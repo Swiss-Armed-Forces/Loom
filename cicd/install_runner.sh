@@ -44,14 +44,11 @@ install_fedora_pkg(){
 	esac
 
 	echo "[*] Register runner"
-	# Note we need ulimit nofile= because of
-	# https://github.com/NixOS/nix/issues/11258#issuecomment-2323063903
 	gitlab-runner register \
 		--non-interactive \
 		--executor docker \
 		--url "${GITLAB_INSTANCE}" \
 		--registration-token "${CI_REGISTRATION_TOKEN}" \
-		--ulimit "nofile=1024:1024" \
 		--docker-volumes /certs/client \
 		--docker-image "${DEFAULT_IMAGE}" \
 		--docker-privileged \
