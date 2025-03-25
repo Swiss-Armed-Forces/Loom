@@ -1,0 +1,220 @@
+environment: production
+
+certificate:
+  enabled: true
+  issuerRef:
+    name: external-vault-issuer
+
+ingress: &default-ingress-config-production-remote
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+  tls:
+    enabled: true
+
+api:
+  resources:
+    limits:
+      cpu: "3"
+      memory: "5Gi"
+    requests:
+      cpu: "0.5"
+      memory: "750Mi"
+  initContainer:
+    resources:
+      limits:
+        cpu: "0.5"
+        memory: "500Mi"
+      requests:
+        cpu: "0.3"
+        memory: "300Mi"
+
+frontend:
+  resources:
+    limits:
+      cpu: "2"
+      memory: "4Gi"
+    requests:
+      cpu: "0.5"
+      memory: "500Mi"
+  ingress: *default-ingress-config-production-remote
+
+celery:
+  flower:
+    resources:
+      limits:
+        cpu: "1"
+        memory: "1Gi"
+      requests:
+        cpu: "0.5"
+        memory: "500Mi"
+    ingress: *default-ingress-config-production-remote
+  worker:
+    main:
+      hpa:
+        enabled: true
+    interactive:
+      hpa:
+        enabled: true
+    beat:
+      resources:
+        limits:
+          cpu: "1"
+          memory: "1Gi"
+        requests:
+          cpu: "0.5"
+          memory: "500Mi"
+
+crawler:
+  enabled: false
+
+elasticsearch:
+  resources:
+    limits:
+      cpu: "8"
+      memory: "16Gi"
+    requests:
+      cpu: "4"
+      memory: "16Gi"
+  pvc:
+    storage: 50Gi
+  ingress: *default-ingress-config-production-remote
+
+elasticvue:
+  resources:
+    limits:
+      cpu: "1"
+      memory: "1500Mi"
+    requests:
+      cpu: "0.5"
+      memory: "750Mi"
+  ingress: *default-ingress-config-production-remote
+
+grafana:
+  resources:
+    limits:
+      cpu: "1.5"
+      memory: "3Gi"
+    requests:
+      cpu: "0.5"
+      memory: "500Mi"
+  ingress: *default-ingress-config-production-remote
+
+fluentd:
+  enabled: false
+
+libretranslate:
+  resources:
+    limits:
+      nvidia.com/gpu: 1
+      cpu: "4"
+      memory: "8Gi"
+    requests:
+      nvidia.com/gpu: 1
+      cpu: "1"
+      memory: "2Gi"
+  ingress:
+    enabled: *default-ingress-config-production-remote
+
+mongodb:
+  resources:
+    limits:
+      cpu: "2"
+      memory: "3Gi"
+    requests:
+      cpu: "1"
+      memory: "1Gi"
+  pvc:
+    storage: 50Gi
+  ingress:
+    enabled: false
+
+rabbit:
+  resources:
+    limits:
+      cpu: "2"
+      memory: "3Gi"
+    requests:
+      cpu: "1"
+      memory: "1Gi"
+    pvc:
+      storage: 30Gi
+  ingress:
+    http: *default-ingress-config-production-remote
+    amqp:
+      enabled: false
+
+ollama:
+  replicaCount: 2
+  resources:
+    limits:
+      nvidia.com/gpu: 1
+      cpu: "2"
+      memory: "10Gi"
+    requests:
+      nvidia.com/gpu: 1
+      cpu: "0.5"
+      memory: "2Gi"
+  ingress:
+    enabled: false
+
+open_webui:
+  resources:
+    limits:
+      cpu: "1.5"
+      memory: "1500Mi"
+    requests:
+      cpu: "0.5"
+      memory: "500Mi"
+  ingress: *default-ingress-config-production-remote
+
+prometheus:
+  resources:
+    limits:
+      cpu: "3"
+      memory: "8Gi"
+    requests:
+      cpu: "0.5"
+      memory: "500Mi"
+  pvc:
+    storage: 20Gi
+  ingress: *default-ingress-config-production-remote
+
+redis:
+  resources:
+    limits:
+      cpu: "1.5"
+      memory: "1500Mi"
+    requests:
+      cpu: "0.5"
+      memory: "500Mi"
+  ingress:
+    enabled: false
+  insight:
+    enabled: false
+
+rspamd:
+  resources:
+    limits:
+      cpu: "2"
+      memory: "3Gi"
+    requests:
+      cpu: "0.5"
+      memory: "500Mi"
+  worker:
+    ingress:
+      enabled: false
+  controller:
+    ingress: *default-ingress-config-production-remote
+
+tika:
+  env:
+    TIKA_JAVA_OPS: "-Xms20g -Xmx20g"
+  resources:
+    limits:
+      cpu: "4"
+      memory: "25Gi"
+    requests:
+      cpu: "2"
+      memory: "22Gi"
+  ingress:
+    enabled: true

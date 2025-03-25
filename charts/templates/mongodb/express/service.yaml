@@ -1,0 +1,16 @@
+{{- if .Values.mongodb.express.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "app.fullname" . }}-mongodb-express
+  labels:
+    {{- include "app.labels.standard" . | nindent 4 }}
+    app.kubernetes.io/component: mongodb
+spec:
+  ports:
+    - port: {{ .Values.mongodb.express.service.port }}
+      name: http
+      targetPort: {{ .Values.mongodb.express.service.port }}
+  selector:
+    app: {{ include "app.name" . }}-mongodb-express
+{{- end }}

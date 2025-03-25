@@ -1,0 +1,30 @@
+{{- if .Values.tika.ingress.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "app.fullname" . }}-tika
+  labels:
+    {{- include "app.labels.standard" . | nindent 4 }}
+    app.kubernetes.io/component: tika
+  annotations:
+    {{- toYaml .Values.tika.ingress.annotations | nindent 4 }}
+spec:
+  ingressClassName: {{ .Values.tika.ingress.className }}
+  rules:
+    - host: tika.{{ .Values.domain }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "app.fullname" . }}-tika
+                port:
+                  number: {{ .Values.tika.service.port }}
+  {{- if .Values.tika.ingress.tls.enabled }}
+  tls:
+    - secretName: {{ include "app.fullname" . }}-external-vault-tls
+      hosts:
+        - tika.{{ .Values.domain }}
+  {{- end }}
+{{- end }}

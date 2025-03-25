@@ -1,0 +1,58 @@
+{{- if .Values.grafana.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "app.fullname" . }}-grafana
+  labels:
+    {{- include "app.labels.standard" . | nindent 4 }}
+    app.kubernetes.io/component: monitoring
+spec:
+  replicas: {{ .Values.grafana.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ include "app.name" . }}-grafana
+  template:
+    metadata:
+      labels:
+        app: {{ include "app.name" . }}-grafana
+    spec:
+      containers:
+        - name: grafana
+          image: {{ .Values.image.registry }}/{{ .Values.grafana.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) .Values.grafana.image.tag }}
+          ports:
+            - name: grafana
+              containerPort: {{ .Values.grafana.service.port }}
+          volumeMounts:
+            - name: datasources
+              mountPath: /etc/grafana/provisioning/datasources
+          {{- if .Values.grafana.readinessProbe.enabled }}
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: {{ .Values.grafana.service.port }}
+            initialDelaySeconds: {{ default 0 .Values.grafana.readinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ default 30 .Values.grafana.readinessProbe.periodSeconds }}
+            failureThreshold: {{ default 3 .Values.grafana.readinessProbe.failureThreshold }}
+          {{- end }}
+          {{- if .Values.grafana.livenessProbe.enabled }}
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: {{ .Values.grafana.service.port }}
+            initialDelaySeconds: {{ default 0 .Values.grafana.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ default 30 .Values.grafana.livenessProbe.periodSeconds }}
+            failureThreshold: {{ default 6 .Values.grafana.livenessProbe.failureThreshold }}
+          {{- end }}
+          {{- if .Values.grafana.resources }}
+          resources: {{- toYaml .Values.grafana.resources | nindent 12 }}
+          {{- end }}
+      volumes:
+        - name: datasources
+          configMap:
+            name: {{ include "app.fullname" . }}-grafana
+            items:
+              - key: elasticsearch.yml
+                path: elasticsearch.yml
+              - key: prometheus.yml
+                path: prometheus.yml
+{{- end }}

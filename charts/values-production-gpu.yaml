@@ -1,0 +1,9 @@
+libretranslate:
+  resources:
+    limits:
+      nvidia.com/gpu: 1
+
+ollama:
+  resources:
+    limits:
+      nvidia.com/gpu: 1

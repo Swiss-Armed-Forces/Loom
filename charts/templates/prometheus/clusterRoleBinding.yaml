@@ -1,0 +1,17 @@
+{{- if .Values.prometheus.enabled }}
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ include "app.fullname" . }}-prometheus
+  labels:
+    {{- include "app.labels.standard" . | nindent 4 }}
+    app.kubernetes.io/component: monitoring
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: {{ include "app.fullname" . }}-prometheus
+subjects:
+  - kind: ServiceAccount
+    namespace: {{ .Release.Namespace }}
+    name: prometheus
+{{- end }}

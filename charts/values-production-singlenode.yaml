@@ -1,0 +1,45 @@
+environment: production
+
+celery:
+  worker:
+    main:
+      hpa:
+        enabled: true
+    interactive:
+      hpa:
+        enabled: true
+
+elasticsearch:
+  resources:
+    limits:
+      cpu: "4"
+      memory: "8Gi"
+    requests:
+      cpu: "2"
+      memory: "8Gi"
+  pvc:
+    storage: 50Gi
+
+mongodb:
+  ingress:
+    enabled: false
+  pvc:
+    storage: 50Gi
+
+rabbit:
+  pvc:
+    storage: 30Gi
+
+redis:
+  ingress:
+    enabled: false
+  insight:
+    enabled: false
+
+tika:
+  ingress:
+    enabled: false
+
+ollama:
+  ingress:
+    enabled: false

@@ -1,0 +1,14 @@
+div.nameWithIcon {
+    display: flex;
+    flex-direction: row;
+    position: relative;
+    text-align: left;
+}
+
+div.customQueryIconSelect :global .MuiSelect-select {
+    padding: 0.8rem;
+}
+
+div.customQueryNameInput {
+    width: 100%;
+}

@@ -1,0 +1,23 @@
+{
+  "index_patterns": [".ds-docker-logs-*"],
+  "template": {
+    "aliases": {},
+    "mappings": {},
+    "settings": {
+      "index": {
+        "lifecycle": {
+          "name": "5d-hot-15-warm-log-op"
+        },
+        "routing": {
+          "allocation": {
+            "include": {
+              "_tier_preference": "data_hot"
+            }
+          }
+        },
+        "number_of_shards": "1",
+        "number_of_replicas": "0"
+      }
+    }
+  }
+}

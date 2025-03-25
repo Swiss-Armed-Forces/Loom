@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "app.fullname" . }}-frontend
+  labels:
+    {{- include "app.labels.standard" . | nindent 4 }}
+    app.kubernetes.io/component: frontend
+spec:
+  replicas: {{ .Values.frontend.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ include "app.name" . }}-frontend
+  template:
+    metadata:
+      labels:
+        app: {{ include "app.name" . }}-frontend
+    spec:
+      containers:
+        - name: frontend
+          image: {{ .Values.image.registry }}/{{ .Values.frontend.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) .Values.frontend.image.tag }}
+          ports:
+            - name: frontend
+              containerPort: {{ .Values.frontend.service.port }}
+          env:
+            - name: ENVIRONMENT
+              value: {{ .Values.environment | quote }}
+            - name: API_BACKEND_URL
+              value: http://{{ include "app.fullname" . }}-api:{{ .Values.api.service.port }}
+          {{- if .Values.frontend.readinessProbe.enabled }}
+          readinessProbe:
+            httpGet:
+              path: /
+              port: {{ .Values.frontend.service.port }}
+            initialDelaySeconds: {{ default 0 .Values.frontend.readinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ default 15 .Values.frontend.readinessProbe.periodSeconds }}
+            failureThreshold: {{ default 3 .Values.frontend.readinessProbe.failureThreshold }}
+          {{- end }}
+          {{- if .Values.frontend.livenessProbe.enabled }}
+          livenessProbe:
+            httpGet:
+              path: /
+              port: {{ .Values.frontend.service.port }}
+            initialDelaySeconds: {{ default 0 .Values.frontend.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ default 15 .Values.frontend.livenessProbe.periodSeconds }}
+            failureThreshold: {{ default 6 .Values.frontend.livenessProbe.failureThreshold }}
+          {{- end }}
+          {{- if .Values.frontend.resources }}
+          resources: {{- toYaml .Values.frontend.resources | nindent 12 }}
+          {{- end }}

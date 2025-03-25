@@ -1,0 +1,127 @@
+.resultHighlightText {
+    padding: 10px;
+}
+
+.resultHighlightText em {
+    font-style: normal;
+    background: #ffc107;
+    white-space: pre-wrap;
+}
+
+.summaryHighlightText {
+    font-style: normal !important;
+    background: rgb(249, 249, 249) !important;
+    display: inline-block !important;
+    border-radius: 5px;
+    border: gray 1px solid;
+    padding: 10px;
+    transform: rotate(180deg);
+    width: auto !important;
+    position: relative !important;
+    grid-area: 1 / 1;
+}
+
+.summaryHighlightTitle {
+    position: relative;
+    font-size: 10px;
+    margin-left: auto;
+}
+
+.summaryText {
+    transform: rotate(180deg);
+}
+
+:global .resultCardParent:target {
+    outline: auto;
+}
+
+.resultCardHeader {
+    display: flex;
+    flex-direction: row;
+    gap: 1rem;
+}
+
+.resultCardHeader :global .MuiCardHeader-avatar {
+    margin-right: 0;
+}
+
+.resultCardHeader :global .MuiCardHeader-content {
+    flex: unset;
+}
+
+.resultCardHeader :global .MuiCardHeader-action {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    flex: 1;
+}
+
+.resultCardActions {
+    display: flex;
+    flex-direction: row;
+}
+
+.MuiCardHeaderActionButtons {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    @media only screen and (max-width: 768px) {
+        flex-wrap: wrap;
+    }
+}
+
+.resultCardActionsBottom {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+}
+
+.sortHint {
+    display: flex;
+    font-size: 0.8rem;
+    color: #9e9e9e;
+    padding: 0 0.5rem;
+}
+
+.resultCardContent {
+    display: flex;
+    flex-direction: row;
+    gap: 1rem;
+
+    word-break: break-word;
+
+    @media only screen and (max-width: 768px) {
+        flex-direction: column;
+    }
+}
+
+.highlights {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+
+    word-break: break-word;
+}
+
+img.resultImage {
+    cursor: pointer;
+    object-fit: contain;
+    object-position: top;
+    width: auto;
+    min-width: 10rem;
+    max-width: 20vw;
+
+    @media only screen and (max-width: 768px) {
+        min-width: 5rem;
+        max-width: 50vw;
+    }
+}
+
+.translationTab {
+    width: 150px;
+}
+
+.translationTabButton {
+    display: flex;
+    align-items: center;
+}

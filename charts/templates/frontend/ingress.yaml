@@ -1,0 +1,30 @@
+{{- if .Values.frontend.ingress.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "app.fullname" . }}-frontend
+  labels:
+    {{- include "app.labels.standard" . | nindent 4 }}
+    app.kubernetes.io/component: frontend
+  annotations:
+    {{- toYaml .Values.frontend.ingress.annotations | nindent 4 }}
+spec:
+  ingressClassName: {{ .Values.frontend.ingress.className }}
+  rules:
+    - host: frontend.{{ .Values.domain }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "app.fullname" . }}-frontend
+                port:
+                  number: {{ .Values.frontend.service.port }}
+  {{- if .Values.frontend.ingress.tls.enabled }}
+  tls:
+    - secretName: {{ include "app.fullname" . }}-external-vault-tls
+      hosts:
+        - frontend.{{ .Values.domain }}
+  {{- end }}
+{{- end }}

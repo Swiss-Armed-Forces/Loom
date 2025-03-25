@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "app.fullname" . }}-frontend
+  labels:
+    {{- include "app.labels.standard" . | nindent 4 }}
+    app.kubernetes.io/component: frontend
+spec:
+  ports:
+    - port: {{ .Values.frontend.service.port }}
+      name: frontend
+      targetPort: {{ .Values.frontend.service.port }}
+  selector:
+    app: {{ include "app.name" . }}-frontend

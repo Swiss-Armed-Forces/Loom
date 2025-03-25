@@ -1,0 +1,28 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "app.fullname" . }}-rspamd
+  labels:
+    {{- include "app.labels.standard" . | nindent 4 }}
+    app.kubernetes.io/component: rspamd
+spec:
+  replicas: {{ .Values.rspamd.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ include "app.name" . }}-rspamd
+  template:
+    metadata:
+      labels:
+        app: {{ include "app.name" . }}-rspamd
+    spec:
+      containers:
+        - name: rspamd
+          image: {{ .Values.image.registry }}/{{ .Values.rspamd.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) .Values.rspamd.image.tag }}
+          ports:
+            - name: worker
+              containerPort: {{ .Values.rspamd.worker.service.port }}
+            - name: controller
+              containerPort: {{ .Values.rspamd.controller.service.port }}
+          {{- if .Values.rspamd.resources }}
+          resources: {{- toYaml .Values.rspamd.resources | nindent 12 }}
+          {{- end }}

@@ -1,0 +1,36 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "app.fullname" . }}-settings
+  labels:
+    {{- include "app.labels.standard" . | nindent 4 }}
+    app.kubernetes.io/component: monitoring
+data:
+    ENVIRONMENT: {{ .Values.environment }}
+    DOMAIN: {{ .Values.domain }}
+
+    # llm
+    llm_model: {{ .Values.llm.model }}
+    llm_model_embedding: {{ .Values.llm.model_embedding }}
+    llm_temperature: {{ .Values.llm.temperature | quote }}
+    llm_summarize_text_chunk_size: {{ .Values.llm.summarize_text_chunk_size | quote  }}
+    llm_summarize_text_chunk_overlap: {{ .Values.llm.summarize_text_chunk_overlap | quote  }}
+    llm_embedding_temperature: {{ .Values.llm.embedding_temperature | quote  }}
+    llm_embedding_text_chunk_size: {{ .Values.llm.embedding_text_chunk_size | quote  }}
+    llm_embedding_text_chunk_overlap: {{ .Values.llm.embedding_text_chunk_overlap | quote  }}
+    llm_rerank_temperature: {{ .Values.llm.rerank_temperature | quote  }}
+
+    # hosts
+    mongo_db_host: mongodb://{{ include "app.fullname" . }}-mongodb:{{ .Values.mongodb.service.port }}
+    es_host: http://{{ include "app.fullname" . }}-elasticsearch:{{ .Values.elasticsearch.service.port }}
+    rabbit_mq_management_host: http://guest:guest@{{ include "app.fullname" . }}-rabbit:{{ .Values.rabbit.service.port.http }}
+    celery_broker_host: amqp://{{ include "app.fullname" . }}-rabbit:{{ .Values.rabbit.service.port.amqp }}
+    celery_backend_host: redis://{{ include "app.fullname" . }}-redis:{{ .Values.redis.service.port }}/0?protocol=3
+    tika_server_host: http://{{ include "app.fullname" . }}-tika:{{ .Values.tika.service.port }}
+    rspam_host: http://{{ include "app.fullname" . }}-rspamd:{{ .Values.rspamd.worker.service.port }}
+    libretranslate_host: http://{{ include "app.fullname" . }}-libretranslate:{{ .Values.libretranslate.service.port }}
+    ollama_host: http://{{ include "app.fullname" . }}-ollama:{{ .Values.ollama.service.port }}
+    api_host: http://{{ include "app.fullname" . }}-api:{{ .Values.api.service.port }}
+    ws_host: ws://{{ include "app.fullname" . }}-api:{{ .Values.api.service.port }}
+    imap_host: imap://{{ include "app.fullname" . }}-dovecot:{{ .Values.dovecot.service.port.imap }}
+    minio_host: {{ include "app.fullname" . }}-minio:{{ .Values.minio.service.port }}

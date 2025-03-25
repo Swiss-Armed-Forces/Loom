@@ -1,0 +1,66 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "app.fullname" . }}-mongodb
+  labels:
+    {{- include "app.labels.standard" . | nindent 4 }}
+    app.kubernetes.io/component: mongodb
+spec:
+  serviceName: {{ include "app.name" . }}-mongodb
+  replicas: {{ .Values.mongodb.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ include "app.name" . }}-mongodb
+  template:
+    metadata:
+      labels:
+        app: {{ include "app.name" . }}-mongodb
+    spec:
+      containers:
+        - name: mongodb
+          image: {{ .Values.image.registry }}/{{ .Values.mongodb.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) .Values.mongodb.image.tag }}
+          volumeMounts:
+            - mountPath: /data/db
+              name: mongodb
+          {{- if .Values.mongodb.readinessProbe.enabled }}
+          readinessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+            initialDelaySeconds: {{ default 0 .Values.mongodb.readinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ default 15 .Values.mongodb.readinessProbe.periodSeconds }}
+            timeoutSeconds: {{ default 10 .Values.mongodb.readinessProbe.timeoutSeconds }}
+            failureThreshold: {{ default 3 .Values.mongodb.readinessProbe.failureThreshold }}
+          {{- end }}
+          {{- if .Values.mongodb.livenessProbe.enabled }}
+          livenessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+            initialDelaySeconds: {{ default 0 .Values.mongodb.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ default 15 .Values.mongodb.livenessProbe.periodSeconds }}
+            timeoutSeconds: {{ default 10  .Values.mongodb.livenessProbe.timeoutSeconds }}
+            failureThreshold: {{ default 6 .Values.mongodb.livenessProbe.failureThreshold }}
+          {{- end }}
+          {{- if .Values.mongodb.resources }}
+          resources:
+            limits:
+              cpu: {{ .Values.mongodb.resources.limits.cpu }}
+              memory: {{ .Values.mongodb.resources.limits.memory }}
+            requests:
+              cpu: {{ .Values.mongodb.resources.requests.cpu }}
+              memory: {{ .Values.mongodb.resources.requests.memory }}
+          {{- end }}
+  volumeClaimTemplates:
+  - metadata:
+      name: mongodb
+    spec:
+      accessModes:
+        - {{ .Values.mongodb.pvc.accessModes | default "ReadWriteOnce" | quote }}
+      resources:
+          requests:
+            storage: {{ .Values.mongodb.pvc.storage }}

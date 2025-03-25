@@ -1,0 +1,30 @@
+{{- if .Values.open_webui.ingress.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "app.fullname" . }}-open-webui
+  labels:
+    {{- include "app.labels.standard" . | nindent 4 }}
+    app.kubernetes.io/component: ollama
+  annotations:
+    {{- toYaml .Values.open_webui.ingress.annotations | nindent 4 }}
+spec:
+  ingressClassName: {{ .Values.open_webui.ingress.className }}
+  rules:
+    - host: open-webui.{{ .Values.domain }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "app.fullname" . }}-open-webui
+                port:
+                  number: {{ .Values.open_webui.service.port }}
+  {{- if .Values.open_webui.ingress.tls.enabled }}
+  tls:
+    - secretName: {{ include "app.fullname" . }}-external-vault-tls
+      hosts:
+        - open-webui.{{ .Values.domain }}
+  {{- end }}
+{{- end }}

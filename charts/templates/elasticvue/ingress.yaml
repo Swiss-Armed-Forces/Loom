@@ -1,0 +1,30 @@
+{{- if .Values.elasticvue.ingress.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "app.fullname" . }}-elasticvue
+  labels:
+    {{- include "app.labels.standard" . | nindent 4 }}
+    app.kubernetes.io/component: elasticsearch
+  annotations:
+    {{- toYaml .Values.elasticvue.ingress.annotations | nindent 4 }}
+spec:
+  ingressClassName: {{ .Values.elasticvue.ingress.className }}
+  rules:
+    - host: elasticvue.{{ .Values.domain }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "app.fullname" . }}-elasticvue
+                port:
+                  number: {{ .Values.elasticvue.service.port }}
+  {{- if .Values.elasticvue.ingress.tls.enabled }}
+  tls:
+    - secretName: {{ include "app.fullname" . }}-external-vault-tls
+      hosts:
+        - elasticvue.{{ .Values.domain }}
+  {{- end }}
+{{- end }}

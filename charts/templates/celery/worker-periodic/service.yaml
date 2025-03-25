@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "app.fullname" . }}-celery-worker-periodic
+  labels:
+    {{- include "app.labels.standard" . | nindent 4 }}
+    app.kubernetes.io/component: "celery"
+spec:
+  ports:
+    - port: {{ .Values.celery.worker.periodic.service.port }}
+      name: worker-periodic
+      targetPort: {{ .Values.celery.worker.periodic.service.port }}
+  selector:
+    app: {{ include "app.name" . }}-celery-worker-periodic

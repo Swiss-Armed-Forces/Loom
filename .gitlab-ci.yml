@@ -1,0 +1,235 @@
+## Gitlab pipeline configuration
+
+include:
+  - template: Workflows/MergeRequest-Pipelines.gitlab-ci.yml
+
+variables:
+  GIT_STRATEGY: fetch
+  # without this the runner lacks access to the target branch
+  GIT_DEPTH: "0"
+  # Skip cloning lfs data
+  GIT_LFS_SKIP_SMUDGE: "1"
+  # enable service debugging
+  # CI_DEBUG_SERVICES: "true"
+
+workflow:
+  auto_cancel:
+    on_job_failure: all
+  # Switch between branch pipelines and merge request pipelines
+  # https://docs.gitlab.com/ee/ci/yaml/README.html#switch-between-branch-pipelines-and-merge-request-pipelines
+  rules:
+    - if: "$CI_COMMIT_TAG"
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TITLE !~ /^Draft/
+    - if: "$CI_COMMIT_BRANCH && $CI_OPEN_MERGE_REQUESTS"
+      when: never
+    - if: '$CI_COMMIT_BRANCH == "main"'
+
+stages:
+  - buildenv
+  - build
+  - test
+
+default:
+  # Allow cancellation of running tasks
+  interruptible: true
+  # By default run on self-hosted runners:
+  tags:
+    # - debug
+    - self-hosted-medium
+    # - saas-linux-xlarge-amd64
+    # - saas-linux-large-amd64
+  # Always use nix-dind image
+  image: ${CI_REGISTRY_IMAGE}/nix-dind:latest
+  before_script:
+    # docker login
+    - echo "${CI_REGISTRY_PASSWORD}" | docker login ${CI_REGISTRY} -u "${CI_REGISTRY_USER}" --password-stdin
+    - echo "${CI_DEPENDENCY_PROXY_PASSWORD}" | docker login ${CI_DEPENDENCY_PROXY_SERVER} -u "${CI_DEPENDENCY_PROXY_USER}" --password-stdin
+    # Enable CI/CD mode for the devenv
+    - cp "nix-dind/devenv.local.nix" "devenv.local.nix"
+  # Dependency caching
+  cache:
+    - key:
+        files:
+          - poetry.lock
+      paths:
+        - .venv
+    - key:
+        files:
+          - Frontend/pnpm-lock.yaml
+      paths:
+        - Frontend/node_modules/
+
+# ---------------------------------------------#
+#
+#
+#       BUILDENV JOBS
+#
+#
+# ----------------------------------------------#
+
+buildenv_nix-dind:
+  stage: buildenv
+  only:
+    - main
+    - tags
+  script:
+    - devenv --verbose shell -- nix-dind --push
+
+# ---------------------------------------------#
+#
+#
+#       BUILD JOBS
+#
+#
+# ----------------------------------------------#
+
+build_images:
+  stage: build
+  variables:
+    # Clone lfs data
+    GIT_LFS_SKIP_SMUDGE: "0"
+  only:
+    - main
+    - tags
+  script:
+    - devenv --verbose shell -- build --profile prod --push
+    - devenv --verbose shell -- build --profile prod --push --tag latest
+    - |
+      if [ -n "${CI_COMMIT_TAG+x}" ]; then
+        devenv --verbose shell -- build --profile prod --push --tag "${CI_COMMIT_TAG}"
+      fi
+
+build_dev_images:
+  stage: build
+  variables:
+    # Clone lfs data
+    GIT_LFS_SKIP_SMUDGE: "0"
+  only:
+    - main
+    - tags
+  script:
+    - devenv --verbose shell -- build --profile dev --push
+
+build_integrationtest_images:
+  stage: build
+  variables:
+    # Clone lfs data
+    GIT_LFS_SKIP_SMUDGE: "0"
+  only:
+    - main
+    - tags
+  script:
+    - devenv --verbose shell -- build --profile integrationtest --push
+
+build_transfer_loom:
+  stage: build
+  when: manual
+  variables:
+    # Clone lfs data
+    GIT_LFS_SKIP_SMUDGE: "0"
+    SLEEP_TIME: infinity
+  script:
+    - devenv --verbose shell -- transfer-loom
+
+build_helm_test:
+  stage: test
+  when: manual
+  script:
+    - devenv --verbose shell -- build-helm
+      --user gitlab-ci-token:${CI_JOB_TOKEN}
+      --package-registry ${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/helm/api/dev/charts
+  rules:
+    - if: '$CI_COMMIT_BRANCH != "main"'
+    - if: $CI_COMMIT_TAG
+      when: never
+
+build_helm_integration:
+  stage: build
+  script:
+    - devenv --verbose shell -- build-helm
+      --publish
+      --user gitlab-ci-token:${CI_JOB_TOKEN}
+      --package-registry ${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/helm/api/test/charts
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+    - if: $CI_COMMIT_TAG
+      when: never
+
+build_helm_prod:
+  stage: build
+  script:
+    - devenv --verbose shell -- build-helm
+      --publish
+      --user gitlab-ci-token:${CI_JOB_TOKEN}
+      --package-registry ${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/helm/api/prod/charts
+  rules:
+    - if: $CI_COMMIT_TAG
+
+# ---------------------------------------------#
+#
+#
+#        TEST JOBS
+#
+#
+# ----------------------------------------------#
+
+linting:
+  stage: test
+  script:
+    - devenv --verbose shell -- lint
+
+frontend_test:
+  stage: test
+  script:
+    - devenv --verbose shell -- frontend-test
+    - devenv --verbose shell -- frontend-build
+
+frontend_audit:
+  stage: test
+  allow_failure: true
+  script:
+    - devenv --verbose shell -- frontend-audit
+
+backend_test:
+  stage: test
+  script:
+    - devenv --verbose shell -- backend-test
+  coverage: '/(?i)total.*? (100(?:\.0+)?\%|[1-9]?\d(?:\.\d+)?\%)$/'
+  artifacts:
+    reports:
+      coverage_report:
+        coverage_format: cobertura
+        path: ./backend/coverage.xml
+
+integrationtest:
+  stage: test
+  variables:
+    # Clone lfs data
+    GIT_LFS_SKIP_SMUDGE: "0"
+  script:
+    - devenv --verbose shell -- sudo --background dmesg --follow > dmesg.txt
+    - devenv --verbose shell -- up --integrationtest --expose "$(tailscale ip -4)"
+    - devenv --verbose shell -- run-integrationtest
+  artifacts:
+    name: integrationtest artifacts
+    paths:
+      - dmesg.txt
+      - logs/
+    expire_in: 1 week
+    when: always
+
+integrationtest_debug:
+  stage: test
+  when: manual
+  variables:
+    # Clone lfs data
+    GIT_LFS_SKIP_SMUDGE: "0"
+    SLEEP_TIME: infinity
+  script:
+    - devenv --verbose shell -- up --integrationtest --expose "$(tailscale ip -4)" || sleep "${SLEEP_TIME}"
+    - devenv --verbose shell -- run-integrationtest
+
+test_build_nix-dind:
+  stage: test
+  script:
+    - devenv --verbose shell -- nix-dind

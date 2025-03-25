@@ -1,0 +1,76 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "app.fullname" . }}-rabbit
+  labels:
+    {{- include "app.labels.standard" . | nindent 4 }}
+    app.kubernetes.io/component: rabbit
+spec:
+  serviceName: {{ include "app.name" . }}-rabbit
+  replicas: {{ .Values.rabbit.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ include "app.name" . }}-rabbit
+  template:
+    metadata:
+      labels:
+        app: {{ include "app.name" . }}-rabbit
+    spec:
+      containers:
+        - name: rabbit
+          image: {{ .Values.image.registry }}/{{ .Values.rabbit.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) .Values.rabbit.image.tag }}
+          ports:
+            - name: amqp
+              containerPort: {{ .Values.rabbit.service.port.amqp }}
+              protocol: TCP
+            - name: http
+              containerPort: {{ .Values.rabbit.service.port.http }}
+              protocol: TCP
+            - name: prometheus
+              containerPort: {{ .Values.rabbit.service.port.prometheus }}
+              protocol: TCP
+          volumeMounts:
+            - mountPath: /var/lib/rabbitmq
+              name: rabbit
+          {{- if .Values.rabbit.readinessProbe.enabled }}
+          readinessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - rabbitmq-diagnostics -q ping
+            initialDelaySeconds: {{ default 0 .Values.rabbit.readinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ default 20 .Values.rabbit.readinessProbe.periodSeconds }}
+            timeoutSeconds: {{ default 5 .Values.rabbit.readinessProbe.timeoutSeconds }}
+            failureThreshold: {{ default 3 .Values.rabbit.readinessProbe.failureThreshold }}
+          {{- end }}
+          {{- if .Values.rabbit.livenessProbe.enabled }}
+          livenessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - rabbitmq-diagnostics -q ping
+            initialDelaySeconds: {{ default 0 .Values.rabbit.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ default 20 .Values.rabbit.livenessProbe.periodSeconds }}
+            timeoutSeconds: {{ default 5 .Values.rabbit.livenessProbe.timeoutSeconds }}
+            failureThreshold: {{ default 6 .Values.rabbit.livenessProbe.failureThreshold }}
+          {{- end }}
+          {{- if .Values.rabbit.resources }}
+          resources:
+            limits:
+              cpu: {{ .Values.rabbit.resources.limits.cpu }}
+              memory: {{ .Values.rabbit.resources.limits.memory }}
+            requests:
+              cpu: {{ .Values.rabbit.resources.requests.cpu }}
+              memory: {{ .Values.rabbit.resources.requests.memory }}
+          {{- end }}
+  volumeClaimTemplates:
+  - metadata:
+      name: rabbit
+    spec:
+      accessModes:
+        - {{ .Values.rabbit.pvc.accessModes | default "ReadWriteOnce" | quote }}
+      resources:
+          requests:
+            storage: {{ .Values.rabbit.pvc.storage }}

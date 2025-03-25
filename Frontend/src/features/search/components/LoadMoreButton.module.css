@@ -1,0 +1,14 @@
+.loadMoreButtonWrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin: 0 2rem 2rem;
+    gap: 1rem;
+}
+
+.loadMoreSpinner {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+}

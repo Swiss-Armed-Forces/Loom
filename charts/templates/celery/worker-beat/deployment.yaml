@@ -1,0 +1,57 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "app.fullname" . }}-celery-worker-beat
+  labels:
+    {{- include "app.labels.standard" . | nindent 4 }}
+    app.kubernetes.io/component: "celery"
+spec:
+  replicas: {{ .Values.celery.worker.beat.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ include "app.name" . }}-celery-worker-beat
+  template:
+    metadata:
+      labels:
+        app: {{ include "app.name" . }}-celery-worker-beat
+    spec:
+      containers:
+        - name: celery-worker-beat
+          image: {{ .Values.image.registry }}/{{ .Values.celery.worker.beat.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) .Values.celery.worker.beat.image.tag }}
+          ports:
+            - name: worker-beat
+              containerPort: {{ .Values.celery.worker.beat.service.port }}
+          envFrom:
+            - configMapRef:
+                name: {{ include "app.fullname" . }}-settings
+          {{- if .Values.celery.worker.beat.readinessProbe.enabled }}
+          readinessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - python beat/beat_health_check.py
+            initialDelaySeconds: {{ default 0 .Values.celery.worker.beat.readinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ default 60 .Values.celery.worker.beat.readinessProbe.periodSeconds }}
+            timeoutSeconds: {{ default 5 .Values.celery.worker.beat.readinessProbe.timeoutSeconds }}
+            failureThreshold: {{ default 3 .Values.celery.worker.beat.readinessProbe.failureThreshold }}
+          {{- end }}
+          {{- if .Values.celery.worker.beat.livenessProbe.enabled }}
+          livenessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - python beat/beat_health_check.py
+            initialDelaySeconds: {{ default 0 .Values.celery.worker.beat.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ default 60 .Values.celery.worker.beat.livenessProbe.periodSeconds }}
+            timeoutSeconds: {{ default 5 .Values.celery.worker.beat.livenessProbe.timeoutSeconds }}
+            failureThreshold: {{ default 6 .Values.celery.worker.beat.livenessProbe.failureThreshold }}
+          {{- end }}
+          {{- if .Values.celery.worker.beat.resources }}
+          resources: {{- toYaml .Values.celery.worker.beat.resources | nindent 12 }}
+          {{- end }}
+      volumes:
+        - name: secret
+          persistentVolumeClaim:
+            claimName: {{ include "app.fullname" . }}-secret

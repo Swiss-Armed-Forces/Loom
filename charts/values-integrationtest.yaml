@@ -1,0 +1,17 @@
+environment: test
+
+llm:
+  # model: qwen2:0.5b
+  model: smollm2:135m
+  temperature: 0
+  summarize_text_chunk_size: 1000
+  summarize_text_chunk_overlap: 33
+  embedding_temperatur: 0
+  embedding_text_chunk_size: 250
+  embedding_text_chunk_overlap: 25
+  llm_rerank_temperature: 0
+
+celery:
+  worker:
+    beat:
+      replicaCount: 0

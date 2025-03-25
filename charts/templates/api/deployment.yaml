@@ -1,0 +1,62 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "app.fullname" . }}-api
+  labels:
+    {{- include "app.labels.standard" . | nindent 4 }}
+    app.kubernetes.io/component: "api"
+spec:
+  replicas: {{ .Values.api.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ include "app.name" . }}-api
+  template:
+    metadata:
+      labels:
+        app: {{ include "app.name" . }}-api
+    spec:
+      initContainers:
+        - name: check-elasticsearch-ready
+          image: {{ .Values.image.registry }}/{{ .Values.api.initContainer.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) .Values.api.initContainer.image.tag }}
+          command:
+            - 'sh'
+            - '-c'
+            - |
+              until nc -vz {{ include "app.fullname" . }}-elasticsearch {{ .Values.elasticsearch.service.port }}; do
+                echo "Waiting for elasticsearch service";
+                sleep 1;
+              done;
+          {{- if .Values.api.initContainer.resources }}
+          resources: {{- toYaml .Values.api.initContainer.resources | nindent 12 }}
+          {{- end }}
+      containers:
+        - name: api
+          image: {{ .Values.image.registry }}/{{ .Values.api.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) .Values.api.image.tag }}
+          envFrom:
+            - configMapRef:
+                name: {{ include "app.fullname" . }}-settings
+          {{- if .Values.api.readinessProbe.enabled }}
+          readinessProbe:
+            httpGet:
+              path: /docs
+              port: {{ .Values.api.service.port }}
+            initialDelaySeconds: {{ default 3 .Values.api.readinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ default 20 .Values.api.readinessProbe.periodSeconds }}
+            failureThreshold: {{ default 3 .Values.api.readinessProbe.failureThreshold }}
+          {{- end }}
+          {{- if .Values.api.livenessProbe.enabled }}
+          livenessProbe:
+            httpGet:
+              path: /docs
+              port: {{ .Values.api.service.port }}
+            initialDelaySeconds: {{ default 3 .Values.api.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ default 20 .Values.api.livenessProbe.periodSeconds }}
+            failureThreshold: {{ default 6 .Values.api.livenessProbe.failureThreshold }}
+          {{- end }}
+          {{- if .Values.api.resources }}
+          resources: {{- toYaml .Values.api.resources | nindent 12 }}
+          {{- end }}
+      volumes:
+        - name: secret
+          persistentVolumeClaim:
+            claimName: {{ include "app.fullname" . }}-secret

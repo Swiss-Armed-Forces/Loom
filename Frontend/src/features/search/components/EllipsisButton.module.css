@@ -1,0 +1,20 @@
+button.ellipsisButton {
+    display: inline-flex;
+    flex-direction: column;
+    justify-content: start;
+
+    padding: 0;
+    margin: 0 0.5rem;
+    height: 1.25rem;
+}
+button.ellipsisButton svg {
+    margin-top: 0.1rem;
+    border: 1px solid #31312e;
+    color: white;
+
+    /*background-color: #ffbf00;*/
+    background-color: #31312e;
+    border-radius: 1rem;
+    width: 1.25rem;
+    height: 1rem;
+}

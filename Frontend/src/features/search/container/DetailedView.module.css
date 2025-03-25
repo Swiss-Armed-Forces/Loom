@@ -1,0 +1,19 @@
+.cardContainer {
+    padding: 1rem;
+    display: flex;
+    gap: 1rem;
+    flex-direction: column;
+    overflow: visible;
+}
+
+.skeletonLoadingContainer {
+    width: calc(100% - 2rem);
+    padding: 1rem;
+}
+
+.skeletonLoadingAvatar {
+    display: flex;
+    flex-direction: row;
+    gap: 2rem;
+    margin-bottom: 2rem;
+}

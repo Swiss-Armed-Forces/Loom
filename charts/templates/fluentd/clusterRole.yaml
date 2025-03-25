@@ -1,0 +1,27 @@
+{{- if .Values.fluentd.enabled }}
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ include "app.fullname" . }}-fluentd
+  labels:
+    {{- include "app.labels.standard" . | nindent 4 }}
+    app.kubernetes.io/component: monitoring
+rules:
+  - apiGroups: [""]
+    resources:
+      - pods
+      - namespaces
+      - events
+      - nodes
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups: ["apps"]
+    resources:
+      - daemonsets
+    verbs:
+      - get
+      - list
+      - watch
+{{- end }}

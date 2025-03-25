@@ -1,0 +1,59 @@
+{{- if .Values.prometheus.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "app.fullname" . }}-prometheus
+  labels:
+    {{- include "app.labels.standard" . | nindent 4 }}
+    app.kubernetes.io/component: monitoring
+spec:
+  replicas: {{ .Values.prometheus.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ include "app.name" . }}-prometheus
+  template:
+    metadata:
+      labels:
+        app: {{ include "app.name" . }}-prometheus
+    spec:
+      serviceAccountName: prometheus
+      securityContext:
+        runAsUser: 65534
+        fsGroup: 65534
+      containers:
+        - name: prometheus
+          image: {{ .Values.image.registry }}/{{ .Values.prometheus.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) .Values.prometheus.image.tag }}
+          ports:
+            - name: prometheus
+              containerPort: {{ .Values.prometheus.service.port }}
+          volumeMounts:
+            - name: prometheus
+              mountPath: /prometheus
+          {{- if .Values.prometheus.readinessProbe.enabled }}
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: metrics
+              scheme: HTTP
+            initialDelaySeconds: {{ default 0 .Values.prometheus.readinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ default 10 .Values.prometheus.readinessProbe.periodSeconds }}
+            failureThreshold: {{ default 3 .Values.prometheus.readinessProbe.failureThreshold }}
+          {{- end }}
+          {{- if .Values.prometheus.livenessProbe.enabled }}
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: metrics
+              scheme: HTTP
+            initialDelaySeconds: {{ default 0 .Values.prometheus.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ default 10 .Values.prometheus.livenessProbe.periodSeconds }}
+            failureThreshold: {{ default 6 .Values.prometheus.livenessProbe.failureThreshold }}
+          {{- end }}
+          {{- if .Values.prometheus.resources }}
+          resources: {{- toYaml .Values.prometheus.resources | nindent 12 }}
+          {{- end }}
+      volumes:
+        - name: prometheus
+          persistentVolumeClaim:
+            claimName: {{ include "app.fullname" . }}-prometheus
+{{- end }}

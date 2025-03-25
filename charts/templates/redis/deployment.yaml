@@ -1,0 +1,50 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "app.fullname" . }}-redis
+  labels:
+    {{- include "app.labels.standard" . | nindent 4 }}
+    app.kubernetes.io/component: redis
+spec:
+  replicas: {{ .Values.redis.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ include "app.name" . }}-redis
+  template:
+    metadata:
+      labels:
+        app: {{ include "app.name" . }}-redis
+    spec:
+      containers:
+        - name: redis
+          image: {{ .Values.image.registry }}/{{ .Values.redis.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) .Values.redis.image.tag }}
+          ports:
+            - name: redis
+              containerPort: {{ .Values.redis.service.port }}
+          {{- if .Values.redis.readinessProbe.enabled }}
+          readinessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - redis-cli ping
+            initialDelaySeconds: {{ default 0 .Values.redis.readinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ default 20 .Values.redis.readinessProbe.periodSeconds }}
+            timeoutSeconds: {{ default 10 .Values.redis.readinessProbe.timeoutSeconds }}
+            failureThreshold: {{ default 3 .Values.redis.readinessProbe.failureThreshold }}
+          {{- end }}
+          {{- if .Values.redis.livenessProbe.enabled }}
+          livenessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - redis-cli ping
+            initialDelaySeconds: {{ default 0 .Values.redis.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ default 20 .Values.redis.livenessProbe.periodSeconds }}
+            timeoutSeconds: {{ default 10 .Values.redis.livenessProbe.timeoutSeconds }}
+            failureThreshold: {{ default 6 .Values.redis.livenessProbe.failureThreshold }}
+          {{- end }}
+          {{- if .Values.redis.resources }}
+          resources: {{- toYaml .Values.redis.resources | nindent 12 }}
+          {{- end }}

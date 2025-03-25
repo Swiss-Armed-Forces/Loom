@@ -1,0 +1,43 @@
+.emptyCard {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin: 1rem;
+}
+
+.emptyCardHeaderTitle {
+    font-size: 15px;
+    font-weight: 600;
+}
+
+.emptyCardTitle {
+    padding-bottom: 0 !important;
+}
+
+.link,
+.link:hover,
+.link:visited {
+    color: #00acc1;
+    text-decoration: underline;
+    cursor: pointer;
+    cursor: hand;
+}
+
+span.clickableSpan {
+    color: #444477;
+    display: inline-block;
+}
+
+span.clickableSpan:hover {
+    border-radius: 4px;
+    background-color: #b2ebf2;
+    cursor: pointer;
+    cursor: hand;
+}
+
+span.clickableSpan:active {
+    border-radius: 4px;
+    background-color: #80deea;
+    cursor: pointer;
+    cursor: hand;
+}

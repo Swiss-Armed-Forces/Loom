@@ -1,0 +1,13 @@
+.savedQueries button {
+    display: flex;
+    flex-direction: row;
+    justify-content: flex-start;
+}
+
+.savedQueries div button .btn-label {
+    flex: 1;
+}
+
+.savedQueries > div > button > .MuiButton-startIcon {
+    justify-self: flex-start;
+}

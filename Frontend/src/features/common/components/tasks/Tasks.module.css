@@ -1,0 +1,4 @@
+.taskListWrapper {
+    display: flex;
+    flex-direction: row;
+}

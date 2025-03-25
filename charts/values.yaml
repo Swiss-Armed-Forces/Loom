@@ -1,0 +1,390 @@
+domain: &default-domain loom
+
+image:
+  registry: registry.gitlab.com
+
+certificate:
+  enabled: false
+
+ingress: &default-ingress-config
+  enabled: true
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: web,websecure
+  tls:
+    enabled: true
+
+
+llm:
+  model: deepseek-r1:8b
+  model_embedding: nomic-embed-text:v1.5
+  temperature: null
+  summarize_text_chunk_size: null
+  summarize_text_chunk_overlap: null
+  embedding_temperatur: null
+  embedding_text_chunk_size: null
+  embedding_text_chunk_overlap: null
+  llm_rerank_temperature: null
+
+secret:
+  pvc:
+    storage: 3Gi
+
+api:
+  replicaCount: 1
+  image:
+    repository: swiss-armed-forces/cyber-command/cea/loom/api
+  initContainer:
+    image:
+      repository: swiss-armed-forces/cyber-command/cea/loom/busybox
+  service:
+    port: 8084
+  ingress: *default-ingress-config
+  readinessProbe:
+    enabled: true
+  livenessProbe:
+    enabled: true
+
+frontend:
+  replicaCount: 1
+  image:
+    repository: swiss-armed-forces/cyber-command/cea/loom/frontend
+  service:
+    port: 80
+  ingress: *default-ingress-config
+  readinessProbe:
+    enabled: false
+  livenessProbe:
+    enabled: true
+
+celery:
+  flower:
+    replicaCount: 1
+    image:
+      repository: swiss-armed-forces/cyber-command/cea/loom/celery-flower
+    service:
+      port: 5555
+    volume:
+      sizeLimit: "500Mi"
+    ingress: *default-ingress-config
+    readinessProbe:
+      enabled: false
+    livenessProbe:
+      enabled: true
+  worker:
+    main:
+      replicaCount: 1
+      hpa: &default-celery-worker-hpa
+        enabled: false
+        maxReplicas: 100
+        minReplicas: 1
+        targetCPUUtilizationPercentage: 100
+        targetMemoryUtilizationPercentage: 100
+      image:
+        repository: swiss-armed-forces/cyber-command/cea/loom/celery-worker
+      env:
+        SKIP_TRANSLATE_WHILE_INDEXING: "false"
+        TIKA_OCR_LANGUAGES: "eng,rus,tur,deu,fra"
+      service: &default-celery-worker-service
+        port: 80
+      readinessProbe:
+        enabled: false
+      livenessProbe:
+        enabled: true
+      resources: &default-celery-worker-resouces
+        limits:
+          cpu: "1"
+          memory: "2000Mi"
+        requests:
+          cpu: "0.1"
+          memory: "500Mi"
+    interactive:
+      replicaCount: 1
+      hpa: *default-celery-worker-hpa
+      image:
+        repository: swiss-armed-forces/cyber-command/cea/loom/celery-worker-interactive
+      service: *default-celery-worker-service
+      readinessProbe:
+        enabled: false
+      livenessProbe:
+        enabled: true
+      resources: *default-celery-worker-resouces
+    periodic:
+      replicaCount: 1
+      image:
+        repository: swiss-armed-forces/cyber-command/cea/loom/celery-worker-periodic
+      service: *default-celery-worker-service
+      readinessProbe:
+        enabled: false
+      livenessProbe:
+        enabled: true
+      resources: *default-celery-worker-resouces
+    beat:
+      replicaCount: 1
+      image:
+        repository: swiss-armed-forces/cyber-command/cea/loom/celery-worker-beat
+      service: *default-celery-worker-service
+      readinessProbe:
+        enabled: false
+      livenessProbe:
+        enabled: true
+
+crawler:
+  enabled: true
+  replicaCount: 1
+  image:
+    repository: swiss-armed-forces/cyber-command/cea/loom/crawler
+  service:
+    port: 80
+
+elasticsearch:
+  replicaCount: 1
+  image:
+    repository: swiss-armed-forces/cyber-command/cea/loom/elasticsearch
+  service:
+    port: 9200
+  pvc:
+    storage: 10Gi
+  resources:
+    requests:
+      memory: 4Gi
+    limits:
+      memory: 4Gi
+  ingress: *default-ingress-config
+  readinessProbe:
+    enabled: true
+  livenessProbe:
+    enabled: true
+
+elasticvue:
+  enabled: true
+  replicaCount: 1
+  image:
+    repository: swiss-armed-forces/cyber-command/cea/loom/elasticvue
+  service:
+    port: 8080
+  ingress: *default-ingress-config
+
+fluentd:
+  enabled: true
+  image:
+    repository: swiss-armed-forces/cyber-command/cea/loom/fluentd
+  service:
+    port: 24224
+
+grafana:
+  enabled: true
+  replicaCount: 1
+  image:
+    repository: swiss-armed-forces/cyber-command/cea/loom/grafana
+  service:
+    port: 3000
+  ingress: *default-ingress-config
+  readinessProbe:
+    enabled: false
+  livenessProbe:
+    enabled: true
+
+libretranslate:
+  replicaCount: 1
+  image:
+    repository: swiss-armed-forces/cyber-command/cea/loom/libretranslate
+  service:
+    port: 5000
+  ingress: *default-ingress-config
+  readinessProbe:
+    enabled: false
+  livenessProbe:
+    enabled: true
+
+minio:
+  domain: *default-domain
+  replicas: 1
+  mode: standalone
+  nameOverride: loom-minio
+  image:
+    repository: registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/minio
+  service:
+    port: 9000
+  consoleService:
+    port: 9001
+  persistence:
+    storage: 20Gi
+  resources:
+    requests:
+      memory: 2Gi
+  ingress:
+    enabled: true
+    annotations:
+      traefik.ingress.kubernetes.io/router.entrypoints: web
+    hosts:
+      - minio-api
+  consoleIngress:
+    enabled: true
+    annotations:
+      traefik.ingress.kubernetes.io/router.entrypoints: web
+    hosts:
+      - minio
+  rootUser: minioadmin
+  rootPassword: minioadmin
+  svcaccts:
+    - accessKey: MinIO-Intake-Key
+      existingSecret: loom-minio-secret
+      existingSecretKey: secretkey
+      user: minioadmin
+  buckets:
+    - name: default
+      policy: public
+      purge: false
+      versioning: false
+      objectlocking: false
+
+mongodb:
+  replicaCount: 1
+  image:
+    repository: swiss-armed-forces/cyber-command/cea/loom/mongodb
+  service:
+    port: 27017
+  pvc:
+    storage: 60Gi
+  ingress:
+    enabled: true
+  readinessProbe:
+    enabled: false
+  livenessProbe:
+    enabled: true
+  express:
+    enabled: true
+    replicaCount: 1
+    image:
+      repository: swiss-armed-forces/cyber-command/cea/loom/mongo-express
+    service:
+      port: 8081
+    ingress: *default-ingress-config
+
+rabbit:
+  replicaCount: 1
+  image:
+    repository: swiss-armed-forces/cyber-command/cea/loom/rabbit
+  service:
+    port:
+      amqp: 5672
+      http: 15672
+      prometheus: 15692
+  pvc:
+    storage: 10Gi
+  ingress:
+    http: *default-ingress-config
+    amqp:
+      enabled: true
+  readinessProbe:
+    enabled: false
+  livenessProbe:
+    enabled: true
+
+ollama:
+  replicaCount: 1
+  image:
+    repository: swiss-armed-forces/cyber-command/cea/loom/ollama
+  service:
+    port: 11434
+  ingress: *default-ingress-config
+  readinessProbe:
+    enabled: false
+  livenessProbe:
+    enabled: true
+
+open_webui:
+  replicaCount: 1
+  image:
+    repository: swiss-armed-forces/cyber-command/cea/loom/open-webui
+  env:
+    WEBUI_AUTH: "false"
+    ENABLE_SIGNUP: "false"
+  service:
+    port: 8080
+  ingress: *default-ingress-config
+
+dovecot:
+  replicaCount: 1
+  image:
+    repository: swiss-armed-forces/cyber-command/cea/loom/dovecot
+  service:
+    port:
+      imap: 143
+  pvc:
+    storage: 10Gi
+  ingress:
+    http: *default-ingress-config
+    imap:
+      enabled: true
+
+roundcube:
+  replicaCount: 1
+  image:
+    repository: swiss-armed-forces/cyber-command/cea/loom/roundcube
+  service:
+    port: 80
+  ingress: *default-ingress-config
+
+prometheus:
+  enabled: true
+  replicaCount: 1
+  image:
+    repository: swiss-armed-forces/cyber-command/cea/loom/prometheus
+  service:
+    port: 9090
+  pvc:
+    storage: 10Gi
+  ingress: *default-ingress-config
+  readinessProbe:
+    enabled: false
+  livenessProbe:
+    enabled: true
+
+redis:
+  replicaCount: 1
+  image:
+    repository: swiss-armed-forces/cyber-command/cea/loom/redis
+  service:
+    port: 6379
+  ingress:
+    enabled: true
+  readinessProbe:
+    enabled: false
+  livenessProbe:
+    enabled: true
+  insight:
+    enabled: true
+    replicaCount: 1
+    image:
+      repository: swiss-armed-forces/cyber-command/cea/loom/redisinsight
+    service:
+      port: 5540
+    ingress: *default-ingress-config
+
+rspamd:
+  replicaCount: 1
+  image:
+    repository: swiss-armed-forces/cyber-command/cea/loom/rspamd
+  worker:
+    ingress: *default-ingress-config
+    service:
+      port: 11333
+  controller:
+    ingress: *default-ingress-config
+    service:
+      port: 11334
+
+tika:
+  replicaCount: 1
+  image:
+    repository: swiss-armed-forces/cyber-command/cea/loom/tika
+  env:
+    TIKA_JAVA_OPS: "-Xms2g -Xmx2g"
+  service:
+    port: 9998
+  ingress: *default-ingress-config
+  readinessProbe:
+    enabled: false
+  livenessProbe:
+    enabled: true

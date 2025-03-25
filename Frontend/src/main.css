@@ -1,0 +1,48 @@
+html,
+body {
+    overflow: hidden;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto",
+        "Oxygen", "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans",
+        "Helvetica Neue", sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+#root {
+    overflow: hidden;
+    max-height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+code {
+    font-family: source-code-pro, Menlo, Monaco, Consolas, "Courier New",
+        monospace;
+}
+
+.hiddenWithAnimation {
+    visibility: hidden;
+    opacity: 0;
+    transition:
+        visibility 0s,
+        opacity 1s linear;
+}
+
+.MuiList-root .MuiButtonBase-root {
+    display: flex;
+    flex-direction: row;
+    gap: 0.5rem;
+
+    padding: 0.5rem 1rem;
+}
+
+.MuiList-root .MuiButtonBase-root .MuiListItemIcon-root {
+    min-width: auto;
+}

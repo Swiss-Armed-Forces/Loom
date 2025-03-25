@@ -1,0 +1,18 @@
+% $ sudo apt install texlive-base texlive-latex-recommended texlive-binaries texlive-latex-extra
+% $ pdflatex <file>.tex
+\documentclass[a4paper]{article}
+\usepackage[latin1]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[rgb]{xcolor}
+\begin{document}
+Here we\pdfcomment[color=red,icon=Insert]{insert: miss} a word!
+
+You can do much more \pdfmarkupcomment[markup=Squiggly,color=green]{with pdfcomment}{move to the front}.
+
+This is a \pdfmarkupcomment[markup=StrikeOut,color=red]{stupid}{replace stupid with funny}  game!
+
+\pdfmarkupcomment[markup=Highlight,color=yellow]{Of course, you can highlight complete sentences.}{Highlight}
+
+This is very\pdfcomment[icon=Note,color=blue]{insert graphic!} interesting!
+\end{document}

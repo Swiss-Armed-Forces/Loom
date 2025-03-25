@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "app.fullname" . }}-tika
+  labels:
+    {{- include "app.labels.standard" . | nindent 4 }}
+    app.kubernetes.io/component: tika
+spec:
+  ports:
+    - port: {{ .Values.tika.service.port }}
+      name: tika
+      targetPort: {{ .Values.tika.service.port }}
+  selector:
+    app: {{ include "app.name" . }}-tika

@@ -1,0 +1,57 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "app.fullname" . }}-celery-worker-periodic
+  labels:
+    {{- include "app.labels.standard" . | nindent 4 }}
+    app.kubernetes.io/component: "celery"
+spec:
+  replicas: {{ .Values.celery.worker.periodic.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ include "app.name" . }}-celery-worker-periodic
+  template:
+    metadata:
+      labels:
+        app: {{ include "app.name" . }}-celery-worker-periodic
+    spec:
+      containers:
+        - name: celery-worker-periodic
+          image: {{ .Values.image.registry }}/{{ .Values.celery.worker.periodic.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) .Values.celery.worker.periodic.image.tag }}
+          ports:
+            - name: worker-periodic
+              containerPort: {{ .Values.celery.worker.periodic.service.port }}
+          envFrom:
+            - configMapRef:
+                name: {{ include "app.fullname" . }}-settings
+          {{- if .Values.celery.worker.periodic.readinessProbe.enabled }}
+          readinessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - python -m celery -A worker inspect ping -t 99999 -d "celery@$HOSTNAME"
+            initialDelaySeconds: {{ default 0 .Values.celery.worker.periodic.readinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ default 30 .Values.celery.worker.periodic.readinessProbe.periodSeconds }}
+            timeoutSeconds: {{ default 10 .Values.celery.worker.periodic.readinessProbe.timeoutSeconds }}
+            failureThreshold: {{ default 3 .Values.celery.worker.periodic.readinessProbe.failureThreshold }}
+          {{- end }}
+          {{- if .Values.celery.worker.periodic.livenessProbe.enabled }}
+          livenessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - python -m celery -A worker inspect ping -t 99999 -d "celery@$HOSTNAME"
+            initialDelaySeconds: {{ default 0 .Values.celery.worker.periodic.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ default 30 .Values.celery.worker.periodic.livenessProbe.periodSeconds }}
+            timeoutSeconds: {{ default 60 .Values.celery.worker.periodic.livenessProbe.timeoutSeconds }}
+            failureThreshold: {{ default 6 .Values.celery.worker.periodic.livenessProbe.failureThreshold }}
+          {{- end }}
+          {{- if .Values.celery.worker.periodic.resources }}
+          resources: {{- toYaml .Values.celery.worker.periodic.resources | nindent 12 }}
+          {{- end }}
+      volumes:
+        - name: secret
+          persistentVolumeClaim:
+            claimName: {{ include "app.fullname" . }}-secret

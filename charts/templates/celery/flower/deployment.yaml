@@ -1,0 +1,52 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "app.fullname" . }}-celery-flower
+  labels:
+    {{- include "app.labels.standard" . | nindent 4 }}
+    app.kubernetes.io/component: "celery"
+spec:
+  replicas: {{ .Values.celery.flower.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ include "app.name" . }}-celery-flower
+  template:
+    metadata:
+      labels:
+        app: {{ include "app.name" . }}-celery-flower
+    spec:
+      containers:
+        - name: celery-flower
+          image: {{ .Values.image.registry }}/{{ .Values.celery.flower.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) .Values.celery.flower.image.tag }}
+          envFrom:
+            - configMapRef:
+                name: {{ include "app.fullname" . }}-settings
+          volumeMounts:
+            - name: flower
+              mountPath: /var/lib/flower
+          {{- if .Values.celery.flower.readinessProbe.enabled }}
+          readinessProbe:
+            httpGet:
+              path: /
+              port: {{ .Values.celery.flower.service.port }}
+            initialDelaySeconds: {{ default 0 .Values.celery.flower.readinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ default 15 .Values.celery.flower.readinessProbe.periodSeconds }}
+            failureThreshold: {{ default 3 .Values.celery.flower.readinessProbe.failureThreshold }}
+          {{- end }}
+          {{- if .Values.celery.flower.livenessProbe.enabled }}
+          livenessProbe:
+            httpGet:
+              path: /
+              port: {{ .Values.celery.flower.service.port }}
+            initialDelaySeconds: {{ default 0 .Values.celery.flower.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ default 15 .Values.celery.flower.livenessProbe.periodSeconds }}
+            failureThreshold: {{ default 6 .Values.celery.flower.livenessProbe.failureThreshold }}
+          {{- end }}
+          {{- if .Values.celery.flower.resources }}
+          resources: {{- toYaml .Values.celery.flower.resources | nindent 12 }}
+          {{- end }}
+      volumes:
+        - name: flower
+          emptyDir:
+            sizeLimit: {{ .Values.celery.flower.volume.sizeLimit }}
+            medium: "Memory"

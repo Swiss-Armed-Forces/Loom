@@ -1,0 +1,50 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "app.fullname" . }}-libretranslate
+  labels:
+    {{- include "app.labels.standard" . | nindent 4 }}
+    app.kubernetes.io/component: libretranslate
+spec:
+  replicas: {{ .Values.libretranslate.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ include "app.name" . }}-libretranslate
+  template:
+    metadata:
+      labels:
+        app: {{ include "app.name" . }}-libretranslate
+    spec:
+      containers:
+        - name: libretranslate
+          image: {{ .Values.image.registry }}/{{ .Values.libretranslate.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) .Values.libretranslate.image.tag }}
+          ports:
+            - name: libretranslate
+              containerPort: {{ .Values.libretranslate.service.port }}
+          {{- if .Values.libretranslate.readinessProbe.enabled }}
+          readinessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - python scripts/healthcheck.py
+            initialDelaySeconds: {{ default 0 .Values.libretranslate.readinessProbe.initialDelaySeconds }}
+            timeoutSeconds: {{ default 10 .Values.libretranslate.readinessProbe.timeoutSeconds }}
+            periodSeconds: {{ default 20 .Values.libretranslate.readinessProbe.periodSeconds }}
+            failureThreshold: {{ default 3 .Values.libretranslate.readinessProbe.failureThreshold }}
+          {{- end }}
+          {{- if .Values.libretranslate.livenessProbe.enabled }}
+          livenessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - python scripts/healthcheck.py
+            initialDelaySeconds: {{ default 0 .Values.libretranslate.livenessProbe.initialDelaySeconds }}
+            timeoutSeconds: {{ default 10 .Values.libretranslate.livenessProbe.timeoutSeconds }}
+            periodSeconds: {{ default 20 .Values.libretranslate.livenessProbe.periodSeconds }}
+            failureThreshold: {{ default 6 .Values.libretranslate.livenessProbe.failureThreshold }}
+          {{- end }}
+          {{- if .Values.libretranslate.resources }}
+          resources: {{- toYaml .Values.libretranslate.resources | nindent 12 }}
+          {{- end }}

@@ -1,0 +1,28 @@
+{{- if .Values.redis.insight.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "app.fullname" . }}-redis-insight
+  labels:
+    {{- include "app.labels.standard" . | nindent 4 }}
+    app.kubernetes.io/component: redis
+spec:
+  replicas: {{ .Values.redis.insight.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ include "app.name" . }}-redis-insight
+  template:
+    metadata:
+      labels:
+        app: {{ include "app.name" . }}-redis-insight
+    spec:
+      containers:
+        - name: redis-insight
+          image: {{ .Values.image.registry }}/{{ .Values.redis.insight.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) .Values.redis.insight.image.tag }}
+          ports:
+            - name: redisinsight
+              containerPort: {{ .Values.redis.insight.service.port }}
+          {{- if .Values.redis.insight.resources }}
+          resources: {{- toYaml .Values.redis.insight.resources | nindent 12 }}
+          {{- end }}
+{{- end }}

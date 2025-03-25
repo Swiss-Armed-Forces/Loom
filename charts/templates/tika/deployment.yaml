@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "app.fullname" . }}-tika
+  labels:
+    {{- include "app.labels.standard" . | nindent 4 }}
+    app.kubernetes.io/component: tika
+spec:
+  replicas: {{ .Values.tika.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ include "app.name" . }}-tika
+  template:
+    metadata:
+      labels:
+        app: {{ include "app.name" . }}-tika
+    spec:
+      containers:
+        - name: tika
+          image: {{ .Values.image.registry }}/{{ .Values.tika.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) .Values.tika.image.tag }}
+          ports:
+            - name: tika
+              containerPort: {{ .Values.tika.service.port }}
+          env:
+            - name: TIKA_JAVA_OPS
+              value: {{ .Values.tika.env.TIKA_JAVA_OPS }}
+          {{- if .Values.tika.readinessProbe.enabled }}
+          readinessProbe:
+            httpGet:
+              path: /tika
+              port: {{ .Values.tika.service.port }}
+            initialDelaySeconds: {{ default 0 .Values.tika.readinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ default 20 .Values.tika.readinessProbe.periodSeconds }}
+            timeoutSeconds: {{ default 5 .Values.tika.readinessProbe.timeoutSeconds }}
+            failureThreshold: {{ default 3 .Values.tika.readinessProbe.failureThreshold }}
+          {{- end }}
+          {{- if .Values.tika.livenessProbe.enabled }}
+          livenessProbe:
+            httpGet:
+              path: /tika
+              port: {{ .Values.tika.service.port }}
+            initialDelaySeconds: {{ default 0 .Values.tika.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ default 20 .Values.tika.livenessProbe.periodSeconds }}
+            timeoutSeconds: {{ default 5 .Values.tika.livenessProbe.timeoutSeconds }}
+            failureThreshold: {{ default 6 .Values.tika.livenessProbe.failureThreshold }}
+          {{- end }}
+          {{- if .Values.tika.resources }}
+          resources: {{- toYaml .Values.tika.resources | nindent 12 }}
+          {{- end }}

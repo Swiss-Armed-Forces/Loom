@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "app.fullname" . }}-dovecot
+  labels:
+    {{- include "app.labels.standard" . | nindent 4 }}
+    app.kubernetes.io/component: dovecot
+spec:
+  ports:
+    - port: {{ .Values.dovecot.service.port.imap }}
+      name: imap
+      targetPort: {{ .Values.dovecot.service.port.imap }}
+    #- port: {{ .Values.dovecot.service.port.submission }}
+    #  name: submission
+    #  targetPort: {{ .Values.dovecot.service.port.submission }}
+  selector:
+    app: {{ include "app.name" . }}-dovecot

@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<properties>
+  <server>
+    <params>
+      <!-- maximum time to allow per parse before shutting down and restarting
+           the forked parser. Not allowed if nofork=true. -->
+       <taskTimeoutMillis>99999999999</taskTimeoutMillis>
+    </params>
+  </server>
+  <parsers>
+
+    <parser class="org.apache.tika.parser.DefaultParser">
+        <mime-exclude>application/vnd.ms-outlook-pst</mime-exclude>
+        <mime-exclude>application/vnd.tcpdump.pcap</mime-exclude>
+    </parser>
+
+    <parser class="org.apache.tika.parser.pdf.PDFParser">
+      <params>
+        <param name="extractInlineImages" type="bool">true</param>
+      </params>
+    </parser>
+
+    <!-- Do not use the pst parser, we have implemented our own pst extraction
+         The default apache tika pst parser does not work very well.  -->
+    <parser class="org.apache.tika.parser.mbox.OutlookPSTParser">
+      <mime-exclude>application/vnd.ms-outlook-pst</mime-exclude>
+    </parser>
+
+  </parsers>
+</properties>

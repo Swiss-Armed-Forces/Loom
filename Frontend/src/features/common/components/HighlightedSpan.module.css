@@ -1,0 +1,19 @@
+span.clickable {
+    cursor: pointer;
+}
+false span.clickable:hover {
+    cursor: pointer;
+    border-radius: 4px;
+    background-color: #b2ebf2;
+}
+
+span.clickable:active {
+    cursor: pointer;
+    border-radius: 4px;
+    background-color: #80deea;
+}
+
+span.highlighted {
+    background-color: #fff176;
+    color: rgb(158, 158, 158);
+}

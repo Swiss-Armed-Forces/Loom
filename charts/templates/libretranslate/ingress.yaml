@@ -1,0 +1,30 @@
+{{- if .Values.libretranslate.ingress.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "app.fullname" . }}-libretranslate
+  labels:
+    {{- include "app.labels.standard" . | nindent 4 }}
+    app.kubernetes.io/component: libretranslate
+  annotations:
+    {{- toYaml .Values.libretranslate.ingress.annotations | nindent 4 }}
+spec:
+  ingressClassName: {{ .Values.libretranslate.ingress.className }}
+  rules:
+    - host: libretranslate.{{ .Values.domain }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "app.fullname" . }}-libretranslate
+                port:
+                  number: {{ .Values.libretranslate.service.port }}
+  {{- if .Values.libretranslate.ingress.tls.enabled }}
+  tls:
+    - secretName: {{ include "app.fullname" . }}-external-vault-tls
+      hosts:
+        - libretranslate.{{ .Values.domain }}
+  {{- end }}
+{{- end }}

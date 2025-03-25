@@ -1,0 +1,19 @@
+.tagsList {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+#sidebarChip {
+    padding: 0;
+    gap: 0;
+}
+
+.open {
+    flex-direction: row;
+}
+
+.closed {
+    flex-direction: column;
+}

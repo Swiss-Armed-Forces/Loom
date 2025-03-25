@@ -1,0 +1,25 @@
+[tool.poetry]
+name = "crawler"
+version = "0.1.0"
+description = "The amabar crawler"
+authors = []
+readme = "README.md"
+packages = [{ include = "crawler" }]
+
+
+[tool.poetry.dependencies]
+python = "^3.11"
+common = { path = "../common", develop = true }
+watchdog = "^6.0.0"
+
+[tool.poetry.group.dev.dependencies]
+debugpy = "^1.8.1"
+
+[tool.poetry.group.test.dependencies]
+pytest = "^8.2.0"
+pytest-mock = "^3.14.0"
+pytest-cov = "^5.0.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

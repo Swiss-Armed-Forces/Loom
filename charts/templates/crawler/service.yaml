@@ -1,0 +1,16 @@
+{{- if .Values.crawler.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "app.fullname" . }}-crawler
+  labels:
+    {{- include "app.labels.standard" . | nindent 4 }}
+    app.kubernetes.io/component: crawler
+spec:
+  ports:
+    - port: {{ .Values.crawler.service.port }}
+      name: crawler
+      targetPort: {{ .Values.crawler.service.port }}
+  selector:
+    app: {{ include "app.name" . }}-crawler
+{{- end }}

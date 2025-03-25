@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "app.fullname" . }}-ollama
+  labels:
+    {{- include "app.labels.standard" . | nindent 4 }}
+    app.kubernetes.io/component: ollama
+spec:
+  replicas: {{ .Values.ollama.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ include "app.name" . }}-ollama
+  template:
+    metadata:
+      labels:
+        app: {{ include "app.name" . }}-ollama
+    spec:
+      containers:
+        - name: ollama
+          image: {{ .Values.image.registry }}/{{ .Values.ollama.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) .Values.ollama.image.tag }}
+          ports:
+            - name: ollama
+              containerPort: {{ .Values.ollama.service.port }}
+          {{- if .Values.ollama.readinessProbe.enabled }}
+          readinessProbe:
+            httpGet:
+              path: /api/ps
+              port: {{ .Values.ollama.service.port }}
+            initialDelaySeconds: {{ default 0 .Values.ollama.readinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ default 20 .Values.ollama.readinessProbe.periodSeconds }}
+            failureThreshold: {{ default 3 .Values.ollama.readinessProbe.failureThreshold }}
+          {{- end }}
+          {{- if .Values.ollama.livenessProbe.enabled }}
+          livenessProbe:
+            httpGet:
+              path: /api/ps
+              port: {{ .Values.ollama.service.port }}
+            initialDelaySeconds: {{ default 0 .Values.ollama.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ default 20 .Values.ollama.livenessProbe.periodSeconds }}
+            failureThreshold: {{ default 6 .Values.ollama.livenessProbe.failureThreshold }}
+          {{- end }}
+          {{- if .Values.ollama.resources }}
+          resources: {{- toYaml .Values.ollama.resources | nindent 12 }}
+          {{- end }}

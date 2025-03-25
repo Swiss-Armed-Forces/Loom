@@ -1,0 +1,72 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "app.fullname" . }}-elasticsearch
+  labels:
+    {{- include "app.labels.standard" . | nindent 4 }}
+    app.kubernetes.io/component: elasticsearch
+spec:
+  serviceName: {{ include "app.name" . }}-elasticsearch
+  replicas: {{ .Values.elasticsearch.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ include "app.name" . }}-elasticsearch
+  template:
+    metadata:
+      labels:
+        app: {{ include "app.name" . }}-elasticsearch
+    spec:
+      securityContext:
+        runAsUser: 1000
+        fsGroup: 1000
+      containers:
+        - name: elasticsearch
+          image: {{ .Values.image.registry }}/{{ .Values.elasticsearch.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) .Values.elasticsearch.image.tag }}
+          env:
+            - name: cluster.name
+              value: {{ include "app.name" . }}-elasticsearch
+            - name: node.name
+              value: elasticsearch
+            - name: discovery.type
+              value: single-node
+          volumeMounts:
+            - mountPath: /usr/share/elasticsearch/data
+              name: elasticsearch-data
+          {{- if .Values.elasticsearch.readinessProbe.enabled }}
+          readinessProbe:
+            httpGet:
+              path: /_cluster/health?wait_for_status=yellow&timeout=10s
+              port: {{ .Values.elasticsearch.service.port }}
+            initialDelaySeconds: {{ default 0 .Values.elasticsearch.readinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ default 15 .Values.elasticsearch.readinessProbe.periodSeconds }}
+            timeoutSeconds: {{ default 12 .Values.elasticsearch.readinessProbe.timeoutSeconds }}
+            failureThreshold: {{ default 3 .Values.elasticsearch.readinessProbe.failureThreshold }}
+          {{- end }}
+          {{- if .Values.elasticsearch.livenessProbe.enabled }}
+          livenessProbe:
+            httpGet:
+              path: /_cluster/health?wait_for_status=yellow&timeout=10s
+              port: {{ .Values.elasticsearch.service.port }}
+            initialDelaySeconds: {{ default 0 .Values.elasticsearch.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ default 15 .Values.elasticsearch.livenessProbe.periodSeconds }}
+            timeoutSeconds: {{ default 12 .Values.elasticsearch.livenessProbe.timeoutSeconds }}
+            failureThreshold: {{ default 6 .Values.elasticsearch.livenessProbe.failureThreshold }}
+          {{- end }}
+          {{- if .Values.elasticsearch.resources }}
+          resources:
+            limits:
+              cpu: {{ .Values.elasticsearch.resources.limits.cpu }}
+              memory: {{ .Values.elasticsearch.resources.limits.memory }}
+            requests:
+              cpu: {{ .Values.elasticsearch.resources.requests.cpu }}
+              memory: {{ .Values.elasticsearch.resources.requests.memory }}
+          {{- end }}
+  volumeClaimTemplates:
+  - metadata:
+      name: elasticsearch-data
+    spec:
+      accessModes:
+        - {{ .Values.elasticsearch.pvc.accessModes | default "ReadWriteOnce" | quote }}
+      resources:
+          requests:
+            storage: {{ .Values.elasticsearch.pvc.storage }}

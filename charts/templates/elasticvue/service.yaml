@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "app.fullname" . }}-elasticvue
+  labels:
+    {{- include "app.labels.standard" . | nindent 4 }}
+    app.kubernetes.io/component: elasticsearch
+spec:
+  ports:
+    - port: {{ .Values.elasticvue.service.port }}
+      name: elasticvue
+      targetPort: {{ .Values.elasticvue.service.port }}
+  selector:
+    app: {{ include "app.name" . }}-elasticvue

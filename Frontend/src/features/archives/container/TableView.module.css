@@ -1,0 +1,15 @@
+.resultTable {
+    overflow: visible;
+}
+
+.skeletonLoadingContainer {
+    width: 100%;
+    padding: 3rem;
+}
+
+.skeletonLoadingAvatar {
+    display: flex;
+    flex-direction: row;
+    gap: 2rem;
+    margin-bottom: 2rem;
+}

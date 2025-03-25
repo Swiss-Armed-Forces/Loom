@@ -1,0 +1,35 @@
+[tool.poetry]
+name = "worker"
+version = "0.1.0"
+description = ""
+authors = []
+readme = "README.md"
+packages = [{ include = "worker" }]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+wand = "^0.6.13"
+common = {path = "../common", develop=true}
+python-magic = "^0.4.27"
+stream-zip = "^0.0.71"
+requests = "^2.31.0"
+tiktoken = "^0.7.0"
+blobfile = "^2.1.1"
+scikit-learn = "^1.5.1"
+langchain-text-splitters = "^0.3.2"
+
+[tool.poetry.group.dev.dependencies]
+debugpy = "^1.8.1"
+watchdog = "^6.0.0"
+flower = "^2.0.1"
+
+[tool.poetry.group.test.dependencies]
+pytest = {extras = ["celery"], version = "^8.2.0"}
+pytest-mock = "^3.14.0"
+pytest-cov = "^5.0.0"
+pytest-celery = "^1.0.0"
+pytest-memray = "^1.6.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

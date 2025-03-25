@@ -1,0 +1,9 @@
+.treeView {
+    overflow: visible;
+    width: 100%;
+}
+
+.skeletonLoadingContainer {
+    width: 80%;
+    padding: 3rem;
+}

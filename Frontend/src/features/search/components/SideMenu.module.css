@@ -1,0 +1,49 @@
+.sideMenuContainer {
+    overflow: auto;
+    padding: 0;
+}
+
+.sideMenu {
+    display: flex;
+    flex-direction: column;
+}
+
+ul.sideMenuActions > li {
+    padding: 0.15rem 0.25rem;
+}
+
+.sideMenuActions button {
+    display: flex;
+    flex-direction: row;
+    justify-content: flex-start;
+}
+
+.sideMenuActions div button .btn-label {
+    flex: 1;
+}
+
+.sideMenuActions > div > button > .MuiButton-startIcon {
+    justify-self: flex-start;
+}
+
+.tagListContainer {
+    display: flex;
+    flex-wrap: wrap;
+    flex-direction: row;
+    gap: 0.3rem;
+    padding-left: 16px;
+    padding-right: 16px;
+}
+
+.sideMenuContainer {
+    position: relative;
+    transition: width 0.2s ease-in-out; /* Side menu in and out animation */
+}
+
+.open {
+    width: 17rem; /* Adjust as needed */
+}
+
+.closed {
+    width: 4.75rem; /* Adjust as needed */
+}

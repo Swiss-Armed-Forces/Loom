@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "app.fullname" . }}-dovecot
+  labels:
+    {{- include "app.labels.standard" . | nindent 4 }}
+    app.kubernetes.io/component: dovecot
+spec:
+  serviceName: {{ include "app.name" . }}-dovecot
+  replicas: {{ .Values.dovecot.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ include "app.name" . }}-dovecot
+  template:
+    metadata:
+      labels:
+        app: {{ include "app.name" . }}-dovecot
+    spec:
+      containers:
+        - name: dovecot
+          image: {{ .Values.image.registry }}/{{ .Values.dovecot.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) .Values.dovecot.image.tag }}
+          ports:
+            - name: imap
+              containerPort: {{ .Values.dovecot.service.port.imap }}
+              protocol: TCP
+            #- name: submission
+            #  containerPort: {{ .Values.dovecot.service.port.submission }}
+            #  protocol: TCP
+          volumeMounts:
+            - mountPath: /srv/mail
+              name: dovecot
+  volumeClaimTemplates:
+  - metadata:
+      name: dovecot
+    spec:
+      accessModes:
+        - {{ .Values.dovecot.pvc.accessModes | default "ReadWriteOnce" | quote }}
+      resources:
+          requests:
+            storage: {{ .Values.dovecot.pvc.storage }}

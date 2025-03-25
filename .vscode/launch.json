@@ -1,0 +1,124 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Launch Frontend",
+      "request": "launch",
+      "type": "chrome",
+      "url": "http://frontend.loom",
+      "webRoot": "${workspaceFolder}/Frontend"
+    },
+    {
+      "name": "Attach Api",
+      "type": "debugpy",
+      "request": "attach",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 4401
+      },
+      "pathMappings": [
+        {
+          "localRoot": "${workspaceFolder}/backend",
+          "remoteRoot": "/code"
+        }
+      ],
+      "justMyCode": true
+    },
+    {
+      "name": "Attach Worker",
+      "type": "debugpy",
+      "request": "attach",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 5500
+      },
+      "pathMappings": [
+        {
+          "localRoot": "${workspaceFolder}/.venv",
+          "remoteRoot": "/code/.venv"
+        },
+        {
+          "localRoot": "${workspaceFolder}/backend",
+          "remoteRoot": "/code"
+        }
+      ],
+      "justMyCode": false
+    },
+    {
+      "name": "Attach Worker-Interactive",
+      "type": "debugpy",
+      "request": "attach",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 5501
+      },
+      "pathMappings": [
+        {
+          "localRoot": "${workspaceFolder}/.venv",
+          "remoteRoot": "/code/.venv"
+        },
+        {
+          "localRoot": "${workspaceFolder}/backend",
+          "remoteRoot": "/code"
+        }
+      ],
+      "justMyCode": false
+    },
+    {
+      "name": "Attach Worker-Periodic",
+      "type": "debugpy",
+      "request": "attach",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 5502
+      },
+      "pathMappings": [
+        {
+          "localRoot": "${workspaceFolder}/.venv",
+          "remoteRoot": "/code/.venv"
+        },
+        {
+          "localRoot": "${workspaceFolder}/backend",
+          "remoteRoot": "/code"
+        }
+      ],
+      "justMyCode": false
+    },
+    {
+      "name": "Attach Beat",
+      "type": "debugpy",
+      "request": "attach",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 5503
+      },
+      "pathMappings": [
+        {
+          "localRoot": "${workspaceFolder}/.venv",
+          "remoteRoot": "/code/.venv"
+        },
+        {
+          "localRoot": "${workspaceFolder}/backend",
+          "remoteRoot": "/code"
+        }
+      ],
+      "justMyCode": true
+    },
+    {
+      "name": "Attach Crawler",
+      "type": "debugpy",
+      "request": "attach",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 6601
+      },
+      "pathMappings": [
+        {
+          "localRoot": "${workspaceFolder}/backend",
+          "remoteRoot": "/code"
+        }
+      ],
+      "justMyCode": true
+    }
+  ]
+}

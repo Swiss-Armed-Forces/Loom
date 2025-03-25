@@ -1,0 +1,30 @@
+{{- if .Values.rspamd.worker.ingress.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "app.fullname" . }}-rspamd-worker
+  labels:
+    {{- include "app.labels.standard" . | nindent 4 }}
+    app.kubernetes.io/component: rspamd
+  annotations:
+    {{- toYaml .Values.rspamd.worker.ingress.annotations | nindent 4 }}
+spec:
+  ingressClassName: {{ .Values.rspamd.worker.ingress.className }}
+  rules:
+    - host: rspamd-worker.{{ .Values.domain }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "app.fullname" . }}-rspamd
+                port:
+                  number: {{ .Values.rspamd.worker.service.port }}
+  {{- if .Values.rspamd.worker.ingress.tls.enabled }}
+  tls:
+    - secretName: {{ include "app.fullname" . }}-external-vault-tls
+      hosts:
+        - rspamd.{{ .Values.domain }}
+  {{- end }}
+{{- end }}

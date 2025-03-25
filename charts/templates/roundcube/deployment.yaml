@@ -1,0 +1,29 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "app.fullname" . }}-roundcube
+  labels:
+    {{- include "app.labels.standard" . | nindent 4 }}
+    app.kubernetes.io/component: roundcube
+spec:
+  replicas: {{ .Values.roundcube.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ include "app.name" . }}-roundcube
+  template:
+    metadata:
+      labels:
+        app: {{ include "app.name" . }}-roundcube
+    spec:
+      containers:
+        - name: roundcube
+          image: {{ .Values.image.registry }}/{{ .Values.roundcube.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) .Values.roundcube.image.tag }}
+          ports:
+            - name: roundcube
+              containerPort: {{ .Values.roundcube.service.port }}
+          env:
+            - name: ROUNDCUBEMAIL_DEFAULT_HOST
+              value: {{ include "app.fullname" . }}-dovecot
+          {{- if .Values.roundcube.resources }}
+          resources: {{- toYaml .Values.roundcube.resources | nindent 12 }}
+          {{- end }}

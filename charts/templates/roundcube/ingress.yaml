@@ -1,0 +1,30 @@
+{{- if .Values.roundcube.ingress.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "app.fullname" . }}-roundcube
+  labels:
+    {{- include "app.labels.standard" . | nindent 4 }}
+    app.kubernetes.io/component: roundcube
+  annotations:
+    {{- toYaml .Values.roundcube.ingress.annotations | nindent 4 }}
+spec:
+  ingressClassName: {{ .Values.roundcube.ingress.className }}
+  rules:
+    - host: roundcube.{{ .Values.domain }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "app.fullname" . }}-roundcube
+                port:
+                  number: {{ .Values.roundcube.service.port }}
+  {{- if .Values.roundcube.ingress.tls.enabled }}
+  tls:
+    - secretName: {{ include "app.fullname" . }}-external-vault-tls
+      hosts:
+        - roundcube.{{ .Values.domain }}
+  {{- end }}
+{{- end }}

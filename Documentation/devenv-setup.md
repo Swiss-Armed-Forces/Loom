@@ -1,0 +1,62 @@
+# Loom Development Environment
+
+## Prerequisites
+
+- `git` installed [official instructions](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git)
+- ssh and/or https access to git repository
+- Internet connection (for package/modules updates)
+
+## Setting up Loom
+
+1. Set up git:
+   - Set username (must match your displayed name on gitlab):
+   `git config --global user.name "USERNAME"`
+   - Set email (must match your email on gitlab):
+   `git config --global user.email "EMAIL"`
+2. Clone git repository:
+   - Clone repo: `git clone --recursive $repository`
+3. Install docker:
+   - Install docker-engine (do not install the alternative called docker-desktop) using the [official instructions](https://docs.docker.com/engine/install/)
+   - Add user to docker group: `sudo gpasswd -a $USER docker`
+   - Reboot your system
+4. Configure docker:
+   - Create a [personal access token](https://docs.gitlab.com/ee/user/profile/personal_access_tokens.html#create-a-personal-access-token)
+      - Check all boxes when selecting the scopes
+   - Use the Access token instead of the password in the next steps
+   - Login to the docker registry: `docker login registry.gitlab.com`
+   - Login to the docker cache: `docker login gitlab.com:443`
+5. Install devenv
+   - In /etc/selinux/config, set `SELINUX=disabled` and reboot
+   - Install devenv using the [official instructions](https://devenv.sh/getting-started/)
+6. Install direnv
+   - Install direnv using the [official instructions](https://direnv.net/docs/installation.html)
+   - Don't forget to hook direnv into your shell [instructions](https://direnv.net/docs/hook.html)
+   - Allow direnv to run in the loom directory: `cd loom/ && direnv allow`
+7. Start devenv: `cd loom/ && devenv up`
+   - k8s will ask to insert the user account password (Press on the yellow triangle)
+
+## ⚠️ Note for Ubuntu Users
+
+If the process named *ide* keeps restarting, follow these steps to resolve the issue:
+
+1. Run **Visual Studio Code** with the verbose flag:
+   `code --verbose`
+2. The error message should display the value of the correct PATH that should be used.
+3. To fix the problem execute the following command with the specific path mentioned in the error:
+   `sudo chmod +s <path_from_the_error>`
+
+## Setup verification
+
+Wait for the k8s process to settle, it might take a few minutes.
+Then navigate to the frontend: <http://frontend.loom>
+
+Upload a file, check if analysis is working and it's indexed.
+
+## Shell
+
+The devenv provides a number of useful commands.
+Start a shell with `devenv shell` and run `devenv-help` to get an overview.
+
+## Tailscale
+
+If you need to connect to one of the gitlab runners, refer to [the detailed instructions](./tailscale.md).

@@ -1,0 +1,234 @@
+{
+    "header": {
+        "appName": "Loom",
+        "search": "Search",
+        "archives": "Archives",
+        "logoAlt": "Loom logo",
+        "runningTasksTooltip": "{{taskCount}} background task(s) are running.",
+        "failedTasksTooltip": "{{failedTaskCount}} files have failed tasks. Click to query for them.",
+        "contentTruncatedTooltip": "{{contentTruncatedCount}} files have truncated content. Click to query for them.",
+        "estimateLessThanFiveMinutes": "Estimated completion time: Less than 5 minutes.",
+        "estimateMinutes": "Estimated completion time: {{minutes}} minute(s).",
+        "estimateHours": "Estimated completion time: {{hours}} hours(s).",
+        "estimateDays": "Estimated completion time: {{days}} days(s)."
+    },
+    "common": {
+        "close": "Close",
+        "cancel": "Cancel"
+    },
+    "error": {
+        "searchResultLoadingError": "Cannot load search results"
+    },
+    "globalSearchBox": {
+        "searchPlaceholder": "Search and press enter",
+        "sortPlaceholder": "Score"
+    },
+    "generalSearchView": {
+        "viewContent": "View content",
+        "loadMore": "Load more...",
+        "download": "Download file",
+        "remove": "Delete file",
+        "restore": "Restore file",
+        "showThumbnail": "Show thumbnail",
+        "resultCounts": "Showing {{actualCount}} of {{totalCount}} results.",
+        "queryThisField": "Query by this field",
+        "sortThisField": "Sort by this field",
+        "shareContent": {
+            "title": "Copy link",
+            "success": "Copied URL to clipboard",
+            "failure": "Could not copy URL to clipboard"
+        }
+    },
+    "addCustomQueryDialog": {
+        "title": "Add current query to saved queries",
+        "add": "Add",
+        "nameLabel": "Name"
+    },
+    "imageDetailDialog": {
+        "title": "Image preview",
+        "imgAlt": "Thumbnail of the document"
+    },
+    "uploadFileDialog": {
+        "title": "Upload files",
+        "uploadButton": "Upload",
+        "dropzoneText": "Drop some files here"
+    },
+    "translateFilesDialog": {
+        "title": "Translate",
+        "executeButton": "Translate",
+        "languageInput": "Translate from...",
+        "languageInputTo": "Translate to...",
+        "scheduledToast": "Translation successfully scheduled, this might take a while",
+        "scheduledErrorToast": "Can not translate files. Code: {{err.status}}, Text: {{err.text}}"
+    },
+    "summarizationDialog": {
+        "title": "Summarize",
+        "systemPromptHint": "Define a system prompt for the summarization",
+        "executeButton": "Summarize"
+    },
+    "confirmDialog": {
+        "title": "Confirm action",
+        "confirmCustomQueryRemoval": "Are you sure to remove the custom query?",
+        "confirmRemoval": "Confirm removal",
+        "confirmArchiveCreationText": "Are you sure to create an archive from search results?",
+        "confirmArchiveCreation": "Start archive creation",
+        "confirmTagDeletionText": "Are you sure you want to delete the '{{tag}}' tag from all files?",
+        "confirmTagDeletion": "Delete tag"
+    },
+    "downloadOptions": {
+        "originalFile": "Original file",
+        "contentOriginal": "Content (original)"
+    },
+    "updateFileState": {
+        "scheduledErrorToast": "Couldn't change visibility of files. Code: {{err.status}}, Text: {{err.text}}",
+        "scheduledHideFilesToast": "Hiding files successfully scheduled, this might take a while",
+        "scheduledShowFilesToast": "Showing files successfully scheduled, this might take a while",
+        "scheduledHideFileToast": "Hiding file successfully scheduled, this might take a while",
+        "scheduledShowFileToast": "Showing file successfully scheduled, this might take a while",
+        "hide": "Hide file",
+        "show": "Show file",
+        "hideFiles": "Hide files",
+        "showFiles": "Show files",
+        "openDialog": "Hide / Show files",
+        "dialog": {
+            "title": "Edit visibility",
+            "text": "Would you like to change the visibility for the whole result set consisting of {{numberOfResults}} files?"
+        }
+    },
+    "sideMenu": {
+        "actions": "Actions",
+        "results": "Results",
+
+        "timeRange": {
+            "title": "Time ranges",
+            "today": "Today",
+            "yesterday": "yesterday",
+            "thisweek": "This week",
+            "thismonth": "This month",
+            "thisyear": "This year"
+        },
+        "createArchive": "Create archive",
+        "translateQueriedFiles": "Translate",
+        "reIndexQueriedFiles": "Re-index",
+        "summarizeQueriedFiles": "Summarize",
+        "chatbotQueriedFiles": "Chatbot",
+        "tags": "Tags",
+        "special": "Special",
+        "hiddenFiles": "Hidden files",
+        "clearQuery": "Clear query",
+        "tasks": {
+            "title": "Queries",
+            "successful": "Successful tasks",
+            "failed": "Failed tasks",
+            "retried": "Retried tasks",
+            "notInArchive": "Not in archive"
+        },
+        "savedQueries": {
+            "title": "Saved queries",
+            "saveNew": "Save current query",
+            "deleteQuery": "Delete this query"
+        }
+    },
+    "tableView": {
+        "header": {
+            "short_name": "File name",
+            "state": "State",
+            "size": "Size",
+            "tags": "Tags",
+            "score": "Score",
+            "_score": "Score",
+            "order": "Order field: ",
+            "query": "Query",
+            "author": "Author",
+            "uploaded_datetime": "Last modified",
+            "checksum": "Checksums (sha256)",
+            "checksumZip": "ZIP",
+            "checksumEncrypted": "Encrypted",
+            "actions": "Actions"
+        }
+    },
+    "folderView": {
+        "moreElementsHidden": "[more elements hidden]",
+        "moreElementsHiddenTooltip": "Refine your query to view hidden elements",
+        "addPathToQueryTooltip": "Add this path to your query"
+    },
+    "tags": {
+        "addTag": "Add tag",
+        "tagDialogTitle": "Add tags to file",
+        "tagDialogInputPlaceholder": "Add tag",
+        "tagDialogSubmit": "Add",
+        "tagDialogHint": "You can add existing tags or create a new one (press enter after to create the new tag)",
+        "scheduledToast": "Tagging successfully scheduled, this might take a while",
+        "scheduledErrorToast": "Can not tag files. Code: {{err.status}}, Text: {{err.text}}"
+    },
+    "tagsList": {
+        "scheduledRemoveTagFromFileToast": "Untagging file successfully scheduled, this might take a while",
+        "scheduledRemoveTagToast": "Removal of tag successfully scheduled, this might take a while",
+        "scheduledRemoveErrorToast": "Couldn't remove tag(s). Code: {{err.status}}, Text: {{err.text}}"
+    },
+    "toolbar": {
+        "views": {
+            "detailed": "Detailed",
+            "table": "Table",
+            "folder": "Folder",
+            "statistics": "Statistics",
+            "chatbot": "Chatbot"
+        }
+    },
+    "emptySearch": {
+        "title": {
+            "nothingFound": "Nothing found with your query",
+            "queryError": "The query given contains errors",
+            "default": "Few tips for search"
+        },
+        "advancedGuide": "For advanced usecases see official documentation",
+        "chatbotGuide": "On the right-hand top corner, there is a button titled “Chatbot.” The Chatbot functionality allows you to ask the chatbot a question and get an answer back using the queried files on the left. When you enter a search term into the top search bar, Loom returns the most relevant files. When you click the Chatbot button and ask the Chatbot a question in the side menu’s bottom chatbot bar, the chatbot uses those queried, relevant files to answer your question. To start, click the Chatbot button in the top right, and, when the right-hand side menu for the chatbot pops out, type your relevant question in the bottom search bar.",
+        "description": "Just type your query in search input above and hit Enter",
+        "tips": {
+            "title": "Try these tips to refine your search",
+            "showAll": "show all",
+            "keyword": "search for both \"John\" and \"Smith\"",
+            "prefix": "search for all strings starting with \"Jo\"",
+            "exact": "search for \"John Smith\" phrase",
+            "exactDistance": "search for both \"John\" and \"Smith\" words with maximum distance of 10 words",
+            "fuzzy": "fuzzy search for word \"John\" in all files with maximum of 2 replacements",
+            "filename": "search for \".txt\" in file fullname",
+            "size": "search for all files larger than 1 Megabyte (options: \"M\" for Megabytes, \"K\" for Kilobytes)",
+            "when": "search for all files modified today (options: today, yesterday, thisweek, thismonth, thisyear)",
+            "author": "search for all files where author field exists",
+            "tags": "search for files tagged with \"interesting\"",
+            "tagsNegate": "search for files NOT tagged with \"interesting\"",
+            "removed": "search in removed files",
+            "fileType": "search by detected MIME type",
+            "and": "search for all files tagged with \"interesting\" and have a timestamp from today",
+            "or": "search for all files tagged with \"interesting\" or have a timestamp from today"
+        },
+        "sort": {
+            "title": "Or sort your files",
+            "name": "sort all files by name in A-Z order",
+            "uploaded": "sort to show most recently uploaded files first",
+            "created": "sort by date created"
+        }
+    },
+    "statisticsView": {
+        "summaryTitle": "Queries files statistics",
+        "numberOfFiles": "Number of files",
+        "minFileSize": "Smallest file",
+        "maxFileSize": "Largest file",
+        "avgFileSize": "Average filesize",
+        "sourcesTitle": "Sources",
+        "statesTitle": "States",
+        "extensionsTitle": "Extensions",
+        "file_type_tikaTitle": "Filetypes by Apache Tika",
+        "file_type_magicTitle": "Filetypes by File Magic",
+        "language_tikaTitle": "Language by Tika",
+        "language_libretranslateTitle": "Language by LibreTranslate",
+        "is_spamTitle": "Spam detected",
+        "tagsTitle": "Tags",
+        "autoReloadTitle": "Auto-refresh",
+        "summarize": "Summarize Chart"
+    },
+    "archives": {
+        "title": "Archives"
+    }
+}

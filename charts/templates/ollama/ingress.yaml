@@ -1,0 +1,30 @@
+{{- if .Values.ollama.ingress.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "app.fullname" . }}-ollama
+  labels:
+    {{- include "app.labels.standard" . | nindent 4 }}
+    app.kubernetes.io/component: ollama
+  annotations:
+    {{- toYaml .Values.ollama.ingress.annotations | nindent 4 }}
+spec:
+  ingressClassName: {{ .Values.ollama.ingress.className }}
+  rules:
+    - host: ollama.{{ .Values.domain }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "app.fullname" . }}-ollama
+                port:
+                  number: {{ .Values.ollama.service.port }}
+  {{- if .Values.ollama.ingress.tls.enabled }}
+  tls:
+    - secretName: {{ include "app.fullname" . }}-external-vault-tls
+      hosts:
+        - ollama.{{ .Values.domain }}
+  {{- end }}
+{{- end }}

@@ -1,0 +1,39 @@
+{{- if .Values.mongodb.express.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "app.fullname" . }}-mongodb-express
+  labels:
+    {{- include "app.labels.standard" . | nindent 4 }}
+    app.kubernetes.io/component: mongodb
+spec:
+  replicas: {{ .Values.mongodb.express.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ include "app.name" . }}-mongodb-express
+  template:
+    metadata:
+      labels:
+        app: {{ include "app.name" . }}-mongodb-express
+    spec:
+      containers:
+        - name: mongodb-express
+          image: {{ .Values.image.registry }}/{{ .Values.mongodb.express.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) .Values.mongodb.express.image.tag }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.mongodb.express.service.port }}
+          env:
+            - name: ME_CONFIG_BASICAUTH
+              value: "false"
+            - name: ME_CONFIG_MONGODB_URL
+              value: mongodb://{{ include "app.fullname" . }}-mongodb
+            - name: ME_CONFIG_SITE_GRIDFS_ENABLED
+              value: "true"
+            - name: PORT
+              value: {{ quote .Values.mongodb.express.service.port }}
+            - name: VCAP_APP_HOST
+              value: "0.0.0.0"
+          {{- if .Values.mongodb.express.resources }}
+          resources: {{- toYaml .Values.mongodb.express.resources | nindent 12 }}
+          {{- end }}
+{{- end }}

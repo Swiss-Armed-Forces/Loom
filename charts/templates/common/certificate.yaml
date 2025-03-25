@@ -1,0 +1,35 @@
+{{- if .Values.certificate.enabled }}
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: {{ include "app.fullname" . }}-external-vault-tls
+  labels:
+    {{- include "app.labels.standard" . | nindent 4 }}
+spec:
+# name of the secret where the private key, certificate and CA will be stored
+  secretName: {{ include "app.fullname" . }}-external-vault-tls
+# CommonName is mandatory
+  commonName: {{ .Values.domain }}
+# Optional additional dnsNames
+  dnsNames:
+    - frontend.{{ .Values.domain }}
+    - api.{{ .Values.domain }}
+    - libretranslate.{{ .Values.domain }}
+    - flower.{{ .Values.domain }}
+    - rabbit.{{ .Values.domain }}
+    - prometheus.{{ .Values.domain }}
+    - grafana.{{ .Values.domain }}
+    - elasticvue.{{ .Values.domain }}
+    - elasticsearch.{{ .Values.domain }}
+    - rspamd.{{ .Values.domain }}
+    - rspamd-worker.{{ .Values.domain }}
+    - open-webui.{{ .Values.domain }}
+    - roundcube.{{ .Values.domain }}
+# Mandatory issuerRef to get a PKI signed certificate
+  issuerRef:
+    name: {{ .Values.certificate.issuerRef.name }}
+    kind: ClusterIssuer
+# Optional privateKey size, enforced to be 4096 bits anyway
+  privateKey:
+    size: 4096
+{{- end }}

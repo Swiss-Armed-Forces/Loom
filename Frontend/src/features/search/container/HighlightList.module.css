@@ -1,0 +1,36 @@
+div.accordion {
+    display: flex;
+    flex-direction: column;
+}
+
+div.accordionHeader {
+    padding: 1rem;
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+}
+
+:global .MuiAccordionSummary-content {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 1rem;
+
+    max-width: calc(100% - 2rem);
+}
+
+.hitField {
+    flex: 1;
+}
+
+.resultHighlightText {
+    text-overflow: ellipsis;
+    word-wrap: anywhere;
+    overflow: hidden;
+    flex: 5;
+}
+
+.resultHighlightText em {
+    font-style: normal;
+    text-decoration: underline;
+    text-decoration-style: dotted;
+}

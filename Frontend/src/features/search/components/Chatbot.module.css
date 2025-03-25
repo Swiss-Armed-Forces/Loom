@@ -1,0 +1,6 @@
+.sticky {
+    position: -webkit-sticky; /* Safari */
+    position: sticky;
+    top: 0;
+    z-index: 1000; /* Adjust z-index as needed */
+}

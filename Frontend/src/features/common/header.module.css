@@ -1,0 +1,26 @@
+div.toolbar {
+    position: initial;
+
+    display: flex;
+    flex-direction: row;
+    gap: 1rem;
+}
+
+.headerBranding {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    margin: 0.25rem;
+    gap: 0.25rem;
+}
+
+.headerButtons {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+header.appHeader {
+    position: unset;
+    background-color: #31312e;
+}

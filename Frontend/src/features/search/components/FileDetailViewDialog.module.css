@@ -1,0 +1,15 @@
+.contentWrapper {
+    padding: 10px;
+    overflow: auto;
+    white-space: pre;
+}
+
+.optionsButton {
+    position: absolute;
+    right: 0;
+}
+
+.translationTabButton {
+    display: flex;
+    align-items: center;
+}

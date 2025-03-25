@@ -1,0 +1,29 @@
+[tool.poetry]
+name = "integrationtest"
+version = "0.1.0"
+description = ""
+authors = []
+readme = "README.md"
+packages = [
+    { include = "integrationtest" },
+]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+worker = {path = "../backend/worker"}
+api = {path = "../backend/api"}
+pytest = "^8.2.0"
+debugpy = "^1.8.1"
+requests = "^2.31.0"
+requests-toolbelt = "^1.0.0"
+websockets = "^12.0"
+pytest-asyncio = "^0.23.6"
+pytest-timeout = "^2.3.1"
+docker = "^7.1.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.scripts]
+wipe_data = "utils.wipe_data:wipe_data"

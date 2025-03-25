@@ -1,0 +1,17 @@
+{
+  "name": "roundcube/alwayslogon",
+  "type": "roundcube-plugin",
+  "description": "Always logon",
+  "license": "GPL-3.0-or-later",
+  "version": "1.0",
+  "authors": [],
+  "require": {
+    "php": ">=7.3.0",
+    "roundcube/plugin-installer": "~0.3.5"
+  },
+  "autoload": {
+    "classmap": [
+      "alwayslogon.php"
+    ]
+  }
+}

@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "app.fullname" . }}-elasticvue
+  labels:
+    {{- include "app.labels.standard" . | nindent 4 }}
+    app.kubernetes.io/component: elasticsearch
+spec:
+  replicas: {{ .Values.elasticvue.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ include "app.name" . }}-elasticvue
+  template:
+    metadata:
+      labels:
+        app: {{ include "app.name" . }}-elasticvue
+    spec:
+      containers:
+        - name: elasticvue
+          image: {{ .Values.image.registry }}/{{ .Values.elasticvue.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) .Values.elasticvue.image.tag }}
+          ports:
+            - name: elasticvue
+              containerPort: {{ .Values.elasticvue.service.port }}
+          {{- if .Values.elasticvue.resources }}
+          resources: {{- toYaml .Values.elasticvue.resources | nindent 12 }}
+          {{- end }}

@@ -1,0 +1,46 @@
+.app {
+    overflow: hidden;
+    max-height: 100%;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+}
+
+.loadingIndicator {
+    z-index: 1100;
+    top: 0;
+}
+
+.loadingIndicatorPlaceholder {
+    min-height: 4px;
+    background-color: #31312e;
+}
+
+.globalSearchBoxWrapperPlaceholder {
+    flex-grow: 1;
+}
+
+.pageContainer {
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+/* custom scrollbar */
+::-webkit-scrollbar {
+    width: 20px;
+}
+
+::-webkit-scrollbar-track {
+    background-color: rgba(201, 190, 190, 0.4);
+}
+
+::-webkit-scrollbar-thumb {
+    background-color: #31312e;
+    border-radius: 1rem;
+    border: 5px solid transparent;
+    background-clip: content-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background-color: #31312e;
+}

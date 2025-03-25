@@ -1,0 +1,30 @@
+{{- if  and .Values.mongodb.express.enabled .Values.mongodb.express.ingress.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "app.fullname" . }}-mongodb-express
+  labels:
+    {{- include "app.labels.standard" . | nindent 4 }}
+    app.kubernetes.io/component: mongodb
+  annotations:
+    {{- toYaml .Values.mongodb.express.ingress.annotations | nindent 4 }}
+spec:
+  ingressClassName: {{ .Values.mongodb.express.ingress.className }}
+  rules:
+    - host: mongo-web.{{ .Values.domain }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "app.fullname" . }}-mongodb-express
+                port:
+                  number: {{ .Values.mongodb.express.service.port }}
+  {{- if .Values.mongodb.express.ingress.tls.enabled }}
+  tls:
+    - secretName: {{ include "app.fullname" . }}-external-vault-tls
+      hosts:
+        - mongo-web.{{ .Values.domain }}
+  {{- end }}
+{{- end }}

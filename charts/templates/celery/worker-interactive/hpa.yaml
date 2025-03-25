@@ -1,0 +1,29 @@
+{{- if .Values.celery.worker.interactive.hpa.enabled -}}
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ include "app.fullname" . }}-celery-worker-interactive
+  labels:
+    {{- include "app.labels.standard" . | nindent 4 }}
+    app.kubernetes.io/component: "celery"
+spec:
+  maxReplicas: {{ .Values.celery.worker.interactive.hpa.maxReplicas }}
+  minReplicas: {{ .Values.celery.worker.interactive.hpa.minReplicas }}
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ include "app.fullname" . }}-celery-worker-interactive
+  metrics:
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: {{ .Values.celery.worker.interactive.hpa.targetMemoryUtilizationPercentage }}
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: {{ .Values.celery.worker.interactive.hpa.targetCPUUtilizationPercentage }}
+{{- end }}

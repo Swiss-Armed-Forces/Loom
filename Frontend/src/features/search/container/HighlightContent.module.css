@@ -1,0 +1,19 @@
+.resultHighlightText em {
+    font-style: normal;
+    background: #ffc107;
+    padding: 0.25rem;
+    border-radius: 0.5rem;
+    max-width: 100%;
+    word-break: break-all;
+    overflow-wrap: break-word;
+}
+
+.highlightWrapper {
+    white-space: pre-wrap;
+}
+
+.highlightWrapper + .highlightWrapper {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px dashed black;
+}

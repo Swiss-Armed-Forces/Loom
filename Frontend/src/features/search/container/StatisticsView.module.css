@@ -1,0 +1,22 @@
+.statisticsContainer {
+    margin-top: 1rem;
+    width: 100%;
+    padding: 2rem;
+}
+
+.statTagsContainer {
+    margin-top: 1rem;
+    display: flex;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.extensionsGraphCell {
+    cursor: pointer;
+}
+
+.skeletonLoadingContainer {
+    width: 80%;
+    padding: 3rem;
+}

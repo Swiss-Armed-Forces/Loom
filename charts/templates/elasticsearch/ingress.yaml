@@ -1,0 +1,30 @@
+{{- if .Values.elasticsearch.ingress.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "app.fullname" . }}-elasticsearch
+  labels:
+    {{- include "app.labels.standard" . | nindent 4 }}
+    app.kubernetes.io/component: elasticsearch
+  annotations:
+    {{- toYaml .Values.elasticsearch.ingress.annotations | nindent 4 }}
+spec:
+  ingressClassName: {{ .Values.elasticsearch.ingress.className }}
+  rules:
+    - host: elasticsearch.{{ .Values.domain }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "app.fullname" . }}-elasticsearch
+                port:
+                  number: {{ .Values.elasticsearch.service.port }}
+  {{- if .Values.elasticsearch.ingress.tls.enabled }}
+  tls:
+    - secretName: {{ include "app.fullname" . }}-external-vault-tls
+      hosts:
+        - elasticsearch.{{ .Values.domain }}
+  {{- end }}
+{{- end }}

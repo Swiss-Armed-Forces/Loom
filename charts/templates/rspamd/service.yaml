@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "app.fullname" . }}-rspamd
+  labels:
+    {{- include "app.labels.standard" . | nindent 4 }}
+    app.kubernetes.io/component: rspamd
+spec:
+  ports:
+    - port: {{ .Values.rspamd.worker.service.port }}
+      name: worker
+      targetPort: {{ .Values.rspamd.worker.service.port }}
+    - port: {{ .Values.rspamd.controller.service.port }}
+      name: controller
+      targetPort: {{ .Values.rspamd.controller.service.port }}
+  selector:
+    app: {{ include "app.name" . }}-rspamd

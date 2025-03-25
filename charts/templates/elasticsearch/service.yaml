@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "app.fullname" . }}-elasticsearch
+  labels:
+    {{- include "app.labels.standard" . | nindent 4 }}
+    app.kubernetes.io/component: elasticsearch
+spec:
+  ports:
+    - port: {{ .Values.elasticsearch.service.port }}
+      name: elasticsearch
+      targetPort: {{ .Values.elasticsearch.service.port }}
+  selector:
+    app: {{ include "app.name" . }}-elasticsearch

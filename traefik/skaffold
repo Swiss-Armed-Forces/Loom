@@ -1,0 +1,70 @@
+#!/usr/bin/env bash
+#
+# Prepares the environment to run skaffold.yaml
+#
+set -euo pipefail
+
+SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd)
+SKAFFOLD_CMD="$(command -v skaffold)"
+TRAEFIK_CHART_PATH="$(mktemp -d)"
+
+# variables defined in vars.sh, here for shellcheck:
+TRAEFIK_HELM_VERSION=""
+TRAEFIK_IMAGE_VERSION=""
+
+VARS_FILE="${SCRIPT_DIR}/../vars.sh"
+# shellcheck disable=SC1091
+# shellcheck source=../vars.sh
+source "${VARS_FILE}"
+
+#
+# Atexit
+#
+
+atexit(){
+    # Shellcheck does not understand
+    # this very well...
+    # shellcheck disable=SC2317
+    rm \
+        --force \
+        --recursive \
+        "${TRAEFIK_CHART_PATH}"
+}
+trap atexit EXIT
+
+#
+# Argument parsing
+#
+
+ARGS=()
+while [[ $# -gt 0 ]]; do
+    case "${1}" in
+    -t | --tag)
+        # ignore tag
+        shift
+        ;;
+    -t=* | --tag=*)
+        # ignore tag
+        ;;
+    *)
+        ARGS+=("${1}")
+        ;;
+    esac
+    shift
+done
+
+#
+# Main
+#
+
+tar \
+    --extract \
+    --gunzip \
+    --directory "${TRAEFIK_CHART_PATH}" \
+    --file "${SCRIPT_DIR}/traefik-${TRAEFIK_HELM_VERSION}.tgz"
+
+# Required environment variables for skaffold.yaml
+TRAEFIK_CHART_PATH="${TRAEFIK_CHART_PATH}" \
+TRAEFIK_IMAGE_VERSION="${TRAEFIK_IMAGE_VERSION}" \
+    "${SKAFFOLD_CMD}" \
+        "${ARGS[@]}"

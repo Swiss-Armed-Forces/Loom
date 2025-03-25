@@ -1,0 +1,42 @@
+namespace: loom
+
+image:
+  registry: registry.gitlab.com
+  repository: swiss-armed-forces/cyber-command/cea/loom/traefik
+  tag: v3.3.2
+
+# expose traefik ui
+ingressRoute:
+  dashboard:
+    enabled: true
+    entryPoints: ["web"]
+    matchRule: Host("traefik.loom")
+
+ports:
+  web:
+    hostPort: 80
+  websecure:
+    hostPort: 443
+  imap:
+    port: 143
+    hostPort: 143
+  amqp:
+    port: 5672
+    hostPort: 5672
+  mongo:
+    hostPort: 27017
+    port: 27017
+  redis:
+    hostPort: 6379
+    port: 6379
+  prometheus:
+    hostPort: 9090
+    port: 9090
+
+additionalArguments:
+  - "--entrypoints.imap.address=:143"
+  - "--entrypoints.amqp.address=:5672"
+  - "--entrypoints.mongo.address=:27017"
+  - "--entrypoints.redis.address=:6379"
+  - "--entrypoints.prometheus.address=:9090"
+  - "--api.insecure=true"
