@@ -66,9 +66,7 @@ const CustomQueryItem: FC<SavedQueryItemProps> = ({
                             (ac) => ac.key == customQuery.icon,
                         )?.icon ?? <Policy key="Policy" />}
                     </ListItemIcon>
-                    <ListItemText className={styles.savedQueriesName}>
-                        {customQuery.name}
-                    </ListItemText>
+                    <ListItemText>{customQuery.name}</ListItemText>
                     <ListItemIcon
                         onClick={(e) => {
                             setOpenConfirmDialog(true);

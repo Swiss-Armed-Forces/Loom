@@ -11,7 +11,3 @@
 .savedQueries > div > button > .MuiButton-startIcon {
     justify-self: flex-start;
 }
-
-.savedQueriesName {
-    vertical-align: middle;
-}
