@@ -42,7 +42,7 @@ class MinioCrawler:
 
     def download_file(self, bucket_name: str, file_name: str):
         logger.info("Crawler detected file %s", file_name)
-        full_name = Path(settings.intake_dir).joinpath(bucket_name, file_name)
+        full_name = Path(f"/{bucket_name}/{file_name}")
         source = f"{settings.crawler_source_id}/{bucket_name}"
         get_file_scheduling_service().index_file(
             str(full_name),

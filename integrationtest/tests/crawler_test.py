@@ -1,5 +1,4 @@
 import io
-from pathlib import Path
 
 import pytest
 from common.dependencies import get_minio_client, init
@@ -39,10 +38,7 @@ class TestCrawler:
                 part_size=10 * 1024 * 1024,
             )
         fileprev = get_file_preview_by_name(filename)
-        res_path = (
-            f"{str(Path(settings.intake_dir))}/{settings.minio_default_bucket_name}"
-            + f"/{filename}"
-        )
+        res_path = f"/{settings.minio_default_bucket_name}/{filename}"
         assert fileprev
         assert fileprev.name == filename
         assert fileprev.path == res_path
@@ -60,10 +56,7 @@ class TestCrawler:
                 part_size=10 * 1024 * 1024,
             )
         fileprev = get_file_preview_by_name(filename)
-        res_path = (
-            f"{str(Path(settings.intake_dir))}/{settings.minio_default_bucket_name}"
-            + f"/{filename}"
-        )
+        res_path = f"/{settings.minio_default_bucket_name}/{filename}"
         assert fileprev
         assert fileprev.name == filename
         assert fileprev.path == res_path
@@ -81,10 +74,7 @@ class TestCrawler:
                 part_size=10 * 1024 * 1024,
             )
         fileprev = get_file_preview_by_name(filename)
-        res_path = (
-            f"{str(Path(settings.intake_dir))}/{settings.minio_default_bucket_name}"
-            + f"/{filename}"
-        )
+        res_path = f"/{settings.minio_default_bucket_name}/{filename}"
         assert fileprev
         assert fileprev.name == filename
         assert fileprev.path == res_path
