@@ -19,10 +19,7 @@ from common.file.file_statistics import (
     StatisticsGeneric,
     StatisticsSummary,
 )
-from common.models.es_repository import (
-    EsIdObject,
-    _EsMeta,
-)
+from common.models.es_repository import EsIdObject, _EsMeta
 from common.services.lazybytes_service import LazyBytes
 from common.services.query_builder import QueryParameters
 from fastapi.testclient import TestClient

@@ -159,7 +159,7 @@ usage() {
     echo "  -f |--fix               try auto-fix issues"
     echo "  -v |--verbose           make verbose"
     echo "  -sp|--skip-python       skip python project linting"
-    echo "  -st|--skip-typescript   skip python project linting"
+    echo "  -st|--skip-typescript   skip typescript project linting"
     echo "  -h |--help              print this help"
     echo
     echo "With PROJECTS:"
