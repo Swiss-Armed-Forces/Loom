@@ -28,7 +28,7 @@ logger = logging.getLogger(__name__)
 
 
 class QueryParameters(BaseModel):
-    search_string: str = Field(default="abc", min_length=1)
+    search_string: str = Field(default="*", min_length=1)
     languages: list[str] | None = None
 
 
