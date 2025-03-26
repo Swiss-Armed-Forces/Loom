@@ -164,6 +164,7 @@ export function AddCustomQueryDialog({
                             id="custom-query-item-select"
                             className={styles.customQueryIconSelect}
                             value={selectedIcon}
+                            variant="standard"
                             onChange={(e) => {
                                 setSelectedIcon(e.target.value);
                             }}

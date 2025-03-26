@@ -5,8 +5,8 @@ div.nameWithIcon {
     text-align: left;
 }
 
-div.customQueryIconSelect :global .MuiSelect-select {
-    padding: 0.8rem;
+div.customQueryIconSelect {
+    margin-right: 1rem;
 }
 
 div.customQueryNameInput {

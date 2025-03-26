@@ -27,6 +27,8 @@ import { CombinedStats, SearchQuery } from "./model.ts";
 import { webSocketSendMessage } from "../../middleware/SocketMiddleware.ts";
 import { defaultPageSize } from "./SearchQueryUtils.ts";
 
+import { v4 as uuidv4 } from "uuid";
+
 export enum SearchView {
     FOLDER = "folder",
     DETAILED = "detailed",
@@ -46,7 +48,7 @@ export function initCustomQuery(
     icon: string,
 ): CustomQuery {
     return {
-        id: crypto.randomUUID(),
+        id: uuidv4(),
         query,
         name,
         icon,
