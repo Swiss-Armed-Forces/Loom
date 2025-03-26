@@ -1,7 +1,7 @@
 """Files router."""
 
 import logging
-from typing import Annotated, Any, Literal
+from typing import Annotated, Any
 from uuid import UUID
 
 from bson import ObjectId
@@ -39,7 +39,6 @@ from api.utils import get_content_disposition_header
 logger = logging.getLogger(__name__)
 CONTENT_PREVIEW_LENGTH = 1000
 
-DEFAULT_PAGE_SIZE = 10
 
 SOURCE_ID = "api-upload"
 router = APIRouter()
@@ -83,32 +82,23 @@ class GetFilesResponse(BaseModel):
     sort_by_field: str
 
 
-# pylint: disable=too-many-arguments
+class GetFilesQuery(QueryParameters, SortingParameters, PaginationParameters):
+    pass
+
+
 @router.get("/")
 def get_files(
-    sort_by_field: str = "_score",
-    sort_direction: Literal["asc", "desc"] = "asc",
-    search_string: str = "*",
-    search_languages: Annotated[list[str] | None, Query()] = None,
+    query: Annotated[GetFilesQuery, Query()],
     file_repository: FileRepository = default_file_repository,
-    sort_id: Annotated[list[Any] | None, Query()] = None,
-    page_size: int = DEFAULT_PAGE_SIZE,
 ) -> GetFilesResponse:
     """Get list of file_id."""
-    query = QueryParameters(search_string=search_string, languages=search_languages)
-    logger.info("Getting files with query: '%s'", search_string)
-
-    sorting_parameters = SortingParameters(
-        field=sort_by_field, direction=sort_direction
-    )
-
-    pagination_parameters = PaginationParameters(sort_id=sort_id, size=page_size)
+    logger.info("Getting files with query: '%s'", query.search_string)
     try:
         result = list(
             file_repository.get_id_generator_by_query(
                 query=query,
-                sort_params=sorting_parameters,
-                pagination_params=pagination_parameters,
+                sort_params=query,
+                pagination_params=query,
             )
         )
         total_files = file_repository.count_by_query(query=query)
@@ -126,7 +116,7 @@ def get_files(
             )
         ),
         total_files=total_files,
-        sort_by_field=sort_by_field,
+        sort_by_field=query.sort_by_field,
     )
     return current_query_file_resp
 
@@ -152,20 +142,21 @@ class GetFilesTreeResponse(RootModel):
     root: list[TreeNodeModel]
 
 
+class GetFilesTreeQuery(QueryParameters):
+    node_path: str = "/"
+
+
 @router.get("/tree")
 def get_files_tree(
-    search_string: str = "*",
-    search_languages: Annotated[list[str] | None, Query()] = None,
-    node_path: str = "/",
+    query: Annotated[GetFilesTreeQuery, Query()],
     file_repository: FileRepository = default_file_repository,
 ) -> GetFilesTreeResponse:
     """Get a node out of the tree of files non-recursively."""
 
-    query = QueryParameters(search_string=search_string, languages=search_languages)
-    logger.info("Get file tree node with query: '%s'", query)
+    logger.info("Get file tree node with query: '%s'", query.search_string)
 
     tree_paths = file_repository.get_full_paths_by_query(
-        query=query, tree_node_directory_path=node_path
+        query=query, tree_node_directory_path=query.node_path
     )
     return GetFilesTreeResponse(
         [TreeNodeModel.model_validate(node.model_dump()) for node in tree_paths]
@@ -181,13 +172,11 @@ def get_tree_max_element_count() -> int:
 
 @router.get("/stats/summary")
 def get_summary_stats(
-    search_string: str = "*",
-    search_languages: Annotated[list[str] | None, Query()] = None,
+    query: Annotated[QueryParameters, Query()],
     file_repository: FileRepository = default_file_repository,
 ) -> SummaryStatisticsModel:
     """Get statistics about the files found by the provided query."""
-    query = QueryParameters(search_string=search_string, languages=search_languages)
-    logger.info("Get summary stats with query: '%s'", query)
+    logger.info("Get summary stats with query: '%s'", query.search_string)
     stats = file_repository.get_stat_summary(query)
     return SummaryStatisticsModel.from_statistics_summary(stats)
 
@@ -195,15 +184,13 @@ def get_summary_stats(
 @router.get("/stats/generic/{stat_name}")
 def get_generic_stats(
     stat_name: Stat,
-    search_string: str = "*",
-    search_languages: Annotated[list[str] | None, Query()] = None,
+    query: Annotated[QueryParameters, Query()],
     file_repository: FileRepository = default_file_repository,
 ) -> GenericStatisticsModel:
     try:
         Stat(stat_name)
     except ValueError as e:
         raise HTTPException(422, f"Unknown stat '{stat_name}'") from e
-    query = QueryParameters(search_string=search_string, languages=search_languages)
     logger.info("Get %s stats with query: '%s'", stat_name, query)
     stats = file_repository.get_stat_generic(query, stat=Stat(stat_name))
     return GenericStatisticsModel.from_statistics_generic(stats)
@@ -248,12 +235,10 @@ class GetFileResponse(BaseModel):
 @router.get("/{file_id}")
 def get_file(
     file_id: UUID,
-    search_string: str = "*",
-    search_languages: Annotated[list[str] | None, Query()] = None,
+    query: Annotated[QueryParameters, Query()],
     file_repository: FileRepository = default_file_repository,
 ) -> GetFileResponse:
     """Get file data of file file_id."""
-    query = QueryParameters(search_string=search_string, languages=search_languages)
     logger.info("Get file data of file with id %s", file_id)
     file = file_repository.get_by_id_with_query(
         id_=file_id, query=query, full_highlight_context=True
@@ -304,12 +289,10 @@ class GetFilePreviewResponse(BaseModel):
 @router.get("/{file_id}/preview")
 def get_file_preview(
     file_id: UUID,
-    search_string: str = "*",
-    search_languages: Annotated[list[str] | None, Query()] = None,
+    query: Annotated[QueryParameters, Query()],
     file_repository: FileRepository = default_file_repository,
 ) -> GetFilePreviewResponse:
     """Get preview data of file."""
-    query = QueryParameters(search_string=search_string, languages=search_languages)
     logger.info("get file preview data of file with id %s", file_id)
     file = file_repository.get_by_id_with_query(
         id_=file_id, query=query, full_highlight_context=False
@@ -341,10 +324,14 @@ def get_file_preview(
     )
 
 
+class GetThumbnailQuery(BaseModel):
+    preview: bool = False
+
+
 @router.get("/{file_id}/thumbnail")
 def get_thumbnail(
     file_id: UUID,
-    preview: bool = False,
+    query: Annotated[GetThumbnailQuery, Query()],
     file_repository: FileRepository = default_file_repository,
     file_storage_service: FileStorageService = default_file_storage_service,
 ) -> Response:
@@ -354,7 +341,7 @@ def get_thumbnail(
         raise HTTPException(status_code=404, detail="Invalid file")
     file_stream = file_storage_service.open_download_iterator(
         file_id=ObjectId(
-            file.thumbnail_file_id if not preview else file.preview_file_id
+            file.thumbnail_file_id if not query.preview else file.preview_file_id
         )
     )
     return StreamingResponse(

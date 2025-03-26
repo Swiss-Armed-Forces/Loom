@@ -11,7 +11,7 @@ packages = [
 [tool.poetry.dependencies]
 python = "^3.11"
 common = {path = "../common", develop = true}
-fastapi = "^0.111.0"
+fastapi = "^0.115.12"
 uvicorn = "^0.29.0"
 python-multipart="^0.0.9"
 websockets = "^12.0"

@@ -544,7 +544,7 @@ def test_es_repository_get_by_query():
     es_repository.get_generator_by_query = MagicMock()
 
     query = QueryParameters(search_string="just a random query")
-    pagination = PaginationParameters(size=10)
+    pagination = PaginationParameters(page_size=10)
 
     es_repository.get_by_query(
         query,

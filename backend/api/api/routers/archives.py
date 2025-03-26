@@ -1,4 +1,5 @@
 import logging
+from typing import Annotated
 from uuid import UUID
 
 from bson import ObjectId
@@ -10,7 +11,7 @@ from common.dependencies import (
     get_file_storage_service,
 )
 from common.services.file_storage_service import FileStorageService
-from fastapi import APIRouter, Depends, HTTPException, Response
+from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
@@ -68,10 +69,14 @@ def create_new_archive(
     return ArchiveCreatedResponse(archive_id=archive.id_)
 
 
+class DownloadArchiveQuery(BaseModel):
+    encrypted: bool = False
+
+
 @router.get("/{archive_id}", status_code=200)
 def download_archive(
     archive_id: UUID,
-    encrypted: bool = False,
+    query: Annotated[DownloadArchiveQuery, Query()],
     archive_repository: ArchiveRepository = default_archive_repository,
     file_storage_service: FileStorageService = default_file_storage_service,
 ) -> Response:
@@ -79,8 +84,8 @@ def download_archive(
     archive = archive_repository.get_by_id(archive_id)
     if archive is None:
         raise HTTPException(status_code=404, detail="Invalid archive")
-    archive_file = archive.plain_file if not encrypted else archive.encrypted_file
-    archive_name = archive.name if not encrypted else archive.name_encrypted
+    archive_file = archive.plain_file if not query.encrypted else archive.encrypted_file
+    archive_name = archive.name if not query.encrypted else archive.name_encrypted
 
     file_stream = file_storage_service.open_download_iterator(
         file_id=ObjectId(archive_file.storage_id)

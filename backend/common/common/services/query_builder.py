@@ -22,13 +22,13 @@ from luqum.tree import (  # type: ignore[import-untyped]
     Word,
 )
 from luqum.visitor import TreeTransformer  # type: ignore[import-untyped]
-from pydantic import BaseModel  # type: ignore[import-untyped]
+from pydantic import BaseModel, Field  # type: ignore[import-untyped]
 
 logger = logging.getLogger(__name__)
 
 
 class QueryParameters(BaseModel):
-    search_string: str
+    search_string: str = Field(default="abc", min_length=1)
     languages: list[str] | None = None
 
 

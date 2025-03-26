@@ -2,7 +2,7 @@ import logging
 import time
 from abc import abstractmethod
 from contextlib import contextmanager
-from typing import Any, Callable, Generator, Generic, TypeVar
+from typing import Any, Callable, Generator, Generic, Literal, TypeVar
 from uuid import UUID, uuid4
 
 import typing_extensions
@@ -30,7 +30,7 @@ logger = logging.getLogger(__name__)
 # I didn't find a way to disable the timeout. None and False
 # does not work...
 INDEX_OPERATION_TIMEOUT = "9999d"
-
+DEFAULT_PAGE_SIZE = 10
 UPDATE_RETRY_ON_CONFLICT_COUNT = 5
 
 # Default keepalive for point in time
@@ -127,13 +127,13 @@ class QuerySearchResult(BaseModel, Generic[EsRepositoryObjectT]):
 
 
 class SortingParameters(BaseModel):
-    field: str = "_score"
-    direction: str = "desc"
+    sort_by_field: str = "_score"
+    sort_direction: Literal["asc", "desc"] = "asc"
 
 
 class PaginationParameters(BaseModel):
     sort_id: list[Any] | None = None
-    size: int
+    page_size: int = DEFAULT_PAGE_SIZE
 
 
 class BaseEsRepository(
@@ -254,9 +254,9 @@ class BaseEsRepository(
         search_after: list[Any] | None = None
         handled_hits_count = 0
 
-        sort_by_field = self._get_sort_by_field(sort_params.field)
+        sort_by_field = self._get_sort_by_field(sort_params.sort_by_field)
 
-        sort = {sort_by_field: {"order": sort_params.direction}}
+        sort = {sort_by_field: {"order": sort_params.sort_direction}}
         search = search.sort(
             sort,
             # We append "sort_unique" here on purpose, see comment in EsRepositoryObject
@@ -270,7 +270,7 @@ class BaseEsRepository(
 
         if pagination_params is not None:
             search = search.extra(
-                size=pagination_params.size,
+                size=pagination_params.page_size,
             )
 
         while True:
@@ -416,7 +416,7 @@ class BaseEsRepository(
         search = self.__get_search_by_query(query)
 
         # limit fields to fetch to just id
-        sort_by_field = sort_params.field
+        sort_by_field = sort_params.sort_by_field
         search = search.source(includes=[sort_by_field], excludes=[])
 
         def page_handler(result: Response):

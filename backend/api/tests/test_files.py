@@ -20,6 +20,7 @@ from common.file.file_statistics import (
     StatisticsSummary,
 )
 from common.models.es_repository import (
+    DEFAULT_PAGE_SIZE,
     EsIdObject,
     PaginationParameters,
     SortingParameters,
@@ -37,7 +38,6 @@ from api.models.statistics_model import (
 )
 from api.routers.files import (
     CONTENT_PREVIEW_LENGTH,
-    DEFAULT_PAGE_SIZE,
     SOURCE_ID,
     FileUploadResponse,
     GetFilePreviewResponse,
@@ -105,12 +105,12 @@ def test_get_files_searches_in_repository(client: TestClient):
 
     search_string = "this is a query"
     query = QueryParameters(search_string=search_string, languages=None)
-    sort = SortingParameters(field="_score", direction="asc")
-    pagination = PaginationParameters(size=10, sort_id=None)
+    sort = SortingParameters(sort_by_field="_score", sort_direction="asc")
+    pagination = PaginationParameters(page_size=10, sort_id=None)
 
     response = client.get(
         "/v1/files/",
-        params={"search_string": search_string, "page_size": pagination.size},
+        params={"search_string": search_string, "page_size": pagination.page_size},
     )
     assert response.status_code == 200
     get_file_repository().get_id_generator_by_query.assert_called_once_with(
@@ -124,7 +124,9 @@ def test_get_files_searches_in_repository_with_ascending_sort(client: TestClient
     query = QueryParameters(search_string=search_string)
     sort_by_field = "foo"
     sort_direction = "asc"
-    sort_params = SortingParameters(field=sort_by_field, direction=sort_direction)
+    sort_params = SortingParameters(
+        sort_by_field=sort_by_field, sort_direction=sort_direction
+    )
 
     client.get(
         "/v1/files/",
@@ -137,7 +139,9 @@ def test_get_files_searches_in_repository_with_ascending_sort(client: TestClient
     get_file_repository().get_id_generator_by_query.assert_called_once_with(
         query=query,
         sort_params=sort_params,
-        pagination_params=PaginationParameters(sort_id=None, size=DEFAULT_PAGE_SIZE),
+        pagination_params=PaginationParameters(
+            sort_id=None, page_size=DEFAULT_PAGE_SIZE
+        ),
     )
 
 
@@ -146,7 +150,9 @@ def test_get_files_searches_in_repository_with_descending_sort(client: TestClien
     query = QueryParameters(search_string=search_string)
     sort_by_field = "foo"
     sort_direction = "desc"
-    sort_params = SortingParameters(field=sort_by_field, direction=sort_direction)
+    sort_params = SortingParameters(
+        sort_by_field=sort_by_field, sort_direction=sort_direction
+    )
     client.get(
         "/v1/files/",
         params={
@@ -158,7 +164,9 @@ def test_get_files_searches_in_repository_with_descending_sort(client: TestClien
     get_file_repository().get_id_generator_by_query.assert_called_once_with(
         query=query,
         sort_params=sort_params,
-        pagination_params=PaginationParameters(sort_id=None, size=DEFAULT_PAGE_SIZE),
+        pagination_params=PaginationParameters(
+            sort_id=None, page_size=DEFAULT_PAGE_SIZE
+        ),
     )
 
 

@@ -22,20 +22,23 @@ class ContextCreateResponse(BaseModel):
 
 @router.post("/")
 def create_context(
-    search_string: str = "*",
-    search_languages: Annotated[list[str] | None, Query()] = None,
+    query: Annotated[QueryParameters, Query()],
     ai_scheduling_service: AiSchedulingService = default_ai_scheduling_service,
 ) -> ContextCreateResponse:
-    query = QueryParameters(search_string=search_string, languages=search_languages)
-
     context = ai_scheduling_service.create_context(query=query)
     return ContextCreateResponse(context_id=context.id_)
+
+
+class ProcessQuestionQuery(BaseModel):
+    question: str
 
 
 @router.post("/{context_id}/process_question")
 def process_question(
     context_id: UUID,
-    question: str,
+    query: Annotated[ProcessQuestionQuery, Query()],
     ai_scheduling_service: AiSchedulingService = default_ai_scheduling_service,
 ):
-    ai_scheduling_service.process_ai_question(context_id=context_id, question=question)
+    ai_scheduling_service.process_ai_question(
+        context_id=context_id, question=query.question
+    )

@@ -21,7 +21,7 @@ def test_create_archive_with_emtpy_query_fails(client):
 def test_create_archive(
     client,
 ):
-    query = QueryModel(search_string="")  # empty query -> ok
+    query = QueryModel(search_string="*")
     archive_request = ArchiveRequest(query=query)
 
     archive = Archive(query=query.to_query_parameters())
@@ -35,7 +35,7 @@ def test_create_archive(
 
 
 def test_archive_get_all(client):
-    query = QueryModel(search_string="")  # empty query -> ok
+    query = QueryModel(search_string="*")
 
     archive1 = Archive(query=query.to_query_parameters())
     archive2 = Archive(query=query.to_query_parameters())
@@ -52,7 +52,7 @@ def test_archive_get_all(client):
 
 
 def test_download_archive(client):
-    search_string = ""  # empty query -> ok
+    search_string = "*"
     query = QueryParameters(search_string=search_string)
     content = [b"file content", b"and", b"another", b"chunk"]
     content_encrypted = [b"encrypted file content", b"and", b"another", b"chunk"]
@@ -89,7 +89,7 @@ def test_download_archive(client):
 
 
 def test_hide_archive(client):
-    search_string = ""  # empty query -> ok
+    search_string = "*"
     query = QueryParameters(search_string=search_string)
     content = [b"file content", b"and", b"another", b"chunk"]
     content_encrypted = [b"encrypted file content", b"and", b"another", b"chunk"]
