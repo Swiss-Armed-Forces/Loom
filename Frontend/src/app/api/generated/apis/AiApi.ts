@@ -17,20 +17,20 @@ import * as runtime from "../runtime";
 import type {
     ContextCreateResponse,
     HTTPValidationError,
-    SearchLanguages,
+    Languages,
 } from "../models/index";
 import {
     ContextCreateResponseFromJSON,
     ContextCreateResponseToJSON,
     HTTPValidationErrorFromJSON,
     HTTPValidationErrorToJSON,
-    SearchLanguagesFromJSON,
-    SearchLanguagesToJSON,
+    LanguagesFromJSON,
+    LanguagesToJSON,
 } from "../models/index";
 
 export interface CreateContextV1AiPostRequest {
     searchString?: string;
-    searchLanguages?: SearchLanguages;
+    languages?: Languages;
 }
 
 export interface ProcessQuestionV1AiContextIdProcessQuestionPostRequest {
@@ -56,9 +56,8 @@ export class AiApi extends runtime.BaseAPI {
                 requestParameters["searchString"];
         }
 
-        if (requestParameters["searchLanguages"] != null) {
-            queryParameters["search_languages"] =
-                requestParameters["searchLanguages"];
+        if (requestParameters["languages"] != null) {
+            queryParameters["languages"] = requestParameters["languages"];
         }
 
         const headerParameters: runtime.HTTPHeaders = {};

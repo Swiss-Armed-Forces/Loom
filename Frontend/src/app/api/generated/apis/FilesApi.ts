@@ -21,7 +21,7 @@ import type {
     GetFileResponse,
     GetFilesResponse,
     HTTPValidationError,
-    SearchLanguages,
+    Languages,
     SortId,
     Stat,
     SummarizeFileRequest,
@@ -44,8 +44,8 @@ import {
     GetFilesResponseToJSON,
     HTTPValidationErrorFromJSON,
     HTTPValidationErrorToJSON,
-    SearchLanguagesFromJSON,
-    SearchLanguagesToJSON,
+    LanguagesFromJSON,
+    LanguagesToJSON,
     SortIdFromJSON,
     SortIdToJSON,
     StatFromJSON,
@@ -85,39 +85,39 @@ export interface DownloadTextV1FilesFileIdTextGetRequest {
 export interface GetFilePreviewV1FilesFileIdPreviewGetRequest {
     fileId: string;
     searchString?: string;
-    searchLanguages?: SearchLanguages;
+    languages?: Languages;
 }
 
 export interface GetFileV1FilesFileIdGetRequest {
     fileId: string;
     searchString?: string;
-    searchLanguages?: SearchLanguages;
+    languages?: Languages;
 }
 
 export interface GetFilesTreeV1FilesTreeGetRequest {
     searchString?: string;
-    searchLanguages?: SearchLanguages;
+    languages?: Languages;
     nodePath?: string;
 }
 
 export interface GetFilesV1FilesGetRequest {
+    sortId?: SortId;
+    pageSize?: number;
     sortByField?: string;
     sortDirection?: GetFilesV1FilesGetSortDirectionEnum;
     searchString?: string;
-    searchLanguages?: SearchLanguages;
-    sortId?: SortId;
-    pageSize?: number;
+    languages?: Languages;
 }
 
 export interface GetGenericStatsV1FilesStatsGenericStatNameGetRequest {
     statName: Stat;
     searchString?: string;
-    searchLanguages?: SearchLanguages;
+    languages?: Languages;
 }
 
 export interface GetSummaryStatsV1FilesStatsSummaryGetRequest {
     searchString?: string;
-    searchLanguages?: SearchLanguages;
+    languages?: Languages;
 }
 
 export interface GetThumbnailV1FilesFileIdThumbnailGetRequest {
@@ -419,9 +419,8 @@ export class FilesApi extends runtime.BaseAPI {
                 requestParameters["searchString"];
         }
 
-        if (requestParameters["searchLanguages"] != null) {
-            queryParameters["search_languages"] =
-                requestParameters["searchLanguages"];
+        if (requestParameters["languages"] != null) {
+            queryParameters["languages"] = requestParameters["languages"];
         }
 
         const headerParameters: runtime.HTTPHeaders = {};
@@ -481,9 +480,8 @@ export class FilesApi extends runtime.BaseAPI {
                 requestParameters["searchString"];
         }
 
-        if (requestParameters["searchLanguages"] != null) {
-            queryParameters["search_languages"] =
-                requestParameters["searchLanguages"];
+        if (requestParameters["languages"] != null) {
+            queryParameters["languages"] = requestParameters["languages"];
         }
 
         const headerParameters: runtime.HTTPHeaders = {};
@@ -536,9 +534,8 @@ export class FilesApi extends runtime.BaseAPI {
                 requestParameters["searchString"];
         }
 
-        if (requestParameters["searchLanguages"] != null) {
-            queryParameters["search_languages"] =
-                requestParameters["searchLanguages"];
+        if (requestParameters["languages"] != null) {
+            queryParameters["languages"] = requestParameters["languages"];
         }
 
         if (requestParameters["nodePath"] != null) {
@@ -587,6 +584,14 @@ export class FilesApi extends runtime.BaseAPI {
     ): Promise<runtime.ApiResponse<GetFilesResponse>> {
         const queryParameters: any = {};
 
+        if (requestParameters["sortId"] != null) {
+            queryParameters["sort_id"] = requestParameters["sortId"];
+        }
+
+        if (requestParameters["pageSize"] != null) {
+            queryParameters["page_size"] = requestParameters["pageSize"];
+        }
+
         if (requestParameters["sortByField"] != null) {
             queryParameters["sort_by_field"] = requestParameters["sortByField"];
         }
@@ -601,17 +606,8 @@ export class FilesApi extends runtime.BaseAPI {
                 requestParameters["searchString"];
         }
 
-        if (requestParameters["searchLanguages"] != null) {
-            queryParameters["search_languages"] =
-                requestParameters["searchLanguages"];
-        }
-
-        if (requestParameters["sortId"] != null) {
-            queryParameters["sort_id"] = requestParameters["sortId"];
-        }
-
-        if (requestParameters["pageSize"] != null) {
-            queryParameters["page_size"] = requestParameters["pageSize"];
+        if (requestParameters["languages"] != null) {
+            queryParameters["languages"] = requestParameters["languages"];
         }
 
         const headerParameters: runtime.HTTPHeaders = {};
@@ -667,9 +663,8 @@ export class FilesApi extends runtime.BaseAPI {
                 requestParameters["searchString"];
         }
 
-        if (requestParameters["searchLanguages"] != null) {
-            queryParameters["search_languages"] =
-                requestParameters["searchLanguages"];
+        if (requestParameters["languages"] != null) {
+            queryParameters["languages"] = requestParameters["languages"];
         }
 
         const headerParameters: runtime.HTTPHeaders = {};
@@ -722,9 +717,8 @@ export class FilesApi extends runtime.BaseAPI {
                 requestParameters["searchString"];
         }
 
-        if (requestParameters["searchLanguages"] != null) {
-            queryParameters["search_languages"] =
-                requestParameters["searchLanguages"];
+        if (requestParameters["languages"] != null) {
+            queryParameters["languages"] = requestParameters["languages"];
         }
 
         const headerParameters: runtime.HTTPHeaders = {};

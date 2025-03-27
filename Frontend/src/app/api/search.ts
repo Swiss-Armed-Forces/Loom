@@ -47,7 +47,7 @@ export const searchFiles = async (
 ): Promise<GetFilesResponse> => {
     return filesApi.getFilesV1FilesGet({
         searchString: query.query ?? "",
-        searchLanguages: query.languages?.map((l) => l.code),
+        languages: query.languages?.map((l) => l.code),
         ...(query.sortField && {
             sortByField: query.sortField,
         }),
@@ -68,7 +68,7 @@ export const searchTree = async (
 ): Promise<TreeNodeModel[]> => {
     return filesApi.getFilesTreeV1FilesTreeGet({
         searchString: query.query ?? "",
-        searchLanguages: query.languages?.map((l) => l.code),
+        languages: query.languages?.map((l) => l.code),
         nodePath: childrenOfNode,
     });
 };
@@ -85,7 +85,7 @@ export const getStatSummary = async (
 
     return filesApi.getSummaryStatsV1FilesStatsSummaryGet({
         searchString: query.query ?? "",
-        searchLanguages: query.languages?.map((l) => l.code),
+        languages: query.languages?.map((l) => l.code),
     });
 };
 
@@ -99,7 +99,7 @@ export const getStatGeneric = async (
 
     return filesApi.getGenericStatsV1FilesStatsGenericStatNameGet({
         searchString: query.query ?? "",
-        searchLanguages: query.languages?.map((l) => l.code),
+        languages: query.languages?.map((l) => l.code),
         statName: stat,
     });
 };
@@ -185,7 +185,7 @@ export const getFullFileContent = async (
     return filesApi.getFileV1FilesFileIdGet({
         fileId: fileId,
         searchString: query.query ?? "",
-        searchLanguages: query.languages?.map((l) => l.code),
+        languages: query.languages?.map((l) => l.code),
     });
 };
 
@@ -196,7 +196,7 @@ export const getFilePreview = async (
     return filesApi.getFilePreviewV1FilesFileIdPreviewGet({
         fileId: fileId,
         searchString: query.query ?? "",
-        searchLanguages: query.languages?.map((l) => l.code),
+        languages: query.languages?.map((l) => l.code),
     });
 };
 
@@ -302,7 +302,7 @@ export const createAiContext = async (
 ): Promise<ContextCreateResponse> => {
     return aiApi.createContextV1AiPost({
         searchString: query.query ?? undefined,
-        searchLanguages: query.languages ?? undefined,
+        languages: query.languages ?? undefined,
     });
 };
 

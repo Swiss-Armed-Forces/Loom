@@ -241,7 +241,7 @@ def test_search_multilanguage():
     # higher score because two words match
     file = get_file_preview_by_name(
         search_string=search_string,
-        search_languages=["de"],
+        languages=["de"],
         file_name="multilanguage_file.txt",
     )
 
@@ -250,7 +250,7 @@ def test_search_multilanguage():
 
     file = get_file_preview_by_name(
         search_string=search_string,
-        search_languages=["de", "fr"],
+        languages=["de", "fr"],
         file_name="multilanguage_file.txt",
     )
 

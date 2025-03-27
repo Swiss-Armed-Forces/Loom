@@ -17,28 +17,28 @@ import { mapValues } from "../runtime";
 /**
  *
  * @export
- * @interface SearchLanguages
+ * @interface Languages
  */
-export interface SearchLanguages {}
+export interface Languages {}
 
 /**
- * Check if a given object implements the SearchLanguages interface.
+ * Check if a given object implements the Languages interface.
  */
-export function instanceOfSearchLanguages(value: object): boolean {
+export function instanceOfLanguages(value: object): boolean {
     return true;
 }
 
-export function SearchLanguagesFromJSON(json: any): SearchLanguages {
-    return SearchLanguagesFromJSONTyped(json, false);
+export function LanguagesFromJSON(json: any): Languages {
+    return LanguagesFromJSONTyped(json, false);
 }
 
-export function SearchLanguagesFromJSONTyped(
+export function LanguagesFromJSONTyped(
     json: any,
     ignoreDiscriminator: boolean,
-): SearchLanguages {
+): Languages {
     return json;
 }
 
-export function SearchLanguagesToJSON(value?: SearchLanguages | null): any {
+export function LanguagesToJSON(value?: Languages | null): any {
     return value;
 }

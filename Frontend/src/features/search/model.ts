@@ -42,9 +42,7 @@ export function getSearchParamsFromSearchQuery(
             page_size: query.pageSize.toString(),
         }),
     });
-    query.languages?.forEach((l) =>
-        searchParams.append("search_languages", l.code),
-    );
+    query.languages?.forEach((l) => searchParams.append("languages", l.code));
     return searchParams;
 }
 
