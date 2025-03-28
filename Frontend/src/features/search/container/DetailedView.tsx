@@ -65,9 +65,9 @@ export function DetailedView() {
                         <ResultCard
                             key={file.meta.fileId}
                             fileId={file.meta.fileId}
-                            ref={(el) =>
-                                (cardRefs.current[file.meta.fileId] = el)
-                            }
+                            ref={(el) => {
+                                cardRefs.current[file.meta.fileId] = el;
+                            }}
                         />
                     );
                 })}

@@ -77,7 +77,7 @@ export function GlobalSearchBox() {
                 inputProps={{ "aria-label": "search" }}
                 value={searchInputFieldContent ?? ""}
                 onChange={handleSearchValueChange}
-                onKeyDown={(ev) => {
+                onKeyDown={(ev: React.KeyboardEvent<HTMLInputElement>) => {
                     if (ev.key === "Enter") {
                         ev.preventDefault();
                         doUpdateQuery();
@@ -105,7 +105,7 @@ export function GlobalSearchBox() {
                 inputProps={{ "aria-label": "sort" }}
                 value={sortInputFieldContent ?? ""}
                 onChange={handleSortValueChange}
-                onKeyDown={(ev) => {
+                onKeyDown={(ev: React.KeyboardEvent<HTMLInputElement>) => {
                     if (ev.key === "Enter") {
                         ev.preventDefault();
                         doUpdateQuery();

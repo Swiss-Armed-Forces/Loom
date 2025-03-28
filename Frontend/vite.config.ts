@@ -11,6 +11,7 @@ export default ({ mode }) => {
         plugins: [react(), svgr()],
         server: {
             host: "0.0.0.0",
+            allowedHosts: true,
             port: parseInt(process.env.PORT) || 5173,
             proxy: {
                 "/api": {

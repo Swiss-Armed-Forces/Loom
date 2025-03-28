@@ -39,6 +39,7 @@ export interface ChildrenAddedAction
     parentPath: string;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export interface QueryChangedAction
     extends BaseFolderViewAction<FolderViewActionType.QUERY_CHANGED> {}
 
@@ -47,6 +48,7 @@ export interface ExpandedNodesChangedAction
     expandedNodes: string[];
 }
 
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export interface InitialDataLoadedAction
     extends BaseFolderViewAction<FolderViewActionType.INITIAL_DATA_LOADED> {}
 

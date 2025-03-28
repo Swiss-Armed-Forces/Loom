@@ -128,7 +128,7 @@ export const BackgroundStatusIndicator: FC = () => {
     }
 
     const getActiveSpinnerTooltip = () => {
-        let estimated_time_addition: JSX.Element = <span></span>;
+        let estimated_time_addition = <span></span>;
         if (queueStatistics.completeEstimateTimestamp != undefined) {
             const now_timestamp = new Date().getTime() / 1000;
             const completed_in =

@@ -301,7 +301,7 @@ export const ResultCard = forwardRef<HTMLDivElement, ResultCardProps>(
                                 className={styles.resultCardActionsBottom}
                             >
                                 <div className={styles.sortHint}>{`${
-                                    searchQuery?.sortField?.length ?? 0 > 0
+                                    (searchQuery?.sortField?.length ?? 0 > 0)
                                         ? searchQuery?.sortField
                                         : "score"
                                 }: ${sortFieldValue}`}</div>

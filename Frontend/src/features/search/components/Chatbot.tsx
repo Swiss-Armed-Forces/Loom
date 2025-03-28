@@ -14,6 +14,7 @@ import {
 import { webSocketSendMessage } from "../../../middleware/SocketMiddleware";
 import { showFileDetailDialog } from "../../common/commonSlice";
 
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
 interface ChatbotProps {}
 
 interface ChatMessage {
@@ -165,6 +166,7 @@ const Chatbot: React.FC<ChatbotProps> = () => {
             // generate bot response
             await processQuestion(aiContext, message!);
         } catch (err: any) {
+            console.error(err);
             toast.error("Cannot get chatbot response");
         }
     };
