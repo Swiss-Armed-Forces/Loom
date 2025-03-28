@@ -145,6 +145,11 @@
             "checksumZip": "ZIP",
             "checksumEncrypted": "Encrypted",
             "actions": "Actions"
+        },
+        "actions": {
+            "download": "Download",
+            "download_encrypted": "Download Encrypted",
+            "search": "Search query"
         }
     },
     "folderView": {

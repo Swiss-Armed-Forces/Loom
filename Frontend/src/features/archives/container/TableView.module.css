@@ -1,10 +1,10 @@
 .resultTable {
-    overflow: visible;
+    margin-top: 1rem;
 }
 
 .skeletonLoadingContainer {
     width: 100%;
-    padding: 3rem;
+    padding: 3rem 0rem;
 }
 
 .skeletonLoadingAvatar {
@@ -12,4 +12,29 @@
     flex-direction: row;
     gap: 2rem;
     margin-bottom: 2rem;
+}
+
+.checksumText {
+    overflow-wrap: break-word;
+    max-width: 100%;
+}
+
+.nameChecksumCell {
+    word-wrap: break-word;
+}
+
+@media only screen and (max-width: 1100px) {
+    .checksumText {
+        word-break: break-all;
+    }
+
+    .nameChecksumCell {
+        max-width: 100%;
+    }
+}
+
+@media only screen and (min-width: 1000px) {
+    .nameChecksumCell {
+        width: 35%;
+    }
 }
