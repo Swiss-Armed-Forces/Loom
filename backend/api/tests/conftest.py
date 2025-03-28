@@ -1,10 +1,10 @@
 from typing import Generator
 
 import pytest
-from common.dependencies import mock_init
 from fastapi.testclient import TestClient
 
 from api.api import init_api
+from api.dependencies import mock_init
 
 
 def pytest_configure():

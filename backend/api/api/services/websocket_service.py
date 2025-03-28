@@ -3,11 +3,10 @@ from asyncio import create_task, gather
 from json import JSONDecodeError
 from traceback import format_exception
 
-from fastapi import WebSocket
-from pydantic import ValidationError
-
 from common.messages.messages import MessageError, PubSubMessage
 from common.messages.pubsub_service import PubSubService, _PubSubAsync
+from fastapi import WebSocket
+from pydantic import ValidationError
 
 logger = logging.getLogger(__name__)
 

@@ -15,11 +15,11 @@ from common.file.file_repository import (
     LibreTranslateTranslations,
 )
 from common.services.lazybytes_service import LazyBytes
-from common.services.tika_service import TIKA_MAX_TEXT_SIZE, TikaResult
 from common.utils.cache import cache
 
 from worker.index_file.infra.file_indexing_task import FileIndexingTask
 from worker.index_file.infra.indexing_persister import IndexingPersister
+from worker.services.tika_service import TIKA_MAX_TEXT_SIZE, TikaResult
 from worker.settings import settings
 from worker.utils.persisting_task import persisting_task
 

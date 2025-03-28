@@ -1,7 +1,8 @@
 from pathlib import Path
 
 import pytest
-from common.dependencies import get_lazybytes_service, get_tika_service
+from common.dependencies import get_lazybytes_service
+from worker.dependencies import get_tika_service
 
 from utils.consts import ASSETS_DIR
 

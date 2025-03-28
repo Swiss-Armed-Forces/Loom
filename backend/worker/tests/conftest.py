@@ -1,7 +1,8 @@
 import pytest
 from common import dependencies
-from common.dependencies import mock_init
 from common.services.lazybytes_service import InMemoryLazyBytesService, LazyBytesService
+
+from worker.dependencies import mock_init
 
 
 def pytest_configure():

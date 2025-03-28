@@ -17,11 +17,11 @@ from zipfile import Path as ZipPath
 from zipfile import ZipFile
 
 import requests
+from common.services.lazybytes_service import LazyBytes, LazyBytesService
 from pydantic import BaseModel, ConfigDict
 from requests import HTTPError
 
-from common.services.lazybytes_service import LazyBytes, LazyBytesService
-from common.settings import settings
+from worker.settings import settings
 
 TIKA_TIMEOUT_SECONDS = 1200
 TIKA_METADATA_JOIN_CHAR = ","

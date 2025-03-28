@@ -1,9 +1,10 @@
 import logging
 
-from common.dependencies import get_websocket_service
 from common.messages.messages import PubSubMessage
-from common.services.websocket_service import WebsocketService
 from fastapi import APIRouter, Depends, WebSocket, WebSocketDisconnect
+
+from api.dependencies import get_websocket_service
+from api.services.websocket_service import WebsocketService
 
 router = APIRouter()
 

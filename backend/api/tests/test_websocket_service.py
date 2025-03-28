@@ -2,12 +2,12 @@ from asyncio import Barrier, Future
 from unittest.mock import AsyncMock
 
 import pytest
-from fastapi import WebSocket, WebSocketDisconnect
-
 from common.dependencies import get_pubsub_service
 from common.messages.messages import MessageError, MessageNoop, PubSubMessage
 from common.messages.pubsub_service import PubSubService, _PubSubAsync
-from common.services.websocket_service import WebsocketService
+from fastapi import WebSocket, WebSocketDisconnect
+
+from api.services.websocket_service import WebsocketService
 
 
 @pytest.fixture(name="pubsub_service_mocks")

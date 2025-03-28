@@ -3,7 +3,7 @@ from tempfile import NamedTemporaryFile
 
 import pytest
 from api.routers.files import CONTENT_PREVIEW_LENGTH, FileUploadResponse
-from common.services.tika_service import TIKA_MAX_TEXT_SIZE
+from worker.services.tika_service import TIKA_MAX_TEXT_SIZE
 
 from utils.consts import ASSETS_DIR
 from utils.fetch_from_api import (

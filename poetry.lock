@@ -603,8 +603,6 @@ fastapi = "^0.115.12"
 filelock = "^3.14.0"
 libretranslatepy = "^2.1.4"
 luqum = "^0.13.0"
-minio = "^7.2.12"
-ollama = "^0.4.3"
 pycryptodome = "^3.20.0"
 pydantic = "^2.7.1"
 pydantic-mongo = "^2.3.0"
@@ -693,6 +691,7 @@ develop = true
 
 [package.dependencies]
 common = {path = "../common", develop = true}
+minio = "^7.2.12"
 watchdog = "^6.0.0"
 
 [package.source]
@@ -1113,6 +1112,7 @@ develop = true
 
 [package.dependencies]
 api = {path = "../backend/api"}
+crawler = {path = "../backend/crawler"}
 debugpy = "^1.8.1"
 docker = "^7.1.0"
 pytest = "^8.2.0"
@@ -3081,6 +3081,7 @@ develop = true
 blobfile = "^2.1.1"
 common = {path = "../common", develop = true}
 langchain-text-splitters = "^0.3.2"
+ollama = "^0.4.3"
 python-magic = "^0.4.27"
 requests = "^2.31.0"
 scikit-learn = "^1.5.1"

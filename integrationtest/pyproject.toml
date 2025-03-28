@@ -12,6 +12,7 @@ packages = [
 python = "^3.11"
 worker = {path = "../backend/worker"}
 api = {path = "../backend/api"}
+crawler = {path = "../backend/crawler"}
 pytest = "^8.2.0"
 debugpy = "^1.8.1"
 requests = "^2.31.0"

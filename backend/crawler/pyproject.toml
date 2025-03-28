@@ -11,6 +11,7 @@ packages = [{ include = "crawler" }]
 python = "^3.11"
 common = { path = "../common", develop = true }
 watchdog = "^6.0.0"
+minio = "^7.2.12"
 
 [tool.poetry.group.dev.dependencies]
 debugpy = "^1.8.1"

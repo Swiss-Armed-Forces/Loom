@@ -4,8 +4,8 @@ from pathlib import Path
 from tempfile import NamedTemporaryFile
 
 import pytest
-from common.services.tika_service import TIKA_MAX_TEXT_SIZE, TIKA_UNPACK_MAX_SIZE
 from common.utils.random_file import random_file, random_file_printable
+from worker.services.tika_service import TIKA_MAX_TEXT_SIZE, TIKA_UNPACK_MAX_SIZE
 
 from utils.consts import ASSETS_DIR
 from utils.fetch_from_api import (

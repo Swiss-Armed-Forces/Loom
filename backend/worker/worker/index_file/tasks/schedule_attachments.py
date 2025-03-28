@@ -7,9 +7,9 @@ from common.dependencies import (
     get_lazybytes_service,
 )
 from common.file.file_repository import File
-from common.services.tika_service import TikaAttachment, TikaResult
 
 from worker.index_file.infra.file_indexing_task import FileIndexingTask
+from worker.services.tika_service import TikaAttachment, TikaResult
 
 logger = logging.getLogger(__name__)
 

@@ -7,19 +7,14 @@ from typing import Generator, Iterable
 
 from celery import chain, chord, group
 from celery.canvas import Signature
-from common.dependencies import get_celery_app, get_lazybytes_service, get_tika_service
+from common.dependencies import get_celery_app, get_lazybytes_service
 from common.file.file_repository import File
 from common.services.lazybytes_service import LazyBytes
-from common.services.tika_service import (
-    TIKA_MAX_TEXT_SIZE,
-    TikaAttachment,
-    TikaError,
-    TikaResult,
-)
 from common.utils.cache import cache
 from requests.exceptions import ConnectionError as RequestsConnectionError
 from requests.exceptions import ReadTimeout as RequestsReadTimeout
 
+from worker.dependencies import get_tika_service
 from worker.index_file.infra.file_indexing_task import FileIndexingTask
 from worker.index_file.infra.indexing_persister import IndexingPersister
 from worker.index_file.processor.extractor.archive_extractors import (
@@ -38,6 +33,12 @@ from worker.index_file.tasks.create_embedding import (
 from worker.index_file.tasks.schedule_attachments import schedule_attachments
 from worker.index_file.tasks.summarize import signature as summarize_signature
 from worker.index_file.tasks.translate import signature as translate_signature
+from worker.services.tika_service import (
+    TIKA_MAX_TEXT_SIZE,
+    TikaAttachment,
+    TikaError,
+    TikaResult,
+)
 from worker.settings import settings
 from worker.utils.persisting_task import persisting_task
 

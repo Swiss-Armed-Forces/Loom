@@ -1,7 +1,7 @@
 import io
 
 import pytest
-from common.dependencies import get_minio_client, init
+from crawler.dependencies import get_minio_client, init
 from crawler.settings import settings
 from minio import Minio
 

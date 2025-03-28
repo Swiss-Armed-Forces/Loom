@@ -1,7 +1,11 @@
 import pytest
-from common.dependencies import init, mock_init
+from api.dependencies import init as init_api_dependencies
+from common.dependencies import init as init_common_dependencies
+from common.dependencies import mock_init
 from common.services.encryption_service import AESMasterKey
 from common.settings import settings
+from crawler.dependencies import init as init_crawler_dependencies
+from worker.dependencies import init as init_worker_dependencies
 
 from utils.wipe_data import wipe_data as _wipe_data
 
@@ -14,7 +18,10 @@ def pytest_configure():
 def global_test_init():
     # Fix AES key
     settings.archive_encryption_master_key = AESMasterKey.from_fixed_key()
-    init()
+    init_common_dependencies()
+    init_crawler_dependencies()
+    init_worker_dependencies()
+    init_api_dependencies()
 
 
 @pytest.fixture(scope="class", autouse=True)

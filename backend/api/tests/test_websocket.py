@@ -1,8 +1,9 @@
 from unittest.mock import AsyncMock
 
-from common.dependencies import get_websocket_service
 from common.messages.messages import MessageNoop, PubSubMessage
 from fastapi.testclient import TestClient
+
+from api.dependencies import get_websocket_service
 
 ENDPOINT = "/v1/websocket"
 

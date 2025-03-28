@@ -8,13 +8,13 @@ from time import sleep
 from common.dependencies import (
     get_celery_app,
     get_elasticsearch,
-    get_minio_client,
     get_pubsub_service,
     get_query_builder,
     get_redis_client,
-    init,
 )
+from common.dependencies import init as init_common_dependencies
 from common.elasticsearch import init_elasticsearch
+from crawler.dependencies import get_minio_client, init
 from crawler.settings import settings as crawler_settings
 from pymongo import MongoClient
 
@@ -130,5 +130,6 @@ def _wipe_minio_buckets():
 
 
 if __name__ == "__main__":
+    init_common_dependencies()
     init()
     wipe_data()

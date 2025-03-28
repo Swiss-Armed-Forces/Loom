@@ -4,13 +4,13 @@ from typing import IO
 
 import pytest
 from common.services.lazybytes_service import InMemoryLazyBytesService
-from common.services.tika_service import TikaResult
 
 from worker.index_file.processor.extractor.archive_extractors import (
     ExtractNotSupported,
     ExtractorBase,
 )
 from worker.index_file.tasks.tika_processing import TikaExtractorFallback
+from worker.services.tika_service import TikaResult
 
 
 # Extractor stubs for testing fallback behavior

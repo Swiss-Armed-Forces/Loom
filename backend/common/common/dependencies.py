@@ -6,8 +6,6 @@ from unittest.mock import AsyncMock, MagicMock
 from celery import Celery
 from elasticsearch import Elasticsearch
 from libretranslatepy import LibreTranslateAPI  # type: ignore[import-untyped]
-from minio import Minio
-from ollama import Client
 from pymongo import MongoClient
 from redis import StrictRedis
 from redis.asyncio import StrictRedis as StrictRedisAsync
@@ -27,8 +25,6 @@ from common.services.lazybytes_service import GridFSLazyBytesService, LazyBytesS
 from common.services.query_builder import QueryBuilder
 from common.services.queues_service import QueuesService
 from common.services.task_scheduling_service import TaskSchedulingService
-from common.services.tika_service import TikaService
-from common.services.websocket_service import WebsocketService
 from common.settings import settings
 from common.task_object.root_task_information_repository import (
     RootTaskInformationRepository,
@@ -49,7 +45,6 @@ _celery_app: Celery | None = None
 _redis_client: StrictRedis | None = None
 _redis_client_async: StrictRedisAsync | None = None
 _pubsub_service: PubSubService | None = None
-_websocket_service: WebsocketService | None = None
 _queues_service: QueuesService | None = None
 _file_storage_service: FileStorageService | None = None
 _archive_repository: ArchiveRepository | None = None
@@ -62,9 +57,6 @@ _archive_scheduling_service: ArchiveSchedulingService | None = None
 _ai_scheduling_service: AiSchedulingService | None = None
 _archive_encryption_service: ArchiveEncryptionService | None = None
 _lazybytes_service: LazyBytesService | None = None
-_tika_service: TikaService | None = None
-_ollama_client: Client | None = None
-_minio_client: Minio | None = None
 
 logger = logging.getLogger(__name__)
 
@@ -106,9 +98,6 @@ def init(init_elasticsearch_documents: bool = False):
 
     global _queues_service
     _queues_service = QueuesService(str(settings.rabbit_mq_management_host))
-
-    global _websocket_service
-    _websocket_service = WebsocketService(_pubsub_service)
 
     global _file_storage_service
     _file_storage_service = FileStorageService(
@@ -165,20 +154,6 @@ def init(init_elasticsearch_documents: bool = False):
         settings.archive_encryption_master_key
     )
 
-    global _tika_service
-    _tika_service = TikaService(_lazybytes_service)
-
-    global _ollama_client
-    _ollama_client = Client(str(settings.ollama_host), timeout=settings.llm_timeout)
-
-    global _minio_client
-    _minio_client = Minio(
-        settings.minio_host,
-        settings.minio_access_key,
-        settings.minio_secret_key,
-        secure=settings.minio_secure_connection,
-    )
-
 
 # pylint: disable=too-many-statements
 def mock_init():
@@ -204,9 +179,6 @@ def mock_init():
 
     global _queues_service
     _queues_service = MagicMock(spec=QueuesService)
-
-    global _websocket_service
-    _websocket_service = MagicMock(spec=WebsocketService)
 
     global _pubsub_service
     _pubsub_service = MagicMock(spec=PubSubService)
@@ -249,15 +221,6 @@ def mock_init():
 
     global _archive_encryption_service
     _archive_encryption_service = MagicMock(spec=ArchiveEncryptionService)
-
-    global _tika_service
-    _tika_service = MagicMock(spec=TikaService)
-
-    global _ollama_client
-    _ollama_client = MagicMock(spec=Client)
-
-    global _minio_client
-    _minio_client = MagicMock(spec=Minio)
 
 
 def get_libretranslate_api() -> LibreTranslateAPI:
@@ -306,12 +269,6 @@ def get_pubsub_service() -> PubSubService:
     if _pubsub_service is None:
         raise DependencyException("Pubsub service is missing")
     return _pubsub_service
-
-
-def get_websocket_service() -> WebsocketService:
-    if _websocket_service is None:
-        raise DependencyException("Connection manager is missing")
-    return _websocket_service
 
 
 def get_file_storage_service() -> FileStorageService:
@@ -378,21 +335,3 @@ def get_lazybytes_service() -> LazyBytesService:
     if _lazybytes_service is None:
         raise DependencyException("Lazybytes Service missing")
     return _lazybytes_service
-
-
-def get_tika_service() -> TikaService:
-    if _tika_service is None:
-        raise DependencyException("Tika Service missing")
-    return _tika_service
-
-
-def get_ollama_client() -> Client:
-    if _ollama_client is None:
-        raise DependencyException("Ollama Client missing")
-    return _ollama_client
-
-
-def get_minio_client() -> Minio:
-    if _minio_client is None:
-        raise DependencyException("MinIO Client missing")
-    return _minio_client
