@@ -24,3 +24,14 @@ header.appHeader {
     position: unset;
     background-color: #31312e;
 }
+
+@media (max-width: 900px) {
+    .headerButtonLabel {
+        display: none;
+    }
+
+    .headerButtons :global(.MuiButton-startIcon) {
+        margin-right: 0;
+        margin-left: 0;
+    }
+}

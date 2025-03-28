@@ -1,4 +1,4 @@
-# ![loom logo](loom-logo-full.png)
+# ![loom logo](Frontend/src/features/common/branding/loom-logo-full-contour.svg)
 
 ## Document Search Engine
 

@@ -1,6 +1,6 @@
 .globalSearchBox {
     display: grid;
-    grid-template-columns: 1fr 200px;
+    grid-template-columns: 4fr 1fr;
     gap: 1rem;
     width: 100%;
 }

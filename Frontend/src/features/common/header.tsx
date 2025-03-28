@@ -8,6 +8,7 @@ import { Inventory, Search } from "@mui/icons-material";
 import React from "react";
 import { BackgroundStatusIndicator } from "../search/components/BackgroundStatusIndicator";
 import { BurgerMenu } from "./components/BurgerMenu";
+import { useMediaQuery } from "@mui/material";
 
 export interface Page {
     route: string;
@@ -17,6 +18,8 @@ export interface Page {
 export function Header() {
     const location = useLocation();
     const { t } = useTranslation();
+    const isMobile = useMediaQuery("(max-width:600px)");
+
     const pages: Page[] = [
         {
             route: "search",
@@ -33,11 +36,12 @@ export function Header() {
             <Toolbar className={styles.toolbar}>
                 {
                     <Link className={styles.headerBranding} to={"/"}>
-                        <LoomResponsiveLogo color={"#FFBF00"} />
+                        <LoomResponsiveLogo />
                     </Link>
                 }
-                {location.pathname === "/search" ||
-                location.pathname === "/" ? (
+                {!isMobile &&
+                (location.pathname === "/search" ||
+                    location.pathname === "/") ? (
                     <GlobalSearchBox />
                 ) : (
                     <div className="globalSearchBoxWrapperPlaceholder" />
@@ -56,12 +60,20 @@ export function Header() {
                                     : "outlined"
                             }
                         >
-                            {t(`header.${page.route}`)}
+                            <span className={styles.headerButtonLabel}>
+                                {t(`header.${page.route}`)}
+                            </span>
                         </Button>
                     ))}
                     <BurgerMenu></BurgerMenu>
                 </Box>
             </Toolbar>
+            {isMobile &&
+            (location.pathname === "/search" || location.pathname === "/") ? (
+                <Toolbar className={styles.toolbar}>
+                    <GlobalSearchBox />
+                </Toolbar>
+            ) : null}
         </AppBar>
     );
 }

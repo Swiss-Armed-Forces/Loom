@@ -29,7 +29,7 @@ import { showFileDetailDialog } from "../../common/commonSlice";
 import { ClickableFilePath } from "../components/ClickableFilePath";
 import { FileDetailViewTab, FileDialogDetailData } from "../model";
 import { useTranslation } from "react-i18next";
-import { Preview } from "@mui/icons-material";
+import { Preview, MoreVert } from "@mui/icons-material";
 import { TranslationDialog } from "../components/TranslationDialog.tsx";
 import { SummaryButton } from "../components/SummaryButton.tsx";
 import { IconButtonDownloadMenu } from "../../common/components/IconButtonDownloadMenu.tsx";
@@ -45,6 +45,7 @@ import { useInView } from "react-intersection-observer";
 import { HighlightList } from "./HighlightList.tsx";
 import { ImageDetailDialog } from "../components/ImageDetailDialog.tsx";
 import { ShareButton } from "../components/ShareButton.tsx";
+import { useMediaQuery, Menu, MenuItem } from "@mui/material";
 
 const FieldTypography = styled(Typography)<TypographyProps>`
     line-height: 1.2;
@@ -58,6 +59,9 @@ export const ResultCard = forwardRef<HTMLDivElement, ResultCardProps>(
     ({ fileId }, ref) => {
         const dispatch = useAppDispatch();
         const { t } = useTranslation();
+        const isMobile = useMediaQuery("(max-width:900px)");
+        const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+        const open = Boolean(anchorEl);
         const searchQuery = useAppSelector(selectQuery);
         const file = useAppSelector(selectFileById(fileId));
         const filePreview = file?.preview;
@@ -69,6 +73,16 @@ export const ResultCard = forwardRef<HTMLDivElement, ResultCardProps>(
 
         const [imageHashToShow, setImageHashToShow] = useState("");
         const [initialAnchor, setInitialAnchor] = useState("");
+
+        const handleMenuClick = (
+            event: React.MouseEvent<HTMLButtonElement>,
+        ) => {
+            setAnchorEl(event.currentTarget);
+        };
+
+        const handleMenuClose = () => {
+            setAnchorEl(null);
+        };
 
         useEffect(() => {
             function updateInitialAnchor() {
@@ -173,55 +187,121 @@ export const ResultCard = forwardRef<HTMLDivElement, ResultCardProps>(
                                     />
                                 }
                                 action={
-                                    <div className={styles.resultCardActions}>
-                                        <TagsList
-                                            tags={
-                                                (filePreview.tags &&
-                                                    filePreview.tags) ||
-                                                []
-                                            }
-                                            fileId={filePreview.fileId}
-                                        ></TagsList>
-                                        <TagsInput
-                                            icon_only={true}
-                                            tagsAlreadyAssignedToFile={
-                                                filePreview.tags
-                                            }
-                                            file_id={filePreview.fileId}
-                                        />
-                                        <div
-                                            className={
-                                                styles.MuiCardHeaderActionButtons
-                                            }
-                                        >
-                                            <ShareButton fileId={fileId} />
+                                    isMobile ? (
+                                        <>
                                             <IconButton
-                                                title={t(
-                                                    "generalSearchView.viewContent",
-                                                )}
-                                                onClick={() =>
-                                                    handleViewDetail({
-                                                        fileId: fileId,
-                                                    })
+                                                onClick={handleMenuClick}
+                                            >
+                                                <MoreVert />
+                                            </IconButton>
+                                            <Menu
+                                                anchorEl={anchorEl}
+                                                open={open}
+                                                onClose={handleMenuClose}
+                                            >
+                                                <MenuItem>
+                                                    <IconButton
+                                                        title={t(
+                                                            "generalSearchView.viewContent",
+                                                        )}
+                                                        onClick={() => {
+                                                            handleMenuClose();
+                                                            handleViewDetail({
+                                                                fileId,
+                                                            });
+                                                        }}
+                                                    >
+                                                        <Preview />
+                                                    </IconButton>
+                                                </MenuItem>
+                                                <MenuItem>
+                                                    <TranslationDialog
+                                                        file_id={fileId}
+                                                    />
+                                                </MenuItem>
+                                                <MenuItem>
+                                                    <SummaryButton
+                                                        file_id={fileId}
+                                                    />
+                                                </MenuItem>
+                                                <MenuItem>
+                                                    <ReIndexButton
+                                                        file_id={fileId}
+                                                    />
+                                                </MenuItem>
+                                                <MenuItem>
+                                                    <IconButtonDownloadMenu
+                                                        fileId={fileId}
+                                                    />
+                                                </MenuItem>
+                                                <MenuItem
+                                                    onClick={handleMenuClose}
+                                                >
+                                                    <UpdateVisibilityButton
+                                                        file_id={fileId}
+                                                        icon_only={true}
+                                                        fileHidden={
+                                                            filePreview.hidden
+                                                        }
+                                                    />
+                                                </MenuItem>
+                                            </Menu>
+                                        </>
+                                    ) : (
+                                        <div
+                                            className={styles.resultCardActions}
+                                        >
+                                            <TagsList
+                                                tags={filePreview.tags || []}
+                                                fileId={filePreview.fileId}
+                                            />
+                                            <TagsInput
+                                                icon_only={true}
+                                                tagsAlreadyAssignedToFile={
+                                                    filePreview.tags
+                                                }
+                                                file_id={filePreview.fileId}
+                                            />
+                                            <div
+                                                className={
+                                                    styles.MuiCardHeaderActionButtons
                                                 }
                                             >
-                                                <Preview />
-                                            </IconButton>
-                                            <TranslationDialog
-                                                file_id={fileId}
-                                            />
-                                            <SummaryButton file_id={fileId} />
-                                            <ReIndexButton file_id={fileId} />
-                                            <IconButtonDownloadMenu
-                                                fileId={fileId}
-                                            ></IconButtonDownloadMenu>
-                                            <UpdateVisibilityButton
-                                                icon_only={true}
-                                                file_id={fileId}
-                                                fileHidden={filePreview.hidden}
-                                            />
+                                                <ShareButton fileId={fileId} />
+                                                <IconButton
+                                                    title={t(
+                                                        "generalSearchView.viewContent",
+                                                    )}
+                                                    onClick={() =>
+                                                        handleViewDetail({
+                                                            fileId,
+                                                        })
+                                                    }
+                                                >
+                                                    <Preview />
+                                                </IconButton>
+                                                <TranslationDialog
+                                                    file_id={fileId}
+                                                />
+                                                <SummaryButton
+                                                    file_id={fileId}
+                                                />
+                                                <ReIndexButton
+                                                    file_id={fileId}
+                                                />
+                                                <IconButtonDownloadMenu
+                                                    fileId={fileId}
+                                                />
+                                                <UpdateVisibilityButton
+                                                    icon_only={true}
+                                                    file_id={fileId}
+                                                    fileHidden={
+                                                        filePreview.hidden
+                                                    }
+                                                />
+                                            </div>
                                         </div>
-                                    </div>
+                                    )
                                 }
                             ></CardHeader>
                             <CardContent className={styles.resultCardContent}>

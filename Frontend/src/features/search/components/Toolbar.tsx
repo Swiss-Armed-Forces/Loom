@@ -1,5 +1,10 @@
 import { Chat, BarChart, Folder, ViewStream } from "@mui/icons-material";
-import { Button, ToggleButton, ToggleButtonGroup } from "@mui/material";
+import {
+    Button,
+    ToggleButton,
+    ToggleButtonGroup,
+    useMediaQuery,
+} from "@mui/material";
 import styles from "./Toolbar.module.css";
 import {
     SearchView,
@@ -21,6 +26,7 @@ export const Toolbar = () => {
     const activeSearchView = useAppSelector(selectActiveSearchView);
     const { t } = useTranslation();
     const chatbotOpen = useAppSelector((state) => state.search.chatbotOpen);
+    const isMobile = useMediaQuery("(max-width:600px)");
 
     const toggleChatbot = () => {
         dispatch(setChatbotOpen(!chatbotOpen));
@@ -61,7 +67,7 @@ export const Toolbar = () => {
                         className={styles.toggleButton}
                     >
                         {val.icon}
-                        {t("toolbar.views." + key)}
+                        {!isMobile && t("toolbar.views." + key)}
                     </ToggleButton>
                 ))}
             </ToggleButtonGroup>
@@ -70,7 +76,7 @@ export const Toolbar = () => {
                 variant="contained"
                 onClick={toggleChatbot}
             >
-                Chatbot
+                {!isMobile && "Chatbot"}
             </Button>
         </div>
     );
