@@ -15,6 +15,7 @@ import {
     ListItemText,
     ListSubheader,
     IconButton,
+    useMediaQuery,
 } from "@mui/material";
 import { useTranslation } from "react-i18next";
 import { toast } from "react-toastify";
@@ -37,6 +38,7 @@ import { ReIndexButton } from "./ReIndexButton.tsx";
 import { SummaryButton } from "./SummaryButton.tsx";
 import { UpdateVisibilityButton } from "../../common/components/files/UpdateVisibilityStateButton.tsx";
 import { scheduleArchiveCreation } from "../../../app/api/search.ts";
+import { useEffect } from "react";
 
 export function SideMenu() {
     const numberOfResults = useAppSelector(selectNumberOfFiles);
@@ -49,6 +51,7 @@ export function SideMenu() {
     const [isMenuExpanded, setIsMenuExpanded] = useState(true);
     const [isMenuAnimationRunning, setIsMenuAnimationRunning] = useState(true);
     const dispatch = useAppDispatch();
+    const matchMedia = useMediaQuery("(min-width: 1200px)");
     const { t } = useTranslation();
 
     const handleClearQuery = () => {
@@ -90,11 +93,18 @@ export function SideMenu() {
         }, 230);
     };
 
+    useEffect(() => {
+        setIsMenuExpanded(matchMedia);
+        setIsMenuAnimationRunning(matchMedia);
+    }, [matchMedia]);
+
     return (
         <div
             className={`${styles.sideMenuContainer} ${isMenuAnimationRunning || isMenuExpanded ? styles.open : styles.closed}`}
         >
-            <div className={styles.sideMenu}>
+            <div
+                className={`${styles.sideMenu} ${!isMenuExpanded && styles.sideMenuCentered}`}
+            >
                 <List className={styles.sideMenuActions}>
                     <ListItem>
                         <IconButton

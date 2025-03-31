@@ -1,5 +1,5 @@
-import { IconButton, Menu, MenuItem } from "@mui/material";
-import { useAppDispatch, useMatchMedia } from "../../../app/hooks";
+import { IconButton, Menu, MenuItem, useMediaQuery } from "@mui/material";
+import { useAppDispatch } from "../../../app/hooks";
 import { webApiGetArchive, webApiGetArchiveEncrypted } from "../../common/urls";
 import { Delete, Download, Search, Lock } from "@mui/icons-material";
 import MenuIcon from "@mui/icons-material/Menu";
@@ -18,7 +18,7 @@ export function ArchiveActions({ archive }: ArchiveActions) {
     const dispatch = useAppDispatch();
     const navigate = useNavigate();
     const { t } = useTranslation();
-    const matchMedia = useMatchMedia(1300);
+    const matchMedia = useMediaQuery("(max-width: 1300px)");
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
 
     const handleMenuOpen = (

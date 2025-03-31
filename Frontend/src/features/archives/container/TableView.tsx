@@ -1,11 +1,11 @@
-import { Skeleton } from "@mui/material";
+import { Skeleton, useMediaQuery } from "@mui/material";
 import Table from "@mui/material/Table";
 import TableBody from "@mui/material/TableBody";
 import TableCell, { tableCellClasses } from "@mui/material/TableCell";
 import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
 import { useTranslation } from "react-i18next";
-import { useAppSelector, useMatchMedia } from "../../../app/hooks";
+import { useAppSelector } from "../../../app/hooks";
 import { selectIsLoading } from "../../common/commonSlice";
 import { selectArchives } from "../archiveSlice";
 import styles from "./TableView.module.css";
@@ -15,7 +15,7 @@ export function TableView() {
     const archives = useAppSelector(selectArchives);
     const isLoading = useAppSelector(selectIsLoading);
     const { t } = useTranslation();
-    const matchMedia = useMatchMedia(800);
+    const matchMedia = useMediaQuery("(max-width: 800px)");
 
     if (isLoading) {
         return (

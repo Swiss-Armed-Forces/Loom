@@ -8,6 +8,10 @@
     flex-direction: column;
 }
 
+.sideMenuCentered {
+    align-items: center;
+}
+
 ul.sideMenuActions > li {
     padding: 0.15rem 0.25rem;
 }

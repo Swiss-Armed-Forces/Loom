@@ -4,3 +4,9 @@
     gap: 1rem;
     width: 100%;
 }
+
+@media (max-width: 800px) {
+    .globalSearchBox {
+        grid-template-columns: 4fr 2fr;
+    }
+}

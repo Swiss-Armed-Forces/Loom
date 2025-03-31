@@ -39,6 +39,8 @@
     display: flex;
     flex-direction: row;
     gap: 1rem;
+    word-wrap: break-word;
+    word-break: break-all;
 }
 
 .resultCardHeader :global .MuiCardHeader-avatar {
@@ -59,15 +61,6 @@
 .resultCardActions {
     display: flex;
     flex-direction: row;
-}
-
-.MuiCardHeaderActionButtons {
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    @media only screen and (max-width: 768px) {
-        flex-wrap: wrap;
-    }
 }
 
 .resultCardActionsBottom {
