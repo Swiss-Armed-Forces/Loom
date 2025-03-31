@@ -215,13 +215,13 @@ minio:
   ingress:
     enabled: true
     annotations:
-      traefik.ingress.kubernetes.io/router.entrypoints: web
+      traefik.ingress.kubernetes.io/router.entrypoints: web,websecure
     hosts:
       - minio-api
   consoleIngress:
     enabled: true
     annotations:
-      traefik.ingress.kubernetes.io/router.entrypoints: web
+      traefik.ingress.kubernetes.io/router.entrypoints: web,websecure
     hosts:
       - minio
   rootUser: minioadmin
