@@ -7,8 +7,6 @@ variables:
   GIT_STRATEGY: fetch
   # without this the runner lacks access to the target branch
   GIT_DEPTH: "0"
-  # Skip cloning lfs data
-  GIT_LFS_SKIP_SMUDGE: "1"
   # enable service debugging
   # CI_DEBUG_SERVICES: "true"
 
@@ -85,9 +83,6 @@ buildenv_nix-dind:
 
 build_images:
   stage: build
-  variables:
-    # Clone lfs data
-    GIT_LFS_SKIP_SMUDGE: "0"
   only:
     - main
     - tags
@@ -101,9 +96,6 @@ build_images:
 
 build_dev_images:
   stage: build
-  variables:
-    # Clone lfs data
-    GIT_LFS_SKIP_SMUDGE: "0"
   only:
     - main
     - tags
@@ -112,9 +104,6 @@ build_dev_images:
 
 build_integrationtest_images:
   stage: build
-  variables:
-    # Clone lfs data
-    GIT_LFS_SKIP_SMUDGE: "0"
   only:
     - main
     - tags
@@ -125,8 +114,6 @@ build_transfer_loom:
   stage: build
   when: manual
   variables:
-    # Clone lfs data
-    GIT_LFS_SKIP_SMUDGE: "0"
     SLEEP_TIME: infinity
   script:
     - devenv --verbose shell -- transfer-loom
@@ -203,9 +190,6 @@ backend_test:
 
 integrationtest:
   stage: test
-  variables:
-    # Clone lfs data
-    GIT_LFS_SKIP_SMUDGE: "0"
   script:
     - devenv --verbose shell -- sudo --background dmesg --follow > dmesg.txt
     - devenv --verbose shell -- up --integrationtest --expose "$(tailscale ip -4)"
@@ -222,8 +206,6 @@ integrationtest_debug:
   stage: test
   when: manual
   variables:
-    # Clone lfs data
-    GIT_LFS_SKIP_SMUDGE: "0"
     SLEEP_TIME: infinity
   script:
     - devenv --verbose shell -- up --integrationtest --expose "$(tailscale ip -4)" || sleep "${SLEEP_TIME}"
