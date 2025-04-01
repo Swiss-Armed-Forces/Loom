@@ -11,7 +11,7 @@
 # to contain:
 #
 # binds+=( '/var/lib/docker' )
-set -exuo pipefail
+set -euo pipefail
 
 # stop docker & bind-mounts
 sudo systemctl stop docker

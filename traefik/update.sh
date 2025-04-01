@@ -2,7 +2,7 @@
 #
 # This script downloads a specific version of the Traefik Helm chart.
 #
-set -exuo pipefail
+set -euo pipefail
 
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd)
 

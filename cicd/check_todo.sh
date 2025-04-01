@@ -10,13 +10,22 @@ check_todo()
         --no-pager \
         grep \
             -I \
+            --ignore-case \
             --line-number \
             TODO \
             -- \
-                ':!.gitlab-ci.yml' \
+                ':!devenv.nix' \
+                ':!poetry.lock' \
+                ':!backend/common/poetry.lock' \
+                ':!backend/crawler/poetry.lock' \
+                ':!backend/worker/poetry.lock' \
+                ':!backend/api/poetry.lock' \
+                ':!integrationtest/poetry.lock' \
+                ':!backend/common/pyproject.toml' \
                 ':!.pylintrc' \
                 ':!cicd/check_todo.sh' \
-                ':!backend/api/static'
+                ':!backend/api/static' \
+                ':!THIRD-PARTY-LICENSES.md'
 }
 
 check_todo

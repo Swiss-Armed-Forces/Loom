@@ -67,7 +67,7 @@ usage() {
     echo "usage: $0 [OPTIONS]"
     echo
     echo "With OPTIONS:"
-    echo "  -t   |--test                        test if frontend types are up to date"
+    echo "  -t   |--test                        test if files are up to date"
     echo "  -ppt | --post-process-typescript    post process a typescript file"
     echo "  -v   |--verbose                     make verbose"
 }

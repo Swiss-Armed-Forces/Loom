@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set -exuo pipefail
+set -euo pipefail
 
 # Check for dos2unix issues
 files_containing_dos2unix_issues="$(git ls-files -z -- . ':!:integrationtest/assets/' ':!Documentation/c4-2-container.svg' | xargs -0 -n1 dos2unix --info=c --)"

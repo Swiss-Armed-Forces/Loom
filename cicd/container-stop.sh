@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set -exou pipefail
+set -eou pipefail
 
 readarray -t containers < <(docker ps -a -q || true)
 

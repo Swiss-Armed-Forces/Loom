@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set -exou pipefail
+set -eou pipefail
 
 docker system prune \
     --all \

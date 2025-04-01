@@ -359,11 +359,23 @@ in
         set -euo pipefail
         cd "''${DEVENV_ROOT}"
 
+        echo "[*] Running lint.sh"
         ./cicd/lint.sh
+
+        echo "[*] Running check-syntax.sh"
         ./cicd/check-syntax.sh
+
+        echo "[*] Checking for whitspace errors"
         ./cicd/check_whitespace_errors.sh
+
+        echo "[*] Checking for dos2unix errors"
         ./cicd/check_dos2unix_errors.sh
+
+        echo "[*] Checking for leftover TODO's"
         ./cicd/check_todo.sh
+
+        echo "[*] Checking THIRD-PARTY-LICENSES.md"
+        ./cicd/generate_third_party_licenses.sh --test
 
         echo "[*] Linting successful!"
       )
@@ -541,6 +553,19 @@ in
         cd "''${DEVENV_ROOT}"
 
         ./cicd/generate_frontend_api.sh \
+          "''${@}"
+      )
+    '';
+  };
+
+  scripts.third-party-licenses-generate = {
+    description = "Generate THIRD-PARTY-LICENSES.md";
+    exec = ''
+      (
+        set -euo pipefail
+        cd "''${DEVENV_ROOT}"
+
+        ./cicd/generate_third_party_licenses.sh \
           "''${@}"
       )
     '';
