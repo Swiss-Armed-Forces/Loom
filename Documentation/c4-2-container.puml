@@ -40,7 +40,7 @@ System_Boundary(loom, "Loom") {
 
         Container(rspamd, "Rspamd", "Spam Filter", "Filters out spam messages from Traefik")
         Container(frontend, "Frontend", "React, Material UI, Redux", "SPA, provides user interaction", $sprite="react")
-        Container(libretranslate, "Libretranslate", "Python", "Translates files to English", $sprite="python")
+        Container(translate, "Translate", "Python", "Translation service", $sprite="python")
 
         together {
             ContainerQueue(rabbit, "Message Queue", "Rabbit MQ", "Used as celery message broker", $sprite="rabbitmq")
@@ -92,7 +92,7 @@ Rel(crawler, es, "Writes data")
 Rel(api, mongo, "Stores & Loads files / archives")
 Rel(api, celery, "Schedules Tasks")
 Rel(api, es, "Reads / Writes data")
-Rel(api, libretranslate, "Fetches translatable languages")
+Rel(api, translate, "Fetches translatable languages")
 
 
 Rel(celery, worker, "Sends tasks")
@@ -103,7 +103,7 @@ Rel(celery, redis, "Stores tasks")
 
 Rel(worker, es, "Persists data")
 Rel(worker, tika, "Analyzes files")
-Rel_U(worker, libretranslate, "Translates files")
+Rel_U(worker, translate, "Translates files")
 
 Rel_L(flower, celery, "Displays tasks", "HTTP/5555")
 

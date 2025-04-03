@@ -174,7 +174,7 @@ Multiple services that are useful for production and development purposes are st
 | Mongo Express  | [http://mongo-web.loom](http://mongo-web.loom)             | Manage the mongo DB                           |                                               |
 | RedisInsight   | [http://redis-web-ui.loom](http://redis-web-ui.loom)       | Manage the redis DB                           | connect to `redis:6379`                       |
 | Apache tika    | [http://tika.loom](http://tika.loom)                       | Tika engine                                   |                                               |
-| Libretranslate | [http://libretranslate.loom](http://libretranslate.loom)   | Libretranslate engine                         |                                               |
+| Translate      | [http://translate.loom](http://translate.loom)             | Translation service powered by LibreTranslate |                                               |
 | Rspamd         | [http://rspamd.loom](http://rspamd.loom)                   | Rspamd spam detection engine                  |                                               |
 | cAdvisor       | [http://cadvisor.loom](http://cadvisor.loom)               | Resource usgage and performance of containers |                                               |
 | Prometheus     | [http://prometheus.loom](http://prometheus.loom)           | Monitoring system & time series database      |                                               |

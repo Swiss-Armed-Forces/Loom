@@ -14,7 +14,7 @@ spec:
   dnsNames:
     - frontend.{{ .Values.domain }}
     - api.{{ .Values.domain }}
-    - libretranslate.{{ .Values.domain }}
+    - translate.{{ .Values.domain }}
     - flower.{{ .Values.domain }}
     - rabbit.{{ .Values.domain }}
     - prometheus.{{ .Values.domain }}

@@ -21,7 +21,7 @@ function getHost(host: string): URL {
 }
 
 export const flowerHost = getHost("flower");
-export const libretranslateHost = getHost("libretranslate");
+export const translateHost = getHost("translate");
 export const roundcubeHost = getHost("roundcube");
 export const minioHost = getHost("minio");
 export const apiHost = getHost("api");

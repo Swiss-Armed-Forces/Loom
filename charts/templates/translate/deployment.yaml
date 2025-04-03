@@ -1,0 +1,50 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "app.fullname" . }}-translate
+  labels:
+    {{- include "app.labels.standard" . | nindent 4 }}
+    app.kubernetes.io/component: translate
+spec:
+  replicas: {{ .Values.translate.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ include "app.name" . }}-translate
+  template:
+    metadata:
+      labels:
+        app: {{ include "app.name" . }}-translate
+    spec:
+      containers:
+        - name: translate
+          image: {{ .Values.image.registry }}/{{ .Values.translate.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) .Values.translate.image.tag }}
+          ports:
+            - name: translate
+              containerPort: {{ .Values.translate.service.port }}
+          {{- if .Values.translate.readinessProbe.enabled }}
+          readinessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - python scripts/healthcheck.py
+            initialDelaySeconds: {{ default 0 .Values.translate.readinessProbe.initialDelaySeconds }}
+            timeoutSeconds: {{ default 10 .Values.translate.readinessProbe.timeoutSeconds }}
+            periodSeconds: {{ default 20 .Values.translate.readinessProbe.periodSeconds }}
+            failureThreshold: {{ default 3 .Values.translate.readinessProbe.failureThreshold }}
+          {{- end }}
+          {{- if .Values.translate.livenessProbe.enabled }}
+          livenessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - python scripts/healthcheck.py
+            initialDelaySeconds: {{ default 0 .Values.translate.livenessProbe.initialDelaySeconds }}
+            timeoutSeconds: {{ default 10 .Values.translate.livenessProbe.timeoutSeconds }}
+            periodSeconds: {{ default 20 .Values.translate.livenessProbe.periodSeconds }}
+            failureThreshold: {{ default 6 .Values.translate.livenessProbe.failureThreshold }}
+          {{- end }}
+          {{- if .Values.translate.resources }}
+          resources: {{- toYaml .Values.translate.resources | nindent 12 }}
+          {{- end }}

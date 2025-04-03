@@ -20,7 +20,7 @@ LOOM_HOSTS=(
     "rspamd-worker"
     "rabbit-amqp"
     "tika"
-    "libretranslate"
+    "translate"
     "mongodb"
     "prometheus"
     "grafana"

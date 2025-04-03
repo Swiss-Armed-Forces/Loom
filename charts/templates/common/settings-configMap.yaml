@@ -28,7 +28,7 @@ data:
     celery_backend_host: redis://{{ include "app.fullname" . }}-redis:{{ .Values.redis.service.port }}/0?protocol=3
     tika_server_host: http://{{ include "app.fullname" . }}-tika:{{ .Values.tika.service.port }}
     rspam_host: http://{{ include "app.fullname" . }}-rspamd:{{ .Values.rspamd.worker.service.port }}
-    libretranslate_host: http://{{ include "app.fullname" . }}-libretranslate:{{ .Values.libretranslate.service.port }}
+    translate_host: http://{{ include "app.fullname" . }}-translate:{{ .Values.translate.service.port }}
     ollama_host: http://{{ include "app.fullname" . }}-ollama:{{ .Values.ollama.service.port }}
     api_host: http://{{ include "app.fullname" . }}-api:{{ .Values.api.service.port }}
     ws_host: ws://{{ include "app.fullname" . }}-api:{{ .Values.api.service.port }}

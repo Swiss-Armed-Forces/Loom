@@ -184,7 +184,7 @@ grafana:
   livenessProbe:
     enabled: true
 
-libretranslate:
+translate:
   replicaCount: 1
   image:
     repository: swiss-armed-forces/cyber-command/cea/loom/libretranslate

@@ -200,9 +200,9 @@ By following these steps, you should be able to upload archives and individual f
 - Failed tasks can be found by checking the alert in the top right corner of Loom or on the statistics page.
 - On the statistics page, you can sort tasks into "stats" and check for any failures.
 
-### Open Libretranslate and translate some text to French
+### Open Translate and translate some text to French
 
-- To open Libretranslate, click on the menu button at the top right and select "Libretranslate".
+- To open Translate, click on the menu button at the top right and select "Translate".
 - You can type in text to be translated and specify the language or let it auto-detect.
 - You can also upload a file for translation.
 
@@ -216,13 +216,13 @@ Here is a beginner's guide that a developer could use:
 
 **Checking Failed Tasks and Translating Text**
 
-As a developer, you may need to check for failed tasks or translate text using Libretranslate. Here are the basic steps:
+As a developer, you may need to check for failed tasks or translate text using Translate. Here are the basic steps:
 
 1. **Check for Failed Tasks**
    - Check the alert in the top right corner of Loom or on the statistics page.
    - On the statistics page, sort tasks into "stats" and check for any failures.
-2. **Translate Text with Libretranslate**
-   - Open Libretranslate by clicking on the menu button at the top right and selecting "Libretranslate".
+2. **Translate Text with Translate**
+   - Open Translate by clicking on the menu button at the top right and selecting "Translate".
    - Type in text to be translated and specify the language or let it auto-detect.
    - You can also upload a file for translation.
 
@@ -236,7 +236,7 @@ As a developer, you may need to check for failed tasks or translate text using L
    - This will bring up a list of tasks, with the default number displayed being 15 at a time.
    - You can sort and filter this list to view different types of tasks.
 
-Note: The above guide is based on the provided question document. However, please note that the actual steps may vary depending on the specific version or setup of Loom, Libretranslate, or Flower.
+Note: The above guide is based on the provided question document. However, please note that the actual steps may vary depending on the specific version or setup of Loom, Translate, or Flower.
 
 ### Find the file in ElasticSearch
 

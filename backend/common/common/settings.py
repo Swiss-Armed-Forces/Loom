@@ -49,7 +49,7 @@ class Settings(BaseSettings):
     celery_backend_host: AnyUrl = AnyUrl(f"redis://redis.{DOMAIN}/0?protocol=3")
     max_file_size: int = 500_000_000  # 500 MB, because of rabbit
     rspam_host: AnyHttpUrl = AnyHttpUrl(f"http://rspamd-worker.{DOMAIN}")
-    libretranslate_host: AnyHttpUrl = AnyHttpUrl(f"http://libretranslate.{DOMAIN}")
+    translate_host: AnyHttpUrl = AnyHttpUrl(f"http://translate.{DOMAIN}")
     imap_host: AnyUrl = AnyUrl(f"imap://dovecot.{DOMAIN}")
     imap_user: str = "user"
     imap_password: str = "pass"

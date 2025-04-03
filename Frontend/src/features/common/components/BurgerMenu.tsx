@@ -24,7 +24,7 @@ import {
     elasticVueHost,
     flowerHost,
     grafanaHost,
-    libretranslateHost,
+    translateHost,
     minioHost,
     mongoWebHost,
     ollamafrontendHost,
@@ -50,8 +50,8 @@ export function BurgerMenu() {
 
     const menuItems = [
         {
-            link: libretranslateHost,
-            text: "Libretranslate",
+            link: translateHost,
+            text: "Translate",
             icon: <TranslateOutlinedIcon />,
         },
         {

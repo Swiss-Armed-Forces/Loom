@@ -104,7 +104,7 @@ class _EsLibreTranslateTranslations(InnerDoc):
             lang["code"]
             # Since this is run at import-time, we can not use the dependency module here
             # to fetch a LibreTranslateAPI instance.
-            for lang in LibreTranslateAPI(str(settings.libretranslate_host)).languages()
+            for lang in LibreTranslateAPI(str(settings.translate_host)).languages()
         ]
     except (URLError, JSONDecodeError):
         # Raised when libretranslate isn't available, for example while running unit-tests

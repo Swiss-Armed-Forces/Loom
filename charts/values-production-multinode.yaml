@@ -102,7 +102,7 @@ grafana:
 fluentd:
   enabled: false
 
-libretranslate:
+translate:
   resources:
     limits:
       nvidia.com/gpu: 1

@@ -66,7 +66,7 @@ def init(init_elasticsearch_documents: bool = False):
     logger.info("Initializes global dependencies")
 
     global _libretranslate_api
-    _libretranslate_api = LibreTranslateAPI(str(settings.libretranslate_host))
+    _libretranslate_api = LibreTranslateAPI(str(settings.translate_host))
 
     global _query_builder
     _query_builder = QueryBuilder(_libretranslate_api)
