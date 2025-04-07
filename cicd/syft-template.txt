@@ -1,0 +1,5 @@
+| Package | Version | License | Found by |
+| ------- | --------| ------- | -------- |
+{{- range .artifacts}}
+| {{.name}} | {{.version}} | {{ $first := true }}{{ range .licenses }}{{ if .spdxExpression }}{{ if not $first }}, {{ end }}{{ .spdxExpression }}{{ $first = false }}{{ end }}{{ end }} | {{.foundBy}} |
+{{- end}}

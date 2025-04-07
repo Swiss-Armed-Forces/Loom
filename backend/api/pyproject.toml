@@ -15,10 +15,10 @@ common = {path = "../common", develop = true}
 fastapi = "^0.115.12"
 uvicorn = "^0.29.0"
 python-multipart="^0.0.9"
-websockets = "^12.0"
 types-redis = "^4.6.0.20240425"
 numpy = "^1.26.4"
 scikit-learn = "^1.4.2"
+websockets = "^13.0"
 
 [tool.poetry.group.dev.dependencies]
 debugpy = "^1.8.1"

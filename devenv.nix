@@ -38,6 +38,16 @@ in
   # toggle CI/CD mode
   env.cicd = lib.mkDefault false;
 
+  # fix locals
+  env.LC_ALL = "C";
+  env.LANG = "C";
+  env.LC_CTYPE = "C";
+  env.LC_COLLATE = "C";
+  env.LC_MONETARY = "C";
+  env.LC_LC_NUMERIC = "C";
+  env.LC_TIME = "C";
+  env.LC_MESSAGES = "C";
+
   # https://devenv.sh/packages/
   packages =
     with pkgs-stable;
@@ -63,10 +73,12 @@ in
       kubectl
       skaffold
       kubernetes-helm
-      minio-client
 
       # for frontend-api-generate
       jre
+
+      # for software bill of materials (SBOM)
+      syft
 
       # for unit testing
       libpst
@@ -76,7 +88,7 @@ in
     ]
     #
     # The following dependencies are made available
-    # for interactive devenv's only. Which mean's they
+    # for interactive devenv's only. Which means they
     # won't be available in the cicd pipeline
     #
     ++ (pkgs.lib.optionals (!config.env.cicd) [
@@ -85,6 +97,9 @@ in
 
       # k8s
       k9s
+
+      # minio
+      minio-client
 
       # connect to CiCd runners
       tailscale
@@ -374,9 +389,6 @@ in
         echo "[*] Checking for leftover TODO's"
         ./cicd/check_todo.sh
 
-        echo "[*] Checking THIRD-PARTY-LICENSES.md"
-        ./cicd/generate_third_party_licenses.sh --test
-
         echo "[*] Linting successful!"
       )
     '';
@@ -566,6 +578,19 @@ in
         cd "''${DEVENV_ROOT}"
 
         ./cicd/generate_third_party_licenses.sh \
+          "''${@}"
+      )
+    '';
+  };
+
+  scripts.test-git-file-changed = {
+    description = "Test if a git file was changed";
+    exec = ''
+      (
+        set -euo pipefail
+        cd "''${DEVENV_ROOT}"
+
+        ./cicd/test_git_file_changed.sh \
           "''${@}"
       )
     '';

@@ -202,6 +202,21 @@ integrationtest:
     expire_in: 1 week
     when: always
 
+artifacts:
+  stage: test
+  script:
+    - devenv --verbose shell -- up --expose "$(tailscale ip -4)"
+    - devenv --verbose shell -- frontend-api-generate
+    - devenv --verbose shell -- third-party-licenses-generate
+    - devenv --verbose shell -- test-git-file-changed
+  artifacts:
+    name: generated artifacts
+    paths:
+      - Frontend/src/app/api/generated
+      - THIRD-PARTY-LICENSES.md
+    expire_in: 1 week
+    when: always
+
 integrationtest_debug:
   stage: test
   when: manual

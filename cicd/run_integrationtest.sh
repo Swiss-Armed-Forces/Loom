@@ -32,10 +32,6 @@ echo "[*] Start fetching pod logs"
     --suffix "-first" \
     --follow
 
-echo "[*] Generate frontend API"
-"${SCRIPT_DIR}/generate_frontend_api.sh" \
-    --test
-
 echo "[*] Running integrationtests"
 poetry run \
     pytest \

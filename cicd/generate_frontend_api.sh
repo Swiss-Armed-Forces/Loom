@@ -8,7 +8,6 @@ OPENAPI_GENERATOR_CONFIG="${GIT_TOPLEVEL}/openapitools.json"
 FRONTEND_API_DIR="${GIT_TOPLEVEL}/Frontend/src/app/api/generated"
 API_URL="http://api.loom"
 
-DO_TEST=false
 VERBOSE=false
 ACTION="generate_frontend_api"
 
@@ -54,20 +53,10 @@ post_process_typescript() {
         "${@}"
 }
 
-test_if_files_changed() {
-    changes=$(git status --porcelain=v1 -- "${FRONTEND_API_DIR}" 2>/dev/null)
-    if [[ -n "${changes}" ]]; then
-        echo >&2 "${changes}"
-        echo >&2 "[*] Frontend api is not up to date"
-        exit 1
-    fi
-}
-
 usage() {
     echo "usage: $0 [OPTIONS]"
     echo
     echo "With OPTIONS:"
-    echo "  -t   |--test                        test if files are up to date"
     echo "  -ppt | --post-process-typescript    post process a typescript file"
     echo "  -v   |--verbose                     make verbose"
 }
@@ -78,9 +67,6 @@ while [[ $# -gt 0 ]]; do
     -h | --help)
         usage
         exit 0
-        ;;
-    -t | --test)
-        DO_TEST=true
         ;;
     -ppt | --post-process-typescript)
         ACTION="post_process_typescript"
@@ -105,7 +91,3 @@ if [[ "${VERBOSE}" = true ]]; then
 fi
 
 "${ACTION}" "${ARGS[@]}"
-
-if [[ "${DO_TEST}" = true ]]; then
-    test_if_files_changed
-fi

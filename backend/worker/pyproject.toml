@@ -14,7 +14,6 @@ common = {path = "../common", develop=true}
 python-magic = "^0.4.27"
 stream-zip = "^0.0.71"
 requests = "^2.31.0"
-tiktoken = "^0.7.0"
 blobfile = "^2.1.1"
 scikit-learn = "^1.5.1"
 langchain-text-splitters = "^0.3.2"
