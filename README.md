@@ -37,6 +37,16 @@ into English.
 * **🔗 REST API:** Seamlessly integrate Loom's powerful search and other functionalities
 into your existing applications and workflows through our comprehensive REST API.
 
+## ⚠️ Security
+
+Loom is not intended for public exposure. Its attack model assumes that anyone with access
+to any component might also directly access the data, file system, or infrastructure. Loom
+does not provide authentication, authorization, or user isolation-these must be managed
+externally. None of its components are designed to be secure for unknown audiences, and the
+risk of injections or code execution is high for anyone with access.
+
+**Never expose Loom to the internet without an additional authorization layer.**
+
 ## 🛠️ Installation
 
 This section provides instructions for setting up Loom in a production-like environment.

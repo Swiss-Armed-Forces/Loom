@@ -1038,11 +1038,13 @@ The complete source code for Traefik is publicly available at [https://github.co
 | click-repl | 0.3.0 | MIT | python-installed-package-cataloger |
 | common | 0.1.0 | MIT | python-installed-package-cataloger |
 | coreutils | 9.1-1 | BSD-4-Clause-UC, FSFULLR, GFDL-1.3-only, GPL-3.0-only, GPL-3.0-or-later, ISC | dpkg-db-cataloger |
+| coverage | 7.6.12 | Apache-2.0 | python-installed-package-cataloger |
 | cryptography | 44.0.2 | Apache-2.0 OR BSD-3-Clause | python-installed-package-cataloger |
 | dash | 0.5.12-2 | BSD-3-Clause, BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
 | debconf | 1.5.82 | BSD-2-Clause | dpkg-db-cataloger |
 | debian-archive-keyring | 2023.3+deb12u1 |  | dpkg-db-cataloger |
 | debianutils | 5.7-0.5~deb12u1 | GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
+| debugpy | 1.8.13 | MIT | python-installed-package-cataloger |
 | diffutils | 1:3.8-4 | FSFAP, FSFULLR, GFDL-1.3-only, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, X11 | dpkg-db-cataloger |
 | dnspython | 2.7.0 | ISC | python-installed-package-cataloger |
 | dpkg | 1.21.22 | BSD-2-Clause, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
@@ -1062,6 +1064,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | idna | 3.10 |  | python-installed-package-cataloger |
 | importlib-metadata | 8.0.0 | Apache-2.0 | python-installed-package-cataloger |
 | inflect | 7.3.1 | MIT | python-installed-package-cataloger |
+| iniconfig | 2.0.0 | MIT | python-installed-package-cataloger |
 | init-system-helpers | 1.65.2 | BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
 | jaraco-collections | 5.1.0 | MIT | python-installed-package-cataloger |
 | jaraco-context | 5.3.0 | MIT | python-installed-package-cataloger |
@@ -1147,11 +1150,13 @@ The complete source code for Traefik is publicly available at [https://github.co
 | numpy | 1.26.4 |  | python-installed-package-cataloger |
 | openssl | 3.0.15-1~deb12u1 | Apache-2.0, GPL-1.0-only, GPL-1.0-or-later | dpkg-db-cataloger |
 | packaging | 24.2 |  | python-installed-package-cataloger |
+| packaging | 24.2 |  | python-installed-package-cataloger |
 | passwd | 1:4.13+dfsg1-1+b1 | BSD-3-Clause, GPL-1.0-only, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
 | perl-base | 5.36.0-7+deb12u1 | Artistic-2.0, BSD-3-Clause, GPL-1.0-only, GPL-1.0-or-later, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.1-only, Zlib | dpkg-db-cataloger |
 | pip | 24.0 | MIT | python-installed-package-cataloger |
 | pip | 25.0.1 | MIT | python-installed-package-cataloger |
 | platformdirs | 4.2.2 | MIT | python-installed-package-cataloger |
+| pluggy | 1.5.0 | MIT | python-installed-package-cataloger |
 | ply | 3.11 |  | python-installed-package-cataloger |
 | prompt-toolkit | 3.0.50 |  | python-installed-package-cataloger |
 | pycparser | 2.22 | BSD-3-Clause | python-installed-package-cataloger |
@@ -1161,6 +1166,9 @@ The complete source code for Traefik is publicly available at [https://github.co
 | pydantic-mongo | 2.3.0 | MIT | python-installed-package-cataloger |
 | pydantic-settings | 2.8.1 | MIT | python-installed-package-cataloger |
 | pymongo | 4.11.2 |  | python-installed-package-cataloger |
+| pytest | 8.3.5 | MIT | python-installed-package-cataloger |
+| pytest-cov | 5.0.0 | MIT | python-installed-package-cataloger |
+| pytest-mock | 3.14.0 | MIT | python-installed-package-cataloger |
 | python | 3.11.11 |  | binary-classifier-cataloger |
 | python-dateutil | 2.9.0.post0 |  | python-installed-package-cataloger |
 | python-dotenv | 1.0.1 | BSD-3-Clause | python-installed-package-cataloger |
@@ -1255,6 +1263,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | comerr-dev | 2.1-1.47.0-2 | Apache-2.0, Apache-2.0, BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later, ISC, Kazlib, LGPL-2.0-only, Latex2e | dpkg-db-cataloger |
 | common | 0.1.0 | MIT | python-installed-package-cataloger |
 | coreutils | 9.1-1 | BSD-4-Clause-UC, FSFULLR, GFDL-1.3-only, GPL-3.0-only, GPL-3.0-or-later, ISC | dpkg-db-cataloger |
+| coverage | 7.6.12 | Apache-2.0 | python-installed-package-cataloger |
 | cpp | 4:12.2.0-3 | GPL-2.0-only | dpkg-db-cataloger |
 | cpp-12 | 12.2.0-14 | GFDL-1.2-only, GPL-2.0-only, GPL-3.0-only | dpkg-db-cataloger |
 | cryptography | 44.0.2 | Apache-2.0 OR BSD-3-Clause | python-installed-package-cataloger |
@@ -1263,10 +1272,12 @@ The complete source code for Traefik is publicly available at [https://github.co
 | debconf | 1.5.82 | BSD-2-Clause | dpkg-db-cataloger |
 | debian-archive-keyring | 2023.3+deb12u1 |  | dpkg-db-cataloger |
 | debianutils | 5.7-0.5~deb12u1 | GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
+| debugpy | 1.8.13 | MIT | python-installed-package-cataloger |
 | default-libmysqlclient-dev | 1.1.0 | GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
 | diffutils | 1:3.8-4 | FSFAP, FSFULLR, GFDL-1.3-only, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, X11 | dpkg-db-cataloger |
 | dirmngr | 2.2.40-1.1 | BSD-3-Clause, CC0-1.0, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
 | dnspython | 2.7.0 | ISC | python-installed-package-cataloger |
+| docker | 7.1.0 | Apache-2.0 | python-installed-package-cataloger |
 | dpkg | 1.21.22 | BSD-2-Clause, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
 | dpkg-dev | 1.21.22 | BSD-2-Clause, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
 | e2fsprogs | 1.47.0-2 | Apache-2.0, Apache-2.0, BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later, ISC, Kazlib, LGPL-2.0-only, Latex2e | dpkg-db-cataloger |
@@ -1277,6 +1288,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | file | 1:5.44-3 | BSD-2-Clause | dpkg-db-cataloger |
 | filelock | 3.17.0 | Unlicense | python-installed-package-cataloger |
 | findutils | 4.9.0-4 | BSD-3-Clause, FSFAP, FSFULLR, GFDL-1.3-only, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, ISC, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, X11 | dpkg-db-cataloger |
+| flower | 2.0.1 |  | python-installed-package-cataloger |
 | fontconfig | 2.14.1-4 |  | dpkg-db-cataloger |
 | fontconfig-config | 2.14.1-4 |  | dpkg-db-cataloger |
 | fonts-dejavu-core | 2.37-6 | GPL-2.0-only, GPL-2.0-or-later, Bitstream-Vera | dpkg-db-cataloger |
@@ -1310,6 +1322,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | hostname | 3.23+nmu1 | GPL-2.0-only | dpkg-db-cataloger |
 | httpcore | 1.0.7 | BSD-3-Clause | python-installed-package-cataloger |
 | httpx | 0.28.1 | BSD-3-Clause | python-installed-package-cataloger |
+| humanize | 4.12.1 | MIT | python-installed-package-cataloger |
 | icu-devtools | 72.1-3 | GPL-3.0-only, MIT | dpkg-db-cataloger |
 | idna | 3.10 |  | python-installed-package-cataloger |
 | imagemagick | 8:6.9.11.60+dfsg-1.6+deb12u2 | GPL-1.0-only, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, ImageMagick, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
@@ -1317,11 +1330,13 @@ The complete source code for Traefik is publicly available at [https://github.co
 | imagemagick-6.q16 | 8:6.9.11.60+dfsg-1.6+deb12u2 | GPL-1.0-only, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, ImageMagick, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
 | importlib-metadata | 8.0.0 | Apache-2.0 | python-installed-package-cataloger |
 | inflect | 7.3.1 | MIT | python-installed-package-cataloger |
+| iniconfig | 2.0.0 | MIT | python-installed-package-cataloger |
 | init-system-helpers | 1.65.2 | BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
 | jaraco-collections | 5.1.0 | MIT | python-installed-package-cataloger |
 | jaraco-context | 5.3.0 | MIT | python-installed-package-cataloger |
 | jaraco-functools | 4.0.1 | MIT | python-installed-package-cataloger |
 | jaraco-text | 3.12.1 | MIT | python-installed-package-cataloger |
+| jinja2 | 3.1.6 |  | python-installed-package-cataloger |
 | joblib | 1.4.2 |  | python-installed-package-cataloger |
 | jsonpatch | 1.33 |  | python-installed-package-cataloger |
 | jsonpointer | 3.0.0 |  | python-installed-package-cataloger |
@@ -1674,6 +1689,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | libyuv0 | 0.0~git20230123.b2528b0-1 | BSD-3-Clause | dpkg-db-cataloger |
 | libzstd-dev | 1.5.4+dfsg2-5 | BSD-3-Clause, GPL-2.0-only, Zlib | dpkg-db-cataloger |
 | libzstd1 | 1.5.4+dfsg2-5 | BSD-3-Clause, GPL-2.0-only, Zlib | dpkg-db-cataloger |
+| linkify-it-py | 2.0.3 | MIT | python-installed-package-cataloger |
 | linux-libc-dev | 6.1.129-1 | BSD-2-Clause, GPL-2.0-only, LGPL-2.1-only | dpkg-db-cataloger |
 | login | 1:4.13+dfsg1-1+b1 | BSD-3-Clause, GPL-1.0-only, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
 | logsave | 1.47.0-2 | Apache-2.0, Apache-2.0, BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later, ISC, Kazlib, LGPL-2.0-only, Latex2e | dpkg-db-cataloger |
@@ -1682,8 +1698,13 @@ The complete source code for Traefik is publicly available at [https://github.co
 | m4 | 1.4.19-3 |  | dpkg-db-cataloger |
 | make | 4.3-4.1 | GPL-3.0-only, GPL-3.0-or-later | dpkg-db-cataloger |
 | mariadb-common | 1:10.11.11-0+deb12u1 | BSD-2-Clause, BSD-2-Clause, BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
+| markdown-it-py | 3.0.0 |  | python-installed-package-cataloger |
+| markupsafe | 3.0.2 |  | python-installed-package-cataloger |
 | mawk | 1.3.4.20200120-3.1 | CC-BY-3.0, GPL-2.0-only, X11 | dpkg-db-cataloger |
+| mdit-py-plugins | 0.4.2 |  | python-installed-package-cataloger |
+| mdurl | 0.1.2 |  | python-installed-package-cataloger |
 | media-types | 10.0.0 |  | dpkg-db-cataloger |
+| memray | 1.16.0 |  | python-installed-package-cataloger |
 | mercurial | 6.3.2 |  | python-installed-package-cataloger |
 | mercurial | 6.3.2-1 | GPL-2.0-only, GPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
 | mercurial-common | 6.3.2-1 | GPL-2.0-only, GPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
@@ -1713,11 +1734,15 @@ The complete source code for Traefik is publicly available at [https://github.co
 | pkgconf | 1.8.1-1 | GPL-2.0-only, GPL-2.0-or-later, ISC, X11 | dpkg-db-cataloger |
 | pkgconf-bin | 1.8.1-1 | GPL-2.0-only, GPL-2.0-or-later, ISC, X11 | dpkg-db-cataloger |
 | platformdirs | 4.2.2 | MIT | python-installed-package-cataloger |
+| platformdirs | 4.3.6 | MIT | python-installed-package-cataloger |
+| pluggy | 1.5.0 | MIT | python-installed-package-cataloger |
 | ply | 3.11 |  | python-installed-package-cataloger |
 | poppler-data | 0.4.12-1 | AGPL-3.0-or-later, GPL-2.0-only, MIT | dpkg-db-cataloger |
 | procps | 2:4.0.2-3 | GPL-2.0-only, GPL-2.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
+| prometheus-client | 0.21.1 |  | python-installed-package-cataloger |
 | prompt-toolkit | 3.0.50 |  | python-installed-package-cataloger |
 | pst-utils | 0.6.76-1 | GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
+| psutil | 7.0.0 | BSD-3-Clause | python-installed-package-cataloger |
 | pycparser | 2.22 | BSD-3-Clause | python-installed-package-cataloger |
 | pycryptodome | 3.21.0 |  | python-installed-package-cataloger |
 | pycryptodomex | 3.21.0 |  | python-installed-package-cataloger |
@@ -1725,7 +1750,14 @@ The complete source code for Traefik is publicly available at [https://github.co
 | pydantic-core | 2.27.2 | MIT | python-installed-package-cataloger |
 | pydantic-mongo | 2.3.0 | MIT | python-installed-package-cataloger |
 | pydantic-settings | 2.8.1 | MIT | python-installed-package-cataloger |
+| pygments | 2.19.1 | BSD-2-Clause | python-installed-package-cataloger |
 | pymongo | 4.11.2 |  | python-installed-package-cataloger |
+| pytest | 8.3.5 | MIT | python-installed-package-cataloger |
+| pytest-celery | 1.2.0 | BSD-3-Clause | python-installed-package-cataloger |
+| pytest-cov | 5.0.0 | MIT | python-installed-package-cataloger |
+| pytest-docker-tools | 3.1.3 | Apache-2.0 | python-installed-package-cataloger |
+| pytest-memray | 1.7.0 | Apache-2.0 | python-installed-package-cataloger |
+| pytest-mock | 3.14.0 | MIT | python-installed-package-cataloger |
 | python | 3.11.11 |  | binary-classifier-cataloger |
 | python-dateutil | 2.9.0.post0 |  | python-installed-package-cataloger |
 | python-dotenv | 1.0.1 | BSD-3-Clause | python-installed-package-cataloger |
@@ -1737,11 +1769,13 @@ The complete source code for Traefik is publicly available at [https://github.co
 | python3-minimal | 3.11.2-1+b1 |  | dpkg-db-cataloger |
 | python3.11 | 3.11.2-6+deb12u5 | GPL-2.0-only | dpkg-db-cataloger |
 | python3.11-minimal | 3.11.2-6+deb12u5 | GPL-2.0-only | dpkg-db-cataloger |
+| pytz | 2025.1 | MIT | python-installed-package-cataloger |
 | pyyaml | 6.0.2 | MIT | python-installed-package-cataloger |
 | readline-common | 8.2-1.3 | GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later | dpkg-db-cataloger |
 | redis | 5.2.1 | MIT | python-installed-package-cataloger |
 | requests | 2.32.3 | Apache-2.0 | python-installed-package-cataloger |
 | requests-toolbelt | 1.0.0 |  | python-installed-package-cataloger |
+| rich | 13.9.4 | MIT | python-installed-package-cataloger |
 | rpcsvc-proto | 1.4.3-1 | BSD-3-Clause, GPL-2.0-only, GPL-3.0-only, MIT | dpkg-db-cataloger |
 | scikit-learn | 1.6.1 |  | python-installed-package-cataloger |
 | scipy | 1.15.2 |  | python-installed-package-cataloger |
@@ -1763,12 +1797,14 @@ The complete source code for Traefik is publicly available at [https://github.co
 | tcl8.6 | 8.6.13+dfsg-2 |  | dpkg-db-cataloger |
 | tcl8.6-dev | 8.6.13+dfsg-2 |  | dpkg-db-cataloger |
 | tenacity | 9.0.0 |  | python-installed-package-cataloger |
+| textual | 2.1.2 | MIT | python-installed-package-cataloger |
 | threadpoolctl | 3.5.0 | BSD-3-Clause | python-installed-package-cataloger |
 | tk | 8.6.13 |  | dpkg-db-cataloger |
 | tk-dev | 8.6.13 |  | dpkg-db-cataloger |
 | tk8.6 | 8.6.13-2 |  | dpkg-db-cataloger |
 | tk8.6-dev | 8.6.13-2 |  | dpkg-db-cataloger |
 | tomli | 2.0.1 |  | python-installed-package-cataloger |
+| tornado | 6.4.2 | Apache-2.0 | python-installed-package-cataloger |
 | tshark | 4.0.17-0+deb12u1 | BSD-2-Clause, BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.0-or-later | dpkg-db-cataloger |
 | typeguard | 4.3.0 | MIT | python-installed-package-cataloger |
 | types-cffi | 1.16.0.20250307 | Apache-2.0 | python-installed-package-cataloger |
@@ -1780,6 +1816,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | typing-extensions | 4.12.2 |  | python-installed-package-cataloger |
 | tzdata | 2025.1 | Apache-2.0 | python-installed-package-cataloger |
 | tzdata | 2025a-0+deb12u1 |  | dpkg-db-cataloger |
+| uc-micro-py | 1.0.3 | MIT | python-installed-package-cataloger |
 | ucf | 3.0043+nmu1+deb12u1 | GPL-2.0-only | dpkg-db-cataloger |
 | unzip | 6.0-28 |  | dpkg-db-cataloger |
 | urllib3 | 2.3.0 |  | python-installed-package-cataloger |
@@ -1789,6 +1826,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | uuid-dev | 2.38.1-5+deb12u3 | BSD-3-Clause, BSD-4-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, MIT | dpkg-db-cataloger |
 | vine | 5.1.0 |  | python-installed-package-cataloger |
 | wand | 0.6.13 |  | python-installed-package-cataloger |
+| watchdog | 6.0.0 | Apache-2.0 | python-installed-package-cataloger |
 | wcwidth | 0.2.13 | MIT | python-installed-package-cataloger |
 | wget | 1.21.3-1+deb12u1 | GFDL-1.2-only, GPL-3.0-only | dpkg-db-cataloger |
 | wheel | 0.43.0 |  | python-installed-package-cataloger |
@@ -1860,6 +1898,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | comerr-dev | 2.1-1.47.0-2 | Apache-2.0, Apache-2.0, BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later, ISC, Kazlib, LGPL-2.0-only, Latex2e | dpkg-db-cataloger |
 | common | 0.1.0 | MIT | python-installed-package-cataloger |
 | coreutils | 9.1-1 | BSD-4-Clause-UC, FSFULLR, GFDL-1.3-only, GPL-3.0-only, GPL-3.0-or-later, ISC | dpkg-db-cataloger |
+| coverage | 7.6.12 | Apache-2.0 | python-installed-package-cataloger |
 | cpp | 4:12.2.0-3 | GPL-2.0-only | dpkg-db-cataloger |
 | cpp-12 | 12.2.0-14 | GFDL-1.2-only, GPL-2.0-only, GPL-3.0-only | dpkg-db-cataloger |
 | cryptography | 44.0.2 | Apache-2.0 OR BSD-3-Clause | python-installed-package-cataloger |
@@ -1868,10 +1907,12 @@ The complete source code for Traefik is publicly available at [https://github.co
 | debconf | 1.5.82 | BSD-2-Clause | dpkg-db-cataloger |
 | debian-archive-keyring | 2023.3+deb12u1 |  | dpkg-db-cataloger |
 | debianutils | 5.7-0.5~deb12u1 | GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
+| debugpy | 1.8.13 | MIT | python-installed-package-cataloger |
 | default-libmysqlclient-dev | 1.1.0 | GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
 | diffutils | 1:3.8-4 | FSFAP, FSFULLR, GFDL-1.3-only, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, X11 | dpkg-db-cataloger |
 | dirmngr | 2.2.40-1.1 | BSD-3-Clause, CC0-1.0, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
 | dnspython | 2.7.0 | ISC | python-installed-package-cataloger |
+| docker | 7.1.0 | Apache-2.0 | python-installed-package-cataloger |
 | dpkg | 1.21.22 | BSD-2-Clause, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
 | dpkg-dev | 1.21.22 | BSD-2-Clause, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
 | e2fsprogs | 1.47.0-2 | Apache-2.0, Apache-2.0, BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later, ISC, Kazlib, LGPL-2.0-only, Latex2e | dpkg-db-cataloger |
@@ -1882,6 +1923,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | file | 1:5.44-3 | BSD-2-Clause | dpkg-db-cataloger |
 | filelock | 3.17.0 | Unlicense | python-installed-package-cataloger |
 | findutils | 4.9.0-4 | BSD-3-Clause, FSFAP, FSFULLR, GFDL-1.3-only, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, ISC, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, X11 | dpkg-db-cataloger |
+| flower | 2.0.1 |  | python-installed-package-cataloger |
 | fontconfig | 2.14.1-4 |  | dpkg-db-cataloger |
 | fontconfig-config | 2.14.1-4 |  | dpkg-db-cataloger |
 | fonts-dejavu-core | 2.37-6 | GPL-2.0-only, GPL-2.0-or-later, Bitstream-Vera | dpkg-db-cataloger |
@@ -1915,6 +1957,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | hostname | 3.23+nmu1 | GPL-2.0-only | dpkg-db-cataloger |
 | httpcore | 1.0.7 | BSD-3-Clause | python-installed-package-cataloger |
 | httpx | 0.28.1 | BSD-3-Clause | python-installed-package-cataloger |
+| humanize | 4.12.1 | MIT | python-installed-package-cataloger |
 | icu-devtools | 72.1-3 | GPL-3.0-only, MIT | dpkg-db-cataloger |
 | idna | 3.10 |  | python-installed-package-cataloger |
 | imagemagick | 8:6.9.11.60+dfsg-1.6+deb12u2 | GPL-1.0-only, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, ImageMagick, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
@@ -1922,11 +1965,13 @@ The complete source code for Traefik is publicly available at [https://github.co
 | imagemagick-6.q16 | 8:6.9.11.60+dfsg-1.6+deb12u2 | GPL-1.0-only, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, ImageMagick, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
 | importlib-metadata | 8.0.0 | Apache-2.0 | python-installed-package-cataloger |
 | inflect | 7.3.1 | MIT | python-installed-package-cataloger |
+| iniconfig | 2.0.0 | MIT | python-installed-package-cataloger |
 | init-system-helpers | 1.65.2 | BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
 | jaraco-collections | 5.1.0 | MIT | python-installed-package-cataloger |
 | jaraco-context | 5.3.0 | MIT | python-installed-package-cataloger |
 | jaraco-functools | 4.0.1 | MIT | python-installed-package-cataloger |
 | jaraco-text | 3.12.1 | MIT | python-installed-package-cataloger |
+| jinja2 | 3.1.6 |  | python-installed-package-cataloger |
 | joblib | 1.4.2 |  | python-installed-package-cataloger |
 | jsonpatch | 1.33 |  | python-installed-package-cataloger |
 | jsonpointer | 3.0.0 |  | python-installed-package-cataloger |
@@ -2279,6 +2324,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | libyuv0 | 0.0~git20230123.b2528b0-1 | BSD-3-Clause | dpkg-db-cataloger |
 | libzstd-dev | 1.5.4+dfsg2-5 | BSD-3-Clause, GPL-2.0-only, Zlib | dpkg-db-cataloger |
 | libzstd1 | 1.5.4+dfsg2-5 | BSD-3-Clause, GPL-2.0-only, Zlib | dpkg-db-cataloger |
+| linkify-it-py | 2.0.3 | MIT | python-installed-package-cataloger |
 | linux-libc-dev | 6.1.129-1 | BSD-2-Clause, GPL-2.0-only, LGPL-2.1-only | dpkg-db-cataloger |
 | login | 1:4.13+dfsg1-1+b1 | BSD-3-Clause, GPL-1.0-only, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
 | logsave | 1.47.0-2 | Apache-2.0, Apache-2.0, BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later, ISC, Kazlib, LGPL-2.0-only, Latex2e | dpkg-db-cataloger |
@@ -2287,8 +2333,13 @@ The complete source code for Traefik is publicly available at [https://github.co
 | m4 | 1.4.19-3 |  | dpkg-db-cataloger |
 | make | 4.3-4.1 | GPL-3.0-only, GPL-3.0-or-later | dpkg-db-cataloger |
 | mariadb-common | 1:10.11.11-0+deb12u1 | BSD-2-Clause, BSD-2-Clause, BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
+| markdown-it-py | 3.0.0 |  | python-installed-package-cataloger |
+| markupsafe | 3.0.2 |  | python-installed-package-cataloger |
 | mawk | 1.3.4.20200120-3.1 | CC-BY-3.0, GPL-2.0-only, X11 | dpkg-db-cataloger |
+| mdit-py-plugins | 0.4.2 |  | python-installed-package-cataloger |
+| mdurl | 0.1.2 |  | python-installed-package-cataloger |
 | media-types | 10.0.0 |  | dpkg-db-cataloger |
+| memray | 1.16.0 |  | python-installed-package-cataloger |
 | mercurial | 6.3.2 |  | python-installed-package-cataloger |
 | mercurial | 6.3.2-1 | GPL-2.0-only, GPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
 | mercurial-common | 6.3.2-1 | GPL-2.0-only, GPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
@@ -2318,11 +2369,15 @@ The complete source code for Traefik is publicly available at [https://github.co
 | pkgconf | 1.8.1-1 | GPL-2.0-only, GPL-2.0-or-later, ISC, X11 | dpkg-db-cataloger |
 | pkgconf-bin | 1.8.1-1 | GPL-2.0-only, GPL-2.0-or-later, ISC, X11 | dpkg-db-cataloger |
 | platformdirs | 4.2.2 | MIT | python-installed-package-cataloger |
+| platformdirs | 4.3.6 | MIT | python-installed-package-cataloger |
+| pluggy | 1.5.0 | MIT | python-installed-package-cataloger |
 | ply | 3.11 |  | python-installed-package-cataloger |
 | poppler-data | 0.4.12-1 | AGPL-3.0-or-later, GPL-2.0-only, MIT | dpkg-db-cataloger |
 | procps | 2:4.0.2-3 | GPL-2.0-only, GPL-2.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
+| prometheus-client | 0.21.1 |  | python-installed-package-cataloger |
 | prompt-toolkit | 3.0.50 |  | python-installed-package-cataloger |
 | pst-utils | 0.6.76-1 | GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
+| psutil | 7.0.0 | BSD-3-Clause | python-installed-package-cataloger |
 | pycparser | 2.22 | BSD-3-Clause | python-installed-package-cataloger |
 | pycryptodome | 3.21.0 |  | python-installed-package-cataloger |
 | pycryptodomex | 3.21.0 |  | python-installed-package-cataloger |
@@ -2330,7 +2385,14 @@ The complete source code for Traefik is publicly available at [https://github.co
 | pydantic-core | 2.27.2 | MIT | python-installed-package-cataloger |
 | pydantic-mongo | 2.3.0 | MIT | python-installed-package-cataloger |
 | pydantic-settings | 2.8.1 | MIT | python-installed-package-cataloger |
+| pygments | 2.19.1 | BSD-2-Clause | python-installed-package-cataloger |
 | pymongo | 4.11.2 |  | python-installed-package-cataloger |
+| pytest | 8.3.5 | MIT | python-installed-package-cataloger |
+| pytest-celery | 1.2.0 | BSD-3-Clause | python-installed-package-cataloger |
+| pytest-cov | 5.0.0 | MIT | python-installed-package-cataloger |
+| pytest-docker-tools | 3.1.3 | Apache-2.0 | python-installed-package-cataloger |
+| pytest-memray | 1.7.0 | Apache-2.0 | python-installed-package-cataloger |
+| pytest-mock | 3.14.0 | MIT | python-installed-package-cataloger |
 | python | 3.11.11 |  | binary-classifier-cataloger |
 | python-dateutil | 2.9.0.post0 |  | python-installed-package-cataloger |
 | python-dotenv | 1.0.1 | BSD-3-Clause | python-installed-package-cataloger |
@@ -2342,11 +2404,13 @@ The complete source code for Traefik is publicly available at [https://github.co
 | python3-minimal | 3.11.2-1+b1 |  | dpkg-db-cataloger |
 | python3.11 | 3.11.2-6+deb12u5 | GPL-2.0-only | dpkg-db-cataloger |
 | python3.11-minimal | 3.11.2-6+deb12u5 | GPL-2.0-only | dpkg-db-cataloger |
+| pytz | 2025.1 | MIT | python-installed-package-cataloger |
 | pyyaml | 6.0.2 | MIT | python-installed-package-cataloger |
 | readline-common | 8.2-1.3 | GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later | dpkg-db-cataloger |
 | redis | 5.2.1 | MIT | python-installed-package-cataloger |
 | requests | 2.32.3 | Apache-2.0 | python-installed-package-cataloger |
 | requests-toolbelt | 1.0.0 |  | python-installed-package-cataloger |
+| rich | 13.9.4 | MIT | python-installed-package-cataloger |
 | rpcsvc-proto | 1.4.3-1 | BSD-3-Clause, GPL-2.0-only, GPL-3.0-only, MIT | dpkg-db-cataloger |
 | scikit-learn | 1.6.1 |  | python-installed-package-cataloger |
 | scipy | 1.15.2 |  | python-installed-package-cataloger |
@@ -2368,12 +2432,14 @@ The complete source code for Traefik is publicly available at [https://github.co
 | tcl8.6 | 8.6.13+dfsg-2 |  | dpkg-db-cataloger |
 | tcl8.6-dev | 8.6.13+dfsg-2 |  | dpkg-db-cataloger |
 | tenacity | 9.0.0 |  | python-installed-package-cataloger |
+| textual | 2.1.2 | MIT | python-installed-package-cataloger |
 | threadpoolctl | 3.5.0 | BSD-3-Clause | python-installed-package-cataloger |
 | tk | 8.6.13 |  | dpkg-db-cataloger |
 | tk-dev | 8.6.13 |  | dpkg-db-cataloger |
 | tk8.6 | 8.6.13-2 |  | dpkg-db-cataloger |
 | tk8.6-dev | 8.6.13-2 |  | dpkg-db-cataloger |
 | tomli | 2.0.1 |  | python-installed-package-cataloger |
+| tornado | 6.4.2 | Apache-2.0 | python-installed-package-cataloger |
 | tshark | 4.0.17-0+deb12u1 | BSD-2-Clause, BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.0-or-later | dpkg-db-cataloger |
 | typeguard | 4.3.0 | MIT | python-installed-package-cataloger |
 | types-cffi | 1.16.0.20250307 | Apache-2.0 | python-installed-package-cataloger |
@@ -2385,6 +2451,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | typing-extensions | 4.12.2 |  | python-installed-package-cataloger |
 | tzdata | 2025.1 | Apache-2.0 | python-installed-package-cataloger |
 | tzdata | 2025a-0+deb12u1 |  | dpkg-db-cataloger |
+| uc-micro-py | 1.0.3 | MIT | python-installed-package-cataloger |
 | ucf | 3.0043+nmu1+deb12u1 | GPL-2.0-only | dpkg-db-cataloger |
 | unzip | 6.0-28 |  | dpkg-db-cataloger |
 | urllib3 | 2.3.0 |  | python-installed-package-cataloger |
@@ -2394,6 +2461,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | uuid-dev | 2.38.1-5+deb12u3 | BSD-3-Clause, BSD-4-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, MIT | dpkg-db-cataloger |
 | vine | 5.1.0 |  | python-installed-package-cataloger |
 | wand | 0.6.13 |  | python-installed-package-cataloger |
+| watchdog | 6.0.0 | Apache-2.0 | python-installed-package-cataloger |
 | wcwidth | 0.2.13 | MIT | python-installed-package-cataloger |
 | wget | 1.21.3-1+deb12u1 | GFDL-1.2-only, GPL-3.0-only | dpkg-db-cataloger |
 | wheel | 0.43.0 |  | python-installed-package-cataloger |
@@ -2465,6 +2533,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | comerr-dev | 2.1-1.47.0-2 | Apache-2.0, Apache-2.0, BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later, ISC, Kazlib, LGPL-2.0-only, Latex2e | dpkg-db-cataloger |
 | common | 0.1.0 | MIT | python-installed-package-cataloger |
 | coreutils | 9.1-1 | BSD-4-Clause-UC, FSFULLR, GFDL-1.3-only, GPL-3.0-only, GPL-3.0-or-later, ISC | dpkg-db-cataloger |
+| coverage | 7.6.12 | Apache-2.0 | python-installed-package-cataloger |
 | cpp | 4:12.2.0-3 | GPL-2.0-only | dpkg-db-cataloger |
 | cpp-12 | 12.2.0-14 | GFDL-1.2-only, GPL-2.0-only, GPL-3.0-only | dpkg-db-cataloger |
 | cryptography | 44.0.2 | Apache-2.0 OR BSD-3-Clause | python-installed-package-cataloger |
@@ -2473,10 +2542,12 @@ The complete source code for Traefik is publicly available at [https://github.co
 | debconf | 1.5.82 | BSD-2-Clause | dpkg-db-cataloger |
 | debian-archive-keyring | 2023.3+deb12u1 |  | dpkg-db-cataloger |
 | debianutils | 5.7-0.5~deb12u1 | GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
+| debugpy | 1.8.13 | MIT | python-installed-package-cataloger |
 | default-libmysqlclient-dev | 1.1.0 | GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
 | diffutils | 1:3.8-4 | FSFAP, FSFULLR, GFDL-1.3-only, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, X11 | dpkg-db-cataloger |
 | dirmngr | 2.2.40-1.1 | BSD-3-Clause, CC0-1.0, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
 | dnspython | 2.7.0 | ISC | python-installed-package-cataloger |
+| docker | 7.1.0 | Apache-2.0 | python-installed-package-cataloger |
 | dpkg | 1.21.22 | BSD-2-Clause, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
 | dpkg-dev | 1.21.22 | BSD-2-Clause, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
 | e2fsprogs | 1.47.0-2 | Apache-2.0, Apache-2.0, BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later, ISC, Kazlib, LGPL-2.0-only, Latex2e | dpkg-db-cataloger |
@@ -2487,6 +2558,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | file | 1:5.44-3 | BSD-2-Clause | dpkg-db-cataloger |
 | filelock | 3.17.0 | Unlicense | python-installed-package-cataloger |
 | findutils | 4.9.0-4 | BSD-3-Clause, FSFAP, FSFULLR, GFDL-1.3-only, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, ISC, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, X11 | dpkg-db-cataloger |
+| flower | 2.0.1 |  | python-installed-package-cataloger |
 | fontconfig | 2.14.1-4 |  | dpkg-db-cataloger |
 | fontconfig-config | 2.14.1-4 |  | dpkg-db-cataloger |
 | fonts-dejavu-core | 2.37-6 | GPL-2.0-only, GPL-2.0-or-later, Bitstream-Vera | dpkg-db-cataloger |
@@ -2520,6 +2592,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | hostname | 3.23+nmu1 | GPL-2.0-only | dpkg-db-cataloger |
 | httpcore | 1.0.7 | BSD-3-Clause | python-installed-package-cataloger |
 | httpx | 0.28.1 | BSD-3-Clause | python-installed-package-cataloger |
+| humanize | 4.12.1 | MIT | python-installed-package-cataloger |
 | icu-devtools | 72.1-3 | GPL-3.0-only, MIT | dpkg-db-cataloger |
 | idna | 3.10 |  | python-installed-package-cataloger |
 | imagemagick | 8:6.9.11.60+dfsg-1.6+deb12u2 | GPL-1.0-only, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, ImageMagick, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
@@ -2527,11 +2600,13 @@ The complete source code for Traefik is publicly available at [https://github.co
 | imagemagick-6.q16 | 8:6.9.11.60+dfsg-1.6+deb12u2 | GPL-1.0-only, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, ImageMagick, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
 | importlib-metadata | 8.0.0 | Apache-2.0 | python-installed-package-cataloger |
 | inflect | 7.3.1 | MIT | python-installed-package-cataloger |
+| iniconfig | 2.0.0 | MIT | python-installed-package-cataloger |
 | init-system-helpers | 1.65.2 | BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
 | jaraco-collections | 5.1.0 | MIT | python-installed-package-cataloger |
 | jaraco-context | 5.3.0 | MIT | python-installed-package-cataloger |
 | jaraco-functools | 4.0.1 | MIT | python-installed-package-cataloger |
 | jaraco-text | 3.12.1 | MIT | python-installed-package-cataloger |
+| jinja2 | 3.1.6 |  | python-installed-package-cataloger |
 | joblib | 1.4.2 |  | python-installed-package-cataloger |
 | jsonpatch | 1.33 |  | python-installed-package-cataloger |
 | jsonpointer | 3.0.0 |  | python-installed-package-cataloger |
@@ -2884,6 +2959,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | libyuv0 | 0.0~git20230123.b2528b0-1 | BSD-3-Clause | dpkg-db-cataloger |
 | libzstd-dev | 1.5.4+dfsg2-5 | BSD-3-Clause, GPL-2.0-only, Zlib | dpkg-db-cataloger |
 | libzstd1 | 1.5.4+dfsg2-5 | BSD-3-Clause, GPL-2.0-only, Zlib | dpkg-db-cataloger |
+| linkify-it-py | 2.0.3 | MIT | python-installed-package-cataloger |
 | linux-libc-dev | 6.1.129-1 | BSD-2-Clause, GPL-2.0-only, LGPL-2.1-only | dpkg-db-cataloger |
 | login | 1:4.13+dfsg1-1+b1 | BSD-3-Clause, GPL-1.0-only, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
 | logsave | 1.47.0-2 | Apache-2.0, Apache-2.0, BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later, ISC, Kazlib, LGPL-2.0-only, Latex2e | dpkg-db-cataloger |
@@ -2892,8 +2968,13 @@ The complete source code for Traefik is publicly available at [https://github.co
 | m4 | 1.4.19-3 |  | dpkg-db-cataloger |
 | make | 4.3-4.1 | GPL-3.0-only, GPL-3.0-or-later | dpkg-db-cataloger |
 | mariadb-common | 1:10.11.11-0+deb12u1 | BSD-2-Clause, BSD-2-Clause, BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
+| markdown-it-py | 3.0.0 |  | python-installed-package-cataloger |
+| markupsafe | 3.0.2 |  | python-installed-package-cataloger |
 | mawk | 1.3.4.20200120-3.1 | CC-BY-3.0, GPL-2.0-only, X11 | dpkg-db-cataloger |
+| mdit-py-plugins | 0.4.2 |  | python-installed-package-cataloger |
+| mdurl | 0.1.2 |  | python-installed-package-cataloger |
 | media-types | 10.0.0 |  | dpkg-db-cataloger |
+| memray | 1.16.0 |  | python-installed-package-cataloger |
 | mercurial | 6.3.2 |  | python-installed-package-cataloger |
 | mercurial | 6.3.2-1 | GPL-2.0-only, GPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
 | mercurial-common | 6.3.2-1 | GPL-2.0-only, GPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
@@ -2923,11 +3004,15 @@ The complete source code for Traefik is publicly available at [https://github.co
 | pkgconf | 1.8.1-1 | GPL-2.0-only, GPL-2.0-or-later, ISC, X11 | dpkg-db-cataloger |
 | pkgconf-bin | 1.8.1-1 | GPL-2.0-only, GPL-2.0-or-later, ISC, X11 | dpkg-db-cataloger |
 | platformdirs | 4.2.2 | MIT | python-installed-package-cataloger |
+| platformdirs | 4.3.6 | MIT | python-installed-package-cataloger |
+| pluggy | 1.5.0 | MIT | python-installed-package-cataloger |
 | ply | 3.11 |  | python-installed-package-cataloger |
 | poppler-data | 0.4.12-1 | AGPL-3.0-or-later, GPL-2.0-only, MIT | dpkg-db-cataloger |
 | procps | 2:4.0.2-3 | GPL-2.0-only, GPL-2.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
+| prometheus-client | 0.21.1 |  | python-installed-package-cataloger |
 | prompt-toolkit | 3.0.50 |  | python-installed-package-cataloger |
 | pst-utils | 0.6.76-1 | GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
+| psutil | 7.0.0 | BSD-3-Clause | python-installed-package-cataloger |
 | pycparser | 2.22 | BSD-3-Clause | python-installed-package-cataloger |
 | pycryptodome | 3.21.0 |  | python-installed-package-cataloger |
 | pycryptodomex | 3.21.0 |  | python-installed-package-cataloger |
@@ -2935,7 +3020,14 @@ The complete source code for Traefik is publicly available at [https://github.co
 | pydantic-core | 2.27.2 | MIT | python-installed-package-cataloger |
 | pydantic-mongo | 2.3.0 | MIT | python-installed-package-cataloger |
 | pydantic-settings | 2.8.1 | MIT | python-installed-package-cataloger |
+| pygments | 2.19.1 | BSD-2-Clause | python-installed-package-cataloger |
 | pymongo | 4.11.2 |  | python-installed-package-cataloger |
+| pytest | 8.3.5 | MIT | python-installed-package-cataloger |
+| pytest-celery | 1.2.0 | BSD-3-Clause | python-installed-package-cataloger |
+| pytest-cov | 5.0.0 | MIT | python-installed-package-cataloger |
+| pytest-docker-tools | 3.1.3 | Apache-2.0 | python-installed-package-cataloger |
+| pytest-memray | 1.7.0 | Apache-2.0 | python-installed-package-cataloger |
+| pytest-mock | 3.14.0 | MIT | python-installed-package-cataloger |
 | python | 3.11.11 |  | binary-classifier-cataloger |
 | python-dateutil | 2.9.0.post0 |  | python-installed-package-cataloger |
 | python-dotenv | 1.0.1 | BSD-3-Clause | python-installed-package-cataloger |
@@ -2947,11 +3039,13 @@ The complete source code for Traefik is publicly available at [https://github.co
 | python3-minimal | 3.11.2-1+b1 |  | dpkg-db-cataloger |
 | python3.11 | 3.11.2-6+deb12u5 | GPL-2.0-only | dpkg-db-cataloger |
 | python3.11-minimal | 3.11.2-6+deb12u5 | GPL-2.0-only | dpkg-db-cataloger |
+| pytz | 2025.1 | MIT | python-installed-package-cataloger |
 | pyyaml | 6.0.2 | MIT | python-installed-package-cataloger |
 | readline-common | 8.2-1.3 | GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later | dpkg-db-cataloger |
 | redis | 5.2.1 | MIT | python-installed-package-cataloger |
 | requests | 2.32.3 | Apache-2.0 | python-installed-package-cataloger |
 | requests-toolbelt | 1.0.0 |  | python-installed-package-cataloger |
+| rich | 13.9.4 | MIT | python-installed-package-cataloger |
 | rpcsvc-proto | 1.4.3-1 | BSD-3-Clause, GPL-2.0-only, GPL-3.0-only, MIT | dpkg-db-cataloger |
 | scikit-learn | 1.6.1 |  | python-installed-package-cataloger |
 | scipy | 1.15.2 |  | python-installed-package-cataloger |
@@ -2973,12 +3067,14 @@ The complete source code for Traefik is publicly available at [https://github.co
 | tcl8.6 | 8.6.13+dfsg-2 |  | dpkg-db-cataloger |
 | tcl8.6-dev | 8.6.13+dfsg-2 |  | dpkg-db-cataloger |
 | tenacity | 9.0.0 |  | python-installed-package-cataloger |
+| textual | 2.1.2 | MIT | python-installed-package-cataloger |
 | threadpoolctl | 3.5.0 | BSD-3-Clause | python-installed-package-cataloger |
 | tk | 8.6.13 |  | dpkg-db-cataloger |
 | tk-dev | 8.6.13 |  | dpkg-db-cataloger |
 | tk8.6 | 8.6.13-2 |  | dpkg-db-cataloger |
 | tk8.6-dev | 8.6.13-2 |  | dpkg-db-cataloger |
 | tomli | 2.0.1 |  | python-installed-package-cataloger |
+| tornado | 6.4.2 | Apache-2.0 | python-installed-package-cataloger |
 | tshark | 4.0.17-0+deb12u1 | BSD-2-Clause, BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.0-or-later | dpkg-db-cataloger |
 | typeguard | 4.3.0 | MIT | python-installed-package-cataloger |
 | types-cffi | 1.16.0.20250307 | Apache-2.0 | python-installed-package-cataloger |
@@ -2990,6 +3086,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | typing-extensions | 4.12.2 |  | python-installed-package-cataloger |
 | tzdata | 2025.1 | Apache-2.0 | python-installed-package-cataloger |
 | tzdata | 2025a-0+deb12u1 |  | dpkg-db-cataloger |
+| uc-micro-py | 1.0.3 | MIT | python-installed-package-cataloger |
 | ucf | 3.0043+nmu1+deb12u1 | GPL-2.0-only | dpkg-db-cataloger |
 | unzip | 6.0-28 |  | dpkg-db-cataloger |
 | urllib3 | 2.3.0 |  | python-installed-package-cataloger |
@@ -2999,6 +3096,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | uuid-dev | 2.38.1-5+deb12u3 | BSD-3-Clause, BSD-4-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, MIT | dpkg-db-cataloger |
 | vine | 5.1.0 |  | python-installed-package-cataloger |
 | wand | 0.6.13 |  | python-installed-package-cataloger |
+| watchdog | 6.0.0 | Apache-2.0 | python-installed-package-cataloger |
 | wcwidth | 0.2.13 | MIT | python-installed-package-cataloger |
 | wget | 1.21.3-1+deb12u1 | GFDL-1.2-only, GPL-3.0-only | dpkg-db-cataloger |
 | wheel | 0.43.0 |  | python-installed-package-cataloger |
@@ -3070,6 +3168,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | comerr-dev | 2.1-1.47.0-2 | Apache-2.0, Apache-2.0, BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later, ISC, Kazlib, LGPL-2.0-only, Latex2e | dpkg-db-cataloger |
 | common | 0.1.0 | MIT | python-installed-package-cataloger |
 | coreutils | 9.1-1 | BSD-4-Clause-UC, FSFULLR, GFDL-1.3-only, GPL-3.0-only, GPL-3.0-or-later, ISC | dpkg-db-cataloger |
+| coverage | 7.6.12 | Apache-2.0 | python-installed-package-cataloger |
 | cpp | 4:12.2.0-3 | GPL-2.0-only | dpkg-db-cataloger |
 | cpp-12 | 12.2.0-14 | GFDL-1.2-only, GPL-2.0-only, GPL-3.0-only | dpkg-db-cataloger |
 | cryptography | 44.0.2 | Apache-2.0 OR BSD-3-Clause | python-installed-package-cataloger |
@@ -3078,10 +3177,12 @@ The complete source code for Traefik is publicly available at [https://github.co
 | debconf | 1.5.82 | BSD-2-Clause | dpkg-db-cataloger |
 | debian-archive-keyring | 2023.3+deb12u1 |  | dpkg-db-cataloger |
 | debianutils | 5.7-0.5~deb12u1 | GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
+| debugpy | 1.8.13 | MIT | python-installed-package-cataloger |
 | default-libmysqlclient-dev | 1.1.0 | GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
 | diffutils | 1:3.8-4 | FSFAP, FSFULLR, GFDL-1.3-only, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, X11 | dpkg-db-cataloger |
 | dirmngr | 2.2.40-1.1 | BSD-3-Clause, CC0-1.0, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
 | dnspython | 2.7.0 | ISC | python-installed-package-cataloger |
+| docker | 7.1.0 | Apache-2.0 | python-installed-package-cataloger |
 | dpkg | 1.21.22 | BSD-2-Clause, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
 | dpkg-dev | 1.21.22 | BSD-2-Clause, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
 | e2fsprogs | 1.47.0-2 | Apache-2.0, Apache-2.0, BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later, ISC, Kazlib, LGPL-2.0-only, Latex2e | dpkg-db-cataloger |
@@ -3092,6 +3193,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | file | 1:5.44-3 | BSD-2-Clause | dpkg-db-cataloger |
 | filelock | 3.17.0 | Unlicense | python-installed-package-cataloger |
 | findutils | 4.9.0-4 | BSD-3-Clause, FSFAP, FSFULLR, GFDL-1.3-only, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, ISC, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, X11 | dpkg-db-cataloger |
+| flower | 2.0.1 |  | python-installed-package-cataloger |
 | fontconfig | 2.14.1-4 |  | dpkg-db-cataloger |
 | fontconfig-config | 2.14.1-4 |  | dpkg-db-cataloger |
 | fonts-dejavu-core | 2.37-6 | GPL-2.0-only, GPL-2.0-or-later, Bitstream-Vera | dpkg-db-cataloger |
@@ -3125,6 +3227,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | hostname | 3.23+nmu1 | GPL-2.0-only | dpkg-db-cataloger |
 | httpcore | 1.0.7 | BSD-3-Clause | python-installed-package-cataloger |
 | httpx | 0.28.1 | BSD-3-Clause | python-installed-package-cataloger |
+| humanize | 4.12.1 | MIT | python-installed-package-cataloger |
 | icu-devtools | 72.1-3 | GPL-3.0-only, MIT | dpkg-db-cataloger |
 | idna | 3.10 |  | python-installed-package-cataloger |
 | imagemagick | 8:6.9.11.60+dfsg-1.6+deb12u2 | GPL-1.0-only, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, ImageMagick, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
@@ -3132,11 +3235,13 @@ The complete source code for Traefik is publicly available at [https://github.co
 | imagemagick-6.q16 | 8:6.9.11.60+dfsg-1.6+deb12u2 | GPL-1.0-only, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, ImageMagick, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
 | importlib-metadata | 8.0.0 | Apache-2.0 | python-installed-package-cataloger |
 | inflect | 7.3.1 | MIT | python-installed-package-cataloger |
+| iniconfig | 2.0.0 | MIT | python-installed-package-cataloger |
 | init-system-helpers | 1.65.2 | BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
 | jaraco-collections | 5.1.0 | MIT | python-installed-package-cataloger |
 | jaraco-context | 5.3.0 | MIT | python-installed-package-cataloger |
 | jaraco-functools | 4.0.1 | MIT | python-installed-package-cataloger |
 | jaraco-text | 3.12.1 | MIT | python-installed-package-cataloger |
+| jinja2 | 3.1.6 |  | python-installed-package-cataloger |
 | joblib | 1.4.2 |  | python-installed-package-cataloger |
 | jsonpatch | 1.33 |  | python-installed-package-cataloger |
 | jsonpointer | 3.0.0 |  | python-installed-package-cataloger |
@@ -3489,6 +3594,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | libyuv0 | 0.0~git20230123.b2528b0-1 | BSD-3-Clause | dpkg-db-cataloger |
 | libzstd-dev | 1.5.4+dfsg2-5 | BSD-3-Clause, GPL-2.0-only, Zlib | dpkg-db-cataloger |
 | libzstd1 | 1.5.4+dfsg2-5 | BSD-3-Clause, GPL-2.0-only, Zlib | dpkg-db-cataloger |
+| linkify-it-py | 2.0.3 | MIT | python-installed-package-cataloger |
 | linux-libc-dev | 6.1.129-1 | BSD-2-Clause, GPL-2.0-only, LGPL-2.1-only | dpkg-db-cataloger |
 | login | 1:4.13+dfsg1-1+b1 | BSD-3-Clause, GPL-1.0-only, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
 | logsave | 1.47.0-2 | Apache-2.0, Apache-2.0, BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later, ISC, Kazlib, LGPL-2.0-only, Latex2e | dpkg-db-cataloger |
@@ -3497,8 +3603,13 @@ The complete source code for Traefik is publicly available at [https://github.co
 | m4 | 1.4.19-3 |  | dpkg-db-cataloger |
 | make | 4.3-4.1 | GPL-3.0-only, GPL-3.0-or-later | dpkg-db-cataloger |
 | mariadb-common | 1:10.11.11-0+deb12u1 | BSD-2-Clause, BSD-2-Clause, BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
+| markdown-it-py | 3.0.0 |  | python-installed-package-cataloger |
+| markupsafe | 3.0.2 |  | python-installed-package-cataloger |
 | mawk | 1.3.4.20200120-3.1 | CC-BY-3.0, GPL-2.0-only, X11 | dpkg-db-cataloger |
+| mdit-py-plugins | 0.4.2 |  | python-installed-package-cataloger |
+| mdurl | 0.1.2 |  | python-installed-package-cataloger |
 | media-types | 10.0.0 |  | dpkg-db-cataloger |
+| memray | 1.16.0 |  | python-installed-package-cataloger |
 | mercurial | 6.3.2 |  | python-installed-package-cataloger |
 | mercurial | 6.3.2-1 | GPL-2.0-only, GPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
 | mercurial-common | 6.3.2-1 | GPL-2.0-only, GPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
@@ -3528,11 +3639,15 @@ The complete source code for Traefik is publicly available at [https://github.co
 | pkgconf | 1.8.1-1 | GPL-2.0-only, GPL-2.0-or-later, ISC, X11 | dpkg-db-cataloger |
 | pkgconf-bin | 1.8.1-1 | GPL-2.0-only, GPL-2.0-or-later, ISC, X11 | dpkg-db-cataloger |
 | platformdirs | 4.2.2 | MIT | python-installed-package-cataloger |
+| platformdirs | 4.3.6 | MIT | python-installed-package-cataloger |
+| pluggy | 1.5.0 | MIT | python-installed-package-cataloger |
 | ply | 3.11 |  | python-installed-package-cataloger |
 | poppler-data | 0.4.12-1 | AGPL-3.0-or-later, GPL-2.0-only, MIT | dpkg-db-cataloger |
 | procps | 2:4.0.2-3 | GPL-2.0-only, GPL-2.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
+| prometheus-client | 0.21.1 |  | python-installed-package-cataloger |
 | prompt-toolkit | 3.0.50 |  | python-installed-package-cataloger |
 | pst-utils | 0.6.76-1 | GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
+| psutil | 7.0.0 | BSD-3-Clause | python-installed-package-cataloger |
 | pycparser | 2.22 | BSD-3-Clause | python-installed-package-cataloger |
 | pycryptodome | 3.21.0 |  | python-installed-package-cataloger |
 | pycryptodomex | 3.21.0 |  | python-installed-package-cataloger |
@@ -3540,7 +3655,14 @@ The complete source code for Traefik is publicly available at [https://github.co
 | pydantic-core | 2.27.2 | MIT | python-installed-package-cataloger |
 | pydantic-mongo | 2.3.0 | MIT | python-installed-package-cataloger |
 | pydantic-settings | 2.8.1 | MIT | python-installed-package-cataloger |
+| pygments | 2.19.1 | BSD-2-Clause | python-installed-package-cataloger |
 | pymongo | 4.11.2 |  | python-installed-package-cataloger |
+| pytest | 8.3.5 | MIT | python-installed-package-cataloger |
+| pytest-celery | 1.2.0 | BSD-3-Clause | python-installed-package-cataloger |
+| pytest-cov | 5.0.0 | MIT | python-installed-package-cataloger |
+| pytest-docker-tools | 3.1.3 | Apache-2.0 | python-installed-package-cataloger |
+| pytest-memray | 1.7.0 | Apache-2.0 | python-installed-package-cataloger |
+| pytest-mock | 3.14.0 | MIT | python-installed-package-cataloger |
 | python | 3.11.11 |  | binary-classifier-cataloger |
 | python-dateutil | 2.9.0.post0 |  | python-installed-package-cataloger |
 | python-dotenv | 1.0.1 | BSD-3-Clause | python-installed-package-cataloger |
@@ -3552,11 +3674,13 @@ The complete source code for Traefik is publicly available at [https://github.co
 | python3-minimal | 3.11.2-1+b1 |  | dpkg-db-cataloger |
 | python3.11 | 3.11.2-6+deb12u5 | GPL-2.0-only | dpkg-db-cataloger |
 | python3.11-minimal | 3.11.2-6+deb12u5 | GPL-2.0-only | dpkg-db-cataloger |
+| pytz | 2025.1 | MIT | python-installed-package-cataloger |
 | pyyaml | 6.0.2 | MIT | python-installed-package-cataloger |
 | readline-common | 8.2-1.3 | GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later | dpkg-db-cataloger |
 | redis | 5.2.1 | MIT | python-installed-package-cataloger |
 | requests | 2.32.3 | Apache-2.0 | python-installed-package-cataloger |
 | requests-toolbelt | 1.0.0 |  | python-installed-package-cataloger |
+| rich | 13.9.4 | MIT | python-installed-package-cataloger |
 | rpcsvc-proto | 1.4.3-1 | BSD-3-Clause, GPL-2.0-only, GPL-3.0-only, MIT | dpkg-db-cataloger |
 | scikit-learn | 1.6.1 |  | python-installed-package-cataloger |
 | scipy | 1.15.2 |  | python-installed-package-cataloger |
@@ -3578,12 +3702,14 @@ The complete source code for Traefik is publicly available at [https://github.co
 | tcl8.6 | 8.6.13+dfsg-2 |  | dpkg-db-cataloger |
 | tcl8.6-dev | 8.6.13+dfsg-2 |  | dpkg-db-cataloger |
 | tenacity | 9.0.0 |  | python-installed-package-cataloger |
+| textual | 2.1.2 | MIT | python-installed-package-cataloger |
 | threadpoolctl | 3.5.0 | BSD-3-Clause | python-installed-package-cataloger |
 | tk | 8.6.13 |  | dpkg-db-cataloger |
 | tk-dev | 8.6.13 |  | dpkg-db-cataloger |
 | tk8.6 | 8.6.13-2 |  | dpkg-db-cataloger |
 | tk8.6-dev | 8.6.13-2 |  | dpkg-db-cataloger |
 | tomli | 2.0.1 |  | python-installed-package-cataloger |
+| tornado | 6.4.2 | Apache-2.0 | python-installed-package-cataloger |
 | tshark | 4.0.17-0+deb12u1 | BSD-2-Clause, BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.0-or-later | dpkg-db-cataloger |
 | typeguard | 4.3.0 | MIT | python-installed-package-cataloger |
 | types-cffi | 1.16.0.20250307 | Apache-2.0 | python-installed-package-cataloger |
@@ -3595,6 +3721,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | typing-extensions | 4.12.2 |  | python-installed-package-cataloger |
 | tzdata | 2025.1 | Apache-2.0 | python-installed-package-cataloger |
 | tzdata | 2025a-0+deb12u1 |  | dpkg-db-cataloger |
+| uc-micro-py | 1.0.3 | MIT | python-installed-package-cataloger |
 | ucf | 3.0043+nmu1+deb12u1 | GPL-2.0-only | dpkg-db-cataloger |
 | unzip | 6.0-28 |  | dpkg-db-cataloger |
 | urllib3 | 2.3.0 |  | python-installed-package-cataloger |
@@ -3604,6 +3731,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | uuid-dev | 2.38.1-5+deb12u3 | BSD-3-Clause, BSD-4-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, MIT | dpkg-db-cataloger |
 | vine | 5.1.0 |  | python-installed-package-cataloger |
 | wand | 0.6.13 |  | python-installed-package-cataloger |
+| watchdog | 6.0.0 | Apache-2.0 | python-installed-package-cataloger |
 | wcwidth | 0.2.13 | MIT | python-installed-package-cataloger |
 | wget | 1.21.3-1+deb12u1 | GFDL-1.2-only, GPL-3.0-only | dpkg-db-cataloger |
 | wheel | 0.43.0 |  | python-installed-package-cataloger |
