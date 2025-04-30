@@ -6541,7 +6541,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | busybox-binsh | 1.36.1-r15 | GPL-2.0-only | apk-db-cataloger |
 | ca-certificates | 20240226-r0 | MPL-2.0 AND MIT | apk-db-cataloger |
 | ca-certificates-bundle | 20230506-r0 | MPL-2.0 AND MIT | apk-db-cataloger |
-| cgi | 0.3.6 | BSD-2-Clause, Ruby | ruby-installed-gemspec-cataloger |
+| cgi | 0.3.7 | BSD-2-Clause, Ruby | ruby-installed-gemspec-cataloger |
 | concurrent-ruby | 1.3.1 | MIT | ruby-installed-gemspec-cataloger |
 | concurrent_ruby | UNKNOWN |  | java-archive-cataloger |
 | console | 1.25.2 | MIT | ruby-installed-gemspec-cataloger |
@@ -6554,14 +6554,14 @@ The complete source code for Traefik is publicly available at [https://github.co
 | drb | 2.1.1 | BSD-2-Clause, Ruby | ruby-installed-gemspec-cataloger |
 | drb | 2.2.1 | BSD-2-Clause, Ruby | ruby-installed-gemspec-cataloger |
 | elastic-transport | 8.4.0 | Apache-2.0 | ruby-installed-gemspec-cataloger |
-| elasticsearch | 8.17.1 | Apache-2.0 | ruby-installed-gemspec-cataloger |
-| elasticsearch-api | 8.17.1 | Apache-2.0 | ruby-installed-gemspec-cataloger |
+| elasticsearch | 9.0.2 | Apache-2.0 | ruby-installed-gemspec-cataloger |
+| elasticsearch-api | 9.0.2 | Apache-2.0 | ruby-installed-gemspec-cataloger |
 | english | 0.7.2 | BSD-2-Clause, Ruby | ruby-installed-gemspec-cataloger |
 | erb | 4.0.2 | BSD-2-Clause, Ruby | ruby-installed-gemspec-cataloger |
 | error_highlight | 0.5.1 | MIT | ruby-installed-gemspec-cataloger |
 | etc | 1.4.2 | BSD-2-Clause, Ruby | ruby-installed-gemspec-cataloger |
 | excon | 1.2.5 | MIT | ruby-installed-gemspec-cataloger |
-| faraday | 2.12.2 | MIT | ruby-installed-gemspec-cataloger |
+| faraday | 2.13.1 | MIT | ruby-installed-gemspec-cataloger |
 | faraday-excon | 2.3.0 | MIT | ruby-installed-gemspec-cataloger |
 | faraday-net_http | 3.4.0 | MIT | ruby-installed-gemspec-cataloger |
 | fcntl | 1.0.2 | BSD-2-Clause, Ruby | ruby-installed-gemspec-cataloger |
@@ -6629,8 +6629,8 @@ The complete source code for Traefik is publicly available at [https://github.co
 | resolv-replace | 0.1.1 | BSD-2-Clause, Ruby | ruby-installed-gemspec-cataloger |
 | rexml | 3.2.6 | BSD-2-Clause | ruby-installed-gemspec-cataloger |
 | rinda | 0.1.1 | BSD-2-Clause, Ruby | ruby-installed-gemspec-cataloger |
-| ruby | 3.2.6-r0 | Ruby AND BSD-2-Clause AND MIT | apk-db-cataloger |
-| ruby-libs | 3.2.6-r0 | Ruby AND BSD-2-Clause AND MIT | apk-db-cataloger |
+| ruby | 3.2.8-r0 | Ruby AND BSD-2-Clause AND MIT | apk-db-cataloger |
+| ruby-libs | 3.2.8-r0 | Ruby AND BSD-2-Clause AND MIT | apk-db-cataloger |
 | ruby-webrick | 1.8.1-r0 | BSD-2-Clause | apk-db-cataloger |
 | ruby2_keywords | 0.0.5 | BSD-2-Clause, Ruby | ruby-installed-gemspec-cataloger |
 | scanelf | 1.3.7-r2 | GPL-2.0-only | apk-db-cataloger |
@@ -6643,7 +6643,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | ssl_client | 1.36.1-r15 | GPL-2.0-only | apk-db-cataloger |
 | stringio | 3.0.4 | BSD-2-Clause, Ruby | ruby-installed-gemspec-cataloger |
 | strptime | 0.2.5 | BSD-2-Clause | ruby-installed-gemspec-cataloger |
-| strscan | 3.0.5 | BSD-2-Clause, Ruby | ruby-installed-gemspec-cataloger |
+| strscan | 3.0.7 | BSD-2-Clause, Ruby | ruby-installed-gemspec-cataloger |
 | syntax_suggest | 1.1.0 | MIT | ruby-installed-gemspec-cataloger |
 | syslog | 0.1.1 | BSD-2-Clause, Ruby | ruby-installed-gemspec-cataloger |
 | tempfile | 0.1.3 | BSD-2-Clause, Ruby | ruby-installed-gemspec-cataloger |
@@ -6657,7 +6657,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | tzinfo | 2.0.6 | MIT | ruby-installed-gemspec-cataloger |
 | tzinfo-data | 1.2024.1 | MIT | ruby-installed-gemspec-cataloger |
 | un | 0.2.1 | BSD-2-Clause, Ruby | ruby-installed-gemspec-cataloger |
-| uri | 0.12.3 | BSD-2-Clause, Ruby | ruby-installed-gemspec-cataloger |
+| uri | 0.12.4 | BSD-2-Clause, Ruby | ruby-installed-gemspec-cataloger |
 | weakref | 0.1.2 | BSD-2-Clause, Ruby | ruby-installed-gemspec-cataloger |
 | webrick | 1.8.1 | BSD-2-Clause, Ruby | ruby-installed-gemspec-cataloger |
 | yajl-ruby | 1.4.3 | MIT | ruby-installed-gemspec-cataloger |
