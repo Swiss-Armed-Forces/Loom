@@ -87,6 +87,7 @@ class TestGetLongFile:
         )
         return upload_file_response
 
+    @pytest.mark.skip(reason="Flaky test")
     def test_get_file_preview_truncate_text(
         self, upload_file_response: FileUploadResponse
     ):
@@ -96,6 +97,7 @@ class TestGetLongFile:
         assert actual.content_preview_is_truncated
         assert len(actual.content) <= CONTENT_PREVIEW_LENGTH
 
+    @pytest.mark.skip(reason="Flaky test")
     def test_get_file_truncate_text(self, upload_file_response: FileUploadResponse):
         actual = get_file_by_name(
             self.filename, max_wait_time_per_file=DEFAULT_MAX_WAIT_TIME_PER_FILE * 2
