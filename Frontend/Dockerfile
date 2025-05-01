@@ -2,8 +2,8 @@
 ARG NODE_IMAGE_VERSION="23-alpine3.20"
 ARG NGINX_IMAGE_VERSION="1.26.2-alpine"
 
-ARG CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX
-FROM ${CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX}/node:${NODE_IMAGE_VERSION} AS base
+ARG DOCKER_REGISTRY
+FROM ${DOCKER_REGISTRY}/node:${NODE_IMAGE_VERSION} AS base
 WORKDIR /code
 # Copy dependencies separately and install them once
 RUN corepack enable
@@ -19,7 +19,7 @@ FROM base AS build
 ENV NODE_ENV=production
 RUN pnpm run build
 
-FROM ${CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX}/nginx:${NGINX_IMAGE_VERSION} AS production
+FROM ${DOCKER_REGISTRY}/nginx:${NGINX_IMAGE_VERSION} AS production
 # Set a timezone
 ENV TZ=UTC
 RUN set -exu \

@@ -7,7 +7,7 @@ DOCKERFILE="${CONTEXT_DIR}/nix-dind/Dockerfile"
 
 # CI variables
 CI_REGISTRY_IMAGE="registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom"
-CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX="gitlab.com:443/swiss-armed-forces/cyber-command/cea/dependency_proxy/containers"
+DOCKER_REGISTRY="${CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX:-docker.io}"
 
 # Image name
 IMAGE_NAME="nix-dind"
@@ -56,7 +56,7 @@ build(){
         --ulimit nofile=1024:1024 \
         --file "${DOCKERFILE}" \
         --tag "${IMAGE_FULL_NAME}:${IMAGE_TAG}" \
-        --build-arg CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX="${CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX}" \
+        --build-arg DOCKER_REGISTRY="${DOCKER_REGISTRY}" \
         --build-arg NIX_GROUP_ID="${GROUP_ID}" \
         --build-arg NIX_USER_ID="${USER_ID}" \
         --cache-to type=inline \

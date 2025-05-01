@@ -58,6 +58,7 @@ Before you begin, ensure the following dependencies are installed on your system
 * `git`
 * `git-lfs`
 * `docker`
+* `openssl`
 * `minikube` (>= [v1.33.1](https://minikube.sigs.k8s.io/docs/start/?arch=%2Flinux%2Fx86-64%2Fstable%2Fbinary+download))
 * `helm` (>= [v3.14.0](https://helm.sh/docs/intro/install/))
 * `kubectl` (>= [v1.30.0](https://kubernetes.io/de/docs/tasks/tools/install-kubectl/))

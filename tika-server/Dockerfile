@@ -1,7 +1,7 @@
 ARG TIKA_IMAGE_VERSION="2.9.2.1-full"
 
-ARG CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX
-FROM ${CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX}/apache/tika:${TIKA_IMAGE_VERSION}
+ARG DOCKER_REGISTRY
+FROM ${DOCKER_REGISTRY}/apache/tika:${TIKA_IMAGE_VERSION}
 
 # from: https://github.com/apache/tika-docker/blob/master/full/Dockerfile#L16
 # "random" uid/gid hopefully not used anywhere else

@@ -43,7 +43,7 @@ TRANSLATION_TESTCASES = [
             GetFileLanguageTranslations(
                 confidence=100.0,
                 language="pt",
-                text="Soy dueño of this blue house and big in the sea.",
+                text="Soy dueño of this big and blue house in the sea.",
             ),
         ],
     ),

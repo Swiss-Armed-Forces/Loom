@@ -1,5 +1,8 @@
-ARG CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX
-FROM ${CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX}/python:3.11-bookworm AS builder-base
+ARG PYTHON_BUILDER_IMAGE_VERSION="3.11-bookworm"
+ARG PYTHON_IMAGE_VERSION="3.11-slim-bookworm"
+
+ARG DOCKER_REGISTRY
+FROM ${DOCKER_REGISTRY}/python:${PYTHON_BUILDER_IMAGE_VERSION} AS builder-base
 
 RUN pip install --no-cache-dir poetry==1.8.3
 
@@ -25,7 +28,7 @@ COPY api/ /code/api
 RUN poetry install --no-cache --without dev,test
 
 # The runtime image, used to just run the code provided its virtual environment
-FROM ${CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX}/python:3.11-slim-bookworm AS runtime-base
+FROM ${DOCKER_REGISTRY}/python:${PYTHON_IMAGE_VERSION} AS runtime-base
 
 # Set timezone
 ENV TZ=UTC

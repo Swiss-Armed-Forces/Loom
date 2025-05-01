@@ -1,5 +1,7 @@
-ARG CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX
-FROM ${CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX}/docker:27.5.1-dind
+ARG DIND_IMAGE_VERSION="27.5.1-dind"
+
+ARG DOCKER_REGISTRY
+FROM ${DOCKER_REGISTRY}/docker:${DIND_IMAGE_VERSION}
 
 # We will use this image as a gitlab-ci runner image.
 # This is why we have to add here the label below, otherwise

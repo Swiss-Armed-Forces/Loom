@@ -21,7 +21,7 @@ profiles:
             dockerfile: Dockerfile
             buildArgs:
               TRAEFIK_IMAGE_VERSION: "{{.TRAEFIK_IMAGE_VERSION}}"
-              CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX: gitlab.com:443/swiss-armed-forces/cyber-command/cea/dependency_proxy/containers
+              DOCKER_REGISTRY: "{{or .CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX \"docker.io\"}}"
             cacheFrom:
               - "registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/traefik"
     manifests:

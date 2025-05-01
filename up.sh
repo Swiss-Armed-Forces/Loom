@@ -14,6 +14,7 @@ SCRIPT_NAME=$(basename "$0")
 #
 EDITOR="${EDITOR:-nano}"
 SUDO_USER="${SUDO_USER:-$(whoami)}"
+REGISTRY_MIRROR="${REGISTRY_MIRROR:-}"
 
 #
 # Defines
@@ -231,6 +232,7 @@ validate_environment() {
     check_command sysctl
     check_command tee
     check_command realpath
+    check_command openssl
 
     # k8s
     check_command docker
@@ -382,6 +384,7 @@ create_cluster(){
     as_user \
         minikube start \
             --driver docker \
+            --registry-mirror "${REGISTRY_MIRROR}" \
             --memory max \
             --cpus max \
             --cni calico \

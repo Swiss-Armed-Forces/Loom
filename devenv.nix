@@ -300,6 +300,13 @@ in
       echo "[!] Failed initializing shell!"
       exit 1
     fi
+
+    # use dependency proxy
+    if docker login gitlab.com:443 &>/dev/null; then
+      CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX="gitlab.com:443/swiss-armed-forces/cyber-command/cea/dependency_proxy/containers"
+      export CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX
+      echo "Using docker image dependency proxy: ''${CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX}"
+    fi
   '';
 
   scripts.devenv-help = {
