@@ -208,6 +208,7 @@ artifacts:
     - devenv --verbose shell -- up --expose "$(tailscale ip -4)"
     - devenv --verbose shell -- frontend-api-generate
     - devenv --verbose shell -- third-party-licenses-generate
+    - devenv --verbose shell -- frontend-static-generate
     - devenv --verbose shell -- test-git-file-changed
   artifacts:
     name: generated artifacts

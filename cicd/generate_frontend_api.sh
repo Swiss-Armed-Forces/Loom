@@ -57,6 +57,7 @@ usage() {
     echo "usage: $0 [OPTIONS]"
     echo
     echo "With OPTIONS:"
+    echo "  -h   |--help                        print this help"
     echo "  -ppt | --post-process-typescript    post process a typescript file"
     echo "  -v   |--verbose                     make verbose"
 }

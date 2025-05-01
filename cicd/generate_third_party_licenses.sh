@@ -161,6 +161,7 @@ usage() {
     echo "usage: $0 [OPTIONS]"
     echo
     echo "With OPTIONS:"
+    echo "  -h   |--help                        print this help"
     echo "  -v   |--verbose                     make verbose"
 }
 

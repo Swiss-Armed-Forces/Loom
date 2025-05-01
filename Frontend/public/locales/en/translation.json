@@ -235,5 +235,14 @@
     },
     "archives": {
         "title": "Archives"
+    },
+    "about": {
+        "title": "About",
+        "titleDialog": "About Loom",
+        "linkTitle": "Link repository: ",
+        "link": "https://gitlab.com/swiss-armed-forces/cyber-command/cea/loom",
+        "license": "License.txt",
+        "thirdParty": "THIRD-PARTY-LICENSES.md",
+        "downloadTitle": "Download: "
     }
 }

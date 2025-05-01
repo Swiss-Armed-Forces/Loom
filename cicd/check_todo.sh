@@ -25,7 +25,8 @@ check_todo()
                 ':!.pylintrc' \
                 ':!cicd/check_todo.sh' \
                 ':!backend/api/static' \
-                ':!THIRD-PARTY-LICENSES.md'
+                ':!THIRD-PARTY-LICENSES.md' \
+                ':!Frontend/public/THIRD-PARTY-LICENSES.md'
 }
 
 check_todo

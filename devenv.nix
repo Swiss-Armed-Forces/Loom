@@ -583,6 +583,19 @@ in
     '';
   };
 
+  scripts.frontend-static-generate = {
+    description = "Generate static assets for Frontend";
+    exec = ''
+      (
+        set -euo pipefail
+        cd "''${DEVENV_ROOT}"
+
+        ./cicd/generate_frontend_static.sh \
+          "''${@}"
+      )
+    '';
+  };
+
   scripts.test-git-file-changed = {
     description = "Test if a git file was changed";
     exec = ''

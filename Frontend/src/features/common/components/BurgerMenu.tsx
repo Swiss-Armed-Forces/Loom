@@ -18,6 +18,7 @@ import {
     TaskOutlined,
     Whatshot,
     DriveFolderUpload,
+    InfoOutlined,
 } from "@mui/icons-material";
 import {
     apiHost,
@@ -34,9 +35,13 @@ import {
     rspamdHost,
     traefikHost,
 } from "../urls";
+import { useTranslation } from "react-i18next";
+import { AboutDialog } from "./AboutDialog";
 
 export function BurgerMenu() {
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+    const [openAboutDialog, setOpenAboutDialog] = useState(false);
+    const { t } = useTranslation();
 
     const handleMenuOpen = (
         event: React.MouseEvent<HTMLButtonElement, MouseEvent>,
@@ -146,7 +151,21 @@ export function BurgerMenu() {
                         {item.text}
                     </MenuItem>
                 ))}
+                <MenuItem
+                    component="a"
+                    onClick={() => {
+                        handleMenuClose();
+                        setOpenAboutDialog(true);
+                    }}
+                >
+                    <InfoOutlined />
+                    {t("about.title")}
+                </MenuItem>
             </Menu>
+            <AboutDialog
+                open={openAboutDialog}
+                closeDialog={() => setOpenAboutDialog(false)}
+            />
         </div>
     );
 }
