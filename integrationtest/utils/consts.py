@@ -14,3 +14,4 @@ WEBSOCKET_ENDPOINT = f"{settings.ws_host}v1/websocket"
 SUMMARIZATION_ENDPOINT = f"{settings.api_host}v1/files/summarization"
 AI_ENDPOINT = f"{settings.api_host}v1/ai"
 REQUEST_TIMEOUT = 10
+FLAKY_MAX_RUNS = 3

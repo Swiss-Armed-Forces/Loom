@@ -3,9 +3,10 @@ from tempfile import NamedTemporaryFile
 
 import pytest
 from api.routers.files import CONTENT_PREVIEW_LENGTH, FileUploadResponse
+from flaky import flaky  # type: ignore
 from worker.services.tika_service import TIKA_MAX_TEXT_SIZE
 
-from utils.consts import ASSETS_DIR
+from utils.consts import ASSETS_DIR, FLAKY_MAX_RUNS
 from utils.fetch_from_api import (
     DEFAULT_MAX_WAIT_TIME_PER_FILE,
     fetch_files_from_api,
@@ -87,7 +88,7 @@ class TestGetLongFile:
         )
         return upload_file_response
 
-    @pytest.mark.skip(reason="Flaky test")
+    @flaky(max_runs=FLAKY_MAX_RUNS)
     def test_get_file_preview_truncate_text(
         self, upload_file_response: FileUploadResponse
     ):
@@ -97,7 +98,7 @@ class TestGetLongFile:
         assert actual.content_preview_is_truncated
         assert len(actual.content) <= CONTENT_PREVIEW_LENGTH
 
-    @pytest.mark.skip(reason="Flaky test")
+    @flaky(max_runs=FLAKY_MAX_RUNS)
     def test_get_file_truncate_text(self, upload_file_response: FileUploadResponse):
         actual = get_file_by_name(
             self.filename, max_wait_time_per_file=DEFAULT_MAX_WAIT_TIME_PER_FILE * 2

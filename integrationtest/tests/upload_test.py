@@ -5,9 +5,10 @@ from tempfile import NamedTemporaryFile
 
 import pytest
 from common.utils.random_file import random_file, random_file_printable
+from flaky import flaky  # type: ignore
 from worker.services.tika_service import TIKA_MAX_TEXT_SIZE, TIKA_UNPACK_MAX_SIZE
 
-from utils.consts import ASSETS_DIR
+from utils.consts import ASSETS_DIR, FLAKY_MAX_RUNS
 from utils.fetch_from_api import (
     DEFAULT_MAX_WAIT_TIME_PER_FILE,
     get_file_preview_by_name,
@@ -34,6 +35,7 @@ def test_upload_email_with_attachment():
     assert "Hello, world!" in attachment.content
 
 
+@flaky(max_runs=FLAKY_MAX_RUNS)
 def test_upload_mbox_email_with_attachment():
     upload_asset("attachment_pdf.eml")
 

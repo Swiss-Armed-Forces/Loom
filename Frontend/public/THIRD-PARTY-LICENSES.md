@@ -437,6 +437,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | elastic-transport        | 8.13.1          | Apache Software License                                                          |
 | elasticsearch            | 8.14.0          | Apache Software License                                                          |
 | elasticsearch-dsl        | 8.14.0          | Apache Software License                                                          |
+| flaky                    | 3.8.1           | Apache Software License                                                          |
 | freezegun                | 1.5.1           | Apache Software License                                                          |
 | minio                    | 7.2.15          | Apache Software License                                                          |
 | pymongo                  | 4.7.3           | Apache Software License                                                          |
