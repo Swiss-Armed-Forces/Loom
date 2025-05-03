@@ -19,6 +19,7 @@ ACTION="generate_third_party_licenses"
 PROFILE="prod"
 
 component_licenses(){
+    >&3 echo "[*] Getting: component_licenses"
     (
         cd "${TOPLEVEL_DIR}"
 
@@ -70,6 +71,7 @@ list_all_images(){
 }
 
 container_licenses() {
+    >&3 echo "[*] Getting: container_licenses"
     (
         local minikube_eval
         minikube_eval=$(minikube -p minikube docker-env)
@@ -79,6 +81,8 @@ container_licenses() {
         for image in $(list_all_images); do
             local image_name
             image_name="${image%:*}"
+
+            >&3 echo "[*] Scanning image: ${image}"
 
             echo
             echo "### ${image_name}"
@@ -93,6 +97,7 @@ container_licenses() {
 }
 
 generate_third_party_licenses() {
+    echo "[*] Running: generate_third_party_licenses"
     {
         echo '# Third Party Licenses'
         echo '<!-- markdownlint-disable -->'
@@ -140,6 +145,7 @@ generate_third_party_licenses() {
         echo
         container_licenses
     } \
+    3>&1 \
     > "${THIRD_PARTY_LICENCES_OUTPUT}"
 }
 

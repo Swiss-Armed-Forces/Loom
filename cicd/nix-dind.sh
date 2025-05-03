@@ -109,10 +109,7 @@ run(){
         docker_run_options+=( "--tty" )
     fi
 
-    # ulimit because of:
-    # https://github.com/NixOS/nix/issues/11258#issuecomment-2323063903
     docker run \
-        --ulimit nofile=1024:1024 \
         --privileged \
         --interactive \
         --env TAILSCALE_AUTHKEY \

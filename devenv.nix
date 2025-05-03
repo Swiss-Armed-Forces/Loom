@@ -32,21 +32,41 @@ let
     overlays = pkgs.overlays ++ [ overlay ];
   };
 
+  # fix locale
+  use-locale = "C.UTF-8";
+  custom-locales = pkgs.pkgs.glibcLocalesUtf8.override {
+    allLocales = false;
+    locales = [ "${use-locale}/UTF-8" ];
+  };
+
   cicd-config = builtins.path { path = ./nix-dind/devenv.local.nix; };
 in
 {
-  # toggle CI/CD mode
-  env.cicd = lib.mkDefault false;
+  env = {
+    # toggle CI/CD mode
+    cicd = lib.mkDefault false;
 
-  # fix locals
-  env.LC_ALL = "C";
-  env.LANG = "C";
-  env.LC_CTYPE = "C";
-  env.LC_COLLATE = "C";
-  env.LC_MONETARY = "C";
-  env.LC_LC_NUMERIC = "C";
-  env.LC_TIME = "C";
-  env.LC_MESSAGES = "C";
+    # fix locale
+    LOCALE_ARCHIVE = "${custom-locales}/lib/locale/locale-archive";
+    LC_ALL = use-locale;
+    LC_CTYPE = use-locale;
+    LC_ADDRESS = use-locale;
+    LC_IDENTIFICATION = use-locale;
+    LC_MEASUREMENT = use-locale;
+    LC_MESSAGES = use-locale;
+    LC_MONETARY = use-locale;
+    LC_NAME = use-locale;
+    LC_NUMERIC = use-locale;
+    LC_PAPER = use-locale;
+    LC_TELEPHONE = use-locale;
+    LC_TIME = use-locale;
+    LC_COLLATE = use-locale;
+
+    # poetry might fallback to query a keyring backend which might or might not exist.
+    # this is bad. We don't want that. We don't need any keys.
+    # https://www.reddit.com/r/learnpython/comments/zcb95y/comment/kdh0aka
+    PYTHON_KEYRING_BACKEND = "keyring.backends.fail.Keyring";
+  };
 
   # https://devenv.sh/packages/
   packages =
@@ -194,11 +214,6 @@ in
   # instabilities when fetching tarball for
   # nixpkgs-unstable
   cachix.enable = false;
-
-  # poetry might fallback to query a keyring backend which might or might not exist.
-  # this is bad. We don't want that. We don't need any keys.
-  # https://www.reddit.com/r/learnpython/comments/zcb95y/comment/kdh0aka/?utm_source=share&utm_medium=web3x&utm_name=web3xcss&utm_term=1&utm_content=share_button
-  env.PYTHON_KEYRING_BACKEND = "keyring.backends.fail.Keyring";
 
   # https://devenv.sh/languages/
   languages.nix.enable = true;

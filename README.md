@@ -1,6 +1,6 @@
 # ![Loom Logo](Frontend/src/features/common/branding/loom-logo-full-contour.svg) Document Search Engine
 
-[![License: MIT](License-MIT-blue.svg)](License.txt)
+[![License: MIT](badge-mit-blue.svg)](License.txt)
 [![Release Status](https://gitlab.com/swiss-armed-forces/cyber-command/cea/loom/-/badges/release.svg)](https://gitlab.com/swiss-armed-forces/cyber-command/cea/loom/-/releases)
 [![GitLab Pipeline Status](https://gitlab.com/swiss-armed-forces/cyber-command/cea/loom/badges/main/pipeline.svg)](https://gitlab.com/swiss-armed-forces/cyber-command/cea/loom/-/pipelines?page=1&scope=all&ref=main)
 [![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-v2.1%20adopted-ff69b4.svg)](https://www.contributor-covenant.org/version/2/1/code_of_conduct/)

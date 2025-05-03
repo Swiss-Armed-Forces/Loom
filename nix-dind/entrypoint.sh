@@ -22,6 +22,7 @@ CODE_OVERLAY_DIR="${CODE_OVERLAY_DIR:-/code-overlay}"
 # Path to the service sockets
 DOCKER_SOCKET="/var/run/docker.sock"
 FORK_PID_PREFIX="/var/run/fork."
+FORK_LOG_PREFIX="/var/run/fork-log."
 NIX_DAEMON_SOCKET="/nix/var/nix/daemon-socket/socket"
 
 WAIT_MAX_RETRIES=60
@@ -36,7 +37,7 @@ CMD_TO_RUN=("${@:-${CMD_BASH}}")
 
 # fork a command
 fork() {
-    exec setsid "${@}" &
+    exec setsid "${@}" &>"${FORK_LOG_PREFIX}${*}.log" &
     # shellcheck disable=SC2128
     echo "${!}" > "${FORK_PID_PREFIX}${RANDOM}${RANDOM}${RANDOM}"
 }
@@ -119,27 +120,29 @@ overlay_code_mount(){
 #
 
 atexit(){
-    echo "Stopping all containers"
-    docker ps \
-        --all \
-        --quiet \
-    | xargs \
-        --no-run-if-empty \
-        docker stop
+    {
+        echo "[*] Stopping all containers"
+        docker ps \
+            --all \
+            --quiet \
+        | xargs \
+            --no-run-if-empty \
+            docker stop
 
-    echo "Killing forked processes"
-    local pidfile
-    for pidfile in "${FORK_PID_PREFIX}"*; do
-        if [[ ! -f "${pidfile}" ]]; then
-            continue
-        fi
-        local pid
-        pid="$(cat "${pidfile}")"
-        kill "${pid}"
-        wait_for is_pid_dead "${pid}"
-        rm -f "${pidfile}"
-        echo "${pid} killed"
-    done
+        echo "[*] Killing forked processes"
+        local pidfile
+        for pidfile in "${FORK_PID_PREFIX}"*; do
+            if [[ ! -f "${pidfile}" ]]; then
+                continue
+            fi
+            local pid
+            pid="$(cat "${pidfile}")"
+            kill "${pid}"
+            wait_for is_pid_dead "${pid}"
+            rm -f "${pidfile}"
+            echo "${pid} killed"
+        done
+    } &>"${FORK_LOG_PREFIX}atexit.log"
 }
 trap atexit EXIT
 
