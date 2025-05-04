@@ -1,6 +1,6 @@
 # ![Loom Logo](Frontend/src/features/common/branding/loom-logo-full-contour.svg) Document Search Engine
 
-[![License: MIT](badge-mit-blue.svg)](License.txt)
+[![License: MIT](badge-mit-blue.svg)](LICENSE.txt)
 [![Release Status](https://gitlab.com/swiss-armed-forces/cyber-command/cea/loom/-/badges/release.svg)](https://gitlab.com/swiss-armed-forces/cyber-command/cea/loom/-/releases)
 [![GitLab Pipeline Status](https://gitlab.com/swiss-armed-forces/cyber-command/cea/loom/badges/main/pipeline.svg)](https://gitlab.com/swiss-armed-forces/cyber-command/cea/loom/-/pipelines?page=1&scope=all&ref=main)
 [![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-v2.1%20adopted-ff69b4.svg)](https://www.contributor-covenant.org/version/2/1/code_of_conduct/)
@@ -162,7 +162,7 @@ ensuring efficient indexing without excessive resource consumption.
 
 ## 📜 License
 
-Loom is licensed under the MIT License. See the full text of the license in the [LICENSE.txt](License.txt) file.
+Loom is licensed under the MIT License. See the full text of the license in the [LICENSE.txt](LICENSE.txt) file.
 
 ## 🛠️ Development Setup
 
@@ -200,7 +200,7 @@ Multiple services that are useful for production and development purposes are st
 * [Development environment setup](Documentation/devenv-setup.md)
 * [Contributing Guidlines](/CONTRIBUTING.md)
 * [Code of Conduct](/CODE_OF_CONDUCT.md)
-* [Third Party Licenses](/THIRD-PARTY-LICENSES.md)
+* [Third Party Licenses](/THIRD-PARTY.md)
 * [Frontend Documentation](Frontend/README.md)
 * [Backend Documentation](backend/README.md)
 * [Integration Testing Documentation](integrationtest/README.md)
