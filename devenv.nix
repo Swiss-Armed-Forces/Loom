@@ -592,8 +592,8 @@ in
     '';
   };
 
-  scripts.third-party-licenses-generate = {
-    description = "Generate THIRD-PARTY-LICENSES.md";
+  scripts.third-party-generate = {
+    description = "Generate THIRD-PARTY.md";
     exec = ''
       (
         set -euo pipefail

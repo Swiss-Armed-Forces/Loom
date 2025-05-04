@@ -216,7 +216,7 @@ artifacts:
     - devenv shell -- sudo --background dmesg --follow > dmesg.txt
     - devenv shell -- up --expose "$(tailscale ip -4)"
     - devenv shell -- frontend-api-generate
-    - devenv shell -- third-party-licenses-generate
+    - devenv shell -- third-party-generate
     - devenv shell -- frontend-static-generate
     - devenv shell -- test-git-file-changed
   artifacts:
@@ -225,7 +225,7 @@ artifacts:
       - dmesg.txt
       - logs/
       - Frontend/src/app/api/generated
-      - THIRD-PARTY-LICENSES.md
+      - THIRD-PARTY.md
     expire_in: 1 week
     when: always
 
