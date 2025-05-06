@@ -53,7 +53,8 @@ This section provides instructions for setting up Loom in a production-like envi
 
 **Dependencies:**
 
-Before you begin, ensure the following dependencies are installed on your system:
+Before you begin, please ensure the following dependencies are installed on your system.
+This will help make the setup process smooth and easy!
 
 * `git`
 * `git-lfs`
@@ -63,6 +64,29 @@ Before you begin, ensure the following dependencies are installed on your system
 * `helm` (>= [v3.14.0](https://helm.sh/docs/intro/install/))
 * `kubectl` (>= [v1.30.0](https://kubernetes.io/de/docs/tasks/tools/install-kubectl/))
 * `skaffold` (>= [v2.12.0](https://skaffold.dev/docs/install/))
+
+### Deployment Schemas
+
+You have a couple of options for deploying Loom, depending on your needs:
+
+* **Single Node Deployment:** This is a straightforward way to get Loom running on a single machine
+using the `up.sh` script. It's perfect for evaluation or smaller setups.
+* **Multi-Node Deployment:** For more extensive or production environments, you can deploy Loom
+on top of your existing Kubernetes cluster using our Helm chart.
+
+### Single Node Deployment
+
+This method is designed for simplicity and is a great starting point!
+
+**Minimal System Specifications:**
+
+To ensure Loom runs smoothly, your system should ideally meet these minimum requirements:
+
+* **RAM:** At least 25 GiB
+* **CPU:** 8 Cores
+* **Disk Space:** 200 GiB
+* **GPU (Optional):** For enhanced performance with certain features, we recommend using at least 2 GPUs.
+Please see the list of supported GPUs here: [https://github.com/ollama/ollama/blob/main/docs/gpu.md](https://github.com/ollama/ollama/blob/main/docs/gpu.md)
 
 **Installation Steps:**
 
@@ -75,11 +99,32 @@ Before you begin, ensure the following dependencies are installed on your system
 
 2. Run the setup script:
 
-    ```bash
-    ./up.sh
-    ```
+    * For a standard deployment (without GPU support):
 
-**Note:** After the build process is complete, open your web browser and navigate to [http://frontend.loom](http://frontend.loom).
+      ```bash
+      ./up.sh
+      ```
+
+    * If you have compatible GPUs and want to enable GPU support:
+
+      ```bash
+      ./up.sh --gpus all
+      ```
+
+**Note:** After the build process is complete, you can open your web browser
+and navigate to [http://frontend.loom](http://frontend.loom) to access Loom.
+
+### Multi-Node Deployment
+
+For a more scalable setup, you can deploy Loom using its Helm chart on your Kubernetes cluster.
+
+**Installation Steps:**
+
+1. You can find and deploy the Helm chart from our official package registry:
+[https://gitlab.com/swiss-armed-forces/cyber-command/cea/loom/-/packages](https://gitlab.com/swiss-armed-forces/cyber-command/cea/loom/-/packages)
+2. To customize your deployment, we provide a set of value files located in the
+[`./charts`](./charts) directory of this repository. These files document all the available
+deployment variables, allowing you to tailor the installation to your specific needs.
 
 ## 🚀 Getting Started
 
