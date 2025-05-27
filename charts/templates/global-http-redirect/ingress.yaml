@@ -1,0 +1,25 @@
+{{- if .Values.globalHttpRedirect.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "app.fullname" . }}-global-http-redirect
+  labels:
+    {{- include "app.labels.standard" . | nindent 4 }}
+    app.kubernetes.io/component: global-http-redirect
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: web
+    traefik.ingress.kubernetes.io/router.middlewares: {{ .Release.Namespace }}-{{ include "app.fullname" . }}-global-http-redirect@kubernetescrd
+spec:
+  ingressClassName: {{ .Values.ingress.className }}
+  rules:
+    - host: "*.{{ .Values.domain }}"
+      http:
+        paths:
+        - path: /
+          pathType: Prefix
+          backend:
+            service:
+              name: {{ include "app.fullname" . }}-global-http-redirect
+              port:
+                number: {{ .Values.globalHttpRedirect.service.port }}
+{{- end }}

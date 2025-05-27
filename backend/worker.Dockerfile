@@ -105,8 +105,7 @@ ENV FLOWER_UNAUTHENTICATED_API=1
 COPY --from=builder-dev ${BUILDER_VIRTUAL_ENV} ${VIRTUAL_ENV}
 # flower port
 EXPOSE 5555
-CMD ["python", "-m", "celery", "--app", "worker", "flower", "--broker-api=http://guest:guest@rabbit:15672/api/",\
-    "--db=/var/lib/flower/flowerdb", "--persistent=True", "--state_save_interval=10000"]
+CMD ["python", "-m", "celery", "--app", "worker", "flower", "--broker-api=http://guest:guest@rabbit:15672/api/"]
 
 FROM runtime-base AS production
 COPY --from=builder-prod ${BUILDER_VIRTUAL_ENV} ${VIRTUAL_ENV}

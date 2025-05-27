@@ -1,0 +1,86 @@
+{{- $totals := dict "cpuRequests" 0 "cpuLimits" 0 "memRequests" 0 "memLimits" 0 }}
+
+{{- define "resourceSummary.walkValues" -}}
+  {{- $ctx := .ctx }}
+  {{- $totals := .totals }}
+  {{- $path := .path | default "" }}
+
+  {{- if kindIs "map" $ctx }}
+    {{- range $k, $v := $ctx }}
+      {{- $currentPath := printf "%s.%s" $path $k | trimPrefix "." }}
+
+      {{- if and (kindIs "map" $v) (hasKey $v "resources") }}
+        {{- $res := $v.resources }}
+
+        {{- if not (and $res.requests (hasKey $res.requests "cpu")) }}
+          {{- fail (printf "Missing cpu request at path: %s" $currentPath) }}
+        {{- end }}
+        {{- if not (and $res.requests (hasKey $res.requests "memory")) }}
+          {{- fail (printf "Missing memory request at path: %s" $currentPath) }}
+        {{- end }}
+        {{- if not (and $res.limits (hasKey $res.limits "cpu")) }}
+          {{- fail (printf "Missing cpu limit at path: %s" $currentPath) }}
+        {{- end }}
+        {{- if not (and $res.limits (hasKey $res.limits "memory")) }}
+          {{- fail (printf "Missing memory limit at path: %s" $currentPath) }}
+        {{- end }}
+
+        {{/* CPU Requests */}}
+        {{- $cpuReq := $res.requests.cpu }}
+        {{- $cpuReqVal := 0 }}
+        {{- if hasSuffix "m" $cpuReq }}
+          {{- $cpuReqVal = trimSuffix "m" $cpuReq | int }}
+        {{- else }}
+          {{- $cpuReqVal = mulf ($cpuReq | float64) 1000 | int }}
+        {{- end }}
+        {{- $_ := set $totals "cpuRequests" (add $totals.cpuRequests $cpuReqVal) }}
+
+        {{/* CPU Limits */}}
+        {{- $cpuLim := $res.limits.cpu }}
+        {{- $cpuLimVal := 0 }}
+        {{- if hasSuffix "m" $cpuLim }}
+          {{- $cpuLimVal = trimSuffix "m" $cpuLim | int }}
+        {{- else }}
+          {{- $cpuLimVal = mulf ($cpuLim | float64) 1000 | int }}
+        {{- end }}
+        {{- $_ := set $totals "cpuLimits" (add $totals.cpuLimits $cpuLimVal) }}
+
+        {{/* Memory Requests */}}
+        {{- $memReq := $res.requests.memory }}
+        {{- $memReqVal := 0 }}
+        {{- if hasSuffix "Gi" $memReq }}
+          {{- $memReqVal = mul (trimSuffix "Gi" $memReq | int) 1024 }}
+        {{- else }}
+          {{- $memReqVal = trimSuffix "Mi" $memReq | int }}
+        {{- end }}
+        {{- $_ := set $totals "memRequests" (add $totals.memRequests $memReqVal) }}
+
+        {{/* Memory Limits */}}
+        {{- $memLim := $res.limits.memory }}
+        {{- $memLimVal := 0 }}
+        {{- if hasSuffix "Gi" $memLim }}
+          {{- $memLimVal = mul (trimSuffix "Gi" $memLim | int) 1024 }}
+        {{- else }}
+          {{- $memLimVal = trimSuffix "Mi" $memLim | int }}
+        {{- end }}
+        {{- $_ := set $totals "memLimits" (add $totals.memLimits $memLimVal) }}
+      {{- end }}
+
+      {{- if kindIs "map" $v }}
+        {{- include "resourceSummary.walkValues" (dict "ctx" $v "totals" $totals "path" $currentPath) }}
+      {{- end }}
+    {{- end }}
+  {{- end }}
+{{- end }}
+
+{{- include "resourceSummary.walkValues" (dict "ctx" .Values "totals" $totals) }}
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "app.fullname" . }}-resource-summary
+data:
+  totalCpuRequests: "{{ $totals.cpuRequests }}m"
+  totalMemoryRequests: "{{ $totals.memRequests }}Mi"
+  totalCpuLimits: "{{ $totals.cpuLimits }}m"
+  totalMemoryLimits: "{{ $totals.memLimits }}Mi"

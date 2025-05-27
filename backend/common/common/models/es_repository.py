@@ -279,6 +279,7 @@ class BaseEsRepository(
 
             results: Response = search.execute()
             hit_count = len(results.hits.hits)
+            total_hits: int = results.hits.total.value
 
             if hit_count == 0:
                 # no more hits
@@ -291,7 +292,7 @@ class BaseEsRepository(
                 break
 
             handled_hits_count += hit_count
-            if handled_hits_count >= results.hits.total.value:
+            if handled_hits_count >= total_hits:
                 break
 
             last_hit = results.hits.hits[-1]
@@ -424,6 +425,7 @@ class BaseEsRepository(
                 document: EsRepositoryDocumentT = hit
                 document_dict = document.to_es_dict()
                 if sort_by_field.startswith("_"):
+                    # special handling for: _score
                     sort_value = str(
                         document_dict["es_meta"][sort_by_field.removeprefix("_")]
                     )

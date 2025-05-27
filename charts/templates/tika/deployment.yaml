@@ -6,7 +6,9 @@ metadata:
     {{- include "app.labels.standard" . | nindent 4 }}
     app.kubernetes.io/component: tika
 spec:
+  {{- if not .Values.tika.hpa.enabled }}
   replicas: {{ .Values.tika.replicaCount }}
+  {{- end }}
   selector:
     matchLabels:
       app: {{ include "app.name" . }}-tika
@@ -18,12 +20,10 @@ spec:
       containers:
         - name: tika
           image: {{ .Values.image.registry }}/{{ .Values.tika.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) .Values.tika.image.tag }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports:
             - name: tika
               containerPort: {{ .Values.tika.service.port }}
-          env:
-            - name: TIKA_JAVA_OPS
-              value: {{ .Values.tika.env.TIKA_JAVA_OPS }}
           {{- if .Values.tika.readinessProbe.enabled }}
           readinessProbe:
             httpGet:

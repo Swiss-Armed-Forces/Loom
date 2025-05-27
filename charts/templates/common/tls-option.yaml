@@ -1,0 +1,26 @@
+apiVersion: traefik.io/v1alpha1
+kind: TLSOption
+metadata:
+  labels:
+    ingressclass: {{ .Values.ingress.className }}
+  name: {{ include "app.fullname" . }}-mtls
+spec:
+  clientAuth:
+    secretNames:
+      - self-signed-mtls-cert
+    clientAuthType: RequireAndVerifyClientCert
+---
+# Variant for minio, where we set
+# nameOverride: loom-minio
+apiVersion: traefik.io/v1alpha1
+kind: TLSOption
+metadata:
+  labels:
+    ingressclass: {{ .Values.ingress.className }}
+  name: {{ include "app.fullname" . }}-minio-mtls
+spec:
+  clientAuth:
+    secretNames:
+      - self-signed-mtls-cert
+    clientAuthType: RequireAndVerifyClientCert
+---

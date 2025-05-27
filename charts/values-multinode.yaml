@@ -1,0 +1,5 @@
+fluentd:
+  enabled: false
+
+prometheus:
+  collectClusterMetrics: false

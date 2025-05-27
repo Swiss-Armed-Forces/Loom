@@ -8,6 +8,9 @@ metadata:
     app.kubernetes.io/component: monitoring
   annotations:
     {{- toYaml .Values.grafana.ingress.annotations | nindent 4 }}
+    {{- if .Values.certificate.requireClientCert }}
+    traefik.ingress.kubernetes.io/router.tls.options: {{ .Release.Namespace }}-{{ include "app.fullname" . }}-mtls@kubernetescrd
+    {{- end }}
 spec:
   ingressClassName: {{ .Values.grafana.ingress.className }}
   rules:
@@ -23,7 +26,7 @@ spec:
                   number: {{ .Values.grafana.service.port }}
   {{- if .Values.grafana.ingress.tls.enabled }}
   tls:
-    - secretName: {{ include "app.fullname" . }}-external-vault-tls
+    - secretName: {{ include "app.fullname" . }}-certificate
       hosts:
         - grafana.{{ .Values.domain }}
   {{- end }}

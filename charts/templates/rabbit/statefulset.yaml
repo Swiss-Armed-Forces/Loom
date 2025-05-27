@@ -19,6 +19,7 @@ spec:
       containers:
         - name: rabbit
           image: {{ .Values.image.registry }}/{{ .Values.rabbit.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) .Values.rabbit.image.tag }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports:
             - name: amqp
               containerPort: {{ .Values.rabbit.service.port.amqp }}
@@ -66,11 +67,11 @@ spec:
               memory: {{ .Values.rabbit.resources.requests.memory }}
           {{- end }}
   volumeClaimTemplates:
-  - metadata:
-      name: rabbit
-    spec:
-      accessModes:
-        - {{ .Values.rabbit.pvc.accessModes | default "ReadWriteOnce" | quote }}
-      resources:
-          requests:
-            storage: {{ .Values.rabbit.pvc.storage }}
+    - metadata:
+        name: rabbit
+      spec:
+        accessModes:
+          - {{ .Values.rabbit.pvc.accessModes | default "ReadWriteOnce" | quote }}
+        resources:
+            requests:
+              storage: {{ .Values.rabbit.pvc.storage }}

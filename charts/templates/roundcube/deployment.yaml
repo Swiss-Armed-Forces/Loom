@@ -18,12 +18,15 @@ spec:
       containers:
         - name: roundcube
           image: {{ .Values.image.registry }}/{{ .Values.roundcube.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) .Values.roundcube.image.tag }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports:
             - name: roundcube
               containerPort: {{ .Values.roundcube.service.port }}
           env:
             - name: ROUNDCUBEMAIL_DEFAULT_HOST
               value: {{ include "app.fullname" . }}-dovecot
+            - name: ROUNDCUBEMAIL_PLUGINS
+              value: archive,zipdownload,subscriptions_option
           {{- if .Values.roundcube.resources }}
           resources: {{- toYaml .Values.roundcube.resources | nindent 12 }}
           {{- end }}

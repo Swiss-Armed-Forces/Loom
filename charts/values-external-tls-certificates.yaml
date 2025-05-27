@@ -1,0 +1,7 @@
+clusterIssuer:
+  enabled: false
+
+certificate:
+  enabled: true
+  issuerRef:
+    name: external-vault-issuer

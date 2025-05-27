@@ -9,7 +9,10 @@ metadata:
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
   annotations:
-    "helm.sh/hook": post-install,post-upgrade
+    # NOTE: Change from the official chart, we do not run these
+    # post jobs post helm deployment: This is so that we can
+    # run and start the crawler.
+    #"helm.sh/hook": post-install,post-upgrade
     "helm.sh/hook-delete-policy": hook-succeeded,before-hook-creation
     {{- with .Values.postJob.annotations }}
       {{- toYaml . | nindent 4 }}

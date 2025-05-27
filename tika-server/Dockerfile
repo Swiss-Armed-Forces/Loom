@@ -29,7 +29,7 @@ COPY tika-config.xml /tika-config.xml
 
 USER $UID_GID
 
-ENV TIKA_JAVA_OPS="-Xms2g -Xmx2g"
+ENV TIKA_JAVA_OPS="-XX:InitialRAMPercentage=90 -XX:MaxRAMPercentage=90"
 
 EXPOSE 8000
 

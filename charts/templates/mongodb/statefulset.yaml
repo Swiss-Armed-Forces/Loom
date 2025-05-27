@@ -19,6 +19,7 @@ spec:
       containers:
         - name: mongodb
           image: {{ .Values.image.registry }}/{{ .Values.mongodb.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) .Values.mongodb.image.tag }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
           volumeMounts:
             - mountPath: /data/db
               name: mongodb
@@ -56,11 +57,11 @@ spec:
               memory: {{ .Values.mongodb.resources.requests.memory }}
           {{- end }}
   volumeClaimTemplates:
-  - metadata:
-      name: mongodb
-    spec:
-      accessModes:
-        - {{ .Values.mongodb.pvc.accessModes | default "ReadWriteOnce" | quote }}
-      resources:
-          requests:
-            storage: {{ .Values.mongodb.pvc.storage }}
+    - metadata:
+        name: mongodb
+      spec:
+        accessModes:
+          - {{ .Values.mongodb.pvc.accessModes | default "ReadWriteOnce" | quote }}
+        resources:
+            requests:
+              storage: {{ .Values.mongodb.pvc.storage }}

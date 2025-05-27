@@ -1,13 +1,64 @@
+{{- if not .Values.egress.enabled }}
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
-  name: default-deny-all
+  name: {{ include "app.fullname" . }}-deny-all-egress
 spec:
   podSelector: {}
   policyTypes:
-  - Egress
-
+    - Egress
   egress:
-  - to:
-    - namespaceSelector: {}
-    - podSelector: {}
+    - to:
+      # Allow access to all pods in this namespace:
+      - podSelector: {}
+
+      # Allow access to kube-services (DNS resolution)
+      - namespaceSelector:
+          matchLabels:
+            kubernetes.io/metadata.name: kube-system
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "app.fullname" . }}-allow-k8s-api
+spec:
+  podSelector: {}
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+      # Allow access to kubernetes-api
+      - ipBlock:
+          # Hard coded cluster ip - might break if changed
+          # see better version below..
+          cidr: {{ .Values.kubernets.api }}/32
+    - ports:
+      - protocol: TCP
+        port: 443
+#---
+# Lookup cluster api ip using helm lookup:
+# -> Does not work with scaffold v2
+# https://github.com/GoogleContainerTools/skaffold/issues/9488
+#apiVersion: networking.k8s.io/v1
+#kind: NetworkPolicy
+#metadata:
+#  name: {{ include "app.fullname" . }}-allow-k8s-api
+#spec:
+#  podSelector: {}
+#  policyTypes:
+#    - Egress
+#  egress:
+#    {{- range (lookup "v1" "Endpoints" "default" "kubernetes").subsets }}
+#    - to:
+#        {{- range .addresses }}
+#        - ipBlock:
+#            cidr: {{ .ip }}/32
+#        {{- end }}
+#      ports:
+#        {{- range .ports }}
+#        - protocol: {{ .protocol }}
+#          port: {{ .port }}
+#        {{- end }}
+#    {{- end }}
+#---
+{{- end }}

@@ -126,25 +126,26 @@ build_transfer_loom:
   script:
     - devenv shell -- transfer-loom
 
-build_helm_test:
-  stage: test
-  when: manual
+build_helm_dev:
+  stage: build
   script:
     - devenv shell -- build-helm
-      --user gitlab-ci-token:${CI_JOB_TOKEN}
-      --package-registry ${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/helm/api/dev/charts
+      --publish
+        "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/helm/api/dev/charts"
+        gitlab-ci-token:${CI_JOB_TOKEN}
   rules:
     - if: '$CI_COMMIT_BRANCH != "main"'
     - if: $CI_COMMIT_TAG
       when: never
 
-build_helm_integration:
+build_helm_test:
   stage: build
   script:
     - devenv shell -- build-helm
       --publish
-      --user gitlab-ci-token:${CI_JOB_TOKEN}
-      --package-registry ${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/helm/api/test/charts
+        "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/helm/api/test/charts"
+        gitlab-ci-token:${CI_JOB_TOKEN}
+
   rules:
     - if: '$CI_COMMIT_BRANCH == "main"'
     - if: $CI_COMMIT_TAG
@@ -155,8 +156,9 @@ build_helm_prod:
   script:
     - devenv shell -- build-helm
       --publish
-      --user gitlab-ci-token:${CI_JOB_TOKEN}
-      --package-registry ${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/helm/api/prod/charts
+        "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/helm/api/prod/charts"
+        gitlab-ci-token:${CI_JOB_TOKEN}
+
   rules:
     - if: $CI_COMMIT_TAG
 
@@ -167,6 +169,15 @@ build_helm_prod:
 #
 #
 # ----------------------------------------------#
+
+helm_test:
+  stage: test
+  script:
+    - devenv --verbose shell -- build-helm
+  rules:
+    - if: '$CI_COMMIT_BRANCH != "main"'
+    - if: $CI_COMMIT_TAG
+      when: never
 
 linting:
   stage: test

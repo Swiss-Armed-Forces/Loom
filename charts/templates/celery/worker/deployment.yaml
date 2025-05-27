@@ -6,7 +6,9 @@ metadata:
     {{- include "app.labels.standard" . | nindent 4 }}
     app.kubernetes.io/component: "celery"
 spec:
+  {{- if not .Values.celery.worker.main.hpa.enabled }}
   replicas: {{ .Values.celery.worker.main.replicaCount }}
+  {{- end }}
   selector:
     matchLabels:
       app: {{ include "app.name" . }}-celery-worker
@@ -18,6 +20,7 @@ spec:
       containers:
         - name: celery-worker
           image: {{ .Values.image.registry }}/{{ .Values.celery.worker.main.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) .Values.celery.worker.main.image.tag }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports:
             - name: worker
               containerPort: {{ .Values.celery.worker.main.service.port }}
@@ -61,7 +64,3 @@ spec:
           {{- if .Values.celery.worker.main.resources }}
           resources: {{- toYaml .Values.celery.worker.main.resources | nindent 12 }}
           {{- end }}
-      volumes:
-        - name: secret
-          persistentVolumeClaim:
-            claimName: {{ include "app.fullname" . }}-secret

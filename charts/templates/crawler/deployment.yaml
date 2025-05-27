@@ -16,19 +16,38 @@ spec:
       labels:
         app: {{ include "app.name" . }}-crawler
     spec:
+      initContainers:
+        - name: check-minio-ready
+          image: {{ .Values.image.registry }}/{{ .Values.crawler.initContainer.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) .Values.crawler.initContainer.image.tag }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command:
+            - 'sh'
+            - '-c'
+            - |
+              set -eu
+
+              until nc -vz {{ include "app.fullname" . }}-minio {{ .Values.minio.service.port }}; do
+                echo "Waiting for minio service";
+                sleep 1;
+              done;
+          {{- if .Values.crawler.initContainer.resources }}
+          resources: {{- toYaml .Values.crawler.initContainer.resources | nindent 12 }}
+          {{- end }}
       containers:
-        - name: api
+        - name: crawler
           image: {{ .Values.image.registry }}/{{ .Values.crawler.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) .Values.crawler.image.tag }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
           env:
+            # Note: we do assume here that the MinIO-Intake-Key is at position 0
+            {{- with index .Values.minio.svcaccts 0 }}
             - name: MINIO_SECRET_KEY
               valueFrom:
                 secretKeyRef:
-                  name: loom-minio-secret
+                  name: "{{ .existingSecret }}"
                   key: secretkey
             - name: MINIO_ACCESS_KEY
-              {{ with index .Values.minio.svcaccts 0}}
-              value: {{.accessKey | quote}}
-              {{end}}
+              value: "{{ .accessKey }}"
+            {{- end }}
           envFrom:
             - configMapRef:
                 name: {{ include "app.fullname" . }}-settings
@@ -36,8 +55,4 @@ spec:
           {{- if .Values.crawler.resources }}
           resources: {{- toYaml .Values.crawler.resources | nindent 12 }}
           {{- end }}
-      volumes:
-        - name: secret
-          persistentVolumeClaim:
-            claimName: {{ include "app.fullname" . }}-secret
 {{- end }}

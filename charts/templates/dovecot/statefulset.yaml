@@ -16,9 +16,26 @@ spec:
       labels:
         app: {{ include "app.name" . }}-dovecot
     spec:
+      initContainers:
+        - name: fix-perms
+          image: {{ .Values.image.registry }}/{{ .Values.dovecot.initContainer.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) .Values.dovecot.initContainer.image.tag }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command:
+            - 'sh'
+            - '-c'
+            - |
+              chown 0:1000 /srv/mail;
+              chmod 0775 /srv/mail;
+          volumeMounts:
+            - mountPath: /srv/mail
+              name: dovecot
+          {{- if .Values.dovecot.initContainer.resources }}
+          resources: {{- toYaml .Values.dovecot.initContainer.resources | nindent 12 }}
+          {{- end }}
       containers:
         - name: dovecot
           image: {{ .Values.image.registry }}/{{ .Values.dovecot.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) .Values.dovecot.image.tag }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports:
             - name: imap
               containerPort: {{ .Values.dovecot.service.port.imap }}
@@ -26,15 +43,26 @@ spec:
             #- name: submission
             #  containerPort: {{ .Values.dovecot.service.port.submission }}
             #  protocol: TCP
+          # securityContext:
+          #   fsGroup: 2000
           volumeMounts:
             - mountPath: /srv/mail
               name: dovecot
+          {{- if .Values.dovecot.resources }}
+          resources:
+            limits:
+              cpu: {{ .Values.dovecot.resources.limits.cpu }}
+              memory: {{ .Values.dovecot.resources.limits.memory }}
+            requests:
+              cpu: {{ .Values.dovecot.resources.requests.cpu }}
+              memory: {{ .Values.dovecot.resources.requests.memory }}
+          {{- end }}
   volumeClaimTemplates:
-  - metadata:
-      name: dovecot
-    spec:
-      accessModes:
-        - {{ .Values.dovecot.pvc.accessModes | default "ReadWriteOnce" | quote }}
-      resources:
-          requests:
-            storage: {{ .Values.dovecot.pvc.storage }}
+    - metadata:
+        name: dovecot
+      spec:
+        accessModes:
+          - {{ .Values.dovecot.pvc.accessModes | default "ReadWriteOnce" | quote }}
+        resources:
+            requests:
+              storage: {{ .Values.dovecot.pvc.storage }}

@@ -22,6 +22,7 @@ spec:
       containers:
         - name: elasticsearch
           image: {{ .Values.image.registry }}/{{ .Values.elasticsearch.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) .Values.elasticsearch.image.tag }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
           env:
             - name: cluster.name
               value: {{ include "app.name" . }}-elasticsearch
@@ -62,11 +63,11 @@ spec:
               memory: {{ .Values.elasticsearch.resources.requests.memory }}
           {{- end }}
   volumeClaimTemplates:
-  - metadata:
-      name: elasticsearch-data
-    spec:
-      accessModes:
-        - {{ .Values.elasticsearch.pvc.accessModes | default "ReadWriteOnce" | quote }}
-      resources:
-          requests:
-            storage: {{ .Values.elasticsearch.pvc.storage }}
+    - metadata:
+        name: elasticsearch-data
+      spec:
+        accessModes:
+          - {{ .Values.elasticsearch.pvc.accessModes | default "ReadWriteOnce" | quote }}
+        resources:
+            requests:
+              storage: {{ .Values.elasticsearch.pvc.storage }}

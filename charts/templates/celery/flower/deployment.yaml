@@ -18,12 +18,10 @@ spec:
       containers:
         - name: celery-flower
           image: {{ .Values.image.registry }}/{{ .Values.celery.flower.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) .Values.celery.flower.image.tag }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
           envFrom:
             - configMapRef:
                 name: {{ include "app.fullname" . }}-settings
-          volumeMounts:
-            - name: flower
-              mountPath: /var/lib/flower
           {{- if .Values.celery.flower.readinessProbe.enabled }}
           readinessProbe:
             httpGet:
@@ -45,8 +43,3 @@ spec:
           {{- if .Values.celery.flower.resources }}
           resources: {{- toYaml .Values.celery.flower.resources | nindent 12 }}
           {{- end }}
-      volumes:
-        - name: flower
-          emptyDir:
-            sizeLimit: {{ .Values.celery.flower.volume.sizeLimit }}
-            medium: "Memory"

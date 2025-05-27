@@ -15,9 +15,20 @@ spec:
       labels:
         app: {{ include "app.name" . }}-rspamd
     spec:
+      # Disable DNS for pod:
+      # Rspamd will lookup spam lists using
+      # DNS, and this is really not something
+      # we want to do here (possible data-leak).
+      dnsPolicy: None
+      dnsConfig:
+        nameservers:
+          - 127.0.0.1
+        searches: []
+        options: []
       containers:
         - name: rspamd
           image: {{ .Values.image.registry }}/{{ .Values.rspamd.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) .Values.rspamd.image.tag }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports:
             - name: worker
               containerPort: {{ .Values.rspamd.worker.service.port }}

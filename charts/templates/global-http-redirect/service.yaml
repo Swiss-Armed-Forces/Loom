@@ -1,0 +1,16 @@
+{{- if .Values.globalHttpRedirect.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "app.fullname" . }}-global-http-redirect
+  labels:
+    {{- include "app.labels.standard" . | nindent 4 }}
+    app.kubernetes.io/component: "global-http-redirect"
+spec:
+  ports:
+    - port: {{ .Values.globalHttpRedirect.service.port }}
+      name: global-http-redirect
+      targetPort: {{ .Values.globalHttpRedirect.service.port }}
+  selector:
+    app: {{ include "app.name" . }}-global-http-redirect
+{{- end }}

@@ -1,11 +1,5 @@
 environment: development
 
-# Override domain inside values.yaml + set a global domain value
-#
-# domain: &default-domain "xxxxx"
-# global:
-#   domain: *default-domain
-
 llm:
   # model: qwen2.5:0.5b
   model: smollm2:135m
@@ -16,3 +10,100 @@ llm:
   embedding_text_chunk_size: 250
   embedding_text_chunk_overlap: 25
   llm_rerank_temperature: 0
+
+ingress: &default-ingress-config
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: web, websecure
+
+globalHttpRedirect:
+  enabled: false
+
+api:
+  ingress: *default-ingress-config
+
+frontend:
+  ingress: *default-ingress-config
+  # The dev-Server needs a bit more ressources
+  resources:
+    requests:
+      cpu: "0.1"
+      memory: "1Gi"
+    limits:
+      cpu: "0.5"
+      memory: "1.5Gi"
+
+celery:
+  flower:
+    ingress: *default-ingress-config
+  worker:
+    main:
+      hpa: &default-celery-worker-hpa
+        enabled: false
+    interactive:
+      hpa: *default-celery-worker-hpa
+
+elasticsearch:
+  ingress: *default-ingress-config
+
+elasticvue:
+  ingress: *default-ingress-config
+
+grafana:
+  ingress: *default-ingress-config
+
+translate:
+  ingress: *default-ingress-config
+  hpa:
+    enabled: false
+
+minio:
+  ingress: *default-ingress-config
+  consoleIngress: *default-ingress-config
+
+mongodb:
+  ingress:
+    enabled: true
+  express:
+    ingress: *default-ingress-config
+
+rabbit:
+  ingress:
+    http: *default-ingress-config
+    amqp:
+      enabled: true
+
+ollama:
+  hpa:
+    enabled: false
+  ingress: *default-ingress-config
+
+open_webui:
+  ingress: *default-ingress-config
+
+dovecot:
+  ingress:
+    imap:
+      enabled: true
+
+roundcube:
+  ingress: *default-ingress-config
+
+prometheus:
+  ingress: *default-ingress-config
+
+redis:
+  ingress:
+    enabled: true
+  insight:
+    ingress: *default-ingress-config
+
+rspamd:
+  worker:
+    ingress: *default-ingress-config
+  controller:
+    ingress: *default-ingress-config
+
+tika:
+  hpa:
+    enabled: false
+  ingress: *default-ingress-config

@@ -8,6 +8,9 @@ metadata:
     app.kubernetes.io/component: tika
   annotations:
     {{- toYaml .Values.tika.ingress.annotations | nindent 4 }}
+    {{- if .Values.certificate.requireClientCert }}
+    traefik.ingress.kubernetes.io/router.tls.options: {{ .Release.Namespace }}-{{ include "app.fullname" . }}-mtls@kubernetescrd
+    {{- end }}
 spec:
   ingressClassName: {{ .Values.tika.ingress.className }}
   rules:
@@ -23,7 +26,7 @@ spec:
                   number: {{ .Values.tika.service.port }}
   {{- if .Values.tika.ingress.tls.enabled }}
   tls:
-    - secretName: {{ include "app.fullname" . }}-external-vault-tls
+    - secretName: {{ include "app.fullname" . }}-certificate
       hosts:
         - tika.{{ .Values.domain }}
   {{- end }}
