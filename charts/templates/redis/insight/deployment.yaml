@@ -19,6 +19,7 @@ spec:
       containers:
         - name: redis-insight
           image: {{ .Values.image.registry }}/{{ .Values.redis.insight.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) .Values.redis.insight.image.tag }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports:
             - name: redisinsight
               containerPort: {{ .Values.redis.insight.service.port }}

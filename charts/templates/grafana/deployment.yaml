@@ -19,6 +19,7 @@ spec:
       containers:
         - name: grafana
           image: {{ .Values.image.registry }}/{{ .Values.grafana.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) .Values.grafana.image.tag }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports:
             - name: grafana
               containerPort: {{ .Values.grafana.service.port }}

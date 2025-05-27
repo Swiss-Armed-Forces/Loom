@@ -1,0 +1,79 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "app.fullname" $ }}-generate-self-signed-mtls-certificate
+  annotations:
+    "helm.sh/hook": pre-install,pre-upgrade
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+spec:
+  template:
+    metadata:
+      labels:
+        app: {{ include "app.name" $ }}-generate-self-signed-mtls-certificate
+    spec:
+      serviceAccountName: {{ include "app.fullname" $ }}-pre-install
+      restartPolicy: Never
+      containers:
+        - name: create-mtls-secret
+          image: {{ .Values.image.registry }}/{{ .Values.preInstall.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) .Values.preInstall.image.tag }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command:
+            - bash
+            - -c
+            - |
+              set -euo pipefail
+
+              #
+              # Vars
+              #
+              export NAMESPACE="{{ .Release.Namespace }}"
+              export LOOM_DOMAIN="{{ .Values.domain }}"
+              export MTLS_CERT_SECRET_NAME="self-signed-mtls-cert"
+
+              CRT_FILE="$(mktemp)"
+              KEY_FILE="$(mktemp)"
+
+              #
+              # Functions
+              #
+
+              create_self_signed_mtls_cert() {
+                  if kubectl get secret "${MTLS_CERT_SECRET_NAME}" -n "${NAMESPACE}" &>/dev/null; then
+                      echo "[-] Certificate '${MTLS_CERT_SECRET_NAME}' already exists in namespace"
+                      return
+                  fi
+
+                  local common_name
+                  common_name="*.${LOOM_DOMAIN}"
+
+                  # Generate self-signed cert and key
+                  openssl req -x509 -nodes -days 365 \
+                      -newkey rsa:4096 \
+                      -keyout "${KEY_FILE}" \
+                      -out "${CRT_FILE}" \
+                      -subj "/CN=${common_name}/O=Wildcard Self-Signed MTLS"
+
+                  # Create the Kubernetes secret
+                  kubectl create secret generic "${MTLS_CERT_SECRET_NAME}" \
+                      --from-file=ca.crt="${CRT_FILE}" \
+                      --from-file=ca.key="${KEY_FILE}" \
+                      --namespace="${NAMESPACE}"
+              }
+
+              #
+              # Atexit
+              #
+              atexit(){
+                  rm -f \
+                      "${CRT_FILE}" \
+                      "${KEY_FILE}"
+              }
+              trap atexit EXIT
+
+              #
+              # Main
+              #
+              create_self_signed_mtls_cert
+          {{- if .Values.preInstall.resources }}
+          resources: {{- toYaml .Values.preInstall.resources | nindent 12 }}
+          {{- end }}

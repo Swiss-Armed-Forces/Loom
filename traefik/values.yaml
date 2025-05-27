@@ -9,8 +9,15 @@ image:
 ingressRoute:
   dashboard:
     enabled: true
-    entryPoints: ["web"]
+    entryPoints:
+      - web
+      - websecure
     matchRule: Host("traefik.loom")
+
+ingressClass:
+  enabled: true
+  isDefaultClass: true
+  name: traefik
 
 ports:
   web:

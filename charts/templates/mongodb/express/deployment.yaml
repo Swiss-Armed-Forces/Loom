@@ -19,6 +19,7 @@ spec:
       containers:
         - name: mongodb-express
           image: {{ .Values.image.registry }}/{{ .Values.mongodb.express.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) .Values.mongodb.express.image.tag }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports:
             - name: http
               containerPort: {{ .Values.mongodb.express.service.port }}

@@ -22,7 +22,8 @@ build_chart(){
 }
 
 publish_chart(){
-    curl --fail-with-body \
+    curl \
+        --fail-with-body \
         --request POST \
         --form "chart=@${PACKAGE_NAME}" \
         --user "${USER}" \
@@ -35,11 +36,12 @@ publish_chart(){
 
 usage(){
     echo "usage: ${0} [<options>]"
-    echo "  -h|--help                         show this help"
-    echo "  -v|--verbose                      show verbose output"
-    echo "  -u|--user                         user acess in format user:acessToken"
-    echo "  -r|--package-registry             url for the package registry"
-    echo "  -p|--publish                      publish the chart needs registry"
+    echo "  -h|--help                           show this help"
+    echo "  -v|--verbose                        show verbose output"
+    echo "  -p|--publish package_registry user  publish the chart needs registry"
+    echo "Notes:"
+    echo " - user argument is in the format user:accessToken"
+
 }
 
 #
@@ -60,15 +62,9 @@ while [[ $# -gt 0 ]]; do
     -p | --publish)
         PUBLISH=true
         shift
-        ;;
-    -u | --user)
+        PACKAGE_REGISTRY="${1?Missing package registry}"
         shift
-        USER="${1}"
-        shift
-        ;;
-    -r | --package-registry)
-        shift
-        PACKAGE_REGISTRY="${1}"
+        USER="${1?Missing user}"
         shift
         ;;
     *)

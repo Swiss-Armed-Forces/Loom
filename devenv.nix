@@ -87,6 +87,7 @@ in
       dos2unix
       curl
       pv
+      openssl
 
       # k8s
       minikube
@@ -115,6 +116,9 @@ in
       # for Frontend debugging
       chromium
 
+      # utils
+      vim
+
       # k8s
       k9s
 
@@ -139,6 +143,8 @@ in
           with vscode-extensions;
           [
             bbenoist.nix
+
+            gitlab.gitlab-workflow
 
             ms-python.python
             ms-python.vscode-pylance
@@ -359,8 +365,16 @@ in
         set -euo pipefail
         cd "''${DEVENV_ROOT}"
 
+        echo "[*] Stopping loom"
         skaffold delete \
           "''${@}"
+
+        (
+          echo "[*] Stopping traefik"
+          cd traefik
+          ./skaffold delete \
+            "''${@}"
+        )
       )
     '';
   };
@@ -410,6 +424,9 @@ in
 
         echo "[*] Checking for leftover TODO's"
         ./cicd/check_todo.sh
+
+        echo "[*] Checking deployment requests"
+        ./cicd/check_requests.sh
 
         echo "[*] Linting successful!"
       )
@@ -549,6 +566,18 @@ in
 
         ./cicd/fetch_all_pod_logs.sh \
           "''${@}"
+      )
+    '';
+  };
+
+  scripts.kubernetes-delete-namespace = {
+    description = "Delete whole namespace";
+    exec = ''
+      (
+        set -euo pipefail
+        cd "''${DEVENV_ROOT}"
+
+        kubectl delete namespace loom
       )
     '';
   };
@@ -717,6 +746,19 @@ in
         cd "''${DEVENV_ROOT}"
 
         ./traefik/update.sh \
+          "''${@}"
+      )
+    '';
+  };
+
+  scripts.generate-client-certificate = {
+    description = "Generate THIRD-PARTY.md";
+    exec = ''
+      (
+        set -euo pipefail
+        cd "''${DEVENV_ROOT}"
+
+        ./cicd/generate_client_certificate.sh \
           "''${@}"
       )
     '';

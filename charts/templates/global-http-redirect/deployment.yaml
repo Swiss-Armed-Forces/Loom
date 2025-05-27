@@ -1,0 +1,35 @@
+{{- if .Values.globalHttpRedirect.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "app.fullname" . }}-global-http-redirect
+  labels:
+    {{- include "app.labels.standard" . | nindent 4 }}
+    app.kubernetes.io/component: "global-http-redirect"
+spec:
+  replicas: {{ .Values.globalHttpRedirect.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ include "app.name" . }}-global-http-redirect
+  template:
+    metadata:
+      labels:
+        app: {{ include "app.name" . }}-global-http-redirect
+    spec:
+      containers:
+        - name: global-http-redirect
+          image: {{ .Values.image.registry }}/{{ .Values.globalHttpRedirect.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) .Values.globalHttpRedirect.image.tag }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command:
+            - bash
+            - -c
+            - |
+              set -euo pipefail
+              echo "[*] Sleeping.."
+              sleep infinity
+          ports:
+            - containerPort: {{ .Values.globalHttpRedirect.service.port }}
+          {{- if .Values.globalHttpRedirect.resources }}
+          resources: {{- toYaml .Values.globalHttpRedirect.resources | nindent 12 }}
+          {{- end }}
+{{- end }}

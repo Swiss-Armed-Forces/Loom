@@ -19,6 +19,10 @@ spec:
       containers:
         - name: fluentd
           image: {{ .Values.image.registry }}/{{ .Values.fluentd.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) .Values.fluentd.image.tag }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          {{- if .Values.fluentd.resources }}
+          resources: {{- toYaml .Values.fluentd.resources | nindent 12 }}
+          {{- end }}
           securityContext:
             runAsUser: 0
           env:

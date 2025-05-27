@@ -1,18 +1,31 @@
+environment: production
+nameOverride: null
+
 domain: &default-domain loom
+
+kubernets:
+  api: 192.168.49.2
 
 image:
   registry: registry.gitlab.com
+  pullPolicy: IfNotPresent
 
 certificate:
   enabled: false
+  issuerRef:
+    name: null
+  requireClientCert: false
 
 ingress: &default-ingress-config
   enabled: true
+  className: traefik
   annotations:
-    traefik.ingress.kubernetes.io/router.entrypoints: web,websecure
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
   tls:
     enabled: true
 
+egress:
+  enabled: false
 
 llm:
   model: deepseek-r1:8b
@@ -25,17 +38,44 @@ llm:
   embedding_text_chunk_overlap: null
   llm_rerank_temperature: null
 
-secret:
-  pvc:
-    storage: 3Gi
+preInstall:
+  image:
+    repository: swiss-armed-forces/cyber-command/cea/loom/alpine
+  resources:
+    requests:
+      cpu: "0.1"
+      memory: "100Mi"
+    limits:
+      cpu: "0.2"
+      memory: "200Mi"
+  generateSecrets:
+    - name: loom-minio-secret
+      size: 40
+      chars: "A-Za-z0-9"
+      fixed: "0000000000000000000000000000000000000000"
+    - name: archive-encryption-master-key
+      size: 32
+      chars: "a-f0-9"
+      fixed: "00000000000000000000000000000000"
+
+globalHttpRedirect:
+  enabled: true
+  image:
+    repository: swiss-armed-forces/cyber-command/cea/loom/alpine
+  service:
+    port: 80
+  resources:
+    requests:
+      cpu: "0.05"
+      memory: "50Mi"
+    limits:
+      cpu: "0.1"
+      memory: "100Mi"
 
 api:
   replicaCount: 1
   image:
     repository: swiss-armed-forces/cyber-command/cea/loom/api
-  initContainer:
-    image:
-      repository: swiss-armed-forces/cyber-command/cea/loom/busybox
   service:
     port: 8084
   ingress: *default-ingress-config
@@ -43,6 +83,23 @@ api:
     enabled: true
   livenessProbe:
     enabled: true
+  resources:
+    requests:
+      cpu: "0.2"
+      memory: "200Mi"
+    limits:
+      cpu: "2"
+      memory: "4Gi"
+  initContainer:
+    image:
+      repository: swiss-armed-forces/cyber-command/cea/loom/alpine
+    resources:
+      requests:
+        cpu: "0.05"
+        memory: "50Mi"
+      limits:
+        cpu: "0.1"
+        memory: "100Mi"
 
 frontend:
   replicaCount: 1
@@ -55,6 +112,13 @@ frontend:
     enabled: false
   livenessProbe:
     enabled: true
+  resources:
+    requests:
+      cpu: "0.1"
+      memory: "100Mi"
+    limits:
+      cpu: "0.3"
+      memory: "500Mi"
 
 celery:
   flower:
@@ -70,11 +134,28 @@ celery:
       enabled: false
     livenessProbe:
       enabled: true
+    resources:
+      requests:
+        cpu: "0.2"
+        memory: "200Mi"
+      limits:
+        cpu: "1"
+        memory: "1Gi"
+    initContainer:
+      image:
+        repository: swiss-armed-forces/cyber-command/cea/loom/alpine
+      resources:
+        requests:
+          cpu: "0.05"
+          memory: "50Mi"
+        limits:
+          cpu: "0.1"
+          memory: "100Mi"
   worker:
     main:
       replicaCount: 1
       hpa: &default-celery-worker-hpa
-        enabled: false
+        enabled: true
         maxReplicas: 100
         minReplicas: 1
         targetCPUUtilizationPercentage: 100
@@ -87,16 +168,16 @@ celery:
       service: &default-celery-worker-service
         port: 80
       readinessProbe:
-        enabled: false
+        enabled: true
       livenessProbe:
         enabled: true
       resources: &default-celery-worker-resouces
-        limits:
-          cpu: "1"
-          memory: "2000Mi"
         requests:
-          cpu: "0.1"
+          cpu: "0.3"
           memory: "500Mi"
+        limits:
+          cpu: "1.5"
+          memory: "4Gi"
     interactive:
       replicaCount: 1
       hpa: *default-celery-worker-hpa
@@ -127,6 +208,13 @@ celery:
         enabled: false
       livenessProbe:
         enabled: true
+      resources:
+        requests:
+          cpu: "0.1"
+          memory: "200Mi"
+        limits:
+          cpu: "0.2"
+          memory: "500Mi"
 
 crawler:
   enabled: true
@@ -135,6 +223,23 @@ crawler:
     repository: swiss-armed-forces/cyber-command/cea/loom/crawler
   service:
     port: 80
+  resources:
+    requests:
+      cpu: "0.2"
+      memory: "200Mi"
+    limits:
+      cpu: "0.4"
+      memory: "1Gi"
+  initContainer:
+    image:
+      repository: swiss-armed-forces/cyber-command/cea/loom/alpine
+    resources:
+      requests:
+        cpu: "0.05"
+        memory: "50Mi"
+      limits:
+        cpu: "0.1"
+        memory: "100Mi"
 
 elasticsearch:
   replicaCount: 1
@@ -143,17 +248,19 @@ elasticsearch:
   service:
     port: 9200
   pvc:
-    storage: 10Gi
-  resources:
-    requests:
-      memory: 4Gi
-    limits:
-      memory: 4Gi
+    storage: 50Gi
   ingress: *default-ingress-config
   readinessProbe:
     enabled: true
   livenessProbe:
     enabled: true
+  resources:
+    requests:
+      cpu: "0.5"
+      memory: "4Gi"
+    limits:
+      cpu: "8"
+      memory: "16Gi"
 
 elasticvue:
   enabled: true
@@ -163,6 +270,13 @@ elasticvue:
   service:
     port: 8080
   ingress: *default-ingress-config
+  resources:
+    requests:
+      cpu: "0.05"
+      memory: "100Mi"
+    limits:
+      cpu: "0.5"
+      memory: "500Mi"
 
 fluentd:
   enabled: true
@@ -170,6 +284,13 @@ fluentd:
     repository: swiss-armed-forces/cyber-command/cea/loom/fluentd
   service:
     port: 24224
+  resources:
+    requests:
+      cpu: "0.1"
+      memory: "100Mi"
+    limits:
+      cpu: "0.5"
+      memory: "500Mi"
 
 grafana:
   enabled: true
@@ -183,9 +304,22 @@ grafana:
     enabled: false
   livenessProbe:
     enabled: true
+  resources:
+    requests:
+      cpu: "0.2"
+      memory: "200Mi"
+    limits:
+      cpu: "2"
+      memory: "2Gi"
 
 translate:
   replicaCount: 1
+  hpa:
+    enabled: true
+    maxReplicas: 2
+    minReplicas: 1
+    targetCPUUtilizationPercentage: 100
+    targetMemoryUtilizationPercentage: 100
   image:
     repository: swiss-armed-forces/cyber-command/cea/loom/libretranslate
   service:
@@ -195,6 +329,13 @@ translate:
     enabled: false
   livenessProbe:
     enabled: true
+  resources:
+    requests:
+      cpu: "0.5"
+      memory: "2Gi"
+    limits:
+      cpu: "2"
+      memory: "10Gi"
 
 minio:
   domain: *default-domain
@@ -203,25 +344,43 @@ minio:
   nameOverride: loom-minio
   image:
     repository: registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/minio
+    pullPolicy: IfNotPresent
+  mcImage:
+    repository: registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/mc
+    pullPolicy: IfNotPresent
   service:
     port: 9000
   consoleService:
     port: 9001
   persistence:
-    storage: 20Gi
+    size: 20Gi
   resources:
     requests:
-      memory: 2Gi
+      cpu: "0.1"
+      memory: "500Mi"
+    limits:
+      cpu: "1"
+      memory: "2000Mi"
+  certificate:
+    requireClientCert: false
   ingress:
     enabled: true
+    ingressClassName: traefik
     annotations:
-      traefik.ingress.kubernetes.io/router.entrypoints: web,websecure
+      traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    tls:
+      - hosts:
+          - minio-api
     hosts:
       - minio-api
   consoleIngress:
     enabled: true
+    ingressClassName: traefik
     annotations:
-      traefik.ingress.kubernetes.io/router.entrypoints: web,websecure
+      traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    tls:
+      - hosts:
+          - minio
     hosts:
       - minio
   rootUser: minioadmin
@@ -237,6 +396,22 @@ minio:
       purge: false
       versioning: false
       objectlocking: false
+  customCommandJob:
+    resources: &default-minio-job-resouces
+      requests:
+        cpu: "0.01"
+        memory: "50Mi"
+      limits:
+        cpu: "0.1"
+        memory: "100Mi"
+  makeBucketJob:
+    resources: *default-minio-job-resouces
+  makePolicyJob:
+    resources: *default-minio-job-resouces
+  makeServiceAccountJob:
+    resources: *default-minio-job-resouces
+  makeUserJob:
+    resources: *default-minio-job-resouces
 
 mongodb:
   replicaCount: 1
@@ -244,14 +419,21 @@ mongodb:
     repository: swiss-armed-forces/cyber-command/cea/loom/mongodb
   service:
     port: 27017
-  pvc:
-    storage: 60Gi
   ingress:
-    enabled: true
+    enabled: false
   readinessProbe:
     enabled: false
   livenessProbe:
     enabled: true
+  pvc:
+    storage: 50Gi
+  resources:
+    requests:
+      cpu: "0.2"
+      memory: "1Gi"
+    limits:
+      cpu: "2"
+      memory: "3Gi"
   express:
     enabled: true
     replicaCount: 1
@@ -260,6 +442,13 @@ mongodb:
     service:
       port: 8081
     ingress: *default-ingress-config
+    resources:
+      requests:
+        cpu: "0.3"
+        memory: "300Mi"
+      limits:
+        cpu: "0.5"
+        memory: "500Mi"
 
 rabbit:
   replicaCount: 1
@@ -271,18 +460,31 @@ rabbit:
       http: 15672
       prometheus: 15692
   pvc:
-    storage: 10Gi
+    storage: 30Gi
   ingress:
     http: *default-ingress-config
     amqp:
-      enabled: true
+      enabled: false
   readinessProbe:
     enabled: false
   livenessProbe:
     enabled: true
+  resources:
+    requests:
+      cpu: "0.4"
+      memory: "1Gi"
+    limits:
+      cpu: "2"
+      memory: "3Gi"
 
 ollama:
   replicaCount: 1
+  hpa:
+    enabled: true
+    maxReplicas: 2
+    minReplicas: 1
+    targetCPUUtilizationPercentage: 100
+    targetMemoryUtilizationPercentage: 100
   image:
     repository: swiss-armed-forces/cyber-command/cea/loom/ollama
   service:
@@ -292,6 +494,13 @@ ollama:
     enabled: false
   livenessProbe:
     enabled: true
+  resources:
+    requests:
+      cpu: "0.6"
+      memory: "2Gi"
+    limits:
+      cpu: "10"
+      memory: "10Gi"
 
 open_webui:
   replicaCount: 1
@@ -303,6 +512,13 @@ open_webui:
   service:
     port: 8080
   ingress: *default-ingress-config
+  resources:
+    requests:
+      cpu: "0.1"
+      memory: "200Mi"
+    limits:
+      cpu: "1.5"
+      memory: "1500Mi"
 
 dovecot:
   replicaCount: 1
@@ -314,9 +530,27 @@ dovecot:
   pvc:
     storage: 10Gi
   ingress:
-    http: *default-ingress-config
+    imaps: *default-ingress-config
     imap:
-      enabled: true
+      enabled: false
+      className: traefik
+  resources:
+    requests:
+      cpu: "0.1"
+      memory: "100Mi"
+    limits:
+      cpu: "0.5"
+      memory: "500Mi"
+  initContainer:
+    image:
+      repository: swiss-armed-forces/cyber-command/cea/loom/alpine
+    resources:
+      requests:
+        cpu: "0.05"
+        memory: "50Mi"
+      limits:
+        cpu: "0.1"
+        memory: "100Mi"
 
 roundcube:
   replicaCount: 1
@@ -325,6 +559,13 @@ roundcube:
   service:
     port: 80
   ingress: *default-ingress-config
+  resources:
+    requests:
+      cpu: "0.1"
+      memory: "100Mi"
+    limits:
+      cpu: "0.5"
+      memory: "500Mi"
 
 prometheus:
   enabled: true
@@ -340,6 +581,24 @@ prometheus:
     enabled: false
   livenessProbe:
     enabled: true
+  resources:
+    requests:
+      cpu: "0.1"
+      memory: "200Mi"
+    limits:
+      cpu: "1"
+      memory: "500Mi"
+  collectClusterMetrics: true
+  initContainer:
+    image:
+      repository: swiss-armed-forces/cyber-command/cea/loom/alpine
+    resources:
+      requests:
+        cpu: "0.05"
+        memory: "50Mi"
+      limits:
+        cpu: "0.1"
+        memory: "100Mi"
 
 redis:
   replicaCount: 1
@@ -348,11 +607,18 @@ redis:
   service:
     port: 6379
   ingress:
-    enabled: true
+    enabled: false
   readinessProbe:
     enabled: false
   livenessProbe:
     enabled: true
+  resources:
+    requests:
+      cpu: "0.2"
+      memory: "500Mi"
+    limits:
+      cpu: "1.5"
+      memory: "1500Mi"
   insight:
     enabled: true
     replicaCount: 1
@@ -361,6 +627,13 @@ redis:
     service:
       port: 5540
     ingress: *default-ingress-config
+    resources:
+      requests:
+        cpu: "0.1"
+        memory: "100Mi"
+      limits:
+        cpu: "0.3"
+        memory: "300Mi"
 
 rspamd:
   replicaCount: 1
@@ -370,6 +643,13 @@ rspamd:
     ingress: *default-ingress-config
     service:
       port: 11333
+  resources:
+    requests:
+      cpu: "0.2"
+      memory: "200Mi"
+    limits:
+      cpu: "1"
+      memory: "1Gi"
   controller:
     ingress: *default-ingress-config
     service:
@@ -377,10 +657,14 @@ rspamd:
 
 tika:
   replicaCount: 1
+  hpa:
+    enabled: true
+    maxReplicas: 10
+    minReplicas: 1
+    targetCPUUtilizationPercentage: 100
+    targetMemoryUtilizationPercentage: 100
   image:
     repository: swiss-armed-forces/cyber-command/cea/loom/tika
-  env:
-    TIKA_JAVA_OPS: "-Xms2g -Xmx2g"
   service:
     port: 9998
   ingress: *default-ingress-config
@@ -388,3 +672,10 @@ tika:
     enabled: false
   livenessProbe:
     enabled: true
+  resources:
+    requests:
+      cpu: "0.5"
+      memory: "4Gi"
+    limits:
+      cpu: "4"
+      memory: "6Gi"

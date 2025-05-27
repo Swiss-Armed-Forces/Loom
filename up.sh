@@ -20,15 +20,12 @@ REGISTRY_MIRROR="${REGISTRY_MIRROR:-}"
 # Defines
 #
 NAMESPACE="loom"
-SECRET_NAME="docker-registry-secret"
+DOCKER_SECRET_NAME="docker-registry-secret"
 DOCKER_CONFIG_FILE="${HOME}/.docker/config.json"
 HOSTS_FILE="/etc/hosts"
 TUNNEL_PIDFILE_DIR="/run/user/${UID}/"
 TUNNEL_PIDFILE="${TUNNEL_PIDFILE_DIR}/${SCRIPT_NAME}.minikube.tunnel.pid"
 TRAEFIK_SKAFFOLD_CMD="${SCRIPT_DIR}/traefik/skaffold"
-ARCHIVE_CREATION_SECRET_NAME="archive-encryption-master-key"
-ARCHIVE_CREATION_DEV_SECRET="00000000000000000000000000000000"
-MINIO_SECRET="loom-minio-secret"
 
 WAIT_MAX_RETRIES=30
 
@@ -69,10 +66,9 @@ STEPS_SETUP_CLUSTER=(
     create_namespace
     use_namespace
     create_docker_secret_from_config
-    create_archive_encryption_master_key
-    create_minio_secret
     install_traefik
     stop_expose_minikube
+    warn_dev_or_integration
 )
 
 #
@@ -232,7 +228,6 @@ validate_environment() {
     check_command sysctl
     check_command tee
     check_command realpath
-    check_command openssl
 
     # k8s
     check_command docker
@@ -253,14 +248,14 @@ create_docker_secret_from_config() {
         return
     fi
 
-    if kubectl get secret "${SECRET_NAME}" &>/dev/null; then
-      echo "[*] Secret '${SECRET_NAME}' already exists"
+    if kubectl get secret "${DOCKER_SECRET_NAME}" &>/dev/null; then
+      echo "[*] Secret '${DOCKER_SECRET_NAME}' already exists"
       return
     fi
 
     echo "[*] Creating Docker registry secret from ${DOCKER_CONFIG_FILE}"
     kubectl \
-        create secret generic "${SECRET_NAME}" \
+        create secret generic "${DOCKER_SECRET_NAME}" \
             --namespace="${NAMESPACE}" \
             --from-file=.dockerconfigjson="${DOCKER_CONFIG_FILE}" \
             --type=kubernetes.io/dockerconfigjson
@@ -268,71 +263,7 @@ create_docker_secret_from_config() {
     echo "[*] Patching 'default' service account to use docker image pull secret as default"
     kubectl patch serviceaccount default \
         --namespace="${NAMESPACE}" \
-        --patch="{\"imagePullSecrets\": [{\"name\": \"${SECRET_NAME}\"}]}"
-}
-
-secret_exist() {
-    local secret_name
-    secret_name="${1}" && shift
-
-    kubectl get secret "${secret_name}"\
-     --namespace="${NAMESPACE}" &>/dev/null
-}
-
-get_secret_key() {
-    local secret_name
-    secret_name="${1}"
-
-    kubectl get secret "${secret_name}" --namespace="${NAMESPACE}" -o jsonpath="{.data.secretkey}" | base64 --decode
-}
-
-create_archive_encryption_master_key() {
-    local archive_encryption_master_key
-
-    # shellcheck disable=SC2310
-    if [[ "${DEVELOPMENT}" = true ]] || [[ "${INTEGRATIONTEST}" = true ]]; then
-        echo "[*] Development or Integration Test mode: Using static ${ARCHIVE_CREATION_SECRET_NAME}"
-        echo "[*] *****************************************"
-        echo "[*] WARNING: DO NOT USE THIS IN PRODUCTION!!!"
-        echo "[*] *****************************************"
-        archive_encryption_master_key="${ARCHIVE_CREATION_DEV_SECRET}"
-        # shellcheck disable=SC2310
-        if secret_exist "${ARCHIVE_CREATION_SECRET_NAME}"; then
-            kubectl delete secret "${ARCHIVE_CREATION_SECRET_NAME}"\
-             --namespace="${NAMESPACE}"
-        fi
-
-    elif ! secret_exist "${ARCHIVE_CREATION_SECRET_NAME}"; then
-        archive_encryption_master_key="$(openssl rand -hex 16)"
-    elif [[ "$(get_secret_key "${ARCHIVE_CREATION_SECRET_NAME}"||true)" == "${ARCHIVE_CREATION_DEV_SECRET}" ]]; then
-        kubectl delete secret "${ARCHIVE_CREATION_SECRET_NAME}"\
-         --namespace="${NAMESPACE}"
-        archive_encryption_master_key="$(openssl rand -hex 16)"
-    else
-        echo "[*] Secret '${ARCHIVE_CREATION_SECRET_NAME}' already exists with production key"
-        return
-    fi
-
-    echo "[*] Creating secret '${ARCHIVE_CREATION_SECRET_NAME}'"
-    kubectl create secret generic "${ARCHIVE_CREATION_SECRET_NAME}" \
-        --namespace="${NAMESPACE}" \
-        --from-literal=secretkey="${archive_encryption_master_key}"
-}
-
-
-create_minio_secret(){
-    local minio_secret_key
-    minio_secret_key="$(openssl rand -hex 20)"
-
-    if kubectl get secret "${MINIO_SECRET}" &>/dev/null; then
-      echo "[*] Secret '${MINIO_SECRET}' already exists"
-      return
-    fi
-
-    echo "[*] Create MinIO ${MINIO_SECRET}"
-    kubectl create secret generic "${MINIO_SECRET}" \
-        --namespace="${NAMESPACE}" \
-        --from-literal=secretkey="${minio_secret_key}"
+        --patch="{\"imagePullSecrets\": [{\"name\": \"${DOCKER_SECRET_NAME}\"}]}"
 }
 
 setup_system(){
@@ -422,6 +353,11 @@ install_traefik(){
             apply \
                 --filename -
 
+        # Install default tls-store
+        kubectl \
+            apply \
+                --filename tls-store.yaml
+
         # We always first delete the existing deployment
         # this is because skaffold will redeploy
         # ressources, which won't work as traefik
@@ -432,7 +368,8 @@ install_traefik(){
             --profile "${PROFILE}"
 
         "${TRAEFIK_SKAFFOLD_CMD}" run \
-            --profile "${PROFILE}"
+            --profile "${PROFILE}" \
+            "${@}"
     )
 }
 
@@ -450,6 +387,18 @@ stop_expose_minikube(){
         rm \
             --force \
             "${TUNNEL_PIDFILE}"
+    fi
+}
+
+warn_dev_or_integration() {
+    if [[ "${DEVELOPMENT}" = true ]] || [[ "${INTEGRATIONTEST}" = true ]]; then
+        echo "[*] !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+        echo "[*] !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+        echo "[*] *****************************************"
+        echo "[*] WARNING: DO NOT USE THIS IN PRODUCTION!!!"
+        echo "[*] *****************************************"
+        echo "[*] !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+        echo "[*] !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
     fi
 }
 
@@ -645,10 +594,7 @@ fi
 
 # assemble PROFILE
 PROFILE="prod"
-if [[ "${INTEGRATIONTEST}" = true ]]; then
-    PROFILE="integrationtest"
-fi
-if [[ "${DEVELOPMENT}" = true ]]; then
+if [[ "${INTEGRATIONTEST}" = true ]] || [[ "${DEVELOPMENT}" = true ]]; then
     PROFILE="dev"
 fi
 

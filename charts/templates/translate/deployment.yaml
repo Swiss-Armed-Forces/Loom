@@ -6,7 +6,9 @@ metadata:
     {{- include "app.labels.standard" . | nindent 4 }}
     app.kubernetes.io/component: translate
 spec:
+  {{- if not .Values.translate.hpa.enabled }}
   replicas: {{ .Values.translate.replicaCount }}
+  {{- end}}
   selector:
     matchLabels:
       app: {{ include "app.name" . }}-translate
@@ -18,6 +20,7 @@ spec:
       containers:
         - name: translate
           image: {{ .Values.image.registry }}/{{ .Values.translate.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) .Values.translate.image.tag }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports:
             - name: translate
               containerPort: {{ .Values.translate.service.port }}

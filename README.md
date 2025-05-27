@@ -59,7 +59,6 @@ This will help make the setup process smooth and easy!
 * `git`
 * `git-lfs`
 * `docker`
-* `openssl`
 * `minikube` (>= [v1.33.1](https://minikube.sigs.k8s.io/docs/start/?arch=%2Flinux%2Fx86-64%2Fstable%2Fbinary+download))
 * `helm` (>= [v3.14.0](https://helm.sh/docs/intro/install/))
 * `kubectl` (>= [v1.30.0](https://kubernetes.io/de/docs/tasks/tools/install-kubectl/))
@@ -112,7 +111,7 @@ Please see the list of supported GPUs here: [https://github.com/ollama/ollama/bl
       ```
 
 **Note:** After the build process is complete, you can open your web browser
-and navigate to [http://frontend.loom](http://frontend.loom) to access Loom.
+and navigate to [https://frontend.loom](https://frontend.loom) to access Loom.
 
 ### Multi-Node Deployment
 
@@ -135,7 +134,7 @@ instructions, please refer to the full [Getting Started Guide](Documentation/get
 
 To index your data, use the simple file upload feature available directly in the Loom frontend:
 
-1. **Open the Loom Frontend:** Navigate to [http://frontend.loom](http://frontend.loom)
+1. **Open the Loom Frontend:** Navigate to [https://frontend.loom](https://frontend.loom)
 in your web browser.
 2. **Upload Files:** Look for the "Upload" option in the user interface (typically in a
 sidebar or as a button). Click on it to open a file selection dialog.
@@ -221,21 +220,23 @@ Multiple services that are useful for production and development purposes are st
 
 | Service        | Url                                                        | Description                                   | Remarks                                       |
 | -------------- | ---------------------------------------------------------- | --------------------------------------------- | --------------------------------------------- |
-| Frontend       | [http://frontend.loom](http://frontend.loom)               | The loom web-ui                               |                                               |
-| Api            | [http://api.loom](http://api.loom)                         | The loom api                                  | Swagger documentation: <http://api.loom/docs> |
-| Flower         | [http://flower.loom](http://flower.loom)                   | Monitor celery tasks                          |                                               |
-| Traefik        | [http://traefik.loom](http://traefik.loom)                 | Traefik reverse proxy                         |                                               |
-| RabbitMQ       | [http://rabbit.loom](http://rabbit.loom)                   | Monitor rabbit messages                       | user: `guest` password: `guest`               |
-| Elasticvue     | [http://elasticvue.loom](http://elasticvue.loom)           | Manage elastic documents                      | connect to <http://elasticsearch.loom>        |
-| Mongo Express  | [http://mongo-web.loom](http://mongo-web.loom)             | Manage the mongo DB                           |                                               |
-| RedisInsight   | [http://redis-web-ui.loom](http://redis-web-ui.loom)       | Manage the redis DB                           | connect to `redis:6379`                       |
-| Apache tika    | [http://tika.loom](http://tika.loom)                       | Tika engine                                   |                                               |
-| Translate      | [http://translate.loom](http://translate.loom)             | Translation service powered by LibreTranslate |                                               |
-| Rspamd         | [http://rspamd.loom](http://rspamd.loom)                   | Rspamd spam detection engine                  |                                               |
-| cAdvisor       | [http://cadvisor.loom](http://cadvisor.loom)               | Resource usgage and performance of containers |                                               |
-| Prometheus     | [http://prometheus.loom](http://prometheus.loom)           | Monitoring system & time series database      |                                               |
-| Grafana        | [http://grafana.loom](http://grafana.loom)                 | Statistics, Dashboards and alerting           |                                               |
-| Minio          | [http://minio.loom](http://minio.loom)                     | File upload                                   |  user: `minioadmin` password: `minioadmin`    |
+| Frontend       | [https://frontend.loom](https://frontend.loom)             | The loom web-ui                               |                                               |
+| Api            | [https://api.loom](https://api.loom)                       | The loom api                                  | Swagger documentation: <https://api.loom/docs>|
+| Flower         | [https://flower.loom](https://flower.loom)                 | Monitor celery tasks                          |                                               |
+| Traefik        | [https://traefik.loom](https://traefik.loom)               | Traefik reverse proxy                         |                                               |
+| RabbitMQ       | [https://rabbit.loom](https://rabbit.loom)                 | Monitor rabbit messages                       | user: `guest` password: `guest`               |
+| Elasticvue     | [https://elasticvue.loom](https://elasticvue.loom)         | Manage elastic documents                      | connect to <https://elasticsearch.loom>       |
+| Mongo Express  | [https://mongo-web.loom](https://mongo-web.loom)           | Manage the mongo DB                           |                                               |
+| RedisInsight   | [https://redis-web-ui.loom](https://redis-web-ui.loom)     | Manage the redis DB                           | connect to `redis:6379`                       |
+| Apache tika    | [https://tika.loom](https://tika.loom)                     | Tika engine                                   |                                               |
+| Translate      | [https://translate.loom](https://translate.loom)           | Translation service powered by LibreTranslate |                                               |
+| Rspamd         | [https://rspamd.loom](https://rspamd.loom)                 | Rspamd spam detection engine                  |                                               |
+| cAdvisor       | [https://cadvisor.loom](https://cadvisor.loom)             | Resource usgage and performance of containers |                                               |
+| Prometheus     | [https://prometheus.loom](https://prometheus.loom)         | Monitoring system & time series database      |                                               |
+| Grafana        | [https://grafana.loom](https://grafana.loom)               | Statistics, Dashboards and alerting           |                                               |
+| Minio          | [https://minio.loom](https://minio.loom)                   | File upload                                   |  user: `minioadmin` password: `minioadmin`    |
+| Dovecot        | [https://dovecot.loom](https://dovecot.loom)               | Imap Server                                   |  user: `user` password: `pass`                |
+| Roundcube      | [https://roundcube.loom](https://roundcube.loom)           | Email Webinterface                            |                                               |
 
 ![Context Diagram](Documentation/c4-2-container.svg)
 

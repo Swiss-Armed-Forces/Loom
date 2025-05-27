@@ -18,6 +18,7 @@ spec:
       containers:
         - name: redis
           image: {{ .Values.image.registry }}/{{ .Values.redis.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) .Values.redis.image.tag }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports:
             - name: redis
               containerPort: {{ .Values.redis.service.port }}

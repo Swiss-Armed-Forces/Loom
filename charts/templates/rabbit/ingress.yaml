@@ -7,7 +7,10 @@ metadata:
     {{- include "app.labels.standard" . | nindent 4 }}
     app.kubernetes.io/component: rabbit
   annotations:
-    {{- toYaml .Values.rabbit.ingress.annotations | nindent 4 }}
+    {{- toYaml .Values.rabbit.ingress.http.annotations | nindent 4 }}
+    {{- if .Values.certificate.requireClientCert }}
+    traefik.ingress.kubernetes.io/router.tls.options: {{ .Release.Namespace }}-{{ include "app.fullname" . }}-mtls@kubernetescrd
+    {{- end }}
 spec:
   ingressClassName: {{ .Values.rabbit.ingress.http.className }}
   rules:
@@ -23,7 +26,7 @@ spec:
                   number: {{ .Values.rabbit.service.port.http }}
   {{- if .Values.rabbit.ingress.http.tls.enabled }}
   tls:
-    - secretName: {{ include "app.fullname" . }}-external-vault-tls
+    - secretName: {{ include "app.fullname" . }}-certificate
       hosts:
         - rabbit.{{ .Values.domain }}
   {{- end }}

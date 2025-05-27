@@ -58,7 +58,6 @@ class ZipExtractor(ExtractorBase):
             with zipfile.ZipFile(fileobj) as f:
                 # Note that directory traversal is mitigated by the
                 # zipfile library, which removes leading slashes or '..'
-                # zipfile library, which removes leading slashes or '..'
                 # elements from the filenames.
                 f.extractall(outdir)
         except zipfile.BadZipFile as exc:

@@ -12,7 +12,7 @@ from pydantic import (
 )
 from pydantic_settings import BaseSettings
 
-from common.environment import get_loglevel, is_development_env, is_test_env
+from common.environment import get_loglevel, is_development_env
 from common.services.encryption_service import AESMasterKey
 
 logger = logging.getLogger(__name__)
@@ -26,7 +26,6 @@ class Settings(BaseSettings):
     variables."""
 
     development_env: bool = Field(default_factory=is_development_env)
-    test_env: bool = Field(default_factory=is_test_env)
     loglevel: int = Field(default_factory=get_loglevel)
     # see: https://docs.python.org/3/library/codecs.html#error-handlers
     decode_error_handler: str = "backslashreplace"
@@ -50,7 +49,7 @@ class Settings(BaseSettings):
     max_file_size: int = 500_000_000  # 500 MB, because of rabbit
     rspam_host: AnyHttpUrl = AnyHttpUrl(f"http://rspamd-worker.{DOMAIN}")
     translate_host: AnyHttpUrl = AnyHttpUrl(f"http://translate.{DOMAIN}")
-    imap_host: AnyUrl = AnyUrl(f"imap://dovecot.{DOMAIN}")
+    imap_host: AnyUrl = AnyUrl(f"imap://dovecot.{DOMAIN}:143")
     imap_user: str = "user"
     imap_password: str = "pass"
     imap_directory: str = "INBOX"
@@ -83,7 +82,7 @@ class Settings(BaseSettings):
 
 settings = Settings()
 
-if settings.development_env or settings.test_env:
+if settings.development_env:
     logger.warning(
         "\n"
         "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n"

@@ -390,3 +390,6 @@ dmesg.txt
 # local devenv overwrites
 devenv.local.nix
 !nix-dind/devenv.local.nix
+
+# generated client certs
+client-*.p12

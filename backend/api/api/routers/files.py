@@ -94,6 +94,7 @@ def get_files(
     """Get list of file_id."""
     logger.info("Getting files with query: '%s'", query.search_string)
     try:
+        total_files = file_repository.count_by_query(query=query)
         result = list(
             file_repository.get_id_generator_by_query(
                 query=query,
@@ -101,7 +102,6 @@ def get_files(
                 pagination_params=query,
             )
         )
-        total_files = file_repository.count_by_query(query=query)
     except InvalidSortFieldExceptions as e:
         raise HTTPException(status_code=400, detail=str(e.args)) from e
     current_query_file_resp = GetFilesResponse(

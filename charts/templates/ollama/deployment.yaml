@@ -6,7 +6,9 @@ metadata:
     {{- include "app.labels.standard" . | nindent 4 }}
     app.kubernetes.io/component: ollama
 spec:
+  {{- if not .Values.ollama.hpa.enabled }}
   replicas: {{ .Values.ollama.replicaCount }}
+  {{- end }}
   selector:
     matchLabels:
       app: {{ include "app.name" . }}-ollama
@@ -18,6 +20,7 @@ spec:
       containers:
         - name: ollama
           image: {{ .Values.image.registry }}/{{ .Values.ollama.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) .Values.ollama.image.tag }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports:
             - name: ollama
               containerPort: {{ .Values.ollama.service.port }}

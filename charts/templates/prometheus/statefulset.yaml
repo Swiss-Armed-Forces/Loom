@@ -1,6 +1,6 @@
 {{- if .Values.prometheus.enabled }}
 apiVersion: apps/v1
-kind: Deployment
+kind: StatefulSet
 metadata:
   name: {{ include "app.fullname" . }}-prometheus
   labels:
@@ -16,23 +16,51 @@ spec:
       labels:
         app: {{ include "app.name" . }}-prometheus
     spec:
-      serviceAccountName: prometheus
+      serviceAccountName: {{ include "app.fullname" . }}-prometheus
       securityContext:
         runAsUser: 65534
         fsGroup: 65534
+      initContainers:
+        - name: clear-tsdb-lock
+          image: {{ .Values.image.registry }}/{{ .Values.prometheus.initContainer.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) .Values.prometheus.initContainer.image.tag }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command:
+            - 'sh'
+            - '-c'
+            - |
+              set -eux
+
+              rm -f /prometheus/lock
+          volumeMounts:
+            - name: prometheus
+              mountPath: /prometheus
+          {{- if .Values.prometheus.initContainer.resources }}
+          resources: {{- toYaml .Values.prometheus.initContainer.resources | nindent 12 }}
+          {{- end }}
       containers:
         - name: prometheus
           image: {{ .Values.image.registry }}/{{ .Values.prometheus.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) .Values.prometheus.image.tag }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          args:
+            # first two are default from the image, https://github.com/prometheus/prometheus/blob/main/Dockerfile
+            - --config.file=/etc/prometheus/prometheus.yml
+            - --storage.tsdb.path=/prometheus
+            # setting max retention to 80% of the disk size
+            - --storage.tsdb.retention.size={{- div (mul (include "SI-to-bytes" .Values.prometheus.pvc.storage) 8) 10 }}B
           ports:
-            - name: prometheus
+            - name: metrics
               containerPort: {{ .Values.prometheus.service.port }}
           volumeMounts:
+            - name: prometheus-config
+              mountPath: /etc/prometheus/prometheus.yml
+              readOnly: true
+              subPath: prometheus.yml
             - name: prometheus
               mountPath: /prometheus
           {{- if .Values.prometheus.readinessProbe.enabled }}
           readinessProbe:
             httpGet:
-              path: /health
+              path: /-/healthy
               port: metrics
               scheme: HTTP
             initialDelaySeconds: {{ default 0 .Values.prometheus.readinessProbe.initialDelaySeconds }}
@@ -42,7 +70,7 @@ spec:
           {{- if .Values.prometheus.livenessProbe.enabled }}
           livenessProbe:
             httpGet:
-              path: /health
+              path: /-/healthy
               port: metrics
               scheme: HTTP
             initialDelaySeconds: {{ default 0 .Values.prometheus.livenessProbe.initialDelaySeconds }}
@@ -53,7 +81,16 @@ spec:
           resources: {{- toYaml .Values.prometheus.resources | nindent 12 }}
           {{- end }}
       volumes:
-        - name: prometheus
-          persistentVolumeClaim:
-            claimName: {{ include "app.fullname" . }}-prometheus
+        - name: prometheus-config
+          configMap:
+            name: {{ include "app.fullname" . }}-prometheus-config
+  volumeClaimTemplates:
+    - metadata:
+        name: prometheus
+      spec:
+        accessModes:
+          - {{ .Values.prometheus.pvc.accessModes | default "ReadWriteOnce" | quote }}
+        resources:
+            requests:
+              storage: {{ .Values.prometheus.pvc.storage }}
 {{- end }}

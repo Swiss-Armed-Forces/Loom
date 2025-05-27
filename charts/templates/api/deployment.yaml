@@ -18,10 +18,13 @@ spec:
       initContainers:
         - name: check-elasticsearch-ready
           image: {{ .Values.image.registry }}/{{ .Values.api.initContainer.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) .Values.api.initContainer.image.tag }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
           command:
             - 'sh'
             - '-c'
             - |
+              set -eu
+
               until nc -vz {{ include "app.fullname" . }}-elasticsearch {{ .Values.elasticsearch.service.port }}; do
                 echo "Waiting for elasticsearch service";
                 sleep 1;
@@ -32,6 +35,9 @@ spec:
       containers:
         - name: api
           image: {{ .Values.image.registry }}/{{ .Values.api.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) .Values.api.image.tag }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - containerPort: {{ .Values.api.service.port }}
           envFrom:
             - configMapRef:
                 name: {{ include "app.fullname" . }}-settings
@@ -56,7 +62,3 @@ spec:
           {{- if .Values.api.resources }}
           resources: {{- toYaml .Values.api.resources | nindent 12 }}
           {{- end }}
-      volumes:
-        - name: secret
-          persistentVolumeClaim:
-            claimName: {{ include "app.fullname" . }}-secret

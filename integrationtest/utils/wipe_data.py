@@ -32,33 +32,12 @@ class WipeException(Exception):
 
 
 def wipe_data():
-    _wipe_imap()
     _wipe_celery()
     _wipe_mongo()
     _wipe_elasticsearch()
     _wipe_redis()
     _wipe_minio_buckets()
-
-
-def _wipe_imap():
-    logger.info("Wiping: IMAP")
-    with IMAP4(
-        settings.imap_host.host if settings.imap_host.host is not None else "",
-        timeout=IMAP_TIMEOUT__S,
-    ) as imap:
-        imap.login(settings.imap_user, settings.imap_password)
-
-        # List all mailboxes
-        status, mailboxes = imap.list()
-        if status != "OK":
-            raise WipeException("Failed to retrieve mailboxes.")
-
-        # Delete all mailboxes
-        for mailbox in mailboxes:
-            if not isinstance(mailbox, bytes):
-                continue
-            mailbox_name = mailbox.decode().split(' "/" ')[-1].strip('"')
-            imap.delete(mailbox_name)
+    _wipe_imap()
 
 
 def _wipe_celery():
@@ -127,6 +106,28 @@ def _wipe_minio_buckets():
                 )
         if bucket.name != crawler_settings.minio_default_bucket_name:
             client.remove_bucket(bucket.name)
+
+
+def _wipe_imap():
+    logger.info("Wiping: IMAP")
+    with IMAP4(
+        host=settings.imap_host.host if settings.imap_host.host is not None else "",
+        port=settings.imap_host.port if settings.imap_host.port is not None else 143,
+        timeout=IMAP_TIMEOUT__S,
+    ) as imap:
+        imap.login(settings.imap_user, settings.imap_password)
+
+        # List all mailboxes
+        status, mailboxes = imap.list()
+        if status != "OK":
+            raise WipeException("Failed to retrieve mailboxes.")
+
+        # Delete all mailboxes
+        for mailbox in mailboxes:
+            if not isinstance(mailbox, bytes):
+                continue
+            mailbox_name = mailbox.decode().split(' "/" ')[-1].strip('"')
+            imap.delete(mailbox_name)
 
 
 if __name__ == "__main__":

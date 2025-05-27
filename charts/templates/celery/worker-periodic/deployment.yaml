@@ -18,6 +18,7 @@ spec:
       containers:
         - name: celery-worker-periodic
           image: {{ .Values.image.registry }}/{{ .Values.celery.worker.periodic.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) .Values.celery.worker.periodic.image.tag }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports:
             - name: worker-periodic
               containerPort: {{ .Values.celery.worker.periodic.service.port }}
@@ -51,7 +52,3 @@ spec:
           {{- if .Values.celery.worker.periodic.resources }}
           resources: {{- toYaml .Values.celery.worker.periodic.resources | nindent 12 }}
           {{- end }}
-      volumes:
-        - name: secret
-          persistentVolumeClaim:
-            claimName: {{ include "app.fullname" . }}-secret

@@ -8,6 +8,9 @@ metadata:
     app.kubernetes.io/component: ollama
   annotations:
     {{- toYaml .Values.open_webui.ingress.annotations | nindent 4 }}
+    {{- if .Values.certificate.requireClientCert }}
+    traefik.ingress.kubernetes.io/router.tls.options: {{ .Release.Namespace }}-{{ include "app.fullname" . }}-mtls@kubernetescrd
+    {{- end }}
 spec:
   ingressClassName: {{ .Values.open_webui.ingress.className }}
   rules:
@@ -23,7 +26,7 @@ spec:
                   number: {{ .Values.open_webui.service.port }}
   {{- if .Values.open_webui.ingress.tls.enabled }}
   tls:
-    - secretName: {{ include "app.fullname" . }}-external-vault-tls
+    - secretName: {{ include "app.fullname" . }}-certificate
       hosts:
         - open-webui.{{ .Values.domain }}
   {{- end }}

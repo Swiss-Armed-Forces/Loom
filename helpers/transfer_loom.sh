@@ -79,7 +79,7 @@ build_stack(){
         --docker-volume "${DOCKER_VOLUME}" \
         --run \
             "cd /code && \
-            cp nix-dind/devenv.local.nix devenv.local.nix && \
+            devenv --verbose shell -- up --profile prod --setup && \
             devenv --verbose shell -- build --profile prod --tag '${APP_VERSION}'"
 }
 

@@ -18,6 +18,7 @@ spec:
       containers:
         - name: elasticvue
           image: {{ .Values.image.registry }}/{{ .Values.elasticvue.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) .Values.elasticvue.image.tag }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports:
             - name: elasticvue
               containerPort: {{ .Values.elasticvue.service.port }}

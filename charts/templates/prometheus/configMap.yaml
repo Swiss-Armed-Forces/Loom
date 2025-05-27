@@ -1,0 +1,43 @@
+{{- if .Values.prometheus.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "app.fullname" . }}-prometheus-config
+  labels:
+    {{- include "app.labels.standard" . | nindent 4 }}
+    app.kubernetes.io/component: monitoring
+data:
+  prometheus.yml: |
+    scrape_configs:
+      - job_name: 'rabbitmq'
+        metrics_path: /metrics
+        static_configs:
+          - targets: ['{{ include "app.fullname" . }}-rabbit:{{ .Values.rabbit.service.port.prometheus }}']
+{{- if .Values.prometheus.collectClusterMetrics }}
+      - job_name: 'cadvisor'
+        scrape_interval: 5s
+        scrape_timeout: 5s
+        kubernetes_sd_configs:
+          - role: node
+        scheme: https
+        tls_config:
+          ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+        bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+        relabel_configs:
+          - action: labelmap
+            regex: __meta_kubernetes_node_label_(.+)
+          - target_label: __address__
+            replacement: kubernetes.default.svc:443
+          - source_labels: [__meta_kubernetes_node_name]
+            target_label: __metrics_path__
+            replacement: /api/v1/nodes/${1}/proxy/metrics/cadvisor
+        metric_relabel_configs:
+          - action: keep
+            source_labels: [namespace]
+            regex: {{ .Release.Namespace }}
+          - action: replace
+            source_labels: [id]
+            regex: '^/machine.slice/machine-rktx2d([^]+).+/([^/]+).service'
+            target_label: id
+{{- end }}
+{{- end }}

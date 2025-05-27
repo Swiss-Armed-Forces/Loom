@@ -8,6 +8,9 @@ metadata:
     app.kubernetes.io/component: rspamd
   annotations:
     {{- toYaml .Values.rspamd.worker.ingress.annotations | nindent 4 }}
+    {{- if .Values.certificate.requireClientCert }}
+    traefik.ingress.kubernetes.io/router.tls.options: {{ .Release.Namespace }}-{{ include "app.fullname" . }}-mtls@kubernetescrd
+    {{- end }}
 spec:
   ingressClassName: {{ .Values.rspamd.worker.ingress.className }}
   rules:
@@ -23,7 +26,7 @@ spec:
                   number: {{ .Values.rspamd.worker.service.port }}
   {{- if .Values.rspamd.worker.ingress.tls.enabled }}
   tls:
-    - secretName: {{ include "app.fullname" . }}-external-vault-tls
+    - secretName: {{ include "app.fullname" . }}-certificate
       hosts:
         - rspamd.{{ .Values.domain }}
   {{- end }}
