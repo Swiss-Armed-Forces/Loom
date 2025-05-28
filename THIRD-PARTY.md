@@ -4905,7 +4905,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | numactl | 2.0.14-3ubuntu2 |  | dpkg-db-cataloger |
 | openssl | 3.0.2-0ubuntu1.19 | Apache-2.0, GPL-1.0-only, GPL-1.0-or-later | dpkg-db-cataloger |
 | passwd | 1:4.8.1-2ubuntu2.2 | GPL-2.0-only | dpkg-db-cataloger |
-| perl-base | 5.34.0-3ubuntu1.3 | Artistic-2.0, BSD-3-Clause, GPL-1.0-only, GPL-1.0-or-later, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.1-only, Zlib | dpkg-db-cataloger |
+| perl-base | 5.34.0-3ubuntu1.4 | Artistic-2.0, BSD-3-Clause, GPL-1.0-only, GPL-1.0-or-later, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.1-only, Zlib | dpkg-db-cataloger |
 | procps | 2:3.3.17-6ubuntu2.1 | GPL-2.0-only, GPL-2.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
 | publicsuffix | 20211207.1025-1 | MPL-2.0 | dpkg-db-cataloger |
 | sed | 4.8-1ubuntu2 | GPL-3.0-only | dpkg-db-cataloger |
@@ -5653,7 +5653,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 
 | Package | Version | License | Found by |
 | ------- | --------| ------- | -------- |
-| .otp-run-deps | 20250417.183303 |  | apk-db-cataloger |
+| .otp-run-deps | 20250508.185749 |  | apk-db-cataloger |
 | alpine-baselayout | 3.6.8-r1 | GPL-2.0-only | apk-db-cataloger |
 | alpine-baselayout-data | 3.6.8-r1 | GPL-2.0-only | apk-db-cataloger |
 | alpine-keys | 2.5-r0 | MIT | apk-db-cataloger |
@@ -5663,7 +5663,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | busybox | 1.37.0-r12 | GPL-2.0-only | apk-db-cataloger |
 | busybox-binsh | 1.37.0-r12 | GPL-2.0-only | apk-db-cataloger |
 | ca-certificates-bundle | 20241121-r1 | MPL-2.0 AND MIT | apk-db-cataloger |
-| erlang | 26.2.5.11 |  | binary-classifier-cataloger |
+| erlang | 26.2.5.12 |  | binary-classifier-cataloger |
 | gdbm | 1.24-r0 | GPL-3.0-or-later | apk-db-cataloger |
 | libbz2 | 1.0.8-r6 | bzip2-1.0.6 | apk-db-cataloger |
 | libcrypto3 | 3.3.3-r0 | Apache-2.0 | apk-db-cataloger |
@@ -5688,7 +5688,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | python3-pycache-pyc0 | 3.12.10-r0 | PSF-2.0 | apk-db-cataloger |
 | readline | 8.2.13-r0 | GPL-3.0-or-later | apk-db-cataloger |
 | scanelf | 1.3.8-r1 | GPL-2.0-only | apk-db-cataloger |
-| sqlite-libs | 3.48.0-r1 | blessing | apk-db-cataloger |
+| sqlite-libs | 3.48.0-r2 | blessing | apk-db-cataloger |
 | ssl_client | 1.37.0-r12 | GPL-2.0-only | apk-db-cataloger |
 | su-exec | 0.2-r3 | MIT | apk-db-cataloger |
 | tzdata | 2025b-r0 |  | apk-db-cataloger |

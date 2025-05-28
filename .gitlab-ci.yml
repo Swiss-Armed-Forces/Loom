@@ -110,14 +110,6 @@ build_dev_images:
   script:
     - devenv shell -- build --profile dev --push
 
-build_integrationtest_images:
-  stage: build
-  only:
-    - main
-    - tags
-  script:
-    - devenv shell -- build --profile integrationtest --push
-
 build_transfer_loom:
   stage: build
   when: manual
