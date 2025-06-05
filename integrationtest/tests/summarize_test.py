@@ -8,6 +8,7 @@ from api.routers.files import SummarizeFileRequest
 from api.routers.summarization import SummarizationRequest
 from pydantic import BaseModel
 from requests import Response
+from worker.utils.natural_language_detection import MIN_WORDS_NATURAL_LANGUAGE
 
 from utils.consts import FILES_ENDPOINT, REQUEST_TIMEOUT, SUMMARIZATION_ENDPOINT
 from utils.fetch_from_api import (
@@ -37,9 +38,11 @@ LONG_TEXT = (
 SUMMARIZATION_TESTCASES = [
     #  "system_prompt, document_string, max_wait_time_per_file"
     #
-    # The next line should come back once we fixed the queue idle
-    # waiting.
-    # (None, "Short test case.", None),
+    (
+        None,
+        f"A short test case with at least {MIN_WORDS_NATURAL_LANGUAGE} words or more.",
+        None,
+    ),
     (
         None,
         LONG_TEXT,
@@ -97,9 +100,13 @@ def _summarization_testcase(
 
     # demand summarization
     on_demand_summarization(summarization_file, system_prompt)
+    # Note: we have to wait until celery is idle, because `on_demand_summarization`
+    # is an async operation and `get_file_by_name` might return before
+    # summarization even started.
     file = get_file_by_name(
         file_name,
         max_wait_time_per_file=max_wait_time_per_file,
+        wait_for_celery_idle=True,
     )
     assert file.summary is not None
 

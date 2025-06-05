@@ -9,6 +9,12 @@ data:
     ENVIRONMENT: {{ .Values.environment }}
     DOMAIN: {{ .Values.domain }}
 
+    # pipeline
+    skip_summarize_while_indexing: {{ .Values.pipeline.skip_summarize_while_indexing | quote }}
+    skip_translate_while_indexing: {{ .Values.pipeline.skip_translate_while_indexing | quote }}
+    tika_ocr_languages: {{ .Values.pipeline.tika_ocr_languages | join "," | quote }}
+
+
     # llm
     llm_model: {{ .Values.llm.model }}
     llm_model_embedding: {{ .Values.llm.model_embedding }}

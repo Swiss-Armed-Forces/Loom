@@ -119,6 +119,30 @@
         }
       ],
       "justMyCode": true
+    },
+    {
+      "name": "Attach by Port (Prompt)",
+      "type": "debugpy",
+      "request": "attach",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": "${input:attachPort}"
+      },
+      "pathMappings": [
+        {
+          "localRoot": "${workspaceFolder}/backend",
+          "remoteRoot": "/code"
+        }
+      ],
+      "justMyCode": true
+    }
+  ],
+  "inputs": [
+    {
+      "id": "attachPort",
+      "type": "promptString",
+      "description": "Enter the port to attach to",
+      "default": "5678"
     }
   ]
 }

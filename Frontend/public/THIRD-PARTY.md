@@ -1174,7 +1174,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | pydantic-mongo | 2.3.0 | MIT | python-installed-package-cataloger |
 | pydantic-settings | 2.8.1 | MIT | python-installed-package-cataloger |
 | pymongo | 4.11.2 |  | python-installed-package-cataloger |
-| python | 3.11.12 |  | binary-classifier-cataloger |
+| python | 3.11.13 |  | binary-classifier-cataloger |
 | python-dateutil | 2.9.0.post0 |  | python-installed-package-cataloger |
 | python-dotenv | 1.0.1 | BSD-3-Clause | python-installed-package-cataloger |
 | python-multipart | 0.0.9 | Apache-2.0 | python-installed-package-cataloger |
