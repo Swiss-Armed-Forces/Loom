@@ -27,6 +27,14 @@ ingress: &default-ingress-config
 egress:
   enabled: false
 
+pipeline:
+  skip_summarize_while_indexing: false
+  skip_translate_while_indexing: false
+  tika_ocr_languages:
+    - eng
+    - deu
+    - fra
+
 llm:
   model: deepseek-r1:8b
   model_embedding: nomic-embed-text:v1.5
@@ -162,9 +170,6 @@ celery:
         targetMemoryUtilizationPercentage: 100
       image:
         repository: swiss-armed-forces/cyber-command/cea/loom/celery-worker
-      env:
-        SKIP_TRANSLATE_WHILE_INDEXING: "false"
-        TIKA_OCR_LANGUAGES: "eng,rus,tur,deu,fra"
       service: &default-celery-worker-service
         port: 80
       readinessProbe:

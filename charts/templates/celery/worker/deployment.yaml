@@ -25,10 +25,6 @@ spec:
             - name: worker
               containerPort: {{ .Values.celery.worker.main.service.port }}
           env:
-            - name: SKIP_TRANSLATE_WHILE_INDEXING
-              value: {{ .Values.celery.worker.main.env.SKIP_TRANSLATE_WHILE_INDEXING | quote }}
-            - name: TIKA_OCR_LANGUAGES
-              value: {{ .Values.celery.worker.main.env.TIKA_OCR_LANGUAGES | quote }}
             - name: archive_encryption_master_key
               valueFrom:
                 secretKeyRef:

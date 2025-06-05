@@ -24,7 +24,6 @@ RUN set -exu \
 	&& apt-get clean \
 	&& rm -rf /var/lib/apt/lists/*
 
-ARG OCRLanguage
 COPY tika-config.xml /tika-config.xml
 
 USER $UID_GID

@@ -1,5 +1,3 @@
-"""Summarization router."""
-
 import logging
 
 from common.dependencies import (
