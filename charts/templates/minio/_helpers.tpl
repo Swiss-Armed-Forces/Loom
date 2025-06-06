@@ -1,48 +1,4 @@
 {{/* vim: set filetype=mustache: */}}
-{{/*
-Expand the name of the chart.
-*/}}
-{{- define "minio.name" -}}
-  {{- default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" -}}
-{{- end -}}
-
-{{/*
-Create a default fully qualified app name.
-We truncate at 63 chars because some Kubernetes name fields are limited to this (by the DNS naming spec).
-If release name contains chart name it will be used as a full name.
-*/}}
-{{- define "minio.fullname" -}}
-  {{- if .Values.fullnameOverride -}}
-    {{- .Values.fullnameOverride | trunc 63 | trimSuffix "-" -}}
-  {{- else -}}
-    {{- $name := default .Chart.Name .Values.nameOverride -}}
-    {{- if contains $name .Release.Name -}}
-      {{- .Release.Name | trunc 63 | trimSuffix "-" -}}
-    {{- else -}}
-      {{- printf "%s-%s" .Release.Name $name | trunc 63 | trimSuffix "-" -}}
-    {{- end -}}
-  {{- end -}}
-{{- end -}}
-
-{{/*
-Create chart name and version as used by the chart label.
-*/}}
-{{- define "minio.chart" -}}
-  {{- printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" -}}
-{{- end -}}
-
-{{/*
-Return the appropriate apiVersion for networkpolicy.
-*/}}
-{{- define "minio.networkPolicy.apiVersion" -}}
-  {{- if semverCompare ">=1.4-0, <1.7-0" .Capabilities.KubeVersion.Version -}}
-    {{- print "extensions/v1beta1" -}}
-  {{- else if semverCompare ">=1.7-0, <1.16-0" .Capabilities.KubeVersion.Version -}}
-    {{- print "networking.k8s.io/v1beta1" -}}
-  {{- else if semverCompare "^1.16-0" .Capabilities.KubeVersion.Version -}}
-    {{- print "networking.k8s.io/v1" -}}
-  {{- end -}}
-{{- end -}}
 
 {{/*
 Return the appropriate apiVersion for deployment.
@@ -96,23 +52,19 @@ Return the appropriate apiVersion for console ingress.
 Determine secret name.
 */}}
 {{- define "minio.secretName" -}}
-  {{- if .Values.existingSecret -}}
-    {{- .Values.existingSecret }}
+  {{- if .Values.minio.existingSecret -}}
+    {{- .Values.minio.existingSecret }}
   {{- else -}}
-    {{- include "minio.fullname" . -}}
+    {{- include "app.fullname" . -}}
   {{- end -}}
 {{- end -}}
 
 {{/*
 Determine domain for hosts
-
-Can be removed if this PR get merged https://github.com/minio/minio/pull/21045
 */}}
 {{- define "minio.domain" -}}
-  {{- if .Values.global.domain -}}
-    {{- printf ".%s" .Values.global.domain -}}
-  {{- else if .Values.domain -}}
-    {{- printf ".%s" .Values.domain -}}
+  {{- if .Values.minio.domain -}}
+    {{- printf ".%s" .Values.minio.domain -}}
   {{- else -}}
     {{- print "" -}}
   {{- end -}}
@@ -122,14 +74,14 @@ Can be removed if this PR get merged https://github.com/minio/minio/pull/21045
 Determine name for scc role and rolebinding
 */}}
 {{- define "minio.sccRoleName" -}}
-  {{- printf "%s-%s" "scc" (include "minio.fullname" .) | trunc 63 | trimSuffix "-" -}}
+  {{- printf "%s-%s" "scc" (include "app.fullname" .) | trunc 63 | trimSuffix "-" -}}
 {{- end -}}
 
 {{/*
 Properly format optional additional arguments to MinIO binary
 */}}
 {{- define "minio.extraArgs" -}}
-{{- range .Values.extraArgs -}}
+{{- range .Values.minio.extraArgs -}}
 {{ " " }}{{ . }}
 {{- end -}}
 {{- end -}}
@@ -143,19 +95,19 @@ Helm 2.11 supports the assignment of a value to a variable defined in a differen
 but Helm 2.9 and 2.10 does not support it, so we need to implement this if-else logic.
 Also, we can not use a single if because lazy evaluation is not an option
 */}}
-{{- if .Values.global }}
-{{- if .Values.global.imagePullSecrets }}
+{{- if .Values.minio.global }}
+{{- if .Values.minio.global.imagePullSecrets }}
 imagePullSecrets:
-{{- range .Values.global.imagePullSecrets }}
+{{- range .Values.minio.global.imagePullSecrets }}
   - name: {{ . }}
 {{- end }}
-{{- else if .Values.imagePullSecrets }}
+{{- else if .Values.minio.imagePullSecrets }}
 imagePullSecrets:
-    {{ toYaml .Values.imagePullSecrets }}
+    {{ toYaml .Values.minio.imagePullSecrets }}
 {{- end -}}
-{{- else if .Values.imagePullSecrets }}
+{{- else if .Values.minio.imagePullSecrets }}
 imagePullSecrets:
-    {{ toYaml .Values.imagePullSecrets }}
+    {{ toYaml .Values.minio.imagePullSecrets }}
 {{- end -}}
 {{- end -}}
 
@@ -163,12 +115,12 @@ imagePullSecrets:
 Formats volumeMount for MinIO TLS keys and trusted certs
 */}}
 {{- define "minio.tlsKeysVolumeMount" -}}
-{{- if .Values.tls.enabled }}
+{{- if .Values.minio.tls.enabled }}
 - name: cert-secret-volume
-  mountPath: {{ .Values.certsPath }}
+  mountPath: {{ .Values.minio.certsPath }}
 {{- end }}
-{{- if or .Values.tls.enabled (ne .Values.trustedCertsSecret "") }}
-{{- $casPath := printf "%s/CAs" .Values.certsPath | clean }}
+{{- if or .Values.minio.tls.enabled (ne .Values.minio.trustedCertsSecret "") }}
+{{- $casPath := printf "%s/CAs" .Values.minio.certsPath | clean }}
 - name: trusted-cert-secret-volume
   mountPath: {{ $casPath }}
 {{- end }}
@@ -178,19 +130,19 @@ Formats volumeMount for MinIO TLS keys and trusted certs
 Formats volume for MinIO TLS keys and trusted certs
 */}}
 {{- define "minio.tlsKeysVolume" -}}
-{{- if .Values.tls.enabled }}
+{{- if .Values.minio.tls.enabled }}
 - name: cert-secret-volume
   secret:
-    secretName: {{ tpl .Values.tls.certSecret $ }}
+    secretName: {{ tpl .Values.minio.tls.certSecret $ }}
     items:
-    - key: {{ .Values.tls.publicCrt }}
+    - key: {{ .Values.minio.tls.publicCrt }}
       path: public.crt
-    - key: {{ .Values.tls.privateKey }}
+    - key: {{ .Values.minio.tls.privateKey }}
       path: private.key
 {{- end }}
-{{- if or .Values.tls.enabled (ne .Values.trustedCertsSecret "") }}
-{{- $certSecret := eq .Values.trustedCertsSecret "" | ternary .Values.tls.certSecret .Values.trustedCertsSecret }}
-{{- $publicCrt := eq .Values.trustedCertsSecret "" | ternary .Values.tls.publicCrt "" }}
+{{- if or .Values.minio.tls.enabled (ne .Values.minio.trustedCertsSecret "") }}
+{{- $certSecret := eq .Values.minio.trustedCertsSecret "" | ternary .Values.minio.tls.certSecret .Values.minio.trustedCertsSecret }}
+{{- $publicCrt := eq .Values.minio.trustedCertsSecret "" | ternary .Values.minio.tls.publicCrt "" }}
 - name: trusted-cert-secret-volume
   secret:
     secretName: {{ $certSecret }}
@@ -217,17 +169,17 @@ otherwise it generates a random value.
 {{- end }}
 
 {{- define "minio.root.username" -}}
-  {{- if .Values.rootUser }}
-    {{- .Values.rootUser | toString }}
+  {{- if .Values.minio.rootUser }}
+    {{- .Values.minio.rootUser | toString }}
   {{- else }}
-    {{- include "minio.getValueFromSecret" (dict "Namespace" .Release.Namespace "Name" (include "minio.fullname" .) "Length" 20 "Key" "rootUser") }}
+    {{- include "minio.getValueFromSecret" (dict "Namespace" .Release.Namespace "Name" (include "app.fullname" .) "Length" 20 "Key" "rootUser") }}
   {{- end }}
 {{- end -}}
 
 {{- define "minio.root.password" -}}
-  {{- if .Values.rootPassword }}
-    {{- .Values.rootPassword | toString }}
+  {{- if .Values.minio.rootPassword }}
+    {{- .Values.minio.rootPassword | toString }}
   {{- else }}
-    {{- include "minio.getValueFromSecret" (dict "Namespace" .Release.Namespace "Name" (include "minio.fullname" .) "Length" 40 "Key" "rootPassword") }}
+    {{- include "minio.getValueFromSecret" (dict "Namespace" .Release.Namespace "Name" (include "app.fullname" .) "Length" 40 "Key" "rootPassword") }}
   {{- end }}
 {{- end -}}

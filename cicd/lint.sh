@@ -11,7 +11,7 @@ SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 # Shellcheck
 echo ">> Shell lint"
 SHELL_SOURCES_IGNORES=(
-    charts/charts/minio/templates/*.txt
+    charts/templates/minio/*.txt
 )
 SHELL_SOURCES=$("${SCRIPT_DIR}/find_file_of_type.sh" "${SEARCH_DIR}" '(shell|\.sh)' "${SHELL_SOURCES_IGNORES[@]}")
 readarray -t -d '' SHELL_SOURCES < <(xargs --no-run-if-empty printf '%s\0' <<<"${SHELL_SOURCES:-}" || true)

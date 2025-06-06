@@ -1,0 +1,35 @@
+{{- if .Values.minio.consoleIngress.enabled -}}
+apiVersion: {{ template "minio.consoleIngress.apiVersion" . }}
+kind: Ingress
+metadata:
+  name: {{ include "app.fullname" . }}-minio-console
+  labels:
+    app: {{ template "app.name" . }}
+    chart: {{ template "app.chart" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+  annotations:
+    {{- toYaml .Values.minio.consoleIngress.annotations | nindent 4 }}
+    {{- if .Values.certificate.requireClientCert }}
+    traefik.ingress.kubernetes.io/router.tls.options: {{ .Release.Namespace }}-{{ include "app.fullname" . }}-mtls@kubernetescrd
+    {{- end }}
+spec:
+  ingressClassName: {{ .Values.minio.consoleIngress.className }}
+  rules:
+    - host: minio.{{ .Values.domain }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "app.fullname" . }}-minio-console
+                port:
+                  number: {{ .Values.minio.consoleService.port }}
+  {{- if .Values.minio.consoleIngress.tls.enabled }}
+  tls:
+    - secretName: {{ include "app.fullname" . }}-certificate
+      hosts:
+        - minio.{{ .Values.domain }}
+  {{- end }}
+{{- end }}

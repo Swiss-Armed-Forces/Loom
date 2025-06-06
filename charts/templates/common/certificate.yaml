@@ -27,6 +27,7 @@ spec:
     - roundcube.{{ .Values.domain }}
     - dovecot.{{ .Values.domain }}
     - minio.{{ .Values.domain }}
+    - minio-api.{{ .Values.domain }}
     - mongo-web.{{ .Values.domain }}
   # Mandatory issuerRef to get a PKI signed certificate
   issuerRef:

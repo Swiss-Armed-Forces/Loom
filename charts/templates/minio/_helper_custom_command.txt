@@ -1,8 +1,8 @@
 #!/bin/sh
 set -e ; # Have script exit in the event of a failed command.
 
-{{- if .Values.configPathmc }}
-MC_CONFIG_DIR="{{ .Values.configPathmc }}"
+{{- if .Values.minio.configPathmc }}
+MC_CONFIG_DIR="{{ .Values.minio.configPathmc }}"
 MC="/usr/bin/mc --insecure --config-dir ${MC_CONFIG_DIR}"
 {{- else }}
 MC="/usr/bin/mc --insecure"
@@ -35,41 +35,24 @@ connectToMinio() {
   return 0
 }
 
-# checkPolicyExists ($policy)
-# Check if the policy exists, by using the exit code of `mc admin policy info`
-checkPolicyExists() {
-  POLICY=$1
-  CMD=$(${MC} admin policy info myminio $POLICY > /dev/null 2>&1)
+# runCommand ($@)
+# Run custom mc command
+runCommand() {
+  ${MC} "$@"
   return $?
 }
 
-# createPolicy($name, $filename)
-createPolicy () {
-  NAME=$1
-  FILENAME=$2
-
-  # Create the name if it does not exist
-  echo "Checking policy: $NAME (in /config/$FILENAME.json)"
-  if ! checkPolicyExists $NAME ; then
-    echo "Creating policy '$NAME'"
-  else
-    echo "Policy '$NAME' already exists."
-  fi
-  ${MC} admin policy create myminio $NAME /config/$FILENAME.json
-
-}
-
 # Try connecting to MinIO instance
-{{- if .Values.tls.enabled }}
+{{- if .Values.minio.tls.enabled }}
 scheme=https
 {{- else }}
 scheme=http
 {{- end }}
 connectToMinio $scheme
 
-{{ if .Values.policies }}
-# Create the policies
-{{- range $idx, $policy := .Values.policies }}
-createPolicy {{ $policy.name }} policy_{{ $idx }}
+{{ if .Values.minio.customCommands }}
+# Run custom commands
+{{- range .Values.minio.customCommands }}
+runCommand {{ .command }}
 {{- end }}
 {{- end }}

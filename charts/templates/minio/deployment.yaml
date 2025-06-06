@@ -1,0 +1,155 @@
+{{- if eq .Values.minio.mode "standalone" }}
+{{ $scheme := .Values.minio.tls.enabled | ternary "https" "http" }}
+{{ $bucketRoot := or ($.Values.minio.bucketRoot) ($.Values.minio.mountPath) }}
+apiVersion: {{ template "minio.deployment.apiVersion" . }}
+kind: Deployment
+metadata:
+  name: {{ template "app.fullname" . }}-minio
+  labels:
+    app: {{ template "app.name" . }}
+    chart: {{ template "app.chart" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+    {{- if .Values.minio.additionalLabels }}
+      {{- toYaml .Values.minio.additionalLabels | nindent 4 }}
+    {{- end }}
+  {{- if .Values.minio.additionalAnnotations }}
+  annotations: {{- toYaml .Values.minio.additionalAnnotations | nindent 4 }}
+  {{- end }}
+spec:
+  strategy:
+    type: {{ .Values.minio.deploymentUpdate.type }}
+    {{- if eq .Values.minio.deploymentUpdate.type "RollingUpdate" }}
+    rollingUpdate:
+      maxSurge: {{ .Values.minio.deploymentUpdate.maxSurge }}
+      maxUnavailable: {{ .Values.minio.deploymentUpdate.maxUnavailable }}
+    {{- end }}
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ template "app.name" . }}
+      release: {{ .Release.Name }}
+  template:
+    metadata:
+      name: {{ template "app.fullname" . }}-minio
+      labels:
+        app: {{ template "app.name" . }}
+        release: {{ .Release.Name }}
+        {{- if .Values.minio.podLabels }}
+          {{- toYaml .Values.minio.podLabels | nindent 8 }}
+        {{- end }}
+      annotations:
+        {{- if not .Values.minio.ignoreChartChecksums }}
+        checksum/secrets: {{ include (print $.Template.BasePath "/minio/secrets.yaml") . | sha256sum }}
+        checksum/config: {{ include (print $.Template.BasePath "/minio/configmap.yaml") . | sha256sum }}
+        {{- end }}
+        {{- if .Values.minio.podAnnotations }}
+          {{- toYaml .Values.minio.podAnnotations | trimSuffix "\n" | nindent 8 }}
+        {{- end }}
+    spec:
+      {{- if .Values.minio.priorityClassName }}
+      priorityClassName: "{{ .Values.minio.priorityClassName }}"
+      {{- end }}
+      {{- if .Values.minio.runtimeClassName }}
+      runtimeClassName: "{{ .Values.minio.runtimeClassName }}"
+      {{- end }}
+      {{- if and .Values.minio.securityContext.enabled .Values.minio.persistence.enabled }}
+      securityContext:
+        {{ omit .Values.minio.securityContext "enabled" | toYaml | nindent 8 }}
+      {{- end }}
+      {{ if .Values.minio.serviceAccount.create }}
+      serviceAccountName: {{ .Values.minio.serviceAccount.name }}
+      {{- end }}
+      containers:
+        - name: {{ .Chart.Name }}
+          image: {{ .Values.image.registry }}/{{ .Values.minio.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) .Values.minio.image.tag }}
+          imagePullPolicy: {{ .Values.minio.image.pullPolicy }}
+          command:
+            - "/bin/sh"
+            - "-ce"
+            - "/usr/bin/docker-entrypoint.sh minio server {{ $bucketRoot }} -S {{ .Values.minio.certsPath }} --address :{{ .Values.minio.minioAPIPort }} --console-address :{{ .Values.minio.minioConsolePort }} {{- template "minio.extraArgs" . }}"
+          volumeMounts:
+            - name: minio-user
+              mountPath: "/tmp/credentials"
+              readOnly: true
+            - name: export
+              mountPath: {{ .Values.minio.mountPath }}
+              {{- if and .Values.minio.persistence.enabled .Values.minio.persistence.subPath }}
+              subPath: "{{ .Values.minio.persistence.subPath }}"
+              {{- end }}
+            {{- if .Values.minio.extraSecret }}
+            - name: extra-secret
+              mountPath: "/tmp/minio-config-env"
+            {{- end }}
+            {{- include "minio.tlsKeysVolumeMount" . | indent 12 }}
+            {{- if .Values.minio.extraVolumeMounts }}
+              {{- toYaml .Values.minio.extraVolumeMounts | nindent 12 }}
+            {{- end }}
+          ports:
+            - name: {{ $scheme }}
+              containerPort: {{ .Values.minio.minioAPIPort }}
+            - name: {{ $scheme }}-console
+              containerPort: {{ .Values.minio.minioConsolePort }}
+          env:
+            - name: MINIO_ROOT_USER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ template "minio.secretName" . }}
+                  key: rootUser
+            - name: MINIO_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ template "minio.secretName" . }}
+                  key: rootPassword
+            {{- if .Values.minio.extraSecret }}
+            - name: MINIO_CONFIG_ENV_FILE
+              value: "/tmp/minio-config-env/config.env"
+            {{- end }}
+            {{- range $key, $val := .Values.minio.environment }}
+            - name: {{ $key }}
+              value: {{ tpl $val $ | quote }}
+            {{- end }}
+          resources: {{- toYaml .Values.minio.resources | nindent 12 }}
+          {{- if and .Values.minio.securityContext.enabled .Values.minio.persistence.enabled }}
+          {{- with .Values.minio.containerSecurityContext }}
+          securityContext: {{ toYaml . | nindent 12}}
+          {{- end }}
+          {{- end }}
+        {{- with .Values.minio.extraContainers }}
+          {{- if eq (typeOf .) "string" }}
+            {{- tpl . $ | nindent 8 }}
+          {{- else }}
+            {{- toYaml . | nindent 8 }}
+          {{- end }}
+        {{- end }}
+      {{- with .Values.minio.nodeSelector }}
+      nodeSelector: {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- include "minio.imagePullSecrets" . | indent 6 }}
+      {{- with .Values.minio.affinity }}
+      affinity: {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.minio.tolerations }}
+      tolerations: {{- toYaml . | nindent 8 }}
+      {{- end }}
+      volumes:
+        - name: export
+          {{- if .Values.minio.persistence.enabled }}
+          persistentVolumeClaim:
+            claimName: {{ .Values.minio.persistence.existingClaim | default (include "app.fullname" .) }}-minio
+          {{- else }}
+          emptyDir: {}
+          {{- end }}
+        {{- if .Values.minio.extraSecret }}
+        - name: extra-secret
+          secret:
+            secretName: {{ .Values.minio.extraSecret }}
+        {{- end }}
+        - name: minio-user
+          secret:
+            secretName: {{ template "minio.secretName" . }}
+        {{- include "minio.tlsKeysVolume" . | indent 8 }}
+        {{- if .Values.minio.extraVolumes }}
+          {{ toYaml .Values.minio.extraVolumes | nindent 8 }}
+        {{- end }}
+{{- end }}

@@ -1,11 +1,11 @@
-{{- if and .Values.securityContext.enabled .Values.persistence.enabled (.Capabilities.APIVersions.Has "security.openshift.io/v1") }}
+{{- if and .Values.minio.securityContext.enabled .Values.minio.persistence.enabled (.Capabilities.APIVersions.Has "security.openshift.io/v1") }}
 apiVersion: security.openshift.io/v1
 kind: SecurityContextConstraints
 metadata:
-  name: {{ template "minio.fullname" . }}
+  name: {{ template "app.fullname" . }}-minio
   labels:
-    app: {{ template "minio.name" . }}
-    chart: {{ template "minio.chart" . }}
+    app: {{ template "app.name" . }}
+    chart: {{ template "app.chart" . }}
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
 allowHostDirVolumePlugin: false
@@ -26,11 +26,11 @@ requiredDropCapabilities:
 fsGroup:
   type: MustRunAs
   ranges:
-  - max: {{ .Values.securityContext.fsGroup }}
-    min: {{ .Values.securityContext.fsGroup }}
+  - max: {{ .Values.minio.securityContext.fsGroup }}
+    min: {{ .Values.minio.securityContext.fsGroup }}
 runAsUser:
   type: MustRunAs
-  uid: {{ .Values.securityContext.runAsUser }}
+  uid: {{ .Values.minio.securityContext.runAsUser }}
 seLinuxContext:
   type: MustRunAs
 supplementalGroups:

@@ -316,8 +316,8 @@ profiles:
                     {{ .IMAGE_DIGEST_registry_gitlab_com_swiss_armed_forces_cyber_command_cea_loom_crawler }}"
               minio:
                 mcImage:
-                  repository: "{{ .IMAGE_DOMAIN_registry_gitlab_com_swiss_armed_forces_cyber_command_cea_loom_mc }}/\
-                    {{ .IMAGE_REPO_NO_DOMAIN_registry_gitlab_com_swiss_armed_forces_cyber_command_cea_loom_mc }}"
+                  registry: "{{ .IMAGE_DOMAIN_registry_gitlab_com_swiss_armed_forces_cyber_command_cea_loom_mc }}"
+                  repository: "{{ .IMAGE_REPO_NO_DOMAIN_registry_gitlab_com_swiss_armed_forces_cyber_command_cea_loom_mc }}"
                   tag: "{{ .IMAGE_TAG_registry_gitlab_com_swiss_armed_forces_cyber_command_cea_loom_mc }}@\
                     {{ .IMAGE_DIGEST_registry_gitlab_com_swiss_armed_forces_cyber_command_cea_loom_mc }}"
   - name: prod
@@ -584,7 +584,7 @@ profiles:
                     {{ .IMAGE_DIGEST_registry_gitlab_com_swiss_armed_forces_cyber_command_cea_loom_crawler }}"
               minio:
                 mcImage:
-                  repository: "{{ .IMAGE_DOMAIN_registry_gitlab_com_swiss_armed_forces_cyber_command_cea_loom_mc }}/\
-                    {{ .IMAGE_REPO_NO_DOMAIN_registry_gitlab_com_swiss_armed_forces_cyber_command_cea_loom_mc }}"
+                  registry: "{{ .IMAGE_DOMAIN_registry_gitlab_com_swiss_armed_forces_cyber_command_cea_loom_mc }}"
+                  repository: "{{ .IMAGE_REPO_NO_DOMAIN_registry_gitlab_com_swiss_armed_forces_cyber_command_cea_loom_mc }}"
                   tag: "{{ .IMAGE_TAG_registry_gitlab_com_swiss_armed_forces_cyber_command_cea_loom_mc }}@\
                     {{ .IMAGE_DIGEST_registry_gitlab_com_swiss_armed_forces_cyber_command_cea_loom_mc }}"

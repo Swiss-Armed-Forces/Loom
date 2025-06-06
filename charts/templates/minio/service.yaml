@@ -1,0 +1,46 @@
+{{ $scheme := .Values.minio.tls.enabled | ternary "https" "http" }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ template "app.fullname" . }}-minio
+  labels:
+    app: {{ template "app.name" . }}
+    chart: {{ template "app.chart" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+    monitoring: "true"
+  {{- if .Values.minio.service.annotations }}
+  annotations: {{- toYaml .Values.minio.service.annotations | nindent 4 }}
+  {{- end }}
+spec:
+  type: {{ .Values.minio.service.type }}
+  {{- if and (eq .Values.minio.service.type "ClusterIP") .Values.minio.service.clusterIP }}
+  clusterIP: {{ .Values.minio.service.clusterIP }}
+  {{- end }}
+  {{- if or (eq .Values.minio.service.type "LoadBalancer") (eq .Values.minio.service.type "NodePort") }}
+  externalTrafficPolicy: {{ .Values.minio.service.externalTrafficPolicy | quote }}
+  {{- end }}
+  {{- if and (eq .Values.minio.service.type "LoadBalancer") .Values.minio.service.loadBalancerSourceRanges }}
+  loadBalancerSourceRanges: {{ .Values.minio.service.loadBalancerSourceRanges }}
+  {{ end }}
+  {{- if and (eq .Values.minio.service.type "LoadBalancer") (not (empty .Values.minio.service.loadBalancerIP)) }}
+  loadBalancerIP: {{ default "" .Values.minio.service.loadBalancerIP | quote }}
+  {{- end }}
+  ports:
+    - name: {{ $scheme }}
+      port: {{ .Values.minio.service.port }}
+      protocol: TCP
+      {{- if (and (eq .Values.minio.service.type "NodePort") ( .Values.minio.service.nodePort)) }}
+      nodePort: {{ .Values.minio.service.nodePort }}
+      {{- else }}
+      targetPort: {{ .Values.minio.minioAPIPort }}
+      {{- end }}
+  {{- if .Values.minio.service.externalIPs }}
+  externalIPs:
+    {{- range $i , $ip := .Values.minio.service.externalIPs }}
+    - {{ $ip }}
+    {{- end }}
+  {{- end }}
+  selector:
+    app: {{ template "app.name" . }}
+    release: {{ .Release.Name }}

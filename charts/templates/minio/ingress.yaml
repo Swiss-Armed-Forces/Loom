@@ -1,0 +1,38 @@
+{{- if .Values.minio.ingress.enabled -}}
+apiVersion: {{ template "minio.ingress.apiVersion" . }}
+kind: Ingress
+metadata:
+  name: {{ include "app.fullname" . }}-minio
+  labels:
+    app: {{ template "app.name" . }}
+    chart: {{ template "app.chart" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+    {{- with .Values.minio.ingress.labels }}
+      {{- toYaml . | nindent 4 }}
+    {{- end }}
+  annotations:
+    {{- toYaml .Values.minio.ingress.annotations | nindent 4 }}
+    {{- if .Values.certificate.requireClientCert }}
+    traefik.ingress.kubernetes.io/router.tls.options: {{ .Release.Namespace }}-{{ include "app.fullname" . }}-mtls@kubernetescrd
+    {{- end }}
+spec:
+  ingressClassName: {{ .Values.minio.ingress.className }}
+  rules:
+    - host: minio-api.{{ .Values.domain }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "app.fullname" . }}-minio
+                port:
+                  number: {{ .Values.minio.service.port }}
+  {{- if .Values.minio.ingress.tls.enabled }}
+  tls:
+    - secretName: {{ include "app.fullname" . }}-certificate
+      hosts:
+        - minio-api.{{ .Values.domain }}
+  {{- end }}
+{{- end }}
