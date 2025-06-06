@@ -1,8 +1,8 @@
 #!/bin/sh
 set -e ; # Have script exit in the event of a failed command.
 
-{{- if .Values.configPathmc }}
-MC_CONFIG_DIR="{{ .Values.configPathmc }}"
+{{- if .Values.minio.configPathmc }}
+MC_CONFIG_DIR="{{ .Values.minio.configPathmc }}"
 MC="/usr/bin/mc --insecure --config-dir ${MC_CONFIG_DIR}"
 {{- else }}
 MC="/usr/bin/mc --insecure"
@@ -82,17 +82,17 @@ createUser() {
 }
 
 # Try connecting to MinIO instance
-{{- if .Values.tls.enabled }}
+{{- if .Values.minio.tls.enabled }}
 scheme=https
 {{- else }}
 scheme=http
 {{- end }}
 connectToMinio $scheme
 
-{{ if .Values.users }}
+{{ if .Values.minio.users }}
 {{ $global := . }}
 # Create the users
-{{- range .Values.users }}
+{{- range .Values.minio.users }}
 echo {{ tpl .accessKey $global }} > $MINIO_ACCESSKEY_SECRETKEY_TMP
 {{- if .existingSecret }}
 cat /config/secrets/{{ tpl .existingSecret $global }}/{{ tpl .existingSecretKey $global }} >> $MINIO_ACCESSKEY_SECRETKEY_TMP

@@ -1,6 +1,0 @@
-dependencies:
-- name: minio
-  repository: ""
-  version: 5.4.0
-digest: sha256:564ab4450afc7a84633fb8b82a9f27e38ee1ac22b9e2ab213b9069e1f55c23e4
-generated: "2025-03-10T13:20:00.103383683+01:00"
