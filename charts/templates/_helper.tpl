@@ -30,6 +30,32 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 app.kubernetes.io/version: {{ .Chart.Version | replace "+" "_" }}
 {{- end -}}
 
+{{/*
+Generate a hash suffix based on values to ensure unique job names on configuration changes.
+
+This approach is specifically designed for ArgoCD deployments where using {{ .Release.Revision }}
+can cause persistent out-of-sync states. Here's why:
+
+ArgoCD vs Helm Revision Tracking:
+- Helm tracks revisions sequentially (1, 2, 3...) for each install/upgrade operation
+- ArgoCD renders templates using its own Git-based revision system, not Helm's counter
+- This mismatch causes ArgoCD to see different revision numbers than what exists in the cluster
+- Result: ArgoCD shows perpetual drift between desired state and live resources
+
+Benefits of Value Hashing:
+1. Deterministic: Same values always produce the same hash, ensuring ArgoCD sync consistency
+2. Change-sensitive: Hash changes only when actual configuration values change
+3. ArgoCD-compatible: No dependency on Helm's revision tracking system
+4. Automatic job recreation: New hash triggers job deletion/recreation when config changes
+5. Stable when unchanged: Prevents unnecessary job churn when values remain static
+
+This ensures jobs run on every meaningful configuration change while maintaining
+ArgoCD's declarative sync model without false drift detection.
+*/}}
+{{- define "app.valuesHash" -}}
+{{- .Values | toYaml | sha256sum | trunc 8 -}}
+{{- end -}}
+
 
 {{- define "SI-to-bytes" -}}
   {{/*

@@ -2,18 +2,21 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: {{ template "app.fullname" . }}-minio-post-job
+  # Using a hash of values as the job name suffix to ensure the job runs on every deployment
+  # while maintaining ArgoCD sync compatibility. The hash ensures unique job names when
+  # configuration changes while remaining consistent when values are unchanged.
+  name: {{ template "app.fullname" . }}-minio-post-job-{{ include "app.valuesHash" . }}
   labels:
     app: {{ template "app.name" . }}-post-job
     chart: {{ template "app.chart" . }}
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
   annotations:
-    "helm.sh/hook-delete-policy": hook-succeeded,before-hook-creation
     {{- with .Values.minio.postJob.annotations }}
       {{- toYaml . | nindent 4 }}
     {{- end }}
 spec:
+  ttlSecondsAfterFinished: 300  # Auto-delete after 5 minutes
   template:
     metadata:
       labels:
