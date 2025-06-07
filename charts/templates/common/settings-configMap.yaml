@@ -6,25 +6,62 @@ metadata:
     {{- include "app.labels.standard" . | nindent 4 }}
     app.kubernetes.io/component: monitoring
 data:
+    # NOTE: Using Helm conditionals to prevent keys with null/empty values from being included
+    # in the ConfigMap. This is a workaround for an ArgoCD bug where null values in YAML
+    # get converted to empty strings, causing the application to remain perpetually OutOfSync.
+    #
+    # Bug details: https://github.com/argoproj/argo-cd/issues/15566
+    # - ArgoCD converts null values to empty strings during processing
+    # - This causes a diff between desired state (null) and live state (key removed)
+    # - The conditional approach ensures keys are only included when they have actual values
+    #
+    # Without conditionals:
+    #   foo: null     -> becomes foo: ""     -> causes OutOfSync
+    # With conditionals:
+    #   {{- if .Values.foo }}foo: {{ .Values.foo }}{{- end }}  -> key omitted entirely
+
     ENVIRONMENT: {{ .Values.environment }}
     DOMAIN: {{ .Values.domain }}
 
     # pipeline
+    {{- if .Values.pipeline.skip_summarize_while_indexing }}
     skip_summarize_while_indexing: {{ .Values.pipeline.skip_summarize_while_indexing | quote }}
+    {{- end }}
+    {{- if .Values.pipeline.skip_translate_while_indexing }}
     skip_translate_while_indexing: {{ .Values.pipeline.skip_translate_while_indexing | quote }}
+    {{- end }}
+    {{- if .Values.pipeline.tika_ocr_languages }}
     tika_ocr_languages: {{ .Values.pipeline.tika_ocr_languages | join "," | quote }}
-
+    {{- end }}
 
     # llm
+    {{- if .Values.llm.model }}
     llm_model: {{ .Values.llm.model }}
+    {{- end }}
+    {{- if .Values.llm.model_embedding }}
     llm_model_embedding: {{ .Values.llm.model_embedding }}
+    {{- end }}
+    {{- if .Values.llm.temperature }}
     llm_temperature: {{ .Values.llm.temperature | quote }}
+    {{- end }}
+    {{- if .Values.llm.summarize_text_chunk_size }}
     llm_summarize_text_chunk_size: {{ .Values.llm.summarize_text_chunk_size | quote  }}
+    {{- end }}
+    {{- if .Values.llm.summarize_text_chunk_overlap }}
     llm_summarize_text_chunk_overlap: {{ .Values.llm.summarize_text_chunk_overlap | quote  }}
+    {{- end }}
+    {{- if .Values.llm.embedding_temperature }}
     llm_embedding_temperature: {{ .Values.llm.embedding_temperature | quote  }}
+    {{- end }}
+    {{- if .Values.llm.embedding_text_chunk_size }}
     llm_embedding_text_chunk_size: {{ .Values.llm.embedding_text_chunk_size | quote  }}
+    {{- end }}
+    {{- if .Values.llm.embedding_text_chunk_overlap }}
     llm_embedding_text_chunk_overlap: {{ .Values.llm.embedding_text_chunk_overlap | quote  }}
+    {{- end }}
+    {{- if .Values.llm.rerank_temperature }}
     llm_rerank_temperature: {{ .Values.llm.rerank_temperature | quote  }}
+    {{- end }}
 
     # hosts
     mongo_db_host: mongodb://{{ include "app.fullname" . }}-mongodb:{{ .Values.mongodb.service.port }}
