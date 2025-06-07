@@ -1,13 +1,16 @@
 apiVersion: v2
 name: loom
-description: Loom is an open-source document search engine with automated crawling, OCR, tagging and instant full-text search.
-type: application
-# This is the chart version. This version number should be incremented each time you make changes
-# to the chart and its templates, including the app version.
-# Versions are expected to follow Semantic Versioning (https://semver.org/)
-version: 0.0.54
-# This is the version number of the application being deployed. This version number should be
-# incremented each time you make changes to the application. Versions are not expected to
-# follow Semantic Versioning. They should reflect the version the application is using.
-# It is recommended to use it with quotes.
-appVersion: "0.0.44"
+description: Loom is a powerful and easily deployable open-source document search engine.
+# We release the Helm chart and application image together as a single versioned unit.
+# Therefore, the chart version and appVersion are always kept identical.
+# To avoid duplication, we define the version once and reuse it using YAML anchors.
+#
+# Bump this version number whenever you make changes to:
+# - the application code (new image release),
+# - the Helm chart templates,
+# - configuration defaults (values.yaml),
+# - or any other chart metadata.
+#
+# This version must follow Semantic Versioning (https://semver.org/).
+version: &version "0.1.0"
+appVersion: *version
