@@ -248,12 +248,16 @@ profiles:
           context: minio
           docker:
             dockerfile: Dockerfile
+            buildArgs:
+              DOCKER_REGISTRY: '{{or .CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX "docker.io"}}'
             cacheFrom:
               - "registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/minio"
         - image: registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/mc
           context: minio
           docker:
             dockerfile: mc.Dockerfile
+            buildArgs:
+              DOCKER_REGISTRY: '{{or .CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX "docker.io"}}'
             cacheFrom:
               - "registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/mc"
         - image: registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/alpine
@@ -517,12 +521,16 @@ profiles:
           context: minio
           docker:
             dockerfile: Dockerfile
+            buildArgs:
+              DOCKER_REGISTRY: '{{or .CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX "docker.io"}}'
             cacheFrom:
               - "registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/minio"
         - image: registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/mc
           context: minio
           docker:
             dockerfile: mc.Dockerfile
+            buildArgs:
+              DOCKER_REGISTRY: '{{or .CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX "docker.io"}}'
             cacheFrom:
               - "registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/mc"
         - image: registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/alpine
