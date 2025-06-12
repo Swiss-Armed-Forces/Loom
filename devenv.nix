@@ -752,7 +752,7 @@ in
   };
 
   scripts.generate-client-certificate = {
-    description = "Generate THIRD-PARTY.md";
+    description = "Generate client certificates";
     exec = ''
       (
         set -euo pipefail

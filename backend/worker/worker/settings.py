@@ -49,6 +49,7 @@ class Settings(CommonSettings):
 
     llm_model: str = "deepseek-r1:8b"
     llm_model_embedding: str = "nomic-embed-text:v1.5"
+    llm_think: bool = True
     llm_temperature: float | None = None
     llm_timeout: int = 5 * 60
     llm_summarize_text_chunk_size: int = 3000

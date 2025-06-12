@@ -41,6 +41,7 @@ data:
     {{- if .Values.llm.model_embedding }}
     llm_model_embedding: {{ .Values.llm.model_embedding }}
     {{- end }}
+    llm_think: {{ .Values.llm.think | quote }}
     {{- if .Values.llm.temperature }}
     llm_temperature: {{ .Values.llm.temperature | quote }}
     {{- end }}

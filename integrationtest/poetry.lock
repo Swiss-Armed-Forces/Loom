@@ -1182,18 +1182,18 @@ files = [
 
 [[package]]
 name = "ollama"
-version = "0.4.3"
+version = "0.5.1"
 description = "The official Python client for Ollama."
 optional = false
-python-versions = "<4.0,>=3.8"
+python-versions = ">=3.8"
 files = [
-    {file = "ollama-0.4.3-py3-none-any.whl", hash = "sha256:4c06c6b4cd7df346a382e157f696ba53eb9ee2cc94db85a4f7d530b9acb9dba2"},
-    {file = "ollama-0.4.3.tar.gz", hash = "sha256:7b294051b2144be5d6ad4f0d033880f66b95a9377f4b40d8512e2974ca4001ef"},
+    {file = "ollama-0.5.1-py3-none-any.whl", hash = "sha256:4c8839f35bc173c7057b1eb2cbe7f498c1a7e134eafc9192824c8aecb3617506"},
+    {file = "ollama-0.5.1.tar.gz", hash = "sha256:5a799e4dc4e7af638b11e3ae588ab17623ee019e496caaf4323efbaa8feeff93"},
 ]
 
 [package.dependencies]
-httpx = ">=0.27.0,<0.28.0"
-pydantic = ">=2.9.0,<3.0.0"
+httpx = ">=0.27"
+pydantic = ">=2.9"
 
 [[package]]
 name = "orjson"
@@ -2365,7 +2365,7 @@ develop = false
 blobfile = "^2.1.1"
 common = {path = "../common", develop = true}
 langchain-text-splitters = "^0.3.2"
-ollama = "^0.4.3"
+ollama = "^0.5.1"
 python-magic = "^0.4.27"
 requests = "^2.31.0"
 scikit-learn = "^1.5.1"
