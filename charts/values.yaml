@@ -38,6 +38,7 @@ pipeline:
 llm:
   model: deepseek-r1:8b
   model_embedding: nomic-embed-text:v1.5
+  think: true
   temperature: null
   summarize_text_chunk_size: null
   summarize_text_chunk_overlap: null

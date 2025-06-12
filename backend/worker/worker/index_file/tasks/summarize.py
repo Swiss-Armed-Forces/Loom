@@ -15,7 +15,6 @@ from worker.index_file.infra.indexing_persister import IndexingPersister
 from worker.services.tika_service import TIKA_MAX_TEXT_SIZE, TikaResult
 from worker.settings import settings
 from worker.utils.async_task_branch import complete_async_branch
-from worker.utils.llm import strip_thinking
 from worker.utils.natural_language_detection import is_natural_language
 from worker.utils.persisting_task import persisting_task
 
@@ -112,11 +111,9 @@ def _invoke_llm(
             temperature=settings.llm_temperature,
             num_predict=max_tokens,
         ),
+        think=settings.llm_think,
     )
-    # remove thinking
-    llm_response = response.response
-    llm_response_stripped = strip_thinking(llm_response)
-    return llm_response_stripped
+    return response.response
 
 
 @app.task(base=FileIndexingTask)

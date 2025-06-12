@@ -1,11 +1,11 @@
 # Image version
-ARG OLLAMA_IMAGE_VERSION="0.3.14"
+ARG OLLAMA_IMAGE_VERSION="0.9.0"
 
 ARG DOCKER_REGISTRY
 FROM ${DOCKER_REGISTRY}/ollama/ollama:${OLLAMA_IMAGE_VERSION}
 
 # Package versions
-ARG CURL_VERSION="7.81.*"
+ARG CURL_VERSION="7.68.*"
 RUN set -exu \
   && apt-get -y update \
   && apt-get -y install --no-install-recommends curl=${CURL_VERSION} \

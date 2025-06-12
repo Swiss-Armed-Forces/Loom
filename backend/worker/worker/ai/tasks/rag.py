@@ -32,7 +32,6 @@ from worker.ai.infra.ai_context_processing_task import AiContextProcessingTask
 from worker.dependencies import get_ollama_client
 from worker.settings import settings
 from worker.utils.async_task_branch import complete_async_branch
-from worker.utils.llm import strip_thinking, strip_thinking_on_chat_response_stream
 
 logger = logging.getLogger(__name__)
 
@@ -201,14 +200,11 @@ def _invoke_rerank_llm(
         options=Options(
             temperature=settings.llm_rerank_temperature,
         ),
+        think=settings.llm_think,
     )
 
-    # stip thinking
-    llm_response = response.response
-    llm_response_stripped = strip_thinking(llm_response)
-
     # search and extract rank
-    rank_search = re.search(r"^\s*(?P<rank>[0-9.]+)", llm_response_stripped)
+    rank_search = re.search(r"^\s*(?P<rank>[0-9.]+)", response.response)
     rank = float(
         rank_search.group("rank") if rank_search is not None else RERANK_MIN_RANK
     )
@@ -356,8 +352,13 @@ def _stream_chat_llm(
         options=Options(
             temperature=settings.llm_temperature,
         ),
+        think=settings.llm_think,
     )
-    yield from strip_thinking_on_chat_response_stream(stream)
+    for token in stream:
+        message_content = token.message.content
+        if message_content is None:
+            continue
+        yield message_content
 
 
 # pylint: disable=too-many-locals

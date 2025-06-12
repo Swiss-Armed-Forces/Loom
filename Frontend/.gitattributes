@@ -1,1 +1,4 @@
 *.png filter=lfs diff=lfs merge=lfs -text
+
+# Collapse generated openapi files
+src/app/api/generated/** gitlab-generated
