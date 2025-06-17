@@ -19,10 +19,10 @@ import type {
     GenericStatisticsModel,
     GetFilePreviewResponse,
     GetFileResponse,
+    GetFilesCountResponse,
     GetFilesResponse,
+    GetQueryResponse,
     HTTPValidationError,
-    Languages,
-    SortId,
     Stat,
     SummarizeFileRequest,
     SummaryStatisticsModel,
@@ -40,14 +40,14 @@ import {
     GetFilePreviewResponseToJSON,
     GetFileResponseFromJSON,
     GetFileResponseToJSON,
+    GetFilesCountResponseFromJSON,
+    GetFilesCountResponseToJSON,
     GetFilesResponseFromJSON,
     GetFilesResponseToJSON,
+    GetQueryResponseFromJSON,
+    GetQueryResponseToJSON,
     HTTPValidationErrorFromJSON,
     HTTPValidationErrorToJSON,
-    LanguagesFromJSON,
-    LanguagesToJSON,
-    SortIdFromJSON,
-    SortIdToJSON,
     StatFromJSON,
     StatToJSON,
     SummarizeFileRequestFromJSON,
@@ -84,40 +84,63 @@ export interface DownloadTextV1FilesFileIdTextGetRequest {
 
 export interface GetFilePreviewV1FilesFileIdPreviewGetRequest {
     fileId: string;
+    queryId: string;
+    keepAlive?: GetFilePreviewV1FilesFileIdPreviewGetKeepAliveEnum;
     searchString?: string;
-    languages?: Languages;
+    languages?: Array<string>;
 }
 
 export interface GetFileV1FilesFileIdGetRequest {
     fileId: string;
+    queryId: string;
+    keepAlive?: GetFileV1FilesFileIdGetKeepAliveEnum;
     searchString?: string;
-    languages?: Languages;
+    languages?: Array<string>;
+}
+
+export interface GetFilesCountV1FilesCountGetRequest {
+    queryId: string;
+    keepAlive?: GetFilesCountV1FilesCountGetKeepAliveEnum;
+    searchString?: string;
+    languages?: Array<string>;
 }
 
 export interface GetFilesTreeV1FilesTreeGetRequest {
+    queryId: string;
+    keepAlive?: GetFilesTreeV1FilesTreeGetKeepAliveEnum;
     searchString?: string;
-    languages?: Languages;
+    languages?: Array<string>;
     nodePath?: string;
 }
 
 export interface GetFilesV1FilesGetRequest {
-    sortId?: SortId;
+    queryId: string;
+    sortId?: Array<any>;
     pageSize?: number;
     sortByField?: string;
     sortDirection?: GetFilesV1FilesGetSortDirectionEnum;
+    keepAlive?: GetFilesV1FilesGetKeepAliveEnum;
     searchString?: string;
-    languages?: Languages;
+    languages?: Array<string>;
 }
 
-export interface GetGenericStatsV1FilesStatsGenericStatNameGetRequest {
-    statName: Stat;
+export interface GetGenericStatsV1FilesStatsGenericStatGetRequest {
+    stat: Stat;
+    queryId: string;
+    keepAlive?: GetGenericStatsV1FilesStatsGenericStatGetKeepAliveEnum;
     searchString?: string;
-    languages?: Languages;
+    languages?: Array<string>;
+}
+
+export interface GetQueryV1FilesQueryPostRequest {
+    keepAlive?: GetQueryV1FilesQueryPostKeepAliveEnum;
 }
 
 export interface GetSummaryStatsV1FilesStatsSummaryGetRequest {
+    queryId: string;
+    keepAlive?: GetSummaryStatsV1FilesStatsSummaryGetKeepAliveEnum;
     searchString?: string;
-    languages?: Languages;
+    languages?: Array<string>;
 }
 
 export interface GetThumbnailV1FilesFileIdThumbnailGetRequest {
@@ -412,7 +435,22 @@ export class FilesApi extends runtime.BaseAPI {
             );
         }
 
+        if (requestParameters["queryId"] == null) {
+            throw new runtime.RequiredError(
+                "queryId",
+                'Required parameter "queryId" was null or undefined when calling getFilePreviewV1FilesFileIdPreviewGet().',
+            );
+        }
+
         const queryParameters: any = {};
+
+        if (requestParameters["queryId"] != null) {
+            queryParameters["query_id"] = requestParameters["queryId"];
+        }
+
+        if (requestParameters["keepAlive"] != null) {
+            queryParameters["keep_alive"] = requestParameters["keepAlive"];
+        }
 
         if (requestParameters["searchString"] != null) {
             queryParameters["search_string"] =
@@ -473,7 +511,22 @@ export class FilesApi extends runtime.BaseAPI {
             );
         }
 
+        if (requestParameters["queryId"] == null) {
+            throw new runtime.RequiredError(
+                "queryId",
+                'Required parameter "queryId" was null or undefined when calling getFileV1FilesFileIdGet().',
+            );
+        }
+
         const queryParameters: any = {};
+
+        if (requestParameters["queryId"] != null) {
+            queryParameters["query_id"] = requestParameters["queryId"];
+        }
+
+        if (requestParameters["keepAlive"] != null) {
+            queryParameters["keep_alive"] = requestParameters["keepAlive"];
+        }
 
         if (requestParameters["searchString"] != null) {
             queryParameters["search_string"] =
@@ -520,6 +573,72 @@ export class FilesApi extends runtime.BaseAPI {
     }
 
     /**
+     * Get files for a given query.
+     * Get Files Count
+     */
+    async getFilesCountV1FilesCountGetRaw(
+        requestParameters: GetFilesCountV1FilesCountGetRequest,
+        initOverrides?: RequestInit | runtime.InitOverrideFunction,
+    ): Promise<runtime.ApiResponse<GetFilesCountResponse>> {
+        if (requestParameters["queryId"] == null) {
+            throw new runtime.RequiredError(
+                "queryId",
+                'Required parameter "queryId" was null or undefined when calling getFilesCountV1FilesCountGet().',
+            );
+        }
+
+        const queryParameters: any = {};
+
+        if (requestParameters["queryId"] != null) {
+            queryParameters["query_id"] = requestParameters["queryId"];
+        }
+
+        if (requestParameters["keepAlive"] != null) {
+            queryParameters["keep_alive"] = requestParameters["keepAlive"];
+        }
+
+        if (requestParameters["searchString"] != null) {
+            queryParameters["search_string"] =
+                requestParameters["searchString"];
+        }
+
+        if (requestParameters["languages"] != null) {
+            queryParameters["languages"] = requestParameters["languages"];
+        }
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        const response = await this.request(
+            {
+                path: `/v1/files/count`,
+                method: "GET",
+                headers: headerParameters,
+                query: queryParameters,
+            },
+            initOverrides,
+        );
+
+        return new runtime.JSONApiResponse(response, (jsonValue) =>
+            GetFilesCountResponseFromJSON(jsonValue),
+        );
+    }
+
+    /**
+     * Get files for a given query.
+     * Get Files Count
+     */
+    async getFilesCountV1FilesCountGet(
+        requestParameters: GetFilesCountV1FilesCountGetRequest,
+        initOverrides?: RequestInit | runtime.InitOverrideFunction,
+    ): Promise<GetFilesCountResponse> {
+        const response = await this.getFilesCountV1FilesCountGetRaw(
+            requestParameters,
+            initOverrides,
+        );
+        return await response.value();
+    }
+
+    /**
      * Get a node out of the tree of files non-recursively.
      * Get Files Tree
      */
@@ -527,7 +646,22 @@ export class FilesApi extends runtime.BaseAPI {
         requestParameters: GetFilesTreeV1FilesTreeGetRequest,
         initOverrides?: RequestInit | runtime.InitOverrideFunction,
     ): Promise<runtime.ApiResponse<Array<TreeNodeModel>>> {
+        if (requestParameters["queryId"] == null) {
+            throw new runtime.RequiredError(
+                "queryId",
+                'Required parameter "queryId" was null or undefined when calling getFilesTreeV1FilesTreeGet().',
+            );
+        }
+
         const queryParameters: any = {};
+
+        if (requestParameters["queryId"] != null) {
+            queryParameters["query_id"] = requestParameters["queryId"];
+        }
+
+        if (requestParameters["keepAlive"] != null) {
+            queryParameters["keep_alive"] = requestParameters["keepAlive"];
+        }
 
         if (requestParameters["searchString"] != null) {
             queryParameters["search_string"] =
@@ -564,7 +698,7 @@ export class FilesApi extends runtime.BaseAPI {
      * Get Files Tree
      */
     async getFilesTreeV1FilesTreeGet(
-        requestParameters: GetFilesTreeV1FilesTreeGetRequest = {},
+        requestParameters: GetFilesTreeV1FilesTreeGetRequest,
         initOverrides?: RequestInit | runtime.InitOverrideFunction,
     ): Promise<Array<TreeNodeModel>> {
         const response = await this.getFilesTreeV1FilesTreeGetRaw(
@@ -575,13 +709,20 @@ export class FilesApi extends runtime.BaseAPI {
     }
 
     /**
-     * Get list of file_id.
+     * Get files for a given query.
      * Get Files
      */
     async getFilesV1FilesGetRaw(
         requestParameters: GetFilesV1FilesGetRequest,
         initOverrides?: RequestInit | runtime.InitOverrideFunction,
     ): Promise<runtime.ApiResponse<GetFilesResponse>> {
+        if (requestParameters["queryId"] == null) {
+            throw new runtime.RequiredError(
+                "queryId",
+                'Required parameter "queryId" was null or undefined when calling getFilesV1FilesGet().',
+            );
+        }
+
         const queryParameters: any = {};
 
         if (requestParameters["sortId"] != null) {
@@ -599,6 +740,14 @@ export class FilesApi extends runtime.BaseAPI {
         if (requestParameters["sortDirection"] != null) {
             queryParameters["sort_direction"] =
                 requestParameters["sortDirection"];
+        }
+
+        if (requestParameters["queryId"] != null) {
+            queryParameters["query_id"] = requestParameters["queryId"];
+        }
+
+        if (requestParameters["keepAlive"] != null) {
+            queryParameters["keep_alive"] = requestParameters["keepAlive"];
         }
 
         if (requestParameters["searchString"] != null) {
@@ -628,11 +777,11 @@ export class FilesApi extends runtime.BaseAPI {
     }
 
     /**
-     * Get list of file_id.
+     * Get files for a given query.
      * Get Files
      */
     async getFilesV1FilesGet(
-        requestParameters: GetFilesV1FilesGetRequest = {},
+        requestParameters: GetFilesV1FilesGetRequest,
         initOverrides?: RequestInit | runtime.InitOverrideFunction,
     ): Promise<GetFilesResponse> {
         const response = await this.getFilesV1FilesGetRaw(
@@ -645,18 +794,33 @@ export class FilesApi extends runtime.BaseAPI {
     /**
      * Get Generic Stats
      */
-    async getGenericStatsV1FilesStatsGenericStatNameGetRaw(
-        requestParameters: GetGenericStatsV1FilesStatsGenericStatNameGetRequest,
+    async getGenericStatsV1FilesStatsGenericStatGetRaw(
+        requestParameters: GetGenericStatsV1FilesStatsGenericStatGetRequest,
         initOverrides?: RequestInit | runtime.InitOverrideFunction,
     ): Promise<runtime.ApiResponse<GenericStatisticsModel>> {
-        if (requestParameters["statName"] == null) {
+        if (requestParameters["stat"] == null) {
             throw new runtime.RequiredError(
-                "statName",
-                'Required parameter "statName" was null or undefined when calling getGenericStatsV1FilesStatsGenericStatNameGet().',
+                "stat",
+                'Required parameter "stat" was null or undefined when calling getGenericStatsV1FilesStatsGenericStatGet().',
+            );
+        }
+
+        if (requestParameters["queryId"] == null) {
+            throw new runtime.RequiredError(
+                "queryId",
+                'Required parameter "queryId" was null or undefined when calling getGenericStatsV1FilesStatsGenericStatGet().',
             );
         }
 
         const queryParameters: any = {};
+
+        if (requestParameters["queryId"] != null) {
+            queryParameters["query_id"] = requestParameters["queryId"];
+        }
+
+        if (requestParameters["keepAlive"] != null) {
+            queryParameters["keep_alive"] = requestParameters["keepAlive"];
+        }
 
         if (requestParameters["searchString"] != null) {
             queryParameters["search_string"] =
@@ -671,9 +835,9 @@ export class FilesApi extends runtime.BaseAPI {
 
         const response = await this.request(
             {
-                path: `/v1/files/stats/generic/{stat_name}`.replace(
-                    `{${"stat_name"}}`,
-                    encodeURIComponent(String(requestParameters["statName"])),
+                path: `/v1/files/stats/generic/{stat}`.replace(
+                    `{${"stat"}}`,
+                    encodeURIComponent(String(requestParameters["stat"])),
                 ),
                 method: "GET",
                 headers: headerParameters,
@@ -690,15 +854,59 @@ export class FilesApi extends runtime.BaseAPI {
     /**
      * Get Generic Stats
      */
-    async getGenericStatsV1FilesStatsGenericStatNameGet(
-        requestParameters: GetGenericStatsV1FilesStatsGenericStatNameGetRequest,
+    async getGenericStatsV1FilesStatsGenericStatGet(
+        requestParameters: GetGenericStatsV1FilesStatsGenericStatGetRequest,
         initOverrides?: RequestInit | runtime.InitOverrideFunction,
     ): Promise<GenericStatisticsModel> {
         const response =
-            await this.getGenericStatsV1FilesStatsGenericStatNameGetRaw(
+            await this.getGenericStatsV1FilesStatsGenericStatGetRaw(
                 requestParameters,
                 initOverrides,
             );
+        return await response.value();
+    }
+
+    /**
+     * Get Query
+     */
+    async getQueryV1FilesQueryPostRaw(
+        requestParameters: GetQueryV1FilesQueryPostRequest,
+        initOverrides?: RequestInit | runtime.InitOverrideFunction,
+    ): Promise<runtime.ApiResponse<GetQueryResponse>> {
+        const queryParameters: any = {};
+
+        if (requestParameters["keepAlive"] != null) {
+            queryParameters["keep_alive"] = requestParameters["keepAlive"];
+        }
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        const response = await this.request(
+            {
+                path: `/v1/files/query`,
+                method: "POST",
+                headers: headerParameters,
+                query: queryParameters,
+            },
+            initOverrides,
+        );
+
+        return new runtime.JSONApiResponse(response, (jsonValue) =>
+            GetQueryResponseFromJSON(jsonValue),
+        );
+    }
+
+    /**
+     * Get Query
+     */
+    async getQueryV1FilesQueryPost(
+        requestParameters: GetQueryV1FilesQueryPostRequest = {},
+        initOverrides?: RequestInit | runtime.InitOverrideFunction,
+    ): Promise<GetQueryResponse> {
+        const response = await this.getQueryV1FilesQueryPostRaw(
+            requestParameters,
+            initOverrides,
+        );
         return await response.value();
     }
 
@@ -710,7 +918,22 @@ export class FilesApi extends runtime.BaseAPI {
         requestParameters: GetSummaryStatsV1FilesStatsSummaryGetRequest,
         initOverrides?: RequestInit | runtime.InitOverrideFunction,
     ): Promise<runtime.ApiResponse<SummaryStatisticsModel>> {
+        if (requestParameters["queryId"] == null) {
+            throw new runtime.RequiredError(
+                "queryId",
+                'Required parameter "queryId" was null or undefined when calling getSummaryStatsV1FilesStatsSummaryGet().',
+            );
+        }
+
         const queryParameters: any = {};
+
+        if (requestParameters["queryId"] != null) {
+            queryParameters["query_id"] = requestParameters["queryId"];
+        }
+
+        if (requestParameters["keepAlive"] != null) {
+            queryParameters["keep_alive"] = requestParameters["keepAlive"];
+        }
 
         if (requestParameters["searchString"] != null) {
             queryParameters["search_string"] =
@@ -743,7 +966,7 @@ export class FilesApi extends runtime.BaseAPI {
      * Get Summary Stats
      */
     async getSummaryStatsV1FilesStatsSummaryGet(
-        requestParameters: GetSummaryStatsV1FilesStatsSummaryGetRequest = {},
+        requestParameters: GetSummaryStatsV1FilesStatsSummaryGetRequest,
         initOverrides?: RequestInit | runtime.InitOverrideFunction,
     ): Promise<SummaryStatisticsModel> {
         const response = await this.getSummaryStatsV1FilesStatsSummaryGetRaw(
@@ -1104,7 +1327,6 @@ export class FilesApi extends runtime.BaseAPI {
     }
 
     /**
-     * Update file.
      * Update Files By Query
      */
     async updateFilesByQueryV1FilesPutRaw(
@@ -1145,7 +1367,6 @@ export class FilesApi extends runtime.BaseAPI {
     }
 
     /**
-     * Update file.
      * Update Files By Query
      */
     async updateFilesByQueryV1FilesPut(
@@ -1233,9 +1454,81 @@ export class FilesApi extends runtime.BaseAPI {
 /**
  * @export
  */
+export const GetFilePreviewV1FilesFileIdPreviewGetKeepAliveEnum = {
+    _10s: "10s",
+    _30m: "30m",
+} as const;
+export type GetFilePreviewV1FilesFileIdPreviewGetKeepAliveEnum =
+    (typeof GetFilePreviewV1FilesFileIdPreviewGetKeepAliveEnum)[keyof typeof GetFilePreviewV1FilesFileIdPreviewGetKeepAliveEnum];
+/**
+ * @export
+ */
+export const GetFileV1FilesFileIdGetKeepAliveEnum = {
+    _10s: "10s",
+    _30m: "30m",
+} as const;
+export type GetFileV1FilesFileIdGetKeepAliveEnum =
+    (typeof GetFileV1FilesFileIdGetKeepAliveEnum)[keyof typeof GetFileV1FilesFileIdGetKeepAliveEnum];
+/**
+ * @export
+ */
+export const GetFilesCountV1FilesCountGetKeepAliveEnum = {
+    _10s: "10s",
+    _30m: "30m",
+} as const;
+export type GetFilesCountV1FilesCountGetKeepAliveEnum =
+    (typeof GetFilesCountV1FilesCountGetKeepAliveEnum)[keyof typeof GetFilesCountV1FilesCountGetKeepAliveEnum];
+/**
+ * @export
+ */
+export const GetFilesTreeV1FilesTreeGetKeepAliveEnum = {
+    _10s: "10s",
+    _30m: "30m",
+} as const;
+export type GetFilesTreeV1FilesTreeGetKeepAliveEnum =
+    (typeof GetFilesTreeV1FilesTreeGetKeepAliveEnum)[keyof typeof GetFilesTreeV1FilesTreeGetKeepAliveEnum];
+/**
+ * @export
+ */
 export const GetFilesV1FilesGetSortDirectionEnum = {
     Asc: "asc",
     Desc: "desc",
 } as const;
 export type GetFilesV1FilesGetSortDirectionEnum =
     (typeof GetFilesV1FilesGetSortDirectionEnum)[keyof typeof GetFilesV1FilesGetSortDirectionEnum];
+/**
+ * @export
+ */
+export const GetFilesV1FilesGetKeepAliveEnum = {
+    _10s: "10s",
+    _30m: "30m",
+} as const;
+export type GetFilesV1FilesGetKeepAliveEnum =
+    (typeof GetFilesV1FilesGetKeepAliveEnum)[keyof typeof GetFilesV1FilesGetKeepAliveEnum];
+/**
+ * @export
+ */
+export const GetGenericStatsV1FilesStatsGenericStatGetKeepAliveEnum = {
+    _10s: "10s",
+    _30m: "30m",
+} as const;
+export type GetGenericStatsV1FilesStatsGenericStatGetKeepAliveEnum =
+    (typeof GetGenericStatsV1FilesStatsGenericStatGetKeepAliveEnum)[keyof typeof GetGenericStatsV1FilesStatsGenericStatGetKeepAliveEnum];
+/**
+ * @export
+ */
+export const GetQueryV1FilesQueryPostKeepAliveEnum = {
+    _10s: "10s",
+    _30m: "30m",
+} as const;
+export type GetQueryV1FilesQueryPostKeepAliveEnum =
+    (typeof GetQueryV1FilesQueryPostKeepAliveEnum)[keyof typeof GetQueryV1FilesQueryPostKeepAliveEnum];
+/**
+ * @export
+ */
+export const GetSummaryStatsV1FilesStatsSummaryGetKeepAliveEnum = {
+    _10s: "10s",
+    _30m: "30m",
+} as const;
+export type GetSummaryStatsV1FilesStatsSummaryGetKeepAliveEnum =
+    (typeof GetSummaryStatsV1FilesStatsSummaryGetKeepAliveEnum)[keyof typeof GetSummaryStatsV1FilesStatsSummaryGetKeepAliveEnum];

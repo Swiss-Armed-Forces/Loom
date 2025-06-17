@@ -9,11 +9,11 @@ from common.dependencies import (
     get_libretranslate_api,
     get_task_scheduling_service,
 )
+from common.services.query_builder import QueryParameters
 from common.services.task_scheduling_service import TaskSchedulingService
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 
-from api.models.query_model import QueryModel
 from api.settings import settings
 
 router = APIRouter()
@@ -31,7 +31,7 @@ class TranslateAllRequest(BaseModel):
     """Query to filter files."""
 
     lang: str
-    query: QueryModel
+    query: QueryParameters
 
 
 class LibretranslateSupportedLanguages(BaseModel):
@@ -58,8 +58,7 @@ def translate_files_on_demand(
     translation_request: TranslateAllRequest,
     task_scheduling_service: TaskSchedulingService = default_task_scheduling_service,
 ):
-    query = translation_request.query.to_query_parameters()
     task_scheduling_service.dispatch_translate_files(
-        query=query,
+        query=translation_request.query,
         lang=translation_request.lang,
     )

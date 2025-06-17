@@ -1,7 +1,7 @@
 import { Chip } from "@mui/material";
 import stc from "string-to-color";
 import { updateTagOfQuery } from "../../../search/SearchQueryUtils.ts";
-import { selectQuery, setQuery } from "../../../search/searchSlice.ts";
+import { selectQuery, updateQuery } from "../../../search/searchSlice.ts";
 import {
     deleteTagFromFile,
     deleteTagFromFiles,
@@ -38,7 +38,7 @@ export const TagsList: FC<TagsListProps> = ({
         useState<boolean>(false);
     const searchForTag = (tagName: string) => {
         dispatch(
-            setQuery({
+            updateQuery({
                 query: updateTagOfQuery(searchQuery?.query ?? "", tagName),
             }),
         );

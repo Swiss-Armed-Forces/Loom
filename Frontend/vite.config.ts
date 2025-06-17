@@ -12,7 +12,7 @@ export default ({ mode }) => {
         server: {
             host: "0.0.0.0",
             allowedHosts: true,
-            port: parseInt(process.env.PORT) || 5173,
+            port: 80,
             proxy: {
                 "/api": {
                     target: process.env.API_BACKEND_URL,

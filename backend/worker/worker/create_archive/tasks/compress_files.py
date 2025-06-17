@@ -3,7 +3,7 @@ import datetime
 from bson import ObjectId
 from common.dependencies import get_celery_app, get_file_storage_service
 from common.file.file_repository import File
-from stream_zip import ZIP_32, stream_zip  # type: ignore[import-untyped]
+from stream_zip import ZIP_32, stream_zip
 
 from worker.create_archive.infra.archive_processing_task import ArchiveProcessingTask
 

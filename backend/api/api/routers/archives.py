@@ -11,12 +11,12 @@ from common.dependencies import (
     get_file_storage_service,
 )
 from common.services.file_storage_service import FileStorageService
+from common.services.query_builder import QueryParameters
 from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
 from api.models.archives_model import ArchivesModel
-from api.models.query_model import QueryModel
 from api.utils import get_content_disposition_header
 
 router = APIRouter()
@@ -37,7 +37,7 @@ class ArchiveCreatedResponse(BaseModel):
 class ArchiveRequest(BaseModel):
     """Query to filter archives."""
 
-    query: QueryModel
+    query: QueryParameters
 
 
 class UpdateArchiveModel(BaseModel):
@@ -51,7 +51,13 @@ def get_all_archives(
     archive_repository: ArchiveRepository = default_archive_repository,
 ) -> ArchivesModel:
     """Get all archives."""
-    all_archives = archive_repository.get_all()
+    all_archives = list(
+        archive_repository.get_generator_by_query(
+            QueryParameters(
+                query_id=archive_repository.open_point_in_time(), search_string="*"
+            )
+        )
+    )
     return ArchivesModel.from_archive_list(all_archives)
 
 
@@ -62,9 +68,7 @@ def create_new_archive(
 ) -> ArchiveCreatedResponse:
     """Create a new archive containing all files that match the query."""
 
-    archive = archive_scheduling_service.create_archive(
-        archive_request.query.to_query_parameters()
-    )
+    archive = archive_scheduling_service.create_archive(query=archive_request.query)
 
     return ArchiveCreatedResponse(archive_id=archive.id_)
 

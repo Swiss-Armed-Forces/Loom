@@ -14,12 +14,12 @@
  */
 
 import { mapValues } from "../runtime";
-import type { QueryModel } from "./QueryModel";
+import type { QueryParameters } from "./QueryParameters";
 import {
-    QueryModelFromJSON,
-    QueryModelFromJSONTyped,
-    QueryModelToJSON,
-} from "./QueryModel";
+    QueryParametersFromJSON,
+    QueryParametersFromJSONTyped,
+    QueryParametersToJSON,
+} from "./QueryParameters";
 
 /**
  *
@@ -35,10 +35,10 @@ export interface ArchiveMeta {
     shortName: string;
     /**
      *
-     * @type {QueryModel}
+     * @type {QueryParameters}
      * @memberof ArchiveMeta
      */
-    query: QueryModel;
+    query: QueryParameters;
     /**
      *
      * @type {string}
@@ -70,7 +70,7 @@ export function ArchiveMetaFromJSONTyped(
     }
     return {
         shortName: json["short_name"],
-        query: QueryModelFromJSON(json["query"]),
+        query: QueryParametersFromJSON(json["query"]),
         updatedDatetime: json["updated_datetime"],
     };
 }
@@ -81,7 +81,7 @@ export function ArchiveMetaToJSON(value?: ArchiveMeta | null): any {
     }
     return {
         short_name: value["shortName"],
-        query: QueryModelToJSON(value["query"]),
+        query: QueryParametersToJSON(value["query"]),
         updated_datetime: value["updatedDatetime"],
     };
 }

@@ -3,35 +3,39 @@ import { Button, CircularProgress } from "@mui/material";
 import { Refresh } from "@mui/icons-material";
 import { useAppDispatch, useAppSelector } from "../../../app/hooks.ts";
 import {
-    incrementPageNumber,
     selectLastFileSortId,
-    selectNumberOfFiles,
-    selectPageNumber,
-    updatePage,
+    selectTotalFiles,
+    selectQuery,
+    updateQuery,
+    selectLoadedFiles,
 } from "../searchSlice.ts";
 import { selectIsLoading } from "../../common/commonSlice.ts";
 import { useTranslation } from "react-i18next";
 import { SearchResultCountText } from "./SearchResultCountText.tsx";
-import { defaultPageSize } from "../SearchQueryUtils.ts";
 
 export const LoadMoreButton = () => {
     const isLoading = useAppSelector(selectIsLoading);
-    const numberOfResults = useAppSelector(selectNumberOfFiles);
-    const pageNumber = useAppSelector(selectPageNumber);
+    const totalFiles = useAppSelector(selectTotalFiles);
+    const loadedFiles = useAppSelector(selectLoadedFiles);
+    const query = useAppSelector(selectQuery);
     const lastFileSortId = useAppSelector(selectLastFileSortId);
 
     const { t } = useTranslation();
     const dispatch = useAppDispatch();
 
     const loadMoreResults = () => {
-        dispatch(incrementPageNumber());
-        dispatch(updatePage(lastFileSortId));
+        dispatch(
+            updateQuery({
+                id: query?.id, // keep query id
+                sortId: lastFileSortId,
+            }),
+        );
     };
 
     return (
         <div className={styles.loadMoreButtonWrapper}>
             <SearchResultCountText />
-            {numberOfResults > (pageNumber + 1) * defaultPageSize && (
+            {totalFiles > loadedFiles && (
                 <Button
                     startIcon={!isLoading ? <Refresh /> : undefined}
                     className={styles.loadMoreButton}

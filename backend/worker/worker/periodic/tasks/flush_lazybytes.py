@@ -1,6 +1,6 @@
 import logging
 
-from celery.canvas import Signature  # type: ignore[import-untyped]
+from celery.canvas import Signature
 from common.dependencies import get_celery_app, get_lazybytes_service
 
 from worker.periodic.infra.periodic_task import PeriodicTask

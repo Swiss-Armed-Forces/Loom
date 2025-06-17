@@ -2,6 +2,7 @@ from uuid import UUID
 
 from celery import chain
 from common.dependencies import get_file_repository, get_file_scheduling_service
+from common.services.query_builder import QueryParameters
 
 from worker.index_file.add_tags_to_file_task import FileNotFoundException, app, logger
 from worker.index_file.infra.file_indexing_task import FileIndexingTask
@@ -14,7 +15,11 @@ def dispatch_remove_tag(
     tag: str,
 ):
     logger.info("dispatch remove tag: '%s' ", tag)
-    for file in get_file_repository().get_generator_by_tag(tag=tag):
+    file_repository = get_file_repository()
+    query = QueryParameters(
+        query_id=file_repository.open_point_in_time(), search_string=f'tags: "{tag}"'
+    )
+    for file in file_repository.get_generator_by_query(query=query):
         dispatch_remove_tag_from_file.s(file_id=file.id_, tag=tag).delay().forget()
 
 

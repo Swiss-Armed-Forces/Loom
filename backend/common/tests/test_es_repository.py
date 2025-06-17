@@ -1,9 +1,9 @@
 import logging
 from typing import Generator
-from unittest.mock import MagicMock, call
+from unittest.mock import MagicMock
 
 import pytest
-from elasticsearch import Elasticsearch
+from elasticsearch import Elasticsearch, NotFoundError
 from elasticsearch_dsl import Integer, Search, Text
 from pydantic import BaseModel, ConfigDict
 
@@ -70,18 +70,19 @@ class _TestEsRepository(BaseEsRepository[_TestEsDocument, _TestEsRepositoryObjec
         mock_types=False,
     ):
         super().__init__(query_builder, pubsub_service)
-        # Note: we use on purpose not spec=type[...] here, mostly because
-        # that does not work work mocking @classmethods.
-        # I am not quite sure why.. Ahhh ducktyping..
-        self.object_type: _TestEsRepositoryObject | MagicMock = (
+        # Note: we use on purpose not spec=type[...] here in MagicMocks,
+        # mostly because it does not work mocking @classmethods.
+        # I am not quite sure why..
+        # Ahhh ducktyping..
+        self.object_type: type[_TestEsRepositoryObject] | MagicMock = (
             _TestEsRepositoryObject
             if not mock_types
             else MagicMock(spec=_TestEsRepositoryObject)
         )
-        self.document_type: _TestEsDocument | MagicMock = (
+        self.document_type: type[_TestEsDocument] | MagicMock = (
             _TestEsDocument if not mock_types else MagicMock(spec=_TestEsDocument)
         )
-        self.elasticsearch_mock = MagicMock(spec=Elasticsearch)
+        self.elasticsearch_mock: Elasticsearch = MagicMock(spec=Elasticsearch)
 
     @property
     def _object_type(self) -> type[_TestEsRepositoryObject]:
@@ -236,7 +237,7 @@ ES_REPOSITORY_TEST_INSTANCES: dict[type[BaseEsRepository], list[_TestInstances]]
                 tasks_retried=list(map(str, TestValueDefaults.test_uuid_list)),
                 tasks_failed=list(map(str, TestValueDefaults.test_uuid_list)),
                 # _EsFile
-                storage_id=str(TestValueDefaults.test_objec_id_str),
+                storage_id=TestValueDefaults.test_objec_id_str,
                 content=TestValueDefaults.test_str,
                 content_truncated=TestValueDefaults.test_bool,
                 full_name=str(TestValueDefaults.test_pure_path),
@@ -251,8 +252,8 @@ ES_REPOSITORY_TEST_INSTANCES: dict[type[BaseEsRepository], list[_TestInstances]]
                 sha256=TestValueDefaults.test_str,
                 uploaded_datetime=TestValueDefaults.test_datetime.isoformat(),
                 size=TestValueDefaults.test_long,
-                thumbnail_file_id=str(TestValueDefaults.test_objec_id_str),
-                preview_file_id=str(TestValueDefaults.test_objec_id_str),
+                thumbnail_file_id=TestValueDefaults.test_objec_id_str,
+                preview_file_id=TestValueDefaults.test_objec_id_str,
                 exclude_from_archives=TestValueDefaults.test_bool,
                 tags=TestValueDefaults.test_str_list_no_duplicates,
                 magic_file_type=TestValueDefaults.test_str,
@@ -314,8 +315,10 @@ ES_REPOSITORY_TEST_INSTANCES: dict[type[BaseEsRepository], list[_TestInstances]]
                 tasks_failed=TestValueDefaults.test_uuid_list,
                 # Archive
                 query=QueryParameters(
+                    query_id=TestValueDefaults.test_objec_id_str,
                     search_string=TestValueDefaults.test_str,
                     languages=TestValueDefaults.test_str_list,
+                    keep_alive=TestValueDefaults.test_keep_alive,
                 ),
                 plain_file=StoredArchive(
                     storage_id=TestValueDefaults.test_objec_id_str,
@@ -352,16 +355,18 @@ ES_REPOSITORY_TEST_INSTANCES: dict[type[BaseEsRepository], list[_TestInstances]]
                 tasks_failed=list(map(str, TestValueDefaults.test_uuid_list)),
                 # _EsArchive
                 query=_EsQueryParameters(
+                    query_id=TestValueDefaults.test_objec_id_str,
                     search_string=TestValueDefaults.test_str,
                     languages=TestValueDefaults.test_str_list,
+                    keep_alive=TestValueDefaults.test_keep_alive,
                 ),
                 plain_file=_EsStoredArchive(
-                    storage_id=str(TestValueDefaults.test_objec_id_str),
+                    storage_id=TestValueDefaults.test_objec_id_str,
                     sha256=TestValueDefaults.test_str,
                     size=TestValueDefaults.test_long,
                 ),
                 encrypted_file=_EsStoredArchive(
-                    storage_id=str(TestValueDefaults.test_objec_id_str),
+                    storage_id=TestValueDefaults.test_objec_id_str,
                     sha256=TestValueDefaults.test_str,
                     size=TestValueDefaults.test_long,
                 ),
@@ -394,8 +399,10 @@ ES_REPOSITORY_TEST_INSTANCES: dict[type[BaseEsRepository], list[_TestInstances]]
                 tasks_failed=TestValueDefaults.test_uuid_list,
                 # AiContext
                 query=QueryParameters(
+                    query_id=TestValueDefaults.test_objec_id_str,
                     search_string=TestValueDefaults.test_str,
                     languages=TestValueDefaults.test_str_list_no_duplicates,
+                    keep_alive=TestValueDefaults.test_keep_alive,
                 ),
                 chat_message_history_id=TestValueDefaults.test_uuid,
                 created_at=TestValueDefaults.test_datetime,
@@ -423,8 +430,10 @@ ES_REPOSITORY_TEST_INSTANCES: dict[type[BaseEsRepository], list[_TestInstances]]
                 tasks_failed=list(map(str, TestValueDefaults.test_uuid_list)),
                 # _EsAiContext
                 query=_EsQueryParameters(
+                    query_id=TestValueDefaults.test_objec_id_str,
                     search_string=TestValueDefaults.test_str,
                     languages=TestValueDefaults.test_str_list_no_duplicates,
+                    keep_alive=TestValueDefaults.test_keep_alive,
                 ),
                 chat_message_history_id=str(TestValueDefaults.test_uuid),
                 created_at=TestValueDefaults.test_datetime.isoformat(),
@@ -515,26 +524,7 @@ def test_es_repository_get_by_id(obj: _TestEsRepositoryObject):
     )
 
 
-def test_es_repository_get_all():
-    es_repository = _TestEsRepository(
-        query_builder=get_query_builder(),
-        pubsub_service=get_pubsub_service(),
-        mock_types=True,
-    )
-    es_repository.get_generator_by_query = MagicMock(
-        spec=es_repository.get_generator_by_query
-    )
-
-    es_repository.get_all()
-
-    es_repository.get_generator_by_query.assert_called_once_with(
-        query=QueryParameters(search_string="*")
-    )
-
-
 def test_es_repository_get_by_query():
-    # Disable unnecessary-dunder-call because of __getitem__() in mock addressing
-    # pylint: disable=unnecessary-dunder-call
     es_repository = _TestEsRepository(
         query_builder=get_query_builder(),
         pubsub_service=get_pubsub_service(),
@@ -543,7 +533,7 @@ def test_es_repository_get_by_query():
 
     es_repository.get_generator_by_query = MagicMock()
 
-    query = QueryParameters(search_string="just a random query")
+    query = QueryParameters(query_id="0123456789", search_string="just a random query")
     pagination = PaginationParameters(page_size=10)
 
     es_repository.get_by_query(
@@ -561,28 +551,28 @@ def test_es_repository_get_generator_by_query():
         pubsub_service=get_pubsub_service(),
         mock_types=True,
     )
+    # setup search_mock
     search_mock = MagicMock(spec=Search)
     es_repository.document_type.search.return_value = search_mock
-    search_execute_mock = (
+    search_pre_execute_mock = (
         search_mock
-        # happens in: __get_search_by_query
+        # happens in: _get_search_by_query
         .highlight_options()
         .highlight()
         .query()
         # happens in: _paginate_search
-        .extra()
+        .sort()
+        # happens in: _execute_search_with_query
         .index()
         .extra()
-        .sort()
-        .execute
     )
 
     list(
         es_repository.get_generator_by_query(
-            QueryParameters(search_string="just a random query")
+            QueryParameters(query_id="0123456789", search_string="just a random query")
         )
     )
-    search_execute_mock.assert_called_once()
+    search_pre_execute_mock.execute.assert_called_once()
 
 
 def test_es_repository_get_generator_by_query_fetches_more_pages():
@@ -591,33 +581,136 @@ def test_es_repository_get_generator_by_query_fetches_more_pages():
         pubsub_service=get_pubsub_service(),
         mock_types=True,
     )
+
+    # setup search_mock
     search_mock = MagicMock(spec=Search)
     es_repository.document_type.search.return_value = search_mock
-    search_mock = (
+    search_pre_execute_mock = (
         search_mock
-        # happens in: __get_search_by_query
+        # happens in: _get_search_by_query
         .highlight_options()
         .highlight()
         .query()
         # happens in: _paginate_search
-        .extra()
         .sort()
     )
-    search_execute_result_hit_mock = MagicMock()
-    search_execute_result_hit_mock.sort = "sort value"
 
-    search_mock.execute().hits.hits = [search_execute_result_hit_mock]
-    search_mock.execute().hits.total.value = 2
+    # setup hits_hits
+    hits_hits_mock = MagicMock()
+    hits_hits_mock.sort = "sort value"
 
-    # 2nd loop pass will call .extra: return same mock object
-    search_mock.extra.return_value = search_mock
+    # 1st page
+    search_execute_mock = search_pre_execute_mock.index().extra().execute
+    search_execute_mock.return_value.hits.__iter__.return_value = [
+        _TestEsDocument(),
+        _TestEsDocument(),
+    ]
+    search_execute_mock.return_value.hits.hits = [
+        hits_hits_mock,
+        hits_hits_mock,
+    ]
 
-    list(
+    # 2nd page
+    search_pre_execute_mock = search_pre_execute_mock.extra()
+    search_page2_execute_mock = search_pre_execute_mock.index().extra().execute
+    search_page2_execute_mock.return_value.hits.__iter__.return_value = [
+        _TestEsDocument()
+    ]
+    search_page2_execute_mock.return_value.hits.hits = [hits_hits_mock]
+
+    # 3rd page (empty)
+    search_pre_execute_mock = search_pre_execute_mock.extra()
+    search_page3_execute_mock = search_pre_execute_mock.index().extra().execute
+    search_page3_execute_mock.return_value.hits.__iter__.return_value = []
+    search_page3_execute_mock.return_value.hits.hits = []
+
+    results = list(
         es_repository.get_generator_by_query(
-            QueryParameters(search_string="just a random query")
+            QueryParameters(query_id="0123456789", search_string="just a random query")
         )
     )
-    search_mock.execute.assert_has_calls([call(), call()])
+    assert len(results) == 3
+    search_execute_mock.assert_called_once()
+    search_page2_execute_mock.assert_called_once()
+    search_page3_execute_mock.assert_called_once()
+
+
+def test_es_repository_get_generator_by_query_fetches_more_pages_with_expired_pit():
+    es_repository = _TestEsRepository(
+        query_builder=get_query_builder(),
+        pubsub_service=get_pubsub_service(),
+        mock_types=True,
+    )
+
+    initial_query_id = "initial query id"
+    new_query_id = "new query id"
+
+    open_point_in_time = MagicMock()
+    open_point_in_time.return_value = {"id": new_query_id}
+    es_repository.elasticsearch_mock.open_point_in_time = open_point_in_time
+
+    # setup search_mock
+    search_mock = MagicMock(spec=Search)
+    es_repository.document_type.search.return_value = search_mock
+    search_pre_execute_mock = (
+        search_mock
+        # happens in: _get_search_by_query
+        .highlight_options()
+        .highlight()
+        .query()
+        # happens in: _paginate_search
+        .sort()
+    )
+
+    # setup hits_hits
+    hits_hits_mock = MagicMock()
+    hits_hits_mock.sort = "sort value"
+
+    # 1st page works
+    search_execute_mock = search_pre_execute_mock.index().extra().execute
+    search_execute_mock.return_value.hits.__iter__.return_value = [
+        _TestEsDocument(),
+        _TestEsDocument(),
+    ]
+    search_execute_mock.return_value.hits.hits = [
+        hits_hits_mock,
+        hits_hits_mock,
+    ]
+
+    # 2nd page throws NotFoundError on first call, succeeds on retry
+    search_pre_execute_mock = search_pre_execute_mock.extra()
+    search_page2_execute_mock = search_pre_execute_mock.index().extra().execute
+
+    # Configure to throw on first call, then return success on second call
+    mock_success_response = MagicMock()
+    mock_success_response.hits.__iter__.return_value = [_TestEsDocument()]
+    mock_success_response.hits.hits = [hits_hits_mock]
+
+    search_page2_execute_mock.side_effect = [
+        NotFoundError(
+            "search phase execution exception", MagicMock(), None
+        ),  # First call throws
+        mock_success_response,  # Second call succeeds
+    ]
+
+    # 3rd page (empty)
+    search_pre_execute_mock = search_pre_execute_mock.extra()
+    search_page3_execute_mock = search_pre_execute_mock.index().extra().execute
+    search_page3_execute_mock.return_value.hits.__iter__.return_value = []
+    search_page3_execute_mock.return_value.hits.hits = []
+
+    results = list(
+        es_repository.get_generator_by_query(
+            QueryParameters(
+                query_id=initial_query_id, search_string="just a random query"
+            )
+        )
+    )
+    assert len(results) == 3
+    search_execute_mock.assert_called_once()
+    assert search_page2_execute_mock.call_count == 2
+    search_page3_execute_mock.assert_called_once()
+    es_repository.elasticsearch_mock.open_point_in_time.assert_called_once()
 
 
 def test_es_repository_get_id_generator_by_query():
@@ -626,46 +719,61 @@ def test_es_repository_get_id_generator_by_query():
         pubsub_service=get_pubsub_service(),
         mock_types=True,
     )
+    # setup search_mock
     search_mock = MagicMock(spec=Search)
     es_repository.document_type.search.return_value = search_mock
-    search_execute_mock = (
+    search_pre_execute_mock = (
         search_mock
-        # happens in: __get_search_by_query
+        # happens in: _get_search_by_query
         .highlight_options()
         .highlight()
         .query()
         # happens in: _paginate_search
-        .extra()
+        .sort()
+        # happens in: _execute_search_with_query
         .index()
         .extra()
-        .sort()
-        .execute
     )
 
     list(
         es_repository.get_generator_by_query(
-            QueryParameters(search_string="just a random query")
+            QueryParameters(query_id="0123456789", search_string="just a random query")
         )
     )
-    search_execute_mock.assert_called_once()
+    search_pre_execute_mock.execute.assert_called_once()
 
 
 def test_es_repository_count_by_query():
+
     es_repository = _TestEsRepository(
         query_builder=get_query_builder(),
         pubsub_service=get_pubsub_service(),
         mock_types=True,
     )
+    # setup search_mock
     search_mock = MagicMock(spec=Search)
     es_repository.document_type.search.return_value = search_mock
-    search_count_mock = (
+    # Because of __getitem__() in mock addressing:
+    # pylint: disable=unnecessary-dunder-call
+    search_pre_count_mock = (
         search_mock
+        # happens in: _get_search_by_query
+        .highlight_options()
+        .highlight()
+        .query()
         # happens in: count_by_query
-        .query().count
+        .__getitem__(slice(0, 0, None))
+        .extra()
+        # happens in: _execute_search_with_query
+        .index()
+        .extra()
+        .execute
     )
-    search_count_mock.return_value = 123
+    hits_mock = MagicMock()
+    hits_mock.hits.total.value = 123
+    search_pre_count_mock.return_value = hits_mock
     count = es_repository.count_by_query(
-        QueryParameters(search_string="just a random query")
+        QueryParameters(query_id="0123456789", search_string="just a random query")
     )
     assert count == 123
 
@@ -680,18 +788,30 @@ def test_es_repository_get_by_id_with_query(obj: _TestEsRepositoryObject):
         pubsub_service=get_pubsub_service(),
         mock_types=True,
     )
+
+    # setup search_mock
     search_mock = MagicMock(spec=Search)
     es_repository.document_type.search.return_value = search_mock
-
-    search_mock.execute().hits.total.value = 1
+    search_pre_execute_mock = (
+        search_mock
+        # happens in: _get_search_by_query
+        .highlight_options()
+        .highlight()
+        .query()
+        # happens in: get_by_id_with_query
+        .filter()
+        # happens in: _execute_search_with_query
+        .index()
+        .extra()
+    )
 
     es_repository.get_by_id_with_query(
         obj.id_,
-        QueryParameters(search_string="just a random query"),
+        QueryParameters(query_id="0123456789", search_string="just a random query"),
         full_highlight_context=False,
     )
 
-    search_mock.highlight_options().highlight().query().filter().execute.assert_called_once()
+    search_pre_execute_mock.execute.assert_called_once()
 
 
 @pytest.mark.parametrize(
@@ -791,3 +911,20 @@ def test_es_repository_update_exclude(obj: _TestEsRepositoryObject):
         refresh=True,
         retry_on_conflict=UPDATE_RETRY_ON_CONFLICT_COUNT,
     )
+
+
+def test_es_repository_open_point_in_time():
+    es_repository = _TestEsRepository(
+        query_builder=get_query_builder(),
+        pubsub_service=get_pubsub_service(),
+        mock_types=True,
+    )
+    mock_point_in_time_id = "0123456789"
+    open_point_in_time = MagicMock()
+    open_point_in_time.return_value = {"id": mock_point_in_time_id}
+    es_repository.elasticsearch_mock.open_point_in_time = open_point_in_time
+
+    point_in_time_id = es_repository.open_point_in_time()
+
+    es_repository.elasticsearch_mock.open_point_in_time.assert_called_once()
+    assert point_in_time_id == mock_point_in_time_id

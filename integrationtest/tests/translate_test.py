@@ -4,11 +4,11 @@ from unittest.mock import MagicMock
 
 import pytest
 import requests
-from api.models.query_model import QueryModel
 from api.routers.files import GetFileLanguageTranslations, TranslateFileRequest
 from api.routers.translation import TranslateAllRequest
 from common.dependencies import get_lazybytes_service
 from common.file.file_repository import File
+from common.services.query_builder import QueryParameters
 from pydantic import BaseModel
 from requests import Response
 from worker.index_file.tasks.translate import (
@@ -18,7 +18,7 @@ from worker.index_file.tasks.translate import (
 )
 
 from utils.consts import FILES_ENDPOINT, REQUEST_TIMEOUT, TRANSLATION_ENDPOINT
-from utils.fetch_from_api import build_search_string, get_file_by_name
+from utils.fetch_from_api import build_search_string, fetch_query_id, get_file_by_name
 from utils.split_into_sentences import split_into_sentences
 from utils.upload_asset import upload_bytes_asset
 
@@ -103,7 +103,7 @@ def test_translate_huge_text():
     assert expected_text_sentences_counted == text_translated_sentences_counted
 
 
-def _on_demand_translate_by_query(query: QueryModel, lang: str):
+def _on_demand_translate_by_query(query: QueryParameters, lang: str):
     response: Response = requests.post(
         f"{TRANSLATION_ENDPOINT}/",
         json=TranslateAllRequest(
@@ -200,10 +200,11 @@ def test_on_demand_translation_by_query(
 ):
     def on_demand_function(file: TranslationFileTest, lang: str):
         _on_demand_translate_by_query(
-            QueryModel(
+            QueryParameters(
+                query_id=fetch_query_id(),
                 search_string=build_search_string(
                     search_string="*", field="full_name", field_value=file.name
-                )
+                ),
             ),
             lang,
         )

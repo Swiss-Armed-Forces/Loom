@@ -31,6 +31,7 @@
         "restore": "Restore file",
         "showThumbnail": "Show thumbnail",
         "resultCounts": "Showing {{actualCount}} of {{totalCount}} results.",
+        "queryExpired": "Query has expired, trying again: Your search results might change",
         "queryThisField": "Query by this field",
         "sortThisField": "Sort by this field",
         "shareContent": {
@@ -227,7 +228,7 @@
         "file_type_tikaTitle": "Filetypes by Apache Tika",
         "file_type_magicTitle": "Filetypes by File Magic",
         "language_tikaTitle": "Language by Tika",
-        "language_translateTitle": "Language by Translate",
+        "language_libretranslateTitle": "Language by Translate",
         "is_spamTitle": "Spam detected",
         "tagsTitle": "Tags",
         "autoReloadTitle": "Auto-refresh",

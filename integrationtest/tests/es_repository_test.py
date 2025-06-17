@@ -7,6 +7,19 @@ from common.models.es_repository import ES_REPOSITORY_TYPES, BaseEsRepository
     "repository_type",
     ES_REPOSITORY_TYPES,
 )
+def test_open_point_in_time(repository_type: type[BaseEsRepository]):
+    repository = repository_type(
+        query_builder=get_query_builder(), pubsub_service=get_pubsub_service()
+    )
+    query_id1 = repository.open_point_in_time()
+    query_id2 = repository.open_point_in_time()
+    assert query_id1 != query_id2
+
+
+@pytest.mark.parametrize(
+    "repository_type",
+    ES_REPOSITORY_TYPES,
+)
 def test_backup_repositories(repository_type: type[BaseEsRepository]):
     elasticsearch = get_elasticsearch()
     repository = repository_type(

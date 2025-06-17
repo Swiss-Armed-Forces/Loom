@@ -1,13 +1,6 @@
 from datetime import datetime
 
-from elasticsearch_dsl import (  # type: ignore[import-untyped]
-    Date,
-    InnerDoc,
-    Keyword,
-    Long,
-    Object,
-    Text,
-)
+from elasticsearch_dsl import Date, InnerDoc, Keyword, Long, Object, Text
 from pydantic import BaseModel, Field, computed_field
 
 from common.models.es_repository import BaseEsRepository
@@ -40,8 +33,10 @@ class Archive(RepositoryTaskObject):
 
 
 class _EsQueryParameters(InnerDoc):
+    query_id = Keyword()
     search_string = Text()
     languages = Text(multi=True)
+    keep_alive = Keyword()
 
 
 class _EsStoredArchive(InnerDoc):

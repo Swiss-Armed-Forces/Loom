@@ -15,7 +15,7 @@ import {
 import { useEffect, useState } from "react";
 import styles from "./SearchTranslateDialog.module.css";
 import { t } from "i18next";
-import { setQuery, selectLanguages, selectQuery } from "../searchSlice";
+import { updateQuery, selectLanguages, selectQuery } from "../searchSlice";
 import { useAppDispatch, useAppSelector } from "../../../app/hooks";
 import { LibretranslateSupportedLanguages } from "../../../app/api";
 
@@ -42,7 +42,7 @@ export function SearchTranslateDialog() {
 
     const save = () => {
         dispatch(
-            setQuery({
+            updateQuery({
                 ...searchQuery,
                 languages: searchTranslationLanguage,
             }),

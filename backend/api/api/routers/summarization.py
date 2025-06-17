@@ -5,11 +5,11 @@ from common.dependencies import (
     get_file_scheduling_service,
     get_task_scheduling_service,
 )
+from common.services.query_builder import QueryParameters
 from common.services.task_scheduling_service import TaskSchedulingService
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 
-from api.models.query_model import QueryModel
 from api.settings import settings
 
 router = APIRouter()
@@ -24,7 +24,7 @@ default_task_scheduling_service = Depends(get_task_scheduling_service)
 class SummarizationRequest(BaseModel):
     """Query to filter files."""
 
-    query: QueryModel
+    query: QueryParameters
     system_prompt: str | None = None
 
 
@@ -38,7 +38,7 @@ def summarize_files_on_demand(
     summarization_request: SummarizationRequest,
     task_scheduling_service: TaskSchedulingService = default_task_scheduling_service,
 ):
-    query = summarization_request.query.to_query_parameters()
     task_scheduling_service.dispatch_summarize_files(
-        query=query, system_prompt=summarization_request.system_prompt
+        query=summarization_request.query,
+        system_prompt=summarization_request.system_prompt,
     )

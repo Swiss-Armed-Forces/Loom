@@ -35,12 +35,6 @@ export interface GetFilesResponse {
     files: Array<GetFilesFileEntry>;
     /**
      *
-     * @type {number}
-     * @memberof GetFilesResponse
-     */
-    totalFiles: number;
-    /**
-     *
      * @type {string}
      * @memberof GetFilesResponse
      */
@@ -52,7 +46,6 @@ export interface GetFilesResponse {
  */
 export function instanceOfGetFilesResponse(value: object): boolean {
     if (!("files" in value)) return false;
-    if (!("totalFiles" in value)) return false;
     if (!("sortByField" in value)) return false;
     return true;
 }
@@ -70,7 +63,6 @@ export function GetFilesResponseFromJSONTyped(
     }
     return {
         files: (json["files"] as Array<any>).map(GetFilesFileEntryFromJSON),
-        totalFiles: json["total_files"],
         sortByField: json["sort_by_field"],
     };
 }
@@ -81,7 +73,6 @@ export function GetFilesResponseToJSON(value?: GetFilesResponse | null): any {
     }
     return {
         files: (value["files"] as Array<any>).map(GetFilesFileEntryToJSON),
-        total_files: value["totalFiles"],
         sort_by_field: value["sortByField"],
     };
 }

@@ -14,18 +14,18 @@ import {
     getFilePreview,
     GetFilePreviewResponse,
     GetFilesFileEntry,
-    GetFilesResponse,
     LibretranslateSupportedLanguages,
     searchFiles,
     SummaryStatisticsModel,
     GenericStatisticsModel,
     Stat,
     PubSubMessage,
-    SortId,
+    getLongRunningQuery,
+    getFilesCount,
+    getShortRunningQuery,
 } from "../../app/api";
 import { CombinedStats, SearchQuery } from "./model.ts";
 import { webSocketSendMessage } from "../../middleware/SocketMiddleware.ts";
-import { defaultPageSize } from "./SearchQueryUtils.ts";
 
 import { v4 as uuidv4 } from "uuid";
 
@@ -57,7 +57,6 @@ export function initCustomQuery(
 
 export interface SearchState {
     query: SearchQuery | null;
-    queryVersion: number;
     queryError?: string;
     view: SearchView;
     stats: CombinedStats;
@@ -68,9 +67,8 @@ export interface SearchState {
         };
     };
     totalFiles: number;
-    lastFileSortId: SortId | null;
+    lastFileSortId: any[] | null;
     filesInView: string[];
-    pageNumber: number;
     tags: string[];
     languages: LibretranslateSupportedLanguages[] | null;
     translationLanguage: LibretranslateSupportedLanguages | null;
@@ -95,7 +93,6 @@ function loadCustomQueries(): CustomQuery[] {
 
 const initialState: SearchState = {
     query: null,
-    queryVersion: 0,
     view: SearchView.DETAILED,
     stats: {
         summary: null,
@@ -109,7 +106,6 @@ const initialState: SearchState = {
     tags: [],
     languages: null,
     translationLanguage: null,
-    pageNumber: 0,
     customQueries: loadCustomQueries(),
     contentTruncatedFilesCount: 0,
     failedFilesCount: 0,
@@ -121,73 +117,72 @@ const initialState: SearchState = {
 
 export const updateQuery = createAsyncThunk(
     "updateQueryThunk",
-    async (query: SearchQuery, thunkAPI) => {
+    async (query: Partial<SearchQuery>, thunkAPI) => {
         const dispatch = thunkAPI.dispatch;
         const lastQuery = (thunkAPI.getState() as RootState).search.query;
-        const newQuery = {
-            ...lastQuery,
-            // By default reset the sortId, but allow it to be overwritten
-            // This is to prevent issues with staying on a later page than the new query might have
-            sortId: null,
-            ...query,
-        };
-        return await dispatch(applyQuery(newQuery));
-    },
-);
+        const queryId = query.id ?? (await getLongRunningQuery()).queryId;
+        const queryQuery = query.query ?? lastQuery?.query ?? "";
 
-export const updatePage = createAsyncThunk(
-    "updatePageThunk",
-    async (sortId: SortId | null, thunkAPI) => {
-        const state = thunkAPI.getState() as RootState;
-        const dispatch = thunkAPI.dispatch;
-        const lastQuery = state.search.query;
-        const newQuery = {
-            ...lastQuery,
-            sortId,
-        };
-        return await dispatch(applyQuery(newQuery));
-    },
-);
-
-export const setQuery = createAsyncThunk(
-    "setQueryThunk",
-    async (query: SearchQuery, thunkAPI) => {
-        const dispatch = thunkAPI.dispatch;
-
-        return await dispatch(applyQuery(query));
-    },
-);
-
-const applyQuery = createAsyncThunk(
-    "applyQueryThunk",
-    async (query: SearchQuery, thunkAPI) => {
-        const dispatch = thunkAPI.dispatch;
-        // do not run query if empty
-        if (!query.query || query.query.trim().length == 0) {
-            return {
-                query: query,
-            };
+        if (queryQuery.trim().length === 0) {
+            return;
         }
-        const queryNew: SearchQuery = {
-            query: query.query,
-            // reset languages to null if there are zero languages
-            languages:
-                query.languages && query.languages?.length > 0
-                    ? query.languages
-                    : null,
-            sortField: query.sortField,
-            sortDirection: query.sortDirection,
-            sortId: query.sortId,
-            pageSize: query.pageSize ?? defaultPageSize,
+
+        const newQuery: SearchQuery = {
+            id: queryId,
+            query: queryQuery,
+            keepAlive: query.keepAlive ?? lastQuery?.keepAlive ?? null,
+            languages: query.languages ?? lastQuery?.languages ?? null,
+            sortField: query.sortField ?? lastQuery?.sortField ?? null,
+            sortDirection:
+                query.sortDirection ?? lastQuery?.sortDirection ?? null,
+            sortId: query.sortId ?? lastQuery?.sortId ?? null,
+            pageSize: query.pageSize ?? lastQuery?.pageSize ?? null,
         };
+        const queryIdChanged = lastQuery?.id !== queryId;
+
+        dispatch(startLoadingIndicator());
+        if (queryIdChanged) {
+            dispatch(
+                webSocketSendMessage({
+                    message: {
+                        type: "subscribe",
+                        channels: [queryId],
+                    },
+                }),
+            );
+        }
         try {
-            dispatch(startLoadingIndicator());
-            const searchResult = await searchFiles(queryNew);
-            return {
-                ...searchResult,
-                query: queryNew,
+            const searchResult = searchFiles(newQuery);
+            const countResult = getFilesCount(newQuery);
+            const result = {
+                ...(await searchResult),
+                ...(await countResult),
+                query: newQuery,
             };
+
+            if (queryIdChanged && lastQuery?.id != null) {
+                dispatch(
+                    webSocketSendMessage({
+                        message: {
+                            type: "unsubscribe",
+                            channels: [lastQuery.id],
+                        },
+                    }),
+                );
+            }
+            return result;
         } catch (err: any) {
+            if (queryIdChanged) {
+                dispatch(
+                    webSocketSendMessage({
+                        message: {
+                            type: "unsubscribe",
+                            channels: [queryId],
+                        },
+                    }),
+                );
+            }
+
             return thunkAPI.rejectWithValue(
                 err.detail ? err.detail : err.toString(),
             );
@@ -207,18 +202,22 @@ export const fetchPreview = createAsyncThunk(
         },
         thunkAPI,
     ) => {
-        const dispatch = thunkAPI.dispatch;
         const searchState = (thunkAPI.getState() as RootState).search;
-        const query = searchState.query;
-        if (!query) return;
+        const file = searchState.files[fileId];
+        if (!file || searchState.query == null) return;
+        const query = {
+            ...searchState.query,
+            // update query id
+            id: (await getShortRunningQuery()).queryId,
+            query: searchState.query?.query ?? "",
+        } satisfies SearchQuery;
         try {
-            const preview = await getFilePreview(fileId, query);
-            dispatch(addFilePreview(preview));
+            return await getFilePreview(fileId, query);
         } catch (err: any) {
-            dispatch(removeFile(fileId));
-            return thunkAPI.rejectWithValue(
-                err.detail ? err.detail : err.toString(),
-            );
+            return thunkAPI.rejectWithValue({
+                error: err.detail ? err.detail : err.toString(),
+                fileId: fileId,
+            });
         }
     },
 );
@@ -226,9 +225,10 @@ export const fetchPreview = createAsyncThunk(
 export const fetchContentTruncatedFiles = createAsyncThunk(
     "fetchContentTruncatedFilesThunk",
     async () => {
-        return searchFiles({
+        return getFilesCount({
+            id: (await getShortRunningQuery()).queryId,
             query: QUERY_CONTENT_TRUNCATED_FILES,
-            pageSize: 0,
+            keepAlive: null,
         });
     },
 );
@@ -236,9 +236,10 @@ export const fetchContentTruncatedFiles = createAsyncThunk(
 export const fetchFailedFiles = createAsyncThunk(
     "fetchFailedFilesThunk",
     async () => {
-        return searchFiles({
+        return getFilesCount({
+            id: (await getShortRunningQuery()).queryId,
             query: QUERY_FAILED_FILES,
-            pageSize: 0,
+            keepAlive: null,
         });
     },
 );
@@ -285,27 +286,6 @@ export const setFileInViewState = createAsyncThunk(
     },
 );
 
-function addFileInformation(state: any, action: any) {
-    // save last query
-    if (!action.payload) return;
-    const payload = action.payload.payload;
-    state.query = payload.query;
-    state.queryVersion++;
-    const fileEntriesModel: GetFilesResponse = payload;
-    if (!fileEntriesModel.files) return;
-    fileEntriesModel.files.forEach((file) => {
-        // initialize file in files list
-        state.files[file.fileId] = {
-            meta: file,
-            preview: null,
-        };
-    });
-    state.totalFiles = payload.totalFiles;
-    state.lastFileSortId =
-        fileEntriesModel.files[fileEntriesModel.files.length - 1]?.sortId;
-    state.queryError = undefined;
-}
-
 export const searchSlice = createSlice({
     name: "search",
     initialState,
@@ -334,43 +314,23 @@ export const searchSlice = createSlice({
                 JSON.stringify(state.customQueries),
             );
         },
-
         fillStatsSummary: (
             state,
             action: PayloadAction<SummaryStatisticsModel | null>,
         ) => {
             state.stats.summary = action.payload;
         },
-
         fillStatsTags: (
             state,
             action: PayloadAction<GenericStatisticsModel | null>,
         ) => {
             state.stats.tags = action.payload;
         },
-
         fillStatsGeneric: (
             state,
             action: PayloadAction<GenericStatisticsModel | null>,
         ) => {
             state.stats.generic = action.payload;
-        },
-
-        incrementPageNumber: (state) => {
-            state.pageNumber += 1;
-        },
-        addFilePreview: (
-            state,
-            action: PayloadAction<GetFilePreviewResponse>,
-        ) => {
-            const fileId = action.payload.fileId;
-            const file = state.files[fileId];
-            if (!file) return;
-            file.preview = action.payload;
-        },
-        removeFile: (state, action: PayloadAction<string>) => {
-            const fileId = action.payload;
-            delete state.files[fileId];
         },
         setTags: (state, action: PayloadAction<string[]>) => {
             state.tags = action.payload;
@@ -416,28 +376,53 @@ export const searchSlice = createSlice({
         builder.addCase(fetchFailedFiles.fulfilled, (state, action) => {
             state.failedFilesCount = action.payload.totalFiles;
         });
-        builder.addCase(updatePage.fulfilled, (state, action: any) => {
-            addFileInformation(state, action);
-        });
-        builder.addCase(setQuery.fulfilled, (state, action: any) => {
-            // reset files
-            state.files = {};
-            state.pageNumber = 0;
+        builder.addCase(updateQuery.fulfilled, (state, action) => {
+            // save last query
+            if (!action.payload) return;
+            const newQuery = action.payload.query;
 
-            addFileInformation(state, action);
-        });
-        builder.addCase(updateQuery.fulfilled, (state, action: any) => {
-            // reset files
-            state.files = {};
-            state.pageNumber = 0;
+            if (state.query?.id != newQuery.id) {
+                // new query: reset files
+                state.files = {};
+            }
+            state.query = action.payload.query;
 
-            addFileInformation(state, action);
+            if (!action.payload.files) return;
+            action.payload.files.forEach((file) => {
+                // initialize file in files list
+                state.files[file.fileId] = {
+                    meta: file,
+                    preview: null,
+                };
+            });
+            state.totalFiles = action.payload.totalFiles;
+            state.lastFileSortId = action.payload.files?.at(-1)?.sortId ?? null;
+            state.queryError = undefined;
         });
-        builder.addCase(applyQuery.rejected, (state, action: any) => {
+        builder.addCase(updateQuery.rejected, (state, action: any) => {
             const error = action.payload;
             toast.error("Cannot load search results. Error: " + error);
-
             state.queryError = error;
+        });
+        builder.addCase(fetchPreview.fulfilled, (state, action) => {
+            if (!action.payload) return;
+            const preview = action.payload;
+            const fileId = preview.fileId;
+            const file = state.files[fileId];
+            if (!file) return;
+            file.preview = preview;
+        });
+        builder.addCase(fetchPreview.rejected, (state, action) => {
+            const { fileId, error } = action.payload as {
+                fileId: string;
+                error: string;
+            };
+
+            if (fileId && state.files[fileId]) {
+                delete state.files[fileId];
+            }
+
+            toast.error("Cannot load file preview. Error: " + error);
         });
         builder.addCase(setFileInViewState.fulfilled, (state, action) => {
             const { fileId, inView } = action.payload;
@@ -462,9 +447,6 @@ export const {
     fillStatsSummary,
     fillStatsTags,
     fillStatsGeneric,
-    addFilePreview,
-    incrementPageNumber,
-    removeFile,
     setTags,
     setLanguages,
     setTranslationLanguage,
@@ -484,16 +466,6 @@ export const selectCustomQueries = createSelector(
 export const selectQuery = createSelector(
     selectSearch,
     (search) => search.query,
-);
-
-export const selectQueryVersion = createSelector(
-    selectSearch,
-    (search) => search.queryVersion,
-);
-
-export const selectPageNumber = createSelector(
-    selectSearch,
-    (search) => search.pageNumber,
 );
 
 export const selectQueryError = createSelector(
@@ -541,10 +513,15 @@ export const selectActiveSearchView = createSelector(
     selectSearch,
     (search) => search.view,
 );
-export const selectNumberOfFiles = createSelector(
+export const selectTotalFiles = createSelector(
     selectSearch,
     (search) => search.totalFiles,
 );
+export const selectLoadedFiles = createSelector(
+    selectSearch,
+    (search) => Object.keys(search.files).length,
+);
+
 export const selectFilesInView = createSelector(
     selectSearch,
     (search) => search.filesInView,

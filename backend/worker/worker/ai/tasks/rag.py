@@ -25,8 +25,8 @@ from numpy import array, linspace
 from ollama import Message, Options
 from pydantic import BaseModel, computed_field
 from pydantic_core import from_json, to_json
-from scipy.signal import argrelextrema  # type: ignore[import-untyped]
-from sklearn.neighbors import KernelDensity  # type: ignore[import-untyped]
+from scipy.signal import argrelextrema
+from sklearn.neighbors import KernelDensity
 
 from worker.ai.infra.ai_context_processing_task import AiContextProcessingTask
 from worker.dependencies import get_ollama_client

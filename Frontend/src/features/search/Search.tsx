@@ -5,7 +5,7 @@ import {
     selectWebSocketPubSubMessage,
     setChatbotOpen,
     setLanguages,
-    setQuery,
+    updateQuery,
     setSummarizationSystemPrompt,
     setTags,
 } from "./searchSlice";
@@ -15,6 +15,7 @@ import {
     loadTags,
     MessageFileUpdate,
     loadSummarizationSystemPrompt,
+    MessageQueryIdExpired,
 } from "../../app/api";
 import {
     handleError,
@@ -35,9 +36,11 @@ import { toast } from "react-toastify";
 import { MessageError } from "../../app/api";
 import ChatMenu from "./components/ChatMenu.tsx";
 import { useSearchParams } from "react-router-dom";
+import { t } from "i18next";
 
 const RELOAD_TIMEOUT__MS = 5000;
 const FILE_FETCH_DEBOUNCE__MS = 2000;
+const UPDATE_QUERY_DEBOUNCE__MS = 2000;
 
 export function Search() {
     const dispatch = useAppDispatch();
@@ -52,6 +55,11 @@ export function Search() {
     const [hasScrollOffset, setHasScrollOffset] = useState(false);
 
     const fileFetchDebounceTimeouts = new Map<
+        string,
+        ReturnType<typeof setTimeout> // see: https://stackoverflow.com/a/56239226/3215929
+    >();
+
+    const updateQueryDebounceTimeouts = new Map<
         string,
         ReturnType<typeof setTimeout> // see: https://stackoverflow.com/a/56239226/3215929
     >();
@@ -129,7 +137,7 @@ export function Search() {
                     sortDirection: sortDirection,
                 }),
         } as SearchQuery;
-        dispatch(setQuery(newQuery));
+        dispatch(updateQuery(newQuery));
     }, [languages]); // eslint-disable-line react-hooks/exhaustive-deps
 
     // persist in query params
@@ -194,11 +202,29 @@ export function Search() {
         const existingTimeout = fileFetchDebounceTimeouts.get(fileId);
         clearTimeout(existingTimeout);
         const newTimeout = setTimeout(() => {
-            dispatch(fetchPreview({ fileId }));
+            dispatch(fetchPreview({ fileId: fileId }));
             fileFetchDebounceTimeouts.delete(fileId);
         }, FILE_FETCH_DEBOUNCE__MS);
         fileFetchDebounceTimeouts.set(fileId, newTimeout);
     }, [webSocketPubSubMessage]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    // update query id and show toast
+    useEffect(() => {
+        if (!webSocketPubSubMessage) return;
+        if (webSocketPubSubMessage.message.type !== "queryIdExpired") return;
+        const message = webSocketPubSubMessage.message as MessageQueryIdExpired;
+        if (searchQuery?.id !== message.oldId) return;
+
+        const oldQueryId = message.oldId;
+        const existingTimeout = updateQueryDebounceTimeouts.get(oldQueryId);
+        clearTimeout(existingTimeout);
+        const newTimeout = setTimeout(() => {
+            dispatch(updateQuery({ id: message.newId }));
+            toast.info(t("generalSearchView.queryExpired"));
+            updateQueryDebounceTimeouts.delete(oldQueryId);
+        }, UPDATE_QUERY_DEBOUNCE__MS);
+        updateQueryDebounceTimeouts.set(oldQueryId, newTimeout);
+    }, [webSocketPubSubMessage, searchQuery]); // eslint-disable-line react-hooks/exhaustive-deps
 
     const updateScrollOffset = (ev: BaseSyntheticEvent) => {
         setHasScrollOffset(ev.target.scrollTop > 0);

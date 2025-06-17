@@ -9,12 +9,22 @@
 import logging
 import time
 from collections import Counter
-from typing import Any, Iterable, Literal, Sequence
+from typing import Any, Iterable, Literal
 from uuid import UUID
 
 import requests
 from api.models.archives_model import ArchiveHit, ArchivesModel
-from api.routers.files import GetFilePreviewResponse, GetFileResponse, GetFilesResponse
+from api.routers.files import (
+    GetFilePreviewResponse,
+    GetFileResponse,
+    GetFilesCountResponse,
+    GetFilesQuery,
+    GetFilesResponse,
+    GetQuery,
+    GetQueryResponse,
+)
+from common.models.es_repository import DEFAULT_PAGE_SIZE
+from common.services.query_builder import QueryParameters
 from requests import Response
 
 from utils.celery_inspect import is_celery_idle
@@ -31,6 +41,19 @@ class FetchException(Exception):
 def _quote_str_for_query(query: str):
     safe_query = query.replace('"', '\\"')
     return safe_query if safe_query.isalpha() else f'"{safe_query}"'
+
+
+def fetch_query_id(get_query: GetQuery | None = None) -> str:
+    if get_query is None:
+        get_query = GetQuery()
+    response: Response = requests.post(
+        f"{FILES_ENDPOINT}/query",
+        params=get_query.model_dump(),
+        timeout=REQUEST_TIMEOUT,
+    )
+    response.raise_for_status()
+    get_query_response = GetQueryResponse.model_validate(response.json())
+    return get_query_response.query_id
 
 
 def build_search_string(
@@ -50,18 +73,34 @@ def build_search_string(
     )
 
 
+def fetch_files_count_from_api(files_query: GetFilesQuery) -> GetFilesCountResponse:
+    response = requests.get(
+        f"{FILES_ENDPOINT}/count",
+        params=files_query.model_dump(),
+        timeout=REQUEST_TIMEOUT,
+    )
+    response.raise_for_status()
+    return GetFilesCountResponse.model_validate(response.json())
+
+
+def fetch_files_by_query_from_api(files_query: GetFilesQuery) -> GetFilesResponse:
+    response = requests.get(
+        f"{FILES_ENDPOINT}/",
+        params=files_query.model_dump(),
+        timeout=REQUEST_TIMEOUT,
+    )
+    response.raise_for_status()
+    return GetFilesResponse.model_validate(response.json())
+
+
 # pylint: disable=too-many-arguments, too-many-locals, too-many-branches
 def fetch_archives_from_api(
-    search_string: str,
-    languages: Sequence[str] | None = None,
     expected_no_of_archives: int = 1,
     expected_state: str | None = "created",
-    page: int = 0,
-    size: int | None = None,
     max_wait_time_per_archive: int | None = None,
-    bad_states: Sequence[str] = ("failed",),
+    bad_states: tuple[str, ...] = ("failed",),
     wait_for_celery_idle: bool = False,
-) -> Sequence[ArchiveHit]:
+) -> list[ArchiveHit]:
     if max_wait_time_per_archive is None:
         max_wait_time_per_archive = DEFAULT_MAX_WAIT_TIME_PER_FILE
 
@@ -74,22 +113,11 @@ def fetch_archives_from_api(
         bad_state for bad_state in bad_states if bad_state != expected_state
     )
 
-    if size is None:
-        size = expected_no_of_archives + 1
-    assert size >= expected_no_of_archives
-
     # Retry the get request maximally 3 times
     for retry_attempts in range(wait_cycles):
         time.sleep(BATCH_WAIT_TIME)  # wait before trying to fetch
-        params = {
-            "search_string": search_string,
-            "languages": languages,
-            "page": page,
-            "size": size,
-        }
         response = requests.get(
             f"{ARCHIVE_ENDPOINT}/",
-            params=params,
             timeout=REQUEST_TIMEOUT,
         )
         response.raise_for_status()
@@ -157,9 +185,8 @@ def fetch_archives_from_api(
         )
         error_msgs.append(f"Results are in the wrong states: {divergent_states}")
     error_msg = (
-        f"Failed to fetch {expected_no_of_archives} "
+        f"Failed to fetch {expected_no_of_archives} archives "
         + f"hits with expected state '{expected_state}' "
-        + f"using query: '{search_string}'\n"
         + f"Retried fetch {retry_attempts} times "
         + f"in a period of {max_wait_time} seconds\n"
         + "\n".join(error_msgs)
@@ -170,19 +197,23 @@ def fetch_archives_from_api(
 
 def fetch_files_from_api(
     search_string: str = "*",
-    languages: Sequence[str] | None = None,
-    sort_by_field: str | None = None,
-    sort_direction: Literal["asc", "desc"] | None = None,
+    languages: list[str] | None = None,
+    sort_by_field: str = "_score",
+    sort_direction: Literal["asc", "desc"] = "asc",
     expected_no_of_files: int = 1,
     expected_state: str = "processed",
-    sort_id: Sequence[Any] | None = None,
-    page_size: int | None = None,
+    sort_id: list[Any] | None = None,
+    page_size: int = DEFAULT_PAGE_SIZE,
     max_wait_time_per_file: int | None = None,
-    bad_states: Sequence[str] = ("failed",),
+    bad_states: tuple[str, ...] = ("failed",),
     wait_for_celery_idle: bool = False,
 ) -> GetFilesResponse:
     if max_wait_time_per_file is None:
         max_wait_time_per_file = DEFAULT_MAX_WAIT_TIME_PER_FILE
+    if languages is None:
+        languages = []
+    if sort_id is None:
+        sort_id = []
 
     max_wait_time = expected_no_of_files * max_wait_time_per_file
     wait_cycles = (max_wait_time // BATCH_WAIT_TIME) + 1
@@ -198,42 +229,35 @@ def fetch_files_from_api(
             time.sleep(BATCH_WAIT_TIME)  # wait before trying to fetch
 
         # search for expected state
-        params = {
-            "search_string": build_search_string(
-                search_string=search_string, field="state", field_value=expected_state
+        files_query = GetFilesQuery(
+            query_id=fetch_query_id(),
+            search_string=build_search_string(
+                search_string=search_string,
+                field="state",
+                field_value=expected_state,
             ),
-            "languages": languages,
-            "sort_id": sort_id,
-            "page_size": page_size,
-            "sort_by_field": sort_by_field,
-            "sort_direction": sort_direction,
-        }
-        response: Response = requests.get(
-            f"{FILES_ENDPOINT}/",
-            params=params,
-            timeout=REQUEST_TIMEOUT,
+            languages=languages,
+            sort_id=sort_id,
+            page_size=page_size,
+            sort_by_field=sort_by_field,
+            sort_direction=sort_direction,
         )
-        response.raise_for_status()
-        file_response_expected_state = GetFilesResponse.model_validate(response.json())
-        response_file_count = file_response_expected_state.total_files
+        response_file_count = fetch_files_count_from_api(files_query).total_files
 
         # search for bad states
         if len(bad_states) > 0:
-            params["search_string"] = build_search_string(
+            bad_states_files_query = files_query.model_copy()
+            bad_states_files_query.search_string = build_search_string(
                 search_string=search_string,
                 field="state",
                 field_value=bad_states,
             )
 
-            response = requests.get(
-                f"{FILES_ENDPOINT}/",
-                params=params,
-                timeout=REQUEST_TIMEOUT,
-            )
-            response.raise_for_status()
-            file_response_bad_state = GetFilesResponse.model_validate(response.json())
+            file_response_bad_state = fetch_files_count_from_api(
+                bad_states_files_query
+            ).total_files
         else:
-            file_response_bad_state = None
+            file_response_bad_state = 0
 
         logging.debug(
             "Query attempt %d/%d, n_%s=%d/%d, n_%s=%d",
@@ -243,11 +267,7 @@ def fetch_files_from_api(
             response_file_count,
             expected_no_of_files,
             bad_states,
-            (
-                file_response_bad_state.total_files
-                if file_response_bad_state is not None
-                else 0
-            ),
+            file_response_bad_state,
         )
 
         if response_file_count > expected_no_of_files:
@@ -258,13 +278,9 @@ def fetch_files_from_api(
             )
             break
 
-        if (
-            file_response_bad_state is not None
-            and file_response_bad_state.total_files > 0
-        ):
+        if file_response_bad_state is not None and file_response_bad_state > 0:
             error_msgs.append(
-                "Results are in the wrong states:"
-                f" {file_response_bad_state.total_files}"
+                "Results are in the wrong states:" f" {file_response_bad_state}"
             )
             break
 
@@ -278,6 +294,8 @@ def fetch_files_from_api(
             # and all results proccessed.
             #    => log response and return immediately.
             logging.debug("Successful response after %d tries", retry_attempts)
+
+            file_response_expected_state = fetch_files_by_query_from_api(files_query)
             return file_response_expected_state
 
     # The requests have not returned the correct response, so log
@@ -301,10 +319,10 @@ def fetch_files_from_api(
 def get_file_preview_by_name(
     file_name: str,
     search_string: str = "*",
-    languages: Sequence[str] | None = None,
+    languages: list[str] | None = None,
     expected_state: str = "processed",
     max_wait_time_per_file: int | None = None,
-    bad_states: Sequence[str] = ("failed",),
+    bad_states: tuple[str, ...] = ("failed",),
     wait_for_celery_idle: bool = False,
 ) -> GetFilePreviewResponse:
     if max_wait_time_per_file is None:
@@ -333,14 +351,18 @@ def get_file_preview_by_name(
 def get_file_preview_by_file_id_without_waiting(
     file_id: UUID,
     search_string: str = "*",
-    languages: Sequence[str] | None = None,
+    languages: list[str] | None = None,
 ) -> GetFilePreviewResponse:
+    if languages is None:
+        languages = []
+
     response = requests.get(
         f"{FILES_ENDPOINT}/{file_id}/preview",
-        params={
-            "search_string": search_string,
-            "languages": languages,
-        },
+        params=QueryParameters(
+            query_id=fetch_query_id(),
+            search_string=search_string,
+            languages=languages,
+        ).model_dump(),
         timeout=REQUEST_TIMEOUT,
     )
     response.raise_for_status()
@@ -350,14 +372,17 @@ def get_file_preview_by_file_id_without_waiting(
 def get_file_by_name(
     file_name: str,
     search_string: str = "*",
-    languages: Sequence[str] | None = None,
+    languages: list[str] | None = None,
     expected_state: str = "processed",
     max_wait_time_per_file: int | None = None,
-    bad_states: Sequence[str] = ("failed",),
+    bad_states: tuple[str, ...] = ("failed",),
     wait_for_celery_idle: bool = False,
 ) -> GetFileResponse:
     if max_wait_time_per_file is None:
         max_wait_time_per_file = DEFAULT_MAX_WAIT_TIME_PER_FILE
+
+    if languages is None:
+        languages = []
 
     search_string = build_search_string(
         search_string=search_string, field="short_name", field_value=file_name
@@ -374,10 +399,11 @@ def get_file_by_name(
 
     response = requests.get(
         f"{FILES_ENDPOINT}/{files.files[0].file_id}",
-        params={
-            "search_string": search_string,
-            "languages": languages,
-        },
+        params=QueryParameters(
+            query_id=fetch_query_id(),
+            search_string=search_string,
+            languages=languages,
+        ).model_dump(),
         timeout=REQUEST_TIMEOUT,
     )
     response.raise_for_status()

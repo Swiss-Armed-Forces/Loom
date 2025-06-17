@@ -2,7 +2,7 @@
 
 import luqum.exceptions as l_exceptions
 from freezegun import freeze_time
-from luqum.thread import parse  # type: ignore[import-untyped]
+from luqum.thread import parse
 
 from common.dependencies import get_libretranslate_api
 from common.services.query_builder import (
@@ -465,7 +465,7 @@ def test_translationtransformer_no_language():
     result = str(
         TranslateTransformer([], get_libretranslate_api()).visit(parse(search_string))
     )
-    assert result == '"file"'
+    assert result == "file"
 
 
 def test_query_builder_simple_and():
@@ -474,7 +474,9 @@ def test_query_builder_simple_and():
 
     Case: simple AND conncetion
     """
-    query = QueryParameters(search_string="alpha:value and beta:value")
+    query = QueryParameters(
+        query_id="0123456789", search_string="alpha:value and beta:value"
+    )
     builder = QueryBuilder(get_libretranslate_api())
     result = builder.build(query)
     assert result == "(alpha:value AND beta:value) AND hidden:false"
@@ -486,7 +488,9 @@ def test_query_builder_simple_or():
 
     Case: simple OR conncetion
     """
-    query = QueryParameters(search_string="alpha:value or beta:value")
+    query = QueryParameters(
+        query_id="0123456789", search_string="alpha:value or beta:value"
+    )
     builder = QueryBuilder(get_libretranslate_api())
     result = builder.build(query)
     assert result == "(alpha:value OR beta:value) AND hidden:false"
@@ -498,7 +502,9 @@ def test_query_builder_subfield():
 
     Case: double sub-field
     """
-    query = QueryParameters(search_string="alpha.beta.gamma:value")
+    query = QueryParameters(
+        query_id="0123456789", search_string="alpha.beta.gamma:value"
+    )
     builder = QueryBuilder(get_libretranslate_api())
     result = builder.build(query)
     assert result == "(alpha.beta.gamma:value) AND hidden:false"
@@ -510,7 +516,7 @@ def test_query_builder_dashed_field():
 
     Case: double sub-field
     """
-    query = QueryParameters(search_string="alpha-beta:value")
+    query = QueryParameters(query_id="0123456789", search_string="alpha-beta:value")
     builder = QueryBuilder(get_libretranslate_api())
     result = builder.build(query)
     assert result == "(alpha-beta:value) AND hidden:false"
@@ -522,7 +528,9 @@ def test_query_builder_phrases():
 
     Case: double sub-field
     """
-    query = QueryParameters(search_string="hello and hidden:true")
+    query = QueryParameters(
+        query_id="0123456789", search_string="hello and hidden:true"
+    )
     builder = QueryBuilder(get_libretranslate_api())
     result = builder.build(query)
     assert result == "hello AND hidden:true"
@@ -534,7 +542,9 @@ def test_query_builder_show_hidden():
 
     Case: double sub-field
     """
-    query = QueryParameters(search_string='"hello and world" and foo')
+    query = QueryParameters(
+        query_id="0123456789", search_string='"hello and world" and foo'
+    )
     builder = QueryBuilder(get_libretranslate_api())
     result = builder.build(query)
     assert result == '("hello and world" AND foo) AND hidden:false'
@@ -545,7 +555,7 @@ def test_lucene_checker_simple():
 
     Case: simple positive
     """
-    query = QueryParameters(search_string="alpha:value")
+    query = QueryParameters(query_id="0123456789", search_string="alpha:value")
     builder = QueryBuilder(get_libretranslate_api())
     check = get_checker()
     tree = builder.parse_and_transform(query)
@@ -558,7 +568,7 @@ def test_lucene_checker_simple_quoted():
 
     Case: quoted value
     """
-    query = QueryParameters(search_string='alpha:"value"')
+    query = QueryParameters(query_id="0123456789", search_string='alpha:"value"')
     builder = QueryBuilder(get_libretranslate_api())
     check = get_checker()
     tree = builder.parse_and_transform(query)
@@ -571,7 +581,9 @@ def test_lucene_checker_simple_and():
 
     Case: simple and
     """
-    query = QueryParameters(search_string="alpha:value AND beta:value")
+    query = QueryParameters(
+        query_id="0123456789", search_string="alpha:value AND beta:value"
+    )
     builder = QueryBuilder(get_libretranslate_api())
     check = get_checker()
     tree = builder.parse_and_transform(query)
@@ -584,7 +596,9 @@ def test_lucene_checker_simple_or():
 
     Case: simple or
     """
-    query = QueryParameters(search_string="alpha:value OR beta:value")
+    query = QueryParameters(
+        query_id="0123456789", search_string="alpha:value OR beta:value"
+    )
     builder = QueryBuilder(get_libretranslate_api())
     check = get_checker()
     tree = builder.parse_and_transform(query)
@@ -597,7 +611,7 @@ def test_lucene_checker_dashed_field():
 
     Case: simple or
     """
-    query = QueryParameters(search_string="alpha-beta:value")
+    query = QueryParameters(query_id="0123456789", search_string="alpha-beta:value")
     builder = QueryBuilder(get_libretranslate_api())
     check = get_checker()
     tree = builder.parse_and_transform(query)
@@ -610,7 +624,7 @@ def test_lucene_checker_single_subfield():
 
     Case: single-nested valuse
     """
-    query = QueryParameters(search_string="alpha.beta:value")
+    query = QueryParameters(query_id="0123456789", search_string="alpha.beta:value")
     builder = QueryBuilder(get_libretranslate_api())
     check = get_checker()
     tree = builder.parse_and_transform(query)
@@ -623,7 +637,9 @@ def test_lucene_checker_double_subfield():
 
     Case: double-nested value
     """
-    query = QueryParameters(search_string="alpha.beta.gamma:value")
+    query = QueryParameters(
+        query_id="0123456789", search_string="alpha.beta.gamma:value"
+    )
     builder = QueryBuilder(get_libretranslate_api())
     check = get_checker()
     tree = builder.parse_and_transform(query)
@@ -637,10 +653,11 @@ def test_lucene_checker_nested_subfield():
     Case: nested query with quoted value
     """
     query = QueryParameters(
+        query_id="0123456789",
         search_string=(
             'alpha.beta.gamma:value AND epsilon.sigma:"quoted_value" AND'
             " delta:normal_value"
-        )
+        ),
     )
     builder = QueryBuilder(get_libretranslate_api())
     check = get_checker()
@@ -654,7 +671,7 @@ def test_lucene_checker_mismatched_quote():
 
     Case: extra/mismatched quote
     """
-    query = QueryParameters(search_string='alpha:"value')
+    query = QueryParameters(query_id="0123456789", search_string='alpha:"value')
     builder = QueryBuilder(get_libretranslate_api())
     check = get_checker()
     try:
@@ -671,7 +688,7 @@ def test_lucene_checker_bad_colon():
 
     Case: bad/extra colon
     """
-    query = QueryParameters(search_string="alpha::value")
+    query = QueryParameters(query_id="0123456789", search_string="alpha::value")
     builder = QueryBuilder(get_libretranslate_api())
     check = get_checker()
     try:
@@ -688,7 +705,7 @@ def test_lucene_checker_bad_sub_field():
 
     Case: bad/extra colon
     """
-    query = QueryParameters(search_string="alpha:beta:value")
+    query = QueryParameters(query_id="0123456789", search_string="alpha:beta:value")
     builder = QueryBuilder(get_libretranslate_api())
     check = get_checker()
     try:
@@ -705,7 +722,7 @@ def test_lucene_checker_bad_sub_field():
 #     Test to ensure the lucene checker validates queries correctly.
 #     Case: unknown operation
 #     """
-#     query = QueryParameters(search_string="alpha:value ORS beta:value")
+#     query = QueryParameters(query_id="0123456789", search_string="alpha:value ORS beta:value")
 #     builder = get_query_builder()
 #     check = get_checker()
 #     tree = builder.parse_and_transform(query)

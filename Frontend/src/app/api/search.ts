@@ -18,6 +18,8 @@ import {
     ArchiveCreatedResponse,
     ContextCreateResponse,
     TreeNodeModel,
+    GetQueryResponse,
+    GetFilesCountResponse,
 } from "./generated";
 
 const filesApi = new FilesApi();
@@ -42,36 +44,52 @@ export const loadSummarizationSystemPrompt = async (): Promise<string> => {
     return summarizationApi.getSystemPromptV1FilesSummarizationSystemPromptGet();
 };
 
+export const getShortRunningQuery = async (): Promise<GetQueryResponse> => {
+    return filesApi.getQueryV1FilesQueryPost({ keepAlive: "10s" });
+};
+
+export const getLongRunningQuery = async (): Promise<GetQueryResponse> => {
+    return filesApi.getQueryV1FilesQueryPost({ keepAlive: "30m" });
+};
+
 export const searchFiles = async (
     query: SearchQuery,
 ): Promise<GetFilesResponse> => {
     return filesApi.getFilesV1FilesGet({
-        searchString: query.query ?? "",
+        queryId: query.id,
+        keepAlive: query.keepAlive ?? undefined,
+        searchString: query.query,
         languages: query.languages?.map((l) => l.code),
-        ...(query.sortField && {
-            sortByField: query.sortField,
-        }),
-        ...(query.sortDirection && {
-            sortDirection: query.sortDirection,
-        }),
-        ...(query.sortId && {
-            sortId: query.sortId,
-        }),
-        ...(query.pageSize != null && {
-            pageSize: query.pageSize,
-        }),
+        sortByField: query.sortField ?? undefined,
+        sortDirection: query.sortDirection ?? undefined,
+        sortId: query.sortId ?? undefined,
+        pageSize: query.pageSize ?? undefined,
     });
 };
+
+export const getFilesCount = async (
+    query: Pick<SearchQuery, "id" | "keepAlive" | "query">,
+): Promise<GetFilesCountResponse> => {
+    return filesApi.getFilesCountV1FilesCountGet({
+        queryId: query.id,
+        keepAlive: query.keepAlive ?? undefined,
+        searchString: query.query,
+    });
+};
+
 export const searchTree = async (
     query: SearchQuery,
     childrenOfNode?: string,
 ): Promise<TreeNodeModel[]> => {
     return filesApi.getFilesTreeV1FilesTreeGet({
-        searchString: query.query ?? "",
+        queryId: query.id,
+        keepAlive: query.keepAlive ?? undefined,
+        searchString: query.query,
         languages: query.languages?.map((l) => l.code),
         nodePath: childrenOfNode,
     });
 };
+
 export const getTreeLevelNodeLimit = async () => {
     return filesApi.getTreeMaxElementCountV1FilesTreeMaxElementCountGet({});
 };
@@ -79,12 +97,14 @@ export const getTreeLevelNodeLimit = async () => {
 export const getStatSummary = async (
     query: SearchQuery,
 ): Promise<SummaryStatisticsModel> => {
-    if (!query.query || query.query.trim().length === 0) {
+    if (query.query.trim() === "") {
         return { count: 0, min: 0, max: 0, avg: 0 };
     }
 
     return filesApi.getSummaryStatsV1FilesStatsSummaryGet({
-        searchString: query.query ?? "",
+        queryId: query.id,
+        keepAlive: query.keepAlive ?? undefined,
+        searchString: query.query,
         languages: query.languages?.map((l) => l.code),
     });
 };
@@ -93,14 +113,16 @@ export const getStatGeneric = async (
     query: SearchQuery,
     stat: Stat,
 ): Promise<GenericStatisticsModel> => {
-    if (!query.query || query.query.trim().length === 0) {
+    if (query.query.trim() === "") {
         return { stat: "", key: "", data: [], fileCount: 0 };
     }
 
-    return filesApi.getGenericStatsV1FilesStatsGenericStatNameGet({
-        searchString: query.query ?? "",
+    return filesApi.getGenericStatsV1FilesStatsGenericStatGet({
+        stat,
+        queryId: query.id,
+        keepAlive: query.keepAlive ?? undefined,
+        searchString: query.query,
         languages: query.languages?.map((l) => l.code),
-        statName: stat,
     });
 };
 
@@ -129,7 +151,9 @@ export const updateFiles = async (
     return filesApi.updateFilesByQueryV1FilesPut({
         updateFilesRequest: {
             query: {
-                searchString: query.query ?? "",
+                queryId: query.id,
+                keepAlive: query.keepAlive ?? undefined,
+                searchString: query.query,
                 languages: query.languages?.map((l) => l.code),
             },
             hidden: hidden,
@@ -165,7 +189,9 @@ export const addTagsToFiles = async (
         addTagRequest: {
             tags: tags,
             query: {
-                searchString: query.query ?? "",
+                queryId: query.id,
+                keepAlive: query.keepAlive ?? undefined,
+                searchString: query.query,
                 languages: query.languages?.map((l) => l.code),
             },
         },
@@ -183,8 +209,10 @@ export const getFullFileContent = async (
     query: SearchQuery,
 ): Promise<GetFileResponse> => {
     return filesApi.getFileV1FilesFileIdGet({
+        queryId: query.id,
+        keepAlive: query.keepAlive ?? undefined,
         fileId: fileId,
-        searchString: query.query ?? "",
+        searchString: query.query,
         languages: query.languages?.map((l) => l.code),
     });
 };
@@ -194,8 +222,10 @@ export const getFilePreview = async (
     query: SearchQuery,
 ): Promise<GetFilePreviewResponse> => {
     return filesApi.getFilePreviewV1FilesFileIdPreviewGet({
+        queryId: query.id,
+        keepAlive: query.keepAlive ?? undefined,
         fileId: fileId,
-        searchString: query.query ?? "",
+        searchString: query.query,
         languages: query.languages?.map((l) => l.code),
     });
 };
@@ -206,8 +236,10 @@ export const scheduleArchiveCreation = async (
     return archivesApi.createNewArchiveV1ArchivePost({
         archiveRequest: {
             query: {
-                searchString: query.query ?? "",
-                languages: query.languages?.map((l) => l.code) ?? [],
+                queryId: query.id,
+                keepAlive: query.keepAlive ?? undefined,
+                searchString: query.query,
+                languages: query.languages?.map((l) => l.code),
             },
         },
     });
@@ -230,8 +262,10 @@ export const scheduleFileTranslation = async (
         translateAllRequest: {
             lang: lang,
             query: {
-                searchString: query.query ?? "",
-                languages: query.languages?.map((l) => l.code) ?? [],
+                queryId: query.id,
+                keepAlive: query.keepAlive ?? undefined,
+                searchString: query.query,
+                languages: query.languages?.map((l) => l.code),
             },
         },
     });
@@ -268,8 +302,10 @@ export const scheduleFileSummarization = async (
     return summarizationApi.summarizeFilesOnDemandV1FilesSummarizationPost({
         summarizationRequest: {
             query: {
-                searchString: query.query ?? "",
-                languages: query.languages?.map((l) => l.code) ?? [],
+                queryId: query.id,
+                keepAlive: query.keepAlive ?? undefined,
+                searchString: query.query,
+                languages: query.languages?.map((l) => l.code),
             },
             systemPrompt: systemPrompt ?? undefined,
         },
@@ -282,8 +318,10 @@ export const scheduleFileIndexing = async (
     return indexApi.indexFilesOnDemandV1FilesIndexPost({
         indexAllRequest: {
             query: {
-                searchString: query.query ?? "",
-                languages: query.languages?.map((l) => l.code) ?? [],
+                queryId: query.id,
+                keepAlive: query.keepAlive ?? undefined,
+                searchString: query.query,
+                languages: query.languages?.map((l) => l.code),
             },
         },
     });
@@ -301,8 +339,10 @@ export const createAiContext = async (
     query: SearchQuery,
 ): Promise<ContextCreateResponse> => {
     return aiApi.createContextV1AiPost({
-        searchString: query.query ?? undefined,
-        languages: query.languages ?? undefined,
+        queryId: query.id,
+        keepAlive: query.keepAlive ?? undefined,
+        searchString: query.query,
+        languages: query.languages?.map((l) => l.code),
     });
 };
 

@@ -2,14 +2,14 @@ import copy
 import logging
 import re
 from datetime import datetime, timedelta
-from typing import Generator, List
+from typing import Generator, List, Literal
 
-from libretranslatepy import LibreTranslateAPI  # type: ignore[import-untyped]
-from luqum import tree as Tree  # type: ignore[import-untyped]
-from luqum.check import LuceneCheck  # type: ignore[import-untyped]
-from luqum.exceptions import ParseSyntaxError  # type: ignore[import-untyped]
-from luqum.thread import parse  # type: ignore[import-untyped]
-from luqum.tree import (  # type: ignore[import-untyped]
+from libretranslatepy import LibreTranslateAPI
+from luqum import tree as Tree
+from luqum.check import LuceneCheck
+from luqum.exceptions import ParseSyntaxError
+from luqum.thread import parse
+from luqum.tree import (
     AndOperation,
     FieldGroup,
     Group,
@@ -21,15 +21,19 @@ from luqum.tree import (  # type: ignore[import-untyped]
     UnknownOperation,
     Word,
 )
-from luqum.visitor import TreeTransformer  # type: ignore[import-untyped]
-from pydantic import BaseModel, Field  # type: ignore[import-untyped]
+from luqum.visitor import TreeTransformer
+from pydantic import BaseModel, Field
 
 logger = logging.getLogger(__name__)
 
+# According to ElasticSearch:
+# Units can be nanos, micros, ms (milliseconds),
+# s (seconds), m (minutes), h (hours) and d (days).
+# Also accepts "0" without a unit and "-1" to indicate an unspecified value.
+KeepAlive = Literal["10s", "30m"]
 
-class QueryParameters(BaseModel):
-    search_string: str = Field(default="*", min_length=1)
-    languages: list[str] | None = None
+# Default keepalive for point in time
+DEFAULT_PIT_KEEPALIVE: KeepAlive = "10s"
 
 
 class QueryBuilderException(Exception):
@@ -153,13 +157,13 @@ class TranslateTransformer(TreeTransformer):
 
     MIN_TRANSLATION_LENGTH = 4
 
-    def __init__(self, langs, translator: LibreTranslateAPI):
+    def __init__(self, languages: list[str], translator: LibreTranslateAPI):
         super().__init__(track_parents=True)
-        self._langs = langs if langs is not None else []
+        self._languages = languages
         self._translator = translator
 
     def _translate_node(self, node: Phrase) -> Generator[Group | Phrase, None, None]:
-        if len(self._langs) == 0:
+        if len(self._languages) <= 0:
             yield node
             return
         # phrases values must start and end with "
@@ -168,7 +172,7 @@ class TranslateTransformer(TreeTransformer):
             yield node
             return
         translation_nodes = [node]
-        for lang in self._langs:
+        for lang in self._languages:
             translation = self._translator.translate(node_value, "en", lang)
             translation_node = Phrase(f'"{translation}"')
             translation_nodes.append(translation_node)
@@ -197,6 +201,9 @@ class TranslateTransformer(TreeTransformer):
 
     def visit_word(self, node: Word, _: dict):
         """Replace words with their translations."""
+        if len(self._languages) <= 0:
+            yield node
+            return
         if len(node.value) < TranslateTransformer.MIN_TRANSLATION_LENGTH:
             yield node
             return
@@ -399,6 +406,13 @@ class CustomLuceneCheck(LuceneCheck):
             yield "Phrase value must start and end with double quote"
 
 
+class QueryParameters(BaseModel):
+    query_id: str = Field(min_length=1)
+    keep_alive: KeepAlive = Field(default=DEFAULT_PIT_KEEPALIVE)
+    search_string: str = Field(default="*", min_length=1)
+    languages: list[str] = Field(default_factory=list)
+
+
 class QueryBuilder:
     """Builds ES queries."""
 
@@ -451,10 +465,9 @@ class QueryBuilder:
                     r"tika_meta.meta\:last-author",
                 ],
             ).visit(tree, {})
-            if query.languages is not None:
-                tree = TranslateTransformer(query.languages, self.translator).visit(
-                    tree, {}
-                )
+            tree = TranslateTransformer(query.languages, self.translator).visit(
+                tree, {}
+            )
             tree = HiddenTransformer().visit(tree, {})
 
         except ParseSyntaxError as ex:

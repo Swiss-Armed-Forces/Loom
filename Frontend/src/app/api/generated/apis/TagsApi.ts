@@ -35,7 +35,6 @@ export interface DeleteTagV1FilesTagsTagToDeleteDeleteRequest {
  */
 export class TagsApi extends runtime.BaseAPI {
     /**
-     * Add tag to files.
      * Add Tags
      */
     async addTagsV1FilesTagsPostRaw(
@@ -74,7 +73,6 @@ export class TagsApi extends runtime.BaseAPI {
     }
 
     /**
-     * Add tag to files.
      * Add Tags
      */
     async addTagsV1FilesTagsPost(
@@ -89,7 +87,6 @@ export class TagsApi extends runtime.BaseAPI {
     }
 
     /**
-     * Delete tag from files.
      * Delete Tag
      */
     async deleteTagV1FilesTagsTagToDeleteDeleteRaw(
@@ -130,7 +127,6 @@ export class TagsApi extends runtime.BaseAPI {
     }
 
     /**
-     * Delete tag from files.
      * Delete Tag
      */
     async deleteTagV1FilesTagsTagToDeleteDelete(

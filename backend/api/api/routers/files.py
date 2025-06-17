@@ -1,5 +1,3 @@
-"""Files router."""
-
 import logging
 from typing import Annotated, Any
 from uuid import UUID
@@ -25,13 +23,16 @@ from common.models.es_repository import (
 )
 from common.services.file_storage_service import FileStorageService
 from common.services.lazybytes_service import LazyBytesService
-from common.services.query_builder import QueryParameters
+from common.services.query_builder import (
+    DEFAULT_PIT_KEEPALIVE,
+    KeepAlive,
+    QueryParameters,
+)
 from common.services.task_scheduling_service import TaskSchedulingService
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, UploadFile
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, RootModel
 
-from api.models.query_model import QueryModel
 from api.models.statistics_model import GenericStatisticsModel, SummaryStatisticsModel
 from api.models.tree_model import TreeNodeModel
 from api.utils import get_content_disposition_header
@@ -70,6 +71,24 @@ def upload_file(
     return FileUploadResponse(file_id=scheduled_file.id_)
 
 
+class GetQueryResponse(BaseModel):
+    query_id: str
+    keep_alive: KeepAlive
+
+
+class GetQuery(BaseModel):
+    keep_alive: KeepAlive = DEFAULT_PIT_KEEPALIVE
+
+
+@router.post("/query")
+def get_query(
+    query: Annotated[GetQuery, Query()],
+    file_repository: FileRepository = default_file_repository,
+) -> GetQueryResponse:
+    query_id = file_repository.open_point_in_time(keep_alive=query.keep_alive)
+    return GetQueryResponse(query_id=query_id, keep_alive=query.keep_alive)
+
+
 class GetFilesFileEntry(BaseModel):
     file_id: UUID
     sort_field_value: str | None
@@ -78,7 +97,6 @@ class GetFilesFileEntry(BaseModel):
 
 class GetFilesResponse(BaseModel):
     files: list[GetFilesFileEntry]
-    total_files: int
     sort_by_field: str
 
 
@@ -91,10 +109,9 @@ def get_files(
     query: Annotated[GetFilesQuery, Query()],
     file_repository: FileRepository = default_file_repository,
 ) -> GetFilesResponse:
-    """Get list of file_id."""
-    logger.info("Getting files with query: '%s'", query.search_string)
+    """Get files for a given query."""
+    logger.info("Getting files with query: '%s'", query)
     try:
-        total_files = file_repository.count_by_query(query=query)
         result = list(
             file_repository.get_id_generator_by_query(
                 query=query,
@@ -115,7 +132,6 @@ def get_files(
                 result,
             )
         ),
-        total_files=total_files,
         sort_by_field=query.sort_by_field,
     )
     return current_query_file_resp
@@ -124,7 +140,7 @@ def get_files(
 class UpdateFilesRequest(BaseModel):
     """Hides file model."""
 
-    query: QueryModel
+    query: QueryParameters
     hidden: bool
 
 
@@ -133,9 +149,24 @@ def update_files_by_query(
     update_files_model: UpdateFilesRequest,
     task_scheduling_service: TaskSchedulingService = default_task_scheduling_service,
 ):
-    """Update file."""
-    query = update_files_model.query.to_query_parameters()
-    task_scheduling_service.dispatch_set_hidden_state(query, update_files_model.hidden)
+    task_scheduling_service.dispatch_set_hidden_state(
+        query=update_files_model.query, hidden=update_files_model.hidden
+    )
+
+
+class GetFilesCountResponse(BaseModel):
+    total_files: int
+
+
+@router.get("/count")
+def get_files_count(
+    query: Annotated[QueryParameters, Query()],
+    file_repository: FileRepository = default_file_repository,
+) -> GetFilesCountResponse:
+    """Get files for a given query."""
+    logger.info("Getting files with query: '%s'", query)
+    total_files = file_repository.count_by_query(query=query)
+    return GetFilesCountResponse(total_files=total_files)
 
 
 class GetFilesTreeResponse(RootModel):
@@ -153,7 +184,7 @@ def get_files_tree(
 ) -> GetFilesTreeResponse:
     """Get a node out of the tree of files non-recursively."""
 
-    logger.info("Get file tree node with query: '%s'", query.search_string)
+    logger.info("Get file tree node with query: '%s'", query)
 
     tree_paths = file_repository.get_full_paths_by_query(
         query=query, tree_node_directory_path=query.node_path
@@ -176,23 +207,19 @@ def get_summary_stats(
     file_repository: FileRepository = default_file_repository,
 ) -> SummaryStatisticsModel:
     """Get statistics about the files found by the provided query."""
-    logger.info("Get summary stats with query: '%s'", query.search_string)
-    stats = file_repository.get_stat_summary(query)
+    logger.info("Get summary stats with query: '%s'", query)
+    stats = file_repository.get_stat_summary(query=query)
     return SummaryStatisticsModel.from_statistics_summary(stats)
 
 
-@router.get("/stats/generic/{stat_name}")
+@router.get("/stats/generic/{stat}")
 def get_generic_stats(
-    stat_name: Stat,
+    stat: Stat,
     query: Annotated[QueryParameters, Query()],
     file_repository: FileRepository = default_file_repository,
 ) -> GenericStatisticsModel:
-    try:
-        Stat(stat_name)
-    except ValueError as e:
-        raise HTTPException(422, f"Unknown stat '{stat_name}'") from e
-    logger.info("Get %s stats with query: '%s'", stat_name, query)
-    stats = file_repository.get_stat_generic(query, stat=Stat(stat_name))
+    logger.info("Get %s stats with query: '%s'", stat, query)
+    stats = file_repository.get_stat_generic(query=query, stat=stat)
     return GenericStatisticsModel.from_statistics_generic(stats)
 
 

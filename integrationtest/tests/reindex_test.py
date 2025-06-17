@@ -1,11 +1,11 @@
 from uuid import UUID
 
 import requests
-from api.models.query_model import QueryModel
 from api.routers.index import IndexAllRequest
+from common.services.query_builder import QueryParameters
 
 from utils.consts import FILES_ENDPOINT, INDEX_ENDPOINT, REQUEST_TIMEOUT
-from utils.fetch_from_api import fetch_files_from_api, get_file_by_name
+from utils.fetch_from_api import fetch_files_from_api, fetch_query_id, get_file_by_name
 from utils.upload_asset import upload_asset, upload_many_assets
 
 
@@ -17,7 +17,7 @@ def _reindex_file(file_id: UUID):
     response.raise_for_status()
 
 
-def _reindex(query: QueryModel):
+def _reindex(query: QueryParameters):
     response = requests.post(
         f"{INDEX_ENDPOINT}/",
         json=IndexAllRequest(query=query).model_dump(),
@@ -45,7 +45,7 @@ def test_reindex_multiple_files():
     # wait for files to be indexed
     fetch_files_from_api(search_string="*", expected_no_of_files=len(asset_list))
 
-    _reindex(QueryModel(search_string="*"))
+    _reindex(QueryParameters(search_string="*", query_id=fetch_query_id()))
 
     # wait for re-index to finish
     fetch_files_from_api(

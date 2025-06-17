@@ -14,12 +14,12 @@
  */
 
 import { mapValues } from "../runtime";
-import type { QueryModel } from "./QueryModel";
+import type { QueryParameters } from "./QueryParameters";
 import {
-    QueryModelFromJSON,
-    QueryModelFromJSONTyped,
-    QueryModelToJSON,
-} from "./QueryModel";
+    QueryParametersFromJSON,
+    QueryParametersFromJSONTyped,
+    QueryParametersToJSON,
+} from "./QueryParameters";
 
 /**
  * Query to filter files.
@@ -29,10 +29,10 @@ import {
 export interface SummarizationRequest {
     /**
      *
-     * @type {QueryModel}
+     * @type {QueryParameters}
      * @memberof SummarizationRequest
      */
-    query: QueryModel;
+    query: QueryParameters;
     /**
      *
      * @type {string}
@@ -61,7 +61,7 @@ export function SummarizationRequestFromJSONTyped(
         return json;
     }
     return {
-        query: QueryModelFromJSON(json["query"]),
+        query: QueryParametersFromJSON(json["query"]),
         systemPrompt:
             json["system_prompt"] == null ? undefined : json["system_prompt"],
     };
@@ -74,7 +74,7 @@ export function SummarizationRequestToJSON(
         return value;
     }
     return {
-        query: QueryModelToJSON(value["query"]),
+        query: QueryParametersToJSON(value["query"]),
         system_prompt: value["systemPrompt"],
     };
 }
