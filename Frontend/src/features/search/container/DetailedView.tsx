@@ -6,18 +6,16 @@ import {
     showFileDetailDialog,
 } from "../../common/commonSlice";
 import { EmptySearchResults } from "../components/EmptySearchResults";
-import { selectFiles, selectPageNumber, selectQuery } from "../searchSlice";
+import { selectFiles, selectQuery } from "../searchSlice";
 import { SearchResultCountText } from "../components/SearchResultCountText";
 import { LoadMoreButton } from "../components/LoadMoreButton";
 import { ResultCard } from "./ResultCard";
-import { defaultPageSize } from "../SearchQueryUtils";
 import styles from "./DetailedView.module.css";
 
 export function DetailedView() {
     const dispatch = useAppDispatch();
     const files = useAppSelector(selectFiles);
     const searchQuery = useAppSelector(selectQuery);
-    const pageNumber = useAppSelector(selectPageNumber);
     const isLoading = useAppSelector(selectIsLoading);
     const [hasShownInitialDialog, setHasShownInitialDialog] = useState(false);
 
@@ -29,14 +27,7 @@ export function DetailedView() {
             }
             setHasShownInitialDialog(true);
         }
-    }, [
-        dispatch,
-        files,
-        hasShownInitialDialog,
-        isLoading,
-        pageNumber,
-        searchQuery,
-    ]);
+    }, [dispatch, files, hasShownInitialDialog, isLoading, searchQuery]);
 
     const cardRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
 
@@ -58,19 +49,17 @@ export function DetailedView() {
     return (
         <div className={styles.cardContainer}>
             <SearchResultCountText />
-            {Object.values(files)
-                .slice(0, (pageNumber + 1) * defaultPageSize)
-                .map((file) => {
-                    return (
-                        <ResultCard
-                            key={file.meta.fileId}
-                            fileId={file.meta.fileId}
-                            ref={(el) => {
-                                cardRefs.current[file.meta.fileId] = el;
-                            }}
-                        />
-                    );
-                })}
+            {Object.values(files).map((file) => {
+                return (
+                    <ResultCard
+                        key={file.meta.fileId}
+                        fileId={file.meta.fileId}
+                        ref={(el) => {
+                            cardRefs.current[file.meta.fileId] = el;
+                        }}
+                    />
+                );
+            })}
             <LoadMoreButton />
         </div>
     );

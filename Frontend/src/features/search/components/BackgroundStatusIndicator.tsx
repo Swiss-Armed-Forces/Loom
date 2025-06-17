@@ -7,7 +7,7 @@ import {
     QUERY_FAILED_FILES,
     selectContentTruncatedFilesCount,
     selectFailedFilesCount,
-    setQuery,
+    updateQuery,
 } from "../searchSlice";
 import {
     Badge,
@@ -105,7 +105,7 @@ export const BackgroundStatusIndicator: FC = () => {
 
     function queryContentTruncatedFiles(): void {
         dispatch(
-            setQuery({
+            updateQuery({
                 query: QUERY_CONTENT_TRUNCATED_FILES,
             }),
         );
@@ -113,7 +113,7 @@ export const BackgroundStatusIndicator: FC = () => {
 
     function queryFailedFiles(): void {
         dispatch(
-            setQuery({
+            updateQuery({
                 query: QUERY_FAILED_FILES,
             }),
         );
@@ -121,7 +121,7 @@ export const BackgroundStatusIndicator: FC = () => {
 
     function queryFilesNotProcessed(): void {
         dispatch(
-            setQuery({
+            updateQuery({
                 query: QUERY_FILES_NOT_PROCESSED,
             }),
         );

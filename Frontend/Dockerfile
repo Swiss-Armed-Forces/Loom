@@ -12,7 +12,6 @@ RUN pnpm install --frozen-lockfile
 COPY ./ ./
 
 FROM base AS dev
-ENV PORT 80
 CMD [ "pnpm", "dev" ]
 
 FROM base AS build

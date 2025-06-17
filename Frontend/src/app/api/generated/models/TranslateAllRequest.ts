@@ -14,12 +14,12 @@
  */
 
 import { mapValues } from "../runtime";
-import type { QueryModel } from "./QueryModel";
+import type { QueryParameters } from "./QueryParameters";
 import {
-    QueryModelFromJSON,
-    QueryModelFromJSONTyped,
-    QueryModelToJSON,
-} from "./QueryModel";
+    QueryParametersFromJSON,
+    QueryParametersFromJSONTyped,
+    QueryParametersToJSON,
+} from "./QueryParameters";
 
 /**
  * Query to filter files.
@@ -35,10 +35,10 @@ export interface TranslateAllRequest {
     lang: string;
     /**
      *
-     * @type {QueryModel}
+     * @type {QueryParameters}
      * @memberof TranslateAllRequest
      */
-    query: QueryModel;
+    query: QueryParameters;
 }
 
 /**
@@ -63,7 +63,7 @@ export function TranslateAllRequestFromJSONTyped(
     }
     return {
         lang: json["lang"],
-        query: QueryModelFromJSON(json["query"]),
+        query: QueryParametersFromJSON(json["query"]),
     };
 }
 
@@ -75,6 +75,6 @@ export function TranslateAllRequestToJSON(
     }
     return {
         lang: value["lang"],
-        query: QueryModelToJSON(value["query"]),
+        query: QueryParametersToJSON(value["query"]),
     };
 }

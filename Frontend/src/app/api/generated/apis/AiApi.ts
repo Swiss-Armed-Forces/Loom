@@ -17,20 +17,19 @@ import * as runtime from "../runtime";
 import type {
     ContextCreateResponse,
     HTTPValidationError,
-    Languages,
 } from "../models/index";
 import {
     ContextCreateResponseFromJSON,
     ContextCreateResponseToJSON,
     HTTPValidationErrorFromJSON,
     HTTPValidationErrorToJSON,
-    LanguagesFromJSON,
-    LanguagesToJSON,
 } from "../models/index";
 
 export interface CreateContextV1AiPostRequest {
+    queryId: string;
+    keepAlive?: CreateContextV1AiPostKeepAliveEnum;
     searchString?: string;
-    languages?: Languages;
+    languages?: Array<string>;
 }
 
 export interface ProcessQuestionV1AiContextIdProcessQuestionPostRequest {
@@ -49,7 +48,22 @@ export class AiApi extends runtime.BaseAPI {
         requestParameters: CreateContextV1AiPostRequest,
         initOverrides?: RequestInit | runtime.InitOverrideFunction,
     ): Promise<runtime.ApiResponse<ContextCreateResponse>> {
+        if (requestParameters["queryId"] == null) {
+            throw new runtime.RequiredError(
+                "queryId",
+                'Required parameter "queryId" was null or undefined when calling createContextV1AiPost().',
+            );
+        }
+
         const queryParameters: any = {};
+
+        if (requestParameters["queryId"] != null) {
+            queryParameters["query_id"] = requestParameters["queryId"];
+        }
+
+        if (requestParameters["keepAlive"] != null) {
+            queryParameters["keep_alive"] = requestParameters["keepAlive"];
+        }
 
         if (requestParameters["searchString"] != null) {
             queryParameters["search_string"] =
@@ -81,7 +95,7 @@ export class AiApi extends runtime.BaseAPI {
      * Create Context
      */
     async createContextV1AiPost(
-        requestParameters: CreateContextV1AiPostRequest = {},
+        requestParameters: CreateContextV1AiPostRequest,
         initOverrides?: RequestInit | runtime.InitOverrideFunction,
     ): Promise<ContextCreateResponse> {
         const response = await this.createContextV1AiPostRaw(
@@ -155,3 +169,13 @@ export class AiApi extends runtime.BaseAPI {
         return await response.value();
     }
 }
+
+/**
+ * @export
+ */
+export const CreateContextV1AiPostKeepAliveEnum = {
+    _10s: "10s",
+    _30m: "30m",
+} as const;
+export type CreateContextV1AiPostKeepAliveEnum =
+    (typeof CreateContextV1AiPostKeepAliveEnum)[keyof typeof CreateContextV1AiPostKeepAliveEnum];

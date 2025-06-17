@@ -1,21 +1,20 @@
 from uuid import UUID
 
 from common.archive.archive_repository import Archive
+from common.services.query_builder import QueryParameters
 from pydantic import BaseModel
-
-from api.models.query_model import QueryModel
 
 
 class ArchiveMeta(BaseModel):
     short_name: str
-    query: QueryModel
+    query: QueryParameters
     updated_datetime: str
 
     @staticmethod
     def from_archive(archive: Archive):
         return ArchiveMeta(
             short_name=archive.name,
-            query=QueryModel.from_query_parameters(archive.query),
+            query=archive.query,
             updated_datetime=archive.created_at.isoformat(timespec="milliseconds"),
         )
 

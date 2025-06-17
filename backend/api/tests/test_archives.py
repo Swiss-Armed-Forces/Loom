@@ -8,7 +8,6 @@ from common.dependencies import (
 from common.services.query_builder import QueryParameters
 
 from api.models.archives_model import ArchivesModel
-from api.models.query_model import QueryModel
 from api.routers.archives import ArchiveCreatedResponse, ArchiveRequest
 
 
@@ -21,10 +20,10 @@ def test_create_archive_with_emtpy_query_fails(client):
 def test_create_archive(
     client,
 ):
-    query = QueryModel(search_string="*")
+    query = QueryParameters(query_id="0123456789", search_string="*")
     archive_request = ArchiveRequest(query=query)
 
-    archive = Archive(query=query.to_query_parameters())
+    archive = Archive(query=query)
     get_archive_scheduling_service().create_archive.return_value = archive
 
     response = client.post("/v1/archive/", json=archive_request.model_dump())
@@ -35,15 +34,16 @@ def test_create_archive(
 
 
 def test_archive_get_all(client):
-    query = QueryModel(search_string="*")
+    query = QueryParameters(query_id="0123456789", search_string="*")
 
-    archive1 = Archive(query=query.to_query_parameters())
-    archive2 = Archive(query=query.to_query_parameters())
-    get_archive_repository().get_all.return_value = [archive1, archive2]
+    archive1 = Archive(query=query)
+    archive2 = Archive(query=query)
+    get_archive_repository().get_generator_by_query.return_value = [archive1, archive2]
+    get_archive_repository().open_point_in_time.return_value = "0123456789"
 
     response = client.get("/v1/archive/")
     assert response.status_code == 200
-    archives = ArchivesModel(**response.json())
+    archives = ArchivesModel.model_validate(response.json())
     assert len(archives.hits) == 2
     assert archives.found == 2
     assert archives.total == 2
@@ -52,8 +52,7 @@ def test_archive_get_all(client):
 
 
 def test_download_archive(client):
-    search_string = "*"
-    query = QueryParameters(search_string=search_string)
+    query = QueryParameters(query_id="0123456789", search_string="*")
     content = [b"file content", b"and", b"another", b"chunk"]
     content_encrypted = [b"encrypted file content", b"and", b"another", b"chunk"]
     archive = Archive(
@@ -89,8 +88,7 @@ def test_download_archive(client):
 
 
 def test_hide_archive(client):
-    search_string = "*"
-    query = QueryParameters(search_string=search_string)
+    query = QueryParameters(query_id="0123456789", search_string="*")
     content = [b"file content", b"and", b"another", b"chunk"]
     content_encrypted = [b"encrypted file content", b"and", b"another", b"chunk"]
     archive = Archive(

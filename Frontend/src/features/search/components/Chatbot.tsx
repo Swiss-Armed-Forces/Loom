@@ -84,9 +84,9 @@ const Chatbot: React.FC<ChatbotProps> = () => {
         // this might happen when this function is called
         // multiple times in strict mode
         if (
-            lastMessage.token_ids.indexOf(
+            lastMessage.token_ids.includes(
                 webSocketPubSubMessage.message.tokenId,
-            ) !== -1
+            )
         )
             return;
 

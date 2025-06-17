@@ -3,46 +3,49 @@ from pathlib import PurePath
 from bson import ObjectId
 from common.dependencies import get_file_repository, get_task_scheduling_service
 from common.file.file_repository import File
+from common.services.query_builder import QueryParameters
 from fastapi.testclient import TestClient
 
-from api.models.query_model import QueryModel
 from api.routers.tags import AddTagRequest
 
 ENDPOINT = "/v1/files/tags/"
 
 
 def test_add_tags(client: TestClient):
-    file = File(
-        full_name=PurePath("/path/to/file.txt"),
-        storage_id=str(ObjectId()),
-        source="test",
-        sha256="",
-        size=0,
+    set_tag_request = AddTagRequest(
+        tags=["test"], query=QueryParameters(query_id="0123456789", search_string="*")
     )
 
-    set_tag_request = AddTagRequest(tags=["test"], query=QueryModel(search_string="*"))
-
-    get_file_repository().get_generator_by_query.return_value = [file]
+    get_file_repository().get_generator_by_query.return_value = [
+        File(
+            full_name=PurePath("/path/to/file.txt"),
+            storage_id=str(ObjectId()),
+            source="test",
+            sha256="",
+            size=0,
+        )
+    ]
 
     response = client.post(ENDPOINT, json=set_tag_request.model_dump())
 
     assert response.status_code == 200
     get_task_scheduling_service().dispatch_add_tags.assert_called_once_with(
-        set_tag_request.query.to_query_parameters(), set_tag_request.tags
+        query=set_tag_request.query, tags=set_tag_request.tags
     )
 
 
 def test_delete_tags(client: TestClient):
     tag = "test"
-    file = File(
-        full_name=PurePath("/path/to/file.txt"),
-        storage_id=str(ObjectId()),
-        source="test",
-        sha256="",
-        size=0,
-    )
 
-    get_file_repository().get_generator_by_tag.return_value = [file]
+    get_file_repository().get_generator_by_query.return_value = [
+        File(
+            full_name=PurePath("/path/to/file.txt"),
+            storage_id=str(ObjectId()),
+            source="test",
+            sha256="",
+            size=0,
+        )
+    ]
 
     response = client.delete(f"{ENDPOINT}{tag}")
 

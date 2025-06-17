@@ -5,7 +5,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 from celery import Celery
 from elasticsearch import Elasticsearch
-from libretranslatepy import LibreTranslateAPI  # type: ignore[import-untyped]
+from libretranslatepy import LibreTranslateAPI
 from pymongo import MongoClient
 from redis import StrictRedis
 from redis.asyncio import StrictRedis as StrictRedisAsync

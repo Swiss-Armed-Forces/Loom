@@ -1,5 +1,3 @@
-export const defaultPageSize = 10;
-
 export const updateTagOfQuery = (
     previousQuery: string,
     newTag: string,

@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 import requests
-from api.routers.files import GetFilesTreeResponse
+from api.routers.files import GetFilesTreeQuery, GetFilesTreeResponse
 from common.file.file_repository import (
     TREE_PATH_BUCKET_SIZE,
     TREE_PATH_MAX_ELEMENT_COUNT,
@@ -10,7 +10,7 @@ from common.file.file_repository import (
 from requests import HTTPError
 
 from utils.consts import FILES_ENDPOINT, REQUEST_TIMEOUT
-from utils.fetch_from_api import build_search_string
+from utils.fetch_from_api import build_search_string, fetch_query_id
 from utils.upload_asset import upload_asset
 
 FILE_COUNT_TOP_LEVEL = 3
@@ -39,7 +39,11 @@ def _upload_test_assets(count: int, folder: Path | None = None):
 def _files_tree(search_string: str, directory: str) -> GetFilesTreeResponse:
     response = requests.get(
         f"{FILES_ENDPOINT}/tree",
-        params={"search_string": search_string, "node_path": directory},
+        params=GetFilesTreeQuery(
+            search_string=search_string,
+            node_path=directory,
+            query_id=fetch_query_id(),
+        ).model_dump(),
         timeout=REQUEST_TIMEOUT,
     )
     response.raise_for_status()

@@ -22,8 +22,8 @@ import { toast } from "react-toastify";
 import { useAppDispatch, useAppSelector } from "../../../app/hooks";
 import { setBackgroundTaskSpinnerActive } from "../../common/commonSlice";
 import {
-    setQuery,
-    selectNumberOfFiles,
+    updateQuery,
+    selectTotalFiles,
     selectQuery,
     selectTags,
 } from "../searchSlice";
@@ -41,7 +41,7 @@ import { scheduleArchiveCreation } from "../../../app/api/search.ts";
 import { useEffect } from "react";
 
 export function SideMenu() {
-    const numberOfResults = useAppSelector(selectNumberOfFiles);
+    const numberOfResults = useAppSelector(selectTotalFiles);
     const searchQuery = useAppSelector(selectQuery);
     const tags = useAppSelector(selectTags);
     const [
@@ -55,11 +55,11 @@ export function SideMenu() {
     const { t } = useTranslation();
 
     const handleClearQuery = () => {
-        dispatch(setQuery({ query: null }));
+        dispatch(updateQuery({ query: "" }));
     };
 
     const handleShowHiddenFiles = () => {
-        dispatch(setQuery({ query: "hidden:true" }));
+        dispatch(updateQuery({ query: "hidden:true" }));
     };
 
     const startArchiveCreation = () => {

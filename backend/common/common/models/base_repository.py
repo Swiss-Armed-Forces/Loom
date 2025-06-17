@@ -35,11 +35,7 @@ class BaseRepository(ABC, Generic[RepositoryObjectT]):
 
     @abstractmethod
     def get_by_id(self, id_: Any) -> RepositoryObjectT | None:
-        """Get a repository object by its id."""
-
-    @abstractmethod
-    def get_all(self) -> list[RepositoryObjectT]:
-        """Get all objects stored in this repository."""
+        pass
 
 
 REPOSITORY_INSTANCES: dict[type[BaseRepository], BaseRepository] = {}

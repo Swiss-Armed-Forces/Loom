@@ -1,11 +1,10 @@
 import logging
 
 from common.dependencies import get_file_repository, get_task_scheduling_service
+from common.services.query_builder import QueryParameters
 from common.services.task_scheduling_service import TaskSchedulingService
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
-
-from api.models.query_model import QueryModel
 
 router = APIRouter()
 
@@ -18,7 +17,7 @@ default_task_scheduling_service = Depends(get_task_scheduling_service)
 class IndexAllRequest(BaseModel):
     """Query to filter files."""
 
-    query: QueryModel
+    query: QueryParameters
 
 
 @router.post("/", status_code=200)
@@ -26,6 +25,4 @@ def index_files_on_demand(
     index_request: IndexAllRequest,
     task_scheduling_service: TaskSchedulingService = default_task_scheduling_service,
 ):
-
-    query = index_request.query.to_query_parameters()
-    task_scheduling_service.dispatch_reindex_files(query=query)
+    task_scheduling_service.dispatch_reindex_files(query=index_request.query)

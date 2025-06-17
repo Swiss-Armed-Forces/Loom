@@ -1,5 +1,3 @@
-"""All tasks to create a thumbnail."""
-
 import logging
 from io import BytesIO
 
@@ -13,11 +11,8 @@ from common.dependencies import (
 from common.file.file_repository import File
 from common.services.lazybytes_service import LazyBytes
 from common.utils.object_id_str import ObjectIdStr
-from wand.exceptions import (  # type: ignore[import-untyped]
-    MissingDelegateError,
-    WandException,
-)
-from wand.image import Image  # type: ignore[import-untyped]
+from wand.exceptions import MissingDelegateError, WandException
+from wand.image import Image
 
 from worker.index_file.infra.file_indexing_task import FileIndexingTask
 from worker.index_file.infra.indexing_persister import IndexingPersister

@@ -39,7 +39,7 @@ export function GlobalSearchBox() {
         dispatch(
             updateQuery({
                 query: searchInputFieldContent,
-                sortField: sortInputFieldContent,
+                sortField: sortInputFieldContent ? sortInputFieldContent : null,
                 sortDirection: sortDirection,
             }),
         );

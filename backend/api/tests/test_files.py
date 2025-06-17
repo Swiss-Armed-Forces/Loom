@@ -24,7 +24,6 @@ from common.services.lazybytes_service import LazyBytes
 from common.services.query_builder import QueryParameters
 from fastapi.testclient import TestClient
 
-from api.models.query_model import QueryModel
 from api.models.statistics_model import (
     GenericStatisticsModel,
     HitsPerGroupEntryModel,
@@ -35,6 +34,7 @@ from api.routers.files import (
     SOURCE_ID,
     FileUploadResponse,
     GetFilePreviewResponse,
+    GetFilesCountResponse,
     GetFilesQuery,
     UpdateFileRequest,
     UpdateFilesRequest,
@@ -59,7 +59,7 @@ def test_upload_file(client: TestClient):
     )
 
     assert response.status_code == 200
-    file_upload_response = FileUploadResponse(**response.json())
+    file_upload_response = FileUploadResponse.model_validate(response.json())
     assert file_upload_response.file_id == file.id_
     get_file_scheduling_service().index_file.assert_called_once_with(
         file.short_name, file_content_mock, SOURCE_ID
@@ -96,73 +96,35 @@ def test_get_files_searches_in_repository(client: TestClient):
     )
 
     get_file_repository().get_id_generator_by_query.return_value = [file1, file2, file3]
-    get_file_repository().count_by_query.return_value = 3
-
-    search_string = "this is a query"
 
     query = GetFilesQuery(
-        search_string=search_string,
-        languages=None,
-        sort_by_field="_score",
-        sort_direction="asc",
-        page_size=10,
-        sort_id=None,
+        query_id="0123456789",
     )
 
     response = client.get(
         "/v1/files/",
-        params={"search_string": search_string, "page_size": query.page_size},
+        params=query.model_dump(),
     )
     assert response.status_code == 200
     get_file_repository().get_id_generator_by_query.assert_called_once_with(
         query=query, sort_params=query, pagination_params=query
     )
+
+
+def test_get_files_count_searches_in_repository(client: TestClient):
+    get_file_repository().count_by_query.return_value = 3
+
+    query = QueryParameters(
+        query_id="0123456789",
+    )
+
+    response = client.get(
+        "/v1/files/count",
+        params=query.model_dump(),
+    )
+    assert response.status_code == 200
+    assert GetFilesCountResponse.model_validate(response.json()).total_files == 3
     get_file_repository().count_by_query.assert_called_once_with(query=query)
-
-
-def test_get_files_searches_in_repository_with_ascending_sort(client: TestClient):
-    search_string = "this is a query"
-    sort_by_field = "foo"
-    sort_direction = "asc"
-    query = GetFilesQuery(
-        search_string=search_string,
-        sort_by_field=sort_by_field,
-        sort_direction=sort_direction,
-    )
-
-    client.get(
-        "/v1/files/",
-        params={
-            "search_string": search_string,
-            "sort_by_field": sort_by_field,
-            "sort_direction": sort_direction,
-        },
-    )
-    get_file_repository().get_id_generator_by_query.assert_called_once_with(
-        query=query, sort_params=query, pagination_params=query
-    )
-
-
-def test_get_files_searches_in_repository_with_descending_sort(client: TestClient):
-    search_string = "this is a query"
-    sort_by_field = "foo"
-    sort_direction = "desc"
-    query = GetFilesQuery(
-        search_string=search_string,
-        sort_by_field=sort_by_field,
-        sort_direction=sort_direction,
-    )
-    client.get(
-        "/v1/files/",
-        params={
-            "search_string": search_string,
-            "sort_by_field": sort_by_field,
-            "sort_direction": sort_direction,
-        },
-    )
-    get_file_repository().get_id_generator_by_query.assert_called_once_with(
-        query=query, sort_params=query, pagination_params=query
-    )
 
 
 def test_update_hidden_state_file_by_id(client: TestClient):
@@ -181,13 +143,13 @@ def test_update_hidden_state_file_by_id(client: TestClient):
     response = client.put(f"v1/files/{file.id_}", json=request.model_dump())
 
     assert response.status_code == 200
-    file.hidden = True
-
     get_file_repository().update.assert_called_once_with(file, include={"hidden"})
 
 
 def test_update_hidden_state_files_by_query(client: TestClient):
-    request = UpdateFilesRequest(query=QueryModel(search_string="*"), hidden=True)
+    request = UpdateFilesRequest(
+        query=QueryParameters(query_id="0123456789"), hidden=True
+    )
 
     file = File(
         full_name=PurePath("/path/to/file.txt"),
@@ -203,7 +165,7 @@ def test_update_hidden_state_files_by_query(client: TestClient):
 
     assert response.status_code == 200
     get_task_scheduling_service().dispatch_set_hidden_state.assert_called_once_with(
-        request.query.to_query_parameters(), request.hidden
+        query=request.query, hidden=request.hidden
     )
 
 
@@ -280,7 +242,6 @@ def test_get_thumbnail(client: TestClient):
 
 
 def test_get_full(client: TestClient):
-    search_string = "file"
     file = File(
         full_name=PurePath("/path/to/file.txt"),
         storage_id=str(ObjectId()),
@@ -290,14 +251,9 @@ def test_get_full(client: TestClient):
         thumbnail_file_id=str(ObjectId()),
     )
     get_file_repository().get_by_id_with_query.return_value = file
-    query = QueryParameters(search_string=search_string)
+    query = QueryParameters(query_id="0123456789")
 
-    response = client.get(
-        f"/v1/files/{file.id_}",
-        params={
-            "search_string": search_string,
-        },
-    )
+    response = client.get(f"/v1/files/{file.id_}", params=query.model_dump())
 
     assert response.status_code == 200
     get_file_repository().get_by_id_with_query.assert_called_once_with(
@@ -307,9 +263,9 @@ def test_get_full(client: TestClient):
 
 def test_get_full_file_is_none(client: TestClient):
     get_file_repository().get_by_id_with_query.return_value = None
-    query = QueryParameters(search_string="*")
+    query = QueryParameters(query_id="0123456789")
     file_id = uuid4()
-    response = client.get(f"/v1/files/{file_id}")
+    response = client.get(f"/v1/files/{file_id}", params=query.model_dump())
 
     assert response.status_code == 404
     get_file_repository().get_by_id_with_query.assert_called_once_with(
@@ -318,7 +274,6 @@ def test_get_full_file_is_none(client: TestClient):
 
 
 def test_get_preview(client: TestClient):
-    search_string = "file"
     file = File(
         full_name=PurePath("/path/to/file.txt"),
         storage_id=str(ObjectId()),
@@ -328,13 +283,11 @@ def test_get_preview(client: TestClient):
         thumbnail_file_id=str(ObjectId()),
     )
     get_file_repository().get_by_id_with_query.return_value = file
-    query = QueryParameters(search_string=search_string)
+    query = QueryParameters(query_id="0123456789")
 
     response = client.get(
         f"/v1/files/{file.id_}/preview",
-        params={
-            "search_string": search_string,
-        },
+        params=query.model_dump(),
     )
 
     assert response.status_code == 200
@@ -356,9 +309,10 @@ def test_get_preview_content_truncated(client: TestClient):
         thumbnail_file_id=str(ObjectId()),
     )
     get_file_repository().get_by_id_with_query.return_value = file
+    query = QueryParameters(query_id="0123456789")
 
-    response = client.get(f"/v1/files/{file.id_}/preview")
-    preview_model = GetFilePreviewResponse(**response.json())
+    response = client.get(f"/v1/files/{file.id_}/preview", params=query.model_dump())
+    preview_model = GetFilePreviewResponse.model_validate(response.json())
 
     assert response.status_code == 200
     assert preview_model.content_preview_is_truncated is True
@@ -367,9 +321,9 @@ def test_get_preview_content_truncated(client: TestClient):
 
 def test_get_preview_file_is_none(client: TestClient):
     get_file_repository().get_by_id_with_query.return_value = None
-    query = QueryParameters(search_string="*")
+    query = QueryParameters(query_id="0123456789")
     file_id = uuid4()
-    response = client.get(f"/v1/files/{file_id}/preview")
+    response = client.get(f"/v1/files/{file_id}/preview", params=query.model_dump())
 
     assert response.status_code == 404
     get_file_repository().get_by_id_with_query.assert_called_once_with(
@@ -384,17 +338,17 @@ def test_stat_summary(client: TestClient):
         max_file_size=32768,
         total_no_of_files=40,
     )
+    query = QueryParameters(query_id="0123456789")
 
-    response = client.get("/v1/files/stats/summary?search_string=*")
+    response = client.get("/v1/files/stats/summary", params=query.model_dump())
     assert response.status_code == 200
-    stats = SummaryStatisticsModel(**response.json())
+    stats = SummaryStatisticsModel.model_validate(response.json())
     assert stats.avg == 16384
     assert stats.min == 1024
     assert stats.max == 32768
     assert stats.count == 40
 
-    query = QueryParameters(search_string="*", languages=None)
-    get_file_repository().get_stat_summary.assert_called_once_with(query)
+    get_file_repository().get_stat_summary.assert_called_once_with(query=query)
 
 
 def test_stat_generic_exists(client: TestClient):
@@ -413,10 +367,13 @@ def test_stat_generic_exists(client: TestClient):
         stat=Stat.EXTENSIONS.value,
         key="extension",
     )
+    query = QueryParameters(query_id="0123456789")
 
-    response = client.get("/v1/files/stats/generic/extensions?search_string=*")
+    response = client.get(
+        "/v1/files/stats/generic/extensions", params=query.model_dump()
+    )
     assert response.status_code == 200
-    stats = GenericStatisticsModel(**response.json())
+    stats = GenericStatisticsModel.model_validate(response.json())
     assert stats.file_count == 40
     assert stats.stat == Stat.EXTENSIONS.value
     assert stats.data == [
@@ -430,9 +387,8 @@ def test_stat_generic_exists(client: TestClient):
         ),
     ]
 
-    query = QueryParameters(search_string="*", languages=None)
     get_file_repository().get_stat_generic.assert_called_once_with(
-        query, stat=Stat.EXTENSIONS
+        query=query, stat=Stat.EXTENSIONS
     )
 
 

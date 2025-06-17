@@ -4,7 +4,7 @@ import { webApiGetArchive, webApiGetArchiveEncrypted } from "../../common/urls";
 import { Delete, Download, Search, Lock } from "@mui/icons-material";
 import MenuIcon from "@mui/icons-material/Menu";
 import { ArchiveHit, hideArchive } from "../../../app/api";
-import { setQuery } from "../../search/searchSlice";
+import { updateQuery } from "../../search/searchSlice";
 import { removeArchive } from "../archiveSlice";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -33,7 +33,7 @@ export function ArchiveActions({ archive }: ArchiveActions) {
 
     const showArchiveQuery = (archiveId: string) => {
         dispatch(
-            setQuery({
+            updateQuery({
                 query: `archives:"${archiveId}"`,
             }),
         );

@@ -14,12 +14,12 @@
  */
 
 import { mapValues } from "../runtime";
-import type { QueryModel } from "./QueryModel";
+import type { QueryParameters } from "./QueryParameters";
 import {
-    QueryModelFromJSON,
-    QueryModelFromJSONTyped,
-    QueryModelToJSON,
-} from "./QueryModel";
+    QueryParametersFromJSON,
+    QueryParametersFromJSONTyped,
+    QueryParametersToJSON,
+} from "./QueryParameters";
 
 /**
  * Query to filter files.
@@ -29,10 +29,10 @@ import {
 export interface IndexAllRequest {
     /**
      *
-     * @type {QueryModel}
+     * @type {QueryParameters}
      * @memberof IndexAllRequest
      */
-    query: QueryModel;
+    query: QueryParameters;
 }
 
 /**
@@ -55,7 +55,7 @@ export function IndexAllRequestFromJSONTyped(
         return json;
     }
     return {
-        query: QueryModelFromJSON(json["query"]),
+        query: QueryParametersFromJSON(json["query"]),
     };
 }
 
@@ -64,6 +64,6 @@ export function IndexAllRequestToJSON(value?: IndexAllRequest | null): any {
         return value;
     }
     return {
-        query: QueryModelToJSON(value["query"]),
+        query: QueryParametersToJSON(value["query"]),
     };
 }

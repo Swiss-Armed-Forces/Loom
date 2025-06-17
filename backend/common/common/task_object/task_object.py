@@ -1,7 +1,7 @@
 from typing import TypeVar
 from uuid import UUID
 
-from elasticsearch_dsl import Keyword  # type: ignore[import-untyped]
+from elasticsearch_dsl import Keyword
 from pydantic import computed_field
 
 from common.models.es_repository import EsRepositoryObject, _EsRepositoryDocument

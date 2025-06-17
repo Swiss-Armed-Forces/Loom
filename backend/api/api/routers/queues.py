@@ -6,7 +6,7 @@ from common.dependencies import get_queues_service
 from common.services.queues_service import QueuesService
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
-from sklearn.linear_model import LinearRegression  # type: ignore[import-untyped]
+from sklearn.linear_model import LinearRegression
 
 from api.models.queues_model import OverallQueuesStats
 

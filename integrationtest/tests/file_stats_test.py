@@ -6,9 +6,10 @@ from api.models.statistics_model import (
     SummaryStatisticsModel,
 )
 from common.file.file_repository import Stat
+from common.services.query_builder import QueryParameters
 
 from utils.consts import FILES_ENDPOINT, REQUEST_TIMEOUT
-from utils.fetch_from_api import fetch_files_from_api
+from utils.fetch_from_api import fetch_files_from_api, fetch_query_id
 from utils.upload_asset import upload_many_assets
 
 
@@ -17,7 +18,7 @@ def _get_summary_stats(
 ) -> SummaryStatisticsModel:
     response = requests.get(
         f"{FILES_ENDPOINT}/stats/summary",
-        params={"search_string": search_string},
+        params=QueryParameters(search_string=search_string, query_id=fetch_query_id()),
         timeout=REQUEST_TIMEOUT,
     )
     response.raise_for_status()
@@ -30,7 +31,7 @@ def _get_generic_stats(
 ) -> GenericStatisticsModel:
     response = requests.get(
         f"{FILES_ENDPOINT}/stats/generic/{stat_name.value}",
-        params={"search_string": search_string},
+        params=QueryParameters(search_string=search_string, query_id=fetch_query_id()),
         timeout=REQUEST_TIMEOUT,
     )
     response.raise_for_status()

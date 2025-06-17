@@ -36,20 +36,25 @@ def test_get_stat_generic():
         },
     )
 
-    def execute():
-        return test_response
-
-    with patch.object(repo, "_prep_search", new=mock_search):
-        mock_search.return_value.execute.side_effect = execute
-        query = QueryParameters(search_string="*", languages=None)
+    with patch.object(repo, "_get_search_by_query", new=mock_search):
+        # Make the search object return itself when sliced
+        mock_search.return_value.__getitem__.return_value = mock_search.return_value
+        mock_search.return_value.index().extra().execute.return_value = test_response
+        query = QueryParameters(query_id="0123456789", search_string="*", languages=[])
         stats = repo.get_stat_generic(query=query, stat=Stat.EXTENSIONS)
 
         calls = [
+            call(query=query),
+            # pylint: disable=unnecessary-dunder-call
+            call().__getitem__(slice(0, 0, None)),
             call().aggs.metric("total_no_of_files", "value_count", field="size"),
             call().aggs.metric(
                 *["all_extensions", "terms"],
                 **{"field": "extension", "size": 100},
             ),
+            call().index(),
+            call().index().extra(pit={"id": "0123456789", "keep_alive": "10s"}),
+            call().index().extra().execute(),
         ]
         mock_search.assert_has_calls(calls)
         assert stats.stat == Stat.EXTENSIONS.value
@@ -78,20 +83,24 @@ def test_get_stat_summary():
         },
     )
 
-    def execute():
-        return test_response
-
-    with patch.object(repo, "_prep_search", new=mock_search):
-        mock_search.return_value.execute.side_effect = execute
-        query = QueryParameters(search_string="*", languages=None)
+    with patch.object(repo, "_get_search_by_query", new=mock_search):
+        # Make the search object return itself when sliced
+        mock_search.return_value.__getitem__.return_value = mock_search.return_value
+        mock_search.return_value.index().extra().execute.return_value = test_response
+        query = QueryParameters(query_id="0123456789", search_string="*", languages=[])
         stats = repo.get_stat_summary(query=query)
 
         calls = [
+            call(query=query),
+            # pylint: disable=unnecessary-dunder-call
+            call().__getitem__(slice(0, 0, None)),
             call().aggs.metric("avg_file_size", "avg", field="size"),
             call().aggs.metric("max_file_size", "max", field="size"),
             call().aggs.metric("min_file_size", "min", field="size"),
             call().aggs.metric("total_no_of_files", "value_count", field="size"),
-            call().execute(),
+            call().index(),
+            call().index().extra(pit={"id": "0123456789", "keep_alive": "10s"}),
+            call().index().extra().execute(),
         ]
         mock_search.assert_has_calls(calls, any_order=False)
         assert stats.total_no_of_files == 40

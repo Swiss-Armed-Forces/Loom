@@ -14,12 +14,12 @@
  */
 
 import { mapValues } from "../runtime";
-import type { QueryModel } from "./QueryModel";
+import type { QueryParameters } from "./QueryParameters";
 import {
-    QueryModelFromJSON,
-    QueryModelFromJSONTyped,
-    QueryModelToJSON,
-} from "./QueryModel";
+    QueryParametersFromJSON,
+    QueryParametersFromJSONTyped,
+    QueryParametersToJSON,
+} from "./QueryParameters";
 
 /**
  * Hides file model.
@@ -29,10 +29,10 @@ import {
 export interface UpdateFilesRequest {
     /**
      *
-     * @type {QueryModel}
+     * @type {QueryParameters}
      * @memberof UpdateFilesRequest
      */
-    query: QueryModel;
+    query: QueryParameters;
     /**
      *
      * @type {boolean}
@@ -62,7 +62,7 @@ export function UpdateFilesRequestFromJSONTyped(
         return json;
     }
     return {
-        query: QueryModelFromJSON(json["query"]),
+        query: QueryParametersFromJSON(json["query"]),
         hidden: json["hidden"],
     };
 }
@@ -74,7 +74,7 @@ export function UpdateFilesRequestToJSON(
         return value;
     }
     return {
-        query: QueryModelToJSON(value["query"]),
+        query: QueryParametersToJSON(value["query"]),
         hidden: value["hidden"],
     };
 }

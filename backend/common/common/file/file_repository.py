@@ -14,7 +14,7 @@ from typing import Any, Callable, Generator, cast
 from urllib.error import URLError
 from uuid import UUID
 
-from elasticsearch_dsl import (  # type: ignore[import-untyped]
+from elasticsearch_dsl import (
     A,
     Boolean,
     Date,
@@ -30,8 +30,8 @@ from elasticsearch_dsl import (  # type: ignore[import-untyped]
     Search,
     Text,
 )
-from elasticsearch_dsl.response import Response  # type: ignore[import-untyped]
-from libretranslatepy import LibreTranslateAPI  # type: ignore[import-untyped]
+from elasticsearch_dsl.response import Response
+from libretranslatepy import LibreTranslateAPI
 from pydantic import BaseModel, Field, computed_field, field_validator
 
 from common.file.file_statistics import (
@@ -363,17 +363,6 @@ class FileRepository(BaseEsRepository[_EsFile, File]):
         # this also prevents dataclass validation errors for int since None != 0
         return res if res is not None else default
 
-    def _prep_search(self, query: QueryParameters) -> Search:
-        search = self._document_type.search(using=self._elasticsearch)
-        query_string = self._query_builder.build(query)
-        search = search.query(
-            "query_string",
-            query=query_string,
-            default_field="*",
-            default_operator="AND",
-        )
-        return search[0:0]
-
     def get_stat_generic(self, query: QueryParameters, stat: Stat) -> StatisticsGeneric:
         @dataclass
         class StatItem:
@@ -429,12 +418,14 @@ class FileRepository(BaseEsRepository[_EsFile, File]):
             ),
         }
 
-        search = self._prep_search(query)
+        search = self._get_search_by_query(query=query)
+        search = search[0:0]  # do not fetch hits
         search.aggs.metric(
             "total_no_of_files", "value_count", field="size"
         )  # required for % calculations
         search.aggs.metric(*search_dict[stat].args, **search_dict[stat].kwargs)
-        result = search.execute()
+        result = self._execute_search_with_query(search=search, query=query)
+
         total_no_of_files = self.get_aggr(
             result, ["total_no_of_files", "value"], default=0
         )
@@ -460,12 +451,14 @@ class FileRepository(BaseEsRepository[_EsFile, File]):
         return stats
 
     def get_stat_summary(self, query: QueryParameters) -> StatisticsSummary:
-        search = self._prep_search(query)
+        search = self._get_search_by_query(query=query)
+        search = search[0:0]  # do not fetch hits
         search.aggs.metric("avg_file_size", "avg", field="size")
         search.aggs.metric("max_file_size", "max", field="size")
         search.aggs.metric("min_file_size", "min", field="size")
         search.aggs.metric("total_no_of_files", "value_count", field="size")
-        result = search.execute()
+        result = self._execute_search_with_query(search=search, query=query)
+
         return StatisticsSummary(
             avg_file_size=self.get_aggr(result, ["avg_file_size", "value"], default=0),
             max_file_size=self.get_aggr(result, ["max_file_size", "value"], default=0),
@@ -476,7 +469,7 @@ class FileRepository(BaseEsRepository[_EsFile, File]):
         )
 
     def get_all_tags(self) -> list[str]:
-        """Get all tags that are in the database."""
+        """Get all tags in the database."""
         search = self._document_type.search(using=self._elasticsearch)
         tags_aggregation = A(
             "terms",
@@ -485,10 +478,11 @@ class FileRepository(BaseEsRepository[_EsFile, File]):
         )
         search.aggs.bucket("all_tags", tags_aggregation)
         search = search[0:0]  # do not fetch hits
-        search_result = search.execute()  # pylint: disable=no-member
+        result = search.execute()  # pylint: disable=no-member
+
         all_tags: list[str] = []
-        for tag in search_result.aggregations.all_tags.buckets:
-            all_tags.append(tag.key)
+        for tag in result.aggregations.all_tags.buckets:
+            all_tags.append(cast(str, tag.key))
         return all_tags
 
     # pylint: disable=too-many-arguments
@@ -505,7 +499,12 @@ class FileRepository(BaseEsRepository[_EsFile, File]):
 
         search: Search = self._document_type.search(using=self._elasticsearch)
 
-        query_q = Q(
+        search = search.extra(
+            pit={"id": query.query_id, "keep_alive": query.keep_alive}
+        )
+        search = search.index()  # Remove index: pit requests run against no index
+
+        filter_query = Q(
             "query_string",
             query=self._query_builder.build(query),
             default_field="*",
@@ -513,12 +512,12 @@ class FileRepository(BaseEsRepository[_EsFile, File]):
         )
 
         for q in embedding_vectors:
-            search = search.knn(
+            search = search.knn(  # pylint: disable=no-member
                 field="embeddings.vector",
                 k=k,
                 num_candidates=k * KNN_CANDIDATES_FACTOR,
                 query_vector=q,
-                filter=query_q,
+                filter=filter_query,
                 inner_hits={"_source": True, "fields": ["embeddings.text"], "size": k},
             )
 
@@ -534,7 +533,11 @@ class FileRepository(BaseEsRepository[_EsFile, File]):
                     )
 
         yield from self._paginate_search(
-            search, sort_params, pagination_params, page_handler
+            search=search,
+            query=query,
+            sort_params=sort_params,
+            pagination_params=pagination_params,
+            per_page_callback=page_handler,
         )
 
     def get_full_paths_by_query(
@@ -548,12 +551,7 @@ class FileRepository(BaseEsRepository[_EsFile, File]):
         pattern_directory = escaped_directory + "/.+"
         pattern_contents = escaped_directory + "/[^/]+/.+"
 
-        search: Search = self._document_type.search(using=self._elasticsearch)
-
-        query_string = self._query_builder.build(query)
-        search = search.query(
-            "query_string", query=query_string, default_operator="AND"
-        )
+        search = self._get_search_by_query(query=query)
 
         dir_aggregation = A(
             "terms",
@@ -565,37 +563,13 @@ class FileRepository(BaseEsRepository[_EsFile, File]):
         )
         search.aggs.bucket("directory", dir_aggregation)
         search = search[0:0]  # do not fetch hits
-        search_result = search.execute()
+        result = self._execute_search_with_query(search=search, query=query)
 
         nodes = []
-        for path in search_result.aggregations.directory.buckets:
+        for path in result.aggregations.directory.buckets:
             dirpath = PurePath(str(path.key))
             nodes.append(
                 TreePathsNode(full_path=dirpath, file_count=cast(int, path.doc_count))
             )
 
         return nodes
-
-    # pylint:disable=duplicate-code
-    def get_generator_by_tag(
-        self,
-        tag: str,
-        pagination_params: PaginationParameters | None = None,
-        sort_params: SortingParameters | None = None,
-    ) -> Generator[File, None, None]:
-        if sort_params is None:
-            sort_params = SortingParameters()
-
-        search = self._document_type.search(
-            using=self._elasticsearch,
-            index=self._index_name,
-        )
-        search = search.query("match", tags=tag)
-
-        def page_handler(result: Response):
-            for hit in result.hits:
-                yield self._document_to_object(hit)
-
-        yield from self._paginate_search(
-            search, sort_params, pagination_params, page_handler
-        )

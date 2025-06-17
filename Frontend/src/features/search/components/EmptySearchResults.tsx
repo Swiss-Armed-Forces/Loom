@@ -3,7 +3,7 @@ import Card from "@mui/material/Card";
 import CardHeader from "@mui/material/CardHeader";
 import CardContent from "@mui/material/CardContent";
 import { useAppDispatch, useAppSelector } from "../../../app/hooks";
-import { setQuery, selectQuery, selectQueryError } from "../searchSlice";
+import { updateQuery, selectQuery, selectQueryError } from "../searchSlice";
 import { useTranslation } from "react-i18next";
 import { Alert, AlertTitle, Box } from "@mui/material";
 
@@ -34,7 +34,7 @@ export function EmptySearchResults() {
             searchParams.sortDirection = sortDirection;
         }
 
-        dispatch(setQuery(searchParams));
+        dispatch(updateQuery(searchParams));
     };
 
     return (

@@ -4,7 +4,7 @@ import logging
 
 from celery import Celery
 from celery.schedules import crontab
-from kombu import Exchange, Queue, serialization  # type: ignore[import-untyped]
+from kombu import Exchange, Queue, serialization
 
 from common.settings import settings
 

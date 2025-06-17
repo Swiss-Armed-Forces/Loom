@@ -3,10 +3,7 @@ from typing import Generic, TypeVar
 
 from bson import ObjectId
 from pydantic import Field
-from pydantic_mongo import (  # type: ignore[import-untyped]
-    AbstractRepository,
-    ObjectIdField,
-)
+from pydantic_mongo import AbstractRepository, ObjectIdField
 from pymongo.database import Database
 
 from common.models.base_repository import BaseRepository, RepositoryObject

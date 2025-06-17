@@ -14,12 +14,12 @@
  */
 
 import { mapValues } from "../runtime";
-import type { QueryModel } from "./QueryModel";
+import type { QueryParameters } from "./QueryParameters";
 import {
-    QueryModelFromJSON,
-    QueryModelFromJSONTyped,
-    QueryModelToJSON,
-} from "./QueryModel";
+    QueryParametersFromJSON,
+    QueryParametersFromJSONTyped,
+    QueryParametersToJSON,
+} from "./QueryParameters";
 
 /**
  * List of new Tags and a Query to filter files.
@@ -35,10 +35,10 @@ export interface AddTagRequest {
     tags: Array<string>;
     /**
      *
-     * @type {QueryModel}
+     * @type {QueryParameters}
      * @memberof AddTagRequest
      */
-    query: QueryModel;
+    query: QueryParameters;
 }
 
 /**
@@ -63,7 +63,7 @@ export function AddTagRequestFromJSONTyped(
     }
     return {
         tags: json["tags"],
-        query: QueryModelFromJSON(json["query"]),
+        query: QueryParametersFromJSON(json["query"]),
     };
 }
 
@@ -73,6 +73,6 @@ export function AddTagRequestToJSON(value?: AddTagRequest | null): any {
     }
     return {
         tags: value["tags"],
-        query: QueryModelToJSON(value["query"]),
+        query: QueryParametersToJSON(value["query"]),
     };
 }

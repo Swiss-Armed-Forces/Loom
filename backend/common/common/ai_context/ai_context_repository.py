@@ -1,13 +1,7 @@
 from datetime import datetime
 from uuid import UUID, uuid4
 
-from elasticsearch_dsl import (  # type: ignore[import-untyped]
-    Date,
-    InnerDoc,
-    Keyword,
-    Object,
-    Text,
-)
+from elasticsearch_dsl import Date, InnerDoc, Keyword, Object, Text
 from pydantic import Field
 
 from common.models.es_repository import BaseEsRepository
@@ -26,8 +20,10 @@ class AiContext(RepositoryTaskObject):
 
 
 class _EsQueryParameters(InnerDoc):
+    query_id = Keyword()
     search_string = Text()
     languages = Text(multi=True)
+    keep_alive = Keyword()
 
 
 class _EsAiContext(_EsTaskDocument):

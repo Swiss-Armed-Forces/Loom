@@ -3,9 +3,9 @@ from typing import Callable
 
 import pytest
 import requests
-from api.models.query_model import QueryModel
 from api.routers.files import SummarizeFileRequest
 from api.routers.summarization import SummarizationRequest
+from common.services.query_builder import QueryParameters
 from pydantic import BaseModel
 from requests import Response
 from worker.utils.natural_language_detection import MIN_WORDS_NATURAL_LANGUAGE
@@ -14,6 +14,7 @@ from utils.consts import FILES_ENDPOINT, REQUEST_TIMEOUT, SUMMARIZATION_ENDPOINT
 from utils.fetch_from_api import (
     DEFAULT_MAX_WAIT_TIME_PER_FILE,
     build_search_string,
+    fetch_query_id,
     get_file_by_name,
 )
 from utils.upload_asset import upload_bytes_asset
@@ -56,7 +57,9 @@ SUMMARIZATION_TESTCASES = [
 ]
 
 
-def _on_demand_summarize_by_query(query: QueryModel, system_prompt: str | None = None):
+def _on_demand_summarize_by_query(
+    query: QueryParameters, system_prompt: str | None = None
+):
     response: Response = requests.post(
         f"{SUMMARIZATION_ENDPOINT}/",
         json=SummarizationRequest(
@@ -135,10 +138,11 @@ def test_on_demand_summarization_by_query(
 ):
     def on_demand_function(file: SummarizationFileTest, system_prompt: str | None):
         _on_demand_summarize_by_query(
-            QueryModel(
+            QueryParameters(
+                query_id=fetch_query_id(),
                 search_string=build_search_string(
                     search_string="*", field="full_name", field_value=file.name
-                )
+                ),
             ),
             system_prompt=system_prompt,
         )

@@ -8,7 +8,7 @@ import {
     IconButton,
 } from "@mui/material";
 import { t } from "i18next";
-import { selectNumberOfFiles, selectQuery } from "../../../search/searchSlice";
+import { selectTotalFiles, selectQuery } from "../../../search/searchSlice";
 import { useAppDispatch, useAppSelector } from "../../../../app/hooks";
 import { toast } from "react-toastify";
 import { useState } from "react";
@@ -33,7 +33,7 @@ export function UpdateVisibilityButton({
     colorSecondary = false,
 }: UpdateVisibilityStateInputProps) {
     const dispatch = useAppDispatch();
-    const numberOfResults = useAppSelector(selectNumberOfFiles);
+    const numberOfResults = useAppSelector(selectTotalFiles);
     const searchQuery = useAppSelector(selectQuery);
     const [showUpdateFileStateDialog, setUpdateFileStateDialog] =
         useState(false);

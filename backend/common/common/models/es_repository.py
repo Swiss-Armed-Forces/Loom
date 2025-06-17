@@ -7,22 +7,25 @@ from uuid import UUID, uuid4
 
 import typing_extensions
 from elastic_transport import ObjectApiResponse
-from elasticsearch import Elasticsearch
-from elasticsearch_dsl import (  # type: ignore[import-untyped]
-    Boolean,
-    Document,
-    Index,
-    Keyword,
-    Search,
-)
-from elasticsearch_dsl.connections import get_connection  # type: ignore[import-untyped]
-from elasticsearch_dsl.response import Response  # type: ignore[import-untyped]
+from elasticsearch import Elasticsearch, NotFoundError
+from elasticsearch_dsl import Boolean, Document, Index, Keyword, Search
+from elasticsearch_dsl.connections import get_connection
+from elasticsearch_dsl.response import Response
 from pydantic import BaseModel, Field, computed_field
 
-from common.messages.messages import MessageFileUpdate, PubSubMessage
+from common.messages.messages import (
+    MessageFileUpdate,
+    MessageQueryIdExpired,
+    PubSubMessage,
+)
 from common.messages.pubsub_service import PubSubService
 from common.models.base_repository import BaseRepository, RepositoryObject
-from common.services.query_builder import QueryBuilder, QueryParameters
+from common.services.query_builder import (
+    DEFAULT_PIT_KEEPALIVE,
+    KeepAlive,
+    QueryBuilder,
+    QueryParameters,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -32,9 +35,6 @@ logger = logging.getLogger(__name__)
 INDEX_OPERATION_TIMEOUT = "9999d"
 DEFAULT_PAGE_SIZE = 10
 UPDATE_RETRY_ON_CONFLICT_COUNT = 5
-
-# Default keepalive for point in time
-PIT_KEEPALIVE = "5m"
 
 # copied from: pydantic/main.py:
 IncEx: typing_extensions.TypeAlias = (
@@ -132,7 +132,7 @@ class SortingParameters(BaseModel):
 
 
 class PaginationParameters(BaseModel):
-    sort_id: list[Any] | None = None
+    sort_id: list[Any] = Field(default_factory=list)
     page_size: int = DEFAULT_PAGE_SIZE
 
 
@@ -207,6 +207,7 @@ class BaseEsRepository(
         sort_field_type = sort_field_mapping["type"]
         match sort_field_type:
             case "text":
+                # text fields can only be sorted via their keyword sub-field (if existent)
                 try:
                     sort_field_keyword_keyword_field = sort_field_mapping["fields"][
                         "keyword"
@@ -227,9 +228,11 @@ class BaseEsRepository(
                 sort_field = field
         return sort_field
 
+    # pylint: disable=too-many-arguments
     def _paginate_search(
         self,
         search: Search,
+        query: QueryParameters,
         sort_params: SortingParameters,
         pagination_params: PaginationParameters | None,
         per_page_callback: Callable[[Response], Generator[Any, None, None]],
@@ -237,22 +240,7 @@ class BaseEsRepository(
         """Runs the given search over several pages and calls the per_page_callback for
         every page."""
 
-        # Create a point in time and use this point to run the query against.
-        # We do this so that our search results / search ordering does not
-        # change while we paginate over them.
-        pit = self._elasticsearch.open_point_in_time(
-            index=self._index_name, keep_alive=PIT_KEEPALIVE
-        )
-        pit_id: str = pit["id"]
-        search = search.extra(pit={"id": pit_id, "keep_alive": PIT_KEEPALIVE})
-        search = search.index()  # Remove index: pit requests run against no index
-
-        # Make ES count the actual total values, which the query would match.
-        # Even if we don't fetch that many hits due to pagination.
-        search = search.extra(track_total_hits=True)
-
         search_after: list[Any] | None = None
-        handled_hits_count = 0
 
         sort_by_field = self._get_sort_by_field(sort_params.sort_by_field)
 
@@ -263,12 +251,11 @@ class BaseEsRepository(
             "sort_unique",
         )
 
-        if pagination_params is not None and pagination_params.sort_id is not None:
-            search = search.extra(
-                search_after=pagination_params.sort_id,
-            )
-
         if pagination_params is not None:
+            if pagination_params.sort_id:
+                search = search.extra(
+                    search_after=pagination_params.sort_id,
+                )
             search = search.extra(
                 size=pagination_params.page_size,
             )
@@ -277,44 +264,29 @@ class BaseEsRepository(
             if search_after is not None:
                 search = search.extra(search_after=search_after)
 
-            results: Response = search.execute()
-            hit_count = len(results.hits.hits)
-            total_hits: int = results.hits.total.value
+            result = self._execute_search_with_query(search=search, query=query)
+            page_hits = result.hits.hits
 
-            if hit_count == 0:
-                # no more hits
+            if len(page_hits) <= 0:
+                # no more hits: last page
                 break
 
-            yield from per_page_callback(results)
+            yield from per_page_callback(result)
 
             if pagination_params is not None:
                 # pagination set, only returning one page
                 break
 
-            handled_hits_count += hit_count
-            if handled_hits_count >= total_hits:
-                break
-
-            last_hit = results.hits.hits[-1]
+            last_hit = page_hits[-1]
             search_after = last_hit.sort
 
-    def __get_search_by_deduplication_fingerprint(
-        self,
-        deduplication_fingerprint: str,
-    ) -> Search:
-        search: Search = self._document_type.search(using=self._elasticsearch)
-        search = search.query(
-            "match",
-            deduplication_fingerprint=deduplication_fingerprint,
-        )
-        return search
-
-    def __get_search_by_query(
+    def _get_search_by_query(
         self,
         query: QueryParameters,
         full_highlight_context: bool = False,
     ) -> Search:
         search: Search = self._document_type.search(using=self._elasticsearch)
+
         search = search.highlight_options(
             order="score",
             pre_tags=["<highlight>"],
@@ -344,6 +316,16 @@ class BaseEsRepository(
             PubSubMessage(channel=file_id, message=MessageFileUpdate(fileId=file_id)),
         )
 
+    def open_point_in_time(
+        self,
+        keep_alive: KeepAlive = DEFAULT_PIT_KEEPALIVE,
+    ) -> str:
+        point_in_time = self._elasticsearch.open_point_in_time(
+            index=self._index_name, keep_alive=keep_alive
+        )
+        point_in_time_id: str = point_in_time["id"]
+        return point_in_time_id
+
     def get_by_id(self, id_: UUID) -> EsRepositoryObjectT | None:
         document = self._document_type.get(id_, using=self._elasticsearch)
         if document is None:
@@ -354,21 +336,19 @@ class BaseEsRepository(
     def get_by_deduplication_fingerprint(
         self, deduplication_fingerprint: str
     ) -> EsRepositoryObjectT | None:
-        search = self.__get_search_by_deduplication_fingerprint(
-            deduplication_fingerprint=deduplication_fingerprint
+        search: Search = self._document_type.search(using=self._elasticsearch)
+        search = search.query(
+            "match",
+            deduplication_fingerprint=deduplication_fingerprint,
         )
         response = search.execute()
         if len(response) <= 0:
             return None
         if len(response) > 1:
-            raise ValueError("dedeuplication_id not unique")
+            raise ValueError("deduplication_fingerprint not unique")
         document = response[0]
         obj = self._document_to_object(document)
         return obj
-
-    def get_all(self) -> list[EsRepositoryObjectT]:
-        result = list(self.get_generator_by_query(QueryParameters(search_string="*")))
-        return result
 
     def get_by_query(
         self,
@@ -395,14 +375,18 @@ class BaseEsRepository(
         if sort_params is None:
             sort_params = SortingParameters()
 
-        search = self.__get_search_by_query(query)
+        search = self._get_search_by_query(query=query)
 
         def page_handler(result: Response):
             for hit in result.hits:
                 yield self._document_to_object(hit)
 
         yield from self._paginate_search(
-            search, sort_params, pagination_params, page_handler
+            search=search,
+            query=query,
+            sort_params=sort_params,
+            pagination_params=pagination_params,
+            per_page_callback=page_handler,
         )
 
     def get_id_generator_by_query(
@@ -414,7 +398,7 @@ class BaseEsRepository(
         if sort_params is None:
             sort_params = SortingParameters()
 
-        search = self.__get_search_by_query(query)
+        search = self._get_search_by_query(query=query)
 
         # limit fields to fetch to just id
         sort_by_field = sort_params.sort_by_field
@@ -442,19 +426,50 @@ class BaseEsRepository(
                 yield EsIdObject.model_validate(document_dict)
 
         yield from self._paginate_search(
-            search, sort_params, pagination_params, page_handler
+            search=search,
+            query=query,
+            sort_params=sort_params,
+            pagination_params=pagination_params,
+            per_page_callback=page_handler,
         )
+
+    def _execute_search_with_query(
+        self, search: Search, query: QueryParameters
+    ) -> Response:
+        try:
+            return (
+                search.index()  # Remove index: pit requests run against no index
+                .extra(pit={"id": query.query_id, "keep_alive": query.keep_alive})
+                .execute()
+            )
+        except NotFoundError:
+            # Returned when the PIT for the query is not found. Probably expired.
+            logger.info("Query %s expired, creating new one", query)
+            old_query_id = query.query_id
+            # Mutate the query's PIT so the caller has access to the new PIT
+            query.query_id = self.open_point_in_time()
+
+            self._pubsub_service.publish_message(
+                PubSubMessage(
+                    channel=old_query_id,
+                    message=MessageQueryIdExpired(
+                        old_id=old_query_id, new_id=query.query_id
+                    ),
+                ),
+            )
+            return self._execute_search_with_query(search, query)
 
     def count_by_query(self, query: QueryParameters) -> int:
         """Counts the number of files returned by the given query."""
+        # search.count() is not pit aware so we use a query instead
+        search = self._get_search_by_query(query=query)
+        search = search[0:0]  # do not fetch hits
+        # Make ES count fetch the actual total values, which the query would match.
+        search = search.extra(track_total_hits=True)
 
-        search = self._document_type.search(using=self._elasticsearch)
-
-        query_string = self._query_builder.build(query)
-        search = search.query(
-            "query_string", query=query_string, default_operator="AND"
-        )
-        return search.count()
+        result = self._execute_search_with_query(search=search, query=query)
+        total_hits: int = int(result.hits.total.value)
+        return total_hits
 
     def get_by_id_with_query(
         self,
@@ -463,9 +478,11 @@ class BaseEsRepository(
         full_highlight_context: bool,
     ) -> EsRepositoryObjectT | None:
         """Load details of an object, includes highlights based on the query."""
-        search = self.__get_search_by_query(query, full_highlight_context)
+        search: Search = self._get_search_by_query(
+            query=query, full_highlight_context=full_highlight_context
+        )
         search = search.filter("term", _id=str(id_))
-        result: Response = search.execute()
+        result = self._execute_search_with_query(search=search, query=query)
         if len(result.hits.hits) < 1:
             return None
         return self._document_to_object(result.hits[0])

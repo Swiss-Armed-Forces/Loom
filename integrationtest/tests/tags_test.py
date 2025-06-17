@@ -1,11 +1,15 @@
 import pytest
 import requests
-from api.models.query_model import QueryModel
 from api.routers.tags import AddTagRequest, AllTags
 from common.file.file_repository import TAG_LEN_MAX
+from common.services.query_builder import QueryParameters
 
 from utils.consts import FILES_ENDPOINT, REQUEST_TIMEOUT, TAGS_ENDPOINT
-from utils.fetch_from_api import fetch_files_from_api, get_file_preview_by_name
+from utils.fetch_from_api import (
+    fetch_files_from_api,
+    fetch_query_id,
+    get_file_preview_by_name,
+)
 from utils.upload_asset import upload_asset, upload_many_assets
 
 
@@ -75,7 +79,8 @@ def test_add_tag_by_query():
     fetch_files_from_api("*", expected_no_of_files=len(assets))
 
     set_tag_request = AddTagRequest(
-        tags=[tag_name], query=QueryModel(search_string="*")
+        tags=[tag_name],
+        query=QueryParameters(search_string="*", query_id=fetch_query_id()),
     )
     _add_tags(set_tag_request)
 
@@ -95,7 +100,9 @@ def test_add_tags_by_query():
     upload_many_assets(assets)
     fetch_files_from_api("*", expected_no_of_files=len(assets))
 
-    set_tag_request = AddTagRequest(tags=tags, query=QueryModel(search_string="*"))
+    set_tag_request = AddTagRequest(
+        tags=tags, query=QueryParameters(search_string="*", query_id=fetch_query_id())
+    )
     _add_tags(set_tag_request)
 
     fetch_files_from_api(
@@ -140,7 +147,8 @@ def test_delete_tags():
     fetch_files_from_api("*", expected_no_of_files=len(assets))
 
     set_tag_request = AddTagRequest(
-        tags=[tag_name], query=QueryModel(search_string="*")
+        tags=[tag_name],
+        query=QueryParameters(search_string="*", query_id=fetch_query_id()),
     )
     _add_tags(set_tag_request)
 

@@ -57,6 +57,12 @@ class MessageChatBotCitation(BaseModel):
     rank: float
 
 
+class MessageQueryIdExpired(BaseModel):
+    type: Literal["queryIdExpired"] = "queryIdExpired"
+    old_id: str
+    new_id: str
+
+
 class PubSubMessage(BaseModel):
     channel: str | None = (
         None  # None means the message will be deliverd on the meta channel
@@ -72,5 +78,6 @@ class PubSubMessage(BaseModel):
         MessageFileSave,
         MessageChatBotToken,
         MessageChatBotCitation,
+        MessageQueryIdExpired,
         MessageError,
     ] = Field(discriminator="type")

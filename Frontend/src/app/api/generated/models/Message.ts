@@ -55,6 +55,13 @@ import {
     MessageNoopFromJSONTyped,
     MessageNoopToJSON,
 } from "./MessageNoop";
+import type { MessageQueryIdExpired } from "./MessageQueryIdExpired";
+import {
+    instanceOfMessageQueryIdExpired,
+    MessageQueryIdExpiredFromJSON,
+    MessageQueryIdExpiredFromJSONTyped,
+    MessageQueryIdExpiredToJSON,
+} from "./MessageQueryIdExpired";
 import type { MessageSubscribConfirmation } from "./MessageSubscribConfirmation";
 import {
     instanceOfMessageSubscribConfirmation,
@@ -96,6 +103,7 @@ export type Message =
     | ({ type: "fileSave" } & MessageFileSave)
     | ({ type: "fileUpdate" } & MessageFileUpdate)
     | ({ type: "noop" } & MessageNoop)
+    | ({ type: "queryIdExpired" } & MessageQueryIdExpired)
     | ({ type: "subscribe" } & MessageSubscribe)
     | ({ type: "subscribeConfirmation" } & MessageSubscribConfirmation)
     | ({ type: "unsubscribe" } & MessageUnsubscribe)
@@ -137,6 +145,11 @@ export function MessageFromJSONTyped(
             };
         case "noop":
             return { ...MessageNoopFromJSONTyped(json, true), type: "noop" };
+        case "queryIdExpired":
+            return {
+                ...MessageQueryIdExpiredFromJSONTyped(json, true),
+                type: "queryIdExpired",
+            };
         case "subscribe":
             return {
                 ...MessageSubscribeFromJSONTyped(json, true),
@@ -181,6 +194,8 @@ export function MessageToJSON(value?: Message | null): any {
             return MessageFileUpdateToJSON(value);
         case "noop":
             return MessageNoopToJSON(value);
+        case "queryIdExpired":
+            return MessageQueryIdExpiredToJSON(value);
         case "subscribe":
             return MessageSubscribeToJSON(value);
         case "subscribeConfirmation":

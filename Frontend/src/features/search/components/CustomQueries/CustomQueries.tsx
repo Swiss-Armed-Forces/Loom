@@ -17,7 +17,7 @@ import { useAppDispatch, useAppSelector } from "../../../../app/hooks.ts";
 import {
     CustomQuery,
     deleteCustomQuery,
-    setQuery,
+    updateQuery,
     selectCustomQueries,
 } from "../../searchSlice.ts";
 import { Delete, Policy } from "@mui/icons-material";
@@ -45,7 +45,7 @@ const CustomQueryItem: FC<SavedQueryItemProps> = ({
             {icon_only ? (
                 <ListItemButton
                     onClick={() => {
-                        dispatch(setQuery(customQuery.query));
+                        dispatch(updateQuery(customQuery.query));
                     }}
                     title={customQuery.name}
                 >
@@ -58,7 +58,7 @@ const CustomQueryItem: FC<SavedQueryItemProps> = ({
             ) : (
                 <ListItemButton
                     onClick={() => {
-                        dispatch(setQuery(customQuery.query));
+                        dispatch(updateQuery(customQuery.query));
                     }}
                 >
                     <ListItemIcon>
