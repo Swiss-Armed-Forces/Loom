@@ -9,8 +9,9 @@ metadata:
 data:
   prometheus.yml: |
     scrape_configs:
-      - job_name: 'rabbitmq'
-        metrics_path: /metrics
+      - job_name: 'rabbitmq-per-object'
+        scrape_interval: 15s
+        metrics_path: /metrics/per-object
         static_configs:
           - targets: ['{{ include "app.fullname" . }}-rabbit:{{ .Values.rabbit.service.port.prometheus }}']
 {{- if .Values.prometheus.collectClusterMetrics }}

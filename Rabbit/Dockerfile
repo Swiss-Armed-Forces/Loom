@@ -1,5 +1,5 @@
 # Image version
-ARG RABBIT_IMAGE_VERSION="3.13.7-management-alpine"
+ARG RABBIT_IMAGE_VERSION="4.1.1-management-alpine"
 
 ARG DOCKER_REGISTRY
 FROM ${DOCKER_REGISTRY}/rabbitmq:${RABBIT_IMAGE_VERSION}

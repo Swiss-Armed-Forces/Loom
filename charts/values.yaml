@@ -163,7 +163,7 @@ celery:
   worker:
     main:
       replicaCount: 1
-      hpa: &default-celery-worker-hpa
+      hpa:
         enabled: true
         maxReplicas: 100
         minReplicas: 1
@@ -177,34 +177,13 @@ celery:
         enabled: true
       livenessProbe:
         enabled: true
-      resources: &default-celery-worker-resouces
+      resources:
         requests:
           cpu: "0.3"
           memory: "500Mi"
         limits:
           cpu: "1.5"
           memory: "4Gi"
-    interactive:
-      replicaCount: 1
-      hpa: *default-celery-worker-hpa
-      image:
-        repository: swiss-armed-forces/cyber-command/cea/loom/celery-worker-interactive
-      service: *default-celery-worker-service
-      readinessProbe:
-        enabled: false
-      livenessProbe:
-        enabled: true
-      resources: *default-celery-worker-resouces
-    periodic:
-      replicaCount: 1
-      image:
-        repository: swiss-armed-forces/cyber-command/cea/loom/celery-worker-periodic
-      service: *default-celery-worker-service
-      readinessProbe:
-        enabled: false
-      livenessProbe:
-        enabled: true
-      resources: *default-celery-worker-resouces
     beat:
       replicaCount: 1
       image:

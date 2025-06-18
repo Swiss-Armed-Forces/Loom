@@ -77,21 +77,7 @@ EXPOSE 5500
 CMD ["python", "-Xfrozen_modules=off", "-m", "debugpy", "--listen", "127.0.0.1:5500", \
     "-m", "watchdog.watchmedo", "auto-restart", "--verbose", "--recursive", "--signal", "SIGTERM", "--patterns", "*.py", "--directory", "/code/common", "--directory", "/code/worker", "--debounce-interval", "3", \
     "--", \
-    "python", "-Xfrozen_modules=off", "-m", "celery", "--app", "worker", "worker", "--loglevel", "DEBUG", "--pool", "threads", "--exclude-queues", "celery.interactive"]
-
-FROM dev AS dev-interactive
-EXPOSE 5501
-CMD ["python", "-Xfrozen_modules=off", "-m", "debugpy", "--listen", "127.0.0.1:5501", \
-    "-m", "watchdog.watchmedo", "auto-restart", "--verbose", "--recursive", "--signal", "SIGTERM", "--patterns", "*.py", "--directory", "/code/common", "--directory", "/code/worker", "--debounce-interval", "3", \
-    "--", \
-    "python", "-Xfrozen_modules=off", "-m", "celery", "--app", "worker", "worker", "--loglevel", "DEBUG", "--pool", "threads", "--queues", "celery.interactive"]
-
-FROM dev AS dev-periodic
-EXPOSE 5502
-CMD ["python", "-Xfrozen_modules=off", "-m", "debugpy", "--listen", "127.0.0.1:5502", \
-    "-m", "watchdog.watchmedo", "auto-restart", "--verbose", "--recursive", "--signal", "SIGTERM", "--patterns", "*.py", "--directory", "/code/common", "--directory", "/code/worker", "--debounce-interval", "3", \
-    "--", \
-    "python", "-Xfrozen_modules=off", "-m", "celery", "--app", "worker", "worker", "--loglevel", "DEBUG", "--pool", "threads", "--queues", "celery.__periodic"]
+    "python", "-Xfrozen_modules=off", "-m", "celery", "--app", "worker", "worker", "--loglevel", "DEBUG", "--pool", "threads"]
 
 FROM dev AS dev-beat
 EXPOSE 5503
@@ -109,13 +95,7 @@ CMD ["python", "-m", "celery", "--app", "worker", "flower", "--broker-api=http:/
 
 FROM runtime-base AS production
 COPY --from=builder-prod ${BUILDER_VIRTUAL_ENV} ${VIRTUAL_ENV}
-CMD ["python" ,"-m", "celery", "--app", "worker", "worker", "--loglevel", "INFO", "--pool", "threads", "--exclude-queues", "celery.interactive,celery.__periodic"]
-
-FROM production AS production-interactive
-CMD ["python", "-m", "celery", "--app", "worker", "worker", "--loglevel", "INFO", "--pool", "threads", "--queues", "celery.interactive"]
-
-FROM production AS production-periodic
-CMD ["python", "-m", "celery", "--app", "worker", "worker", "--loglevel", "INFO", "--pool", "threads", "--queues", "celery.__periodic"]
+CMD ["python" ,"-m", "celery", "--app", "worker", "worker", "--loglevel", "INFO", "--pool", "threads"]
 
 FROM production AS production-beat
 CMD ["python", "-m", "celery", "--app", "worker", "beat", "--loglevel", "INFO"]

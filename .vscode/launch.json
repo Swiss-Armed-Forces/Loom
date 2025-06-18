@@ -45,46 +45,6 @@
       "justMyCode": false
     },
     {
-      "name": "Attach Worker-Interactive",
-      "type": "debugpy",
-      "request": "attach",
-      "connect": {
-        "host": "127.0.0.1",
-        "port": 5501
-      },
-      "pathMappings": [
-        {
-          "localRoot": "${workspaceFolder}/.venv",
-          "remoteRoot": "/code/.venv"
-        },
-        {
-          "localRoot": "${workspaceFolder}/backend",
-          "remoteRoot": "/code"
-        }
-      ],
-      "justMyCode": false
-    },
-    {
-      "name": "Attach Worker-Periodic",
-      "type": "debugpy",
-      "request": "attach",
-      "connect": {
-        "host": "127.0.0.1",
-        "port": 5502
-      },
-      "pathMappings": [
-        {
-          "localRoot": "${workspaceFolder}/.venv",
-          "remoteRoot": "/code/.venv"
-        },
-        {
-          "localRoot": "${workspaceFolder}/backend",
-          "remoteRoot": "/code"
-        }
-      ],
-      "justMyCode": false
-    },
-    {
       "name": "Attach Beat",
       "type": "debugpy",
       "request": "attach",

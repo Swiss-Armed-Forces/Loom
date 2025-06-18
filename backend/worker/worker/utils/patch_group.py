@@ -17,7 +17,7 @@ def patch_group(app: Celery):
         expected when using a mixture of nested groups & chains."""
         return chord(original_group(*signatures, **options), __completer.s())
 
-    @app.task(queue="celery.__meta")
+    @app.task()
     def __completer(results):
         """Task that does nothing, can be used in a chord to complete the chord."""
         return results

@@ -106,6 +106,8 @@ in
       tshark
       binwalk
       cabextract
+      imagemagick
+      file
     ]
     #
     # The following dependencies are made available

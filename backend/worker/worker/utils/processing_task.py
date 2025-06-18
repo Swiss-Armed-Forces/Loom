@@ -4,7 +4,6 @@ from uuid import UUID
 
 from celery import Task
 from celery.utils.log import get_task_logger
-from common.celery_app import CELERY_QUEUE_MAX_PRIORITY
 from common.dependencies import get_celery_app, get_root_task_information_repository
 from common.models.base_repository import REPOSITORY_INSTANCES, BaseRepository
 from common.task_object.task_object import (
@@ -82,17 +81,13 @@ class ProcessingTask(
         return super().on_success(retval, task_id, args, kwargs)
 
 
-# Note: we set priority here very high, so that those
-# tasks are processed quite quick and the user gets
-# an immediate response on the ui.
-@app.task(  # type: ignore[call-overload]
+@app.task(
     bind=True,
     autoretry_for=tuple([PersistingException]),
     max_retries=PERSIST_MAX_RETRIES,
     retry_backoff=True,
-    priority=CELERY_QUEUE_MAX_PRIORITY,
 )
-def _persist_task_status_task(  # type: ignore[call-overload]
+def _persist_task_status_task(
     task: Task,
     repository_type: type[BaseRepository],
     task_id: UUID,

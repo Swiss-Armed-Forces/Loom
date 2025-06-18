@@ -44,21 +44,6 @@ profiles:
               DOCKER_REGISTRY: "{{or .CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX \"docker.io\"}}"
             cacheFrom:
               - "registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/celery-worker"
-        - image: registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/celery-worker-interactive
-          context: backend
-          sync:
-            manual:
-              - src: "common/**"
-                dest: /code
-              - src: "worker/**"
-                dest: /code
-          docker:
-            dockerfile: worker.Dockerfile
-            target: dev-interactive
-            buildArgs:
-              DOCKER_REGISTRY: "{{or .CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX \"docker.io\"}}"
-            cacheFrom:
-              - "registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/celery-worker-interactive"
         - image: registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/celery-worker-beat
           context: backend
           sync:
@@ -74,21 +59,6 @@ profiles:
               DOCKER_REGISTRY: "{{or .CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX \"docker.io\"}}"
             cacheFrom:
               - "registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/celery-worker-beat"
-        - image: registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/celery-worker-periodic
-          context: backend
-          sync:
-            manual:
-              - src: "common/**"
-                dest: /code
-              - src: "worker/**"
-                dest: /code
-          docker:
-            dockerfile: worker.Dockerfile
-            target: dev-periodic
-            buildArgs:
-              DOCKER_REGISTRY: "{{or .CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX \"docker.io\"}}"
-            cacheFrom:
-              - "registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/celery-worker-periodic"
         - image: registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/celery-flower
           context: backend
           sync:
@@ -353,15 +323,6 @@ profiles:
               DOCKER_REGISTRY: "{{or .CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX \"docker.io\"}}"
             cacheFrom:
               - "registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/celery-worker"
-        - image: registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/celery-worker-interactive
-          context: backend
-          docker:
-            dockerfile: worker.Dockerfile
-            target: production-interactive
-            buildArgs:
-              DOCKER_REGISTRY: "{{or .CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX \"docker.io\"}}"
-            cacheFrom:
-              - "registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/celery-worker-interactive"
         - image: registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/celery-worker-beat
           context: backend
           docker:
@@ -371,15 +332,6 @@ profiles:
               DOCKER_REGISTRY: "{{or .CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX \"docker.io\"}}"
             cacheFrom:
               - "registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/celery-worker-beat"
-        - image: registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/celery-worker-periodic
-          context: backend
-          docker:
-            dockerfile: worker.Dockerfile
-            target: production-periodic
-            buildArgs:
-              DOCKER_REGISTRY: "{{or .CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX \"docker.io\"}}"
-            cacheFrom:
-              - "registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/celery-worker-periodic"
         - image: registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/celery-flower
           context: backend
           docker:
