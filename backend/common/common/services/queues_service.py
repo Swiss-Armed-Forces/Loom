@@ -4,11 +4,12 @@ from urllib.parse import quote
 import requests
 from requests import Response
 
+from common.celery_app import CELERY_QUEUE_NAME_PREFIX
+
 RABBITMQ_MANAGEMENT_REQUEST_TIMEOUT = 30  # in seconds
 
-# All application relevant queues must start with: "celery."
-# And by default do not include queues with: "__", those are private queues.
-QUEUES_NAME_REGEX = r"^celery(\.[a-zA-Z0-9]+)?$"
+# All application relevant queues must start with: CELERY_QUEUE_NAME_PREFIX
+QUEUES_NAME_REGEX = rf"^{CELERY_QUEUE_NAME_PREFIX}.*$"
 
 
 class QueuesService:

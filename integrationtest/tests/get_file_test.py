@@ -1,12 +1,14 @@
+import logging
 from pathlib import Path
 from tempfile import NamedTemporaryFile
+from uuid import UUID
 
 import pytest
-from api.routers.files import CONTENT_PREVIEW_LENGTH, FileUploadResponse
-from flaky import flaky  # type: ignore
+from api.routers.files import CONTENT_PREVIEW_LENGTH
+from pydantic import BaseModel
 from worker.services.tika_service import TIKA_MAX_TEXT_SIZE
 
-from utils.consts import ASSETS_DIR, FLAKY_MAX_RUNS
+from utils.consts import ASSETS_DIR, REQUEST_TIMEOUT
 from utils.fetch_from_api import (
     DEFAULT_MAX_WAIT_TIME_PER_FILE,
     fetch_files_from_api,
@@ -15,14 +17,20 @@ from utils.fetch_from_api import (
 )
 from utils.upload_asset import upload_asset
 
+logger = logging.getLogger(__name__)
+
+
+class FileInfo(BaseModel):
+    id: UUID
+    name: str
+
 
 class TestGetShortFile:
 
-    asset = "text.txt"
-
     @pytest.fixture(scope="class")
-    def upload_file_response(self) -> FileUploadResponse:
-        upload_file_response = upload_asset(self.asset)
+    def file_info(self) -> FileInfo:
+        asset = "text.txt"
+        upload_file_response = upload_asset(asset)
 
         # wait for assets to be processes
         search_string = "*"
@@ -30,79 +38,79 @@ class TestGetShortFile:
         fetch_files_from_api(
             search_string=search_string, expected_no_of_files=file_count
         )
-        return upload_file_response
+        return FileInfo(
+            name=asset,
+            id=upload_file_response.file_id,
+        )
 
-    def test_get_file(self, upload_file_response: FileUploadResponse):
-        actual = get_file_by_name(self.asset)
+    def test_get_file(self, file_info: FileInfo):
+        actual = get_file_by_name(file_info.name)
 
-        assert actual.file_id == upload_file_response.file_id
+        assert actual.file_id == file_info.id
         assert actual.content == "Dummy Text\n"
         assert actual.name == "text.txt"
 
-    def test_get_file_highlight_text(self, upload_file_response: FileUploadResponse):
+    def test_get_file_highlight_text(self, file_info: FileInfo):
         search_string = "Dummy"
-        actual = get_file_by_name(self.asset, search_string)
+        actual = get_file_by_name(file_info.name, search_string)
 
-        assert actual.file_id == upload_file_response.file_id
+        assert actual.file_id == file_info.id
         assert actual.highlight == {
             "content": [f"<highlight>{search_string}</highlight> Text"],
-            "short_name": [f"<highlight>{self.asset}</highlight>"],
+            "short_name": [f"<highlight>{file_info.name}</highlight>"],
         }
 
-    def test_get_file_preview(self, upload_file_response: FileUploadResponse):
-        actual = get_file_preview_by_name(self.asset)
+    def test_get_file_preview(self, file_info: FileInfo):
+        actual = get_file_preview_by_name(file_info.name)
 
-        assert actual.file_id == upload_file_response.file_id
+        assert actual.file_id == file_info.id
         assert actual.content == "Dummy Text\n"
         assert actual.content_is_truncated is False
         assert actual.name == "text.txt"
 
-    def test_get_file_preview_highlight_text(
-        self, upload_file_response: FileUploadResponse
-    ):
+    def test_get_file_preview_highlight_text(self, file_info: FileInfo):
         search_string = "Dummy"
-        actual = get_file_preview_by_name(self.asset, search_string)
+        actual = get_file_preview_by_name(file_info.name, search_string)
 
-        assert actual.file_id == upload_file_response.file_id
+        assert actual.file_id == file_info.id
         assert actual.highlight == {
             "content": [f"<highlight>{search_string}</highlight> Text"],
-            "short_name": [f"<highlight>{self.asset}</highlight>"],
+            "short_name": [f"<highlight>{file_info.name}</highlight>"],
         }
 
 
 class TestGetLongFile:
-    filename = ""
-
     @pytest.fixture(scope="class")
-    def upload_file_response(self) -> FileUploadResponse:
+    def file_info(self) -> FileInfo:
         with NamedTemporaryFile(mode="w+", dir=ASSETS_DIR) as tmp:
             tmp.write("a" * (TIKA_MAX_TEXT_SIZE + 1))
             tmp.flush()
-            self.filename = Path(tmp.name).name
-            upload_file_response = upload_asset(self.filename)
+            file_name = Path(tmp.name).name
+            file_upload_response = upload_asset(
+                file_name, request_timeout=REQUEST_TIMEOUT * 10
+            )
 
         search_string = "*"
         file_count = 1
         fetch_files_from_api(
             search_string=search_string, expected_no_of_files=file_count
         )
-        return upload_file_response
+        return FileInfo(
+            name=file_name,
+            id=file_upload_response.file_id,
+        )
 
-    @flaky(max_runs=FLAKY_MAX_RUNS)
-    def test_get_file_preview_truncate_text(
-        self, upload_file_response: FileUploadResponse
-    ):
-        actual = get_file_preview_by_name(self.filename)
+    def test_get_file_preview_truncate_text(self, file_info: FileInfo):
+        actual = get_file_preview_by_name(file_info.name)
 
-        assert actual.file_id == upload_file_response.file_id
+        assert actual.file_id == file_info.id
         assert actual.content_preview_is_truncated
         assert len(actual.content) <= CONTENT_PREVIEW_LENGTH
 
-    @flaky(max_runs=FLAKY_MAX_RUNS)
-    def test_get_file_truncate_text(self, upload_file_response: FileUploadResponse):
+    def test_get_file_truncate_text(self, file_info: FileInfo):
         actual = get_file_by_name(
-            self.filename, max_wait_time_per_file=DEFAULT_MAX_WAIT_TIME_PER_FILE * 2
+            file_info.name, max_wait_time_per_file=DEFAULT_MAX_WAIT_TIME_PER_FILE * 2
         )
 
-        assert actual.file_id == upload_file_response.file_id
+        assert actual.file_id == file_info.id
         assert len(actual.content) <= TIKA_MAX_TEXT_SIZE

@@ -4,7 +4,6 @@ import logging
 from uuid import UUID
 
 from celery import chain, group
-from common.celery_app import CELERY_QUEUE_MIN_PRIORITY
 from common.dependencies import (
     get_celery_app,
     get_file_repository,
@@ -41,10 +40,7 @@ def dispatch_reindex_file(file_id: UUID):
     get_file_scheduling_service().reindex_file(file_id=file_id)
 
 
-# Note: set priority here to the lowest possible, this is to prevent
-# loom from indexing new files when there are old files
-# still in beeing indexed.
-@app.task(base=FileIndexingTask, priority=CELERY_QUEUE_MIN_PRIORITY)
+@app.task(base=FileIndexingTask)
 def index_file_task(file: File, file_content: LazyBytes):
     logger.info("Indexing file with id '%s'", file.id_)
 

@@ -14,9 +14,11 @@ from common.dependencies import (
 )
 from common.dependencies import init as init_common_dependencies
 from common.elasticsearch import init_elasticsearch
-from crawler.dependencies import get_minio_client, init
+from crawler.dependencies import get_minio_client
+from crawler.dependencies import init as init_crawler_dependencies
 from crawler.settings import settings as crawler_settings
 from pymongo import MongoClient
+from worker.dependencies import init as init_worker_dependencies
 
 from utils.celery_inspect import is_celery_idle
 from utils.settings import settings
@@ -132,5 +134,6 @@ def _wipe_imap():
 
 if __name__ == "__main__":
     init_common_dependencies()
-    init()
+    init_worker_dependencies()
+    init_crawler_dependencies()
     wipe_data()

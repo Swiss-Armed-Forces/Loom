@@ -915,7 +915,7 @@
       "type": "stat"
     },
     {
-      "collapsed": false,
+      "collapsed": true,
       "gridPos": {
         "h": 1,
         "w": 24,
@@ -923,859 +923,854 @@
         "y": 6
       },
       "id": 4,
-      "panels": [],
+      "panels": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "custom": {
+                "align": "auto",
+                "cellOptions": {
+                  "type": "auto"
+                },
+                "inspect": false
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "percentage",
+                "steps": [
+                  {
+                    "color": "green"
+                  },
+                  {
+                    "color": "red",
+                    "value": 1
+                  }
+                ]
+              }
+            },
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "erlang_version"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "Erlang/OTP"
+                  },
+                  {
+                    "id": "unit",
+                    "value": "none"
+                  },
+                  {
+                    "id": "custom.align"
+                  },
+                  {
+                    "id": "thresholds",
+                    "value": {
+                      "mode": "absolute",
+                      "steps": [
+                        {
+                          "color": "rgba(50, 172, 45, 0.97)"
+                        },
+                        {
+                          "color": "rgba(237, 129, 40, 0.89)"
+                        }
+                      ]
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "rabbitmq_version"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "Version"
+                  },
+                  {
+                    "id": "thresholds",
+                    "value": {
+                      "mode": "absolute",
+                      "steps": [
+                        {
+                          "color": "rgba(245, 54, 54, 0.9)"
+                        },
+                        {
+                          "color": "rgba(237, 129, 40, 0.89)"
+                        }
+                      ]
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "instance"
+                },
+                "properties": [
+                  {
+                    "id": "custom.hidden",
+                    "value": true
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "rabbitmq_node"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "Node name"
+                  },
+                  {
+                    "id": "thresholds",
+                    "value": {
+                      "mode": "absolute",
+                      "steps": [
+                        {
+                          "color": "rgba(245, 54, 54, 0.9)"
+                        },
+                        {
+                          "color": "rgba(237, 129, 40, 0.89)"
+                        }
+                      ]
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Time"
+                },
+                "properties": [
+                  {
+                    "id": "custom.hidden",
+                    "value": true
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Value"
+                },
+                "properties": [
+                  {
+                    "id": "custom.hidden",
+                    "value": false
+                  },
+                  {
+                    "id": "unit",
+                    "value": "clocks"
+                  },
+                  {
+                    "id": "displayName",
+                    "value": "Uptime"
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "job"
+                },
+                "properties": [
+                  {
+                    "id": "custom.hidden",
+                    "value": true
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "rabbitmq_cluster"
+                },
+                "properties": [
+                  {
+                    "id": "custom.hidden",
+                    "value": true
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "prometheus_client_version"
+                },
+                "properties": [
+                  {
+                    "id": "custom.hidden",
+                    "value": true
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "prometheus_plugin_version"
+                },
+                "properties": [
+                  {
+                    "id": "custom.hidden",
+                    "value": true
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "namespace"
+                },
+                "properties": [
+                  {
+                    "id": "custom.hidden",
+                    "value": true
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "endpoint"
+                },
+                "properties": [
+                  {
+                    "id": "custom.hidden",
+                    "value": true
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "container"
+                },
+                "properties": [
+                  {
+                    "id": "custom.hidden",
+                    "value": true
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "service"
+                },
+                "properties": [
+                  {
+                    "id": "custom.hidden",
+                    "value": true
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "pod"
+                },
+                "properties": [
+                  {
+                    "id": "custom.hidden",
+                    "value": true
+                  }
+                ]
+              }
+            ]
+          },
+          "gridPos": {
+            "h": 5,
+            "w": 24,
+            "x": 0,
+            "y": 7
+          },
+          "id": 69,
+          "options": {
+            "cellHeight": "sm",
+            "footer": {
+              "countRows": false,
+              "fields": "",
+              "reducer": ["sum"],
+              "show": false
+            },
+            "showHeader": true
+          },
+          "pluginVersion": "10.4.3",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "PBFA97CFB590B2093"
+              },
+              "editorMode": "code",
+              "exemplar": false,
+              "expr": "rabbitmq_erlang_uptime_seconds *on(instance,job) group_left(rabbitmq_version, erlang_version) rabbitmq_build_info * on(instance, job) group_left(rabbitmq_cluster, rabbitmq_node) rabbitmq_identity_info{namespace=\"$namespace\", rabbitmq_cluster=\"$rabbitmq_cluster\", rabbitmq_endpoint=\"$endpoint\"}",
+              "format": "table",
+              "instant": true,
+              "interval": "",
+              "intervalFactor": 1,
+              "legendFormat": "",
+              "range": false,
+              "refId": "A"
+            }
+          ],
+          "transformations": [
+            {
+              "id": "organize",
+              "options": {
+                "excludeByName": {},
+                "includeByName": {},
+                "indexByName": {
+                  "Time": 3,
+                  "Value": 10,
+                  "erlang_version": 2,
+                  "instance": 4,
+                  "job": 5,
+                  "namespace": 6,
+                  "prometheus_client_version": 7,
+                  "prometheus_plugin_version": 8,
+                  "rabbitmq_cluster": 9,
+                  "rabbitmq_node": 0,
+                  "rabbitmq_version": 1
+                },
+                "renameByName": {}
+              }
+            }
+          ],
+          "type": "table"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
+          },
+          "description": "If the value is zero or less, the memory alarm will be triggered and all publishing connections across all cluster nodes will be blocked.\n\nThis value can temporarily go negative because the memory alarm is triggered with a slight delay.\n\nThe kernel's view of the amount of memory used by the node can differ from what the node itself can observe. This means that this value can be negative for a sustained period of time.\n\nBy default nodes use resident set size (RSS) to compute how much memory they use. This strategy can be changed (see the guides below).\n\n* [Alarms](https://www.rabbitmq.com/alarms.html)\n* [Memory Alarms](https://www.rabbitmq.com/memory.html)\n* [Reasoning About Memory Use](https://www.rabbitmq.com/memory-use.html)\n* [Blocked Connection Notifications](https://www.rabbitmq.com/connection-blocked.html)",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "drawStyle": "line",
+                "fillOpacity": 0,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "insertNulls": false,
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "never",
+                "spanNulls": true,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "line+area"
+                }
+              },
+              "decimals": 1,
+              "links": [],
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "red"
+                  },
+                  {
+                    "color": "orange",
+                    "value": 0
+                  },
+                  {
+                    "color": "transparent",
+                    "value": 536870912
+                  }
+                ]
+              },
+              "unit": "bytes"
+            },
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byRegexp",
+                  "options": "/^rabbit@[a-zA-Z\\.\\-]*?0(\\b|\\.)/"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "fixedColor": "#56A64B",
+                      "mode": "fixed"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byRegexp",
+                  "options": "/^rabbit@[a-zA-Z\\.\\-]*?1(\\b|\\.)/"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "fixedColor": "#F2CC0C",
+                      "mode": "fixed"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byRegexp",
+                  "options": "/^rabbit@[a-zA-Z\\.\\-]*?2(\\b|\\.)/"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "fixedColor": "#3274D9",
+                      "mode": "fixed"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byRegexp",
+                  "options": "/^rabbit@[a-zA-Z\\.\\-]*?3(\\b|\\.)/"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "fixedColor": "#A352CC",
+                      "mode": "fixed"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byRegexp",
+                  "options": "/^rabbit@[a-zA-Z\\.\\-]*?4(\\b|\\.)/"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "fixedColor": "#FF780A",
+                      "mode": "fixed"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byRegexp",
+                  "options": "/^rabbit@[a-zA-Z\\.\\-]*?5(\\b|\\.)/"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "fixedColor": "#96D98D",
+                      "mode": "fixed"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byRegexp",
+                  "options": "/^rabbit@[a-zA-Z\\.\\-]*?6(\\b|\\.)/"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "fixedColor": "#FFEE52",
+                      "mode": "fixed"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byRegexp",
+                  "options": "/^rabbit@[a-zA-Z\\.\\-]*?7(\\b|\\.)/"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "fixedColor": "#8AB8FF",
+                      "mode": "fixed"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byRegexp",
+                  "options": "/^rabbit@[a-zA-Z\\.\\-]*?8(\\b|\\.)/"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "fixedColor": "#CA95E5",
+                      "mode": "fixed"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byRegexp",
+                  "options": "/^rabbit@[a-zA-Z\\.\\-]*?9(\\b|\\.)/"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "fixedColor": "#FFB357",
+                      "mode": "fixed"
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 12
+          },
+          "id": 7,
+          "options": {
+            "legend": {
+              "calcs": ["lastNotNull", "max", "min"],
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": false
+            },
+            "tooltip": {
+              "hideZeros": false,
+              "mode": "multi",
+              "sort": "none"
+            }
+          },
+          "pluginVersion": "11.6.0",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "PBFA97CFB590B2093"
+              },
+              "editorMode": "code",
+              "expr": "(rabbitmq_resident_memory_limit_bytes * on(instance, job) group_left(rabbitmq_cluster, rabbitmq_node) rabbitmq_identity_info{rabbitmq_cluster=\"$rabbitmq_cluster\", namespace=\"$namespace\", rabbitmq_endpoint=\"$endpoint\"}) -\n(rabbitmq_process_resident_memory_bytes * on(instance, job) group_left(rabbitmq_cluster, rabbitmq_node) rabbitmq_identity_info{rabbitmq_cluster=\"$rabbitmq_cluster\", namespace=\"$namespace\", rabbitmq_endpoint=\"$endpoint\"})",
+              "format": "time_series",
+              "instant": false,
+              "intervalFactor": 1,
+              "legendFormat": "{{rabbitmq_node}}",
+              "refId": "A"
+            }
+          ],
+          "title": "Memory available before publishers blocked",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
+          },
+          "description": "This metric is reported for the partition where the RabbitMQ data directory is stored.\n\nIf the value is zero or less, the disk alarm will be triggered and all publishing connections across all cluster nodes will be blocked.\n\nThis value can temporarily go negative because the free disk space alarm is triggered with a slight delay.\n\n* [Alarms](https://www.rabbitmq.com/alarms.html)\n* [Disk Space Alarms](https://www.rabbitmq.com/disk-alarms.html)\n* [Disk Space](https://www.rabbitmq.com/production-checklist.html#resource-limits-disk-space)\n* [Persistence Configuration](https://www.rabbitmq.com/persistence-conf.html)\n* [Blocked Connection Notifications](https://www.rabbitmq.com/connection-blocked.html)",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "drawStyle": "line",
+                "fillOpacity": 0,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "insertNulls": false,
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "never",
+                "spanNulls": true,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "line+area"
+                }
+              },
+              "decimals": 1,
+              "links": [],
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "red"
+                  },
+                  {
+                    "color": "orange",
+                    "value": 1073741824
+                  },
+                  {
+                    "color": "transparent",
+                    "value": 5368709120
+                  }
+                ]
+              },
+              "unit": "bytes"
+            },
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byRegexp",
+                  "options": "/^rabbit@[a-zA-Z\\.\\-]*?0(\\b|\\.)/"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "fixedColor": "#56A64B",
+                      "mode": "fixed"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byRegexp",
+                  "options": "/^rabbit@[a-zA-Z\\.\\-]*?1(\\b|\\.)/"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "fixedColor": "#F2CC0C",
+                      "mode": "fixed"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byRegexp",
+                  "options": "/^rabbit@[a-zA-Z\\.\\-]*?2(\\b|\\.)/"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "fixedColor": "#3274D9",
+                      "mode": "fixed"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byRegexp",
+                  "options": "/^rabbit@[a-zA-Z\\.\\-]*?3(\\b|\\.)/"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "fixedColor": "#A352CC",
+                      "mode": "fixed"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byRegexp",
+                  "options": "/^rabbit@[a-zA-Z\\.\\-]*?4(\\b|\\.)/"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "fixedColor": "#FF780A",
+                      "mode": "fixed"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byRegexp",
+                  "options": "/^rabbit@[a-zA-Z\\.\\-]*?5(\\b|\\.)/"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "fixedColor": "#96D98D",
+                      "mode": "fixed"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byRegexp",
+                  "options": "/^rabbit@[a-zA-Z\\.\\-]*?6(\\b|\\.)/"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "fixedColor": "#FFEE52",
+                      "mode": "fixed"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byRegexp",
+                  "options": "/^rabbit@[a-zA-Z\\.\\-]*?7(\\b|\\.)/"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "fixedColor": "#8AB8FF",
+                      "mode": "fixed"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byRegexp",
+                  "options": "/^rabbit@[a-zA-Z\\.\\-]*?8(\\b|\\.)/"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "fixedColor": "#CA95E5",
+                      "mode": "fixed"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byRegexp",
+                  "options": "/^rabbit@[a-zA-Z\\.\\-]*?9(\\b|\\.)/"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "fixedColor": "#FFB357",
+                      "mode": "fixed"
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 12
+          },
+          "id": 8,
+          "options": {
+            "legend": {
+              "calcs": ["lastNotNull", "max", "min"],
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": false
+            },
+            "tooltip": {
+              "hideZeros": false,
+              "mode": "multi",
+              "sort": "none"
+            }
+          },
+          "pluginVersion": "11.6.0",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "PBFA97CFB590B2093"
+              },
+              "editorMode": "code",
+              "expr": "rabbitmq_disk_space_available_bytes * on(instance, job) group_left(rabbitmq_cluster, rabbitmq_node) rabbitmq_identity_info{rabbitmq_cluster=\"$rabbitmq_cluster\", namespace=\"$namespace\", rabbitmq_endpoint=\"$endpoint\"}",
+              "format": "time_series",
+              "instant": false,
+              "intervalFactor": 1,
+              "legendFormat": "{{rabbitmq_node}}",
+              "refId": "A"
+            }
+          ],
+          "title": "Disk space available before publishers blocked",
+          "type": "timeseries"
+        }
+      ],
       "title": "NODES",
       "type": "row"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "PBFA97CFB590B2093"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "custom": {
-            "align": "auto",
-            "cellOptions": {
-              "type": "auto"
-            },
-            "inspect": false
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "percentage",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "red",
-                "value": 1
-              }
-            ]
-          }
-        },
-        "overrides": [
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "erlang_version"
-            },
-            "properties": [
-              {
-                "id": "displayName",
-                "value": "Erlang/OTP"
-              },
-              {
-                "id": "unit",
-                "value": "none"
-              },
-              {
-                "id": "custom.align"
-              },
-              {
-                "id": "thresholds",
-                "value": {
-                  "mode": "absolute",
-                  "steps": [
-                    {
-                      "color": "rgba(50, 172, 45, 0.97)",
-                      "value": null
-                    },
-                    {
-                      "color": "rgba(237, 129, 40, 0.89)"
-                    }
-                  ]
-                }
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "rabbitmq_version"
-            },
-            "properties": [
-              {
-                "id": "displayName",
-                "value": "Version"
-              },
-              {
-                "id": "thresholds",
-                "value": {
-                  "mode": "absolute",
-                  "steps": [
-                    {
-                      "color": "rgba(245, 54, 54, 0.9)",
-                      "value": null
-                    },
-                    {
-                      "color": "rgba(237, 129, 40, 0.89)"
-                    }
-                  ]
-                }
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "instance"
-            },
-            "properties": [
-              {
-                "id": "custom.hidden",
-                "value": true
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "rabbitmq_node"
-            },
-            "properties": [
-              {
-                "id": "displayName",
-                "value": "Node name"
-              },
-              {
-                "id": "thresholds",
-                "value": {
-                  "mode": "absolute",
-                  "steps": [
-                    {
-                      "color": "rgba(245, 54, 54, 0.9)",
-                      "value": null
-                    },
-                    {
-                      "color": "rgba(237, 129, 40, 0.89)"
-                    }
-                  ]
-                }
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "Time"
-            },
-            "properties": [
-              {
-                "id": "custom.hidden",
-                "value": true
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "Value"
-            },
-            "properties": [
-              {
-                "id": "custom.hidden",
-                "value": false
-              },
-              {
-                "id": "unit",
-                "value": "clocks"
-              },
-              {
-                "id": "displayName",
-                "value": "Uptime"
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "job"
-            },
-            "properties": [
-              {
-                "id": "custom.hidden",
-                "value": true
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "rabbitmq_cluster"
-            },
-            "properties": [
-              {
-                "id": "custom.hidden",
-                "value": true
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "prometheus_client_version"
-            },
-            "properties": [
-              {
-                "id": "custom.hidden",
-                "value": true
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "prometheus_plugin_version"
-            },
-            "properties": [
-              {
-                "id": "custom.hidden",
-                "value": true
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "namespace"
-            },
-            "properties": [
-              {
-                "id": "custom.hidden",
-                "value": true
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "endpoint"
-            },
-            "properties": [
-              {
-                "id": "custom.hidden",
-                "value": true
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "container"
-            },
-            "properties": [
-              {
-                "id": "custom.hidden",
-                "value": true
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "service"
-            },
-            "properties": [
-              {
-                "id": "custom.hidden",
-                "value": true
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "pod"
-            },
-            "properties": [
-              {
-                "id": "custom.hidden",
-                "value": true
-              }
-            ]
-          }
-        ]
-      },
-      "gridPos": {
-        "h": 5,
-        "w": 24,
-        "x": 0,
-        "y": 7
-      },
-      "id": 69,
-      "options": {
-        "cellHeight": "sm",
-        "footer": {
-          "countRows": false,
-          "fields": "",
-          "reducer": ["sum"],
-          "show": false
-        },
-        "showHeader": true
-      },
-      "pluginVersion": "10.4.3",
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
-          },
-          "editorMode": "code",
-          "exemplar": false,
-          "expr": "rabbitmq_erlang_uptime_seconds *on(instance,job) group_left(rabbitmq_version, erlang_version) rabbitmq_build_info * on(instance, job) group_left(rabbitmq_cluster, rabbitmq_node) rabbitmq_identity_info{namespace=\"$namespace\", rabbitmq_cluster=\"$rabbitmq_cluster\", rabbitmq_endpoint=\"$endpoint\"}",
-          "format": "table",
-          "instant": true,
-          "interval": "",
-          "intervalFactor": 1,
-          "legendFormat": "",
-          "range": false,
-          "refId": "A"
-        }
-      ],
-      "transformations": [
-        {
-          "id": "organize",
-          "options": {
-            "excludeByName": {},
-            "includeByName": {},
-            "indexByName": {
-              "Time": 3,
-              "Value": 10,
-              "erlang_version": 2,
-              "instance": 4,
-              "job": 5,
-              "namespace": 6,
-              "prometheus_client_version": 7,
-              "prometheus_plugin_version": 8,
-              "rabbitmq_cluster": 9,
-              "rabbitmq_node": 0,
-              "rabbitmq_version": 1
-            },
-            "renameByName": {}
-          }
-        }
-      ],
-      "type": "table"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "PBFA97CFB590B2093"
-      },
-      "description": "If the value is zero or less, the memory alarm will be triggered and all publishing connections across all cluster nodes will be blocked.\n\nThis value can temporarily go negative because the memory alarm is triggered with a slight delay.\n\nThe kernel's view of the amount of memory used by the node can differ from what the node itself can observe. This means that this value can be negative for a sustained period of time.\n\nBy default nodes use resident set size (RSS) to compute how much memory they use. This strategy can be changed (see the guides below).\n\n* [Alarms](https://www.rabbitmq.com/alarms.html)\n* [Memory Alarms](https://www.rabbitmq.com/memory.html)\n* [Reasoning About Memory Use](https://www.rabbitmq.com/memory-use.html)\n* [Blocked Connection Notifications](https://www.rabbitmq.com/connection-blocked.html)",
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisBorderShow": false,
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "drawStyle": "line",
-            "fillOpacity": 0,
-            "gradientMode": "none",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "insertNulls": false,
-            "lineInterpolation": "linear",
-            "lineWidth": 1,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "never",
-            "spanNulls": true,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "line+area"
-            }
-          },
-          "decimals": 1,
-          "links": [],
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "red",
-                "value": null
-              },
-              {
-                "color": "orange",
-                "value": 0
-              },
-              {
-                "color": "transparent",
-                "value": 536870912
-              }
-            ]
-          },
-          "unit": "bytes"
-        },
-        "overrides": [
-          {
-            "matcher": {
-              "id": "byRegexp",
-              "options": "/^rabbit@[a-zA-Z\\.\\-]*?0(\\b|\\.)/"
-            },
-            "properties": [
-              {
-                "id": "color",
-                "value": {
-                  "fixedColor": "#56A64B",
-                  "mode": "fixed"
-                }
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byRegexp",
-              "options": "/^rabbit@[a-zA-Z\\.\\-]*?1(\\b|\\.)/"
-            },
-            "properties": [
-              {
-                "id": "color",
-                "value": {
-                  "fixedColor": "#F2CC0C",
-                  "mode": "fixed"
-                }
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byRegexp",
-              "options": "/^rabbit@[a-zA-Z\\.\\-]*?2(\\b|\\.)/"
-            },
-            "properties": [
-              {
-                "id": "color",
-                "value": {
-                  "fixedColor": "#3274D9",
-                  "mode": "fixed"
-                }
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byRegexp",
-              "options": "/^rabbit@[a-zA-Z\\.\\-]*?3(\\b|\\.)/"
-            },
-            "properties": [
-              {
-                "id": "color",
-                "value": {
-                  "fixedColor": "#A352CC",
-                  "mode": "fixed"
-                }
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byRegexp",
-              "options": "/^rabbit@[a-zA-Z\\.\\-]*?4(\\b|\\.)/"
-            },
-            "properties": [
-              {
-                "id": "color",
-                "value": {
-                  "fixedColor": "#FF780A",
-                  "mode": "fixed"
-                }
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byRegexp",
-              "options": "/^rabbit@[a-zA-Z\\.\\-]*?5(\\b|\\.)/"
-            },
-            "properties": [
-              {
-                "id": "color",
-                "value": {
-                  "fixedColor": "#96D98D",
-                  "mode": "fixed"
-                }
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byRegexp",
-              "options": "/^rabbit@[a-zA-Z\\.\\-]*?6(\\b|\\.)/"
-            },
-            "properties": [
-              {
-                "id": "color",
-                "value": {
-                  "fixedColor": "#FFEE52",
-                  "mode": "fixed"
-                }
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byRegexp",
-              "options": "/^rabbit@[a-zA-Z\\.\\-]*?7(\\b|\\.)/"
-            },
-            "properties": [
-              {
-                "id": "color",
-                "value": {
-                  "fixedColor": "#8AB8FF",
-                  "mode": "fixed"
-                }
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byRegexp",
-              "options": "/^rabbit@[a-zA-Z\\.\\-]*?8(\\b|\\.)/"
-            },
-            "properties": [
-              {
-                "id": "color",
-                "value": {
-                  "fixedColor": "#CA95E5",
-                  "mode": "fixed"
-                }
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byRegexp",
-              "options": "/^rabbit@[a-zA-Z\\.\\-]*?9(\\b|\\.)/"
-            },
-            "properties": [
-              {
-                "id": "color",
-                "value": {
-                  "fixedColor": "#FFB357",
-                  "mode": "fixed"
-                }
-              }
-            ]
-          }
-        ]
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 0,
-        "y": 12
-      },
-      "id": 7,
-      "options": {
-        "legend": {
-          "calcs": ["lastNotNull", "max", "min"],
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": false
-        },
-        "tooltip": {
-          "hideZeros": false,
-          "mode": "multi",
-          "sort": "none"
-        }
-      },
-      "pluginVersion": "11.6.0",
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
-          },
-          "editorMode": "code",
-          "expr": "(rabbitmq_resident_memory_limit_bytes * on(instance, job) group_left(rabbitmq_cluster, rabbitmq_node) rabbitmq_identity_info{rabbitmq_cluster=\"$rabbitmq_cluster\", namespace=\"$namespace\", rabbitmq_endpoint=\"$endpoint\"}) -\n(rabbitmq_process_resident_memory_bytes * on(instance, job) group_left(rabbitmq_cluster, rabbitmq_node) rabbitmq_identity_info{rabbitmq_cluster=\"$rabbitmq_cluster\", namespace=\"$namespace\", rabbitmq_endpoint=\"$endpoint\"})",
-          "format": "time_series",
-          "instant": false,
-          "intervalFactor": 1,
-          "legendFormat": "{{rabbitmq_node}}",
-          "refId": "A"
-        }
-      ],
-      "title": "Memory available before publishers blocked",
-      "type": "timeseries"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "PBFA97CFB590B2093"
-      },
-      "description": "This metric is reported for the partition where the RabbitMQ data directory is stored.\n\nIf the value is zero or less, the disk alarm will be triggered and all publishing connections across all cluster nodes will be blocked.\n\nThis value can temporarily go negative because the free disk space alarm is triggered with a slight delay.\n\n* [Alarms](https://www.rabbitmq.com/alarms.html)\n* [Disk Space Alarms](https://www.rabbitmq.com/disk-alarms.html)\n* [Disk Space](https://www.rabbitmq.com/production-checklist.html#resource-limits-disk-space)\n* [Persistence Configuration](https://www.rabbitmq.com/persistence-conf.html)\n* [Blocked Connection Notifications](https://www.rabbitmq.com/connection-blocked.html)",
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisBorderShow": false,
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "drawStyle": "line",
-            "fillOpacity": 0,
-            "gradientMode": "none",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "insertNulls": false,
-            "lineInterpolation": "linear",
-            "lineWidth": 1,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "never",
-            "spanNulls": true,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "line+area"
-            }
-          },
-          "decimals": 1,
-          "links": [],
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "red",
-                "value": null
-              },
-              {
-                "color": "orange",
-                "value": 1073741824
-              },
-              {
-                "color": "transparent",
-                "value": 5368709120
-              }
-            ]
-          },
-          "unit": "bytes"
-        },
-        "overrides": [
-          {
-            "matcher": {
-              "id": "byRegexp",
-              "options": "/^rabbit@[a-zA-Z\\.\\-]*?0(\\b|\\.)/"
-            },
-            "properties": [
-              {
-                "id": "color",
-                "value": {
-                  "fixedColor": "#56A64B",
-                  "mode": "fixed"
-                }
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byRegexp",
-              "options": "/^rabbit@[a-zA-Z\\.\\-]*?1(\\b|\\.)/"
-            },
-            "properties": [
-              {
-                "id": "color",
-                "value": {
-                  "fixedColor": "#F2CC0C",
-                  "mode": "fixed"
-                }
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byRegexp",
-              "options": "/^rabbit@[a-zA-Z\\.\\-]*?2(\\b|\\.)/"
-            },
-            "properties": [
-              {
-                "id": "color",
-                "value": {
-                  "fixedColor": "#3274D9",
-                  "mode": "fixed"
-                }
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byRegexp",
-              "options": "/^rabbit@[a-zA-Z\\.\\-]*?3(\\b|\\.)/"
-            },
-            "properties": [
-              {
-                "id": "color",
-                "value": {
-                  "fixedColor": "#A352CC",
-                  "mode": "fixed"
-                }
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byRegexp",
-              "options": "/^rabbit@[a-zA-Z\\.\\-]*?4(\\b|\\.)/"
-            },
-            "properties": [
-              {
-                "id": "color",
-                "value": {
-                  "fixedColor": "#FF780A",
-                  "mode": "fixed"
-                }
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byRegexp",
-              "options": "/^rabbit@[a-zA-Z\\.\\-]*?5(\\b|\\.)/"
-            },
-            "properties": [
-              {
-                "id": "color",
-                "value": {
-                  "fixedColor": "#96D98D",
-                  "mode": "fixed"
-                }
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byRegexp",
-              "options": "/^rabbit@[a-zA-Z\\.\\-]*?6(\\b|\\.)/"
-            },
-            "properties": [
-              {
-                "id": "color",
-                "value": {
-                  "fixedColor": "#FFEE52",
-                  "mode": "fixed"
-                }
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byRegexp",
-              "options": "/^rabbit@[a-zA-Z\\.\\-]*?7(\\b|\\.)/"
-            },
-            "properties": [
-              {
-                "id": "color",
-                "value": {
-                  "fixedColor": "#8AB8FF",
-                  "mode": "fixed"
-                }
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byRegexp",
-              "options": "/^rabbit@[a-zA-Z\\.\\-]*?8(\\b|\\.)/"
-            },
-            "properties": [
-              {
-                "id": "color",
-                "value": {
-                  "fixedColor": "#CA95E5",
-                  "mode": "fixed"
-                }
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byRegexp",
-              "options": "/^rabbit@[a-zA-Z\\.\\-]*?9(\\b|\\.)/"
-            },
-            "properties": [
-              {
-                "id": "color",
-                "value": {
-                  "fixedColor": "#FFB357",
-                  "mode": "fixed"
-                }
-              }
-            ]
-          }
-        ]
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 12
-      },
-      "id": 8,
-      "options": {
-        "legend": {
-          "calcs": ["lastNotNull", "max", "min"],
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": false
-        },
-        "tooltip": {
-          "hideZeros": false,
-          "mode": "multi",
-          "sort": "none"
-        }
-      },
-      "pluginVersion": "11.6.0",
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
-          },
-          "editorMode": "code",
-          "expr": "rabbitmq_disk_space_available_bytes * on(instance, job) group_left(rabbitmq_cluster, rabbitmq_node) rabbitmq_identity_info{rabbitmq_cluster=\"$rabbitmq_cluster\", namespace=\"$namespace\", rabbitmq_endpoint=\"$endpoint\"}",
-          "format": "time_series",
-          "instant": false,
-          "intervalFactor": 1,
-          "legendFormat": "{{rabbitmq_node}}",
-          "refId": "A"
-        }
-      ],
-      "title": "Disk space available before publishers blocked",
-      "type": "timeseries"
     },
     {
       "collapsed": false,
@@ -1783,7 +1778,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 20
+        "y": 7
       },
       "id": 27,
       "panels": [],
@@ -2006,23 +2001,25 @@
         ]
       },
       "gridPos": {
-        "h": 5,
+        "h": 12,
         "w": 12,
         "x": 0,
-        "y": 21
+        "y": 8
       },
       "id": 9,
       "options": {
         "legend": {
           "calcs": ["lastNotNull", "max", "min"],
-          "displayMode": "list",
+          "displayMode": "table",
           "placement": "bottom",
-          "showLegend": false
+          "showLegend": true,
+          "sortBy": "Last *",
+          "sortDesc": true
         },
         "tooltip": {
           "hideZeros": false,
           "mode": "multi",
-          "sort": "none"
+          "sort": "desc"
         }
       },
       "pluginVersion": "11.6.0",
@@ -2033,11 +2030,11 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "sum(rabbitmq_queue_messages_ready * on(instance, job) group_left(rabbitmq_cluster, rabbitmq_node) rabbitmq_identity_info{rabbitmq_cluster=\"$rabbitmq_cluster\", namespace=\"$namespace\", rabbitmq_endpoint=\"$endpoint\"}) by(rabbitmq_node)",
+          "expr": "sum(rabbitmq_queue_messages_ready * on(instance, job) group_left(rabbitmq_cluster, rabbitmq_node) rabbitmq_identity_info{rabbitmq_cluster=\"$rabbitmq_cluster\", namespace=\"$namespace\", rabbitmq_endpoint=\"$endpoint\"}) by(queue)",
           "format": "time_series",
           "instant": false,
           "intervalFactor": 1,
-          "legendFormat": "{{rabbitmq_node}}",
+          "legendFormat": "{{queue}}",
           "refId": "A"
         }
       ],
@@ -2260,23 +2257,25 @@
         ]
       },
       "gridPos": {
-        "h": 5,
+        "h": 12,
         "w": 12,
         "x": 12,
-        "y": 21
+        "y": 8
       },
-      "id": 19,
+      "id": 75,
       "options": {
         "legend": {
           "calcs": ["lastNotNull", "max", "min"],
-          "displayMode": "list",
+          "displayMode": "table",
           "placement": "bottom",
-          "showLegend": false
+          "showLegend": true,
+          "sortBy": "Last *",
+          "sortDesc": true
         },
         "tooltip": {
           "hideZeros": false,
           "mode": "multi",
-          "sort": "none"
+          "sort": "desc"
         }
       },
       "pluginVersion": "11.6.0",
@@ -2287,11 +2286,11 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "sum(rabbitmq_queue_messages_unacked * on(instance, job) group_left(rabbitmq_cluster, rabbitmq_node) rabbitmq_identity_info{rabbitmq_cluster=\"$rabbitmq_cluster\", namespace=\"$namespace\", rabbitmq_endpoint=\"$endpoint\"}) by(rabbitmq_node)",
+          "expr": "sum(rabbitmq_queue_messages_unacked * on(instance, job) group_left(rabbitmq_cluster, rabbitmq_node) rabbitmq_identity_info{rabbitmq_cluster=\"$rabbitmq_cluster\", namespace=\"$namespace\", rabbitmq_endpoint=\"$endpoint\"}) by(queue)",
           "format": "time_series",
           "instant": false,
           "intervalFactor": 1,
-          "legendFormat": "{{rabbitmq_node}}",
+          "legendFormat": "{{queue}}",
           "refId": "A"
         }
       ],
@@ -2304,7 +2303,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 26
+        "y": 20
       },
       "id": 11,
       "panels": [],
@@ -2329,7 +2328,6 @@
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
-            "barWidthFactor": 0.6,
             "drawStyle": "line",
             "fillOpacity": 100,
             "gradientMode": "none",
@@ -2363,7 +2361,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
               },
               {
                 "color": "red",
@@ -2530,7 +2529,7 @@
         "h": 5,
         "w": 12,
         "x": 0,
-        "y": 27
+        "y": 21
       },
       "id": 13,
       "options": {
@@ -2584,7 +2583,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
               },
               {
                 "color": "red",
@@ -2600,7 +2600,7 @@
         "h": 5,
         "w": 2,
         "x": 12,
-        "y": 27
+        "y": 21
       },
       "id": 73,
       "interval": "30s",
@@ -2619,7 +2619,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "11.6.0",
+      "pluginVersion": "10.4.3",
       "targets": [
         {
           "datasource": {
@@ -2659,7 +2659,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
               },
               {
                 "color": "red",
@@ -2811,7 +2812,7 @@
         "h": 5,
         "w": 10,
         "x": 14,
-        "y": 27
+        "y": 21
       },
       "id": 74,
       "options": {
@@ -2836,7 +2837,7 @@
         "sizing": "auto",
         "valueMode": "color"
       },
-      "pluginVersion": "11.6.0",
+      "pluginVersion": "10.4.3",
       "targets": [
         {
           "datasource": {
@@ -2995,7 +2996,6 @@
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
-            "barWidthFactor": 0.6,
             "drawStyle": "line",
             "fillOpacity": 100,
             "gradientMode": "none",
@@ -3196,7 +3196,7 @@
         "h": 5,
         "w": 12,
         "x": 0,
-        "y": 32
+        "y": 26
       },
       "id": 61,
       "options": {
@@ -3249,7 +3249,6 @@
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
-            "barWidthFactor": 0.6,
             "drawStyle": "line",
             "fillOpacity": 100,
             "gradientMode": "none",
@@ -3450,7 +3449,7 @@
         "h": 5,
         "w": 12,
         "x": 12,
-        "y": 32
+        "y": 26
       },
       "id": 18,
       "options": {
@@ -3503,7 +3502,6 @@
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
-            "barWidthFactor": 0.6,
             "drawStyle": "line",
             "fillOpacity": 100,
             "gradientMode": "none",
@@ -3568,7 +3566,7 @@
         "h": 5,
         "w": 12,
         "x": 0,
-        "y": 37
+        "y": 31
       },
       "id": 34,
       "options": {
@@ -3634,7 +3632,6 @@
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
-            "barWidthFactor": 0.6,
             "drawStyle": "line",
             "fillOpacity": 100,
             "gradientMode": "none",
@@ -3835,7 +3832,7 @@
         "h": 5,
         "w": 12,
         "x": 12,
-        "y": 37
+        "y": 31
       },
       "id": 12,
       "options": {
@@ -3876,7 +3873,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 42
+        "y": 36
       },
       "id": 29,
       "panels": [],
@@ -3901,7 +3898,6 @@
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
-            "barWidthFactor": 0.6,
             "drawStyle": "line",
             "fillOpacity": 100,
             "gradientMode": "none",
@@ -4102,7 +4098,7 @@
         "h": 5,
         "w": 12,
         "x": 0,
-        "y": 43
+        "y": 37
       },
       "id": 14,
       "options": {
@@ -4155,7 +4151,6 @@
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
-            "barWidthFactor": 0.6,
             "drawStyle": "line",
             "fillOpacity": 100,
             "gradientMode": "none",
@@ -4359,7 +4354,7 @@
         "h": 5,
         "w": 12,
         "x": 12,
-        "y": 43
+        "y": 37
       },
       "id": 15,
       "options": {
@@ -4412,7 +4407,6 @@
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
-            "barWidthFactor": 0.6,
             "drawStyle": "line",
             "fillOpacity": 100,
             "gradientMode": "none",
@@ -4613,7 +4607,7 @@
         "h": 5,
         "w": 12,
         "x": 0,
-        "y": 48
+        "y": 42
       },
       "id": 20,
       "options": {
@@ -4666,7 +4660,6 @@
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
-            "barWidthFactor": 0.6,
             "drawStyle": "line",
             "fillOpacity": 100,
             "gradientMode": "none",
@@ -4867,7 +4860,7 @@
         "h": 5,
         "w": 12,
         "x": 12,
-        "y": 48
+        "y": 42
       },
       "id": 21,
       "options": {
@@ -4920,7 +4913,6 @@
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
-            "barWidthFactor": 0.6,
             "drawStyle": "line",
             "fillOpacity": 100,
             "gradientMode": "none",
@@ -5121,7 +5113,7 @@
         "h": 5,
         "w": 12,
         "x": 0,
-        "y": 53
+        "y": 47
       },
       "id": 22,
       "options": {
@@ -5174,7 +5166,6 @@
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
-            "barWidthFactor": 0.6,
             "drawStyle": "line",
             "fillOpacity": 100,
             "gradientMode": "none",
@@ -5239,7 +5230,7 @@
         "h": 5,
         "w": 12,
         "x": 12,
-        "y": 53
+        "y": 47
       },
       "id": 24,
       "options": {
@@ -5292,7 +5283,6 @@
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
-            "barWidthFactor": 0.6,
             "drawStyle": "line",
             "fillOpacity": 100,
             "gradientMode": "none",
@@ -5357,7 +5347,7 @@
         "h": 5,
         "w": 12,
         "x": 0,
-        "y": 58
+        "y": 52
       },
       "id": 25,
       "options": {
@@ -5410,7 +5400,6 @@
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
-            "barWidthFactor": 0.6,
             "drawStyle": "line",
             "fillOpacity": 100,
             "gradientMode": "none",
@@ -5475,7 +5464,7 @@
         "h": 5,
         "w": 12,
         "x": 12,
-        "y": 58
+        "y": 52
       },
       "id": 23,
       "options": {
@@ -5516,7 +5505,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 63
+        "y": 57
       },
       "id": 53,
       "panels": [],
@@ -5741,7 +5730,7 @@
         "h": 5,
         "w": 12,
         "x": 0,
-        "y": 64
+        "y": 58
       },
       "id": 57,
       "options": {
@@ -5999,7 +5988,7 @@
         "h": 5,
         "w": 4,
         "x": 12,
-        "y": 64
+        "y": 58
       },
       "id": 58,
       "options": {
@@ -6256,7 +6245,7 @@
         "h": 5,
         "w": 4,
         "x": 16,
-        "y": 64
+        "y": 58
       },
       "id": 60,
       "options": {
@@ -6513,7 +6502,7 @@
         "h": 5,
         "w": 4,
         "x": 20,
-        "y": 64
+        "y": 58
       },
       "id": 59,
       "options": {
@@ -6554,7 +6543,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 69
+        "y": 63
       },
       "id": 51,
       "panels": [],
@@ -6779,7 +6768,7 @@
         "h": 5,
         "w": 12,
         "x": 0,
-        "y": 70
+        "y": 64
       },
       "id": 54,
       "options": {
@@ -7036,7 +7025,7 @@
         "h": 5,
         "w": 6,
         "x": 12,
-        "y": 70
+        "y": 64
       },
       "id": 55,
       "options": {
@@ -7293,7 +7282,7 @@
         "h": 5,
         "w": 6,
         "x": 18,
-        "y": 70
+        "y": 64
       },
       "id": 56,
       "options": {
@@ -7334,7 +7323,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 75
+        "y": 69
       },
       "id": 46,
       "panels": [],
@@ -7559,7 +7548,7 @@
         "h": 5,
         "w": 12,
         "x": 0,
-        "y": 76
+        "y": 70
       },
       "id": 47,
       "options": {
@@ -7816,7 +7805,7 @@
         "h": 5,
         "w": 6,
         "x": 12,
-        "y": 76
+        "y": 70
       },
       "id": 48,
       "options": {
@@ -8074,7 +8063,7 @@
         "h": 5,
         "w": 6,
         "x": 18,
-        "y": 76
+        "y": 70
       },
       "id": 49,
       "options": {
@@ -8195,10 +8184,9 @@
         "allValue": ".*",
         "allowCustomValue": false,
         "current": {
-          "isNone": true,
           "selected": false,
-          "text": "None",
-          "value": ""
+          "text": "per-object",
+          "value": "per-object"
         },
         "datasource": {
           "type": "prometheus",
@@ -8226,7 +8214,7 @@
     ]
   },
   "time": {
-    "from": "now-1h",
+    "from": "now-15m",
     "to": "now"
   },
   "timepicker": {
@@ -8235,6 +8223,6 @@
   "timezone": "",
   "title": "RabbitMQ-Overview",
   "uid": "Kn5xm-gZk",
-  "version": 2,
+  "version": 1,
   "weekStart": ""
 }

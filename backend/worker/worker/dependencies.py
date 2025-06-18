@@ -1,11 +1,13 @@
 from unittest.mock import MagicMock
 
 from common import dependencies as common_dependencies
+from common.celery_app import register_queues_for_package
 from common.dependencies import DependencyException
 from ollama import Client
 
 from worker.services.tika_service import TikaService
 from worker.settings import settings
+from worker.utils.patch_group import patch_group
 
 _tika_service: TikaService | None = None
 
@@ -14,6 +16,11 @@ _ollama_client: Client | None = None
 
 def init():
     # pylint: disable=global-statement
+
+    # init celery with worker tasks
+    app = common_dependencies.get_celery_app()
+    patch_group(app=app)
+    register_queues_for_package(app=app, package="worker")
 
     global _tika_service
     _tika_service = TikaService(common_dependencies.get_lazybytes_service())

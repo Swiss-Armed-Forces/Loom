@@ -38,10 +38,8 @@ celery:
     ingress: *default-ingress-config
   worker:
     main:
-      hpa: &default-celery-worker-hpa
+      hpa:
         enabled: false
-    interactive:
-      hpa: *default-celery-worker-hpa
 
 elasticsearch:
   ingress: *default-ingress-config
