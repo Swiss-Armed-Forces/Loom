@@ -104,7 +104,7 @@ export function FolderView() {
     });
 
     const handleExpandedItemsChange = (
-        _: React.SyntheticEvent,
+        _: React.SyntheticEvent | null,
         nodeIds: string[],
     ) => {
         folderDispatch({

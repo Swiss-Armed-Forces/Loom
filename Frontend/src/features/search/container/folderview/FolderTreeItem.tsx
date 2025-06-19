@@ -89,11 +89,7 @@ export function FolderViewNode({
                 <Chip label={tree.fileCount} size="small" />
             )}
             <IconButton
-                onClick={() =>
-                    handleUpdateQueryFilename(
-                        `"${tree.id.replace(/["]/g, '\\"')}"`,
-                    )
-                }
+                onClick={() => handleUpdateQueryFilename(tree.id)}
                 title={t("folderView.addPathToQueryTooltip")}
             >
                 <Search />

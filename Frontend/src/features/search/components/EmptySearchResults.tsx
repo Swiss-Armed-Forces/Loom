@@ -178,10 +178,10 @@ export function EmptySearchResults() {
                                     <span
                                         className={styles.clickableSpan}
                                         onClick={() => {
-                                            performSearch("tag:interesting");
+                                            performSearch("tags:interesting");
                                         }}
                                     >
-                                        tag:interesting
+                                        tags:interesting
                                     </span>{" "}
                                     - {t("emptySearch.tips.tags")}
                                 </li>
@@ -190,11 +190,11 @@ export function EmptySearchResults() {
                                         className={styles.clickableSpan}
                                         onClick={() => {
                                             performSearch(
-                                                "NOT tag:interesting",
+                                                "NOT tags:interesting",
                                             );
                                         }}
                                     >
-                                        NOT tag:interesting
+                                        NOT tags:interesting
                                     </span>{" "}
                                     - {t("emptySearch.tips.tagsNegate")}
                                 </li>
@@ -227,11 +227,11 @@ export function EmptySearchResults() {
                                         className={styles.clickableSpan}
                                         onClick={() => {
                                             performSearch(
-                                                "tag:interesting AND when:today",
+                                                "tags:interesting AND when:today",
                                             );
                                         }}
                                     >
-                                        tag:interesting AND when:today
+                                        tags:interesting AND when:today
                                     </span>{" "}
                                     - {t("emptySearch.tips.and")}
                                 </li>
@@ -240,11 +240,11 @@ export function EmptySearchResults() {
                                         className={styles.clickableSpan}
                                         onClick={() => {
                                             performSearch(
-                                                "tag:interesting OR when:today",
+                                                "tags:interesting OR when:today",
                                             );
                                         }}
                                     >
-                                        tag:interesting OR when:today
+                                        tags:interesting OR when:today
                                     </span>{" "}
                                     - {t("emptySearch.tips.or")}
                                 </li>

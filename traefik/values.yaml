@@ -3,7 +3,7 @@ namespace: loom
 image:
   registry: registry.gitlab.com
   repository: swiss-armed-forces/cyber-command/cea/loom/traefik
-  tag: v3.3.2
+  tag: v3.4.1
 
 # expose traefik ui
 ingressRoute:

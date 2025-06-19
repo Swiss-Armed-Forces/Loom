@@ -136,7 +136,7 @@ export function StatisticsView() {
             className={styles.statisticsContainer}
             columns={12}
         >
-            <Grid item xs={3}>
+            <Grid size={{ xs: 3 }}>
                 <Typography variant="h4">
                     {t("statisticsView.summaryTitle")}
                 </Typography>
@@ -195,7 +195,7 @@ export function StatisticsView() {
                 </List>
             </Grid>
             {!!stats?.generic && (
-                <Grid item xs={5}>
+                <Grid size={{ xs: 5 }}>
                     <Chart
                         entries={stats?.generic?.data}
                         title={t(`statisticsView.${stats.generic?.stat}Title`)}
@@ -205,7 +205,7 @@ export function StatisticsView() {
                     ></Chart>
                 </Grid>
             )}
-            <Grid item xs={2}>
+            <Grid size={{ xs: 2 }}>
                 <FormControl fullWidth>
                     <InputLabel id="stat-select-label">Stat</InputLabel>
                     <Select

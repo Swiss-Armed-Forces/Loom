@@ -163,7 +163,7 @@
         "tagDialogTitle": "Add tags to file",
         "tagDialogInputPlaceholder": "Add tag",
         "tagDialogSubmit": "Add",
-        "tagDialogHint": "You can add existing tags or create a new one (press enter after to create the new tag)",
+        "tagDialogHint": "You can add existing tags or create a new one",
         "scheduledToast": "Tagging successfully scheduled, this might take a while",
         "scheduledErrorToast": "Can not tag files. Code: {{err.status}}, Text: {{err.text}}"
     },

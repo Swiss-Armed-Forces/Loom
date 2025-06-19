@@ -1,4 +1,4 @@
-ARG DIND_IMAGE_VERSION="27.5.1-dind"
+ARG DIND_IMAGE_VERSION="28.2.2-dind-alpine3.22"
 
 ARG DOCKER_REGISTRY
 FROM ${DOCKER_REGISTRY}/docker:${DIND_IMAGE_VERSION}
@@ -23,7 +23,7 @@ SHELL ["/bin/bash", "--login", "-c"]
 #
 # Sudo
 #
-ARG SUDO_VERSION="1.9.16_p2-r0"
+ARG SUDO_VERSION="1.9.16_p2-r1"
 RUN set -exu \
     && apk add --no-cache \
     sudo=${SUDO_VERSION}
@@ -48,7 +48,7 @@ RUN set -exu \
 #
 # Install tailscale
 #
-ARG TAILSCALE_VERSION="1.76.6-r8"
+ARG TAILSCALE_VERSION="1.84.2-r0"
 RUN set -exu \
     && apk add --no-cache \
     tailscale="${TAILSCALE_VERSION}"
@@ -56,7 +56,7 @@ RUN set -exu \
 #
 # Install nix (package version)
 #
-#ARG NIX_VERSION="2.23.3-r2"
+#ARG NIX_VERSION="2.28.3-r1"
 #RUN set -exu \
 #    && apk add --no-cache \
 #    --repository=https://dl-cdn.alpinelinux.org/alpine/edge/community \
@@ -65,9 +65,9 @@ RUN set -exu \
 #
 # Install nix (from upstream)
 #
-ARG CURL_VERSION="8.12.1-r1"
-ARG SHADOW_VERSION="4.16.0-r1"
-ARG XZ_VERSION="5.6.3-r0"
+ARG CURL_VERSION="8.14.1-r0"
+ARG SHADOW_VERSION="4.17.3-r0"
+ARG XZ_VERSION="5.8.1-r0"
 RUN set -exu \
     && apk add --no-cache \
     curl=${CURL_VERSION} \
@@ -120,8 +120,8 @@ ARG NIX_STORE_OPTIMIZE=true
 ENV NIX_STORE_OPTIMIZE=${NIX_STORE_OPTIMIZE}
 
 
-#ARG NIX_CHANNEL="nixos-24.11"
-ARG NIX_CHANNEL="nixpkgs-unstable"
+ARG NIX_CHANNEL="nixos-25.05"
+#ARG NIX_CHANNEL="nixpkgs-unstable"
 # hadolint ignore=DL3004
 RUN set -exu \
     && fork() { (setsid "$@" &); } && fork nix-daemon ${NIX_DAEMON_ARGS} \

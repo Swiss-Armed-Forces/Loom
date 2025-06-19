@@ -377,17 +377,18 @@ export const searchSlice = createSlice({
             state.failedFilesCount = action.payload.totalFiles;
         });
         builder.addCase(updateQuery.fulfilled, (state, action) => {
-            // save last query
-            if (!action.payload) return;
-            const newQuery = action.payload.query;
-
-            if (state.query?.id != newQuery.id) {
+            if (state.query?.id != action.payload?.query.id) {
                 // new query: reset files
                 state.files = {};
             }
+            if (action.payload == null) {
+                if (state.query != null) {
+                    state.query.query = "";
+                }
+                return;
+            }
             state.query = action.payload.query;
 
-            if (!action.payload.files) return;
             action.payload.files.forEach((file) => {
                 // initialize file in files list
                 state.files[file.fileId] = {

@@ -80,10 +80,10 @@ describe("SearchQueryUtils", () => {
         // act
         const result = updateFilenameOfQuery(
             "* filename:*.txt",
-            "//crawler0/testfolder/*",
+            '//crawler0/test"folder/*',
         );
 
         // assert
-        expect(result).toBe("* filename://crawler0/testfolder/*");
+        expect(result).toBe('* filename:"//crawler0/test\\"folder/*"');
     });
 });

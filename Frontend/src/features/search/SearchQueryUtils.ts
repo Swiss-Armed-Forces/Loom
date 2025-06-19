@@ -16,7 +16,11 @@ export const updateFilenameOfQuery = (
     previousQuery: string,
     newFilename: string,
 ): string => {
-    return replaceSectionIfExists(previousQuery, "filename", newFilename);
+    return replaceSectionIfExists(
+        previousQuery,
+        "filename",
+        `"${newFilename.replaceAll('"', '\\"')}"`,
+    );
 };
 
 export const updateFileExtensionOfQuery = (
@@ -44,13 +48,15 @@ export const replaceSectionIfExists = (
     newValue: string,
 ) => {
     let resultQuery: string;
-    if (query.includes(sectionName)) {
+    const sectionPrefix = `${sectionName}:`;
+    const newSectionBlock = sectionPrefix + newValue;
+    if (query.includes(sectionPrefix)) {
         resultQuery = query.replace(
-            new RegExp(sectionName + ":((\\(.+\\))|([^ ]*))"),
-            sectionName + ":" + newValue,
+            new RegExp(sectionPrefix + "((\\(.+\\))|([^ ]*))"),
+            newSectionBlock,
         );
     } else {
-        resultQuery = `${query} ${sectionName}:${newValue}`;
+        resultQuery = `${query} ${newSectionBlock}`;
     }
     return resultQuery.trim();
 };
