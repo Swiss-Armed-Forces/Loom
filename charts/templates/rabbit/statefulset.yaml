@@ -75,3 +75,6 @@ spec:
         resources:
             requests:
               storage: {{ .Values.rabbit.pvc.storage }}
+        {{- if .Values.rabbit.pvc.storageClass -}}
+        storageClassName: {{ .Values.rabbit.pvc.storageClass }}
+        {{- end }}
