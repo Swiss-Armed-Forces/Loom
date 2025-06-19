@@ -116,8 +116,8 @@ export const Chart = ({
                             arcLabel,
                             arcLabelMinAngle: 45,
                             highlightScope: {
-                                faded: "global",
-                                highlighted: "item",
+                                fade: "global",
+                                highlight: "item",
                             },
                             faded: {
                                 innerRadius: 30,

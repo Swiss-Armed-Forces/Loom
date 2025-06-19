@@ -75,10 +75,10 @@ export function TagsInput({
     };
 
     const addTagsToAdd = (newTags: string[]) => {
-        const tags = newTags.map((t) => {
-            // filter out spaces because they causes errors
-            return t.replace(" ", "-");
-        });
+        const tags = newTags.map((t) =>
+            /* filter out characters with semantic meaning within ES query */
+            t.replaceAll(/[ ()\\:]/g, "-"),
+        );
         setSelectedTagsToAdd(tags);
     };
 
@@ -128,6 +128,7 @@ export function TagsInput({
                 <DialogContent>
                     <p>{t("tags.tagDialogHint")}</p>
                     <Autocomplete
+                        autoSelect
                         freeSolo
                         multiple
                         options={existingTags}

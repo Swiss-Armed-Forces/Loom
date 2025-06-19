@@ -28,7 +28,7 @@ export function ClickableFilePath({ fullPath }: ClickableFilePathProps) {
     const handleQueryReplaceFilename = (newFilepath: string) => {
         const newQuery = updateFilenameOfQuery(
             searchQuery?.query ?? "",
-            `"${newFilepath.replace(/["]/g, '\\"')}"`,
+            newFilepath,
         );
         dispatch(
             updateQuery({

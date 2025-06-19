@@ -1,5 +1,5 @@
 # Image version
-ARG ALPINE_IMAGE_VERSION="3.21.3"
+ARG ALPINE_IMAGE_VERSION="3.22.0"
 
 ARG DOCKER_REGISTRY
 FROM ${DOCKER_REGISTRY}/alpine:${ALPINE_IMAGE_VERSION}
@@ -16,7 +16,7 @@ SHELL ["/bin/bash", "--login", "-c"]
 #
 # kubectl
 #
-ARG KUBECTL_VERSION="1.31.5-r3"
+ARG KUBECTL_VERSION="1.33.1-r0"
 RUN set -exu \
     && apk add --no-cache \
     kubectl=${KUBECTL_VERSION}
@@ -24,7 +24,7 @@ RUN set -exu \
 #
 # openssl
 #
-ARG OPENSSL_VERSION="3.3.3-r0"
+ARG OPENSSL_VERSION="3.5.0-r0"
 RUN set -exu \
     && apk add --no-cache \
     openssl=${OPENSSL_VERSION}
