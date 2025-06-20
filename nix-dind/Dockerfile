@@ -39,9 +39,10 @@ COPY \
 #
 # Install bindfs
 #
-ARG BINDFS_VERSION="1.17.7-r0"
+ARG BINDFS_VERSION="1.17.7-r1"
 RUN set -exu \
     && apk add --no-cache \
+    --repository=https://dl-cdn.alpinelinux.org/alpine/edge/main \
     --repository=https://dl-cdn.alpinelinux.org/alpine/edge/testing \
     bindfs=${BINDFS_VERSION}
 
@@ -52,6 +53,14 @@ ARG TAILSCALE_VERSION="1.84.2-r0"
 RUN set -exu \
     && apk add --no-cache \
     tailscale="${TAILSCALE_VERSION}"
+
+#
+# shadow (for groupadd)
+#
+ARG SHADOW_VERSION="4.17.3-r0"
+RUN set -exu \
+    && apk add --no-cache \
+    shadow=${SHADOW_VERSION}
 
 #
 # Install nix (package version)
@@ -66,13 +75,11 @@ RUN set -exu \
 # Install nix (from upstream)
 #
 ARG CURL_VERSION="8.14.1-r0"
-ARG SHADOW_VERSION="4.17.3-r0"
 ARG XZ_VERSION="5.8.1-r0"
 RUN set -exu \
     && apk add --no-cache \
     curl=${CURL_VERSION} \
-    shadow=${SHADOW_VERSION} \
-    xz=$XZ_VERSION
+    xz=${XZ_VERSION}
 RUN set -exu \
     && sh <(curl -L https://nixos.org/nix/install) --daemon
 
