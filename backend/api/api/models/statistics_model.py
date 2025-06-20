@@ -65,7 +65,7 @@ class SummaryStatisticsModel(BaseModel):
     count: int
     min: int
     max: int
-    avg: float
+    avg: int
 
     @staticmethod
     def from_statistics_summary(stats: StatisticsSummary):

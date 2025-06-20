@@ -1,5 +1,4 @@
 import logging
-from dataclasses import dataclass
 from string import punctuation
 
 from celery import chain
@@ -16,6 +15,7 @@ from common.file.file_repository import (
 )
 from common.services.lazybytes_service import LazyBytes
 from common.utils.cache import cache
+from pydantic import BaseModel
 
 from worker.index_file.infra.file_indexing_task import FileIndexingTask
 from worker.index_file.infra.indexing_persister import IndexingPersister
@@ -49,8 +49,7 @@ logger = logging.getLogger(__name__)
 app = get_celery_app()
 
 
-@dataclass(frozen=True)
-class LibretranslateDetectedLanguage:
+class LibretranslateDetectedLanguage(BaseModel, frozen=True):
     confidence: float
     language: str
 
@@ -115,7 +114,9 @@ def translate_detect_language(text: str) -> LibreTranslateLanguageDetectResult:
     detected_languages = libre_translate.detect(text)
 
     for detected_language in detected_languages:
-        detected_language = LibretranslateDetectedLanguage(**detected_language)
+        detected_language = LibretranslateDetectedLanguage.model_validate(
+            detected_language
+        )
         if detected_language.confidence >= settings.min_language_detection_confidence:
             result.append(detected_language)
 

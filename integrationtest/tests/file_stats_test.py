@@ -22,7 +22,7 @@ def _get_summary_stats(
         timeout=REQUEST_TIMEOUT,
     )
     response.raise_for_status()
-    return SummaryStatisticsModel(**response.json())
+    return SummaryStatisticsModel.model_validate(response.json())
 
 
 def _get_generic_stats(
@@ -35,7 +35,7 @@ def _get_generic_stats(
         timeout=REQUEST_TIMEOUT,
     )
     response.raise_for_status()
-    return GenericStatisticsModel(**response.json())
+    return GenericStatisticsModel.model_validate(response.json())
 
 
 class TestStatsWithoutFiles:

@@ -6,7 +6,6 @@ import enum
 import hashlib
 import logging
 import re
-from dataclasses import dataclass
 from datetime import datetime
 from json import JSONDecodeError
 from pathlib import PurePath
@@ -364,8 +363,7 @@ class FileRepository(BaseEsRepository[_EsFile, File]):
         return res if res is not None else default
 
     def get_stat_generic(self, query: QueryParameters, stat: Stat) -> StatisticsGeneric:
-        @dataclass
-        class StatItem:
+        class StatItem(BaseModel):
             args: list[str]
             kwargs: dict[str, Any]
             transforms: dict[str, Callable[[str], str]]
@@ -460,7 +458,9 @@ class FileRepository(BaseEsRepository[_EsFile, File]):
         result = self._execute_search_with_query(search=search, query=query)
 
         return StatisticsSummary(
-            avg_file_size=self.get_aggr(result, ["avg_file_size", "value"], default=0),
+            avg_file_size=int(
+                round(self.get_aggr(result, ["avg_file_size", "value"], default=0))
+            ),
             max_file_size=self.get_aggr(result, ["max_file_size", "value"], default=0),
             min_file_size=self.get_aggr(result, ["min_file_size", "value"], default=0),
             total_no_of_files=self.get_aggr(

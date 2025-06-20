@@ -12,4 +12,4 @@ def create_archive(query: QueryParameters) -> ArchiveCreatedResponse:
         timeout=REQUEST_TIMEOUT,
     )
     response.raise_for_status()
-    return ArchiveCreatedResponse(**response.json())
+    return ArchiveCreatedResponse.model_validate(response.json())

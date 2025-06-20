@@ -40,7 +40,7 @@ def upload_asset(
         )
         api_response.raise_for_status()
 
-    return FileUploadResponse(**api_response.json())
+    return FileUploadResponse.model_validate(api_response.json())
 
 
 def upload_many_assets(
@@ -105,4 +105,4 @@ def upload_bytes_asset(
     )
     api_response.raise_for_status()
 
-    return FileUploadResponse(**api_response.json())
+    return FileUploadResponse.model_validate(api_response.json())

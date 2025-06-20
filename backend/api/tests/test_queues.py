@@ -32,7 +32,7 @@ def test_get_overall_queue_stats(client: TestClient):
     # do call
     response = client.get("/v1/queues/")
     response.raise_for_status()
-    overall_queue_stats = OverallQueuesStats(**response.json())
+    overall_queue_stats = OverallQueuesStats.model_validate(response.json())
 
     assert overall_queue_stats.messages_in_queues == 50
     assert overall_queue_stats.complete_estimate_timestamp == int(
@@ -64,7 +64,7 @@ def test_get_completed_estimate(client: TestClient):
     # do call
     response = client.get(f"/v1/queues/{queue}/complete_estimate")
     response.raise_for_status()
-    complete_estimate = CompleteEstimate(**response.json())
+    complete_estimate = CompleteEstimate.model_validate(response.json())
 
     assert complete_estimate.samples_count == 4
     assert complete_estimate.estimate_timestamp == int(now.timestamp() + 1000)

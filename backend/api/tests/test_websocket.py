@@ -13,7 +13,7 @@ def test_get_websocket_messages(client: TestClient):
     response = client.post(ENDPOINT, json=message.model_dump())
     assert response.raise_for_status()
 
-    response_message = PubSubMessage(**response.json())
+    response_message = PubSubMessage.model_validate(response.json())
     assert message == response_message
 
 

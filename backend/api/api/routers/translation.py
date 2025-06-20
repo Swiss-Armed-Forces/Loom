@@ -44,7 +44,7 @@ def get_supported_languages() -> list[LibretranslateSupportedLanguages]:
     api = get_libretranslate_api()
     try:
         languages = [
-            LibretranslateSupportedLanguages(**lang)
+            LibretranslateSupportedLanguages.model_validate(lang)
             for lang in api.languages(timeout=LIBRETRANSLATE_REQUEST_TIMEOUT)
         ]
     except URLError as exc:

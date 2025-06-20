@@ -23,7 +23,7 @@ def _get_overall_queue_stats() -> OverallQueuesStats:
     )
     response.raise_for_status()
 
-    return OverallQueuesStats(**response.json())
+    return OverallQueuesStats.model_validate(response.json())
 
 
 def _get_complete_estimate(queue: Queue) -> CompleteEstimate | None:
@@ -36,7 +36,7 @@ def _get_complete_estimate(queue: Queue) -> CompleteEstimate | None:
     response_json = response.json()
     if response_json is None:
         return response_json
-    return CompleteEstimate(**response_json)
+    return CompleteEstimate.model_validate(response_json)
 
 
 def _get_message_count(queue: Queue) -> int:
