@@ -236,7 +236,7 @@ artifacts:
       - dmesg.txt
       - logs/
       - Frontend/src/app/api/generated
-      - THIRD-PARTY.md
+      - changed-files/
     expire_in: 1 week
     when: always
 

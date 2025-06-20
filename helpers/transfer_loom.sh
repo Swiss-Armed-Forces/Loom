@@ -174,10 +174,7 @@ if ! docker_image_exists; then
 fi
 
 echo "[*] Starting '${DIND_CONTAINER_NAME}'"
-# ulimit because of:
-# https://github.com/NixOS/nix/issues/11258#issuecomment-2323063903
 docker run \
-    --ulimit nofile=1024:1024 \
     --rm \
     --privileged \
     --interactive \

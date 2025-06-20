@@ -6,15 +6,30 @@ TOPLEVEL_DIR="${SCRIPT_DIR}/.."
 
 VERBOSE=false
 ACTION="test_git_files_changed"
-
+CHANGED_FILES_ARCHIVE="changed-files/"
 
 test_git_files_changed() {
     (
         cd "${TOPLEVEL_DIR}"
-        changes=$(git status --porcelain=v1 2>/dev/null)
-        if [[ -n "${changes}" ]]; then
-            echo >&2 "${changes}"
-            echo >&2 "[*] Git files are not up to date"
+        # Get changed files (staged and unstaged)
+        local has_changed_files
+        has_changed_files=false
+
+        local status
+        local file
+        git status --porcelain=v1 2>/dev/null | while read -r status file; do
+            >&2 echo "[*] Changed file: '${file}' (status: ${status})"
+
+            # Create directory structure if needed
+            mkdir -p "${CHANGED_FILES_ARCHIVE}/$(dirname "${file}")"
+
+            # Copy the file
+            cp "${file}" "${CHANGED_FILES_ARCHIVE}/${file}"
+            has_changed_files=true
+        done
+
+        if [[ "${has_changed_files}" = true ]]; then
+            >&2 echo "[*] Some files are not up to date"
             exit 1
         fi
     )

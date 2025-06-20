@@ -50,10 +50,7 @@ pull(){
 }
 
 build(){
-    # ulimit because of:
-    # https://github.com/NixOS/nix/issues/11258#issuecomment-2323063903
     docker build \
-        --ulimit nofile=1024:1024 \
         --file "${DOCKERFILE}" \
         --tag "${IMAGE_FULL_NAME}:${IMAGE_TAG}" \
         --build-arg DOCKER_REGISTRY="${DOCKER_REGISTRY}" \
