@@ -24,7 +24,7 @@
       - Check all boxes when selecting the scopes
    - Use the Access token instead of the password in the next steps
    - Login to the docker registry: `docker login registry.gitlab.com`
-   - Login to the docker cache: `docker login gitlab.com:443`
+   - Login to the docker cache: `docker login gitlab.com`
 5. Install devenv
    - In /etc/selinux/config, set `SELINUX=disabled` and reboot
    - Install devenv using the [official instructions](https://devenv.sh/getting-started/)
