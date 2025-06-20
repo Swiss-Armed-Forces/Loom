@@ -29,7 +29,7 @@ def test_create_archive(
     response = client.post("/v1/archive/", json=archive_request.model_dump())
     response.raise_for_status()
     assert response.status_code == 201
-    archive_create_response = ArchiveCreatedResponse(**response.json())
+    archive_create_response = ArchiveCreatedResponse.model_validate(response.json())
     assert archive_create_response.archive_id == archive.id_
 
 
