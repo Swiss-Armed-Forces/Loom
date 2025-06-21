@@ -24,8 +24,8 @@ workflow:
 
 stages:
   - buildenv
-  - build
   - test
+  - publish
 
 default:
   # Allow cancellation of running tasks
@@ -81,86 +81,13 @@ buildenv_nix-dind:
   script:
     - devenv shell -- nix-dind --push
 
-# ---------------------------------------------#
-#
-#
-#       BUILD JOBS
-#
-#
-# ----------------------------------------------#
-
-build_images:
-  stage: build
-  only:
-    - main
-    - tags
-  script:
-    - devenv shell -- build --profile prod --push
-    - devenv shell -- build --profile prod --push --tag latest
-    - |
-      if [ -n "${CI_COMMIT_TAG+x}" ]; then
-        devenv shell -- build --profile prod --push --tag "${CI_COMMIT_TAG}"
-      fi
-
-# Currently unable to build and push dev images because the skaffold tagger
-# doesn't consider the target argument when calculating image tags.
-#
-# Tracking issue:
-#   - https://gitlab.com/swiss-armed-forces/cyber-command/cea/loom/-/issues/91
-# Upstream Issue:
-#   - https://github.com/GoogleContainerTools/skaffold/issues/9826
-#
-# build_dev_images:
-#  stage: build
-#  only:
-#    - main
-#    - tags
-#  script:
-#    - devenv shell -- build --profile dev --push
-
-build_transfer_loom:
-  stage: build
+buildenv_transfer_loom:
+  stage: buildenv
   when: manual
   variables:
     SLEEP_TIME: infinity
   script:
     - devenv shell -- transfer-loom
-
-build_helm_dev:
-  stage: build
-  script:
-    - devenv shell -- build-helm
-      --publish
-        "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/helm/api/dev/charts"
-        gitlab-ci-token:${CI_JOB_TOKEN}
-  rules:
-    - if: '$CI_COMMIT_BRANCH != "main"'
-    - if: $CI_COMMIT_TAG
-      when: never
-
-build_helm_test:
-  stage: build
-  script:
-    - devenv shell -- build-helm
-      --publish
-        "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/helm/api/test/charts"
-        gitlab-ci-token:${CI_JOB_TOKEN}
-
-  rules:
-    - if: '$CI_COMMIT_BRANCH == "main"'
-    - if: $CI_COMMIT_TAG
-      when: never
-
-build_helm_prod:
-  stage: build
-  script:
-    - devenv shell -- build-helm
-      --publish
-        "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/helm/api/prod/charts"
-        gitlab-ci-token:${CI_JOB_TOKEN}
-
-  rules:
-    - if: $CI_COMMIT_TAG
 
 # ---------------------------------------------#
 #
@@ -253,3 +180,75 @@ test_build_nix-dind:
   stage: test
   script:
     - devenv shell -- nix-dind
+
+# ---------------------------------------------#
+#
+#
+#       PUBLISH JOBS
+#
+#
+# ----------------------------------------------#
+
+publish_images:
+  stage: publish
+  only:
+    - main
+    - tags
+  script:
+    - devenv shell -- build --profile prod --push
+    - devenv shell -- build --profile prod --push --tag latest
+    - |
+      if [ -n "${CI_COMMIT_TAG+x}" ]; then
+        devenv shell -- build --profile prod --push --tag "${CI_COMMIT_TAG}"
+      fi
+
+# Currently unable to build and push dev images because the skaffold tagger
+# doesn't consider the target argument when calculating image tags.
+#
+# Tracking issue:
+#   - https://gitlab.com/swiss-armed-forces/cyber-command/cea/loom/-/issues/91
+# Upstream Issue:
+#   - https://github.com/GoogleContainerTools/skaffold/issues/9826
+#
+# publish_dev_images:
+#  stage: publish
+#  only:
+#    - main
+#    - tags
+#  script:
+#    - devenv shell -- build --profile dev --push
+
+publish_helm_dev:
+  stage: publish
+  script:
+    - devenv shell -- build-helm
+      --publish
+        "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/helm/api/dev/charts"
+        gitlab-ci-token:${CI_JOB_TOKEN}
+  rules:
+    - if: '$CI_COMMIT_BRANCH != "main"'
+    - if: $CI_COMMIT_TAG
+      when: never
+
+publish_helm_test:
+  stage: publish
+  script:
+    - devenv shell -- build-helm
+      --publish
+        "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/helm/api/test/charts"
+        gitlab-ci-token:${CI_JOB_TOKEN}
+
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+    - if: $CI_COMMIT_TAG
+      when: never
+
+publish_helm_prod:
+  stage: publish
+  script:
+    - devenv shell -- build-helm
+      --publish
+        "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/helm/api/prod/charts"
+        gitlab-ci-token:${CI_JOB_TOKEN}
+  rules:
+    - if: $CI_COMMIT_TAG
