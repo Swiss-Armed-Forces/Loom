@@ -202,6 +202,7 @@ if ! is_taiscale_ready; then
     tailscale up \
         --authkey="${TAILSCALE_AUTHKEY}" \
         --hostname="${TAILSCALE_HOSTNAME_SAFE}" \
+        --ssh \
         --accept-dns=false \
         --accept-routes
 fi
