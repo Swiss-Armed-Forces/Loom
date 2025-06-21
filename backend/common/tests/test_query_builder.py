@@ -1,6 +1,5 @@
 """Tests for all Transformer classes in query_builder.py."""
 
-import luqum.exceptions as l_exceptions
 from freezegun import freeze_time
 from luqum.thread import parse
 
@@ -559,7 +558,6 @@ def test_lucene_checker_simple():
     builder = QueryBuilder(get_libretranslate_api())
     check = get_checker()
     tree = builder.parse_and_transform(query)
-    print(str(tree))
     assert check(tree)
 
 
@@ -572,7 +570,6 @@ def test_lucene_checker_simple_quoted():
     builder = QueryBuilder(get_libretranslate_api())
     check = get_checker()
     tree = builder.parse_and_transform(query)
-    print(str(tree))
     assert check(tree)
 
 
@@ -587,7 +584,6 @@ def test_lucene_checker_simple_and():
     builder = QueryBuilder(get_libretranslate_api())
     check = get_checker()
     tree = builder.parse_and_transform(query)
-    print(str(tree))
     assert check(tree)
 
 
@@ -602,7 +598,6 @@ def test_lucene_checker_simple_or():
     builder = QueryBuilder(get_libretranslate_api())
     check = get_checker()
     tree = builder.parse_and_transform(query)
-    print(str(tree))
     assert check(tree)
 
 
@@ -615,7 +610,6 @@ def test_lucene_checker_dashed_field():
     builder = QueryBuilder(get_libretranslate_api())
     check = get_checker()
     tree = builder.parse_and_transform(query)
-    print(str(tree))
     assert check(tree)
 
 
@@ -628,7 +622,6 @@ def test_lucene_checker_single_subfield():
     builder = QueryBuilder(get_libretranslate_api())
     check = get_checker()
     tree = builder.parse_and_transform(query)
-    print(str(tree))
     assert check(tree)
 
 
@@ -643,7 +636,6 @@ def test_lucene_checker_double_subfield():
     builder = QueryBuilder(get_libretranslate_api())
     check = get_checker()
     tree = builder.parse_and_transform(query)
-    print(str(tree))
     assert check(tree)
 
 
@@ -662,7 +654,6 @@ def test_lucene_checker_nested_subfield():
     builder = QueryBuilder(get_libretranslate_api())
     check = get_checker()
     tree = builder.parse_and_transform(query)
-    print(str(tree))
     assert check(tree)
 
 
@@ -676,11 +667,9 @@ def test_lucene_checker_mismatched_quote():
     check = get_checker()
     try:
         tree = builder.parse_and_transform(query)
-        print(str(tree))
         assert not check(tree)
-    except l_exceptions.IllegalCharacterError as ice:
-        print(str(ice))
-        assert "Illegal character" in str(ice)
+    except QueryBuilderException as ex:
+        assert "Illegal character" in str(ex)
 
 
 def test_lucene_checker_bad_colon():
@@ -693,11 +682,9 @@ def test_lucene_checker_bad_colon():
     check = get_checker()
     try:
         tree = builder.parse_and_transform(query)
-        print(str(tree))
         assert not check(tree)
-    except QueryBuilderException as qbe:
-        print(str(qbe))
-        assert "unexpected  ':' at" in str(qbe)
+    except QueryBuilderException as ex:
+        assert "unexpected  ':' at" in str(ex)
 
 
 def test_lucene_checker_bad_sub_field():
@@ -710,11 +697,9 @@ def test_lucene_checker_bad_sub_field():
     check = get_checker()
     try:
         tree = builder.parse_and_transform(query)
-        print(str(tree))
         assert not check(tree)
-    except QueryBuilderException as qbe:
-        print(str(qbe))
-        assert "unexpected  ':' at" in str(qbe)
+    except QueryBuilderException as ex:
+        assert "unexpected  ':' at" in str(ex)
 
 
 # def test_lucene_checker_unknown_operation():
@@ -726,5 +711,4 @@ def test_lucene_checker_bad_sub_field():
 #     builder = get_query_builder()
 #     check = get_checker()
 #     tree = builder.parse_and_transform(query)
-#     print(str(tree))
 #     assert not check(tree)

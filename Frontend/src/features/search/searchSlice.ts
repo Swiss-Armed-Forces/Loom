@@ -23,11 +23,13 @@ import {
     getLongRunningQuery,
     getFilesCount,
     getShortRunningQuery,
+    ResponseError,
 } from "../../app/api";
 import { CombinedStats, SearchQuery } from "./model.ts";
 import { webSocketSendMessage } from "../../middleware/SocketMiddleware.ts";
 
 import { v4 as uuidv4 } from "uuid";
+import { t } from "i18next";
 
 export enum SearchView {
     FOLDER = "folder",
@@ -171,7 +173,7 @@ export const updateQuery = createAsyncThunk(
                 );
             }
             return result;
-        } catch (err: any) {
+        } catch (error: any) {
             if (queryIdChanged) {
                 dispatch(
                     webSocketSendMessage({
@@ -182,10 +184,15 @@ export const updateQuery = createAsyncThunk(
                     }),
                 );
             }
-
-            return thunkAPI.rejectWithValue(
-                err.detail ? err.detail : err.toString(),
-            );
+            // Get error detail
+            let errorDetail = "";
+            if (error instanceof ResponseError) {
+                const errorData = await error.response.json();
+                errorDetail = errorData?.detail ?? JSON.stringify(errorData);
+            } else {
+                errorDetail = error.toString();
+            }
+            return thunkAPI.rejectWithValue(errorDetail);
         } finally {
             dispatch(stopLoadingIndicator());
         }
@@ -402,7 +409,7 @@ export const searchSlice = createSlice({
         });
         builder.addCase(updateQuery.rejected, (state, action: any) => {
             const error = action.payload;
-            toast.error("Cannot load search results. Error: " + error);
+            toast.error(t("error.searchResultLoadingError", { error: error }));
             state.queryError = error;
         });
         builder.addCase(fetchPreview.fulfilled, (state, action) => {

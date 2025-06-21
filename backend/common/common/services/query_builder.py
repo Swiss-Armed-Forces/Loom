@@ -5,9 +5,8 @@ from datetime import datetime, timedelta
 from typing import Generator, List, Literal
 
 from libretranslatepy import LibreTranslateAPI
-from luqum import tree as Tree
 from luqum.check import LuceneCheck
-from luqum.exceptions import ParseSyntaxError
+from luqum.exceptions import ParseError
 from luqum.thread import parse
 from luqum.tree import (
     AndOperation,
@@ -132,7 +131,7 @@ class OpTransformer(TreeTransformer):
         super().__init__(track_parents=True)
         self.ops = ["AND", "OR", "NOT"]
 
-    def visit(self, tree: Tree, context: dict | None = None) -> Tree:
+    def visit(self, tree: Item, context: dict | None = None) -> Item:
         """Overwriting visit to reparse the tree for the changes below to come into
         effect."""
         _tree = super().visit(tree, context)
@@ -347,7 +346,7 @@ class HiddenTransformer(TreeTransformer):
         super().__init__(track_parents=True)
         self.has_hidden_clause = False
 
-    def visit(self, tree: Tree, context: dict | None = None) -> Tree:
+    def visit(self, tree: Item, context: dict | None = None) -> Item:
         """Check if a searchfield with name hidden is present.
 
         Otherwise add hidden clause
@@ -419,7 +418,7 @@ class QueryBuilder:
     def __init__(self, translator: LibreTranslateAPI):
         self.translator = translator
 
-    def parse_and_transform(self, query: QueryParameters) -> Tree.Item:
+    def parse_and_transform(self, query: QueryParameters) -> Item:
         """Takes query parameters, parses it into a query-tree and then transforms it.
 
         Args:
@@ -470,17 +469,17 @@ class QueryBuilder:
             )
             tree = HiddenTransformer().visit(tree, {})
 
-        except ParseSyntaxError as ex:
+        except ParseError as ex:
             raise QueryBuilderException(str(ex)) from ex
 
         return tree
 
     def build(self, query: QueryParameters) -> str:
         """Uses the provided search object to build."""
-        new_search_string = str(self.parse_and_transform(query))
+        search_string = str(self.parse_and_transform(query))
 
         logger.info(
-            "Query '%s' was transformed to '%s'", query.search_string, new_search_string
+            "Query '%s' was transformed to '%s'", query.search_string, search_string
         )
 
-        return new_search_string
+        return search_string

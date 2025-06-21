@@ -3,10 +3,11 @@ set -euo pipefail
 
 # Set the namespace
 NAMESPACE="loom"
-APPS=$(kubectl get deployments,statefulsets,daemonset --namespace="${NAMESPACE}" -o name)
+PODS=$(kubectl get pods --namespace="${NAMESPACE}" -o name | sed 's|pod/||')
 
 LOG_DIR="./logs"
-LOG_FILE_SUFFIX=""
+LOG_DIR_SUBDIR=""
+LOG_DIR_FINAL=""
 
 VERBOSE=false
 DO_BACKGROUND=false
@@ -18,7 +19,7 @@ DO_BACKGROUND=false
 fetch_logs(){
     kubectl logs \
         --tail=-1 \
-        --selector app="${APP_NAME}" \
+        "${POD_NAME}" \
         --all-containers=true \
         --namespace="${NAMESPACE}" \
         "${@}"
@@ -33,7 +34,7 @@ usage(){
     echo "  -h|--help                         show this help"
     echo "  -v|--verbose                      show verbose output"
     echo "  -b|--background                   fetch logs but in the background"
-    echo "  -s|--suffix SUFFIX                use SUFFIX as log file suffix"
+    echo "  -s|--subdor SUBDIR                write logs to a subdirectory SUBDIR"
 }
 
 #
@@ -56,9 +57,9 @@ while [[ $# -gt 0 ]]; do
             DO_BACKGROUND=true
             shift
         ;;
-        -s|--suffix)
+        -s|--subdir)
             shift
-            LOG_FILE_SUFFIX="${1}"
+            LOG_DIR_SUBDIR="${1}"
             shift
         ;;
         *)
@@ -76,17 +77,16 @@ if [[ "${VERBOSE}" = true ]]; then
     set -x
 fi
 
-mkdir -p "${LOG_DIR}"
+LOG_DIR_FINAL="${LOG_DIR}/${LOG_DIR_SUBDIR}"
+mkdir -p "${LOG_DIR_FINAL}"
 
-# Loop through each app and save logs
-for APP in ${APPS}; do
-    # Get base of deployment name
-    APP_NAME=$(basename "${APP}")
-    # Remove environement from deployment name
-    APP_NAME="${APP_NAME#*-}"
-    LOG_FILE_BASE="${LOG_DIR}/${APP_NAME}${LOG_FILE_SUFFIX}"
+# Loop through each pod and save logs
+for POD in ${PODS}; do
+    # Use the full pod name
+    POD_NAME="${POD}"
+    LOG_FILE_BASE="${LOG_DIR_FINAL}/${POD_NAME}"
 
-    echo "[*] Fetching logs for: ${APP_NAME}"
+    echo "[*] Fetching logs for: ${POD_NAME}"
 
     if [[ "${DO_BACKGROUND}" = false ]]; then
       fetch_logs "${ARGS[@]}" > "${LOG_FILE_BASE}.log"

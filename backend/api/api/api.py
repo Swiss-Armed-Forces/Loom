@@ -3,9 +3,11 @@
 from pathlib import Path
 from typing import Any, Dict
 
+from common.services.query_builder import QueryBuilderException
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.utils import get_openapi
+from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from api.routers import (
@@ -69,6 +71,12 @@ def init_api() -> FastAPI:
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
+    )
+
+    # global exception handlers
+    api.add_exception_handler(
+        QueryBuilderException,
+        lambda _, ex: JSONResponse(status_code=400, content={"detail": str(ex)}),
     )
 
     # static assets

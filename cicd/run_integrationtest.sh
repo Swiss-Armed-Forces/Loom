@@ -15,7 +15,7 @@ atexit(){
 
     echo "[*] Fetching pod logs again"
     "${SCRIPT_DIR}/fetch_all_pod_logs.sh" \
-        --suffix "-last"
+        --subdir "at_exit"
 
     echo "[*] Listing all pods"
     kubectl get pods \
@@ -29,7 +29,7 @@ trap atexit EXIT
 echo "[*] Start fetching pod logs"
 "${SCRIPT_DIR}/fetch_all_pod_logs.sh" \
     --background \
-    --suffix "-first" \
+    --subdir "at_start" \
     --follow
 
 echo "[*] Running integrationtests"

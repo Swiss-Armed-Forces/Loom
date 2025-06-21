@@ -6,16 +6,8 @@ kind: Deployment
 metadata:
   name: {{ template "app.fullname" . }}-minio
   labels:
-    app: {{ template "app.name" . }}
-    chart: {{ template "app.chart" . }}
-    release: {{ .Release.Name }}
-    heritage: {{ .Release.Service }}
-    {{- if .Values.minio.additionalLabels }}
-      {{- toYaml .Values.minio.additionalLabels | nindent 4 }}
-    {{- end }}
-  {{- if .Values.minio.additionalAnnotations }}
-  annotations: {{- toYaml .Values.minio.additionalAnnotations | nindent 4 }}
-  {{- end }}
+    {{- include "app.labels.standard" . | nindent 4 }}
+    app.kubernetes.io/component: "minio"
 spec:
   strategy:
     type: {{ .Values.minio.deploymentUpdate.type }}

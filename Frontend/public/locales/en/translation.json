@@ -17,7 +17,7 @@
         "cancel": "Cancel"
     },
     "error": {
-        "searchResultLoadingError": "Cannot load search results"
+        "searchResultLoadingError": "Cannot load search results. {{- error}}"
     },
     "globalSearchBox": {
         "searchPlaceholder": "Search and press enter",

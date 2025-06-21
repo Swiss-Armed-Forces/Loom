@@ -71,7 +71,7 @@ wait_for(){
     # Loop until check_function is ready or max retries is reached
     while ! "${check_function[@]}"; do
         if [[ "${retry_count}" -ge "${WAIT_MAX_RETRIES}" ]]; then
-            echo "${check_function[*]} was not ready after ${WAIT_MAX_RETRIES} seconds."
+            echo "${check_function[*]} was not ready after ${WAIT_MAX_RETRIES} retries."
             exit 1
         fi
 
