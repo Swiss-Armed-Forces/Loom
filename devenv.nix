@@ -325,8 +325,9 @@ in
     fi
 
     # use dependency proxy
-    if docker login gitlab.com &>/dev/null; then
-      CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX="gitlab.com/swiss-armed-forces/cyber-command/cea/dependency_proxy/containers"
+    CI_DEPENDENCY_PROXY_SERVER="''${CI_DEPENDENCY_PROXY_SERVER:-gitlab.com}"
+    if docker login "''${CI_DEPENDENCY_PROXY_SERVER}" &>/dev/null; then
+      CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX="''${CI_DEPENDENCY_PROXY_SERVER}/swiss-armed-forces/cyber-command/cea/dependency_proxy/containers"
       export CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX
       echo "Using docker image dependency proxy: ''${CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX}"
     fi
