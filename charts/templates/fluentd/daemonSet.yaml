@@ -33,14 +33,9 @@ spec:
           volumeMounts:
             - name: varlog
               mountPath: /var/log
-            - name: dockercontainerlogdirectory
-              mountPath: /var/lib/docker/
               readOnly: true
       volumes:
         - name: varlog
           hostPath:
             path: /var/log
-        - name: dockercontainerlogdirectory
-          hostPath:
-            path: /var/lib/docker/
 {{- end }}

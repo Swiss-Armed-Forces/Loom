@@ -134,6 +134,7 @@ backend_test:
         coverage_format: cobertura
         path: ./backend/coverage.xml
 
+
 integrationtest:
   stage: test
   script:
@@ -147,6 +148,13 @@ integrationtest:
       - logs/
     expire_in: 1 week
     when: always
+
+integrationtest_debug:
+  extends: integrationtest
+  variables:
+    SLEEP_TIME: infinity
+  rules:
+    - when: manual
 
 artifacts:
   stage: test
@@ -166,15 +174,6 @@ artifacts:
       - changed-files/
     expire_in: 1 week
     when: always
-
-integrationtest_debug:
-  stage: test
-  when: manual
-  variables:
-    SLEEP_TIME: infinity
-  script:
-    - devenv shell -- up --integrationtest --expose "$(tailscale ip -4)" || sleep "${SLEEP_TIME}"
-    - devenv shell -- run-integrationtest
 
 test_build_nix-dind:
   stage: test

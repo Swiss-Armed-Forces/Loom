@@ -19,6 +19,11 @@ ingressClass:
   isDefaultClass: true
   name: traefik
 
+logs:
+  access:
+    enabled: true
+    addInternals: true
+
 ports:
   web:
     hostPort: 80

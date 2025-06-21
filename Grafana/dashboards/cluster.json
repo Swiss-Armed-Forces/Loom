@@ -20,6 +20,7 @@
   "fiscalYearStartMonth": 0,
   "gnetId": 8321,
   "graphTooltip": 1,
+  "id": 1,
   "links": [],
   "panels": [
     {
@@ -343,7 +344,7 @@
         },
         "tooltip": {
           "mode": "multi",
-          "sort": "none"
+          "sort": "desc"
         }
       },
       "pluginVersion": "10.4.2",
@@ -444,7 +445,7 @@
         },
         "tooltip": {
           "mode": "multi",
-          "sort": "none"
+          "sort": "desc"
         }
       },
       "pluginVersion": "10.4.2",
@@ -544,7 +545,7 @@
         },
         "tooltip": {
           "mode": "multi",
-          "sort": "none"
+          "sort": "desc"
         }
       },
       "pluginVersion": "10.4.2",
@@ -643,7 +644,7 @@
         },
         "tooltip": {
           "mode": "multi",
-          "sort": "none"
+          "sort": "desc"
         }
       },
       "pluginVersion": "10.4.2",
@@ -741,7 +742,7 @@
         },
         "tooltip": {
           "mode": "multi",
-          "sort": "none"
+          "sort": "desc"
         }
       },
       "pluginVersion": "10.4.2",
@@ -840,7 +841,7 @@
         },
         "tooltip": {
           "mode": "multi",
-          "sort": "none"
+          "sort": "desc"
         }
       },
       "pluginVersion": "10.4.2",
@@ -866,7 +867,7 @@
     {
       "datasource": {
         "type": "elasticsearch",
-        "uid": "PAE1B8C8635429669"
+        "uid": "P31C819B24CF3C3C7"
       },
       "gridPos": {
         "h": 11,
@@ -883,26 +884,32 @@
         "showLabels": false,
         "showTime": true,
         "sortOrder": "Descending",
-        "wrapLogMessage": false
+        "wrapLogMessage": true
       },
       "targets": [
         {
           "alias": "",
-          "bucketAggs": [],
+          "bucketAggs": [
+            {
+              "field": "@timestamp",
+              "id": "2",
+              "settings": {
+                "interval": "auto"
+              },
+              "type": "date_histogram"
+            }
+          ],
           "datasource": {
             "type": "elasticsearch",
-            "uid": "fdlntnohkdqm8d"
+            "uid": "P31C819B24CF3C3C7"
           },
           "metrics": [
             {
               "id": "1",
-              "settings": {
-                "limit": "500"
-              },
               "type": "logs"
             }
           ],
-          "query": "tag:container.logs.$pod*",
+          "query": "pod:${pod}",
           "refId": "A",
           "timeField": "@timestamp"
         }
@@ -945,7 +952,7 @@
       },
       {
         "current": {
-          "selected": true,
+          "selected": false,
           "text": ["All"],
           "value": ["$__all"]
         },
@@ -973,8 +980,8 @@
       {
         "current": {
           "selected": false,
-          "text": "All",
-          "value": "$__all"
+          "text": ["All"],
+          "value": ["$__all"]
         },
         "datasource": {
           "type": "prometheus",
