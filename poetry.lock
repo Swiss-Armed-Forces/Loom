@@ -3494,4 +3494,4 @@ url = "backend/worker"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.11"
-content-hash = "cdd4b07e20c4b335c17d7c3a66117fbc712f7bd6b99a306cde65ca97e054d0e3"
+content-hash = "7b9ab95d04ee7703065fcfd3aca6df66f4ce80bfb2d75cc9b4dda1cf06639d77"

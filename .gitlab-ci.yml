@@ -1,5 +1,14 @@
 ## Gitlab pipeline configuration
 
+spec:
+  inputs:
+    CI_REPEAT_JOBS:
+      default: 1
+      description: "Number of times to repeat each job for stability testing"
+      type: number
+
+---
+
 include:
   - template: Workflows/MergeRequest-Pipelines.gitlab-ci.yml
 
@@ -39,14 +48,20 @@ default:
   # Always use nix-dind image
   image: ${CI_REGISTRY_IMAGE}/nix-dind:latest
   before_script:
+    # Show job instance info for debugging (only relevant for parallel jobs)
+    - echo "Running job instance ${CI_NODE_INDEX} of ${CI_NODE_TOTAL}"
     # docker login
     - echo "${CI_REGISTRY_PASSWORD}" | docker login ${CI_REGISTRY} -u "${CI_REGISTRY_USER}" --password-stdin
     - echo "${CI_DEPENDENCY_PROXY_PASSWORD}" | docker login ${CI_DEPENDENCY_PROXY_SERVER} -u "${CI_DEPENDENCY_PROXY_USER}" --password-stdin
     # Enable CI/CD mode for the devenv
     - cp "nix-dind/devenv.local.nix" "devenv.local.nix"
+    # Restore docker volumes
+    - devenv shell -- backup-restore-docker-volume restore minikube docker-volume-cache
   after_script:
     # collect fork logs
     - mkdir -p fork-logs && cp /var/run/fork-log.*.log fork-logs/
+    # Backup docker volumes
+    - devenv shell -- backup-restore-docker-volume backup minikube docker-volume-cache
   artifacts:
     paths:
       - fork-logs/
@@ -54,16 +69,24 @@ default:
     when: always
   # Dependency caching
   cache:
+    # One key to rule them all:
+    # our pipeline jobs will manage cache size
+    - key: docker-volume-cache
+      paths:
+        - docker-volume-cache
+      unprotect: true
     - key:
         files:
           - poetry.lock
       paths:
         - .venv
+      unprotect: true
     - key:
         files:
           - Frontend/pnpm-lock.yaml
       paths:
         - Frontend/node_modules/
+      unprotect: true
 
 # ---------------------------------------------#
 #
@@ -83,6 +106,7 @@ buildenv_nix-dind:
 
 buildenv_transfer_loom:
   stage: buildenv
+  allow_failure: true
   when: manual
   variables:
     SLEEP_TIME: infinity
@@ -99,6 +123,7 @@ buildenv_transfer_loom:
 
 helm_test:
   stage: test
+  parallel: $[[ inputs.CI_REPEAT_JOBS ]]
   script:
     - devenv --verbose shell -- build-helm
   rules:
@@ -108,23 +133,27 @@ helm_test:
 
 linting:
   stage: test
+  parallel: $[[ inputs.CI_REPEAT_JOBS ]]
   script:
     - devenv shell -- lint
 
 frontend_test:
   stage: test
+  parallel: $[[ inputs.CI_REPEAT_JOBS ]]
   script:
     - devenv shell -- frontend-test
     - devenv shell -- frontend-build
 
 frontend_audit:
   stage: test
+  parallel: $[[ inputs.CI_REPEAT_JOBS ]]
   allow_failure: true
   script:
     - devenv shell -- frontend-audit
 
 backend_test:
   stage: test
+  parallel: $[[ inputs.CI_REPEAT_JOBS ]]
   script:
     - devenv shell -- backend-test
   coverage: '/(?i)total.*? (100(?:\.0+)?\%|[1-9]?\d(?:\.\d+)?\%)$/'
@@ -134,13 +163,14 @@ backend_test:
         coverage_format: cobertura
         path: ./backend/coverage.xml
 
-
 integrationtest:
   stage: test
+  parallel: $[[ inputs.CI_REPEAT_JOBS ]]
   script:
     - devenv shell -- sudo --background dmesg --follow > dmesg.txt
     - devenv shell -- up --integrationtest --expose "$(tailscale ip -4)"
     - devenv shell -- run-integrationtest
+    - devenv shell -- kubernetes-prune
   artifacts:
     paths:
       - fork-logs/
@@ -151,6 +181,7 @@ integrationtest:
 
 integrationtest_debug:
   extends: integrationtest
+  allow_failure: true
   variables:
     SLEEP_TIME: infinity
   rules:
@@ -158,6 +189,7 @@ integrationtest_debug:
 
 artifacts:
   stage: test
+  parallel: $[[ inputs.CI_REPEAT_JOBS ]]
   script:
     - devenv shell -- sudo --background dmesg --follow > dmesg.txt
     - devenv shell -- up --expose "$(tailscale ip -4)"
@@ -165,6 +197,7 @@ artifacts:
     - devenv shell -- third-party-generate
     - devenv shell -- frontend-static-generate
     - devenv shell -- test-git-file-changed
+    - devenv shell -- kubernetes-prune
   artifacts:
     paths:
       - fork-logs/
@@ -177,6 +210,7 @@ artifacts:
 
 test_build_nix-dind:
   stage: test
+  parallel: $[[ inputs.CI_REPEAT_JOBS ]]
   script:
     - devenv shell -- nix-dind
 
