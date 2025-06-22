@@ -585,6 +585,24 @@ in
     '';
   };
 
+  scripts.kubernetes-prune = {
+    description = "Remove unused data";
+    exec = ''
+      (
+        set -euo pipefail
+        cd "''${DEVENV_ROOT}"
+
+        minikube ssh \
+          -- \
+          docker \
+              system prune \
+                --all \
+                --volumes \
+                --force
+      )
+    '';
+  };
+
   scripts.docker-prune = {
     description = "Prune all docker resources";
     exec = ''
@@ -762,6 +780,19 @@ in
         cd "''${DEVENV_ROOT}"
 
         ./cicd/generate_client_certificate.sh \
+          "''${@}"
+      )
+    '';
+  };
+
+  scripts.backup-restore-docker-volume = {
+    description = "Backup/Restore docker volumes";
+    exec = ''
+      (
+        set -euo pipefail
+        cd "''${DEVENV_ROOT}"
+
+        ./cicd/backup_restore_docker_volume.py \
           "''${@}"
       )
     '';

@@ -388,6 +388,9 @@ devenv.local.nix
 # generated client certs
 client-*.p12
 
+# docker volume cahe
+docker-volume-cache/
+
 # cicd generated files
 fork-logs/
 dmesg.txt
