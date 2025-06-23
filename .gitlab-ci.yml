@@ -75,18 +75,21 @@ default:
       paths:
         - docker-volume-cache
       unprotect: true
+      when: 'always'
     - key:
         files:
           - poetry.lock
       paths:
         - .venv
       unprotect: true
+      when: 'always'
     - key:
         files:
           - Frontend/pnpm-lock.yaml
       paths:
         - Frontend/node_modules/
       unprotect: true
+      when: 'always'
 
 # ---------------------------------------------#
 #

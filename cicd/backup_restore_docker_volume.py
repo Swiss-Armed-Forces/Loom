@@ -1,8 +1,14 @@
 #!/usr/bin/env python3
 import argparse
 import logging
+import os
 from pathlib import Path
 import docker
+
+CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX = os.environ.get(
+    "CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX", ""
+)
+DEFAULT_IMAGE = "alpine"
 
 # Configure logging
 logging.basicConfig(
@@ -11,6 +17,40 @@ logging.basicConfig(
     datefmt="%Y-%m-%d %H:%M:%S",
 )
 logger = logging.getLogger(__name__)
+
+
+def format_file_size(file_path: Path) -> str:
+    """
+    Get file size and format it with the most appropriate unit (TiB, GiB, MiB, KiB, or bytes).
+
+    Args:
+        file_path: Path to the file
+
+    Returns:
+        Formatted size string (e.g., "1.23 GiB", "456.78 MiB", "12.34 KiB", "123 bytes")
+    """
+    if not file_path.exists():
+        return "File not found"
+
+    size_bytes = file_path.stat().st_size
+
+    # Define units in descending order
+    units = [
+        (1024**4, "TiB"),
+        (1024**3, "GiB"),
+        (1024**2, "MiB"),
+        (1024**1, "KiB"),
+        (1, "bytes"),
+    ]
+
+    for divisor, unit in units:
+        if size_bytes >= divisor:
+            size = size_bytes / divisor
+            if unit == "bytes":
+                return f"{int(size)} {unit}"
+            return f"{size:.2f} {unit}"
+
+    return "0 bytes"
 
 
 def backup_volume(volume_name: str, backup_dir: Path, image: str):
@@ -47,7 +87,7 @@ def backup_volume(volume_name: str, backup_dir: Path, image: str):
     )
     container.wait()
 
-    logger.info("Backup completed.")
+    logger.info("Backup completed. Size: %s", format_file_size(archive_path))
 
 
 def restore_volume(volume_name: str, backup_dir: Path, image: str):
@@ -67,9 +107,10 @@ def restore_volume(volume_name: str, backup_dir: Path, image: str):
         return
 
     logger.info(
-        "Restoring  volume '%s' to '%s' using image '%s'...",
+        "Restoring  volume '%s' from '%s' (%s) using image '%s'...",
         volume_name,
         archive_path,
+        format_file_size(archive_path),
         image,
     )
 
@@ -99,17 +140,22 @@ def main():
     parser.add_argument("directory", help="Directory to store/read backups.")
     parser.add_argument(
         "--image",
-        default="alpine",
+        default=DEFAULT_IMAGE,
         help="Docker image to use for backup/restore (default: alpine)",
     )
     args = parser.parse_args()
 
     backup_dir = Path(args.directory)
+    image = (
+        f"{CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX}/{args.image}"
+        if CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX
+        else args.image
+    )
 
     if args.action == "backup":
-        backup_volume(args.volume, backup_dir, args.image)
+        backup_volume(args.volume, backup_dir, image)
     elif args.action == "restore":
-        restore_volume(args.volume, backup_dir, args.image)
+        restore_volume(args.volume, backup_dir, image)
 
 
 if __name__ == "__main__":
