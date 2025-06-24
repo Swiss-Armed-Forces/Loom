@@ -5,7 +5,7 @@ ARG DOCKER_REGISTRY
 FROM ${DOCKER_REGISTRY}/alpine:${ALPINE_IMAGE_VERSION}
 
 #
-# Bash
+# bash
 #
 ARG BASH_VERSION="5.2.37-r0"
 RUN set -exu \

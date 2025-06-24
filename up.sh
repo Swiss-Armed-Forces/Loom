@@ -155,6 +155,7 @@ wait_for(){
 as_user(){
     sudo \
         --user "${SUDO_USER}" \
+        --preserve-env \
         --non-interactive \
             "${@}"
 }

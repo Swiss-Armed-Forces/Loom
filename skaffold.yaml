@@ -274,7 +274,7 @@ profiles:
               - charts/values-development.yaml
             setValueTemplates:
               # It seems like image: ... in helm.sh/hooks
-              # are not replaces by skaffold automatically. Therefore we have to specify them
+              # are not replaced by skaffold automatically. Therefore we have to specify them
               # here manually.
               preInstall:
                 image:
@@ -528,7 +528,7 @@ profiles:
               - charts/values.yaml
             setValueTemplates:
               # It seems like image: ... in helm.sh/hooks
-              # are not replaces by skaffold automatically. Therefore we have to specify them
+              # are not replaced by skaffold automatically. Therefore we have to specify them
               # here manually.
               preInstall:
                 image:

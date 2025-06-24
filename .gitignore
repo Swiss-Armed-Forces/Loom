@@ -388,8 +388,11 @@ devenv.local.nix
 # generated client certs
 client-*.p12
 
-# docker volume cahe
-docker-volume-cache/
+# cicd caches
+docker-cache/
+kubernetes-cache/
+kubernetes-dev-cache/
+.minikube/
 
 # cicd generated files
 fork-logs/

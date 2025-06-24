@@ -12,13 +12,6 @@ spec:
 include:
   - template: Workflows/MergeRequest-Pipelines.gitlab-ci.yml
 
-variables:
-  GIT_STRATEGY: fetch
-  # without this the runner lacks access to the target branch
-  GIT_DEPTH: "0"
-  # enable service debugging
-  # CI_DEBUG_SERVICES: "true"
-
 workflow:
   auto_cancel:
     on_job_failure: all
@@ -36,6 +29,16 @@ stages:
   - test
   - publish
 
+variables:
+  GIT_STRATEGY: fetch
+  # without this the runner lacks access to the target branch
+  GIT_DEPTH: "0"
+  # enable service debugging
+  # CI_DEBUG_SERVICES: "true"
+  # allow some time for backup operations
+  RUNNER_SCRIPT_TIMEOUT: 2h
+  RUNNER_AFTER_SCRIPT_TIMEOUT: 30m
+
 default:
   # Allow cancellation of running tasks
   interruptible: true
@@ -48,34 +51,32 @@ default:
   # Always use nix-dind image
   image: ${CI_REGISTRY_IMAGE}/nix-dind:latest
   before_script:
-    # Show job instance info for debugging (only relevant for parallel jobs)
+    # show job instance info for debugging (only relevant for parallel jobs)
     - echo "Running job instance ${CI_NODE_INDEX} of ${CI_NODE_TOTAL}"
-    # docker login
-    - echo "${CI_REGISTRY_PASSWORD}" | docker login ${CI_REGISTRY} -u "${CI_REGISTRY_USER}" --password-stdin
-    - echo "${CI_DEPENDENCY_PROXY_PASSWORD}" | docker login ${CI_DEPENDENCY_PROXY_SERVER} -u "${CI_DEPENDENCY_PROXY_USER}" --password-stdin
-    # Enable CI/CD mode for the devenv
+    # enable CI/CD mode for the devenv
     - cp "nix-dind/devenv.local.nix" "devenv.local.nix"
-    # Restore docker volumes
-    - devenv shell -- backup-restore-docker-volume restore minikube docker-volume-cache
+    # building shell
+    - devenv shell -- echo "[*] devenv shell ready"
   after_script:
     # collect fork logs
     - mkdir -p fork-logs && cp /var/run/fork-log.*.log fork-logs/
-    # Backup docker volumes
-    - devenv shell -- backup-restore-docker-volume backup minikube docker-volume-cache
   artifacts:
+    # NOTE: This artifact declaration has to live here as artifacts.* does not seem to support
+    # the `!reference []` GitLab annotation. This is why we have to declare all artifacts here
+    # instead of where we actually generate them.
     paths:
       - fork-logs/
+      # for: .default-k8s
+      - dmesg.txt
+      # for: artifacts
+      - Frontend/src/app/api/generated
+      - changed-files/
+      # for: integrationtest
+      - logs/
     expire_in: 1 week
     when: always
   # Dependency caching
   cache:
-    # One key to rule them all:
-    # our pipeline jobs will manage cache size
-    - key: docker-volume-cache
-      paths:
-        - docker-volume-cache
-      unprotect: true
-      when: 'always'
     - key:
         files:
           - poetry.lock
@@ -91,6 +92,132 @@ default:
       unprotect: true
       when: 'always'
 
+.default-docker:
+  extends: default
+  before_script:
+    - !reference [default, before_script]
+    # docker login
+    - echo "${CI_REGISTRY_PASSWORD}" | docker login ${CI_REGISTRY} -u "${CI_REGISTRY_USER}" --password-stdin
+    - echo "${CI_DEPENDENCY_PROXY_PASSWORD}" | docker login ${CI_DEPENDENCY_PROXY_SERVER} -u "${CI_DEPENDENCY_PROXY_USER}" --password-stdin
+    # restore images
+    - devenv shell -- docker-image-backup-restore restore '.*' docker-cache/images/
+  after_script:
+    - !reference [default, after_script]
+    # backup images
+    - devenv shell -- docker-image-backup-restore backup '.*' docker-cache/images/
+  cache:
+    - !reference [default, cache]
+    # One key to rule them all:
+    - key: docker-cache
+      paths:
+        - docker-cache
+      unprotect: true
+      when: 'always'
+
+.default-k8s:
+  extends: .default-docker
+  variables:
+    MINIKUBE_HOME: ${CI_PROJECT_DIR}/.minikube
+  before_script:
+    - !reference [.default-docker, before_script]
+    # collect dmesg
+    - devenv shell -- sudo --background dmesg --follow > dmesg.txt
+    # start k8s
+    - devenv shell -- up --setup
+    # restore images
+    - devenv shell -- docker-image-backup-restore --minikube restore '.*' kubernetes-cache/images/
+  after_script:
+    - !reference [.default-docker, after_script]
+    # start k8s
+    - devenv shell -- up --setup
+    # backup images
+    - devenv shell -- docker-image-backup-restore --minikube backup '.*' kubernetes-cache/images/
+  cache:
+    - !reference [.default-docker, cache]
+    # Cache per runner tags: minikube setup is dependant
+    # on runner hardware - we assume here that all
+    # runners with the same tags are very similar
+    - key: minikube-cache-${CI_RUNNER_TAGS}
+      paths:
+        - ${MINIKUBE_HOME}
+      unprotect: true
+      when: 'always'
+    # One key to rule them all:
+    - key: kubernetes-cache
+      paths:
+        - kubernetes-cache
+      unprotect: true
+      when: 'always'
+
+.default-up:
+  extends: .default-k8s
+  before_script:
+    - !reference [.default-k8s, before_script]
+    # start stack
+    - devenv shell -- up --expose "$(tailscale ip -4)"
+
+# .default-up-integrationtest:
+#   extends: .default-k8s
+#   before_script:
+#     - !reference [.default-k8s, before_script]
+#     # start stack
+#     - devenv shell -- up --integrationtest --expose "$(tailscale ip -4)"
+
+# We should really be using the commented version of .default-up-integrationtest
+# above, but due to a bug in Skaffold which causes dev images to have the same tag
+# as prod images, we cannot mix the two image types. This forces us to also
+# separate the caches (kubernetes-dev-cache vs kubernetes-cache) to avoid
+# conflicts between dev and prod builds.
+#
+# The root cause is that Skaffold's tagger doesn't consider the target argument
+# when calculating image tags, meaning both dev and prod builds get identical
+# tags despite being different builds with different targets. This prevents us
+# from using shared infrastructure and caches between dev/prod environments.
+#
+#
+# Tracking issue:
+#   - https://gitlab.com/swiss-armed-forces/cyber-command/cea/loom/-/issues/91
+# Upstream Issue:
+#   - https://github.com/GoogleContainerTools/skaffold/issues/9826
+#
+.default-up-integrationtest:
+  extends: .default-docker
+  variables:
+    MINIKUBE_HOME: ${CI_PROJECT_DIR}/.minikube
+  before_script:
+    - !reference [.default-docker, before_script]
+    # collect dmesg
+    - devenv shell -- sudo --background dmesg --follow > dmesg.txt
+    # start k8s
+    - devenv shell -- up --setup
+    # restore images
+    - devenv shell -- docker-image-backup-restore --minikube restore '.*' kubernetes-dev-cache/images/
+    # start stack
+    - devenv shell -- up --integrationtest --expose "$(tailscale ip -4)"
+  after_script:
+    - !reference [.default-docker, after_script]
+    # start k8s
+    - devenv shell -- up --setup
+    # backup images
+    - devenv shell -- docker-image-backup-restore --minikube backup '.*' kubernetes-dev-cache/images/
+  cache:
+    - !reference [.default-docker, cache]
+    # Cache per runner tags: minikube setup is dependant
+    # on runner hardware - we assume here that all
+    # runners with the same tags are very similar
+    - key: minikube-cache-${CI_RUNNER_TAGS}
+      paths:
+        - ${MINIKUBE_HOME}
+      unprotect: true
+      when: 'always'
+    # One key to rule them all:
+    - key: kubernetes-dev-cache
+      paths:
+        - kubernetes-dev-cache
+      unprotect: true
+      when: 'always'
+
+
 # ---------------------------------------------#
 #
 #
@@ -100,6 +227,7 @@ default:
 # ----------------------------------------------#
 
 buildenv_nix-dind:
+  extends: .default-docker
   stage: buildenv
   only:
     - main
@@ -108,6 +236,7 @@ buildenv_nix-dind:
     - devenv shell -- nix-dind --push
 
 buildenv_transfer_loom:
+  extends: .default-docker
   stage: buildenv
   allow_failure: true
   when: manual
@@ -167,20 +296,11 @@ backend_test:
         path: ./backend/coverage.xml
 
 integrationtest:
+  extends: .default-up-integrationtest
   stage: test
   parallel: $[[ inputs.CI_REPEAT_JOBS ]]
   script:
-    - devenv shell -- sudo --background dmesg --follow > dmesg.txt
-    - devenv shell -- up --integrationtest --expose "$(tailscale ip -4)"
     - devenv shell -- run-integrationtest
-    - devenv shell -- kubernetes-prune
-  artifacts:
-    paths:
-      - fork-logs/
-      - dmesg.txt
-      - logs/
-    expire_in: 1 week
-    when: always
 
 integrationtest_debug:
   extends: integrationtest
@@ -191,27 +311,17 @@ integrationtest_debug:
     - when: manual
 
 artifacts:
+  extends: .default-up
   stage: test
   parallel: $[[ inputs.CI_REPEAT_JOBS ]]
   script:
-    - devenv shell -- sudo --background dmesg --follow > dmesg.txt
-    - devenv shell -- up --expose "$(tailscale ip -4)"
     - devenv shell -- frontend-api-generate
     - devenv shell -- third-party-generate
     - devenv shell -- frontend-static-generate
     - devenv shell -- test-git-file-changed
-    - devenv shell -- kubernetes-prune
-  artifacts:
-    paths:
-      - fork-logs/
-      - dmesg.txt
-      - logs/
-      - Frontend/src/app/api/generated
-      - changed-files/
-    expire_in: 1 week
-    when: always
 
 test_build_nix-dind:
+  extends: .default-docker
   stage: test
   parallel: $[[ inputs.CI_REPEAT_JOBS ]]
   script:
@@ -226,6 +336,7 @@ test_build_nix-dind:
 # ----------------------------------------------#
 
 publish_images:
+  extends: .default-k8s
   stage: publish
   only:
     - main
@@ -247,6 +358,7 @@ publish_images:
 #   - https://github.com/GoogleContainerTools/skaffold/issues/9826
 #
 # publish_dev_images:
+#  extends: .default-k8s
 #  stage: publish
 #  only:
 #    - main
