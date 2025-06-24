@@ -533,14 +533,41 @@ in
     '';
   };
 
-  scripts.container-stop = {
-    description = "Stop all docker containers";
+  scripts.kubernetes-image-backup-restore = {
+    description = "Backup/Restore kubernetes images";
     exec = ''
       (
         set -euo pipefail
         cd "''${DEVENV_ROOT}"
 
-        ./cicd/container-stop.sh \
+        ./cicd/docker_image_backup_restore.py \
+          --minikube \
+          "''${@}"
+      )
+    '';
+  };
+
+  scripts.kubernetes-pause = {
+    description = "Pause kubernetes cluster";
+    exec = ''
+      (
+        set -euo pipefail
+        cd "''${DEVENV_ROOT}"
+
+        ./cicd/kubernetes_pause.sh \
+          "''${@}"
+      )
+    '';
+  };
+
+  scripts.kubernetes-stop = {
+    description = "Stop kubernetes cluster";
+    exec = ''
+      (
+        set -euo pipefail
+        cd "''${DEVENV_ROOT}"
+
+        ./cicd/kubernetes_stop.sh \
           "''${@}"
       )
     '';
@@ -553,9 +580,34 @@ in
         set -euo pipefail
         cd "''${DEVENV_ROOT}"
 
-        minikube delete \
-          --all=true \
-          --purge=true \
+        ./cicd/kubernetes_delete.sh \
+          "''${@}"
+      )
+    '';
+  };
+
+  scripts.kubernetes-delete-namespace = {
+    description = "Delete namespace in kubernetes";
+    exec = ''
+      (
+        set -euo pipefail
+        cd "''${DEVENV_ROOT}"
+
+        ./cicd/kubernetes_delete_namespace.sh \
+          "''${@}"
+      )
+    '';
+  };
+
+  scripts.kubernetes-prune = {
+    description = "Remove unused data in kubernetes";
+    exec = ''
+      (
+        set -euo pipefail
+        cd "''${DEVENV_ROOT}"
+
+        ./cicd/kubernetes_prune.sh \
+          "''${@}"
       )
     '';
   };
@@ -573,32 +625,28 @@ in
     '';
   };
 
-  scripts.kubernetes-delete-namespace = {
-    description = "Delete whole namespace";
+  scripts.docker-image-backup-restore = {
+    description = "Backup/Restore docker images";
     exec = ''
       (
         set -euo pipefail
         cd "''${DEVENV_ROOT}"
 
-        kubectl delete namespace loom
+        ./cicd/docker_image_backup_restore.py \
+          "''${@}"
       )
     '';
   };
 
-  scripts.kubernetes-prune = {
-    description = "Remove unused data";
+  scripts.docker-container-stop = {
+    description = "Stop all docker containers";
     exec = ''
       (
         set -euo pipefail
         cd "''${DEVENV_ROOT}"
 
-        minikube ssh \
-          -- \
-          docker \
-              system prune \
-                --all \
-                --volumes \
-                --force
+        ./cicd/docker_container_stop.sh \
+          "''${@}"
       )
     '';
   };
@@ -780,19 +828,6 @@ in
         cd "''${DEVENV_ROOT}"
 
         ./cicd/generate_client_certificate.sh \
-          "''${@}"
-      )
-    '';
-  };
-
-  scripts.backup-restore-docker-volume = {
-    description = "Backup/Restore docker volumes";
-    exec = ''
-      (
-        set -euo pipefail
-        cd "''${DEVENV_ROOT}"
-
-        ./cicd/backup_restore_docker_volume.py \
           "''${@}"
       )
     '';

@@ -5244,16 +5244,16 @@ The complete source code for Traefik is publicly available at [https://github.co
 | drb | 2.1.1 | BSD-2-Clause, Ruby | ruby-installed-gemspec-cataloger |
 | drb | 2.2.1 | BSD-2-Clause, Ruby | ruby-installed-gemspec-cataloger |
 | elastic-transport | 8.4.0 | Apache-2.0 | ruby-installed-gemspec-cataloger |
-| elasticsearch | 9.0.3 | Apache-2.0 | ruby-installed-gemspec-cataloger |
-| elasticsearch-api | 9.0.3 | Apache-2.0 | ruby-installed-gemspec-cataloger |
+| elasticsearch | 8.18.0 | Apache-2.0 | ruby-installed-gemspec-cataloger |
+| elasticsearch-api | 8.18.0 | Apache-2.0 | ruby-installed-gemspec-cataloger |
 | english | 0.7.2 | BSD-2-Clause, Ruby | ruby-installed-gemspec-cataloger |
 | erb | 4.0.2 | BSD-2-Clause, Ruby | ruby-installed-gemspec-cataloger |
 | error_highlight | 0.5.1 | MIT | ruby-installed-gemspec-cataloger |
 | etc | 1.4.2 | BSD-2-Clause, Ruby | ruby-installed-gemspec-cataloger |
-| excon | 1.2.5 | MIT | ruby-installed-gemspec-cataloger |
+| excon | 1.2.7 | MIT | ruby-installed-gemspec-cataloger |
 | faraday | 2.13.1 | MIT | ruby-installed-gemspec-cataloger |
 | faraday-excon | 2.3.0 | MIT | ruby-installed-gemspec-cataloger |
-| faraday-net_http | 3.4.0 | MIT | ruby-installed-gemspec-cataloger |
+| faraday-net_http | 3.4.1 | MIT | ruby-installed-gemspec-cataloger |
 | fcntl | 1.0.2 | BSD-2-Clause, Ruby | ruby-installed-gemspec-cataloger |
 | fiber-annotation | 0.2.0 | MIT | ruby-installed-gemspec-cataloger |
 | fiber-local | 1.1.0 | MIT | ruby-installed-gemspec-cataloger |
@@ -5261,7 +5261,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | fiddle | 1.1.1 | BSD-2-Clause, Ruby | ruby-installed-gemspec-cataloger |
 | fileutils | 1.7.0 | BSD-2-Clause, Ruby | ruby-installed-gemspec-cataloger |
 | find | 0.1.1 | BSD-2-Clause, Ruby | ruby-installed-gemspec-cataloger |
-| fluent-plugin-elasticsearch | 5.4.3 | Apache-2.0 | ruby-installed-gemspec-cataloger |
+| fluent-plugin-elasticsearch | 6.0.0 | Apache-2.0 | ruby-installed-gemspec-cataloger |
 | fluentd | 1.17.0 | Apache-2.0 | ruby-installed-gemspec-cataloger |
 | forwardable | 1.3.3 | BSD-2-Clause, Ruby | ruby-installed-gemspec-cataloger |
 | getoptlong | 0.2.0 | BSD-2-Clause, Ruby | ruby-installed-gemspec-cataloger |
