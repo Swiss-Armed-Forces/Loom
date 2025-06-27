@@ -66,6 +66,9 @@ in
     # this is bad. We don't want that. We don't need any keys.
     # https://www.reddit.com/r/learnpython/comments/zcb95y/comment/kdh0aka
     PYTHON_KEYRING_BACKEND = "keyring.backends.fail.Keyring";
+
+    # Make minikube store all its metadata in the project root
+    MINIKUBE_HOME = "${config.devenv.root}/.minikube";
   };
 
   # https://devenv.sh/packages/
@@ -303,7 +306,7 @@ in
     init(){
       (
         set -euo pipefail
-        cd "''${DEVENV_ROOT}"
+        cd "${config.devenv.root}"
 
         # is interactive shell?
         if tty -s; then
@@ -326,7 +329,7 @@ in
 
     # use dependency proxy
     CI_DEPENDENCY_PROXY_SERVER="''${CI_DEPENDENCY_PROXY_SERVER:-gitlab.com}"
-    if docker login "''${CI_DEPENDENCY_PROXY_SERVER}" &>/dev/null; then
+    if docker-login-noninteractive "''${CI_DEPENDENCY_PROXY_SERVER}" &>/dev/null; then
       CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX="''${CI_DEPENDENCY_PROXY_SERVER}/swiss-armed-forces/cyber-command/cea/dependency_proxy/containers"
       export CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX
       echo "Using docker image dependency proxy: ''${CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX}"
@@ -337,7 +340,7 @@ in
     description = "Print this help";
     exec = ''
       set -euo pipefail
-      cd "''${DEVENV_ROOT}"
+      cd "${config.devenv.root}"
 
       echo
       echo "Helper scripts provided by the devenv:"
@@ -354,7 +357,7 @@ in
     exec = ''
       (
         set -euo pipefail
-        cd "''${DEVENV_ROOT}"
+        cd "${config.devenv.root}"
 
         ./up.sh "''${@}"
       )
@@ -366,7 +369,7 @@ in
     exec = ''
       (
         set -euo pipefail
-        cd "''${DEVENV_ROOT}"
+        cd "${config.devenv.root}"
 
         echo "[*] Stopping loom"
         skaffold delete \
@@ -387,7 +390,7 @@ in
     exec = ''
       (
         set -euo pipefail
-        cd "''${DEVENV_ROOT}"
+        cd "${config.devenv.root}"
 
         ./cicd/build.sh "''${@}"
       )
@@ -399,7 +402,7 @@ in
     exec = ''
       (
         set -euo pipefail
-        cd "''${DEVENV_ROOT}"
+        cd "${config.devenv.root}"
 
         ./cicd/build_helm.sh "''${@}"
       )
@@ -411,7 +414,7 @@ in
     exec = ''
       (
         set -euo pipefail
-        cd "''${DEVENV_ROOT}"
+        cd "${config.devenv.root}"
 
         echo "[*] Running lint.sh"
         ./cicd/lint.sh
@@ -441,10 +444,23 @@ in
     exec = ''
       (
         set -euo pipefail
-        cd "''${DEVENV_ROOT}"
+        cd "${config.devenv.root}"
 
         ./cicd/check-syntax.sh \
           --fix \
+          "''${@}"
+      )
+    '';
+  };
+
+  scripts.generate-openapi-schema = {
+    description = "Print the openapi-schema.json";
+    exec = ''
+      (
+        set -euo pipefail
+        cd "${config.devenv.root}"
+
+        ./cicd/generate_openapi_schema.py \
           "''${@}"
       )
     '';
@@ -511,7 +527,7 @@ in
     exec = ''
       (
         set -euo pipefail
-        cd "''${DEVENV_ROOT}"
+        cd "${config.devenv.root}"
 
         ./cicd/update-poetry-lock.sh \
           "''${@}"
@@ -524,7 +540,7 @@ in
     exec = ''
       (
         set -euo pipefail
-        cd "''${DEVENV_ROOT}"
+        cd "${config.devenv.root}"
 
         poetry run \
           integrationtest/utils/wipe_data.py \
@@ -538,7 +554,7 @@ in
     exec = ''
       (
         set -euo pipefail
-        cd "''${DEVENV_ROOT}"
+        cd "${config.devenv.root}"
 
         ./cicd/docker_image_backup_restore.py \
           --minikube \
@@ -552,7 +568,7 @@ in
     exec = ''
       (
         set -euo pipefail
-        cd "''${DEVENV_ROOT}"
+        cd "${config.devenv.root}"
 
         ./cicd/kubernetes_pause.sh \
           "''${@}"
@@ -565,7 +581,7 @@ in
     exec = ''
       (
         set -euo pipefail
-        cd "''${DEVENV_ROOT}"
+        cd "${config.devenv.root}"
 
         ./cicd/kubernetes_stop.sh \
           "''${@}"
@@ -578,7 +594,7 @@ in
     exec = ''
       (
         set -euo pipefail
-        cd "''${DEVENV_ROOT}"
+        cd "${config.devenv.root}"
 
         ./cicd/kubernetes_delete.sh \
           "''${@}"
@@ -591,7 +607,7 @@ in
     exec = ''
       (
         set -euo pipefail
-        cd "''${DEVENV_ROOT}"
+        cd "${config.devenv.root}"
 
         ./cicd/kubernetes_delete_namespace.sh \
           "''${@}"
@@ -604,7 +620,7 @@ in
     exec = ''
       (
         set -euo pipefail
-        cd "''${DEVENV_ROOT}"
+        cd "${config.devenv.root}"
 
         ./cicd/kubernetes_prune.sh \
           "''${@}"
@@ -617,9 +633,38 @@ in
     exec = ''
       (
         set -euo pipefail
-        cd "''${DEVENV_ROOT}"
+        cd "${config.devenv.root}"
 
         ./cicd/fetch_all_pod_logs.sh \
+          "''${@}"
+      )
+    '';
+  };
+
+  scripts.docker-minikube = {
+    description = "Docker cli wrapper communicating to the minikube docker daemon";
+    exec = ''
+      (
+        set -euo pipefail
+        cd "${config.devenv.root}"
+
+        MINIKUBE_EVAL=$(minikube -p minikube docker-env)
+        eval "''${MINIKUBE_EVAL}"
+
+        docker \
+          "''${@}"
+      )
+    '';
+  };
+
+  scripts.docker-login-noninteractive = {
+    description = "Calling docker login without user interaction";
+    exec = ''
+      (
+        set -euo pipefail
+        cd "${config.devenv.root}"
+
+        ./cicd/docker_login_noninteractive.sh \
           "''${@}"
       )
     '';
@@ -630,7 +675,7 @@ in
     exec = ''
       (
         set -euo pipefail
-        cd "''${DEVENV_ROOT}"
+        cd "${config.devenv.root}"
 
         ./cicd/docker_image_backup_restore.py \
           "''${@}"
@@ -643,7 +688,7 @@ in
     exec = ''
       (
         set -euo pipefail
-        cd "''${DEVENV_ROOT}"
+        cd "${config.devenv.root}"
 
         ./cicd/docker_container_stop.sh \
           "''${@}"
@@ -656,7 +701,7 @@ in
     exec = ''
       (
         set -euo pipefail
-        cd "''${DEVENV_ROOT}"
+        cd "${config.devenv.root}"
 
         ./cicd/docker_prune.sh \
           "''${@}"
@@ -669,7 +714,7 @@ in
     exec = ''
       (
         set -euo pipefail
-        cd "''${DEVENV_ROOT}"
+        cd "${config.devenv.root}"
 
         ./cicd/nix-dind.sh \
           "''${@}"
@@ -682,7 +727,7 @@ in
     exec = ''
       (
         set -euo pipefail
-        cd "''${DEVENV_ROOT}"
+        cd "${config.devenv.root}"
 
         ./cicd/generate_frontend_api.sh \
           "''${@}"
@@ -690,14 +735,14 @@ in
     '';
   };
 
-  scripts.third-party-generate = {
+  scripts.generate-third-party = {
     description = "Generate THIRD-PARTY.md";
     exec = ''
       (
         set -euo pipefail
-        cd "''${DEVENV_ROOT}"
+        cd "${config.devenv.root}"
 
-        ./cicd/generate_third_party_licenses.sh \
+        ./cicd/generate_third_party.sh \
           "''${@}"
       )
     '';
@@ -708,7 +753,7 @@ in
     exec = ''
       (
         set -euo pipefail
-        cd "''${DEVENV_ROOT}"
+        cd "${config.devenv.root}"
 
         ./cicd/generate_frontend_static.sh \
           "''${@}"
@@ -721,7 +766,7 @@ in
     exec = ''
       (
         set -euo pipefail
-        cd "''${DEVENV_ROOT}"
+        cd "${config.devenv.root}"
 
         ./cicd/test_git_file_changed.sh \
           "''${@}"
@@ -734,7 +779,7 @@ in
     exec = ''
       (
         set -euo pipefail
-        cd "''${DEVENV_ROOT}"
+        cd "${config.devenv.root}"
 
         ./cicd/run_integrationtest.sh
           "''${@}"
@@ -747,7 +792,7 @@ in
     exec = ''
       (
         set -euo pipefail
-        cd "''${DEVENV_ROOT}"
+        cd "${config.devenv.root}"
 
         cp "${builtins.toString cicd-config}" devenv.local.nix
       )
@@ -759,7 +804,7 @@ in
     exec = ''
       (
         set -euo pipefail
-        cd "''${DEVENV_ROOT}"
+        cd "${config.devenv.root}"
 
         rm \
           --force \
@@ -773,7 +818,7 @@ in
     exec = ''
       (
         set -euo pipefail
-        cd "''${DEVENV_ROOT}"
+        cd "${config.devenv.root}"
 
         ./cicd/install_runner.sh
           "''${@}"
@@ -786,7 +831,7 @@ in
     exec = ''
       (
         set -euo pipefail
-        cd "''${DEVENV_ROOT}"
+        cd "${config.devenv.root}"
 
         ./cicd/chrome_wrapped.sh \
           "''${@}"
@@ -799,7 +844,7 @@ in
     exec = ''
       (
         set -euo pipefail
-        cd "''${DEVENV_ROOT}"
+        cd "${config.devenv.root}"
 
         ./helpers/transfer_loom.sh \
           "''${@}"
@@ -812,7 +857,7 @@ in
     exec = ''
       (
         set -euo pipefail
-        cd "''${DEVENV_ROOT}"
+        cd "${config.devenv.root}"
 
         ./traefik/update.sh \
           "''${@}"
@@ -825,7 +870,7 @@ in
     exec = ''
       (
         set -euo pipefail
-        cd "''${DEVENV_ROOT}"
+        cd "${config.devenv.root}"
 
         ./cicd/generate_client_certificate.sh \
           "''${@}"

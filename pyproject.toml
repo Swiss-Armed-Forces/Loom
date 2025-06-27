@@ -41,6 +41,7 @@ pytest-memray = "^1.6.0"
 pytest-asyncio = "^0.23.6"
 freezegun = "^1.5.1"
 pytest-random-order = "^1.1.1"
+pytest-split = "^0.10.0"
 
 [build-system]
 requires = ["poetry-core"]

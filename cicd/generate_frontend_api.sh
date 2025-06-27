@@ -1,35 +1,43 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+#
+# Consts
+#
+
 SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null && pwd)
 GIT_TOPLEVEL=$(git rev-parse --show-toplevel)
 
 OPENAPI_GENERATOR_CONFIG="${GIT_TOPLEVEL}/openapitools.json"
 FRONTEND_API_DIR="${GIT_TOPLEVEL}/Frontend/src/app/api/generated"
-API_URL="http://api.loom"
+OPENAPI_SCHEMA_TMP="$(mktemp)"
 
 VERBOSE=false
 ACTION="generate_frontend_api"
 
+#
+# Functions
+#
+
 generate_frontend_api() {
-    # first, remove all files previously generated
+    echo "[*] Removing previously generated files"
     rm -rf \
         "${FRONTEND_API_DIR}"
 
-    # then, fresh generate files
-    export TS_POST_PROCESS_FILE="${SCRIPT_DIR}/generate_frontend_api.sh --post-process-typescript"
-    # disable certificate verification
-    export JAVA_OPTS="-Dio.swagger.parser.util.RemoteUrl.trustAll=true -Dio.swagger.v3.parser.util.RemoteUrl.trustAll=true"
+    echo "[*] Generating openapi schema"
+    "${SCRIPT_DIR}/generate_openapi_schema.py" > "${OPENAPI_SCHEMA_TMP}"
 
+    echo "[*] Generating typescript client"
+    export TS_POST_PROCESS_FILE="${SCRIPT_DIR}/generate_frontend_api.sh --post-process-typescript"
     openapi-generator-cli \
         generate \
             --config "${OPENAPI_GENERATOR_CONFIG}" \
             --generator-name "typescript-fetch" \
-            --input-spec "${API_URL}/openapi.json" \
+            --input-spec "${OPENAPI_SCHEMA_TMP}" \
             --enable-post-process-file \
             --output "${FRONTEND_API_DIR}"
 
-    # last, fix all the generated files
+    echo "[*] Check and fixing syntax"
     "${SCRIPT_DIR}/check-syntax.sh" \
         --fix \
         --skip-python
@@ -61,6 +69,20 @@ usage() {
     echo "  -ppt | --post-process-typescript    post process a typescript file"
     echo "  -v   |--verbose                     make verbose"
 }
+
+
+#
+# Atexit handler
+#
+
+atexit(){
+    rm -rf "${OPENAPI_SCHEMA_TMP}"
+}
+trap atexit EXIT
+
+#
+# Argument parser
+#
 
 ARGS=()
 while [[ $# -gt 0 ]]; do

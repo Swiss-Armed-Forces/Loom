@@ -2605,6 +2605,20 @@ files = [
 pytest = ">=3.0.0"
 
 [[package]]
+name = "pytest-split"
+version = "0.10.0"
+description = "Pytest plugin which splits the test suite to equally sized sub suites based on test execution time."
+optional = false
+python-versions = "<4.0,>=3.8.1"
+files = [
+    {file = "pytest_split-0.10.0-py3-none-any.whl", hash = "sha256:466096b086a7147bcd423c6e6c2e57fc62af1c5ea2e256b4ed50fc030fc3dddc"},
+    {file = "pytest_split-0.10.0.tar.gz", hash = "sha256:adf80ba9fef7be89500d571e705b4f963dfa05038edf35e4925817e6b34ea66f"},
+]
+
+[package.dependencies]
+pytest = ">=5,<9"
+
+[[package]]
 name = "pytest-timeout"
 version = "2.3.1"
 description = "pytest plugin to abort hanging tests"
@@ -3606,4 +3620,4 @@ cffi = ["cffi (>=1.11)"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.11"
-content-hash = "54e1e956e5d17db80bc0935829a60545991d63626caeaa09179651348cf2cd30"
+content-hash = "c3d0e4eaf1dd4ff65c704f10760c26b409ed6be5e0a288782db9e841fca03a92"

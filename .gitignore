@@ -388,14 +388,24 @@ devenv.local.nix
 # generated client certs
 client-*.p12
 
+# syft
+.syft-tmp.*/
+
+# THIRD-PARTY
+THIRD-PARTY.md.progress
+
+# pytest-split
+.test_durations
+
 # cicd caches
 docker-cache/
 kubernetes-cache/
 kubernetes-dev-cache/
 .minikube/
+third-party-cache/
 
 # cicd generated files
 fork-logs/
 dmesg.txt
 logs/
-change-files/
+changed-files/
