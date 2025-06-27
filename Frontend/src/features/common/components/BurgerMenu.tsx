@@ -124,6 +124,12 @@ export function BurgerMenu() {
     return (
         <div>
             <IconButton
+                sx={{
+                    "background-color": "rgba(0, 0, 0, 0.75)",
+                    "&:hover": {
+                        backgroundColor: "rgba(0, 0, 0, 0.85)",
+                    },
+                }}
                 edge="start"
                 color="inherit"
                 aria-label="menu"
