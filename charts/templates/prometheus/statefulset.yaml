@@ -1,4 +1,7 @@
 {{- if .Values.prometheus.enabled }}
+{{- $pvcStorageBytes := include "SI-to-bytes" .Values.prometheus.pvc.storage | int64 -}}
+{{- $pvcStorageHighWatermarkThresholdPercent := 0.5 -}}
+{{- $pvcStorageHighWatermarkBytes := mulf $pvcStorageBytes $pvcStorageHighWatermarkThresholdPercent | int64 -}}
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
@@ -45,8 +48,8 @@ spec:
             # first two are default from the image, https://github.com/prometheus/prometheus/blob/main/Dockerfile
             - --config.file=/etc/prometheus/prometheus.yml
             - --storage.tsdb.path=/prometheus
-            # setting max retention to 80% of the disk size
-            - --storage.tsdb.retention.size={{- div (mul (include "SI-to-bytes" .Values.prometheus.pvc.storage) 8) 10 }}B
+            # setting max retention to % of the pvc
+            - --storage.tsdb.retention.size={{ printf "%d" $pvcStorageHighWatermarkBytes }}B
           ports:
             - name: metrics
               containerPort: {{ .Values.prometheus.service.port }}
