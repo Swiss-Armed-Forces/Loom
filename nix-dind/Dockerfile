@@ -126,9 +126,12 @@ ENV NIX_DAEMON_ARGS=${NIX_DAEMON_ARGS}
 ARG NIX_STORE_OPTIMIZE=true
 ENV NIX_STORE_OPTIMIZE=${NIX_STORE_OPTIMIZE}
 
-
-ARG NIX_CHANNEL="nixos-25.05"
-#ARG NIX_CHANNEL="nixpkgs-unstable"
+# Using unstable for now (we really should not)
+# because of build failures in devenv
+# see:
+#   - https://github.com/NixOS/nixpkgs/issues/420134
+#ARG NIX_CHANNEL="nixos-25.05"
+ARG NIX_CHANNEL="nixpkgs-unstable"
 # hadolint ignore=DL3004
 RUN set -exu \
     && fork() { (setsid "$@" &); } && fork nix-daemon ${NIX_DAEMON_ARGS} \

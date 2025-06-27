@@ -316,6 +316,7 @@ create_cluster(){
     as_user \
         minikube start \
             --driver docker \
+            --wait all \
             --registry-mirror "${REGISTRY_MIRROR}" \
             --memory max \
             --cpus max \
@@ -348,13 +349,21 @@ install_traefik(){
         # Deploy CRDs as skaffold won't do this
         # Related:
         # https://github.com/GoogleContainerTools/skaffold/issues/8227
+        echo "[*] Deploying traefik CRDS"
         helm show crds \
             "traefik-${TRAEFIK_HELM_VERSION}.tgz" \
         | kubectl \
             apply \
                 --filename -
 
+        # Wait for all CRDs to be established
+        kubectl wait \
+            --for condition=established \
+                crd \
+                    --all
+
         # Install default tls-store
+        echo "[*] Installing traefik tls-store"
         kubectl \
             apply \
                 --filename tls-store.yaml
@@ -364,7 +373,7 @@ install_traefik(){
         # ressources, which won't work as traefik
         # holds exclusive access on certain ports
         # Related:
-        # https://github.com/GoogleContainerTools/skaffold/issues/9222
+        #   - https://github.com/GoogleContainerTools/skaffold/issues/9222
         "${TRAEFIK_SKAFFOLD_CMD}" delete \
             --profile "${PROFILE}"
 

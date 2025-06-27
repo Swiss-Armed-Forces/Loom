@@ -1,14 +1,4 @@
 ## Gitlab pipeline configuration
-
-spec:
-  inputs:
-    CI_REPEAT_JOBS:
-      default: 1
-      description: "Number of times to repeat each job for stability testing"
-      type: number
-
----
-
 include:
   - template: Workflows/MergeRequest-Pipelines.gitlab-ci.yml
 
@@ -33,10 +23,21 @@ variables:
   GIT_STRATEGY: fetch
   # without this the runner lacks access to the target branch
   GIT_DEPTH: "0"
+  # output upload and download progress every x seconds
+  TRANSFER_METER_FREQUENCY: "2s"
+  # Fastzip is a performant archiver for cache/artifact archiving and extraction
+  FF_USE_FASTZIP: "true"
+  # Use fast compression for artifacts, resulting in larger archives
+  ARTIFACT_COMPRESSION_LEVEL: "default"
+  # Use no compression for caches
+  CACHE_COMPRESSION_LEVEL: "fastest"
+  # When enabled, each script line from the .gitlab-ci.yml file is in
+  # a collapsible section in the job output, and shows the duration of each line.
+  FF_SCRIPT_SECTIONS: "true"
   # enable service debugging
   # CI_DEBUG_SERVICES: "true"
   # allow some time for backup operations
-  RUNNER_SCRIPT_TIMEOUT: 2h
+  RUNNER_SCRIPT_TIMEOUT: 3h
   RUNNER_AFTER_SCRIPT_TIMEOUT: 30m
 
 default:
@@ -68,11 +69,11 @@ default:
       - fork-logs/
       # for: .default-k8s
       - dmesg.txt
-      # for: artifacts
-      - Frontend/src/app/api/generated
+      # for: all jobs which use test-git-file-changed
       - changed-files/
       # for: integrationtest
       - logs/
+      - .test_durations
     expire_in: 1 week
     when: always
   # Dependency caching
@@ -100,11 +101,11 @@ default:
     - echo "${CI_REGISTRY_PASSWORD}" | docker login ${CI_REGISTRY} -u "${CI_REGISTRY_USER}" --password-stdin
     - echo "${CI_DEPENDENCY_PROXY_PASSWORD}" | docker login ${CI_DEPENDENCY_PROXY_SERVER} -u "${CI_DEPENDENCY_PROXY_USER}" --password-stdin
     # restore images
-    - devenv shell -- docker-image-backup-restore restore '.*' docker-cache/images/
+    - devenv shell -- docker-image-backup-restore restore docker-cache/images/
   after_script:
     - !reference [default, after_script]
     # backup images
-    - devenv shell -- docker-image-backup-restore backup '.*' docker-cache/images/
+    - devenv shell -- docker-image-backup-restore backup --prune '.*' docker-cache/images/
   cache:
     - !reference [default, cache]
     # One key to rule them all:
@@ -125,13 +126,13 @@ default:
     # start k8s
     - devenv shell -- up --setup
     # restore images
-    - devenv shell -- docker-image-backup-restore --minikube restore '.*' kubernetes-cache/images/
+    - devenv shell -- docker-image-backup-restore --minikube restore kubernetes-cache/images/
   after_script:
     - !reference [.default-docker, after_script]
     # start k8s
     - devenv shell -- up --setup
     # backup images
-    - devenv shell -- docker-image-backup-restore --minikube backup '.*' kubernetes-cache/images/
+    - devenv shell -- docker-image-backup-restore --minikube backup --prune '.*' kubernetes-cache/images/
   cache:
     - !reference [.default-docker, cache]
     # Cache per runner tags: minikube setup is dependant
@@ -154,68 +155,7 @@ default:
   before_script:
     - !reference [.default-k8s, before_script]
     # start stack
-    - devenv shell -- up --expose "$(tailscale ip -4)"
-
-# .default-up-integrationtest:
-#   extends: .default-k8s
-#   before_script:
-#     - !reference [.default-k8s, before_script]
-#     # start stack
-#     - devenv shell -- up --integrationtest --expose "$(tailscale ip -4)"
-
-# We should really be using the commented version of .default-up-integrationtest
-# above, but due to a bug in Skaffold which causes dev images to have the same tag
-# as prod images, we cannot mix the two image types. This forces us to also
-# separate the caches (kubernetes-dev-cache vs kubernetes-cache) to avoid
-# conflicts between dev and prod builds.
-#
-# The root cause is that Skaffold's tagger doesn't consider the target argument
-# when calculating image tags, meaning both dev and prod builds get identical
-# tags despite being different builds with different targets. This prevents us
-# from using shared infrastructure and caches between dev/prod environments.
-#
-#
-# Tracking issue:
-#   - https://gitlab.com/swiss-armed-forces/cyber-command/cea/loom/-/issues/91
-# Upstream Issue:
-#   - https://github.com/GoogleContainerTools/skaffold/issues/9826
-#
-.default-up-integrationtest:
-  extends: .default-docker
-  variables:
-    MINIKUBE_HOME: ${CI_PROJECT_DIR}/.minikube
-  before_script:
-    - !reference [.default-docker, before_script]
-    # collect dmesg
-    - devenv shell -- sudo --background dmesg --follow > dmesg.txt
-    # start k8s
-    - devenv shell -- up --setup
-    # restore images
-    - devenv shell -- docker-image-backup-restore --minikube restore '.*' kubernetes-dev-cache/images/
-    # start stack
     - devenv shell -- up --integrationtest --expose "$(tailscale ip -4)"
-  after_script:
-    - !reference [.default-docker, after_script]
-    # start k8s
-    - devenv shell -- up --setup
-    # backup images
-    - devenv shell -- docker-image-backup-restore --minikube backup '.*' kubernetes-dev-cache/images/
-  cache:
-    - !reference [.default-docker, cache]
-    # Cache per runner tags: minikube setup is dependant
-    # on runner hardware - we assume here that all
-    # runners with the same tags are very similar
-    - key: minikube-cache-${CI_RUNNER_TAGS}
-      paths:
-        - ${MINIKUBE_HOME}
-      unprotect: true
-      when: 'always'
-    # One key to rule them all:
-    - key: kubernetes-dev-cache
-      paths:
-        - kubernetes-dev-cache
-      unprotect: true
-      when: 'always'
 
 
 # ---------------------------------------------#
@@ -255,9 +195,8 @@ buildenv_transfer_loom:
 
 helm_test:
   stage: test
-  parallel: $[[ inputs.CI_REPEAT_JOBS ]]
   script:
-    - devenv --verbose shell -- build-helm
+    - devenv shell -- build-helm
   rules:
     - if: '$CI_COMMIT_BRANCH != "main"'
     - if: $CI_COMMIT_TAG
@@ -265,27 +204,36 @@ helm_test:
 
 linting:
   stage: test
-  parallel: $[[ inputs.CI_REPEAT_JOBS ]]
   script:
     - devenv shell -- lint
 
 frontend_test:
   stage: test
-  parallel: $[[ inputs.CI_REPEAT_JOBS ]]
   script:
     - devenv shell -- frontend-test
     - devenv shell -- frontend-build
 
 frontend_audit:
   stage: test
-  parallel: $[[ inputs.CI_REPEAT_JOBS ]]
   allow_failure: true
   script:
     - devenv shell -- frontend-audit
 
+frontend_static_generate:
+  stage: test
+  allow_failure: true
+  script:
+    - devenv shell -- frontend-static-generate
+    - devenv shell -- test-git-file-changed
+
+frontend_api_generate:
+  stage: test
+  script:
+    - devenv shell -- frontend-api-generate
+    - devenv shell -- test-git-file-changed
+
 backend_test:
   stage: test
-  parallel: $[[ inputs.CI_REPEAT_JOBS ]]
   script:
     - devenv shell -- backend-test
   coverage: '/(?i)total.*? (100(?:\.0+)?\%|[1-9]?\d(?:\.\d+)?\%)$/'
@@ -295,10 +243,40 @@ backend_test:
         coverage_format: cobertura
         path: ./backend/coverage.xml
 
-integrationtest:
-  extends: .default-up-integrationtest
+test_build_nix-dind:
+  extends: .default-docker
   stage: test
-  parallel: $[[ inputs.CI_REPEAT_JOBS ]]
+  script:
+    - devenv shell -- nix-dind
+
+generate_third_party:
+  extends: .default-up
+  stage: test
+  script:
+    - devenv shell -- generate-third-party --minikube
+    - devenv shell -- test-git-file-changed
+  cache:
+    - !reference [.default-up, cache]
+    - key:
+        files:
+          - cicd/generate_third_party.sh
+      paths:
+        - third-party-cache
+      unprotect: true
+      when: 'always'
+
+integrationtest:
+  extends: .default-up
+  stage: test
+  variables:
+    # We do need to fix the RANDOM_ORDER_SEED
+    # here to make pytest-split work with
+    # pytest-random-order.
+    #
+    # see:
+    #   - https://jerry-git.github.io/pytest-split/
+    RANDOM_ORDER_SEED: "${CI_PIPELINE_ID}"
+  parallel: 4
   script:
     - devenv shell -- run-integrationtest
 
@@ -309,23 +287,6 @@ integrationtest_debug:
     SLEEP_TIME: infinity
   rules:
     - when: manual
-
-artifacts:
-  extends: .default-up
-  stage: test
-  parallel: $[[ inputs.CI_REPEAT_JOBS ]]
-  script:
-    - devenv shell -- frontend-api-generate
-    - devenv shell -- third-party-generate
-    - devenv shell -- frontend-static-generate
-    - devenv shell -- test-git-file-changed
-
-test_build_nix-dind:
-  extends: .default-docker
-  stage: test
-  parallel: $[[ inputs.CI_REPEAT_JOBS ]]
-  script:
-    - devenv shell -- nix-dind
 
 # ---------------------------------------------#
 #
@@ -349,8 +310,9 @@ publish_images:
         devenv shell -- build --profile prod --push --tag "${CI_COMMIT_TAG}"
       fi
 
-# Currently unable to build and push dev images because the skaffold tagger
-# doesn't consider the target argument when calculating image tags.
+# Currently we are unable to build and push dev images because the
+# skaffold tagger doesn't consider the target argument when calculating
+# image tags.
 #
 # Tracking issue:
 #   - https://gitlab.com/swiss-armed-forces/cyber-command/cea/loom/-/issues/91

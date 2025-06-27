@@ -7,13 +7,17 @@ TOPLEVEL_DIR="${SCRIPT_DIR}/.."
 FRONTEND_DIR="${TOPLEVEL_DIR}/Frontend"
 SYFT_TEMPLATE="${SCRIPT_DIR}/syft-template.txt"
 THIRD_PARTY_LICENCES="THIRD-PARTY.md"
-THIRD_PARTY_LICENCES_OUTPUT="${TOPLEVEL_DIR}/${THIRD_PARTY_LICENCES}"
+THIRD_PARTY_LICENCES_PROGRESS="THIRD-PARTY.md.progress"
+THIRD_PARTY_CACHE_DIR="${THIRD_PARTY_CACHE_DIR:-third-party-cache}"
+
 TRAEFIK_SKAFFOLD_CMD="${TOPLEVEL_DIR}/traefik/skaffold"
 # We need this because some images ore too big for /tmp (RAM)
 SYFT_TMPDIR="$(mktemp --directory --tmpdir="${PWD}" ".syft-tmp.XXXXXXX" )"
-#NIX_DIND_IMAGE="registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/nix-dind:latest"
+
 
 VERBOSE=false
+MINIKUBE_ENABLE=false
+MINIKUBE_EVAL=""
 ACTION="generate_third_party_licenses"
 
 PROFILE="prod"
@@ -39,25 +43,22 @@ component_licenses(){
 }
 
 
-filter_images(){
-    sed \
-        --quiet \
-        --regexp-extended \
-        --expression 's/\s*- .+ -> (.+)/\1/p'
+get_image_tags(){
+    jq \
+        --raw-output \
+        '.builds[].tag'
 }
 
 # build & list all images
 list_all_images(){
-    # Skipping for now: takes too long
-    #echo "${NIX_DIND_IMAGE}"
-
     # Traefik
     (
         cd "${TOPLEVEL_DIR}/traefik"
         "${TRAEFIK_SKAFFOLD_CMD}" \
             build \
+            --quiet \
             --profile "${PROFILE}" \
-        | filter_images
+        | get_image_tags
     )
 
     # Application
@@ -65,33 +66,91 @@ list_all_images(){
         cd "${TOPLEVEL_DIR}"
         skaffold \
             build \
+            --quiet \
             --profile "${PROFILE}" \
-        | filter_images
+        | get_image_tags
     )
+}
+
+syft_call() {
+    local image
+    image="${1}" && shift
+
+    local syft_output
+    syft_output=$(
+        TMPDIR="${SYFT_TMPDIR}" \
+        syft scan \
+            --output template \
+            --template "${SYFT_TEMPLATE}" \
+            "docker:${image}"
+    )
+
+    # test if syft_output is empty
+    # we need to this here because syft does
+    # not always return a proper exit status on error.
+    # For example on signal SIGINT (CTRL+C) syft exits with 0.
+    if [[ -z "${syft_output}" ]]; then
+        >&3 echo "[!] No output from syft scan"
+        return 1
+    fi
+
+    # Return the result
+    echo "${syft_output}"
+}
+
+scan_image(){
+    local image
+    image="${1}" && shift
+
+    local image_name
+    image_name="${image%%:*}"
+
+    >&3 echo "[*] Scanning image: ${image}"
+
+    echo
+    echo "### ${image_name}"
+    echo
+    syft_call "${image}"
+}
+
+get_scan_image_cache_file(){
+    local image
+    image="${1}" && shift
+
+    local cache_dir
+    cache_dir="${THIRD_PARTY_CACHE_DIR}/scan_image"
+    mkdir -p "${cache_dir}"
+
+    local image_directory_safe
+    image_directory_safe="$(echo "${image}" | tr '/:' '_')"
+
+    echo "${cache_dir}/${image_directory_safe}.txt"
 }
 
 container_licenses() {
     >&3 echo "[*] Getting: container_licenses"
     (
-        local minikube_eval
-        minikube_eval=$(minikube -p minikube docker-env)
-        eval "${minikube_eval}"
+        >&3 echo "[*] Listing all images"
+        local all_images
+        all_images=$(list_all_images)
+        readarray -t -d '' all_images < <(xargs --no-run-if-empty printf '%s\0' <<<"${all_images:-}" || true)
 
+        >&3 echo "[*] Scanning all images"
         local image
-        for image in $(list_all_images); do
-            local image_name
-            image_name="${image%:*}"
+        for image in "${all_images[@]}"; do
+            local cache_file
+            cache_file="$(get_scan_image_cache_file "${image}")"
 
-            >&3 echo "[*] Scanning image: ${image}"
+            if [[ -f "${cache_file}" ]]; then
+                >&3 echo "[*] Using cache for image: '${image}'"
+                cat "${cache_file}"
+                continue
+            fi
 
-            echo
-            echo "### ${image_name}"
-            echo
-            TMPDIR="${SYFT_TMPDIR}" \
-                syft scan \
-                    --output template \
-                    --template "${SYFT_TEMPLATE}" \
-                    "docker:${image}"
+            local scan_image_output
+            scan_image_output="$(scan_image "${image}")"
+            echo "${scan_image_output}" > "${cache_file}"
+            echo "${scan_image_output}"
         done
     )
 }
@@ -146,7 +205,9 @@ generate_third_party_licenses() {
         container_licenses
     } \
     3>&1 \
-    > "${THIRD_PARTY_LICENCES_OUTPUT}"
+    > "${THIRD_PARTY_LICENCES_PROGRESS}"
+    # copy to final location
+    mv "${THIRD_PARTY_LICENCES_PROGRESS}" "${THIRD_PARTY_LICENCES}"
 }
 
 #
@@ -155,7 +216,9 @@ generate_third_party_licenses() {
 
 atexit(){
     echo "[*] Exiting.."
-    rm -rf "${SYFT_TMPDIR}"
+    rm -rf \
+        "${THIRD_PARTY_LICENCES_PROGRESS}" \
+        "${SYFT_TMPDIR}"
 }
 trap atexit EXIT
 
@@ -167,8 +230,9 @@ usage() {
     echo "usage: $0 [OPTIONS]"
     echo
     echo "With OPTIONS:"
-    echo "  -h   |--help                        print this help"
-    echo "  -v   |--verbose                     make verbose"
+    echo "  -h|--help               print this help"
+    echo "  -m|--minikube           enable minikube environment"
+    echo "  -v|--verbose            make verbose"
 }
 
 #
@@ -178,12 +242,15 @@ usage() {
 ARGS=()
 while [[ $# -gt 0 ]]; do
     case "${1}" in
-    -h | --help)
+    -h|--help)
         usage
         exit 0
         ;;
-    -v | --verbose)
+    -v|--verbose)
         VERBOSE=true
+        ;;
+    -m|--minikube)
+        MINIKUBE_ENABLE=true
         ;;
     *)
         ARGS+=("${1}")
@@ -199,6 +266,11 @@ done
 
 if [[ "${VERBOSE}" = true ]]; then
     set -x
+fi
+
+if [[ "${MINIKUBE_ENABLE}" = true ]]; then
+    MINIKUBE_EVAL=$(minikube -p minikube docker-env)
+    eval "${MINIKUBE_EVAL}"
 fi
 
 "${ACTION}" "${ARGS[@]}"

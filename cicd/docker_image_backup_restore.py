@@ -4,47 +4,62 @@ import logging
 import os
 import re
 import shlex
+import shutil
 import subprocess
+from concurrent.futures import ProcessPoolExecutor, as_completed
 from logging.handlers import QueueHandler, QueueListener
-from multiprocessing import Process, Queue
+from multiprocessing import Queue
 from multiprocessing.queues import Queue as MPQueue
 from pathlib import Path
-from typing import Callable
 
 import docker
 import zstandard as zstd
 from docker.errors import ImageLoadError, ImageNotFound
+from pydantic import BaseModel
 
 # -------------------------------
 # Constants
 # -------------------------------
-DOCKER_CLIENT_TIMEOUT = 600  # 10 minutes
-DOCKER_SAVE_CHUNK_SIZE = 1024 * 1024 * 100  # 100 MiB
+DOCKER_CLIENT_TIMEOUT = 20 * 60
+DOCKER_SAVE_CHUNK_SIZE = 100 * 1024**2
 ZSTD_COMPRESSION_LEVEL = 3
 LOG_LEVEL = logging.INFO
 
 # -------------------------------
-# Logging
+# Logging Setup
 # -------------------------------
 log_queue: MPQueue = Queue()
-logger = logging.getLogger(__name__)
+logger = logging.getLogger()
+logger.setLevel(LOG_LEVEL)
+
+queue_handler = QueueHandler(log_queue)
+logger.addHandler(queue_handler)
+
+console_handler = logging.StreamHandler()
+console_handler.setFormatter(
+    logging.Formatter("%(asctime)s [%(levelname)s] %(message)s", "%Y-%m-%d %H:%M:%S")
+)
+listener = QueueListener(log_queue, console_handler)
+
+
+# -------------------------------
+# Models
+# -------------------------------
+class ImageMetadata(BaseModel):
+    id: str
+    tags: list[str]
 
 
 # -------------------------------
 # Minikube Env Loader
 # -------------------------------
-def load_minikube_env():
-    """
-    Runs `minikube -p minikube docker-env`, parses its export statements,
-    and sets them in os.environ.
-    """
+def load_minikube_env() -> None:
     proc = subprocess.run(
         ["minikube", "-p", "minikube", "docker-env"],
         capture_output=True,
         text=True,
         check=True,
     )
-
     for line in proc.stdout.splitlines():
         line = line.strip()
         if not line.startswith("export "):
@@ -57,10 +72,9 @@ def load_minikube_env():
 
 
 # -------------------------------
-# Utility Functions
+# Utilities
 # -------------------------------
 def format_file_size(file_path: Path) -> str:
-    """Return a human-readable file size string for the given file."""
     if not file_path.exists():
         return "File not found"
     size_bytes = file_path.stat().st_size
@@ -68,7 +82,7 @@ def format_file_size(file_path: Path) -> str:
         (1024**4, "TiB"),
         (1024**3, "GiB"),
         (1024**2, "MiB"),
-        (1024**1, "KiB"),
+        (1024, "KiB"),
         (1, "bytes"),
     ]:
         if size_bytes >= divisor:
@@ -78,188 +92,198 @@ def format_file_size(file_path: Path) -> str:
 
 
 def get_docker_client() -> docker.DockerClient:
-    """Create a Docker client instance."""
     return docker.from_env(timeout=DOCKER_CLIENT_TIMEOUT)
 
 
-def get_matching_images(pattern: str) -> list[str]:
-    """Return a list of image names that match the given regex pattern."""
+def get_image_map(pattern: str) -> list[ImageMetadata]:
     client = get_docker_client()
     regex = re.compile(pattern)
-    names = []
+    images = []
     for image in client.images.list():
-        for tag in image.tags:
-            if regex.fullmatch(tag):
-                names.append(tag)
-    return names
-
-
-def get_matching_archive_files(directory: Path, pattern: str) -> list[str]:
-    """Return a list of archive filenames (normalized to image names) matching the given regex pattern."""
-    regex = re.compile(pattern)
-    matches = []
-    for f in directory.glob("*.tar.zst"):
-        name = f.name.removesuffix(".tar.zst").replace(
-            "_", "/"
-        )  # reverse normalization
-        if regex.fullmatch(name):
-            matches.append(name)
-    return matches
+        if not image.id:
+            logger.warning("Skipping image with no ID.")
+            continue
+        matching_tags = [tag for tag in image.tags if regex.fullmatch(tag)]
+        if matching_tags:
+            images.append(ImageMetadata(id=image.id, tags=matching_tags))
+    return images
 
 
 # -------------------------------
-# Image Backup & Restore
+# Logging in Subprocesses
 # -------------------------------
-def docker_backup_image(image_name: str, backup_dir: Path):
-    """
-    Backup a Docker image to a compressed .tar.zst archive.
-    Uses a temporary `.progress` file during write to avoid partial results.
-    """
+def setup_subprocess_logging() -> None:
+    logging.getLogger().handlers.clear()
+    logging.getLogger().addHandler(QueueHandler(log_queue))
+    logging.getLogger().setLevel(LOG_LEVEL)
+
+
+# -------------------------------
+# Docker Backup & Restore
+# -------------------------------
+def docker_backup_image(meta: ImageMetadata, backup_dir: Path) -> None:
+    setup_subprocess_logging()
     client = get_docker_client()
-    backup_dir.mkdir(parents=True, exist_ok=True)
 
-    archive_name = image_name.replace("/", "_") + ".tar.zst"
-    archive_path = backup_dir / archive_name
-    temp_path = archive_path.with_suffix(".tar.zst.progress")
+    image_dir = backup_dir / meta.id
+    archive_path = image_dir / "image.tar.zst"
+    temp_path = image_dir / "image.tar.zst.progress"
+    metadata_path = image_dir / "meta.json"
 
-    if archive_path.exists():
-        logger.info("Archive already exists for image '%s'. Skipping.", image_name)
-        return
+    # Create the backup directory if it doesn't exist
+    logger.info("Creating: %s", image_dir)
+    image_dir.mkdir(parents=True, exist_ok=True)
 
-    try:
-        image = client.images.get(image_name)
-    except ImageNotFound:
-        logger.warning("Image '%s' not found. Skipping.", image_name)
-        return
-
-    logger.info("Backing up image '%s' to '%s'...", image_name, archive_path)
-
-    try:
-        with open(temp_path, "wb") as raw:
-            cctx = zstd.ZstdCompressor(level=ZSTD_COMPRESSION_LEVEL)
-            with cctx.stream_writer(raw) as compressor:
-                for chunk in image.save(named=True, chunk_size=DOCKER_SAVE_CHUNK_SIZE):
-                    compressor.write(chunk)
-        temp_path.replace(archive_path)
-    finally:
-        if temp_path.exists():
-            temp_path.unlink()
-
-    logger.info(
-        "Backup complete for image '%s' (%s).",
-        image_name,
-        format_file_size(archive_path),
-    )
-
-
-def docker_restore_image(image_name: str, backup_dir: Path) -> None:
-    """
-    Restore a Docker image from a compressed .tar.zst archive if it is not already loaded.
-    """
-    archive_path = backup_dir / (image_name.replace("/", "_") + ".tar.zst")
     if not archive_path.exists():
-        logger.warning("Archive for image '%s' not found. Skipping.", image_name)
-        return
+        try:
+            image = client.images.get(meta.id)
+        except ImageNotFound:
+            logger.warning("Image ID '%s' not found. Skipping.", meta.id)
+            return
 
+        logger.info("Backing up image ID '%s'...", meta.id)
+        try:
+            with open(temp_path, "wb") as raw:
+                cctx = zstd.ZstdCompressor(level=ZSTD_COMPRESSION_LEVEL)
+                with cctx.stream_writer(raw) as compressor:
+                    for chunk in image.save(
+                        named=True, chunk_size=DOCKER_SAVE_CHUNK_SIZE
+                    ):
+                        compressor.write(chunk)
+            temp_path.replace(archive_path)
+        finally:
+            if temp_path.exists():
+                temp_path.unlink()
+        logger.info("Backup complete for image ID '%s'.", meta.id)
+    else:
+        logger.info("Archive already exists for image ID '%s'. Skipping.", meta.id)
+
+    metadata_path.write_text(meta.model_dump_json(indent=2))
+
+
+def docker_restore_image(image_id: str, backup_dir: Path) -> None:
+    setup_subprocess_logging()
     client = get_docker_client()
 
-    try:
-        client.images.get(image_name)
-        logger.info("Image '%s' already exists. Skipping restore.", image_name)
+    image_dir = backup_dir / image_id
+    archive_path = image_dir / "image.tar.zst"
+    metadata_path = image_dir / "meta.json"
+
+    if not archive_path.exists() or not metadata_path.exists():
+        logger.warning("Missing archive or metadata for '%s'. Skipping.", image_id)
         return
+
+    with open(metadata_path, "r", encoding="utf-8") as f:
+        meta = ImageMetadata.model_validate_json(f.read())
+
+    try:
+        client.images.get(image_id)
+        logger.info("Image ID '%s' already loaded. Skipping import.", image_id)
     except ImageNotFound:
-        pass  # Continue to restore
+        logger.info("Loading image ID '%s' from archive...", image_id)
+        try:
+            with open(archive_path, "rb") as raw:
+                dctx = zstd.ZstdDecompressor()
+                with dctx.stream_reader(raw) as reader:
+                    client.images.load(reader)  # type: ignore
+        except ImageLoadError as e:
+            logger.warning("Failed to load image ID '%s': %s", image_id, e)
+            return
 
-    logger.info("Restoring image '%s' from '%s'...", image_name, archive_path)
-
-    try:
-        with open(archive_path, "rb") as raw:
-            dctx = zstd.ZstdDecompressor()
-            with dctx.stream_reader(raw) as reader:
-                client.images.load(reader)  # type: ignore
-    except ImageLoadError as e:
-        logger.warning("Failed to load image '%s': %s. Skipping.", image_name, e)
-        return
-
-    logger.info(
-        "Restore complete for image '%s' (%s).",
-        image_name,
-        format_file_size(archive_path),
-    )
-
-
-# -------------------------------
-# Multiprocessing Helpers
-# -------------------------------
-def setup_child_logger():
-    """Set up the child logger to send logs through the queue."""
-    root = logging.getLogger()
-    root.handlers.clear()
-    root.addHandler(QueueHandler(log_queue))
-    root.setLevel(LOG_LEVEL)
-
-
-def run_with_logging(func: Callable, *args):
-    """Run a function with queue-based logging inside a subprocess."""
-    setup_child_logger()
-    func(*args)
+    image = client.images.get(image_id)
+    for tag in meta.tags:
+        image.tag(tag)
+        logger.info("Tagged image ID '%s' as '%s'.", image_id, tag)
 
 
 # -------------------------------
 # CLI Entry Point
 # -------------------------------
+def cmd_backup(parallel: int, image_dir: Path, pattern: str, prune: bool) -> None:
+    image_metadata = get_image_map(pattern)
+    logger.info("Found %d unique images to back up.", len(image_metadata))
+
+    with ProcessPoolExecutor(max_workers=parallel or None) as executor:
+        futures = [
+            executor.submit(docker_backup_image, meta, image_dir)
+            for meta in image_metadata
+        ]
+        for future in as_completed(futures):
+            future.result()
+
+    if prune:
+        kept_dirs = {meta.id for meta in image_metadata}
+        for child in image_dir.iterdir():
+            if child.name not in kept_dirs:
+                logger.info("Pruning: %s", child)
+                if child.is_file():
+                    child.unlink()
+                elif child.is_dir():
+                    shutil.rmtree(child)
+
+
+def cmd_restore(
+    parallel: int,
+    image_dir: Path,
+) -> None:
+    if not image_dir.is_dir():
+        logger.warning("Directory %s does not exist. Nothing to restore.", image_dir)
+        return
+    image_dirs = [p for p in image_dir.iterdir() if (p / "meta.json").exists()]
+    logger.info("Found %d images to restore.", len(image_dirs))
+    with ProcessPoolExecutor(max_workers=parallel or None) as executor:
+        futures = [
+            executor.submit(docker_restore_image, p.name, image_dir) for p in image_dirs
+        ]
+        for future in as_completed(futures):
+            future.result()
+
+
 def main() -> None:
-    """Main CLI dispatcher for backup and restore commands."""
     parser = argparse.ArgumentParser(description="Backup and restore Docker images.")
     parser.add_argument(
-        "-m", "--minikube", action="store_true", help="Load Minikube Docker env."
+        "-m", "--minikube", action="store_true", help="Use Minikube's Docker daemon."
     )
+    parser.add_argument(
+        "--parallel",
+        type=int,
+        default=os.cpu_count(),
+        help="Number of parallel jobs to run (0 = unlimited, default = CPU count).",
+    )
+
     subparsers = parser.add_subparsers(dest="command", required=True)
 
-    parser_bi = subparsers.add_parser("backup", help="Backup Docker images by regex.")
-    parser_bi.add_argument("pattern", help="Regex pattern to match image names.")
-    parser_bi.add_argument("directory", type=Path, help="Backup destination directory.")
+    parser_b = subparsers.add_parser("backup", help="Backup images by regex.")
+    parser_b.add_argument(
+        "-p",
+        "--prune",
+        action="store_true",
+        help="Prune outdated backup directories not updated during this run.",
+    )
+    parser_b.add_argument("pattern", help="Regex to match image names.")
+    parser_b.add_argument("directory", type=Path, help="Target backup directory.")
 
-    parser_ri = subparsers.add_parser("restore", help="Restore Docker images by regex.")
-    parser_ri.add_argument("pattern", help="Regex pattern to match archive names.")
-    parser_ri.add_argument("directory", type=Path, help="Backup source directory.")
+    parser_r = subparsers.add_parser(
+        "restore", help="Restore all images from a directory."
+    )
+    parser_r.add_argument("directory", type=Path, help="Backup source directory.")
 
     args = parser.parse_args()
 
-    if args.minikube:
-        load_minikube_env()
+    # Arguments
+    minikube: bool = args.minikube
+    command: str = args.command
 
-    console_handler = logging.StreamHandler()
-    console_handler.setFormatter(
-        logging.Formatter(
-            "%(asctime)s [%(levelname)s] %(message)s", "%Y-%m-%d %H:%M:%S"
-        )
-    )
-    listener = QueueListener(log_queue, console_handler)
     listener.start()
-
     try:
-        processes = []
-        match args.command:
-            case "backup":
-                for name in get_matching_images(args.pattern):
-                    p = Process(
-                        target=run_with_logging,
-                        args=(docker_backup_image, name, args.directory),
-                    )
-                    p.start()
-                    processes.append(p)
-            case "restore":
-                for name in get_matching_archive_files(args.directory, args.pattern):
-                    p = Process(
-                        target=run_with_logging,
-                        args=(docker_restore_image, name, args.directory),
-                    )
-                    p.start()
-                    processes.append(p)
+        if minikube:
+            load_minikube_env()
 
-        for p in processes:
-            p.join()
+        match command:
+            case "backup":
+                cmd_backup(args.parallel, args.directory, args.pattern, args.prune)
+            case "restore":
+                cmd_restore(args.parallel, args.directory)
     finally:
         listener.stop()
 
