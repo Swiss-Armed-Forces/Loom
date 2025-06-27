@@ -31,6 +31,10 @@ spec:
               containerPort: {{ .Values.rabbit.service.port.prometheus }}
               protocol: TCP
           volumeMounts:
+            - name: rabbit-config
+              mountPath: /etc/rabbitmq/rabbitmq.conf
+              readOnly: true
+              subPath: rabbitmq.conf
             - mountPath: /var/lib/rabbitmq
               name: rabbit
           {{- if .Values.rabbit.readinessProbe.enabled }}
@@ -58,14 +62,12 @@ spec:
             failureThreshold: {{ default 6 .Values.rabbit.livenessProbe.failureThreshold }}
           {{- end }}
           {{- if .Values.rabbit.resources }}
-          resources:
-            limits:
-              cpu: {{ .Values.rabbit.resources.limits.cpu }}
-              memory: {{ .Values.rabbit.resources.limits.memory }}
-            requests:
-              cpu: {{ .Values.rabbit.resources.requests.cpu }}
-              memory: {{ .Values.rabbit.resources.requests.memory }}
+          resources: {{- toYaml .Values.rabbit.resources | nindent 12 }}
           {{- end }}
+      volumes:
+        - name: rabbit-config
+          configMap:
+            name: {{ include "app.fullname" . }}-rabbit-config
   volumeClaimTemplates:
     - metadata:
         name: rabbit
