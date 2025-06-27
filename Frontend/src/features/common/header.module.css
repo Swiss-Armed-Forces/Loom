@@ -20,6 +20,16 @@ div.toolbar {
     gap: 1rem;
 }
 
+header.stripedAppHeader {
+    position: unset;
+    background-attachment: fixed;
+    background-image: repeating-linear-gradient(
+        -45deg,
+        #31312e 0 30px,
+        color-mix(in srgb, var(--stripe-color) 25%, #31312e 75%) 30px 60px
+    );
+}
+
 header.appHeader {
     position: unset;
     background-color: #31312e;
