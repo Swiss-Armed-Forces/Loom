@@ -1,10 +1,7 @@
 #!/usr/bin/env bash
+# Note this entrypoint is inteded to be run in
+# a bash login shell (--login)
 set -euo pipefail
-
-# Source bashrc
-# shellcheck disable=SC1091
-# shellcheck source=/etc/bashrc
-source /etc/bashrc
 
 # Environment
 NIX_USER_NAME="${NIX_USER_NAME:-nix}"

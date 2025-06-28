@@ -188,4 +188,4 @@ RUN set -exu \
 # Entrypoint
 #
 COPY --chmod=0755 nix-dind/entrypoint.sh /usr/local/bin/entrypoint.sh
-ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
+ENTRYPOINT ["bash", "--login", "/usr/local/bin/entrypoint.sh"]
