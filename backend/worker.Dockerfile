@@ -11,20 +11,14 @@ ENV POETRY_NO_INTERACTION=1 \
     POETRY_VIRTUALENVS_CREATE=1
 
 
-COPY worker/pyproject.toml worker/poetry.lock worker/README.md /code/worker/
-COPY common/pyproject.toml common/poetry.lock common/README.md /code/common/
+COPY common/ /code/common
+COPY worker/ /code/worker
 WORKDIR /code/worker
 
 FROM builder-base AS builder-dev
-RUN poetry install --no-root --no-directory --no-cache
-COPY common/ /code/common
-COPY worker/ /code/worker
 RUN poetry install --no-cache
 
 FROM builder-base AS builder-prod
-RUN poetry install --no-cache --no-root --no-directory --without dev,test
-COPY common/ /code/common
-COPY worker/ /code/worker
 RUN poetry install --no-cache --without dev,test
 
 
