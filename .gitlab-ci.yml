@@ -52,15 +52,33 @@ default:
   # Always use nix-dind image
   image: ${CI_REGISTRY_IMAGE}/nix-dind:latest
   before_script:
+    - source cicd/gitlab_job_sections.sh
+    #
+    # START SECTION
+    #
+    - section_start default-before_script
     # show job instance info for debugging (only relevant for parallel jobs)
     - echo "Running job instance ${CI_NODE_INDEX} of ${CI_NODE_TOTAL}"
     # enable CI/CD mode for the devenv
     - cp "nix-dind/devenv.local.nix" "devenv.local.nix"
     # building shell
     - devenv shell -- echo "[*] devenv shell ready"
+    #
+    # END SECION
+    #
+    - section_end default-before_script
   after_script:
+    - source cicd/gitlab_job_sections.sh
+    #
+    # START SECION
+    #
+    - section_start default-after_script
     # collect fork logs
     - mkdir -p fork-logs && cp /var/run/fork-log.*.log fork-logs/
+    #
+    # END SECTION
+    #
+    - section_end default-after_script
   artifacts:
     # NOTE: This artifact declaration has to live here as artifacts.* does not seem to support
     # the `!reference []` GitLab annotation. This is why we have to declare all artifacts here
@@ -97,15 +115,31 @@ default:
   extends: default
   before_script:
     - !reference [default, before_script]
+    #
+    # START SECTION
+    #
+    - section_start .default-docker-before_script
     # docker login
     - echo "${CI_REGISTRY_PASSWORD}" | docker login ${CI_REGISTRY} -u "${CI_REGISTRY_USER}" --password-stdin
     - echo "${CI_DEPENDENCY_PROXY_PASSWORD}" | docker login ${CI_DEPENDENCY_PROXY_SERVER} -u "${CI_DEPENDENCY_PROXY_USER}" --password-stdin
     # restore images
     - devenv shell -- docker-image-backup-restore restore docker-cache/images/
+    #
+    # END SECTION
+    #
+    - section_end .default-docker-before_script
   after_script:
     - !reference [default, after_script]
+    #
+    # START SECTION
+    #
+    - section_start .default-docker-after_script
     # backup images
     - devenv shell -- docker-image-backup-restore backup --prune '.*' docker-cache/images/
+    #
+    # END SECTION
+    #
+    - section_end .default-docker-after_script
   cache:
     - !reference [default, cache]
     # One key to rule them all:
@@ -121,18 +155,34 @@ default:
     MINIKUBE_HOME: ${CI_PROJECT_DIR}/.minikube
   before_script:
     - !reference [.default-docker, before_script]
+    #
+    # START SECTION
+    #
+    - section_start .default-k8s-before_script
     # collect dmesg
     - devenv shell -- sudo --background dmesg --follow > dmesg.txt
     # start k8s
     - devenv shell -- up --setup
     # restore images
     - devenv shell -- docker-image-backup-restore --minikube restore kubernetes-cache/images/
+    #
+    # END SECTION
+    #
+    - section_end .default-k8s-before_script
   after_script:
     - !reference [.default-docker, after_script]
+    #
+    # START SECTION
+    #
+    - section_start .default-k8s-after_script
     # start k8s
     - devenv shell -- up --setup
     # backup images
     - devenv shell -- docker-image-backup-restore --minikube backup --prune '.*' kubernetes-cache/images/
+    #
+    # END SECTION
+    #
+    - section_end .default-k8s-after_script
   cache:
     - !reference [.default-docker, cache]
     # Cache per runner tags: minikube setup is dependant
@@ -154,6 +204,10 @@ default:
   extends: .default-k8s
   before_script:
     - !reference [.default-k8s, before_script]
+    #
+    # START SECTION
+    #
+    - section_start .default-up-before_script
     # start stack
     - devenv shell -- up --expose "$(tailscale ip -4)"
 
@@ -163,6 +217,10 @@ default:
     - !reference [.default-k8s, before_script]
     # start stack
     - devenv shell -- up --integrationtest --expose "$(tailscale ip -4)"
+    #
+    # END SECTION
+    #
+    - section_end .default-up-before_script
 
 
 # ---------------------------------------------#

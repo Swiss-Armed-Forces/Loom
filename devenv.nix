@@ -46,6 +46,11 @@ in
     # toggle CI/CD mode
     cicd = lib.mkDefault false;
 
+    # set do not track
+    # see:
+    # - https://consoledonottrack.com/
+    DO_NOT_TRACK = 1;
+
     # fix locale
     LOCALE_ARCHIVE = "${custom-locales}/lib/locale/locale-archive";
     LC_ALL = use-locale;
