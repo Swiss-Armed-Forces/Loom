@@ -10,21 +10,14 @@ ENV POETRY_NO_INTERACTION=1 \
     POETRY_VIRTUALENVS_IN_PROJECT=1 \
     POETRY_VIRTUALENVS_CREATE=1
 
-COPY api/pyproject.toml api/poetry.lock api/README.md /code/api/
-COPY common/pyproject.toml common/poetry.lock common/README.md /code/common/
+COPY common/ /code/common
+COPY api/ /code/api
 WORKDIR /code/api
 
 FROM builder-base AS builder-dev
-RUN poetry install --no-cache --no-root --no-directory
-COPY common/ /code/common
-COPY api/ /code/api
 RUN poetry install --no-cache
 
-
 FROM builder-base AS builder-prod
-RUN poetry install --no-cache --no-root --no-directory --without dev,test
-COPY common/ /code/common
-COPY api/ /code/api
 RUN poetry install --no-cache --without dev,test
 
 # The runtime image, used to just run the code provided its virtual environment
@@ -41,6 +34,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 ENV BUILDER_VIRTUAL_ENV=/code/api/.venv \
     VIRTUAL_ENV=/code/.venv \
     PATH="/code/.venv/bin:$PATH"
+
 COPY common/ /code/common
 COPY api/ /code/api
 WORKDIR /code/api

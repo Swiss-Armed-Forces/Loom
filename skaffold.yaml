@@ -8,7 +8,14 @@ profiles:
       - command: dev
     build:
       tagPolicy:
-        inputDigest: {}
+        # We can not use inputDigest tagger directy here, as
+        # this will create identical image tags for different
+        # build profiles.
+        #
+        # see:
+        #   - https://github.com/GoogleContainerTools/skaffold/issues/9826
+        customTemplate:
+          template: "dev-{{.INPUT_DIGEST}}"
       local:
         concurrency: 0
         useBuildkit: true
@@ -299,7 +306,14 @@ profiles:
       - command: prod
     build:
       tagPolicy:
-        inputDigest: {}
+        # We can not use inputDigest tagger directy here, as
+        # this will create identical image tags for different
+        # build profiles.
+        #
+        # see:
+        #   - https://github.com/GoogleContainerTools/skaffold/issues/9826
+        customTemplate:
+          template: "prod-{{.INPUT_DIGEST}}"
       local:
         concurrency: 0
         useBuildkit: true

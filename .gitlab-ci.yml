@@ -155,6 +155,13 @@ default:
   before_script:
     - !reference [.default-k8s, before_script]
     # start stack
+    - devenv shell -- up --expose "$(tailscale ip -4)"
+
+.default-up-integrationtest:
+  extends: .default-k8s
+  before_script:
+    - !reference [.default-k8s, before_script]
+    # start stack
     - devenv shell -- up --integrationtest --expose "$(tailscale ip -4)"
 
 
@@ -266,7 +273,7 @@ generate_third_party:
       when: 'always'
 
 integrationtest:
-  extends: .default-up
+  extends: .default-up-integrationtest
   stage: test
   variables:
     # We do need to fix the RANDOM_ORDER_SEED
@@ -310,23 +317,14 @@ publish_images:
         devenv shell -- build --profile prod --push --tag "${CI_COMMIT_TAG}"
       fi
 
-# Currently we are unable to build and push dev images because the
-# skaffold tagger doesn't consider the target argument when calculating
-# image tags.
-#
-# Tracking issue:
-#   - https://gitlab.com/swiss-armed-forces/cyber-command/cea/loom/-/issues/91
-# Upstream Issue:
-#   - https://github.com/GoogleContainerTools/skaffold/issues/9826
-#
-# publish_dev_images:
-#  extends: .default-k8s
-#  stage: publish
-#  only:
-#    - main
-#    - tags
-#  script:
-#    - devenv shell -- build --profile dev --push
+publish_dev_images:
+  extends: .default-k8s
+  stage: publish
+  only:
+    - main
+    - tags
+  script:
+    - devenv shell -- build --profile dev --push
 
 publish_helm_dev:
   stage: publish
