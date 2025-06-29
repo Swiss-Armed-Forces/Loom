@@ -40,12 +40,13 @@ def init_celery_app() -> Celery:
     serialization.enable_insecure_serializers()
 
     # Configure worker behavior
+    app.conf.worker_pool = "prefork"
+    app.conf.worker_concurrency = 1
     app.conf.task_ignore_result = True
     app.conf.task_store_errors_even_if_ignored = True
     app.conf.result_backend_max_retries = 30
     app.conf.task_acks_late = True
     app.conf.task_acks_on_failure_or_timeout = True
-    app.conf.worker_concurrency = 1
     app.conf.worker_prefetch_multiplier = 128
     app.conf.task_reject_on_worker_lost = False
 
