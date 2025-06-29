@@ -142,8 +142,7 @@ default:
     - section_end .default-docker-after_script
   cache:
     - !reference [default, cache]
-    # One key to rule them all:
-    - key: docker-cache
+    - key: ${CI_JOB_NAME}-docker-cache
       paths:
         - docker-cache
       unprotect: true
@@ -188,13 +187,12 @@ default:
     # Cache per runner tags: minikube setup is dependant
     # on runner hardware - we assume here that all
     # runners with the same tags are very similar
-    - key: minikube-cache-${CI_RUNNER_TAGS}
+    - key: ${CI_JOB_NAME}-minikube-cache-${CI_RUNNER_TAGS}
       paths:
         - ${MINIKUBE_HOME}
       unprotect: true
       when: 'always'
-    # One key to rule them all:
-    - key: kubernetes-cache
+    - key: ${CI_JOB_NAME}-kubernetes-cache
       paths:
         - kubernetes-cache
       unprotect: true
@@ -210,17 +208,25 @@ default:
     - section_start .default-up-before_script
     # start stack
     - devenv shell -- up --expose "$(tailscale ip -4)"
+    #
+    # END SECTION
+    #
+    - section_end .default-up-before_script
 
 .default-up-integrationtest:
   extends: .default-k8s
   before_script:
     - !reference [.default-k8s, before_script]
+    #
+    # START SECTION
+    #
+    - section_start .default-up-integrationtest-before_script
     # start stack
     - devenv shell -- up --integrationtest --expose "$(tailscale ip -4)"
     #
     # END SECTION
     #
-    - section_end .default-up-before_script
+    - section_end .default-up-integrationtest-before_script
 
 
 # ---------------------------------------------#
@@ -315,13 +321,13 @@ test_build_nix-dind:
     - devenv shell -- nix-dind
 
 generate_third_party:
-  extends: .default-up
+  extends: .default-docker
   stage: test
   script:
-    - devenv shell -- generate-third-party --minikube
+    - devenv shell -- generate-third-party
     - devenv shell -- test-git-file-changed
   cache:
-    - !reference [.default-up, cache]
+    - !reference [.default-docker, cache]
     - key:
         files:
           - cicd/generate_third_party.sh
@@ -362,7 +368,7 @@ integrationtest_debug:
 # ----------------------------------------------#
 
 publish_images:
-  extends: .default-k8s
+  extends: .default-docker
   stage: publish
   only:
     - main
@@ -376,7 +382,7 @@ publish_images:
       fi
 
 publish_dev_images:
-  extends: .default-k8s
+  extends: .default-docker
   stage: publish
   only:
     - main
