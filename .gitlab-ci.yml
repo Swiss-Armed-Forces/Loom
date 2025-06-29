@@ -142,7 +142,7 @@ default:
     - section_end .default-docker-after_script
   cache:
     - !reference [default, cache]
-    - key: ${CI_JOB_NAME}-docker-cache
+    - key: ${CI_JOB_GROUP_NAME}-docker-cache
       paths:
         - docker-cache
       unprotect: true
@@ -187,12 +187,12 @@ default:
     # Cache per runner tags: minikube setup is dependant
     # on runner hardware - we assume here that all
     # runners with the same tags are very similar
-    - key: ${CI_JOB_NAME}-minikube-cache-${CI_RUNNER_TAGS}
+    - key: ${CI_JOB_GROUP_NAME}-minikube-cache-${CI_RUNNER_TAGS}
       paths:
         - ${MINIKUBE_HOME}
       unprotect: true
       when: 'always'
-    - key: ${CI_JOB_NAME}-kubernetes-cache
+    - key: ${CI_JOB_GROUP_NAME}-kubernetes-cache
       paths:
         - kubernetes-cache
       unprotect: true
