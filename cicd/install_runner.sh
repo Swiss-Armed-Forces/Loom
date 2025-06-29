@@ -69,6 +69,7 @@ EOF
 	echo "[*] Installing weekly cleanup cronjob"
 	cat << EOF > /etc/cron.weekly/gitlab_runner_clear_cache
 #!/usr/bin/env sh
+docker ps --quiet | xargs --no-run-if-empty docker stop
 docker system prune --volumes --all --force
 docker volume prune --all --force
 EOF
