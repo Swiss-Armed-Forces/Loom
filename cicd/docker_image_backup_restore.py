@@ -74,10 +74,7 @@ def load_minikube_env() -> None:
 # -------------------------------
 # Utilities
 # -------------------------------
-def format_file_size(file_path: Path) -> str:
-    if not file_path.exists():
-        return "File not found"
-    size_bytes = file_path.stat().st_size
+def format_size(size_bytes: int) -> str:
     for divisor, unit in [
         (1024**4, "TiB"),
         (1024**3, "GiB"),
@@ -89,6 +86,13 @@ def format_file_size(file_path: Path) -> str:
             size = size_bytes / divisor
             return f"{size:.2f} {unit}" if unit != "bytes" else f"{int(size)} {unit}"
     return "0 bytes"
+
+
+def format_file_path_size(file_path: Path) -> str:
+    if not file_path.exists():
+        return "File not found"
+    size_bytes = file_path.stat().st_size
+    return format_size(size_bytes)
 
 
 def get_docker_client() -> docker.DockerClient:
@@ -154,9 +158,17 @@ def docker_backup_image(meta: ImageMetadata, backup_dir: Path) -> None:
         finally:
             if temp_path.exists():
                 temp_path.unlink()
-        logger.info("Backup complete for image ID '%s'.", meta.id)
+        logger.info(
+            "Backup complete for image ID '%s' (%s).",
+            meta.id,
+            format_file_path_size(archive_path),
+        )
     else:
-        logger.info("Archive already exists for image ID '%s'. Skipping.", meta.id)
+        logger.info(
+            "Archive already exists for image ID '%s' (%s). Skipping.",
+            meta.id,
+            format_file_path_size(archive_path),
+        )
 
     metadata_path.write_text(meta.model_dump_json(indent=2))
 
@@ -179,16 +191,22 @@ def docker_restore_image(image_id: str, backup_dir: Path) -> None:
     try:
         client.images.get(image_id)
         logger.info("Image ID '%s' already loaded. Skipping import.", image_id)
+        return
     except ImageNotFound:
-        logger.info("Loading image ID '%s' from archive...", image_id)
-        try:
-            with open(archive_path, "rb") as raw:
-                dctx = zstd.ZstdDecompressor()
-                with dctx.stream_reader(raw) as reader:
-                    client.images.load(reader)  # type: ignore
-        except ImageLoadError as e:
-            logger.warning("Failed to load image ID '%s': %s", image_id, e)
-            return
+        pass
+    logger.info(
+        "Loading image ID '%s' (%s) from archive...",
+        image_id,
+        format_file_path_size(archive_path),
+    )
+    try:
+        with open(archive_path, "rb") as raw:
+            dctx = zstd.ZstdDecompressor()
+            with dctx.stream_reader(raw) as reader:
+                client.images.load(reader)  # type: ignore
+    except ImageLoadError as e:
+        logger.warning("Failed to load image ID '%s': %s", image_id, e)
+        return
 
     image = client.images.get(image_id)
     for tag in meta.tags:
@@ -220,6 +238,10 @@ def cmd_backup(parallel: int, image_dir: Path, pattern: str, prune: bool) -> Non
                     child.unlink()
                 elif child.is_dir():
                     shutil.rmtree(child)
+
+    # Print total size of image_dir directory
+    total_size = sum(f.stat().st_size for f in image_dir.glob("**/*") if f.is_file())
+    logger.info("Total size of backup: %s", format_size(total_size))
 
 
 def cmd_restore(
