@@ -148,12 +148,13 @@ class BinwalkExtractor(ExtractorBase):
             except CalledProcessError as ex:
                 raise ExtractNotSupported from ex
 
+            # move files out of `.extracted` directory
             extracted_dir = Path(f"{outdir}/_{basename(bin_file.name)}.extracted")
-            # only create stdout dump if files were extracted
+
             if not extracted_dir.is_dir():
+                # nothing extracted
                 return
 
-            # move files out of `.extracted` directory
             for item in extracted_dir.iterdir():
                 shutil.move(item, outdir)
             extracted_dir.rmdir()
