@@ -45,6 +45,10 @@ spec:
           image: {{ .Values.image.registry }}/{{ .Values.prometheus.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) .Values.prometheus.image.tag }}
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           args:
+            - --web.enable-admin-api
+            # Go LIMITS
+            - --enable-feature=auto-gomemlimit
+            - --enable-feature=auto-gomaxprocs
             # first two are default from the image, https://github.com/prometheus/prometheus/blob/main/Dockerfile
             - --config.file=/etc/prometheus/prometheus.yml
             - --storage.tsdb.path=/prometheus

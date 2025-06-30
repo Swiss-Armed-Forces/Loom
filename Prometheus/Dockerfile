@@ -4,4 +4,4 @@ ARG PROMETHEUS_IMAGE_VERSION="v2.55.0"
 ARG DOCKER_REGISTRY
 FROM ${DOCKER_REGISTRY}/prom/prometheus:${PROMETHEUS_IMAGE_VERSION}
 
-CMD ["--web.enable-admin-api", "--auto-gomemlimit", "--auto-gomaxprocs", "--config.file=/etc/prometheus/prometheus.yml"]
+CMD ["--web.enable-admin-api", "--enable-feature=auto-gomemlimit", "--enable-feature=auto-gomaxprocs", "--config.file=/etc/prometheus/prometheus.yml", "--storage.tsdb.path=/prometheus"]
