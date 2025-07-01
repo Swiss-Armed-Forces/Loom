@@ -7,30 +7,11 @@
 }:
 
 let
+  nixpkgsWithConfig = nixpkgs: pkgs.callPackage (import nixpkgs) { };
 
-  # local overlays: this can be removed
-  # once we moved to devenv 1.4.2 which
-  # adds support for local overlays
-  overlay = final: prev: {
-
-    # we have to disable the chromium
-    # sandbox otherwise some (mostly electron)
-    # apps won't run in containers and ubuntu (AppArmor)
-    chromium = prev.chromium.override {
-      commandLineArgs = "--no-sandbox";
-    };
-  };
-
-  pkgs-stable = import inputs.nixpkgs-stable {
-    system = pkgs.stdenv.system;
-    config = pkgs.config;
-    overlays = pkgs.overlays ++ [ overlay ];
-  };
-  pkgs-unstable = import inputs.nixpkgs-unstable {
-    system = pkgs.stdenv.system;
-    config = pkgs.config;
-    overlays = pkgs.overlays ++ [ overlay ];
-  };
+  pkgs-stable = nixpkgsWithConfig inputs.nixpkgs-stable;
+  pkgs-unstable = nixpkgsWithConfig inputs.nixpkgs-unstable;
+  pkgs-24-11 = nixpkgsWithConfig inputs.nixpkgs-24-11;
 
   # fix locale
   use-locale = "C.UTF-8";
@@ -76,6 +57,18 @@ in
     MINIKUBE_HOME = "${config.devenv.root}/.minikube";
   };
 
+  overlays = [
+    (
+      # we have to disable the chromium
+      # sandbox otherwise some (mostly electron)
+      # apps won't run in containers and ubuntu (AppArmor)
+      final: prev: {
+        chromium = prev.chromium.override {
+          commandLineArgs = "--no-sandbox";
+        };
+      })
+  ];
+
   # https://devenv.sh/packages/
   packages =
     with pkgs-stable;
@@ -112,7 +105,16 @@ in
       # for unit testing
       libpst
       tshark
-      binwalk
+
+      # we have to use an outdated binwalk version
+      # here to stay compatible with the very old
+      # binwalk version installed in the worker
+      # (debian: 2.3.4).
+      # We can probably remove this when:
+      # * debian packaged the 3.* version of binwalk
+      # * .. or we install binwalk from source in the worker
+      pkgs-24-11.binwalk
+
       cabextract
       imagemagick
       file
@@ -217,7 +219,7 @@ in
     };
 
     ide = {
-      exec = "code --wait $DEVENV_ROOT";
+      exec = "code --wait '${config.devenv.root}'";
       process-compose = {
         availability = {
           restart = "always";
@@ -244,6 +246,17 @@ in
     poetry = {
       enable = true;
       activate.enable = true;
+      # We have to use the poetry package from pkgs-stable here
+      # because of an issue with flaky tests which did not make
+      # it yet into devenv-nixpkgs/rolling:
+      #  - https://github.com/python-poetry/poetry/issues/10369
+      #  - https://github.com/NixOS/nixpkgs/blob/nixos-25.05/pkgs/by-name/po/poetry/unwrapped.nix#L143
+      #
+      # This can probably be removed once devenv-nixpkgs/rolling
+      # is updated and also ignores those flaky tests here:
+      #  - https://github.com/cachix/devenv-nixpkgs/blob/rolling/pkgs/by-name/po/poetry/unwrapped.nix#L141
+      #
+      package = pkgs-stable.poetry;
     };
   };
 
@@ -258,8 +271,8 @@ in
   };
   languages.typescript.enable = true;
 
-  # https://devenv.sh/pre-commit-hooks/
-  pre-commit.hooks = {
+  # https://devenv.sh/git-hooks-hooks/
+  git-hooks.hooks = {
     trim-trailing-whitespace.enable = true;
 
     #isort.enable = true;
@@ -311,7 +324,7 @@ in
     init(){
       (
         set -euo pipefail
-        cd "${config.devenv.root}"
+        cd '${config.devenv.root}'
 
         # is interactive shell?
         if tty -s; then
@@ -345,7 +358,7 @@ in
     description = "Print this help";
     exec = ''
       set -euo pipefail
-      cd "${config.devenv.root}"
+      cd '${config.devenv.root}'
 
       echo
       echo "Helper scripts provided by the devenv:"
@@ -362,7 +375,7 @@ in
     exec = ''
       (
         set -euo pipefail
-        cd "${config.devenv.root}"
+        cd '${config.devenv.root}'
 
         ./up.sh "''${@}"
       )
@@ -374,7 +387,7 @@ in
     exec = ''
       (
         set -euo pipefail
-        cd "${config.devenv.root}"
+        cd '${config.devenv.root}'
 
         echo "[*] Stopping loom"
         skaffold delete \
@@ -395,7 +408,7 @@ in
     exec = ''
       (
         set -euo pipefail
-        cd "${config.devenv.root}"
+        cd '${config.devenv.root}'
 
         ./cicd/build.sh "''${@}"
       )
@@ -407,7 +420,7 @@ in
     exec = ''
       (
         set -euo pipefail
-        cd "${config.devenv.root}"
+        cd '${config.devenv.root}'
 
         ./cicd/build_helm.sh "''${@}"
       )
@@ -419,7 +432,7 @@ in
     exec = ''
       (
         set -euo pipefail
-        cd "${config.devenv.root}"
+        cd '${config.devenv.root}'
 
         echo "[*] Running lint.sh"
         ./cicd/lint.sh
@@ -449,7 +462,7 @@ in
     exec = ''
       (
         set -euo pipefail
-        cd "${config.devenv.root}"
+        cd '${config.devenv.root}'
 
         ./cicd/check-syntax.sh \
           --fix \
@@ -463,7 +476,7 @@ in
     exec = ''
       (
         set -euo pipefail
-        cd "${config.devenv.root}"
+        cd '${config.devenv.root}'
 
         ./cicd/generate_openapi_schema.py \
           "''${@}"
@@ -476,7 +489,7 @@ in
     exec = ''
       (
         set -euo pipefail
-        cd "''${DEVENV_ROOT}/Frontend"
+        cd '${config.devenv.root}/Frontend'
 
         pnpm test run \
           "''${@}"
@@ -489,7 +502,7 @@ in
     exec = ''
       (
         set -euo pipefail
-        cd "''${DEVENV_ROOT}/Frontend"
+        cd '${config.devenv.root}/Frontend'
 
         pnpm run build \
           "''${@}"
@@ -502,7 +515,7 @@ in
     exec = ''
       (
         set -euo pipefail
-        cd "''${DEVENV_ROOT}/Frontend"
+        cd '${config.devenv.root}/Frontend'
 
         pnpm audit \
           "''${@}"
@@ -515,7 +528,7 @@ in
     exec = ''
       (
         set -euo pipefail
-        cd "''${DEVENV_ROOT}/backend"
+        cd '${config.devenv.root}/backend'
 
         python -m pytest \
           --cov=. \
@@ -532,7 +545,7 @@ in
     exec = ''
       (
         set -euo pipefail
-        cd "${config.devenv.root}"
+        cd '${config.devenv.root}'
 
         ./cicd/update-poetry-lock.sh \
           "''${@}"
@@ -545,7 +558,7 @@ in
     exec = ''
       (
         set -euo pipefail
-        cd "${config.devenv.root}"
+        cd '${config.devenv.root}'
 
         poetry run \
           integrationtest/utils/wipe_data.py \
@@ -559,7 +572,7 @@ in
     exec = ''
       (
         set -euo pipefail
-        cd "${config.devenv.root}"
+        cd '${config.devenv.root}'
 
         ./cicd/docker_image_backup_restore.py \
           --minikube \
@@ -573,7 +586,7 @@ in
     exec = ''
       (
         set -euo pipefail
-        cd "${config.devenv.root}"
+        cd '${config.devenv.root}'
 
         ./cicd/kubernetes_pause.sh \
           "''${@}"
@@ -586,7 +599,7 @@ in
     exec = ''
       (
         set -euo pipefail
-        cd "${config.devenv.root}"
+        cd '${config.devenv.root}'
 
         ./cicd/kubernetes_stop.sh \
           "''${@}"
@@ -599,7 +612,7 @@ in
     exec = ''
       (
         set -euo pipefail
-        cd "${config.devenv.root}"
+        cd '${config.devenv.root}'
 
         ./cicd/kubernetes_delete.sh \
           "''${@}"
@@ -612,7 +625,7 @@ in
     exec = ''
       (
         set -euo pipefail
-        cd "${config.devenv.root}"
+        cd '${config.devenv.root}'
 
         ./cicd/kubernetes_delete_namespace.sh \
           "''${@}"
@@ -625,7 +638,7 @@ in
     exec = ''
       (
         set -euo pipefail
-        cd "${config.devenv.root}"
+        cd '${config.devenv.root}'
 
         ./cicd/kubernetes_prune.sh \
           "''${@}"
@@ -638,7 +651,7 @@ in
     exec = ''
       (
         set -euo pipefail
-        cd "${config.devenv.root}"
+        cd '${config.devenv.root}'
 
         ./cicd/fetch_all_pod_logs.sh \
           "''${@}"
@@ -651,7 +664,7 @@ in
     exec = ''
       (
         set -euo pipefail
-        cd "${config.devenv.root}"
+        cd '${config.devenv.root}'
 
         MINIKUBE_EVAL=$(minikube -p minikube docker-env)
         eval "''${MINIKUBE_EVAL}"
@@ -667,7 +680,7 @@ in
     exec = ''
       (
         set -euo pipefail
-        cd "${config.devenv.root}"
+        cd '${config.devenv.root}'
 
         ./cicd/docker_login_noninteractive.sh \
           "''${@}"
@@ -680,7 +693,7 @@ in
     exec = ''
       (
         set -euo pipefail
-        cd "${config.devenv.root}"
+        cd '${config.devenv.root}'
 
         ./cicd/docker_image_backup_restore.py \
           "''${@}"
@@ -693,7 +706,7 @@ in
     exec = ''
       (
         set -euo pipefail
-        cd "${config.devenv.root}"
+        cd '${config.devenv.root}'
 
         ./cicd/docker_container_stop.sh \
           "''${@}"
@@ -706,7 +719,7 @@ in
     exec = ''
       (
         set -euo pipefail
-        cd "${config.devenv.root}"
+        cd '${config.devenv.root}'
 
         ./cicd/docker_prune.sh \
           "''${@}"
@@ -719,7 +732,7 @@ in
     exec = ''
       (
         set -euo pipefail
-        cd "${config.devenv.root}"
+        cd '${config.devenv.root}'
 
         ./cicd/nix-dind.sh \
           "''${@}"
@@ -732,7 +745,7 @@ in
     exec = ''
       (
         set -euo pipefail
-        cd "${config.devenv.root}"
+        cd '${config.devenv.root}'
 
         ./cicd/generate_frontend_api.sh \
           "''${@}"
@@ -745,7 +758,7 @@ in
     exec = ''
       (
         set -euo pipefail
-        cd "${config.devenv.root}"
+        cd '${config.devenv.root}'
 
         ./cicd/generate_third_party.sh \
           "''${@}"
@@ -758,7 +771,7 @@ in
     exec = ''
       (
         set -euo pipefail
-        cd "${config.devenv.root}"
+        cd '${config.devenv.root}'
 
         ./cicd/generate_frontend_static.sh \
           "''${@}"
@@ -771,7 +784,7 @@ in
     exec = ''
       (
         set -euo pipefail
-        cd "${config.devenv.root}"
+        cd '${config.devenv.root}'
 
         ./cicd/test_git_file_changed.sh \
           "''${@}"
@@ -784,7 +797,7 @@ in
     exec = ''
       (
         set -euo pipefail
-        cd "${config.devenv.root}"
+        cd '${config.devenv.root}'
 
         ./cicd/run_integrationtest.sh
           "''${@}"
@@ -797,7 +810,7 @@ in
     exec = ''
       (
         set -euo pipefail
-        cd "${config.devenv.root}"
+        cd '${config.devenv.root}'
 
         cp "${builtins.toString cicd-config}" devenv.local.nix
       )
@@ -809,7 +822,7 @@ in
     exec = ''
       (
         set -euo pipefail
-        cd "${config.devenv.root}"
+        cd '${config.devenv.root}'
 
         rm \
           --force \
@@ -823,7 +836,7 @@ in
     exec = ''
       (
         set -euo pipefail
-        cd "${config.devenv.root}"
+        cd '${config.devenv.root}'
 
         ./cicd/install_runner.sh
           "''${@}"
@@ -836,7 +849,7 @@ in
     exec = ''
       (
         set -euo pipefail
-        cd "${config.devenv.root}"
+        cd '${config.devenv.root}'
 
         ./cicd/chrome_wrapped.sh \
           "''${@}"
@@ -849,7 +862,7 @@ in
     exec = ''
       (
         set -euo pipefail
-        cd "${config.devenv.root}"
+        cd '${config.devenv.root}'
 
         ./helpers/transfer_loom.sh \
           "''${@}"
@@ -862,7 +875,7 @@ in
     exec = ''
       (
         set -euo pipefail
-        cd "${config.devenv.root}"
+        cd '${config.devenv.root}'
 
         ./traefik/update.sh \
           "''${@}"
@@ -875,7 +888,7 @@ in
     exec = ''
       (
         set -euo pipefail
-        cd "${config.devenv.root}"
+        cd '${config.devenv.root}'
 
         ./cicd/generate_client_certificate.sh \
           "''${@}"

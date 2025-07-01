@@ -41,12 +41,11 @@ run_poetry_tool() {
 
     echo "Running: ${cmd[0]}"
     poetry \
-        -C "${GIT_TOPLEVEL}" \
         run "${cmd[@]}"
 }
 
 # In this function we use the: when_fixing and when_not_fixing
-# functions whichare designed to be used with word splitting.
+# functions which are designed to be used with word splitting.
 # Hence, we have to disable those shellcheck checkers
 # shellcheck disable=SC2046,SC2312
 process_python_files() {
