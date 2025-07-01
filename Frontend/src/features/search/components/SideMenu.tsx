@@ -1,7 +1,6 @@
 import { useState } from "react";
 import {
     ArchiveOutlined,
-    Clear,
     Delete,
     ChevronLeft,
     ChevronRight,
@@ -16,6 +15,8 @@ import {
     ListSubheader,
     IconButton,
     useMediaQuery,
+    Switch,
+    FormControlLabel,
 } from "@mui/material";
 import { useTranslation } from "react-i18next";
 import { toast } from "react-toastify";
@@ -40,6 +41,8 @@ import { UpdateVisibilityButton } from "../../common/components/files/UpdateVisi
 import { scheduleArchiveCreation } from "../../../app/api/search.ts";
 import { useEffect } from "react";
 
+const expertModeKey = "loomExpertMode";
+
 export function SideMenu() {
     const numberOfResults = useAppSelector(selectTotalFiles);
     const searchQuery = useAppSelector(selectQuery);
@@ -50,13 +53,13 @@ export function SideMenu() {
     ] = useState(false);
     const [isMenuExpanded, setIsMenuExpanded] = useState(true);
     const [isMenuAnimationRunning, setIsMenuAnimationRunning] = useState(true);
+    const [expertMode, setExpertMode] = useState(
+        () => window.localStorage.getItem(expertModeKey) === "true",
+    );
+
     const dispatch = useAppDispatch();
     const matchMedia = useMediaQuery("(min-width: 1200px)");
     const { t } = useTranslation();
-
-    const handleClearQuery = () => {
-        dispatch(updateQuery({ query: "" }));
-    };
 
     const handleShowHiddenFiles = () => {
         dispatch(updateQuery({ query: "hidden:true" }));
@@ -122,79 +125,115 @@ export function SideMenu() {
                     <ListItem>
                         <UploadFileDialog icon_only={!isMenuExpanded} />
                     </ListItem>
-                    <ListItem>
-                        <TagsInput
-                            icon_only={!isMenuExpanded}
-                            button_full_width
-                            disabled={numberOfResults === 0}
-                        />
-                    </ListItem>
-                    <ListItem>
-                        <UpdateVisibilityButton
-                            icon_only={!isMenuExpanded}
-                            button_full_width
-                            disabled={numberOfResults === 0}
-                        />
-                    </ListItem>
-                    <ListItem>
-                        {isMenuExpanded ? (
-                            <Button
-                                onClick={() =>
-                                    setOpenConfirmArchiveCreationDialog(true)
+                    {isMenuExpanded && (
+                        <ListItem>
+                            <FormControlLabel
+                                control={
+                                    <Switch
+                                        sx={{
+                                            ".MuiSwitch-switchBase": {
+                                                padding: "9px",
+                                            },
+                                        }}
+                                        checked={expertMode}
+                                        onChange={(e) => {
+                                            setExpertMode(e.target.checked);
+                                            window.localStorage.setItem(
+                                                expertModeKey,
+                                                e.target.checked.toString(),
+                                            );
+                                        }}
+                                    />
                                 }
-                                disabled={numberOfResults === 0}
-                                color="secondary"
-                                variant="contained"
-                                startIcon={<ArchiveOutlined />}
-                                fullWidth={true}
-                            >
-                                <span className="btn-label">
-                                    {t("sideMenu.createArchive")}
-                                </span>
-                            </Button>
-                        ) : (
-                            <IconButton
-                                onClick={() =>
-                                    setOpenConfirmArchiveCreationDialog(true)
-                                }
-                                disabled={numberOfResults === 0}
-                                title={t("sideMenu.createArchive")}
-                            >
-                                <ArchiveOutlined />
-                            </IconButton>
-                        )}
+                                label={t("sideMenu.expertMode")}
+                            />
+                        </ListItem>
+                    )}
+                    {expertMode && (
+                        <>
+                            <ListItem>
+                                <TagsInput
+                                    icon_only={!isMenuExpanded}
+                                    button_full_width
+                                    disabled={numberOfResults === 0}
+                                />
+                            </ListItem>
+                            <ListItem>
+                                <UpdateVisibilityButton
+                                    icon_only={!isMenuExpanded}
+                                    button_full_width
+                                    disabled={numberOfResults === 0}
+                                />
+                            </ListItem>
+                            <ListItem>
+                                {isMenuExpanded ? (
+                                    <Button
+                                        onClick={() =>
+                                            setOpenConfirmArchiveCreationDialog(
+                                                true,
+                                            )
+                                        }
+                                        disabled={numberOfResults === 0}
+                                        color="secondary"
+                                        variant="contained"
+                                        startIcon={<ArchiveOutlined />}
+                                        fullWidth={true}
+                                    >
+                                        <span className="btn-label">
+                                            {t("sideMenu.createArchive")}
+                                        </span>
+                                    </Button>
+                                ) : (
+                                    <IconButton
+                                        onClick={() =>
+                                            setOpenConfirmArchiveCreationDialog(
+                                                true,
+                                            )
+                                        }
+                                        disabled={numberOfResults === 0}
+                                        title={t("sideMenu.createArchive")}
+                                    >
+                                        <ArchiveOutlined />
+                                    </IconButton>
+                                )}
 
-                        <ConfirmDialog
-                            open={openConfirmArchiveCreationDialog}
-                            text={t("confirmDialog.confirmArchiveCreationText")}
-                            buttonText={t(
-                                "confirmDialog.confirmArchiveCreation",
-                            )}
-                            handleConfirmation={startArchiveCreation}
-                            cancel={() =>
-                                setOpenConfirmArchiveCreationDialog(false)
-                            }
-                            icon={<ArchiveOutlined />}
-                        />
-                    </ListItem>
-                    <ListItem>
-                        <TranslationDialog
-                            icon_only={!isMenuExpanded}
-                            disabled={numberOfResults === 0}
-                        />
-                    </ListItem>
-                    <ListItem>
-                        <ReIndexButton
-                            icon_only={!isMenuExpanded}
-                            disabled={numberOfResults === 0}
-                        />
-                    </ListItem>
-                    <ListItem>
-                        <SummaryButton
-                            icon_only={!isMenuExpanded}
-                            disabled={numberOfResults === 0}
-                        />
-                    </ListItem>
+                                <ConfirmDialog
+                                    open={openConfirmArchiveCreationDialog}
+                                    text={t(
+                                        "confirmDialog.confirmArchiveCreationText",
+                                    )}
+                                    buttonText={t(
+                                        "confirmDialog.confirmArchiveCreation",
+                                    )}
+                                    handleConfirmation={startArchiveCreation}
+                                    cancel={() =>
+                                        setOpenConfirmArchiveCreationDialog(
+                                            false,
+                                        )
+                                    }
+                                    icon={<ArchiveOutlined />}
+                                />
+                            </ListItem>
+                            <ListItem>
+                                <TranslationDialog
+                                    icon_only={!isMenuExpanded}
+                                    disabled={numberOfResults === 0}
+                                />
+                            </ListItem>
+                            <ListItem>
+                                <ReIndexButton
+                                    icon_only={!isMenuExpanded}
+                                    disabled={numberOfResults === 0}
+                                />
+                            </ListItem>
+                            <ListItem>
+                                <SummaryButton
+                                    icon_only={!isMenuExpanded}
+                                    disabled={numberOfResults === 0}
+                                />
+                            </ListItem>
+                        </>
+                    )}
                 </List>
                 <List
                     subheader={
@@ -232,19 +271,6 @@ export function SideMenu() {
                         </ListItemIcon>
                         {isMenuExpanded ? (
                             <ListItemText primary={t("sideMenu.hiddenFiles")} />
-                        ) : (
-                            <></>
-                        )}
-                    </ListItemButton>
-                    <ListItemButton onClick={handleClearQuery}>
-                        <ListItemIcon title={t("sideMenu.clearQuery")}>
-                            <Clear />
-                        </ListItemIcon>
-                        {isMenuExpanded ? (
-                            <ListItemText
-                                color="red"
-                                primary={t("sideMenu.clearQuery")}
-                            />
                         ) : (
                             <></>
                         )}
