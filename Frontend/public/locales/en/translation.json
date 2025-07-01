@@ -99,6 +99,7 @@
     "sideMenu": {
         "actions": "Actions",
         "results": "Results",
+        "expertMode": "Expert Mode",
 
         "timeRange": {
             "title": "Time ranges",
@@ -116,7 +117,6 @@
         "tags": "Tags",
         "special": "Special",
         "hiddenFiles": "Hidden files",
-        "clearQuery": "Clear query",
         "tasks": {
             "title": "Queries",
             "successful": "Successful tasks",
