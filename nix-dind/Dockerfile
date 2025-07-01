@@ -23,7 +23,7 @@ SHELL ["/bin/bash", "--login", "-c"]
 #
 # Sudo
 #
-ARG SUDO_VERSION="1.9.16_p2-r1"
+ARG SUDO_VERSION="1.9.17_p1-r0"
 RUN set -exu \
     && apk add --no-cache \
     sudo=${SUDO_VERSION}
@@ -74,7 +74,7 @@ RUN set -exu \
 #
 # Install nix (from upstream)
 #
-ARG CURL_VERSION="8.14.1-r0"
+ARG CURL_VERSION="8.14.1-r1"
 ARG XZ_VERSION="5.8.1-r0"
 RUN set -exu \
     && apk add --no-cache \
@@ -132,11 +132,12 @@ ENV NIX_STORE_OPTIMIZE=${NIX_STORE_OPTIMIZE}
 #   - https://github.com/NixOS/nixpkgs/issues/420134
 #ARG NIX_CHANNEL="nixos-25.05"
 ARG NIX_CHANNEL="nixpkgs-unstable"
+#ARG NIX_CHANNEL="02b9ebc695596cdcd7d58b1180e1be4b0d6735f8"
 # hadolint ignore=DL3004
 RUN set -exu \
     && fork() { (setsid "$@" &); } && fork nix-daemon ${NIX_DAEMON_ARGS} \
     && sudo -i -u "${NIX_USER_NAME}" \
-    nix-channel --add "https://nixos.org/channels/${NIX_CHANNEL}" "nixpkgs"\
+    nix-channel --add "https://github.com/NixOS/nixpkgs/archive/${NIX_CHANNEL}.tar.gz" "nixpkgs"\
     && sudo -i -u "${NIX_USER_NAME}" \
     nix-channel --update \
     && sudo -i -u "${NIX_USER_NAME}" \
@@ -155,14 +156,19 @@ COPY --chown=${NIX_USER_NAME} \
     nix-dind/devenv.local.nix \
     "${NIX_USER_HOMEDIR}"/nix-dind/
 
+#
+# With devenv: 1.6.1, we can currently not run devenv build:
+# see:
+#   - https://github.com/cachix/devenv/issues/1902
+#
 # hadolint ignore=DL3004
-RUN set -exu \
-    && fork() { (setsid "$@" &); } && fork nix-daemon  ${NIX_DAEMON_ARGS} \
-    && sudo -i -u "${NIX_USER_NAME}" \
-    devenv --verbose build \
-    && nix-collect-garbage --delete-old \
-    && if [ "${NIX_STORE_OPTIMIZE}" == "true" ]; then nix-store --optimise; fi \
-    && nix-store --verify --check-contents
+#RUN set -exu \
+#    && fork() { (setsid "$@" &); } && fork nix-daemon  ${NIX_DAEMON_ARGS} \
+#    && sudo -i -u "${NIX_USER_NAME}" \
+#    devenv --verbose build \
+#    && nix-collect-garbage --delete-old \
+#    && if [ "${NIX_STORE_OPTIMIZE}" == "true" ]; then nix-store --optimise; fi \
+#    && nix-store --verify --check-contents
 
 # For a FAT devenv base image comment/uncomment this:
 # hadolint ignore=DL3004
