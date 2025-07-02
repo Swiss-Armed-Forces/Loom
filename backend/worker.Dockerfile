@@ -25,7 +25,6 @@ RUN poetry install --no-cache --without dev,test
 FROM ${DOCKER_REGISTRY}/python:${PYTHON_IMAGE_VERSION} AS runtime-base
 
 # Package versions
-ARG CA_CERTIFICATES_VERSION="20230311"
 ARG IMAGEMAGICK_VERSION="8:6.9.*"
 ARG GHOSTSCRIPT_VERSION="10.0.*"
 ARG LIBLEPTONICA_DEV_VERSION="1.82.*"
@@ -37,7 +36,6 @@ ARG CABEXTRACT_VERSION="1.9-*"
 # install deps
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
-    ca-certificates=${CA_CERTIFICATES_VERSION} \
     imagemagick=${IMAGEMAGICK_VERSION} \
     ghostscript=${GHOSTSCRIPT_VERSION} \
     libleptonica-dev=${LIBLEPTONICA_DEV_VERSION} \
