@@ -221,6 +221,10 @@ def cmd_backup(parallel: int, image_dir: Path, pattern: str, prune: bool) -> Non
     image_metadata = get_image_map(pattern)
     logger.info("Found %d unique images to back up.", len(image_metadata))
 
+    # Create the backup directory if it doesn't exist
+    logger.info("Creating: %s", image_dir)
+    image_dir.mkdir(parents=True, exist_ok=True)
+
     with ProcessPoolExecutor(max_workers=parallel or None) as executor:
         futures = [
             executor.submit(docker_backup_image, meta, image_dir)
