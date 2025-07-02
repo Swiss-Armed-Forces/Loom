@@ -13,6 +13,7 @@ THIRD_PARTY_CACHE_DIR="${THIRD_PARTY_CACHE_DIR:-third-party-cache}"
 TRAEFIK_SKAFFOLD_CMD="${TOPLEVEL_DIR}/traefik/skaffold"
 # We need this because some images ore too big for /tmp (RAM)
 SYFT_TMPDIR="$(mktemp --directory --tmpdir="${PWD}" ".syft-tmp.XXXXXXX" )"
+SYFT_VERSION="$(syft --version | sed 's/syft //' | tr -cd '[:alnum:]._-')"
 
 
 VERBOSE=false
@@ -49,13 +50,31 @@ get_image_tags(){
         '.builds[].tag'
 }
 
-# build & list all images
+build_all_images(){
+    # Traefik
+    (
+        cd "${TOPLEVEL_DIR}/traefik"
+        "${TRAEFIK_SKAFFOLD_CMD}" \
+            build \
+            --profile "${PROFILE}"
+    )
+
+    # Application
+    (
+        cd "${TOPLEVEL_DIR}"
+        skaffold \
+            build \
+            --profile "${PROFILE}"
+    )
+}
+
 list_all_images(){
     # Traefik
     (
         cd "${TOPLEVEL_DIR}/traefik"
         "${TRAEFIK_SKAFFOLD_CMD}" \
             build \
+            --dry-run \
             --quiet \
             --profile "${PROFILE}" \
         | get_image_tags
@@ -66,6 +85,7 @@ list_all_images(){
         cd "${TOPLEVEL_DIR}"
         skaffold \
             build \
+            --dry-run \
             --quiet \
             --profile "${PROFILE}" \
         | get_image_tags
@@ -118,7 +138,7 @@ get_scan_image_cache_file(){
     image="${1}" && shift
 
     local cache_dir
-    cache_dir="${THIRD_PARTY_CACHE_DIR}/scan_image"
+    cache_dir="${THIRD_PARTY_CACHE_DIR}/scan_image/syft_${SYFT_VERSION}"
     mkdir -p "${cache_dir}"
 
     local image_directory_safe
@@ -130,6 +150,9 @@ get_scan_image_cache_file(){
 container_licenses() {
     >&3 echo "[*] Getting: container_licenses"
     (
+        >&3 echo "[*] Building all images"
+        >&3 build_all_images
+
         >&3 echo "[*] Listing all images"
         local all_images
         all_images=$(list_all_images)

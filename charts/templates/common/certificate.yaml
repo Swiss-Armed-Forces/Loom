@@ -24,6 +24,7 @@ spec:
     - rspamd.{{ .Values.domain }}
     - rspamd-worker.{{ .Values.domain }}
     - open-webui.{{ .Values.domain }}
+    - ollama.{{ .Values.domain }}
     - roundcube.{{ .Values.domain }}
     - dovecot.{{ .Values.domain }}
     - minio.{{ .Values.domain }}

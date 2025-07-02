@@ -25,6 +25,7 @@ LOOM_HOSTS=(
     "prometheus"
     "grafana"
     "open-webui"
+    "ollama"
     "dovecot"
     "roundcube"
     "minio"

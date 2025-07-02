@@ -271,8 +271,30 @@ in
   };
   languages.typescript.enable = true;
 
-  # https://devenv.sh/git-hooks-hooks/
+  # https://devenv.sh/git-hooks/
   git-hooks.hooks = {
+    ai-commit-message = {
+      enable = true;
+      stages = [
+        "prepare-commit-msg"
+      ];
+
+      # The name of the hook (appears on the report table):
+      name = "AI commit message";
+
+      # The command to execute (mandatory):
+      # Note: we have to poetry run here so that the script
+      # has access to poetry installed dependencies
+      entry = "poetry run ./cicd/ai_commit_message.py";
+
+      # The language of the hook - tells pre-commit
+      # how to install the hook (default: "system")
+      # see also https://pre-commit.com/#supported-languages
+      #language = "python";
+
+      # verbose = true;
+    };
+
     trim-trailing-whitespace.enable = true;
 
     #isort.enable = true;
