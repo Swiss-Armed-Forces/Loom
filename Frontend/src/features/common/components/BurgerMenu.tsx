@@ -125,7 +125,7 @@ export function BurgerMenu() {
         <div>
             <IconButton
                 sx={{
-                    "background-color": "rgba(0, 0, 0, 0.75)",
+                    backgroundColor: "rgba(0, 0, 0, 0.75)",
                     "&:hover": {
                         backgroundColor: "rgba(0, 0, 0, 0.85)",
                     },
