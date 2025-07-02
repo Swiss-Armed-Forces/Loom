@@ -49,7 +49,11 @@ export function Header() {
                 <BackgroundStatusIndicator />
                 <Box className={styles.headerButtons}>
                     <Tabs
-                        value={location.pathname}
+                        value={
+                            location.pathname === "/"
+                                ? "/search"
+                                : location.pathname
+                        }
                         aria-label="loom tabs"
                         sx={{
                             backgroundColor: "rgba(0,0,0,0.75)",
