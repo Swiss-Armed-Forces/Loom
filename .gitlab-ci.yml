@@ -208,6 +208,8 @@ default:
     - section_start .default-up-before_script
     # start stack
     - devenv shell -- up --expose "$(tailscale ip -4)"
+    # everything should be running now: prune rest
+    - devenv shell -- kubernetes-prune
     #
     # END SECTION
     #
@@ -223,6 +225,8 @@ default:
     - section_start .default-up-integrationtest-before_script
     # start stack
     - devenv shell -- up --integrationtest --expose "$(tailscale ip -4)"
+    # everything should be running now: prune rest
+    - devenv shell -- kubernetes-prune
     #
     # END SECTION
     #
