@@ -347,7 +347,7 @@ integrationtest:
     # see:
     #   - https://jerry-git.github.io/pytest-split/
     RANDOM_ORDER_SEED: "${CI_PIPELINE_ID}"
-  parallel: 4
+  parallel: 3
   script:
     - devenv shell -- run-integrationtest
 
