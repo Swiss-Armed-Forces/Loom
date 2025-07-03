@@ -5,6 +5,7 @@ include:
 workflow:
   auto_cancel:
     on_job_failure: all
+    on_new_commit: interruptible
   # Switch between branch pipelines and merge request pipelines
   # https://docs.gitlab.com/ee/ci/yaml/README.html#switch-between-branch-pipelines-and-merge-request-pipelines
   rules:
