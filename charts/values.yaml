@@ -276,6 +276,16 @@ fluentd:
     limits:
       cpu: "0.5"
       memory: "500Mi"
+  initContainer:
+    image:
+      repository: swiss-armed-forces/cyber-command/cea/loom/alpine
+    resources:
+      requests:
+        cpu: "0.05"
+        memory: "50Mi"
+      limits:
+        cpu: "0.1"
+        memory: "100Mi"
 
 grafana:
   enabled: true

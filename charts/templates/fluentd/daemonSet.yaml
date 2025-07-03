@@ -16,6 +16,23 @@ spec:
         app: {{ include "app.name" . }}-fluentd
     spec:
       serviceAccountName: {{ include "app.fullname" . }}-fluentd
+      initContainers:
+        - name: check-elasticsearch-ready
+          image: {{ .Values.image.registry }}/{{ .Values.fluentd.initContainer.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) .Values.fluentd.initContainer.image.tag }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command:
+            - 'sh'
+            - '-c'
+            - |
+              set -eu
+
+              until nc -vz {{ include "app.fullname" . }}-elasticsearch {{ .Values.elasticsearch.service.port }}; do
+                echo "Waiting for elasticsearch service";
+                sleep 1;
+              done;
+          {{- if .Values.fluentd.initContainer.resources }}
+          resources: {{- toYaml .Values.fluentd.initContainer.resources | nindent 12 }}
+          {{- end }}
       containers:
         - name: fluentd
           image: {{ .Values.image.registry }}/{{ .Values.fluentd.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) .Values.fluentd.image.tag }}
@@ -34,8 +51,14 @@ spec:
             - name: varlog
               mountPath: /var/log
               readOnly: true
+            - name: varlibdocker
+              mountPath: /var/lib/docker/
+              readOnly: true
       volumes:
         - name: varlog
           hostPath:
             path: /var/log
+        - name: varlibdocker
+          hostPath:
+            path: /var/lib/docker/
 {{- end }}
