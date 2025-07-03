@@ -13,7 +13,7 @@ These guidelines will help ensure smooth collaboration and effective contributio
 
 To maintain transparency and traceability:
 
-- **Do not hold important design discussions in Rocket.Chat.**
+- **Do not hold important design discussions in Chat.**
   Always use **issues** or **merge request comments** to discuss design and technical decisions.This ensures all discussions
   are visible, well-documented, and accessible to the entire team.
 
