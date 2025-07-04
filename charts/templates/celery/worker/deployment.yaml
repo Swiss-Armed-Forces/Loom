@@ -53,7 +53,7 @@ spec:
                 - -c
                 - python -m celery -A worker inspect ping -t 99999 -d "celery@$HOSTNAME"
             initialDelaySeconds: {{ default 0 .Values.celery.worker.main.livenessProbe.initialDelaySeconds }}
-            periodSeconds: {{ default 30 .Values.celery.worker.main.livenessProbe.periodSeconds }}
+            periodSeconds: {{ default 120 .Values.celery.worker.main.livenessProbe.periodSeconds }}
             timeoutSeconds: {{ default 60 .Values.celery.worker.main.livenessProbe.timeoutSeconds }}
             failureThreshold: {{ default 6 .Values.celery.worker.main.livenessProbe.failureThreshold }}
           {{- end }}

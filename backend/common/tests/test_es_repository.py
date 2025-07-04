@@ -231,7 +231,6 @@ ES_REPOSITORY_TEST_INSTANCES: dict[type[BaseEsRepository], list[_TestInstances]]
                 sort_unique=str(TestValueDefaults.test_uuid),
                 hidden=TestValueDefaults.test_bool,
                 # _EsTaskDocument
-                root_task_id=str(TestValueDefaults.test_uuid),
                 state=TestValueDefaults.test_str,
                 tasks_succeeded=list(map(str, TestValueDefaults.test_uuid_list)),
                 tasks_retried=list(map(str, TestValueDefaults.test_uuid_list)),
@@ -348,7 +347,6 @@ ES_REPOSITORY_TEST_INSTANCES: dict[type[BaseEsRepository], list[_TestInstances]]
                 sort_unique=str(TestValueDefaults.test_uuid),
                 hidden=TestValueDefaults.test_bool,
                 # _EsTaskDocument
-                root_task_id=str(TestValueDefaults.test_uuid),
                 state=TestValueDefaults.test_str,
                 tasks_succeeded=list(map(str, TestValueDefaults.test_uuid_list)),
                 tasks_retried=list(map(str, TestValueDefaults.test_uuid_list)),
@@ -423,7 +421,6 @@ ES_REPOSITORY_TEST_INSTANCES: dict[type[BaseEsRepository], list[_TestInstances]]
                 sort_unique=str(TestValueDefaults.test_uuid),
                 hidden=TestValueDefaults.test_bool,
                 # _EsTaskDocument
-                root_task_id=str(TestValueDefaults.test_uuid),
                 state=TestValueDefaults.test_str,
                 tasks_succeeded=list(map(str, TestValueDefaults.test_uuid_list)),
                 tasks_retried=list(map(str, TestValueDefaults.test_uuid_list)),
