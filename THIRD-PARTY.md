@@ -8491,13 +8491,13 @@ The complete source code for Traefik is publicly available at [https://github.co
 | k8s.io/utils | v0.0.0-20241104100929-3ea5e8cea738 |  | go-module-binary-cataloger |
 | kubectl | 1.33.1-r0 | Apache-2.0 | apk-db-cataloger |
 | libapk2 | 2.14.9-r2 | GPL-2.0-only | apk-db-cataloger |
-| libcrypto3 | 3.5.0-r0 | Apache-2.0 | apk-db-cataloger |
+| libcrypto3 | 3.5.1-r0 | Apache-2.0 | apk-db-cataloger |
 | libncursesw | 6.5_p20250503-r0 | X11 | apk-db-cataloger |
-| libssl3 | 3.5.0-r0 | Apache-2.0 | apk-db-cataloger |
+| libssl3 | 3.5.1-r0 | Apache-2.0 | apk-db-cataloger |
 | musl | 1.2.5-r10 | MIT | apk-db-cataloger |
 | musl-utils | 1.2.5-r10 | MIT AND BSD-2-Clause AND GPL-2.0-or-later | apk-db-cataloger |
 | ncurses-terminfo-base | 6.5_p20250503-r0 | X11 | apk-db-cataloger |
-| openssl | 3.5.0-r0 | Apache-2.0 | apk-db-cataloger |
+| openssl | 3.5.1-r0 | Apache-2.0 | apk-db-cataloger |
 | readline | 8.2.13-r1 | GPL-3.0-or-later | apk-db-cataloger |
 | scanelf | 1.3.8-r1 | GPL-2.0-only | apk-db-cataloger |
 | sigs.k8s.io/json | v0.0.0-20241010143419-9aa6b5e7a4b3 |  | go-module-binary-cataloger |
