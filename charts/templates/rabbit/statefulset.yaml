@@ -58,7 +58,7 @@ spec:
                 - rabbitmq-diagnostics -q ping
             initialDelaySeconds: {{ default 0 .Values.rabbit.livenessProbe.initialDelaySeconds }}
             periodSeconds: {{ default 20 .Values.rabbit.livenessProbe.periodSeconds }}
-            timeoutSeconds: {{ default 5 .Values.rabbit.livenessProbe.timeoutSeconds }}
+            timeoutSeconds: {{ default 15 .Values.rabbit.livenessProbe.timeoutSeconds }}
             failureThreshold: {{ default 6 .Values.rabbit.livenessProbe.failureThreshold }}
           {{- end }}
           {{- if .Values.rabbit.resources }}

@@ -1054,7 +1054,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | bash | 5.2.15-2+b8 | BSD-4-Clause-UC, GFDL-1.3-only, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, Latex2e | dpkg-db-cataloger |
 | billiard | 4.2.1 |  | python-installed-package-cataloger |
 | bsdutils | 1:2.38.1-5+deb12u3 | BSD-3-Clause, BSD-4-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, MIT | dpkg-db-cataloger |
-| ca-certificates | 20230311 | GPL-2.0-only, GPL-2.0-or-later, MPL-2.0 | dpkg-db-cataloger |
+| ca-certificates | 20230311+deb12u1 | GPL-2.0-only, GPL-2.0-or-later, MPL-2.0 | dpkg-db-cataloger |
 | celery | 5.4.0 | BSD-3-Clause | python-installed-package-cataloger |
 | celery-types | 0.22.0 | Apache-2.0 | python-installed-package-cataloger |
 | certifi | 2025.1.31 | MPL-2.0 | python-installed-package-cataloger |
@@ -3040,7 +3040,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | bash | 5.2.15-2+b8 | BSD-4-Clause-UC, GFDL-1.3-only, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, Latex2e | dpkg-db-cataloger |
 | billiard | 4.2.1 |  | python-installed-package-cataloger |
 | bsdutils | 1:2.38.1-5+deb12u3 | BSD-3-Clause, BSD-4-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, MIT | dpkg-db-cataloger |
-| ca-certificates | 20230311 | GPL-2.0-only, GPL-2.0-or-later, MPL-2.0 | dpkg-db-cataloger |
+| ca-certificates | 20230311+deb12u1 | GPL-2.0-only, GPL-2.0-or-later, MPL-2.0 | dpkg-db-cataloger |
 | celery | 5.4.0 | BSD-3-Clause | python-installed-package-cataloger |
 | celery-types | 0.22.0 | Apache-2.0 | python-installed-package-cataloger |
 | certifi | 2024.8.30 | MPL-2.0 | python-installed-package-cataloger |

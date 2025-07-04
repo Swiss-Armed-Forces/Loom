@@ -1,10 +1,11 @@
 import logging
 
-from celery import Celery
+from celery import Celery, signals
 from celery.schedules import crontab
 from kombu import Exchange, Queue, serialization
 
 from common.settings import settings
+from common.utils.oom_score_adjust import adjust_oom_score
 
 logger = logging.getLogger(__name__)
 
@@ -42,12 +43,18 @@ def init_celery_app() -> Celery:
     # Configure worker behavior
     app.conf.worker_pool = "prefork"
     app.conf.worker_concurrency = 1
+    app.conf.worker_prefetch_multiplier = 4
+    app.conf.worker_hijack_root_logger = True
+
+    app.conf.task_acks_late = True
+    app.conf.task_track_started = True
+    app.conf.task_send_sent_event = True
+    app.conf.worker_send_task_events = True
+
     app.conf.task_ignore_result = True
     app.conf.task_store_errors_even_if_ignored = True
     app.conf.result_backend_max_retries = 30
-    app.conf.task_acks_late = True
     app.conf.task_acks_on_failure_or_timeout = True
-    app.conf.worker_prefetch_multiplier = 128
     app.conf.task_reject_on_worker_lost = False
 
     # Register periodic tasks
@@ -122,3 +129,11 @@ def register_queues_for_package(app: Celery, package: str):
     )
     app.autodiscover_tasks([package], force=True)
     register_queues(app=app)
+
+
+# Set oom scores for the pool worker
+# such that the pool worker is more likely to be
+# killed.
+@signals.worker_process_init.connect
+def set_oom_score_for_pool_worker(*_, **__):
+    adjust_oom_score(1000)

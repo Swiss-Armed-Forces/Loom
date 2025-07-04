@@ -28,17 +28,17 @@ class TaskSchedulingService:
 
     def create_archive(self, archive: Archive):
         """Schedule the creation of an archive."""
+        root_task_id = uuid4()
         self._root_task_information_repository.save(
             RootTaskInformation(
-                root_task_id=archive.root_task_id,
+                root_task_id=root_task_id,
                 object_id=archive.id_,
             )
         )
         self._celery_app.send_task(
             "worker.create_archive.create_archive_task.create_archive_task",
             args=[archive],
-            task_id=str(archive.root_task_id),
-            root_id=str(archive.root_task_id),
+            root_id=str(root_task_id),
         ).forget()
 
     def dispatch_reindex_files(self, query: QueryParameters):
@@ -51,17 +51,17 @@ class TaskSchedulingService:
 
     def index_file(self, file: File, file_content: LazyBytes):
         """Schedule the indexing of a file."""
+        root_task_id = uuid4()
         self._root_task_information_repository.save(
             RootTaskInformation(
-                root_task_id=file.root_task_id,
+                root_task_id=root_task_id,
                 object_id=file.id_,
             )
         )
         self._celery_app.send_task(
             "worker.index_file.index_file_task.index_file_task",
             args=[file, file_content],
-            task_id=str(file.root_task_id),
-            root_id=str(file.root_task_id),
+            root_id=str(root_task_id),
         ).forget()
 
     def dispatch_translate_files(self, query: QueryParameters, lang: str):

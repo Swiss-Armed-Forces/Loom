@@ -21,7 +21,7 @@ def get_loglevel() -> int:
 def init_logging():
     logging.basicConfig(
         level=get_loglevel(),
-        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+        format="[%(asctime)s: %(levelname)s/%(processName)s - %(name)s] %(message)s",
     )
     logging.info("Logging initialized")
 
