@@ -24,7 +24,7 @@ RUN set -exu \
 #
 # openssl
 #
-ARG OPENSSL_VERSION="3.5.0-r0"
+ARG OPENSSL_VERSION="3.5.1-r0"
 RUN set -exu \
     && apk add --no-cache \
     openssl=${OPENSSL_VERSION}
