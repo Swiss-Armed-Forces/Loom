@@ -1,6 +1,7 @@
 import logging
+from typing import Any
 
-from celery import Celery, signals
+from celery import Celery, Task, signals
 from celery.schedules import crontab
 from kombu import Exchange, Queue, serialization
 
@@ -20,8 +21,8 @@ DEFAULT_QUEUE_ARGS = {
 }
 
 
-def init_celery_app() -> Celery:
-    """Initialize and configure the Celery app."""
+def init_minimal_celery_app() -> Celery:
+    """Initialize a minimal Celery app."""
     app = Celery(
         "loom",
         broker=str(settings.celery_broker_host),
@@ -29,16 +30,22 @@ def init_celery_app() -> Celery:
     )
 
     # Configure content and serializers
-    app.conf.accept_content = ["application/json", "application/x-python-serialize"]
+    app.conf.accept_content = ["json", "pickle"]
     app.conf.result_accept_content = [
-        "application/json",
-        "application/x-python-serialize",
+        "json",
+        "pickle",
     ]
     app.conf.event_serializer = "pickle"
     app.conf.result_serializer = "pickle"
     app.conf.task_serializer = "pickle"
     serialization.register_pickle()
     serialization.enable_insecure_serializers()
+    return app
+
+
+def init_celery_app() -> Celery:
+    """Initialize and configure the Celery app."""
+    app = init_minimal_celery_app()
 
     # Configure worker behavior
     app.conf.worker_pool = "prefork"
@@ -137,3 +144,22 @@ def register_queues_for_package(app: Celery, package: str):
 @signals.worker_process_init.connect
 def set_oom_score_for_pool_worker(*_, **__):
     adjust_oom_score(1000)
+
+
+@signals.task_prerun.connect
+def log_task_start(
+    _: Task | None = None,
+    task_id: str | None = None,
+    task: Task | None = None,
+    args: list[Any] | None = None,
+    kwargs: dict[str, Any] | None = None,
+    **__: Any,
+) -> None:
+
+    logger.info(
+        "Starting task %s[%s] with args=%s, kwargs=%s",
+        task.name if task is not None else None,
+        task_id,
+        args,
+        kwargs,
+    )
