@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "app.fullname" . }}-ollama-models
+  labels:
+    {{- include "app.labels.standard" . | nindent 4 }}
+    app.kubernetes.io/component: ollama
+spec:
+  accessModes:
+    - {{ .Values.ollama.pvc.accessModes | default "ReadWriteMany" | quote }}
+  resources:
+    requests:
+      storage: {{ .Values.ollama.pvc.storage }}
+  {{- if .Values.ollama.pvc.storageClass -}}
+  storageClassName: {{ .Values.ollama.pvc.storageClass }}
+  {{- end }}
