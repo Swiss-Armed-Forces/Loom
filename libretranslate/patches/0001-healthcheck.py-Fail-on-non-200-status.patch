@@ -1,0 +1,23 @@
+From e30572255cedf214a00ff86f021c41be36f6b58e Mon Sep 17 00:00:00 2001
+From: shrewd-laidback palace
+ <shrewd-laidback-palace-736-c41-2c1-e464fc974@swiss-armed-forces-open-source.ch>
+Date: Sat, 5 Jul 2025 13:17:53 +0200
+Subject: [PATCH] healthcheck.py: Fail on non 200 status
+
+This way the health check will also fail on 500 and similar
+---
+ scripts/healthcheck.py | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/scripts/healthcheck.py b/scripts/healthcheck.py
+index 10bf315..37014c1 100644
+--- a/scripts/healthcheck.py
++++ b/scripts/healthcheck.py
+@@ -12,4 +12,4 @@ response = requests.post(
+     },
+     timeout=60
+ )
+-# if server unavailable then requests with raise exception and healthcheck will fail
++response.raise_for_status() # if server unavailable then requests with raise exception and healthcheck will fail
+--
+2.49.0

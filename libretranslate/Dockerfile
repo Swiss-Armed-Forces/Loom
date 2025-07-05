@@ -3,13 +3,15 @@ ARG LIBRETRANSLATE_IMAGE_VERSION="v1.6.4"
 ARG DOCKER_REGISTRY
 FROM ${DOCKER_REGISTRY}/libretranslate/libretranslate:${LIBRETRANSLATE_IMAGE_VERSION}-cuda
 
+COPY patches/ /tmp/patches/
+RUN set -exu && \
+    for patch in /tmp/patches/*.patch; do [ -f "$patch" ] && patch -p1 < "${patch}"; done && \
+    rm -rf /tmp/patches
+
 RUN scripts/install_models.py
 
-WORKDIR /app
-
-# Package versions
+# Install GUNICORN
 ARG GUNICORN_VERSION=22.0.0
-
 RUN set -exu \
     && pip install --no-cache-dir -I "gunicorn[gevent]==${GUNICORN_VERSION}"
 
