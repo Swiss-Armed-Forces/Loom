@@ -49,13 +49,7 @@ spec:
             - mountPath: /srv/mail
               name: dovecot
           {{- if .Values.dovecot.resources }}
-          resources:
-            limits:
-              cpu: {{ .Values.dovecot.resources.limits.cpu }}
-              memory: {{ .Values.dovecot.resources.limits.memory }}
-            requests:
-              cpu: {{ .Values.dovecot.resources.requests.cpu }}
-              memory: {{ .Values.dovecot.resources.requests.memory }}
+          resources: {{- toYaml .Values.dovecot.resources | nindent 12 }}
           {{- end }}
   volumeClaimTemplates:
     - metadata:

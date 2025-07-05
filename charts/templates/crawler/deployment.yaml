@@ -51,7 +51,6 @@ spec:
           envFrom:
             - configMapRef:
                 name: {{ include "app.fullname" . }}-settings
-          volumeMounts:
           {{- if .Values.crawler.resources }}
           resources: {{- toYaml .Values.crawler.resources | nindent 12 }}
           {{- end }}

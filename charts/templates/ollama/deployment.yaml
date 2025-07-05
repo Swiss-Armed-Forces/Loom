@@ -17,13 +17,31 @@ spec:
       labels:
         app: {{ include "app.name" . }}-ollama
     spec:
+      initContainers:
+        - name: copy-ollama-models
+          image: &container-image {{ .Values.image.registry }}/{{ .Values.ollama.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) .Values.ollama.image.tag }}
+          command:
+            - /bin/sh
+            - -c
+            - |
+              echo "Copying preloaded models to PVC..."
+              cp \
+                --recursive \
+                --update \
+                /root/.ollama/models/* /ollama-models/
+          volumeMounts:
+            - name: ollama-models
+              mountPath: /ollama-models
       containers:
         - name: ollama
-          image: {{ .Values.image.registry }}/{{ .Values.ollama.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) .Values.ollama.image.tag }}
+          image: *container-image
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports:
             - name: ollama
               containerPort: {{ .Values.ollama.service.port }}
+          env:
+            - name: OLLAMA_MODELS
+              value: /ollama-models
           {{- if .Values.ollama.readinessProbe.enabled }}
           readinessProbe:
             httpGet:
@@ -42,6 +60,13 @@ spec:
             periodSeconds: {{ default 20 .Values.ollama.livenessProbe.periodSeconds }}
             failureThreshold: {{ default 6 .Values.ollama.livenessProbe.failureThreshold }}
           {{- end }}
+          volumeMounts:
+            - name: ollama-models
+              mountPath: /ollama-models
           {{- if .Values.ollama.resources }}
           resources: {{- toYaml .Values.ollama.resources | nindent 12 }}
           {{- end }}
+      volumes:
+        - name: ollama-models
+          persistentVolumeClaim:
+            claimName: {{ include "app.fullname" . }}-ollama-models

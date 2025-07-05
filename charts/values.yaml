@@ -876,6 +876,8 @@ ollama:
     repository: swiss-armed-forces/cyber-command/cea/loom/ollama
   service:
     port: 11434
+  pvc:
+    storage: 30Gi
   ingress: *default-ingress-config
   readinessProbe:
     enabled: false
@@ -888,6 +890,14 @@ ollama:
     limits:
       cpu: "10"
       memory: "10Gi"
+  initContainer:
+    resources:
+      requests:
+        cpu: "0.05"
+        memory: "50Mi"
+      limits:
+        cpu: "0.1"
+        memory: "100Mi"
 
 open_webui:
   replicaCount: 1
