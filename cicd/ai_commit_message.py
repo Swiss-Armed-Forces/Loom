@@ -67,10 +67,18 @@ def update_commit_msg_file(file_path: str, message: str) -> None:
 
 def is_merge_commit_from_hook_args() -> bool:
     """Determine if this is a merge commit based on hook arguments."""
+    # Check if the commit message file is MERGE_MSG (indicates merge)
+    if len(sys.argv) >= 2:
+        commit_msg_file = sys.argv[1]
+        return commit_msg_file.endswith("MERGE_MSG")
+
+    # Alternative: check if third argument is "merge" (for other cases)
     return len(sys.argv) >= 3 and sys.argv[2] == "merge"
 
 
 def main():
+    logger.debug("Called with arguments: %s", sys.argv)
+
     if len(sys.argv) < 2:
         logger.error(
             "This script must be run as a prepare-commit-msg hook with the commit message file path."
