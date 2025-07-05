@@ -39,11 +39,16 @@ spec:
               command:
                 - /bin/sh
                 - -c
-                - python -m celery -A worker inspect ping -t 99999 -d "celery@$HOSTNAME"
-            initialDelaySeconds: {{ default 0 .Values.celery.worker.main.readinessProbe.initialDelaySeconds }}
-            periodSeconds: {{ default 30 .Values.celery.worker.main.readinessProbe.periodSeconds }}
-            timeoutSeconds: {{ default 10 .Values.celery.worker.main.readinessProbe.timeoutSeconds }}
-            failureThreshold: {{ default 3 .Values.celery.worker.main.readinessProbe.failureThreshold }}
+                - python
+                  -m celery
+                  -A worker
+                  inspect ping
+                    -t 99999
+                    -d "celery@${HOSTNAME}"
+            initialDelaySeconds: {{ default 10 .Values.celery.worker.main.readinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ default 120 .Values.celery.worker.main.readinessProbe.periodSeconds }}
+            timeoutSeconds: {{ default 60 .Values.celery.worker.main.readinessProbe.timeoutSeconds }}
+            failureThreshold: {{ default 6 .Values.celery.worker.main.readinessProbe.failureThreshold }}
           {{- end }}
           {{- if .Values.celery.worker.main.livenessProbe.enabled }}
           livenessProbe:
@@ -51,8 +56,13 @@ spec:
               command:
                 - /bin/sh
                 - -c
-                - python -m celery -A worker inspect ping -t 99999 -d "celery@$HOSTNAME"
-            initialDelaySeconds: {{ default 0 .Values.celery.worker.main.livenessProbe.initialDelaySeconds }}
+                - python
+                  -m celery
+                  -A worker
+                  inspect ping
+                    -t 99999
+                    -d "celery@${HOSTNAME}"
+            initialDelaySeconds: {{ default 10 .Values.celery.worker.main.livenessProbe.initialDelaySeconds }}
             periodSeconds: {{ default 120 .Values.celery.worker.main.livenessProbe.periodSeconds }}
             timeoutSeconds: {{ default 60 .Values.celery.worker.main.livenessProbe.timeoutSeconds }}
             failureThreshold: {{ default 6 .Values.celery.worker.main.livenessProbe.failureThreshold }}
