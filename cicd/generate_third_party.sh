@@ -56,7 +56,8 @@ build_all_images(){
         cd "${TOPLEVEL_DIR}/traefik"
         "${TRAEFIK_SKAFFOLD_CMD}" \
             build \
-            --profile "${PROFILE}"
+            --profile "${PROFILE}" \
+            --push=false
     )
 
     # Application
@@ -64,7 +65,8 @@ build_all_images(){
         cd "${TOPLEVEL_DIR}"
         skaffold \
             build \
-            --profile "${PROFILE}"
+            --profile "${PROFILE}" \
+            --push=false
     )
 }
 
