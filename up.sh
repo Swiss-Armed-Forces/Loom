@@ -2,7 +2,7 @@
 #
 # This script orchestrates the setup, management, and deployment of a Kubernetes cluster using Minikube and Skaffold.
 # It includes environment validation, system configuration, cluster creation, namespace management, and Helm chart installation.
-# Supports customizable workflows via arguments for resetting, exposing, and tailoring cluster operations.
+# Supports customizable workflows via arguments for exposing, and tailoring cluster operations.
 #
 set -eou pipefail
 
@@ -13,7 +13,6 @@ SCRIPT_NAME=$(basename "$0")
 # Environment
 #
 EDITOR="${EDITOR:-nano}"
-SUDO_USER="${SUDO_USER:-$(whoami)}"
 REGISTRY_MIRROR="${REGISTRY_MIRROR:-}"
 
 #
@@ -56,11 +55,6 @@ STEPS_SETUP_SYSTEM=(
     install_host_entries
 )
 
-# Steps to reset the cluster before startup
-STEPS_RESET_CLUSTER=(
-    delete_cluster
-)
-
 # Steps to setup the cluster before startup
 STEPS_SETUP_CLUSTER=(
     create_namespace
@@ -76,7 +70,6 @@ STEPS_SETUP_CLUSTER=(
 #
 
 SKIP=()
-DO_RESET=false
 VERBOSE=false
 DEVELOPMENT=false
 INTEGRATIONTEST=false
@@ -99,23 +92,10 @@ check_command() {
     cmd="${1}" && shift
 
     if ! command -v "${cmd}" > /dev/null 2>&1; then
-        echo >&2 "[!] ${cmd} is not installed. Please install ${cmd} and try again."
+        echo >&2 "[!] ${cmd} is not installed."
+        echo >&2 "[!] Please install ${cmd} and try again."
         exit 1
     fi
-}
-
-sudo_preserves_path(){
-    local sudo_cmd
-    sudo_cmd="$(command -v sudo)"
-
-    local bash_cmd
-    bash_cmd="$(command -v bash)"
-
-    # shellcheck disable=SC2016
-    PATH="TESTPATH" \
-    "${sudo_cmd}" \
-        --user "${SUDO_USER}" \
-        "${bash_cmd}" -c '[[ "${PATH}" == "TESTPATH" ]]'
 }
 
 wait_for(){
@@ -141,33 +121,6 @@ wait_for(){
     echo "${check_function} is ready!"
 }
 
-# This is a wrapper for sudo which always runs
-# the command as user instead of root.
-#
-# If this scripts runs under sudo, we have to drop
-# root here because minikube does not like to run as
-# root..
-# We don't want to use --force, because then minikube
-# apparently skips a few checks (according to its prints)
-# Note that we populate SUDO_USER with the current user
-# (whoami) if SUDO_USER is not set. In that case sudo
-# should become mostly a noop.
-as_user(){
-    sudo \
-        --user "${SUDO_USER}" \
-        --preserve-env \
-        --non-interactive \
-            "${@}"
-}
-
-as_root(){
-    sudo \
-        --preserve-env \
-        --non-interactive \
-        minikube \
-            "${@}"
-}
-
 namespace_exists() {
     kubectl \
         get namespace \
@@ -175,7 +128,7 @@ namespace_exists() {
 }
 
 cluster_exists() {
-    as_user minikube status &>/dev/null
+    minikube status &>/dev/null
 }
 
 is_hosts_file_writable_as_root(){
@@ -191,10 +144,16 @@ is_serviceaccount_ready() {
 #
 
 delete_cluster(){
-    as_user minikube delete
+    minikube delete
 }
 
 validate_environment() {
+    # Check if not run as root
+    if [[ "${EUID}" -eq 0 ]]; then
+        echo >&2 "[!] Error: Script must not be run as root!"
+        exit 1
+    fi
+
     # Check submodules
     submodules=$(git submodule | awk '{ print $2 }')
     for submodule in ${submodules}; do
@@ -208,20 +167,14 @@ validate_environment() {
 
     # Check git lfs
     if [[ ! -d ".git/lfs/objects" ]]; then
-        echo >&2 "[!] Error: Git lfs objects missing"
+        echo >&2 "[!] Error: Git lfs objects missing!"
         echo >&2 "[!] Install git-lfs and run: 'git lfs pull'"
         exit 1
     fi
 
-    # Check if PATH is forwarded by sudo
-    # shellcheck disable=SC2310
-    if ! sudo_preserves_path; then
-        echo >&2 "[!] Error: sudo does not preserve paths"
-        echo >&2 "[!] Check your /etc/sudoers if it conains any 'secure_path = ...' and if PATH is in env_keep"
-        exit 1
-    fi;
-
     # utils
+    check_command cp
+    check_command mkdir
     check_command tty
     check_command diff
     check_command grep
@@ -231,6 +184,7 @@ validate_environment() {
     check_command pkill
     check_command tee
     check_command realpath
+    check_command sh
 
     # k8s
     check_command docker
@@ -315,16 +269,15 @@ create_cluster(){
         return
     fi
 
-    as_user \
-        minikube start \
-            --driver docker \
-            --wait all \
-            --registry-mirror "${REGISTRY_MIRROR}" \
-            --memory max \
-            --cpus max \
-            --cni calico \
-            --addons metrics-server \
-            --gpus "${GPUS}"
+    minikube start \
+        --driver docker \
+        --wait all \
+        --registry-mirror "${REGISTRY_MIRROR}" \
+        --memory max \
+        --cpus max \
+        --cni calico \
+        --addons metrics-server \
+        --gpus "${GPUS}"
 }
 
 create_namespace(){
@@ -415,19 +368,26 @@ warn_dev_or_integration() {
 }
 
 expose_minikube(){
+    # Store the path to the command so that we can use
+    # this later in sudo.
+    # This is because minikube might be installed in /nix
+    # and the system sudo configuration might purge
+    # the PATH variable.
+    local minikube_cmd
+    minikube_cmd="$(command -v minikube)"
+
     # root required for binding 80 and 443
     #
-    # Also we need to modify HOME so that
-    # minikube finds the configuration files
-    # in the user home directories.
+    # Also we need have to preserve-env so that
+    # minikube finds the configuration files.
     echo "[*] Exposing application on ${EXPOSE_IP}"
     sudo \
         --background \
-        HOME="${HOME}" \
-        bash -c "
-            mkdir -p '${TUNNEL_PIDFILE_DIR}'
+        --preserve-env \
+        sh -c "
+            mkdir --parents '${TUNNEL_PIDFILE_DIR}'
             echo \$\$ > '${TUNNEL_PIDFILE}'
-            exec minikube tunnel \
+            exec '${minikube_cmd}' tunnel \
                 --bind-address='${EXPOSE_IP}' \
                 --cleanup=true
         "
@@ -435,7 +395,7 @@ expose_minikube(){
 
 install_host_entries(){
     local minikube_ip
-    minikube_ip="$(as_user minikube ip)"
+    minikube_ip="$(minikube ip)"
 
     local hosts_file
     hosts_file="$(cat "${HOSTS_FILE}" 2>/dev/null || true)"
@@ -528,7 +488,6 @@ usage(){
     echo "usage: ${0} [<options>]"
     echo "  -h|--help               show this help"
     echo "  -v|--verbose            show verbose output"
-    echo "  -r|--reset              resets the cluster"
     echo "  -d|--development        start in development mode. This provides debugging und live reloading."
     echo "  -i|--integrationtest    run integrationtests"
     echo "  -s|--setup              only setup system, don't start anything"
@@ -549,10 +508,6 @@ while [[ $# -gt 0 ]]; do
             usage
             trap - EXIT
             exit 0
-        ;;
-        -r|--reset)
-            DO_RESET=true
-            shift
         ;;
         -i|--integrationtest)
             INTEGRATIONTEST=true
@@ -629,9 +584,6 @@ fi
 
 # assemble STEPS
 STEPS=()
-if [[ "${DO_RESET}" = true ]]; then
-    STEPS+=("${STEPS_RESET_CLUSTER[@]}")
-fi
 STEPS+=(
     "${STEPS_SETUP_SYSTEM[@]}"
     "${STEPS_SETUP_CLUSTER[@]}"
