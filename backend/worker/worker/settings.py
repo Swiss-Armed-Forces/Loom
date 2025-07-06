@@ -47,7 +47,7 @@ class Settings(CommonSettings):
     tika_ocr_languages: list[TikaAllowedOcrLanguage] = ["eng"]
     tika_server_host: AnyHttpUrl = AnyHttpUrl(f"http://tika.{DOMAIN}")
 
-    llm_model: str = "deepseek-r1:8b"
+    llm_model: str = "qwen3:8b"
     llm_model_embedding: str = "nomic-embed-text:v1.5"
     llm_think: bool = True
     llm_temperature: float | None = None
