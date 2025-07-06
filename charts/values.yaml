@@ -36,7 +36,7 @@ pipeline:
     - fra
 
 llm:
-  model: deepseek-r1:8b
+  model: qwen3:8b
   model_embedding: nomic-embed-text:v1.5
   think: true
   temperature: null

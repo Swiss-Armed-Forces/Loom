@@ -11,7 +11,7 @@ RUN set -exu \
   && apt-get -y install --no-install-recommends curl=${CURL_VERSION} \
   && rm -rf /var/lib/apt/lists/*
 
-ARG LLM_MODELS="deepseek-r1:8b smollm2:135m nomic-embed-text:v1.5"
+ARG LLM_MODELS="qwen3:8b smollm2:135m nomic-embed-text:v1.5"
 ENV LLM_MODELS=${LLM_MODELS}
 
 RUN set -exu \
