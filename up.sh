@@ -227,6 +227,8 @@ validate_environment() {
     check_command grep
     check_command sudo
     check_command sysctl
+    check_command pidwait
+    check_command pkill
     check_command tee
     check_command realpath
 
@@ -390,7 +392,7 @@ stop_expose_minikube(){
             --pidfile "${TUNNEL_PIDFILE}" \
         || true
 
-        pwait \
+        pidwait \
             --pidfile "${TUNNEL_PIDFILE}" \
         || true
 
