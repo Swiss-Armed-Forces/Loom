@@ -1,6 +1,7 @@
 @startuml ContainerDiagram
 !include <C4/C4_Container>
 
+
 !include <logos/docker>
 !include <logos/react>
 !include <logos/nodejs>
@@ -13,107 +14,99 @@
 !include <logos/prometheus>
 !include <logos/grafana>
 
-LAYOUT_LEFT_RIGHT()
+!include <office/Concepts/email>
+!include <office/Servers/reverse_proxy>
 
 title Loom - Container Diagram
 
+!pragma layout elk
 skinparam ranksep 50
 skinparam nodesep 50
 
-Person(user, "Loom User", "")
-System(loom, "Loom", "Document Search Engine")
+AddElementTag("exposed", $legendText="External Exposed Service", $shadowing="true", $bgColor="#b35806", $borderColor="#d73027")
 
-System_Boundary(loom, "Loom") {
+System_Boundary(loom, "") {
 
-    node "Traefik Reverse Proxy" as traefik {
-        System_Boundary(backend, "Python Backend") {
-            Container(api, "API", "Python FastAPI", "Provides REST-API", $sprite="python")
-            Container(crawler, "Crawler", "Python", "Schedules files in intake for indexing", $sprite="python")
-            Container(worker, "Worker", "Python", "Analyzes files, also has a interactive variant for chat-bot related tasks and a periodic variant for periodic events", $sprite="python")
-            package "Celery Library" as celerygroup {
-                interface (Celery) as celery
-                interface (Flower Frontend) as flower
-            }
-        }
+    'System_Boundary(frontend_services, "Frontend Services"){
+        Container(frontend, "Frontend", "React, Material UI, Redux", "User interaction", $sprite="react", $tags="exposed")
+        Container(translate, "Translate", "LibeTranslate", "Translation", $sprite="&text,scale=5", $tags="exposed")
+        Container(ai_ui, "AI User Interface", "Open Webui", "User Interaction with AI", $sprite="robot", $tags="exposed")
+        Container(email_client, "Email Client", "Roundcube", "Visualizes Emails", $sprite="email", $tags="exposed")
 
-        ContainerDb(minio, "File Upload", "minio", "Stores files to be indexed")
+        ContainerDb(minio, "File Upload", "Minio", "Raw Data Intake", $tags="exposed")
 
-        Container(rspamd, "Rspamd", "Spam Filter", "Filters out spam messages from Traefik")
-        Container(frontend, "Frontend", "React, Material UI, Redux", "SPA, provides user interaction", $sprite="react")
-        Container(translate, "Translate", "Python", "Translation service", $sprite="python")
+        Container(api, "API", "Python FastAPI", "REST-API", $sprite="python", $tags="exposed")
+    '}
 
-        together {
-            ContainerQueue(rabbit, "Message Queue", "Rabbit MQ", "Used as celery message broker", $sprite="rabbitmq")
-            ContainerDb(redis, "Cache", "Redis", "Used as celery backend", $sprite="redis")
-            ContainerDb(mongo, "File Storage", "mongoDB", "Stores raw indexed files", $sprite="mongodb")
-            ContainerDb(es, "Database", "Elasticsearch", "Stores log messages and analyzed file content", $sprite="elasticsearch")
-            Container(tika, "Tika", "Tika", "Analyzes files", $sprite="apache")
-        }
-        System_Boundary(dev, "Dev Tools"){
-            Container(elasticvue, "Elasticvue", "Elasticvue", "Elasticsearch GUI", $sprite="elasticsearch")
-            Container(mongoexpress, "Mongo Express", "Mongo Express", "MongoDB GUI", $sprite="mongodb")
-            Container(rediswebui, "Redis Web UI", "Redis Web UI", "GUI for Redis", $sprite="redis")
+    'System_Boundary(backend_services, "Backend Services"){
+        Container(crawler, "Crawler", "Python", "Crawls Raw Data and Schedules Tasks", $sprite="python")
+        Container(beat, "Beat", "Python", "Schedules Periodic Tasks", $sprite="&clock,scale=5")
 
-            Container(prometheus, "Prometheus", "prometheus", "Monitoring system & time series database", $sprite="prometheus")
-            Container(grafana, "Grafana", "grafana", "Monitoring system & time series database", $sprite="grafana")
-        }
-    }
-    Container(autoheal, "Autoheal", "Monitor", "Monitors and restarts containers", $sprite="docker")
-    Container(cadvisor, "cAdvisor", "Monitor", "Measures resource usage and performance", $sprite="docker")
-    Container(fluentd, "Fluentd", "Monitor", "Collects Logs", $sprite="docker")
+        Container(worker, "Worker", "Python Celery", "Processes Tasks", $sprite="python")
+
+        Container(imap, "Imap Server", "Dovecot", "Stores Email", $sprite="email", $tags="exposed")
+
+        Container(rspamd, "Rspamd", "Spam Filter", "Detect SPAM", $sprite="email", $tags="exposed")
+
+        ContainerQueue(rabbit, "Message Queue", "Rabbit MQ", "Task Queue", $sprite="rabbitmq", $tags="exposed")
+        ContainerDb(redis, "Cache", "Redis", "Stores: Cache, Celery Synchroization", $sprite="redis")
+        ContainerDb(mongo, "File Storage", "mongoDB", "Stores: Raw Data, Task Metadata", $sprite="mongodb")
+        ContainerDb(es, "Database", "Elasticsearch", "Stores: Analyzed Data, Logs", $sprite="elasticsearch", $tags="exposed")
+        Container(tika, "Content Extraction", "Tika", "Analyzes files", $sprite="apache", $tags="exposed")
+        Container(ai, "AI Server", "Ollama", "Provides AI Services", $sprite="robot", $tags="exposed")
+
+        Container(fluentd, "Fluentd", "Fluentd", "Collects Logs", $sprite="docker")
+        Container(prometheus, "Prometheus", "prometheus", "Collect System Statistics", $sprite="prometheus", $tags="exposed")
+
+        Container(flower, "Flower", "Celery Flower", "Visualizes Tasks", $sprite="&task,scale=5", $tags="exposed")
+
+        Container(elasticvue, "Elasticvue", "Elasticvue", "Elasticsearch GUI", $sprite="elasticsearch", $tags="exposed")
+        Container(mongoexpress, "Mongo Express", "Mongo Express", "MongoDB GUI", $sprite="mongodb", $tags="exposed")
+        Container(rediswebui, "Redis Web UI", "Redis Web UI", "GUI for Redis", $sprite="redis", $tags="exposed")
+
+        Container(grafana, "Grafana", "grafana", "Visualizes: Logs, System, Queues", $sprite="grafana", $tags="exposed")
+
+        Container(traefik, "Traefik", "Traefik", "Reverse Proxy, TLS", $sprite="reverse_proxy", $tags="exposed")
+    '}
 }
 
-Lay_U(celery, api)
-Lay_U(loom, user)
-Lay_U(crawler, user)
-Lay_D(crawler, celery)
-Lay_L(crawler, api)
-Lay_D(autoheal, loom)
-Lay_D(cadvisor, loom)
-Lay_D(fluentd, loom)
-Lay_L(rspamd, worker)
+Rel(minio, crawler, "")
 
-loom <-> autoheal : restarts containers
-loom <-> cadvisor : collect container stats
-loom <-> fluentd : collect logs
+Rel(api, mongo, "")
+Rel(api, rabbit, "")
+Rel(api, es, "")
+Rel(api, translate, "")
 
-Rel(user, frontend, "Interacts with website", "HTTP/80")
-Rel(user, crawler, "Puts files into intake on FS")
-Rel(user, minio, "Upload files")
-Rel(minio, crawler, "Reads files from bucket")
+Rel(crawler, mongo, "")
+Rel(crawler, rabbit, "")
 
-Rel_D(frontend, api, "Sends API calls", "HTTP/8084")
-Rel_D(frontend, flower, "Links to tasks")
+Rel(ai_ui, ai, "")
 
-Rel(crawler, mongo, "Stores files")
-Rel(crawler, celery, "Schedules Tasks")
-Rel(crawler, es, "Writes data")
+Rel(imap, email_client, "")
 
-Rel(api, mongo, "Stores & Loads files / archives")
-Rel(api, celery, "Schedules Tasks")
-Rel(api, es, "Reads / Writes data")
-Rel(api, translate, "Fetches translatable languages")
+Rel(rabbit, worker, "")
 
+Rel(beat, rabbit, "")
 
-Rel(celery, worker, "Sends tasks")
+Rel(worker, flower, "")
+Rel(worker, redis, "")
+Rel(worker, mongo, "")
+Rel(worker, es, "")
+Rel(worker, tika, "")
+Rel(worker, ai, "")
+Rel(worker, translate, "")
+Rel(worker, imap, "")
+Rel(worker, rspamd, "")
 
+Rel(mongoexpress, mongo, "")
+Rel(elasticvue, es, "")
+Rel(rediswebui, redis, "")
+Rel(fluentd, es, "")
 
-Rel(celery, rabbit, "Publishes tasks")
-Rel(celery, redis, "Stores tasks")
+Rel(prometheus, grafana, "")
+Rel(es, grafana, "Logs")
+Rel(rabbit, prometheus, "")
 
-Rel(worker, es, "Persists data")
-Rel(worker, tika, "Analyzes files")
-Rel_U(worker, translate, "Translates files")
+SHOW_LEGEND(true)
 
-Rel_L(flower, celery, "Displays tasks", "HTTP/5555")
-
-Rel(worker, rspamd, "Checks for spam")
-
-Rel_U(mongoexpress, mongo, "Interacts with mongo", "HTTP/8081")
-Rel_U(elasticvue, es, "Interacts with es", "HTTP/8081")
-Rel_U(rediswebui, redis, "Interacts with redis", "HTTP/8001")
-Rel_U(cadvisor, prometheus, "Load system stats", "HTTP/9090")
-Rel_U(fluentd, es, "Store logs", "HTTP/9200")
-Rel_U(prometheus, grafana, "Provide system stats", "HTTP/3000")
-Rel_U(es, grafana, "Provide Logs", "HTTP/3000")
 @enduml

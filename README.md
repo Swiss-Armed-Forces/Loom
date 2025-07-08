@@ -120,7 +120,11 @@ For a more scalable setup, you can deploy Loom using its Helm chart on your Kube
 **Installation Steps:**
 
 1. You can find and deploy the Helm chart from our official package registry:
-[https://gitlab.com/swiss-armed-forces/cyber-command/cea/loom/-/packages](https://gitlab.com/swiss-armed-forces/cyber-command/cea/loom/-/packages)
+
+    ```bash
+    helm repo add loom-prod https://gitlab.com/api/v4/projects/68343701/packages/helm/prod
+    ```
+
 2. To customize your deployment, we provide a set of value files located in the
 [`./charts`](./charts) directory of this repository. These files document all the available
 deployment variables, allowing you to tailor the installation to your specific needs.
@@ -220,25 +224,31 @@ Multiple services that are useful for production and development purposes are st
 
 | Service        | Url                                                        | Description                                   | Remarks                                       |
 | -------------- | ---------------------------------------------------------- | --------------------------------------------- | --------------------------------------------- |
-| Frontend       | [https://frontend.loom](https://frontend.loom)             | The loom web-ui                               |                                               |
+| Frontend       | [https://frontend.loom](https://frontend.loom)             | The loom Frontend                             |                                               |
+| Translate      | [https://translate.loom](https://translate.loom)           | Translation service powered by LibreTranslate |                                               |
+| Open Webui     | [https://open-webui.loom](https://open-webui.loom)         | AI Webinterface                               |                                               |
+| Roundcube      | [https://roundcube.loom](https://roundcube.loom)           | Email Webinterface                            |                                               |
+| Minio          | [https://minio.loom](https://minio.loom)                   | File upload                                   | user: `minioadmin` password: `minioadmin`     |
 | Api            | [https://api.loom](https://api.loom)                       | The loom api                                  | Swagger documentation: <https://api.loom/docs>|
 | Flower         | [https://flower.loom](https://flower.loom)                 | Monitor celery tasks                          |                                               |
-| Traefik        | [https://traefik.loom](https://traefik.loom)               | Traefik reverse proxy                         |                                               |
 | RabbitMQ       | [https://rabbit.loom](https://rabbit.loom)                 | Monitor rabbit messages                       | user: `guest` password: `guest`               |
-| Elasticvue     | [https://elasticvue.loom](https://elasticvue.loom)         | Manage elastic documents                      | connect to <https://elasticsearch.loom>       |
-| Mongo Express  | [https://mongo-web.loom](https://mongo-web.loom)           | Manage the mongo DB                           |                                               |
-| RedisInsight   | [https://redis-web-ui.loom](https://redis-web-ui.loom)     | Manage the redis DB                           | connect to `redis:6379`                       |
-| Apache tika    | [https://tika.loom](https://tika.loom)                     | Tika engine                                   |                                               |
-| Translate      | [https://translate.loom](https://translate.loom)           | Translation service powered by LibreTranslate |                                               |
+| Elasticvue     | [https://elasticvue.loom](https://elasticvue.loom)         | ElasticSearch management                      | connect to <https://elasticsearch.loom>       |
+| ElasticSearch  | [https://elasticsearch.loom](https://elasticsearch.loom)   | Elasticsearch Database                        |                                               |
+| Mongo Express  | [https://mongo-web.loom](https://mongo-web.loom)           | mongoDB management                            |                                               |
 | Rspamd         | [https://rspamd.loom](https://rspamd.loom)                 | Rspamd spam detection engine                  |                                               |
-| cAdvisor       | [https://cadvisor.loom](https://cadvisor.loom)             | Resource usgage and performance of containers |                                               |
-| Prometheus     | [https://prometheus.loom](https://prometheus.loom)         | Monitoring system & time series database      |                                               |
+| RedisInsight   | [https://redis-insight.loom](https://redis-insight.loom)   | Manage the redis DB                           | connect to `production-loom-redis:6379`       |
+| Prometheus     | [https://prometheus.loom](https://prometheus.loom)         | Manage prometheus                             |                                               |
 | Grafana        | [https://grafana.loom](https://grafana.loom)               | Statistics, Dashboards and alerting           |                                               |
-| Minio          | [https://minio.loom](https://minio.loom)                   | File upload                                   |  user: `minioadmin` password: `minioadmin`    |
-| Dovecot        | [https://dovecot.loom](https://dovecot.loom)               | Imap Server                                   |  user: `user` password: `pass`                |
-| Roundcube      | [https://roundcube.loom](https://roundcube.loom)           | Email Webinterface                            |                                               |
+| Traefik        | [https://traefik.loom](https://traefik.loom)               | Traefik reverse proxy                         |                                               |
+| Apache Tika    | [https://tika.loom](https://tika.loom)                     | Tika content extraction engine                |                                               |
+| Dovecot        | [imaps://dovecot.loom:443](imaps://dovecot.loom:443)       | Imap Server                                   | user: `user` password: `pass`                 |
+| Ollama         | [https://ollama.loom](https://ollama.loom)                 | AI Server                                     |                                               |
 
-![Context Diagram](Documentation/c4-2-container.svg)
+![Context Diagram](Documentation/ContainerDiagram.svg)
+
+**Note**: We allow external access to quite a few services. This is by design.
+Loom is supposed to be a powerful toolkit that enables users to use the tools and their
+APIs directly, if needed.
 
 ### 🔗 More Documentation and Links
 

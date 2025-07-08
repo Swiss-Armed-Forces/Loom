@@ -26,13 +26,17 @@ export const roundcubeHost = getHost("roundcube");
 export const minioHost = getHost("minio");
 export const apiHost = getHost("api");
 export const rabbitHost = getHost("rabbit");
+export const elasticSearchHost = getHost("elasticsearch");
 export const elasticVueHost = getHost("elasticvue");
 export const mongoWebHost = getHost("mongo-web");
 export const rspamdHost = getHost("rspamd");
+export const redisInsightHost = getHost("redisinsight");
 export const prometheusHost = getHost("prometheus");
 export const grafanaHost = getHost("grafana");
+export const tikaHost = getHost("tika");
 export const traefikHost = getHost("traefik");
-export const ollamafrontendHost = getHost("open-webui");
+export const openWebuifrontendHost = getHost("open-webui");
+export const ollamaHost = getHost("ollama");
 
 export const webApiGetFile = (fileId: string) =>
     `${apiUrl}/v1/files/${fileId}/download`;
