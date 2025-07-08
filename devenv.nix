@@ -155,6 +155,7 @@ in
           with vscode-extensions;
           [
             bbenoist.nix
+            mkhl.direnv
 
             gitlab.gitlab-workflow
 
@@ -178,7 +179,7 @@ in
 
             davidanson.vscode-markdownlint
 
-            mkhl.direnv
+            vscode-extensions.jebbs.plantuml
           ]
           ++ vscode-utils.extensionsFromVscodeMarketplace [
             {

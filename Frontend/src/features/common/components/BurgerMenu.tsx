@@ -19,6 +19,10 @@ import {
     Whatshot,
     DriveFolderUpload,
     InfoOutlined,
+    StorageOutlined,
+    ExpandOutlined,
+    PrecisionManufacturingOutlined,
+    FindInPageOutlined,
 } from "@mui/icons-material";
 import {
     apiHost,
@@ -28,12 +32,16 @@ import {
     translateHost,
     minioHost,
     mongoWebHost,
-    ollamafrontendHost,
+    openWebuifrontendHost,
     prometheusHost,
     rabbitHost,
     roundcubeHost,
     rspamdHost,
     traefikHost,
+    redisInsightHost,
+    tikaHost as apacheTikaHost,
+    ollamaHost,
+    elasticSearchHost,
 } from "../urls";
 import { useTranslation } from "react-i18next";
 import { AboutDialog } from "./AboutDialog";
@@ -60,8 +68,8 @@ export function BurgerMenu() {
             icon: <TranslateOutlinedIcon />,
         },
         {
-            link: ollamafrontendHost,
-            text: "Ollama",
+            link: openWebuifrontendHost,
+            text: "Open WebUI",
             icon: <SmartToyOutlined />,
         },
         {
@@ -91,7 +99,7 @@ export function BurgerMenu() {
         },
         {
             link: elasticVueHost,
-            text: "Elasticsearch",
+            text: "ElasticVue",
             icon: <SearchOutlinedIcon />,
         },
         {
@@ -105,6 +113,11 @@ export function BurgerMenu() {
             icon: <MailOutlineOutlined />,
         },
         {
+            link: redisInsightHost,
+            text: "Redis",
+            icon: <StorageOutlined />,
+        },
+        {
             link: prometheusHost,
             text: "Prometheus",
             icon: <Whatshot />,
@@ -113,6 +126,21 @@ export function BurgerMenu() {
             link: grafanaHost,
             text: "Grafana",
             icon: <Insights />,
+        },
+        {
+            link: apacheTikaHost,
+            text: "Apache Tika",
+            icon: <ExpandOutlined />,
+        },
+        {
+            link: ollamaHost,
+            text: "Ollama",
+            icon: <PrecisionManufacturingOutlined />,
+        },
+        {
+            link: elasticSearchHost,
+            text: "ElasticSearch",
+            icon: <FindInPageOutlined />,
         },
         {
             link: traefikHost,

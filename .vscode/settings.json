@@ -48,5 +48,8 @@
   "helm-intellisense.customValueFileNames": [
     "charts/values.yaml",
     "charts/values-development.yaml"
-  ]
+  ],
+  "plantuml.exportFormat": "svg",
+  "plantuml.exportOutDir": "./",
+  "plantuml.exportSubFolder": false
 }
