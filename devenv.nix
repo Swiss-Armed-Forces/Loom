@@ -246,6 +246,8 @@ in
     poetry = {
       enable = true;
       activate.enable = true;
+      # Run this to update the .venv always. This is to avoid version and library conflicts.
+      install.enable = true;
       # We have to use the poetry package from pkgs-stable here
       # because of an issue with flaky tests which did not make
       # it yet into devenv-nixpkgs/rolling:
