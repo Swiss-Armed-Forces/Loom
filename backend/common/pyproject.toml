@@ -13,7 +13,7 @@ packages = [
 python = "^3.11"
 celery = {extras = ["redis"], version = "^5.4.0"}
 celery-types = "^0.22.0"
-elasticsearch_dsl = "^8.13.1"
+elasticsearch = "^9.0.2"
 pymongo = "^4.7.2"
 luqum = "^0.13.0"
 pycryptodome = "^3.20.0"
@@ -47,10 +47,6 @@ ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
 module = "libretranslatepy.*"
-ignore_missing_imports = true
-
-[[tool.mypy.overrides]]
-module = "elasticsearch_dsl.*"
 ignore_missing_imports = true
 
 [[tool.mypy.overrides]]

@@ -435,7 +435,7 @@ develop = true
 [package.dependencies]
 celery = {version = "^5.4.0", extras = ["redis"]}
 celery-types = "^0.22.0"
-elasticsearch_dsl = "^8.13.1"
+elasticsearch = "^9.0.2"
 fastapi = "^0.115.12"
 filelock = "^3.14.0"
 libretranslatepy = "^2.1.4"
@@ -587,13 +587,13 @@ develop = ["aiohttp", "furo", "httpx", "opentelemetry-api", "opentelemetry-sdk",
 
 [[package]]
 name = "elasticsearch"
-version = "8.18.1"
+version = "9.0.2"
 description = "Python client for Elasticsearch"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "elasticsearch-8.18.1-py3-none-any.whl", hash = "sha256:1a8c8b5ec3ce5be88f96d2f898375671648e96272978bce0dee3137d9326aabb"},
-    {file = "elasticsearch-8.18.1.tar.gz", hash = "sha256:998035f17a8c1fba7ae26b183dca797dcf95db86da6a7ecba56d31afc40f07c7"},
+    {file = "elasticsearch-9.0.2-py3-none-any.whl", hash = "sha256:47cac1f0e5e7be8d8c6751a5d7818d416adfc11eac72f1b59e145930a87de880"},
+    {file = "elasticsearch-9.0.2.tar.gz", hash = "sha256:290e790153500d9f3cb66d74918ac70e9f96b5cd88147213859edca6ab5013f5"},
 ]
 
 [package.dependencies]
@@ -609,27 +609,6 @@ orjson = ["orjson (>=3)"]
 pyarrow = ["pyarrow (>=1)"]
 requests = ["requests (>=2.4.0,!=2.32.2,<3.0.0)"]
 vectorstore-mmr = ["numpy (>=1)", "simsimd (>=3)"]
-
-[[package]]
-name = "elasticsearch-dsl"
-version = "8.18.0"
-description = "Python client for Elasticsearch"
-optional = false
-python-versions = ">=3.8"
-files = [
-    {file = "elasticsearch_dsl-8.18.0-py3-none-any.whl", hash = "sha256:0522c5bb20c7abae69855109e650bf1166d486cbf706b5e1b29c28936a9102a3"},
-    {file = "elasticsearch_dsl-8.18.0.tar.gz", hash = "sha256:763465dba9eae166add10567e924c65730aa122819b08bfe9a077e91b13b30d1"},
-]
-
-[package.dependencies]
-elastic-transport = ">=8.0.0,<9.0.0"
-elasticsearch = ">=8.0.0,<9.0.0"
-python-dateutil = "*"
-typing-extensions = "*"
-
-[package.extras]
-async = ["elasticsearch[async] (>=8.0.0,<9.0.0)"]
-develop = ["coverage", "elasticsearch[async]", "jinja2", "mypy", "nltk", "pyright", "pytest", "pytest-asyncio", "pytest-cov", "pytest-mock", "pytz", "sentence_transformers", "sphinx (>2)", "sphinx-rtd-theme (>0.5)", "tqdm", "types-python-dateutil", "types-pytz", "types-tqdm", "unasync"]
 
 [[package]]
 name = "fastapi"

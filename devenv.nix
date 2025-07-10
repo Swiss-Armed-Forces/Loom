@@ -883,7 +883,7 @@ in
   };
 
   scripts.transfer-loom = {
-    description = "Build a loom transer file";
+    description = "Build a loom transfer file";
     exec = ''
       (
         set -euo pipefail

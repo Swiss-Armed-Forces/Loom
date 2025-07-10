@@ -4,7 +4,7 @@ from unittest.mock import MagicMock
 
 import pytest
 from elasticsearch import Elasticsearch, NotFoundError
-from elasticsearch_dsl import Integer, Search, Text
+from elasticsearch.dsl import Integer, Search, Text
 from pydantic import BaseModel, ConfigDict
 
 from common.ai_context.ai_context_repository import (
@@ -516,7 +516,7 @@ def test_es_repository_get_by_id(obj: _TestEsRepositoryObject):
     es_repository.get_by_id(obj.id_)
 
     es_repository.document_type.get.assert_called_once_with(  # pylint: disable=no-member
-        obj.id_,
+        str(obj.id_),
         using=es_repository.elasticsearch_mock,
     )
 
@@ -602,6 +602,7 @@ def test_es_repository_get_generator_by_query_fetches_more_pages():
         _TestEsDocument(),
         _TestEsDocument(),
     ]
+    search_execute_mock.return_value.hits.__len__.return_value = 2
     search_execute_mock.return_value.hits.hits = [
         hits_hits_mock,
         hits_hits_mock,
@@ -613,6 +614,7 @@ def test_es_repository_get_generator_by_query_fetches_more_pages():
     search_page2_execute_mock.return_value.hits.__iter__.return_value = [
         _TestEsDocument()
     ]
+    search_page2_execute_mock.return_value.hits.__len__.return_value = 1
     search_page2_execute_mock.return_value.hits.hits = [hits_hits_mock]
 
     # 3rd page (empty)
@@ -669,6 +671,7 @@ def test_es_repository_get_generator_by_query_fetches_more_pages_with_expired_pi
         _TestEsDocument(),
         _TestEsDocument(),
     ]
+    search_execute_mock.return_value.hits.__len__.return_value = 2
     search_execute_mock.return_value.hits.hits = [
         hits_hits_mock,
         hits_hits_mock,
@@ -681,6 +684,7 @@ def test_es_repository_get_generator_by_query_fetches_more_pages_with_expired_pi
     # Configure to throw on first call, then return success on second call
     mock_success_response = MagicMock()
     mock_success_response.hits.__iter__.return_value = [_TestEsDocument()]
+    mock_success_response.hits.__len__.return_value = 1
     mock_success_response.hits.hits = [hits_hits_mock]
 
     search_page2_execute_mock.side_effect = [
@@ -694,7 +698,7 @@ def test_es_repository_get_generator_by_query_fetches_more_pages_with_expired_pi
     search_pre_execute_mock = search_pre_execute_mock.extra()
     search_page3_execute_mock = search_pre_execute_mock.index().extra().execute
     search_page3_execute_mock.return_value.hits.__iter__.return_value = []
-    search_page3_execute_mock.return_value.hits.hits = []
+    search_page3_execute_mock.return_value.hits = []
 
     results = list(
         es_repository.get_generator_by_query(
@@ -767,7 +771,8 @@ def test_es_repository_count_by_query():
         .execute
     )
     hits_mock = MagicMock()
-    hits_mock.hits.total.value = 123
+    # https://github.com/elastic/elasticsearch-dsl-py/issues/1897
+    hits_mock.hits.total.value = 123  # pylint: disable=no-member
     search_pre_count_mock.return_value = hits_mock
     count = es_repository.count_by_query(
         QueryParameters(query_id="0123456789", search_string="just a random query")
