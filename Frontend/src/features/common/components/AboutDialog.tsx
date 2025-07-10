@@ -15,14 +15,14 @@ interface AboutDialogProps {
 }
 
 export function AboutDialog({ open, closeDialog }: AboutDialogProps) {
-    const [licenseText, setLicenseText] = useState<string[]>([]);
+    const [licenseText, setLicenseText] = useState<string>("");
     const { t } = useTranslation();
 
     useEffect(() => {
         const fetchFile = async () => {
             fetch("/" + t("about.license"))
                 .then((r) => r.text())
-                .then((text) => setLicenseText(text.split("\n")))
+                .then((text) => setLicenseText(text))
                 .catch((err) => console.log(err));
         };
 
@@ -30,7 +30,7 @@ export function AboutDialog({ open, closeDialog }: AboutDialogProps) {
     }, [t]);
 
     return (
-        <Dialog open={open}>
+        <Dialog maxWidth="lg" open={open}>
             <DialogTitle>
                 <Typography>
                     <b>{t("about.titleDialog")}</b>
@@ -61,9 +61,7 @@ export function AboutDialog({ open, closeDialog }: AboutDialogProps) {
                             {t("about.link")}
                         </a>
                     </p>
-                    {licenseText.map((text, index) => (
-                        <p key={index}>{text}</p>
-                    ))}
+                    <pre>{licenseText}</pre>
                     <p>
                         {t("about.downloadTitle")}
                         <a href={"/" + t("about.license")} download>
