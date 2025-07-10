@@ -13,8 +13,9 @@ from typing import Any, Callable, Generator, cast
 from urllib.error import URLError
 from uuid import UUID
 
-from elasticsearch_dsl import (
+from elasticsearch.dsl import (
     A,
+    Agg,
     Boolean,
     Date,
     DenseVector,
@@ -29,7 +30,7 @@ from elasticsearch_dsl import (
     Search,
     Text,
 )
-from elasticsearch_dsl.response import Response
+from elasticsearch.dsl.response import Response
 from libretranslatepy import LibreTranslateAPI
 from pydantic import BaseModel, Field, computed_field, field_validator
 
@@ -351,9 +352,11 @@ class FileRepository(BaseEsRepository[_EsFile, File]):
         return _EsFile
 
     @staticmethod
-    def get_aggr(result: Response, key_nest: list[str], default: Any = 0) -> Any:
+    def get_aggr(
+        result: Response[_EsFile], key_nest: list[str], default: Any = 0
+    ) -> Any:
         """Accesses nested aggregate data from a response object."""
-        res = result.aggregations
+        res: Any = result.aggregations
         for key in key_nest:
             if key not in res:
                 return default
@@ -471,7 +474,7 @@ class FileRepository(BaseEsRepository[_EsFile, File]):
     def get_all_tags(self) -> list[str]:
         """Get all tags in the database."""
         search = self._document_type.search(using=self._elasticsearch)
-        tags_aggregation = A(
+        tags_aggregation: Agg[_EsFile] = A(
             "terms",
             field="tags",
             order={"_key": "asc"},  # alphebetic order
@@ -497,11 +500,12 @@ class FileRepository(BaseEsRepository[_EsFile, File]):
         if sort_params is None:
             sort_params = SortingParameters()
 
-        search: Search = self._document_type.search(using=self._elasticsearch)
+        search: Search[_EsFile] = self._document_type.search(using=self._elasticsearch)
 
         search = search.extra(
             pit={"id": query.query_id, "keep_alive": query.keep_alive}
         )
+
         search = search.index()  # Remove index: pit requests run against no index
 
         filter_query = Q(
@@ -521,15 +525,23 @@ class FileRepository(BaseEsRepository[_EsFile, File]):
                 inner_hits={"_source": True, "fields": ["embeddings.text"], "size": k},
             )
 
-        def page_handler(result: Response):
-            for es_file, hit in zip(result.hits, result.hits.hits):
+        def page_handler(result: Response[_EsFile]):
+            for es_file in result.hits:
                 es_embedding: _EsEmbedding
-                for es_embedding in hit.inner_hits.embeddings:
+                for es_embedding in es_file.inner_hits.embeddings:
                     yield KnnSearchEmbedding(
-                        file_id=es_file.meta.id,
-                        file_score=es_file.meta.score,
-                        text_score=es_embedding.meta.score,
-                        text=es_embedding.text,
+                        file_id=UUID(es_file.meta.id),
+                        file_score=(
+                            es_file.meta.score
+                            if es_file.meta.score is not None
+                            else 0.0
+                        ),
+                        text_score=(
+                            es_embedding.meta.score
+                            if es_embedding.meta.score is not None
+                            else 0.0
+                        ),
+                        text=str(es_embedding.text),
                     )
 
         yield from self._paginate_search(
@@ -553,7 +565,7 @@ class FileRepository(BaseEsRepository[_EsFile, File]):
 
         search = self._get_search_by_query(query=query)
 
-        dir_aggregation = A(
+        dir_aggregation: Agg[_EsFile] = A(
             "terms",
             size=TREE_PATH_BUCKET_SIZE,
             field="full_path.tree",

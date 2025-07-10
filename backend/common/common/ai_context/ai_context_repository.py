@@ -1,7 +1,7 @@
 from datetime import datetime
 from uuid import UUID, uuid4
 
-from elasticsearch_dsl import Date, InnerDoc, Keyword, Object, Text
+from elasticsearch.dsl import Date, InnerDoc, Keyword, Object, Text
 from pydantic import Field
 
 from common.models.es_repository import BaseEsRepository

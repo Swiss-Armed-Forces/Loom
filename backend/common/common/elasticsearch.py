@@ -3,8 +3,8 @@
 import logging
 
 from elasticsearch import Elasticsearch, RequestError
-from elasticsearch_dsl.connections import create_connection
-from elasticsearch_dsl.exceptions import ElasticsearchDslException
+from elasticsearch.dsl.connections import create_connection
+from elasticsearch.dsl.exceptions import ElasticsearchDslException
 
 from common.messages.pubsub_service import PubSubService
 from common.models.es_repository import ES_REPOSITORY_TYPES

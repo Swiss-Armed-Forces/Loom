@@ -1,7 +1,7 @@
 from unittest.mock import MagicMock, call, patch
 
-from elasticsearch_dsl import Search
-from elasticsearch_dsl.response import Response
+from elasticsearch.dsl import Search
+from elasticsearch.dsl.response import Response
 
 from common.file.file_repository import FileRepository, Stat
 from common.file.file_statistics import StatisticsEntry

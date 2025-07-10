@@ -8,9 +8,9 @@ from uuid import UUID, uuid4
 import typing_extensions
 from elastic_transport import ObjectApiResponse
 from elasticsearch import Elasticsearch, NotFoundError
-from elasticsearch_dsl import Boolean, Document, Index, Keyword, Search
-from elasticsearch_dsl.connections import get_connection
-from elasticsearch_dsl.response import Response
+from elasticsearch.dsl import Boolean, Document, Index, Keyword, Search
+from elasticsearch.dsl.connections import get_connection
+from elasticsearch.dsl.response import Response
 from pydantic import BaseModel, Field, computed_field
 
 from common.messages.messages import (
@@ -231,11 +231,13 @@ class BaseEsRepository(
     # pylint: disable=too-many-arguments
     def _paginate_search(
         self,
-        search: Search,
+        search: Search[EsRepositoryDocumentT],
         query: QueryParameters,
         sort_params: SortingParameters,
         pagination_params: PaginationParameters | None,
-        per_page_callback: Callable[[Response], Generator[Any, None, None]],
+        per_page_callback: Callable[
+            [Response[EsRepositoryDocumentT]], Generator[Any, None, None]
+        ],
     ) -> Generator[Any, None, None]:
         """Runs the given search over several pages and calls the per_page_callback for
         every page."""
@@ -244,7 +246,9 @@ class BaseEsRepository(
 
         sort_by_field = self._get_sort_by_field(sort_params.sort_by_field)
 
-        sort = {sort_by_field: {"order": sort_params.sort_direction}}
+        sort: dict[str, dict[str, str]] = {
+            sort_by_field: {"order": sort_params.sort_direction}
+        }
         search = search.sort(
             sort,
             # We append "sort_unique" here on purpose, see comment in EsRepositoryObject
@@ -265,7 +269,7 @@ class BaseEsRepository(
                 search = search.extra(search_after=search_after)
 
             result = self._execute_search_with_query(search=search, query=query)
-            page_hits = result.hits.hits
+            page_hits = result.hits
 
             if len(page_hits) <= 0:
                 # no more hits: last page
@@ -277,15 +281,17 @@ class BaseEsRepository(
                 # pagination set, only returning one page
                 break
 
-            last_hit = page_hits[-1]
+            last_hit = page_hits.hits[-1]  # type: ignore
             search_after = last_hit.sort
 
     def _get_search_by_query(
         self,
         query: QueryParameters,
         full_highlight_context: bool = False,
-    ) -> Search:
-        search: Search = self._document_type.search(using=self._elasticsearch)
+    ) -> Search[EsRepositoryDocumentT]:
+        search: Search[EsRepositoryDocumentT] = self._document_type.search(
+            using=self._elasticsearch
+        )
 
         search = search.highlight_options(
             order="score",
@@ -327,7 +333,7 @@ class BaseEsRepository(
         return point_in_time_id
 
     def get_by_id(self, id_: UUID) -> EsRepositoryObjectT | None:
-        document = self._document_type.get(id_, using=self._elasticsearch)
+        document = self._document_type.get(str(id_), using=self._elasticsearch)
         if document is None:
             return document
         obj = self._document_to_object(document)
@@ -336,7 +342,9 @@ class BaseEsRepository(
     def get_by_deduplication_fingerprint(
         self, deduplication_fingerprint: str
     ) -> EsRepositoryObjectT | None:
-        search: Search = self._document_type.search(using=self._elasticsearch)
+        search: Search[EsRepositoryDocumentT] = self._document_type.search(
+            using=self._elasticsearch
+        )
         search = search.query(
             "match",
             deduplication_fingerprint=deduplication_fingerprint,
@@ -377,7 +385,7 @@ class BaseEsRepository(
 
         search = self._get_search_by_query(query=query)
 
-        def page_handler(result: Response):
+        def page_handler(result: Response[EsRepositoryDocumentT]):
             for hit in result.hits:
                 yield self._document_to_object(hit)
 
@@ -404,7 +412,7 @@ class BaseEsRepository(
         sort_by_field = sort_params.sort_by_field
         search = search.source(includes=[sort_by_field], excludes=[])
 
-        def page_handler(result: Response):
+        def page_handler(result: Response[EsRepositoryDocumentT]):
             for hit in result.hits:
                 document: EsRepositoryDocumentT = hit
                 document_dict = document.to_es_dict()
@@ -434,8 +442,8 @@ class BaseEsRepository(
         )
 
     def _execute_search_with_query(
-        self, search: Search, query: QueryParameters
-    ) -> Response:
+        self, search: Search[EsRepositoryDocumentT], query: QueryParameters
+    ) -> Response[EsRepositoryDocumentT]:
         try:
             return (
                 search.index()  # Remove index: pit requests run against no index
@@ -468,8 +476,8 @@ class BaseEsRepository(
         search = search.extra(track_total_hits=True)
 
         result = self._execute_search_with_query(search=search, query=query)
-        total_hits: int = int(result.hits.total.value)
-        return total_hits
+        # Cf. https://github.com/elastic/elasticsearch-dsl-py/issues/1897
+        return result.hits.total.value  # type: ignore
 
     def get_by_id_with_query(
         self,
@@ -478,12 +486,12 @@ class BaseEsRepository(
         full_highlight_context: bool,
     ) -> EsRepositoryObjectT | None:
         """Load details of an object, includes highlights based on the query."""
-        search: Search = self._get_search_by_query(
+        search: Search[EsRepositoryDocumentT] = self._get_search_by_query(
             query=query, full_highlight_context=full_highlight_context
         )
         search = search.filter("term", _id=str(id_))
         result = self._execute_search_with_query(search=search, query=query)
-        if len(result.hits.hits) < 1:
+        if len(result.hits) < 1:
             return None
         return self._document_to_object(result.hits[0])
 

@@ -1,7 +1,7 @@
 from typing import TypeVar
 from uuid import UUID
 
-from elasticsearch_dsl import Keyword
+from elasticsearch.dsl import Keyword
 
 from common.models.es_repository import EsRepositoryObject, _EsRepositoryDocument
 

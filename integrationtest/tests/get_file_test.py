@@ -56,7 +56,7 @@ class TestGetShortFile:
 
         assert actual.file_id == file_info.id
         assert actual.highlight == {
-            "content": [f"<highlight>{search_string}</highlight> Text"],
+            "content": [f"<highlight>{search_string}</highlight> Text\n"],
             "short_name": [f"<highlight>{file_info.name}</highlight>"],
         }
 

@@ -486,7 +486,7 @@ develop = true
 [package.dependencies]
 celery = {version = "^5.4.0", extras = ["redis"]}
 celery-types = "^0.22.0"
-elasticsearch_dsl = "^8.13.1"
+elasticsearch = "^9.0.2"
 fastapi = "^0.115.12"
 filelock = "^3.14.0"
 libretranslatepy = "^2.1.4"
@@ -628,47 +628,28 @@ develop = ["aiohttp", "furo", "httpcore (<1.0.6)", "httpx", "opentelemetry-api",
 
 [[package]]
 name = "elasticsearch"
-version = "8.16.0"
+version = "9.0.2"
 description = "Python client for Elasticsearch"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "elasticsearch-8.16.0-py3-none-any.whl", hash = "sha256:83d9fe09e8e95880559da43e44976c1e11cc63fe96bc0c0592f3d64f371772bf"},
-    {file = "elasticsearch-8.16.0.tar.gz", hash = "sha256:d2aaa92f44ebea3c4147389aeba038c0b42a017f8c52ff35b1e7ebc34c49adb7"},
+    {file = "elasticsearch-9.0.2-py3-none-any.whl", hash = "sha256:47cac1f0e5e7be8d8c6751a5d7818d416adfc11eac72f1b59e145930a87de880"},
+    {file = "elasticsearch-9.0.2.tar.gz", hash = "sha256:290e790153500d9f3cb66d74918ac70e9f96b5cd88147213859edca6ab5013f5"},
 ]
 
 [package.dependencies]
 elastic-transport = ">=8.15.1,<9"
+python-dateutil = "*"
+typing-extensions = "*"
 
 [package.extras]
 async = ["aiohttp (>=3,<4)"]
-dev = ["aiohttp", "black", "build", "coverage", "isort", "jinja2", "mapbox-vector-tile", "nox", "numpy", "orjson", "pandas", "pyarrow", "pytest", "pytest-asyncio", "pytest-cov", "python-dateutil", "pyyaml (>=5.4)", "requests (>=2,<3)", "simsimd", "twine", "unasync"]
+dev = ["aiohttp", "black", "build", "coverage", "isort", "jinja2", "mapbox-vector-tile", "mypy", "nltk", "nox", "numpy", "orjson", "pandas", "pyarrow", "pyright", "pytest", "pytest-asyncio", "pytest-cov", "pytest-mock", "python-dateutil", "pyyaml (>=5.4)", "requests (>=2,<3)", "sentence-transformers", "simsimd", "tqdm", "twine", "types-python-dateutil", "types-tqdm", "unasync"]
 docs = ["sphinx", "sphinx-autodoc-typehints", "sphinx-rtd-theme (>=2.0)"]
 orjson = ["orjson (>=3)"]
 pyarrow = ["pyarrow (>=1)"]
 requests = ["requests (>=2.4.0,!=2.32.2,<3.0.0)"]
 vectorstore-mmr = ["numpy (>=1)", "simsimd (>=3)"]
-
-[[package]]
-name = "elasticsearch-dsl"
-version = "8.16.0"
-description = "Python client for Elasticsearch"
-optional = false
-python-versions = ">=3.8"
-files = [
-    {file = "elasticsearch_dsl-8.16.0-py3-none-any.whl", hash = "sha256:39b753804df885cbc71fcaf40efcece6ef5569e2d70f6fe79c5bdb7da066acb4"},
-    {file = "elasticsearch_dsl-8.16.0.tar.gz", hash = "sha256:05bd5050eef7d0706a4487cd22864d3c158c8e1cbca26b53ef1a473bdee13459"},
-]
-
-[package.dependencies]
-elastic-transport = ">=8.0.0,<9.0.0"
-elasticsearch = ">=8.0.0,<9.0.0"
-python-dateutil = "*"
-typing-extensions = "*"
-
-[package.extras]
-async = ["elasticsearch[async] (>=8.0.0,<9.0.0)"]
-develop = ["coverage", "elasticsearch[async]", "jinja2", "mypy", "nltk", "pyright", "pytest", "pytest-asyncio", "pytest-cov", "pytest-mock", "pytz", "sentence-transformers", "sphinx (>2)", "sphinx-rtd-theme (>0.5)", "tqdm", "types-python-dateutil", "types-pytz", "types-tqdm", "unasync"]
 
 [[package]]
 name = "fastapi"

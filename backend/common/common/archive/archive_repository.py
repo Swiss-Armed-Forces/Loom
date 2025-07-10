@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from elasticsearch_dsl import Date, InnerDoc, Keyword, Long, Object, Text
+from elasticsearch.dsl import Date, InnerDoc, Keyword, Long, Object, Text
 from pydantic import BaseModel, Field, computed_field
 
 from common.models.es_repository import BaseEsRepository
