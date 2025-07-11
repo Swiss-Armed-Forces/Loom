@@ -14,6 +14,7 @@ from worker.index_file import (
     translate_file_task,
 )
 from worker.periodic import flush_on_idle_task, shrink_periodically_task
+from worker.test import sigkill_pgroup_task
 
 # DO NOT REMOVE THIS ARRAY!!!
 # the (then considered unused) imports would be removed by autoflake
@@ -28,4 +29,5 @@ tasks = [
     flush_on_idle_task,
     shrink_periodically_task,
     process_question_task,
+    sigkill_pgroup_task,
 ]

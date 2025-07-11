@@ -20,6 +20,7 @@ from api.routers import (
     queues,
     summarization,
     tags,
+    tests,
     translation,
     websocket,
 )
@@ -98,6 +99,7 @@ def init_api() -> FastAPI:
     )
     api.include_router(ai.router, prefix="/v1/ai", tags=["ai"])
     api.include_router(files.router, prefix="/v1/files", tags=["files"])
+    api.include_router(tests.router, prefix="/v1/tests", tags=["tests"])
 
     def custom_openapi():
         if api.openapi_schema:

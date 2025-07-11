@@ -128,54 +128,44 @@ export const BackgroundStatusIndicator: FC = () => {
     }
 
     const getActiveSpinnerTooltip = () => {
-        let estimated_time_addition = <span></span>;
-        if (queueStatistics.completeEstimateTimestamp != undefined) {
+        const completeEstimateTimestamp =
+            queueStatistics.completeEstimateTimestamp;
+        let estimated_time_addition = "";
+        if (completeEstimateTimestamp != undefined) {
             const now_timestamp = new Date().getTime() / 1000;
-            const completed_in =
-                queueStatistics.completeEstimateTimestamp - now_timestamp;
+            const completed_in = completeEstimateTimestamp - now_timestamp;
 
             if (completed_in < 60 * 5) {
                 // < 5 Minutes
-                estimated_time_addition = (
-                    <span>{t("header.estimateLessThanFiveMinutes")}</span>
+                estimated_time_addition = t(
+                    "header.estimateLessThanFiveMinutes",
                 );
             } else if (completed_in < 60 * 60 * 3) {
                 // < 3 hours
-                estimated_time_addition = (
-                    <span>
-                        {t("header.estimateMinutes", {
-                            minutes: Math.ceil(completed_in / 60),
-                        })}
-                    </span>
-                );
+                estimated_time_addition = t("header.estimateMinutes", {
+                    minutes: Math.ceil(completed_in / 60),
+                });
             } else if (completed_in < 60 * 60 * 52) {
                 // < 52 hours
-                estimated_time_addition = (
-                    <span>
-                        {t("header.estimateHours", {
-                            hours: Math.ceil(completed_in / (60 * 60)),
-                        })}
-                    </span>
-                );
+                estimated_time_addition = t("header.estimateHours", {
+                    hours: Math.ceil(completed_in / (60 * 60)),
+                });
             } else {
-                estimated_time_addition = (
-                    <span>
-                        {t("header.estimateDays", {
-                            days: Math.ceil(completed_in / (60 * 60 * 24)),
-                        })}
-                    </span>
-                );
+                estimated_time_addition = t("header.estimateDays", {
+                    days: Math.ceil(completed_in / (60 * 60 * 24)),
+                });
             }
         }
 
         return (
-            <span>
-                {t("header.runningTasksTooltip", {
-                    taskCount: queueStatistics.messagesInQueues,
-                })}
-                <br />
-                {estimated_time_addition}
-            </span>
+            <div>
+                <div>
+                    {t("header.runningTasksTooltip", {
+                        taskCount: queueStatistics.messagesInQueues,
+                    })}
+                </div>
+                <div>{estimated_time_addition}</div>
+            </div>
         );
     };
 

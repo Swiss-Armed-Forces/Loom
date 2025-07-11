@@ -4,7 +4,7 @@
         "search": "Search",
         "archives": "Archives",
         "logoAlt": "Loom logo",
-        "runningTasksTooltip": "{{taskCount}} background task(s) are running.",
+        "runningTasksTooltip": "{{taskCount}} task(s) are running.",
         "failedTasksTooltip": "{{failedTaskCount}} files have failed tasks. Click to query for them.",
         "contentTruncatedTooltip": "{{contentTruncatedCount}} files have truncated content. Click to query for them.",
         "estimateLessThanFiveMinutes": "Estimated completion time: Less than 5 minutes.",

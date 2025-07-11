@@ -5,6 +5,7 @@ import sys
 import logging
 
 from git import Repo
+from httpx import HTTPError
 from ollama import Client, Options, RequestError, ResponseError
 
 # Configure logging
@@ -16,6 +17,11 @@ logger = logging.getLogger(__name__)
 
 # Constants
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "mevatron/diffsense:1.5b")
+OLLAMA_CLIENT_TIMEOUT = int(os.getenv("OLLAMA_CLIENT_TIMEOUT", "30"))
+OLLAMA_CONNECTION_TEST_CLIENT_TIMEOUT = int(
+    os.getenv("OLLAMA_CONNECTION_TEST_CLIENT_TIMEOUT", "1")
+)
+OLLAMA_PULL_CLIENT_TIMEOUT = int(os.getenv("OLLAMA_PULL_CLIENT_TIMEOUT", "180"))
 OLLAMA_HOST = os.getenv("OLLAMA_HOST", "ollama.loom")
 OLLAMA_MAX_TOKENS = int(os.getenv("OLLAMA_MAX_TOKENS", "1024"))
 OLLAMA_SYSTEM_PROMPT = (
@@ -26,7 +32,13 @@ OLLAMA_SYSTEM_PROMPT = (
 )
 
 # Initialize Ollama client
-ollama_client = Client(host=f"http://{OLLAMA_HOST}")
+ollama_client = Client(host=f"http://{OLLAMA_HOST}", timeout=OLLAMA_CLIENT_TIMEOUT)
+ollama_connection_test_client = Client(
+    host=f"http://{OLLAMA_HOST}", timeout=OLLAMA_CONNECTION_TEST_CLIENT_TIMEOUT
+)
+ollama_pull_client = Client(
+    host=f"http://{OLLAMA_HOST}", timeout=OLLAMA_PULL_CLIENT_TIMEOUT
+)
 
 
 def get_staged_diff(repo: Repo) -> str:
@@ -39,8 +51,10 @@ def get_staged_diff(repo: Repo) -> str:
 def generate_commit_message(diff: str) -> str | None:
     """Generate a commit message using the Ollama client."""
     try:
+        logger.info("Testing connection to: %s", OLLAMA_HOST)
+        ollama_connection_test_client.ps()
         logger.info("Pulling ollama model: %s", OLLAMA_MODEL)
-        ollama_client.pull(model=OLLAMA_MODEL)
+        ollama_pull_client.pull(model=OLLAMA_MODEL)
         logger.info("Sending diff to Ollama for commit message suggestion...")
 
         response = ollama_client.generate(
@@ -53,7 +67,12 @@ def generate_commit_message(diff: str) -> str | None:
         )
         logger.debug("Ollama response: %s", response)
         return response.response
-    except (ConnectionError, RequestError, ResponseError) as e:
+    except (
+        HTTPError,
+        ConnectionError,
+        RequestError,
+        ResponseError,
+    ) as e:
         logger.warning("Ollama error (%s): %s", OLLAMA_HOST, e)
         return None
 

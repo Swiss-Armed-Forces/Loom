@@ -7,6 +7,7 @@ apis/IndexApi.ts
 apis/QueuesApi.ts
 apis/SummarizationApi.ts
 apis/TagsApi.ts
+apis/TestsApi.ts
 apis/TranslationApi.ts
 apis/WebsocketApi.ts
 apis/index.ts
