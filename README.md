@@ -32,20 +32,32 @@ automatically generated concise summaries, available directly within the user in
 into archives for convenient data extraction and transfer.
 * **📌 Tagging:** Organize and categorize your document collection with custom,
 user-defined tags.
-* **🌐 Translation:** Built-in functionality to translate content from various languages
+* **🌍 Translation:** Built-in functionality to translate content from various languages
 into English.
 * **🔗 REST API:** Seamlessly integrate Loom's powerful search and other functionalities
 into your existing applications and workflows through our comprehensive REST API.
 
-## ⚠️ Security
+## 🚫 Limitations and Out-of-Scope Features
 
-Loom is not intended for public exposure. Its attack model assumes that anyone with access
-to any component might also directly access the data, file system, or infrastructure. Loom
-does not provide authentication, authorization, or user isolation-these must be managed
-externally. None of its components are designed to be secure for unknown audiences, and the
-risk of injections or code execution is high for anyone with access.
+Loom is built as a modular and extensible toolkit for document indexing and search-fast to deploy,
+easy to adapt, and intended for secure, task-specific use. However, it makes a number of deliberate
+trade-offs in scope and design. The following points clarify what Loom is not intended to support:
 
-**Never expose Loom to the internet without an additional authorization layer.**
+* **🔄🚫 No upgrade path guarantees:** Loom is designed for ephemeral usage. You are expected to deploy
+a fresh instance, index a dataset, analyze the results, and shut it down. There is no support for
+migrating data or state across versions or long-running deployments.
+* **🧑‍🚫 No user management:** Loom does not provide authentication, authorization, or role separation.
+All users accessing an instance are considered fully trusted. If isolation is needed, you must run
+separate Loom instances.
+* **🌐🚫 Not suitable for public exposure:** Loom is not hardened for internet-facing use. It assumes a
+trusted environment and lacks defenses against malicious input. Exposing it without strict external
+protection (e.g., VPN, proxy authentication) carries significant security risks.
+* **🧰🚫 Not a general-purpose SaaS product:** Loom is not a polished, multi-tenant solution. It’s a
+low-friction framework for building document analysis systems, meant to be shaped to your domain;
+not a turnkey platform for general use.
+
+These boundaries reflect Loom’s focus on flexibility, transparency, and local control. Ideal for internal
+deployments and exploratory workflows, but not for unmanaged or large-scale public scenarios.
 
 ## 🛠️ Installation
 
