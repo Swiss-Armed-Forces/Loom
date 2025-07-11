@@ -14,3 +14,9 @@ data:
     # according to recommendations in:
     # https://www.rabbitmq.com/docs/prometheus#prometheus-configuration
     collect_statistics_interval = 10000
+
+    # we allow the maximum possible message size for now
+    # https://www.rabbitmq.com/docs/configure
+    # this is a workaround until we have fixed the following issue:
+    # https://gitlab.com/swiss-armed-forces/cyber-command/cea/loom/-/issues/115
+    max_message_size = 536870912
