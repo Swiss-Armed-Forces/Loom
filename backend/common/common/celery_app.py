@@ -1,4 +1,5 @@
 import logging
+from abc import ABC
 from typing import Any
 
 from celery import Celery, Task, signals
@@ -11,14 +12,63 @@ from common.utils.oom_score_adjust import adjust_oom_score
 logger = logging.getLogger(__name__)
 
 CELERY_QUEUE_NAME_PREFIX = "celery"
-DEFAULT_QUEUE_ARGS = {
-    # NOTE:
-    # - All these arguments will only be working with the
-    #   RabbitMQ message broker
-    # - The x-queue-mode should not be required after switching
-    #   to rabbitmq 3.12, but we keep it here just to be safe
-    "x-queue-mode": "lazy",
-}
+CELERY_DEAD_LETTER_QUEUE_NAME_SUFFIX = ".dead_letter"
+
+
+def get_queues_for_task(task_name: str) -> list[Queue]:
+    queue_name = task_name
+    dead_letter_queue_name = f"{queue_name}{CELERY_DEAD_LETTER_QUEUE_NAME_SUFFIX}"
+
+    return [
+        Queue(
+            task_name,
+            Exchange(task_name, delivery_mode="persistent"),
+            routing_key=task_name,
+            queue_arguments={
+                # We are using Quorum Queues in order to profit from the
+                # broker's poison message handling mechanism and thus avoid
+                # processing poison messages repeatedly.
+                #
+                # https://www.rabbitmq.com/docs/quorum-queues#poison-message-handling
+                "x-queue-type": "quorum",
+                "x-delivery-limit": 3,
+                "x-dead-letter-exchange": dead_letter_queue_name,
+                "x-dead-letter-routing-key": dead_letter_queue_name,
+            },
+        ),
+        Queue(
+            dead_letter_queue_name,
+            Exchange(dead_letter_queue_name, delivery_mode="persistent"),
+            routing_key=dead_letter_queue_name,
+            queue_arguments={
+                # We are using Quorum Queues in order to profit from the
+                # broker's poison message handling mechanism and thus avoid
+                # processing poison messages repeatedly.
+                #
+                # https://www.rabbitmq.com/docs/quorum-queues#poison-message-handling
+                "x-queue-type": "quorum",
+                "x-delivery-limit": 1,
+            },
+        ),
+    ]
+
+
+class DeadTask(Exception):
+    """Exception raised when a task comes from a dead letter queue."""
+
+
+class BaseTask(ABC, Task):
+    def __call__(self, *args, **kwargs):
+        headers = getattr(self.request, "headers", {}) or {}
+        xdeath = headers.get("x-death")
+
+        # x-death is an AMQP 0.9.1 header set by RabbitMQ when a message is dead-lettered
+        if xdeath:
+            # Optional: you can still check for count/reason/queue if needed
+            reason = xdeath[0].get("reason", "unknown")
+            raise DeadTask(f"Rejecting task due to x-death header (reason: {reason})")
+
+        return self.run(*args, **kwargs)
 
 
 def init_minimal_celery_app() -> Celery:
@@ -27,6 +77,7 @@ def init_minimal_celery_app() -> Celery:
         "loom",
         broker=str(settings.celery_broker_host),
         backend=str(settings.celery_backend_host),
+        task_cls=BaseTask,
     )
 
     # Configure content and serializers
@@ -47,16 +98,26 @@ def init_celery_app() -> Celery:
     """Initialize and configure the Celery app."""
     app = init_minimal_celery_app()
 
-    # Configure worker behavior
-    app.conf.worker_pool = "prefork"
-    app.conf.worker_concurrency = 1
-    app.conf.worker_prefetch_multiplier = 4
     app.conf.worker_hijack_root_logger = True
+    # We do use the prefork pool here, becasue it is
+    # a) more robust against worker failure
+    # b) splits signalling and task processing (worker online)
+    app.conf.worker_pool = "prefork"
+    # We have to disable concurrency and prefetching here (=1),
+    # since in case of a hard worker failure only the tasks that was
+    # running will have it's x-delivery-count incremented and eventually
+    # moved to the dead letter queue.
+    app.conf.worker_concurrency = 1
+    app.conf.worker_prefetch_multiplier = 1
 
     app.conf.task_acks_late = True
     app.conf.task_track_started = True
     app.conf.task_send_sent_event = True
     app.conf.worker_send_task_events = True
+
+    app.conf.task_default_queue_type = "quorum"
+    app.conf.worker_detect_quorum_queues = True
+    app.conf.broker_transport_options = {"confirm_publish": True}
 
     app.conf.task_ignore_result = True
     app.conf.task_store_errors_even_if_ignored = True
@@ -76,20 +137,13 @@ def init_celery_app() -> Celery:
         },
     }
 
-    app.conf.task_queues = [
-        # Define the celery default queue
-        # This queue will be used when external components
-        # without insight about all the tasks send tasks
-        # to celery.
-        #
-        # For example the api will post to this queue.
-        Queue(
-            "celery",
-            Exchange("celery", delivery_mode="persistent"),
-            routing_key="celery",
-            queue_arguments=DEFAULT_QUEUE_ARGS,
-        ),
-    ]
+    # Define the celery default queue
+    # This queue will be used when external components
+    # without insight about all the tasks send tasks
+    # to celery.
+    #
+    # For example, the api will post to this queue.
+    app.conf.task_queues = get_queues_for_task("celery")
     register_queues(
         app=app,
     )
@@ -108,7 +162,6 @@ def register_queues(app: Celery):
 
     for task_name in app.tasks.keys():
         queue_name = f"{CELERY_QUEUE_NAME_PREFIX}:{task_name}"
-        queue_args = dict(DEFAULT_QUEUE_ARGS)
 
         if queue_name in {q.name for q in task_queues}:
             # do not add duplicate queues
@@ -116,14 +169,7 @@ def register_queues(app: Celery):
 
         logger.info("Adding Queue: %s", queue_name)
 
-        task_queues.append(
-            Queue(
-                name=queue_name,
-                exchange=Exchange(queue_name, delivery_mode="persistent"),
-                routing_key=queue_name,
-                queue_arguments=queue_args,
-            )
-        )
+        task_queues.extend(get_queues_for_task(queue_name))
         task_routes[task_name] = {"queue": queue_name}
 
     app.conf.task_queues = task_queues
@@ -140,7 +186,7 @@ def register_queues_for_package(app: Celery, package: str):
 
 # Set oom scores for the pool worker
 # such that the pool worker is more likely to be
-# killed.
+# killed under memory pressure..
 @signals.worker_process_init.connect
 def set_oom_score_for_pool_worker(*_, **__):
     adjust_oom_score(1000)
@@ -155,7 +201,6 @@ def log_task_start(
     kwargs: dict[str, Any] | None = None,
     **__: Any,
 ) -> None:
-
     logger.info(
         "Starting task %s[%s] with args=%s, kwargs=%s",
         task.name if task is not None else None,

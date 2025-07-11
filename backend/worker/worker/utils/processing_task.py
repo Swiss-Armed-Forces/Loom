@@ -4,6 +4,7 @@ from uuid import UUID
 
 from celery import Task
 from celery.utils.log import get_task_logger
+from common.celery_app import BaseTask
 from common.dependencies import get_celery_app, get_root_task_information_repository
 from common.models.base_repository import REPOSITORY_INSTANCES, BaseRepository
 from common.task_object.task_object import (
@@ -21,8 +22,12 @@ logger = get_task_logger(__name__)
 app = get_celery_app()
 
 
+class DeadTask(Exception):
+    """Exception raised when a task comes from a dead letter queue."""
+
+
 class ProcessingTask(
-    ABC, Task, Generic[RepositoryTaskObjectT, SecondaryRepositoryTaskObjectT]
+    BaseTask, ABC, Generic[RepositoryTaskObjectT, SecondaryRepositoryTaskObjectT]
 ):
     """A base task for all processing tasks.
 
@@ -60,7 +65,7 @@ class ProcessingTask(
         self, exc, task_id, args, kwargs, einfo
     ):  # pylint: disable=too-many-arguments
         _persist_task_status_task.delay(
-            type(self._repository), task_id, ProcessingTask._persist_fail
+            type(self._repository), UUID(task_id), ProcessingTask._persist_fail
         ).forget()
         return super().on_failure(exc, task_id, args, kwargs, einfo)
 
@@ -69,14 +74,14 @@ class ProcessingTask(
     ):  # pylint: disable=too-many-arguments
         if settings.persist_retry_tasks:
             _persist_task_status_task.delay(
-                type(self._repository), task_id, ProcessingTask._persist_retry
+                type(self._repository), UUID(task_id), ProcessingTask._persist_retry
             ).forget()
         return super().on_retry(exc, task_id, args, kwargs, einfo)
 
     def on_success(self, retval, task_id, args, kwargs):
         if settings.persist_success_tasks:
             _persist_task_status_task.delay(
-                type(self._repository), task_id, ProcessingTask._persist_success
+                type(self._repository), UUID(task_id), ProcessingTask._persist_success
             ).forget()
         return super().on_success(retval, task_id, args, kwargs)
 

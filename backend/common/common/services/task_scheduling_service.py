@@ -195,3 +195,18 @@ class TaskSchedulingService:
             task_id=str(root_task_id),
             root_id=str(root_task_id),
         ).forget()
+
+    def sigkill_prgoup(self):
+        root_task_id = uuid4()
+        self._root_task_information_repository.save(
+            RootTaskInformation(
+                root_task_id=root_task_id,
+                object_id=root_task_id,
+            )
+        )
+        self._celery_app.send_task(
+            "worker.test.sigkill_pgroup_task.sigkill_pgroup_task",
+            args=[],
+            task_id=str(root_task_id),
+            root_id=str(root_task_id),
+        ).forget()

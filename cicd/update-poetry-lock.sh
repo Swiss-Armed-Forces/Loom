@@ -10,6 +10,6 @@ for project in "${PYTHON_PROJECTS[@]}"; do
     dir=$(dirname "${project}")
     (
         cd "${dir}"
-        poetry lock --no-update
+        poetry lock
     )
 done
