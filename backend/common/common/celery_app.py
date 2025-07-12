@@ -91,12 +91,6 @@ def init_minimal_celery_app() -> Celery:
     app.conf.task_serializer = "pickle"
     serialization.register_pickle()
     serialization.enable_insecure_serializers()
-    return app
-
-
-def init_celery_app() -> Celery:
-    """Initialize and configure the Celery app."""
-    app = init_minimal_celery_app()
 
     app.conf.worker_hijack_root_logger = True
     # We do use the prefork pool here, becasue it is
@@ -144,6 +138,13 @@ def init_celery_app() -> Celery:
     #
     # For example, the api will post to this queue.
     app.conf.task_queues = get_queues_for_task("celery")
+
+    return app
+
+
+def init_celery_app() -> Celery:
+    """Initialize and configure the Celery app."""
+    app = init_minimal_celery_app()
     register_queues(
         app=app,
     )
