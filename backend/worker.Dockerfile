@@ -66,10 +66,15 @@ COPY --from=builder-dev ${BUILDER_VIRTUAL_ENV} ${VIRTUAL_ENV}
 # ENV GEVENT_SUPPORT=True
 
 EXPOSE 5500
+# Note: We must use the poorly documented optimization profile "fair" here. Otherwise,
+# the worker will reserve multiple messages on the message broker, even with prefetch_multiplier=1
+# and acks_late=True. This causes those messages' x-delivery-count to be incremented when
+# the worker dies, which can result in them being dead-lettered alongside the actually
+# failing message, even though they never had a chance to run.
 CMD ["python", "-Xfrozen_modules=off", "-m", "debugpy", "--listen", "127.0.0.1:5500", \
     "-m", "watchdog.watchmedo", "auto-restart", "--verbose", "--recursive", "--signal", "SIGTERM", "--patterns", "*.py", "--directory", "/code/common", "--directory", "/code/worker", "--debounce-interval", "3", \
     "--", \
-    "python", "-Xfrozen_modules=off", "-m", "celery", "--app", "worker", "worker", "--loglevel", "DEBUG"]
+    "python", "-Xfrozen_modules=off", "-m", "celery", "--app", "worker", "worker", "--loglevel", "DEBUG", "-O", "fair"]
 
 FROM dev AS dev-beat
 EXPOSE 5503
@@ -87,7 +92,12 @@ CMD ["python", "-m", "celery", "--app", "worker", "flower", "--broker-api=http:/
 
 FROM runtime-base AS production
 COPY --from=builder-prod ${BUILDER_VIRTUAL_ENV} ${VIRTUAL_ENV}
-CMD ["python" ,"-m", "celery", "--app", "worker", "worker", "--loglevel", "INFO"]
+# Note: We must use the poorly documented optimization profile "fair" here. Otherwise,
+# the worker will reserve multiple messages on the message broker, even with prefetch_multiplier=1
+# and acks_late=True. This causes those messages' x-delivery-count to be incremented when
+# the worker dies, which can result in them being dead-lettered alongside the actually
+# failing message, even though they never had a chance to run.
+CMD ["python" ,"-m", "celery", "--app", "worker", "worker", "--loglevel", "INFO", "-O", "fair"]
 
 FROM production AS production-beat
 CMD ["python", "-m", "celery", "--app", "worker", "beat", "--loglevel", "INFO"]
