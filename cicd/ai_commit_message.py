@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 # Constants
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "mevatron/diffsense:1.5b")
-OLLAMA_CLIENT_TIMEOUT = int(os.getenv("OLLAMA_CLIENT_TIMEOUT", "30"))
+OLLAMA_CLIENT_TIMEOUT = int(os.getenv("OLLAMA_CLIENT_TIMEOUT", "60"))
 OLLAMA_CONNECTION_TEST_CLIENT_TIMEOUT = int(
     os.getenv("OLLAMA_CONNECTION_TEST_CLIENT_TIMEOUT", "1")
 )
@@ -84,15 +84,9 @@ def update_commit_msg_file(file_path: str, message: str) -> None:
     logger.info("Commit message file updated.")
 
 
-def is_merge_commit_from_hook_args() -> bool:
-    """Determine if this is a merge commit based on hook arguments."""
-    # Check if the commit message file is MERGE_MSG (indicates merge)
-    if len(sys.argv) >= 2:
-        commit_msg_file = sys.argv[1]
-        return commit_msg_file.endswith("MERGE_MSG")
-
-    # Alternative: check if third argument is "merge" (for other cases)
-    return len(sys.argv) >= 3 and sys.argv[2] == "merge"
+def is_standard_commit_msg_file(filepath: str) -> bool:
+    """Check if the commit message file is for a normal new commit."""
+    return os.path.basename(filepath) == "COMMIT_EDITMSG"
 
 
 def main():
@@ -107,11 +101,14 @@ def main():
     commit_msg_filepath = sys.argv[1]
     logger.info("Preparing commit message using file: %s", commit_msg_filepath)
 
-    repo = Repo(os.getcwd())
-
-    if is_merge_commit_from_hook_args():
-        logger.info("Merge commit detected, skipping AI generation.")
+    # Only generate commit message for new, standard commits
+    if not is_standard_commit_msg_file(commit_msg_filepath):
+        logger.info(
+            "Non-standard commit message context detected, skipping AI generation."
+        )
         return
+
+    repo = Repo(os.getcwd())
 
     diff = get_staged_diff(repo)
     message = generate_commit_message(diff)

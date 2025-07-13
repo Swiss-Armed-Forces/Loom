@@ -22,10 +22,6 @@ logger = get_task_logger(__name__)
 app = get_celery_app()
 
 
-class DeadTask(Exception):
-    """Exception raised when a task comes from a dead letter queue."""
-
-
 class ProcessingTask(
     BaseTask, ABC, Generic[RepositoryTaskObjectT, SecondaryRepositoryTaskObjectT]
 ):

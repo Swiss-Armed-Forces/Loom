@@ -1,4 +1,5 @@
 import logging
+import random
 from abc import ABC
 from typing import Any
 
@@ -31,7 +32,7 @@ def get_queues_for_task(task_name: str) -> list[Queue]:
                 #
                 # https://www.rabbitmq.com/docs/quorum-queues#poison-message-handling
                 "x-queue-type": "quorum",
-                "x-delivery-limit": 3,
+                "x-delivery-limit": 10,
                 "x-dead-letter-exchange": dead_letter_queue_name,
                 "x-dead-letter-routing-key": dead_letter_queue_name,
             },
@@ -97,10 +98,14 @@ def init_minimal_celery_app() -> Celery:
     # a) more robust against worker failure
     # b) splits signalling and task processing (worker online)
     app.conf.worker_pool = "prefork"
+
     # We have to disable concurrency and prefetching here (=1),
-    # since in case of a hard worker failure only the tasks that was
-    # running will have it's x-delivery-count incremented and eventually
+    # since in case of a hard worker failure only tasks which were
+    # unacked will have it's x-delivery-count incremented and eventually
     # moved to the dead letter queue.
+    # Note that worker_prefetch_multiplier applies per queue, which means
+    # in our model (one queue per task) the worker will still prefetch quite
+    # a few tasks.
     app.conf.worker_concurrency = 1
     app.conf.worker_prefetch_multiplier = 1
 
@@ -148,6 +153,21 @@ def init_celery_app() -> Celery:
     register_queues(
         app=app,
     )
+
+    # We shuffle the task queue order at startup to reduce the risk of starvation or overload
+    # on specific queues. Celery sets a prefetch limit per queue, not globally - so when a
+    # worker subscribes to many queues, it prefetches one task *from each queue*. This can
+    # result in many tasks being reserved even if concurrency is low.
+    #
+    # If a worker crashes, all of those prefetched tasks are requeued, and their
+    # x-delivery-count (used for retry/dead-letter logic) is incremented. If one queue
+    # contains tasks that often crash the worker, and Celery always polls that queue first,
+    # it can effectively stall the pipeline and repeatedly retry the same crashing tasks.
+    #
+    # By randomizing the queue order at each startup, we distribute the likelihood of any
+    # one queue dominating the prefetching pattern, helping to balance task execution and
+    # avoid failure feedback loops tied to queue order.
+    random.shuffle(app.conf.task_queues)
     return app
 
 
