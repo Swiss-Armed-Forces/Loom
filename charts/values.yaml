@@ -129,77 +129,68 @@ frontend:
       cpu: "0.3"
       memory: "500Mi"
 
-celery:
-  flower:
-    replicaCount: 1
-    image:
-      repository: swiss-armed-forces/cyber-command/cea/loom/celery-flower
-    service:
-      port: 5555
-    volume:
-      sizeLimit: "500Mi"
-    ingress: *default-ingress-config
-    readinessProbe:
-      enabled: false
-    livenessProbe:
-      enabled: true
-    resources:
-      requests:
-        cpu: "0.2"
-        memory: "200Mi"
-      limits:
-        cpu: "1"
-        memory: "1Gi"
-    initContainer:
-      image:
-        repository: swiss-armed-forces/cyber-command/cea/loom/alpine
-      resources:
-        requests:
-          cpu: "0.05"
-          memory: "50Mi"
-        limits:
-          cpu: "0.1"
-          memory: "100Mi"
-  worker:
-    main:
-      replicaCount: 1
-      hpa:
-        enabled: true
-        maxReplicas: 100
-        minReplicas: 1
-        targetCPUUtilizationPercentage: 100
-        targetMemoryUtilizationPercentage: 100
-      image:
-        repository: swiss-armed-forces/cyber-command/cea/loom/celery-worker
-      service: &default-celery-worker-service
-        port: 80
-      readinessProbe:
-        enabled: true
-      livenessProbe:
-        enabled: true
-      resources:
-        requests:
-          cpu: "0.3"
-          memory: "500Mi"
-        limits:
-          cpu: "1.5"
-          memory: "4Gi"
-    beat:
-      replicaCount: 1
-      image:
-        repository: swiss-armed-forces/cyber-command/cea/loom/celery-worker-beat
-      service: *default-celery-worker-service
-      readinessProbe:
-        enabled: false
-      livenessProbe:
-        enabled: true
-      resources:
-        requests:
-          cpu: "0.1"
-          memory: "200Mi"
-        limits:
-          cpu: "0.2"
-          memory: "500Mi"
+worker: &worker
+  replicaCount: 1
+  image:
+    repository: swiss-armed-forces/cyber-command/cea/loom/worker
+  hpa:
+    enabled: true
+    maxReplicas: 100
+    minReplicas: 1
+    targetCPUUtilizationPercentage: 100
+    targetMemoryUtilizationPercentage: 100
+  service:
+    port: 80
+  readinessProbe:
+    enabled: true
+  livenessProbe:
+    enabled: true
+  resources:
+    requests:
+      cpu: "0.3"
+      memory: "500Mi"
+    limits:
+      cpu: "1.5"
+      memory: "4Gi"
+
+reaper: *worker
+
+beat:
+  replicaCount: 1
+  image:
+    repository: swiss-armed-forces/cyber-command/cea/loom/worker
+  service:
+    port: 80
+  readinessProbe:
+    enabled: false
+  livenessProbe:
+    enabled: true
+  resources:
+    requests:
+      cpu: "0.1"
+      memory: "200Mi"
+    limits:
+      cpu: "0.2"
+      memory: "500Mi"
+
+flower:
+  replicaCount: 1
+  image:
+    repository: swiss-armed-forces/cyber-command/cea/loom/worker
+  service:
+    port: 5555
+  ingress: *default-ingress-config
+  readinessProbe:
+    enabled: false
+  livenessProbe:
+    enabled: true
+  resources:
+    requests:
+      cpu: "0.2"
+      memory: "200Mi"
+    limits:
+      cpu: "1"
+      memory: "1Gi"
 
 crawler:
   enabled: true
@@ -877,6 +868,7 @@ ollama:
   service:
     port: 11434
   pvc:
+    enabled: true
     storage: 30Gi
   ingress: *default-ingress-config
   readinessProbe:

@@ -5,7 +5,7 @@ metadata:
   name: {{ include "app.fullname" . }}-ollama
   labels:
     {{- include "app.labels.standard" . | nindent 4 }}
-    app.kubernetes.io/component: "celery"
+    app.kubernetes.io/component: "ollama"
 spec:
   maxReplicas: {{ .Values.ollama.hpa.maxReplicas }}
   minReplicas: {{ .Values.ollama.hpa.minReplicas }}

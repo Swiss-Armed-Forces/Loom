@@ -52,7 +52,7 @@ def create_resized_image(
                 blob = image.make_blob(format="png")
         except MissingDelegateError as ex:
             logger.info(
-                "Type of is not supported by Wand! %s: %s",
+                "Type is not supported by Wand! %s: %s",
                 type(ex),
                 ex,
             )
@@ -60,7 +60,7 @@ def create_resized_image(
         except WandException as ex:
             if file.magic_file_type is None or "image" in file.magic_file_type:
                 logger.error(
-                    "Unable to create thumbnail for with Wand! %s: %s",
+                    "Unable to create thumbnail with Wand! %s: %s",
                     type(ex),
                     ex,
                 )

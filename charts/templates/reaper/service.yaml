@@ -1,0 +1,2 @@
+{{- $component := base (dir $.Template.Name) -}}
+{{- include "app.worker.service" (dict "Values" .Values "Chart" .Chart "Release" .Release "component" $component) -}}

@@ -1,3 +1,4 @@
+import logging
 from unittest.mock import MagicMock
 
 from common import dependencies as common_dependencies
@@ -8,9 +9,13 @@ from crawler.settings import settings
 
 _minio_client: Minio | None = None
 
+logger = logging.getLogger(__name__)
+
 
 def init():
     # pylint: disable=global-statement
+    logger.info("Initializes crawler dependencies")
+
     global _minio_client
     _minio_client = Minio(
         settings.minio_host,

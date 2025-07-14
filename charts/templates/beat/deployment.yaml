@@ -1,0 +1,58 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "app.fullname" . }}-beat
+  labels:
+    {{- include "app.labels.standard" . | nindent 4 }}
+    app.kubernetes.io/component: "beat"
+spec:
+  replicas: {{ .Values.beat.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ include "app.name" . }}-beat
+  template:
+    metadata:
+      labels:
+        app: {{ include "app.name" . }}-beat
+    spec:
+      containers:
+        - name: beat
+          image: {{ .Values.image.registry }}/{{ .Values.beat.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) .Values.beat.image.tag }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: worker-beat
+              containerPort: {{ .Values.beat.service.port }}
+          env:
+            - name: WORKER_TYPE
+              value: "BEAT"
+          envFrom:
+            - configMapRef:
+                name: {{ include "app.fullname" . }}-settings
+          {{- if .Values.beat.command }}
+          command: {{- toYaml .Values.beat.command | nindent 10 }}
+          {{- else }}
+          command: ["python", "main.py", "beat", "--loglevel", "INFO"]
+          {{- end }}
+          {{- if .Values.beat.readinessProbe.enabled }}
+          readinessProbe:
+            exec:
+              command:
+                - python beat/beat_health_check.py
+            initialDelaySeconds: {{ default 0 .Values.beat.readinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ default 60 .Values.beat.readinessProbe.periodSeconds }}
+            timeoutSeconds: {{ default 5 .Values.beat.readinessProbe.timeoutSeconds }}
+            failureThreshold: {{ default 3 .Values.beat.readinessProbe.failureThreshold }}
+          {{- end }}
+          {{- if .Values.beat.livenessProbe.enabled }}
+          livenessProbe:
+            exec:
+              command:
+                - python beat/beat_health_check.py
+            initialDelaySeconds: {{ default 0 .Values.beat.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ default 60 .Values.beat.livenessProbe.periodSeconds }}
+            timeoutSeconds: {{ default 5 .Values.beat.livenessProbe.timeoutSeconds }}
+            failureThreshold: {{ default 6 .Values.beat.livenessProbe.failureThreshold }}
+          {{- end }}
+          {{- if .Values.beat.resources }}
+          resources: {{- toYaml .Values.beat.resources | nindent 12 }}
+          {{- end }}

@@ -1,0 +1,55 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "app.fullname" . }}-flower
+  labels:
+    {{- include "app.labels.standard" . | nindent 4 }}
+    app.kubernetes.io/component: "flower"
+spec:
+  replicas: {{ .Values.flower.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ include "app.name" . }}-flower
+  template:
+    metadata:
+      labels:
+        app: {{ include "app.name" . }}-flower
+    spec:
+      containers:
+        - name: flower
+          image: {{ .Values.image.registry }}/{{ .Values.flower.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) .Values.flower.image.tag }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          env:
+            - name: WORKER_TYPE
+              value: "FLOWER"
+            - name: FLOWER_UNAUTHENTICATED_API
+              value: "1"
+          envFrom:
+            - configMapRef:
+                name: {{ include "app.fullname" . }}-settings
+          {{- if .Values.flower.command }}
+          command: {{- toYaml .Values.flower.command | nindent 10 }}
+          {{- else }}
+          command: ["python", "main.py", "flower", "--broker-api=http://guest:guest@rabbit:15672/api/"]
+          {{- end }}
+          {{- if .Values.flower.readinessProbe.enabled }}
+          readinessProbe:
+            httpGet:
+              path: /
+              port: {{ .Values.flower.service.port }}
+            initialDelaySeconds: {{ default 0 .Values.flower.readinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ default 15 .Values.flower.readinessProbe.periodSeconds }}
+            failureThreshold: {{ default 3 .Values.flower.readinessProbe.failureThreshold }}
+          {{- end }}
+          {{- if .Values.flower.livenessProbe.enabled }}
+          livenessProbe:
+            httpGet:
+              path: /
+              port: {{ .Values.flower.service.port }}
+            initialDelaySeconds: {{ default 0 .Values.flower.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ default 15 .Values.flower.livenessProbe.periodSeconds }}
+            failureThreshold: {{ default 6 .Values.flower.livenessProbe.failureThreshold }}
+          {{- end }}
+          {{- if .Values.flower.resources }}
+          resources: {{- toYaml .Values.flower.resources | nindent 12 }}
+          {{- end }}

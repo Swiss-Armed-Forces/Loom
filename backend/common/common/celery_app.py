@@ -1,11 +1,17 @@
 import logging
 import random
 from abc import ABC
+from datetime import datetime
 from typing import Any
 
-from celery import Celery, Task, signals
+import celery
+from celery import Celery, Task, chord
+from celery import group as original_group
+from celery import signals
+from celery.canvas import Signature
 from celery.schedules import crontab
 from kombu import Exchange, Queue, serialization
+from pydantic import BaseModel, Field, RootModel
 
 from common.settings import settings
 from common.utils.oom_score_adjust import adjust_oom_score
@@ -13,66 +19,125 @@ from common.utils.oom_score_adjust import adjust_oom_score
 logger = logging.getLogger(__name__)
 
 CELERY_QUEUE_NAME_PREFIX = "celery"
-CELERY_DEAD_LETTER_QUEUE_NAME_SUFFIX = ".dead_letter"
+
+CELERY_DELIVER_LIMIT = 5
+CELERY_GRAVEYARD_DELIVER_LIMIT = 3
+CELERY_GRAVEYARD_QUEUE_NAME = f"{CELERY_QUEUE_NAME_PREFIX}.graveyard"
+CELERY_DEAD_QUEUE_NAME = f"{CELERY_QUEUE_NAME_PREFIX}.dead"
 
 
-def get_queues_for_task(task_name: str) -> list[Queue]:
-    queue_name = task_name
-    dead_letter_queue_name = f"{queue_name}{CELERY_DEAD_LETTER_QUEUE_NAME_SUFFIX}"
+def _patch_group(app: Celery) -> None:
+    """Patch the behavior of celery of group/chain nesting.
 
-    return [
-        Queue(
-            task_name,
-            Exchange(task_name, delivery_mode="persistent"),
-            routing_key=task_name,
-            queue_arguments={
-                # We are using Quorum Queues in order to profit from the
-                # broker's poison message handling mechanism and thus avoid
-                # processing poison messages repeatedly.
-                #
-                # https://www.rabbitmq.com/docs/quorum-queues#poison-message-handling
-                "x-queue-type": "quorum",
-                "x-delivery-limit": 10,
-                "x-dead-letter-exchange": dead_letter_queue_name,
-                "x-dead-letter-routing-key": dead_letter_queue_name,
-            },
-        ),
-        Queue(
-            dead_letter_queue_name,
-            Exchange(dead_letter_queue_name, delivery_mode="persistent"),
-            routing_key=dead_letter_queue_name,
-            queue_arguments={
-                # We are using Quorum Queues in order to profit from the
-                # broker's poison message handling mechanism and thus avoid
-                # processing poison messages repeatedly.
-                #
-                # https://www.rabbitmq.com/docs/quorum-queues#poison-message-handling
-                "x-queue-type": "quorum",
-                "x-delivery-limit": 1,
-            },
-        ),
-    ]
+    See: https://github.com/celery/celery/issues/8182
+    """
+
+    def patched_group(*signatures: Signature[Any], **options: Any) -> Signature[Any]:
+        """A patch for celery.group This is required, because celery does not work as
+        expected when using a mixture of nested groups & chains."""
+        return chord(original_group(*signatures, **options), __completer.s())
+
+    @app.task()
+    def __completer(results):
+        """Task that does nothing, can be used in a chord to complete the chord."""
+        return results
+
+    celery.group = patched_group  # type: ignore[misc, assignment]
 
 
 class DeadTask(Exception):
     """Exception raised when a task comes from a dead letter queue."""
 
 
+class XDeathEntry(BaseModel):
+    queue: str
+    reason: str
+    count: int
+    exchange: str
+    routing_keys: list[str] = Field(alias="routing-keys")
+    # AMQP 0.9.1:
+    time: datetime | None = None
+    # AMQP 1.0:
+    first_time: datetime | None = Field(alias="first-time", default=None)
+    last_time: datetime | None = Field(alias="last-time", default=None)
+
+
+class XDeathHeader(RootModel[list[XDeathEntry]]):
+    def __getitem__(self, item) -> XDeathEntry:
+        return self.root[item]
+
+    def __len__(self) -> int:
+        return len(self.root)
+
+
 class BaseTask(ABC, Task):
-    def __call__(self, *args, **kwargs):
+    def __call__(self, *args, **kwargs) -> None:
         headers = getattr(self.request, "headers", {}) or {}
-        xdeath = headers.get("x-death")
 
         # x-death is an AMQP 0.9.1 header set by RabbitMQ when a message is dead-lettered
-        if xdeath:
-            # Optional: you can still check for count/reason/queue if needed
-            reason = xdeath[0].get("reason", "unknown")
-            raise DeadTask(f"Rejecting task due to x-death header (reason: {reason})")
+        x_death = XDeathHeader.model_validate(headers.get("x-death", []))
+        if len(x_death) > 1:
+            # More than one death: reap the task
+            raise DeadTask(f"Task died: {x_death}")
 
         return self.run(*args, **kwargs)
 
 
-def init_minimal_celery_app() -> Celery:
+def _get_queue(queue_name: str) -> Queue:
+    return Queue(
+        queue_name,
+        Exchange(queue_name, delivery_mode="persistent"),
+        routing_key=queue_name,
+        queue_arguments={
+            # We are using Quorum Queues in order to profit from the
+            # broker's poison message handling mechanism and thus avoid
+            # processing poison messages repeatedly.
+            #
+            # https://www.rabbitmq.com/docs/quorum-queues#poison-message-handling
+            "x-queue-type": "quorum",
+            "x-delivery-limit": CELERY_DELIVER_LIMIT,
+            "x-dead-letter-exchange": CELERY_GRAVEYARD_QUEUE_NAME,
+            "x-dead-letter-routing-key": CELERY_GRAVEYARD_QUEUE_NAME,
+        },
+    )
+
+
+def _get_graveyard_queue(queue_name: str) -> Queue:
+    return Queue(
+        queue_name,
+        Exchange(queue_name, delivery_mode="persistent"),
+        routing_key=queue_name,
+        queue_arguments={
+            # We are using Quorum Queues in order to profit from the
+            # broker's poison message handling mechanism and thus avoid
+            # processing poison messages repeatedly.
+            #
+            # https://www.rabbitmq.com/docs/quorum-queues#poison-message-handling
+            "x-queue-type": "quorum",
+            "x-delivery-limit": CELERY_GRAVEYARD_DELIVER_LIMIT,
+            "x-dead-letter-exchange": CELERY_DEAD_QUEUE_NAME,
+            "x-dead-letter-routing-key": CELERY_DEAD_QUEUE_NAME,
+        },
+    )
+
+
+def _get_dead_queue(queue_name: str) -> Queue:
+    return Queue(
+        queue_name,
+        Exchange(queue_name, delivery_mode="persistent"),
+        routing_key=queue_name,
+        queue_arguments={
+            # We are using Quorum Queues in order to profit from the
+            # broker's poison message handling mechanism and thus avoid
+            # processing poison messages repeatedly.
+            #
+            # https://www.rabbitmq.com/docs/quorum-queues#poison-message-handling
+            "x-queue-type": "quorum",
+        },
+    )
+
+
+def init_celery_app() -> Celery:
     """Initialize a minimal Celery app."""
     app = Celery(
         "loom",
@@ -98,15 +163,10 @@ def init_minimal_celery_app() -> Celery:
     # a) more robust against worker failure
     # b) splits signalling and task processing (worker online)
     app.conf.worker_pool = "prefork"
-
-    # We have to disable concurrency and prefetching here (=1),
-    # since in case of a hard worker failure only tasks which were
-    # unacked will have it's x-delivery-count incremented and eventually
-    # moved to the dead letter queue.
-    # Note that worker_prefetch_multiplier applies per queue, which means
+    app.conf.worker_concurrency = 4
+    # Note: that worker_prefetch_multiplier applies per queue, which means
     # in our model (one queue per task) the worker will still prefetch quite
     # a few tasks.
-    app.conf.worker_concurrency = 1
     app.conf.worker_prefetch_multiplier = 1
 
     app.conf.task_acks_late = True
@@ -136,23 +196,30 @@ def init_minimal_celery_app() -> Celery:
         },
     }
 
-    # Define the celery default queue
+    # Define the celery default queues
     # This queue will be used when external components
     # without insight about all the tasks send tasks
     # to celery.
     #
     # For example, the api will post to this queue.
-    app.conf.task_queues = get_queues_for_task("celery")
+    app.conf.task_queues = [_get_queue("celery")]
+    app.conf.task_default_queue = "celery"
+    app.conf.task_default_exchange = "celery"
 
-    return app
+    # Define dead letter queues
+    app.conf.task_queues.append(_get_graveyard_queue(CELERY_GRAVEYARD_QUEUE_NAME))
+    app.conf.task_queues.append(_get_dead_queue(CELERY_DEAD_QUEUE_NAME))
 
-
-def init_celery_app() -> Celery:
-    """Initialize and configure the Celery app."""
-    app = init_minimal_celery_app()
-    register_queues(
-        app=app,
-    )
+    # Worker type specific configuration
+    match settings.worker_type:
+        case "REAPER":
+            # We have to disable concurrency and prefetching here (=1),
+            # because we will be consuming tasks in the dead-letter queue
+            # and we have to process them one-by-one.
+            app.conf.worker_concurrency = 1
+            app.conf.worker_prefetch_multiplier = 1
+        case _:
+            pass
 
     # We shuffle the task queue order at startup to reduce the risk of starvation or overload
     # on specific queues. Celery sets a prefetch limit per queue, not globally - so when a
@@ -168,10 +235,14 @@ def init_celery_app() -> Celery:
     # one queue dominating the prefetching pattern, helping to balance task execution and
     # avoid failure feedback loops tied to queue order.
     random.shuffle(app.conf.task_queues)
+
+    # Patch the celery group functionality as required due to a bug in celery.
+    _patch_group(app=app)
+
     return app
 
 
-def register_queues(app: Celery):
+def _register_task_queues(app: Celery):
     """Create a dedicated queue per task.
 
     Args:
@@ -190,19 +261,21 @@ def register_queues(app: Celery):
 
         logger.info("Adding Queue: %s", queue_name)
 
-        task_queues.extend(get_queues_for_task(queue_name))
+        task_queues.append(_get_queue(queue_name))
         task_routes[task_name] = {"queue": queue_name}
 
     app.conf.task_queues = task_queues
     app.conf.task_routes = task_routes
 
 
-def register_queues_for_package(app: Celery, package: str):
+def register_tasks_for_package(app: Celery, package: str):
     app.conf.update(
         include=[f"{package}.tasks"],
     )
     app.autodiscover_tasks([package], force=True)
-    register_queues(app=app)
+    _register_task_queues(app)
+    # See comment in: init_celery_app
+    random.shuffle(app.conf.task_queues)
 
 
 # Set oom scores for the pool worker

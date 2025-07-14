@@ -1,18 +1,18 @@
-{{- if .Values.celery.flower.ingress.enabled }}
+{{- if .Values.flower.ingress.enabled }}
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: {{ include "app.fullname" . }}-celery-flower
+  name: {{ include "app.fullname" . }}-flower
   labels:
     {{- include "app.labels.standard" . | nindent 4 }}
-    app.kubernetes.io/component: "celery"
+    app.kubernetes.io/component: "flower"
   annotations:
-    {{- toYaml .Values.celery.flower.ingress.annotations | nindent 4 }}
+    {{- toYaml .Values.flower.ingress.annotations | nindent 4 }}
     {{- if .Values.certificate.requireClientCert }}
     traefik.ingress.kubernetes.io/router.tls.options: {{ .Release.Namespace }}-{{ include "app.fullname" . }}-mtls@kubernetescrd
     {{- end }}
 spec:
-  ingressClassName: {{ .Values.celery.flower.ingress.className }}
+  ingressClassName: {{ .Values.flower.ingress.className }}
   rules:
     - host: flower.{{ .Values.domain }}
       http:
@@ -21,10 +21,10 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: {{ include "app.fullname" . }}-celery-flower
+                name: {{ include "app.fullname" . }}-flower
                 port:
-                  number: {{ .Values.celery.flower.service.port }}
-  {{- if .Values.celery.flower.ingress.tls.enabled }}
+                  number: {{ .Values.flower.service.port }}
+  {{- if .Values.flower.ingress.tls.enabled }}
   tls:
     - secretName: {{ include "app.fullname" . }}-certificate
       hosts:

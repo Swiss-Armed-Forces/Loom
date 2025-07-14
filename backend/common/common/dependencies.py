@@ -1,5 +1,3 @@
-"""Declarations of all shared services and tasks."""
-
 import logging
 from unittest.mock import AsyncMock, MagicMock
 
@@ -63,7 +61,7 @@ logger = logging.getLogger(__name__)
 
 def init(init_elasticsearch_documents: bool = False):
     # pylint: disable=global-statement
-    logger.info("Initializes global dependencies")
+    logger.info("Initializes common dependencies")
 
     global _libretranslate_api
     _libretranslate_api = LibreTranslateAPI(str(settings.translate_host))

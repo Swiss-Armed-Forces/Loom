@@ -1,0 +1,73 @@
+{{- define "app.worker.deployment" -}}
+{{- $component := .component -}}
+{{- $values := index .Values $component -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "app.fullname" . }}-{{ $component }}
+  labels:
+    {{- include "app.labels.standard" . | nindent 4 }}
+    app.kubernetes.io/component: "{{ $component }}"
+spec:
+  {{- if not $values.hpa.enabled }}
+  replicas: {{ $values.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      app: {{ include "app.name" . }}-{{ $component }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "app.name" . }}-{{ $component }}
+    spec:
+      containers:
+        - name: {{ $component }}
+          image: {{ .Values.image.registry }}/{{ $values.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) $values.image.tag }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: {{ $component }}
+              containerPort: {{ $values.service.port }}
+          env:
+            - name: WORKER_TYPE
+              value: {{ $component | upper | quote }}
+            - name: archive_encryption_master_key
+              valueFrom:
+                secretKeyRef:
+                  name: archive-encryption-master-key
+                  key: secretkey
+          envFrom:
+            - configMapRef:
+                name: {{ include "app.fullname" . }}-settings
+          {{- if $values.command }}
+          command: {{- toYaml $values.command | nindent 10 }}
+          {{- else }}
+          command: {{ $values.defaultCommand | default (list "python" "main.py" "worker" "--loglevel" "INFO") | toJson }}
+          {{- end }}
+          {{- if $values.readinessProbe.enabled }}
+          readinessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - WORKER_TYPE=INSPECT python main.py inspect ping --timeout 99999 --destination "celery@${HOSTNAME}"
+            initialDelaySeconds: {{ default 10 $values.readinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ default 120 $values.readinessProbe.periodSeconds }}
+            timeoutSeconds: {{ default 60 $values.readinessProbe.timeoutSeconds }}
+            failureThreshold: {{ default 6 $values.readinessProbe.failureThreshold }}
+          {{- end }}
+          {{- if $values.livenessProbe.enabled }}
+          livenessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - WORKER_TYPE=INSPECT python main.py inspect ping --timeout 99999 --destination "celery@${HOSTNAME}"
+            initialDelaySeconds: {{ default 10 $values.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ default 120 $values.livenessProbe.periodSeconds }}
+            timeoutSeconds: {{ default 60 $values.livenessProbe.timeoutSeconds }}
+            failureThreshold: {{ default 6 $values.livenessProbe.failureThreshold }}
+          {{- end }}
+          {{- if $values.resources }}
+          resources: {{- toYaml $values.resources | nindent 12 }}
+          {{- end }}
+{{- end -}}
