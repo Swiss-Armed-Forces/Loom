@@ -33,13 +33,83 @@ frontend:
       cpu: "0.5"
       memory: "1.5Gi"
 
-celery:
-  flower:
-    ingress: *default-ingress-config
-  worker:
-    main:
-      hpa:
-        enabled: false
+
+worker:
+  # yamllint disable rule:indentation
+  command: [
+    "python", "-Xfrozen_modules=off",
+    "-m", "debugpy",
+      "--listen", "127.0.0.1:5500",
+    "-m", "watchdog.watchmedo",
+      "auto-restart",
+      "--verbose",
+      "--recursive",
+      "--signal", "SIGTERM",
+      "--patterns", "*.py",
+      "--directory", "/code/common",
+      "--directory", "/code/worker",
+      "--debounce-interval", "3",
+    "--",
+    "python", "-Xfrozen_modules=off",
+    "main.py",
+      "worker",
+      "--loglevel", "DEBUG"
+  ]
+  # yamllint enable rule:indentation
+  hpa:
+    enabled: false
+
+reaper:
+  # yamllint disable rule:indentation
+  command: [
+    "python", "-Xfrozen_modules=off",
+    "-m", "debugpy",
+      "--listen", "127.0.0.1:5501",
+    "-m", "watchdog.watchmedo",
+      "auto-restart",
+      "--verbose",
+      "--recursive",
+      "--signal", "SIGTERM",
+      "--patterns", "*.py",
+      "--directory", "/code/common",
+      "--directory", "/code/worker",
+      "--debounce-interval", "3",
+    "--",
+    "python", "-Xfrozen_modules=off",
+    "main.py",
+      "worker",
+      "--loglevel", "DEBUG"
+  ]
+  # yamllint enable rule:indentation
+  hpa:
+    enabled: false
+
+beat:
+  # yamllint disable rule:indentation
+  command: [
+    "python", "-Xfrozen_modules=off",
+    "-m", "debugpy",
+      "--listen", "127.0.0.1:5503",
+    "-m", "watchdog.watchmedo",
+      "auto-restart",
+      "--verbose",
+      "--recursive",
+      "--signal", "SIGTERM",
+      "--patterns", "*.py",
+      "--directory", "/code/common",
+      "--directory", "/code/worker",
+      "--debounce-interval", "3",
+    "--",
+    "python", "-Xfrozen_modules=off",
+    "main.py",
+      "beat",
+      "--loglevel", "DEBUG"
+  ]
+  # yamllint enable rule:indentation
+
+
+flower:
+  ingress: *default-ingress-config
 
 elasticsearch:
   ingress: *default-ingress-config
@@ -73,6 +143,8 @@ rabbit:
 
 ollama:
   hpa:
+    enabled: false
+  pvc:
     enabled: false
   ingress: *default-ingress-config
 

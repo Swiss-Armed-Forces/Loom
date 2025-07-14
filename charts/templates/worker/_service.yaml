@@ -1,0 +1,24 @@
+{{- define "app.worker.service" -}}
+{{- $component := .component -}}
+{{- $values := index .Values $component -}}
+{{- if $values.service.enabled | default true -}}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "app.fullname" . }}-{{ $component }}
+  labels:
+    {{- include "app.labels.standard" . | nindent 4 }}
+    app.kubernetes.io/component: "{{ $component }}"
+spec:
+  type: {{ $values.service.type | default "ClusterIP" }}
+  ports:
+    - port: {{ $values.service.port }}
+      name: {{ $component }}
+      targetPort: {{ $values.service.targetPort | default $values.service.port }}
+      {{- if and (eq ($values.service.type | default "ClusterIP") "NodePort") $values.service.nodePort }}
+      nodePort: {{ $values.service.nodePort }}
+      {{- end }}
+  selector:
+    app: {{ include "app.name" . }}-{{ $component }}
+{{- end -}}
+{{- end -}}

@@ -1,6 +1,7 @@
 import logging
 import os
 from pathlib import Path
+from typing import Literal
 
 from pydantic import (
     AnyHttpUrl,
@@ -32,6 +33,8 @@ class Settings(BaseSettings):
     encode_error_handler: str = "backslashreplace"
     translate_target: str = "en"
     tempfile_dir: Path = Path.home() / ".loomcache"
+
+    worker_type: Literal["WORKER", "REAPER", "FLOWER", "BEAT", "INSPECT"] = "INSPECT"
 
     mongo_db_host: MongoDsn = MongoDsn(f"mongodb://mongodb.{DOMAIN}")
     mongo_db_file_storage_name: str = "files"

@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "app.fullname" . }}-flower
+  labels:
+    {{- include "app.labels.standard" . | nindent 4 }}
+    app.kubernetes.io/component: "flower"
+spec:
+  ports:
+    - port: {{ .Values.flower.service.port }}
+      name: flower
+      targetPort: {{ .Values.flower.service.port }}
+  selector:
+    app: {{ include "app.name" . }}-flower

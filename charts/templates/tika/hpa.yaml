@@ -5,7 +5,7 @@ metadata:
   name: {{ include "app.fullname" . }}-tika
   labels:
     {{- include "app.labels.standard" . | nindent 4 }}
-    app.kubernetes.io/component: "celery"
+    app.kubernetes.io/component: "tika"
 spec:
   maxReplicas: {{ .Values.tika.hpa.maxReplicas }}
   minReplicas: {{ .Values.tika.hpa.minReplicas }}

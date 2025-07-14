@@ -36,7 +36,7 @@ profiles:
               DOCKER_REGISTRY: "{{or .CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX \"docker.io\"}}"
             cacheFrom:
               - "registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/api"
-        - image: registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/celery-worker
+        - image: registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/worker
           context: backend
           sync:
             manual:
@@ -50,37 +50,7 @@ profiles:
             buildArgs:
               DOCKER_REGISTRY: "{{or .CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX \"docker.io\"}}"
             cacheFrom:
-              - "registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/celery-worker"
-        - image: registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/celery-worker-beat
-          context: backend
-          sync:
-            manual:
-              - src: "common/**"
-                dest: /code
-              - src: "worker/**"
-                dest: /code
-          docker:
-            dockerfile: worker.Dockerfile
-            target: dev-beat
-            buildArgs:
-              DOCKER_REGISTRY: "{{or .CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX \"docker.io\"}}"
-            cacheFrom:
-              - "registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/celery-worker-beat"
-        - image: registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/celery-flower
-          context: backend
-          sync:
-            manual:
-              - src: "common/**"
-                dest: /code
-              - src: "worker/**"
-                dest: /code
-          docker:
-            dockerfile: worker.Dockerfile
-            target: flower
-            buildArgs:
-              DOCKER_REGISTRY: "{{or .CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX \"docker.io\"}}"
-            cacheFrom:
-              - "registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/celery-flower"
+              - "registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/worker"
         - image: registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/crawler
           context: backend
           sync:
@@ -328,7 +298,7 @@ profiles:
               DOCKER_REGISTRY: "{{or .CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX \"docker.io\"}}"
             cacheFrom:
               - "registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/api"
-        - image: registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/celery-worker
+        - image: registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/worker
           context: backend
           docker:
             dockerfile: worker.Dockerfile
@@ -336,25 +306,7 @@ profiles:
             buildArgs:
               DOCKER_REGISTRY: "{{or .CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX \"docker.io\"}}"
             cacheFrom:
-              - "registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/celery-worker"
-        - image: registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/celery-worker-beat
-          context: backend
-          docker:
-            dockerfile: worker.Dockerfile
-            target: production-beat
-            buildArgs:
-              DOCKER_REGISTRY: "{{or .CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX \"docker.io\"}}"
-            cacheFrom:
-              - "registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/celery-worker-beat"
-        - image: registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/celery-flower
-          context: backend
-          docker:
-            dockerfile: worker.Dockerfile
-            target: flower
-            buildArgs:
-              DOCKER_REGISTRY: "{{or .CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX \"docker.io\"}}"
-            cacheFrom:
-              - "registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/celery-flower"
+              - "registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/worker"
         - image: registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/crawler
           context: backend
           docker:

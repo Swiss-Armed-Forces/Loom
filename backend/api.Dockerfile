@@ -10,14 +10,30 @@ ENV POETRY_NO_INTERACTION=1 \
     POETRY_VIRTUALENVS_IN_PROJECT=1 \
     POETRY_VIRTUALENVS_CREATE=1
 
-COPY common/ /code/common
-COPY api/ /code/api
+COPY common/pyproject.toml common/poetry.lock common/README.md /code/common/
+COPY api/pyproject.toml api/poetry.lock api/README.md /code/api/
 WORKDIR /code/api
 
 FROM builder-base AS builder-dev
+# Install dependencies only (not the project itself or directory deps):
+# --no-root: we don't need to install our source, we'll copy that to the image later
+# --no-directory: we reference common as directory dependency - don't make poetry check for that
+# poetry is run twice to support Docker layer caching - this way we don't always have to
+# re-install all internet dependencies when something in the source code changes
+RUN poetry install --no-root --no-directory --no-cache
+COPY common/ /code/common
+COPY api/ /code/api
 RUN poetry install --no-cache
 
 FROM builder-base AS builder-prod
+# Install dependencies only (not the project itself or directory deps):
+# --no-root: we don't need to install our source, we'll copy that to the image later
+# --no-directory: we reference common as directory dependency - don't make poetry check for that
+# poetry is run twice to support Docker layer caching - this way we don't always have to
+# re-install all internet dependencies when something in the source code changest
+RUN poetry install --no-root --no-directory --no-cache --without dev,test
+COPY common/ /code/common
+COPY api/ /code/api
 RUN poetry install --no-cache --without dev,test
 
 # The runtime image, used to just run the code provided its virtual environment
