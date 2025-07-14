@@ -19,11 +19,11 @@ scipy = "^1.15.3"
 scikit-learn = "^1.7.0"
 langchain-text-splitters = "^0.3.2"
 ollama = "^0.5.1"
+flower = "^2.0.1"
 
 [tool.poetry.group.dev.dependencies]
 debugpy = "^1.8.1"
 watchdog = "^6.0.0"
-flower = "^2.0.1"
 scipy-stubs = "^1.15.3.0"
 
 [tool.poetry.group.test.dependencies]
