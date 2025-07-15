@@ -308,6 +308,8 @@ translate:
     targetMemoryUtilizationPercentage: 100
   image:
     repository: swiss-armed-forces/cyber-command/cea/loom/libretranslate
+  env:
+    ARGOS_DEVICE_TYPE: "auto"
   service:
     port: 5000
   ingress: *default-ingress-config

@@ -24,6 +24,9 @@ spec:
           ports:
             - name: translate
               containerPort: {{ .Values.translate.service.port }}
+          env:
+            - name: ARGOS_DEVICE_TYPE
+              value: {{ .Values.translate.env.ARGOS_DEVICE_TYPE | quote }}
           {{- if .Values.translate.readinessProbe.enabled }}
           readinessProbe:
             exec:
