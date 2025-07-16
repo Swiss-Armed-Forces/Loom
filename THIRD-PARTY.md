@@ -471,7 +471,6 @@ The complete source code for Traefik is publicly available at [https://github.co
 | tzdata                   | 2024.1          | Apache Software License                                                          |
 | watchdog                 | 6.0.0           | Apache Software License                                                          |
 | yq                       | 3.4.3           | Apache Software License                                                          |
-| yq                       | 3.4.3           | Apache Software License                                                          |
 | cryptography             | 42.0.8          | Apache Software License; BSD License                                             |
 | packaging                | 24.2            | Apache Software License; BSD License                                             |
 | packaging                | 24.2            | Apache Software License; BSD License                                             |
@@ -525,7 +524,6 @@ The complete source code for Traefik is publicly available at [https://github.co
 | pylint                   | 3.2.4           | GNU General Public License v2 (GPLv2)                                            |
 | pylint-plugin-utils      | 0.8.2           | GNU General Public License v2 or later (GPLv2+)                                  |
 | yamllint                 | 1.37.0          | GNU General Public License v3 (GPLv3)                                            |
-| yamllint                 | 1.37.0          | GNU General Public License v3 (GPLv3)                                            |
 | astroid                  | 3.2.2           | GNU Lesser General Public License v2 (LGPLv2)                                    |
 | python-gitlab            | 6.0.0           | GNU Lesser General Public License v3 (LGPLv3)                                    |
 | pylint-pydantic          | 0.3.2           | GPLv3                                                                            |
@@ -543,9 +541,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | attrs                    | 23.2.0          | MIT License                                                                      |
 | autoflake                | 2.3.1           | MIT License                                                                      |
 | autoflake                | 2.3.1           | MIT License                                                                      |
-| autoflake                | 2.3.1           | MIT License                                                                      |
 | black                    | 24.4.2          | MIT License                                                                      |
-| black                    | 25.1.0          | MIT License                                                                      |
 | black                    | 25.1.0          | MIT License                                                                      |
 | cffi                     | 1.17.1          | MIT License                                                                      |
 | charset-normalizer       | 3.3.2           | MIT License                                                                      |
@@ -556,7 +552,6 @@ The complete source code for Traefik is publicly available at [https://github.co
 | deptry                   | 0.16.1          | MIT License                                                                      |
 | fastapi                  | 0.115.12        | MIT License                                                                      |
 | flake8                   | 7.1.0           | MIT License                                                                      |
-| flake8                   | 7.2.0           | MIT License                                                                      |
 | flake8                   | 7.2.0           | MIT License                                                                      |
 | flake8-bugbear           | 24.4.26         | MIT License                                                                      |
 | h11                      | 0.14.0          | MIT License                                                                      |
@@ -580,8 +575,6 @@ The complete source code for Traefik is publicly available at [https://github.co
 | platformdirs             | 4.3.7           | MIT License                                                                      |
 | pluggy                   | 1.5.0           | MIT License                                                                      |
 | poetry                   | 2.1.3           | MIT License                                                                      |
-| poetry                   | 2.1.3           | MIT License                                                                      |
-| pre_commit_hooks         | 5.0.0           | MIT License                                                                      |
 | pre_commit_hooks         | 5.0.0           | MIT License                                                                      |
 | py                       | 1.11.0          | MIT License                                                                      |
 | pycodestyle              | 2.12.0          | MIT License                                                                      |
@@ -621,7 +614,6 @@ The complete source code for Traefik is publicly available at [https://github.co
 | blobfile                 | 2.1.1           | Public Domain                                                                    |
 | typing_extensions        | 4.12.2          | Python Software Foundation License                                               |
 | filelock                 | 3.15.4          | The Unlicense (Unlicense)                                                        |
-| binwalk                  | 2.4.3           | UNKNOWN                                                                          |
 | binwalk                  | 2.4.3           | UNKNOWN                                                                          |
 | celery-types             | 0.22.0          | UNKNOWN                                                                          |
 | humanize                 | 4.12.3          | UNKNOWN                                                                          |

@@ -164,8 +164,8 @@ in
             ms-python.isort
             ms-python.black-formatter
             ms-python.debugpy
-            vscode-extensions.ms-python.pylint
-            vscode-extensions.ms-python.flake8
+            ms-python.pylint
+            ms-python.flake8
 
             ms-azuretools.vscode-docker
             ms-kubernetes-tools.vscode-kubernetes-tools
@@ -179,7 +179,7 @@ in
 
             davidanson.vscode-markdownlint
 
-            vscode-extensions.jebbs.plantuml
+            jebbs.plantuml
           ]
           ++ vscode-utils.extensionsFromVscodeMarketplace [
             {
@@ -238,6 +238,12 @@ in
   languages.nix.enable = true;
   languages.python = {
     enable = true;
+    # We pin the python version to the same version as
+    # we use in the python container images, this is so
+    # that the debugger (when attached) can resolve
+    # python libraries. When you update this, you probably
+    # also need to update quite a few Dockerfiles.
+    package = pkgs-stable.python311;
     # Note: we have to disable manylinux here,
     # because otherwise when using cli tools
     # from within python will segfault
