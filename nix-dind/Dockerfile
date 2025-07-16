@@ -63,6 +63,19 @@ RUN set -exu \
     shadow=${SHADOW_VERSION}
 
 #
+# Workaround for busybox `cp`
+# not supporting `--preserve=ownership,timestamps`
+#
+# see:
+#   - https://github.com/NixOS/nix/issues/13480
+#   - https://gitlab.com/swiss-armed-forces/cyber-command/cea/loom/-/issues/118
+#
+ARG COREUTILS="9.7-r1"
+RUN set -exu \
+    && apk add --no-cache \
+    coreutils=${COREUTILS}
+
+#
 # Install nix (package version)
 #
 #ARG NIX_VERSION="2.28.3-r1"
