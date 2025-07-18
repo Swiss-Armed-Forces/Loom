@@ -4,10 +4,9 @@ div.accordion {
 }
 
 div.accordionHeader {
-    padding: 1rem;
+    padding-left: 1rem;
     display: flex;
-    flex-direction: row;
-    flex-wrap: wrap;
+    align-items: center;
 }
 
 :global .MuiAccordionSummary-content {
