@@ -156,10 +156,7 @@ export const HighlightEntry: FC<HighlightEntryProps> = ({
             }}
             className={styles.accordion}
         >
-            <AccordionSummary
-                className={styles.accordionHeader}
-                expandIcon={<ExpandMore />}
-            >
+            <div className={styles.accordionHeader}>
                 <IconButton
                     onClick={(event) => {
                         event.stopPropagation();
@@ -168,16 +165,18 @@ export const HighlightEntry: FC<HighlightEntryProps> = ({
                 >
                     <MoreVert />
                 </IconButton>
-                <FieldTypography className={styles.hitField}>
-                    {field}
-                </FieldTypography>
-                <FieldTypography
-                    color="text.secondary"
-                    className={styles.resultHighlightText}
-                >
-                    {!expanded && valueElement[0]}
-                </FieldTypography>
-            </AccordionSummary>
+                <AccordionSummary expandIcon={<ExpandMore />}>
+                    <FieldTypography className={styles.hitField}>
+                        {field}
+                    </FieldTypography>
+                    <FieldTypography
+                        color="text.secondary"
+                        className={styles.resultHighlightText}
+                    >
+                        {!expanded && valueElement[0]}
+                    </FieldTypography>
+                </AccordionSummary>
+            </div>
             <AccordionDetails>
                 {valueElement.map((highlight, index) => {
                     return (
