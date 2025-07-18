@@ -28,9 +28,13 @@
 5. Install devenv
    - In /etc/selinux/config, set `SELINUX=disabled` and reboot
    - Install devenv using the [official instructions](https://devenv.sh/getting-started/)
+   - ❗**Workaroud for fedora-41**:
+   After installing nix open the file `/nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh`
+   and comment out the first two lines
 6. Install direnv
    - Install direnv using the [official instructions](https://direnv.net/docs/installation.html)
    - Don't forget to hook direnv into your shell [instructions](https://direnv.net/docs/hook.html)
+   - **Optional:** Open file `/etc/nix/nix.conf` and add `allowed-users = root [NAME_OF_YOUR_USER]`
    - Allow direnv to run in the loom directory: `cd loom/ && direnv allow`
 7. Start devenv: `cd loom/ && devenv up`
    - k8s will ask to insert the user account password (Press on the yellow triangle)
