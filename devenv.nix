@@ -150,58 +150,67 @@ in
 
       # ide
       # see: https://nixos.wiki/wiki/Visual_Studio_Code
-      (vscode-with-extensions.override {
-        vscodeExtensions =
-          with vscode-extensions;
-          [
-            bbenoist.nix
-            mkhl.direnv
+      #
+      # Note we pin to the 24.11 nixpkgs version here because of
+      # a bug in vscode python extension which prevents the
+      # python langauge server from loading:
+      # see:
+      #   - https://github.com/microsoft/vscode-python/issues/25301
+      (
+        with pkgs-24-11;
+        vscode-with-extensions.override {
+          vscodeExtensions =
+            with vscode-extensions;
+            [
+              bbenoist.nix
+              mkhl.direnv
 
-            gitlab.gitlab-workflow
+              gitlab.gitlab-workflow
 
-            ms-python.python
-            ms-python.vscode-pylance
-            ms-python.isort
-            ms-python.black-formatter
-            ms-python.debugpy
-            ms-python.pylint
-            ms-python.flake8
+              ms-python.python
+              ms-python.vscode-pylance
+              ms-python.isort
+              ms-python.black-formatter
+              ms-python.debugpy
+              ms-python.pylint
+              ms-python.flake8
 
-            ms-azuretools.vscode-docker
-            ms-kubernetes-tools.vscode-kubernetes-tools
-            redhat.vscode-yaml # required for vscode-kubernetes-tools
-            tim-koehler.helm-intellisense
+              ms-azuretools.vscode-docker
+              ms-kubernetes-tools.vscode-kubernetes-tools
+              redhat.vscode-yaml # required for vscode-kubernetes-tools
+              tim-koehler.helm-intellisense
 
-            dbaeumer.vscode-eslint
-            esbenp.prettier-vscode
+              dbaeumer.vscode-eslint
+              esbenp.prettier-vscode
 
-            timonwong.shellcheck
+              timonwong.shellcheck
 
-            davidanson.vscode-markdownlint
+              davidanson.vscode-markdownlint
 
-            jebbs.plantuml
-          ]
-          ++ vscode-utils.extensionsFromVscodeMarketplace [
-            {
-              name = "mypy-type-checker";
-              publisher = "ms-python";
-              version = "2024.0.0";
-              sha256 = "sha256-o2qmz8tAC4MG/4DTBdM1JS5slsUrlub4fbDulU42Bgg=";
-            }
-            {
-              name = "autoflake-extension";
-              publisher = "mikoz";
-              version = "1.0.4";
-              sha256 = "sha256-CtsJGlGsMmEePKTBQIu7vX15SkfdJo8zREJgVyztNTY=";
-            }
-            {
-              name = "hadolint";
-              publisher = "exiasr";
-              version = "1.1.2";
-              sha256 = "sha256-6GO1f8SP4CE8yYl87/tm60FdGHqHsJA4c2B6UKVdpgM=";
-            }
-          ];
-      })
+              jebbs.plantuml
+            ]
+            ++ vscode-utils.extensionsFromVscodeMarketplace [
+              {
+                name = "mypy-type-checker";
+                publisher = "ms-python";
+                version = "2024.0.0";
+                sha256 = "sha256-o2qmz8tAC4MG/4DTBdM1JS5slsUrlub4fbDulU42Bgg=";
+              }
+              {
+                name = "autoflake-extension";
+                publisher = "mikoz";
+                version = "1.0.4";
+                sha256 = "sha256-CtsJGlGsMmEePKTBQIu7vX15SkfdJo8zREJgVyztNTY=";
+              }
+              {
+                name = "hadolint";
+                publisher = "exiasr";
+                version = "1.1.2";
+                sha256 = "sha256-6GO1f8SP4CE8yYl87/tm60FdGHqHsJA4c2B6UKVdpgM=";
+              }
+            ];
+        }
+      )
     ]);
 
   processes = {
