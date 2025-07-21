@@ -6,9 +6,11 @@ ARG DOCKER_REGISTRY
 FROM ${DOCKER_REGISTRY}/node:${NODE_IMAGE_VERSION} AS base
 WORKDIR /code
 # Copy dependencies separately and install them once
-RUN corepack enable
+RUN set -exu \
+  && corepack enable
 COPY package.json pnpm-lock.yaml ./
-RUN pnpm install --frozen-lockfile
+RUN set -exu \
+  && pnpm install --frozen-lockfile
 COPY ./ ./
 
 FROM base AS dev
@@ -16,7 +18,8 @@ CMD [ "pnpm", "dev" ]
 
 FROM base AS build
 ENV NODE_ENV=production
-RUN pnpm run build
+RUN set -exu \
+  && pnpm run build
 
 FROM ${DOCKER_REGISTRY}/nginx:${NGINX_IMAGE_VERSION} AS production
 # Set a timezone
