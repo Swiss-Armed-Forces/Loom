@@ -4,7 +4,7 @@ ARG PYTHON_IMAGE_VERSION="3.11.13-bookworm"
 ARG DOCKER_REGISTRY
 FROM ${DOCKER_REGISTRY}/python:${PYTHON_BUILDER_IMAGE_VERSION} AS builder-base
 
-RUN pip install --no-cache-dir poetry==1.8.3
+RUN set -exu && pip install --no-cache-dir poetry==1.8.3
 
 ENV POETRY_NO_INTERACTION=1 \
     POETRY_VIRTUALENVS_IN_PROJECT=1 \
@@ -21,10 +21,10 @@ FROM builder-base AS builder-dev
 # --no-directory: we reference common as directory dependency - don't make poetry check for that
 # poetry is run twice to support Docker layer caching - this way we don't always have to
 # re-install all internet dependencies when something in the source code changes
-RUN poetry install --no-root --no-directory --no-cache
+RUN set -exu && poetry install --no-root --no-directory --no-cache
 COPY common/ /code/common
 COPY worker/ /code/worker
-RUN poetry install --no-cache
+RUN set -exu && poetry install --no-cache
 
 FROM builder-base AS builder-prod
 # Install dependencies only (not the project itself or directory deps):
@@ -32,10 +32,10 @@ FROM builder-base AS builder-prod
 # --no-directory: we reference common as directory dependency - don't make poetry check for that
 # poetry is run twice to support Docker layer caching - this way we don't always have to
 # re-install all internet dependencies when something in the source code changest
-RUN poetry install --no-root --no-directory --no-cache --without dev,test
+RUN set -exu && poetry install --no-root --no-directory --no-cache --without dev,test
 COPY common/ /code/common
 COPY worker/ /code/worker
-RUN poetry install --no-cache --without dev,test
+RUN set -exu && poetry install --no-cache --without dev,test
 
 
 FROM ${DOCKER_REGISTRY}/python:${PYTHON_IMAGE_VERSION} AS runtime-base
@@ -50,7 +50,8 @@ ARG BINWALK_VERSION="2.3.*"
 ARG CABEXTRACT_VERSION="1.9-*"
 
 # install deps
-RUN apt-get update \
+RUN set -exu \
+    && apt-get update \
     && apt-get install -y --no-install-recommends \
     imagemagick=${IMAGEMAGICK_VERSION} \
     ghostscript=${GHOSTSCRIPT_VERSION} \
@@ -63,7 +64,7 @@ RUN apt-get update \
 
 # Set timezone and permit Celery uid 0 to hide deserialisation warnings
 ENV TZ=UTC C_FORCE_ROOT=true
-RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+RUN set -exu && ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
 COPY ./worker/imagemagic-policy.xml /etc/ImageMagick-6/policy.xml
 

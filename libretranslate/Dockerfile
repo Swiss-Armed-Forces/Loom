@@ -8,7 +8,8 @@ RUN set -exu && \
     for patch in /tmp/patches/*.patch; do [ -f "$patch" ] && patch -p1 < "${patch}"; done && \
     rm -rf /tmp/patches
 
-RUN scripts/install_models.py
+RUN set -exu \
+    && scripts/install_models.py
 
 # Install GUNICORN
 ARG GUNICORN_VERSION=22.0.0
