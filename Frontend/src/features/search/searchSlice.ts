@@ -137,8 +137,8 @@ export const updateQuery = createAsyncThunk(
             sortField: query.sortField ?? lastQuery?.sortField ?? null,
             sortDirection:
                 query.sortDirection ?? lastQuery?.sortDirection ?? null,
-            sortId: query.sortId ?? lastQuery?.sortId ?? null,
-            pageSize: query.pageSize ?? lastQuery?.pageSize ?? null,
+            sortId: query.sortId ?? null,
+            pageSize: query.pageSize ?? null,
         };
         const queryIdChanged = lastQuery?.id !== queryId;
 
