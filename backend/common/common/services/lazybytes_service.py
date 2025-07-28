@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 from contextlib import contextmanager
 from datetime import datetime, timedelta
 from io import SEEK_END, BytesIO
+from math import ceil
 from mmap import PROT_READ, mmap
 from tempfile import SpooledTemporaryFile, TemporaryFile
 from typing import IO, Any, BinaryIO, Generator
@@ -187,6 +188,7 @@ class LazyBytesService(ABC):
 class GridFSLazyBytesService(LazyBytesService):
     def __init__(self, database: Database):
         super().__init__()
+        self._database = database
         self._bucket = GridFSBucket(database)
 
     def _store(self, data: IO) -> Any:
@@ -209,11 +211,28 @@ class GridFSLazyBytesService(LazyBytesService):
             yield from chunked_iterator_for_stream(stream)
 
     def flush(self):
-        one_minute_ago = datetime.now() - timedelta(minutes=1)
+        # Deletes lazybytes assuming they are no longer used because it's only
+        # only called once the system is idle.
+        # To prevent deleting of incomplete uploads we check if the number of
+        # chunks is what we expect.
+        # If a file is older than one hour it is deleted regardless.
+        now = datetime.now()
+        one_minute_ago = now - timedelta(minutes=1)
+        one_hour_ago = now - timedelta(hours=1)
         query = {"uploadDate": {"$lt": one_minute_ago}}
         files_to_delete = self._bucket.find(query)
         for file in files_to_delete:
-            self._bucket.delete(file._id)  # pylint: disable=protected-access
+            if file.length > file.chunk_size and file.upload_date > one_hour_ago:
+                file_id = file._id  # pylint: disable=protected-access
+                expected_chunks = ceil(file.length / file.chunk_size)
+                actual_chunks = self._database.fs.chunks.count_documents(
+                    {"files_id": file_id}
+                )
+
+                if actual_chunks < expected_chunks:
+                    continue
+
+            self._bucket.delete(file_id)
 
 
 class InMemoryLazyBytesService(LazyBytesService):
