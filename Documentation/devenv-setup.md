@@ -36,8 +36,9 @@
    - Don't forget to hook direnv into your shell [instructions](https://direnv.net/docs/hook.html)
    - **Optional:** Open file `/etc/nix/nix.conf` and add `allowed-users = root [NAME_OF_YOUR_USER]`
    - Allow direnv to run in the loom directory: `cd loom/ && direnv allow`
-7. Start devenv: `cd loom/ && devenv up`
-   - k8s will ask to insert the user account password (Press on the yellow triangle)
+7. Start the development environment:
+   - Loom: `cd loom/ && up --development`
+   - VS Code: `cd loom/ && code .`
 
 ## Setup verification
 

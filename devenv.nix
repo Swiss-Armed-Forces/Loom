@@ -213,31 +213,6 @@ in
       )
     ]);
 
-  processes = {
-    k8s-setup = {
-      exec = "./up.sh --setup";
-      process-compose = {
-        is_elevated = true;
-      };
-    };
-
-    k8s = {
-      exec = "./up.sh --development";
-      process-compose = {
-        depends_on.k8s-setup.condition = "process_completed_successfully";
-      };
-    };
-
-    ide = {
-      exec = "code --wait '${config.devenv.root}'";
-      process-compose = {
-        availability = {
-          restart = "always";
-        };
-      };
-    };
-  };
-
   # Disable cachix because cachix might cause
   # instabilities when fetching tarball for
   # nixpkgs-unstable

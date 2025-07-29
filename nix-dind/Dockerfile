@@ -23,7 +23,7 @@ SHELL ["/bin/bash", "--login", "-c"]
 #
 # Sudo
 #
-ARG SUDO_VERSION="1.9.17_p1-r0"
+ARG SUDO_VERSION="1.9.17_p2-r0"
 RUN set -exu \
     && apk add --no-cache \
     sudo=${SUDO_VERSION}
