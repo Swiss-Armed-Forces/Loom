@@ -10,5 +10,4 @@ RUN set -exu \
     && ln -snf /usr/share/zoneinfo/$TZ /etc/localtime \
     && echo $TZ > /etc/timezone
 
-COPY --chown=rabbitmq:rabbitmq advanced.config /etc/rabbitmq/advanced.config
 COPY --chown=rabbitmq:rabbitmq enabled_plugins /etc/rabbitmq/enabled_plugins

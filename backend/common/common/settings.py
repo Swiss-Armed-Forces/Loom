@@ -57,6 +57,8 @@ class Settings(BaseSettings):
     imap_password: str = "pass"
     imap_directory: str = "INBOX"
 
+    task_time_limit__seconds: int = 3600
+
     llm_embedding_dimensions: int = (
         # Note: 4096 is largest vector supported by ElasticSearch
         768  # -> nomic-embed-text:v1.5

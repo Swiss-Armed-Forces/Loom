@@ -28,6 +28,7 @@ egress:
   enabled: false
 
 pipeline:
+  taskTimeLimitSeconds: 3600
   skip_summarize_while_indexing: false
   skip_translate_while_indexing: false
   tika_ocr_languages:

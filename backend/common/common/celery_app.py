@@ -169,6 +169,12 @@ def init_celery_app() -> Celery:
     # a few tasks.
     app.conf.worker_prefetch_multiplier = 1
 
+    # We do set only the soft time limit here, for a hard time limit we use
+    # RabbitMQ consumer_timeout to rely on the task being re-delived to a different
+    # worker.
+    app.conf.task_soft_time_limit = settings.task_time_limit__seconds
+    app.conf.task_time_limit = None
+
     app.conf.task_acks_late = True
     app.conf.task_track_started = True
     app.conf.task_send_sent_event = True
