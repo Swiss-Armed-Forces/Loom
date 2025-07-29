@@ -24,6 +24,9 @@ data:
     DOMAIN: {{ .Values.domain }}
 
     # pipeline
+    {{- if .Values.pipeline.taskTimeLimitSeconds }}
+    task_time_limit__seconds: {{ .Values.pipeline.taskTimeLimitSeconds | quote }}
+    {{- end }}
     {{- if .Values.pipeline.skip_summarize_while_indexing }}
     skip_summarize_while_indexing: {{ .Values.pipeline.skip_summarize_while_indexing | quote }}
     {{- end }}
