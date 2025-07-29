@@ -30,3 +30,12 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry.scripts]
 wipe_data = "utils.wipe_data:wipe_data"
+
+
+#
+# Modules with missing type stubs
+#
+
+[[tool.mypy.overrides]]
+module = "requests_toolbelt.*"
+ignore_missing_imports = true

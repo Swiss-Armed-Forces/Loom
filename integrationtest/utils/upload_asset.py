@@ -1,6 +1,6 @@
 from hashlib import sha256
 from io import BytesIO
-from typing import Optional
+from typing import Any, Optional
 
 import requests
 from api.routers.files import FileUploadResponse
@@ -91,16 +91,15 @@ def upload_bytes_asset(
     if not upload_file_name:
         upload_file_name = sha256(bytes_to_upload).hexdigest()
 
+    files: dict[str, Any] = {
+        "file": (upload_file_name, BytesIO(bytes_to_upload)),
+        "action": (None, "store"),
+        "path": (None, "/path1"),
+    }
+
     api_response: Response = requests.post(
         f"{FILES_ENDPOINT}/",
-        files={
-            "file": (
-                upload_file_name,
-                BytesIO(bytes_to_upload),
-            ),
-            "action": (None, "store"),
-            "path": (None, "/path1"),
-        },
+        files=files,
         timeout=request_timeout,
     )
     api_response.raise_for_status()
