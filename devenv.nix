@@ -20,6 +20,165 @@ let
     locales = [ "${use-locale}/UTF-8" ];
   };
 
+  # Python subdirectories
+  pythonSubdirs = [
+    "backend/api"
+    "backend/common"
+    "backend/crawler"
+    "backend/worker"
+    "integrationtest"
+  ];
+
+  # JavaScript/TypeScript subdirectories
+  jsSubdirs = [
+    "Frontend"
+  ];
+
+  # Helm subdirectories
+  helmSubdirs = [
+    "charts"
+  ];
+
+  # Helper function to create a wrapper script that handles relative paths and additional args
+  createToolWrapper =
+    toolPath: subdir: subdirName: additionalArgs:
+    builtins.toString (
+      pkgs.writeShellScript "tool-wrapper-${subdirName}" ''
+        cd "${subdir}"
+
+        # Convert all file paths to relative paths and process in one call
+        relative_files=()
+        for file in "''${@}"; do
+          # Check if file is actually in the subdir
+          if [[ "''${file}" == "${subdir}"* ]]; then
+            relative_files+=("''${file#${subdir}/}")
+          else
+             >&2 echo "Warning: Skipping file outside ${subdir}: ''${file}"
+          fi
+        done
+
+        if [ ''${#relative_files[@]} -gt 0 ]; then
+          "${toolPath}" ${additionalArgs} "''${relative_files[@]}"
+        fi
+      ''
+    );
+
+  # Generate hooks for each subdirectory
+  createPythonHooksForSubdir =
+    subdir:
+    let
+      subdirName = builtins.replaceStrings [ "/" ] [ "-" ] subdir;
+      top_pyproject_toml = "${config.devenv.root}/pyproject.toml";
+      top_flake8 = "${config.devenv.root}/.flake8";
+      top_pylintrc = "${config.devenv.root}/.pylintrc";
+    in
+    {
+      "isort::${subdirName}" = {
+        enable = true;
+        entry =
+          createToolWrapper "isort" subdir subdirName
+            "--config-root '${config.devenv.root}' --resolve-all-configs";
+        files = "^${subdir}/.*\\.py$";
+      };
+
+      "autoflake::${subdirName}" = {
+        enable = true;
+        entry = createToolWrapper "autoflake" subdir subdirName "--config '${top_pyproject_toml}'";
+        files = "^${subdir}/.*\\.py$";
+      };
+
+      "docormatter::${subdirName}" = {
+        enable = true;
+        entry = createToolWrapper "docformatter" subdir subdirName "--config '${top_pyproject_toml}'";
+        files = "^${subdir}/.*\\.py$";
+      };
+
+      "black::${subdirName}" = {
+        enable = true;
+        entry = createToolWrapper "black" subdir subdirName "--config '${top_pyproject_toml}' --preview";
+        files = "^${subdir}/.*\\.py$";
+      };
+
+      "flake8::${subdirName}" = {
+        enable = true;
+        entry = createToolWrapper "flake8" subdir subdirName "--config '${top_flake8}'";
+        files = "^${subdir}/.*\\.py$";
+      };
+
+      "pylint::${subdirName}" = {
+        enable = true;
+        entry = createToolWrapper "pylint" subdir subdirName "--rcfile '${top_pylintrc}'";
+        files = "^${subdir}/.*\\.py$";
+      };
+
+      "mypy::${subdirName}" = {
+        enable = true;
+        entry = createToolWrapper "mypy" subdir subdirName "";
+        files = "^${subdir}/.*\\.py$";
+        excludes = [ "^${subdir}/tests/.*\\.py$" ];
+        # mypy must be run in serial, otherwise we hit the
+        # following issue:
+        # - https://github.com/python/mypy/issues/14521
+        require_serial = true;
+      };
+    };
+
+  createJsHooksForSubdir =
+    subdir:
+    let
+      subdirName = builtins.replaceStrings [ "/" ] [ "-" ] subdir;
+    in
+    {
+      "eslint::${subdirName}" = {
+        enable = true;
+        entry = createToolWrapper "eslint" subdir subdirName "--max-warning 0 --fix ./.";
+        files = "^${subdir}/.*$";
+        pass_filenames = false;
+      };
+
+      "prettier::${subdirName}" = {
+        enable = true;
+        entry = createToolWrapper "prettier" subdir subdirName "--write ./.";
+        files = "^${subdir}/.*$";
+        pass_filenames = false;
+      };
+
+      "tsc::${subdirName}" = {
+        enable = true;
+        entry = createToolWrapper "tsc" subdir subdirName "--noEmit";
+        files = "^${subdir}/.*$";
+        pass_filenames = false;
+      };
+
+      "vite-build::${subdirName}" = {
+        enable = true;
+        entry = createToolWrapper "vite" subdir subdirName "build";
+        files = "^${subdir}/.*$";
+        pass_filenames = false;
+      };
+    };
+
+  createHelmHooksForSubdir =
+    subdir:
+    let
+      subdirName = builtins.replaceStrings [ "/" ] [ "-" ] subdir;
+    in
+    {
+      "helm-lint::${subdirName}" = {
+        enable = true;
+        entry = createToolWrapper "helm" subdir subdirName "lint ./.";
+        files = "^${subdir}/.*$";
+        pass_filenames = false;
+      };
+    };
+
+  # Merge all hooks
+  pythonHooks = builtins.foldl' (
+    acc: subdir: acc // (createPythonHooksForSubdir subdir)
+  ) { } pythonSubdirs;
+  jsHooks = builtins.foldl' (acc: subdir: acc // (createJsHooksForSubdir subdir)) { } jsSubdirs;
+  helmHooks = builtins.foldl' (acc: subdir: acc // (createHelmHooksForSubdir subdir)) { } helmSubdirs;
+
   cicd-config = builtins.path { path = ./nix-dind/devenv.local.nix; };
 in
 {
@@ -265,70 +424,61 @@ in
   languages.typescript.enable = true;
 
   # https://devenv.sh/git-hooks/
-  git-hooks.hooks = {
-    ai-commit-message = {
-      enable = true;
-      stages = [
-        "prepare-commit-msg"
-      ];
+  git-hooks.hooks =
+    {
+      ai-commit-message = {
+        enable = true;
+        stages = [
+          "prepare-commit-msg"
+        ];
 
-      # The name of the hook (appears on the report table):
-      name = "AI commit message";
+        # The name of the hook (appears on the report table):
+        name = "AI commit message";
 
-      # The command to execute (mandatory):
-      # Note: we have to poetry run here so that the script
-      # has access to poetry installed dependencies
-      entry = "poetry run ./cicd/ai_commit_message.py";
+        # The command to execute (mandatory):
+        # Note: we have to poetry run here so that the script
+        # has access to poetry installed dependencies
+        entry = "poetry run ./cicd/ai_commit_message.py";
 
-      # The language of the hook - tells pre-commit
-      # how to install the hook (default: "system")
-      # see also https://pre-commit.com/#supported-languages
-      #language = "python";
+        # The language of the hook - tells pre-commit
+        # how to install the hook (default: "system")
+        # see also https://pre-commit.com/#supported-languages
+        #language = "python";
 
-      # verbose = true;
-    };
-
-    trim-trailing-whitespace.enable = true;
-
-    #isort.enable = true;
-    autoflake.enable = true;
-    # missing: docformatter
-    black.enable = true;
-    flake8.enable = true;
-    #pylint = {
-    #  enable = true;
-    #  entry = "pylint --rcfile .pylintrc";
-    #};
-    #mypy = {
-    #  enable = true;
-    #  entry = "mypy --exclude 'tests/*'";
-    #};
-    nixfmt-rfc-style.enable = true;
-
-    shellcheck.enable = true;
-
-    hadolint.enable = true;
-
-    markdownlint.enable = true;
-    markdownlint.settings.configuration = {
-      MD013 = {
-        line_length = 120;
-        tables = false;
+        # verbose = true;
       };
-    };
 
-    eslint.enable = true;
+      trim-trailing-whitespace.enable = true;
 
-    yamllint = {
-      enable = true;
-      settings.configuration = ''
-        ignore: |
-          pnpm-lock.yaml
-          charts/templates/**
-          charts/charts/**
-      '';
-    };
-  };
+      nixfmt-rfc-style.enable = true;
+
+      shellcheck.enable = true;
+
+      hadolint.enable = true;
+
+      markdownlint = {
+        enable = true;
+        settings.configuration = {
+          MD013 = {
+            line_length = 120;
+            tables = false;
+          };
+        };
+      };
+
+      yamllint = {
+        enable = true;
+        settings.configuration = ''
+          ignore: |
+            pnpm-lock.yaml
+            charts/templates/**
+            charts/charts/**
+        '';
+      };
+    }
+    // pythonHooks
+    // jsHooks
+    // helmHooks;
 
   dotenv = {
     enable = true;

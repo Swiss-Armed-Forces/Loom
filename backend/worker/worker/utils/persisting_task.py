@@ -1,4 +1,4 @@
-from typing import Callable, Concatenate, ParamSpec, Type
+from typing import Any, Callable, Concatenate, ParamSpec, Type
 
 from celery import Celery
 from common.models.base_repository import BaseRepository
@@ -77,7 +77,7 @@ def persisting_task(
                 return get_task_object_repository()
 
             @persisting_cache_decorator(persist_fcn)
-            def run(self, *args, **kwargs):
+            def run(self, *args, **kwargs) -> Any:
                 passed_args = args[:-1]
                 obj: RepositoryTaskObjectT = args[-1]
                 with persister_type(obj.id_) as persister:

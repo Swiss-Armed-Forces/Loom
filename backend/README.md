@@ -10,7 +10,7 @@ The Loom REST api
 
 ## Crawler
 
-A crawler that watches a directory and schedules files for processing
+A crawler that watches locations and schedules files for processing.
 
 [more...](./crawler/README.md)
 
@@ -32,16 +32,16 @@ The dependencies on the individual packages are managed with [Poetry](https://py
 
 To add a package, call `poetry add some_package` in the directory of the package (e.g. backend/api).
 
-This will install the package in the virtual environment, add it to the `pyproject.toml` file and update the `poetry.lock` file.
+This will install the package in the virtual environment, add it to the `pyproject.toml`
+file and update the `poetry.lock` file.
 
-**IMPORTANT:** _When adding dependencies to `commmon`, it is required to call `poetry lock` in all the other packages that depend on `common`._
-
-This ensured that the `poetry.lock` file gets updated and all the correct packages will be installed.
+**IMPORTANT:** _When adding dependencies to `commmon`, it is required to call `poetry lock`
+in all the other packages that depend on `common`. The devenv utility: `poetry-lock`
+updates all lock files in all packages._
 
 ## Testing and linting
 
-All Python code in the backend needs to pass the unit and lint tests performed by the CI/CD pipeline. It is recommended run those checks locally first to avoid unncessary commits.
+All Python code in the backend needs to pass the unit and lint tests performed by the CI/CD pipeline.
+It is recommended run those checks locally first to avoid unncessary commits.
 
 Unit tests can be run locally by using the `backend-test` devenv script.
-
-![](https://imgs.xkcd.com/comics/code_quality.png "Obligatory XKCD reference")

@@ -283,6 +283,11 @@ linting:
   script:
     - devenv shell -- lint
 
+devenv_test:
+  stage: test
+  script:
+    - devenv test
+
 frontend_test:
   stage: test
   script:
