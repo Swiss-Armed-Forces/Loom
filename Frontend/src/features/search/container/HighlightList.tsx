@@ -84,17 +84,10 @@ const sortHighlightsByPriority = (
  * @param value the value to sanitise
  * @returns the value for use in the query
  */
-function sanitiseFieldValue(value: string | undefined): string | undefined {
-    return value?.replace(PATTERN_HIGHLIGHT_TAG, "")?.replace(/"/g, '\\"');
-}
-
-/**
- * ES does not allow certain characters in the field names to go unescaped.
- *
- * @param value the value to sanitise
- */
-function sanitiseFieldNameForQuery(value: string): string {
-    return value.replace(/([-\s\\:])/g, "\\$1");
+function removeHighlightsFromFieldValue(
+    value: string | undefined,
+): string | undefined {
+    return value?.replace(PATTERN_HIGHLIGHT_TAG, "");
 }
 
 interface HighlightEntryProps {
@@ -208,7 +201,10 @@ export const HighlightList: FC<HighlightListProps> = ({
     if (!highlights) return;
 
     const highlightValues: Record<string, string> = Object.entries(highlights)
-        .map(([field, value]) => [field, sanitiseFieldValue(value[0])])
+        .map(([field, value]) => [
+            field,
+            removeHighlightsFromFieldValue(value[0]),
+        ])
         .reduce(
             (previous, [field, value]) => ({
                 ...previous,
@@ -230,7 +226,7 @@ export const HighlightList: FC<HighlightListProps> = ({
         if (!contextField) return;
         const updatedQuery = updateFieldOfQuery(
             query?.query ?? "",
-            sanitiseFieldNameForQuery(contextField),
+            contextField,
             highlightValues[contextField] ?? "",
         );
         dispatch(

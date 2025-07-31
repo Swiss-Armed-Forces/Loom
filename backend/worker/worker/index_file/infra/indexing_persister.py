@@ -6,6 +6,7 @@ from common.file.file_repository import (
     File,
     LibretranslateTranslatedLanguage,
     LibreTranslateTranslations,
+    Tag,
 )
 from common.models.base_repository import BaseRepository
 from common.utils.object_id_str import ObjectIdStr
@@ -81,11 +82,11 @@ class IndexingPersister(PersisterBase[File]):
     def set_hidden_state_file(self, hidden: bool):
         self._object.hidden = hidden
 
-    def add_tag(self, tag: str):
+    def add_tag(self, tag: Tag):
         if tag not in self._object.tags:
             self._object.tags.append(tag)
 
-    def remove_tag(self, tag: str):
+    def remove_tag(self, tag: Tag):
         self._object.tags.remove(tag)
 
     def set_summary(self, summary: str):

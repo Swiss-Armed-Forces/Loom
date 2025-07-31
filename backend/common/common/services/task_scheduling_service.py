@@ -6,7 +6,7 @@ from celery import Celery
 
 from common.ai_context.ai_context_repository import AiContext
 from common.archive.archive_repository import Archive
-from common.file.file_repository import File
+from common.file.file_repository import File, Tag
 from common.services.lazybytes_service import LazyBytes
 from common.services.query_builder import QueryParameters
 from common.task_object.root_task_information_repository import (
@@ -135,7 +135,7 @@ class TaskSchedulingService:
             root_id=str(root_task_id),
         ).forget()
 
-    def dispatch_add_tags(self, query: QueryParameters, tags: list[str]):
+    def dispatch_add_tags(self, query: QueryParameters, tags: list[Tag]):
         root_task_id = uuid4()
         self._celery_app.send_task(
             "worker.index_file.add_tags_to_file_task.dispatch_add_tags_to_files",
@@ -143,7 +143,7 @@ class TaskSchedulingService:
             root_id=str(root_task_id),
         ).forget()
 
-    def add_tag_to_file_by_id(self, file_id: UUID, tags: list[str]):
+    def add_tag_to_file_by_id(self, file_id: UUID, tags: list[Tag]):
         root_task_id = uuid4()
         self._root_task_information_repository.save(
             RootTaskInformation(
@@ -166,7 +166,7 @@ class TaskSchedulingService:
             root_id=str(root_task_id),
         ).forget()
 
-    def remove_tag_from_file_by_id(self, file_id: UUID, tag: str):
+    def remove_tag_from_file_by_id(self, file_id: UUID, tag: Tag):
         root_task_id = uuid4()
         self._root_task_information_repository.save(
             RootTaskInformation(

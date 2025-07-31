@@ -1,5 +1,3 @@
-"""Fixtures for tests."""
-
 import pytest
 
 from common import dependencies

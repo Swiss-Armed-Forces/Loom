@@ -5,6 +5,7 @@ import logging
 import pytest
 import requests
 import websockets
+from common.file.file_repository import Tag
 from common.messages.messages import (
     MessageError,
     MessageFileUpdate,
@@ -24,7 +25,7 @@ from utils.upload_asset import upload_asset, upload_many_assets
 logger = logging.getLogger(__name__)
 
 
-def _add_tag(file_id: str, tag: str):
+def _add_tag(file_id: str, tag: Tag):
     response = requests.post(
         f"{FILES_ENDPOINT}/{file_id}/tags/{tag}",
         timeout=REQUEST_TIMEOUT,

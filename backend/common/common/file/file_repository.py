@@ -9,7 +9,7 @@ import re
 from datetime import datetime
 from json import JSONDecodeError
 from pathlib import PurePath
-from typing import Any, Callable, Generator, cast
+from typing import Annotated, Any, Callable, Generator, cast
 from urllib.error import URLError
 from uuid import UUID
 
@@ -32,7 +32,13 @@ from elasticsearch.dsl import (
 )
 from elasticsearch.dsl.response import Response
 from libretranslatepy import LibreTranslateAPI
-from pydantic import BaseModel, Field, computed_field, field_validator
+from pydantic import (
+    BaseModel,
+    Field,
+    StringConstraints,
+    computed_field,
+    field_validator,
+)
 
 from common.file.file_statistics import (
     StatisticsEntry,
@@ -118,6 +124,7 @@ FILE_SHORT_NAME_CONTENT_SUFFIX = ".content.txt"
 
 TAG_LEN_MIN = 1
 TAG_LEN_MAX = 25
+Tag = Annotated[str, StringConstraints(min_length=TAG_LEN_MIN, max_length=TAG_LEN_MAX)]
 
 
 class File(RepositoryTaskObject):
@@ -163,7 +170,7 @@ class File(RepositoryTaskObject):
     thumbnail_file_id: ObjectIdStr | None = None
     preview_file_id: ObjectIdStr | None = None
     exclude_from_archives: bool = False
-    tags: list[str] = []
+    tags: list[Tag] = []
     magic_file_type: str | None = None
     tika_language: str | None = None
     libretranslate_language: str | None = None
@@ -180,18 +187,7 @@ class File(RepositoryTaskObject):
 
     @field_validator("tags")
     @classmethod
-    def check_tag_len(cls, tags: list[str]) -> list[str]:
-        for tag in tags:
-            tag_len = len(tag)
-            if tag_len < TAG_LEN_MIN or tag_len > TAG_LEN_MAX:
-                raise ValueError(
-                    f"len('{tag}') must be {TAG_LEN_MIN} < {len(tag)} < {TAG_LEN_MAX}"
-                )
-        return tags
-
-    @field_validator("tags")
-    @classmethod
-    def unique_tags(cls, tags: list[str]) -> list[str]:
+    def unique_tags(cls, tags: list[Tag]) -> list[Tag]:
         return unique_list(tags)
 
     @field_validator("archives")

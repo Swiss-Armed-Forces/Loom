@@ -7,7 +7,7 @@ from uuid import UUID
 
 from bson import ObjectId
 
-from common.file.file_repository import File, FileNotFoundException, FileRepository
+from common.file.file_repository import File, FileNotFoundException, FileRepository, Tag
 from common.services.file_storage_service import FileStorageService
 from common.services.lazybytes_service import LazyBytes, LazyBytesService
 from common.services.task_scheduling_service import TaskSchedulingService
@@ -134,7 +134,7 @@ class FileSchedulingService:
         self._file_repository.update(file_to_hide, include={"state"})
         self._task_scheduling_service.set_hidden_state_by_id(file_id, hidden)
 
-    def add_tags(self, file_id: UUID, tags: list[str]):
+    def add_tags(self, file_id: UUID, tags: list[Tag]):
         # Add Tags to File
         file_to_add_tag = self._file_repository.get_by_id(file_id)
         if not file_to_add_tag:
@@ -143,7 +143,7 @@ class FileSchedulingService:
         self._file_repository.update(file_to_add_tag, include={"state"})
         self._task_scheduling_service.add_tag_to_file_by_id(file_id, tags)
 
-    def remove_tag(self, file_id: UUID, tag: str):
+    def remove_tag(self, file_id: UUID, tag: Tag):
         # Add Tags to File
         file_to_remove_tag = self._file_repository.get_by_id(file_id)
         if not file_to_remove_tag:

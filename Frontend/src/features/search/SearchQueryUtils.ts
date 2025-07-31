@@ -2,61 +2,44 @@ export const updateTagOfQuery = (
     previousQuery: string,
     newTag: string,
 ): string => {
-    return replaceSectionIfExists(previousQuery, "tags", newTag);
+    return updateFieldOfQuery(previousQuery, "tags", newTag);
 };
 
 export const updateWhenOfQuery = (
     previousQuery: string,
     newWhen: string,
 ): string => {
-    return replaceSectionIfExists(previousQuery, "when", newWhen);
+    return updateFieldOfQuery(previousQuery, "when", newWhen);
 };
 
 export const updateFilenameOfQuery = (
     previousQuery: string,
     newFilename: string,
 ): string => {
-    return replaceSectionIfExists(
-        previousQuery,
-        "filename",
-        `"${newFilename.replaceAll('"', '\\"')}"`,
-    );
+    return updateFieldOfQuery(previousQuery, "filename", newFilename);
 };
 
 export const updateFileExtensionOfQuery = (
     previousQuery: string,
     newFileExtension: string,
 ): string => {
-    return replaceSectionIfExists(previousQuery, "extension", newFileExtension);
+    return updateFieldOfQuery(previousQuery, "extension", newFileExtension);
 };
 
 export const updateFieldOfQuery = (
     previousQuery: string,
-    newFieldName: string,
-    newFieldValue: string,
+    fieldName: string,
+    fieldValue: string,
 ): string => {
-    return replaceSectionIfExists(
-        previousQuery,
-        newFieldName,
-        `"${newFieldValue}"`,
+    const newFieldNameSanitized = fieldName.replace(/([-\s\\:])/g, "\\$1");
+    const newFieldValueSanitized = fieldValue.replace(/(["\\])/g, "\\$1");
+    const fieldRegex = new RegExp(
+        `${newFieldNameSanitized}:"(?:[^"\\\\]|\\\\.)*"`,
     );
-};
-
-export const replaceSectionIfExists = (
-    query: string,
-    sectionName: string,
-    newValue: string,
-) => {
-    let resultQuery: string;
-    const sectionPrefix = `${sectionName}:`;
-    const newSectionBlock = sectionPrefix + newValue;
-    if (query.includes(sectionPrefix)) {
-        resultQuery = query.replace(
-            new RegExp(sectionPrefix + "((\\(.+\\))|([^ ]*))"),
-            newSectionBlock,
-        );
-    } else {
-        resultQuery = `${query} ${newSectionBlock}`;
-    }
-    return resultQuery.trim();
+    const previousQueryReplaced = previousQuery.replace(fieldRegex, "").trim();
+    return (
+        previousQueryReplaced +
+        (previousQueryReplaced.length > 0 ? " " : "") +
+        `${newFieldNameSanitized}:"${newFieldValueSanitized}"`
+    );
 };

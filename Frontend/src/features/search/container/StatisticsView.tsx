@@ -30,7 +30,6 @@ import styles from "./StatisticsView.module.css";
 import { Equalizer, Numbers, StackedLineChart } from "@mui/icons-material";
 import { useTranslation } from "react-i18next";
 import { formatFileSize } from "../util";
-import { replaceSectionIfExists } from "../SearchQueryUtils";
 import { toast } from "react-toastify";
 import { Chart } from "./Chart";
 import InputLabel from "@mui/material/InputLabel";
@@ -41,6 +40,7 @@ import { AppDispatch } from "../../../app/store.ts";
 import { getStatSummary, getStatGeneric, Stat } from "../../../app/api";
 import { TagsList } from "../../common/components/tags/TagsList.tsx";
 import { EmptySearchResults } from "../components/EmptySearchResults.tsx";
+import { updateFieldOfQuery } from "../SearchQueryUtils.ts";
 
 const PIE_AMOUNT = 5;
 
@@ -98,7 +98,7 @@ export function StatisticsView() {
     }, [searchQuery, displayStat]); // eslint-disable-line react-hooks/exhaustive-deps
 
     const handleUpdateQuery = (queryKeyword: string, searchTerm: string) => {
-        const newQuery = replaceSectionIfExists(
+        const newQuery = updateFieldOfQuery(
             searchQuery?.query ?? "",
             queryKeyword,
             searchTerm,

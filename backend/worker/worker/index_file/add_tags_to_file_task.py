@@ -7,6 +7,7 @@ from common.dependencies import (
     get_file_repository,
     get_file_scheduling_service,
 )
+from common.file.file_repository import Tag
 from common.services.query_builder import QueryParameters
 
 from worker.index_file.infra.file_indexing_task import FileIndexingTask
@@ -26,7 +27,7 @@ app = get_celery_app()
 @app.task()
 def dispatch_add_tags_to_files(
     query: QueryParameters,
-    tags: list[str],
+    tags: list[Tag],
 ):
     logger.info("dispatch add tags tasks for tags %s and query: '%s'", tags, query)
     for file in get_file_repository().get_id_generator_by_query(query=query):
@@ -36,14 +37,14 @@ def dispatch_add_tags_to_files(
 @app.task()
 def dispatch_add_tags_to_file(
     file_id: UUID,
-    tags: list[str],
+    tags: list[Tag],
 ):
     logger.info("dispatch add tags tasks for tags %s and id: '%s'", tags, file_id)
     get_file_scheduling_service().add_tags(file_id=file_id, tags=tags)
 
 
 @app.task(base=FileIndexingTask)
-def add_tags_to_file_task(file_id: UUID, tags: list[str]):
+def add_tags_to_file_task(file_id: UUID, tags: list[Tag]):
     logger.info("adding tag to file with id '%s'", file_id)
     file = get_file_repository().get_by_id(file_id)
     if file is None:

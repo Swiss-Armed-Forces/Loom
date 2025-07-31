@@ -5,6 +5,7 @@ from pathlib import PurePath
 from unittest.mock import MagicMock
 from uuid import uuid4
 
+import pytest
 from bson import ObjectId
 from common.dependencies import (
     get_file_repository,
@@ -13,7 +14,7 @@ from common.dependencies import (
     get_lazybytes_service,
     get_task_scheduling_service,
 )
-from common.file.file_repository import File, Stat
+from common.file.file_repository import TAG_LEN_MAX, TAG_LEN_MIN, File, Stat
 from common.file.file_statistics import (
     StatisticsEntry,
     StatisticsGeneric,
@@ -169,7 +170,31 @@ def test_update_hidden_state_files_by_query(client: TestClient):
     )
 
 
-def test_add_tag(client: TestClient):
+VALID_TAG_NAMES = [
+    "tag",
+    "tag123",
+    'Tag with Quote"',
+    "tag with spaces",
+    "Tag with spaces",
+    "tag-with-dash",
+    "Tag-with-dash",
+    "tag_with_underscore",
+    "Tag_with_underscore",
+    "Tag with umlaut äöü",
+    "Tag with special @#$%",
+    "1234567890",
+    "Tag with backslash \\",
+    "Tag with unicode 💩",
+    "X" * (TAG_LEN_MAX),
+    "X" * (TAG_LEN_MIN),
+]
+
+
+@pytest.mark.parametrize(
+    "tag_name",
+    VALID_TAG_NAMES,
+)
+def test_add_valid_tag(client: TestClient, tag_name: str):
     file = File(
         full_name=PurePath("/path/to/file.txt"),
         storage_id=str(ObjectId()),
@@ -177,13 +202,37 @@ def test_add_tag(client: TestClient):
         sha256="",
         size=0,
     )
-    tag = "testtag"
     get_file_repository().get_by_id.return_value = file
 
-    response = client.post(f"/v1/files/{file.id_}/tags/{tag}")
+    response = client.post(f"/v1/files/{file.id_}/tags/{tag_name}")
 
     assert response.status_code == 200
     get_file_repository().update.assert_called_once_with(file, include={"tags"})
+
+
+INVALID_TAG_NAMES = [
+    "X" * (TAG_LEN_MAX + 1),  # too long
+]
+
+
+@pytest.mark.parametrize(
+    "tag_name",
+    INVALID_TAG_NAMES,
+)
+def test_add_invalid_tag(client: TestClient, tag_name: str):
+    file = File(
+        full_name=PurePath("/path/to/file.txt"),
+        storage_id=str(ObjectId()),
+        source="test",
+        sha256="",
+        size=0,
+    )
+    get_file_repository().get_by_id.return_value = file
+
+    response = client.post(f"/v1/files/{file.id_}/tags/{tag_name}")
+
+    assert response.status_code == 422
+    get_file_repository().update.assert_not_called()
 
 
 def test_delete_tag(client: TestClient):

@@ -15,13 +15,12 @@ export function ClickableFilePath({ fullPath }: ClickableFilePathProps) {
     const fullPathPartsExtended = fullPathParts.map((part, idx) => {
         const isLast = idx === fullPathParts.length - 1;
         const trailingSymbol = isLast ? "" : "/";
-        const trailingAsterisk = "*";
 
         return {
             part: `${part}${trailingSymbol}`,
             pathToPart: `//${fullPathParts
                 .filter((_, innerIdx) => innerIdx <= idx)
-                .join("/")}${trailingAsterisk}`,
+                .join("/")}`,
         };
     });
 

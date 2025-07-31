@@ -100,7 +100,7 @@ export const ResultCard = forwardRef<HTMLDivElement, ResultCardProps>(
                 updateQuery({
                     query: updateFileExtensionOfQuery(
                         searchQuery?.query ?? "",
-                        `"${extension}"`,
+                        extension,
                     ),
                 }),
             );
