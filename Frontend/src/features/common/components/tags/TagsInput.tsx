@@ -18,7 +18,11 @@ import { useAppDispatch, useAppSelector } from "../../../../app/hooks.ts";
 import { selectQuery, selectTags } from "../../../search/searchSlice.ts";
 import LabelIcon from "@mui/icons-material/Label";
 import { setBackgroundTaskSpinnerActive } from "../../commonSlice.ts";
-import { addTagToFile, addTagsToFiles } from "../../../../app/api";
+import {
+    ResponseError,
+    addTagToFile,
+    addTagsToFiles,
+} from "../../../../app/api";
 interface TagsInputProps {
     tagsAlreadyAssignedToFile?: string[];
     file_id?: string;
@@ -55,10 +59,17 @@ export function TagsInput({
                 await addTagsToFiles(searchQuery, selectedTagsToAdd);
             }
             toast.success(t("tags.scheduledToast"));
-        } catch (err) {
+        } catch (error: any) {
+            let errorDetail = "";
+            if (error instanceof ResponseError) {
+                const errorData = await error.response.json();
+                errorDetail = errorData?.detail ?? JSON.stringify(errorData);
+            } else {
+                errorDetail = error.toString();
+            }
             toast.error(
                 t("tags.scheduledErrorToast", {
-                    err: err,
+                    err: errorDetail,
                 }),
             );
         } finally {
@@ -72,14 +83,6 @@ export function TagsInput({
             return;
         }
         setShowAddTagDialog(false);
-    };
-
-    const addTagsToAdd = (newTags: string[]) => {
-        const tags = newTags.map((t) =>
-            /* filter out characters with semantic meaning within ES query */
-            t.replaceAll(/[ ()\\:]/g, "-"),
-        );
-        setSelectedTagsToAdd(tags);
     };
 
     return (
@@ -132,7 +135,7 @@ export function TagsInput({
                         freeSolo
                         multiple
                         options={existingTags}
-                        onChange={(_e, value) => addTagsToAdd(value)}
+                        onChange={(_e, value) => setSelectedTagsToAdd(value)}
                         getOptionDisabled={(option) => {
                             if (!tagsAlreadyAssignedToFile) return false;
                             return (
@@ -154,6 +157,7 @@ export function TagsInput({
                         startIcon={<Close />}
                         variant="outlined"
                         color="secondary"
+                        tabIndex={2}
                         onClick={() => {
                             setShowAddTagDialog(false);
                         }}
@@ -166,6 +170,7 @@ export function TagsInput({
                         color="primary"
                         variant="contained"
                         startIcon={<LabelOutlined />}
+                        tabIndex={1}
                     >
                         {t("tags.tagDialogSubmit")}
                     </Button>

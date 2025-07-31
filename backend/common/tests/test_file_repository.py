@@ -1,9 +1,17 @@
 from unittest.mock import MagicMock, call, patch
 
+import pytest
 from elasticsearch.dsl import Search
 from elasticsearch.dsl.response import Response
+from pydantic import RootModel
 
-from common.file.file_repository import FileRepository, Stat
+from common.file.file_repository import (
+    TAG_LEN_MAX,
+    TAG_LEN_MIN,
+    FileRepository,
+    Stat,
+    Tag,
+)
 from common.file.file_statistics import StatisticsEntry
 from common.services.query_builder import QueryParameters
 
@@ -107,3 +115,53 @@ def test_get_stat_summary():
         assert stats.min_file_size == 128
         assert stats.max_file_size == 256
         assert stats.avg_file_size == 192
+
+
+TestTagType = RootModel[Tag]
+
+VALID_TAG_NAMES = [
+    "tag",
+    "tag123",
+    'Tag with Quote"',
+    "tag with spaces",
+    "Tag with spaces",
+    "tag-with-dash",
+    "Tag-with-dash",
+    "tag_with_underscore",
+    "Tag_with_underscore",
+    "Tag with umlaut äöü",
+    "Tag with special @#$%",
+    "1234567890",
+    "Tag with backslash \\",
+    "Tag with unicode 💩",
+    "X" * (TAG_LEN_MAX),
+    "X" * (TAG_LEN_MIN),
+]
+
+
+@pytest.mark.parametrize(
+    "tag_name",
+    VALID_TAG_NAMES,
+)
+def test_valid_tag_names(tag_name: str):
+    tag = TestTagType(tag_name)
+    assert tag.root == tag_name
+
+
+INVALID_TAG_NAMES = [
+    123,  # not a string
+    {},  # not a string
+    "",  # empty
+    "X" * (TAG_LEN_MAX + 1),  # too long
+    "X" * (TAG_LEN_MIN - 1),  # too short
+]
+
+
+@pytest.mark.parametrize(
+    "tag_name",
+    INVALID_TAG_NAMES,
+)
+def test_invalid_tag_names(tag_name: str):
+    # Test with empty tag name
+    with pytest.raises(ValueError):
+        TestTagType(tag_name)

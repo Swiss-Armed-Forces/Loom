@@ -5,7 +5,7 @@ from common.dependencies import (
     get_file_scheduling_service,
     get_task_scheduling_service,
 )
-from common.file.file_repository import FileRepository
+from common.file.file_repository import FileRepository, Tag
 from common.services.query_builder import QueryParameters
 from common.services.task_scheduling_service import TaskSchedulingService
 from fastapi import APIRouter, Depends
@@ -26,7 +26,7 @@ AllTags = list[str]
 class AddTagRequest(BaseModel):
     """List of new Tags and a Query to filter files."""
 
-    tags: list[str]
+    tags: list[Tag]
     query: QueryParameters
 
 

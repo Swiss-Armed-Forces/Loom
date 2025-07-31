@@ -1,7 +1,7 @@
 import pytest
 import requests
 from api.routers.tags import AddTagRequest, AllTags
-from common.file.file_repository import TAG_LEN_MAX
+from common.file.file_repository import TAG_LEN_MAX, Tag
 from common.services.query_builder import QueryParameters
 
 from utils.consts import FILES_ENDPOINT, REQUEST_TIMEOUT, TAGS_ENDPOINT
@@ -13,7 +13,7 @@ from utils.fetch_from_api import (
 from utils.upload_asset import upload_asset, upload_many_assets
 
 
-def _add_tag(file_id: str, tag: str):
+def _add_tag(file_id: str, tag: Tag):
     response = requests.post(
         f"{FILES_ENDPOINT}/{file_id}/tags/{tag}",
         timeout=REQUEST_TIMEOUT,
@@ -30,7 +30,7 @@ def _add_tags(set_tag_request: AddTagRequest):
     response.raise_for_status()
 
 
-def _delete_tag(file_id: str, tag: str):
+def _delete_tag(file_id: str, tag: Tag):
     response = requests.delete(
         f"{FILES_ENDPOINT}/{file_id}/tags/{tag}", timeout=REQUEST_TIMEOUT
     )
@@ -72,14 +72,14 @@ def test_add_tag():
 
 
 def test_add_tag_by_query():
-    tag_name = "test"
+    tag = "test"
     assets = ["basic_email.eml", "text.txt"]
 
     upload_many_assets(assets)
     fetch_files_from_api("*", expected_no_of_files=len(assets))
 
     set_tag_request = AddTagRequest(
-        tags=[tag_name],
+        tags=[tag],
         query=QueryParameters(search_string="*", query_id=fetch_query_id()),
     )
     _add_tags(set_tag_request)
@@ -90,7 +90,7 @@ def test_add_tag_by_query():
 
     for file in assets:
         file_preview = get_file_preview_by_name(file)
-        assert tag_name in file_preview.tags
+        assert tag in file_preview.tags
 
 
 def test_add_tags_by_query():
@@ -140,14 +140,14 @@ def test_delete_tag():
 
 
 def test_delete_tags():
-    tag_name = "test"
+    tag = "test"
     assets = ["basic_email.eml", "text.txt"]
 
     upload_many_assets(assets)
     fetch_files_from_api("*", expected_no_of_files=len(assets))
 
     set_tag_request = AddTagRequest(
-        tags=[tag_name],
+        tags=[tag],
         query=QueryParameters(search_string="*", query_id=fetch_query_id()),
     )
     _add_tags(set_tag_request)
@@ -156,7 +156,7 @@ def test_delete_tags():
         "tags:test", expected_no_of_files=len(assets), wait_for_celery_idle=True
     )
 
-    _delete_tags(tag_name)
+    _delete_tags(tag)
 
     fetch_files_from_api(
         "*", expected_no_of_files=len(assets), wait_for_celery_idle=True
@@ -164,7 +164,7 @@ def test_delete_tags():
 
     for file in assets:
         file_preview = get_file_preview_by_name(file)
-        assert tag_name not in file_preview.tags
+        assert tag not in file_preview.tags
 
 
 def test_add_tag_is_idempotent():
@@ -184,21 +184,19 @@ def test_add_tag_is_idempotent():
 
 
 @pytest.mark.parametrize(
-    "invalid_name",
+    "tag_with_invalid_name",
     [
         "X" * (TAG_LEN_MAX + 1),  # too long
     ],
 )
-def test_set_tag_fails_with_invalid_tag_name(invalid_name: str):
+def test_set_tag_fails_with_invalid_tag_name(tag_with_invalid_name: Tag):
     # Test with empty tag name
     upload_asset("basic_email.eml")
     file = get_file_preview_by_name("basic_email.eml")
 
-    tag_with_invalid_name = invalid_name
-
     with pytest.raises(requests.HTTPError) as exc_info:
         _add_tag(str(file.file_id), tag_with_invalid_name)
-    assert exc_info.value.response.status_code == 400
+    assert exc_info.value.response.status_code == 422
 
 
 def test_all_tags():

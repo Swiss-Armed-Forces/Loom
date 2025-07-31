@@ -14,6 +14,7 @@ from common.file.file_repository import (
     TREE_PATH_MAX_ELEMENT_COUNT,
     FileRepository,
     Stat,
+    Tag,
 )
 from common.file.file_scheduling_service import FileSchedulingService
 from common.models.es_repository import (
@@ -296,7 +297,7 @@ def get_file(
 
 class GetFilePreviewResponse(BaseModel):
     file_id: UUID
-    tags: list[str] = []
+    tags: list[Tag] = []
     hidden: bool
     content: str
     content_preview_is_truncated: bool
@@ -461,7 +462,7 @@ def download_text(
 @router.post("/{file_id}/tags/{tag_to_add}")
 def add_tag(
     file_id: UUID,
-    tag_to_add: str,
+    tag_to_add: Tag,
     file_repository: FileRepository = default_file_repository,
 ):
     """Add tag to file."""
@@ -480,7 +481,7 @@ def add_tag(
 @router.delete("/{file_id}/tags/{tag_to_remove}")
 def delete_tag(
     file_id: UUID,
-    tag_to_remove: str,
+    tag_to_remove: Tag,
     file_repository: FileRepository = default_file_repository,
 ):
     """Delete tag from file."""

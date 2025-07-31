@@ -13,7 +13,8 @@ ENDPOINT = "/v1/files/tags/"
 
 def test_add_tags(client: TestClient):
     set_tag_request = AddTagRequest(
-        tags=["test"], query=QueryParameters(query_id="0123456789", search_string="*")
+        tags=["test"],
+        query=QueryParameters(query_id="0123456789", search_string="*"),
     )
 
     get_file_repository().get_generator_by_query.return_value = [

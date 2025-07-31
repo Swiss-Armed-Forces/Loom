@@ -11,7 +11,7 @@ describe("SearchQueryUtils", () => {
         const result = updateTagOfQuery("*", "ui-uploaded");
 
         // assert
-        expect(result).toBe("* tags:ui-uploaded");
+        expect(result).toBe('* tags:"ui-uploaded"');
     });
 
     it("should updateTagOfQuery correctly with empty query", () => {
@@ -19,26 +19,26 @@ describe("SearchQueryUtils", () => {
         const result = updateTagOfQuery("", "ui-uploaded");
 
         // assert
-        expect(result).toBe("tags:ui-uploaded");
+        expect(result).toBe('tags:"ui-uploaded"');
     });
 
     it("should updateTagOfQuery correctly replace previous tag", () => {
         // act
-        const result = updateTagOfQuery("* tags:some-old-tag", "ui-uploaded");
+        const result = updateTagOfQuery('* tags:"some-old-tag"', "ui-uploaded");
 
         // assert
-        expect(result).toBe("* tags:ui-uploaded");
+        expect(result).toBe('* tags:"ui-uploaded"');
     });
 
     it("should updateTagOfQuery correctly replace previous tag with many spaces", () => {
         // act
         const result = updateTagOfQuery(
-            "*  tags:some-old-tag  when:yesterday",
+            '*  tags:"some-old-tag"  when:"yesterday"',
             "ui-uploaded",
         );
 
         // assert
-        expect(result).toBe("*  tags:ui-uploaded  when:yesterday");
+        expect(result).toBe('*    when:"yesterday" tags:"ui-uploaded"');
     });
 
     it("should updateWhenOfQuery correctly with previous start query", () => {
@@ -46,7 +46,7 @@ describe("SearchQueryUtils", () => {
         const result = updateWhenOfQuery("*", "yesterday");
 
         // assert
-        expect(result).toBe("* when:yesterday");
+        expect(result).toBe('* when:"yesterday"');
     });
 
     it("should updateWhenOfQuery correctly with empty query", () => {
@@ -54,32 +54,32 @@ describe("SearchQueryUtils", () => {
         const result = updateWhenOfQuery("", "today");
 
         // assert
-        expect(result).toBe("when:today");
+        expect(result).toBe('when:"today"');
     });
 
     it("should updateWhenOfQuery correctly replace previous when", () => {
         // act
-        const result = updateWhenOfQuery("* when:thisweek", "today");
+        const result = updateWhenOfQuery('* when:"thisweek"', "today");
 
         // assert
-        expect(result).toBe("* when:today");
+        expect(result).toBe('* when:"today"');
     });
 
     it("should updateWhenOfQuery correctly replace previous when with many spaces", () => {
         // act
         const result = updateWhenOfQuery(
-            "*  tags:ui-uploaded  when:today",
+            '*  tags:"ui-uploaded"  when:"today"',
             "thisweek",
         );
 
         // assert
-        expect(result).toBe("*  tags:ui-uploaded  when:thisweek");
+        expect(result).toBe('*  tags:"ui-uploaded" when:"thisweek"');
     });
 
     it("should updateFilenameOfQuery currectly with nested paths", () => {
         // act
         const result = updateFilenameOfQuery(
-            "* filename:*.txt",
+            '* filename:"*.txt"',
             '//crawler0/test"folder/*',
         );
 

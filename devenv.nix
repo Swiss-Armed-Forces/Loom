@@ -367,6 +367,12 @@ in
                 version = "1.1.2";
                 sha256 = "sha256-6GO1f8SP4CE8yYl87/tm60FdGHqHsJA4c2B6UKVdpgM=";
               }
+              {
+                name = "explorer";
+                publisher = "vitest";
+                version = "1.26.3";
+                sha256 = "sha256-RNRpUWq9dTSOGeLsINrUHy6+nPov+SAsCDRTB1D/3Rs=";
+              }
             ];
         }
       )
