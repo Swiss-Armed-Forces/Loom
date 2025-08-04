@@ -1,5 +1,4 @@
 import logging
-from http.client import RemoteDisconnected
 from urllib.error import HTTPError
 
 from celery import chain, chord
@@ -193,7 +192,7 @@ def translate(text: str, detected_language: LibretranslateDetectedLanguage) -> s
         if 500 <= ex.code < 600:
             raise LibretranslateInternalException from ex
         raise ex
-    except RemoteDisconnected as ex:
+    except OSError as ex:
         raise LibretranslateInternalException from ex
 
     return translation_result

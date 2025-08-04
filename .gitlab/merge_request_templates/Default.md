@@ -10,11 +10,3 @@ This ensures the issue is automatically closed when the MR is merged.
 Example:
 Closes #123
 -->
-
-Closes #...
-
-## ✅ Related Issues (Optional)
-
-<!-- Link any additional related issues or epics -->
-
-- Related to #
