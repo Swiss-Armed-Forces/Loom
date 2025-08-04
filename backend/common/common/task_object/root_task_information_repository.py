@@ -22,3 +22,23 @@ class RootTaskInformationRepository(BaseMongoRepository[RootTaskInformation]):
         if root_task_info is None:
             raise ValueError(f"Root task info with id {root_task_id} not found")
         return root_task_info
+
+    def add_started_async_branch(self, root_task_id: UUID, async_branch_id: UUID):
+        """Atomic update of started_async_branches."""
+        collction = self._repo.get_collection()
+        result = collction.update_one(
+            {"root_task_id": root_task_id},
+            {"$push": {"started_async_branches": async_branch_id}},
+        )
+        if result.modified_count != 1:
+            raise ValueError(f"Failed registering started async branch: {result}")
+
+    def add_completed_async_branch(self, root_task_id: UUID, async_branch_id: UUID):
+        """Atomic update of completed_async_branches."""
+        collction = self._repo.get_collection()
+        result = collction.update_one(
+            {"root_task_id": root_task_id},
+            {"$push": {"completed_async_branches": async_branch_id}},
+        )
+        if result.modified_count != 1:
+            raise ValueError(f"Failed registering completed async branch: {result}")

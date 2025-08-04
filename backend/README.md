@@ -35,13 +35,13 @@ To add a package, call `poetry add some_package` in the directory of the package
 This will install the package in the virtual environment, add it to the `pyproject.toml`
 file and update the `poetry.lock` file.
 
-**IMPORTANT:** _When adding dependencies to `commmon`, it is required to call `poetry lock`
+**IMPORTANT:** _When adding dependencies to `common`, it is required to call `poetry lock`
 in all the other packages that depend on `common`. The devenv utility: `poetry-lock`
 updates all lock files in all packages._
 
 ## Testing and linting
 
 All Python code in the backend needs to pass the unit and lint tests performed by the CI/CD pipeline.
-It is recommended run those checks locally first to avoid unncessary commits.
+It is recommended run those checks locally first to avoid unnecessary commits.
 
 Unit tests can be run locally by using the `backend-test` devenv script.

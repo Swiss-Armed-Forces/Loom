@@ -11,7 +11,7 @@ from api.models.archives_model import ArchivesModel
 from api.routers.archives import ArchiveCreatedResponse, ArchiveRequest
 
 
-def test_create_archive_with_emtpy_query_fails(client):
+def test_create_archive_with_empty_query_fails(client):
     # query is required -> bad request
     response = client.post("/v1/archive/", json={})
     assert response.status_code == 422

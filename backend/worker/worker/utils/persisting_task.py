@@ -43,7 +43,7 @@ def persisting_task(
         task is reporting its state to.
     :param persisting_cache_decorator: Decorator is used before running the task allowing
         caching. The decorator needs to return a cache decorator and accept the persisting
-        function which can be used to create the actuall cache name.
+        function which can be used to create the actually cache name.
         This can be used with `persisting_cache`.
     """
 

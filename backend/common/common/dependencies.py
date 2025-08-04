@@ -34,7 +34,7 @@ class DependencyException(Exception):
     pass
 
 
-# Note, "= None" assignements are needed here to make flake8 happy
+# Note, "= None" assignments are needed here to make flake8 happy
 _libretranslate_api: LibreTranslateAPI | None = None
 _query_builder: QueryBuilder | None = None
 _elasticsearch: Elasticsearch | None = None
@@ -172,7 +172,7 @@ def mock_init():
 
     global _celery_app
     _celery_app = MagicMock(spec=Celery)
-    # make the task decorator work: neede if we want to tests tasks
+    # make the task decorator work: needed if we want to tests tasks
     _celery_app.task = noop_decorator
 
     global _queues_service

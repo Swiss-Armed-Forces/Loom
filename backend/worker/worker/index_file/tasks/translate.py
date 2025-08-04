@@ -1,47 +1,40 @@
 import logging
-from string import punctuation
+from http.client import RemoteDisconnected
+from urllib.error import HTTPError
 
-from celery import chain
+from celery import chain, chord
 from celery.canvas import Signature
 from common.dependencies import (
     get_celery_app,
     get_lazybytes_service,
     get_libretranslate_api,
 )
-from common.file.file_repository import (
-    File,
-    LibretranslateTranslatedLanguage,
-    LibreTranslateTranslations,
-)
+from common.file.file_repository import File, LibretranslateTranslatedLanguage
 from common.services.lazybytes_service import LazyBytes
 from common.utils.cache import cache
+from langchain_text_splitters import RecursiveCharacterTextSplitter, TextSplitter
 from pydantic import BaseModel
 
 from worker.index_file.infra.file_indexing_task import FileIndexingTask
 from worker.index_file.infra.indexing_persister import IndexingPersister
 from worker.services.tika_service import TIKA_MAX_TEXT_SIZE, TikaResult
 from worker.settings import settings
+from worker.utils.async_task_branch import complete_async_branch
 from worker.utils.persisting_task import persisting_task
 
 LIBRETRANSLATE_MAX_TEXT_SIZE = TIKA_MAX_TEXT_SIZE
 LIBRETRANSLATE_CHARACTERS_PER_SECOND = 125  # An estimated average
 LIBRETRANSLATE_MAX_REQUEST_LEN_SECONDS = (
-    180  # From libretranslate/Dockerfile (--timeout)
+    30  # From libretranslate/Dockerfile (--timeout)
 )
-LIBRETRANSLATE_SAFETY_MARGIN = 0.6
+LIBRETRANSLATE_SAFETY_MARGIN = 0.5
 LIBRETRANSLATE_MAX_CHARACTERS_PER_REQUEST = int(
     LIBRETRANSLATE_CHARACTERS_PER_SECOND
     * LIBRETRANSLATE_MAX_REQUEST_LEN_SECONDS
     * LIBRETRANSLATE_SAFETY_MARGIN
 )
-LIBRETRANSLATE_MAX_BACKTRACK_RANGE = min(
-    2 * 100,  # 2 * average english sentence length
-    int(
-        # this is just here as a safety, so that we never backtrack too far
-        LIBRETRANSLATE_MAX_CHARACTERS_PER_REQUEST
-        * 0.9
-    ),
-)
+TRANSLATE_MAX_RETRIES = 15
+CORRECT_TRANSLATION_MAX_TOKENS_FACTOR = 1.5
 
 
 logger = logging.getLogger(__name__)
@@ -66,7 +59,6 @@ def signature(file: File) -> Signature:
         extract_text_from_tika_result.s(),
         translate_detect_language_task.s(file),
         translate_task.s(file),
-        persist_translation.s(file),
     )
 
 
@@ -86,7 +78,6 @@ def translate_detect_language_task(
     text_lazy: LazyBytes | None,
     file: File,  # pylint: disable=unused-argument
 ) -> tuple[LazyBytes | None, LibreTranslateLanguageDetectResult | None]:
-    """Detect languages."""
     if text_lazy is None:
         return text_lazy, None
 
@@ -98,10 +89,10 @@ def translate_detect_language_task(
             .tobytes()
             .decode(errors=settings.decode_error_handler)
         )
-        # limit text size used for languge detection
+        # limit text size used for language detection
         text = text[:LIBRETRANSLATE_MAX_CHARACTERS_PER_REQUEST]
-        result = translate_detect_language(text)
-    return text_lazy, result
+        detected_languages = translate_detect_language(text)
+    return text_lazy, detected_languages
 
 
 def translate_detect_language(text: str) -> LibreTranslateLanguageDetectResult:
@@ -123,26 +114,29 @@ def translate_detect_language(text: str) -> LibreTranslateLanguageDetectResult:
     return result
 
 
-@app.task(base=FileIndexingTask)
-@cache(
-    key_function=lambda translate_detect_language_result, file: (
-        (
-            translate_detect_language_result[1]
-            if translate_detect_language_result
-            else None
-        ),
-        file.sha256,
-    ),
-)
+def get_translation_text_splitter() -> TextSplitter:
+    return RecursiveCharacterTextSplitter(
+        chunk_size=LIBRETRANSLATE_MAX_CHARACTERS_PER_REQUEST,
+        chunk_overlap=0,
+        separators=["\n\n", "\n", ".", "!", "?", ":", ";", " "],
+        keep_separator="end",
+        strip_whitespace=False,
+    )
+
+
+@app.task(bind=True, base=FileIndexingTask)
 def translate_task(
+    self: FileIndexingTask,
     translate_detect_language_result: tuple[
         LazyBytes | None, LibreTranslateLanguageDetectResult | None
     ],
     file: File,  # pylint: disable=unused-argument
-) -> LibreTranslateTranslations | None:
+) -> None:
     (text_lazy, detected_languages) = translate_detect_language_result
     if text_lazy is None or detected_languages is None:
-        return None
+        return
+
+    text_splitter = get_translation_text_splitter()
 
     with get_lazybytes_service().load_memoryview(text_lazy) as memview:
         text = (
@@ -150,82 +144,78 @@ def translate_task(
             .tobytes()
             .decode(errors=settings.decode_error_handler)
         )
-        language_translations = translate(text, detected_languages)
 
-    result = LibreTranslateTranslations()
-    for language, translation in language_translations.items():
-        result.append(
-            LibretranslateTranslatedLanguage(
-                language=language.language,
-                confidence=language.confidence,
-                text=translation,
-            )
+        text_chunks = text_splitter.split_text(text)
+        for detected_language in detected_languages:
+            chain(
+                chord(
+                    [
+                        translate.s(text_chunk, detected_language)
+                        for text_chunk in text_chunks
+                    ],
+                    chain(
+                        combine_translation.s(detected_language),
+                        persist_translation.s(file),
+                    ),
+                ),
+                complete_async_branch(self),
+            ).delay().forget()
+
+
+class LibretranslateInternalException(Exception):
+    pass
+
+
+@app.task(
+    base=FileIndexingTask,
+    autoretry_for=tuple([LibretranslateInternalException]),
+    retry_backoff=True,
+    max_retries=TRANSLATE_MAX_RETRIES,
+)
+@cache()
+def translate(text: str, detected_language: LibretranslateDetectedLanguage) -> str:
+    if len(text) <= 0:
+        return text
+
+    # Do not translate if detected language already matches the target language
+    if detected_language.language == settings.translate_target:
+        return text
+
+    libretranslate_api = get_libretranslate_api()
+
+    try:
+        translation_result: str = libretranslate_api.translate(
+            text,
+            detected_language.language,
+            settings.translate_target,
         )
-    return result
+    except HTTPError as ex:
+        if 500 <= ex.code < 600:
+            raise LibretranslateInternalException from ex
+        raise ex
+    except RemoteDisconnected as ex:
+        raise LibretranslateInternalException from ex
+
+    return translation_result
 
 
-def translate(
-    text: str, detected_languages: LibreTranslateLanguageDetectResult
-) -> dict[LibretranslateDetectedLanguage, str]:
-    result = {}
-    libre_translate = get_libretranslate_api()
-
-    for language in detected_languages:
-        translation_result = ""
-
-        # Do not translate if detected language already matches the target language
-        if language.language == settings.translate_target:
-            result[language] = text
-            continue
-
-        # split text into manageable chunks
-        remaining_text = text
-        while len(remaining_text) > 0:
-            text_to_translate = remaining_text[
-                :LIBRETRANSLATE_MAX_CHARACTERS_PER_REQUEST
-            ]
-            remaining_text = remaining_text[LIBRETRANSLATE_MAX_CHARACTERS_PER_REQUEST:]
-
-            if len(text_to_translate) == LIBRETRANSLATE_MAX_CHARACTERS_PER_REQUEST:
-                # we have maxed-out the translation request size:
-                # try to backtrack a few characters to the last punctuation
-                for _ in range(LIBRETRANSLATE_MAX_BACKTRACK_RANGE):
-                    last_char = text_to_translate[-1]
-                    if last_char in punctuation:
-                        break
-                    text_to_translate = text_to_translate[:-1]
-                    remaining_text = last_char + remaining_text
-                else:
-                    # backtracking failed: restore original
-                    text_to_translate += remaining_text[
-                        :LIBRETRANSLATE_MAX_BACKTRACK_RANGE
-                    ]
-                    remaining_text = remaining_text[LIBRETRANSLATE_MAX_BACKTRACK_RANGE:]
-
-            if len(text_to_translate) > 0:
-                translation_result += libre_translate.translate(
-                    text_to_translate,
-                    language.language,
-                    settings.translate_target,
-                )
-
-        translation_result = translation_result.strip()
-        result[language] = translation_result
-
-    return result
+@app.task(base=FileIndexingTask)
+def combine_translation(
+    translation_results: list[str],
+    detected_language: LibretranslateDetectedLanguage,
+) -> LibretranslateTranslatedLanguage:
+    translation_result = "".join(translation_results)
+    return LibretranslateTranslatedLanguage(
+        confidence=detected_language.confidence,
+        language=detected_language.language,
+        text=translation_result,
+    )
 
 
 @persisting_task(app, IndexingPersister)
 def persist_translation(
     persister: IndexingPersister,
-    translations: list[LibretranslateTranslatedLanguage],
+    translation: LibretranslateTranslatedLanguage,
 ):
     """Persists the translation result."""
-    if translations is None:
-        return
-
-    if len(translations) > 0:
-        persister.set_libretranslate_language(translations[0].language)
-
-    for translation in translations:
-        persister.add_or_replace_libretranslate_translated_language(translation)
+    persister.add_or_replace_libretranslate_translated_language(translation)

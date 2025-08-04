@@ -146,7 +146,7 @@ def signature(file_content: LazyBytes, file: File) -> Signature:
 
 @app.task(  # type: ignore[call-overload]
     base=FileIndexingTask,
-    autoretry_for=[RequestsConnectionError, RequestsReadTimeout],
+    autoretry_for=tuple([RequestsConnectionError, RequestsReadTimeout]),
     max_retries=TIKA_MAX_RETRIES,
     retry_backoff=True,
 )

@@ -1,28 +1,36 @@
-"""Test translate."""
+from email.message import Message
+from http.client import RemoteDisconnected
+from math import floor
+from urllib.error import HTTPError
 
 import pytest
+from common.dependencies import get_libretranslate_api
 
 from worker.index_file.tasks.translate import (
-    LIBRETRANSLATE_MAX_BACKTRACK_RANGE,
     LIBRETRANSLATE_MAX_CHARACTERS_PER_REQUEST,
     LibretranslateDetectedLanguage,
-    LibreTranslateLanguageDetectResult,
+    LibretranslateInternalException,
+    get_translation_text_splitter,
     translate,
     translate_detect_language,
 )
+from worker.settings import settings
 
 
 @pytest.mark.parametrize(
     "text, expected_language, expected_confidence",
-    [("Dieser Text ist in deutscher Sprache verfasst.", "de", 100)],
+    [
+        (
+            "Dieser Text ist in deutscher Sprache verfasst.",  # spellchecker:disable-line
+            "de",
+            100,
+        )
+    ],
 )
 def test_translate_detect_language(text, expected_language, expected_confidence):
-    from common.dependencies import (  # pylint: disable=import-outside-toplevel
-        get_libretranslate_api,
-    )
 
-    libre_translate_api = get_libretranslate_api()
-    libre_translate_api.detect.return_value = [
+    libretranslate_api = get_libretranslate_api()
+    libretranslate_api.detect.return_value = [
         {
             "language": expected_language,
             "confidence": expected_confidence,
@@ -41,12 +49,8 @@ def test_translate_detect_language(text, expected_language, expected_confidence)
 def test_translate_detect_language_filters_low_confidence(
     text, expected_language, expected_confidence
 ):
-    from common.dependencies import (  # pylint: disable=import-outside-toplevel
-        get_libretranslate_api,
-    )
-
-    libre_translate_api = get_libretranslate_api()
-    libre_translate_api.detect.return_value = [
+    libretranslate_api = get_libretranslate_api()
+    libretranslate_api.detect.return_value = [
         {
             "language": expected_language,
             "confidence": expected_confidence,
@@ -58,123 +62,109 @@ def test_translate_detect_language_filters_low_confidence(
 
 
 def test_translate_detect_language_empty_text():
-    from common.dependencies import (  # pylint: disable=import-outside-toplevel
-        get_libretranslate_api,
-    )
-
-    libre_translate_api = get_libretranslate_api()
+    libretranslate_api = get_libretranslate_api()
     text = ""
     result = translate_detect_language(text)
-    assert not libre_translate_api.detect.called
+    assert not libretranslate_api.detect.called
     assert len(result) == 0
 
 
 @pytest.mark.parametrize(
-    "text, expected_text, expected_language",
+    "text, expected_text, expected_language,expected_translate_calls",
     [
+        ("", "", "fr", 0),
         (
-            "Dieser Text ist in deutscher Sprache verfasst.",
+            "Don't translate for the default translation target",
+            "Don't translate for the default translation target",
+            settings.translate_target,
+            0,
+        ),
+        (
+            "Dieser Text ist in deutscher Sprache verfasst.",  # spellchecker:disable-line
             "This is the english translation result.",
             "de",
-        )
+            1,
+        ),
     ],
 )
-def test_translate(text: str, expected_text: str, expected_language: str):
-    from common.dependencies import (  # pylint: disable=import-outside-toplevel
-        get_libretranslate_api,
+def test_translate(
+    text: str, expected_text: str, expected_language: str, expected_translate_calls: int
+):
+    libretranslate_api = get_libretranslate_api()
+    libretranslate_api.translate.return_value = expected_text
+
+    translation = translate(
+        text, LibretranslateDetectedLanguage(confidence=1, language=expected_language)
     )
 
-    libre_translate_api = get_libretranslate_api()
-    libre_translate_api.translate.return_value = expected_text
+    assert translation == expected_text
+    assert libretranslate_api.translate.call_count == expected_translate_calls
 
-    result = translate(
-        text,
-        LibreTranslateLanguageDetectResult(
-            [LibretranslateDetectedLanguage(confidence=1, language=expected_language)]
-        ),
+
+def test_translate_http_internal_server_error():
+    libretranslate_api = get_libretranslate_api()
+    libretranslate_api.translate.side_effect = HTTPError(
+        url="http://...", code=500, msg="Internal error", fp=None, hdrs=Message()
     )
 
-    assert len(result) == 1
-    for language, translate_text in result.items():
-        assert language.language == expected_language
-        assert translate_text == expected_text
+    with pytest.raises(LibretranslateInternalException):
+        translate(
+            "a short text", LibretranslateDetectedLanguage(confidence=1, language="es")
+        )
 
 
-def test_translate_empty_text():
-    from common.dependencies import (  # pylint: disable=import-outside-toplevel
-        get_libretranslate_api,
+def test_translate_remote_disconnected():
+    libretranslate_api = get_libretranslate_api()
+    libretranslate_api.translate.side_effect = RemoteDisconnected("status line")
+
+    with pytest.raises(LibretranslateInternalException):
+        translate(
+            "a short text", LibretranslateDetectedLanguage(confidence=1, language="es")
+        )
+
+
+def test_translate_http_client_error():
+    libretranslate_api = get_libretranslate_api()
+    libretranslate_api.translate.side_effect = HTTPError(
+        url="http://...", code=400, msg="Internal error", fp=None, hdrs=Message()
     )
 
-    libre_translate_api = get_libretranslate_api()
-    text = ""
-    result = translate(text, LibreTranslateLanguageDetectResult())
-    assert not libre_translate_api.translate.called
-    assert len(result) == 0
+    with pytest.raises(HTTPError):
+        translate(
+            "a short text", LibretranslateDetectedLanguage(confidence=1, language="es")
+        )
 
 
 @pytest.mark.parametrize(
-    "expected_translation_calls",
+    "expected_text_chunks",
     [0, 1, 10, 20, 100],
 )
-def test_translate_long_word(expected_translation_calls):
-    from common.dependencies import (  # pylint: disable=import-outside-toplevel
-        get_libretranslate_api,
+def test_translate_text_splitter_long_word(expected_text_chunks: int):
+    text = "x" * LIBRETRANSLATE_MAX_CHARACTERS_PER_REQUEST * expected_text_chunks
+
+    text_splitter = get_translation_text_splitter()
+    text_chunks = text_splitter.split_text(text)
+    assert (
+        len(text_chunks) == expected_text_chunks
+        if expected_text_chunks == 0
+        else len(text_chunks) == 1  # 1: can not split
     )
-
-    libre_translate_api = get_libretranslate_api()
-
-    text = "x" * LIBRETRANSLATE_MAX_CHARACTERS_PER_REQUEST * expected_translation_calls
-    translation_mock = "mocktranslation"
-    libre_translate_api.translate.return_value = translation_mock
-    result = translate(
-        text,
-        LibreTranslateLanguageDetectResult(
-            [LibretranslateDetectedLanguage(confidence=1, language="de")]
-        ),
-    )
-
-    expected_text = translation_mock * libre_translate_api.translate.call_count
-    assert len(result) == 1
-    assert libre_translate_api.translate.call_count == expected_translation_calls
-    for _, translate_text in result.items():
-        assert translate_text == expected_text
+    assert text == "".join(text_chunks)
 
 
 @pytest.mark.parametrize(
-    "expected_translation_calls",
-    [0, 1, 10, 20],
+    "expected_text_chunks",
+    [0, 1, 10, 20, 100],
 )
-def test_translate_long_text(expected_translation_calls):
-    from common.dependencies import (  # pylint: disable=import-outside-toplevel
-        get_libretranslate_api,
+def test_translate_text_splitter_long_text(expected_text_chunks: int):
+    word = "x "
+    text = (
+        word
+        * floor(LIBRETRANSLATE_MAX_CHARACTERS_PER_REQUEST / len(word))
+        * expected_text_chunks
     )
 
-    libre_translate_api = get_libretranslate_api()
-    translation_mock = "mocktranslation"
-    libre_translate_api.translate.return_value = translation_mock
-
-    for world_len in range(LIBRETRANSLATE_MAX_BACKTRACK_RANGE * 2):
-        text_word = "x" * world_len
-        text = (text_word + " ") * int(
-            LIBRETRANSLATE_MAX_CHARACTERS_PER_REQUEST * expected_translation_calls
-        )
-        text = text[
-            : LIBRETRANSLATE_MAX_CHARACTERS_PER_REQUEST * expected_translation_calls
-        ]
-
-        result = translate(
-            text,
-            LibreTranslateLanguageDetectResult(
-                [LibretranslateDetectedLanguage(confidence=1, language="de")]
-            ),
-        )
-
-        assert libre_translate_api.translate.call_count in (
-            expected_translation_calls,
-            expected_translation_calls + 1,
-        )
-        expected_text = translation_mock * libre_translate_api.translate.call_count
-        libre_translate_api.translate.reset_mock()
-        assert len(result) == 1
-        for _, translate_text in result.items():
-            assert translate_text == expected_text
+    text_splitter = get_translation_text_splitter()
+    text_chunks = text_splitter.split_text(text)
+    assert len(text_chunks) == expected_text_chunks
+    assert text == "".join(text_chunks)

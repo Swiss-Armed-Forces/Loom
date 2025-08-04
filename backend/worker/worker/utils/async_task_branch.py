@@ -7,8 +7,9 @@ from common.dependencies import get_celery_app, get_root_task_information_reposi
 
 app = get_celery_app()
 
-
-WAIT_FOR_ASYNC_BRANCHES_TO_COMPLETE_MAX_RETRIES = 15
+# We should check this regularly, therefore we set this to quite a high number.
+WAIT_FOR_ASYNC_BRANCHES_TO_COMPLETE_MAX_RETRIES = 1000
+WAIT_FOR_ASYNC_BRANCHES_TO_COMPLETE_RETRY_BACKOFF_MAX = 10
 
 
 class AsyncBranchesNotCompleted(Exception):
@@ -19,10 +20,9 @@ def complete_async_branch(task: Task) -> Signature:
     async_branch_id = uuid4()
     root_task_id = UUID(task.request.root_id)
 
+    # Register started branch
     repository = get_root_task_information_repository()
-    root_task_information = repository.get_by_root_task_id(root_task_id)
-    root_task_information.started_async_branches.append(async_branch_id)
-    repository.save(root_task_information)
+    repository.add_started_async_branch(root_task_id, async_branch_id)
     return _complete_async_branch_task.s(root_task_id, async_branch_id)
 
 
@@ -39,6 +39,4 @@ def raise_if_has_incomplete_async_branches(task: Task):
 @app.task()
 def _complete_async_branch_task(_: Any, root_task_id: UUID, async_branch_id: UUID):
     repository = get_root_task_information_repository()
-    root_task_information = repository.get_by_root_task_id(root_task_id)
-    root_task_information.completed_async_branches.append(async_branch_id)
-    repository.save(root_task_information)
+    repository.add_completed_async_branch(root_task_id, async_branch_id)

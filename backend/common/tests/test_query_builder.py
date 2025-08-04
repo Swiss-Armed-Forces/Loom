@@ -69,21 +69,21 @@ def test_rftransformer_nested2():
 
 
 def test_rftransformer_multiple():
-    """Check rftransformer with multiple occurences of target field."""
+    """Check rftransformer with multiple occurrences of target field."""
     search_string = "alpha:value1 AND alpha:value2"
     result = str(RFTransformer("alpha", ["omega"]).visit(parse(search_string)))
     assert result == "omega:value1 AND omega:value2"
 
 
 def test_rftransformer_complex_values1():
-    """Check rftransformer with multiple occurences of target field."""
+    """Check rftransformer with multiple occurrences of target field."""
     search_string = "alpha:(value1 OR value2)"
     result = str(RFTransformer("alpha", ["omega"]).visit(parse(search_string)))
     assert result == "omega:(value1 OR value2)"
 
 
 def test_rftransformer_complex_values2():
-    """Check rftransformer with multiple occurences of target field."""
+    """Check rftransformer with multiple occurrences of target field."""
     search_string = "alpha:(value1 OR value2)"
     result = str(
         RFTransformer(
@@ -98,7 +98,7 @@ def test_rftransformer_complex_values2():
 
 
 def test_rftransformer_complex_values3():
-    """Check rftransformer with multiple occurences of target field."""
+    """Check rftransformer with multiple occurrences of target field."""
     search_string = "(filename:1.txt) OR filename:2.txt"
     result = str(
         RFTransformer(
@@ -142,7 +142,7 @@ def test_optransformer_advanced2_not():
 
 def test_optransformer_advanced3_not():
     """Check nested case of lower case "not"."""
-    search_string = "nOT (Not value2)"
+    search_string = "nOT (Not value2)"  # spellchecker:disable-line
     result = str(OpTransformer().visit(parse(search_string)))
     assert result == "NOT (NOT value2)"
 
@@ -322,12 +322,12 @@ def test_nestedfieldstransformer_group2():
 
 def test_translationtransformer_star():
     """Test translation of *"""
-    libre_translate_api = get_libretranslate_api()
-    libre_translate_api.translate.return_value = "something"
+    libretranslate_api = get_libretranslate_api()
+    libretranslate_api.translate.return_value = "something"
 
     search_string = "*"
     result = str(
-        TranslateTransformer(["de"], libre_translate_api).visit(parse(search_string))
+        TranslateTransformer(["de"], libretranslate_api).visit(parse(search_string))
     )
 
     assert result == "*"
@@ -335,12 +335,12 @@ def test_translationtransformer_star():
 
 def test_translationtransformer_starfield():
     """Test translation of * in a field."""
-    libre_translate_api = get_libretranslate_api()
-    libre_translate_api.translate.return_value = "something"
+    libretranslate_api = get_libretranslate_api()
+    libretranslate_api.translate.return_value = "something"
 
     search_string = "field:*"
     result = str(
-        TranslateTransformer(["de"], libre_translate_api).visit(parse(search_string))
+        TranslateTransformer(["de"], libretranslate_api).visit(parse(search_string))
     )
 
     assert result == "field:*"
@@ -348,48 +348,48 @@ def test_translationtransformer_starfield():
 
 def test_translationtransformer_simple1():
     """Test translation of field search."""
-    libre_translate_api = get_libretranslate_api()
-    libre_translate_api.translate.return_value = "datei"
+    libretranslate_api = get_libretranslate_api()
+    libretranslate_api.translate.return_value = "datei"
 
     search_string = "filename:file"
     result = str(
-        TranslateTransformer(["de"], libre_translate_api).visit(parse(search_string))
+        TranslateTransformer(["de"], libretranslate_api).visit(parse(search_string))
     )
 
     assert result == 'filename:("file" OR "datei")'
-    assert libre_translate_api.translate.call_args.args[0] == "file"
-    assert libre_translate_api.translate.call_args.args[2] == "de"
+    assert libretranslate_api.translate.call_args.args[0] == "file"
+    assert libretranslate_api.translate.call_args.args[2] == "de"
 
 
 def test_translationtransformer_simple2():
     """Test translation of nested field search."""
-    libre_translate_api = get_libretranslate_api()
-    libre_translate_api.translate.return_value = "datei"
+    libretranslate_api = get_libretranslate_api()
+    libretranslate_api.translate.return_value = "datei"
 
     search_string = "alpha.beta.gamma:file"
     result = str(
-        TranslateTransformer(["de"], libre_translate_api).visit(parse(search_string))
+        TranslateTransformer(["de"], libretranslate_api).visit(parse(search_string))
     )
 
     assert result == 'alpha.beta.gamma:("file" OR "datei")'
-    assert libre_translate_api.translate.call_args.args[0] == "file"
-    assert libre_translate_api.translate.call_args.args[2] == "de"
+    assert libretranslate_api.translate.call_args.args[0] == "file"
+    assert libretranslate_api.translate.call_args.args[2] == "de"
 
 
 def test_translationtransformer_group1():
     """Test translation of groups."""
-    libre_translate_api = get_libretranslate_api()
+    libretranslate_api = get_libretranslate_api()
 
     def side_effect(*args, **_):
         if args[0] == "file":
             return "datei"
         return "haus"
 
-    libre_translate_api.translate.side_effect = side_effect
+    libretranslate_api.translate.side_effect = side_effect
 
     search_string = "filename:(file OR house)"
     result = str(
-        TranslateTransformer(["de"], libre_translate_api).visit(parse(search_string))
+        TranslateTransformer(["de"], libretranslate_api).visit(parse(search_string))
     )
 
     assert result == 'filename:(("file" OR "datei")OR("house" OR "haus"))'
@@ -397,36 +397,36 @@ def test_translationtransformer_group1():
 
 def test_translationtransformer_group2():
     """Test translation of groups."""
-    libre_translate_api = get_libretranslate_api()
+    libretranslate_api = get_libretranslate_api()
 
     def side_effect(*args, **_):
         if args[0] == "file":
             return "datei"
         return "haus"
 
-    libre_translate_api.translate.side_effect = side_effect
+    libretranslate_api.translate.side_effect = side_effect
 
     search_string = "(file AND house)"
     result = str(
-        TranslateTransformer(["de"], libre_translate_api).visit(parse(search_string))
+        TranslateTransformer(["de"], libretranslate_api).visit(parse(search_string))
     )
     assert result == '(("file" OR "datei")AND("house" OR "haus"))'
 
 
 def test_translationtransformer_range():
     """Test translation of ranges."""
-    libre_translate_api = get_libretranslate_api()
+    libretranslate_api = get_libretranslate_api()
 
     def side_effect(*args, **_):
         if args[0] == "file":
             return "datei"
         return "haus"
 
-    libre_translate_api.translate.side_effect = side_effect
+    libretranslate_api.translate.side_effect = side_effect
 
     search_string = "[file TO datei]"
     result = str(
-        TranslateTransformer(["de"], libre_translate_api).visit(parse(search_string))
+        TranslateTransformer(["de"], libretranslate_api).visit(parse(search_string))
     )
 
     assert result == "[file TO datei]"
@@ -434,7 +434,7 @@ def test_translationtransformer_range():
 
 def test_translationtransformer_multi_language():
     """Test translation with multiple languages."""
-    libre_translate_api = get_libretranslate_api()
+    libretranslate_api = get_libretranslate_api()
 
     def side_effect(*args, **_):
         if args[2] == "de":
@@ -445,11 +445,11 @@ def test_translationtransformer_multi_language():
             return "fichier"
         return "maison"
 
-    libre_translate_api.translate.side_effect = side_effect
+    libretranslate_api.translate.side_effect = side_effect
 
     search_string = "(file AND house)"
     result = str(
-        TranslateTransformer(["de", "fr"], libre_translate_api).visit(
+        TranslateTransformer(["de", "fr"], libretranslate_api).visit(
             parse(search_string)
         )
     )
@@ -471,7 +471,7 @@ def test_query_builder_simple_and():
     """Test if the QueryBuilder build() function builds the correct queries for the
     elasticsearch backend.
 
-    Case: simple AND conncetion
+    Case: simple AND connection
     """
     query = QueryParameters(
         query_id="0123456789", search_string="alpha:value and beta:value"
@@ -485,7 +485,7 @@ def test_query_builder_simple_or():
     """Test if the QueryBuilder build() function builds the correct queries for the
     elasticsearch backend.
 
-    Case: simple OR conncetion
+    Case: simple OR connection
     """
     query = QueryParameters(
         query_id="0123456789", search_string="alpha:value or beta:value"
@@ -616,7 +616,7 @@ def test_lucene_checker_dashed_field():
 def test_lucene_checker_single_subfield():
     """Test to ensure the lucene checker validates queries correctly.
 
-    Case: single-nested valuse
+    Case: single-nested values
     """
     query = QueryParameters(query_id="0123456789", search_string="alpha.beta:value")
     builder = QueryBuilder(get_libretranslate_api())

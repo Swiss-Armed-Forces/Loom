@@ -16,6 +16,7 @@ from worker.index_file.infra.file_indexing_task import FileIndexingTask
 from worker.index_file.infra.indexing_persister import IndexingPersister
 from worker.services.tika_service import TikaResult
 from worker.settings import settings
+from worker.utils.async_task_branch import complete_async_branch
 from worker.utils.natural_language_detection import is_natural_language
 from worker.utils.persisting_task import persisting_task
 
@@ -51,8 +52,9 @@ def load_text_from_text_lazy(text_lazy: LazyBytes) -> str:
         return text
 
 
-@app.task(base=FileIndexingTask)
+@app.task(bind=True, base=FileIndexingTask)
 def create_embedding_task(
+    self: FileIndexingTask,
     text_lazy: LazyBytes | None,
     file: File,
 ):
@@ -67,13 +69,16 @@ def create_embedding_task(
     text = load_text_from_text_lazy(text_lazy=text_lazy)
 
     text_fragments = text_splitter.split_text(text)
-    chord(
-        [
-            embed_text.s(fragment)
-            for fragment in text_fragments
-            if is_natural_language(fragment)
-        ],
-        persist_embeddings.s(file),
+    chain(
+        chord(
+            [
+                embed_text.s(fragment)
+                for fragment in text_fragments
+                if is_natural_language(fragment)
+            ],
+            persist_embeddings.s(file),
+        ),
+        complete_async_branch(self),
     ).delay().forget()
 
 

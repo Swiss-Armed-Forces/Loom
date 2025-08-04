@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Note this entrypoint is inteded to be run in
+# Note this entrypoint is intended to be run in
 # a bash login shell (--login)
 set -euo pipefail
 
@@ -158,7 +158,7 @@ if ! is_docker_ready; then
     (
         # dockerd-entrypoint always spawns a tini processes
         # which, if TINI_SUBREAPER is not defined, expects to
-        # to be PID=1 and hence failes sometimes
+        # to be PID=1 and hence fails sometimes
         # (possibly due concurrency issues)
         # This is why we tell tini here to register as child
         # subreaper. Which will make tini reap only processes
@@ -207,7 +207,7 @@ wait_for is_taiscale_ready
 
 # Run command
 # Notes:
-#   - we use sudo here becuase su - user -c COMMAND
+#   - we use sudo here because su - user -c COMMAND
 #     does not work properly if COMMAND contains options
 #     like -c, -l ... Dont ask me why
 #   - we use env -i here to remove env variables

@@ -15,7 +15,6 @@ from worker.index_file.infra.file_indexing_task import FileIndexingTask
 from worker.index_file.tasks import persist_processing_done
 from worker.index_file.tasks.translate import (
     LibretranslateDetectedLanguage,
-    persist_translation,
     translate_task,
 )
 
@@ -59,6 +58,5 @@ def translate_file_task(lang: str, file_id: UUID):
     file_content = get_lazybytes_service().from_bytes(content.encode())
     chain(
         translate_task.s((file_content, [libretranslate_language]), file),
-        persist_translation.s(file),
         persist_processing_done.signature(file),
     ).delay().forget()

@@ -325,7 +325,7 @@ install_traefik(){
 
         # We always first delete the existing deployment
         # this is because skaffold will redeploy
-        # ressources, which won't work as traefik
+        # resources, which won't work as traefik
         # holds exclusive access on certain ports
         # Related:
         #   - https://github.com/GoogleContainerTools/skaffold/issues/9222
@@ -493,7 +493,7 @@ usage(){
     echo "  -s|--setup              only setup system, don't start anything"
     echo "  -e|--expose IP          expose the application to the outside world by binding to IP"
     echo "  -g|--gpus GPUS          allow access to the GPUs. Possible values: all, nvidia, amd"
-    echo "  -t|--tail               tail logs afer startup"
+    echo "  -t|--tail               tail logs after startup"
     echo "  --skip-STEP             skip step STEP"
 }
 

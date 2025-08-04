@@ -47,19 +47,14 @@ class IndexingPersister(PersisterBase[File]):
     def set_tika_language(self, language: str):
         self._object.tika_language = language
 
-    def set_libretranslate_language(self, libretranslate_language: str):
-        self._object.libretranslate_language = libretranslate_language
-
     def add_or_replace_libretranslate_translated_language(
         self, libretranslate_translated_language: LibretranslateTranslatedLanguage
     ):
         # remove filter previous translation
         filtered_translations = LibreTranslateTranslations(
-            filter(
-                lambda translation: translation.language
-                != libretranslate_translated_language.language,
-                self._object.libretranslate_translations,
-            )
+            translation
+            for translation in self._object.libretranslate_translations
+            if translation.language != libretranslate_translated_language.language
         )
         self._object.libretranslate_translations = filtered_translations
         # add new translation

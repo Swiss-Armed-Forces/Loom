@@ -168,7 +168,7 @@ def fetch_archives_from_api(
 
         if number_in_expected_state == expected_no_of_archives:
             # Successful response with expected number of results
-            # and all results proccessed.
+            # and all results processed.
             #    => log response and return immediately.
             logging.debug("Successful response after %d tries", retry_attempts)
             return hits
@@ -291,7 +291,7 @@ def fetch_files_from_api(
 
         if response_file_count == expected_no_of_files:
             # Successful response with expected number of results
-            # and all results proccessed.
+            # and all results processed.
             #    => log response and return immediately.
             logging.debug("Successful response after %d tries", retry_attempts)
 

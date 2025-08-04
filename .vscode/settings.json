@@ -51,5 +51,6 @@
   ],
   "plantuml.exportFormat": "svg",
   "plantuml.exportOutDir": "./",
-  "plantuml.exportSubFolder": false
+  "plantuml.exportSubFolder": false,
+  "gitlab.showPipelineUpdateNotifications": true
 }

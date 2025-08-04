@@ -1,25 +1,15 @@
-from collections import Counter
 from typing import Callable
-from unittest.mock import MagicMock
 
 import pytest
 import requests
 from api.routers.files import GetFileLanguageTranslations, TranslateFileRequest
 from api.routers.translation import TranslateAllRequest
-from common.dependencies import get_lazybytes_service
-from common.file.file_repository import File
 from common.services.query_builder import QueryParameters
 from pydantic import BaseModel
 from requests import Response
-from worker.index_file.tasks.translate import (
-    LIBRETRANSLATE_MAX_CHARACTERS_PER_REQUEST,
-    LibretranslateDetectedLanguage,
-    translate_task,
-)
 
 from utils.consts import FILES_ENDPOINT, REQUEST_TIMEOUT, TRANSLATION_ENDPOINT
 from utils.fetch_from_api import build_search_string, fetch_query_id, get_file_by_name
-from utils.split_into_sentences import split_into_sentences
 from utils.upload_asset import upload_bytes_asset
 
 
@@ -80,29 +70,6 @@ def test_get_libretranslate_languages():
     assert len(langs) != 0
 
 
-def test_translate_huge_text():
-    text_piece = "Ein kurzer deutscher Satz. "
-    text_repetitions = (
-        LIBRETRANSLATE_MAX_CHARACTERS_PER_REQUEST // len(text_piece)
-    ) * 10
-    text = text_piece * text_repetitions
-
-    expected_text_piece = "A short German sentence. "
-    expected_text = expected_text_piece * text_repetitions
-    expected_text_sentences_counted = Counter(split_into_sentences(expected_text))
-
-    file = MagicMock(File)
-    file.sha256 = "test"
-
-    detection_result = [LibretranslateDetectedLanguage(confidence=100, language="de")]
-    text_lazy = get_lazybytes_service().from_bytes(text.encode())
-    translation_result = translate_task((text_lazy, detection_result), file)
-    text_translated_sentences_counted = Counter(
-        split_into_sentences(translation_result[0].text)
-    )
-    assert expected_text_sentences_counted == text_translated_sentences_counted
-
-
 def _on_demand_translate_by_query(query: QueryParameters, lang: str):
     response: Response = requests.post(
         f"{TRANSLATION_ENDPOINT}/",
@@ -147,7 +114,7 @@ def _translation_testcase(
     # wait for file to be processed
     file = get_file_by_name(file_name)
 
-    # create a custome model to be able to generalize the calls
+    # create a custom model to be able to generalize the calls
     translation_file = TranslationFileTest(file_id=str(file.file_id), name=file.name)
 
     # should not be translated yet:

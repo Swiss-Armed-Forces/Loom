@@ -98,7 +98,7 @@ def get_completed_estimate_for_period(
     if r_sq < MIN_R_SQ:
         return None
 
-    # positive slope -> we won't have a time esimate in the future
+    # positive slope -> we won't have a time estimate in the future
     if slope >= 0:
         return None
 
@@ -121,7 +121,7 @@ def get_completed_estimate(
     queue_name: str | None = None,
     queues_service: QueuesService = default_queues_service,
 ) -> CompleteEstimate | None:
-    # make complete esimates for different sample periods
+    # make complete estimates for different sample periods
     for sample_period__s in SAMPLE_PERIODS__S:
         complete_estimate = get_completed_estimate_for_period(
             sample_period__s=sample_period__s,

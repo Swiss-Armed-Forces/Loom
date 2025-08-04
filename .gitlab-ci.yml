@@ -65,13 +65,13 @@ default:
     # building shell
     - devenv shell -- echo "[*] devenv shell ready"
     #
-    # END SECION
+    # END SECTION
     #
     - section_end default-before_script
   after_script:
     - source cicd/gitlab_job_sections.sh
     #
-    # START SECION
+    # START SECTION
     #
     - section_start default-after_script
     # collect fork logs

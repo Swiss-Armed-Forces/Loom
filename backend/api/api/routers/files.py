@@ -470,7 +470,7 @@ def add_tag(
     if file is None:
         raise HTTPException(status_code=404, detail="Invalid file")
     try:
-        # We deliberatly use += and not .append() here,
+        # We deliberately use += and not .append() here,
         # this is to trigger pydantic validation
         file.tags += [tag_to_add]
     except ValueError as ex:

@@ -1,5 +1,3 @@
-"""Taks that starts the indexing pipeline."""
-
 import logging
 from uuid import UUID
 

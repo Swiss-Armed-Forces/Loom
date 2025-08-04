@@ -11,6 +11,7 @@ from worker.create_archive.infra.archive_creation_persister import (
 from worker.create_archive.infra.archive_processing_task import ArchiveProcessingTask
 from worker.utils.async_task_branch import (
     WAIT_FOR_ASYNC_BRANCHES_TO_COMPLETE_MAX_RETRIES,
+    WAIT_FOR_ASYNC_BRANCHES_TO_COMPLETE_RETRY_BACKOFF_MAX,
     AsyncBranchesNotCompleted,
     raise_if_has_incomplete_async_branches,
 )
@@ -33,6 +34,7 @@ def signature(archive: Archive) -> Signature:
     autoretry_for=tuple([AsyncBranchesNotCompleted]),
     retry_backoff=True,
     max_retries=WAIT_FOR_ASYNC_BRANCHES_TO_COMPLETE_MAX_RETRIES,
+    retry_backoff_max=WAIT_FOR_ASYNC_BRANCHES_TO_COMPLETE_RETRY_BACKOFF_MAX,
 )
 def wait_for_async_branches_to_complete(self: ArchiveProcessingTask, args: Any):
     raise_if_has_incomplete_async_branches(self)

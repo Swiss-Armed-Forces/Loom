@@ -28,7 +28,7 @@
 5. Install devenv
    - In /etc/selinux/config, set `SELINUX=disabled` and reboot
    - Install devenv using the [official instructions](https://devenv.sh/getting-started/)
-   - ❗**Workaroud for fedora-41**:
+   - ❗**Workaround for fedora-41**:
    After installing nix open the file `/nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh`
    and comment out the first two lines
 6. Install direnv
