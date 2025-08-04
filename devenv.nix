@@ -57,9 +57,7 @@ let
           fi
         done
 
-        if [ ''${#relative_files[@]} -gt 0 ]; then
-          "${toolPath}" ${additionalArgs} "''${relative_files[@]}"
-        fi
+        "${toolPath}" ${additionalArgs} "''${relative_files[@]}"
       ''
     );
 
@@ -79,48 +77,64 @@ let
           createToolWrapper "isort" subdir subdirName
             "--config-root '${config.devenv.root}' --resolve-all-configs";
         files = "^${subdir}/.*\\.py$";
+        types = [ "python" ];
       };
 
       "autoflake::${subdirName}" = {
         enable = true;
         entry = createToolWrapper "autoflake" subdir subdirName "--config '${top_pyproject_toml}'";
         files = "^${subdir}/.*\\.py$";
+        types = [ "python" ];
       };
 
       "docormatter::${subdirName}" = {
         enable = true;
         entry = createToolWrapper "docformatter" subdir subdirName "--config '${top_pyproject_toml}'";
         files = "^${subdir}/.*\\.py$";
+        types = [ "python" ];
       };
 
       "black::${subdirName}" = {
         enable = true;
         entry = createToolWrapper "black" subdir subdirName "--config '${top_pyproject_toml}' --preview";
         files = "^${subdir}/.*\\.py$";
+        types = [ "python" ];
       };
 
       "flake8::${subdirName}" = {
         enable = true;
         entry = createToolWrapper "flake8" subdir subdirName "--config '${top_flake8}'";
         files = "^${subdir}/.*\\.py$";
+        types = [ "python" ];
       };
 
       "pylint::${subdirName}" = {
         enable = true;
         entry = createToolWrapper "pylint" subdir subdirName "--rcfile '${top_pylintrc}'";
         files = "^${subdir}/.*\\.py$";
+        types = [ "python" ];
       };
 
       "mypy::${subdirName}" = {
         enable = true;
         entry = createToolWrapper "mypy" subdir subdirName "";
         files = "^${subdir}/.*\\.py$";
+        types = [ "python" ];
         excludes = [ "^${subdir}/tests/.*\\.py$" ];
         # mypy must be run in serial, otherwise we hit the
         # following issue:
         # - https://github.com/python/mypy/issues/14521
         require_serial = true;
       };
+
+      "poetry-lock::${subdirName}" = {
+        enable = true;
+        entry = createToolWrapper "poetry" subdir subdirName "lock";
+        files = "^${subdir}/(pyproject.toml)|(poetry.lock)$";
+        types = [ "toml" ];
+        pass_filenames = false;
+      };
+
     };
 
   createJsHooksForSubdir =
@@ -131,7 +145,7 @@ let
     {
       "eslint::${subdirName}" = {
         enable = true;
-        entry = createToolWrapper "eslint" subdir subdirName "--max-warning 0 --fix ./.";
+        entry = createToolWrapper "eslint" subdir subdirName "--max-warnings 0 --fix ./.";
         files = "^${subdir}/.*$";
         pass_filenames = false;
       };
@@ -170,6 +184,13 @@ let
         files = "^${subdir}/.*$";
         pass_filenames = false;
       };
+      "check-requests::${subdirName}" = {
+        enable = true;
+        entry = createToolWrapper "${config.devenv.root}/cicd/check_requests.sh" subdir subdirName "./.";
+        files = "^${subdir}/.*$";
+        pass_filenames = false;
+      };
+
     };
 
   # Merge all hooks
@@ -296,6 +317,9 @@ in
       # minio
       minio-client
 
+      # inspect docker images
+      dive
+
       # connect to CiCd runners
       tailscale
       dig
@@ -312,7 +336,7 @@ in
       #
       # Note we pin to the 24.11 nixpkgs version here because of
       # a bug in vscode python extension which prevents the
-      # python langauge server from loading:
+      # python language server from loading:
       # see:
       #   - https://github.com/microsoft/vscode-python/issues/25301
       (
@@ -420,7 +444,7 @@ in
 
   languages.javascript = {
     enable = true;
-    directory = "Frontend";
+    directory = "${config.devenv.root}/Frontend";
     corepack.enable = true;
     pnpm = {
       enable = true;
@@ -454,11 +478,29 @@ in
         # verbose = true;
       };
 
+      dos2unix = {
+        enable = true;
+        entry = "dos2unix";
+        args = [
+          "--info=c"
+        ];
+        excludes = [
+          ".*/assets/.*"
+        ];
+      };
+
       trim-trailing-whitespace.enable = true;
 
       nixfmt-rfc-style.enable = true;
 
-      shellcheck.enable = true;
+      shellcheck = {
+        enable = true;
+        args = [
+          "-x"
+          "-o"
+          "all"
+        ];
+      };
 
       hadolint.enable = true;
 
@@ -474,12 +516,52 @@ in
 
       yamllint = {
         enable = true;
-        settings.configuration = ''
-          ignore: |
-            pnpm-lock.yaml
-            charts/templates/**
-            charts/charts/**
-        '';
+        settings = {
+          strict = true;
+          configuration = ''
+            document-start:
+              disable
+            line-length:
+              max: 165
+            ignore: |
+              pnpm-lock.yaml
+              charts/templates/**
+              charts/charts/**
+          '';
+        };
+      };
+
+      check-json.enable = true;
+
+      check-toml.enable = true;
+
+      trufflehog.enable = true;
+
+      typos = {
+        enable = true;
+        excludes = [
+          "backend/api/static/swagger-ui.css"
+          "backend/api/static/redoc.standalone.js"
+          "backend/api/static/swagger-ui-bundle.js"
+          "THIRD-PARTY.md"
+          "Frontend/public/THIRD-PARTY.md"
+          "Redis/redis.conf"
+          ".*/assets/.*"
+        ];
+        exclude_types = [
+          "svg"
+        ];
+        settings = {
+          configuration = ''
+            [default]
+            extend-ignore-re = [
+              # Custom ignore regex patterns: https://github.com/crate-ci/typos/blob/master/docs/reference.md#example-configurations
+              "(?Rm)^.*(#|//)\\s*spellchecker:disable-line$",
+              "(?s)(#|//)\\s*spellchecker:off.*?\\n\\s*(#|//)\\s*spellchecker:on",
+              "(#|//)\\s*spellchecker:ignore-next-line\\n.*"
+            ]
+          '';
+        };
       };
     }
     // pythonHooks
@@ -611,7 +693,7 @@ in
         echo "[*] Running check-syntax.sh"
         ./cicd/check-syntax.sh
 
-        echo "[*] Checking for whitspace errors"
+        echo "[*] Checking for whitespace errors"
         ./cicd/check_whitespace_errors.sh
 
         echo "[*] Checking for dos2unix errors"
@@ -621,7 +703,7 @@ in
         ./cicd/check_todo.sh
 
         echo "[*] Checking deployment requests"
-        ./cicd/check_requests.sh
+        ./cicd/check_requests.sh charts/
 
         echo "[*] Linting successful!"
       )
@@ -846,6 +928,22 @@ in
     '';
   };
 
+  scripts.docker-minikube-dive = {
+    description = "Inspect docker images in minikube images layer by layer";
+    exec = ''
+      (
+        set -euo pipefail
+        cd '${config.devenv.root}'
+
+        MINIKUBE_EVAL=$(minikube -p minikube docker-env)
+        eval "''${MINIKUBE_EVAL}"
+
+        dive \
+          "''${@}"
+      )
+    '';
+  };
+
   scripts.docker-login-noninteractive = {
     description = "Calling docker login without user interaction";
     exec = ''
@@ -912,7 +1010,7 @@ in
   };
 
   scripts.frontend-api-generate = {
-    description = "Generate frontent api typescript files";
+    description = "Generate frontend api typescript files";
     exec = ''
       (
         set -euo pipefail

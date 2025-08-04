@@ -108,7 +108,7 @@ def test_hide_archive():
     )
 
     # Note: we don't wait for a specific state here, we expect
-    # the archive to be listed immediatly after we created it.
+    # the archive to be listed immediately after we created it.
     archives = fetch_archives_from_api(expected_no_of_archives=1, expected_state=None)
     assert len(archives) == 1
     assert created_archive.archive_id == archives[0].file_id

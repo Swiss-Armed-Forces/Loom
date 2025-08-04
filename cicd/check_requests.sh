@@ -1,9 +1,15 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-GIT_TOPLEVEL=$(git rev-parse --show-toplevel)
-CHARTS_DIR="${GIT_TOPLEVEL}/charts/"
+#
+# Consts
+#
 RESOURCE_SUMMARY="templates/common/resource-summary.yaml"
+
+#
+# Arguments
+#
+CHARTS_DIR="${1?Missing Charts Dir}"
 
 # Max allowed requests
 #

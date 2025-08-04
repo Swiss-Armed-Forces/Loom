@@ -3,6 +3,7 @@ from typing import Literal
 # from https://tesseract-ocr.github.io/tessdoc/Data-Files-in-different-versions.html
 
 TikaAllowedOcrLanguage = Literal[
+    # spellchecker:off
     "afr",
     "ara",
     "asm",
@@ -128,4 +129,5 @@ TikaAllowedOcrLanguage = Literal[
     "vie",
     "yid",
     "yor",
+    # spellchecker:on
 ]

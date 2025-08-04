@@ -1,6 +1,6 @@
 export const thisUrl = new URL(window.location.href);
 
-/// Use TLS execpt if env TLS_ENABLED is false
+/// Use TLS except if env TLS_ENABLED is false
 const isHttps = window.location.protocol === "https:";
 const wsProtocol = isHttps ? "wss" : "ws";
 const apiProtocol = isHttps ? "https" : "http";

@@ -1,4 +1,4 @@
-"""Repository that handles file persistance operation."""
+"""Repository that handles file persistence operation."""
 
 from __future__ import annotations
 
@@ -411,7 +411,7 @@ class FileRepository(BaseEsRepository[_EsFile, File]):
             Stat.IS_SPAM: StatItem(
                 args=["all_is_spam", "terms"],
                 kwargs={"field": "is_spam", "size": 100},
-                transforms={"name": lambda s: str(bool(s)).lower()},
+                transforms={"name": lambda s: str(bool(int(s))).lower()},
             ),
         }
 
@@ -435,7 +435,7 @@ class FileRepository(BaseEsRepository[_EsFile, File]):
         nest_key = search_dict[stat].args[0]
         for bucket in self.get_aggr(result, [nest_key, "buckets"], []):
             stat_entry = StatisticsEntry(
-                name=bucket["key"], hits_count=bucket["doc_count"]
+                name=str(bucket["key"]), hits_count=int(bucket["doc_count"])
             )
 
             # apply special transforms like the name adjustment for IS_SPAM

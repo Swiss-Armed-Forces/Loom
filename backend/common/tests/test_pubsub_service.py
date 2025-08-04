@@ -146,12 +146,12 @@ async def test_get_message_handle_subscription():
         channel=None, message=MessageSubscribe(channels=expected_channels)
     )
 
-    get_messge_calls = 0
+    get_message_calls = 0
 
     async def get_message(*_, **__):
-        nonlocal get_messge_calls
-        get_messge_calls += 1
-        if get_messge_calls == 1:
+        nonlocal get_message_calls
+        get_message_calls += 1
+        if get_message_calls == 1:
             return {"data": expected_message.model_dump_json()}
         raise EndOfTestException()
 
@@ -190,12 +190,12 @@ async def test_get_message_handle_unsubscription():
         channel=None, message=MessageUnsubscribe(channels=expected_channels)
     )
 
-    get_messge_calls = 0
+    get_message_calls = 0
 
     async def get_message(*_, **__):
-        nonlocal get_messge_calls
-        get_messge_calls += 1
-        if get_messge_calls == 1:
+        nonlocal get_message_calls
+        get_message_calls += 1
+        if get_message_calls == 1:
             return {"data": expected_message.model_dump_json()}
         raise EndOfTestException()
 

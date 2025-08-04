@@ -24,7 +24,7 @@ def test_dead_letter_tasks():
     # Same issues as:
     #  - https://gitlab.com/swiss-armed-forces/cyber-command/cea/loom/-/issues/25
     #
-    # But we keep this test here anyways - logically the test ist correct.
+    # But we keep this test here anyways - logically the test is correct.
     while not is_celery_idle():
         logger.debug("Celery not idle yet")
         sleep(0.1)

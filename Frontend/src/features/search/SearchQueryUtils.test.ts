@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+    updateFieldOfQuery,
     updateFilenameOfQuery,
     updateTagOfQuery,
     updateWhenOfQuery,
@@ -76,7 +77,7 @@ describe("SearchQueryUtils", () => {
         expect(result).toBe('*  tags:"ui-uploaded" when:"thisweek"');
     });
 
-    it("should updateFilenameOfQuery currectly with nested paths", () => {
+    it("should updateFilenameOfQuery correctly with nested paths", () => {
         // act
         const result = updateFilenameOfQuery(
             '* filename:"*.txt"',
@@ -85,5 +86,58 @@ describe("SearchQueryUtils", () => {
 
         // assert
         expect(result).toBe('* filename:"//crawler0/test\\"folder/*"');
+    });
+
+    it("should updateFieldOfQuery correctly with multiple field values", () => {
+        // act
+        const result = updateFieldOfQuery('abc:("value1 OR "value2")', "def", [
+            "value3",
+            "value4",
+        ]);
+
+        // assert
+        expect(result).toBe(
+            'abc:("value1 OR "value2") def:("value3" OR "value4")',
+        );
+    });
+
+    it("should updateFieldOfQuery correctly with multiple field multiple values already there", () => {
+        // act
+        const result = updateFieldOfQuery(
+            'abc:("value1 OR "value2") def:("value3" OR "value4")',
+            "def",
+            ["value5", "value6"],
+        );
+
+        // assert
+        expect(result).toBe(
+            'abc:("value1 OR "value2") def:("value5" OR "value6")',
+        );
+    });
+
+    it("should updateFieldOfQuery correctly with multiple field single values already there", () => {
+        // act
+        const result = updateFieldOfQuery(
+            'abc:("value1 OR "value2") def:"value3"',
+            "def",
+            ["value4", "value5"],
+        );
+
+        // assert
+        expect(result).toBe(
+            'abc:("value1 OR "value2") def:("value4" OR "value5")',
+        );
+    });
+
+    it("should updateFieldOfQuery correctly with single field values already there", () => {
+        // act
+        const result = updateFieldOfQuery(
+            'abc:("value1 OR "value2") def:("value3" OR "value4")',
+            "def",
+            "value5",
+        );
+
+        // assert
+        expect(result).toBe('abc:("value1 OR "value2") def:"value5"');
     });
 });

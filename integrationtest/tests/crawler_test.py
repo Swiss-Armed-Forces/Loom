@@ -61,7 +61,7 @@ class TestCrawler:
         assert fileprev.name == filename
         assert fileprev.path == res_path
 
-    def test_upload_file_qith_quotation_matk_in_name(self, client: Minio):
+    def test_upload_file_with_quotation_mark_in_name(self, client: Minio):
         filename = '".zip'
         file_src = ASSETS_DIR / filename
         with open(file_src, "rb") as file:

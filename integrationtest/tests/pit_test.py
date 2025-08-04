@@ -31,7 +31,7 @@ def test_pit_search():
 
     # New query id, query returns results
     query_id2 = fetch_query_id()
-    files_after_upload_wiht_new_query_id = fetch_files_by_query_from_api(
+    files_after_upload_with_new_query_id = fetch_files_by_query_from_api(
         GetFilesQuery(query_id=query_id2, search_string=search_string)
     ).files
-    assert len(files_after_upload_wiht_new_query_id) == 1
+    assert len(files_after_upload_with_new_query_id) == 1

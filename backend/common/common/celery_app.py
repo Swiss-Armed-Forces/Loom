@@ -159,7 +159,7 @@ def init_celery_app() -> Celery:
     serialization.enable_insecure_serializers()
 
     app.conf.worker_hijack_root_logger = True
-    # We do use the prefork pool here, becasue it is
+    # We do use the prefork pool here, because it is
     # a) more robust against worker failure
     # b) splits signalling and task processing (worker online)
     app.conf.worker_pool = "prefork"

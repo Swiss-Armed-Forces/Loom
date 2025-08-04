@@ -13,7 +13,7 @@ import { HitsPerGroupEntryModel } from "../../../app/api";
 interface ChartProps {
     entries: HitsPerGroupEntryModel[];
     title: string;
-    handleUpdateQuery: (key: string, value: string) => void;
+    handleUpdateQuery: (key: string, value: string | string[]) => void;
     queryKeyword: string;
     compact: number;
 }
@@ -86,14 +86,11 @@ export const Chart = ({
         __: PieItemIdentifier,
         item: DefaultizedPieValueType,
     ) => {
-        let term: string;
+        let term: string | string[];
         if (item.id === MISC_ID) {
-            term = `(${others
-                .filter((d) => d.label)
-                .map((d) => `"${d.label}"`)
-                .join(" OR ")})`;
+            term = others.map((other) => `${other.label}`);
         } else {
-            term = item.label ? `"${item.label}"` : "";
+            term = item.label ? `${item.label}` : "";
         }
         handleUpdateQuery(queryKeyword, term);
     };

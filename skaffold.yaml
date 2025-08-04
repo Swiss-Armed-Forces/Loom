@@ -8,7 +8,7 @@ profiles:
       - command: dev
     build:
       tagPolicy:
-        # We can not use inputDigest tagger directy here, as
+        # We can not use inputDigest tagger directly here, as
         # this will create identical image tags for different
         # build profiles.
         #
@@ -276,7 +276,7 @@ profiles:
       - command: prod
     build:
       tagPolicy:
-        # We can not use inputDigest tagger directy here, as
+        # We can not use inputDigest tagger directly here, as
         # this will create identical image tags for different
         # build profiles.
         #

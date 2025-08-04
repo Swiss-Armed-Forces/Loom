@@ -26,7 +26,7 @@ class TestValueDefaults:  # pylint: disable=too-few-public-methods
         "thing",
     ]
     test_object_id = ObjectId()
-    test_objec_id_str = str(ObjectId())
+    test_object_id_str = str(ObjectId())
     test_datetime = datetime.now()
     test_pure_path = PurePath("/a/path/to/nowhere.txt")
     test_uuid_list = [uuid4(), uuid4()]

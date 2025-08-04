@@ -83,5 +83,5 @@ fi
 
 # Helm lint
 echo ">> Helm lint"
-HELM_SERACH_DIR="${SEARCH_DIR}/charts"
-helm lint "${HELM_SERACH_DIR}"
+HELM_SEARCH_DIR="${SEARCH_DIR}/charts"
+helm lint "${HELM_SEARCH_DIR}"

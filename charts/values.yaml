@@ -3,7 +3,7 @@ nameOverride: null
 
 domain: &default-domain loom
 
-kubernets:
+kubernetes:
   api: 192.168.49.2
 
 image:
@@ -43,7 +43,7 @@ llm:
   temperature: null
   summarize_text_chunk_size: null
   summarize_text_chunk_overlap: null
-  embedding_temperatur: null
+  embedding_temperature: null
   embedding_text_chunk_size: null
   embedding_text_chunk_overlap: null
   llm_rerank_temperature: null
@@ -617,7 +617,7 @@ minio:
       enabled: false
       runAsUser: 1000
       runAsGroup: 1000
-    resources: &default-minio-job-resouces
+    resources: &default-minio-job-resources
       requests:
         cpu: "0.01"
         memory: "50Mi"
@@ -649,7 +649,7 @@ minio:
       enabled: false
       runAsUser: 1000
       runAsGroup: 1000
-    resources: *default-minio-job-resouces
+    resources: *default-minio-job-resources
     # Command to run after the main command on exit
     exitCommand: ''
   ## List of service accounts to be created after minio install
@@ -689,7 +689,7 @@ minio:
       enabled: false
       runAsUser: 1000
       runAsGroup: 1000
-    resources: *default-minio-job-resouces
+    resources: *default-minio-job-resources
     # Command to run after the main command on exit
     exitCommand: ''
   ## List of buckets to be created after minio install
@@ -726,7 +726,7 @@ minio:
       enabled: false
       runAsUser: 1000
       runAsGroup: 1000
-    resources: *default-minio-job-resouces
+    resources: *default-minio-job-resources
     # Command to run after the main command on exit
     exitCommand: ''
   ## List of command to run after minio install
@@ -740,7 +740,7 @@ minio:
       enabled: false
       runAsUser: 1000
       runAsGroup: 1000
-    resources: *default-minio-job-resouces
+    resources: *default-minio-job-resources
     ## Additional volumes to add to the post-job.
     extraVolumes: []
     ## for example:

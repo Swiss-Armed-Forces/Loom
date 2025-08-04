@@ -168,7 +168,7 @@ ES_REPOSITORY_TEST_INSTANCES: dict[type[BaseEsRepository], list[_TestInstances]]
                 tasks_retried=TestValueDefaults.test_uuid_list,
                 tasks_failed=TestValueDefaults.test_uuid_list,
                 # File
-                storage_id=TestValueDefaults.test_objec_id_str,
+                storage_id=TestValueDefaults.test_object_id_str,
                 content=TestValueDefaults.test_str,
                 content_truncated=TestValueDefaults.test_bool,
                 full_name=TestValueDefaults.test_pure_path,
@@ -176,8 +176,8 @@ ES_REPOSITORY_TEST_INSTANCES: dict[type[BaseEsRepository], list[_TestInstances]]
                 sha256=TestValueDefaults.test_str,
                 uploaded_datetime=TestValueDefaults.test_datetime,
                 size=TestValueDefaults.test_long,
-                thumbnail_file_id=TestValueDefaults.test_objec_id_str,
-                preview_file_id=TestValueDefaults.test_objec_id_str,
+                thumbnail_file_id=TestValueDefaults.test_object_id_str,
+                preview_file_id=TestValueDefaults.test_object_id_str,
                 exclude_from_archives=TestValueDefaults.test_bool,
                 tags=TestValueDefaults.test_str_list_no_duplicates,
                 magic_file_type=TestValueDefaults.test_str,
@@ -236,7 +236,7 @@ ES_REPOSITORY_TEST_INSTANCES: dict[type[BaseEsRepository], list[_TestInstances]]
                 tasks_retried=list(map(str, TestValueDefaults.test_uuid_list)),
                 tasks_failed=list(map(str, TestValueDefaults.test_uuid_list)),
                 # _EsFile
-                storage_id=TestValueDefaults.test_objec_id_str,
+                storage_id=TestValueDefaults.test_object_id_str,
                 content=TestValueDefaults.test_str,
                 content_truncated=TestValueDefaults.test_bool,
                 full_name=str(TestValueDefaults.test_pure_path),
@@ -251,8 +251,8 @@ ES_REPOSITORY_TEST_INSTANCES: dict[type[BaseEsRepository], list[_TestInstances]]
                 sha256=TestValueDefaults.test_str,
                 uploaded_datetime=TestValueDefaults.test_datetime.isoformat(),
                 size=TestValueDefaults.test_long,
-                thumbnail_file_id=TestValueDefaults.test_objec_id_str,
-                preview_file_id=TestValueDefaults.test_objec_id_str,
+                thumbnail_file_id=TestValueDefaults.test_object_id_str,
+                preview_file_id=TestValueDefaults.test_object_id_str,
                 exclude_from_archives=TestValueDefaults.test_bool,
                 tags=TestValueDefaults.test_str_list_no_duplicates,
                 magic_file_type=TestValueDefaults.test_str,
@@ -314,18 +314,18 @@ ES_REPOSITORY_TEST_INSTANCES: dict[type[BaseEsRepository], list[_TestInstances]]
                 tasks_failed=TestValueDefaults.test_uuid_list,
                 # Archive
                 query=QueryParameters(
-                    query_id=TestValueDefaults.test_objec_id_str,
+                    query_id=TestValueDefaults.test_object_id_str,
                     search_string=TestValueDefaults.test_str,
                     languages=TestValueDefaults.test_str_list,
                     keep_alive=TestValueDefaults.test_keep_alive,
                 ),
                 plain_file=StoredArchive(
-                    storage_id=TestValueDefaults.test_objec_id_str,
+                    storage_id=TestValueDefaults.test_object_id_str,
                     sha256=TestValueDefaults.test_str,
                     size=TestValueDefaults.test_long,
                 ),
                 encrypted_file=StoredArchive(
-                    storage_id=TestValueDefaults.test_objec_id_str,
+                    storage_id=TestValueDefaults.test_object_id_str,
                     sha256=TestValueDefaults.test_str,
                     size=TestValueDefaults.test_long,
                 ),
@@ -353,18 +353,18 @@ ES_REPOSITORY_TEST_INSTANCES: dict[type[BaseEsRepository], list[_TestInstances]]
                 tasks_failed=list(map(str, TestValueDefaults.test_uuid_list)),
                 # _EsArchive
                 query=_EsQueryParameters(
-                    query_id=TestValueDefaults.test_objec_id_str,
+                    query_id=TestValueDefaults.test_object_id_str,
                     search_string=TestValueDefaults.test_str,
                     languages=TestValueDefaults.test_str_list,
                     keep_alive=TestValueDefaults.test_keep_alive,
                 ),
                 plain_file=_EsStoredArchive(
-                    storage_id=TestValueDefaults.test_objec_id_str,
+                    storage_id=TestValueDefaults.test_object_id_str,
                     sha256=TestValueDefaults.test_str,
                     size=TestValueDefaults.test_long,
                 ),
                 encrypted_file=_EsStoredArchive(
-                    storage_id=TestValueDefaults.test_objec_id_str,
+                    storage_id=TestValueDefaults.test_object_id_str,
                     sha256=TestValueDefaults.test_str,
                     size=TestValueDefaults.test_long,
                 ),
@@ -397,7 +397,7 @@ ES_REPOSITORY_TEST_INSTANCES: dict[type[BaseEsRepository], list[_TestInstances]]
                 tasks_failed=TestValueDefaults.test_uuid_list,
                 # AiContext
                 query=QueryParameters(
-                    query_id=TestValueDefaults.test_objec_id_str,
+                    query_id=TestValueDefaults.test_object_id_str,
                     search_string=TestValueDefaults.test_str,
                     languages=TestValueDefaults.test_str_list_no_duplicates,
                     keep_alive=TestValueDefaults.test_keep_alive,
@@ -427,7 +427,7 @@ ES_REPOSITORY_TEST_INSTANCES: dict[type[BaseEsRepository], list[_TestInstances]]
                 tasks_failed=list(map(str, TestValueDefaults.test_uuid_list)),
                 # _EsAiContext
                 query=_EsQueryParameters(
-                    query_id=TestValueDefaults.test_objec_id_str,
+                    query_id=TestValueDefaults.test_object_id_str,
                     search_string=TestValueDefaults.test_str,
                     languages=TestValueDefaults.test_str_list_no_duplicates,
                     keep_alive=TestValueDefaults.test_keep_alive,

@@ -20,13 +20,13 @@ app = get_celery_app()
 def schedule_attachments(tika_result: TikaResult, file: File):
     """Schedule tasks to dispatch the attachment processing of an file.
 
-    Note: that tika proccesses archives (i.e. zip, tar, ect.) as attachments, so this
+    Note: that tika processes archives (i.e. zip, tar, etc.) as attachments, so this
     also handles these types of files through the tika processing.
     """
     for attachment in tika_result.attachments:
-        # Note: we schedule here each tasks seperatly
+        # Note: we schedule here each tasks separately
         # and not in a group([..]): This is to avoid
-        # that we are beeing OOM-Killed for files
+        # that we are being OOM-Killed for files
         # with many attachments
         schedule_attachment.s(attachment, file).delay().forget()
 

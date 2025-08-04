@@ -65,7 +65,7 @@ class MessageQueryIdExpired(BaseModel):
 
 class PubSubMessage(BaseModel):
     channel: str | None = (
-        None  # None means the message will be deliverd on the meta channel
+        None  # None means the message will be delivered on the meta channel
     )
 
     message: Union[

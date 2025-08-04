@@ -97,7 +97,10 @@ export function StatisticsView() {
             });
     }, [searchQuery, displayStat]); // eslint-disable-line react-hooks/exhaustive-deps
 
-    const handleUpdateQuery = (queryKeyword: string, searchTerm: string) => {
+    const handleUpdateQuery = (
+        queryKeyword: string,
+        searchTerm: string | string[],
+    ) => {
         const newQuery = updateFieldOfQuery(
             searchQuery?.query ?? "",
             queryKeyword,

@@ -40,14 +40,14 @@ def _get_generic_stats(
 
 class TestStatsWithoutFiles:
 
-    def test_get_stat_summary_on_emtpy_es(self):
+    def test_get_stat_summary_on_empty_es(self):
         res = _get_summary_stats()
         assert res.count == 0
         assert res.avg == 0
         assert res.max == 0
         assert res.min == 0
 
-    def test_get_generic_stats_on_emtpy_es(self):
+    def test_get_generic_stats_on_empty_es(self):
         res = _get_generic_stats(Stat.FILE_TYPE_MAGIC)
         assert res.stat == Stat.FILE_TYPE_MAGIC.value
         assert res.data == []

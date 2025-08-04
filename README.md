@@ -266,7 +266,7 @@ APIs directly, if needed.
 
 * [Getting Started Guide](Documentation/getting-started.md)
 * [Development environment setup](Documentation/devenv-setup.md)
-* [Contributing Guidlines](/CONTRIBUTING.md)
+* [Contributing Guidelines](/CONTRIBUTING.md)
 * [Code of Conduct](/CODE_OF_CONDUCT.md)
 * [Third Party Licenses](/THIRD-PARTY.md)
 * [Frontend Documentation](Frontend/README.md)

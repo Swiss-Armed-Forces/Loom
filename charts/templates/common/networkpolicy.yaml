@@ -31,7 +31,7 @@ spec:
       - ipBlock:
           # Hard coded cluster ip - might break if changed
           # see better version below..
-          cidr: {{ .Values.kubernets.api }}/32
+          cidr: {{ .Values.kubernetes.api }}/32
     - ports:
       - protocol: TCP
         port: 443
