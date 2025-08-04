@@ -20,6 +20,7 @@ from common.messages.messages import (
 )
 from common.services.lazybytes_service import LazyBytes
 from common.services.query_builder import QueryParameters
+from httpx import HTTPError
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from numpy import array, linspace
 from ollama import Message, Options
@@ -52,6 +53,8 @@ SCORED_RANK_SCALING_FACTOR = 10
 MAX_RANKED_SEARCH_EMBEDDINGS = 10
 
 LLM_MAX_TOKENS_RAG = 100
+
+RAG_MAX_RETRIES = 15
 
 
 # Contains the chunks of a files text with a scored the knn score of the .
@@ -99,7 +102,16 @@ def signature(context: AiContext, question: str) -> Signature:
     )
 
 
-@app.task(base=AiContextProcessingTask)
+class LLMError(Exception):
+    pass
+
+
+@app.task(
+    base=AiContextProcessingTask,
+    autoretry_for=tuple([LLMError]),
+    max_retries=RAG_MAX_RETRIES,
+    retry_backoff=True,
+)
 def create_question_embedding(text: str) -> LazyBytes:
     text_splitter = RecursiveCharacterTextSplitter(
         chunk_size=settings.llm_embedding_text_chunk_size,
@@ -108,13 +120,16 @@ def create_question_embedding(text: str) -> LazyBytes:
     texts = text_splitter.split_text(text)
 
     client = get_ollama_client()
-    response = client.embed(
-        model=settings.llm_model_embedding,
-        input=texts,
-        options=Options(
-            temperature=settings.llm_embedding_temperature,
-        ),
-    )
+    try:
+        response = client.embed(
+            model=settings.llm_model_embedding,
+            input=texts,
+            options=Options(
+                temperature=settings.llm_embedding_temperature,
+            ),
+        )
+    except HTTPError as ex:
+        raise LLMError() from ex
 
     embeddings_vectors = response.embeddings
     embedding_vectors_bytes = to_json(embeddings_vectors)
@@ -193,15 +208,18 @@ def _invoke_rerank_llm(
     prompt: str,
 ) -> float:
     client = get_ollama_client()
-    response = client.generate(
-        model=settings.llm_model,
-        prompt=prompt,
-        system=settings.llm_rerank_system_prompt,
-        options=Options(
-            temperature=settings.llm_rerank_temperature,
-        ),
-        think=settings.llm_think,
-    )
+    try:
+        response = client.generate(
+            model=settings.llm_model,
+            prompt=prompt,
+            system=settings.llm_rerank_system_prompt,
+            options=Options(
+                temperature=settings.llm_rerank_temperature,
+            ),
+            think=settings.llm_think,
+        )
+    except HTTPError as ex:
+        raise LLMError() from ex
 
     # search and extract rank
     rank_search = re.search(r"^\s*(?P<rank>[0-9.]+)", response.response)
@@ -244,7 +262,12 @@ RANK:"""
     return rank
 
 
-@app.task(base=AiContextProcessingTask)
+@app.task(
+    base=AiContextProcessingTask,
+    autoretry_for=tuple([LLMError]),
+    max_retries=RAG_MAX_RETRIES,
+    retry_backoff=True,
+)
 def rerank(
     scored_search_embedding: ScoredSearchEmbedding,
     question: str,
@@ -345,15 +368,18 @@ def _stream_chat_llm(
     messages = [Message(role="system", content=settings.llm_chat_system_prompt)] + list(
         messages
     )
-    stream = client.chat(
-        model=settings.llm_model,
-        messages=messages,
-        stream=True,
-        options=Options(
-            temperature=settings.llm_temperature,
-        ),
-        think=settings.llm_think,
-    )
+    try:
+        stream = client.chat(
+            model=settings.llm_model,
+            messages=messages,
+            stream=True,
+            options=Options(
+                temperature=settings.llm_temperature,
+            ),
+            think=settings.llm_think,
+        )
+    except HTTPError as ex:
+        raise LLMError() from ex
     for token in stream:
         message_content = token.message.content
         if message_content is None:
@@ -362,7 +388,12 @@ def _stream_chat_llm(
 
 
 # pylint: disable=too-many-locals
-@app.task(base=AiContextProcessingTask)
+@app.task(
+    base=AiContextProcessingTask,
+    autoretry_for=tuple([LLMError]),
+    max_retries=RAG_MAX_RETRIES,
+    retry_backoff=True,
+)
 def chatbot_query(
     sorted_ranked_search_embeddings: list[RankedSearchEmbedding],
     context: AiContext,

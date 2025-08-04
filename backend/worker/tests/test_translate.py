@@ -1,5 +1,4 @@
 from email.message import Message
-from http.client import RemoteDisconnected
 from math import floor
 from urllib.error import HTTPError
 
@@ -115,7 +114,7 @@ def test_translate_http_internal_server_error():
 
 def test_translate_remote_disconnected():
     libretranslate_api = get_libretranslate_api()
-    libretranslate_api.translate.side_effect = RemoteDisconnected("status line")
+    libretranslate_api.translate.side_effect = OSError("status line")
 
     with pytest.raises(LibretranslateInternalException):
         translate(

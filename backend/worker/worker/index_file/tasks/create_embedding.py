@@ -7,6 +7,7 @@ from common.dependencies import get_celery_app, get_lazybytes_service
 from common.file.file_repository import Embedding, File
 from common.services.lazybytes_service import LazyBytes
 from common.utils.cache import cache
+from httpx import HTTPError
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from ollama import Options
 from pydantic_core import from_json, to_json
@@ -26,6 +27,8 @@ app = get_celery_app()
 
 CHUNK_LENGTH = 400
 CHUNK_OVERLAP = 100
+
+CREATE_EMBEDDING_MAX_RETRIES = 15
 
 
 def signature(file: File) -> Signature:
@@ -82,17 +85,29 @@ def create_embedding_task(
     ).delay().forget()
 
 
-@app.task(base=FileIndexingTask)
+class LLMError(Exception):
+    pass
+
+
+@app.task(
+    base=FileIndexingTask,
+    autoretry_for=tuple([LLMError]),
+    max_retries=CREATE_EMBEDDING_MAX_RETRIES,
+    retry_backoff=True,
+)
 @cache()
 def embed_text(text: str) -> LazyBytes:
     client = get_ollama_client()
-    response = client.embed(
-        model=settings.llm_model_embedding,
-        input=text,
-        options=Options(
-            temperature=settings.llm_embedding_temperature,
-        ),
-    )
+    try:
+        response = client.embed(
+            model=settings.llm_model_embedding,
+            input=text,
+            options=Options(
+                temperature=settings.llm_embedding_temperature,
+            ),
+        )
+    except HTTPError as ex:
+        raise LLMError() from ex
     embedding = Embedding(
         text=text,
         vector=list(response.embeddings[0]),

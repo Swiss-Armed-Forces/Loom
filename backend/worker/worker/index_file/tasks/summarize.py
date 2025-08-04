@@ -6,6 +6,7 @@ from common.dependencies import get_celery_app, get_lazybytes_service
 from common.file.file_repository import File
 from common.services.lazybytes_service import LazyBytes
 from common.utils.cache import cache
+from httpx import HTTPError
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from ollama import Options
 
@@ -27,6 +28,8 @@ MAX_SUMMARIZATION_INPUT_TEXT_LENGTH = TIKA_MAX_TEXT_SIZE
 LLM_MAX_TOKENS_KEY_POINTS = 500
 LLM_MAX_TOKENS_SUMMARIZE = 2000
 LLM_MAX_TOKENS_SUMMARIZE_REFINE = 500
+
+SUMMARIZE_MAX_RETRIES = 15
 
 
 def signature(file: File) -> Signature:
@@ -94,6 +97,10 @@ def summarize_task(
     ).delay().forget()
 
 
+class LLMError(Exception):
+    pass
+
+
 def _invoke_llm(
     prompt: str,
     max_tokens: int = -1,
@@ -103,20 +110,28 @@ def _invoke_llm(
         system_prompt = settings.llm_summarize_system_prompt
 
     client = get_ollama_client()
-    response = client.generate(
-        model=settings.llm_model,
-        prompt=prompt,
-        system=system_prompt,
-        options=Options(
-            temperature=settings.llm_temperature,
-            num_predict=max_tokens,
-        ),
-        think=settings.llm_think,
-    )
+    try:
+        response = client.generate(
+            model=settings.llm_model,
+            prompt=prompt,
+            system=system_prompt,
+            options=Options(
+                temperature=settings.llm_temperature,
+                num_predict=max_tokens,
+            ),
+            think=settings.llm_think,
+        )
+    except HTTPError as ex:
+        raise LLMError() from ex
     return response.response
 
 
-@app.task(base=FileIndexingTask)
+@app.task(
+    base=FileIndexingTask,
+    autoretry_for=tuple([LLMError]),
+    max_retries=SUMMARIZE_MAX_RETRIES,
+    retry_backoff=True,
+)
 @cache()
 def extract_key_points(text: str) -> str:
     extract_prompt = f"""TEXT:
@@ -136,7 +151,12 @@ KEY POINTS:"""
     return llm_response
 
 
-@app.task(base=FileIndexingTask)
+@app.task(
+    base=FileIndexingTask,
+    autoretry_for=tuple([LLMError]),
+    max_retries=SUMMARIZE_MAX_RETRIES,
+    retry_backoff=True,
+)
 @cache()
 def summarize(key_points: list[str]) -> str | None:
     if len(key_points) <= 0:
@@ -163,7 +183,12 @@ SUMMARY:"""
     return llm_response
 
 
-@app.task(base=FileIndexingTask)
+@app.task(
+    base=FileIndexingTask,
+    autoretry_for=tuple([LLMError]),
+    max_retries=SUMMARIZE_MAX_RETRIES,
+    retry_backoff=True,
+)
 @cache()
 def refine_summary(summary: str | None, system_prompt: str) -> str | None:
     if summary is None:
