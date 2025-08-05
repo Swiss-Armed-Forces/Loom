@@ -2,6 +2,7 @@ import logging
 import random
 from abc import ABC
 from datetime import datetime
+from pprint import pformat
 from typing import Any
 
 import celery
@@ -14,6 +15,10 @@ from kombu import Exchange, Queue, serialization
 from pydantic import BaseModel, Field, RootModel
 
 from common.settings import settings
+from common.utils.cgroup_memory_limit import (
+    MemoryLimitNotFoundError,
+    get_cgroup_memory_limit,
+)
 from common.utils.oom_score_adjust import adjust_oom_score
 
 logger = logging.getLogger(__name__)
@@ -164,6 +169,16 @@ def init_celery_app() -> Celery:
     # b) splits signalling and task processing (worker online)
     app.conf.worker_pool = "prefork"
     app.conf.worker_concurrency = 4
+    # Set max memory per child worker to prevent memory leaks which
+    # might lead to OOM-Kills
+    try:
+        app.conf.worker_max_memory_per_child = (get_cgroup_memory_limit() / 1024) // (
+            app.conf.worker_concurrency + 1  # +1: for main Process
+        )
+    except MemoryLimitNotFoundError:
+        # we don't set a memory limit if we can not determine the Cgroup memory limit
+        pass
+
     # Note: that worker_prefetch_multiplier applies per queue, which means
     # in our model (one queue per task) the worker will still prefetch quite
     # a few tasks.
@@ -245,6 +260,7 @@ def init_celery_app() -> Celery:
     # Patch the celery group functionality as required due to a bug in celery.
     _patch_group(app=app)
 
+    logging.debug("Celery initialized with config: %s", pformat(app.conf))
     return app
 
 
