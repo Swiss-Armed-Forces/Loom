@@ -12,7 +12,7 @@ describe("SearchQueryUtils", () => {
         const result = updateTagOfQuery("*", "ui-uploaded");
 
         // assert
-        expect(result).toBe('* tags:"ui-uploaded"');
+        expect(result).toBe('tags:"ui-uploaded" *');
     });
 
     it("should updateTagOfQuery correctly with empty query", () => {
@@ -28,7 +28,7 @@ describe("SearchQueryUtils", () => {
         const result = updateTagOfQuery('* tags:"some-old-tag"', "ui-uploaded");
 
         // assert
-        expect(result).toBe('* tags:"ui-uploaded"');
+        expect(result).toBe('tags:"ui-uploaded" *');
     });
 
     it("should updateTagOfQuery correctly replace previous tag with many spaces", () => {
@@ -39,7 +39,7 @@ describe("SearchQueryUtils", () => {
         );
 
         // assert
-        expect(result).toBe('*    when:"yesterday" tags:"ui-uploaded"');
+        expect(result).toBe('tags:"ui-uploaded" * when:"yesterday"');
     });
 
     it("should updateWhenOfQuery correctly with previous start query", () => {
@@ -47,7 +47,7 @@ describe("SearchQueryUtils", () => {
         const result = updateWhenOfQuery("*", "yesterday");
 
         // assert
-        expect(result).toBe('* when:"yesterday"');
+        expect(result).toBe('when:"yesterday" *');
     });
 
     it("should updateWhenOfQuery correctly with empty query", () => {
@@ -63,7 +63,7 @@ describe("SearchQueryUtils", () => {
         const result = updateWhenOfQuery('* when:"thisweek"', "today");
 
         // assert
-        expect(result).toBe('* when:"today"');
+        expect(result).toBe('when:"today" *');
     });
 
     it("should updateWhenOfQuery correctly replace previous when with many spaces", () => {
@@ -74,7 +74,7 @@ describe("SearchQueryUtils", () => {
         );
 
         // assert
-        expect(result).toBe('*  tags:"ui-uploaded" when:"thisweek"');
+        expect(result).toBe('when:"thisweek" *  tags:"ui-uploaded"');
     });
 
     it("should updateFilenameOfQuery correctly with nested paths", () => {
@@ -85,7 +85,7 @@ describe("SearchQueryUtils", () => {
         );
 
         // assert
-        expect(result).toBe('* filename:"//crawler0/test\\"folder/*"');
+        expect(result).toBe('filename:"//crawler0/test\\"folder/*" *');
     });
 
     it("should updateFieldOfQuery correctly with multiple field values", () => {
@@ -97,7 +97,7 @@ describe("SearchQueryUtils", () => {
 
         // assert
         expect(result).toBe(
-            'abc:("value1 OR "value2") def:("value3" OR "value4")',
+            'def:("value3" OR "value4") abc:("value1 OR "value2")',
         );
     });
 
@@ -111,7 +111,7 @@ describe("SearchQueryUtils", () => {
 
         // assert
         expect(result).toBe(
-            'abc:("value1 OR "value2") def:("value5" OR "value6")',
+            'def:("value5" OR "value6") abc:("value1 OR "value2")',
         );
     });
 
@@ -125,7 +125,7 @@ describe("SearchQueryUtils", () => {
 
         // assert
         expect(result).toBe(
-            'abc:("value1 OR "value2") def:("value4" OR "value5")',
+            'def:("value4" OR "value5") abc:("value1 OR "value2")',
         );
     });
 
@@ -138,6 +138,6 @@ describe("SearchQueryUtils", () => {
         );
 
         // assert
-        expect(result).toBe('abc:("value1 OR "value2") def:"value5"');
+        expect(result).toBe('def:"value5" abc:("value1 OR "value2")');
     });
 });
