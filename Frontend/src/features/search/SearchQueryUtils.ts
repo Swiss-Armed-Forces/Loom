@@ -56,13 +56,13 @@ export const updateFieldOfQuery = (
     // Regex to match both formats:
     // fieldName:"value" OR fieldName:("value1" OR "value2" ...)
     const fieldRegex = new RegExp(
-        `${newFieldNameSanitized}:(?:"(?:[^"\\\\]|\\\\.)*"|\\([^)]*\\))`,
+        `\\s*${newFieldNameSanitized}:(?:"(?:[^"\\\\]|\\\\.)*"|\\([^)]*\\))\\s*`,
         "g",
     );
-    const previousQueryReplaced = previousQuery.replace(fieldRegex, "").trim();
+    const previousQueryReplaced = previousQuery.replace(fieldRegex, " ").trim();
     return (
-        previousQueryReplaced +
+        fieldEntry +
         (previousQueryReplaced.length > 0 ? " " : "") +
-        fieldEntry
+        previousQueryReplaced
     );
 };
