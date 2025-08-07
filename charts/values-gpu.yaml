@@ -1,4 +1,6 @@
 translate:
+  env:
+    ARGOS_DEVICE_TYPE: "cuda"
   resources:
     requests:
       nvidia.com/gpu: 1
