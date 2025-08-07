@@ -323,8 +323,8 @@ translate:
       cpu: "0.5"
       memory: "2Gi"
     limits:
-      cpu: "2"
-      memory: "10Gi"
+      cpu: "4"
+      memory: "5Gi"
 
 minio:
   ## set kubernetes cluster domain where minio is running

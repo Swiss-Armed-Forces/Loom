@@ -23,6 +23,8 @@ from luqum.tree import (
 from luqum.visitor import TreeTransformer
 from pydantic import BaseModel, Field
 
+from common.settings import settings
+
 logger = logging.getLogger(__name__)
 
 # According to ElasticSearch:
@@ -172,7 +174,9 @@ class TranslateTransformer(TreeTransformer):
             return
         translation_nodes = [node]
         for lang in self._languages:
-            translation = self._translator.translate(node_value, "en", lang)
+            translation = self._translator.translate(
+                node_value, settings.translate_target, lang
+            )
             translation_node = Phrase(f'"{translation}"')
             translation_nodes.append(translation_node)
 
