@@ -22,4 +22,12 @@ RUN set -exu \
 
 EXPOSE 5000
 
-ENTRYPOINT ["gunicorn", "wsgi:app", "--bind", "0.0.0.0:5000", "--max-requests", "50", "--max-requests-jitter", "10", "--access-logfile", "-", "--timeout", "180" ]
+ENTRYPOINT [ "gunicorn", "wsgi:app", \
+    "--bind", "0.0.0.0:5000", \
+    "--timeout", "180", \
+    "--worker-class", "gevent", \
+    "--workers", "2", \
+    "--max-requests", "1024", \
+    "--max-requests-jitter", "1024", \
+    "--access-logfile", "-" \
+    ]

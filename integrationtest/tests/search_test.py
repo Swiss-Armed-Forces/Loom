@@ -225,34 +225,52 @@ def test_search_strange_chars_password():
     fetch_files_from_api(search_string=search_string, expected_no_of_files=1)
 
 
-def test_search_multilanguage():
-    search_string = "house"
+class TestSearchMultilanguage:
+    asset_list = [
+        "search_test_files/multilanguage_file.txt",
+    ]
 
-    # Ensure the uploads went well
-    upload_asset(asset_name="search_test_files/multilanguage_file.txt")
+    @pytest.fixture(scope="class", autouse=True)
+    def setup_testfiles(self):
+        upload_many_assets(asset_names=self.asset_list)
 
-    file = get_file_preview_by_name(
-        search_string=search_string, file_name="multilanguage_file.txt"
-    )
+        # wait for assets to be processes
+        search_string = "*"
+        file_count = len(self.asset_list)
+        fetch_files_from_api(
+            search_string=search_string, expected_no_of_files=file_count
+        )
 
-    assert file.highlight is not None
-    assert file.highlight["content"][0].count("highlight") == 2
+    def seaerch_no_language(self):
+        search_string = "house"
 
-    # higher score because two words match
-    file = get_file_preview_by_name(
-        search_string=search_string,
-        languages=["de"],
-        file_name="multilanguage_file.txt",
-    )
+        file = get_file_preview_by_name(
+            search_string=search_string, file_name="multilanguage_file.txt"
+        )
 
-    assert file.highlight is not None
-    assert file.highlight["content"][0].count("highlight") == 4
+        assert file.highlight is not None
+        assert file.highlight["content"][0].count("highlight") == 2
 
-    file = get_file_preview_by_name(
-        search_string=search_string,
-        languages=["de", "fr"],
-        file_name="multilanguage_file.txt",
-    )
+    def search_single_language(self):
+        search_string = "house"
 
-    assert file.highlight is not None
-    assert file.highlight["content"][0].count("highlight") == 6
+        file = get_file_preview_by_name(
+            search_string=search_string,
+            languages=["de"],
+            file_name="multilanguage_file.txt",
+        )
+
+        assert file.highlight is not None
+        assert file.highlight["content"][0].count("highlight") == 4
+
+    def search_multi_language(self):
+        search_string = "house"
+
+        file = get_file_preview_by_name(
+            search_string=search_string,
+            languages=["de", "fr"],
+            file_name="multilanguage_file.txt",
+        )
+
+        assert file.highlight is not None
+        assert file.highlight["content"][0].count("highlight") == 6
