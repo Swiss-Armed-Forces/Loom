@@ -36,7 +36,7 @@ zstandard = "^0.23.0"
 identify = "^2.6.12"
 
 [tool.poetry.group.test.dependencies]
-pytest = {extras = ["celery"], version = "^8.2.0"}
+pytest = "^8.2.0"
 pytest-mock = "^3.14.0"
 pytest-cov = "^5.0.0"
 pytest-celery = "^1.0.0"
