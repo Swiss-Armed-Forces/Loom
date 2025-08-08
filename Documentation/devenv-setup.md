@@ -34,7 +34,8 @@
 6. Install direnv
    - Install direnv using the [official instructions](https://direnv.net/docs/installation.html)
    - Don't forget to hook direnv into your shell [instructions](https://direnv.net/docs/hook.html)
-   - **Optional:** Open file `/etc/nix/nix.conf` and add `allowed-users = root [NAME_OF_YOUR_USER]`
+   - Open file `/etc/nix/nix.conf` and add `allowed-users = root [NAME_OF_YOUR_USER]`
+   - Run `sudo systemctl restart nix-daemon.service` to restart the Nix daemon
    - Allow direnv to run in the loom directory: `cd loom/ && direnv allow`
 7. Start the development environment:
    - Loom: `cd loom/ && up --development`
