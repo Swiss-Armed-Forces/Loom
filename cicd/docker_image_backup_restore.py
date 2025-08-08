@@ -225,14 +225,6 @@ def cmd_backup(parallel: int, image_dir: Path, pattern: str, prune: bool) -> Non
     logger.info("Creating: %s", image_dir)
     image_dir.mkdir(parents=True, exist_ok=True)
 
-    with ProcessPoolExecutor(max_workers=parallel or None) as executor:
-        futures = [
-            executor.submit(docker_backup_image, meta, image_dir)
-            for meta in image_metadata
-        ]
-        for future in as_completed(futures):
-            future.result()
-
     if prune:
         kept_dirs = {meta.id for meta in image_metadata}
         for child in image_dir.iterdir():
@@ -242,6 +234,14 @@ def cmd_backup(parallel: int, image_dir: Path, pattern: str, prune: bool) -> Non
                     child.unlink()
                 elif child.is_dir():
                     shutil.rmtree(child)
+
+    with ProcessPoolExecutor(max_workers=parallel or None) as executor:
+        futures = [
+            executor.submit(docker_backup_image, meta, image_dir)
+            for meta in image_metadata
+        ]
+        for future in as_completed(futures):
+            future.result()
 
     # Print total size of image_dir directory
     total_size = sum(f.stat().st_size for f in image_dir.glob("**/*") if f.is_file())
