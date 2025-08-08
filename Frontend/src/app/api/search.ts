@@ -97,10 +97,6 @@ export const getTreeLevelNodeLimit = async () => {
 export const getStatSummary = async (
     query: SearchQuery,
 ): Promise<SummaryStatisticsModel> => {
-    if (query.query.trim() === "") {
-        return { count: 0, min: 0, max: 0, avg: 0 };
-    }
-
     return filesApi.getSummaryStatsV1FilesStatsSummaryGet({
         queryId: query.id,
         keepAlive: query.keepAlive ?? undefined,
@@ -113,10 +109,6 @@ export const getStatGeneric = async (
     query: SearchQuery,
     stat: Stat,
 ): Promise<GenericStatisticsModel> => {
-    if (query.query.trim() === "") {
-        return { stat: "", key: "", data: [], fileCount: 0 };
-    }
-
     return filesApi.getGenericStatsV1FilesStatsGenericStatGet({
         stat,
         queryId: query.id,
