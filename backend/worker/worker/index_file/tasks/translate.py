@@ -49,6 +49,10 @@ class LibretranslateDetectedLanguage(BaseModel, frozen=True):
 LibreTranslateLanguageDetectResult = list[LibretranslateDetectedLanguage]
 
 
+class LibretranslateInternalException(Exception):
+    pass
+
+
 def signature(file: File) -> Signature:
     """Create the signature for translation."""
     if settings.skip_translate_while_indexing:
@@ -71,7 +75,12 @@ def extract_text_from_tika_result(tika_result: TikaResult) -> LazyBytes | None:
     return tika_result.text
 
 
-@app.task(base=FileIndexingTask)
+@app.task(
+    base=FileIndexingTask,
+    autoretry_for=tuple([LibretranslateInternalException]),
+    retry_backoff=True,
+    max_retries=TRANSLATE_MAX_RETRIES,
+)
 @cache(key_function=lambda _, file: file.sha256)
 def translate_detect_language_task(
     text_lazy: LazyBytes | None,
@@ -100,8 +109,14 @@ def translate_detect_language(text: str) -> LibreTranslateLanguageDetectResult:
         return result
 
     libre_translate = get_libretranslate_api()
-
-    detected_languages = libre_translate.detect(text)
+    try:
+        detected_languages = libre_translate.detect(text)
+    except HTTPError as ex:
+        if 500 <= ex.code < 600:
+            raise LibretranslateInternalException from ex
+        raise ex
+    except OSError as ex:
+        raise LibretranslateInternalException from ex
 
     for detected_language in detected_languages:
         detected_language = LibretranslateDetectedLanguage.model_validate(
@@ -159,10 +174,6 @@ def translate_task(
                 ),
                 complete_async_branch(self),
             ).delay().forget()
-
-
-class LibretranslateInternalException(Exception):
-    pass
 
 
 @app.task(

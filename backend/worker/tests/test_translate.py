@@ -68,6 +68,34 @@ def test_translate_detect_language_empty_text():
     assert len(result) == 0
 
 
+def test_translate_detect_http_internal_server_error():
+    libretranslate_api = get_libretranslate_api()
+    libretranslate_api.detect.side_effect = HTTPError(
+        url="http://...", code=500, msg="Internal error", fp=None, hdrs=Message()
+    )
+
+    with pytest.raises(LibretranslateInternalException):
+        translate_detect_language("a short text")
+
+
+def test_translate_detect_remote_disconnected():
+    libretranslate_api = get_libretranslate_api()
+    libretranslate_api.detect.side_effect = OSError("status line")
+
+    with pytest.raises(LibretranslateInternalException):
+        translate_detect_language("a short text")
+
+
+def test_translate_detect_http_client_error():
+    libretranslate_api = get_libretranslate_api()
+    libretranslate_api.detect.side_effect = HTTPError(
+        url="http://...", code=400, msg="Internal error", fp=None, hdrs=Message()
+    )
+
+    with pytest.raises(HTTPError):
+        translate_detect_language("a short text")
+
+
 @pytest.mark.parametrize(
     "text, expected_text, expected_language,expected_translate_calls",
     [
