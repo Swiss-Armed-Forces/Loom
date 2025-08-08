@@ -47,8 +47,8 @@ spec:
                 - -c
                 - python scripts/healthcheck.py
             initialDelaySeconds: {{ default 0 .Values.translate.livenessProbe.initialDelaySeconds }}
-            timeoutSeconds: {{ default 10 .Values.translate.livenessProbe.timeoutSeconds }}
-            periodSeconds: {{ default 20 .Values.translate.livenessProbe.periodSeconds }}
+            timeoutSeconds: {{ default 90 .Values.translate.livenessProbe.timeoutSeconds }}
+            periodSeconds: {{ default 500 .Values.translate.livenessProbe.periodSeconds }}
             failureThreshold: {{ default 6 .Values.translate.livenessProbe.failureThreshold }}
           {{- end }}
           {{- if .Values.translate.resources }}

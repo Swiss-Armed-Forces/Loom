@@ -222,14 +222,16 @@ class GridFSLazyBytesService(LazyBytesService):
         query = {"uploadDate": {"$lt": one_minute_ago}}
         files_to_delete = self._bucket.find(query)
         for file in files_to_delete:
+            file_id = file._id  # pylint: disable=protected-access
             if file.length > file.chunk_size and file.upload_date > one_hour_ago:
-                file_id = file._id  # pylint: disable=protected-access
+                # file has many chunks and was recently uploaded, might still be uploading:
                 expected_chunks = ceil(file.length / file.chunk_size)
                 actual_chunks = self._database.fs.chunks.count_documents(
                     {"files_id": file_id}
                 )
 
                 if actual_chunks < expected_chunks:
+                    # not all chunks uploaded yet: skip delete
                     continue
 
             self._bucket.delete(file_id)
