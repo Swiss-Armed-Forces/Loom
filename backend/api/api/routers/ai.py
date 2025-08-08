@@ -6,7 +6,7 @@ from common.ai_context.ai_scheduling_service import AiSchedulingService
 from common.dependencies import get_ai_context_repository, get_ai_scheduling_service
 from common.services.query_builder import QueryParameters
 from fastapi import APIRouter, Depends, Query
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 router = APIRouter()
 
@@ -17,7 +17,7 @@ default_ai_scheduling_service = Depends(get_ai_scheduling_service)
 
 
 class ContextCreateResponse(BaseModel):
-    context_id: UUID
+    context_id: UUID = Field(min_length=1)
 
 
 @router.post("/")
@@ -30,7 +30,7 @@ def create_context(
 
 
 class ProcessQuestionQuery(BaseModel):
-    question: str
+    question: str = Field(min_length=1)
 
 
 @router.post("/{context_id}/process_question")
