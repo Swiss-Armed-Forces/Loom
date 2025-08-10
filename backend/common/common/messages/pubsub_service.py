@@ -8,8 +8,8 @@ from redis import StrictRedis
 from redis.asyncio import StrictRedis as StrictRedisAsync
 
 from common.messages.messages import (
-    MessageSubscribConfirmation,
     MessageSubscribe,
+    MessageSubscribeConfirmation,
     MessageUnsubscribe,
     MessageUnsubscribeConfirmation,
     PubSubMessage,
@@ -71,7 +71,7 @@ class _PubSubAsync:
         await self._pubsub_client.subscribe(*message.channels)
         receivers = await self.publish_message(
             PubSubMessage(
-                message=MessageSubscribConfirmation(channels=message.channels),
+                message=MessageSubscribeConfirmation(channels=message.channels),
             ),
         )
         assert receivers == 1

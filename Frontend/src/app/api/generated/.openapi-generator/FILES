@@ -36,6 +36,7 @@ models/HitsPerGroupEntryModel.ts
 models/IndexAllRequest.ts
 models/LibretranslateSupportedLanguages.ts
 models/Message.ts
+models/MessageChatBotAnswerComplete.ts
 models/MessageChatBotCitation.ts
 models/MessageChatBotToken.ts
 models/MessageError.ts
@@ -43,11 +44,12 @@ models/MessageFileSave.ts
 models/MessageFileUpdate.ts
 models/MessageNoop.ts
 models/MessageQueryIdExpired.ts
-models/MessageSubscribConfirmation.ts
 models/MessageSubscribe.ts
+models/MessageSubscribeConfirmation.ts
 models/MessageUnsubscribe.ts
 models/MessageUnsubscribeConfirmation.ts
 models/OverallQueuesStats.ts
+models/ProcessQuestionQuery.ts
 models/PubSubMessage.ts
 models/QueryParameters.ts
 models/QueueName.ts

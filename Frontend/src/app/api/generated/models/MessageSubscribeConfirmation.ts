@@ -17,40 +17,40 @@ import { mapValues } from "../runtime";
 /**
  *
  * @export
- * @interface MessageSubscribConfirmation
+ * @interface MessageSubscribeConfirmation
  */
-export interface MessageSubscribConfirmation {
+export interface MessageSubscribeConfirmation {
     /**
      *
      * @type {string}
-     * @memberof MessageSubscribConfirmation
+     * @memberof MessageSubscribeConfirmation
      */
     type?: string;
     /**
      *
      * @type {Array<string>}
-     * @memberof MessageSubscribConfirmation
+     * @memberof MessageSubscribeConfirmation
      */
     channels?: Array<string>;
 }
 
 /**
- * Check if a given object implements the MessageSubscribConfirmation interface.
+ * Check if a given object implements the MessageSubscribeConfirmation interface.
  */
-export function instanceOfMessageSubscribConfirmation(value: object): boolean {
+export function instanceOfMessageSubscribeConfirmation(value: object): boolean {
     return true;
 }
 
-export function MessageSubscribConfirmationFromJSON(
+export function MessageSubscribeConfirmationFromJSON(
     json: any,
-): MessageSubscribConfirmation {
-    return MessageSubscribConfirmationFromJSONTyped(json, false);
+): MessageSubscribeConfirmation {
+    return MessageSubscribeConfirmationFromJSONTyped(json, false);
 }
 
-export function MessageSubscribConfirmationFromJSONTyped(
+export function MessageSubscribeConfirmationFromJSONTyped(
     json: any,
     ignoreDiscriminator: boolean,
-): MessageSubscribConfirmation {
+): MessageSubscribeConfirmation {
     if (json == null) {
         return json;
     }
@@ -60,8 +60,8 @@ export function MessageSubscribConfirmationFromJSONTyped(
     };
 }
 
-export function MessageSubscribConfirmationToJSON(
-    value?: MessageSubscribConfirmation | null,
+export function MessageSubscribeConfirmationToJSON(
+    value?: MessageSubscribeConfirmation | null,
 ): any {
     if (value == null) {
         return value;

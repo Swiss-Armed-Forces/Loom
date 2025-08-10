@@ -9,8 +9,8 @@ from common.file.file_repository import Tag
 from common.messages.messages import (
     MessageError,
     MessageFileUpdate,
-    MessageSubscribConfirmation,
     MessageSubscribe,
+    MessageSubscribeConfirmation,
     PubSubMessage,
 )
 
@@ -41,7 +41,7 @@ async def _subscribe_to_channel(
 
     websocket_message = json.loads(await websocket.recv())
     response = PubSubMessage.model_validate(websocket_message)
-    assert isinstance(response.message, MessageSubscribConfirmation)
+    assert isinstance(response.message, MessageSubscribeConfirmation)
     assert response.message.channels == channels
 
 

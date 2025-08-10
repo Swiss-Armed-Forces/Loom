@@ -518,7 +518,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | websockets               | 13.1            | BSD License                                                                      |
 | zstandard                | 0.23.0          | BSD License                                                                      |
 | pytest-celery            | 1.0.0           | BSD License; Other/Proprietary License                                           |
-| pytest-timeout           | 2.3.1           | DFSG approved; MIT License                                                       |
+| pytest-timeout           | 2.4.0           | DFSG approved; MIT License                                                       |
 | pylint                   | 3.2.4           | GNU General Public License v2 (GPLv2)                                            |
 | pylint-plugin-utils      | 0.8.2           | GNU General Public License v2 or later (GPLv2+)                                  |
 | yamllint                 | 1.37.0          | GNU General Public License v3 (GPLv3)                                            |

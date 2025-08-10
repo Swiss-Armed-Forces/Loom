@@ -13,6 +13,13 @@
  * Do not edit the class manually.
  */
 
+import type { MessageChatBotAnswerComplete } from "./MessageChatBotAnswerComplete";
+import {
+    instanceOfMessageChatBotAnswerComplete,
+    MessageChatBotAnswerCompleteFromJSON,
+    MessageChatBotAnswerCompleteFromJSONTyped,
+    MessageChatBotAnswerCompleteToJSON,
+} from "./MessageChatBotAnswerComplete";
 import type { MessageChatBotCitation } from "./MessageChatBotCitation";
 import {
     instanceOfMessageChatBotCitation,
@@ -62,13 +69,6 @@ import {
     MessageQueryIdExpiredFromJSONTyped,
     MessageQueryIdExpiredToJSON,
 } from "./MessageQueryIdExpired";
-import type { MessageSubscribConfirmation } from "./MessageSubscribConfirmation";
-import {
-    instanceOfMessageSubscribConfirmation,
-    MessageSubscribConfirmationFromJSON,
-    MessageSubscribConfirmationFromJSONTyped,
-    MessageSubscribConfirmationToJSON,
-} from "./MessageSubscribConfirmation";
 import type { MessageSubscribe } from "./MessageSubscribe";
 import {
     instanceOfMessageSubscribe,
@@ -76,6 +76,13 @@ import {
     MessageSubscribeFromJSONTyped,
     MessageSubscribeToJSON,
 } from "./MessageSubscribe";
+import type { MessageSubscribeConfirmation } from "./MessageSubscribeConfirmation";
+import {
+    instanceOfMessageSubscribeConfirmation,
+    MessageSubscribeConfirmationFromJSON,
+    MessageSubscribeConfirmationFromJSONTyped,
+    MessageSubscribeConfirmationToJSON,
+} from "./MessageSubscribeConfirmation";
 import type { MessageUnsubscribe } from "./MessageUnsubscribe";
 import {
     instanceOfMessageUnsubscribe,
@@ -97,6 +104,7 @@ import {
  * @export
  */
 export type Message =
+    | ({ type: "chatBotAnswerComplete" } & MessageChatBotAnswerComplete)
     | ({ type: "chatBotCitation" } & MessageChatBotCitation)
     | ({ type: "chatBotToken" } & MessageChatBotToken)
     | ({ type: "error" } & MessageError)
@@ -105,7 +113,7 @@ export type Message =
     | ({ type: "noop" } & MessageNoop)
     | ({ type: "queryIdExpired" } & MessageQueryIdExpired)
     | ({ type: "subscribe" } & MessageSubscribe)
-    | ({ type: "subscribeConfirmation" } & MessageSubscribConfirmation)
+    | ({ type: "subscribeConfirmation" } & MessageSubscribeConfirmation)
     | ({ type: "unsubscribe" } & MessageUnsubscribe)
     | ({ type: "unsubscribeConfirmation" } & MessageUnsubscribeConfirmation);
 
@@ -121,6 +129,11 @@ export function MessageFromJSONTyped(
         return json;
     }
     switch (json["type"]) {
+        case "chatBotAnswerComplete":
+            return {
+                ...MessageChatBotAnswerCompleteFromJSONTyped(json, true),
+                type: "chatBotAnswerComplete",
+            };
         case "chatBotCitation":
             return {
                 ...MessageChatBotCitationFromJSONTyped(json, true),
@@ -157,7 +170,7 @@ export function MessageFromJSONTyped(
             };
         case "subscribeConfirmation":
             return {
-                ...MessageSubscribConfirmationFromJSONTyped(json, true),
+                ...MessageSubscribeConfirmationFromJSONTyped(json, true),
                 type: "subscribeConfirmation",
             };
         case "unsubscribe":
@@ -182,6 +195,8 @@ export function MessageToJSON(value?: Message | null): any {
         return value;
     }
     switch (value["type"]) {
+        case "chatBotAnswerComplete":
+            return MessageChatBotAnswerCompleteToJSON(value);
         case "chatBotCitation":
             return MessageChatBotCitationToJSON(value);
         case "chatBotToken":
@@ -199,7 +214,7 @@ export function MessageToJSON(value?: Message | null): any {
         case "subscribe":
             return MessageSubscribeToJSON(value);
         case "subscribeConfirmation":
-            return MessageSubscribConfirmationToJSON(value);
+            return MessageSubscribeConfirmationToJSON(value);
         case "unsubscribe":
             return MessageUnsubscribeToJSON(value);
         case "unsubscribeConfirmation":
