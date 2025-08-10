@@ -13,7 +13,7 @@ class MessageSubscribe(BaseModel):
     channels: set[str] = set()
 
 
-class MessageSubscribConfirmation(BaseModel):
+class MessageSubscribeConfirmation(BaseModel):
     type: Literal["subscribeConfirmation"] = "subscribeConfirmation"
     channels: set[str] = set()
 
@@ -57,6 +57,10 @@ class MessageChatBotCitation(BaseModel):
     rank: float
 
 
+class MessageChatBotAnswerComplete(BaseModel):
+    type: Literal["chatBotAnswerComplete"] = "chatBotAnswerComplete"
+
+
 class MessageQueryIdExpired(BaseModel):
     type: Literal["queryIdExpired"] = "queryIdExpired"
     old_id: str
@@ -71,13 +75,14 @@ class PubSubMessage(BaseModel):
     message: Union[
         MessageNoop,
         MessageSubscribe,
-        MessageSubscribConfirmation,
+        MessageSubscribeConfirmation,
         MessageUnsubscribe,
         MessageUnsubscribeConfirmation,
         MessageFileUpdate,
         MessageFileSave,
         MessageChatBotToken,
         MessageChatBotCitation,
+        MessageChatBotAnswerComplete,
         MessageQueryIdExpired,
         MessageError,
     ] = Field(discriminator="type")

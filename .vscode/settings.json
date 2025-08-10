@@ -52,5 +52,6 @@
   "plantuml.exportFormat": "svg",
   "plantuml.exportOutDir": "./",
   "plantuml.exportSubFolder": false,
-  "gitlab.showPipelineUpdateNotifications": true
+  "gitlab.showPipelineUpdateNotifications": true,
+  "chat.commandCenter.enabled": false
 }

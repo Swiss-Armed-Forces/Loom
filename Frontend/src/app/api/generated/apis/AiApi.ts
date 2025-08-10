@@ -17,24 +17,27 @@ import * as runtime from "../runtime";
 import type {
     ContextCreateResponse,
     HTTPValidationError,
+    ProcessQuestionQuery,
+    QueryParameters,
 } from "../models/index";
 import {
     ContextCreateResponseFromJSON,
     ContextCreateResponseToJSON,
     HTTPValidationErrorFromJSON,
     HTTPValidationErrorToJSON,
+    ProcessQuestionQueryFromJSON,
+    ProcessQuestionQueryToJSON,
+    QueryParametersFromJSON,
+    QueryParametersToJSON,
 } from "../models/index";
 
 export interface CreateContextV1AiPostRequest {
-    queryId: string;
-    keepAlive?: CreateContextV1AiPostKeepAliveEnum;
-    searchString?: string;
-    languages?: Array<string>;
+    _queryParameters: QueryParameters;
 }
 
 export interface ProcessQuestionV1AiContextIdProcessQuestionPostRequest {
     contextId: string;
-    question: string;
+    processQuestionQuery: ProcessQuestionQuery;
 }
 
 /**
@@ -48,33 +51,18 @@ export class AiApi extends runtime.BaseAPI {
         requestParameters: CreateContextV1AiPostRequest,
         initOverrides?: RequestInit | runtime.InitOverrideFunction,
     ): Promise<runtime.ApiResponse<ContextCreateResponse>> {
-        if (requestParameters["queryId"] == null) {
+        if (requestParameters["_queryParameters"] == null) {
             throw new runtime.RequiredError(
-                "queryId",
-                'Required parameter "queryId" was null or undefined when calling createContextV1AiPost().',
+                "_queryParameters",
+                'Required parameter "_queryParameters" was null or undefined when calling createContextV1AiPost().',
             );
         }
 
         const queryParameters: any = {};
 
-        if (requestParameters["queryId"] != null) {
-            queryParameters["query_id"] = requestParameters["queryId"];
-        }
-
-        if (requestParameters["keepAlive"] != null) {
-            queryParameters["keep_alive"] = requestParameters["keepAlive"];
-        }
-
-        if (requestParameters["searchString"] != null) {
-            queryParameters["search_string"] =
-                requestParameters["searchString"];
-        }
-
-        if (requestParameters["languages"] != null) {
-            queryParameters["languages"] = requestParameters["languages"];
-        }
-
         const headerParameters: runtime.HTTPHeaders = {};
+
+        headerParameters["Content-Type"] = "application/json";
 
         const response = await this.request(
             {
@@ -82,6 +70,9 @@ export class AiApi extends runtime.BaseAPI {
                 method: "POST",
                 headers: headerParameters,
                 query: queryParameters,
+                body: QueryParametersToJSON(
+                    requestParameters["_queryParameters"],
+                ),
             },
             initOverrides,
         );
@@ -119,20 +110,18 @@ export class AiApi extends runtime.BaseAPI {
             );
         }
 
-        if (requestParameters["question"] == null) {
+        if (requestParameters["processQuestionQuery"] == null) {
             throw new runtime.RequiredError(
-                "question",
-                'Required parameter "question" was null or undefined when calling processQuestionV1AiContextIdProcessQuestionPost().',
+                "processQuestionQuery",
+                'Required parameter "processQuestionQuery" was null or undefined when calling processQuestionV1AiContextIdProcessQuestionPost().',
             );
         }
 
         const queryParameters: any = {};
 
-        if (requestParameters["question"] != null) {
-            queryParameters["question"] = requestParameters["question"];
-        }
-
         const headerParameters: runtime.HTTPHeaders = {};
+
+        headerParameters["Content-Type"] = "application/json";
 
         const response = await this.request(
             {
@@ -143,6 +132,9 @@ export class AiApi extends runtime.BaseAPI {
                 method: "POST",
                 headers: headerParameters,
                 query: queryParameters,
+                body: ProcessQuestionQueryToJSON(
+                    requestParameters["processQuestionQuery"],
+                ),
             },
             initOverrides,
         );
@@ -169,13 +161,3 @@ export class AiApi extends runtime.BaseAPI {
         return await response.value();
     }
 }
-
-/**
- * @export
- */
-export const CreateContextV1AiPostKeepAliveEnum = {
-    _10s: "10s",
-    _30m: "30m",
-} as const;
-export type CreateContextV1AiPostKeepAliveEnum =
-    (typeof CreateContextV1AiPostKeepAliveEnum)[keyof typeof CreateContextV1AiPostKeepAliveEnum];

@@ -331,10 +331,12 @@ export const createAiContext = async (
     query: SearchQuery,
 ): Promise<ContextCreateResponse> => {
     return aiApi.createContextV1AiPost({
-        queryId: query.id,
-        keepAlive: query.keepAlive ?? undefined,
-        searchString: query.query,
-        languages: query.languages?.map((l) => l.code),
+        _queryParameters: {
+            queryId: query.id,
+            keepAlive: query.keepAlive ?? undefined,
+            searchString: query.query,
+            languages: query.languages?.map((l) => l.code),
+        },
     });
 };
 
@@ -344,6 +346,8 @@ export const processQuestion = async (
 ): Promise<ContextCreateResponse> => {
     return aiApi.processQuestionV1AiContextIdProcessQuestionPost({
         contextId: context.contextId,
-        question: question,
+        processQuestionQuery: {
+            question: question,
+        },
     });
 };

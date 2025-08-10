@@ -6,8 +6,8 @@ from redis.client import PubSub
 from common.dependencies import get_redis_client, get_redis_client_async
 from common.messages.messages import (
     MessageNoop,
-    MessageSubscribConfirmation,
     MessageSubscribe,
+    MessageSubscribeConfirmation,
     MessageUnsubscribe,
     MessageUnsubscribeConfirmation,
     PubSubMessage,
@@ -178,7 +178,7 @@ async def test_get_message_handle_subscription():
     redis_client_async.publish.assert_called_once_with(
         meta_channel_name,
         PubSubMessage(
-            message=MessageSubscribConfirmation(channels=expected_channels),
+            message=MessageSubscribeConfirmation(channels=expected_channels),
         ).model_dump_json(),
     )
 

@@ -524,7 +524,7 @@ class FileRepository(BaseEsRepository[_EsFile, File]):
         def page_handler(result: Response[_EsFile]):
             for es_file in result.hits:
                 es_embedding: _EsEmbedding
-                for es_embedding in es_file.inner_hits.embeddings:
+                for es_embedding in es_file.meta.inner_hits["embeddings"]:
                     yield KnnSearchEmbedding(
                         file_id=UUID(es_file.meta.id),
                         file_score=(

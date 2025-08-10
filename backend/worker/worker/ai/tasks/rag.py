@@ -14,6 +14,7 @@ from common.dependencies import (
     get_pubsub_service,
 )
 from common.messages.messages import (
+    MessageChatBotAnswerComplete,
     MessageChatBotCitation,
     MessageChatBotToken,
     PubSubMessage,
@@ -468,6 +469,13 @@ Keep your answer concise and brief.""",
             # nobody is actually listening: abort
             logger.info("No receiver for citations")
             return
+
+    receivers = get_pubsub_service().publish_message(
+        PubSubMessage(
+            channel=str(context.id_),
+            message=MessageChatBotAnswerComplete(),
+        )
+    )
 
     logger.debug(
         "Question: %s, Answer: %s, Citations: %s",
