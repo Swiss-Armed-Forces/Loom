@@ -52,8 +52,10 @@ spec:
           configMap:
             name: {{ include "app.fullname" . }}-grafana
             items:
-              - key: elasticsearch.yml
-                path: elasticsearch.yml
+              - key: elasticsearch-logs.yml
+                path: elasticsearch-logs.yml
+              - key: elasticsearch-file.yml
+                path: elasticsearch-file.yml
               - key: prometheus.yml
                 path: prometheus.yml
 {{- end }}
