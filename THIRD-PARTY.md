@@ -448,7 +448,6 @@ The complete source code for Traefik is publicly available at [https://github.co
 | docker                   | 7.1.0           | Apache Software License                                                          |
 | elastic-transport        | 8.17.1          | Apache Software License                                                          |
 | elasticsearch            | 9.0.2           | Apache Software License                                                          |
-| flaky                    | 3.8.1           | Apache Software License                                                          |
 | freezegun                | 1.5.1           | Apache Software License                                                          |
 | memray                   | 1.17.2          | Apache Software License                                                          |
 | minio                    | 7.2.15          | Apache Software License                                                          |
@@ -576,7 +575,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | pydantic-settings        | 2.3.4           | MIT License                                                                      |
 | pydantic_core            | 2.27.1          | MIT License                                                                      |
 | pyflakes                 | 3.2.0           | MIT License                                                                      |
-| pytest                   | 8.2.2           | MIT License                                                                      |
+| pytest                   | 8.4.1           | MIT License                                                                      |
 | pytest-cov               | 5.0.0           | MIT License                                                                      |
 | pytest-mock              | 3.14.0          | MIT License                                                                      |
 | pytest-random-order      | 1.1.1           | MIT License                                                                      |
@@ -599,6 +598,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | worker                   | 0.1.0           | MIT License                                                                      |
 | xmltodict                | 0.14.2          | MIT License                                                                      |
 | docformatter             | 1.7.5           | MIT License; Other/Proprietary License                                           |
+| pytest-rerunfailures     | 15.1            | MPL-2.0                                                                          |
 | certifi                  | 2024.6.2        | Mozilla Public License 2.0 (MPL 2.0)                                             |
 | pathspec                 | 0.12.1          | Mozilla Public License 2.0 (MPL 2.0)                                             |
 | pathspec                 | 0.12.1          | Mozilla Public License 2.0 (MPL 2.0)                                             |
