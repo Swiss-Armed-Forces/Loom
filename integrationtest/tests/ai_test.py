@@ -61,7 +61,13 @@ class TestChatbot:
             * len(self.asset_list),
         )
 
-    @pytest.mark.asyncio
+    # Currently, without loop_scope, this test exhibits some flakiness
+    # and fails sometimes in the pubsub_async.subscribe line with an:
+    # RuntimeError: Event loop is closed
+    #
+    # I currently have no clue why, but I am experimenting a bit with
+    # changing the loop scope...
+    @pytest.mark.asyncio(loop_scope="class")
     async def test_chatbot(self):
 
         ai_context = _create_context(query=QueryParameters(query_id=fetch_query_id()))
