@@ -784,18 +784,6 @@ testing = ["covdefaults (>=2.3)", "coverage (>=7.3.2)", "diff-cover (>=8.0.1)", 
 typing = ["typing-extensions (>=4.8) ; python_version < \"3.11\""]
 
 [[package]]
-name = "flaky"
-version = "3.8.1"
-description = "Plugin for pytest that automatically reruns flaky tests."
-optional = false
-python-versions = ">=3.5"
-groups = ["main"]
-files = [
-    {file = "flaky-3.8.1-py2.py3-none-any.whl", hash = "sha256:194ccf4f0d3a22b2de7130f4b62e45e977ac1b5ccad74d4d48f3005dcc38815e"},
-    {file = "flaky-3.8.1.tar.gz", hash = "sha256:47204a81ec905f3d5acfbd61daeabcada8f9d4031616d9bcb0618461729699f5"},
-]
-
-[[package]]
 name = "flower"
 version = "2.0.1"
 description = "Celery Flower"
@@ -2575,4 +2563,4 @@ url = "../backend/worker"
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.11"
-content-hash = "efb90180019fd4fd1bf00780bb253339971bc35ff79b5f74e15e762337a2968d"
+content-hash = "d08c04bc88b36cb100fa9592502c840b0d44f9a7fe9a6e77219b1177555fe9a8"
