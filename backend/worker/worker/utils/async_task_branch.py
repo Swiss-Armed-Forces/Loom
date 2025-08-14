@@ -8,8 +8,8 @@ from common.dependencies import get_celery_app, get_root_task_information_reposi
 app = get_celery_app()
 
 # We should check this regularly, therefore we set this to quite a high number.
-WAIT_FOR_ASYNC_BRANCHES_TO_COMPLETE_MAX_RETRIES = 1000
-WAIT_FOR_ASYNC_BRANCHES_TO_COMPLETE_RETRY_BACKOFF_MAX = 10
+WAIT_FOR_ASYNC_BRANCHES_TO_COMPLETE_MAX_RETRIES = 200
+WAIT_FOR_ASYNC_BRANCHES_TO_COMPLETE_RETRY_BACKOFF_MAX = 30
 
 
 class AsyncBranchesNotCompleted(Exception):
@@ -34,6 +34,20 @@ def raise_if_has_incomplete_async_branches(task: Task):
         root_task_information.completed_async_branches
     ):
         raise AsyncBranchesNotCompleted
+
+
+# Note: we specifically don't set a base here, especially not for a ProcessingTask.
+# this is to avoid overloading the repository with lots of "retried task"-updates.
+@app.task(
+    bind=True,
+    autoretry_for=tuple([AsyncBranchesNotCompleted]),
+    retry_backoff=True,
+    max_retries=WAIT_FOR_ASYNC_BRANCHES_TO_COMPLETE_MAX_RETRIES,
+    retry_backoff_max=WAIT_FOR_ASYNC_BRANCHES_TO_COMPLETE_RETRY_BACKOFF_MAX,
+)
+def wait_for_async_branches_to_complete(self: Task, args: Any):
+    raise_if_has_incomplete_async_branches(self)
+    return args
 
 
 @app.task()
