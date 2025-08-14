@@ -536,6 +536,7 @@ in
       check-toml.enable = true;
 
       trufflehog.enable = true;
+      ripsecrets.enable = true;
 
       typos = {
         enable = true;
