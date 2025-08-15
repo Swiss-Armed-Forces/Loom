@@ -10,7 +10,13 @@ from common.messages.messages import (
 )
 
 
-@pytest.mark.asyncio
+# Currently, without loop_scope, this test exhibits some flakiness
+# and fails sometimes in the pubsub_async.subscribe line with an:
+# RuntimeError: Event loop is closed
+#
+# I currently have no clue why, but I am experimenting a bit with
+# changing the loop scope...
+@pytest.mark.asyncio(loop_scope="session")
 @pytest.mark.parametrize(
     "message",
     [MessageNoop()],

@@ -67,7 +67,7 @@ class TestChatbot:
     #
     # I currently have no clue why, but I am experimenting a bit with
     # changing the loop scope...
-    @pytest.mark.asyncio(loop_scope="class")
+    @pytest.mark.asyncio(loop_scope="session")
     async def test_chatbot(self):
 
         ai_context = _create_context(query=QueryParameters(query_id=fetch_query_id()))
