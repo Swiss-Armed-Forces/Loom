@@ -54,6 +54,7 @@ class Settings(CommonSettings):
     llm_timeout: int = 5 * 60
     llm_summarize_text_chunk_size: int = 3000
     llm_summarize_text_chunk_overlap: int = 100
+    summary_max_chunks: int = 5
 
     llm_embedding_temperature: float | None = 0
 

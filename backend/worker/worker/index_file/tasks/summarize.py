@@ -80,6 +80,9 @@ def summarize_task(
     text = load_text_from_text_lazy(text_lazy)
 
     text_chunks = text_splitter.split_text(text)
+
+    text_chunks = text_chunks[: settings.summary_max_chunks]
+
     chain(
         chord(
             [
