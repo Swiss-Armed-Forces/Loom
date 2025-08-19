@@ -57,6 +57,7 @@ export function SearchTranslateDialog() {
                     key={item.code}
                     label={item.code}
                     size="small"
+                    onClick={() => {}}
                     style={{
                         backgroundColor: "#fff",
                     }}
