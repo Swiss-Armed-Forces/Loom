@@ -30,6 +30,8 @@ spec:
     - minio.{{ .Values.domain }}
     - minio-api.{{ .Values.domain }}
     - mongo-web.{{ .Values.domain }}
+    - tika.{{ .Values.domain }}
+    - redisinsight.{{ .Values.domain }}
   # Mandatory issuerRef to get a PKI signed certificate
   issuerRef:
     name: {{ default (printf "%s-selfsigned-issuer" (include "app.fullname" .)) .Values.certificate.issuerRef.name }}
