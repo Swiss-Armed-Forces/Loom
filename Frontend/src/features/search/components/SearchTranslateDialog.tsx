@@ -58,6 +58,19 @@ export function SearchTranslateDialog() {
                     label={item.code}
                     size="small"
                     onClick={() => {}}
+                    onDelete={() => {
+                        const updated =
+                            searchQuery.languages?.filter(
+                                (lang) => lang.code !== item.code,
+                            ) ?? [];
+
+                        dispatch(
+                            updateQuery({
+                                ...searchQuery,
+                                languages: updated,
+                            }),
+                        );
+                    }}
                     style={{
                         backgroundColor: "#fff",
                     }}
