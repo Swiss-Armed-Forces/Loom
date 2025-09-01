@@ -133,8 +133,14 @@ export const updateQuery = createAsyncThunk(
             id: queryId,
             query: queryQuery,
             keepAlive: query.keepAlive ?? lastQuery?.keepAlive ?? null,
-            languages: query.languages ?? lastQuery?.languages ?? null,
-            sortField: query.sortField ?? lastQuery?.sortField ?? null,
+            languages:
+                query.languages?.length === 0
+                    ? null
+                    : (query.languages ?? lastQuery?.languages ?? null),
+            sortField:
+                query.sortField !== undefined
+                    ? query.sortField?.trim() || null
+                    : (lastQuery?.sortField ?? null),
             sortDirection:
                 query.sortDirection ?? lastQuery?.sortDirection ?? null,
             sortId: query.sortId ?? null,
