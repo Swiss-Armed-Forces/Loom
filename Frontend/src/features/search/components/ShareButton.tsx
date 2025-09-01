@@ -15,18 +15,24 @@ export function ShareButton({ fileId }: ShareProps) {
                 const url = new URL(location.toString());
                 url.hash = fileId;
                 // Navigator clipboard api needs secure context (https)
-                navigator.clipboard
-                    .writeText(url.toString())
-                    .then(() =>
-                        toast.success(
-                            t("generalSearchView.shareContent.success"),
-                        ),
-                    )
-                    .catch(() =>
-                        toast.error(
-                            t("generalSearchView.shareContent.failure"),
-                        ),
+                if (window.isSecureContext) {
+                    navigator.clipboard
+                        .writeText(url.toString())
+                        .then(() =>
+                            toast.success(
+                                t("generalSearchView.shareContent.success"),
+                            ),
+                        )
+                        .catch(() =>
+                            toast.error(
+                                t("generalSearchView.shareContent.failure"),
+                            ),
+                        );
+                } else {
+                    toast.error(
+                        t("generalSearchView.shareContent.noSecureContext"),
                     );
+                }
             }}
         >
             <Share />

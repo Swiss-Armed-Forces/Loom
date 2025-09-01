@@ -37,7 +37,8 @@
         "shareContent": {
             "title": "Copy link",
             "success": "Copied URL to clipboard",
-            "failure": "Could not copy URL to clipboard"
+            "failure": "Could not copy URL to clipboard",
+            "noSecureContext": "Could not copy URL to clipboard due to unsecure context (no HTTPS)"
         }
     },
     "addCustomQueryDialog": {
