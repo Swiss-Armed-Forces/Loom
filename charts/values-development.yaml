@@ -112,6 +112,13 @@ flower:
 
 elasticsearch:
   ingress: *default-ingress-config
+  resources:
+    requests:
+      cpu: "0.5"
+      memory: "2Gi"
+    limits:
+      cpu: "8"
+      memory: "4Gi"
 
 elasticvue:
   ingress: *default-ingress-config
