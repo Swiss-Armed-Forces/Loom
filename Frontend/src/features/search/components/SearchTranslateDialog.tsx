@@ -100,11 +100,15 @@ export function SearchTranslateDialog() {
                             value: LibretranslateSupportedLanguages[] | null,
                         ) => setSearchTranslationLanguage(value ?? [])}
                         getOptionLabel={(option) => option.name}
-                        renderOption={(props, option) => (
-                            <Box component="li" {...props}>
-                                {option.name}
-                            </Box>
-                        )}
+                        renderOption={(props, option) => {
+                            // eslint-disable-next-line react/prop-types
+                            const { key, ...otherProps } = props;
+                            return (
+                                <Box component="li" key={key} {...otherProps}>
+                                    {option.name}
+                                </Box>
+                            );
+                        }}
                         renderInput={(params) => (
                             <TextField
                                 {...params}

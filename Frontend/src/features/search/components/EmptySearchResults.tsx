@@ -42,7 +42,7 @@ export function EmptySearchResults() {
             {queryError && (
                 <Alert severity="error">
                     <AlertTitle>{t("emptySearch.title.queryError")}</AlertTitle>
-                    {queryError}
+                    {String(queryError)}
                 </Alert>
             )}
             <Card>
