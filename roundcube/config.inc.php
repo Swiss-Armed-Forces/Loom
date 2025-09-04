@@ -62,4 +62,17 @@ $config['create_default_folders'] = false;
 // protect the default folders from renames, deletes, and subscription changes
 $config['protect_default_folders'] = false;
 
+// Behavior if a received message requests a message delivery notification (read receipt)
+// 0 = ask the user,
+// 1 = send automatically,
+// 2 = ignore (never send or ask)
+// 3 = send automatically if sender is in my contacts, otherwise ask the user
+// 4 = send automatically if sender is in my contacts, otherwise ignore
+// 5 = send automatically if sender is a trusted sender, otherwise ask the user
+// 6 = send automatically if sender is a trusted sender, otherwise ignore
+$config['mdn_requests'] = 2;
+
+// Enables display of email address with name instead of a name (and address in title)
+$config['message_show_email'] = true;
+
 ?>
