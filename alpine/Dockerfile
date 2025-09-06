@@ -16,7 +16,7 @@ SHELL ["/bin/bash", "--login", "-c"]
 #
 # kubectl
 #
-ARG KUBECTL_VERSION="1.33.1-r0"
+ARG KUBECTL_VERSION="1.33.1-r1"
 RUN set -exu \
     && apk add --no-cache \
     kubectl=${KUBECTL_VERSION}
@@ -24,7 +24,7 @@ RUN set -exu \
 #
 # openssl
 #
-ARG OPENSSL_VERSION="3.5.1-r0"
+ARG OPENSSL_VERSION="3.5.2-r0"
 RUN set -exu \
     && apk add --no-cache \
     openssl=${OPENSSL_VERSION}
