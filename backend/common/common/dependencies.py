@@ -4,6 +4,7 @@ from unittest.mock import AsyncMock, MagicMock
 from celery import Celery
 from elasticsearch import Elasticsearch
 from libretranslatepy import LibreTranslateAPI
+from ollama import Client
 from pymongo import MongoClient
 from redis import StrictRedis
 from redis.asyncio import StrictRedis as StrictRedisAsync
@@ -55,6 +56,8 @@ _archive_scheduling_service: ArchiveSchedulingService | None = None
 _ai_scheduling_service: AiSchedulingService | None = None
 _archive_encryption_service: ArchiveEncryptionService | None = None
 _lazybytes_service: LazyBytesService | None = None
+_ollama_client: Client | None = None
+_ollama_tool_client: Client | None = None
 
 logger = logging.getLogger(__name__)
 
@@ -152,6 +155,14 @@ def init(init_elasticsearch_documents: bool = False):
         settings.archive_encryption_master_key
     )
 
+    global _ollama_client
+    _ollama_client = Client(str(settings.ollama_host), timeout=settings.ollama_timeout)
+
+    global _ollama_tool_client
+    _ollama_tool_client = Client(
+        str(settings.ollama_tool_host), timeout=settings.ollama_timeout
+    )
+
 
 # pylint: disable=too-many-statements
 def mock_init():
@@ -219,6 +230,12 @@ def mock_init():
 
     global _archive_encryption_service
     _archive_encryption_service = MagicMock(spec=ArchiveEncryptionService)
+
+    global _ollama_client
+    _ollama_client = MagicMock(spec=Client)
+
+    global _ollama_tool_client
+    _ollama_tool_client = MagicMock(spec=Client)
 
 
 def get_libretranslate_api() -> LibreTranslateAPI:
@@ -333,3 +350,15 @@ def get_lazybytes_service() -> LazyBytesService:
     if _lazybytes_service is None:
         raise DependencyException("Lazybytes Service missing")
     return _lazybytes_service
+
+
+def get_ollama_client() -> Client:
+    if _ollama_client is None:
+        raise DependencyException("Ollama Client missing")
+    return _ollama_client
+
+
+def get_ollama_tool_client() -> Client:
+    if _ollama_tool_client is None:
+        raise DependencyException("Ollama Tool Client missing")
+    return _ollama_tool_client

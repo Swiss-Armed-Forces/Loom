@@ -544,6 +544,9 @@ class BaseEsRepository(
         )
         return backup_index_name
 
+    def get_mapping(self) -> dict[str, Any]:
+        return self._index.get_mapping()[self._index_name]["mappings"]
+
     @contextmanager
     def make_index_readonly(self) -> Generator[None, None, None]:
         def set_index_readonly(readonly: bool):

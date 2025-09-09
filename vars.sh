@@ -26,6 +26,7 @@ LOOM_HOSTS=(
     "grafana"
     "open-webui"
     "ollama"
+    "ollama-tool"
     "dovecot"
     "roundcube"
     "minio"

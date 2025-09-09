@@ -39,7 +39,7 @@ pipeline:
 llm:
   model: qwen3:8b
   model_embedding: nomic-embed-text:v1.5
-  think: true
+  model_tool: qwen3:8b
   temperature: null
   summarize_text_chunk_size: null
   summarize_text_chunk_overlap: null
@@ -870,6 +870,8 @@ ollama:
     repository: swiss-armed-forces/cyber-command/cea/loom/ollama
   service:
     port: 11434
+  toolService:
+    port: 11435
   pvc:
     enabled: true
     storage: 30Gi
@@ -878,13 +880,14 @@ ollama:
     enabled: false
   livenessProbe:
     enabled: true
-  resources:
+  resources: &ollama-resources
     requests:
       cpu: "0.6"
       memory: "2Gi"
     limits:
       cpu: "10"
       memory: "10Gi"
+  toolResources: *ollama-resources
   initContainer:
     resources:
       requests:
@@ -899,10 +902,13 @@ open_webui:
   image:
     repository: swiss-armed-forces/cyber-command/cea/loom/open-webui
   env:
+    ENV: "prod"
     WEBUI_AUTH: "false"
     ENABLE_SIGNUP: "false"
   service:
     port: 8080
+  pvc:
+    storage: 10Gi
   ingress: *default-ingress-config
   resources:
     requests:

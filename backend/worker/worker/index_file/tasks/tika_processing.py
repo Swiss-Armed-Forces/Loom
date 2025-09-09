@@ -137,8 +137,10 @@ def signature(file_content: LazyBytes, file: File) -> Signature:
             ),
             chain(
                 tika_get_file_type_task.s(file_content, file),
-                persist_tika_file_type_task.s(file),
-                email_processing.signature(file_content, file),
+                group(
+                    persist_tika_file_type_task.s(file),
+                    email_processing.signature(file_content, file),
+                ),
             ),
         ),
     )

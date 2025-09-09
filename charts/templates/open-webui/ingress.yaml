@@ -5,7 +5,7 @@ metadata:
   name: {{ include "app.fullname" . }}-open-webui
   labels:
     {{- include "app.labels.standard" . | nindent 4 }}
-    app.kubernetes.io/component: ollama
+    app.kubernetes.io/component: open-webui
   annotations:
     {{- toYaml .Values.open_webui.ingress.annotations | nindent 4 }}
     {{- if .Values.certificate.requireClientCert }}

@@ -43,15 +43,9 @@ class Settings(CommonSettings):
     min_language_detection_confidence: float = 95.0
     persist_success_tasks: bool = False
     persist_retry_tasks: bool = True
-    ollama_host: AnyHttpUrl = AnyHttpUrl(f"http://ollama.{DOMAIN}")
     tika_ocr_languages: list[TikaAllowedOcrLanguage] = ["eng"]
     tika_server_host: AnyHttpUrl = AnyHttpUrl(f"http://tika.{DOMAIN}")
 
-    llm_model: str = "qwen3:8b"
-    llm_model_embedding: str = "nomic-embed-text:v1.5"
-    llm_think: bool = True
-    llm_temperature: float | None = None
-    llm_timeout: int = 5 * 60
     llm_summarize_text_chunk_size: int = 3000
     llm_summarize_text_chunk_overlap: int = 100
     summary_max_chunks: int = 5

@@ -12,6 +12,7 @@ from common.dependencies import (
 )
 from common.file.file_repository import (
     TREE_PATH_MAX_ELEMENT_COUNT,
+    File,
     FileRepository,
     Stat,
     Tag,
@@ -259,6 +260,29 @@ class GetFileResponse(BaseModel):
     raw: str
     summary: str | None
 
+    @staticmethod
+    def from_file(file: File):
+        return GetFileResponse(
+            file_id=file.id_,
+            highlight=file.es_meta.highlight,
+            content=str(file.content if file.content is not None else ""),
+            name=str(file.short_name),
+            libretranslate_language_translations=list(
+                map(
+                    lambda libretranslate_translations: GetFileLanguageTranslations(
+                        confidence=libretranslate_translations.confidence,
+                        language=libretranslate_translations.language,
+                        text=libretranslate_translations.text,
+                    ),
+                    file.libretranslate_translations,
+                )
+            ),
+            raw=file.model_dump_json(
+                exclude={"embeddings", "content", "libretranslate_translations"}
+            ),
+            summary=file.summary,
+        )
+
 
 @router.get("/{file_id}")
 def get_file(
@@ -273,26 +297,7 @@ def get_file(
     )
     if file is None:
         raise HTTPException(status_code=404, detail="file not found")
-    return GetFileResponse(
-        file_id=file.id_,
-        highlight=file.es_meta.highlight,
-        content=str(file.content if file.content is not None else ""),
-        name=str(file.short_name),
-        libretranslate_language_translations=list(
-            map(
-                lambda libretranslate_translations: GetFileLanguageTranslations(
-                    confidence=libretranslate_translations.confidence,
-                    language=libretranslate_translations.language,
-                    text=libretranslate_translations.text,
-                ),
-                file.libretranslate_translations,
-            )
-        ),
-        raw=file.model_dump_json(
-            exclude={"embeddings", "content", "libretranslate_translations"}
-        ),
-        summary=file.summary,
-    )
+    return GetFileResponse.from_file(file)
 
 
 class GetFilePreviewResponse(BaseModel):

@@ -24,11 +24,13 @@ spec:
           ports:
             - name: ollama
               containerPort: {{ .Values.ollama.service.port }}
-          {{- if .Values.ollama.pvc.enabled }}
           env:
+            - name: OLLAMA_HOST
+              value: "0.0.0.0:{{ .Values.ollama.service.port }}"
+            {{- if .Values.ollama.pvc.enabled }}
             - name: OLLAMA_MODELS
               value: /ollama-models
-          {{- end }}
+            {{- end }}
           {{- if .Values.ollama.readinessProbe.enabled }}
           readinessProbe:
             httpGet:
@@ -43,6 +45,45 @@ spec:
             httpGet:
               path: /api/ps
               port: {{ .Values.ollama.service.port }}
+            initialDelaySeconds: {{ default 0 .Values.ollama.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ default 20 .Values.ollama.livenessProbe.periodSeconds }}
+            failureThreshold: {{ default 6 .Values.ollama.livenessProbe.failureThreshold }}
+          {{- end }}
+          {{- if .Values.ollama.pvc.enabled }}
+          volumeMounts:
+            - name: ollama-models
+              mountPath: /ollama-models
+          {{- end }}
+          {{- if .Values.ollama.resources }}
+          resources: {{- toYaml .Values.ollama.resources | nindent 12 }}
+          {{- end }}
+        - name: ollama-tool
+          image: *container-image
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: ollama-tool
+              containerPort: {{ .Values.ollama.toolService.port }}
+          env:
+            - name: OLLAMA_HOST
+              value: "0.0.0.0:{{ .Values.ollama.toolService.port }}"
+            {{- if .Values.ollama.pvc.enabled }}
+            - name: OLLAMA_MODELS
+              value: /ollama-models
+            {{- end }}
+          {{- if .Values.ollama.readinessProbe.enabled }}
+          readinessProbe:
+            httpGet:
+              path: /api/ps
+              port: {{ .Values.ollama.toolService.port }}
+            initialDelaySeconds: {{ default 0 .Values.ollama.readinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ default 20 .Values.ollama.readinessProbe.periodSeconds }}
+            failureThreshold: {{ default 3 .Values.ollama.readinessProbe.failureThreshold }}
+          {{- end }}
+          {{- if .Values.ollama.livenessProbe.enabled }}
+          livenessProbe:
+            httpGet:
+              path: /api/ps
+              port: {{ .Values.ollama.toolService.port }}
             initialDelaySeconds: {{ default 0 .Values.ollama.livenessProbe.initialDelaySeconds }}
             periodSeconds: {{ default 20 .Values.ollama.livenessProbe.periodSeconds }}
             failureThreshold: {{ default 6 .Values.ollama.livenessProbe.failureThreshold }}

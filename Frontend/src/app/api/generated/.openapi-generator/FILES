@@ -1,5 +1,6 @@
 .openapi-generator-ignore
 apis/AiApi.ts
+apis/AitoolsApi.ts
 apis/ArchivesApi.ts
 apis/CachingApi.ts
 apis/FilesApi.ts
@@ -31,6 +32,8 @@ models/GetFilesCountResponse.ts
 models/GetFilesFileEntry.ts
 models/GetFilesResponse.ts
 models/GetQueryResponse.ts
+models/GetSearchResponse.ts
+models/GetSearchResponseFile.ts
 models/HTTPValidationError.ts
 models/HitsPerGroupEntryModel.ts
 models/IndexAllRequest.ts

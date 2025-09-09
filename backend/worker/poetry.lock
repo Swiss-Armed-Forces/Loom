@@ -459,6 +459,7 @@ fastapi = "^0.115.12"
 filelock = "^3.14.0"
 libretranslatepy = "^2.1.4"
 luqum = "^0.13.0"
+ollama = "^0.5.1"
 pycryptodome = "^3.20.0"
 pydantic = "^2.7.1"
 pydantic-mongo = "^2.3.0"
@@ -2405,4 +2406,4 @@ cffi = ["cffi (>=1.11)"]
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.11"
-content-hash = "4fe531cd274ea1fe77445a5ed7f2e719852604ffb276236debc4f555392e6867"
+content-hash = "2a0ce90201a98d51dad6e53b90f27b8b5def4065d6cacbb1b9c2c012b6d3c4c2"
