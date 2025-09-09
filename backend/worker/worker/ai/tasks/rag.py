@@ -11,6 +11,7 @@ from common.dependencies import (
     get_celery_app,
     get_file_repository,
     get_lazybytes_service,
+    get_ollama_client,
     get_pubsub_service,
 )
 from common.messages.messages import (
@@ -31,7 +32,6 @@ from scipy.signal import argrelextrema
 from sklearn.neighbors import KernelDensity
 
 from worker.ai.infra.ai_context_processing_task import AiContextProcessingTask
-from worker.dependencies import get_ollama_client
 from worker.settings import settings
 from worker.utils.async_task_branch import complete_async_branch
 

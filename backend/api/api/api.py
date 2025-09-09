@@ -1,17 +1,18 @@
 """Initialize the fastapi app."""
 
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any
 
 from common.services.query_builder import QueryBuilderException
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.openapi.utils import get_openapi
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
+from api.patch_openapi_schema import patch_openapi_schema_for_app
 from api.routers import (
     ai,
+    aitools,
     archives,
     caching,
     docs,
@@ -27,35 +28,6 @@ from api.routers import (
 from api.settings import settings
 
 STATIC_ASSETS_PATH = Path(__file__).parent.parent / "static"
-
-
-def remove_null_from_any_of(schema: Dict[str, Any]) -> Dict[str, Any]:
-    if "properties" in schema:
-        for prop, prop_schema in schema["properties"].items():
-            if "anyOf" in prop_schema:
-                any_of = prop_schema["anyOf"]
-                if len(any_of) == 2 and {"type": "null"} in any_of:
-                    schema["properties"][prop] = [
-                        x for x in any_of if x != {"type": "null"}
-                    ][0]
-                    if "required" in schema:
-                        schema["required"] = [
-                            x for x in schema["required"] if x != prop
-                        ]
-                else:
-                    raise NotImplementedError(
-                        "anyOf with more than 2 elements not supported"
-                    )
-
-    return schema
-
-
-def patch_openapi_schema(schema: Dict[str, Any]) -> Dict[str, Any]:
-    for component_name, component_schema in schema["components"]["schemas"].items():
-        schema["components"]["schemas"][component_name] = remove_null_from_any_of(
-            component_schema
-        )
-    return schema
 
 
 def init_api() -> FastAPI:
@@ -98,35 +70,16 @@ def init_api() -> FastAPI:
         summarization.router, prefix="/v1/files/summarization", tags=["summarization"]
     )
     api.include_router(ai.router, prefix="/v1/ai", tags=["ai"])
+    api.include_router(aitools.router, prefix="/v1/aitools", tags=["aitools"])
     api.include_router(files.router, prefix="/v1/files", tags=["files"])
     api.include_router(tests.router, prefix="/v1/tests", tags=["tests"])
 
-    def custom_openapi():
+    def custom_openapi() -> dict[str, Any]:
         if api.openapi_schema:
             return api.openapi_schema
-
-        openapi_schema = get_openapi(
-            title=api.title,
-            version=api.version,
-            openapi_version=api.openapi_version,
-            summary=api.summary,
-            description=api.description,
-            terms_of_service=api.terms_of_service,
-            contact=api.contact,
-            license_info=api.license_info,
-            routes=api.routes,
-            webhooks=api.webhooks.routes,
-            tags=api.openapi_tags,
-            servers=api.servers,
-            separate_input_output_schemas=api.separate_input_output_schemas,
-        )
-        # Patching the openapi schema so the frontend code generator can handle it
-        # If a model has a property that is optional (e.g.`sha256: str | None`) this
-        # will be represented as `anyOf` in the openapi schema.
-        # The frontend code generator does not handle this correctly, so we remove the
-        # `null` type from the `anyOf` and remove the property from the `required` list.
-        api.openapi_schema = patch_openapi_schema(openapi_schema)
-
+        patch_openapi_schema_for_app(api)
+        if api.openapi_schema is None:
+            raise RuntimeError("openapi_schema is None")
         return api.openapi_schema
 
     # This is the recommended way to customize OpenAPI schema in FastAPI

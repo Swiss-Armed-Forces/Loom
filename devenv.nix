@@ -516,18 +516,14 @@ in
 
       yamllint = {
         enable = true;
+        excludes = [
+          "pnpm-lock.yaml"
+          "charts/templates/"
+          "charts/charts/"
+        ];
         settings = {
           strict = true;
-          configuration = ''
-            document-start:
-              disable
-            line-length:
-              max: 165
-            ignore: |
-              pnpm-lock.yaml
-              charts/templates/**
-              charts/charts/**
-          '';
+          configData = ''{ extends: default, rules: { document-start: disable, line-length: {max: 165} } }'';
         };
       };
 

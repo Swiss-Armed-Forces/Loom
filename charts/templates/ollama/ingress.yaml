@@ -30,4 +30,36 @@ spec:
       hosts:
         - ollama.{{ .Values.domain }}
   {{- end }}
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "app.fullname" . }}-ollama-tool
+  labels:
+    {{- include "app.labels.standard" . | nindent 4 }}
+    app.kubernetes.io/component: ollama
+  annotations:
+    {{- toYaml .Values.ollama.ingress.annotations | nindent 4 }}
+    {{- if .Values.certificate.requireClientCert }}
+    traefik.ingress.kubernetes.io/router.tls.options: {{ .Release.Namespace }}-{{ include "app.fullname" . }}-mtls@kubernetescrd
+    {{- end }}
+spec:
+  ingressClassName: {{ .Values.ollama.ingress.className }}
+  rules:
+    - host: ollama-tool.{{ .Values.domain }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "app.fullname" . }}-ollama-tool
+                port:
+                  number: {{ .Values.ollama.toolService.port }}
+  {{- if .Values.ollama.ingress.tls.enabled }}
+  tls:
+    - secretName: {{ include "app.fullname" . }}-certificate
+      hosts:
+        - ollama-tool.{{ .Values.domain }}
+  {{- end }}
 {{- end }}

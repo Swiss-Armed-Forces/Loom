@@ -20,6 +20,8 @@ export * from "./GetFilesCountResponse";
 export * from "./GetFilesFileEntry";
 export * from "./GetFilesResponse";
 export * from "./GetQueryResponse";
+export * from "./GetSearchResponse";
+export * from "./GetSearchResponseFile";
 export * from "./HTTPValidationError";
 export * from "./HitsPerGroupEntryModel";
 export * from "./IndexAllRequest";

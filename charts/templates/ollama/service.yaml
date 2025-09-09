@@ -12,3 +12,18 @@ spec:
       targetPort: {{ .Values.ollama.service.port }}
   selector:
     app: {{ include "app.name" . }}-ollama
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "app.fullname" . }}-ollama-tool
+  labels:
+    {{- include "app.labels.standard" . | nindent 4 }}
+    app.kubernetes.io/component: ollama
+spec:
+  ports:
+    - port: {{ .Values.ollama.toolService.port }}
+      name: ollama-tool
+      targetPort: {{ .Values.ollama.toolService.port }}
+  selector:
+    app: {{ include "app.name" . }}-ollama

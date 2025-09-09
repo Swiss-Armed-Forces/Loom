@@ -3,7 +3,7 @@ import logging
 
 from celery import chain, chord
 from celery.canvas import Signature
-from common.dependencies import get_celery_app, get_lazybytes_service
+from common.dependencies import get_celery_app, get_lazybytes_service, get_ollama_client
 from common.file.file_repository import Embedding, File
 from common.services.lazybytes_service import LazyBytes
 from common.utils.cache import cache
@@ -12,7 +12,6 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 from ollama import Options
 from pydantic_core import from_json, to_json
 
-from worker.dependencies import get_ollama_client
 from worker.index_file.infra.file_indexing_task import FileIndexingTask
 from worker.index_file.infra.indexing_persister import IndexingPersister
 from worker.services.tika_service import TikaResult

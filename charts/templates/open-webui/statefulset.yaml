@@ -1,0 +1,72 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "app.fullname" . }}-open-webui
+  labels:
+    {{- include "app.labels.standard" . | nindent 4 }}
+    app.kubernetes.io/component: ollama
+spec:
+  replicas: {{ .Values.open_webui.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ include "app.name" . }}-open-webui
+  template:
+    metadata:
+      labels:
+        app: {{ include "app.name" . }}-open-webui
+    spec:
+      volumes:
+        - name: config-volume
+          configMap:
+            name: {{ include "app.fullname" . }}-webui-import
+      containers:
+        - name: open-webui
+          image: {{ .Values.image.registry }}/{{ .Values.open_webui.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) .Values.open_webui.image.tag }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: openwebui
+              containerPort: {{ .Values.open_webui.service.port }}
+          env:
+            - name: OLLAMA_BASE_URL
+              value: http://{{ include "app.fullname" . }}-ollama:{{ .Values.ollama.service.port }}
+            - name: ENV
+              value: {{ .Values.open_webui.env.ENV | quote }}
+            - name: WEBUI_URL
+              value: "http://localhost:{{ .Values.open_webui.service.port }}"
+            - name: WEBUI_AUTH
+              value: {{ .Values.open_webui.env.WEBUI_AUTH | quote }}
+            - name: ENABLE_SIGNUP
+              value: {{ .Values.open_webui.env.ENABLE_SIGNUP | quote }}
+            - name: DEFAULT_MODELS
+              value: {{ .Values.llm.model | quote }}
+            - name: TOOL_SERVER_CONNECTIONS
+              value: |
+                [
+                  {
+                      "url": "http://{{ include "app.fullname" . }}-api:{{ .Values.api.service.port }}/v1/aitools",
+                      "path": "openapi.json",
+                      "auth_type": "bearer",
+                      "key": "",
+                      "config": { "enable": true, "access_control": null },
+                      "info": { "name": "Loom-Api", "description": "" }
+                  }
+                ]
+
+          volumeMounts:
+            - mountPath: /app/backend/data
+              name: open-webui
+          {{- if .Values.open_webui.resources }}
+          resources: {{- toYaml .Values.open_webui.resources | nindent 12 }}
+          {{- end }}
+  volumeClaimTemplates:
+    - metadata:
+        name: open-webui
+      spec:
+        accessModes:
+          - {{ .Values.open_webui.pvc.accessModes | default "ReadWriteOnce" | quote }}
+        resources:
+            requests:
+              storage: {{ .Values.open_webui.pvc.storage }}
+        {{- if .Values.open_webui.pvc.storageClass -}}
+        storageClassName: {{ .Values.open_webui.pvc.storageClass }}
+        {{- end }}

@@ -4,7 +4,7 @@ metadata:
   name: {{ include "app.fullname" . }}-open-webui
   labels:
     {{- include "app.labels.standard" . | nindent 4 }}
-    app.kubernetes.io/component: ollama
+    app.kubernetes.io/component: open-webui
 spec:
   ports:
     - port: {{ .Values.open_webui.service.port }}

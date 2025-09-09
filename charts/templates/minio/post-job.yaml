@@ -16,7 +16,6 @@ metadata:
       {{- toYaml . | nindent 4 }}
     {{- end }}
 spec:
-  ttlSecondsAfterFinished: 300  # Auto-delete after 5 minutes
   template:
     metadata:
       labels:
