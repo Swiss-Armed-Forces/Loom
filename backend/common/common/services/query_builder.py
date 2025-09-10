@@ -452,12 +452,22 @@ class QueryBuilder:
                 ],
             ).visit(tree, {})
             tree = RFTransformer(
-                "when",
+                "uploaded",
                 [
                     r"uploaded_datetime",
+                ],
+            ).visit(tree, {})
+            tree = RFTransformer(
+                "created",
+                [
                     r"tika_meta.dcterms\:created",
-                    r"tika_meta.dcterms\:modified",
                     r"tika_meta.pdf\:docinfo\:created",
+                ],
+            ).visit(tree, {})
+            tree = RFTransformer(
+                "modified",
+                [
+                    r"tika_meta.dcterms\:modified",
                 ],
             ).visit(tree, {})
             tree = RFTransformer(

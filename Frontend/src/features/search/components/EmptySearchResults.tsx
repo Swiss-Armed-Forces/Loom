@@ -37,6 +37,20 @@ export function EmptySearchResults() {
         dispatch(updateQuery(searchParams));
     };
 
+    const createSearchTip = (query: string, searchKey: string) => (
+        <li>
+            <span
+                className={styles.clickableSpan}
+                onClick={() => {
+                    performSearch(query);
+                }}
+            >
+                {query}
+            </span>{" "}
+            - {t("emptySearch.tips." + searchKey)}
+        </li>
+    );
+
     return (
         <Box className={styles.emptyCard}>
             {queryError && (
@@ -64,190 +78,49 @@ export function EmptySearchResults() {
                         <div>
                             <p>{t("emptySearch.tips.title")}</p>
                             <ul>
-                                <li>
-                                    <span
-                                        className={styles.clickableSpan}
-                                        onClick={() => {
-                                            performSearch("*");
-                                        }}
-                                    >
-                                        *
-                                    </span>{" "}
-                                    - {t("emptySearch.tips.showAll")}
-                                </li>
-                                <li>
-                                    <span
-                                        className={styles.clickableSpan}
-                                        onClick={() => {
-                                            performSearch("John Smith");
-                                        }}
-                                    >
-                                        John Smith
-                                    </span>{" "}
-                                    - {t("emptySearch.tips.keyword")}
-                                </li>
-                                <li>
-                                    <span
-                                        className={styles.clickableSpan}
-                                        onClick={() => {
-                                            performSearch("Jo*");
-                                        }}
-                                    >
-                                        Jo&#42;
-                                    </span>{" "}
-                                    - {t("emptySearch.tips.prefix")}
-                                </li>
-                                <li>
-                                    <span
-                                        className={styles.clickableSpan}
-                                        onClick={() => {
-                                            performSearch('"John Smith"');
-                                        }}
-                                    >
-                                        &quot;John Smith&quot;
-                                    </span>{" "}
-                                    - {t("emptySearch.tips.exact")}
-                                </li>
-                                <li>
-                                    <span
-                                        className={styles.clickableSpan}
-                                        onClick={() => {
-                                            performSearch('"John Smith"~10');
-                                        }}
-                                    >
-                                        &quot;John Smith&quot;~10
-                                    </span>{" "}
-                                    - {t("emptySearch.tips.exactDistance")}
-                                </li>
-                                <li>
-                                    <span
-                                        className={styles.clickableSpan}
-                                        onClick={() => {
-                                            performSearch("John~2");
-                                        }}
-                                    >
-                                        John~2
-                                    </span>{" "}
-                                    - {t("emptySearch.tips.fuzzy")}
-                                </li>
-                                <li>
-                                    <span
-                                        className={styles.clickableSpan}
-                                        onClick={() => {
-                                            performSearch("filename:*.txt");
-                                        }}
-                                    >
-                                        filename:*.txt
-                                    </span>{" "}
-                                    - {t("emptySearch.tips.filename")}
-                                </li>
-                                <li>
-                                    <span
-                                        className={styles.clickableSpan}
-                                        onClick={() => {
-                                            performSearch("size:>1M");
-                                        }}
-                                    >
-                                        size:&gt;1M
-                                    </span>{" "}
-                                    -{t("emptySearch.tips.size")}
-                                </li>
-                                <li>
-                                    <span
-                                        className={styles.clickableSpan}
-                                        onClick={() => {
-                                            performSearch("when:today");
-                                        }}
-                                    >
-                                        when:today
-                                    </span>{" "}
-                                    - {t("emptySearch.tips.when")}
-                                </li>
-                                <li>
-                                    <span
-                                        className={styles.clickableSpan}
-                                        onClick={() => {
-                                            performSearch("author:*");
-                                        }}
-                                    >
-                                        author:*
-                                    </span>{" "}
-                                    - {t("emptySearch.tips.author")}
-                                </li>
-                                <li>
-                                    <span
-                                        className={styles.clickableSpan}
-                                        onClick={() => {
-                                            performSearch("tags:interesting");
-                                        }}
-                                    >
-                                        tags:interesting
-                                    </span>{" "}
-                                    - {t("emptySearch.tips.tags")}
-                                </li>
-                                <li>
-                                    <span
-                                        className={styles.clickableSpan}
-                                        onClick={() => {
-                                            performSearch(
-                                                "NOT tags:interesting",
-                                            );
-                                        }}
-                                    >
-                                        NOT tags:interesting
-                                    </span>{" "}
-                                    - {t("emptySearch.tips.tagsNegate")}
-                                </li>
-                                <li>
-                                    <span
-                                        className={styles.clickableSpan}
-                                        onClick={() => {
-                                            performSearch("hidden:true");
-                                        }}
-                                    >
-                                        hidden:true
-                                    </span>{" "}
-                                    - {t("emptySearch.tips.removed")}
-                                </li>
-                                <li>
-                                    <span
-                                        className={styles.clickableSpan}
-                                        onClick={() => {
-                                            performSearch(
-                                                "file_type:image/png",
-                                            );
-                                        }}
-                                    >
-                                        file_type:image/png
-                                    </span>{" "}
-                                    - {t("emptySearch.tips.fileType")}
-                                </li>
-                                <li>
-                                    <span
-                                        className={styles.clickableSpan}
-                                        onClick={() => {
-                                            performSearch(
-                                                "tags:interesting AND when:today",
-                                            );
-                                        }}
-                                    >
-                                        tags:interesting AND when:today
-                                    </span>{" "}
-                                    - {t("emptySearch.tips.and")}
-                                </li>
-                                <li>
-                                    <span
-                                        className={styles.clickableSpan}
-                                        onClick={() => {
-                                            performSearch(
-                                                "tags:interesting OR when:today",
-                                            );
-                                        }}
-                                    >
-                                        tags:interesting OR when:today
-                                    </span>{" "}
-                                    - {t("emptySearch.tips.or")}
-                                </li>
+                                {createSearchTip("*", "showAll")}
+                                {createSearchTip("John Smith", "keyword")}
+                                {createSearchTip("Jo*", "prefix")}
+                                {createSearchTip('"John Smith"', "exact")}
+                                {createSearchTip(
+                                    '"John Smith"~10',
+                                    "exactDistance",
+                                )}
+                                {createSearchTip("John~2", "fuzzy")}
+                                {createSearchTip("filename:*.txt", "filename")}
+                                {createSearchTip("size:>1M", "size")}
+                                {createSearchTip("modified:today", "when")}
+                                {createSearchTip("author:*", "author")}
+                                {createSearchTip("tags:interesting", "tags")}
+                                {createSearchTip(
+                                    "NOT tags:interesting",
+                                    "tagsNegate",
+                                )}
+                                {createSearchTip("hidden:true", "removed")}
+                                {createSearchTip(
+                                    "file_type:image/png",
+                                    "fileType",
+                                )}
+                                {createSearchTip(
+                                    "tags:interesting AND modified:today",
+                                    "and",
+                                )}
+                                {createSearchTip(
+                                    "tags:interesting OR modified:today",
+                                    "or",
+                                )}
+                                {createSearchTip(
+                                    "uploaded:[* TO 2020-06-31]",
+                                    "uploadTime",
+                                )}
+                                {createSearchTip(
+                                    "created:{2020-12-31 TO 2025-01-01}",
+                                    "creationTime",
+                                )}
+                                {createSearchTip(
+                                    "modified:[2021-01-01 TO 2025-01-01}",
+                                    "modificationTime",
+                                )}
                             </ul>
                         </div>
                         <div>
