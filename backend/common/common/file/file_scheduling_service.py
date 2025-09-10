@@ -11,6 +11,7 @@ from common.file.file_repository import File, FileNotFoundException, FileReposit
 from common.services.file_storage_service import FileStorageService
 from common.services.lazybytes_service import LazyBytes, LazyBytesService
 from common.services.task_scheduling_service import TaskSchedulingService
+from common.settings import settings
 
 logger = logging.getLogger(__name__)
 
@@ -75,6 +76,10 @@ class FileSchedulingService:
             return deduplicated_file
 
         self._file_repository.save(file)
+
+        if not settings.automatic_indexing:
+            return file
+
         self._task_scheduling_service.index_file(file, file_content)
 
         return file

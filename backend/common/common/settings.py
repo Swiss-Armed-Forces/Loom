@@ -82,6 +82,8 @@ class Settings(BaseSettings):
 
     archive_encryption_master_key: AESMasterKey | None = None
 
+    automatic_indexing: bool = True
+
     @field_validator("archive_encryption_master_key", mode="before")
     @classmethod
     def parse_archive_encryption_master_key(cls, value: str) -> AESMasterKey:

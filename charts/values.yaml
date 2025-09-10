@@ -31,6 +31,7 @@ pipeline:
   taskTimeLimitSeconds: 3600
   skip_summarize_while_indexing: false
   skip_translate_while_indexing: false
+  automatic_indexing: true
   tika_ocr_languages:
     - eng
     - deu
