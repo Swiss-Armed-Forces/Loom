@@ -33,6 +33,9 @@ data:
     {{- if .Values.pipeline.skip_translate_while_indexing }}
     skip_translate_while_indexing: {{ .Values.pipeline.skip_translate_while_indexing | quote }}
     {{- end }}
+    {{- if .Values.pipeline.automatic_indexing }}
+    automatic_indexing: {{ .Values.pipeline.automatic_indexing | quote }}
+    {{- end }}
     {{- if .Values.pipeline.tika_ocr_languages }}
     tika_ocr_languages: {{ .Values.pipeline.tika_ocr_languages | join "," | quote }}
     {{- end }}
