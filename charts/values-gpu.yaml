@@ -7,7 +7,7 @@ translate:
     limits:
       nvidia.com/gpu: 1
 
-ollama:
+ollama: &ollama
   resources:
     requests:
       nvidia.com/gpu: 1
@@ -15,3 +15,5 @@ ollama:
       nvidia.com/gpu: 1
       cpu: "2"
       memory: "5Gi"
+
+ollama-tool: *ollama

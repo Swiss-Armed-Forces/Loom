@@ -1,0 +1,86 @@
+{{- define "app.ollama.deployment" -}}
+{{- $component := .component -}}
+{{- $values := index .Values $component -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "app.fullname" . }}-{{ $component }}
+  labels:
+    {{- include "app.labels.standard" . | nindent 4 }}
+    app.kubernetes.io/component: "{{ $component }}"
+spec:
+  {{- if not $values.hpa.enabled }}
+  replicas: {{ $values.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      app: {{ include "app.name" . }}-{{ $component }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "app.name" . }}-{{ $component }}
+    spec:
+      containers:
+        - name: {{ $component }}
+          image: {{ .Values.image.registry }}/{{ $values.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) $values.image.tag }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: {{ $component }}
+              containerPort: {{ $values.service.port }}
+          env:
+            - name: OLLAMA_HOST
+              value: "0.0.0.0:{{ $values.service.port }}"
+            {{- if $values.pvc.enabled }}
+            - name: OLLAMA_MODELS
+              value: /ollama-models
+            {{- end }}
+          {{- if $values.readinessProbe.enabled }}
+          readinessProbe:
+            httpGet:
+              path: /api/ps
+              port: {{ $values.service.port }}
+            initialDelaySeconds: {{ default 0 $values.readinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ default 20 $values.readinessProbe.periodSeconds }}
+            failureThreshold: {{ default 3 $values.readinessProbe.failureThreshold }}
+          {{- end }}
+          {{- if $values.livenessProbe.enabled }}
+          livenessProbe:
+            httpGet:
+              path: /api/ps
+              port: {{ $values.service.port }}
+            initialDelaySeconds: {{ default 0 $values.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ default 20 $values.livenessProbe.periodSeconds }}
+            failureThreshold: {{ default 6 $values.livenessProbe.failureThreshold }}
+          {{- end }}
+          {{- if $values.pvc.enabled }}
+          volumeMounts:
+            - name: ollama-models
+              mountPath: /ollama-models
+          {{- end }}
+          {{- if $values.resources }}
+          resources: {{- toYaml $values.resources | nindent 12 }}
+          {{- end }}
+      {{- if $values.pvc.enabled }}
+      initContainers:
+        - name: copy-ollama-models
+          image: {{ .Values.image.registry }}/{{ $values.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) $values.image.tag }}
+          command:
+            - /bin/sh
+            - -c
+            - |
+              echo "Copying preloaded models to PVC..."
+              cp --recursive --update /root/.ollama/models/* /ollama-models/ || true
+          volumeMounts:
+            - name: ollama-models
+              mountPath: /ollama-models
+          {{- if $values.initContainer.resources }}
+          resources: {{- toYaml $values.initContainer.resources | nindent 12 }}
+          {{- end }}
+      {{- end }}
+      {{- if $values.pvc.enabled }}
+      volumes:
+        - name: ollama-models
+          persistentVolumeClaim:
+            claimName: {{ include "app.fullname" . }}-{{ $component }}-ollama-models
+      {{- end }}
+{{- end -}}

@@ -1,0 +1,37 @@
+{{- define "app.ollama.ingress" -}}
+{{- $component := .component -}}
+{{- $values := index .Values $component -}}
+{{- if $values.ingress.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "app.fullname" . }}-{{ $component }}
+  labels:
+    {{- include "app.labels.standard" . | nindent 4 }}
+    app.kubernetes.io/component: "{{ $component }}"
+  annotations:
+    {{- toYaml $values.ingress.annotations | nindent 4 }}
+    {{- if .Values.certificate.requireClientCert }}
+    traefik.ingress.kubernetes.io/router.tls.options: {{ .Release.Namespace }}-{{ include "app.fullname" . }}-mtls@kubernetescrd
+    {{- end }}
+spec:
+  ingressClassName: {{ $values.ingress.className }}
+  rules:
+    - host: {{ printf "%s.%s" $component .Values.domain }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "app.fullname" . }}-{{ $component }}
+                port:
+                  number: {{ $values.service.port }}
+  {{- if $values.ingress.tls.enabled }}
+  tls:
+    - secretName: {{ include "app.fullname" . }}-certificate
+      hosts:
+        - {{ printf "%s.%s" $component .Values.domain }}
+  {{- end }}
+{{- end }}
+{{- end -}}

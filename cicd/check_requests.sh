@@ -18,7 +18,7 @@ CHARTS_DIR="${1?Missing Charts Dir}"
 # Note: minikube declares a base load of:
 # - ~ 1200m CPU
 # - ~ 440Mi RAM
-MAX_CPU="6500"       # in millicores
+MAX_CPU="7000"       # in millicores
 MAX_MEMORY="21000"   # in Mi
 
 # Render the Helm chart and extract the ConfigMap YAML

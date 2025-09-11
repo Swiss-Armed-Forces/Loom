@@ -1,0 +1,18 @@
+{{- define "app.ollama.service" -}}
+{{- $component := .component -}}
+{{- $values := index .Values $component -}}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "app.fullname" . }}-{{ $component }}
+  labels:
+    {{- include "app.labels.standard" . | nindent 4 }}
+    app.kubernetes.io/component: "{{ $component }}"
+spec:
+  ports:
+    - port: {{ $values.service.port }}
+      name: {{ $component }}
+      targetPort: {{ $values.service.port }}
+  selector:
+    app: {{ include "app.name" . }}-{{ $component }}
+{{- end -}}
