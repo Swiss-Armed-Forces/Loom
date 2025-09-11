@@ -149,12 +149,14 @@ rabbit:
     amqp:
       enabled: true
 
-ollama:
+ollama: &ollama
   hpa:
     enabled: false
   pvc:
     enabled: false
   ingress: *default-ingress-config
+
+ollama-tool: *ollama
 
 open_webui:
   env:

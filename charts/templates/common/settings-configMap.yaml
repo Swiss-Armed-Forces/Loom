@@ -83,7 +83,7 @@ data:
     rspam_host: http://{{ include "app.fullname" . }}-rspamd:{{ .Values.rspamd.worker.service.port }}
     translate_host: http://{{ include "app.fullname" . }}-translate:{{ .Values.translate.service.port }}
     ollama_host: http://{{ include "app.fullname" . }}-ollama:{{ .Values.ollama.service.port }}
-    ollama_tool_host: http://{{ include "app.fullname" . }}-ollama-tool:{{ .Values.ollama.toolService.port }}
+    ollama_tool_host: http://{{ include "app.fullname" . }}-ollama-tool:{{ index .Values "ollama-tool" "service" "port" }}
     api_host: http://{{ include "app.fullname" . }}-api:{{ .Values.api.service.port }}
     ws_host: ws://{{ include "app.fullname" . }}-api:{{ .Values.api.service.port }}
     imap_host: imap://{{ include "app.fullname" . }}-dovecot:{{ .Values.dovecot.service.port.imap }}

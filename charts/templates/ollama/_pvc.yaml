@@ -1,0 +1,20 @@
+{{- define "app.ollama.pvc" -}}
+{{- $component := .component -}}
+{{- $values := index .Values $component -}}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "app.fullname" . }}-{{ $component }}-ollama-models
+  labels:
+    {{- include "app.labels.standard" . | nindent 4 }}
+    app.kubernetes.io/component: "{{ $component }}"
+spec:
+  accessModes:
+    - {{ $values.pvc.accessModes | default "ReadWriteMany" | quote }}
+  resources:
+    requests:
+      storage: {{ $values.pvc.storage }}
+  {{- if $values.pvc.storageClass -}}
+  storageClassName: {{ $values.pvc.storageClass }}
+  {{- end }}
+{{- end -}}

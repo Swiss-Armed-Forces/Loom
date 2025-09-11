@@ -859,7 +859,7 @@ rabbit:
       cpu: "2"
       memory: "3Gi"
 
-ollama:
+ollama: &ollama
   replicaCount: 1
   hpa:
     enabled: true
@@ -871,8 +871,6 @@ ollama:
     repository: swiss-armed-forces/cyber-command/cea/loom/ollama
   service:
     port: 11434
-  toolService:
-    port: 11435
   pvc:
     enabled: true
     storage: 30Gi
@@ -881,14 +879,13 @@ ollama:
     enabled: false
   livenessProbe:
     enabled: true
-  resources: &ollama-resources
+  resources:
     requests:
-      cpu: "0.6"
-      memory: "2Gi"
+      cpu: "0.5"
+      memory: "1.5Gi"
     limits:
       cpu: "10"
       memory: "10Gi"
-  toolResources: *ollama-resources
   initContainer:
     resources:
       requests:
@@ -897,6 +894,8 @@ ollama:
       limits:
         cpu: "0.1"
         memory: "100Mi"
+
+ollama-tool: *ollama
 
 open_webui:
   replicaCount: 1
