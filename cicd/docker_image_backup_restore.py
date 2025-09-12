@@ -218,12 +218,17 @@ def docker_restore_image(image_id: str, backup_dir: Path) -> None:
 # CLI Entry Point
 # -------------------------------
 def cmd_backup(parallel: int, image_dir: Path, pattern: str, prune: bool) -> None:
-    image_metadata = get_image_map(pattern)
-    logger.info("Found %d unique images to back up.", len(image_metadata))
-
     # Create the backup directory if it doesn't exist
     logger.info("Creating: %s", image_dir)
     image_dir.mkdir(parents=True, exist_ok=True)
+
+    if prune:
+        logger.info("Pruning docker images")
+        client = get_docker_client()
+        client.images.prune(filters={"dangling": False})
+
+    image_metadata = get_image_map(pattern)
+    logger.info("Found %d unique images to back up.", len(image_metadata))
 
     if prune:
         kept_dirs = {meta.id for meta in image_metadata}
