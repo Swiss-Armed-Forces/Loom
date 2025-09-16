@@ -50,7 +50,9 @@ data:
     {{- if .Values.llm.model_tool }}
     llm_model_tool: {{ .Values.llm.model_tool }}
     {{- end }}
+    {{- if .Values.llm.think }}
     llm_think: {{ .Values.llm.think | quote }}
+    {{- end }}
     {{- if .Values.llm.temperature }}
     llm_temperature: {{ .Values.llm.temperature | quote }}
     {{- end }}
