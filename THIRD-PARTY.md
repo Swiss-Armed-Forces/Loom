@@ -637,20 +637,20 @@ The complete source code for Traefik is publicly available at [https://github.co
 | react-toastify                      | MIT          | 11.0.5            |
 | string-to-color                     | MIT          | 2.2.2             |
 | uuid                                | MIT          | 11.1.0            |
-| @eslint/compat                      | Apache-2.0   | 1.3.0             |
+| @eslint/compat                      | Apache-2.0   | 1.3.1             |
 | @eslint/eslintrc                    | MIT          | 3.3.1             |
 | @eslint/js                          | MIT          | 9.29.0            |
 | @mui/types                          | MIT          | 7.4.3             |
-| @openapitools/openapi-generator-cli | Apache-2.0   | 2.20.2            |
+| @openapitools/openapi-generator-cli | Apache-2.0   | 2.23.4            |
 | @testing-library/jest-dom           | MIT          | 6.6.3             |
 | @testing-library/react              | MIT          | 16.3.0            |
 | @types/node                         | MIT          | 22.15.32          |
 | @types/react                        | MIT          | 19.1.8            |
 | @types/react-dom                    | MIT          | 19.1.6            |
-| @typescript-eslint/eslint-plugin    | MIT          | 8.34.1            |
-| @typescript-eslint/parser           | MIT          | 8.34.1            |
+| @typescript-eslint/eslint-plugin    | MIT          | 8.39.0            |
+| @typescript-eslint/parser           | MIT          | 8.39.0            |
 | @vitejs/plugin-react                | MIT          | 4.5.2             |
-| eslint                              | MIT          | 9.29.0            |
+| eslint                              | MIT          | 9.32.0            |
 | eslint-config-prettier              | MIT          | 10.1.5            |
 | eslint-plugin-prettier              | MIT          | 5.5.0             |
 | eslint-plugin-react                 | MIT          | 7.37.5            |
@@ -662,7 +662,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | license-report                      | MIT          | 6.8.0             |
 | prettier                            | MIT          | 3.5.3             |
 | typescript                          | Apache-2.0   | 5.8.3             |
-| vite                                | MIT          | 6.3.5             |
+| vite                                | MIT          | 6.3.6             |
 | vite-plugin-svgr                    | MIT          | 4.3.0             |
 | vitest                              | MIT          | 3.2.4             |
 
