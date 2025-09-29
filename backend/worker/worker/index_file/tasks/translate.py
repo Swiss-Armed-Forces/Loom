@@ -99,6 +99,12 @@ def translate_detect_language_task(
         )
         # limit text size used for language detection
         text = text[:LIBRETRANSLATE_MAX_CHARACTERS_PER_REQUEST]
+
+        # Do not attempt detecting languages if the text just consists of
+        # whitespace characters
+        if len(text.strip()) < 0:
+            return text_lazy, None
+
         detected_languages = translate_detect_language(text)
     return text_lazy, detected_languages
 
