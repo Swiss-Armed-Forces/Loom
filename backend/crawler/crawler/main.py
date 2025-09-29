@@ -12,5 +12,5 @@ if __name__ == "__main__":
     init()
     minio_client = get_minio_client()
     minio_crawler = MinioCrawler(minio_client)
-
+    # Start crawling
     minio_crawler.crawl()
