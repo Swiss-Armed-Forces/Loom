@@ -59,6 +59,12 @@ TRANSLATION_TESTCASES = [
             ),
         ],
     ),
+    (
+        # Empty document (as seen when we tika extract content from .zip)
+        ("\n" * 0x70),
+        [],
+        [],
+    ),
 ]
 
 
