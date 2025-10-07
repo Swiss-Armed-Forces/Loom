@@ -1668,8 +1668,8 @@ The complete source code for Traefik is publicly available at [https://github.co
 | libxpm4 | 1:3.5.12-1.1+deb12u1 | MIT | dpkg-db-cataloger |
 | libxrender-dev | 1:0.9.10-1.1 | HPND-sell-variant | dpkg-db-cataloger |
 | libxrender1 | 1:0.9.10-1.1 | HPND-sell-variant | dpkg-db-cataloger |
-| libxslt1-dev | 1.1.35-1+deb12u2 |  | dpkg-db-cataloger |
-| libxslt1.1 | 1.1.35-1+deb12u2 |  | dpkg-db-cataloger |
+| libxslt1-dev | 1.1.35-1+deb12u3 |  | dpkg-db-cataloger |
+| libxslt1.1 | 1.1.35-1+deb12u3 |  | dpkg-db-cataloger |
 | libxss-dev | 1:1.2.3-1 | MIT | dpkg-db-cataloger |
 | libxss1 | 1:1.2.3-1 | MIT | dpkg-db-cataloger |
 | libxt-dev | 1:1.2.1-1.1 |  | dpkg-db-cataloger |
@@ -1680,7 +1680,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | libyuv0 | 0.0~git20230123.b2528b0-1 | BSD-3-Clause | dpkg-db-cataloger |
 | libzstd-dev | 1.5.4+dfsg2-5 | BSD-3-Clause, GPL-2.0-only, Zlib | dpkg-db-cataloger |
 | libzstd1 | 1.5.4+dfsg2-5 | BSD-3-Clause, GPL-2.0-only, Zlib | dpkg-db-cataloger |
-| linux-libc-dev | 6.1.148-1 | BSD-2-Clause, GPL-2.0-only, LGPL-2.1-only | dpkg-db-cataloger |
+| linux-libc-dev | 6.1.153-1 | BSD-2-Clause, GPL-2.0-only, LGPL-2.1-only | dpkg-db-cataloger |
 | login | 1:4.13+dfsg1-1+deb12u1 | BSD-3-Clause, GPL-1.0-only, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
 | logsave | 1.47.0-2+b2 | Apache-2.0, Apache-2.0, BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later, ISC, Kazlib, LGPL-2.0-only, Latex2e | dpkg-db-cataloger |
 | luqum | 0.13.0 |  | python-installed-package-cataloger |

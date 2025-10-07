@@ -13,7 +13,11 @@ from worker.index_file import (
     summarize_file_task,
     translate_file_task,
 )
-from worker.periodic import flush_on_idle_task, shrink_periodically_task
+from worker.periodic import (
+    flush_on_idle_task,
+    hide_periodically_task,
+    shrink_periodically_task,
+)
 from worker.test import sigkill_pgroup_task
 
 # DO NOT REMOVE THIS ARRAY!!!
@@ -30,4 +34,5 @@ tasks = [
     shrink_periodically_task,
     process_question_task,
     sigkill_pgroup_task,
+    hide_periodically_task,
 ]

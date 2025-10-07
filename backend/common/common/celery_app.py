@@ -215,6 +215,10 @@ def init_celery_app() -> Celery:
             "task": "worker.periodic.shrink_periodically_task.shrink_periodically_task",
             "schedule": crontab(minute="*"),
         },
+        "hide-old-uploaded-files": {
+            "task": "worker.periodic.hide_periodically_task.hide_periodically_task",
+            "schedule": crontab(hour="0"),
+        },
     }
 
     # Define the celery default queues
