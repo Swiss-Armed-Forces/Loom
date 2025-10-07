@@ -29,6 +29,7 @@ egress:
 
 pipeline:
   taskTimeLimitSeconds: 3600
+  uploaded_files_time_before_hidden: null
   skip_summarize_while_indexing: false
   skip_translate_while_indexing: false
   automatic_indexing: true
