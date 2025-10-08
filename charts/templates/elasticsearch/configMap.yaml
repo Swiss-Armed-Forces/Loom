@@ -1,0 +1,89 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "app.fullname" . }}-elasticsearch-config
+  labels:
+    {{- include "app.labels.standard" . | nindent 4 }}
+data:
+  elasticsearch.yml: |
+    {{- $name := include "app.fullname" . -}}
+    {{- $replicas := int (default 1 .Values.elasticsearch.replicaCount) -}}
+
+    {{- /* Build seed and master lists */ -}}
+    {{- $seeds := list -}}
+    {{- $masters := list -}}
+    {{- range $i, $_ := until $replicas }}
+      {{- $seeds = append $seeds (printf "%s-elasticsearch-%d.%s-elasticsearch" $name $i $name) -}}
+      {{- $masters = append $masters (printf "%s-elasticsearch-%d" $name $i) -}}
+    {{- end }}
+
+    {{- /* Defaults */ -}}
+    {{- $defaults := fromYaml (printf `
+cluster:
+  name: %s-elasticsearch
+  routing:
+    allocation:
+      disk:
+        # We are running a single-node cluster:
+        # -> disable all disk watermark and migration
+        #    as there's no place where data could be
+        #    migrated to.
+        threshold_enabled: false
+
+node:
+  name: ${NODE_NAME}
+  roles:
+    - master
+    - data
+    - ingest
+
+network:
+  host: 0.0.0.0
+
+# Populated below
+discovery:
+  type: multi-node
+
+
+# HTTP
+http:
+  max_content_length: 1024mb
+  cors:
+    enabled: true
+    allow-origin: "*"
+
+# Indexing
+action:
+  auto_create_index: false
+
+# Security
+xpack:
+  security:
+    enabled: false
+    enrollment:
+      enabled: false
+    http:
+      ssl:
+        enabled: false
+` $name) -}}
+
+    {{- /* Fill dynamic lists using nested map updates */ -}}
+    {{- if eq $replicas 1 -}}
+    {{- $discard := set (index $defaults "discovery") "type" "single-node" -}}
+    {{- else -}}
+    {{- $discard := set (index $defaults "discovery") "seed_hosts" $seeds -}}
+    {{- $discard := set (index $defaults "cluster") "initial_master_nodes" $masters -}}
+    {{- end -}}
+
+    {{- /* User overrides from values.yaml */ -}}
+    {{- $user := default dict .Values.elasticsearch.config -}}
+    {{- $cfg := mustMergeOverwrite $defaults $user -}}
+
+    {{- toYaml $cfg | nindent 4 }}
+
+    {{- /* Optional: append raw YAML if provided */ -}}
+    {{- if .Values.elasticsearch.extraConfig }}
+
+    # --- extraConfig (verbatim) ---
+    {{ .Values.elasticsearch.extraConfig | nindent 4 }}
+    {{- end }}

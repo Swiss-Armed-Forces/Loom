@@ -6,6 +6,8 @@ metadata:
     {{- include "app.labels.standard" . | nindent 4 }}
     app.kubernetes.io/component: elasticsearch
 spec:
+  clusterIP: None  # Makes it headless
+  publishNotReadyAddresses: true  # Critical for startup communication
   ports:
     - port: {{ .Values.elasticsearch.service.port }}
       name: elasticsearch

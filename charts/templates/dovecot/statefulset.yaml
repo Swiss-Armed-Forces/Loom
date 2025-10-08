@@ -6,7 +6,7 @@ metadata:
     {{- include "app.labels.standard" . | nindent 4 }}
     app.kubernetes.io/component: dovecot
 spec:
-  serviceName: {{ include "app.name" . }}-dovecot
+  serviceName: {{ include "app.fullname" . }}-dovecot
   replicas: {{ .Values.dovecot.replicaCount }}
   selector:
     matchLabels:

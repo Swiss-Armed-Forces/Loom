@@ -6,7 +6,7 @@ metadata:
     {{- include "app.labels.standard" . | nindent 4 }}
     app.kubernetes.io/component: mongodb
 spec:
-  serviceName: {{ include "app.name" . }}-mongodb
+  serviceName: {{ include "app.fullname" . }}-mongodb
   replicas: {{ .Values.mongodb.replicaCount }}
   selector:
     matchLabels:

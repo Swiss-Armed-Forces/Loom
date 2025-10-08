@@ -3,3 +3,13 @@ fluentd:
 
 prometheus:
   collectClusterMetrics: false
+
+elasticsearch:
+  replicaCount: 3
+  shardCount: 3
+  config:
+    cluster:
+      routing:
+        allocation:
+          disk:
+            threshold_enabled: true

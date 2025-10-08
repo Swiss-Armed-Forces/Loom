@@ -6,7 +6,7 @@ metadata:
     {{- include "app.labels.standard" . | nindent 4 }}
     app.kubernetes.io/component: elasticsearch
 spec:
-  serviceName: {{ include "app.name" . }}-elasticsearch
+  serviceName: {{ include "app.fullname" . }}-elasticsearch
   replicas: {{ .Values.elasticsearch.replicaCount }}
   selector:
     matchLabels:
@@ -24,13 +24,15 @@ spec:
           image: {{ .Values.image.registry }}/{{ .Values.elasticsearch.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) .Values.elasticsearch.image.tag }}
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           env:
-            - name: cluster.name
-              value: {{ include "app.name" . }}-elasticsearch
-            - name: node.name
-              value: elasticsearch
-            - name: discovery.type
-              value: single-node
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
           volumeMounts:
+            - name: elasticsearch-config
+              mountPath: /usr/share/elasticsearch/config/elasticsearch.yml
+              readOnly: true
+              subPath: elasticsearch.yml
             - mountPath: /usr/share/elasticsearch/data
               name: elasticsearch-data
           {{- if .Values.elasticsearch.readinessProbe.enabled }}
@@ -62,6 +64,10 @@ spec:
               cpu: {{ .Values.elasticsearch.resources.requests.cpu }}
               memory: {{ .Values.elasticsearch.resources.requests.memory }}
           {{- end }}
+      volumes:
+        - name: elasticsearch-config
+          configMap:
+            name: {{ include "app.fullname" . }}-elasticsearch-config
   volumeClaimTemplates:
     - metadata:
         name: elasticsearch-data

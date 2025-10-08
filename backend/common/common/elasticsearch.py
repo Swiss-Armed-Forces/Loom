@@ -38,7 +38,9 @@ def init_elasticsearch(
             except (RequestError, ElasticsearchDslException):
                 # We failed creating the index: reindex
                 logger.warning(
-                    "Could not init repository: %s, start reindexing", repository_type
+                    "Could not init repository: %s, start reindexing",
+                    repository_type.__name__,
+                    exc_info=True,
                 )
                 repository.reindex()
     return elasticsearch

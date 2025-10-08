@@ -221,7 +221,8 @@ crawler:
         memory: "100Mi"
 
 elasticsearch:
-  replicaCount: 1
+  replicaCount: 3
+  shardCount: 3
   image:
     repository: swiss-armed-forces/cyber-command/cea/loom/elasticsearch
   service:
@@ -238,8 +239,8 @@ elasticsearch:
       cpu: "0.5"
       memory: "4Gi"
     limits:
-      cpu: "8"
-      memory: "16Gi"
+      cpu: "4"
+      memory: "8Gi"
 
 elasticvue:
   enabled: true

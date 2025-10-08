@@ -19,9 +19,18 @@ spec:
         - name: elasticvue
           image: {{ .Values.image.registry }}/{{ .Values.elasticvue.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) .Values.elasticvue.image.tag }}
           imagePullPolicy: {{ .Values.image.pullPolicy }}
+          volumeMounts:
+            - name: elasticvue-config
+              mountPath: /usr/share/nginx/html/api/default_clusters.json
+              readOnly: true
+              subPath: default_clusters.json
           ports:
             - name: elasticvue
               containerPort: {{ .Values.elasticvue.service.port }}
           {{- if .Values.elasticvue.resources }}
           resources: {{- toYaml .Values.elasticvue.resources | nindent 12 }}
           {{- end }}
+      volumes:
+        - name: elasticvue-config
+          configMap:
+            name:  {{ include "app.fullname" . }}-elasticvue-config
