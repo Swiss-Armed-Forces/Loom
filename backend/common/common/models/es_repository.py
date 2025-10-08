@@ -526,6 +526,12 @@ class BaseEsRepository(
         self._document_type.init(using=self._elasticsearch)
         # after initialization: open the index
         self._index.open(using=self._elasticsearch)
+        # Wait for the init operation to complete
+        self._elasticsearch.cluster.health(
+            index=self._index_name,
+            wait_for_status="green",
+            timeout=INDEX_OPERATION_TIMEOUT,
+        )
 
     def reindex(self) -> str:
         clone_index_name = f"{self._index_name}-reindex-{time.time()}"
@@ -562,8 +568,18 @@ class BaseEsRepository(
 
     def backup_index(self, backup_index_name: str | None = None) -> str:
         index_settings = self._elasticsearch.indices.get_settings(
-            index=self._index_name, name="index.number_of_replicas"
-        )[self._index_name]
+            index=self._index_name
+        )[self._index_name]["settings"]
+
+        # overwrite default for backup index
+        index_settings = {
+            **index_settings,
+            **{
+                "index": {
+                    "number_of_replicas": 0,
+                }
+            },
+        }
 
         if backup_index_name is None:
             backup_index_name = f"{self._index_name}-backup-{time.time()}"
@@ -573,7 +589,7 @@ class BaseEsRepository(
             self._elasticsearch.indices.clone(
                 index=self._index_name,
                 target=backup_index_name,
-                settings=index_settings["settings"],
+                settings=index_settings,
             )
             # Wait for the clone operation to complete
             self._elasticsearch.cluster.health(

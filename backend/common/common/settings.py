@@ -44,6 +44,8 @@ class Settings(BaseSettings):
 
     es_host: AnyHttpUrl = AnyHttpUrl(f"http://elasticsearch.{DOMAIN}")
     es_timeout: int = 120
+    es_number_of_replicas: int = 0
+    es_number_of_shards: int = 1
     rabbit_mq_management_host: AnyHttpUrl = AnyHttpUrl(
         f"http://guest:guest@rabbit.{DOMAIN}"
     )

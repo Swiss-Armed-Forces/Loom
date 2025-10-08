@@ -10,8 +10,10 @@ RUN set -exu && \
   analysis-ukrainian \
   analysis-stempel
 
-WORKDIR "/usr/share/elasticsearch"
-COPY elasticsearch.yml ./config/elasticsearch.yml
+# Remove default configurations so that we can overwrite them
+# with configmaps
+RUN set -exu && \
+  rm -rf "/usr/share/elasticsearch/config/elasticsearch.yml"
 
 EXPOSE 9200
 EXPOSE 9300

@@ -6,7 +6,7 @@ metadata:
     {{- include "app.labels.standard" . | nindent 4 }}
     app.kubernetes.io/component: rabbit
 spec:
-  serviceName: {{ include "app.name" . }}-rabbit
+  serviceName: {{ include "app.fullname" . }}-rabbit
   replicas: {{ .Values.rabbit.replicaCount }}
   selector:
     matchLabels:

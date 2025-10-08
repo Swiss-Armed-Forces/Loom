@@ -244,7 +244,7 @@ Multiple services that are useful for production and development purposes are st
 | Api            | [https://api.loom](https://api.loom)                       | The loom api                                  | Swagger documentation: <https://api.loom/docs>|
 | Flower         | [https://flower.loom](https://flower.loom)                 | Monitor celery tasks                          |                                               |
 | RabbitMQ       | [https://rabbit.loom](https://rabbit.loom)                 | Monitor rabbit messages                       | user: `guest` password: `guest`               |
-| Elasticvue     | [https://elasticvue.loom](https://elasticvue.loom)         | ElasticSearch management                      | connect to <https://elasticsearch.loom>       |
+| Elasticvue     | [https://elasticvue.loom](https://elasticvue.loom)         | ElasticSearch management                      | use "predefined clusters"                     |
 | ElasticSearch  | [https://elasticsearch.loom](https://elasticsearch.loom)   | Elasticsearch Database                        |                                               |
 | Mongo Express  | [https://mongo-web.loom](https://mongo-web.loom)           | mongoDB management                            |                                               |
 | Rspamd         | [https://rspamd.loom](https://rspamd.loom)                 | Rspamd spam detection engine                  |                                               |

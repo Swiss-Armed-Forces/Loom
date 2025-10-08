@@ -5,6 +5,7 @@ from pydantic import BaseModel, Field, computed_field
 
 from common.models.es_repository import BaseEsRepository
 from common.services.query_builder import QueryParameters
+from common.settings import settings
 from common.task_object.task_object import RepositoryTaskObject, _EsTaskDocument
 from common.utils.object_id_str import ObjectIdStr
 
@@ -59,9 +60,8 @@ class _EsArchive(_EsTaskDocument):
 
         name = "archive"
         settings = {
-            # we disable data replication, since we run a single node cluster
-            # ref: https://www.elastic.co/guide/en/elasticsearch/reference/current/high-availability-cluster-small-clusters.html # noqa: E501, B950 # pylint: disable=line-too-long
-            "number_of_replicas": 0,
+            "number_of_shards": settings.es_number_of_shards,
+            "number_of_replicas": settings.es_number_of_replicas,
         }
 
 

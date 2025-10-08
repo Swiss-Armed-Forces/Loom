@@ -78,6 +78,16 @@ data:
     llm_rerank_temperature: {{ .Values.llm.rerank_temperature | quote  }}
     {{- end }}
 
+    # elasticsearch
+    {{- if .Values.elasticsearch.replicaCount }}
+    # When running 1 or fewer ES instances, set replicas to 0 since replicas
+    # cannot be placed on the same node as the primary shard
+    es_number_of_replicas: {{ ternary 0 .Values.elasticsearch.replicaCount (le (int .Values.elasticsearch.replicaCount) 1) | quote }}
+    {{- end }}
+    {{- if .Values.elasticsearch.shardCount }}
+    es_number_of_shards: {{ .Values.elasticsearch.shardCount | quote  }}
+    {{- end }}
+
     # hosts
     mongo_db_host: mongodb://{{ include "app.fullname" . }}-mongodb:{{ .Values.mongodb.service.port }}
     es_host: http://{{ include "app.fullname" . }}-elasticsearch:{{ .Values.elasticsearch.service.port }}

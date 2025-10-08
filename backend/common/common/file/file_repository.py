@@ -290,9 +290,8 @@ class _EsFile(_EsTaskDocument):
 
         name = "file"
         settings = {
-            # we disable data replication, since we run a single node cluster
-            # ref: https://www.elastic.co/guide/en/elasticsearch/reference/current/high-availability-cluster-small-clusters.html # noqa: E501, B950 # pylint: disable=line-too-long
-            "number_of_replicas": 0,
+            "number_of_shards": settings.es_number_of_shards,
+            "number_of_replicas": settings.es_number_of_replicas,
             # tika_meta produces a lot of sub fields:
             # hence, we have to increase the limit here
             # ref: https://www.elastic.co/guide/en/elasticsearch/reference/master/mapping-settings-limit.html  # noqa: E501, B950 # pylint: disable=line-too-long

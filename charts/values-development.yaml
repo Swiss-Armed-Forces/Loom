@@ -113,13 +113,15 @@ flower:
   ingress: *default-ingress-config
 
 elasticsearch:
+  replicaCount: 1
+  shardCount: 1
   ingress: *default-ingress-config
   resources:
     requests:
       cpu: "0.5"
       memory: "2Gi"
     limits:
-      cpu: "8"
+      cpu: "4"
       memory: "4Gi"
 
 elasticvue:
