@@ -69,6 +69,12 @@ export interface GetFileResponse {
      * @memberof GetFileResponse
      */
     summary?: string;
+    /**
+     *
+     * @type {string}
+     * @memberof GetFileResponse
+     */
+    type?: string;
 }
 
 /**
@@ -104,6 +110,7 @@ export function GetFileResponseFromJSONTyped(
         ).map(GetFileLanguageTranslationsFromJSON),
         raw: json["raw"],
         summary: json["summary"] == null ? undefined : json["summary"],
+        type: json["type"] == null ? undefined : json["type"],
     };
 }
 
@@ -121,5 +128,6 @@ export function GetFileResponseToJSON(value?: GetFileResponse | null): any {
         ).map(GetFileLanguageTranslationsToJSON),
         raw: value["raw"],
         summary: value["summary"],
+        type: value["type"],
     };
 }

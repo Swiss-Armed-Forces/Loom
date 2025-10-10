@@ -25,7 +25,11 @@ import {
     getShortRunningQuery,
     ResponseError,
 } from "../../app/api";
-import { CombinedStats, SearchQuery } from "./model.ts";
+import {
+    CombinedStats,
+    FileDetailData as FileDetailData,
+    SearchQuery,
+} from "./model.ts";
 import { webSocketSendMessage } from "../../middleware/SocketMiddleware.ts";
 
 import { v4 as uuidv4 } from "uuid";
@@ -68,6 +72,7 @@ export interface SearchState {
             preview: GetFilePreviewResponse | null;
         };
     };
+    fileDetailData: FileDetailData | null;
     totalFiles: number;
     lastFileSortId: any[] | null;
     filesInView: string[];
@@ -102,6 +107,7 @@ const initialState: SearchState = {
         tags: null,
     },
     files: {},
+    fileDetailData: null,
     lastFileSortId: null,
     totalFiles: 0,
     filesInView: [],
@@ -378,6 +384,12 @@ export const searchSlice = createSlice({
         ) => {
             state.summarizationSystemPrompt = action.payload;
         },
+        setFileDetailData: (
+            state,
+            action: PayloadAction<FileDetailData | null>,
+        ) => {
+            state.fileDetailData = action.payload;
+        },
     },
     extraReducers: (builder) => {
         builder.addCase(
@@ -468,6 +480,7 @@ export const {
     setDisplayStat,
     setChatbotOpen,
     setSummarizationSystemPrompt,
+    setFileDetailData,
 } = searchSlice.actions;
 
 export const selectSearch = (state: RootState) => state.search;
@@ -554,6 +567,11 @@ export const selectWebSocketPubSubMessage = createSelector(
 export const selectSummarizationSystemPrompt = createSelector(
     selectSearch,
     (search) => search.summarizationSystemPrompt,
+);
+
+export const selectFileDetailData = createSelector(
+    selectSearch,
+    (search) => search.fileDetailData,
 );
 
 export default searchSlice.reducer;

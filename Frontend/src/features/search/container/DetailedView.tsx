@@ -1,33 +1,17 @@
-import { useEffect, useRef, useState } from "react";
+import { useRef } from "react";
 import { Skeleton } from "@mui/material";
-import { useAppDispatch, useAppSelector } from "../../../app/hooks";
-import {
-    selectIsLoading,
-    showFileDetailDialog,
-} from "../../common/commonSlice";
+import { useAppSelector } from "../../../app/hooks";
+import { selectIsLoading } from "../../common/commonSlice";
 import { EmptySearchResults } from "../components/EmptySearchResults";
-import { selectFiles, selectQuery } from "../searchSlice";
+import { selectFiles } from "../searchSlice";
 import { SearchResultCountText } from "../components/SearchResultCountText";
 import { LoadMoreButton } from "../components/LoadMoreButton";
 import { ResultCard } from "./ResultCard";
 import styles from "./DetailedView.module.css";
 
 export function DetailedView() {
-    const dispatch = useAppDispatch();
     const files = useAppSelector(selectFiles);
-    const searchQuery = useAppSelector(selectQuery);
     const isLoading = useAppSelector(selectIsLoading);
-    const [hasShownInitialDialog, setHasShownInitialDialog] = useState(false);
-
-    useEffect(() => {
-        const fileId = window.location.hash.substring(1);
-        if (!hasShownInitialDialog && !isLoading && searchQuery) {
-            if (fileId && !files[fileId]) {
-                dispatch(showFileDetailDialog({ fileId }));
-            }
-            setHasShownInitialDialog(true);
-        }
-    }, [dispatch, files, hasShownInitialDialog, isLoading, searchQuery]);
 
     const cardRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
 

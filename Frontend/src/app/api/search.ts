@@ -196,7 +196,7 @@ export const deleteTagFromFiles = async (tagName: string): Promise<void> => {
     });
 };
 
-export const getFullFileContent = async (
+export const getFile = async (
     fileId: string,
     query: SearchQuery,
 ): Promise<GetFileResponse> => {

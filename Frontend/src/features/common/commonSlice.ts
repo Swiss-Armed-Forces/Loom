@@ -5,7 +5,6 @@ import {
     PayloadAction,
 } from "@reduxjs/toolkit";
 import { RootState } from "../../app/store";
-import { FileDialogDetailData } from "../search/model";
 import {
     fetchCount,
     fetchOverallQueueStatistics,
@@ -17,7 +16,6 @@ export const DefaultErrorMessage =
 
 export interface CommonState {
     loading: number;
-    fileDetailDialogData?: FileDialogDetailData;
     notification: {
         message: string;
         reason: "info" | "error";
@@ -68,8 +66,6 @@ export const commonSlice = createSlice({
             state,
             action: PayloadAction<{ error: any; showErrorMessage?: boolean }>,
         ) => {
-            console.error("Error:", action.payload.error);
-
             const error = action.payload.error;
             let errorMessage: string;
             if (error instanceof Response) {
@@ -77,6 +73,7 @@ export const commonSlice = createSlice({
             } else {
                 errorMessage = error;
             }
+            console.error("Error:", error);
             state.notification = {
                 message: action.payload.showErrorMessage
                     ? errorMessage
@@ -92,15 +89,6 @@ export const commonSlice = createSlice({
         },
         closeNotification: (state) => {
             state.notification = null;
-        },
-        showFileDetailDialog: (
-            state,
-            action: PayloadAction<FileDialogDetailData>,
-        ) => {
-            state.fileDetailDialogData = action.payload;
-        },
-        closeFileDetailDialog: (state) => {
-            state.fileDetailDialogData = undefined;
         },
     },
     extraReducers: (builder) => {
@@ -127,18 +115,12 @@ export const {
     handleError,
     showInfo,
     closeNotification,
-    showFileDetailDialog,
-    closeFileDetailDialog,
 } = commonSlice.actions;
 
 export const selectCommon = (state: RootState) => state.common;
 export const selectIsLoading = createSelector(
     selectCommon,
     (common) => common.loading > 0,
-);
-export const selectFileDetailData = createSelector(
-    selectCommon,
-    (common) => common.fileDetailDialogData,
 );
 
 export const selectQueuesStatistics = createSelector(

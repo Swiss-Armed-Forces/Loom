@@ -255,10 +255,11 @@ class GetFileResponse(BaseModel):
     file_id: UUID
     highlight: dict[str, list[str]] | None
     content: str
-    name: str  # short_name
+    name: str
     libretranslate_language_translations: list[GetFileLanguageTranslations]
     raw: str
     summary: str | None
+    type: str | None
 
     @staticmethod
     def from_file(file: File):
@@ -281,6 +282,7 @@ class GetFileResponse(BaseModel):
                 exclude={"embeddings", "content", "libretranslate_translations"}
             ),
             summary=file.summary,
+            type=file.magic_file_type,
         )
 
 
