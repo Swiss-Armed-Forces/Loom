@@ -3,7 +3,11 @@ import { Box, Tooltip } from "@mui/material";
 import ChatWindow from "./ChatWindow";
 import MessageInput from "./MessageInput";
 import styles from "./Chatbot.module.css";
-import { selectQuery, selectWebSocketPubSubMessage } from "../searchSlice";
+import {
+    selectQuery,
+    selectWebSocketPubSubMessage,
+    setFileDetailData,
+} from "../searchSlice";
 import { useAppDispatch, useAppSelector } from "../../../app/hooks";
 import { toast } from "react-toastify";
 import {
@@ -12,7 +16,6 @@ import {
     processQuestion,
 } from "../../../app/api";
 import { webSocketSendMessage } from "../../../middleware/SocketMiddleware";
-import { showFileDetailDialog } from "../../common/commonSlice";
 
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type
 interface ChatbotProps {}
@@ -139,7 +142,7 @@ const Chatbot: React.FC<ChatbotProps> = () => {
                         <a
                             href={"#" + fileId}
                             onClick={() => {
-                                dispatch(showFileDetailDialog({ fileId }));
+                                handleViewDetail(fileId);
                             }}
                         >
                             {"[" + count + "]"}
@@ -169,6 +172,14 @@ const Chatbot: React.FC<ChatbotProps> = () => {
             console.error(err);
             toast.error("Cannot get chatbot response");
         }
+    };
+
+    const handleViewDetail = (fileId: string) => {
+        dispatch(
+            setFileDetailData({
+                fileId: fileId,
+            }),
+        );
     };
 
     return (

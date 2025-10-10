@@ -18,15 +18,14 @@ import {
     selectQuery,
     selectFileById,
     setFileInViewState,
+    setFileDetailData,
 } from "../searchSlice";
 import { useAppDispatch, useAppSelector } from "../../../app/hooks";
 
 import styles from "./ResultCard.module.css";
 
-import { showFileDetailDialog } from "../../common/commonSlice";
-
 import { ClickableFilePath } from "../components/ClickableFilePath";
-import { FileDetailViewTab, FileDialogDetailData } from "../model";
+import { FileDetailTab } from "../model";
 import { useTranslation } from "react-i18next";
 import { Tasks } from "../../common/components/tasks/Tasks.tsx";
 import { EllipsisButton } from "../components/EllipsisButton.tsx";
@@ -62,17 +61,6 @@ export const ResultCard = forwardRef<HTMLDivElement, ResultCardProps>(
         });
 
         const [imageHashToShow, setImageHashToShow] = useState("");
-        const [initialAnchor, setInitialAnchor] = useState("");
-
-        useEffect(() => {
-            function updateInitialAnchor() {
-                setInitialAnchor(window.location.hash.substring(1));
-            }
-            window.addEventListener("hashchange", updateInitialAnchor);
-            return () => {
-                window.removeEventListener("hashchange", updateInitialAnchor);
-            };
-        });
 
         useEffect(() => {
             dispatch(
@@ -83,16 +71,13 @@ export const ResultCard = forwardRef<HTMLDivElement, ResultCardProps>(
             );
         }, [inView, fileId, searchQuery, dispatch]);
 
-        useEffect(() => {
-            if (initialAnchor === fileId) {
-                handleViewDetail({
+        const handleViewDetail = () => {
+            dispatch(
+                setFileDetailData({
                     fileId: fileId,
-                });
-            }
-        }, [fileId, initialAnchor]); // eslint-disable-line react-hooks/exhaustive-deps
-
-        const handleViewDetail = (fileDetailData: FileDialogDetailData) => {
-            dispatch(showFileDetailDialog(fileDetailData));
+                    tab: FileDetailTab.Content,
+                }),
+            );
         };
 
         const handleQueryReplaceFileExtension = (extension: string) => {
@@ -209,12 +194,7 @@ export const ResultCard = forwardRef<HTMLDivElement, ResultCardProps>(
                                         {filePreview.content}
                                         {filePreview.contentPreviewIsTruncated && (
                                             <EllipsisButton
-                                                click={() =>
-                                                    handleViewDetail({
-                                                        fileId: fileId,
-                                                        tab: FileDetailViewTab.Content,
-                                                    })
-                                                }
+                                                click={handleViewDetail}
                                                 title={t(
                                                     "generalSearchView.viewContent",
                                                 )}

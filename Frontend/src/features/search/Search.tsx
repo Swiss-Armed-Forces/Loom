@@ -8,6 +8,8 @@ import {
     updateQuery,
     setSummarizationSystemPrompt,
     setTags,
+    selectFileDetailData,
+    setFileDetailData,
 } from "./searchSlice";
 import {
     loadLanguages,
@@ -19,14 +21,13 @@ import {
 } from "../../app/api";
 import {
     handleError,
-    showFileDetailDialog,
     startLoadingIndicator,
     stopLoadingIndicator,
 } from "../common/commonSlice";
 import { SearchResults } from "./container/SearchResults";
 import { SideMenu } from "./components/SideMenu";
 import styles from "./Search.module.css";
-import { FileDetailViewDialog } from "./components/FileDetailViewDialog";
+import { FileDetailDialog } from "./components/FileDetailDialog.tsx";
 import { Toolbar } from "./components/Toolbar.tsx";
 import { ScrollToTop } from "./components/ScrollToTop.tsx";
 import { selectQuery, selectLanguages } from "./searchSlice";
@@ -46,6 +47,7 @@ export function Search() {
     const dispatch = useAppDispatch();
     const languages = useAppSelector(selectLanguages);
     const searchQuery = useAppSelector(selectQuery);
+    const fileDetailDialogData = useAppSelector(selectFileDetailData);
     const webSocketPubSubMessage = useAppSelector(selectWebSocketPubSubMessage);
 
     const chatbotOpen = useAppSelector((state) => state.search.chatbotOpen);
@@ -71,7 +73,7 @@ export function Search() {
     useEffect(() => {
         async function fetchInitialSearchState() {
             await Promise.all([
-                await fetchSearchState(),
+                fetchSearchState(),
                 dispatch(websocketConnect),
                 dispatch(setLanguages(await loadLanguages())),
                 dispatch(
@@ -81,14 +83,12 @@ export function Search() {
                 ),
             ]).catch((errorPayload) => {
                 dispatch(handleError(errorPayload));
-                dispatch(stopLoadingIndicator());
             });
         }
         async function fetchSearchState() {
             await Promise.all([dispatch(setTags(await loadTags()))]).catch(
                 (errorPayload) => {
                     dispatch(handleError(errorPayload));
-                    dispatch(stopLoadingIndicator());
                 },
             );
         }
@@ -138,6 +138,10 @@ export function Search() {
                 }),
         } as SearchQuery;
         dispatch(updateQuery(newQuery));
+        // load fileId
+        const fileId = window.location.hash.substring(1); // substring: remove '#'
+        if (!fileId) return;
+        dispatch(setFileDetailData({ fileId: fileId }));
     }, [languages]); // eslint-disable-line react-hooks/exhaustive-deps
 
     // persist in query params
@@ -160,29 +164,17 @@ export function Search() {
             );
         }
 
-        const currentAnchor = location.hash; // Hash ("#") is the URL anchor
-
         // Update URL with new search params
         setSearchParams(newSearchParams);
 
-        // If there was an anchor previously, add it back to the URL
-        if (!currentAnchor) return;
+        // If there was an selected file id previously, add it back to the URL
+        if (!fileDetailDialogData) return;
         window.history.replaceState(
             null,
             "",
-            `${window.location.pathname}?${newSearchParams.toString()}${currentAnchor}`,
+            `${window.location.pathname}?${newSearchParams.toString()}#${fileDetailDialogData.fileId}`,
         );
-
-        // Remove hash from URL anchor
-        const fileId = currentAnchor.substring(1);
-
-        // Open FileDetailViewDialog at the load of the page
-        dispatch(
-            showFileDetailDialog({
-                fileId: fileId,
-            }),
-        );
-    }, [searchQuery, setSearchParams, location.hash]); // eslint-disable-line react-hooks/exhaustive-deps
+    }, [searchQuery, fileDetailDialogData, setSearchParams, location.hash]); // eslint-disable-line react-hooks/exhaustive-deps
 
     // print error messages as toasts
     useEffect(() => {
@@ -250,7 +242,7 @@ export function Search() {
                     />
                 </div>
 
-                <FileDetailViewDialog />
+                <FileDetailDialog />
             </div>
             <ChatMenu isOpen={chatbotOpen} toggleMenu={toggleChatbot} />
         </div>

@@ -8,13 +8,12 @@ import { SummaryButton } from "../components/SummaryButton";
 import { TranslationDialog } from "../components/TranslationDialog";
 import { useState } from "react";
 import { useAppDispatch } from "../../../app/hooks";
-import { FileDialogDetailData } from "../model";
-import { showFileDetailDialog } from "../../common/commonSlice";
 import { GetFilePreviewResponse } from "../../../app/api";
 import { TagsList } from "../../common/components/tags/TagsList";
 import { TagsInput } from "../../common/components/tags/TagsInput";
 import { ShareButton } from "../components/ShareButton";
 import styles from "./ResultCardAction.module.css";
+import { setFileDetailData } from "../searchSlice";
 
 interface ResultCardActions {
     isMobile: boolean;
@@ -39,8 +38,12 @@ export function ResultCardActions({
         setAnchorEl(null);
     };
 
-    const handleViewDetail = (fileDetailData: FileDialogDetailData) => {
-        dispatch(showFileDetailDialog(fileDetailData));
+    const handleViewDetail = () => {
+        dispatch(
+            setFileDetailData({
+                fileId: fileId,
+            }),
+        );
     };
 
     if (isMobile) {
@@ -65,9 +68,7 @@ export function ResultCardActions({
                             title={t("generalSearchView.viewContent")}
                             onClick={() => {
                                 handleMenuClose();
-                                handleViewDetail({
-                                    fileId,
-                                });
+                                handleViewDetail();
                             }}
                         >
                             <Preview />
@@ -111,11 +112,7 @@ export function ResultCardActions({
                 <ShareButton fileId={fileId} />
                 <IconButton
                     title={t("generalSearchView.viewContent")}
-                    onClick={() =>
-                        handleViewDetail({
-                            fileId,
-                        })
-                    }
+                    onClick={handleViewDetail}
                 >
                     <Preview />
                 </IconButton>

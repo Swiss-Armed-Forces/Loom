@@ -43,7 +43,6 @@ export function GlobalSearchBox() {
                 sortDirection: sortDirection,
             }),
         );
-        window.location.hash = "";
     };
 
     const handleSearchValueChange = (

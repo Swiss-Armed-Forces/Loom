@@ -26,15 +26,16 @@ export interface SearchQuery {
     pageSize: number | null;
 }
 
-export interface FileDialogDetailData {
-    fileId: string;
-    tab?: FileDetailViewTab;
-}
-export enum FileDetailViewTab {
+export enum FileDetailTab {
     Content,
     Highlights,
     RAW,
     Summary,
+}
+
+export interface FileDetailData {
+    fileId: string;
+    tab?: FileDetailTab;
 }
 
 export interface CombinedStats {
