@@ -24,11 +24,15 @@ match settings.worker_type:
         argv = argv + [
             "--exclude-queues",
             f"{CELERY_GRAVEYARD_QUEUE_NAME},{CELERY_DEAD_QUEUE_NAME}",
+            "--autoscale",
+            f"{settings.worker_max_concurrency},0",
         ]
     case "REAPER":
         argv = argv + [
             "--queues",
             f"{CELERY_GRAVEYARD_QUEUE_NAME},{CELERY_DEAD_QUEUE_NAME}",
+            "--autoscale",
+            f"{settings.worker_max_concurrency},0",
         ]
     case _:
         pass
