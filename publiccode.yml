@@ -115,6 +115,9 @@ legal:
   license: MIT
 maintenance:
   type: internal
+  contacts:
+    - name: Group Mailbox
+      email: loom-open-source@vtg.admin.ch
 localisation:
   localisationReady: true
   availableLanguages:
