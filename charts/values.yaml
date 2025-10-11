@@ -221,8 +221,9 @@ crawler:
         memory: "100Mi"
 
 elasticsearch:
-  replicaCount: 3
-  shardCount: 3
+  replicaCount: 1
+  shardsCount: null
+  shardsReplicasCount: null
   image:
     repository: swiss-armed-forces/cyber-command/cea/loom/elasticsearch
   service:

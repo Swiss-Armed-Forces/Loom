@@ -79,13 +79,11 @@ data:
     {{- end }}
 
     # elasticsearch
-    {{- if .Values.elasticsearch.replicaCount }}
-    # When running 1 or fewer ES instances, set replicas to 0 since replicas
-    # cannot be placed on the same node as the primary shard
-    es_number_of_replicas: {{ ternary 0 .Values.elasticsearch.replicaCount (le (int .Values.elasticsearch.replicaCount) 1) | quote }}
+    {{- if .Values.elasticsearch.shardsCount }}
+    es_number_of_shards: {{ .Values.elasticsearch.shardsCount | quote  }}
     {{- end }}
-    {{- if .Values.elasticsearch.shardCount }}
-    es_number_of_shards: {{ .Values.elasticsearch.shardCount | quote  }}
+    {{- if .Values.elasticsearch.shardsReplicasCount }}
+    es_number_of_replicas: {{ .Values.elasticsearch.shardsReplicasCount | quote  }}
     {{- end }}
 
     # hosts
