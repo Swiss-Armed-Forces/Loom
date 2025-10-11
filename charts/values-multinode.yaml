@@ -6,7 +6,8 @@ prometheus:
 
 elasticsearch:
   replicaCount: 3
-  shardCount: 3
+  shardsCount: 3
+  shardsReplicasCount: 1
   config:
     cluster:
       routing:
