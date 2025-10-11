@@ -168,7 +168,7 @@ def init_celery_app() -> Celery:
     # a) more robust against worker failure
     # b) splits signalling and task processing (worker online)
     app.conf.worker_pool = "prefork"
-    app.conf.worker_concurrency = 4
+    app.conf.worker_concurrency = settings.worker_max_concurrency
     # Set max memory per child worker to prevent memory leaks which
     # might lead to OOM-Kills
     try:

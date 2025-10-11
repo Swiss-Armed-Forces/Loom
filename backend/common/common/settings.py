@@ -35,6 +35,7 @@ class Settings(BaseSettings):
     tempfile_dir: Path = Path.home() / ".loomcache"
 
     worker_type: Literal["WORKER", "REAPER", "FLOWER", "BEAT", "INSPECT"] = "INSPECT"
+    worker_max_concurrency: int = 4
 
     mongo_db_host: MongoDsn = MongoDsn(f"mongodb://mongodb.{DOMAIN}")
     mongo_db_file_storage_name: str = "files"
