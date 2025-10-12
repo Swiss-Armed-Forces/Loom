@@ -49,7 +49,7 @@ RUN set -exu \
 #
 # Install tailscale
 #
-ARG TAILSCALE_VERSION="1.84.2-r2"
+ARG TAILSCALE_VERSION="1.86.2-r0"
 RUN set -exu \
     && apk add --no-cache \
     tailscale="${TAILSCALE_VERSION}"
@@ -87,7 +87,7 @@ RUN set -exu \
 #
 # Install nix (from upstream)
 #
-ARG CURL_VERSION="8.14.1-r1"
+ARG CURL_VERSION="8.14.1-r2"
 ARG XZ_VERSION="5.8.1-r0"
 RUN set -exu \
     && apk add --no-cache \
