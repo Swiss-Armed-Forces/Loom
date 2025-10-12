@@ -40,6 +40,8 @@ variables:
   # allow some time for backup operations
   RUNNER_SCRIPT_TIMEOUT: 3h
   RUNNER_AFTER_SCRIPT_TIMEOUT: 30m
+  # Set Script Log Level
+  LOG_LEVEL: "DEBUG"
 
 default:
   # Allow cancellation of running tasks
@@ -88,8 +90,6 @@ default:
       - fork-logs/
       # for: .default-k8s
       - dmesg.txt
-      # for: all jobs which use test-git-file-changed
-      - changed-files/
       # for: integrationtest
       - logs/
       - .test_durations
