@@ -7449,7 +7449,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | libxcb | 1.16.1-r0 | MIT | apk-db-cataloger |
 | libxdmcp | 1.1.5-r1 | MIT | apk-db-cataloger |
 | libxext | 1.3.6-r2 | MIT | apk-db-cataloger |
-| libxml2 | 2.13.4-r5 | MIT | apk-db-cataloger |
+| libxml2 | 2.13.4-r6 | MIT | apk-db-cataloger |
 | libxpm | 3.5.17-r0 | X11 | apk-db-cataloger |
 | libxslt | 1.1.42-r2 | X11 | apk-db-cataloger |
 | libxt | 1.3.1-r0 | MIT | apk-db-cataloger |

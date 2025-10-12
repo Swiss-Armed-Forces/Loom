@@ -1052,7 +1052,7 @@ in
         set -euo pipefail
         cd '${config.devenv.root}'
 
-        ./cicd/test_git_file_changed.sh \
+        ./cicd/test_git_file_changed.py \
           "''${@}"
       )
     '';
