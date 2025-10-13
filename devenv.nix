@@ -276,7 +276,7 @@ in
       skaffold
       kubernetes-helm
 
-      # for frontend-api-generate
+      # for generate-frontend-api
       jre
 
       # for software bill of materials (SBOM)
@@ -1006,7 +1006,7 @@ in
     '';
   };
 
-  scripts.frontend-api-generate = {
+  scripts.generate-frontend-api = {
     description = "Generate frontend api typescript files";
     exec = ''
       (
@@ -1032,7 +1032,7 @@ in
     '';
   };
 
-  scripts.frontend-static-generate = {
+  scripts.generate-frontend-static = {
     description = "Generate static assets for Frontend";
     exec = ''
       (
