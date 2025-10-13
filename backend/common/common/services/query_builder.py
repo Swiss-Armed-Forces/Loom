@@ -478,6 +478,13 @@ class QueryBuilder:
                     r"tika_meta.meta\:last-author",
                 ],
             ).visit(tree, {})
+            tree = RFTransformer(
+                "secrets",
+                [
+                    r"trufflehog_secrets.secret",
+                    r"ripsecrets_secrets.secret",
+                ],
+            ).visit(tree, {})
             tree = TranslateTransformer(query.languages, self.translator).visit(
                 tree, {}
             )

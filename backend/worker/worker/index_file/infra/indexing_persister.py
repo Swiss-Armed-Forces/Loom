@@ -6,6 +6,7 @@ from common.file.file_repository import (
     File,
     LibretranslateTranslatedLanguage,
     LibreTranslateTranslations,
+    Secret,
     Tag,
 )
 from common.models.base_repository import BaseRepository
@@ -14,6 +15,7 @@ from common.utils.object_id_str import ObjectIdStr
 from worker.utils.persister_base import PersisterBase
 
 
+# pylint: disable=too-many-public-methods
 class IndexingPersister(PersisterBase[File]):
     """Persists the results of the indexing tasks Has to be used in a `with
     IndexingPersister(file_id) as x:` statement to ensure that the file is saved."""
@@ -89,3 +91,9 @@ class IndexingPersister(PersisterBase[File]):
 
     def set_embeddings(self, embeddings: list[Embedding]):
         self._object.embeddings = embeddings
+
+    def set_ripsecrets_secret(self, secrets: list[Secret]):
+        self._object.ripsecrets_secrets = secrets
+
+    def set_trufflehog_secret(self, secrets: list[Secret]):
+        self._object.trufflehog_secrets = secrets

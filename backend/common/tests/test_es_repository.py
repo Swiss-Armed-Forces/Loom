@@ -27,10 +27,12 @@ from common.file.file_repository import (
     File,
     FileRepository,
     LibretranslateTranslatedLanguage,
+    Secret,
     _EsEmbedding,
     _EsFile,
     _EsLibretranslateTranslatedLanguage,
     _EsLibreTranslateTranslations,
+    _EsSecret,
 )
 from common.messages.pubsub_service import PubSubService
 from common.models.base_repository import RepositoryObject
@@ -201,6 +203,26 @@ ES_REPOSITORY_TEST_INSTANCES: dict[type[BaseEsRepository], list[_TestInstances]]
                 tika_meta=TestValueDefaults.test_str_str_dict,
                 has_attachments=TestValueDefaults.test_bool,
                 summary=TestValueDefaults.test_str,
+                trufflehog_secrets=[
+                    Secret(
+                        line_number=TestValueDefaults.test_long,
+                        secret=TestValueDefaults.test_str,
+                    ),
+                    Secret(
+                        line_number=TestValueDefaults.test_long,
+                        secret=TestValueDefaults.test_str,
+                    ),
+                ],
+                ripsecrets_secrets=[
+                    Secret(
+                        line_number=TestValueDefaults.test_long,
+                        secret=TestValueDefaults.test_str,
+                    ),
+                    Secret(
+                        line_number=TestValueDefaults.test_long,
+                        secret=TestValueDefaults.test_str,
+                    ),
+                ],
                 embeddings=[
                     Embedding(
                         vector=TestValueDefaults.test_vector,
@@ -278,6 +300,26 @@ ES_REPOSITORY_TEST_INSTANCES: dict[type[BaseEsRepository], list[_TestInstances]]
                 tika_meta=TestValueDefaults.test_str_str_dict,
                 has_attachments=TestValueDefaults.test_bool,
                 summary=TestValueDefaults.test_str,
+                trufflehog_secrets=[
+                    _EsSecret(
+                        line_number=TestValueDefaults.test_long,
+                        secret=TestValueDefaults.test_str,
+                    ),
+                    _EsSecret(
+                        line_number=TestValueDefaults.test_long,
+                        secret=TestValueDefaults.test_str,
+                    ),
+                ],
+                ripsecrets_secrets=[
+                    _EsSecret(
+                        line_number=TestValueDefaults.test_long,
+                        secret=TestValueDefaults.test_str,
+                    ),
+                    _EsSecret(
+                        line_number=TestValueDefaults.test_long,
+                        secret=TestValueDefaults.test_str,
+                    ),
+                ],
                 embeddings=[
                     _EsEmbedding(
                         vector=TestValueDefaults.test_vector,

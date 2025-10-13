@@ -121,6 +121,7 @@ export function EmptySearchResults() {
                                     "modified:[2021-01-01 TO 2025-01-01}",
                                     "modificationTime",
                                 )}
+                                {createSearchTip("secrets:*", "secrets")}
                             </ul>
                         </div>
                         <div>

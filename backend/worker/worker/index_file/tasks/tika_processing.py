@@ -31,6 +31,7 @@ from worker.index_file.tasks.create_embedding import (
     signature as create_embedding_signature,
 )
 from worker.index_file.tasks.schedule_attachments import schedule_attachments
+from worker.index_file.tasks.secret_scan import signature as secret_scan_signature
 from worker.index_file.tasks.summarize import signature as summarize_signature
 from worker.index_file.tasks.translate import signature as translate_signature
 from worker.services.tika_service import (
@@ -125,6 +126,7 @@ def signature(file_content: LazyBytes, file: File) -> Signature:
                             summarize_signature(file),
                             translate_signature(file),
                             create_embedding_signature(file),
+                            secret_scan_signature(file),
                         ),
                     ),
                     persist_tika_meta_task.s(file),
