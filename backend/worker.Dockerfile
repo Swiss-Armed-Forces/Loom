@@ -48,6 +48,11 @@ ARG PST_UTILS_VERSION="0.6.*"
 ARG TSHARK_VERSION="4.0.*"
 ARG BINWALK_VERSION="2.3.*"
 ARG CABEXTRACT_VERSION="1.9-*"
+ARG RIPSECRETS_VERSION="0.1.11"
+ARG CURL_VERSION="7.88.*"
+ARG TRUFFLEHOG_VERSION="v3.90.6"
+
+SHELL [ "/bin/bash", "-o", "pipefail", "-c" ]
 
 # install deps
 RUN set -exu \
@@ -60,7 +65,16 @@ RUN set -exu \
     tshark=${TSHARK_VERSION} \
     binwalk=${BINWALK_VERSION} \
     cabextract=${CABEXTRACT_VERSION} \
+    curl=${CURL_VERSION} \
+    && curl -sSfL https://raw.githubusercontent.com/trufflesecurity/trufflehog/main/scripts/install.sh \
+    | sh -s -- -b /usr/local/bin "${TRUFFLEHOG_VERSION}" \
+    && curl -LO "https://github.com/sirwart/ripsecrets/releases/download/v${RIPSECRETS_VERSION}/ripsecrets-${RIPSECRETS_VERSION}-x86_64-unknown-linux-gnu.tar.gz" \
+    && tar -xzf "ripsecrets-${RIPSECRETS_VERSION}-x86_64-unknown-linux-gnu.tar.gz" \
+    && mv "ripsecrets-${RIPSECRETS_VERSION}-x86_64-unknown-linux-gnu/ripsecrets" /usr/local/bin/ripsecrets \
+    && rm "ripsecrets-${RIPSECRETS_VERSION}-x86_64-unknown-linux-gnu.tar.gz" \
+    && rm -rf "ripsecrets-${RIPSECRETS_VERSION}-x86_64-unknown-linux-gnu" \
     && rm -rf /var/cache/apt/archives /var/lib/apt/lists/*
+
 
 # Set timezone and permit Celery uid 0 to hide deserialisation warnings
 ENV TZ=UTC C_FORCE_ROOT=true

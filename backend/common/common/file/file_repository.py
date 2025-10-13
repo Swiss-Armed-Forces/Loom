@@ -87,6 +87,16 @@ class _EsEmbedding(InnerDoc):
     text = Text(term_vector="with_positions_offsets")
 
 
+class Secret(BaseModel):
+    line_number: int
+    secret: str
+
+
+class _EsSecret(InnerDoc):
+    line_number = Long()
+    secret = Text(term_vector="with_positions_offsets")
+
+
 class LibretranslateTranslatedLanguage(BaseModel):
     confidence: float
     language: str
@@ -184,6 +194,8 @@ class File(RepositoryTaskObject):
     has_attachments: bool | None = None
     summary: str | None = None
     embeddings: list[Embedding] = []
+    trufflehog_secrets: list[Secret] | None = None
+    ripsecrets_secrets: list[Secret] | None = None
 
     @field_validator("tags")
     @classmethod
@@ -204,7 +216,6 @@ class File(RepositoryTaskObject):
             es_dict["libretranslate_translations"][
                 translation["language"]
             ] = translation
-
         return es_dict
 
 
@@ -258,6 +269,8 @@ class _EsFile(_EsTaskDocument):
         },
     )
     embeddings = Nested(_EsEmbedding)
+    trufflehog_secrets = Object(_EsSecret, multi=True)
+    ripsecrets_secrets = Object(_EsSecret, multi=True)
 
     def to_es_dict(self) -> dict:
         es_dict = super().to_es_dict()
