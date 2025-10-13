@@ -4,7 +4,8 @@ ARG PYTHON_IMAGE_VERSION="3.11.13-slim-bookworm"
 ARG DOCKER_REGISTRY
 FROM ${DOCKER_REGISTRY}/python:${PYTHON_BUILDER_IMAGE_VERSION} AS builder-base
 
-RUN set -exu && pip install --no-cache-dir poetry==1.8.3
+RUN set -exu \
+    && pip install --no-cache-dir poetry==1.8.3
 
 ENV POETRY_NO_INTERACTION=1 \
     POETRY_VIRTUALENVS_IN_PROJECT=1 \
@@ -21,10 +22,12 @@ FROM builder-base AS builder-dev
 # --no-directory: we reference common as directory dependency - don't make poetry check for that
 # poetry is run twice to support Docker layer caching - this way we don't always have to
 # re-install all internet dependencies when something in the source code changes
-RUN set -exu && poetry install --no-root --no-directory --no-cache
+RUN set -exu \
+    && poetry install --no-root --no-directory --no-cache
 COPY common/ /code/common
 COPY crawler/ /code/crawler
-RUN set -exu && poetry install --no-cache
+RUN set -exu \
+    && poetry install --no-cache
 
 FROM builder-base AS builder-prod
 # Install dependencies only (not the project itself or directory deps):
@@ -32,10 +35,12 @@ FROM builder-base AS builder-prod
 # --no-directory: we reference common as directory dependency - don't make poetry check for that
 # poetry is run twice to support Docker layer caching - this way we don't always have to
 # re-install all internet dependencies when something in the source code changest
-RUN set -exu && poetry install --no-root --no-directory --no-cache --without dev,test
+RUN set -exu \
+    && poetry install --no-root --no-directory --no-cache --without dev,test
 COPY common/ /code/common
 COPY crawler/ /code/crawler
-RUN set -exu && poetry install --no-cache --without dev,test
+RUN set -exu \
+    && poetry install --no-cache --without dev,test
 
 
 # The runtime image, used to just run the code provided its virtual environment
@@ -43,7 +48,9 @@ FROM ${DOCKER_REGISTRY}/python:${PYTHON_IMAGE_VERSION} AS runtime-base
 
 # Set timezone
 ENV TZ=UTC
-RUN set -exu && ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+RUN set -exu \
+    && ln -snf /usr/share/zoneinfo/$TZ /etc/localtime \
+    && echo $TZ > /etc/timezone
 
 ENV BUILDER_VIRTUAL_ENV=/code/crawler/.venv \
     VIRTUAL_ENV=/code/.venv \

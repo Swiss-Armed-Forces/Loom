@@ -4,8 +4,8 @@ ARG DOCKER_REGISTRY
 FROM ${DOCKER_REGISTRY}/libretranslate/libretranslate:${LIBRETRANSLATE_IMAGE_VERSION}-cuda
 
 COPY patches/ /tmp/patches/
-RUN set -exu && \
-    for patch in /tmp/patches/*.patch; do \
+RUN set -exu \
+    && for patch in /tmp/patches/*.patch; do \
     if [ -f "${patch}" ]; then \
     patch -p1 < "${patch}"; \
     fi \

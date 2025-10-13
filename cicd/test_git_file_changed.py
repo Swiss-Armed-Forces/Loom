@@ -28,7 +28,6 @@ class CiContext:
     pipeline_id: Optional[str]
     pipeline_source: Optional[str]
     commit_sha_short: Optional[str]
-    mr_iid: Optional[int]
 
     # Source branch is only meaningful when running in an MR pipeline
     is_mr: bool
@@ -101,8 +100,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument(
         "--max-ci-commits",
         type=int,
-        default=int(os.getenv("MAX_CI_COMMITS", "3")),
-        help="Abort if there are already this many consecutive CI commits. Default 3.",
+        default=int(os.getenv("MAX_CI_COMMITS", "10")),
+        help="Abort if there are already this many consecutive CI commits. Default 10.",
     )
     return parser.parse_args(argv)
 
@@ -110,9 +109,6 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 def build_context(ns: argparse.Namespace) -> CiContext:
     source_branch = os.getenv("CI_MERGE_REQUEST_SOURCE_BRANCH_NAME", "")
     is_mr = bool(source_branch.strip())
-
-    mr_iid_str = os.getenv("CI_MERGE_REQUEST_IID")
-    mr_iid = int(mr_iid_str) if mr_iid_str and mr_iid_str.isdigit() else None
 
     author_name = ns.author_name or os.getenv("GITLAB_USER_NAME", "CI Bot")
     author_email = ns.author_email or os.getenv(
@@ -136,7 +132,6 @@ def build_context(ns: argparse.Namespace) -> CiContext:
         pipeline_id=os.getenv("CI_PIPELINE_ID"),
         pipeline_source=os.getenv("CI_PIPELINE_SOURCE"),
         commit_sha_short=os.getenv("CI_COMMIT_SHORT_SHA"),
-        mr_iid=mr_iid,
         is_mr=is_mr,
         source_branch=source_branch,
         personal_token=ns.gitlab_token or os.getenv("GITLAB_TOKEN"),
@@ -329,52 +324,11 @@ def commit_and_push(repo: git.Repo, ctx: CiContext) -> None:
 
 
 # ----------------------------
-# GitLab helpers
-# ----------------------------
-
-
-def gitlab_client(ctx: CiContext) -> gitlab.Gitlab:
-    """Build a python-gitlab client using PAT (preferred) or the CI job token."""
-    base_url = ctx.api_url.rsplit("/api/v4", 1)[0]
-    if ctx.personal_token:
-        client = gitlab.Gitlab(base_url, private_token=ctx.personal_token)
-    elif ctx.job_token:
-        client = gitlab.Gitlab(base_url, job_token=ctx.job_token)
-    else:
-        raise RuntimeError("No GitLab auth: set GITLAB_TOKEN or CI_JOB_TOKEN.")
-    client.auth()
-    return client
-
-
-def comment_on_mr(ctx: CiContext, body: str) -> None:
-    if not ctx.is_mr or ctx.mr_iid is None:
-        logging.info("No MR context; skipping MR comment.")
-        return
-    if ctx.dry_run:
-        logging.info(
-            "[DRY RUN] Would comment on MR !%s with body:\n%s", ctx.mr_iid, body
-        )
-        return
-    client = gitlab_client(ctx)
-    project = client.projects.get(ctx.project_id)
-    mr = project.mergerequests.get(ctx.mr_iid)
-    mr.notes.create({"body": body})
-    logging.info("Commented on MR !%s", ctx.mr_iid)
-
-
-def build_note(ctx: CiContext) -> str:
-    return (
-        f"✅ Updated generated files and pushed to `{ctx.source_branch}`.\n"
-        f"Commit: `{ctx.commit_sha_short or 'n/a'}` in pipeline `#{ctx.pipeline_id or 'n/a'}`."
-    )
-
-
-# ----------------------------
 # Main
 # ----------------------------
 
 
-def run(argv: list[str] | None = None) -> int:
+def main(argv: list[str] | None = None) -> int:
     ns = parse_args(argv)
     ctx = build_context(ns)
     setup_logging(ctx.log_level)
@@ -423,21 +377,10 @@ def run(argv: list[str] | None = None) -> int:
     # 3) Commit & push (or simulate)
     commit_and_push(repo, ctx)
 
-    # 4) Comment on MR (best-effort)
-    comment_on_mr(ctx, build_note(ctx))
-
-    # 5) Changes were present -> fail the job (even after push)
+    # 4) Changes were present -> fail the job (even after push)
     logging.error("Changes were present and have been pushed. Failing the job.")
     return 1
 
 
-def main() -> int:
-    try:
-        return run(sys.argv[1:])
-    except (RuntimeError, git.GitCommandError, GitlabError, OSError) as exc:
-        logging.error("ERROR: %s", exc)
-        return 1
-
-
 if __name__ == "__main__":
-    sys.exit(main())
+    sys.exit(main(sys.argv[1:]))

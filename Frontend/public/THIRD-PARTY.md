@@ -3376,7 +3376,6 @@ The complete source code for Traefik is publicly available at [https://github.co
 | base-files | 13ubuntu10 |  | dpkg-db-cataloger |
 | base-passwd | 3.6.3build1 | GPL-2.0-only | dpkg-db-cataloger |
 | bash | 5.2.21-2ubuntu4 | BSD-4-Clause-UC, GFDL-1.3-only, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, Latex2e | dpkg-db-cataloger |
-| bc | 1.07.1-3ubuntu4 | GPL-2.0-only, GPL-2.0-or-later, X11 | dpkg-db-cataloger |
 | blinker | 1.7.0 |  | python-installed-package-cataloger |
 | bsdutils | 1:2.39.3-9ubuntu6 | BSD-3-Clause, BSD-4-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, MIT | dpkg-db-cataloger |
 | byte-buddy | 1.14.9 |  | java-archive-cataloger |
@@ -4016,16 +4015,16 @@ The complete source code for Traefik is publicly available at [https://github.co
 | alpine-baselayout-data | 3.6.5-r0 | GPL-2.0-only | apk-db-cataloger |
 | alpine-keys | 2.4-r1 | MIT | apk-db-cataloger |
 | apk-tools | 2.14.4-r1 | GPL-2.0-only | apk-db-cataloger |
-| busybox | 1.36.1-r29 | GPL-2.0-only | apk-db-cataloger |
-| busybox-binsh | 1.36.1-r29 | GPL-2.0-only | apk-db-cataloger |
-| ca-certificates-bundle | 20250619-r0 | MPL-2.0 AND MIT | apk-db-cataloger |
+| busybox | 1.36.1-r30 | GPL-2.0-only | apk-db-cataloger |
+| busybox-binsh | 1.36.1-r30 | GPL-2.0-only | apk-db-cataloger |
+| ca-certificates-bundle | 20250911-r0 | MPL-2.0 AND MIT | apk-db-cataloger |
 | fasttext-libs | 0.9.2-r1 | MIT | apk-db-cataloger |
 | glib | 2.80.5-r0 | LGPL-2.1-or-later | apk-db-cataloger |
 | icu-data-full | 74.2-r1 | ICU | apk-db-cataloger |
 | icu-libs | 74.2-r1 | ICU | apk-db-cataloger |
 | libblkid | 2.40.1-r1 | LGPL-2.1-or-later | apk-db-cataloger |
 | libbz2 | 1.0.8-r6 | bzip2-1.0.6 | apk-db-cataloger |
-| libcrypto3 | 3.3.4-r0 | Apache-2.0 | apk-db-cataloger |
+| libcrypto3 | 3.3.5-r0 | Apache-2.0 | apk-db-cataloger |
 | libdw | 0.191-r0 | GPL-3.0-or-later AND ( GPL-2.0-or-later OR LGPL-3.0-or-later ) | apk-db-cataloger |
 | libeconf | 0.6.3-r0 | MIT | apk-db-cataloger |
 | libelf | 0.191-r0 | GPL-3.0-or-later AND ( GPL-2.0-or-later OR LGPL-3.0-or-later ) | apk-db-cataloger |
@@ -4034,7 +4033,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | libintl | 0.22.5-r0 | LGPL-2.1-or-later | apk-db-cataloger |
 | libmount | 2.40.1-r1 | LGPL-2.1-or-later | apk-db-cataloger |
 | libsodium | 1.0.19-r0 | ISC | apk-db-cataloger |
-| libssl3 | 3.3.4-r0 | Apache-2.0 | apk-db-cataloger |
+| libssl3 | 3.3.5-r0 | Apache-2.0 | apk-db-cataloger |
 | libstdc++ | 13.2.1_git20240309-r1 | GPL-2.0-or-later AND LGPL-2.1-or-later | apk-db-cataloger |
 | libstemmer | 2.2.0-r0 | BSD-3-Clause | apk-db-cataloger |
 | luajit | 2.1_p20240314-r0 | MIT | apk-db-cataloger |
@@ -4046,7 +4045,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | rspamd-libs | 3.8.4-r0 | Apache-2.0, BSD-1-Clause, BSD-2-Clause, BSD-3-Clause, CC0-1.0, LGPL-2.1-or-later, LGPL-3.0-only, MIT, Zlib | apk-db-cataloger |
 | scanelf | 1.3.7-r2 | GPL-2.0-only | apk-db-cataloger |
 | sqlite-libs | 3.45.3-r2 | blessing | apk-db-cataloger |
-| ssl_client | 1.36.1-r29 | GPL-2.0-only | apk-db-cataloger |
+| ssl_client | 1.36.1-r30 | GPL-2.0-only | apk-db-cataloger |
 | vectorscan | 5.4.11-r1 | BSD-3-Clause | apk-db-cataloger |
 | xz-libs | 5.6.2-r1 | 0BSD, GPL-2.0-or-later, LGPL-2.1-or-later | apk-db-cataloger |
 | zlib | 1.3.1-r1 | Zlib | apk-db-cataloger |

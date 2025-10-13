@@ -17,6 +17,7 @@ workflow:
 
 stages:
   - buildenv
+  - generate
   - test
   - publish
 
@@ -264,6 +265,42 @@ buildenv_transfer_loom:
 # ---------------------------------------------#
 #
 #
+#       GENERATE JOBS
+#
+#
+# ----------------------------------------------#
+
+generate_frontend_static:
+  stage: generate
+  script:
+    - devenv shell -- generate-frontend-static
+    - devenv shell -- test-git-file-changed
+
+generate_frontend_api:
+  stage: generate
+  script:
+    - devenv shell -- generate-frontend-api
+    - devenv shell -- test-git-file-changed
+
+generate_third_party:
+  extends: .default-docker
+  stage: generate
+  script:
+    - devenv shell -- generate-third-party
+    - devenv shell -- test-git-file-changed
+  cache:
+    - !reference [.default-docker, cache]
+    - key:
+        files:
+          - cicd/generate_third_party.sh
+      paths:
+        - third-party-cache
+      unprotect: true
+      when: 'always'
+
+# ---------------------------------------------#
+#
+#
 #        TEST JOBS
 #
 #
@@ -300,18 +337,6 @@ frontend_audit:
   script:
     - devenv shell -- frontend-audit
 
-frontend_static_generate:
-  stage: test
-  script:
-    - devenv shell -- frontend-static-generate
-    - devenv shell -- test-git-file-changed
-
-frontend_api_generate:
-  stage: test
-  script:
-    - devenv shell -- frontend-api-generate
-    - devenv shell -- test-git-file-changed
-
 backend_test:
   stage: test
   script:
@@ -328,22 +353,6 @@ test_build_nix-dind:
   stage: test
   script:
     - devenv shell -- nix-dind
-
-generate_third_party:
-  extends: .default-docker
-  stage: test
-  script:
-    - devenv shell -- generate-third-party
-    - devenv shell -- test-git-file-changed
-  cache:
-    - !reference [.default-docker, cache]
-    - key:
-        files:
-          - cicd/generate_third_party.sh
-      paths:
-        - third-party-cache
-      unprotect: true
-      when: 'always'
 
 integrationtest:
   extends: .default-up-integrationtest
