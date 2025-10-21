@@ -4,7 +4,7 @@ kind: Ingress
 metadata:
   name: {{ include "app.fullname" . }}-elasticvue
   labels:
-    {{- include "app.labels.standard" . | nindent 4 }}
+    {{- include "app.labels.custom" (dict "context" . "component" "elasticvue") | nindent 4 }}
     app.kubernetes.io/component: elasticsearch
   annotations:
     {{- toYaml .Values.elasticvue.ingress.annotations | nindent 4 }}

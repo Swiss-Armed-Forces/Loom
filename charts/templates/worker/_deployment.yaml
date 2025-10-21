@@ -6,7 +6,7 @@ kind: Deployment
 metadata:
   name: {{ include "app.fullname" . }}-{{ $component }}
   labels:
-    {{- include "app.labels.standard" . | nindent 4 }}
+    {{- include "app.labels.custom" (dict "context" . "component" "worker") | nindent 4 }}
     app.kubernetes.io/component: "{{ $component }}"
 spec:
   {{- if not $values.hpa.enabled }}
@@ -19,6 +19,7 @@ spec:
     metadata:
       labels:
         app: {{ include "app.name" . }}-{{ $component }}
+        {{- include "app.labels.custom" (dict "context" . "component" "worker") | nindent 8 }}
     spec:
       containers:
         - name: {{ $component }}

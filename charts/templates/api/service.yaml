@@ -3,7 +3,7 @@ kind: Service
 metadata:
   name: {{ include "app.fullname" . }}-api
   labels:
-    {{- include "app.labels.standard" . | nindent 4 }}
+    {{- include "app.labels.custom" (dict "context" . "component" "api") | nindent 4 }}
     app.kubernetes.io/component: "api"
 spec:
   ports:

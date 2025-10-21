@@ -4,7 +4,7 @@ kind: HorizontalPodAutoscaler
 metadata:
   name: {{ include "app.fullname" . }}-translate
   labels:
-    {{- include "app.labels.standard" . | nindent 4 }}
+    {{- include "app.labels.custom" (dict "context" . "component" "translate") | nindent 4 }}
     app.kubernetes.io/component: "celery"
 spec:
   maxReplicas: {{ .Values.translate.hpa.maxReplicas }}

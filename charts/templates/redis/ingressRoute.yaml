@@ -4,7 +4,7 @@ kind: IngressRouteTCP
 metadata:
   name: {{ include "app.fullname" . }}-redis
   labels:
-    {{- include "app.labels.standard" . | nindent 4 }}
+    {{- include "app.labels.custom" (dict "context" . "component" "redis") | nindent 4 }}
     app.kubernetes.io/component: redis
 spec:
   entryPoints:

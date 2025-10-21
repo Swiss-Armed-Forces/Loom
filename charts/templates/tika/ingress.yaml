@@ -4,7 +4,7 @@ kind: Ingress
 metadata:
   name: {{ include "app.fullname" . }}-tika
   labels:
-    {{- include "app.labels.standard" . | nindent 4 }}
+    {{- include "app.labels.custom" (dict "context" . "component" "tika") | nindent 4 }}
     app.kubernetes.io/component: tika
   annotations:
     {{- toYaml .Values.tika.ingress.annotations | nindent 4 }}

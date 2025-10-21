@@ -4,7 +4,7 @@ kind: Ingress
 metadata:
   name: {{ include "app.fullname" . }}-rspamd-controller
   labels:
-    {{- include "app.labels.standard" . | nindent 4 }}
+    {{- include "app.labels.custom" (dict "context" . "component" "rspamd") | nindent 4 }}
     app.kubernetes.io/component: rspamd
   annotations:
     {{- toYaml .Values.rspamd.controller.ingress.annotations | nindent 4 }}

@@ -16,7 +16,7 @@ SHELL ["/bin/bash", "--login", "-c"]
 #
 # kubectl
 #
-ARG KUBECTL_VERSION="1.33.1-r2"
+ARG KUBECTL_VERSION="1.33.1-r3"
 RUN set -exu \
     && apk add --no-cache \
     kubectl=${KUBECTL_VERSION}

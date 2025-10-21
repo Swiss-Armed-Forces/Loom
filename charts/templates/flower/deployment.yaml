@@ -3,7 +3,7 @@ kind: Deployment
 metadata:
   name: {{ include "app.fullname" . }}-flower
   labels:
-    {{- include "app.labels.standard" . | nindent 4 }}
+    {{- include "app.labels.custom" (dict "context" . "component" "flower") | nindent 4 }}
     app.kubernetes.io/component: "flower"
 spec:
   replicas: {{ .Values.flower.replicaCount }}
@@ -14,6 +14,7 @@ spec:
     metadata:
       labels:
         app: {{ include "app.name" . }}-flower
+        {{- include "app.labels.custom" (dict "context" . "component" "flower") | nindent 8 }}
     spec:
       containers:
         - name: flower

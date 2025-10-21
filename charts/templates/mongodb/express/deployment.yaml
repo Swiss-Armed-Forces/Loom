@@ -4,7 +4,7 @@ kind: Deployment
 metadata:
   name: {{ include "app.fullname" . }}-mongodb-express
   labels:
-    {{- include "app.labels.standard" . | nindent 4 }}
+    {{- include "app.labels.custom" (dict "context" . "component" "mongodb") | nindent 4 }}
     app.kubernetes.io/component: mongodb
 spec:
   replicas: {{ .Values.mongodb.express.replicaCount }}
@@ -15,6 +15,7 @@ spec:
     metadata:
       labels:
         app: {{ include "app.name" . }}-mongodb-express
+        {{- include "app.labels.custom" (dict "context" . "component" "mongodb") | nindent 8 }}
     spec:
       containers:
         - name: mongodb-express

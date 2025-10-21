@@ -3,7 +3,7 @@ kind: ConfigMap
 metadata:
   name: {{ include "app.fullname" . }}-elasticsearch-config
   labels:
-    {{- include "app.labels.standard" . | nindent 4 }}
+    {{- include "app.labels.custom" (dict "context" . "component" "elasticsearch") | nindent 4 }}
 data:
   elasticsearch.yml: |
     {{- $name := include "app.fullname" . -}}

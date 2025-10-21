@@ -3,7 +3,7 @@ kind: ConfigMap
 metadata:
   name: {{ include "app.fullname" . }}-elasticvue-config
   labels:
-    {{- include "app.labels.standard" . | nindent 4 }}
+    {{- include "app.labels.custom" (dict "context" . "component" "elasticvue") | nindent 4 }}
 data:
   default_clusters.json: |
     [

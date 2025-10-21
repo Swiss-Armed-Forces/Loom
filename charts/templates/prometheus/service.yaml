@@ -4,7 +4,7 @@ kind: Service
 metadata:
   name: {{ include "app.fullname" . }}-prometheus
   labels:
-    {{- include "app.labels.standard" . | nindent 4 }}
+    {{- include "app.labels.custom" (dict "context" . "component" "prometheus") | nindent 4 }}
     app.kubernetes.io/component: monitoring
 spec:
   ports:

@@ -4,7 +4,7 @@ kind: Ingress
 metadata:
   name: {{ include "app.fullname" . }}-flower
   labels:
-    {{- include "app.labels.standard" . | nindent 4 }}
+    {{- include "app.labels.custom" (dict "context" . "component" "flower") | nindent 4 }}
     app.kubernetes.io/component: "flower"
   annotations:
     {{- toYaml .Values.flower.ingress.annotations | nindent 4 }}
