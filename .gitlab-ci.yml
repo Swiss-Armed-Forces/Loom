@@ -67,6 +67,8 @@ default:
     - cp "nix-dind/devenv.local.nix" "devenv.local.nix"
     # building shell
     - devenv shell -- echo "[*] devenv shell ready"
+    # verify that the source tree is clean
+    - devenv shell -- test-git-file-changed --no-update
     #
     # END SECTION
     #
@@ -91,6 +93,8 @@ default:
       - fork-logs/
       # for: .default-k8s
       - dmesg.txt
+      # for: all jobs which use test-git-file-changed
+      - changed-files/
       # for: integrationtest
       - logs/
       - .test_durations
