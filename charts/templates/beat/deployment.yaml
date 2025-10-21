@@ -3,7 +3,7 @@ kind: Deployment
 metadata:
   name: {{ include "app.fullname" . }}-beat
   labels:
-    {{- include "app.labels.standard" . | nindent 4 }}
+    {{- include "app.labels.custom" (dict "context" . "component" "beat") | nindent 4 }}
     app.kubernetes.io/component: "beat"
 spec:
   replicas: {{ .Values.beat.replicaCount }}
@@ -14,6 +14,7 @@ spec:
     metadata:
       labels:
         app: {{ include "app.name" . }}-beat
+        {{- include "app.labels.custom" (dict "context" . "component" "beat") | nindent 8 }}
     spec:
       containers:
         - name: beat

@@ -3,7 +3,7 @@ kind: Deployment
 metadata:
   name: {{ include "app.fullname" . }}-roundcube
   labels:
-    {{- include "app.labels.standard" . | nindent 4 }}
+    {{- include "app.labels.custom" (dict "context" . "component" "roundcube") | nindent 4 }}
     app.kubernetes.io/component: roundcube
 spec:
   replicas: {{ .Values.roundcube.replicaCount }}
@@ -14,6 +14,7 @@ spec:
     metadata:
       labels:
         app: {{ include "app.name" . }}-roundcube
+        {{- include "app.labels.custom" (dict "context" . "component" "roundcube") | nindent 8 }}
     spec:
       containers:
         - name: roundcube

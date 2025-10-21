@@ -11,7 +11,7 @@ kind: ConfigMap
 metadata:
   name: {{ include "app.fullname" . }}-rabbit-config
   labels:
-    {{- include "app.labels.standard" . | nindent 4 }}
+    {{- include "app.labels.custom" (dict "context" . "component" "rabbit") | nindent 4 }}
 data:
   rabbitmq.conf: |
     vm_memory_high_watermark.absolute = {{ printf "%d" $memoryLimitHighWatermarkBytes }}

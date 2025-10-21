@@ -4,7 +4,7 @@ kind: Deployment
 metadata:
   name: {{ include "app.fullname" . }}-crawler
   labels:
-    {{- include "app.labels.standard" . | nindent 4 }}
+    {{- include "app.labels.custom" (dict "context" . "component" "crawler") | nindent 4 }}
     app.kubernetes.io/component: crawler
 spec:
   replicas: {{ .Values.crawler.replicaCount }}
@@ -15,6 +15,7 @@ spec:
     metadata:
       labels:
         app: {{ include "app.name" . }}-crawler
+        {{- include "app.labels.custom" (dict "context" . "component" "crawler") | nindent 8 }}
     spec:
       initContainers:
         - name: check-minio-ready

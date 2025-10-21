@@ -3,7 +3,7 @@ kind: Deployment
 metadata:
   name: {{ include "app.fullname" . }}-frontend
   labels:
-    {{- include "app.labels.standard" . | nindent 4 }}
+    {{- include "app.labels.custom" (dict "context" . "component" "frontend") | nindent 4 }}
     app.kubernetes.io/component: frontend
 spec:
   replicas: {{ .Values.frontend.replicaCount }}
@@ -14,6 +14,7 @@ spec:
     metadata:
       labels:
         app: {{ include "app.name" . }}-frontend
+        {{- include "app.labels.custom" (dict "context" . "component" "frontend") | nindent 8 }}
     spec:
       containers:
         - name: frontend

@@ -4,7 +4,7 @@ kind: IngressRouteTCP
 metadata:
   name: {{ include "app.fullname" . }}-dovecot-imaps
   labels:
-    {{- include "app.labels.standard" . | nindent 4 }}
+    {{- include "app.labels.custom" (dict "context" . "component" "dovecot") | nindent 4 }}
     ingressclass: {{ .Values.dovecot.ingress.imaps.className }}
     app.kubernetes.io/component: dovecot
 spec:
@@ -34,7 +34,7 @@ kind: IngressRouteTCP
 metadata:
   name: {{ include "app.fullname" . }}-dovecot-imap
   labels:
-    {{- include "app.labels.standard" . | nindent 4 }}
+    {{- include "app.labels.custom" (dict "context" . "component" "dovecot") | nindent 4 }}
     ingressclass: {{ .Values.dovecot.ingress.imap.className }}
     app.kubernetes.io/component: dovecot
 spec:

@@ -31,6 +31,34 @@ app.kubernetes.io/version: {{ .Chart.Version | replace "+" "_" }}
 {{- end -}}
 
 {{/*
+Custom labels for a component
+Merges standard labels with global custom labels and component-specific custom labels
+Usage: {{ include "app.labels.custom" (dict "context" . "component" "prometheus") }}
+*/}}
+{{- define "app.labels.custom" -}}
+{{- $context := .context -}}
+{{- $component := .component -}}
+{{- include "app.labels.standard" $context }}
+{{- if $context.Values.global }}
+{{- if $context.Values.global.customLabels }}
+{{- range $key, $value := $context.Values.global.customLabels }}
+{{ $key }}: {{ $value | quote }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- if $component }}
+{{- $componentValues := index $context.Values $component -}}
+{{- if $componentValues }}
+{{- if $componentValues.customLabels }}
+{{- range $key, $value := $componentValues.customLabels }}
+{{ $key }}: {{ $value | quote }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- end -}}
+
+{{/*
 Generate a hash suffix based on values to ensure unique job names on configuration changes.
 
 This approach is specifically designed for ArgoCD deployments where using {{ .Release.Revision }}
@@ -55,7 +83,6 @@ ArgoCD's declarative sync model without false drift detection.
 {{- define "app.valuesHash" -}}
 {{- .Values | toYaml | sha256sum | trunc 8 -}}
 {{- end -}}
-
 
 {{- define "SI-to-bytes" -}}
   {{/*

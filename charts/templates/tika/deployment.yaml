@@ -3,7 +3,7 @@ kind: Deployment
 metadata:
   name: {{ include "app.fullname" . }}-tika
   labels:
-    {{- include "app.labels.standard" . | nindent 4 }}
+    {{- include "app.labels.custom" (dict "context" . "component" "tika") | nindent 4 }}
     app.kubernetes.io/component: tika
 spec:
   {{- if not .Values.tika.hpa.enabled }}
@@ -16,6 +16,7 @@ spec:
     metadata:
       labels:
         app: {{ include "app.name" . }}-tika
+        {{- include "app.labels.custom" (dict "context" . "component" "tika") | nindent 8 }}
     spec:
       containers:
         - name: tika

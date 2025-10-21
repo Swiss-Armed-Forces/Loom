@@ -3,7 +3,7 @@ kind: StatefulSet
 metadata:
   name: {{ include "app.fullname" . }}-rabbit
   labels:
-    {{- include "app.labels.standard" . | nindent 4 }}
+    {{- include "app.labels.custom" (dict "context" . "component" "rabbit") | nindent 4 }}
     app.kubernetes.io/component: rabbit
 spec:
   serviceName: {{ include "app.fullname" . }}-rabbit
@@ -15,6 +15,7 @@ spec:
     metadata:
       labels:
         app: {{ include "app.name" . }}-rabbit
+        {{- include "app.labels.custom" (dict "context" . "component" "rabbit") | nindent 8 }}
     spec:
       containers:
         - name: rabbit

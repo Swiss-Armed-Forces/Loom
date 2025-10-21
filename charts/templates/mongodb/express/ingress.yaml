@@ -4,7 +4,7 @@ kind: Ingress
 metadata:
   name: {{ include "app.fullname" . }}-mongodb-express
   labels:
-    {{- include "app.labels.standard" . | nindent 4 }}
+    {{- include "app.labels.custom" (dict "context" . "component" "mongodb") | nindent 4 }}
     app.kubernetes.io/component: mongodb
   annotations:
     {{- toYaml .Values.mongodb.express.ingress.annotations | nindent 4 }}

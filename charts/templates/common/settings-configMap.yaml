@@ -3,7 +3,7 @@ kind: ConfigMap
 metadata:
   name: {{ include "app.fullname" . }}-settings
   labels:
-    {{- include "app.labels.standard" . | nindent 4 }}
+    {{- include "app.labels.custom" (dict "context" . "component" "") | nindent 4 }}
     app.kubernetes.io/component: monitoring
 data:
     # NOTE: Using Helm conditionals to prevent keys with null/empty values from being included

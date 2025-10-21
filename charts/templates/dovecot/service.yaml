@@ -3,7 +3,7 @@ kind: Service
 metadata:
   name: {{ include "app.fullname" . }}-dovecot
   labels:
-    {{- include "app.labels.standard" . | nindent 4 }}
+    {{- include "app.labels.custom" (dict "context" . "component" "dovecot") | nindent 4 }}
     app.kubernetes.io/component: dovecot
 spec:
   ports:

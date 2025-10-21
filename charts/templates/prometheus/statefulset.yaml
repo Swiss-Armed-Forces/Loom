@@ -7,7 +7,7 @@ kind: StatefulSet
 metadata:
   name: {{ include "app.fullname" . }}-prometheus
   labels:
-    {{- include "app.labels.standard" . | nindent 4 }}
+    {{- include "app.labels.custom" (dict "context" . "component" "prometheus") | nindent 4 }}
     app.kubernetes.io/component: monitoring
 spec:
   replicas: {{ .Values.prometheus.replicaCount }}
@@ -18,6 +18,7 @@ spec:
     metadata:
       labels:
         app: {{ include "app.name" . }}-prometheus
+        {{- include "app.labels.custom" (dict "context" . "component" "prometheus") | nindent 8 }}
     spec:
       serviceAccountName: {{ include "app.fullname" . }}-prometheus
       securityContext:
@@ -46,6 +47,8 @@ spec:
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           args:
             - --web.enable-admin-api
+            # for receiving stats via pulse
+            - --web.enable-remote-write-receiver
             # Go LIMITS
             - --enable-feature=auto-gomemlimit
             - --enable-feature=auto-gomaxprocs

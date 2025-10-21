@@ -3,7 +3,7 @@ kind: Deployment
 metadata:
   name: {{ include "app.fullname" . }}-redis
   labels:
-    {{- include "app.labels.standard" . | nindent 4 }}
+    {{- include "app.labels.custom" (dict "context" . "component" "redis") | nindent 4 }}
     app.kubernetes.io/component: redis
 spec:
   replicas: {{ .Values.redis.replicaCount }}
@@ -14,6 +14,7 @@ spec:
     metadata:
       labels:
         app: {{ include "app.name" . }}-redis
+        {{- include "app.labels.custom" (dict "context" . "component" "redis") | nindent 8 }}
     spec:
       containers:
         - name: redis

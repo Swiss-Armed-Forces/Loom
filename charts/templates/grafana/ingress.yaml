@@ -4,7 +4,7 @@ kind: Ingress
 metadata:
   name: {{ include "app.fullname" . }}-grafana
   labels:
-    {{- include "app.labels.standard" . | nindent 4 }}
+    {{- include "app.labels.custom" (dict "context" . "component" "grafana") | nindent 4 }}
     app.kubernetes.io/component: monitoring
   annotations:
     {{- toYaml .Values.grafana.ingress.annotations | nindent 4 }}

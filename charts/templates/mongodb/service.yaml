@@ -3,7 +3,7 @@ kind: Service
 metadata:
   name: {{ include "app.fullname" . }}-mongodb
   labels:
-    {{- include "app.labels.standard" . | nindent 4 }}
+    {{- include "app.labels.custom" (dict "context" . "component" "mongodb") | nindent 4 }}
     app.kubernetes.io/component: mongodb
 spec:
   ports:

@@ -4,7 +4,7 @@ kind: DaemonSet
 metadata:
   name: {{ include "app.fullname" . }}-fluentd
   labels:
-    {{- include "app.labels.standard" . | nindent 4 }}
+    {{- include "app.labels.custom" (dict "context" . "component" "fluentd") | nindent 4 }}
     app.kubernetes.io/component: monitoring
 spec:
   selector:
@@ -14,6 +14,7 @@ spec:
     metadata:
       labels:
         app: {{ include "app.name" . }}-fluentd
+        {{- include "app.labels.custom" (dict "context" . "component" "fluentd") | nindent 8 }}
     spec:
       serviceAccountName: {{ include "app.fullname" . }}-fluentd
       initContainers:

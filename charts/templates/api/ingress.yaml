@@ -4,7 +4,7 @@ kind: Ingress
 metadata:
   name: {{ include "app.fullname" . }}-api
   labels:
-    {{- include "app.labels.standard" . | nindent 4 }}
+    {{- include "app.labels.custom" (dict "context" . "component" "api") | nindent 4 }}
     app.kubernetes.io/component: "api"
   annotations:
     {{- toYaml .Values.api.ingress.annotations | nindent 4 }}

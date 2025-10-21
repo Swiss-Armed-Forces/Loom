@@ -1,6 +1,15 @@
 environment: production
 nameOverride: null
 
+# Global configuration
+global:
+  # Custom labels to add to all resources
+  customLabels: {}
+  # Example:
+  # environment: production
+  # team: platform
+  # cost-center: "12345"
+
 domain: &default-domain loom
 
 kubernetes:
@@ -83,6 +92,11 @@ globalHttpRedirect:
     limits:
       cpu: "0.1"
       memory: "100Mi"
+  # Custom labels specific to globalHttpRedirect resources
+  customLabels: {}
+  # Example:
+  # environment: production
+  # team: infrastructure
 
 api:
   replicaCount: 1
@@ -112,6 +126,11 @@ api:
       limits:
         cpu: "0.1"
         memory: "100Mi"
+  # Custom labels specific to api resources
+  customLabels: {}
+  # Example:
+  # app-tier: backend
+  # service-type: api
 
 frontend:
   replicaCount: 1
@@ -131,6 +150,11 @@ frontend:
     limits:
       cpu: "0.3"
       memory: "500Mi"
+  # Custom labels specific to frontend resources
+  customLabels: {}
+  # Example:
+  # app-tier: frontend
+  # service-type: web
 
 worker: &worker
   replicaCount: 1
@@ -155,6 +179,11 @@ worker: &worker
     limits:
       cpu: "1.5"
       memory: "4Gi"
+  # Custom labels specific to worker resources
+  customLabels: {}
+  # Example:
+  # app-tier: worker
+  # workload-type: async
 
 reaper: *worker
 
@@ -175,6 +204,11 @@ beat:
     limits:
       cpu: "0.2"
       memory: "500Mi"
+  # Custom labels specific to beat resources
+  customLabels: {}
+  # Example:
+  # app-tier: scheduler
+  # service-type: beat
 
 flower:
   replicaCount: 1
@@ -194,6 +228,11 @@ flower:
     limits:
       cpu: "1"
       memory: "1Gi"
+  # Custom labels specific to flower resources
+  customLabels: {}
+  # Example:
+  # app-tier: monitoring
+  # service-type: flower
 
 crawler:
   enabled: true
@@ -219,6 +258,11 @@ crawler:
       limits:
         cpu: "0.1"
         memory: "100Mi"
+  # Custom labels specific to crawler resources
+  customLabels: {}
+  # Example:
+  # app-tier: crawler
+  # service-type: ingestion
 
 elasticsearch:
   replicaCount: 1
@@ -242,6 +286,11 @@ elasticsearch:
     limits:
       cpu: "4"
       memory: "8Gi"
+  # Custom labels specific to elasticsearch resources
+  customLabels: {}
+  # Example:
+  # datastore-type: search
+  # persistence: required
 
 elasticvue:
   enabled: true
@@ -258,6 +307,11 @@ elasticvue:
     limits:
       cpu: "0.5"
       memory: "500Mi"
+  # Custom labels specific to elasticvue resources
+  customLabels: {}
+  # Example:
+  # app-tier: management
+  # service-type: ui
 
 fluentd:
   enabled: true
@@ -282,6 +336,11 @@ fluentd:
       limits:
         cpu: "0.1"
         memory: "100Mi"
+  # Custom labels specific to fluentd resources
+  customLabels: {}
+  # Example:
+  # app-tier: logging
+  # service-type: aggregator
 
 grafana:
   enabled: true
@@ -302,6 +361,11 @@ grafana:
     limits:
       cpu: "2"
       memory: "2Gi"
+  # Custom labels specific to grafana resources
+  customLabels: {}
+  # Example:
+  # app-tier: monitoring
+  # service-type: visualization
 
 translate:
   replicaCount: 1
@@ -329,6 +393,11 @@ translate:
     limits:
       cpu: "4"
       memory: "5Gi"
+  # Custom labels specific to translate resources
+  customLabels: {}
+  # Example:
+  # app-tier: ml
+  # service-type: translation
 
 minio:
   ## set kubernetes cluster domain where minio is running
@@ -699,25 +768,25 @@ minio:
   ## List of buckets to be created after minio install
   ##
   buckets:
-    #  # Name of the bucket
+    ## Name of the bucket
     # - name: bucket1
-    #  # Policy to be set on the
-    #  # bucket [none|download|upload|public]
+    ## Policy to be set on the
+    ## bucket [none|download|upload|public]
     #   policy: none
-    #  # Purge if bucket exists already
+    ## Purge if bucket exists already
     #   purge: false
-    #  # set versioning for
-    #  # bucket [true|false]
+    ## set versioning for
+    ## bucket [true|false]
     #   versioning: false  # remove this key if you do not want versioning feature
-    #  # set objectlocking for
-    #  # bucket [true|false] NOTE: versioning is enabled by default if you use locking
+    ## set objectlocking for
+    ## bucket [true|false] NOTE: versioning is enabled by default if you use locking
     #   objectlocking: false
     # - name: bucket2
     #   policy: none
     #   purge: false
     #   versioning: true
-    #  # set objectlocking for
-    #  # bucket [true|false] NOTE: versioning is enabled by default if you use locking
+    ## set objectlocking for
+    ## bucket [true|false] NOTE: versioning is enabled by default if you use locking
     #   objectlocking: false
     - name: default
       policy: public
@@ -797,6 +866,11 @@ minio:
     ## The name of the service account to use. If 'create' is 'true', a service account with that name
     ## will be created.
     name: minio-sa
+  # Custom labels specific to minio resources
+  customLabels: {}
+  # Example:
+  # datastore-type: object
+  # persistence: required
 
 mongodb:
   replicaCount: 1
@@ -819,6 +893,11 @@ mongodb:
     limits:
       cpu: "2"
       memory: "3Gi"
+  # Custom labels specific to mongodb resources
+  customLabels: {}
+  # Example:
+  # datastore-type: document
+  # persistence: required
   express:
     enabled: true
     replicaCount: 1
@@ -861,6 +940,11 @@ rabbit:
     limits:
       cpu: "2"
       memory: "3Gi"
+  # Custom labels specific to rabbit resources
+  customLabels: {}
+  # Example:
+  # app-tier: messaging
+  # service-type: queue
 
 ollama: &ollama
   replicaCount: 1
@@ -897,6 +981,11 @@ ollama: &ollama
       limits:
         cpu: "0.1"
         memory: "100Mi"
+  # Custom labels specific to ollama resources
+  customLabels: {}
+  # Example:
+  # app-tier: ml
+  # service-type: llm
 
 ollama-tool: *ollama
 
@@ -920,6 +1009,11 @@ open_webui:
     limits:
       cpu: "1.5"
       memory: "1500Mi"
+  # Custom labels specific to open_webui resources
+  customLabels: {}
+  # Example:
+  # app-tier: frontend
+  # service-type: chat-ui
 
 dovecot:
   replicaCount: 1
@@ -952,6 +1046,11 @@ dovecot:
       limits:
         cpu: "0.1"
         memory: "100Mi"
+  # Custom labels specific to dovecot resources
+  customLabels: {}
+  # Example:
+  # app-tier: email
+  # service-type: imap
 
 roundcube:
   replicaCount: 1
@@ -967,6 +1066,11 @@ roundcube:
     limits:
       cpu: "0.5"
       memory: "500Mi"
+  # Custom labels specific to roundcube resources
+  customLabels: {}
+  # Example:
+  # app-tier: frontend
+  # service-type: webmail
 
 prometheus:
   enabled: true
@@ -1000,6 +1104,11 @@ prometheus:
       limits:
         cpu: "0.1"
         memory: "100Mi"
+  # Custom labels specific to prometheus resources
+  customLabels: {}
+  # Example:
+  # monitoring-tier: "primary"
+  # sla: "99.9"
 
 redis:
   replicaCount: 1
@@ -1020,6 +1129,11 @@ redis:
     limits:
       cpu: "1.5"
       memory: "1500Mi"
+  # Custom labels specific to redis resources
+  customLabels: {}
+  # Example:
+  # datastore-type: cache
+  # persistence: optional
   insight:
     enabled: true
     replicaCount: 1
@@ -1055,6 +1169,11 @@ rspamd:
     ingress: *default-ingress-config
     service:
       port: 11334
+  # Custom labels specific to rspamd resources
+  customLabels: {}
+  # Example:
+  # app-tier: email
+  # service-type: spam-filter
 
 tika:
   replicaCount: 1
@@ -1080,3 +1199,8 @@ tika:
     limits:
       cpu: "4"
       memory: "6Gi"
+  # Custom labels specific to tika resources
+  customLabels: {}
+  # Example:
+  # app-tier: processing
+  # service-type: content-extraction

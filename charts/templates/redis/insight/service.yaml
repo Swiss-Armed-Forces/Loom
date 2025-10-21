@@ -4,7 +4,7 @@ kind: Service
 metadata:
   name: {{ include "app.fullname" . }}-redis-insight
   labels:
-    {{- include "app.labels.standard" . | nindent 4 }}
+    {{- include "app.labels.custom" (dict "context" . "component" "redis") | nindent 4 }}
     app.kubernetes.io/component: redis
 spec:
   ports:

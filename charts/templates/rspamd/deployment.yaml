@@ -3,7 +3,7 @@ kind: Deployment
 metadata:
   name: {{ include "app.fullname" . }}-rspamd
   labels:
-    {{- include "app.labels.standard" . | nindent 4 }}
+    {{- include "app.labels.custom" (dict "context" . "component" "rspamd") | nindent 4 }}
     app.kubernetes.io/component: rspamd
 spec:
   replicas: {{ .Values.rspamd.replicaCount }}
@@ -14,6 +14,7 @@ spec:
     metadata:
       labels:
         app: {{ include "app.name" . }}-rspamd
+        {{- include "app.labels.custom" (dict "context" . "component" "rspamd") | nindent 8 }}
     spec:
       # Disable DNS for pod:
       # Rspamd will lookup spam lists using

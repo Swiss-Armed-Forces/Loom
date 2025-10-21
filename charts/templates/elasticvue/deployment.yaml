@@ -3,7 +3,7 @@ kind: Deployment
 metadata:
   name: {{ include "app.fullname" . }}-elasticvue
   labels:
-    {{- include "app.labels.standard" . | nindent 4 }}
+    {{- include "app.labels.custom" (dict "context" . "component" "elasticvue") | nindent 4 }}
     app.kubernetes.io/component: elasticsearch
 spec:
   replicas: {{ .Values.elasticvue.replicaCount }}
@@ -14,6 +14,7 @@ spec:
     metadata:
       labels:
         app: {{ include "app.name" . }}-elasticvue
+        {{- include "app.labels.custom" (dict "context" . "component" "elasticvue") | nindent 8 }}
     spec:
       containers:
         - name: elasticvue

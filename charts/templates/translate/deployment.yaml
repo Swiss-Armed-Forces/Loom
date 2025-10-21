@@ -3,7 +3,7 @@ kind: Deployment
 metadata:
   name: {{ include "app.fullname" . }}-translate
   labels:
-    {{- include "app.labels.standard" . | nindent 4 }}
+    {{- include "app.labels.custom" (dict "context" . "component" "translate") | nindent 4 }}
     app.kubernetes.io/component: translate
 spec:
   {{- if not .Values.translate.hpa.enabled }}
@@ -16,6 +16,7 @@ spec:
     metadata:
       labels:
         app: {{ include "app.name" . }}-translate
+        {{- include "app.labels.custom" (dict "context" . "component" "translate") | nindent 8 }}
     spec:
       containers:
         - name: translate
