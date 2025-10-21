@@ -97,7 +97,6 @@ default:
       - changed-files/
       # for: integrationtest
       - logs/
-      - .test_durations
     expire_in: 1 week
     when: always
   # Dependency caching
