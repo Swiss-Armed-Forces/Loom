@@ -576,13 +576,14 @@ in
         set -euo pipefail
         cd '${config.devenv.root}'
 
+        # pull lfs artifacts: required for gitlab cicd pipelines
+        # Note: we can not install lfs hooks because,
+        # hooks are managed by devenv
+        git lfs install --skip-repo
+        git lfs pull
+
         # is interactive shell?
         if tty -s; then
-          # - pull lfs artifacts
-          # Note: we can not install lfs hooks because,
-          # hooks are managed by devenv
-          git lfs install --skip-repo
-          git lfs pull
           # print help
           devenv-help
         fi

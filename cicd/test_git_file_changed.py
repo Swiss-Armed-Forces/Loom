@@ -3,13 +3,12 @@ import argparse
 import logging
 import os
 import sys
+import shutil
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterable, Optional
 
-import git  # GitPython
-import gitlab  # python-gitlab
-from gitlab.exceptions import GitlabError
+import git
 
 
 # ----------------------------
@@ -41,6 +40,8 @@ class CiContext:
     log_level: str
     dry_run: bool
     max_ci_commits: int
+    no_update: bool
+    changed_out_dir: Path
     ci_commit_prefix: str = "chore(ci):"
 
 
@@ -59,9 +60,9 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description=(
             "In MR pipelines, stage ALL unstaged changes, commit & push to the MR "
-            "source branch (with safeguards), comment on the MR, then exit 1 if "
-            "changes were detected. In non-MR pipelines, only verify cleanliness "
-            "and fail if there are changes."
+            "source branch (with safeguards), then exit 1 if changes were detected. "
+            "In non-MR pipelines (or with --no-update), only verify cleanliness and "
+            "fail if there are changes. Also copies changed files to a mirror folder."
         )
     )
     parser.add_argument(
@@ -95,13 +96,25 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument(
         "--dry-run",
         action="store_true",
-        help="Print actions only; do not stage/commit/push or call the API.",
+        help="Print actions only; do not stage/commit/push.",
     )
     parser.add_argument(
         "--max-ci-commits",
         type=int,
         default=int(os.getenv("MAX_CI_COMMITS", "10")),
         help="Abort if there are already this many consecutive CI commits. Default 10.",
+    )
+    parser.add_argument(
+        "--no-update",
+        action="store_true",
+        help="Verification-only mode: just check for unstaged changes and exit 1 if any; "
+        "do not stage/commit/push even in MR pipelines.",
+    )
+    parser.add_argument(
+        "--changed-out-dir",
+        default=os.getenv("CHANGED_OUT_DIR", "changed-files"),
+        help="Directory to mirror changed files into (preserving tree). "
+        "Default: env CHANGED_OUT_DIR or 'changed-files'.",
     )
     return parser.parse_args(argv)
 
@@ -123,6 +136,8 @@ def build_context(ns: argparse.Namespace) -> CiContext:
     log_level = ns.log_level or os.getenv("LOG_LEVEL", "INFO")
     dry_run = bool(ns.dry_run or _truthy(os.getenv("DRY_RUN")))
 
+    changed_out_dir = Path(ns.changed_out_dir).resolve()
+
     return CiContext(
         api_url=_req_env("CI_API_V4_URL"),
         server_host=_req_env("CI_SERVER_HOST"),
@@ -141,6 +156,8 @@ def build_context(ns: argparse.Namespace) -> CiContext:
         log_level=log_level,
         dry_run=dry_run,
         max_ci_commits=ns.max_ci_commits,
+        no_update=bool(ns.no_update),
+        changed_out_dir=changed_out_dir,
     )
 
 
@@ -244,9 +261,9 @@ def print_paths(prefix: str, paths: Iterable[Path]) -> None:
         logging.info("  %s", p)
 
 
-def stage_all_unstaged(repo: git.Repo, *, dry_run: bool) -> None:
+def stage_all_unstaged(repo: git.Repo, ctx: CiContext) -> None:
     """Stage all working tree changes (equivalent to `git add --all`)."""
-    if dry_run:
+    if ctx.dry_run:
         logging.info("[DRY RUN] Would stage ALL unstaged changes: git add --all")
         return
     repo.git.add("--all")
@@ -264,6 +281,39 @@ def has_staged_changes(repo: git.Repo) -> bool:
         if repo.index.diff("HEAD"):
             return True
     return bool(repo.git.diff("--cached"))
+
+
+# ----------------------------
+# Copy changed files (preserve tree)
+# ----------------------------
+def copy_changed_files(
+    repo: git.Repo,
+    changed_paths: Iterable[Path],
+    ctx: CiContext,
+) -> None:
+    """
+    Copy all existing changed files into dest_root, preserving tree relative to repo root.
+    Skips deleted/non-existent files (logs them).
+    """
+    wt = Path(repo.working_tree_dir or ".").resolve()
+
+    items = list(changed_paths)
+    if not items:
+        logging.info("No changed files to copy.")
+        return
+
+    logging.info("Mirroring %d changed file(s) to: %s", len(items), ctx.changed_out_dir)
+    for rel_path in items:
+        src = wt / rel_path
+        dst = ctx.changed_out_dir / rel_path
+        if not src.exists():
+            logging.info("Skipping (deleted/missing): %s", rel_path)
+            continue
+        if ctx.dry_run:
+            logging.info("[DRY RUN] Would copy %s -> %s", src, dst)
+            continue
+        dst.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(src, dst)
 
 
 # ----------------------------
@@ -333,26 +383,41 @@ def main(argv: list[str] | None = None) -> int:
     ctx = build_context(ns)
     setup_logging(ctx.log_level)
 
-    mode = "MR" if ctx.is_mr else "non-MR"
+    # Effective mode:
+    # - update_mode = True only when in MR AND --no-update is NOT set
+    update_mode = ctx.is_mr and not ctx.no_update
+    mode = (
+        "MR-update"
+        if update_mode
+        else ("verification-only (no-update)" if ctx.no_update else "non-MR")
+    )
     logging.info("Running in %s mode for project %s", mode, ctx.project_path)
 
-    repo = git.Repo(Path.cwd())  # open early to read status for both modes
+    repo = git.Repo(Path.cwd())
 
-    # 1) Detect and print all unstaged changes
+    # Detect and print all unstaged changes
     unstaged_before = get_unstaged_paths(repo)
     print_paths("Unstaged changes", unstaged_before)
+
+    # Mirror changed files (preserve tree) to ctx.changed_out_dir
+    copy_changed_files(repo, unstaged_before, ctx)
+
+    if not update_mode:
+        # Verification-only: do not modify the repo regardless of MR status.
+        if not unstaged_before:
+            logging.info("No changes detected. Nothing to do.")
+            return 0
+        logging.error(
+            "Verification-only: changes detected (%d file(s)). Failing without updates.",
+            len(unstaged_before),
+        )
+        return 1
+
+    # From here: MR update mode (allowed to modify/push)
 
     if not unstaged_before:
         logging.info("No changes detected. Nothing to do.")
         return 0
-
-    # Non-MR pipelines: verification-only — fail if any changes and do not modify repo
-    if not ctx.is_mr:
-        logging.error(
-            "Non-MR pipeline: changes detected (%d file(s)). Failing without updates.",
-            len(unstaged_before),
-        )
-        return 1
 
     # Max consecutive CI commits safeguard
     consecutive = count_consecutive_ci_commits(repo, ctx)
@@ -364,20 +429,19 @@ def main(argv: list[str] | None = None) -> int:
         )
         return 1
 
-    # MR pipelines: initialize (mutating) repo config and branch state
+    # Prepare repo (fetch/checkout/pull with autostash)
     repo = init_git_repo(ctx)
 
-    # 2) Stage all, record exactly what will be pushed, and print the list
-    stage_all_unstaged(repo, dry_run=ctx.dry_run)
+    # Stage, list, commit, push
+    stage_all_unstaged(repo, ctx)
     staged_now = (
         get_staged_names(repo) if not ctx.dry_run else [str(p) for p in unstaged_before]
     )
     print_paths("Files to push", [Path(p) for p in staged_now])
 
-    # 3) Commit & push (or simulate)
     commit_and_push(repo, ctx)
 
-    # 4) Changes were present -> fail the job (even after push)
+    # Changes were present -> fail the job (even after push)
     logging.error("Changes were present and have been pushed. Failing the job.")
     return 1
 
