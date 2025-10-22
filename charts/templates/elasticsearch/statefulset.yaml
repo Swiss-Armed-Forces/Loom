@@ -7,6 +7,8 @@ metadata:
     app.kubernetes.io/component: elasticsearch
 spec:
   serviceName: {{ include "app.fullname" . }}-elasticsearch
+  # for cluster forming: must start all pods in parallel
+  podManagementPolicy: Parallel
   replicas: {{ .Values.elasticsearch.replicaCount }}
   selector:
     matchLabels:
