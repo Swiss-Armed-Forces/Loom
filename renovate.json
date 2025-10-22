@@ -1,0 +1,209 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "description": "Comprehensive Renovate configuration for Loom - a multi-technology project with Frontend (TypeScript/React), Backend (Python/Poetry), Docker, and Helm",
+  "extends": [
+    "config:recommended",
+    ":dependencyDashboard",
+    ":semanticCommits",
+    ":separatePatchReleases",
+    "security:openssf-scorecard",
+    "workarounds:all"
+  ],
+  "timezone": "UTC",
+  "schedule": [
+    "before 6am on monday"
+  ],
+  "prConcurrentLimit": 10,
+  "prHourlyLimit": 2,
+  "stabilityDays": 3,
+  "minimumReleaseAge": "3 days",
+  "branchPrefix": "renovate/",
+  "labels": ["dependencies", "renovate"],
+  "enabledManagers": [
+    "npm",
+    "poetry",
+    "dockerfile",
+    "docker-compose",
+    "helm-values",
+    "helmv3",
+    "github-actions",
+    "gitlabci",
+    "regex",
+    "nix"
+  ],
+  "poetry": {
+    "versioning": "pep440",
+    "lockFileMaintenance": { "enabled": true }
+  },
+  "vulnerabilityAlerts": {
+    "enabled": true,
+    "schedule": ["at any time"],
+    "stabilityDays": 0,
+    "minimumReleaseAge": null,
+    "prCreation": "immediate",
+    "labels": ["security", "vulnerability"],
+    "groupName": null,
+    "groupSlug": null
+  },
+  "lockFileMaintenance": {
+    "enabled": true,
+    "schedule": ["before 6am on the first day of the month"],
+    "commitMessageAction": "lock file maintenance",
+    "branchTopic": "lock-file-maintenance"
+  },
+  "packageRules": [
+    {
+      "matchManagers": ["npm"],
+      "matchPaths": ["Frontend/**"],
+      "groupName": "Frontend Dependencies",
+      "matchDepTypes": ["dependencies", "devDependencies"],
+      "prPriority": 5,
+      "postUpdateOptions": ["pnpmDedupe"],
+      "automerge": true,
+      "matchUpdateTypes": ["minor", "patch"]
+    },
+    {
+      "matchManagers": ["poetry"],
+      "matchPaths": ["backend/**", "integrationtest/**", "pyproject.toml"],
+      "groupName": "Backend Dependencies",
+      "prPriority": 4,
+      "automerge": true,
+      "matchUpdateTypes": ["minor", "patch"]
+    },
+    {
+      "matchManagers": ["poetry"],
+      "matchDepNames": ["python"],
+      "enabled": false
+    },
+    {
+      "matchManagers": ["dockerfile", "gitlabci"],
+      "groupName": "Docker base images",
+      "prPriority": 3
+    },
+    {
+      "matchManagers": ["dockerfile", "gitlabci"],
+      "matchPaths": ["nix-dind/**", ".gitlab-ci.yml"],
+      "matchUpdateTypes": ["minor", "patch", "digest"],
+      "automerge": true
+    },
+    {
+      "matchUpdateTypes": ["major"],
+      "automerge": false,
+      "prPriority": 1,
+      "schedule": ["before 6am on the first day of the month"]
+    },
+    {
+      "matchManagers": ["nix"],
+      "groupName": "Nix Development Environment",
+      "matchFileNames": ["devenv.yaml", "devenv.nix", "devenv.lock"],
+      "prPriority": 6,
+      "schedule": ["before 6am on monday"],
+      "automerge": false,
+      "labels": ["nix", "devenv"]
+    },
+    {
+      "matchManagers": ["nix"],
+      "matchDepNames": ["nixpkgs", "nixpkgs-stable", "nixpkgs-unstable", "nixpkgs-24-11"],
+      "groupName": "Nix Package Channels",
+      "prPriority": 2,
+      "schedule": ["before 6am on the first day of the month"],
+      "automerge": false,
+      "labels": ["nix", "nixpkgs"],
+      "minimumReleaseAge": "7 days",
+      "stabilityDays": 7
+    },
+    {
+      "matchManagers": ["nix"],
+      "matchDepNames": ["devenv", "git-hooks"],
+      "groupName": "Nix Development Tools",
+      "prPriority": 3,
+      "schedule": ["before 6am on monday"],
+      "automerge": true,
+      "automergeType": "pr",
+      "labels": ["nix", "dev-tools"]
+    }
+  ],
+  "customManagers": [
+    {
+      "customType": "regex",
+      "description": "Update Python versions in Docker files",
+      "fileMatch": ["(^|/)Dockerfile$", "(^|/)Dockerfile\\.[^/]*$"],
+      "matchStrings": [
+        "FROM python:(?<currentValue>\\S+)"
+      ],
+      "datasourceTemplate": "docker",
+      "depNameTemplate": "python",
+      "versioningTemplate": "docker"
+    },
+    {
+      "customType": "regex",
+      "description": "Update Node.js versions in Docker files",
+      "fileMatch": ["(^|/)Dockerfile$", "(^|/)Dockerfile\\.[^/]*$"],
+      "matchStrings": [
+        "FROM node:(?<currentValue>\\S+)"
+      ],
+      "datasourceTemplate": "docker",
+      "depNameTemplate": "node",
+      "versioningTemplate": "docker"
+    },
+    {
+      "customType": "regex",
+      "description": "Update package manager versions in package.json",
+      "fileMatch": ["(^|/)package\\.json$"],
+      "matchStrings": [
+        "\"packageManager\":\\s*\"(?<depName>pnpm)@(?<currentValue>\\S+)\""
+      ],
+      "datasourceTemplate": "npm",
+      "versioningTemplate": "npm"
+    },
+    {
+      "customType": "regex",
+      "description": "Update VSCode extension versions in devenv.nix",
+      "fileMatch": ["(^|/)devenv\\.nix$"],
+      "matchStrings": [
+        "\\{\\s*name = \"(?<depName>[^\"]+)\";\\s*publisher = \"(?<publisher>[^\"]+)\";\\s*version = \"(?<currentValue>[^\"]+)\";\\s*sha256 = \"[^\"]+\";\\s*\\}"
+      ],
+      "datasourceTemplate": "vscode",
+      "depNameTemplate": "{{publisher}}.{{depName}}"
+    }
+  ],
+  "hostRules": [
+    {
+      "matchHost": "registry.npmjs.org",
+      "concurrentRequestLimit": 10
+    },
+    {
+      "matchHost": "pypi.org",
+      "concurrentRequestLimit": 10
+    }
+  ],
+  "ignorePaths": [
+    "**/node_modules/**",
+    "**/dist/**",
+    "**/build/**",
+    "**/.git/**",
+    "**/logs/**",
+    "**/log/**",
+    "**/out/**",
+    "charts/**"
+  ],
+  "ignoreTests": true,
+  "separateMinorPatch": true,
+  "separateMajorMinor": true,
+  "separateMultipleMajor": true,
+  "recreateWhen": "auto",
+  "rebaseWhen": "behind-base-branch",
+  "automergeSchedule": ["before 6am"],
+  "platformAutomerge": true,
+  "includeForks": false,
+  "forkProcessing": "disabled",
+  "dependencyDashboard": true,
+  "dependencyDashboardTitle": "Dependency Dashboard",
+  "dependencyDashboardApproval": false,
+  "dependencyDashboardAutoclose": true,
+  "commitBodyTable": true,
+  "prBodyTemplate": "{{{header}}}{{{table}}}{{{notes}}}{{{changelogs}}}{{{controls}}}{{{footer}}}",
+  "commitMessageTopic": "{{depName}}",
+  "commitMessageAction": "{{#if isPin}}pin{{else}}update{{/if}}",
+  "commitMessageExtra": "{{#if isMajor}}(major){{else}}{{#if isMinor}}(minor){{else}}(patch){{/if}}{{/if}}"
+}
