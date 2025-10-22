@@ -2,6 +2,8 @@ fluentd:
   enabled: false
 
 prometheus:
+  customLabels:
+    pulse/enabled: true
   collectClusterMetrics: false
 
 elasticsearch:
