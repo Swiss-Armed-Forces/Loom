@@ -66,15 +66,16 @@
     "summarizationDialog": {
         "title": "Summarize",
         "systemPromptHint": "Define a system prompt for the summarization",
-        "executeButton": "Summarize"
+        "executeButton": "Summarize",
+        "confirmationTitle": "Confirm Summarization"
     },
     "confirmDialog": {
         "title": "Confirm action",
-        "confirmCustomQueryRemoval": "Are you sure to remove the custom query?",
+        "confirmCustomQueryRemoval": "Would you like to remove the custom query?",
         "confirmRemoval": "Confirm removal",
-        "confirmArchiveCreationText": "Are you sure to create an archive from search results?",
+        "confirmArchiveCreationText": "Would you like to create an archive from the search results?",
         "confirmArchiveCreation": "Start archive creation",
-        "confirmTagDeletionText": "Are you sure you want to delete the '{{tag}}' tag from all files?",
+        "confirmTagDeletionText": "Would you like to delete the '{{tag}}' tag from all files?",
         "confirmTagDeletion": "Delete tag"
     },
     "downloadOptions": {
@@ -94,8 +95,13 @@
         "openDialog": "Hide / Show files",
         "dialog": {
             "title": "Edit visibility",
-            "text": "Would you like to change the visibility for the whole result set consisting of {{numberOfResults}} files?"
+            "text": "Would you like to change the visibility of {{numberOfResults}} files?"
         }
+    },
+    "reIndex": {
+        "confirmationTitle": "Confirm Re-indexing",
+        "confirmationMessage": "Would you like to re-index {{count}} files?",
+        "executeButton": "Re-index"
     },
     "sideMenu": {
         "actions": "Actions",

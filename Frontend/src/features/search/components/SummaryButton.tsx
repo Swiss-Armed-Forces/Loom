@@ -18,7 +18,11 @@ import {
 import { setBackgroundTaskSpinnerActive } from "../../common/commonSlice";
 import { useAppDispatch, useAppSelector } from "../../../app/hooks";
 import { toast } from "react-toastify";
-import { selectQuery, selectSummarizationSystemPrompt } from "../searchSlice";
+import {
+    selectQuery,
+    selectSummarizationSystemPrompt,
+    selectTotalFiles,
+} from "../searchSlice";
 
 interface SummarizeProps {
     file_id?: string;
@@ -40,15 +44,20 @@ export function SummaryButton({
     );
     const [showDialog, setShowDialog] = useState(false);
     const [systemPrompt, setSystemPrompt] = useState<string | null>(null);
+    const filesCount = useAppSelector(selectTotalFiles);
 
-    const startFileSummary = () => {
+    const handleSummarize = () => {
         if (!searchQuery) return;
+        if (!file_id) return;
         dispatch(setBackgroundTaskSpinnerActive());
         let result: Promise<void>;
         if (file_id) {
             result = scheduleSingleFileSummarization(file_id, systemPrompt);
-        } else {
+        } else if (searchQuery) {
             result = scheduleFileSummarization(searchQuery, systemPrompt);
+        } else {
+            toast.error("Error while opening Dialog: No File or Query found");
+            return;
         }
 
         result
@@ -68,6 +77,11 @@ export function SummaryButton({
         setShowDialog(false);
     };
 
+    const startSummaryProcess = () => {
+        if ((!searchQuery && !file_id) || filesCount === 0) return;
+        setShowDialog(true);
+    };
+
     const handleCloseDialog = (_: unknown, reason: string) => {
         if (reason && reason == "backdropClick") {
             return;
@@ -79,7 +93,7 @@ export function SummaryButton({
         <>
             {file_id || icon_only ? (
                 <IconButton
-                    onClick={() => setShowDialog(true)}
+                    onClick={() => startSummaryProcess()}
                     disabled={disabled}
                     title="Summarize"
                     aria-label="summarize"
@@ -88,7 +102,7 @@ export function SummaryButton({
                 </IconButton>
             ) : (
                 <Button
-                    onClick={() => setShowDialog(true)}
+                    onClick={() => startSummaryProcess()}
                     disabled={disabled}
                     color="secondary"
                     fullWidth={true}
@@ -148,7 +162,7 @@ export function SummaryButton({
                     </Button>
                     <Button
                         startIcon={<SummarizeOutlined />}
-                        onClick={startFileSummary}
+                        onClick={handleSummarize}
                         color="primary"
                         variant="contained"
                     >
