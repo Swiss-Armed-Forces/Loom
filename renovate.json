@@ -15,10 +15,12 @@
   ],
   "prConcurrentLimit": 10,
   "prHourlyLimit": 2,
-  "stabilityDays": 3,
   "minimumReleaseAge": "3 days",
   "branchPrefix": "renovate/",
-  "labels": ["dependencies", "renovate"],
+  "labels": [
+    "dependencies",
+    "renovate"
+  ],
   "enabledManagers": [
     "npm",
     "poetry",
@@ -28,106 +30,191 @@
     "helmv3",
     "github-actions",
     "gitlabci",
-    "regex",
+    "custom.regex",
     "nix"
   ],
   "poetry": {
     "versioning": "pep440",
-    "lockFileMaintenance": { "enabled": true }
+    "lockFileMaintenance": {
+      "enabled": true
+    }
   },
   "vulnerabilityAlerts": {
     "enabled": true,
-    "schedule": ["at any time"],
-    "stabilityDays": 0,
+    "schedule": [
+      "at any time"
+    ],
     "minimumReleaseAge": null,
     "prCreation": "immediate",
-    "labels": ["security", "vulnerability"],
+    "labels": [
+      "security",
+      "vulnerability"
+    ],
     "groupName": null,
     "groupSlug": null
   },
   "lockFileMaintenance": {
     "enabled": true,
-    "schedule": ["before 6am on the first day of the month"],
+    "schedule": [
+      "before 6am on the first day of the month"
+    ],
     "commitMessageAction": "lock file maintenance",
     "branchTopic": "lock-file-maintenance"
   },
   "packageRules": [
     {
-      "matchManagers": ["npm"],
-      "matchPaths": ["Frontend/**"],
+      "matchManagers": [
+        "npm"
+      ],
+      "matchFileNames": [
+        "Frontend/**"
+      ],
       "groupName": "Frontend Dependencies",
-      "matchDepTypes": ["dependencies", "devDependencies"],
+      "matchDepTypes": [
+        "dependencies",
+        "devDependencies"
+      ],
       "prPriority": 5,
-      "postUpdateOptions": ["pnpmDedupe"],
+      "postUpdateOptions": [
+        "pnpmDedupe"
+      ],
       "automerge": true,
-      "matchUpdateTypes": ["minor", "patch"]
+      "matchUpdateTypes": [
+        "minor",
+        "patch"
+      ]
     },
     {
-      "matchManagers": ["poetry"],
-      "matchPaths": ["backend/**", "integrationtest/**", "pyproject.toml"],
+      "matchManagers": [
+        "poetry"
+      ],
+      "matchFileNames": [
+        "backend/**",
+        "integrationtest/**",
+        "pyproject.toml"
+      ],
       "groupName": "Backend Dependencies",
       "prPriority": 4,
       "automerge": true,
-      "matchUpdateTypes": ["minor", "patch"]
+      "matchUpdateTypes": [
+        "minor",
+        "patch"
+      ]
     },
     {
-      "matchManagers": ["poetry"],
-      "matchDepNames": ["python"],
+      "matchManagers": [
+        "poetry"
+      ],
+      "matchDepNames": [
+        "python"
+      ],
       "enabled": false
     },
     {
-      "matchManagers": ["dockerfile", "gitlabci"],
+      "matchManagers": [
+        "dockerfile",
+        "gitlabci"
+      ],
       "groupName": "Docker base images",
       "prPriority": 3
     },
     {
-      "matchManagers": ["dockerfile", "gitlabci"],
-      "matchPaths": ["nix-dind/**", ".gitlab-ci.yml"],
-      "matchUpdateTypes": ["minor", "patch", "digest"],
+      "matchManagers": [
+        "dockerfile",
+        "gitlabci"
+      ],
+      "matchFileNames": [
+        "nix-dind/**",
+        ".gitlab-ci.yml"
+      ],
+      "matchUpdateTypes": [
+        "minor",
+        "patch",
+        "digest"
+      ],
       "automerge": true
     },
     {
-      "matchUpdateTypes": ["major"],
+      "matchUpdateTypes": [
+        "major"
+      ],
       "automerge": false,
       "prPriority": 1,
-      "schedule": ["before 6am on the first day of the month"]
+      "schedule": [
+        "before 6am on the first day of the month"
+      ]
     },
     {
-      "matchManagers": ["nix"],
+      "matchManagers": [
+        "nix"
+      ],
       "groupName": "Nix Development Environment",
-      "matchFileNames": ["devenv.yaml", "devenv.nix", "devenv.lock"],
+      "matchFileNames": [
+        "devenv.yaml",
+        "devenv.nix",
+        "devenv.lock"
+      ],
       "prPriority": 6,
-      "schedule": ["before 6am on monday"],
+      "schedule": [
+        "before 6am on monday"
+      ],
       "automerge": false,
-      "labels": ["nix", "devenv"]
+      "labels": [
+        "nix",
+        "devenv"
+      ]
     },
     {
-      "matchManagers": ["nix"],
-      "matchDepNames": ["nixpkgs", "nixpkgs-stable", "nixpkgs-unstable", "nixpkgs-24-11"],
+      "matchManagers": [
+        "nix"
+      ],
+      "matchDepNames": [
+        "nixpkgs",
+        "nixpkgs-stable",
+        "nixpkgs-unstable",
+        "nixpkgs-24-11"
+      ],
       "groupName": "Nix Package Channels",
       "prPriority": 2,
-      "schedule": ["before 6am on the first day of the month"],
+      "schedule": [
+        "before 6am on the first day of the month"
+      ],
       "automerge": false,
-      "labels": ["nix", "nixpkgs"],
-      "minimumReleaseAge": "7 days",
-      "stabilityDays": 7
+      "labels": [
+        "nix",
+        "nixpkgs"
+      ],
+      "minimumReleaseAge": "7 days"
     },
     {
-      "matchManagers": ["nix"],
-      "matchDepNames": ["devenv", "git-hooks"],
+      "matchManagers": [
+        "nix"
+      ],
+      "matchDepNames": [
+        "devenv",
+        "git-hooks"
+      ],
       "groupName": "Nix Development Tools",
       "prPriority": 3,
-      "schedule": ["before 6am on monday"],
+      "schedule": [
+        "before 6am on monday"
+      ],
       "automerge": true,
       "automergeType": "pr",
-      "labels": ["nix", "dev-tools"]
+      "labels": [
+        "nix",
+        "dev-tools"
+      ]
     }
   ],
   "customManagers": [
     {
       "customType": "regex",
       "description": "Update Python versions in Docker files",
-      "fileMatch": ["(^|/)Dockerfile$", "(^|/)Dockerfile\\.[^/]*$"],
+      "managerFilePatterns": [
+        "/(^|/)Dockerfile$/",
+        "/(^|/)Dockerfile\\.[^/]*$/"
+      ],
       "matchStrings": [
         "FROM python:(?<currentValue>\\S+)"
       ],
@@ -138,7 +225,10 @@
     {
       "customType": "regex",
       "description": "Update Node.js versions in Docker files",
-      "fileMatch": ["(^|/)Dockerfile$", "(^|/)Dockerfile\\.[^/]*$"],
+      "managerFilePatterns": [
+        "/(^|/)Dockerfile$/",
+        "/(^|/)Dockerfile\\.[^/]*$/"
+      ],
       "matchStrings": [
         "FROM node:(?<currentValue>\\S+)"
       ],
@@ -149,7 +239,9 @@
     {
       "customType": "regex",
       "description": "Update package manager versions in package.json",
-      "fileMatch": ["(^|/)package\\.json$"],
+      "managerFilePatterns": [
+        "/(^|/)package\\.json$/"
+      ],
       "matchStrings": [
         "\"packageManager\":\\s*\"(?<depName>pnpm)@(?<currentValue>\\S+)\""
       ],
@@ -159,7 +251,9 @@
     {
       "customType": "regex",
       "description": "Update VSCode extension versions in devenv.nix",
-      "fileMatch": ["(^|/)devenv\\.nix$"],
+      "managerFilePatterns": [
+        "/(^|/)devenv\\.nix$/"
+      ],
       "matchStrings": [
         "\\{\\s*name = \"(?<depName>[^\"]+)\";\\s*publisher = \"(?<publisher>[^\"]+)\";\\s*version = \"(?<currentValue>[^\"]+)\";\\s*sha256 = \"[^\"]+\";\\s*\\}"
       ],
@@ -193,9 +287,10 @@
   "separateMultipleMajor": true,
   "recreateWhen": "auto",
   "rebaseWhen": "behind-base-branch",
-  "automergeSchedule": ["before 6am"],
+  "automergeSchedule": [
+    "before 6am"
+  ],
   "platformAutomerge": true,
-  "includeForks": false,
   "forkProcessing": "disabled",
   "dependencyDashboard": true,
   "dependencyDashboardTitle": "Dependency Dashboard",
