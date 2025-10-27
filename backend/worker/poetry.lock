@@ -452,7 +452,7 @@ files = []
 develop = true
 
 [package.dependencies]
-celery = {version = "^5.4.0", extras = ["redis"]}
+celery = {version = "^5.5.0", extras = ["redis"]}
 celery-types = "^0.22.0"
 elasticsearch = "^9.0.2"
 fastapi = "^0.115.12"

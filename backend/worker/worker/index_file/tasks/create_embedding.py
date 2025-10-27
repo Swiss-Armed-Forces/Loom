@@ -16,7 +16,6 @@ from worker.index_file.infra.file_indexing_task import FileIndexingTask
 from worker.index_file.infra.indexing_persister import IndexingPersister
 from worker.services.tika_service import TikaResult
 from worker.settings import settings
-from worker.utils.async_task_branch import complete_async_branch
 from worker.utils.natural_language_detection import is_natural_language
 from worker.utils.persisting_task import persisting_task
 
@@ -61,7 +60,7 @@ def create_embedding_task(
     file: File,
 ):
     if text_lazy is None:
-        return
+        return None
 
     text_splitter = RecursiveCharacterTextSplitter(
         chunk_size=settings.llm_embedding_text_chunk_size,
@@ -71,7 +70,8 @@ def create_embedding_task(
     text = load_text_from_text_lazy(text_lazy=text_lazy)
 
     text_fragments = text_splitter.split_text(text)
-    chain(
+
+    return self.replace(
         chord(
             [
                 embed_text.s(fragment)
@@ -79,9 +79,8 @@ def create_embedding_task(
                 if is_natural_language(fragment)
             ],
             persist_embeddings.s(file),
-        ),
-        complete_async_branch(self),
-    ).delay().forget()
+        )
+    )
 
 
 class LLMError(Exception):

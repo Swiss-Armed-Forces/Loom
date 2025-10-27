@@ -11,7 +11,7 @@ packages = [
 
 [tool.poetry.dependencies]
 python = "^3.11"
-celery = {extras = ["redis"], version = "^5.4.0"}
+celery = {extras = ["redis"], version = "^5.5.0"}
 celery-types = "^0.22.0"
 elasticsearch = "^9.0.2"
 pymongo = "^4.7.2"

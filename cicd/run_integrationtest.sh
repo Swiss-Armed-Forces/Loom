@@ -44,4 +44,4 @@ poetry run \
     --store-durations \
     --splits "${CI_NODE_TOTAL}" \
     --group "${CI_NODE_INDEX}" \
-    integrationtest
+    "${@:-integrationtest}"

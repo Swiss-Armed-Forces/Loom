@@ -199,7 +199,9 @@ def init_celery_app() -> Celery:
     app.conf.worker_detect_quorum_queues = True
     app.conf.broker_transport_options = {"confirm_publish": True}
 
-    app.conf.task_ignore_result = True
+    # We have to disable task_ignore_result as we heavily rely on chors
+    # https://docs.celeryq.dev/en/stable/userguide/canvas.html#important-notes
+    app.conf.task_ignore_result = False
     app.conf.task_store_errors_even_if_ignored = True
     app.conf.result_backend_max_retries = 30
     app.conf.task_acks_on_failure_or_timeout = True
@@ -263,6 +265,10 @@ def init_celery_app() -> Celery:
 
     # Patch the celery group functionality as required due to a bug in celery.
     _patch_group(app=app)
+
+    # Ensure this app is used for unpickling operations (fixes hostname resolution issues)
+    app.set_current()  # Thread-local current app
+    app.set_default()  # Global default app
 
     logging.debug("Celery initialized with config: %s", pformat(app.conf))
     return app

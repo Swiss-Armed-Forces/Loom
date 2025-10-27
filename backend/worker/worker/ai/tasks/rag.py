@@ -33,7 +33,6 @@ from sklearn.neighbors import KernelDensity
 
 from worker.ai.infra.ai_context_processing_task import AiContextProcessingTask
 from worker.settings import settings
-from worker.utils.async_task_branch import complete_async_branch
 
 logger = logging.getLogger(__name__)
 
@@ -188,7 +187,7 @@ def rerank_scored_search_embeddings(
     context: AiContext,
     question: str,
 ):
-    chain(
+    return self.replace(
         chord(
             [
                 rerank.s(scored_search_embedding, question)
@@ -200,9 +199,8 @@ def rerank_scored_search_embeddings(
                 limit_and_sort_ranked_search_embeddings.s(),
                 chatbot_query.s(context, question),
             ),
-        ),
-        complete_async_branch(self),
-    ).delay().forget()
+        )
+    )
 
 
 def _invoke_rerank_llm(

@@ -1,9 +1,13 @@
+import logging
+
 import requests
 from api.models.queues_model import OverallQueuesStats
 from common.dependencies import get_celery_app
 from requests import Response
 
 from utils.consts import QUEUES_ENDPOINT, REQUEST_TIMEOUT
+
+logger = logging.getLogger(__name__)
 
 
 def get_messages_in_queues() -> int:
@@ -32,7 +36,7 @@ def get_celery_tasks_count() -> int:
 
 
 def is_celery_idle() -> bool:
-    messages_in_queues = get_messages_in_queues()
     celery_tasks_count = get_celery_tasks_count()
+    messages_in_queues = get_messages_in_queues()
 
     return messages_in_queues <= 0 and celery_tasks_count <= 0
