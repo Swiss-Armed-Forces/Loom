@@ -467,7 +467,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | types-redis              | 4.6.0.20240425  | Apache Software License                                                          |
 | types-requests           | 2.32.0.20240622 | Apache Software License                                                          |
 | types-setuptools         | 70.1.0.20240625 | Apache Software License                                                          |
-| tzdata                   | 2024.1          | Apache Software License                                                          |
+| tzdata                   | 2025.2          | Apache Software License                                                          |
 | watchdog                 | 6.0.0           | Apache Software License                                                          |
 | yq                       | 3.4.3           | Apache Software License                                                          |
 | cryptography             | 42.0.8          | Apache Software License; BSD License                                             |
@@ -485,8 +485,8 @@ The complete source code for Traefik is publicly available at [https://github.co
 | MarkupSafe               | 3.0.2           | BSD License                                                                      |
 | Pygments                 | 2.19.1          | BSD License                                                                      |
 | amqp                     | 5.2.0           | BSD License                                                                      |
-| billiard                 | 4.2.0           | BSD License                                                                      |
-| celery                   | 5.4.0           | BSD License                                                                      |
+| billiard                 | 4.2.2           | BSD License                                                                      |
+| celery                   | 5.5.3           | BSD License                                                                      |
 | click                    | 8.1.7           | BSD License                                                                      |
 | click-plugins            | 1.1.1           | BSD License                                                                      |
 | decorator                | 5.2.1           | BSD License                                                                      |
@@ -499,7 +499,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | joblib                   | 1.4.2           | BSD License                                                                      |
 | jsonpatch                | 1.33            | BSD License                                                                      |
 | jsonpointer              | 3.0.0           | BSD License                                                                      |
-| kombu                    | 5.3.7           | BSD License                                                                      |
+| kombu                    | 5.5.4           | BSD License                                                                      |
 | lxml                     | 4.9.4           | BSD License                                                                      |
 | numpy                    | 1.26.4          | BSD License                                                                      |
 | pika                     | 1.3.2           | BSD License                                                                      |
@@ -1042,7 +1042,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | billiard | 4.2.1 |  | python-installed-package-cataloger |
 | bsdutils | 1:2.38.1-5+deb12u3 | BSD-3-Clause, BSD-4-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, MIT | dpkg-db-cataloger |
 | ca-certificates | 20230311+deb12u1 | GPL-2.0-only, GPL-2.0-or-later, MPL-2.0 | dpkg-db-cataloger |
-| celery | 5.4.0 | BSD-3-Clause | python-installed-package-cataloger |
+| celery | 5.5.3 | BSD-3-Clause | python-installed-package-cataloger |
 | celery-types | 0.22.0 | Apache-2.0 | python-installed-package-cataloger |
 | certifi | 2025.1.31 | MPL-2.0 | python-installed-package-cataloger |
 | cffi | 1.17.1 | MIT | python-installed-package-cataloger |
@@ -1084,7 +1084,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | jaraco-functools | 4.0.1 | MIT | python-installed-package-cataloger |
 | jaraco-text | 3.12.1 | MIT | python-installed-package-cataloger |
 | joblib | 1.4.2 |  | python-installed-package-cataloger |
-| kombu | 5.4.2 | BSD-3-Clause | python-installed-package-cataloger |
+| kombu | 5.5.4 | BSD-3-Clause | python-installed-package-cataloger |
 | libacl1 | 2.3.1-3 | GPL-2.0-only, GPL-2.0-or-later, LGPL-2.0-or-later, LGPL-2.1-only | dpkg-db-cataloger |
 | libapt-pkg6.0 | 2.6.1 | BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
 | libattr1 | 1:2.5.1-4 | GPL-2.0-only, GPL-2.0-or-later, LGPL-2.0-or-later, LGPL-2.1-only | dpkg-db-cataloger |
@@ -1164,6 +1164,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | ollama | 0.5.1 |  | python-installed-package-cataloger |
 | openssl | 3.0.17-1~deb12u2 | Apache-2.0, GPL-1.0-only, GPL-1.0-or-later | dpkg-db-cataloger |
 | packaging | 24.2 |  | python-installed-package-cataloger |
+| packaging | 25.0 |  | python-installed-package-cataloger |
 | passwd | 1:4.13+dfsg1-1+deb12u1 | BSD-3-Clause, GPL-1.0-only, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
 | perl-base | 5.36.0-7+deb12u3 | Artistic-2.0, BSD-3-Clause, GPL-1.0-only, GPL-1.0-or-later, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.1-only, Zlib | dpkg-db-cataloger |
 | pip | 24.0 | MIT | python-installed-package-cataloger |
@@ -1205,7 +1206,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | types-setuptools | 75.8.2.20250305 | Apache-2.0 | python-installed-package-cataloger |
 | typing-extensions | 4.12.2 |  | python-installed-package-cataloger |
 | typing-extensions | 4.12.2 |  | python-installed-package-cataloger |
-| tzdata | 2025.1 | Apache-2.0 | python-installed-package-cataloger |
+| tzdata | 2025.2 | Apache-2.0 | python-installed-package-cataloger |
 | tzdata | 2025b-0+deb12u2 |  | dpkg-db-cataloger |
 | urllib3 | 2.3.0 |  | python-installed-package-cataloger |
 | usr-is-merged | 37~deb12u1 | GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
@@ -1837,7 +1838,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | billiard | 4.2.1 |  | python-installed-package-cataloger |
 | bsdutils | 1:2.38.1-5+deb12u3 | BSD-3-Clause, BSD-4-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, MIT | dpkg-db-cataloger |
 | ca-certificates | 20230311+deb12u1 | GPL-2.0-only, GPL-2.0-or-later, MPL-2.0 | dpkg-db-cataloger |
-| celery | 5.4.0 | BSD-3-Clause | python-installed-package-cataloger |
+| celery | 5.5.3 | BSD-3-Clause | python-installed-package-cataloger |
 | celery-types | 0.22.0 | Apache-2.0 | python-installed-package-cataloger |
 | certifi | 2024.8.30 | MPL-2.0 | python-installed-package-cataloger |
 | cffi | 1.17.1 | MIT | python-installed-package-cataloger |
@@ -1879,7 +1880,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | jaraco-context | 5.3.0 | MIT | python-installed-package-cataloger |
 | jaraco-functools | 4.0.1 | MIT | python-installed-package-cataloger |
 | jaraco-text | 3.12.1 | MIT | python-installed-package-cataloger |
-| kombu | 5.4.2 | BSD-3-Clause | python-installed-package-cataloger |
+| kombu | 5.5.4 | BSD-3-Clause | python-installed-package-cataloger |
 | libacl1 | 2.3.1-3 | GPL-2.0-only, GPL-2.0-or-later, LGPL-2.0-or-later, LGPL-2.1-only | dpkg-db-cataloger |
 | libapt-pkg6.0 | 2.6.1 | BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
 | libattr1 | 1:2.5.1-4 | GPL-2.0-only, GPL-2.0-or-later, LGPL-2.0-or-later, LGPL-2.1-only | dpkg-db-cataloger |
@@ -1959,6 +1960,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | ollama | 0.5.1 |  | python-installed-package-cataloger |
 | openssl | 3.0.17-1~deb12u2 | Apache-2.0, GPL-1.0-only, GPL-1.0-or-later | dpkg-db-cataloger |
 | packaging | 24.2 |  | python-installed-package-cataloger |
+| packaging | 25.0 |  | python-installed-package-cataloger |
 | passwd | 1:4.13+dfsg1-1+deb12u1 | BSD-3-Clause, GPL-1.0-only, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
 | perl-base | 5.36.0-7+deb12u3 | Artistic-2.0, BSD-3-Clause, GPL-1.0-only, GPL-1.0-or-later, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.1-only, Zlib | dpkg-db-cataloger |
 | pip | 24.0 | MIT | python-installed-package-cataloger |
@@ -1996,7 +1998,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | types-setuptools | 75.6.0.20241126 | Apache-2.0 | python-installed-package-cataloger |
 | typing-extensions | 4.12.2 |  | python-installed-package-cataloger |
 | typing-extensions | 4.12.2 |  | python-installed-package-cataloger |
-| tzdata | 2024.2 | Apache-2.0 | python-installed-package-cataloger |
+| tzdata | 2025.2 | Apache-2.0 | python-installed-package-cataloger |
 | tzdata | 2025b-0+deb12u2 |  | dpkg-db-cataloger |
 | urllib3 | 2.2.3 |  | python-installed-package-cataloger |
 | usr-is-merged | 37~deb12u1 | GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |

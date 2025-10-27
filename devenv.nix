@@ -1066,7 +1066,7 @@ in
         set -euo pipefail
         cd '${config.devenv.root}'
 
-        ./cicd/run_integrationtest.sh
+        ./cicd/run_integrationtest.sh \
           "''${@}"
       )
     '';

@@ -14,7 +14,6 @@ from worker.index_file.infra.file_indexing_task import FileIndexingTask
 from worker.index_file.infra.indexing_persister import IndexingPersister
 from worker.services.tika_service import TIKA_MAX_TEXT_SIZE, TikaResult
 from worker.settings import settings
-from worker.utils.async_task_branch import complete_async_branch
 from worker.utils.natural_language_detection import is_natural_language
 from worker.utils.persisting_task import persisting_task
 
@@ -70,7 +69,7 @@ def summarize_task(
     system_prompt: str | None = None,
 ):
     if text_lazy is None:
-        return
+        return None
 
     text_splitter = RecursiveCharacterTextSplitter(
         chunk_size=settings.llm_summarize_text_chunk_size,
@@ -79,10 +78,7 @@ def summarize_task(
     text = load_text_from_text_lazy(text_lazy)
 
     text_chunks = text_splitter.split_text(text)
-
-    text_chunks = text_chunks[: settings.summary_max_chunks]
-
-    chain(
+    return self.replace(
         chord(
             [
                 extract_key_points.s(text_chunk)
@@ -94,9 +90,8 @@ def summarize_task(
                 refine_summary.s(system_prompt),
                 persist_summary.s(file),
             ),
-        ),
-        complete_async_branch(self),
-    ).delay().forget()
+        )
+    )
 
 
 class LLMError(Exception):

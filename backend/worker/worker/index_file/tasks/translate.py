@@ -1,7 +1,7 @@
 import logging
 from urllib.error import HTTPError
 
-from celery import chain, chord
+from celery import chain, chord, group
 from celery.canvas import Signature
 from common.dependencies import (
     get_celery_app,
@@ -18,7 +18,6 @@ from worker.index_file.infra.file_indexing_task import FileIndexingTask
 from worker.index_file.infra.indexing_persister import IndexingPersister
 from worker.services.tika_service import TIKA_MAX_TEXT_SIZE, TikaResult
 from worker.settings import settings
-from worker.utils.async_task_branch import complete_async_branch
 from worker.utils.persisting_task import persisting_task
 
 LIBRETRANSLATE_MAX_TEXT_SIZE = TIKA_MAX_TEXT_SIZE
@@ -150,11 +149,11 @@ def translate_task(
     translate_detect_language_result: tuple[
         LazyBytes | None, LibreTranslateLanguageDetectResult | None
     ],
-    file: File,  # pylint: disable=unused-argument
-) -> None:
+    file: File,
+):
     (text_lazy, detected_languages) = translate_detect_language_result
     if text_lazy is None or detected_languages is None:
-        return
+        return None
 
     text_splitter = get_translation_text_splitter()
 
@@ -166,8 +165,8 @@ def translate_task(
         )
 
         text_chunks = text_splitter.split_text(text)
-        for detected_language in detected_languages:
-            chain(
+        return self.replace(
+            group(
                 chord(
                     [
                         translate.s(text_chunk, detected_language)
@@ -177,9 +176,10 @@ def translate_task(
                         combine_translation.s(detected_language),
                         persist_translation.s(file),
                     ),
-                ),
-                complete_async_branch(self),
-            ).delay().forget()
+                )
+                for detected_language in detected_languages
+            )
+        )
 
 
 @app.task(
