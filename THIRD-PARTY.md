@@ -455,7 +455,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | pytest-asyncio           | 0.23.7          | Apache Software License                                                          |
 | pytest-memray            | 1.7.0           | Apache Software License                                                          |
 | pytest_docker_tools      | 3.1.9           | Apache Software License                                                          |
-| python-multipart         | 0.0.9           | Apache Software License                                                          |
+| python-multipart         | 0.0.20          | Apache Software License                                                          |
 | requests                 | 2.32.3          | Apache Software License                                                          |
 | requests-toolbelt        | 1.0.0           | Apache Software License                                                          |
 | retry                    | 0.9.2           | Apache Software License                                                          |
@@ -588,7 +588,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | ruamel.yaml              | 0.18.10         | MIT License                                                                      |
 | ruamel.yaml.clib         | 0.2.12          | MIT License                                                                      |
 | six                      | 1.16.0          | MIT License                                                                      |
-| stream-zip               | 0.0.71          | MIT License                                                                      |
+| stream-zip               | 0.0.83          | MIT License                                                                      |
 | textual                  | 3.3.0           | MIT License                                                                      |
 | tomlkit                  | 0.12.5          | MIT License                                                                      |
 | tomlkit                  | 0.13.2          | MIT License                                                                      |
