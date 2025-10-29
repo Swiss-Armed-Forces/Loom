@@ -49,7 +49,7 @@ RUN set -exu \
 #
 # Install tailscale
 #
-ARG TAILSCALE_VERSION="1.86.2-r0"
+ARG TAILSCALE_VERSION="1.86.2-r1"
 RUN set -exu \
     && apk add --no-cache \
     tailscale="${TAILSCALE_VERSION}"

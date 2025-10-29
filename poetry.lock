@@ -63,7 +63,7 @@ develop = true
 common = {path = "../common", develop = true}
 fastapi = "^0.115.12"
 numpy = "^1.26.4"
-python-multipart = "^0.0.9"
+python-multipart = "^0.0.20"
 scikit-learn = "^1.4.2"
 types-redis = "^4.6.0.20240425"
 uvicorn = "^0.29.0"
@@ -2904,18 +2904,15 @@ files = [
 
 [[package]]
 name = "python-multipart"
-version = "0.0.9"
+version = "0.0.20"
 description = "A streaming multipart parser for Python"
 optional = false
 python-versions = ">=3.8"
 groups = ["main"]
 files = [
-    {file = "python_multipart-0.0.9-py3-none-any.whl", hash = "sha256:97ca7b8ea7b05f977dc3849c3ba99d51689822fab725c3703af7c866a0c2b215"},
-    {file = "python_multipart-0.0.9.tar.gz", hash = "sha256:03f54688c663f1b7977105f021043b0793151e4cb1c1a9d4a11fc13d622c4026"},
+    {file = "python_multipart-0.0.20-py3-none-any.whl", hash = "sha256:8a62d3a8335e06589fe01f2a3e178cdcc632f3fbe0d492ad9ee0ec35aab1f104"},
+    {file = "python_multipart-0.0.20.tar.gz", hash = "sha256:8dd0cab45b8e23064ae09147625994d090fa46f5b0d1e13af944c331a7fa9d13"},
 ]
-
-[package.extras]
-dev = ["atomicwrites (==1.4.1)", "attrs (==23.2.0)", "coverage (==7.4.1)", "hatch", "invoke (==2.2.0)", "more-itertools (==10.2.0)", "pbr (==6.0.0)", "pluggy (==1.4.0)", "py (==1.11.0)", "pytest (==8.0.0)", "pytest-cov (==4.1.0)", "pytest-timeout (==2.2.0)", "pyyaml (==6.0.1)", "ruff (==0.2.1)"]
 
 [[package]]
 name = "pytz"
@@ -3297,22 +3294,22 @@ full = ["httpx (>=0.27.0,<0.29.0)", "itsdangerous", "jinja2", "python-multipart 
 
 [[package]]
 name = "stream-zip"
-version = "0.0.71"
+version = "0.0.83"
 description = "Python function to construct a ZIP archive with stream processing - without having to store the entire ZIP in memory or disk"
 optional = false
 python-versions = ">=3.6.7"
 groups = ["main"]
 files = [
-    {file = "stream_zip-0.0.71-py3-none-any.whl", hash = "sha256:4afff6da680876b7982afedcc9c3478a575a519c74015a25a4248d3fe69a46a0"},
-    {file = "stream_zip-0.0.71.tar.gz", hash = "sha256:fd85a01e8eadec4d1151b548c7da0eeecc37432f29df01ba232f672f958a2fc6"},
+    {file = "stream_zip-0.0.83-py3-none-any.whl", hash = "sha256:118bef93c10031dc715235e081c72e1dab2850771893f261cb5d246ff56e0e42"},
+    {file = "stream_zip-0.0.83.tar.gz", hash = "sha256:87d755f0ce43dfc6b0ae555b733f162c76e2eafcf3c7805d3f591e966b316716"},
 ]
 
 [package.dependencies]
 pycryptodome = ">=3.10.1"
 
 [package.extras]
-ci = ["coverage (==6.2)", "pycryptodome (==3.10.1)", "pytest (==7.0.1)", "pytest-cov (==3.0.0)", "pyzipper (==0.3.6)", "stream-unzip (==0.0.86)"]
-dev = ["coverage (>=6.2)", "pytest (>=7.0.1)", "pytest-cov (>=3.0.0)", "pyzipper (>=0.3.6)", "stream-unzip (>=0.0.86)"]
+ci = ["mypy (==0.971)", "pycryptodome (==3.10.1)", "pyzipper (==0.3.6)", "stream-unzip (==0.0.86)", "types-contextvars (==2.4.7.3) ; python_version < \"3.7\""]
+dev = ["coverage (>=6.2)", "mypy (>=0.971)", "pytest (>=7.0.1)", "pytest-cov (>=3.0.0)", "pyzipper (>=0.3.6)", "stream-unzip (>=0.0.86)", "types-contextvars (>=2.4.7.3) ; python_version < \"3.7\""]
 
 [[package]]
 name = "tenacity"
@@ -3814,7 +3811,7 @@ python-magic = "^0.4.27"
 requests = "^2.31.0"
 scikit-learn = "^1.7.0"
 scipy = "^1.15.3"
-stream-zip = "^0.0.71"
+stream-zip = "^0.0.83"
 wand = "^0.6.13"
 
 [package.source]
