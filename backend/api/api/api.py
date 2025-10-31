@@ -1,5 +1,3 @@
-"""Initialize the fastapi app."""
-
 from pathlib import Path
 from typing import Any
 
@@ -21,7 +19,6 @@ from api.routers import (
     queues,
     summarization,
     tags,
-    tests,
     translation,
     websocket,
 )
@@ -72,7 +69,6 @@ def init_api() -> FastAPI:
     api.include_router(ai.router, prefix="/v1/ai", tags=["ai"])
     api.include_router(aitools.router, prefix="/v1/aitools", tags=["aitools"])
     api.include_router(files.router, prefix="/v1/files", tags=["files"])
-    api.include_router(tests.router, prefix="/v1/tests", tags=["tests"])
 
     def custom_openapi() -> dict[str, Any]:
         if api.openapi_schema:

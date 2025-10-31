@@ -10,6 +10,5 @@ export * from "./IndexApi";
 export * from "./QueuesApi";
 export * from "./SummarizationApi";
 export * from "./TagsApi";
-export * from "./TestsApi";
 export * from "./TranslationApi";
 export * from "./WebsocketApi";
