@@ -96,7 +96,8 @@ export function EmptySearchResults() {
                                     "NOT tags:interesting",
                                     "tagsNegate",
                                 )}
-                                {createSearchTip("hidden:true", "removed")}
+                                {createSearchTip("hidden:true", "hidden")}
+                                {createSearchTip("hidden:*", "allHidden")}
                                 {createSearchTip(
                                     "file_type:image/png",
                                     "fileType",
@@ -110,7 +111,7 @@ export function EmptySearchResults() {
                                     "or",
                                 )}
                                 {createSearchTip(
-                                    "uploaded:[* TO 2020-06-31]",
+                                    "uploaded:[* TO 2020-06-15]",
                                     "uploadTime",
                                 )}
                                 {createSearchTip(
