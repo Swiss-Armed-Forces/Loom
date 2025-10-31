@@ -19,6 +19,6 @@ def old_files_hidden(*_, **__):
 @app.task(base=PeriodicTask)
 def hide_periodically_task():
     chain(
-        hide_old_uploaded_files.hide_old_uploaded_files_task.signature(),
+        hide_old_uploaded_files.signature(),
         old_files_hidden.s(),
     ).delay().forget()
