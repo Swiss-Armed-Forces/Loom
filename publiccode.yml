@@ -97,7 +97,6 @@ description:
       into your existing applications and workflows through our comprehensive
       REST API.
     documentation: https://gitlab.com/swiss-armed-forces/cyber-command/cea/loom/-/blob/main/README.md
-    apiDocumentation: https://api.loom/docs
     features:
       - Simple Deployment
       - Powerful Search
