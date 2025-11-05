@@ -11,8 +11,7 @@ from common.dependencies import get_celery_app, get_lazybytes_service
 from common.file.file_repository import File
 from common.services.lazybytes_service import LazyBytes
 from common.utils.cache import cache
-from requests.exceptions import ConnectionError as RequestsConnectionError
-from requests.exceptions import ReadTimeout as RequestsReadTimeout
+from requests import RequestException
 
 from worker.dependencies import get_tika_service
 from worker.index_file.infra.file_indexing_task import FileIndexingTask
@@ -44,6 +43,7 @@ from worker.settings import settings
 from worker.utils.persisting_task import persisting_task
 
 TIKA_MAX_RETRIES = 15
+TIKA_RETRY_EXCEPTIONS = (RequestException,)
 
 logger = logging.getLogger(__name__)
 
@@ -150,7 +150,7 @@ def signature(file_content: LazyBytes, file: File) -> Signature:
 
 @app.task(  # type: ignore[call-overload]
     base=FileIndexingTask,
-    autoretry_for=tuple([RequestsConnectionError, RequestsReadTimeout]),
+    autoretry_for=TIKA_RETRY_EXCEPTIONS,
     max_retries=TIKA_MAX_RETRIES,
     retry_backoff=True,
 )
@@ -225,7 +225,7 @@ def persist_tika_meta_task(persister: IndexingPersister, tika_result: TikaResult
 
 @app.task(  # type: ignore[call-overload]
     base=FileIndexingTask,
-    autoretry_for=[RequestsConnectionError, RequestsReadTimeout],
+    autoretry_for=TIKA_RETRY_EXCEPTIONS,
     max_retries=TIKA_MAX_RETRIES,
     retry_backoff=True,
 )
@@ -244,7 +244,7 @@ def persist_tika_language_task(persister: IndexingPersister, tika_language: str)
 
 @app.task(  # type: ignore[call-overload]
     base=FileIndexingTask,
-    autoretry_for=[RequestsConnectionError, RequestsReadTimeout],
+    autoretry_for=TIKA_RETRY_EXCEPTIONS,
     max_retries=TIKA_MAX_RETRIES,
     retry_backoff=True,
 )
