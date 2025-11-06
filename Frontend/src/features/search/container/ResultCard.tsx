@@ -1,4 +1,4 @@
-import React, { forwardRef, useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
     Box,
     Card,
@@ -46,8 +46,8 @@ interface ResultCardProps {
     fileId: string;
 }
 
-export const ResultCard = forwardRef<HTMLDivElement, ResultCardProps>(
-    ({ fileId }, ref) => {
+export const ResultCard: React.FC<ResultCardProps> = React.memo(
+    ({ fileId }: ResultCardProps) => {
         const dispatch = useAppDispatch();
         const { t } = useTranslation();
         const isMobile = useMediaQuery("(max-width:900px)");
@@ -55,9 +55,8 @@ export const ResultCard = forwardRef<HTMLDivElement, ResultCardProps>(
         const file = useAppSelector(selectFileById(fileId));
         const filePreview = file?.preview;
         const sortFieldValue = file?.meta.sortFieldValue ?? "";
-
-        const { ref: inViewRef, inView } = useInView({
-            threshold: [0, 0.5],
+        const { ref, inView } = useInView({
+            threshold: [0.2],
         });
 
         const [imageHashToShow, setImageHashToShow] = useState("");
@@ -69,7 +68,7 @@ export const ResultCard = forwardRef<HTMLDivElement, ResultCardProps>(
                     inView: inView,
                 }),
             );
-        }, [inView, fileId, searchQuery, dispatch]);
+        }, [inView, fileId, dispatch]);
 
         const handleViewDetail = () => {
             dispatch(
@@ -91,24 +90,9 @@ export const ResultCard = forwardRef<HTMLDivElement, ResultCardProps>(
             );
         };
 
-        const setRefs = React.useCallback(
-            (node: HTMLDivElement | null) => {
-                // Ref's from useRef need to have the current value set.
-                if (typeof ref === "function") {
-                    ref(node);
-                } else if (ref) {
-                    ref.current = node;
-                }
-                inViewRef(node);
-            },
-            [ref, inViewRef],
-        );
-
         return (
-            <div className="resultCardParent" ref={setRefs}>
-                {!inView && !filePreview ? (
-                    <div style={{ height: "200px" }}></div>
-                ) : inView && !filePreview ? (
+            <div className="resultCardParent" ref={ref}>
+                {!filePreview ? (
                     <div className={styles.skeletonLoadingContainer}>
                         <div className={styles.skeletonLoadingAvatar}>
                             <Skeleton
