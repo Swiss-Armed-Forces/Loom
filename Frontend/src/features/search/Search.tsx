@@ -39,9 +39,9 @@ import ChatMenu from "./components/ChatMenu.tsx";
 import { useSearchParams } from "react-router-dom";
 import { t } from "i18next";
 
-const RELOAD_TIMEOUT__MS = 5000;
-const FILE_FETCH_DEBOUNCE__MS = 2000;
-const UPDATE_QUERY_DEBOUNCE__MS = 2000;
+const RELOAD_TIMEOUT__MS = 5_000;
+const FILE_FETCH_DEBOUNCE__MS = 2_000;
+const UPDATE_QUERY_DEBOUNCE__MS = 2_000;
 
 export function Search() {
     const dispatch = useAppDispatch();

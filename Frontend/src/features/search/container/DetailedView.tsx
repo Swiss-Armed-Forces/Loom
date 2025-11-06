@@ -1,4 +1,3 @@
-import { useRef } from "react";
 import { Skeleton } from "@mui/material";
 import { useAppSelector } from "../../../app/hooks";
 import { selectIsLoading } from "../../common/commonSlice";
@@ -8,12 +7,11 @@ import { SearchResultCountText } from "../components/SearchResultCountText";
 import { LoadMoreButton } from "../components/LoadMoreButton";
 import { ResultCard } from "./ResultCard";
 import styles from "./DetailedView.module.css";
+import React from "react";
 
-export function DetailedView() {
+export const DetailedView: React.FC = React.memo(() => {
     const files = useAppSelector(selectFiles);
     const isLoading = useAppSelector(selectIsLoading);
-
-    const cardRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
 
     if (Object.entries(files).length === 0) {
         if (!isLoading) return <EmptySearchResults />;
@@ -38,13 +36,12 @@ export function DetailedView() {
                     <ResultCard
                         key={file.meta.fileId}
                         fileId={file.meta.fileId}
-                        ref={(el) => {
-                            cardRefs.current[file.meta.fileId] = el;
-                        }}
                     />
                 );
             })}
             <LoadMoreButton />
         </div>
     );
-}
+});
+
+DetailedView.displayName = "DetailedView";
