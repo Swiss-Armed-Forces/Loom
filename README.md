@@ -129,6 +129,9 @@ and navigate to [https://frontend.loom](https://frontend.loom) to access Loom.
 
 For a more scalable setup, you can deploy Loom using its Helm chart on your Kubernetes cluster.
 
+> ⚠️ We currently only support Traefik as the ingress controller. We are tracking progress on
+integrating Nginx in issue #161.
+
 **Installation Steps:**
 
 1. You can find and deploy the Helm chart from our official package registry:
