@@ -219,7 +219,7 @@ def init_celery_app() -> Celery:
         },
         "hide-old-uploaded-files": {
             "task": "worker.periodic.hide_periodically_task.hide_periodically_task",
-            "schedule": crontab(hour="0"),
+            "schedule": crontab(minute="0", hour="0"),
         },
     }
 
