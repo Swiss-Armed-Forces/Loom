@@ -7,6 +7,7 @@ from api.routers.translation import TranslateAllRequest
 from common.services.query_builder import QueryParameters
 from pydantic import BaseModel
 from requests import Response
+from worker.settings import settings
 
 from utils.consts import FILES_ENDPOINT, REQUEST_TIMEOUT, TRANSLATION_ENDPOINT
 from utils.fetch_from_api import build_search_string, fetch_query_id, get_file_by_name
@@ -154,6 +155,10 @@ def test_on_demand_translation_by_file(
     expected_translations: list[GetFileLanguageTranslations],
     expected_on_demand_translations: list[GetFileLanguageTranslations] | None,
 ):
+
+    if settings.skip_translate_while_indexing:
+        expected_translations = []
+
     _translation_testcase(
         on_demand_translation=_on_demand_translate_by_file,
         content=content,
@@ -171,6 +176,9 @@ def test_on_demand_translation_by_query(
     expected_translations: list[GetFileLanguageTranslations],
     expected_on_demand_translations: list[GetFileLanguageTranslations] | None,
 ):
+    if settings.skip_translate_while_indexing:
+        expected_translations = []
+
     def on_demand_function(file: TranslationFileTest, lang: str):
         _on_demand_translate_by_query(
             QueryParameters(

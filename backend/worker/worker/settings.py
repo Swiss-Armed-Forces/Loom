@@ -39,8 +39,8 @@ class Settings(CommonSettings):
     ) -> Tuple[PydanticBaseSettingsSource, ...]:
         return (SettingsSource(settings_cls),)
 
-    skip_translate_while_indexing: bool = False
-    skip_summarize_while_indexing: bool = False
+    skip_translate_while_indexing: bool = True
+    skip_summarize_while_indexing: bool = True
     min_language_detection_confidence: float = 95.0
     persist_success_tasks: bool = False
     persist_retry_tasks: bool = True

@@ -39,8 +39,8 @@ egress:
 pipeline:
   taskTimeLimitSeconds: 3600
   uploaded_files_time_before_hidden: null
-  skip_summarize_while_indexing: false
-  skip_translate_while_indexing: false
+  skip_summarize_while_indexing: true
+  skip_translate_while_indexing: true
   automatic_indexing: true
   tika_ocr_languages:
     - eng
