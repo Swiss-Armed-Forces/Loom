@@ -34,7 +34,8 @@ class CiContext:
     source_branch: str  # empty when not MR
 
     # User-tunable (CLI-capable)
-    pipeline_trigger_token: Optional[str]
+    project_access_token: Optional[str]
+    mr_iid: Optional[str]
     author_name: str
     author_email: str
     add_skip_ci: bool
@@ -62,8 +63,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         description=(
             "In MR pipelines, stage ALL unstaged changes, commit & push to the MR "
             "source branch (with safeguards), then exit 1 if changes were detected. "
-            "Uses CI_JOB_TOKEN for authentication. Optionally triggers new pipeline "
-            "after successful push using pipeline trigger token. "
+            "Uses CI_JOB_TOKEN for authentication. Optionally triggers new MR pipeline "
+            "after successful push using PROJECT_ACCESS_TOKEN. "
             "In non-MR pipelines (or with --no-update), only verify cleanliness and "
             "fail if there are changes. Also copies changed files to a mirror folder."
         )
@@ -79,9 +80,9 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         help="Commit author email (default: GITLAB_USER_EMAIL or 'ci-bot@gitlab.local').",
     )
     parser.add_argument(
-        "--pipeline-trigger-token",
+        "--project-access-token",
         default=None,
-        help="Pipeline trigger token. When provided, will trigger a new pipeline after successful commit push.",
+        help="Project access token for creating MR pipelines (default: PROJECT_ACCESS_TOKEN env var).",
     )
     parser.add_argument(
         "--skip-ci",
@@ -125,6 +126,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 def build_context(ns: argparse.Namespace) -> CiContext:
     source_branch = os.getenv("CI_MERGE_REQUEST_SOURCE_BRANCH_NAME", "")
     is_mr = bool(source_branch.strip())
+    mr_iid = os.getenv("CI_MERGE_REQUEST_IID") if is_mr else None
 
     author_name = ns.author_name or os.getenv("GITLAB_USER_NAME", "CI Bot")
     author_email = ns.author_email or os.getenv(
@@ -152,8 +154,9 @@ def build_context(ns: argparse.Namespace) -> CiContext:
         commit_sha_short=os.getenv("CI_COMMIT_SHORT_SHA"),
         is_mr=is_mr,
         source_branch=source_branch,
-        pipeline_trigger_token=ns.pipeline_trigger_token
-        or os.getenv("PIPELINE_TRIGGER_TOKEN"),
+        project_access_token=ns.project_access_token
+        or os.getenv("PROJECT_ACCESS_TOKEN"),
+        mr_iid=mr_iid,
         author_name=author_name,
         author_email=author_email,
         add_skip_ci=add_skip_ci,
@@ -346,23 +349,34 @@ def count_consecutive_ci_commits(
 
 def trigger_pipeline(ctx: CiContext) -> None:
     """
-    Trigger a new pipeline using the pipeline trigger token.
-    No-ops in dry-run or if no trigger token is provided.
+    Trigger a new merge request pipeline using the project access token.
+    No-ops in dry-run or if not in MR context or no token provided.
     """
-    if not ctx.pipeline_trigger_token:
-        logging.info("No pipeline trigger token provided; skipping pipeline trigger.")
+    if not ctx.is_mr:
+        logging.info("Not in MR context; skipping pipeline trigger.")
+        return
+
+    if not ctx.project_access_token:
+        logging.info("No project access token provided; skipping pipeline trigger.")
+        return
+
+    if not ctx.mr_iid:
+        logging.warning("CI_MERGE_REQUEST_IID not available; skipping pipeline trigger.")
         return
 
     if ctx.dry_run:
-        logging.info("[DRY RUN] Would trigger new pipeline using trigger token")
+        logging.info("[DRY RUN] Would trigger new MR pipeline for MR !%s", ctx.mr_iid)
         return
 
-    # Create GitLab client and trigger pipeline
+    # Create GitLab client with project access token
     base_url = f"https://{ctx.server_host}"
-    gl = gitlab.Gitlab(base_url)  # no authentication
-    project = gl.projects.get(ctx.project_id, lazy=True)  # no API call
-    pipeline = project.trigger_pipeline(ctx.source_branch, ctx.pipeline_trigger_token)
-    logging.info("Successfully triggered new pipeline: %s", pipeline.id)
+    gl = gitlab.Gitlab(base_url, private_token=ctx.project_access_token)
+    project = gl.projects.get(ctx.project_id, lazy=True)
+
+    # Create merge request pipeline using the MR pipeline API
+    mr = project.mergerequests.get(ctx.mr_iid, lazy=True)
+    pipeline = mr.pipelines.create({})
+    logging.info("Successfully triggered new MR pipeline: %s", pipeline.id)
 
 
 # ----------------------------
@@ -386,7 +400,7 @@ def commit_and_push(repo: git.Repo, ctx: CiContext) -> None:
     if ctx.dry_run:
         logging.info("[DRY RUN] Would commit with message:\n%s", msg.strip())
         logging.info("[DRY RUN] Would push HEAD:%s", ctx.source_branch)
-        logging.info("[DRY RUN] Would trigger new pipeline if trigger token provided")
+        logging.info("[DRY RUN] Would trigger new MR pipeline if project access token provided")
         return
 
     if not has_staged_changes(repo):
