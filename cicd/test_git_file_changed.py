@@ -11,7 +11,7 @@ from typing import Iterable, Optional
 
 import git
 import gitlab
-from gitlab.v4.objects import ProjectMergeRequest
+from gitlab.v4.objects import ProjectMergeRequest, Project
 
 
 # ----------------------------
@@ -87,6 +87,12 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         help="Project access token for creating MR pipelines (default: PROJECT_ACCESS_TOKEN env var).",
     )
     parser.add_argument(
+        "--project-id",
+        type=int,
+        default=None,
+        help="GitLab project ID (default: CI_PROJECT_ID env var).",
+    )
+    parser.add_argument(
         "--skip-ci",
         dest="add_skip_ci",
         action="store_true",
@@ -145,11 +151,14 @@ def build_context(ns: argparse.Namespace) -> CiContext:
 
     changed_out_dir = Path(ns.changed_out_dir).resolve()
 
+    server_host = os.getenv("CI_SERVER_HOST", "gitlab.com")
+    api_url = os.getenv("CI_API_V4_URL") or f"https://{server_host}/api/v4"
+
     return CiContext(
-        api_url=_req_env("CI_API_V4_URL"),
-        server_host=_req_env("CI_SERVER_HOST"),
-        project_id=int(_req_env("CI_PROJECT_ID")),
-        project_path=_req_env("CI_PROJECT_PATH"),
+        api_url=api_url,
+        server_host=server_host,
+        project_id=ns.project_id or int(_req_env("CI_PROJECT_ID")),
+        project_path=os.getenv("CI_PROJECT_PATH", "swiss-armed-forces/cyber-command/cea/loom"),
         job_token=os.getenv("CI_JOB_TOKEN"),
         pipeline_id=os.getenv("CI_PIPELINE_ID"),
         pipeline_source=os.getenv("CI_PIPELINE_SOURCE"),
@@ -349,12 +358,19 @@ def count_consecutive_ci_commits(
 # ----------------------------
 
 
-def wait_for_mr_commit_sync(mr: ProjectMergeRequest, expected_commit_sha: str, max_retries: int = 5, base_delay: float = 2.0) -> bool:
+def wait_for_mr_commit_sync(
+    project: Project,
+    mr_iid: str,
+    expected_commit_sha: str,
+    max_retries: int = 5,
+    base_delay: float = 2.0,
+) -> bool:
     """
     Wait for GitLab MR to sync with the latest commit using exponential backoff.
 
     Args:
-        mr: GitLab merge request instance
+        project: GitLab project instance
+        mr_iid: Merge request IID
         expected_commit_sha: The commit SHA we expect the MR to have
         max_retries: Maximum number of retry attempts (default: 5)
         base_delay: Base delay in seconds for exponential backoff (default: 2.0)
@@ -363,8 +379,14 @@ def wait_for_mr_commit_sync(mr: ProjectMergeRequest, expected_commit_sha: str, m
         True if MR synced successfully, False if timed out
     """
     for attempt in range(max_retries + 1):
-        # Get current MR commit SHA
-        current_sha = mr.sha  # Head commit SHA of the MR
+        # Always fetch fresh MR data from API
+        mr = project.mergerequests.get(mr_iid, lazy=True)
+        diffs = mr.diffs.list()
+        current_sha = None
+        if diffs:
+            # Get the latest diff (most recent)
+            latest_diff = diffs[0]
+            current_sha: str | None = latest_diff.head_commit_sha
 
         if current_sha == expected_commit_sha:
             if attempt > 0:
@@ -372,12 +394,21 @@ def wait_for_mr_commit_sync(mr: ProjectMergeRequest, expected_commit_sha: str, m
             return True
 
         if attempt < max_retries:
-            delay = base_delay * (2 ** attempt)  # Exponential backoff
-            logging.info("MR has commit %s, waiting for %s. Retrying in %.1fs (attempt %d/%d)",
-                       current_sha[:8], expected_commit_sha[:8], delay, attempt + 1, max_retries)
+            delay = base_delay * (2**attempt)  # Exponential backoff
+            logging.info(
+                "MR has commit %s, waiting for %s. Retrying in %.1fs (attempt %d/%d)",
+                current_sha[:8] if current_sha else "unknown",
+                expected_commit_sha[:8],
+                delay,
+                attempt + 1,
+                max_retries,
+            )
             time.sleep(delay)
 
-    logging.error("MR commit sync timeout after %d attempts. MR may have stale commit.", max_retries)
+    logging.error(
+        "MR commit sync timeout after %d attempts. MR may have stale commit.",
+        max_retries,
+    )
     return False
 
 
@@ -396,7 +427,9 @@ def trigger_pipeline(ctx: CiContext) -> None:
         return
 
     if not ctx.mr_iid:
-        logging.warning("CI_MERGE_REQUEST_IID not available; skipping pipeline trigger.")
+        logging.warning(
+            "CI_MERGE_REQUEST_IID not available; skipping pipeline trigger."
+        )
         return
 
     if ctx.dry_run:
@@ -416,8 +449,10 @@ def trigger_pipeline(ctx: CiContext) -> None:
 
     # Wait for GitLab MR to sync with the latest commit
     logging.info("Waiting for MR !%s to sync with latest commit...", ctx.mr_iid)
-    if not wait_for_mr_commit_sync(mr, latest_commit_sha):
-        logging.error("Failed to sync MR with latest commit. Not triggering pipeline to avoid running on stale commit.")
+    if not wait_for_mr_commit_sync(project, ctx.mr_iid, latest_commit_sha):
+        logging.error(
+            "Failed to sync MR with latest commit. Not triggering pipeline to avoid running on stale commit."
+        )
         return
 
     # Create merge request pipeline using the MR pipeline API
@@ -446,7 +481,9 @@ def commit_and_push(repo: git.Repo, ctx: CiContext) -> None:
     if ctx.dry_run:
         logging.info("[DRY RUN] Would commit with message:\n%s", msg.strip())
         logging.info("[DRY RUN] Would push HEAD:%s", ctx.source_branch)
-        logging.info("[DRY RUN] Would trigger new MR pipeline if project access token provided")
+        logging.info(
+            "[DRY RUN] Would trigger new MR pipeline if project access token provided"
+        )
         return
 
     if not has_staged_changes(repo):
