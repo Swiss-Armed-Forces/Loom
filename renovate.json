@@ -28,7 +28,7 @@
   ],
   "poetry": {
     "versioning": "pep440",
-    "rangeStrategy": "pin"
+    "rangeStrategy": "update-lockfile"
   },
   "npm": {
     "rangeStrategy": "update-lockfile"
