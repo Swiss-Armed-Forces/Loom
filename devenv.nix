@@ -282,6 +282,9 @@ in
       # for software bill of materials (SBOM)
       syft
 
+      # dependency tracking
+      renovate
+
       # for unit testing
       libpst
       tshark
@@ -528,6 +531,12 @@ in
       };
 
       check-json.enable = true;
+
+      renovate-config-validator = {
+        enable = true;
+        files = "renovate\\.json$";
+        entry = "renovate-config-validator";
+      };
 
       check-toml.enable = true;
 

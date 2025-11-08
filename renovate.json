@@ -28,9 +28,6 @@
   ],
   "poetry": {
     "versioning": "pep440",
-    "lockFileMaintenance": {
-      "enabled": false
-    },
     "rangeStrategy": "pin"
   },
   "npm": {
@@ -140,16 +137,6 @@
       ],
       "datasourceTemplate": "npm",
       "versioningTemplate": "npm"
-    },
-    {
-      "customType": "regex",
-      "description": "Update VSCode extension versions in devenv.nix",
-      "fileMatch": ["(^|/)devenv\\.nix$"],
-      "matchStrings": [
-        "\\s+(?<depName>[a-zA-Z0-9_-]+\\.[a-zA-Z0-9_-]+)(?:\\s|$)"
-      ],
-      "datasourceTemplate": "vscode",
-      "currentValueTemplate": "latest"
     }
   ],
   "hostRules": [
