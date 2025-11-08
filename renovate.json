@@ -16,14 +16,13 @@
   "minimumReleaseAge": "3 days",
   "branchPrefix": "renovate/",
   "labels": ["dependencies", "renovate"],
+  "logLevel": "debug",
   "enabledManagers": [
     "npm",
     "poetry",
     "dockerfile",
-    "docker-compose",
     "helm-values",
     "helmv3",
-    "github-actions",
     "gitlabci",
     "custom.regex",
     "nix"
@@ -32,7 +31,11 @@
     "versioning": "pep440",
     "lockFileMaintenance": {
       "enabled": true
-    }
+    },
+    "rangeStrategy": "update-lockfile"
+  },
+  "npm": {
+    "rangeStrategy": "update-lockfile"
   },
   "vulnerabilityAlerts": {
     "enabled": true,
@@ -56,7 +59,6 @@
       "groupName": "Frontend Dependencies",
       "matchDepTypes": ["dependencies", "devDependencies"],
       "prPriority": 5,
-      "postUpdateOptions": ["pnpmDedupe"],
       "automerge": true,
       "matchUpdateTypes": ["minor", "patch"]
     },
@@ -86,17 +88,15 @@
     },
     {
       "matchUpdateTypes": ["major"],
-      "automerge": false,
-      "prPriority": 1,
+      "prPriority": 10,
       "schedule": ["before 6am on the first day of the month"]
     },
     {
       "matchManagers": ["nix"],
       "groupName": "Nix Development Environment",
       "matchFileNames": ["devenv.yaml", "devenv.nix", "devenv.lock"],
-      "prPriority": 6,
+      "prPriority": 2,
       "schedule": ["before 6am on sunday"],
-      "automerge": false,
       "labels": ["nix", "devenv"]
     },
     {
@@ -108,9 +108,8 @@
         "nixpkgs-24-11"
       ],
       "groupName": "Nix Package Channels",
-      "prPriority": 2,
+      "prPriority": 1,
       "schedule": ["before 6am on the first day of the month"],
-      "automerge": false,
       "labels": ["nix", "nixpkgs"],
       "minimumReleaseAge": "7 days"
     },
@@ -121,35 +120,10 @@
       "prPriority": 3,
       "schedule": ["before 6am on sunday"],
       "automerge": true,
-      "automergeType": "pr",
       "labels": ["nix", "dev-tools"]
     }
   ],
   "customManagers": [
-    {
-      "customType": "regex",
-      "description": "Update Python versions in Docker files",
-      "managerFilePatterns": [
-        "/(^|/)Dockerfile$/",
-        "/(^|/)Dockerfile\\.[^/]*$/"
-      ],
-      "matchStrings": ["FROM python:(?<currentValue>\\S+)"],
-      "datasourceTemplate": "docker",
-      "depNameTemplate": "python",
-      "versioningTemplate": "docker"
-    },
-    {
-      "customType": "regex",
-      "description": "Update Node.js versions in Docker files",
-      "managerFilePatterns": [
-        "/(^|/)Dockerfile$/",
-        "/(^|/)Dockerfile\\.[^/]*$/"
-      ],
-      "matchStrings": ["FROM node:(?<currentValue>\\S+)"],
-      "datasourceTemplate": "docker",
-      "depNameTemplate": "node",
-      "versioningTemplate": "docker"
-    },
     {
       "customType": "regex",
       "description": "Update package manager versions in package.json",
@@ -165,10 +139,9 @@
       "description": "Update VSCode extension versions in devenv.nix",
       "managerFilePatterns": ["/(^|/)devenv\\.nix$/"],
       "matchStrings": [
-        "\\{\\s*name = \"(?<depName>[^\"]+)\";\\s*publisher = \"(?<publisher>[^\"]+)\";\\s*version = \"(?<currentValue>[^\"]+)\";\\s*sha256 = \"[^\"]+\";\\s*\\}"
+        "\\s+(?<depName>[a-zA-Z0-9_-]+\\.[a-zA-Z0-9_-]+)(?:\\s|$)"
       ],
-      "datasourceTemplate": "vscode",
-      "depNameTemplate": "{{publisher}}.{{depName}}"
+      "datasourceTemplate": "vscode"
     }
   ],
   "hostRules": [
@@ -188,8 +161,7 @@
     "**/.git/**",
     "**/logs/**",
     "**/log/**",
-    "**/out/**",
-    "charts/**"
+    "**/out/**"
   ],
   "separateMinorPatch": true,
   "separateMajorMinor": true,
