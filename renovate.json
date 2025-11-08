@@ -27,11 +27,7 @@
     "nix"
   ],
   "poetry": {
-    "versioning": "pep440",
-    "rangeStrategy": "update-lockfile"
-  },
-  "npm": {
-    "rangeStrategy": "update-lockfile"
+    "versioning": "pep440"
   },
   "vulnerabilityAlerts": {
     "enabled": true,
