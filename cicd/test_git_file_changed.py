@@ -78,7 +78,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument(
         "--gitlab-token",
         default=None,
-        help="Personal Access Token (PAT). Overrides CI_JOB_TOKEN if provided.",
+        help="Project Access Token (PAT). When provided, commits will trigger new pipelines. Falls back to CI_JOB_TOKEN (no pipeline triggering) if not provided.",
     )
     parser.add_argument(
         "--skip-ci",
@@ -199,15 +199,18 @@ def init_git_repo(ctx: CiContext) -> git.Repo:
         cw.set_value("safe", "directory", str(Path.cwd()))
 
     if ctx.personal_token is not None:
+        # Use project access token - this will trigger new pipelines
         https_url = (
-            "https://oauth2:"
-            f"{ctx.personal_token}@{ctx.server_host}/{ctx.project_path}.git"
+            f"https://project-token:{ctx.personal_token}@{ctx.server_host}/{ctx.project_path}.git"
         )
+        logging.info("Using project access token authentication (pipelines will be triggered)")
     elif ctx.job_token is not None:
+        # Fall back to CI job token - this will NOT trigger new pipelines
         https_url = (
             "https://gitlab-ci-token:"
             f"{ctx.job_token}@{ctx.server_host}/{ctx.project_path}.git"
         )
+        logging.info("Using CI job token authentication (pipelines will NOT be triggered)")
     else:
         raise RuntimeError(
             "No authentication provided: set CI_JOB_TOKEN or GITLAB_TOKEN."
