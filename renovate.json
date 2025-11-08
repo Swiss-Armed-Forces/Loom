@@ -16,7 +16,6 @@
   "prConcurrentLimit": 10,
   "prHourlyLimit": 2,
   "minimumReleaseAge": "3 days",
-  "minimumReleaseAgeBehaviour": "timestamp-optional",
   "branchPrefix": "renovate/",
   "labels": [
     "dependencies",
@@ -214,8 +213,8 @@
     {
       "customType": "regex",
       "description": "Update package manager versions in package.json",
-      "managerFilePatterns": [
-        "/(^|/)package\\.json$/"
+      "fileMatch": [
+        "(^|/)package\\.json$"
       ],
       "matchStrings": [
         "\"packageManager\":\\s*\"(?<depName>pnpm)@(?<currentValue>\\S+)\""

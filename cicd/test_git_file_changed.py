@@ -358,7 +358,9 @@ def trigger_pipeline(ctx: CiContext) -> None:
         return
 
     # Create GitLab client and trigger pipeline
-    gl = gitlab.Gitlab(ctx.api_url, private_token=ctx.pipeline_trigger_token)
+    # Remove /api/v4 from the URL since python-gitlab adds it automatically
+    base_url = ctx.api_url.replace('/api/v4', '') if '/api/v4' in ctx.api_url else f"https://{ctx.server_host}"
+    gl = gitlab.Gitlab(base_url, private_token=ctx.pipeline_trigger_token)
     project = gl.projects.get(ctx.project_id)
     pipeline = project.trigger_pipeline(ctx.source_branch)
     logging.info("Successfully triggered new pipeline: %s", pipeline.id)
