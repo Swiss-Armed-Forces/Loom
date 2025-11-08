@@ -29,9 +29,9 @@
   "poetry": {
     "versioning": "pep440",
     "lockFileMaintenance": {
-      "enabled": true
+      "enabled": false
     },
-    "rangeStrategy": "update-lockfile"
+    "rangeStrategy": "pin"
   },
   "npm": {
     "rangeStrategy": "update-lockfile"
@@ -63,9 +63,17 @@
     },
     {
       "matchManagers": ["poetry"],
-      "matchFileNames": ["backend/**", "integrationtest/**", "pyproject.toml"],
+      "matchFileNames": ["backend/**", "integrationtest/**"],
       "groupName": "Backend Dependencies",
       "prPriority": 4,
+      "automerge": true,
+      "matchUpdateTypes": ["minor", "patch"]
+    },
+    {
+      "matchManagers": ["poetry"],
+      "matchFileNames": ["pyproject.toml"],
+      "groupName": "Root Dev Dependencies",
+      "prPriority": 3,
       "automerge": true,
       "matchUpdateTypes": ["minor", "patch"]
     },
