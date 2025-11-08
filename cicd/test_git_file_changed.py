@@ -359,9 +359,9 @@ def trigger_pipeline(ctx: CiContext) -> None:
 
     # Create GitLab client and trigger pipeline
     base_url = f"https://{ctx.server_host}"
-    gl = gitlab.Gitlab(base_url, private_token=ctx.pipeline_trigger_token)
-    project = gl.projects.get(ctx.project_id)
-    pipeline = project.trigger_pipeline(ctx.source_branch)
+    gl = gitlab.Gitlab(base_url)  # no authentication
+    project = gl.projects.get(ctx.project_id, lazy=True)  # no API call
+    pipeline = project.trigger_pipeline(ctx.source_branch, ctx.pipeline_trigger_token)
     logging.info("Successfully triggered new pipeline: %s", pipeline.id)
 
 
