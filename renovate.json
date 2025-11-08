@@ -15,7 +15,6 @@
   ],
   "prConcurrentLimit": 10,
   "prHourlyLimit": 2,
-  "minimumReleaseAge": "3 days",
   "branchPrefix": "renovate/",
   "labels": [
     "dependencies",
@@ -186,8 +185,7 @@
       "labels": [
         "nix",
         "nixpkgs"
-      ],
-      "minimumReleaseAge": "7 days"
+      ]
     },
     {
       "matchManagers": [
