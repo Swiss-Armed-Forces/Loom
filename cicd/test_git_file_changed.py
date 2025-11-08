@@ -30,6 +30,7 @@ class CiContext:
     pipeline_id: Optional[str]
     pipeline_source: Optional[str]
     commit_sha_short: Optional[str]
+    gitlab_user_login: Optional[str]
 
     # Source branch is only meaningful when running in an MR pipeline
     is_mr: bool
@@ -158,11 +159,14 @@ def build_context(ns: argparse.Namespace) -> CiContext:
         api_url=api_url,
         server_host=server_host,
         project_id=ns.project_id or int(_req_env("CI_PROJECT_ID")),
-        project_path=os.getenv("CI_PROJECT_PATH", "swiss-armed-forces/cyber-command/cea/loom"),
+        project_path=os.getenv(
+            "CI_PROJECT_PATH", "swiss-armed-forces/cyber-command/cea/loom"
+        ),
         job_token=os.getenv("CI_JOB_TOKEN"),
         pipeline_id=os.getenv("CI_PIPELINE_ID"),
         pipeline_source=os.getenv("CI_PIPELINE_SOURCE"),
         commit_sha_short=os.getenv("CI_COMMIT_SHORT_SHA"),
+        gitlab_user_login=os.getenv("GITLAB_USER_LOGIN"),
         is_mr=is_mr,
         source_branch=source_branch,
         project_access_token=ns.project_access_token
@@ -358,6 +362,23 @@ def count_consecutive_ci_commits(
 # ----------------------------
 
 
+def is_bot_user(ctx: CiContext) -> bool:
+    """
+    Detect if pipeline was triggered by a bot user (project/group access token).
+
+    Bot users created by access tokens follow these patterns:
+    - Project tokens: project_{id}_bot{suffix}
+    - Group tokens: group_{id}_bot_{hash}
+
+    Returns True if the user appears to be a bot, False otherwise.
+    If gitlab_user_login is not available, returns False (assumes human).
+    """
+    user_login = ctx.gitlab_user_login or ""
+    return (user_login.startswith("project_") and "_bot" in user_login) or (
+        user_login.startswith("group_") and "_bot" in user_login
+    )
+
+
 def wait_for_mr_commit_sync(
     project: Project,
     mr_iid: str,
@@ -414,13 +435,38 @@ def wait_for_mr_commit_sync(
 
 def trigger_pipeline(ctx: CiContext) -> None:
     """
-    Trigger a new merge request pipeline using the project access token.
-    Waits for GitLab to sync the latest commit before triggering.
+    Conditionally trigger a new merge request pipeline using the project access token.
+
+    Manual triggering is only needed for bot users (project/group access tokens) because:
+    - Bot users with CI_JOB_TOKEN: Do NOT auto-trigger pipelines (by design)
+    - Human users with CI_JOB_TOKEN: DO auto-trigger pipelines normally
+
+    This optimization skips redundant manual triggering for human users while ensuring
+    bot users (like group_*_bot_* or project_*_bot*) still get their pipelines triggered.
+
+    Waits for GitLab to sync the latest commit before triggering to ensure the
+    pipeline runs on the correct commit, not a stale one.
+
     No-ops in dry-run or if not in MR context or no token provided.
     """
     if not ctx.is_mr:
         logging.info("Not in MR context; skipping pipeline trigger.")
         return
+
+    # Check if manual triggering is needed based on user type
+    is_bot = is_bot_user(ctx)
+    user_login = ctx.gitlab_user_login or "unknown"
+
+    if not is_bot:
+        logging.info(
+            "Human user (%s) detected; automatic pipeline triggering expected, skipping manual trigger.",
+            user_login,
+        )
+        return
+
+    logging.info(
+        "Bot user (%s) detected; manual pipeline triggering required.", user_login
+    )
 
     if not ctx.project_access_token:
         logging.info("No project access token provided; skipping pipeline trigger.")
