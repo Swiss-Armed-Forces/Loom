@@ -134,7 +134,7 @@
     {
       "customType": "regex",
       "description": "Update package manager versions in package.json",
-      "managerFilePatterns": ["/(^|/)package\\.json$/"],
+      "fileMatch": ["(^|/)package\\.json$"],
       "matchStrings": [
         "\"packageManager\":\\s*\"(?<depName>pnpm)@(?<currentValue>\\S+)\""
       ],
@@ -144,7 +144,7 @@
     {
       "customType": "regex",
       "description": "Update VSCode extension versions in devenv.nix",
-      "managerFilePatterns": ["/(^|/)devenv\\.nix$/"],
+      "fileMatch": ["(^|/)devenv\\.nix$"],
       "matchStrings": [
         "\\s+(?<depName>[a-zA-Z0-9_-]+\\.[a-zA-Z0-9_-]+)(?:\\s|$)"
       ],
