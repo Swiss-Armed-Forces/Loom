@@ -4,12 +4,14 @@ import logging
 import os
 import sys
 import shutil
+import time
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterable, Optional
 
 import git
 import gitlab
+from gitlab.v4.objects import ProjectMergeRequest
 
 
 # ----------------------------
@@ -347,9 +349,42 @@ def count_consecutive_ci_commits(
 # ----------------------------
 
 
+def wait_for_mr_commit_sync(mr: ProjectMergeRequest, expected_commit_sha: str, max_retries: int = 5, base_delay: float = 2.0) -> bool:
+    """
+    Wait for GitLab MR to sync with the latest commit using exponential backoff.
+
+    Args:
+        mr: GitLab merge request instance
+        expected_commit_sha: The commit SHA we expect the MR to have
+        max_retries: Maximum number of retry attempts (default: 5)
+        base_delay: Base delay in seconds for exponential backoff (default: 2.0)
+
+    Returns:
+        True if MR synced successfully, False if timed out
+    """
+    for attempt in range(max_retries + 1):
+        # Get current MR commit SHA
+        current_sha = mr.sha  # Head commit SHA of the MR
+
+        if current_sha == expected_commit_sha:
+            if attempt > 0:
+                logging.info("MR commit sync successful after %d attempt(s)", attempt)
+            return True
+
+        if attempt < max_retries:
+            delay = base_delay * (2 ** attempt)  # Exponential backoff
+            logging.info("MR has commit %s, waiting for %s. Retrying in %.1fs (attempt %d/%d)",
+                       current_sha[:8], expected_commit_sha[:8], delay, attempt + 1, max_retries)
+            time.sleep(delay)
+
+    logging.error("MR commit sync timeout after %d attempts. MR may have stale commit.", max_retries)
+    return False
+
+
 def trigger_pipeline(ctx: CiContext) -> None:
     """
     Trigger a new merge request pipeline using the project access token.
+    Waits for GitLab to sync the latest commit before triggering.
     No-ops in dry-run or if not in MR context or no token provided.
     """
     if not ctx.is_mr:
@@ -368,13 +403,24 @@ def trigger_pipeline(ctx: CiContext) -> None:
         logging.info("[DRY RUN] Would trigger new MR pipeline for MR !%s", ctx.mr_iid)
         return
 
-    # Create GitLab client with project access token
+    # Create GitLab client and get merge request
     base_url = f"https://{ctx.server_host}"
     gl = gitlab.Gitlab(base_url, private_token=ctx.project_access_token)
     project = gl.projects.get(ctx.project_id, lazy=True)
+    mr = project.mergerequests.get(ctx.mr_iid, lazy=True)
+
+    # Get the latest commit SHA from the local repository
+    repo = git.Repo(Path.cwd())
+    latest_commit_sha = repo.head.commit.hexsha
+    logging.info("Latest local commit: %s", latest_commit_sha[:8])
+
+    # Wait for GitLab MR to sync with the latest commit
+    logging.info("Waiting for MR !%s to sync with latest commit...", ctx.mr_iid)
+    if not wait_for_mr_commit_sync(mr, latest_commit_sha):
+        logging.error("Failed to sync MR with latest commit. Not triggering pipeline to avoid running on stale commit.")
+        return
 
     # Create merge request pipeline using the MR pipeline API
-    mr = project.mergerequests.get(ctx.mr_iid, lazy=True)
     pipeline = mr.pipelines.create({})
     logging.info("Successfully triggered new MR pipeline: %s", pipeline.id)
 
