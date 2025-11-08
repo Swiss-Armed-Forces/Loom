@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Iterable, Optional
 
 import git
+import gitlab
 
 
 # ----------------------------
@@ -33,7 +34,7 @@ class CiContext:
     source_branch: str  # empty when not MR
 
     # User-tunable (CLI-capable)
-    personal_token: Optional[str]
+    pipeline_trigger_token: Optional[str]
     author_name: str
     author_email: str
     add_skip_ci: bool
@@ -61,6 +62,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         description=(
             "In MR pipelines, stage ALL unstaged changes, commit & push to the MR "
             "source branch (with safeguards), then exit 1 if changes were detected. "
+            "Uses CI_JOB_TOKEN for authentication. Optionally triggers new pipeline "
+            "after successful push using pipeline trigger token. "
             "In non-MR pipelines (or with --no-update), only verify cleanliness and "
             "fail if there are changes. Also copies changed files to a mirror folder."
         )
@@ -76,9 +79,9 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         help="Commit author email (default: GITLAB_USER_EMAIL or 'ci-bot@gitlab.local').",
     )
     parser.add_argument(
-        "--gitlab-token",
+        "--pipeline-trigger-token",
         default=None,
-        help="Project Access Token (PAT). When provided, commits will trigger new pipelines. Falls back to CI_JOB_TOKEN (no pipeline triggering) if not provided.",
+        help="Pipeline trigger token. When provided, will trigger a new pipeline after successful commit push.",
     )
     parser.add_argument(
         "--skip-ci",
@@ -149,7 +152,8 @@ def build_context(ns: argparse.Namespace) -> CiContext:
         commit_sha_short=os.getenv("CI_COMMIT_SHORT_SHA"),
         is_mr=is_mr,
         source_branch=source_branch,
-        personal_token=ns.gitlab_token or os.getenv("GITLAB_TOKEN"),
+        pipeline_trigger_token=ns.pipeline_trigger_token
+        or os.getenv("PIPELINE_TRIGGER_TOKEN"),
         author_name=author_name,
         author_email=author_email,
         add_skip_ci=add_skip_ci,
@@ -184,7 +188,7 @@ def init_git_repo(ctx: CiContext) -> git.Repo:
 
     if ctx.dry_run:
         logging.info("[DRY RUN] Would configure user/email and mark repo as safe.")
-        logging.info("[DRY RUN] Would set remote 'origin' to token-auth URL.")
+        logging.info("[DRY RUN] Would set remote 'origin' to CI_JOB_TOKEN auth URL.")
         logging.info("[DRY RUN] Would fetch origin/%s.", ctx.source_branch)
         logging.info("[DRY RUN] Would `checkout -B %s`.", ctx.source_branch)
         logging.info(
@@ -198,23 +202,15 @@ def init_git_repo(ctx: CiContext) -> git.Repo:
         cw.set_value("user", "email", ctx.author_email)
         cw.set_value("safe", "directory", str(Path.cwd()))
 
-    if ctx.personal_token is not None:
-        # Use project access token - this will trigger new pipelines
-        https_url = (
-            f"https://project-token:{ctx.personal_token}@{ctx.server_host}/{ctx.project_path}.git"
-        )
-        logging.info("Using project access token authentication (pipelines will be triggered)")
-    elif ctx.job_token is not None:
-        # Fall back to CI job token - this will NOT trigger new pipelines
+    if ctx.job_token is not None:
+        # Use CI job token for git operations
         https_url = (
             "https://gitlab-ci-token:"
             f"{ctx.job_token}@{ctx.server_host}/{ctx.project_path}.git"
         )
-        logging.info("Using CI job token authentication (pipelines will NOT be triggered)")
+        logging.info("Using CI job token authentication")
     else:
-        raise RuntimeError(
-            "No authentication provided: set CI_JOB_TOKEN or GITLAB_TOKEN."
-        )
+        raise RuntimeError("No authentication provided: CI_JOB_TOKEN is required.")
 
     try:
         _ = repo.remotes.origin
@@ -344,6 +340,31 @@ def count_consecutive_ci_commits(
 
 
 # ----------------------------
+# Pipeline triggering
+# ----------------------------
+
+
+def trigger_pipeline(ctx: CiContext) -> None:
+    """
+    Trigger a new pipeline using the pipeline trigger token.
+    No-ops in dry-run or if no trigger token is provided.
+    """
+    if not ctx.pipeline_trigger_token:
+        logging.info("No pipeline trigger token provided; skipping pipeline trigger.")
+        return
+
+    if ctx.dry_run:
+        logging.info("[DRY RUN] Would trigger new pipeline using trigger token")
+        return
+
+    # Create GitLab client and trigger pipeline
+    gl = gitlab.Gitlab(ctx.api_url, private_token=ctx.pipeline_trigger_token)
+    project = gl.projects.get(ctx.project_id)
+    pipeline = project.trigger_pipeline(ctx.source_branch)
+    logging.info("Successfully triggered new pipeline: %s", pipeline.id)
+
+
+# ----------------------------
 # Committing & pushing
 # ----------------------------
 
@@ -364,6 +385,7 @@ def commit_and_push(repo: git.Repo, ctx: CiContext) -> None:
     if ctx.dry_run:
         logging.info("[DRY RUN] Would commit with message:\n%s", msg.strip())
         logging.info("[DRY RUN] Would push HEAD:%s", ctx.source_branch)
+        logging.info("[DRY RUN] Would trigger new pipeline if trigger token provided")
         return
 
     if not has_staged_changes(repo):
@@ -374,6 +396,9 @@ def commit_and_push(repo: git.Repo, ctx: CiContext) -> None:
     logging.info("Committed staged changes.")
     repo.git.push("origin", f"HEAD:{ctx.source_branch}")
     logging.info("Pushed changes to origin/%s", ctx.source_branch)
+
+    # Trigger new pipeline if token is provided
+    trigger_pipeline(ctx)
 
 
 # ----------------------------
