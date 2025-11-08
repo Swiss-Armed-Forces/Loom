@@ -412,9 +412,6 @@ def commit_and_push(repo: git.Repo, ctx: CiContext) -> None:
     repo.git.push("origin", f"HEAD:{ctx.source_branch}")
     logging.info("Pushed changes to origin/%s", ctx.source_branch)
 
-    # Trigger new pipeline if token is provided
-    trigger_pipeline(ctx)
-
 
 # ----------------------------
 # Main
@@ -483,6 +480,9 @@ def main(argv: list[str] | None = None) -> int:
     print_paths("Files to push", [Path(p) for p in staged_now])
 
     commit_and_push(repo, ctx)
+
+    # Trigger new pipeline after successful push
+    trigger_pipeline(ctx)
 
     # Changes were present -> fail the job (even after push)
     logging.error("Changes were present and have been pushed. Failing the job.")
