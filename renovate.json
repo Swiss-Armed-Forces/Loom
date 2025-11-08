@@ -16,7 +16,6 @@
   "minimumReleaseAge": "3 days",
   "branchPrefix": "renovate/",
   "labels": ["dependencies", "renovate"],
-  "logLevel": "debug",
   "enabledManagers": [
     "npm",
     "poetry",
@@ -141,7 +140,8 @@
       "matchStrings": [
         "\\s+(?<depName>[a-zA-Z0-9_-]+\\.[a-zA-Z0-9_-]+)(?:\\s|$)"
       ],
-      "datasourceTemplate": "vscode"
+      "datasourceTemplate": "vscode",
+      "currentValueTemplate": "latest"
     }
   ],
   "hostRules": [
