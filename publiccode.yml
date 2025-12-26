@@ -1,6 +1,6 @@
 publiccodeYmlVersion: 0.5.0
 name: Loom
-url: https://gitlab.com/swiss-armed-forces/cyber-command/cea/loom
+url: https://github.com/Swiss-Armed-Forces/Loom
 releaseDate: 2025-04-29
 logo: https://gitlab.com/swiss-armed-forces/cyber-command/cea/loom/-/blob/d65a19de6af5ca405b4f06d4beb4da59dae7f5d3/Frontend/src/features/common/branding/loom-logo-full-contour.svg  # yamllint disable-line rule:line-length
 platforms:
