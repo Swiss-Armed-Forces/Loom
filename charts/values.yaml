@@ -696,7 +696,7 @@ minio:
         memory: "50Mi"
       limits:
         cpu: "0.1"
-        memory: "100Mi"
+        memory: "500Mi"
     # Command to run after the main command on exit
     exitCommand: ''
   ## List of users to be created after minio install

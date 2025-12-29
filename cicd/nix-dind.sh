@@ -7,7 +7,7 @@ DOCKERFILE="${CONTEXT_DIR}/nix-dind/Dockerfile"
 
 # CI variables
 CI_REGISTRY_IMAGE="registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom"
-DOCKER_REGISTRY="${CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX:-docker.io}"
+DOCKER_REGISTRY="${CI_DEPENDENCY_PROXY_DIRECT_GROUP_IMAGE_PREFIX:-docker.io}"
 
 # Image name
 IMAGE_NAME="nix-dind"
