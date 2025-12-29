@@ -435,14 +435,7 @@ def wait_for_mr_commit_sync(
 
 def trigger_pipeline(ctx: CiContext) -> None:
     """
-    Conditionally trigger a new merge request pipeline using the project access token.
-
-    Manual triggering is only needed for bot users (project/group access tokens) because:
-    - Bot users with CI_JOB_TOKEN: Do NOT auto-trigger pipelines (by design)
-    - Human users with CI_JOB_TOKEN: DO auto-trigger pipelines normally
-
-    This optimization skips redundant manual triggering for human users while ensuring
-    bot users (like group_*_bot_* or project_*_bot*) still get their pipelines triggered.
+    Trigger a new merge request pipeline using the project access token.
 
     Waits for GitLab to sync the latest commit before triggering to ensure the
     pipeline runs on the correct commit, not a stale one.
@@ -452,21 +445,6 @@ def trigger_pipeline(ctx: CiContext) -> None:
     if not ctx.is_mr:
         logging.info("Not in MR context; skipping pipeline trigger.")
         return
-
-    # Check if manual triggering is needed based on user type
-    is_bot = is_bot_user(ctx)
-    user_login = ctx.gitlab_user_login or "unknown"
-
-    if not is_bot:
-        logging.info(
-            "Human user (%s) detected; automatic pipeline triggering expected, skipping manual trigger.",
-            user_login,
-        )
-        return
-
-    logging.info(
-        "Bot user (%s) detected; manual pipeline triggering required.", user_login
-    )
 
     if not ctx.project_access_token:
         logging.info("No project access token provided; skipping pipeline trigger.")

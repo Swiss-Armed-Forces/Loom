@@ -608,9 +608,9 @@ in
     # use dependency proxy
     CI_DEPENDENCY_PROXY_SERVER="''${CI_DEPENDENCY_PROXY_SERVER:-gitlab.com}"
     if docker-login-noninteractive "''${CI_DEPENDENCY_PROXY_SERVER}" &>/dev/null; then
-      CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX="''${CI_DEPENDENCY_PROXY_SERVER}/swiss-armed-forces/cyber-command/cea/dependency_proxy/containers"
-      export CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX
-      echo "Using docker image dependency proxy: ''${CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX}"
+      CI_DEPENDENCY_PROXY_DIRECT_GROUP_IMAGE_PREFIX="''${CI_DEPENDENCY_PROXY_SERVER}/swiss-armed-forces/cyber-command/cea/dependency_proxy/containers"
+      export CI_DEPENDENCY_PROXY_DIRECT_GROUP_IMAGE_PREFIX
+      echo "Using docker image dependency proxy: ''${CI_DEPENDENCY_PROXY_DIRECT_GROUP_IMAGE_PREFIX}"
     fi
   '';
 

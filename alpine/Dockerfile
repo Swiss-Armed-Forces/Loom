@@ -7,24 +7,24 @@ FROM ${DOCKER_REGISTRY}/alpine:${ALPINE_IMAGE_VERSION}
 #
 # bash
 #
-ARG BASH_VERSION="5.2.37-r0"
+ARG BASH_VERSION="5.2.37"
 RUN set -exu \
     && apk add --no-cache \
-    bash=${BASH_VERSION}
+    bash~=${BASH_VERSION}
 SHELL ["/bin/bash", "--login", "-c"]
 
 #
 # kubectl
 #
-ARG KUBECTL_VERSION="1.33.1-r3"
+ARG KUBECTL_VERSION="1.33.1"
 RUN set -exu \
     && apk add --no-cache \
-    kubectl=${KUBECTL_VERSION}
+    kubectl~=${KUBECTL_VERSION}
 
 #
 # openssl
 #
-ARG OPENSSL_VERSION="3.5.4-r0"
+ARG OPENSSL_VERSION="3.5.4"
 RUN set -exu \
     && apk add --no-cache \
-    openssl=${OPENSSL_VERSION}
+    openssl~=${OPENSSL_VERSION}

@@ -4095,10 +4095,10 @@ The complete source code for Traefik is publicly available at [https://github.co
 | erb | 4.0.2 | BSD-2-Clause, Ruby | ruby-installed-gemspec-cataloger |
 | error_highlight | 0.5.1 | MIT | ruby-installed-gemspec-cataloger |
 | etc | 1.4.2 | BSD-2-Clause, Ruby | ruby-installed-gemspec-cataloger |
-| excon | 1.3.0 | MIT | ruby-installed-gemspec-cataloger |
+| excon | 1.3.2 | MIT | ruby-installed-gemspec-cataloger |
 | faraday | 2.14.0 | MIT | ruby-installed-gemspec-cataloger |
-| faraday-excon | 2.3.0 | MIT | ruby-installed-gemspec-cataloger |
-| faraday-net_http | 3.4.1 | MIT | ruby-installed-gemspec-cataloger |
+| faraday-excon | 2.4.0 | MIT | ruby-installed-gemspec-cataloger |
+| faraday-net_http | 3.4.2 | MIT | ruby-installed-gemspec-cataloger |
 | fcntl | 1.0.2 | BSD-2-Clause, Ruby | ruby-installed-gemspec-cataloger |
 | fiber-annotation | 0.2.0 | MIT | ruby-installed-gemspec-cataloger |
 | fiber-local | 1.1.0 | MIT | ruby-installed-gemspec-cataloger |
@@ -4128,13 +4128,13 @@ The complete source code for Traefik is publicly available at [https://github.co
 | libucontext | 1.2-r2 | ISC | apk-db-cataloger |
 | logger | 1.5.3 | BSD-2-Clause, Ruby | ruby-installed-gemspec-cataloger |
 | msgpack | 1.7.2 |  | ruby-installed-gemspec-cataloger |
-| multi_json | 1.17.0 | MIT | ruby-installed-gemspec-cataloger |
+| multi_json | 1.18.0 | MIT | ruby-installed-gemspec-cataloger |
 | musl | 1.2.4_git20230717-r5 | MIT | apk-db-cataloger |
 | musl-utils | 1.2.4_git20230717-r4 | MIT AND BSD-2-Clause AND GPL-2.0-or-later | apk-db-cataloger |
 | mutex_m | 0.1.2 | BSD-2-Clause, Ruby | ruby-installed-gemspec-cataloger |
 | ncurses-terminfo-base | 6.4_p20231125-r0 | X11 | apk-db-cataloger |
 | net-http | 0.4.1 | BSD-2-Clause, Ruby | ruby-installed-gemspec-cataloger |
-| net-http | 0.6.0 | BSD-2-Clause, Ruby | ruby-installed-gemspec-cataloger |
+| net-http | 0.9.1 | BSD-2-Clause, Ruby | ruby-installed-gemspec-cataloger |
 | net-protocol | 0.2.1 | BSD-2-Clause, Ruby | ruby-installed-gemspec-cataloger |
 | nio4r | 2.7.3 | BSD-2-Clause, MIT | ruby-installed-gemspec-cataloger |
 | nkf | 0.1.2 | BSD-2-Clause, Ruby | ruby-installed-gemspec-cataloger |
@@ -6790,7 +6790,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | util-linux | 2.38.1-5+deb12u3 | BSD-3-Clause, BSD-4-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, MIT | dpkg-db-cataloger |
 | util-linux-extra | 2.38.1-5+deb12u3 | BSD-3-Clause, BSD-4-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, MIT | dpkg-db-cataloger |
 | uuid-dev | 2.38.1-5+deb12u3 | BSD-3-Clause, BSD-4-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, MIT | dpkg-db-cataloger |
-| weird-birds/thunderbird_labels | v1.6.1 | BSD-2-Clause | php-composer-installed-cataloger |
+| weird-birds/thunderbird_labels | v1.6.2 | BSD-2-Clause | php-composer-installed-cataloger |
 | xz-utils | 5.4.1-0.2 | GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, LGPL-2.0-only, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
 | zlib1g | 1:1.2.13.dfsg-1 | Zlib | dpkg-db-cataloger |
 | zlib1g-dev | 1:1.2.13.dfsg-1 | Zlib | dpkg-db-cataloger |
@@ -7381,7 +7381,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | k8s.io/kubernetes | UNKNOWN |  | go-module-binary-cataloger |
 | k8s.io/metrics | UNKNOWN |  | go-module-binary-cataloger |
 | k8s.io/utils | v0.0.0-20241104100929-3ea5e8cea738 |  | go-module-binary-cataloger |
-| kubectl | 1.33.1-r3 | Apache-2.0 | apk-db-cataloger |
+| kubectl | 1.33.1-r4 | Apache-2.0 | apk-db-cataloger |
 | libapk2 | 2.14.9-r2 | GPL-2.0-only | apk-db-cataloger |
 | libcrypto3 | 3.5.4-r0 | Apache-2.0 | apk-db-cataloger |
 | libncursesw | 6.5_p20250503-r0 | X11 | apk-db-cataloger |
@@ -7400,7 +7400,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | sigs.k8s.io/structured-merge-diff/v4 | v4.6.0 |  | go-module-binary-cataloger |
 | sigs.k8s.io/yaml | v1.4.0 |  | go-module-binary-cataloger |
 | ssl_client | 1.37.0-r18 | GPL-2.0-only | apk-db-cataloger |
-| stdlib | go1.24.8 | BSD-3-Clause | go-module-binary-cataloger |
+| stdlib | go1.24.11 | BSD-3-Clause | go-module-binary-cataloger |
 | zlib | 1.3.1-r2 | Zlib | apk-db-cataloger |
 
 ### registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/elasticvue
