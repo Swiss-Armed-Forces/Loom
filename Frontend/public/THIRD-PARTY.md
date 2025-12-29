@@ -4128,7 +4128,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | libucontext | 1.2-r2 | ISC | apk-db-cataloger |
 | logger | 1.5.3 | BSD-2-Clause, Ruby | ruby-installed-gemspec-cataloger |
 | msgpack | 1.7.2 |  | ruby-installed-gemspec-cataloger |
-| multi_json | 1.18.0 | MIT | ruby-installed-gemspec-cataloger |
+| multi_json | 1.19.1 | MIT | ruby-installed-gemspec-cataloger |
 | musl | 1.2.4_git20230717-r5 | MIT | apk-db-cataloger |
 | musl-utils | 1.2.4_git20230717-r4 | MIT AND BSD-2-Clause AND GPL-2.0-or-later | apk-db-cataloger |
 | mutex_m | 0.1.2 | BSD-2-Clause, Ruby | ruby-installed-gemspec-cataloger |
