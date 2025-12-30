@@ -2,515 +2,320 @@ apiVersion: skaffold/v4beta11
 kind: Config
 metadata:
   name: loom
+
+# Production configuration as default at top level
+build:
+  local:
+    concurrency: 0
+    useBuildkit: true
+    tryImportMissing: true
+  tagPolicy:
+    customTemplate:
+      template: "prod-{{.INPUT_DIGEST}}"
+  artifacts:
+    - image: registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/api
+      context: backend
+      docker:
+        dockerfile: api.Dockerfile
+        target: production
+        buildArgs:
+          DOCKER_REGISTRY: "{{or .CI_DEPENDENCY_PROXY_DIRECT_GROUP_IMAGE_PREFIX \"docker.io\"}}"
+        cacheFrom:
+          - "registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/api"
+    - image: registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/worker
+      context: backend
+      docker:
+        dockerfile: worker.Dockerfile
+        target: production
+        buildArgs:
+          DOCKER_REGISTRY: "{{or .CI_DEPENDENCY_PROXY_DIRECT_GROUP_IMAGE_PREFIX \"docker.io\"}}"
+        cacheFrom:
+          - "registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/worker"
+    - image: registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/crawler
+      context: backend
+      docker:
+        dockerfile: crawler.Dockerfile
+        target: production
+        buildArgs:
+          DOCKER_REGISTRY: "{{or .CI_DEPENDENCY_PROXY_DIRECT_GROUP_IMAGE_PREFIX \"docker.io\"}}"
+        cacheFrom:
+          - "registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/crawler"
+    - image: registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/frontend
+      context: Frontend
+      docker:
+        dockerfile: Dockerfile
+        target: production
+        buildArgs:
+          DOCKER_REGISTRY: "{{or .CI_DEPENDENCY_PROXY_DIRECT_GROUP_IMAGE_PREFIX \"docker.io\"}}"
+        cacheFrom:
+          - "registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/frontend"
+    - image: registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/mongodb
+      context: MongoDB
+      docker:
+        dockerfile: Dockerfile
+        buildArgs:
+          DOCKER_REGISTRY: "{{or .CI_DEPENDENCY_PROXY_DIRECT_GROUP_IMAGE_PREFIX \"docker.io\"}}"
+        cacheFrom:
+          - "registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/mongodb"
+    - image: registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/elasticsearch
+      context: ElasticSearch
+      docker:
+        dockerfile: Dockerfile
+        buildArgs:
+          DOCKER_REGISTRY: "{{or .CI_DEPENDENCY_PROXY_DIRECT_GROUP_IMAGE_PREFIX \"docker.io\"}}"
+        cacheFrom:
+          - "registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/elasticsearch"
+    - image: registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/rabbit
+      context: Rabbit
+      docker:
+        dockerfile: Dockerfile
+        buildArgs:
+          DOCKER_REGISTRY: "{{or .CI_DEPENDENCY_PROXY_DIRECT_GROUP_IMAGE_PREFIX \"docker.io\"}}"
+        cacheFrom:
+          - "registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/rabbit"
+    - image: registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/redis
+      context: Redis
+      docker:
+        dockerfile: Dockerfile
+        buildArgs:
+          DOCKER_REGISTRY: "{{or .CI_DEPENDENCY_PROXY_DIRECT_GROUP_IMAGE_PREFIX \"docker.io\"}}"
+        cacheFrom:
+          - "registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/redis"
+    - image: registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/tika
+      context: tika-server
+      docker:
+        dockerfile: Dockerfile
+        buildArgs:
+          DOCKER_REGISTRY: "{{or .CI_DEPENDENCY_PROXY_DIRECT_GROUP_IMAGE_PREFIX \"docker.io\"}}"
+        cacheFrom:
+          - "registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/tika"
+    - image: registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/rspamd
+      context: rspamd
+      docker:
+        dockerfile: Dockerfile
+        buildArgs:
+          DOCKER_REGISTRY: "{{or .CI_DEPENDENCY_PROXY_DIRECT_GROUP_IMAGE_PREFIX \"docker.io\"}}"
+        cacheFrom:
+          - "registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/rspamd"
+    - image: registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/fluentd
+      context: fluentd
+      docker:
+        dockerfile: Dockerfile
+        buildArgs:
+          DOCKER_REGISTRY: "{{or .CI_DEPENDENCY_PROXY_DIRECT_GROUP_IMAGE_PREFIX \"docker.io\"}}"
+        cacheFrom:
+          - "registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/fluentd"
+    - image: registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/prometheus
+      context: Prometheus
+      docker:
+        dockerfile: Dockerfile
+        buildArgs:
+          DOCKER_REGISTRY: "{{or .CI_DEPENDENCY_PROXY_DIRECT_GROUP_IMAGE_PREFIX \"docker.io\"}}"
+        cacheFrom:
+          - "registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/prometheus"
+    - image: registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/grafana
+      context: Grafana
+      docker:
+        dockerfile: Dockerfile
+        buildArgs:
+          DOCKER_REGISTRY: "{{or .CI_DEPENDENCY_PROXY_DIRECT_GROUP_IMAGE_PREFIX \"docker.io\"}}"
+        cacheFrom:
+          - "registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/grafana"
+    - image: registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/ollama
+      context: ollama
+      docker:
+        dockerfile: Dockerfile
+        buildArgs:
+          DOCKER_REGISTRY: "{{or .CI_DEPENDENCY_PROXY_DIRECT_GROUP_IMAGE_PREFIX \"docker.io\"}}"
+        cacheFrom:
+          - "registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/ollama"
+    - image: registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/libretranslate
+      context: libretranslate
+      docker:
+        dockerfile: Dockerfile
+        buildArgs:
+          DOCKER_REGISTRY: "{{or .CI_DEPENDENCY_PROXY_DIRECT_GROUP_IMAGE_PREFIX \"docker.io\"}}"
+        cacheFrom:
+          - "registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/libretranslate"
+    - image: registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/open-webui
+      context: open-webui
+      docker:
+        dockerfile: Dockerfile
+        cacheFrom:
+          - "registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/open-webui"
+    - image: registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/dovecot
+      context: dovecot
+      docker:
+        dockerfile: Dockerfile
+        buildArgs:
+          DOCKER_REGISTRY: "{{or .CI_DEPENDENCY_PROXY_DIRECT_GROUP_IMAGE_PREFIX \"docker.io\"}}"
+        cacheFrom:
+          - "registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/dovecot"
+    - image: registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/roundcube
+      context: roundcube
+      docker:
+        dockerfile: Dockerfile
+        buildArgs:
+          DOCKER_REGISTRY: "{{or .CI_DEPENDENCY_PROXY_DIRECT_GROUP_IMAGE_PREFIX \"docker.io\"}}"
+        cacheFrom:
+          - "registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/roundcube"
+    - image: registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/minio
+      context: minio
+      docker:
+        dockerfile: Dockerfile
+        buildArgs:
+          DOCKER_REGISTRY: '{{or .CI_DEPENDENCY_PROXY_DIRECT_GROUP_IMAGE_PREFIX "docker.io"}}'
+        cacheFrom:
+          - "registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/minio"
+    - image: registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/mc
+      context: minio
+      docker:
+        dockerfile: mc.Dockerfile
+        buildArgs:
+          DOCKER_REGISTRY: '{{or .CI_DEPENDENCY_PROXY_DIRECT_GROUP_IMAGE_PREFIX "docker.io"}}'
+        cacheFrom:
+          - "registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/mc"
+    - image: registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/alpine
+      context: alpine
+      docker:
+        dockerfile: Dockerfile
+        buildArgs:
+          DOCKER_REGISTRY: "{{or .CI_DEPENDENCY_PROXY_DIRECT_GROUP_IMAGE_PREFIX \"docker.io\"}}"
+        cacheFrom:
+          - "registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/alpine"
+    - image: registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/elasticvue
+      context: elasticvue
+      docker:
+        dockerfile: Dockerfile
+        buildArgs:
+          DOCKER_REGISTRY: "{{or .CI_DEPENDENCY_PROXY_DIRECT_GROUP_IMAGE_PREFIX \"docker.io\"}}"
+        cacheFrom:
+          - "registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/elasticvue"
+    - image: registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/mongo-express
+      context: MongoDB/mongo-express
+      docker:
+        dockerfile: Dockerfile
+        buildArgs:
+          DOCKER_REGISTRY: "{{or .CI_DEPENDENCY_PROXY_DIRECT_GROUP_IMAGE_PREFIX \"docker.io\"}}"
+        cacheFrom:
+          - "registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/mongo-express"
+    - image: registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/redisinsight
+      context: Redis/redisinsight
+      docker:
+        dockerfile: Dockerfile
+        buildArgs:
+          DOCKER_REGISTRY: "{{or .CI_DEPENDENCY_PROXY_DIRECT_GROUP_IMAGE_PREFIX \"docker.io\"}}"
+        cacheFrom:
+          - "registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/redisinsight"
+
+# Production manifests configuration as default
+manifests:
+  helm:
+    releases:
+      - name: production
+        namespace: loom
+        chartPath: charts
+        valuesFiles:
+          - charts/values.yaml
+        setValueTemplates:
+          preInstall:
+            image:
+              registry: "{{ .IMAGE_DOMAIN_registry_gitlab_com_swiss_armed_forces_cyber_command_cea_loom_alpine }}"
+              repository: "{{ .IMAGE_REPO_NO_DOMAIN_registry_gitlab_com_swiss_armed_forces_cyber_command_cea_loom_alpine }}"
+              tag: >-
+                {{ printf "%s@%s"
+                  .IMAGE_TAG_registry_gitlab_com_swiss_armed_forces_cyber_command_cea_loom_alpine
+                  .IMAGE_DIGEST_registry_gitlab_com_swiss_armed_forces_cyber_command_cea_loom_alpine
+                }}
+          crawler:
+            image:
+              registry: "{{ .IMAGE_DOMAIN_registry_gitlab_com_swiss_armed_forces_cyber_command_cea_loom_crawler }}"
+              repository: "{{ .IMAGE_REPO_NO_DOMAIN_registry_gitlab_com_swiss_armed_forces_cyber_command_cea_loom_crawler }}"
+              tag: >-
+                {{ printf "%s@%s"
+                  .IMAGE_TAG_registry_gitlab_com_swiss_armed_forces_cyber_command_cea_loom_crawler
+                  .IMAGE_DIGEST_registry_gitlab_com_swiss_armed_forces_cyber_command_cea_loom_crawler
+                }}
+          minio:
+            mcImage:
+              registry: "{{ .IMAGE_DOMAIN_registry_gitlab_com_swiss_armed_forces_cyber_command_cea_loom_mc }}"
+              repository: "{{ .IMAGE_REPO_NO_DOMAIN_registry_gitlab_com_swiss_armed_forces_cyber_command_cea_loom_mc }}"
+              tag: >-
+                {{ printf "%s@%s"
+                  .IMAGE_TAG_registry_gitlab_com_swiss_armed_forces_cyber_command_cea_loom_mc
+                  .IMAGE_DIGEST_registry_gitlab_com_swiss_armed_forces_cyber_command_cea_loom_mc
+                }}
+
+
+# Minimal profiles - only overrides
 profiles:
   - name: dev
     activation:
       - command: dev
-    build:
-      tagPolicy:
-        # We can not use inputDigest tagger directly here, as
-        # this will create identical image tags for different
-        # build profiles.
-        #
-        # see:
-        #   - https://github.com/GoogleContainerTools/skaffold/issues/9826
-        customTemplate:
-          template: "dev-{{.INPUT_DIGEST}}"
-      local:
-        concurrency: 0
-        useBuildkit: true
-        tryImportMissing: true
-      artifacts:
-        - image: registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/api
-          context: backend
-          sync:
-            manual:
-              - src: "api/**"
-                dest: /code
-              - src: "common/**"
-                dest: /code
-          docker:
-            dockerfile: api.Dockerfile
-            target: dev
-            buildArgs:
-              DOCKER_REGISTRY: "{{or .CI_DEPENDENCY_PROXY_DIRECT_GROUP_IMAGE_PREFIX \"docker.io\"}}"
-            cacheFrom:
-              - "registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/api"
-        - image: registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/worker
-          context: backend
-          sync:
-            manual:
-              - src: "common/**"
-                dest: /code
-              - src: "worker/**"
-                dest: /code
-          docker:
-            dockerfile: worker.Dockerfile
-            target: dev
-            buildArgs:
-              DOCKER_REGISTRY: "{{or .CI_DEPENDENCY_PROXY_DIRECT_GROUP_IMAGE_PREFIX \"docker.io\"}}"
-            cacheFrom:
-              - "registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/worker"
-        - image: registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/crawler
-          context: backend
-          sync:
-            manual:
-              - src: "common/**"
-                dest: /code
-              - src: "crawler/**"
-                dest: /code
-          docker:
-            dockerfile: crawler.Dockerfile
-            target: dev
-            buildArgs:
-              DOCKER_REGISTRY: "{{or .CI_DEPENDENCY_PROXY_DIRECT_GROUP_IMAGE_PREFIX \"docker.io\"}}"
-            cacheFrom:
-              - "registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/crawler"
-        - image: registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/frontend
-          context: Frontend
-          sync:
-            manual:
-              - src: "**"
-                dest: /code
-          docker:
-            dockerfile: Dockerfile
-            target: dev
-            buildArgs:
-              DOCKER_REGISTRY: "{{or .CI_DEPENDENCY_PROXY_DIRECT_GROUP_IMAGE_PREFIX \"docker.io\"}}"
-            cacheFrom:
-              - "registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/frontend"
-        - image: registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/mongodb
-          context: MongoDB
-          docker:
-            dockerfile: Dockerfile
-            buildArgs:
-              DOCKER_REGISTRY: "{{or .CI_DEPENDENCY_PROXY_DIRECT_GROUP_IMAGE_PREFIX \"docker.io\"}}"
-            cacheFrom:
-              - "registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/mongodb"
-        - image: registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/elasticsearch
-          context: ElasticSearch
-          docker:
-            dockerfile: Dockerfile
-            buildArgs:
-              DOCKER_REGISTRY: "{{or .CI_DEPENDENCY_PROXY_DIRECT_GROUP_IMAGE_PREFIX \"docker.io\"}}"
-            cacheFrom:
-              - "registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/elasticsearch"
-        - image: registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/rabbit
-          context: Rabbit
-          docker:
-            dockerfile: Dockerfile
-            buildArgs:
-              DOCKER_REGISTRY: "{{or .CI_DEPENDENCY_PROXY_DIRECT_GROUP_IMAGE_PREFIX \"docker.io\"}}"
-            cacheFrom:
-              - "registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/rabbit"
-        - image: registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/redis
-          context: Redis
-          docker:
-            dockerfile: Dockerfile
-            buildArgs:
-              DOCKER_REGISTRY: "{{or .CI_DEPENDENCY_PROXY_DIRECT_GROUP_IMAGE_PREFIX \"docker.io\"}}"
-            cacheFrom:
-              - "registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/redis"
-        - image: registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/tika
-          context: tika-server
-          docker:
-            dockerfile: Dockerfile
-            buildArgs:
-              DOCKER_REGISTRY: "{{or .CI_DEPENDENCY_PROXY_DIRECT_GROUP_IMAGE_PREFIX \"docker.io\"}}"
-            cacheFrom:
-              - "registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/tika"
-        - image: registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/rspamd
-          context: rspamd
-          docker:
-            dockerfile: Dockerfile
-            buildArgs:
-              DOCKER_REGISTRY: "{{or .CI_DEPENDENCY_PROXY_DIRECT_GROUP_IMAGE_PREFIX \"docker.io\"}}"
-            cacheFrom:
-              - "registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/rspamd"
-        - image: registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/fluentd
-          context: fluentd
-          docker:
-            dockerfile: Dockerfile
-            buildArgs:
-              DOCKER_REGISTRY: "{{or .CI_DEPENDENCY_PROXY_DIRECT_GROUP_IMAGE_PREFIX \"docker.io\"}}"
-            cacheFrom:
-              - "registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/fluentd"
-        - image: registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/prometheus
-          context: Prometheus
-          docker:
-            dockerfile: Dockerfile
-            buildArgs:
-              DOCKER_REGISTRY: "{{or .CI_DEPENDENCY_PROXY_DIRECT_GROUP_IMAGE_PREFIX \"docker.io\"}}"
-            cacheFrom:
-              - "registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/prometheus"
-        - image: registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/grafana
-          context: Grafana
-          docker:
-            dockerfile: Dockerfile
-            buildArgs:
-              DOCKER_REGISTRY: "{{or .CI_DEPENDENCY_PROXY_DIRECT_GROUP_IMAGE_PREFIX \"docker.io\"}}"
-            cacheFrom:
-              - "registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/grafana"
-        - image: registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/ollama
-          context: ollama
-          docker:
-            dockerfile: Dockerfile
-            buildArgs:
-              DOCKER_REGISTRY: "{{or .CI_DEPENDENCY_PROXY_DIRECT_GROUP_IMAGE_PREFIX \"docker.io\"}}"
-            cacheFrom:
-              - "registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/ollama"
-        - image: registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/libretranslate
-          context: libretranslate
-          docker:
-            dockerfile: Dockerfile
-            buildArgs:
-              DOCKER_REGISTRY: "{{or .CI_DEPENDENCY_PROXY_DIRECT_GROUP_IMAGE_PREFIX \"docker.io\"}}"
-            cacheFrom:
-              - "registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/libretranslate"
-        - image: registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/open-webui
-          context: open-webui
-          # Override python debugging because it causes pod failure
-          runtimeType: nodejs
-          docker:
-            dockerfile: Dockerfile
-            cacheFrom:
-              - "registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/open-webui"
-        - image: registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/dovecot
-          context: dovecot
-          docker:
-            dockerfile: Dockerfile
-            buildArgs:
-              DOCKER_REGISTRY: "{{or .CI_DEPENDENCY_PROXY_DIRECT_GROUP_IMAGE_PREFIX \"docker.io\"}}"
-            cacheFrom:
-              - "registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/dovecot"
-        - image: registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/roundcube
-          context: roundcube
-          docker:
-            dockerfile: Dockerfile
-            buildArgs:
-              DOCKER_REGISTRY: "{{or .CI_DEPENDENCY_PROXY_DIRECT_GROUP_IMAGE_PREFIX \"docker.io\"}}"
-            cacheFrom:
-              - "registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/roundcube"
-        - image: registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/minio
-          context: minio
-          docker:
-            dockerfile: Dockerfile
-            buildArgs:
-              DOCKER_REGISTRY: '{{or .CI_DEPENDENCY_PROXY_DIRECT_GROUP_IMAGE_PREFIX "docker.io"}}'
-            cacheFrom:
-              - "registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/minio"
-        - image: registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/mc
-          context: minio
-          docker:
-            dockerfile: mc.Dockerfile
-            buildArgs:
-              DOCKER_REGISTRY: '{{or .CI_DEPENDENCY_PROXY_DIRECT_GROUP_IMAGE_PREFIX "docker.io"}}'
-            cacheFrom:
-              - "registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/mc"
-        - image: registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/alpine
-          context: alpine
-          docker:
-            dockerfile: Dockerfile
-            buildArgs:
-              DOCKER_REGISTRY: "{{or .CI_DEPENDENCY_PROXY_DIRECT_GROUP_IMAGE_PREFIX \"docker.io\"}}"
-            cacheFrom:
-              - "registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/alpine"
-        - image: registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/elasticvue
-          context: elasticvue
-          docker:
-            dockerfile: Dockerfile
-            buildArgs:
-              DOCKER_REGISTRY: "{{or .CI_DEPENDENCY_PROXY_DIRECT_GROUP_IMAGE_PREFIX \"docker.io\"}}"
-            cacheFrom:
-              - "registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/elasticvue"
-        - image: registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/mongo-express
-          context: MongoDB/mongo-express
-          docker:
-            dockerfile: Dockerfile
-            buildArgs:
-              DOCKER_REGISTRY: "{{or .CI_DEPENDENCY_PROXY_DIRECT_GROUP_IMAGE_PREFIX \"docker.io\"}}"
-            cacheFrom:
-              - "registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/mongo-express"
-        - image: registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/redisinsight
-          context: Redis/redisinsight
-          docker:
-            dockerfile: Dockerfile
-            buildArgs:
-              DOCKER_REGISTRY: "{{or .CI_DEPENDENCY_PROXY_DIRECT_GROUP_IMAGE_PREFIX \"docker.io\"}}"
-            cacheFrom:
-              - "registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/redisinsight"
+    patches:
+      # Patch build configuration for dev
+      - op: replace
+        path: /build/tagPolicy/customTemplate/template
+        value: "dev-{{.INPUT_DIGEST}}"
+      # Patch api artifact for dev target and sync
+      - op: replace
+        path: /build/artifacts/0/docker/target
+        value: dev
+      - op: add
+        path: /build/artifacts/0/sync
+        value:
+          manual:
+            - src: "api/**"
+              dest: /code
+            - src: "common/**"
+              dest: /code
+      # Patch worker artifact for dev target and sync
+      - op: replace
+        path: /build/artifacts/1/docker/target
+        value: dev
+      - op: add
+        path: /build/artifacts/1/sync
+        value:
+          manual:
+            - src: "common/**"
+              dest: /code
+            - src: "worker/**"
+              dest: /code
+      # Patch crawler artifact for dev target and sync
+      - op: replace
+        path: /build/artifacts/2/docker/target
+        value: dev
+      - op: add
+        path: /build/artifacts/2/sync
+        value:
+          manual:
+            - src: "common/**"
+              dest: /code
+            - src: "crawler/**"
+              dest: /code
+      # Patch frontend artifact for dev target and sync
+      - op: replace
+        path: /build/artifacts/3/docker/target
+        value: dev
+      - op: add
+        path: /build/artifacts/3/sync
+        value:
+          manual:
+            - src: "**"
+              dest: /code
+      # Patch open-webui artifact for nodejs runtime
+      - op: add
+        path: /build/artifacts/15/runtimeType
+        value: nodejs
+      # Patch manifests for development
+      - op: replace
+        path: /manifests/helm/releases/0/name
+        value: development
+      - op: add
+        path: /manifests/helm/releases/0/valuesFiles/-
+        value: charts/values-development.yaml
 
-    manifests:
-      helm:
-        releases:
-          - name: development
-            namespace: loom
-            chartPath: charts
-            valuesFiles:
-              - charts/values.yaml
-              - charts/values-development.yaml
-            setValueTemplates:
-              # It seems like image: ... in helm.sh/hooks
-              # are not replaced by skaffold automatically. Therefore we have to specify them
-              # here manually.
-              preInstall:
-                image:
-                  registry: "{{ .IMAGE_DOMAIN_registry_gitlab_com_swiss_armed_forces_cyber_command_cea_loom_alpine }}"
-                  repository: "{{ .IMAGE_REPO_NO_DOMAIN_registry_gitlab_com_swiss_armed_forces_cyber_command_cea_loom_alpine }}"
-                  tag: "{{ .IMAGE_TAG_registry_gitlab_com_swiss_armed_forces_cyber_command_cea_loom_alpine }}@\
-                    {{ .IMAGE_DIGEST_registry_gitlab_com_swiss_armed_forces_cyber_command_cea_loom_alpine }}"
-              crawler:
-                image:
-                  registry: "{{ .IMAGE_DOMAIN_registry_gitlab_com_swiss_armed_forces_cyber_command_cea_loom_crawler }}"
-                  repository: "{{ .IMAGE_REPO_NO_DOMAIN_registry_gitlab_com_swiss_armed_forces_cyber_command_cea_loom_crawler }}"
-                  tag: "{{ .IMAGE_TAG_registry_gitlab_com_swiss_armed_forces_cyber_command_cea_loom_crawler }}@\
-                    {{ .IMAGE_DIGEST_registry_gitlab_com_swiss_armed_forces_cyber_command_cea_loom_crawler }}"
-              minio:
-                mcImage:
-                  registry: "{{ .IMAGE_DOMAIN_registry_gitlab_com_swiss_armed_forces_cyber_command_cea_loom_mc }}"
-                  repository: "{{ .IMAGE_REPO_NO_DOMAIN_registry_gitlab_com_swiss_armed_forces_cyber_command_cea_loom_mc }}"
-                  tag: "{{ .IMAGE_TAG_registry_gitlab_com_swiss_armed_forces_cyber_command_cea_loom_mc }}@\
-                    {{ .IMAGE_DIGEST_registry_gitlab_com_swiss_armed_forces_cyber_command_cea_loom_mc }}"
   - name: prod
     activation:
       - command: prod
-    build:
-      tagPolicy:
-        # We can not use inputDigest tagger directly here, as
-        # this will create identical image tags for different
-        # build profiles.
-        #
-        # see:
-        #   - https://github.com/GoogleContainerTools/skaffold/issues/9826
-        customTemplate:
-          template: "prod-{{.INPUT_DIGEST}}"
-      local:
-        concurrency: 0
-        useBuildkit: true
-        tryImportMissing: true
-      artifacts:
-        - image: registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/api
-          context: backend
-          docker:
-            dockerfile: api.Dockerfile
-            target: production
-            buildArgs:
-              DOCKER_REGISTRY: "{{or .CI_DEPENDENCY_PROXY_DIRECT_GROUP_IMAGE_PREFIX \"docker.io\"}}"
-            cacheFrom:
-              - "registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/api"
-        - image: registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/worker
-          context: backend
-          docker:
-            dockerfile: worker.Dockerfile
-            target: production
-            buildArgs:
-              DOCKER_REGISTRY: "{{or .CI_DEPENDENCY_PROXY_DIRECT_GROUP_IMAGE_PREFIX \"docker.io\"}}"
-            cacheFrom:
-              - "registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/worker"
-        - image: registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/crawler
-          context: backend
-          docker:
-            dockerfile: crawler.Dockerfile
-            target: production
-            buildArgs:
-              DOCKER_REGISTRY: "{{or .CI_DEPENDENCY_PROXY_DIRECT_GROUP_IMAGE_PREFIX \"docker.io\"}}"
-            cacheFrom:
-              - "registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/crawler"
-        - image: registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/frontend
-          context: Frontend
-          docker:
-            dockerfile: Dockerfile
-            target: production
-            buildArgs:
-              DOCKER_REGISTRY: "{{or .CI_DEPENDENCY_PROXY_DIRECT_GROUP_IMAGE_PREFIX \"docker.io\"}}"
-            cacheFrom:
-              - "registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/frontend"
-        - image: registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/mongodb
-          context: MongoDB
-          docker:
-            dockerfile: Dockerfile
-            buildArgs:
-              DOCKER_REGISTRY: "{{or .CI_DEPENDENCY_PROXY_DIRECT_GROUP_IMAGE_PREFIX \"docker.io\"}}"
-            cacheFrom:
-              - "registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/mongodb"
-        - image: registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/elasticsearch
-          context: ElasticSearch
-          docker:
-            dockerfile: Dockerfile
-            buildArgs:
-              DOCKER_REGISTRY: "{{or .CI_DEPENDENCY_PROXY_DIRECT_GROUP_IMAGE_PREFIX \"docker.io\"}}"
-            cacheFrom:
-              - "registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/elasticsearch"
-        - image: registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/rabbit
-          context: Rabbit
-          docker:
-            dockerfile: Dockerfile
-            buildArgs:
-              DOCKER_REGISTRY: "{{or .CI_DEPENDENCY_PROXY_DIRECT_GROUP_IMAGE_PREFIX \"docker.io\"}}"
-            cacheFrom:
-              - "registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/rabbit"
-        - image: registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/redis
-          context: Redis
-          docker:
-            dockerfile: Dockerfile
-            buildArgs:
-              DOCKER_REGISTRY: "{{or .CI_DEPENDENCY_PROXY_DIRECT_GROUP_IMAGE_PREFIX \"docker.io\"}}"
-            cacheFrom:
-              - "registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/redis"
-        - image: registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/tika
-          context: tika-server
-          docker:
-            dockerfile: Dockerfile
-            buildArgs:
-              DOCKER_REGISTRY: "{{or .CI_DEPENDENCY_PROXY_DIRECT_GROUP_IMAGE_PREFIX \"docker.io\"}}"
-            cacheFrom:
-              - "registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/tika"
-        - image: registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/rspamd
-          context: rspamd
-          docker:
-            dockerfile: Dockerfile
-            buildArgs:
-              DOCKER_REGISTRY: "{{or .CI_DEPENDENCY_PROXY_DIRECT_GROUP_IMAGE_PREFIX \"docker.io\"}}"
-            cacheFrom:
-              - "registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/rspamd"
-        - image: registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/fluentd
-          context: fluentd
-          docker:
-            dockerfile: Dockerfile
-            buildArgs:
-              DOCKER_REGISTRY: "{{or .CI_DEPENDENCY_PROXY_DIRECT_GROUP_IMAGE_PREFIX \"docker.io\"}}"
-            cacheFrom:
-              - "registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/fluentd"
-        - image: registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/prometheus
-          context: Prometheus
-          docker:
-            dockerfile: Dockerfile
-            buildArgs:
-              DOCKER_REGISTRY: "{{or .CI_DEPENDENCY_PROXY_DIRECT_GROUP_IMAGE_PREFIX \"docker.io\"}}"
-            cacheFrom:
-              - "registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/prometheus"
-        - image: registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/grafana
-          context: Grafana
-          docker:
-            dockerfile: Dockerfile
-            buildArgs:
-              DOCKER_REGISTRY: "{{or .CI_DEPENDENCY_PROXY_DIRECT_GROUP_IMAGE_PREFIX \"docker.io\"}}"
-            cacheFrom:
-              - "registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/grafana"
-        - image: registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/ollama
-          context: ollama
-          docker:
-            dockerfile: Dockerfile
-            buildArgs:
-              DOCKER_REGISTRY: "{{or .CI_DEPENDENCY_PROXY_DIRECT_GROUP_IMAGE_PREFIX \"docker.io\"}}"
-            cacheFrom:
-              - "registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/ollama"
-        - image: registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/libretranslate
-          context: libretranslate
-          docker:
-            dockerfile: Dockerfile
-            buildArgs:
-              DOCKER_REGISTRY: "{{or .CI_DEPENDENCY_PROXY_DIRECT_GROUP_IMAGE_PREFIX \"docker.io\"}}"
-            cacheFrom:
-              - "registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/libretranslate"
-        - image: registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/open-webui
-          context: open-webui
-          docker:
-            dockerfile: Dockerfile
-            cacheFrom:
-              - "registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/open-webui"
-        - image: registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/dovecot
-          context: dovecot
-          docker:
-            dockerfile: Dockerfile
-            buildArgs:
-              DOCKER_REGISTRY: "{{or .CI_DEPENDENCY_PROXY_DIRECT_GROUP_IMAGE_PREFIX \"docker.io\"}}"
-            cacheFrom:
-              - "registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/dovecot"
-        - image: registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/roundcube
-          context: roundcube
-          docker:
-            dockerfile: Dockerfile
-            buildArgs:
-              DOCKER_REGISTRY: "{{or .CI_DEPENDENCY_PROXY_DIRECT_GROUP_IMAGE_PREFIX \"docker.io\"}}"
-            cacheFrom:
-              - "registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/roundcube"
-        - image: registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/minio
-          context: minio
-          docker:
-            dockerfile: Dockerfile
-            buildArgs:
-              DOCKER_REGISTRY: '{{or .CI_DEPENDENCY_PROXY_DIRECT_GROUP_IMAGE_PREFIX "docker.io"}}'
-            cacheFrom:
-              - "registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/minio"
-        - image: registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/mc
-          context: minio
-          docker:
-            dockerfile: mc.Dockerfile
-            buildArgs:
-              DOCKER_REGISTRY: '{{or .CI_DEPENDENCY_PROXY_DIRECT_GROUP_IMAGE_PREFIX "docker.io"}}'
-            cacheFrom:
-              - "registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/mc"
-        - image: registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/alpine
-          context: alpine
-          docker:
-            dockerfile: Dockerfile
-            buildArgs:
-              DOCKER_REGISTRY: "{{or .CI_DEPENDENCY_PROXY_DIRECT_GROUP_IMAGE_PREFIX \"docker.io\"}}"
-            cacheFrom:
-              - "registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/alpine"
-        - image: registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/elasticvue
-          context: elasticvue
-          docker:
-            dockerfile: Dockerfile
-            buildArgs:
-              DOCKER_REGISTRY: "{{or .CI_DEPENDENCY_PROXY_DIRECT_GROUP_IMAGE_PREFIX \"docker.io\"}}"
-            cacheFrom:
-              - "registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/elasticvue"
-        - image: registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/mongo-express
-          context: MongoDB/mongo-express
-          docker:
-            dockerfile: Dockerfile
-            buildArgs:
-              DOCKER_REGISTRY: "{{or .CI_DEPENDENCY_PROXY_DIRECT_GROUP_IMAGE_PREFIX \"docker.io\"}}"
-            cacheFrom:
-              - "registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/mongo-express"
-        - image: registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/redisinsight
-          context: Redis/redisinsight
-          docker:
-            dockerfile: Dockerfile
-            buildArgs:
-              DOCKER_REGISTRY: "{{or .CI_DEPENDENCY_PROXY_DIRECT_GROUP_IMAGE_PREFIX \"docker.io\"}}"
-            cacheFrom:
-              - "registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/redisinsight"
-
-    manifests:
-      helm:
-        releases:
-          - name: production
-            namespace: loom
-            chartPath: charts
-            valuesFiles:
-              - charts/values.yaml
-            setValueTemplates:
-              # It seems like image: ... in helm.sh/hooks
-              # are not replaced by skaffold automatically. Therefore we have to specify them
-              # here manually.
-              preInstall:
-                image:
-                  registry: "{{ .IMAGE_DOMAIN_registry_gitlab_com_swiss_armed_forces_cyber_command_cea_loom_alpine }}"
-                  repository: "{{ .IMAGE_REPO_NO_DOMAIN_registry_gitlab_com_swiss_armed_forces_cyber_command_cea_loom_alpine }}"
-                  tag: "{{ .IMAGE_TAG_registry_gitlab_com_swiss_armed_forces_cyber_command_cea_loom_alpine }}@\
-                    {{ .IMAGE_DIGEST_registry_gitlab_com_swiss_armed_forces_cyber_command_cea_loom_alpine }}"
-              crawler:
-                image:
-                  registry: "{{ .IMAGE_DOMAIN_registry_gitlab_com_swiss_armed_forces_cyber_command_cea_loom_crawler }}"
-                  repository: "{{ .IMAGE_REPO_NO_DOMAIN_registry_gitlab_com_swiss_armed_forces_cyber_command_cea_loom_crawler }}"
-                  tag: "{{ .IMAGE_TAG_registry_gitlab_com_swiss_armed_forces_cyber_command_cea_loom_crawler }}@\
-                    {{ .IMAGE_DIGEST_registry_gitlab_com_swiss_armed_forces_cyber_command_cea_loom_crawler }}"
-              minio:
-                mcImage:
-                  registry: "{{ .IMAGE_DOMAIN_registry_gitlab_com_swiss_armed_forces_cyber_command_cea_loom_mc }}"
-                  repository: "{{ .IMAGE_REPO_NO_DOMAIN_registry_gitlab_com_swiss_armed_forces_cyber_command_cea_loom_mc }}"
-                  tag: "{{ .IMAGE_TAG_registry_gitlab_com_swiss_armed_forces_cyber_command_cea_loom_mc }}@\
-                    {{ .IMAGE_DIGEST_registry_gitlab_com_swiss_armed_forces_cyber_command_cea_loom_mc }}"
+      # No patches needed - production is the default
