@@ -387,8 +387,7 @@ export function FileDetailDialog() {
                                                         showGutter={true}
                                                         readOnly={true}
                                                         editorProps={{
-                                                            $blockScrolling:
-                                                                true,
+                                                            $blockScrolling: true,
                                                         }}
                                                         setOptions={{
                                                             useWorker: false,
@@ -433,8 +432,7 @@ export function FileDetailDialog() {
                                                         wrapEnabled={wrapLines}
                                                         readOnly={true}
                                                         editorProps={{
-                                                            $blockScrolling:
-                                                                true,
+                                                            $blockScrolling: true,
                                                         }}
                                                         setOptions={{
                                                             useWorker: false,
@@ -458,8 +456,7 @@ export function FileDetailDialog() {
                                                         showGutter={true}
                                                         readOnly={true}
                                                         editorProps={{
-                                                            $blockScrolling:
-                                                                true,
+                                                            $blockScrolling: true,
                                                         }}
                                                         setOptions={{
                                                             useWorker: false,
@@ -487,8 +484,7 @@ export function FileDetailDialog() {
                                                         showGutter={true}
                                                         readOnly={false}
                                                         editorProps={{
-                                                            $blockScrolling:
-                                                                true,
+                                                            $blockScrolling: true,
                                                         }}
                                                         setOptions={{
                                                             useWorker: false,
