@@ -1065,7 +1065,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | e2fsprogs | 1.47.0-2+b2 | Apache-2.0, Apache-2.0, BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later, ISC, Kazlib, LGPL-2.0-only, Latex2e | dpkg-db-cataloger |
 | elastic-transport | 8.17.0 | Apache-2.0 | python-installed-package-cataloger |
 | elasticsearch | 9.0.2 | Apache-2.0 | python-installed-package-cataloger |
-| fastapi | 0.115.12 |  | python-installed-package-cataloger |
+| fastapi | 0.115.14 |  | python-installed-package-cataloger |
 | filelock | 3.17.0 | Unlicense | python-installed-package-cataloger |
 | findutils | 4.9.0-4 | BSD-3-Clause, FSFAP, FSFULLR, GFDL-1.3-only, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, ISC, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, X11 | dpkg-db-cataloger |
 | gcc-12-base | 12.2.0-14+deb12u1 | GFDL-1.2-only, GPL-2.0-only, GPL-3.0-only | dpkg-db-cataloger |
@@ -1183,7 +1183,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | python | 3.11.13 |  | binary-classifier-cataloger |
 | python-dateutil | 2.9.0.post0 |  | python-installed-package-cataloger |
 | python-dotenv | 1.0.1 | BSD-3-Clause | python-installed-package-cataloger |
-| python-multipart | 0.0.9 | Apache-2.0 | python-installed-package-cataloger |
+| python-multipart | 0.0.21 | Apache-2.0 | python-installed-package-cataloger |
 | readline-common | 8.2-1.3 | GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later | dpkg-db-cataloger |
 | redis | 5.2.1 | MIT | python-installed-package-cataloger |
 | requests | 2.32.3 | Apache-2.0 | python-installed-package-cataloger |
@@ -1335,8 +1335,8 @@ The complete source code for Traefik is publicly available at [https://github.co
 | jsonpointer | 3.0.0 |  | python-installed-package-cataloger |
 | kombu | 5.5.4 | BSD-3-Clause | python-installed-package-cataloger |
 | krb5-multidev | 1.20.1-2+deb12u4 | GPL-2.0-only | dpkg-db-cataloger |
-| langchain-core | 0.3.65 | MIT | python-installed-package-cataloger |
-| langchain-text-splitters | 0.3.8 | MIT | python-installed-package-cataloger |
+| langchain-core | 1.2.5 | MIT | python-installed-package-cataloger |
+| langchain-text-splitters | 0.3.11 | MIT | python-installed-package-cataloger |
 | langsmith | 0.3.45 | MIT | python-installed-package-cataloger |
 | libabsl20220623 | 20220623.1-1+deb12u2 | Apache-2.0 | dpkg-db-cataloger |
 | libacl1 | 2.3.1-3 | GPL-2.0-only, GPL-2.0-or-later, LGPL-2.0-or-later, LGPL-2.1-only | dpkg-db-cataloger |
@@ -1750,10 +1750,10 @@ The complete source code for Traefik is publicly available at [https://github.co
 | pyyaml | 6.0.2 | MIT | python-installed-package-cataloger |
 | readline-common | 8.2-1.3 | GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later | dpkg-db-cataloger |
 | redis | 5.2.1 | MIT | python-installed-package-cataloger |
-| requests | 2.32.4 | Apache-2.0 | python-installed-package-cataloger |
+| requests | 2.32.5 | Apache-2.0 | python-installed-package-cataloger |
 | requests-toolbelt | 1.0.0 |  | python-installed-package-cataloger |
 | rpcsvc-proto | 1.4.3-1 | BSD-3-Clause, GPL-2.0-only, GPL-3.0-only, MIT | dpkg-db-cataloger |
-| scikit-learn | 1.7.0 |  | python-installed-package-cataloger |
+| scikit-learn | 1.8.0 | BSD-3-Clause | python-installed-package-cataloger |
 | scipy | 1.15.3 | BSD-3-Clause | python-installed-package-cataloger |
 | sed | 4.9-1 | BSD-4-Clause-UC, BSL-1.0, GFDL-1.3-only, GPL-3.0-only, GPL-3.0-or-later, ISC, X11 | dpkg-db-cataloger |
 | sensible-utils | 0.0.17+nmu1 | GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
@@ -1764,7 +1764,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | sniffio | 1.3.1 | MIT OR Apache-2.0 | python-installed-package-cataloger |
 | sq | 0.27.0-2+b1 | GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
 | starlette | 0.46.2 | BSD-3-Clause | python-installed-package-cataloger |
-| stream-zip | 0.0.71 |  | python-installed-package-cataloger |
+| stream-zip | 0.0.83 |  | python-installed-package-cataloger |
 | subversion | 1.14.2-4+deb12u1 | AFL-3.0, Apache-2.0, BSD-2-Clause, BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later | dpkg-db-cataloger |
 | sysvinit-utils | 3.06-4 | GPL-2.0-only, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-only | dpkg-db-cataloger |
 | tar | 1.34+dfsg-1.2+deb12u1 | GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
@@ -1799,6 +1799,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | util-linux | 2.38.1-5+deb12u3 | BSD-3-Clause, BSD-4-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, MIT | dpkg-db-cataloger |
 | util-linux-extra | 2.38.1-5+deb12u3 | BSD-3-Clause, BSD-4-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, MIT | dpkg-db-cataloger |
 | uuid-dev | 2.38.1-5+deb12u3 | BSD-3-Clause, BSD-4-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, MIT | dpkg-db-cataloger |
+| uuid-utils | 0.12.0 |  | python-installed-package-cataloger |
 | vine | 5.1.0 |  | python-installed-package-cataloger |
 | wand | 0.6.13 |  | python-installed-package-cataloger |
 | wcwidth | 0.2.13 | MIT | python-installed-package-cataloger |
@@ -1951,7 +1952,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | logsave | 1.47.0-2+b2 | Apache-2.0, Apache-2.0, BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later, ISC, Kazlib, LGPL-2.0-only, Latex2e | dpkg-db-cataloger |
 | luqum | 0.13.0 |  | python-installed-package-cataloger |
 | mawk | 1.3.4.20200120-3.1 | CC-BY-3.0, GPL-2.0-only, X11 | dpkg-db-cataloger |
-| minio | 7.2.12 | Apache-2.0 | python-installed-package-cataloger |
+| minio | 7.2.20 | Apache-2.0 | python-installed-package-cataloger |
 | more-itertools | 10.3.0 | MIT | python-installed-package-cataloger |
 | mount | 2.38.1-5+deb12u3 | BSD-3-Clause, BSD-4-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, MIT | dpkg-db-cataloger |
 | my-test-package | 1.0 |  | python-installed-package-cataloger |
