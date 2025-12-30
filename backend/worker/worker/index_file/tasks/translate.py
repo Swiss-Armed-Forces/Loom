@@ -151,7 +151,7 @@ def translate_task(
     ],
     file: File,
 ):
-    (text_lazy, detected_languages) = translate_detect_language_result
+    text_lazy, detected_languages = translate_detect_language_result
     if text_lazy is None or detected_languages is None:
         return None
 
