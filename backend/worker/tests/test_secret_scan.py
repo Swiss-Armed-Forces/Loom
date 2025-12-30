@@ -17,12 +17,10 @@ from worker.index_file.tasks.secret_scan import (
     [
         (
             ".env",
-            dedent(
-                """
+            dedent("""
                 APP_ENV=production
                 APP_SECRET_KEY=8f9d0f4e3c2a7b1d6e5f0c3a8d7e6f5a
-                """
-            ),
+                """),
             [
                 Secret(
                     line_number=3,
@@ -32,13 +30,11 @@ from worker.index_file.tasks.secret_scan import (
         ),
         (
             ".env",
-            dedent(
-                """
+            dedent("""
                 AWS_ACCESS_KEY_ID=AKIAIOSFODNN7EXAMPLE
                 AWS_SECRET_ACCESS_KEY=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
                 AWS_DEFAULT_REGION=us-east-1
-                """
-            ),
+                """),
             [
                 Secret(line_number=2, secret="AWS_ACCESS_KEY_ID=AKIAIOSFODNN7EXAMPLE"),
                 Secret(
@@ -49,8 +45,7 @@ from worker.index_file.tasks.secret_scan import (
         ),
         (
             "",
-            dedent(
-                """
+            dedent("""
                 -----BEGIN OPENSSH PRIVATE KEY-----
                 b3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAMwAAAAtzc2gtZW
                 QyNTUxOQAAACDtUokKSwahTl1UV+VmOL6PV35qAwOD1qpRd73c9OMxDwAAAJBXujs8V7o7
@@ -59,19 +54,16 @@ from worker.index_file.tasks.secret_scan import (
                 fmoDA4PWqlF3vdz04zEPAAAACXVzZXJAbG9vbQECAwQ=
                 -----END OPENSSH PRIVATE KEY-----
 
-                """
-            ),
+                """),
             [
                 Secret(line_number=2, secret="-----BEGIN OPENSSH PRIVATE KEY-----"),
             ],
         ),
         (
             ".txt",
-            dedent(
-                """
+            dedent("""
                 This text has no secrets in it! X-Ray Yankee Zulu
-                """
-            ),
+                """),
             [],
         ),
     ],
@@ -106,8 +98,7 @@ def test_ripsecrets_scan_task(
         ),
         (
             "",
-            dedent(
-                """
+            dedent("""
                 -----BEGIN OPENSSH PRIVATE KEY-----
                 b3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAMwAAAAtzc2gtZW
                 QyNTUxOQAAACDtUokKSwahTl1UV+VmOL6PV35qAwOD1qpRd73c9OMxDwAAAJBXujs8V7o7
@@ -115,8 +106,7 @@ def test_ripsecrets_scan_task(
                 AAAEBCUyMQCop/GYIMTF92mEKFkBu4z0c8apiQt5Yhqofq3u1SiQpLBqFOXVRX5WY4vo9X
                 fmoDA4PWqlF3vdz04zEPAAAACXVzZXJAbG9vbQECAwQ=
                 -----END OPENSSH PRIVATE KEY-----
-                """
-            ),
+                """),
             [
                 Secret(
                     line_number=2,
@@ -132,11 +122,9 @@ def test_ripsecrets_scan_task(
         ),
         (
             ".txt",
-            dedent(
-                """
+            dedent("""
                 This text has no secrets in it! X-Ray Yankee Zulu
-                """
-            ),
+                """),
             [],
         ),
     ],

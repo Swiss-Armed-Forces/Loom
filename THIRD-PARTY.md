@@ -538,7 +538,6 @@ The complete source code for Traefik is publicly available at [https://github.co
 | argon2-cffi-bindings     | 21.2.0          | MIT License                                                                      |
 | attrs                    | 23.2.0          | MIT License                                                                      |
 | autoflake                | 2.3.1           | MIT License                                                                      |
-| black                    | 24.4.2          | MIT License                                                                      |
 | cffi                     | 1.17.1          | MIT License                                                                      |
 | charset-normalizer       | 3.3.2           | MIT License                                                                      |
 | click-didyoumean         | 0.3.1           | MIT License                                                                      |
@@ -581,6 +580,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | pytest-random-order      | 1.1.1           | MIT License                                                                      |
 | pytest-split             | 0.10.0          | MIT License                                                                      |
 | python-magic             | 0.4.27          | MIT License                                                                      |
+| pytokens                 | 0.3.0           | MIT License                                                                      |
 | pytz                     | 2025.2          | MIT License                                                                      |
 | redis                    | 5.0.7           | MIT License                                                                      |
 | rich                     | 14.0.0          | MIT License                                                                      |
@@ -606,6 +606,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | typing_extensions        | 4.12.2          | Python Software Foundation License                                               |
 | filelock                 | 3.15.4          | The Unlicense (Unlicense)                                                        |
 | binwalk                  | 2.4.3           | UNKNOWN                                                                          |
+| black                    | 25.12.0         | UNKNOWN                                                                          |
 | celery-types             | 0.22.0          | UNKNOWN                                                                          |
 | humanize                 | 4.12.3          | UNKNOWN                                                                          |
 | ollama                   | 0.5.1           | UNKNOWN                                                                          |
