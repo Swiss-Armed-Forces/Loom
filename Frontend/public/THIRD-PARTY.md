@@ -5586,119 +5586,116 @@ The complete source code for Traefik is publicly available at [https://github.co
 
 | Package | Version | License | Found by |
 | ------- | --------| ------- | -------- |
-| accelerate | 1.7.0 |  | python-installed-package-cataloger |
+| accelerate | 1.12.0 |  | python-installed-package-cataloger |
 | adduser | 3.134 | GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
 | aiocache | 0.12.3 | BSD-3-Clause | python-installed-package-cataloger |
-| aiofiles | 24.1.0 | Apache-2.0 | python-installed-package-cataloger |
+| aiofiles | 25.1.0 | Apache-2.0 | python-installed-package-cataloger |
 | aiohappyeyeballs | 2.6.1 | PSF-2.0 | python-installed-package-cataloger |
-| aiohttp | 3.11.11 | Apache-2.0 | python-installed-package-cataloger |
-| aiosignal | 1.3.2 |  | python-installed-package-cataloger |
-| alembic | 1.14.0 | MIT | python-installed-package-cataloger |
+| aiohttp | 3.13.2 | Apache-2.0 AND MIT | python-installed-package-cataloger |
+| aiosignal | 1.4.0 |  | python-installed-package-cataloger |
+| alembic | 1.17.2 | MIT | python-installed-package-cataloger |
+| annotated-doc | 0.0.4 | MIT | python-installed-package-cataloger |
 | annotated-types | 0.7.0 |  | python-installed-package-cataloger |
-| anthropic | 0.54.0 | MIT | python-installed-package-cataloger |
-| anyio | 4.9.0 | MIT | python-installed-package-cataloger |
-| apscheduler | 3.10.4 | MIT | python-installed-package-cataloger |
+| anthropic | 0.75.0 | MIT | python-installed-package-cataloger |
+| anyio | 4.12.0 | MIT | python-installed-package-cataloger |
+| apscheduler | 3.11.1 | MIT | python-installed-package-cataloger |
 | apt | 2.6.1 | BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
-| argon2-cffi | 23.1.0 | MIT | python-installed-package-cataloger |
-| argon2-cffi-bindings | 21.2.0 | MIT | python-installed-package-cataloger |
-| asgiref | 3.8.1 | BSD-3-Clause | python-installed-package-cataloger |
+| argon2-cffi | 25.1.0 | MIT | python-installed-package-cataloger |
+| argon2-cffi-bindings | 25.1.0 | MIT | python-installed-package-cataloger |
+| asgiref | 3.11.0 | BSD-3-Clause | python-installed-package-cataloger |
 | async-timeout | 5.0.1 |  | python-installed-package-cataloger |
-| attrs | 25.3.0 | MIT | python-installed-package-cataloger |
-| authlib | 1.4.1 | BSD-3-Clause | python-installed-package-cataloger |
+| attrs | 25.4.0 | MIT | python-installed-package-cataloger |
+| authlib | 1.6.6 | BSD-3-Clause | python-installed-package-cataloger |
 | autocommand | 2.2.2 |  | python-installed-package-cataloger |
-| av | 14.4.0 | BSD-3-Clause | python-installed-package-cataloger |
+| av | 14.0.1 |  | python-installed-package-cataloger |
 | azure-ai-documentintelligence | 1.0.2 |  | python-installed-package-cataloger |
-| azure-core | 1.34.0 |  | python-installed-package-cataloger |
-| azure-identity | 1.21.0 |  | python-installed-package-cataloger |
-| azure-storage-blob | 12.24.1 |  | python-installed-package-cataloger |
+| azure-common | 1.1.28 |  | python-installed-package-cataloger |
+| azure-core | 1.37.0 |  | python-installed-package-cataloger |
+| azure-identity | 1.25.1 | MIT | python-installed-package-cataloger |
+| azure-search-documents | 11.6.0 |  | python-installed-package-cataloger |
+| azure-storage-blob | 12.27.1 |  | python-installed-package-cataloger |
 | backoff | 2.2.1 | MIT | python-installed-package-cataloger |
 | backports-tarfile | 1.2.0 | MIT | python-installed-package-cataloger |
-| base-files | 12.4+deb12u11 |  | dpkg-db-cataloger |
+| base-files | 12.4+deb12u12 |  | dpkg-db-cataloger |
 | base-passwd | 3.6.1 | GPL-2.0-only | dpkg-db-cataloger |
-| bash | 5.2.15-2+b8 | BSD-4-Clause-UC, GFDL-1.3-only, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, Latex2e | dpkg-db-cataloger |
-| bcrypt | 4.3.0 | Apache-2.0 | python-installed-package-cataloger |
-| beautifulsoup4 | 4.13.4 |  | python-installed-package-cataloger |
+| bash | 5.2.15-2+b9 | BSD-4-Clause-UC, GFDL-1.3-only, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, Latex2e | dpkg-db-cataloger |
+| bcrypt | 5.0.0 | Apache-2.0 | python-installed-package-cataloger |
+| beautifulsoup4 | 4.14.3 |  | python-installed-package-cataloger |
 | bidict | 0.23.1 |  | python-installed-package-cataloger |
 | binutils | 2.40-2 |  | dpkg-db-cataloger |
 | binutils-common | 2.40-2 |  | dpkg-db-cataloger |
 | binutils-x86-64-linux-gnu | 2.40-2 |  | dpkg-db-cataloger |
-| bitarray | 3.4.2 | PSF-2.0 | python-installed-package-cataloger |
-| black | 25.1.0 | MIT | python-installed-package-cataloger |
+| bitarray | 3.8.0 | PSF-2.0 | python-installed-package-cataloger |
+| black | 25.12.0 | MIT | python-installed-package-cataloger |
 | blinker | 1.9.0 | MIT | python-installed-package-cataloger |
-| boto3 | 1.35.53 |  | python-installed-package-cataloger |
-| botocore | 1.35.99 |  | python-installed-package-cataloger |
-| brotli | 1.1.0 | MIT | python-installed-package-cataloger |
+| boto3 | 1.42.14 | Apache-2.0 | python-installed-package-cataloger |
+| botocore | 1.42.14 | Apache-2.0 | python-installed-package-cataloger |
+| brotli | 1.2.0 | MIT | python-installed-package-cataloger |
 | bsdutils | 1:2.38.1-5+deb12u3 | BSD-3-Clause, BSD-4-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, MIT | dpkg-db-cataloger |
-| build | 1.2.2.post1 | MIT | python-installed-package-cataloger |
+| build | 1.3.0 | MIT | python-installed-package-cataloger |
 | build-essential | 12.9 |  | dpkg-db-cataloger |
 | bzip2 | 1.0.8-5+b1 | GPL-2.0-only | dpkg-db-cataloger |
-| ca-certificates | 20230311 | GPL-2.0-only, GPL-2.0-or-later, MPL-2.0 | dpkg-db-cataloger |
-| cachetools | 5.5.2 | MIT | python-installed-package-cataloger |
-| certifi | 2025.6.15 | MPL-2.0 | python-installed-package-cataloger |
-| cffi | 1.17.1 | MIT | python-installed-package-cataloger |
+| ca-certificates | 20230311+deb12u1 | GPL-2.0-only, GPL-2.0-or-later, MPL-2.0 | dpkg-db-cataloger |
+| cachetools | 6.2.4 | MIT | python-installed-package-cataloger |
+| certifi | 2025.11.12 | MPL-2.0 | python-installed-package-cataloger |
+| cffi | 2.0.0 | MIT | python-installed-package-cataloger |
 | chardet | 5.2.0 |  | python-installed-package-cataloger |
-| charset-normalizer | 3.4.2 | MIT | python-installed-package-cataloger |
-| chroma-hnswlib | 0.7.6 | Apache-2.0 | python-installed-package-cataloger |
-| chromadb | 0.6.3 | Apache-2.0 | python-installed-package-cataloger |
-| click | 8.2.1 | BSD-3-Clause | python-installed-package-cataloger |
-| colbert-ai | 0.2.21 | MIT | python-installed-package-cataloger |
-| colorclass | 2.2.2 | MIT | python-installed-package-cataloger |
+| charset-normalizer | 3.4.4 | MIT | python-installed-package-cataloger |
+| chromadb | 1.3.7 |  | python-installed-package-cataloger |
+| click | 8.3.1 | BSD-3-Clause | python-installed-package-cataloger |
+| colbert-ai | 0.2.22 |  | python-installed-package-cataloger |
 | coloredlogs | 15.0.1 | MIT | python-installed-package-cataloger |
-| compressed-rtf | 1.0.7 | MIT | python-installed-package-cataloger |
 | coreutils | 9.1-1 | BSD-4-Clause-UC, FSFULLR, GFDL-1.3-only, GPL-3.0-only, GPL-3.0-or-later, ISC | dpkg-db-cataloger |
 | cpp | 4:12.2.0-3 | GPL-2.0-only | dpkg-db-cataloger |
 | cpp-12 | 12.2.0-14+deb12u1 | GFDL-1.2-only, GPL-2.0-only, GPL-3.0-only | dpkg-db-cataloger |
-| cryptography | 45.0.4 | Apache-2.0 OR BSD-3-Clause | python-installed-package-cataloger |
-| ctranslate2 | 4.6.0 | MIT | python-installed-package-cataloger |
-| curl | 7.88.1-10+deb12u12 | BSD-3-Clause, BSD-3-Clause, BSD-4-Clause-UC, FSFULLR, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-or-later, ISC, OLDAP-2.8, X11, curl | dpkg-db-cataloger |
+| cryptography | 46.0.3 | Apache-2.0 OR BSD-3-Clause | python-installed-package-cataloger |
+| ctranslate2 | 4.6.2 |  | python-installed-package-cataloger |
+| curl | 7.88.1-10+deb12u14 | BSD-3-Clause, BSD-3-Clause, BSD-4-Clause-UC, FSFULLR, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-or-later, ISC, OLDAP-2.8, X11, curl | dpkg-db-cataloger |
 | dash | 0.5.12-2 | BSD-3-Clause, BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
 | dataclasses-json | 0.6.7 | MIT | python-installed-package-cataloger |
-| datasets | 3.6.0 |  | python-installed-package-cataloger |
+| datasets | 4.0.0 |  | python-installed-package-cataloger |
+| ddgs | 9.10.0 | MIT | python-installed-package-cataloger |
 | debconf | 1.5.82 | BSD-2-Clause | dpkg-db-cataloger |
 | debian-archive-keyring | 2023.3+deb12u2 |  | dpkg-db-cataloger |
 | debianutils | 5.7-0.5~deb12u1 | GPL-2.0-only, GPL-2.0-or-later, SMAIL-GPL | dpkg-db-cataloger |
 | defusedxml | 0.7.1 |  | python-installed-package-cataloger |
-| deprecated | 1.2.18 | MIT | python-installed-package-cataloger |
+| deprecation | 2.1.0 |  | python-installed-package-cataloger |
 | diffutils | 1:3.8-4 | FSFAP, FSFULLR, GFDL-1.3-only, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, X11 | dpkg-db-cataloger |
 | dill | 0.3.8 | BSD-3-Clause | python-installed-package-cataloger |
 | distro | 1.9.0 |  | python-installed-package-cataloger |
-| dnspython | 2.7.0 | ISC | python-installed-package-cataloger |
+| dnspython | 2.8.0 | ISC | python-installed-package-cataloger |
 | docker | 7.1.0 | Apache-2.0 | python-installed-package-cataloger |
-| docx2txt | 0.8 |  | python-installed-package-cataloger |
+| docstring-parser | 0.17.0 | MIT | python-installed-package-cataloger |
+| docx2txt | 0.9 |  | python-installed-package-cataloger |
 | dpkg | 1.21.22 | BSD-2-Clause, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
 | dpkg-dev | 1.21.22 | BSD-2-Clause, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
-| duckduckgo-search | 8.0.2 |  | python-installed-package-cataloger |
 | durationpy | 0.10 | MIT | python-installed-package-cataloger |
-| e2fsprogs | 1.47.0-2 | Apache-2.0, Apache-2.0, BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later, ISC, Kazlib, LGPL-2.0-only, Latex2e | dpkg-db-cataloger |
-| easygui | 0.98.3 |  | python-installed-package-cataloger |
-| ebcdic | 1.1.1 |  | python-installed-package-cataloger |
+| e2fsprogs | 1.47.0-2+b2 | Apache-2.0, Apache-2.0, BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later, ISC, Kazlib, LGPL-2.0-only, Latex2e | dpkg-db-cataloger |
 | ecdsa | 0.19.1 | MIT | python-installed-package-cataloger |
 | einops | 0.8.1 | MIT | python-installed-package-cataloger |
-| elastic-transport | 8.17.1 |  | python-installed-package-cataloger |
-| elasticsearch | 9.0.1 | Apache-2.0 | python-installed-package-cataloger |
-| emoji | 2.14.1 | BSD-3-Clause | python-installed-package-cataloger |
+| elastic-transport | 9.2.0 |  | python-installed-package-cataloger |
+| elasticsearch | 9.2.0 | Apache-2.0 | python-installed-package-cataloger |
+| emoji | 2.15.0 |  | python-installed-package-cataloger |
 | et-xmlfile | 2.0.0 | MIT | python-installed-package-cataloger |
-| eval-type-backport | 0.2.2 | MIT | python-installed-package-cataloger |
 | events | 0.5 |  | python-installed-package-cataloger |
-| extract-msg | 0.54.1 |  | python-installed-package-cataloger |
-| fake-useragent | 2.1.0 |  | python-installed-package-cataloger |
-| fastapi | 0.115.7 |  | python-installed-package-cataloger |
-| faster-whisper | 1.1.1 | MIT | python-installed-package-cataloger |
-| ffmpeg | 7:5.1.6-0+deb12u1 | BSD-1-Clause, BSD-2-Clause, BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, IJG, ISC, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, Zlib | dpkg-db-cataloger |
-| filelock | 3.13.1 | Unlicense | python-installed-package-cataloger |
+| fake-useragent | 2.2.0 | Apache-2.0 | python-installed-package-cataloger |
+| fastapi | 0.126.0 | MIT | python-installed-package-cataloger |
+| faster-whisper | 1.2.1 | MIT | python-installed-package-cataloger |
+| ffmpeg | 7:5.1.8-0+deb12u1 | BSD-1-Clause, BSD-2-Clause, BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, IJG, ISC, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, Zlib | dpkg-db-cataloger |
+| filelock | 3.20.0 | Unlicense | python-installed-package-cataloger |
 | filetype | 1.2.0 | MIT | python-installed-package-cataloger |
 | findutils | 4.9.0-4 | BSD-3-Clause, FSFAP, FSFULLR, GFDL-1.3-only, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, ISC, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, X11 | dpkg-db-cataloger |
-| firecrawl-py | 1.12.0 |  | python-installed-package-cataloger |
-| flask | 3.1.1 | BSD-3-Clause | python-installed-package-cataloger |
-| flatbuffers | 25.2.10 |  | python-installed-package-cataloger |
+| firecrawl-py | 4.12.0 |  | python-installed-package-cataloger |
+| flask | 3.1.2 | BSD-3-Clause | python-installed-package-cataloger |
+| flatbuffers | 25.12.19 |  | python-installed-package-cataloger |
 | fontconfig | 2.14.1-4 | HPND-sell-variant | dpkg-db-cataloger |
 | fontconfig-config | 2.14.1-4 | HPND-sell-variant | dpkg-db-cataloger |
 | fonts-dejavu-core | 2.37-6 | GPL-2.0-only, GPL-2.0-or-later, Bitstream-Vera | dpkg-db-cataloger |
-| fonttools | 4.58.4 | MIT | python-installed-package-cataloger |
-| fpdf2 | 2.8.2 | LGPL-3.0-or-later | python-installed-package-cataloger |
-| frozenlist | 1.7.0 | Apache-2.0 | python-installed-package-cataloger |
-| fsspec | 2024.6.1 | BSD-3-Clause | python-installed-package-cataloger |
-| ftfy | 6.2.3 | Apache-2.0 | python-installed-package-cataloger |
+| fonttools | 4.61.1 | MIT | python-installed-package-cataloger |
+| fpdf2 | 2.8.5 | LGPL-3.0-only | python-installed-package-cataloger |
+| frozenlist | 1.8.0 | Apache-2.0 | python-installed-package-cataloger |
+| fsspec | 2025.3.0 | BSD-3-Clause | python-installed-package-cataloger |
+| ftfy | 6.3.1 | Apache-2.0 | python-installed-package-cataloger |
 | g++ | 4:12.2.0-3 | GPL-2.0-only | dpkg-db-cataloger |
 | g++-12 | 12.2.0-14+deb12u1 | GFDL-1.2-only, GPL-2.0-only, GPL-3.0-only | dpkg-db-cataloger |
 | gcc | 4:12.2.0-3 | GPL-2.0-only | dpkg-db-cataloger |
@@ -5706,75 +5703,78 @@ The complete source code for Traefik is publicly available at [https://github.co
 | gcc-12-base | 12.2.0-14+deb12u1 | GFDL-1.2-only, GPL-2.0-only, GPL-3.0-only | dpkg-db-cataloger |
 | git | 1:2.39.5-0+deb12u2 | Apache-2.0, BSD-3-Clause, GPL-1.0-or-later, GPL-2.0-only, GPL-2.0-or-later, ISC, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, Zlib | dpkg-db-cataloger |
 | git-man | 1:2.39.5-0+deb12u2 | Apache-2.0, BSD-3-Clause, GPL-1.0-or-later, GPL-2.0-only, GPL-2.0-or-later, ISC, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, Zlib | dpkg-db-cataloger |
-| git-python | 1.0.3 |  | python-installed-package-cataloger |
 | gitdb | 4.0.12 |  | python-installed-package-cataloger |
-| gitpython | 3.1.44 | BSD-3-Clause | python-installed-package-cataloger |
+| gitpython | 3.1.45 | BSD-3-Clause | python-installed-package-cataloger |
 | google-ai-generativelanguage | 0.6.15 |  | python-installed-package-cataloger |
-| google-api-core | 2.25.1 |  | python-installed-package-cataloger |
-| google-api-python-client | 2.172.0 |  | python-installed-package-cataloger |
-| google-auth | 2.40.3 |  | python-installed-package-cataloger |
-| google-auth-httplib2 | 0.2.0 |  | python-installed-package-cataloger |
+| google-api-core | 2.28.1 |  | python-installed-package-cataloger |
+| google-api-python-client | 2.187.0 |  | python-installed-package-cataloger |
+| google-auth | 2.45.0 |  | python-installed-package-cataloger |
+| google-auth-httplib2 | 0.3.0 |  | python-installed-package-cataloger |
 | google-auth-oauthlib | 1.2.2 |  | python-installed-package-cataloger |
-| google-cloud-core | 2.4.3 |  | python-installed-package-cataloger |
-| google-cloud-storage | 2.19.0 |  | python-installed-package-cataloger |
-| google-crc32c | 1.7.1 |  | python-installed-package-cataloger |
-| google-genai | 1.15.0 | Apache-2.0 | python-installed-package-cataloger |
-| google-generativeai | 0.8.5 |  | python-installed-package-cataloger |
-| google-resumable-media | 2.7.2 |  | python-installed-package-cataloger |
-| googleapis-common-protos | 1.63.2 | Apache-2.0 | python-installed-package-cataloger |
-| gpgv | 2.2.40-1.1 | BSD-3-Clause, CC0-1.0, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
-| greenlet | 3.1.1 |  | python-installed-package-cataloger |
+| google-cloud-core | 2.5.0 |  | python-installed-package-cataloger |
+| google-cloud-storage | 3.7.0 |  | python-installed-package-cataloger |
+| google-crc32c | 1.8.0 |  | python-installed-package-cataloger |
+| google-genai | 1.56.0 | Apache-2.0 | python-installed-package-cataloger |
+| google-generativeai | 0.8.6 |  | python-installed-package-cataloger |
+| google-resumable-media | 2.8.0 |  | python-installed-package-cataloger |
+| googleapis-common-protos | 1.72.0 |  | python-installed-package-cataloger |
+| gpgv | 2.2.40-1.1+deb12u1 | BSD-3-Clause, CC0-1.0, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
+| greenlet | 3.3.0 | MIT AND Python-2.0 | python-installed-package-cataloger |
 | grep | 3.8-5 | GPL-3.0-only, GPL-3.0-or-later | dpkg-db-cataloger |
-| grpcio | 1.67.1 |  | python-installed-package-cataloger |
-| grpcio-status | 1.67.1 |  | python-installed-package-cataloger |
-| grpcio-tools | 1.67.1 |  | python-installed-package-cataloger |
+| grpcio | 1.76.0 |  | python-installed-package-cataloger |
+| grpcio-status | 1.71.2 |  | python-installed-package-cataloger |
 | gzip | 1.12-1 | GPL-3.0-only, GPL-3.0-or-later | dpkg-db-cataloger |
 | h11 | 0.16.0 | MIT | python-installed-package-cataloger |
-| h2 | 4.2.0 | MIT | python-installed-package-cataloger |
-| hf-xet | 1.1.3 | Apache-2.0 | python-installed-package-cataloger |
+| h2 | 4.3.0 | MIT | python-installed-package-cataloger |
+| hf-xet | 1.2.0 | Apache-2.0 | python-installed-package-cataloger |
 | hostname | 3.23+nmu1 | GPL-2.0-only | dpkg-db-cataloger |
 | hpack | 4.1.0 | MIT | python-installed-package-cataloger |
 | html5lib | 1.1 |  | python-installed-package-cataloger |
 | httpcore | 1.0.9 | BSD-3-Clause | python-installed-package-cataloger |
-| httplib2 | 0.22.0 | MIT | python-installed-package-cataloger |
-| httptools | 0.6.4 | MIT | python-installed-package-cataloger |
+| httplib2 | 0.31.0 | MIT | python-installed-package-cataloger |
+| httptools | 0.7.1 | MIT | python-installed-package-cataloger |
 | httpx | 0.28.1 | BSD-3-Clause | python-installed-package-cataloger |
-| httpx-sse | 0.4.0 | MIT | python-installed-package-cataloger |
-| huggingface-hub | 0.33.0 |  | python-installed-package-cataloger |
+| httpx-sse | 0.4.3 | MIT | python-installed-package-cataloger |
+| huggingface-hub | 0.36.0 |  | python-installed-package-cataloger |
 | humanfriendly | 10.0 | MIT | python-installed-package-cataloger |
 | hyperframe | 6.1.0 | MIT | python-installed-package-cataloger |
-| idna | 3.10 | BSD-3-Clause | python-installed-package-cataloger |
+| idna | 3.11 | BSD-3-Clause | python-installed-package-cataloger |
 | importlib-metadata | 8.0.0 | Apache-2.0 | python-installed-package-cataloger |
-| importlib-metadata | 8.6.1 | Apache-2.0 | python-installed-package-cataloger |
+| importlib-metadata | 8.7.1 | Apache-2.0 | python-installed-package-cataloger |
 | importlib-resources | 6.5.2 | Apache-2.0 | python-installed-package-cataloger |
 | inflect | 7.3.1 | MIT | python-installed-package-cataloger |
-| iniconfig | 2.1.0 | MIT | python-installed-package-cataloger |
-| init-system-helpers | 1.65.2 | BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
+| iniconfig | 2.3.0 | MIT | python-installed-package-cataloger |
+| init-system-helpers | 1.65.2+deb12u1 | BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
 | isodate | 0.7.2 | BSD-3-Clause | python-installed-package-cataloger |
 | itsdangerous | 2.2.0 | BSD-3-Clause | python-installed-package-cataloger |
 | jaraco-collections | 5.1.0 | MIT | python-installed-package-cataloger |
 | jaraco-context | 5.3.0 | MIT | python-installed-package-cataloger |
 | jaraco-functools | 4.0.1 | MIT | python-installed-package-cataloger |
 | jaraco-text | 3.12.1 | MIT | python-installed-package-cataloger |
-| jinja2 | 3.1.4 | BSD-3-Clause | python-installed-package-cataloger |
-| jiter | 0.10.0 | MIT | python-installed-package-cataloger |
+| jinja2 | 3.1.6 |  | python-installed-package-cataloger |
+| jiter | 0.12.0 |  | python-installed-package-cataloger |
 | jmespath | 1.0.1 | MIT | python-installed-package-cataloger |
-| joblib | 1.5.1 |  | python-installed-package-cataloger |
-| jq | 1.6-2.1 | CC-BY-3.0, GPL-2.0-only, GPL-2.0-or-later, MIT | dpkg-db-cataloger |
+| joblib | 1.5.3 | BSD-3-Clause | python-installed-package-cataloger |
+| jq | 1.6-2.1+deb12u1 | CC-BY-3.0, GPL-2.0-only, GPL-2.0-or-later, MIT | dpkg-db-cataloger |
 | jsonpatch | 1.33 |  | python-installed-package-cataloger |
 | jsonpointer | 3.0.0 |  | python-installed-package-cataloger |
+| jsonschema | 4.25.1 | MIT | python-installed-package-cataloger |
+| jsonschema-specifications | 2025.9.1 | MIT | python-installed-package-cataloger |
 | kubernetes | 33.1.0 |  | python-installed-package-cataloger |
-| langchain | 0.3.24 | MIT | python-installed-package-cataloger |
-| langchain-community | 0.3.23 | MIT | python-installed-package-cataloger |
-| langchain-core | 0.3.65 | MIT | python-installed-package-cataloger |
-| langchain-text-splitters | 0.3.8 | MIT | python-installed-package-cataloger |
+| langchain | 1.2.0 | MIT | python-installed-package-cataloger |
+| langchain-classic | 1.0.0 | MIT | python-installed-package-cataloger |
+| langchain-community | 0.4.1 | MIT | python-installed-package-cataloger |
+| langchain-core | 1.2.4 | MIT | python-installed-package-cataloger |
+| langchain-text-splitters | 1.1.0 | MIT | python-installed-package-cataloger |
 | langdetect | 1.0.9 | MIT | python-installed-package-cataloger |
-| langfuse | 2.44.0 | MIT | python-installed-package-cataloger |
-| langsmith | 0.3.45 | MIT | python-installed-package-cataloger |
-| lark | 1.1.9 | MIT | python-installed-package-cataloger |
+| langgraph | 1.0.5 | MIT | python-installed-package-cataloger |
+| langgraph-checkpoint | 3.0.1 | MIT | python-installed-package-cataloger |
+| langgraph-prebuilt | 1.0.5 | MIT | python-installed-package-cataloger |
+| langgraph-sdk | 0.3.1 | MIT | python-installed-package-cataloger |
+| langsmith | 0.5.0 | MIT | python-installed-package-cataloger |
 | ldap3 | 2.9.1 |  | python-installed-package-cataloger |
 | libacl1 | 2.3.1-3 | GPL-2.0-only, GPL-2.0-or-later, LGPL-2.0-or-later, LGPL-2.1-only | dpkg-db-cataloger |
-| libaom3 | 3.6.0-1+deb12u1 | BSD-2-Clause, BSD-2-Clause, BSD-3-Clause, ISC | dpkg-db-cataloger |
+| libaom3 | 3.6.0-1+deb12u2 | BSD-2-Clause, BSD-2-Clause, BSD-3-Clause, ISC | dpkg-db-cataloger |
 | libapt-pkg6.0 | 2.6.1 | BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
 | libasan8 | 12.2.0-14+deb12u1 | GFDL-1.2-only, GPL-2.0-only, GPL-3.0-only | dpkg-db-cataloger |
 | libasound2 | 1.2.8-1+b1 | LGPL-2.1-only | dpkg-db-cataloger |
@@ -5786,11 +5786,11 @@ The complete source code for Traefik is publicly available at [https://github.co
 | libaudit-common | 1:3.0.9-1 | GPL-1.0-only, GPL-2.0-only, LGPL-2.1-only | dpkg-db-cataloger |
 | libaudit1 | 1:3.0.9-1 | GPL-1.0-only, GPL-2.0-only, LGPL-2.1-only | dpkg-db-cataloger |
 | libavc1394-0 | 0.5.4-5 | GPL-2.0-only, GPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
-| libavcodec59 | 7:5.1.6-0+deb12u1 | BSD-1-Clause, BSD-2-Clause, BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, IJG, ISC, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, Zlib | dpkg-db-cataloger |
-| libavdevice59 | 7:5.1.6-0+deb12u1 | BSD-1-Clause, BSD-2-Clause, BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, IJG, ISC, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, Zlib | dpkg-db-cataloger |
-| libavfilter8 | 7:5.1.6-0+deb12u1 | BSD-1-Clause, BSD-2-Clause, BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, IJG, ISC, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, Zlib | dpkg-db-cataloger |
-| libavformat59 | 7:5.1.6-0+deb12u1 | BSD-1-Clause, BSD-2-Clause, BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, IJG, ISC, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, Zlib | dpkg-db-cataloger |
-| libavutil57 | 7:5.1.6-0+deb12u1 | BSD-1-Clause, BSD-2-Clause, BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, IJG, ISC, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, Zlib | dpkg-db-cataloger |
+| libavcodec59 | 7:5.1.8-0+deb12u1 | BSD-1-Clause, BSD-2-Clause, BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, IJG, ISC, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, Zlib | dpkg-db-cataloger |
+| libavdevice59 | 7:5.1.8-0+deb12u1 | BSD-1-Clause, BSD-2-Clause, BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, IJG, ISC, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, Zlib | dpkg-db-cataloger |
+| libavfilter8 | 7:5.1.8-0+deb12u1 | BSD-1-Clause, BSD-2-Clause, BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, IJG, ISC, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, Zlib | dpkg-db-cataloger |
+| libavformat59 | 7:5.1.8-0+deb12u1 | BSD-1-Clause, BSD-2-Clause, BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, IJG, ISC, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, Zlib | dpkg-db-cataloger |
+| libavutil57 | 7:5.1.8-0+deb12u1 | BSD-1-Clause, BSD-2-Clause, BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, IJG, ISC, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, Zlib | dpkg-db-cataloger |
 | libbinutils | 2.40-2 |  | dpkg-db-cataloger |
 | libblas3 | 3.11.0-2 | BSD-3-Clause | dpkg-db-cataloger |
 | libblkid1 | 2.38.1-5+deb12u3 | BSD-3-Clause, BSD-4-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, MIT | dpkg-db-cataloger |
@@ -5799,29 +5799,29 @@ The complete source code for Traefik is publicly available at [https://github.co
 | libbs2b0 | 3.1.0+dfsg-7 | GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later | dpkg-db-cataloger |
 | libbsd0 | 0.11.7-2 | BSD-2-Clause, BSD-2-Clause, BSD-3-Clause, Beerware, ISC, libutil-David-Nugent | dpkg-db-cataloger |
 | libbz2-1.0 | 1.0.8-5+b1 | GPL-2.0-only | dpkg-db-cataloger |
-| libc-bin | 2.36-9+deb12u10 | GPL-2.0-only, LGPL-2.1-only | dpkg-db-cataloger |
-| libc-dev-bin | 2.36-9+deb12u10 | GPL-2.0-only, LGPL-2.1-only | dpkg-db-cataloger |
-| libc6 | 2.36-9+deb12u10 | GPL-2.0-only, LGPL-2.1-only | dpkg-db-cataloger |
-| libc6-dev | 2.36-9+deb12u10 | GPL-2.0-only, LGPL-2.1-only | dpkg-db-cataloger |
+| libc-bin | 2.36-9+deb12u13 | GPL-2.0-only, LGPL-2.1-only | dpkg-db-cataloger |
+| libc-dev-bin | 2.36-9+deb12u13 | GPL-2.0-only, LGPL-2.1-only | dpkg-db-cataloger |
+| libc6 | 2.36-9+deb12u13 | GPL-2.0-only, LGPL-2.1-only | dpkg-db-cataloger |
+| libc6-dev | 2.36-9+deb12u13 | GPL-2.0-only, LGPL-2.1-only | dpkg-db-cataloger |
 | libcaca0 | 0.99.beta20-3 | GPL-1.0-only, GPL-2.0-only, GPL-2.0-or-later, ISC, LGPL-2.0-only, LGPL-2.0-or-later | dpkg-db-cataloger |
 | libcairo-gobject2 | 1.16.0-7 | LGPL-2.1-only | dpkg-db-cataloger |
 | libcairo2 | 1.16.0-7 | LGPL-2.1-only | dpkg-db-cataloger |
 | libcap-ng0 | 0.8.3-1+b3 | GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
-| libcap2 | 1:2.66-4+deb12u1 | BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
+| libcap2 | 1:2.66-4+deb12u2 | BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
 | libcc1-0 | 12.2.0-14+deb12u1 | GFDL-1.2-only, GPL-2.0-only, GPL-3.0-only | dpkg-db-cataloger |
 | libcdio-cdda2 | 10.2+2.0.1-1 | GFDL-1.2-only, GPL-3.0-only | dpkg-db-cataloger |
 | libcdio-paranoia2 | 10.2+2.0.1-1 | GFDL-1.2-only, GPL-3.0-only | dpkg-db-cataloger |
 | libcdio19 | 2.1.0-4 | GFDL-1.2-only, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only | dpkg-db-cataloger |
 | libchromaprint1 | 1.5.1-2+b1 | BSD-3-Clause, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
-| libcjson1 | 1.7.15-1+deb12u2 | Apache-2.0, MIT | dpkg-db-cataloger |
+| libcjson1 | 1.7.15-1+deb12u4 | Apache-2.0, MIT | dpkg-db-cataloger |
 | libcodec2-1.0 | 1.0.5-1 | LGPL-2.1-only | dpkg-db-cataloger |
-| libcom-err2 | 1.47.0-2 | Apache-2.0, Apache-2.0, BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later, ISC, Kazlib, LGPL-2.0-only, Latex2e | dpkg-db-cataloger |
+| libcom-err2 | 1.47.0-2+b2 | Apache-2.0, Apache-2.0, BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later, ISC, Kazlib, LGPL-2.0-only, Latex2e | dpkg-db-cataloger |
 | libcrypt-dev | 1:4.4.33-2 |  | dpkg-db-cataloger |
 | libcrypt1 | 1:4.4.33-2 |  | dpkg-db-cataloger |
 | libctf-nobfd0 | 2.40-2 |  | dpkg-db-cataloger |
 | libctf0 | 2.40-2 |  | dpkg-db-cataloger |
-| libcurl3-gnutls | 7.88.1-10+deb12u12 | BSD-3-Clause, BSD-3-Clause, BSD-4-Clause-UC, FSFULLR, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-or-later, ISC, OLDAP-2.8, X11, curl | dpkg-db-cataloger |
-| libcurl4 | 7.88.1-10+deb12u12 | BSD-3-Clause, BSD-3-Clause, BSD-4-Clause-UC, FSFULLR, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-or-later, ISC, OLDAP-2.8, X11, curl | dpkg-db-cataloger |
+| libcurl3-gnutls | 7.88.1-10+deb12u14 | BSD-3-Clause, BSD-3-Clause, BSD-4-Clause-UC, FSFULLR, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-or-later, ISC, OLDAP-2.8, X11, curl | dpkg-db-cataloger |
+| libcurl4 | 7.88.1-10+deb12u14 | BSD-3-Clause, BSD-3-Clause, BSD-4-Clause-UC, FSFULLR, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-or-later, ISC, OLDAP-2.8, X11, curl | dpkg-db-cataloger |
 | libdatrie1 | 0.2.13-2+b1 | GPL-2.0-only, GPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
 | libdav1d6 | 1.0.0-2+deb12u1 | BSD-2-Clause, ISC | dpkg-db-cataloger |
 | libdb5.3 | 5.3.28+dfsg2-1 | BSD-3-Clause, GPL-3.0-only, MS-PL, Sleepycat, X11, Zlib | dpkg-db-cataloger |
@@ -5841,9 +5841,9 @@ The complete source code for Traefik is publicly available at [https://github.co
 | libelf1 | 0.188-2.1 | BSD-2-Clause, GFDL-1.3-only, GPL-2.0-only, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
 | libepoxy0 | 1.5.10-1 |  | dpkg-db-cataloger |
 | liberror-perl | 0.17029-2 | GPL-1.0-only, GPL-1.0-or-later | dpkg-db-cataloger |
-| libexpat1 | 2.5.0-1+deb12u1 | MIT | dpkg-db-cataloger |
-| libexpat1-dev | 2.5.0-1+deb12u1 | MIT | dpkg-db-cataloger |
-| libext2fs2 | 1.47.0-2 | Apache-2.0, Apache-2.0, BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later, ISC, Kazlib, LGPL-2.0-only, Latex2e | dpkg-db-cataloger |
+| libexpat1 | 2.5.0-1+deb12u2 | MIT | dpkg-db-cataloger |
+| libexpat1-dev | 2.5.0-1+deb12u2 | MIT | dpkg-db-cataloger |
+| libext2fs2 | 1.47.0-2+b2 | Apache-2.0, Apache-2.0, BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later, ISC, Kazlib, LGPL-2.0-only, Latex2e | dpkg-db-cataloger |
 | libffi8 | 3.4.4-1 | GPL-2.0-or-later, GPL-3.0-or-later, MPL-1.1, X11 | dpkg-db-cataloger |
 | libflac12 | 1.4.2+ds-2 | BSD-3-Clause, GFDL-1.1-or-later, GFDL-1.2-only, GPL-2.0-only, GPL-2.0-or-later, ISC, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
 | libflite1 | 2.2-5 | GPL-2.0-only, GPL-3.0-only | dpkg-db-cataloger |
@@ -5856,30 +5856,30 @@ The complete source code for Traefik is publicly available at [https://github.co
 | libgcrypt20 | 1.10.1-3 | GPL-2.0-only | dpkg-db-cataloger |
 | libgdbm-compat4 | 1.23-3 | GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later | dpkg-db-cataloger |
 | libgdbm6 | 1.23-3 | GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later | dpkg-db-cataloger |
-| libgdk-pixbuf-2.0-0 | 2.42.10+dfsg-1+deb12u1 | CC0-1.0, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
-| libgdk-pixbuf2.0-common | 2.42.10+dfsg-1+deb12u1 | CC0-1.0, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
+| libgdk-pixbuf-2.0-0 | 2.42.10+dfsg-1+deb12u2 | CC0-1.0, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
+| libgdk-pixbuf2.0-common | 2.42.10+dfsg-1+deb12u2 | CC0-1.0, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
 | libgfortran5 | 12.2.0-14+deb12u1 | GFDL-1.2-only, GPL-2.0-only, GPL-3.0-only | dpkg-db-cataloger |
 | libgl1 | 1.6.0-1 | Apache-2.0, BSD-1-Clause, GPL-3.0-only, GPL-3.0-or-later, MIT | dpkg-db-cataloger |
 | libgl1-mesa-dri | 22.3.6-1+deb12u1 | Apache-2.0, BSD-2-Clause, MIT | dpkg-db-cataloger |
 | libglapi-mesa | 22.3.6-1+deb12u1 | Apache-2.0, BSD-2-Clause, MIT | dpkg-db-cataloger |
-| libglib2.0-0 | 2.74.6-2+deb12u6 | AFL-2.0, Apache-2.0, CC-BY-SA-3.0, CC0-1.0, FSFULLR, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, Unicode-DFS-2016, bzip2-1.0.6 | dpkg-db-cataloger |
+| libglib2.0-0 | 2.74.6-2+deb12u7 | AFL-2.0, Apache-2.0, CC-BY-SA-3.0, CC0-1.0, FSFULLR, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, Unicode-DFS-2016, bzip2-1.0.6 | dpkg-db-cataloger |
 | libglvnd0 | 1.6.0-1 | Apache-2.0, BSD-1-Clause, GPL-3.0-only, GPL-3.0-or-later, MIT | dpkg-db-cataloger |
 | libglx-mesa0 | 22.3.6-1+deb12u1 | Apache-2.0, BSD-2-Clause, MIT | dpkg-db-cataloger |
 | libglx0 | 1.6.0-1 | Apache-2.0, BSD-1-Clause, GPL-3.0-only, GPL-3.0-or-later, MIT | dpkg-db-cataloger |
 | libgme0 | 0.6.3-6 | LGPL-2.1-only, LGPL-2.1-or-later, MIT | dpkg-db-cataloger |
 | libgmp10 | 2:6.2.1+dfsg1-1.1 | GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
-| libgnutls30 | 3.7.9-2+deb12u4 | Apache-2.0, BSD-3-Clause, GFDL-1.3-only, GPL-3.0-only, LGPL-3.0-only | dpkg-db-cataloger |
+| libgnutls30 | 3.7.9-2+deb12u5 | Apache-2.0, BSD-3-Clause, GFDL-1.3-only, GPL-3.0-only, LGPL-3.0-only | dpkg-db-cataloger |
 | libgomp1 | 12.2.0-14+deb12u1 | GFDL-1.2-only, GPL-2.0-only, GPL-3.0-only | dpkg-db-cataloger |
 | libgpg-error0 | 1.46-1 | BSD-3-Clause, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
 | libgprofng0 | 2.40-2 |  | dpkg-db-cataloger |
 | libgraphite2-3 | 1.3.14-1 | GPL-1.0-only, GPL-1.0-or-later, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, MPL-1.1 | dpkg-db-cataloger |
 | libgsm1 | 1.0.22-1 | TU-Berlin-2.0 | dpkg-db-cataloger |
-| libgssapi-krb5-2 | 1.20.1-2+deb12u3 | GPL-2.0-only | dpkg-db-cataloger |
+| libgssapi-krb5-2 | 1.20.1-2+deb12u4 | GPL-2.0-only | dpkg-db-cataloger |
 | libharfbuzz0b | 6.0.0+dfsg-3 | Apache-2.0, CC0-1.0, FSFAP, FSFUL, FSFULLR, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, ISC, LGPL-2.1-only, LGPL-2.1-or-later, MIT, OFL-1.1 | dpkg-db-cataloger |
 | libhogweed6 | 3.8.1-2 | GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-3.0-or-later | dpkg-db-cataloger |
 | libhwy1 | 1.0.3-3+deb12u1 | Apache-2.0 | dpkg-db-cataloger |
 | libice6 | 2:1.0.10-1 |  | dpkg-db-cataloger |
-| libicu72 | 72.1-3 | GPL-3.0-only, MIT | dpkg-db-cataloger |
+| libicu72 | 72.1-3+deb12u1 | GPL-3.0-only, MIT | dpkg-db-cataloger |
 | libidn2-0 | 2.3.3-1+b1 | GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
 | libiec61883-0 | 1.2.0-6+b1 | LGPL-2.1-only | dpkg-db-cataloger |
 | libisl23 | 0.25-1.1 | BSD-2-Clause, LGPL-2.0-only, LGPL-2.1-or-later, MIT | dpkg-db-cataloger |
@@ -5888,15 +5888,15 @@ The complete source code for Traefik is publicly available at [https://github.co
 | libjansson4 | 2.14-2 |  | dpkg-db-cataloger |
 | libjbig0 | 2.1-6.1 | GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
 | libjpeg62-turbo | 1:2.1.5-2 | BSD-3-Clause, NTP, Zlib | dpkg-db-cataloger |
-| libjq1 | 1.6-2.1 | CC-BY-3.0, GPL-2.0-only, GPL-2.0-or-later, MIT | dpkg-db-cataloger |
+| libjq1 | 1.6-2.1+deb12u1 | CC-BY-3.0, GPL-2.0-only, GPL-2.0-or-later, MIT | dpkg-db-cataloger |
 | libjs-jquery | 3.6.1+dfsg+~3.5.14-1 |  | dpkg-db-cataloger |
 | libjs-sphinxdoc | 5.3.0-4 | BSD-2-Clause, BSD-3-Clause | dpkg-db-cataloger |
 | libjs-underscore | 1.13.4~dfsg+~1.11.4-3 | BSD-3-Clause, GPL-3.0-only, GPL-3.0-or-later | dpkg-db-cataloger |
-| libjxl0.7 | 0.7.0-10 |  | dpkg-db-cataloger |
-| libk5crypto3 | 1.20.1-2+deb12u3 | GPL-2.0-only | dpkg-db-cataloger |
+| libjxl0.7 | 0.7.0-10+deb12u1 |  | dpkg-db-cataloger |
+| libk5crypto3 | 1.20.1-2+deb12u4 | GPL-2.0-only | dpkg-db-cataloger |
 | libkeyutils1 | 1.6.3-2 | GPL-2.0-only, GPL-2.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later | dpkg-db-cataloger |
-| libkrb5-3 | 1.20.1-2+deb12u3 | GPL-2.0-only | dpkg-db-cataloger |
-| libkrb5support0 | 1.20.1-2+deb12u3 | GPL-2.0-only | dpkg-db-cataloger |
+| libkrb5-3 | 1.20.1-2+deb12u4 | GPL-2.0-only | dpkg-db-cataloger |
+| libkrb5support0 | 1.20.1-2+deb12u4 | GPL-2.0-only | dpkg-db-cataloger |
 | liblapack3 | 3.11.0-2 | BSD-3-Clause | dpkg-db-cataloger |
 | liblcms2-2 | 2.14-2 | GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, IJG, MIT | dpkg-db-cataloger |
 | libldap-2.5-0 | 2.5.13+dfsg-5 | BSD-3-Clause, Beerware, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later | dpkg-db-cataloger |
@@ -5927,7 +5927,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | libonig5 | 6.9.8-1 | BSD-2-Clause, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
 | libopenal-data | 1:1.19.1-2 | GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.0-or-later, LGPL-2.1-or-later | dpkg-db-cataloger |
 | libopenal1 | 1:1.19.1-2 | GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.0-or-later, LGPL-2.1-or-later | dpkg-db-cataloger |
-| libopenjp2-7 | 2.5.0-2+deb12u1 | Libpng, libtiff, MIT, Zlib | dpkg-db-cataloger |
+| libopenjp2-7 | 2.5.0-2+deb12u2 | Libpng, libtiff, MIT, Zlib | dpkg-db-cataloger |
 | libopenmpt0 | 0.6.9-1 | BSD-3-Clause, BSL-1.0, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, X11 | dpkg-db-cataloger |
 | libopus0 | 1.3.1-3 | BSD-2-Clause, BSD-3-Clause | dpkg-db-cataloger |
 | libp11-kit0 | 0.24.1-2 | Apache-2.0, BSD-3-Clause, ISC, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
@@ -5940,13 +5940,13 @@ The complete source code for Traefik is publicly available at [https://github.co
 | libpangoft2-1.0-0 | 1.50.12+ds-1 | Apache-2.0, Apache-2.0, Bitstream-Vera, CC0-1.0, GPL-2.0-or-later, GPL-2.0-only, ICU, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, OFL-1.1, TCL | dpkg-db-cataloger |
 | libpciaccess0 | 0.17-2 |  | dpkg-db-cataloger |
 | libpcre2-8-0 | 10.42-1 | BSD-2-Clause, BSD-3-Clause, X11 | dpkg-db-cataloger |
-| libperl5.36 | 5.36.0-7+deb12u2 | Artistic-2.0, BSD-3-Clause, GPL-1.0-only, GPL-1.0-or-later, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.1-only, Zlib | dpkg-db-cataloger |
+| libperl5.36 | 5.36.0-7+deb12u3 | Artistic-2.0, BSD-3-Clause, GPL-1.0-only, GPL-1.0-or-later, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.1-only, Zlib | dpkg-db-cataloger |
 | libpgm-5.3-0 | 5.3.128~dfsg-2 | BSD-3-Clause, ISC, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only | dpkg-db-cataloger |
 | libpixman-1-0 | 0.42.2-1 |  | dpkg-db-cataloger |
 | libplacebo208 | 4.208.0-3 | LGPL-2.1-only, LGPL-2.1-or-later, Zlib | dpkg-db-cataloger |
-| libpng16-16 | 1.6.39-2 | Apache-2.0, BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later, Libpng | dpkg-db-cataloger |
+| libpng16-16 | 1.6.39-2+deb12u1 | Apache-2.0, BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later, Libpng | dpkg-db-cataloger |
 | libpocketsphinx3 | 0.8+5prealpha+1-15 | BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
-| libpostproc56 | 7:5.1.6-0+deb12u1 | BSD-1-Clause, BSD-2-Clause, BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, IJG, ISC, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, Zlib | dpkg-db-cataloger |
+| libpostproc56 | 7:5.1.8-0+deb12u1 | BSD-1-Clause, BSD-2-Clause, BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, IJG, ISC, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, Zlib | dpkg-db-cataloger |
 | libpsl5 | 0.21.2-1 | MIT | dpkg-db-cataloger |
 | libpulse0 | 16.1+dfsg1-2+b1 | GPL-2.0-only, GPL-2.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
 | libpython3-dev | 3.11.2-1+b1 |  | dpkg-db-cataloger |
@@ -5981,31 +5981,31 @@ The complete source code for Traefik is publicly available at [https://github.co
 | libsm6 | 2:1.2.3-1 |  | dpkg-db-cataloger |
 | libsmartcols1 | 2.38.1-5+deb12u3 | BSD-3-Clause, BSD-4-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, MIT | dpkg-db-cataloger |
 | libsnappy1v5 | 1.1.9-3 | BSD-3-Clause, CC-BY-3.0, CC-BY-4.0, MIT | dpkg-db-cataloger |
-| libsndfile1 | 1.2.0-1 | Apache-2.0, BSD-2-Clause, BSD-3-Clause, FSFAP, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, NTP | dpkg-db-cataloger |
+| libsndfile1 | 1.2.0-1+deb12u1 | Apache-2.0, BSD-2-Clause, BSD-3-Clause, FSFAP, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, NTP | dpkg-db-cataloger |
 | libsndio7.0 | 1.9.0-0.3+b2 | ISC | dpkg-db-cataloger |
 | libsodium23 | 1.0.18-1 | BSD-2-Clause, CC0-1.0, GPL-2.0-only, GPL-2.0-or-later, ISC, MIT | dpkg-db-cataloger |
 | libsord-0-0 | 0.16.14+git221008-1 | ISC | dpkg-db-cataloger |
 | libsoxr0 | 0.1.3-4 | LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
 | libspeex1 | 1.2.1-2 | BSD-3-Clause, GFDL-1.1-or-later, GFDL-1.2-only, LGPL-2.0-only, LGPL-2.0-or-later | dpkg-db-cataloger |
 | libsphinxbase3 | 0.8+5prealpha+1-16 | BSD-2-Clause, BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
-| libsqlite3-0 | 3.40.1-2+deb12u1 | GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
+| libsqlite3-0 | 3.40.1-2+deb12u2 | GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
 | libsratom-0-0 | 0.6.14-1 | ISC | dpkg-db-cataloger |
 | libsrt1.5-gnutls | 1.5.1-1+deb12u1 | BSD-3-Clause, LGPL-2.1-only, LGPL-2.1-or-later, MPL-2.0, Zlib, Unlicense | dpkg-db-cataloger |
-| libss2 | 1.47.0-2 | Apache-2.0, Apache-2.0, BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later, ISC, Kazlib, LGPL-2.0-only, Latex2e | dpkg-db-cataloger |
+| libss2 | 1.47.0-2+b2 | Apache-2.0, Apache-2.0, BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later, ISC, Kazlib, LGPL-2.0-only, Latex2e | dpkg-db-cataloger |
 | libssh-gcrypt-4 | 0.10.6-0+deb12u1 | BSD-2-Clause, BSD-3-Clause, LGPL-2.1-only | dpkg-db-cataloger |
 | libssh2-1 | 1.10.0-3+b1 |  | dpkg-db-cataloger |
-| libssl3 | 3.0.16-1~deb12u1 | Apache-2.0, GPL-1.0-only, GPL-1.0-or-later | dpkg-db-cataloger |
+| libssl3 | 3.0.17-1~deb12u3 | Apache-2.0, GPL-1.0-only, GPL-1.0-or-later | dpkg-db-cataloger |
 | libstdc++-12-dev | 12.2.0-14+deb12u1 | GFDL-1.2-only, GPL-2.0-only, GPL-3.0-only | dpkg-db-cataloger |
 | libstdc++6 | 12.2.0-14+deb12u1 | GFDL-1.2-only, GPL-2.0-only, GPL-3.0-only | dpkg-db-cataloger |
 | libsvtav1enc1 | 1.4.1+dfsg-1 | BSD-2-Clause, BSD-3-Clause-Clear, BSD-3-Clause, ISC, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
-| libswresample4 | 7:5.1.6-0+deb12u1 | BSD-1-Clause, BSD-2-Clause, BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, IJG, ISC, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, Zlib | dpkg-db-cataloger |
-| libswscale6 | 7:5.1.6-0+deb12u1 | BSD-1-Clause, BSD-2-Clause, BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, IJG, ISC, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, Zlib | dpkg-db-cataloger |
-| libsystemd0 | 252.38-1~deb12u1 | CC0-1.0, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
+| libswresample4 | 7:5.1.8-0+deb12u1 | BSD-1-Clause, BSD-2-Clause, BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, IJG, ISC, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, Zlib | dpkg-db-cataloger |
+| libswscale6 | 7:5.1.8-0+deb12u1 | BSD-1-Clause, BSD-2-Clause, BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, IJG, ISC, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, Zlib | dpkg-db-cataloger |
+| libsystemd0 | 252.39-1~deb12u1 | CC0-1.0, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
 | libtasn1-6 | 4.19.0-2+deb12u1 | GFDL-1.3-only, GPL-3.0-only, LGPL-2.1-only | dpkg-db-cataloger |
 | libthai-data | 0.1.29-1 | GPL-2.0-only, GPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
 | libthai0 | 0.1.29-1 | GPL-2.0-only, GPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
-| libtheora0 | 1.1.1+dfsg.1-16.1+b1 | BSD-3-Clause | dpkg-db-cataloger |
-| libtiff6 | 4.5.0-6+deb12u2 |  | dpkg-db-cataloger |
+| libtheora0 | 1.1.1+dfsg.1-16.1+deb12u1 | BSD-3-Clause | dpkg-db-cataloger |
+| libtiff6 | 4.5.0-6+deb12u3 |  | dpkg-db-cataloger |
 | libtinfo6 | 6.4-4 | BSD-3-Clause, X11 | dpkg-db-cataloger |
 | libtirpc-common | 1.3.3+ds-1 | BSD-3-Clause, GPL-2.0-only, LGPL-2.1-only | dpkg-db-cataloger |
 | libtirpc-dev | 1.3.3+ds-1 | BSD-3-Clause, GPL-2.0-only, LGPL-2.1-only | dpkg-db-cataloger |
@@ -6013,7 +6013,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | libtsan2 | 12.2.0-14+deb12u1 | GFDL-1.2-only, GPL-2.0-only, GPL-3.0-only | dpkg-db-cataloger |
 | libtwolame0 | 0.4.0-2 | LGPL-2.0-only, LGPL-2.0-or-later | dpkg-db-cataloger |
 | libubsan1 | 12.2.0-14+deb12u1 | GFDL-1.2-only, GPL-2.0-only, GPL-3.0-only | dpkg-db-cataloger |
-| libudev1 | 252.38-1~deb12u1 | CC0-1.0, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
+| libudev1 | 252.39-1~deb12u1 | CC0-1.0, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
 | libudfread0 | 1.1.2-1 | GPL-2.0-only, GPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
 | libunistring2 | 1.0-2 | GFDL-1.2-only, GFDL-1.2-or-later, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-3.0-only, LGPL-3.0-or-later, MIT | dpkg-db-cataloger |
 | libusb-1.0-0 | 2:1.0.26-1 | GPL-2.0-only, LGPL-2.1-only | dpkg-db-cataloger |
@@ -6057,7 +6057,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | libxfixes3 | 1:6.0.0-2 | HPND-sell-variant, MIT | dpkg-db-cataloger |
 | libxi6 | 2:1.8-1+b1 |  | dpkg-db-cataloger |
 | libxkbcommon0 | 1.5.0-1 |  | dpkg-db-cataloger |
-| libxml2 | 2.9.14+dfsg-1.3~deb12u1 | ISC | dpkg-db-cataloger |
+| libxml2 | 2.9.14+dfsg-1.3~deb12u4 | ISC | dpkg-db-cataloger |
 | libxrandr2 | 2:1.5.2-2+b1 | HPND-sell-variant | dpkg-db-cataloger |
 | libxrender1 | 1:0.9.10-1.1 | HPND-sell-variant | dpkg-db-cataloger |
 | libxshmfence1 | 1.3-1 | HPND-sell-variant | dpkg-db-cataloger |
@@ -6073,142 +6073,144 @@ The complete source code for Traefik is publicly available at [https://github.co
 | libzstd1 | 1.5.4+dfsg2-5 | BSD-3-Clause, GPL-2.0-only, Zlib | dpkg-db-cataloger |
 | libzvbi-common | 0.2.41-1 | BSD-2-Clause, BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, MIT | dpkg-db-cataloger |
 | libzvbi0 | 0.2.41-1 | BSD-2-Clause, BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, MIT | dpkg-db-cataloger |
-| linux-libc-dev | 6.1.140-1 | BSD-2-Clause, GPL-2.0-only, LGPL-2.1-only | dpkg-db-cataloger |
+| linux-libc-dev | 6.1.158-1 | BSD-2-Clause, GPL-2.0-only, LGPL-2.1-only | dpkg-db-cataloger |
 | login | 1:4.13+dfsg1-1+deb12u1 | BSD-3-Clause, GPL-1.0-only, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
-| logsave | 1.47.0-2 | Apache-2.0, Apache-2.0, BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later, ISC, Kazlib, LGPL-2.0-only, Latex2e | dpkg-db-cataloger |
+| logsave | 1.47.0-2+b2 | Apache-2.0, Apache-2.0, BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later, ISC, Kazlib, LGPL-2.0-only, Latex2e | dpkg-db-cataloger |
 | loguru | 0.7.3 |  | python-installed-package-cataloger |
-| lxml | 5.4.0 | BSD-3-Clause | python-installed-package-cataloger |
+| lxml | 6.0.2 | BSD-3-Clause | python-installed-package-cataloger |
 | make | 4.3-4.1 | GPL-3.0-only, GPL-3.0-or-later | dpkg-db-cataloger |
 | mako | 1.3.10 | MIT | python-installed-package-cataloger |
-| markdown | 3.7 | BSD-3-Clause | python-installed-package-cataloger |
-| markdown-it-py | 3.0.0 | MIT | python-installed-package-cataloger |
+| markdown | 3.10 | BSD-3-Clause | python-installed-package-cataloger |
+| markdown-it-py | 4.0.0 |  | python-installed-package-cataloger |
 | markupsafe | 2.1.5 | BSD-3-Clause | python-installed-package-cataloger |
 | marshmallow | 3.26.1 | MIT | python-installed-package-cataloger |
 | mawk | 1.3.4.20200120-3.1 | CC-BY-3.0, GPL-2.0-only, X11 | dpkg-db-cataloger |
+| mcp | 1.25.0 | MIT | python-installed-package-cataloger |
 | mdurl | 0.1.2 | MIT | python-installed-package-cataloger |
 | media-types | 10.0.0 |  | dpkg-db-cataloger |
-| milvus-lite | 2.4.12 |  | python-installed-package-cataloger |
-| mmh3 | 5.1.0 | MIT | python-installed-package-cataloger |
+| mmh3 | 5.2.0 | MIT | python-installed-package-cataloger |
 | more-itertools | 10.3.0 | MIT | python-installed-package-cataloger |
 | mount | 2.38.1-5+deb12u3 | BSD-3-Clause, BSD-4-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, MIT | dpkg-db-cataloger |
 | mpmath | 1.3.0 |  | python-installed-package-cataloger |
-| msal | 1.32.3 | MIT | python-installed-package-cataloger |
+| msal | 1.34.0 | MIT | python-installed-package-cataloger |
 | msal-extensions | 1.3.1 |  | python-installed-package-cataloger |
 | msoffcrypto-tool | 5.4.2 | MIT | python-installed-package-cataloger |
-| multidict | 6.4.4 |  | python-installed-package-cataloger |
+| multidict | 6.7.0 |  | python-installed-package-cataloger |
 | multiprocess | 0.70.16 | BSD-3-Clause | python-installed-package-cataloger |
-| my-test-package | 1.0 |  | python-installed-package-cataloger |
 | mypy-extensions | 1.1.0 | MIT | python-installed-package-cataloger |
 | ncurses-base | 6.4-4 | BSD-3-Clause, X11 | dpkg-db-cataloger |
 | ncurses-bin | 6.4-4 | BSD-3-Clause, X11 | dpkg-db-cataloger |
 | nest-asyncio | 1.6.0 |  | python-installed-package-cataloger |
 | netbase | 6.4 | GPL-2.0-only | dpkg-db-cataloger |
 | netcat-openbsd | 1.219-1 | BSD-2-Clause, BSD-3-Clause | dpkg-db-cataloger |
-| networkx | 3.3 | BSD-3-Clause | python-installed-package-cataloger |
-| ninja | 1.11.1.4 |  | python-installed-package-cataloger |
-| nltk | 3.9.1 |  | python-installed-package-cataloger |
-| node | 22.11.0 |  | binary-classifier-cataloger |
-| numpy | 1.26.4 | BSD-3-Clause | python-installed-package-cataloger |
-| oauthlib | 3.2.2 |  | python-installed-package-cataloger |
+| networkx | 3.6.1 | BSD-3-Clause | python-installed-package-cataloger |
+| ninja | 1.13.0 |  | python-installed-package-cataloger |
+| nltk | 3.9.2 |  | python-installed-package-cataloger |
+| node | 24.11.1 |  | binary-classifier-cataloger |
+| numpy | 2.2.6 | BSD-3-Clause | python-installed-package-cataloger |
+| oauthlib | 3.3.1 | BSD-3-Clause | python-installed-package-cataloger |
 | ocl-icd-libopencl1 | 2.3.1-1 | BSD-2-Clause | dpkg-db-cataloger |
 | olefile | 0.47 |  | python-installed-package-cataloger |
-| oletools | 0.60.2 |  | python-installed-package-cataloger |
-| onnxruntime | 1.20.1 |  | python-installed-package-cataloger |
-| open-webui | 0.6.15 |  | javascript-package-cataloger |
-| openai | 1.86.0 | Apache-2.0 | python-installed-package-cataloger |
-| opencv-python | 4.11.0.86 |  | python-installed-package-cataloger |
-| opencv-python-headless | 4.11.0.86 |  | python-installed-package-cataloger |
+| onnxruntime | 1.23.2 |  | python-installed-package-cataloger |
+| open-webui | 0.6.43 |  | javascript-package-cataloger |
+| openai | 2.14.0 | Apache-2.0 | python-installed-package-cataloger |
+| opencv-python | 4.12.0.88 |  | python-installed-package-cataloger |
+| opencv-python-headless | 4.12.0.88 |  | python-installed-package-cataloger |
 | openpyxl | 3.1.5 | MIT | python-installed-package-cataloger |
-| opensearch-py | 2.8.0 | Apache-2.0 | python-installed-package-cataloger |
-| openssl | 3.0.16-1~deb12u1 | Apache-2.0, GPL-1.0-only, GPL-1.0-or-later | dpkg-db-cataloger |
-| opentelemetry-api | 1.32.1 | Apache-2.0 | python-installed-package-cataloger |
-| opentelemetry-exporter-otlp | 1.32.1 | Apache-2.0 | python-installed-package-cataloger |
-| opentelemetry-exporter-otlp-proto-common | 1.32.1 | Apache-2.0 | python-installed-package-cataloger |
-| opentelemetry-exporter-otlp-proto-grpc | 1.32.1 | Apache-2.0 | python-installed-package-cataloger |
-| opentelemetry-exporter-otlp-proto-http | 1.32.1 | Apache-2.0 | python-installed-package-cataloger |
-| opentelemetry-instrumentation | 0.53b1 | Apache-2.0 | python-installed-package-cataloger |
-| opentelemetry-instrumentation-aiohttp-client | 0.53b1 | Apache-2.0 | python-installed-package-cataloger |
-| opentelemetry-instrumentation-asgi | 0.53b1 | Apache-2.0 | python-installed-package-cataloger |
-| opentelemetry-instrumentation-fastapi | 0.53b1 | Apache-2.0 | python-installed-package-cataloger |
-| opentelemetry-instrumentation-httpx | 0.53b1 | Apache-2.0 | python-installed-package-cataloger |
-| opentelemetry-instrumentation-logging | 0.53b1 | Apache-2.0 | python-installed-package-cataloger |
-| opentelemetry-instrumentation-redis | 0.53b1 | Apache-2.0 | python-installed-package-cataloger |
-| opentelemetry-instrumentation-requests | 0.53b1 | Apache-2.0 | python-installed-package-cataloger |
-| opentelemetry-instrumentation-sqlalchemy | 0.53b1 | Apache-2.0 | python-installed-package-cataloger |
-| opentelemetry-proto | 1.32.1 | Apache-2.0 | python-installed-package-cataloger |
-| opentelemetry-sdk | 1.32.1 | Apache-2.0 | python-installed-package-cataloger |
-| opentelemetry-semantic-conventions | 0.53b1 | Apache-2.0 | python-installed-package-cataloger |
-| opentelemetry-util-http | 0.53b1 | Apache-2.0 | python-installed-package-cataloger |
-| orjson | 3.10.18 | Apache-2.0 OR MIT | python-installed-package-cataloger |
+| opensearch-protobufs | 0.19.0 | Apache-2.0 | python-installed-package-cataloger |
+| opensearch-py | 3.1.0 | Apache-2.0 | python-installed-package-cataloger |
+| openssl | 3.0.17-1~deb12u3 | Apache-2.0, GPL-1.0-only, GPL-1.0-or-later | dpkg-db-cataloger |
+| opentelemetry-api | 1.39.1 | Apache-2.0 | python-installed-package-cataloger |
+| opentelemetry-exporter-otlp | 1.39.1 | Apache-2.0 | python-installed-package-cataloger |
+| opentelemetry-exporter-otlp-proto-common | 1.39.1 | Apache-2.0 | python-installed-package-cataloger |
+| opentelemetry-exporter-otlp-proto-grpc | 1.39.1 | Apache-2.0 | python-installed-package-cataloger |
+| opentelemetry-exporter-otlp-proto-http | 1.39.1 | Apache-2.0 | python-installed-package-cataloger |
+| opentelemetry-instrumentation | 0.60b1 | Apache-2.0 | python-installed-package-cataloger |
+| opentelemetry-instrumentation-aiohttp-client | 0.60b1 | Apache-2.0 | python-installed-package-cataloger |
+| opentelemetry-instrumentation-asgi | 0.60b1 | Apache-2.0 | python-installed-package-cataloger |
+| opentelemetry-instrumentation-fastapi | 0.60b1 | Apache-2.0 | python-installed-package-cataloger |
+| opentelemetry-instrumentation-httpx | 0.60b1 | Apache-2.0 | python-installed-package-cataloger |
+| opentelemetry-instrumentation-logging | 0.60b1 | Apache-2.0 | python-installed-package-cataloger |
+| opentelemetry-instrumentation-redis | 0.60b1 | Apache-2.0 | python-installed-package-cataloger |
+| opentelemetry-instrumentation-requests | 0.60b1 | Apache-2.0 | python-installed-package-cataloger |
+| opentelemetry-instrumentation-sqlalchemy | 0.60b1 | Apache-2.0 | python-installed-package-cataloger |
+| opentelemetry-proto | 1.39.1 | Apache-2.0 | python-installed-package-cataloger |
+| opentelemetry-sdk | 1.39.1 | Apache-2.0 | python-installed-package-cataloger |
+| opentelemetry-semantic-conventions | 0.60b1 | Apache-2.0 | python-installed-package-cataloger |
+| opentelemetry-util-http | 0.60b1 | Apache-2.0 | python-installed-package-cataloger |
+| oracledb | 3.4.1 | UPL-1.0 OR Apache-2.0 | python-installed-package-cataloger |
+| orjson | 3.11.5 | Apache-2.0 OR MIT | python-installed-package-cataloger |
+| ormsgpack | 1.12.1 | Apache-2.0 OR MIT | python-installed-package-cataloger |
 | overrides | 7.7.0 |  | python-installed-package-cataloger |
-| packaging | 23.2 |  | python-installed-package-cataloger |
 | packaging | 24.2 |  | python-installed-package-cataloger |
-| pandas | 2.2.3 |  | python-installed-package-cataloger |
+| packaging | 25.0 |  | python-installed-package-cataloger |
+| pandas | 2.3.3 |  | python-installed-package-cataloger |
 | pandoc | 2.17.1.1-2~deb12u1 | CC-BY-SA-3.0, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, ISC, MS-RL | dpkg-db-cataloger |
 | pandoc-data | 2.17.1.1-2~deb12u1 | CC-BY-SA-3.0, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, ISC, MS-RL | dpkg-db-cataloger |
-| passlib | 1.7.4 |  | python-installed-package-cataloger |
 | passwd | 1:4.13+dfsg1-1+deb12u1 | BSD-3-Clause, GPL-1.0-only, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
 | patch | 2.7.6-7 |  | dpkg-db-cataloger |
 | pathspec | 0.12.1 | MPL-2.0 | python-installed-package-cataloger |
-| pcodedmp | 1.2.6 |  | python-installed-package-cataloger |
-| peewee | 3.18.1 |  | python-installed-package-cataloger |
-| peewee-migrate | 1.12.2 | MIT | python-installed-package-cataloger |
-| perl | 5.36.0-7+deb12u2 | Artistic-2.0, BSD-3-Clause, GPL-1.0-only, GPL-1.0-or-later, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.1-only, Zlib | dpkg-db-cataloger |
-| perl-base | 5.36.0-7+deb12u2 | Artistic-2.0, BSD-3-Clause, GPL-1.0-only, GPL-1.0-or-later, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.1-only, Zlib | dpkg-db-cataloger |
-| perl-modules-5.36 | 5.36.0-7+deb12u2 | Artistic-2.0, BSD-3-Clause, GPL-1.0-only, GPL-1.0-or-later, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.1-only, Zlib | dpkg-db-cataloger |
-| pgvector | 0.4.0 | MIT | python-installed-package-cataloger |
-| pillow | 11.2.1 | MIT-CMU | python-installed-package-cataloger |
+| peewee | 3.18.3 |  | python-installed-package-cataloger |
+| peewee-migrate | 1.14.3 | MIT | python-installed-package-cataloger |
+| perl | 5.36.0-7+deb12u3 | Artistic-2.0, BSD-3-Clause, GPL-1.0-only, GPL-1.0-or-later, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.1-only, Zlib | dpkg-db-cataloger |
+| perl-base | 5.36.0-7+deb12u3 | Artistic-2.0, BSD-3-Clause, GPL-1.0-only, GPL-1.0-or-later, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.1-only, Zlib | dpkg-db-cataloger |
+| perl-modules-5.36 | 5.36.0-7+deb12u3 | Artistic-2.0, BSD-3-Clause, GPL-1.0-only, GPL-1.0-or-later, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.1-only, Zlib | dpkg-db-cataloger |
+| pgvector | 0.4.2 | MIT | python-installed-package-cataloger |
+| pillow | 12.0.0 | MIT-CMU | python-installed-package-cataloger |
 | pinecone | 6.0.2 | Apache-2.0 | python-installed-package-cataloger |
 | pinecone-plugin-interface | 0.0.7 | Apache-2.0 | python-installed-package-cataloger |
 | pip | 24.0 | MIT | python-installed-package-cataloger |
 | platformdirs | 4.2.2 | MIT | python-installed-package-cataloger |
-| platformdirs | 4.3.8 | MIT | python-installed-package-cataloger |
-| playwright | 1.49.1 | Apache-2.0 | python-installed-package-cataloger |
-| playwright-core | 1.49.1 | Apache-2.0 | javascript-package-cataloger |
+| platformdirs | 4.5.1 | MIT | python-installed-package-cataloger |
+| playwright | 1.57.0 | Apache-2.0 | python-installed-package-cataloger |
+| playwright-core | 1.57.0-beta-1764944708000 | Apache-2.0 | javascript-package-cataloger |
 | pluggy | 1.6.0 | MIT | python-installed-package-cataloger |
-| portalocker | 2.10.1 | BSD-3-Clause | python-installed-package-cataloger |
-| posthog | 4.10.0 | MIT | python-installed-package-cataloger |
+| portalocker | 3.2.0 | BSD-3-Clause | python-installed-package-cataloger |
+| posthog | 5.4.0 | MIT | python-installed-package-cataloger |
 | primp | 0.15.0 |  | python-installed-package-cataloger |
-| propcache | 0.3.2 | Apache-2.0 | python-installed-package-cataloger |
-| proto-plus | 1.26.1 |  | python-installed-package-cataloger |
+| propcache | 0.4.1 | Apache-2.0 | python-installed-package-cataloger |
+| proto-plus | 1.27.0 |  | python-installed-package-cataloger |
 | protobuf | 5.29.5 |  | python-installed-package-cataloger |
-| psutil | 7.0.0 | BSD-3-Clause | python-installed-package-cataloger |
-| psycopg2-binary | 2.9.9 |  | python-installed-package-cataloger |
+| psutil | 7.1.3 | BSD-3-Clause | python-installed-package-cataloger |
+| psycopg2-binary | 2.9.11 |  | python-installed-package-cataloger |
 | pyarrow | 20.0.0 |  | python-installed-package-cataloger |
-| pyasn1 | 0.4.8 |  | python-installed-package-cataloger |
-| pyasn1-modules | 0.4.1 |  | python-installed-package-cataloger |
-| pyclipper | 1.3.0.post6 | MIT | python-installed-package-cataloger |
-| pycparser | 2.22 | BSD-3-Clause | python-installed-package-cataloger |
-| pydantic | 2.10.6 | MIT | python-installed-package-cataloger |
-| pydantic-core | 2.27.2 | MIT | python-installed-package-cataloger |
-| pydantic-settings | 2.9.1 | MIT | python-installed-package-cataloger |
+| pyasn1 | 0.6.1 | BSD-2-Clause | python-installed-package-cataloger |
+| pyasn1-modules | 0.4.2 |  | python-installed-package-cataloger |
+| pybase64 | 1.4.3 | BSD-2-Clause | python-installed-package-cataloger |
+| pyclipper | 1.4.0 | MIT | python-installed-package-cataloger |
+| pycparser | 2.23 | BSD-3-Clause | python-installed-package-cataloger |
+| pycrdt | 0.12.44 |  | python-installed-package-cataloger |
+| pydantic | 2.12.5 | MIT | python-installed-package-cataloger |
+| pydantic-core | 2.41.5 | MIT | python-installed-package-cataloger |
+| pydantic-settings | 2.12.0 | MIT | python-installed-package-cataloger |
 | pydub | 0.25.1 | MIT | python-installed-package-cataloger |
-| pyee | 12.0.0 | MIT | python-installed-package-cataloger |
-| pygments | 2.19.1 | BSD-2-Clause | python-installed-package-cataloger |
+| pyee | 13.0.0 | MIT | python-installed-package-cataloger |
+| pygments | 2.19.2 | BSD-2-Clause | python-installed-package-cataloger |
 | pyjwt | 2.10.1 | MIT | python-installed-package-cataloger |
-| pymdown-extensions | 10.14.2 | MIT | python-installed-package-cataloger |
-| pymilvus | 2.5.0 | Apache-2.0 | python-installed-package-cataloger |
-| pymongo | 4.13.1 | Apache-2.0 | python-installed-package-cataloger |
-| pymysql | 1.1.1 |  | python-installed-package-cataloger |
-| pyodide | 0.27.3 | Apache-2.0 | javascript-package-cataloger |
-| pypandoc | 1.15 | MIT | python-installed-package-cataloger |
-| pyparsing | 3.2.3 | MIT | python-installed-package-cataloger |
-| pypdf | 4.3.1 | BSD-3-Clause | python-installed-package-cataloger |
+| pymdown-extensions | 10.19.1 | MIT | python-installed-package-cataloger |
+| pymilvus | 2.6.5 |  | python-installed-package-cataloger |
+| pymongo | 4.15.5 | Apache-2.0 | python-installed-package-cataloger |
+| pymysql | 1.1.2 | MIT | python-installed-package-cataloger |
+| pyodide | 0.28.2 | MPL-2.0 | javascript-package-cataloger |
+| pypandoc | 1.16.2 | MIT | python-installed-package-cataloger |
+| pyparsing | 3.2.5 | MIT | python-installed-package-cataloger |
+| pypdf | 6.5.0 | BSD-3-Clause | python-installed-package-cataloger |
 | pypika | 0.48.9 |  | python-installed-package-cataloger |
 | pyproject-hooks | 1.2.0 | MIT | python-installed-package-cataloger |
-| pytest | 8.3.5 | MIT | python-installed-package-cataloger |
-| pytest-docker | 3.1.2 | MIT | python-installed-package-cataloger |
-| python | 3.11.13 |  | binary-classifier-cataloger |
+| pytest | 8.4.2 | MIT | python-installed-package-cataloger |
+| pytest-docker | 3.2.5 | MIT | python-installed-package-cataloger |
+| python | 3.11.14 |  | binary-classifier-cataloger |
 | python-dateutil | 2.9.0.post0 |  | python-installed-package-cataloger |
-| python-dotenv | 1.1.0 | BSD-3-Clause | python-installed-package-cataloger |
-| python-engineio | 4.12.2 | MIT | python-installed-package-cataloger |
-| python-iso639 | 2025.2.18 |  | python-installed-package-cataloger |
-| python-jose | 3.4.0 | MIT | python-installed-package-cataloger |
+| python-dotenv | 1.2.1 | BSD-3-Clause | python-installed-package-cataloger |
+| python-engineio | 4.12.3 | MIT | python-installed-package-cataloger |
+| python-iso639 | 2025.11.16 |  | python-installed-package-cataloger |
+| python-jose | 3.5.0 | MIT | python-installed-package-cataloger |
 | python-magic | 0.4.27 | MIT | python-installed-package-cataloger |
-| python-multipart | 0.0.20 | Apache-2.0 | python-installed-package-cataloger |
+| python-mimeparse | 2.0.0 | MIT | python-installed-package-cataloger |
+| python-multipart | 0.0.21 | Apache-2.0 | python-installed-package-cataloger |
 | python-oxmsg | 0.0.2 | MIT | python-installed-package-cataloger |
 | python-pptx | 1.0.2 | MIT | python-installed-package-cataloger |
-| python-socketio | 5.13.0 |  | python-installed-package-cataloger |
+| python-socketio | 5.15.1 | MIT | python-installed-package-cataloger |
 | python3 | 3.11.2-1+b1 |  | dpkg-db-cataloger |
 | python3-dev | 3.11.2-1+b1 |  | dpkg-db-cataloger |
 | python3-distutils | 3.11.2-3 |  | dpkg-db-cataloger |
@@ -6217,104 +6219,109 @@ The complete source code for Traefik is publicly available at [https://github.co
 | python3.11 | 3.11.2-6+deb12u6 | GPL-2.0-only | dpkg-db-cataloger |
 | python3.11-dev | 3.11.2-6+deb12u6 | GPL-2.0-only | dpkg-db-cataloger |
 | python3.11-minimal | 3.11.2-6+deb12u6 | GPL-2.0-only | dpkg-db-cataloger |
+| pytokens | 0.3.0 | MIT | python-installed-package-cataloger |
 | pytube | 15.0.0 |  | python-installed-package-cataloger |
 | pytz | 2025.2 | MIT | python-installed-package-cataloger |
 | pyxlsb | 1.0.10 |  | python-installed-package-cataloger |
-| pyyaml | 6.0.2 | MIT | python-installed-package-cataloger |
-| qdrant-client | 1.12.2 | Apache-2.0 | python-installed-package-cataloger |
+| pyyaml | 6.0.3 | MIT | python-installed-package-cataloger |
+| qdrant-client | 1.16.2 | Apache-2.0 | python-installed-package-cataloger |
 | rank-bm25 | 0.2.2 | Apache-2.0 | python-installed-package-cataloger |
-| rapidfuzz | 3.13.0 | MIT | python-installed-package-cataloger |
+| rapidfuzz | 3.14.3 | MIT | python-installed-package-cataloger |
 | rapidocr-onnxruntime | 1.4.4 | Apache-2.0 | python-installed-package-cataloger |
 | readline-common | 8.2-1.3 | GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later | dpkg-db-cataloger |
-| red-black-tree-mod | 1.22 | MIT | python-installed-package-cataloger |
-| redis | 6.2.0 | MIT | python-installed-package-cataloger |
-| regex | 2024.11.6 |  | python-installed-package-cataloger |
-| requests | 2.32.4 | Apache-2.0 | python-installed-package-cataloger |
+| redis | 7.1.0 | MIT | python-installed-package-cataloger |
+| referencing | 0.37.0 | MIT | python-installed-package-cataloger |
+| regex | 2025.11.3 | Apache-2.0 AND CNRI-Python | python-installed-package-cataloger |
+| requests | 2.32.5 | Apache-2.0 | python-installed-package-cataloger |
 | requests-oauthlib | 2.0.0 | ISC | python-installed-package-cataloger |
 | requests-toolbelt | 1.0.0 |  | python-installed-package-cataloger |
-| restrictedpython | 8.0 | ZPL-2.1 | python-installed-package-cataloger |
-| rich | 14.0.0 | MIT | python-installed-package-cataloger |
+| restrictedpython | 8.1 | ZPL-2.1 | python-installed-package-cataloger |
+| rich | 13.9.4 | MIT | python-installed-package-cataloger |
 | rpcsvc-proto | 1.4.3-1 | BSD-3-Clause, GPL-2.0-only, GPL-3.0-only, MIT | dpkg-db-cataloger |
+| rpds-py | 0.30.0 | MIT | python-installed-package-cataloger |
 | rsa | 4.9.1 | Apache-2.0 | python-installed-package-cataloger |
-| rtfde | 0.1.2.1 |  | python-installed-package-cataloger |
-| s3transfer | 0.10.4 |  | python-installed-package-cataloger |
-| safetensors | 0.5.3 |  | python-installed-package-cataloger |
-| scikit-learn | 1.7.0 |  | python-installed-package-cataloger |
-| scipy | 1.15.3 | BSD-3-Clause | python-installed-package-cataloger |
+| s3transfer | 0.16.0 |  | python-installed-package-cataloger |
+| safetensors | 0.7.0 |  | python-installed-package-cataloger |
+| scikit-learn | 1.8.0 | BSD-3-Clause | python-installed-package-cataloger |
+| scipy | 1.16.3 | BSD-3-Clause | python-installed-package-cataloger |
 | sed | 4.9-1 | BSD-4-Clause-UC, BSL-1.0, GFDL-1.3-only, GPL-3.0-only, GPL-3.0-or-later, ISC, X11 | dpkg-db-cataloger |
-| sentence-transformers | 4.1.0 |  | python-installed-package-cataloger |
-| sentencepiece | 0.2.0 |  | python-installed-package-cataloger |
-| setuptools | 80.9.0 | MIT | python-installed-package-cataloger |
-| shapely | 2.1.1 |  | python-installed-package-cataloger |
+| sentence-transformers | 5.2.0 |  | python-installed-package-cataloger |
+| sentencepiece | 0.2.1 |  | python-installed-package-cataloger |
+| setuptools | 79.0.1 |  | python-installed-package-cataloger |
+| shapely | 2.1.2 |  | python-installed-package-cataloger |
 | shared-mime-info | 2.2-1 |  | dpkg-db-cataloger |
 | shellingham | 1.5.4 |  | python-installed-package-cataloger |
 | simple-websocket | 1.1.0 | MIT | python-installed-package-cataloger |
 | six | 1.17.0 | MIT | python-installed-package-cataloger |
 | smmap | 5.0.2 | BSD-3-Clause | python-installed-package-cataloger |
 | sniffio | 1.3.1 | MIT OR Apache-2.0 | python-installed-package-cataloger |
+| socksio | 1.0.0 |  | python-installed-package-cataloger |
 | soundfile | 0.13.1 |  | python-installed-package-cataloger |
-| soupsieve | 2.7 | MIT | python-installed-package-cataloger |
-| sqlalchemy | 2.0.38 | MIT | python-installed-package-cataloger |
-| starlette | 0.45.3 | BSD-3-Clause | python-installed-package-cataloger |
-| starlette-compress | 1.6.0 | 0BSD | python-installed-package-cataloger |
-| sympy | 1.13.3 |  | python-installed-package-cataloger |
+| soupsieve | 2.8.1 | MIT | python-installed-package-cataloger |
+| sqlalchemy | 2.0.45 | MIT | python-installed-package-cataloger |
+| sse-starlette | 3.0.4 | BSD-3-Clause | python-installed-package-cataloger |
+| starlette | 0.50.0 | BSD-3-Clause | python-installed-package-cataloger |
+| starlette-compress | 1.6.1 | 0BSD | python-installed-package-cataloger |
+| starsessions | 2.2.1 | MIT | python-installed-package-cataloger |
+| sympy | 1.14.0 |  | python-installed-package-cataloger |
 | sysvinit-utils | 3.06-4 | GPL-2.0-only, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-only | dpkg-db-cataloger |
 | tar | 1.34+dfsg-1.2+deb12u1 | GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
 | tenacity | 9.1.2 |  | python-installed-package-cataloger |
-| tencentcloud-sdk-python | 3.0.1336 |  | python-installed-package-cataloger |
 | threadpoolctl | 3.6.0 | BSD-3-Clause | python-installed-package-cataloger |
-| tiktoken | 0.9.0 | MIT | python-installed-package-cataloger |
-| tokenizers | 0.21.1 |  | python-installed-package-cataloger |
+| tiktoken | 0.12.0 | MIT | python-installed-package-cataloger |
+| tokenizers | 0.22.1 |  | python-installed-package-cataloger |
 | tomli | 2.0.1 | MIT | python-installed-package-cataloger |
-| torch | 2.7.1+cpu | BSD-3-Clause | python-installed-package-cataloger |
-| torchaudio | 2.7.1+cpu |  | python-installed-package-cataloger |
-| torchvision | 0.22.1+cpu |  | python-installed-package-cataloger |
+| torch | 2.9.1+cpu | BSD-3-Clause | python-installed-package-cataloger |
+| torchaudio | 2.9.1+cpu |  | python-installed-package-cataloger |
+| torchvision | 0.24.1+cpu |  | python-installed-package-cataloger |
 | tqdm | 4.67.1 | MPL-2.0 AND MIT | python-installed-package-cataloger |
-| transformers | 4.52.4 |  | python-installed-package-cataloger |
+| transformers | 4.57.3 |  | python-installed-package-cataloger |
 | typeguard | 4.3.0 | MIT | python-installed-package-cataloger |
-| typer | 0.16.0 |  | python-installed-package-cataloger |
+| typer | 0.20.1 | MIT | python-installed-package-cataloger |
 | typing-extensions | 4.12.2 |  | python-installed-package-cataloger |
-| typing-extensions | 4.12.2 |  | python-installed-package-cataloger |
+| typing-extensions | 4.15.0 | PSF-2.0 | python-installed-package-cataloger |
 | typing-inspect | 0.9.0 | MIT | python-installed-package-cataloger |
-| typing-inspection | 0.4.1 | MIT | python-installed-package-cataloger |
-| tzdata | 2025.2 | Apache-2.0 | python-installed-package-cataloger |
-| tzdata | 2025b-0+deb12u1 |  | dpkg-db-cataloger |
+| typing-inspection | 0.4.2 | MIT | python-installed-package-cataloger |
+| tzdata | 2025.3 | Apache-2.0 | python-installed-package-cataloger |
+| tzdata | 2025b-0+deb12u2 |  | dpkg-db-cataloger |
 | tzlocal | 5.3.1 | MIT | python-installed-package-cataloger |
-| ujson | 5.10.0 | BSD-3-Clause, TCL | python-installed-package-cataloger |
-| unstructured | 0.16.17 | Apache-2.0 | python-installed-package-cataloger |
-| unstructured-client | 0.32.3 | MIT | python-installed-package-cataloger |
+| ujson | 5.11.0 |  | python-installed-package-cataloger |
+| unstructured | 0.18.21 | Apache-2.0 | python-installed-package-cataloger |
+| unstructured-client | 0.42.6 | MIT | python-installed-package-cataloger |
 | uritemplate | 4.2.0 |  | python-installed-package-cataloger |
-| urllib3 | 2.4.0 | MIT | python-installed-package-cataloger |
+| urllib3 | 2.6.2 | MIT | python-installed-package-cataloger |
 | usr-is-merged | 37~deb12u1 | GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
 | util-linux | 2.38.1-5+deb12u3 | BSD-3-Clause, BSD-4-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, MIT | dpkg-db-cataloger |
 | util-linux-extra | 2.38.1-5+deb12u3 | BSD-3-Clause, BSD-4-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, MIT | dpkg-db-cataloger |
-| uv | 0.7.13 | MIT OR Apache-2.0 | python-installed-package-cataloger |
-| uvicorn | 0.34.2 | BSD-3-Clause | python-installed-package-cataloger |
-| uvloop | 0.21.0 |  | python-installed-package-cataloger |
+| uuid-utils | 0.12.0 |  | python-installed-package-cataloger |
+| uv | 0.9.18 |  | python-installed-package-cataloger |
+| uvicorn | 0.37.0 | BSD-3-Clause | python-installed-package-cataloger |
+| uvloop | 0.22.1 |  | python-installed-package-cataloger |
 | validators | 0.35.0 | MIT | python-installed-package-cataloger |
-| watchfiles | 1.1.0 | MIT | python-installed-package-cataloger |
-| wcwidth | 0.2.13 | MIT | python-installed-package-cataloger |
+| watchfiles | 1.1.1 | MIT | python-installed-package-cataloger |
+| wcwidth | 0.2.14 | MIT | python-installed-package-cataloger |
+| weaviate-client | 4.19.0 |  | python-installed-package-cataloger |
 | webencodings | 0.5.1 |  | python-installed-package-cataloger |
-| websocket-client | 1.8.0 | Apache-2.0 | python-installed-package-cataloger |
+| websocket-client | 1.9.0 | Apache-2.0 | python-installed-package-cataloger |
 | websockets | 15.0.1 | BSD-3-Clause | python-installed-package-cataloger |
-| werkzeug | 3.1.3 | BSD-3-Clause | python-installed-package-cataloger |
+| werkzeug | 3.1.4 | BSD-3-Clause | python-installed-package-cataloger |
 | wheel | 0.45.1 | MIT | python-installed-package-cataloger |
 | wheel | 0.45.1 | MIT | python-installed-package-cataloger |
-| wrapt | 1.17.2 |  | python-installed-package-cataloger |
-| wsproto | 1.2.0 |  | python-installed-package-cataloger |
+| wrapt | 1.17.3 |  | python-installed-package-cataloger |
+| wsproto | 1.3.2 | MIT | python-installed-package-cataloger |
 | x11-common | 1:7.7+23 |  | dpkg-db-cataloger |
 | xkb-data | 2.35.1-1 |  | dpkg-db-cataloger |
-| xlrd | 2.0.1 |  | python-installed-package-cataloger |
-| xlsxwriter | 3.2.3 | BSD-2-Clause | python-installed-package-cataloger |
-| xxhash | 3.5.0 |  | python-installed-package-cataloger |
+| xlrd | 2.0.2 |  | python-installed-package-cataloger |
+| xlsxwriter | 3.2.9 | BSD-2-Clause | python-installed-package-cataloger |
+| xxhash | 3.6.0 |  | python-installed-package-cataloger |
 | xz-utils | 5.4.1-1 | GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, LGPL-2.0-only, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
-| yarl | 1.20.1 | Apache-2.0 | python-installed-package-cataloger |
-| youtube-transcript-api | 1.1.0 | MIT | python-installed-package-cataloger |
+| yarl | 1.22.0 | Apache-2.0 | python-installed-package-cataloger |
+| youtube-transcript-api | 1.2.3 | MIT | python-installed-package-cataloger |
 | zipp | 3.19.2 | MIT | python-installed-package-cataloger |
 | zipp | 3.23.0 | MIT | python-installed-package-cataloger |
 | zlib1g | 1:1.2.13.dfsg-1 | Zlib | dpkg-db-cataloger |
 | zlib1g-dev | 1:1.2.13.dfsg-1 | Zlib | dpkg-db-cataloger |
-| zstandard | 0.23.0 |  | python-installed-package-cataloger |
+| zstandard | 0.25.0 | BSD-3-Clause | python-installed-package-cataloger |
 
 ### registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/dovecot
 
