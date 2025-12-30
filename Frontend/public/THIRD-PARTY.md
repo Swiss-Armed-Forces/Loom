@@ -639,13 +639,13 @@ The complete source code for Traefik is publicly available at [https://github.co
 | string-to-color                     | MIT          | 2.2.2             |
 | uuid                                | MIT          | 11.1.0            |
 | @eslint/compat                      | Apache-2.0   | 1.4.1             |
-| @eslint/eslintrc                    | MIT          | 3.3.1             |
+| @eslint/eslintrc                    | MIT          | 3.3.3             |
 | @eslint/js                          | MIT          | 9.39.2            |
-| @mui/types                          | MIT          | 7.4.8             |
+| @mui/types                          | MIT          | 7.4.9             |
 | @openapitools/openapi-generator-cli | Apache-2.0   | 2.26.0            |
 | @testing-library/jest-dom           | MIT          | 6.9.1             |
-| @testing-library/react              | MIT          | 16.3.0            |
-| @types/node                         | MIT          | 24.10.0           |
+| @testing-library/react              | MIT          | 16.3.1            |
+| @types/node                         | MIT          | 24.10.4           |
 | @types/react                        | MIT          | 19.2.7            |
 | @types/react-dom                    | MIT          | 19.2.3            |
 | @typescript-eslint/eslint-plugin    | MIT          | 8.51.0            |
@@ -656,7 +656,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | eslint-plugin-prettier              | MIT          | 5.5.4             |
 | eslint-plugin-react                 | MIT          | 7.37.5            |
 | eslint-plugin-react-hooks           | MIT          | 5.2.0             |
-| eslint-plugin-react-refresh         | MIT          | 0.4.24            |
+| eslint-plugin-react-refresh         | MIT          | 0.4.26            |
 | eslint-plugin-unused-imports        | MIT          | 4.3.0             |
 | globals                             | MIT          | 16.5.0            |
 | jsdom                               | MIT          | 26.1.0            |
