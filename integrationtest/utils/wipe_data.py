@@ -2,7 +2,6 @@
 
 import logging
 from contextlib import contextmanager
-from imaplib import IMAP4
 from time import sleep
 
 from common.dependencies import (
@@ -18,6 +17,7 @@ from crawler.dependencies import get_minio_client
 from crawler.dependencies import init as init_crawler_dependencies
 from crawler.settings import settings as crawler_settings
 from pymongo import MongoClient
+from worker.dependencies import get_imap_service
 from worker.dependencies import init as init_worker_dependencies
 
 from utils.celery_inspect import is_celery_idle
@@ -112,24 +112,8 @@ def _wipe_minio_buckets():
 
 def _wipe_imap():
     logger.info("Wiping: IMAP")
-    with IMAP4(
-        host=settings.imap_host.host if settings.imap_host.host is not None else "",
-        port=settings.imap_host.port if settings.imap_host.port is not None else 143,
-        timeout=IMAP_TIMEOUT__S,
-    ) as imap:
-        imap.login(settings.imap_user, settings.imap_password)
-
-        # List all mailboxes
-        status, mailboxes = imap.list()
-        if status != "OK":
-            raise WipeException("Failed to retrieve mailboxes.")
-
-        # Delete all mailboxes
-        for mailbox in mailboxes:
-            if not isinstance(mailbox, bytes):
-                continue
-            mailbox_name = mailbox.decode().split(' "/" ')[-1].strip('"')
-            imap.delete(mailbox_name)
+    imap_service = get_imap_service()
+    imap_service.wipe()
 
 
 if __name__ == "__main__":

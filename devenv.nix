@@ -1055,14 +1055,14 @@ in
     '';
   };
 
-  scripts.test-git-file-changed = {
+  scripts.git-file-changed = {
     description = "Test if a git file was changed";
     exec = ''
       (
         set -euo pipefail
         cd '${config.devenv.root}'
 
-        ./cicd/test_git_file_changed.py \
+        ./cicd/git_file_changed.py \
           "''${@}"
       )
     '';
