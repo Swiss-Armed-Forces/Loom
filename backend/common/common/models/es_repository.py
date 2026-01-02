@@ -114,6 +114,51 @@ class _EsRepositoryDocument(Document):
 
         return document_dict
 
+    @classmethod
+    def get_default_fields(cls) -> list[str]:
+        """Extract all field names from the document mapping, including nested fields
+        and multi-fields.
+
+        Returns a list of field names that can be used for index.query.default_field
+        setting to limit default search scope and improve performance.
+        """
+
+        def extract_fields(mapping: dict, prefix: str = "") -> list[str]:
+            """Recursively extract field names from mapping dictionary.
+
+            Args:
+                mapping: The mapping dictionary (can contain 'properties' or 'fields')
+                prefix: The current field path prefix (for nested fields)
+
+            Returns:
+                List of field names including nested paths
+                (e.g., 'parent.child', 'title.keyword')
+            """
+            fields = []
+            for field_name, field_config in mapping.items():
+                # Build the full field path
+                full_path = f"{prefix}.{field_name}" if prefix else field_name
+                fields.append(full_path)
+
+                if isinstance(field_config, dict):
+                    # Recurse into nested object properties
+                    if "properties" in field_config:
+                        nested_fields = extract_fields(
+                            field_config["properties"], full_path
+                        )
+                        fields.extend(nested_fields)
+
+                    # Recurse into multi-fields
+                    if "fields" in field_config:
+                        multi_fields = extract_fields(field_config["fields"], full_path)
+                        fields.extend(multi_fields)
+
+            return fields
+
+        mapping_dict = cls._doc_type.mapping.to_dict()
+        field_names = extract_fields(mapping_dict.get("properties", {}))
+        return field_names
+
 
 EsRepositoryObjectT = TypeVar("EsRepositoryObjectT", bound=EsRepositoryObject)
 EsRepositoryDocumentT = TypeVar("EsRepositoryDocumentT", bound=_EsRepositoryDocument)
@@ -307,8 +352,12 @@ class BaseEsRepository(
         search = search.query(
             "query_string",
             query=query_string,
-            default_field="*",
             default_operator="AND",
+            # Be lenient because the index-level default fields are set dynamically
+            # (index.query.default_field). Those fields can span multiple data types
+            # (text, numeric, boolean, date), and query_string parsing would otherwise
+            # fail when a term is incompatible with a field's type.
+            lenient=True,
         )
 
         return search
@@ -522,6 +571,10 @@ class BaseEsRepository(
             using=self._elasticsearch
         ):
             self._index.close(using=self._elasticsearch)
+        # set settings before initializing
+        self._index.settings(
+            query={"default_field": self._document_type.get_default_fields()}
+        )
         # initialize
         self._document_type.init(using=self._elasticsearch)
         # after initialization: open the index

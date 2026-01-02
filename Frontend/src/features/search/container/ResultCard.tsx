@@ -68,7 +68,12 @@ export const ResultCard: React.FC<ResultCardProps> = React.memo(
                     inView: inView,
                 }),
             );
-        }, [inView, fileId, dispatch]);
+        }, [
+            inView,
+            fileId,
+            searchQuery, // this is required here as we want to re-run this every time the user changes query. The same file might be in the old and new query results
+            dispatch,
+        ]);
 
         const handleViewDetail = () => {
             dispatch(

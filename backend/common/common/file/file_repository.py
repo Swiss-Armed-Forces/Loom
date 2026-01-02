@@ -299,7 +299,6 @@ class _EsFile(_EsTaskDocument):
         )
 
     class Index:  # pylint: disable=too-few-public-methods
-        """The index."""
 
         name = "file"
         settings = {
@@ -519,8 +518,12 @@ class FileRepository(BaseEsRepository[_EsFile, File]):
         filter_query = Q(
             "query_string",
             query=self._query_builder.build(query),
-            default_field="*",
             default_operator="AND",
+            # Be lenient because the index-level default fields are set dynamically
+            # (index.query.default_field). Those fields can span multiple data types
+            # (text, numeric, boolean, date), and query_string parsing would otherwise
+            # fail when a term is incompatible with a field's type.
+            lenient=True,
         )
 
         for q in embedding_vectors:
