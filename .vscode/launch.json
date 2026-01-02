@@ -22,7 +22,7 @@
           "remoteRoot": "/code"
         }
       ],
-      "justMyCode": true
+      "justMyCode": false
     },
     {
       "name": "Attach Worker",
@@ -82,7 +82,7 @@
           "remoteRoot": "/code"
         }
       ],
-      "justMyCode": true
+      "justMyCode": false
     },
     {
       "name": "Attach Crawler",
@@ -98,7 +98,7 @@
           "remoteRoot": "/code"
         }
       ],
-      "justMyCode": true
+      "justMyCode": false
     },
     {
       "name": "Attach by Port (Prompt)",
@@ -114,7 +114,7 @@
           "remoteRoot": "/code"
         }
       ],
-      "justMyCode": true
+      "justMyCode": false
     }
   ],
   "inputs": [
