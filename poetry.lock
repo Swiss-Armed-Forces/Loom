@@ -63,7 +63,7 @@ develop = true
 common = {path = "../common", develop = true}
 fastapi = "^0.115.12"
 numpy = "^1.26.4"
-python-multipart = "^0.0.20"
+python-multipart = "^0.0.21"
 scikit-learn = "^1.4.2"
 types-redis = "^4.6.0.20240425"
 uvicorn = "^0.29.0"
@@ -1226,6 +1226,21 @@ files = [
     {file = "idna-3.7-py3-none-any.whl", hash = "sha256:82fee1fc78add43492d3a1898bfa6d8a904cc97d8427f683ed8e798d07761aa0"},
     {file = "idna-3.7.tar.gz", hash = "sha256:028ff3aadf0609c1fd278d8ea3089299412a7a8b9bd005dd08b9f8285bcb5cfc"},
 ]
+
+[[package]]
+name = "imapclient"
+version = "3.0.1"
+description = "Easy-to-use, Pythonic and complete IMAP client library"
+optional = false
+python-versions = ">=3.7.0"
+groups = ["main"]
+files = [
+    {file = "IMAPClient-3.0.1-py2.py3-none-any.whl", hash = "sha256:d77d77caa4123e0233b5cf2b9c54a078522e63270b88d3f48653a28637fd8828"},
+    {file = "IMAPClient-3.0.1.zip", hash = "sha256:78e6d62fbfbbe233e1f0e0e993160fd665eb1fd35973acddc61c15719b22bc02"},
+]
+
+[package.extras]
+doc = ["sphinx"]
 
 [[package]]
 name = "iniconfig"
@@ -2910,14 +2925,14 @@ files = [
 
 [[package]]
 name = "python-multipart"
-version = "0.0.20"
+version = "0.0.21"
 description = "A streaming multipart parser for Python"
 optional = false
-python-versions = ">=3.8"
+python-versions = ">=3.10"
 groups = ["main"]
 files = [
-    {file = "python_multipart-0.0.20-py3-none-any.whl", hash = "sha256:8a62d3a8335e06589fe01f2a3e178cdcc632f3fbe0d492ad9ee0ec35aab1f104"},
-    {file = "python_multipart-0.0.20.tar.gz", hash = "sha256:8dd0cab45b8e23064ae09147625994d090fa46f5b0d1e13af944c331a7fa9d13"},
+    {file = "python_multipart-0.0.21-py3-none-any.whl", hash = "sha256:cf7a6713e01c87aa35387f4774e812c4361150938d20d232800f75ffcf266090"},
+    {file = "python_multipart-0.0.21.tar.gz", hash = "sha256:7137ebd4d3bbf70ea1622998f902b97a29434a9e8dc40eb203bbcf7c2a2cba92"},
 ]
 
 [[package]]
@@ -3827,6 +3842,7 @@ develop = true
 blobfile = "^2.1.1"
 common = {path = "../common", develop = true}
 flower = "^2.0.1"
+imapclient = "^3.0.1"
 langchain-text-splitters = "^0.3.2"
 python-magic = "^0.4.27"
 requests = "^2.31.0"

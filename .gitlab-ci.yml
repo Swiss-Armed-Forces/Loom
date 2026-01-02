@@ -68,7 +68,7 @@ default:
     # building shell
     - devenv shell -- echo "[*] devenv shell ready"
     # verify that the source tree is clean
-    - devenv shell -- test-git-file-changed --no-update
+    - devenv shell -- git-file-changed --no-update
     #
     # END SECTION
     #
@@ -93,7 +93,7 @@ default:
       - fork-logs/
       # for: .default-k8s
       - dmesg.txt
-      # for: all jobs which use test-git-file-changed
+      # for: all jobs which use git-file-changed
       - changed-files/
       # for: integrationtest
       - logs/
@@ -277,20 +277,20 @@ generate_frontend_static:
   stage: generate
   script:
     - devenv shell -- generate-frontend-static
-    - devenv shell -- test-git-file-changed
+    - devenv shell -- git-file-changed
 
 generate_frontend_api:
   stage: generate
   script:
     - devenv shell -- generate-frontend-api
-    - devenv shell -- test-git-file-changed
+    - devenv shell -- git-file-changed
 
 generate_third_party:
   extends: .default-docker
   stage: generate
   script:
     - devenv shell -- generate-third-party
-    - devenv shell -- test-git-file-changed
+    - devenv shell -- git-file-changed
   cache:
     - !reference [.default-docker, cache]
     - key:

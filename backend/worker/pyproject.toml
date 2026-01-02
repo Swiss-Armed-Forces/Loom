@@ -19,6 +19,7 @@ scipy = "^1.15.3"
 scikit-learn = "^1.7.0"
 langchain-text-splitters = "^0.3.2"
 flower = "^2.0.1"
+imapclient = "^3.0.1"
 
 [tool.poetry.group.dev.dependencies]
 debugpy = "^1.8.1"
@@ -52,4 +53,8 @@ ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
 module = "wand.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "imapclient.*"
 ignore_missing_imports = true

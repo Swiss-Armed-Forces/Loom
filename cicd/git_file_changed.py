@@ -11,7 +11,7 @@ from typing import Iterable, Optional
 
 import git
 import gitlab
-from gitlab.v4.objects import ProjectMergeRequest, Project
+from gitlab.v4.objects import Project
 
 
 # ----------------------------
