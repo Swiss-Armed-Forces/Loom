@@ -639,7 +639,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | react-toastify                      | MIT          | 11.0.5            |
 | string-to-color                     | MIT          | 2.2.2             |
 | uuid                                | MIT          | 11.1.0            |
-| @eslint/compat                      | Apache-2.0   | 1.4.1             |
+| @eslint/compat                      | Apache-2.0   | 2.0.1             |
 | @eslint/eslintrc                    | MIT          | 3.3.3             |
 | @eslint/js                          | MIT          | 9.39.2            |
 | @mui/types                          | MIT          | 7.4.10            |
