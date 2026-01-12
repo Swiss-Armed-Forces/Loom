@@ -619,14 +619,14 @@ The complete source code for Traefik is publicly available at [https://github.co
 | Name                                | License type | Installed version |
 | :---------------------------------- | :----------- | :---------------- |
 | @emotion/styled                     | MIT          | 11.14.1           |
-| @mui/icons-material                 | MIT          | 7.3.6             |
-| @mui/material                       | MIT          | 7.3.6             |
+| @mui/icons-material                 | MIT          | 7.3.7             |
+| @mui/material                       | MIT          | 7.3.7             |
 | @mui/x-charts                       | MIT          | 8.23.0            |
 | @mui/x-tree-view                    | MIT          | 8.23.0            |
 | @reduxjs/toolkit                    | MIT          | 2.11.2            |
 | ace-builds                          | BSD-3-Clause | 1.43.5            |
 | date-fns                            | MIT          | 4.1.0             |
-| i18next                             | MIT          | 25.7.3            |
+| i18next                             | MIT          | 25.7.4            |
 | i18next-http-backend                | MIT          | 3.0.2             |
 | react                               | MIT          | 19.2.3            |
 | react-ace                           | MIT          | 14.0.1            |
@@ -642,12 +642,12 @@ The complete source code for Traefik is publicly available at [https://github.co
 | @eslint/compat                      | Apache-2.0   | 1.4.1             |
 | @eslint/eslintrc                    | MIT          | 3.3.3             |
 | @eslint/js                          | MIT          | 9.39.2            |
-| @mui/types                          | MIT          | 7.4.9             |
+| @mui/types                          | MIT          | 7.4.10            |
 | @openapitools/openapi-generator-cli | Apache-2.0   | 2.26.0            |
 | @testing-library/jest-dom           | MIT          | 6.9.1             |
 | @testing-library/react              | MIT          | 16.3.1            |
-| @types/node                         | MIT          | 24.10.4           |
-| @types/react                        | MIT          | 19.2.7            |
+| @types/node                         | MIT          | 24.10.7           |
+| @types/react                        | MIT          | 19.2.8            |
 | @types/react-dom                    | MIT          | 19.2.3            |
 | @typescript-eslint/eslint-plugin    | MIT          | 8.51.0            |
 | @typescript-eslint/parser           | MIT          | 8.51.0            |
@@ -5100,9 +5100,9 @@ The complete source code for Traefik is publicly available at [https://github.co
 | libpam0g | 1.5.3-5ubuntu5.4 | BSD-3-Clause, Beerware, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later | dpkg-db-cataloger |
 | libpcre2-8-0 | 10.42-4ubuntu2.1 | BSD-2-Clause, BSD-3-Clause, X11 | dpkg-db-cataloger |
 | libproc2-0 | 2:4.0.4-4ubuntu3.2 | GPL-2.0-only, GPL-2.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
-| libpython3-stdlib | 3.12.3-0ubuntu2 |  | dpkg-db-cataloger |
-| libpython3.12-minimal | 3.12.3-1ubuntu0.8 | GPL-2.0-only | dpkg-db-cataloger |
-| libpython3.12-stdlib | 3.12.3-1ubuntu0.8 | GPL-2.0-only | dpkg-db-cataloger |
+| libpython3-stdlib | 3.12.3-0ubuntu2.1 |  | dpkg-db-cataloger |
+| libpython3.12-minimal | 3.12.3-1ubuntu0.9 | GPL-2.0-only | dpkg-db-cataloger |
+| libpython3.12-stdlib | 3.12.3-1ubuntu0.9 | GPL-2.0-only | dpkg-db-cataloger |
 | libreadline8t64 | 8.2-4build1 | GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later | dpkg-db-cataloger |
 | libseccomp2 | 2.5.5-1ubuntu3.1 | LGPL-2.1-only | dpkg-db-cataloger |
 | libselinux1 | 3.5-2ubuntu2.1 | GPL-2.0-only | dpkg-db-cataloger |
@@ -5134,10 +5134,10 @@ The complete source code for Traefik is publicly available at [https://github.co
 | passwd | 1:4.13+dfsg1-4ubuntu3.2 | BSD-3-Clause, GPL-1.0-only, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
 | perl-base | 5.38.2-3.2ubuntu0.1 | Artistic-2.0, BSD-3-Clause, FSFAP, GPL-1.0-only, GPL-1.0-or-later, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.1-only, Zlib | dpkg-db-cataloger |
 | procps | 2:4.0.4-4ubuntu3.2 | GPL-2.0-only, GPL-2.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
-| python3 | 3.12.3-0ubuntu2 |  | dpkg-db-cataloger |
-| python3-minimal | 3.12.3-0ubuntu2 |  | dpkg-db-cataloger |
-| python3.12 | 3.12.3-1ubuntu0.8 | GPL-2.0-only | dpkg-db-cataloger |
-| python3.12-minimal | 3.12.3-1ubuntu0.8 | GPL-2.0-only | dpkg-db-cataloger |
+| python3 | 3.12.3-0ubuntu2.1 |  | dpkg-db-cataloger |
+| python3-minimal | 3.12.3-0ubuntu2.1 |  | dpkg-db-cataloger |
+| python3.12 | 3.12.3-1ubuntu0.9 | GPL-2.0-only | dpkg-db-cataloger |
+| python3.12-minimal | 3.12.3-1ubuntu0.9 | GPL-2.0-only | dpkg-db-cataloger |
 | readline-common | 8.2-4build1 | GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later | dpkg-db-cataloger |
 | sed | 4.9-2build1 | BSD-4-Clause-UC, BSL-1.0, GFDL-1.3-only, GPL-3.0-only, GPL-3.0-or-later, ISC, X11 | dpkg-db-cataloger |
 | sensible-utils | 0.0.22 | BSD-2-Clause, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
