@@ -1338,8 +1338,8 @@ The complete source code for Traefik is publicly available at [https://github.co
 | jsonpointer | 3.0.0 |  | python-installed-package-cataloger |
 | kombu | 5.5.4 | BSD-3-Clause | python-installed-package-cataloger |
 | krb5-multidev | 1.20.1-2+deb12u4 | GPL-2.0-only | dpkg-db-cataloger |
-| langchain-core | 0.3.65 | MIT | python-installed-package-cataloger |
-| langchain-text-splitters | 0.3.8 | MIT | python-installed-package-cataloger |
+| langchain-core | 1.2.7 | MIT | python-installed-package-cataloger |
+| langchain-text-splitters | 0.3.11 | MIT | python-installed-package-cataloger |
 | langsmith | 0.3.45 | MIT | python-installed-package-cataloger |
 | libabsl20220623 | 20220623.1-1+deb12u2 | Apache-2.0 | dpkg-db-cataloger |
 | libacl1 | 2.3.1-3 | GPL-2.0-only, GPL-2.0-or-later, LGPL-2.0-or-later, LGPL-2.1-only | dpkg-db-cataloger |
@@ -1753,7 +1753,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | pyyaml | 6.0.2 | MIT | python-installed-package-cataloger |
 | readline-common | 8.2-1.3 | GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later | dpkg-db-cataloger |
 | redis | 5.2.1 | MIT | python-installed-package-cataloger |
-| requests | 2.32.4 | Apache-2.0 | python-installed-package-cataloger |
+| requests | 2.32.5 | Apache-2.0 | python-installed-package-cataloger |
 | requests-toolbelt | 1.0.0 |  | python-installed-package-cataloger |
 | rpcsvc-proto | 1.4.3-1 | BSD-3-Clause, GPL-2.0-only, GPL-3.0-only, MIT | dpkg-db-cataloger |
 | scikit-learn | 1.8.0 | BSD-3-Clause | python-installed-package-cataloger |
@@ -1802,6 +1802,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | util-linux | 2.38.1-5+deb12u3 | BSD-3-Clause, BSD-4-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, MIT | dpkg-db-cataloger |
 | util-linux-extra | 2.38.1-5+deb12u3 | BSD-3-Clause, BSD-4-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, MIT | dpkg-db-cataloger |
 | uuid-dev | 2.38.1-5+deb12u3 | BSD-3-Clause, BSD-4-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, MIT | dpkg-db-cataloger |
+| uuid-utils | 0.13.0 |  | python-installed-package-cataloger |
 | vine | 5.1.0 |  | python-installed-package-cataloger |
 | wand | 0.6.13 |  | python-installed-package-cataloger |
 | wcwidth | 0.2.13 | MIT | python-installed-package-cataloger |
