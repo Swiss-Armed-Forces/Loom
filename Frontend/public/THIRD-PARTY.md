@@ -639,8 +639,6 @@ The complete source code for Traefik is publicly available at [https://github.co
 | react-toastify                      | MIT          | 11.0.5            |
 | string-to-color                     | MIT          | 2.2.2             |
 | uuid                                | MIT          | 11.1.0            |
-| @eslint/compat                      | Apache-2.0   | 2.0.1             |
-| @eslint/eslintrc                    | MIT          | 3.3.3             |
 | @eslint/js                          | MIT          | 9.39.2            |
 | @mui/types                          | MIT          | 7.4.10            |
 | @openapitools/openapi-generator-cli | Apache-2.0   | 2.26.0            |
@@ -656,7 +654,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | eslint-config-prettier              | MIT          | 10.1.8            |
 | eslint-plugin-prettier              | MIT          | 5.5.4             |
 | eslint-plugin-react                 | MIT          | 7.37.5            |
-| eslint-plugin-react-hooks           | MIT          | 5.2.0             |
+| eslint-plugin-react-hooks           | MIT          | 6.1.1             |
 | eslint-plugin-react-refresh         | MIT          | 0.4.26            |
 | eslint-plugin-unused-imports        | MIT          | 4.3.0             |
 | globals                             | MIT          | 16.5.0            |
@@ -664,6 +662,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | license-report                      | MIT          | 6.8.1             |
 | prettier                            | MIT          | 3.7.4             |
 | typescript                          | Apache-2.0   | 5.9.3             |
+| typescript-eslint                   | MIT          | 8.53.0            |
 | vite                                | MIT          | 6.4.1             |
 | vite-plugin-svgr                    | MIT          | 4.5.0             |
 | vitest                              | MIT          | 3.2.4             |
