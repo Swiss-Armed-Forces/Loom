@@ -100,11 +100,18 @@ export function Search() {
             } finally {
                 dispatch(stopLoadingIndicator());
             }
-
-            // refresh search state after timeout
-            setInterval(fetchSearchState, RELOAD_TIMEOUT__MS);
         }
         load();
+
+        // refresh search state after timeout
+        const fetchSearchStateInterval = setInterval(
+            fetchSearchState,
+            RELOAD_TIMEOUT__MS,
+        );
+
+        return () => {
+            clearInterval(fetchSearchStateInterval);
+        };
     }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
     useEffect(() => {

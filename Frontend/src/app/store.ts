@@ -4,6 +4,7 @@ import searchReducer from "../features/search/searchSlice";
 import archiveReducer from "../features/archives/archiveSlice";
 import socketMiddleware from "../middleware/SocketMiddleware";
 import SocketApi from "./api/socketApi";
+import { localStorageCustomQueriesMiddleware } from "./middlewares";
 
 export const store = configureStore({
     reducer: {
@@ -12,7 +13,9 @@ export const store = configureStore({
         archive: archiveReducer,
     },
     middleware: (getDefaultMiddleware) =>
-        getDefaultMiddleware().concat(socketMiddleware(new SocketApi())),
+        getDefaultMiddleware()
+            .prepend(localStorageCustomQueriesMiddleware.middleware)
+            .concat(socketMiddleware(new SocketApi())),
 });
 
 export type AppDispatch = typeof store.dispatch;

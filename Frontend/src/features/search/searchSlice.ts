@@ -44,18 +44,23 @@ export enum SearchView {
 export interface CustomQuery {
     id: string;
     query: SearchQuery;
+    fileCount: number;
+    hasNewFiles: boolean;
     name: string;
     icon: string;
 }
 
 export function initCustomQuery(
     query: SearchQuery,
+    fileCount: number,
     name: string,
     icon: string,
 ): CustomQuery {
     return {
         id: uuidv4(),
         query,
+        fileCount,
+        hasNewFiles: false,
         name,
         icon,
     } as CustomQuery;
@@ -88,7 +93,7 @@ export interface SearchState {
     summarizationSystemPrompt: string | null;
 }
 
-const CUSTOM_QUERIES_LOCAL_STORAGE_KEY = "CUSTOM_QUERIES";
+export const CUSTOM_QUERIES_LOCAL_STORAGE_KEY = "CUSTOM_QUERIES";
 export const QUERY_FAILED_FILES = "state:failed";
 export const QUERY_CONTENT_TRUNCATED_FILES = "content_truncated:true";
 
@@ -241,6 +246,32 @@ export const fetchPreview = createAsyncThunk(
     },
 );
 
+export const fetchFilesCountForCustomQuery = createAsyncThunk(
+    "fetchFilesCountForCustomQueryThunk",
+    async (
+        {
+            customQuery,
+        }: {
+            customQuery: CustomQuery;
+        },
+        thunkAPI,
+    ) => {
+        try {
+            return {
+                response: await getFilesCount({
+                    ...customQuery.query,
+                    id: (await getShortRunningQuery()).queryId,
+                }),
+                customQueryId: customQuery.id,
+            };
+        } catch (err: any) {
+            return thunkAPI.rejectWithValue({
+                error: err.detail ? err.detail : err.toString(),
+            });
+        }
+    },
+);
+
 export const fetchContentTruncatedFiles = createAsyncThunk(
     "fetchContentTruncatedFilesThunk",
     async () => {
@@ -314,10 +345,6 @@ export const searchSlice = createSlice({
         },
         addCustomQuery: (state, action: PayloadAction<CustomQuery>) => {
             state.customQueries.push(action.payload);
-            window.localStorage.setItem(
-                CUSTOM_QUERIES_LOCAL_STORAGE_KEY,
-                JSON.stringify(state.customQueries),
-            );
         },
         deleteCustomQuery: (state, action: PayloadAction<CustomQuery>) => {
             const toRemove = state.customQueries.find(
@@ -328,10 +355,15 @@ export const searchSlice = createSlice({
                 const index = state.customQueries.indexOf(toRemove);
                 state.customQueries.splice(index, 1);
             }
-            window.localStorage.setItem(
-                CUSTOM_QUERIES_LOCAL_STORAGE_KEY,
-                JSON.stringify(state.customQueries),
+        },
+        markCustomQueryAsRead: (state, action: PayloadAction<CustomQuery>) => {
+            const toMark = state.customQueries.find(
+                (cq) => cq.id == action.payload.id,
             );
+
+            if (toMark) {
+                toMark.hasNewFiles = false;
+            }
         },
         fillStatsSummary: (
             state,
@@ -392,6 +424,21 @@ export const searchSlice = createSlice({
         },
     },
     extraReducers: (builder) => {
+        builder.addCase(
+            fetchFilesCountForCustomQuery.fulfilled,
+            (state, action) => {
+                const customQuery = state.customQueries.find(
+                    (cq) => cq.id === action.payload.customQueryId,
+                );
+                if (!customQuery) return;
+
+                const newFileCount = action.payload.response.totalFiles;
+                customQuery.hasNewFiles =
+                    newFileCount > customQuery.fileCount ||
+                    customQuery.hasNewFiles; // has new files or already had new files
+                customQuery.fileCount = newFileCount;
+            },
+        );
         builder.addCase(
             fetchContentTruncatedFiles.fulfilled,
             (state, action) => {
@@ -470,6 +517,7 @@ export const {
     setSearchView,
     addCustomQuery,
     deleteCustomQuery,
+    markCustomQueryAsRead,
     fillStatsSummary,
     fillStatsTags,
     fillStatsGeneric,

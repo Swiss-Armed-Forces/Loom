@@ -1,4 +1,6 @@
 import {
+    Badge,
+    Chip,
     List,
     ListItem,
     ListItemButton,
@@ -6,7 +8,7 @@ import {
     ListItemText,
     ListSubheader,
 } from "@mui/material";
-import { FC, useState } from "react";
+import { FC, useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import styles from "./CustomQueries.module.css";
 import {
@@ -19,9 +21,13 @@ import {
     deleteCustomQuery,
     updateQuery,
     selectCustomQueries,
+    fetchFilesCountForCustomQuery,
+    markCustomQueryAsRead,
 } from "../../searchSlice.ts";
 import { Delete, Policy } from "@mui/icons-material";
 import { ConfirmDialog } from "../ConfirmDialog.tsx";
+
+const CUSTOM_QUERY_FILES_COUNT_POLL_INTERVAL__MS = 30_000;
 
 interface SavedQueryItemProps {
     customQuery: CustomQuery;
@@ -40,33 +46,69 @@ const CustomQueryItem: FC<SavedQueryItemProps> = ({
         dispatch(deleteCustomQuery(customQuery));
         setOpenConfirmDialog(false);
     };
+
+    const onCustomQueryClick = useCallback(() => {
+        dispatch(markCustomQueryAsRead(customQuery));
+        dispatch(updateQuery(customQuery.query));
+    }, [dispatch, customQuery]);
+
+    useEffect(() => {
+        const customQueryFilesCountInterval = setInterval(async () => {
+            await dispatch(fetchFilesCountForCustomQuery({ customQuery }));
+        }, CUSTOM_QUERY_FILES_COUNT_POLL_INTERVAL__MS);
+
+        return () => {
+            clearInterval(customQueryFilesCountInterval);
+        };
+    }, [customQuery, dispatch]);
+
     return (
         <>
             {icon_only ? (
                 <ListItemButton
-                    onClick={() => {
-                        dispatch(updateQuery(customQuery.query));
-                    }}
+                    onClick={onCustomQueryClick}
                     title={customQuery.name}
                 >
-                    <ListItemIcon>
-                        {availableCustomQueryIcons.find(
-                            (ac) => ac.key == customQuery.icon,
-                        )?.icon ?? <Policy key="Policy" />}
-                    </ListItemIcon>
+                    <Badge
+                        invisible={!customQuery.hasNewFiles}
+                        color="primary"
+                        anchorOrigin={{
+                            vertical: "top",
+                            horizontal: "left",
+                        }}
+                        variant="dot"
+                    >
+                        <ListItemIcon>
+                            {availableCustomQueryIcons.find(
+                                (ac) => ac.key == customQuery.icon,
+                            )?.icon ?? <Policy key="Policy" />}
+                        </ListItemIcon>
+                    </Badge>
                 </ListItemButton>
             ) : (
-                <ListItemButton
-                    onClick={() => {
-                        dispatch(updateQuery(customQuery.query));
-                    }}
-                >
-                    <ListItemIcon>
-                        {availableCustomQueryIcons.find(
-                            (ac) => ac.key == customQuery.icon,
-                        )?.icon ?? <Policy key="Policy" />}
-                    </ListItemIcon>
-                    <ListItemText>{customQuery.name}</ListItemText>
+                <ListItemButton onClick={onCustomQueryClick}>
+                    <Badge
+                        invisible={!customQuery.hasNewFiles}
+                        color="primary"
+                        anchorOrigin={{
+                            vertical: "top",
+                            horizontal: "left",
+                        }}
+                        variant="dot"
+                    >
+                        <ListItemIcon>
+                            {availableCustomQueryIcons.find(
+                                (ac) => ac.key == customQuery.icon,
+                            )?.icon ?? <Policy key="Policy" />}
+                        </ListItemIcon>
+                    </Badge>
+                    <ListItemText className={styles.listItemText}>
+                        {customQuery.name}{" "}
+                        <Chip
+                            label={customQuery.fileCount.toString()}
+                            size="small"
+                        ></Chip>
+                    </ListItemText>
                     <ListItemIcon
                         onClick={(e) => {
                             setOpenConfirmDialog(true);

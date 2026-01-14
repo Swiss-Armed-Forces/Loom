@@ -37,6 +37,7 @@ import {
     addCustomQuery,
     initCustomQuery,
     selectQuery,
+    selectTotalFiles,
 } from "../../searchSlice.ts";
 import styles from "./AddCustomQueryDialog.module.css";
 
@@ -75,6 +76,7 @@ export function AddCustomQueryDialog({
     const { t } = useTranslation();
     const dispatch = useAppDispatch();
     const searchQuery = useAppSelector(selectQuery);
+    const totalFilesCount = useAppSelector(selectTotalFiles);
     const [showAddCustomQueryDialog, setShowAddCustomQueryDialog] =
         useState(false);
 
@@ -87,7 +89,12 @@ export function AddCustomQueryDialog({
         if (!searchQuery) return;
         dispatch(
             addCustomQuery(
-                initCustomQuery(searchQuery, customQueryName, selectedIcon),
+                initCustomQuery(
+                    searchQuery,
+                    totalFilesCount,
+                    customQueryName,
+                    selectedIcon,
+                ),
             ),
         );
         setSelectedIcon(availableCustomQueryIcons[0]?.key ?? "");
