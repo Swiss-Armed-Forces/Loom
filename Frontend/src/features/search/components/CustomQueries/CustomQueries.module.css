@@ -11,3 +11,9 @@
 .savedQueries > div > button > .MuiButton-startIcon {
     justify-self: flex-start;
 }
+
+.listItemText > span {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+}
