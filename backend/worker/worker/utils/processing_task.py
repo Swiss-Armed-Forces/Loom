@@ -59,7 +59,7 @@ class ProcessingTask(
 
     def on_failure(
         self, exc, task_id, args, kwargs, einfo
-    ):  # pylint: disable=too-many-arguments
+    ):  # pylint: disable=too-many-arguments, too-many-positional-arguments
         _persist_task_status_task.delay(
             type(self._repository), UUID(task_id), ProcessingTask._persist_fail
         ).forget()
@@ -67,7 +67,7 @@ class ProcessingTask(
 
     def on_retry(
         self, exc, task_id, args, kwargs, einfo
-    ):  # pylint: disable=too-many-arguments
+    ):  # pylint: disable=too-many-arguments, too-many-positional-arguments
         if settings.persist_retry_tasks:
             _persist_task_status_task.delay(
                 type(self._repository), UUID(task_id), ProcessingTask._persist_retry

@@ -3,8 +3,6 @@
 # - No shared base class between Hit and ArchiveHit
 # - ...
 # This should be resolved with issue #86
-# also that we have to to the following is very ugly:
-# pylint: disable=too-many-arguments
 
 import logging
 import time
@@ -93,7 +91,8 @@ def fetch_files_by_query_from_api(files_query: GetFilesQuery) -> GetFilesRespons
     return GetFilesResponse.model_validate(response.json())
 
 
-# pylint: disable=too-many-arguments, too-many-locals, too-many-branches
+# pylint: disable=too-many-arguments, too-many-positional-arguments
+# pylint: disable=too-many-locals, too-many-branches
 def fetch_archives_from_api(
     expected_no_of_archives: int = 1,
     expected_state: str | None = "created",

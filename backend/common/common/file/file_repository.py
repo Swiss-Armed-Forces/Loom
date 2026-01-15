@@ -495,7 +495,7 @@ class FileRepository(BaseEsRepository[_EsFile, File]):
             all_tags.append(cast(str, tag.key))
         return all_tags
 
-    # pylint: disable=too-many-arguments
+    # pylint: disable=too-many-arguments, too-many-positional-arguments
     def get_embedding_generator_by_knn(
         self,
         query: QueryParameters,

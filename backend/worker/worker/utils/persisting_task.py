@@ -1,6 +1,7 @@
 from typing import Any, Callable, Concatenate, ParamSpec, Type
 
 from celery import Celery
+from common.celery_app import BaseTask
 from common.models.base_repository import BaseRepository
 from common.task_object.task_object import (
     RepositoryTaskObjectT,
@@ -23,7 +24,7 @@ def _default_persisting_cache(*_, **__):
 
 
 def persisting_task(
-    celery_app: Celery,
+    celery_app: "Celery[BaseTask]",
     persister_type: Type[PersisterBase[RepositoryTaskObjectT]],
     get_task_object_repository: (
         Callable[[], BaseRepository[SecondaryRepositoryTaskObjectT]] | None
