@@ -31,25 +31,6 @@ CELERY_GRAVEYARD_QUEUE_NAME = f"{CELERY_QUEUE_NAME_PREFIX}.graveyard"
 CELERY_DEAD_QUEUE_NAME = f"{CELERY_QUEUE_NAME_PREFIX}.dead"
 
 
-def _patch_group(app: Celery) -> None:
-    """Patch the behavior of celery of group/chain nesting.
-
-    See: https://github.com/celery/celery/issues/8182
-    """
-
-    def patched_group(*signatures: Signature[Any], **options: Any) -> Signature[Any]:
-        """A patch for celery.group This is required, because celery does not work as
-        expected when using a mixture of nested groups & chains."""
-        return chord(original_group(*signatures, **options), __completer.s())
-
-    @app.task()
-    def __completer(results):
-        """Task that does nothing, can be used in a chord to complete the chord."""
-        return results
-
-    celery.group = patched_group  # type: ignore[misc, assignment]
-
-
 class DeadTask(Exception):
     """Exception raised when a task comes from a dead letter queue."""
 
@@ -86,6 +67,25 @@ class BaseTask(ABC, Task):
             raise DeadTask(f"Task died: {x_death}")
 
         return self.run(*args, **kwargs)
+
+
+def _patch_group(app: "Celery[BaseTask]") -> None:
+    """Patch the behavior of celery of group/chain nesting.
+
+    See: https://github.com/celery/celery/issues/8182
+    """
+
+    def patched_group(*signatures: Signature[Any], **options: Any) -> Signature[Any]:
+        """A patch for celery.group This is required, because celery does not work as
+        expected when using a mixture of nested groups & chains."""
+        return chord(original_group(*signatures, **options), __completer.s())
+
+    @app.task()
+    def __completer(results):
+        """Task that does nothing, can be used in a chord to complete the chord."""
+        return results
+
+    celery.group = patched_group  # type: ignore[misc, assignment]
 
 
 def _get_queue(queue_name: str) -> Queue:
@@ -142,7 +142,7 @@ def _get_dead_queue(queue_name: str) -> Queue:
     )
 
 
-def init_celery_app() -> Celery:
+def init_celery_app() -> "Celery[BaseTask]":
     """Initialize a minimal Celery app."""
     app = Celery(
         "loom",

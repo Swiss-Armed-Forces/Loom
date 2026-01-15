@@ -273,7 +273,7 @@ class BaseEsRepository(
                 sort_field = field
         return sort_field
 
-    # pylint: disable=too-many-arguments
+    # pylint: disable=too-many-arguments, too-many-positional-arguments
     def _paginate_search(
         self,
         search: Search[EsRepositoryDocumentT],

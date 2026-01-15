@@ -444,22 +444,21 @@ The complete source code for Traefik is publicly available at [https://github.co
 | Name                     | Version         | License                                                                          |
 |--------------------------|-----------------|----------------------------------------------------------------------------------|
 | argcomplete              | 3.5.3           | Apache Software License                                                          |
+| celery-types             | 0.24.0          | Apache Software License                                                          |
 | coverage                 | 7.5.4           | Apache Software License                                                          |
 | docker                   | 7.1.0           | Apache Software License                                                          |
 | elastic-transport        | 8.17.1          | Apache Software License                                                          |
 | elasticsearch            | 9.0.2           | Apache Software License                                                          |
-| freezegun                | 1.5.1           | Apache Software License                                                          |
 | memray                   | 1.17.2          | Apache Software License                                                          |
 | minio                    | 7.2.15          | Apache Software License                                                          |
 | pymongo                  | 4.7.3           | Apache Software License                                                          |
-| pytest-asyncio           | 0.23.7          | Apache Software License                                                          |
 | pytest-memray            | 1.7.0           | Apache Software License                                                          |
 | pytest_docker_tools      | 3.1.9           | Apache Software License                                                          |
 | python-multipart         | 0.0.21          | Apache Software License                                                          |
 | requests                 | 2.32.3          | Apache Software License                                                          |
 | requests-toolbelt        | 1.0.0           | Apache Software License                                                          |
-| retry                    | 0.9.2           | Apache Software License                                                          |
-| tenacity                 | 8.4.2           | Apache Software License                                                          |
+| requirements-parser      | 0.13.0          | Apache Software License                                                          |
+| tenacity                 | 9.1.2           | Apache Software License                                                          |
 | tornado                  | 6.5.1           | Apache Software License                                                          |
 | types-cffi               | 1.16.0.20240331 | Apache Software License                                                          |
 | types-docker             | 7.1.0.20240626  | Apache Software License                                                          |
@@ -476,11 +475,11 @@ The complete source code for Traefik is publicly available at [https://github.co
 | pycryptodome             | 3.20.0          | Apache Software License; BSD License; Public Domain                              |
 | pycryptodome             | 3.20.0          | Apache Software License; BSD License; Public Domain                              |
 | pycryptodomex            | 3.20.0          | Apache Software License; BSD License; Public Domain                              |
-| luqum                    | 0.13.0          | Apache Software License; GNU Lesser General Public License v3 or later (LGPLv3+) |
+| luqum                    | 0.14.0          | Apache Software License; GNU Lesser General Public License v3 or later (LGPLv3+) |
 | orjson                   | 3.10.5          | Apache Software License; MIT License                                             |
 | sniffio                  | 1.3.1           | Apache Software License; MIT License                                             |
+| freezegun                | 1.5.5           | Apache-2.0                                                                       |
 | ply                      | 3.11            | BSD                                                                              |
-| GitPython                | 3.1.44          | BSD License                                                                      |
 | IMAPClient               | 3.0.1           | BSD License                                                                      |
 | Jinja2                   | 3.1.6           | BSD License                                                                      |
 | MarkupSafe               | 3.0.2           | BSD License                                                                      |
@@ -490,7 +489,6 @@ The complete source code for Traefik is publicly available at [https://github.co
 | celery                   | 5.5.3           | BSD License                                                                      |
 | click                    | 8.1.7           | BSD License                                                                      |
 | click-plugins            | 1.1.1           | BSD License                                                                      |
-| decorator                | 5.2.1           | BSD License                                                                      |
 | dill                     | 0.3.8           | BSD License                                                                      |
 | flower                   | 2.0.1           | BSD License                                                                      |
 | gitdb                    | 4.0.12          | BSD License                                                                      |
@@ -505,29 +503,27 @@ The complete source code for Traefik is publicly available at [https://github.co
 | numpy                    | 1.26.4          | BSD License                                                                      |
 | pika                     | 1.3.2           | BSD License                                                                      |
 | prompt_toolkit           | 3.0.47          | BSD License                                                                      |
-| psutil                   | 6.1.0           | BSD License                                                                      |
 | pycparser                | 2.22            | BSD License                                                                      |
+| pytest-celery            | 1.2.1           | BSD License                                                                      |
 | python-dotenv            | 1.0.1           | BSD License                                                                      |
 | scikit-learn             | 1.7.0           | BSD License                                                                      |
 | scipy                    | 1.15.3          | BSD License                                                                      |
 | smmap                    | 5.0.2           | BSD License                                                                      |
 | starlette                | 0.46.1          | BSD License                                                                      |
 | threadpoolctl            | 3.5.0           | BSD License                                                                      |
-| uvicorn                  | 0.29.0          | BSD License                                                                      |
 | vine                     | 5.1.0           | BSD License                                                                      |
 | websockets               | 13.1            | BSD License                                                                      |
-| zstandard                | 0.23.0          | BSD License                                                                      |
-| pytest-celery            | 1.0.0           | BSD License; Other/Proprietary License                                           |
+| GitPython                | 3.1.46          | BSD-3-Clause                                                                     |
+| psutil                   | 7.2.1           | BSD-3-Clause                                                                     |
 | pytest-timeout           | 2.4.0           | DFSG approved; MIT License                                                       |
-| pylint                   | 3.2.4           | GNU General Public License v2 (GPLv2)                                            |
 | pylint-plugin-utils      | 0.8.2           | GNU General Public License v2 or later (GPLv2+)                                  |
 | yamllint                 | 1.37.0          | GNU General Public License v3 (GPLv3)                                            |
-| astroid                  | 3.2.2           | GNU Lesser General Public License v2 (LGPLv2)                                    |
 | python-gitlab            | 6.0.0           | GNU Lesser General Public License v3 (LGPLv3)                                    |
-| pylint-pydantic          | 0.3.2           | GPLv3                                                                            |
+| pylint-pydantic          | 0.4.1           | GPLv3                                                                            |
 | dnspython                | 2.6.1           | ISC License (ISCL)                                                               |
 | click-repl               | 0.3.0           | MIT                                                                              |
-| identify                 | 2.6.12          | MIT                                                                              |
+| identify                 | 2.6.16          | MIT                                                                              |
+| pycodestyle              | 2.14.0          | MIT                                                                              |
 | PyYAML                   | 6.0.1           | MIT License                                                                      |
 | PyYAML                   | 6.0.2           | MIT License                                                                      |
 | PyYAML                   | 6.0.2           | MIT License                                                                      |
@@ -544,10 +540,9 @@ The complete source code for Traefik is publicly available at [https://github.co
 | click-didyoumean         | 0.3.1           | MIT License                                                                      |
 | common                   | 0.1.0           | MIT License                                                                      |
 | crawler                  | 0.1.0           | MIT License                                                                      |
-| debugpy                  | 1.8.2           | MIT License                                                                      |
-| deptry                   | 0.16.1          | MIT License                                                                      |
-| fastapi                  | 0.115.12        | MIT License                                                                      |
-| flake8                   | 7.1.0           | MIT License                                                                      |
+| debugpy                  | 1.8.19          | MIT License                                                                      |
+| deptry                   | 0.24.0          | MIT License                                                                      |
+| flake8                   | 7.3.0           | MIT License                                                                      |
 | flake8-bugbear           | 24.4.26         | MIT License                                                                      |
 | h11                      | 0.14.0          | MIT License                                                                      |
 | iniconfig                | 2.0.0           | MIT License                                                                      |
@@ -568,16 +563,14 @@ The complete source code for Traefik is publicly available at [https://github.co
 | pluggy                   | 1.5.0           | MIT License                                                                      |
 | poetry                   | 2.1.3           | MIT License                                                                      |
 | pre_commit_hooks         | 5.0.0           | MIT License                                                                      |
-| py                       | 1.11.0          | MIT License                                                                      |
-| pycodestyle              | 2.12.0          | MIT License                                                                      |
 | pydantic                 | 2.10.3          | MIT License                                                                      |
 | pydantic-mongo           | 2.3.0           | MIT License                                                                      |
 | pydantic-settings        | 2.3.4           | MIT License                                                                      |
 | pydantic_core            | 2.27.1          | MIT License                                                                      |
-| pyflakes                 | 3.2.0           | MIT License                                                                      |
-| pytest                   | 8.4.1           | MIT License                                                                      |
+| pyflakes                 | 3.4.0           | MIT License                                                                      |
+| pytest                   | 8.4.2           | MIT License                                                                      |
 | pytest-cov               | 5.0.0           | MIT License                                                                      |
-| pytest-mock              | 3.14.0          | MIT License                                                                      |
+| pytest-mock              | 3.15.1          | MIT License                                                                      |
 | pytest-random-order      | 1.1.1           | MIT License                                                                      |
 | pytest-split             | 0.10.0          | MIT License                                                                      |
 | python-magic             | 0.4.27          | MIT License                                                                      |
@@ -598,21 +591,27 @@ The complete source code for Traefik is publicly available at [https://github.co
 | urllib3                  | 2.2.2           | MIT License                                                                      |
 | worker                   | 0.1.0           | MIT License                                                                      |
 | xmltodict                | 0.14.2          | MIT License                                                                      |
-| docformatter             | 1.7.5           | MIT License; Other/Proprietary License                                           |
+| docformatter             | 1.7.7           | MIT License; Other/Proprietary License                                           |
 | pytest-rerunfailures     | 15.1            | MPL-2.0                                                                          |
 | certifi                  | 2024.6.2        | Mozilla Public License 2.0 (MPL 2.0)                                             |
 | pathspec                 | 0.12.1          | Mozilla Public License 2.0 (MPL 2.0)                                             |
 | pathspec                 | 0.12.1          | Mozilla Public License 2.0 (MPL 2.0)                                             |
 | blobfile                 | 2.1.1           | Public Domain                                                                    |
-| typing_extensions        | 4.12.2          | Python Software Foundation License                                               |
 | filelock                 | 3.15.4          | The Unlicense (Unlicense)                                                        |
+| annotated-doc            | 0.0.4           | UNKNOWN                                                                          |
+| astroid                  | 3.3.11          | UNKNOWN                                                                          |
 | binwalk                  | 2.4.3           | UNKNOWN                                                                          |
 | black                    | 25.12.0         | UNKNOWN                                                                          |
-| celery-types             | 0.22.0          | UNKNOWN                                                                          |
+| fastapi                  | 0.128.0         | UNKNOWN                                                                          |
 | humanize                 | 4.12.3          | UNKNOWN                                                                          |
-| ollama                   | 0.5.1           | UNKNOWN                                                                          |
+| ollama                   | 0.6.1           | UNKNOWN                                                                          |
 | prometheus_client        | 0.22.1          | UNKNOWN                                                                          |
 | pycrypto                 | 3.20.0          | UNKNOWN                                                                          |
+| pylint                   | 3.3.9           | UNKNOWN                                                                          |
+| pytest-asyncio           | 0.26.0          | UNKNOWN                                                                          |
+| typing_extensions        | 4.15.0          | UNKNOWN                                                                          |
+| uvicorn                  | 0.40.0          | UNKNOWN                                                                          |
+| zstandard                | 0.25.0          | UNKNOWN                                                                          |
 
 ## JavaScript
 

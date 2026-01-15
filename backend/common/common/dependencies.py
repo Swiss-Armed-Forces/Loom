@@ -1,4 +1,5 @@
 import logging
+from typing import Optional
 from unittest.mock import AsyncMock, MagicMock
 
 from celery import Celery
@@ -14,7 +15,7 @@ from common.ai_context.ai_scheduling_service import AiSchedulingService
 from common.archive.archive_encryption_service import ArchiveEncryptionService
 from common.archive.archive_repository import ArchiveRepository
 from common.archive.archive_scheduling_service import ArchiveSchedulingService
-from common.celery_app import init_celery_app
+from common.celery_app import BaseTask, init_celery_app
 from common.elasticsearch import init_elasticsearch
 from common.file.file_repository import FileRepository
 from common.file.file_scheduling_service import FileSchedulingService
@@ -40,7 +41,7 @@ _libretranslate_api: LibreTranslateAPI | None = None
 _query_builder: QueryBuilder | None = None
 _elasticsearch: Elasticsearch | None = None
 _mongo: MongoClient | None = None
-_celery_app: Celery | None = None
+_celery_app: Optional["Celery[BaseTask]"] = None
 _redis_client: StrictRedis | None = None
 _redis_client_async: StrictRedisAsync | None = None
 _pubsub_service: PubSubService | None = None
@@ -256,7 +257,7 @@ def get_elasticsearch() -> Elasticsearch:
     return _elasticsearch
 
 
-def get_celery_app() -> Celery:
+def get_celery_app() -> "Celery[BaseTask]":
     if _celery_app is None:
         raise DependencyException("Celery app not initialized")
     return _celery_app

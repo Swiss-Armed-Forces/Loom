@@ -6,6 +6,7 @@ from celery import Celery
 
 from common.ai_context.ai_context_repository import AiContext
 from common.archive.archive_repository import Archive
+from common.celery_app import BaseTask
 from common.file.file_repository import File, Tag
 from common.services.lazybytes_service import LazyBytes
 from common.services.query_builder import QueryParameters
@@ -20,7 +21,7 @@ class TaskSchedulingService:
 
     def __init__(
         self,
-        celery_app: Celery,
+        celery_app: "Celery[BaseTask]",
         root_task_information_repository: RootTaskInformationRepository,
     ):
         self._celery_app = celery_app

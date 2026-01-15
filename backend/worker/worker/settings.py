@@ -27,7 +27,7 @@ class SettingsSource(EnvSettingsSource):
 class Settings(CommonSettings):
     """All settings for the worker service."""
 
-    # pylint: disable=too-many-arguments
+    # pylint: disable=too-many-arguments, too-many-positional-arguments
     @classmethod
     def settings_customise_sources(
         cls,
