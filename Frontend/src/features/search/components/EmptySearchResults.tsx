@@ -81,6 +81,7 @@ export function EmptySearchResults() {
                                 {createSearchTip("*", "showAll")}
                                 {createSearchTip("John Smith", "keyword")}
                                 {createSearchTip("Jo*", "prefix")}
+                                {createSearchTip("/.*Jo?n.*/", "regex")}
                                 {createSearchTip('"John Smith"', "exact")}
                                 {createSearchTip(
                                     '"John Smith"~10',
@@ -90,17 +91,11 @@ export function EmptySearchResults() {
                                 {createSearchTip("filename:*.txt", "filename")}
                                 {createSearchTip("size:>1M", "size")}
                                 {createSearchTip("modified:today", "when")}
-                                {createSearchTip("author:*", "author")}
+                                {createSearchTip("author:/.*/", "author")}
                                 {createSearchTip("tags:interesting", "tags")}
                                 {createSearchTip(
                                     "NOT tags:interesting",
                                     "tagsNegate",
-                                )}
-                                {createSearchTip("hidden:true", "hidden")}
-                                {createSearchTip("hidden:*", "allHidden")}
-                                {createSearchTip(
-                                    "file_type:image/png",
-                                    "fileType",
                                 )}
                                 {createSearchTip(
                                     "tags:interesting AND modified:today",
@@ -109,6 +104,12 @@ export function EmptySearchResults() {
                                 {createSearchTip(
                                     "tags:interesting OR modified:today",
                                     "or",
+                                )}
+                                {createSearchTip("hidden:true", "hidden")}
+                                {createSearchTip("hidden:*", "allHidden")}
+                                {createSearchTip(
+                                    "file_type:image/png",
+                                    "fileType",
                                 )}
                                 {createSearchTip(
                                     "uploaded:[* TO 2020-06-15]",
@@ -123,6 +124,11 @@ export function EmptySearchResults() {
                                     "modificationTime",
                                 )}
                                 {createSearchTip("secrets:*", "secrets")}
+                                {createSearchTip("*:John", "allFields")}
+                                {createSearchTip(
+                                    "\\*name\\*:*txt*",
+                                    "nameFields",
+                                )}
                             </ul>
                         </div>
                         <div>
