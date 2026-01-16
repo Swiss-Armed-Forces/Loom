@@ -1,4 +1,6 @@
 import logging
+from concurrent.futures import ThreadPoolExecutor
+from typing import Any
 
 import requests
 from api.models.queues_model import OverallQueuesStats
@@ -20,19 +22,16 @@ def get_messages_in_queues() -> int:
 def get_celery_tasks_count() -> int:
     inspect = get_celery_app().control.inspect()
 
-    active_tasks_count = 0
+    def count_total_tasks(worker_tasks: dict[str, list[Any]] | None):
+        if worker_tasks is None:
+            return 0
+        return sum(len(tasks) for _, tasks in worker_tasks.items())
 
-    active_tasks = inspect.active()
-    if active_tasks is not None:
-        for active_worker_tasks in active_tasks.values():
-            active_tasks_count += len(active_worker_tasks)
+    inspect_methods = [inspect.active, inspect.scheduled, inspect.reserved]
 
-    scheduled_tasks = inspect.scheduled()
-    if scheduled_tasks is not None:
-        for scheduled_worker_tasks in scheduled_tasks.values():
-            active_tasks_count += len(scheduled_worker_tasks)
-
-    return active_tasks_count
+    with ThreadPoolExecutor() as executor:
+        futures = [executor.submit(method, safe=True) for method in inspect_methods]
+        return sum(count_total_tasks(f.result()) for f in futures)
 
 
 def is_celery_idle() -> bool:
