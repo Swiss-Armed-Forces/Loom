@@ -7,11 +7,13 @@ import {
     DialogContent,
     DialogTitle,
     IconButton,
+    LinearProgress,
     TextField,
 } from "@mui/material";
 import { useTranslation } from "react-i18next";
 import { Close } from "@mui/icons-material";
 import {
+    ResponseError,
     scheduleFileSummarization,
     scheduleSingleFileSummarization,
 } from "../../../app/api";
@@ -45,36 +47,37 @@ export function SummaryButton({
     const [showDialog, setShowDialog] = useState(false);
     const [systemPrompt, setSystemPrompt] = useState<string | null>(null);
     const filesCount = useAppSelector(selectTotalFiles);
+    const [loadingBar, setLoadingBar] = useState(false);
 
-    const handleSummarize = () => {
-        if (!searchQuery) return;
-        if (!file_id) return;
-        dispatch(setBackgroundTaskSpinnerActive());
-        let result: Promise<void>;
-        if (file_id) {
-            result = scheduleSingleFileSummarization(file_id, systemPrompt);
-        } else if (searchQuery) {
-            result = scheduleFileSummarization(searchQuery, systemPrompt);
-        } else {
-            toast.error("Error while opening Dialog: No File or Query found");
-            return;
+    const handleSummarize = async () => {
+        if (!searchQuery && !file_id) return;
+        try {
+            dispatch(setBackgroundTaskSpinnerActive());
+            setLoadingBar(true);
+            if (file_id) {
+                await scheduleSingleFileSummarization(file_id, systemPrompt);
+            } else if (searchQuery) {
+                await scheduleFileSummarization(searchQuery, systemPrompt);
+            }
+
+            toast.success(t("summarizationDialog.scheduledToast"));
+        } catch (error: any) {
+            let errorDetail = "";
+            if (error instanceof ResponseError) {
+                const errorData = await error.response.json();
+                errorDetail = errorData?.detail ?? JSON.stringify(errorData);
+            } else {
+                errorDetail = error.toString();
+            }
+            toast.error(
+                t("summarizationDialog.scheduledErrorToast", {
+                    err: errorDetail,
+                }),
+            );
+        } finally {
+            setLoadingBar(false);
+            setShowDialog(false);
         }
-
-        result
-            .then(() => {
-                toast.success(
-                    "Summary successfully scheduled, this might take a while.",
-                );
-            })
-            .catch((err) => {
-                toast.error(
-                    "Cannot summarize files. Code: " +
-                        err.status +
-                        ", Text: " +
-                        err.text,
-                );
-            });
-        setShowDialog(false);
     };
 
     const startSummaryProcess = () => {
@@ -169,6 +172,14 @@ export function SummaryButton({
                         {t("sideMenu.summarizeQueriedFiles")}
                     </Button>
                 </DialogActions>
+                {loadingBar && (
+                    <div className="loadingIndicator">
+                        <LinearProgress color="primary" />
+                    </div>
+                )}
+                {!loadingBar && (
+                    <div className="loadingIndicatorPlaceholder"></div>
+                )}
             </Dialog>
         </>
     );
