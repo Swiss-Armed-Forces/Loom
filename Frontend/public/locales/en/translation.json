@@ -67,7 +67,8 @@
         "title": "Summarize",
         "systemPromptHint": "Define a system prompt for the summarization",
         "executeButton": "Summarize",
-        "confirmationTitle": "Confirm Summarization"
+        "scheduledToast": "Summarization successfully scheduled, this might take a while",
+        "scheduledErrorToast": "Can not summarize files. Code: {{err.status}}, Text: {{err.text}}"
     },
     "confirmDialog": {
         "title": "Confirm action",
