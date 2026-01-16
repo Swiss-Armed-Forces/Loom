@@ -192,7 +192,10 @@ default:
     # Cache per runner tags: minikube setup is dependant
     # on runner hardware - we assume here that all
     # runners with the same tags are very similar
-    - key: ${CI_JOB_GROUP_NAME}-minikube-cache-${CI_RUNNER_TAGS}
+    - key:
+        files:
+          - devenv.lock  # pins minikube version
+        prefix: ${CI_JOB_GROUP_NAME}-minikube-cache-${CI_RUNNER_TAGS}
       paths:
         - ${MINIKUBE_HOME}
       unprotect: true
