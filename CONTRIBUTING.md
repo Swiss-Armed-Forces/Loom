@@ -1,7 +1,8 @@
 # Contributing Guidelines for Loom
 
 Welcome to the Loom project! Contributions are the foundation of our success, and we’re excited to have you involved.
-These guidelines will help ensure smooth collaboration and effective contributions. Please review them carefully before starting.
+These guidelines will help ensure smooth collaboration and effective contributions.
+Please review them carefully before starting.
 
 ## Table of Contents
 

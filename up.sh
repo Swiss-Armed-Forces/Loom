@@ -127,10 +127,6 @@ namespace_exists() {
         "${NAMESPACE}" &> /dev/null
 }
 
-cluster_exists() {
-    minikube status &>/dev/null
-}
-
 is_hosts_file_writable_as_root(){
     sudo [ -w "${HOSTS_FILE}" ]
 }
@@ -263,12 +259,6 @@ EOF
 }
 
 create_cluster(){
-    # shellcheck disable=SC2310
-    if cluster_exists; then
-        echo "[-] Cluster already exists"
-        return
-    fi
-
     minikube start \
         --driver docker \
         --wait all \
