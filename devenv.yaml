@@ -4,7 +4,7 @@ inputs:
     url: github:cachix/devenv-nixpkgs/rolling
 
   nixpkgs-stable:
-    url: github:NixOS/nixpkgs/nixos-25.05
+    url: github:NixOS/nixpkgs/nixos-25.11
 
   nixpkgs-unstable:
     url: github:NixOS/nixpkgs/nixpkgs-unstable

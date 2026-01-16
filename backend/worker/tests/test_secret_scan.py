@@ -136,7 +136,7 @@ def test_trufflehog_scan_task(
     lazybytes_service_inmemory: LazyBytesService,
 ):
     lazy_bytes_obj = lazybytes_service_inmemory.from_bytes(file_content)
-    secrets: list[Secret] = trufflehog_scan_task(lazy_bytes_obj, extension)
+    secrets = trufflehog_scan_task(lazy_bytes_obj, extension)
     assert secrets == result
 
 

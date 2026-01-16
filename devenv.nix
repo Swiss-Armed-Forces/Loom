@@ -251,7 +251,7 @@ in
 
   # https://devenv.sh/packages/
   packages =
-    with pkgs-stable;
+    with pkgs;
     [
       # git
       git
@@ -282,12 +282,14 @@ in
       # for software bill of materials (SBOM)
       syft
 
-      # dependency tracking
+      # for dependency tracking & renovate-config-validator
       renovate
 
       # for unit testing
       libpst
       tshark
+      trufflehog
+      ripsecrets
 
       # we have to use an outdated binwalk version
       # here to stay compatible with the very old
@@ -334,81 +336,68 @@ in
       # the terminal in VScode work (or not ..)
       bashInteractive
 
-      # ide
-      # see: https://nixos.wiki/wiki/Visual_Studio_Code
-      #
-      # Note we pin to the 24.11 nixpkgs version here because of
-      # a bug in vscode python extension which prevents the
-      # python language server from loading:
-      # see:
-      #   - https://github.com/microsoft/vscode-python/issues/25301
-      (
-        with pkgs-24-11;
-        vscode-with-extensions.override {
-          vscodeExtensions =
-            with vscode-extensions;
-            [
-              bbenoist.nix
-              mkhl.direnv
+      (vscode-with-extensions.override {
+        vscodeExtensions =
+          with vscode-extensions;
+          [
+            bbenoist.nix
+            mkhl.direnv
 
-              gitlab.gitlab-workflow
+            gitlab.gitlab-workflow
 
-              ms-python.python
-              ms-python.vscode-pylance
-              ms-python.isort
-              ms-python.black-formatter
-              ms-python.debugpy
-              ms-python.pylint
-              ms-python.flake8
+            ms-python.python
+            ms-python.vscode-pylance
+            ms-python.isort
+            ms-python.black-formatter
+            ms-python.debugpy
+            ms-python.pylint
+            ms-python.flake8
+            ms-python.mypy-type-checker
 
-              ms-azuretools.vscode-docker
-              ms-kubernetes-tools.vscode-kubernetes-tools
-              redhat.vscode-yaml # required for vscode-kubernetes-tools
-              tim-koehler.helm-intellisense
+            ms-azuretools.vscode-docker
+            ms-kubernetes-tools.vscode-kubernetes-tools
+            redhat.vscode-yaml # required for vscode-kubernetes-tools
+            tim-koehler.helm-intellisense
 
-              dbaeumer.vscode-eslint
-              esbenp.prettier-vscode
+            dbaeumer.vscode-eslint
+            esbenp.prettier-vscode
 
-              timonwong.shellcheck
+            timonwong.shellcheck
 
-              davidanson.vscode-markdownlint
+            davidanson.vscode-markdownlint
 
-              jebbs.plantuml
-            ]
-            ++ vscode-utils.extensionsFromVscodeMarketplace [
-              {
-                name = "mypy-type-checker";
-                publisher = "ms-python";
-                version = "2024.0.0";
-                sha256 = "sha256-o2qmz8tAC4MG/4DTBdM1JS5slsUrlub4fbDulU42Bgg=";
-              }
-              {
-                name = "autoflake-extension";
-                publisher = "mikoz";
-                version = "1.0.4";
-                sha256 = "sha256-CtsJGlGsMmEePKTBQIu7vX15SkfdJo8zREJgVyztNTY=";
-              }
-              {
-                name = "hadolint";
-                publisher = "exiasr";
-                version = "1.1.2";
-                sha256 = "sha256-6GO1f8SP4CE8yYl87/tm60FdGHqHsJA4c2B6UKVdpgM=";
-              }
-              {
-                name = "explorer";
-                publisher = "vitest";
-                version = "1.26.3";
-                sha256 = "sha256-RNRpUWq9dTSOGeLsINrUHy6+nPov+SAsCDRTB1D/3Rs=";
-              }
-            ];
-        }
-      )
+            jebbs.plantuml
+          ]
+          ++ vscode-utils.extensionsFromVscodeMarketplace [
+            {
+              # https://marketplace.visualstudio.com/items?itemName=mikoz.autoflake-extension
+              name = "autoflake-extension";
+              publisher = "mikoz";
+              version = "1.0.6";
+              sha256 = "sha256-y0tJsKhz1JR7jBPl+TChtdb3B8xpu7Qh8KpGHuSVZM4=";
+            }
+            {
+              # https://marketplace.visualstudio.com/items?itemName=exiasr.hadolint
+              name = "hadolint";
+              publisher = "exiasr";
+              version = "1.1.2";
+              sha256 = "sha256-6GO1f8SP4CE8yYl87/tm60FdGHqHsJA4c2B6UKVdpgM=";
+            }
+            {
+              # https://marketplace.visualstudio.com/items?itemName=vitest.explorer
+              name = "explorer";
+              publisher = "vitest";
+              version = "1.36.0";
+              sha256 = "sha256-ic1Gk3jJyyD7WnXjXMymr/5YV2z3tK5VPToWeCkhqyU=";
+            }
+          ];
+      })
     ]);
 
   # Disable cachix because cachix might cause
   # instabilities when fetching tarball for
   # nixpkgs-unstable
-  cachix.enable = false;
+  #cachix.enable = false;
 
   # https://devenv.sh/languages/
   languages.nix.enable = true;
@@ -419,7 +408,7 @@ in
     # that the debugger (when attached) can resolve
     # python libraries. When you update this, you probably
     # also need to update quite a few Dockerfiles.
-    package = pkgs-stable.python311;
+    package = pkgs.python311;
     # Note: we have to disable manylinux here,
     # because otherwise when using cli tools
     # from within python will segfault
@@ -429,19 +418,9 @@ in
     poetry = {
       enable = true;
       activate.enable = true;
-      # Run this to update the .venv always. This is to avoid version and library conflicts.
+      # Run this to update the .venv always:
+      # This is to avoid version and library conflicts.
       install.enable = true;
-      # We have to use the poetry package from pkgs-stable here
-      # because of an issue with flaky tests which did not make
-      # it yet into devenv-nixpkgs/rolling:
-      #  - https://github.com/python-poetry/poetry/issues/10369
-      #  - https://github.com/NixOS/nixpkgs/blob/nixos-25.05/pkgs/by-name/po/poetry/unwrapped.nix#L143
-      #
-      # This can probably be removed once devenv-nixpkgs/rolling
-      # is updated and also ignores those flaky tests here:
-      #  - https://github.com/cachix/devenv-nixpkgs/blob/rolling/pkgs/by-name/po/poetry/unwrapped.nix#L141
-      #
-      package = pkgs-stable.poetry;
     };
   };
 
@@ -451,128 +430,122 @@ in
     corepack.enable = true;
     pnpm = {
       enable = true;
+      # Run this to update the node_modules always:
+      # This is to avoid version and library conflicts.
       install.enable = true;
     };
   };
   languages.typescript.enable = true;
 
   # https://devenv.sh/git-hooks/
-  git-hooks.hooks =
-    {
-      ai-commit-message = {
-        enable = true;
-        stages = [
-          "prepare-commit-msg"
-        ];
+  git-hooks.hooks = {
+    ai-commit-message = {
+      enable = true;
+      stages = [
+        "prepare-commit-msg"
+      ];
 
-        # The name of the hook (appears on the report table):
-        name = "AI commit message";
+      # The name of the hook (appears on the report table):
+      name = "AI commit message";
 
-        # The command to execute (mandatory):
-        # Note: we have to poetry run here so that the script
-        # has access to poetry installed dependencies
-        entry = "poetry run ./cicd/ai_commit_message.py";
+      # The command to execute (mandatory):
+      # Note: we have to poetry run here so that the script
+      # has access to poetry installed dependencies
+      entry = "poetry run ./cicd/ai_commit_message.py";
 
-        # The language of the hook - tells pre-commit
-        # how to install the hook (default: "system")
-        # see also https://pre-commit.com/#supported-languages
-        #language = "python";
+      # The language of the hook - tells pre-commit
+      # how to install the hook (default: "system")
+      # see also https://pre-commit.com/#supported-languages
+      #language = "python";
 
-        # verbose = true;
-      };
+      # verbose = true;
+    };
 
-      dos2unix = {
-        enable = true;
-        entry = "dos2unix";
-        args = [
-          "--info=c"
-        ];
-        excludes = [
-          ".*/assets/.*"
-        ];
-      };
+    dos2unix = {
+      enable = true;
+      entry = "dos2unix";
+      args = [
+        "--info=c"
+      ];
+      excludes = [
+        ".*/assets/.*"
+      ];
+    };
 
-      trim-trailing-whitespace.enable = true;
+    trim-trailing-whitespace.enable = true;
 
-      nixfmt-rfc-style.enable = true;
+    nixfmt-rfc-style.enable = true;
 
-      shellcheck = {
-        enable = true;
-        args = [
-          "-x"
-          "-o"
-          "all"
-        ];
-      };
+    shellcheck = {
+      enable = true;
+      args = [
+        "-x"
+        "-o"
+        "all"
+      ];
+    };
 
-      hadolint.enable = true;
+    hadolint.enable = true;
 
-      markdownlint = {
-        enable = true;
-        settings.configuration = {
-          MD013 = {
-            line_length = 120;
-            tables = false;
-          };
+    markdownlint = {
+      enable = true;
+      settings.configuration = {
+        MD013 = {
+          line_length = 120;
+          tables = false;
         };
       };
+    };
 
-      yamllint = {
-        enable = true;
-        excludes = [
-          "pnpm-lock.yaml"
-          "charts/templates/"
-          "charts/charts/"
-        ];
-        settings = {
-          strict = true;
-          configData = ''{ extends: default, rules: { document-start: disable, line-length: {max: 165} } }'';
-        };
+    yamllint = {
+      enable = true;
+      excludes = [
+        "pnpm-lock.yaml"
+        "charts/templates/"
+        "charts/charts/"
+      ];
+      settings = {
+        strict = true;
+        configData = ''{ extends: default, rules: { document-start: disable, line-length: {max: 165} } }'';
       };
+    };
 
-      check-json.enable = true;
+    check-json.enable = true;
 
-      renovate-config-validator = {
-        enable = true;
-        files = "renovate\\.json$";
-        entry = "renovate-config-validator";
-      };
+    renovate-config-validator = {
+      enable = true;
+      files = "renovate\\.json$";
+      entry = "renovate-config-validator";
+    };
 
-      check-toml.enable = true;
+    check-toml.enable = true;
 
-      trufflehog.enable = true;
-      ripsecrets.enable = true;
+    # trufflehog disable for now;
+    # we do get "files were modified by this hook"
+    # when there are changes and we run: git commit -a
+    # trufflehog.enable = true;
+    ripsecrets.enable = true;
 
-      typos = {
-        enable = true;
-        excludes = [
-          "backend/api/static/swagger-ui.css"
-          "backend/api/static/redoc.standalone.js"
-          "backend/api/static/swagger-ui-bundle.js"
-          "THIRD-PARTY.md"
-          "Frontend/public/THIRD-PARTY.md"
-          "Redis/redis.conf"
-          ".*/assets/.*"
-        ];
-        exclude_types = [
-          "svg"
-        ];
-        settings = {
-          configuration = ''
-            [default]
-            extend-ignore-re = [
-              # Custom ignore regex patterns: https://github.com/crate-ci/typos/blob/master/docs/reference.md#example-configurations
-              "(?Rm)^.*(#|//)\\s*spellchecker:disable-line$",
-              "(?s)(#|//)\\s*spellchecker:off.*?\\n\\s*(#|//)\\s*spellchecker:on",
-              "(#|//)\\s*spellchecker:ignore-next-line\\n.*"
-            ]
-          '';
-        };
-      };
-    }
-    // pythonHooks
-    // jsHooks
-    // helmHooks;
+    typos = {
+      enable = true;
+      excludes = [
+        "backend/api/static/swagger-ui.css"
+        "backend/api/static/redoc.standalone.js"
+        "backend/api/static/swagger-ui-bundle.js"
+        "THIRD-PARTY.md"
+        "Frontend/public/THIRD-PARTY.md"
+        "Redis/redis.conf"
+        ".*/assets/.*"
+        ".*/\\.gitignore"
+      ];
+      exclude_types = [
+        "svg"
+      ];
+    };
+  }
+  // pythonHooks
+  // jsHooks
+  // helmHooks;
 
   dotenv = {
     enable = true;
@@ -586,7 +559,7 @@ in
         cd '${config.devenv.root}'
 
         # pull lfs artifacts: required for gitlab cicd pipelines
-        # Note: we can not install lfs hooks because,
+        # Note: we can not install lfs hooks because
         # hooks are managed by devenv
         git lfs install --skip-repo
         git lfs pull

@@ -29,8 +29,8 @@ def encrypt_file_task(storage_id: ObjectId) -> ObjectId:
     ) as plain_file_storage_stream, file_storage_service.open_upload_stream_with_id(
         encrypted_file_storage_id,
         "",
-    ) as encryted_file_storage_stream, archive_encryption_service.get_encryptor(
-        encryted_file_storage_stream
+    ) as encrypted_file_storage_stream, archive_encryption_service.get_encryptor(
+        encrypted_file_storage_stream
     ) as encrypt:
         for chunk in plain_file_storage_stream:
             encrypt(chunk)

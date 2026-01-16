@@ -2,29 +2,10 @@
 
 This directory contains multiple python packages.
 
-## API
-
-The Loom REST api
-
-[more...](./api/README.md)
-
-## Crawler
-
-A crawler that watches locations and schedules files for processing.
-
-[more...](./crawler/README.md)
-
-## Worker
-
-Celery worker that processes files
-
-[more...](./worker/README.md)
-
-## Common
-
-A library that contains shared logic and is used by the other packages of `backend/`
-
-[more...](./common/README.md)
+* [API: The Loom REST api](./api/README.md)
+* [Crawler: Watches locations and schedules files for processing](./crawler/README.md)
+* [Worker: Processes files](./worker/README.md)
+* [Common: shared logic and is used by the other packages of `backend/`](./common/README.md)
 
 ## Install dependencies
 

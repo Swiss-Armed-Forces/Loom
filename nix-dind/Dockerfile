@@ -49,7 +49,7 @@ RUN set -exu \
 #
 # Install tailscale
 #
-ARG TAILSCALE_VERSION="1.86.2-r1"
+ARG TAILSCALE_VERSION="1.86.2-r3"
 RUN set -exu \
     && apk add --no-cache \
     tailscale="${TAILSCALE_VERSION}"
@@ -139,12 +139,8 @@ ENV NIX_DAEMON_ARGS=${NIX_DAEMON_ARGS}
 ARG NIX_STORE_OPTIMIZE=true
 ENV NIX_STORE_OPTIMIZE=${NIX_STORE_OPTIMIZE}
 
-# Using unstable for now (we really should not)
-# because of build failures in devenv
-# see:
-#   - https://github.com/NixOS/nixpkgs/issues/420134
-#ARG NIX_CHANNEL="nixos-25.05"
-ARG NIX_CHANNEL="nixpkgs-unstable"
+ARG NIX_CHANNEL="nixos-25.11"
+#ARG NIX_CHANNEL="nixpkgs-unstable"
 #ARG NIX_CHANNEL="02b9ebc695596cdcd7d58b1180e1be4b0d6735f8"
 # hadolint ignore=DL3004
 RUN set -exu \
@@ -159,6 +155,9 @@ RUN set -exu \
     && if [ "${NIX_STORE_OPTIMIZE}" == "true" ]; then nix-store --optimise; fi \
     && nix-store --verify --check-contents
 
+# Copy Lockfiles
+
+# nix
 COPY --chown=${NIX_USER_NAME} \
     devenv.lock \
     devenv.nix \
@@ -169,26 +168,27 @@ COPY --chown=${NIX_USER_NAME} \
     nix-dind/devenv.local.nix \
     "${NIX_USER_HOMEDIR}"/nix-dind/
 
-#
-# With devenv: 1.6.1, we can currently not run devenv build:
-# see:
-#   - https://github.com/cachix/devenv/issues/1902
-#
+
 # hadolint ignore=DL3004
-#RUN set -exu \
-#    && fork() { (setsid "$@" &); } && fork nix-daemon  ${NIX_DAEMON_ARGS} \
-#    && sudo -i -u "${NIX_USER_NAME}" \
-#    devenv --verbose build \
-#    && nix-collect-garbage --delete-old \
-#    && if [ "${NIX_STORE_OPTIMIZE}" == "true" ]; then nix-store --optimise; fi \
-#    && nix-store --verify --check-contents
+RUN set -exu \
+    && fork() { (setsid "$@" &); } && fork nix-daemon  ${NIX_DAEMON_ARGS} \
+    && sudo -i -u "${NIX_USER_NAME}" \
+    devenv --verbose build \
+    && nix-collect-garbage --delete-old \
+    && if [ "${NIX_STORE_OPTIMIZE}" == "true" ]; then nix-store --optimise; fi \
+    && nix-store --verify --check-contents
 
 # For a FAT devenv base image comment/uncomment this:
 # hadolint ignore=DL3004
 RUN set -exu \
     && fork() { (setsid "$@" &); } && fork nix-daemon  ${NIX_DAEMON_ARGS} \
     && sudo -i -u "${NIX_USER_NAME}" \
-    devenv --verbose shell -- true \
+    devenv --verbose shell \
+    # Note: we disable install.enable for all languages,
+    # this is because we do not want any packages installed
+    --option languages.python.poetry.install.enable:bool false \
+    --option languages.javascript.pnpm.install.enable:bool false \
+    -- true \
     && nix-collect-garbage --delete-old \
     && if [ "${NIX_STORE_OPTIMIZE}" == "true" ]; then nix-store --optimise; fi \
     && nix-store --verify --check-contents

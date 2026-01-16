@@ -4,7 +4,9 @@
   "editor.codeActionsOnSave": {
     "source.fixAll.eslint": "always"
   },
-  "python.testing.pytestArgs": ["."],
+  "python.testing.pytestArgs": [
+    "."
+  ],
   "python.testing.unittestEnabled": false,
   "python.testing.pytestEnabled": true,
   "[javascript]": {
@@ -57,5 +59,7 @@
   "plantuml.exportOutDir": "./",
   "plantuml.exportSubFolder": false,
   "gitlab.showPipelineUpdateNotifications": true,
-  "chat.commandCenter.enabled": false
+  "chat.commandCenter.enabled": false,
+  "chat.agent.enabled": false,
+  "chat.disableAIFeatures": true
 }
