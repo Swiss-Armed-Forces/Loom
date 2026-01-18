@@ -607,8 +607,8 @@ The complete source code for Traefik is publicly available at [https://github.co
 | @emotion/styled                     | MIT          | 11.14.1           |
 | @mui/icons-material                 | MIT          | 7.3.7             |
 | @mui/material                       | MIT          | 7.3.7             |
-| @mui/x-charts                       | MIT          | 8.24.0            |
-| @mui/x-tree-view                    | MIT          | 8.24.0            |
+| @mui/x-charts                       | MIT          | 8.25.0            |
+| @mui/x-tree-view                    | MIT          | 8.25.0            |
 | @reduxjs/toolkit                    | MIT          | 2.11.2            |
 | ace-builds                          | BSD-3-Clause | 1.43.5            |
 | date-fns                            | MIT          | 4.1.0             |
@@ -646,7 +646,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | globals                             | MIT          | 16.5.0            |
 | jsdom                               | MIT          | 26.1.0            |
 | license-report                      | MIT          | 6.8.1             |
-| prettier                            | MIT          | 3.7.4             |
+| prettier                            | MIT          | 3.8.0             |
 | typescript                          | Apache-2.0   | 5.9.3             |
 | typescript-eslint                   | MIT          | 8.53.0            |
 | vite                                | MIT          | 6.4.1             |
