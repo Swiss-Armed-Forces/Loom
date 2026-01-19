@@ -235,6 +235,9 @@ in
 
     # Make minikube store all its metadata in the project root
     MINIKUBE_HOME = "${config.devenv.root}/.minikube";
+
+    # Make skaffold store all its metadata in the project root
+    SKAFFOLD_HOME = "${config.devenv.root}/.skaffold";
   };
 
   overlays = [

@@ -2,57 +2,51 @@ apiVersion: skaffold/v4beta11
 kind: Config
 metadata:
   name: loom
+
+# Production configuration as default at top level
+build:
+  tagPolicy:
+    envTemplate:
+      template: "{{.TRAEFIK_IMAGE_VERSION}}"
+  local:
+    concurrency: 0
+    useBuildkit: true
+    tryImportMissing: true
+  artifacts:
+    - image: registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/traefik
+      context: .
+      docker:
+        dockerfile: Dockerfile
+        buildArgs:
+          TRAEFIK_IMAGE_VERSION: "{{.TRAEFIK_IMAGE_VERSION}}"
+          DOCKER_REGISTRY: "{{or .CI_DEPENDENCY_PROXY_DIRECT_GROUP_IMAGE_PREFIX \"docker.io\"}}"
+        cacheFrom:
+          - "registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/traefik"
+      hooks:
+        after:
+          - command: ["../cicd/tag_latest.sh"]
+
+manifests:
+  helm:
+    releases:
+      - name: production
+        namespace: loom
+        chartPath: "{{.TRAEFIK_CHART_PATH}}/traefik"
+        valuesFiles:
+          - values.yaml
+
+# Minimal profiles - only overrides
 profiles:
-  - name: prod
-    activation: &prod-activation
-      - command: prod
-    build: &prod-build
-      tagPolicy:
-        envTemplate:
-          template: "{{.TRAEFIK_IMAGE_VERSION}}"
-      local:
-        concurrency: 0
-        useBuildkit: true
-        tryImportMissing: true
-      artifacts:
-        - image: registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/traefik
-          context: .
-          docker:
-            dockerfile: Dockerfile
-            buildArgs:
-              TRAEFIK_IMAGE_VERSION: "{{.TRAEFIK_IMAGE_VERSION}}"
-              DOCKER_REGISTRY: "{{or .CI_DEPENDENCY_PROXY_DIRECT_GROUP_IMAGE_PREFIX \"docker.io\"}}"
-            cacheFrom:
-              - "registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/traefik"
-    manifests:
-      helm:
-        releases:
-          - name: production
-            namespace: loom
-            chartPath: "{{.TRAEFIK_CHART_PATH}}/traefik"
-            valuesFiles:
-              - values.yaml
-
   - name: dev
-    activation: *prod-activation
-    build: *prod-build
-    manifests:
-      helm:
-        releases:
-          - name: development
-            namespace: loom
-            chartPath: "{{.TRAEFIK_CHART_PATH}}/traefik"
-            valuesFiles:
-              - values.yaml
+    activation:
+      - command: dev
+    patches:
+      # Only patch the release name for dev
+      - op: replace
+        path: /manifests/helm/releases/0/name
+        value: development
 
-  - name: integrationtest
-    activation: *prod-activation
-    build: *prod-build
-    manifests:
-      helm:
-        releases:
-          - name: integrationtest
-            namespace: loom
-            chartPath: "{{.TRAEFIK_CHART_PATH}}/traefik"
-            valuesFiles:
-              - values.yaml
+  - name: prod
+    activation:
+      - command: prod
+      # No patches needed - production is already the default

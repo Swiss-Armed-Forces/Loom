@@ -396,6 +396,7 @@ THIRD-PARTY.md.progress
 
 # cicd caches
 docker-cache/
+.skaffold/
 kubernetes-cache/
 kubernetes-dev-cache/
 .minikube/

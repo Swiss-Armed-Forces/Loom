@@ -70,6 +70,7 @@ This will help make the setup process smooth and easy!
 
 * `git`
 * `git-lfs`
+* `curl`
 * `docker`
 * `minikube` (>= [v1.33.1](https://minikube.sigs.k8s.io/docs/start/?arch=%2Flinux%2Fx86-64%2Fstable%2Fbinary+download))
 * `helm` (>= [v3.14.0](https://helm.sh/docs/intro/install/))
@@ -122,8 +123,11 @@ Please see the list of supported GPUs here: [https://github.com/ollama/ollama/bl
       ./up.sh --gpus all
       ```
 
-**Note:** After the build process is complete, you can open your web browser
+**Note:** After the up process is complete, you can open your web browser
 and navigate to [https://frontend.loom](https://frontend.loom) to access Loom.
+
+**Offline usage:** You need to start Loom using `./up.sh` at least once before you
+can start Loom in offline mode. To start Loom offline, run `./up.sh --offline`.
 
 ### Multi-Node Deployment
 
@@ -143,6 +147,11 @@ integrating Nginx in issue #161.
 2. To customize your deployment, we provide a set of value files located in the
 [`./charts`](./charts) directory of this repository. These files document all the available
 deployment variables, allowing you to tailor the installation to your specific needs.
+
+**Offline usage:** To run Loom in an offline Kubernetes cluster, you need at least
+one container image registry that mirrors `registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom`
+within your offline network. Then, override the `image.registry` value in your
+deployment scripts to point to your internal image registry.
 
 ## 🚀 Getting Started
 

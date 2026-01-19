@@ -118,6 +118,8 @@ default:
 
 .default-docker:
   extends: default
+  variables:
+    SKAFFOLD_HOME: ${CI_PROJECT_DIR}/.skaffold
   before_script:
     - !reference [default, before_script]
     #
@@ -140,7 +142,7 @@ default:
     #
     - section_start .default-docker-after_script
     # backup images
-    - devenv shell -- docker-image-backup-restore backup --prune '.*' docker-cache/images/
+    - devenv shell -- docker-image-backup-restore backup --prune "${CI_REGISTRY_IMAGE}" '.*' docker-cache/images/
     #
     # END SECTION
     #
@@ -150,6 +152,11 @@ default:
     - key: ${CI_JOB_GROUP_NAME}-docker-cache
       paths:
         - docker-cache
+      unprotect: true
+      when: 'always'
+    - key: ${CI_JOB_GROUP_NAME}-skaffold-cache
+      paths:
+        - ${SKAFFOLD_HOME}
       unprotect: true
       when: 'always'
 
@@ -182,7 +189,7 @@ default:
     # start k8s
     - devenv shell -- up --setup
     # backup images
-    - devenv shell -- docker-image-backup-restore --minikube backup --prune '.*' kubernetes-cache/images/
+    - devenv shell -- docker-image-backup-restore --minikube backup --prune "${CI_REGISTRY_IMAGE}" '.*' kubernetes-cache/images/
     #
     # END SECTION
     #
