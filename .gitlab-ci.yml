@@ -201,6 +201,7 @@ default:
     # runners with the same tags are very similar
     - key:
         files:
+          - up.sh  # pins minikube invocation
           - devenv.lock  # pins minikube version
         prefix: ${CI_JOB_GROUP_NAME}-minikube-cache-${CI_RUNNER_TAGS}
       paths:
