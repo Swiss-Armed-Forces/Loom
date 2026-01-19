@@ -149,8 +149,8 @@ is_serviceaccount_ready() {
     &>/dev/null
 }
 
-is_online() {
-    curl \
+is_offline() {
+    ! curl \
         --silent \
         --fail \
         --max-time 5 \
@@ -163,15 +163,17 @@ is_online() {
 #
 
 set_offline_mode(){
-    if [[ "${OFFLINE_MODE}" = false ]]; then
-        is_online
-        OFFLINE_MODE="${?}"
+    # shellcheck disable=SC2310
+    if is_offline; then
+        OFFLINE_MODE=true
     fi
     if [[ "${OFFLINE_MODE}" = true ]] &&  [[ "${DEVELOPMENT}" = true ]]; then
-        echo "[!] Can not start development mode when offline"
+        echo "[!] Error: Can not start development mode when offline"
         exit 1
     fi
-    echo "[*] Offline mode: ${OFFLINE_MODE}"
+    if [[ "${OFFLINE_MODE}" = true ]]; then
+        echo "[*] Running in offline mode"
+    fi
 }
 
 set_skaffold_profile(){
