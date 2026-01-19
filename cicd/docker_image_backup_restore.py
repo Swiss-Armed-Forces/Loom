@@ -24,6 +24,7 @@ DOCKER_CLIENT_TIMEOUT = 20 * 60
 DOCKER_SAVE_CHUNK_SIZE = 100 * 1024**2
 ZSTD_COMPRESSION_LEVEL = 3
 LOG_LEVEL = logging.INFO
+LATEST_TAG_NAME = "latest"
 
 # -------------------------------
 # Logging Setup
@@ -217,7 +218,7 @@ def docker_restore_image(image_id: str, backup_dir: Path) -> None:
 # -------------------------------
 # CLI Entry Point
 # -------------------------------
-def cmd_backup(parallel: int, image_dir: Path, pattern: str, prune: bool) -> None:
+def cmd_backup(parallel: int, image_dir: Path, pattern: str, prune: str | None) -> None:
     # Create the backup directory if it doesn't exist
     logger.info("Creating: %s", image_dir)
     image_dir.mkdir(parents=True, exist_ok=True)
@@ -225,20 +226,31 @@ def cmd_backup(parallel: int, image_dir: Path, pattern: str, prune: bool) -> Non
     if prune:
         logger.info("Pruning docker images")
         client = get_docker_client()
-        client.images.prune(filters={"dangling": False})
+        client.images.prune(filters={"dangling": True})
 
     image_metadata = get_image_map(pattern)
-    logger.info("Found %d unique images to back up.", len(image_metadata))
-
     if prune:
-        kept_dirs = {meta.id for meta in image_metadata}
+        # prune images if they start with prune-prefix and do not have a latest tag
+        image_metadata = [
+            image
+            for image in image_metadata
+            if not any(tag.startswith(prune) for tag in image.tags)
+            or any(tag.endswith(LATEST_TAG_NAME) for tag in image.tags)
+        ]
+
+    logger.info("Found %d unique images to back up.", len(image_metadata))
+    if prune:
+        # decide which directories to keep
+        keep_dirs = {meta.id for meta in image_metadata}
+        # remove others
         for child in image_dir.iterdir():
-            if child.name not in kept_dirs:
-                logger.info("Pruning: %s", child)
-                if child.is_file():
-                    child.unlink()
-                elif child.is_dir():
-                    shutil.rmtree(child)
+            if child.name in keep_dirs:
+                continue
+            logger.info("Pruning: %s", child)
+            if child.is_file():
+                child.unlink()
+            elif child.is_dir():
+                shutil.rmtree(child)
 
     with ProcessPoolExecutor(max_workers=parallel or None) as executor:
         futures = [
@@ -288,8 +300,9 @@ def main() -> None:
     parser_b.add_argument(
         "-p",
         "--prune",
-        action="store_true",
-        help="Prune outdated backup directories not updated during this run.",
+        type=str,
+        default=None,
+        help="Prune images starting with PRUNE-prefix and no latest tag.",
     )
     parser_b.add_argument("pattern", help="Regex to match image names.")
     parser_b.add_argument("directory", type=Path, help="Target backup directory.")

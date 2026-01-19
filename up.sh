@@ -14,6 +14,7 @@ SCRIPT_NAME=$(basename "$0")
 #
 EDITOR="${EDITOR:-nano}"
 REGISTRY_MIRROR="${REGISTRY_MIRROR:-}"
+SKAFFOLD_HOME="${SKAFFOLD_HOME:-${HOME}/.skaffold}"
 
 #
 # Defines
@@ -25,6 +26,8 @@ HOSTS_FILE="/etc/hosts"
 TUNNEL_PIDFILE_DIR="/run/user/${UID}/"
 TUNNEL_PIDFILE="${TUNNEL_PIDFILE_DIR}/${SCRIPT_NAME}.minikube.tunnel.pid"
 TRAEFIK_SKAFFOLD_CMD="${SCRIPT_DIR}/traefik/skaffold"
+ONLINE_TEST_URL="https://gitlab.com"
+OFFLINE_IMAGE_TAG="latest"
 
 WAIT_MAX_RETRIES=30
 
@@ -49,6 +52,10 @@ source "${VARS_FILE}"
 # Steps which always run
 # some of these steps require root
 STEPS_SETUP_SYSTEM=(
+    set_offline_mode
+    set_skaffold_profile
+    set_skaffold_command
+    set_skaffold_args
     validate_environment
     setup_system
     create_cluster
@@ -78,20 +85,23 @@ TAIL=false
 EXPOSE=false
 EXPOSE_IP=""
 GPUS=""
+OFFLINE_MODE=false
+SKAFFOLD_PROFILE="prod"
+SKAFFOLD_ARGS=()
+TRAEFIK_SKAFFOLD_ARGS=()
+SKAFFOLD_COMMAND="run"
+SKAFFOLD_CACHE_FILE="${SKAFFOLD_HOME}/cache"
+SKAFFOLD_REMOTE_CACHE_DIR="${SKAFFOLD_HOME}/remote-cache"
 
 #
 # Utils
 #
 
-is_tty_attached() {
-    tty -s
-}
-
 check_command() {
     local cmd
     cmd="${1}" && shift
 
-    if ! command -v "${cmd}" > /dev/null 2>&1; then
+    if ! command -v "${cmd}" &>/dev/null; then
         echo >&2 "[!] ${cmd} is not installed."
         echo >&2 "[!] Please install ${cmd} and try again."
         exit 1
@@ -132,12 +142,89 @@ is_hosts_file_writable_as_root(){
 }
 
 is_serviceaccount_ready() {
-    kubectl get serviceaccount default --namespace "${NAMESPACE}" > /dev/null 2>&1
+    kubectl get \
+        serviceaccount \
+        default \
+        --namespace "${NAMESPACE}" \
+    &>/dev/null
+}
+
+is_online() {
+    curl \
+        --silent \
+        --fail \
+        --max-time 5 \
+        --head "${ONLINE_TEST_URL}" \
+    &>/dev/null
 }
 
 #
 # Steps
 #
+
+set_offline_mode(){
+    if [[ "${OFFLINE_MODE}" = false ]]; then
+        is_online
+        OFFLINE_MODE="${?}"
+    fi
+    if [[ "${OFFLINE_MODE}" = true ]] &&  [[ "${DEVELOPMENT}" = true ]]; then
+        echo "[!] Can not start development mode when offline"
+        exit 1
+    fi
+    echo "[*] Offline mode: ${OFFLINE_MODE}"
+}
+
+set_skaffold_profile(){
+    if [[ "${DEVELOPMENT}" = true ]] || [[ "${INTEGRATIONTEST}" = true ]]; then
+        SKAFFOLD_PROFILE="dev"
+    fi
+}
+
+set_skaffold_command(){
+    if [[ "${DEVELOPMENT}" = true ]]; then
+        SKAFFOLD_COMMAND="debug"
+    fi
+}
+
+set_skaffold_args(){
+    if [[ "${DEVELOPMENT}" = true ]]; then
+        SKAFFOLD_ARGS+=(
+            "--auto-build"
+            "--auto-deploy"
+            "--auto-sync"
+        )
+    fi
+    if [[ "${OFFLINE_MODE}" = true ]]; then
+        local offline_skaffold_args
+        offline_skaffold_args=(
+            # fix tags: dynamic tag computation requires
+            # checking of base images in the registry
+            # Note: skaffold won't deploy this tag,
+            # but instead it will use the appVersion
+            # from Charts.yaml
+            "--tag=${OFFLINE_IMAGE_TAG}"
+            # we can not download caches from the registry
+            "--cache-artifacts=false"
+            # we can not build any images
+            "--build-image=[]"
+        )
+        SKAFFOLD_ARGS+=( "${offline_skaffold_args[@]}" )
+        TRAEFIK_SKAFFOLD_ARGS+=( "${offline_skaffold_args[@]}" )
+    fi
+    local skaffold_cache_args
+    skaffold_cache_args=(
+        "--cache-file=${SKAFFOLD_CACHE_FILE}"
+        "--remote-cache-dir=${SKAFFOLD_REMOTE_CACHE_DIR}"
+    )
+    # default args:
+    SKAFFOLD_ARGS+=(
+        "--tail=${TAIL}"
+        "${skaffold_cache_args[@]}"
+    )
+    TRAEFIK_SKAFFOLD_ARGS+=(
+        "${skaffold_cache_args[@]}"
+    )
+}
 
 delete_cluster(){
     minikube delete
@@ -171,7 +258,6 @@ validate_environment() {
     # utils
     check_command cp
     check_command mkdir
-    check_command tty
     check_command diff
     check_command grep
     check_command sudo
@@ -181,6 +267,7 @@ validate_environment() {
     check_command tee
     check_command realpath
     check_command sh
+    check_command curl
 
     # k8s
     check_command docker
@@ -320,10 +407,11 @@ install_traefik(){
         # Related:
         #   - https://github.com/GoogleContainerTools/skaffold/issues/9222
         "${TRAEFIK_SKAFFOLD_CMD}" delete \
-            --profile "${PROFILE}"
+            --profile "${SKAFFOLD_PROFILE}"
 
         "${TRAEFIK_SKAFFOLD_CMD}" run \
-            --profile "${PROFILE}" \
+            --profile "${SKAFFOLD_PROFILE}" \
+            "${TRAEFIK_SKAFFOLD_ARGS[@]}" \
             "${@}"
     )
 }
@@ -447,7 +535,7 @@ install_host_entries(){
 
 run_skaffold(){
     skaffold "${SKAFFOLD_COMMAND}" \
-        --profile "${PROFILE}" \
+        --profile "${SKAFFOLD_PROFILE}" \
         "${SKAFFOLD_ARGS[@]}" \
         "${@}"
 }
@@ -465,7 +553,7 @@ atexit(){
 
     if [[ "${TAIL}" = true ]]; then
         skaffold delete \
-            --profile "${PROFILE}"
+            --profile "${SKAFFOLD_PROFILE}"
     fi
 }
 trap atexit EXIT
@@ -478,12 +566,13 @@ usage(){
     echo "usage: ${0} [<options>]"
     echo "  -h|--help               show this help"
     echo "  -v|--verbose            show verbose output"
-    echo "  -d|--development        start in development mode. This provides debugging und live reloading."
-    echo "  -i|--integrationtest    run integrationtests"
+    echo "  -d|--development        start in development mode: Provides debugging und live reloading."
+    echo "  -i|--integrationtest    start in integration test mode"
     echo "  -s|--setup              only setup system, don't start anything"
     echo "  -e|--expose IP          expose the application to the outside world by binding to IP"
     echo "  -g|--gpus GPUS          allow access to the GPUs. Possible values: all, nvidia, amd"
     echo "  -t|--tail               tail logs after startup"
+    echo "  -o|--offline            run in offline mode"
     echo "  --skip-STEP             skip step STEP"
 }
 
@@ -499,12 +588,12 @@ while [[ $# -gt 0 ]]; do
             trap - EXIT
             exit 0
         ;;
-        -i|--integrationtest)
-            INTEGRATIONTEST=true
-            shift
-        ;;
         -d|--development)
             DEVELOPMENT=true
+            shift
+        ;;
+        -i|--integrationtest)
+            INTEGRATIONTEST=true
             shift
         ;;
         -v|--verbose)
@@ -530,6 +619,10 @@ while [[ $# -gt 0 ]]; do
             GPUS="${1}"
             shift
         ;;
+        -o|--offline)
+            shift
+            OFFLINE_MODE=true
+        ;;
         --skip-*)
             SKIP+=("${1}")
             shift
@@ -547,29 +640,6 @@ done
 
 if [[ "${VERBOSE}" = true ]]; then
     set -x
-fi
-
-# assemble PROFILE
-PROFILE="prod"
-if [[ "${INTEGRATIONTEST}" = true ]] || [[ "${DEVELOPMENT}" = true ]]; then
-    PROFILE="dev"
-fi
-
-# assemble SKAFFOLD_ARGS
-SKAFFOLD_ARGS=()
-if [[ "${DEVELOPMENT}" = true ]]; then
-    SKAFFOLD_ARGS+=(
-        "--auto-build" \
-        "--auto-deploy" \
-        "--auto-sync"
-    )
-fi
-SKAFFOLD_ARGS+=( "--tail=${TAIL}" )
-
-# assemble SKAFFOLD_COMMAND
-SKAFFOLD_COMMAND="run"
-if [[ "${DEVELOPMENT}" = true ]]; then
-    SKAFFOLD_COMMAND="debug"
 fi
 
 # assemble STEPS
