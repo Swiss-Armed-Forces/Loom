@@ -1,0 +1,15 @@
+# This file is intentionally left empty to allow users to easily override Helm values
+# when deploying with Skaffold.
+#
+# Skaffold does not provide a command-line option to override Helm values directly.
+# Instead, you can add your custom value overrides here, and they will be automatically
+# applied during deployment as this file is included in the valuesFiles list in skaffold.yaml.
+#
+# Example usage:
+#   api:
+#     replicas: 3
+#   frontend:
+#     image:
+#       tag: custom-tag
+#
+# Any values specified here will take precedence over the default values.yaml file.

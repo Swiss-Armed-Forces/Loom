@@ -63,7 +63,7 @@ deployments and exploratory workflows, but not for unmanaged or large-scale publ
 
 This section provides instructions for setting up Loom in a production-like environment.
 
-**Dependencies:**
+### Dependencies
 
 Before you begin, please ensure the following dependencies are installed on your system.
 This will help make the setup process smooth and easy!
@@ -83,14 +83,14 @@ You have a couple of options for deploying Loom, depending on your needs:
 
 * **Single Node Deployment:** This is a straightforward way to get Loom running on a single machine
 using the `up.sh` script. It's perfect for evaluation or smaller setups.
-* **Multi-Node Deployment:** For more extensive or production environments, you can deploy Loom
+* **Multi Node Deployment:** For more extensive or production environments, you can deploy Loom
 on top of your existing Kubernetes cluster using our Helm chart.
 
 ### Single Node Deployment
 
 This method is designed for simplicity and is a great starting point!
 
-**Minimal System Specifications:**
+#### Minimal System Specifications
 
 To ensure Loom runs smoothly, your system should ideally meet these minimum requirements:
 
@@ -100,7 +100,7 @@ To ensure Loom runs smoothly, your system should ideally meet these minimum requ
 * **GPU (Optional):** For enhanced performance with certain features, we recommend using at least 2 GPUs.
 Please see the list of supported GPUs here: [https://github.com/ollama/ollama/blob/main/docs/gpu.md](https://github.com/ollama/ollama/blob/main/docs/gpu.md)
 
-**Installation Steps:**
+#### Single Node Installation Steps
 
 1. Clone the repository:
 
@@ -123,20 +123,38 @@ Please see the list of supported GPUs here: [https://github.com/ollama/ollama/bl
       ./up.sh --gpus all
       ```
 
-**Note:** After the up process is complete, you can open your web browser
+After the up process is complete, you can open your web browser
 and navigate to [https://frontend.loom](https://frontend.loom) to access Loom.
 
-**Offline usage:** You need to start Loom using `./up.sh` at least once before you
-can start Loom in offline mode. To start Loom offline, run `./up.sh --offline`.
+#### Single Node Offline usage
 
-### Multi-Node Deployment
+If you want to use loom fully offline, you need to start Loom using `./up.sh --offline`
+at least once **while connected to the internet** before you can disconnect your host
+and re-start Loom in full offline mode: `./up.sh --offline`.
+
+⚠️ Offline mode only works when you have checked out a specific Git tag (not on a branch like `main`).
+To check out a tag:
+
+```bash
+git fetch --tags
+git tag -l                    # List available tags
+git checkout tags/<tag-name>  # Check out a specific tag (e.g., tags/v1.0.0)
+```
+
+#### Overriding Helm Values
+
+To customize the deployment configuration, add your value
+overrides to `charts/values-overwrite.yaml`. This file is intentionally left empty and
+is automatically included during Skaffold deployments.
+
+### Multi Node Deployment
 
 For a more scalable setup, you can deploy Loom using its Helm chart on your Kubernetes cluster.
 
 > ⚠️ We currently only support Traefik as the ingress controller. We are tracking progress on
 integrating Nginx in issue #161.
 
-**Installation Steps:**
+#### Multi Node Installation Steps
 
 1. You can find and deploy the Helm chart from our official package registry:
 
@@ -148,7 +166,9 @@ integrating Nginx in issue #161.
 [`./charts`](./charts) directory of this repository. These files document all the available
 deployment variables, allowing you to tailor the installation to your specific needs.
 
-**Offline usage:** To run Loom in an offline Kubernetes cluster, you need at least
+#### Multi Node Offline usage
+
+To run Loom in an offline Kubernetes cluster, you need at least
 one container image registry that mirrors `registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom`
 within your offline network. Then, override the `image.registry` value in your
 deployment scripts to point to your internal image registry.

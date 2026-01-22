@@ -167,12 +167,26 @@ set_offline_mode(){
     if is_offline; then
         OFFLINE_MODE=true
     fi
-    if [[ "${OFFLINE_MODE}" = true ]] &&  [[ "${DEVELOPMENT}" = true ]]; then
+    if [[ "${OFFLINE_MODE}" = true ]] && [[ "${DEVELOPMENT}" = true ]] ; then
         echo "[!] Error: Can not start development mode when offline"
         exit 1
     fi
     if [[ "${OFFLINE_MODE}" = true ]]; then
-        echo "[*] Running in offline mode"
+        local tag
+        if ! tag="$(git describe --exact-match --tags HEAD 2>/dev/null)"; then
+            echo >&2 "[!] Offline mode requires checking out a specific Git tag."
+            echo >&2 "    You are currently not on a tagged commit (likely on the main branch)."
+            echo >&2 ""
+            echo >&2 "    To check out a tag, run:"
+            echo >&2 "      git fetch --tags"
+            echo >&2 "      git tag -l                    # List available tags"
+            echo >&2 "      git checkout <tag-name>  # Check out a specific tag"
+            echo >&2 ""
+            echo >&2 "    Example:"
+            echo >&2 "      git checkout tags/1.0.0"
+            exit 1
+        fi
+        echo "[*] Running in offline mode, on tag: ${tag}"
     fi
 }
 
