@@ -49,7 +49,12 @@ const CustomQueryItem: FC<SavedQueryItemProps> = ({
 
     const onCustomQueryClick = useCallback(() => {
         dispatch(markCustomQueryAsRead(customQuery));
-        dispatch(updateQuery(customQuery.query));
+        dispatch(
+            updateQuery({
+                ...customQuery.query,
+                id: undefined,
+            }),
+        );
     }, [dispatch, customQuery]);
 
     useEffect(() => {

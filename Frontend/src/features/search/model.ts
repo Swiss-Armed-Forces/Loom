@@ -4,6 +4,8 @@ import {
     SummaryStatisticsModel,
 } from "../../app/api";
 
+import { JSONSchemaType } from "ajv";
+
 export interface TreeExpandedState {
     path: string;
     isExpanded: boolean;
@@ -25,6 +27,54 @@ export interface SearchQuery {
     sortId: any[] | null;
     pageSize: number | null;
 }
+
+export const LibretranslateSupportedLanguagesSchema: JSONSchemaType<LibretranslateSupportedLanguages> =
+    {
+        type: "object",
+        properties: {
+            code: { type: "string" },
+            name: { type: "string" },
+        },
+        required: ["code", "name"],
+        additionalProperties: false,
+    };
+
+export const SearchQuerySchema = {
+    type: "object",
+    additionalProperties: false,
+    properties: {
+        id: { type: "string" },
+        query: { type: "string" },
+
+        keepAlive: { type: ["string", "null"], enum: ["10s", "30m", null] },
+
+        languages: {
+            type: ["array", "null"],
+            items: LibretranslateSupportedLanguagesSchema,
+        },
+
+        sortField: { type: ["string", "null"] },
+
+        sortDirection: {
+            type: ["string", "null"],
+            enum: ["asc", "desc", null],
+        },
+
+        sortId: { type: ["array", "null"], items: {} },
+
+        pageSize: { type: ["number", "null"] },
+    },
+    required: [
+        "id",
+        "query",
+        "keepAlive",
+        "languages",
+        "sortField",
+        "sortDirection",
+        "sortId",
+        "pageSize",
+    ],
+} as const;
 
 export enum FileDetailTab {
     Content,

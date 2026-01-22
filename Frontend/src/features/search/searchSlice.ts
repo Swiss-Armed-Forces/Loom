@@ -29,11 +29,13 @@ import {
     CombinedStats,
     FileDetailData as FileDetailData,
     SearchQuery,
+    SearchQuerySchema,
 } from "./model.ts";
 import { webSocketSendMessage } from "../../middleware/SocketMiddleware.ts";
 
 import { v4 as uuidv4 } from "uuid";
 import { t } from "i18next";
+import Ajv, { JSONSchemaType } from "ajv";
 
 export enum SearchView {
     FOLDER = "folder",
@@ -49,6 +51,20 @@ export interface CustomQuery {
     name: string;
     icon: string;
 }
+
+const CustomQuerySchema: JSONSchemaType<CustomQuery> = {
+    type: "object",
+    properties: {
+        id: { type: "string" },
+        query: SearchQuerySchema as any,
+        fileCount: { type: "number" },
+        hasNewFiles: { type: "boolean" },
+        name: { type: "string" },
+        icon: { type: "string" },
+    },
+    required: ["id", "query", "fileCount", "hasNewFiles", "name", "icon"],
+    additionalProperties: false,
+};
 
 export function initCustomQuery(
     query: SearchQuery,
@@ -96,11 +112,37 @@ export interface SearchState {
 export const CUSTOM_QUERIES_LOCAL_STORAGE_KEY = "CUSTOM_QUERIES";
 export const QUERY_FAILED_FILES = "state:failed";
 export const QUERY_CONTENT_TRUNCATED_FILES = "content_truncated:true";
+const AJV = new Ajv();
 
 function loadCustomQueries(): CustomQuery[] {
     const data = window.localStorage.getItem(CUSTOM_QUERIES_LOCAL_STORAGE_KEY);
     if (data === null) return [];
-    return JSON.parse(data);
+
+    try {
+        const parsed = JSON.parse(data);
+        if (!Array.isArray(parsed)) {
+            console.warn("Invalid custom queries data format");
+            return [];
+        }
+
+        const validate = AJV.compile(CustomQuerySchema);
+        const validQueries: CustomQuery[] = [];
+
+        for (const query of parsed) {
+            if (validate(query)) {
+                validQueries.push(query);
+            } else {
+                console.warn(
+                    `Invalid custom query "${query?.name || "Unknown"}" was removed`,
+                );
+            }
+        }
+
+        return validQueries;
+    } catch {
+        console.warn("Failed to load custom queries");
+        return [];
+    }
 }
 
 const initialState: SearchState = {
@@ -344,7 +386,8 @@ export const searchSlice = createSlice({
             state.view = action.payload;
         },
         addCustomQuery: (state, action: PayloadAction<CustomQuery>) => {
-            state.customQueries.push(action.payload);
+            const customQuery: CustomQuery = action.payload;
+            state.customQueries.push(customQuery);
         },
         deleteCustomQuery: (state, action: PayloadAction<CustomQuery>) => {
             const toRemove = state.customQueries.find(

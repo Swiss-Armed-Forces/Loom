@@ -26,8 +26,9 @@ IMAGE_REPO="${SKAFFOLD_IMAGE%%:*}"  # Remove everything after first ':'
 IMAGE_REPO="${IMAGE_REPO%%@*}"      # Remove everything after first '@'
 
 # enable minikube-env (if available)
-MINIKUBE_EVAL=$(minikube -p minikube docker-env 2>/dev/null || true)
-eval "${MINIKUBE_EVAL}"
+if MINIKUBE_EVAL=$(minikube -p minikube docker-env 2>/dev/null); then
+    eval "${MINIKUBE_EVAL}"
+fi
 
 # Tag as latest
 docker tag "${SKAFFOLD_IMAGE}" "${IMAGE_REPO}:latest"
