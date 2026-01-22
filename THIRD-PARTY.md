@@ -611,6 +611,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | @mui/x-tree-view                    | MIT          | 8.25.0            |
 | @reduxjs/toolkit                    | MIT          | 2.11.2            |
 | ace-builds                          | BSD-3-Clause | 1.43.5            |
+| ajv                                 | MIT          | 8.17.1            |
 | date-fns                            | MIT          | 4.1.0             |
 | i18next                             | MIT          | 25.7.4            |
 | i18next-http-backend                | MIT          | 3.0.2             |
