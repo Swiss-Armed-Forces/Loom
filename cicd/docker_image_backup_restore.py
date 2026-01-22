@@ -15,7 +15,7 @@ from pathlib import Path
 import docker
 import zstandard as zstd
 from docker.errors import ImageLoadError, ImageNotFound
-from pydantic import BaseModel
+from pydantic import BaseModel, RootModel
 
 # -------------------------------
 # Constants
@@ -46,9 +46,41 @@ listener = QueueListener(log_queue, console_handler)
 # -------------------------------
 # Models
 # -------------------------------
+class ImageTag(RootModel[str]):
+    """A Docker image tag with convenient accessors for repository and tag components."""
+
+    root: str
+
+    @property
+    def repository(self) -> str:
+        """
+        Get the repository part (everything before the ':').
+
+        Example: 'registry.gitlab.com/path/to/image:tag' -> 'registry.gitlab.com/path/to/image'
+        """
+        if ':' in self.root:
+            return self.root.rsplit(':', 1)[0]
+        return self.root
+
+    @property
+    def tag(self) -> str:
+        """
+        Get the tag part (everything after the ':').
+
+        Example: 'registry.gitlab.com/path/to/image:tag' -> 'tag'
+        Returns 'latest' if no tag is specified.
+        """
+        if ':' in self.root:
+            return self.root.rsplit(':', 1)[1]
+        return LATEST_TAG_NAME
+
+    def __str__(self) -> str:
+        """Return the full tag as a string."""
+        return self.root
+
 class ImageMetadata(BaseModel):
     id: str
-    tags: list[str]
+    tags: list[ImageTag]
 
 
 # -------------------------------
@@ -108,7 +140,7 @@ def get_image_map(pattern: str) -> list[ImageMetadata]:
         if not image.id:
             logger.warning("Skipping image with no ID.")
             continue
-        matching_tags = [tag for tag in image.tags if regex.fullmatch(tag)]
+        matching_tags = [ImageTag(tag) for tag in image.tags if regex.fullmatch(tag)]
         if matching_tags:
             images.append(ImageMetadata(id=image.id, tags=matching_tags))
     return images
@@ -211,7 +243,7 @@ def docker_restore_image(image_id: str, backup_dir: Path) -> None:
 
     image = client.images.get(image_id)
     for tag in meta.tags:
-        image.tag(tag)
+        image.tag(str(tag))
         logger.info("Tagged image ID '%s' as '%s'.", image_id, tag)
 
 
@@ -230,12 +262,22 @@ def cmd_backup(parallel: int, image_dir: Path, pattern: str, prune: str | None) 
 
     image_metadata = get_image_map(pattern)
     if prune:
-        # prune images if they start with prune-prefix and do not have a latest tag
+        # get are all repositories for which we have a latest tag
+        prunable_image_repositories = {
+            tag.repository
+            for image in image_metadata
+            if any(t.tag == LATEST_TAG_NAME for t in image.tags)
+            for tag in image.tags
+        }
+        logger.info("Pruning images: %s", prunable_image_repositories)
+        # prune images if:
+        # - any tag repository are in prunable_image_repositories
+        # - does not have a latest tag
         image_metadata = [
             image
             for image in image_metadata
-            if not any(tag.startswith(prune) for tag in image.tags)
-            or any(tag.endswith(LATEST_TAG_NAME) for tag in image.tags)
+            if not any(tag.repository in prunable_image_repositories for tag in image.tags)
+            or any(t.tag == LATEST_TAG_NAME for t in image.tags)
         ]
 
     logger.info("Found %d unique images to back up.", len(image_metadata))
