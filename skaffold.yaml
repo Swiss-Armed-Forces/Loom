@@ -289,34 +289,7 @@ manifests:
         chartPath: charts
         valuesFiles:
           - charts/values.yaml
-        setValueTemplates:
-          preInstall:
-            image:
-              registry: "{{ .IMAGE_DOMAIN_registry_gitlab_com_swiss_armed_forces_cyber_command_cea_loom_alpine }}"
-              repository: "{{ .IMAGE_REPO_NO_DOMAIN_registry_gitlab_com_swiss_armed_forces_cyber_command_cea_loom_alpine }}"
-              tag: >-
-                {{ printf "%s@%s"
-                  .IMAGE_TAG_registry_gitlab_com_swiss_armed_forces_cyber_command_cea_loom_alpine
-                  .IMAGE_DIGEST_registry_gitlab_com_swiss_armed_forces_cyber_command_cea_loom_alpine
-                }}
-          crawler:
-            image:
-              registry: "{{ .IMAGE_DOMAIN_registry_gitlab_com_swiss_armed_forces_cyber_command_cea_loom_crawler }}"
-              repository: "{{ .IMAGE_REPO_NO_DOMAIN_registry_gitlab_com_swiss_armed_forces_cyber_command_cea_loom_crawler }}"
-              tag: >-
-                {{ printf "%s@%s"
-                  .IMAGE_TAG_registry_gitlab_com_swiss_armed_forces_cyber_command_cea_loom_crawler
-                  .IMAGE_DIGEST_registry_gitlab_com_swiss_armed_forces_cyber_command_cea_loom_crawler
-                }}
-          minio:
-            mcImage:
-              registry: "{{ .IMAGE_DOMAIN_registry_gitlab_com_swiss_armed_forces_cyber_command_cea_loom_mc }}"
-              repository: "{{ .IMAGE_REPO_NO_DOMAIN_registry_gitlab_com_swiss_armed_forces_cyber_command_cea_loom_mc }}"
-              tag: >-
-                {{ printf "%s@%s"
-                  .IMAGE_TAG_registry_gitlab_com_swiss_armed_forces_cyber_command_cea_loom_mc
-                  .IMAGE_DIGEST_registry_gitlab_com_swiss_armed_forces_cyber_command_cea_loom_mc
-                }}
+          - charts/values-overwrites.yaml
 
 
 # Minimal profiles - only overrides
