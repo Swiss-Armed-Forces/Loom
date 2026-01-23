@@ -7,7 +7,7 @@
 
 ## 📌 Summary
 
-<!-- A clear, concise title for the issue -->
+<!-- A clear, concise summary for the issue -->
 
 ## 🐞 Bug Report (Fill this section if reporting a bug)
 
