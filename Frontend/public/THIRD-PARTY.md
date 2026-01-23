@@ -607,13 +607,13 @@ The complete source code for Traefik is publicly available at [https://github.co
 | @emotion/styled                     | MIT          | 11.14.1           |
 | @mui/icons-material                 | MIT          | 7.3.7             |
 | @mui/material                       | MIT          | 7.3.7             |
-| @mui/x-charts                       | MIT          | 8.25.0            |
-| @mui/x-tree-view                    | MIT          | 8.25.0            |
+| @mui/x-charts                       | MIT          | 8.26.0            |
+| @mui/x-tree-view                    | MIT          | 8.26.0            |
 | @reduxjs/toolkit                    | MIT          | 2.11.2            |
 | ace-builds                          | BSD-3-Clause | 1.43.5            |
 | ajv                                 | MIT          | 8.17.1            |
 | date-fns                            | MIT          | 4.1.0             |
-| i18next                             | MIT          | 25.7.4            |
+| i18next                             | MIT          | 25.8.0            |
 | i18next-http-backend                | MIT          | 3.0.2             |
 | react                               | MIT          | 19.2.3            |
 | react-ace                           | MIT          | 14.0.1            |
@@ -628,7 +628,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | uuid                                | MIT          | 11.1.0            |
 | @eslint/js                          | MIT          | 9.39.2            |
 | @mui/types                          | MIT          | 7.4.10            |
-| @openapitools/openapi-generator-cli | Apache-2.0   | 2.27.0            |
+| @openapitools/openapi-generator-cli | Apache-2.0   | 2.28.0            |
 | @testing-library/jest-dom           | MIT          | 6.9.1             |
 | @testing-library/react              | MIT          | 16.3.1            |
 | @types/node                         | MIT          | 24.10.9           |
