@@ -196,7 +196,7 @@ default:
     - section_end .default-k8s-after_script
   cache:
     - !reference [.default-docker, cache]
-    # Cache per runner tags: minikube setup is dependant
+    # Cache per runner tags: minikube setup is dependent
     # on runner hardware - we assume here that all
     # runners with the same tags are very similar
     - key:
