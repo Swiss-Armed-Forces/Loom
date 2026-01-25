@@ -185,7 +185,7 @@ export const ResultCard: React.FC<ResultCardProps> = React.memo(
                                             <EllipsisButton
                                                 click={handleViewDetail}
                                                 title={t(
-                                                    "generalSearchView.viewContent",
+                                                    "generalSearchView.viewDetails",
                                                 )}
                                             />
                                         )}

@@ -4,9 +4,7 @@
   "editor.codeActionsOnSave": {
     "source.fixAll.eslint": "always"
   },
-  "python.testing.pytestArgs": [
-    "."
-  ],
+  "python.testing.pytestArgs": ["."],
   "python.testing.unittestEnabled": false,
   "python.testing.pytestEnabled": true,
   "[javascript]": {

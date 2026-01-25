@@ -98,7 +98,7 @@ def download_archive(
         content=file_stream,
         media_type="archive/zip",
         headers={
-            **get_content_disposition_header(archive_name),
+            **get_content_disposition_header("attachment", archive_name),
         },
     )
 

@@ -35,6 +35,7 @@ models/GetSearchResponse.ts
 models/GetSearchResponseFile.ts
 models/HTTPValidationError.ts
 models/HitsPerGroupEntryModel.ts
+models/ImapInfo.ts
 models/IndexAllRequest.ts
 models/LibretranslateSupportedLanguages.ts
 models/Message.ts

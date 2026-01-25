@@ -4,6 +4,7 @@ from common.dependencies import get_file_repository
 from common.file.file_repository import (
     Embedding,
     File,
+    ImapInfo,
     LibretranslateTranslatedLanguage,
     LibreTranslateTranslations,
     Secret,
@@ -69,6 +70,9 @@ class IndexingPersister(PersisterBase[File]):
 
     def set_is_spam(self, is_spam: bool):
         self._object.is_spam = is_spam
+
+    def set_imap_info(self, imap_info: ImapInfo):
+        self._object.imap = imap_info
 
     def set_has_attachments(self, has_attachments: bool):
         self._object.has_attachments = has_attachments

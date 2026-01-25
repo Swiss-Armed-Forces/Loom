@@ -1,5 +1,5 @@
 import logging
-from typing import Annotated, Any
+from typing import Annotated, Any, Literal
 from uuid import UUID
 
 from bson import ObjectId
@@ -14,6 +14,7 @@ from common.file.file_repository import (
     TREE_PATH_MAX_ELEMENT_COUNT,
     File,
     FileRepository,
+    ImapInfo,
     Stat,
     Tag,
 )
@@ -260,6 +261,7 @@ class GetFileResponse(BaseModel):
     raw: str
     summary: str | None
     type: str | None
+    imap: ImapInfo | None
 
     @staticmethod
     def from_file(file: File):
@@ -283,6 +285,7 @@ class GetFileResponse(BaseModel):
             ),
             summary=file.summary,
             type=file.magic_file_type,
+            imap=file.imap,
         )
 
 
@@ -382,7 +385,7 @@ def get_thumbnail(
     return StreamingResponse(
         content=file_stream,
         headers={
-            **get_content_disposition_header(file.thumbnail_file_id),
+            **get_content_disposition_header("attachment", file.thumbnail_file_id),
         },
     )
 
@@ -431,6 +434,7 @@ def summarize_file(
 @router.get("/{file_id}/download", status_code=200)
 def download_file(
     file_id: UUID,
+    content_disposition: Literal["inline", "attachment"] = "attachment",
     file_repository: FileRepository = default_file_repository,
     file_storage_service: FileStorageService = default_file_storage_service,
 ) -> Response:
@@ -444,7 +448,7 @@ def download_file(
     return StreamingResponse(
         content=file_stream,
         headers={
-            **get_content_disposition_header(file.short_name),
+            **get_content_disposition_header(content_disposition, file.short_name),
         },
     )
 
@@ -452,6 +456,7 @@ def download_file(
 @router.get("/{file_id}/text", response_model=dict)
 def download_text(
     file_id: UUID,
+    content_disposition: Literal["inline", "attachment"] = "attachment",
     file_repository: FileRepository = default_file_repository,
 ) -> Response:
     """Download content of file as text."""
@@ -461,7 +466,9 @@ def download_text(
     return Response(
         content=str.encode(str(file.content)),
         headers={
-            **get_content_disposition_header(file.short_name_content),
+            **get_content_disposition_header(
+                content_disposition, file.short_name_content
+            ),
         },
     )
 

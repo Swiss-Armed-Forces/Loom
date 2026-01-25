@@ -62,7 +62,7 @@ export function IconButtonDownloadMenu({
                     target="_blank"
                     rel="noopener noreferrer"
                 >
-                    {t("downloadOptions.originalFile")}
+                    {t("downloadOptions.file")}
                 </MenuItem>
                 <MenuItem
                     component="a"
@@ -70,7 +70,7 @@ export function IconButtonDownloadMenu({
                     target="_blank"
                     rel="noopener noreferrer"
                 >
-                    {t("downloadOptions.contentOriginal")}
+                    {t("downloadOptions.content")}
                 </MenuItem>
             </Menu>
         </>

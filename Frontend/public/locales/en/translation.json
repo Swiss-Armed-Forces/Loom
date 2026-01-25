@@ -24,7 +24,7 @@
         "sortPlaceholder": "Score"
     },
     "generalSearchView": {
-        "viewContent": "View content",
+        "viewDetails": "View details",
         "loadMore": "Load more...",
         "download": "Download file",
         "remove": "Delete file",
@@ -80,8 +80,8 @@
         "confirmTagDeletion": "Delete tag"
     },
     "downloadOptions": {
-        "originalFile": "Original file",
-        "contentOriginal": "Content (original)"
+        "file": "File",
+        "content": "Content"
     },
     "updateFileState": {
         "scheduledErrorToast": "Couldn't change visibility of files. Code: {{err.status}}, Text: {{err.text}}",

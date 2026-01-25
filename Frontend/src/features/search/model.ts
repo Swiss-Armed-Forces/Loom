@@ -77,6 +77,7 @@ export const SearchQuerySchema = {
 } as const;
 
 export enum FileDetailTab {
+    Rendered,
     Content,
     Highlights,
     RAW,

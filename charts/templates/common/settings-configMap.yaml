@@ -101,6 +101,7 @@ data:
     ws_host: ws://{{ include "app.fullname" . }}-api:{{ .Values.api.service.port }}
     imap_host: imap://{{ include "app.fullname" . }}-dovecot:{{ .Values.dovecot.service.port.imap }}
     minio_host: {{ include "app.fullname" . }}-minio:{{ .Values.minio.service.port }}
+    roundcube_host: http://{{ include "app.fullname" . }}-roundcube:{{ .Values.roundcube.service.port }}
 
     # flower
     FLOWER_BROKER_API: http://guest:guest@{{ include "app.fullname" . }}-rabbit:{{ .Values.rabbit.service.port.http }}/api/

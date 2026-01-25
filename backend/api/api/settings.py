@@ -1,5 +1,3 @@
-"""Settings for the API service."""
-
 from typing import Optional
 
 from common.settings import DOMAIN

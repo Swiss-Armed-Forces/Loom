@@ -36,11 +36,30 @@ def imap_service() -> IMAPService:
     "email",
     EMAIL_ASSETS,
 )
-def test_imap_append_email(imap_service: IMAPService, email: bytes):
+def test_imap_append_and_count(imap_service: IMAPService, email: bytes):
     imap_service.append_email(email)
 
     message_count = imap_service.count_messages()
     assert message_count == 1
+
+
+@pytest.mark.parametrize(
+    "email",
+    EMAIL_ASSETS,
+)
+def test_imap_append_same_uuid_as_get_uuid(imap_service: IMAPService, email: bytes):
+    info = imap_service.append_email(email)
+    uid = imap_service.get_uid_of_email(email)
+    assert info.uid == uid
+
+
+@pytest.mark.parametrize(
+    "email",
+    EMAIL_ASSETS,
+)
+def test_imap_get_uuid_no_match(imap_service: IMAPService, email: bytes):
+    uid = imap_service.get_uid_of_email(email)
+    assert uid is None
 
 
 @pytest.mark.parametrize(
@@ -72,34 +91,14 @@ def test_imap_double_append_email(imap_service: IMAPService, email: bytes):
 
 
 @pytest.mark.parametrize(
-    "email",
-    EMAIL_ASSETS,
-)
-def test_imap_not_contain_email(imap_service: IMAPService, email: bytes):
-    duplicate_found = imap_service.contains_email(email)
-    assert duplicate_found is False
-
-
-@pytest.mark.parametrize(
-    "email",
-    EMAIL_ASSETS,
-)
-def test_imap_contains_email(imap_service: IMAPService, email: bytes):
-    imap_service.append_email(email)
-
-    duplicate_found = imap_service.contains_email(email)
-    assert duplicate_found is True
-
-
-@pytest.mark.parametrize(
     "email, folder_path",
     [(email, folder_path) for email in EMAIL_ASSETS for folder_path in FOLDER_PATHS],
 )
 def test_imap_not_contain_email_folder(
     imap_service: IMAPService, email: bytes, folder_path: PurePath
 ):
-    duplicate_found = imap_service.contains_email(email, folder_path)
-    assert duplicate_found is False
+    uid = imap_service.get_uid_of_email(email, folder_path)
+    assert uid is None
 
 
 @pytest.mark.parametrize(
@@ -111,8 +110,8 @@ def test_imap_not_contain_email_folder_exists(
 ):
     imap_service.create_folder(folder_path)
 
-    duplicate_found = imap_service.contains_email(email, folder_path)
-    assert duplicate_found is False
+    uid = imap_service.get_uid_of_email(email, folder_path)
+    assert uid is None
 
 
 @pytest.mark.parametrize(
@@ -124,5 +123,5 @@ def test_imap_contains_email_folder(
 ):
     imap_service.append_email(email, folder_path)
 
-    duplicate_found = imap_service.contains_email(email, folder_path)
-    assert duplicate_found is True
+    uid = imap_service.get_uid_of_email(email, folder_path)
+    assert uid is not None

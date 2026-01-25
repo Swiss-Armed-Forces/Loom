@@ -14,6 +14,7 @@ import { TagsInput } from "../../common/components/tags/TagsInput";
 import { ShareButton } from "../components/ShareButton";
 import styles from "./ResultCardAction.module.css";
 import { setFileDetailData } from "../searchSlice";
+import { OpenButton } from "../components/OpenButton";
 
 interface ResultCardActions {
     isMobile: boolean;
@@ -65,7 +66,7 @@ export function ResultCardActions({
                     </MenuItem>
                     <MenuItem>
                         <IconButton
-                            title={t("generalSearchView.viewContent")}
+                            title={t("generalSearchView.viewDetails")}
                             onClick={() => {
                                 handleMenuClose();
                                 handleViewDetail();
@@ -82,6 +83,9 @@ export function ResultCardActions({
                     </MenuItem>
                     <MenuItem>
                         <ReIndexButton file_id={fileId} />
+                    </MenuItem>
+                    <MenuItem>
+                        <OpenButton file_id={fileId} />
                     </MenuItem>
                     <MenuItem>
                         <IconButtonDownloadMenu fileId={fileId} />
@@ -111,7 +115,7 @@ export function ResultCardActions({
             <div className={styles.MuiCardHeaderActionButtons}>
                 <ShareButton fileId={fileId} />
                 <IconButton
-                    title={t("generalSearchView.viewContent")}
+                    title={t("generalSearchView.viewDetails")}
                     onClick={handleViewDetail}
                 >
                     <Preview />
@@ -119,6 +123,7 @@ export function ResultCardActions({
                 <TranslationDialog file_id={fileId} />
                 <SummaryButton file_id={fileId} />
                 <ReIndexButton file_id={fileId} />
+                <OpenButton file_id={fileId} />
                 <IconButtonDownloadMenu fileId={fileId} />
                 <UpdateVisibilityButton
                     icon_only={true}

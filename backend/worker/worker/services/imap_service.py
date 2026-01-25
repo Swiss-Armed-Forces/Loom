@@ -1,9 +1,11 @@
 import email
 import hashlib
+import re
 from contextlib import contextmanager
 from email.policy import default
 from pathlib import PurePath
 
+from common.file.file_repository import ImapInfo
 from imapclient import IMAPClient
 from imapclient.exceptions import IMAPClientError
 from pydantic import AnyUrl
@@ -18,12 +20,23 @@ IMAP_TIMEOUT = 1200
 IMAP_DIRECTORY_BASE = PurePath("INBOX")
 
 
+class IMAPServiceError(Exception):
+    pass
+
+
 class IMAPService:
 
     def __init__(self, imap_host: AnyUrl, user: str, password: str):
         self.host = imap_host
         self.user = user
         self.password = password
+
+    @staticmethod
+    def _get_imap_folder(folder: PurePath | None) -> PurePath:
+        if folder is None:
+            return IMAP_DIRECTORY_BASE
+        folder_path = IMAP_DIRECTORY_BASE / folder.relative_to(folder.anchor)
+        return folder_path
 
     @contextmanager
     def _imap_context(self):
@@ -36,52 +49,68 @@ class IMAPService:
             client.login(self.user, self.password)
             yield client
 
-    @staticmethod
-    def _imap_folder(folder: PurePath | None) -> str:
-        if folder is None:
-            return str(IMAP_DIRECTORY_BASE)
-        folder_path = str(IMAP_DIRECTORY_BASE / folder.relative_to(folder.anchor))
-        return folder_path
-
     def count_messages(self, folder: PurePath | None = None) -> int:
         with self._imap_context() as client:
-
-            select_info = client.select_folder(self._imap_folder(folder))
+            select_info = client.select_folder(str(self._get_imap_folder(folder)))
             return int(select_info[b"EXISTS"])
 
     def create_folder(self, folder: PurePath):
         with self._imap_context() as client:
-            client.create_folder(self._imap_folder(folder))
+            client.create_folder(str(self._get_imap_folder(folder)))
 
-    def contains_email(self, raw_email: bytes, folder: PurePath | None = None) -> bool:
+    def get_uid_of_email(
+        self, raw_email: bytes, folder: PurePath | None = None
+    ) -> int | None:
         deduplication_finterprint = _get_email_deduplication_fingerprint(raw_email)
-        imap_folder = self._imap_folder(folder)
+        imap_folder = self._get_imap_folder(folder)
 
         with self._imap_context() as client:
             try:
-                client.select_folder(imap_folder)
+                client.select_folder(str(imap_folder))
             except IMAPClientError:
                 # likely: folder does not exist
-                return False
-            search_info = client.search(
+                return None
+            uids = client.search(
                 ["HEADER", IMAP_DEDUPLICATION_HEADER, deduplication_finterprint]  # type: ignore
             )
-            return len(search_info) > 0
+            return uids[-1] if uids else None
 
-    def append_email(self, raw_email: bytes, folder: PurePath | None = None):
+    def append_email(
+        self, raw_email: bytes, folder: PurePath | None = None
+    ) -> ImapInfo:
         deduplication_finterprint = _get_email_deduplication_fingerprint(raw_email)
 
-        imap_folder = self._imap_folder(folder)
+        imap_folder = self._get_imap_folder(folder)
         # Append with deterministic header
         email_parsed = email.message_from_bytes(raw_email, policy=default)
         email_parsed[IMAP_DEDUPLICATION_HEADER] = deduplication_finterprint
 
         with self._imap_context() as client:
             try:
-                client.create_folder(imap_folder)
+                client.create_folder(str(imap_folder))
             except IMAPClientError:
                 pass  # skip b"[ALREADYEXISTS]"
-            client.append(imap_folder, str(email_parsed))
+
+            # Check if server supports UIDPLUS
+            response = client.append(str(imap_folder), str(email_parsed))
+            if isinstance(response, bytes) and b"UIDPLUS" in client.capabilities():
+                # Response format: [APPENDUID uidvalidity uid]
+                match = re.search(rb"\[APPENDUID\s+(\d+)\s+(\d+)\]", response)
+                if match:
+                    uid_raw = match.group(2)
+                    uid = int(uid_raw)
+                    return ImapInfo(
+                        uid=uid,
+                        folder=imap_folder,
+                    )
+            # Fallback to search method
+            found_uid = self.get_uid_of_email(raw_email, folder)
+            if found_uid is None:
+                raise IMAPServiceError("Failed to find the appended email UID.")
+            return ImapInfo(
+                uid=found_uid,
+                folder=imap_folder,
+            )
 
     @staticmethod
     def _is_noselect(flags: list[bytes]) -> bool:

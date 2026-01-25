@@ -11,8 +11,8 @@ from worker.services.tika_service import TikaService
 from worker.settings import settings
 
 _tika_service: TikaService | None = None
-_imap_service: IMAPService | None = None
 _rspamd_service: RspamdService | None = None
+_imap_service: IMAPService | None = None
 
 
 logger = logging.getLogger(__name__)
@@ -29,13 +29,13 @@ def init():
     global _tika_service
     _tika_service = TikaService(common_dependencies.get_lazybytes_service())
 
+    global _rspamd_service
+    _rspamd_service = RspamdService(settings.rspam_host)
+
     global _imap_service
     _imap_service = IMAPService(
         settings.imap_host, settings.imap_user, settings.imap_password
     )
-
-    global _rspamd_service
-    _rspamd_service = RspamdService(settings.rspam_host)
 
 
 def mock_init():
@@ -44,6 +44,12 @@ def mock_init():
     global _tika_service
     _tika_service = MagicMock(spec=TikaService)
 
+    global _rspamd_service
+    _rspamd_service = MagicMock(spec=RspamdService)
+
+    global _imap_service
+    _imap_service = MagicMock(spec=IMAPService)
+
 
 def get_tika_service() -> TikaService:
     if _tika_service is None:
@@ -51,13 +57,13 @@ def get_tika_service() -> TikaService:
     return _tika_service
 
 
-def get_imap_service() -> IMAPService:
-    if _imap_service is None:
-        raise DependencyException("IMAP Service missing")
-    return _imap_service
-
-
 def get_rspamd_service() -> RspamdService:
     if _rspamd_service is None:
         raise DependencyException("Rspamd Service missing")
     return _rspamd_service
+
+
+def get_imap_service() -> IMAPService:
+    if _imap_service is None:
+        raise DependencyException("IMAP Service missing")
+    return _imap_service

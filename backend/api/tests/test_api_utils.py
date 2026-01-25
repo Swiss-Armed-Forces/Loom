@@ -1,8 +1,25 @@
+from typing import Literal
 from urllib.parse import unquote
 
 import pytest
 
-from api.utils import CONTENT_DISPOSITION_HEADER_PREFIX, get_content_disposition_header
+from api.utils import FILENAME_ENCODING, get_content_disposition_header
+
+
+@pytest.mark.parametrize(
+    "disposition_type",
+    [
+        "inline",
+        "attachment",
+    ],
+)
+def test_get_content_disposition_header(
+    disposition_type: Literal["inline", "attachment"],
+):
+    header_value = get_content_disposition_header(disposition_type)[
+        "Content-Disposition"
+    ]
+    assert header_value == disposition_type
 
 
 @pytest.mark.parametrize(
@@ -17,14 +34,14 @@ from api.utils import CONTENT_DISPOSITION_HEADER_PREFIX, get_content_disposition
         "εικόνα μιας γάτας που κοιμάται σε μια καρέκλα",
     ],
 )
-def test_get_content_disposition_header(file_name: str):
+def test_get_content_disposition_header_filename_encoding(file_name: str):
     """Test the encoding of various UTF-8 strings as content_disposition_name."""
 
-    header_value = get_content_disposition_header(file_name)["Content-Disposition"]
-    assert header_value.startswith(CONTENT_DISPOSITION_HEADER_PREFIX)
+    header_value = get_content_disposition_header("attachment", file_name)[
+        "Content-Disposition"
+    ]
+    assert FILENAME_ENCODING in header_value
 
-    content_disposition_file_name = header_value.removeprefix(
-        CONTENT_DISPOSITION_HEADER_PREFIX
-    )
-    decoded_file_name = unquote(content_disposition_file_name)
+    _, _, encoded_file_name = header_value.partition(FILENAME_ENCODING)
+    decoded_file_name = unquote(encoded_file_name)
     assert file_name == decoded_file_name

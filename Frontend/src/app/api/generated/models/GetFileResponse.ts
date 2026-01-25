@@ -20,6 +20,12 @@ import {
     GetFileLanguageTranslationsFromJSONTyped,
     GetFileLanguageTranslationsToJSON,
 } from "./GetFileLanguageTranslations";
+import type { ImapInfo } from "./ImapInfo";
+import {
+    ImapInfoFromJSON,
+    ImapInfoFromJSONTyped,
+    ImapInfoToJSON,
+} from "./ImapInfo";
 
 /**
  *
@@ -75,6 +81,12 @@ export interface GetFileResponse {
      * @memberof GetFileResponse
      */
     type?: string;
+    /**
+     *
+     * @type {ImapInfo}
+     * @memberof GetFileResponse
+     */
+    imap?: ImapInfo;
 }
 
 /**
@@ -111,6 +123,7 @@ export function GetFileResponseFromJSONTyped(
         raw: json["raw"],
         summary: json["summary"] == null ? undefined : json["summary"],
         type: json["type"] == null ? undefined : json["type"],
+        imap: json["imap"] == null ? undefined : ImapInfoFromJSON(json["imap"]),
     };
 }
 
@@ -129,5 +142,6 @@ export function GetFileResponseToJSON(value?: GetFileResponse | null): any {
         raw: value["raw"],
         summary: value["summary"],
         type: value["type"],
+        imap: ImapInfoToJSON(value["imap"]),
     };
 }
