@@ -41,6 +41,7 @@ import {
 } from "../../common/commonSlice";
 
 import "ace-builds/esm-resolver";
+import { roundcubeHost } from "../../common/urls";
 
 export function FileDetailDialog() {
     const fileDetailData = useAppSelector(selectFileDetailData);
@@ -280,7 +281,7 @@ export function FileDetailDialog() {
                                 textColor="secondary"
                                 className={styles.tabBar}
                                 value={
-                                    fileDetailData.tab ?? FileDetailTab.Content
+                                    fileDetailData.tab ?? 0 // always use first enum entry as default
                                 }
                                 onChange={(_, number) => {
                                     dispatch(
@@ -292,6 +293,10 @@ export function FileDetailDialog() {
                                 }}
                                 aria-label="basic tabs example"
                             >
+                                <Tab
+                                    label="Rendered"
+                                    value={FileDetailTab.Rendered}
+                                />
                                 <Tab
                                     label="Content"
                                     value={FileDetailTab.Content}
@@ -373,6 +378,18 @@ export function FileDetailDialog() {
                                     {(() => {
                                         switch (fileDetailData.tab) {
                                             case undefined: // default
+                                            case FileDetailTab.Rendered:
+                                                return file.imap ? (
+                                                    <iframe
+                                                        src={`${roundcubeHost}?_task=mail&_extwin=1&_action=show&_uid=${file.imap.uid}&_mbox=${encodeURIComponent(file.imap.folder)}`}
+                                                        style={{
+                                                            width: "100%",
+                                                            height: "100%",
+                                                            border: "none",
+                                                        }}
+                                                    ></iframe>
+                                                ) : null;
+
                                             case FileDetailTab.Content:
                                                 return (
                                                     <AceEditor

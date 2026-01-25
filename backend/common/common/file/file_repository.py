@@ -130,6 +130,25 @@ class _EsLibreTranslateTranslations(InnerDoc):
         locals()[lang] = Object(_EsLibretranslateTranslatedLanguage)
 
 
+class ImapInfo(BaseModel):
+    uid: int
+    folder: PurePath
+
+
+class _EsImapInfo(InnerDoc):
+    uid = Long()
+    folder = Text(
+        fielddata=True,
+        fields={
+            "tree": Text(
+                analyzer="path_analyzer",
+                fielddata=True,
+            ),
+            "keyword": Keyword(),
+        },
+    )
+
+
 FILE_SHORT_NAME_CONTENT_SUFFIX = ".content.txt"
 
 TAG_LEN_MIN = 1
@@ -196,6 +215,7 @@ class File(RepositoryTaskObject):
     embeddings: list[Embedding] = []
     trufflehog_secrets: list[Secret] | None = None
     ripsecrets_secrets: list[Secret] | None = None
+    imap: ImapInfo | None = None
 
     @field_validator("tags")
     @classmethod
@@ -271,6 +291,7 @@ class _EsFile(_EsTaskDocument):
     embeddings = Nested(_EsEmbedding)
     trufflehog_secrets = Object(_EsSecret, multi=True)
     ripsecrets_secrets = Object(_EsSecret, multi=True)
+    imap = Object(_EsImapInfo)
 
     def to_es_dict(self) -> dict:
         es_dict = super().to_es_dict()

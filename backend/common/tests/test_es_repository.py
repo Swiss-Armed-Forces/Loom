@@ -26,10 +26,12 @@ from common.file.file_repository import (
     Embedding,
     File,
     FileRepository,
+    ImapInfo,
     LibretranslateTranslatedLanguage,
     Secret,
     _EsEmbedding,
     _EsFile,
+    _EsImapInfo,
     _EsLibretranslateTranslatedLanguage,
     _EsLibreTranslateTranslations,
     _EsSecret,
@@ -233,6 +235,10 @@ ES_REPOSITORY_TEST_INSTANCES: dict[type[BaseEsRepository], list[_TestInstances]]
                         text=TestValueDefaults.test_str,
                     ),
                 ],
+                imap=ImapInfo(
+                    uid=TestValueDefaults.test_int,
+                    folder=TestValueDefaults.test_pure_path,
+                ),
             ),
             document=_EsFile(
                 {
@@ -330,6 +336,10 @@ ES_REPOSITORY_TEST_INSTANCES: dict[type[BaseEsRepository], list[_TestInstances]]
                         text=TestValueDefaults.test_str,
                     ),
                 ],
+                imap=_EsImapInfo(
+                    uid=TestValueDefaults.test_int,
+                    folder=str(TestValueDefaults.test_pure_path),
+                ),
             ),
         )
     ],

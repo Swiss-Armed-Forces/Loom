@@ -75,4 +75,8 @@ $config['mdn_requests'] = 2;
 // Enables display of email address with name instead of a name (and address in title)
 $config['message_show_email'] = true;
 
+// X-Frame-Options HTTP header value sent to prevent from Clickjacking.
+// Possible values: sameorigin|deny|allow-from <uri>.
+// Set to false in order to disable sending the header.
+$config['x_frame_options'] = false;
 ?>

@@ -24,6 +24,7 @@ export * from "./GetSearchResponse";
 export * from "./GetSearchResponseFile";
 export * from "./HTTPValidationError";
 export * from "./HitsPerGroupEntryModel";
+export * from "./ImapInfo";
 export * from "./IndexAllRequest";
 export * from "./LibretranslateSupportedLanguages";
 export * from "./Message";

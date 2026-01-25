@@ -3,7 +3,7 @@ import logging
 from celery import chain, group
 from celery.canvas import Signature
 from common.dependencies import get_celery_app, get_lazybytes_service
-from common.file.file_repository import File
+from common.file.file_repository import File, ImapInfo
 from common.services.lazybytes_service import LazyBytes
 
 from worker.dependencies import get_imap_service, get_rspamd_service
@@ -27,7 +27,10 @@ def signature(file_content: LazyBytes, file: File) -> Signature:
         detect_email_task.s(file.extension),
         group(
             chain(detect_spam_task.s(file_content), persist_spam_task.s(file)),
-            upload_email_to_imap_task.s(file_content, file),
+            chain(
+                upload_email_to_imap_task.s(file_content, file),
+                persist_imap_info.s(file),
+            ),
         ),
     )
 
@@ -70,10 +73,10 @@ def upload_email_to_imap_task(
     is_email_detected: bool,
     file_content: LazyBytes,
     file: File,
-):
+) -> ImapInfo | None:
 
     if not is_email_detected:
-        return
+        return None
 
     imap_service = get_imap_service()
     email_file = file.full_path
@@ -81,10 +84,22 @@ def upload_email_to_imap_task(
 
     with get_lazybytes_service().load_memoryview(file_content) as memview:
         email = bytes(memview)
-        if imap_service.contains_email(email, email_folder):
+        uid = imap_service.get_uid_of_email(email, email_folder)
+        if uid:
             logger.info(
                 "Not uploading, IMAP deduplication: %s",
                 email_file,
             )
-            return
-        imap_service.append_email(email, email_folder)
+            return ImapInfo(
+                uid=uid,
+                folder=email_folder,
+            )
+        imap_info = imap_service.append_email(email, email_folder)
+        return imap_info
+
+
+@persisting_task(app, IndexingPersister)
+def persist_imap_info(persister: IndexingPersister, imap_info: ImapInfo | None):
+    if imap_info is None:
+        return
+    persister.set_imap_info(imap_info)

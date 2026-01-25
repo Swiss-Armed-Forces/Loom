@@ -76,10 +76,12 @@ export interface DeleteTagV1FilesFileIdTagsTagToRemoveDeleteRequest {
 
 export interface DownloadFileV1FilesFileIdDownloadGetRequest {
     fileId: string;
+    contentDisposition?: DownloadFileV1FilesFileIdDownloadGetContentDispositionEnum;
 }
 
 export interface DownloadTextV1FilesFileIdTextGetRequest {
     fileId: string;
+    contentDisposition?: DownloadTextV1FilesFileIdTextGetContentDispositionEnum;
 }
 
 export interface GetFilePreviewV1FilesFileIdPreviewGetRequest {
@@ -333,6 +335,11 @@ export class FilesApi extends runtime.BaseAPI {
 
         const queryParameters: any = {};
 
+        if (requestParameters["contentDisposition"] != null) {
+            queryParameters["content_disposition"] =
+                requestParameters["contentDisposition"];
+        }
+
         const headerParameters: runtime.HTTPHeaders = {};
 
         const response = await this.request(
@@ -386,6 +393,11 @@ export class FilesApi extends runtime.BaseAPI {
         }
 
         const queryParameters: any = {};
+
+        if (requestParameters["contentDisposition"] != null) {
+            queryParameters["content_disposition"] =
+                requestParameters["contentDisposition"];
+        }
 
         const headerParameters: runtime.HTTPHeaders = {};
 
@@ -1451,6 +1463,24 @@ export class FilesApi extends runtime.BaseAPI {
     }
 }
 
+/**
+ * @export
+ */
+export const DownloadFileV1FilesFileIdDownloadGetContentDispositionEnum = {
+    Inline: "inline",
+    Attachment: "attachment",
+} as const;
+export type DownloadFileV1FilesFileIdDownloadGetContentDispositionEnum =
+    (typeof DownloadFileV1FilesFileIdDownloadGetContentDispositionEnum)[keyof typeof DownloadFileV1FilesFileIdDownloadGetContentDispositionEnum];
+/**
+ * @export
+ */
+export const DownloadTextV1FilesFileIdTextGetContentDispositionEnum = {
+    Inline: "inline",
+    Attachment: "attachment",
+} as const;
+export type DownloadTextV1FilesFileIdTextGetContentDispositionEnum =
+    (typeof DownloadTextV1FilesFileIdTextGetContentDispositionEnum)[keyof typeof DownloadTextV1FilesFileIdTextGetContentDispositionEnum];
 /**
  * @export
  */

@@ -76,6 +76,8 @@ class Settings(BaseSettings):
         """You are an expert english summarization machine called Loom"""
     )
 
+    roundcube_host: AnyHttpUrl = AnyHttpUrl(f"http://roundcube.{DOMAIN}")
+
     random_source: bytes | None = None
 
     archive_encryption_master_key: AESMasterKey | None = None
