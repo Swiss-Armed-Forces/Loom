@@ -622,7 +622,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | react-i18next                       | MIT          | 15.7.4            |
 | react-intersection-observer         | MIT          | 9.16.0            |
 | react-redux                         | MIT          | 9.2.0             |
-| react-router-dom                    | MIT          | 7.12.0            |
+| react-router-dom                    | MIT          | 7.13.0            |
 | react-toastify                      | MIT          | 11.0.5            |
 | string-to-color                     | MIT          | 2.2.2             |
 | uuid                                | MIT          | 11.1.0            |
