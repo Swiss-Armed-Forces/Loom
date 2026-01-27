@@ -46,6 +46,22 @@ profiles:
         path: /manifests/helm/releases/0/name
         value: development
 
+  - name: offline
+    activation:
+      - command: offline
+    patches:
+      # Patch deploy configuration for offline
+      - op: add
+        path: /deploy
+        value:
+          # Extended timeouts for image downloads when running offline, we need to download
+          # many container images which can take considerable time depending on network
+          # speed and image sizes. This profile extends the status check deadline and tolerates
+          # failures during that period to allow sufficient time for all images to be pulled
+          # and the stack to become ready.
+          statusCheckDeadlineSeconds: 21600  # = 6h
+          tolerateFailuresUntilDeadline: true
+
   - name: prod
     activation:
       - command: prod
