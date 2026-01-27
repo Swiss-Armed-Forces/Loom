@@ -194,6 +194,9 @@ set_skaffold_profile(){
     if [[ "${DEVELOPMENT}" = true ]] || [[ "${INTEGRATIONTEST}" = true ]]; then
         SKAFFOLD_PROFILE="dev"
     fi
+    if [[ "${OFFLINE_MODE}" = true ]]; then
+        SKAFFOLD_PROFILE="offline"
+    fi
 }
 
 set_skaffold_command(){
@@ -224,7 +227,9 @@ set_skaffold_args(){
             # we can not build any images
             "--build-image=[]"
         )
-        SKAFFOLD_ARGS+=( "${offline_skaffold_args[@]}" )
+        SKAFFOLD_ARGS+=(
+            "${offline_skaffold_args[@]}"
+        )
         TRAEFIK_SKAFFOLD_ARGS+=( "${offline_skaffold_args[@]}" )
     fi
     local skaffold_cache_args
