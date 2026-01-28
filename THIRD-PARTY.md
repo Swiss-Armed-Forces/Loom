@@ -7506,15 +7506,15 @@ The complete source code for Traefik is publicly available at [https://github.co
 | k8s.io/kubernetes | UNKNOWN |  | go-module-binary-cataloger |
 | k8s.io/metrics | UNKNOWN |  | go-module-binary-cataloger |
 | k8s.io/utils | v0.0.0-20241104100929-3ea5e8cea738 |  | go-module-binary-cataloger |
-| kubectl | 1.33.1-r4 | Apache-2.0 | apk-db-cataloger |
+| kubectl | 1.33.1-r5 | Apache-2.0 | apk-db-cataloger |
 | libapk2 | 2.14.9-r2 | GPL-2.0-only | apk-db-cataloger |
-| libcrypto3 | 3.5.4-r0 | Apache-2.0 | apk-db-cataloger |
+| libcrypto3 | 3.5.5-r0 | Apache-2.0 | apk-db-cataloger |
 | libncursesw | 6.5_p20250503-r0 | X11 | apk-db-cataloger |
-| libssl3 | 3.5.4-r0 | Apache-2.0 | apk-db-cataloger |
+| libssl3 | 3.5.5-r0 | Apache-2.0 | apk-db-cataloger |
 | musl | 1.2.5-r10 | MIT | apk-db-cataloger |
 | musl-utils | 1.2.5-r10 | MIT AND BSD-2-Clause AND GPL-2.0-or-later | apk-db-cataloger |
 | ncurses-terminfo-base | 6.5_p20250503-r0 | X11 | apk-db-cataloger |
-| openssl | 3.5.4-r0 | Apache-2.0 | apk-db-cataloger |
+| openssl | 3.5.5-r0 | Apache-2.0 | apk-db-cataloger |
 | readline | 8.2.13-r1 | GPL-3.0-or-later | apk-db-cataloger |
 | scanelf | 1.3.8-r1 | GPL-2.0-only | apk-db-cataloger |
 | sigs.k8s.io/json | v0.0.0-20241010143419-9aa6b5e7a4b3 |  | go-module-binary-cataloger |
@@ -7525,7 +7525,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | sigs.k8s.io/structured-merge-diff/v4 | v4.6.0 |  | go-module-binary-cataloger |
 | sigs.k8s.io/yaml | v1.4.0 |  | go-module-binary-cataloger |
 | ssl_client | 1.37.0-r18 | GPL-2.0-only | apk-db-cataloger |
-| stdlib | go1.24.11 | BSD-3-Clause | go-module-binary-cataloger |
+| stdlib | go1.24.12 | BSD-3-Clause | go-module-binary-cataloger |
 | zlib | 1.3.1-r2 | Zlib | apk-db-cataloger |
 
 ### registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/elasticvue
