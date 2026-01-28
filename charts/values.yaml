@@ -69,12 +69,12 @@ preInstall:
     limits:
       cpu: "0.2"
       memory: "200Mi"
-  generateSecrets:
+  generateSecret:
     - name: loom-minio-secret
       size: 40
       chars: "A-Za-z0-9"
       fixed: "0000000000000000000000000000000000000000"
-    - name: archive-encryption-master-key
+    - name: archive-enc-master-key
       size: 32
       chars: "a-f0-9"
       fixed: "00000000000000000000000000000000"

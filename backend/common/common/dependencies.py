@@ -154,7 +154,7 @@ def init(init_elasticsearch_documents: bool = False):
 
     global _archive_encryption_service
     _archive_encryption_service = ArchiveEncryptionService(
-        settings.archive_encryption_master_key
+        settings.archive_enc_master_key
     )
 
     global _ollama_client

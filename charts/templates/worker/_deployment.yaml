@@ -31,10 +31,10 @@ spec:
           env:
             - name: WORKER_TYPE
               value: {{ $component | upper | quote }}
-            - name: archive_encryption_master_key
+            - name: archive_enc_master_key
               valueFrom:
                 secretKeyRef:
-                  name: archive-encryption-master-key
+                  name: archive-enc-master-key
                   key: secretkey
           envFrom:
             - configMapRef:

@@ -1,7 +1,10 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: {{ include "app.fullname" $ }}-generate-self-signed-certificate
+  # Using a hash of values as the job name suffix to ensure the job runs on every deployment
+  # while maintaining sync compatibility. The hash ensures unique job names when configuration
+  # changes while remaining consistent when values are unchanged.
+  name: {{ include "app.fullname" $ }}-generate-self-signed-certificate-{{ include "app.valuesHash" . }}
 spec:
   template:
     metadata:
