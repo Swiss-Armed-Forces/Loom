@@ -17,7 +17,7 @@ def pytest_configure():
 @pytest.fixture(scope="session", autouse=True)
 def global_test_init():
     # Fix AES key
-    settings.archive_encryption_master_key = AESMasterKey.from_fixed_key()
+    settings.archive_enc_master_key = AESMasterKey.from_fixed_key()
     init_common_dependencies()
     init_crawler_dependencies()
     init_worker_dependencies()

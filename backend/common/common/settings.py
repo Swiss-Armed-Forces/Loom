@@ -80,13 +80,13 @@ class Settings(BaseSettings):
 
     random_source: bytes | None = None
 
-    archive_encryption_master_key: AESMasterKey | None = None
+    archive_enc_master_key: AESMasterKey | None = None
 
     automatic_indexing: bool = True
 
-    @field_validator("archive_encryption_master_key", mode="before")
+    @field_validator("archive_enc_master_key", mode="before")
     @classmethod
-    def parse_archive_encryption_master_key(cls, value: str) -> AESMasterKey:
+    def parse_archive_enc_master_key(cls, value: str) -> AESMasterKey:
         if isinstance(value, str):
             return AESMasterKey.from_string(value)
         logger.warning("No archive encryption master key provided. Using fixed key.")
