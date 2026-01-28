@@ -12,5 +12,5 @@ description: Loom is a powerful and easily deployable open-source document searc
 # - or any other chart metadata.
 #
 # This version must follow Semantic Versioning (https://semver.org/).
-version: &version "0.3.2-rc1"
+version: &version "0.3.2-rc2"
 appVersion: *version
