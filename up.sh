@@ -28,6 +28,7 @@ TUNNEL_PIDFILE="${TUNNEL_PIDFILE_DIR}/${SCRIPT_NAME}.minikube.tunnel.pid"
 TRAEFIK_SKAFFOLD_CMD="${SCRIPT_DIR}/traefik/skaffold"
 ONLINE_TEST_URL="https://gitlab.com"
 OFFLINE_IMAGE_TAG="latest"
+CERTIFICATE_SECRET_NAME="self-signed-cert"
 
 WAIT_MAX_RETRIES=30
 
@@ -68,6 +69,7 @@ STEPS_SETUP_CLUSTER=(
     use_namespace
     create_docker_secret_from_config
     install_traefik
+    install_certificate
     stop_expose_minikube
     warn_dev_or_integration
 )
@@ -92,6 +94,7 @@ TRAEFIK_SKAFFOLD_ARGS=()
 SKAFFOLD_COMMAND="run"
 SKAFFOLD_CACHE_FILE="${SKAFFOLD_HOME}/cache"
 SKAFFOLD_REMOTE_CACHE_DIR="${SKAFFOLD_HOME}/remote-cache"
+CERTIFICATE=false
 
 #
 # Utils
@@ -437,6 +440,23 @@ install_traefik(){
     )
 }
 
+install_certificate(){
+    if [[ "${CERTIFICATE}" = false ]]; then
+        return
+    fi
+    kubectl \
+        delete \
+            secret \
+                "${CERTIFICATE_SECRET_NAME}" \
+                --ignore-not-found true
+    kubectl \
+        create \
+            secret tls \
+                "${CERTIFICATE_SECRET_NAME}" \
+                --cert "${CERTIFICATE[0]}" \
+                --key "${CERTIFICATE[1]}"
+}
+
 stop_expose_minikube(){
     if [[ -f "${TUNNEL_PIDFILE}" ]]; then
         sudo pkill \
@@ -585,16 +605,17 @@ trap atexit EXIT
 
 usage(){
     echo "usage: ${0} [<options>]"
-    echo "  -h|--help               show this help"
-    echo "  -v|--verbose            show verbose output"
-    echo "  -d|--development        start in development mode: Provides debugging und live reloading."
-    echo "  -i|--integrationtest    start in integration test mode"
-    echo "  -s|--setup              only setup system, don't start anything"
-    echo "  -e|--expose IP          expose the application to the outside world by binding to IP"
-    echo "  -g|--gpus GPUS          allow access to the GPUs. Possible values: all, nvidia, amd"
-    echo "  -t|--tail               tail logs after startup"
-    echo "  -o|--offline            run in offline mode"
-    echo "  --skip-STEP             skip step STEP"
+    echo "  -h|--help                   show this help"
+    echo "  -v|--verbose                show verbose output"
+    echo "  -d|--development            start in development mode: Provides debugging und live reloading."
+    echo "  -i|--integrationtest        start in integration test mode"
+    echo "  -s|--setup                  only setup system, don't start anything"
+    echo "  -e|--expose IP              expose the application to the outside world by binding to IP"
+    echo "  -g|--gpus GPUS              allow access to the GPUs. Possible values: all, nvidia, amd"
+    echo "  -t|--tail                   tail logs after startup"
+    echo "  -o|--offline                run in offline mode"
+    echo "  -c|--certificate CERT KEY   install certificate (CERT) with key (KEY)"
+    echo "  --skip-STEP                 skip step STEP"
 }
 
 #
@@ -643,6 +664,12 @@ while [[ $# -gt 0 ]]; do
         -o|--offline)
             shift
             OFFLINE_MODE=true
+        ;;
+        -c|--certificate)
+            shift
+            CERTIFICATE=("${1?Missing CERT}" "${2?Missing KEY}")
+            shift
+            shift
         ;;
         --skip-*)
             SKIP+=("${1}")
