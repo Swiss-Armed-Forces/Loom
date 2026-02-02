@@ -94,9 +94,9 @@ data:
     celery_backend_host: redis://{{ include "app.fullname" . }}-redis:{{ .Values.redis.service.port }}/0?protocol=3
     tika_server_host: http://{{ include "app.fullname" . }}-tika:{{ .Values.tika.service.port }}
     rspam_host: http://{{ include "app.fullname" . }}-rspamd:{{ .Values.rspamd.worker.service.port }}
-    translate_host: http://{{ include "app.fullname" . }}-translate:{{ .Values.translate.service.port }}
-    ollama_host: http://{{ include "app.fullname" . }}-ollama:{{ .Values.ollama.service.port }}
-    ollama_tool_host: http://{{ include "app.fullname" . }}-ollama-tool:{{ index .Values "ollama-tool" "service" "port" }}
+    translate_host: http://{{ .Values.translate.service.externalHost | default (printf "%s-translate" (include "app.fullname" .)) }}:{{ .Values.translate.service.port }}
+    ollama_host: http://{{ .Values.ollama.service.externalHost | default (printf "%s-ollama" (include "app.fullname" .)) }}:{{ .Values.ollama.service.port }}
+    ollama_tool_host: http://{{ index .Values "ollama-tool" "service" "externalHost" | default (printf "%s-ollama-tool" (include "app.fullname" .)) }}:{{ index .Values "ollama-tool" "service" "port" }}
     api_host: http://{{ include "app.fullname" . }}-api:{{ .Values.api.service.port }}
     ws_host: ws://{{ include "app.fullname" . }}-api:{{ .Values.api.service.port }}
     imap_host: imap://{{ include "app.fullname" . }}-dovecot:{{ .Values.dovecot.service.port.imap }}
