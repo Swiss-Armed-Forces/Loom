@@ -381,6 +381,9 @@ translate:
     ARGOS_DEVICE_TYPE: "auto"
   service:
     port: 5000
+    # External hostname for the service.
+    # If set, routes to external service instead of internal pods.
+    externalHost: ""
   ingress: *default-ingress-config
   readinessProbe:
     enabled: false
@@ -958,6 +961,9 @@ ollama: &ollama
     repository: swiss-armed-forces/cyber-command/cea/loom/ollama
   service:
     port: 11434
+    # External hostname for the service.
+    # If set, routes to external service instead of internal pods.
+    externalHost: ""
   pvc:
     enabled: true
     storage: 30Gi
