@@ -538,7 +538,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | debugpy                  | 1.8.19          | MIT License                                                                      |
 | deptry                   | 0.24.0          | MIT License                                                                      |
 | flake8                   | 7.3.0           | MIT License                                                                      |
-| flake8-bugbear           | 24.4.26         | MIT License                                                                      |
+| flake8-bugbear           | 25.11.29        | MIT License                                                                      |
 | h11                      | 0.14.0          | MIT License                                                                      |
 | iniconfig                | 2.0.0           | MIT License                                                                      |
 | integrationtest          | 0.1.0           | MIT License                                                                      |
@@ -2492,15 +2492,15 @@ The complete source code for Traefik is publicly available at [https://github.co
 | libsepol2 | 3.3-1build1 |  | dpkg-db-cataloger |
 | libsmartcols1 | 2.37.2-4ubuntu3.4 | BSD-2-Clause, BSD-3-Clause, BSD-4-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, MIT | dpkg-db-cataloger |
 | libss2 | 1.46.5-2ubuntu1.2 |  | dpkg-db-cataloger |
-| libssh-4 | 0.9.6-2ubuntu0.22.04.4 | BSD-2-Clause, BSD-3-Clause, LGPL-2.1-only | dpkg-db-cataloger |
+| libssh-4 | 0.9.6-2ubuntu0.22.04.5 | BSD-2-Clause, BSD-3-Clause, LGPL-2.1-only | dpkg-db-cataloger |
 | libssl3 | 3.0.2-0ubuntu1.20 | Apache-2.0, GPL-1.0-only, GPL-1.0-or-later | dpkg-db-cataloger |
 | libstdc++6 | 12.3.0-1ubuntu1~22.04.2 | GFDL-1.2-only, GPL-2.0-only, GPL-3.0-only | dpkg-db-cataloger |
-| libsystemd0 | 249.11-0ubuntu3.16 | CC0-1.0, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
+| libsystemd0 | 249.11-0ubuntu3.17 | CC0-1.0, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
 | libtasn1-6 | 4.18.0-4ubuntu0.1 | GFDL-1.3-only, GPL-3.0-only, LGPL-2.1-only | dpkg-db-cataloger |
 | libtinfo6 | 6.3-2ubuntu0.1 | BSD-3-Clause, X11 | dpkg-db-cataloger |
 | libtirpc-common | 1.3.2-2ubuntu0.1 | BSD-3-Clause, GPL-2.0-only, LGPL-2.1-only | dpkg-db-cataloger |
 | libtirpc3 | 1.3.2-2ubuntu0.1 | BSD-3-Clause, GPL-2.0-only, LGPL-2.1-only | dpkg-db-cataloger |
-| libudev1 | 249.11-0ubuntu3.16 | CC0-1.0, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
+| libudev1 | 249.11-0ubuntu3.17 | CC0-1.0, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
 | libunistring2 | 1.0-1 | GFDL-1.2-only, GFDL-1.2-or-later, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-3.0-only, LGPL-3.0-or-later, MIT | dpkg-db-cataloger |
 | libuuid1 | 2.37.2-4ubuntu3.4 | BSD-2-Clause, BSD-3-Clause, BSD-4-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, MIT | dpkg-db-cataloger |
 | libxxhash0 | 0.8.1-1 | BSD-2-Clause, GPL-2.0-only | dpkg-db-cataloger |
@@ -2510,7 +2510,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | lsb-base | 11.1.0ubuntu4 | BSD-3-Clause, GPL-2.0-only | dpkg-db-cataloger |
 | mawk | 1.3.4.20200120-3 | GPL-2.0-only | dpkg-db-cataloger |
 | mongodb-database-tools | 100.13.0 |  | dpkg-db-cataloger |
-| mongodb-mongosh | 2.5.8 | Apache-2.0 | dpkg-db-cataloger |
+| mongodb-mongosh | 2.5.9 | Apache-2.0 | dpkg-db-cataloger |
 | mongodb-org | 7.0.25 |  | dpkg-db-cataloger |
 | mongodb-org-database | 7.0.25 |  | dpkg-db-cataloger |
 | mongodb-org-database-tools-extra | 7.0.25 |  | dpkg-db-cataloger |
