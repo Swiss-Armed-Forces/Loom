@@ -582,13 +582,13 @@ The complete source code for Traefik is publicly available at [https://github.co
 | docformatter             | 1.7.7           | MIT License; Other/Proprietary License                                           |
 | pytest-rerunfailures     | 15.1            | MPL-2.0                                                                          |
 | certifi                  | 2024.6.2        | Mozilla Public License 2.0 (MPL 2.0)                                             |
-| pathspec                 | 0.12.1          | Mozilla Public License 2.0 (MPL 2.0)                                             |
+| pathspec                 | 1.0.4           | Mozilla Public License 2.0 (MPL 2.0)                                             |
 | blobfile                 | 2.1.1           | Public Domain                                                                    |
 | filelock                 | 3.15.4          | The Unlicense (Unlicense)                                                        |
 | annotated-doc            | 0.0.4           | UNKNOWN                                                                          |
 | astroid                  | 3.3.11          | UNKNOWN                                                                          |
 | binwalk                  | 2.4.3           | UNKNOWN                                                                          |
-| black                    | 25.12.0         | UNKNOWN                                                                          |
+| black                    | 26.1.0          | UNKNOWN                                                                          |
 | fastapi                  | 0.128.0         | UNKNOWN                                                                          |
 | humanize                 | 4.12.3          | UNKNOWN                                                                          |
 | ollama                   | 0.6.1           | UNKNOWN                                                                          |
