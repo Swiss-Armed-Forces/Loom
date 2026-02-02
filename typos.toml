@@ -3,5 +3,6 @@ extend-ignore-re = [
     # Custom ignore regex patterns: https://github.com/crate-ci/typos/blob/master/docs/reference.md#example-configurations
     "(?Rm)^.*(#|//)\\s*spellchecker:disable-line$",
     "(?s)(#|//)\\s*spellchecker:off.*?\\n\\s*(#|//)\\s*spellchecker:on",
-    "(#|//)\\s*spellchecker:ignore-next-line\\n.*"
+    "(#|//)\\s*spellchecker:ignore-next-line\\n.*",
+    "(?s)(#|//)\\s*spellchecker:ignore-file\\n.*"
 ]

@@ -1,3 +1,4 @@
+# spellchecker:ignore-file
 # Redis configuration file example.
 #
 # Note that in order to read the configuration file, Redis must be
@@ -1116,7 +1117,7 @@ acllog-max-len 128
 # limit for maxmemory so that there is some free RAM on the system for replica
 # output buffers (but this is not needed if the policy is 'noeviction').
 #
-# maxmemory <bytes>
+maxmemory {{ .memoryLimitBytes }}
 
 # MAXMEMORY POLICY: how Redis will select what to remove when maxmemory
 # is reached. You can select one from the following behaviors:

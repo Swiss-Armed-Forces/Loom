@@ -23,6 +23,11 @@ spec:
           ports:
             - name: redis
               containerPort: {{ .Values.redis.service.port }}
+          volumeMounts:
+            - name: redis-config
+              mountPath: /usr/local/etc/redis/redis.conf
+              readOnly: true
+              subPath: redis.conf
           {{- if .Values.redis.readinessProbe.enabled }}
           readinessProbe:
             exec:
@@ -50,3 +55,7 @@ spec:
           {{- if .Values.redis.resources }}
           resources: {{- toYaml .Values.redis.resources | nindent 12 }}
           {{- end }}
+      volumes:
+        - name: redis-config
+          configMap:
+            name:  {{ include "app.fullname" . }}-redis-config
