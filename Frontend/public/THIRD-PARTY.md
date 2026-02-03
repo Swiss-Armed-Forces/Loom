@@ -6649,7 +6649,6 @@ The complete source code for Traefik is publicly available at [https://github.co
 | imagemagick-6-common | 8:6.9.11.60+dfsg-1.6+deb12u2 | GPL-1.0-only, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, ImageMagick, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
 | init-system-helpers | 1.65.2 | BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
 | intl | 8.1.31 |  | php-interpreter-cataloger |
-| jfcherng-roundcube/show-folder-size | 0.7.20 | MIT | php-composer-installed-cataloger |
 | johndoh/contextmenu | 3.3.1 | GPL-3.0-or-later | php-composer-installed-cataloger |
 | kolab/net_ldap3 | v1.1.5 | GPL-3.0-or-later | php-composer-installed-cataloger |
 | kolab/net_ldap3 | v1.1.5 | GPL-3.0-or-later | php-composer-installed-cataloger |
