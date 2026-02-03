@@ -24,7 +24,7 @@ $config['search_scope'] = null;
 // Default interval for auto-refresh requests (in seconds)
 // These are requests for system state updates e.g. checking for new messages, etc.
 // Setting it to 0 disables the feature.
-$config['refresh_interval'] = 10;
+$config['refresh_interval'] = 0;
 
 // If true all folders will be checked for recent messages
 $config['check_all_folders'] = true;
