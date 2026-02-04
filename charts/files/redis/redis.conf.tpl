@@ -422,7 +422,7 @@ proc-title-template "{title} {listen-addr} {server-mode}"
 # Snapshotting can be completely disabled with a single empty string argument
 # as in following example:
 #
-save ""
+# save ""
 #
 # Unless specified otherwise, by default Redis will save the DB:
 #   * After 3600 seconds (an hour) if at least 1 change was performed
@@ -1146,7 +1146,7 @@ maxmemory {{ .memoryLimitBytes }}
 #
 # The default is:
 #
-# maxmemory-policy noeviction
+maxmemory-policy volatile-ttl
 
 # LRU, LFU and minimal TTL algorithms are not precise algorithms but approximated
 # algorithms (in order to save memory), so you can tune it for speed or
@@ -1377,7 +1377,7 @@ disable-thp yes
 #
 # Please check https://redis.io/topics/persistence for more information.
 
-appendonly no
+appendonly yes
 
 # The base name of the append only file.
 #

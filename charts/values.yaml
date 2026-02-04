@@ -1122,6 +1122,8 @@ redis:
     repository: swiss-armed-forces/cyber-command/cea/loom/redis
   service:
     port: 6379
+  pvc:
+    storage: 10Gi
   ingress:
     enabled: false
   readinessProbe:
