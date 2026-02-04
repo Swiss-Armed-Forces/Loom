@@ -561,11 +561,10 @@ The complete source code for Traefik is publicly available at [https://github.co
 | pydantic-settings        | 2.3.4           | MIT License                                                                      |
 | pydantic_core            | 2.27.1          | MIT License                                                                      |
 | pyflakes                 | 3.4.0           | MIT License                                                                      |
-| pytest                   | 8.4.2           | MIT License                                                                      |
 | pytest-cov               | 5.0.0           | MIT License                                                                      |
 | pytest-mock              | 3.15.1          | MIT License                                                                      |
 | pytest-random-order      | 1.1.1           | MIT License                                                                      |
-| pytest-split             | 0.10.0          | MIT License                                                                      |
+| pytest-split             | 0.11.0          | MIT License                                                                      |
 | python-magic             | 0.4.27          | MIT License                                                                      |
 | pytokens                 | 0.3.0           | MIT License                                                                      |
 | pytz                     | 2025.2          | MIT License                                                                      |
@@ -595,7 +594,8 @@ The complete source code for Traefik is publicly available at [https://github.co
 | prometheus_client        | 0.22.1          | UNKNOWN                                                                          |
 | pycrypto                 | 3.20.0          | UNKNOWN                                                                          |
 | pylint                   | 3.3.9           | UNKNOWN                                                                          |
-| pytest-asyncio           | 0.26.0          | UNKNOWN                                                                          |
+| pytest                   | 9.0.2           | UNKNOWN                                                                          |
+| pytest-asyncio           | 1.3.0           | UNKNOWN                                                                          |
 | typing_extensions        | 4.15.0          | UNKNOWN                                                                          |
 | uvicorn                  | 0.40.0          | UNKNOWN                                                                          |
 | zstandard                | 0.25.0          | UNKNOWN                                                                          |
