@@ -88,6 +88,7 @@ EXPOSE=false
 EXPOSE_IP=""
 GPUS=""
 OFFLINE_MODE=false
+DELETE=false
 SKAFFOLD_PROFILE="prod"
 SKAFFOLD_ARGS=()
 TRAEFIK_SKAFFOLD_ARGS=()
@@ -207,6 +208,7 @@ set_skaffold_command(){
         SKAFFOLD_COMMAND="debug"
     fi
 }
+
 
 set_skaffold_args(){
     if [[ "${DEVELOPMENT}" = true ]]; then
@@ -592,7 +594,14 @@ atexit(){
         return
     fi
 
-    if [[ "${TAIL}" = true ]]; then
+    if [[ "${DELETE}" = true ]]; then
+        (
+            cd "${SCRIPT_DIR}/traefik"
+
+            "${TRAEFIK_SKAFFOLD_CMD}" delete \
+                --profile "${SKAFFOLD_PROFILE}"
+        )
+
         skaffold delete \
             --profile "${SKAFFOLD_PROFILE}"
     fi
@@ -615,6 +624,7 @@ usage(){
     echo "  -t|--tail                   tail logs after startup"
     echo "  -o|--offline                run in offline mode"
     echo "  -c|--certificate CERT KEY   install certificate (CERT) with key (KEY)"
+    echo "  --delete                    delete the deployment after startup"
     echo "  --skip-STEP                 skip step STEP"
 }
 
@@ -669,6 +679,10 @@ while [[ $# -gt 0 ]]; do
             shift
             CERTIFICATE=("${1?Missing CERT}" "${2?Missing KEY}")
             shift
+            shift
+        ;;
+        --delete)
+            DELETE=true
             shift
         ;;
         --skip-*)

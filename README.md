@@ -128,7 +128,7 @@ and navigate to [https://frontend.loom](https://frontend.loom) to access Loom.
 
 #### Single Node Offline usage
 
-If you want to use loom fully offline, you need to start Loom using `./up.sh --offline`
+If you want to use loom fully offline, you need to start Loom using `./up.sh --offline --delete`
 at least once **while connected to the internet** before you can disconnect your host
 and re-start Loom in full offline mode: `./up.sh --offline`.
 
