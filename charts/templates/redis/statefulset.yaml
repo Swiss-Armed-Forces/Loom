@@ -1,11 +1,12 @@
 apiVersion: apps/v1
-kind: Deployment
+kind: StatefulSet
 metadata:
   name: {{ include "app.fullname" . }}-redis
   labels:
     {{- include "app.labels.custom" (dict "context" . "component" "redis") | nindent 4 }}
     app.kubernetes.io/component: redis
 spec:
+  serviceName: {{ include "app.fullname" . }}-redis
   replicas: {{ .Values.redis.replicaCount }}
   selector:
     matchLabels:
@@ -28,6 +29,8 @@ spec:
               mountPath: /usr/local/etc/redis/redis.conf
               readOnly: true
               subPath: redis.conf
+            - mountPath: /data
+              name: redis
           {{- if .Values.redis.readinessProbe.enabled }}
           readinessProbe:
             exec:
@@ -58,4 +61,16 @@ spec:
       volumes:
         - name: redis-config
           configMap:
-            name:  {{ include "app.fullname" . }}-redis-config
+            name: {{ include "app.fullname" . }}-redis-config
+  volumeClaimTemplates:
+    - metadata:
+        name: redis
+      spec:
+        accessModes:
+          - {{ .Values.redis.pvc.accessModes | default "ReadWriteOnce" | quote }}
+        resources:
+            requests:
+              storage: {{ .Values.redis.pvc.storage }}
+        {{- if .Values.redis.pvc.storageClass -}}
+        storageClassName: {{ .Values.redis.pvc.storageClass }}
+        {{- end }}
