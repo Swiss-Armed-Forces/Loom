@@ -1044,6 +1044,19 @@ in
     '';
   };
 
+  scripts.git-delete-merged-branches = {
+    description = "Delete all merged branches";
+    exec = ''
+      (
+        set -euo pipefail
+        cd '${config.devenv.root}'
+
+        ./cicd/git_delete_merged_branches.sh \
+          "''${@}"
+      )
+    '';
+  };
+
   scripts.run-integrationtest = {
     description = "Run integrationtest";
     exec = ''
