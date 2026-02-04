@@ -521,6 +521,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | click-repl               | 0.3.0           | MIT                                                                              |
 | identify                 | 2.6.16          | MIT                                                                              |
 | pycodestyle              | 2.14.0          | MIT                                                                              |
+| pytest-cov               | 6.3.0           | MIT                                                                              |
 | PyYAML                   | 6.0.1           | MIT License                                                                      |
 | Wand                     | 0.6.13          | MIT License                                                                      |
 | annotated-types          | 0.7.0           | MIT License                                                                      |
@@ -561,7 +562,6 @@ The complete source code for Traefik is publicly available at [https://github.co
 | pydantic-settings        | 2.3.4           | MIT License                                                                      |
 | pydantic_core            | 2.27.1          | MIT License                                                                      |
 | pyflakes                 | 3.4.0           | MIT License                                                                      |
-| pytest-cov               | 5.0.0           | MIT License                                                                      |
 | pytest-mock              | 3.15.1          | MIT License                                                                      |
 | pytest-random-order      | 1.1.1           | MIT License                                                                      |
 | pytest-split             | 0.11.0          | MIT License                                                                      |
