@@ -10,7 +10,12 @@ from requests import Response
 from worker.settings import settings
 
 from utils.consts import FILES_ENDPOINT, REQUEST_TIMEOUT, TRANSLATION_ENDPOINT
-from utils.fetch_from_api import build_search_string, fetch_query_id, get_file_by_name
+from utils.fetch_from_api import (
+    build_search_string,
+    fetch_files_from_api,
+    fetch_query_id,
+    get_file_by_name,
+)
 from utils.upload_asset import upload_bytes_asset
 
 
@@ -106,7 +111,47 @@ def _assert_all_translation(
 ):
     assert len(expected_translations) == len(libretranslate_language_translations)
     for expected_translation in expected_translations:
-        assert expected_translation in libretranslate_language_translations
+        # Find matching translation by language and confidence (ignore text)
+        matching_translation = next(
+            (
+                t
+                for t in libretranslate_language_translations
+                if t.language == expected_translation.language
+                and t.confidence == expected_translation.confidence
+            ),
+            None,
+        )
+
+        assert matching_translation is not None, (
+            f"No translation found for language={expected_translation.language}, "
+            f"confidence={expected_translation.confidence}"
+        )
+
+        # Verify text exists and has content but don't compare exact value,
+        # AI:dependent might be differ from system to system.
+        assert isinstance(
+            matching_translation.text, str
+        ), f"Translation text is not a string for language={expected_translation.language}"
+        assert (
+            len(matching_translation.text) > 0
+        ), f"Translation text is empty for language={expected_translation.language}"
+
+    # test if detected language is set:
+    expected_best_detected_language = (
+        max(expected_translations, key=lambda x: x.confidence)
+        if expected_translations
+        else None
+    )
+    if expected_best_detected_language is None:
+        return
+    fetch_files_from_api(
+        search_string=build_search_string(
+            search_string="*",
+            field="libretranslate_language",
+            field_value=expected_best_detected_language.language,
+        ),
+        max_wait_time_per_file=0,
+    )
 
 
 def _translation_testcase(
@@ -124,7 +169,7 @@ def _translation_testcase(
     # create a custom model to be able to generalize the calls
     translation_file = TranslationFileTest(file_id=str(file.file_id), name=file.name)
 
-    # should not be translated yet:
+    # test if all indexing translations are there
     _assert_all_translation(
         expected_translations,
         file.libretranslate_language_translations,

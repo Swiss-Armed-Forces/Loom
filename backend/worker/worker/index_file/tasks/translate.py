@@ -60,7 +60,13 @@ def signature(file: File) -> Signature:
     return chain(
         extract_text_from_tika_result.s(),
         translate_detect_language_task.s(file),
-        translate_task.s(file),
+        group(
+            translate_task.s(file),
+            chain(
+                translate_get_best_detected_language.s(),
+                persist_best_detected_language.s(file),
+            ),
+        ),
     )
 
 
@@ -235,3 +241,30 @@ def persist_translation(
 ):
     """Persists the translation result."""
     persister.add_or_replace_libretranslate_translated_language(translation)
+
+
+@app.task(base=FileIndexingTask)
+def translate_get_best_detected_language(
+    translate_detect_language_result: tuple[
+        LazyBytes | None, LibreTranslateLanguageDetectResult | None
+    ],
+) -> str | None:
+    _, detected_languages = translate_detect_language_result
+    if detected_languages is None:
+        return None
+    best_detected_language = (
+        max(detected_languages, key=lambda x: x.confidence)
+        if detected_languages
+        else None
+    )
+    return best_detected_language.language if best_detected_language else None
+
+
+@persisting_task(app, IndexingPersister)
+def persist_best_detected_language(
+    persister: IndexingPersister,
+    best_detected_language: str | None,
+):
+    if best_detected_language is None:
+        return
+    persister.set_libretranslate_language(best_detected_language)
