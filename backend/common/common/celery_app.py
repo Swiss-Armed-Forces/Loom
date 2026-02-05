@@ -203,7 +203,7 @@ def init_celery_app() -> "Celery[BaseTask]":
     # https://docs.celeryq.dev/en/stable/userguide/canvas.html#important-notes
     app.conf.task_ignore_result = False
     app.conf.task_store_errors_even_if_ignored = True
-    app.conf.result_backend_max_retries = 30
+    app.conf.result_backend_always_retry = True
     app.conf.task_acks_on_failure_or_timeout = True
     app.conf.task_reject_on_worker_lost = False
 
