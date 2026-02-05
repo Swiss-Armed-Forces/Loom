@@ -252,10 +252,6 @@ set_skaffold_args(){
     )
 }
 
-delete_cluster(){
-    minikube delete
-}
-
 validate_environment() {
     # Check if not run as root
     if [[ "${EUID}" -eq 0 ]]; then
@@ -604,6 +600,11 @@ atexit(){
 
         skaffold delete \
             --profile "${SKAFFOLD_PROFILE}"
+
+        minikube ssh \
+            -- \
+            docker \
+                system prune
     fi
 }
 trap atexit EXIT
