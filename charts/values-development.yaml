@@ -111,6 +111,27 @@ beat:
 
 flower:
   ingress: *default-ingress-config
+  # yamllint disable rule:indentation
+  command: [
+    "python", "-Xfrozen_modules=off",
+    "-m", "debugpy",
+      "--listen", "127.0.0.1:5503",
+    "-m", "watchdog.watchmedo",
+      "auto-restart",
+      "--verbose",
+      "--recursive",
+      "--signal", "SIGTERM",
+      "--patterns", "*.py",
+      "--directory", "/code/common",
+      "--directory", "/code/worker",
+      "--debounce-interval", "3",
+    "--",
+    "python", "-Xfrozen_modules=off",
+    "main.py",
+      "flower",
+      "--loglevel", "DEBUG"
+  ]
+  # yamllint enable rule:indentation
 
 elasticsearch:
   ingress: *default-ingress-config

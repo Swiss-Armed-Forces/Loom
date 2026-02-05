@@ -31,7 +31,7 @@ spec:
           {{- if .Values.flower.command }}
           command: {{- toYaml .Values.flower.command | nindent 10 }}
           {{- else }}
-          command: ["python", "main.py", "flower", "--broker-api=http://guest:guest@rabbit:15672/api/"]
+          command: ["python", "main.py", "flower"]
           {{- end }}
           {{- if .Values.flower.readinessProbe.enabled }}
           readinessProbe:

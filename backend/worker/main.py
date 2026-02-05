@@ -2,6 +2,7 @@
 
 import logging
 import sys
+from shlex import quote
 
 from common.celery_app import CELERY_DEAD_QUEUE_NAME, CELERY_GRAVEYARD_QUEUE_NAME
 from common.dependencies import get_celery_app
@@ -34,7 +35,16 @@ match settings.worker_type:
             "--autoscale",
             f"{settings.worker_max_concurrency},0",
         ]
+    case "FLOWER":
+        argv = argv + [
+            f"--broker-api={settings.rabbit_mq_management_host}api/",
+            "--purge_offline_workers=600",
+            "--max_tasks=50000",
+        ]
     case _:
         pass
-logger.info("Starting : %s", settings.worker_type)
+
+logger.info(
+    "Starting (%s): %s", settings.worker_type, " ".join(quote(arg) for arg in argv)
+)
 app.start(argv=argv)
