@@ -1,7 +1,7 @@
 import logging
 from uuid import UUID
 
-from celery import chain
+from celery import chain, group
 from common.dependencies import (
     get_celery_app,
     get_file_repository,
@@ -15,6 +15,7 @@ from worker.index_file.infra.file_indexing_task import FileIndexingTask
 from worker.index_file.tasks import persist_processing_done
 from worker.index_file.tasks.translate import (
     LibretranslateDetectedLanguage,
+    persist_best_detected_language,
     translate_task,
 )
 
@@ -57,6 +58,9 @@ def translate_file_task(lang: str, file_id: UUID):
     content = file.content if file.content is not None else ""
     file_content = get_lazybytes_service().from_bytes(content.encode())
     chain(
-        translate_task.s((file_content, [libretranslate_language]), file),
+        group(
+            translate_task.s((file_content, [libretranslate_language]), file),
+            persist_best_detected_language.s(libretranslate_language.language, file),
+        ),
         persist_processing_done.signature(file),
     ).delay().forget()

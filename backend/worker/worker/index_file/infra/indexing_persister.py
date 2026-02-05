@@ -50,6 +50,9 @@ class IndexingPersister(PersisterBase[File]):
     def set_tika_language(self, language: str):
         self._object.tika_language = language
 
+    def set_libretranslate_language(self, language: str):
+        self._object.libretranslate_language = language
+
     def add_or_replace_libretranslate_translated_language(
         self, libretranslate_translated_language: LibretranslateTranslatedLanguage
     ):
