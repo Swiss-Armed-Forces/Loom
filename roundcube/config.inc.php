@@ -21,6 +21,9 @@ $config['use_subscriptions'] = false; // or true
 // 'all' - for all folders
 $config['search_scope'] = null;
 
+// do not show pretty dates as standard
+$config['prettydate'] = false;
+
 // Default interval for auto-refresh requests (in seconds)
 // These are requests for system state updates e.g. checking for new messages, etc.
 // Setting it to 0 disables the feature.
