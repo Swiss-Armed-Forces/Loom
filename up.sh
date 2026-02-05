@@ -604,7 +604,8 @@ atexit(){
         minikube ssh \
             -- \
             docker \
-                system prune
+                system prune \
+                    --force
     fi
 }
 trap atexit EXIT
