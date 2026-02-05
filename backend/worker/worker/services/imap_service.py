@@ -2,7 +2,6 @@ import email
 import hashlib
 import re
 from contextlib import contextmanager
-from email.policy import default
 from pathlib import PurePath
 
 from common.file.file_repository import ImapInfo
@@ -82,7 +81,7 @@ class IMAPService:
 
         imap_folder = self._get_imap_folder(folder)
         # Append with deterministic header
-        email_parsed = email.message_from_bytes(raw_email, policy=default)
+        email_parsed = email.message_from_bytes(raw_email)
         email_parsed[IMAP_DEDUPLICATION_HEADER] = deduplication_finterprint
 
         with self._imap_context() as client:
@@ -92,7 +91,7 @@ class IMAPService:
                 pass  # skip b"[ALREADYEXISTS]"
 
             # Check if server supports UIDPLUS
-            response = client.append(str(imap_folder), str(email_parsed))
+            response = client.append(str(imap_folder), email_parsed.as_bytes())
             if isinstance(response, bytes) and b"UIDPLUS" in client.capabilities():
                 # Response format: [APPENDUID uidvalidity uid]
                 match = re.search(rb"\[APPENDUID\s+(\d+)\s+(\d+)\]", response)

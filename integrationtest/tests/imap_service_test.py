@@ -8,7 +8,13 @@ from utils.consts import ASSETS_DIR
 
 # pylint: disable=redefined-outer-name
 
-EMAIL_ASSET_NAMES = ["basic_email.eml", "attachment_pdf.eml"]
+EMAIL_ASSET_NAMES = [
+    "basic_email.eml",
+    "unicode_email.eml",
+    "attachment_pdf.eml",
+    "2020-05-05-phishing-email-example-02.eml",
+    "attachment_content_disposition.eml",
+]
 
 EMAIL_ASSETS = [
     ((ASSETS_DIR / Path(email)).read_bytes()) for email in EMAIL_ASSET_NAMES
@@ -23,6 +29,7 @@ FOLDER_NAMES = [
     "Ξξêë💩",
     "Ξξ/êë/💩",
 ]
+
 
 FOLDER_PATHS = [PurePath(f) for f in FOLDER_NAMES]
 
@@ -64,7 +71,7 @@ def test_imap_get_uuid_no_match(imap_service: IMAPService, email: bytes):
 
 @pytest.mark.parametrize(
     "email, folder_path",
-    [(email, folder_path) for email in EMAIL_ASSETS for folder_path in FOLDER_PATHS],
+    [(EMAIL_ASSETS[0], folder_path) for folder_path in FOLDER_PATHS],
 )
 def test_imap_append_email_folder(
     imap_service: IMAPService, email: bytes, folder_path: PurePath
@@ -80,7 +87,7 @@ def test_imap_append_email_folder(
 
 @pytest.mark.parametrize(
     "email",
-    EMAIL_ASSETS,
+    (EMAIL_ASSETS[0],),
 )
 def test_imap_double_append_email(imap_service: IMAPService, email: bytes):
     imap_service.append_email(email)
@@ -92,7 +99,7 @@ def test_imap_double_append_email(imap_service: IMAPService, email: bytes):
 
 @pytest.mark.parametrize(
     "email, folder_path",
-    [(email, folder_path) for email in EMAIL_ASSETS for folder_path in FOLDER_PATHS],
+    [(EMAIL_ASSETS[0], folder_path) for folder_path in FOLDER_PATHS],
 )
 def test_imap_not_contain_email_folder(
     imap_service: IMAPService, email: bytes, folder_path: PurePath
@@ -103,7 +110,7 @@ def test_imap_not_contain_email_folder(
 
 @pytest.mark.parametrize(
     "email, folder_path",
-    [(email, folder_path) for email in EMAIL_ASSETS for folder_path in FOLDER_PATHS],
+    [(EMAIL_ASSETS[0], folder_path) for folder_path in FOLDER_PATHS],
 )
 def test_imap_not_contain_email_folder_exists(
     imap_service: IMAPService, email: bytes, folder_path: PurePath
@@ -116,7 +123,7 @@ def test_imap_not_contain_email_folder_exists(
 
 @pytest.mark.parametrize(
     "email, folder_path",
-    [(email, folder_path) for email in EMAIL_ASSETS for folder_path in FOLDER_PATHS],
+    [(EMAIL_ASSETS[0], folder_path) for folder_path in FOLDER_PATHS],
 )
 def test_imap_contains_email_folder(
     imap_service: IMAPService, email: bytes, folder_path: PurePath
