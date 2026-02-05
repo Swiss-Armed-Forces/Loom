@@ -101,6 +101,22 @@
       "justMyCode": false
     },
     {
+      "name": "Attach Flower",
+      "type": "debugpy",
+      "request": "attach",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 5504
+      },
+      "pathMappings": [
+        {
+          "localRoot": "${workspaceFolder}/backend",
+          "remoteRoot": "/code"
+        }
+      ],
+      "justMyCode": false
+    },
+    {
       "name": "Attach by Port (Prompt)",
       "type": "debugpy",
       "request": "attach",
