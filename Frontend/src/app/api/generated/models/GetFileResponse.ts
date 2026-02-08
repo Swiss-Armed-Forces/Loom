@@ -26,6 +26,12 @@ import {
     ImapInfoFromJSONTyped,
     ImapInfoToJSON,
 } from "./ImapInfo";
+import type { RenderedFile } from "./RenderedFile";
+import {
+    RenderedFileFromJSON,
+    RenderedFileFromJSONTyped,
+    RenderedFileToJSON,
+} from "./RenderedFile";
 
 /**
  *
@@ -59,6 +65,12 @@ export interface GetFileResponse {
     name: string;
     /**
      *
+     * @type {string}
+     * @memberof GetFileResponse
+     */
+    fullPath: string;
+    /**
+     *
      * @type {Array<GetFileLanguageTranslations>}
      * @memberof GetFileResponse
      */
@@ -87,6 +99,12 @@ export interface GetFileResponse {
      * @memberof GetFileResponse
      */
     imap?: ImapInfo;
+    /**
+     *
+     * @type {RenderedFile}
+     * @memberof GetFileResponse
+     */
+    renderedFile: RenderedFile;
 }
 
 /**
@@ -96,8 +114,10 @@ export function instanceOfGetFileResponse(value: object): boolean {
     if (!("fileId" in value)) return false;
     if (!("content" in value)) return false;
     if (!("name" in value)) return false;
+    if (!("fullPath" in value)) return false;
     if (!("libretranslateLanguageTranslations" in value)) return false;
     if (!("raw" in value)) return false;
+    if (!("renderedFile" in value)) return false;
     return true;
 }
 
@@ -117,6 +137,7 @@ export function GetFileResponseFromJSONTyped(
         highlight: json["highlight"] == null ? undefined : json["highlight"],
         content: json["content"],
         name: json["name"],
+        fullPath: json["full_path"],
         libretranslateLanguageTranslations: (
             json["libretranslate_language_translations"] as Array<any>
         ).map(GetFileLanguageTranslationsFromJSON),
@@ -124,6 +145,7 @@ export function GetFileResponseFromJSONTyped(
         summary: json["summary"] == null ? undefined : json["summary"],
         type: json["type"] == null ? undefined : json["type"],
         imap: json["imap"] == null ? undefined : ImapInfoFromJSON(json["imap"]),
+        renderedFile: RenderedFileFromJSON(json["rendered_file"]),
     };
 }
 
@@ -136,6 +158,7 @@ export function GetFileResponseToJSON(value?: GetFileResponse | null): any {
         highlight: value["highlight"],
         content: value["content"],
         name: value["name"],
+        full_path: value["fullPath"],
         libretranslate_language_translations: (
             value["libretranslateLanguageTranslations"] as Array<any>
         ).map(GetFileLanguageTranslationsToJSON),
@@ -143,5 +166,6 @@ export function GetFileResponseToJSON(value?: GetFileResponse | null): any {
         summary: value["summary"],
         type: value["type"],
         imap: ImapInfoToJSON(value["imap"]),
+        rendered_file: RenderedFileToJSON(value["renderedFile"]),
     };
 }

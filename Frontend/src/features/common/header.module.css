@@ -22,13 +22,6 @@ div.toolbar {
 
 header.stripedAppHeader {
     position: unset;
-    background-attachment: fixed;
-    background-image: repeating-linear-gradient(
-        -45deg,
-        #31312e 0 30px,
-        oklch(from var(--stripe-color) clamp(0.5, l, 0.75) clamp(0, c, 0.15) h)
-            30px 60px
-    );
 }
 
 header.appHeader {

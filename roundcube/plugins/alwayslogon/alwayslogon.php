@@ -7,7 +7,7 @@
  */
 class alwayslogon extends rcube_plugin
 {
-    public $task = 'login';
+    private $redirect_query;
 
     /**
      * Plugin initialization
@@ -17,6 +17,8 @@ class alwayslogon extends rcube_plugin
     {
         $this->add_hook('startup', [$this, 'startup']);
         $this->add_hook('authenticate', [$this, 'authenticate']);
+        $this->add_hook('login_after', array($this, 'login_redirect'));
+
     }
 
     /**
@@ -31,6 +33,7 @@ class alwayslogon extends rcube_plugin
         // change action to login
         if (empty($_SESSION['user_id'])) {
             $args['action'] = 'login';
+            $this->redirect_query = $_SERVER['QUERY_STRING'];
         }
 
         return $args;
@@ -50,6 +53,17 @@ class alwayslogon extends rcube_plugin
         $args['host'] = $_ENV['ROUNDCUBEMAIL_DEFAULT_HOST'];
         $args['cookiecheck'] = false;
         $args['valid'] = true;
+
+        return $args;
+    }
+
+    function login_redirect($args)
+    {
+        // Redirect to the previous QUERY_STRING
+        if ($this->redirect_query) {
+            header('Location: ./?' . $this->redirect_query);
+            exit;
+        }
 
         return $args;
     }

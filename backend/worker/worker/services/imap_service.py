@@ -31,7 +31,7 @@ class IMAPService:
         self.password = password
 
     @staticmethod
-    def _get_imap_folder(folder: PurePath | None) -> PurePath:
+    def get_imap_folder(folder: PurePath | None) -> PurePath:
         if folder is None:
             return IMAP_DIRECTORY_BASE
         folder_path = IMAP_DIRECTORY_BASE / folder.relative_to(folder.anchor)
@@ -50,18 +50,18 @@ class IMAPService:
 
     def count_messages(self, folder: PurePath | None = None) -> int:
         with self._imap_context() as client:
-            select_info = client.select_folder(str(self._get_imap_folder(folder)))
+            select_info = client.select_folder(str(self.get_imap_folder(folder)))
             return int(select_info[b"EXISTS"])
 
     def create_folder(self, folder: PurePath):
         with self._imap_context() as client:
-            client.create_folder(str(self._get_imap_folder(folder)))
+            client.create_folder(str(self.get_imap_folder(folder)))
 
     def get_uid_of_email(
         self, raw_email: bytes, folder: PurePath | None = None
     ) -> int | None:
         deduplication_finterprint = _get_email_deduplication_fingerprint(raw_email)
-        imap_folder = self._get_imap_folder(folder)
+        imap_folder = self.get_imap_folder(folder)
 
         with self._imap_context() as client:
             try:
@@ -79,7 +79,7 @@ class IMAPService:
     ) -> ImapInfo:
         deduplication_finterprint = _get_email_deduplication_fingerprint(raw_email)
 
-        imap_folder = self._get_imap_folder(folder)
+        imap_folder = self.get_imap_folder(folder)
         # Append with deterministic header
         email_parsed = email.message_from_bytes(raw_email)
         email_parsed[IMAP_DEDUPLICATION_HEADER] = deduplication_finterprint

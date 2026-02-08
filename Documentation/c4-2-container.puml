@@ -6,6 +6,7 @@
 !include <logos/react>
 !include <logos/nodejs>
 !include <logos/python>
+!include <logos/go>
 !include <logos/mongodb>
 !include <logos/rabbitmq>
 !include <logos/elasticsearch>
@@ -53,6 +54,7 @@ System_Boundary(loom, "") {
         ContainerDb(mongo, "File Storage", "mongoDB", "Stores: Raw Data, Task Metadata", $sprite="mongodb")
         ContainerDb(es, "Database", "Elasticsearch", "Stores: Analyzed Data, Logs", $sprite="elasticsearch", $tags="exposed")
         Container(tika, "Content Extraction", "Tika", "Analyzes files", $sprite="apache", $tags="exposed")
+        Container(gotenberg, "PDF conversion", "Gotenberg", "Generates PDFs", $sprite="go", $tags="exposed")
         Container(ai, "AI Server", "Ollama", "Provides AI Services", $sprite="robot", $tags="exposed")
 
         Container(fluentd, "Fluentd", "Fluentd", "Collects Logs", $sprite="docker")
@@ -93,6 +95,7 @@ Rel(worker, redis, "")
 Rel(worker, mongo, "")
 Rel(worker, es, "")
 Rel(worker, tika, "")
+Rel(worker, gotenberg, "")
 Rel(worker, ai, "")
 Rel(worker, translate, "")
 Rel(worker, imap, "")

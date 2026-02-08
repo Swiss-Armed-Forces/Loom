@@ -19,6 +19,7 @@ models/ArchiveHit.ts
 models/ArchiveMeta.ts
 models/ArchiveRequest.ts
 models/ArchivesModel.ts
+models/Attachment.ts
 models/CacheStatisticsEntryModel.ts
 models/CompleteEstimate.ts
 models/ContextCreateResponse.ts
@@ -56,6 +57,7 @@ models/ProcessQuestionQuery.ts
 models/PubSubMessage.ts
 models/QueryParameters.ts
 models/QueueName.ts
+models/RenderedFile.ts
 models/ResponseGetCompletedEstimateV1QueuesQueueNameCompleteEstimateGet.ts
 models/Stat.ts
 models/SummarizationRequest.ts

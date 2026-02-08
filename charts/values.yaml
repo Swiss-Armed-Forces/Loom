@@ -1212,3 +1212,33 @@ tika:
   # Example:
   # app-tier: processing
   # service-type: content-extraction
+
+gotenberg:
+  replicaCount: 1
+  hpa:
+    enabled: true
+    maxReplicas: 10
+    minReplicas: 1
+    targetCPUUtilizationPercentage: 100
+    targetMemoryUtilizationPercentage: 100
+  image:
+    repository: swiss-armed-forces/cyber-command/cea/loom/gotenberg
+  service:
+    port: 3000
+  ingress: *default-ingress-config
+  readinessProbe:
+    enabled: false
+  livenessProbe:
+    enabled: true
+  resources:
+    requests:
+      cpu: "0.2"
+      memory: "1Gi"
+    limits:
+      cpu: "2"
+      memory: "2Gi"
+  # Custom labels specific to gotenberg resources
+  customLabels: {}
+  # Example:
+  # app-tier: processing
+  # service-type: content-extraction

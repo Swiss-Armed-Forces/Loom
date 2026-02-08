@@ -1,0 +1,29 @@
+{{- if .Values.gotenberg.hpa.enabled -}}
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ include "app.fullname" . }}-gotenberg
+  labels:
+    {{- include "app.labels.custom" (dict "context" . "component" "gotenberg") | nindent 4 }}
+    app.kubernetes.io/component: "gotenberg"
+spec:
+  maxReplicas: {{ .Values.gotenberg.hpa.maxReplicas }}
+  minReplicas: {{ .Values.gotenberg.hpa.minReplicas }}
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ include "app.fullname" . }}-gotenberg
+  metrics:
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: {{ .Values.gotenberg.hpa.targetMemoryUtilizationPercentage }}
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: {{ .Values.gotenberg.hpa.targetCPUUtilizationPercentage }}
+{{- end }}

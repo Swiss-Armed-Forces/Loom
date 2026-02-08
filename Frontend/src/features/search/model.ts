@@ -1,5 +1,6 @@
 import {
     GenericStatisticsModel,
+    GetFilePreviewResponse,
     LibretranslateSupportedLanguages,
     SummaryStatisticsModel,
 } from "../../app/api";
@@ -82,11 +83,23 @@ export enum FileDetailTab {
     Highlights,
     RAW,
     Summary,
+    Translations,
+}
+
+export enum FileRendererType {
+    Image,
+    Browser,
+    Office,
+    Email,
 }
 
 export interface FileDetailData {
-    fileId: string;
-    tab?: FileDetailTab;
+    filePreview?: GetFilePreviewResponse | null;
+    searchQuery?: SearchQuery | null;
+
+    tab?: FileDetailTab | null;
+    selectedFileRendererType?: FileRendererType | null;
+    selectedTranslationLanguage?: string | null;
 }
 
 export interface CombinedStats {

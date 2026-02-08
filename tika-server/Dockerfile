@@ -18,7 +18,7 @@ ARG TESSERACT_OCR_ALL_VERSION="5.3.*"
 RUN set -exu \
 	&& apt-get update \
 	&& apt-get install -y --no-install-recommends \
-	tesseract-ocr-all=${TESSERACT_OCR_ALL_VERSION} \
+	tesseract-ocr-all="${TESSERACT_OCR_ALL_VERSION}" \
 	&& apt-get clean \
 	&& rm -rf /var/lib/apt/lists/*
 

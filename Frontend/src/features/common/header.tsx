@@ -8,12 +8,14 @@ import { Inventory, Search } from "@mui/icons-material";
 import { BackgroundStatusIndicator } from "../search/components/BackgroundStatusIndicator";
 import { BurgerMenu } from "./components/BurgerMenu";
 import { useMediaQuery } from "@mui/material";
+import { getColorFromString } from "./getColorFromString";
 
 export function Header() {
     const location = useLocation();
     const { t } = useTranslation();
     const isMobile = useMediaQuery("(max-width:600px)");
-    const useStripedNavbar = window.location.hostname !== "frontend.loom";
+    const useAccentColor = window.location.hostname !== "frontend.loom";
+    const accentColor = getColorFromString(window.location.hostname);
 
     const pages = [
         {
@@ -28,10 +30,20 @@ export function Header() {
 
     return (
         <AppBar
-            className={
-                useStripedNavbar ? styles.stripedAppHeader : styles.appHeader
-            }
+            className={styles.stripedAppHeader}
             color="secondary"
+            sx={
+                useAccentColor
+                    ? {
+                          backgroundImage: `repeating-linear-gradient(
+                              -45deg,
+                              #31312e 0 30px,
+                              ${accentColor} 30px 60px
+                          )`,
+                          backgroundAttachment: "fixed",
+                      }
+                    : {}
+            }
         >
             <Toolbar className={styles.toolbar}>
                 {

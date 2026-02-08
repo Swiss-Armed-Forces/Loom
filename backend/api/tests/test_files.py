@@ -271,6 +271,7 @@ def test_delete_not_existing_tag(client: TestClient):
 
 def test_get_thumbnail(client: TestClient):
     thumbnail_content = b"just a random thumbnail"
+    thumbnail_file_id = str(ObjectId())
     file = File(
         full_name="/path/to/file.txt",
         storage_id=str(ObjectId()),
@@ -279,12 +280,13 @@ def test_get_thumbnail(client: TestClient):
         size=0,
         thumbnail_file_id=str(ObjectId()),
     )
+
     get_file_repository().get_by_id.return_value = file
     get_file_storage_service().open_download_iterator.return_value = iter(
         re.split(rb"(\s+)", thumbnail_content)
     )
 
-    response = client.get(f"/v1/files/{file.id_}/thumbnail")
+    response = client.get(f"/v1/files/{file.id_}/thumbnail/{thumbnail_file_id}")
 
     assert response.status_code == 200
     assert response.content == thumbnail_content

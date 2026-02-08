@@ -1,5 +1,6 @@
 import pickle
 import random
+from pathlib import Path
 
 import pytest
 
@@ -8,6 +9,7 @@ from common.services.lazybytes_service import (
     InMemoryLazyBytesService,
     LazyBytes,
 )
+from common.settings import settings
 
 # pylint: disable=redefined-outer-name
 
@@ -53,10 +55,54 @@ def test_load_file(in_memory_lazy_bytes_service: InMemoryLazyBytesService, large
         assert tempfile.read() == large_data
 
 
+def test_load_file_named(
+    in_memory_lazy_bytes_service: InMemoryLazyBytesService, large_data
+):
+    lazy_bytes = in_memory_lazy_bytes_service.from_bytes(large_data)
+    with in_memory_lazy_bytes_service.load_file_named(lazy_bytes) as tempfile:
+        assert tempfile.read() == large_data
+
+
+def test_load_file_named_has_name(
+    in_memory_lazy_bytes_service: InMemoryLazyBytesService, large_data
+):
+    prefix = "prefix"
+    suffix = "suffix"
+    lazy_bytes = in_memory_lazy_bytes_service.from_bytes(large_data)
+    with in_memory_lazy_bytes_service.load_file_named(
+        lazy_bytes=lazy_bytes, prefix=prefix, suffix=suffix
+    ) as tempfile:
+        tempfile_path = Path(tempfile.name)
+        assert tempfile_path.is_relative_to(settings.tempfile_dir)
+        assert tempfile_path.name.startswith(prefix)
+        assert tempfile_path.name.endswith(suffix)
+
+
 def test_load_file_small(in_memory_lazy_bytes_service: InMemoryLazyBytesService):
     lazy_bytes = in_memory_lazy_bytes_service.from_bytes(b"{}")
     with in_memory_lazy_bytes_service.load_file(lazy_bytes) as tempfile:
         assert tempfile.read() == b"{}"
+
+
+def test_load_file_named_small(in_memory_lazy_bytes_service: InMemoryLazyBytesService):
+    lazy_bytes = in_memory_lazy_bytes_service.from_bytes(b"{}")
+    with in_memory_lazy_bytes_service.load_file_named(lazy_bytes) as tempfile:
+        assert tempfile.read() == b"{}"
+
+
+def test_load_file_named_small_has_name(
+    in_memory_lazy_bytes_service: InMemoryLazyBytesService,
+):
+    prefix = "prefix"
+    suffix = "suffix"
+    lazy_bytes = in_memory_lazy_bytes_service.from_bytes(b"{}")
+    with in_memory_lazy_bytes_service.load_file_named(
+        lazy_bytes=lazy_bytes, prefix=prefix, suffix=suffix
+    ) as tempfile:
+        tempfile_path = Path(tempfile.name)
+        assert tempfile_path.is_relative_to(settings.tempfile_dir)
+        assert tempfile_path.name.startswith(prefix)
+        assert tempfile_path.name.endswith(suffix)
 
 
 def test_load_generator(

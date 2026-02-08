@@ -14,6 +14,13 @@
  */
 
 import { mapValues } from "../runtime";
+import type { Attachment } from "./Attachment";
+import {
+    AttachmentFromJSON,
+    AttachmentFromJSONTyped,
+    AttachmentToJSON,
+} from "./Attachment";
+
 /**
  *
  * @export
@@ -70,16 +77,22 @@ export interface GetFilePreviewResponse {
     path: string;
     /**
      *
-     * @type {boolean}
+     * @type {string}
      * @memberof GetFilePreviewResponse
      */
-    hasThumbnail: boolean;
+    thumbnailFileId?: string;
     /**
      *
-     * @type {boolean}
+     * @type {number}
      * @memberof GetFilePreviewResponse
      */
-    hasAttachments: boolean;
+    thumbnailTotalFrames?: number;
+    /**
+     *
+     * @type {Array<Attachment>}
+     * @memberof GetFilePreviewResponse
+     */
+    attachments?: Array<Attachment>;
     /**
      *
      * @type {string}
@@ -129,8 +142,6 @@ export function instanceOfGetFilePreviewResponse(value: object): boolean {
     if (!("contentIsTruncated" in value)) return false;
     if (!("name" in value)) return false;
     if (!("path" in value)) return false;
-    if (!("hasThumbnail" in value)) return false;
-    if (!("hasAttachments" in value)) return false;
     if (!("fileExtension" in value)) return false;
     return true;
 }
@@ -157,8 +168,18 @@ export function GetFilePreviewResponseFromJSONTyped(
         contentIsTruncated: json["content_is_truncated"],
         name: json["name"],
         path: json["path"],
-        hasThumbnail: json["has_thumbnail"],
-        hasAttachments: json["has_attachments"],
+        thumbnailFileId:
+            json["thumbnail_file_id"] == null
+                ? undefined
+                : json["thumbnail_file_id"],
+        thumbnailTotalFrames:
+            json["thumbnail_total_frames"] == null
+                ? undefined
+                : json["thumbnail_total_frames"],
+        attachments:
+            json["attachments"] == null
+                ? undefined
+                : (json["attachments"] as Array<any>).map(AttachmentFromJSON),
         fileExtension: json["file_extension"],
         highlight: json["highlight"] == null ? undefined : json["highlight"],
         tasksSucceeded:
@@ -188,8 +209,12 @@ export function GetFilePreviewResponseToJSON(
         content_is_truncated: value["contentIsTruncated"],
         name: value["name"],
         path: value["path"],
-        has_thumbnail: value["hasThumbnail"],
-        has_attachments: value["hasAttachments"],
+        thumbnail_file_id: value["thumbnailFileId"],
+        thumbnail_total_frames: value["thumbnailTotalFrames"],
+        attachments:
+            value["attachments"] == null
+                ? undefined
+                : (value["attachments"] as Array<any>).map(AttachmentToJSON),
         file_extension: value["fileExtension"],
         highlight: value["highlight"],
         tasks_succeeded: value["tasksSucceeded"],

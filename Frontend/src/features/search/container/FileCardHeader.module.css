@@ -1,0 +1,22 @@
+.fileCardHeader {
+    display: flex;
+    flex-direction: row;
+    gap: 1rem;
+    word-wrap: break-word;
+    word-break: break-all;
+}
+
+.fileCardHeader :global .MuiCardHeader-avatar {
+    margin-right: 0;
+}
+
+.fileCardHeader :global .MuiCardHeader-content {
+    flex: unset;
+}
+
+.fileCardHeader :global .MuiCardHeader-action {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    flex: 1;
+}

@@ -17,7 +17,7 @@ import {
 import { setBackgroundTaskSpinnerActive } from "../../common/commonSlice";
 import { useAppDispatch, useAppSelector } from "../../../app/hooks";
 import { toast } from "react-toastify";
-import { selectQuery, selectTotalFiles, updateQuery } from "../searchSlice";
+import { selectQuery, selectTotalFiles } from "../searchSlice";
 
 interface ReIndexProps {
     file_id?: string;
@@ -52,9 +52,8 @@ export function ReIndexButton({
         result
             .then(() => {
                 toast.success(
-                    "Re-indexing successfully scheduled, this might take a while. Refresh the page to see the results.",
+                    "Re-indexing successfully scheduled, this might take a while.",
                 );
-                dispatch(updateQuery(searchQuery!));
             })
             .catch((err) => {
                 toast.error(

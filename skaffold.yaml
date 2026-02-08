@@ -279,6 +279,17 @@ build:
       hooks:
         after:
           - command: ["./cicd/tag_latest.sh"]
+    - image: registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/gotenberg
+      context: gotenberg
+      docker:
+        dockerfile: Dockerfile
+        buildArgs:
+          DOCKER_REGISTRY: "{{or .CI_DEPENDENCY_PROXY_DIRECT_GROUP_IMAGE_PREFIX \"docker.io\"}}"
+        cacheFrom:
+          - "registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/gotenberg"
+      hooks:
+        after:
+          - command: ["./cicd/tag_latest.sh"]
 
 # Production manifests configuration as default
 manifests:

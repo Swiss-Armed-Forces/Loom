@@ -63,7 +63,7 @@ class TikaExtractorFallback(TikaFallback):
         self.extractor = extractor
 
     def handle(self, file_content: LazyBytes) -> TikaResult | None:
-        with get_lazybytes_service().load_file(
+        with get_lazybytes_service().load_file_named(
             file_content
         ) as fd, tempfile.TemporaryDirectory() as d:
             try:
@@ -214,7 +214,6 @@ def persist_tika_content_task(persister: IndexingPersister, tika_result: TikaRes
                 .decode(errors=settings.decode_error_handler)
             )
             persister.set_content(text)
-    persister.set_has_attachments(len(tika_result.attachments) > 0)
     persister.set_content_truncated(tika_result.text_truncated)
 
 

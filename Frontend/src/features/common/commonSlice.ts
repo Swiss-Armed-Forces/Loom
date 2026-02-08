@@ -2,7 +2,6 @@ import {
     createAsyncThunk,
     createSelector,
     createSlice,
-    PayloadAction,
 } from "@reduxjs/toolkit";
 import { RootState } from "../../app/store";
 import {
@@ -16,16 +15,11 @@ export const DefaultErrorMessage =
 
 export interface CommonState {
     loading: number;
-    notification: {
-        message: string;
-        reason: "info" | "error";
-    } | null;
     queueStats: OverallQueuesStats;
 }
 
 const initialState: CommonState = {
     loading: 0,
-    notification: null,
     queueStats: {
         messagesInQueues: 0,
         completeEstimateTimestamp: undefined,
@@ -62,34 +56,6 @@ export const commonSlice = createSlice({
         stopLoadingIndicator: (state) => {
             state.loading -= 1;
         },
-        handleError: (
-            state,
-            action: PayloadAction<{ error: any; showErrorMessage?: boolean }>,
-        ) => {
-            const error = action.payload.error;
-            let errorMessage: string;
-            if (error instanceof Response) {
-                errorMessage = `Response ${error.status} ${error.statusText} at ${error.url}`;
-            } else {
-                errorMessage = error;
-            }
-            console.error("Error:", error);
-            state.notification = {
-                message: action.payload.showErrorMessage
-                    ? errorMessage
-                    : DefaultErrorMessage,
-                reason: "error",
-            };
-        },
-        showInfo: (state, action: PayloadAction<{ message: string }>) => {
-            state.notification = {
-                message: action.payload.message,
-                reason: "info",
-            };
-        },
-        closeNotification: (state) => {
-            state.notification = null;
-        },
     },
     extraReducers: (builder) => {
         builder.addCase(fetchQueueStatistics.fulfilled, (state, action) => {
@@ -112,9 +78,6 @@ export const {
     setBackgroundTaskSpinnerActive,
     startLoadingIndicator,
     stopLoadingIndicator,
-    handleError,
-    showInfo,
-    closeNotification,
 } = commonSlice.actions;
 
 export const selectCommon = (state: RootState) => state.common;

@@ -31,6 +31,7 @@ LOOM_HOSTS=(
     "roundcube"
     "minio"
     "minio-api"
+    "gotenberg"
 )
 LOOM_DOMAIN="loom"
 

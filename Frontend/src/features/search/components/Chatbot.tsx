@@ -4,9 +4,9 @@ import ChatWindow from "./ChatWindow";
 import MessageInput from "./MessageInput";
 import styles from "./Chatbot.module.css";
 import {
+    fetchFileDetailData,
     selectQuery,
     selectWebSocketPubSubMessage,
-    setFileDetailData,
 } from "../searchSlice";
 import { useAppDispatch, useAppSelector } from "../../../app/hooks";
 import { toast } from "react-toastify";
@@ -175,11 +175,7 @@ const Chatbot: React.FC<ChatbotProps> = () => {
     };
 
     const handleViewDetail = (fileId: string) => {
-        dispatch(
-            setFileDetailData({
-                fileId: fileId,
-            }),
-        );
+        dispatch(fetchFileDetailData({ fileId }));
     };
 
     return (

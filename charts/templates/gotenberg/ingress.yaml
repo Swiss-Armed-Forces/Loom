@@ -1,0 +1,33 @@
+{{- if .Values.gotenberg.ingress.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "app.fullname" . }}-gotenberg
+  labels:
+    {{- include "app.labels.custom" (dict "context" . "component" "gotenberg") | nindent 4 }}
+    app.kubernetes.io/component: gotenberg
+  annotations:
+    {{- toYaml .Values.gotenberg.ingress.annotations | nindent 4 }}
+    {{- if .Values.certificate.requireClientCert }}
+    traefik.ingress.kubernetes.io/router.tls.options: {{ .Release.Namespace }}-{{ include "app.fullname" . }}-mtls@kubernetescrd
+    {{- end }}
+spec:
+  ingressClassName: {{ .Values.gotenberg.ingress.className }}
+  rules:
+    - host: gotenberg.{{ .Values.domain }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "app.fullname" . }}-gotenberg
+                port:
+                  number: {{ .Values.gotenberg.service.port }}
+  {{- if .Values.gotenberg.ingress.tls.enabled }}
+  tls:
+    - secretName: {{ include "app.fullname" . }}-certificate
+      hosts:
+        - gotenberg.{{ .Values.domain }}
+  {{- end }}
+{{- end }}

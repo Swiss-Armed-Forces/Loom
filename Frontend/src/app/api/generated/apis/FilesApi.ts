@@ -138,6 +138,11 @@ export interface GetQueryV1FilesQueryPostRequest {
     keepAlive?: GetQueryV1FilesQueryPostKeepAliveEnum;
 }
 
+export interface GetRenderedV1FilesFileIdRenderedRenderedIdGetRequest {
+    fileId: string;
+    renderedId: string;
+}
+
 export interface GetSummaryStatsV1FilesStatsSummaryGetRequest {
     queryId: string;
     keepAlive?: GetSummaryStatsV1FilesStatsSummaryGetKeepAliveEnum;
@@ -145,9 +150,9 @@ export interface GetSummaryStatsV1FilesStatsSummaryGetRequest {
     languages?: Array<string>;
 }
 
-export interface GetThumbnailV1FilesFileIdThumbnailGetRequest {
+export interface GetThumbnailV1FilesFileIdThumbnailThumbnailFileIdGetRequest {
     fileId: string;
-    preview?: boolean;
+    thumbnailFileId: string;
 }
 
 export interface IndexFileV1FilesFileIdIndexPostRequest {
@@ -923,6 +928,75 @@ export class FilesApi extends runtime.BaseAPI {
     }
 
     /**
+     * Get rendered version of a file.
+     * Get Rendered
+     */
+    async getRenderedV1FilesFileIdRenderedRenderedIdGetRaw(
+        requestParameters: GetRenderedV1FilesFileIdRenderedRenderedIdGetRequest,
+        initOverrides?: RequestInit | runtime.InitOverrideFunction,
+    ): Promise<runtime.ApiResponse<any>> {
+        if (requestParameters["fileId"] == null) {
+            throw new runtime.RequiredError(
+                "fileId",
+                'Required parameter "fileId" was null or undefined when calling getRenderedV1FilesFileIdRenderedRenderedIdGet().',
+            );
+        }
+
+        if (requestParameters["renderedId"] == null) {
+            throw new runtime.RequiredError(
+                "renderedId",
+                'Required parameter "renderedId" was null or undefined when calling getRenderedV1FilesFileIdRenderedRenderedIdGet().',
+            );
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        const response = await this.request(
+            {
+                path: `/v1/files/{file_id}/rendered/{rendered_id}`
+                    .replace(
+                        `{${"file_id"}}`,
+                        encodeURIComponent(String(requestParameters["fileId"])),
+                    )
+                    .replace(
+                        `{${"rendered_id"}}`,
+                        encodeURIComponent(
+                            String(requestParameters["renderedId"]),
+                        ),
+                    ),
+                method: "GET",
+                headers: headerParameters,
+                query: queryParameters,
+            },
+            initOverrides,
+        );
+
+        if (this.isJsonMime(response.headers.get("content-type"))) {
+            return new runtime.JSONApiResponse<any>(response);
+        } else {
+            return new runtime.TextApiResponse(response) as any;
+        }
+    }
+
+    /**
+     * Get rendered version of a file.
+     * Get Rendered
+     */
+    async getRenderedV1FilesFileIdRenderedRenderedIdGet(
+        requestParameters: GetRenderedV1FilesFileIdRenderedRenderedIdGetRequest,
+        initOverrides?: RequestInit | runtime.InitOverrideFunction,
+    ): Promise<any> {
+        const response =
+            await this.getRenderedV1FilesFileIdRenderedRenderedIdGetRaw(
+                requestParameters,
+                initOverrides,
+            );
+        return await response.value();
+    }
+
+    /**
      * Get statistics about the files found by the provided query.
      * Get Summary Stats
      */
@@ -989,34 +1063,44 @@ export class FilesApi extends runtime.BaseAPI {
     }
 
     /**
-     * Get thumbnail for the file.
+     * Get thumbnail of a file.
      * Get Thumbnail
      */
-    async getThumbnailV1FilesFileIdThumbnailGetRaw(
-        requestParameters: GetThumbnailV1FilesFileIdThumbnailGetRequest,
+    async getThumbnailV1FilesFileIdThumbnailThumbnailFileIdGetRaw(
+        requestParameters: GetThumbnailV1FilesFileIdThumbnailThumbnailFileIdGetRequest,
         initOverrides?: RequestInit | runtime.InitOverrideFunction,
     ): Promise<runtime.ApiResponse<any>> {
         if (requestParameters["fileId"] == null) {
             throw new runtime.RequiredError(
                 "fileId",
-                'Required parameter "fileId" was null or undefined when calling getThumbnailV1FilesFileIdThumbnailGet().',
+                'Required parameter "fileId" was null or undefined when calling getThumbnailV1FilesFileIdThumbnailThumbnailFileIdGet().',
+            );
+        }
+
+        if (requestParameters["thumbnailFileId"] == null) {
+            throw new runtime.RequiredError(
+                "thumbnailFileId",
+                'Required parameter "thumbnailFileId" was null or undefined when calling getThumbnailV1FilesFileIdThumbnailThumbnailFileIdGet().',
             );
         }
 
         const queryParameters: any = {};
 
-        if (requestParameters["preview"] != null) {
-            queryParameters["preview"] = requestParameters["preview"];
-        }
-
         const headerParameters: runtime.HTTPHeaders = {};
 
         const response = await this.request(
             {
-                path: `/v1/files/{file_id}/thumbnail`.replace(
-                    `{${"file_id"}}`,
-                    encodeURIComponent(String(requestParameters["fileId"])),
-                ),
+                path: `/v1/files/{file_id}/thumbnail/{thumbnail_file_id}`
+                    .replace(
+                        `{${"file_id"}}`,
+                        encodeURIComponent(String(requestParameters["fileId"])),
+                    )
+                    .replace(
+                        `{${"thumbnail_file_id"}}`,
+                        encodeURIComponent(
+                            String(requestParameters["thumbnailFileId"]),
+                        ),
+                    ),
                 method: "GET",
                 headers: headerParameters,
                 query: queryParameters,
@@ -1032,17 +1116,18 @@ export class FilesApi extends runtime.BaseAPI {
     }
 
     /**
-     * Get thumbnail for the file.
+     * Get thumbnail of a file.
      * Get Thumbnail
      */
-    async getThumbnailV1FilesFileIdThumbnailGet(
-        requestParameters: GetThumbnailV1FilesFileIdThumbnailGetRequest,
+    async getThumbnailV1FilesFileIdThumbnailThumbnailFileIdGet(
+        requestParameters: GetThumbnailV1FilesFileIdThumbnailThumbnailFileIdGetRequest,
         initOverrides?: RequestInit | runtime.InitOverrideFunction,
     ): Promise<any> {
-        const response = await this.getThumbnailV1FilesFileIdThumbnailGetRaw(
-            requestParameters,
-            initOverrides,
-        );
+        const response =
+            await this.getThumbnailV1FilesFileIdThumbnailThumbnailFileIdGetRaw(
+                requestParameters,
+                initOverrides,
+            );
         return await response.value();
     }
 

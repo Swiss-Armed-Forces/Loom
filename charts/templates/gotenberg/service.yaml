@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "app.fullname" . }}-gotenberg
+  labels:
+    {{- include "app.labels.custom" (dict "context" . "component" "gotenberg") | nindent 4 }}
+    app.kubernetes.io/component: gotenberg
+spec:
+  ports:
+    - port: {{ .Values.gotenberg.service.port }}
+      name: gotenberg
+      targetPort: {{ .Values.gotenberg.service.port }}
+  selector:
+    app: {{ include "app.name" . }}-gotenberg

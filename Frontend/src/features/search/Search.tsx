@@ -9,7 +9,7 @@ import {
     setSummarizationSystemPrompt,
     setTags,
     selectFileDetailData,
-    setFileDetailData,
+    fetchFileDetailData,
 } from "./searchSlice";
 import {
     loadLanguages,
@@ -20,7 +20,6 @@ import {
     MessageQueryIdExpired,
 } from "../../app/api";
 import {
-    handleError,
     startLoadingIndicator,
     stopLoadingIndicator,
 } from "../common/commonSlice";
@@ -47,7 +46,7 @@ export function Search() {
     const dispatch = useAppDispatch();
     const languages = useAppSelector(selectLanguages);
     const searchQuery = useAppSelector(selectQuery);
-    const fileDetailDialogData = useAppSelector(selectFileDetailData);
+    const fileDetailData = useAppSelector(selectFileDetailData);
     const webSocketPubSubMessage = useAppSelector(selectWebSocketPubSubMessage);
 
     const chatbotOpen = useAppSelector((state) => state.search.chatbotOpen);
@@ -66,6 +65,10 @@ export function Search() {
         ReturnType<typeof setTimeout> // see: https://stackoverflow.com/a/56239226/3215929
     >();
 
+    const fileDetailDataFetchDebounceTimeout = useRef<
+        ReturnType<typeof setTimeout> | undefined
+    >(undefined); // see: https://stackoverflow.com/a/56239226/3215929
+
     const toggleChatbot = () => {
         dispatch(setChatbotOpen(!chatbotOpen));
     };
@@ -82,13 +85,15 @@ export function Search() {
                     ),
                 ),
             ]).catch((errorPayload) => {
-                dispatch(handleError(errorPayload));
+                toast.error(
+                    `Error in fetchInitialSearchState: ${errorPayload}`,
+                );
             });
         }
         async function fetchSearchState() {
             await Promise.all([dispatch(setTags(await loadTags()))]).catch(
                 (errorPayload) => {
-                    dispatch(handleError(errorPayload));
+                    toast.error(`Error in fetchSearchState: ${errorPayload}`);
                 },
             );
         }
@@ -145,11 +150,16 @@ export function Search() {
                 }),
         } as SearchQuery;
         dispatch(updateQuery(newQuery));
+    }, [languages]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    // load file detail
+    useEffect(() => {
+        if (!searchQuery) return;
         // load fileId
         const fileId = window.location.hash.substring(1); // substring: remove '#'
         if (!fileId) return;
-        dispatch(setFileDetailData({ fileId: fileId }));
-    }, [languages]); // eslint-disable-line react-hooks/exhaustive-deps
+        dispatch(fetchFileDetailData({ fileId }));
+    }, [searchQuery]); // eslint-disable-line react-hooks/exhaustive-deps
 
     // persist in query params
     useEffect(() => {
@@ -175,13 +185,13 @@ export function Search() {
         setSearchParams(newSearchParams);
 
         // If there was an selected file id previously, add it back to the URL
-        if (!fileDetailDialogData) return;
+        if (!fileDetailData.filePreview) return;
         window.history.replaceState(
             null,
             "",
-            `${window.location.pathname}?${newSearchParams.toString()}#${fileDetailDialogData.fileId}`,
+            `${window.location.pathname}?${newSearchParams.toString()}#${fileDetailData.filePreview.fileId}`,
         );
-    }, [searchQuery, fileDetailDialogData, setSearchParams, location.hash]); // eslint-disable-line react-hooks/exhaustive-deps
+    }, [searchQuery, fileDetailData, setSearchParams, location.hash]); // eslint-disable-line react-hooks/exhaustive-deps
 
     // print error messages as toasts
     useEffect(() => {
@@ -205,6 +215,22 @@ export function Search() {
             fileFetchDebounceTimeouts.delete(fileId);
         }, FILE_FETCH_DEBOUNCE__MS);
         fileFetchDebounceTimeouts.set(fileId, newTimeout);
+    }, [webSocketPubSubMessage]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    // fetch file detail on change
+    useEffect(() => {
+        if (!webSocketPubSubMessage) return;
+        if (webSocketPubSubMessage.message.type !== "fileUpdate") return;
+        const message = webSocketPubSubMessage.message as MessageFileUpdate;
+
+        const fileId = message.fileId;
+        if (fileId !== fileDetailData.filePreview?.fileId) return;
+        clearTimeout(fileDetailDataFetchDebounceTimeout.current);
+        const newTimeout = setTimeout(() => {
+            dispatch(fetchFileDetailData({ fileId }));
+            fileFetchDebounceTimeouts.delete(fileId);
+        }, FILE_FETCH_DEBOUNCE__MS);
+        fileDetailDataFetchDebounceTimeout.current = newTimeout;
     }, [webSocketPubSubMessage]); // eslint-disable-line react-hooks/exhaustive-deps
 
     // update query id and show toast

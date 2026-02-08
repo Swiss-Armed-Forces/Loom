@@ -12,9 +12,11 @@ from common.dependencies import (
 )
 from common.file.file_repository import (
     TREE_PATH_MAX_ELEMENT_COUNT,
+    Attachment,
     File,
     FileRepository,
     ImapInfo,
+    RenderedFile,
     Stat,
     Tag,
 )
@@ -32,6 +34,7 @@ from common.services.query_builder import (
     QueryParameters,
 )
 from common.services.task_scheduling_service import TaskSchedulingService
+from common.utils.object_id_str import ObjectIdStr
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, UploadFile
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, RootModel
@@ -257,11 +260,13 @@ class GetFileResponse(BaseModel):
     highlight: dict[str, list[str]] | None
     content: str
     name: str
+    full_path: str
     libretranslate_language_translations: list[GetFileLanguageTranslations]
     raw: str
     summary: str | None
     type: str | None
     imap: ImapInfo | None
+    rendered_file: RenderedFile
 
     @staticmethod
     def from_file(file: File):
@@ -270,6 +275,7 @@ class GetFileResponse(BaseModel):
             highlight=file.es_meta.highlight,
             content=str(file.content if file.content is not None else ""),
             name=str(file.short_name),
+            full_path=str(file.full_path),
             libretranslate_language_translations=list(
                 map(
                     lambda libretranslate_translations: GetFileLanguageTranslations(
@@ -286,6 +292,7 @@ class GetFileResponse(BaseModel):
             summary=file.summary,
             type=file.magic_file_type,
             imap=file.imap,
+            rendered_file=file.rendered_file,
         )
 
 
@@ -314,8 +321,9 @@ class GetFilePreviewResponse(BaseModel):
     content_is_truncated: bool
     name: str  # short_name
     path: str  # full_path
-    has_thumbnail: bool
-    has_attachments: bool
+    thumbnail_file_id: ObjectIdStr | None
+    thumbnail_total_frames: int | None
+    attachments: list[Attachment] = []
     file_extension: str
     highlight: dict[str, list[str]] | None = {}
     tasks_succeeded: list[UUID] = []
@@ -351,8 +359,9 @@ def get_file_preview(
         # Convert the file's short name to a string, or set it to an empty string if it is None
         name=str(file.short_name),
         path=str(file.full_path),
-        has_thumbnail=bool(file.thumbnail_file_id),
-        has_attachments=bool(file.has_attachments),
+        thumbnail_file_id=file.thumbnail_file_id,
+        thumbnail_total_frames=file.thumbnail_total_frames,
+        attachments=file.attachments,
         file_extension=str(file.extension),
         highlight=file.es_meta.highlight,
         tasks_succeeded=file.tasks_succeeded,
@@ -362,30 +371,50 @@ def get_file_preview(
     )
 
 
-class GetThumbnailQuery(BaseModel):
-    preview: bool = False
-
-
-@router.get("/{file_id}/thumbnail")
+@router.get("/{file_id}/thumbnail/{thumbnail_file_id}")
 def get_thumbnail(
     file_id: UUID,
-    query: Annotated[GetThumbnailQuery, Query()],
+    thumbnail_file_id: ObjectIdStr,
     file_repository: FileRepository = default_file_repository,
     file_storage_service: FileStorageService = default_file_storage_service,
 ) -> Response:
-    """Get thumbnail for the file."""
+    """Get thumbnail of a file."""
     file = file_repository.get_by_id(file_id)
     if file is None:
         raise HTTPException(status_code=404, detail="Invalid file")
+
     file_stream = file_storage_service.open_download_iterator(
-        file_id=ObjectId(
-            file.thumbnail_file_id if not query.preview else file.preview_file_id
-        )
+        file_id=ObjectId(thumbnail_file_id)
     )
     return StreamingResponse(
         content=file_stream,
         headers={
-            **get_content_disposition_header("attachment", file.thumbnail_file_id),
+            **get_content_disposition_header(
+                "inline", f"{file.short_name}.thumbnail.png"
+            ),
+        },
+    )
+
+
+@router.get("/{file_id}/rendered/{rendered_id}")
+def get_rendered(
+    file_id: UUID,
+    rendered_id: ObjectIdStr,
+    file_repository: FileRepository = default_file_repository,
+    file_storage_service: FileStorageService = default_file_storage_service,
+) -> Response:
+    """Get rendered version of a file."""
+    file = file_repository.get_by_id(file_id)
+    if file is None:
+        raise HTTPException(status_code=404, detail="Invalid file")
+
+    file_stream = file_storage_service.open_download_iterator(
+        file_id=ObjectId(str(rendered_id))
+    )
+    return StreamingResponse(
+        content=file_stream,
+        headers={
+            **get_content_disposition_header("inline", f"{file.short_name}.rendered"),
         },
     )
 

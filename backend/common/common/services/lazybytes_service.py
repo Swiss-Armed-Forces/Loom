@@ -4,7 +4,12 @@ from datetime import datetime, timedelta
 from io import SEEK_END, BytesIO
 from math import ceil
 from mmap import PROT_READ, mmap
-from tempfile import SpooledTemporaryFile, TemporaryFile
+from tempfile import (
+    NamedTemporaryFile,
+    SpooledTemporaryFile,
+    TemporaryFile,
+    _TemporaryFileWrapper,
+)
 from typing import IO, Any, BinaryIO, Generator
 
 from gridfs import GridFSBucket
@@ -147,9 +152,12 @@ class LazyBytesService(ABC):
     ) -> Generator[Generator[bytes, None, None], None, None]:
         # pylint: disable=protected-access
         if lazy_bytes.embedded_data is not None:
+            embedded_data = (
+                lazy_bytes.embedded_data
+            )  # Capture to preserve type narrowing
 
             def _embedded_data_generator():
-                yield lazy_bytes.embedded_data
+                yield embedded_data
 
             yield _embedded_data_generator()
         else:
@@ -174,7 +182,39 @@ class LazyBytesService(ABC):
         # but I don't think that was every implemented and/or
         # can be used here.
         with SpooledTemporaryFile(
-            max_size=LAZY_THRESHOLD_BYTES, dir=self.tempfile_dir
+            max_size=LAZY_THRESHOLD_BYTES, dir=str(self.tempfile_dir)
+        ) as dst:
+            if lazy_bytes.embedded_data is not None:
+                dst.write(lazy_bytes.embedded_data)
+            else:
+                self._load_to(lazy_bytes.service_id, dst)
+            dst.flush()
+            dst.seek(0)
+            yield dst
+
+    @contextmanager
+    def load_file_named(
+        self,
+        lazy_bytes: LazyBytes,
+        prefix: str | None = None,
+        suffix: str | None = None,
+    ) -> Generator[_TemporaryFileWrapper, None, None]:
+        # pylint: disable=protected-access
+        #
+        # Note do NOT use the following here:
+        #
+        # with self.load_memoryview(lazy_bytes) as memory:
+        #     yield BytesIO(memory)
+        #
+        # I did quite a lot of experimentation and it looks that
+        # BytesIO always copies the bytes given into an internal
+        # buffer, even if it could just do copy on write.
+        # There is this:
+        # - https://bugs.python.org/issue22003
+        # but I don't think that was every implemented and/or
+        # can be used here.
+        with NamedTemporaryFile(
+            prefix=prefix, suffix=suffix, dir=str(self.tempfile_dir)
         ) as dst:
             if lazy_bytes.embedded_data is not None:
                 dst.write(lazy_bytes.embedded_data)

@@ -1,7 +1,6 @@
 import json
 import logging
 import subprocess
-import tempfile
 
 from celery import chain, group
 from celery.canvas import Signature
@@ -45,14 +44,11 @@ def ripsecrets_scan_task(
 ) -> list[Secret] | None:
     if tika_text is None:
         return None
-    with tempfile.NamedTemporaryFile(suffix=extension) as file:
-        with get_lazybytes_service().load_generator(tika_text) as layz_generator:
-            for data in layz_generator:
-                file.write(data)
-        file.flush()
-
+    with get_lazybytes_service().load_file_named(
+        lazy_bytes=tika_text, suffix=extension
+    ) as fd:
         proc = subprocess.run(
-            ["ripsecrets", file.name],
+            ["ripsecrets", fd.name],
             capture_output=True,
             text=True,
             check=False,
@@ -70,14 +66,11 @@ def trufflehog_scan_task(
 ) -> list[Secret] | None:
     if tika_text is None:
         return None
-    with tempfile.NamedTemporaryFile(suffix=extension) as file:
-        with get_lazybytes_service().load_generator(tika_text) as layz_generator:
-            for data in layz_generator:
-                file.write(data)
-        file.flush()
-
+    with get_lazybytes_service().load_file_named(
+        lazy_bytes=tika_text, suffix=extension
+    ) as fd:
         proc = subprocess.run(
-            ["trufflehog", "filesystem", file.name, "--json"],
+            ["trufflehog", "filesystem", fd.name, "--json"],
             capture_output=True,
             text=True,
             check=False,

@@ -1,0 +1,50 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "app.fullname" . }}-gotenberg
+  labels:
+    {{- include "app.labels.custom" (dict "context" . "component" "gotenberg") | nindent 4 }}
+    app.kubernetes.io/component: gotenberg
+spec:
+  {{- if not .Values.gotenberg.hpa.enabled }}
+  replicas: {{ .Values.gotenberg.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      app: {{ include "app.name" . }}-gotenberg
+  template:
+    metadata:
+      labels:
+        app: {{ include "app.name" . }}-gotenberg
+        {{- include "app.labels.custom" (dict "context" . "component" "gotenberg") | nindent 8 }}
+    spec:
+      containers:
+        - name: gotenberg
+          image: {{ .Values.image.registry }}/{{ .Values.gotenberg.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) .Values.gotenberg.image.tag }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: gotenberg
+              containerPort: {{ .Values.gotenberg.service.port }}
+          {{- if .Values.gotenberg.readinessProbe.enabled }}
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: {{ .Values.gotenberg.service.port }}
+            initialDelaySeconds: {{ default 0 .Values.gotenberg.readinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ default 20 .Values.gotenberg.readinessProbe.periodSeconds }}
+            timeoutSeconds: {{ default 5 .Values.gotenberg.readinessProbe.timeoutSeconds }}
+            failureThreshold: {{ default 3 .Values.gotenberg.readinessProbe.failureThreshold }}
+          {{- end }}
+          {{- if .Values.gotenberg.livenessProbe.enabled }}
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: {{ .Values.gotenberg.service.port }}
+            initialDelaySeconds: {{ default 0 .Values.gotenberg.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ default 20 .Values.gotenberg.livenessProbe.periodSeconds }}
+            timeoutSeconds: {{ default 5 .Values.gotenberg.livenessProbe.timeoutSeconds }}
+            failureThreshold: {{ default 6 .Values.gotenberg.livenessProbe.failureThreshold }}
+          {{- end }}
+          {{- if .Values.gotenberg.resources }}
+          resources: {{- toYaml .Values.gotenberg.resources | nindent 12 }}
+          {{- end }}

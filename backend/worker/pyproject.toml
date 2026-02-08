@@ -20,6 +20,7 @@ scikit-learn = "^1.7.0"
 langchain-text-splitters = "^0.3.2"
 flower = "^2.0.1"
 imapclient = "^3.0.1"
+gotenberg-client = "^0.13.1"
 
 [tool.poetry.group.dev.dependencies]
 debugpy = "^1.8.1"
