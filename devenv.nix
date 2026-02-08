@@ -538,6 +538,7 @@ in
         "THIRD-PARTY.md"
         "Frontend/public/THIRD-PARTY.md"
         "Redis/redis.conf"
+        ".test_durations"
         ".*/assets/.*"
         ".*/\\.gitignore"
       ];
