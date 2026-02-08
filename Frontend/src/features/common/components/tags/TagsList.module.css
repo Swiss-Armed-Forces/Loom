@@ -5,15 +5,23 @@
     gap: 0.25rem;
 }
 
-#sidebarChip {
-    padding: 0;
-    gap: 0;
-}
-
 .open {
     flex-direction: row;
 }
 
 .closed {
     flex-direction: column;
+}
+
+.tagChip {
+    cursor: pointer;
+    transition: transform 0.2s ease;
+}
+
+.tagChip:hover {
+    transform: scale(1.1);
+}
+
+.tagChip:active {
+    transform: scale(0.95);
 }

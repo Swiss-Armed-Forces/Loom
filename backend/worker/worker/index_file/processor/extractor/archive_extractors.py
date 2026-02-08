@@ -1,10 +1,7 @@
-"""Outlook pst file processor."""
-
 import abc
 import logging
 import shutil
 import tarfile
-import tempfile
 import zipfile
 from getpass import getuser
 from os.path import basename
@@ -27,7 +24,7 @@ class ExtractorBase(abc.ABC):
         """Extracts the file to the given output directory.
 
         Args:
-          fileobj: the file to extract
+          fileobj: the file to extract (supports: .name)
           outdir: the output directory
 
         Raises:
@@ -84,42 +81,33 @@ class PstArchiveExtractor(ExtractorBase):
         ]
         run(cmd, check=True)
 
-    # the type of fileobj is omitted due to mypy being dumb
-    def extract(self, fileobj, outdir: str):
+    def extract(self, fileobj: IO[bytes], outdir: str):
         """Process pst."""
-
-        with tempfile.NamedTemporaryFile("wb") as pst_file:
-            shutil.copyfileobj(fileobj, pst_file)
-            pst_file.flush()
-
-            # extract content
-            try:
-                self._extract_pst_archive(pst_file.name, outdir)
-            except CalledProcessError as ex:
-                raise ExtractNotSupported from ex
+        # extract content
+        try:
+            self._extract_pst_archive(fileobj.name, outdir)
+        except CalledProcessError as ex:
+            raise ExtractNotSupported from ex
 
 
 class PcapExtractor(ExtractorBase):
-    def extract(self, fileobj, outdir: str):
-        with tempfile.NamedTemporaryFile("wb") as pcap_file:
-            shutil.copyfileobj(fileobj, pcap_file)
-            pcap_file.flush()
+    def extract(self, fileobj: IO[bytes], outdir: str):
 
-            cmd = [
-                "tshark",
-                "-r",
-                pcap_file.name,
-            ]
-            stdout_file_path = Path(outdir, "pcap_decoded").absolute().as_posix()
-            with open(stdout_file_path, "wb") as stdout_file:
-                try:
-                    run(
-                        cmd,
-                        check=True,
-                        stdout=stdout_file,
-                    )
-                except CalledProcessError as ex:
-                    raise ExtractNotSupported from ex
+        cmd = [
+            "tshark",
+            "-r",
+            fileobj.name,
+        ]
+        stdout_file_path = Path(outdir, "pcap_decoded").absolute().as_posix()
+        with open(stdout_file_path, "wb") as stdout_file:
+            try:
+                run(
+                    cmd,
+                    check=True,
+                    stdout=stdout_file,
+                )
+            except CalledProcessError as ex:
+                raise ExtractNotSupported from ex
 
 
 class BinwalkExtractor(ExtractorBase):
@@ -128,33 +116,29 @@ class BinwalkExtractor(ExtractorBase):
     Avoids extracting archives already being processed by the other extractors.
     """
 
-    def extract(self, fileobj, outdir: str):
-        with tempfile.NamedTemporaryFile("wb") as bin_file:
-            shutil.copyfileobj(fileobj, bin_file)
-            bin_file.flush()
+    def extract(self, fileobj: IO[bytes], outdir: str):
+        # Extract contents
+        cmd_extract = [
+            "binwalk",
+            f"--run-as={getuser()}",
+            "--extract",
+            "--subdirs",
+            "--directory",
+            outdir,
+            fileobj.name,
+        ]
+        try:
+            run(cmd_extract, check=True)
+        except CalledProcessError as ex:
+            raise ExtractNotSupported from ex
 
-            # Extract contents
-            cmd_extract = [
-                "binwalk",
-                f"--run-as={getuser()}",
-                "--extract",
-                "--subdirs",
-                "--directory",
-                outdir,
-                bin_file.name,
-            ]
-            try:
-                run(cmd_extract, check=True)
-            except CalledProcessError as ex:
-                raise ExtractNotSupported from ex
+        # move files out of `.extracted` directory
+        extracted_dir = Path(f"{outdir}/_{basename(fileobj.name)}.extracted")
 
-            # move files out of `.extracted` directory
-            extracted_dir = Path(f"{outdir}/_{basename(bin_file.name)}.extracted")
+        if not extracted_dir.is_dir():
+            # nothing extracted
+            return
 
-            if not extracted_dir.is_dir():
-                # nothing extracted
-                return
-
-            for item in extracted_dir.iterdir():
-                shutil.move(item, outdir)
-            extracted_dir.rmdir()
+        for item in extracted_dir.iterdir():
+            shutil.move(item, outdir)
+        extracted_dir.rmdir()

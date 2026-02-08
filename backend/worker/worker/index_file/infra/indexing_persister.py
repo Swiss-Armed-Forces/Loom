@@ -2,6 +2,7 @@ from uuid import UUID
 
 from common.dependencies import get_file_repository
 from common.file.file_repository import (
+    Attachment,
     Embedding,
     File,
     ImapInfo,
@@ -29,8 +30,23 @@ class IndexingPersister(PersisterBase[File]):
     def set_thumbnail_file_id(self, thumbnail_file_id: ObjectIdStr):
         self._object.thumbnail_file_id = thumbnail_file_id
 
-    def set_preview_file_id(self, preview_file_id: ObjectIdStr):
-        self._object.preview_file_id = preview_file_id
+    def set_thumbnail_total_frames(self, thumbnail_total_frames: int):
+        self._object.thumbnail_total_frames = thumbnail_total_frames
+
+    def set_rendered_file_image_file_id(self, rendered_file_image_file_id: ObjectIdStr):
+        self._object.rendered_file.image_file_id = rendered_file_image_file_id
+
+    def set_rendered_file_office_pdf_file_id(
+        self, rendered_file_office_pdf_file_id: ObjectIdStr
+    ):
+        self._object.rendered_file.office_pdf_file_id = rendered_file_office_pdf_file_id
+
+    def set_rendered_file_browser_pdf_file_id(
+        self, rendered_file_browser_pdf_file_id: ObjectIdStr
+    ):
+        self._object.rendered_file.browser_pdf_file_id = (
+            rendered_file_browser_pdf_file_id
+        )
 
     def set_state(self, state: str):
         self._object.state = state
@@ -77,8 +93,14 @@ class IndexingPersister(PersisterBase[File]):
     def set_imap_info(self, imap_info: ImapInfo):
         self._object.imap = imap_info
 
-    def set_has_attachments(self, has_attachments: bool):
-        self._object.has_attachments = has_attachments
+    def add_or_replace_attachment(self, attachment: Attachment):
+        # remove previous attachment with same name
+        filtered_attachments = [
+            att for att in self._object.attachments if att.name != attachment.name
+        ]
+        self._object.attachments = filtered_attachments
+        # add new attachment
+        self._object.attachments.append(attachment)
 
     def add_archive(self, archive_id: UUID):
         self._object.archives.append(str(archive_id))

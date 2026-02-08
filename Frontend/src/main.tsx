@@ -2,7 +2,6 @@ import React from "react";
 import { createRoot } from "react-dom/client";
 import { Provider } from "react-redux";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import stc from "string-to-color";
 import { store } from "./app/store";
 import App from "./App";
 import "./main.css";
@@ -14,7 +13,6 @@ import { Archives } from "./features/archives/Archives";
 
 const container = document.getElementById("root")!;
 const root = createRoot(container);
-container.style.setProperty("--stripe-color", stc(window.location.hostname));
 
 root.render(
     <React.StrictMode>

@@ -20,7 +20,7 @@ from pymongo import MongoClient
 from worker.dependencies import get_imap_service
 from worker.dependencies import init as init_worker_dependencies
 
-from utils.celery_inspect import is_celery_idle
+from utils.celery_inspect import is_celery_idle, iterate_celery_tasks
 from utils.settings import settings
 
 logger = logging.getLogger(__name__)
@@ -47,7 +47,17 @@ def _wipe_celery():
     celery_control = get_celery_app().control
     while True:
         # purge all tasks until no celery worker has active tasks
+        logger.info("Purging celery tasks")
         celery_control.purge()
+        # wait for celery to be idle
+        # send termination signal for all remaining tasks
+        # these are most likely tasks which are backing off
+        # at the workers.
+        for task in iterate_celery_tasks():
+            task_id = task.get("id", None)
+            if task_id is not None:
+                logger.info("Terminating task: %s", task_id)
+                celery_control.terminate(task_id)
         if is_celery_idle():
             break
         sleep(WAIT_FOR_CELERY_IDLE_SLEEP_TIME__S)

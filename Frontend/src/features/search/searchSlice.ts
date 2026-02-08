@@ -1,7 +1,9 @@
 import {
+    AsyncThunkConfig,
     createAsyncThunk,
     createSelector,
     createSlice,
+    GetThunkAPI,
     PayloadAction,
 } from "@reduxjs/toolkit";
 import { RootState } from "../../app/store";
@@ -93,7 +95,7 @@ export interface SearchState {
             preview: GetFilePreviewResponse | null;
         };
     };
-    fileDetailData: FileDetailData | null;
+    fileDetailData: FileDetailData;
     totalFiles: number;
     lastFileSortId: any[] | null;
     filesInView: string[];
@@ -154,7 +156,12 @@ const initialState: SearchState = {
         tags: null,
     },
     files: {},
-    fileDetailData: null,
+    fileDetailData: {
+        tab: null,
+        filePreview: null,
+        selectedFileRendererType: null,
+        selectedTranslationLanguage: null,
+    },
     lastFileSortId: null,
     totalFiles: 0,
     filesInView: [],
@@ -266,11 +273,10 @@ export const fetchPreview = createAsyncThunk(
         }: {
             fileId: string;
         },
-        thunkAPI,
+        thunkAPI: GetThunkAPI<AsyncThunkConfig>,
     ) => {
         const searchState = (thunkAPI.getState() as RootState).search;
-        const file = searchState.files[fileId];
-        if (!file || searchState.query == null) return;
+        if (searchState.query == null) return;
         const query = {
             ...searchState.query,
             // update query id
@@ -279,6 +285,40 @@ export const fetchPreview = createAsyncThunk(
         } satisfies SearchQuery;
         try {
             return await getFilePreview(fileId, query);
+        } catch (err: any) {
+            return thunkAPI.rejectWithValue({
+                error: err.detail ? err.detail : err.toString(),
+                fileId: fileId,
+            });
+        }
+    },
+);
+
+export const fetchFileDetailData = createAsyncThunk(
+    "fetchFileDetailData",
+    async (
+        {
+            fileId,
+        }: {
+            fileId: string;
+        },
+        thunkAPI: GetThunkAPI<AsyncThunkConfig>,
+    ) => {
+        const query = {
+            id: (await getShortRunningQuery()).queryId,
+            query: "*",
+            keepAlive: null,
+            languages: null,
+            sortField: null,
+            sortDirection: null,
+            sortId: null,
+            pageSize: null,
+        } satisfies SearchQuery;
+        try {
+            return await {
+                query: query,
+                filePreview: await getFilePreview(fileId, query),
+            };
         } catch (err: any) {
             return thunkAPI.rejectWithValue({
                 error: err.detail ? err.detail : err.toString(),
@@ -459,11 +499,12 @@ export const searchSlice = createSlice({
         ) => {
             state.summarizationSystemPrompt = action.payload;
         },
-        setFileDetailData: (
-            state,
-            action: PayloadAction<FileDetailData | null>,
-        ) => {
-            state.fileDetailData = action.payload;
+        setFileDetailData: (state, action: PayloadAction<FileDetailData>) => {
+            const newFileDetailData = action.payload;
+            state.fileDetailData = {
+                ...(state.fileDetailData ?? {}),
+                ...newFileDetailData,
+            } as FileDetailData;
         },
     },
     extraReducers: (builder) => {
@@ -529,7 +570,7 @@ export const searchSlice = createSlice({
             file.preview = preview;
         });
         builder.addCase(fetchPreview.rejected, (state, action) => {
-            const { fileId, error } = action.payload as {
+            const { fileId } = action.payload as {
                 fileId: string;
                 error: string;
             };
@@ -537,8 +578,25 @@ export const searchSlice = createSlice({
             if (fileId && state.files[fileId]) {
                 delete state.files[fileId];
             }
+        });
+        builder.addCase(fetchFileDetailData.fulfilled, (state, action) => {
+            if (!action.payload) return;
+            const { query, filePreview } = action.payload;
+            state.fileDetailData = {
+                ...state.fileDetailData,
+                searchQuery: query,
+                filePreview: filePreview,
+            } as FileDetailData;
+        });
+        builder.addCase(fetchFileDetailData.rejected, (state, action) => {
+            const { fileId } = action.payload as {
+                fileId: string;
+                error: string;
+            };
 
-            toast.error("Cannot load file preview. Error: " + error);
+            if (fileId && state.files[fileId]) {
+                delete state.files[fileId];
+            }
         });
         builder.addCase(setFileInViewState.fulfilled, (state, action) => {
             const { fileId, inView } = action.payload;
@@ -663,6 +721,16 @@ export const selectSummarizationSystemPrompt = createSelector(
 export const selectFileDetailData = createSelector(
     selectSearch,
     (search) => search.fileDetailData,
+);
+
+export const selectFileDetailDataSelectedFileRendererType = createSelector(
+    selectSearch,
+    (search) => search.fileDetailData.selectedFileRendererType,
+);
+
+export const selectFileDetailDataSelectedTranslationLanguage = createSelector(
+    selectSearch,
+    (search) => search.fileDetailData.selectedTranslationLanguage,
 );
 
 export default searchSlice.reducer;

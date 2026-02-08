@@ -1,5 +1,3 @@
-"""Repository that handles file persistence operation."""
-
 from __future__ import annotations
 
 import enum
@@ -149,11 +147,33 @@ class _EsImapInfo(InnerDoc):
     )
 
 
+class RenderedFile(BaseModel):
+    image_file_id: ObjectIdStr | None = None
+    office_pdf_file_id: ObjectIdStr | None = None
+    browser_pdf_file_id: ObjectIdStr | None = None
+
+
+class _EsRenderedFile(InnerDoc):
+    image_file_id = Keyword()
+    office_pdf_file_id = Keyword()
+    browser_pdf_file_id = Keyword()
+
+
 FILE_SHORT_NAME_CONTENT_SUFFIX = ".content.txt"
 
 TAG_LEN_MIN = 1
 TAG_LEN_MAX = 25
 Tag = Annotated[str, StringConstraints(min_length=TAG_LEN_MIN, max_length=TAG_LEN_MAX)]
+
+
+class Attachment(BaseModel):
+    id: UUID
+    name: str
+
+
+class _EsAttachment(InnerDoc):
+    id = Keyword()
+    name = Keyword()
 
 
 class File(RepositoryTaskObject):
@@ -197,7 +217,8 @@ class File(RepositoryTaskObject):
     uploaded_datetime: datetime = Field(default_factory=datetime.now)
     size: int
     thumbnail_file_id: ObjectIdStr | None = None
-    preview_file_id: ObjectIdStr | None = None
+    thumbnail_total_frames: int | None = None
+    rendered_file: RenderedFile = RenderedFile()
     exclude_from_archives: bool = False
     tags: list[Tag] = []
     magic_file_type: str | None = None
@@ -210,7 +231,7 @@ class File(RepositoryTaskObject):
     tika_file_type: str | None = None
     archives: list[str] = []
     tika_meta: dict[str, Any] = {}
-    has_attachments: bool | None = None
+    attachments: list[Attachment] = []
     summary: str | None = None
     embeddings: list[Embedding] = []
     trufflehog_secrets: list[Secret] | None = None
@@ -268,7 +289,8 @@ class _EsFile(_EsTaskDocument):
     uploaded_datetime = Date()
     size = Long()
     thumbnail_file_id = Keyword()
-    preview_file_id = Keyword()
+    thumbnail_total_frames = Long()
+    rendered_file = Object(_EsRenderedFile)
     exclude_from_archives = Boolean()
     tags = Keyword(multi=True)
     magic_file_type = Keyword()
@@ -279,6 +301,7 @@ class _EsFile(_EsTaskDocument):
     tika_file_type = Keyword()
     archives = Keyword(multi=True)
     tika_meta = Object()
+    attachments = Object(_EsAttachment, multi=True)
     has_attachments = Boolean()
     summary = Text(
         term_vector="with_positions_offsets",

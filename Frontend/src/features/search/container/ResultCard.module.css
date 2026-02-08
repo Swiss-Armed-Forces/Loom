@@ -35,34 +35,6 @@
     outline: auto;
 }
 
-.resultCardHeader {
-    display: flex;
-    flex-direction: row;
-    gap: 1rem;
-    word-wrap: break-word;
-    word-break: break-all;
-}
-
-.resultCardHeader :global .MuiCardHeader-avatar {
-    margin-right: 0;
-}
-
-.resultCardHeader :global .MuiCardHeader-content {
-    flex: unset;
-}
-
-.resultCardHeader :global .MuiCardHeader-action {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    flex: 1;
-}
-
-.resultCardActions {
-    display: flex;
-    flex-direction: row;
-}
-
 .resultCardActionsBottom {
     display: flex;
     flex-direction: row;
@@ -96,25 +68,33 @@
     word-break: break-word;
 }
 
-img.resultImage {
+.resultImage {
     cursor: pointer;
     object-fit: contain;
     object-position: top;
     width: auto;
     min-width: 10rem;
     max-width: 20vw;
+    max-height: 20vw;
+    transition:
+        transform 0.2s ease,
+        opacity 0.2s ease,
+        box-shadow 0.2s ease;
 
     @media only screen and (max-width: 768px) {
         min-width: 5rem;
         max-width: 50vw;
+        min-height: 5rem;
+        max-height: 50vw;
     }
 }
 
-.translationTab {
-    width: 150px;
+.resultImage:hover {
+    transform: scale(1.05);
+    opacity: 0.9;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
-.translationTabButton {
-    display: flex;
-    align-items: center;
+.resultImage:active {
+    transform: scale(0.98);
 }

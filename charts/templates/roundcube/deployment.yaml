@@ -26,8 +26,6 @@ spec:
           env:
             - name: ROUNDCUBEMAIL_DEFAULT_HOST
               value: {{ include "app.fullname" . }}-dovecot
-            - name: ROUNDCUBEMAIL_PLUGINS
-              value: archive,zipdownload,subscriptions_option
           volumeMounts:
             - name: roundcube-config
               mountPath: /usr/local/etc/php/conf.d/zzz_roundcube-custom.ini
@@ -39,4 +37,4 @@ spec:
       volumes:
         - name: roundcube-config
           configMap:
-            name:  {{ include "app.fullname" . }}-roundcube-config
+            name:  {{ include "app.fullname" . }}-roundcube-php-config

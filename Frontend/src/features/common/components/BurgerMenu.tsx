@@ -1,7 +1,6 @@
 import { IconButton, Menu, MenuItem } from "@mui/material";
 import { useState } from "react";
 import MenuIcon from "@mui/icons-material/Menu";
-import TranslateOutlinedIcon from "@mui/icons-material/TranslateOutlined";
 import QueueOutlinedIcon from "@mui/icons-material/QueueOutlined";
 import SearchOutlinedIcon from "@mui/icons-material/Search";
 export interface Page {
@@ -11,18 +10,20 @@ export interface Page {
 import {
     ApiOutlined,
     CloudCircleOutlined,
-    DataObject,
-    Insights,
     MailOutlineOutlined,
     SmartToyOutlined,
     TaskOutlined,
-    Whatshot,
-    DriveFolderUpload,
     InfoOutlined,
     StorageOutlined,
     ExpandOutlined,
     PrecisionManufacturingOutlined,
     FindInPageOutlined,
+    PictureAsPdfOutlined,
+    InsightsOutlined,
+    WhatshotOutlined,
+    DataObjectOutlined,
+    TranslateOutlined,
+    DriveFolderUploadOutlined,
 } from "@mui/icons-material";
 import {
     apiHost,
@@ -39,9 +40,10 @@ import {
     rspamdHost,
     traefikHost,
     redisInsightHost,
-    tikaHost as apacheTikaHost,
+    tikaHost,
     ollamaHost,
     elasticSearchHost,
+    gotenbergHost,
 } from "../urls";
 import { useTranslation } from "react-i18next";
 import { AboutDialog } from "./AboutDialog";
@@ -65,7 +67,7 @@ export function BurgerMenu() {
         {
             link: translateHost,
             text: "Translate",
-            icon: <TranslateOutlinedIcon />,
+            icon: <TranslateOutlined />,
         },
         {
             link: openWebuifrontendHost,
@@ -80,7 +82,7 @@ export function BurgerMenu() {
         {
             link: minioHost,
             text: "Minio",
-            icon: <DriveFolderUpload />,
+            icon: <DriveFolderUploadOutlined />,
         },
         {
             link: apiHost,
@@ -105,7 +107,7 @@ export function BurgerMenu() {
         {
             link: mongoWebHost,
             text: "MongoDB",
-            icon: <DataObject />,
+            icon: <DataObjectOutlined />,
         },
         {
             link: rspamdHost,
@@ -120,17 +122,22 @@ export function BurgerMenu() {
         {
             link: prometheusHost,
             text: "Prometheus",
-            icon: <Whatshot />,
+            icon: <WhatshotOutlined />,
         },
         {
             link: grafanaHost,
             text: "Grafana",
-            icon: <Insights />,
+            icon: <InsightsOutlined />,
         },
         {
-            link: apacheTikaHost,
+            link: tikaHost,
             text: "Apache Tika",
             icon: <ExpandOutlined />,
+        },
+        {
+            link: gotenbergHost,
+            text: "Gotenberg",
+            icon: <PictureAsPdfOutlined />,
         },
         {
             link: ollamaHost,

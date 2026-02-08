@@ -14,6 +14,11 @@ data:
         metrics_path: /metrics/per-object
         static_configs:
           - targets: ['{{ include "app.fullname" . }}-rabbit:{{ .Values.rabbit.service.port.prometheus }}']
+      - job_name: 'gotenberg'
+        scrape_interval: 15s
+        metrics_path: /prometheus/metrics
+        static_configs:
+          - targets: ['{{ include "app.fullname" . }}-gotenberg:{{ .Values.gotenberg.service.port }}']
 {{- if .Values.prometheus.collectClusterMetrics }}
       - job_name: 'cadvisor'
         scrape_interval: 5s

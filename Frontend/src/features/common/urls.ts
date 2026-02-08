@@ -20,6 +20,7 @@ function getHost(host: string): URL {
     return urlCopy;
 }
 
+export const frontendHost = getHost("frontend");
 export const flowerHost = getHost("flower");
 export const translateHost = getHost("translate");
 export const roundcubeHost = getHost("roundcube");
@@ -37,6 +38,7 @@ export const tikaHost = getHost("tika");
 export const traefikHost = getHost("traefik");
 export const openWebuifrontendHost = getHost("open-webui");
 export const ollamaHost = getHost("ollama");
+export const gotenbergHost = getHost("gotenberg");
 
 export const webApiGetFile = (fileId: string) =>
     `${apiUrl}/v1/files/${fileId}/download`;
@@ -44,10 +46,12 @@ export const webApiGetFileOpen = (fileId: string) =>
     `${apiUrl}/v1/files/${fileId}/download?content_disposition=inline`;
 export const webApiGetFileText = (fileId: string) =>
     `${apiUrl}/v1/files/${fileId}/text`;
-export const webApiGetFileThumbnail = (file_id: string) =>
-    `${apiUrl}/v1/files/${file_id}/thumbnail`;
-export const webApiGetFilePreview = (file_id: string) =>
-    `${apiUrl}/v1/files/${file_id}/thumbnail?preview=true`;
+export const webApiGetFileThumbnail = (
+    file_id: string,
+    thumbnail_file_id: string,
+) => `${apiUrl}/v1/files/${file_id}/thumbnail/${thumbnail_file_id}`;
+export const webApiGetFileRendered = (file_id: string, rendered_id: string) =>
+    `${apiUrl}/v1/files/${file_id}/rendered/${rendered_id}`;
 export const webApiGetArchive = (fileId: string) =>
     `${apiUrl}/v1/archive/${fileId}`;
 export const webApiGetArchiveEncrypted = (fileId: string) =>

@@ -1,10 +1,10 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
 import {
+    Badge,
     Box,
     Card,
     CardActions,
     CardContent,
-    CardHeader,
     CardMedia,
     Skeleton,
     styled,
@@ -12,9 +12,7 @@ import {
     TypographyProps,
 } from "@mui/material";
 
-import { FileAvatar } from "../components/FileAvatar";
 import {
-    updateQuery,
     selectQuery,
     selectFileById,
     setFileInViewState,
@@ -24,19 +22,16 @@ import { useAppDispatch, useAppSelector } from "../../../app/hooks";
 
 import styles from "./ResultCard.module.css";
 
-import { ClickableFilePath } from "../components/ClickableFilePath";
 import { FileDetailTab } from "../model";
 import { useTranslation } from "react-i18next";
 import { Tasks } from "../../common/components/tasks/Tasks.tsx";
 import { EllipsisButton } from "../components/EllipsisButton.tsx";
-import { updateFileExtensionOfQuery } from "../SearchQueryUtils.ts";
 import { webApiGetFileThumbnail } from "../../common/urls.ts";
 import { useInView } from "react-intersection-observer";
 import { HighlightList } from "./HighlightList.tsx";
-import { ImageDetailDialog } from "../components/ImageDetailDialog.tsx";
 import { useMediaQuery } from "@mui/material";
-import { ResultCardActions } from "./ResultCardAction.tsx";
 import { TagsList } from "../../common/components/tags/TagsList.tsx";
+import { FileCardHeader } from "./FileCardHeader.tsx";
 
 const FieldTypography = styled(Typography)<TypographyProps>`
     line-height: 1.2;
@@ -59,8 +54,6 @@ export const ResultCard: React.FC<ResultCardProps> = React.memo(
             threshold: [0.2],
         });
 
-        const [imageHashToShow, setImageHashToShow] = useState("");
-
         useEffect(() => {
             dispatch(
                 setFileInViewState({
@@ -74,26 +67,6 @@ export const ResultCard: React.FC<ResultCardProps> = React.memo(
             searchQuery, // this is required here as we want to re-run this every time the user changes query. The same file might be in the old and new query results
             dispatch,
         ]);
-
-        const handleViewDetail = () => {
-            dispatch(
-                setFileDetailData({
-                    fileId: fileId,
-                    tab: FileDetailTab.Content,
-                }),
-            );
-        };
-
-        const handleQueryReplaceFileExtension = (extension: string) => {
-            dispatch(
-                updateQuery({
-                    query: updateFileExtensionOfQuery(
-                        searchQuery?.query ?? "",
-                        extension,
-                    ),
-                }),
-            );
-        };
 
         return (
             <div className="resultCardParent" ref={ref}>
@@ -114,40 +87,7 @@ export const ResultCard: React.FC<ResultCardProps> = React.memo(
                 ) : filePreview ? (
                     <Card>
                         <Box>
-                            <CardHeader
-                                className={styles.resultCardHeader}
-                                avatar={
-                                    <FileAvatar
-                                        hasAttachments={
-                                            filePreview.hasAttachments
-                                        }
-                                        isTruncated={
-                                            filePreview.contentIsTruncated
-                                        }
-                                        fileExtension={filePreview.fileExtension
-                                            .replace(".", "")
-                                            .toLowerCase()}
-                                        performSearch={() =>
-                                            handleQueryReplaceFileExtension(
-                                                filePreview.fileExtension,
-                                            )
-                                        }
-                                    />
-                                }
-                                title={filePreview.name}
-                                subheader={
-                                    <ClickableFilePath
-                                        fullPath={filePreview.path}
-                                    />
-                                }
-                                action={
-                                    <ResultCardActions
-                                        isMobile={isMobile}
-                                        fileId={fileId}
-                                        filePreview={filePreview}
-                                    />
-                                }
-                            ></CardHeader>
+                            <FileCardHeader filePreview={filePreview} />
                             <CardContent className={styles.resultCardContent}>
                                 <Box className={styles.highlights}>
                                     {filePreview.summary == null ||
@@ -183,7 +123,17 @@ export const ResultCard: React.FC<ResultCardProps> = React.memo(
                                         {filePreview.content}
                                         {filePreview.contentPreviewIsTruncated && (
                                             <EllipsisButton
-                                                click={handleViewDetail}
+                                                click={() => {
+                                                    dispatch(
+                                                        setFileDetailData({
+                                                            filePreview:
+                                                                filePreview,
+                                                            searchQuery:
+                                                                searchQuery,
+                                                            tab: FileDetailTab.Content,
+                                                        }),
+                                                    );
+                                                }}
                                                 title={t(
                                                     "generalSearchView.viewDetails",
                                                 )}
@@ -206,20 +156,37 @@ export const ResultCard: React.FC<ResultCardProps> = React.memo(
                                     )}
                                 </Box>
 
-                                {filePreview.hasThumbnail && (
-                                    <CardMedia
-                                        component="img"
-                                        onClick={() =>
-                                            setImageHashToShow(
-                                                filePreview.fileId,
-                                            )
+                                {filePreview.thumbnailFileId && (
+                                    <Badge
+                                        badgeContent={
+                                            filePreview.thumbnailTotalFrames
                                         }
-                                        className={styles.resultImage}
-                                        image={webApiGetFileThumbnail(
-                                            filePreview.fileId,
-                                        )}
-                                        alt="Thumbnail of document"
-                                    />
+                                        anchorOrigin={{
+                                            vertical: "bottom",
+                                            horizontal: "right",
+                                        }}
+                                    >
+                                        <CardMedia
+                                            component="img"
+                                            onClick={() => {
+                                                dispatch(
+                                                    setFileDetailData({
+                                                        filePreview:
+                                                            filePreview,
+                                                        searchQuery:
+                                                            searchQuery,
+                                                        tab: FileDetailTab.Rendered,
+                                                    }),
+                                                );
+                                            }}
+                                            className={styles.resultImage}
+                                            image={webApiGetFileThumbnail(
+                                                filePreview.fileId,
+                                                filePreview.thumbnailFileId,
+                                            )}
+                                            alt="Thumbnail"
+                                        />
+                                    </Badge>
                                 )}
                             </CardContent>
                             <CardActions
@@ -249,10 +216,6 @@ export const ResultCard: React.FC<ResultCardProps> = React.memo(
                         </Box>
                     </Card>
                 ) : null}
-                <ImageDetailDialog
-                    imageHashToShow={imageHashToShow}
-                    onClose={() => setImageHashToShow("")}
-                />
             </div>
         );
     },

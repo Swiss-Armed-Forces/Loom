@@ -26,10 +26,10 @@ import { useTranslation } from "react-i18next";
 import { AppDispatch } from "../../../app/store";
 import {
     fetchQueueStatistics,
-    handleError,
     selectQueuesStatistics,
 } from "../../common/commonSlice.ts";
 import { ContentCut } from "@mui/icons-material";
+import { toast } from "react-toastify";
 
 const CONTENT_TRUNCATED_FILES_POLL_INTERVAL__MS = 180_000;
 const FAILED_FILES_POLL_INTERVAL__MS = 180_000;
@@ -71,7 +71,7 @@ export const BackgroundStatusIndicator: FC = () => {
                 dispatch(fetchFailedFiles()),
                 dispatch(fetchQueueStatistics()),
             ]).catch((errorPayload) => {
-                dispatch(handleError(errorPayload));
+                toast.error(`Error in load: ${errorPayload}`);
             });
         }
         load();
@@ -79,20 +79,24 @@ export const BackgroundStatusIndicator: FC = () => {
         const contentTruncatedFilesInterval = setInterval(async () => {
             await dispatch(fetchContentTruncatedFiles()).catch(
                 (errorPayload) => {
-                    dispatch(handleError(errorPayload));
+                    toast.error(
+                        `Error in contentTruncatedFilesInterval: ${errorPayload}`,
+                    );
                 },
             );
         }, CONTENT_TRUNCATED_FILES_POLL_INTERVAL__MS);
 
         const failedFilesInterval = setInterval(async () => {
             await dispatch(fetchFailedFiles()).catch((errorPayload) => {
-                dispatch(handleError(errorPayload));
+                toast.error(`Error in failedFilesInterval: ${errorPayload}`);
             });
         }, FAILED_FILES_POLL_INTERVAL__MS);
 
         const queueStatisticsInterval = setInterval(async () => {
             await dispatch(fetchQueueStatistics()).catch((errorPayload) => {
-                dispatch(handleError(errorPayload));
+                toast.error(
+                    `Error in queueStatisticsInterval: ${errorPayload}`,
+                );
             });
         }, QUEUE_STATISTICS_POLL_INTERVAL__MS);
 

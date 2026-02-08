@@ -1,3 +1,4 @@
+# pylint: disable=too-many-lines
 import logging
 from typing import Generator
 from unittest.mock import MagicMock
@@ -23,17 +24,21 @@ from common.archive.archive_repository import (
 from common.dependencies import get_pubsub_service, get_query_builder
 from common.file.file_repository import (
     FILE_SHORT_NAME_CONTENT_SUFFIX,
+    Attachment,
     Embedding,
     File,
     FileRepository,
     ImapInfo,
     LibretranslateTranslatedLanguage,
+    RenderedFile,
     Secret,
+    _EsAttachment,
     _EsEmbedding,
     _EsFile,
     _EsImapInfo,
     _EsLibretranslateTranslatedLanguage,
     _EsLibreTranslateTranslations,
+    _EsRenderedFile,
     _EsSecret,
 )
 from common.messages.pubsub_service import PubSubService
@@ -181,7 +186,12 @@ ES_REPOSITORY_TEST_INSTANCES: dict[type[BaseEsRepository], list[_TestInstances]]
                 uploaded_datetime=TestValueDefaults.test_datetime,
                 size=TestValueDefaults.test_long,
                 thumbnail_file_id=TestValueDefaults.test_object_id_str,
-                preview_file_id=TestValueDefaults.test_object_id_str,
+                thumbnail_total_frames=TestValueDefaults.test_int,
+                rendered_file=RenderedFile(
+                    image_file_id=TestValueDefaults.test_object_id_str,
+                    office_pdf_file_id=TestValueDefaults.test_object_id_str,
+                    browser_pdf_file_id=TestValueDefaults.test_object_id_str,
+                ),
                 exclude_from_archives=TestValueDefaults.test_bool,
                 tags=TestValueDefaults.test_str_list_no_duplicates,
                 magic_file_type=TestValueDefaults.test_str,
@@ -203,7 +213,12 @@ ES_REPOSITORY_TEST_INSTANCES: dict[type[BaseEsRepository], list[_TestInstances]]
                 tika_file_type=TestValueDefaults.test_str,
                 archives=TestValueDefaults.test_str_list_no_duplicates,
                 tika_meta=TestValueDefaults.test_str_str_dict,
-                has_attachments=TestValueDefaults.test_bool,
+                attachments=[
+                    Attachment(
+                        id=TestValueDefaults.test_uuid,
+                        name=TestValueDefaults.test_str,
+                    ),
+                ],
                 summary=TestValueDefaults.test_str,
                 trufflehog_secrets=[
                     Secret(
@@ -280,7 +295,12 @@ ES_REPOSITORY_TEST_INSTANCES: dict[type[BaseEsRepository], list[_TestInstances]]
                 uploaded_datetime=TestValueDefaults.test_datetime.isoformat(),
                 size=TestValueDefaults.test_long,
                 thumbnail_file_id=TestValueDefaults.test_object_id_str,
-                preview_file_id=TestValueDefaults.test_object_id_str,
+                thumbnail_total_frames=TestValueDefaults.test_int,
+                rendered_file=_EsRenderedFile(
+                    image_file_id=TestValueDefaults.test_object_id_str,
+                    office_pdf_file_id=TestValueDefaults.test_object_id_str,
+                    browser_pdf_file_id=TestValueDefaults.test_object_id_str,
+                ),
                 exclude_from_archives=TestValueDefaults.test_bool,
                 tags=TestValueDefaults.test_str_list_no_duplicates,
                 magic_file_type=TestValueDefaults.test_str,
@@ -304,7 +324,12 @@ ES_REPOSITORY_TEST_INSTANCES: dict[type[BaseEsRepository], list[_TestInstances]]
                 tika_file_type=TestValueDefaults.test_str,
                 archives=TestValueDefaults.test_str_list_no_duplicates,
                 tika_meta=TestValueDefaults.test_str_str_dict,
-                has_attachments=TestValueDefaults.test_bool,
+                attachments=[
+                    _EsAttachment(
+                        id=str(TestValueDefaults.test_uuid),
+                        name=TestValueDefaults.test_str,
+                    ),
+                ],
                 summary=TestValueDefaults.test_str,
                 trufflehog_secrets=[
                     _EsSecret(

@@ -8,7 +8,7 @@ WORKDIR /code
 # Copy dependencies separately and install them once
 RUN set -exu \
   && corepack enable
-COPY package.json pnpm-lock.yaml ./
+COPY package.json pnpm-lock.yaml .npmrc ./
 RUN set -exu \
   && pnpm install --frozen-lockfile
 COPY ./ ./

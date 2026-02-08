@@ -1,5 +1,4 @@
 import { Chip } from "@mui/material";
-import stc from "string-to-color";
 import { updateTagOfQuery } from "../../../search/SearchQueryUtils.ts";
 import { selectQuery, updateQuery } from "../../../search/searchSlice.ts";
 import {
@@ -7,7 +6,7 @@ import {
     deleteTagFromFiles,
     GenericStatisticsModel,
 } from "../../../../app/api";
-import { FC, useState } from "react";
+import { FC, useState, useMemo } from "react";
 import { useAppDispatch, useAppSelector } from "../../../../app/hooks.ts";
 import styles from "./TagsList.module.css";
 import { toast } from "react-toastify";
@@ -18,6 +17,10 @@ import {
     startLoadingIndicator,
     stopLoadingIndicator,
 } from "../../commonSlice.ts";
+import {
+    getColorFromString,
+    getFontColorFromBackGroundColor,
+} from "../../getColorFromString.ts";
 
 interface TagsListProps {
     tags: string[];
@@ -25,6 +28,7 @@ interface TagsListProps {
     tagStats?: GenericStatisticsModel;
     icon_only?: boolean;
 }
+
 export const TagsList: FC<TagsListProps> = ({
     tags,
     fileId,
@@ -32,10 +36,15 @@ export const TagsList: FC<TagsListProps> = ({
     icon_only = false,
 }) => {
     const [tagInDeletion, setTagInDeletion] = useState<string | null>(null);
+    const [showConfirmDialog, setShowConfirmDialog] = useState(false);
     const dispatch = useAppDispatch();
     const searchQuery = useAppSelector(selectQuery);
-    const [openConfirmDeleteTagGlobal, setOpenConfirmDeleteTagGlobal] =
-        useState<boolean>(false);
+
+    const sortedTags = useMemo(
+        () => tags.slice().sort((a, b) => a.localeCompare(b)),
+        [tags],
+    );
+
     const searchForTag = (tagName: string) => {
         dispatch(
             updateQuery({
@@ -44,148 +53,123 @@ export const TagsList: FC<TagsListProps> = ({
         );
     };
 
-    const tagStatHitRate = (tagName: string) => {
+    const getTagHitRate = (tagName: string): number => {
         const tagData = tagStats?.data ?? [];
-        const total = tagStats?.fileCount ?? 1; // happy typescript / eslint
-        for (const tag of tagData) {
-            if (tag.name === tagName) {
-                return (tag.hitsCount / total) * 100;
-            }
-        }
-        return 0;
-    };
-
-    const handleDeleteTagConfirmation = (tag: string) => {
-        setTagInDeletion(tag);
-        setOpenConfirmDeleteTagGlobal(true);
+        const total = tagStats?.fileCount ?? 1;
+        const tag = tagData.find((t) => t.name === tagName);
+        return tag ? (tag.hitsCount / total) * 100 : 0;
     };
 
     const handleDeleteTagFromFile = async (tag: string) => {
         if (!fileId) return;
+
         try {
             dispatch(startLoadingIndicator());
             await deleteTagFromFile(fileId, tag);
             toast.success(t("tagsList.scheduledRemoveTagFromFileToast"));
         } catch (err) {
-            toast.error(
-                t("tagsList.scheduledRemoveErrorToast", {
-                    err: err,
-                }),
-            );
+            toast.error(t("tagsList.scheduledRemoveErrorToast", { err }));
         } finally {
             dispatch(stopLoadingIndicator());
         }
     };
 
-    const handleDeleteTag = async () => {
+    const handleDeleteTagGlobally = async () => {
         if (!tagInDeletion) return;
+
         try {
             dispatch(startLoadingIndicator());
             await deleteTagFromFiles(tagInDeletion);
-            setOpenConfirmDeleteTagGlobal(false);
+            setShowConfirmDialog(false);
             toast.success(t("tagsList.scheduledRemoveTagToast"));
         } catch (err) {
-            toast.error(
-                t("tagsList.scheduledRemoveErrorToast", {
-                    err: err,
-                }),
-            );
+            toast.error(t("tagsList.scheduledRemoveErrorToast", { err }));
         } finally {
             dispatch(stopLoadingIndicator());
         }
     };
 
-    const calculateLuminance = (color: string) => {
-        // convert hex to RGB
-        const hex = color.substring(1);
-        const r = parseInt(hex.substring(0, 2), 16) / 255;
-        const g = parseInt(hex.substring(2, 4), 16) / 255;
-        const b = parseInt(hex.substring(4, 6), 16) / 255;
-
-        // calculate luminance
-        const luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b;
-        return luminance;
+    const handleDeleteClick = (tag: string) => {
+        if (fileId) {
+            handleDeleteTagFromFile(tag);
+        } else {
+            setTagInDeletion(tag);
+            setShowConfirmDialog(true);
+        }
     };
 
-    const fontColor = (color: string) => {
-        const luminance = calculateLuminance(color);
-        // get text color based on luminance
-        return luminance > 0.5 ? "#000000" : "#ffffff";
+    const getTagLabel = (tag: string): string => {
+        if (!tagStats) return tag;
+        const hitRate = getTagHitRate(tag);
+        return `${tag} (${hitRate.toFixed(1)}%)`;
     };
 
     return (
         <>
-            {icon_only ? (
-                <div className={`${styles.tagsList} ${styles.closed}`}>
-                    {tags
-                        .slice()
-                        .sort((a, b) => a.localeCompare(b))
-                        .map((tag) => (
-                            <Chip
-                                id={styles.sidebarChip}
-                                style={{
-                                    backgroundColor: stc(tag),
-                                    color: fontColor(stc(tag)),
-                                }}
-                                key={fileId + tag}
-                                onClick={() => searchForTag(tag)}
-                                title={tag}
-                            ></Chip>
-                        ))}
-                    {tagInDeletion && (
-                        <ConfirmDialog
-                            open={openConfirmDeleteTagGlobal}
-                            text={t("confirmDialog.confirmTagDeletionText", {
-                                tag: tagInDeletion,
-                            })}
-                            buttonText={t("confirmDialog.confirmTagDeletion")}
-                            handleConfirmation={handleDeleteTag}
-                            cancel={() => setOpenConfirmDeleteTagGlobal(false)}
-                            icon={<LabelIcon />}
-                        ></ConfirmDialog>
-                    )}
-                </div>
-            ) : (
-                <div className={styles.tagsList}>
-                    {tags
-                        .slice()
-                        .sort((a, b) => a.localeCompare(b))
-                        .map((tag) => (
-                            <Chip
-                                id={styles.sidebarChip}
-                                size="small"
-                                style={{
-                                    backgroundColor: stc(tag),
-                                    color: fontColor(stc(tag)),
-                                }}
-                                key={fileId + tag}
-                                label={
-                                    tagStats
-                                        ? `${tag} (${tagStatHitRate(tag).toFixed(1)}%)`
-                                        : tag
-                                }
-                                onDelete={
-                                    fileId
-                                        ? () => handleDeleteTagFromFile(tag)
-                                        : () => handleDeleteTagConfirmation(tag)
-                                }
-                                onClick={() => searchForTag(tag)}
-                            />
-                        ))}
-                    {tagInDeletion && (
-                        <ConfirmDialog
-                            open={openConfirmDeleteTagGlobal}
-                            text={t("confirmDialog.confirmTagDeletionText", {
-                                tag: tagInDeletion,
-                            })}
-                            buttonText={t("confirmDialog.confirmTagDeletion")}
-                            handleConfirmation={handleDeleteTag}
-                            cancel={() => setOpenConfirmDeleteTagGlobal(false)}
-                            icon={<LabelIcon />}
-                        ></ConfirmDialog>
-                    )}
-                </div>
+            <div
+                className={
+                    icon_only
+                        ? `${styles.tagsList} ${styles.closed}`
+                        : styles.tagsList
+                }
+            >
+                {sortedTags.map((tag) => (
+                    <TagChip
+                        key={fileId + tag}
+                        tag={tag}
+                        iconOnly={icon_only}
+                        label={getTagLabel(tag)}
+                        onSearch={searchForTag}
+                        onDelete={
+                            icon_only ? undefined : () => handleDeleteClick(tag)
+                        }
+                    />
+                ))}
+            </div>
+
+            {tagInDeletion && (
+                <ConfirmDialog
+                    open={showConfirmDialog}
+                    text={t("confirmDialog.confirmTagDeletionText", {
+                        tag: tagInDeletion,
+                    })}
+                    buttonText={t("confirmDialog.confirmTagDeletion")}
+                    handleConfirmation={handleDeleteTagGlobally}
+                    cancel={() => setShowConfirmDialog(false)}
+                    icon={<LabelIcon />}
+                />
             )}
         </>
+    );
+};
+
+interface TagChipProps {
+    tag: string;
+    iconOnly: boolean;
+    label: string;
+    onSearch: (tag: string) => void;
+    onDelete?: () => void;
+}
+
+const TagChip: FC<TagChipProps> = ({
+    tag,
+    iconOnly,
+    label,
+    onSearch,
+    onDelete,
+}) => {
+    const backgroundColor = getColorFromString(tag);
+    const color = getFontColorFromBackGroundColor(backgroundColor);
+
+    return (
+        <Chip
+            className={styles.tagChip}
+            size={iconOnly ? undefined : "small"}
+            sx={{ backgroundColor, color }}
+            label={iconOnly ? undefined : label}
+            title={iconOnly ? tag : undefined}
+            onClick={() => onSearch(tag)}
+            onDelete={onDelete}
+        />
     );
 };
