@@ -368,6 +368,7 @@ grafana:
   # service-type: visualization
 
 translate:
+  enabled: true
   replicaCount: 1
   hpa:
     enabled: true
@@ -950,6 +951,7 @@ rabbit:
   # service-type: queue
 
 ollama: &ollama
+  enabled: true
   replicaCount: 1
   hpa:
     enabled: true
@@ -996,6 +998,7 @@ ollama: &ollama
 ollama-tool: *ollama
 
 open_webui:
+  enabled: true
   replicaCount: 1
   image:
     repository: swiss-armed-forces/cyber-command/cea/loom/open-webui

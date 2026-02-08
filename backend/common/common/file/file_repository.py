@@ -110,22 +110,34 @@ class _EsLibretranslateTranslatedLanguage(InnerDoc):
 LibreTranslateTranslations = list[LibretranslateTranslatedLanguage]
 
 
+class LibretranslateSupportedLanguages(BaseModel):
+    code: str
+    name: str
+
+
+try:
+    LIBRETRANSLATE_SUPPORTED_LANGUAGES = [
+        LibretranslateSupportedLanguages.model_validate(lang)
+        # Since this is run at import-time, we can not use the dependency module here
+        # to fetch a LibreTranslateAPI instance.
+        for lang in LibreTranslateAPI(str(settings.translate_host)).languages()
+        if settings.translate_target in lang["targets"]
+    ]
+except (URLError, JSONDecodeError):
+    # Raised when libretranslate isn't available: for example while running unit-tests
+    logger.warning("LibreTranslate service unavailable: using fallback language list")
+    LIBRETRANSLATE_SUPPORTED_LANGUAGES = [
+        LibretranslateSupportedLanguages(
+            code=settings.translate_target, name="FallbackLanguage"
+        ),
+    ]
+
+
 class _EsLibreTranslateTranslations(InnerDoc):
     """A wrapper for all available libretranslate languages."""
 
-    try:
-        LIBRETRANSLATE_SUPPORTED_LANGUAGES = [
-            lang["code"]
-            # Since this is run at import-time, we can not use the dependency module here
-            # to fetch a LibreTranslateAPI instance.
-            for lang in LibreTranslateAPI(str(settings.translate_host)).languages()
-        ]
-    except (URLError, JSONDecodeError):
-        # Raised when libretranslate isn't available, for example while running unit-tests
-        LIBRETRANSLATE_SUPPORTED_LANGUAGES = [settings.translate_target]
-
     for lang in LIBRETRANSLATE_SUPPORTED_LANGUAGES:
-        locals()[lang] = Object(_EsLibretranslateTranslatedLanguage)
+        locals()[lang.code] = Object(_EsLibretranslateTranslatedLanguage)
 
 
 class ImapInfo(BaseModel):

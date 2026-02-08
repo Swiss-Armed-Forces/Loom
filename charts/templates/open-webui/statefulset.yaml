@@ -1,3 +1,4 @@
+{{- if and .Values.open_webui.enabled }}
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
@@ -71,3 +72,4 @@ spec:
         {{- if .Values.open_webui.pvc.storageClass -}}
         storageClassName: {{ .Values.open_webui.pvc.storageClass }}
         {{- end }}
+{{- end }}

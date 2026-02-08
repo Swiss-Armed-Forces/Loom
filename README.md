@@ -287,6 +287,7 @@ Multiple services that are useful for production and development purposes are st
 | Apache Tika    | [https://tika.loom](https://tika.loom)                     | Tika content extraction engine                |                                               |
 | Dovecot        | [imaps://dovecot.loom:443](imaps://dovecot.loom:443)       | Imap Server                                   | user: `user` password: `pass`                 |
 | Ollama         | [https://ollama.loom](https://ollama.loom)                 | AI Server                                     |                                               |
+| Gotenberg      | [https://gotenberg.loom](https://gotenberg.loom)           | Document rendering                            |                                               |
 
 ![Context Diagram](Documentation/ContainerDiagram.svg)
 
@@ -298,9 +299,9 @@ APIs directly, if needed.
 
 * [Getting Started Guide](Documentation/getting-started.md)
 * [Development environment setup](Documentation/devenv-setup.md)
-* [Contributing Guidelines](/CONTRIBUTING.md)
-* [Code of Conduct](/CODE_OF_CONDUCT.md)
-* [Third Party Licenses](/THIRD-PARTY.md)
+* [Contributing Guidelines](CONTRIBUTING.md)
+* [Code of Conduct](CODE_OF_CONDUCT.md)
+* [Third Party Licenses](THIRD-PARTY.md)
 * [Frontend Documentation](Frontend/README.md)
 * [Backend Documentation](backend/README.md)
 * [Integration Testing Documentation](integrationtest/README.md)

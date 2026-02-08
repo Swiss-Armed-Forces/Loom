@@ -1,7 +1,7 @@
 {{- define "app.ollama.hpa" -}}
 {{- $component := .component -}}
 {{- $values := index .Values $component -}}
-{{- if $values.hpa.enabled -}}
+{{- if and $values.enabled $values.hpa.enabled -}}
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:

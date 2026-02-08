@@ -1,6 +1,7 @@
 {{- define "app.ollama.deployment" -}}
 {{- $component := .component -}}
 {{- $values := index .Values $component -}}
+{{- if $values.enabled -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -84,4 +85,5 @@ spec:
           persistentVolumeClaim:
             claimName: {{ include "app.fullname" . }}-{{ $component }}-ollama-models
       {{- end }}
+{{- end }}
 {{- end -}}

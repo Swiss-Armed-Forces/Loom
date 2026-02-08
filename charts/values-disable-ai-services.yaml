@@ -1,0 +1,19 @@
+# Disable AI Services
+#
+# This Helm values file disables all AI-related services in Loom.
+# Use this configuration when you don't want to run AI services internally within the Loom cluster.
+#
+# Note: If you still want AI functionality to be available, you will need to configure
+# external service endpoints for each disabled service:
+#   - translate.service.externalHost
+#   - ollama.service.externalHost
+#   - ollama-tool.service.externalHost
+#   - open_webui.service.externalHost
+translate:
+  enabled: false
+ollama:
+  enabled: false
+ollama-tool:
+  enabled: false
+open_webui:
+  enabled: false
