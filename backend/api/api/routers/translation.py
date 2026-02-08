@@ -1,20 +1,20 @@
 """Translation router."""
 
 import logging
-from urllib.error import URLError
 
 from common.dependencies import (
     get_file_repository,
     get_file_scheduling_service,
-    get_libretranslate_api,
     get_task_scheduling_service,
+)
+from common.file.file_repository import (
+    LIBRETRANSLATE_SUPPORTED_LANGUAGES,
+    LibretranslateSupportedLanguages,
 )
 from common.services.query_builder import QueryParameters
 from common.services.task_scheduling_service import TaskSchedulingService
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
-
-from api.settings import settings
 
 router = APIRouter()
 
@@ -34,23 +34,9 @@ class TranslateAllRequest(BaseModel):
     query: QueryParameters
 
 
-class LibretranslateSupportedLanguages(BaseModel):
-    code: str
-    name: str
-
-
 @router.get("/languages", status_code=200)
 def get_supported_languages() -> list[LibretranslateSupportedLanguages]:
-    api = get_libretranslate_api()
-    try:
-        languages = [
-            LibretranslateSupportedLanguages.model_validate(lang)
-            for lang in api.languages(timeout=LIBRETRANSLATE_REQUEST_TIMEOUT)
-        ]
-    except URLError as exc:
-        logger.warning("Exception getting supported languages", exc_info=exc)
-        return []
-    return [lang for lang in languages if lang.code != settings.translate_target]
+    return LIBRETRANSLATE_SUPPORTED_LANGUAGES
 
 
 @router.post("/", status_code=200)

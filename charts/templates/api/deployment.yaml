@@ -33,6 +33,24 @@ spec:
           {{- if .Values.api.initContainer.resources }}
           resources: {{- toYaml .Values.api.initContainer.resources | nindent 12 }}
           {{- end }}
+        {{- if .Values.translate.enabled }}
+        - name: check-translate-ready
+          image: {{ .Values.image.registry }}/{{ .Values.api.initContainer.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) .Values.api.initContainer.image.tag }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command:
+            - 'sh'
+            - '-c'
+            - |
+              set -eu
+
+              until nc -vz {{ include "app.fullname" . }}-translate {{ .Values.translate.service.port }}; do
+                echo "Waiting for translate service";
+                sleep 1;
+              done;
+          {{- if .Values.api.initContainer.resources }}
+          resources: {{- toYaml .Values.api.initContainer.resources | nindent 12 }}
+          {{- end }}
+        {{- end }}
       containers:
         - name: api
           image: {{ .Values.image.registry }}/{{ .Values.api.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) .Values.api.image.tag }}

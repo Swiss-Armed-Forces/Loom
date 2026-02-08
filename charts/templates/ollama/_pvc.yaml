@@ -1,6 +1,7 @@
 {{- define "app.ollama.pvc" -}}
 {{- $component := .component -}}
 {{- $values := index .Values $component -}}
+{{- if and $values.enabled }}
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
@@ -17,4 +18,5 @@ spec:
   {{- if $values.pvc.storageClass -}}
   storageClassName: {{ $values.pvc.storageClass }}
   {{- end }}
+{{- end }}
 {{- end -}}

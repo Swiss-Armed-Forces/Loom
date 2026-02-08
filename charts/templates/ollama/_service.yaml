@@ -1,6 +1,7 @@
 {{- define "app.ollama.service" -}}
 {{- $component := .component -}}
 {{- $values := index .Values $component -}}
+{{- if and $values.enabled }}
 apiVersion: v1
 kind: Service
 metadata:
@@ -15,4 +16,5 @@ spec:
       targetPort: {{ $values.service.port }}
   selector:
     app: {{ include "app.name" . }}-{{ $component }}
+{{- end }}
 {{- end -}}
