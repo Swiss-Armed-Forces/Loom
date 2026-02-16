@@ -48,10 +48,60 @@ class IMAPService:
             client.login(self.user, self.password)
             yield client
 
-    def count_messages(self, folder: PurePath | None = None) -> int:
+    def count_messages(
+        self, folder: PurePath | None = None, recurse: bool = False
+    ) -> int:
+        """Counts messages in a folder.
+
+        - recurse=False: counts only the specified folder.
+        - recurse=True: counts folder + all subfolders recursively.
+        Raises IMAPServiceError on failure.
+        """
+        root = self.get_imap_folder(folder)
+
         with self._imap_context() as client:
-            select_info = client.select_folder(str(self.get_imap_folder(folder)))
-            return int(select_info[b"EXISTS"])
+
+            def _status_messages(mailbox: str) -> int:
+                try:
+                    status = client.folder_status(mailbox, [b"MESSAGES"])
+                except IMAPClientError as e:
+                    raise IMAPServiceError(
+                        f"Failed to get STATUS for mailbox '{mailbox}': {e}"
+                    ) from e
+
+                messages = status.get(b"MESSAGES")
+                if not isinstance(messages, int):
+                    raise IMAPServiceError(
+                        f"Unexpected STATUS response for mailbox '{mailbox}': {status}"
+                    )
+                return messages
+
+            if not recurse:
+                return _status_messages(str(root))
+
+            # Recursive mode
+            all_folders = client.list_folders()
+            delimiter = next((d for _, d, _ in all_folders if d), b"/").decode()
+
+            try:
+                subtree = client.list_folders(
+                    directory="", pattern=f"{root}{delimiter}*"
+                )
+            except IMAPClientError as e:
+                raise IMAPServiceError(
+                    f"Failed to list folder subtree for '{root}': {e}"
+                ) from e
+
+            mailboxes: set[str] = {str(root)}
+
+            for flags, _, name in subtree:
+                if self._is_noselect(flags):
+                    continue
+                if isinstance(name, bytes):
+                    name = name.decode()
+                mailboxes.add(name)
+
+            return sum(_status_messages(mbox) for mbox in mailboxes)
 
     def create_folder(self, folder: PurePath):
         with self._imap_context() as client:

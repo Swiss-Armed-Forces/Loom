@@ -132,3 +132,60 @@ def test_imap_contains_email_folder(
 
     uid = imap_service.get_uid_of_email(email, folder_path)
     assert uid is not None
+
+
+def test_imap_count_messages_recurse_no_messages(imap_service: IMAPService):
+    # No messages anywhere
+    assert imap_service.count_messages(recurse=True) == 0
+
+
+def test_imap_count_messages_recurse_inbox_only(imap_service: IMAPService):
+    # Only messages in INBOX
+    imap_service.append_email(EMAIL_ASSETS[0])
+    imap_service.append_email(EMAIL_ASSETS[1])
+    imap_service.append_email(EMAIL_ASSETS[2])
+
+    assert imap_service.count_messages() == 3
+    assert imap_service.count_messages(recurse=True) == 3
+
+
+def test_imap_count_messages_recurse_subfolders_only(imap_service: IMAPService):
+    # Messages only in subfolders, INBOX empty
+    parent = PurePath("count_parent")
+    child = PurePath("count_parent/child")
+
+    imap_service.append_email(EMAIL_ASSETS[0], parent)
+    imap_service.append_email(EMAIL_ASSETS[1], child)
+    imap_service.append_email(EMAIL_ASSETS[2], child)
+
+    # INBOX has none directly
+    assert imap_service.count_messages() == 0
+
+    # Subtree counts
+    assert imap_service.count_messages(parent) == 1
+    assert imap_service.count_messages(child) == 2
+    assert imap_service.count_messages(parent, recurse=True) == 3
+
+    # Whole account under INBOX should see them too
+    assert imap_service.count_messages(recurse=True) == 3
+
+
+def test_imap_count_messages_recurse_mixed_depth(imap_service: IMAPService):
+    root = PurePath("mixed")
+    child1 = PurePath("mixed/child1")
+    child2 = PurePath("mixed/child2")
+    grandchild = PurePath("mixed/child2/grandchild")
+
+    imap_service.append_email(EMAIL_ASSETS[0], root)  # 1 in root
+    imap_service.append_email(EMAIL_ASSETS[1], child1)  # 1 in child1
+    imap_service.append_email(EMAIL_ASSETS[2], child2)  # 1 in child2
+    imap_service.append_email(EMAIL_ASSETS[3], grandchild)  # 1 in grandchild
+
+    assert imap_service.count_messages(root) == 1
+    assert imap_service.count_messages(child1) == 1
+    assert imap_service.count_messages(child2) == 1
+    assert imap_service.count_messages(grandchild) == 1
+
+    # Recursive counts
+    assert imap_service.count_messages(root, recurse=True) == 4
+    assert imap_service.count_messages(child2, recurse=True) == 2
