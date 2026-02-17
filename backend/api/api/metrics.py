@@ -9,6 +9,18 @@ from opentelemetry.metrics import CallbackOptions, Observation
 from opentelemetry.sdk.metrics import MeterProvider
 
 
+def count_files(_: CallbackOptions) -> Iterable[Observation]:
+    file_repository = get_file_repository()
+    query_id = file_repository.open_point_in_time()
+    email_count = file_repository.count_by_query(
+        query=QueryParameters(
+            query_id=query_id,
+            search_string="*",
+        )
+    )
+    yield Observation(value=email_count)
+
+
 def count_emails(_: CallbackOptions) -> Iterable[Observation]:
     file_repository = get_file_repository()
     query_id = file_repository.open_point_in_time()
@@ -37,6 +49,12 @@ def init_metrics(api: FastAPI):
 
     # add custom metrics
     data_meter = provider.get_meter("data")
+    data_meter.create_observable_up_down_counter(
+        name="data.files",
+        callbacks=[count_files],
+        unit="files",
+        description="Number of files",
+    )
     data_meter.create_observable_up_down_counter(
         name="data.emails",
         callbacks=[count_emails],
