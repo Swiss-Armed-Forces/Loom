@@ -34,7 +34,13 @@
 6. Install direnv
    - Install direnv using the [official instructions](https://direnv.net/docs/installation.html)
    - Don't forget to hook direnv into your shell [instructions](https://direnv.net/docs/hook.html)
-   - Open file `/etc/nix/nix.conf` and add `allowed-users = root [NAME_OF_YOUR_USER]`
+   - Open file `/etc/nix/nix.conf` and add the following lines
+
+   ```bash
+   extra-substituters = https://devenv.cachix.org
+   extra-trusted-public-keys = devenv.cachix.org-1:w1cLUi8dv3hnoSPGAuibQv+f9TZLr6cv/Hm9XgU50cw=
+   ```
+
    - Run `sudo systemctl restart nix-daemon.service` to restart the Nix daemon
    - Allow direnv to run in the loom directory: `cd loom/ && direnv allow`
 7. Start the development environment:
@@ -66,3 +72,7 @@ you're authenticated using a **personal access token**—OAuth-based authenticat
 **not supported** in this setup. When prompted, log in with your GitLab.com credentials
 using the access token as the password. Once authenticated, GitLab Duo will be able to
 provide contextual code suggestions directly within your development environment.
+
+## More Documentation and Links
+
+Get further information by reading the [documentations](../README.md#-more-documentation-and-links)
