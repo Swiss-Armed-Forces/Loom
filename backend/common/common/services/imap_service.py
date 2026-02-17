@@ -4,10 +4,11 @@ import re
 from contextlib import contextmanager
 from pathlib import PurePath
 
-from common.file.file_repository import ImapInfo
 from imapclient import IMAPClient
 from imapclient.exceptions import IMAPClientError
 from pydantic import AnyUrl
+
+from common.file.file_repository import ImapInfo
 
 
 def _get_email_deduplication_fingerprint(raw_email: bytes) -> str:

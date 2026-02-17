@@ -5,6 +5,7 @@ apis/ArchivesApi.ts
 apis/CachingApi.ts
 apis/FilesApi.ts
 apis/IndexApi.ts
+apis/MetricsApi.ts
 apis/QueuesApi.ts
 apis/SummarizationApi.ts
 apis/TagsApi.ts

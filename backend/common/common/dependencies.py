@@ -21,6 +21,7 @@ from common.file.file_repository import FileRepository
 from common.file.file_scheduling_service import FileSchedulingService
 from common.messages.pubsub_service import PubSubService
 from common.services.file_storage_service import FileStorageService
+from common.services.imap_service import IMAPService
 from common.services.lazybytes_service import GridFSLazyBytesService, LazyBytesService
 from common.services.query_builder import QueryBuilder
 from common.services.queues_service import QueuesService
@@ -59,6 +60,7 @@ _archive_encryption_service: ArchiveEncryptionService | None = None
 _lazybytes_service: LazyBytesService | None = None
 _ollama_client: Client | None = None
 _ollama_tool_client: Client | None = None
+_imap_service: IMAPService | None = None
 
 
 logger = logging.getLogger(__name__)
@@ -165,6 +167,11 @@ def init(init_elasticsearch_documents: bool = False):
         str(settings.ollama_tool_host), timeout=settings.ollama_timeout
     )
 
+    global _imap_service
+    _imap_service = IMAPService(
+        settings.imap_host, settings.imap_user, settings.imap_password
+    )
+
 
 # pylint: disable=too-many-statements
 def mock_init():
@@ -238,6 +245,9 @@ def mock_init():
 
     global _ollama_tool_client
     _ollama_tool_client = MagicMock(spec=Client)
+
+    global _imap_service
+    _imap_service = MagicMock(spec=IMAPService)
 
 
 def get_libretranslate_api() -> LibreTranslateAPI:
@@ -364,3 +374,9 @@ def get_ollama_tool_client() -> Client:
     if _ollama_tool_client is None:
         raise DependencyException("Ollama Tool Client missing")
     return _ollama_tool_client
+
+
+def get_imap_service() -> IMAPService:
+    if _imap_service is None:
+        raise DependencyException("IMAP Service missing")
+    return _imap_service

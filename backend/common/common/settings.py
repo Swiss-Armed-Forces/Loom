@@ -59,6 +59,10 @@ class Settings(BaseSettings):
     ollama_tool_host: AnyHttpUrl = AnyHttpUrl(f"http://ollama-tool.{DOMAIN}")
     ollama_timeout: int = 5 * 60
 
+    imap_host: AnyUrl = AnyUrl(f"imap://dovecot.{DOMAIN}:143")
+    imap_user: str = "user"
+    imap_password: str = "pass"
+
     llm_model: str = "smollm2:135m"
     llm_model_embedding: str = "nomic-embed-text:v1.5"
     llm_model_tool: str = "smollm2:135m"

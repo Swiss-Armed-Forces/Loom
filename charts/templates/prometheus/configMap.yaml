@@ -14,6 +14,11 @@ data:
         metrics_path: /metrics/per-object
         static_configs:
           - targets: ['{{ include "app.fullname" . }}-rabbit:{{ .Values.rabbit.service.port.prometheus }}']
+      - job_name: 'api'
+        scrape_interval: 15s
+        metrics_path: /v1/metrics
+        static_configs:
+          - targets: ['{{ include "app.fullname" . }}-api:{{ .Values.api.service.port }}']
       - job_name: 'gotenberg'
         scrape_interval: 15s
         metrics_path: /prometheus/metrics

@@ -7,6 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
+from api.metrics import init_metrics
 from api.patch_openapi_schema import patch_openapi_schema_for_app
 from api.routers import (
     ai,
@@ -16,6 +17,7 @@ from api.routers import (
     docs,
     files,
     index,
+    metrics,
     queues,
     summarization,
     tags,
@@ -34,6 +36,9 @@ def init_api() -> FastAPI:
         redoc_url=None,
         servers=[{"url": "/", "description": "Loom API"}],
     )
+
+    # metrics
+    init_metrics(api)
 
     api.add_middleware(
         CORSMiddleware,
@@ -54,6 +59,7 @@ def init_api() -> FastAPI:
 
     # register routers
     api.include_router(docs.router)
+    api.include_router(metrics.router, prefix="/v1/metrics", tags=["metrics"])
     api.include_router(archives.router, prefix="/v1/archive", tags=["archives"])
     api.include_router(tags.router, prefix="/v1/files/tags", tags=["tags"])
     api.include_router(queues.router, prefix="/v1/queues", tags=["queues"])

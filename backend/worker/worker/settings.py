@@ -4,7 +4,7 @@ from typing import Any, Literal, Tuple, Type
 from common.settings import DOMAIN
 from common.settings import Settings as CommonSettings
 from gotenberg_client.options import Measurement, MeasurementUnitType, PageSize
-from pydantic import AnyHttpUrl, AnyUrl
+from pydantic import AnyHttpUrl
 from pydantic.fields import FieldInfo
 from pydantic_settings import (
     BaseSettings,
@@ -177,10 +177,6 @@ class Settings(CommonSettings):
     persist_retry_tasks: bool = True
     tika_ocr_languages: list[TikaAllowedOcrLanguage] = ["eng"]
     tika_server_host: AnyHttpUrl = AnyHttpUrl(f"http://tika.{DOMAIN}")
-
-    imap_host: AnyUrl = AnyUrl(f"imap://dovecot.{DOMAIN}:143")
-    imap_user: str = "user"
-    imap_password: str = "pass"
 
     rspam_host: AnyHttpUrl = AnyHttpUrl(f"http://rspamd-worker.{DOMAIN}")
 
