@@ -26,7 +26,8 @@ check_todo()
                 ':!cicd/check_todo.sh' \
                 ':!backend/api/static' \
                 ':!THIRD-PARTY.md' \
-                ':!Frontend/public/THIRD-PARTY.md'
+                ':!Frontend/public/THIRD-PARTY.md' \
+                ':!Documentation/ContainerDiagram.svg'
 }
 
 check_todo

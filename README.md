@@ -306,3 +306,4 @@ APIs directly, if needed.
 * [Backend Documentation](backend/README.md)
 * [Integration Testing Documentation](integrationtest/README.md)
 * [CI/CD Pipeline Documentation](cicd/README.md)
+* [Celery Flower canvas](https://docs.celeryq.dev/en/stable/userguide/canvas.html)
