@@ -7,6 +7,7 @@ from time import sleep
 from common.dependencies import (
     get_celery_app,
     get_elasticsearch,
+    get_imap_service,
     get_pubsub_service,
     get_query_builder,
     get_redis_client,
@@ -17,7 +18,6 @@ from crawler.dependencies import get_minio_client
 from crawler.dependencies import init as init_crawler_dependencies
 from crawler.settings import settings as crawler_settings
 from pymongo import MongoClient
-from worker.dependencies import get_imap_service
 from worker.dependencies import init as init_worker_dependencies
 
 from utils.celery_inspect import is_celery_idle, iterate_celery_tasks

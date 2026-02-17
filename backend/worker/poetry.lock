@@ -469,6 +469,7 @@ celery-types = "^0.24.0"
 elasticsearch = "^9.0.2"
 fastapi = "^0.128.0"
 filelock = "^3.14.0"
+imapclient = "^3.0.1"
 libretranslatepy = "^2.1.4"
 luqum = "^0.14.0"
 ollama = "^0.6.0"
@@ -2558,4 +2559,4 @@ cffi = ["cffi (>=1.11)"]
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.11"
-content-hash = "f0d6c2565247fba71b7594739008735be890cb9c2678752076df6ac8304de1e1"
+content-hash = "1dd87918041cf7361e31b74bea258ffa94e377a3c4c758d8c01fd69b294bfa0d"

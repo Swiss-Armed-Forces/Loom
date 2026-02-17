@@ -19,6 +19,9 @@ types-redis = "^4.6.0.20240425"
 numpy = "^1.26.4"
 scikit-learn = "^1.4.2"
 websockets = "^13.0"
+prometheus-client = "^0.24.1"
+opentelemetry-instrumentation-fastapi = "^0.60b1"
+opentelemetry-exporter-prometheus = "^0.60b1"
 
 [tool.poetry.group.dev.dependencies]
 debugpy = "^1.8.1"

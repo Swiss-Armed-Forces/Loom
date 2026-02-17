@@ -5,16 +5,12 @@ from urllib.parse import urlencode
 
 from celery import chain, group
 from celery.canvas import Signature
-from common.dependencies import get_celery_app, get_lazybytes_service
+from common.dependencies import get_celery_app, get_imap_service, get_lazybytes_service
 from common.file.file_repository import File, ImapInfo
 from common.services.lazybytes_service import LazyBytes
 from httpx import HTTPStatusError
 
-from worker.dependencies import (
-    get_gotenberg_client,
-    get_imap_service,
-    get_rspamd_service,
-)
+from worker.dependencies import get_gotenberg_client, get_rspamd_service
 from worker.index_file.infra.file_indexing_task import FileIndexingTask
 from worker.index_file.infra.indexing_persister import IndexingPersister
 from worker.index_file.tasks import create_thumbnail, render

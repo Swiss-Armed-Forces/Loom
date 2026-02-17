@@ -482,168 +482,180 @@ The complete source code for Traefik is publicly available at [https://github.co
 
 ## Python
 
-| Name                     | Version         | License                                                                          |
-|--------------------------|-----------------|----------------------------------------------------------------------------------|
-| celery-types             | 0.24.0          | Apache Software License                                                          |
-| coverage                 | 7.5.4           | Apache Software License                                                          |
-| docker                   | 7.1.0           | Apache Software License                                                          |
-| elastic-transport        | 8.17.1          | Apache Software License                                                          |
-| elasticsearch            | 9.0.2           | Apache Software License                                                          |
-| memray                   | 1.17.2          | Apache Software License                                                          |
-| minio                    | 7.2.15          | Apache Software License                                                          |
-| pymongo                  | 4.7.3           | Apache Software License                                                          |
-| pytest-memray            | 1.7.0           | Apache Software License                                                          |
-| pytest_docker_tools      | 3.1.9           | Apache Software License                                                          |
-| python-multipart         | 0.0.21          | Apache Software License                                                          |
-| requests                 | 2.32.3          | Apache Software License                                                          |
-| requests-toolbelt        | 1.0.0           | Apache Software License                                                          |
-| requirements-parser      | 0.13.0          | Apache Software License                                                          |
-| tenacity                 | 9.1.2           | Apache Software License                                                          |
-| tornado                  | 6.5.1           | Apache Software License                                                          |
-| types-cffi               | 1.16.0.20240331 | Apache Software License                                                          |
-| types-docker             | 7.1.0.20240626  | Apache Software License                                                          |
-| types-pyOpenSSL          | 24.1.0.20240425 | Apache Software License                                                          |
-| types-redis              | 4.6.0.20240425  | Apache Software License                                                          |
-| types-requests           | 2.32.0.20240622 | Apache Software License                                                          |
-| types-setuptools         | 70.1.0.20240625 | Apache Software License                                                          |
-| tzdata                   | 2025.2          | Apache Software License                                                          |
-| watchdog                 | 6.0.0           | Apache Software License                                                          |
-| cryptography             | 42.0.8          | Apache Software License; BSD License                                             |
-| packaging                | 24.2            | Apache Software License; BSD License                                             |
-| python-dateutil          | 2.9.0.post0     | Apache Software License; BSD License                                             |
-| pycryptodome             | 3.20.0          | Apache Software License; BSD License; Public Domain                              |
-| pycryptodome             | 3.20.0          | Apache Software License; BSD License; Public Domain                              |
-| pycryptodomex            | 3.20.0          | Apache Software License; BSD License; Public Domain                              |
-| luqum                    | 0.14.0          | Apache Software License; GNU Lesser General Public License v3 or later (LGPLv3+) |
-| orjson                   | 3.10.5          | Apache Software License; MIT License                                             |
-| sniffio                  | 1.3.1           | Apache Software License; MIT License                                             |
-| freezegun                | 1.5.5           | Apache-2.0                                                                       |
-| ply                      | 3.11            | BSD                                                                              |
-| IMAPClient               | 3.0.1           | BSD License                                                                      |
-| Jinja2                   | 3.1.6           | BSD License                                                                      |
-| MarkupSafe               | 3.0.2           | BSD License                                                                      |
-| Pygments                 | 2.19.1          | BSD License                                                                      |
-| amqp                     | 5.2.0           | BSD License                                                                      |
-| billiard                 | 4.2.2           | BSD License                                                                      |
-| celery                   | 5.5.3           | BSD License                                                                      |
-| click                    | 8.1.7           | BSD License                                                                      |
-| click-plugins            | 1.1.1           | BSD License                                                                      |
-| dill                     | 0.3.8           | BSD License                                                                      |
-| flower                   | 2.0.1           | BSD License                                                                      |
-| gitdb                    | 4.0.12          | BSD License                                                                      |
-| httpcore                 | 1.0.5           | BSD License                                                                      |
-| httpx                    | 0.28.1          | BSD License                                                                      |
-| idna                     | 3.7             | BSD License                                                                      |
-| joblib                   | 1.4.2           | BSD License                                                                      |
-| jsonpatch                | 1.33            | BSD License                                                                      |
-| jsonpointer              | 3.0.0           | BSD License                                                                      |
-| kombu                    | 5.5.4           | BSD License                                                                      |
-| lxml                     | 4.9.4           | BSD License                                                                      |
-| numpy                    | 1.26.4          | BSD License                                                                      |
-| pika                     | 1.3.2           | BSD License                                                                      |
-| prompt_toolkit           | 3.0.47          | BSD License                                                                      |
-| pycparser                | 2.22            | BSD License                                                                      |
-| pytest-celery            | 1.2.1           | BSD License                                                                      |
-| python-dotenv            | 1.0.1           | BSD License                                                                      |
-| scikit-learn             | 1.7.0           | BSD License                                                                      |
-| scipy                    | 1.15.3          | BSD License                                                                      |
-| smmap                    | 5.0.2           | BSD License                                                                      |
-| starlette                | 0.46.1          | BSD License                                                                      |
-| threadpoolctl            | 3.5.0           | BSD License                                                                      |
-| vine                     | 5.1.0           | BSD License                                                                      |
-| websockets               | 13.1            | BSD License                                                                      |
-| GitPython                | 3.1.46          | BSD-3-Clause                                                                     |
-| psutil                   | 7.2.1           | BSD-3-Clause                                                                     |
-| pytest-timeout           | 2.4.0           | DFSG approved; MIT License                                                       |
-| pylint-plugin-utils      | 0.8.2           | GNU General Public License v2 or later (GPLv2+)                                  |
-| python-gitlab            | 6.0.0           | GNU Lesser General Public License v3 (LGPLv3)                                    |
-| pylint-pydantic          | 0.4.1           | GPLv3                                                                            |
-| dnspython                | 2.6.1           | ISC License (ISCL)                                                               |
-| click-repl               | 0.3.0           | MIT                                                                              |
-| identify                 | 2.6.16          | MIT                                                                              |
-| pycodestyle              | 2.14.0          | MIT                                                                              |
-| pytest-cov               | 6.3.0           | MIT                                                                              |
-| PyYAML                   | 6.0.1           | MIT License                                                                      |
-| Wand                     | 0.6.13          | MIT License                                                                      |
-| annotated-types          | 0.7.0           | MIT License                                                                      |
-| anyio                    | 4.9.0           | MIT License                                                                      |
-| api                      | 0.1.0           | MIT License                                                                      |
-| argon2-cffi              | 23.1.0          | MIT License                                                                      |
-| argon2-cffi-bindings     | 21.2.0          | MIT License                                                                      |
-| attrs                    | 23.2.0          | MIT License                                                                      |
-| autoflake                | 2.3.1           | MIT License                                                                      |
-| cffi                     | 1.17.1          | MIT License                                                                      |
-| charset-normalizer       | 3.3.2           | MIT License                                                                      |
-| click-didyoumean         | 0.3.1           | MIT License                                                                      |
-| common                   | 0.1.0           | MIT License                                                                      |
-| crawler                  | 0.1.0           | MIT License                                                                      |
-| debugpy                  | 1.8.19          | MIT License                                                                      |
-| deptry                   | 0.24.0          | MIT License                                                                      |
-| flake8                   | 7.3.0           | MIT License                                                                      |
-| flake8-bugbear           | 25.11.29        | MIT License                                                                      |
-| h11                      | 0.14.0          | MIT License                                                                      |
-| h2                       | 4.3.0           | MIT License                                                                      |
-| hpack                    | 4.1.0           | MIT License                                                                      |
-| hyperframe               | 6.1.0           | MIT License                                                                      |
-| iniconfig                | 2.0.0           | MIT License                                                                      |
-| integrationtest          | 0.1.0           | MIT License                                                                      |
-| isort                    | 5.13.2          | MIT License                                                                      |
-| langchain-core           | 0.3.22          | MIT License                                                                      |
-| langchain-text-splitters | 0.3.2           | MIT License                                                                      |
-| langsmith                | 0.1.147         | MIT License                                                                      |
-| libretranslatepy         | 2.1.4           | MIT License                                                                      |
-| linkify-it-py            | 2.0.3           | MIT License                                                                      |
-| markdown-it-py           | 3.0.0           | MIT License                                                                      |
-| mccabe                   | 0.7.0           | MIT License                                                                      |
-| mdit-py-plugins          | 0.4.2           | MIT License                                                                      |
-| mdurl                    | 0.1.2           | MIT License                                                                      |
-| mypy                     | 1.10.1          | MIT License                                                                      |
-| mypy-extensions          | 1.0.0           | MIT License                                                                      |
-| platformdirs             | 4.2.2           | MIT License                                                                      |
-| pluggy                   | 1.5.0           | MIT License                                                                      |
-| pydantic                 | 2.10.3          | MIT License                                                                      |
-| pydantic-mongo           | 2.3.0           | MIT License                                                                      |
-| pydantic-settings        | 2.3.4           | MIT License                                                                      |
-| pydantic_core            | 2.27.1          | MIT License                                                                      |
-| pyflakes                 | 3.4.0           | MIT License                                                                      |
-| pytest-mock              | 3.15.1          | MIT License                                                                      |
-| pytest-random-order      | 1.1.1           | MIT License                                                                      |
-| pytest-split             | 0.11.0          | MIT License                                                                      |
-| python-magic             | 0.4.27          | MIT License                                                                      |
-| pytokens                 | 0.3.0           | MIT License                                                                      |
-| pytz                     | 2025.2          | MIT License                                                                      |
-| redis                    | 5.0.7           | MIT License                                                                      |
-| rich                     | 14.0.0          | MIT License                                                                      |
-| six                      | 1.16.0          | MIT License                                                                      |
-| stream-zip               | 0.0.83          | MIT License                                                                      |
-| textual                  | 3.3.0           | MIT License                                                                      |
-| tomlkit                  | 0.12.5          | MIT License                                                                      |
-| uc-micro-py              | 1.0.3           | MIT License                                                                      |
-| untokenize               | 0.1.1           | MIT License                                                                      |
-| urllib3                  | 2.2.2           | MIT License                                                                      |
-| worker                   | 0.1.0           | MIT License                                                                      |
-| docformatter             | 1.7.7           | MIT License; Other/Proprietary License                                           |
-| pytest-rerunfailures     | 15.1            | MPL-2.0                                                                          |
-| certifi                  | 2024.6.2        | Mozilla Public License 2.0 (MPL 2.0)                                             |
-| gotenberg-client         | 0.13.1          | Mozilla Public License 2.0 (MPL 2.0)                                             |
-| pathspec                 | 1.0.4           | Mozilla Public License 2.0 (MPL 2.0)                                             |
-| blobfile                 | 2.1.1           | Public Domain                                                                    |
-| filelock                 | 3.15.4          | The Unlicense (Unlicense)                                                        |
-| annotated-doc            | 0.0.4           | UNKNOWN                                                                          |
-| astroid                  | 3.3.11          | UNKNOWN                                                                          |
-| binwalk                  | 2.4.3           | UNKNOWN                                                                          |
-| black                    | 26.1.0          | UNKNOWN                                                                          |
-| fastapi                  | 0.128.0         | UNKNOWN                                                                          |
-| humanize                 | 4.12.3          | UNKNOWN                                                                          |
-| ollama                   | 0.6.1           | UNKNOWN                                                                          |
-| prometheus_client        | 0.22.1          | UNKNOWN                                                                          |
-| pycrypto                 | 3.20.0          | UNKNOWN                                                                          |
-| pylint                   | 3.3.9           | UNKNOWN                                                                          |
-| pytest                   | 9.0.2           | UNKNOWN                                                                          |
-| pytest-asyncio           | 1.3.0           | UNKNOWN                                                                          |
-| typing_extensions        | 4.15.0          | UNKNOWN                                                                          |
-| uvicorn                  | 0.40.0          | UNKNOWN                                                                          |
-| zstandard                | 0.25.0          | UNKNOWN                                                                          |
+| Name                                  | Version         | License                                                                          |
+|---------------------------------------|-----------------|----------------------------------------------------------------------------------|
+| celery-types                          | 0.24.0          | Apache Software License                                                          |
+| coverage                              | 7.5.4           | Apache Software License                                                          |
+| docker                                | 7.1.0           | Apache Software License                                                          |
+| elastic-transport                     | 8.17.1          | Apache Software License                                                          |
+| elasticsearch                         | 9.0.2           | Apache Software License                                                          |
+| memray                                | 1.17.2          | Apache Software License                                                          |
+| minio                                 | 7.2.15          | Apache Software License                                                          |
+| opentelemetry-instrumentation         | 0.60b1          | Apache Software License                                                          |
+| opentelemetry-instrumentation-asgi    | 0.60b1          | Apache Software License                                                          |
+| opentelemetry-instrumentation-fastapi | 0.60b1          | Apache Software License                                                          |
+| opentelemetry-util-http               | 0.60b1          | Apache Software License                                                          |
+| pymongo                               | 4.7.3           | Apache Software License                                                          |
+| pytest-memray                         | 1.7.0           | Apache Software License                                                          |
+| pytest_docker_tools                   | 3.1.9           | Apache Software License                                                          |
+| python-multipart                      | 0.0.21          | Apache Software License                                                          |
+| requests                              | 2.32.3          | Apache Software License                                                          |
+| requests-toolbelt                     | 1.0.0           | Apache Software License                                                          |
+| requirements-parser                   | 0.13.0          | Apache Software License                                                          |
+| tenacity                              | 9.1.2           | Apache Software License                                                          |
+| tornado                               | 6.5.1           | Apache Software License                                                          |
+| types-cffi                            | 1.16.0.20240331 | Apache Software License                                                          |
+| types-docker                          | 7.1.0.20240626  | Apache Software License                                                          |
+| types-pyOpenSSL                       | 24.1.0.20240425 | Apache Software License                                                          |
+| types-redis                           | 4.6.0.20240425  | Apache Software License                                                          |
+| types-requests                        | 2.32.0.20240622 | Apache Software License                                                          |
+| types-setuptools                      | 70.1.0.20240625 | Apache Software License                                                          |
+| tzdata                                | 2025.2          | Apache Software License                                                          |
+| watchdog                              | 6.0.0           | Apache Software License                                                          |
+| cryptography                          | 42.0.8          | Apache Software License; BSD License                                             |
+| packaging                             | 24.2            | Apache Software License; BSD License                                             |
+| python-dateutil                       | 2.9.0.post0     | Apache Software License; BSD License                                             |
+| pycryptodome                          | 3.20.0          | Apache Software License; BSD License; Public Domain                              |
+| pycryptodome                          | 3.20.0          | Apache Software License; BSD License; Public Domain                              |
+| pycryptodomex                         | 3.20.0          | Apache Software License; BSD License; Public Domain                              |
+| luqum                                 | 0.14.0          | Apache Software License; GNU Lesser General Public License v3 or later (LGPLv3+) |
+| orjson                                | 3.10.5          | Apache Software License; MIT License                                             |
+| sniffio                               | 1.3.1           | Apache Software License; MIT License                                             |
+| freezegun                             | 1.5.5           | Apache-2.0                                                                       |
+| ply                                   | 3.11            | BSD                                                                              |
+| IMAPClient                            | 3.0.1           | BSD License                                                                      |
+| Jinja2                                | 3.1.6           | BSD License                                                                      |
+| MarkupSafe                            | 3.0.2           | BSD License                                                                      |
+| Pygments                              | 2.19.1          | BSD License                                                                      |
+| amqp                                  | 5.2.0           | BSD License                                                                      |
+| asgiref                               | 3.11.1          | BSD License                                                                      |
+| billiard                              | 4.2.2           | BSD License                                                                      |
+| celery                                | 5.5.3           | BSD License                                                                      |
+| click                                 | 8.1.7           | BSD License                                                                      |
+| click-plugins                         | 1.1.1           | BSD License                                                                      |
+| dill                                  | 0.3.8           | BSD License                                                                      |
+| flower                                | 2.0.1           | BSD License                                                                      |
+| gitdb                                 | 4.0.12          | BSD License                                                                      |
+| httpcore                              | 1.0.5           | BSD License                                                                      |
+| httpx                                 | 0.28.1          | BSD License                                                                      |
+| idna                                  | 3.7             | BSD License                                                                      |
+| joblib                                | 1.4.2           | BSD License                                                                      |
+| jsonpatch                             | 1.33            | BSD License                                                                      |
+| jsonpointer                           | 3.0.0           | BSD License                                                                      |
+| kombu                                 | 5.5.4           | BSD License                                                                      |
+| lxml                                  | 4.9.4           | BSD License                                                                      |
+| numpy                                 | 1.26.4          | BSD License                                                                      |
+| pika                                  | 1.3.2           | BSD License                                                                      |
+| prompt_toolkit                        | 3.0.47          | BSD License                                                                      |
+| pycparser                             | 2.22            | BSD License                                                                      |
+| pytest-celery                         | 1.2.1           | BSD License                                                                      |
+| python-dotenv                         | 1.0.1           | BSD License                                                                      |
+| scikit-learn                          | 1.7.0           | BSD License                                                                      |
+| scipy                                 | 1.15.3          | BSD License                                                                      |
+| smmap                                 | 5.0.2           | BSD License                                                                      |
+| starlette                             | 0.46.1          | BSD License                                                                      |
+| threadpoolctl                         | 3.5.0           | BSD License                                                                      |
+| vine                                  | 5.1.0           | BSD License                                                                      |
+| websockets                            | 13.1            | BSD License                                                                      |
+| wrapt                                 | 1.17.3          | BSD License                                                                      |
+| GitPython                             | 3.1.46          | BSD-3-Clause                                                                     |
+| psutil                                | 7.2.1           | BSD-3-Clause                                                                     |
+| pytest-timeout                        | 2.4.0           | DFSG approved; MIT License                                                       |
+| pylint-plugin-utils                   | 0.8.2           | GNU General Public License v2 or later (GPLv2+)                                  |
+| python-gitlab                         | 6.0.0           | GNU Lesser General Public License v3 (LGPLv3)                                    |
+| pylint-pydantic                       | 0.4.1           | GPLv3                                                                            |
+| dnspython                             | 2.6.1           | ISC License (ISCL)                                                               |
+| click-repl                            | 0.3.0           | MIT                                                                              |
+| identify                              | 2.6.16          | MIT                                                                              |
+| pycodestyle                           | 2.14.0          | MIT                                                                              |
+| pytest-cov                            | 6.3.0           | MIT                                                                              |
+| PyYAML                                | 6.0.1           | MIT License                                                                      |
+| Wand                                  | 0.6.13          | MIT License                                                                      |
+| annotated-types                       | 0.7.0           | MIT License                                                                      |
+| anyio                                 | 4.9.0           | MIT License                                                                      |
+| api                                   | 0.1.0           | MIT License                                                                      |
+| argon2-cffi                           | 23.1.0          | MIT License                                                                      |
+| argon2-cffi-bindings                  | 21.2.0          | MIT License                                                                      |
+| attrs                                 | 23.2.0          | MIT License                                                                      |
+| autoflake                             | 2.3.1           | MIT License                                                                      |
+| cffi                                  | 1.17.1          | MIT License                                                                      |
+| charset-normalizer                    | 3.3.2           | MIT License                                                                      |
+| click-didyoumean                      | 0.3.1           | MIT License                                                                      |
+| common                                | 0.1.0           | MIT License                                                                      |
+| crawler                               | 0.1.0           | MIT License                                                                      |
+| debugpy                               | 1.8.19          | MIT License                                                                      |
+| deptry                                | 0.24.0          | MIT License                                                                      |
+| flake8                                | 7.3.0           | MIT License                                                                      |
+| flake8-bugbear                        | 25.11.29        | MIT License                                                                      |
+| h11                                   | 0.14.0          | MIT License                                                                      |
+| h2                                    | 4.3.0           | MIT License                                                                      |
+| hpack                                 | 4.1.0           | MIT License                                                                      |
+| hyperframe                            | 6.1.0           | MIT License                                                                      |
+| iniconfig                             | 2.0.0           | MIT License                                                                      |
+| integrationtest                       | 0.1.0           | MIT License                                                                      |
+| isort                                 | 5.13.2          | MIT License                                                                      |
+| langchain-core                        | 0.3.22          | MIT License                                                                      |
+| langchain-text-splitters              | 0.3.2           | MIT License                                                                      |
+| langsmith                             | 0.1.147         | MIT License                                                                      |
+| libretranslatepy                      | 2.1.4           | MIT License                                                                      |
+| linkify-it-py                         | 2.0.3           | MIT License                                                                      |
+| markdown-it-py                        | 3.0.0           | MIT License                                                                      |
+| mccabe                                | 0.7.0           | MIT License                                                                      |
+| mdit-py-plugins                       | 0.4.2           | MIT License                                                                      |
+| mdurl                                 | 0.1.2           | MIT License                                                                      |
+| mypy                                  | 1.10.1          | MIT License                                                                      |
+| mypy-extensions                       | 1.0.0           | MIT License                                                                      |
+| platformdirs                          | 4.2.2           | MIT License                                                                      |
+| pluggy                                | 1.5.0           | MIT License                                                                      |
+| pydantic                              | 2.10.3          | MIT License                                                                      |
+| pydantic-mongo                        | 2.3.0           | MIT License                                                                      |
+| pydantic-settings                     | 2.3.4           | MIT License                                                                      |
+| pydantic_core                         | 2.27.1          | MIT License                                                                      |
+| pyflakes                              | 3.4.0           | MIT License                                                                      |
+| pytest-mock                           | 3.15.1          | MIT License                                                                      |
+| pytest-random-order                   | 1.1.1           | MIT License                                                                      |
+| pytest-split                          | 0.11.0          | MIT License                                                                      |
+| python-magic                          | 0.4.27          | MIT License                                                                      |
+| pytokens                              | 0.3.0           | MIT License                                                                      |
+| pytz                                  | 2025.2          | MIT License                                                                      |
+| redis                                 | 5.0.7           | MIT License                                                                      |
+| rich                                  | 14.0.0          | MIT License                                                                      |
+| six                                   | 1.16.0          | MIT License                                                                      |
+| stream-zip                            | 0.0.83          | MIT License                                                                      |
+| textual                               | 3.3.0           | MIT License                                                                      |
+| tomlkit                               | 0.12.5          | MIT License                                                                      |
+| uc-micro-py                           | 1.0.3           | MIT License                                                                      |
+| untokenize                            | 0.1.1           | MIT License                                                                      |
+| urllib3                               | 2.2.2           | MIT License                                                                      |
+| worker                                | 0.1.0           | MIT License                                                                      |
+| docformatter                          | 1.7.7           | MIT License; Other/Proprietary License                                           |
+| pytest-rerunfailures                  | 15.1            | MPL-2.0                                                                          |
+| certifi                               | 2024.6.2        | Mozilla Public License 2.0 (MPL 2.0)                                             |
+| gotenberg-client                      | 0.13.1          | Mozilla Public License 2.0 (MPL 2.0)                                             |
+| pathspec                              | 1.0.4           | Mozilla Public License 2.0 (MPL 2.0)                                             |
+| blobfile                              | 2.1.1           | Public Domain                                                                    |
+| filelock                              | 3.15.4          | The Unlicense (Unlicense)                                                        |
+| annotated-doc                         | 0.0.4           | UNKNOWN                                                                          |
+| astroid                               | 3.3.11          | UNKNOWN                                                                          |
+| binwalk                               | 2.4.3           | UNKNOWN                                                                          |
+| black                                 | 26.1.0          | UNKNOWN                                                                          |
+| fastapi                               | 0.128.0         | UNKNOWN                                                                          |
+| humanize                              | 4.12.3          | UNKNOWN                                                                          |
+| importlib_metadata                    | 8.7.1           | UNKNOWN                                                                          |
+| ollama                                | 0.6.1           | UNKNOWN                                                                          |
+| opentelemetry-api                     | 1.39.1          | UNKNOWN                                                                          |
+| opentelemetry-exporter-prometheus     | 0.60b1          | UNKNOWN                                                                          |
+| opentelemetry-sdk                     | 1.39.1          | UNKNOWN                                                                          |
+| opentelemetry-semantic-conventions    | 0.60b1          | UNKNOWN                                                                          |
+| prometheus_client                     | 0.24.1          | UNKNOWN                                                                          |
+| pycrypto                              | 3.20.0          | UNKNOWN                                                                          |
+| pylint                                | 3.3.9           | UNKNOWN                                                                          |
+| pytest                                | 9.0.2           | UNKNOWN                                                                          |
+| pytest-asyncio                        | 1.3.0           | UNKNOWN                                                                          |
+| typing_extensions                     | 4.15.0          | UNKNOWN                                                                          |
+| uvicorn                               | 0.40.0          | UNKNOWN                                                                          |
+| zipp                                  | 3.23.0          | UNKNOWN                                                                          |
+| zstandard                             | 0.25.0          | UNKNOWN                                                                          |
 
 ## JavaScript
 
@@ -1081,6 +1093,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | anyio | 4.8.0 | MIT | python-installed-package-cataloger |
 | api | 0.1.0 | MIT | python-installed-package-cataloger |
 | apt | 2.6.1 | BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
+| asgiref | 3.11.1 | BSD-3-Clause | python-installed-package-cataloger |
 | autocommand | 2.2.2 |  | python-installed-package-cataloger |
 | backports-tarfile | 1.2.0 | MIT | python-installed-package-cataloger |
 | base-files | 12.4+deb12u12 |  | dpkg-db-cataloger |
@@ -1139,7 +1152,9 @@ The complete source code for Traefik is publicly available at [https://github.co
 | httpcore | 1.0.8 | BSD-3-Clause | python-installed-package-cataloger |
 | httpx | 0.28.1 | BSD-3-Clause | python-installed-package-cataloger |
 | idna | 3.10 | BSD-3-Clause | python-installed-package-cataloger |
+| imapclient | 3.1.0 |  | python-installed-package-cataloger |
 | importlib-metadata | 8.0.0 | Apache-2.0 | python-installed-package-cataloger |
+| importlib-metadata | 8.7.1 | Apache-2.0 | python-installed-package-cataloger |
 | inflect | 7.3.1 | MIT | python-installed-package-cataloger |
 | init-system-helpers | 1.65.2+deb12u1 | BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
 | jaraco-collections | 5.1.0 | MIT | python-installed-package-cataloger |
@@ -1226,14 +1241,23 @@ The complete source code for Traefik is publicly available at [https://github.co
 | numpy | 1.26.4 | BSD-3-Clause | python-installed-package-cataloger |
 | ollama | 0.6.1 | MIT | python-installed-package-cataloger |
 | openssl | 3.0.17-1~deb12u2 | Apache-2.0, GPL-1.0-only, GPL-1.0-or-later | dpkg-db-cataloger |
+| opentelemetry-api | 1.39.1 | Apache-2.0 | python-installed-package-cataloger |
+| opentelemetry-exporter-prometheus | 0.60b1 | Apache-2.0 | python-installed-package-cataloger |
+| opentelemetry-instrumentation | 0.60b1 | Apache-2.0 | python-installed-package-cataloger |
+| opentelemetry-instrumentation-asgi | 0.60b1 | Apache-2.0 | python-installed-package-cataloger |
+| opentelemetry-instrumentation-fastapi | 0.60b1 | Apache-2.0 | python-installed-package-cataloger |
+| opentelemetry-sdk | 1.39.1 | Apache-2.0 | python-installed-package-cataloger |
+| opentelemetry-semantic-conventions | 0.60b1 | Apache-2.0 | python-installed-package-cataloger |
+| opentelemetry-util-http | 0.60b1 | Apache-2.0 | python-installed-package-cataloger |
 | packaging | 24.2 | Apache-2.0, BSD-2-Clause | python-installed-package-cataloger |
 | packaging | 25.0 |  | python-installed-package-cataloger |
 | passwd | 1:4.13+dfsg1-1+deb12u1 | BSD-3-Clause, GPL-1.0-only, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
 | perl-base | 5.36.0-7+deb12u3 | Artistic-2.0, Artistic-dist, BSD-3-Clause, GPL-1.0-only, GPL-1.0-or-later, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.1-only, Zlib | dpkg-db-cataloger |
 | pip | 24.0 | MIT | python-installed-package-cataloger |
-| pip | 25.3 | MIT | python-installed-package-cataloger |
+| pip | 26.0.1 | MIT | python-installed-package-cataloger |
 | platformdirs | 4.2.2 | MIT | python-installed-package-cataloger |
 | ply | 3.11 |  | python-installed-package-cataloger |
+| prometheus-client | 0.24.1 | Apache-2.0 AND BSD-2-Clause | python-installed-package-cataloger |
 | prompt-toolkit | 3.0.50 |  | python-installed-package-cataloger |
 | pycparser | 2.22 | BSD-3-Clause | python-installed-package-cataloger |
 | pycryptodome | 3.21.0 |  | python-installed-package-cataloger |
@@ -1281,7 +1305,9 @@ The complete source code for Traefik is publicly available at [https://github.co
 | websockets | 13.1 | BSD-3-Clause | python-installed-package-cataloger |
 | wheel | 0.43.0 | MIT | python-installed-package-cataloger |
 | wheel | 0.45.1 | MIT | python-installed-package-cataloger |
+| wrapt | 1.17.3 |  | python-installed-package-cataloger |
 | zipp | 3.19.2 | MIT | python-installed-package-cataloger |
+| zipp | 3.23.0 | MIT | python-installed-package-cataloger |
 | zlib1g | 1:1.2.13.dfsg-1 | Zlib | dpkg-db-cataloger |
 
 ### registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/worker
@@ -1419,13 +1445,11 @@ The complete source code for Traefik is publicly available at [https://github.co
 | imagemagick-6-common | 8:6.9.11.60+dfsg-1.6+deb12u6 | GPL-1.0-only, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, ImageMagick, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
 | imagemagick-6.q16 | 8:6.9.11.60+dfsg-1.6+deb12u6 | GPL-1.0-only, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, ImageMagick, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
 | imapclient | 3.0.1 |  | python-installed-package-cataloger |
-| importlib-metadata | 8.0.0 | Apache-2.0 | python-installed-package-cataloger |
-| inflect | 7.3.1 | MIT | python-installed-package-cataloger |
+| importlib-metadata | 8.7.1 | Apache-2.0 | python-installed-package-cataloger |
 | init-system-helpers | 1.65.2+deb12u1 | BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
-| jaraco-collections | 5.1.0 | MIT | python-installed-package-cataloger |
-| jaraco-context | 5.3.0 | MIT | python-installed-package-cataloger |
-| jaraco-functools | 4.0.1 | MIT | python-installed-package-cataloger |
-| jaraco-text | 3.12.1 | MIT | python-installed-package-cataloger |
+| jaraco-context | 6.1.0 | MIT | python-installed-package-cataloger |
+| jaraco-functools | 4.4.0 | MIT | python-installed-package-cataloger |
+| jaraco-text | 4.0.0 | MIT | python-installed-package-cataloger |
 | joblib | 1.5.1 |  | python-installed-package-cataloger |
 | jsonpatch | 1.33 |  | python-installed-package-cataloger |
 | jsonpointer | 3.0.0 |  | python-installed-package-cataloger |
@@ -1791,9 +1815,8 @@ The complete source code for Traefik is publicly available at [https://github.co
 | mercurial | 6.3.2 |  | python-installed-package-cataloger |
 | mercurial | 6.3.2-1+deb12u1 | GPL-2.0-only, GPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
 | mercurial-common | 6.3.2-1+deb12u1 | GPL-2.0-only, GPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
-| more-itertools | 10.3.0 | MIT | python-installed-package-cataloger |
+| more-itertools | 10.8.0 | MIT | python-installed-package-cataloger |
 | mount | 2.38.1-5+deb12u3 | BSD-3-Clause, BSD-4-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, MIT | dpkg-db-cataloger |
-| my-test-package | 1.0 |  | python-installed-package-cataloger |
 | mysql-common | 5.8+1.1.0 | GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
 | ncurses-base | 6.4-4 | BSD-3-Clause, X11 | dpkg-db-cataloger |
 | ncurses-bin | 6.4-4 | BSD-3-Clause, X11 | dpkg-db-cataloger |
@@ -1804,7 +1827,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | openssl | 3.0.17-1~deb12u2 | Apache-2.0, GPL-1.0-only, GPL-1.0-or-later | dpkg-db-cataloger |
 | orjson | 3.10.18 | Apache-2.0 OR MIT | python-installed-package-cataloger |
 | packaging | 24.2 | Apache-2.0, BSD-2-Clause | python-installed-package-cataloger |
-| packaging | 24.2 | Apache-2.0, BSD-2-Clause | python-installed-package-cataloger |
+| packaging | 26.0 | Apache-2.0 OR BSD-2-Clause | python-installed-package-cataloger |
 | passwd | 1:4.13+dfsg1-1+deb12u1 | BSD-3-Clause, GPL-1.0-only, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
 | patch | 2.7.6-7 |  | dpkg-db-cataloger |
 | perl | 5.36.0-7+deb12u3 | Artistic-2.0, Artistic-dist, BSD-3-Clause, GPL-1.0-only, GPL-1.0-or-later, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.1-only, Zlib | dpkg-db-cataloger |
@@ -1812,11 +1835,11 @@ The complete source code for Traefik is publicly available at [https://github.co
 | perl-modules-5.36 | 5.36.0-7+deb12u3 | Artistic-2.0, Artistic-dist, BSD-3-Clause, GPL-1.0-only, GPL-1.0-or-later, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.1-only, Zlib | dpkg-db-cataloger |
 | pinentry-curses | 1.2.1-1 | GPL-2.0-only, GPL-2.0-or-later, LGPL-3.0-only, LGPL-3.0-or-later, X11 | dpkg-db-cataloger |
 | pip | 24.0 | MIT | python-installed-package-cataloger |
-| pip | 25.3 | MIT | python-installed-package-cataloger |
+| pip | 26.0.1 | MIT | python-installed-package-cataloger |
 | pkg-config | 1.8.1-1 | GPL-2.0-only, GPL-2.0-or-later, ISC, X11 | dpkg-db-cataloger |
 | pkgconf | 1.8.1-1 | GPL-2.0-only, GPL-2.0-or-later, ISC, X11 | dpkg-db-cataloger |
 | pkgconf-bin | 1.8.1-1 | GPL-2.0-only, GPL-2.0-or-later, ISC, X11 | dpkg-db-cataloger |
-| platformdirs | 4.2.2 | MIT | python-installed-package-cataloger |
+| platformdirs | 4.4.0 | MIT | python-installed-package-cataloger |
 | ply | 3.11 |  | python-installed-package-cataloger |
 | poppler-data | 0.4.12-1 | AGPL-3.0-or-later, GPL-2.0-only, MIT | dpkg-db-cataloger |
 | procps | 2:4.0.2-3 | GPL-2.0-only, GPL-2.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
@@ -1854,7 +1877,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | sed | 4.9-1 | BSD-4-Clause-UC, BSL-1.0, GFDL-1.3-only, GPL-3.0-only, GPL-3.0-or-later, ISC, X11 | dpkg-db-cataloger |
 | sensible-utils | 0.0.17+nmu1 | GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
 | setuptools | 65.5.1 | MIT | python-installed-package-cataloger |
-| setuptools | 80.9.0 | MIT | python-installed-package-cataloger |
+| setuptools | 82.0.0 | MIT | python-installed-package-cataloger |
 | shared-mime-info | 2.2-1 |  | dpkg-db-cataloger |
 | six | 1.17.0 | MIT | python-installed-package-cataloger |
 | sniffio | 1.3.1 | MIT OR Apache-2.0 | python-installed-package-cataloger |
@@ -1874,16 +1897,14 @@ The complete source code for Traefik is publicly available at [https://github.co
 | tk-dev | 8.6.13 |  | dpkg-db-cataloger |
 | tk8.6 | 8.6.13-2 |  | dpkg-db-cataloger |
 | tk8.6-dev | 8.6.13-2 |  | dpkg-db-cataloger |
-| tomli | 2.0.1 | MIT | python-installed-package-cataloger |
+| tomli | 2.4.0 | MIT | python-installed-package-cataloger |
 | tornado | 6.5.1 | Apache-2.0 | python-installed-package-cataloger |
 | tshark | 4.0.17-0+deb12u1 | BSD-2-Clause, BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.0-or-later | dpkg-db-cataloger |
-| typeguard | 4.3.0 | MIT | python-installed-package-cataloger |
 | types-cffi | 1.17.0.20250523 | Apache-2.0 | python-installed-package-cataloger |
 | types-pyopenssl | 24.1.0.20240722 |  | python-installed-package-cataloger |
 | types-redis | 4.6.0.20241004 | Apache-2.0 | python-installed-package-cataloger |
 | types-requests | 2.32.4.20250611 | Apache-2.0 | python-installed-package-cataloger |
 | types-setuptools | 80.9.0.20250529 | Apache-2.0 | python-installed-package-cataloger |
-| typing-extensions | 4.12.2 |  | python-installed-package-cataloger |
 | typing-extensions | 4.15.0 | PSF-2.0 | python-installed-package-cataloger |
 | typing-inspection | 0.4.1 | MIT | python-installed-package-cataloger |
 | tzdata | 2025.2 | Apache-2.0 | python-installed-package-cataloger |
@@ -1901,7 +1922,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | wcwidth | 0.2.13 | MIT | python-installed-package-cataloger |
 | wget | 1.21.3-1+deb12u1 | GFDL-1.2-only, GPL-3.0-only | dpkg-db-cataloger |
 | wheel | 0.45.1 | MIT | python-installed-package-cataloger |
-| wheel | 0.45.1 | MIT | python-installed-package-cataloger |
+| wheel | 0.46.3 | MIT | python-installed-package-cataloger |
 | wireshark-common | 4.0.17-0+deb12u1 | BSD-2-Clause, BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.0-or-later | dpkg-db-cataloger |
 | worker | 0.1.0 | MIT | python-installed-package-cataloger |
 | x11-common | 1:7.7+23 |  | dpkg-db-cataloger |
@@ -1912,7 +1933,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | xorg-sgml-doctools | 1:1.11-1.1 | HPND-sell-variant, MIT | dpkg-db-cataloger |
 | xtrans-dev | 1.4.0-1 | HPND, HPND-sell-variant, MIT | dpkg-db-cataloger |
 | xz-utils | 5.4.1-1 | GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, LGPL-2.0-only, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
-| zipp | 3.19.2 | MIT | python-installed-package-cataloger |
+| zipp | 3.23.0 | MIT | python-installed-package-cataloger |
 | zlib1g | 1:1.2.13.dfsg-1 | Zlib | dpkg-db-cataloger |
 | zlib1g-dev | 1:1.2.13.dfsg-1 | Zlib | dpkg-db-cataloger |
 | zstandard | 0.23.0 |  | python-installed-package-cataloger |
@@ -2000,13 +2021,12 @@ The complete source code for Traefik is publicly available at [https://github.co
 | httpcore | 1.0.9 | BSD-3-Clause | python-installed-package-cataloger |
 | httpx | 0.28.1 | BSD-3-Clause | python-installed-package-cataloger |
 | idna | 3.10 | BSD-3-Clause | python-installed-package-cataloger |
-| importlib-metadata | 8.0.0 | Apache-2.0 | python-installed-package-cataloger |
-| inflect | 7.3.1 | MIT | python-installed-package-cataloger |
+| imapclient | 3.1.0 |  | python-installed-package-cataloger |
+| importlib-metadata | 8.7.1 | Apache-2.0 | python-installed-package-cataloger |
 | init-system-helpers | 1.65.2+deb12u1 | BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
-| jaraco-collections | 5.1.0 | MIT | python-installed-package-cataloger |
-| jaraco-context | 5.3.0 | MIT | python-installed-package-cataloger |
-| jaraco-functools | 4.0.1 | MIT | python-installed-package-cataloger |
-| jaraco-text | 3.12.1 | MIT | python-installed-package-cataloger |
+| jaraco-context | 6.1.0 | MIT | python-installed-package-cataloger |
+| jaraco-functools | 4.4.0 | MIT | python-installed-package-cataloger |
+| jaraco-text | 4.0.0 | MIT | python-installed-package-cataloger |
 | kombu | 5.5.4 | BSD-3-Clause | python-installed-package-cataloger |
 | libacl1 | 2.3.1-3 | GPL-2.0-only, GPL-2.0-or-later, LGPL-2.0-or-later, LGPL-2.1-only | dpkg-db-cataloger |
 | libapt-pkg6.0 | 2.6.1 | BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
@@ -2078,21 +2098,20 @@ The complete source code for Traefik is publicly available at [https://github.co
 | luqum | 0.14.0 | LGPL-3.0-only | python-installed-package-cataloger |
 | mawk | 1.3.4.20200120-3.1 | CC-BY-3.0, GPL-2.0-only, X11 | dpkg-db-cataloger |
 | minio | 7.2.20 | Apache-2.0 | python-installed-package-cataloger |
-| more-itertools | 10.3.0 | MIT | python-installed-package-cataloger |
+| more-itertools | 10.8.0 | MIT | python-installed-package-cataloger |
 | mount | 2.38.1-5+deb12u3 | BSD-3-Clause, BSD-4-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, MIT | dpkg-db-cataloger |
-| my-test-package | 1.0 |  | python-installed-package-cataloger |
 | ncurses-base | 6.4-4 | BSD-3-Clause, X11 | dpkg-db-cataloger |
 | ncurses-bin | 6.4-4 | BSD-3-Clause, X11 | dpkg-db-cataloger |
 | netbase | 6.4 | GPL-2.0-only | dpkg-db-cataloger |
 | ollama | 0.6.1 | MIT | python-installed-package-cataloger |
 | openssl | 3.0.17-1~deb12u2 | Apache-2.0, GPL-1.0-only, GPL-1.0-or-later | dpkg-db-cataloger |
-| packaging | 24.2 | Apache-2.0, BSD-2-Clause | python-installed-package-cataloger |
 | packaging | 25.0 |  | python-installed-package-cataloger |
+| packaging | 26.0 | Apache-2.0 OR BSD-2-Clause | python-installed-package-cataloger |
 | passwd | 1:4.13+dfsg1-1+deb12u1 | BSD-3-Clause, GPL-1.0-only, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
 | perl-base | 5.36.0-7+deb12u3 | Artistic-2.0, Artistic-dist, BSD-3-Clause, GPL-1.0-only, GPL-1.0-or-later, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.1-only, Zlib | dpkg-db-cataloger |
 | pip | 24.0 | MIT | python-installed-package-cataloger |
-| pip | 25.3 | MIT | python-installed-package-cataloger |
-| platformdirs | 4.2.2 | MIT | python-installed-package-cataloger |
+| pip | 26.0.1 | MIT | python-installed-package-cataloger |
+| platformdirs | 4.4.0 | MIT | python-installed-package-cataloger |
 | ply | 3.11 |  | python-installed-package-cataloger |
 | prompt-toolkit | 3.0.48 |  | python-installed-package-cataloger |
 | pycparser | 2.22 | BSD-3-Clause | python-installed-package-cataloger |
@@ -2110,20 +2129,18 @@ The complete source code for Traefik is publicly available at [https://github.co
 | requests | 2.32.3 | Apache-2.0 | python-installed-package-cataloger |
 | sed | 4.9-1 | BSD-4-Clause-UC, BSL-1.0, GFDL-1.3-only, GPL-3.0-only, GPL-3.0-or-later, ISC, X11 | dpkg-db-cataloger |
 | setuptools | 65.5.1 | MIT | python-installed-package-cataloger |
-| setuptools | 80.9.0 | MIT | python-installed-package-cataloger |
+| setuptools | 82.0.0 | MIT | python-installed-package-cataloger |
 | six | 1.17.0 | MIT | python-installed-package-cataloger |
 | sniffio | 1.3.1 | MIT OR Apache-2.0 | python-installed-package-cataloger |
 | starlette | 0.46.1 | BSD-3-Clause | python-installed-package-cataloger |
 | sysvinit-utils | 3.06-4 | GPL-2.0-only, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-only | dpkg-db-cataloger |
 | tar | 1.34+dfsg-1.2+deb12u1 | GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
-| tomli | 2.0.1 | MIT | python-installed-package-cataloger |
-| typeguard | 4.3.0 | MIT | python-installed-package-cataloger |
+| tomli | 2.4.0 | MIT | python-installed-package-cataloger |
 | types-cffi | 1.16.0.20240331 |  | python-installed-package-cataloger |
 | types-pyopenssl | 24.1.0.20240722 |  | python-installed-package-cataloger |
 | types-redis | 4.6.0.20241004 | Apache-2.0 | python-installed-package-cataloger |
 | types-requests | 2.32.0.20241016 | Apache-2.0 | python-installed-package-cataloger |
 | types-setuptools | 75.6.0.20241126 | Apache-2.0 | python-installed-package-cataloger |
-| typing-extensions | 4.12.2 |  | python-installed-package-cataloger |
 | typing-extensions | 4.15.0 | PSF-2.0 | python-installed-package-cataloger |
 | tzdata | 2025.2 | Apache-2.0 | python-installed-package-cataloger |
 | tzdata | 2025b-0+deb12u2 |  | dpkg-db-cataloger |
@@ -2135,8 +2152,8 @@ The complete source code for Traefik is publicly available at [https://github.co
 | watchdog | 6.0.0 | Apache-2.0 | python-installed-package-cataloger |
 | wcwidth | 0.2.13 | MIT | python-installed-package-cataloger |
 | wheel | 0.45.1 | MIT | python-installed-package-cataloger |
-| wheel | 0.45.1 | MIT | python-installed-package-cataloger |
-| zipp | 3.19.2 | MIT | python-installed-package-cataloger |
+| wheel | 0.46.3 | MIT | python-installed-package-cataloger |
+| zipp | 3.23.0 | MIT | python-installed-package-cataloger |
 | zlib1g | 1:1.2.13.dfsg-1 | Zlib | dpkg-db-cataloger |
 
 ### registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/frontend

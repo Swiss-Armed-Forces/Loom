@@ -1,8 +1,8 @@
 from pathlib import Path, PurePath
 
 import pytest
-from worker.dependencies import get_imap_service
-from worker.services.imap_service import IMAPService
+from common.dependencies import get_imap_service
+from common.services.imap_service import IMAPService
 
 from utils.consts import ASSETS_DIR
 
