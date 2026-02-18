@@ -420,6 +420,7 @@ export function FileDetailDialog() {
                                                 editorProps={{
                                                     $blockScrolling: true,
                                                 }}
+                                                wrapEnabled={true}
                                                 setOptions={{
                                                     useWorker: false,
                                                 }}
@@ -478,6 +479,7 @@ export function FileDetailDialog() {
                                                 editorProps={{
                                                     $blockScrolling: true,
                                                 }}
+                                                wrapEnabled={true}
                                                 setOptions={{
                                                     useWorker: false,
                                                 }}

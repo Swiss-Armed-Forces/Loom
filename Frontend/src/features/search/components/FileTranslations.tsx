@@ -86,6 +86,7 @@ export function FileTranslations({ translations }: FileTranslationsProps) {
                     editorProps={{
                         $blockScrolling: true,
                     }}
+                    wrapEnabled={true}
                     setOptions={{
                         useWorker: false,
                     }}

@@ -15,74 +15,71 @@ data:
     # - This causes a diff between desired state (null) and live state (key removed)
     # - The conditional approach ensures keys are only included when they have actual values
     #
-    # Without conditionals:
-    #   foo: null     -> becomes foo: ""     -> causes OutOfSync
-    # With conditionals:
-    #   {{- if .Values.foo }}foo: {{ .Values.foo }}{{- end }}  -> key omitted entirely
+    # Using 'ne ... nil' to exclude null values while including false booleans and zero values
 
     ENVIRONMENT: {{ .Values.environment }}
     DOMAIN: {{ .Values.domain }}
 
     # pipeline
-    {{- if .Values.pipeline.taskTimeLimitSeconds }}
+    {{- if ne .Values.pipeline.taskTimeLimitSeconds nil }}
     task_time_limit__seconds: {{ .Values.pipeline.taskTimeLimitSeconds | quote }}
     {{- end }}
-    {{- if .Values.pipeline.uploaded_files_time_before_hidden }}
+    {{- if ne .Values.pipeline.uploaded_files_time_before_hidden nil }}
     uploaded_files_time_before_hidden: {{ .Values.pipeline.uploaded_files_time_before_hidden | quote }}
     {{- end }}
-    {{- if .Values.pipeline.skip_summarize_while_indexing }}
+    {{- if ne .Values.pipeline.skip_summarize_while_indexing nil }}
     skip_summarize_while_indexing: {{ .Values.pipeline.skip_summarize_while_indexing | quote }}
     {{- end }}
-    {{- if .Values.pipeline.skip_translate_while_indexing }}
+    {{- if ne .Values.pipeline.skip_translate_while_indexing nil }}
     skip_translate_while_indexing: {{ .Values.pipeline.skip_translate_while_indexing | quote }}
     {{- end }}
-    {{- if .Values.pipeline.automatic_indexing }}
+    {{- if ne .Values.pipeline.automatic_indexing nil }}
     automatic_indexing: {{ .Values.pipeline.automatic_indexing | quote }}
     {{- end }}
-    {{- if .Values.pipeline.tika_ocr_languages }}
+    {{- if ne .Values.pipeline.tika_ocr_languages nil }}
     tika_ocr_languages: {{ .Values.pipeline.tika_ocr_languages | join "," | quote }}
     {{- end }}
 
     # llm
-    {{- if .Values.llm.model }}
+    {{- if ne .Values.llm.model nil }}
     llm_model: {{ .Values.llm.model }}
     {{- end }}
-    {{- if .Values.llm.model_embedding }}
+    {{- if ne .Values.llm.model_embedding nil }}
     llm_model_embedding: {{ .Values.llm.model_embedding }}
     {{- end }}
-    {{- if .Values.llm.model_tool }}
+    {{- if ne .Values.llm.model_tool nil }}
     llm_model_tool: {{ .Values.llm.model_tool }}
     {{- end }}
-    {{- if .Values.llm.think }}
+    {{- if ne .Values.llm.think nil }}
     llm_think: {{ .Values.llm.think | quote }}
     {{- end }}
-    {{- if .Values.llm.temperature }}
+    {{- if ne .Values.llm.temperature nil }}
     llm_temperature: {{ .Values.llm.temperature | quote }}
     {{- end }}
-    {{- if .Values.llm.summarize_text_chunk_size }}
+    {{- if ne .Values.llm.summarize_text_chunk_size nil }}
     llm_summarize_text_chunk_size: {{ .Values.llm.summarize_text_chunk_size | quote  }}
     {{- end }}
-    {{- if .Values.llm.summarize_text_chunk_overlap }}
+    {{- if ne .Values.llm.summarize_text_chunk_overlap nil }}
     llm_summarize_text_chunk_overlap: {{ .Values.llm.summarize_text_chunk_overlap | quote  }}
     {{- end }}
-    {{- if .Values.llm.embedding_temperature }}
+    {{- if ne .Values.llm.embedding_temperature nil }}
     llm_embedding_temperature: {{ .Values.llm.embedding_temperature | quote  }}
     {{- end }}
-    {{- if .Values.llm.embedding_text_chunk_size }}
+    {{- if ne .Values.llm.embedding_text_chunk_size nil }}
     llm_embedding_text_chunk_size: {{ .Values.llm.embedding_text_chunk_size | quote  }}
     {{- end }}
-    {{- if .Values.llm.embedding_text_chunk_overlap }}
+    {{- if ne .Values.llm.embedding_text_chunk_overlap nil }}
     llm_embedding_text_chunk_overlap: {{ .Values.llm.embedding_text_chunk_overlap | quote  }}
     {{- end }}
-    {{- if .Values.llm.rerank_temperature }}
+    {{- if ne .Values.llm.rerank_temperature nil }}
     llm_rerank_temperature: {{ .Values.llm.rerank_temperature | quote  }}
     {{- end }}
 
     # elasticsearch
-    {{- if .Values.elasticsearch.shardsCount }}
+    {{- if ne .Values.elasticsearch.shardsCount nil }}
     es_number_of_shards: {{ .Values.elasticsearch.shardsCount | quote  }}
     {{- end }}
-    {{- if .Values.elasticsearch.shardsReplicasCount }}
+    {{- if ne .Values.elasticsearch.shardsReplicasCount nil }}
     es_number_of_replicas: {{ .Values.elasticsearch.shardsReplicasCount | quote  }}
     {{- end }}
 
