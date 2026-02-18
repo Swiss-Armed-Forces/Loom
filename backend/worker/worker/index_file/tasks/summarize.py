@@ -139,6 +139,7 @@ PROMPT: Extract the KEY POINTS of the text above.
 Return your response in a paragraph of {LLM_MAX_TOKENS_KEY_POINTS} tokens or less.
 If there's nothing or not enough TEXT to extract key points just provide an empty answer.
 Do NOT use any previous knowledge.
+Always summarize in the following language: {settings.translate_target}
 
 KEY POINTS:"""
 
@@ -171,6 +172,7 @@ Return your response in a paragraph of {LLM_MAX_TOKENS_SUMMARIZE} tokens or less
 Do NOT explain that you are giving a summary, just output the summary.
 If there's nothing or not enough TEXT to summarize just provide an empty answer.
 Do NOT use any previous knowledge.
+Always summarize in the following language: {settings.translate_target}
 
 SUMMARY:"""
 

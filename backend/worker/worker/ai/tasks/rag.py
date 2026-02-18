@@ -416,6 +416,7 @@ Do NOT use any previous knowledge which is not contained in the CONTEXT.
 
 Keep your answer in a paragraph of {LLM_MAX_TOKENS_RAG} tokens or less.
 Keep your answer concise and brief.
+Always answer in the following language: {settings.translate_target}
 --------------------
 CONTEXT: {answer_context}""",
             ),

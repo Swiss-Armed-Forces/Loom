@@ -165,7 +165,6 @@ worker: &worker
     maxReplicas: 100
     minReplicas: 1
     targetCPUUtilizationPercentage: 100
-    targetMemoryUtilizationPercentage: 100
   service:
     port: 80
   readinessProbe:
