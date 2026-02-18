@@ -158,6 +158,7 @@ export const ResultCard: React.FC<ResultCardProps> = React.memo(
 
                                 {filePreview.thumbnailFileId && (
                                     <Badge
+                                        color="primary"
                                         badgeContent={
                                             filePreview.thumbnailTotalFrames
                                         }
@@ -165,27 +166,33 @@ export const ResultCard: React.FC<ResultCardProps> = React.memo(
                                             vertical: "bottom",
                                             horizontal: "right",
                                         }}
+                                        sx={{ alignSelf: "flex-start" }}
                                     >
-                                        <CardMedia
-                                            component="img"
-                                            onClick={() => {
-                                                dispatch(
-                                                    setFileDetailData({
-                                                        filePreview:
-                                                            filePreview,
-                                                        searchQuery:
-                                                            searchQuery,
-                                                        tab: FileDetailTab.Rendered,
-                                                    }),
-                                                );
-                                            }}
-                                            className={styles.resultImage}
-                                            image={webApiGetFileThumbnail(
-                                                filePreview.fileId,
-                                                filePreview.thumbnailFileId,
-                                            )}
-                                            alt="Thumbnail"
-                                        />
+                                        <Box sx={{ display: "inline-flex" }}>
+                                            <CardMedia
+                                                component="img"
+                                                onClick={() => {
+                                                    dispatch(
+                                                        setFileDetailData({
+                                                            filePreview:
+                                                                filePreview,
+                                                            searchQuery:
+                                                                searchQuery,
+                                                            tab: FileDetailTab.Rendered,
+                                                        }),
+                                                    );
+                                                }}
+                                                className={styles.resultImage}
+                                                sx={{
+                                                    "object-fit": "contain",
+                                                }}
+                                                image={webApiGetFileThumbnail(
+                                                    filePreview.fileId,
+                                                    filePreview.thumbnailFileId,
+                                                )}
+                                                alt="Thumbnail"
+                                            />
+                                        </Box>
                                     </Badge>
                                 )}
                             </CardContent>
