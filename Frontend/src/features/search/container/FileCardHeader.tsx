@@ -10,6 +10,7 @@ import { FileAvatar } from "../components/FileAvatar";
 import { ReactNode } from "react";
 import { FileActions } from "./FileActions";
 import { FileAttachments } from "./FileAttachments";
+import { NavigateToParent } from "../components/NavigateToParent";
 
 interface FileCardHeaderProps {
     filePreview: GetFilePreviewResponse;
@@ -37,7 +38,7 @@ export function FileCardHeader({
     return (
         <CardHeader
             className={styles.resultCardHeader}
-            sx={{ flex: 1, padding: 0 }}
+            sx={{ flex: 1 }}
             avatar={
                 <FileAvatar
                     fileExtension={filePreview.fileExtension}
@@ -50,10 +51,10 @@ export function FileCardHeader({
             }
             title={
                 <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                    <span>{filePreview.name}</span>
-                    <FileAttachments
-                        attachments={filePreview.attachments}
-                    ></FileAttachments>
+                    {filePreview.partentId && (
+                        <NavigateToParent parentId={filePreview.partentId} />
+                    )}
+                    <ClickableFilePath fullPath={filePreview.path} />
                     {filePreview.contentIsTruncated && (
                         <ContentCut
                             fontSize="small"
@@ -62,7 +63,13 @@ export function FileCardHeader({
                     )}
                 </Box>
             }
-            subheader={<ClickableFilePath fullPath={filePreview.path} />}
+            subheader={
+                <Box sx={{ display: "flex", alignItems: "center" }}>
+                    <FileAttachments
+                        attachments={filePreview.attachments}
+                    ></FileAttachments>
+                </Box>
+            }
             action={
                 <FileActions
                     filePreview={filePreview}

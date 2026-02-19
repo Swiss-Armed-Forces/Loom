@@ -66,13 +66,14 @@ class _BucketCrawlerThread(Thread):
         full_name = Path(f"//{self.bucket.name}/{file_name}")
         source = f"{settings.crawler_source_id}/{self.bucket.name}"
         get_file_scheduling_service().index_file(
-            str(full_name),
-            get_lazybytes_service().from_generator(
+            full_name=str(full_name),
+            file_content=get_lazybytes_service().from_generator(
                 self.client.get_object(self.bucket.name, file_name).stream(
                     MINIO_READ_CHUNK_SIZE
                 )  # type: ignore
             ),
-            source,
+            source_id=source,
+            parent_id=None,
         )
 
     def _download_all_files(self):

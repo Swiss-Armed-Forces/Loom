@@ -225,13 +225,13 @@ class File(RepositoryTaskObject):
         return self.full_name.suffix
 
     source: str
+    parent_id: UUID | None = None
     sha256: str
     uploaded_datetime: datetime = Field(default_factory=datetime.now)
     size: int
     thumbnail_file_id: ObjectIdStr | None = None
     thumbnail_total_frames: int | None = None
     rendered_file: RenderedFile = RenderedFile()
-    exclude_from_archives: bool = False
     tags: list[Tag] = []
     magic_file_type: str | None = None
     tika_language: str | None = None
@@ -297,13 +297,13 @@ class _EsFile(_EsTaskDocument):
     short_name = Text(fields={"keyword": Keyword()})
     extension = Keyword()
     source = Keyword()
+    parent_id = Keyword()
     sha256 = Keyword()
     uploaded_datetime = Date()
     size = Long()
     thumbnail_file_id = Keyword()
     thumbnail_total_frames = Long()
     rendered_file = Object(_EsRenderedFile)
-    exclude_from_archives = Boolean()
     tags = Keyword(multi=True)
     magic_file_type = Keyword()
     tika_language = Keyword()

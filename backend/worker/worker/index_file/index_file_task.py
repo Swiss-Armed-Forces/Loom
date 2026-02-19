@@ -49,7 +49,7 @@ def index_file_task(file: File, file_content: LazyBytes):
             create_thumbnail.signature(file, file_content),
             render.signature(file, file_content),
             tika_processing.signature(file_content, file),
-            extract_loom_archive.signature(file_content),
+            extract_loom_archive.signature(file, file_content),
         ),
         persist_processing_done.signature(file),
     ).delay().forget()

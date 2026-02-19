@@ -8,24 +8,33 @@ import { useState, useRef, useEffect } from "react";
 
 interface FileAttachmentsProps {
     attachments?: Attachment[];
-    maxWidth?: number; // Maximum width in pixels before collapsing
+    maxWidthRatio?: number; // Percentage of container width (0-1), default 0.8 = 80%
 }
+
 export function FileAttachments({
     attachments,
-    maxWidth = 500,
+    maxWidthRatio = 0.8,
 }: FileAttachmentsProps) {
     const dispatch = useAppDispatch();
     const [showDropdown, setShowDropdown] = useState(false);
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
     const [shouldCollapse, setShouldCollapse] = useState(false);
     const containerRef = useRef<HTMLDivElement>(null);
+    const parentRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
-        if (containerRef.current && attachments && attachments.length > 1) {
-            const width = containerRef.current.scrollWidth;
-            setShouldCollapse(width > maxWidth);
+        if (
+            containerRef.current &&
+            parentRef.current &&
+            attachments &&
+            attachments.length > 1
+        ) {
+            const chipsWidth = containerRef.current.scrollWidth;
+            const parentWidth = parentRef.current.offsetWidth;
+            const maxAllowedWidth = parentWidth * maxWidthRatio;
+            setShouldCollapse(chipsWidth > maxAllowedWidth);
         }
-    }, [attachments, maxWidth]);
+    }, [attachments, maxWidthRatio]);
 
     const handleAttachmentsClick = (attachmentFileId: string) => {
         dispatch(
@@ -79,7 +88,7 @@ export function FileAttachments({
     // Check if we need to collapse
     if (shouldCollapse) {
         return (
-            <>
+            <Box ref={parentRef} sx={{ width: "100%" }}>
                 <Chip
                     icon={<AttachFile />}
                     label={`${attachments.length} attachments`}
@@ -120,13 +129,13 @@ export function FileAttachments({
                         </MenuItem>
                     ))}
                 </Menu>
-            </>
+            </Box>
         );
     }
 
     // Render all chips
     return (
-        <>
+        <Box ref={parentRef} sx={{ width: "100%" }}>
             {measurementChips}
             <Box sx={{ display: "flex", gap: "4px", flexWrap: "wrap" }}>
                 {attachments.map((attachment) => (
@@ -141,6 +150,6 @@ export function FileAttachments({
                     />
                 ))}
             </Box>
-        </>
+        </Box>
     );
 }

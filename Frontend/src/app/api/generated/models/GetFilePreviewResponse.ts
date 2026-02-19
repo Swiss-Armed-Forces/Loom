@@ -35,6 +35,12 @@ export interface GetFilePreviewResponse {
     fileId: string;
     /**
      *
+     * @type {string}
+     * @memberof GetFilePreviewResponse
+     */
+    partentId?: string;
+    /**
+     *
      * @type {Array<string>}
      * @memberof GetFilePreviewResponse
      */
@@ -161,6 +167,7 @@ export function GetFilePreviewResponseFromJSONTyped(
     }
     return {
         fileId: json["file_id"],
+        partentId: json["partent_id"] == null ? undefined : json["partent_id"],
         tags: json["tags"] == null ? undefined : json["tags"],
         hidden: json["hidden"],
         content: json["content"],
@@ -202,6 +209,7 @@ export function GetFilePreviewResponseToJSON(
     }
     return {
         file_id: value["fileId"],
+        partent_id: value["partentId"],
         tags: value["tags"],
         hidden: value["hidden"],
         content: value["content"],

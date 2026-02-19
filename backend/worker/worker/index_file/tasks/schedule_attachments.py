@@ -60,10 +60,10 @@ def schedule_attachment(
         return None
 
     new_file = get_file_scheduling_service().index_file(
-        attachment_name,
-        tika_attachment.data,
-        file.source,
-        exclude_from_archives=True,
+        full_name=attachment_name,
+        file_content=tika_attachment.data,
+        source_id=file.source,
+        parent_id=file.id_,
     )
     return Attachment(
         id=new_file.id_,

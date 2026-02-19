@@ -63,7 +63,10 @@ def test_upload_file(client: TestClient):
     file_upload_response = FileUploadResponse.model_validate(response.json())
     assert file_upload_response.file_id == file.id_
     get_file_scheduling_service().index_file.assert_called_once_with(
-        file.short_name, file_content_mock, SOURCE_ID
+        full_name=file.short_name,
+        file_content=file_content_mock,
+        source_id=SOURCE_ID,
+        parent_id=None,
     )
 
 
