@@ -58,8 +58,8 @@ class ImageTag(RootModel[str]):
 
         Example: 'registry.gitlab.com/path/to/image:tag' -> 'registry.gitlab.com/path/to/image'
         """
-        if ':' in self.root:
-            return self.root.rsplit(':', 1)[0]
+        if ":" in self.root:
+            return self.root.rsplit(":", 1)[0]
         return self.root
 
     @property
@@ -70,13 +70,14 @@ class ImageTag(RootModel[str]):
         Example: 'registry.gitlab.com/path/to/image:tag' -> 'tag'
         Returns 'latest' if no tag is specified.
         """
-        if ':' in self.root:
-            return self.root.rsplit(':', 1)[1]
+        if ":" in self.root:
+            return self.root.rsplit(":", 1)[1]
         return LATEST_TAG_NAME
 
     def __str__(self) -> str:
         """Return the full tag as a string."""
         return self.root
+
 
 class ImageMetadata(BaseModel):
     id: str
@@ -232,14 +233,10 @@ def docker_restore_image(image_id: str, backup_dir: Path) -> None:
         image_id,
         format_file_path_size(archive_path),
     )
-    try:
-        with open(archive_path, "rb") as raw:
-            dctx = zstd.ZstdDecompressor()
-            with dctx.stream_reader(raw) as reader:
-                client.images.load(reader)  # type: ignore
-    except ImageLoadError as e:
-        logger.warning("Failed to load image ID '%s': %s", image_id, e)
-        return
+    with open(archive_path, "rb") as raw:
+        dctx = zstd.ZstdDecompressor()
+        with dctx.stream_reader(raw) as reader:
+            client.images.load(reader)  # type: ignore
 
     image = client.images.get(image_id)
     for tag in meta.tags:
@@ -276,7 +273,9 @@ def cmd_backup(parallel: int, image_dir: Path, pattern: str, prune: str | None) 
         image_metadata = [
             image
             for image in image_metadata
-            if not any(tag.repository in prunable_image_repositories for tag in image.tags)
+            if not any(
+                tag.repository in prunable_image_repositories for tag in image.tags
+            )
             or any(t.tag == LATEST_TAG_NAME for t in image.tags)
         ]
 
