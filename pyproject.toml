@@ -17,7 +17,7 @@ integrationtest = {path = "integrationtest", develop = true}
 types-docker = "^7.1.0.20240601"
 
 [tool.poetry.group.dev.dependencies]
-pylint = "^3.2.0"
+pylint = "^4.0.0"
 flake8 = "^7.0.0"
 flake8-bugbear = "^25.0.0"
 autoflake = "^2.3.1"

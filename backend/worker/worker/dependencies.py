@@ -10,6 +10,7 @@ from worker.services.rspamd_service import RspamdService
 from worker.services.tika_service import TikaService
 from worker.settings import settings
 
+# Note, "= None" assignments are needed here to make flake8 happy
 _tika_service: TikaService | None = None
 _rspamd_service: RspamdService | None = None
 _gotenberg_client: GotenbergClient | None = None
