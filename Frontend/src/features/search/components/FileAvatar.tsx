@@ -4,6 +4,7 @@ import {
     getColorFromString,
     getFontColorFromBackGroundColor,
 } from "../../common/getColorFromString";
+import { Description } from "@mui/icons-material";
 
 interface FileAvatarProps {
     fileExtension: string;
@@ -16,10 +17,10 @@ export function FileAvatar({ fileExtension, performSearch }: FileAvatarProps) {
     return (
         <Avatar
             className={styles.fileAvatar}
-            onClick={() => performSearch(`*.${fileExtension}`)}
+            onClick={() => performSearch(`${fileExtension}`)}
             sx={{ backgroundColor, color }}
         >
-            {fileExtension}
+            {fileExtension || <Description />}
         </Avatar>
     );
 }

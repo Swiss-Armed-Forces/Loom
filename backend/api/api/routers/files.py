@@ -72,7 +72,10 @@ def upload_file(
     """Upload new file that will be processed by Loom."""
     file_content = lazybytes_service.from_file(file.file)
     scheduled_file = file_scheduling_service.index_file(
-        file.filename if file.filename is not None else "", file_content, SOURCE_ID
+        full_name=file.filename if file.filename is not None else "",
+        file_content=file_content,
+        source_id=SOURCE_ID,
+        parent_id=None,
     )
     return FileUploadResponse(file_id=scheduled_file.id_)
 
@@ -314,6 +317,7 @@ def get_file(
 
 class GetFilePreviewResponse(BaseModel):
     file_id: UUID
+    partent_id: UUID | None
     tags: list[Tag] = []
     hidden: bool
     content: str
@@ -349,6 +353,7 @@ def get_file_preview(
         file.content = ""
     return GetFilePreviewResponse(
         file_id=file.id_,
+        partent_id=file.parent_id,
         tags=file.tags,
         hidden=file.hidden,
         content=str(file.content[:CONTENT_PREVIEW_LENGTH]),

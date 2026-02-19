@@ -1,7 +1,7 @@
 import { useAppDispatch, useAppSelector } from "../../../app/hooks";
 import { updateFilenameOfQuery } from "../SearchQueryUtils";
 import { selectQuery, updateQuery } from "../searchSlice";
-import styles from "./ClickableFilePath.module.css";
+import { Breadcrumbs, Link } from "@mui/material";
 
 interface ClickableFilePathProps {
     fullPath: string;
@@ -13,11 +13,8 @@ export function ClickableFilePath({ fullPath }: ClickableFilePathProps) {
 
     const fullPathParts = fullPath.split("/").filter((part) => part !== "");
     const fullPathPartsExtended = fullPathParts.map((part, idx) => {
-        const isLast = idx === fullPathParts.length - 1;
-        const trailingSymbol = isLast ? "" : "/";
-
         return {
-            part: `${part}${trailingSymbol}`,
+            part: part,
             pathToPart: `//${fullPathParts
                 .filter((_, innerIdx) => innerIdx <= idx)
                 .join("/")}`,
@@ -37,21 +34,32 @@ export function ClickableFilePath({ fullPath }: ClickableFilePathProps) {
     };
 
     return (
-        <div>
-            <div className={styles.metaFullNameLineContainer}>
-                <span>&#47;&#47;</span>
-                {fullPathPartsExtended.map((part, idx) => (
-                    <span
-                        className={styles.metaFullNamePart}
-                        key={idx}
-                        onClick={() =>
-                            handleQueryReplaceFilename(part.pathToPart)
-                        }
-                    >
-                        {part.part}
-                    </span>
-                ))}
-            </div>
-        </div>
+        <Breadcrumbs
+            separator="/"
+            sx={{
+                "& .MuiBreadcrumbs-separator": { mx: 0.25 },
+            }}
+            maxItems={4}
+            itemsBeforeCollapse={0}
+            itemsAfterCollapse={3}
+        >
+            {fullPathPartsExtended.map((part, idx) => (
+                <Link
+                    key={idx}
+                    color="inherit"
+                    onClick={() => handleQueryReplaceFilename(part.pathToPart)}
+                    sx={{
+                        cursor: "pointer",
+                        textDecoration: "none",
+                        "&:hover": {
+                            textDecoration: "underline",
+                            color: "secondary.main",
+                        },
+                    }}
+                >
+                    {part.part}
+                </Link>
+            ))}
+        </Breadcrumbs>
     );
 }

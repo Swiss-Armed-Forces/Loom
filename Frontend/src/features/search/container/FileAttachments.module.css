@@ -1,5 +1,4 @@
 .attachmentChip {
-    height: 20px;
     cursor: pointer;
     transition: transform 0.2s ease;
 }

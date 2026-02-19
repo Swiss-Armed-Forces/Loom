@@ -36,7 +36,7 @@ class FileSchedulingService:
         full_name: str,
         file_content: LazyBytes,
         source_id: str,
-        exclude_from_archives: bool = False,
+        parent_id: UUID | None,
     ) -> File:
         logger.info("Scheduling indexing of file: '%s'", full_name)
 
@@ -58,7 +58,7 @@ class FileSchedulingService:
             storage_id=str(file_storage_id),
             full_name=PurePath(full_name),
             source=source_id,
-            exclude_from_archives=exclude_from_archives,
+            parent_id=parent_id,
             sha256=file_data_hash.hexdigest(),
             size=file_len,
         )

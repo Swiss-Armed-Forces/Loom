@@ -1,4 +1,5 @@
 import logging
+from uuid import UUID
 from zipfile import ZipFile
 
 from celery import chain
@@ -9,6 +10,7 @@ from common.dependencies import (
     get_file_scheduling_service,
     get_lazybytes_service,
 )
+from common.file.file_repository import File
 from common.services.encryption_service import FileEncryptionServiceException
 from common.services.lazybytes_service import LazyBytes
 
@@ -21,9 +23,9 @@ logger = logging.getLogger(__name__)
 app = get_celery_app()
 
 
-def signature(file_content: LazyBytes) -> Signature:
-    """Decrypt and import an LOOM archive."""
-    return chain(decrypt_archive.s(file_content), unzip_loom_archive.s())
+def signature(file: File, file_content: LazyBytes) -> Signature:
+    """Decrypt and import archive."""
+    return chain(decrypt_archive.s(file_content), unzip_loom_archive.s(file.id_))
 
 
 @app.task(base=FileIndexingTask)
@@ -49,7 +51,7 @@ def decrypt_archive(encrypted_file: LazyBytes) -> LazyBytes | None:
 
 
 @app.task(base=FileIndexingTask)
-def unzip_loom_archive(decrypted_archive: LazyBytes | None):
+def unzip_loom_archive(decrypted_archive: LazyBytes | None, parent_file_id: UUID):
     if decrypted_archive is None:
         return
 
@@ -60,7 +62,8 @@ def unzip_loom_archive(decrypted_archive: LazyBytes | None):
         for fname in zip_file.namelist():
             with zip_file.open(fname, mode="r") as zipfd:
                 file_scheduling_service.index_file(
-                    fname,
-                    lazybytes_service.from_file(zipfd),
-                    ARCHIVE_IMPORT_SOURCE_ID,
+                    full_name=fname,
+                    file_content=lazybytes_service.from_file(zipfd),
+                    source_id=ARCHIVE_IMPORT_SOURCE_ID,
+                    parent_id=parent_file_id,
                 )

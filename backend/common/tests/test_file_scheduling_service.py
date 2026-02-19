@@ -24,7 +24,10 @@ def test_index_file(lazybytes_service_inmemory: LazyBytesService):
     )
 
     file_scheduling_service.index_file(
-        "test", lazybytes_service_inmemory.from_bytes(b"test"), "SOURCE"
+        full_name="test",
+        file_content=lazybytes_service_inmemory.from_bytes(b"test"),
+        source_id="SOURCE",
+        parent_id=None,
     )
 
     file_repository.save.assert_called_once()
@@ -47,7 +50,10 @@ def test_index_file_duplicate(lazybytes_service_inmemory: LazyBytesService):
     )
 
     file = file_scheduling_service.index_file(
-        "test", lazybytes_service_inmemory.from_bytes(b"test"), "SOURCE"
+        full_name="test",
+        file_content=lazybytes_service_inmemory.from_bytes(b"test"),
+        source_id="SOURCE",
+        parent_id=None,
     )
     assert file == file_duplicate
 
