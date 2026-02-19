@@ -55,19 +55,13 @@ export function Search() {
     const searchResultWrapper = useRef<HTMLDivElement>(null);
     const [hasScrollOffset, setHasScrollOffset] = useState(false);
 
-    const fileFetchDebounceTimeouts = new Map<
-        string,
-        ReturnType<typeof setTimeout> // see: https://stackoverflow.com/a/56239226/3215929
-    >();
+    const fileFetchDebounceTimeouts = useRef(
+        new Map<string, ReturnType<typeof setTimeout>>(),
+    );
 
-    const updateQueryDebounceTimeouts = new Map<
-        string,
-        ReturnType<typeof setTimeout> // see: https://stackoverflow.com/a/56239226/3215929
-    >();
-
-    const fileDetailDataFetchDebounceTimeout = useRef<
-        ReturnType<typeof setTimeout> | undefined
-    >(undefined); // see: https://stackoverflow.com/a/56239226/3215929
+    const updateQueryDebounceTimeouts = useRef(
+        new Map<string, ReturnType<typeof setTimeout>>(),
+    );
 
     const toggleChatbot = () => {
         dispatch(setChatbotOpen(!chatbotOpen));
@@ -208,29 +202,13 @@ export function Search() {
         const message = webSocketPubSubMessage.message as MessageFileUpdate;
 
         const fileId = message.fileId;
-        const existingTimeout = fileFetchDebounceTimeouts.get(fileId);
+        const existingTimeout = fileFetchDebounceTimeouts.current.get(fileId);
         clearTimeout(existingTimeout);
         const newTimeout = setTimeout(() => {
             dispatch(fetchPreview({ fileId: fileId }));
-            fileFetchDebounceTimeouts.delete(fileId);
+            fileFetchDebounceTimeouts.current.delete(fileId);
         }, FILE_FETCH_DEBOUNCE__MS);
-        fileFetchDebounceTimeouts.set(fileId, newTimeout);
-    }, [webSocketPubSubMessage]); // eslint-disable-line react-hooks/exhaustive-deps
-
-    // fetch file detail on change
-    useEffect(() => {
-        if (!webSocketPubSubMessage) return;
-        if (webSocketPubSubMessage.message.type !== "fileUpdate") return;
-        const message = webSocketPubSubMessage.message as MessageFileUpdate;
-
-        const fileId = message.fileId;
-        if (fileId !== fileDetailData.filePreview?.fileId) return;
-        clearTimeout(fileDetailDataFetchDebounceTimeout.current);
-        const newTimeout = setTimeout(() => {
-            dispatch(fetchFileDetailData({ fileId }));
-            fileFetchDebounceTimeouts.delete(fileId);
-        }, FILE_FETCH_DEBOUNCE__MS);
-        fileDetailDataFetchDebounceTimeout.current = newTimeout;
+        fileFetchDebounceTimeouts.current.set(fileId, newTimeout);
     }, [webSocketPubSubMessage]); // eslint-disable-line react-hooks/exhaustive-deps
 
     // update query id and show toast
@@ -241,14 +219,15 @@ export function Search() {
         if (searchQuery?.id !== message.oldId) return;
 
         const oldQueryId = message.oldId;
-        const existingTimeout = updateQueryDebounceTimeouts.get(oldQueryId);
+        const existingTimeout =
+            updateQueryDebounceTimeouts.current.get(oldQueryId);
         clearTimeout(existingTimeout);
         const newTimeout = setTimeout(() => {
             dispatch(updateQuery({ id: message.newId }));
             toast.info(t("generalSearchView.queryExpired"));
-            updateQueryDebounceTimeouts.delete(oldQueryId);
+            updateQueryDebounceTimeouts.current.delete(oldQueryId);
         }, UPDATE_QUERY_DEBOUNCE__MS);
-        updateQueryDebounceTimeouts.set(oldQueryId, newTimeout);
+        updateQueryDebounceTimeouts.current.set(oldQueryId, newTimeout);
     }, [webSocketPubSubMessage, searchQuery]); // eslint-disable-line react-hooks/exhaustive-deps
 
     const updateScrollOffset = (ev: BaseSyntheticEvent) => {

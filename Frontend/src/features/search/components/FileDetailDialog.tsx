@@ -19,6 +19,7 @@ import {
 } from "../../../app/api";
 import AceEditor from "react-ace";
 import {
+    fetchFileDetailData,
     selectFileDetailData,
     selectWebSocketPubSubMessage,
     setFileDetailData,
@@ -28,7 +29,6 @@ import { HighlightList } from "../container/HighlightList";
 
 import { FileDetailTab } from "../model";
 import {
-    selectIsLoading,
     startLoadingIndicator,
     stopLoadingIndicator,
 } from "../../common/commonSlice";
@@ -189,7 +189,6 @@ const inferModeFromMimeType = (mimeType: string | undefined) => {
 export function FileDetailDialog() {
     const webSocketPubSubMessage = useAppSelector(selectWebSocketPubSubMessage);
     const fileDetailData = useAppSelector(selectFileDetailData);
-    const isLoading = useAppSelector(selectIsLoading);
     const dispatch = useAppDispatch();
     const { t } = useTranslation();
 
@@ -199,13 +198,29 @@ export function FileDetailDialog() {
 
     const [isFullscreen, setIsFullscreen] = useState(false);
 
+    const fileDetailDataFetchDebounceTimeout = useRef<
+        ReturnType<typeof setTimeout> | undefined
+    >(undefined);
+
     const fileFetchDebounceTimeout = useRef<
         ReturnType<typeof setTimeout> | undefined
     >(undefined); // see: https://stackoverflow.com/a/56239226/3215929
 
+    const openDialog = !!(
+        fileDetailData.filePreview && fileDetailData.searchQuery
+    );
+
+    const openDialogRef = useRef(openDialog);
+
+    // Update ref whenever openDialog changes
+    useEffect(() => {
+        openDialogRef.current = openDialog;
+    }, [openDialog]);
+
     async function fetchFile() {
         if (!fileDetailData.searchQuery) return;
         if (!fileDetailData.filePreview) return;
+        if (!openDialogRef.current) return; // Check current value via ref
 
         const response = await getFile(fileDetailData.filePreview.fileId, {
             ...fileDetailData.searchQuery,
@@ -231,6 +246,22 @@ export function FileDetailDialog() {
         load();
     }, [fileDetailData.filePreview?.fileId, fileDetailData.searchQuery]); // eslint-disable-line react-hooks/exhaustive-deps
 
+    // fetch file detail on change
+    useEffect(() => {
+        if (!webSocketPubSubMessage) return;
+        if (webSocketPubSubMessage.message.type !== "fileUpdate") return;
+        const message = webSocketPubSubMessage.message as MessageFileUpdate;
+
+        const fileId = message.fileId;
+        if (fileId !== fileDetailData.filePreview?.fileId) return;
+        clearTimeout(fileDetailDataFetchDebounceTimeout.current);
+        const newTimeout = setTimeout(() => {
+            if (!openDialogRef.current) return; // Check current value via ref
+            dispatch(fetchFileDetailData({ fileId }));
+        }, FILE_FETCH_DEBOUNCE__MS);
+        fileDetailDataFetchDebounceTimeout.current = newTimeout;
+    }, [webSocketPubSubMessage]); // eslint-disable-line react-hooks/exhaustive-deps
+
     // fetch file on change
     useEffect(() => {
         if (!webSocketPubSubMessage) return;
@@ -250,15 +281,12 @@ export function FileDetailDialog() {
 
     const close = () => {
         dispatch(setFileDetailData({ searchQuery: null, filePreview: null }));
+        setFile(undefined);
     };
 
     const toggleFullscreen = () => {
         setIsFullscreen(!isFullscreen);
     };
-
-    const openDialog = !!(
-        fileDetailData.filePreview && fileDetailData.searchQuery
-    );
 
     const hasContent = (file?.content.trim().length ?? 0) > 0;
 
@@ -382,7 +410,7 @@ export function FileDetailDialog() {
                         overflow: "hidden",
                     }}
                 >
-                    {isLoading || !file ? (
+                    {!file ? (
                         <div>
                             <Skeleton variant="text" />
                             <Skeleton variant="text" />
