@@ -99,10 +99,6 @@ recursive=no
 # source root.
 source-roots=
 
-# When enabled, pylint would attempt to guess common misconfiguration and emit
-# user-friendly hints instead of false-positive error messages.
-suggestion-mode=yes
-
 # Allow loading of arbitrary C extensions. Extensions are imported into the
 # active Python interpreter and may run arbitrary code.
 unsafe-load-any-extension=no
@@ -162,7 +158,8 @@ class-naming-style=PascalCase
 
 # Regular expression matching correct class names. Overrides class-naming-
 # style. If left empty, class names will be checked with the set naming style.
-#class-rgx=
+# -> Allows _lowercase for singletons
+const-rgx=(([A-Z_][A-Z0-9_]*)|(__.*__)|(_[a-z_][a-z0-9_]*))$
 
 # Naming style matching correct constant names.
 const-naming-style=UPPER_CASE

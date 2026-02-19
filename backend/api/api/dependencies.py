@@ -6,6 +6,7 @@ from common.dependencies import DependencyException
 
 from api.services.websocket_service import WebsocketService
 
+# Note, "= None" assignments are needed here to make flake8 happy
 _websocket_service: WebsocketService | None = None
 
 logger = logging.getLogger(__name__)

@@ -7,6 +7,7 @@ from minio import Minio
 
 from crawler.settings import settings
 
+# Note, "= None" assignments are needed here to make flake8 happy
 _minio_client: Minio | None = None
 
 logger = logging.getLogger(__name__)

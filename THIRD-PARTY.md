@@ -636,7 +636,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | blobfile                              | 2.1.1           | Public Domain                                                                    |
 | filelock                              | 3.15.4          | The Unlicense (Unlicense)                                                        |
 | annotated-doc                         | 0.0.4           | UNKNOWN                                                                          |
-| astroid                               | 3.3.11          | UNKNOWN                                                                          |
+| astroid                               | 4.0.4           | UNKNOWN                                                                          |
 | binwalk                               | 2.4.3           | UNKNOWN                                                                          |
 | black                                 | 26.1.0          | UNKNOWN                                                                          |
 | fastapi                               | 0.128.0         | UNKNOWN                                                                          |
@@ -649,7 +649,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | opentelemetry-semantic-conventions    | 0.60b1          | UNKNOWN                                                                          |
 | prometheus_client                     | 0.24.1          | UNKNOWN                                                                          |
 | pycrypto                              | 3.20.0          | UNKNOWN                                                                          |
-| pylint                                | 3.3.9           | UNKNOWN                                                                          |
+| pylint                                | 4.0.4           | UNKNOWN                                                                          |
 | pytest                                | 9.0.2           | UNKNOWN                                                                          |
 | pytest-asyncio                        | 1.3.0           | UNKNOWN                                                                          |
 | typing_extensions                     | 4.15.0          | UNKNOWN                                                                          |
