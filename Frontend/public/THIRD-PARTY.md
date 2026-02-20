@@ -593,7 +593,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | hyperframe                            | 6.1.0           | MIT License                                                                      |
 | iniconfig                             | 2.0.0           | MIT License                                                                      |
 | integrationtest                       | 0.1.0           | MIT License                                                                      |
-| isort                                 | 5.13.2          | MIT License                                                                      |
+| isort                                 | 7.0.0           | MIT License                                                                      |
 | langchain-core                        | 0.3.22          | MIT License                                                                      |
 | langchain-text-splitters              | 0.3.2           | MIT License                                                                      |
 | langsmith                             | 0.1.147         | MIT License                                                                      |
