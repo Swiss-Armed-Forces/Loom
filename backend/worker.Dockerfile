@@ -4,8 +4,9 @@ ARG PYTHON_IMAGE_VERSION="3.11.13-bookworm"
 ARG DOCKER_REGISTRY
 FROM ${DOCKER_REGISTRY}/python:${PYTHON_BUILDER_IMAGE_VERSION} AS builder-base
 
+ARG POETRY_VERSION="2.2.1"
 RUN set -exu \
-    && pip install --no-cache-dir poetry==1.8.3
+    && pip install --no-cache-dir poetry==${POETRY_VERSION}
 
 ENV POETRY_NO_INTERACTION=1 \
     POETRY_VIRTUALENVS_IN_PROJECT=1 \

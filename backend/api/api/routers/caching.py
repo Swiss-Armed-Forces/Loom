@@ -18,8 +18,8 @@ def get_caching_stats(
 
     # need to do utf-8 decode here as we have set decode_responses=False
     # for StrictRedis due to pickled binaries which cause errors otherwise
-    keys = redis_client.keys(f"{{{CACHE_KEY_PREFIX}*[miss|hits]?")
-    keys = list(map(lambda key: key.decode(), keys))
+    keys_bytes = redis_client.keys(f"{{{CACHE_KEY_PREFIX}*[miss|hits]?")  # type: ignore
+    keys = list(map(lambda key: key.decode(), keys_bytes))
 
     tasks = list(map(lambda key: key.split(":")[1][:-1], keys))
     for task in set(tasks):
