@@ -33,6 +33,15 @@ CERTIFICATE_SECRET_NAME="self-signed-cert"
 WAIT_MAX_RETRIES=30
 
 #
+# Minikube host resource reservation
+# (leave some resources free on the host)
+#
+# Note: --cpus expects a number; we compute (nproc - reserve) and FLOOR it to an integer.
+# If reserve is 0, we pass "max" to minikube (same for memory).
+MINIKUBE_HOST_CPU_RESERVE_CORES="0"
+MINIKUBE_HOST_MEM_RESERVE_KIB="0"
+
+#
 # Shared variables
 #
 
@@ -59,6 +68,8 @@ STEPS_SETUP_SYSTEM=(
     set_skaffold_args
     validate_environment
     setup_system
+    compute_minikube_cpu_resources
+    compute_minikube_memory_resources
     create_cluster
     install_host_entries
 )
@@ -96,6 +107,11 @@ SKAFFOLD_COMMAND="run"
 SKAFFOLD_CACHE_FILE="${SKAFFOLD_HOME}/cache"
 SKAFFOLD_REMOTE_CACHE_DIR="${SKAFFOLD_HOME}/remote-cache"
 CERTIFICATE=false
+
+# Computed Minikube resources
+MINIKUBE_CPUS=""
+# NOTE: This contains the exact value passed to minikube --memory, INCLUDING suffix if needed ("1234kb" or "max")
+MINIKUBE_MEMORY_KIB=""
 
 #
 # Utils
@@ -209,7 +225,6 @@ set_skaffold_command(){
     fi
 }
 
-
 set_skaffold_args(){
     if [[ "${DEVELOPMENT}" = true ]]; then
         SKAFFOLD_ARGS+=(
@@ -285,6 +300,8 @@ validate_environment() {
     check_command sudo
     check_command sysctl
     check_command pidwait
+    check_command nproc
+    check_command awk
     check_command pkill
     check_command tee
     check_command realpath
@@ -367,13 +384,75 @@ EOF
     fi
 }
 
+compute_minikube_cpu_resources() {
+    if [[ "${MINIKUBE_HOST_CPU_RESERVE_CORES}" == "0" ]] || [[ "${MINIKUBE_HOST_CPU_RESERVE_CORES}" == "0.0" ]]; then
+        MINIKUBE_CPUS="max"
+        return
+    fi
+
+    local total_cpus
+    total_cpus="$(nproc)"
+
+    # Compute usable CPUs: floor(total - reserve), minimum 1
+    MINIKUBE_CPUS="$(
+        awk -v total="${total_cpus}" -v reserve="${MINIKUBE_HOST_CPU_RESERVE_CORES}" '
+            BEGIN {
+                usable = total - reserve;
+                if (usable < 1) usable = 1;
+                printf("%d\n", usable);
+            }
+        '
+    )"
+}
+
+compute_minikube_memory_resources() {
+    # Memory
+    # - If reserve is 0 -> use "max" (no suffix!)
+    # - Else -> compute KiB and append "kb" suffix here
+    if [[ "${MINIKUBE_HOST_MEM_RESERVE_KIB}" == "0" ]]; then
+        MINIKUBE_MEMORY_KIB="max"
+        return
+    fi
+
+    # Memory: keep everything in KiB (MemTotal is in KiB)
+    local mem_total_kib
+    mem_total_kib="$(
+        awk '
+            $1 == "MemTotal:" { print $2; exit }
+        ' /proc/meminfo
+    )"
+
+    if [[ -z "${mem_total_kib}" ]]; then
+        echo >&2 "[!] Error: Could not read MemTotal from /proc/meminfo"
+        exit 1
+    fi
+
+    # Reserve some memory, minimum 524288 KiB (512 MiB)
+    local usable_kib
+    usable_kib="$(
+        awk -v total="${mem_total_kib}" -v reserve="${MINIKUBE_HOST_MEM_RESERVE_KIB}" '
+            BEGIN {
+                usable = total - reserve;
+                if (usable < 524288) usable = 524288;
+                printf("%d\n", usable);
+            }
+        '
+    )"
+
+    MINIKUBE_MEMORY_KIB="${usable_kib}kb"
+}
+
 create_cluster(){
+    echo "[*] Minikube resources:"
+    echo "[*]   Host CPU reserve: ${MINIKUBE_HOST_CPU_RESERVE_CORES} -> using: ${MINIKUBE_CPUS}"
+    echo "[*]   Host Mem reserve: ${MINIKUBE_HOST_MEM_RESERVE_KIB}KiB -> using: ${MINIKUBE_MEMORY_KIB}"
+
     minikube start \
         --driver docker \
         --wait all \
         --registry-mirror "${REGISTRY_MIRROR}" \
-        --memory max \
-        --cpus max \
+        --memory "${MINIKUBE_MEMORY_KIB}" \
+        --cpus "${MINIKUBE_CPUS}" \
         --cni calico \
         --addons metrics-server \
         --gpus "${GPUS}"
@@ -398,7 +477,6 @@ use_namespace(){
 install_traefik(){
     (
         cd "${SCRIPT_DIR}/traefik"
-
 
         # Deploy CRDs as skaffold won't do this
         # Related:
@@ -616,18 +694,20 @@ trap atexit EXIT
 
 usage(){
     echo "usage: ${0} [<options>]"
-    echo "  -h|--help                   show this help"
-    echo "  -v|--verbose                show verbose output"
-    echo "  -d|--development            start in development mode: Provides debugging und live reloading."
-    echo "  -i|--integrationtest        start in integration test mode"
-    echo "  -s|--setup                  only setup system, don't start anything"
-    echo "  -e|--expose IP              expose the application to the outside world by binding to IP"
-    echo "  -g|--gpus GPUS              allow access to the GPUs. Possible values: all, nvidia, amd"
-    echo "  -t|--tail                   tail logs after startup"
-    echo "  -o|--offline                run in offline mode"
-    echo "  -c|--certificate CERT KEY   install certificate (CERT) with key (KEY)"
-    echo "  --delete                    delete the deployment after startup"
-    echo "  --skip-STEP                 skip step STEP"
+    echo "  -h|--help                             show this help"
+    echo "  -v|--verbose                          show verbose output"
+    echo "  -d|--development                      start in development mode: Provides debugging und live reloading."
+    echo "  -i|--integrationtest                  start in integration test mode"
+    echo "  -s|--setup                            only setup system, don't start anything"
+    echo "  -e|--expose IP                        expose the application to the outside world by binding to IP"
+    echo "  -g|--gpus GPUS                        allow access to the GPUs. Possible values: all, nvidia, amd"
+    echo "  -t|--tail                             tail logs after startup"
+    echo "  -o|--offline                          run in offline mode"
+    echo "  -c|--certificate CERT KEY             install certificate (CERT) with key (KEY)"
+    echo "  --minikube-host-cpu-reserve N         reserve N CPU cores on the host (default: ${MINIKUBE_HOST_CPU_RESERVE_CORES})"
+    echo "  --minikube-host-mem-reserve-kib KiB   reserve KiB of RAM on the host (default: ${MINIKUBE_HOST_MEM_RESERVE_KIB})"
+    echo "  --delete                              delete the deployment after startup"
+    echo "  --skip-STEP                           skip step STEP"
 }
 
 #
@@ -681,6 +761,16 @@ while [[ $# -gt 0 ]]; do
             shift
             CERTIFICATE=("${1?Missing CERT}" "${2?Missing KEY}")
             shift
+            shift
+        ;;
+        --minikube-host-cpu-reserve)
+            shift
+            MINIKUBE_HOST_CPU_RESERVE_CORES="${1?Missing reserve cores value (e.g. 0.5)}"
+            shift
+        ;;
+        --minikube-host-mem-reserve-kib)
+            shift
+            MINIKUBE_HOST_MEM_RESERVE_KIB="${1?Missing reserve memory KiB value (e.g. 512000)}"
             shift
         ;;
         --delete)
