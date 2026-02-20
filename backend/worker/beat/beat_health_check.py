@@ -1,15 +1,15 @@
 import logging
 import shelve
 import sys
-import tempfile
 from datetime import timedelta
+from tempfile import NamedTemporaryFile
 
 TOLERANCE_IN_MINUTES = 3
 
 
 def beat_health(cb_schedule: str = "celerybeat-schedule"):
 
-    with tempfile.NamedTemporaryFile(delete=False) as temp_file:
+    with NamedTemporaryFile() as temp_file:
         with open(cb_schedule, "rb") as src:
             temp_file.write(src.read())
 

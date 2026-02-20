@@ -13,6 +13,7 @@ logger = logging.getLogger(__name__)
 CACHE_KEY_PREFIX = "rc"
 CACHE_KEY_FORMAT = "{{rc:{namespace}}}:{key}"
 CACHE_DEFAULT_SHRINK_PERCENTAGE = 0.8  # setting 0.8 means that it will free up 20%
+CACHE_DEFAULT_TTL_SECONDS = 3600  # 60 minutes
 CACHE_DEFAULT_MAX_SIZE = 5 * (1024**3)  # 5 GB
 
 
@@ -52,8 +53,9 @@ def persisting_cache(*args, **kwargs):
 
 
 def cache(
-    max_size: int = CACHE_DEFAULT_MAX_SIZE,  # 5 GB
+    max_size: int = CACHE_DEFAULT_MAX_SIZE,
     shrink_percentage: float = CACHE_DEFAULT_SHRINK_PERCENTAGE,
+    ttl_seconds: int = CACHE_DEFAULT_TTL_SECONDS,
     key_function: Callable | None = None,
     namespace: str | None = None,
 ):
@@ -98,6 +100,11 @@ def cache(
                 redis_client.zadd(keys_key, {key: time()})
                 # store result for key in cache
                 redis_client.hset(vals_key, key, result_serialized)
+                # set/refresh ttl for key
+                redis_client.hexpire(vals_key, ttl_seconds, key)  # type: ignore
+
+            # set/refresh ttl for vals_key
+            redis_client.expire(vals_key, ttl_seconds)
 
             return parsed_result
 

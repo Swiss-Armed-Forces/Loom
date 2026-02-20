@@ -79,7 +79,6 @@ opentelemetry-instrumentation-fastapi = "^0.60b1"
 prometheus-client = "^0.24.1"
 python-multipart = "^0.0.22"
 scikit-learn = "^1.4.2"
-types-redis = "^4.6.0.20240425"
 uvicorn = "^0.40.0"
 websockets = "^13.0"
 
@@ -576,8 +575,9 @@ pydantic = "^2.7.1"
 pydantic-mongo = "^2.3.0"
 pydantic-settings = "^2.2.1"
 pymongo = "^4.7.2"
+redis = "^5.2.0"
 requests = "^2.31.0"
-types-redis = "^4.6.0.20240425"
+types-redis = "^4.6.0.20241004"
 types-requests = "^2.31.0.20240406"
 
 [package.source]
@@ -2116,22 +2116,22 @@ files = [
 
 [[package]]
 name = "redis"
-version = "5.0.4"
+version = "5.2.1"
 description = "Python client for Redis database and key-value store"
 optional = false
-python-versions = ">=3.7"
+python-versions = ">=3.8"
 groups = ["main"]
 files = [
-    {file = "redis-5.0.4-py3-none-any.whl", hash = "sha256:7adc2835c7a9b5033b7ad8f8918d09b7344188228809c98df07af226d39dec91"},
-    {file = "redis-5.0.4.tar.gz", hash = "sha256:ec31f2ed9675cc54c21ba854cfe0462e6faf1d83c8ce5944709db8a4700b9c61"},
+    {file = "redis-5.2.1-py3-none-any.whl", hash = "sha256:ee7e1056b9aea0f04c6c2ed59452947f34c4940ee025f5dd83e6a6418b6989e4"},
+    {file = "redis-5.2.1.tar.gz", hash = "sha256:16f2e22dff21d5125e8481515e386711a34cbec50f0e44413dd7d9c060a54e0f"},
 ]
 
 [package.dependencies]
 async-timeout = {version = ">=4.0.3", markers = "python_full_version < \"3.11.3\""}
 
 [package.extras]
-hiredis = ["hiredis (>=1.0.0)"]
-ocsp = ["cryptography (>=36.0.1)", "pyopenssl (==20.0.1)", "requests (>=2.26.0)"]
+hiredis = ["hiredis (>=3.0.0)"]
+ocsp = ["cryptography (>=36.0.1)", "pyopenssl (==23.2.1)", "requests (>=2.31.0)"]
 
 [[package]]
 name = "requests"
@@ -2397,14 +2397,14 @@ files = [
 
 [[package]]
 name = "types-cffi"
-version = "1.16.0.20240331"
+version = "1.17.0.20250915"
 description = "Typing stubs for cffi"
 optional = false
-python-versions = ">=3.8"
+python-versions = ">=3.9"
 groups = ["main"]
 files = [
-    {file = "types-cffi-1.16.0.20240331.tar.gz", hash = "sha256:b8b20d23a2b89cfed5f8c5bc53b0cb8677c3aac6d970dbc771e28b9c698f5dee"},
-    {file = "types_cffi-1.16.0.20240331-py3-none-any.whl", hash = "sha256:a363e5ea54a4eb6a4a105d800685fde596bc318089b025b27dee09849fe41ff0"},
+    {file = "types_cffi-1.17.0.20250915-py3-none-any.whl", hash = "sha256:cef4af1116c83359c11bb4269283c50f0688e9fc1d7f0eeb390f3661546da52c"},
+    {file = "types_cffi-1.17.0.20250915.tar.gz", hash = "sha256:4362e20368f78dabd5c56bca8004752cc890e07a71605d9e0d9e069dbaac8c06"},
 ]
 
 [package.dependencies]
@@ -2444,14 +2444,14 @@ cryptography = ">=37.0.0"
 
 [[package]]
 name = "types-pyopenssl"
-version = "24.1.0.20240425"
+version = "24.1.0.20240722"
 description = "Typing stubs for pyOpenSSL"
 optional = false
 python-versions = ">=3.8"
 groups = ["main"]
 files = [
-    {file = "types-pyOpenSSL-24.1.0.20240425.tar.gz", hash = "sha256:0a7e82626c1983dc8dc59292bf20654a51c3c3881bcbb9b337c1da6e32f0204e"},
-    {file = "types_pyOpenSSL-24.1.0.20240425-py3-none-any.whl", hash = "sha256:f51a156835555dd2a1f025621e8c4fbe7493470331afeef96884d1d29bf3a473"},
+    {file = "types-pyOpenSSL-24.1.0.20240722.tar.gz", hash = "sha256:47913b4678a01d879f503a12044468221ed8576263c1540dcb0484ca21b08c39"},
+    {file = "types_pyOpenSSL-24.1.0.20240722-py3-none-any.whl", hash = "sha256:6a7a5d2ec042537934cfb4c9d4deb0e16c4c6250b09358df1f083682fe6fda54"},
 ]
 
 [package.dependencies]
@@ -2460,14 +2460,14 @@ types-cffi = "*"
 
 [[package]]
 name = "types-redis"
-version = "4.6.0.20240425"
+version = "4.6.0.20241004"
 description = "Typing stubs for redis"
 optional = false
 python-versions = ">=3.8"
 groups = ["main"]
 files = [
-    {file = "types-redis-4.6.0.20240425.tar.gz", hash = "sha256:9402a10ee931d241fdfcc04592ebf7a661d7bb92a8dea631279f0d8acbcf3a22"},
-    {file = "types_redis-4.6.0.20240425-py3-none-any.whl", hash = "sha256:ac5bc19e8f5997b9e76ad5d9cf15d0392d9f28cf5fc7746ea4a64b989c45c6a8"},
+    {file = "types-redis-4.6.0.20241004.tar.gz", hash = "sha256:5f17d2b3f9091ab75384153bfa276619ffa1cf6a38da60e10d5e6749cc5b902e"},
+    {file = "types_redis-4.6.0.20241004-py3-none-any.whl", hash = "sha256:ef5da68cb827e5f606c8f9c0b49eeee4c2669d6d97122f301d3a55dc6a63f6ed"},
 ]
 
 [package.dependencies]
@@ -2491,14 +2491,14 @@ urllib3 = ">=2"
 
 [[package]]
 name = "types-setuptools"
-version = "70.0.0.20240524"
+version = "82.0.0.20260210"
 description = "Typing stubs for setuptools"
 optional = false
-python-versions = ">=3.8"
+python-versions = ">=3.10"
 groups = ["main"]
 files = [
-    {file = "types-setuptools-70.0.0.20240524.tar.gz", hash = "sha256:e31fee7b9d15ef53980526579ac6089b3ae51a005a281acf97178e90ac71aff6"},
-    {file = "types_setuptools-70.0.0.20240524-py3-none-any.whl", hash = "sha256:8f5379b9948682d72a9ab531fbe52932e84c4f38deda570255f9bae3edd766bc"},
+    {file = "types_setuptools-82.0.0.20260210-py3-none-any.whl", hash = "sha256:5124a7daf67f195c6054e0f00f1d97c69caad12fdcf9113eba33eff0bce8cd2b"},
+    {file = "types_setuptools-82.0.0.20260210.tar.gz", hash = "sha256:d9719fbbeb185254480ade1f25327c4654f8c00efda3fec36823379cebcdee58"},
 ]
 
 [[package]]

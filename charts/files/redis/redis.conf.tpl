@@ -1146,6 +1146,7 @@ maxmemory {{ .memoryLimitBytes }}
 #
 # The default is:
 #
+# maxmemory-policy volatile-lru
 maxmemory-policy volatile-ttl
 
 # LRU, LFU and minimal TTL algorithms are not precise algorithms but approximated
