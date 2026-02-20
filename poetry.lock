@@ -78,7 +78,7 @@ numpy = "^1.26.4"
 opentelemetry-exporter-prometheus = "^0.60b1"
 opentelemetry-instrumentation-fastapi = "^0.60b1"
 prometheus-client = "^0.24.1"
-python-multipart = "^0.0.21"
+python-multipart = "^0.0.22"
 scikit-learn = "^1.4.2"
 types-redis = "^4.6.0.20240425"
 uvicorn = "^0.40.0"
@@ -3180,14 +3180,14 @@ files = [
 
 [[package]]
 name = "python-multipart"
-version = "0.0.21"
+version = "0.0.22"
 description = "A streaming multipart parser for Python"
 optional = false
 python-versions = ">=3.10"
 groups = ["main"]
 files = [
-    {file = "python_multipart-0.0.21-py3-none-any.whl", hash = "sha256:cf7a6713e01c87aa35387f4774e812c4361150938d20d232800f75ffcf266090"},
-    {file = "python_multipart-0.0.21.tar.gz", hash = "sha256:7137ebd4d3bbf70ea1622998f902b97a29434a9e8dc40eb203bbcf7c2a2cba92"},
+    {file = "python_multipart-0.0.22-py3-none-any.whl", hash = "sha256:2b2cd894c83d21bf49d702499531c7bafd057d730c201782048f7945d82de155"},
+    {file = "python_multipart-0.0.22.tar.gz", hash = "sha256:7340bef99a7e0032613f56dc36027b959fd3b30a787ed62d310e951f7c3a3a58"},
 ]
 
 [[package]]
@@ -3584,21 +3584,21 @@ full = ["httpx (>=0.27.0,<0.29.0)", "itsdangerous", "jinja2", "python-multipart 
 
 [[package]]
 name = "stream-zip"
-version = "0.0.83"
+version = "0.0.84"
 description = "Python function to construct a ZIP archive with stream processing - without having to store the entire ZIP in memory or disk"
 optional = false
 python-versions = ">=3.6.7"
 groups = ["main"]
 files = [
-    {file = "stream_zip-0.0.83-py3-none-any.whl", hash = "sha256:118bef93c10031dc715235e081c72e1dab2850771893f261cb5d246ff56e0e42"},
-    {file = "stream_zip-0.0.83.tar.gz", hash = "sha256:87d755f0ce43dfc6b0ae555b733f162c76e2eafcf3c7805d3f591e966b316716"},
+    {file = "stream_zip-0.0.84-py3-none-any.whl", hash = "sha256:4e3a68aba1aba643035c4b9e219a61de519752693ff727c3268581a1e70f1376"},
+    {file = "stream_zip-0.0.84.tar.gz", hash = "sha256:32ba07c3c7fe947c0224a9f8e4a228f14080e01b17d8ffc78c16a6043b1fba12"},
 ]
 
 [package.dependencies]
 pycryptodome = ">=3.10.1"
 
 [package.extras]
-ci = ["mypy (==0.971)", "pycryptodome (==3.10.1)", "pyzipper (==0.3.6)", "stream-unzip (==0.0.86)", "types-contextvars (==2.4.7.3) ; python_version < \"3.7\""]
+ci = ["mypy (>=0.971)", "pycryptodome (==3.10.1)", "pyzipper (==0.3.6)", "stream-unzip (==0.0.86)", "types-contextvars (>=2.4.7.3) ; python_version < \"3.9\""]
 dev = ["coverage (>=6.2)", "mypy (>=0.971)", "pytest (>=7.0.1)", "pytest-cov (>=3.0.0)", "pyzipper (>=0.3.6)", "stream-unzip (>=0.0.86)", "types-contextvars (>=2.4.7.3) ; python_version < \"3.7\""]
 
 [[package]]
@@ -4102,7 +4102,7 @@ python-magic = "^0.4.27"
 requests = "^2.31.0"
 scikit-learn = "^1.7.0"
 scipy = "^1.15.3"
-stream-zip = "^0.0.83"
+stream-zip = "^0.0.84"
 wand = "^0.6.13"
 
 [package.source]
