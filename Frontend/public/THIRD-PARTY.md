@@ -514,7 +514,6 @@ The complete source code for Traefik is publicly available at [https://github.co
 | python-dateutil                       | 2.9.0.post0     | Apache Software License; BSD License                                             |
 | pycryptodome                          | 3.20.0          | Apache Software License; BSD License; Public Domain                              |
 | pycryptodome                          | 3.20.0          | Apache Software License; BSD License; Public Domain                              |
-| pycryptodomex                         | 3.20.0          | Apache Software License; BSD License; Public Domain                              |
 | luqum                                 | 0.14.0          | Apache Software License; GNU Lesser General Public License v3 or later (LGPLv3+) |
 | orjson                                | 3.10.5          | Apache Software License; MIT License                                             |
 | sniffio                               | 1.3.1           | Apache Software License; MIT License                                             |
@@ -540,7 +539,6 @@ The complete source code for Traefik is publicly available at [https://github.co
 | jsonpatch                             | 1.33            | BSD License                                                                      |
 | jsonpointer                           | 3.0.0           | BSD License                                                                      |
 | kombu                                 | 5.5.4           | BSD License                                                                      |
-| lxml                                  | 4.9.4           | BSD License                                                                      |
 | numpy                                 | 1.26.4          | BSD License                                                                      |
 | pika                                  | 1.3.2           | BSD License                                                                      |
 | prompt_toolkit                        | 3.0.47          | BSD License                                                                      |
@@ -629,8 +627,6 @@ The complete source code for Traefik is publicly available at [https://github.co
 | certifi                               | 2024.6.2        | Mozilla Public License 2.0 (MPL 2.0)                                             |
 | gotenberg-client                      | 0.13.1          | Mozilla Public License 2.0 (MPL 2.0)                                             |
 | pathspec                              | 1.0.4           | Mozilla Public License 2.0 (MPL 2.0)                                             |
-| blobfile                              | 2.1.1           | Public Domain                                                                    |
-| filelock                              | 3.15.4          | The Unlicense (Unlicense)                                                        |
 | annotated-doc                         | 0.0.4           | UNKNOWN                                                                          |
 | astroid                               | 4.0.4           | UNKNOWN                                                                          |
 | binwalk                               | 2.4.3           | UNKNOWN                                                                          |
@@ -1133,7 +1129,6 @@ The complete source code for Traefik is publicly available at [https://github.co
 | elastic-transport | 8.17.0 | Apache-2.0 | python-installed-package-cataloger |
 | elasticsearch | 9.0.2 | Apache-2.0 | python-installed-package-cataloger |
 | fastapi | 0.128.8 | MIT | python-installed-package-cataloger |
-| filelock | 3.17.0 | Unlicense | python-installed-package-cataloger |
 | findutils | 4.9.0-4 | BSD-3-Clause, FSFAP, FSFULLR, GFDL-1.3-only, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, ISC, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, X11 | dpkg-db-cataloger |
 | gcc-12-base | 12.2.0-14+deb12u1 | GFDL-1.2-only, GPL-2.0-only, GPL-3.0-only | dpkg-db-cataloger |
 | gpgv | 2.2.40-1.1+deb12u1 | BSD-3-Clause, CC0-1.0, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
@@ -1257,7 +1252,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | prometheus-client | 0.24.1 | Apache-2.0 AND BSD-2-Clause | python-installed-package-cataloger |
 | prompt-toolkit | 3.0.50 |  | python-installed-package-cataloger |
 | pycparser | 3.0 | BSD-3-Clause | python-installed-package-cataloger |
-| pycryptodome | 3.21.0 |  | python-installed-package-cataloger |
+| pycryptodome | 3.23.0 |  | python-installed-package-cataloger |
 | pydantic | 2.10.6 | MIT | python-installed-package-cataloger |
 | pydantic-core | 2.27.2 | MIT | python-installed-package-cataloger |
 | pydantic-mongo | 2.3.0 | MIT | python-installed-package-cataloger |
@@ -1340,7 +1335,6 @@ The complete source code for Traefik is publicly available at [https://github.co
 | binutils-x86-64-linux-gnu | 2.40-2 |  | dpkg-db-cataloger |
 | binwalk | 2.3.3 |  | python-installed-package-cataloger |
 | binwalk | 2.3.4+dfsg1-1 |  | dpkg-db-cataloger |
-| blobfile | 2.1.1 |  | python-installed-package-cataloger |
 | bsdutils | 1:2.38.1-5+deb12u3 | BSD-3-Clause, BSD-4-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, MIT | dpkg-db-cataloger |
 | bzip2 | 1.0.8-5+b1 | GPL-2.0-only | dpkg-db-cataloger |
 | ca-certificates | 20230311+deb12u1 | GPL-2.0-only, GPL-2.0-or-later, MPL-2.0 | dpkg-db-cataloger |
@@ -1380,7 +1374,6 @@ The complete source code for Traefik is publicly available at [https://github.co
 | elasticsearch | 9.0.2 | Apache-2.0 | python-installed-package-cataloger |
 | fastapi | 0.128.0 | MIT | python-installed-package-cataloger |
 | file | 1:5.44-3 | BSD-2-Clause | dpkg-db-cataloger |
-| filelock | 3.18.0 | Unlicense | python-installed-package-cataloger |
 | findutils | 4.9.0-4 | BSD-3-Clause, FSFAP, FSFULLR, GFDL-1.3-only, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, ISC, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, X11 | dpkg-db-cataloger |
 | flower | 2.0.1 |  | python-installed-package-cataloger |
 | fontconfig | 2.14.1-4 | HPND-sell-variant | dpkg-db-cataloger |
@@ -1788,7 +1781,6 @@ The complete source code for Traefik is publicly available at [https://github.co
 | login | 1:4.13+dfsg1-1+deb12u1 | BSD-3-Clause, GPL-1.0-only, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
 | logsave | 1.47.0-2+b2 | Apache-2.0, Apache-2.0, BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later, ISC, Kazlib, LGPL-2.0-only, Latex2e | dpkg-db-cataloger |
 | luqum | 0.14.0 | LGPL-3.0-only | python-installed-package-cataloger |
-| lxml | 4.9.4 | BSD-3-Clause | python-installed-package-cataloger |
 | m4 | 1.4.19-3 |  | dpkg-db-cataloger |
 | make | 4.3-4.1 | GPL-3.0-only, GPL-3.0-or-later | dpkg-db-cataloger |
 | mariadb-common | 1:10.11.14-0+deb12u2 | BSD-2-Clause, BSD-2-Clause, BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
@@ -1827,7 +1819,6 @@ The complete source code for Traefik is publicly available at [https://github.co
 | pst-utils | 0.6.76-1 | GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
 | pycparser | 2.22 | BSD-3-Clause | python-installed-package-cataloger |
 | pycryptodome | 3.23.0 |  | python-installed-package-cataloger |
-| pycryptodomex | 3.23.0 |  | python-installed-package-cataloger |
 | pydantic | 2.11.5 | MIT | python-installed-package-cataloger |
 | pydantic-core | 2.33.2 | MIT | python-installed-package-cataloger |
 | pydantic-mongo | 2.4.0 | MIT | python-installed-package-cataloger |
@@ -1977,7 +1968,6 @@ The complete source code for Traefik is publicly available at [https://github.co
 | elastic-transport | 8.15.1 | Apache-2.0 | python-installed-package-cataloger |
 | elasticsearch | 9.0.2 | Apache-2.0 | python-installed-package-cataloger |
 | fastapi | 0.128.0 | MIT | python-installed-package-cataloger |
-| filelock | 3.16.1 | Unlicense | python-installed-package-cataloger |
 | findutils | 4.9.0-4 | BSD-3-Clause, FSFAP, FSFULLR, GFDL-1.3-only, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, ISC, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, X11 | dpkg-db-cataloger |
 | gcc-12-base | 12.2.0-14+deb12u1 | GFDL-1.2-only, GPL-2.0-only, GPL-3.0-only | dpkg-db-cataloger |
 | gpgv | 2.2.40-1.1+deb12u1 | BSD-3-Clause, CC0-1.0, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
