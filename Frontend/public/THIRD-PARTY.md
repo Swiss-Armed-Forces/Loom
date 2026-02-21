@@ -707,7 +707,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | prettier                            | MIT          | 3.8.1             |
 | typescript                          | Apache-2.0   | 5.9.3             |
 | typescript-eslint                   | MIT          | 8.56.0            |
-| vite                                | MIT          | 6.4.1             |
+| vite                                | MIT          | 7.3.1             |
 | vite-plugin-static-copy             | MIT          | 3.2.0             |
 | vite-plugin-svgr                    | MIT          | 4.5.0             |
 | vitest                              | MIT          | 3.2.4             |
