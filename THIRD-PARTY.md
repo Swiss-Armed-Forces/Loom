@@ -695,7 +695,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | eslint-plugin-prettier              | MIT          | 5.5.5             |
 | eslint-plugin-react                 | MIT          | 7.37.5            |
 | eslint-plugin-react-hooks           | MIT          | 7.0.1             |
-| eslint-plugin-react-refresh         | MIT          | 0.4.26            |
+| eslint-plugin-react-refresh         | MIT          | 0.5.0             |
 | eslint-plugin-unused-imports        | MIT          | 4.4.1             |
 | globals                             | MIT          | 16.5.0            |
 | jsdom                               | MIT          | 26.1.0            |
