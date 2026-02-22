@@ -1,3 +1,7 @@
+{{- $redisMemoryLimitBytes := include "SI-to-bytes" .Values.redis.resources.limits.memory | int64 -}}
+{{- $pvcStorageMultiplier := 4 -}}
+{{- $pvcStorageBytes := mulf $redisMemoryLimitBytes $pvcStorageMultiplier | int64 -}}
+
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
@@ -67,10 +71,10 @@ spec:
         name: redis
       spec:
         accessModes:
-          - {{ .Values.redis.pvc.accessModes | default "ReadWriteOnce" | quote }}
+          - {{ default "ReadWriteOnce" (dig "pvc" "accessModes" "" .Values.redis) | quote }}
         resources:
             requests:
-              storage: {{ .Values.redis.pvc.storage }}
-        {{- if .Values.redis.pvc.storageClass -}}
+              storage: {{ printf "%d" $pvcStorageBytes }}
+        {{- if and .Values.redis.pvc .Values.redis.pvc.storageClass }}
         storageClassName: {{ .Values.redis.pvc.storageClass }}
         {{- end }}
