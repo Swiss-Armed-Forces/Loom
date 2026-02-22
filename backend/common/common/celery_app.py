@@ -163,6 +163,14 @@ def init_celery_app() -> "Celery[BaseTask]":
     serialization.register_pickle()
     serialization.enable_insecure_serializers()
 
+    # Enable compression for tasks & result backend
+    # We do this to reduce bandwidth usage, memory
+    # and disk pressure on the broker and backend.
+    # Using bzip2 for better compression ratio since we can
+    # scale workers horizontally easier than the backend.
+    app.conf.task_compression = "bzip2"
+    app.conf.result_compression = "bzip2"
+
     app.conf.worker_hijack_root_logger = True
     # We do use the prefork pool here, because it is
     # a) more robust against worker failure
