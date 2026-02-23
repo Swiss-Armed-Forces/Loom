@@ -2,17 +2,17 @@ import { MoreVert, Preview } from "@mui/icons-material";
 import { IconButton, Menu, MenuItem, useMediaQuery } from "@mui/material";
 import { t } from "i18next";
 import { UpdateVisibilityButton } from "../../common/components/files/UpdateVisibilityStateButton";
-import { IconButtonDownloadMenu } from "../../common/components/IconButtonDownloadMenu";
+import styles from "./FileActions.module.css";
+import { DownloadButton } from "../../common/components/DownloadButton";
 import { ReIndexButton } from "../components/ReIndexButton";
 import { SummaryButton } from "../components/SummaryButton";
 import { TranslationDialog } from "../components/TranslationDialog";
-import { useState, ReactNode } from "react";
+import { useState, ReactNode, useCallback } from "react";
 import { useAppDispatch, useAppSelector } from "../../../app/hooks";
 import { GetFilePreviewResponse } from "../../../app/api";
 import { TagsList } from "../../common/components/tags/TagsList";
 import { TagsInput } from "../../common/components/tags/TagsInput";
 import { ShareButton } from "../components/ShareButton";
-import styles from "./FileActions.module.css";
 import { selectQuery, setFileDetailData } from "../searchSlice";
 import { OpenButton } from "../components/OpenButton";
 
@@ -39,16 +39,16 @@ export function FileActions({
         setAnchorEl(null);
     };
 
-    const handleViewDetail = () => {
+    const handleViewDetail = useCallback(() => {
         dispatch(
             setFileDetailData({
                 filePreview: filePreview,
                 searchQuery: searchQuery,
             }),
         );
-    };
+    }, [dispatch, filePreview, searchQuery]);
 
-    const actionButtons = [
+    const actions: ReactNode[] = [
         <TagsInput
             key="tags-input"
             icon_only={true}
@@ -58,6 +58,7 @@ export function FileActions({
         <ShareButton key="share" fileId={filePreview.fileId} />,
         <IconButton
             key="preview"
+            aria-label="preview"
             title={t("generalSearchView.viewDetails")}
             onClick={() => {
                 if (isMobile) handleMenuClose();
@@ -66,19 +67,20 @@ export function FileActions({
         >
             <Preview />
         </IconButton>,
-        <TranslationDialog key="translation" file_id={filePreview.fileId} />,
-        <SummaryButton key="summary" file_id={filePreview.fileId} />,
-        <ReIndexButton key="reindex" file_id={filePreview.fileId} />,
+        <TranslationDialog key="translate" file_id={filePreview.fileId} />,
+        <SummaryButton key="summarize" file_id={filePreview.fileId} />,
+        <ReIndexButton key="re-index" file_id={filePreview.fileId} />,
         <OpenButton key="open" file_id={filePreview.fileId} />,
-        <IconButtonDownloadMenu key="download" fileId={filePreview.fileId} />,
+        <DownloadButton key="download" fileId={filePreview.fileId} />,
         <UpdateVisibilityButton
             key="visibility"
             icon_only={true}
             file_id={filePreview.fileId}
             fileHidden={filePreview.hidden}
         />,
-        ...(additionalActions ?? []),
     ];
+
+    const actionButtons = [...actions, ...(additionalActions ?? [])];
 
     if (isMobile) {
         return (

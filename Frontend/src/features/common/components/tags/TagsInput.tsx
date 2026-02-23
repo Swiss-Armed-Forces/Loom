@@ -89,6 +89,7 @@ export function TagsInput({
         <>
             {icon_only ? (
                 <IconButton
+                    aria-label="tags-input"
                     onClick={() => setShowAddTagDialog(true)}
                     disabled={disabled}
                     title={t("tags.addTag")}
@@ -147,6 +148,7 @@ export function TagsInput({
                         renderInput={(params) => (
                             <TextField
                                 {...params}
+                                autoFocus
                                 label={t("tags.tagDialogInputPlaceholder")}
                             />
                         )}

@@ -79,11 +79,6 @@ export interface DownloadFileV1FilesFileIdDownloadGetRequest {
     contentDisposition?: DownloadFileV1FilesFileIdDownloadGetContentDispositionEnum;
 }
 
-export interface DownloadTextV1FilesFileIdTextGetRequest {
-    fileId: string;
-    contentDisposition?: DownloadTextV1FilesFileIdTextGetContentDispositionEnum;
-}
-
 export interface GetFilePreviewV1FilesFileIdPreviewGetRequest {
     fileId: string;
     queryId: string;
@@ -376,61 +371,6 @@ export class FilesApi extends runtime.BaseAPI {
         initOverrides?: RequestInit | runtime.InitOverrideFunction,
     ): Promise<any> {
         const response = await this.downloadFileV1FilesFileIdDownloadGetRaw(
-            requestParameters,
-            initOverrides,
-        );
-        return await response.value();
-    }
-
-    /**
-     * Download content of file as text.
-     * Download Text
-     */
-    async downloadTextV1FilesFileIdTextGetRaw(
-        requestParameters: DownloadTextV1FilesFileIdTextGetRequest,
-        initOverrides?: RequestInit | runtime.InitOverrideFunction,
-    ): Promise<runtime.ApiResponse<object>> {
-        if (requestParameters["fileId"] == null) {
-            throw new runtime.RequiredError(
-                "fileId",
-                'Required parameter "fileId" was null or undefined when calling downloadTextV1FilesFileIdTextGet().',
-            );
-        }
-
-        const queryParameters: any = {};
-
-        if (requestParameters["contentDisposition"] != null) {
-            queryParameters["content_disposition"] =
-                requestParameters["contentDisposition"];
-        }
-
-        const headerParameters: runtime.HTTPHeaders = {};
-
-        const response = await this.request(
-            {
-                path: `/v1/files/{file_id}/text`.replace(
-                    `{${"file_id"}}`,
-                    encodeURIComponent(String(requestParameters["fileId"])),
-                ),
-                method: "GET",
-                headers: headerParameters,
-                query: queryParameters,
-            },
-            initOverrides,
-        );
-
-        return new runtime.JSONApiResponse<any>(response);
-    }
-
-    /**
-     * Download content of file as text.
-     * Download Text
-     */
-    async downloadTextV1FilesFileIdTextGet(
-        requestParameters: DownloadTextV1FilesFileIdTextGetRequest,
-        initOverrides?: RequestInit | runtime.InitOverrideFunction,
-    ): Promise<object> {
-        const response = await this.downloadTextV1FilesFileIdTextGetRaw(
             requestParameters,
             initOverrides,
         );
@@ -1557,15 +1497,6 @@ export const DownloadFileV1FilesFileIdDownloadGetContentDispositionEnum = {
 } as const;
 export type DownloadFileV1FilesFileIdDownloadGetContentDispositionEnum =
     (typeof DownloadFileV1FilesFileIdDownloadGetContentDispositionEnum)[keyof typeof DownloadFileV1FilesFileIdDownloadGetContentDispositionEnum];
-/**
- * @export
- */
-export const DownloadTextV1FilesFileIdTextGetContentDispositionEnum = {
-    Inline: "inline",
-    Attachment: "attachment",
-} as const;
-export type DownloadTextV1FilesFileIdTextGetContentDispositionEnum =
-    (typeof DownloadTextV1FilesFileIdTextGetContentDispositionEnum)[keyof typeof DownloadTextV1FilesFileIdTextGetContentDispositionEnum];
 /**
  * @export
  */

@@ -24,6 +24,7 @@
         "sortPlaceholder": "Score"
     },
     "generalSearchView": {
+        "summary": "Summary",
         "viewDetails": "View details",
         "loadMore": "Load more...",
         "download": "Download file",

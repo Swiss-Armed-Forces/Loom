@@ -10,6 +10,7 @@ interface ShareProps {
 export function ShareButton({ fileId }: ShareProps) {
     return (
         <IconButton
+            aria-label="share"
             title={t("generalSearchView.shareContent.title")}
             onClick={() => {
                 const url = new URL(location.toString());

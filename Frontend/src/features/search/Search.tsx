@@ -10,7 +10,10 @@ import {
     setTags,
     selectFileDetailData,
     fetchFileDetailData,
+    selectQuery,
+    selectLanguages,
 } from "./searchSlice";
+import { useKeyboardNavigation } from "./hooks/useKeyboardNavigation.ts";
 import {
     loadLanguages,
     LibretranslateSupportedLanguages,
@@ -29,7 +32,6 @@ import styles from "./Search.module.css";
 import { FileDetailDialog } from "./components/FileDetailDialog.tsx";
 import { Toolbar } from "./components/Toolbar.tsx";
 import { ScrollToTop } from "./components/ScrollToTop.tsx";
-import { selectQuery, selectLanguages } from "./searchSlice";
 import { isSortDirection, SearchQuery } from "./model";
 import { websocketConnect } from "../../middleware/SocketMiddleware.ts";
 import { toast } from "react-toastify";
@@ -51,9 +53,18 @@ export function Search() {
 
     const chatbotOpen = useAppSelector((state) => state.search.chatbotOpen);
 
+    // Initialize keyboard navigation
+    useKeyboardNavigation();
+
     const [searchParams, setSearchParams] = useSearchParams();
     const searchResultWrapper = useRef<HTMLDivElement>(null);
     const [hasScrollOffset, setHasScrollOffset] = useState(false);
+
+    // Reset scroll position when search query changes
+    useEffect(() => {
+        if (!searchQuery?.id) return;
+        searchResultWrapper.current?.scrollTo(0, 0);
+    }, [searchQuery?.id]);
 
     const fileFetchDebounceTimeouts = useRef(
         new Map<string, ReturnType<typeof setTimeout>>(),

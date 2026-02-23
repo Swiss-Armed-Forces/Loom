@@ -8,7 +8,7 @@ import {
     Box,
     IconButton,
 } from "@mui/material";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { useAppDispatch, useAppSelector } from "../../../app/hooks";
 import {
@@ -39,152 +39,9 @@ import { FileTranslations } from "./FileTranslations";
 import { Close, Fullscreen, FullscreenExit } from "@mui/icons-material";
 import { FileCardHeader } from "../container/FileCardHeader";
 import { toast } from "react-toastify";
+import { inferAceModeFromMimeType } from "../../common/inferAceModeFromMimeType";
 
 const FILE_FETCH_DEBOUNCE__MS = 2_000;
-
-const inferModeFromMimeType = (mimeType: string | undefined) => {
-    const mimeToModeMap: { [key: string]: string } = {
-        // Web Technologies
-        "text/html": "html",
-        "application/xhtml+xml": "html",
-        "text/css": "css",
-        "text/sass": "sass",
-        "text/scss": "scss",
-        "text/less": "less",
-        "text/stylus": "stylus",
-
-        // JavaScript & TypeScript
-        "text/javascript": "javascript",
-        "application/javascript": "javascript",
-        "application/x-javascript": "javascript",
-        "text/typescript": "typescript",
-        "application/typescript": "typescript",
-        "text/jsx": "jsx",
-        "text/tsx": "tsx",
-        "application/json": "json",
-        "application/ld+json": "json",
-        "text/json": "json",
-
-        // Programming Languages
-        "text/x-python": "python",
-        "application/x-python-code": "python",
-        "text/x-java-source": "java",
-        "text/x-java": "java",
-        "text/x-c": "c_cpp",
-        "text/x-c++src": "c_cpp",
-        "text/x-c++": "c_cpp",
-        "text/x-csharp": "csharp",
-        "text/x-php": "php",
-        "application/x-php": "php",
-        "text/x-ruby": "ruby",
-        "application/x-ruby": "ruby",
-        "text/x-go": "golang",
-        "text/x-rust": "rust",
-        "text/x-kotlin": "kotlin",
-        "text/x-scala": "scala",
-        "text/x-swift": "swift",
-        "text/x-objectivec": "objectivec",
-
-        // Functional Languages
-        "text/x-haskell": "haskell",
-        "text/x-erlang": "erlang",
-        "text/x-elixir": "elixir",
-        "text/x-clojure": "clojure",
-        "text/x-fsharp": "fsharp",
-        "text/x-ocaml": "ocaml",
-        "text/x-scheme": "scheme",
-        "text/x-lisp": "lisp",
-
-        // Shell & Config
-        "text/x-shellscript": "sh",
-        "application/x-sh": "sh",
-        "text/x-bash": "sh",
-        "text/x-zsh": "sh",
-        "text/x-fish": "sh",
-        "text/x-powershell": "powershell",
-        "text/x-dockerfile": "dockerfile",
-        "text/x-makefile": "makefile",
-        "text/x-cmake": "cmake",
-
-        // Markup & Documentation
-        "text/xml": "xml",
-        "application/xml": "xml",
-        "text/markdown": "markdown",
-        "text/x-markdown": "markdown",
-        "application/x-tex": "latex",
-        "text/x-tex": "latex",
-        "text/x-rst": "rst",
-        "text/x-asciidoc": "asciidoc",
-
-        // Data Formats
-        "text/yaml": "yaml",
-        "application/x-yaml": "yaml",
-        "text/x-yaml": "yaml",
-        "text/x-toml": "toml",
-        "text/csv": "text",
-        "text/tab-separated-values": "text",
-        "application/x-ini": "ini",
-        "text/x-properties": "properties",
-
-        // Database
-        "application/sql": "mysql",
-        "text/x-sql": "mysql",
-        "text/x-mysql": "mysql",
-        "text/x-postgresql": "pgsql",
-        "text/x-plsql": "plsql",
-        "text/x-cassandra": "cassandra",
-
-        // Web Assembly & Low Level
-        "text/x-assembly": "assembly_x86",
-        "application/wasm": "wasm",
-
-        // Templating
-        "text/x-handlebars": "handlebars",
-        "text/x-mustache": "mustache",
-        "text/x-twig": "twig",
-        "text/x-smarty": "smarty",
-        "text/x-velocity": "velocity",
-        "text/x-freemarker": "ftl",
-
-        // Game Development
-        "text/x-lua": "lua",
-        "text/x-glsl": "glsl",
-        "text/x-hlsl": "hlsl",
-
-        // Mobile Development
-        "text/x-dart": "dart",
-
-        // Scientific Computing
-        "text/x-r": "r",
-        "text/x-matlab": "matlab",
-        "text/x-octave": "matlab",
-        "text/x-julia": "julia",
-
-        // Legacy & Specialized
-        "text/x-perl": "perl",
-        "text/x-tcl": "tcl",
-        "text/x-pascal": "pascal",
-        "text/x-fortran": "fortran",
-        "text/x-cobol": "cobol",
-        "text/x-ada": "ada",
-        "text/x-vbscript": "vbscript",
-        "text/x-vb": "vbscript",
-        "text/x-actionscript": "actionscript",
-
-        // Configuration Files
-        "text/x-apache-conf": "apache_conf",
-        "text/x-nginx-conf": "nginx",
-        "text/x-gitignore": "gitignore",
-        "text/x-editorconfig": "editorconfig",
-
-        // Default
-        "text/plain": "text",
-        "application/octet-stream": "text",
-    };
-
-    if (!mimeType) return "text";
-    return mimeToModeMap[mimeType] ?? "text";
-};
 
 export function FileDetailDialog() {
     const webSocketPubSubMessage = useAppSelector(selectWebSocketPubSubMessage);
@@ -212,20 +69,38 @@ export function FileDetailDialog() {
 
     const openDialogRef = useRef(openDialog);
 
+    // Track current fileId to prevent stale closure race conditions
+    const currentFileIdRef = useRef<string | undefined>(undefined);
+
     // Update ref whenever openDialog changes
     useEffect(() => {
         openDialogRef.current = openDialog;
     }, [openDialog]);
+
+    // Update ref whenever fileId changes
+    useEffect(() => {
+        currentFileIdRef.current = fileDetailData.filePreview?.fileId;
+    }, [fileDetailData.filePreview?.fileId]);
 
     async function fetchFile() {
         if (!fileDetailData.searchQuery) return;
         if (!fileDetailData.filePreview) return;
         if (!openDialogRef.current) return; // Check current value via ref
 
+        // Capture fileId before async operation to detect stale closure
+        const expectedFileId = fileDetailData.filePreview.fileId;
+
         const response = await getFile(fileDetailData.filePreview.fileId, {
             ...fileDetailData.searchQuery,
             id: (await getShortRunningQuery()).queryId,
         });
+
+        // Only update state if this is still the file we're showing
+        // Use ref to get CURRENT fileId, not stale closure value
+        if (currentFileIdRef.current !== expectedFileId) {
+            return; // Dialog has changed, discard stale response
+        }
+
         setFile(response);
     }
 
@@ -279,14 +154,18 @@ export function FileDetailDialog() {
         fileFetchDebounceTimeout.current = newTimeout;
     }, [webSocketPubSubMessage]); // eslint-disable-line react-hooks/exhaustive-deps
 
-    const close = () => {
+    const close = useCallback(() => {
+        // Cancel any pending debounced fetch
+        clearTimeout(fileFetchDebounceTimeout.current);
+        clearTimeout(fileDetailDataFetchDebounceTimeout.current);
+        // Unset the data
         dispatch(setFileDetailData({ searchQuery: null, filePreview: null }));
         setFile(undefined);
-    };
+    }, [dispatch]);
 
-    const toggleFullscreen = () => {
-        setIsFullscreen(!isFullscreen);
-    };
+    const toggleFullscreen = useCallback(() => {
+        setIsFullscreen((prev) => !prev);
+    }, []);
 
     const hasContent = (file?.content.trim().length ?? 0) > 0;
 
@@ -377,24 +256,36 @@ export function FileDetailDialog() {
                         }}
                         aria-label="file detail tabs"
                     >
-                        <Tab label="Rendered" value={FileDetailTab.Rendered} />
-                        <Tab label="Raw" value={FileDetailTab.RAW} />
                         <Tab
+                            data-tab-value={FileDetailTab.Rendered}
+                            label="Rendered"
+                            value={FileDetailTab.Rendered}
+                        />
+                        <Tab
+                            data-tab-value={FileDetailTab.Content}
                             label="Content"
                             value={FileDetailTab.Content}
                             disabled={!hasContent}
                         />
                         <Tab
+                            data-tab-value={FileDetailTab.Highlights}
                             label="Highlights"
                             value={FileDetailTab.Highlights}
                             disabled={!hasHighlights}
                         />
                         <Tab
+                            data-tab-value={FileDetailTab.RAW}
+                            label="Raw"
+                            value={FileDetailTab.RAW}
+                        />
+                        <Tab
+                            data-tab-value={FileDetailTab.Summary}
                             label="Summary"
                             value={FileDetailTab.Summary}
                             disabled={!hasSummary}
                         />
                         <Tab
+                            data-tab-value={FileDetailTab.Translations}
                             label="Translations"
                             value={FileDetailTab.Translations}
                             disabled={!hasTranslations}
@@ -436,7 +327,7 @@ export function FileDetailDialog() {
                                     case FileDetailTab.Content:
                                         return (
                                             <AceEditor
-                                                mode={inferModeFromMimeType(
+                                                mode={inferAceModeFromMimeType(
                                                     file.type,
                                                 )}
                                                 ref={editorRef}
@@ -495,7 +386,7 @@ export function FileDetailDialog() {
                                     case FileDetailTab.Summary:
                                         return (
                                             <AceEditor
-                                                mode={inferModeFromMimeType(
+                                                mode={inferAceModeFromMimeType(
                                                     file.type,
                                                 )}
                                                 ref={editorRef}

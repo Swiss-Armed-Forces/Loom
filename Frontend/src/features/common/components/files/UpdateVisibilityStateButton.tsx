@@ -97,6 +97,7 @@ export function UpdateVisibilityButton({
         return (
             <>
                 <IconButton
+                    aria-label="visibility"
                     onClick={handleIconClick}
                     disabled={disabled}
                     title={iconTitle}

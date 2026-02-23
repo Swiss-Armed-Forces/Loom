@@ -44,8 +44,6 @@ export const webApiGetFile = (fileId: string) =>
     `${apiUrl}/v1/files/${fileId}/download`;
 export const webApiGetFileOpen = (fileId: string) =>
     `${apiUrl}/v1/files/${fileId}/download?content_disposition=inline`;
-export const webApiGetFileText = (fileId: string) =>
-    `${apiUrl}/v1/files/${fileId}/text`;
 export const webApiGetFileThumbnail = (
     file_id: string,
     thumbnail_file_id: string,

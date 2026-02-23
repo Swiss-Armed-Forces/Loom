@@ -1,6 +1,6 @@
 import { ArrowDownward, ArrowUpward, Search, Sort } from "@mui/icons-material";
 import { IconButton, InputBase, styled } from "@mui/material";
-import { ChangeEvent, useEffect, useState } from "react";
+import { ChangeEvent, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useAppDispatch, useAppSelector } from "../../../app/hooks";
 
@@ -27,6 +27,7 @@ export function GlobalSearchBox() {
     const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
     const dispatch = useAppDispatch();
     const { t } = useTranslation();
+    const searchInputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
         if (!searchQuery) return;
@@ -70,16 +71,24 @@ export function GlobalSearchBox() {
     return (
         <div className={styles.globalSearchBox}>
             <StyledInputBase
+                inputRef={searchInputRef}
                 startAdornment={<Search sx={{ p: 1 }} />}
                 endAdornment={<SearchTranslateDialog />}
                 placeholder={t("globalSearchBox.searchPlaceholder")}
-                inputProps={{ "aria-label": "search" }}
+                inputProps={{
+                    "aria-label": "search",
+                    "data-search-input": true,
+                }}
                 value={searchInputFieldContent ?? ""}
                 onChange={handleSearchValueChange}
                 onKeyDown={(ev: React.KeyboardEvent<HTMLInputElement>) => {
                     if (ev.key === "Enter") {
                         ev.preventDefault();
                         doUpdateQuery();
+                        searchInputRef.current?.blur();
+                    } else if (ev.key === "Escape") {
+                        ev.preventDefault();
+                        searchInputRef.current?.blur();
                     }
                 }}
             />
