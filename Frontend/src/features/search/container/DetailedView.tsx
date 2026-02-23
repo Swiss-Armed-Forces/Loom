@@ -2,7 +2,7 @@ import { Skeleton } from "@mui/material";
 import { useAppSelector } from "../../../app/hooks";
 import { selectIsLoading } from "../../common/commonSlice";
 import { EmptySearchResults } from "../components/EmptySearchResults";
-import { selectFiles } from "../searchSlice";
+import { selectFiles, selectHighlightedIndex } from "../searchSlice";
 import { SearchResultCountText } from "../components/SearchResultCountText";
 import { LoadMoreButton } from "../components/LoadMoreButton";
 import { ResultCard } from "./ResultCard";
@@ -12,8 +12,11 @@ import React from "react";
 export const DetailedView: React.FC = React.memo(() => {
     const files = useAppSelector(selectFiles);
     const isLoading = useAppSelector(selectIsLoading);
+    const highlightedIndex = useAppSelector(selectHighlightedIndex);
 
-    if (Object.entries(files).length === 0) {
+    const fileIds = Object.keys(files);
+
+    if (fileIds.length === 0) {
         if (!isLoading) return <EmptySearchResults />;
         return (
             <div className={styles.skeletonLoadingContainer}>
@@ -31,14 +34,14 @@ export const DetailedView: React.FC = React.memo(() => {
     return (
         <div className={styles.cardContainer}>
             <SearchResultCountText />
-            {Object.values(files).map((file) => {
-                return (
-                    <ResultCard
-                        key={file.meta.fileId}
-                        fileId={file.meta.fileId}
-                    />
-                );
-            })}
+            {fileIds.map((fileId, index) => (
+                <ResultCard
+                    key={fileId}
+                    fileId={fileId}
+                    index={index}
+                    isHighlighted={highlightedIndex === index}
+                />
+            ))}
             <LoadMoreButton />
         </div>
     );

@@ -487,26 +487,6 @@ def download_file(
     )
 
 
-@router.get("/{file_id}/text", response_model=dict)
-def download_text(
-    file_id: UUID,
-    content_disposition: Literal["inline", "attachment"] = "attachment",
-    file_repository: FileRepository = default_file_repository,
-) -> Response:
-    """Download content of file as text."""
-    file = file_repository.get_by_id(file_id)
-    if file is None:
-        raise HTTPException(status_code=404, detail="Invalid file")
-    return Response(
-        content=str.encode(str(file.content)),
-        headers={
-            **get_content_disposition_header(
-                content_disposition, file.short_name_content
-            ),
-        },
-    )
-
-
 @router.post("/{file_id}/tags/{tag_to_add}")
 def add_tag(
     file_id: UUID,

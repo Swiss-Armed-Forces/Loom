@@ -133,6 +133,7 @@ export function TranslationDialog({
                         defaultValue={translationLanguage}
                         multiple={false}
                         freeSolo={false}
+                        autoHighlight
                         isOptionEqualToValue={(option, value) =>
                             option.code === value.code
                         }
@@ -153,16 +154,18 @@ export function TranslationDialog({
                         renderInput={(params) => (
                             <TextField
                                 {...params}
+                                autoFocus
                                 label={t("translateFilesDialog.languageInput")}
                             />
                         )}
-                    ></Autocomplete>
+                    />
                 </DialogContent>
                 <DialogActions>
                     <Button
                         startIcon={<Close />}
                         variant="outlined"
                         color="secondary"
+                        tabIndex={2}
                         onClick={() => {
                             setShowTranslationDialog(false);
                         }}
@@ -174,6 +177,7 @@ export function TranslationDialog({
                         onClick={startFileTranslation}
                         color="primary"
                         variant="contained"
+                        tabIndex={1}
                     >
                         {t("translateFilesDialog.executeButton")}
                     </Button>

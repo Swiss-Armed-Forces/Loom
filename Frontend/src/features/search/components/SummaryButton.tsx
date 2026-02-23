@@ -143,6 +143,7 @@ export function SummaryButton({
                     <TextField
                         fullWidth
                         variant="outlined"
+                        autoFocus
                         multiline={true}
                         value={systemPrompt ?? ""}
                         placeholder={summarizationSystemPrompt ?? ""}
@@ -159,6 +160,7 @@ export function SummaryButton({
                         startIcon={<Close />}
                         variant="outlined"
                         color="secondary"
+                        tabIndex={2}
                         onClick={() => setShowDialog(false)}
                     >
                         {t("common.cancel")}
@@ -168,6 +170,7 @@ export function SummaryButton({
                         onClick={handleSummarize}
                         color="primary"
                         variant="contained"
+                        tabIndex={1}
                     >
                         {t("sideMenu.summarizeQueriedFiles")}
                     </Button>

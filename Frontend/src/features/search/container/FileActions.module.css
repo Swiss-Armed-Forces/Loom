@@ -1,14 +1,15 @@
-.fileActionButtons {
-    display: flex;
-    flex-direction: row;
-    @media only screen and (max-width: 768px) {
-        flex-wrap: wrap;
-    }
-}
-
 .fileActions {
     display: flex;
     flex-direction: row;
+}
+
+.fileActionButtons {
+    display: flex;
+    flex-direction: row;
+
+    @media only screen and (max-width: 768px) {
+        flex-wrap: wrap;
+    }
 }
 
 .fileActionButtons > * {

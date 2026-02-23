@@ -84,6 +84,10 @@ export function initCustomQuery(
     } as CustomQuery;
 }
 
+export interface KeyboardNavigationState {
+    highlightedIndex: number | null;
+}
+
 export interface SearchState {
     query: SearchQuery | null;
     queryError?: string;
@@ -109,6 +113,7 @@ export interface SearchState {
     webSocketPubSubMessage: PubSubMessage | null;
     chatbotOpen: boolean;
     summarizationSystemPrompt: string | null;
+    keyboardNavigation: KeyboardNavigationState;
 }
 
 export const CUSTOM_QUERIES_LOCAL_STORAGE_KEY = "CUSTOM_QUERIES";
@@ -175,6 +180,9 @@ const initialState: SearchState = {
     webSocketPubSubMessage: null,
     chatbotOpen: false,
     summarizationSystemPrompt: null,
+    keyboardNavigation: {
+        highlightedIndex: null,
+    },
 };
 
 export const updateQuery = createAsyncThunk(
@@ -506,6 +514,9 @@ export const searchSlice = createSlice({
                 ...newFileDetailData,
             } as FileDetailData;
         },
+        setHighlightedIndex: (state, action: PayloadAction<number | null>) => {
+            state.keyboardNavigation.highlightedIndex = action.payload;
+        },
     },
     extraReducers: (builder) => {
         builder.addCase(
@@ -533,9 +544,13 @@ export const searchSlice = createSlice({
             state.failedFilesCount = action.payload.totalFiles;
         });
         builder.addCase(updateQuery.fulfilled, (state, action) => {
-            if (state.query?.id != action.payload?.query.id) {
-                // new query: reset files
+            const isNewQuery = state.query?.id != action.payload?.query.id;
+            if (isNewQuery) {
+                // new query: reset files and keyboard navigation
                 state.files = {};
+                state.keyboardNavigation = {
+                    highlightedIndex: null,
+                };
             }
             if (action.payload == null) {
                 if (state.query != null) {
@@ -543,6 +558,7 @@ export const searchSlice = createSlice({
                 }
                 return;
             }
+
             state.query = action.payload.query;
 
             action.payload.files.forEach((file) => {
@@ -630,6 +646,7 @@ export const {
     setChatbotOpen,
     setSummarizationSystemPrompt,
     setFileDetailData,
+    setHighlightedIndex,
 } = searchSlice.actions;
 
 export const selectSearch = (state: RootState) => state.search;
@@ -731,6 +748,11 @@ export const selectFileDetailDataSelectedFileRendererType = createSelector(
 export const selectFileDetailDataSelectedTranslationLanguage = createSelector(
     selectSearch,
     (search) => search.fileDetailData.selectedTranslationLanguage,
+);
+
+export const selectHighlightedIndex = createSelector(
+    selectSearch,
+    (search) => search.keyboardNavigation.highlightedIndex,
 );
 
 export default searchSlice.reducer;
