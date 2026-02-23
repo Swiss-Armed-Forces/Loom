@@ -661,12 +661,12 @@ The complete source code for Traefik is publicly available at [https://github.co
 | @mui/icons-material                 | MIT          | 7.3.8             |
 | @mui/material                       | MIT          | 7.3.8             |
 | @mui/x-charts                       | MIT          | 8.27.0            |
-| @mui/x-tree-view                    | MIT          | 8.27.1            |
+| @mui/x-tree-view                    | MIT          | 8.27.2            |
 | @reduxjs/toolkit                    | MIT          | 2.11.2            |
 | ace-builds                          | BSD-3-Clause | 1.43.6            |
 | ajv                                 | MIT          | 8.18.0            |
 | date-fns                            | MIT          | 4.1.0             |
-| i18next                             | MIT          | 25.8.11           |
+| i18next                             | MIT          | 25.8.13           |
 | i18next-http-backend                | MIT          | 3.0.2             |
 | react                               | MIT          | 19.2.4            |
 | react-ace                           | MIT          | 14.0.1            |
@@ -679,7 +679,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | react-router-dom                    | MIT          | 7.13.0            |
 | react-toastify                      | MIT          | 11.0.5            |
 | uuid                                | MIT          | 12.0.0            |
-| @eslint/js                          | MIT          | 9.39.2            |
+| @eslint/js                          | MIT          | 9.39.3            |
 | @mui/types                          | MIT          | 7.4.11            |
 | @openapitools/openapi-generator-cli | Apache-2.0   | 2.29.0            |
 | @testing-library/jest-dom           | MIT          | 6.9.1             |
@@ -690,7 +690,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | @typescript-eslint/eslint-plugin    | MIT          | 8.56.0            |
 | @typescript-eslint/parser           | MIT          | 8.56.0            |
 | @vitejs/plugin-react                | MIT          | 5.1.4             |
-| eslint                              | MIT          | 9.39.2            |
+| eslint                              | MIT          | 9.39.3            |
 | eslint-config-prettier              | MIT          | 10.1.8            |
 | eslint-plugin-prettier              | MIT          | 5.5.5             |
 | eslint-plugin-react                 | MIT          | 7.37.5            |
