@@ -101,6 +101,12 @@ export interface GetFilePreviewResponse {
     attachments?: Array<Attachment>;
     /**
      *
+     * @type {number}
+     * @memberof GetFilePreviewResponse
+     */
+    attachmentsTotalCount?: number;
+    /**
+     *
      * @type {string}
      * @memberof GetFilePreviewResponse
      */
@@ -187,6 +193,10 @@ export function GetFilePreviewResponseFromJSONTyped(
             json["attachments"] == null
                 ? undefined
                 : (json["attachments"] as Array<any>).map(AttachmentFromJSON),
+        attachmentsTotalCount:
+            json["attachments_total_count"] == null
+                ? undefined
+                : json["attachments_total_count"],
         fileExtension: json["file_extension"],
         highlight: json["highlight"] == null ? undefined : json["highlight"],
         tasksSucceeded:
@@ -223,6 +233,7 @@ export function GetFilePreviewResponseToJSON(
             value["attachments"] == null
                 ? undefined
                 : (value["attachments"] as Array<any>).map(AttachmentToJSON),
+        attachments_total_count: value["attachmentsTotalCount"],
         file_extension: value["fileExtension"],
         highlight: value["highlight"],
         tasks_succeeded: value["tasksSucceeded"],

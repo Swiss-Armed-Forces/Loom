@@ -45,6 +45,7 @@ from api.utils import get_content_disposition_header
 
 logger = logging.getLogger(__name__)
 CONTENT_PREVIEW_LENGTH = 1000
+MAX_ATTACHMENTS_PREVIEW = 20
 
 
 SOURCE_ID = "api-upload"
@@ -290,7 +291,12 @@ class GetFileResponse(BaseModel):
                 )
             ),
             raw=file.model_dump_json(
-                exclude={"embeddings", "content", "libretranslate_translations"}
+                exclude={
+                    "embeddings",
+                    "content",
+                    "libretranslate_translations",
+                    "attachments",
+                }
             ),
             summary=file.summary,
             type=file.magic_file_type,
@@ -328,6 +334,7 @@ class GetFilePreviewResponse(BaseModel):
     thumbnail_file_id: ObjectIdStr | None
     thumbnail_total_frames: int | None
     attachments: list[Attachment] = []
+    attachments_total_count: int = 0
     file_extension: str
     highlight: dict[str, list[str]] | None = {}
     tasks_succeeded: list[UUID] = []
@@ -366,7 +373,8 @@ def get_file_preview(
         path=str(file.full_path),
         thumbnail_file_id=file.thumbnail_file_id,
         thumbnail_total_frames=file.thumbnail_total_frames,
-        attachments=file.attachments,
+        attachments=file.attachments[:MAX_ATTACHMENTS_PREVIEW],
+        attachments_total_count=len(file.attachments),
         file_extension=str(file.extension),
         highlight=file.es_meta.highlight,
         tasks_succeeded=file.tasks_succeeded,
