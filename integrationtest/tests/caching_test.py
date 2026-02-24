@@ -1,7 +1,7 @@
 from http.client import REQUEST_TIMEOUT
 
 import requests
-from api.models.statistics_model import CacheStatistics
+from common.utils.cache import CacheStatistics
 
 from utils.consts import CACHING_ENDPOINT
 from utils.fetch_from_api import fetch_files_from_api

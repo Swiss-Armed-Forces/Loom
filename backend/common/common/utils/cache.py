@@ -5,6 +5,9 @@ from pickle import dumps, loads
 from time import time
 from typing import Callable
 
+from pydantic import BaseModel, Field, RootModel, computed_field
+from redis import StrictRedis
+
 from common.dependencies import get_redis_client
 
 logger = logging.getLogger(__name__)
@@ -15,6 +18,113 @@ CACHE_KEY_FORMAT = "{{rc:{namespace}}}:{key}"
 CACHE_DEFAULT_SHRINK_PERCENTAGE = 0.8  # setting 0.8 means that it will free up 20%
 CACHE_DEFAULT_TTL_SECONDS = 3600  # 60 minutes
 CACHE_DEFAULT_MAX_SIZE = 5 * (1024**3)  # 5 GB
+
+
+class CacheStatisticsEntryModel(BaseModel):
+    """Cache stats of task caching."""
+
+    mem_size: int
+    entries_count: int
+    hits_count: int
+    miss_count: int
+
+
+class CacheStatistics(RootModel):
+    root: dict[str, CacheStatisticsEntryModel] = Field(default_factory=dict)
+
+    @computed_field  # type: ignore[misc]
+    @property
+    def mem_size_total(self) -> int:
+        return sum(entry.mem_size for entry in self.root.values())
+
+    @computed_field  # type: ignore[misc]
+    @property
+    def entries_count_total(self) -> int:
+        return sum(entry.entries_count for entry in self.root.values())
+
+    @computed_field  # type: ignore[misc]
+    @property
+    def hits_count_total(self) -> int:
+        return sum(entry.hits_count for entry in self.root.values())
+
+    @computed_field  # type: ignore[misc]
+    @property
+    def miss_count_total(self) -> int:
+        return sum(entry.miss_count for entry in self.root.values())
+
+    def __getitem__(self, item):
+        return self.root[item]
+
+    def __setitem__(self, key, newvalue):
+        self.root[key] = newvalue
+
+
+def get_cache_statistics(redis_client: StrictRedis) -> CacheStatistics:
+    """Get statistics for all cache namespaces."""
+    result = CacheStatistics()
+
+    keys_bytes = redis_client.keys(f"{{{CACHE_KEY_PREFIX}*[miss|hits]?")
+    keys = [key.decode() for key in keys_bytes]
+
+    tasks = {key.split(":")[1][:-1] for key in keys}
+    for task in tasks:
+        val_key = CACHE_KEY_FORMAT.format(namespace=task, key="vals")
+        mem_size = redis_client.execute_command(f"MEMORY USAGE {val_key}")
+        entries_count = redis_client.zcard(
+            CACHE_KEY_FORMAT.format(namespace=task, key="keys")
+        )
+        hits_count = redis_client.get(
+            CACHE_KEY_FORMAT.format(namespace=task, key="hits")
+        )
+        miss_count = redis_client.get(
+            CACHE_KEY_FORMAT.format(namespace=task, key="miss")
+        )
+
+        result[task] = CacheStatisticsEntryModel(
+            mem_size=int(mem_size) if mem_size else 0,
+            entries_count=int(entries_count) if entries_count else 0,
+            hits_count=int(hits_count) if hits_count else 0,
+            miss_count=int(miss_count) if miss_count else 0,
+        )
+
+    return result
+
+
+def shrink_cache(redis_client: StrictRedis) -> None:
+    """Shrink all cache namespaces that exceed their configured max size."""
+    keys_bytes = redis_client.keys(f"{{{CACHE_KEY_PREFIX}*[settings]?")
+    keys = [key.decode() for key in keys_bytes]
+    tasks = [key.split(":")[1][:-1] for key in keys]
+
+    for task in tasks:
+        logger.debug("Shrinking cache of task %s", task)
+        keys_key = CACHE_KEY_FORMAT.format(namespace=task, key="keys")
+        vals_key = CACHE_KEY_FORMAT.format(namespace=task, key="vals")
+        settings_key = CACHE_KEY_FORMAT.format(namespace=task, key="settings")
+
+        settings = redis_client.hgetall(settings_key)
+        response = {key.decode(): value.decode() for key, value in settings.items()}
+        max_size = int(response.get("max_size", CACHE_DEFAULT_MAX_SIZE))
+        shrink_percentage = float(
+            response.get("shrink_percentage", CACHE_DEFAULT_SHRINK_PERCENTAGE)
+        )
+
+        memory_usage = redis_client.memory_usage(vals_key)
+        desired_size = max_size * shrink_percentage
+        while memory_usage is not None and memory_usage > desired_size:
+            logger.debug(
+                "Shrinking: memory usage: %d, desired size: %d",
+                memory_usage,
+                desired_size,
+            )
+            # remove the key with the lowest score
+            eject = redis_client.zrange(keys_key, 0, 0)
+            if not eject:
+                logger.debug("Sorted set is empty, cannot shrink the cache of %s", task)
+                break
+            redis_client.zremrangebyrank(keys_key, 0, 0)
+            redis_client.hdel(vals_key, *eject)
+            memory_usage = redis_client.memory_usage(vals_key)
 
 
 def _default_key_function(*args, **kwargs) -> tuple:
