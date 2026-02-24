@@ -8,11 +8,13 @@ import { useState, useRef, useEffect } from "react";
 
 interface FileAttachmentsProps {
     attachments?: Attachment[];
+    totalCount?: number; // Total number of attachments (may be > attachments.length)
     maxWidthRatio?: number; // Percentage of container width (0-1), default 0.8 = 80%
 }
 
 export function FileAttachments({
     attachments,
+    totalCount,
     maxWidthRatio = 0.8,
 }: FileAttachmentsProps) {
     const dispatch = useAppDispatch();
@@ -91,7 +93,7 @@ export function FileAttachments({
             <Box ref={parentRef} sx={{ width: "100%" }}>
                 <Chip
                     icon={<AttachFile />}
-                    label={`${attachments.length} attachments`}
+                    label={`${totalCount ?? attachments.length} attachments${totalCount && totalCount > attachments.length ? ` (showing ${attachments.length})` : ""}`}
                     size="small"
                     variant="outlined"
                     onClick={handleOpenMenu}

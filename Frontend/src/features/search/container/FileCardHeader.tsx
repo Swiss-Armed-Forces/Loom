@@ -67,7 +67,8 @@ export function FileCardHeader({
                 <Box sx={{ display: "flex", alignItems: "center" }}>
                     <FileAttachments
                         attachments={filePreview.attachments}
-                    ></FileAttachments>
+                        totalCount={filePreview.attachmentsTotalCount}
+                    />
                 </Box>
             }
             action={
