@@ -1,7 +1,8 @@
 from typing import Iterable
 
-from common.dependencies import get_file_repository, get_imap_service
+from common.dependencies import get_file_repository, get_imap_service, get_redis_client
 from common.services.query_builder import QueryParameters
+from common.utils.cache import get_cache_statistics
 from fastapi import FastAPI
 from opentelemetry.exporter.prometheus import PrometheusMetricReader
 from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
@@ -39,6 +40,36 @@ def count_imap_emails(_: CallbackOptions) -> Iterable[Observation]:
     yield Observation(value=email_count)
 
 
+def observe_cache_mem_size(_: CallbackOptions) -> Iterable[Observation]:
+    redis_client = get_redis_client()
+    stats = get_cache_statistics(redis_client)
+    for namespace, entry in stats.root.items():
+        yield Observation(value=entry.mem_size, attributes={"namespace": namespace})
+
+
+def observe_cache_entries(_: CallbackOptions) -> Iterable[Observation]:
+    redis_client = get_redis_client()
+    stats = get_cache_statistics(redis_client)
+    for namespace, entry in stats.root.items():
+        yield Observation(
+            value=entry.entries_count, attributes={"namespace": namespace}
+        )
+
+
+def observe_cache_hits(_: CallbackOptions) -> Iterable[Observation]:
+    redis_client = get_redis_client()
+    stats = get_cache_statistics(redis_client)
+    for namespace, entry in stats.root.items():
+        yield Observation(value=entry.hits_count, attributes={"namespace": namespace})
+
+
+def observe_cache_misses(_: CallbackOptions) -> Iterable[Observation]:
+    redis_client = get_redis_client()
+    stats = get_cache_statistics(redis_client)
+    for namespace, entry in stats.root.items():
+        yield Observation(value=entry.miss_count, attributes={"namespace": namespace})
+
+
 def init_metrics(api: FastAPI):
     # setup prometheus provider
     prometheus_reader = PrometheusMetricReader()
@@ -66,4 +97,31 @@ def init_metrics(api: FastAPI):
         callbacks=[count_imap_emails],
         unit="email",
         description="Number of emails in IMAP inbox",
+    )
+
+    # add cache metrics
+    cache_meter = provider.get_meter("cache")
+    cache_meter.create_observable_gauge(
+        name="cache.mem_size",
+        callbacks=[observe_cache_mem_size],
+        unit="bytes",
+        description="Memory usage of cache namespace",
+    )
+    cache_meter.create_observable_gauge(
+        name="cache.entries_count",
+        callbacks=[observe_cache_entries],
+        unit="entries",
+        description="Number of entries in cache namespace",
+    )
+    cache_meter.create_observable_gauge(
+        name="cache.hits_count",
+        callbacks=[observe_cache_hits],
+        unit="hits",
+        description="Number of cache hits",
+    )
+    cache_meter.create_observable_gauge(
+        name="cache.miss_count",
+        callbacks=[observe_cache_misses],
+        unit="misses",
+        description="Number of cache misses",
     )
