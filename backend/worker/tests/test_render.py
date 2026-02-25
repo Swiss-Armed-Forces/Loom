@@ -7,11 +7,19 @@ import pytest
 from common.services.lazybytes_service import LazyBytes, LazyBytesService
 from wand.exceptions import MissingDelegateError, WandException
 
-from worker.index_file.tasks.render import render_image_png_task
+from worker.index_file.tasks.render import RenderFile, render_image_png_task
 
 # pylint: disable=redefined-outer-name
 
 TEST_ASSETS_DIR = Path(__file__).parent / "assets"
+
+
+@pytest.fixture
+def render_file() -> RenderFile:
+    """Provide a sample RenderFile for testing."""
+    return RenderFile(
+        short_name="test_file", extension=".png", cache_key="test_cache_key"
+    )
 
 
 @pytest.fixture
@@ -24,34 +32,42 @@ def sample_png_bytes() -> bytes:
 class TestRenderImagePngTask:
     """Test suite for render_image_png_task."""
 
-    def test_returns_none_when_file_content_is_none(self) -> None:
+    def test_returns_none_when_file_content_is_none(
+        self, render_file: RenderFile
+    ) -> None:
         """Test that None is returned when file_content is None."""
-        result = render_image_png_task(None)
+        result = render_image_png_task(None, render_file)
         assert result is None
 
     def test_creates_rendered_image_for_simple_image(
-        self, lazybytes_service_inmemory: LazyBytesService, sample_png_bytes: bytes
+        self,
+        lazybytes_service_inmemory: LazyBytesService,
+        sample_png_bytes: bytes,
+        render_file: RenderFile,
     ) -> None:
         """Test successful rendered image creation for a simple image."""
         # Setup
         lazy_bytes = lazybytes_service_inmemory.from_bytes(sample_png_bytes)
 
         # Execute
-        result = render_image_png_task(lazy_bytes)
+        result = render_image_png_task(lazy_bytes, render_file)
 
         # Assert
         assert result is not None
         assert isinstance(result, LazyBytes)
 
     def test_returns_lazybytes_from_blob(
-        self, lazybytes_service_inmemory: LazyBytesService, sample_png_bytes: bytes
+        self,
+        lazybytes_service_inmemory: LazyBytesService,
+        sample_png_bytes: bytes,
+        render_file: RenderFile,
     ) -> None:
         """Test that result is properly converted to LazyBytes."""
         # Setup
         lazy_bytes = lazybytes_service_inmemory.from_bytes(sample_png_bytes)
 
         # Execute
-        result = render_image_png_task(lazy_bytes)
+        result = render_image_png_task(lazy_bytes, render_file)
 
         # Assert
         assert result is not None
@@ -62,12 +78,14 @@ class TestRenderImagePngTask:
         [WandException, MissingDelegateError],
     )
     @patch("worker.index_file.tasks.render.Image")
+    # pylint: disable=too-many-arguments,too-many-positional-arguments
     def test_returns_none_on_image_exception(
         self,
         mock_image_class: MagicMock,
         exception_class: type[Exception],
         lazybytes_service_inmemory: LazyBytesService,
         sample_png_bytes: bytes,
+        render_file: RenderFile,
     ) -> None:
         """Test that None is returned when Image raises an exception."""
         # Setup
@@ -79,7 +97,7 @@ class TestRenderImagePngTask:
         )
 
         # Execute
-        result = render_image_png_task(lazy_bytes)
+        result = render_image_png_task(lazy_bytes, render_file)
 
         # Assert
         assert result is None
@@ -90,6 +108,7 @@ class TestRenderImagePngTask:
         mock_image_class: MagicMock,
         lazybytes_service_inmemory: LazyBytesService,
         sample_png_bytes: bytes,
+        render_file: RenderFile,
     ) -> None:
         """Test that None is returned when make_blob returns non-bytes."""
         # Setup
@@ -103,7 +122,7 @@ class TestRenderImagePngTask:
         mock_image_class.return_value.__exit__.return_value = None
 
         # Execute
-        result = render_image_png_task(lazy_bytes)
+        result = render_image_png_task(lazy_bytes, render_file)
 
         # Assert
         assert result is None
@@ -114,6 +133,7 @@ class TestRenderImagePngTask:
         mock_image_class: MagicMock,
         lazybytes_service_inmemory: LazyBytesService,
         sample_png_bytes: bytes,
+        render_file: RenderFile,
     ) -> None:
         """Test that None is returned when make_blob returns None."""
         # Setup
@@ -127,7 +147,7 @@ class TestRenderImagePngTask:
         mock_image_class.return_value.__exit__.return_value = None
 
         # Execute
-        result = render_image_png_task(lazy_bytes)
+        result = render_image_png_task(lazy_bytes, render_file)
 
         # Assert
         assert result is None

@@ -26,17 +26,17 @@ def test_caching():
     fetch_files_from_api(search_string=search_string, expected_no_of_files=1)
 
     caching_results = _get_stats()
-    assert caching_results.mem_size_total == 2000
-    assert caching_results.entries_count_total == 3
-    assert caching_results.hits_count_total == 0
-    assert caching_results.miss_count_total == 3
+    assert caching_results.mem_size_total == 5440
+    assert caching_results.entries_count_total == 12
+    assert caching_results.hits_count_total == 2
+    assert caching_results.miss_count_total == 12
 
     upload_asset(asset_name=asset_name, upload_file_name="text2.txt")
     # wait for files to be indexed
     fetch_files_from_api(search_string=search_string, expected_no_of_files=2)
 
     caching_results = _get_stats()
-    assert caching_results.mem_size_total == 2000
-    assert caching_results.entries_count_total == 3
-    assert caching_results.hits_count_total == 3  # more hits!
-    assert caching_results.miss_count_total == 3
+    assert caching_results.mem_size_total == 5440
+    assert caching_results.entries_count_total == 12
+    assert caching_results.hits_count_total == 16  # more hits!
+    assert caching_results.miss_count_total == 12

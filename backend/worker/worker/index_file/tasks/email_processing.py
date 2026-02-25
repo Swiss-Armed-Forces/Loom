@@ -14,6 +14,7 @@ from worker.dependencies import get_gotenberg_client, get_rspamd_service
 from worker.index_file.infra.file_indexing_task import FileIndexingTask
 from worker.index_file.infra.indexing_persister import IndexingPersister
 from worker.index_file.tasks import create_thumbnail, render
+from worker.index_file.tasks.create_thumbnail import ThumbnailFile
 from worker.index_file.tasks.render import RenderFile
 from worker.settings import settings
 from worker.utils.persisting_task import persisting_task
@@ -40,6 +41,19 @@ EMAIL_RENDER_EXPRESSION_JAVASCRIPT = """
 
 
 def signature(file_content: LazyBytes, file: File) -> Signature:
+    # Create rendered file and thumbnail with modified SHA256 to break cache.
+    # We append "+1" to the original file's SHA256 because:
+    # 1. The actual SHA256 of the rendered PDF cannot be computed yet (rendering happens later)
+    # 2. We need a unique identifier to prevent cache collisions with the original file
+    # 3. This ensures the rendered version is treated as a distinct file in the system
+    rendered_file = RenderFile(
+        short_name=file.short_name,
+        extension=".pdf",
+        cache_key=f"{file.sha256}+1",
+    )
+    thumbnail_file = ThumbnailFile(
+        cache_key=f"{file.sha256}+1", render_file=rendered_file
+    )
     return chain(
         detect_email_task.s(file.extension),
         group(
@@ -50,13 +64,15 @@ def signature(file_content: LazyBytes, file: File) -> Signature:
                     persist_imap_info.s(file),
                     chain(
                         render_email_to_image.s(),
-                        create_thumbnail.signature_pass_file_content(file),
+                        create_thumbnail.signature_pass_file_content(
+                            file=file,
+                            thumbnail_file=thumbnail_file,
+                        ),
                     ),
                     chain(
                         render_email_to_pdf.s(),
                         render.signature_pass_file_content(
-                            file,
-                            RenderFile(short_name=file.short_name, extension=".pdf"),
+                            file=file, render_file=rendered_file
                         ),
                     ),
                 ),

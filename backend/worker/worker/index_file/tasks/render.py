@@ -11,6 +11,7 @@ from common.dependencies import (
 )
 from common.file.file_repository import File
 from common.services.lazybytes_service import LazyBytes
+from common.utils.cache import cache
 from common.utils.object_id_str import ObjectIdStr
 from httpx import HTTPStatusError
 from pydantic import BaseModel
@@ -31,10 +32,13 @@ app = get_celery_app()
 class RenderFile(BaseModel):
     short_name: str
     extension: str
+    cache_key: str
 
     @staticmethod
     def from_file(file: File) -> "RenderFile":
-        return RenderFile(short_name=file.short_name, extension=file.extension)
+        return RenderFile(
+            short_name=file.short_name, extension=file.extension, cache_key=file.sha256
+        )
 
 
 class RenderType(Enum):
@@ -199,7 +203,7 @@ def signature(file: File, file_content: LazyBytes) -> Signature:
     render_file = RenderFile.from_file(file)
     return group(
         chain(
-            render_image_png_task.s(file_content),
+            render_image_png_task.s(file_content, render_file),
             upload_rendered_task.s(render_file, RenderType.IMAGE),
             persist_rendered_file_image_file_id_task.s(file),
         ),
@@ -222,7 +226,7 @@ def signature_pass_file_content(
 ) -> Signature:
     return group(
         chain(
-            render_image_png_task.s(),
+            render_image_png_task.s(render_file),
             upload_rendered_task.s(render_file, RenderType.IMAGE),
             persist_rendered_file_image_file_id_task.s(file),
         ),
@@ -240,9 +244,13 @@ def signature_pass_file_content(
 
 
 @app.task(base=FileIndexingTask)
-def render_image_png_task(file_content: LazyBytes | None) -> LazyBytes | None:
+@cache(key_function=lambda _, render_file: render_file.cache_key)
+def render_image_png_task(
+    file_content: LazyBytes | None, _: RenderFile
+) -> LazyBytes | None:
     if file_content is None:
         return None
+
     try:
         with (
             get_lazybytes_service().load_file(file_content) as fd,
@@ -267,6 +275,7 @@ def render_image_png_task(file_content: LazyBytes | None) -> LazyBytes | None:
 
 
 @app.task(base=FileIndexingTask)
+@cache(key_function=lambda _, render_file: render_file.cache_key)
 def render_browser_to_pdf_task(
     file_content: LazyBytes | None,
     render_file: RenderFile,
@@ -294,6 +303,7 @@ def render_browser_to_pdf_task(
 
 
 @app.task(base=FileIndexingTask)
+@cache(key_function=lambda _, render_file: render_file.cache_key)
 def render_office_to_pdf_task(
     file_content: LazyBytes,
     render_file: RenderFile,

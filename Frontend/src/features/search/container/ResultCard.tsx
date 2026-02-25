@@ -5,7 +5,6 @@ import {
     Card,
     CardActions,
     CardContent,
-    CardMedia,
     Skeleton,
     styled,
     Typography,
@@ -256,28 +255,23 @@ export const ResultCard: React.FC<ResultCardProps> = React.memo(
                                     }}
                                     className={styles.thumbnailBadge}
                                 >
-                                    <div className={styles.thumbnailWrapper}>
-                                        <CardMedia
-                                            component="img"
-                                            onClick={() => {
-                                                dispatch(
-                                                    setFileDetailData({
-                                                        filePreview:
-                                                            filePreview,
-                                                        searchQuery:
-                                                            searchQuery,
-                                                        tab: FileDetailTab.Rendered,
-                                                    }),
-                                                );
-                                            }}
-                                            className={styles.resultImage}
-                                            image={webApiGetFileThumbnail(
-                                                filePreview.fileId,
-                                                filePreview.thumbnailFileId,
-                                            )}
-                                            alt="Thumbnail"
-                                        />
-                                    </div>
+                                    <img
+                                        onClick={() => {
+                                            dispatch(
+                                                setFileDetailData({
+                                                    filePreview: filePreview,
+                                                    searchQuery: searchQuery,
+                                                    tab: FileDetailTab.Rendered,
+                                                }),
+                                            );
+                                        }}
+                                        className={styles.resultImage}
+                                        src={webApiGetFileThumbnail(
+                                            filePreview.fileId,
+                                            filePreview.thumbnailFileId,
+                                        )}
+                                        alt="Thumbnail"
+                                    />
                                 </Badge>
                             )}
                         </CardContent>

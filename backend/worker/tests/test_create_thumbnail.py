@@ -5,11 +5,25 @@ import pytest
 from common.services.lazybytes_service import LazyBytesService
 from wand.exceptions import MissingDelegateError, WandException
 
-from worker.index_file.tasks.create_thumbnail import Thumbnail, thumbnail_image_png_task
+from worker.index_file.tasks.create_thumbnail import (
+    Thumbnail,
+    ThumbnailFile,
+    thumbnail_image_png_task,
+)
+from worker.index_file.tasks.render import RenderFile
 
 # pylint: disable=redefined-outer-name
 
 TEST_ASSETS_DIR = Path(__file__).parent / "assets"
+
+
+@pytest.fixture
+def thumbnail_file() -> ThumbnailFile:
+    """Provide a sample ThumbnailFile for testing."""
+    render_file = RenderFile(
+        short_name="test_file", extension=".png", cache_key="test_cache_key"
+    )
+    return ThumbnailFile(cache_key="test_cache_key", render_file=render_file)
 
 
 @pytest.fixture
@@ -22,34 +36,42 @@ def sample_png_bytes() -> bytes:
 class TestThumbnailImagePngTask:
     """Test suite for thumbnail_image_png_task."""
 
-    def test_returns_none_when_file_content_is_none(self) -> None:
+    def test_returns_none_when_file_content_is_none(
+        self, thumbnail_file: ThumbnailFile
+    ) -> None:
         """Test that None is returned when file_content is None."""
-        result = thumbnail_image_png_task(None)
+        result = thumbnail_image_png_task(None, thumbnail_file)
         assert result is None
 
     def test_creates_thumbnail_for_simple_image(
-        self, lazybytes_service_inmemory: LazyBytesService, sample_png_bytes: bytes
+        self,
+        lazybytes_service_inmemory: LazyBytesService,
+        sample_png_bytes: bytes,
+        thumbnail_file: ThumbnailFile,
     ) -> None:
         """Test successful thumbnail creation for a simple image."""
         # Setup
         lazy_bytes = lazybytes_service_inmemory.from_bytes(sample_png_bytes)
 
         # Execute
-        result = thumbnail_image_png_task(lazy_bytes)
+        result = thumbnail_image_png_task(lazy_bytes, thumbnail_file)
 
         # Assert
         assert result is not None
         assert isinstance(result, Thumbnail)
 
     def test_returns_lazybytes_from_blob(
-        self, lazybytes_service_inmemory: LazyBytesService, sample_png_bytes: bytes
+        self,
+        lazybytes_service_inmemory: LazyBytesService,
+        sample_png_bytes: bytes,
+        thumbnail_file: ThumbnailFile,
     ) -> None:
         """Test that result is properly converted to LazyBytes."""
         # Setup
         lazy_bytes = lazybytes_service_inmemory.from_bytes(sample_png_bytes)
 
         # Execute
-        result = thumbnail_image_png_task(lazy_bytes)
+        result = thumbnail_image_png_task(lazy_bytes, thumbnail_file)
 
         # Assert
         assert result is not None
@@ -60,12 +82,14 @@ class TestThumbnailImagePngTask:
         [WandException, MissingDelegateError],
     )
     @patch("worker.index_file.tasks.create_thumbnail.Image")
+    # pylint: disable=too-many-arguments,too-many-positional-arguments
     def test_returns_none_on_image_exception(
         self,
         mock_image_class: MagicMock,
         exception_class: type[Exception],
         lazybytes_service_inmemory: LazyBytesService,
         sample_png_bytes: bytes,
+        thumbnail_file: ThumbnailFile,
     ) -> None:
         """Test that None is returned when Image raises an exception."""
         # Setup
@@ -77,7 +101,7 @@ class TestThumbnailImagePngTask:
         )
 
         # Execute
-        result = thumbnail_image_png_task(lazy_bytes)
+        result = thumbnail_image_png_task(lazy_bytes, thumbnail_file)
 
         # Assert
         assert result is None
@@ -88,6 +112,7 @@ class TestThumbnailImagePngTask:
         mock_image_class: MagicMock,
         lazybytes_service_inmemory: LazyBytesService,
         sample_png_bytes: bytes,
+        thumbnail_file: ThumbnailFile,
     ) -> None:
         """Test that None is returned when make_blob returns non-bytes."""
         # Setup
@@ -102,7 +127,7 @@ class TestThumbnailImagePngTask:
         mock_image_class.return_value.__exit__.return_value = None
 
         # Execute
-        result = thumbnail_image_png_task(lazy_bytes)
+        result = thumbnail_image_png_task(lazy_bytes, thumbnail_file)
 
         # Assert
         assert result is None
@@ -113,6 +138,7 @@ class TestThumbnailImagePngTask:
         mock_image_class: MagicMock,
         lazybytes_service_inmemory: LazyBytesService,
         sample_png_bytes: bytes,
+        thumbnail_file: ThumbnailFile,
     ) -> None:
         """Test that None is returned when make_blob returns None."""
         # Setup
@@ -127,7 +153,7 @@ class TestThumbnailImagePngTask:
         mock_image_class.return_value.__exit__.return_value = None
 
         # Execute
-        result = thumbnail_image_png_task(lazy_bytes)
+        result = thumbnail_image_png_task(lazy_bytes, thumbnail_file)
 
         # Assert
         assert result is None

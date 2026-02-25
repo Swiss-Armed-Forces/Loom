@@ -34,8 +34,6 @@
 
 .resultImage {
     cursor: pointer;
-    object-fit: contain;
-    object-position: top;
     width: auto;
     min-width: 10rem;
     max-width: 20vw;
@@ -97,10 +95,6 @@
 
 .thumbnailBadge {
     align-self: flex-start;
-}
-
-.thumbnailWrapper {
-    display: inline-flex;
 }
 
 .cardActions {

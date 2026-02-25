@@ -14,6 +14,7 @@ def test_cache_decorator():
     redis_client = get_redis_client()
     # set up
     redis_client.hget.return_value = None
+    redis_client.hsetnx.return_value = True  # Simulate being first to cache
     redis_client.zcard.return_value = 1
 
     # call function to trigger caching
@@ -28,10 +29,15 @@ def test_cache_decorator():
         f"{{rc:{expected_namespace}}}:vals", f"{{rc:{expected_namespace}}}:{identifier}"
     )
     assert redis_client.zadd.call_args.args[0] == f"{{rc:{expected_namespace}}}:keys"
-    assert redis_client.hset.call_args.args[0] == f"{{rc:{expected_namespace}}}:vals"
+    # Value is now stored atomically via hsetnx
+    assert redis_client.hsetnx.call_args.args[0] == f"{{rc:{expected_namespace}}}:vals"
     assert (
-        redis_client.hset.call_args.args[1]
+        redis_client.hsetnx.call_args.args[1]
         == f"{{rc:{expected_namespace}}}:{identifier}"
+    )
+    # hset is now used for settings
+    assert (
+        redis_client.hset.call_args.args[0] == f"{{rc:{expected_namespace}}}:settings"
     )
     assert not redis_client.zrange.called
     assert not redis_client.zremrangebyrank.called
