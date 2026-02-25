@@ -362,11 +362,8 @@ class BaseEsRepository(
 
         return search
 
-    def _send_file_update_message(
-        self,
-        obj: EsRepositoryObjectT,
-    ):
-        file_id = str(obj.id_)
+    def _send_file_update_message_by_id(self, id_: UUID):
+        file_id = str(id_)
         self._pubsub_service.publish_message(
             PubSubMessage(channel=file_id, message=MessageFileUpdate(fileId=file_id)),
         )
@@ -547,7 +544,7 @@ class BaseEsRepository(
     def save(self, obj: EsRepositoryObjectT):
         document = self._object_to_document(obj)
         document.save(refresh=True, using=self._elasticsearch)
-        self._send_file_update_message(obj)
+        self._send_file_update_message_by_id(obj.id_)
 
     def update(
         self, obj: EsRepositoryObjectT, include: IncEx = None, exclude: IncEx = None
@@ -563,7 +560,21 @@ class BaseEsRepository(
             refresh=True,
             retry_on_conflict=UPDATE_RETRY_ON_CONFLICT_COUNT,
         )
-        self._send_file_update_message(obj)
+        self._send_file_update_message_by_id(obj.id_)
+
+    def delete_by_id(self, id_: UUID) -> bool:
+        """Delete a document by ID.
+
+        Returns:
+            True if the document was deleted, False if it didn't exist.
+        """
+        try:
+            document = self._document_type({"_id": id_})
+            document.delete(using=self._elasticsearch, refresh=True)
+            self._send_file_update_message_by_id(id_)
+            return True
+        except NotFoundError:
+            return False
 
     def init(self):
         # make sure the index is closed before initialization

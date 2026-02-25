@@ -992,6 +992,49 @@ def test_es_repository_update_exclude(obj: _TestEsRepositoryObject):
     )
 
 
+@pytest.mark.parametrize(
+    "obj",
+    get_test_repository_object_instances(),
+)
+def test_es_repository_delete_by_id(obj: _TestEsRepositoryObject):
+    es_repository = _TestEsRepository(
+        query_builder=get_query_builder(),
+        pubsub_service=get_pubsub_service(),
+        mock_types=True,
+    )
+    document_mock = MagicMock(spec=_TestEsDocument)
+    es_repository.document_type.return_value = document_mock
+
+    result = es_repository.delete_by_id(obj.id_)
+
+    assert result is True
+    document_mock.delete.assert_called_once_with(
+        using=es_repository.elasticsearch_mock,
+        refresh=True,
+    )
+
+
+@pytest.mark.parametrize(
+    "obj",
+    get_test_repository_object_instances(),
+)
+def test_es_repository_delete_by_id_not_found(obj: _TestEsRepositoryObject):
+    es_repository = _TestEsRepository(
+        query_builder=get_query_builder(),
+        pubsub_service=get_pubsub_service(),
+        mock_types=True,
+    )
+    document_mock = MagicMock(spec=_TestEsDocument)
+    document_mock.delete.side_effect = NotFoundError(
+        "document not found", MagicMock(), None
+    )
+    es_repository.document_type.return_value = document_mock
+
+    result = es_repository.delete_by_id(obj.id_)
+
+    assert result is False
+
+
 def test_es_repository_open_point_in_time():
     es_repository = _TestEsRepository(
         query_builder=get_query_builder(),

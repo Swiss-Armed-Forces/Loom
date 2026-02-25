@@ -85,18 +85,35 @@ class FileSchedulingService:
         return file
 
     def reindex_file(self, file_id: UUID):
-        file = self._file_repository.get_by_id(file_id)
-        if file is None:
+        old_file = self._file_repository.get_by_id(file_id)
+        if old_file is None:
             raise FileNotFoundException("Invalid file")
 
-        logger.info("Scheduling re-index of file '%s'", file.full_name)
-        # update status
-        file.state = "reindexing"
-        self._file_repository.update(file, include={"state"})
+        logger.info("Scheduling re-index of file '%s'", old_file.full_name)
 
+        # Delete the old (heavy) file from the repository
+        self._file_repository.delete_by_id(file_id)
+
+        # Create a new minimal file object (same pattern as index_file)
+        file = File(
+            storage_id=old_file.storage_id,
+            full_name=old_file.full_name,
+            source=old_file.source,
+            parent_id=old_file.parent_id,
+            sha256=old_file.sha256,
+            size=old_file.size,
+            state="reindexing",
+        )
+        # Preserve the original file ID
+        file.es_meta.id = file_id
+
+        # Save the minimal file
+        self._file_repository.save(file)
+
+        # Load file content and schedule indexing
         file_content = self._lazybytes_service.from_generator(
             self._file_storage_service.open_download_iterator(
-                file_id=ObjectId(file.storage_id)
+                file_id=ObjectId(old_file.storage_id)
             )
         )
         self._task_scheduling_service.index_file(file, file_content)
