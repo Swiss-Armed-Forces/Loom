@@ -568,6 +568,14 @@ in
         git lfs install --skip-repo
         git lfs pull
 
+        # Ignore local changes to values-overwrites.yaml
+        # This file is meant for local development overrides and should not be committed.
+        # Each developer can customize it without polluting git status.
+        git \
+          update-index \
+            --skip-worktree \
+            charts/values-overwrites.yaml
+
         # is interactive shell?
         if tty -s; then
           # print help

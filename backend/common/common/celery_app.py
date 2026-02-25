@@ -168,6 +168,10 @@ def init_celery_app() -> "Celery[BaseTask]":
     # and disk pressure on the broker and backend.
     # Using bzip2 for better compression ratio since we can
     # scale workers horizontally easier than the backend.
+    #
+    # Note: result_compression currently has no effect with Redis backend
+    # (only task_compression works), but we keep it configured anyway in case
+    # future Celery versions add support for compressing result messages in Redis.
     app.conf.task_compression = "bzip2"
     app.conf.result_compression = "bzip2"
 

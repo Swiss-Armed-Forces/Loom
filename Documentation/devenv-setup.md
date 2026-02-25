@@ -59,6 +59,31 @@ Upload a file, check if analysis is working and it's indexed.
 The devenv provides a number of useful commands.
 Start a shell with `devenv shell` and run `devenv-help` to get an overview.
 
+## Optimizing Development Deployment
+
+If you don't need certain features during development, you can significantly
+speed up deployment time and reduce resource usage by disabling them in
+`charts/values-overwrites.yaml`.
+
+### Disable AI Features (optional)
+
+If you're not working on AI-related functionality
+(summarization, translation, embeddings), disable these services:
+
+```yaml
+# charts/values-overwrites.yaml
+ollama:
+  enabled: false
+ollama-tool:
+  enabled: false
+open-webui:
+  enabled: false
+translate:
+  enabled: false
+```
+
+Important: When services are disabled, any tasks that depend on them will fail.
+
 ## Tailscale (optional)
 
 If you need to connect to one of the gitlab runners, refer to [the detailed instructions](./tailscale.md).

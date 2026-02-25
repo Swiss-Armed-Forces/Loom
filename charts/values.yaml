@@ -193,7 +193,7 @@ beat:
   service:
     port: 80
   readinessProbe:
-    enabled: false
+    enabled: true
   livenessProbe:
     enabled: true
   resources:
