@@ -1,6 +1,10 @@
 from typing import Iterable
 
-from common.dependencies import get_file_repository, get_imap_service, get_redis_client
+from common.dependencies import (
+    get_file_repository,
+    get_imap_service,
+    get_redis_cache_client,
+)
 from common.services.query_builder import QueryParameters
 from common.utils.cache import get_cache_statistics
 from fastapi import FastAPI
@@ -41,14 +45,14 @@ def count_imap_emails(_: CallbackOptions) -> Iterable[Observation]:
 
 
 def observe_cache_mem_size(_: CallbackOptions) -> Iterable[Observation]:
-    redis_client = get_redis_client()
+    redis_client = get_redis_cache_client()
     stats = get_cache_statistics(redis_client)
     for namespace, entry in stats.root.items():
         yield Observation(value=entry.mem_size, attributes={"namespace": namespace})
 
 
 def observe_cache_entries(_: CallbackOptions) -> Iterable[Observation]:
-    redis_client = get_redis_client()
+    redis_client = get_redis_cache_client()
     stats = get_cache_statistics(redis_client)
     for namespace, entry in stats.root.items():
         yield Observation(
@@ -57,14 +61,14 @@ def observe_cache_entries(_: CallbackOptions) -> Iterable[Observation]:
 
 
 def observe_cache_hits(_: CallbackOptions) -> Iterable[Observation]:
-    redis_client = get_redis_client()
+    redis_client = get_redis_cache_client()
     stats = get_cache_statistics(redis_client)
     for namespace, entry in stats.root.items():
         yield Observation(value=entry.hits_count, attributes={"namespace": namespace})
 
 
 def observe_cache_misses(_: CallbackOptions) -> Iterable[Observation]:
-    redis_client = get_redis_client()
+    redis_client = get_redis_cache_client()
     stats = get_cache_statistics(redis_client)
     for namespace, entry in stats.root.items():
         yield Observation(value=entry.miss_count, attributes={"namespace": namespace})

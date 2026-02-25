@@ -1,0 +1,16 @@
+{{- if .Values.redisinsight.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "app.fullname" . }}-redisinsight
+  labels:
+    {{- include "app.labels.custom" (dict "context" . "component" "redisinsight") | nindent 4 }}
+    app.kubernetes.io/component: redisinsight
+spec:
+  ports:
+    - port: {{ .Values.redisinsight.service.port }}
+      name: redisinsight
+      targetPort: {{ .Values.redisinsight.service.port }}
+  selector:
+    app: {{ include "app.name" . }}-redisinsight
+{{- end }}

@@ -1,0 +1,21 @@
+{{- define "app.redis.ingressRoute" -}}
+{{- $component := .component -}}
+{{- $values := index .Values $component -}}
+{{- if $values.ingress.enabled }}
+apiVersion: traefik.io/v1alpha1
+kind: IngressRouteTCP
+metadata:
+  name: {{ include "app.fullname" . }}-{{ $component }}
+  labels:
+    {{- include "app.labels.custom" (dict "context" . "component" $component) | nindent 4 }}
+    app.kubernetes.io/component: "{{ $component }}"
+spec:
+  entryPoints:
+    - {{ $component }}
+  routes:
+    - match: HostSNI(`*`)
+      services:
+        - name: {{ include "app.fullname" . }}-{{ $component }}
+          port: {{ $values.service.port }}
+{{- end }}
+{{- end -}}

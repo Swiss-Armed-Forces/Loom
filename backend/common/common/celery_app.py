@@ -1,7 +1,7 @@
 import logging
 import random
 from abc import ABC
-from datetime import datetime
+from datetime import datetime, timedelta
 from pprint import pformat
 from typing import Any
 
@@ -218,6 +218,28 @@ def init_celery_app() -> "Celery[BaseTask]":
     app.conf.result_backend_always_retry = True
     app.conf.task_acks_on_failure_or_timeout = True
     app.conf.task_reject_on_worker_lost = False
+
+    # Set result expiration to a very large value (9999 days) for the following reasons:
+    #
+    # 1. We want results to effectively never expire under normal conditions:
+    #    - Expired results = Redis evicts the result
+    #    - Evicted results = task pipeline stops mid-execution
+    #    - This causes files to remain stuck in "starting" state indefinitely
+    #
+    # 2. However, we MUST set a non-zero TTL (not 0/None) because:
+    #    - We use maxmemory-policy=volatile-ttl in Redis
+    #    - This policy only evicts keys WITH a TTL when memory pressure occurs
+    #    - Without TTL, results would never be evicted, leading to Redis OOM crashes
+    #
+    # 3. Trade-off decision:
+    #    - A few files failing to finish processing (due to eviction) is acceptable
+    #    - Redis crashing is catastrophic and affects the entire system
+    #    - Under memory pressure, evicting old task results is the lesser evil
+    #
+    # The large value (9999 days ~ 274 years) ensures results persist long enough
+    # for normal operations while still being eligible for eviction if Redis
+    # runs out of memory.
+    app.conf.result_expires = timedelta(days=99999)
 
     # Register periodic tasks
     app.conf.beat_schedule = {

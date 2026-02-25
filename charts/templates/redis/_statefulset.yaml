@@ -1,0 +1,84 @@
+{{- define "app.redis.statefulset" -}}
+{{- $component := .component -}}
+{{- $values := index .Values $component -}}
+{{- $redisMemoryLimitBytes := include "SI-to-bytes" $values.resources.limits.memory | int64 -}}
+{{- $pvcStorageMultiplier := 4 -}}
+{{- $pvcStorageBytes := mulf $redisMemoryLimitBytes $pvcStorageMultiplier | int64 -}}
+
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "app.fullname" . }}-{{ $component }}
+  labels:
+    {{- include "app.labels.custom" (dict "context" . "component" $component) | nindent 4 }}
+    app.kubernetes.io/component: "{{ $component }}"
+spec:
+  serviceName: {{ include "app.fullname" . }}-{{ $component }}
+  replicas: {{ $values.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ include "app.name" . }}-{{ $component }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "app.name" . }}-{{ $component }}
+        {{- include "app.labels.custom" (dict "context" . "component" $component) | nindent 8 }}
+    spec:
+      containers:
+        - name: {{ $component }}
+          image: {{ .Values.image.registry }}/{{ $values.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) $values.image.tag }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: {{ $component }}
+              containerPort: {{ $values.service.port }}
+          volumeMounts:
+            - name: redis-config
+              mountPath: /usr/local/etc/redis/redis.conf
+              readOnly: true
+              subPath: redis.conf
+            - mountPath: /data
+              name: redis
+          {{- if $values.readinessProbe.enabled }}
+          readinessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - redis-cli ping
+            initialDelaySeconds: {{ default 0 $values.readinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ default 20 $values.readinessProbe.periodSeconds }}
+            timeoutSeconds: {{ default 10 $values.readinessProbe.timeoutSeconds }}
+            failureThreshold: {{ default 3 $values.readinessProbe.failureThreshold }}
+          {{- end }}
+          {{- if $values.livenessProbe.enabled }}
+          livenessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - redis-cli ping
+            initialDelaySeconds: {{ default 0 $values.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ default 20 $values.livenessProbe.periodSeconds }}
+            timeoutSeconds: {{ default 10 $values.livenessProbe.timeoutSeconds }}
+            failureThreshold: {{ default 6 $values.livenessProbe.failureThreshold }}
+          {{- end }}
+          {{- if $values.resources }}
+          resources: {{- toYaml $values.resources | nindent 12 }}
+          {{- end }}
+      volumes:
+        - name: redis-config
+          configMap:
+            name: {{ include "app.fullname" . }}-{{ $component }}-config
+  volumeClaimTemplates:
+    - metadata:
+        name: redis
+      spec:
+        accessModes:
+          - {{ default "ReadWriteOnce" (dig "pvc" "accessModes" "" $values) | quote }}
+        resources:
+            requests:
+              storage: {{ printf "%d" $pvcStorageBytes }}
+        {{- if and $values.pvc $values.pvc.storageClass }}
+        storageClassName: {{ $values.pvc.storageClass }}
+        {{- end }}
+{{- end -}}

@@ -51,7 +51,8 @@ class Settings(BaseSettings):
         f"http://guest:guest@rabbit.{DOMAIN}"
     )
     celery_broker_host: AnyUrl = AnyUrl(f"amqp://rabbit-amqp.{DOMAIN}")
-    celery_backend_host: AnyUrl = AnyUrl(f"redis://redis.{DOMAIN}/0?protocol=3")
+    celery_backend_host: AnyUrl = AnyUrl(f"redis://redis.{DOMAIN}:6379/0?protocol=3")
+    redis_cache_host: AnyUrl = AnyUrl(f"redis://redis-cache.{DOMAIN}:6380/0?protocol=3")
     max_file_size: int = 500_000_000  # 500 MB, because of rabbit
     translate_host: AnyHttpUrl = AnyHttpUrl(f"http://translate.{DOMAIN}")
 

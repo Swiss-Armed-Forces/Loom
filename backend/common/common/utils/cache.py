@@ -8,7 +8,7 @@ from typing import Callable
 from pydantic import BaseModel, Field, RootModel, computed_field
 from redis import StrictRedis
 
-from common.dependencies import get_redis_client
+from common.dependencies import get_redis_cache_client
 
 logger = logging.getLogger(__name__)
 
@@ -186,7 +186,7 @@ def cache(
             result = None
 
             # retrieve the value from redis by key
-            redis_client = get_redis_client()
+            redis_client = get_redis_cache_client()
             result = redis_client.hget(vals_key, key)
 
             logger.debug("Result from redis (key: %s): %s", key, bool(result))

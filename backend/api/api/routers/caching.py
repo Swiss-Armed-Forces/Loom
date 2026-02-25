@@ -1,11 +1,11 @@
-from common.dependencies import get_redis_client
+from common.dependencies import get_redis_cache_client
 from common.utils.cache import CacheStatistics, get_cache_statistics
 from fastapi import APIRouter, Depends
 from redis import StrictRedis
 
 router = APIRouter()
 
-_redis_client = Depends(get_redis_client)
+_redis_client = Depends(get_redis_cache_client)
 
 
 @router.get("/")
