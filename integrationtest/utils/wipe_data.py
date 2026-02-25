@@ -10,6 +10,7 @@ from common.dependencies import (
     get_imap_service,
     get_pubsub_service,
     get_query_builder,
+    get_redis_cache_client,
     get_redis_client,
 )
 from common.dependencies import init as init_common_dependencies
@@ -100,8 +101,9 @@ def _wipe_elasticsearch():
 
 
 def _wipe_redis():
-    redis_client = get_redis_client()
-    redis_client.flushall()
+    logger.info("Wiping: redis")
+    get_redis_client().flushall()
+    get_redis_cache_client().flushall()
 
 
 def _wipe_minio_buckets():

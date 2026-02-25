@@ -45,6 +45,7 @@ _mongo: MongoClient | None = None
 _celery_app: Optional["Celery[BaseTask]"] = None
 _redis_client: StrictRedis | None = None
 _redis_client_async: StrictRedisAsync | None = None
+_redis_cache_client: StrictRedis | None = None
 _pubsub_service: PubSubService | None = None
 _queues_service: QueuesService | None = None
 _file_storage_service: FileStorageService | None = None
@@ -81,6 +82,9 @@ def init(init_elasticsearch_documents: bool = False):
 
     global _redis_client_async
     _redis_client_async = StrictRedisAsync.from_url(str(settings.celery_backend_host))
+
+    global _redis_cache_client
+    _redis_cache_client = StrictRedis.from_url(str(settings.redis_cache_host))
 
     global _pubsub_service
     _pubsub_service = PubSubService(_redis_client, _redis_client_async)
@@ -207,6 +211,9 @@ def mock_init():
     global _redis_client_async
     _redis_client_async = AsyncMock(spec=StrictRedisAsync)
 
+    global _redis_cache_client
+    _redis_cache_client = MagicMock(spec=StrictRedis)
+
     global _file_storage_service
     _file_storage_service = MagicMock(spec=FileStorageService)
 
@@ -290,6 +297,12 @@ def get_redis_client_async() -> StrictRedisAsync:
     if _redis_client_async is None:
         raise DependencyException("Async Redis client is missing")
     return _redis_client_async
+
+
+def get_redis_cache_client() -> StrictRedis:
+    if _redis_cache_client is None:
+        raise DependencyException("Redis cache client is missing")
+    return _redis_cache_client
 
 
 def get_pubsub_service() -> PubSubService:

@@ -280,7 +280,7 @@ Multiple services that are useful for production and development purposes are st
 | ElasticSearch  | [https://elasticsearch.loom](https://elasticsearch.loom)   | Elasticsearch Database                        |                                               |
 | Mongo Express  | [https://mongo-web.loom](https://mongo-web.loom)           | mongoDB management                            |                                               |
 | Rspamd         | [https://rspamd.loom](https://rspamd.loom)                 | Rspamd spam detection engine                  |                                               |
-| RedisInsight   | [https://redis-insight.loom](https://redis-insight.loom)   | Manage the redis DB                           | connect to `production-loom-redis:6379`       |
+| RedisInsight   | [https://redisinsight.loom](https://redisinsight.loom)     | Manage the redis DB                           |                                               |
 | Prometheus     | [https://prometheus.loom](https://prometheus.loom)         | Manage prometheus                             |                                               |
 | Grafana        | [https://grafana.loom](https://grafana.loom)               | Statistics, Dashboards and alerting           |                                               |
 | Traefik        | [https://traefik.loom](https://traefik.loom)               | Traefik reverse proxy                         |                                               |

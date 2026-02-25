@@ -1,18 +1,18 @@
-{{- if  and .Values.redis.insight.enabled .Values.redis.insight.ingress.enabled }}
+{{- if and .Values.redisinsight.enabled .Values.redisinsight.ingress.enabled }}
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: {{ include "app.fullname" . }}-redis-insight
+  name: {{ include "app.fullname" . }}-redisinsight
   labels:
-    {{- include "app.labels.custom" (dict "context" . "component" "redis") | nindent 4 }}
-    app.kubernetes.io/component: redis
+    {{- include "app.labels.custom" (dict "context" . "component" "redisinsight") | nindent 4 }}
+    app.kubernetes.io/component: redisinsight
   annotations:
-    {{- toYaml .Values.redis.insight.ingress.annotations | nindent 4 }}
+    {{- toYaml .Values.redisinsight.ingress.annotations | nindent 4 }}
     {{- if .Values.certificate.requireClientCert }}
     traefik.ingress.kubernetes.io/router.tls.options: {{ .Release.Namespace }}-{{ include "app.fullname" . }}-mtls@kubernetescrd
     {{- end }}
 spec:
-  ingressClassName: {{ .Values.redis.insight.ingress.className }}
+  ingressClassName: {{ .Values.redisinsight.ingress.className }}
   rules:
     - host: redisinsight.{{ .Values.domain }}
       http:
@@ -21,10 +21,10 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: {{ include "app.fullname" . }}-redis-insight
+                name: {{ include "app.fullname" . }}-redisinsight
                 port:
-                  number: {{ .Values.redis.insight.service.port }}
-  {{- if .Values.redis.insight.ingress.tls.enabled }}
+                  number: {{ .Values.redisinsight.service.port }}
+  {{- if .Values.redisinsight.ingress.tls.enabled }}
   tls:
     - secretName: {{ include "app.fullname" . }}-certificate
       hosts:

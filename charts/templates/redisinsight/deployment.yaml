@@ -1,0 +1,43 @@
+{{- if .Values.redisinsight.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "app.fullname" . }}-redisinsight
+  labels:
+    {{- include "app.labels.custom" (dict "context" . "component" "redisinsight") | nindent 4 }}
+    app.kubernetes.io/component: redisinsight
+spec:
+  replicas: {{ .Values.redisinsight.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ include "app.name" . }}-redisinsight
+  template:
+    metadata:
+      labels:
+        app: {{ include "app.name" . }}-redisinsight
+        {{- include "app.labels.custom" (dict "context" . "component" "redisinsight") | nindent 8 }}
+    spec:
+      containers:
+        - name: redisinsight
+          image: {{ .Values.image.registry }}/{{ .Values.redisinsight.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) .Values.redisinsight.image.tag }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          env:
+            - name: RI_REDIS_HOST_0
+              value: "{{ include "app.fullname" . }}-redis"
+            - name: RI_REDIS_PORT_0
+              value: "{{ .Values.redis.service.port }}"
+            - name: RI_REDIS_ALIAS_0
+              value: "redis (celery backend)"
+            - name: RI_REDIS_HOST_1
+              value: "{{ include "app.fullname" . }}-redis-cache"
+            - name: RI_REDIS_PORT_1
+              value: "{{ index .Values "redis-cache" "service" "port" }}"
+            - name: RI_REDIS_ALIAS_1
+              value: "redis-cache (function cache)"
+          ports:
+            - name: redisinsight
+              containerPort: {{ .Values.redisinsight.service.port }}
+          {{- if .Values.redisinsight.resources }}
+          resources: {{- toYaml .Values.redisinsight.resources | nindent 12 }}
+          {{- end }}
+{{- end }}

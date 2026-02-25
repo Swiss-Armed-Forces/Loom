@@ -1,7 +1,7 @@
 from hashlib import sha256
 from pickle import dumps
 
-from common.dependencies import get_redis_client
+from common.dependencies import get_redis_cache_client
 from common.utils.cache import cache
 
 
@@ -11,7 +11,7 @@ def cached_function() -> str:
 
 
 def test_cache_decorator():
-    redis_client = get_redis_client()
+    redis_client = get_redis_cache_client()
     # set up
     redis_client.hget.return_value = None
     redis_client.hsetnx.return_value = True  # Simulate being first to cache

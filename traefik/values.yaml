@@ -41,6 +41,9 @@ ports:
   redis:
     hostPort: 6379
     port: 6379
+  redis-cache:
+    hostPort: 6380
+    port: 6380
   prometheus:
     hostPort: 9090
     port: 9090
@@ -50,5 +53,6 @@ additionalArguments:
   - "--entrypoints.amqp.address=:5672"
   - "--entrypoints.mongo.address=:27017"
   - "--entrypoints.redis.address=:6379"
+  - "--entrypoints.redis-cache.address=:6380"
   - "--entrypoints.prometheus.address=:9090"
   - "--api.insecure=true"

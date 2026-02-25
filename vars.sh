@@ -15,6 +15,7 @@ LOOM_HOSTS=(
     "elasticsearch"
     "redisinsight"
     "redis"
+    "redis-cache"
     "flower"
     "rspamd"
     "rspamd-worker"

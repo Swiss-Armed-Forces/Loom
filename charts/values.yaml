@@ -1118,7 +1118,7 @@ prometheus:
   # monitoring-tier: "primary"
   # sla: "99.9"
 
-redis:
+redis: &redis
   replicaCount: 1
   image:
     repository: swiss-armed-forces/cyber-command/cea/loom/redis
@@ -1132,7 +1132,7 @@ redis:
     enabled: true
   resources:
     requests:
-      cpu: "0.2"
+      cpu: "0.1"
       memory: "500Mi"
     limits:
       cpu: "1.5"
@@ -1142,21 +1142,24 @@ redis:
   # Example:
   # datastore-type: cache
   # persistence: optional
-  insight:
-    enabled: true
-    replicaCount: 1
-    image:
-      repository: swiss-armed-forces/cyber-command/cea/loom/redisinsight
-    service:
-      port: 5540
-    ingress: *default-ingress-config
-    resources:
-      requests:
-        cpu: "0.1"
-        memory: "100Mi"
-      limits:
-        cpu: "0.3"
-        memory: "300Mi"
+
+redis-cache: *redis
+
+redisinsight:
+  enabled: true
+  replicaCount: 1
+  image:
+    repository: swiss-armed-forces/cyber-command/cea/loom/redisinsight
+  service:
+    port: 5540
+  ingress: *default-ingress-config
+  resources:
+    requests:
+      cpu: "0.01"
+      memory: "100Mi"
+    limits:
+      cpu: "0.3"
+      memory: "300Mi"
 
 rspamd:
   replicaCount: 1

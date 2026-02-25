@@ -195,11 +195,14 @@ roundcube:
 prometheus:
   ingress: *default-ingress-config
 
-redis:
+redis: &redis
   ingress:
     enabled: true
-  insight:
-    ingress: *default-ingress-config
+
+redis-cache: *redis
+
+redisinsight:
+  ingress: *default-ingress-config
 
 rspamd:
   worker:
