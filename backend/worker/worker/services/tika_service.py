@@ -11,8 +11,9 @@ https://cwiki.apache.org/confluence/display/TIKA/TikaOCR
 import csv
 import logging
 from contextlib import contextmanager
+from itertools import chain
 from tempfile import TemporaryFile
-from typing import Generator, Mapping
+from typing import Generator, Iterable, Mapping
 from zipfile import Path as ZipPath
 from zipfile import ZipFile
 
@@ -64,8 +65,22 @@ class TikaService:
         self.timeout = timeout
         self.lazybytes_service = lazybytes_service
 
+    def _peek_and_chain(
+        self, data_generator: Generator[bytes, None, None]
+    ) -> Iterable[bytes] | None:
+        """Peek at the first chunk of a generator and chain it back.
+
+        Returns None if the generator is empty, otherwise returns an iterable with the
+        first chunk chained back to the rest of the generator.
+        """
+        try:
+            first_chunk = next(data_generator)
+        except StopIteration:
+            return None
+        return chain([first_chunk], data_generator)
+
     @contextmanager
-    def _unpack(self, data: memoryview) -> Generator[ZipFile, None, None]:
+    def _unpack(self, data_iterable: Iterable[bytes]) -> Generator[ZipFile, None, None]:
         """Returns the tika unpack result."""
         uri = f"{settings.tika_server_host}/unpack/all"
         headers: Mapping[str, str] = {
@@ -77,7 +92,7 @@ class TikaService:
         }
         response = requests.put(
             uri,
-            data,
+            data_iterable,
             headers=headers,
             stream=True,
             timeout=self.timeout,
@@ -136,23 +151,28 @@ class TikaService:
 
         return result
 
-    def parse(self, data: memoryview) -> TikaResult:
+    def parse_from_generator(
+        self, data_generator: Generator[bytes, None, None]
+    ) -> TikaResult:
         """Parse file using tika.
 
         Raises TikaError on failures.
         """
-        if len(data) <= 0:
+        data_iterable = self._peek_and_chain(data_generator)
+        if data_iterable is None:
             return TikaResult()
 
         try:
-            with self._unpack(data) as zipfile:
+            with self._unpack(data_iterable) as zipfile:
                 return self._parse(zipfile)
         except HTTPError as exc:
             raise TikaError from exc
 
-    def get_language(self, data: memoryview) -> str:
-        """Returns the language."""
-        if len(data) <= 0:
+    def get_language_from_generator(
+        self, data_generator: Generator[bytes, None, None]
+    ) -> str:
+        data_iterable = self._peek_and_chain(data_generator)
+        if data_iterable is None:
             return ""
 
         uri = f"{settings.tika_server_host}/language/string"
@@ -161,14 +181,20 @@ class TikaService:
             "X-Tika-Timeout-Millis": str(self.timeout * 1000**1),
         }
         response = requests.put(
-            uri, data, headers=headers, timeout=self.timeout, verify=TIKA_VERIFY_TLS
+            uri,
+            data_iterable,
+            headers=headers,
+            timeout=self.timeout,
+            verify=TIKA_VERIFY_TLS,
         )
         response.raise_for_status()
         return response.text
 
-    def get_file_type(self, data: memoryview) -> str:
-        """Returns the filetype."""
-        if len(data) <= 0:
+    def get_file_type_from_generator(
+        self, data_generator: Generator[bytes, None, None]
+    ) -> str:
+        data_iterable = self._peek_and_chain(data_generator)
+        if data_iterable is None:
             return ""
 
         uri = f"{settings.tika_server_host}/detect/stream"
@@ -177,7 +203,11 @@ class TikaService:
             "X-Tika-Timeout-Millis": str(self.timeout * 1000**1),
         }
         response = requests.put(
-            uri, data, headers=headers, timeout=self.timeout, verify=TIKA_VERIFY_TLS
+            uri,
+            data_iterable,
+            headers=headers,
+            timeout=self.timeout,
+            verify=TIKA_VERIFY_TLS,
         )
         response.raise_for_status()
         return response.text

@@ -158,9 +158,9 @@ def signature(file_content: LazyBytes, file: File) -> Signature:
 def tika_processor_task(file_content: LazyBytes, file: File) -> TikaResult | None:
     """Task to process the raw data of a file."""
     logger.info("Processing %s with tika", file.full_name)
-    with get_lazybytes_service().load_memoryview(file_content) as memview:
+    with get_lazybytes_service().load_generator(file_content) as generator:
         try:
-            result = get_tika_service().parse(memview)
+            result = get_tika_service().parse_from_generator(generator)
         except TikaError:
             # will proceed to fallback
             return None
@@ -232,8 +232,8 @@ def persist_tika_meta_task(persister: IndexingPersister, tika_result: TikaResult
 def tika_get_language_task(file_content: LazyBytes, file: File) -> str:
     """Task to get the tika detected language."""
     logger.info("Getting language for %s with tika", file.full_name)
-    with get_lazybytes_service().load_memoryview(file_content) as memview:
-        return get_tika_service().get_language(memview)
+    with get_lazybytes_service().load_generator(file_content) as file_generator:
+        return get_tika_service().get_language_from_generator(file_generator)
 
 
 @persisting_task(app, IndexingPersister)
@@ -251,8 +251,8 @@ def persist_tika_language_task(persister: IndexingPersister, tika_language: str)
 def tika_get_file_type_task(file_content: LazyBytes, file: File) -> str:
     """Task to get the tika detected file type."""
     logger.info("Getting file type for %s with tika", file.full_name)
-    with get_lazybytes_service().load_memoryview(file_content) as memview:
-        return get_tika_service().get_file_type(memview)
+    with get_lazybytes_service().load_generator(file_content) as file_generator:
+        return get_tika_service().get_file_type_from_generator(file_generator)
 
 
 @persisting_task(app, IndexingPersister)
