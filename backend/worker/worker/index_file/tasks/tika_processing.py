@@ -24,6 +24,7 @@ from worker.index_file.processor.extractor.archive_extractors import (
     PstArchiveExtractor,
     TarExtractor,
     ZipExtractor,
+    ZstdExtractor,
 )
 from worker.index_file.tasks import email_processing
 from worker.index_file.tasks.create_embedding import (
@@ -88,6 +89,7 @@ class TikaExtractorFallback(TikaFallback):
 # Fallback objects to be used in the case of an unsuccessful unpack by Tika.
 # Ordered list indicating the order of fallback extractor to be used.
 FALLBACKS: list[TikaFallback] = [
+    TikaExtractorFallback(ZstdExtractor()),
     TikaExtractorFallback(TarExtractor()),
     TikaExtractorFallback(ZipExtractor()),
     TikaExtractorFallback(PstArchiveExtractor()),

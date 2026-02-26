@@ -4,10 +4,16 @@ import shutil
 import tarfile
 import zipfile
 from getpass import getuser
-from os.path import basename
+from os.path import basename, join
 from pathlib import Path
 from subprocess import CalledProcessError, run
 from typing import IO
+
+# pylint: disable=no-name-in-module
+from zstd import Error as ZSTDError
+from zstd import ZSTD_uncompress
+
+# pylint: enable=no-name-in-module
 
 logger = logging.getLogger(__name__)
 
@@ -108,6 +114,19 @@ class PcapExtractor(ExtractorBase):
                 )
             except CalledProcessError as ex:
                 raise ExtractNotSupported from ex
+
+
+class ZstdExtractor(ExtractorBase):
+    """Extractor for zstd-compressed files built with the zstd module."""
+
+    def extract(self, fileobj: IO[bytes], outdir: str):
+        try:
+            data = ZSTD_uncompress(fileobj.read())
+            outpath = join(outdir, "0")
+            with open(outpath, "wb") as f:
+                f.write(data)
+        except ZSTDError as ex:
+            raise ExtractNotSupported from ex
 
 
 class BinwalkExtractor(ExtractorBase):

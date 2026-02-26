@@ -86,6 +86,8 @@ from utils.upload_asset import upload_asset
         ),
         # Pcap extraction test
         ("http.pcap", 2, ["http.pcap", "http.pcap/pcap_decoded"]),
+        # Zstd extraction test
+        ("file.txt.zst", 2, ["0"]),
     ],
 )
 def test_archive_extraction(
