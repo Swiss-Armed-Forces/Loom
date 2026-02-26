@@ -91,9 +91,6 @@ class FileSchedulingService:
 
         logger.info("Scheduling re-index of file '%s'", old_file.full_name)
 
-        # Delete the old (heavy) file from the repository
-        self._file_repository.delete_by_id(file_id)
-
         # Create a new minimal file object (same pattern as index_file)
         file = File(
             storage_id=old_file.storage_id,

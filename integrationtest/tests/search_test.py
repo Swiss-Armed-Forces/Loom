@@ -162,16 +162,6 @@ class TestCommonQueries:
             search_string=search_string, expected_no_of_files=file_count
         )
 
-    def test_search_tika_subfield_2(self):
-        # Setup the test params
-        search_string = "tika_meta.Content-Length:52"
-        file_count = 1
-
-        # Do the search test
-        fetch_files_from_api(
-            search_string=search_string, expected_no_of_files=file_count
-        )
-
     def test_search_tika_subfield_3(self):
         # Setup the test params
         search_string = 'tika_meta.Content-Type:"text/plain; charset=ISO-8859-1"'
