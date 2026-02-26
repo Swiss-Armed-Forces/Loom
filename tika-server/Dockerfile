@@ -14,13 +14,24 @@ USER root:root
 # Package versions
 ARG TESSERACT_OCR_ALL_VERSION="5.3.*"
 
-# install language package for OCR and dependencies for custom-entry-point
+# install language package for OCR, zstd-jni for compression support, and dependencies for custom-entry-point
 RUN set -exu \
 	&& apt-get update \
 	&& apt-get install -y --no-install-recommends \
 	tesseract-ocr-all="${TESSERACT_OCR_ALL_VERSION}" \
 	&& apt-get clean \
 	&& rm -rf /var/lib/apt/lists/*
+
+# Download and install zstd-jni JAR to tika-extras directory
+ARG ZSTD_JNI_VERSION="1.5.7-7"
+
+RUN set -exu \
+	&& mkdir --parents /tika-extras \
+	&& wget \
+		--directory-prefix=/tika-extras \
+		--quiet \
+		"https://repo1.maven.org/maven2/com/github/luben/zstd-jni/${ZSTD_JNI_VERSION}/zstd-jni-${ZSTD_JNI_VERSION}.jar" \
+	&& chmod 644 /tika-extras/zstd-jni-${ZSTD_JNI_VERSION}.jar
 
 COPY tika-config.xml /tika-config.xml
 

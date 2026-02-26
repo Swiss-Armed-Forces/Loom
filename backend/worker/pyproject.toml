@@ -20,6 +20,10 @@ langchain-text-splitters = "^0.3.2"
 flower = "^2.0.1"
 gotenberg-client = "^0.13.1"
 
+# Can be removed once we migrate to python ^3.14
+zstd = "^1.5.7.3"
+types-zstd = "^1.5.7.3.20260110"
+
 [tool.poetry.group.dev.dependencies]
 debugpy = "^1.8.1"
 watchdog = "^6.0.0"

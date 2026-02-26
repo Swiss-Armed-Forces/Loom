@@ -786,7 +786,7 @@ in
   };
 
   scripts.poetry-lock = {
-    description = "Regenrate all poetry lockfiles";
+    description = "Regenerate all poetry lockfiles";
     exec = ''
       (
         set -euo pipefail

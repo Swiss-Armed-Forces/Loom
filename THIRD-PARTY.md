@@ -482,176 +482,178 @@ The complete source code for Traefik is publicly available at [https://github.co
 
 ## Python
 
-| Name                                  | Version         | License                                                                          |
-|---------------------------------------|-----------------|----------------------------------------------------------------------------------|
-| celery-types                          | 0.24.0          | Apache Software License                                                          |
-| coverage                              | 7.5.4           | Apache Software License                                                          |
-| docker                                | 7.1.0           | Apache Software License                                                          |
-| elastic-transport                     | 8.17.1          | Apache Software License                                                          |
-| elasticsearch                         | 9.0.2           | Apache Software License                                                          |
-| memray                                | 1.17.2          | Apache Software License                                                          |
-| minio                                 | 7.2.15          | Apache Software License                                                          |
-| opentelemetry-instrumentation         | 0.60b1          | Apache Software License                                                          |
-| opentelemetry-instrumentation-asgi    | 0.60b1          | Apache Software License                                                          |
-| opentelemetry-instrumentation-fastapi | 0.60b1          | Apache Software License                                                          |
-| opentelemetry-util-http               | 0.60b1          | Apache Software License                                                          |
-| pymongo                               | 4.7.3           | Apache Software License                                                          |
-| pytest-memray                         | 1.7.0           | Apache Software License                                                          |
-| pytest_docker_tools                   | 3.1.9           | Apache Software License                                                          |
-| python-multipart                      | 0.0.22          | Apache Software License                                                          |
-| requests                              | 2.32.3          | Apache Software License                                                          |
-| requests-toolbelt                     | 1.0.0           | Apache Software License                                                          |
-| requirements-parser                   | 0.13.0          | Apache Software License                                                          |
-| tenacity                              | 9.1.2           | Apache Software License                                                          |
-| tornado                               | 6.5.1           | Apache Software License                                                          |
-| types-docker                          | 7.1.0.20240626  | Apache Software License                                                          |
-| types-pyOpenSSL                       | 24.1.0.20240722 | Apache Software License                                                          |
-| types-redis                           | 4.6.0.20241004  | Apache Software License                                                          |
-| types-requests                        | 2.32.0.20240622 | Apache Software License                                                          |
-| tzdata                                | 2025.2          | Apache Software License                                                          |
-| watchdog                              | 6.0.0           | Apache Software License                                                          |
-| packaging                             | 24.2            | Apache Software License; BSD License                                             |
-| python-dateutil                       | 2.9.0.post0     | Apache Software License; BSD License                                             |
-| pycryptodome                          | 3.20.0          | Apache Software License; BSD License; Public Domain                              |
-| pycryptodome                          | 3.20.0          | Apache Software License; BSD License; Public Domain                              |
-| luqum                                 | 0.14.0          | Apache Software License; GNU Lesser General Public License v3 or later (LGPLv3+) |
-| orjson                                | 3.10.5          | Apache Software License; MIT License                                             |
-| sniffio                               | 1.3.1           | Apache Software License; MIT License                                             |
-| freezegun                             | 1.5.5           | Apache-2.0                                                                       |
-| ply                                   | 3.11            | BSD                                                                              |
-| IMAPClient                            | 3.0.1           | BSD License                                                                      |
-| Jinja2                                | 3.1.6           | BSD License                                                                      |
-| MarkupSafe                            | 3.0.2           | BSD License                                                                      |
-| Pygments                              | 2.19.1          | BSD License                                                                      |
-| amqp                                  | 5.2.0           | BSD License                                                                      |
-| asgiref                               | 3.11.1          | BSD License                                                                      |
-| billiard                              | 4.2.2           | BSD License                                                                      |
-| celery                                | 5.5.3           | BSD License                                                                      |
-| click                                 | 8.1.7           | BSD License                                                                      |
-| click-plugins                         | 1.1.1           | BSD License                                                                      |
-| dill                                  | 0.3.8           | BSD License                                                                      |
-| flower                                | 2.0.1           | BSD License                                                                      |
-| gitdb                                 | 4.0.12          | BSD License                                                                      |
-| httpcore                              | 1.0.5           | BSD License                                                                      |
-| httpx                                 | 0.28.1          | BSD License                                                                      |
-| idna                                  | 3.7             | BSD License                                                                      |
-| joblib                                | 1.4.2           | BSD License                                                                      |
-| jsonpatch                             | 1.33            | BSD License                                                                      |
-| jsonpointer                           | 3.0.0           | BSD License                                                                      |
-| kombu                                 | 5.5.4           | BSD License                                                                      |
-| numpy                                 | 1.26.4          | BSD License                                                                      |
-| pika                                  | 1.3.2           | BSD License                                                                      |
-| prompt_toolkit                        | 3.0.47          | BSD License                                                                      |
-| pycparser                             | 2.22            | BSD License                                                                      |
-| pytest-celery                         | 1.2.1           | BSD License                                                                      |
-| python-dotenv                         | 1.0.1           | BSD License                                                                      |
-| scikit-learn                          | 1.7.0           | BSD License                                                                      |
-| scipy                                 | 1.15.3          | BSD License                                                                      |
-| smmap                                 | 5.0.2           | BSD License                                                                      |
-| starlette                             | 0.46.1          | BSD License                                                                      |
-| threadpoolctl                         | 3.5.0           | BSD License                                                                      |
-| vine                                  | 5.1.0           | BSD License                                                                      |
-| websockets                            | 13.1            | BSD License                                                                      |
-| wrapt                                 | 1.17.3          | BSD License                                                                      |
-| GitPython                             | 3.1.46          | BSD-3-Clause                                                                     |
-| psutil                                | 7.2.1           | BSD-3-Clause                                                                     |
-| pytest-timeout                        | 2.4.0           | DFSG approved; MIT License                                                       |
-| pylint-plugin-utils                   | 0.8.2           | GNU General Public License v2 or later (GPLv2+)                                  |
-| python-gitlab                         | 6.0.0           | GNU Lesser General Public License v3 (LGPLv3)                                    |
-| pylint-pydantic                       | 0.4.1           | GPLv3                                                                            |
-| dnspython                             | 2.6.1           | ISC License (ISCL)                                                               |
-| click-repl                            | 0.3.0           | MIT                                                                              |
-| identify                              | 2.6.16          | MIT                                                                              |
-| pycodestyle                           | 2.14.0          | MIT                                                                              |
-| pytest-cov                            | 6.3.0           | MIT                                                                              |
-| PyYAML                                | 6.0.1           | MIT License                                                                      |
-| Wand                                  | 0.6.13          | MIT License                                                                      |
-| annotated-types                       | 0.7.0           | MIT License                                                                      |
-| anyio                                 | 4.9.0           | MIT License                                                                      |
-| api                                   | 0.1.0           | MIT License                                                                      |
-| argon2-cffi                           | 23.1.0          | MIT License                                                                      |
-| argon2-cffi-bindings                  | 21.2.0          | MIT License                                                                      |
-| attrs                                 | 23.2.0          | MIT License                                                                      |
-| autoflake                             | 2.3.1           | MIT License                                                                      |
-| charset-normalizer                    | 3.3.2           | MIT License                                                                      |
-| click-didyoumean                      | 0.3.1           | MIT License                                                                      |
-| common                                | 0.1.0           | MIT License                                                                      |
-| crawler                               | 0.1.0           | MIT License                                                                      |
-| debugpy                               | 1.8.19          | MIT License                                                                      |
-| deptry                                | 0.24.0          | MIT License                                                                      |
-| flake8                                | 7.3.0           | MIT License                                                                      |
-| flake8-bugbear                        | 25.11.29        | MIT License                                                                      |
-| h11                                   | 0.14.0          | MIT License                                                                      |
-| h2                                    | 4.3.0           | MIT License                                                                      |
-| hpack                                 | 4.1.0           | MIT License                                                                      |
-| hyperframe                            | 6.1.0           | MIT License                                                                      |
-| iniconfig                             | 2.0.0           | MIT License                                                                      |
-| integrationtest                       | 0.1.0           | MIT License                                                                      |
-| isort                                 | 7.0.0           | MIT License                                                                      |
-| langchain-core                        | 0.3.22          | MIT License                                                                      |
-| langchain-text-splitters              | 0.3.2           | MIT License                                                                      |
-| langsmith                             | 0.1.147         | MIT License                                                                      |
-| libretranslatepy                      | 2.1.4           | MIT License                                                                      |
-| linkify-it-py                         | 2.0.3           | MIT License                                                                      |
-| markdown-it-py                        | 3.0.0           | MIT License                                                                      |
-| mccabe                                | 0.7.0           | MIT License                                                                      |
-| mdit-py-plugins                       | 0.4.2           | MIT License                                                                      |
-| mdurl                                 | 0.1.2           | MIT License                                                                      |
-| mypy                                  | 1.10.1          | MIT License                                                                      |
-| mypy-extensions                       | 1.0.0           | MIT License                                                                      |
-| platformdirs                          | 4.2.2           | MIT License                                                                      |
-| pluggy                                | 1.5.0           | MIT License                                                                      |
-| pydantic                              | 2.10.3          | MIT License                                                                      |
-| pydantic-mongo                        | 2.3.0           | MIT License                                                                      |
-| pydantic-settings                     | 2.3.4           | MIT License                                                                      |
-| pydantic_core                         | 2.27.1          | MIT License                                                                      |
-| pyflakes                              | 3.4.0           | MIT License                                                                      |
-| pytest-mock                           | 3.15.1          | MIT License                                                                      |
-| pytest-random-order                   | 1.1.1           | MIT License                                                                      |
-| pytest-split                          | 0.11.0          | MIT License                                                                      |
-| python-magic                          | 0.4.27          | MIT License                                                                      |
-| pytokens                              | 0.3.0           | MIT License                                                                      |
-| pytz                                  | 2025.2          | MIT License                                                                      |
-| redis                                 | 5.2.1           | MIT License                                                                      |
-| rich                                  | 14.0.0          | MIT License                                                                      |
-| six                                   | 1.16.0          | MIT License                                                                      |
-| stream-zip                            | 0.0.84          | MIT License                                                                      |
-| textual                               | 3.3.0           | MIT License                                                                      |
-| tomlkit                               | 0.12.5          | MIT License                                                                      |
-| uc-micro-py                           | 1.0.3           | MIT License                                                                      |
-| untokenize                            | 0.1.1           | MIT License                                                                      |
-| urllib3                               | 2.2.2           | MIT License                                                                      |
-| worker                                | 0.1.0           | MIT License                                                                      |
-| docformatter                          | 1.7.7           | MIT License; Other/Proprietary License                                           |
-| pytest-rerunfailures                  | 15.1            | MPL-2.0                                                                          |
-| certifi                               | 2024.6.2        | Mozilla Public License 2.0 (MPL 2.0)                                             |
-| gotenberg-client                      | 0.13.1          | Mozilla Public License 2.0 (MPL 2.0)                                             |
-| pathspec                              | 1.0.4           | Mozilla Public License 2.0 (MPL 2.0)                                             |
-| annotated-doc                         | 0.0.4           | UNKNOWN                                                                          |
-| astroid                               | 4.0.4           | UNKNOWN                                                                          |
-| binwalk                               | 2.4.3           | UNKNOWN                                                                          |
-| black                                 | 26.1.0          | UNKNOWN                                                                          |
-| cffi                                  | 2.0.0           | UNKNOWN                                                                          |
-| cryptography                          | 46.0.0          | UNKNOWN                                                                          |
-| fastapi                               | 0.128.0         | UNKNOWN                                                                          |
-| humanize                              | 4.12.3          | UNKNOWN                                                                          |
-| importlib_metadata                    | 8.7.1           | UNKNOWN                                                                          |
-| ollama                                | 0.6.1           | UNKNOWN                                                                          |
-| opentelemetry-api                     | 1.39.1          | UNKNOWN                                                                          |
-| opentelemetry-exporter-prometheus     | 0.60b1          | UNKNOWN                                                                          |
-| opentelemetry-sdk                     | 1.39.1          | UNKNOWN                                                                          |
-| opentelemetry-semantic-conventions    | 0.60b1          | UNKNOWN                                                                          |
-| prometheus_client                     | 0.24.1          | UNKNOWN                                                                          |
-| pycrypto                              | 3.20.0          | UNKNOWN                                                                          |
-| pylint                                | 4.0.4           | UNKNOWN                                                                          |
-| pytest                                | 9.0.2           | UNKNOWN                                                                          |
-| pytest-asyncio                        | 1.3.0           | UNKNOWN                                                                          |
-| types-cffi                            | 1.17.0.20250915 | UNKNOWN                                                                          |
-| types-setuptools                      | 82.0.0.20260210 | UNKNOWN                                                                          |
-| typing_extensions                     | 4.15.0          | UNKNOWN                                                                          |
-| uvicorn                               | 0.40.0          | UNKNOWN                                                                          |
-| zipp                                  | 3.23.0          | UNKNOWN                                                                          |
-| zstandard                             | 0.25.0          | UNKNOWN                                                                          |
+| Name                                  | Version          | License                                                                          |
+|---------------------------------------|------------------|----------------------------------------------------------------------------------|
+| celery-types                          | 0.24.0           | Apache Software License                                                          |
+| coverage                              | 7.5.4            | Apache Software License                                                          |
+| docker                                | 7.1.0            | Apache Software License                                                          |
+| elastic-transport                     | 8.17.1           | Apache Software License                                                          |
+| elasticsearch                         | 9.0.2            | Apache Software License                                                          |
+| memray                                | 1.17.2           | Apache Software License                                                          |
+| minio                                 | 7.2.15           | Apache Software License                                                          |
+| opentelemetry-instrumentation         | 0.60b1           | Apache Software License                                                          |
+| opentelemetry-instrumentation-asgi    | 0.60b1           | Apache Software License                                                          |
+| opentelemetry-instrumentation-fastapi | 0.60b1           | Apache Software License                                                          |
+| opentelemetry-util-http               | 0.60b1           | Apache Software License                                                          |
+| pymongo                               | 4.7.3            | Apache Software License                                                          |
+| pytest-memray                         | 1.7.0            | Apache Software License                                                          |
+| pytest_docker_tools                   | 3.1.9            | Apache Software License                                                          |
+| python-multipart                      | 0.0.22           | Apache Software License                                                          |
+| requests                              | 2.32.3           | Apache Software License                                                          |
+| requests-toolbelt                     | 1.0.0            | Apache Software License                                                          |
+| requirements-parser                   | 0.13.0           | Apache Software License                                                          |
+| tenacity                              | 9.1.2            | Apache Software License                                                          |
+| tornado                               | 6.5.1            | Apache Software License                                                          |
+| types-docker                          | 7.1.0.20240626   | Apache Software License                                                          |
+| types-pyOpenSSL                       | 24.1.0.20240722  | Apache Software License                                                          |
+| types-redis                           | 4.6.0.20241004   | Apache Software License                                                          |
+| types-requests                        | 2.32.0.20240622  | Apache Software License                                                          |
+| tzdata                                | 2025.2           | Apache Software License                                                          |
+| watchdog                              | 6.0.0            | Apache Software License                                                          |
+| packaging                             | 24.2             | Apache Software License; BSD License                                             |
+| python-dateutil                       | 2.9.0.post0      | Apache Software License; BSD License                                             |
+| pycryptodome                          | 3.20.0           | Apache Software License; BSD License; Public Domain                              |
+| pycryptodome                          | 3.20.0           | Apache Software License; BSD License; Public Domain                              |
+| luqum                                 | 0.14.0           | Apache Software License; GNU Lesser General Public License v3 or later (LGPLv3+) |
+| orjson                                | 3.10.5           | Apache Software License; MIT License                                             |
+| sniffio                               | 1.3.1            | Apache Software License; MIT License                                             |
+| freezegun                             | 1.5.5            | Apache-2.0                                                                       |
+| ply                                   | 3.11             | BSD                                                                              |
+| zstd                                  | 1.5.7.3          | BSD                                                                              |
+| IMAPClient                            | 3.0.1            | BSD License                                                                      |
+| Jinja2                                | 3.1.6            | BSD License                                                                      |
+| MarkupSafe                            | 3.0.2            | BSD License                                                                      |
+| Pygments                              | 2.19.1           | BSD License                                                                      |
+| amqp                                  | 5.2.0            | BSD License                                                                      |
+| asgiref                               | 3.11.1           | BSD License                                                                      |
+| billiard                              | 4.2.2            | BSD License                                                                      |
+| celery                                | 5.5.3            | BSD License                                                                      |
+| click                                 | 8.1.7            | BSD License                                                                      |
+| click-plugins                         | 1.1.1            | BSD License                                                                      |
+| dill                                  | 0.3.8            | BSD License                                                                      |
+| flower                                | 2.0.1            | BSD License                                                                      |
+| gitdb                                 | 4.0.12           | BSD License                                                                      |
+| httpcore                              | 1.0.5            | BSD License                                                                      |
+| httpx                                 | 0.28.1           | BSD License                                                                      |
+| idna                                  | 3.7              | BSD License                                                                      |
+| joblib                                | 1.4.2            | BSD License                                                                      |
+| jsonpatch                             | 1.33             | BSD License                                                                      |
+| jsonpointer                           | 3.0.0            | BSD License                                                                      |
+| kombu                                 | 5.5.4            | BSD License                                                                      |
+| numpy                                 | 1.26.4           | BSD License                                                                      |
+| pika                                  | 1.3.2            | BSD License                                                                      |
+| prompt_toolkit                        | 3.0.47           | BSD License                                                                      |
+| pycparser                             | 2.22             | BSD License                                                                      |
+| pytest-celery                         | 1.2.1            | BSD License                                                                      |
+| python-dotenv                         | 1.0.1            | BSD License                                                                      |
+| scikit-learn                          | 1.7.0            | BSD License                                                                      |
+| scipy                                 | 1.15.3           | BSD License                                                                      |
+| smmap                                 | 5.0.2            | BSD License                                                                      |
+| starlette                             | 0.46.1           | BSD License                                                                      |
+| threadpoolctl                         | 3.5.0            | BSD License                                                                      |
+| vine                                  | 5.1.0            | BSD License                                                                      |
+| websockets                            | 13.1             | BSD License                                                                      |
+| wrapt                                 | 1.17.3           | BSD License                                                                      |
+| GitPython                             | 3.1.46           | BSD-3-Clause                                                                     |
+| psutil                                | 7.2.1            | BSD-3-Clause                                                                     |
+| pytest-timeout                        | 2.4.0            | DFSG approved; MIT License                                                       |
+| pylint-plugin-utils                   | 0.8.2            | GNU General Public License v2 or later (GPLv2+)                                  |
+| python-gitlab                         | 6.0.0            | GNU Lesser General Public License v3 (LGPLv3)                                    |
+| pylint-pydantic                       | 0.4.1            | GPLv3                                                                            |
+| dnspython                             | 2.6.1            | ISC License (ISCL)                                                               |
+| click-repl                            | 0.3.0            | MIT                                                                              |
+| identify                              | 2.6.16           | MIT                                                                              |
+| pycodestyle                           | 2.14.0           | MIT                                                                              |
+| pytest-cov                            | 6.3.0            | MIT                                                                              |
+| PyYAML                                | 6.0.1            | MIT License                                                                      |
+| Wand                                  | 0.6.13           | MIT License                                                                      |
+| annotated-types                       | 0.7.0            | MIT License                                                                      |
+| anyio                                 | 4.9.0            | MIT License                                                                      |
+| api                                   | 0.1.0            | MIT License                                                                      |
+| argon2-cffi                           | 23.1.0           | MIT License                                                                      |
+| argon2-cffi-bindings                  | 21.2.0           | MIT License                                                                      |
+| attrs                                 | 23.2.0           | MIT License                                                                      |
+| autoflake                             | 2.3.1            | MIT License                                                                      |
+| charset-normalizer                    | 3.3.2            | MIT License                                                                      |
+| click-didyoumean                      | 0.3.1            | MIT License                                                                      |
+| common                                | 0.1.0            | MIT License                                                                      |
+| crawler                               | 0.1.0            | MIT License                                                                      |
+| debugpy                               | 1.8.19           | MIT License                                                                      |
+| deptry                                | 0.24.0           | MIT License                                                                      |
+| flake8                                | 7.3.0            | MIT License                                                                      |
+| flake8-bugbear                        | 25.11.29         | MIT License                                                                      |
+| h11                                   | 0.14.0           | MIT License                                                                      |
+| h2                                    | 4.3.0            | MIT License                                                                      |
+| hpack                                 | 4.1.0            | MIT License                                                                      |
+| hyperframe                            | 6.1.0            | MIT License                                                                      |
+| iniconfig                             | 2.0.0            | MIT License                                                                      |
+| integrationtest                       | 0.1.0            | MIT License                                                                      |
+| isort                                 | 7.0.0            | MIT License                                                                      |
+| langchain-core                        | 0.3.22           | MIT License                                                                      |
+| langchain-text-splitters              | 0.3.2            | MIT License                                                                      |
+| langsmith                             | 0.1.147          | MIT License                                                                      |
+| libretranslatepy                      | 2.1.4            | MIT License                                                                      |
+| linkify-it-py                         | 2.0.3            | MIT License                                                                      |
+| markdown-it-py                        | 3.0.0            | MIT License                                                                      |
+| mccabe                                | 0.7.0            | MIT License                                                                      |
+| mdit-py-plugins                       | 0.4.2            | MIT License                                                                      |
+| mdurl                                 | 0.1.2            | MIT License                                                                      |
+| mypy                                  | 1.10.1           | MIT License                                                                      |
+| mypy-extensions                       | 1.0.0            | MIT License                                                                      |
+| platformdirs                          | 4.2.2            | MIT License                                                                      |
+| pluggy                                | 1.5.0            | MIT License                                                                      |
+| pydantic                              | 2.10.3           | MIT License                                                                      |
+| pydantic-mongo                        | 2.3.0            | MIT License                                                                      |
+| pydantic-settings                     | 2.3.4            | MIT License                                                                      |
+| pydantic_core                         | 2.27.1           | MIT License                                                                      |
+| pyflakes                              | 3.4.0            | MIT License                                                                      |
+| pytest-mock                           | 3.15.1           | MIT License                                                                      |
+| pytest-random-order                   | 1.1.1            | MIT License                                                                      |
+| pytest-split                          | 0.11.0           | MIT License                                                                      |
+| python-magic                          | 0.4.27           | MIT License                                                                      |
+| pytokens                              | 0.3.0            | MIT License                                                                      |
+| pytz                                  | 2025.2           | MIT License                                                                      |
+| redis                                 | 5.2.1            | MIT License                                                                      |
+| rich                                  | 14.0.0           | MIT License                                                                      |
+| six                                   | 1.16.0           | MIT License                                                                      |
+| stream-zip                            | 0.0.84           | MIT License                                                                      |
+| textual                               | 3.3.0            | MIT License                                                                      |
+| tomlkit                               | 0.12.5           | MIT License                                                                      |
+| uc-micro-py                           | 1.0.3            | MIT License                                                                      |
+| untokenize                            | 0.1.1            | MIT License                                                                      |
+| urllib3                               | 2.2.2            | MIT License                                                                      |
+| worker                                | 0.1.0            | MIT License                                                                      |
+| docformatter                          | 1.7.7            | MIT License; Other/Proprietary License                                           |
+| pytest-rerunfailures                  | 15.1             | MPL-2.0                                                                          |
+| certifi                               | 2024.6.2         | Mozilla Public License 2.0 (MPL 2.0)                                             |
+| gotenberg-client                      | 0.13.1           | Mozilla Public License 2.0 (MPL 2.0)                                             |
+| pathspec                              | 1.0.4            | Mozilla Public License 2.0 (MPL 2.0)                                             |
+| annotated-doc                         | 0.0.4            | UNKNOWN                                                                          |
+| astroid                               | 4.0.4            | UNKNOWN                                                                          |
+| binwalk                               | 2.4.3            | UNKNOWN                                                                          |
+| black                                 | 26.1.0           | UNKNOWN                                                                          |
+| cffi                                  | 2.0.0            | UNKNOWN                                                                          |
+| cryptography                          | 46.0.0           | UNKNOWN                                                                          |
+| fastapi                               | 0.128.0          | UNKNOWN                                                                          |
+| humanize                              | 4.12.3           | UNKNOWN                                                                          |
+| importlib_metadata                    | 8.7.1            | UNKNOWN                                                                          |
+| ollama                                | 0.6.1            | UNKNOWN                                                                          |
+| opentelemetry-api                     | 1.39.1           | UNKNOWN                                                                          |
+| opentelemetry-exporter-prometheus     | 0.60b1           | UNKNOWN                                                                          |
+| opentelemetry-sdk                     | 1.39.1           | UNKNOWN                                                                          |
+| opentelemetry-semantic-conventions    | 0.60b1           | UNKNOWN                                                                          |
+| prometheus_client                     | 0.24.1           | UNKNOWN                                                                          |
+| pycrypto                              | 3.20.0           | UNKNOWN                                                                          |
+| pylint                                | 4.0.4            | UNKNOWN                                                                          |
+| pytest                                | 9.0.2            | UNKNOWN                                                                          |
+| pytest-asyncio                        | 1.3.0            | UNKNOWN                                                                          |
+| types-cffi                            | 1.17.0.20250915  | UNKNOWN                                                                          |
+| types-setuptools                      | 82.0.0.20260210  | UNKNOWN                                                                          |
+| types-zstd                            | 1.5.7.3.20260110 | UNKNOWN                                                                          |
+| typing_extensions                     | 4.15.0           | UNKNOWN                                                                          |
+| uvicorn                               | 0.40.0           | UNKNOWN                                                                          |
+| zipp                                  | 3.23.0           | UNKNOWN                                                                          |
+| zstandard                             | 0.25.0           | UNKNOWN                                                                          |
 
 ## JavaScript
 
@@ -1432,7 +1434,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | krb5-multidev | 1.20.1-2+deb12u4 | GPL-2.0-only | dpkg-db-cataloger |
 | langchain-core | 1.2.7 | MIT | python-installed-package-cataloger |
 | langchain-text-splitters | 0.3.11 | MIT | python-installed-package-cataloger |
-| langsmith | 0.3.45 | MIT | python-installed-package-cataloger |
+| langsmith | 0.7.4 | MIT | python-installed-package-cataloger |
 | libabsl20220623 | 20220623.1-1+deb12u2 | Apache-2.0 | dpkg-db-cataloger |
 | libacl1 | 2.3.1-3 | GPL-2.0-only, GPL-2.0-or-later, LGPL-2.0-or-later, LGPL-2.1-only | dpkg-db-cataloger |
 | libaom3 | 3.6.0-1+deb12u2 | BSD-2-Clause, BSD-2-Clause, BSD-3-Clause, ISC | dpkg-db-cataloger |
@@ -1873,6 +1875,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | types-redis | 4.6.0.20241004 | Apache-2.0 | python-installed-package-cataloger |
 | types-requests | 2.32.4.20250611 | Apache-2.0 | python-installed-package-cataloger |
 | types-setuptools | 82.0.0.20260210 | Apache-2.0 | python-installed-package-cataloger |
+| types-zstd | 1.5.7.3.20260110 | Apache-2.0 | python-installed-package-cataloger |
 | typing-extensions | 4.15.0 | PSF-2.0 | python-installed-package-cataloger |
 | typing-inspection | 0.4.1 | MIT | python-installed-package-cataloger |
 | tzdata | 2025.2 | Apache-2.0 | python-installed-package-cataloger |
@@ -1899,10 +1902,12 @@ The complete source code for Traefik is publicly available at [https://github.co
 | xfonts-utils | 1:7.7+6 |  | dpkg-db-cataloger |
 | xorg-sgml-doctools | 1:1.11-1.1 | HPND-sell-variant, MIT | dpkg-db-cataloger |
 | xtrans-dev | 1.4.0-1 | HPND, HPND-sell-variant, MIT | dpkg-db-cataloger |
+| xxhash | 3.6.0 |  | python-installed-package-cataloger |
 | xz-utils | 5.4.1-1 | GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, LGPL-2.0-only, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
 | zlib1g | 1:1.2.13.dfsg-1 | Zlib | dpkg-db-cataloger |
 | zlib1g-dev | 1:1.2.13.dfsg-1 | Zlib | dpkg-db-cataloger |
-| zstandard | 0.23.0 |  | python-installed-package-cataloger |
+| zstandard | 0.25.0 | BSD-3-Clause | python-installed-package-cataloger |
+| zstd | 1.5.7.3 |  | python-installed-package-cataloger |
 
 ### registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/crawler
 
@@ -4117,6 +4122,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | xsdlib | 2022.7 |  | java-archive-cataloger |
 | zlib1g | 1:1.3.dfsg-3.1ubuntu2 | Zlib | dpkg-db-cataloger |
 | zstd | 1.5.5+dfsg2-2build1 | BSD-3-Clause, GPL-2.0-only, Zlib | dpkg-db-cataloger |
+| zstd-jni | 1.5.7-7 |  | java-archive-cataloger |
 
 ### registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/rspamd
 
