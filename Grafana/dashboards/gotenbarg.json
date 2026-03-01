@@ -18,7 +18,6 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": 6,
   "links": [],
   "panels": [
     {
@@ -92,7 +91,9 @@
           "calcs": ["lastNotNull"],
           "displayMode": "table",
           "placement": "right",
-          "showLegend": true
+          "showLegend": true,
+          "sortBy": "Last *",
+          "sortDesc": true
         },
         "tooltip": {
           "mode": "single",
@@ -111,7 +112,7 @@
           "fullMetaSearch": false,
           "includeNullMetadata": true,
           "instant": false,
-          "legendFormat": "{{instance}}",
+          "legendFormat": "{{pod}}",
           "range": true,
           "refId": "A",
           "useBackend": false
@@ -191,7 +192,9 @@
           "calcs": ["lastNotNull"],
           "displayMode": "table",
           "placement": "right",
-          "showLegend": true
+          "showLegend": true,
+          "sortBy": "Last *",
+          "sortDesc": true
         },
         "tooltip": {
           "mode": "single",
@@ -210,7 +213,7 @@
           "fullMetaSearch": false,
           "includeNullMetadata": true,
           "instant": false,
-          "legendFormat": "{{instance}}",
+          "legendFormat": "{{pod}}",
           "range": true,
           "refId": "A",
           "useBackend": false
@@ -290,7 +293,9 @@
           "calcs": ["lastNotNull"],
           "displayMode": "table",
           "placement": "right",
-          "showLegend": true
+          "showLegend": true,
+          "sortBy": "Last *",
+          "sortDesc": true
         },
         "tooltip": {
           "mode": "single",
@@ -309,7 +314,7 @@
           "fullMetaSearch": false,
           "includeNullMetadata": true,
           "instant": false,
-          "legendFormat": "{{instance}}",
+          "legendFormat": "{{pod}}",
           "range": true,
           "refId": "A",
           "useBackend": false
@@ -389,7 +394,9 @@
           "calcs": ["lastNotNull"],
           "displayMode": "table",
           "placement": "right",
-          "showLegend": true
+          "showLegend": true,
+          "sortBy": "Last *",
+          "sortDesc": true
         },
         "tooltip": {
           "mode": "single",
@@ -408,7 +415,7 @@
           "fullMetaSearch": false,
           "includeNullMetadata": true,
           "instant": false,
-          "legendFormat": "{{instance}}",
+          "legendFormat": "{{pod}}",
           "range": true,
           "refId": "A",
           "useBackend": false

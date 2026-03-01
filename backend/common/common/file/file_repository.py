@@ -231,6 +231,7 @@ class File(RepositoryTaskObject):
     sha256: str
     uploaded_datetime: datetime = Field(default_factory=datetime.now)
     size: int
+    reindex_count: int = 0
     thumbnail_file_id: ObjectIdStr | None = None
     thumbnail_total_frames: int | None = None
     rendered_file: RenderedFile = RenderedFile()
@@ -303,6 +304,7 @@ class _EsFile(_EsTaskDocument):
     sha256 = Keyword()
     uploaded_datetime = Date()
     size = Long()
+    reindex_count = Long()
     thumbnail_file_id = Keyword()
     thumbnail_total_frames = Long()
     rendered_file = Object(_EsRenderedFile)
