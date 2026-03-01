@@ -55,6 +55,10 @@ class Settings(BaseSettings):
     redis_cache_host: AnyUrl = AnyUrl(f"redis://redis-cache.{DOMAIN}:6380/0?protocol=3")
     max_file_size: int = 500_000_000  # 500 MB, because of rabbit
     translate_host: AnyHttpUrl = AnyHttpUrl(f"http://translate.{DOMAIN}")
+    translate_timeout: int = 3 * 60
+    translate_startup_timeout: int = (
+        10  # used only for fetching languages during app startup
+    )
 
     ollama_host: AnyHttpUrl = AnyHttpUrl(f"http://ollama.{DOMAIN}")
     ollama_tool_host: AnyHttpUrl = AnyHttpUrl(f"http://ollama-tool.{DOMAIN}")

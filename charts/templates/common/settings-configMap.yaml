@@ -83,6 +83,11 @@ data:
     es_number_of_replicas: {{ .Values.elasticsearch.shardsReplicasCount | quote  }}
     {{- end }}
 
+    # translate
+    {{- if ne .Values.translate.timeout nil }}
+    translate_timeout: {{ .Values.translate.timeout | quote }}
+    {{- end }}
+
     # hosts
     mongo_db_host: mongodb://{{ include "app.fullname" . }}-mongodb:{{ .Values.mongodb.service.port }}
     es_host: http://{{ include "app.fullname" . }}-elasticsearch:{{ .Values.elasticsearch.service.port }}

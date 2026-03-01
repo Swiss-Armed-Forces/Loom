@@ -121,7 +121,9 @@ def translate_detect_language(text: str) -> LibreTranslateLanguageDetectResult:
 
     libre_translate = get_libretranslate_api()
     try:
-        detected_languages = libre_translate.detect(text)
+        detected_languages = libre_translate.detect(
+            text, timeout=settings.translate_timeout
+        )
     except HTTPError as ex:
         if 500 <= ex.code < 600:
             raise LibretranslateInternalException from ex
@@ -210,6 +212,7 @@ def translate(text: str, detected_language: LibretranslateDetectedLanguage) -> s
             text,
             detected_language.language,
             settings.translate_target,
+            timeout=settings.translate_timeout,
         )
     except HTTPError as ex:
         if 500 <= ex.code < 600:
