@@ -1,5 +1,5 @@
 import { CardHeader, Box } from "@mui/material";
-import { ContentCut } from "@mui/icons-material";
+import { ContentCut, Whatshot } from "@mui/icons-material";
 import { useAppDispatch, useAppSelector } from "../../../app/hooks";
 import { GetFilePreviewResponse } from "../../../app/api";
 import styles from "./FileCardHeader.module.css";
@@ -60,6 +60,9 @@ export function FileCardHeader({
                             fontSize="small"
                             titleAccess="Content is truncated"
                         />
+                    )}
+                    {filePreview.isSpam && (
+                        <Whatshot fontSize="small" titleAccess="SPAM" />
                     )}
                 </Box>
             }
