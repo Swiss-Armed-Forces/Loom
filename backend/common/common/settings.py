@@ -74,7 +74,7 @@ class Settings(BaseSettings):
     llm_think: bool = False
     llm_temperature: float | None = None
 
-    task_time_limit__seconds: int = 3600
+    task_time_limit__seconds: int = 60 * 60 * 24
 
     llm_embedding_dimensions: int = (
         # Note: 4096 is largest vector supported by ElasticSearch

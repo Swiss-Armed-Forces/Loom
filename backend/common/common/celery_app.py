@@ -199,7 +199,7 @@ def init_celery_app() -> "Celery[BaseTask]":
     # We do set only the soft time limit here, for a hard time limit we use
     # RabbitMQ consumer_timeout to rely on the task being re-delived to a different
     # worker.
-    app.conf.task_soft_time_limit = settings.task_time_limit__seconds
+    app.conf.task_soft_time_limit = int(settings.task_time_limit__seconds * 0.98)
     app.conf.task_time_limit = None
 
     app.conf.task_acks_late = True
