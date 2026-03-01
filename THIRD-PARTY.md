@@ -5631,7 +5631,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | openssl | 1.1.1f-1ubuntu2.24 | OpenSSL | dpkg-db-cataloger |
 | packaging | 23.1 | Apache-2.0, BSD-2-Clause | python-installed-package-cataloger |
 | packaging | 24.1 | Apache-2.0, BSD-2-Clause | python-installed-package-cataloger |
-| packaging | 25.0 |  | python-installed-package-cataloger |
+| packaging | 26.0 | Apache-2.0 OR BSD-2-Clause | python-installed-package-cataloger |
 | passwd | 1:4.8.1-1ubuntu5.20.04.5 | GPL-2.0-only | dpkg-db-cataloger |
 | patch | 2.7.6-6 |  | dpkg-db-cataloger |
 | perl | 5.30.0-9ubuntu0.5 | Artistic-2.0, Artistic-dist, BSD-3-Clause, GPL-1.0-only, GPL-1.0-or-later, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.1-only, Zlib | dpkg-db-cataloger |
@@ -5670,7 +5670,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | sensible-utils | 0.0.12+nmu1 | GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
 | sentencepiece | 0.2.0 |  | python-installed-package-cataloger |
 | setuptools | 45.2.0 |  | python-installed-package-cataloger |
-| setuptools | 75.3.2 | MIT | python-installed-package-cataloger |
+| setuptools | 75.3.4 | MIT | python-installed-package-cataloger |
 | six | 1.17.0 | MIT | python-installed-package-cataloger |
 | soupsieve | 2.7 | MIT | python-installed-package-cataloger |
 | stanza | 1.1.1 |  | python-installed-package-cataloger |

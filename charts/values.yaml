@@ -396,6 +396,7 @@ translate:
     limits:
       cpu: "4"
       memory: "5Gi"
+  timeout: 300
   # Custom labels specific to translate resources
   customLabels: {}
   # Example:

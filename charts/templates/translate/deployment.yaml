@@ -23,6 +23,21 @@ spec:
         - name: translate
           image: {{ .Values.image.registry }}/{{ .Values.translate.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) .Values.translate.image.tag }}
           imagePullPolicy: {{ .Values.image.pullPolicy }}
+          args:
+            - "--bind"
+            - "0.0.0.0:{{ .Values.translate.service.port }}"
+            - "--timeout"
+            - {{ .Values.translate.timeout | quote }}
+            - "--worker-class"
+            - "gevent"
+            - "--workers"
+            - "2"
+            - "--max-requests"
+            - "1024"
+            - "--max-requests-jitter"
+            - "1024"
+            - "--access-logfile"
+            - "-"
           ports:
             - name: translate
               containerPort: {{ .Values.translate.service.port }}

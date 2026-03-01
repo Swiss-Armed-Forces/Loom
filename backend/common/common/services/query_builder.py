@@ -158,10 +158,10 @@ class TranslateTransformer(TreeTransformer):
 
     MIN_TRANSLATION_LENGTH = 4
 
-    def __init__(self, languages: list[str], translator: LibreTranslateAPI):
+    def __init__(self, languages: list[str], translate: LibreTranslateAPI):
         super().__init__(track_parents=True)
         self._languages = languages
-        self._translator = translator
+        self._translate = translate
 
     def _translate_node(self, node: Phrase) -> Generator[Group | Phrase, None, None]:
         if len(self._languages) <= 0:
@@ -174,8 +174,11 @@ class TranslateTransformer(TreeTransformer):
             return
         translation_nodes = [node]
         for lang in self._languages:
-            translation = self._translator.translate(
-                node_value, settings.translate_target, lang
+            translation = self._translate.translate(
+                node_value,
+                settings.translate_target,
+                lang,
+                timeout=settings.translate_timeout,
             )
             translation_node = Phrase(f'"{translation}"')
             translation_nodes.append(translation_node)
@@ -419,8 +422,8 @@ class QueryParameters(BaseModel):
 class QueryBuilder:
     """Builds ES queries."""
 
-    def __init__(self, translator: LibreTranslateAPI):
-        self.translator = translator
+    def __init__(self, translate: LibreTranslateAPI):
+        self.translate = translate
 
     def parse_and_transform(self, query: QueryParameters) -> Item:
         """Takes query parameters, parses it into a query-tree and then transforms it.
@@ -485,9 +488,7 @@ class QueryBuilder:
                     r"ripsecrets_secrets.secret",
                 ],
             ).visit(tree, {})
-            tree = TranslateTransformer(query.languages, self.translator).visit(
-                tree, {}
-            )
+            tree = TranslateTransformer(query.languages, self.translate).visit(tree, {})
             tree = HiddenTransformer().visit(tree, {})
 
         except ParseError as ex:

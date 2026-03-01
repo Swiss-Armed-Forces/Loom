@@ -120,7 +120,9 @@ try:
         LibretranslateSupportedLanguages.model_validate(lang)
         # Since this is run at import-time, we can not use the dependency module here
         # to fetch a LibreTranslateAPI instance.
-        for lang in LibreTranslateAPI(str(settings.translate_host)).languages()
+        for lang in LibreTranslateAPI(str(settings.translate_host)).languages(
+            timeout=settings.translate_startup_timeout
+        )
         if settings.translate_target in lang["targets"]
     ]
 except (URLError, JSONDecodeError):
