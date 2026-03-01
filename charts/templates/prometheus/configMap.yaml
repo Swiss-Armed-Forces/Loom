@@ -36,6 +36,23 @@ data:
           - source_labels: [__meta_kubernetes_pod_name]
             action: replace
             target_label: pod
+      - job_name: 'translate'
+        scrape_interval: 15s
+        metrics_path: /metrics
+        kubernetes_sd_configs:
+          - role: endpoints
+            namespaces:
+              names:
+                - {{ .Release.Namespace }}
+        relabel_configs:
+          # Only keep endpoints from the translate service
+          - source_labels: [__meta_kubernetes_service_name]
+            action: keep
+            regex: {{ include "app.fullname" . }}-translate
+          # Add pod name as a label for per-instance metrics
+          - source_labels: [__meta_kubernetes_pod_name]
+            action: replace
+            target_label: pod
 {{- if .Values.prometheus.collectClusterMetrics }}
       - job_name: 'cadvisor'
         scrape_interval: 5s

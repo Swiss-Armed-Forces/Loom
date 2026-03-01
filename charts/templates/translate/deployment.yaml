@@ -38,6 +38,7 @@ spec:
             - "1024"
             - "--access-logfile"
             - "-"
+            - "wsgi:app(frontend_title='{{ include "app.name" . }}-translate', metrics=True)"
           ports:
             - name: translate
               containerPort: {{ .Values.translate.service.port }}

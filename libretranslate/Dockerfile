@@ -1,4 +1,4 @@
-ARG LIBRETRANSLATE_IMAGE_VERSION="v1.7.2"
+ARG LIBRETRANSLATE_IMAGE_VERSION="v1.9.4"
 
 ARG DOCKER_REGISTRY
 FROM ${DOCKER_REGISTRY}/libretranslate/libretranslate:${LIBRETRANSLATE_IMAGE_VERSION}-cuda
@@ -15,6 +15,11 @@ RUN set -exu \
 RUN set -exu \
     && scripts/install_models.py
 
+# Set up /metrics data dir
+ENV PROMETHEUS_MULTIPROC_DIR="db/prometheus"
+RUN set -exu \
+    && mkdir -p "${PROMETHEUS_MULTIPROC_DIR}"
+
 # Install GUNICORN
 ARG GUNICORN_VERSION=23.0.0
 RUN set -exu \
@@ -22,4 +27,5 @@ RUN set -exu \
 
 EXPOSE 5000
 
-ENTRYPOINT ["gunicorn", "wsgi:app"]
+ENTRYPOINT ["gunicorn", "-c", "scripts/gunicorn_conf.py"]
+CMD ["wsgi:app()"]
