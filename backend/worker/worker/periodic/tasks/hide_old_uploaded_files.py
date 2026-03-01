@@ -23,12 +23,14 @@ def signature() -> Signature:
 
 @app.task(base=PeriodicTask)
 def hide_old_uploaded_files_task(
-    time_before_hidden: timedelta = settings.uploaded_files_time_before_hidden,
+    days_before_hidden: int | None = settings.uploaded_files_days_before_hidden,
 ):
+    if days_before_hidden is None:
+        return
     logger.info("Hiding old uploaded files")
 
     current_datetime = datetime.now()
-    cutoff_date = current_datetime - time_before_hidden
+    cutoff_date = current_datetime - timedelta(days=days_before_hidden)
     file_repository = get_file_repository()
     cutoff_date_str = cutoff_date.strftime("%Y-%m-%d")
 

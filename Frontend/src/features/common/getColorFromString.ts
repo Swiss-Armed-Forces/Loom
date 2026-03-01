@@ -1,34 +1,49 @@
 const FALLBACK_COLOR = "#FFD600";
 const COLOR_PALETTE = [
-    "#00B0FF",
-    "#00BFA5",
-    "#00C853",
-    "#2196F3",
-    "#263238",
-    "#2979FF",
-    "#3D5AFE",
-    "#3E2723",
+    // Spectrum colors
+    "#D32F2F",
+    "#E53935",
+    "#FF5722",
+    "#FF6D00", // Red-Orange
+    "#F57C00",
+    "#FF9800",
+    "#FFC107",
+    "#FFD600", // Orange-Yellow
+    "#FFEB3B",
+    "#C6FF00",
+    "#64DD17",
+    "#00C853", // Yellow-Green
     "#43A047",
+    "#00BFA5",
+    "#1DE9B6",
+    "#00BCD4", // Green-Cyan
+    "#00B0FF",
+    "#0091EA",
+    "#2196F3",
+    "#2979FF", // Cyan-Blue
+    "#3D5AFE",
     "#5C6BC0",
     "#6200EA",
-    "#64DD17",
-    "#78909C",
-    "#795548",
-    "#7E57C2",
-    "#A1887F",
+    "#7E57C2", // Blue-Violet
+    "#9C27B0",
     "#AB47BC",
-    "#AEEA00",
-    "#DD2C00",
-    "#E53935",
-    "#F50057",
+    "#E040FB",
+    "#F50057", // Violet-Magenta
     "#FF4081",
-    "#FF5722",
-    "#FF6D00",
-    "#FF9800",
-    "#FFAB00",
-    "#FFD600",
-    "#FFEB3B",
-    "#FFFFFF",
+    "#EC407A", // Magenta-Pink
+
+    // Browns
+    "#3E2723",
+    "#5D4037",
+    "#795548",
+    "#A1887F",
+
+    // Grays & Black
+    "#000000",
+    "#263238",
+    "#546E7A",
+    "#90A4AE",
+    "#CFD8DC",
 ];
 
 const getHashCode = (str: string): number => {

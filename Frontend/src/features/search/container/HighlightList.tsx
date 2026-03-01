@@ -166,7 +166,7 @@ export const HighlightEntry: FC<HighlightEntryProps> = ({
                         color="text.secondary"
                         className={styles.resultHighlightText}
                     >
-                        {!expanded && valueElement[0]}
+                        {!expanded && !fullDetails && valueElement[0]}
                     </FieldTypography>
                 </AccordionSummary>
             </div>

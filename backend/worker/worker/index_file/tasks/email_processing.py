@@ -103,8 +103,8 @@ def detect_spam_task(
 
     rspamd_service = get_rspamd_service()
 
-    with get_lazybytes_service().load_memoryview(file_content) as memview:
-        is_spam = rspamd_service.detect_spam(memview)
+    with get_lazybytes_service().load_generator(file_content) as generator:
+        is_spam = rspamd_service.detect_spam_from_generator(generator)
         return is_spam
 
 

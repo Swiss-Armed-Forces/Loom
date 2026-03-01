@@ -348,17 +348,26 @@ export function FileDetailDialog() {
 
                                     case FileDetailTab.Highlights:
                                         return (
-                                            <HighlightList
-                                                highlights={
-                                                    (file.highlight as {
-                                                        // Cast needed here as the
-                                                        // generated type does not properly
-                                                        // reflect the api type
-                                                        [key: string]: string[];
-                                                    }) ?? []
-                                                }
-                                                fullDetails={true}
-                                            />
+                                            <div
+                                                style={{
+                                                    overflow: "auto",
+                                                    flex: 1,
+                                                }}
+                                            >
+                                                <HighlightList
+                                                    highlights={
+                                                        (file.highlight as {
+                                                            // Cast needed here as the
+                                                            // generated type does not properly
+                                                            // reflect the api type
+                                                            [
+                                                                key: string
+                                                            ]: string[];
+                                                        }) ?? []
+                                                    }
+                                                    fullDetails={true}
+                                                />
+                                            </div>
                                         );
 
                                     case FileDetailTab.RAW:

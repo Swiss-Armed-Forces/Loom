@@ -1,4 +1,3 @@
-from datetime import timedelta
 from typing import Any, Literal, Tuple, Type
 
 from common.settings import DOMAIN
@@ -183,7 +182,7 @@ class Settings(CommonSettings):
     llm_summarize_text_chunk_size: int = 3000
     llm_summarize_text_chunk_overlap: int = 100
     summary_max_chunks: int = 5
-    uploaded_files_time_before_hidden: timedelta = timedelta(days=90)
+    uploaded_files_days_before_hidden: int | None = None
 
     llm_embedding_temperature: float | None = 0
 

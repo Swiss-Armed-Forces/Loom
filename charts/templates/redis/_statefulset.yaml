@@ -24,6 +24,20 @@ spec:
         app: {{ include "app.name" . }}-{{ $component }}
         {{- include "app.labels.custom" (dict "context" . "component" $component) | nindent 8 }}
     spec:
+      initContainers:
+        - name: delete-redis-tmp-rdb-files
+          image: {{ .Values.image.registry }}/{{ $values.initContainer.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) $values.initContainer.image.tag }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command:
+            - 'sh'
+            - '-c'
+            - |
+              set -eux
+
+              rm -rf temp-*.rdb
+          {{- if $values.initContainer.resources }}
+          resources: {{- toYaml $values.initContainer.resources | nindent 12 }}
+          {{- end }}
       containers:
         - name: {{ $component }}
           image: {{ .Values.image.registry }}/{{ $values.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) $values.image.tag }}

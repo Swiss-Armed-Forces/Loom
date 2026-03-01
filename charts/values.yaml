@@ -38,7 +38,7 @@ egress:
 
 pipeline:
   taskTimeLimitSeconds: 3600
-  uploaded_files_time_before_hidden: null
+  uploaded_files_days_before_hidden: null
   skip_summarize_while_indexing: true
   skip_translate_while_indexing: true
   automatic_indexing: true
@@ -1128,7 +1128,7 @@ redis: &redis
   ingress:
     enabled: false
   readinessProbe:
-    enabled: false
+    enabled: true
   livenessProbe:
     enabled: true
   resources:
@@ -1138,6 +1138,16 @@ redis: &redis
     limits:
       cpu: "1.5"
       memory: "1500Mi"
+  initContainer:
+    image:
+      repository: swiss-armed-forces/cyber-command/cea/loom/alpine
+    resources:
+      requests:
+        cpu: "0.05"
+        memory: "50Mi"
+      limits:
+        cpu: "0.1"
+        memory: "100Mi"
   # Custom labels specific to redis resources
   customLabels: {}
   # Example:
