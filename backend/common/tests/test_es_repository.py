@@ -186,6 +186,7 @@ ES_REPOSITORY_TEST_INSTANCES: dict[type[BaseEsRepository], list[_TestInstances]]
                 sha256=TestValueDefaults.test_str,
                 uploaded_datetime=TestValueDefaults.test_datetime,
                 size=TestValueDefaults.test_long,
+                reindex_count=TestValueDefaults.test_long,
                 thumbnail_file_id=TestValueDefaults.test_object_id_str,
                 thumbnail_total_frames=TestValueDefaults.test_int,
                 rendered_file=RenderedFile(
@@ -295,6 +296,7 @@ ES_REPOSITORY_TEST_INSTANCES: dict[type[BaseEsRepository], list[_TestInstances]]
                 sha256=TestValueDefaults.test_str,
                 uploaded_datetime=TestValueDefaults.test_datetime.isoformat(),
                 size=TestValueDefaults.test_long,
+                reindex_count=TestValueDefaults.test_long,
                 thumbnail_file_id=TestValueDefaults.test_object_id_str,
                 thumbnail_total_frames=TestValueDefaults.test_int,
                 rendered_file=_EsRenderedFile(

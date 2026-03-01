@@ -247,9 +247,15 @@ def init_celery_app() -> "Celery[BaseTask]":
             "task": "worker.periodic.flush_on_idle_task.flush_on_idle_task",
             "schedule": crontab(minute="*/15"),
         },
+        "reindex-started-files-on-idle": {
+            "task": (
+                "worker.periodic.reindex_started_files_on_idle_task.reindex_started_files_on_idle_task"  # noqa: E501 pylint: disable=line-too-long
+            ),
+            "schedule": crontab(minute="5", hour="22-05"),
+        },
         "shrink-cache": {
             "task": "worker.periodic.shrink_periodically_task.shrink_periodically_task",
-            "schedule": crontab(minute="*"),
+            "schedule": crontab(minute="*/3"),
         },
         "hide-old-uploaded-files": {
             "task": "worker.periodic.hide_periodically_task.hide_periodically_task",

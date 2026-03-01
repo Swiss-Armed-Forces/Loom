@@ -100,6 +100,7 @@ class FileSchedulingService:
             sha256=old_file.sha256,
             size=old_file.size,
             state="reindexing",
+            reindex_count=old_file.reindex_count + 1,
         )
         # Preserve the original file ID
         file.es_meta.id = file_id

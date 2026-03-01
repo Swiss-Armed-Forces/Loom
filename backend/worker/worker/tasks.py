@@ -16,6 +16,7 @@ from worker.index_file import (
 from worker.periodic import (
     flush_on_idle_task,
     hide_periodically_task,
+    reindex_started_files_on_idle_task,
     shrink_periodically_task,
 )
 from worker.test import canvas_test_task, sigkill_pgroup_task
@@ -36,4 +37,5 @@ tasks = [
     canvas_test_task,
     sigkill_pgroup_task,
     hide_periodically_task,
+    reindex_started_files_on_idle_task,
 ]
