@@ -141,6 +141,12 @@ export interface GetFilePreviewResponse {
      * @memberof GetFilePreviewResponse
      */
     summary?: string;
+    /**
+     *
+     * @type {boolean}
+     * @memberof GetFilePreviewResponse
+     */
+    isSpam?: boolean;
 }
 
 /**
@@ -208,6 +214,7 @@ export function GetFilePreviewResponseFromJSONTyped(
         tasksFailed:
             json["tasks_failed"] == null ? undefined : json["tasks_failed"],
         summary: json["summary"] == null ? undefined : json["summary"],
+        isSpam: json["is_spam"] == null ? undefined : json["is_spam"],
     };
 }
 
@@ -240,5 +247,6 @@ export function GetFilePreviewResponseToJSON(
         tasks_retried: value["tasksRetried"],
         tasks_failed: value["tasksFailed"],
         summary: value["summary"],
+        is_spam: value["isSpam"],
     };
 }
