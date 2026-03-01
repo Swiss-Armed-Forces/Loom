@@ -24,8 +24,8 @@ data:
     {{- if ne .Values.pipeline.taskTimeLimitSeconds nil }}
     task_time_limit__seconds: {{ .Values.pipeline.taskTimeLimitSeconds | quote }}
     {{- end }}
-    {{- if ne .Values.pipeline.uploaded_files_time_before_hidden nil }}
-    uploaded_files_time_before_hidden: {{ .Values.pipeline.uploaded_files_time_before_hidden | quote }}
+    {{- if ne .Values.pipeline.uploaded_files_days_before_hidden nil }}
+    uploaded_files_days_before_hidden: {{ .Values.pipeline.uploaded_files_days_before_hidden | quote }}
     {{- end }}
     {{- if ne .Values.pipeline.skip_summarize_while_indexing nil }}
     skip_summarize_while_indexing: {{ .Values.pipeline.skip_summarize_while_indexing | quote }}

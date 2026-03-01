@@ -1,5 +1,4 @@
 import logging
-from datetime import timedelta
 from typing import Callable
 
 import pytest
@@ -32,13 +31,13 @@ def setup_testfiles():
 
 
 def test_hide_old_uploaded_files_task_does_hide_when_in_range():
-    test_time = timedelta(seconds=1)
+    days_before_hidden = 0
     fully_qualified_name = _get_fully_qualified_name(hide_old_uploaded_files_task)
 
     get_celery_app().send_task(
         fully_qualified_name,
         args=[
-            test_time,
+            days_before_hidden,
         ],
     ).forget()
 
@@ -48,13 +47,13 @@ def test_hide_old_uploaded_files_task_does_hide_when_in_range():
 
 
 def test_hide_old_uploaded_files_task_does_not_hide_when_not_in_range():
-    test_time = timedelta(days=1)
+    days_before_hidden = 1
     fully_qualified_name = _get_fully_qualified_name(hide_old_uploaded_files_task)
 
     get_celery_app().send_task(
         fully_qualified_name,
         args=[
-            test_time,
+            days_before_hidden,
         ],
     ).forget()
 

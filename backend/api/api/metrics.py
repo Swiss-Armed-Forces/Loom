@@ -32,7 +32,7 @@ def count_emails(_: CallbackOptions) -> Iterable[Observation]:
     email_count = file_repository.count_by_query(
         query=QueryParameters(
             query_id=query_id,
-            search_string='extension:".eml" OR file_type:"message/rfc822"',
+            search_string='(extension:".eml" OR file_type:"message/rfc822") AND hidden:*',
         )
     )
     yield Observation(value=email_count)

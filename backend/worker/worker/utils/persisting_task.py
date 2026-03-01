@@ -11,7 +11,7 @@ from common.task_object.task_object import (
 from worker.utils.persister_base import PersisterBase, PersistingException
 from worker.utils.processing_task import ProcessingTask
 
-PERSIST_MAX_RETRIES = 10
+PERSIST_MAX_RETRIES = 20
 
 P = ParamSpec("P")
 

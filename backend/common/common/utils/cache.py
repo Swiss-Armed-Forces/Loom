@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 CACHE_KEY_PREFIX = "rc"
 CACHE_KEY_FORMAT = "{{rc:{namespace}}}:{key}"
 CACHE_DEFAULT_SHRINK_PERCENTAGE = 0.8  # setting 0.8 means that it will free up 20%
-CACHE_DEFAULT_TTL_SECONDS = 3600  # 60 minutes
+CACHE_DEFAULT_TTL_SECONDS = 60 * 60 * 24  # 1 day
 CACHE_DEFAULT_MAX_SIZE = 5 * (1024**3)  # 5 GB
 
 
