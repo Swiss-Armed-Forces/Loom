@@ -23,7 +23,19 @@ def count_files(_: CallbackOptions) -> Iterable[Observation]:
     count = file_repository.count_by_query(
         query=QueryParameters(
             query_id=query_id,
-            search_string="*",
+            search_string="hidden:*",
+        )
+    )
+    yield Observation(value=count)
+
+
+def count_files_hidden(_: CallbackOptions) -> Iterable[Observation]:
+    file_repository = get_file_repository()
+    query_id = file_repository.open_point_in_time()
+    count = file_repository.count_by_query(
+        query=QueryParameters(
+            query_id=query_id,
+            search_string="hidden:true",
         )
     )
     yield Observation(value=count)
@@ -126,8 +138,14 @@ def init_metrics(api: FastAPI):
     data_meter.create_observable_up_down_counter(
         name="data.files",
         callbacks=[count_files],
-        unit="files",
+        unit="file",
         description="Number of files",
+    )
+    data_meter.create_observable_up_down_counter(
+        name="data.files_hidden",
+        callbacks=[count_files_hidden],
+        unit="file",
+        description="Number of hidden files",
     )
     data_meter.create_observable_up_down_counter(
         name="data.emails",
@@ -147,24 +165,24 @@ def init_metrics(api: FastAPI):
     cache_meter.create_observable_gauge(
         name="cache.mem_size",
         callbacks=[observe_cache_mem_size],
-        unit="bytes",
+        unit="byte",
         description="Memory usage of cache namespace",
     )
     cache_meter.create_observable_gauge(
         name="cache.entries_count",
         callbacks=[observe_cache_entries],
-        unit="entries",
+        unit="entry",
         description="Number of entries in cache namespace",
     )
     cache_meter.create_observable_gauge(
         name="cache.hits_count",
         callbacks=[observe_cache_hits],
-        unit="hits",
+        unit="hit",
         description="Number of cache hits",
     )
     cache_meter.create_observable_gauge(
         name="cache.miss_count",
         callbacks=[observe_cache_misses],
-        unit="misses",
+        unit="miss",
         description="Number of cache misses",
     )

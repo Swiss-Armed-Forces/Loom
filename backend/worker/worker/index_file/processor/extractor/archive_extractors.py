@@ -130,10 +130,7 @@ class ZstdExtractor(ExtractorBase):
 
 
 class BinwalkExtractor(ExtractorBase):
-    """Extracts information of general binaries by using binwalk on general binaries.
-
-    Avoids extracting archives already being processed by the other extractors.
-    """
+    """Extracts information of general binaries by using binwalk on general binaries."""
 
     def extract(self, fileobj: IO[bytes], outdir: str):
         # Extract contents
