@@ -70,6 +70,7 @@ EXPOSE 4401
 EXPOSE 8084
 CMD ["python", "-Xfrozen_modules=off", "-m", "debugpy", "--listen", "127.0.0.1:4401", \
     "-m", "uvicorn", "api.main:app", \
+    "--workers", "4", \
     "--log-level", "debug", \
     "--port", "8084", \
     "--host", "0.0.0.0", \
@@ -83,6 +84,7 @@ COPY --from=builder-prod ${BUILDER_VIRTUAL_ENV} ${VIRTUAL_ENV}
 EXPOSE 8084
 CMD ["python", \
     "-m", "uvicorn", "api.main:app", \
+    "--workers", "4", \
     "--port", "8084", \
     "--host", "0.0.0.0" \
     ]

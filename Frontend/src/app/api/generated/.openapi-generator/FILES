@@ -4,6 +4,7 @@ apis/AitoolsApi.ts
 apis/ArchivesApi.ts
 apis/CachingApi.ts
 apis/FilesApi.ts
+apis/ImapApi.ts
 apis/IndexApi.ts
 apis/MetricsApi.ts
 apis/QueuesApi.ts
@@ -25,6 +26,7 @@ models/CacheStatisticsEntryModel.ts
 models/CompleteEstimate.ts
 models/ContextCreateResponse.ts
 models/FileUploadResponse.ts
+models/Folder.ts
 models/GenericStatisticsModel.ts
 models/GetFileLanguageTranslations.ts
 models/GetFilePreviewResponse.ts

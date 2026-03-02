@@ -55,6 +55,17 @@ spec:
         - name: api
           image: {{ .Values.image.registry }}/{{ .Values.api.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) .Values.api.image.tag }}
           imagePullPolicy: {{ .Values.image.pullPolicy }}
+          args:
+            - "python"
+            - "-m"
+            - "uvicorn"
+            - "api.main:app"
+            - "--workers"
+            - {{ include "cpu-limit-to-count" .Values.api.resources.limits.cpu | quote }}
+            - "--port"
+            - {{ .Values.api.service.port | quote }}
+            - "--host"
+            - "0.0.0.0"
           ports:
             - containerPort: {{ .Values.api.service.port }}
           envFrom:

@@ -9,7 +9,7 @@ router = APIRouter()
 
 
 @router.get("/")
-async def metrics():
+def metrics():
     return Response(
         content=generate_latest(),
         media_type=CONTENT_TYPE_LATEST,

@@ -6,6 +6,7 @@ export * from "./AitoolsApi";
 export * from "./ArchivesApi";
 export * from "./CachingApi";
 export * from "./FilesApi";
+export * from "./ImapApi";
 export * from "./IndexApi";
 export * from "./MetricsApi";
 export * from "./QueuesApi";
