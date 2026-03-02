@@ -16,6 +16,7 @@ from api.routers import (
     caching,
     docs,
     files,
+    imap,
     index,
     metrics,
     queues,
@@ -75,6 +76,7 @@ def init_api() -> FastAPI:
     api.include_router(ai.router, prefix="/v1/ai", tags=["ai"])
     api.include_router(aitools.router, prefix="/v1/aitools", tags=["aitools"])
     api.include_router(files.router, prefix="/v1/files", tags=["files"])
+    api.include_router(imap.router, prefix="/v1/imap", tags=["imap"])
 
     def custom_openapi() -> dict[str, Any]:
         if api.openapi_schema:

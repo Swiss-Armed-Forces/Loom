@@ -122,3 +122,31 @@ ArgoCD's declarative sync model without false drift detection.
   {{- end -}}
   {{- $bytes | int64 -}}
 {{- end -}}
+
+{{- define "cpu-limit-to-count" -}}
+  {{/*
+  This template converts Kubernetes CPU resource limit to integer CPU count.
+  Input can be: millicores (e.g., "500m", "1500m") or whole CPUs (e.g., "2", "2.5")
+  Returns minimum of 1 CPU
+  */}}
+  {{- $cpuLimit := . -}}
+  {{- if not (typeIs "string" . ) -}}
+    {{- $cpuLimit = toString $cpuLimit -}}
+  {{- end -}}
+  {{- $cpuCount := 0 -}}
+  {{- if hasSuffix "m" $cpuLimit -}}
+    {{- /* Handle millicores (e.g., "500m") */ -}}
+    {{- $millis := $cpuLimit | trimSuffix "m" | float64 -}}
+    {{- $cpuCount = divf $millis 1000 | ceil | int -}}
+  {{- else if (mustRegexMatch "^[0-9]+(\\.[0-9]+)?$" $cpuLimit) -}}
+    {{- /* Handle whole or decimal CPUs (e.g., "2" or "2.5") */ -}}
+    {{- $cpuCount = $cpuLimit | float64 | ceil | int -}}
+  {{- else -}}
+    {{- printf "\n%s is invalid CPU quantity\nFormat can be: millicores (e.g., 500m) or CPUs (e.g., 2 or 2.5)" $cpuLimit | fail -}}
+  {{- end -}}
+  {{- /* Ensure minimum of 1 CPU */ -}}
+  {{- if lt $cpuCount 1 -}}
+    {{- $cpuCount = 1 -}}
+  {{- end -}}
+  {{- $cpuCount | int64 -}}
+{{- end -}}

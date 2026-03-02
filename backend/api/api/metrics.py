@@ -1,4 +1,6 @@
-from typing import Iterable
+from datetime import datetime, timedelta
+from functools import wraps
+from typing import Callable, Iterable
 
 from common.dependencies import (
     get_file_repository,
@@ -6,36 +8,37 @@ from common.dependencies import (
     get_redis_cache_client,
 )
 from common.services.query_builder import QueryParameters
-from common.utils.cache import get_cache_statistics
+from common.utils.cache import CacheStatistics, get_cache_statistics
 from fastapi import FastAPI
 from opentelemetry.exporter.prometheus import PrometheusMetricReader
 from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 from opentelemetry.metrics import CallbackOptions, Observation
 from opentelemetry.sdk.metrics import MeterProvider
+from pydantic import BaseModel, Field
 
 
 def count_files(_: CallbackOptions) -> Iterable[Observation]:
     file_repository = get_file_repository()
     query_id = file_repository.open_point_in_time()
-    email_count = file_repository.count_by_query(
+    count = file_repository.count_by_query(
         query=QueryParameters(
             query_id=query_id,
             search_string="*",
         )
     )
-    yield Observation(value=email_count)
+    yield Observation(value=count)
 
 
 def count_emails(_: CallbackOptions) -> Iterable[Observation]:
     file_repository = get_file_repository()
     query_id = file_repository.open_point_in_time()
-    email_count = file_repository.count_by_query(
+    count = file_repository.count_by_query(
         query=QueryParameters(
             query_id=query_id,
             search_string='(extension:".eml" OR file_type:"message/rfc822") AND hidden:*',
         )
     )
-    yield Observation(value=email_count)
+    yield Observation(value=count)
 
 
 def count_imap_emails(_: CallbackOptions) -> Iterable[Observation]:
@@ -44,32 +47,68 @@ def count_imap_emails(_: CallbackOptions) -> Iterable[Observation]:
     yield Observation(value=email_count)
 
 
-def observe_cache_mem_size(_: CallbackOptions) -> Iterable[Observation]:
-    redis_client = get_redis_cache_client()
-    stats = get_cache_statistics(redis_client)
+def with_cached_cache_statistics(ttl: timedelta | None = None):
+    """Decorator factory that provides cached cache statistics to the function."""
+    if ttl is None:
+        ttl = timedelta(seconds=10)
+
+    class CacheState(BaseModel):
+        stats: CacheStatistics
+        timestamp: datetime = Field(default_factory=datetime.now)
+
+    # Cache state stored in closure
+    cache: CacheState | None = None
+
+    def decorator(
+        func: Callable[[CallbackOptions, CacheStatistics], Iterable[Observation]],
+    ) -> Callable:
+        @wraps(func)
+        def wrapper(options: CallbackOptions) -> Iterable[Observation]:
+            current_time = datetime.now()
+            # Check if cache is expired or empty
+            nonlocal cache
+            if cache is None or (current_time - cache.timestamp) > ttl:
+                redis_client = get_redis_cache_client()
+                cache = CacheState(stats=get_cache_statistics(redis_client))
+
+            # Call the original function with cached stats
+            return func(options, cache.stats)
+
+        return wrapper
+
+    return decorator
+
+
+@with_cached_cache_statistics()
+def observe_cache_mem_size(
+    _: CallbackOptions, stats: CacheStatistics
+) -> Iterable[Observation]:
     for namespace, entry in stats.root.items():
         yield Observation(value=entry.mem_size, attributes={"namespace": namespace})
 
 
-def observe_cache_entries(_: CallbackOptions) -> Iterable[Observation]:
-    redis_client = get_redis_cache_client()
-    stats = get_cache_statistics(redis_client)
+@with_cached_cache_statistics()
+def observe_cache_entries(
+    _: CallbackOptions, stats: CacheStatistics
+) -> Iterable[Observation]:
     for namespace, entry in stats.root.items():
         yield Observation(
             value=entry.entries_count, attributes={"namespace": namespace}
         )
 
 
-def observe_cache_hits(_: CallbackOptions) -> Iterable[Observation]:
-    redis_client = get_redis_cache_client()
-    stats = get_cache_statistics(redis_client)
+@with_cached_cache_statistics()
+def observe_cache_hits(
+    _: CallbackOptions, stats: CacheStatistics
+) -> Iterable[Observation]:
     for namespace, entry in stats.root.items():
         yield Observation(value=entry.hits_count, attributes={"namespace": namespace})
 
 
-def observe_cache_misses(_: CallbackOptions) -> Iterable[Observation]:
-    redis_client = get_redis_cache_client()
-    stats = get_cache_statistics(redis_client)
+@with_cached_cache_statistics()
+def observe_cache_misses(
+    _: CallbackOptions, stats: CacheStatistics
+) -> Iterable[Observation]:
     for namespace, entry in stats.root.items():
         yield Observation(value=entry.miss_count, attributes={"namespace": namespace})
 
