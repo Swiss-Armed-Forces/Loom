@@ -7,6 +7,7 @@ from common.dependencies import (
     get_imap_service,
     get_redis_cache_client,
 )
+from common.file.file_repository import Stat
 from common.services.query_builder import QueryParameters
 from common.utils.cache import CacheStatistics, get_cache_statistics
 from fastapi import FastAPI
@@ -27,6 +28,22 @@ def count_files(_: CallbackOptions) -> Iterable[Observation]:
         )
     )
     yield Observation(value=count)
+
+
+def count_files_by_state(_: CallbackOptions) -> Iterable[Observation]:
+    file_repository = get_file_repository()
+    query_id = file_repository.open_point_in_time()
+    state_stat = file_repository.get_stat_generic(
+        query=QueryParameters(
+            query_id=query_id,
+            search_string="hidden:*",
+        ),
+        stat=Stat.STATES,
+    )
+    for state_data in state_stat.data:
+        yield Observation(
+            value=state_data.hits_count, attributes={"state": state_data.name}
+        )
 
 
 def count_files_hidden(_: CallbackOptions) -> Iterable[Observation]:
@@ -140,6 +157,12 @@ def init_metrics(api: FastAPI):
         callbacks=[count_files],
         unit="file",
         description="Number of files",
+    )
+    data_meter.create_observable_up_down_counter(
+        name="data.files_by_state",
+        callbacks=[count_files_by_state],
+        unit="file",
+        description="Number of files by state",
     )
     data_meter.create_observable_up_down_counter(
         name="data.files_hidden",

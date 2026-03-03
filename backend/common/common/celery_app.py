@@ -247,9 +247,9 @@ def init_celery_app() -> "Celery[BaseTask]":
             "task": "worker.periodic.flush_on_idle_task.flush_on_idle_task",
             "schedule": crontab(minute="*/15"),
         },
-        "reindex-started-files-on-idle": {
+        "reindex-lost-files-on-idle": {
             "task": (
-                "worker.periodic.reindex_started_files_on_idle_task.reindex_started_files_on_idle_task"  # noqa: E501 pylint: disable=line-too-long
+                "worker.periodic.reindex_lost_files_on_idle_task.reindex_lost_files_on_idle_task"  # noqa: E501 pylint: disable=line-too-long
             ),
             "schedule": crontab(minute="5", hour="22-05"),
         },

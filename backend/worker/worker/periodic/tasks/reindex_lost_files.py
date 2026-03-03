@@ -18,19 +18,22 @@ app = get_celery_app()
 
 MAX_REINDEX_FILES = 100
 MAX_REINDEX_COUNT = 5
+LOST_FILES_QUERY = (
+    f'NOT state:("failed" OR "processed") AND reindex_count:<{MAX_REINDEX_COUNT}'
+)
 
 
 def signature() -> Signature:
-    return reindex_started_files.s()
+    return reindex_lost_files.s()
 
 
 @app.task(bind=True, base=PeriodicTask)
-def reindex_started_files(self: PeriodicTask, *_, **__):
+def reindex_lost_files(self: PeriodicTask, *_, **__):
     logger.info("Reindexing files")
     file_repository = get_file_repository()
     query = QueryParameters(
         query_id=file_repository.open_point_in_time(),
-        search_string=f"state:started AND reindex_count:<{MAX_REINDEX_COUNT}",
+        search_string=LOST_FILES_QUERY,
     )
     sort_params = SortingParameters(
         sort_by_field="uploaded_datetime", sort_direction="desc"
