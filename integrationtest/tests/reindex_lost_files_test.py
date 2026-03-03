@@ -3,8 +3,8 @@ from typing import Callable
 
 import pytest
 from common.dependencies import get_celery_app, get_file_repository
-from worker.periodic.tasks.reindex_started_files import (
-    reindex_started_files,
+from worker.periodic.tasks.reindex_lost_files import (
+    reindex_lost_files,
 )
 
 from utils.fetch_from_api import fetch_files_from_api
@@ -60,7 +60,7 @@ def setup_testfiles():
 
 
 def test_reindex_started_files():
-    fully_qualified_name = _get_fully_qualified_name(reindex_started_files)
+    fully_qualified_name = _get_fully_qualified_name(reindex_lost_files)
 
     get_celery_app().send_task(
         fully_qualified_name,
