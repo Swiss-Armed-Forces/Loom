@@ -7,15 +7,24 @@ metadata:
   # changes while remaining consistent when values are unchanged.
   name: {{ template "app.fullname" . }}-minio-post-job-{{ include "app.valuesHash" . }}
   labels:
+    {{- include "app.labels.custom" (dict "context" $ "component" "minio") | nindent 4 }}
+    app.kubernetes.io/component: post-install
     app: {{ template "app.name" . }}-post-job
     chart: {{ template "app.chart" . }}
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
   annotations:
+    # Argo CD hooks - delete old Job before creating new one to avoid immutability errors
+    argocd.argoproj.io/hook: PostSync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+    # Helm hooks - for non-Argo deployments
+    helm.sh/hook: post-install,post-upgrade
+    helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
     {{- with .Values.minio.postJob.annotations }}
       {{- toYaml . | nindent 4 }}
     {{- end }}
 spec:
+  ttlSecondsAfterFinished: 300
   template:
     metadata:
       labels:
