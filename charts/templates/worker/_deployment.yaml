@@ -42,7 +42,12 @@ spec:
           {{- if $values.command }}
           command: {{- toYaml $values.command | nindent 10 }}
           {{- else }}
-          command: {{ $values.defaultCommand | default (list "python" "main.py" "worker" "--loglevel" "INFO") | toJson }}
+          command:
+            - "python"
+            - "main.py"
+            - "worker"
+            - "--loglevel"
+            - "INFO"
           {{- end }}
           {{- if $values.readinessProbe.enabled }}
           readinessProbe:

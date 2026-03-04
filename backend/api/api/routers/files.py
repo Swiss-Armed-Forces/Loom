@@ -439,7 +439,6 @@ def index_file(
     file_id: UUID,
     file_scheduling_service: FileSchedulingService = default_file_scheduling_service,
 ):
-    """Re-index file."""
     file_scheduling_service.reindex_file(file_id)
 
 

@@ -9,6 +9,7 @@ from common.dependencies import get_celery_app, get_imap_service, get_lazybytes_
 from common.file.file_repository import File, ImapInfo
 from common.services.lazybytes_service import LazyBytes
 from httpx import HTTPStatusError
+from pydantic import BaseModel
 
 from worker.dependencies import get_gotenberg_client, get_rspamd_service
 from worker.index_file.infra.file_indexing_task import FileIndexingTask
@@ -64,15 +65,27 @@ def signature(file_content: LazyBytes, file: File) -> Signature:
                     persist_imap_info.s(file),
                     chain(
                         render_email_to_image.s(),
-                        create_thumbnail.signature_pass_file_content(
-                            file=file,
-                            thumbnail_file=thumbnail_file,
+                        group(
+                            remove_seen_flag_from_email.s(),
+                            chain(
+                                get_rendered_content_from_render_email_return.s(),
+                                create_thumbnail.signature_pass_file_content(
+                                    file=file,
+                                    thumbnail_file=thumbnail_file,
+                                ),
+                            ),
                         ),
                     ),
                     chain(
                         render_email_to_pdf.s(),
-                        render.signature_pass_file_content(
-                            file=file, render_file=rendered_file
+                        group(
+                            remove_seen_flag_from_email.s(),
+                            chain(
+                                get_rendered_content_from_render_email_return.s(),
+                                render.signature_pass_file_content(
+                                    file=file, render_file=rendered_file
+                                ),
+                            ),
                         ),
                     ),
                 ),
@@ -164,10 +177,15 @@ def _get_roundcube_email_url(imap_info: ImapInfo) -> str:
     return f"{settings.roundcube_host}?{query_string}"
 
 
+class RenderEmailReturn(BaseModel):
+    rendered_content: LazyBytes
+    imap_info: ImapInfo
+
+
 @app.task(base=FileIndexingTask)
 def render_email_to_image(
     imap_info: ImapInfo | None,
-) -> LazyBytes | None:
+) -> RenderEmailReturn | None:
     if imap_info is None:
         return None
 
@@ -185,13 +203,13 @@ def render_email_to_image(
         with NamedTemporaryFile("rb", dir=settings.tempfile_dir) as fd:
             response.to_file(Path(fd.name))
             lazy_bytes = get_lazybytes_service().from_file(fd)
-        return lazy_bytes
+        return RenderEmailReturn(rendered_content=lazy_bytes, imap_info=imap_info)
 
 
 @app.task(base=FileIndexingTask)
 def render_email_to_pdf(
     imap_info: ImapInfo | None,
-) -> LazyBytes | None:
+) -> RenderEmailReturn | None:
     if imap_info is None:
         return None
 
@@ -206,5 +224,28 @@ def render_email_to_pdf(
         except HTTPStatusError:
             logger.warning("Unable to render email to pdf in browser", exc_info=True)
             return None
-        file_content = get_lazybytes_service().from_bytes(response.content)
-    return file_content
+        lazy_bytes = get_lazybytes_service().from_bytes(response.content)
+    return RenderEmailReturn(rendered_content=lazy_bytes, imap_info=imap_info)
+
+
+@app.task(base=FileIndexingTask)
+def get_rendered_content_from_render_email_return(
+    render_email_return: RenderEmailReturn | None,
+) -> LazyBytes | None:
+    if render_email_return is None:
+        return None
+    return render_email_return.rendered_content
+
+
+@app.task(base=FileIndexingTask)
+def remove_seen_flag_from_email(
+    render_email_return: RenderEmailReturn | None,
+):
+    if render_email_return is None:
+        return
+
+    imap_info = render_email_return.imap_info
+    imap_service = get_imap_service()
+    imap_service.remove_flags_from_emails(
+        folder=imap_info.folder, uids=[imap_info.uid], flags=[b"\\SEEN"]
+    )

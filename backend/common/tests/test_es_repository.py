@@ -23,7 +23,6 @@ from common.archive.archive_repository import (
 )
 from common.dependencies import get_pubsub_service, get_query_builder
 from common.file.file_repository import (
-    FILE_SHORT_NAME_CONTENT_SUFFIX,
     Attachment,
     Embedding,
     File,
@@ -180,7 +179,7 @@ ES_REPOSITORY_TEST_INSTANCES: dict[type[BaseEsRepository], list[_TestInstances]]
                 storage_id=TestValueDefaults.test_object_id_str,
                 content=TestValueDefaults.test_str,
                 content_truncated=TestValueDefaults.test_bool,
-                full_name=TestValueDefaults.test_pure_path,
+                full_name=TestValueDefaults.test_file_pure_path,
                 source=TestValueDefaults.test_str,
                 parent_id=TestValueDefaults.test_uuid,
                 sha256=TestValueDefaults.test_str,
@@ -253,7 +252,7 @@ ES_REPOSITORY_TEST_INSTANCES: dict[type[BaseEsRepository], list[_TestInstances]]
                 ],
                 imap=ImapInfo(
                     uid=TestValueDefaults.test_int,
-                    folder=TestValueDefaults.test_pure_path,
+                    folder=TestValueDefaults.test_imappure_path,
                 ),
             ),
             document=_EsFile(
@@ -283,14 +282,10 @@ ES_REPOSITORY_TEST_INSTANCES: dict[type[BaseEsRepository], list[_TestInstances]]
                 storage_id=TestValueDefaults.test_object_id_str,
                 content=TestValueDefaults.test_str,
                 content_truncated=TestValueDefaults.test_bool,
-                full_name=str(TestValueDefaults.test_pure_path),
-                full_path=str(TestValueDefaults.test_pure_path),
-                short_name=TestValueDefaults.test_pure_path.name,
-                short_name_content=(
-                    f"{TestValueDefaults.test_pure_path.name}"
-                    f"{FILE_SHORT_NAME_CONTENT_SUFFIX}"
-                ),
-                extension=TestValueDefaults.test_pure_path.suffix,
+                full_name=str(TestValueDefaults.test_file_pure_path),
+                full_path=str(TestValueDefaults.test_file_pure_path),
+                short_name=TestValueDefaults.test_file_pure_path.name,
+                extension=TestValueDefaults.test_file_pure_path.suffix,
                 source=TestValueDefaults.test_str,
                 parent_id=str(TestValueDefaults.test_uuid),
                 sha256=TestValueDefaults.test_str,
@@ -365,7 +360,7 @@ ES_REPOSITORY_TEST_INSTANCES: dict[type[BaseEsRepository], list[_TestInstances]]
                 ],
                 imap=_EsImapInfo(
                     uid=TestValueDefaults.test_int,
-                    folder=str(TestValueDefaults.test_pure_path),
+                    folder=str(TestValueDefaults.test_imappure_path),
                 ),
             ),
         )

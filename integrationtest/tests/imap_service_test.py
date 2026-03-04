@@ -1,8 +1,12 @@
-from pathlib import Path, PurePath
+from pathlib import Path
 
 import pytest
 from common.dependencies import get_imap_service
-from common.services.imap_service import IMAPService
+from common.file.file_repository import FilePurePath
+from common.services.imap_service import (
+    IMAPService,
+    IMAPServiceErrorFolderNotSelectable,
+)
 
 from utils.consts import ASSETS_DIR
 
@@ -31,7 +35,7 @@ FOLDER_NAMES = [
 ]
 
 
-FOLDER_PATHS = [PurePath(f) for f in FOLDER_NAMES]
+FOLDER_PATHS = [FilePurePath(f) for f in FOLDER_NAMES]
 
 
 @pytest.fixture()
@@ -50,6 +54,48 @@ def test_imap_append_and_count(imap_service: IMAPService, email: bytes):
     assert message_count == 1
 
 
+@pytest.mark.parametrize("recurse", (True, False))
+def test_imap_count_messages_returns_0_on_non_existing_folder(
+    imap_service: IMAPService, recurse: bool
+):
+    count = imap_service.count_messages(
+        FilePurePath("this/folder/does/not/exist"), recurse=recurse
+    )
+    assert count == 0
+
+
+@pytest.mark.parametrize("recurse", (True, False))
+def test_imap_get_emails_returns_empty_list_on_non_existing_folder(
+    imap_service: IMAPService, recurse: bool
+):
+    result = imap_service.get_emails(
+        folder=FilePurePath("this/folder/does/not/exist"), recurse=recurse
+    )
+    assert result == []
+
+
+def test_imap_add_flags_to_emails_raises_on_non_existing_folder(
+    imap_service: IMAPService,
+):
+    with pytest.raises(IMAPServiceErrorFolderNotSelectable):
+        imap_service.add_flags_to_emails(
+            folder=FilePurePath("this/folder/does/not/exist"),
+            uids=[],
+            flags=[],
+        )
+
+
+def test_imap_remove_flags_from_emails_raises_on_non_existing_folder(
+    imap_service: IMAPService,
+):
+    with pytest.raises(IMAPServiceErrorFolderNotSelectable):
+        imap_service.remove_flags_from_emails(
+            folder=FilePurePath("this/folder/does/not/exist"),
+            uids=[],
+            flags=[],
+        )
+
+
 @pytest.mark.parametrize(
     "email",
     EMAIL_ASSETS,
@@ -58,6 +104,13 @@ def test_imap_append_same_uuid_as_get_uuid(imap_service: IMAPService, email: byt
     info = imap_service.append_email(email)
     uid = imap_service.get_uid_of_email(email)
     assert info.uid == uid
+
+
+def test_imap_get_uid_of_email_non_existing_folder(imap_service: IMAPService):
+    uid = imap_service.get_uid_of_email(
+        EMAIL_ASSETS[0], FilePurePath("this/folder/does/not/exist")
+    )
+    assert uid is None
 
 
 @pytest.mark.parametrize(
@@ -74,7 +127,7 @@ def test_imap_get_uuid_no_match(imap_service: IMAPService, email: bytes):
     [(EMAIL_ASSETS[0], folder_path) for folder_path in FOLDER_PATHS],
 )
 def test_imap_append_email_folder(
-    imap_service: IMAPService, email: bytes, folder_path: PurePath
+    imap_service: IMAPService, email: bytes, folder_path: FilePurePath
 ):
     imap_service.append_email(email, folder_path)
 
@@ -102,7 +155,7 @@ def test_imap_double_append_email(imap_service: IMAPService, email: bytes):
     [(EMAIL_ASSETS[0], folder_path) for folder_path in FOLDER_PATHS],
 )
 def test_imap_not_contain_email_folder(
-    imap_service: IMAPService, email: bytes, folder_path: PurePath
+    imap_service: IMAPService, email: bytes, folder_path: FilePurePath
 ):
     uid = imap_service.get_uid_of_email(email, folder_path)
     assert uid is None
@@ -113,7 +166,7 @@ def test_imap_not_contain_email_folder(
     [(EMAIL_ASSETS[0], folder_path) for folder_path in FOLDER_PATHS],
 )
 def test_imap_not_contain_email_folder_exists(
-    imap_service: IMAPService, email: bytes, folder_path: PurePath
+    imap_service: IMAPService, email: bytes, folder_path: FilePurePath
 ):
     imap_service.create_folder(folder_path)
 
@@ -126,7 +179,7 @@ def test_imap_not_contain_email_folder_exists(
     [(EMAIL_ASSETS[0], folder_path) for folder_path in FOLDER_PATHS],
 )
 def test_imap_contains_email_folder(
-    imap_service: IMAPService, email: bytes, folder_path: PurePath
+    imap_service: IMAPService, email: bytes, folder_path: FilePurePath
 ):
     imap_service.append_email(email, folder_path)
 
@@ -151,8 +204,8 @@ def test_imap_count_messages_recurse_inbox_only(imap_service: IMAPService):
 
 def test_imap_count_messages_recurse_subfolders_only(imap_service: IMAPService):
     # Messages only in subfolders, INBOX empty
-    parent = PurePath("count_parent")
-    child = PurePath("count_parent/child")
+    parent = FilePurePath("count_parent")
+    child = FilePurePath("count_parent/child")
 
     imap_service.append_email(EMAIL_ASSETS[0], parent)
     imap_service.append_email(EMAIL_ASSETS[1], child)
@@ -171,10 +224,10 @@ def test_imap_count_messages_recurse_subfolders_only(imap_service: IMAPService):
 
 
 def test_imap_count_messages_recurse_mixed_depth(imap_service: IMAPService):
-    root = PurePath("mixed")
-    child1 = PurePath("mixed/child1")
-    child2 = PurePath("mixed/child2")
-    grandchild = PurePath("mixed/child2/grandchild")
+    root = FilePurePath("mixed")
+    child1 = FilePurePath("mixed/child1")
+    child2 = FilePurePath("mixed/child2")
+    grandchild = FilePurePath("mixed/child2/grandchild")
 
     imap_service.append_email(EMAIL_ASSETS[0], root)  # 1 in root
     imap_service.append_email(EMAIL_ASSETS[1], child1)  # 1 in child1
@@ -189,3 +242,96 @@ def test_imap_count_messages_recurse_mixed_depth(imap_service: IMAPService):
     # Recursive counts
     assert imap_service.count_messages(root, recurse=True) == 4
     assert imap_service.count_messages(child2, recurse=True) == 2
+
+
+@pytest.mark.parametrize(
+    "folder_structure,get_emails_args,expected_matches",
+    [
+        (
+            {
+                FilePurePath("email_test"): [None, None, None],
+                FilePurePath("email_test/subfolder"): [None],
+                FilePurePath("email_test/subfolder/deep"): [None, None],
+            },
+            (
+                None,
+                FilePurePath("email_test"),
+                False,
+            ),
+            3,
+        ),
+        (
+            {
+                FilePurePath("email_test"): [None, None, None],
+                FilePurePath("email_test/subfolder"): [None],
+                FilePurePath("email_test/subfolder/deep"): [None, None],
+            },
+            (
+                None,
+                FilePurePath("email_test"),
+                True,
+            ),
+            6,
+        ),
+        # Get SEEN emails only (recursive)
+        (
+            {
+                FilePurePath("email_test"): [None, [b"\\Seen"], None],
+                FilePurePath("email_test/subfolder"): [None],
+                FilePurePath("email_test/subfolder/deep"): [[b"\\Seen"], None],
+            },
+            (
+                ["SEEN"],
+                None,
+                True,
+            ),
+            2,
+        ),
+        # Get FLAGGED emails only (recursive)
+        (
+            {
+                FilePurePath("email_test"): [None, [b"\\Flagged"], [b"\\Flagged"]],
+                FilePurePath("email_test/subfolder"): [[b"\\Flagged"]],
+            },
+            (
+                ["FLAGGED"],
+                None,
+                True,
+            ),
+            3,
+        ),
+        # Combined criteria - FLAGGED and SEEN
+        (
+            {
+                FilePurePath("email_test"): [None, [b"\\Seen", b"\\Flagged"], None],
+                FilePurePath("email_test/subfolder"): [None],
+                FilePurePath("email_test/subfolder/deep"): [[b"\\Seen"], None],
+            },
+            (
+                ["FLAGGED", "SEEN"],
+                FilePurePath("email_test"),
+                True,
+            ),
+            1,
+        ),
+    ],
+)
+def test_imap_get_emails(
+    imap_service: IMAPService,
+    folder_structure: dict[FilePurePath, list[list[bytes] | None]],
+    get_emails_args: tuple[list[str] | None, FilePurePath | None, bool],
+    expected_matches: int,
+):
+
+    for folder_path, emails in folder_structure.items():
+        for flags in emails:
+            info = imap_service.append_email(EMAIL_ASSETS[0], folder_path)
+            if flags is None:
+                continue
+            imap_service.add_flags_to_emails(info.folder, [info.uid], flags)
+
+    # Search for emails
+    results = imap_service.get_emails(*get_emails_args)
+
+    # Verify count
+    assert len(results) == expected_matches

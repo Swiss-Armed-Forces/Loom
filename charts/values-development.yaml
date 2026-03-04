@@ -22,6 +22,21 @@ globalHttpRedirect:
 
 api:
   ingress: *default-ingress-config
+  # yamllint disable rule:indentation
+  command: [
+    "python", "-Xfrozen_modules=off",
+    "-m", "debugpy",
+      "--listen", "127.0.0.1:4401",
+    "-m", "uvicorn", "api.main:app",
+      "--workers", "1",
+      "--log-level", "debug",
+      "--port", "8084",
+      "--host", "0.0.0.0",
+      "--reload",
+      "--reload-dir", "/code/common",
+      "--reload-dir", "/code/api"
+  ]
+  # yamllint enable rule:indentation
 
 frontend:
   ingress: *default-ingress-config
@@ -33,7 +48,6 @@ frontend:
     limits:
       cpu: "0.5"
       memory: "2Gi"
-
 
 worker:
   # yamllint disable rule:indentation

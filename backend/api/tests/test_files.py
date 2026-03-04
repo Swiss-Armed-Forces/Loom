@@ -1,7 +1,6 @@
 import random
 import re
 import string
-from pathlib import PurePath
 from unittest.mock import MagicMock
 from uuid import uuid4
 
@@ -14,7 +13,13 @@ from common.dependencies import (
     get_lazybytes_service,
     get_task_scheduling_service,
 )
-from common.file.file_repository import TAG_LEN_MAX, TAG_LEN_MIN, File, Stat
+from common.file.file_repository import (
+    TAG_LEN_MAX,
+    TAG_LEN_MIN,
+    File,
+    FilePurePath,
+    Stat,
+)
 from common.file.file_statistics import (
     StatisticsEntry,
     StatisticsGeneric,
@@ -45,7 +50,7 @@ from api.routers.files import (
 def test_upload_file(client: TestClient):
     file_content = "this is just a testfile with a bit of content"
     file = File(
-        full_name=PurePath("/path/to/file.txt"),
+        full_name=FilePurePath("/path/to/file.txt"),
         storage_id=str(ObjectId()),
         source="test",
         sha256="",
@@ -133,7 +138,7 @@ def test_get_files_count_searches_in_repository(client: TestClient):
 
 def test_update_hidden_state_file_by_id(client: TestClient):
     file = File(
-        full_name=PurePath("/path/to/file.txt"),
+        full_name=FilePurePath("/path/to/file.txt"),
         storage_id=str(ObjectId()),
         source="test",
         sha256="",
@@ -156,7 +161,7 @@ def test_update_hidden_state_files_by_query(client: TestClient):
     )
 
     file = File(
-        full_name=PurePath("/path/to/file.txt"),
+        full_name=FilePurePath("/path/to/file.txt"),
         storage_id=str(ObjectId()),
         source="test",
         sha256="",
@@ -199,7 +204,7 @@ VALID_TAG_NAMES = [
 )
 def test_add_valid_tag(client: TestClient, tag_name: str):
     file = File(
-        full_name=PurePath("/path/to/file.txt"),
+        full_name=FilePurePath("/path/to/file.txt"),
         storage_id=str(ObjectId()),
         source="test",
         sha256="",
@@ -224,7 +229,7 @@ INVALID_TAG_NAMES = [
 )
 def test_add_invalid_tag(client: TestClient, tag_name: str):
     file = File(
-        full_name=PurePath("/path/to/file.txt"),
+        full_name=FilePurePath("/path/to/file.txt"),
         storage_id=str(ObjectId()),
         source="test",
         sha256="",
@@ -241,7 +246,7 @@ def test_add_invalid_tag(client: TestClient, tag_name: str):
 def test_delete_tag(client: TestClient):
     tag = "testtag"
     file = File(
-        full_name=PurePath("/path/to/file.txt"),
+        full_name=FilePurePath("/path/to/file.txt"),
         storage_id=str(ObjectId()),
         source="test",
         sha256="",
@@ -297,7 +302,7 @@ def test_get_thumbnail(client: TestClient):
 
 def test_get_full(client: TestClient):
     file = File(
-        full_name=PurePath("/path/to/file.txt"),
+        full_name=FilePurePath("/path/to/file.txt"),
         storage_id=str(ObjectId()),
         source="test",
         sha256="",
@@ -329,7 +334,7 @@ def test_get_full_file_is_none(client: TestClient):
 
 def test_get_preview(client: TestClient):
     file = File(
-        full_name=PurePath("/path/to/file.txt"),
+        full_name=FilePurePath("/path/to/file.txt"),
         storage_id=str(ObjectId()),
         source="test",
         sha256="",
@@ -352,7 +357,7 @@ def test_get_preview(client: TestClient):
 
 def test_get_preview_content_truncated(client: TestClient):
     file = File(
-        full_name=PurePath("/path/to/file.txt"),
+        full_name=FilePurePath("/path/to/file.txt"),
         storage_id=str(ObjectId()),
         source="test",
         content="".join(
