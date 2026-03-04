@@ -11,10 +11,6 @@ $config['product_name'] = 'Loom Webmail';
 // Disable ui elements we don't need
 $config['disabled_actions'] = array('compose', 'addressbook', 'reply', 'reply-all', 'forward', 'logout');
 
-// Force use subscription
-$config['dont_override'] = ['use_subscriptions'];
-$config['use_subscriptions'] = false; // or true
-
 // Default search scope. Supported values:
 // 'base' - for current folder (default),
 // 'sub' - for current folder and subfolders,
