@@ -2,6 +2,7 @@ import email
 import hashlib
 import re
 from contextlib import contextmanager
+from datetime import datetime
 from itertools import chain
 from typing import Generator
 
@@ -134,6 +135,36 @@ class IMAPService:
                 _count_messages_in_folder(imap_folder)
                 for imap_folder in folders_to_count
             )
+
+    def get_latest_email_date(
+        self, folder: FilePurePath | ImapPurePath | None = None
+    ) -> datetime | None:
+        imap_folder = self.get_imap_folder(folder)
+
+        with self._imap_context() as client, self._select_folder(
+            client, imap_folder, readonly=True
+        ):
+            # Sort by ARRIVAL in reverse order (newest first), get just the first UID
+            sorted_uids = client.sort(
+                ["REVERSE", "ARRIVAL"], ["ALL"]
+            )  # type: ignore[arg-type]
+
+            if not sorted_uids:
+                return None
+
+            # Fetch the INTERNALDATE of the most recent email
+            latest_uid = sorted_uids[0]
+            fetch_result = client.fetch([latest_uid], ["INTERNALDATE"])
+
+            if latest_uid not in fetch_result:
+                return None
+
+            internal_date = fetch_result[latest_uid][b"INTERNALDATE"]
+            if not isinstance(internal_date, datetime):
+                raise IMAPServiceError(
+                    f"Unexpected INTERNALDATE type for UID {latest_uid}: {type(internal_date)}"
+                )
+            return internal_date
 
     def create_folder(self, folder: FilePurePath | ImapPurePath | None):
         imap_folder = self.get_imap_folder(folder)
@@ -362,6 +393,11 @@ class IMAPService:
     def subscribe_to_folder(self, folder: FilePurePath | ImapPurePath | None):
         with self._imap_context() as client:
             client.subscribe_folder(str(folder))
+
+    def unsubscribe_folder(self, folder: FilePurePath | ImapPurePath | None):
+        imap_folder = self.get_imap_folder(folder)
+        with self._imap_context() as client:
+            client.unsubscribe_folder(str(imap_folder))
 
     def list_subscribed_folders(
         self, folder: FilePurePath | ImapPurePath | None = None

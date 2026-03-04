@@ -261,6 +261,12 @@ def init_celery_app() -> "Celery[BaseTask]":
             "task": "worker.periodic.hide_periodically_task.hide_periodically_task",
             "schedule": crontab(minute="0", hour="0"),
         },
+        "unsubscribe-old-imap-folders": {
+            "task": (
+                "worker.periodic.unsubscribe_old_imap_folders_periodically_task.unsubscribe_old_imap_folders_periodically_task"  # noqa: E501 pylint: disable=line-too-long
+            ),
+            "schedule": crontab(minute="0", hour="1"),
+        },
     }
 
     # Define the celery default queues

@@ -1,3 +1,4 @@
+from datetime import datetime
 from pathlib import Path
 
 import pytest
@@ -335,3 +336,33 @@ def test_imap_get_emails(
 
     # Verify count
     assert len(results) == expected_matches
+
+
+def test_get_latest_email_date_empty_folder(imap_service: IMAPService):
+    result = imap_service.get_latest_email_date()
+    assert result is None
+
+
+def test_get_latest_email_date(imap_service: IMAPService):
+    imap_service.append_email(EMAIL_ASSETS[0])
+
+    result = imap_service.get_latest_email_date()
+    assert result is not None
+    assert isinstance(result, datetime)
+
+
+def test_unsubscribe_folder(imap_service: IMAPService):
+    folder = FilePurePath("unsubscribe_test")
+    imap_folder = imap_service.get_imap_folder(folder)
+
+    imap_service.create_folder(imap_folder)
+
+    # Subscribe to folder
+    imap_service.subscribe_to_folder(imap_folder)
+    subscribed = imap_service.list_subscribed_folders()
+    assert imap_folder in subscribed
+
+    # Unsubscribe from folder
+    imap_service.unsubscribe_folder(folder)
+    subscribed = imap_service.list_subscribed_folders()
+    assert imap_folder not in subscribed
