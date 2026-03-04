@@ -10,6 +10,7 @@ from pydantic import (
     Field,
     MongoDsn,
     field_validator,
+    model_validator,
 )
 from pydantic_settings import BaseSettings
 
@@ -53,7 +54,7 @@ class Settings(BaseSettings):
     celery_broker_host: AnyUrl = AnyUrl(f"amqp://rabbit-amqp.{DOMAIN}")
     celery_backend_host: AnyUrl = AnyUrl(f"redis://redis.{DOMAIN}:6379/0?protocol=3")
     redis_cache_host: AnyUrl = AnyUrl(f"redis://redis-cache.{DOMAIN}:6380/0?protocol=3")
-    max_file_size: int = 500_000_000  # 500 MB, because of rabbit
+    lazy_threshold_bytes: int = 1024  # 1KiB
     translate_host: AnyHttpUrl = AnyHttpUrl(f"http://translate.{DOMAIN}")
     translate_timeout: int = 3 * 60
     translate_startup_timeout: int = (
@@ -100,6 +101,12 @@ class Settings(BaseSettings):
             return AESMasterKey.from_string(value)
         logger.warning("No archive encryption master key provided. Using fixed key.")
         return AESMasterKey.from_fixed_key()
+
+    @model_validator(mode="after")
+    def adjust_lazy_threshold_for_reaper(self) -> "Settings":
+        if self.worker_type == "REAPER":
+            self.lazy_threshold_bytes = 0
+        return self
 
     api_host: AnyHttpUrl = AnyHttpUrl(f"http://api.{DOMAIN}")
     ws_host: AnyWebsocketUrl = AnyWebsocketUrl(

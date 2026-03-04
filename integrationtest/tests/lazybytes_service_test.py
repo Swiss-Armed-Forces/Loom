@@ -4,16 +4,16 @@ import random
 import pytest
 from common.dependencies import get_lazybytes_service
 from common.services.lazybytes_service import (
-    LAZY_THRESHOLD_BYTES,
     LazyBytes,
     LazyBytesService,
 )
+from common.settings import settings
 
 # pylint: disable=redefined-outer-name
 
 
 def random_large_data():
-    return random.randbytes(LAZY_THRESHOLD_BYTES * 3 + 1)
+    return random.randbytes(settings.lazy_threshold_bytes * 3 + 1)
 
 
 @pytest.fixture

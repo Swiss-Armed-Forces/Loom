@@ -19,8 +19,6 @@ from pymongo.database import Database
 from common.settings import settings
 from common.utils.gridfs import chunked_iterator_for_stream
 
-LAZY_THRESHOLD_BYTES = 1024  # 1KiB
-
 
 class LazyBytes(BaseModel):
     """Serializable container for lazy-loadable byte data."""
@@ -49,7 +47,7 @@ class LazyBytesService(ABC):
 
     def from_bytes(self, data: bytes) -> LazyBytes:
         """Stores the given data in this service."""
-        if len(data) <= LAZY_THRESHOLD_BYTES:
+        if len(data) <= settings.lazy_threshold_bytes:
             return LazyBytes(embedded_data=data)
         service_id = self._store(BytesIO(data))
         return LazyBytes(service_id=service_id)
@@ -58,7 +56,7 @@ class LazyBytesService(ABC):
         self, data: Generator[bytes, None, None], data_len: int | None = None
     ) -> LazyBytes:
         """Stores the given data in this service."""
-        if data_len is not None and data_len <= LAZY_THRESHOLD_BYTES:
+        if data_len is not None and data_len <= settings.lazy_threshold_bytes:
             return LazyBytes(
                 embedded_data=bytes(int.from_bytes(b, byteorder="little") for b in data)
             )
@@ -79,7 +77,7 @@ class LazyBytesService(ABC):
         fd.seek(0, SEEK_END)
         fd_size = fd.tell()
         fd.seek(0, curr)
-        if fd_size <= LAZY_THRESHOLD_BYTES:
+        if fd_size <= settings.lazy_threshold_bytes:
             return LazyBytes(embedded_data=fd.read())
         service_id = self._store(fd)
         return LazyBytes(service_id=service_id)
@@ -182,7 +180,7 @@ class LazyBytesService(ABC):
         # but I don't think that was every implemented and/or
         # can be used here.
         with SpooledTemporaryFile(
-            max_size=LAZY_THRESHOLD_BYTES, dir=str(self.tempfile_dir)
+            max_size=settings.lazy_threshold_bytes, dir=str(self.tempfile_dir)
         ) as dst:
             if lazy_bytes.embedded_data is not None:
                 dst.write(lazy_bytes.embedded_data)

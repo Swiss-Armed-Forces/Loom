@@ -27,6 +27,9 @@ data:
     {{- if ne .Values.pipeline.uploaded_files_days_before_hidden nil }}
     uploaded_files_days_before_hidden: {{ .Values.pipeline.uploaded_files_days_before_hidden | quote }}
     {{- end }}
+    {{- if ne .Values.pipeline.lazy_threshold_bytes nil }}
+    lazy_threshold_bytes: {{ .Values.pipeline.lazy_threshold_bytes | quote }}
+    {{- end }}
     {{- if ne .Values.pipeline.imap_folder_days_before_unsubscribe nil }}
     imap_folder_days_before_unsubscribe: {{ .Values.pipeline.imap_folder_days_before_unsubscribe | quote }}
     {{- end }}
