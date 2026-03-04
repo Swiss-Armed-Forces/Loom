@@ -5,7 +5,6 @@ from pathlib import Path
 import pytest
 
 from common.services.lazybytes_service import (
-    LAZY_THRESHOLD_BYTES,
     InMemoryLazyBytesService,
     LazyBytes,
 )
@@ -15,7 +14,7 @@ from common.settings import settings
 
 
 def random_large_data():
-    return random.randbytes(LAZY_THRESHOLD_BYTES * 3 + 1)
+    return random.randbytes(settings.lazy_threshold_bytes * 3 + 1)
 
 
 @pytest.fixture

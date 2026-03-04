@@ -38,6 +38,7 @@ egress:
 
 pipeline:
   taskTimeLimitSeconds: 86400  # 24h
+  lazy_threshold_bytes: null
   uploaded_files_days_before_hidden: null
   imap_folder_days_before_unsubscribe: null
   skip_summarize_while_indexing: true
