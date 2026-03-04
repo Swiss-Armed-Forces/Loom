@@ -63,6 +63,7 @@ def signature(file_content: LazyBytes, file: File) -> Signature:
                 upload_email_to_imap_task.s(file_content, file),
                 group(
                     persist_imap_info.s(file),
+                    subscribe_to_imap_folder.s(),
                     chain(
                         render_email_to_image.s(),
                         group(
@@ -154,6 +155,14 @@ def upload_email_to_imap_task(
             )
         imap_info = imap_service.append_email(email, email_folder)
         return imap_info
+
+
+@app.task(base=FileIndexingTask)
+def subscribe_to_imap_folder(imap_info: ImapInfo | None):
+    if imap_info is None:
+        return
+    imap_service = get_imap_service()
+    imap_service.subscribe_to_folder(imap_info.folder)
 
 
 @persisting_task(app, IndexingPersister)

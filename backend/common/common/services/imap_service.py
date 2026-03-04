@@ -7,7 +7,7 @@ from typing import Generator
 
 from imapclient import IMAPClient
 from imapclient.exceptions import IMAPClientError
-from pydantic import AnyUrl
+from pydantic import AnyUrl, BaseModel
 
 from common.file.file_repository import FilePurePath, ImapInfo, ImapPurePath
 
@@ -22,6 +22,12 @@ class IMAPServiceError(Exception):
 
 class IMAPServiceErrorFolderNotSelectable(IMAPServiceError):
     pass
+
+
+class ImapFolderInfo(BaseModel):
+    flags: list[bytes]
+    delimiter: bytes
+    name: ImapPurePath
 
 
 IMAP_DEDUPLICATION_HEADER = "X-Deduplication-Upload-Hash"
@@ -121,7 +127,7 @@ class IMAPService:
             folders_to_count = chain([imap_folder])
             if recurse:
                 folders_to_count = chain(
-                    folders_to_count, self._iter_subfolders(client, imap_folder)
+                    folders_to_count, self._iter_subfolder_names(client, imap_folder)
                 )
 
             return sum(
@@ -197,8 +203,17 @@ class IMAPService:
 
     def wipe(self):
         with self._imap_context() as client:
+            # Unsubscribe from all subscribed folders
+            for subscribed_imap_folder in self._iter_subscription_names(
+                client=client, imap_folder=IMAP_DIRECTORY_BASE
+            ):
+                client.unsubscribe_folder(str(subscribed_imap_folder))
+
+            # Get all folders
             imap_folders = list(
-                self._iter_subfolders(client=client, imap_folder=IMAP_DIRECTORY_BASE)
+                self._iter_subfolder_names(
+                    client=client, imap_folder=IMAP_DIRECTORY_BASE
+                )
             )
 
             # Sort by depth so later on we delete subfolders before parents.
@@ -207,7 +222,7 @@ class IMAPService:
                 reverse=True,
             )
 
-            # 1) Empty all selectable folders
+            # Empty all selectable folders
             for imap_folder in imap_folders:
                 try:
                     with self._select_folder(client, imap_folder, readonly=False):
@@ -220,7 +235,7 @@ class IMAPService:
                 except IMAPServiceErrorFolderNotSelectable:
                     continue
 
-            # 2) Delete folders (deepest-first)
+            # Delete folders (deepest-first)
             for imap_folder in imap_folders:
                 client.delete_folder(str(imap_folder))
 
@@ -234,7 +249,7 @@ class IMAPService:
 
     def _iter_subfolders(
         self, client: IMAPClient, imap_folder: ImapPurePath
-    ) -> Generator[ImapPurePath, None, None]:
+    ) -> Generator[ImapFolderInfo, None, None]:
         try:
             subtree = client.list_folders(
                 directory="", pattern=f"{imap_folder}{IMAP_FOLDER_DELIMITER}*"
@@ -244,10 +259,51 @@ class IMAPService:
                 f"Failed to list folder subtree for '{imap_folder}': {e}"
             ) from e
 
-        for _, _, name in subtree:
+        for flags, delimiter, name in subtree:
             if isinstance(name, bytes):
                 name = name.decode()
-            yield ImapPurePath(name)
+
+            yield ImapFolderInfo(
+                flags=flags,
+                delimiter=delimiter,
+                name=ImapPurePath(name),
+            )
+
+    def _iter_subfolder_names(
+        self, client: IMAPClient, imap_folder: ImapPurePath
+    ) -> Generator[ImapPurePath, None, None]:
+        yield from (
+            folder.name for folder in self._iter_subfolders(client, imap_folder)
+        )
+
+    def _iter_subscriptions(
+        self, client: IMAPClient, imap_folder: ImapPurePath
+    ) -> Generator[ImapFolderInfo, None, None]:
+        try:
+            subtree = client.list_sub_folders(
+                directory="", pattern=f"{imap_folder}{IMAP_FOLDER_DELIMITER}*"
+            )
+        except IMAPClientError as e:
+            raise IMAPServiceError(
+                f"Failed to list subscribed folder subtree for '{imap_folder}': {e}"
+            ) from e
+
+        for flags, delimiter, name in subtree:
+            if isinstance(name, bytes):
+                name = name.decode()
+
+            yield ImapFolderInfo(
+                flags=flags,
+                delimiter=delimiter,
+                name=ImapPurePath(name),
+            )
+
+    def _iter_subscription_names(
+        self, client: IMAPClient, imap_folder: ImapPurePath
+    ) -> Generator[ImapPurePath, None, None]:
+        yield from (
+            folder.name for folder in self._iter_subscriptions(client, imap_folder)
+        )
 
     def get_emails(
         self,
@@ -262,7 +318,7 @@ class IMAPService:
         with self._imap_context() as client:
             if recurse:
                 imap_folder_iter = chain(
-                    imap_folder_iter, self._iter_subfolders(client, imap_folder)
+                    imap_folder_iter, self._iter_subfolder_names(client, imap_folder)
                 )
             for f in imap_folder_iter:
                 try:
@@ -302,3 +358,14 @@ class IMAPService:
         imap_folder = self.get_imap_folder(folder)
         with self._imap_context() as client, self._select_folder(client, imap_folder):
             client.remove_flags(uids, flags)
+
+    def subscribe_to_folder(self, folder: FilePurePath | ImapPurePath | None):
+        with self._imap_context() as client:
+            client.subscribe_folder(str(folder))
+
+    def list_subscribed_folders(
+        self, folder: FilePurePath | ImapPurePath | None = None
+    ) -> list[ImapPurePath]:
+        imap_folder = self.get_imap_folder(folder)
+        with self._imap_context() as client:
+            return list(self._iter_subscription_names(client, imap_folder))
