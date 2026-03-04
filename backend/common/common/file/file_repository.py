@@ -6,7 +6,7 @@ import logging
 import re
 from datetime import datetime
 from json import JSONDecodeError
-from pathlib import PurePath
+from pathlib import PurePosixPath
 from typing import Annotated, Any, Callable, Generator, cast
 from urllib.error import URLError
 from uuid import UUID
@@ -37,6 +37,7 @@ from pydantic import (
     computed_field,
     field_validator,
 )
+from pydantic_core import core_schema
 
 from common.file.file_statistics import (
     StatisticsEntry,
@@ -142,9 +143,32 @@ class _EsLibreTranslateTranslations(InnerDoc):
         locals()[lang.code] = Object(_EsLibretranslateTranslatedLanguage)
 
 
+class ImapPurePath(PurePosixPath):
+    """IMAP path - behaves like PurePosixPath but works with Pydantic."""
+
+    @classmethod
+    def __get_pydantic_core_schema__(cls, _: Any, __):
+
+        return core_schema.no_info_after_validator_function(
+            cls,
+            core_schema.union_schema(
+                [
+                    core_schema.is_instance_schema(cls),
+                    core_schema.str_schema(),
+                ]
+            ),
+            # spellchecker:off
+            serialization=core_schema.plain_serializer_function_ser_schema(
+                str,
+                return_schema=core_schema.str_schema(),
+            ),
+            # spellchecker:on
+        )
+
+
 class ImapInfo(BaseModel):
     uid: int
-    folder: PurePath
+    folder: ImapPurePath
 
 
 class _EsImapInfo(InnerDoc):
@@ -173,8 +197,6 @@ class _EsRenderedFile(InnerDoc):
     browser_pdf_file_id = Keyword()
 
 
-FILE_SHORT_NAME_CONTENT_SUFFIX = ".content.txt"
-
 TAG_LEN_MIN = 1
 TAG_LEN_MAX = 25
 Tag = Annotated[str, StringConstraints(min_length=TAG_LEN_MIN, max_length=TAG_LEN_MAX)]
@@ -190,11 +212,34 @@ class _EsAttachment(InnerDoc):
     name = Keyword()
 
 
+class FilePurePath(PurePosixPath):
+    """File path - behaves like PurePosixPath but works with Pydantic."""
+
+    @classmethod
+    def __get_pydantic_core_schema__(cls, _: Any, __):
+
+        return core_schema.no_info_after_validator_function(
+            cls,
+            core_schema.union_schema(
+                [
+                    core_schema.is_instance_schema(cls),
+                    core_schema.str_schema(),
+                ]
+            ),
+            # spellchecker:off
+            serialization=core_schema.plain_serializer_function_ser_schema(
+                str,
+                return_schema=core_schema.str_schema(),
+            ),
+            # spellchecker:on
+        )
+
+
 class File(RepositoryTaskObject):
     storage_id: ObjectIdStr
     content: str | None = None
     content_truncated: bool = False
-    full_name: PurePath
+    full_name: FilePurePath
 
     @computed_field  # type: ignore[misc]
     @property
@@ -206,20 +251,15 @@ class File(RepositoryTaskObject):
 
     @computed_field  # type: ignore[misc]
     @property
-    def full_path(self) -> PurePath:
+    def full_path(self) -> FilePurePath:
         if isinstance(self.full_name, str):
-            return PurePath(f"//{self.source}/{self.full_name}")
-        return PurePath(f"//{self.source}") / self.full_name
+            return FilePurePath(f"//{self.source}/{self.full_name}")
+        return FilePurePath(f"//{self.source}") / self.full_name
 
     @computed_field  # type: ignore[misc]
     @property
     def short_name(self) -> str:
         return self.full_name.name
-
-    @computed_field  # type: ignore[misc]
-    @property
-    def short_name_content(self) -> str:
-        return f"{self.short_name}{FILE_SHORT_NAME_CONTENT_SUFFIX}"
 
     @computed_field  # type: ignore[misc]
     @property
@@ -392,7 +432,7 @@ class _EsFile(_EsTaskDocument):
 class TreePathsNode(BaseModel):
     """Node of tree of paths."""
 
-    full_path: PurePath
+    full_path: FilePurePath
     file_count: int
 
 
@@ -650,7 +690,7 @@ class FileRepository(BaseEsRepository[_EsFile, File]):
 
         nodes = []
         for path in result.aggregations.directory.buckets:
-            dirpath = PurePath(str(path.key))
+            dirpath = FilePurePath(str(path.key))
             nodes.append(
                 TreePathsNode(full_path=dirpath, file_count=cast(int, path.doc_count))
             )

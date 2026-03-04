@@ -2,12 +2,17 @@
 
 import hashlib
 import logging
-from pathlib import PurePath
 from uuid import UUID
 
 from bson import ObjectId
 
-from common.file.file_repository import File, FileNotFoundException, FileRepository, Tag
+from common.file.file_repository import (
+    File,
+    FileNotFoundException,
+    FilePurePath,
+    FileRepository,
+    Tag,
+)
 from common.services.file_storage_service import FileStorageService
 from common.services.lazybytes_service import LazyBytes, LazyBytesService
 from common.services.task_scheduling_service import TaskSchedulingService
@@ -56,7 +61,7 @@ class FileSchedulingService:
 
         file = File(
             storage_id=str(file_storage_id),
-            full_name=PurePath(full_name),
+            full_name=FilePurePath(full_name),
             source=source_id,
             parent_id=parent_id,
             sha256=file_data_hash.hexdigest(),

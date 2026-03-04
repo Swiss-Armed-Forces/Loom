@@ -1114,7 +1114,6 @@ export class FilesApi extends runtime.BaseAPI {
     }
 
     /**
-     * Re-index file.
      * Index File
      */
     async indexFileV1FilesFileIdIndexPostRaw(
@@ -1153,7 +1152,6 @@ export class FilesApi extends runtime.BaseAPI {
     }
 
     /**
-     * Re-index file.
      * Index File
      */
     async indexFileV1FilesFileIdIndexPost(

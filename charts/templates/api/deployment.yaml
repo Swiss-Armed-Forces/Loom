@@ -55,7 +55,10 @@ spec:
         - name: api
           image: {{ .Values.image.registry }}/{{ .Values.api.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) .Values.api.image.tag }}
           imagePullPolicy: {{ .Values.image.pullPolicy }}
-          args:
+          {{- if .Values.api.command }}
+          command: {{- toYaml .Values.api.command | nindent 10 }}
+          {{- else }}
+          command:
             - "python"
             - "-m"
             - "uvicorn"
@@ -66,6 +69,7 @@ spec:
             - {{ .Values.api.service.port | quote }}
             - "--host"
             - "0.0.0.0"
+          {{- end }}
           ports:
             - containerPort: {{ .Values.api.service.port }}
           envFrom:

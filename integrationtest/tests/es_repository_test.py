@@ -1,11 +1,10 @@
-from pathlib import PurePath
 from uuid import uuid4
 
 import pytest
 from common.ai_context.ai_context_repository import AiContext, AiContextRepository
 from common.archive.archive_repository import Archive, ArchiveRepository
 from common.dependencies import get_elasticsearch, get_pubsub_service, get_query_builder
-from common.file.file_repository import File, FileRepository
+from common.file.file_repository import File, FilePurePath, FileRepository
 from common.models.base_repository import RepositoryObject
 from common.models.es_repository import ES_REPOSITORY_TYPES, BaseEsRepository
 from common.services.query_builder import QueryParameters
@@ -14,7 +13,7 @@ from elasticsearch import NotFoundError
 ES_REPOSITORY_MINIMAL_OBJECTS: dict[type[BaseEsRepository], RepositoryObject] = {
     FileRepository: File(
         storage_id="000000000000000000000000",
-        full_name=PurePath("/test/test.txt"),
+        full_name=FilePurePath("/test/test.txt"),
         source="test-source",
         parent_id=None,
         sha256="abc123",

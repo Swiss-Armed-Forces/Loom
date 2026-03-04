@@ -1,9 +1,9 @@
 from datetime import datetime
-from pathlib import PurePath
 from uuid import uuid4
 
 from bson import ObjectId
 
+from common.file.file_repository import FilePurePath, ImapPurePath
 from common.services.query_builder import KeepAlive, QueryParameters
 
 
@@ -28,7 +28,8 @@ class TestValueDefaults:  # pylint: disable=too-few-public-methods
     test_object_id = ObjectId()
     test_object_id_str = str(ObjectId())
     test_datetime = datetime.now()
-    test_pure_path = PurePath("/a/path/to/nowhere.txt")
+    test_file_pure_path = FilePurePath("/a/path/to/nowhere.txt")
+    test_imappure_path = ImapPurePath("/a/path/to/nowhere_else.txt")
     test_uuid_list = [uuid4(), uuid4()]
     test_bool = False
     test_empty_dict: dict = {}
