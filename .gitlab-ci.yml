@@ -266,16 +266,6 @@ buildenv_nix-dind:
   script:
     - devenv shell -- nix-dind --push
 
-buildenv_transfer_loom:
-  extends: .default-docker
-  stage: buildenv
-  allow_failure: true
-  when: manual
-  variables:
-    SLEEP_TIME: infinity
-  script:
-    - devenv shell -- transfer-loom
-
 # ---------------------------------------------#
 #
 #
@@ -286,12 +276,20 @@ buildenv_transfer_loom:
 
 generate_frontend_static:
   stage: generate
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main" || $CI_COMMIT_TAG'
+      when: never
+    - when: manual
   script:
     - devenv shell -- generate-frontend-static
     - devenv shell -- git-file-changed
 
 generate_frontend_api:
   stage: generate
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main" || $CI_COMMIT_TAG'
+      when: never
+    - when: manual
   script:
     - devenv shell -- generate-frontend-api
     - devenv shell -- git-file-changed
@@ -299,6 +297,10 @@ generate_frontend_api:
 generate_third_party:
   extends: .default-docker
   stage: generate
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main" || $CI_COMMIT_TAG'
+      when: never
+    - when: manual
   script:
     - devenv shell -- generate-third-party
     - devenv shell -- git-file-changed

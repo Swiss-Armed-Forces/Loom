@@ -1131,19 +1131,6 @@ in
     '';
   };
 
-  scripts.transfer-loom = {
-    description = "Build a loom transfer file";
-    exec = ''
-      (
-        set -euo pipefail
-        cd '${config.devenv.root}'
-
-        ./helpers/transfer_loom.sh \
-          "''${@}"
-      )
-    '';
-  };
-
   scripts.update-traefik = {
     description = "Update the traefik helm charts in this repo";
     exec = ''
