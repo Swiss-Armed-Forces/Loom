@@ -314,7 +314,7 @@ export const fetchFileDetailData = createAsyncThunk(
     ) => {
         const query = {
             id: (await getShortRunningQuery()).queryId,
-            query: "*",
+            query: "hidden:*", // query all files
             keepAlive: null,
             languages: null,
             sortField: null,

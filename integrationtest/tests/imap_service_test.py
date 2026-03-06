@@ -6,6 +6,7 @@ from common.dependencies import get_imap_service
 from common.file.file_repository import FilePurePath
 from common.services.imap_service import (
     IMAPService,
+    IMAPServiceError,
     IMAPServiceErrorFolderNotSelectable,
 )
 
@@ -358,7 +359,7 @@ def test_unsubscribe_folder(imap_service: IMAPService):
     imap_service.create_folder(imap_folder)
 
     # Subscribe to folder
-    imap_service.subscribe_to_folder(imap_folder)
+    imap_service.subscribe_folder(imap_folder)
     subscribed = imap_service.list_subscribed_folders()
     assert imap_folder in subscribed
 
@@ -366,3 +367,50 @@ def test_unsubscribe_folder(imap_service: IMAPService):
     imap_service.unsubscribe_folder(folder)
     subscribed = imap_service.list_subscribed_folders()
     assert imap_folder not in subscribed
+
+
+def test_subscribe_unsubscribe_folder_recurse(imap_service: IMAPService):
+    parent = FilePurePath("subscribe_unsubscribe_recurse_test")
+    child = FilePurePath("subscribe_unsubscribe_recurse_test/child")
+    grandchild = FilePurePath("subscribe_unsubscribe_recurse_test/child/grandchild")
+
+    parent_imap = imap_service.get_imap_folder(parent)
+    child_imap = imap_service.get_imap_folder(child)
+    grandchild_imap = imap_service.get_imap_folder(grandchild)
+
+    # Create folder hierarchy
+    imap_service.create_folder(parent_imap)
+    imap_service.create_folder(child_imap)
+    imap_service.create_folder(grandchild_imap)
+
+    # Subscribe recursively from parent
+    imap_service.subscribe_folder(parent, recurse=True)
+
+    # Verify all folders are subscribed
+    subscribed = imap_service.list_subscribed_folders()
+    assert parent_imap in subscribed
+    assert child_imap in subscribed
+    assert grandchild_imap in subscribed
+
+    # Unsubscribe recursively from parent
+    imap_service.unsubscribe_folder(parent, recurse=True)
+
+    # Verify all folders are unsubscribed
+    subscribed = imap_service.list_subscribed_folders()
+    assert parent_imap not in subscribed
+    assert child_imap not in subscribed
+    assert grandchild_imap not in subscribed
+
+
+def test_imap_subscribe_folder_raises_on_non_existing_folder(imap_service: IMAPService):
+    invalid_folder = FilePurePath("this/folder/does/not/exist")
+    with pytest.raises(IMAPServiceError):
+        imap_service.subscribe_folder(invalid_folder)
+
+
+def test_imap_unsubscribe_folder_raises_on_folder_with_invalid_name(
+    imap_service: IMAPService,
+):
+    invalid_folder = FilePurePath("invalid\x00name")
+    with pytest.raises(IMAPServiceError):
+        imap_service.unsubscribe_folder(invalid_folder)

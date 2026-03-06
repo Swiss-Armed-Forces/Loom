@@ -1,3 +1,5 @@
+import logging
+import math
 from datetime import datetime, timedelta
 from functools import wraps
 from typing import Callable, Iterable
@@ -15,9 +17,104 @@ from opentelemetry.exporter.prometheus import PrometheusMetricReader
 from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 from opentelemetry.metrics import CallbackOptions, Observation
 from opentelemetry.sdk.metrics import MeterProvider
+from opentelemetry.sdk.metrics.export import (
+    MetricExporter,
+    MetricExportResult,
+    MetricsData,
+    PeriodicExportingMetricReader,
+)
 from pydantic import BaseModel, Field
 
+logger = logging.getLogger(__name__)
 
+PERIODIC_METRICS_REFRESH__MS = 60 * 1000
+ADAPTIVE_CACHE_TIMEOUT_SAFETY_FACTOR = 0.8
+
+
+class LoggingMetricExporter(MetricExporter):
+    """Metric exporter that logs metric collection."""
+
+    def export(
+        self,
+        metrics_data: MetricsData,
+        timeout_millis: float = 10_000,
+        **kwargs,
+    ) -> MetricExportResult:
+        """Log metric collection."""
+        logger.debug("Periodic metric collection triggered: %s", metrics_data)
+        return MetricExportResult.SUCCESS
+
+    def shutdown(self, timeout_millis: float = 30_000, **kwargs) -> None:
+        pass
+
+    def force_flush(self, timeout_millis: float = 10_000) -> bool:
+        return True
+
+
+def with_adaptive_cache():
+    """Decorator that caches metric Observations based on collection time."""
+
+    class MetricCache(BaseModel):
+        # Allow Observation type which doesn't have Pydantic schema
+        model_config = {"arbitrary_types_allowed": True}
+
+        observations: list[Observation]
+        timestamp: datetime = Field(default_factory=datetime.now)
+        collection_time: timedelta
+
+    def decorator(
+        func: Callable[[CallbackOptions], Iterable[Observation]],
+    ) -> Callable:
+        cache: MetricCache | None = None
+
+        @wraps(func)
+        def wrapper(options: CallbackOptions) -> Iterable[Observation]:
+            nonlocal cache
+
+            # Return cached result if we won't be able to collect them in time
+            timeout = timedelta(
+                milliseconds=(
+                    options.timeout_millis * ADAPTIVE_CACHE_TIMEOUT_SAFETY_FACTOR
+                )
+            )
+
+            if cache:
+                enough_time_to_compute = cache.collection_time < timeout
+                if not enough_time_to_compute:
+                    logger.info(
+                        "Returning cached metric %s (collected in %s, at: %s)",
+                        func.__name__,
+                        cache.collection_time,
+                        cache.timestamp,
+                    )
+                    yield from cache.observations
+                    return
+
+            # Collect new metric and measure time
+            start_time = datetime.now()
+            observations = list(func(options))
+            collection_time = datetime.now() - start_time
+
+            # Update cache
+            cache = MetricCache(
+                observations=observations,
+                collection_time=collection_time,
+            )
+
+            logger.info(
+                "Collected metric %s in %s",
+                func.__name__,
+                collection_time,
+            )
+
+            yield from observations
+
+        return wrapper
+
+    return decorator
+
+
+@with_adaptive_cache()
 def count_files(_: CallbackOptions) -> Iterable[Observation]:
     file_repository = get_file_repository()
     query_id = file_repository.open_point_in_time()
@@ -30,6 +127,7 @@ def count_files(_: CallbackOptions) -> Iterable[Observation]:
     yield Observation(value=count)
 
 
+@with_adaptive_cache()
 def count_files_by_state(_: CallbackOptions) -> Iterable[Observation]:
     file_repository = get_file_repository()
     query_id = file_repository.open_point_in_time()
@@ -46,6 +144,7 @@ def count_files_by_state(_: CallbackOptions) -> Iterable[Observation]:
         )
 
 
+@with_adaptive_cache()
 def count_files_hidden(_: CallbackOptions) -> Iterable[Observation]:
     file_repository = get_file_repository()
     query_id = file_repository.open_point_in_time()
@@ -58,6 +157,7 @@ def count_files_hidden(_: CallbackOptions) -> Iterable[Observation]:
     yield Observation(value=count)
 
 
+@with_adaptive_cache()
 def count_emails(_: CallbackOptions) -> Iterable[Observation]:
     file_repository = get_file_repository()
     query_id = file_repository.open_point_in_time()
@@ -70,6 +170,7 @@ def count_emails(_: CallbackOptions) -> Iterable[Observation]:
     yield Observation(value=count)
 
 
+@with_adaptive_cache()
 def count_imap_emails(_: CallbackOptions) -> Iterable[Observation]:
     imap_service = get_imap_service()
     email_count = imap_service.count_messages(recurse=True)
@@ -108,6 +209,7 @@ def with_cached_cache_statistics(ttl: timedelta | None = None):
     return decorator
 
 
+@with_adaptive_cache()
 @with_cached_cache_statistics()
 def observe_cache_mem_size(
     _: CallbackOptions, stats: CacheStatistics
@@ -116,6 +218,7 @@ def observe_cache_mem_size(
         yield Observation(value=entry.mem_size, attributes={"namespace": namespace})
 
 
+@with_adaptive_cache()
 @with_cached_cache_statistics()
 def observe_cache_entries(
     _: CallbackOptions, stats: CacheStatistics
@@ -126,6 +229,7 @@ def observe_cache_entries(
         )
 
 
+@with_adaptive_cache()
 @with_cached_cache_statistics()
 def observe_cache_hits(
     _: CallbackOptions, stats: CacheStatistics
@@ -134,6 +238,7 @@ def observe_cache_hits(
         yield Observation(value=entry.hits_count, attributes={"namespace": namespace})
 
 
+@with_adaptive_cache()
 @with_cached_cache_statistics()
 def observe_cache_misses(
     _: CallbackOptions, stats: CacheStatistics
@@ -143,9 +248,22 @@ def observe_cache_misses(
 
 
 def init_metrics(api: FastAPI):
+
     # setup prometheus provider
     prometheus_reader = PrometheusMetricReader()
-    provider = MeterProvider(metric_readers=[prometheus_reader])
+
+    # Periodic reader to warm up metric caches in the background.
+    # The PrometheusMetricReader doesn't have a configurable export_timeout,
+    # so we use this periodic reader to trigger metric collection every N seconds,
+    # which populates the @with_adaptive_cache decorators.
+    # This ensures Prometheus scrapes always get fast cached results.
+    periodic_reader = PeriodicExportingMetricReader(
+        exporter=LoggingMetricExporter(),
+        export_interval_millis=PERIODIC_METRICS_REFRESH__MS,
+        export_timeout_millis=math.inf,
+    )
+
+    provider = MeterProvider(metric_readers=[prometheus_reader, periodic_reader])
 
     # instrument the fastapi app
     FastAPIInstrumentor.instrument_app(api, meter_provider=provider)

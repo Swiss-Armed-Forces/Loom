@@ -399,7 +399,9 @@ class BaseEsRepository(
         if len(response) <= 0:
             return None
         if len(response) > 1:
-            raise ValueError("deduplication_fingerprint not unique")
+            logger.warning(
+                "deduplication_fingerprint (%s) not unique.", deduplication_fingerprint
+            )
         document = response[0]
         obj = self._document_to_object(document)
         return obj

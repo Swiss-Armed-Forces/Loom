@@ -10,6 +10,7 @@ from common.file.file_repository import File, ImapInfo
 from common.services.lazybytes_service import LazyBytes
 from httpx import HTTPStatusError
 from pydantic import BaseModel
+from requests.exceptions import ConnectionError as RequestsConnectionError
 
 from worker.dependencies import get_gotenberg_client, get_rspamd_service
 from worker.index_file.infra.file_indexing_task import FileIndexingTask
@@ -39,6 +40,9 @@ EMAIL_RENDER_EXPRESSION_JAVASCRIPT = """
     && (!document.fonts || document.fonts.status === 'loaded')
 )
 """
+
+RSPAMD_MAX_RETRIES = 15
+RSPAMD_RETRY_EXCEPTIONS = (RequestsConnectionError,)
 
 
 def signature(file_content: LazyBytes, file: File) -> Signature:
@@ -107,7 +111,12 @@ def detect_email_task(
     return is_email(extension=file_extension, mimetype=tika_file_type)
 
 
-@app.task(base=FileIndexingTask)
+@app.task(
+    base=FileIndexingTask,
+    autoretry_for=RSPAMD_RETRY_EXCEPTIONS,
+    max_retries=RSPAMD_MAX_RETRIES,
+    retry_backoff=True,
+)
 def detect_spam_task(
     is_email_detected: bool,
     file_content: LazyBytes,
@@ -162,7 +171,7 @@ def subscribe_to_imap_folder(imap_info: ImapInfo | None):
     if imap_info is None:
         return
     imap_service = get_imap_service()
-    imap_service.subscribe_to_folder(imap_info.folder)
+    imap_service.subscribe_folder(imap_info.folder)
 
 
 @persisting_task(app, IndexingPersister)

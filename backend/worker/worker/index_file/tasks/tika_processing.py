@@ -66,7 +66,7 @@ class TikaExtractorFallback(TikaFallback):
     def handle(self, file_content: LazyBytes) -> TikaResult | None:
         with get_lazybytes_service().load_file_named(
             file_content
-        ) as fd, tempfile.TemporaryDirectory() as d:
+        ) as fd, tempfile.TemporaryDirectory(dir=settings.tempfile_dir) as d:
             try:
                 self.extractor.extract(fd, d)
             except ExtractNotSupported:
