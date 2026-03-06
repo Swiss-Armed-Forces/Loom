@@ -74,6 +74,12 @@ class IMAPService:
 
     @contextmanager
     def _imap_context(self) -> Generator[IMAPClient, None, None]:
+        # We do create a new connection here because IMAPClient is not thread safe
+        # We could probably be a bit smarter here, but we have to be very careful
+        # Note that at the time of writing this class is instantiated in the
+        # celery master process, which is then forked for the children.
+        # See:
+        # - https://imapclient.readthedocs.io/en/2.2.0/api.html#thread-safety
         with IMAPClient(
             host=self.host.host if self.host.host else "",
             port=self.host.port if self.host.port else 143,
@@ -390,14 +396,41 @@ class IMAPService:
         with self._imap_context() as client, self._select_folder(client, imap_folder):
             client.remove_flags(uids, flags)
 
-    def subscribe_to_folder(self, folder: FilePurePath | ImapPurePath | None):
-        with self._imap_context() as client:
-            client.subscribe_folder(str(folder))
-
-    def unsubscribe_folder(self, folder: FilePurePath | ImapPurePath | None):
+    def subscribe_folder(
+        self, folder: FilePurePath | ImapPurePath | None, recurse: bool = False
+    ):
         imap_folder = self.get_imap_folder(folder)
         with self._imap_context() as client:
-            client.unsubscribe_folder(str(imap_folder))
+            folders = chain([imap_folder])
+            if recurse:
+                folders = chain(
+                    folders, self._iter_subfolder_names(client, imap_folder)
+                )
+            for f in folders:
+                try:
+                    client.subscribe_folder(str(f))
+                except IMAPClientError as e:
+                    raise IMAPServiceError(
+                        f"Failed to subscribe to folder '{f}': {e}"
+                    ) from e
+
+    def unsubscribe_folder(
+        self, folder: FilePurePath | ImapPurePath | None, recurse: bool = False
+    ):
+        imap_folder = self.get_imap_folder(folder)
+        with self._imap_context() as client:
+            folders = chain([imap_folder])
+            if recurse:
+                folders = chain(
+                    folders, self._iter_subfolder_names(client, imap_folder)
+                )
+            for f in folders:
+                try:
+                    client.unsubscribe_folder(str(f))
+                except IMAPClientError as e:
+                    raise IMAPServiceError(
+                        f"Failed to unsubscribe from folder '{f}': {e}"
+                    ) from e
 
     def list_subscribed_folders(
         self, folder: FilePurePath | ImapPurePath | None = None

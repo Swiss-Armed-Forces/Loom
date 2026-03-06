@@ -22,7 +22,17 @@ import {
     HTTPValidationErrorToJSON,
 } from "../models/index";
 
-export interface CountImapMessagesV1ImapMessagesCountGetRequest {
+export interface CountMessagesV1ImapFolderMessagesCountGetRequest {
+    folder?: Folder;
+    recurse?: boolean;
+}
+
+export interface SubscribeFolderV1ImapFolderSubscribePutRequest {
+    folder?: Folder;
+    recurse?: boolean;
+}
+
+export interface UnsubscribeFolderV1ImapFolderUnsubscribePutRequest {
     folder?: Folder;
     recurse?: boolean;
 }
@@ -32,10 +42,10 @@ export interface CountImapMessagesV1ImapMessagesCountGetRequest {
  */
 export class ImapApi extends runtime.BaseAPI {
     /**
-     * Count Imap Messages
+     * Count Messages
      */
-    async countImapMessagesV1ImapMessagesCountGetRaw(
-        requestParameters: CountImapMessagesV1ImapMessagesCountGetRequest,
+    async countMessagesV1ImapFolderMessagesCountGetRaw(
+        requestParameters: CountMessagesV1ImapFolderMessagesCountGetRequest,
         initOverrides?: RequestInit | runtime.InitOverrideFunction,
     ): Promise<runtime.ApiResponse<number>> {
         const queryParameters: any = {};
@@ -52,7 +62,7 @@ export class ImapApi extends runtime.BaseAPI {
 
         const response = await this.request(
             {
-                path: `/v1/imap/messages/count`,
+                path: `/v1/imap/folder/messages/count`,
                 method: "GET",
                 headers: headerParameters,
                 query: queryParameters,
@@ -68,16 +78,118 @@ export class ImapApi extends runtime.BaseAPI {
     }
 
     /**
-     * Count Imap Messages
+     * Count Messages
      */
-    async countImapMessagesV1ImapMessagesCountGet(
-        requestParameters: CountImapMessagesV1ImapMessagesCountGetRequest = {},
+    async countMessagesV1ImapFolderMessagesCountGet(
+        requestParameters: CountMessagesV1ImapFolderMessagesCountGetRequest = {},
         initOverrides?: RequestInit | runtime.InitOverrideFunction,
     ): Promise<number> {
-        const response = await this.countImapMessagesV1ImapMessagesCountGetRaw(
+        const response =
+            await this.countMessagesV1ImapFolderMessagesCountGetRaw(
+                requestParameters,
+                initOverrides,
+            );
+        return await response.value();
+    }
+
+    /**
+     * Subscribe Folder
+     */
+    async subscribeFolderV1ImapFolderSubscribePutRaw(
+        requestParameters: SubscribeFolderV1ImapFolderSubscribePutRequest,
+        initOverrides?: RequestInit | runtime.InitOverrideFunction,
+    ): Promise<runtime.ApiResponse<any>> {
+        const queryParameters: any = {};
+
+        if (requestParameters["folder"] != null) {
+            queryParameters["folder"] = requestParameters["folder"];
+        }
+
+        if (requestParameters["recurse"] != null) {
+            queryParameters["recurse"] = requestParameters["recurse"];
+        }
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        const response = await this.request(
+            {
+                path: `/v1/imap/folder/subscribe`,
+                method: "PUT",
+                headers: headerParameters,
+                query: queryParameters,
+            },
+            initOverrides,
+        );
+
+        if (this.isJsonMime(response.headers.get("content-type"))) {
+            return new runtime.JSONApiResponse<any>(response);
+        } else {
+            return new runtime.TextApiResponse(response) as any;
+        }
+    }
+
+    /**
+     * Subscribe Folder
+     */
+    async subscribeFolderV1ImapFolderSubscribePut(
+        requestParameters: SubscribeFolderV1ImapFolderSubscribePutRequest = {},
+        initOverrides?: RequestInit | runtime.InitOverrideFunction,
+    ): Promise<any> {
+        const response = await this.subscribeFolderV1ImapFolderSubscribePutRaw(
             requestParameters,
             initOverrides,
         );
+        return await response.value();
+    }
+
+    /**
+     * Unsubscribe Folder
+     */
+    async unsubscribeFolderV1ImapFolderUnsubscribePutRaw(
+        requestParameters: UnsubscribeFolderV1ImapFolderUnsubscribePutRequest,
+        initOverrides?: RequestInit | runtime.InitOverrideFunction,
+    ): Promise<runtime.ApiResponse<any>> {
+        const queryParameters: any = {};
+
+        if (requestParameters["folder"] != null) {
+            queryParameters["folder"] = requestParameters["folder"];
+        }
+
+        if (requestParameters["recurse"] != null) {
+            queryParameters["recurse"] = requestParameters["recurse"];
+        }
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        const response = await this.request(
+            {
+                path: `/v1/imap/folder/unsubscribe`,
+                method: "PUT",
+                headers: headerParameters,
+                query: queryParameters,
+            },
+            initOverrides,
+        );
+
+        if (this.isJsonMime(response.headers.get("content-type"))) {
+            return new runtime.JSONApiResponse<any>(response);
+        } else {
+            return new runtime.TextApiResponse(response) as any;
+        }
+    }
+
+    /**
+     * Unsubscribe Folder
+     */
+    async unsubscribeFolderV1ImapFolderUnsubscribePut(
+        requestParameters: UnsubscribeFolderV1ImapFolderUnsubscribePutRequest = {},
+        initOverrides?: RequestInit | runtime.InitOverrideFunction,
+    ): Promise<any> {
+        const response =
+            await this.unsubscribeFolderV1ImapFolderUnsubscribePutRaw(
+                requestParameters,
+                initOverrides,
+            );
         return await response.value();
     }
 }
