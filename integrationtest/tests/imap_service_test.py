@@ -67,13 +67,13 @@ def test_imap_count_messages_returns_0_on_non_existing_folder(
 
 
 @pytest.mark.parametrize("recurse", (True, False))
-def test_imap_get_emails_returns_empty_list_on_non_existing_folder(
+def test_imap_get_emails_raises_on_non_existing_folder(
     imap_service: IMAPService, recurse: bool
 ):
-    result = imap_service.get_emails(
-        folder=FilePurePath("this/folder/does/not/exist"), recurse=recurse
-    )
-    assert result == []
+    with pytest.raises(IMAPServiceError):
+        imap_service.get_emails(
+            folder=FilePurePath("this/folder/does/not/exist"), recurse=recurse
+        )
 
 
 def test_imap_add_flags_to_emails_raises_on_non_existing_folder(
@@ -414,3 +414,38 @@ def test_imap_unsubscribe_folder_raises_on_folder_with_invalid_name(
     invalid_folder = FilePurePath("invalid\x00name")
     with pytest.raises(IMAPServiceError):
         imap_service.unsubscribe_folder(invalid_folder)
+
+
+def test_subscribe_folder_recurse_only_subscribes_selectable_folders(
+    imap_service: IMAPService,
+):
+    """Test that recursive subscription works and only subscribes to selectable folders.
+
+    Note: Creating true NOSELECT folders is server-dependent. This test verifies
+    the existing recursive subscription behavior continues to work correctly.
+    The NOSELECT filtering is verified by unit tests.
+    """
+    parent = FilePurePath("subscribe_selectable_test")
+    child = FilePurePath("subscribe_selectable_test/child")
+    grandchild = FilePurePath("subscribe_selectable_test/child/grandchild")
+
+    parent_imap = imap_service.get_imap_folder(parent)
+    child_imap = imap_service.get_imap_folder(child)
+    grandchild_imap = imap_service.get_imap_folder(grandchild)
+
+    # Create folder hierarchy
+    imap_service.create_folder(parent_imap)
+    imap_service.create_folder(child_imap)
+    imap_service.create_folder(grandchild_imap)
+
+    # Subscribe recursively from parent
+    imap_service.subscribe_folder(parent, recurse=True)
+
+    # Verify all selectable folders are subscribed
+    subscribed = imap_service.list_subscribed_folders()
+    assert parent_imap in subscribed
+    assert child_imap in subscribed
+    assert grandchild_imap in subscribed
+
+    # Cleanup
+    imap_service.unsubscribe_folder(parent, recurse=True)

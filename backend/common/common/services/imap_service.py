@@ -25,12 +25,21 @@ class IMAPServiceErrorFolderNotSelectable(IMAPServiceError):
     pass
 
 
+class IMAPServiceErrorNoSelectableFolderFound(IMAPServiceError):
+    pass
+
+
 class ImapFolderInfo(BaseModel):
     flags: list[bytes]
     delimiter: bytes
     name: ImapPurePath
 
+    @property
+    def is_selectable(self) -> bool:
+        return IMAP_FLAG_NOSELECT not in self.flags
 
+
+IMAP_FLAG_NOSELECT = b"\\Noselect"
 IMAP_DEDUPLICATION_HEADER = "X-Deduplication-Upload-Hash"
 IMAP_TIMEOUT = 1200
 IMAP_DIRECTORY_BASE = ImapPurePath("INBOX")
@@ -313,6 +322,62 @@ class IMAPService:
             folder.name for folder in self._iter_subfolders(client, imap_folder)
         )
 
+    def _get_folder_info(
+        self, client: IMAPClient, imap_folder: ImapPurePath
+    ) -> ImapFolderInfo:
+        """Get folder info for a specific folder."""
+        try:
+            folder_list = client.list_folders(directory="", pattern=str(imap_folder))
+        except IMAPClientError as e:
+            raise IMAPServiceError(
+                f"Could not get folder info '{imap_folder}': {e}"
+            ) from e
+
+        if not folder_list:
+            raise IMAPServiceError(
+                f"Could not get folder info '{imap_folder}': Folder not found"
+            )
+
+        if len(folder_list) > 1:
+            raise IMAPServiceError(
+                f"Could not get folder info '{imap_folder}': Multiple folders found"
+            )
+
+        flags, delimiter, name = folder_list[0]
+        if isinstance(name, bytes):
+            name = name.decode()
+        return ImapFolderInfo(flags=flags, delimiter=delimiter, name=ImapPurePath(name))
+
+    def _iter_selectable_folder_names(
+        self,
+        client: IMAPClient,
+        imap_folder: ImapPurePath,
+        recurse: bool = False,
+    ) -> Generator[ImapPurePath, None, None]:
+        """Iterate selectable folder names.
+
+        Yields the main folder if selectable, and if recurse=True, also yields all
+        selectable subfolders.
+        """
+        selectable_folders: list[ImapPurePath] = []
+
+        folder_info = self._get_folder_info(client, imap_folder)
+        if folder_info is None or folder_info.is_selectable:
+            selectable_folders.append(imap_folder)
+
+        if recurse:
+            for folder in self._iter_subfolders(client, imap_folder):
+                if folder.is_selectable:
+                    selectable_folders.append(folder.name)
+
+        if not selectable_folders:
+            raise IMAPServiceErrorNoSelectableFolderFound(
+                f"Cannot iterate over folder '{imap_folder}': "
+                "no selectable folders found"
+            )
+
+        yield from selectable_folders
+
     def _iter_subscriptions(
         self, client: IMAPClient, imap_folder: ImapPurePath
     ) -> Generator[ImapFolderInfo, None, None]:
@@ -351,26 +416,18 @@ class IMAPService:
         search_criteria = search_criteria if search_criteria else ["ALL"]
         infos: list[ImapInfo] = []
         imap_folder = self.get_imap_folder(folder)
-        imap_folder_iter = chain([imap_folder])
         with self._imap_context() as client:
-            if recurse:
-                imap_folder_iter = chain(
-                    imap_folder_iter, self._iter_subfolder_names(client, imap_folder)
-                )
-            for f in imap_folder_iter:
-                try:
-                    with self._select_folder(client, f):
-                        try:
-                            searched_uids = client.search(search_criteria)  # type: ignore
-                        except IMAPClientError as e:
-                            raise IMAPServiceError(
-                                (
-                                    f"Failed to search in folder '{f}'"
-                                    f"for emails with criteria {search_criteria}"
-                                )
-                            ) from e
-                except IMAPServiceErrorFolderNotSelectable:
-                    continue
+            for f in self._iter_selectable_folder_names(
+                client, imap_folder, recurse=recurse
+            ):
+                with self._select_folder(client, f):
+                    try:
+                        searched_uids = client.search(search_criteria)  # type: ignore
+                    except IMAPClientError as e:
+                        raise IMAPServiceError(
+                            f"Failed to search in folder '{f}' "
+                            f"for emails with criteria {search_criteria}"
+                        ) from e
 
                 for uid in searched_uids:
                     infos.append(ImapInfo(folder=imap_folder, uid=uid))
@@ -401,12 +458,9 @@ class IMAPService:
     ):
         imap_folder = self.get_imap_folder(folder)
         with self._imap_context() as client:
-            folders = chain([imap_folder])
-            if recurse:
-                folders = chain(
-                    folders, self._iter_subfolder_names(client, imap_folder)
-                )
-            for f in folders:
+            for f in self._iter_selectable_folder_names(
+                client, imap_folder, recurse=recurse
+            ):
                 try:
                     client.subscribe_folder(str(f))
                 except IMAPClientError as e:
