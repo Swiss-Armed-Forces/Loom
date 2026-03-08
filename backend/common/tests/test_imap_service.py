@@ -3,7 +3,12 @@ from pathlib import PurePath
 import pytest
 
 from common.file.file_repository import FilePurePath, ImapPurePath
-from common.services.imap_service import IMAP_DIRECTORY_BASE, IMAPService
+from common.services.imap_service import (
+    IMAP_DIRECTORY_BASE,
+    IMAP_FLAG_NOSELECT,
+    ImapFolderInfo,
+    IMAPService,
+)
 
 
 class TestIMAPService:
@@ -156,3 +161,29 @@ class TestIMAPService:
         """Test that get_folder returns None for IMAP_DIRECTORY_BASE."""
         result = IMAPService.get_folder(ImapPurePath(IMAP_DIRECTORY_BASE))
         assert result is None
+
+
+class TestImapFolderInfo:
+    def test_is_selectable_without_noselect_flag(self):
+        folder = ImapFolderInfo(
+            flags=[b"\\HasChildren"],
+            delimiter=b"/",
+            name=ImapPurePath("INBOX/Test"),
+        )
+        assert folder.is_selectable is True
+
+    def test_is_selectable_with_noselect_flag(self):
+        folder = ImapFolderInfo(
+            flags=[IMAP_FLAG_NOSELECT, b"\\HasChildren"],
+            delimiter=b"/",
+            name=ImapPurePath("INBOX/Test"),
+        )
+        assert folder.is_selectable is False
+
+    def test_is_selectable_with_empty_flags(self):
+        folder = ImapFolderInfo(
+            flags=[],
+            delimiter=b"/",
+            name=ImapPurePath("INBOX/Test"),
+        )
+        assert folder.is_selectable is True
