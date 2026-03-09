@@ -1,3 +1,4 @@
+import logging
 import pickle
 from abc import ABC, abstractmethod
 from contextlib import contextmanager
@@ -19,6 +20,9 @@ from pymongo.database import Database
 
 from common.settings import settings
 from common.utils.gridfs import chunked_iterator_for_stream
+
+logger = logging.getLogger(__name__)
+
 
 T = TypeVar("T")
 
@@ -307,8 +311,9 @@ class GridFSLazyBytesService(LazyBytesService):
 
                 if actual_chunks < expected_chunks:
                     # not all chunks uploaded yet: skip delete
+                    logger.info("Not Flushing: %s", file_id)
                     continue
-
+            logger.info("Flushing: %s", file_id)
             self._bucket.delete(file_id)
 
 
