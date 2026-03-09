@@ -15,14 +15,11 @@ logger = logging.getLogger(__name__)
 
 CACHE_KEY_PREFIX = "rc"
 CACHE_KEY_FORMAT = "{{rc:{namespace}}}:{key}"
-CACHE_DEFAULT_SHRINK_PERCENTAGE = 0.8  # setting 0.8 means that it will free up 20%
 CACHE_DEFAULT_TTL_SECONDS = 60 * 60 * 24  # 1 day
 CACHE_DEFAULT_MAX_SIZE = 5 * (1024**3)  # 5 GB
 
 
 class CacheStatisticsEntryModel(BaseModel):
-    """Cache stats of task caching."""
-
     mem_size: int
     entries_count: int
     hits_count: int
@@ -66,21 +63,21 @@ def get_cache_statistics(redis_client: StrictRedis) -> CacheStatistics:
     keys_bytes = redis_client.keys(f"{{{CACHE_KEY_PREFIX}*[miss|hits]?")
     keys = [key.decode() for key in keys_bytes]
 
-    tasks = {key.split(":")[1][:-1] for key in keys}
-    for task in tasks:
-        val_key = CACHE_KEY_FORMAT.format(namespace=task, key="vals")
+    namespaces = {key.split(":")[1][:-1] for key in keys}
+    for namespace in namespaces:
+        val_key = CACHE_KEY_FORMAT.format(namespace=namespace, key="vals")
         mem_size = redis_client.execute_command(f"MEMORY USAGE {val_key}")
         entries_count = redis_client.zcard(
-            CACHE_KEY_FORMAT.format(namespace=task, key="keys")
+            CACHE_KEY_FORMAT.format(namespace=namespace, key="keys")
         )
         hits_count = redis_client.get(
-            CACHE_KEY_FORMAT.format(namespace=task, key="hits")
+            CACHE_KEY_FORMAT.format(namespace=namespace, key="hits")
         )
         miss_count = redis_client.get(
-            CACHE_KEY_FORMAT.format(namespace=task, key="miss")
+            CACHE_KEY_FORMAT.format(namespace=namespace, key="miss")
         )
 
-        result[task] = CacheStatisticsEntryModel(
+        result[namespace] = CacheStatisticsEntryModel(
             mem_size=int(mem_size) if mem_size else 0,
             entries_count=int(entries_count) if entries_count else 0,
             hits_count=int(hits_count) if hits_count else 0,
@@ -94,33 +91,32 @@ def shrink_cache(redis_client: StrictRedis) -> None:
     """Shrink all cache namespaces that exceed their configured max size."""
     keys_bytes = redis_client.keys(f"{{{CACHE_KEY_PREFIX}*[settings]?")
     keys = [key.decode() for key in keys_bytes]
-    tasks = [key.split(":")[1][:-1] for key in keys]
+    namespaces = [key.split(":")[1][:-1] for key in keys]
 
-    for task in tasks:
-        logger.debug("Shrinking cache of task %s", task)
-        keys_key = CACHE_KEY_FORMAT.format(namespace=task, key="keys")
-        vals_key = CACHE_KEY_FORMAT.format(namespace=task, key="vals")
-        settings_key = CACHE_KEY_FORMAT.format(namespace=task, key="settings")
+    for namespace in namespaces:
+        logger.debug("Shrinking cache '%s'", namespace)
+        keys_key = CACHE_KEY_FORMAT.format(namespace=namespace, key="keys")
+        vals_key = CACHE_KEY_FORMAT.format(namespace=namespace, key="vals")
+        settings_key = CACHE_KEY_FORMAT.format(namespace=namespace, key="settings")
 
         settings = redis_client.hgetall(settings_key)
         response = {key.decode(): value.decode() for key, value in settings.items()}
         max_size = int(response.get("max_size", CACHE_DEFAULT_MAX_SIZE))
-        shrink_percentage = float(
-            response.get("shrink_percentage", CACHE_DEFAULT_SHRINK_PERCENTAGE)
-        )
 
         memory_usage = redis_client.memory_usage(vals_key)
-        desired_size = max_size * shrink_percentage
-        while memory_usage is not None and memory_usage > desired_size:
-            logger.debug(
-                "Shrinking: memory usage: %d, desired size: %d",
+        while memory_usage is not None and memory_usage > max_size:
+            logger.info(
+                "Shrinking '%s': memory usage: %d, max size: %d",
+                namespace,
                 memory_usage,
-                desired_size,
+                max_size,
             )
             # remove the key with the lowest score
             eject = redis_client.zrange(keys_key, 0, 0)
             if not eject:
-                logger.debug("Sorted set is empty, cannot shrink the cache of %s", task)
+                logger.debug(
+                    "Sorted set is empty, cannot shrink the cache '%s'", namespace
+                )
                 break
             redis_client.zremrangebyrank(keys_key, 0, 0)
             redis_client.hdel(vals_key, *eject)
@@ -164,7 +160,6 @@ def persisting_cache(*args, **kwargs):
 
 def cache(
     max_size: int = CACHE_DEFAULT_MAX_SIZE,
-    shrink_percentage: float = CACHE_DEFAULT_SHRINK_PERCENTAGE,
     ttl_seconds: int = CACHE_DEFAULT_TTL_SECONDS,
     key_function: Callable | None = None,
     namespace: str | None = None,
@@ -210,9 +205,6 @@ def cache(
                     # We were first to cache - this is a true cache miss
                     redis_client.incr(stats_miss_key)
                     redis_client.hset(settings_key, "max_size", max_size)
-                    redis_client.hset(
-                        settings_key, "shrink_percentage", shrink_percentage
-                    )
                     redis_client.hexpire(vals_key, ttl_seconds, key)  # type: ignore
                 else:
                     # Race condition: another process computed and stored the same value
