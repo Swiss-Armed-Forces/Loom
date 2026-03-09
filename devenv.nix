@@ -113,6 +113,9 @@ let
         entry = createToolWrapper "pylint" subdir subdirName "--rcfile '${top_pylintrc}'";
         files = "^${subdir}/.*\\.py$";
         types = [ "python" ];
+        # pylint must be run in serial, otherwise code duplication
+        # checks don't properly work.
+        require_serial = true;
       };
 
       "mypy::${subdirName}" = {

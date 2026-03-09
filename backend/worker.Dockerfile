@@ -57,6 +57,7 @@ ARG CABEXTRACT_VERSION="1.9-*"
 ARG RIPSECRETS_VERSION="0.1.11"
 ARG CURL_VERSION="7.88.*"
 ARG TRUFFLEHOG_VERSION="v3.90.6"
+ARG BINUTILS_VERSION="2.40-*"
 
 SHELL [ "/bin/bash", "-o", "pipefail", "-c" ]
 
@@ -72,6 +73,7 @@ RUN set -exu \
     binwalk=${BINWALK_VERSION} \
     cabextract=${CABEXTRACT_VERSION} \
     curl=${CURL_VERSION} \
+    binutils=${BINUTILS_VERSION} \
     && curl -sSfL https://raw.githubusercontent.com/trufflesecurity/trufflehog/main/scripts/install.sh \
     | sh -s -- -b /usr/local/bin "${TRUFFLEHOG_VERSION}" \
     && curl -LO "https://github.com/sirwart/ripsecrets/releases/download/v${RIPSECRETS_VERSION}/ripsecrets-${RIPSECRETS_VERSION}-x86_64-unknown-linux-gnu.tar.gz" \

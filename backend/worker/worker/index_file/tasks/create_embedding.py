@@ -14,7 +14,6 @@ from pydantic_core import from_json, to_json
 
 from worker.index_file.infra.file_indexing_task import FileIndexingTask
 from worker.index_file.infra.indexing_persister import IndexingPersister
-from worker.services.tika_service import TikaResult
 from worker.settings import settings
 from worker.utils.natural_language_detection import is_natural_language
 from worker.utils.persisting_task import persisting_task
@@ -32,7 +31,6 @@ CREATE_EMBEDDING_MAX_RETRIES = 15
 def signature(file: File) -> Signature:
     """Create the signature for vectorization."""
     return chain(
-        extract_text_from_tika_result.s(),
         create_embedding_task.s(file),
     )
 
@@ -40,11 +38,6 @@ def signature(file: File) -> Signature:
 @app.task(base=FileIndexingTask)
 def noop(*_, **__):
     pass
-
-
-@app.task(base=FileIndexingTask)
-def extract_text_from_tika_result(tika_result: TikaResult) -> LazyBytes | None:
-    return tika_result.text
 
 
 def load_text_from_text_lazy(text_lazy: LazyBytes) -> str:

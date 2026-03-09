@@ -12,7 +12,7 @@ from ollama import Options
 
 from worker.index_file.infra.file_indexing_task import FileIndexingTask
 from worker.index_file.infra.indexing_persister import IndexingPersister
-from worker.services.tika_service import TIKA_MAX_TEXT_SIZE, TikaResult
+from worker.services.tika_service import TIKA_MAX_TEXT_SIZE
 from worker.settings import settings
 from worker.utils.natural_language_detection import is_natural_language
 from worker.utils.persisting_task import persisting_task
@@ -36,7 +36,6 @@ def signature(file: File) -> Signature:
         return noop.s()
 
     return chain(
-        extract_text_from_tika_result.s(),
         summarize_task.s(file),
     )
 
@@ -44,11 +43,6 @@ def signature(file: File) -> Signature:
 @app.task(base=FileIndexingTask)
 def noop(*_, **__):
     pass
-
-
-@app.task(base=FileIndexingTask)
-def extract_text_from_tika_result(tika_result: TikaResult) -> LazyBytes | None:
-    return tika_result.text
 
 
 def load_text_from_text_lazy(text_lazy: LazyBytes) -> str:

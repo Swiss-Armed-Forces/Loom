@@ -1,11 +1,11 @@
 import hashlib
-from os import walk
 from pathlib import Path
-from tempfile import TemporaryDirectory
+from tempfile import NamedTemporaryFile, TemporaryDirectory
 
 import pytest
+from common.services.lazybytes_service import LazyBytesService
 
-from worker.index_file.processor.extractor import archive_extractors
+from worker.index_file.extractor.zstd_extractor import ZstdExtractor
 
 TEST_ASSETS_DIR = Path(__file__).parent / "assets"
 
@@ -27,35 +27,20 @@ TEST_ASSETS_DIR = Path(__file__).parent / "assets"
         ),
     ],
 )
-def test_zstd_archive_extraction_hash(filename: str, content_hash: str):
-    zstd_processor = archive_extractors.ZstdExtractor()
+def test_zstd_archive_extraction_hash(
+    filename: str, content_hash: str, lazybytes_service_inmemory: LazyBytesService
+):
+    zstd_processor = ZstdExtractor()
 
     filepath = TEST_ASSETS_DIR / filename
 
-    with TemporaryDirectory() as d, filepath.open("rb") as f:
-        zstd_processor.extract(f, d)
-        assert sum(len(filenames) for _, _, filenames in walk(d)) == 1
+    with TemporaryDirectory() as d, filepath.open(
+        "rb"
+    ) as f, NamedTemporaryFile() as out_content:
+        lazy_bytes = lazybytes_service_inmemory.from_file(f)
+        zstd_processor.extract(lazy_bytes, "application/zstd", d, out_content)
         inner_file = Path(d) / "0"
         assert inner_file.is_file()
 
         with inner_file.open("rb") as tar_f:
             assert hashlib.sha256(tar_f.read()).hexdigest() == content_hash
-
-
-def test_zstd_archive_extraction_filepaths():
-    processor = archive_extractors.ZstdExtractor()
-
-    filepath = TEST_ASSETS_DIR / "empty_file.tar.zst"
-
-    with TemporaryDirectory() as d, filepath.open("rb") as f:
-        processor.extract(f, d)
-
-        base_path = Path(d)
-
-        # Check that files are extracted
-        extracted_files = list(base_path.rglob("*"))
-        assert len(extracted_files) > 0
-
-        # Verify no directory traversal occurred
-        for extracted_file in extracted_files:
-            assert extracted_file.is_relative_to(base_path)

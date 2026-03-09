@@ -10,7 +10,6 @@ from common.services.lazybytes_service import LazyBytes
 
 from worker.index_file.infra.file_indexing_task import FileIndexingTask
 from worker.index_file.infra.indexing_persister import IndexingPersister
-from worker.services.tika_service import TikaResult
 from worker.utils.persisting_task import persisting_task
 
 logger = logging.getLogger(__name__)
@@ -18,24 +17,16 @@ app = get_celery_app()
 
 
 def signature(file: File) -> Signature:
-    return chain(
-        extract_text_from_tika_result.s(),
-        group(
-            chain(
-                trufflehog_scan_task.s(file.extension),
-                persist_trufflehog_scan_task.s(file),
-            ),
-            chain(
-                ripsecrets_scan_task.s(file.extension),
-                persist_ripsecrets_scan_task.s(file),
-            ),
+    return group(
+        chain(
+            trufflehog_scan_task.s(file.extension),
+            persist_trufflehog_scan_task.s(file),
+        ),
+        chain(
+            ripsecrets_scan_task.s(file.extension),
+            persist_ripsecrets_scan_task.s(file),
         ),
     )
-
-
-@app.task(base=FileIndexingTask)
-def extract_text_from_tika_result(tika_result: TikaResult) -> LazyBytes | None:
-    return tika_result.text
 
 
 @app.task(base=FileIndexingTask)

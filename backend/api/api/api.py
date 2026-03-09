@@ -30,7 +30,7 @@ from api.settings import settings
 STATIC_ASSETS_PATH = Path(__file__).parent.parent / "static"
 
 
-def init_api() -> FastAPI:
+def init_api(collect_metrics=True) -> FastAPI:
     api = FastAPI(
         title=settings.app_title,
         docs_url=None,
@@ -39,7 +39,8 @@ def init_api() -> FastAPI:
     )
 
     # metrics
-    init_metrics(api)
+    if collect_metrics:
+        init_metrics(api)
 
     api.add_middleware(
         CORSMiddleware,

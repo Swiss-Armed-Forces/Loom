@@ -286,6 +286,7 @@ class File(RepositoryTaskObject):
     tika_file_type: str | None = None
     archives: list[str] = []
     tika_meta: dict[str, Any] = {}
+    tika_handled_by: str | None = None
     attachments: list[Attachment] = []
     summary: str | None = None
     embeddings: list[Embedding] = []
@@ -357,6 +358,7 @@ class _EsFile(_EsTaskDocument):
     tika_file_type = Keyword()
     archives = Keyword(multi=True)
     tika_meta = Object()
+    tika_handled_by = Keyword()
     attachments = Object(_EsAttachment, multi=True)
     has_attachments = Boolean()
     summary = Text(

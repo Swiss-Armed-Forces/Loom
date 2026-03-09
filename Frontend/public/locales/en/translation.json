@@ -256,11 +256,10 @@
     },
     "about": {
         "title": "About",
-        "titleDialog": "About Loom",
-        "linkTitle": "Link repository: ",
+        "linkTitle": "Repository",
         "link": "https://gitlab.com/swiss-armed-forces/cyber-command/cea/loom",
+        "chartData": "chartData.json",
         "license": "LICENSE.txt",
-        "thirdParty": "THIRD-PARTY.md",
-        "downloadTitle": "Download: "
+        "thirdParty": "THIRD-PARTY.md"
     }
 }

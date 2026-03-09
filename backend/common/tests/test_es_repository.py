@@ -213,6 +213,7 @@ ES_REPOSITORY_TEST_INSTANCES: dict[type[BaseEsRepository], list[_TestInstances]]
                 tika_file_type=TestValueDefaults.test_str,
                 archives=TestValueDefaults.test_str_list_no_duplicates,
                 tika_meta=TestValueDefaults.test_str_str_dict,
+                tika_handled_by=TestValueDefaults.test_str,
                 attachments=[
                     Attachment(
                         id=TestValueDefaults.test_uuid,
@@ -321,6 +322,7 @@ ES_REPOSITORY_TEST_INSTANCES: dict[type[BaseEsRepository], list[_TestInstances]]
                 tika_file_type=TestValueDefaults.test_str,
                 archives=TestValueDefaults.test_str_list_no_duplicates,
                 tika_meta=TestValueDefaults.test_str_str_dict,
+                tika_handled_by=TestValueDefaults.test_str,
                 attachments=[
                     _EsAttachment(
                         id=str(TestValueDefaults.test_uuid),

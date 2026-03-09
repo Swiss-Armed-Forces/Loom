@@ -1,3 +1,4 @@
+import pickle
 from abc import ABC, abstractmethod
 from contextlib import contextmanager
 from datetime import datetime, timedelta
@@ -10,7 +11,7 @@ from tempfile import (
     TemporaryFile,
     _TemporaryFileWrapper,
 )
-from typing import IO, Any, BinaryIO, Generator
+from typing import IO, Any, BinaryIO, Generator, Generic, TypeVar
 
 from gridfs import GridFSBucket
 from pydantic import BaseModel, ConfigDict, model_validator
@@ -18,6 +19,8 @@ from pymongo.database import Database
 
 from common.settings import settings
 from common.utils.gridfs import chunked_iterator_for_stream
+
+T = TypeVar("T")
 
 
 class LazyBytes(BaseModel):
@@ -37,6 +40,13 @@ class LazyBytes(BaseModel):
             msg = "service id provided together with embedded data"
             raise ValueError(msg)
         return self
+
+
+class TypedLazyBytes(LazyBytes, Generic[T]):
+    """Serializable container for typed lazy-loadable objects.
+
+    Uses pickle for serialization, preserving type information.
+    """
 
 
 class LazyBytesService(ABC):
@@ -81,6 +91,21 @@ class LazyBytesService(ABC):
             return LazyBytes(embedded_data=fd.read())
         service_id = self._store(fd)
         return LazyBytes(service_id=service_id)
+
+    def from_object(self, obj: T) -> TypedLazyBytes[T]:
+        """Serializes an object using pickle and stores it as TypedLazyBytes.
+
+        Args:
+            obj: The object to serialize. Can be any picklable Python object.
+
+        Returns:
+            A TypedLazyBytes container for deserialization via load_object().
+        """
+        data = pickle.dumps(obj)
+        if len(data) <= settings.lazy_threshold_bytes:
+            return TypedLazyBytes(embedded_data=data)
+        service_id = self._store(BytesIO(data))
+        return TypedLazyBytes(service_id=service_id)
 
     @abstractmethod
     def _store(self, data: IO) -> Any:
@@ -221,6 +246,18 @@ class LazyBytesService(ABC):
             dst.flush()
             dst.seek(0)
             yield dst
+
+    def load_object(self, lazy_bytes: TypedLazyBytes[T]) -> T:
+        """Deserializes TypedLazyBytes back to an object.
+
+        Args:
+            lazy_bytes: The TypedLazyBytes container created by from_object().
+
+        Returns:
+            The deserialized object.
+        """
+        with self.load_memoryview(lazy_bytes) as memview:
+            return pickle.loads(memview)
 
 
 class GridFSLazyBytesService(LazyBytesService):
