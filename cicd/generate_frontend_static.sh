@@ -9,16 +9,42 @@ THIRD_PARTY_LICENCES="THIRD-PARTY.md"
 THIRD_PARTY_LICENCES_OUTPUT="${TOPLEVEL_DIR}/${THIRD_PARTY_LICENCES}"
 FRONTEND_STATIC_DIR="${FRONTEND_DIR}/public"
 LICENSE_TXT="${TOPLEVEL_DIR}/LICENSE.txt"
+CHARTS_DIR="${TOPLEVEL_DIR}/charts"
 
 VERBOSE=false
-ACTION="copy_to_frontend_static"
+STEPS=(
+    copy_third_party_license
+    copy_license
+    write_chart_data
+    fix_frontend
+)
+SKIP=()
 
-copy_to_frontend_static(){
+copy_third_party_license(){
     cp \
         "${THIRD_PARTY_LICENCES_OUTPUT}" "${FRONTEND_STATIC_DIR}"
+}
+
+copy_license(){
     cp \
         "${LICENSE_TXT}" "${FRONTEND_STATIC_DIR}"
 }
+
+write_chart_data(){
+    helm \
+        show chart "${CHARTS_DIR}" \
+    | yq \
+    > "${FRONTEND_STATIC_DIR}/chartData.json"
+}
+
+fix_frontend(){
+    pre-commit \
+        run \
+        --all-files \
+        prettier::Frontend \
+    || true
+}
+
 
 #
 # Usage
@@ -30,6 +56,7 @@ usage() {
     echo "With OPTIONS:"
     echo "  -h   |--help                        print this help"
     echo "  -v   |--verbose                     make verbose"
+    echo "  --skip-STEP                         skip step STEP"
 }
 
 #
@@ -46,6 +73,10 @@ while [[ $# -gt 0 ]]; do
     -v | --verbose)
         VERBOSE=true
         ;;
+    --skip-*)
+        SKIP+=("${1}")
+        shift
+    ;;
     *)
         ARGS+=("${1}")
         ;;
@@ -62,4 +93,12 @@ if [[ "${VERBOSE}" = true ]]; then
     set -x
 fi
 
-"${ACTION}" "${ARGS[@]}"
+# execute steps
+for step in "${STEPS[@]}"; do
+    if [[ "${SKIP[*]}" == *"--skip-${step}"* ]]; then
+        echo "[*] Skipping: ${step}"
+        continue
+    fi
+    echo "[*] Running: ${step}"
+    "${step}" "${ARGS[@]}"
+done

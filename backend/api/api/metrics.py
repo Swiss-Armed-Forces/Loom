@@ -248,6 +248,7 @@ def observe_cache_misses(
 
 
 def init_metrics(api: FastAPI):
+    logger.info("Initializing Metrics")
 
     # setup prometheus provider
     prometheus_reader = PrometheusMetricReader()

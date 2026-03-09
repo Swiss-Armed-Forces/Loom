@@ -18,7 +18,7 @@ def dependencies_init():
 
 @pytest.fixture()
 def client() -> Generator[TestClient, None, None]:
-    api = init_api()
+    api = init_api(collect_metrics=False)
     with TestClient(api) as test_client:
         yield test_client
         api.dependency_overrides = {}

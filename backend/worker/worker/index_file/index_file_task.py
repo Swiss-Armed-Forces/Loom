@@ -15,7 +15,6 @@ from worker.index_file.infra.file_indexing_task import FileIndexingTask
 from worker.index_file.tasks import (
     create_thumbnail,
     extract_loom_archive,
-    extract_magic_file_type,
     persist_processing_done,
     render,
     tika_processing,
@@ -45,7 +44,6 @@ def index_file_task(file: File, file_content: LazyBytes):
 
     chain(
         group(
-            extract_magic_file_type.signature(file_content, file),
             create_thumbnail.signature(file, file_content),
             render.signature(file, file_content),
             tika_processing.signature(file_content, file),

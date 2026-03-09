@@ -87,6 +87,9 @@ class IndexingPersister(PersisterBase[File]):
     def set_tika_meta(self, meta: dict):
         self._object.tika_meta = meta
 
+    def set_tika_handled_by(self, handled_by: str):
+        self._object.tika_handled_by = handled_by
+
     def set_is_spam(self, is_spam: bool):
         self._object.is_spam = is_spam
 

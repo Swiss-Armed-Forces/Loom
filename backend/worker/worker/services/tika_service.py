@@ -145,7 +145,7 @@ class TikaService:
                         result.attachments.append(
                             TikaAttachment(
                                 name=name,
-                                data=self.lazybytes_service.from_bytes(zipfd.read()),
+                                data=self.lazybytes_service.from_file(zipfd),
                             )
                         )
 

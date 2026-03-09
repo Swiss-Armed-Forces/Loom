@@ -8,6 +8,15 @@ from common.services.lazybytes_service import (
     LazyBytesService,
 )
 from common.settings import settings
+from pydantic import BaseModel
+
+
+class SampleModel(BaseModel):
+    """A Pydantic model for testing TypedLazyBytes."""
+
+    value: int
+    name: str
+
 
 # pylint: disable=redefined-outer-name
 
@@ -34,6 +43,7 @@ def lazy_bytes_service():
 
 
 class TestLazybytes:
+    # pylint: disable=too-many-public-methods
 
     def test_load_memoryview(self, lazy_bytes_service: LazyBytesService, large_data):
         lazy_bytes = lazy_bytes_service.from_bytes(large_data)
@@ -134,3 +144,36 @@ class TestLazybytes:
         lazy_bytes = pickle.loads(pickle.dumps(lazy_bytes))
         with lazy_bytes_service.load_memoryview(lazy_bytes) as memory:
             assert memory == b"asdfasdf"
+
+    def test_from_object_pydantic_small(self, lazy_bytes_service: LazyBytesService):
+        original = SampleModel(value=42, name="test")
+        lazy = lazy_bytes_service.from_object(original)
+        assert lazy.embedded_data is not None
+        result = lazy_bytes_service.load_object(lazy)
+        assert result == original
+
+    def test_from_object_pydantic_large(self, lazy_bytes_service: LazyBytesService):
+        original = list(range(settings.lazy_threshold_bytes))
+        lazy = lazy_bytes_service.from_object(original)
+        assert lazy.service_id is not None
+        result = lazy_bytes_service.load_object(lazy)
+        assert result == original
+
+    def test_typed_lazy_bytes_pickle_roundtrip(
+        self, lazy_bytes_service: LazyBytesService
+    ):
+        original = {"test": "data", "number": 123}
+        lazy = lazy_bytes_service.from_object(original)
+        lazy_restored = pickle.loads(pickle.dumps(lazy))
+        result = lazy_bytes_service.load_object(lazy_restored)
+        assert result == original
+
+    def test_from_object_complex_nested(self, lazy_bytes_service: LazyBytesService):
+        original = {
+            "models": [SampleModel(value=1, name="a"), SampleModel(value=2, name="b")],
+            "nested": {"deep": {"list": [1, 2, 3]}},
+            "primitives": [1, "two", 3.0, None, True],
+        }
+        lazy = lazy_bytes_service.from_object(original)
+        result = lazy_bytes_service.load_object(lazy)
+        assert result == original

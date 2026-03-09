@@ -8,6 +8,7 @@ from common.dependencies import (
     get_lazybytes_service,
 )
 from common.file.file_repository import Attachment, File
+from common.services.lazybytes_service import TypedLazyBytes
 
 from worker.index_file.infra.file_indexing_task import FileIndexingTask
 from worker.index_file.infra.indexing_persister import IndexingPersister
@@ -20,12 +21,10 @@ app = get_celery_app()
 
 
 @app.task(bind=True, base=FileIndexingTask)
-def schedule_attachments(self: FileIndexingTask, tika_result: TikaResult, file: File):
-    """Schedule tasks to dispatch the attachment processing of an file.
-
-    Note: that tika processes archives (i.e. zip, tar, etc.) as attachments, so this
-    also handles these types of files through the tika processing.
-    """
+def schedule_attachments(
+    self: FileIndexingTask, lazy_tika_result: TypedLazyBytes[TikaResult], file: File
+):
+    tika_result = get_lazybytes_service().load_object(lazy_tika_result)
     return self.replace(
         group(
             *[

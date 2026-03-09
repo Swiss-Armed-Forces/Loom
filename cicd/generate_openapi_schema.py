@@ -4,7 +4,7 @@ from api.api import init_api
 
 
 def main() -> None:
-    app = init_api()
+    app = init_api(collect_metrics=False)
     print(json.dumps(app.openapi()))
 
 

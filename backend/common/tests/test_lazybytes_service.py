@@ -3,10 +3,12 @@ import random
 from pathlib import Path
 
 import pytest
+from pydantic import BaseModel
 
 from common.services.lazybytes_service import (
     InMemoryLazyBytesService,
     LazyBytes,
+    TypedLazyBytes,
 )
 from common.settings import settings
 
@@ -190,3 +192,98 @@ def test_pickle_small(in_memory_lazy_bytes_service: InMemoryLazyBytesService):
     lazy_bytes = pickle.loads(pickle.dumps(lazy_bytes))
     with in_memory_lazy_bytes_service.load_memoryview(lazy_bytes) as memory:
         assert memory == b"asdfasdf"
+
+
+# TypedLazyBytes tests
+
+
+class SampleModel(BaseModel):
+    """A Pydantic model for testing TypedLazyBytes with typed objects."""
+
+    value: int
+    name: str
+
+
+def test_typed_lazy_bytes_inherits_lazy_bytes():
+    """TypedLazyBytes should inherit from LazyBytes."""
+    typed = TypedLazyBytes(embedded_data=b"test")
+    assert isinstance(typed, LazyBytes)
+
+
+def test_from_object_primitive_list(
+    in_memory_lazy_bytes_service: InMemoryLazyBytesService,
+):
+    """Test roundtrip of a primitive list."""
+    original = [1, 2, 3, 4, 5]
+    lazy = in_memory_lazy_bytes_service.from_object(original)
+    result = in_memory_lazy_bytes_service.load_object(lazy)
+    assert result == original
+
+
+def test_from_object_dict(in_memory_lazy_bytes_service: InMemoryLazyBytesService):
+    """Test roundtrip of a dictionary."""
+    original = {"key": "value", "number": 42, "nested": {"a": 1}}
+    lazy = in_memory_lazy_bytes_service.from_object(original)
+    result = in_memory_lazy_bytes_service.load_object(lazy)
+    assert result == original
+
+
+def test_from_object_pydantic_model(
+    in_memory_lazy_bytes_service: InMemoryLazyBytesService,
+):
+    """Test roundtrip of a Pydantic model."""
+    original = SampleModel(value=42, name="test")
+    lazy = in_memory_lazy_bytes_service.from_object(original)
+    result = in_memory_lazy_bytes_service.load_object(lazy)
+    assert result == original
+
+
+def test_from_object_small_embedded(
+    in_memory_lazy_bytes_service: InMemoryLazyBytesService,
+):
+    """Small objects should be embedded directly."""
+    original = [1, 2, 3]
+    lazy = in_memory_lazy_bytes_service.from_object(original)
+    assert lazy.embedded_data is not None
+    assert lazy.service_id is None
+
+
+def test_from_object_large_stored(
+    in_memory_lazy_bytes_service: InMemoryLazyBytesService,
+):
+    """Large objects should be stored in the service."""
+    # Create a large object that exceeds the threshold
+    original = list(range(settings.lazy_threshold_bytes))
+    lazy = in_memory_lazy_bytes_service.from_object(original)
+    assert lazy.service_id is not None
+    assert lazy.embedded_data is None
+    # Verify roundtrip still works
+    result = in_memory_lazy_bytes_service.load_object(lazy)
+    assert result == original
+
+
+def test_typed_lazy_bytes_can_be_pickled(
+    in_memory_lazy_bytes_service: InMemoryLazyBytesService,
+):
+    """TypedLazyBytes itself should be picklable (for Celery task arguments)."""
+    original = {"test": "data"}
+    lazy = in_memory_lazy_bytes_service.from_object(original)
+    # Pickle and unpickle the TypedLazyBytes container
+    lazy_restored = pickle.loads(pickle.dumps(lazy))
+    # Should still be able to load the object
+    result = in_memory_lazy_bytes_service.load_object(lazy_restored)
+    assert result == original
+
+
+def test_typed_lazy_bytes_large_can_be_pickled(
+    in_memory_lazy_bytes_service: InMemoryLazyBytesService,
+):
+    """Large TypedLazyBytes (with service_id) should be picklable."""
+    original = list(range(settings.lazy_threshold_bytes))
+    lazy = in_memory_lazy_bytes_service.from_object(original)
+    assert lazy.service_id is not None
+    # Pickle and unpickle the TypedLazyBytes container
+    lazy_restored = pickle.loads(pickle.dumps(lazy))
+    # Should still be able to load the object
+    result = in_memory_lazy_bytes_service.load_object(lazy_restored)
+    assert result == original
