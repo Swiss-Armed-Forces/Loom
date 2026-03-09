@@ -15,7 +15,7 @@
 
 import { mapValues } from "../runtime";
 /**
- * Cache stats of task caching.
+ *
  * @export
  * @interface CacheStatisticsEntryModel
  */
