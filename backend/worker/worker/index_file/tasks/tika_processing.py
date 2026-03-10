@@ -255,13 +255,14 @@ def signature(file_content: LazyBytes, file: File) -> Signature:
 
 @app.task(  # type: ignore[call-overload]
     base=FileIndexingTask,
+    bind=True,
     autoretry_for=TIKA_RETRY_EXCEPTIONS,
     max_retries=TIKA_MAX_RETRIES,
     retry_backoff=True,
 )
-@cache(key_function=lambda _, __, file: file.sha256)
+@cache(key_function=lambda _, __, ___, file: file.sha256)
 def tika_processor_task(
-    file_type: str, file_content: LazyBytes, _: File
+    self: FileIndexingTask, file_type: str, file_content: LazyBytes, _: File
 ) -> TikaProcessingResult:
     lazybytes_service = get_lazybytes_service()
 
@@ -273,6 +274,8 @@ def tika_processor_task(
         try:
             result = get_tika_service().parse_from_generator(generator)
         except Exception as ex:  # pylint: disable=broad-exception-caught
+            if ex in TIKA_RETRY_EXCEPTIONS and self.request.retries < TIKA_MAX_RETRIES:
+                raise ex
             # will proceed to fallback
             return TikaProcessingResult(file_type=file_type, exceptions=[ex])
 
