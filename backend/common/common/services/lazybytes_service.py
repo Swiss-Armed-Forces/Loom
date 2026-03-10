@@ -315,6 +315,10 @@ class GridFSLazyBytesService(LazyBytesService):
                     continue
             logger.info("Flushing: %s", file_id)
             self._bucket.delete(file_id)
+        # Compact Collections in Database
+        logger.info("Compacting collections")
+        self._database.command("compact", "fs.files")
+        self._database.command("compact", "fs.chunks")
 
 
 class InMemoryLazyBytesService(LazyBytesService):
