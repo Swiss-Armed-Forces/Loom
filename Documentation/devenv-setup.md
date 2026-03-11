@@ -27,7 +27,18 @@
    - Login to the docker cache: `docker login gitlab.com`
 5. Install devenv
    - In /etc/selinux/config, set `SELINUX=disabled` and reboot
-   - Install devenv using the [official instructions](https://devenv.sh/getting-started/)
+   - Install [Nix](https://nixos.org/)
+
+      ```sh
+      sh <(curl -L https://nixos.org/nix/install) --daemon
+      ```
+
+   - Install [devenv](https://devenv.sh/getting-started/) with `nix-env` from stable channel
+
+      ```sh
+      nix-env --install --attr devenv -f https://github.com/NixOS/nixpkgs/tarball/nixos-25.11
+      ```
+
    - ❗**Workaround for fedora-41**:
    After installing nix open the file `/nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh`
    and comment out the first two lines

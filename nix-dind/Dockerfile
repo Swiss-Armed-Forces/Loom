@@ -139,6 +139,7 @@ ENV NIX_DAEMON_ARGS=${NIX_DAEMON_ARGS}
 ARG NIX_STORE_OPTIMIZE=true
 ENV NIX_STORE_OPTIMIZE=${NIX_STORE_OPTIMIZE}
 
+# This channel must match the one specified in the devenv setup instructions
 ARG NIX_CHANNEL="nixos-25.11"
 #ARG NIX_CHANNEL="nixpkgs-unstable"
 #ARG NIX_CHANNEL="02b9ebc695596cdcd7d58b1180e1be4b0d6735f8"
