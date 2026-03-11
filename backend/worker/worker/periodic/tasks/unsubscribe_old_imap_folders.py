@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 
 from celery.canvas import Signature
 from common.dependencies import get_celery_app, get_imap_service
@@ -25,7 +25,7 @@ def unsubscribe_old_imap_folders_task(
     logger.info("Checking subscribed IMAP folders for old emails")
 
     imap_service = get_imap_service()
-    cutoff_date = datetime.now(timezone.utc) - timedelta(days=days_before_unsubscribe)
+    cutoff_date = datetime.now() - timedelta(days=days_before_unsubscribe)
 
     subscribed_folders = imap_service.list_subscribed_folders()
 
