@@ -1,8 +1,8 @@
-import email
 import hashlib
 import re
 from contextlib import contextmanager
 from datetime import datetime
+from email.parser import BytesHeaderParser
 from itertools import chain
 from typing import Generator
 
@@ -219,7 +219,8 @@ class IMAPService:
 
         imap_folder = self.get_imap_folder(folder)
         # Append with deterministic header
-        email_parsed = email.message_from_bytes(raw_email)
+        header_parser = BytesHeaderParser()
+        email_parsed = header_parser.parsebytes(raw_email)
         email_parsed[IMAP_DEDUPLICATION_HEADER] = deduplication_finterprint
 
         with self._imap_context() as client:
