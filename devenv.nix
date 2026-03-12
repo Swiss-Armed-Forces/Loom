@@ -351,6 +351,8 @@ in
 
             gitlab.gitlab-workflow
 
+            ms-vscode.hexeditor
+
             ms-python.python
             ms-python.vscode-pylance
             ms-python.isort
