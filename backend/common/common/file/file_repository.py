@@ -32,6 +32,7 @@ from elasticsearch.dsl.response import Response
 from libretranslatepy import LibreTranslateAPI
 from pydantic import (
     BaseModel,
+    ConfigDict,
     Field,
     StringConstraints,
     computed_field,
@@ -202,6 +203,93 @@ TAG_LEN_MAX = 25
 Tag = Annotated[str, StringConstraints(min_length=TAG_LEN_MIN, max_length=TAG_LEN_MAX)]
 
 
+class TikaMeta(BaseModel):
+    model_config = ConfigDict(extra="allow", populate_by_name=True)
+
+    dc_title: str | list[str] | None = Field(default=None, alias="dc:title")
+    dc_description: str | list[str] | None = Field(default=None, alias="dc:description")
+    dc_subject: str | list[str] | None = Field(default=None, alias="dc:subject")
+    dc_creator: str | list[str] | None = Field(default=None, alias="dc:creator")
+    dcterms_created: datetime | list[datetime] | None = Field(
+        default=None, alias="dcterms:created"
+    )
+    dcterms_modified: datetime | list[datetime] | None = Field(
+        default=None, alias="dcterms:modified"
+    )
+
+    pdf_producer: str | list[str] | None = Field(default=None, alias="pdf:producer")
+    pdf_docinfo_producer: str | list[str] | None = Field(
+        default=None, alias="pdf:docinfo:producer"
+    )
+    pdf_docinfo_creator: str | list[str] | None = Field(
+        default=None, alias="pdf:docinfo:creator"
+    )
+    pdf_docinfo_creator_tool: str | list[str] | None = Field(
+        default=None, alias="pdf:docinfo:creator_tool"
+    )
+    pdf_docinfo_created: datetime | list[datetime] | None = Field(
+        default=None, alias="pdf:docinfo:created"
+    )
+    pdf_docinfo_modified: datetime | list[datetime] | None = Field(
+        default=None, alias="pdf:docinfo:modified"
+    )
+    pdf_docinfo_keywords: str | list[str] | None = Field(
+        default=None, alias="pdf:docinfo:keywords"
+    )
+    pdf_docinfo_title: str | list[str] | None = Field(
+        default=None, alias="pdf:docinfo:title"
+    )
+
+    message_from: str | list[str] | None = Field(default=None, alias="Message-From")
+    message_from_name: str | list[str] | None = Field(
+        default=None, alias="Message:From-Name"
+    )
+    message_from_email: str | list[str] | None = Field(
+        default=None, alias="Message:From-Email"
+    )
+    message_to: str | list[str] | None = Field(default=None, alias="Message-To")
+    message_to_name: str | list[str] | None = Field(
+        default=None, alias="Message:To-Name"
+    )
+    message_to_email: str | list[str] | None = Field(
+        default=None, alias="Message:To-Email"
+    )
+    message_cc: str | list[str] | None = Field(default=None, alias="Message-Cc")
+
+    meta_last_author: str | list[str] | None = Field(
+        default=None, alias="meta:last-author"
+    )
+    content_type: str | list[str] | None = Field(default=None, alias="Content-Type")
+
+
+class _EsTikaMeta(InnerDoc):
+    dc_title = Text(multi=True)
+    dc_description = Text(multi=True)
+    dc_subject = Text(multi=True)
+    dc_creator = Text(multi=True)
+    dcterms_created = Date(multi=True)
+    dcterms_modified = Date(multi=True)
+
+    pdf_producer = Text(multi=True)
+    pdf_docinfo_producer = Text(multi=True)
+    pdf_docinfo_creator = Text(multi=True)
+    pdf_docinfo_creator_tool = Text(multi=True)
+    pdf_docinfo_created = Date(multi=True)
+    pdf_docinfo_modified = Date(multi=True)
+    pdf_docinfo_keywords = Text(multi=True)
+
+    message_from = Text(multi=True)
+    message_from_name = Text(multi=True)
+    message_from_email = Text(multi=True)
+    message_to = Text(multi=True)
+    message_to_name = Text(multi=True)
+    message_to_email = Text(multi=True)
+    message_cc = Text(multi=True)
+
+    meta_last_author = Text(multi=True)
+    content_type = Text(multi=True)
+
+
 class Attachment(BaseModel):
     id: UUID
     name: str
@@ -285,7 +373,7 @@ class File(RepositoryTaskObject):
     is_spam: bool | None = None
     tika_file_type: str | None = None
     archives: list[str] = []
-    tika_meta: dict[str, Any] = {}
+    tika_meta: TikaMeta = Field(default_factory=TikaMeta)
     tika_handled_by: str | None = None
     attachments: list[Attachment] = []
     summary: str | None = None
@@ -357,7 +445,7 @@ class _EsFile(_EsTaskDocument):
     is_spam = Boolean()
     tika_file_type = Keyword()
     archives = Keyword(multi=True)
-    tika_meta = Object()
+    tika_meta = Object(_EsTikaMeta)
     tika_handled_by = Keyword()
     attachments = Object(_EsAttachment, multi=True)
     has_attachments = Boolean()

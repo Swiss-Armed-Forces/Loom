@@ -1,11 +1,6 @@
-from pathlib import Path
-from tempfile import NamedTemporaryFile
-
 import pytest
 
-from utils.consts import ASSETS_DIR
 from utils.fetch_from_api import (
-    DEFAULT_MAX_WAIT_TIME_PER_FILE,
     fetch_files_from_api,
     get_file_preview_by_name,
 )
@@ -139,12 +134,11 @@ class TestCommonQueries:
 
     def test_search_filename_for_exact_text_or(self):
         # Setup the test params
-        search_string = ""
-        search_string += "filename:("
-        search_string += "divergent_lorem_ipsum_search_file_test_7"
-        search_string += " OR "
-        search_string += "falsehood_lorem_ipsum_search_file_test_8"
-        search_string += ")"
+        terms = [
+            "divergent_lorem_ipsum_search_file_test_7",
+            "falsehood_lorem_ipsum_search_file_test_8",
+        ]
+        search_string = f"filename:({' OR '.join(terms)})"
         file_count = 2
 
         # Do the search test
@@ -164,7 +158,7 @@ class TestCommonQueries:
 
     def test_search_tika_subfield_3(self):
         # Setup the test params
-        search_string = 'tika_meta.Content-Type:"text/plain; charset=ISO-8859-1"'
+        search_string = 'tika_meta.content_type:"text/plain; charset=ISO-8859-1"'
         file_count = len(self.asset_list)
 
         # Do the search test
@@ -174,7 +168,7 @@ class TestCommonQueries:
 
     def test_search_tika_subfield_substring(self):
         # Setup the test params
-        search_string = 'tika_meta.Content-Type:"text/plain"'
+        search_string = 'tika_meta.content_type:"text/plain"'
         file_count = len(self.asset_list)
 
         # Do the search test
@@ -192,19 +186,11 @@ def test_search_for_file_name_with_quotation_mark():
 
 
 def test_search_file_with_more_index_highlight_max_analyzed_offset():
-    # Setup the test params
     search_string = "hello"
-    with NamedTemporaryFile(mode="w+", dir=ASSETS_DIR) as tmp:
-        tmp.write("hello world " * 1_000_000)
-        tmp.flush()
-        name = Path(tmp.name).name
-        upload_asset(name)
+    file_content = f"{search_string} world " * 1_000_000
+    upload_bytes_asset(file_content.encode())
 
-    fetch_files_from_api(
-        search_string=search_string,
-        expected_no_of_files=1,
-        max_wait_time_per_file=DEFAULT_MAX_WAIT_TIME_PER_FILE,
-    )
+    fetch_files_from_api(search_string=search_string)
 
 
 def test_search_strange_chars_password():
@@ -212,7 +198,7 @@ def test_search_strange_chars_password():
     file_content = "This is a p@ssw0rd2023--- with strange chars"
     upload_bytes_asset(file_content.encode())
 
-    fetch_files_from_api(search_string=search_string, expected_no_of_files=1)
+    fetch_files_from_api(search_string=search_string)
 
 
 class TestSearchMultilanguage:
@@ -264,3 +250,39 @@ class TestSearchMultilanguage:
 
         assert file.highlight is not None
         assert file.highlight["content"][0].count("highlight") == 6
+
+
+class TestEmailQueries:
+    asset_list = [
+        "basic_email.eml",
+    ]
+
+    @pytest.fixture(scope="class", autouse=True)
+    def setup_testfiles(self):
+        upload_many_assets(asset_names=self.asset_list)
+
+        # wait for assets to be processes
+        search_string = "*"
+        file_count = len(self.asset_list)
+        fetch_files_from_api(
+            search_string=search_string, expected_no_of_files=file_count
+        )
+
+    @pytest.mark.parametrize(
+        "field, field_value",
+        [
+            ("tika_meta.message_from", "Mikel Lindsaar <test@lindsaar.net>"),
+            ("tika_meta.message_from_name", "Mikel Lindsaar"),
+            ("tika_meta.message_from_email", "test@lindsaar.net"),
+            ("tika_meta.message_to", "Mikel Lindsaar <raasdnil@gmail.com>"),
+        ],
+    )
+    def test_for_message_from(self, field: str, field_value: str):
+        file_count = len(self.asset_list)
+
+        # search in field
+        fetch_files_from_api(
+            search_string=f'{field}:"{field_value}"', expected_no_of_files=file_count
+        )
+        # search in default fields
+        fetch_files_from_api(search_string=field_value, expected_no_of_files=file_count)
