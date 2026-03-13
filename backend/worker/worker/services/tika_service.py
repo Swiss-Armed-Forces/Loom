@@ -18,8 +18,9 @@ from zipfile import Path as ZipPath
 from zipfile import ZipFile
 
 import requests
+from common.file.file_repository import TikaMeta
 from common.services.lazybytes_service import LazyBytes, LazyBytesService
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 from requests import HTTPError
 
 from worker.settings import settings
@@ -46,7 +47,7 @@ class TikaResult(BaseModel):
 
     text: LazyBytes | None = None
     text_truncated: bool = False
-    meta: dict = {}
+    meta: TikaMeta = Field(default_factory=TikaMeta)
     attachments: list[TikaAttachment] = []
 
 
@@ -131,10 +132,16 @@ class TikaService:
                         for metadata_line in csv.reader(zipfd):
                             metadata_key = metadata_line[0]
                             metadata_value = metadata_line[1:]
-                            if len(metadata_value) == 1:
-                                result.meta[metadata_key] = metadata_value[0]
-                            else:
-                                result.meta[metadata_key] = metadata_value
+                            setattr(
+                                result.meta,
+                                metadata_key,
+                                (
+                                    # flatten if possible
+                                    metadata_value[0]
+                                    if len(metadata_value) == 1
+                                    else metadata_value
+                                ),
+                            )
                 case "__TEXT__":
                     with ZipPath(zipfile, name).open(mode="rb") as zipfd:
                         text = zipfd.read(TIKA_MAX_TEXT_SIZE)

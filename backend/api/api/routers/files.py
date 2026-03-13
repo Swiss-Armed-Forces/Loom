@@ -296,7 +296,9 @@ class GetFileResponse(BaseModel):
                     "content",
                     "libretranslate_translations",
                     "attachments",
-                }
+                },
+                exclude_none=True,
+                exclude_unset=True,
             ),
             summary=file.summary,
             type=file.magic_file_type,

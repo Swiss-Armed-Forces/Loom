@@ -10,6 +10,7 @@ from common.file.file_repository import (
     LibreTranslateTranslations,
     Secret,
     Tag,
+    TikaMeta,
 )
 from common.models.base_repository import BaseRepository
 from common.utils.object_id_str import ObjectIdStr
@@ -84,7 +85,7 @@ class IndexingPersister(PersisterBase[File]):
             libretranslate_translated_language
         )
 
-    def set_tika_meta(self, meta: dict):
+    def set_tika_meta(self, meta: TikaMeta):
         self._object.tika_meta = meta
 
     def set_tika_handled_by(self, handled_by: str):

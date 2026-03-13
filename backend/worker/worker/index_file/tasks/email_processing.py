@@ -105,10 +105,10 @@ def is_email(extension: str, mimetype: str) -> bool:
 
 @app.task(base=FileIndexingTask)
 def detect_email_task(
-    tika_file_type: str,
+    file_type: str,
     file_extension: str,
 ) -> bool:
-    return is_email(extension=file_extension, mimetype=tika_file_type)
+    return is_email(extension=file_extension, mimetype=file_type)
 
 
 @app.task(

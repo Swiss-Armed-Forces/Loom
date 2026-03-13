@@ -26,7 +26,7 @@ def test_caching():
     fetch_files_from_api(search_string=search_string, expected_no_of_files=1)
 
     caching_results = _get_stats()
-    assert caching_results.mem_size_total == 17784
+    assert caching_results.mem_size_total == 11128
     assert caching_results.entries_count_total == 19
     assert caching_results.hits_count_total == 2
     assert caching_results.miss_count_total == 19
@@ -36,7 +36,7 @@ def test_caching():
     fetch_files_from_api(search_string=search_string, expected_no_of_files=2)
 
     caching_results = _get_stats()
-    assert caching_results.mem_size_total == 17784
+    assert caching_results.mem_size_total == 11128
     assert caching_results.entries_count_total == 19
     assert caching_results.hits_count_total == 23  # more hits!
     assert caching_results.miss_count_total == 19
