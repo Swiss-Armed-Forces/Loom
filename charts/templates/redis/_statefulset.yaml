@@ -25,7 +25,7 @@ spec:
         {{- include "app.labels.custom" (dict "context" . "component" $component) | nindent 8 }}
     spec:
       initContainers:
-        - name: delete-redis-tmp-rdb-files
+        - name: delete-redis-tmp-files
           image: {{ .Values.image.registry }}/{{ $values.initContainer.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) $values.initContainer.image.tag }}
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           command:
@@ -35,6 +35,10 @@ spec:
               set -eux
 
               rm -rf temp-*.rdb
+              rm -rf appendonlydir/temp-*
+          volumeMounts:
+            - mountPath: /data
+              name: redis
           {{- if $values.initContainer.resources }}
           resources: {{- toYaml $values.initContainer.resources | nindent 12 }}
           {{- end }}
