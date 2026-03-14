@@ -70,7 +70,7 @@ class Settings(BaseSettings):
     imap_password: str = "pass"
 
     llm_model: str = "smollm2:135m"
-    llm_model_embedding: str = "nomic-embed-text:v1.5"
+    llm_model_embedding: str = "nomic-embed-text-v2-moe"
     llm_model_tool: str = "smollm2:135m"
     llm_think: bool = False
     llm_temperature: float | None = None
@@ -79,7 +79,7 @@ class Settings(BaseSettings):
 
     llm_embedding_dimensions: int = (
         # Note: 4096 is largest vector supported by ElasticSearch
-        768  # -> nomic-embed-text:v1.5
+        768  # -> nomic-embed-text-v2-moe
     )
     llm_system_prompt: str = """You are an expert english AI called Loom"""
     llm_summarize_system_prompt: str = (

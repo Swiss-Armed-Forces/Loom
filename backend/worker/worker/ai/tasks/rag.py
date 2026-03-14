@@ -20,14 +20,12 @@ from common.messages.messages import (
     MessageChatBotToken,
     PubSubMessage,
 )
-from common.services.lazybytes_service import LazyBytes
+from common.services.lazybytes_service import LazyBytes, TypedLazyBytes
 from common.services.query_builder import QueryParameters
 from httpx import HTTPError
-from langchain_text_splitters import RecursiveCharacterTextSplitter
 from numpy import array, linspace
 from ollama import Message, Options
 from pydantic import BaseModel, computed_field
-from pydantic_core import from_json, to_json
 from scipy.signal import argrelextrema
 from sklearn.neighbors import KernelDensity
 
@@ -94,8 +92,18 @@ def load_text_from_text_lazy(text_lazy: LazyBytes) -> str:
 
 
 def signature(context: AiContext, question: str) -> Signature:
+    # HyDE: parallel (generate -> embed) chains, then aggregate -> search
     return chain(
-        create_question_embedding.s(question),
+        chord(
+            [
+                chain(
+                    generate_hypothetical_document.s(question),
+                    embed_hyde_document.s(),
+                )
+                for _ in range(settings.llm_hyde_num_documents)
+            ],
+            aggregate_hyde_embeddings.s(),
+        ),
         fetch_scored_search_embeddings.s(context.query),
         sort_and_limit_scored_search_embeddings.s(),
         rerank_scored_search_embeddings.s(context, question),
@@ -106,52 +114,105 @@ class LLMError(Exception):
     pass
 
 
+# =============================================================================
+# HyDE (Hypothetical Document Embeddings) Tasks
+# =============================================================================
+
+
 @app.task(
     base=AiContextProcessingTask,
     autoretry_for=tuple([LLMError]),
     max_retries=RAG_MAX_RETRIES,
     retry_backoff=True,
 )
-def create_question_embedding(text: str) -> LazyBytes:
-    text_splitter = RecursiveCharacterTextSplitter(
-        chunk_size=settings.llm_embedding_text_chunk_size,
-        chunk_overlap=settings.llm_embedding_text_chunk_overlap,
-    )
-    texts = text_splitter.split_text(text)
+def generate_hypothetical_document(question: str) -> str:
+    """Generate a single hypothetical document for HyDE."""
+    prompt = f"""Given the question below, write a short factual passage that would
+directly answer it. Do not explain or preface your answer. Just write the passage
+as if it were from a document. Keep your answer in a paragraph of
+{settings.llm_embedding_text_chunk_size} tokens or less.
 
+Question: {question}
+
+Passage:"""
+    client = get_ollama_client()
+
+    try:
+        response = client.generate(
+            model=settings.llm_model,
+            prompt=prompt,
+            options=Options(
+                temperature=settings.llm_hyde_temperature,
+                num_predict=settings.llm_embedding_text_chunk_size,
+            ),
+            think=settings.llm_think,
+        )
+    except HTTPError as ex:
+        raise LLMError("HyDE document generation failed") from ex
+
+    doc = response.response.strip()
+    logger.debug("HyDE generated document: %.100s...", doc)
+    return doc
+
+
+@app.task(
+    base=AiContextProcessingTask,
+    autoretry_for=tuple([LLMError]),
+    max_retries=RAG_MAX_RETRIES,
+    retry_backoff=True,
+)
+def embed_hyde_document(document: str) -> TypedLazyBytes[Sequence[float]]:
+    """Embed a single hypothetical document.
+
+    This task is chained after generate_hypothetical_document.
+    """
     client = get_ollama_client()
     try:
         response = client.embed(
             model=settings.llm_model_embedding,
-            input=texts,
+            input=[f"{settings.llm_embedding_document_prefix}{document}"],
             options=Options(
                 temperature=settings.llm_embedding_temperature,
             ),
         )
     except HTTPError as ex:
-        raise LLMError() from ex
+        raise LLMError("HyDE document embedding failed") from ex
 
-    embeddings_vectors = response.embeddings
-    embedding_vectors_bytes = to_json(embeddings_vectors)
-    embedding_vectors_bytes_lazy = get_lazybytes_service().from_bytes(
-        embedding_vectors_bytes
+    embedding = response.embeddings[0]
+    logger.debug("HyDE embedded document into %d-dim vector", len(embedding))
+    return get_lazybytes_service().from_object(embedding)
+
+
+@app.task(base=AiContextProcessingTask)
+def aggregate_hyde_embeddings(
+    embeddings_lazy: list[TypedLazyBytes[Sequence[float]]],
+) -> TypedLazyBytes[Sequence[float]]:
+    """Aggregate HyDE embeddings by computing their mean."""
+    embeddings = [
+        get_lazybytes_service().load_object(lazy_embedding)
+        for lazy_embedding in embeddings_lazy
+    ]
+    embeddings_array = np.array(embeddings)
+    mean_embedding: list[float] = np.mean(embeddings_array, axis=0).tolist()
+
+    logger.info(
+        "HyDE aggregated %d embeddings into %d-dim vector",
+        len(embeddings),
+        len(mean_embedding),
     )
 
-    return embedding_vectors_bytes_lazy
+    return get_lazybytes_service().from_object(mean_embedding)
 
 
 @app.task(base=AiContextProcessingTask)
 def fetch_scored_search_embeddings(
-    embedding_vectors_bytes_lazy: LazyBytes, query: QueryParameters
+    embedding_lazy: TypedLazyBytes[Sequence[float]], query: QueryParameters
 ) -> list[ScoredSearchEmbedding]:
-    with get_lazybytes_service().load_memoryview(
-        embedding_vectors_bytes_lazy
-    ) as memview:
-        embedding_vectors: list[list[float]] = from_json(memview.tobytes())
+    embedding = get_lazybytes_service().load_object(embedding_lazy)
 
     scored_search_embeddings = []
     for knn_search_embedding in get_file_repository().get_embedding_generator_by_knn(
-        query=query, embedding_vectors=embedding_vectors, k=MAX_FILES_KNN_SEARCH
+        query=query, embedding_vectors=[embedding], k=MAX_FILES_KNN_SEARCH
     ):
         text_lazy = get_lazybytes_service().from_bytes(
             knn_search_embedding.text.encode()

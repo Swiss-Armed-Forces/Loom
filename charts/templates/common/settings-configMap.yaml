@@ -80,6 +80,12 @@ data:
     {{- if ne .Values.llm.rerank_temperature nil }}
     llm_rerank_temperature: {{ .Values.llm.rerank_temperature | quote  }}
     {{- end }}
+    {{- if ne .Values.llm.hyde_num_documents nil }}
+    llm_hyde_num_documents: {{ .Values.llm.hyde_num_documents | quote  }}
+    {{- end }}
+    {{- if ne .Values.llm.hyde_temperature nil }}
+    llm_hyde_temperature: {{ .Values.llm.hyde_temperature | quote  }}
+    {{- end }}
 
     # elasticsearch
     {{- if ne .Values.elasticsearch.shardsCount nil }}

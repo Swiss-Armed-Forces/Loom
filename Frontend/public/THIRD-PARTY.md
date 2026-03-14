@@ -5188,22 +5188,31 @@ The complete source code for Traefik is publicly available at [https://github.co
 | Package | Version | License | Found by |
 | ------- | --------| ------- | -------- |
 | apt | 2.8.3 | BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
-| base-files | 13ubuntu10.2 |  | dpkg-db-cataloger |
+| base-files | 13ubuntu10.4 |  | dpkg-db-cataloger |
 | base-passwd | 3.6.3build1 | GPL-2.0-only | dpkg-db-cataloger |
 | bash | 5.2.21-2ubuntu4 | BSD-4-Clause-UC, GFDL-1.3-only, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, Latex2e | dpkg-db-cataloger |
-| bsdutils | 1:2.39.3-9ubuntu6.3 | BSD-3-Clause, BSD-4-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, MIT | dpkg-db-cataloger |
+| bsdutils | 1:2.39.3-9ubuntu6.4 | BSD-3-Clause, BSD-4-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, MIT | dpkg-db-cataloger |
 | ca-certificates | 20240203 | GPL-2.0-only, GPL-2.0-or-later, MPL-2.0 | dpkg-db-cataloger |
-| coreutils | 9.4-3ubuntu6 | BSD-4-Clause-UC, FSFULLR, GFDL-1.3-only, GPL-3.0-only, GPL-3.0-or-later, ISC | dpkg-db-cataloger |
+| coreutils | 9.4-3ubuntu6.1 | BSD-4-Clause-UC, FSFULLR, GFDL-1.3-only, GPL-3.0-only, GPL-3.0-or-later, ISC | dpkg-db-cataloger |
 | dash | 0.5.12-6ubuntu5 | BSD-3-Clause, BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
 | debconf | 1.5.86ubuntu1 | BSD-2-Clause | dpkg-db-cataloger |
 | debianutils | 5.17build1 | GPL-2.0-only, GPL-2.0-or-later, SMAIL-GPL | dpkg-db-cataloger |
 | diffutils | 1:3.10-1build1 | FSFAP, FSFULLR, GFDL-1.3-only, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, X11 | dpkg-db-cataloger |
-| dpkg | 1.22.6ubuntu6.1 | GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
+| dpkg | 1.22.6ubuntu6.5 | GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
 | e2fsprogs | 1.47.0-2.4~exp1ubuntu4.1 | Apache-2.0, Apache-2.0, BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later, ISC, Kazlib, LGPL-2.0-only, Latex2e | dpkg-db-cataloger |
 | findutils | 4.9.0-5build1 | BSD-3-Clause, FSFAP, FSFULLR, GFDL-1.3-only, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, ISC, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, X11 | dpkg-db-cataloger |
-| gcc-14-base | 14.2.0-4ubuntu2~24.04 | GFDL-1.2-only, GPL-3.0-only | dpkg-db-cataloger |
+| gcc-14-base | 14.2.0-4ubuntu2~24.04.1 | GFDL-1.2-only, GPL-3.0-only | dpkg-db-cataloger |
 | github.com/agnivade/levenshtein | v1.1.1 |  | go-module-binary-cataloger |
 | github.com/apache/arrow/go/arrow | v0.0.0-20211112161151-bc219186db40 |  | go-module-binary-cataloger |
+| github.com/aymanbagabas/go-osc52/v2 | v2.0.1 |  | go-module-binary-cataloger |
+| github.com/bahlo/generic-list-go | v0.2.0 |  | go-module-binary-cataloger |
+| github.com/buger/jsonparser | v1.1.1 |  | go-module-binary-cataloger |
+| github.com/charmbracelet/bubbletea | v1.3.10 |  | go-module-binary-cataloger |
+| github.com/charmbracelet/colorprofile | v0.2.3-0.20250311203215-f60798e515dc |  | go-module-binary-cataloger |
+| github.com/charmbracelet/lipgloss | v1.1.0 |  | go-module-binary-cataloger |
+| github.com/charmbracelet/x/ansi | v0.10.1 |  | go-module-binary-cataloger |
+| github.com/charmbracelet/x/cellbuf | v0.0.13-0.20250311204145-2c3ea96c31dd |  | go-module-binary-cataloger |
+| github.com/charmbracelet/x/term | v0.2.1 |  | go-module-binary-cataloger |
 | github.com/chewxy/hm | v1.0.0 |  | go-module-binary-cataloger |
 | github.com/chewxy/math32 | v1.11.0 |  | go-module-binary-cataloger |
 | github.com/containerd/console | v1.0.3 |  | go-module-binary-cataloger |
@@ -5220,37 +5229,48 @@ The complete source code for Traefik is publicly available at [https://github.co
 | github.com/gogo/protobuf | v1.3.2 |  | go-module-binary-cataloger |
 | github.com/golang/protobuf | v1.5.4 |  | go-module-binary-cataloger |
 | github.com/google/flatbuffers | v24.3.25+incompatible |  | go-module-binary-cataloger |
+| github.com/google/uuid | v1.6.0 |  | go-module-binary-cataloger |
+| github.com/klauspost/compress | v1.18.3 |  | go-module-binary-cataloger |
 | github.com/leodido/go-urn | v1.4.0 |  | go-module-binary-cataloger |
+| github.com/lucasb-eyer/go-colorful | v1.2.0 |  | go-module-binary-cataloger |
+| github.com/mailru/easyjson | v0.7.7 |  | go-module-binary-cataloger |
 | github.com/mattn/go-isatty | v0.0.20 |  | go-module-binary-cataloger |
-| github.com/mattn/go-runewidth | v0.0.14 |  | go-module-binary-cataloger |
+| github.com/mattn/go-runewidth | v0.0.16 |  | go-module-binary-cataloger |
+| github.com/muesli/ansi | v0.0.0-20230316100256-276c6243b2f6 |  | go-module-binary-cataloger |
+| github.com/muesli/cancelreader | v0.2.2 |  | go-module-binary-cataloger |
+| github.com/muesli/termenv | v0.16.0 |  | go-module-binary-cataloger |
 | github.com/nlpodyssey/gopickle | v0.3.0 |  | go-module-binary-cataloger |
 | github.com/olekukonko/tablewriter | v0.0.5 |  | go-module-binary-cataloger |
 | github.com/ollama/ollama | UNKNOWN |  | go-module-binary-cataloger |
 | github.com/pdevine/tensor | v0.0.0-20240510204454-f88f4562727c |  | go-module-binary-cataloger |
 | github.com/pelletier/go-toml/v2 | v2.2.2 |  | go-module-binary-cataloger |
+| github.com/pkg/browser | v0.0.0-20240102092130-5ac0b6a4141c |  | go-module-binary-cataloger |
 | github.com/pkg/errors | v0.9.1 |  | go-module-binary-cataloger |
-| github.com/rivo/uniseg | v0.2.0 |  | go-module-binary-cataloger |
+| github.com/rivo/uniseg | v0.4.7 |  | go-module-binary-cataloger |
 | github.com/spf13/cobra | v1.7.0 |  | go-module-binary-cataloger |
 | github.com/spf13/pflag | v1.0.5 |  | go-module-binary-cataloger |
 | github.com/ugorji/go/codec | v1.2.12 |  | go-module-binary-cataloger |
+| github.com/wk8/go-ordered-map/v2 | v2.1.8 |  | go-module-binary-cataloger |
 | github.com/x448/float16 | v0.8.4 |  | go-module-binary-cataloger |
+| github.com/xo/terminfo | v0.0.0-20220910002029-abceb7e1c41e |  | go-module-binary-cataloger |
 | github.com/xtgo/set | v1.0.0 |  | go-module-binary-cataloger |
 | go4.org/unsafe/assume-no-moving-gc | v0.0.0-20231121144256-b99613f794b6 |  | go-module-binary-cataloger |
-| golang.org/x/crypto | v0.36.0 |  | go-module-binary-cataloger |
+| golang.org/x/crypto | v0.43.0 |  | go-module-binary-cataloger |
 | golang.org/x/exp | v0.0.0-20250218142911-aa4b98e5adaa |  | go-module-binary-cataloger |
 | golang.org/x/image | v0.22.0 |  | go-module-binary-cataloger |
-| golang.org/x/net | v0.38.0 |  | go-module-binary-cataloger |
-| golang.org/x/sync | v0.12.0 |  | go-module-binary-cataloger |
-| golang.org/x/sys | v0.31.0 |  | go-module-binary-cataloger |
-| golang.org/x/term | v0.30.0 |  | go-module-binary-cataloger |
-| golang.org/x/text | v0.23.0 |  | go-module-binary-cataloger |
+| golang.org/x/mod | v0.30.0 |  | go-module-binary-cataloger |
+| golang.org/x/net | v0.46.0 |  | go-module-binary-cataloger |
+| golang.org/x/sync | v0.17.0 |  | go-module-binary-cataloger |
+| golang.org/x/sys | v0.37.0 |  | go-module-binary-cataloger |
+| golang.org/x/term | v0.36.0 |  | go-module-binary-cataloger |
+| golang.org/x/text | v0.30.0 |  | go-module-binary-cataloger |
 | golang.org/x/xerrors | v0.0.0-20200804184101-5ec99f83aff1 |  | go-module-binary-cataloger |
 | gonum.org/v1/gonum | v0.15.0 |  | go-module-binary-cataloger |
 | google.golang.org/protobuf | v1.34.1 |  | go-module-binary-cataloger |
 | gopkg.in/yaml.v3 | v3.0.1 |  | go-module-binary-cataloger |
 | gorgonia.org/vecf32 | v0.9.0 |  | go-module-binary-cataloger |
 | gorgonia.org/vecf64 | v0.9.0 |  | go-module-binary-cataloger |
-| gpgv | 2.4.4-2ubuntu17.3 | BSD-3-Clause, CC0-1.0, GPL-2.0-or-later, GPL-2.0-only, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
+| gpgv | 2.4.4-2ubuntu17.4 | BSD-3-Clause, CC0-1.0, GPL-2.0-or-later, GPL-2.0-only, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
 | grep | 3.11-4build1 | GPL-3.0-only, GPL-3.0-or-later | dpkg-db-cataloger |
 | gzip | 1.12-1ubuntu3.1 | GPL-3.0-only, GPL-3.0-or-later | dpkg-db-cataloger |
 | hostname | 3.23+nmu2ubuntu2 | GPL-2.0-only | dpkg-db-cataloger |
@@ -5261,88 +5281,116 @@ The complete source code for Traefik is publicly available at [https://github.co
 | libattr1 | 1:2.5.2-1build1.1 | GPL-2.0-only, GPL-2.0-or-later, LGPL-2.0-or-later, LGPL-2.1-only | dpkg-db-cataloger |
 | libaudit-common | 1:3.1.2-2.1build1.1 | GPL-1.0-only, GPL-2.0-only, LGPL-2.1-only | dpkg-db-cataloger |
 | libaudit1 | 1:3.1.2-2.1build1.1 | GPL-1.0-only, GPL-2.0-only, LGPL-2.1-only | dpkg-db-cataloger |
-| libblkid1 | 2.39.3-9ubuntu6.3 | BSD-3-Clause, BSD-4-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, MIT | dpkg-db-cataloger |
+| libblkid1 | 2.39.3-9ubuntu6.4 | BSD-3-Clause, BSD-4-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, MIT | dpkg-db-cataloger |
+| libbsd0 | 0.12.1-1build1.1 | BSD-2-Clause, BSD-2-Clause, BSD-3-Clause, Beerware, ISC | dpkg-db-cataloger |
 | libbz2-1.0 | 1.0.8-5.1build0.1 | GPL-2.0-only | dpkg-db-cataloger |
-| libc-bin | 2.39-0ubuntu8.5 | GFDL-1.3-only, GPL-2.0-only, LGPL-2.1-only | dpkg-db-cataloger |
-| libc6 | 2.39-0ubuntu8.5 | GFDL-1.3-only, GPL-2.0-only, LGPL-2.1-only | dpkg-db-cataloger |
+| libc-bin | 2.39-0ubuntu8.7 | GFDL-1.3-only, GPL-2.0-only, LGPL-2.1-only | dpkg-db-cataloger |
+| libc6 | 2.39-0ubuntu8.7 | GFDL-1.3-only, GPL-2.0-only, LGPL-2.1-only | dpkg-db-cataloger |
 | libcap-ng0 | 0.8.4-2build2 | GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
 | libcap2 | 1:2.66-5ubuntu2.2 | BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
 | libcom-err2 | 1.47.0-2.4~exp1ubuntu4.1 | Apache-2.0, Apache-2.0, BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later, ISC, Kazlib, LGPL-2.0-only, Latex2e | dpkg-db-cataloger |
 | libcrypt1 | 1:4.4.36-4build1 |  | dpkg-db-cataloger |
 | libdb5.3t64 | 5.3.28+dfsg2-7 | BSD-3-Clause, GPL-3.0-only, MS-PL, Sleepycat, X11, Zlib | dpkg-db-cataloger |
 | libdebconfclient0 | 0.271ubuntu3 | BSD-2-Clause, BSD-2-Clause, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
+| libdrm-amdgpu1 | 2.4.125-1ubuntu0.1~24.04.1 |  | dpkg-db-cataloger |
+| libdrm-common | 2.4.125-1ubuntu0.1~24.04.1 |  | dpkg-db-cataloger |
+| libdrm2 | 2.4.125-1ubuntu0.1~24.04.1 |  | dpkg-db-cataloger |
+| libedit2 | 3.1-20230828-1build1 | BSD-3-Clause | dpkg-db-cataloger |
+| libelf1t64 | 0.190-1.1ubuntu0.1 | BSD-2-Clause, GFDL-1.3-only, GPL-2.0-only, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
 | libexpat1 | 2.6.1-2ubuntu0.4 | MIT | dpkg-db-cataloger |
 | libext2fs2t64 | 1.47.0-2.4~exp1ubuntu4.1 | Apache-2.0, Apache-2.0, BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later, ISC, Kazlib, LGPL-2.0-only, Latex2e | dpkg-db-cataloger |
 | libffi8 | 3.4.6-1build1 | GPL-2.0-or-later, GPL-3.0-or-later, MPL-1.1, X11 | dpkg-db-cataloger |
-| libgcc-s1 | 14.2.0-4ubuntu2~24.04 | GFDL-1.2-only, GPL-3.0-only | dpkg-db-cataloger |
+| libgcc-s1 | 14.2.0-4ubuntu2~24.04.1 | GFDL-1.2-only, GPL-3.0-only | dpkg-db-cataloger |
 | libgcrypt20 | 1.10.3-2build1 | GPL-2.0-only | dpkg-db-cataloger |
+| libgfortran5 | 14.2.0-4ubuntu2~24.04.1 | GFDL-1.2-only, GPL-3.0-only | dpkg-db-cataloger |
 | libgmp10 | 2:6.3.0+dfsg-2ubuntu6.1 | GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
 | libgnutls30t64 | 3.8.3-1.1ubuntu3.4 | Apache-2.0, BSD-3-Clause, GFDL-1.3-only, GPL-3.0-only, LGPL-3.0-only | dpkg-db-cataloger |
 | libgpg-error0 | 1.47-3build2.1 | BSD-3-Clause, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
 | libhogweed6t64 | 3.9.1-2.2build1.1 | GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-3.0-or-later | dpkg-db-cataloger |
+| libicu74 | 74.2-1ubuntu3.1 | GPL-3.0-only, MIT | dpkg-db-cataloger |
 | libidn2-0 | 2.3.7-2build1.1 | GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
+| libllvm20 | 1:20.1.2-0ubuntu1~24.04.2 | Apache-2.0, BSD-3-Clause, BSD-3-Clause, MIT | dpkg-db-cataloger |
 | liblz4-1 | 1.9.4-1build1.1 | BSD-2-Clause, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
 | liblzma5 | 5.6.1+really5.4.5-1ubuntu0.2 | GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, LGPL-2.0-only, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
 | libmd0 | 1.1.0-2build1.1 | BSD-2-Clause, BSD-2-Clause, BSD-3-Clause, Beerware, ISC | dpkg-db-cataloger |
-| libmount1 | 2.39.3-9ubuntu6.3 | BSD-3-Clause, BSD-4-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, MIT | dpkg-db-cataloger |
+| libmount1 | 2.39.3-9ubuntu6.4 | BSD-3-Clause, BSD-4-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, MIT | dpkg-db-cataloger |
 | libncursesw6 | 6.4+20240113-1ubuntu2 | BSD-3-Clause, X11 | dpkg-db-cataloger |
 | libnettle8t64 | 3.9.1-2.2build1.1 | GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-3.0-or-later | dpkg-db-cataloger |
 | libnpth0t64 | 1.6-3.1build1 | LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
+| libopenblas0 | 0.3.26+ds-1ubuntu0.1 | Apache-2.0, BSD-2-Clause, BSD-3-Clause | dpkg-db-cataloger |
+| libopenblas0-pthread | 0.3.26+ds-1ubuntu0.1 | Apache-2.0, BSD-2-Clause, BSD-3-Clause | dpkg-db-cataloger |
 | libp11-kit0 | 0.25.3-4ubuntu2.1 | Apache-2.0, BSD-3-Clause, FSFAP, FSFULLR, GPL-2.0-or-later, GPL-3.0-or-later, ISC, LGPL-2.1-only, LGPL-2.1-or-later, X11 | dpkg-db-cataloger |
-| libpam-modules | 1.5.3-5ubuntu5.4 | BSD-3-Clause, Beerware, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later | dpkg-db-cataloger |
-| libpam-modules-bin | 1.5.3-5ubuntu5.4 | BSD-3-Clause, Beerware, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later | dpkg-db-cataloger |
-| libpam-runtime | 1.5.3-5ubuntu5.4 | BSD-3-Clause, Beerware, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later | dpkg-db-cataloger |
-| libpam0g | 1.5.3-5ubuntu5.4 | BSD-3-Clause, Beerware, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later | dpkg-db-cataloger |
+| libpam-modules | 1.5.3-5ubuntu5.5 | BSD-3-Clause, Beerware, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later | dpkg-db-cataloger |
+| libpam-modules-bin | 1.5.3-5ubuntu5.5 | BSD-3-Clause, Beerware, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later | dpkg-db-cataloger |
+| libpam-runtime | 1.5.3-5ubuntu5.5 | BSD-3-Clause, Beerware, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later | dpkg-db-cataloger |
+| libpam0g | 1.5.3-5ubuntu5.5 | BSD-3-Clause, Beerware, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later | dpkg-db-cataloger |
 | libpcre2-8-0 | 10.42-4ubuntu2.1 | BSD-2-Clause, BSD-3-Clause, X11 | dpkg-db-cataloger |
 | libproc2-0 | 2:4.0.4-4ubuntu3.2 | GPL-2.0-only, GPL-2.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
 | libpython3-stdlib | 3.12.3-0ubuntu2.1 |  | dpkg-db-cataloger |
-| libpython3.12-minimal | 3.12.3-1ubuntu0.11 | GPL-2.0-only | dpkg-db-cataloger |
-| libpython3.12-stdlib | 3.12.3-1ubuntu0.11 | GPL-2.0-only | dpkg-db-cataloger |
+| libpython3.12-minimal | 3.12.3-1ubuntu0.12 | GPL-2.0-only | dpkg-db-cataloger |
+| libpython3.12-stdlib | 3.12.3-1ubuntu0.12 | GPL-2.0-only | dpkg-db-cataloger |
 | libreadline8t64 | 8.2-4build1 | GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later | dpkg-db-cataloger |
 | libseccomp2 | 2.5.5-1ubuntu3.1 | LGPL-2.1-only | dpkg-db-cataloger |
 | libselinux1 | 3.5-2ubuntu2.1 | GPL-2.0-only | dpkg-db-cataloger |
 | libsemanage-common | 3.5-1build5 | GPL-2.0-only, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
 | libsemanage2 | 3.5-1build5 | GPL-2.0-only, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
 | libsepol2 | 3.5-2build1 | GPL-2.0-only, GPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, Zlib | dpkg-db-cataloger |
-| libsmartcols1 | 2.39.3-9ubuntu6.3 | BSD-3-Clause, BSD-4-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, MIT | dpkg-db-cataloger |
+| libsmartcols1 | 2.39.3-9ubuntu6.4 | BSD-3-Clause, BSD-4-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, MIT | dpkg-db-cataloger |
 | libsqlite3-0 | 3.45.1-1ubuntu2.5 | GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
 | libss2 | 1.47.0-2.4~exp1ubuntu4.1 | Apache-2.0, Apache-2.0, BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later, ISC, Kazlib, LGPL-2.0-only, Latex2e | dpkg-db-cataloger |
-| libssl3t64 | 3.0.13-0ubuntu3.5 | Apache-2.0, GPL-1.0-only, GPL-1.0-or-later | dpkg-db-cataloger |
-| libstdc++6 | 14.2.0-4ubuntu2~24.04 | GFDL-1.2-only, GPL-3.0-only | dpkg-db-cataloger |
-| libsystemd0 | 255.4-1ubuntu8.8 | CC0-1.0, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
-| libtasn1-6 | 4.19.0-3ubuntu0.24.04.1 | GFDL-1.3-only, GPL-3.0-only, LGPL-2.1-only | dpkg-db-cataloger |
+| libssl3t64 | 3.0.13-0ubuntu3.7 | Apache-2.0, GPL-1.0-only, GPL-1.0-or-later | dpkg-db-cataloger |
+| libstdc++6 | 14.2.0-4ubuntu2~24.04.1 | GFDL-1.2-only, GPL-3.0-only | dpkg-db-cataloger |
+| libsystemd0 | 255.4-1ubuntu8.12 | CC0-1.0, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
+| libtasn1-6 | 4.19.0-3ubuntu0.24.04.2 | GFDL-1.3-only, GPL-3.0-only, LGPL-2.1-only | dpkg-db-cataloger |
 | libtinfo6 | 6.4+20240113-1ubuntu2 | BSD-3-Clause, X11 | dpkg-db-cataloger |
-| libudev1 | 255.4-1ubuntu8.8 | CC0-1.0, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
+| libudev1 | 255.4-1ubuntu8.12 | CC0-1.0, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
 | libunistring5 | 1.1-2build1.1 | GFDL-1.2-only, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-3.0-only, LGPL-3.0-or-later, X11 | dpkg-db-cataloger |
-| libuuid1 | 2.39.3-9ubuntu6.3 | BSD-3-Clause, BSD-4-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, MIT | dpkg-db-cataloger |
+| libuuid1 | 2.39.3-9ubuntu6.4 | BSD-3-Clause, BSD-4-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, MIT | dpkg-db-cataloger |
+| libvulkan1 | 1.3.275.0-1build1 | Apache-2.0, MIT | dpkg-db-cataloger |
+| libwayland-client0 | 1.22.0-2.1build1 | X11 | dpkg-db-cataloger |
+| libx11-6 | 2:1.8.7-1build1 | BSD-1-Clause, HPND, HPND-sell-variant, MIT | dpkg-db-cataloger |
+| libx11-data | 2:1.8.7-1build1 | BSD-1-Clause, HPND, HPND-sell-variant, MIT | dpkg-db-cataloger |
+| libx11-xcb1 | 2:1.8.7-1build1 | BSD-1-Clause, HPND, HPND-sell-variant, MIT | dpkg-db-cataloger |
+| libxau6 | 1:1.0.9-1build6 |  | dpkg-db-cataloger |
+| libxcb-dri3-0 | 1.15-1ubuntu2 |  | dpkg-db-cataloger |
+| libxcb-present0 | 1.15-1ubuntu2 |  | dpkg-db-cataloger |
+| libxcb-randr0 | 1.15-1ubuntu2 |  | dpkg-db-cataloger |
+| libxcb-shm0 | 1.15-1ubuntu2 |  | dpkg-db-cataloger |
+| libxcb-sync1 | 1.15-1ubuntu2 |  | dpkg-db-cataloger |
+| libxcb-xfixes0 | 1.15-1ubuntu2 |  | dpkg-db-cataloger |
+| libxcb1 | 1.15-1ubuntu2 |  | dpkg-db-cataloger |
+| libxdmcp6 | 1:1.1.3-0ubuntu6 |  | dpkg-db-cataloger |
+| libxml2 | 2.9.14+dfsg-1.3ubuntu3.7 | ISC | dpkg-db-cataloger |
+| libxshmfence1 | 1.3-1build5 | HPND-sell-variant | dpkg-db-cataloger |
 | libxxhash0 | 0.8.2-2build1 | BSD-2-Clause, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
 | libzstd1 | 1.5.5+dfsg2-2build1.1 | BSD-3-Clause, GPL-2.0-only, Zlib | dpkg-db-cataloger |
 | login | 1:4.13+dfsg1-4ubuntu3.2 | BSD-3-Clause, GPL-1.0-only, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
 | logsave | 1.47.0-2.4~exp1ubuntu4.1 | Apache-2.0, Apache-2.0, BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later, ISC, Kazlib, LGPL-2.0-only, Latex2e | dpkg-db-cataloger |
 | mawk | 1.3.4.20240123-1build1 | CC-BY-3.0, GPL-2.0-only, GPL-2.0-only, X11 | dpkg-db-cataloger |
 | media-types | 10.1.0 |  | dpkg-db-cataloger |
-| mount | 2.39.3-9ubuntu6.3 | BSD-3-Clause, BSD-4-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, MIT | dpkg-db-cataloger |
+| mesa-vulkan-drivers | 25.2.8-0ubuntu0.24.04.1 | Apache-2.0, BSD-2-Clause, GPL-1.0-only, GPL-1.0-or-later, GPL-2.0-only, MIT, Unicode-DFS-2016 | dpkg-db-cataloger |
+| mount | 2.39.3-9ubuntu6.4 | BSD-3-Clause, BSD-4-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, MIT | dpkg-db-cataloger |
 | ncurses-base | 6.4+20240113-1ubuntu2 | BSD-3-Clause, X11 | dpkg-db-cataloger |
 | ncurses-bin | 6.4+20240113-1ubuntu2 | BSD-3-Clause, X11 | dpkg-db-cataloger |
 | netbase | 6.4 | GPL-2.0-only | dpkg-db-cataloger |
-| openssl | 3.0.13-0ubuntu3.5 |  | dpkg-db-cataloger |
+| openssl | 3.0.13-0ubuntu3.7 |  | dpkg-db-cataloger |
 | passwd | 1:4.13+dfsg1-4ubuntu3.2 | BSD-3-Clause, GPL-1.0-only, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
-| perl-base | 5.38.2-3.2ubuntu0.1 | Artistic-2.0, Artistic-dist, BSD-3-Clause, FSFAP, GPL-1.0-only, GPL-1.0-or-later, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.1-only, Zlib | dpkg-db-cataloger |
+| perl-base | 5.38.2-3.2ubuntu0.2 | Artistic-2.0, Artistic-dist, BSD-3-Clause, FSFAP, GPL-1.0-only, GPL-1.0-or-later, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.1-only, Zlib | dpkg-db-cataloger |
 | procps | 2:4.0.4-4ubuntu3.2 | GPL-2.0-only, GPL-2.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
 | python3 | 3.12.3-0ubuntu2.1 |  | dpkg-db-cataloger |
 | python3-minimal | 3.12.3-0ubuntu2.1 |  | dpkg-db-cataloger |
-| python3.12 | 3.12.3-1ubuntu0.11 | GPL-2.0-only | dpkg-db-cataloger |
-| python3.12-minimal | 3.12.3-1ubuntu0.11 | GPL-2.0-only | dpkg-db-cataloger |
+| python3.12 | 3.12.3-1ubuntu0.12 | GPL-2.0-only | dpkg-db-cataloger |
+| python3.12-minimal | 3.12.3-1ubuntu0.12 | GPL-2.0-only | dpkg-db-cataloger |
 | readline-common | 8.2-4build1 | GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later | dpkg-db-cataloger |
 | sed | 4.9-2build1 | BSD-4-Clause-UC, BSL-1.0, GFDL-1.3-only, GPL-3.0-only, GPL-3.0-or-later, ISC, X11 | dpkg-db-cataloger |
 | sensible-utils | 0.0.22 | BSD-2-Clause, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
-| stdlib | go1.24.0 | BSD-3-Clause | go-module-binary-cataloger |
+| stdlib | go1.24.1 | BSD-3-Clause | go-module-binary-cataloger |
 | sysvinit-utils | 3.08-6ubuntu3 | GPL-2.0-only, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-only, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
 | tar | 1.35+dfsg-3build1 | GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
 | tzdata | 2025b-0ubuntu0.24.04.1 | ICU | dpkg-db-cataloger |
 | ubuntu-keyring | 2023.11.28.1 |  | dpkg-db-cataloger |
 | unminimize | 0.2.1 | GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
-| util-linux | 2.39.3-9ubuntu6.3 | BSD-3-Clause, BSD-4-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, MIT | dpkg-db-cataloger |
+| util-linux | 2.39.3-9ubuntu6.4 | BSD-3-Clause, BSD-4-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, MIT | dpkg-db-cataloger |
 | zlib1g | 1:1.3.dfsg-3.1ubuntu2.1 | Zlib | dpkg-db-cataloger |
 
 ### registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/libretranslate

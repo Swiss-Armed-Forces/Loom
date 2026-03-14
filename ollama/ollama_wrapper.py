@@ -30,7 +30,15 @@ def size_bytes_to_human(size_bytes: int) -> str:
     return f"{size_bytes} B"
 
 
-# --- Data class ---
+# --- Data classes ---
+@dataclass
+class ParallelismEstimate:
+    """Result of estimating OLLAMA_NUM_PARALLEL and related settings."""
+
+    parallelism: int
+    largest_context_length: int | None = None
+
+
 @dataclass
 class ModelInfo:
     """Represents an installed Ollama model with its parsed size in bytes."""
@@ -187,30 +195,39 @@ def calculate_parallelism(
     )
 
 
-def estimate_parallelism() -> int:
+def estimate_parallelism() -> ParallelismEstimate:
     """Estimates a safe OLLAMA_NUM_PARALLEL from installed model and GPU memory."""
     models = get_installed_models()
     if not models:
         print("⚠️ No installed models found.")
-        return 1
+        return ParallelismEstimate(parallelism=1)
 
     total_model_size_bytes = sum(m.size_bytes for m in models)
     print(f"📦 Total model size: {size_bytes_to_human(total_model_size_bytes)}")
 
-    largest_context = max(
-        (m for m in models if m.context_length_bytes is not None),
-        key=lambda m: (
-            m.context_length_bytes if m.context_length_bytes is not None else 0
-        ),
-    )
-    print(
-        f"💬 Largest context: {largest_context.name} ({largest_context.context_length_human})"
-    )
+    # Find largest context length if any model has it
+    models_with_context = [m for m in models if m.context_length_bytes is not None]
+    largest_context_length: int | None = None
+    if models_with_context:
+        largest_context = max(
+            models_with_context,
+            key=lambda m: (
+                m.context_length_bytes if m.context_length_bytes is not None else 0
+            ),
+        )
+        largest_context_length = largest_context.context_length_bytes
+        print(
+            f"💬 Largest context: {largest_context.name} ({largest_context.context_length_human})"
+        )
+    else:
+        print("⚠️ No context length information found for any model.")
 
     vram_mb = get_total_gpu_vram_mb()
     if vram_mb is None:
         print("⚠️ No GPU detected. Assuming CPU-only environment.")
-        return 1
+        return ParallelismEstimate(
+            parallelism=1, largest_context_length=largest_context_length
+        )
     print(f"🧠 GPU detected: {vram_mb} MB VRAM")
 
     vram_bytes = vram_mb * (1024**2)
@@ -218,9 +235,11 @@ def estimate_parallelism() -> int:
         vram_bytes,
         len(models),
         total_model_size_bytes,
-        largest_context.context_length_bytes,
+        largest_context_length,
     )
-    return parallelism
+    return ParallelismEstimate(
+        parallelism=parallelism, largest_context_length=largest_context_length
+    )
 
 
 # --- Mode handlers ---
@@ -235,12 +254,22 @@ def run_entry_command(ollama_args: list[str]) -> None:
     """Runs a main Ollama command, estimating OLLAMA_NUM_PARALLEL if not already set."""
     env = os.environ.copy()
 
+    estimate = estimate_parallelism()
     if "OLLAMA_NUM_PARALLEL" in env:
         print(f"🔧 Using pre-defined OLLAMA_NUM_PARALLEL={env['OLLAMA_NUM_PARALLEL']}")
     else:
-        parallelism = estimate_parallelism()
-        print(f"✅ Dynamically setting OLLAMA_NUM_PARALLEL={parallelism}")
-        env["OLLAMA_NUM_PARALLEL"] = str(parallelism)
+        print(f"✅ Dynamically setting OLLAMA_NUM_PARALLEL={estimate.parallelism}")
+        env["OLLAMA_NUM_PARALLEL"] = str(estimate.parallelism)
+
+    if "OLLAMA_CONTEXT_LENGTH" in env:
+        print(
+            f"🔧 Using pre-defined OLLAMA_CONTEXT_LENGTH={env['OLLAMA_CONTEXT_LENGTH']}"
+        )
+    elif estimate is not None and estimate.largest_context_length is not None:
+        print(
+            f"✅ Dynamically setting OLLAMA_CONTEXT_LENGTH={estimate.largest_context_length}"
+        )
+        env["OLLAMA_CONTEXT_LENGTH"] = str(estimate.largest_context_length)
 
     # flush std*
     sys.stdout.flush()
