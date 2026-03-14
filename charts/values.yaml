@@ -340,6 +340,29 @@ fluentd:
       limits:
         cpu: "0.1"
         memory: "100Mi"
+  # Fluentd configuration settings
+  config:
+    elasticsearch:
+      # Optional: override to use external ES. If null, defaults to internal ES instance
+      host: null
+      port: null
+    buffer:
+      flushThreadCount: 8
+      flushInterval: "5s"
+      chunkLimitSize: "2M"
+      queueLimitLength: 32
+      retryMaxInterval: 30
+    dataStream:
+      name: "docker-logs"
+      templateName: "docker-logs-template"
+      ilmName: "5d-hot-15-warm-log-op"
+      hotMaxAge: "1d"
+      hotMaxShardSize: "20gb"
+      warmMinAge: "5d"
+      deleteMinAge: "15d"
+    indexTemplate:
+      numberOfShards: 1
+      numberOfReplicas: 0
   # Custom labels specific to fluentd resources
   customLabels: {}
   # Example:

@@ -9,7 +9,7 @@ USER root
 # Package versions
 ARG BUILD_BASE_VERSION="0.5-r3"
 ARG RUBY_DEV_VERSION="3.2.8-r0"
-ARG FLUENT_PLUGIN_ELASTICSEARCH_VERSION="6.0.0"
+ARG FLUENT_PLUGIN_ELASTICSEARCH_VERSION="5.4.3"
 # Fix for Fluentd Elasticsearch compatibility issue:
 # The fluent-plugin-elasticsearch .gemspec doesn't pin the elasticsearch Ruby gem version,
 # which can cause version 9.x to be installed automatically. This creates compatibility
@@ -34,8 +34,6 @@ RUN set -exu \
     && apk del .build-deps \
     && rm -rf /home/fluent/.gem/ruby/2.5.0/cache/*.gem
 
-COPY fluent.conf /fluentd/etc/
-COPY index-templates /fluentd/etc/index-templates
 COPY entrypoint.sh /bin/
 
 USER fluent

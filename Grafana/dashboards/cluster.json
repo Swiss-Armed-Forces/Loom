@@ -20,7 +20,6 @@
   "fiscalYearStartMonth": 0,
   "gnetId": 8321,
   "graphTooltip": 1,
-  "id": 1,
   "links": [],
   "panels": [
     {
@@ -423,7 +422,7 @@
               }
             ]
           },
-          "unit": "mbytes"
+          "unit": "decbytes"
         },
         "overrides": []
       },
@@ -456,7 +455,7 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "container_memory_usage_bytes{job=~\"$job\",instance=~\"$instance\",namespace=~\"$namespace\",pod=~\"$pod\"}/1024/1024",
+          "expr": "container_memory_working_set_bytes{job=~\"$job\",instance=~\"$instance\",namespace=~\"$namespace\",pod=~\"$pod\"}",
           "hide": false,
           "intervalFactor": 2,
           "legendFormat": "{{pod}}",
@@ -867,7 +866,7 @@
     {
       "datasource": {
         "type": "elasticsearch",
-        "uid": "P31C819B24CF3C3C7"
+        "uid": "P61E7A9AD0246CD05"
       },
       "gridPos": {
         "h": 11,
@@ -901,7 +900,7 @@
           ],
           "datasource": {
             "type": "elasticsearch",
-            "uid": "P31C819B24CF3C3C7"
+            "uid": "P61E7A9AD0246CD05"
           },
           "metrics": [
             {
@@ -911,7 +910,7 @@
           ],
           "query": "pod:${pod}",
           "refId": "A",
-          "timeField": "@timestamp"
+          "timeField": "uploaded_datetime"
         }
       ],
       "title": "Log",
