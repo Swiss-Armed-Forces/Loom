@@ -500,8 +500,8 @@ install_traefik(){
             apply \
                 --filename tls-store.yaml
 
-        # We always first delete the existing deployment
-        # this is because skaffold will redeploy
+        # We always first delete the existing deployment.
+        # This is because skaffold will redeploy
         # resources, which won't work as traefik
         # holds exclusive access on certain ports
         # Related:
