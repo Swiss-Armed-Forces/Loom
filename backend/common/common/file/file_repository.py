@@ -7,7 +7,7 @@ import re
 from datetime import datetime
 from json import JSONDecodeError
 from pathlib import PurePosixPath
-from typing import Annotated, Any, Callable, Generator, cast
+from typing import Annotated, Any, Callable, Generator, Sequence, cast
 from urllib.error import URLError
 from uuid import UUID
 
@@ -689,7 +689,7 @@ class FileRepository(BaseEsRepository[_EsFile, File]):
     def get_embedding_generator_by_knn(
         self,
         query: QueryParameters,
-        embedding_vectors: list[list[float]],
+        embedding_vectors: Sequence[Sequence[float]],
         k: int,
         pagination_params: PaginationParameters | None = None,
         sort_params: SortingParameters | None = None,
@@ -721,7 +721,7 @@ class FileRepository(BaseEsRepository[_EsFile, File]):
                 field="embeddings.vector",
                 k=k,
                 num_candidates=k * KNN_CANDIDATES_FACTOR,
-                query_vector=q,
+                query_vector=list(q),
                 filter=filter_query,
                 inner_hits={"_source": True, "fields": ["embeddings.text"], "size": k},
             )

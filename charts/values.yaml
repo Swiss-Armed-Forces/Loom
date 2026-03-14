@@ -50,16 +50,19 @@ pipeline:
     - fra
 
 llm:
-  model: qwen3:8b
-  model_embedding: nomic-embed-text:v1.5
-  model_tool: qwen3:8b
+  model: huihui_ai/qwen3.5-abliterated:9b
+  model_embedding: nomic-embed-text-v2-moe
+  model_tool: huihui_ai/qwen3.5-abliterated:9b
   temperature: null
   summarize_text_chunk_size: null
   summarize_text_chunk_overlap: null
   embedding_temperature: null
   embedding_text_chunk_size: null
   embedding_text_chunk_overlap: null
-  llm_rerank_temperature: null
+  rerank_temperature: null
+  # HyDE (Hypothetical Document Embeddings) settings
+  hyde_num_documents: null  # Number of hypothetical docs to generate
+  hyde_temperature: null
 
 preInstall:
   image:

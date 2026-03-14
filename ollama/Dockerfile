@@ -1,10 +1,10 @@
 # Image version
-ARG OLLAMA_IMAGE_VERSION="0.11.3"
+ARG OLLAMA_IMAGE_VERSION="0.18.0"
 
 ARG DOCKER_REGISTRY
 FROM ${DOCKER_REGISTRY}/ollama/ollama:${OLLAMA_IMAGE_VERSION}
 
-ARG LLM_MODELS="qwen3:8b smollm2:135m nomic-embed-text:v1.5"
+ARG LLM_MODELS="huihui_ai/qwen3.5-abliterated:9b smollm2:135m nomic-embed-text-v2-moe"
 ENV LLM_MODELS=${LLM_MODELS}
 
 # Python
@@ -24,6 +24,7 @@ RUN set -exu \
 # Make service accessible from extern
 ENV OLLAMA_HOST="0.0.0.0"
 ENV OLLAMA_DEBUG=1
+ENV OLLAMA_NO_CLOUD=1
 
 ENTRYPOINT ["/bin/ollama_wrapper.py", "entry"]
 CMD ["serve"]

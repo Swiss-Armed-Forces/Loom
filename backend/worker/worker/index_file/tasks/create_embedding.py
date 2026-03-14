@@ -5,12 +5,11 @@ from celery import chain, chord
 from celery.canvas import Signature
 from common.dependencies import get_celery_app, get_lazybytes_service, get_ollama_client
 from common.file.file_repository import Embedding, File
-from common.services.lazybytes_service import LazyBytes
+from common.services.lazybytes_service import LazyBytes, TypedLazyBytes
 from common.utils.cache import cache
 from httpx import HTTPError
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from ollama import Options
-from pydantic_core import from_json, to_json
 
 from worker.index_file.infra.file_indexing_task import FileIndexingTask
 from worker.index_file.infra.indexing_persister import IndexingPersister
@@ -21,9 +20,6 @@ from worker.utils.persisting_task import persisting_task
 logger = logging.getLogger(__name__)
 
 app = get_celery_app()
-
-CHUNK_LENGTH = 400
-CHUNK_OVERLAP = 100
 
 CREATE_EMBEDDING_MAX_RETRIES = 15
 
@@ -87,12 +83,12 @@ class LLMError(Exception):
     retry_backoff=True,
 )
 @cache()
-def embed_text(text: str) -> LazyBytes:
+def embed_text(text: str) -> TypedLazyBytes[Embedding]:
     client = get_ollama_client()
     try:
         response = client.embed(
             model=settings.llm_model_embedding,
-            input=text,
+            input="{settings.llm_embedding_document_prefix}{text}",
             options=Options(
                 temperature=settings.llm_embedding_temperature,
             ),
@@ -104,10 +100,7 @@ def embed_text(text: str) -> LazyBytes:
         vector=list(response.embeddings[0]),
     )
 
-    embedding_bytes = to_json(embedding)
-    embedding_bytes_lazy = get_lazybytes_service().from_bytes(embedding_bytes)
-
-    return embedding_bytes_lazy
+    return get_lazybytes_service().from_object(embedding)
 
 
 @persisting_task(
@@ -116,12 +109,11 @@ def embed_text(text: str) -> LazyBytes:
 )
 def persist_embeddings(
     persister: IndexingPersister,
-    embeddings_bytes_lazy: list[LazyBytes],
+    embeddings_lazy: list[TypedLazyBytes[Embedding]],
 ):
-    embeddings: list[Embedding] = []
-    for embedding_bytes_lazy in embeddings_bytes_lazy:
-        with get_lazybytes_service().load_memoryview(embedding_bytes_lazy) as memview:
-            embedding: Embedding = from_json(memview.tobytes())
-            embeddings.append(embedding)
+    embeddings = [
+        get_lazybytes_service().load_object(embedding_lazy)
+        for embedding_lazy in embeddings_lazy
+    ]
 
     persister.set_embeddings(embeddings)

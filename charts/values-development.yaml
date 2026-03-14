@@ -2,7 +2,7 @@ environment: development
 
 llm:
   model: smollm2:135m
-  model_embedding: nomic-embed-text:v1.5
+  model_embedding: nomic-embed-text-v2-moe
   # Warning ! This model is not intelligent enough to understand how tools work
   model_tool: smollm2:135m
   temperature: null
