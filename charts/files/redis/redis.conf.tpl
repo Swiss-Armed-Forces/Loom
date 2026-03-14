@@ -1478,7 +1478,7 @@ no-appendfsync-on-rewrite no
 # Specify a percentage of zero in order to disable the automatic AOF
 # rewrite feature.
 
-auto-aof-rewrite-percentage 100
+auto-aof-rewrite-percentage 75
 auto-aof-rewrite-min-size 64mb
 
 # An AOF file may be found to be truncated at the end during the Redis

@@ -2,7 +2,7 @@
 {{- $component := .component -}}
 {{- $values := index .Values $component -}}
 {{- $redisMemoryLimitBytes := include "SI-to-bytes" $values.resources.limits.memory | int64 -}}
-{{- $pvcStorageMultiplier := 4 -}}
+{{- $pvcStorageMultiplier := dig "pvc" "storageMultiplier" 4 $values -}}
 {{- $pvcStorageBytes := mulf $redisMemoryLimitBytes $pvcStorageMultiplier | int64 -}}
 
 apiVersion: apps/v1
