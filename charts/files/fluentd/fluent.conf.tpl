@@ -24,14 +24,14 @@
 
 <match pod.logs.**>
   @type elasticsearch_data_stream
-  host "#{ENV['FLUENT_ELASTICSEARCH_HOST'] || 'elasticsearch'}"
-  port "#{ENV['FLUENT_ELASTICSEARCH_PORT'] || '9200'}"
+  host {{ .Values.fluentd.config.elasticsearch.host | default (printf "%s-elasticsearch" (include "app.fullname" .)) | quote }}
+  port {{ .Values.fluentd.config.elasticsearch.port | default .Values.elasticsearch.service.port | quote }}
 
   logstash_format true
   include_tag_key true
-  data_stream_name docker-logs
-  data_stream_template_name docker-logs-template
-  data_stream_ilm_name "5d-hot-15-warm-log-op"
+  data_stream_name {{ .Values.fluentd.config.dataStream.name | quote }}
+  data_stream_template_name {{ .Values.fluentd.config.dataStream.templateName | quote }}
+  data_stream_ilm_name {{ .Values.fluentd.config.dataStream.ilmName | quote }}
   data_stream_ilm_policy_overwrite true
   data_stream_ilm_policy {
     "policy": {
@@ -40,8 +40,8 @@
           "min_age": "0ms",
           "actions": {
             "rollover": {
-              "max_primary_shard_size": "20gb",
-              "max_age": "1d"
+              "max_primary_shard_size": {{ .Values.fluentd.config.dataStream.hotMaxShardSize | quote }},
+              "max_age": {{ .Values.fluentd.config.dataStream.hotMaxAge | quote }}
             },
             "set_priority": {
               "priority": 100
@@ -49,7 +49,7 @@
           }
         },
         "warm": {
-          "min_age": "5d",
+          "min_age": {{ .Values.fluentd.config.dataStream.warmMinAge | quote }},
           "actions": {
             "set_priority": {
               "priority": 50
@@ -57,7 +57,7 @@
           }
         },
         "delete": {
-          "min_age": "15d",
+          "min_age": {{ .Values.fluentd.config.dataStream.deleteMinAge | quote }},
           "actions": {
             "delete": {
               "delete_searchable_snapshot": true
@@ -73,11 +73,11 @@
   reload_connections false
   reload_on_failure true
   <buffer>
-    flush_thread_count "#{ENV['FLUENT_ELASTICSEARCH_BUFFER_FLUSH_THREAD_COUNT'] || '8'}"
-    flush_interval "#{ENV['FLUENT_ELASTICSEARCH_BUFFER_FLUSH_INTERVAL'] || '5s'}"
-    chunk_limit_size "#{ENV['FLUENT_ELASTICSEARCH_BUFFER_CHUNK_LIMIT_SIZE'] || '2M'}"
-    queue_limit_length "#{ENV['FLUENT_ELASTICSEARCH_BUFFER_QUEUE_LIMIT_LENGTH'] || '32'}"
-    retry_max_interval "#{ENV['FLUENT_ELASTICSEARCH_BUFFER_RETRY_MAX_INTERVAL'] || '30'}"
+    flush_thread_count {{ .Values.fluentd.config.buffer.flushThreadCount }}
+    flush_interval {{ .Values.fluentd.config.buffer.flushInterval | quote }}
+    chunk_limit_size {{ .Values.fluentd.config.buffer.chunkLimitSize | quote }}
+    queue_limit_length {{ .Values.fluentd.config.buffer.queueLimitLength }}
+    retry_max_interval {{ .Values.fluentd.config.buffer.retryMaxInterval }}
     retry_forever true
   </buffer>
 </match>

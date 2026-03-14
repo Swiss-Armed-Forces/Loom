@@ -6,11 +6,15 @@ metadata:
     {{- include "app.labels.custom" (dict "context" . "component" "grafana") | nindent 4 }}
     app.kubernetes.io/component: monitoring
 data:
+  # see:
+  # https://grafana.com/docs/grafana/latest/administration/provisioning/
   elasticsearch-logs.yml: |
     apiVersion: 1
     datasources:
       - name: Elasticsearch-Log
         type: elasticsearch
+        uid: P61E7A9AD0246CD05
+        isDefault: false
         access: proxy
         # Access mode - proxy (server in the UI) or direct (browser in the UI).
         url: http://{{ include "app.fullname" . }}-elasticsearch:{{ .Values.elasticsearch.service.port }}
@@ -23,6 +27,8 @@ data:
     datasources:
       - name: Elasticsearch-File
         type: elasticsearch
+        uid: P512E5BC8A4C042E7
+        isDefault: false
         access: proxy
         # Access mode - proxy (server in the UI) or direct (browser in the UI).
         url: http://{{ include "app.fullname" . }}-elasticsearch:{{ .Values.elasticsearch.service.port }}
@@ -34,6 +40,8 @@ data:
     datasources:
       - name: Prometheus
         type: prometheus
+        uid: PBFA97CFB590B2093
+        isDefault: true
         access: proxy
         # Access mode - proxy (server in the UI) or direct (browser in the UI).
         url: http://{{ include "app.fullname" . }}-prometheus:{{ .Values.prometheus.service.port }}

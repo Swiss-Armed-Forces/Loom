@@ -1,0 +1,14 @@
+{{- if .Values.fluentd.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "app.fullname" . }}-fluentd
+  labels:
+    {{- include "app.labels.custom" (dict "context" . "component" "fluentd") | nindent 4 }}
+    app.kubernetes.io/component: monitoring
+data:
+  fluent.conf: |
+{{ tpl (.Files.Get "files/fluentd/fluent.conf.tpl") . | indent 4 }}
+  docker-logs.json: |
+{{ tpl (.Files.Get "files/fluentd/docker-logs.json.tpl") . | indent 4 }}
+{{- end }}
