@@ -1843,7 +1843,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | requests-toolbelt | 1.0.0 |  | python-installed-package-cataloger |
 | rpcsvc-proto | 1.4.3-1 | BSD-3-Clause, GPL-2.0-only, GPL-3.0-only, MIT | dpkg-db-cataloger |
 | scikit-learn | 1.8.0 | BSD-3-Clause | python-installed-package-cataloger |
-| scipy | 1.17.0 | BSD-3-Clause | python-installed-package-cataloger |
+| scipy | 1.17.1 | BSD-3-Clause | python-installed-package-cataloger |
 | sed | 4.9-1 | BSD-4-Clause-UC, BSL-1.0, GFDL-1.3-only, GPL-3.0-only, GPL-3.0-or-later, ISC, X11 | dpkg-db-cataloger |
 | sensible-utils | 0.0.17+nmu1 | GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
 | setuptools | 65.5.1 | MIT | python-installed-package-cataloger |
