@@ -2,7 +2,7 @@
 {{- $component := .component -}}
 {{- $values := index .Values $component -}}
 {{- $memoryLimitBytes := include "SI-to-bytes" $values.resources.limits.memory | int64 -}}
-{{- $memoryLimitThresholdPercent := 0.6 -}}
+{{- $memoryLimitThresholdPercent := dig "memoryLimitThresholdPercent" 0.6 $values -}}
 {{- $memoryLimitBytes := mulf $memoryLimitBytes $memoryLimitThresholdPercent | int64 -}}
 
 apiVersion: v1
