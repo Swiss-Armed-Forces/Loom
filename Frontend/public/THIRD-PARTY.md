@@ -561,7 +561,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | pylint-pydantic                       | 0.4.1           | GPLv3                                                                            |
 | dnspython                             | 2.6.1           | ISC License (ISCL)                                                               |
 | click-repl                            | 0.3.0           | MIT                                                                              |
-| identify                              | 2.6.16          | MIT                                                                              |
+| identify                              | 2.6.17          | MIT                                                                              |
 | pycodestyle                           | 2.14.0          | MIT                                                                              |
 | pytest-cov                            | 6.3.0           | MIT                                                                              |
 | PyYAML                                | 6.0.1           | MIT License                                                                      |
@@ -572,7 +572,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | argon2-cffi                           | 23.1.0          | MIT License                                                                      |
 | argon2-cffi-bindings                  | 21.2.0          | MIT License                                                                      |
 | attrs                                 | 23.2.0          | MIT License                                                                      |
-| autoflake                             | 2.3.1           | MIT License                                                                      |
+| autoflake                             | 2.3.3           | MIT License                                                                      |
 | charset-normalizer                    | 3.3.2           | MIT License                                                                      |
 | click-didyoumean                      | 0.3.1           | MIT License                                                                      |
 | common                                | 0.1.0           | MIT License                                                                      |
@@ -643,7 +643,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | opentelemetry-semantic-conventions    | 0.60b1          | UNKNOWN                                                                          |
 | prometheus_client                     | 0.24.1          | UNKNOWN                                                                          |
 | pycrypto                              | 3.20.0          | UNKNOWN                                                                          |
-| pylint                                | 4.0.4           | UNKNOWN                                                                          |
+| pylint                                | 4.0.5           | UNKNOWN                                                                          |
 | pytest                                | 9.0.2           | UNKNOWN                                                                          |
 | pytest-asyncio                        | 1.3.0           | UNKNOWN                                                                          |
 | types-cffi                            | 1.17.0.20250915 | UNKNOWN                                                                          |
