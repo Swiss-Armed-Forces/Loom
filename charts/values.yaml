@@ -1154,7 +1154,12 @@ redis: &redis
   service:
     port: 6379
   pvc:
+    # Multiplier for PVC storage size relative to memory limit.
+    # PVC size = memory limit * storageMultiplier (default: 4)
     storageMultiplier: 5
+  # Percentage of memory limit to use for Redis maxmemory setting.
+  # This reserves headroom for Redis overhead and fragmentation (default: 0.6 = 60%)
+  memoryLimitThresholdPercent: 0.6
   ingress:
     enabled: false
   readinessProbe:

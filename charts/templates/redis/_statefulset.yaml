@@ -34,8 +34,8 @@ spec:
             - |
               set -eux
 
-              rm -rf temp-*.rdb
-              rm -rf appendonlydir/temp-*
+              rm -rf  /data/temp-*.rdb
+              rm -rf  /data/appendonlydir/temp-*
           volumeMounts:
             - mountPath: /data
               name: redis
