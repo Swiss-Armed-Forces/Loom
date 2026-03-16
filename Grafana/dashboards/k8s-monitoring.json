@@ -382,7 +382,7 @@
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "count by (container, reason)(\n    increase(kube_pod_container_status_last_terminated_reason[24h])\n)",
+          "expr": "sum by (namespace, container, reason) (\n  increase(kube_pod_container_status_restarts_total[24h])\n  * on (namespace, container, pod)\n  group_left(reason) (kube_pod_container_status_last_terminated_reason == 1)\n)",
           "format": "time_series",
           "instant": false,
           "interval": "",
@@ -518,8 +518,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -623,8 +622,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
