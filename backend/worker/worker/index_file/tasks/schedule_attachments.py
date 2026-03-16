@@ -27,12 +27,8 @@ def schedule_attachments(
     tika_result = get_lazybytes_service().load_object(lazy_tika_result)
     return self.replace(
         group(
-            *[
-                chain(
-                    schedule_attachment.s(attachment, file), persist_attachment.s(file)
-                )
-                for attachment in tika_result.attachments
-            ]
+            chain(schedule_attachment.s(attachment, file), persist_attachment.s(file))
+            for attachment in tika_result.attachments
         )
     )
 
