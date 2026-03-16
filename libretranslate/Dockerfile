@@ -1,6 +1,7 @@
+# Image version
 ARG LIBRETRANSLATE_IMAGE_VERSION="v1.9.4"
 
-ARG DOCKER_REGISTRY
+ARG DOCKER_REGISTRY="docker.io"
 FROM ${DOCKER_REGISTRY}/libretranslate/libretranslate:${LIBRETRANSLATE_IMAGE_VERSION}-cuda
 
 COPY patches/ /tmp/patches/

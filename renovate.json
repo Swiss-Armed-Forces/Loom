@@ -27,8 +27,8 @@
     "helm-values",
     "helmv3",
     "gitlabci",
-    "custom.regex",
-    "nix"
+    "nix",
+    "custom.regex"
   ],
   "poetry": {
     "versioning": "pep440"
@@ -120,24 +120,14 @@
         "dockerfile",
         "gitlabci"
       ],
-      "groupName": "Docker base images",
-      "prPriority": 3
-    },
-    {
-      "matchManagers": [
-        "dockerfile",
-        "gitlabci"
-      ],
-      "matchFileNames": [
-        "nix-dind/**",
-        ".gitlab-ci.yml"
-      ],
+      "groupName": "Docker images",
+      "prPriority": 3,
+      "automerge": true,
       "matchUpdateTypes": [
         "minor",
         "patch",
         "digest"
-      ],
-      "automerge": true
+      ]
     },
     {
       "matchUpdateTypes": [
@@ -240,23 +230,14 @@
     "**/log/**",
     "**/out/**"
   ],
-  "separateMinorPatch": true,
-  "separateMajorMinor": true,
-  "separateMultipleMajor": true,
-  "recreateWhen": "auto",
   "rebaseWhen": "behind-base-branch",
   "automergeSchedule": [
     "before 6am"
   ],
   "platformAutomerge": true,
-  "forkProcessing": "disabled",
-  "dependencyDashboard": true,
   "dependencyDashboardTitle": "Dependency Dashboard",
   "dependencyDashboardApproval": false,
   "dependencyDashboardAutoclose": true,
   "commitBodyTable": true,
-  "prBodyTemplate": "{{{header}}}{{{table}}}{{{notes}}}{{{changelogs}}}{{{controls}}}{{{footer}}}",
-  "commitMessageTopic": "{{depName}}",
-  "commitMessageAction": "{{#if isPin}}pin{{else}}update{{/if}}",
-  "commitMessageExtra": "{{#if isMajor}}(major){{else}}{{#if isMinor}}(minor){{else}}(patch){{/if}}{{/if}}"
+  "prBodyTemplate": "{{{header}}}{{{table}}}{{{notes}}}{{{changelogs}}}{{{controls}}}{{{footer}}}"
 }

@@ -1,6 +1,7 @@
+# Image version
 ARG DIND_IMAGE_VERSION="28.2.2-dind-alpine3.22"
 
-ARG DOCKER_REGISTRY
+ARG DOCKER_REGISTRY="docker.io"
 FROM ${DOCKER_REGISTRY}/docker:${DIND_IMAGE_VERSION}
 
 # We will use this image as a gitlab-ci runner image.

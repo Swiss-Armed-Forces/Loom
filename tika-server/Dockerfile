@@ -1,6 +1,7 @@
+# Image version
 ARG TIKA_IMAGE_VERSION="2.9.2.1-full"
 
-ARG DOCKER_REGISTRY
+ARG DOCKER_REGISTRY="docker.io"
 FROM ${DOCKER_REGISTRY}/apache/tika:${TIKA_IMAGE_VERSION}
 
 # from: https://github.com/apache/tika-docker/blob/master/full/Dockerfile#L16
