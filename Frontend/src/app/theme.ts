@@ -1,6 +1,9 @@
 import { createTheme } from "@mui/material";
 
 export const globalTheme = createTheme({
+    transitions: {
+        create: () => "none",
+    },
     components: {
         MuiButton: {
             styleOverrides: {
