@@ -1,7 +1,7 @@
 # Image version
 ARG RABBIT_IMAGE_VERSION="4.1.1-management-alpine"
 
-ARG DOCKER_REGISTRY
+ARG DOCKER_REGISTRY="docker.io"
 FROM ${DOCKER_REGISTRY}/rabbitmq:${RABBIT_IMAGE_VERSION}
 
 # Set a timezone

@@ -1,7 +1,7 @@
 # Image version
 ARG ALPINE_IMAGE_VERSION="3.20"
 
-ARG DOCKER_REGISTRY
+ARG DOCKER_REGISTRY="docker.io"
 FROM ${DOCKER_REGISTRY}/alpine:${ALPINE_IMAGE_VERSION}
 
 # Package versions

@@ -1,7 +1,7 @@
 # Image version
 ARG ROUNDCUBE_IMAGE_VERSION="1.6.9-apache"
 
-ARG DOCKER_REGISTRY
+ARG DOCKER_REGISTRY="docker.io"
 FROM ${DOCKER_REGISTRY}/roundcube/roundcubemail:${ROUNDCUBE_IMAGE_VERSION}
 
 

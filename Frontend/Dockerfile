@@ -2,7 +2,7 @@
 ARG NODE_IMAGE_VERSION="24.2.0-alpine3.22"
 ARG NGINX_IMAGE_VERSION="1.27.5-alpine3.21"
 
-ARG DOCKER_REGISTRY
+ARG DOCKER_REGISTRY="docker.io"
 FROM ${DOCKER_REGISTRY}/node:${NODE_IMAGE_VERSION} AS base
 WORKDIR /code
 # Copy dependencies separately and install them once

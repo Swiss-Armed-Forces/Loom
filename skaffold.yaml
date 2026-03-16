@@ -16,7 +16,7 @@ build:
     - image: registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/api
       context: backend
       docker:
-        dockerfile: api.Dockerfile
+        dockerfile: api/Dockerfile
         target: production
         buildArgs:
           DOCKER_REGISTRY: "{{or .CI_DEPENDENCY_PROXY_DIRECT_GROUP_IMAGE_PREFIX \"docker.io\"}}"
@@ -28,7 +28,7 @@ build:
     - image: registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/worker
       context: backend
       docker:
-        dockerfile: worker.Dockerfile
+        dockerfile: worker/Dockerfile
         target: production
         buildArgs:
           DOCKER_REGISTRY: "{{or .CI_DEPENDENCY_PROXY_DIRECT_GROUP_IMAGE_PREFIX \"docker.io\"}}"
@@ -40,7 +40,7 @@ build:
     - image: registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/crawler
       context: backend
       docker:
-        dockerfile: crawler.Dockerfile
+        dockerfile: crawler/Dockerfile
         target: production
         buildArgs:
           DOCKER_REGISTRY: "{{or .CI_DEPENDENCY_PROXY_DIRECT_GROUP_IMAGE_PREFIX \"docker.io\"}}"
@@ -225,9 +225,9 @@ build:
         after:
           - command: ["./cicd/tag_latest.sh"]
     - image: registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/mc
-      context: minio
+      context: minio/mc
       docker:
-        dockerfile: mc.Dockerfile
+        dockerfile: Dockerfile
         buildArgs:
           DOCKER_REGISTRY: '{{or .CI_DEPENDENCY_PROXY_DIRECT_GROUP_IMAGE_PREFIX "docker.io"}}'
         cacheFrom:

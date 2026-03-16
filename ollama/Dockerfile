@@ -1,7 +1,7 @@
 # Image version
 ARG OLLAMA_IMAGE_VERSION="0.18.0"
 
-ARG DOCKER_REGISTRY
+ARG DOCKER_REGISTRY="docker.io"
 FROM ${DOCKER_REGISTRY}/ollama/ollama:${OLLAMA_IMAGE_VERSION}
 
 ARG LLM_MODELS="huihui_ai/qwen3.5-abliterated:9b smollm2:135m nomic-embed-text-v2-moe"
