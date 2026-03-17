@@ -34,6 +34,8 @@ FOLDER_NAMES = [
     "/Ξξêë💩",
     "Ξξêë💩",
     "Ξξ/êë/💩",
+    "very_long_folder_name_" + "x" * 100,
+    "very_long_unicode_folder_name_" + "💩" * 20,
 ]
 
 
@@ -244,6 +246,18 @@ def test_imap_count_messages_recurse_mixed_depth(imap_service: IMAPService):
     # Recursive counts
     assert imap_service.count_messages(root, recurse=True) == 4
     assert imap_service.count_messages(child2, recurse=True) == 2
+
+
+def test_imap_create_folder_name_too_long(imap_service: IMAPService):
+    too_long = FilePurePath("💩" * 100)
+    with pytest.raises(IMAPServiceError, match="too long"):
+        imap_service.create_folder(too_long)
+
+
+def test_imap_append_name_too_long(imap_service: IMAPService):
+    too_long = FilePurePath("💩" * 100)
+    with pytest.raises(IMAPServiceError, match="too long"):
+        imap_service.append_email(EMAIL_ASSETS[0], too_long)
 
 
 @pytest.mark.parametrize(

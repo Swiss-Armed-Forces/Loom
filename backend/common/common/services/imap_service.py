@@ -12,6 +12,8 @@ from pydantic import AnyUrl, BaseModel
 
 from common.file.file_repository import FilePurePath, ImapInfo, ImapPurePath
 
+DEFAULT_TRUNCATION_LENGTH = 20
+
 
 def _get_email_deduplication_fingerprint(raw_email: bytes) -> str:
     return hashlib.sha256(raw_email).hexdigest()
@@ -26,6 +28,10 @@ class IMAPServiceErrorFolderNotSelectable(IMAPServiceError):
 
 
 class IMAPServiceErrorNoSelectableFolderFound(IMAPServiceError):
+    pass
+
+
+class IMAPServiceErrorFolderExists(IMAPServiceError):
     pass
 
 
@@ -52,6 +58,16 @@ class IMAPService:
         self.host = imap_host
         self.user = user
         self.password = password
+
+    @staticmethod
+    def get_truncated_imap_folder(
+        path: FilePurePath, truncation_length: int = DEFAULT_TRUNCATION_LENGTH
+    ) -> ImapPurePath:
+        """Convert a file path to an IMAP folder path, truncating each path part."""
+        if truncation_length <= 0:
+            raise ValueError("Truncation length must be greater than 0")
+        truncated = FilePurePath(*(part[:truncation_length] for part in path.parts))
+        return IMAPService.get_imap_folder(truncated)
 
     @staticmethod
     def get_imap_folder(
@@ -184,7 +200,16 @@ class IMAPService:
     def create_folder(self, folder: FilePurePath | ImapPurePath | None):
         imap_folder = self.get_imap_folder(folder)
         with self._imap_context() as client:
-            client.create_folder(str(imap_folder))
+            self._create_folder(client, str(imap_folder))
+
+    @staticmethod
+    def _create_folder(client: IMAPClient, folder: str):
+        try:
+            client.create_folder(folder)
+        except IMAPClientError as e:
+            if "[ALREADYEXISTS]" in str(e):
+                raise IMAPServiceErrorFolderExists(f"Folder already exists: {e}") from e
+            raise IMAPServiceError(f"Failed to create folder: {e}") from e
 
     def get_uid_of_email(
         self, raw_email: bytes, folder: FilePurePath | ImapPurePath | None = None
@@ -225,9 +250,9 @@ class IMAPService:
 
         with self._imap_context() as client:
             try:
-                client.create_folder(str(imap_folder))
-            except IMAPClientError:
-                pass  # skip b"[ALREADYEXISTS]"
+                self._create_folder(client, str(imap_folder))
+            except IMAPServiceErrorFolderExists:
+                pass
 
             # Check if server supports UIDPLUS
             response = client.append(str(imap_folder), email_parsed.as_bytes())

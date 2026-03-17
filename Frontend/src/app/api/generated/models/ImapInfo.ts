@@ -32,6 +32,12 @@ export interface ImapInfo {
      * @memberof ImapInfo
      */
     folder: string;
+    /**
+     *
+     * @type {string}
+     * @memberof ImapInfo
+     */
+    readonly folderUtf7: string;
 }
 
 /**
@@ -40,6 +46,7 @@ export interface ImapInfo {
 export function instanceOfImapInfo(value: object): boolean {
     if (!("uid" in value)) return false;
     if (!("folder" in value)) return false;
+    if (!("folderUtf7" in value)) return false;
     return true;
 }
 
@@ -57,6 +64,7 @@ export function ImapInfoFromJSONTyped(
     return {
         uid: json["uid"],
         folder: json["folder"],
+        folderUtf7: json["folder_utf7"],
     };
 }
 
