@@ -90,7 +90,7 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "count(container_cpu_usage_seconds_total{job=~\"$job\",instance=~\"$instance\",namespace=~\"$namespace\",pod=~\"$pod\"})",
+          "expr": "count(\n    container_last_seen{job=~\"$job\",instance=~\"$instance\",namespace=~\"$namespace\",pod=~\"$pod\"}\n    > (time() - 60)\n)\n\n",
           "intervalFactor": 2,
           "legendFormat": "",
           "metric": "container_last_seen",
@@ -137,7 +137,7 @@
               }
             ]
           },
-          "unit": "mbytes"
+          "unit": "decbytes"
         },
         "overrides": []
       },
@@ -171,7 +171,7 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "sum(container_memory_usage_bytes{job=~\"$job\",instance=~\"$instance\",namespace=~\"$namespace\",pod=~\"$pod\"})/1024/1024",
+          "expr": "sum(container_memory_working_set_bytes{job=~\"$job\",instance=~\"$instance\",namespace=~\"$namespace\",pod=~\"$pod\"})\n/ count(container_memory_working_set_bytes{job=~\"$job\",instance=~\"$instance\",namespace=~\"$namespace\",pod=~\"$pod\"})",
           "intervalFactor": 2,
           "legendFormat": "",
           "metric": "total_container_memory_usage_bytes",
@@ -180,7 +180,7 @@
           "step": 240
         }
       ],
-      "title": "Total Memory Usage",
+      "title": "Average Memory Usage",
       "transparent": true,
       "type": "stat"
     },
@@ -218,7 +218,7 @@
               }
             ]
           },
-          "unit": "percent"
+          "unit": "percentunit"
         },
         "overrides": []
       },
@@ -252,7 +252,7 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "sum(rate(container_cpu_user_seconds_total{job=~\"$job\",instance=~\"$instance\",namespace=~\"$namespace\",pod=~\"$pod\"}[5m]) * 100)",
+          "expr": "sum(\n    rate(container_cpu_usage_seconds_total{job=~\"$job\",instance=~\"$instance\",namespace=~\"$namespace\",pod=~\"$pod\"}[5m])\n) / count(container_cpu_usage_seconds_total{job=~\"$job\",instance=~\"$instance\",namespace=~\"$namespace\",pod=~\"$pod\"})",
           "intervalFactor": 2,
           "legendFormat": "",
           "metric": "total_container_cpu_user_seconds_total",
@@ -261,7 +261,7 @@
           "step": 240
         }
       ],
-      "title": "Total CPU Usage",
+      "title": "Average CPU Usage",
       "transparent": true,
       "type": "stat"
     },
@@ -321,7 +321,7 @@
               }
             ]
           },
-          "unit": "percent"
+          "unit": "percentunit"
         },
         "overrides": []
       },
@@ -354,7 +354,7 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "rate(container_cpu_user_seconds_total{job=~\"$job\",instance=~\"$instance\",namespace=~\"$namespace\",pod=~\"$pod\"}[5m]) * 100",
+          "expr": "rate(container_cpu_user_seconds_total{job=~\"$job\",instance=~\"$instance\",namespace=~\"$namespace\",pod=~\"$pod\"}[5m])",
           "intervalFactor": 2,
           "legendFormat": "{{pod}}",
           "metric": "cpu",
@@ -951,7 +951,7 @@
       },
       {
         "current": {
-          "selected": false,
+          "selected": true,
           "text": ["All"],
           "value": ["$__all"]
         },
@@ -978,7 +978,7 @@
       },
       {
         "current": {
-          "selected": false,
+          "selected": true,
           "text": ["All"],
           "value": ["$__all"]
         },
