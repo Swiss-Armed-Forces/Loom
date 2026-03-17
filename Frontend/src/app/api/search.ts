@@ -163,13 +163,15 @@ export const deleteTagFromFile = async (
     });
 };
 
-export const addTagToFile = async (
+export const addTagsToFile = async (
     fileId: string,
-    tagName: string,
+    tagNames: string[],
 ): Promise<void> => {
-    return filesApi.addTagV1FilesFileIdTagsTagToAddPost({
+    return filesApi.addTagsV1FilesFileIdTagsPost({
         fileId: fileId,
-        tagToAdd: tagName,
+        addTagsRequest: {
+            tags: tagNames,
+        },
     });
 };
 
@@ -178,7 +180,7 @@ export const addTagsToFiles = async (
     tags: string[],
 ): Promise<void> => {
     return tagsApi.addTagsV1FilesTagsPost({
-        addTagRequest: {
+        addTagsByQueryRequest: {
             tags: tags,
             query: {
                 queryId: query.id,

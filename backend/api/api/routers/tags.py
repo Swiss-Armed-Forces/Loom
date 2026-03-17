@@ -24,26 +24,23 @@ default_task_scheduling_service = Depends(get_task_scheduling_service)
 AllTags = list[str]
 
 
-class AddTagRequest(BaseModel):
-    """List of new Tags and a Query to filter files."""
-
+class AddTagsByQueryRequest(BaseModel):
     tags: list[Tag]
     query: QueryParameters
 
 
 @router.get("/")
 def get_tags(file_repository: FileRepository = default_file_repository) -> AllTags:
-    """Get all tags."""
     return file_repository.get_all_tags()
 
 
 @router.post("/", status_code=200)
 def add_tags(
-    set_tag_request: AddTagRequest,
+    tags_to_add_request: AddTagsByQueryRequest,
     task_scheduling_service: TaskSchedulingService = default_task_scheduling_service,
 ):
-    task_scheduling_service.dispatch_add_tags(
-        query=set_tag_request.query, tags=set_tag_request.tags
+    task_scheduling_service.dispatch_add_tags_to_files(
+        query=tags_to_add_request.query, tags=tags_to_add_request.tags
     )
 
 

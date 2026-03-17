@@ -14,16 +14,19 @@
  */
 
 import * as runtime from "../runtime";
-import type { AddTagRequest, HTTPValidationError } from "../models/index";
+import type {
+    AddTagsByQueryRequest,
+    HTTPValidationError,
+} from "../models/index";
 import {
-    AddTagRequestFromJSON,
-    AddTagRequestToJSON,
+    AddTagsByQueryRequestFromJSON,
+    AddTagsByQueryRequestToJSON,
     HTTPValidationErrorFromJSON,
     HTTPValidationErrorToJSON,
 } from "../models/index";
 
 export interface AddTagsV1FilesTagsPostRequest {
-    addTagRequest: AddTagRequest;
+    addTagsByQueryRequest: AddTagsByQueryRequest;
 }
 
 export interface DeleteTagV1FilesTagsTagToDeleteDeleteRequest {
@@ -41,10 +44,10 @@ export class TagsApi extends runtime.BaseAPI {
         requestParameters: AddTagsV1FilesTagsPostRequest,
         initOverrides?: RequestInit | runtime.InitOverrideFunction,
     ): Promise<runtime.ApiResponse<any>> {
-        if (requestParameters["addTagRequest"] == null) {
+        if (requestParameters["addTagsByQueryRequest"] == null) {
             throw new runtime.RequiredError(
-                "addTagRequest",
-                'Required parameter "addTagRequest" was null or undefined when calling addTagsV1FilesTagsPost().',
+                "addTagsByQueryRequest",
+                'Required parameter "addTagsByQueryRequest" was null or undefined when calling addTagsV1FilesTagsPost().',
             );
         }
 
@@ -60,7 +63,9 @@ export class TagsApi extends runtime.BaseAPI {
                 method: "POST",
                 headers: headerParameters,
                 query: queryParameters,
-                body: AddTagRequestToJSON(requestParameters["addTagRequest"]),
+                body: AddTagsByQueryRequestToJSON(
+                    requestParameters["addTagsByQueryRequest"],
+                ),
             },
             initOverrides,
         );
@@ -141,7 +146,6 @@ export class TagsApi extends runtime.BaseAPI {
     }
 
     /**
-     * Get all tags.
      * Get Tags
      */
     async getTagsV1FilesTagsGetRaw(
@@ -165,7 +169,6 @@ export class TagsApi extends runtime.BaseAPI {
     }
 
     /**
-     * Get all tags.
      * Get Tags
      */
     async getTagsV1FilesTagsGet(
