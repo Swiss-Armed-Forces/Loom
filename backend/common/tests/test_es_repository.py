@@ -413,6 +413,9 @@ ES_REPOSITORY_TEST_INSTANCES: dict[type[BaseEsRepository], list[_TestInstances]]
                 imap=_EsImapInfo(
                     uid=TestValueDefaults.test_int,
                     folder=str(TestValueDefaults.test_imappure_path),
+                    folder_utf7=str(
+                        TestValueDefaults.test_imappure_path
+                    ),  # no unicode chars so it matches folder
                 ),
             ),
         )

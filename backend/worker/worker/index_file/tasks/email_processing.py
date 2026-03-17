@@ -148,7 +148,7 @@ def upload_email_to_imap_task(
 
     imap_service = get_imap_service()
     email_file = file.full_path
-    email_folder = file.full_path.parent
+    email_folder = imap_service.get_truncated_imap_folder(file.full_path.parent)
 
     with get_lazybytes_service().load_memoryview(file_content) as memview:
         email = bytes(memview)
@@ -160,7 +160,7 @@ def upload_email_to_imap_task(
             )
             return ImapInfo(
                 uid=uid,
-                folder=imap_service.get_imap_folder(email_folder),
+                folder=email_folder,
             )
         imap_info = imap_service.append_email(email, email_folder)
         return imap_info
@@ -188,9 +188,8 @@ def _get_roundcube_email_url(imap_info: ImapInfo) -> str:
         "_extwin": "1",
         "_action": "print",
         "_uid": str(imap_info.uid),
-        "_mbox": imap_info.folder,
+        "_mbox": imap_info.folder_utf7,
     }
-
     query_string = urlencode(params)
     return f"{settings.roundcube_host}?{query_string}"
 

@@ -11,6 +11,7 @@ from typing import Annotated, Any, Callable, Generator, Sequence, cast
 from urllib.error import URLError
 from uuid import UUID
 
+import imapclient.imap_utf7
 from elasticsearch.dsl import (
     A,
     Agg,
@@ -171,6 +172,12 @@ class ImapInfo(BaseModel):
     uid: int
     folder: ImapPurePath
 
+    @computed_field  # type: ignore[misc]
+    @property
+    def folder_utf7(self) -> str:
+        data = imapclient.imap_utf7.encode(str(self.folder))
+        return data.decode()
+
 
 class _EsImapInfo(InnerDoc):
     uid = Long()
@@ -184,6 +191,7 @@ class _EsImapInfo(InnerDoc):
             "keyword": Keyword(),
         },
     )
+    folder_utf7 = Keyword()
 
 
 class RenderedFile(BaseModel):

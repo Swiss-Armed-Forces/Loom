@@ -101,7 +101,7 @@ export function FileRenderer({
             case FileRendererType.Email:
                 return imap ? (
                     <iframe
-                        src={`${roundcubeHost}?_task=mail&_extwin=1&_action=show&_uid=${imap.uid}&_mbox=${encodeURIComponent(imap.folder)}`}
+                        src={`${roundcubeHost}?_task=mail&_extwin=1&_action=show&_uid=${imap.uid}&_mbox=${encodeURIComponent(imap.folderUtf7)}`}
                         style={{
                             width: "100%",
                             height: "100%",

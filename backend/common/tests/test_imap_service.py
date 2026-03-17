@@ -44,6 +44,23 @@ class TestIMAPService:
         assert result is imap_path
         assert isinstance(result, ImapPurePath)
 
+    def test_get_truncated_imap_folder_with_simple_path(self):
+        folder = FilePurePath("Archive/2024")
+        result = IMAPService.get_truncated_imap_folder(folder, truncation_length=1)
+        assert result == IMAP_DIRECTORY_BASE / "A" / "2"
+        assert isinstance(result, ImapPurePath)
+
+    def test_get_truncated_imap_folder_with_unicode_path(self):
+        folder = FilePurePath("Archive/💩💩💩💩💩💩")
+        result = IMAPService.get_truncated_imap_folder(folder, truncation_length=1)
+        assert result == IMAP_DIRECTORY_BASE / "A" / "💩"
+        assert isinstance(result, ImapPurePath)
+
+    def test_get_truncated_imap_folder_raises_on_invalid(self):
+        folder = FilePurePath()
+        with pytest.raises(ValueError):
+            IMAPService.get_truncated_imap_folder(folder, truncation_length=0)
+
     def test_get_folder_with_none(self):
         result = IMAPService.get_folder(None)
         assert result is None
