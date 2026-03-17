@@ -50,6 +50,14 @@ class TaskSchedulingService:
             root_id=str(root_task_id),
         ).forget()
 
+    def dispatch_reindex_file(self, file_id: UUID):
+        root_task_id = uuid4()
+        self._celery_app.send_task(
+            "worker.index_file.index_file_task.dispatch_reindex_file",
+            args=[file_id],
+            root_id=str(root_task_id),
+        ).forget()
+
     def index_file(self, file: File, file_content: LazyBytes):
         """Schedule the indexing of a file."""
         root_task_id = uuid4()
@@ -73,6 +81,14 @@ class TaskSchedulingService:
             root_id=str(root_task_id),
         ).forget()
 
+    def dispatch_translate_file(self, file_id: UUID, lang: str):
+        root_task_id = uuid4()
+        self._celery_app.send_task(
+            "worker.index_file.translate_file_task.dispatch_translate_file",
+            args=[file_id, lang],
+            root_id=str(root_task_id),
+        ).forget()
+
     def translate_files_by_id(self, file_id: UUID, lang: str):
         root_task_id = uuid4()
         self._root_task_information_repository.save(
@@ -85,6 +101,14 @@ class TaskSchedulingService:
             "worker.index_file.translate_file_task.translate_file_task",
             args=[lang, file_id],
             task_id=str(root_task_id),
+            root_id=str(root_task_id),
+        ).forget()
+
+    def dispatch_summarize_file(self, file_id: UUID, system_prompt: str | None = None):
+        root_task_id = uuid4()
+        self._celery_app.send_task(
+            "worker.index_file.summarize_file_task.dispatch_summarize_file",
+            args=[file_id, system_prompt],
             root_id=str(root_task_id),
         ).forget()
 
@@ -136,11 +160,19 @@ class TaskSchedulingService:
             root_id=str(root_task_id),
         ).forget()
 
-    def dispatch_add_tags(self, query: QueryParameters, tags: list[Tag]):
+    def dispatch_add_tags_to_files(self, query: QueryParameters, tags: list[Tag]):
         root_task_id = uuid4()
         self._celery_app.send_task(
             "worker.index_file.add_tags_to_file_task.dispatch_add_tags_to_files",
             args=[query, tags],
+            root_id=str(root_task_id),
+        ).forget()
+
+    def dispatch_add_tags_to_file(self, file_id: UUID, tags: list[Tag]):
+        root_task_id = uuid4()
+        self._celery_app.send_task(
+            "worker.index_file.add_tags_to_file_task.dispatch_add_tags_to_file",
+            args=[file_id, tags],
             root_id=str(root_task_id),
         ).forget()
 
@@ -164,6 +196,14 @@ class TaskSchedulingService:
         self._celery_app.send_task(
             "worker.index_file.remove_tag_from_file_task.dispatch_remove_tag",
             args=[tag],
+            root_id=str(root_task_id),
+        ).forget()
+
+    def dispatch_remove_tag_from_file(self, file_id: UUID, tag):
+        root_task_id = uuid4()
+        self._celery_app.send_task(
+            "worker.index_file.remove_tag_from_file_task.dispatch_remove_tag_from_file",
+            args=[file_id, tag],
             root_id=str(root_task_id),
         ).forget()
 

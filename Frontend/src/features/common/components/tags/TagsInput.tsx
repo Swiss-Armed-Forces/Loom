@@ -20,7 +20,7 @@ import LabelIcon from "@mui/icons-material/Label";
 import { setBackgroundTaskSpinnerActive } from "../../commonSlice.ts";
 import {
     ResponseError,
-    addTagToFile,
+    addTagsToFile,
     addTagsToFiles,
 } from "../../../../app/api";
 interface TagsInputProps {
@@ -52,9 +52,7 @@ export function TagsInput({
             dispatch(setBackgroundTaskSpinnerActive());
             setLoadingBar(true);
             if (file_id) {
-                for (const tag of selectedTagsToAdd) {
-                    await addTagToFile(file_id, tag);
-                }
+                await addTagsToFile(file_id, selectedTagsToAdd);
             } else {
                 await addTagsToFiles(searchQuery, selectedTagsToAdd);
             }

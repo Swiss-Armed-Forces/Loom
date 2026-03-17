@@ -14,7 +14,8 @@ apis/TranslationApi.ts
 apis/WebsocketApi.ts
 apis/index.ts
 index.ts
-models/AddTagRequest.ts
+models/AddTagsByQueryRequest.ts
+models/AddTagsRequest.ts
 models/ArchiveContent.ts
 models/ArchiveCreatedResponse.ts
 models/ArchiveHit.ts

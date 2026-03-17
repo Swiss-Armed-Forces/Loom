@@ -4,13 +4,13 @@ from common.file.file_repository import File, FilePurePath
 from common.services.query_builder import QueryParameters
 from fastapi.testclient import TestClient
 
-from api.routers.tags import AddTagRequest
+from api.routers.tags import AddTagsByQueryRequest
 
 ENDPOINT = "/v1/files/tags/"
 
 
 def test_add_tags(client: TestClient):
-    set_tag_request = AddTagRequest(
+    set_tag_request = AddTagsByQueryRequest(
         tags=["test"],
         query=QueryParameters(query_id="0123456789", search_string="*"),
     )
@@ -28,7 +28,7 @@ def test_add_tags(client: TestClient):
     response = client.post(ENDPOINT, json=set_tag_request.model_dump())
 
     assert response.status_code == 200
-    get_task_scheduling_service().dispatch_add_tags.assert_called_once_with(
+    get_task_scheduling_service().dispatch_add_tags_to_files.assert_called_once_with(
         query=set_tag_request.query, tags=set_tag_request.tags
     )
 

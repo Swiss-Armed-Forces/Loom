@@ -15,6 +15,7 @@
 
 import * as runtime from "../runtime";
 import type {
+    AddTagsRequest,
     FileUploadResponse,
     GenericStatisticsModel,
     GetFilePreviewResponse,
@@ -32,6 +33,8 @@ import type {
     UpdateFilesRequest,
 } from "../models/index";
 import {
+    AddTagsRequestFromJSON,
+    AddTagsRequestToJSON,
     FileUploadResponseFromJSON,
     FileUploadResponseToJSON,
     GenericStatisticsModelFromJSON,
@@ -64,9 +67,9 @@ import {
     UpdateFilesRequestToJSON,
 } from "../models/index";
 
-export interface AddTagV1FilesFileIdTagsTagToAddPostRequest {
+export interface AddTagsV1FilesFileIdTagsPostRequest {
     fileId: string;
-    tagToAdd: string;
+    addTagsRequest: AddTagsRequest;
 }
 
 export interface DeleteTagV1FilesFileIdTagsTagToRemoveDeleteRequest {
@@ -182,24 +185,23 @@ export interface UploadFileV1FilesPostRequest {
  */
 export class FilesApi extends runtime.BaseAPI {
     /**
-     * Add tag to file.
-     * Add Tag
+     * Add Tags
      */
-    async addTagV1FilesFileIdTagsTagToAddPostRaw(
-        requestParameters: AddTagV1FilesFileIdTagsTagToAddPostRequest,
+    async addTagsV1FilesFileIdTagsPostRaw(
+        requestParameters: AddTagsV1FilesFileIdTagsPostRequest,
         initOverrides?: RequestInit | runtime.InitOverrideFunction,
     ): Promise<runtime.ApiResponse<any>> {
         if (requestParameters["fileId"] == null) {
             throw new runtime.RequiredError(
                 "fileId",
-                'Required parameter "fileId" was null or undefined when calling addTagV1FilesFileIdTagsTagToAddPost().',
+                'Required parameter "fileId" was null or undefined when calling addTagsV1FilesFileIdTagsPost().',
             );
         }
 
-        if (requestParameters["tagToAdd"] == null) {
+        if (requestParameters["addTagsRequest"] == null) {
             throw new runtime.RequiredError(
-                "tagToAdd",
-                'Required parameter "tagToAdd" was null or undefined when calling addTagV1FilesFileIdTagsTagToAddPost().',
+                "addTagsRequest",
+                'Required parameter "addTagsRequest" was null or undefined when calling addTagsV1FilesFileIdTagsPost().',
             );
         }
 
@@ -207,22 +209,18 @@ export class FilesApi extends runtime.BaseAPI {
 
         const headerParameters: runtime.HTTPHeaders = {};
 
+        headerParameters["Content-Type"] = "application/json";
+
         const response = await this.request(
             {
-                path: `/v1/files/{file_id}/tags/{tag_to_add}`
-                    .replace(
-                        `{${"file_id"}}`,
-                        encodeURIComponent(String(requestParameters["fileId"])),
-                    )
-                    .replace(
-                        `{${"tag_to_add"}}`,
-                        encodeURIComponent(
-                            String(requestParameters["tagToAdd"]),
-                        ),
-                    ),
+                path: `/v1/files/{file_id}/tags`.replace(
+                    `{${"file_id"}}`,
+                    encodeURIComponent(String(requestParameters["fileId"])),
+                ),
                 method: "POST",
                 headers: headerParameters,
                 query: queryParameters,
+                body: AddTagsRequestToJSON(requestParameters["addTagsRequest"]),
             },
             initOverrides,
         );
@@ -235,14 +233,13 @@ export class FilesApi extends runtime.BaseAPI {
     }
 
     /**
-     * Add tag to file.
-     * Add Tag
+     * Add Tags
      */
-    async addTagV1FilesFileIdTagsTagToAddPost(
-        requestParameters: AddTagV1FilesFileIdTagsTagToAddPostRequest,
+    async addTagsV1FilesFileIdTagsPost(
+        requestParameters: AddTagsV1FilesFileIdTagsPostRequest,
         initOverrides?: RequestInit | runtime.InitOverrideFunction,
     ): Promise<any> {
-        const response = await this.addTagV1FilesFileIdTagsTagToAddPostRaw(
+        const response = await this.addTagsV1FilesFileIdTagsPostRaw(
             requestParameters,
             initOverrides,
         );
@@ -250,7 +247,6 @@ export class FilesApi extends runtime.BaseAPI {
     }
 
     /**
-     * Delete tag from file.
      * Delete Tag
      */
     async deleteTagV1FilesFileIdTagsTagToRemoveDeleteRaw(
@@ -303,7 +299,6 @@ export class FilesApi extends runtime.BaseAPI {
     }
 
     /**
-     * Delete tag from file.
      * Delete Tag
      */
     async deleteTagV1FilesFileIdTagsTagToRemoveDelete(
@@ -319,7 +314,6 @@ export class FilesApi extends runtime.BaseAPI {
     }
 
     /**
-     * Download file.
      * Download File
      */
     async downloadFileV1FilesFileIdDownloadGetRaw(
@@ -363,7 +357,6 @@ export class FilesApi extends runtime.BaseAPI {
     }
 
     /**
-     * Download file.
      * Download File
      */
     async downloadFileV1FilesFileIdDownloadGet(
@@ -1166,7 +1159,6 @@ export class FilesApi extends runtime.BaseAPI {
     }
 
     /**
-     * Summarize file.
      * Summarize File
      */
     async summarizeFileV1FilesFileIdSummarizePostRaw(
@@ -1217,7 +1209,6 @@ export class FilesApi extends runtime.BaseAPI {
     }
 
     /**
-     * Summarize file.
      * Summarize File
      */
     async summarizeFileV1FilesFileIdSummarizePost(

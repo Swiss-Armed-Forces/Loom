@@ -22,42 +22,44 @@ import {
 } from "./QueryParameters";
 
 /**
- * List of new Tags and a Query to filter files.
+ *
  * @export
- * @interface AddTagRequest
+ * @interface AddTagsByQueryRequest
  */
-export interface AddTagRequest {
+export interface AddTagsByQueryRequest {
     /**
      *
      * @type {Array<string>}
-     * @memberof AddTagRequest
+     * @memberof AddTagsByQueryRequest
      */
     tags: Array<string>;
     /**
      *
      * @type {QueryParameters}
-     * @memberof AddTagRequest
+     * @memberof AddTagsByQueryRequest
      */
     query: QueryParameters;
 }
 
 /**
- * Check if a given object implements the AddTagRequest interface.
+ * Check if a given object implements the AddTagsByQueryRequest interface.
  */
-export function instanceOfAddTagRequest(value: object): boolean {
+export function instanceOfAddTagsByQueryRequest(value: object): boolean {
     if (!("tags" in value)) return false;
     if (!("query" in value)) return false;
     return true;
 }
 
-export function AddTagRequestFromJSON(json: any): AddTagRequest {
-    return AddTagRequestFromJSONTyped(json, false);
+export function AddTagsByQueryRequestFromJSON(
+    json: any,
+): AddTagsByQueryRequest {
+    return AddTagsByQueryRequestFromJSONTyped(json, false);
 }
 
-export function AddTagRequestFromJSONTyped(
+export function AddTagsByQueryRequestFromJSONTyped(
     json: any,
     ignoreDiscriminator: boolean,
-): AddTagRequest {
+): AddTagsByQueryRequest {
     if (json == null) {
         return json;
     }
@@ -67,7 +69,9 @@ export function AddTagRequestFromJSONTyped(
     };
 }
 
-export function AddTagRequestToJSON(value?: AddTagRequest | null): any {
+export function AddTagsByQueryRequestToJSON(
+    value?: AddTagsByQueryRequest | null,
+): any {
     if (value == null) {
         return value;
     }

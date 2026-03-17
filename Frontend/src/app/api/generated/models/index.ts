@@ -1,7 +1,8 @@
 /* tslint:disable */
 /* eslint-disable */
 // @ts-nocheck
-export * from "./AddTagRequest";
+export * from "./AddTagsByQueryRequest";
+export * from "./AddTagsRequest";
 export * from "./ArchiveContent";
 export * from "./ArchiveCreatedResponse";
 export * from "./ArchiveHit";

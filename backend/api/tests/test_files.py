@@ -38,6 +38,7 @@ from api.models.statistics_model import (
 from api.routers.files import (
     CONTENT_PREVIEW_LENGTH,
     SOURCE_ID,
+    AddTagsRequest,
     FileUploadResponse,
     GetFilePreviewResponse,
     GetFilesCountResponse,
@@ -212,56 +213,16 @@ def test_add_valid_tag(client: TestClient, tag_name: str):
     )
     get_file_repository().get_by_id.return_value = file
 
-    response = client.post(f"/v1/files/{file.id_}/tags/{tag_name}")
+    tags_request = AddTagsRequest(tags=[tag_name])
+    response = client.post(f"/v1/files/{file.id_}/tags", json=tags_request.model_dump())
 
     assert response.status_code == 200
-    get_file_repository().update.assert_called_once_with(file, include={"tags"})
-
-
-INVALID_TAG_NAMES = [
-    "X" * (TAG_LEN_MAX + 1),  # too long
-]
-
-
-@pytest.mark.parametrize(
-    "tag_name",
-    INVALID_TAG_NAMES,
-)
-def test_add_invalid_tag(client: TestClient, tag_name: str):
-    file = File(
-        full_name=FilePurePath("/path/to/file.txt"),
-        storage_id=str(ObjectId()),
-        source="test",
-        sha256="",
-        size=0,
+    get_task_scheduling_service().dispatch_add_tags_to_file.assert_called_once_with(
+        file_id=file.id_, tags=[tag_name]
     )
-    get_file_repository().get_by_id.return_value = file
-
-    response = client.post(f"/v1/files/{file.id_}/tags/{tag_name}")
-
-    assert response.status_code == 422
-    get_file_repository().update.assert_not_called()
 
 
 def test_delete_tag(client: TestClient):
-    tag = "testtag"
-    file = File(
-        full_name=FilePurePath("/path/to/file.txt"),
-        storage_id=str(ObjectId()),
-        source="test",
-        sha256="",
-        size=0,
-        tags=[tag],
-    )
-    get_file_repository().get_by_id.return_value = file
-
-    response = client.delete(f"/v1/files/{file.id_}/tags/{tag}")
-
-    assert response.status_code == 200
-    get_file_repository().update.assert_called_once_with(file, include={"tags"})
-
-
-def test_delete_not_existing_tag(client: TestClient):
     tag = "testtag"
     file = File(
         full_name="/path/to/file.txt",
@@ -274,7 +235,10 @@ def test_delete_not_existing_tag(client: TestClient):
 
     response = client.delete(f"/v1/files/{file.id_}/tags/{tag}")
 
-    assert response.status_code == 404
+    assert response.status_code == 200
+    get_task_scheduling_service().dispatch_remove_tag_from_file.assert_called_once_with(
+        file_id=file.id_, tag=tag
+    )
 
 
 def test_get_thumbnail(client: TestClient):

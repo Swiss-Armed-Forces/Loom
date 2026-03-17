@@ -5,6 +5,7 @@ import logging
 import pytest
 import requests
 import websockets
+from api.routers.files import AddTagsRequest
 from common.file.file_repository import Tag
 from common.messages.messages import (
     MessageError,
@@ -27,7 +28,8 @@ logger = logging.getLogger(__name__)
 
 def _add_tag(file_id: str, tag: Tag):
     response = requests.post(
-        f"{FILES_ENDPOINT}/{file_id}/tags/{tag}",
+        f"{FILES_ENDPOINT}/{file_id}/tags/",
+        json=AddTagsRequest(tags=[tag]).model_dump(),
         timeout=REQUEST_TIMEOUT,
     )
     response.raise_for_status()

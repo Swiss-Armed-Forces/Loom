@@ -1,5 +1,5 @@
 import logging
-from typing import Annotated, Any, Literal
+from typing import Annotated, Any, List, Literal
 from uuid import UUID
 
 from bson import ObjectId
@@ -439,9 +439,9 @@ def get_rendered(
 @router.post("/{file_id}/index", status_code=200)
 def index_file(
     file_id: UUID,
-    file_scheduling_service: FileSchedulingService = default_file_scheduling_service,
+    task_scheduling_service: TaskSchedulingService = default_task_scheduling_service,
 ):
-    file_scheduling_service.reindex_file(file_id)
+    task_scheduling_service.dispatch_reindex_file(file_id=file_id)
 
 
 class TranslateFileRequest(BaseModel):
@@ -452,11 +452,11 @@ class TranslateFileRequest(BaseModel):
 def translate_file(
     file_id: UUID,
     translation_request: TranslateFileRequest,
-    file_scheduling_service: FileSchedulingService = default_file_scheduling_service,
+    task_scheduling_service: TaskSchedulingService = default_task_scheduling_service,
 ):
-    file_scheduling_service.translate_file(
-        file_id,
-        translation_request.lang,
+    task_scheduling_service.dispatch_translate_file(
+        file_id=file_id,
+        lang=translation_request.lang,
     )
 
 
@@ -468,10 +468,9 @@ class SummarizeFileRequest(BaseModel):
 def summarize_file(
     file_id: UUID,
     summarize_request: SummarizeFileRequest,
-    file_scheduling_service: FileSchedulingService = default_file_scheduling_service,
+    task_scheduling_service: TaskSchedulingService = default_task_scheduling_service,
 ):
-    """Summarize file."""
-    file_scheduling_service.summarize_file(
+    task_scheduling_service.dispatch_summarize_file(
         file_id=file_id, system_prompt=summarize_request.system_prompt
     )
 
@@ -483,7 +482,6 @@ def download_file(
     file_repository: FileRepository = default_file_repository,
     file_storage_service: FileStorageService = default_file_storage_service,
 ) -> Response:
-    """Download file."""
     file = file_repository.get_by_id(file_id)
     if file is None:
         raise HTTPException(status_code=404, detail="Invalid file")
@@ -498,37 +496,27 @@ def download_file(
     )
 
 
-@router.post("/{file_id}/tags/{tag_to_add}")
-def add_tag(
+class AddTagsRequest(BaseModel):
+    tags: List[Tag]
+
+
+@router.post("/{file_id}/tags")
+def add_tags(
     file_id: UUID,
-    tag_to_add: Tag,
-    file_repository: FileRepository = default_file_repository,
+    request: AddTagsRequest,
+    task_scheduling_service: TaskSchedulingService = default_task_scheduling_service,
 ):
-    """Add tag to file."""
-    file = file_repository.get_by_id(file_id)
-    if file is None:
-        raise HTTPException(status_code=404, detail="Invalid file")
-    try:
-        # We deliberately use += and not .append() here,
-        # this is to trigger pydantic validation
-        file.tags += [tag_to_add]
-    except ValueError as ex:
-        raise HTTPException(status_code=400, detail="Invalid tag") from ex
-    file_repository.update(file, include={"tags"})
+    task_scheduling_service.dispatch_add_tags_to_file(
+        file_id=file_id, tags=request.tags
+    )
 
 
 @router.delete("/{file_id}/tags/{tag_to_remove}")
 def delete_tag(
     file_id: UUID,
     tag_to_remove: Tag,
-    file_repository: FileRepository = default_file_repository,
+    task_scheduling_service: TaskSchedulingService = default_task_scheduling_service,
 ):
-    """Delete tag from file."""
-    file = file_repository.get_by_id(file_id)
-    if file is None:
-        raise HTTPException(status_code=404, detail="Invalid file")
-    try:
-        file.tags.remove(tag_to_remove)
-    except ValueError as ex:
-        raise HTTPException(status_code=404, detail="Tag to remove not found") from ex
-    file_repository.update(file, include={"tags"})
+    task_scheduling_service.dispatch_remove_tag_from_file(
+        file_id=file_id, tag=tag_to_remove
+    )
