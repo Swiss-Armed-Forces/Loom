@@ -5416,7 +5416,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | beautifulsoup4 | 4.9.3 | MIT | python-installed-package-cataloger |
 | bsdutils | 1:2.37.2-4ubuntu3.4 | BSD-2-Clause, BSD-3-Clause, BSD-4-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, MIT | dpkg-db-cataloger |
 | ca-certificates | 20230311ubuntu0.22.04.1 | GPL-2.0-only, GPL-2.0-or-later, MPL-2.0 | dpkg-db-cataloger |
-| certifi | 2026.1.4 | MPL-2.0 | python-installed-package-cataloger |
+| certifi | 2026.2.25 | MPL-2.0 | python-installed-package-cataloger |
 | chardet | 6.0.0.post1 | LGPL-2.1-or-later | python-installed-package-cataloger |
 | charset-normalizer | 3.4.4 | MIT | python-installed-package-cataloger |
 | cli | UNKNOWN |  | pe-binary-package-cataloger |
@@ -5447,7 +5447,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | dpkg | 1.21.1ubuntu2.3 | BSD-2-Clause, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
 | e2fsprogs | 1.46.5-2ubuntu1.1 | GPL-2.0-only, LGPL-2.0-only | dpkg-db-cataloger |
 | expiringdict | 1.2.2 |  | python-installed-package-cataloger |
-| filelock | 3.24.3 | MIT | python-installed-package-cataloger |
+| filelock | 3.25.0 | MIT | python-installed-package-cataloger |
 | findutils | 4.8.0-1ubuntu3 | GFDL-1.3-only, GPL-3.0-only | dpkg-db-cataloger |
 | flask | 2.2.5 | BSD-3-Clause | python-installed-package-cataloger |
 | flask-babel | 3.1.0 | BSD-3-Clause | python-installed-package-cataloger |
@@ -5550,7 +5550,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | libpython3.10-minimal | 3.10.12-1~22.04.14 | GPL-2.0-only | dpkg-db-cataloger |
 | libpython3.10-stdlib | 3.10.12-1~22.04.14 | GPL-2.0-only | dpkg-db-cataloger |
 | libreadline8 | 8.1.2-1 | GPL-3.0-only | dpkg-db-cataloger |
-| libretranslate | 1.9.4 | AGPL-3.0-only | python-installed-package-cataloger |
+| libretranslate | 1.9.5 | AGPL-3.0-only | python-installed-package-cataloger |
 | libsasl2-2 | 2.1.27+dfsg2-3ubuntu1.2 | BSD-2-Clause, BSD-3-Clause, BSD-4-Clause, BSD-4-Clause-UC, FSFULLR, GPL-3.0-only, GPL-3.0-or-later, MIT-CMU, OpenSSL, RSA-MD | dpkg-db-cataloger |
 | libsasl2-modules-db | 2.1.27+dfsg2-3ubuntu1.2 | BSD-2-Clause, BSD-3-Clause, BSD-4-Clause, BSD-4-Clause-UC, FSFULLR, GPL-3.0-only, GPL-3.0-or-later, MIT-CMU, OpenSSL, RSA-MD | dpkg-db-cataloger |
 | libseccomp2 | 2.5.3-2ubuntu2 | LGPL-2.1-only | dpkg-db-cataloger |
@@ -5581,7 +5581,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | markupsafe | 3.0.3 | BSD-3-Clause | python-installed-package-cataloger |
 | mawk | 1.3.4.20200120-3 | GPL-2.0-only | dpkg-db-cataloger |
 | media-types | 7.0.0 |  | dpkg-db-cataloger |
-| minisbd | 0.9.3 | AGPL-3.0-only | python-installed-package-cataloger |
+| minisbd | 0.9.5 | AGPL-3.0-only | python-installed-package-cataloger |
 | mount | 2.37.2-4ubuntu3.4 | BSD-2-Clause, BSD-3-Clause, BSD-4-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, MIT | dpkg-db-cataloger |
 | mpmath | 1.3.0 |  | python-installed-package-cataloger |
 | ncurses-base | 6.3-2ubuntu0.1 | BSD-3-Clause, X11 | dpkg-db-cataloger |
@@ -5599,7 +5599,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | polib | 1.1.1 | MIT | python-installed-package-cataloger |
 | procps | 2:3.3.17-6ubuntu2.1 | GPL-2.0-only, GPL-2.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
 | prometheus-client | 0.15.0 |  | python-installed-package-cataloger |
-| protobuf | 6.33.5 |  | python-installed-package-cataloger |
+| protobuf | 7.34.0 |  | python-installed-package-cataloger |
 | pygments | 2.19.2 | BSD-2-Clause | python-installed-package-cataloger |
 | pymupdf | 1.27.1 |  | python-installed-package-cataloger |
 | pysrt | 1.1.2 |  | python-installed-package-cataloger |
@@ -5613,11 +5613,11 @@ The complete source code for Traefik is publicly available at [https://github.co
 | python3-wheel | 0.37.1-2ubuntu0.22.04.1 | GPL-3.0-only | dpkg-db-cataloger |
 | python3.10 | 3.10.12-1~22.04.14 | GPL-2.0-only | dpkg-db-cataloger |
 | python3.10-minimal | 3.10.12-1~22.04.14 | GPL-2.0-only | dpkg-db-cataloger |
-| pytz | 2025.2 | MIT | python-installed-package-cataloger |
+| pytz | 2026.1.post1 | MIT | python-installed-package-cataloger |
 | pyyaml | 6.0.3 | MIT | python-installed-package-cataloger |
 | readline-common | 8.1.2-1 | GPL-3.0-only | dpkg-db-cataloger |
 | redis | 4.4.4 | MIT | python-installed-package-cataloger |
-| regex | 2026.2.19 | Apache-2.0 AND CNRI-Python | python-installed-package-cataloger |
+| regex | 2026.2.28 | Apache-2.0 AND CNRI-Python | python-installed-package-cataloger |
 | requests | 2.31.0 |  | python-installed-package-cataloger |
 | rich | 12.6.0 | MIT | python-installed-package-cataloger |
 | sacremoses | 0.1.1 | MIT | python-installed-package-cataloger |
