@@ -12,6 +12,7 @@ spec:
   commonName: {{ .Values.domain }}
   # Optional additional dnsNames
   dnsNames:
+    - traefik.{{ .Values.domain }}
     - frontend.{{ .Values.domain }}
     - api.{{ .Values.domain }}
     - translate.{{ .Values.domain }}
@@ -33,6 +34,7 @@ spec:
     - mongo-web.{{ .Values.domain }}
     - tika.{{ .Values.domain }}
     - redisinsight.{{ .Values.domain }}
+    - gotenberg.{{ .Values.domain }}
   # Mandatory issuerRef to get a PKI signed certificate
   issuerRef:
     name: {{ default (printf "%s-selfsigned-issuer" (include "app.fullname" .)) .Values.certificate.issuerRef.name }}
