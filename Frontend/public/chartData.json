@@ -1,7 +1,7 @@
 {
     "apiVersion": "v2",
-    "appVersion": "0.4.1-rc9",
+    "appVersion": "0.4.1-rc10",
     "description": "Loom is a powerful and easily deployable open-source document search engine.",
     "name": "loom",
-    "version": "0.4.1-rc9"
+    "version": "0.4.1-rc10"
 }
