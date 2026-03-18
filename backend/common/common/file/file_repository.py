@@ -263,6 +263,7 @@ class TikaMeta(BaseModel):
         default=None, alias="Message:To-Email"
     )
     message_cc: str | list[str] | None = Field(default=None, alias="Message-Cc")
+    message_bcc: str | list[str] | None = Field(default=None, alias="Message-Bcc")
 
     meta_last_author: str | list[str] | None = Field(
         default=None, alias="meta:last-author"
@@ -293,6 +294,7 @@ class _EsTikaMeta(InnerDoc):
     message_to_name = Text(multi=True)
     message_to_email = Text(multi=True)
     message_cc = Text(multi=True)
+    message_bcc = Text(multi=True)
 
     meta_last_author = Text(multi=True)
     content_type = Text(multi=True)
