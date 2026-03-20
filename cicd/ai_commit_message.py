@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 
-import os
-import sys
 import logging
+import os
+import shutil
+import subprocess
+import sys
 
 from git import Repo
-from httpx import HTTPError
-from ollama import Client, Options, RequestError, ResponseError
 
 # Configure logging
 logging.basicConfig(
@@ -16,29 +16,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Constants
-OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "mevatron/diffsense:1.5b")
-OLLAMA_CLIENT_TIMEOUT = int(os.getenv("OLLAMA_CLIENT_TIMEOUT", "60"))
-OLLAMA_CONNECTION_TEST_CLIENT_TIMEOUT = int(
-    os.getenv("OLLAMA_CONNECTION_TEST_CLIENT_TIMEOUT", "1")
-)
-OLLAMA_PULL_CLIENT_TIMEOUT = int(os.getenv("OLLAMA_PULL_CLIENT_TIMEOUT", "180"))
-OLLAMA_HOST = os.getenv("OLLAMA_HOST", "ollama.loom")
-OLLAMA_MAX_TOKENS = int(os.getenv("OLLAMA_MAX_TOKENS", "1024"))
-OLLAMA_SYSTEM_PROMPT = (
-    "You are a helpful assistant that writes conventional git commit messages. "
-    "Given a git diff, generate a clear, concise commit message summarizing the changes. "
-    "Just describe the change, do not explain why this change is required. "
-    f"Output only the commit message in {OLLAMA_MAX_TOKENS} tokens or less."
-)
-
-# Initialize Ollama client
-ollama_client = Client(host=f"http://{OLLAMA_HOST}", timeout=OLLAMA_CLIENT_TIMEOUT)
-ollama_connection_test_client = Client(
-    host=f"http://{OLLAMA_HOST}", timeout=OLLAMA_CONNECTION_TEST_CLIENT_TIMEOUT
-)
-ollama_pull_client = Client(
-    host=f"http://{OLLAMA_HOST}", timeout=OLLAMA_PULL_CLIENT_TIMEOUT
-)
+CLAUDE_TIMEOUT = int(os.getenv("CLAUDE_TIMEOUT", "30"))
 
 
 def get_staged_diff(repo: Repo) -> str:
@@ -48,32 +26,66 @@ def get_staged_diff(repo: Repo) -> str:
     return diff
 
 
-def generate_commit_message(diff: str) -> str | None:
-    """Generate a commit message using the Ollama client."""
-    try:
-        logger.info("Testing connection to: %s", OLLAMA_HOST)
-        ollama_connection_test_client.ps()
-        logger.info("Pulling ollama model: %s", OLLAMA_MODEL)
-        ollama_pull_client.pull(model=OLLAMA_MODEL)
-        logger.info("Sending diff to Ollama for commit message suggestion...")
+def is_claude_cli_installed() -> bool:
+    """Check if the Claude Code CLI is installed."""
+    return shutil.which("claude") is not None
 
-        response = ollama_client.generate(
-            model=OLLAMA_MODEL,
-            prompt=diff,
-            system=OLLAMA_SYSTEM_PROMPT,
-            options=Options(
-                num_predict=OLLAMA_MAX_TOKENS,
-            ),
+
+def generate_commit_message(diff: str, repo: Repo) -> str | None:
+    """Generate a commit message using the Claude Code CLI."""
+    prompt = f"""Generate a git commit message for the following diff.
+
+Format:
+- First line: conventional commit format (type(scope): description), max 72 characters
+- Blank line
+- A brief paragraph summarizing the changes
+- Sections like "Added:", "Changed:", "Removed:", "Fixed:" followed by bullet points (use "- " for bullets)
+
+Rules:
+- Describe what changed, not why
+- Output only the raw commit message text, nothing else
+- Do NOT use markdown formatting (no code blocks, no # headers)
+- Lines starting with # are git comments and will be ignored
+
+Diff:
+{diff}
+"""
+
+    try:
+        logger.info("Sending diff to Claude CLI for commit message suggestion...")
+        result = subprocess.run(
+            [
+                "claude",
+                "--print",
+                "--output-format",
+                "text",
+                "--max-turns",
+                "1",
+                "--no-session-persistence",
+                prompt,
+            ],
+            capture_output=True,
+            text=True,
+            timeout=CLAUDE_TIMEOUT,
+            cwd=repo.working_dir,
+            check=False,
         )
-        logger.debug("Ollama response: %s", response)
-        return response.response
-    except (
-        HTTPError,
-        ConnectionError,
-        RequestError,
-        ResponseError,
-    ) as e:
-        logger.warning("Ollama error (%s): %s", OLLAMA_HOST, e)
+
+        if result.returncode != 0:
+            logger.warning("Claude CLI returned non-zero exit code: %s", result.returncode)
+            if result.stderr:
+                logger.warning("Claude CLI stderr: %s", result.stderr)
+            return None
+
+        message = result.stdout.strip()
+        logger.debug("Claude CLI response: %s", message)
+        return message if message else None
+
+    except subprocess.TimeoutExpired:
+        logger.warning("Claude CLI timed out after %s seconds", CLAUDE_TIMEOUT)
+        return None
+    except OSError as e:
+        logger.warning("Failed to run Claude CLI: %s", e)
         return None
 
 
@@ -98,6 +110,11 @@ def main():
         )
         sys.exit(1)
 
+    # Check if Claude CLI is installed
+    if not is_claude_cli_installed():
+        logger.debug("Claude CLI not installed, skipping AI commit message generation.")
+        return
+
     commit_msg_filepath = sys.argv[1]
     logger.info("Preparing commit message using file: %s", commit_msg_filepath)
 
@@ -111,7 +128,11 @@ def main():
     repo = Repo(os.getcwd())
 
     diff = get_staged_diff(repo)
-    message = generate_commit_message(diff)
+    if not diff:
+        logger.info("No staged changes found, skipping AI commit message generation.")
+        return
+
+    message = generate_commit_message(diff, repo)
 
     if message:
         update_commit_msg_file(commit_msg_filepath, message)
