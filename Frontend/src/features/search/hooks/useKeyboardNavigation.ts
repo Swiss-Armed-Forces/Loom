@@ -63,15 +63,14 @@ export function useKeyboardNavigation() {
                     return true;
                 }
 
-                // Ignore if focus is on an interactive element within a dialog
-                // (e.g., buttons, selects) - this prevents keyboard shortcuts
-                // from firing when interacting with dialog controls
-                const dialog = document.querySelector("[role='dialog']");
-                if (dialog && dialog.contains(activeElement)) {
-                    const interactiveTags = ["button", "select", "a"];
-                    if (interactiveTags.includes(tagName)) {
-                        return true;
-                    }
+                // Ignore select events if focus is on an interactive element
+                const interactiveTags = ["button", "select", "a"];
+                const selectKeys = [" ", "Enter"];
+                if (
+                    interactiveTags.includes(tagName) &&
+                    selectKeys.includes(event.key)
+                ) {
+                    return true;
                 }
             }
 
@@ -283,7 +282,6 @@ export function useKeyboardNavigation() {
             // Handle dialog-specific navigation
             if (isDialogOpen) {
                 switch (event.key) {
-                    case "Tab":
                     case "n":
                         // Tab/n key cycles through tabs (round robin)
                         handleTabNavigation();
