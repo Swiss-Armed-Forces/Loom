@@ -109,6 +109,7 @@ export const ResultCard: React.FC<ResultCardProps> = React.memo(
                 const timeoutId = setTimeout(() => {
                     scrollCardIntoView();
                 }, 100);
+                cardRef.current.focus();
                 return () => clearTimeout(timeoutId);
             }
         }, [isHighlighted, filePreview]);
@@ -141,9 +142,11 @@ export const ResultCard: React.FC<ResultCardProps> = React.memo(
         return (
             <Box
                 className="resultCardParent"
+                tabIndex={0}
                 data-highlighted={isHighlighted ? "true" : undefined}
                 ref={setRefs}
                 onClick={handleCardClick}
+                onFocus={handleCardClick}
                 sx={{
                     cursor: "pointer",
                     position: "relative",

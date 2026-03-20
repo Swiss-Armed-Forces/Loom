@@ -77,7 +77,7 @@ export function AboutDialog({ open, closeDialog }: AboutDialogProps) {
     }, [t]);
 
     return (
-        <Dialog maxWidth="md" open={open}>
+        <Dialog maxWidth="md" open={open} onClose={closeDialog}>
             <DialogTitle>
                 <Box
                     display="flex"
