@@ -1,7 +1,7 @@
 import logging
 from hashlib import sha256
 
-from celery import chain, group
+from celery import chain
 from common.dependencies import (
     get_celery_app,
     get_file_scheduling_service,
@@ -20,17 +20,23 @@ logger = logging.getLogger(__name__)
 app = get_celery_app()
 
 
-@app.task(bind=True, base=FileIndexingTask)
-def schedule_attachments(
-    self: FileIndexingTask, lazy_tika_result: TypedLazyBytes[TikaResult], file: File
-):
+@app.task(base=FileIndexingTask)
+def schedule_attachments(lazy_tika_result: TypedLazyBytes[TikaResult], file: File):
     tika_result = get_lazybytes_service().load_object(lazy_tika_result)
-    return self.replace(
-        group(
-            chain(schedule_attachment.s(attachment, file), persist_attachment.s(file))
-            for attachment in tika_result.attachments
-        )
-    )
+
+    # We spawn each attachment sub-pipeline independently rather than using
+    # self.replace(group(...)) because constructing a Celery group with many
+    # attachments (e.g., large archives) causes memory blowup - the entire group
+    # is built in memory before execution.
+    #
+    # Trade-off: Using delay().forget() loses proper pipeline integration with
+    # the parent task. Exceptions won't propagate to the parent, and task tracking
+    # becomes independent. The "correct" approach would be self.replace(group(...))
+    # but it's not feasible for files with many attachments.
+    for attachment in tika_result.attachments:
+        chain(
+            schedule_attachment.s(attachment, file), persist_attachment.s(file)
+        ).delay().forget()
 
 
 @app.task(base=FileIndexingTask)
