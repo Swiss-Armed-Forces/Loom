@@ -579,6 +579,8 @@ in
       CI_DEPENDENCY_PROXY_DIRECT_GROUP_IMAGE_PREFIX="''${CI_DEPENDENCY_PROXY_SERVER}/swiss-armed-forces/cyber-command/cea/dependency_proxy/containers"
       export CI_DEPENDENCY_PROXY_DIRECT_GROUP_IMAGE_PREFIX
       echo "Using docker image dependency proxy: ''${CI_DEPENDENCY_PROXY_DIRECT_GROUP_IMAGE_PREFIX}"
+    else
+      echo "WARNING: Could not login to dependency proxy at ''${CI_DEPENDENCY_PROXY_SERVER}. You may face Docker Hub rate limit issues when pulling images"
     fi
   '';
 
