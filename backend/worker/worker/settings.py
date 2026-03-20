@@ -174,7 +174,7 @@ class Settings(CommonSettings):
     min_language_detection_confidence: float = 95.0
     persist_success_tasks: bool = False
     persist_retry_tasks: bool = True
-    tika_ocr_languages: list[TikaAllowedOcrLanguage] = ["eng"]
+    tika_ocr_languages: list[TikaAllowedOcrLanguage] = ["eng", "deu", "fra"]
     tika_server_host: AnyHttpUrl = AnyHttpUrl(f"http://tika.{DOMAIN}")
 
     rspam_host: AnyHttpUrl = AnyHttpUrl(f"http://rspamd-worker.{DOMAIN}")

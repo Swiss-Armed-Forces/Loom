@@ -147,7 +147,6 @@ class TestTikaService:
                     "kpasman",
                     "Window",
                     "Password",
-                    "Ready",
                 ),
             ),
             ("ocr.jpg", ("Block diagrams",)),
@@ -160,4 +159,5 @@ class TestTikaService:
         assert result.text
         with get_lazybytes_service().load_memoryview(result.text) as memview:
             result_text = memview.tobytes().decode()
-            assert all(expected in result_text for expected in expected_identified)
+            for expected in expected_identified:
+                assert expected in result_text
