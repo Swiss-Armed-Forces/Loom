@@ -51,11 +51,18 @@ def load_mr_template(repo: Repo) -> str:
         return ""
 
 
-def build_prompt(mr_template: str, include_diff: str | None = None) -> str:
+def build_prompt(
+    mr_template: str,
+    current_title: str = "",
+    current_description: str = "",
+    include_diff: str | None = None,
+) -> str:
     """Build the prompt for commit message generation.
 
     Args:
         mr_template: The MR template content to include in instructions.
+        current_title: The current MR title (as a hint for the AI).
+        current_description: The current MR description (as a hint for the AI).
         include_diff: If provided, append the diff to the prompt (for Claude CLI).
                       If None, diff should be passed separately (for GitLab Duo).
     """
@@ -72,6 +79,14 @@ sections like "Added:", "Changed:", "Removed:", "Fixed:" with bullet points (use
 Leave the Issue Reference section empty (it will be filled manually).
 """
 
+    current_mr_hint = ""
+    if current_title or current_description:
+        current_mr_hint = "\nCurrent MR content (use as reference):\n"
+        if current_title:
+            current_mr_hint += f"Title: {current_title}\n"
+        if current_description:
+            current_mr_hint += f"Description:\n{current_description}\n"
+
     prompt = f"""Generate a git commit message and MR description for the following diff.
 
 Format:
@@ -83,7 +98,9 @@ Rules:
 - Output only the raw commit message text, nothing else
 - Do NOT wrap output in code fences or markdown code blocks
 - Use markdown formatting for the body (headers with #, bullet points with -)
-"""
+- Preserve external references from the current description if still relevant (e.g., "Closes #123",
+  "Related to #456", links to issues/MRs, or other cross-references)
+{current_mr_hint}"""
 
     if include_diff:
         prompt += f"\nDiff:\n{include_diff}\n"
@@ -91,13 +108,18 @@ Rules:
     return prompt
 
 
-def generate_commit_message_via_duo(diff: str, mr_template: str) -> str | None:
+def generate_commit_message_via_duo(
+    diff: str,
+    mr_template: str,
+    current_title: str = "",
+    current_description: str = "",
+) -> str | None:
     """Generate a commit message using GitLab Duo Chat API."""
     if not GITLAB_TOKEN:
         logger.warning("No GitLab token available for Duo API")
         return None
 
-    prompt = build_prompt(mr_template)
+    prompt = build_prompt(mr_template, current_title, current_description)
 
     url = f"https://{CI_SERVER_HOST}/api/v4/chat/completions"
     headers = {
@@ -133,14 +155,20 @@ def is_claude_cli_installed() -> bool:
 
 
 def generate_commit_message_via_claude(
-    diff: str, mr_template: str, repo: Repo
+    diff: str,
+    mr_template: str,
+    repo: Repo,
+    current_title: str = "",
+    current_description: str = "",
 ) -> str | None:
     """Generate a commit message using the Claude Code CLI."""
     if not repo.working_dir:
         logger.warning("No working directory available (bare repo?)")
         return None
 
-    prompt = build_prompt(mr_template, include_diff=diff)
+    prompt = build_prompt(
+        mr_template, current_title, current_description, include_diff=diff
+    )
 
     try:
         logger.info("Sending diff to Claude CLI for commit message suggestion...")
@@ -256,6 +284,10 @@ def main() -> None:
 
     logger.info("Found MR !%s: %s", mr.iid, mr.title)
 
+    # Get current MR title and description as hints for the AI
+    current_title = mr.title or ""
+    current_description = mr.description or ""
+
     # Get diff against origin/main
     diff = get_branch_diff(repo)
     if not diff:
@@ -266,13 +298,17 @@ def main() -> None:
     mr_template = load_mr_template(repo)
 
     # Try GitLab Duo first, fall back to Claude CLI
-    message = generate_commit_message_via_duo(diff, mr_template)
+    message = generate_commit_message_via_duo(
+        diff, mr_template, current_title, current_description
+    )
     if not message:
         logger.info("GitLab Duo unavailable, trying Claude CLI fallback...")
         if not is_claude_cli_installed():
             logger.error("Claude CLI not installed and GitLab Duo unavailable.")
             sys.exit(1)
-        message = generate_commit_message_via_claude(diff, mr_template, repo)
+        message = generate_commit_message_via_claude(
+            diff, mr_template, repo, current_title, current_description
+        )
         if not message:
             logger.error("Failed to generate commit message via both methods.")
             sys.exit(1)
