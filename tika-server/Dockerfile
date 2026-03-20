@@ -14,14 +14,22 @@ USER root:root
 
 # Package versions
 ARG TESSERACT_OCR_ALL_VERSION="5.3.*"
+ARG IMAGEMAGICK_VERSION="8:6.9.*"
+ARG PYTHON3_SKIMAGE_VERSION="0.22.*"
 
 # install language package for OCR, zstd-jni for compression support, and dependencies for custom-entry-point
+# ImageMagick and python3-skimage are required for Tika's image preprocessing (rotation detection, normalization)
 RUN set -exu \
 	&& apt-get update \
 	&& apt-get install -y --no-install-recommends \
 	tesseract-ocr-all="${TESSERACT_OCR_ALL_VERSION}" \
+	imagemagick="${IMAGEMAGICK_VERSION}" \
+	python3-skimage="${PYTHON3_SKIMAGE_VERSION}" \
 	&& apt-get clean \
 	&& rm -rf /var/lib/apt/lists/*
+
+# Copy ImageMagick security policy to restrict dangerous operations
+COPY imagemagick-policy.xml /etc/ImageMagick-6/policy.xml
 
 # Download and install zstd-jni JAR to tika-extras directory
 ARG ZSTD_JNI_VERSION="1.5.7-7"

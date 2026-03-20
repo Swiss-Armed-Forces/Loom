@@ -26,5 +26,15 @@
       <mime-exclude>application/vnd.ms-outlook-pst</mime-exclude>
     </parser>
 
+    <!-- TesseractOCRParser with image preprocessing enabled -->
+    <parser class="org.apache.tika.parser.ocr.TesseractOCRParser">
+      <params>
+        <!-- Enable image preprocessing (requires ImageMagick) -->
+        <param name="enableImagePreprocessing" type="bool">true</param>
+        <!-- Enable rotation detection (requires Python 3 + scikit-image + numpy) -->
+        <param name="applyRotation" type="bool">true</param>
+      </params>
+    </parser>
+
   </parsers>
 </properties>
