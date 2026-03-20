@@ -4,7 +4,7 @@ from typing import Generator, Sequence
 from uuid import UUID, uuid4
 
 import numpy as np
-from celery import chain, chord
+from celery import chain, chord, group
 from celery.canvas import Signature
 from common.ai_context.ai_context_repository import AiContext
 from common.dependencies import (
@@ -92,17 +92,22 @@ def load_text_from_text_lazy(text_lazy: LazyBytes) -> str:
 
 
 def signature(context: AiContext, question: str) -> Signature:
-    # HyDE: parallel (generate -> embed) chains, then aggregate -> search
     return chain(
         chord(
             [
-                chain(
-                    generate_hypothetical_document.s(question),
-                    embed_hyde_document.s(),
-                )
-                for _ in range(settings.llm_hyde_num_documents)
+                embed_question.s(question),
+                group(
+                    # HyDE: Hypothetical Document Embeddings
+                    # Generate multiple hypothetical documents that could answer the question
+                    # This helps improve retrieval by creating diverse query representation.
+                    chain(
+                        generate_hypothetical_document.s(question),
+                        embed_document.s(),
+                    )
+                    for _ in range(settings.llm_hyde_num_documents)
+                ),
             ],
-            aggregate_hyde_embeddings.s(),
+            aggregate_embeddings.s(),
         ),
         fetch_scored_search_embeddings.s(context.query),
         sort_and_limit_scored_search_embeddings.s(),
@@ -114,9 +119,30 @@ class LLMError(Exception):
     pass
 
 
-# =============================================================================
-# HyDE (Hypothetical Document Embeddings) Tasks
-# =============================================================================
+@app.task(
+    base=AiContextProcessingTask,
+    autoretry_for=tuple([LLMError]),
+    max_retries=RAG_MAX_RETRIES,
+    retry_backoff=True,
+)
+def embed_question(question: str) -> TypedLazyBytes[Sequence[float]]:
+    """Embed a single question."""
+    client = get_ollama_client()
+    try:
+        response = client.embed(
+            model=settings.llm_model_embedding,
+            input=[f"{settings.llm_embedding_query_prefix}{question}"],
+            dimensions=settings.llm_embedding_dimensions,
+            options=Options(
+                temperature=settings.llm_embedding_temperature,
+            ),
+        )
+    except HTTPError as ex:
+        raise LLMError("Document embedding failed") from ex
+
+    embedding = response.embeddings[0]
+    logger.debug("Embedded question into %d-dim vector", len(embedding))
+    return get_lazybytes_service().from_object(embedding)
 
 
 @app.task(
@@ -126,7 +152,7 @@ class LLMError(Exception):
     retry_backoff=True,
 )
 def generate_hypothetical_document(question: str) -> str:
-    """Generate a single hypothetical document for HyDE."""
+    """Generate a single hypothetical document."""
     prompt = f"""Given the question below, write a short factual passage that would
 directly answer it. Do not explain or preface your answer. Just write the passage
 as if it were from a document. Keep your answer in a paragraph of
@@ -148,10 +174,10 @@ Passage:"""
             think=settings.llm_think,
         )
     except HTTPError as ex:
-        raise LLMError("HyDE document generation failed") from ex
+        raise LLMError("Hypothetical document generation failed") from ex
 
     doc = response.response.strip()
-    logger.debug("HyDE generated document: %.100s...", doc)
+    logger.debug("Hypothetical generated document: %.100s...", doc)
     return doc
 
 
@@ -161,42 +187,43 @@ Passage:"""
     max_retries=RAG_MAX_RETRIES,
     retry_backoff=True,
 )
-def embed_hyde_document(document: str) -> TypedLazyBytes[Sequence[float]]:
-    """Embed a single hypothetical document.
-
-    This task is chained after generate_hypothetical_document.
-    """
+def embed_document(document: str) -> TypedLazyBytes[Sequence[float]]:
+    """Embed a single document."""
     client = get_ollama_client()
     try:
         response = client.embed(
             model=settings.llm_model_embedding,
             input=[f"{settings.llm_embedding_document_prefix}{document}"],
+            dimensions=settings.llm_embedding_dimensions,
             options=Options(
                 temperature=settings.llm_embedding_temperature,
             ),
         )
     except HTTPError as ex:
-        raise LLMError("HyDE document embedding failed") from ex
+        raise LLMError("Document embedding failed") from ex
 
     embedding = response.embeddings[0]
-    logger.debug("HyDE embedded document into %d-dim vector", len(embedding))
+    logger.debug("Embedded document into %d-dim vector", len(embedding))
     return get_lazybytes_service().from_object(embedding)
 
 
 @app.task(base=AiContextProcessingTask)
-def aggregate_hyde_embeddings(
-    embeddings_lazy: list[TypedLazyBytes[Sequence[float]]],
+def aggregate_embeddings(
+    lazy_embeddings_generated: tuple[
+        TypedLazyBytes[Sequence[float]], list[TypedLazyBytes[Sequence[float]]]
+    ],
 ) -> TypedLazyBytes[Sequence[float]]:
-    """Aggregate HyDE embeddings by computing their mean."""
+    """Aggregate embeddings by computing their mean."""
+    lazy_embedding_question, lazy_embeddings_hyde = lazy_embeddings_generated
     embeddings = [
         get_lazybytes_service().load_object(lazy_embedding)
-        for lazy_embedding in embeddings_lazy
+        for lazy_embedding in [lazy_embedding_question] + lazy_embeddings_hyde
     ]
     embeddings_array = np.array(embeddings)
     mean_embedding: list[float] = np.mean(embeddings_array, axis=0).tolist()
 
     logger.info(
-        "HyDE aggregated %d embeddings into %d-dim vector",
+        "Aggregated %d embeddings into %d-dim vector",
         len(embeddings),
         len(mean_embedding),
     )

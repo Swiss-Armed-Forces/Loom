@@ -186,6 +186,7 @@ class Settings(CommonSettings):
     imap_folder_days_before_unsubscribe: int | None = None
 
     llm_embedding_document_prefix: str = "search_document:"
+    llm_embedding_query_prefix: str = "search_query:"
     llm_embedding_temperature: float | None = 0
 
     llm_embedding_text_chunk_size: int = 400
