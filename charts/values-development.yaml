@@ -12,6 +12,7 @@ llm:
   embedding_text_chunk_size: 250
   embedding_text_chunk_overlap: 25
   llm_rerank_temperature: 0
+  hyde_num_documents: 1
 
 ingress: &default-ingress-config
   annotations:
