@@ -447,28 +447,6 @@ in
 
   # https://devenv.sh/git-hooks/
   git-hooks.hooks = {
-    ai-commit-message = {
-      enable = true;
-      stages = [
-        "prepare-commit-msg"
-      ];
-
-      # The name of the hook (appears on the report table):
-      name = "AI commit message";
-
-      # The command to execute (mandatory):
-      # Note: we have to poetry run here so that the script
-      # has access to poetry installed dependencies
-      entry = "poetry run ./cicd/ai_commit_message.py";
-
-      # The language of the hook - tells pre-commit
-      # how to install the hook (default: "system")
-      # see also https://pre-commit.com/#supported-languages
-      #language = "python";
-
-      # verbose = true;
-    };
-
     dos2unix = {
       enable = true;
       entry = "dos2unix";
@@ -1066,6 +1044,19 @@ in
         cd '${config.devenv.root}'
 
         ./cicd/git_delete_merged_branches.sh \
+          "''${@}"
+      )
+    '';
+  };
+
+  scripts.ai-mr-update = {
+    description = "Update GitLab MR title/description using AI";
+    exec = ''
+      (
+        set -euo pipefail
+        cd '${config.devenv.root}'
+
+        poetry run ./cicd/ai_mr_update.py \
           "''${@}"
       )
     '';

@@ -39,7 +39,7 @@
       nix-env --install --attr devenv -f https://github.com/NixOS/nixpkgs/tarball/nixos-25.11
       ```
 
-   - ❗**Workaround for fedora-41**:
+   - ❗**Workaround for fedora**:
    After installing nix open the file `/nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh`
    and comment out the first two lines
 6. Install direnv
@@ -108,6 +108,34 @@ you're authenticated using a **personal access token**—OAuth-based authenticat
 **not supported** in this setup. When prompted, log in with your GitLab.com credentials
 using the access token as the password. Once authenticated, GitLab Duo will be able to
 provide contextual code suggestions directly within your development environment.
+
+## Setting up GITLAB_TOKEN (optional)
+
+Some development tools (like `ai-mr-update`) require a GitLab personal access token. You can
+configure this using `devenv.local.nix`, which is automatically loaded by devenv and excluded
+from git.
+
+1. Create a [personal access token][pat-docs] with `api` scope
+
+2. Create the file `devenv.local.nix` in the repository root:
+
+   ```nix
+   { ... }:
+   {
+     env.GITLAB_TOKEN = "glpat-xxxxxxxxxxxxxxxxxxxx";
+   }
+   ```
+
+3. Reload the devenv environment:
+
+   ```sh
+   direnv reload
+   ```
+
+The `devenv.local.nix` file is gitignored, so your token stays local and won't be committed.
+See the [devenv documentation](https://devenv.sh/files-and-variables/) for more options.
+
+[pat-docs]: https://docs.gitlab.com/ee/user/profile/personal_access_tokens.html#create-a-personal-access-token
 
 ## More Documentation and Links
 
