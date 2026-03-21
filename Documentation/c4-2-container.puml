@@ -109,6 +109,11 @@ Rel(fluentd, es, "")
 Rel(prometheus, grafana, "")
 Rel(es, grafana, "Logs")
 Rel(rabbit, prometheus, "")
+Rel(es, prometheus, "")
+Rel(mongo, prometheus, "")
+Rel(redis, prometheus, "")
+Rel(translate, prometheus, "")
+Rel(gotenberg, prometheus, "")
 
 SHOW_LEGEND(true)
 
