@@ -12,5 +12,10 @@ spec:
     - port: {{ .Values.elasticsearch.service.port }}
       name: elasticsearch
       targetPort: {{ .Values.elasticsearch.service.port }}
+    {{- if .Values.elasticsearch.exporter.enabled }}
+    - port: {{ .Values.elasticsearch.exporter.port }}
+      name: metrics
+      targetPort: {{ .Values.elasticsearch.exporter.port }}
+    {{- end }}
   selector:
     app: {{ include "app.name" . }}-elasticsearch

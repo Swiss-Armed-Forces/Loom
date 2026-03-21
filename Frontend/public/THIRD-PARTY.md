@@ -3532,6 +3532,58 @@ The complete source code for Traefik is publicly available at [https://github.co
 | zip | 3.0-35.el9 |  | rpm-db-cataloger |
 | zlib | 1.2.11-40.el9 |  | rpm-db-cataloger |
 
+### registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/elasticsearch-exporter
+
+| Package | Version | License | Found by |
+| ------- | --------| ------- | -------- |
+| busybox | 1.37.0 |  | binary-classifier-cataloger |
+| github.com/alecthomas/kingpin/v2 | v2.4.0 |  | go-module-binary-cataloger |
+| github.com/alecthomas/units | v0.0.0-20240927000941-0f3dac36c52b |  | go-module-binary-cataloger |
+| github.com/aws/aws-sdk-go-v2 | v1.40.0 |  | go-module-binary-cataloger |
+| github.com/aws/aws-sdk-go-v2/config | v1.32.2 |  | go-module-binary-cataloger |
+| github.com/aws/aws-sdk-go-v2/credentials | v1.19.2 |  | go-module-binary-cataloger |
+| github.com/aws/aws-sdk-go-v2/feature/ec2/imds | v1.18.14 |  | go-module-binary-cataloger |
+| github.com/aws/aws-sdk-go-v2/internal/configsources | v1.4.14 |  | go-module-binary-cataloger |
+| github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 | v2.7.14 |  | go-module-binary-cataloger |
+| github.com/aws/aws-sdk-go-v2/internal/ini | v1.8.4 |  | go-module-binary-cataloger |
+| github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding | v1.13.3 |  | go-module-binary-cataloger |
+| github.com/aws/aws-sdk-go-v2/service/internal/presigned-url | v1.13.14 |  | go-module-binary-cataloger |
+| github.com/aws/aws-sdk-go-v2/service/signin | v1.0.2 |  | go-module-binary-cataloger |
+| github.com/aws/aws-sdk-go-v2/service/sso | v1.30.5 |  | go-module-binary-cataloger |
+| github.com/aws/aws-sdk-go-v2/service/ssooidc | v1.35.10 |  | go-module-binary-cataloger |
+| github.com/aws/aws-sdk-go-v2/service/sts | v1.41.2 |  | go-module-binary-cataloger |
+| github.com/aws/smithy-go | v1.23.2 |  | go-module-binary-cataloger |
+| github.com/beorn7/perks | v1.0.1 |  | go-module-binary-cataloger |
+| github.com/blang/semver/v4 | v4.0.0 |  | go-module-binary-cataloger |
+| github.com/cespare/xxhash/v2 | v2.3.0 |  | go-module-binary-cataloger |
+| github.com/coreos/go-systemd/v22 | v22.6.0 |  | go-module-binary-cataloger |
+| github.com/golang-jwt/jwt/v5 | v5.3.0 |  | go-module-binary-cataloger |
+| github.com/google/uuid | v1.6.0 |  | go-module-binary-cataloger |
+| github.com/imdario/mergo | v0.3.13 |  | go-module-binary-cataloger |
+| github.com/jpillora/backoff | v1.0.0 |  | go-module-binary-cataloger |
+| github.com/mdlayher/socket | v0.4.1 |  | go-module-binary-cataloger |
+| github.com/mdlayher/vsock | v1.2.1 |  | go-module-binary-cataloger |
+| github.com/munnerz/goautoneg | v0.0.0-20191010083416-a7dc8b61c822 |  | go-module-binary-cataloger |
+| github.com/mwitkow/go-conntrack | v0.0.0-20190716064945-2f068394615f |  | go-module-binary-cataloger |
+| github.com/prometheus-community/elasticsearch_exporter | v1.10.0+dirty |  | go-module-binary-cataloger |
+| github.com/prometheus/client_golang | v1.23.2 |  | go-module-binary-cataloger |
+| github.com/prometheus/client_model | v0.6.2 |  | go-module-binary-cataloger |
+| github.com/prometheus/common | v0.67.4 |  | go-module-binary-cataloger |
+| github.com/prometheus/exporter-toolkit | v0.15.0 |  | go-module-binary-cataloger |
+| github.com/prometheus/procfs | v0.16.1 |  | go-module-binary-cataloger |
+| github.com/xhit/go-str2duration/v2 | v2.1.0 |  | go-module-binary-cataloger |
+| go.yaml.in/yaml/v2 | v2.4.3 |  | go-module-binary-cataloger |
+| go.yaml.in/yaml/v3 | v3.0.4 |  | go-module-binary-cataloger |
+| golang.org/x/crypto | v0.45.0 |  | go-module-binary-cataloger |
+| golang.org/x/net | v0.47.0 |  | go-module-binary-cataloger |
+| golang.org/x/oauth2 | v0.32.0 |  | go-module-binary-cataloger |
+| golang.org/x/sync | v0.18.0 |  | go-module-binary-cataloger |
+| golang.org/x/sys | v0.38.0 |  | go-module-binary-cataloger |
+| golang.org/x/text | v0.31.0 |  | go-module-binary-cataloger |
+| golang.org/x/time | v0.13.0 |  | go-module-binary-cataloger |
+| google.golang.org/protobuf | v1.36.10 |  | go-module-binary-cataloger |
+| stdlib | go1.25.5 | BSD-3-Clause | go-module-binary-cataloger |
+
 ### registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/rabbit
 
 | Package | Version | License | Found by |

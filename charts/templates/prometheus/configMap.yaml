@@ -82,6 +82,33 @@ data:
             action: replace
             target_label: service
 {{- end }}
+{{- if .Values.elasticsearch.exporter.enabled }}
+      - job_name: 'elasticsearch'
+        scrape_interval: 15s
+        metrics_path: /metrics
+        kubernetes_sd_configs:
+          - role: endpoints
+            namespaces:
+              names:
+                - {{ .Release.Namespace }}
+        relabel_configs:
+          # Only keep endpoints from the elasticsearch service
+          - source_labels: [__meta_kubernetes_service_name]
+            action: keep
+            regex: {{ include "app.fullname" . }}-elasticsearch
+          # Only keep the metrics port (not the elasticsearch port itself)
+          - source_labels: [__meta_kubernetes_endpoint_port_name]
+            action: keep
+            regex: metrics
+          # Add pod name as a label for per-instance metrics
+          - source_labels: [__meta_kubernetes_pod_name]
+            action: replace
+            target_label: pod
+          # Add service name for consistency
+          - source_labels: [__meta_kubernetes_service_name]
+            action: replace
+            target_label: service
+{{- end }}
 {{- if .Values.redis.exporter.enabled }}
       - job_name: 'redis'
         scrape_interval: 15s
