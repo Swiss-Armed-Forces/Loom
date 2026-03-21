@@ -57,6 +57,33 @@ spec:
               cpu: {{ .Values.mongodb.resources.requests.cpu }}
               memory: {{ .Values.mongodb.resources.requests.memory }}
           {{- end }}
+        {{- if .Values.mongodb.exporter.enabled }}
+        - name: mongodb-exporter
+          image: {{ .Values.image.registry }}/{{ .Values.mongodb.exporter.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) .Values.mongodb.exporter.image.tag }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          args:
+            - "--mongodb.uri=mongodb://localhost:27017"
+            - "--collect-all"
+            - "--discovering-mode"
+          ports:
+            - name: metrics
+              containerPort: {{ .Values.mongodb.exporter.port }}
+              protocol: TCP
+          resources:
+            {{- toYaml .Values.mongodb.exporter.resources | nindent 12 }}
+          livenessProbe:
+            httpGet:
+              path: /
+              port: metrics
+            initialDelaySeconds: 10
+            periodSeconds: 15
+          readinessProbe:
+            httpGet:
+              path: /
+              port: metrics
+            initialDelaySeconds: 5
+            periodSeconds: 10
+        {{- end }}
   volumeClaimTemplates:
     - metadata:
         name: mongodb

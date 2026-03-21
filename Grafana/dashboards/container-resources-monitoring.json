@@ -257,7 +257,7 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "container_memory_usage_bytes{container=~\"$container\",pod=~\"$pod\"}",
+          "expr": "container_memory_working_set_bytes{container=~\"$container\",pod=~\"$pod\"}",
           "instant": false,
           "legendFormat": "{{pod}}",
           "range": true,

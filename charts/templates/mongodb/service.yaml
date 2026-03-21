@@ -10,5 +10,10 @@ spec:
     - port: {{ .Values.mongodb.service.port }}
       name: mongodb
       targetPort: {{ .Values.mongodb.service.port }}
+    {{- if .Values.mongodb.exporter.enabled }}
+    - port: {{ .Values.mongodb.exporter.port }}
+      name: metrics
+      targetPort: {{ .Values.mongodb.exporter.port }}
+    {{- end }}
   selector:
     app: {{ include "app.name" . }}-mongodb

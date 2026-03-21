@@ -927,6 +927,18 @@ mongodb:
   # Example:
   # datastore-type: document
   # persistence: required
+  exporter:
+    enabled: true
+    image:
+      repository: swiss-armed-forces/cyber-command/cea/loom/mongodb-exporter
+    port: 9216
+    resources:
+      requests:
+        cpu: "0.05"
+        memory: "50Mi"
+      limits:
+        cpu: "0.2"
+        memory: "100Mi"
   express:
     enabled: true
     replicaCount: 1
