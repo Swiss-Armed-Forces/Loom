@@ -292,6 +292,18 @@ elasticsearch:
   # Example:
   # datastore-type: search
   # persistence: required
+  exporter:
+    enabled: true
+    image:
+      repository: swiss-armed-forces/cyber-command/cea/loom/elasticsearch-exporter
+    port: 9114
+    resources:
+      requests:
+        cpu: "0.05"
+        memory: "50Mi"
+      limits:
+        cpu: "0.2"
+        memory: "100Mi"
 
 elasticvue:
   enabled: true
@@ -1050,7 +1062,7 @@ open_webui:
   ingress: *default-ingress-config
   resources:
     requests:
-      cpu: "0.1"
+      cpu: "0.05"
       memory: "200Mi"
     limits:
       cpu: "1.5"

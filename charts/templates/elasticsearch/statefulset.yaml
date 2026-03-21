@@ -67,6 +67,34 @@ spec:
               cpu: {{ .Values.elasticsearch.resources.requests.cpu }}
               memory: {{ .Values.elasticsearch.resources.requests.memory }}
           {{- end }}
+        {{- if .Values.elasticsearch.exporter.enabled }}
+        - name: elasticsearch-exporter
+          image: {{ .Values.image.registry }}/{{ .Values.elasticsearch.exporter.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) .Values.elasticsearch.exporter.image.tag }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          args:
+            - "--es.uri=http://127.0.0.1:{{ .Values.elasticsearch.service.port }}"
+            - "--es.all"
+            - "--es.indices"
+            - "--es.shards"
+          ports:
+            - name: metrics
+              containerPort: {{ .Values.elasticsearch.exporter.port }}
+              protocol: TCP
+          resources:
+            {{- toYaml .Values.elasticsearch.exporter.resources | nindent 12 }}
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: metrics
+            initialDelaySeconds: 10
+            periodSeconds: 15
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: metrics
+            initialDelaySeconds: 5
+            periodSeconds: 10
+        {{- end }}
       volumes:
         - name: elasticsearch-config
           configMap:
