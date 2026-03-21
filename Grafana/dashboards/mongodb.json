@@ -93,7 +93,7 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "mongodb_up",
+          "expr": "mongodb_up{service=~\"$instance\"}",
           "legendFormat": "MongoDB",
           "range": true,
           "refId": "A"
@@ -163,7 +163,7 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "mongodb_ss_connections{conn_type=\"current\"}",
+          "expr": "mongodb_ss_connections{conn_type=\"current\",service=~\"$instance\"}",
           "legendFormat": "Current",
           "range": true,
           "refId": "A"
@@ -233,7 +233,7 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "mongodb_ss_connections{conn_type=\"available\"}",
+          "expr": "mongodb_ss_connections{conn_type=\"available\",service=~\"$instance\"}",
           "legendFormat": "Available",
           "range": true,
           "refId": "A"
@@ -328,7 +328,7 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "rate(mongodb_ss_opcounters{legacy_op_type=\"insert\"}[5m])",
+          "expr": "rate(mongodb_ss_opcounters{legacy_op_type=\"insert\",service=~\"$instance\"}[5m])",
           "legendFormat": "Insert",
           "range": true,
           "refId": "A"
@@ -339,7 +339,7 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "rate(mongodb_ss_opcounters{legacy_op_type=\"query\"}[5m])",
+          "expr": "rate(mongodb_ss_opcounters{legacy_op_type=\"query\",service=~\"$instance\"}[5m])",
           "legendFormat": "Query",
           "range": true,
           "refId": "B"
@@ -350,7 +350,7 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "rate(mongodb_ss_opcounters{legacy_op_type=\"update\"}[5m])",
+          "expr": "rate(mongodb_ss_opcounters{legacy_op_type=\"update\",service=~\"$instance\"}[5m])",
           "legendFormat": "Update",
           "range": true,
           "refId": "C"
@@ -361,7 +361,7 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "rate(mongodb_ss_opcounters{legacy_op_type=\"delete\"}[5m])",
+          "expr": "rate(mongodb_ss_opcounters{legacy_op_type=\"delete\",service=~\"$instance\"}[5m])",
           "legendFormat": "Delete",
           "range": true,
           "refId": "D"
@@ -372,7 +372,7 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "rate(mongodb_ss_opcounters{legacy_op_type=\"getmore\"}[5m])",
+          "expr": "rate(mongodb_ss_opcounters{legacy_op_type=\"getmore\",service=~\"$instance\"}[5m])",
           "legendFormat": "GetMore",
           "range": true,
           "refId": "E"
@@ -383,7 +383,7 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "rate(mongodb_ss_opcounters{legacy_op_type=\"command\"}[5m])",
+          "expr": "rate(mongodb_ss_opcounters{legacy_op_type=\"command\",service=~\"$instance\"}[5m])",
           "legendFormat": "Command",
           "range": true,
           "refId": "F"
@@ -478,7 +478,7 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "mongodb_ss_mem_resident * 1024 * 1024",
+          "expr": "mongodb_ss_mem_resident{service=~\"$instance\"} * 1024 * 1024",
           "legendFormat": "Resident",
           "range": true,
           "refId": "A"
@@ -489,7 +489,7 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "mongodb_ss_mem_virtual * 1024 * 1024",
+          "expr": "mongodb_ss_mem_virtual{service=~\"$instance\"} * 1024 * 1024",
           "legendFormat": "Virtual",
           "range": true,
           "refId": "B"
@@ -584,7 +584,7 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "mongodb_ss_wt_cache_bytes_currently_in_the_cache",
+          "expr": "mongodb_ss_wt_cache_bytes_currently_in_the_cache{service=~\"$instance\"}",
           "legendFormat": "In Cache",
           "range": true,
           "refId": "A"
@@ -595,7 +595,7 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "mongodb_ss_wt_cache_maximum_bytes_configured",
+          "expr": "mongodb_ss_wt_cache_maximum_bytes_configured{service=~\"$instance\"}",
           "legendFormat": "Max Configured",
           "range": true,
           "refId": "B"
@@ -690,7 +690,7 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "rate(mongodb_ss_network_bytesIn[5m])",
+          "expr": "rate(mongodb_ss_network_bytesIn{service=~\"$instance\"}[5m])",
           "legendFormat": "Bytes In",
           "range": true,
           "refId": "A"
@@ -701,7 +701,7 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "rate(mongodb_ss_network_bytesOut[5m])",
+          "expr": "rate(mongodb_ss_network_bytesOut{service=~\"$instance\"}[5m])",
           "legendFormat": "Bytes Out",
           "range": true,
           "refId": "B"
@@ -817,7 +817,7 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "rate(mongodb_collstats_latencyStats_commands_latency[5m]) / rate(mongodb_collstats_latencyStats_commands_ops[5m])",
+          "expr": "rate(mongodb_collstats_latencyStats_commands_latency{service=~\"$instance\"}[5m]) / rate(mongodb_collstats_latencyStats_commands_ops{service=~\"$instance\"}[5m])",
           "legendFormat": "{{database}}.{{collection}}",
           "range": true,
           "refId": "A"
@@ -912,7 +912,7 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "rate(mongodb_collstats_latencyStats_commands_ops[5m])",
+          "expr": "rate(mongodb_collstats_latencyStats_commands_ops{service=~\"$instance\"}[5m])",
           "legendFormat": "{{database}}.{{collection}}",
           "range": true,
           "refId": "A"
@@ -1007,7 +1007,7 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "topk(10, rate(mongodb_top_commands_count[5m]))",
+          "expr": "topk(10, rate(mongodb_top_commands_count{service=~\"$instance\"}[5m]))",
           "legendFormat": "{{database}}.{{collection}} ({{type}})",
           "range": true,
           "refId": "A"
@@ -1102,7 +1102,7 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "topk(10, rate(mongodb_top_commands_time[5m]))",
+          "expr": "topk(10, rate(mongodb_top_commands_time{service=~\"$instance\"}[5m]))",
           "legendFormat": "{{database}}.{{collection}} ({{type}})",
           "range": true,
           "refId": "A"
@@ -1174,7 +1174,7 @@
                 "uid": "PBFA97CFB590B2093"
               },
               "editorMode": "code",
-              "expr": "mongodb_ss_uptime",
+              "expr": "mongodb_ss_uptime{service=~\"$instance\"}",
               "legendFormat": "Uptime",
               "range": true,
               "refId": "A"
@@ -1236,7 +1236,7 @@
                 "uid": "PBFA97CFB590B2093"
               },
               "editorMode": "code",
-              "expr": "mongodb_ss_featureCompatibilityVersion_major + mongodb_ss_featureCompatibilityVersion_minor / 10",
+              "expr": "mongodb_ss_featureCompatibilityVersion_major{service=~\"$instance\"} + mongodb_ss_featureCompatibilityVersion_minor{service=~\"$instance\"} / 10",
               "legendFormat": "FCV",
               "range": true,
               "refId": "A"
@@ -1339,7 +1339,7 @@
                 "uid": "PBFA97CFB590B2093"
               },
               "editorMode": "code",
-              "expr": "rate(mongodb_ss_asserts[5m])",
+              "expr": "rate(mongodb_ss_asserts{service=~\"$instance\"}[5m])",
               "legendFormat": "{{assert_type}}",
               "range": true,
               "refId": "A"
@@ -1421,7 +1421,7 @@
                 "uid": "PBFA97CFB590B2093"
               },
               "editorMode": "code",
-              "expr": "mongodb_currentop_fsync_lock_state",
+              "expr": "mongodb_currentop_fsync_lock_state{service=~\"$instance\"}",
               "legendFormat": "Fsync Lock",
               "range": true,
               "refId": "A"
@@ -1530,7 +1530,7 @@
                 "uid": "PBFA97CFB590B2093"
               },
               "editorMode": "code",
-              "expr": "mongodb_ss_connections{conn_type=\"current\"}",
+              "expr": "mongodb_ss_connections{conn_type=\"current\",service=~\"$instance\"}",
               "legendFormat": "Current",
               "range": true,
               "refId": "A"
@@ -1541,7 +1541,7 @@
                 "uid": "PBFA97CFB590B2093"
               },
               "editorMode": "code",
-              "expr": "mongodb_ss_connections{conn_type=\"active\"}",
+              "expr": "mongodb_ss_connections{conn_type=\"active\",service=~\"$instance\"}",
               "legendFormat": "Active",
               "range": true,
               "refId": "B"
@@ -1552,7 +1552,7 @@
                 "uid": "PBFA97CFB590B2093"
               },
               "editorMode": "code",
-              "expr": "mongodb_ss_connections{conn_type=\"available\"}",
+              "expr": "mongodb_ss_connections{conn_type=\"available\",service=~\"$instance\"}",
               "legendFormat": "Available",
               "range": true,
               "refId": "C"
@@ -1622,7 +1622,7 @@
                 "uid": "PBFA97CFB590B2093"
               },
               "editorMode": "code",
-              "expr": "increase(mongodb_ss_connections_establishmentRateLimit_rejected[5m])",
+              "expr": "increase(mongodb_ss_connections_establishmentRateLimit_rejected{service=~\"$instance\"}[5m])",
               "legendFormat": "Rejected",
               "range": true,
               "refId": "A"
@@ -1731,7 +1731,7 @@
                 "uid": "PBFA97CFB590B2093"
               },
               "editorMode": "code",
-              "expr": "rate(mongodb_ss_metrics_document{doc_op_type=\"deleted\"}[5m])",
+              "expr": "rate(mongodb_ss_metrics_document{doc_op_type=\"deleted\",service=~\"$instance\"}[5m])",
               "legendFormat": "Deleted",
               "range": true,
               "refId": "A"
@@ -1742,7 +1742,7 @@
                 "uid": "PBFA97CFB590B2093"
               },
               "editorMode": "code",
-              "expr": "rate(mongodb_ss_metrics_document{doc_op_type=\"inserted\"}[5m])",
+              "expr": "rate(mongodb_ss_metrics_document{doc_op_type=\"inserted\",service=~\"$instance\"}[5m])",
               "legendFormat": "Inserted",
               "range": true,
               "refId": "B"
@@ -1753,7 +1753,7 @@
                 "uid": "PBFA97CFB590B2093"
               },
               "editorMode": "code",
-              "expr": "rate(mongodb_ss_metrics_document{doc_op_type=\"returned\"}[5m])",
+              "expr": "rate(mongodb_ss_metrics_document{doc_op_type=\"returned\",service=~\"$instance\"}[5m])",
               "legendFormat": "Returned",
               "range": true,
               "refId": "C"
@@ -1764,7 +1764,7 @@
                 "uid": "PBFA97CFB590B2093"
               },
               "editorMode": "code",
-              "expr": "rate(mongodb_ss_metrics_document{doc_op_type=\"updated\"}[5m])",
+              "expr": "rate(mongodb_ss_metrics_document{doc_op_type=\"updated\",service=~\"$instance\"}[5m])",
               "legendFormat": "Updated",
               "range": true,
               "refId": "D"
@@ -1859,7 +1859,7 @@
                 "uid": "PBFA97CFB590B2093"
               },
               "editorMode": "code",
-              "expr": "rate(mongodb_ss_metrics_queryExecutor_scanned[5m])",
+              "expr": "rate(mongodb_ss_metrics_queryExecutor_scanned{service=~\"$instance\"}[5m])",
               "legendFormat": "Scanned",
               "range": true,
               "refId": "A"
@@ -1870,7 +1870,7 @@
                 "uid": "PBFA97CFB590B2093"
               },
               "editorMode": "code",
-              "expr": "rate(mongodb_ss_metrics_queryExecutor_scannedObjects[5m])",
+              "expr": "rate(mongodb_ss_metrics_queryExecutor_scannedObjects{service=~\"$instance\"}[5m])",
               "legendFormat": "Scanned Objects",
               "range": true,
               "refId": "B"
@@ -1987,7 +1987,7 @@
                 "uid": "PBFA97CFB590B2093"
               },
               "editorMode": "code",
-              "expr": "mongodb_ss_globalLock_currentQueue{count_type=\"readers\"}",
+              "expr": "mongodb_ss_globalLock_currentQueue{count_type=\"readers\",service=~\"$instance\"}",
               "legendFormat": "Readers",
               "range": true,
               "refId": "A"
@@ -1998,7 +1998,7 @@
                 "uid": "PBFA97CFB590B2093"
               },
               "editorMode": "code",
-              "expr": "mongodb_ss_globalLock_currentQueue{count_type=\"writers\"}",
+              "expr": "mongodb_ss_globalLock_currentQueue{count_type=\"writers\",service=~\"$instance\"}",
               "legendFormat": "Writers",
               "range": true,
               "refId": "B"
@@ -2009,7 +2009,7 @@
                 "uid": "PBFA97CFB590B2093"
               },
               "editorMode": "code",
-              "expr": "mongodb_ss_globalLock_currentQueue{count_type=\"total\"}",
+              "expr": "mongodb_ss_globalLock_currentQueue{count_type=\"total\",service=~\"$instance\"}",
               "legendFormat": "Total",
               "range": true,
               "refId": "C"
@@ -2104,7 +2104,7 @@
                 "uid": "PBFA97CFB590B2093"
               },
               "editorMode": "code",
-              "expr": "mongodb_ss_globalLock_activeClients_readers",
+              "expr": "mongodb_ss_globalLock_activeClients_readers{service=~\"$instance\"}",
               "legendFormat": "Readers",
               "range": true,
               "refId": "A"
@@ -2115,7 +2115,7 @@
                 "uid": "PBFA97CFB590B2093"
               },
               "editorMode": "code",
-              "expr": "mongodb_ss_globalLock_activeClients_writers",
+              "expr": "mongodb_ss_globalLock_activeClients_writers{service=~\"$instance\"}",
               "legendFormat": "Writers",
               "range": true,
               "refId": "B"
@@ -2126,7 +2126,7 @@
                 "uid": "PBFA97CFB590B2093"
               },
               "editorMode": "code",
-              "expr": "mongodb_ss_globalLock_activeClients_total",
+              "expr": "mongodb_ss_globalLock_activeClients_total{service=~\"$instance\"}",
               "legendFormat": "Total",
               "range": true,
               "refId": "C"
@@ -2221,7 +2221,7 @@
                 "uid": "PBFA97CFB590B2093"
               },
               "editorMode": "code",
-              "expr": "topk(5, rate(mongodb_ss_locks_acquireCount[5m]))",
+              "expr": "topk(5, rate(mongodb_ss_locks_acquireCount{service=~\"$instance\"}[5m]))",
               "legendFormat": "{{resource}} ({{lock_mode}})",
               "range": true,
               "refId": "A"
@@ -2306,7 +2306,7 @@
                 "uid": "PBFA97CFB590B2093"
               },
               "editorMode": "code",
-              "expr": "mongodb_ss_wt_cache_bytes_currently_in_the_cache / mongodb_ss_wt_cache_maximum_bytes_configured * 100",
+              "expr": "mongodb_ss_wt_cache_bytes_currently_in_the_cache{service=~\"$instance\"} / mongodb_ss_wt_cache_maximum_bytes_configured{service=~\"$instance\"} * 100",
               "legendFormat": "Cache Fill %",
               "range": true,
               "refId": "A"
@@ -2401,7 +2401,7 @@
                 "uid": "PBFA97CFB590B2093"
               },
               "editorMode": "code",
-              "expr": "rate(mongodb_ss_wt_cache_bytes_read_into_cache[5m])",
+              "expr": "rate(mongodb_ss_wt_cache_bytes_read_into_cache{service=~\"$instance\"}[5m])",
               "legendFormat": "Bytes Read",
               "range": true,
               "refId": "A"
@@ -2412,7 +2412,7 @@
                 "uid": "PBFA97CFB590B2093"
               },
               "editorMode": "code",
-              "expr": "rate(mongodb_ss_wt_cache_bytes_written_from_cache[5m])",
+              "expr": "rate(mongodb_ss_wt_cache_bytes_written_from_cache{service=~\"$instance\"}[5m])",
               "legendFormat": "Bytes Written",
               "range": true,
               "refId": "B"
@@ -2507,7 +2507,7 @@
                 "uid": "PBFA97CFB590B2093"
               },
               "editorMode": "code",
-              "expr": "mongodb_ss_wt_cache_tracked_dirty_bytes_in_the_cache",
+              "expr": "mongodb_ss_wt_cache_tracked_dirty_bytes_in_the_cache{service=~\"$instance\"}",
               "legendFormat": "Dirty Bytes",
               "range": true,
               "refId": "A"
@@ -2602,7 +2602,7 @@
                 "uid": "PBFA97CFB590B2093"
               },
               "editorMode": "code",
-              "expr": "rate(mongodb_ss_wt_cache_unmodified_pages_evicted[5m])",
+              "expr": "rate(mongodb_ss_wt_cache_unmodified_pages_evicted{service=~\"$instance\"}[5m])",
               "legendFormat": "Unmodified",
               "range": true,
               "refId": "A"
@@ -2613,7 +2613,7 @@
                 "uid": "PBFA97CFB590B2093"
               },
               "editorMode": "code",
-              "expr": "rate(mongodb_ss_wt_cache_modified_pages_evicted[5m])",
+              "expr": "rate(mongodb_ss_wt_cache_modified_pages_evicted{service=~\"$instance\"}[5m])",
               "legendFormat": "Modified",
               "range": true,
               "refId": "B"
@@ -2722,7 +2722,7 @@
                 "uid": "PBFA97CFB590B2093"
               },
               "editorMode": "code",
-              "expr": "rate(mongodb_ss_wt_block_manager_bytes_read[5m])",
+              "expr": "rate(mongodb_ss_wt_block_manager_bytes_read{service=~\"$instance\"}[5m])",
               "legendFormat": "Bytes Read",
               "range": true,
               "refId": "A"
@@ -2733,7 +2733,7 @@
                 "uid": "PBFA97CFB590B2093"
               },
               "editorMode": "code",
-              "expr": "rate(mongodb_ss_wt_block_manager_bytes_written[5m])",
+              "expr": "rate(mongodb_ss_wt_block_manager_bytes_written{service=~\"$instance\"}[5m])",
               "legendFormat": "Bytes Written",
               "range": true,
               "refId": "B"
@@ -2828,7 +2828,7 @@
                 "uid": "PBFA97CFB590B2093"
               },
               "editorMode": "code",
-              "expr": "mongodb_ss_wt_checkpoint_most_recent_time_msecs",
+              "expr": "mongodb_ss_wt_checkpoint_most_recent_time_msecs{service=~\"$instance\"}",
               "legendFormat": "Checkpoint Time",
               "range": true,
               "refId": "A"
@@ -2937,7 +2937,7 @@
                 "uid": "PBFA97CFB590B2093"
               },
               "editorMode": "code",
-              "expr": "rate(mongodb_ss_wt_txn_transactions_committed[5m])",
+              "expr": "rate(mongodb_ss_wt_txn_transactions_committed{service=~\"$instance\"}[5m])",
               "legendFormat": "Committed",
               "range": true,
               "refId": "A"
@@ -2948,7 +2948,7 @@
                 "uid": "PBFA97CFB590B2093"
               },
               "editorMode": "code",
-              "expr": "rate(mongodb_ss_wt_txn_transactions_rolled_back[5m])",
+              "expr": "rate(mongodb_ss_wt_txn_transactions_rolled_back{service=~\"$instance\"}[5m])",
               "legendFormat": "Rolled Back",
               "range": true,
               "refId": "B"
@@ -3043,7 +3043,7 @@
                 "uid": "PBFA97CFB590B2093"
               },
               "editorMode": "code",
-              "expr": "mongodb_ss_metrics_cursor_open{csr_type=\"total\"}",
+              "expr": "mongodb_ss_metrics_cursor_open{csr_type=\"total\",service=~\"$instance\"}",
               "legendFormat": "Total",
               "range": true,
               "refId": "A"
@@ -3054,7 +3054,7 @@
                 "uid": "PBFA97CFB590B2093"
               },
               "editorMode": "code",
-              "expr": "mongodb_ss_metrics_cursor_open{csr_type=\"noTimeout\"}",
+              "expr": "mongodb_ss_metrics_cursor_open{csr_type=\"noTimeout\",service=~\"$instance\"}",
               "legendFormat": "No Timeout",
               "range": true,
               "refId": "B"
@@ -3065,7 +3065,7 @@
                 "uid": "PBFA97CFB590B2093"
               },
               "editorMode": "code",
-              "expr": "mongodb_ss_metrics_cursor_open{csr_type=\"pinned\"}",
+              "expr": "mongodb_ss_metrics_cursor_open{csr_type=\"pinned\",service=~\"$instance\"}",
               "legendFormat": "Pinned",
               "range": true,
               "refId": "C"
@@ -3182,7 +3182,7 @@
                 "uid": "PBFA97CFB590B2093"
               },
               "editorMode": "code",
-              "expr": "rate(mongodb_collstats_latencyStats_reads_latency[5m]) / rate(mongodb_collstats_latencyStats_reads_ops[5m])",
+              "expr": "rate(mongodb_collstats_latencyStats_reads_latency{service=~\"$instance\"}[5m]) / rate(mongodb_collstats_latencyStats_reads_ops{service=~\"$instance\"}[5m])",
               "legendFormat": "{{database}}.{{collection}}",
               "range": true,
               "refId": "A"
@@ -3285,7 +3285,7 @@
                 "uid": "PBFA97CFB590B2093"
               },
               "editorMode": "code",
-              "expr": "rate(mongodb_collstats_latencyStats_writes_latency[5m]) / rate(mongodb_collstats_latencyStats_writes_ops[5m])",
+              "expr": "rate(mongodb_collstats_latencyStats_writes_latency{service=~\"$instance\"}[5m]) / rate(mongodb_collstats_latencyStats_writes_ops{service=~\"$instance\"}[5m])",
               "legendFormat": "{{database}}.{{collection}}",
               "range": true,
               "refId": "A"
@@ -3364,7 +3364,7 @@
                 "uid": "PBFA97CFB590B2093"
               },
               "editorMode": "code",
-              "expr": "mongodb_dbstats_dataSize",
+              "expr": "mongodb_dbstats_dataSize{service=~\"$instance\"}",
               "legendFormat": "{{database}}",
               "range": true,
               "refId": "A"
@@ -3429,7 +3429,7 @@
                 "uid": "PBFA97CFB590B2093"
               },
               "editorMode": "code",
-              "expr": "mongodb_dbstats_storageSize",
+              "expr": "mongodb_dbstats_storageSize{service=~\"$instance\"}",
               "legendFormat": "{{database}}",
               "range": true,
               "refId": "A"
@@ -3494,7 +3494,7 @@
                 "uid": "PBFA97CFB590B2093"
               },
               "editorMode": "code",
-              "expr": "mongodb_dbstats_indexSize",
+              "expr": "mongodb_dbstats_indexSize{service=~\"$instance\"}",
               "legendFormat": "{{database}}",
               "range": true,
               "refId": "A"
@@ -3589,7 +3589,7 @@
                 "uid": "PBFA97CFB590B2093"
               },
               "editorMode": "code",
-              "expr": "mongodb_dbstats_fsTotalSize - mongodb_dbstats_fsUsedSize",
+              "expr": "mongodb_dbstats_fsTotalSize{service=~\"$instance\"} - mongodb_dbstats_fsUsedSize{service=~\"$instance\"}",
               "legendFormat": "{{database}}",
               "range": true,
               "refId": "A"
@@ -3674,7 +3674,7 @@
                 "uid": "PBFA97CFB590B2093"
               },
               "editorMode": "code",
-              "expr": "sum(mongodb_dbstats_fsUsedSize) / sum(mongodb_dbstats_fsTotalSize) * 100",
+              "expr": "sum(mongodb_dbstats_fsUsedSize{service=~\"$instance\"}) / sum(mongodb_dbstats_fsTotalSize{service=~\"$instance\"}) * 100",
               "legendFormat": "FS Usage %",
               "range": true,
               "refId": "A"
@@ -3769,7 +3769,7 @@
                 "uid": "PBFA97CFB590B2093"
               },
               "editorMode": "code",
-              "expr": "rate(mongodb_ss_extra_info_page_faults[5m])",
+              "expr": "rate(mongodb_ss_extra_info_page_faults{service=~\"$instance\"}[5m])",
               "legendFormat": "Page Faults",
               "range": true,
               "refId": "A"
@@ -3864,7 +3864,7 @@
                 "uid": "PBFA97CFB590B2093"
               },
               "editorMode": "code",
-              "expr": "rate(mongodb_ss_extra_info_involuntary_context_switches[5m])",
+              "expr": "rate(mongodb_ss_extra_info_involuntary_context_switches{service=~\"$instance\"}[5m])",
               "legendFormat": "Involuntary",
               "range": true,
               "refId": "A"
@@ -3875,7 +3875,7 @@
                 "uid": "PBFA97CFB590B2093"
               },
               "editorMode": "code",
-              "expr": "rate(mongodb_ss_extra_info_voluntary_context_switches[5m])",
+              "expr": "rate(mongodb_ss_extra_info_voluntary_context_switches{service=~\"$instance\"}[5m])",
               "legendFormat": "Voluntary",
               "range": true,
               "refId": "B"
@@ -3984,7 +3984,7 @@
                 "uid": "PBFA97CFB590B2093"
               },
               "editorMode": "code",
-              "expr": "topk(10, rate(mongodb_indexstats_accesses_ops[5m]))",
+              "expr": "topk(10, rate(mongodb_indexstats_accesses_ops{service=~\"$instance\"}[5m]))",
               "legendFormat": "{{database}}.{{collection}} [{{key_name}}]",
               "range": true,
               "refId": "A"
@@ -4093,7 +4093,7 @@
                 "uid": "PBFA97CFB590B2093"
               },
               "editorMode": "code",
-              "expr": "topk(10, rate(mongodb_ss_metrics_commands[5m]))",
+              "expr": "topk(10, rate(mongodb_ss_metrics_commands{service=~\"$instance\"}[5m]))",
               "legendFormat": "{{cmd_name}}",
               "range": true,
               "refId": "A"
@@ -4196,7 +4196,7 @@
                 "uid": "PBFA97CFB590B2093"
               },
               "editorMode": "code",
-              "expr": "rate(mongodb_ss_opcountersRepl{legacy_op_type=~\".*\"}[5m])",
+              "expr": "rate(mongodb_ss_opcountersRepl{legacy_op_type=~\".*\",service=~\"$instance\"}[5m])",
               "legendFormat": "{{legacy_op_type}}",
               "range": true,
               "refId": "A"
@@ -4214,7 +4214,35 @@
   "schemaVersion": 39,
   "tags": [],
   "templating": {
-    "list": []
+    "list": [
+      {
+        "current": {
+          "selected": true,
+          "text": ["All"],
+          "value": ["$__all"]
+        },
+        "datasource": {
+          "type": "prometheus",
+          "uid": "PBFA97CFB590B2093"
+        },
+        "definition": "label_values(mongodb_up, service)",
+        "hide": 0,
+        "includeAll": true,
+        "label": "Instance",
+        "multi": true,
+        "name": "instance",
+        "options": [],
+        "query": {
+          "query": "label_values(mongodb_up, service)",
+          "refId": "StandardVariableQuery"
+        },
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 1,
+        "type": "query"
+      }
+    ]
   },
   "time": {
     "from": "now-15m",
