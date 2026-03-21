@@ -3608,6 +3608,28 @@ The complete source code for Traefik is publicly available at [https://github.co
 | tzdata | 2025b-r0 |  | apk-db-cataloger |
 | zlib | 1.3.1-r2 | Zlib | apk-db-cataloger |
 
+### registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/redis-exporter
+
+| Package | Version | License | Found by |
+| ------- | --------| ------- | -------- |
+| github.com/beorn7/perks | v1.0.1 |  | go-module-binary-cataloger |
+| github.com/cespare/xxhash/v2 | v2.3.0 |  | go-module-binary-cataloger |
+| github.com/gomodule/redigo | v1.9.3 |  | go-module-binary-cataloger |
+| github.com/klauspost/compress | v1.18.0 |  | go-module-binary-cataloger |
+| github.com/mna/redisc | v1.4.0 |  | go-module-binary-cataloger |
+| github.com/munnerz/goautoneg | v0.0.0-20191010083416-a7dc8b61c822 |  | go-module-binary-cataloger |
+| github.com/oliver006/redis_exporter | v1.82.0 |  | go-module-binary-cataloger |
+| github.com/prometheus/client_golang | v1.23.2 |  | go-module-binary-cataloger |
+| github.com/prometheus/client_model | v0.6.2 |  | go-module-binary-cataloger |
+| github.com/prometheus/common | v0.66.1 |  | go-module-binary-cataloger |
+| github.com/prometheus/procfs | v0.16.1 |  | go-module-binary-cataloger |
+| github.com/sirupsen/logrus | v1.9.4 |  | go-module-binary-cataloger |
+| go.yaml.in/yaml/v2 | v2.4.2 |  | go-module-binary-cataloger |
+| golang.org/x/crypto | v0.48.0 |  | go-module-binary-cataloger |
+| golang.org/x/sys | v0.41.0 |  | go-module-binary-cataloger |
+| google.golang.org/protobuf | v1.36.8 |  | go-module-binary-cataloger |
+| stdlib | go1.26.1 | BSD-3-Clause | go-module-binary-cataloger |
+
 ### registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/tika
 
 | Package | Version | License | Found by |

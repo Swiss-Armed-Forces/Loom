@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import argparse
 import logging
 import os
 import re
@@ -56,6 +57,7 @@ def build_prompt(
     current_title: str = "",
     current_description: str = "",
     include_diff: str | None = None,
+    user_instructions: str = "",
 ) -> str:
     """Build the prompt for commit message generation.
 
@@ -65,6 +67,7 @@ def build_prompt(
         current_description: The current MR description (as a hint for the AI).
         include_diff: If provided, append the diff to the prompt (for Claude CLI).
                       If None, diff should be passed separately (for GitLab Duo).
+        user_instructions: Additional user instructions to append to the prompt.
     """
     template_instruction = ""
     if mr_template:
@@ -102,6 +105,9 @@ Rules:
   "Related to #456", links to issues/MRs, or other cross-references)
 {current_mr_hint}"""
 
+    if user_instructions:
+        prompt += f"\nAdditional user instructions:\n{user_instructions}\n"
+
     if include_diff:
         prompt += f"\nDiff:\n{include_diff}\n"
 
@@ -113,13 +119,16 @@ def generate_commit_message_via_duo(
     mr_template: str,
     current_title: str = "",
     current_description: str = "",
+    user_instructions: str = "",
 ) -> str | None:
     """Generate a commit message using GitLab Duo Chat API."""
     if not GITLAB_TOKEN:
         logger.warning("No GitLab token available for Duo API")
         return None
 
-    prompt = build_prompt(mr_template, current_title, current_description)
+    prompt = build_prompt(
+        mr_template, current_title, current_description, user_instructions=user_instructions
+    )
 
     url = f"https://{CI_SERVER_HOST}/api/v4/chat/completions"
     headers = {
@@ -160,6 +169,7 @@ def generate_commit_message_via_claude(
     repo: Repo,
     current_title: str = "",
     current_description: str = "",
+    user_instructions: str = "",
 ) -> str | None:
     """Generate a commit message using the Claude Code CLI."""
     if not repo.working_dir:
@@ -167,7 +177,11 @@ def generate_commit_message_via_claude(
         return None
 
     prompt = build_prompt(
-        mr_template, current_title, current_description, include_diff=diff
+        mr_template,
+        current_title,
+        current_description,
+        include_diff=diff,
+        user_instructions=user_instructions,
     )
 
     try:
@@ -267,6 +281,20 @@ def update_mr(mr: ProjectMergeRequest, title: str, description: str) -> None:
 
 
 def main() -> None:
+    parser = argparse.ArgumentParser(
+        description="Update MR title and description using AI-generated content."
+    )
+    parser.add_argument(
+        "instructions",
+        nargs="*",
+        help="Additional instructions to append to the AI prompt",
+    )
+    args = parser.parse_args()
+    user_instructions = " ".join(args.instructions) if args.instructions else ""
+
+    if user_instructions:
+        logger.info("User instructions: %s", user_instructions)
+
     repo = Repo(os.getcwd())
     branch = repo.active_branch.name
     logger.info("Current branch: %s", branch)
@@ -299,7 +327,7 @@ def main() -> None:
 
     # Try GitLab Duo first, fall back to Claude CLI
     message = generate_commit_message_via_duo(
-        diff, mr_template, current_title, current_description
+        diff, mr_template, current_title, current_description, user_instructions
     )
     if not message:
         logger.info("GitLab Duo unavailable, trying Claude CLI fallback...")
@@ -307,7 +335,7 @@ def main() -> None:
             logger.error("Claude CLI not installed and GitLab Duo unavailable.")
             sys.exit(1)
         message = generate_commit_message_via_claude(
-            diff, mr_template, repo, current_title, current_description
+            diff, mr_template, repo, current_title, current_description, user_instructions
         )
         if not message:
             logger.error("Failed to generate commit message via both methods.")

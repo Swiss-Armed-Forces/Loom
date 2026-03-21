@@ -13,6 +13,13 @@ spec:
     - port: {{ $values.service.port }}
       name: {{ $component }}
       targetPort: {{ $values.service.port }}
+    {{- if $values.exporter }}
+    {{- if $values.exporter.enabled }}
+    - port: {{ $values.exporter.port }}
+      name: metrics
+      targetPort: {{ $values.exporter.port }}
+    {{- end }}
+    {{- end }}
   selector:
     app: {{ include "app.name" . }}-{{ $component }}
 {{- end -}}

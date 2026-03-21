@@ -83,6 +83,34 @@ spec:
           {{- if $values.resources }}
           resources: {{- toYaml $values.resources | nindent 12 }}
           {{- end }}
+        {{- if $values.exporter }}
+        {{- if $values.exporter.enabled }}
+        - name: redis-exporter
+          image: {{ .Values.image.registry }}/{{ $values.exporter.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) $values.exporter.image.tag }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          env:
+            - name: REDIS_ADDR
+              value: "redis://localhost:{{ $values.service.port }}"
+          ports:
+            - name: metrics
+              containerPort: {{ $values.exporter.port }}
+              protocol: TCP
+          resources:
+            {{- toYaml $values.exporter.resources | nindent 12 }}
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: metrics
+            initialDelaySeconds: 10
+            periodSeconds: 15
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: metrics
+            initialDelaySeconds: 5
+            periodSeconds: 10
+        {{- end }}
+        {{- end }}
       volumes:
         - name: redis-config
           configMap:
