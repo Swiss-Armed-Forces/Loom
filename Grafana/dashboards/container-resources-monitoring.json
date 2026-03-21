@@ -136,7 +136,7 @@
           "editorMode": "code",
           "expr": "rate(container_cpu_usage_seconds_total{container=~\"$container\",pod=~\"$pod\"}[5m])",
           "instant": false,
-          "legendFormat": "CPU Current usage",
+          "legendFormat": "{{pod}}",
           "range": true,
           "refId": "A"
         }
