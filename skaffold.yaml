@@ -116,6 +116,17 @@ build:
       hooks:
         after:
           - command: ["./cicd/tag_latest.sh"]
+    - image: registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/redis-exporter
+      context: Redis/redis-exporter
+      docker:
+        dockerfile: Dockerfile
+        buildArgs:
+          DOCKER_REGISTRY: "{{or .CI_DEPENDENCY_PROXY_DIRECT_GROUP_IMAGE_PREFIX \"docker.io\"}}"
+        cacheFrom:
+          - "registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/redis-exporter"
+      hooks:
+        after:
+          - command: ["./cicd/tag_latest.sh"]
     - image: registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/tika
       context: tika-server
       docker:
@@ -371,7 +382,7 @@ profiles:
               dest: /code
       # Patch open-webui artifact for nodejs runtime
       - op: add
-        path: /build/artifacts/16/runtimeType
+        path: /build/artifacts/17/runtimeType
         value: nodejs
       # Patch manifests for development
       - op: replace

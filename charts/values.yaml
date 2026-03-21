@@ -1192,6 +1192,18 @@ redis: &redis
       limits:
         cpu: "0.1"
         memory: "100Mi"
+  exporter:
+    enabled: true
+    image:
+      repository: swiss-armed-forces/cyber-command/cea/loom/redis-exporter
+    port: 9121
+    resources:
+      requests:
+        cpu: "0.05"
+        memory: "50Mi"
+      limits:
+        cpu: "0.2"
+        memory: "100Mi"
   # Custom labels specific to redis resources
   customLabels: {}
   # Example:
@@ -1226,7 +1238,7 @@ rspamd:
       port: 11333
   resources:
     requests:
-      cpu: "0.2"
+      cpu: "0.1"
       memory: "200Mi"
     limits:
       cpu: "1"

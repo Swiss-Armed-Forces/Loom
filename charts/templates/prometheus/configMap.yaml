@@ -36,6 +36,7 @@ data:
           - source_labels: [__meta_kubernetes_pod_name]
             action: replace
             target_label: pod
+{{- if .Values.translate.enabled }}
       - job_name: 'translate'
         scrape_interval: 15s
         metrics_path: /metrics
@@ -53,7 +54,8 @@ data:
           - source_labels: [__meta_kubernetes_pod_name]
             action: replace
             target_label: pod
-      {{- if .Values.mongodb.exporter.enabled }}
+{{- end }}
+{{- if .Values.mongodb.exporter.enabled }}
       - job_name: 'mongodb'
         scrape_interval: 15s
         metrics_path: /metrics
@@ -79,7 +81,34 @@ data:
           - source_labels: [__meta_kubernetes_service_name]
             action: replace
             target_label: service
-      {{- end }}
+{{- end }}
+{{- if .Values.redis.exporter.enabled }}
+      - job_name: 'redis'
+        scrape_interval: 15s
+        metrics_path: /metrics
+        kubernetes_sd_configs:
+          - role: endpoints
+            namespaces:
+              names:
+                - {{ .Release.Namespace }}
+        relabel_configs:
+          # Only keep endpoints from redis services (redis and redis-cache)
+          - source_labels: [__meta_kubernetes_service_name]
+            action: keep
+            regex: {{ include "app.fullname" . }}-redis(-cache)?
+          # Only keep the metrics port (not the redis port itself)
+          - source_labels: [__meta_kubernetes_endpoint_port_name]
+            action: keep
+            regex: metrics
+          # Add pod name as a label for per-instance metrics
+          - source_labels: [__meta_kubernetes_pod_name]
+            action: replace
+            target_label: pod
+          # Add service name to distinguish redis vs redis-cache
+          - source_labels: [__meta_kubernetes_service_name]
+            action: replace
+            target_label: service
+{{- end }}
 {{- if .Values.prometheus.collectClusterMetrics }}
       - job_name: 'cadvisor'
         scrape_interval: 5s
