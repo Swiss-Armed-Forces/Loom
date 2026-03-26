@@ -660,13 +660,13 @@ The complete source code for Traefik is publicly available at [https://github.co
 | @emotion/styled                     | MIT          | 11.14.1           |
 | @mui/icons-material                 | MIT          | 7.3.9             |
 | @mui/material                       | MIT          | 7.3.9             |
-| @mui/x-charts                       | MIT          | 8.27.5            |
+| @mui/x-charts                       | MIT          | 8.28.0            |
 | @mui/x-tree-view                    | MIT          | 8.27.2            |
 | @reduxjs/toolkit                    | MIT          | 2.11.2            |
 | ace-builds                          | BSD-3-Clause | 1.43.6            |
 | ajv                                 | MIT          | 8.18.0            |
 | date-fns                            | MIT          | 4.1.0             |
-| i18next                             | MIT          | 25.8.18           |
+| i18next                             | MIT          | 25.10.9           |
 | i18next-http-backend                | MIT          | 3.0.2             |
 | react                               | MIT          | 19.2.4            |
 | react-ace                           | MIT          | 14.0.1            |
@@ -681,7 +681,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | uuid                                | MIT          | 12.0.0            |
 | @eslint/js                          | MIT          | 9.39.4            |
 | @mui/types                          | MIT          | 7.4.12            |
-| @openapitools/openapi-generator-cli | Apache-2.0   | 2.30.2            |
+| @openapitools/openapi-generator-cli | Apache-2.0   | 2.31.0            |
 | @testing-library/jest-dom           | MIT          | 6.9.1             |
 | @testing-library/react              | MIT          | 16.3.2            |
 | @types/node                         | MIT          | 24.12.0           |
@@ -704,7 +704,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | typescript                          | Apache-2.0   | 5.9.3             |
 | typescript-eslint                   | MIT          | 8.57.0            |
 | vite                                | MIT          | 7.3.1             |
-| vite-plugin-static-copy             | MIT          | 3.3.0             |
+| vite-plugin-static-copy             | MIT          | 3.4.0             |
 | vite-plugin-svgr                    | MIT          | 4.5.0             |
 | vitest                              | MIT          | 4.1.0             |
 
