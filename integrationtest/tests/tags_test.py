@@ -68,7 +68,7 @@ def test_add_tag():
 
     _add_tag(str(file.file_id), tag)
 
-    file = get_file_preview_by_name("basic_email.eml")
+    file = get_file_preview_by_name("basic_email.eml", wait_for_celery_idle=True)
     assert file.tags == [tag]
 
 
