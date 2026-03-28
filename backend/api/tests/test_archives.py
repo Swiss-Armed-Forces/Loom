@@ -5,20 +5,22 @@ from common.dependencies import (
     get_archive_scheduling_service,
     get_file_storage_service,
 )
+from common.services.lazybytes_service import LazyBytes
 from common.services.query_builder import QueryParameters
+from fastapi.testclient import TestClient
 
 from api.models.archives_model import ArchivesModel
 from api.routers.archives import ArchiveCreatedResponse, ArchiveRequest
 
 
-def test_create_archive_with_empty_query_fails(client):
+def test_create_archive_with_empty_query_fails(client: TestClient):
     # query is required -> bad request
     response = client.post("/v1/archive/", json={})
     assert response.status_code == 422
 
 
 def test_create_archive(
-    client,
+    client: TestClient,
 ):
     query = QueryParameters(query_id="0123456789", search_string="*")
     archive_request = ArchiveRequest(query=query)
@@ -33,7 +35,7 @@ def test_create_archive(
     assert archive_create_response.archive_id == archive.id_
 
 
-def test_archive_get_all(client):
+def test_archive_get_all(client: TestClient):
     query = QueryParameters(query_id="0123456789", search_string="*")
 
     archive1 = Archive(query=query)
@@ -51,19 +53,19 @@ def test_archive_get_all(client):
     assert archives.hits[1].file_id == archive2.id_
 
 
-def test_download_archive(client):
+def test_download_archive(client: TestClient):
     query = QueryParameters(query_id="0123456789", search_string="*")
     content = [b"file content", b"and", b"another", b"chunk"]
     content_encrypted = [b"encrypted file content", b"and", b"another", b"chunk"]
     archive = Archive(
         query=query,
         plain_file=StoredArchive(
-            storage_id=str(ObjectId()),
+            storage_data=LazyBytes(service_id=str(ObjectId())),
             sha256="",
             size=len(content),
         ),
         encrypted_file=StoredArchive(
-            storage_id=str(ObjectId()),
+            storage_data=LazyBytes(service_id=str(ObjectId())),
             sha256="",
             size=len(content_encrypted),
         ),
@@ -71,7 +73,7 @@ def test_download_archive(client):
     get_archive_repository().get_by_id.return_value = archive
 
     # Test encrypted:
-    get_file_storage_service().open_download_iterator.return_value = (
+    get_file_storage_service().load_generator.return_value = (
         content_chunk for content_chunk in content_encrypted
     )
     response = client.get(f"/v1/archive/{archive.id_}")
@@ -79,7 +81,7 @@ def test_download_archive(client):
     assert response.content == b"".join(content_encrypted)
 
     # Test not encrypted:
-    get_file_storage_service().open_download_iterator.return_value = (
+    get_file_storage_service().load_generator.return_value = (
         content_chunk for content_chunk in content
     )
     response = client.get(f"/v1/archive/{archive.id_}?encrypted=false")
@@ -87,19 +89,19 @@ def test_download_archive(client):
     assert response.content == b"".join(content)
 
 
-def test_hide_archive(client):
+def test_hide_archive(client: TestClient):
     query = QueryParameters(query_id="0123456789", search_string="*")
     content = [b"file content", b"and", b"another", b"chunk"]
     content_encrypted = [b"encrypted file content", b"and", b"another", b"chunk"]
     archive = Archive(
         query=query,
         plain_file=StoredArchive(
-            storage_id=str(ObjectId()),
+            storage_data=LazyBytes(service_id=str(ObjectId())),
             sha256="",
             size=len(content),
         ),
         encrypted_file=StoredArchive(
-            storage_id=str(ObjectId()),
+            storage_data=LazyBytes(service_id=str(ObjectId())),
             sha256="",
             size=len(content_encrypted),
         ),

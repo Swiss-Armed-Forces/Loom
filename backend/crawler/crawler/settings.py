@@ -14,7 +14,7 @@ class Settings(CommonSettings):
     """All settings for the crawler."""
 
     crawler_source_id: str = "crawler"
-    minio_default_bucket_name: str = "default"
+    minio_bucket_names: list[str] = ["default"]
 
     minio_host: str = f"minio-api.{DOMAIN}"
     minio_secret_key: str = Field(alias="MINIO_SECRET_KEY", default="minioadmin")

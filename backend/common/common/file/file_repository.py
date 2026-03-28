@@ -51,10 +51,10 @@ from common.models.es_repository import (
     PaginationParameters,
     SortingParameters,
 )
+from common.services.lazybytes_service import LazyBytes
 from common.services.query_builder import QueryParameters
 from common.settings import settings
 from common.task_object.task_object import RepositoryTaskObject, _EsTaskDocument
-from common.utils.object_id_str import ObjectIdStr
 from common.utils.unique_list import unique_list
 
 logger = logging.getLogger(__name__)
@@ -194,16 +194,21 @@ class _EsImapInfo(InnerDoc):
     folder_utf7 = Keyword()
 
 
+class _EsLazyBytes(InnerDoc):
+    embedded_data = Keyword()
+    service_id = Keyword()
+
+
 class RenderedFile(BaseModel):
-    image_file_id: ObjectIdStr | None = None
-    office_pdf_file_id: ObjectIdStr | None = None
-    browser_pdf_file_id: ObjectIdStr | None = None
+    image_data: LazyBytes | None = None
+    office_pdf_data: LazyBytes | None = None
+    browser_pdf_data: LazyBytes | None = None
 
 
 class _EsRenderedFile(InnerDoc):
-    image_file_id = Keyword()
-    office_pdf_file_id = Keyword()
-    browser_pdf_file_id = Keyword()
+    image_data = Object(_EsLazyBytes)
+    office_pdf_data = Object(_EsLazyBytes)
+    browser_pdf_data = Object(_EsLazyBytes)
 
 
 TAG_LEN_MIN = 1
@@ -334,7 +339,9 @@ class FilePurePath(PurePosixPath):
 
 
 class File(RepositoryTaskObject):
-    storage_id: ObjectIdStr
+    storage_data: LazyBytes | None = None
+    storage_id: str | None = None  # Legacy GridFS ObjectId (for migration)
+
     content: str | None = None
     content_truncated: bool = False
     full_name: FilePurePath
@@ -370,7 +377,7 @@ class File(RepositoryTaskObject):
     uploaded_datetime: datetime = Field(default_factory=datetime.now)
     size: int
     reindex_count: int = 0
-    thumbnail_file_id: ObjectIdStr | None = None
+    thumbnail_data: LazyBytes | None = None
     thumbnail_total_frames: int | None = None
     rendered_file: RenderedFile = RenderedFile()
     tags: list[Tag] = []
@@ -415,7 +422,8 @@ class File(RepositoryTaskObject):
 
 
 class _EsFile(_EsTaskDocument):
-    storage_id = Keyword()
+    storage_data = Object(_EsLazyBytes)
+    storage_id = Keyword()  # Legacy GridFS ObjectId (for migration)
     content = Text(
         term_vector="with_positions_offsets",
         fields={
@@ -444,7 +452,7 @@ class _EsFile(_EsTaskDocument):
     uploaded_datetime = Date()
     size = Long()
     reindex_count = Long()
-    thumbnail_file_id = Keyword()
+    thumbnail_data = Object(_EsLazyBytes)
     thumbnail_total_frames = Long()
     rendered_file = Object(_EsRenderedFile)
     tags = Keyword(multi=True)

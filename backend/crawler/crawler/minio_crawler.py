@@ -16,26 +16,15 @@ MINIO_READ_CHUNK_SIZE: int = 64 * 1024
 
 
 class MinioCrawler:
-    def __init__(self, minio_client: Minio):
+    def __init__(self, minio_client: Minio, buckets: list[str]):
         self.client = minio_client
-        self.bucket_crawlers: dict[Bucket, Thread] = {}
+        self.bucket_crawlers: dict[Bucket, Thread] = {
+            Bucket(bucket, None): Thread(target=None) for bucket in buckets
+        }
 
-    def _reap_dead_bucket_crawlers(self):
-        # Collect buckets to remove first
-        buckets_to_remove = []
+    def _recreate_crawlers(self):
         for bucket, crawler in self.bucket_crawlers.items():
             if not crawler.is_alive():
-                logger.info("Reaping crawler for bucket: %s", bucket)
-                buckets_to_remove.append(bucket)
-
-        # Then remove them
-        for bucket in buckets_to_remove:
-            del self.bucket_crawlers[bucket]
-
-    def _create_bucket_crawler_for_new_buckets(self):
-        for bucket in self.client.list_buckets():
-            if bucket not in self.bucket_crawlers:
-                logger.info("New bucket detected: %s", bucket)
                 self._create_bucket_crawler_thread(bucket)
 
     def _create_bucket_crawler_thread(self, bucket: Bucket):
@@ -45,8 +34,7 @@ class MinioCrawler:
 
     def crawl(self):
         while True:
-            self._reap_dead_bucket_crawlers()
-            self._create_bucket_crawler_for_new_buckets()
+            self._recreate_crawlers()
             time.sleep(MINIO_BUCKET_CHECK_INTERVAL_S)
 
 

@@ -13,7 +13,7 @@ from common.file.file_repository import (
     TikaMeta,
 )
 from common.models.base_repository import BaseRepository
-from common.utils.object_id_str import ObjectIdStr
+from common.services.lazybytes_service import LazyBytes
 
 from worker.utils.persister_base import PersisterBase
 
@@ -28,26 +28,24 @@ class IndexingPersister(PersisterBase[File]):
         repository = get_file_repository()
         return repository
 
-    def set_thumbnail_file_id(self, thumbnail_file_id: ObjectIdStr):
-        self._object.thumbnail_file_id = thumbnail_file_id
+    def set_thumbnail_data(self, thumbnail_data: LazyBytes):
+        self._object.thumbnail_data = thumbnail_data
 
     def set_thumbnail_total_frames(self, thumbnail_total_frames: int):
         self._object.thumbnail_total_frames = thumbnail_total_frames
 
-    def set_rendered_file_image_file_id(self, rendered_file_image_file_id: ObjectIdStr):
-        self._object.rendered_file.image_file_id = rendered_file_image_file_id
+    def set_rendered_file_image_data(self, rendered_file_image_data: LazyBytes):
+        self._object.rendered_file.image_data = rendered_file_image_data
 
-    def set_rendered_file_office_pdf_file_id(
-        self, rendered_file_office_pdf_file_id: ObjectIdStr
+    def set_rendered_file_office_pdf_data(
+        self, rendered_file_office_pdf_data: LazyBytes
     ):
-        self._object.rendered_file.office_pdf_file_id = rendered_file_office_pdf_file_id
+        self._object.rendered_file.office_pdf_data = rendered_file_office_pdf_data
 
-    def set_rendered_file_browser_pdf_file_id(
-        self, rendered_file_browser_pdf_file_id: ObjectIdStr
+    def set_rendered_file_browser_pdf_data(
+        self, rendered_file_browser_pdf_data: LazyBytes
     ):
-        self._object.rendered_file.browser_pdf_file_id = (
-            rendered_file_browser_pdf_file_id
-        )
+        self._object.rendered_file.browser_pdf_data = rendered_file_browser_pdf_data
 
     def set_state(self, state: str):
         self._object.state = state

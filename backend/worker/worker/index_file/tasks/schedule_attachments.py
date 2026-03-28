@@ -44,11 +44,9 @@ def schedule_attachment(
     tika_attachment: TikaAttachment, file: File
 ) -> Attachment | None:
     file_data_hash = sha256()
-    with get_lazybytes_service().load_generator(
-        tika_attachment.data
-    ) as file_chunk_generator:
-        for file_chunk in file_chunk_generator:
-            file_data_hash.update(file_chunk)
+    file_chunk_generator = get_lazybytes_service().load_generator(tika_attachment.data)
+    for file_chunk in file_chunk_generator:
+        file_data_hash.update(file_chunk)
 
     attachment_name = str(file.full_name / tika_attachment.name)
     if file.sha256 == file_data_hash.hexdigest():

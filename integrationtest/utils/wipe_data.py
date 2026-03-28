@@ -118,7 +118,7 @@ def _wipe_minio_buckets():
                 client.remove_object(
                     bucket.name, bucket_object.object_name, bucket_object.version_id
                 )
-        if bucket.name != crawler_settings.minio_default_bucket_name:
+        if bucket.name not in crawler_settings.minio_bucket_names:
             client.remove_bucket(bucket.name)
 
 

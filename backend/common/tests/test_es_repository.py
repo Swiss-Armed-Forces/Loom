@@ -36,6 +36,7 @@ from common.file.file_repository import (
     _EsEmbedding,
     _EsFile,
     _EsImapInfo,
+    _EsLazyBytes,
     _EsLibretranslateTranslatedLanguage,
     _EsLibreTranslateTranslations,
     _EsRenderedFile,
@@ -53,6 +54,7 @@ from common.models.es_repository import (
     _EsMeta,
     _EsRepositoryDocument,
 )
+from common.services.lazybytes_service import LazyBytes
 from common.services.query_builder import QueryBuilder, QueryParameters
 from common.settings import settings
 from mocks.test_value_defaults import TestValueDefaults
@@ -178,6 +180,7 @@ ES_REPOSITORY_TEST_INSTANCES: dict[type[BaseEsRepository], list[_TestInstances]]
                 tasks_retried=TestValueDefaults.test_uuid_list,
                 tasks_failed=TestValueDefaults.test_uuid_list,
                 # File
+                storage_data=LazyBytes(service_id=TestValueDefaults.test_object_id_str),
                 storage_id=TestValueDefaults.test_object_id_str,
                 content=TestValueDefaults.test_str,
                 content_truncated=TestValueDefaults.test_bool,
@@ -188,12 +191,20 @@ ES_REPOSITORY_TEST_INSTANCES: dict[type[BaseEsRepository], list[_TestInstances]]
                 uploaded_datetime=TestValueDefaults.test_datetime,
                 size=TestValueDefaults.test_long,
                 reindex_count=TestValueDefaults.test_long,
-                thumbnail_file_id=TestValueDefaults.test_object_id_str,
+                thumbnail_data=LazyBytes(
+                    service_id=TestValueDefaults.test_object_id_str
+                ),
                 thumbnail_total_frames=TestValueDefaults.test_int,
                 rendered_file=RenderedFile(
-                    image_file_id=TestValueDefaults.test_object_id_str,
-                    office_pdf_file_id=TestValueDefaults.test_object_id_str,
-                    browser_pdf_file_id=TestValueDefaults.test_object_id_str,
+                    image_data=LazyBytes(
+                        service_id=TestValueDefaults.test_object_id_str
+                    ),
+                    office_pdf_data=LazyBytes(
+                        service_id=TestValueDefaults.test_object_id_str
+                    ),
+                    browser_pdf_data=LazyBytes(
+                        service_id=TestValueDefaults.test_object_id_str
+                    ),
                 ),
                 tags=TestValueDefaults.test_str_list_no_duplicates,
                 magic_file_type=TestValueDefaults.test_str,
@@ -307,6 +318,9 @@ ES_REPOSITORY_TEST_INSTANCES: dict[type[BaseEsRepository], list[_TestInstances]]
                 tasks_retried=list(map(str, TestValueDefaults.test_uuid_list)),
                 tasks_failed=list(map(str, TestValueDefaults.test_uuid_list)),
                 # _EsFile
+                storage_data=_EsLazyBytes(
+                    service_id=TestValueDefaults.test_object_id_str, embedded_data=None
+                ),
                 storage_id=TestValueDefaults.test_object_id_str,
                 content=TestValueDefaults.test_str,
                 content_truncated=TestValueDefaults.test_bool,
@@ -320,12 +334,24 @@ ES_REPOSITORY_TEST_INSTANCES: dict[type[BaseEsRepository], list[_TestInstances]]
                 uploaded_datetime=TestValueDefaults.test_datetime.isoformat(),
                 size=TestValueDefaults.test_long,
                 reindex_count=TestValueDefaults.test_long,
-                thumbnail_file_id=TestValueDefaults.test_object_id_str,
+                thumbnail_data=_EsLazyBytes(
+                    service_id=TestValueDefaults.test_object_id_str,
+                    embedded_data=None,
+                ),
                 thumbnail_total_frames=TestValueDefaults.test_int,
                 rendered_file=_EsRenderedFile(
-                    image_file_id=TestValueDefaults.test_object_id_str,
-                    office_pdf_file_id=TestValueDefaults.test_object_id_str,
-                    browser_pdf_file_id=TestValueDefaults.test_object_id_str,
+                    image_data=_EsLazyBytes(
+                        service_id=TestValueDefaults.test_object_id_str,
+                        embedded_data=None,
+                    ),
+                    office_pdf_data=_EsLazyBytes(
+                        service_id=TestValueDefaults.test_object_id_str,
+                        embedded_data=None,
+                    ),
+                    browser_pdf_data=_EsLazyBytes(
+                        service_id=TestValueDefaults.test_object_id_str,
+                        embedded_data=None,
+                    ),
                 ),
                 tags=TestValueDefaults.test_str_list_no_duplicates,
                 magic_file_type=TestValueDefaults.test_str,
@@ -451,12 +477,16 @@ ES_REPOSITORY_TEST_INSTANCES: dict[type[BaseEsRepository], list[_TestInstances]]
                     keep_alive=TestValueDefaults.test_keep_alive,
                 ),
                 plain_file=StoredArchive(
-                    storage_id=TestValueDefaults.test_object_id_str,
+                    storage_data=LazyBytes(
+                        service_id=TestValueDefaults.test_object_id_str
+                    ),
                     sha256=TestValueDefaults.test_str,
                     size=TestValueDefaults.test_long,
                 ),
                 encrypted_file=StoredArchive(
-                    storage_id=TestValueDefaults.test_object_id_str,
+                    storage_data=LazyBytes(
+                        service_id=TestValueDefaults.test_object_id_str
+                    ),
                     sha256=TestValueDefaults.test_str,
                     size=TestValueDefaults.test_long,
                 ),
@@ -490,12 +520,18 @@ ES_REPOSITORY_TEST_INSTANCES: dict[type[BaseEsRepository], list[_TestInstances]]
                     keep_alive=TestValueDefaults.test_keep_alive,
                 ),
                 plain_file=_EsStoredArchive(
-                    storage_id=TestValueDefaults.test_object_id_str,
+                    storage_data=_EsLazyBytes(
+                        service_id=TestValueDefaults.test_object_id_str,
+                        embedded_data=None,
+                    ),
                     sha256=TestValueDefaults.test_str,
                     size=TestValueDefaults.test_long,
                 ),
                 encrypted_file=_EsStoredArchive(
-                    storage_id=TestValueDefaults.test_object_id_str,
+                    storage_data=_EsLazyBytes(
+                        service_id=TestValueDefaults.test_object_id_str,
+                        embedded_data=None,
+                    ),
                     sha256=TestValueDefaults.test_str,
                     size=TestValueDefaults.test_long,
                 ),
@@ -606,7 +642,7 @@ def test_es_repository_object_to_document(
     )
     # do compare value dicts first: this is only here because
     # pytest can generate nice diffs on dicts.
-    assert test_instance.document.to_dict() == document.to_dict()
+    assert test_instance.document.to_dict(skip_empty=False) == document.to_dict()
 
     assert test_instance.document == document
 

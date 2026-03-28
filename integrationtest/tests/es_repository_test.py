@@ -7,12 +7,13 @@ from common.dependencies import get_elasticsearch, get_pubsub_service, get_query
 from common.file.file_repository import File, FilePurePath, FileRepository
 from common.models.base_repository import RepositoryObject
 from common.models.es_repository import ES_REPOSITORY_TYPES, BaseEsRepository
+from common.services.lazybytes_service import LazyBytes
 from common.services.query_builder import QueryParameters
 from elasticsearch import NotFoundError
 
 ES_REPOSITORY_MINIMAL_OBJECTS: dict[type[BaseEsRepository], RepositoryObject] = {
     FileRepository: File(
-        storage_id="000000000000000000000000",
+        storage_data=LazyBytes(service_id="000000000000000000000000"),
         full_name=FilePurePath("/test/test.txt"),
         source="test-source",
         parent_id=None,

@@ -81,23 +81,20 @@ _plaintext_chunks = [
 def test_file_encryption_service_encrypt_decrypt(plaintext_chunks: Tuple[bytes]):
     plaintext = b"".join(plaintext_chunks)
     file_encryption_service = FileEncryptionService()
-    encrypted_file = BytesIO()
 
-    with file_encryption_service.get_encryptor(encrypted_file) as encrypt:
-        for plaintext_chunk in plaintext_chunks:
-            encrypt(plaintext_chunk)
-    encrypted_file.seek(0)
+    encrypted_stream = file_encryption_service.get_encrypted_stream(
+        iter(plaintext_chunks)
+    )
+    encrypted_file = BytesIO(b"".join(encrypted_stream))
 
     encrypted_file_data = encrypted_file.getvalue()
     assert encrypted_file_data != plaintext
     assert len(encrypted_file_data) > len(plaintext)
 
-    decrypted_file = b""
-    with file_encryption_service.get_decryptor(encrypted_file) as decrypt:
-        for plaintext_chunk in plaintext_chunks:
-            decrypted_file_chunk = decrypt(len(plaintext_chunk))
-            assert decrypted_file_chunk == plaintext_chunk
-            decrypted_file += decrypted_file_chunk
+    decrypted_stream = file_encryption_service.get_decrypted_stream(
+        iter([encrypted_file.read()])
+    )
+    decrypted_file = b"".join(decrypted_stream)
 
     assert decrypted_file == plaintext
 
@@ -111,19 +108,18 @@ def test_file_encryption_service_encrypt_decrypt_all_at_once(
 ):
     plaintext = b"".join(plaintext_chunks)
     file_encryption_service = FileEncryptionService()
-    encrypted_file = BytesIO()
 
-    with file_encryption_service.get_encryptor(encrypted_file) as encrypt:
-        encrypt(plaintext)
-    encrypted_file.seek(0)
+    encrypted_stream = file_encryption_service.get_encrypted_stream(iter([plaintext]))
+    encrypted_file = BytesIO(b"".join(encrypted_stream))
 
     encrypted_file_data = encrypted_file.getvalue()
     assert encrypted_file_data != plaintext
     assert len(encrypted_file_data) > len(plaintext)
 
-    decrypted_file = b""
-    with file_encryption_service.get_decryptor(encrypted_file) as decrypt:
-        decrypted_file = decrypt()
+    decrypted_stream = file_encryption_service.get_decrypted_stream(
+        iter([encrypted_file.read()])
+    )
+    decrypted_file = b"".join(decrypted_stream)
 
     assert decrypted_file == plaintext
 
@@ -136,21 +132,19 @@ def test_file_encryption_service_encrypt_decrypt_mac_works(
     plaintext_chunks: Tuple[bytes],
 ):
     file_encryption_service = FileEncryptionService()
-    encrypted_file = BytesIO()
 
-    with file_encryption_service.get_encryptor(encrypted_file) as encrypt:
-        for plaintext_chunk in plaintext_chunks:
-            encrypt(plaintext_chunk)
-    encrypted_file.seek(0)
+    encrypted_stream = file_encryption_service.get_encrypted_stream(
+        iter(plaintext_chunks)
+    )
+    encrypted_file = BytesIO(b"".join(encrypted_stream))
 
     # tamper with the data
     encrypted_file_buffer = encrypted_file.getvalue()
     for i, value in enumerate(encrypted_file_buffer):
-        modified_encrypted_file_buffer = BytesIO(encrypted_file_buffer)
-        modified_encrypted_file_buffer.getbuffer()[i] = value + 1 if value < 255 else 0
+        modified_encrypted_file_buffer = bytearray(encrypted_file_buffer)
+        modified_encrypted_file_buffer[i] = value + 1 if value < 255 else 0
         with pytest.raises((FileEncryptionServiceException, ValueError)):
-            with file_encryption_service.get_decryptor(
-                modified_encrypted_file_buffer
-            ) as decrypt:
-                for plaintext_chunk in plaintext_chunks:
-                    decrypt(len(plaintext_chunk))
+            decrypted_stream = file_encryption_service.get_decrypted_stream(
+                iter([bytes(modified_encrypted_file_buffer)])
+            )
+            list(decrypted_stream)  # consume generator to trigger MAC verification

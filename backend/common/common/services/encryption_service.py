@@ -1,15 +1,12 @@
 from abc import ABC, abstractmethod
-from contextlib import contextmanager
-from tempfile import SpooledTemporaryFile
-from typing import Any, BinaryIO, Generator
+from collections.abc import Iterator
+from typing import Any, Generator
 
 from Crypto.Cipher import AES
 from Crypto.Hash import SHA512
 from Crypto.Protocol.KDF import HKDF
 from Crypto.Random import get_random_bytes
-from gridfs import GridIn
 from pydantic import BaseModel, ConfigDict, Field, SecretBytes, field_validator
-from typing_extensions import Protocol
 
 AES_KEY_LEN_BYTES = 32
 AES_SALT_LEN_BYTES = 32
@@ -106,16 +103,6 @@ class FileEncryptionServiceException(Exception):
     """Thrown by FileEncryptionService."""
 
 
-class EncryptorProtocol(Protocol):
-    def __call__(self, data: bytes):
-        pass
-
-
-class DecryptorProtocol(Protocol):
-    def __call__(self, size: int = -1) -> bytes:
-        pass
-
-
 class FileEncryptionService:
     """Handles ile encryption and decryption."""
 
@@ -127,81 +114,81 @@ class FileEncryptionService:
         self._master_key = master_key if master_key is not None else AESMasterKey()
         self._magic_bytes = magic_bytes
 
-    @contextmanager
-    def get_encryptor(
-        self, dst: BinaryIO | GridIn | SpooledTemporaryFile[bytes]
-    ) -> Generator[EncryptorProtocol, None, None]:
+    def get_encrypted_stream(
+        self, input_stream: Iterator[bytes]
+    ) -> Generator[bytes, None, None]:
         salt = get_random_bytes(AES_SALT_LEN_BYTES)
         key = _derive_key(self._master_key, salt)
         nonce = get_random_bytes(AES_NONCE_LEN_BYTES)
         cipher = _get_cipher(key, nonce)
 
-        def encrypt(data: bytes):
-            ciphertext = cipher.encrypt(data)
-            dst.write(ciphertext)
-
         # write file header
-        dst.write(self._magic_bytes)
-        dst.write(salt)
-        dst.write(nonce)
+        yield self._magic_bytes
+        yield salt
+        yield nonce
 
-        yield encrypt
+        for chunk in input_stream:
+            ciphertext = cipher.encrypt(chunk)
+            yield ciphertext
 
         mac = cipher.digest()
-        dst.write(mac)
+        yield mac
 
-    @contextmanager
-    def get_decryptor(
-        self, src: BinaryIO | GridIn | SpooledTemporaryFile[bytes]
-    ) -> Generator[DecryptorProtocol, None, None]:
-        magic = src.read(len(self._magic_bytes))
+    def get_decrypted_stream(
+        self, input_stream: Iterator[bytes]
+    ) -> Generator[bytes, None, None]:
+        """Decrypt a stream of encrypted bytes.
+
+        The input_stream must yield encrypted data starting with the header (magic
+        bytes, salt, nonce) followed by ciphertext and ending with MAC.
+        """
+        # Buffer to accumulate input until we have enough for header/MAC parsing
+        buffer = b""
+
+        # Read header
+        header_size = len(self._magic_bytes) + AES_SALT_LEN_BYTES + AES_NONCE_LEN_BYTES
+        for chunk in input_stream:
+            buffer += chunk
+            if len(buffer) >= header_size + AES_MAC_LEN:
+                break
+
+        if len(buffer) < header_size + AES_MAC_LEN:
+            raise FileEncryptionServiceException("Input too short")
+
+        # Parse header
+        magic = buffer[: len(self._magic_bytes)]
         if magic != self._magic_bytes:
             raise FileEncryptionServiceException(
                 f"Magic bytes {str(self._magic_bytes)} not found"
             )
 
-        salt = src.read(AES_SALT_LEN_BYTES)
-        if len(salt) != AES_SALT_LEN_BYTES:
-            raise FileEncryptionServiceException(
-                f"Failed reading salt. Expected {AES_SALT_LEN_BYTES} bytes, got"
-                f" {len(salt)}"
-            )
+        salt = buffer[
+            len(self._magic_bytes) : len(self._magic_bytes) + AES_SALT_LEN_BYTES
+        ]
+        nonce = buffer[len(self._magic_bytes) + AES_SALT_LEN_BYTES : header_size]
+
         key = _derive_key(self._master_key, salt)
-        nonce = src.read(AES_NONCE_LEN_BYTES)
-        if len(nonce) != AES_NONCE_LEN_BYTES:
-            raise FileEncryptionServiceException(
-                f"Failed reading nonce. Expected {AES_NONCE_LEN_BYTES} bytes, got"
-                f" {len(nonce)}"
-            )
         cipher = _get_cipher(key, nonce)
 
-        mac = src.read(AES_MAC_LEN)
-        if len(mac) != AES_MAC_LEN:
-            raise FileEncryptionServiceException(
-                f"Failed reading mac. Expected {AES_MAC_LEN} bytes, got {len(mac)}"
-            )
+        # Process remaining data, keeping last AES_MAC_LEN bytes as potential MAC
+        buffer = buffer[header_size:]
 
-        def decrypt(size: int = -1) -> bytes:
-            nonlocal mac
+        for chunk in input_stream:
+            buffer += chunk
+            # Yield all but the last AES_MAC_LEN bytes (which might be MAC)
+            if len(buffer) > AES_MAC_LEN:
+                to_decrypt = buffer[:-AES_MAC_LEN]
+                buffer = buffer[-AES_MAC_LEN:]
+                if to_decrypt:
+                    yield cipher.decrypt(to_decrypt)
 
-            # ciphertext is always previous mac and new data
-            ciphertext = mac[:size] if size >= 0 else mac
-            ciphertext += src.read(size - len(ciphertext)) if size >= 0 else src.read()
+        # Final chunk: buffer contains MAC
+        if len(buffer) < AES_MAC_LEN:
+            raise FileEncryptionServiceException(f"MAC too short: {len(buffer)}")
 
-            # always also read possible new mac
-            mac = mac[size:] if size >= 0 else b""
-            mac += src.read(AES_MAC_LEN - len(mac)) if size >= 0 else b""
-
-            # is mac long enough?
-            mac_remaining = AES_MAC_LEN - len(mac)
-            if mac_remaining > 0:
-                # no: clip some data from ciphertext
-                mac = ciphertext[-mac_remaining:]
-                ciphertext = ciphertext[:-mac_remaining]
-
-            plaintext = cipher.decrypt(ciphertext)
-            return plaintext
-
-        yield decrypt
+        mac = buffer[-AES_MAC_LEN:]
+        remaining_ciphertext = buffer[:-AES_MAC_LEN]
+        if remaining_ciphertext:
+            yield cipher.decrypt(remaining_ciphertext)
 
         cipher.verify(mac)

@@ -4,6 +4,8 @@ from common import dependencies
 from common.dependencies import mock_init
 from common.services.lazybytes_service import InMemoryLazyBytesService, LazyBytesService
 
+LAZYBYTES_THRESHOLD_BYTES = 64
+
 
 def pytest_configure():
     mock_init()
@@ -16,7 +18,9 @@ def dependencies_init():
 
 @pytest.fixture()
 def lazybytes_service_inmemory() -> LazyBytesService:
-    lazybytes_service = InMemoryLazyBytesService()
+    lazybytes_service = InMemoryLazyBytesService(
+        threshold_bytes=LAZYBYTES_THRESHOLD_BYTES
+    )
     dependencies._lazybytes_service = (  # pylint: disable=protected-access
         lazybytes_service
     )

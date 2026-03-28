@@ -1,11 +1,17 @@
 import datetime
+import logging
 
-from bson import ObjectId
-from common.dependencies import get_celery_app, get_file_storage_service
+from common.dependencies import (
+    get_celery_app,
+    get_file_storage_service,
+)
 from common.file.file_repository import File
+from common.services.lazybytes_service import LazyBytes
 from stream_zip import ZIP_32, stream_zip
 
 from worker.create_archive.infra.archive_processing_task import ArchiveProcessingTask
+
+logger = logging.getLogger(__name__)
 
 app = get_celery_app()
 
@@ -16,28 +22,26 @@ def _archive_data(files: list[File]):
     perms = 0o600
 
     for file in files:
-
-        def content(file_storage_id: ObjectId):
-            file_stream = file_storage_service.open_download_stream(file_storage_id)
-            while True:
-                data = file_stream.readchunk()
-                if data == b"":
-                    return
-                yield data
+        if file.storage_data is None:
+            logger.warning(
+                "Skipping file '%s' from archive: no storage data",
+                file.full_path,
+            )
+            continue
 
         yield (
             str(file.full_path),
             modified_at,
             perms,
             ZIP_32,
-            content(ObjectId(file.storage_id)),
+            file_storage_service.load_generator(file.storage_data),
         )
 
 
 @app.task(
     base=ArchiveProcessingTask,
 )
-def compress_files_task(files: list[File]) -> ObjectId:
+def compress_files_task(files: list[File]) -> LazyBytes:
     """Load files from storage and compress them.
 
     :param files: The files to load and compress :param
@@ -46,13 +50,9 @@ def compress_files_task(files: list[File]) -> ObjectId:
 
     file_storage_service = get_file_storage_service()
 
-    compressed_file_storage_id = ObjectId()
     zipped_chunks = stream_zip(_archive_data(files))
 
-    with file_storage_service.open_upload_stream_with_id(
-        compressed_file_storage_id,
-        "",
-    ) as zip_storage_stream:
-        for chunk in zipped_chunks:
-            zip_storage_stream.write(chunk)
-    return compressed_file_storage_id
+    compressed_file_storage_data = file_storage_service.from_generator(
+        iter(zipped_chunks)
+    )
+    return compressed_file_storage_data

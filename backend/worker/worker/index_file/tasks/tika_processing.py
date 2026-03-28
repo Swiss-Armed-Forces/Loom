@@ -270,14 +270,14 @@ def tika_processor_task(
         # force a fallback
         return TikaProcessingResult(file_type=file_type)
 
-    with lazybytes_service.load_generator(file_content) as generator:
-        try:
-            result = get_tika_service().parse_from_generator(generator)
-        except Exception as ex:  # pylint: disable=broad-exception-caught
-            if ex in TIKA_RETRY_EXCEPTIONS and self.request.retries < TIKA_MAX_RETRIES:
-                raise ex
-            # will proceed to fallback
-            return TikaProcessingResult(file_type=file_type, exceptions=[ex])
+    generator = lazybytes_service.load_generator(file_content)
+    try:
+        result = get_tika_service().parse_from_generator(generator)
+    except Exception as ex:  # pylint: disable=broad-exception-caught
+        if ex in TIKA_RETRY_EXCEPTIONS and self.request.retries < TIKA_MAX_RETRIES:
+            raise ex
+        # will proceed to fallback
+        return TikaProcessingResult(file_type=file_type, exceptions=[ex])
 
     return TikaProcessingResult(
         file_type=file_type,
@@ -368,8 +368,8 @@ def persist_tika_meta_task(
 def tika_get_language_task(file_content: LazyBytes, file: File) -> str:
     """Task to get the tika detected language."""
     logger.info("Getting language for %s with tika", file.full_name)
-    with get_lazybytes_service().load_generator(file_content) as file_generator:
-        return get_tika_service().get_language_from_generator(file_generator)
+    file_generator = get_lazybytes_service().load_generator(file_content)
+    return get_tika_service().get_language_from_generator(file_generator)
 
 
 @persisting_task(app, IndexingPersister)
@@ -387,8 +387,8 @@ def persist_tika_language_task(persister: IndexingPersister, tika_language: str)
 def tika_get_file_type_task(file_content: LazyBytes, file: File) -> str:
     """Task to get the tika detected file type."""
     logger.info("Getting file type for %s with tika", file.full_name)
-    with get_lazybytes_service().load_generator(file_content) as file_generator:
-        return get_tika_service().get_file_type_from_generator(file_generator)
+    file_generator = get_lazybytes_service().load_generator(file_content)
+    return get_tika_service().get_file_type_from_generator(file_generator)
 
 
 @persisting_task(app, IndexingPersister)
