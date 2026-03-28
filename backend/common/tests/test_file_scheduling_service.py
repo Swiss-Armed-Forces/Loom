@@ -2,7 +2,6 @@ from unittest.mock import MagicMock
 
 from common.dependencies import (
     get_file_repository,
-    get_file_storage_service,
     get_task_scheduling_service,
 )
 from common.file.file_repository import File
@@ -14,11 +13,10 @@ def test_index_file(lazybytes_service_inmemory: LazyBytesService):
     file_repository = get_file_repository()
     file_repository.get_by_deduplication_fingerprint.return_value = None
 
-    file_storage_service = get_file_storage_service()
     task_scheduling_service = get_task_scheduling_service()
     file_scheduling_service = FileSchedulingService(
         file_repository,
-        file_storage_service,
+        lazybytes_service_inmemory,
         task_scheduling_service,
         lazybytes_service_inmemory,
     )
@@ -40,11 +38,10 @@ def test_index_file_duplicate(lazybytes_service_inmemory: LazyBytesService):
     file_repository = get_file_repository()
     file_repository.get_by_deduplication_fingerprint.return_value = file_duplicate
 
-    file_storage_service = get_file_storage_service()
     task_scheduling_service = get_task_scheduling_service()
     file_scheduling_service = FileSchedulingService(
         file_repository,
-        file_storage_service,
+        lazybytes_service_inmemory,
         task_scheduling_service,
         lazybytes_service_inmemory,
     )

@@ -1,6 +1,8 @@
 import logging
 import pickle
+import uuid
 from abc import ABC, abstractmethod
+from collections.abc import Iterator
 from contextlib import contextmanager
 from datetime import datetime, timedelta
 from io import SEEK_END, BytesIO
@@ -12,9 +14,10 @@ from tempfile import (
     TemporaryFile,
     _TemporaryFileWrapper,
 )
-from typing import IO, Any, BinaryIO, Generator, Generic, TypeVar
+from typing import IO, Any, Generator, Generic, TypeVar
 
 from gridfs import GridFSBucket
+from minio import Minio
 from pydantic import BaseModel, ConfigDict, model_validator
 from pymongo.database import Database
 
@@ -23,6 +26,7 @@ from common.utils.gridfs import chunked_iterator_for_stream
 
 logger = logging.getLogger(__name__)
 
+S3_PART_SIZE = 10 * 1024 * 1024
 
 T = TypeVar("T")
 
@@ -54,23 +58,28 @@ class TypedLazyBytes(LazyBytes, Generic[T]):
 
 
 class LazyBytesService(ABC):
-    def __init__(self):
+    def __init__(self, *, threshold_bytes: int):
+        self._threshold_bytes = threshold_bytes
         self.tempfile_dir = settings.tempfile_dir
         if self.tempfile_dir:
             self.tempfile_dir.mkdir(parents=True, exist_ok=True)
 
+    @property
+    def threshold_bytes(self) -> int:
+        return self._threshold_bytes
+
     def from_bytes(self, data: bytes) -> LazyBytes:
         """Stores the given data in this service."""
-        if len(data) <= settings.lazy_threshold_bytes:
+        if len(data) <= self._threshold_bytes:
             return LazyBytes(embedded_data=data)
         service_id = self._store(BytesIO(data))
         return LazyBytes(service_id=service_id)
 
     def from_generator(
-        self, data: Generator[bytes, None, None], data_len: int | None = None
+        self, data: Iterator[bytes], data_len: int | None = None
     ) -> LazyBytes:
         """Stores the given data in this service."""
-        if data_len is not None and data_len <= settings.lazy_threshold_bytes:
+        if data_len is not None and data_len <= self._threshold_bytes:
             return LazyBytes(
                 embedded_data=bytes(int.from_bytes(b, byteorder="little") for b in data)
             )
@@ -82,7 +91,7 @@ class LazyBytesService(ABC):
             tmp.seek(0)
             return self.from_file(tmp)
 
-    def from_file(self, fd: BinaryIO | IO[bytes]) -> LazyBytes:
+    def from_file(self, fd: IO[bytes]) -> LazyBytes:
         """Stores the given data in this service."""
         # get filesize without calling .fileno()
         # -> calling .fileno will have the effect that
@@ -91,7 +100,7 @@ class LazyBytesService(ABC):
         fd.seek(0, SEEK_END)
         fd_size = fd.tell()
         fd.seek(0, curr)
-        if fd_size <= settings.lazy_threshold_bytes:
+        if fd_size <= self._threshold_bytes:
             return LazyBytes(embedded_data=fd.read())
         service_id = self._store(fd)
         return LazyBytes(service_id=service_id)
@@ -106,13 +115,23 @@ class LazyBytesService(ABC):
             A TypedLazyBytes container for deserialization via load_object().
         """
         data = pickle.dumps(obj)
-        if len(data) <= settings.lazy_threshold_bytes:
+        if len(data) <= self._threshold_bytes:
             return TypedLazyBytes(embedded_data=data)
         service_id = self._store(BytesIO(data))
         return TypedLazyBytes(service_id=service_id)
 
+    def delete(self, lazy_bytes: LazyBytes):
+        """Deletes the data if stored in the service."""
+        if lazy_bytes.service_id is None:
+            return
+        self._delete(lazy_bytes.service_id)
+
     @abstractmethod
-    def _store(self, data: IO) -> Any:
+    def _delete(self, service_id: Any):
+        """Deletes the data in the service."""
+
+    @abstractmethod
+    def _store(self, data: IO[bytes]) -> Any:
         """Stores the data in the service returning a service id."""
 
     @abstractmethod
@@ -173,22 +192,11 @@ class LazyBytesService(ABC):
                 # better:
                 # yield from yield_release(memoryview(mmap_memory))
 
-    @contextmanager
-    def load_generator(
-        self, lazy_bytes: LazyBytes
-    ) -> Generator[Generator[bytes, None, None], None, None]:
-        # pylint: disable=protected-access
+    def load_generator(self, lazy_bytes: LazyBytes) -> Generator[bytes, None, None]:
         if lazy_bytes.embedded_data is not None:
-            embedded_data = (
-                lazy_bytes.embedded_data
-            )  # Capture to preserve type narrowing
-
-            def _embedded_data_generator():
-                yield embedded_data
-
-            yield _embedded_data_generator()
+            yield lazy_bytes.embedded_data
         else:
-            yield self._load_to_generator(lazy_bytes.service_id)
+            yield from self._load_to_generator(lazy_bytes.service_id)
 
     @contextmanager
     def load_file(
@@ -209,7 +217,7 @@ class LazyBytesService(ABC):
         # but I don't think that was every implemented and/or
         # can be used here.
         with SpooledTemporaryFile(
-            max_size=settings.lazy_threshold_bytes, dir=str(self.tempfile_dir)
+            max_size=self._threshold_bytes, dir=str(self.tempfile_dir)
         ) as dst:
             if lazy_bytes.embedded_data is not None:
                 dst.write(lazy_bytes.embedded_data)
@@ -265,12 +273,12 @@ class LazyBytesService(ABC):
 
 
 class GridFSLazyBytesService(LazyBytesService):
-    def __init__(self, database: Database):
-        super().__init__()
+    def __init__(self, database: Database, *, threshold_bytes: int):
+        super().__init__(threshold_bytes=threshold_bytes)
         self._database = database
         self._bucket = GridFSBucket(database)
 
-    def _store(self, data: IO) -> Any:
+    def _store(self, data: IO[bytes]) -> Any:
         id_ = self._bucket.upload_from_stream(
             # We leave the filename empty in the upload because
             # this service is only concerned by the data itself.
@@ -320,6 +328,46 @@ class GridFSLazyBytesService(LazyBytesService):
         self._database.command("compact", "fs.files")
         self._database.command("compact", "fs.chunks")
 
+    def _delete(self, service_id: Any):
+        self._bucket.delete(service_id)
+
+
+class S3LazyBytesService(LazyBytesService):
+    def __init__(self, client: Minio, bucket: str, *, threshold_bytes: int):
+        super().__init__(threshold_bytes=threshold_bytes)
+        self._client = client
+        self._bucket = bucket
+
+    def _store(self, data: IO[bytes]) -> Any:
+        id_ = uuid.uuid4()
+        if not self._client.bucket_exists(self._bucket):
+            self._client.make_bucket(self._bucket)
+        self._client.put_object(
+            self._bucket,
+            str(id_),
+            # This function should be taking IO[bytes] instead of
+            # BytesIO, as IO[bytes] is the parent class
+            data,  # type: ignore
+            length=-1,
+            part_size=S3_PART_SIZE,
+        )
+        return id_
+
+    def _load_to(self, service_id: Any, dst: IO):
+        response = self._client.get_object(self._bucket, str(service_id))
+        for chunk in response.stream():
+            dst.write(chunk)
+
+    def _load_to_generator(self, service_id: Any) -> Generator[bytes, None, None]:
+        response = self._client.get_object(self._bucket, str(service_id))
+        yield from response.stream()
+
+    def flush(self):
+        self._client.remove_bucket(self._bucket)
+
+    def _delete(self, service_id: Any):
+        self._client.remove_object(self._bucket, str(service_id))
+
 
 class InMemoryLazyBytesService(LazyBytesService):
     """All in-memory lazybytes service for testing.
@@ -327,13 +375,19 @@ class InMemoryLazyBytesService(LazyBytesService):
     **!!DO NOT USE THIS IN PRODUCTION!!**.
     """
 
-    def __init__(self):
-        super().__init__()
-        self._storage = []
+    def __init__(self, *, threshold_bytes: int):
+        super().__init__(threshold_bytes=threshold_bytes)
+        self._storage: dict[int, bytes] = {}
+        self._counter = 0
 
-    def _store(self, data: IO) -> Any:
-        service_id = len(self._storage)
-        self._storage.append(data.read())
+    def _get_service_id(self) -> int:
+        service_id = self._counter
+        self._counter += 1
+        return service_id
+
+    def _store(self, data: IO[bytes]) -> Any:
+        service_id = self._get_service_id()
+        self._storage[service_id] = data.read()
         return service_id
 
     def _load_to(self, service_id: Any, dst: IO):
@@ -343,4 +397,7 @@ class InMemoryLazyBytesService(LazyBytesService):
         yield self._storage[service_id]
 
     def flush(self):
-        self._storage = []
+        self._storage = {}
+
+    def _delete(self, service_id: Any):
+        del self._storage[service_id]

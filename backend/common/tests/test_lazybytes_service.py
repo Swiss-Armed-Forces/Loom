@@ -33,7 +33,7 @@ def data_generator(large_data):
 
 @pytest.fixture()
 def in_memory_lazy_bytes_service():
-    return InMemoryLazyBytesService()
+    return InMemoryLazyBytesService(threshold_bytes=64)
 
 
 def test_load_memoryview(
@@ -110,14 +110,14 @@ def test_load_generator(
     in_memory_lazy_bytes_service: InMemoryLazyBytesService, large_data
 ):
     lazy_bytes = in_memory_lazy_bytes_service.from_bytes(large_data)
-    with in_memory_lazy_bytes_service.load_generator(lazy_bytes) as lazy_generator:
-        assert b"".join(lazy_generator) == large_data
+    lazy_generator = in_memory_lazy_bytes_service.load_generator(lazy_bytes)
+    assert b"".join(lazy_generator) == large_data
 
 
 def test_load_generator_small(in_memory_lazy_bytes_service: InMemoryLazyBytesService):
     lazy_bytes = in_memory_lazy_bytes_service.from_bytes(b"generate meeee")
-    with in_memory_lazy_bytes_service.load_generator(lazy_bytes) as lazy_generator:
-        assert next(lazy_generator) == b"generate meeee"
+    lazy_generator = in_memory_lazy_bytes_service.load_generator(lazy_bytes)
+    assert next(lazy_generator) == b"generate meeee"
 
 
 def test_from_generator(
@@ -287,3 +287,12 @@ def test_typed_lazy_bytes_large_can_be_pickled(
     # Should still be able to load the object
     result = in_memory_lazy_bytes_service.load_object(lazy_restored)
     assert result == original
+
+
+# pylint: disable=protected-access
+def test_delete(in_memory_lazy_bytes_service: InMemoryLazyBytesService):
+    obj = bytes(in_memory_lazy_bytes_service.threshold_bytes + 1)
+    lazy = in_memory_lazy_bytes_service.from_bytes(obj)
+    assert lazy.service_id in in_memory_lazy_bytes_service._storage
+    in_memory_lazy_bytes_service.delete(lazy)
+    assert lazy.service_id not in in_memory_lazy_bytes_service._storage

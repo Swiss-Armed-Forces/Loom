@@ -2,7 +2,6 @@ import logging
 from typing import Annotated, Any, List, Literal
 from uuid import UUID
 
-from bson import ObjectId
 from common.dependencies import (
     get_file_repository,
     get_file_scheduling_service,
@@ -16,7 +15,6 @@ from common.file.file_repository import (
     File,
     FileRepository,
     ImapInfo,
-    RenderedFile,
     Stat,
     Tag,
 )
@@ -26,15 +24,13 @@ from common.models.es_repository import (
     PaginationParameters,
     SortingParameters,
 )
-from common.services.file_storage_service import FileStorageService
-from common.services.lazybytes_service import LazyBytesService
+from common.services.lazybytes_service import LazyBytes, LazyBytesService
 from common.services.query_builder import (
     DEFAULT_PIT_KEEPALIVE,
     KeepAlive,
     QueryParameters,
 )
 from common.services.task_scheduling_service import TaskSchedulingService
-from common.utils.object_id_str import ObjectIdStr
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, UploadFile
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, RootModel
@@ -259,6 +255,12 @@ class GetFileLanguageTranslations(BaseModel):
     text: str
 
 
+class RenderedFile(BaseModel):
+    image_file_id: str | None = None
+    office_pdf_file_id: str | None = None
+    browser_pdf_file_id: str | None = None
+
+
 class GetFileResponse(BaseModel):
     file_id: UUID
     highlight: dict[str, list[str]] | None
@@ -303,8 +305,18 @@ class GetFileResponse(BaseModel):
             summary=file.summary,
             type=file.magic_file_type,
             imap=file.imap,
-            rendered_file=file.rendered_file,
+            rendered_file=RenderedFile(
+                image_file_id=service_id(file.rendered_file.image_data),
+                browser_pdf_file_id=service_id(file.rendered_file.browser_pdf_data),
+                office_pdf_file_id=service_id(file.rendered_file.office_pdf_data),
+            ),
         )
+
+
+def service_id(lb: LazyBytes | None) -> str | None:
+    if not lb:
+        return None
+    return lb.service_id
 
 
 @router.get("/{file_id}")
@@ -333,7 +345,7 @@ class GetFilePreviewResponse(BaseModel):
     content_is_truncated: bool
     name: str  # short_name
     path: str  # full_path
-    thumbnail_file_id: ObjectIdStr | None
+    thumbnail_file_id: str | None
     thumbnail_total_frames: int | None
     attachments: list[Attachment] = []
     attachments_total_count: int = 0
@@ -374,7 +386,7 @@ def get_file_preview(
         # Convert the file's short name to a string, or set it to an empty string if it is None
         name=str(file.short_name),
         path=str(file.full_path),
-        thumbnail_file_id=file.thumbnail_file_id,
+        thumbnail_file_id=service_id(file.thumbnail_data),
         thumbnail_total_frames=file.thumbnail_total_frames,
         attachments=file.attachments[:MAX_ATTACHMENTS_PREVIEW],
         attachments_total_count=len(file.attachments),
@@ -391,17 +403,17 @@ def get_file_preview(
 @router.get("/{file_id}/thumbnail/{thumbnail_file_id}")
 def get_thumbnail(
     file_id: UUID,
-    thumbnail_file_id: ObjectIdStr,
+    thumbnail_file_id: str,
     file_repository: FileRepository = default_file_repository,
-    file_storage_service: FileStorageService = default_file_storage_service,
+    file_storage_service: LazyBytesService = default_file_storage_service,
 ) -> Response:
     """Get thumbnail of a file."""
     file = file_repository.get_by_id(file_id)
     if file is None:
         raise HTTPException(status_code=404, detail="Invalid file")
 
-    file_stream = file_storage_service.open_download_iterator(
-        file_id=ObjectId(thumbnail_file_id)
+    file_stream = file_storage_service.load_generator(
+        LazyBytes(service_id=thumbnail_file_id)
     )
     return StreamingResponse(
         content=file_stream,
@@ -416,18 +428,16 @@ def get_thumbnail(
 @router.get("/{file_id}/rendered/{rendered_id}")
 def get_rendered(
     file_id: UUID,
-    rendered_id: ObjectIdStr,
+    rendered_id: str,
     file_repository: FileRepository = default_file_repository,
-    file_storage_service: FileStorageService = default_file_storage_service,
+    file_storage_service: LazyBytesService = default_file_storage_service,
 ) -> Response:
     """Get rendered version of a file."""
     file = file_repository.get_by_id(file_id)
     if file is None:
         raise HTTPException(status_code=404, detail="Invalid file")
 
-    file_stream = file_storage_service.open_download_iterator(
-        file_id=ObjectId(str(rendered_id))
-    )
+    file_stream = file_storage_service.load_generator(LazyBytes(service_id=rendered_id))
     return StreamingResponse(
         content=file_stream,
         headers={
@@ -480,14 +490,14 @@ def download_file(
     file_id: UUID,
     content_disposition: Literal["inline", "attachment"] = "attachment",
     file_repository: FileRepository = default_file_repository,
-    file_storage_service: FileStorageService = default_file_storage_service,
+    file_storage_service: LazyBytesService = default_file_storage_service,
 ) -> Response:
     file = file_repository.get_by_id(file_id)
     if file is None:
         raise HTTPException(status_code=404, detail="Invalid file")
-    file_stream = file_storage_service.open_download_iterator(
-        file_id=ObjectId(file.storage_id)
-    )
+    if file.storage_data is None:
+        raise HTTPException(status_code=404, detail="File content not available")
+    file_stream = file_storage_service.load_generator(file.storage_data)
     return StreamingResponse(
         content=file_stream,
         headers={

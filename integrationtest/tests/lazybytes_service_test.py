@@ -2,7 +2,10 @@ import pickle
 import random
 
 import pytest
-from common.dependencies import get_lazybytes_service
+from common.dependencies import (
+    get_file_storage_service,
+    get_lazybytes_service,
+)
 from common.services.lazybytes_service import (
     LazyBytes,
     LazyBytesService,
@@ -37,12 +40,18 @@ def data_generator(large_data):
         yield large_data[i : i + chunksize]
 
 
-@pytest.fixture()
-def lazy_bytes_service():
-    return get_lazybytes_service()
+@pytest.fixture(params=["lazybytes", "filestorage"])
+def lazy_bytes_service(request) -> LazyBytesService:
+    match request.param:
+        case "lazybytes":
+            return get_lazybytes_service()
+        case "filestorage":
+            return get_file_storage_service()
+        case _:
+            raise AssertionError()
 
 
-class TestLazybytes:
+class TestLazyBytes:
     # pylint: disable=too-many-public-methods
 
     def test_load_memoryview(self, lazy_bytes_service: LazyBytesService, large_data):
@@ -67,13 +76,13 @@ class TestLazybytes:
 
     def test_load_generator(self, lazy_bytes_service: LazyBytesService, large_data):
         lazy_bytes = lazy_bytes_service.from_bytes(large_data)
-        with lazy_bytes_service.load_generator(lazy_bytes) as lazy_generator:
-            assert b"".join(lazy_generator) == large_data
+        lazy_generator = lazy_bytes_service.load_generator(lazy_bytes)
+        assert b"".join(lazy_generator) == large_data
 
     def test_load_generator_small(self, lazy_bytes_service: LazyBytesService):
         lazy_bytes = lazy_bytes_service.from_bytes(b"generate meeee")
-        with lazy_bytes_service.load_generator(lazy_bytes) as lazy_generator:
-            assert next(lazy_generator) == b"generate meeee"
+        lazy_generator = lazy_bytes_service.load_generator(lazy_bytes)
+        assert next(lazy_generator) == b"generate meeee"
 
     def test_from_generator(self, lazy_bytes_service: LazyBytesService, large_data):
         lazy_bytes = lazy_bytes_service.from_generator(data_generator(large_data))
@@ -148,7 +157,8 @@ class TestLazybytes:
     def test_from_object_pydantic_small(self, lazy_bytes_service: LazyBytesService):
         original = SampleModel(value=42, name="test")
         lazy = lazy_bytes_service.from_object(original)
-        assert lazy.embedded_data is not None
+        if len(pickle.dumps(original)) <= lazy_bytes_service.threshold_bytes:
+            assert lazy.embedded_data is not None
         result = lazy_bytes_service.load_object(lazy)
         assert result == original
 
@@ -177,3 +187,43 @@ class TestLazybytes:
         lazy = lazy_bytes_service.from_object(original)
         result = lazy_bytes_service.load_object(lazy)
         assert result == original
+
+    def test_delete(self, lazy_bytes_service: LazyBytesService, large_data):
+        lazy_bytes = lazy_bytes_service.from_bytes(large_data)
+        # Verify data is accessible
+        with lazy_bytes_service.load_memoryview(lazy_bytes) as memory:
+            assert memory == large_data
+        # Verify it was stored externally (not embedded)
+        assert lazy_bytes.service_id is not None
+        # Delete the data
+        lazy_bytes_service.delete(lazy_bytes)
+
+    def test_delete_small(self, lazy_bytes_service: LazyBytesService):
+        small_data = b"small"
+
+        # Skip if service never embeds data (e.g., filestorage with threshold=-1)
+        if len(small_data) > lazy_bytes_service.threshold_bytes:
+            pytest.skip(
+                "Service never embeds data; embedding behavior tested elsewhere"
+            )
+
+        lazy_bytes = lazy_bytes_service.from_bytes(small_data)
+        # Verify it's embedded (no service_id)
+        assert lazy_bytes.service_id is None
+        assert lazy_bytes.embedded_data is not None
+        # Delete should be a no-op for embedded data
+        lazy_bytes_service.delete(lazy_bytes)
+        # Data should still be accessible
+        with lazy_bytes_service.load_memoryview(lazy_bytes) as memory:
+            assert memory == small_data
+
+    def test_delete_then_load_fails(
+        self, lazy_bytes_service: LazyBytesService, large_data
+    ):
+        lazy_bytes = lazy_bytes_service.from_bytes(large_data)
+        assert lazy_bytes.service_id is not None
+        lazy_bytes_service.delete(lazy_bytes)
+        # Attempting to load deleted data should raise an exception
+        with pytest.raises(Exception, match="."):
+            with lazy_bytes_service.load_memoryview(lazy_bytes) as memory:
+                _ = bytes(memory)  # Force load

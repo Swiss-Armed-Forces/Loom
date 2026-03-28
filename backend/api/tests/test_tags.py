@@ -1,6 +1,7 @@
 from bson import ObjectId
 from common.dependencies import get_file_repository, get_task_scheduling_service
 from common.file.file_repository import File, FilePurePath
+from common.services.lazybytes_service import LazyBytes
 from common.services.query_builder import QueryParameters
 from fastapi.testclient import TestClient
 
@@ -18,7 +19,7 @@ def test_add_tags(client: TestClient):
     get_file_repository().get_generator_by_query.return_value = [
         File(
             full_name=FilePurePath("/path/to/file.txt"),
-            storage_id=str(ObjectId()),
+            storage_data=LazyBytes(service_id=str(ObjectId())),
             source="test",
             sha256="",
             size=0,
@@ -39,7 +40,7 @@ def test_delete_tags(client: TestClient):
     get_file_repository().get_generator_by_query.return_value = [
         File(
             full_name=FilePurePath("/path/to/file.txt"),
-            storage_id=str(ObjectId()),
+            storage_data=LazyBytes(service_id=str(ObjectId())),
             source="test",
             sha256="",
             size=0,

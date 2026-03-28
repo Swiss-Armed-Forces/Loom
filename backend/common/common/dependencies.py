@@ -2,6 +2,7 @@ import logging
 from typing import Optional
 from unittest.mock import AsyncMock, MagicMock
 
+import minio
 from celery import Celery
 from elasticsearch import Elasticsearch
 from libretranslatepy import LibreTranslateAPI
@@ -22,7 +23,11 @@ from common.file.file_scheduling_service import FileSchedulingService
 from common.messages.pubsub_service import PubSubService
 from common.services.file_storage_service import FileStorageService
 from common.services.imap_service import IMAPService
-from common.services.lazybytes_service import GridFSLazyBytesService, LazyBytesService
+from common.services.lazybytes_service import (
+    GridFSLazyBytesService,
+    LazyBytesService,
+    S3LazyBytesService,
+)
 from common.services.query_builder import QueryBuilder
 from common.services.queues_service import QueuesService
 from common.services.task_scheduling_service import TaskSchedulingService
@@ -48,7 +53,8 @@ _redis_client_async: StrictRedisAsync | None = None
 _redis_cache_client: StrictRedis | None = None
 _pubsub_service: PubSubService | None = None
 _queues_service: QueuesService | None = None
-_file_storage_service: FileStorageService | None = None
+_file_storage_service: LazyBytesService | None = None
+_file_storage_service_legacy: FileStorageService | None = None
 _archive_repository: ArchiveRepository | None = None
 _file_repository: FileRepository | None = None
 _ai_context_repository: AiContextRepository | None = None
@@ -67,6 +73,7 @@ _imap_service: IMAPService | None = None
 logger = logging.getLogger(__name__)
 
 
+# pylint: disable=too-many-statements
 def init(init_elasticsearch_documents: bool = False):
     # pylint: disable=global-statement
     logger.info("Initializes common dependencies")
@@ -109,7 +116,21 @@ def init(init_elasticsearch_documents: bool = False):
     _queues_service = QueuesService(str(settings.rabbit_mq_management_host))
 
     global _file_storage_service
-    _file_storage_service = FileStorageService(
+    _file_storage_service = S3LazyBytesService(
+        minio.Minio(
+            settings.file_storage.minio_host,
+            settings.file_storage.minio_access_key,
+            settings.file_storage.minio_secret_key,
+            secure=settings.file_storage.minio_secure_connection,
+        ),
+        settings.file_storage.minio_bucket_name,
+        # We always want to store data in the file storage service, to
+        # avoid embedded data in ElasticSearch
+        threshold_bytes=-1,
+    )
+
+    global _file_storage_service_legacy
+    _file_storage_service_legacy = FileStorageService(
         _mongo.get_database(settings.mongo_db_file_storage_name)
     )
 
@@ -129,7 +150,8 @@ def init(init_elasticsearch_documents: bool = False):
 
     global _lazybytes_service
     _lazybytes_service = GridFSLazyBytesService(
-        _mongo.get_database(settings.mongo_db_lazybytes_storage_name)
+        _mongo.get_database(settings.mongo_db_lazybytes_storage_name),
+        threshold_bytes=settings.lazy_threshold_bytes,
     )
 
     global _task_scheduling_service
@@ -144,6 +166,7 @@ def init(init_elasticsearch_documents: bool = False):
         _file_storage_service,
         _task_scheduling_service,
         _lazybytes_service,
+        _file_storage_service_legacy,
     )
 
     global _archive_scheduling_service
@@ -215,7 +238,7 @@ def mock_init():
     _redis_cache_client = MagicMock(spec=StrictRedis)
 
     global _file_storage_service
-    _file_storage_service = MagicMock(spec=FileStorageService)
+    _file_storage_service = MagicMock(spec=LazyBytesService)
 
     global _archive_repository
     _archive_repository = MagicMock(spec=ArchiveRepository)
@@ -311,10 +334,16 @@ def get_pubsub_service() -> PubSubService:
     return _pubsub_service
 
 
-def get_file_storage_service() -> FileStorageService:
+def get_file_storage_service() -> LazyBytesService:
     if _file_storage_service is None:
         raise DependencyException("File Storage Service missing")
     return _file_storage_service
+
+
+def get_file_storage_service_legacy() -> FileStorageService:
+    if _file_storage_service_legacy is None:
+        raise DependencyException("File Storage Service missing")
+    return _file_storage_service_legacy
 
 
 def get_archive_repository() -> ArchiveRepository:

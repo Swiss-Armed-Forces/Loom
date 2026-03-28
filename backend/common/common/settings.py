@@ -7,12 +7,13 @@ from pydantic import (
     AnyHttpUrl,
     AnyUrl,
     AnyWebsocketUrl,
+    BaseModel,
     Field,
     MongoDsn,
     field_validator,
     model_validator,
 )
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from common.environment import get_loglevel, is_development_env
 from common.services.encryption_service import AESMasterKey
@@ -23,9 +24,20 @@ logger = logging.getLogger(__name__)
 DOMAIN: str = str(os.getenv("DOMAIN", "loom"))
 
 
+class FileStorageSettings(BaseModel):
+    # MinIO for file repository service
+    minio_bucket_name: str = "loomstorage"
+    minio_host: str = f"minio-api.{DOMAIN}"
+    minio_secret_key: str = "minioadmin"
+    minio_access_key: str = "minioadmin"
+    minio_secure_connection: bool = False
+
+
 class Settings(BaseSettings):
     """Settings for the common module They can be overridden by environment
     variables."""
+
+    model_config = SettingsConfigDict(env_nested_delimiter="__")
 
     development_env: bool = Field(default_factory=is_development_env)
     loglevel: int = Field(default_factory=get_loglevel)
@@ -112,6 +124,8 @@ class Settings(BaseSettings):
     ws_host: AnyWebsocketUrl = AnyWebsocketUrl(
         f"ws://api.{DOMAIN}",
     )
+
+    file_storage: FileStorageSettings = FileStorageSettings()
 
 
 settings = Settings()

@@ -126,9 +126,9 @@ def detect_spam_task(
 
     rspamd_service = get_rspamd_service()
 
-    with get_lazybytes_service().load_generator(file_content) as generator:
-        is_spam = rspamd_service.detect_spam_from_generator(generator)
-        return is_spam
+    generator = get_lazybytes_service().load_generator(file_content)
+    is_spam = rspamd_service.detect_spam_from_generator(generator)
+    return is_spam
 
 
 @persisting_task(app, IndexingPersister)

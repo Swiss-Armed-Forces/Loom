@@ -46,15 +46,10 @@ def _download_archive_and_check_if_files_are_there(archive_id: UUID, files: list
     )
     response.raise_for_status()
 
-    decrypted_archive = b""
-    with get_archive_encryption_service().get_decryptor(
-        BytesIO(response.content)
-    ) as decryptor:
-        while True:
-            plaintext = decryptor()
-            if plaintext == b"":
-                break
-            decrypted_archive += plaintext
+    decrypted_stream = get_archive_encryption_service().get_decrypted_stream(
+        iter([response.content])
+    )
+    decrypted_archive = b"".join(decrypted_stream)
     assert_files_in_archive(decrypted_archive)
 
 

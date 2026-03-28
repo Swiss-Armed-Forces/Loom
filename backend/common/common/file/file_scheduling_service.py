@@ -1,6 +1,5 @@
 """Service to schedule new files for processing."""
 
-import hashlib
 import logging
 from uuid import UUID
 
@@ -17,6 +16,7 @@ from common.services.file_storage_service import FileStorageService
 from common.services.lazybytes_service import LazyBytes, LazyBytesService
 from common.services.task_scheduling_service import TaskSchedulingService
 from common.settings import settings
+from common.utils.iterhash import CountingHash, iterhash
 
 logger = logging.getLogger(__name__)
 
@@ -24,17 +24,20 @@ logger = logging.getLogger(__name__)
 class FileSchedulingService:
     """Handles new files, stores them and schedules tasks."""
 
+    # pylint: disable=too-many-arguments, too-many-positional-arguments
     def __init__(
         self,
         file_repository: FileRepository,
-        file_storage_service: FileStorageService,
+        file_storage_service: LazyBytesService,
         task_scheduling_service: TaskSchedulingService,
         lazybytes_service: LazyBytesService,
+        file_storage_service_legacy: FileStorageService | None = None,
     ):
         self._file_repository = file_repository
         self._file_storage_service = file_storage_service
         self._task_scheduling_service = task_scheduling_service
         self._lazybytes_service = lazybytes_service
+        self._file_storage_service_legacy = file_storage_service_legacy
 
     def index_file(
         self,
@@ -45,27 +48,24 @@ class FileSchedulingService:
     ) -> File:
         logger.info("Scheduling indexing of file: '%s'", full_name)
 
-        # Upload to file storage, compute hash and length
-        file_storage_id = ObjectId()
-        file_data_hash = hashlib.sha256()
-        file_len = 0
-        with self._lazybytes_service.load_generator(
-            file_content
-        ) as file_chunk_generator, self._file_storage_service.open_upload_stream_with_id(
-            file_storage_id, str(full_name)
-        ) as file_upload:
-            for file_chunk in file_chunk_generator:
-                file_upload.write(file_chunk)
-                file_data_hash.update(file_chunk)
-                file_len += len(file_chunk)
+        logger.info("Uploading '%s' to file storage", full_name)
+
+        # Wrap data stream with hash and byte count tracking
+        data_hash = CountingHash("sha256")
+        data = iterhash(data_hash, self._lazybytes_service.load_generator(file_content))
+
+        # Upload to file storage
+        file_storage_handle = self._file_storage_service.from_generator(data)
+
+        logger.info("Uploaded '%s' to file storage", full_name)
 
         file = File(
-            storage_id=str(file_storage_id),
+            storage_data=file_storage_handle,
             full_name=FilePurePath(full_name),
             source=source_id,
             parent_id=parent_id,
-            sha256=file_data_hash.hexdigest(),
-            size=file_len,
+            sha256=data_hash.hexdigest(),
+            size=data_hash.bytes_count,
         )
 
         # deduplicate file -> do not index the same file twice
@@ -77,7 +77,7 @@ class FileSchedulingService:
             # - delete uploaded raw file
             # - return duplicate
             logger.info("Deduplication of file: '%s'", full_name)
-            self._file_storage_service.delete(file_storage_id)
+            self._file_storage_service.delete(file_storage_handle)
             return deduplicated_file
 
         self._file_repository.save(file)
@@ -94,11 +94,42 @@ class FileSchedulingService:
         if old_file is None:
             raise FileNotFoundException("Invalid file")
 
+        # Handle legacy files: migrate from legacy file storage
+        if old_file.storage_data is None:
+            if old_file.storage_id is None:
+                raise ValueError(
+                    f"Cannot reindex file '{old_file.full_name}': "
+                    "no storage data or storage_id"
+                )
+
+            logger.info(
+                "Migrating file '%s' from legacy file storage",
+                old_file.full_name,
+            )
+
+            # Load from legacy GridFS storage
+            if self._file_storage_service_legacy is None:
+                raise ValueError(
+                    f"Cannot migrate file '{old_file.full_name}': "
+                    "legacy file storage service not configured"
+                )
+
+            legacy_data_stream = (
+                self._file_storage_service_legacy.open_download_iterator(
+                    file_id=ObjectId(old_file.storage_id)
+                )
+            )
+
+            # Upload to new file storage service
+            storage_data = self._file_storage_service.from_generator(legacy_data_stream)
+        else:
+            storage_data = old_file.storage_data
+
         logger.info("Scheduling re-index of file '%s'", old_file.full_name)
 
         # Create a new minimal file object (same pattern as index_file)
         file = File(
-            storage_id=old_file.storage_id,
+            storage_data=storage_data,
             full_name=old_file.full_name,
             source=old_file.source,
             parent_id=old_file.parent_id,
@@ -115,12 +146,9 @@ class FileSchedulingService:
         self._file_repository.save(file)
 
         # Load file content and schedule indexing
-        file_content = self._lazybytes_service.from_generator(
-            self._file_storage_service.open_download_iterator(
-                file_id=ObjectId(old_file.storage_id)
-            )
-        )
-        self._task_scheduling_service.index_file(file, file_content)
+        storage_data_stream = self._file_storage_service.load_generator(storage_data)
+        lazybytes = self._lazybytes_service.from_generator(storage_data_stream)
+        self._task_scheduling_service.index_file(file, lazybytes)
 
     def translate_file(self, file_id: UUID, lang: str):
         # update status

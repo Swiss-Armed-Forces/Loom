@@ -52,7 +52,7 @@ def test_upload_file(client: TestClient):
     file_content = "this is just a testfile with a bit of content"
     file = File(
         full_name=FilePurePath("/path/to/file.txt"),
-        storage_id=str(ObjectId()),
+        storage_data=LazyBytes(service_id=str(ObjectId())),
         source="test",
         sha256="",
         size=len(file_content),
@@ -140,7 +140,7 @@ def test_get_files_count_searches_in_repository(client: TestClient):
 def test_update_hidden_state_file_by_id(client: TestClient):
     file = File(
         full_name=FilePurePath("/path/to/file.txt"),
-        storage_id=str(ObjectId()),
+        storage_data=LazyBytes(service_id=str(ObjectId())),
         source="test",
         sha256="",
         size=0,
@@ -163,7 +163,7 @@ def test_update_hidden_state_files_by_query(client: TestClient):
 
     file = File(
         full_name=FilePurePath("/path/to/file.txt"),
-        storage_id=str(ObjectId()),
+        storage_data=LazyBytes(service_id=str(ObjectId())),
         source="test",
         sha256="",
         size=0,
@@ -206,7 +206,7 @@ VALID_TAG_NAMES = [
 def test_add_valid_tag(client: TestClient, tag_name: str):
     file = File(
         full_name=FilePurePath("/path/to/file.txt"),
-        storage_id=str(ObjectId()),
+        storage_data=LazyBytes(service_id=str(ObjectId())),
         source="test",
         sha256="",
         size=0,
@@ -226,7 +226,7 @@ def test_delete_tag(client: TestClient):
     tag = "testtag"
     file = File(
         full_name="/path/to/file.txt",
-        storage_id=str(ObjectId()),
+        storage_data=LazyBytes(service_id=str(ObjectId())),
         source="test",
         sha256="",
         size=0,
@@ -243,22 +243,22 @@ def test_delete_tag(client: TestClient):
 
 def test_get_thumbnail(client: TestClient):
     thumbnail_content = b"just a random thumbnail"
-    thumbnail_file_id = str(ObjectId())
+    thumbnail_data = LazyBytes(service_id=str(ObjectId()))
     file = File(
         full_name="/path/to/file.txt",
-        storage_id=str(ObjectId()),
+        storage_data=LazyBytes(service_id=str(ObjectId())),
         source="test",
         sha256="",
         size=0,
-        thumbnail_file_id=str(ObjectId()),
+        thumbnail_data=thumbnail_data,
     )
 
     get_file_repository().get_by_id.return_value = file
-    get_file_storage_service().open_download_iterator.return_value = iter(
+    get_file_storage_service().load_generator.return_value = iter(
         re.split(rb"(\s+)", thumbnail_content)
     )
 
-    response = client.get(f"/v1/files/{file.id_}/thumbnail/{thumbnail_file_id}")
+    response = client.get(f"/v1/files/{file.id_}/thumbnail/{thumbnail_data.service_id}")
 
     assert response.status_code == 200
     assert response.content == thumbnail_content
@@ -267,11 +267,11 @@ def test_get_thumbnail(client: TestClient):
 def test_get_full(client: TestClient):
     file = File(
         full_name=FilePurePath("/path/to/file.txt"),
-        storage_id=str(ObjectId()),
+        storage_data=LazyBytes(service_id=str(ObjectId())),
         source="test",
         sha256="",
         size=0,
-        thumbnail_file_id=str(ObjectId()),
+        thumbnail_data=LazyBytes(service_id=str(ObjectId())),
     )
     get_file_repository().get_by_id_with_query.return_value = file
     query = QueryParameters(query_id="0123456789")
@@ -299,11 +299,11 @@ def test_get_full_file_is_none(client: TestClient):
 def test_get_preview(client: TestClient):
     file = File(
         full_name=FilePurePath("/path/to/file.txt"),
-        storage_id=str(ObjectId()),
+        storage_data=LazyBytes(service_id=str(ObjectId())),
         source="test",
         sha256="",
         size=0,
-        thumbnail_file_id=str(ObjectId()),
+        thumbnail_data=LazyBytes(service_id=str(ObjectId())),
     )
     get_file_repository().get_by_id_with_query.return_value = file
     query = QueryParameters(query_id="0123456789")
@@ -322,14 +322,14 @@ def test_get_preview(client: TestClient):
 def test_get_preview_content_truncated(client: TestClient):
     file = File(
         full_name=FilePurePath("/path/to/file.txt"),
-        storage_id=str(ObjectId()),
+        storage_data=LazyBytes(service_id=str(ObjectId())),
         source="test",
         content="".join(
             random.choices(string.ascii_letters, k=CONTENT_PREVIEW_LENGTH + 1)
         ),
         sha256="",
         size=0,
-        thumbnail_file_id=str(ObjectId()),
+        thumbnail_data=LazyBytes(service_id=str(ObjectId())),
     )
     get_file_repository().get_by_id_with_query.return_value = file
     query = QueryParameters(query_id="0123456789")

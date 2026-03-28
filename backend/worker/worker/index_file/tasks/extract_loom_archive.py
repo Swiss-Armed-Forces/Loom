@@ -33,21 +33,15 @@ def decrypt_archive(encrypted_file: LazyBytes) -> LazyBytes | None:
     lazybytes_service = get_lazybytes_service()
     archive_encryption_service = get_archive_encryption_service()
 
-    with lazybytes_service.load_file(encrypted_file) as fd:
-        try:
-            with archive_encryption_service.get_decryptor(fd) as decryptor:
-
-                def decrypt_generator():
-                    while True:
-                        decrypted = decryptor()
-                        if decrypted == b"":
-                            return
-                        yield decrypted
-
-                return lazybytes_service.from_generator(decrypt_generator())
-        except FileEncryptionServiceException:
-            # not an archive we can decrypt
-            return None
+    try:
+        encrypted_generator = lazybytes_service.load_generator(encrypted_file)
+        decrypted_stream = archive_encryption_service.get_decrypted_stream(
+            encrypted_generator
+        )
+        return lazybytes_service.from_generator(decrypted_stream)
+    except FileEncryptionServiceException:
+        # not an archive we can decrypt
+        return None
 
 
 @app.task(base=FileIndexingTask)

@@ -22,6 +22,7 @@ gotenberg-client = "^0.13.1"
 
 # Can be removed once we migrate to python ^3.14
 zstandard = "^0.25.0"
+minio = "^7.2.20"
 
 [tool.poetry.group.dev.dependencies]
 debugpy = "^1.8.1"

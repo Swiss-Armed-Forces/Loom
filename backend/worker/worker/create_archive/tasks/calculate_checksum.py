@@ -1,9 +1,12 @@
 import hashlib
 
-from bson import ObjectId
 from celery import chain
 from common.archive.archive_repository import Archive
-from common.dependencies import get_celery_app, get_file_storage_service
+from common.dependencies import (
+    get_celery_app,
+    get_file_storage_service,
+)
+from common.services.lazybytes_service import LazyBytes
 
 from worker.create_archive.infra.archive_creation_persister import (
     ArchiveCreationPersister,
@@ -29,9 +32,9 @@ def signature_encrypted_file(archive: Archive):
 
 
 @app.task(base=ArchiveProcessingTask)
-def calculate_checksum_task(storage_id: ObjectId) -> str:
+def calculate_checksum_task(storage_data: LazyBytes) -> str:
     checksum = hashlib.sha256()
-    for chunk in get_file_storage_service().open_download_iterator(storage_id):
+    for chunk in get_file_storage_service().load_generator(storage_data):
         checksum.update(chunk)
     return checksum.hexdigest()
 

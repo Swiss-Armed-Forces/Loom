@@ -487,10 +487,10 @@ The complete source code for Traefik is publicly available at [https://github.co
 | celery-types                          | 0.24.0          | Apache Software License                                                          |
 | coverage                              | 7.5.4           | Apache Software License                                                          |
 | docker                                | 7.1.0           | Apache Software License                                                          |
-| elastic-transport                     | 8.17.1          | Apache Software License                                                          |
-| elasticsearch                         | 9.0.2           | Apache Software License                                                          |
+| elastic-transport                     | 9.2.1           | Apache Software License                                                          |
+| elasticsearch                         | 9.3.0           | Apache Software License                                                          |
 | memray                                | 1.17.2          | Apache Software License                                                          |
-| minio                                 | 7.2.15          | Apache Software License                                                          |
+| minio                                 | 7.2.20          | Apache Software License                                                          |
 | opentelemetry-instrumentation         | 0.60b1          | Apache Software License                                                          |
 | opentelemetry-instrumentation-asgi    | 0.60b1          | Apache Software License                                                          |
 | opentelemetry-instrumentation-fastapi | 0.60b1          | Apache Software License                                                          |
@@ -1089,6 +1089,8 @@ The complete source code for Traefik is publicly available at [https://github.co
 | anyio | 4.8.0 | MIT | python-installed-package-cataloger |
 | api | 0.1.0 | MIT | python-installed-package-cataloger |
 | apt | 2.6.1 | BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
+| argon2-cffi | 25.1.0 | MIT | python-installed-package-cataloger |
+| argon2-cffi-bindings | 25.1.0 | MIT | python-installed-package-cataloger |
 | asgiref | 3.11.1 | BSD-3-Clause | python-installed-package-cataloger |
 | autocommand | 2.2.2 |  | python-installed-package-cataloger |
 | backports-tarfile | 1.2.0 | MIT | python-installed-package-cataloger |
@@ -1225,6 +1227,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | logsave | 1.47.0-2+b2 | Apache-2.0, Apache-2.0, BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later, ISC, Kazlib, LGPL-2.0-only, Latex2e | dpkg-db-cataloger |
 | luqum | 0.14.0 | LGPL-3.0-only | python-installed-package-cataloger |
 | mawk | 1.3.4.20200120-3.1 | CC-BY-3.0, GPL-2.0-only, X11 | dpkg-db-cataloger |
+| minio | 7.2.20 | Apache-2.0 | python-installed-package-cataloger |
 | more-itertools | 10.8.0 | MIT | python-installed-package-cataloger |
 | mount | 2.38.1-5+deb12u3 | BSD-3-Clause, BSD-4-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, MIT | dpkg-db-cataloger |
 | ncurses-base | 6.4-4 | BSD-3-Clause, X11 | dpkg-db-cataloger |
@@ -1323,6 +1326,8 @@ The complete source code for Traefik is publicly available at [https://github.co
 | annotated-types | 0.7.0 |  | python-installed-package-cataloger |
 | anyio | 4.9.0 | MIT | python-installed-package-cataloger |
 | apt | 2.6.1 | BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
+| argon2-cffi | 25.1.0 | MIT | python-installed-package-cataloger |
+| argon2-cffi-bindings | 25.1.0 | MIT | python-installed-package-cataloger |
 | autoconf | 2.71-3 | GFDL-1.3-only, GFDL-1.3-or-later, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later | dpkg-db-cataloger |
 | automake | 1:1.16.5-1.3 | GFDL-1.3-only, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later | dpkg-db-cataloger |
 | autotools-dev | 20220109.1 | GPL-3.0-only | dpkg-db-cataloger |
@@ -1789,6 +1794,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | mercurial | 6.3.2 |  | python-installed-package-cataloger |
 | mercurial | 6.3.2-1+deb12u1 | GPL-2.0-only, GPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
 | mercurial-common | 6.3.2-1+deb12u1 | GPL-2.0-only, GPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
+| minio | 7.2.20 | Apache-2.0 | python-installed-package-cataloger |
 | mount | 2.38.1-5+deb12u3 | BSD-3-Clause, BSD-4-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, MIT | dpkg-db-cataloger |
 | mysql-common | 5.8+1.1.0 | GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
 | ncurses-base | 6.4-4 | BSD-3-Clause, X11 | dpkg-db-cataloger |

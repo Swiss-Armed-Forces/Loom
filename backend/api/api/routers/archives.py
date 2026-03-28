@@ -2,7 +2,6 @@ import logging
 from typing import Annotated
 from uuid import UUID
 
-from bson import ObjectId
 from common.archive.archive_repository import ArchiveRepository
 from common.archive.archive_scheduling_service import ArchiveSchedulingService
 from common.dependencies import (
@@ -10,7 +9,7 @@ from common.dependencies import (
     get_archive_scheduling_service,
     get_file_storage_service,
 )
-from common.services.file_storage_service import FileStorageService
+from common.services.lazybytes_service import LazyBytesService
 from common.services.query_builder import QueryParameters
 from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from fastapi.responses import StreamingResponse
@@ -82,21 +81,26 @@ def download_archive(
     archive_id: UUID,
     query: Annotated[DownloadArchiveQuery, Query()],
     archive_repository: ArchiveRepository = default_archive_repository,
-    file_storage_service: FileStorageService = default_file_storage_service,
+    file_storage_service: LazyBytesService = default_file_storage_service,
 ) -> Response:
     """Download an archive by id."""
     archive = archive_repository.get_by_id(archive_id)
     if archive is None:
         raise HTTPException(status_code=404, detail="Invalid archive")
-    archive_file = archive.plain_file if not query.encrypted else archive.encrypted_file
-    archive_name = archive.name if not query.encrypted else archive.name_encrypted
+    if not query.encrypted:
+        archive_file = archive.plain_file
+        archive_name = archive.name
+    else:
+        archive_file = archive.encrypted_file
+        archive_name = archive.name_encrypted
+    storage_data = archive_file.storage_data
+    if storage_data is None:
+        raise HTTPException(status_code=500, detail="No storage data found")
 
-    file_stream = file_storage_service.open_download_iterator(
-        file_id=ObjectId(archive_file.storage_id)
-    )
+    file_stream = file_storage_service.load_generator(storage_data)
     return StreamingResponse(
         content=file_stream,
-        media_type="archive/zip",
+        media_type="application/zip",
         headers={
             **get_content_disposition_header("attachment", archive_name),
         },

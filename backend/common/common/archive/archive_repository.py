@@ -3,15 +3,16 @@ from datetime import datetime
 from elasticsearch.dsl import Date, InnerDoc, Keyword, Long, Object, Text
 from pydantic import BaseModel, Field, computed_field
 
+from common.file.file_repository import _EsLazyBytes
 from common.models.es_repository import BaseEsRepository
+from common.services.lazybytes_service import LazyBytes
 from common.services.query_builder import QueryParameters
 from common.settings import settings
 from common.task_object.task_object import RepositoryTaskObject, _EsTaskDocument
-from common.utils.object_id_str import ObjectIdStr
 
 
 class StoredArchive(BaseModel):
-    storage_id: ObjectIdStr | None = None
+    storage_data: LazyBytes | None = None
     sha256: str | None = None
     size: int | None = None
 
@@ -41,7 +42,7 @@ class _EsQueryParameters(InnerDoc):
 
 
 class _EsStoredArchive(InnerDoc):
-    storage_id = Keyword()
+    storage_data = Object(_EsLazyBytes)
     sha256 = Keyword()
     size = Long()
 

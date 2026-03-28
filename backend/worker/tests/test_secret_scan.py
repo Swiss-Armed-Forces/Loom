@@ -70,11 +70,11 @@ from worker.index_file.tasks.secret_scan import (
 )
 def test_ripsecrets_scan_task(
     extension: str,
-    file_content: bytes,
+    file_content: str,
     result: list[Secret],
     lazybytes_service_inmemory: LazyBytesService,
 ):
-    lazy_bytes_obj = lazybytes_service_inmemory.from_bytes(file_content)
+    lazy_bytes_obj = lazybytes_service_inmemory.from_bytes(file_content.encode())
     secrets: list[Secret] = ripsecrets_scan_task(lazy_bytes_obj, extension)
     assert secrets == result
 
@@ -131,11 +131,11 @@ def test_ripsecrets_scan_task(
 )
 def test_trufflehog_scan_task(
     extension: str,
-    file_content: bytes,
+    file_content: str,
     result: list[Secret],
     lazybytes_service_inmemory: LazyBytesService,
 ):
-    lazy_bytes_obj = lazybytes_service_inmemory.from_bytes(file_content)
+    lazy_bytes_obj = lazybytes_service_inmemory.from_bytes(file_content.encode())
     secrets = trufflehog_scan_task(lazy_bytes_obj, extension)
     assert secrets == result
 

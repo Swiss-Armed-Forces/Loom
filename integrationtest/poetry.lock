@@ -73,6 +73,7 @@ develop = true
 [package.dependencies]
 common = {path = "../common", develop = true}
 fastapi = "^0.128.0"
+minio = "^7.2.20"
 numpy = "^1.26.4"
 opentelemetry-exporter-prometheus = "^0.60b1"
 opentelemetry-instrumentation-fastapi = "^0.60b1"
@@ -1162,14 +1163,14 @@ ply = ">=3.11"
 
 [[package]]
 name = "minio"
-version = "7.2.15"
+version = "7.2.20"
 description = "MinIO Python SDK for Amazon S3 Compatible Cloud Storage"
 optional = false
 python-versions = ">=3.9"
 groups = ["main"]
 files = [
-    {file = "minio-7.2.15-py3-none-any.whl", hash = "sha256:c06ef7a43e5d67107067f77b6c07ebdd68733e5aa7eed03076472410ca19d876"},
-    {file = "minio-7.2.15.tar.gz", hash = "sha256:5247df5d4dca7bfa4c9b20093acd5ad43e82d8710ceb059d79c6eea970f49f79"},
+    {file = "minio-7.2.20-py3-none-any.whl", hash = "sha256:eb33dd2fb80e04c3726a76b13241c6be3c4c46f8d81e1d58e757786f6501897e"},
+    {file = "minio-7.2.20.tar.gz", hash = "sha256:95898b7a023fbbfde375985aa77e2cd6a0762268db79cf886f002a9ea8e68598"},
 ]
 
 [package.dependencies]
@@ -2569,6 +2570,7 @@ common = {path = "../common", develop = true}
 flower = "^2.0.1"
 gotenberg-client = "^0.13.1"
 langchain-text-splitters = "^0.3.2"
+minio = "^7.2.20"
 python-magic = "^0.4.27"
 requests = "^2.31.0"
 scikit-learn = "^1.7.0"

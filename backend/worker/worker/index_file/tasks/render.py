@@ -12,7 +12,6 @@ from common.dependencies import (
 from common.file.file_repository import File
 from common.services.lazybytes_service import LazyBytes
 from common.utils.cache import cache
-from common.utils.object_id_str import ObjectIdStr
 from httpx import HTTPStatusError
 from pydantic import BaseModel
 from wand.exceptions import MissingDelegateError, WandException
@@ -204,18 +203,18 @@ def signature(file: File, file_content: LazyBytes) -> Signature:
     return group(
         chain(
             render_image_png_task.s(file_content, render_file),
-            upload_rendered_task.s(render_file, RenderType.IMAGE),
-            persist_rendered_file_image_file_id_task.s(file),
+            upload_rendered_task.s(),
+            persist_rendered_file_image_data_task.s(file),
         ),
         chain(
             render_browser_to_pdf_task.s(file_content, render_file),
-            upload_rendered_task.s(render_file, RenderType.BROWSER),
-            persist_rendered_file_browser_pdf_file_id_task.s(file),
+            upload_rendered_task.s(),
+            persist_rendered_file_browser_pdf_data_task.s(file),
         ),
         chain(
             render_office_to_pdf_task.s(file_content, render_file),
-            upload_rendered_task.s(render_file, RenderType.OFFICE),
-            persist_rendered_file_office_pdf_file_id_task.s(file),
+            upload_rendered_task.s(),
+            persist_rendered_file_office_pdf_data_task.s(file),
         ),
     )
 
@@ -227,18 +226,18 @@ def signature_pass_file_content(
     return group(
         chain(
             render_image_png_task.s(render_file),
-            upload_rendered_task.s(render_file, RenderType.IMAGE),
-            persist_rendered_file_image_file_id_task.s(file),
+            upload_rendered_task.s(),
+            persist_rendered_file_image_data_task.s(file),
         ),
         chain(
             render_browser_to_pdf_task.s(render_file),
-            upload_rendered_task.s(render_file, RenderType.BROWSER),
-            persist_rendered_file_browser_pdf_file_id_task.s(file),
+            upload_rendered_task.s(),
+            persist_rendered_file_browser_pdf_data_task.s(file),
         ),
         chain(
             render_office_to_pdf_task.s(render_file),
-            upload_rendered_task.s(render_file, RenderType.OFFICE),
-            persist_rendered_file_office_pdf_file_id_task.s(file),
+            upload_rendered_task.s(),
+            persist_rendered_file_office_pdf_data_task.s(file),
         ),
     )
 
@@ -331,41 +330,35 @@ def render_office_to_pdf_task(
 @app.task(base=FileIndexingTask)
 def upload_rendered_task(
     rendered_lazy: LazyBytes | None,
-    render_file: RenderFile,
-    render_type: RenderType,
-) -> ObjectIdStr | None:
+) -> LazyBytes | None:
     if rendered_lazy is None:
         return None
-    with get_lazybytes_service().load_file(rendered_lazy) as fd:
-        file_id = get_file_storage_service().upload_from_stream(
-            f"{render_file.short_name}.{render_type.value}-rendered.{render_file.extension}",
-            fd,
-        )
-    return ObjectIdStr(file_id)
+    data = get_lazybytes_service().load_generator(rendered_lazy)
+    return get_file_storage_service().from_generator(data)
 
 
 @persisting_task(app, IndexingPersister)
-def persist_rendered_file_image_file_id_task(
-    persister: IndexingPersister, rendered_file_image_file_id: ObjectIdStr | None
+def persist_rendered_file_image_data_task(
+    persister: IndexingPersister, rendered_file_image_data: LazyBytes | None
 ):
-    if rendered_file_image_file_id is None:
+    if rendered_file_image_data is None:
         return
-    persister.set_rendered_file_image_file_id(rendered_file_image_file_id)
+    persister.set_rendered_file_image_data(rendered_file_image_data)
 
 
 @persisting_task(app, IndexingPersister)
-def persist_rendered_file_browser_pdf_file_id_task(
-    persister: IndexingPersister, rendered_file_browser_pdf_file_id: ObjectIdStr | None
+def persist_rendered_file_browser_pdf_data_task(
+    persister: IndexingPersister, rendered_file_browser_pdf_data: LazyBytes | None
 ):
-    if rendered_file_browser_pdf_file_id is None:
+    if rendered_file_browser_pdf_data is None:
         return
-    persister.set_rendered_file_browser_pdf_file_id(rendered_file_browser_pdf_file_id)
+    persister.set_rendered_file_browser_pdf_data(rendered_file_browser_pdf_data)
 
 
 @persisting_task(app, IndexingPersister)
-def persist_rendered_file_office_pdf_file_id_task(
-    persister: IndexingPersister, rendered_file_office_pdf_file_id: ObjectIdStr | None
+def persist_rendered_file_office_pdf_data_task(
+    persister: IndexingPersister, rendered_file_office_pdf_data: LazyBytes | None
 ):
-    if rendered_file_office_pdf_file_id is None:
+    if rendered_file_office_pdf_data is None:
         return
-    persister.set_rendered_file_office_pdf_file_id(rendered_file_office_pdf_file_id)
+    persister.set_rendered_file_office_pdf_data(rendered_file_office_pdf_data)

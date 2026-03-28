@@ -1,7 +1,7 @@
-from bson import ObjectId
 from celery import chain, group
 from common.archive.archive_repository import Archive
 from common.dependencies import get_celery_app
+from common.services.lazybytes_service import LazyBytes
 
 from worker.create_archive.infra.archive_creation_persister import (
     ArchiveCreationPersister,
@@ -30,7 +30,7 @@ def create_archive_task(archive: Archive):
             chain(
                 compress_files_task.s(),
                 group(
-                    persist_plain_file_storage_id_task.s(archive),
+                    persist_plain_file_storage_data_task.s(archive),
                     group(
                         calculate_checksum.signature_plain_file(archive),
                         calculate_size.signature_plain_file(archive),
@@ -38,7 +38,7 @@ def create_archive_task(archive: Archive):
                     chain(
                         encrypt_file_task.s(),
                         group(
-                            persist_encrypted_file_storage_id_task.s(archive),
+                            persist_encrypted_file_storage_data_task.s(archive),
                             calculate_checksum.signature_encrypted_file(archive),
                             calculate_size.signature_encrypted_file(archive),
                         ),
@@ -51,14 +51,14 @@ def create_archive_task(archive: Archive):
 
 
 @persisting_task(app, ArchiveCreationPersister)
-def persist_plain_file_storage_id_task(
-    persister: ArchiveCreationPersister, storage_id: ObjectId
+def persist_plain_file_storage_data_task(
+    persister: ArchiveCreationPersister, storage_data: LazyBytes
 ):
-    persister.set_plain_file_storage_id(storage_id)
+    persister.set_plain_file_storage_data(storage_data)
 
 
 @persisting_task(app, ArchiveCreationPersister)
-def persist_encrypted_file_storage_id_task(
-    persister: ArchiveCreationPersister, storage_id: ObjectId
+def persist_encrypted_file_storage_data_task(
+    persister: ArchiveCreationPersister, storage_data: LazyBytes
 ):
-    persister.set_encrypted_file_storage_id(storage_id)
+    persister.set_encrypted_file_storage_data(storage_data)

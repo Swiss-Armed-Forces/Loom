@@ -1,6 +1,6 @@
-from bson import ObjectId
 from common.archive.archive_repository import Archive, ArchiveRepository
 from common.dependencies import get_archive_repository
+from common.services.lazybytes_service import LazyBytes
 
 from worker.utils.persister_base import PersisterBase
 
@@ -14,11 +14,11 @@ class ArchiveCreationPersister(PersisterBase[Archive]):
     def set_state(self, state: str):
         self._object.state = state
 
-    def set_plain_file_storage_id(self, storage_id: ObjectId):
-        self._object.plain_file.storage_id = str(storage_id)
+    def set_plain_file_storage_data(self, storage_data: LazyBytes):
+        self._object.plain_file.storage_data = storage_data
 
-    def set_encrypted_file_storage_id(self, storage_id: ObjectId):
-        self._object.encrypted_file.storage_id = str(storage_id)
+    def set_encrypted_file_storage_data(self, storage_data: LazyBytes):
+        self._object.encrypted_file.storage_data = storage_data
 
     def set_plain_file_checksum(self, checksum: str):
         self._object.plain_file.sha256 = checksum
