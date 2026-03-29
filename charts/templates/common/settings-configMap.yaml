@@ -125,8 +125,11 @@ data:
     gotenberg_host: http://{{ include "app.fullname" . }}-gotenberg:{{ .Values.gotenberg.service.port }}
     seaweedfs_master_host: http://{{ include "app.fullname" . }}-seaweedfs-master:{{ .Values.seaweedfs.master.port }}
 
+    # storage services
     file_storage__s3_host: *s3-host
-    file_storage__bucket_name: {{ include "app.fullname" . }}-filestorage
+    file_storage__bucket_name: loom-filestorage
+    lazybytes_storage__s3_host: *s3-host
+    lazybytes_storage__bucket_name: loom-lazybytes
 
     # flower
     FLOWER_BROKER_API: http://guest:guest@{{ include "app.fullname" . }}-rabbit:{{ .Values.rabbit.service.port.http }}/api/

@@ -24,7 +24,6 @@ from common.messages.pubsub_service import PubSubService
 from common.services.file_storage_service import FileStorageService
 from common.services.imap_service import IMAPService
 from common.services.lazybytes_service import (
-    GridFSLazyBytesService,
     LazyBytesService,
     S3LazyBytesService,
 )
@@ -149,8 +148,14 @@ def init(init_elasticsearch_documents: bool = False):
     )
 
     global _lazybytes_service
-    _lazybytes_service = GridFSLazyBytesService(
-        _mongo.get_database(settings.mongo_db_lazybytes_storage_name),
+    _lazybytes_service = S3LazyBytesService(
+        Minio(
+            settings.lazybytes_storage.s3_host,
+            settings.lazybytes_storage.s3_access_key,
+            settings.lazybytes_storage.s3_secret_key,
+            secure=settings.lazybytes_storage.s3_secure_connection,
+        ),
+        settings.lazybytes_storage.bucket_name,
         threshold_bytes=settings.lazy_threshold_bytes,
     )
 

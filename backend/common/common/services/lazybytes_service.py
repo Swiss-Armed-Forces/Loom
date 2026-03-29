@@ -22,6 +22,7 @@ from pydantic import BaseModel, ConfigDict, model_validator
 from pymongo.database import Database
 
 from common.settings import settings
+from common.utils.flush_s3_bucket import flush_s3_bucket
 from common.utils.gridfs import chunked_iterator_for_stream
 
 logger = logging.getLogger(__name__)
@@ -363,7 +364,7 @@ class S3LazyBytesService(LazyBytesService):
         yield from response.stream()
 
     def flush(self):
-        self._client.remove_bucket(self._bucket)
+        flush_s3_bucket(self._client, self._bucket)
 
     def _delete(self, service_id: Any):
         self._client.remove_object(self._bucket, str(service_id))

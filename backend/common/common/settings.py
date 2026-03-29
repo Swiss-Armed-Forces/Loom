@@ -24,9 +24,8 @@ logger = logging.getLogger(__name__)
 DOMAIN: str = str(os.getenv("DOMAIN", "loom"))
 
 
-class FileStorageSettings(BaseModel):
-    # MinIO for file repository service
-    bucket_name: str = "loom-filestorage"
+class S3StorageSettings(BaseModel):
+    bucket_name: str
     s3_host: str = f"s3.{DOMAIN}"
     s3_secret_key: str | None = None
     s3_access_key: str | None = None
@@ -133,7 +132,10 @@ class Settings(BaseSettings):
         f"ws://api.{DOMAIN}",
     )
 
-    file_storage: FileStorageSettings = FileStorageSettings()
+    file_storage: S3StorageSettings = S3StorageSettings(bucket_name="loom-filestorage")
+    lazybytes_storage: S3StorageSettings = S3StorageSettings(
+        bucket_name="loom-lazybytes"
+    )
 
 
 settings = Settings()
