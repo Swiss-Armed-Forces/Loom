@@ -1,25 +1,36 @@
 """Settings for the crawler."""
 
-import os
+from typing import Any
 
 from common.settings import DOMAIN
 from common.settings import Settings as CommonSettings
-from pydantic import Field
+from pydantic.fields import FieldInfo
+from pydantic_settings import (
+    EnvSettingsSource,
+)
 
-MINIO_ACCESS_KEY: str = "MinIO-Intake-Key"
-MINIO_SECRET_KEY: str = str(os.getenv("MINIO_SECRET_KEY", "minioadmin"))
+
+class CrawlerEnvSettingsSource(EnvSettingsSource):
+    """Custom settings source that parses comma-separated values for s3_buckets."""
+
+    def prepare_field_value(
+        self, field_name: str, field: FieldInfo, value: Any, value_is_complex: bool
+    ) -> Any:
+        if field_name == "s3_buckets":
+            if value:
+                return list(value.split(","))
+        return value
 
 
 class Settings(CommonSettings):
     """All settings for the crawler."""
 
     crawler_source_id: str = "crawler"
-    minio_bucket_names: list[str] = ["default"]
 
-    minio_host: str = f"minio-api.{DOMAIN}"
-    minio_secret_key: str = Field(alias="MINIO_SECRET_KEY", default="minioadmin")
-    minio_access_key: str = Field(alias="MINIO_ACCESS_KEY", default="minioadmin")
-    minio_secure_connection: bool = False
+    s3_host: str = f"s3.{DOMAIN}"
+    s3_secure_connection: bool = False
+
+    s3_bucket_names: list[str] = ["default"]
 
 
 settings = Settings()

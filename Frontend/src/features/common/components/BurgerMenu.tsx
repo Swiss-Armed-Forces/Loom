@@ -14,7 +14,6 @@ import {
     SmartToyOutlined,
     TaskOutlined,
     InfoOutlined,
-    StorageOutlined,
     ExpandOutlined,
     PrecisionManufacturingOutlined,
     FindInPageOutlined,
@@ -23,7 +22,9 @@ import {
     WhatshotOutlined,
     DataObjectOutlined,
     TranslateOutlined,
-    DriveFolderUploadOutlined,
+    CloudUploadOutlined,
+    KeyOutlined,
+    StorageOutlined,
 } from "@mui/icons-material";
 import {
     apiHost,
@@ -31,7 +32,7 @@ import {
     flowerHost,
     grafanaHost,
     translateHost,
-    minioHost,
+    s3Host,
     mongoWebHost,
     openWebuifrontendHost,
     prometheusHost,
@@ -44,6 +45,7 @@ import {
     ollamaHost,
     elasticSearchHost,
     gotenbergHost,
+    seaweedfsHost,
 } from "../urls";
 import { useTranslation } from "react-i18next";
 import { AboutDialog } from "./AboutDialog";
@@ -80,14 +82,19 @@ export function BurgerMenu() {
             icon: <MailOutlineOutlined />,
         },
         {
-            link: minioHost,
-            text: "Minio",
-            icon: <DriveFolderUploadOutlined />,
+            link: seaweedfsHost,
+            text: "SeaweedFS",
+            icon: <StorageOutlined />,
         },
         {
             link: apiHost,
             text: "Api",
             icon: <ApiOutlined />,
+        },
+        {
+            link: s3Host,
+            text: "S3",
+            icon: <CloudUploadOutlined />,
         },
         {
             link: flowerHost,
@@ -117,7 +124,7 @@ export function BurgerMenu() {
         {
             link: redisInsightHost,
             text: "Redis",
-            icon: <StorageOutlined />,
+            icon: <KeyOutlined />,
         },
         {
             link: prometheusHost,

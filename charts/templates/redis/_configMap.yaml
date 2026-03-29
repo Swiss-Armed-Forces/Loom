@@ -4,6 +4,9 @@
 {{- $memoryLimitBytes := include "SI-to-bytes" $values.resources.limits.memory | int64 -}}
 {{- $memoryLimitThresholdPercent := dig "memoryLimitThresholdPercent" 0.6 $values -}}
 {{- $memoryLimitBytes := mulf $memoryLimitBytes $memoryLimitThresholdPercent | int64 -}}
+{{- $maxmemoryPolicy := dig "maxmemoryPolicy" "volatile-ttl" . -}}
+{{- $stopWritesOnBgsaveError := dig "stopWritesOnBgsaveError" "no" . -}}
+{{- $aofLoadTruncated := dig "aofLoadTruncated" "yes" . -}}
 
 apiVersion: v1
 kind: ConfigMap
@@ -13,5 +16,5 @@ metadata:
     {{- include "app.labels.custom" (dict "context" . "component" $component) | nindent 4 }}
 data:
   redis.conf: |
-    {{- tpl (.Files.Get "files/redis/redis.conf.tpl") (dict "memoryLimitBytes" $memoryLimitBytes) | nindent 4 }}
+    {{- tpl (.Files.Get "files/redis/redis.conf.tpl") (dict "memoryLimitBytes" $memoryLimitBytes "maxmemoryPolicy" $maxmemoryPolicy "stopWritesOnBgsaveError" $stopWritesOnBgsaveError "aofLoadTruncated" $aofLoadTruncated) | nindent 4 }}
 {{- end -}}

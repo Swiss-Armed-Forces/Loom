@@ -1,0 +1,53 @@
+# Headless service for StatefulSet DNS
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "app.fullname" . }}-seaweedfs-volume-headless
+  labels:
+    {{- include "app.labels.custom" (dict "context" . "component" "seaweedfs") | nindent 4 }}
+    app.kubernetes.io/component: seaweedfs-volume
+spec:
+  type: ClusterIP
+  clusterIP: None
+  publishNotReadyAddresses: true
+  ports:
+    - name: volume
+      port: {{ .Values.seaweedfs.volume.port }}
+      targetPort: volume
+      protocol: TCP
+    - name: grpc
+      port: {{ .Values.seaweedfs.volume.grpcPort }}
+      targetPort: grpc
+      protocol: TCP
+    - name: metrics
+      port: {{ .Values.seaweedfs.volume.metricsPort }}
+      targetPort: metrics
+      protocol: TCP
+  selector:
+    app: {{ include "app.name" . }}-seaweedfs-volume
+---
+# Regular service for clients
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "app.fullname" . }}-seaweedfs-volume
+  labels:
+    {{- include "app.labels.custom" (dict "context" . "component" "seaweedfs") | nindent 4 }}
+    app.kubernetes.io/component: seaweedfs-volume
+spec:
+  type: ClusterIP
+  ports:
+    - name: volume
+      port: {{ .Values.seaweedfs.volume.port }}
+      targetPort: volume
+      protocol: TCP
+    - name: grpc
+      port: {{ .Values.seaweedfs.volume.grpcPort }}
+      targetPort: grpc
+      protocol: TCP
+    - name: metrics
+      port: {{ .Values.seaweedfs.volume.metricsPort }}
+      targetPort: metrics
+      protocol: TCP
+  selector:
+    app: {{ include "app.name" . }}-seaweedfs-volume

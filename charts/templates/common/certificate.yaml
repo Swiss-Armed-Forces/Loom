@@ -29,8 +29,8 @@ spec:
     - ollama-tool.{{ .Values.domain }}
     - roundcube.{{ .Values.domain }}
     - dovecot.{{ .Values.domain }}
-    - minio.{{ .Values.domain }}
-    - minio-api.{{ .Values.domain }}
+    - seaweedfs.{{ .Values.domain }}
+    - s3.{{ .Values.domain }}
     - mongo-web.{{ .Values.domain }}
     - tika.{{ .Values.domain }}
     - redisinsight.{{ .Values.domain }}

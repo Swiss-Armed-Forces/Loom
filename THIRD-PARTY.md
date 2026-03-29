@@ -341,23 +341,6 @@ The name "LibreTranslate" is a registered trademark. The LibreTranslate Trademar
 
 **Source Code:** The authoritative source code for LibreTranslate, including all license files, is available at: <https://github.com/LibreTranslate/LibreTranslate>
 
-### minio
-
-<!-- markdownlint-disable -->
-Loom utilizes the MinIO software as a standalone Docker image.
-
-**Software Licenses:**
-MinIO is distributed under a dual-licensing model, which includes the GNU Affero General Public License Version 3 (AGPLv3) as its primary open-source license. The full text of the AGPLv3 is available at [https://www.gnu.org/licenses/agpl-3.0.txt](https://www.gnu.org/licenses/agpl-3.0.txt). Because AGPLv3 places specific requirements on network distribution and derivative works, organizations whose use cases are not compatible with AGPLv3 obligations may opt for a commercial license from MinIO, Inc. For questions about compliance or determining the most suitable license for your specific deployment model, consulting legal counsel is recommended.
-
-**Component Website:**
-Further information about MinIO, including detailed documentation, support resources, and commercial licensing options, is available at [https://min.io/](https://min.io/).
-
-**Trademark Information:**
-"MinIO" is a registered trademark of MinIO, Inc. in the United States and other countries. Usage of the MinIO name, logos, or related trademarks must adhere to the official [MinIO Trademark Policy](https://min.io/compliance). This policy details permissible references and ensures clarity regarding the origin and endorsement of the software.
-
-**Source Code:**
-The source code for MinIO can be found in its official repository at [https://github.com/minio/minio](https://github.com/minio/minio).
-
 ### ollama
 
 <!-- markdownlint-disable -->
@@ -441,6 +424,41 @@ Based on publicly available information at the time of review, no explicit regis
 The Rspamd source code is available through its [GitHub repository](https://github.com/rspamd/rspamd). Interested parties are encouraged to review the repository for additional licensing details and updates.
 
 This declaration reflects the information accessible at the time of writing. Users of the “Loom” project are responsible for verifying any updates to Rspamd’s licensing terms or trademark status to ensure continuous compliance with applicable legal requirements.
+
+### seaweedfs
+
+<!-- markdownlint-disable -->
+
+Loom utilizes the SeaweedFS as a standalone Docker image.
+
+**Software Licenses:**
+SeaweedFS is subject to a dual-licensing model:
+
+1. **Community Edition – Apache License, Version 2.0**
+   - Copyright © 2016–2026 Chris Lu and contributors.
+   - Licensed under the Apache License, Version 2.0.
+   - This license grants a perpetual, worldwide, non-exclusive, no-charge, royalty-free, and irrevocable copyright and patent license.
+   - Redistribution in Docker image form requires inclusion of the license text and preservation of all copyright, patent, and attribution notices.
+   - The software is provided on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND.
+
+2. **Enterprise Edition – Seaweed Data End User License Agreement (EULA)**
+   - Applicable when deployment exceeds 25TB of managed storage or when enterprise features are used.
+   - Publisher: Seaweed Data.
+   - Free usage permitted below 25TB; above this threshold requires a commercial license.
+   - Includes additional restrictions, including limitations on reverse engineering and certain hosting or resale scenarios.
+   - May impose indemnification obligations on the user.
+
+**Component Website:**
+- https://seaweedfs.com
+
+**Trademark Information:**
+- “SeaweedFS” is a trademark of its respective owners.
+- All references to the name are for descriptive purposes only and do not imply endorsement, affiliation, or sponsorship.
+- Loom does not claim any rights to the SeaweedFS trademarks and uses them in accordance with the Apache License 2.0 trademark limitations.
+- When applicable, Docker images or distributions (e.g., Bitnami builds) may include additional trademarks and copyrights owned by their respective providers (e.g., Broadcom Inc.).
+
+**Source Code:**
+- https://github.com/seaweedfs/seaweedfs
 
 ### tika-server
 
@@ -1328,6 +1346,9 @@ The complete source code for Traefik is publicly available at [https://github.co
 | apt | 2.6.1 | BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
 | argon2-cffi | 25.1.0 | MIT | python-installed-package-cataloger |
 | argon2-cffi-bindings | 25.1.0 | MIT | python-installed-package-cataloger |
+| atomicgo.dev/cursor | v0.2.0 |  | go-module-binary-cataloger |
+| atomicgo.dev/keyboard | v0.2.9 |  | go-module-binary-cataloger |
+| atomicgo.dev/schedule | v0.1.0 |  | go-module-binary-cataloger |
 | autoconf | 2.71-3 | GFDL-1.3-only, GFDL-1.3-or-later, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later | dpkg-db-cataloger |
 | automake | 1:1.16.5-1.3 | GFDL-1.3-only, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later | dpkg-db-cataloger |
 | autotools-dev | 20220109.1 | GPL-3.0-only | dpkg-db-cataloger |
@@ -1344,6 +1365,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | bzip2 | 1.0.8-5+b1 | GPL-2.0-only | dpkg-db-cataloger |
 | ca-certificates | 20230311+deb12u1 | GPL-2.0-only, GPL-2.0-or-later, MPL-2.0 | dpkg-db-cataloger |
 | cabextract | 1.9-3 |  | dpkg-db-cataloger |
+| cel.dev/expr | v0.25.1 |  | go-module-binary-cataloger |
 | celery | 5.5.3 | BSD-3-Clause | python-installed-package-cataloger |
 | celery-types | 0.24.0 | Apache-2.0 | python-installed-package-cataloger |
 | certifi | 2025.4.26 | MPL-2.0 | python-installed-package-cataloger |
@@ -1357,6 +1379,17 @@ The complete source code for Traefik is publicly available at [https://github.co
 | click-didyoumean | 0.3.1 | MIT | python-installed-package-cataloger |
 | click-plugins | 1.1.1 |  | python-installed-package-cataloger |
 | click-repl | 0.3.0 | MIT | python-installed-package-cataloger |
+| cloud.google.com/go | v0.123.0 |  | go-module-binary-cataloger |
+| cloud.google.com/go/auth | v0.17.0 |  | go-module-binary-cataloger |
+| cloud.google.com/go/auth/oauth2adapt | v0.2.8 |  | go-module-binary-cataloger |
+| cloud.google.com/go/compute/metadata | v0.9.0 |  | go-module-binary-cataloger |
+| cloud.google.com/go/iam | v1.5.3 |  | go-module-binary-cataloger |
+| cloud.google.com/go/kms | v1.23.2 |  | go-module-binary-cataloger |
+| cloud.google.com/go/longrunning | v0.7.0 |  | go-module-binary-cataloger |
+| cloud.google.com/go/monitoring | v1.24.3 |  | go-module-binary-cataloger |
+| cloud.google.com/go/pubsub | v1.50.1 |  | go-module-binary-cataloger |
+| cloud.google.com/go/pubsub/v2 | v2.3.0 |  | go-module-binary-cataloger |
+| cloud.google.com/go/storage | v1.59.2 |  | go-module-binary-cataloger |
 | comerr-dev | 2.1-1.47.0-2+b2 | Apache-2.0, Apache-2.0, BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later, ISC, Kazlib, LGPL-2.0-only, Latex2e | dpkg-db-cataloger |
 | common | 0.1.0 | MIT | python-installed-package-cataloger |
 | coreutils | 9.1-1 | BSD-4-Clause-UC, FSFULLR, GFDL-1.3-only, GPL-3.0-only, GPL-3.0-or-later, ISC | dpkg-db-cataloger |
@@ -1379,6 +1412,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | elasticsearch | 9.0.2 | Apache-2.0 | python-installed-package-cataloger |
 | fastapi | 0.128.0 | MIT | python-installed-package-cataloger |
 | file | 1:5.44-3 | BSD-2-Clause | dpkg-db-cataloger |
+| filippo.io/edwards25519 | v1.1.1 |  | go-module-binary-cataloger |
 | findutils | 4.9.0-4 | BSD-3-Clause, FSFAP, FSFULLR, GFDL-1.3-only, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, ISC, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, X11 | dpkg-db-cataloger |
 | flower | 2.0.1 |  | python-installed-package-cataloger |
 | fontconfig | 2.14.1-4 | HPND-sell-variant | dpkg-db-cataloger |
@@ -1397,9 +1431,272 @@ The complete source code for Traefik is publicly available at [https://github.co
 | gir1.2-rsvg-2.0 | 2.54.7+dfsg-1~deb12u1 | 0BSD, Apache-2.0, BSD-2-Clause, BSD-3-Clause, CC-BY-3.0, FSFAP, LGPL-2.0-only, LGPL-2.0-or-later, MPL-2.0, OFL-1.1, Unlicense, Zlib | dpkg-db-cataloger |
 | git | 1:2.39.5-0+deb12u2 | Apache-2.0, BSD-3-Clause, GPL-1.0-or-later, GPL-2.0-only, GPL-2.0-or-later, ISC, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, Zlib | dpkg-db-cataloger |
 | git-man | 1:2.39.5-0+deb12u2 | Apache-2.0, BSD-3-Clause, GPL-1.0-or-later, GPL-2.0-only, GPL-2.0-or-later, ISC, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, Zlib | dpkg-db-cataloger |
+| github.com/Azure/azure-sdk-for-go/sdk/azcore | v1.21.0 |  | go-module-binary-cataloger |
+| github.com/Azure/azure-sdk-for-go/sdk/azidentity | v1.13.1 |  | go-module-binary-cataloger |
+| github.com/Azure/azure-sdk-for-go/sdk/internal | v1.11.2 |  | go-module-binary-cataloger |
+| github.com/Azure/azure-sdk-for-go/sdk/storage/azblob | v1.6.4 |  | go-module-binary-cataloger |
+| github.com/Azure/go-autorest/autorest/to | v0.4.1 |  | go-module-binary-cataloger |
+| github.com/Azure/go-ntlmssp | v0.1.0 |  | go-module-binary-cataloger |
+| github.com/AzureAD/microsoft-authentication-library-for-go | v1.6.0 |  | go-module-binary-cataloger |
+| github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp | v1.30.0 |  | go-module-binary-cataloger |
+| github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/metric | v0.54.0 |  | go-module-binary-cataloger |
+| github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/resourcemapping | v0.54.0 |  | go-module-binary-cataloger |
+| github.com/Jille/raft-grpc-transport | v1.6.1 |  | go-module-binary-cataloger |
+| github.com/Shopify/sarama | v1.38.1 |  | go-module-binary-cataloger |
+| github.com/ThreeDotsLabs/watermill | v1.5.1 |  | go-module-binary-cataloger |
+| github.com/a-h/templ | v0.3.977 |  | go-module-binary-cataloger |
+| github.com/andybalholm/brotli | v1.2.0 |  | go-module-binary-cataloger |
+| github.com/antlr4-go/antlr/v4 | v4.13.1 |  | go-module-binary-cataloger |
+| github.com/apache/arrow-go/v18 | v18.4.1 |  | go-module-binary-cataloger |
+| github.com/apache/cassandra-gocql-driver/v2 | v2.0.0 |  | go-module-binary-cataloger |
+| github.com/apache/iceberg-go | v0.4.0 |  | go-module-binary-cataloger |
+| github.com/apache/thrift | v0.22.0 |  | go-module-binary-cataloger |
+| github.com/arangodb/go-driver | v1.6.9 |  | go-module-binary-cataloger |
+| github.com/arangodb/go-velocypack | v0.0.0-20200318135517-5af53c29c67e |  | go-module-binary-cataloger |
+| github.com/armon/go-metrics | v0.4.1 |  | go-module-binary-cataloger |
+| github.com/aws/aws-sdk-go | v1.55.8 |  | go-module-binary-cataloger |
+| github.com/aws/aws-sdk-go-v2 | v1.41.3 |  | go-module-binary-cataloger |
+| github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream | v1.7.4 |  | go-module-binary-cataloger |
+| github.com/aws/aws-sdk-go-v2/config | v1.32.7 |  | go-module-binary-cataloger |
+| github.com/aws/aws-sdk-go-v2/credentials | v1.19.7 |  | go-module-binary-cataloger |
+| github.com/aws/aws-sdk-go-v2/feature/ec2/imds | v1.18.17 |  | go-module-binary-cataloger |
+| github.com/aws/aws-sdk-go-v2/feature/s3/manager | v1.20.12 |  | go-module-binary-cataloger |
+| github.com/aws/aws-sdk-go-v2/internal/configsources | v1.4.17 |  | go-module-binary-cataloger |
+| github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 | v2.7.17 |  | go-module-binary-cataloger |
+| github.com/aws/aws-sdk-go-v2/internal/ini | v1.8.4 |  | go-module-binary-cataloger |
+| github.com/aws/aws-sdk-go-v2/internal/v4a | v1.4.16 |  | go-module-binary-cataloger |
+| github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding | v1.13.4 |  | go-module-binary-cataloger |
+| github.com/aws/aws-sdk-go-v2/service/internal/checksum | v1.9.7 |  | go-module-binary-cataloger |
+| github.com/aws/aws-sdk-go-v2/service/internal/presigned-url | v1.13.17 |  | go-module-binary-cataloger |
+| github.com/aws/aws-sdk-go-v2/service/internal/s3shared | v1.19.16 |  | go-module-binary-cataloger |
+| github.com/aws/aws-sdk-go-v2/service/s3 | v1.95.0 |  | go-module-binary-cataloger |
+| github.com/aws/aws-sdk-go-v2/service/signin | v1.0.5 |  | go-module-binary-cataloger |
+| github.com/aws/aws-sdk-go-v2/service/sso | v1.30.9 |  | go-module-binary-cataloger |
+| github.com/aws/aws-sdk-go-v2/service/ssooidc | v1.35.13 |  | go-module-binary-cataloger |
+| github.com/aws/aws-sdk-go-v2/service/sts | v1.41.6 |  | go-module-binary-cataloger |
+| github.com/aws/smithy-go | v1.24.2 |  | go-module-binary-cataloger |
+| github.com/beorn7/perks | v1.0.1 |  | go-module-binary-cataloger |
+| github.com/boltdb/bolt | v1.3.1 |  | go-module-binary-cataloger |
+| github.com/bwmarrin/snowflake | v0.3.0 |  | go-module-binary-cataloger |
+| github.com/cenkalti/backoff/v4 | v4.3.0 |  | go-module-binary-cataloger |
+| github.com/cenkalti/backoff/v5 | v5.0.3 |  | go-module-binary-cataloger |
+| github.com/cespare/xxhash/v2 | v2.3.0 |  | go-module-binary-cataloger |
+| github.com/clipperhouse/stringish | v0.1.1 |  | go-module-binary-cataloger |
+| github.com/clipperhouse/uax29/v2 | v2.3.0 |  | go-module-binary-cataloger |
+| github.com/cncf/xds/go | v0.0.0-20251110193048-8bfbf64dc13e |  | go-module-binary-cataloger |
+| github.com/cockroachdb/apd/v3 | v3.2.1 |  | go-module-binary-cataloger |
+| github.com/cognusion/imaging | v1.0.2 |  | go-module-binary-cataloger |
+| github.com/containerd/console | v1.0.5 |  | go-module-binary-cataloger |
+| github.com/coreos/go-semver | v0.3.1 |  | go-module-binary-cataloger |
+| github.com/coreos/go-systemd/v22 | v22.6.0 |  | go-module-binary-cataloger |
+| github.com/creasty/defaults | v1.8.0 |  | go-module-binary-cataloger |
+| github.com/davecgh/go-spew | v1.1.2-0.20180830191138-d8f796af33cc |  | go-module-binary-cataloger |
+| github.com/dgryski/go-rendezvous | v0.0.0-20200823014737-9f7001d12a5f |  | go-module-binary-cataloger |
+| github.com/dustin/go-humanize | v1.0.1 |  | go-module-binary-cataloger |
+| github.com/eapache/go-resiliency | v1.6.0 |  | go-module-binary-cataloger |
+| github.com/eapache/go-xerial-snappy | v0.0.0-20230731223053-c322873962e3 |  | go-module-binary-cataloger |
+| github.com/eapache/queue | v1.1.0 |  | go-module-binary-cataloger |
+| github.com/envoyproxy/go-control-plane/envoy | v1.36.0 |  | go-module-binary-cataloger |
+| github.com/envoyproxy/protoc-gen-validate | v1.2.1 |  | go-module-binary-cataloger |
+| github.com/facebookgo/clock | v0.0.0-20150410010913-600d898af40a |  | go-module-binary-cataloger |
+| github.com/facebookgo/stats | v0.0.0-20151006221625-1b76add642e4 |  | go-module-binary-cataloger |
+| github.com/fatih/color | v1.18.0 |  | go-module-binary-cataloger |
+| github.com/felixge/httpsnoop | v1.0.4 |  | go-module-binary-cataloger |
+| github.com/fluent/fluent-logger-golang | v1.10.1 |  | go-module-binary-cataloger |
+| github.com/fsnotify/fsnotify | v1.9.0 |  | go-module-binary-cataloger |
+| github.com/getsentry/sentry-go | v0.43.0 |  | go-module-binary-cataloger |
+| github.com/go-asn1-ber/asn1-ber | v1.5.8-0.20250403174932-29230038a667 |  | go-module-binary-cataloger |
+| github.com/go-jose/go-jose/v4 | v4.1.3 |  | go-module-binary-cataloger |
+| github.com/go-ldap/ldap/v3 | v3.4.12 |  | go-module-binary-cataloger |
+| github.com/go-logr/logr | v1.4.3 |  | go-module-binary-cataloger |
+| github.com/go-logr/stdr | v1.2.2 |  | go-module-binary-cataloger |
+| github.com/go-redsync/redsync/v4 | v4.16.0 |  | go-module-binary-cataloger |
+| github.com/go-sql-driver/mysql | v1.9.3 |  | go-module-binary-cataloger |
+| github.com/go-viper/mapstructure/v2 | v2.4.0 |  | go-module-binary-cataloger |
+| github.com/go-zookeeper/zk | v1.0.3 |  | go-module-binary-cataloger |
+| github.com/goccy/go-json | v0.10.5 |  | go-module-binary-cataloger |
+| github.com/goccy/go-yaml | v1.18.0 |  | go-module-binary-cataloger |
+| github.com/gogo/protobuf | v1.3.2 |  | go-module-binary-cataloger |
+| github.com/golang-jwt/jwt/v5 | v5.3.1 |  | go-module-binary-cataloger |
+| github.com/golang/protobuf | v1.5.4 |  | go-module-binary-cataloger |
+| github.com/golang/snappy | v1.0.0 |  | go-module-binary-cataloger |
+| github.com/google/btree | v1.1.3 |  | go-module-binary-cataloger |
+| github.com/google/flatbuffers/go | v0.0.0-20230108230133-3b8644d32c50 |  | go-module-binary-cataloger |
+| github.com/google/s2a-go | v0.1.9 |  | go-module-binary-cataloger |
+| github.com/google/uuid | v1.6.0 |  | go-module-binary-cataloger |
+| github.com/google/wire | v0.7.0 |  | go-module-binary-cataloger |
+| github.com/googleapis/enterprise-certificate-proxy | v0.3.7 |  | go-module-binary-cataloger |
+| github.com/googleapis/gax-go/v2 | v2.15.0 |  | go-module-binary-cataloger |
+| github.com/gookit/color | v1.5.4 |  | go-module-binary-cataloger |
+| github.com/gorilla/mux | v1.8.1 |  | go-module-binary-cataloger |
+| github.com/gorilla/securecookie | v1.1.2 |  | go-module-binary-cataloger |
+| github.com/gorilla/sessions | v1.4.0 |  | go-module-binary-cataloger |
+| github.com/grpc-ecosystem/grpc-gateway/v2 | v2.27.3 |  | go-module-binary-cataloger |
+| github.com/hamba/avro/v2 | v2.30.0 |  | go-module-binary-cataloger |
+| github.com/hashicorp/errwrap | v1.1.0 |  | go-module-binary-cataloger |
+| github.com/hashicorp/go-cleanhttp | v0.5.2 |  | go-module-binary-cataloger |
+| github.com/hashicorp/go-hclog | v1.6.3 |  | go-module-binary-cataloger |
+| github.com/hashicorp/go-immutable-radix | v1.3.1 |  | go-module-binary-cataloger |
+| github.com/hashicorp/go-metrics | v0.5.4 |  | go-module-binary-cataloger |
+| github.com/hashicorp/go-msgpack/v2 | v2.1.2 |  | go-module-binary-cataloger |
+| github.com/hashicorp/go-multierror | v1.1.1 |  | go-module-binary-cataloger |
+| github.com/hashicorp/go-retryablehttp | v0.7.8 |  | go-module-binary-cataloger |
+| github.com/hashicorp/go-rootcerts | v1.0.2 |  | go-module-binary-cataloger |
+| github.com/hashicorp/go-secure-stdlib/parseutil | v0.2.0 |  | go-module-binary-cataloger |
+| github.com/hashicorp/go-secure-stdlib/strutil | v0.1.2 |  | go-module-binary-cataloger |
+| github.com/hashicorp/go-sockaddr | v1.0.7 |  | go-module-binary-cataloger |
+| github.com/hashicorp/go-uuid | v1.0.3 |  | go-module-binary-cataloger |
+| github.com/hashicorp/golang-lru | v0.6.0 |  | go-module-binary-cataloger |
+| github.com/hashicorp/hcl | v1.0.1-vault-7 |  | go-module-binary-cataloger |
+| github.com/hashicorp/raft | v1.7.3 |  | go-module-binary-cataloger |
+| github.com/hashicorp/raft-boltdb/v2 | v2.3.1 |  | go-module-binary-cataloger |
+| github.com/hashicorp/vault/api | v1.22.0 |  | go-module-binary-cataloger |
+| github.com/jackc/pgpassfile | v1.0.0 |  | go-module-binary-cataloger |
+| github.com/jackc/pgservicefile | v0.0.0-20240606120523-5a60cdf6a761 |  | go-module-binary-cataloger |
+| github.com/jackc/pgx/v5 | v5.8.0 |  | go-module-binary-cataloger |
+| github.com/jackc/puddle/v2 | v2.2.2 |  | go-module-binary-cataloger |
+| github.com/jcmturner/aescts/v2 | v2.0.0 |  | go-module-binary-cataloger |
+| github.com/jcmturner/dnsutils/v2 | v2.0.0 |  | go-module-binary-cataloger |
+| github.com/jcmturner/gofork | v1.7.6 |  | go-module-binary-cataloger |
+| github.com/jcmturner/gokrb5/v8 | v8.4.4 |  | go-module-binary-cataloger |
+| github.com/jcmturner/rpc/v2 | v2.0.3 |  | go-module-binary-cataloger |
+| github.com/jhump/protoreflect | v1.18.0 |  | go-module-binary-cataloger |
+| github.com/jhump/protoreflect/v2 | v2.0.0-beta.1 |  | go-module-binary-cataloger |
+| github.com/jmespath/go-jmespath | v0.4.0 |  | go-module-binary-cataloger |
+| github.com/json-iterator/go | v1.1.12 |  | go-module-binary-cataloger |
+| github.com/karlseguin/ccache/v2 | v2.0.8 |  | go-module-binary-cataloger |
+| github.com/klauspost/compress | v1.18.4 |  | go-module-binary-cataloger |
+| github.com/klauspost/cpuid/v2 | v2.3.0 |  | go-module-binary-cataloger |
+| github.com/klauspost/reedsolomon | v1.13.0 |  | go-module-binary-cataloger |
+| github.com/kr/fs | v0.1.0 |  | go-module-binary-cataloger |
+| github.com/kurin/blazer | v0.5.3 |  | go-module-binary-cataloger |
+| github.com/kylelemons/godebug | v1.1.0 |  | go-module-binary-cataloger |
+| github.com/linkedin/goavro/v2 | v2.15.0 |  | go-module-binary-cataloger |
+| github.com/lithammer/fuzzysearch | v1.1.8 |  | go-module-binary-cataloger |
+| github.com/lithammer/shortuuid/v3 | v3.0.7 |  | go-module-binary-cataloger |
+| github.com/mattn/go-colorable | v0.1.14 |  | go-module-binary-cataloger |
+| github.com/mattn/go-isatty | v0.0.20 |  | go-module-binary-cataloger |
+| github.com/mattn/go-runewidth | v0.0.19 |  | go-module-binary-cataloger |
+| github.com/minio/crc64nvme | v1.1.1 |  | go-module-binary-cataloger |
+| github.com/mitchellh/colorstring | v0.0.0-20190213212951-d06e56a500db |  | go-module-binary-cataloger |
+| github.com/mitchellh/mapstructure | v1.5.1-0.20220423185008-bf980b35cac4 |  | go-module-binary-cataloger |
+| github.com/modern-go/concurrent | v0.0.0-20180306012644-bacd9c7ef1dd |  | go-module-binary-cataloger |
+| github.com/modern-go/reflect2 | v1.0.2 |  | go-module-binary-cataloger |
+| github.com/montanaflynn/stats | v0.7.1 |  | go-module-binary-cataloger |
+| github.com/munnerz/goautoneg | v0.0.0-20191010083416-a7dc8b61c822 |  | go-module-binary-cataloger |
+| github.com/oklog/ulid | v1.3.1 |  | go-module-binary-cataloger |
+| github.com/orcaman/concurrent-map/v2 | v2.0.1 |  | go-module-binary-cataloger |
+| github.com/parquet-go/bitpack | v1.0.0 |  | go-module-binary-cataloger |
+| github.com/parquet-go/jsonlite | v1.0.0 |  | go-module-binary-cataloger |
+| github.com/parquet-go/parquet-go | v0.28.0 |  | go-module-binary-cataloger |
+| github.com/pelletier/go-toml/v2 | v2.2.4 |  | go-module-binary-cataloger |
+| github.com/peterh/liner | v1.2.2 |  | go-module-binary-cataloger |
+| github.com/philhofer/fwd | v1.2.0 |  | go-module-binary-cataloger |
+| github.com/pierrec/lz4/v4 | v4.1.25 |  | go-module-binary-cataloger |
+| github.com/pkg/browser | v0.0.0-20240102092130-5ac0b6a4141c |  | go-module-binary-cataloger |
+| github.com/pkg/errors | v0.9.1 |  | go-module-binary-cataloger |
+| github.com/pkg/sftp | v1.13.10 |  | go-module-binary-cataloger |
+| github.com/pmezard/go-difflib | v1.0.1-0.20181226105442-5d4384ee4fb2 |  | go-module-binary-cataloger |
+| github.com/posener/complete | v1.2.3 |  | go-module-binary-cataloger |
+| github.com/pquerna/cachecontrol | v0.2.0 |  | go-module-binary-cataloger |
+| github.com/prometheus/client_golang | v1.23.2 |  | go-module-binary-cataloger |
+| github.com/prometheus/client_model | v0.6.2 |  | go-module-binary-cataloger |
+| github.com/prometheus/common | v0.67.2 |  | go-module-binary-cataloger |
+| github.com/prometheus/procfs | v0.20.1 |  | go-module-binary-cataloger |
+| github.com/pterm/pterm | v0.12.81 |  | go-module-binary-cataloger |
+| github.com/rcrowley/go-metrics | v0.0.0-20201227073835-cf1acfcdf475 |  | go-module-binary-cataloger |
+| github.com/rdleal/intervalst | v1.5.0 |  | go-module-binary-cataloger |
+| github.com/redis/go-redis/v9 | v9.18.0 |  | go-module-binary-cataloger |
+| github.com/remyoudompheng/bigfft | v0.0.0-20230129092748-24d4a6f8daec |  | go-module-binary-cataloger |
+| github.com/rivo/uniseg | v0.4.7 |  | go-module-binary-cataloger |
+| github.com/ryanuber/go-glob | v1.0.0 |  | go-module-binary-cataloger |
+| github.com/sagikazarmark/locafero | v0.11.0 |  | go-module-binary-cataloger |
+| github.com/schollz/progressbar/v3 | v3.19.0 |  | go-module-binary-cataloger |
+| github.com/seaweedfs/go-fuse/v2 | v2.9.1 |  | go-module-binary-cataloger |
+| github.com/seaweedfs/goexif | v1.0.3 |  | go-module-binary-cataloger |
+| github.com/seaweedfs/raft | v1.1.6 |  | go-module-binary-cataloger |
+| github.com/seaweedfs/seaweedfs | v0.0.0-20260311092924-4a5243886a5c |  | go-module-binary-cataloger |
+| github.com/shirou/gopsutil/v4 | v4.26.2 |  | go-module-binary-cataloger |
+| github.com/sirupsen/logrus | v1.9.4-0.20230606125235-dd1b4c2e81af |  | go-module-binary-cataloger |
+| github.com/sony/gobreaker | v1.0.0 |  | go-module-binary-cataloger |
+| github.com/sourcegraph/conc | v0.3.1-0.20240121214520-5f936abd7ae8 |  | go-module-binary-cataloger |
+| github.com/spf13/afero | v1.15.0 |  | go-module-binary-cataloger |
+| github.com/spf13/cast | v1.10.0 |  | go-module-binary-cataloger |
+| github.com/spf13/pflag | v1.0.10 |  | go-module-binary-cataloger |
+| github.com/spf13/viper | v1.21.0 |  | go-module-binary-cataloger |
+| github.com/spiffe/go-spiffe/v2 | v2.6.0 |  | go-module-binary-cataloger |
+| github.com/stretchr/objx | v0.5.2 |  | go-module-binary-cataloger |
+| github.com/stretchr/testify | v1.11.1 |  | go-module-binary-cataloger |
+| github.com/subosito/gotenv | v1.6.0 |  | go-module-binary-cataloger |
+| github.com/substrait-io/substrait | v0.69.0 |  | go-module-binary-cataloger |
+| github.com/substrait-io/substrait-go/v4 | v4.4.0 |  | go-module-binary-cataloger |
+| github.com/substrait-io/substrait-protobuf/go | v0.71.0 |  | go-module-binary-cataloger |
+| github.com/syndtr/goleveldb | v1.0.1-0.20190318030020-c3a204f8e965 |  | go-module-binary-cataloger |
+| github.com/tidwall/gjson | v1.18.0 |  | go-module-binary-cataloger |
+| github.com/tidwall/match | v1.2.0 |  | go-module-binary-cataloger |
+| github.com/tidwall/pretty | v1.2.0 |  | go-module-binary-cataloger |
+| github.com/tinylib/msgp | v1.5.0 |  | go-module-binary-cataloger |
+| github.com/tklauser/go-sysconf | v0.3.16 |  | go-module-binary-cataloger |
+| github.com/tklauser/numcpus | v0.11.0 |  | go-module-binary-cataloger |
+| github.com/tsuna/gohbase | v0.0.0-20201125011725-348991136365 |  | go-module-binary-cataloger |
+| github.com/twmb/murmur3 | v1.1.8 |  | go-module-binary-cataloger |
+| github.com/twpayne/go-geom | v1.6.1 |  | go-module-binary-cataloger |
+| github.com/tylertreat/BoomFilters | v0.0.0-20210315201527-1a82519a3e43 |  | go-module-binary-cataloger |
+| github.com/valyala/bytebufferpool | v1.0.0 |  | go-module-binary-cataloger |
+| github.com/viant/ptrie | v1.0.1 |  | go-module-binary-cataloger |
+| github.com/xdg-go/pbkdf2 | v1.0.0 |  | go-module-binary-cataloger |
+| github.com/xdg-go/scram | v1.1.2 |  | go-module-binary-cataloger |
+| github.com/xdg-go/stringprep | v1.0.4 |  | go-module-binary-cataloger |
+| github.com/xeipuuv/gojsonpointer | v0.0.0-20190905194746-02993c407bfb |  | go-module-binary-cataloger |
+| github.com/xeipuuv/gojsonreference | v0.0.0-20180127040603-bd5ef7bd5415 |  | go-module-binary-cataloger |
+| github.com/xeipuuv/gojsonschema | v1.2.0 |  | go-module-binary-cataloger |
+| github.com/xo/terminfo | v0.0.0-20220910002029-abceb7e1c41e |  | go-module-binary-cataloger |
+| github.com/youmark/pkcs8 | v0.0.0-20240726163527-a2c0da244d78 |  | go-module-binary-cataloger |
+| github.com/zeebo/xxh3 | v1.0.2 |  | go-module-binary-cataloger |
 | gnupg | 2.2.40-1.1+deb12u1 | BSD-3-Clause, CC0-1.0, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
 | gnupg-l10n | 2.2.40-1.1+deb12u1 | BSD-3-Clause, CC0-1.0, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
 | gnupg-utils | 2.2.40-1.1+deb12u1 | BSD-3-Clause, CC0-1.0, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
+| go.etcd.io/bbolt | v1.4.3 |  | go-module-binary-cataloger |
+| go.etcd.io/etcd/api/v3 | v3.6.7 |  | go-module-binary-cataloger |
+| go.etcd.io/etcd/client/pkg/v3 | v3.6.7 |  | go-module-binary-cataloger |
+| go.etcd.io/etcd/client/v3 | v3.6.7 |  | go-module-binary-cataloger |
+| go.mongodb.org/mongo-driver | v1.17.9 |  | go-module-binary-cataloger |
+| go.opencensus.io | v0.24.0 |  | go-module-binary-cataloger |
+| go.opentelemetry.io/auto/sdk | v1.2.1 |  | go-module-binary-cataloger |
+| go.opentelemetry.io/contrib/detectors/gcp | v1.38.0 |  | go-module-binary-cataloger |
+| go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc | v0.63.0 |  | go-module-binary-cataloger |
+| go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp | v0.63.0 |  | go-module-binary-cataloger |
+| go.opentelemetry.io/otel | v1.40.0 |  | go-module-binary-cataloger |
+| go.opentelemetry.io/otel/metric | v1.40.0 |  | go-module-binary-cataloger |
+| go.opentelemetry.io/otel/sdk | v1.40.0 |  | go-module-binary-cataloger |
+| go.opentelemetry.io/otel/sdk/metric | v1.40.0 |  | go-module-binary-cataloger |
+| go.opentelemetry.io/otel/trace | v1.40.0 |  | go-module-binary-cataloger |
+| go.uber.org/atomic | v1.11.0 |  | go-module-binary-cataloger |
+| go.uber.org/multierr | v1.11.0 |  | go-module-binary-cataloger |
+| go.uber.org/zap | v1.27.1 |  | go-module-binary-cataloger |
+| go.yaml.in/yaml/v2 | v2.4.3 |  | go-module-binary-cataloger |
+| go.yaml.in/yaml/v3 | v3.0.4 |  | go-module-binary-cataloger |
+| gocloud.dev | v0.45.0 |  | go-module-binary-cataloger |
+| golang.org/x/crypto | v0.48.0 |  | go-module-binary-cataloger |
+| golang.org/x/exp | v0.0.0-20251023183803-a4bb9ffd2546 |  | go-module-binary-cataloger |
+| golang.org/x/image | v0.36.0 |  | go-module-binary-cataloger |
+| golang.org/x/net | v0.49.0 |  | go-module-binary-cataloger |
+| golang.org/x/oauth2 | v0.35.0 |  | go-module-binary-cataloger |
+| golang.org/x/sync | v0.19.0 |  | go-module-binary-cataloger |
+| golang.org/x/sys | v0.42.0 |  | go-module-binary-cataloger |
+| golang.org/x/term | v0.40.0 |  | go-module-binary-cataloger |
+| golang.org/x/text | v0.34.0 |  | go-module-binary-cataloger |
+| golang.org/x/time | v0.14.0 |  | go-module-binary-cataloger |
+| golang.org/x/xerrors | v0.0.0-20240903120638-7835f813f4da |  | go-module-binary-cataloger |
+| google.golang.org/api | v0.258.0 |  | go-module-binary-cataloger |
+| google.golang.org/genproto | v0.0.0-20251124214823-79d6a2a48846 |  | go-module-binary-cataloger |
+| google.golang.org/genproto/googleapis/api | v0.0.0-20251124214823-79d6a2a48846 |  | go-module-binary-cataloger |
+| google.golang.org/genproto/googleapis/rpc | v0.0.0-20251213004720-97cd9d5aeac2 |  | go-module-binary-cataloger |
+| google.golang.org/grpc | v1.78.0 |  | go-module-binary-cataloger |
+| google.golang.org/grpc/security/advancedtls | v1.0.0 |  | go-module-binary-cataloger |
+| google.golang.org/protobuf | v1.36.11 |  | go-module-binary-cataloger |
+| gopkg.in/inf.v0 | v0.9.1 |  | go-module-binary-cataloger |
+| gopkg.in/yaml.v3 | v3.0.1 |  | go-module-binary-cataloger |
 | gotenberg-client | 0.13.1 | MPL-2.0 | python-installed-package-cataloger |
 | gpg | 2.2.40-1.1+deb12u1 | BSD-3-Clause, CC0-1.0, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
 | gpg-agent | 2.2.40-1.1+deb12u1 | BSD-3-Clause, CC0-1.0, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
@@ -1795,6 +2092,9 @@ The complete source code for Traefik is publicly available at [https://github.co
 | mercurial | 6.3.2-1+deb12u1 | GPL-2.0-only, GPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
 | mercurial-common | 6.3.2-1+deb12u1 | GPL-2.0-only, GPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
 | minio | 7.2.20 | Apache-2.0 | python-installed-package-cataloger |
+| modernc.org/b | v1.0.0 |  | go-module-binary-cataloger |
+| modernc.org/mathutil | v1.7.1 |  | go-module-binary-cataloger |
+| modernc.org/strutil | v1.2.1 |  | go-module-binary-cataloger |
 | mount | 2.38.1-5+deb12u3 | BSD-3-Clause, BSD-4-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, MIT | dpkg-db-cataloger |
 | mysql-common | 5.8+1.1.0 | GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
 | ncurses-base | 6.4-4 | BSD-3-Clause, X11 | dpkg-db-cataloger |
@@ -1858,6 +2158,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | sniffio | 1.3.1 | MIT OR Apache-2.0 | python-installed-package-cataloger |
 | sq | 0.27.0-2+b1 | GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
 | starlette | 0.46.2 | BSD-3-Clause | python-installed-package-cataloger |
+| stdlib | go1.26.1 | BSD-3-Clause | go-module-binary-cataloger |
 | stream-zip | 0.0.84 |  | python-installed-package-cataloger |
 | subversion | 1.14.2-4+deb12u1 | AFL-3.0, Apache-2.0, BSD-2-Clause, BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later | dpkg-db-cataloger |
 | sysvinit-utils | 3.06-4 | GPL-2.0-only, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-only | dpkg-db-cataloger |
@@ -7177,503 +7478,461 @@ The complete source code for Traefik is publicly available at [https://github.co
 | zlib1g | 1:1.2.13.dfsg-1 | Zlib | dpkg-db-cataloger |
 | zlib1g-dev | 1:1.2.13.dfsg-1 | Zlib | dpkg-db-cataloger |
 
-### registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/minio
+### registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/seaweedfs
 
 | Package | Version | License | Found by |
 | ------- | --------| ------- | -------- |
-| aead.dev/mem | v0.2.0 |  | go-module-binary-cataloger |
-| aead.dev/minisign | v0.3.0 |  | go-module-binary-cataloger |
-| aead.dev/minisign | v0.3.0 |  | go-module-binary-cataloger |
-| basesystem | 11-13.el9 |  | rpm-db-cataloger |
-| bash | 5.1.8-9.el9 |  | rpm-db-cataloger |
-| cel.dev/expr | v0.19.0 |  | go-module-binary-cataloger |
-| cloud.google.com/go | v0.116.0 |  | go-module-binary-cataloger |
-| cloud.google.com/go/auth | v0.13.0 |  | go-module-binary-cataloger |
-| cloud.google.com/go/auth/oauth2adapt | v0.2.6 |  | go-module-binary-cataloger |
-| cloud.google.com/go/compute/metadata | v0.6.0 |  | go-module-binary-cataloger |
-| cloud.google.com/go/iam | v1.2.2 |  | go-module-binary-cataloger |
-| cloud.google.com/go/monitoring | v1.21.2 |  | go-module-binary-cataloger |
-| cloud.google.com/go/storage | v1.46.0 |  | go-module-binary-cataloger |
-| coreutils-single | 8.32-36.el9 |  | rpm-db-cataloger |
-| curl | 8.11.0 |  | binary-classifier-cataloger |
-| filesystem | 3.16-5.el9 |  | rpm-db-cataloger |
-| filippo.io/edwards25519 | v1.1.0 |  | go-module-binary-cataloger |
-| github.com/Azure/azure-sdk-for-go/sdk/azcore | v1.16.0 |  | go-module-binary-cataloger |
-| github.com/Azure/azure-sdk-for-go/sdk/azidentity | v1.8.0 |  | go-module-binary-cataloger |
-| github.com/Azure/azure-sdk-for-go/sdk/internal | v1.10.0 |  | go-module-binary-cataloger |
-| github.com/Azure/azure-sdk-for-go/sdk/storage/azblob | v1.5.0 |  | go-module-binary-cataloger |
-| github.com/Azure/go-ntlmssp | v0.0.0-20221128193559-754e69321358 |  | go-module-binary-cataloger |
-| github.com/AzureAD/microsoft-authentication-library-for-go | v1.3.1 |  | go-module-binary-cataloger |
-| github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp | v1.25.0 |  | go-module-binary-cataloger |
-| github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/metric | v0.49.0 |  | go-module-binary-cataloger |
-| github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/resourcemapping | v0.49.0 |  | go-module-binary-cataloger |
-| github.com/IBM/sarama | v1.43.3 |  | go-module-binary-cataloger |
-| github.com/VividCortex/ewma | v1.2.0 |  | go-module-binary-cataloger |
-| github.com/VividCortex/ewma | v1.2.0 |  | go-module-binary-cataloger |
-| github.com/acarl005/stripansi | v0.0.0-20180116102854-5a71ef0e047d |  | go-module-binary-cataloger |
-| github.com/acarl005/stripansi | v0.0.0-20180116102854-5a71ef0e047d |  | go-module-binary-cataloger |
-| github.com/alecthomas/participle | v0.7.1 |  | go-module-binary-cataloger |
-| github.com/apache/thrift | v0.21.0 |  | go-module-binary-cataloger |
-| github.com/asaskevich/govalidator | v0.0.0-20230301143203-a9d515a09cc2 |  | go-module-binary-cataloger |
-| github.com/aymanbagabas/go-osc52/v2 | v2.0.1 |  | go-module-binary-cataloger |
-| github.com/aymanbagabas/go-osc52/v2 | v2.0.1 |  | go-module-binary-cataloger |
-| github.com/beevik/ntp | v1.4.3 |  | go-module-binary-cataloger |
+| alpine-baselayout | 3.7.1-r8 | GPL-2.0-only | apk-db-cataloger |
+| alpine-baselayout-data | 3.7.1-r8 | GPL-2.0-only | apk-db-cataloger |
+| alpine-keys | 2.6-r0 | MIT | apk-db-cataloger |
+| alpine-release | 3.23.3-r0 | MIT | apk-db-cataloger |
+| apk-tools | 3.0.3-r1 | GPL-2.0-only | apk-db-cataloger |
+| atomicgo.dev/cursor | v0.2.0 |  | go-module-binary-cataloger |
+| atomicgo.dev/keyboard | v0.2.9 |  | go-module-binary-cataloger |
+| atomicgo.dev/schedule | v0.1.0 |  | go-module-binary-cataloger |
+| brotli-libs | 1.2.0-r0 | MIT | apk-db-cataloger |
+| busybox | 1.37.0-r30 | GPL-2.0-only | apk-db-cataloger |
+| busybox-binsh | 1.37.0-r30 | GPL-2.0-only | apk-db-cataloger |
+| c-ares | 1.34.6-r0 | MIT | apk-db-cataloger |
+| ca-certificates-bundle | 20251003-r0 | MPL-2.0 AND MIT | apk-db-cataloger |
+| cel.dev/expr | v0.25.1 |  | go-module-binary-cataloger |
+| cloud.google.com/go | v0.123.0 |  | go-module-binary-cataloger |
+| cloud.google.com/go/auth | v0.17.0 |  | go-module-binary-cataloger |
+| cloud.google.com/go/auth/oauth2adapt | v0.2.8 |  | go-module-binary-cataloger |
+| cloud.google.com/go/compute/metadata | v0.9.0 |  | go-module-binary-cataloger |
+| cloud.google.com/go/iam | v1.5.3 |  | go-module-binary-cataloger |
+| cloud.google.com/go/kms | v1.23.2 |  | go-module-binary-cataloger |
+| cloud.google.com/go/longrunning | v0.7.0 |  | go-module-binary-cataloger |
+| cloud.google.com/go/monitoring | v1.24.3 |  | go-module-binary-cataloger |
+| cloud.google.com/go/pubsub | v1.50.1 |  | go-module-binary-cataloger |
+| cloud.google.com/go/pubsub/v2 | v2.3.0 |  | go-module-binary-cataloger |
+| cloud.google.com/go/storage | v1.59.2 |  | go-module-binary-cataloger |
+| curl | 8.17.0-r1 | curl | apk-db-cataloger |
+| filippo.io/edwards25519 | v1.1.1 |  | go-module-binary-cataloger |
+| fuse | 2.9.9-r7 | GPL-2.0-only AND LGPL-2.1-only | apk-db-cataloger |
+| fuse-common | 3.17.3-r1 | GPL-2.0-only AND LGPL-2.1-only | apk-db-cataloger |
+| github.com/Azure/azure-sdk-for-go/sdk/azcore | v1.21.0 |  | go-module-binary-cataloger |
+| github.com/Azure/azure-sdk-for-go/sdk/azidentity | v1.13.1 |  | go-module-binary-cataloger |
+| github.com/Azure/azure-sdk-for-go/sdk/internal | v1.11.2 |  | go-module-binary-cataloger |
+| github.com/Azure/azure-sdk-for-go/sdk/storage/azblob | v1.6.4 |  | go-module-binary-cataloger |
+| github.com/Azure/azure-sdk-for-go/sdk/storage/azfile | v1.5.3 |  | go-module-binary-cataloger |
+| github.com/Azure/go-autorest/autorest/to | v0.4.1 |  | go-module-binary-cataloger |
+| github.com/Azure/go-ntlmssp | v0.1.0 |  | go-module-binary-cataloger |
+| github.com/AzureAD/microsoft-authentication-library-for-go | v1.6.0 |  | go-module-binary-cataloger |
+| github.com/FilenCloudDienste/filen-sdk-go | v0.0.37 |  | go-module-binary-cataloger |
+| github.com/Files-com/files-sdk-go/v3 | v3.2.264 |  | go-module-binary-cataloger |
+| github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp | v1.30.0 |  | go-module-binary-cataloger |
+| github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/metric | v0.54.0 |  | go-module-binary-cataloger |
+| github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/resourcemapping | v0.54.0 |  | go-module-binary-cataloger |
+| github.com/IBM/go-sdk-core/v5 | v5.21.0 |  | go-module-binary-cataloger |
+| github.com/Jille/raft-grpc-transport | v1.6.1 |  | go-module-binary-cataloger |
+| github.com/Max-Sum/base32768 | v0.0.0-20230304063302-18e6ce5945fd |  | go-module-binary-cataloger |
+| github.com/ProtonMail/bcrypt | v0.0.0-20211005172633-e235017c1baf |  | go-module-binary-cataloger |
+| github.com/ProtonMail/gluon | v0.17.1-0.20230724134000-308be39be96e |  | go-module-binary-cataloger |
+| github.com/ProtonMail/go-crypto | v1.3.0 |  | go-module-binary-cataloger |
+| github.com/ProtonMail/go-mime | v0.0.0-20230322103455-7d82a3887f2f |  | go-module-binary-cataloger |
+| github.com/ProtonMail/go-srp | v0.0.7 |  | go-module-binary-cataloger |
+| github.com/ProtonMail/gopenpgp/v2 | v2.9.0 |  | go-module-binary-cataloger |
+| github.com/PuerkitoBio/goquery | v1.10.3 |  | go-module-binary-cataloger |
+| github.com/Shopify/sarama | v1.38.1 |  | go-module-binary-cataloger |
+| github.com/ThreeDotsLabs/watermill | v1.5.1 |  | go-module-binary-cataloger |
+| github.com/a-h/templ | v0.3.977 |  | go-module-binary-cataloger |
+| github.com/a1ex3/zstd-seekable-format-go/pkg | v0.10.0 |  | go-module-binary-cataloger |
+| github.com/abbot/go-http-auth | v0.4.0 |  | go-module-binary-cataloger |
+| github.com/anchore/go-lzo | v0.1.0 |  | go-module-binary-cataloger |
+| github.com/andybalholm/brotli | v1.2.0 |  | go-module-binary-cataloger |
+| github.com/andybalholm/cascadia | v1.3.3 |  | go-module-binary-cataloger |
+| github.com/antlr4-go/antlr/v4 | v4.13.1 |  | go-module-binary-cataloger |
+| github.com/apache/arrow-go/v18 | v18.4.1 |  | go-module-binary-cataloger |
+| github.com/apache/cassandra-gocql-driver/v2 | v2.0.0 |  | go-module-binary-cataloger |
+| github.com/apache/iceberg-go | v0.4.0 |  | go-module-binary-cataloger |
+| github.com/apache/thrift | v0.22.0 |  | go-module-binary-cataloger |
+| github.com/appscode/go-querystring | v0.0.0-20170504095604-0126cfb3f1dc |  | go-module-binary-cataloger |
+| github.com/arangodb/go-driver | v1.6.9 |  | go-module-binary-cataloger |
+| github.com/arangodb/go-velocypack | v0.0.0-20200318135517-5af53c29c67e |  | go-module-binary-cataloger |
+| github.com/armon/go-metrics | v0.4.1 |  | go-module-binary-cataloger |
+| github.com/aws/aws-sdk-go | v1.55.8 |  | go-module-binary-cataloger |
+| github.com/aws/aws-sdk-go-v2 | v1.41.3 |  | go-module-binary-cataloger |
+| github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream | v1.7.4 |  | go-module-binary-cataloger |
+| github.com/aws/aws-sdk-go-v2/config | v1.32.7 |  | go-module-binary-cataloger |
+| github.com/aws/aws-sdk-go-v2/credentials | v1.19.7 |  | go-module-binary-cataloger |
+| github.com/aws/aws-sdk-go-v2/feature/ec2/imds | v1.18.17 |  | go-module-binary-cataloger |
+| github.com/aws/aws-sdk-go-v2/feature/s3/manager | v1.20.12 |  | go-module-binary-cataloger |
+| github.com/aws/aws-sdk-go-v2/internal/configsources | v1.4.17 |  | go-module-binary-cataloger |
+| github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 | v2.7.17 |  | go-module-binary-cataloger |
+| github.com/aws/aws-sdk-go-v2/internal/ini | v1.8.4 |  | go-module-binary-cataloger |
+| github.com/aws/aws-sdk-go-v2/internal/v4a | v1.4.16 |  | go-module-binary-cataloger |
+| github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding | v1.13.4 |  | go-module-binary-cataloger |
+| github.com/aws/aws-sdk-go-v2/service/internal/checksum | v1.9.7 |  | go-module-binary-cataloger |
+| github.com/aws/aws-sdk-go-v2/service/internal/presigned-url | v1.13.17 |  | go-module-binary-cataloger |
+| github.com/aws/aws-sdk-go-v2/service/internal/s3shared | v1.19.16 |  | go-module-binary-cataloger |
+| github.com/aws/aws-sdk-go-v2/service/s3 | v1.95.0 |  | go-module-binary-cataloger |
+| github.com/aws/aws-sdk-go-v2/service/signin | v1.0.5 |  | go-module-binary-cataloger |
+| github.com/aws/aws-sdk-go-v2/service/sns | v1.39.7 |  | go-module-binary-cataloger |
+| github.com/aws/aws-sdk-go-v2/service/sqs | v1.42.17 |  | go-module-binary-cataloger |
+| github.com/aws/aws-sdk-go-v2/service/sso | v1.30.9 |  | go-module-binary-cataloger |
+| github.com/aws/aws-sdk-go-v2/service/ssooidc | v1.35.13 |  | go-module-binary-cataloger |
+| github.com/aws/aws-sdk-go-v2/service/sts | v1.41.6 |  | go-module-binary-cataloger |
+| github.com/aws/smithy-go | v1.24.2 |  | go-module-binary-cataloger |
+| github.com/bahlo/generic-list-go | v0.2.0 |  | go-module-binary-cataloger |
 | github.com/beorn7/perks | v1.0.1 |  | go-module-binary-cataloger |
-| github.com/beorn7/perks | v1.0.1 |  | go-module-binary-cataloger |
+| github.com/boltdb/bolt | v1.3.1 |  | go-module-binary-cataloger |
+| github.com/boombuler/barcode | v1.1.0 |  | go-module-binary-cataloger |
+| github.com/bradenaw/juniper | v0.15.3 |  | go-module-binary-cataloger |
+| github.com/bradfitz/iter | v0.0.0-20191230175014-e8f45d346db8 |  | go-module-binary-cataloger |
+| github.com/buengese/sgzip | v0.1.1 |  | go-module-binary-cataloger |
 | github.com/buger/jsonparser | v1.1.1 |  | go-module-binary-cataloger |
-| github.com/census-instrumentation/opencensus-proto | v0.4.1 |  | go-module-binary-cataloger |
+| github.com/bwmarrin/snowflake | v0.3.0 |  | go-module-binary-cataloger |
+| github.com/calebcase/tmpfile | v1.0.3 |  | go-module-binary-cataloger |
+| github.com/cenkalti/backoff/v4 | v4.3.0 |  | go-module-binary-cataloger |
+| github.com/cenkalti/backoff/v5 | v5.0.3 |  | go-module-binary-cataloger |
 | github.com/cespare/xxhash/v2 | v2.3.0 |  | go-module-binary-cataloger |
-| github.com/cespare/xxhash/v2 | v2.3.0 |  | go-module-binary-cataloger |
-| github.com/charmbracelet/bubbles | v0.20.0 |  | go-module-binary-cataloger |
-| github.com/charmbracelet/bubbles | v0.20.0 |  | go-module-binary-cataloger |
-| github.com/charmbracelet/bubbletea | v1.3.0 |  | go-module-binary-cataloger |
-| github.com/charmbracelet/bubbletea | v1.3.3 |  | go-module-binary-cataloger |
-| github.com/charmbracelet/lipgloss | v1.0.0 |  | go-module-binary-cataloger |
-| github.com/charmbracelet/lipgloss | v1.0.0 |  | go-module-binary-cataloger |
-| github.com/charmbracelet/x/ansi | v0.8.0 |  | go-module-binary-cataloger |
-| github.com/charmbracelet/x/ansi | v0.8.0 |  | go-module-binary-cataloger |
-| github.com/charmbracelet/x/term | v0.2.1 |  | go-module-binary-cataloger |
-| github.com/charmbracelet/x/term | v0.2.1 |  | go-module-binary-cataloger |
-| github.com/cheggaaa/pb | v1.0.29 |  | go-module-binary-cataloger |
-| github.com/cheggaaa/pb | v1.0.29 |  | go-module-binary-cataloger |
-| github.com/cncf/xds/go | v0.0.0-20240905190251-b4127c9b8d78 |  | go-module-binary-cataloger |
-| github.com/coreos/go-oidc/v3 | v3.11.0 |  | go-module-binary-cataloger |
+| github.com/chilts/sid | v0.0.0-20190607042430-660e94789ec9 |  | go-module-binary-cataloger |
+| github.com/clipperhouse/stringish | v0.1.1 |  | go-module-binary-cataloger |
+| github.com/clipperhouse/uax29/v2 | v2.3.0 |  | go-module-binary-cataloger |
+| github.com/cloudflare/circl | v1.6.3 |  | go-module-binary-cataloger |
+| github.com/cloudinary/cloudinary-go/v2 | v2.13.0 |  | go-module-binary-cataloger |
+| github.com/cloudsoda/go-smb2 | v0.0.0-20250228001242-d4c70e6251cc |  | go-module-binary-cataloger |
+| github.com/cloudsoda/sddl | v0.0.0-20250224235906-926454e91efc |  | go-module-binary-cataloger |
+| github.com/cncf/xds/go | v0.0.0-20251110193048-8bfbf64dc13e |  | go-module-binary-cataloger |
+| github.com/cockroachdb/apd/v3 | v3.2.1 |  | go-module-binary-cataloger |
+| github.com/cognusion/imaging | v1.0.2 |  | go-module-binary-cataloger |
+| github.com/colinmarc/hdfs/v2 | v2.4.0 |  | go-module-binary-cataloger |
+| github.com/containerd/console | v1.0.5 |  | go-module-binary-cataloger |
 | github.com/coreos/go-semver | v0.3.1 |  | go-module-binary-cataloger |
-| github.com/coreos/go-semver | v0.3.1 |  | go-module-binary-cataloger |
-| github.com/coreos/go-systemd/v22 | v22.5.0 |  | go-module-binary-cataloger |
-| github.com/coreos/go-systemd/v22 | v22.5.0 |  | go-module-binary-cataloger |
-| github.com/cosnicolaou/pbzip2 | v1.0.5 |  | go-module-binary-cataloger |
+| github.com/coreos/go-systemd/v22 | v22.6.0 |  | go-module-binary-cataloger |
+| github.com/creasty/defaults | v1.8.0 |  | go-module-binary-cataloger |
+| github.com/cronokirby/saferith | v0.33.0 |  | go-module-binary-cataloger |
+| github.com/cznic/mathutil | v0.0.0-20181122101859-297441e03548 |  | go-module-binary-cataloger |
 | github.com/davecgh/go-spew | v1.1.2-0.20180830191138-d8f796af33cc |  | go-module-binary-cataloger |
-| github.com/dchest/siphash | v1.2.3 |  | go-module-binary-cataloger |
-| github.com/docker/go-units | v0.5.0 |  | go-module-binary-cataloger |
+| github.com/dgryski/go-farm | v0.0.0-20200201041132-a6ae2369ad13 |  | go-module-binary-cataloger |
+| github.com/dgryski/go-rendezvous | v0.0.0-20200823014737-9f7001d12a5f |  | go-module-binary-cataloger |
+| github.com/diskfs/go-diskfs | v1.7.0 |  | go-module-binary-cataloger |
+| github.com/dromara/dongle | v1.0.1 |  | go-module-binary-cataloger |
+| github.com/dropbox/dropbox-sdk-go-unofficial/v6 | v6.0.5 |  | go-module-binary-cataloger |
 | github.com/dustin/go-humanize | v1.0.1 |  | go-module-binary-cataloger |
-| github.com/dustin/go-humanize | v1.0.1 |  | go-module-binary-cataloger |
-| github.com/eapache/go-resiliency | v1.7.0 |  | go-module-binary-cataloger |
+| github.com/eapache/go-resiliency | v1.6.0 |  | go-module-binary-cataloger |
 | github.com/eapache/go-xerial-snappy | v0.0.0-20230731223053-c322873962e3 |  | go-module-binary-cataloger |
 | github.com/eapache/queue | v1.1.0 |  | go-module-binary-cataloger |
-| github.com/eclipse/paho.mqtt.golang | v1.5.0 |  | go-module-binary-cataloger |
-| github.com/elastic/go-elasticsearch/v7 | v7.17.10 |  | go-module-binary-cataloger |
-| github.com/envoyproxy/go-control-plane | v0.13.1 |  | go-module-binary-cataloger |
-| github.com/envoyproxy/protoc-gen-validate | v1.1.0 |  | go-module-binary-cataloger |
+| github.com/elastic/gosigar | v0.14.3 |  | go-module-binary-cataloger |
+| github.com/emersion/go-message | v0.18.2 |  | go-module-binary-cataloger |
+| github.com/emersion/go-vcard | v0.0.0-20241024213814-c9703dde27ff |  | go-module-binary-cataloger |
+| github.com/envoyproxy/go-control-plane/envoy | v1.36.0 |  | go-module-binary-cataloger |
+| github.com/envoyproxy/protoc-gen-validate | v1.2.1 |  | go-module-binary-cataloger |
+| github.com/facebookgo/clock | v0.0.0-20150410010913-600d898af40a |  | go-module-binary-cataloger |
+| github.com/facebookgo/stats | v0.0.0-20151006221625-1b76add642e4 |  | go-module-binary-cataloger |
 | github.com/fatih/color | v1.18.0 |  | go-module-binary-cataloger |
-| github.com/fatih/color | v1.18.0 |  | go-module-binary-cataloger |
-| github.com/fatih/structs | v1.1.0 |  | go-module-binary-cataloger |
-| github.com/fatih/structs | v1.1.0 |  | go-module-binary-cataloger |
-| github.com/felixge/fgprof | v0.9.5 |  | go-module-binary-cataloger |
 | github.com/felixge/httpsnoop | v1.0.4 |  | go-module-binary-cataloger |
-| github.com/fraugster/parquet-go | v0.12.0 |  | go-module-binary-cataloger |
-| github.com/go-asn1-ber/asn1-ber | v1.5.7 |  | go-module-binary-cataloger |
-| github.com/go-ini/ini | v1.67.0 |  | go-module-binary-cataloger |
-| github.com/go-ini/ini | v1.67.0 |  | go-module-binary-cataloger |
-| github.com/go-jose/go-jose/v4 | v4.0.5 |  | go-module-binary-cataloger |
-| github.com/go-ldap/ldap/v3 | v3.4.8 |  | go-module-binary-cataloger |
-| github.com/go-logr/logr | v1.4.2 |  | go-module-binary-cataloger |
+| github.com/fluent/fluent-logger-golang | v1.10.1 |  | go-module-binary-cataloger |
+| github.com/flynn/noise | v1.1.0 |  | go-module-binary-cataloger |
+| github.com/fsnotify/fsnotify | v1.9.0 |  | go-module-binary-cataloger |
+| github.com/gabriel-vasile/mimetype | v1.4.11 |  | go-module-binary-cataloger |
+| github.com/geoffgarside/ber | v1.2.0 |  | go-module-binary-cataloger |
+| github.com/getsentry/sentry-go | v0.43.0 |  | go-module-binary-cataloger |
+| github.com/go-asn1-ber/asn1-ber | v1.5.8-0.20250403174932-29230038a667 |  | go-module-binary-cataloger |
+| github.com/go-chi/chi/v5 | v5.2.5 |  | go-module-binary-cataloger |
+| github.com/go-git/go-billy/v5 | v5.6.2 |  | go-module-binary-cataloger |
+| github.com/go-jose/go-jose/v4 | v4.1.3 |  | go-module-binary-cataloger |
+| github.com/go-ldap/ldap/v3 | v3.4.12 |  | go-module-binary-cataloger |
+| github.com/go-logr/logr | v1.4.3 |  | go-module-binary-cataloger |
 | github.com/go-logr/stdr | v1.2.2 |  | go-module-binary-cataloger |
-| github.com/go-openapi/analysis | v0.23.0 |  | go-module-binary-cataloger |
-| github.com/go-openapi/errors | v0.22.0 |  | go-module-binary-cataloger |
-| github.com/go-openapi/jsonpointer | v0.21.0 |  | go-module-binary-cataloger |
-| github.com/go-openapi/jsonreference | v0.21.0 |  | go-module-binary-cataloger |
-| github.com/go-openapi/loads | v0.22.0 |  | go-module-binary-cataloger |
-| github.com/go-openapi/runtime | v0.28.0 |  | go-module-binary-cataloger |
-| github.com/go-openapi/spec | v0.21.0 |  | go-module-binary-cataloger |
-| github.com/go-openapi/strfmt | v0.23.0 |  | go-module-binary-cataloger |
-| github.com/go-openapi/swag | v0.23.0 |  | go-module-binary-cataloger |
-| github.com/go-openapi/validate | v0.24.0 |  | go-module-binary-cataloger |
-| github.com/go-sql-driver/mysql | v1.8.1 |  | go-module-binary-cataloger |
-| github.com/gobwas/httphead | v0.1.0 |  | go-module-binary-cataloger |
-| github.com/gobwas/pool | v0.2.1 |  | go-module-binary-cataloger |
-| github.com/gobwas/ws | v1.4.0 |  | go-module-binary-cataloger |
+| github.com/go-openapi/errors | v0.22.4 |  | go-module-binary-cataloger |
+| github.com/go-openapi/strfmt | v0.25.0 |  | go-module-binary-cataloger |
+| github.com/go-playground/locales | v0.14.1 |  | go-module-binary-cataloger |
+| github.com/go-playground/universal-translator | v0.18.1 |  | go-module-binary-cataloger |
+| github.com/go-playground/validator/v10 | v10.28.0 |  | go-module-binary-cataloger |
+| github.com/go-redsync/redsync/v4 | v4.16.0 |  | go-module-binary-cataloger |
+| github.com/go-resty/resty/v2 | v2.16.5 |  | go-module-binary-cataloger |
+| github.com/go-sql-driver/mysql | v1.9.3 |  | go-module-binary-cataloger |
+| github.com/go-viper/mapstructure/v2 | v2.4.0 |  | go-module-binary-cataloger |
+| github.com/go-zookeeper/zk | v1.0.3 |  | go-module-binary-cataloger |
 | github.com/goccy/go-json | v0.10.5 |  | go-module-binary-cataloger |
-| github.com/goccy/go-json | v0.10.5 |  | go-module-binary-cataloger |
+| github.com/goccy/go-yaml | v1.18.0 |  | go-module-binary-cataloger |
+| github.com/gofrs/flock | v0.13.0 |  | go-module-binary-cataloger |
 | github.com/gogo/protobuf | v1.3.2 |  | go-module-binary-cataloger |
-| github.com/gogo/protobuf | v1.3.2 |  | go-module-binary-cataloger |
-| github.com/golang-jwt/jwt/v4 | v4.5.1 |  | go-module-binary-cataloger |
-| github.com/golang-jwt/jwt/v4 | v4.5.1 |  | go-module-binary-cataloger |
-| github.com/golang-jwt/jwt/v5 | v5.2.1 |  | go-module-binary-cataloger |
-| github.com/golang/groupcache | v0.0.0-20210331224755-41bb18bfe9da |  | go-module-binary-cataloger |
+| github.com/golang-jwt/jwt/v4 | v4.5.2 |  | go-module-binary-cataloger |
+| github.com/golang-jwt/jwt/v5 | v5.3.1 |  | go-module-binary-cataloger |
 | github.com/golang/protobuf | v1.5.4 |  | go-module-binary-cataloger |
-| github.com/golang/protobuf | v1.5.4 |  | go-module-binary-cataloger |
-| github.com/golang/snappy | v0.0.4 |  | go-module-binary-cataloger |
-| github.com/gomodule/redigo | v1.9.2 |  | go-module-binary-cataloger |
-| github.com/google/pprof | v0.0.0-20241210010833-40e02aabc2ad |  | go-module-binary-cataloger |
-| github.com/google/s2a-go | v0.1.8 |  | go-module-binary-cataloger |
-| github.com/google/shlex | v0.0.0-20191202100458-e7afc7fbc510 |  | go-module-binary-cataloger |
-| github.com/google/shlex | v0.0.0-20191202100458-e7afc7fbc510 |  | go-module-binary-cataloger |
+| github.com/golang/snappy | v1.0.0 |  | go-module-binary-cataloger |
+| github.com/google/btree | v1.1.3 |  | go-module-binary-cataloger |
+| github.com/google/flatbuffers/go | v0.0.0-20230108230133-3b8644d32c50 |  | go-module-binary-cataloger |
+| github.com/google/s2a-go | v0.1.9 |  | go-module-binary-cataloger |
 | github.com/google/uuid | v1.6.0 |  | go-module-binary-cataloger |
-| github.com/google/uuid | v1.6.0 |  | go-module-binary-cataloger |
-| github.com/googleapis/enterprise-certificate-proxy | v0.3.4 |  | go-module-binary-cataloger |
-| github.com/googleapis/gax-go/v2 | v2.14.0 |  | go-module-binary-cataloger |
-| github.com/gorilla/websocket | v1.5.3 |  | go-module-binary-cataloger |
+| github.com/google/wire | v0.7.0 |  | go-module-binary-cataloger |
+| github.com/googleapis/enterprise-certificate-proxy | v0.3.7 |  | go-module-binary-cataloger |
+| github.com/googleapis/gax-go/v2 | v2.15.0 |  | go-module-binary-cataloger |
+| github.com/gookit/color | v1.5.4 |  | go-module-binary-cataloger |
+| github.com/gorilla/mux | v1.8.1 |  | go-module-binary-cataloger |
+| github.com/gorilla/schema | v1.4.1 |  | go-module-binary-cataloger |
+| github.com/gorilla/securecookie | v1.1.2 |  | go-module-binary-cataloger |
+| github.com/gorilla/sessions | v1.4.0 |  | go-module-binary-cataloger |
+| github.com/grpc-ecosystem/go-grpc-middleware | v1.4.0 |  | go-module-binary-cataloger |
+| github.com/grpc-ecosystem/grpc-gateway/v2 | v2.27.3 |  | go-module-binary-cataloger |
+| github.com/hamba/avro/v2 | v2.30.0 |  | go-module-binary-cataloger |
 | github.com/hashicorp/errwrap | v1.1.0 |  | go-module-binary-cataloger |
-| github.com/hashicorp/errwrap | v1.1.0 |  | go-module-binary-cataloger |
+| github.com/hashicorp/go-cleanhttp | v0.5.2 |  | go-module-binary-cataloger |
+| github.com/hashicorp/go-hclog | v1.6.3 |  | go-module-binary-cataloger |
+| github.com/hashicorp/go-immutable-radix | v1.3.1 |  | go-module-binary-cataloger |
+| github.com/hashicorp/go-metrics | v0.5.4 |  | go-module-binary-cataloger |
+| github.com/hashicorp/go-msgpack/v2 | v2.1.2 |  | go-module-binary-cataloger |
 | github.com/hashicorp/go-multierror | v1.1.1 |  | go-module-binary-cataloger |
-| github.com/hashicorp/go-multierror | v1.1.1 |  | go-module-binary-cataloger |
+| github.com/hashicorp/go-retryablehttp | v0.7.8 |  | go-module-binary-cataloger |
+| github.com/hashicorp/go-rootcerts | v1.0.2 |  | go-module-binary-cataloger |
+| github.com/hashicorp/go-secure-stdlib/parseutil | v0.2.0 |  | go-module-binary-cataloger |
+| github.com/hashicorp/go-secure-stdlib/strutil | v0.1.2 |  | go-module-binary-cataloger |
+| github.com/hashicorp/go-sockaddr | v1.0.7 |  | go-module-binary-cataloger |
 | github.com/hashicorp/go-uuid | v1.0.3 |  | go-module-binary-cataloger |
-| github.com/inconshreveable/mousetrap | v1.1.0 |  | go-module-binary-cataloger |
-| github.com/inconshreveable/mousetrap | v1.1.0 |  | go-module-binary-cataloger |
+| github.com/hashicorp/golang-lru | v0.6.0 |  | go-module-binary-cataloger |
+| github.com/hashicorp/hcl | v1.0.1-vault-7 |  | go-module-binary-cataloger |
+| github.com/hashicorp/raft | v1.7.3 |  | go-module-binary-cataloger |
+| github.com/hashicorp/raft-boltdb/v2 | v2.3.1 |  | go-module-binary-cataloger |
+| github.com/hashicorp/vault/api | v1.22.0 |  | go-module-binary-cataloger |
+| github.com/internxt/rclone-adapter | v0.0.0-20260213125353-6f59c89fcb7c |  | go-module-binary-cataloger |
+| github.com/jackc/pgpassfile | v1.0.0 |  | go-module-binary-cataloger |
+| github.com/jackc/pgservicefile | v0.0.0-20240606120523-5a60cdf6a761 |  | go-module-binary-cataloger |
+| github.com/jackc/pgx/v5 | v5.8.0 |  | go-module-binary-cataloger |
+| github.com/jackc/puddle/v2 | v2.2.2 |  | go-module-binary-cataloger |
 | github.com/jcmturner/aescts/v2 | v2.0.0 |  | go-module-binary-cataloger |
 | github.com/jcmturner/dnsutils/v2 | v2.0.0 |  | go-module-binary-cataloger |
 | github.com/jcmturner/gofork | v1.7.6 |  | go-module-binary-cataloger |
+| github.com/jcmturner/goidentity/v6 | v6.0.1 |  | go-module-binary-cataloger |
 | github.com/jcmturner/gokrb5/v8 | v8.4.4 |  | go-module-binary-cataloger |
 | github.com/jcmturner/rpc/v2 | v2.0.3 |  | go-module-binary-cataloger |
-| github.com/jedib0t/go-pretty/v6 | v6.6.5 |  | go-module-binary-cataloger |
-| github.com/jedib0t/go-pretty/v6 | v6.6.6 |  | go-module-binary-cataloger |
-| github.com/jessevdk/go-flags | v1.6.1 |  | go-module-binary-cataloger |
+| github.com/jhump/protoreflect | v1.18.0 |  | go-module-binary-cataloger |
+| github.com/jhump/protoreflect/v2 | v2.0.0-beta.1 |  | go-module-binary-cataloger |
+| github.com/jlaffaye/ftp | v0.2.1-0.20240918233326-1b970516f5d3 |  | go-module-binary-cataloger |
+| github.com/jmespath/go-jmespath | v0.4.0 |  | go-module-binary-cataloger |
+| github.com/jonboulle/clockwork | v0.5.0 |  | go-module-binary-cataloger |
 | github.com/josharian/intern | v1.0.0 |  | go-module-binary-cataloger |
 | github.com/json-iterator/go | v1.1.12 |  | go-module-binary-cataloger |
-| github.com/juju/ratelimit | v1.0.2 |  | go-module-binary-cataloger |
-| github.com/juju/ratelimit | v1.0.2 |  | go-module-binary-cataloger |
-| github.com/klauspost/compress | v1.17.11 |  | go-module-binary-cataloger |
-| github.com/klauspost/compress | v1.17.11 |  | go-module-binary-cataloger |
-| github.com/klauspost/cpuid/v2 | v2.2.9 |  | go-module-binary-cataloger |
-| github.com/klauspost/cpuid/v2 | v2.2.9 |  | go-module-binary-cataloger |
-| github.com/klauspost/filepathx | v1.1.1 |  | go-module-binary-cataloger |
-| github.com/klauspost/pgzip | v1.2.6 |  | go-module-binary-cataloger |
-| github.com/klauspost/readahead | v1.4.0 |  | go-module-binary-cataloger |
-| github.com/klauspost/reedsolomon | v1.12.4 |  | go-module-binary-cataloger |
+| github.com/jtolio/noiseconn | v0.0.0-20231127013910-f6d9ecbf1de7 |  | go-module-binary-cataloger |
+| github.com/jzelinskie/whirlpool | v0.0.0-20201016144138-0675e54bb004 |  | go-module-binary-cataloger |
+| github.com/karlseguin/ccache/v2 | v2.0.8 |  | go-module-binary-cataloger |
+| github.com/klauspost/compress | v1.18.4 |  | go-module-binary-cataloger |
+| github.com/klauspost/cpuid/v2 | v2.3.0 |  | go-module-binary-cataloger |
+| github.com/klauspost/reedsolomon | v1.13.0 |  | go-module-binary-cataloger |
+| github.com/koofr/go-httpclient | v0.0.0-20240520111329-e20f8f203988 |  | go-module-binary-cataloger |
+| github.com/koofr/go-koofrclient | v0.0.0-20221207135200-cbd7fc9ad6a6 |  | go-module-binary-cataloger |
 | github.com/kr/fs | v0.1.0 |  | go-module-binary-cataloger |
+| github.com/kurin/blazer | v0.5.3 |  | go-module-binary-cataloger |
 | github.com/kylelemons/godebug | v1.1.0 |  | go-module-binary-cataloger |
-| github.com/lestrrat-go/blackmagic | v1.0.2 |  | go-module-binary-cataloger |
-| github.com/lestrrat-go/blackmagic | v1.0.2 |  | go-module-binary-cataloger |
-| github.com/lestrrat-go/httpcc | v1.0.1 |  | go-module-binary-cataloger |
-| github.com/lestrrat-go/httpcc | v1.0.1 |  | go-module-binary-cataloger |
-| github.com/lestrrat-go/httprc | v1.0.6 |  | go-module-binary-cataloger |
-| github.com/lestrrat-go/httprc | v1.0.6 |  | go-module-binary-cataloger |
-| github.com/lestrrat-go/iter | v1.0.2 |  | go-module-binary-cataloger |
-| github.com/lestrrat-go/iter | v1.0.2 |  | go-module-binary-cataloger |
-| github.com/lestrrat-go/jwx/v2 | v2.1.3 |  | go-module-binary-cataloger |
-| github.com/lestrrat-go/jwx/v2 | v2.1.3 |  | go-module-binary-cataloger |
-| github.com/lestrrat-go/option | v1.0.1 |  | go-module-binary-cataloger |
-| github.com/lestrrat-go/option | v1.0.1 |  | go-module-binary-cataloger |
-| github.com/lib/pq | v1.10.9 |  | go-module-binary-cataloger |
-| github.com/lithammer/shortuuid/v4 | v4.0.0 |  | go-module-binary-cataloger |
-| github.com/lucasb-eyer/go-colorful | v1.2.0 |  | go-module-binary-cataloger |
-| github.com/lucasb-eyer/go-colorful | v1.2.0 |  | go-module-binary-cataloger |
-| github.com/mailru/easyjson | v0.9.0 |  | go-module-binary-cataloger |
+| github.com/lanrat/extsort | v1.4.2 |  | go-module-binary-cataloger |
+| github.com/leodido/go-urn | v1.4.0 |  | go-module-binary-cataloger |
+| github.com/linkedin/goavro/v2 | v2.15.0 |  | go-module-binary-cataloger |
+| github.com/lithammer/fuzzysearch | v1.1.8 |  | go-module-binary-cataloger |
+| github.com/lithammer/shortuuid/v3 | v3.0.7 |  | go-module-binary-cataloger |
+| github.com/lpar/date | v1.0.0 |  | go-module-binary-cataloger |
+| github.com/mailru/easyjson | v0.9.1 |  | go-module-binary-cataloger |
 | github.com/mattn/go-colorable | v0.1.14 |  | go-module-binary-cataloger |
-| github.com/mattn/go-colorable | v0.1.14 |  | go-module-binary-cataloger |
-| github.com/mattn/go-ieproxy | v0.0.12 |  | go-module-binary-cataloger |
-| github.com/mattn/go-ieproxy | v0.0.12 |  | go-module-binary-cataloger |
 | github.com/mattn/go-isatty | v0.0.20 |  | go-module-binary-cataloger |
-| github.com/mattn/go-isatty | v0.0.20 |  | go-module-binary-cataloger |
-| github.com/mattn/go-runewidth | v0.0.16 |  | go-module-binary-cataloger |
-| github.com/mattn/go-runewidth | v0.0.16 |  | go-module-binary-cataloger |
-| github.com/matttproud/golang_protobuf_extensions | v1.0.4 |  | go-module-binary-cataloger |
-| github.com/matttproud/golang_protobuf_extensions | v1.0.4 |  | go-module-binary-cataloger |
-| github.com/miekg/dns | v1.1.62 |  | go-module-binary-cataloger |
-| github.com/minio/cli | v1.24.2 |  | go-module-binary-cataloger |
-| github.com/minio/cli | v1.24.2 |  | go-module-binary-cataloger |
-| github.com/minio/colorjson | v1.0.8 |  | go-module-binary-cataloger |
-| github.com/minio/colorjson | v1.0.8 |  | go-module-binary-cataloger |
-| github.com/minio/console | v1.7.6 |  | go-module-binary-cataloger |
-| github.com/minio/crc64nvme | v1.0.1 |  | go-module-binary-cataloger |
-| github.com/minio/csvparser | v1.0.0 |  | go-module-binary-cataloger |
-| github.com/minio/dnscache | v0.1.1 |  | go-module-binary-cataloger |
-| github.com/minio/dperf | v0.6.3 |  | go-module-binary-cataloger |
-| github.com/minio/filepath | v1.0.0 |  | go-module-binary-cataloger |
-| github.com/minio/filepath | v1.0.0 |  | go-module-binary-cataloger |
-| github.com/minio/highwayhash | v1.0.3 |  | go-module-binary-cataloger |
-| github.com/minio/kms-go/kes | v0.3.1 |  | go-module-binary-cataloger |
-| github.com/minio/kms-go/kms | v0.4.0 |  | go-module-binary-cataloger |
-| github.com/minio/madmin-go/v3 | v3.0.91 |  | go-module-binary-cataloger |
-| github.com/minio/madmin-go/v3 | v3.0.94 |  | go-module-binary-cataloger |
-| github.com/minio/mc | v0.0.0-20250208210632-10c50368c526 |  | go-module-binary-cataloger |
-| github.com/minio/mc | v0.0.0-20250221160046-9eb205cb62c6 |  | go-module-binary-cataloger |
-| github.com/minio/md5-simd | v1.1.2 |  | go-module-binary-cataloger |
-| github.com/minio/md5-simd | v1.1.2 |  | go-module-binary-cataloger |
-| github.com/minio/minio | v0.0.0-20250228095516-8c2c92f7afdc |  | go-module-binary-cataloger |
-| github.com/minio/minio-go/v7 | v7.0.85 |  | go-module-binary-cataloger |
-| github.com/minio/minio-go/v7 | v7.0.87 |  | go-module-binary-cataloger |
-| github.com/minio/mux | v1.9.0 |  | go-module-binary-cataloger |
-| github.com/minio/pkg/v3 | v3.0.29 |  | go-module-binary-cataloger |
-| github.com/minio/pkg/v3 | v3.0.30 |  | go-module-binary-cataloger |
-| github.com/minio/selfupdate | v0.6.0 |  | go-module-binary-cataloger |
-| github.com/minio/selfupdate | v0.6.0 |  | go-module-binary-cataloger |
-| github.com/minio/simdjson-go | v0.4.5 |  | go-module-binary-cataloger |
-| github.com/minio/sio | v0.4.1 |  | go-module-binary-cataloger |
-| github.com/minio/websocket | v1.6.0 |  | go-module-binary-cataloger |
-| github.com/minio/xxml | v0.0.3 |  | go-module-binary-cataloger |
-| github.com/minio/zipindex | v0.4.0 |  | go-module-binary-cataloger |
+| github.com/mattn/go-runewidth | v0.0.19 |  | go-module-binary-cataloger |
+| github.com/minio/crc64nvme | v1.1.1 |  | go-module-binary-cataloger |
+| github.com/mitchellh/colorstring | v0.0.0-20190213212951-d06e56a500db |  | go-module-binary-cataloger |
 | github.com/mitchellh/go-homedir | v1.1.0 |  | go-module-binary-cataloger |
-| github.com/mitchellh/go-homedir | v1.1.0 |  | go-module-binary-cataloger |
-| github.com/mitchellh/mapstructure | v1.5.0 |  | go-module-binary-cataloger |
+| github.com/mitchellh/mapstructure | v1.5.1-0.20220423185008-bf980b35cac4 |  | go-module-binary-cataloger |
 | github.com/modern-go/concurrent | v0.0.0-20180306012644-bacd9c7ef1dd |  | go-module-binary-cataloger |
 | github.com/modern-go/reflect2 | v1.0.2 |  | go-module-binary-cataloger |
 | github.com/montanaflynn/stats | v0.7.1 |  | go-module-binary-cataloger |
-| github.com/muesli/ansi | v0.0.0-20230316100256-276c6243b2f6 |  | go-module-binary-cataloger |
-| github.com/muesli/ansi | v0.0.0-20230316100256-276c6243b2f6 |  | go-module-binary-cataloger |
-| github.com/muesli/cancelreader | v0.2.2 |  | go-module-binary-cataloger |
-| github.com/muesli/cancelreader | v0.2.2 |  | go-module-binary-cataloger |
-| github.com/muesli/reflow | v0.3.0 |  | go-module-binary-cataloger |
-| github.com/muesli/reflow | v0.3.0 |  | go-module-binary-cataloger |
-| github.com/muesli/termenv | v0.15.2 |  | go-module-binary-cataloger |
-| github.com/muesli/termenv | v0.15.2 |  | go-module-binary-cataloger |
 | github.com/munnerz/goautoneg | v0.0.0-20191010083416-a7dc8b61c822 |  | go-module-binary-cataloger |
-| github.com/munnerz/goautoneg | v0.0.0-20191010083416-a7dc8b61c822 |  | go-module-binary-cataloger |
-| github.com/nats-io/nats.go | v1.37.0 |  | go-module-binary-cataloger |
-| github.com/nats-io/nkeys | v0.4.7 |  | go-module-binary-cataloger |
+| github.com/nats-io/nats.go | v1.48.0 |  | go-module-binary-cataloger |
+| github.com/nats-io/nkeys | v0.4.12 |  | go-module-binary-cataloger |
 | github.com/nats-io/nuid | v1.0.1 |  | go-module-binary-cataloger |
-| github.com/nats-io/stan.go | v0.10.4 |  | go-module-binary-cataloger |
-| github.com/ncw/directio | v1.0.5 |  | go-module-binary-cataloger |
-| github.com/nsqio/go-nsq | v1.1.0 |  | go-module-binary-cataloger |
+| github.com/ncw/swift/v2 | v2.0.5 |  | go-module-binary-cataloger |
 | github.com/oklog/ulid | v1.3.1 |  | go-module-binary-cataloger |
-| github.com/olekukonko/tablewriter | v0.0.5 |  | go-module-binary-cataloger |
-| github.com/olekukonko/tablewriter | v0.0.5 |  | go-module-binary-cataloger |
-| github.com/philhofer/fwd | v1.1.3-0.20240916144458-20a13a1f6b7c |  | go-module-binary-cataloger |
-| github.com/philhofer/fwd | v1.1.3-0.20240916144458-20a13a1f6b7c |  | go-module-binary-cataloger |
-| github.com/pierrec/lz4/v4 | v4.1.21 |  | go-module-binary-cataloger |
+| github.com/olivere/elastic/v7 | v7.0.32 |  | go-module-binary-cataloger |
+| github.com/opentracing/opentracing-go | v1.2.0 |  | go-module-binary-cataloger |
+| github.com/oracle/oci-go-sdk/v65 | v65.104.0 |  | go-module-binary-cataloger |
+| github.com/orcaman/concurrent-map/v2 | v2.0.1 |  | go-module-binary-cataloger |
+| github.com/panjf2000/ants/v2 | v2.11.3 |  | go-module-binary-cataloger |
+| github.com/parquet-go/bitpack | v1.0.0 |  | go-module-binary-cataloger |
+| github.com/parquet-go/jsonlite | v1.0.0 |  | go-module-binary-cataloger |
+| github.com/parquet-go/parquet-go | v0.28.0 |  | go-module-binary-cataloger |
+| github.com/patrickmn/go-cache | v2.1.0+incompatible |  | go-module-binary-cataloger |
+| github.com/pelletier/go-toml/v2 | v2.2.4 |  | go-module-binary-cataloger |
+| github.com/pengsrc/go-shared | v0.2.1-0.20190131101655-1999055a4a14 |  | go-module-binary-cataloger |
+| github.com/peterh/liner | v1.2.2 |  | go-module-binary-cataloger |
+| github.com/philhofer/fwd | v1.2.0 |  | go-module-binary-cataloger |
+| github.com/pierrec/lz4/v4 | v4.1.25 |  | go-module-binary-cataloger |
+| github.com/pingcap/errors | v0.11.5-0.20211224045212-9687c2b0f87c |  | go-module-binary-cataloger |
+| github.com/pingcap/failpoint | v0.0.0-20220801062533-2eaa32854a6c |  | go-module-binary-cataloger |
+| github.com/pingcap/kvproto | v0.0.0-20230403051650-e166ae588106 |  | go-module-binary-cataloger |
+| github.com/pingcap/log | v1.1.1-0.20221110025148-ca232912c9f3 |  | go-module-binary-cataloger |
 | github.com/pkg/browser | v0.0.0-20240102092130-5ac0b6a4141c |  | go-module-binary-cataloger |
 | github.com/pkg/errors | v0.9.1 |  | go-module-binary-cataloger |
-| github.com/pkg/sftp | v1.13.7 |  | go-module-binary-cataloger |
-| github.com/pkg/xattr | v0.4.10 |  | go-module-binary-cataloger |
-| github.com/pkg/xattr | v0.4.10 |  | go-module-binary-cataloger |
+| github.com/pkg/sftp | v1.13.10 |  | go-module-binary-cataloger |
+| github.com/pkg/xattr | v0.4.12 |  | go-module-binary-cataloger |
+| github.com/pmezard/go-difflib | v1.0.1-0.20181226105442-5d4384ee4fb2 |  | go-module-binary-cataloger |
 | github.com/posener/complete | v1.2.3 |  | go-module-binary-cataloger |
-| github.com/posener/complete | v1.2.3 |  | go-module-binary-cataloger |
-| github.com/prometheus/client_golang | v1.20.5 |  | go-module-binary-cataloger |
-| github.com/prometheus/client_golang | v1.20.5 |  | go-module-binary-cataloger |
-| github.com/prometheus/client_model | v0.6.1 |  | go-module-binary-cataloger |
-| github.com/prometheus/client_model | v0.6.1 |  | go-module-binary-cataloger |
-| github.com/prometheus/common | v0.62.0 |  | go-module-binary-cataloger |
-| github.com/prometheus/common | v0.62.0 |  | go-module-binary-cataloger |
-| github.com/prometheus/procfs | v0.15.1 |  | go-module-binary-cataloger |
-| github.com/prometheus/procfs | v0.15.1 |  | go-module-binary-cataloger |
-| github.com/prometheus/prom2json | v1.4.1 |  | go-module-binary-cataloger |
-| github.com/prometheus/prom2json | v1.4.1 |  | go-module-binary-cataloger |
-| github.com/prometheus/prometheus | v0.301.0 |  | go-module-binary-cataloger |
-| github.com/prometheus/prometheus | v0.301.0 |  | go-module-binary-cataloger |
-| github.com/puzpuzpuz/xsync/v3 | v3.4.0 |  | go-module-binary-cataloger |
+| github.com/pquerna/cachecontrol | v0.2.0 |  | go-module-binary-cataloger |
+| github.com/pquerna/otp | v1.5.0 |  | go-module-binary-cataloger |
+| github.com/prometheus/client_golang | v1.23.2 |  | go-module-binary-cataloger |
+| github.com/prometheus/client_model | v0.6.2 |  | go-module-binary-cataloger |
+| github.com/prometheus/common | v0.67.2 |  | go-module-binary-cataloger |
+| github.com/prometheus/procfs | v0.20.1 |  | go-module-binary-cataloger |
+| github.com/pterm/pterm | v0.12.81 |  | go-module-binary-cataloger |
+| github.com/putdotio/go-putio/putio | v0.0.0-20200123120452-16d982cac2b8 |  | go-module-binary-cataloger |
 | github.com/rabbitmq/amqp091-go | v1.10.0 |  | go-module-binary-cataloger |
+| github.com/rclone/Proton-API-Bridge | v1.0.1-0.20260127174007-77f974840d11 |  | go-module-binary-cataloger |
+| github.com/rclone/go-proton-api | v1.0.1-0.20260127173028-eb465cac3b18 |  | go-module-binary-cataloger |
+| github.com/rclone/rclone | v1.73.1 |  | go-module-binary-cataloger |
 | github.com/rcrowley/go-metrics | v0.0.0-20201227073835-cf1acfcdf475 |  | go-module-binary-cataloger |
+| github.com/rdleal/intervalst | v1.5.0 |  | go-module-binary-cataloger |
+| github.com/redis/go-redis/v9 | v9.18.0 |  | go-module-binary-cataloger |
+| github.com/relvacode/iso8601 | v1.7.0 |  | go-module-binary-cataloger |
+| github.com/remyoudompheng/bigfft | v0.0.0-20230129092748-24d4a6f8daec |  | go-module-binary-cataloger |
+| github.com/rfjakob/eme | v1.1.2 |  | go-module-binary-cataloger |
 | github.com/rivo/uniseg | v0.4.7 |  | go-module-binary-cataloger |
-| github.com/rivo/uniseg | v0.4.7 |  | go-module-binary-cataloger |
-| github.com/rjeczalik/notify | v0.9.3 |  | go-module-binary-cataloger |
-| github.com/rjeczalik/notify | v0.9.3 |  | go-module-binary-cataloger |
-| github.com/rs/cors | v1.11.1 |  | go-module-binary-cataloger |
-| github.com/rs/xid | v1.6.0 |  | go-module-binary-cataloger |
-| github.com/rs/xid | v1.6.0 |  | go-module-binary-cataloger |
-| github.com/safchain/ethtool | v0.5.10 |  | go-module-binary-cataloger |
-| github.com/safchain/ethtool | v0.5.10 |  | go-module-binary-cataloger |
-| github.com/secure-io/sio-go | v0.3.1 |  | go-module-binary-cataloger |
-| github.com/secure-io/sio-go | v0.3.1 |  | go-module-binary-cataloger |
-| github.com/shirou/gopsutil/v3 | v3.24.5 |  | go-module-binary-cataloger |
-| github.com/shirou/gopsutil/v3 | v3.24.5 |  | go-module-binary-cataloger |
+| github.com/ryanuber/go-glob | v1.0.0 |  | go-module-binary-cataloger |
+| github.com/sabhiram/go-gitignore | v0.0.0-20210923224102-525f6e181f06 |  | go-module-binary-cataloger |
+| github.com/sagikazarmark/locafero | v0.11.0 |  | go-module-binary-cataloger |
+| github.com/samber/lo | v1.52.0 |  | go-module-binary-cataloger |
+| github.com/schollz/progressbar/v3 | v3.19.0 |  | go-module-binary-cataloger |
+| github.com/seaweedfs/go-fuse/v2 | v2.9.1 |  | go-module-binary-cataloger |
+| github.com/seaweedfs/goexif | v1.0.3 |  | go-module-binary-cataloger |
+| github.com/seaweedfs/raft | v1.1.6 |  | go-module-binary-cataloger |
+| github.com/seaweedfs/seaweedfs | v0.0.0-20260311092924-4a5243886a5c |  | go-module-binary-cataloger |
+| github.com/shirou/gopsutil/v4 | v4.26.2 |  | go-module-binary-cataloger |
+| github.com/sirupsen/logrus | v1.9.4-0.20230606125235-dd1b4c2e81af |  | go-module-binary-cataloger |
+| github.com/skratchdot/open-golang | v0.0.0-20200116055534-eef842397966 |  | go-module-binary-cataloger |
+| github.com/sony/gobreaker | v1.0.0 |  | go-module-binary-cataloger |
+| github.com/sourcegraph/conc | v0.3.1-0.20240121214520-5f936abd7ae8 |  | go-module-binary-cataloger |
+| github.com/spacemonkeygo/monkit/v3 | v3.0.25-0.20251022131615-eb24eb109368 |  | go-module-binary-cataloger |
+| github.com/spf13/afero | v1.15.0 |  | go-module-binary-cataloger |
+| github.com/spf13/cast | v1.10.0 |  | go-module-binary-cataloger |
+| github.com/spf13/pflag | v1.0.10 |  | go-module-binary-cataloger |
+| github.com/spf13/viper | v1.21.0 |  | go-module-binary-cataloger |
+| github.com/spiffe/go-spiffe/v2 | v2.6.0 |  | go-module-binary-cataloger |
+| github.com/stretchr/objx | v0.5.2 |  | go-module-binary-cataloger |
+| github.com/stretchr/testify | v1.11.1 |  | go-module-binary-cataloger |
+| github.com/subosito/gotenv | v1.6.0 |  | go-module-binary-cataloger |
+| github.com/substrait-io/substrait | v0.69.0 |  | go-module-binary-cataloger |
+| github.com/substrait-io/substrait-go/v4 | v4.4.0 |  | go-module-binary-cataloger |
+| github.com/substrait-io/substrait-protobuf/go | v0.71.0 |  | go-module-binary-cataloger |
+| github.com/syndtr/goleveldb | v1.0.1-0.20190318030020-c3a204f8e965 |  | go-module-binary-cataloger |
+| github.com/t3rm1n4l/go-mega | v0.0.0-20251031123324-a804aaa87491 |  | go-module-binary-cataloger |
+| github.com/tarantool/go-iproto | v1.1.0 |  | go-module-binary-cataloger |
+| github.com/tarantool/go-tarantool/v2 | v2.4.1 |  | go-module-binary-cataloger |
+| github.com/tiancaiamao/gp | v0.0.0-20221230034425-4025bc8a4d4a |  | go-module-binary-cataloger |
 | github.com/tidwall/gjson | v1.18.0 |  | go-module-binary-cataloger |
-| github.com/tidwall/gjson | v1.18.0 |  | go-module-binary-cataloger |
-| github.com/tidwall/match | v1.1.1 |  | go-module-binary-cataloger |
-| github.com/tidwall/match | v1.1.1 |  | go-module-binary-cataloger |
-| github.com/tidwall/pretty | v1.2.1 |  | go-module-binary-cataloger |
-| github.com/tidwall/pretty | v1.2.1 |  | go-module-binary-cataloger |
-| github.com/tinylib/msgp | v1.2.5 |  | go-module-binary-cataloger |
-| github.com/tinylib/msgp | v1.2.5 |  | go-module-binary-cataloger |
-| github.com/tklauser/go-sysconf | v0.3.14 |  | go-module-binary-cataloger |
-| github.com/tklauser/go-sysconf | v0.3.14 |  | go-module-binary-cataloger |
-| github.com/tklauser/numcpus | v0.9.0 |  | go-module-binary-cataloger |
-| github.com/tklauser/numcpus | v0.9.0 |  | go-module-binary-cataloger |
-| github.com/unrolled/secure | v1.17.0 |  | go-module-binary-cataloger |
+| github.com/tidwall/match | v1.2.0 |  | go-module-binary-cataloger |
+| github.com/tidwall/pretty | v1.2.0 |  | go-module-binary-cataloger |
+| github.com/tikv/client-go/v2 | v2.0.7 |  | go-module-binary-cataloger |
+| github.com/tikv/pd/client | v0.0.0-20230329114254-1948c247c2b1 |  | go-module-binary-cataloger |
+| github.com/tinylib/msgp | v1.5.0 |  | go-module-binary-cataloger |
+| github.com/tklauser/go-sysconf | v0.3.16 |  | go-module-binary-cataloger |
+| github.com/tklauser/numcpus | v0.11.0 |  | go-module-binary-cataloger |
+| github.com/tsuna/gohbase | v0.0.0-20201125011725-348991136365 |  | go-module-binary-cataloger |
+| github.com/twmb/murmur3 | v1.1.8 |  | go-module-binary-cataloger |
+| github.com/twpayne/go-geom | v1.6.1 |  | go-module-binary-cataloger |
+| github.com/tyler-smith/go-bip39 | v1.1.0 |  | go-module-binary-cataloger |
+| github.com/tylertreat/BoomFilters | v0.0.0-20210315201527-1a82519a3e43 |  | go-module-binary-cataloger |
+| github.com/ulikunitz/xz | v0.5.15 |  | go-module-binary-cataloger |
+| github.com/unknwon/goconfig | v1.0.0 |  | go-module-binary-cataloger |
 | github.com/valyala/bytebufferpool | v1.0.0 |  | go-module-binary-cataloger |
-| github.com/vbauerster/mpb/v8 | v8.9.2 |  | go-module-binary-cataloger |
-| github.com/vbauerster/mpb/v8 | v8.9.2 |  | go-module-binary-cataloger |
-| github.com/xdg/scram | v1.0.5 |  | go-module-binary-cataloger |
-| github.com/xdg/stringprep | v1.0.3 |  | go-module-binary-cataloger |
+| github.com/viant/ptrie | v1.0.1 |  | go-module-binary-cataloger |
+| github.com/vmihailenco/msgpack/v5 | v5.4.1 |  | go-module-binary-cataloger |
+| github.com/vmihailenco/tagparser/v2 | v2.0.0 |  | go-module-binary-cataloger |
+| github.com/wk8/go-ordered-map/v2 | v2.1.8 |  | go-module-binary-cataloger |
+| github.com/xanzy/ssh-agent | v0.3.3 |  | go-module-binary-cataloger |
+| github.com/xdg-go/pbkdf2 | v1.0.0 |  | go-module-binary-cataloger |
+| github.com/xdg-go/scram | v1.1.2 |  | go-module-binary-cataloger |
+| github.com/xdg-go/stringprep | v1.0.4 |  | go-module-binary-cataloger |
+| github.com/xeipuuv/gojsonpointer | v0.0.0-20190905194746-02993c407bfb |  | go-module-binary-cataloger |
+| github.com/xeipuuv/gojsonreference | v0.0.0-20180127040603-bd5ef7bd5415 |  | go-module-binary-cataloger |
+| github.com/xeipuuv/gojsonschema | v1.2.0 |  | go-module-binary-cataloger |
+| github.com/xo/terminfo | v0.0.0-20220910002029-abceb7e1c41e |  | go-module-binary-cataloger |
+| github.com/yandex-cloud/go-genproto | v0.0.0-20211115083454-9ca41db5ed9e |  | go-module-binary-cataloger |
+| github.com/ydb-platform/ydb-go-genproto | v0.0.0-20251125145508-6d7ef87db5cb |  | go-module-binary-cataloger |
+| github.com/ydb-platform/ydb-go-sdk-auth-environ | v0.5.1 |  | go-module-binary-cataloger |
+| github.com/ydb-platform/ydb-go-sdk/v3 | v3.125.3 |  | go-module-binary-cataloger |
+| github.com/ydb-platform/ydb-go-yc | v0.12.1 |  | go-module-binary-cataloger |
+| github.com/ydb-platform/ydb-go-yc-metadata | v0.6.1 |  | go-module-binary-cataloger |
+| github.com/youmark/pkcs8 | v0.0.0-20240726163527-a2c0da244d78 |  | go-module-binary-cataloger |
+| github.com/yunify/qingstor-sdk-go/v3 | v3.2.0 |  | go-module-binary-cataloger |
+| github.com/zeebo/blake3 | v0.2.4 |  | go-module-binary-cataloger |
+| github.com/zeebo/errs | v1.4.0 |  | go-module-binary-cataloger |
 | github.com/zeebo/xxh3 | v1.0.2 |  | go-module-binary-cataloger |
-| glibc | 2.34-125.el9_5.1 |  | rpm-db-cataloger |
-| glibc-common | 2.34-125.el9_5.1 |  | rpm-db-cataloger |
-| glibc-minimal-langpack | 2.34-125.el9_5.1 |  | rpm-db-cataloger |
-| go.etcd.io/etcd/api/v3 | v3.5.18 |  | go-module-binary-cataloger |
-| go.etcd.io/etcd/api/v3 | v3.5.18 |  | go-module-binary-cataloger |
-| go.etcd.io/etcd/client/pkg/v3 | v3.5.18 |  | go-module-binary-cataloger |
-| go.etcd.io/etcd/client/pkg/v3 | v3.5.18 |  | go-module-binary-cataloger |
-| go.etcd.io/etcd/client/v3 | v3.5.18 |  | go-module-binary-cataloger |
-| go.etcd.io/etcd/client/v3 | v3.5.18 |  | go-module-binary-cataloger |
-| go.mongodb.org/mongo-driver | v1.17.2 |  | go-module-binary-cataloger |
+| go.etcd.io/bbolt | v1.4.3 |  | go-module-binary-cataloger |
+| go.etcd.io/etcd/api/v3 | v3.6.7 |  | go-module-binary-cataloger |
+| go.etcd.io/etcd/client/pkg/v3 | v3.6.7 |  | go-module-binary-cataloger |
+| go.etcd.io/etcd/client/v3 | v3.6.7 |  | go-module-binary-cataloger |
+| go.mongodb.org/mongo-driver | v1.17.9 |  | go-module-binary-cataloger |
 | go.opencensus.io | v0.24.0 |  | go-module-binary-cataloger |
-| go.opentelemetry.io/auto/sdk | v1.1.0 |  | go-module-binary-cataloger |
-| go.opentelemetry.io/contrib/detectors/gcp | v1.32.0 |  | go-module-binary-cataloger |
-| go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc | v0.57.0 |  | go-module-binary-cataloger |
-| go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp | v0.58.0 |  | go-module-binary-cataloger |
-| go.opentelemetry.io/otel | v1.33.0 |  | go-module-binary-cataloger |
-| go.opentelemetry.io/otel/metric | v1.33.0 |  | go-module-binary-cataloger |
-| go.opentelemetry.io/otel/sdk | v1.33.0 |  | go-module-binary-cataloger |
-| go.opentelemetry.io/otel/sdk/metric | v1.32.0 |  | go-module-binary-cataloger |
-| go.opentelemetry.io/otel/trace | v1.33.0 |  | go-module-binary-cataloger |
+| go.opentelemetry.io/auto/sdk | v1.2.1 |  | go-module-binary-cataloger |
+| go.opentelemetry.io/contrib/detectors/gcp | v1.38.0 |  | go-module-binary-cataloger |
+| go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc | v0.63.0 |  | go-module-binary-cataloger |
+| go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp | v0.63.0 |  | go-module-binary-cataloger |
+| go.opentelemetry.io/otel | v1.40.0 |  | go-module-binary-cataloger |
+| go.opentelemetry.io/otel/metric | v1.40.0 |  | go-module-binary-cataloger |
+| go.opentelemetry.io/otel/sdk | v1.40.0 |  | go-module-binary-cataloger |
+| go.opentelemetry.io/otel/sdk/metric | v1.40.0 |  | go-module-binary-cataloger |
+| go.opentelemetry.io/otel/trace | v1.40.0 |  | go-module-binary-cataloger |
 | go.uber.org/atomic | v1.11.0 |  | go-module-binary-cataloger |
 | go.uber.org/multierr | v1.11.0 |  | go-module-binary-cataloger |
-| go.uber.org/multierr | v1.11.0 |  | go-module-binary-cataloger |
-| go.uber.org/zap | v1.27.0 |  | go-module-binary-cataloger |
-| go.uber.org/zap | v1.27.0 |  | go-module-binary-cataloger |
-| goftp.io/server/v2 | v2.0.1 |  | go-module-binary-cataloger |
-| golang.org/x/crypto | v0.33.0 |  | go-module-binary-cataloger |
-| golang.org/x/crypto | v0.35.0 |  | go-module-binary-cataloger |
-| golang.org/x/net | v0.35.0 |  | go-module-binary-cataloger |
-| golang.org/x/net | v0.35.0 |  | go-module-binary-cataloger |
-| golang.org/x/oauth2 | v0.26.0 |  | go-module-binary-cataloger |
-| golang.org/x/sync | v0.11.0 |  | go-module-binary-cataloger |
-| golang.org/x/sync | v0.11.0 |  | go-module-binary-cataloger |
-| golang.org/x/sys | v0.30.0 |  | go-module-binary-cataloger |
-| golang.org/x/sys | v0.30.0 |  | go-module-binary-cataloger |
-| golang.org/x/term | v0.29.0 |  | go-module-binary-cataloger |
-| golang.org/x/term | v0.29.0 |  | go-module-binary-cataloger |
-| golang.org/x/text | v0.22.0 |  | go-module-binary-cataloger |
-| golang.org/x/text | v0.22.0 |  | go-module-binary-cataloger |
-| golang.org/x/time | v0.8.0 |  | go-module-binary-cataloger |
-| google.golang.org/api | v0.213.0 |  | go-module-binary-cataloger |
-| google.golang.org/genproto | v0.0.0-20241113202542-65e8d215514f |  | go-module-binary-cataloger |
-| google.golang.org/genproto/googleapis/api | v0.0.0-20250207221924-e9438ea467c6 |  | go-module-binary-cataloger |
-| google.golang.org/genproto/googleapis/api | v0.0.0-20250212204824-5a70512c5d8b |  | go-module-binary-cataloger |
-| google.golang.org/genproto/googleapis/rpc | v0.0.0-20250207221924-e9438ea467c6 |  | go-module-binary-cataloger |
-| google.golang.org/genproto/googleapis/rpc | v0.0.0-20250212204824-5a70512c5d8b |  | go-module-binary-cataloger |
-| google.golang.org/grpc | v1.70.0 |  | go-module-binary-cataloger |
-| google.golang.org/grpc | v1.70.0 |  | go-module-binary-cataloger |
-| google.golang.org/protobuf | v1.36.5 |  | go-module-binary-cataloger |
-| google.golang.org/protobuf | v1.36.5 |  | go-module-binary-cataloger |
-| gopkg.in/yaml.v2 | v2.4.0 |  | go-module-binary-cataloger |
+| go.uber.org/zap | v1.27.1 |  | go-module-binary-cataloger |
+| go.yaml.in/yaml/v2 | v2.4.3 |  | go-module-binary-cataloger |
+| go.yaml.in/yaml/v3 | v3.0.4 |  | go-module-binary-cataloger |
+| gocloud.dev | v0.45.0 |  | go-module-binary-cataloger |
+| gocloud.dev/pubsub/natspubsub | v0.45.0 |  | go-module-binary-cataloger |
+| gocloud.dev/pubsub/rabbitpubsub | v0.44.0 |  | go-module-binary-cataloger |
+| golang.org/x/crypto | v0.48.0 |  | go-module-binary-cataloger |
+| golang.org/x/exp | v0.0.0-20251023183803-a4bb9ffd2546 |  | go-module-binary-cataloger |
+| golang.org/x/image | v0.36.0 |  | go-module-binary-cataloger |
+| golang.org/x/net | v0.49.0 |  | go-module-binary-cataloger |
+| golang.org/x/oauth2 | v0.35.0 |  | go-module-binary-cataloger |
+| golang.org/x/sync | v0.19.0 |  | go-module-binary-cataloger |
+| golang.org/x/sys | v0.42.0 |  | go-module-binary-cataloger |
+| golang.org/x/term | v0.40.0 |  | go-module-binary-cataloger |
+| golang.org/x/text | v0.34.0 |  | go-module-binary-cataloger |
+| golang.org/x/time | v0.14.0 |  | go-module-binary-cataloger |
+| golang.org/x/xerrors | v0.0.0-20240903120638-7835f813f4da |  | go-module-binary-cataloger |
+| google.golang.org/api | v0.258.0 |  | go-module-binary-cataloger |
+| google.golang.org/genproto | v0.0.0-20251124214823-79d6a2a48846 |  | go-module-binary-cataloger |
+| google.golang.org/genproto/googleapis/api | v0.0.0-20251124214823-79d6a2a48846 |  | go-module-binary-cataloger |
+| google.golang.org/genproto/googleapis/rpc | v0.0.0-20251213004720-97cd9d5aeac2 |  | go-module-binary-cataloger |
+| google.golang.org/grpc | v1.78.0 |  | go-module-binary-cataloger |
+| google.golang.org/grpc/security/advancedtls | v1.0.0 |  | go-module-binary-cataloger |
+| google.golang.org/protobuf | v1.36.11 |  | go-module-binary-cataloger |
+| gopkg.in/inf.v0 | v0.9.1 |  | go-module-binary-cataloger |
+| gopkg.in/natefinch/lumberjack.v2 | v2.2.1 |  | go-module-binary-cataloger |
+| gopkg.in/validator.v2 | v2.0.1 |  | go-module-binary-cataloger |
 | gopkg.in/yaml.v2 | v2.4.0 |  | go-module-binary-cataloger |
 | gopkg.in/yaml.v3 | v3.0.1 |  | go-module-binary-cataloger |
-| gopkg.in/yaml.v3 | v3.0.1 |  | go-module-binary-cataloger |
-| gpg-pubkey | 5a6340b3-6229229e |  | rpm-db-cataloger |
-| gpg-pubkey | fd431d51-4ae0493b |  | rpm-db-cataloger |
-| libacl | 2.3.1-4.el9 |  | rpm-db-cataloger |
-| libattr | 2.5.1-3.el9 |  | rpm-db-cataloger |
-| libcap | 2.48-9.el9_2 |  | rpm-db-cataloger |
-| libgcc | 11.5.0-5.el9_5 |  | rpm-db-cataloger |
-| libselinux | 3.6-1.el9 |  | rpm-db-cataloger |
-| libsepol | 3.6-1.el9 |  | rpm-db-cataloger |
-| ncurses-base | 6.2-10.20210508.el9 | MIT | rpm-db-cataloger |
-| ncurses-libs | 6.2-10.20210508.el9 | MIT | rpm-db-cataloger |
-| pcre2 | 10.40-6.el9 |  | rpm-db-cataloger |
-| pcre2-syntax | 10.40-6.el9 |  | rpm-db-cataloger |
-| redhat-release | 9.5-0.6.el9 |  | rpm-db-cataloger |
-| setup | 2.13.7-10.el9 |  | rpm-db-cataloger |
-| stdlib | go1.23.6 | BSD-3-Clause | go-module-binary-cataloger |
-| stdlib | go1.23.6 | BSD-3-Clause | go-module-binary-cataloger |
-| tzdata | 2025a-1.el9 |  | rpm-db-cataloger |
-
-### registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/mc
-
-| Package | Version | License | Found by |
-| ------- | --------| ------- | -------- |
-| aead.dev/minisign | v0.3.0 |  | go-module-binary-cataloger |
-| basesystem | 11-13.el9 |  | rpm-db-cataloger |
-| bash | 5.1.8-9.el9 |  | rpm-db-cataloger |
-| coreutils-single | 8.32-36.el9 |  | rpm-db-cataloger |
-| filesystem | 3.16-5.el9 |  | rpm-db-cataloger |
-| github.com/VividCortex/ewma | v1.2.0 |  | go-module-binary-cataloger |
-| github.com/acarl005/stripansi | v0.0.0-20180116102854-5a71ef0e047d |  | go-module-binary-cataloger |
-| github.com/aymanbagabas/go-osc52/v2 | v2.0.1 |  | go-module-binary-cataloger |
-| github.com/beorn7/perks | v1.0.1 |  | go-module-binary-cataloger |
-| github.com/cespare/xxhash/v2 | v2.3.0 |  | go-module-binary-cataloger |
-| github.com/charmbracelet/bubbles | v0.20.0 |  | go-module-binary-cataloger |
-| github.com/charmbracelet/bubbletea | v1.1.1 |  | go-module-binary-cataloger |
-| github.com/charmbracelet/lipgloss | v0.13.0 |  | go-module-binary-cataloger |
-| github.com/charmbracelet/x/ansi | v0.3.2 |  | go-module-binary-cataloger |
-| github.com/charmbracelet/x/term | v0.2.0 |  | go-module-binary-cataloger |
-| github.com/cheggaaa/pb | v1.0.29 |  | go-module-binary-cataloger |
-| github.com/coreos/go-semver | v0.3.1 |  | go-module-binary-cataloger |
-| github.com/coreos/go-systemd/v22 | v22.5.0 |  | go-module-binary-cataloger |
-| github.com/dustin/go-humanize | v1.0.1 |  | go-module-binary-cataloger |
-| github.com/fatih/color | v1.17.0 |  | go-module-binary-cataloger |
-| github.com/fatih/structs | v1.1.0 |  | go-module-binary-cataloger |
-| github.com/go-ini/ini | v1.67.0 |  | go-module-binary-cataloger |
-| github.com/goccy/go-json | v0.10.3 |  | go-module-binary-cataloger |
-| github.com/gogo/protobuf | v1.3.2 |  | go-module-binary-cataloger |
-| github.com/golang-jwt/jwt/v4 | v4.5.1 |  | go-module-binary-cataloger |
-| github.com/golang/protobuf | v1.5.4 |  | go-module-binary-cataloger |
-| github.com/google/shlex | v0.0.0-20191202100458-e7afc7fbc510 |  | go-module-binary-cataloger |
-| github.com/google/uuid | v1.6.0 |  | go-module-binary-cataloger |
-| github.com/hashicorp/errwrap | v1.1.0 |  | go-module-binary-cataloger |
-| github.com/hashicorp/go-multierror | v1.1.1 |  | go-module-binary-cataloger |
-| github.com/inconshreveable/mousetrap | v1.1.0 |  | go-module-binary-cataloger |
-| github.com/jedib0t/go-pretty/v6 | v6.5.9 |  | go-module-binary-cataloger |
-| github.com/juju/ratelimit | v1.0.2 |  | go-module-binary-cataloger |
-| github.com/klauspost/compress | v1.17.10 |  | go-module-binary-cataloger |
-| github.com/klauspost/cpuid/v2 | v2.2.8 |  | go-module-binary-cataloger |
-| github.com/lestrrat-go/backoff/v2 | v2.0.8 |  | go-module-binary-cataloger |
-| github.com/lestrrat-go/blackmagic | v1.0.2 |  | go-module-binary-cataloger |
-| github.com/lestrrat-go/httpcc | v1.0.1 |  | go-module-binary-cataloger |
-| github.com/lestrrat-go/iter | v1.0.2 |  | go-module-binary-cataloger |
-| github.com/lestrrat-go/jwx | v1.2.30 |  | go-module-binary-cataloger |
-| github.com/lestrrat-go/option | v1.0.1 |  | go-module-binary-cataloger |
-| github.com/lucasb-eyer/go-colorful | v1.2.0 |  | go-module-binary-cataloger |
-| github.com/mattn/go-colorable | v0.1.13 |  | go-module-binary-cataloger |
-| github.com/mattn/go-ieproxy | v0.0.12 |  | go-module-binary-cataloger |
-| github.com/mattn/go-isatty | v0.0.20 |  | go-module-binary-cataloger |
-| github.com/mattn/go-runewidth | v0.0.16 |  | go-module-binary-cataloger |
-| github.com/matttproud/golang_protobuf_extensions | v1.0.4 |  | go-module-binary-cataloger |
-| github.com/minio/cli | v1.24.2 |  | go-module-binary-cataloger |
-| github.com/minio/colorjson | v1.0.8 |  | go-module-binary-cataloger |
-| github.com/minio/filepath | v1.0.0 |  | go-module-binary-cataloger |
-| github.com/minio/madmin-go/v3 | v3.0.70 |  | go-module-binary-cataloger |
-| github.com/minio/mc | v0.0.0-20241121172154-1681e4497c09 |  | go-module-binary-cataloger |
-| github.com/minio/md5-simd | v1.1.2 |  | go-module-binary-cataloger |
-| github.com/minio/minio-go/v7 | v7.0.77 |  | go-module-binary-cataloger |
-| github.com/minio/pkg/v3 | v3.0.20 |  | go-module-binary-cataloger |
-| github.com/minio/selfupdate | v0.6.0 |  | go-module-binary-cataloger |
-| github.com/mitchellh/go-homedir | v1.1.0 |  | go-module-binary-cataloger |
-| github.com/muesli/ansi | v0.0.0-20230316100256-276c6243b2f6 |  | go-module-binary-cataloger |
-| github.com/muesli/cancelreader | v0.2.2 |  | go-module-binary-cataloger |
-| github.com/muesli/reflow | v0.3.0 |  | go-module-binary-cataloger |
-| github.com/muesli/termenv | v0.15.2 |  | go-module-binary-cataloger |
-| github.com/munnerz/goautoneg | v0.0.0-20191010083416-a7dc8b61c822 |  | go-module-binary-cataloger |
-| github.com/olekukonko/tablewriter | v0.0.5 |  | go-module-binary-cataloger |
-| github.com/philhofer/fwd | v1.1.3-0.20240916144458-20a13a1f6b7c |  | go-module-binary-cataloger |
-| github.com/pkg/errors | v0.9.1 |  | go-module-binary-cataloger |
-| github.com/pkg/xattr | v0.4.10 |  | go-module-binary-cataloger |
-| github.com/posener/complete | v1.2.3 |  | go-module-binary-cataloger |
-| github.com/prometheus/client_golang | v1.20.4 |  | go-module-binary-cataloger |
-| github.com/prometheus/client_model | v0.6.1 |  | go-module-binary-cataloger |
-| github.com/prometheus/common | v0.60.0 |  | go-module-binary-cataloger |
-| github.com/prometheus/procfs | v0.15.1 |  | go-module-binary-cataloger |
-| github.com/prometheus/prom2json | v1.4.1 |  | go-module-binary-cataloger |
-| github.com/prometheus/prometheus | v0.54.1 |  | go-module-binary-cataloger |
-| github.com/rivo/uniseg | v0.4.7 |  | go-module-binary-cataloger |
-| github.com/rjeczalik/notify | v0.9.3 |  | go-module-binary-cataloger |
-| github.com/rs/xid | v1.6.0 |  | go-module-binary-cataloger |
-| github.com/safchain/ethtool | v0.4.1 |  | go-module-binary-cataloger |
-| github.com/secure-io/sio-go | v0.3.1 |  | go-module-binary-cataloger |
-| github.com/shirou/gopsutil/v3 | v3.24.5 |  | go-module-binary-cataloger |
-| github.com/tidwall/gjson | v1.17.3 |  | go-module-binary-cataloger |
-| github.com/tidwall/match | v1.1.1 |  | go-module-binary-cataloger |
-| github.com/tidwall/pretty | v1.2.1 |  | go-module-binary-cataloger |
-| github.com/tinylib/msgp | v1.2.2 |  | go-module-binary-cataloger |
-| github.com/tklauser/go-sysconf | v0.3.14 |  | go-module-binary-cataloger |
-| github.com/tklauser/numcpus | v0.8.0 |  | go-module-binary-cataloger |
-| github.com/vbauerster/mpb/v8 | v8.8.3 |  | go-module-binary-cataloger |
-| glibc | 2.34-125.el9_5.1 |  | rpm-db-cataloger |
-| glibc-common | 2.34-125.el9_5.1 |  | rpm-db-cataloger |
-| glibc-minimal-langpack | 2.34-125.el9_5.1 |  | rpm-db-cataloger |
-| go.etcd.io/etcd/api/v3 | v3.5.16 |  | go-module-binary-cataloger |
-| go.etcd.io/etcd/client/pkg/v3 | v3.5.16 |  | go-module-binary-cataloger |
-| go.etcd.io/etcd/client/v3 | v3.5.16 |  | go-module-binary-cataloger |
-| go.uber.org/multierr | v1.11.0 |  | go-module-binary-cataloger |
-| go.uber.org/zap | v1.27.0 |  | go-module-binary-cataloger |
-| golang.org/x/crypto | v0.27.0 |  | go-module-binary-cataloger |
-| golang.org/x/net | v0.29.0 |  | go-module-binary-cataloger |
-| golang.org/x/sync | v0.8.0 |  | go-module-binary-cataloger |
-| golang.org/x/sys | v0.25.0 |  | go-module-binary-cataloger |
-| golang.org/x/term | v0.24.0 |  | go-module-binary-cataloger |
-| golang.org/x/text | v0.18.0 |  | go-module-binary-cataloger |
-| google.golang.org/genproto/googleapis/api | v0.0.0-20240930140551-af27646dc61f |  | go-module-binary-cataloger |
-| google.golang.org/genproto/googleapis/rpc | v0.0.0-20240930140551-af27646dc61f |  | go-module-binary-cataloger |
-| google.golang.org/grpc | v1.67.1 |  | go-module-binary-cataloger |
-| google.golang.org/protobuf | v1.34.2 |  | go-module-binary-cataloger |
-| gopkg.in/yaml.v2 | v2.4.0 |  | go-module-binary-cataloger |
-| gopkg.in/yaml.v3 | v3.0.1 |  | go-module-binary-cataloger |
-| gpg-pubkey | 5a6340b3-6229229e |  | rpm-db-cataloger |
-| gpg-pubkey | fd431d51-4ae0493b |  | rpm-db-cataloger |
-| libacl | 2.3.1-4.el9 |  | rpm-db-cataloger |
-| libattr | 2.5.1-3.el9 |  | rpm-db-cataloger |
-| libcap | 2.48-9.el9_2 |  | rpm-db-cataloger |
-| libgcc | 11.5.0-2.el9 |  | rpm-db-cataloger |
-| libselinux | 3.6-1.el9 |  | rpm-db-cataloger |
-| libsepol | 3.6-1.el9 |  | rpm-db-cataloger |
-| ncurses-base | 6.2-10.20210508.el9 | MIT | rpm-db-cataloger |
-| ncurses-libs | 6.2-10.20210508.el9 | MIT | rpm-db-cataloger |
-| pcre2 | 10.40-6.el9 |  | rpm-db-cataloger |
-| pcre2-syntax | 10.40-6.el9 |  | rpm-db-cataloger |
-| redhat-release | 9.5-0.6.el9 |  | rpm-db-cataloger |
-| setup | 2.13.7-10.el9 |  | rpm-db-cataloger |
-| stdlib | go1.23.4 | BSD-3-Clause | go-module-binary-cataloger |
-| tzdata | 2024b-2.el9 |  | rpm-db-cataloger |
+| libapk | 3.0.3-r1 | GPL-2.0-only | apk-db-cataloger |
+| libcrypto3 | 3.5.5-r0 | Apache-2.0 | apk-db-cataloger |
+| libcurl | 8.17.0-r1 | curl | apk-db-cataloger |
+| libidn2 | 2.3.8-r0 | GPL-2.0-or-later OR LGPL-3.0-or-later | apk-db-cataloger |
+| libncursesw | 6.5_p20251123-r0 | X11 | apk-db-cataloger |
+| libpsl | 0.21.5-r3 | MIT | apk-db-cataloger |
+| libssl3 | 3.5.5-r0 | Apache-2.0 | apk-db-cataloger |
+| libunistring | 1.4.1-r0 | GPL-2.0-or-later OR LGPL-3.0-or-later | apk-db-cataloger |
+| modernc.org/b | v1.0.0 |  | go-module-binary-cataloger |
+| modernc.org/libc | v1.67.6 |  | go-module-binary-cataloger |
+| modernc.org/mathutil | v1.7.1 |  | go-module-binary-cataloger |
+| modernc.org/memory | v1.11.0 |  | go-module-binary-cataloger |
+| modernc.org/sqlite | v1.46.1 |  | go-module-binary-cataloger |
+| modernc.org/strutil | v1.2.1 |  | go-module-binary-cataloger |
+| moul.io/http2curl/v2 | v2.3.0 |  | go-module-binary-cataloger |
+| musl | 1.2.5-r21 | MIT | apk-db-cataloger |
+| musl-utils | 1.2.5-r21 | MIT AND BSD-2-Clause AND GPL-2.0-or-later | apk-db-cataloger |
+| ncurses-terminfo-base | 6.5_p20251123-r0 | X11 | apk-db-cataloger |
+| nghttp2-libs | 1.68.0-r0 | MIT | apk-db-cataloger |
+| nghttp3 | 1.13.1-r0 | MIT | apk-db-cataloger |
+| readline | 8.3.1-r0 | GPL-3.0-or-later | apk-db-cataloger |
+| scanelf | 1.3.8-r2 | GPL-2.0-only | apk-db-cataloger |
+| sigs.k8s.io/yaml | v1.6.0 |  | go-module-binary-cataloger |
+| sqlite | 3.51.2-r0 | blessing | apk-db-cataloger |
+| ssl_client | 1.37.0-r30 | GPL-2.0-only | apk-db-cataloger |
+| stdlib | go1.25.8 | BSD-3-Clause | go-module-binary-cataloger |
+| storj.io/common | v0.0.0-20251107171817-6221ae45072c |  | go-module-binary-cataloger |
+| storj.io/drpc | v0.0.35-0.20250513201419-f7819ea69b55 |  | go-module-binary-cataloger |
+| storj.io/eventkit | v0.0.0-20250410172343-61f26d3de156 |  | go-module-binary-cataloger |
+| storj.io/infectious | v0.0.2 |  | go-module-binary-cataloger |
+| storj.io/picobuf | v0.0.4 |  | go-module-binary-cataloger |
+| storj.io/uplink | v1.13.1 |  | go-module-binary-cataloger |
+| su-exec | 0.3-r0 | MIT | apk-db-cataloger |
+| zlib | 1.3.1-r2 | Zlib | apk-db-cataloger |
+| zstd-libs | 1.5.7-r2 | BSD-3-Clause OR GPL-2.0-or-later | apk-db-cataloger |
 
 ### registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/alpine
 

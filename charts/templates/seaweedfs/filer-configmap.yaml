@@ -1,0 +1,27 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "app.fullname" . }}-seaweedfs-filer-config
+  labels:
+    {{- include "app.labels.custom" (dict "context" . "component" "seaweedfs") | nindent 4 }}
+    app.kubernetes.io/component: seaweedfs-filer
+data:
+  filer.toml: |
+    # Using redis3 instead of redis2 because we expect more than a million entries
+    # in a directory when using lazybytes. redis3 uses Redis sorted sets for better
+    # scalability with large directories.
+    # See: https://github.com/seaweedfs/seaweedfs/wiki/Filer-Redis-Setup
+    [redis3]
+    enabled = true
+    address = "{{ include "app.fullname" . }}-redis-filer:{{ index .Values "redis-filer" "service" "port" }}"
+    password = ""
+    database = 0
+  s3.json: |
+    {
+      "identities": [
+        {
+          "name": "anonymous",
+          "actions": ["Admin", "Read", "Write", "List", "Tagging"]
+        }
+      ]
+    }

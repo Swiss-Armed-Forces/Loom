@@ -1,0 +1,71 @@
+{{- if .Values.seaweedfs.admin.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "app.fullname" . }}-seaweedfs-admin
+  labels:
+    {{- include "app.labels.custom" (dict "context" . "component" "seaweedfs") | nindent 4 }}
+    app.kubernetes.io/component: seaweedfs-admin
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ include "app.name" . }}-seaweedfs-admin
+  template:
+    metadata:
+      labels:
+        app: {{ include "app.name" . }}-seaweedfs-admin
+        {{- include "app.labels.custom" (dict "context" . "component" "seaweedfs") | nindent 8 }}
+    spec:
+      securityContext:
+        runAsUser: 1000
+        fsGroup: 1000
+      initContainers:
+        - name: wait-for-master
+          image: {{ .Values.image.registry }}/{{ .Values.seaweedfs.initContainer.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) .Values.seaweedfs.initContainer.image.tag }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command:
+            - 'sh'
+            - '-c'
+            - |
+              set -eu
+              until nc -vz {{ include "app.fullname" . }}-seaweedfs-master {{ .Values.seaweedfs.master.port }}; do
+                echo "Waiting for SeaweedFS master";
+                sleep 2;
+              done;
+          {{- if .Values.seaweedfs.initContainer.resources }}
+          resources: {{- toYaml .Values.seaweedfs.initContainer.resources | nindent 12 }}
+          {{- end }}
+      containers:
+        - name: admin
+          image: {{ .Values.image.registry }}/{{ .Values.seaweedfs.admin.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) .Values.seaweedfs.admin.image.tag }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command:
+            - weed
+            - admin
+            - -port={{ .Values.seaweedfs.admin.port }}
+            - -masters={{ include "app.fullname" . }}-seaweedfs-master:{{ .Values.seaweedfs.master.port }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.seaweedfs.admin.port }}
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /
+              port: {{ .Values.seaweedfs.admin.port }}
+            initialDelaySeconds: 20
+            periodSeconds: 30
+            timeoutSeconds: 10
+            failureThreshold: 6
+          readinessProbe:
+            httpGet:
+              path: /
+              port: {{ .Values.seaweedfs.admin.port }}
+            initialDelaySeconds: 10
+            periodSeconds: 15
+            timeoutSeconds: 10
+            failureThreshold: 6
+          {{- if .Values.seaweedfs.admin.resources }}
+          resources: {{- toYaml .Values.seaweedfs.admin.resources | nindent 12 }}
+          {{- end }}
+{{- end }}

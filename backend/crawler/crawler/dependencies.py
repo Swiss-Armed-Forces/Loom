@@ -8,7 +8,7 @@ from minio import Minio
 from crawler.settings import settings
 
 # Note, "= None" assignments are needed here to make flake8 happy
-_minio_client: Minio | None = None
+_s3_client: Minio | None = None
 
 logger = logging.getLogger(__name__)
 
@@ -17,12 +17,10 @@ def init():
     # pylint: disable=global-statement
     logger.info("Initializes crawler dependencies")
 
-    global _minio_client
-    _minio_client = Minio(
-        settings.minio_host,
-        settings.minio_access_key,
-        settings.minio_secret_key,
-        secure=settings.minio_secure_connection,
+    global _s3_client
+    _s3_client = Minio(
+        settings.s3_host,
+        secure=settings.s3_secure_connection,
     )
 
 
@@ -30,11 +28,11 @@ def mock_init():
     # pylint: disable=global-statement
     common_dependencies.mock_init()
 
-    global _minio_client
-    _minio_client = MagicMock(spec=Minio)
+    global _s3_client
+    _s3_client = MagicMock(spec=Minio)
 
 
-def get_minio_client() -> Minio:
-    if _minio_client is None:
-        raise DependencyException("MinIO Client missing")
-    return _minio_client
+def get_s3_client() -> Minio:
+    if _s3_client is None:
+        raise DependencyException("S3 Client missing")
+    return _s3_client

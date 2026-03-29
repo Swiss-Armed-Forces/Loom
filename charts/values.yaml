@@ -72,10 +72,6 @@ preInstall:
       cpu: "0.2"
       memory: "200Mi"
   generateSecret:
-    - name: loom-minio-secret
-      size: 40
-      chars: "A-Za-z0-9"
-      fixed: "0000000000000000000000000000000000000000"
     - name: archive-enc-master-key
       size: 32
       chars: "a-f0-9"
@@ -224,7 +220,7 @@ flower:
     enabled: true
   resources:
     requests:
-      cpu: "0.2"
+      cpu: "0.1"
       memory: "200Mi"
     limits:
       cpu: "1"
@@ -242,6 +238,9 @@ crawler:
     repository: swiss-armed-forces/cyber-command/cea/loom/crawler
   service:
     port: 80
+  # List of S3 buckets to crawl (will be created if they don't exist)
+  s3Buckets:
+    - default
   resources:
     requests:
       cpu: "0.2"
@@ -392,7 +391,7 @@ grafana:
     enabled: true
   resources:
     requests:
-      cpu: "0.2"
+      cpu: "0.1"
       memory: "200Mi"
     limits:
       cpu: "2"
@@ -440,474 +439,134 @@ translate:
   # app-tier: ml
   # service-type: translation
 
-minio:
-  ## set kubernetes cluster domain where minio is running
-  ##
-  clusterDomain: cluster.local
-  ## Set default image, imageTag, and imagePullPolicy. mode is used to indicate the
-  ##
-  image:
-    repository: swiss-armed-forces/cyber-command/cea/loom/minio
-    pullPolicy: IfNotPresent
-  imagePullSecrets: []
-  # - name: "image-pull-secret"
-  ## Set default image, imageTag, and imagePullPolicy for the `mc` (the minio
-  ## client used to create a default bucket).
-  ##
-  mcImage:
-    repository: swiss-armed-forces/cyber-command/cea/loom/mc
-    pullPolicy: IfNotPresent
-  ## minio mode, i.e. standalone or distributed
-  mode: standalone  ## other supported values are "standalone"
+seaweedfs:
+  # SeaweedFS is a distributed storage system for blobs, objects, files, and data lake
+  # It provides S3-compatible API through the filer component
 
-  ## Typically the deployment/statefulset includes checksums of secrets/config,
-  ## So that when these change on a subsequent helm install, the deployment/statefulset
-  ## is restarted. This can result in unnecessary restarts under GitOps tooling such as
-  ## flux, so set to "true" to disable this behaviour.
-  ignoreChartChecksums: false
-
-  ## Additional arguments to pass to minio binary
-  extraArgs: []
-  # example for enabling FTP:
-  #   - --ftp=\"address=:8021\"
-  #   - --ftp=\"passive-port-range=10000-10010\"
-
-  ## Additional volumes to minio container
-  extraVolumes: []
-
-  ## Additional volumeMounts to minio container
-  extraVolumeMounts: []
-
-  ## Additional sidecar containers
-  extraContainers: []
-
-  ## Internal port number for MinIO S3 API container
-  ## Change service.port to change external port number
-  minioAPIPort: '9000'
-
-  ## Internal port number for MinIO Browser Console container
-  ## Change consoleService.port to change external port number
-  minioConsolePort: '9001'
-  ## Update strategy for Deployments
-  deploymentUpdate:
-    type: RollingUpdate
-    maxUnavailable: 0
-    maxSurge: 100%
-  ## Update strategy for StatefulSets
-  statefulSetUpdate:
-    updateStrategy: RollingUpdate
-  ## Pod priority settings
-  ## ref: https://kubernetes.io/docs/concepts/configuration/pod-priority-preemption/
-  ##
-  priorityClassName: ''
-
-  ## Pod runtime class name
-  ## ref https://kubernetes.io/docs/concepts/containers/runtime-class/
-  ##
-  runtimeClassName: ''
-
-  ## Set default rootUser, rootPassword
-  ## rootUser and rootPassword is generated when not set
-  ## Distributed MinIO ref: https://min.io/docs/minio/linux/operations/install-deploy-manage/deploy-minio-multi-node-multi-drive.html
-  ##
-  rootUser: minioadmin
-  rootPassword: minioadmin
-
-  ## Use existing Secret that store following variables:
-  ##
-  ## | Chart var             | .data.<key> in Secret    |
-  ## |:----------------------|:-------------------------|
-  ## | rootUser              | rootUser                 |
-  ## | rootPassword          | rootPassword             |
-  ##
-  ## All mentioned variables will be ignored in values file.
-  ## .data.rootUser and .data.rootPassword are mandatory,
-  ## others depend on enabled status of corresponding sections.
-  existingSecret: ''
-
-  ## Directory on the MinIO pof
-  certsPath: /etc/minio/certs/
-  configPathmc: /etc/minio/mc/
-
-  ## Path where PV would be mounted on the MinIO Pod
-  mountPath: /export
-  ## Override the root directory which the minio server should serve from.
-  ## If left empty, it defaults to the value of {{ .Values.minio.mountPath }}
-  ## If defined, it must be a sub-directory of the path specified in {{ .Values.minio.mountPath }}
-  ##
-  bucketRoot: ''
-
-  # Number of drives attached to a node
-  drivesPerNode: 1
-  # Number of MinIO containers running
-  replicas: 1
-  # Number of expanded MinIO clusters
-  pools: 1
-  ## TLS Settings for MinIO
-  tls:
-    enabled: false
-    ## Create a secret with private.key and public.crt files and pass that here.
-    ## Ref: https://github.com/minio/minio/tree/master/docs/tls/kubernetes#2-create-kubernetes-secret
-    certSecret: ''
-    publicCrt: public.crt
-    privateKey: private.key
-  ## Trusted Certificates Settings for MinIO.
-  ## Ref: https://min.io/docs/minio/linux/operations/network-encryption.html#third-party-certificate-authorities
-  ##
-  ## Bundle multiple trusted certificates into one secret and pass that here.
-  ## Ref: https://github.com/minio/minio/tree/master/docs/tls/kubernetes#2-create-kubernetes-secret
-  ##
-  ## When using self-signed certificates, remember to include MinIO's own certificate in the bundle with key public.crt.
-  ## If certSecret is left empty and tls is enabled, this chart installs the public certificate from .Values.minio.tls.certSecret.
-  trustedCertsSecret: ''
-  ## Enable persistence using Persistent Volume Claims
-  ## ref: http://kubernetes.io/docs/user-guide/persistent-volumes/
-  ##
-  persistence:
-    enabled: true
-    annotations: {}
-
-    ## A manually managed Persistent Volume and Claim
-    ## Requires persistence.enabled: true
-    ## If defined, PVC must be created manually before volume will be bound
-    existingClaim: ''
-
-    ## minio data Persistent Volume Storage Class
-    ## If defined, storageClassName: <storageClass>
-    ## If set to "-", storageClassName: "", which disables dynamic provisioning
-    ## If undefined (the default) or set to null, no storageClassName spec is
-    ##   set, choosing the default provisioner.  (gp2 on AWS, standard on
-    ##   GKE, AWS & OpenStack)
-    ##
-    ## Storage class of PV to bind. By default it looks for standard storage class.
-    ## If the PV uses a different storage class, specify that here.
-    storageClass: ''
-    volumeName: ''
-    accessMode: ReadWriteOnce
-    size: 20Gi
-
-    ## If subPath is set mount a sub folder of a volume instead of the root of the volume.
-    ## This is especially handy for volume plugins that don't natively support sub mounting (like glusterfs).
-    ##
-    subPath: ''
-  ## Expose the MinIO service to be accessed from outside the cluster (LoadBalancer service).
-  ## or access it from within the cluster (ClusterIP service). Set the service type and the port to serve it.
-  ## ref: http://kubernetes.io/docs/user-guide/services/
-  ##
-  service:
-    type: ClusterIP
-    clusterIP:
-    port: '9000'
-    nodePort: 32000
-    loadBalancerIP:
-    externalIPs: []
-    annotations: {}
-
-    ## service.loadBalancerSourceRanges Addresses that are allowed when service is LoadBalancer
-    ## https://kubernetes.io/docs/tasks/access-application-cluster/configure-cloud-provider-firewall/#restrict-access-for-loadbalancer-service
-    ##
-    # loadBalancerSourceRanges:
-    #   - 10.10.10.0/24
-    loadBalancerSourceRanges: []
-
-    ## service.externalTrafficPolicy minio service external traffic policy
-    ## ref http://kubernetes.io/docs/tasks/access-application-cluster/create-external-load-balancer/#preserving-the-client-source-ip
-    ##
-    externalTrafficPolicy: Cluster
-  ## Configure Ingress based on the documentation here: https://kubernetes.io/docs/concepts/services-networking/ingress/
-  ##
-  ingress: *default-ingress-config
-  consoleService:
-    type: ClusterIP
-    clusterIP:
-    port: '9001'
-    nodePort: 32001
-    loadBalancerIP:
-    externalIPs: []
-    annotations: {}
-    ## consoleService.loadBalancerSourceRanges Addresses that are allowed when service is LoadBalancer
-    ## https://kubernetes.io/docs/tasks/access-application-cluster/configure-cloud-provider-firewall/#restrict-access-for-loadbalancer-service
-    ##
-    # loadBalancerSourceRanges:
-    #   - 10.10.10.0/24
-    loadBalancerSourceRanges: []
-
-    ## servconsoleServiceice.externalTrafficPolicy minio service external traffic policy
-    ## ref http://kubernetes.io/docs/tasks/access-application-cluster/create-external-load-balancer/#preserving-the-client-source-ip
-    ##
-    externalTrafficPolicy: Cluster
-  consoleIngress: *default-ingress-config
-  ## Node labels for pod assignment
-  ## Ref: https://kubernetes.io/docs/user-guide/node-selection/
-  ##
-  nodeSelector: {}
-  tolerations: []
-  affinity: {}
-  topologySpreadConstraints: []
-  ## Add stateful containers to have security context, if enabled MinIO will run as this
-  ## user and group NOTE: securityContext is only enabled if persistence.enabled=true
-  securityContext:
-    enabled: true
-    runAsUser: 1000
-    runAsGroup: 1000
-    fsGroup: 1000
-    fsGroupChangePolicy: OnRootMismatch
-  containerSecurityContext:
-    readOnlyRootFilesystem: false
-  # Additational pod annotations
-  podAnnotations: {}
-
-  # Additional pod labels
-  podLabels: {}
-  ## Configure resource requests and limits
-  ## ref: http://kubernetes.io/docs/user-guide/compute-resources/
-  ##
-  resources:
-    requests:
-      cpu: "0.1"
-      memory: "500Mi"
-    limits:
-      cpu: "1"
-      memory: "2000Mi"
-  ## List of policies to be created after minio install
-  ##
-  ## In addition to default policies [readonly|readwrite|writeonly|consoleAdmin|diagnostics]
-  ## you can define additional policies with custom supported actions and resources
-  policies: []
-  ## writeexamplepolicy policy grants creation or deletion of buckets with name
-  ## starting with example. In addition, grants objects write permissions on buckets starting with
-  ## example.
-  # - name: writeexamplepolicy
-  #   statements:
-  #     - effect: Allow  # this is the default
-  #       resources:
-  #         - 'arn:aws:s3:::example*/*'
-  #       actions:
-  #         - "s3:AbortMultipartUpload"
-  #         - "s3:GetObject"
-  #         - "s3:DeleteObject"
-  #         - "s3:PutObject"
-  #         - "s3:ListMultipartUploadParts"
-  #     - resources:
-  #         - 'arn:aws:s3:::example*'
-  #       actions:
-  #         - "s3:CreateBucket"
-  #         - "s3:DeleteBucket"
-  #         - "s3:GetBucketLocation"
-  #         - "s3:ListBucket"
-  #         - "s3:ListBucketMultipartUploads"
-  ## readonlyexamplepolicy policy grants access to buckets with name starting with example.
-  ## In addition, grants objects read permissions on buckets starting with example.
-  # - name: readonlyexamplepolicy
-  #   statements:
-  #     - resources:
-  #         - 'arn:aws:s3:::example*/*'
-  #       actions:
-  #         - "s3:GetObject"
-  #     - resources:
-  #         - 'arn:aws:s3:::example*'
-  #       actions:
-  #         - "s3:GetBucketLocation"
-  #         - "s3:ListBucket"
-  #         - "s3:ListBucketMultipartUploads"
-  ## conditionsexample policy creates all access to example bucket with aws:username="johndoe" and source ip range 10.0.0.0/8 and 192.168.0.0/24 only
-  # - name: conditionsexample
-  #   statements:
-  #     - resources:
-  #       - 'arn:aws:s3:::example/*'
-  #       actions:
-  #       - 's3:*'
-  #       conditions:
-  #         - StringEquals: '"aws:username": "johndoe"'
-  #         - IpAddress: |
-  #             "aws:SourceIp": [
-  #               "10.0.0.0/8",
-  #               "192.168.0.0/24"
-  #             ]
-  #
-  ## Additional Annotations for the Kubernetes Job makePolicyJob
-  makePolicyJob:
-    securityContext:
-      enabled: false
-      runAsUser: 1000
-      runAsGroup: 1000
-    resources: &default-minio-job-resources
+  master:
+    replicaCount: 1
+    image:
+      repository: swiss-armed-forces/cyber-command/cea/loom/seaweedfs
+    port: 9333
+    grpcPort: 19333
+    metricsPort: 9327
+    # Replication format: xyz where x=datacenter, y=rack, z=server replicas
+    #
+    # REPLICATION CODES:
+    # - "000": No replication (single copy)
+    # - "001": 1 replica same rack (single-node default)
+    # - "010": 1 replica different rack
+    # - "011": 1 replica different rack + 1 same rack (multi-node recommended)
+    #
+    defaultReplication: "001"
+    # Maximum size of each volume in MB. Smaller volumes = more volumes,
+    # better replication distribution, faster garbage collection.
+    # Default: 1024 (1GB). SeaweedFS default is 30000 (30GB).
+    volumeSizeLimitMB: 1024
+    pvc:
+      storage: 1Gi
+    resources:
       requests:
-        cpu: "0.01"
+        cpu: "0.1"
+        memory: "256Mi"
+      limits:
+        cpu: "0.5"
+        memory: "512Mi"
+
+  volume:
+    replicaCount: 2
+    # Multiplier for volumeSizeLimitMB to reserve space for compaction.
+    # Volume compaction requires free disk space approximately equal to the volume being compacted.
+    # With multiplier 2 and volumeSizeLimitMB 1024, reserves 2048MB (2GB) for compaction.
+    minFreeSpaceMultiplier: 2
+    image:
+      repository: swiss-armed-forces/cyber-command/cea/loom/seaweedfs
+    port: 8080
+    grpcPort: 18080
+    metricsPort: 9328
+    pvc:
+      storage: 20Gi
+    resources:
+      requests:
+        cpu: "0.15"
+        memory: "512Mi"
+      limits:
+        cpu: "1"
+        memory: "2Gi"
+
+  filer:
+    replicaCount: 1
+    hpa:
+      enabled: true
+      maxReplicas: 5
+      minReplicas: 1
+      targetCPUUtilizationPercentage: 100
+      targetMemoryUtilizationPercentage: 100
+    image:
+      repository: swiss-armed-forces/cyber-command/cea/loom/seaweedfs
+    port: 8888
+    grpcPort: 18888
+    metricsPort: 9329
+    resources:
+      requests:
+        cpu: "0.1"
+        memory: "256Mi"
+      limits:
+        cpu: "0.5"
+        memory: "512Mi"
+
+  s3:
+    port: 8333
+    ingress: *default-ingress-config
+
+  admin:
+    enabled: true
+    port: 23646
+    image:
+      repository: swiss-armed-forces/cyber-command/cea/loom/seaweedfs
+    resources:
+      requests:
+        cpu: "0.05"
+        memory: "64Mi"
+      limits:
+        cpu: "0.2"
+        memory: "256Mi"
+    ingress: *default-ingress-config
+
+  initContainer:
+    image:
+      repository: swiss-armed-forces/cyber-command/cea/loom/alpine
+    resources:
+      requests:
+        cpu: "0.05"
         memory: "50Mi"
       limits:
         cpu: "0.1"
-        memory: "500Mi"
-    # Command to run after the main command on exit
-    exitCommand: ''
-  ## List of users to be created after minio install
-  ##
-  users: []
-  ## Username, password and policy to be assigned to the user
-  ## Default policies are [readonly|readwrite|writeonly|consoleAdmin|diagnostics]
-  ## Add new policies as explained here:
-  ## https://min.io/docs/minio/kubernetes/upstream/administration/identity-access-management.html#access-management
-  ## NOTE: this will fail if LDAP is enabled in your MinIO deployment
-  ## make sure to disable this if you are using LDAP.
-  # - accessKey: console
-  #   secretKey: console123
-  #   policy: consoleAdmin
-  ## Or you can refer to specific secret
-  # - accessKey: externalSecret
-  #   existingSecret: my-secret
-  #   existingSecretKey: password
-  #   policy: readonly
-  ## Additional Annotations for the Kubernetes Job makeUserJob
-  makeUserJob:
-    securityContext:
-      enabled: false
-      runAsUser: 1000
-      runAsGroup: 1000
-    resources: *default-minio-job-resources
-    # Command to run after the main command on exit
-    exitCommand: ''
-  ## List of service accounts to be created after minio install
-  ##
-  svcaccts:
-    ## accessKey, secretKey and parent user to be assigned to the service accounts
-    ## Add new service accounts as explained
-    ## here https://min.io/docs/minio/kubernetes/upstream/administration/identity-access-management/minio-user-management.html#service-accounts
-    # - accessKey: console-svcacct
-    #   secretKey: console123
-    #   user: console
-    ## Or you can refer to specific secret
-    # - accessKey: externalSecret
-    #   existingSecret: my-secret
-    #   existingSecretKey: password
-    #   user: console
-    ## You also can pass custom policy
-    # - accessKey: console-svcacct
-    #   secretKey: console123
-    #   user: console
-    #   policy:
-    #     statements:
-    #       - resources:
-    #           - 'arn:aws:s3:::example*/*'
-    #         actions:
-    #           - "s3:AbortMultipartUpload"
-    #           - "s3:GetObject"
-    #           - "s3:DeleteObject"
-    #           - "s3:PutObject"
-    #           - "s3:ListMultipartUploadParts"
-    - accessKey: MinIO-Intake-Key
-      existingSecret: loom-minio-secret
-      existingSecretKey: secretkey
-      user: minioadmin
-  makeServiceAccountJob:
-    securityContext:
-      enabled: false
-      runAsUser: 1000
-      runAsGroup: 1000
-    resources: *default-minio-job-resources
-    # Command to run after the main command on exit
-    exitCommand: ''
-  ## List of buckets to be created after minio install
-  ##
-  buckets:
-    ## Name of the bucket
-    # - name: bucket1
-    ## Policy to be set on the
-    ## bucket [none|download|upload|public]
-    #   policy: none
-    ## Purge if bucket exists already
-    #   purge: false
-    ## set versioning for
-    ## bucket [true|false]
-    #   versioning: false  # remove this key if you do not want versioning feature
-    ## set objectlocking for
-    ## bucket [true|false] NOTE: versioning is enabled by default if you use locking
-    #   objectlocking: false
-    # - name: bucket2
-    #   policy: none
-    #   purge: false
-    #   versioning: true
-    ## set objectlocking for
-    ## bucket [true|false] NOTE: versioning is enabled by default if you use locking
-    #   objectlocking: false
-    - name: default
-      policy: public
-      purge: false
-      versioning: false
-      objectlocking: false
-  ## Additional Annotations for the Kubernetes Job makeBucketJob
-  makeBucketJob:
-    securityContext:
-      enabled: false
-      runAsUser: 1000
-      runAsGroup: 1000
-    resources: *default-minio-job-resources
-    # Command to run after the main command on exit
-    exitCommand: ''
-  ## List of command to run after minio install
-  ## NOTE: the mc command TARGET is always "myminio"
-  customCommands:
-  ## for example:
-  # - command: "admin policy attach myminio consoleAdmin --group='cn=ops,cn=groups,dc=example,dc=com'"
-  ## Additional Annotations for the Kubernetes Job customCommandJob
-  customCommandJob:
-    securityContext:
-      enabled: false
-      runAsUser: 1000
-      runAsGroup: 1000
-    resources: *default-minio-job-resources
-    ## Additional volumes to add to the post-job.
-    extraVolumes: []
-    ## for example:
-    # - name: extra-policies
-    #   configMap:
-    #     name: my-extra-policies-cm
-    ## Additional volumeMounts to add to the custom commands container when
-    ## running the post-job.
-    extraVolumeMounts: []
-    ## for example:
-    # - name: extra-policies
-    #   mountPath: /mnt/extras/
-    # Command to run after the main command on exit
-    exitCommand: ''
-  ## Merge jobs
-  postJob:
-    podAnnotations: {}
-    annotations: {}
-    securityContext:
-      enabled: false
-      runAsUser: 1000
-      runAsGroup: 1000
-      fsGroup: 1000
-    nodeSelector: {}
-    tolerations: []
-    affinity: {}
-  ## Use this field to add environment variables relevant to MinIO server. These fields will be passed on to MinIO container(s)
-  ## when Chart is deployed
-  environment:
-  ## Please refer for comprehensive list:
-  ## https://min.io/docs/minio/linux/reference/minio-server/minio-server.html
-  ##
-  ## MINIO_SUBNET_LICENSE: "License key obtained from https://subnet.min.io"
-  ## MINIO_BROWSER: "off"
-  ## The name of a secret in the same kubernetes namespace which contain secret values
-  ## This can be useful for LDAP password, etc
-  ## The key in the secret must be 'config.env'
-  ##
-  extraSecret:
-  ## PodDisruptionBudget settings
-  ## ref: https://kubernetes.io/docs/concepts/workloads/pods/disruptions/
-  ##
-  podDisruptionBudget:
-    enabled: false
-    maxUnavailable: 1
-  ## Specify the service account to use for the MinIO pods. If 'create' is set to 'false'
-  ## and 'name' is left unspecified, the account 'default' will be used.
-  serviceAccount:
-    create: true
-    ## The name of the service account to use. If 'create' is 'true', a service account with that name
-    ## will be created.
-    name: minio-sa
-  # Custom labels specific to minio resources
+        memory: "100Mi"
+
+  # Filer Metadata Backup to SQLite
+  # Backs up filer metadata to a local SQLite database for disaster recovery
+  filerMetaBackup:
+    enabled: true
+    filerDir: "/"
+    pvc:
+      # Multiplier for PVC storage size relative to redis-filer memory limit.
+      # PVC size = redis-filer memory limit * storageMultiplier
+      # This ensures enough space to store all metadata that could fit in Redis + headroom.
+      storageMultiplier: 2
+    # SQLite filer sidecar for restore operations
+    sqliteFiler:
+      port: 18889
+      grpcPort: 28889
+    resources:
+      requests:
+        cpu: "0.05"
+        memory: "64Mi"
+      limits:
+        cpu: "0.2"
+        memory: "256Mi"
+
+  # Custom labels specific to seaweedfs resources
   customLabels: {}
   # Example:
   # datastore-type: object
@@ -929,7 +588,7 @@ mongodb:
     storage: 50Gi
   resources:
     requests:
-      cpu: "0.2"
+      cpu: "0.15"
       memory: "1Gi"
     limits:
       cpu: "2"
@@ -961,7 +620,7 @@ mongodb:
     ingress: *default-ingress-config
     resources:
       requests:
-        cpu: "0.3"
+        cpu: "0.1"
         memory: "300Mi"
       limits:
         cpu: "0.5"
@@ -988,7 +647,7 @@ rabbit:
     enabled: true
   resources:
     requests:
-      cpu: "0.4"
+      cpu: "0.3"
       memory: "1Gi"
     limits:
       cpu: "2"
@@ -1176,10 +835,10 @@ redis: &redis
     port: 6379
   pvc:
     # Multiplier for PVC storage size relative to memory limit.
-    # PVC size = memory limit * storageMultiplier (default: 4)
+    # PVC size = memory limit * storageMultiplier
     storageMultiplier: 5
   # Percentage of memory limit to use for Redis maxmemory setting.
-  # This reserves headroom for Redis overhead and fragmentation (default: 0.6 = 60%)
+  # This reserves headroom for Redis overhead and fragmentation
   memoryLimitThresholdPercent: 0.6
   ingress:
     enabled: false
@@ -1223,6 +882,8 @@ redis: &redis
   # persistence: optional
 
 redis-cache: *redis
+
+redis-filer: *redis
 
 redisinsight:
   enabled: true

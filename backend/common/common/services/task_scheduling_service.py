@@ -6,7 +6,7 @@ from celery import Celery
 
 from common.ai_context.ai_context_repository import AiContext
 from common.archive.archive_repository import Archive
-from common.celery_app import BaseTask
+from common.celery_app import BaseTask, get_beat_schedule
 from common.file.file_repository import File, Tag
 from common.services.lazybytes_service import LazyBytes
 from common.services.query_builder import QueryParameters
@@ -234,5 +234,38 @@ class TaskSchedulingService:
             "worker.ai.process_question_task.process_question_task",
             args=[context, question],
             task_id=str(root_task_id),
+            root_id=str(root_task_id),
+        ).forget()
+
+    def trigger_scheduled_task(self, schedule_name: str):
+        """Trigger a scheduled (beat) task by name.
+
+        Args:
+            schedule_name: The name from beat_schedule (e.g., "cleanup-on-idle")
+
+        Raises:
+            KeyError: If schedule_name not found in beat_schedule
+        """
+        beat_schedule = get_beat_schedule()
+
+        if schedule_name not in beat_schedule:
+            raise KeyError(f"Schedule '{schedule_name}' not found")
+
+        schedule_config = beat_schedule[schedule_name]
+        task_name = schedule_config["task"]
+        task_args = schedule_config.get("args", ())
+        task_kwargs = schedule_config.get("kwargs", {})
+
+        root_task_id = uuid4()
+        self._root_task_information_repository.save(
+            RootTaskInformation(
+                root_task_id=root_task_id,
+                object_id=root_task_id,
+            )
+        )
+        self._celery_app.send_task(
+            task_name,
+            args=task_args,
+            kwargs=task_kwargs,
             root_id=str(root_task_id),
         ).forget()

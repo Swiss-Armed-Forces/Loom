@@ -1,0 +1,53 @@
+# Headless service for StatefulSet DNS and Raft peer discovery
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "app.fullname" . }}-seaweedfs-master-headless
+  labels:
+    {{- include "app.labels.custom" (dict "context" . "component" "seaweedfs") | nindent 4 }}
+    app.kubernetes.io/component: seaweedfs-master
+spec:
+  type: ClusterIP
+  clusterIP: None
+  publishNotReadyAddresses: true
+  ports:
+    - name: master
+      port: {{ .Values.seaweedfs.master.port }}
+      targetPort: master
+      protocol: TCP
+    - name: grpc
+      port: {{ .Values.seaweedfs.master.grpcPort }}
+      targetPort: grpc
+      protocol: TCP
+    - name: metrics
+      port: {{ .Values.seaweedfs.master.metricsPort }}
+      targetPort: metrics
+      protocol: TCP
+  selector:
+    app: {{ include "app.name" . }}-seaweedfs-master
+---
+# Regular service for clients (filer, volume, workers, configMap)
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "app.fullname" . }}-seaweedfs-master
+  labels:
+    {{- include "app.labels.custom" (dict "context" . "component" "seaweedfs") | nindent 4 }}
+    app.kubernetes.io/component: seaweedfs-master
+spec:
+  type: ClusterIP
+  ports:
+    - name: master
+      port: {{ .Values.seaweedfs.master.port }}
+      targetPort: master
+      protocol: TCP
+    - name: grpc
+      port: {{ .Values.seaweedfs.master.grpcPort }}
+      targetPort: grpc
+      protocol: TCP
+    - name: metrics
+      port: {{ .Values.seaweedfs.master.metricsPort }}
+      targetPort: metrics
+      protocol: TCP
+  selector:
+    app: {{ include "app.name" . }}-seaweedfs-master

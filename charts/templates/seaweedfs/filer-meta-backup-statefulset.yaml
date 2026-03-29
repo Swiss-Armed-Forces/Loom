@@ -1,0 +1,96 @@
+{{- if .Values.seaweedfs.filerMetaBackup.enabled }}
+{{- $redisFilerValues := index .Values "redis-filer" -}}
+{{- $redisMemoryLimitBytes := include "SI-to-bytes" $redisFilerValues.resources.limits.memory | int64 -}}
+{{- $pvcStorageMultiplier := .Values.seaweedfs.filerMetaBackup.pvc.storageMultiplier | default 2 -}}
+{{- $pvcStorageBytes := mulf $redisMemoryLimitBytes $pvcStorageMultiplier | int64 -}}
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "app.fullname" . }}-seaweedfs-filer-meta-backup
+  labels:
+    {{- include "app.labels.custom" (dict "context" . "component" "seaweedfs") | nindent 4 }}
+    app.kubernetes.io/component: seaweedfs-filer-meta-backup
+spec:
+  serviceName: {{ include "app.fullname" . }}-seaweedfs-filer-meta-backup
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ include "app.name" . }}-seaweedfs-filer-meta-backup
+  template:
+    metadata:
+      labels:
+        app: {{ include "app.name" . }}-seaweedfs-filer-meta-backup
+        {{- include "app.labels.custom" (dict "context" . "component" "seaweedfs") | nindent 8 }}
+    spec:
+      securityContext:
+        runAsUser: 1000
+        fsGroup: 1000
+      initContainers:
+        - name: wait-for-filer
+          image: {{ .Values.image.registry }}/{{ .Values.seaweedfs.initContainer.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) .Values.seaweedfs.initContainer.image.tag }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command:
+            - 'sh'
+            - '-c'
+            - |
+              set -eu
+              until nc -vz {{ include "app.fullname" . }}-seaweedfs-filer {{ .Values.seaweedfs.filer.grpcPort }}; do
+                echo "Waiting for SeaweedFS filer gRPC";
+                sleep 2;
+              done;
+          {{- if .Values.seaweedfs.initContainer.resources }}
+          resources: {{- toYaml .Values.seaweedfs.initContainer.resources | nindent 12 }}
+          {{- end }}
+      containers:
+        # Backup process: reads from main filer (Redis) and writes to SQLite
+        # For restore: kubectl exec -it <pod> -c backup -- /scripts/restore.sh
+        - name: backup
+          image: {{ .Values.image.registry }}/{{ .Values.seaweedfs.filer.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) .Values.seaweedfs.filer.image.tag }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command:
+            - weed
+            - filer.meta.backup
+            - -filer={{ include "app.fullname" . }}-seaweedfs-filer:{{ .Values.seaweedfs.filer.port }}
+            - -filerDir={{ .Values.seaweedfs.filerMetaBackup.filerDir | default "/" }}
+            - -config=/etc/seaweedfs/filer.toml
+          env:
+            - name: SQLITE_FILER_PORT
+              value: "{{ .Values.seaweedfs.filerMetaBackup.sqliteFiler.port }}"
+            - name: SQLITE_FILER_GRPC_PORT
+              value: "{{ .Values.seaweedfs.filerMetaBackup.sqliteFiler.grpcPort }}"
+            - name: MASTER_HOST
+              value: "{{ include "app.fullname" . }}-seaweedfs-master"
+            - name: MASTER_PORT
+              value: "{{ .Values.seaweedfs.master.port }}"
+          volumeMounts:
+            - name: backup-config
+              mountPath: /etc/seaweedfs/filer.toml
+              subPath: filer.toml
+              readOnly: true
+            - name: filer-config
+              mountPath: /etc/seaweedfs/redis_filer.toml
+              subPath: filer.toml
+              readOnly: true
+            - name: data
+              mountPath: /data
+          {{- if .Values.seaweedfs.filerMetaBackup.resources }}
+          resources: {{- toYaml .Values.seaweedfs.filerMetaBackup.resources | nindent 12 }}
+          {{- end }}
+      volumes:
+        - name: backup-config
+          configMap:
+            name: {{ include "app.fullname" . }}-seaweedfs-filer-meta-backup-config
+        - name: filer-config
+          configMap:
+            name: {{ include "app.fullname" . }}-seaweedfs-filer-config
+      terminationGracePeriodSeconds: 30
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: {{ printf "%d" $pvcStorageBytes }}
+{{- end }}

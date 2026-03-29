@@ -11,7 +11,6 @@ SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 # Shellcheck
 echo ">> Shell lint"
 SHELL_SOURCES_IGNORES=(
-    charts/templates/minio/*.txt
     backend/worker/worker/services/imap_service.py
 )
 SHELL_SOURCES=$("${SCRIPT_DIR}/find_file_of_type.sh" "${SEARCH_DIR}" '(shell|\.sh)' "${SHELL_SOURCES_IGNORES[@]}")
@@ -28,8 +27,6 @@ YAML_SOURCES_IGNORES=(
     "Frontend/pnpm-lock.yaml"
     charts/templates/**/*.yaml
     charts/templates/**/**/*.yaml
-    charts/charts/minio/*.yaml
-    charts/charts/minio/templates/*.yaml
 )
 YAML_SOURCES=$("${SCRIPT_DIR}/find_file_of_type.sh" "${SEARCH_DIR}" '(yaml|\.yml|\.sls|\.top)' "${YAML_SOURCES_IGNORES[@]}")
 readarray -t -d '' YAML_SOURCES < <(xargs --no-run-if-empty printf '%s\0' <<<"${YAML_SOURCES:-}" || true)

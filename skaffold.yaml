@@ -246,25 +246,14 @@ build:
       hooks:
         after:
           - command: ["./cicd/tag_latest.sh"]
-    - image: registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/minio
-      context: minio
+    - image: registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/seaweedfs
+      context: seaweedfs
       docker:
         dockerfile: Dockerfile
         buildArgs:
           DOCKER_REGISTRY: '{{or .CI_DEPENDENCY_PROXY_DIRECT_GROUP_IMAGE_PREFIX "docker.io"}}'
         cacheFrom:
-          - "registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/minio"
-      hooks:
-        after:
-          - command: ["./cicd/tag_latest.sh"]
-    - image: registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/mc
-      context: minio/mc
-      docker:
-        dockerfile: Dockerfile
-        buildArgs:
-          DOCKER_REGISTRY: '{{or .CI_DEPENDENCY_PROXY_DIRECT_GROUP_IMAGE_PREFIX "docker.io"}}'
-        cacheFrom:
-          - "registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/mc"
+          - "registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/seaweedfs"
       hooks:
         after:
           - command: ["./cicd/tag_latest.sh"]

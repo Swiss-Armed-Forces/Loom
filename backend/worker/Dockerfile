@@ -59,6 +59,7 @@ ARG RIPSECRETS_VERSION="0.1.11"
 ARG CURL_VERSION="7.88.*"
 ARG TRUFFLEHOG_VERSION="v3.90.6"
 ARG BINUTILS_VERSION="2.40-*"
+ARG SEAWEEDFS_VERSION="4.17"
 
 SHELL [ "/bin/bash", "-o", "pipefail", "-c" ]
 
@@ -82,6 +83,11 @@ RUN set -exu \
     && mv "ripsecrets-${RIPSECRETS_VERSION}-x86_64-unknown-linux-gnu/ripsecrets" /usr/local/bin/ripsecrets \
     && rm "ripsecrets-${RIPSECRETS_VERSION}-x86_64-unknown-linux-gnu.tar.gz" \
     && rm -rf "ripsecrets-${RIPSECRETS_VERSION}-x86_64-unknown-linux-gnu" \
+    && curl -LO "https://github.com/seaweedfs/seaweedfs/releases/download/${SEAWEEDFS_VERSION}/linux_amd64.tar.gz" \
+    && tar -xzf linux_amd64.tar.gz \
+    && mv weed /usr/local/bin/weed \
+    && chmod +x /usr/local/bin/weed \
+    && rm linux_amd64.tar.gz \
     && rm -rf /var/cache/apt/archives /var/lib/apt/lists/*
 
 

@@ -325,8 +325,12 @@ in
       # k8s
       k9s
 
-      # minio
+      # storage
       minio-client
+      seaweedfs
+
+      # for promtool (promQL cli)
+      prometheus.cli
 
       # inspect docker images
       dive

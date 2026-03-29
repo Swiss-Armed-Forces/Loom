@@ -7,6 +7,7 @@ from common.dependencies import DependencyException, get_celery_app
 from gotenberg_client import GotenbergClient
 
 from worker.services.rspamd_service import RspamdService
+from worker.services.seaweedfs_shell_service import SeaweedFSShellService
 from worker.services.tika_service import TikaService
 from worker.settings import settings
 
@@ -14,6 +15,7 @@ from worker.settings import settings
 _tika_service: TikaService | None = None
 _rspamd_service: RspamdService | None = None
 _gotenberg_client: GotenbergClient | None = None
+_seaweedfs_shell_service: SeaweedFSShellService | None = None
 
 
 logger = logging.getLogger(__name__)
@@ -38,6 +40,12 @@ def init():
         str(settings.gotenberg_host), timeout=settings.gotenberg_timeout
     )
 
+    global _seaweedfs_shell_service
+    _seaweedfs_shell_service = SeaweedFSShellService(
+        master_host=settings.seaweedfs_master_host,
+        timeout=settings.seaweedfs_shell_timeout,
+    )
+
 
 def mock_init():
     # pylint: disable=global-statement
@@ -50,6 +58,9 @@ def mock_init():
 
     global _gotenberg_client
     _gotenberg_client = MagicMock(spec=GotenbergClient)
+
+    global _seaweedfs_shell_service
+    _seaweedfs_shell_service = MagicMock(spec=SeaweedFSShellService)
 
 
 def get_tika_service() -> TikaService:
@@ -68,3 +79,9 @@ def get_gotenberg_client() -> GotenbergClient:
     if _gotenberg_client is None:
         raise DependencyException("Gotenberg Client missing")
     return _gotenberg_client
+
+
+def get_seaweedfs_shell_service() -> SeaweedFSShellService:
+    if _seaweedfs_shell_service is None:
+        raise DependencyException("SeaweedFS Shell Service missing")
+    return _seaweedfs_shell_service

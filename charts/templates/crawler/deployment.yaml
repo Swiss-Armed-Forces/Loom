@@ -18,7 +18,7 @@ spec:
         {{- include "app.labels.custom" (dict "context" . "component" "crawler") | nindent 8 }}
     spec:
       initContainers:
-        - name: check-minio-ready
+        - name: check-seaweedfs-ready
           image: {{ .Values.image.registry }}/{{ .Values.crawler.initContainer.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) .Values.crawler.initContainer.image.tag }}
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           command:
@@ -27,8 +27,8 @@ spec:
             - |
               set -eu
 
-              until nc -vz {{ include "app.fullname" . }}-minio {{ .Values.minio.service.port }}; do
-                echo "Waiting for minio service";
+              until nc -vz {{ include "app.fullname" . }}-seaweedfs-filer {{ .Values.seaweedfs.s3.port }}; do
+                echo "Waiting for SeaweedFS S3 service";
                 sleep 1;
               done;
           {{- if .Values.crawler.initContainer.resources }}
@@ -38,17 +38,6 @@ spec:
         - name: crawler
           image: {{ .Values.image.registry }}/{{ .Values.crawler.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) .Values.crawler.image.tag }}
           imagePullPolicy: {{ .Values.image.pullPolicy }}
-          env:
-            # Note: we do assume here that the MinIO-Intake-Key is at position 0
-            {{- with index .Values.minio.svcaccts 0 }}
-            - name: MINIO_SECRET_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: "{{ .existingSecret }}"
-                  key: secretkey
-            - name: MINIO_ACCESS_KEY
-              value: "{{ .accessKey }}"
-            {{- end }}
           envFrom:
             - configMapRef:
                 name: {{ include "app.fullname" . }}-settings

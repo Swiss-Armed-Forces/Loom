@@ -1,0 +1,119 @@
+{{- $minFreeSpaceMultiplier := .Values.seaweedfs.volume.minFreeSpaceMultiplier | default 2 -}}
+{{- $minFreeSpaceMB := mulf .Values.seaweedfs.master.volumeSizeLimitMB $minFreeSpaceMultiplier | int64 -}}
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "app.fullname" . }}-seaweedfs-volume
+  labels:
+    {{- include "app.labels.custom" (dict "context" . "component" "seaweedfs") | nindent 4 }}
+    app.kubernetes.io/component: seaweedfs-volume
+spec:
+  serviceName: {{ include "app.fullname" . }}-seaweedfs-volume-headless
+  replicas: {{ .Values.seaweedfs.volume.replicaCount }}
+  podManagementPolicy: Parallel
+  selector:
+    matchLabels:
+      app: {{ include "app.name" . }}-seaweedfs-volume
+  template:
+    metadata:
+      labels:
+        app: {{ include "app.name" . }}-seaweedfs-volume
+        {{- include "app.labels.custom" (dict "context" . "component" "seaweedfs") | nindent 8 }}
+    spec:
+      affinity:
+        podAntiAffinity:
+          # Prefer scheduling volume pods on different nodes for better data distribution
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchLabels:
+                    app: {{ include "app.name" . }}-seaweedfs-volume
+                topologyKey: kubernetes.io/hostname
+      securityContext:
+        runAsUser: 1000
+        fsGroup: 1000
+      initContainers:
+        - name: wait-for-master
+          image: {{ .Values.image.registry }}/{{ .Values.seaweedfs.initContainer.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) .Values.seaweedfs.initContainer.image.tag }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command:
+            - 'sh'
+            - '-c'
+            - |
+              set -eu
+              until nc -vz {{ include "app.fullname" . }}-seaweedfs-master {{ .Values.seaweedfs.master.port }}; do
+                echo "Waiting for SeaweedFS master";
+                sleep 2;
+              done;
+          {{- if .Values.seaweedfs.initContainer.resources }}
+          resources: {{- toYaml .Values.seaweedfs.initContainer.resources | nindent 12 }}
+          {{- end }}
+      containers:
+        - name: volume
+          image: {{ .Values.image.registry }}/{{ .Values.seaweedfs.volume.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) .Values.seaweedfs.volume.image.tag }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          env:
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+          command:
+            - weed
+            - volume
+            - -mserver={{ include "app.fullname" . }}-seaweedfs-master:{{ .Values.seaweedfs.master.port }}
+            - -ip=$(POD_NAME).{{ include "app.fullname" . }}-seaweedfs-volume-headless
+            - -ip.bind=0.0.0.0
+            - -port={{ .Values.seaweedfs.volume.port }}
+            - -port.grpc={{ .Values.seaweedfs.volume.grpcPort }}
+            - -dir=/data
+            - -max=0
+            - -minFreeSpace={{ $minFreeSpaceMB }}MB
+            - -dataCenter={{ include "app.fullname" . }}
+            - -rack=$(NODE_NAME)
+            - -metricsPort={{ .Values.seaweedfs.volume.metricsPort }}
+          ports:
+            - name: volume
+              containerPort: {{ .Values.seaweedfs.volume.port }}
+              protocol: TCP
+            - name: grpc
+              containerPort: {{ .Values.seaweedfs.volume.grpcPort }}
+              protocol: TCP
+            - name: metrics
+              containerPort: {{ .Values.seaweedfs.volume.metricsPort }}
+              protocol: TCP
+          volumeMounts:
+            - name: data
+              mountPath: /data
+          livenessProbe:
+            httpGet:
+              path: /status
+              port: {{ .Values.seaweedfs.volume.port }}
+            initialDelaySeconds: 20
+            periodSeconds: 30
+            timeoutSeconds: 10
+            failureThreshold: 6
+          readinessProbe:
+            httpGet:
+              path: /status
+              port: {{ .Values.seaweedfs.volume.port }}
+            initialDelaySeconds: 10
+            periodSeconds: 15
+            timeoutSeconds: 10
+            failureThreshold: 6
+          {{- if .Values.seaweedfs.volume.resources }}
+          resources: {{- toYaml .Values.seaweedfs.volume.resources | nindent 12 }}
+          {{- end }}
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: {{ .Values.seaweedfs.volume.pvc.storage }}
