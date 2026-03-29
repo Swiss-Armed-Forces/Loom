@@ -2,10 +2,10 @@ import logging
 from typing import Optional
 from unittest.mock import AsyncMock, MagicMock
 
-import minio
 from celery import Celery
 from elasticsearch import Elasticsearch
 from libretranslatepy import LibreTranslateAPI
+from minio import Minio
 from ollama import Client
 from pymongo import MongoClient
 from redis import StrictRedis
@@ -117,13 +117,13 @@ def init(init_elasticsearch_documents: bool = False):
 
     global _file_storage_service
     _file_storage_service = S3LazyBytesService(
-        minio.Minio(
-            settings.file_storage.minio_host,
-            settings.file_storage.minio_access_key,
-            settings.file_storage.minio_secret_key,
-            secure=settings.file_storage.minio_secure_connection,
+        Minio(
+            settings.file_storage.s3_host,
+            settings.file_storage.s3_access_key,
+            settings.file_storage.s3_secret_key,
+            secure=settings.file_storage.s3_secure_connection,
         ),
-        settings.file_storage.minio_bucket_name,
+        settings.file_storage.bucket_name,
         # We always want to store data in the file storage service, to
         # avoid embedded data in ElasticSearch
         threshold_bytes=-1,

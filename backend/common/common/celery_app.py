@@ -23,6 +23,104 @@ from common.utils.oom_score_adjust import adjust_oom_score
 
 logger = logging.getLogger(__name__)
 
+
+def get_beat_schedule() -> dict:
+    """Return the Celery Beat schedule configuration.
+
+    This function is separate from init_celery_app() so it can be called at module level
+    by other components (e.g., beat router) without requiring a fully initialized Celery
+    app.
+    """
+    return {
+        "cleanup-on-idle": {
+            "task": "worker.periodic.flush_on_idle_task.flush_on_idle_task",
+            "schedule": crontab(minute="*/15"),
+        },
+        "reindex-lost-files-on-idle": {
+            "task": (
+                "worker.periodic.reindex_lost_files_on_idle_task.reindex_lost_files_on_idle_task"  # noqa: E501 pylint: disable=line-too-long
+            ),
+            "schedule": crontab(minute="5", hour="22-05"),
+        },
+        "shrink-cache": {
+            "task": "worker.periodic.shrink_periodically_task.shrink_periodically_task",
+            "schedule": crontab(minute="*/3"),
+        },
+        "hide-old-uploaded-files": {
+            "task": "worker.periodic.hide_periodically_task.hide_periodically_task",
+            "schedule": crontab(minute="0", hour="0"),
+        },
+        "unsubscribe-old-imap-folders": {
+            "task": (
+                "worker.periodic.unsubscribe_old_imap_folders_periodically_task.unsubscribe_old_imap_folders_periodically_task"  # noqa: E501 pylint: disable=line-too-long
+            ),
+            "schedule": crontab(minute="0", hour="1"),
+        },
+        # SeaweedFS Maintenance Tasks - frequent "on-idle" variants (check_idle=True)
+        "seaweedfs-fix-replication-on-idle": {
+            "task": (
+                "worker.periodic.seaweedfs_maintenance_task.seaweedfs_maintenance_task"
+            ),
+            "schedule": crontab(minute="0", hour="0,4,8,12,16,20"),
+            "args": ("volume.fix.replication", ["-apply"]),
+        },
+        "seaweedfs-balance-on-idle": {
+            "task": (
+                "worker.periodic.seaweedfs_maintenance_task.seaweedfs_maintenance_task"
+            ),
+            "schedule": crontab(minute="15", hour="1,7,13,19"),
+            "args": ("volume.balance", ["-apply"]),
+        },
+        "seaweedfs-vacuum-on-idle": {
+            "task": (
+                "worker.periodic.seaweedfs_maintenance_task.seaweedfs_maintenance_task"
+            ),
+            "schedule": crontab(minute="30", hour="2,8,14,20"),
+            "args": ("volume.vacuum",),
+        },
+        "seaweedfs-scrub-on-idle": {
+            "task": (
+                "worker.periodic.seaweedfs_maintenance_task.seaweedfs_maintenance_task"
+            ),
+            "schedule": crontab(minute="45", hour="3,9,15,21"),
+            "args": ("volume.scrub",),
+        },
+        # SeaweedFS Maintenance Tasks - weekly forced runs at night (check_idle=False)
+        "seaweedfs-fix-replication": {
+            "task": (
+                "worker.periodic.seaweedfs_maintenance_task.seaweedfs_maintenance_task"
+            ),
+            "schedule": crontab(minute="0", hour="2", day_of_week="5"),  # Friday 2am
+            "args": ("volume.fix.replication", ["-apply"]),
+            "kwargs": {"check_idle": False},
+        },
+        "seaweedfs-balance": {
+            "task": (
+                "worker.periodic.seaweedfs_maintenance_task.seaweedfs_maintenance_task"
+            ),
+            "schedule": crontab(minute="0", hour="2", day_of_week="6"),  # Saturday 2am
+            "args": ("volume.balance", ["-apply"]),
+            "kwargs": {"check_idle": False},
+        },
+        "seaweedfs-vacuum": {
+            "task": (
+                "worker.periodic.seaweedfs_maintenance_task.seaweedfs_maintenance_task"
+            ),
+            "schedule": crontab(minute="0", hour="3", day_of_week="6"),  # Saturday 3am
+            "args": ("volume.vacuum",),
+            "kwargs": {"check_idle": False},
+        },
+        "seaweedfs-scrub": {
+            "task": (
+                "worker.periodic.seaweedfs_maintenance_task.seaweedfs_maintenance_task"
+            ),
+            "schedule": crontab(minute="0", hour="2", day_of_week="0"),  # Sunday 2am
+            "args": ("volume.scrub",),
+            "kwargs": {"check_idle": False},
+        },
+    }
+
+
 CELERY_QUEUE_NAME_PREFIX = "celery"
 
 CELERY_DELIVER_LIMIT = 5
@@ -242,32 +340,7 @@ def init_celery_app() -> "Celery[BaseTask]":
     app.conf.result_expires = timedelta(days=99999)
 
     # Register periodic tasks
-    app.conf.beat_schedule = {
-        "cleanup-on-idle": {
-            "task": "worker.periodic.flush_on_idle_task.flush_on_idle_task",
-            "schedule": crontab(minute="*/15"),
-        },
-        "reindex-lost-files-on-idle": {
-            "task": (
-                "worker.periodic.reindex_lost_files_on_idle_task.reindex_lost_files_on_idle_task"  # noqa: E501 pylint: disable=line-too-long
-            ),
-            "schedule": crontab(minute="5", hour="22-05"),
-        },
-        "shrink-cache": {
-            "task": "worker.periodic.shrink_periodically_task.shrink_periodically_task",
-            "schedule": crontab(minute="*/3"),
-        },
-        "hide-old-uploaded-files": {
-            "task": "worker.periodic.hide_periodically_task.hide_periodically_task",
-            "schedule": crontab(minute="0", hour="0"),
-        },
-        "unsubscribe-old-imap-folders": {
-            "task": (
-                "worker.periodic.unsubscribe_old_imap_folders_periodically_task.unsubscribe_old_imap_folders_periodically_task"  # noqa: E501 pylint: disable=line-too-long
-            ),
-            "schedule": crontab(minute="0", hour="1"),
-        },
-    }
+    app.conf.beat_schedule = get_beat_schedule()
 
     # Define the celery default queues
     # This queue will be used when external components

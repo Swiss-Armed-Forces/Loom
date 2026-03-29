@@ -1,0 +1,29 @@
+{{- if .Values.seaweedfs.filer.hpa.enabled -}}
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ include "app.fullname" . }}-seaweedfs-filer
+  labels:
+    {{- include "app.labels.custom" (dict "context" . "component" "seaweedfs") | nindent 4 }}
+    app.kubernetes.io/component: "seaweedfs-filer"
+spec:
+  maxReplicas: {{ .Values.seaweedfs.filer.hpa.maxReplicas }}
+  minReplicas: {{ .Values.seaweedfs.filer.hpa.minReplicas }}
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ include "app.fullname" . }}-seaweedfs-filer
+  metrics:
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: {{ .Values.seaweedfs.filer.hpa.targetMemoryUtilizationPercentage }}
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: {{ .Values.seaweedfs.filer.hpa.targetCPUUtilizationPercentage }}
+{{- end }}

@@ -36,6 +36,69 @@ data:
           - source_labels: [__meta_kubernetes_pod_name]
             action: replace
             target_label: pod
+      - job_name: 'seaweedfs-master'
+        scrape_interval: 15s
+        metrics_path: /metrics
+        kubernetes_sd_configs:
+          - role: endpoints
+            namespaces:
+              names:
+                - {{ .Release.Namespace }}
+        relabel_configs:
+          - source_labels: [__meta_kubernetes_service_name]
+            action: keep
+            regex: {{ include "app.fullname" . }}-seaweedfs-master
+          - source_labels: [__meta_kubernetes_endpoint_port_name]
+            action: keep
+            regex: metrics
+          - source_labels: [__meta_kubernetes_pod_name]
+            action: replace
+            target_label: pod
+          - source_labels: [__meta_kubernetes_service_name]
+            action: replace
+            target_label: service
+      - job_name: 'seaweedfs-volume'
+        scrape_interval: 15s
+        metrics_path: /metrics
+        kubernetes_sd_configs:
+          - role: endpoints
+            namespaces:
+              names:
+                - {{ .Release.Namespace }}
+        relabel_configs:
+          - source_labels: [__meta_kubernetes_service_name]
+            action: keep
+            regex: {{ include "app.fullname" . }}-seaweedfs-volume
+          - source_labels: [__meta_kubernetes_endpoint_port_name]
+            action: keep
+            regex: metrics
+          - source_labels: [__meta_kubernetes_pod_name]
+            action: replace
+            target_label: pod
+          - source_labels: [__meta_kubernetes_service_name]
+            action: replace
+            target_label: service
+      - job_name: 'seaweedfs-filer'
+        scrape_interval: 15s
+        metrics_path: /metrics
+        kubernetes_sd_configs:
+          - role: endpoints
+            namespaces:
+              names:
+                - {{ .Release.Namespace }}
+        relabel_configs:
+          - source_labels: [__meta_kubernetes_service_name]
+            action: keep
+            regex: {{ include "app.fullname" . }}-seaweedfs-filer
+          - source_labels: [__meta_kubernetes_endpoint_port_name]
+            action: keep
+            regex: metrics
+          - source_labels: [__meta_kubernetes_pod_name]
+            action: replace
+            target_label: pod
+          - source_labels: [__meta_kubernetes_service_name]
+            action: replace
+            target_label: service
 {{- if .Values.translate.enabled }}
       - job_name: 'translate'
         scrape_interval: 15s
@@ -122,7 +185,7 @@ data:
           # Only keep endpoints from redis services (redis and redis-cache)
           - source_labels: [__meta_kubernetes_service_name]
             action: keep
-            regex: {{ include "app.fullname" . }}-redis(-cache)?
+            regex: {{ include "app.fullname" . }}-redis(-cache|-filer)?
           # Only keep the metrics port (not the redis port itself)
           - source_labels: [__meta_kubernetes_endpoint_port_name]
             action: keep

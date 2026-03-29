@@ -2,6 +2,7 @@ import logging
 
 from celery import chain, group
 from common.dependencies import get_celery_app, get_queues_service
+from common.settings import settings
 
 from worker.periodic.infra.periodic_task import PeriodicTask
 from worker.periodic.tasks import flush_cache, flush_lazybytes
@@ -20,7 +21,10 @@ def flush_complete(*_, **__):
 def flush_on_idle_task():
     queues_service = get_queues_service()
 
-    if queues_service.get_message_count() > 0:
+    if (
+        queues_service.get_message_count()
+        > settings.periodic_consider_queue_idle_threshold
+    ):
         logger.info("Queues not empty: do nothing")
         return
 

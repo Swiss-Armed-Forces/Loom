@@ -1,7 +1,7 @@
 import io
 
 import pytest
-from crawler.dependencies import get_minio_client, init
+from crawler.dependencies import get_s3_client, init
 from crawler.settings import settings
 from minio import Minio
 
@@ -17,7 +17,7 @@ class TestCrawler:
     def client(self) -> Minio:
         init()
 
-        client = get_minio_client()
+        client = get_s3_client()
         return client
 
     def test_check_bucket_exists(self, client: Minio):
@@ -31,14 +31,14 @@ class TestCrawler:
         with open(file_src, "rb") as file:
             f = file.read()
             client.put_object(
-                settings.minio_bucket_names[0],
+                settings.s3_bucket_names[0],
                 filename,
                 io.BytesIO(f),
                 -1,
                 part_size=10 * 1024 * 1024,
             )
         fileprev = get_file_preview_by_name(filename)
-        res_path = f"//{settings.minio_bucket_names[0]}/{filename}"
+        res_path = f"//{settings.s3_bucket_names[0]}/{filename}"
         assert fileprev
         assert fileprev.name == filename
         assert fileprev.path == res_path
@@ -49,14 +49,14 @@ class TestCrawler:
         with open(file_src, "rb") as file:
             f = file.read()
             client.put_object(
-                settings.minio_bucket_names[0],
+                settings.s3_bucket_names[0],
                 filename,
                 io.BytesIO(f),
                 -1,
                 part_size=10 * 1024 * 1024,
             )
         fileprev = get_file_preview_by_name(filename)
-        res_path = f"//{settings.minio_bucket_names[0]}/{filename}"
+        res_path = f"//{settings.s3_bucket_names[0]}/{filename}"
         assert fileprev
         assert fileprev.name == filename
         assert fileprev.path == res_path
@@ -67,14 +67,14 @@ class TestCrawler:
         with open(file_src, "rb") as file:
             f = file.read()
             client.put_object(
-                settings.minio_bucket_names[0],
+                settings.s3_bucket_names[0],
                 filename,
                 io.BytesIO(f),
                 -1,
                 part_size=10 * 1024 * 1024,
             )
         fileprev = get_file_preview_by_name(filename)
-        res_path = f"//{settings.minio_bucket_names[0]}/{filename}"
+        res_path = f"//{settings.s3_bucket_names[0]}/{filename}"
         assert fileprev
         assert fileprev.name == filename
         assert fileprev.path == res_path

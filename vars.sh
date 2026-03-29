@@ -30,8 +30,8 @@ LOOM_HOSTS=(
     "ollama-tool"
     "dovecot"
     "roundcube"
-    "minio"
-    "minio-api"
+    "seaweedfs"
+    "s3"
     "gotenberg"
 )
 LOOM_DOMAIN="loom"

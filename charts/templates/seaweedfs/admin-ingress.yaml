@@ -1,0 +1,33 @@
+{{- if and .Values.seaweedfs.admin.enabled .Values.seaweedfs.admin.ingress.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "app.fullname" . }}-seaweedfs-admin
+  labels:
+    {{- include "app.labels.custom" (dict "context" . "component" "seaweedfs") | nindent 4 }}
+    app.kubernetes.io/component: seaweedfs-admin
+  annotations:
+    {{- toYaml .Values.seaweedfs.admin.ingress.annotations | nindent 4 }}
+    {{- if .Values.certificate.requireClientCert }}
+    traefik.ingress.kubernetes.io/router.tls.options: {{ .Release.Namespace }}-{{ include "app.fullname" . }}-mtls@kubernetescrd
+    {{- end }}
+spec:
+  ingressClassName: {{ .Values.seaweedfs.admin.ingress.className }}
+  rules:
+    - host: seaweedfs.{{ .Values.domain }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "app.fullname" . }}-seaweedfs-admin
+                port:
+                  number: {{ .Values.seaweedfs.admin.port }}
+  {{- if .Values.seaweedfs.admin.ingress.tls.enabled }}
+  tls:
+    - secretName: {{ include "app.fullname" . }}-certificate
+      hosts:
+        - seaweedfs.{{ .Values.domain }}
+  {{- end }}
+{{- end }}

@@ -272,7 +272,8 @@ Multiple services that are useful for production and development purposes are st
 | Translate      | [https://translate.loom](https://translate.loom)           | Translation service powered by LibreTranslate |                                               |
 | Open Webui     | [https://open-webui.loom](https://open-webui.loom)         | AI Webinterface                               |                                               |
 | Roundcube      | [https://roundcube.loom](https://roundcube.loom)           | Email Webinterface                            |                                               |
-| Minio          | [https://minio.loom](https://minio.loom)                   | File upload                                   | user: `minioadmin` password: `minioadmin`     |
+| SeaweedFS      | [https://seaweedfs.loom](https://seaweedfs.loom)           | Admin UI for cluster management               |                                               |
+| S3             | [https://s3.loom](https://s3.loom)                         | S3-compatible storage API                     |                                               |
 | Api            | [https://api.loom](https://api.loom)                       | The loom api                                  | Swagger documentation: <https://api.loom/docs>|
 | Flower         | [https://flower.loom](https://flower.loom)                 | Monitor celery tasks                          |                                               |
 | RabbitMQ       | [https://rabbit.loom](https://rabbit.loom)                 | Monitor rabbit messages                       | user: `guest` password: `guest`               |

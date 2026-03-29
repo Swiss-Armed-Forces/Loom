@@ -14,9 +14,15 @@
 !include <logos/apache>
 !include <logos/prometheus>
 !include <logos/grafana>
+!include <logos/aws-s3>
+!include <logos/sqlite>
 
 !include <office/Concepts/email>
+!include <office/Concepts/anti_spam>
 !include <office/Servers/reverse_proxy>
+!include <office/Databases/database>
+!include <office/Databases/application_store>
+!include <office/Users/administrator>
 
 title Loom - Container Diagram
 
@@ -34,10 +40,16 @@ System_Boundary(loom, "") {
         Container(ai_ui, "AI User Interface", "Open Webui", "User Interaction with AI", $sprite="robot", $tags="exposed")
         Container(email_client, "Email Client", "Roundcube", "Visualizes Emails", $sprite="email", $tags="exposed")
 
-        ContainerDb(minio, "File Upload", "Minio", "Raw Data Intake", $tags="exposed")
-
         Container(api, "API", "Python FastAPI", "REST-API", $sprite="python", $tags="exposed")
     '}
+
+    System_Boundary(seaweedfs, "SeaweedFS Cluster") {
+        Container(seaweedfs_admin, "SeaweedFS Admin", "SeaweedFS", "Admin UI", $sprite="administrator", $tags="exposed")
+        Container(seaweedfs_master, "SeaweedFS Master", "SeaweedFS", "Cluster coordination + metrics", $sprite="database")
+        Container(seaweedfs_filer, "SeaweedFS Filer", "SeaweedFS", "S3 interface", $sprite="aws-s3", $tags="exposed")
+        Container(seaweedfs_filer_meta_backup, "SeaweedFS Filer Meta Backup", "SeaweedFS", "Filer Metadata Backup", $sprite="sqlite")
+        Container(seaweedfs_volume, "SeaweedFS Volume", "SeaweedFS", "Stores actual file chunks", $sprite="application_store")
+    }
 
     'System_Boundary(backend_services, "Backend Services"){
         Container(crawler, "Crawler", "Python", "Crawls Raw Data and Schedules Tasks", $sprite="python")
@@ -47,14 +59,14 @@ System_Boundary(loom, "") {
 
         Container(imap, "Imap Server", "Dovecot", "Stores Email", $sprite="email", $tags="exposed")
 
-        Container(rspamd, "Rspamd", "Spam Filter", "Detect SPAM", $sprite="email", $tags="exposed")
+        Container(rspamd, "Rspamd", "Spam Filter", "Detect SPAM", $sprite="anti_spam", $tags="exposed")
 
         ContainerQueue(rabbit, "Message Queue", "Rabbit MQ", "Task Queue", $sprite="rabbitmq", $tags="exposed")
-        ContainerDb(redis, "Cache", "Redis", "Stores: Cache, Celery Synchroization", $sprite="redis")
-        ContainerDb(mongo, "File Storage", "mongoDB", "Stores: Raw Data, Task Metadata", $sprite="mongodb")
+        ContainerDb(redis, "KV-Store", "Redis", "Stores: Cache | Celery Results | SeaweedFS Filer", $sprite="redis")
+        ContainerDb(mongo, "Metadata Storage", "mongoDB", "Stores: Task Metadata", $sprite="mongodb")
         ContainerDb(es, "Database", "Elasticsearch", "Stores: Analyzed Data, Logs", $sprite="elasticsearch", $tags="exposed")
         Container(tika, "Content Extraction", "Tika", "Analyzes files", $sprite="apache", $tags="exposed")
-        Container(gotenberg, "PDF conversion", "Gotenberg", "Generates PDFs", $sprite="go", $tags="exposed")
+        Container(gotenberg, "File Rendering", "Gotenberg", "Generates Rendered Files", $sprite="go", $tags="exposed")
         Container(ai, "AI Server", "Ollama", "Provides AI Services", $sprite="robot", $tags="exposed")
 
         Container(fluentd, "Fluentd", "Fluentd", "Collects Logs", $sprite="docker")
@@ -64,7 +76,7 @@ System_Boundary(loom, "") {
 
         Container(elasticvue, "Elasticvue", "Elasticvue", "Elasticsearch GUI", $sprite="elasticsearch", $tags="exposed")
         Container(mongoexpress, "Mongo Express", "Mongo Express", "MongoDB GUI", $sprite="mongodb", $tags="exposed")
-        Container(rediswebui, "Redis Web UI", "Redis Web UI", "GUI for Redis", $sprite="redis", $tags="exposed")
+        Container(rediswebui, "Redis Admin UI", "Redis Insight", "GUI for Redis", $sprite="redis", $tags="exposed")
 
         Container(grafana, "Grafana", "grafana", "Visualizes: Logs, System, Queues", $sprite="grafana", $tags="exposed")
 
@@ -72,15 +84,22 @@ System_Boundary(loom, "") {
     '}
 }
 
-Rel(minio, crawler, "")
+Rel(frontend, api, "")
 
-Rel(api, mongo, "")
+Rel(seaweedfs_filer, redis, "")
+Rel(seaweedfs_filer, seaweedfs_filer_meta_backup, "")
+Rel(seaweedfs_filer, seaweedfs_master, "")
+Rel(seaweedfs_filer, seaweedfs_volume, "")
+
+Rel(seaweedfs_admin, seaweedfs_master, "")
+
 Rel(api, rabbit, "")
 Rel(api, es, "")
 Rel(api, translate, "")
+Rel(api, seaweedfs_filer, "")
 
-Rel(crawler, mongo, "")
 Rel(crawler, rabbit, "")
+Rel(crawler, seaweedfs_filer, "")
 
 Rel(ai_ui, ai, "")
 
@@ -100,6 +119,7 @@ Rel(worker, ai, "")
 Rel(worker, translate, "")
 Rel(worker, imap, "")
 Rel(worker, rspamd, "")
+Rel(worker, seaweedfs_filer, "")
 
 Rel(mongoexpress, mongo, "")
 Rel(elasticvue, es, "")
@@ -107,13 +127,19 @@ Rel(rediswebui, redis, "")
 Rel(fluentd, es, "")
 
 Rel(prometheus, grafana, "")
-Rel(es, grafana, "Logs")
+Rel(es, grafana, "Queries logs", "Elasticsearch DSL")
+
 Rel(rabbit, prometheus, "")
 Rel(es, prometheus, "")
 Rel(mongo, prometheus, "")
+
 Rel(redis, prometheus, "")
+
 Rel(translate, prometheus, "")
 Rel(gotenberg, prometheus, "")
+Rel(seaweedfs_master, prometheus, "")
+
+Rel(gotenberg, email_client, "")
 
 SHOW_LEGEND(true)
 

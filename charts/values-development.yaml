@@ -169,9 +169,11 @@ translate:
   hpa:
     enabled: false
 
-minio:
-  ingress: *default-ingress-config
-  consoleIngress: *default-ingress-config
+seaweedfs:
+  s3:
+    ingress: *default-ingress-config
+  admin:
+    ingress: *default-ingress-config
 
 mongodb:
   ingress:

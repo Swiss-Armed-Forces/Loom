@@ -1,0 +1,18 @@
+{{- if .Values.seaweedfs.admin.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "app.fullname" . }}-seaweedfs-admin
+  labels:
+    {{- include "app.labels.custom" (dict "context" . "component" "seaweedfs") | nindent 4 }}
+    app.kubernetes.io/component: seaweedfs-admin
+spec:
+  type: ClusterIP
+  ports:
+    - port: {{ .Values.seaweedfs.admin.port }}
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    app: {{ include "app.name" . }}-seaweedfs-admin
+{{- end }}

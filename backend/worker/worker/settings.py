@@ -217,6 +217,9 @@ class Settings(CommonSettings):
     rendered_pdf_page_width__mm: int = 210  # A4
     rendered_pdf_page_height__mm: int = 297  # A4
 
+    # SeaweedFS Maintenance Settings
+    seaweedfs_shell_timeout: int = 3600  # 1 hour
+
     @property
     def rendered_pdf_page_size(self) -> PageSize:
         return PageSize(

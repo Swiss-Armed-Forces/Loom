@@ -17,6 +17,7 @@ from worker.periodic import (
     flush_on_idle_task,
     hide_periodically_task,
     reindex_lost_files_on_idle_task,
+    seaweedfs_maintenance_task,
     shrink_periodically_task,
     unsubscribe_old_imap_folders_periodically_task,
 )
@@ -40,4 +41,5 @@ tasks = [
     hide_periodically_task,
     reindex_lost_files_on_idle_task,
     unsubscribe_old_imap_folders_periodically_task,
+    seaweedfs_maintenance_task,
 ]

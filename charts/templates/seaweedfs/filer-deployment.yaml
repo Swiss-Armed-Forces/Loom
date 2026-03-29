@@ -1,0 +1,118 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "app.fullname" . }}-seaweedfs-filer
+  labels:
+    {{- include "app.labels.custom" (dict "context" . "component" "seaweedfs") | nindent 4 }}
+    app.kubernetes.io/component: seaweedfs-filer
+spec:
+  {{- if not .Values.seaweedfs.filer.hpa.enabled }}
+  replicas: {{ .Values.seaweedfs.filer.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      app: {{ include "app.name" . }}-seaweedfs-filer
+  template:
+    metadata:
+      labels:
+        app: {{ include "app.name" . }}-seaweedfs-filer
+        {{- include "app.labels.custom" (dict "context" . "component" "seaweedfs") | nindent 8 }}
+    spec:
+      securityContext:
+        runAsUser: 1000
+        fsGroup: 1000
+      initContainers:
+        - name: wait-for-redis
+          image: {{ .Values.image.registry }}/{{ .Values.seaweedfs.initContainer.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) .Values.seaweedfs.initContainer.image.tag }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command:
+            - 'sh'
+            - '-c'
+            - |
+              set -eu
+              until nc -vz {{ include "app.fullname" . }}-redis-filer {{ index .Values "redis-filer" "service" "port" }}; do
+                echo "Waiting for Redis filer";
+                sleep 2;
+              done;
+          {{- if .Values.seaweedfs.initContainer.resources }}
+          resources: {{- toYaml .Values.seaweedfs.initContainer.resources | nindent 12 }}
+          {{- end }}
+        - name: wait-for-master
+          image: {{ .Values.image.registry }}/{{ .Values.seaweedfs.initContainer.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) .Values.seaweedfs.initContainer.image.tag }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command:
+            - 'sh'
+            - '-c'
+            - |
+              set -eu
+              until nc -vz {{ include "app.fullname" . }}-seaweedfs-master {{ .Values.seaweedfs.master.port }}; do
+                echo "Waiting for SeaweedFS master";
+                sleep 2;
+              done;
+          {{- if .Values.seaweedfs.initContainer.resources }}
+          resources: {{- toYaml .Values.seaweedfs.initContainer.resources | nindent 12 }}
+          {{- end }}
+      containers:
+        - name: filer
+          image: {{ .Values.image.registry }}/{{ .Values.seaweedfs.filer.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) .Values.seaweedfs.filer.image.tag }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          env:
+            - name: POD_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+          command:
+            - weed
+            - filer
+            - -master={{ include "app.fullname" . }}-seaweedfs-master:{{ .Values.seaweedfs.master.port }}
+            - -ip=$(POD_IP)
+            - -ip.bind=0.0.0.0
+            - -port={{ .Values.seaweedfs.filer.port }}
+            - -port.grpc={{ .Values.seaweedfs.filer.grpcPort }}
+            - -s3
+            - -s3.port={{ .Values.seaweedfs.s3.port }}
+            - -s3.config=/etc/seaweedfs/s3.json
+            - -metricsPort={{ .Values.seaweedfs.filer.metricsPort }}
+          ports:
+            - name: filer
+              containerPort: {{ .Values.seaweedfs.filer.port }}
+              protocol: TCP
+            - name: grpc
+              containerPort: {{ .Values.seaweedfs.filer.grpcPort }}
+              protocol: TCP
+            - name: s3
+              containerPort: {{ .Values.seaweedfs.s3.port }}
+              protocol: TCP
+            - name: metrics
+              containerPort: {{ .Values.seaweedfs.filer.metricsPort }}
+              protocol: TCP
+          volumeMounts:
+            - name: filer-config
+              mountPath: /etc/seaweedfs/filer.toml
+              subPath: filer.toml
+            - name: filer-config
+              mountPath: /etc/seaweedfs/s3.json
+              subPath: s3.json
+          livenessProbe:
+            httpGet:
+              path: /
+              port: {{ .Values.seaweedfs.filer.port }}
+            initialDelaySeconds: 20
+            periodSeconds: 30
+            timeoutSeconds: 10
+            failureThreshold: 6
+          readinessProbe:
+            httpGet:
+              path: /
+              port: {{ .Values.seaweedfs.filer.port }}
+            initialDelaySeconds: 10
+            periodSeconds: 15
+            timeoutSeconds: 10
+            failureThreshold: 6
+          {{- if .Values.seaweedfs.filer.resources }}
+          resources: {{- toYaml .Values.seaweedfs.filer.resources | nindent 12 }}
+          {{- end }}
+      volumes:
+        - name: filer-config
+          configMap:
+            name: {{ include "app.fullname" . }}-seaweedfs-filer-config

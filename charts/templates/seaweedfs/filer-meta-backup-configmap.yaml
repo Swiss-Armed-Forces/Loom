@@ -1,0 +1,15 @@
+{{- if .Values.seaweedfs.filerMetaBackup.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "app.fullname" . }}-seaweedfs-filer-meta-backup-config
+  labels:
+    {{- include "app.labels.custom" (dict "context" . "component" "seaweedfs") | nindent 4 }}
+    app.kubernetes.io/component: seaweedfs-filer-meta-backup
+data:
+  filer.toml: |
+    # SQLite store for filer metadata backup
+    [sqlite]
+    enabled = true
+    dbFile = "/data/filer_backup.db"
+{{- end }}

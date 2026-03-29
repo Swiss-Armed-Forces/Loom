@@ -15,9 +15,10 @@ from common.dependencies import (
 )
 from common.dependencies import init as init_common_dependencies
 from common.elasticsearch import init_elasticsearch
-from crawler.dependencies import get_minio_client
+from crawler.dependencies import get_s3_client
 from crawler.dependencies import init as init_crawler_dependencies
-from crawler.settings import settings as crawler_settings
+from minio import Minio
+from minio.deleteobjects import DeleteObject
 from pymongo import MongoClient
 from worker.dependencies import init as init_worker_dependencies
 
@@ -39,7 +40,7 @@ def wipe_data():
     _wipe_mongo()
     _wipe_elasticsearch()
     _wipe_redis()
-    _wipe_minio_buckets()
+    _wipe_s3_buckets()
     _wipe_imap()
 
 
@@ -106,20 +107,40 @@ def _wipe_redis():
     get_redis_cache_client().flushall()
 
 
-def _wipe_minio_buckets():
-    logger.info("Wiping: MinIO")
-    client = get_minio_client()
-    buckets = client.list_buckets()
-    for bucket in buckets:
-        logger.info("Wiping bucket: %s", bucket.name)
-        objects = client.list_objects(bucket.name, include_version=True, recursive=True)
-        for bucket_object in objects:
-            if bucket_object.object_name:
-                client.remove_object(
-                    bucket.name, bucket_object.object_name, bucket_object.version_id
-                )
-        if bucket.name not in crawler_settings.minio_bucket_names:
-            client.remove_bucket(bucket.name)
+def _wipe_s3_buckets():
+    """Wipe all objects from S3 buckets without deleting the buckets themselves.
+
+    This approach is required for SeaweedFS compatibility:
+    - SeaweedFS does not properly clean up underlying collections when buckets are deleted
+    - Deleting buckets can cause orphaned collections and bucket recreation failures
+    - Keeping buckets but clearing objects is idempotent and reliable
+    """
+    logger.info("Wiping: S3")
+    client = get_s3_client()
+
+    # Clear all objects from all existing buckets
+    for bucket in client.list_buckets():
+        logger.info("Clearing bucket: %s", bucket.name)
+        _clear_bucket(client, bucket.name)
+
+
+def _clear_bucket(client: Minio, bucket_name: str):
+    """Delete all objects from a bucket using bulk delete.
+
+    Uses remove_objects() for efficient bulk deletion instead of individual
+    remove_object() calls.
+    """
+
+    # List all objects (including versions if versioning is enabled)
+    objects = client.list_objects(bucket_name, recursive=True)
+    delete_objects = (
+        DeleteObject(obj.object_name) for obj in objects if obj.object_name is not None
+    )
+
+    # Bulk delete - remove_objects returns an iterator of errors
+    errors = client.remove_objects(bucket_name, delete_objects)
+    for error in errors:
+        logger.error("Failed to delete object %s: %s", error.name, error.message)
 
 
 def _wipe_imap():

@@ -46,6 +46,11 @@ data:
     tika_ocr_languages: {{ .Values.pipeline.tika_ocr_languages | join "," | quote }}
     {{- end }}
 
+    # crawler
+    {{- if .Values.crawler.s3Buckets }}
+    s3_buckets: {{ .Values.crawler.s3Buckets | join "," | quote }}
+    {{- end }}
+
     # llm
     {{- if ne .Values.llm.model nil }}
     llm_model: {{ .Values.llm.model }}
@@ -115,11 +120,13 @@ data:
     api_host: http://{{ include "app.fullname" . }}-api:{{ .Values.api.service.port }}
     ws_host: ws://{{ include "app.fullname" . }}-api:{{ .Values.api.service.port }}
     imap_host: imap://{{ include "app.fullname" . }}-dovecot:{{ .Values.dovecot.service.port.imap }}
-    minio_host: {{ include "app.fullname" . }}-minio:{{ .Values.minio.service.port }}
+    s3_host: &s3-host {{ include "app.fullname" . }}-seaweedfs-filer:{{ .Values.seaweedfs.s3.port }}
     roundcube_host: http://{{ include "app.fullname" . }}-roundcube:{{ .Values.roundcube.service.port }}
     gotenberg_host: http://{{ include "app.fullname" . }}-gotenberg:{{ .Values.gotenberg.service.port }}
+    seaweedfs_master_host: http://{{ include "app.fullname" . }}-seaweedfs-master:{{ .Values.seaweedfs.master.port }}
 
-    file_storage__minio_host: {{ include "app.fullname" . }}-minio:{{ .Values.minio.service.port }}
+    file_storage__s3_host: *s3-host
+    file_storage__bucket_name: {{ include "app.fullname" . }}-filestorage
 
     # flower
     FLOWER_BROKER_API: http://guest:guest@{{ include "app.fullname" . }}-rabbit:{{ .Values.rabbit.service.port.http }}/api/

@@ -4,6 +4,7 @@
 export * from "./AiApi";
 export * from "./AitoolsApi";
 export * from "./ArchivesApi";
+export * from "./BeatApi";
 export * from "./CachingApi";
 export * from "./FilesApi";
 export * from "./ImapApi";

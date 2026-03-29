@@ -1,0 +1,2 @@
+{{- $component := base (dir $.Template.Name) -}}
+{{- include "app.redis.configMap" (dict "Values" .Values "Chart" .Chart "Release" .Release "Files" .Files "component" $component "maxmemoryPolicy" "noeviction" "stopWritesOnBgsaveError" "yes" "aofLoadTruncated" "no") -}}

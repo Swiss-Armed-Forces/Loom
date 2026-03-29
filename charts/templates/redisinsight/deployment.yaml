@@ -34,6 +34,12 @@ spec:
               value: "{{ index .Values "redis-cache" "service" "port" }}"
             - name: RI_REDIS_ALIAS_1
               value: "redis-cache (function cache)"
+            - name: RI_REDIS_HOST_2
+              value: "{{ include "app.fullname" . }}-redis-filer"
+            - name: RI_REDIS_PORT_2
+              value: "{{ index .Values "redis-filer" "service" "port" }}"
+            - name: RI_REDIS_ALIAS_2
+              value: "redis-filer (seaweedfs filer metadata)"
           ports:
             - name: redisinsight
               containerPort: {{ .Values.redisinsight.service.port }}

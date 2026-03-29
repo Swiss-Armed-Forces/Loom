@@ -1,0 +1,82 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "app.fullname" . }}-seaweedfs-master
+  labels:
+    {{- include "app.labels.custom" (dict "context" . "component" "seaweedfs") | nindent 4 }}
+    app.kubernetes.io/component: seaweedfs-master
+spec:
+  serviceName: {{ include "app.fullname" . }}-seaweedfs-master-headless
+  replicas: {{ .Values.seaweedfs.master.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ include "app.name" . }}-seaweedfs-master
+  template:
+    metadata:
+      labels:
+        app: {{ include "app.name" . }}-seaweedfs-master
+        {{- include "app.labels.custom" (dict "context" . "component" "seaweedfs") | nindent 8 }}
+    spec:
+      securityContext:
+        runAsUser: 1000
+        fsGroup: 1000
+      containers:
+        - name: master
+          image: {{ .Values.image.registry }}/{{ .Values.seaweedfs.master.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) .Values.seaweedfs.master.image.tag }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          env:
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+          command:
+            - weed
+            - master
+            - -ip=$(POD_NAME).{{ include "app.fullname" . }}-seaweedfs-master-headless
+            - -ip.bind=0.0.0.0
+            - -port={{ .Values.seaweedfs.master.port }}
+            - -mdir=/data
+            - -defaultReplication={{ .Values.seaweedfs.master.defaultReplication }}
+            - -volumeSizeLimitMB={{ .Values.seaweedfs.master.volumeSizeLimitMB }}
+            - -metricsPort={{ .Values.seaweedfs.master.metricsPort }}
+          ports:
+            - name: master
+              containerPort: {{ .Values.seaweedfs.master.port }}
+              protocol: TCP
+            - name: grpc
+              containerPort: {{ .Values.seaweedfs.master.grpcPort }}
+              protocol: TCP
+            - name: metrics
+              containerPort: {{ .Values.seaweedfs.master.metricsPort }}
+              protocol: TCP
+          volumeMounts:
+            - name: data
+              mountPath: /data
+          livenessProbe:
+            httpGet:
+              path: /cluster/status
+              port: {{ .Values.seaweedfs.master.port }}
+            initialDelaySeconds: 20
+            periodSeconds: 30
+            timeoutSeconds: 10
+            failureThreshold: 6
+          readinessProbe:
+            httpGet:
+              path: /cluster/status
+              port: {{ .Values.seaweedfs.master.port }}
+            initialDelaySeconds: 10
+            periodSeconds: 15
+            timeoutSeconds: 10
+            failureThreshold: 6
+          {{- if .Values.seaweedfs.master.resources }}
+          resources: {{- toYaml .Values.seaweedfs.master.resources | nindent 12 }}
+          {{- end }}
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: {{ .Values.seaweedfs.master.pvc.storage }}

@@ -446,7 +446,7 @@ proc-title-template "{title} {listen-addr} {server-mode}"
 # and persistence, you may want to disable this feature so that Redis will
 # continue to work as usual even if there are problems with disk,
 # permissions, and so forth.
-stop-writes-on-bgsave-error no
+stop-writes-on-bgsave-error {{ .stopWritesOnBgsaveError }}
 
 # Compress string objects using LZF when dump .rdb databases?
 # By default compression is enabled as it's almost always a win.
@@ -1147,7 +1147,7 @@ maxmemory {{ .memoryLimitBytes }}
 # The default is:
 #
 # maxmemory-policy volatile-lru
-maxmemory-policy volatile-ttl
+maxmemory-policy {{ .maxmemoryPolicy }}
 
 # LRU, LFU and minimal TTL algorithms are not precise algorithms but approximated
 # algorithms (in order to save memory), so you can tune it for speed or
@@ -1503,7 +1503,7 @@ auto-aof-rewrite-min-size 64mb
 # the server will still exit with an error. This option only applies when
 # Redis will try to read more data from the AOF file but not enough bytes
 # will be found.
-aof-load-truncated yes
+aof-load-truncated {{ .aofLoadTruncated }}
 
 # Redis can create append-only base files in either RDB or AOF formats. Using
 # the RDB format is always faster and more efficient, and disabling it is only

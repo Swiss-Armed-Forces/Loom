@@ -2,6 +2,7 @@
 apis/AiApi.ts
 apis/AitoolsApi.ts
 apis/ArchivesApi.ts
+apis/BeatApi.ts
 apis/CachingApi.ts
 apis/FilesApi.ts
 apis/ImapApi.ts

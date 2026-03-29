@@ -13,6 +13,7 @@ from api.routers import (
     ai,
     aitools,
     archives,
+    beat,
     caching,
     docs,
     files,
@@ -78,6 +79,7 @@ def init_api(collect_metrics=True) -> FastAPI:
     api.include_router(aitools.router, prefix="/v1/aitools", tags=["aitools"])
     api.include_router(files.router, prefix="/v1/files", tags=["files"])
     api.include_router(imap.router, prefix="/v1/imap", tags=["imap"])
+    api.include_router(beat.router, prefix="/v1/beat", tags=["beat"])
 
     def custom_openapi() -> dict[str, Any]:
         if api.openapi_schema:

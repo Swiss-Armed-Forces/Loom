@@ -16,3 +16,8 @@ elasticsearch:
         allocation:
           disk:
             threshold_enabled: true
+seaweedfs:
+  master:
+    defaultReplication: "010"
+  volume:
+    replicaCount: 3

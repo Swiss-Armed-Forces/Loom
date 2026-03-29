@@ -26,11 +26,11 @@ DOMAIN: str = str(os.getenv("DOMAIN", "loom"))
 
 class FileStorageSettings(BaseModel):
     # MinIO for file repository service
-    minio_bucket_name: str = "loomstorage"
-    minio_host: str = f"minio-api.{DOMAIN}"
-    minio_secret_key: str = "minioadmin"
-    minio_access_key: str = "minioadmin"
-    minio_secure_connection: bool = False
+    bucket_name: str = "loom-filestorage"
+    s3_host: str = f"s3.{DOMAIN}"
+    s3_secret_key: str | None = None
+    s3_access_key: str | None = None
+    s3_secure_connection: bool = False
 
 
 class Settings(BaseSettings):
@@ -49,6 +49,9 @@ class Settings(BaseSettings):
 
     worker_type: Literal["WORKER", "REAPER", "FLOWER", "BEAT", "INSPECT"] = "INSPECT"
     worker_max_concurrency: int = 4
+    # Threshold for considering queues "idle" in periodic tasks.
+    # Set > 0 because the periodic task itself is counted in the queue.
+    periodic_consider_queue_idle_threshold: int = 5
 
     mongo_db_host: MongoDsn = MongoDsn(f"mongodb://mongodb.{DOMAIN}")
     mongo_db_file_storage_name: str = "files"
@@ -99,6 +102,11 @@ class Settings(BaseSettings):
     )
 
     roundcube_host: AnyHttpUrl = AnyHttpUrl(f"http://roundcube.{DOMAIN}")
+
+    # SeaweedFS Configuration
+    seaweedfs_master_host: AnyHttpUrl = AnyHttpUrl(
+        f"http://seaweedfs-master.{DOMAIN}:9333"
+    )
 
     random_source: bytes | None = None
 
