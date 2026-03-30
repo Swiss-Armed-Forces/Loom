@@ -62,21 +62,9 @@ readarray -t -d '' DOCKER_SOURCES < <(xargs --no-run-if-empty printf '%s\0' <<<"
 if [[ "${#DOCKER_SOURCES[@]}" -ne 0 ]]; then
     hadolint \
         "${DOCKER_SOURCES[@]}"
-fi
-# Check RUN commands for proper set flags
-exit_code=0
-for dockerfile in "${DOCKER_SOURCES[@]}"; do
-    # Find RUN commands that don't start with set -exuo pipefail or set -exu
-    if grep -n '^RUN ' "${dockerfile}" | grep -v -E '^[0-9]+:RUN (set -exuo? pipefail|set -exu)' | grep -q .; then
-        >&2 echo "ERROR: Found RUN commands in ${dockerfile} that don't start with 'set -exuo pipefail' or 'set -exu':"
-        grep -n '^RUN ' "${dockerfile}" | grep -v -E '^[0-9]+:RUN (set -exuo? pipefail|set -exu)'
-        exit_code=1
-    fi
-done
 
-# Exit with error code if any files failed
-if [[ ${exit_code} -ne 0 ]]; then
-    exit 1
+    # Check RUN commands for proper set flags
+    "${SCRIPT_DIR}/check_dockerfile_run_flags.sh" "${DOCKER_SOURCES[@]}"
 fi
 
 # Helm lint
