@@ -477,6 +477,12 @@ in
 
     hadolint.enable = true;
 
+    "check-dockerfile-run-flags" = {
+      enable = true;
+      entry = "${config.devenv.root}/cicd/check_dockerfile_run_flags.sh";
+      types = [ "dockerfile" ];
+    };
+
     markdownlint = {
       enable = true;
       settings.configuration = {
