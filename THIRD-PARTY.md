@@ -684,7 +684,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | ace-builds                          | BSD-3-Clause | 1.43.6            |
 | ajv                                 | MIT          | 8.18.0            |
 | date-fns                            | MIT          | 4.1.0             |
-| i18next                             | MIT          | 25.10.9           |
+| i18next                             | MIT          | 25.10.10          |
 | i18next-http-backend                | MIT          | 3.0.2             |
 | react                               | MIT          | 19.2.4            |
 | react-ace                           | MIT          | 14.0.1            |
@@ -694,7 +694,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | react-intersection-observer         | MIT          | 9.16.0            |
 | react-pdf                           | MIT          | 10.4.1            |
 | react-redux                         | MIT          | 9.2.0             |
-| react-router-dom                    | MIT          | 7.13.1            |
+| react-router-dom                    | MIT          | 7.13.2            |
 | react-toastify                      | MIT          | 11.0.5            |
 | uuid                                | MIT          | 12.0.0            |
 | @eslint/js                          | MIT          | 9.39.4            |
@@ -705,8 +705,8 @@ The complete source code for Traefik is publicly available at [https://github.co
 | @types/node                         | MIT          | 24.12.0           |
 | @types/react                        | MIT          | 19.2.14           |
 | @types/react-dom                    | MIT          | 19.2.3            |
-| @typescript-eslint/eslint-plugin    | MIT          | 8.57.0            |
-| @typescript-eslint/parser           | MIT          | 8.57.0            |
+| @typescript-eslint/eslint-plugin    | MIT          | 8.57.2            |
+| @typescript-eslint/parser           | MIT          | 8.57.2            |
 | @vitejs/plugin-react                | MIT          | 5.2.0             |
 | eslint                              | MIT          | 9.39.4            |
 | eslint-config-prettier              | MIT          | 10.1.8            |
@@ -720,11 +720,11 @@ The complete source code for Traefik is publicly available at [https://github.co
 | license-report                      | MIT          | 6.8.2             |
 | prettier                            | MIT          | 3.8.1             |
 | typescript                          | Apache-2.0   | 5.9.3             |
-| typescript-eslint                   | MIT          | 8.57.0            |
+| typescript-eslint                   | MIT          | 8.57.2            |
 | vite                                | MIT          | 7.3.1             |
 | vite-plugin-static-copy             | MIT          | 3.4.0             |
 | vite-plugin-svgr                    | MIT          | 4.5.0             |
-| vitest                              | MIT          | 4.1.0             |
+| vitest                              | MIT          | 4.1.2             |
 
 
 ## Container
