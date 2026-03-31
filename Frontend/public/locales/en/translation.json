@@ -17,7 +17,8 @@
         "cancel": "Cancel"
     },
     "error": {
-        "searchResultLoadingError": "Cannot load search results. {{- error}}"
+        "searchResultLoadingError": "Cannot load search results. {{- error}}",
+        "webSocketClosed": "The WebSocket lost connection. Please reload the page."
     },
     "globalSearchBox": {
         "searchPlaceholder": "Search and press enter",
