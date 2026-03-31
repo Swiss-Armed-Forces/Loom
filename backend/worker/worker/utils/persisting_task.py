@@ -3,10 +3,12 @@ from typing import Any, Callable, Concatenate, ParamSpec, Type
 from celery import Celery
 from common.celery_app import BaseTask
 from common.models.base_repository import BaseRepository
+from common.settings import settings
 from common.task_object.task_object import (
     RepositoryTaskObjectT,
     SecondaryRepositoryTaskObjectT,
 )
+from common.utils.sharding import compute_shard, get_persister_shard_queue_name
 
 from worker.utils.persister_base import PersisterBase, PersistingException
 from worker.utils.processing_task import ProcessingTask
@@ -76,6 +78,16 @@ def persisting_task(
                 if get_task_object_repository is None:
                     return persister_type.get_repository()
                 return get_task_object_repository()
+
+            def apply_async(  # type: ignore[override]  # pylint: disable=arguments-differ
+                self, args=None, kwargs=None, **options
+            ):
+                """Route to persister shard queue based on entity ID."""
+                # Last argument is always the entity object
+                obj: RepositoryTaskObjectT = args[-1]
+                shard = compute_shard(obj.id_, settings.num_persister_shards)
+                options["queue"] = get_persister_shard_queue_name(shard)
+                return super().apply_async(args, kwargs, **options)
 
             @persisting_cache_decorator(persist_fcn)
             def run(self, *args, **kwargs) -> Any:

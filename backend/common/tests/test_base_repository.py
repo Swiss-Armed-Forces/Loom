@@ -2,11 +2,12 @@ from uuid import UUID, uuid4
 
 from pydantic import Field
 
-from common.models.base_repository import BaseRepository, RepositoryObject
+from common.models.base_repository import BaseRepository, IncEx, RepositoryObject
 
 
 class _TestRepositoryObject(RepositoryObject):
     id_field: UUID = Field(default_factory=uuid4)
+    name: str = ""
 
     @property
     def id_(self) -> UUID:
@@ -14,11 +15,19 @@ class _TestRepositoryObject(RepositoryObject):
 
 
 class _TestRepository(BaseRepository[_TestRepositoryObject]):
-    _repo: dict[UUID, _TestRepositoryObject] = {}
+    def __init__(self):
+        super().__init__()
+        self._repo: dict[UUID, _TestRepositoryObject] = {}
 
     @property
     def _object_type(self) -> type[_TestRepositoryObject]:
         return _TestRepositoryObject
+
+    def is_fresh(self, obj: _TestRepositoryObject) -> bool:
+        if obj.id_ not in self._repo:
+            return False
+        stored = self._repo[obj.id_]
+        return stored.model_dump() == obj.model_dump()
 
     def save(self, obj: _TestRepositoryObject):
         self._repo[obj.id_] = obj
@@ -27,7 +36,16 @@ class _TestRepository(BaseRepository[_TestRepositoryObject]):
         return self._repo[id_]
 
     def get_all(self) -> list[_TestRepositoryObject]:
-        return self._repo.values()
+        return list(self._repo.values())
+
+    def update(
+        self,
+        obj: _TestRepositoryObject,
+        include: IncEx = None,
+        exclude: IncEx = None,
+    ):
+        del include, exclude  # unused in test implementation
+        self._repo[obj.id_] = obj
 
 
 def test_base_repo_save_and_get():
@@ -35,4 +53,45 @@ def test_base_repo_save_and_get():
     obj = _TestRepositoryObject()
     repo.save(obj)
     assert obj == repo.get_by_id(obj.id_)
-    assert obj in repo.get_all()
+
+
+def test_base_repo_get_all():
+    repo = _TestRepository()
+    obj1 = _TestRepositoryObject(name="first")
+    obj2 = _TestRepositoryObject(name="second")
+    repo.save(obj1)
+    repo.save(obj2)
+
+    all_objects = repo.get_all()
+
+    assert isinstance(all_objects, list)
+    assert len(all_objects) == 2
+    assert obj1 in all_objects
+    assert obj2 in all_objects
+
+
+def test_base_repo_update():
+    repo = _TestRepository()
+    obj = _TestRepositoryObject(name="original")
+    repo.save(obj)
+
+    obj.name = "updated"
+    repo.update(obj)
+
+    retrieved = repo.get_by_id(obj.id_)
+    assert retrieved.name == "updated"
+
+
+def test_base_repo_is_fresh():
+    repo = _TestRepository()
+    obj = _TestRepositoryObject(name="test")
+    repo.save(obj)
+    assert repo.is_fresh(obj) is True
+
+    # Create a cached copy, then modify the stored object
+    cached = obj.model_copy(deep=True)
+    obj.name = "modified"
+    repo.save(obj)  # Update the store with modified version
+
+    # The cached copy is no longer fresh
+    assert repo.is_fresh(cached) is False

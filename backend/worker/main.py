@@ -8,6 +8,10 @@ from common.celery_app import CELERY_DEAD_QUEUE_NAME, CELERY_GRAVEYARD_QUEUE_NAM
 from common.dependencies import get_celery_app
 from common.dependencies import init as init_common_dependencies
 from common.settings import settings
+from common.utils.sharding import (
+    get_all_persister_shard_queues,
+    get_persister_shard_queues_for_worker,
+)
 
 from worker.dependencies import init
 
@@ -20,11 +24,18 @@ init()
 app = get_celery_app()
 
 argv = sys.argv[1:]
+persister_shard_queues = get_all_persister_shard_queues(settings.num_persister_shards)
 match settings.worker_type:
     case "WORKER":
+        # Exclude graveyard, dead, and persister shard queues from normal workers
+        exclude_queues = [
+            CELERY_GRAVEYARD_QUEUE_NAME,
+            CELERY_DEAD_QUEUE_NAME,
+            *persister_shard_queues,
+        ]
         argv = argv + [
             "--exclude-queues",
-            f"{CELERY_GRAVEYARD_QUEUE_NAME},{CELERY_DEAD_QUEUE_NAME}",
+            ",".join(exclude_queues),
             "--autoscale",
             f"{settings.worker_max_concurrency},0",
         ]
@@ -33,7 +44,20 @@ match settings.worker_type:
             "--queues",
             f"{CELERY_GRAVEYARD_QUEUE_NAME},{CELERY_DEAD_QUEUE_NAME}",
             "--autoscale",
-            f"{settings.worker_max_concurrency},0",
+            "1,0",
+        ]
+    case "PERSISTER":
+        # Persister workers only consume their assigned shard queues
+        my_queues = get_persister_shard_queues_for_worker(
+            settings.persister_id,
+            settings.persister_total,
+            settings.num_persister_shards,
+        )
+        argv = argv + [
+            "--queues",
+            ",".join(my_queues),
+            "--autoscale",
+            "1,0",
         ]
     case "FLOWER":
         argv = argv + [

@@ -6,7 +6,7 @@ from pydantic import Field
 from pydantic_mongo import AbstractRepository, ObjectIdField
 from pymongo.database import Database
 
-from common.models.base_repository import BaseRepository, RepositoryObject
+from common.models.base_repository import BaseRepository, IncEx, RepositoryObject
 
 logger = logging.getLogger(__name__)
 
@@ -59,6 +59,9 @@ class BaseMongoRepository(
         super().__init_subclass__(**kwargs)
         MONGO_REPOSITORY_TYPES.append(cls)
 
+    def is_fresh(self, obj: MongoRepositoryObjectT) -> bool:
+        raise NotImplementedError("is_fresh is not yet implemented")
+
     def save(self, obj: MongoRepositoryObjectT):
         self._repo.save(obj)
 
@@ -67,6 +70,23 @@ class BaseMongoRepository(
 
     def get_all(self) -> list[MongoRepositoryObjectT]:
         return list(self._repo.find_by({"_id": "$all"}))
+
+    def update(
+        self,
+        obj: MongoRepositoryObjectT,
+        include: IncEx = None,
+        exclude: IncEx = None,
+    ):
+        """Partial update using MongoDB $set operator."""
+        update_dict = obj.model_dump(
+            include=include,
+            exclude=exclude,
+        )
+        # Remove id from update payload (can't update _id)
+        update_dict.pop("id", None)
+
+        collection = self._repo.get_collection()
+        collection.update_one({"_id": obj.id}, {"$set": update_dict})
 
 
 # A list of all known repositories

@@ -20,6 +20,7 @@ from common.utils.cgroup_memory_limit import (
     get_cgroup_memory_limit,
 )
 from common.utils.oom_score_adjust import adjust_oom_score
+from common.utils.sharding import get_all_persister_shard_queues
 
 logger = logging.getLogger(__name__)
 
@@ -240,7 +241,7 @@ def _get_dead_queue(queue_name: str) -> Queue:
     )
 
 
-def init_celery_app() -> "Celery[BaseTask]":
+def init_celery_app() -> "Celery[BaseTask]":  # pylint: disable=too-many-statements
     """Initialize a minimal Celery app."""
     app = Celery(
         "loom",
@@ -356,6 +357,10 @@ def init_celery_app() -> "Celery[BaseTask]":
     app.conf.task_queues.append(_get_graveyard_queue(CELERY_GRAVEYARD_QUEUE_NAME))
     app.conf.task_queues.append(_get_dead_queue(CELERY_DEAD_QUEUE_NAME))
 
+    # Define persister shard queues for serialized persistence per entity
+    for queue_name in get_all_persister_shard_queues(settings.num_persister_shards):
+        app.conf.task_queues.append(_get_queue(queue_name))
+
     # Worker type specific configuration
     match settings.worker_type:
         case "REAPER":
@@ -364,6 +369,12 @@ def init_celery_app() -> "Celery[BaseTask]":
             # and we have to process them one-by-one.
             app.conf.worker_concurrency = 1
             app.conf.worker_prefetch_multiplier = 1
+        case "PERSISTER":
+            # Persister workers run with concurrency=1 to ensure sequential
+            # processing per shard, avoiding optimistic concurrency control
+            # conflicts. However, we can safely prefetch many tasks.
+            app.conf.worker_concurrency = 1
+            app.conf.worker_prefetch_multiplier = 16
         case _:
             pass
 

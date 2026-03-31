@@ -171,7 +171,7 @@ worker: &worker
     enabled: true
   resources:
     requests:
-      cpu: "0.3"
+      cpu: "0.2"
       memory: "500Mi"
     limits:
       cpu: "1.5"
@@ -183,6 +183,29 @@ worker: &worker
   # workload-type: async
 
 reaper: *worker
+
+persister:
+  # Number of persister replicas - each gets a unique shard assignment.
+  replicaCount: 1
+  image:
+    repository: swiss-armed-forces/cyber-command/cea/loom/worker
+  service:
+    port: 80
+  readinessProbe:
+    enabled: true
+  livenessProbe:
+    enabled: true
+  resources:
+    requests:
+      cpu: "0.05"
+      memory: "200Mi"
+    limits:
+      cpu: "1"
+      memory: "2Gi"
+  sharding:
+    # Total number of shards
+    numShards: null
+  customLabels: {}
 
 beat:
   replicaCount: 1

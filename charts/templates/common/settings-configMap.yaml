@@ -46,6 +46,12 @@ data:
     tika_ocr_languages: {{ .Values.pipeline.tika_ocr_languages | join "," | quote }}
     {{- end }}
 
+    # persister sharding
+    {{- if ne .Values.persister.sharding.numShards nil }}
+    num_persister_shards: {{ .Values.persister.sharding.numShards | quote }}
+    {{- end }}
+    persister_total: {{ .Values.persister.replicaCount | quote }}
+
     # crawler
     {{- if .Values.crawler.s3Buckets }}
     s3_buckets: {{ .Values.crawler.s3Buckets | join "," | quote }}

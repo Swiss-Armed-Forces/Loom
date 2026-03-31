@@ -1,6 +1,7 @@
 import logging
 import os
 from pathlib import Path
+from socket import gethostname
 from typing import Literal
 
 from pydantic import (
@@ -19,6 +20,19 @@ from common.environment import get_loglevel, is_development_env
 from common.services.encryption_service import AESMasterKey
 
 logger = logging.getLogger(__name__)
+
+
+def _get_persister_id_from_hostname() -> int:
+    """Extract persister ID from StatefulSet pod hostname.
+
+    StatefulSet pods have hostnames like 'loom-persister-0', 'loom-persister-1', etc.
+    Extract the ordinal suffix as the persister ID.
+    """
+    hostname = os.environ.get("HOSTNAME", gethostname())
+    try:
+        return int(hostname.rsplit("-", 1)[-1])
+    except (ValueError, IndexError):
+        return 0  # Default for non-StatefulSet environments
 
 
 DOMAIN: str = str(os.getenv("DOMAIN", "loom"))
@@ -46,8 +60,19 @@ class Settings(BaseSettings):
     translate_target: str = "en"
     tempfile_dir: Path = Path.home() / ".loomcache"
 
-    worker_type: Literal["WORKER", "REAPER", "FLOWER", "BEAT", "INSPECT"] = "INSPECT"
+    worker_type: Literal[
+        "WORKER",
+        "REAPER",
+        "FLOWER",
+        "BEAT",
+        "PERSISTER",
+        "INSPECT",
+    ] = "INSPECT"
     worker_max_concurrency: int = 4
+    num_persister_shards: int = 16
+    persister_total: int = 1  # Total number of PERSISTER workers
+    persister_id: int = Field(default_factory=_get_persister_id_from_hostname)
+
     # Threshold for considering queues "idle" in periodic tasks.
     # Set > 0 because the periodic task itself is counted in the queue.
     periodic_consider_queue_idle_threshold: int = 5
@@ -125,6 +150,24 @@ class Settings(BaseSettings):
     def adjust_lazy_threshold_for_reaper(self) -> "Settings":
         if self.worker_type == "REAPER":
             self.lazy_threshold_bytes = 0
+        return self
+
+    @model_validator(mode="after")
+    def validate_persister_total(self) -> "Settings":
+        if self.persister_total > self.num_persister_shards:
+            raise ValueError(
+                f"persister_total ({self.persister_total}) cannot exceed "
+                f"num_persister_shards ({self.num_persister_shards})"
+            )
+        return self
+
+    @model_validator(mode="after")
+    def validate_persister_id(self) -> "Settings":
+        if self.persister_id >= self.persister_total:
+            raise ValueError(
+                f"persister_id ({self.persister_id}) must be less than "
+                f"persister_total ({self.persister_total})"
+            )
         return self
 
     api_host: AnyHttpUrl = AnyHttpUrl(f"http://api.{DOMAIN}")
