@@ -1,0 +1,69 @@
+# -----------------------------------------------------------------------------
+# RFC 822 Email Detection Rules
+#
+# This magic file fragment identifies files containing RFC 822–style email
+# messages by searching for common mail header fields within the first 4096
+# bytes of the file.
+#
+# The rules use case-insensitive regular expressions to match typical email
+# headers such as:
+#   - From:
+#   - Sender:
+#   - Date:
+#   - Message-ID:
+#   - Subject:
+#   - To:
+#   - X-From, X-To, X-Origin (extended headers)
+#   - Delivered-To:
+#   - Received:
+#   - Return-Path:
+#
+# Each rule looks for a newline followed by optional whitespace and a header
+# name ending with a colon, which is characteristic of RFC 822 message format.
+#
+# When a match is found, the file is classified as:
+#   "RFC 822 mail"
+#
+# and assigned the MIME type:
+#   message/rfc822
+#
+# Notes:
+# - The search is limited to the first 4096 bytes for efficiency.
+# - Matching multiple headers increases confidence that the file is an email.
+# -----------------------------------------------------------------------------
+
+0   regex/4096/c   \n[[:space:]]*from[[:space:]]*:          RFC 822 mail
+!:mime message/rfc822
+
+0   regex/4096/c   \n[[:space:]]*sender[[:space:]]*:        RFC 822 mail
+!:mime message/rfc822
+
+0   regex/4096/c   \n[[:space:]]*date[[:space:]]*:          RFC 822 mail
+!:mime message/rfc822
+
+0   regex/4096/c   \n[[:space:]]*message-id[[:space:]]*:    RFC 822 mail
+!:mime message/rfc822
+
+0   regex/4096/c   \n[[:space:]]*subject[[:space:]]*:       RFC 822 mail
+!:mime message/rfc822
+
+0   regex/4096/c   \n[[:space:]]*to[[:space:]]*:            RFC 822 mail
+!:mime message/rfc822
+
+0   regex/4096/c   \n[[:space:]]*x-from[[:space:]]*:        RFC 822 mail
+!:mime message/rfc822
+
+0   regex/4096/c   \n[[:space:]]*x-to[[:space:]]*:          RFC 822 mail
+!:mime message/rfc822
+
+0   regex/4096/c   \n[[:space:]]*x-origin[[:space:]]*:      RFC 822 mail
+!:mime message/rfc822
+
+0   regex/4096/c   \n[[:space:]]*delivered-to[[:space:]]*:  RFC 822 mail
+!:mime message/rfc822
+
+0   regex/4096/c   \n[[:space:]]*received[[:space:]]*:      RFC 822 mail
+!:mime message/rfc822
+
+0   regex/4096/c   \n[[:space:]]*return-path[[:space:]]*:   RFC 822 mail
+!:mime message/rfc822

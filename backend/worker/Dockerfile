@@ -98,10 +98,15 @@ RUN set -exu \
     && echo $TZ > /etc/timezone
 
 COPY ./worker/imagemagic-policy.xml /etc/ImageMagick-6/policy.xml
+WORKDIR /usr/share/misc/magic
+COPY ./worker/magic/email.magic /usr/share/misc/magic/email.magic
+RUN set -exu \
+    && file -C -m /usr/share/misc/magic/email.magic
 
 ENV BUILDER_VIRTUAL_ENV=/code/worker/.venv \
     VIRTUAL_ENV=/code/.venv \
-    PATH="/code/.venv/bin:$PATH"
+    PATH="/code/.venv/bin:$PATH" \
+    MAGIC="/usr/share/misc/magic.mgc:/usr/share/misc/magic/email.magic.mgc"
 
 COPY common/ /code/common
 COPY worker/ /code/worker

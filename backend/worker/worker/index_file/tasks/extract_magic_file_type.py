@@ -1,12 +1,12 @@
 import logging
 
-import magic
 from celery import chain
 from celery.canvas import Signature
 from common.dependencies import get_celery_app, get_lazybytes_service
 from common.file.file_repository import File
 from common.services.lazybytes_service import LazyBytes
 
+import magic
 from worker.index_file.infra.file_indexing_task import FileIndexingTask
 from worker.index_file.infra.indexing_persister import IndexingPersister
 from worker.utils.persisting_task import persisting_task
