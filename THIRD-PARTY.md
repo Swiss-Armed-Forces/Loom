@@ -685,7 +685,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | ajv                                 | MIT          | 8.18.0            |
 | date-fns                            | MIT          | 4.1.0             |
 | i18next                             | MIT          | 25.10.10          |
-| i18next-http-backend                | MIT          | 3.0.2             |
+| i18next-http-backend                | MIT          | 3.0.4             |
 | react                               | MIT          | 19.2.4            |
 | react-ace                           | MIT          | 14.0.1            |
 | react-dom                           | MIT          | 19.2.4            |
@@ -705,8 +705,8 @@ The complete source code for Traefik is publicly available at [https://github.co
 | @types/node                         | MIT          | 24.12.0           |
 | @types/react                        | MIT          | 19.2.14           |
 | @types/react-dom                    | MIT          | 19.2.3            |
-| @typescript-eslint/eslint-plugin    | MIT          | 8.57.2            |
-| @typescript-eslint/parser           | MIT          | 8.57.2            |
+| @typescript-eslint/eslint-plugin    | MIT          | 8.58.0            |
+| @typescript-eslint/parser           | MIT          | 8.58.0            |
 | @vitejs/plugin-react                | MIT          | 5.2.0             |
 | eslint                              | MIT          | 9.39.4            |
 | eslint-config-prettier              | MIT          | 10.1.8            |
@@ -715,12 +715,12 @@ The complete source code for Traefik is publicly available at [https://github.co
 | eslint-plugin-react-hooks           | MIT          | 7.0.1             |
 | eslint-plugin-react-refresh         | MIT          | 0.5.2             |
 | eslint-plugin-unused-imports        | MIT          | 4.4.1             |
-| globals                             | MIT          | 16.5.0            |
+| globals                             | MIT          | 17.4.0            |
 | jsdom                               | MIT          | 26.1.0            |
 | license-report                      | MIT          | 6.8.2             |
 | prettier                            | MIT          | 3.8.1             |
 | typescript                          | Apache-2.0   | 5.9.3             |
-| typescript-eslint                   | MIT          | 8.57.2            |
+| typescript-eslint                   | MIT          | 8.58.0            |
 | vite                                | MIT          | 7.3.1             |
 | vite-plugin-static-copy             | MIT          | 3.4.0             |
 | vite-plugin-svgr                    | MIT          | 4.5.0             |
