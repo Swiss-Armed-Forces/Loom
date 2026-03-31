@@ -3,7 +3,7 @@ from functools import wraps
 from hashlib import sha256
 from pickle import dumps, loads
 from time import time
-from typing import Callable
+from typing import Any, Callable, Generic, TypeVar
 
 from pydantic import BaseModel, Field, RootModel, computed_field
 from redis import StrictRedis
@@ -11,6 +11,8 @@ from redis import StrictRedis
 from common.dependencies import get_redis_cache_client
 
 logger = logging.getLogger(__name__)
+
+T = TypeVar("T")
 
 
 CACHE_KEY_PREFIX = "rc"
@@ -148,6 +150,82 @@ def _get_key(
     return CACHE_KEY_FORMAT.format(namespace=namespace, key=identifier)
 
 
+class CacheResult(BaseModel, Generic[T]):
+    """Result of a cache lookup."""
+
+    hit: bool
+    value: T | None = None
+
+
+def cache_get(
+    namespace: str,
+    key_function: Callable | None,
+    *args,
+    **kwargs,
+) -> CacheResult[Any]:
+    """Get a value from the cache.
+
+    Returns:
+        CacheResult with hit=True and value if found, hit=False otherwise.
+    """
+    key = _get_key(key_function, namespace, args, kwargs)
+    vals_key = f"{_full_prefix(namespace)}:vals"
+    keys_key = f"{_full_prefix(namespace)}:keys"
+    stats_hit_key = f"{_full_prefix(namespace)}:hits"
+    stats_miss_key = f"{_full_prefix(namespace)}:miss"
+
+    redis_client = get_redis_cache_client()
+    result = redis_client.hget(vals_key, key)
+
+    if result is not None:
+        redis_client.incr(stats_hit_key)
+        redis_client.zadd(keys_key, {key: time()})
+        return CacheResult(hit=True, value=loads(result))
+
+    redis_client.incr(stats_miss_key)
+    return CacheResult(hit=False)
+
+
+def cache_set(
+    namespace: str,
+    key_function: Callable | None,
+    value: Any,
+    *args,
+    max_size: int = CACHE_DEFAULT_MAX_SIZE,
+    ttl_seconds: int = CACHE_DEFAULT_TTL_SECONDS,
+    **kwargs,
+) -> None:
+    """Set a value in the cache."""
+    key = _get_key(key_function, namespace, args, kwargs)
+    vals_key = f"{_full_prefix(namespace)}:vals"
+    keys_key = f"{_full_prefix(namespace)}:keys"
+    settings_key = f"{_full_prefix(namespace)}:settings"
+
+    redis_client = get_redis_cache_client()
+    redis_client.hset(vals_key, key, dumps(value))
+    redis_client.zadd(keys_key, {key: time()})
+    redis_client.hset(settings_key, "max_size", max_size)
+    redis_client.hexpire(vals_key, ttl_seconds, key)  # type: ignore[attr-defined]
+    redis_client.expire(vals_key, ttl_seconds)
+
+
+def invalidate(namespace: str, key_function: Callable | None, *args, **kwargs) -> bool:
+    """Invalidate (delete) a specific cache entry.
+
+    Returns:
+        True if the entry was deleted, False if it didn't exist.
+    """
+    key = _get_key(key_function, namespace, args, kwargs)
+    keys_key = f"{_full_prefix(namespace)}:keys"
+    vals_key = f"{_full_prefix(namespace)}:vals"
+
+    redis_client = get_redis_cache_client()
+    deleted = redis_client.hdel(vals_key, key)
+    redis_client.zrem(keys_key, key)
+
+    return deleted > 0
+
+
 def persisting_cache(*args, **kwargs):
     def decorator(func: Callable):
         namespace = f"{func.__module__}.{func.__qualname__}"
@@ -165,19 +243,20 @@ def cache(
     namespace: str | None = None,
 ):
     def decorator(func: Callable):
-        nonlocal namespace
-        if namespace is None:
-            namespace = f"{func.__module__}.{func.__qualname__}"
+        resolved_namespace = namespace
+        if resolved_namespace is None:
+            resolved_namespace = f"{func.__module__}.{func.__qualname__}"
 
-        keys_key = f"{_full_prefix(namespace)}:keys"
-        vals_key = f"{_full_prefix(namespace)}:vals"
-        stats_hit_key = f"{_full_prefix(namespace)}:hits"
-        stats_miss_key = f"{_full_prefix(namespace)}:miss"
-        settings_key = f"{_full_prefix(namespace)}:settings"
+        keys_key = f"{_full_prefix(resolved_namespace)}:keys"
+        vals_key = f"{_full_prefix(resolved_namespace)}:vals"
+        stats_hit_key = f"{_full_prefix(resolved_namespace)}:hits"
+        stats_miss_key = f"{_full_prefix(resolved_namespace)}:miss"
+        settings_key = f"{_full_prefix(resolved_namespace)}:settings"
 
         @wraps(func)
         def wrapper(*args, **kwargs):
-            key = _get_key(key_function, namespace, args, kwargs)
+            assert resolved_namespace is not None
+            key = _get_key(key_function, resolved_namespace, args, kwargs)
             result = None
 
             # retrieve the value from redis by key

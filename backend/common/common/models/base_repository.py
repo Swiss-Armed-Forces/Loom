@@ -1,7 +1,13 @@
 from abc import ABC, abstractmethod
 from typing import Any, Generic, TypeVar
 
+import typing_extensions
 from pydantic import BaseModel, ConfigDict
+
+# Type alias for Pydantic's include/exclude format
+IncEx: typing_extensions.TypeAlias = (
+    set[int] | set[str] | dict[int, Any] | dict[str, Any] | None
+)
 
 
 class RepositoryObject(BaseModel, ABC):
@@ -30,12 +36,25 @@ class BaseRepository(ABC, Generic[RepositoryObjectT]):
         pass
 
     @abstractmethod
+    def is_fresh(self, obj: RepositoryObjectT) -> bool:
+        pass
+
+    @abstractmethod
     def save(self, obj: RepositoryObjectT):
         pass
 
     @abstractmethod
     def get_by_id(self, id_: Any) -> RepositoryObjectT | None:
         pass
+
+    @abstractmethod
+    def update(
+        self,
+        obj: RepositoryObjectT,
+        include: IncEx = None,
+        exclude: IncEx = None,
+    ):
+        """Partial update of specific fields."""
 
 
 REPOSITORY_INSTANCES: dict[type[BaseRepository], BaseRepository] = {}

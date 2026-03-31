@@ -5,9 +5,8 @@ from contextlib import contextmanager
 from typing import Any, Callable, Generator, Generic, Literal, TypeVar
 from uuid import UUID, uuid4
 
-import typing_extensions
 from elastic_transport import ObjectApiResponse
-from elasticsearch import Elasticsearch, NotFoundError
+from elasticsearch import ConflictError, Elasticsearch, NotFoundError
 from elasticsearch.dsl import Boolean, Document, Index, Keyword, Search
 from elasticsearch.dsl.connections import get_connection
 from elasticsearch.dsl.response import Response
@@ -19,7 +18,7 @@ from common.messages.messages import (
     PubSubMessage,
 )
 from common.messages.pubsub_service import PubSubService
-from common.models.base_repository import BaseRepository, RepositoryObject
+from common.models.base_repository import BaseRepository, IncEx, RepositoryObject
 from common.services.query_builder import (
     DEFAULT_PIT_KEEPALIVE,
     KeepAlive,
@@ -34,12 +33,6 @@ logger = logging.getLogger(__name__)
 # does not work...
 INDEX_OPERATION_TIMEOUT = "9999d"
 DEFAULT_PAGE_SIZE = 10
-UPDATE_RETRY_ON_CONFLICT_COUNT = 5
-
-# copied from: pydantic/main.py:
-IncEx: typing_extensions.TypeAlias = (
-    set[int] | set[str] | dict[int, Any] | dict[str, Any] | None
-)
 
 
 class InvalidSortFieldExceptions(Exception):
@@ -78,8 +71,8 @@ class EsRepositoryObject(RepositoryObject):
     sort_unique: UUID = Field(default_factory=uuid4)
     hidden: bool = False
 
-    def to_es_dict(self) -> dict:
-        es_dict = self.model_dump(mode="json")
+    def to_es_dict(self, include: IncEx = None, exclude: IncEx = None) -> dict:
+        es_dict = self.model_dump(mode="json", include=include, exclude=exclude)
         return es_dict
 
 
@@ -378,6 +371,33 @@ class BaseEsRepository(
         point_in_time_id: str = point_in_time["id"]
         return point_in_time_id
 
+    def is_fresh(self, obj: EsRepositoryObjectT) -> bool:
+        """Check if a object is still the latest version in Elasticsearch.
+
+        Uses a HEAD request with if_seq_no and if_primary_term to efficiently
+        validate cache freshness without fetching the document body.
+
+        Args:
+            obj: The cached object to validate
+
+        Returns:
+            True if the cached object matches the current ES version, False otherwise
+        """
+        # If object doesn't have version metadata, consider it stale
+        if obj.es_meta.version is None:
+            return False
+
+        try:
+            exists = self._document_type.exists(
+                id=str(obj.id_),
+                using=self._elasticsearch,
+                version=obj.es_meta.version,
+            )
+            return exists
+        except (NotFoundError, ConflictError):
+            # Document doesn't exist or version mismatch
+            return False
+
     def get_by_id(self, id_: UUID) -> EsRepositoryObjectT | None:
         document = self._document_type.get(str(id_), using=self._elasticsearch)
         if document is None:
@@ -544,24 +564,38 @@ class BaseEsRepository(
         return self._document_to_object(result.hits[0])
 
     def save(self, obj: EsRepositoryObjectT):
+        """Persists the object and updates its ES metadata in-place."""
         document = self._object_to_document(obj)
         document.save(refresh=True, using=self._elasticsearch)
+
+        # Update object metadata
+        new_obj = self._document_to_object(document)
+        obj.es_meta = new_obj.es_meta
+
         self._send_file_update_message_by_id(obj.id_)
 
     def update(
         self, obj: EsRepositoryObjectT, include: IncEx = None, exclude: IncEx = None
     ):
-        document = self._document_type({"_id": obj.id_})
-        update_dict = obj.model_dump(
-            include=include,
-            exclude=exclude,
-        )
-        document.update(
-            **update_dict,
-            using=self._elasticsearch,
-            refresh=True,
-            retry_on_conflict=UPDATE_RETRY_ON_CONFLICT_COUNT,
-        )
+        """Update the object and updates its ES metadata in-place."""
+        document = self._object_to_document(obj)
+        es_dict = obj.to_es_dict(include=include, exclude=exclude)
+
+        # Build update kwargs with optimistic concurrency control
+        update_kwargs: dict[str, Any] = {
+            "using": self._elasticsearch,
+            "refresh": True,
+        }
+        if obj.es_meta.seq_no is not None and obj.es_meta.primary_term is not None:
+            update_kwargs["if_seq_no"] = obj.es_meta.seq_no
+            update_kwargs["if_primary_term"] = obj.es_meta.primary_term
+
+        document.update(**es_dict, **update_kwargs)
+
+        # Update object metadata
+        new_obj = self._document_to_object(document)
+        obj.es_meta = new_obj.es_meta
+
         self._send_file_update_message_by_id(obj.id_)
 
     def delete_by_id(self, id_: UUID) -> bool:

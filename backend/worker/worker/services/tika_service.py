@@ -128,20 +128,20 @@ class TikaService:
         for name in zipfile.namelist():
             match name:
                 case "__METADATA__":
+                    # Collect all metadata into a dictionary
+                    metadata_dict = {}
                     with ZipPath(zipfile, name).open(mode="r", newline="") as zipfd:
                         for metadata_line in csv.reader(zipfd):
                             metadata_key = metadata_line[0]
                             metadata_value = metadata_line[1:]
-                            setattr(
-                                result.meta,
-                                metadata_key,
-                                (
-                                    # flatten if possible
-                                    metadata_value[0]
-                                    if len(metadata_value) == 1
-                                    else metadata_value
-                                ),
+                            metadata_dict[metadata_key] = (
+                                # flatten if possible
+                                metadata_value[0]
+                                if len(metadata_value) == 1
+                                else metadata_value
                             )
+                    # Use model_validate to properly handle aliases
+                    result.meta = TikaMeta.model_validate(metadata_dict)
                 case "__TEXT__":
                     with ZipPath(zipfile, name).open(mode="rb") as zipfd:
                         text = zipfd.read(TIKA_MAX_TEXT_SIZE)

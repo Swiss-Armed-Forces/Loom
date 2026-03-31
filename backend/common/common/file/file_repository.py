@@ -46,6 +46,7 @@ from common.file.file_statistics import (
     StatisticsGeneric,
     StatisticsSummary,
 )
+from common.models.base_repository import IncEx
 from common.models.es_repository import (
     BaseEsRepository,
     PaginationParameters,
@@ -409,15 +410,16 @@ class File(RepositoryTaskObject):
     def unique_archives(cls, archives: list[str]) -> list[str]:
         return unique_list(archives)
 
-    def to_es_dict(self) -> dict:
-        es_dict = super().to_es_dict()
-        # expand translations to object
-        libretranslate_translations = es_dict["libretranslate_translations"]
-        es_dict["libretranslate_translations"] = {}
-        for translation in libretranslate_translations:
-            es_dict["libretranslate_translations"][
-                translation["language"]
-            ] = translation
+    def to_es_dict(self, include: IncEx = None, exclude: IncEx = None) -> dict:
+        es_dict = super().to_es_dict(include=include, exclude=exclude)
+        if "libretranslate_translations" in es_dict:
+            # expand translations to object
+            libretranslate_translations = es_dict["libretranslate_translations"]
+            es_dict["libretranslate_translations"] = {}
+            for translation in libretranslate_translations:
+                es_dict["libretranslate_translations"][
+                    translation["language"]
+                ] = translation
         return es_dict
 
 
@@ -466,7 +468,6 @@ class _EsFile(_EsTaskDocument):
     tika_meta = Object(_EsTikaMeta)
     tika_handled_by = Keyword()
     attachments = Object(_EsAttachment, multi=True)
-    has_attachments = Boolean()
     summary = Text(
         term_vector="with_positions_offsets",
         fields={

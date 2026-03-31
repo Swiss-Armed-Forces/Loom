@@ -55,7 +55,7 @@ System_Boundary(loom, "") {
         Container(crawler, "Crawler", "Python", "Crawls Raw Data and Schedules Tasks", $sprite="python")
         Container(beat, "Beat", "Python", "Schedules Periodic Tasks", $sprite="&clock,scale=5")
 
-        Container(worker, "Worker | Reaper", "Python Celery", "Processes Tasks", $sprite="python")
+        Container(worker, "Worker | Reaper | Persister", "Python Celery", "Processes Tasks", $sprite="python")
 
         Container(imap, "Imap Server", "Dovecot", "Stores Email", $sprite="email", $tags="exposed")
 

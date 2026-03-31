@@ -4,7 +4,7 @@ from typing import Generator
 from unittest.mock import MagicMock
 
 import pytest
-from elasticsearch import Elasticsearch, NotFoundError
+from elasticsearch import ConflictError, Elasticsearch, NotFoundError
 from elasticsearch.dsl import Integer, Search, Text
 from pydantic import BaseModel, ConfigDict
 
@@ -47,7 +47,6 @@ from common.messages.pubsub_service import PubSubService
 from common.models.base_repository import RepositoryObject
 from common.models.es_repository import (
     ES_REPOSITORY_TYPES,
-    UPDATE_RETRY_ON_CONFLICT_COUNT,
     BaseEsRepository,
     EsRepositoryObject,
     PaginationParameters,
@@ -994,7 +993,18 @@ def test_es_repository_save(obj: _TestEsRepositoryObject):
         mock_types=True,
     )
     document_mock = MagicMock(spec=_TestEsDocument)
+    document_mock.meta = MagicMock()
+    document_mock.meta.seq_no = 1
+    document_mock.meta.primary_term = 1
+
     es_repository.document_type.return_value = document_mock
+
+    # Configure object_type.model_validate to return an object with valid es_meta
+    # (this is called by _document_to_object internally)
+    returned_obj = obj.model_copy(deep=True)
+    returned_obj.es_meta.seq_no = 1
+    returned_obj.es_meta.primary_term = 1
+    es_repository.object_type.model_validate.return_value = returned_obj
 
     es_repository.save(obj)
 
@@ -1015,20 +1025,38 @@ def test_es_repository_update(obj: _TestEsRepositoryObject):
         mock_types=True,
     )
     document_mock = MagicMock(spec=_TestEsDocument)
+    # Configure meta attributes that update() accesses after the update
+    document_mock.meta = MagicMock()
+    document_mock.meta.seq_no = 1
+    document_mock.meta.primary_term = 1
     es_repository.document_type.return_value = document_mock
+
+    # Capture original values before update (update modifies obj.es_meta)
+    original_seq_no = obj.es_meta.seq_no
+    original_primary_term = obj.es_meta.primary_term
+
+    # Configure object_type.model_validate to return an object with valid es_meta
+    # (this is called by _document_to_object internally)
+    returned_obj = obj.model_copy(deep=True)
+    returned_obj.es_meta.seq_no = 2
+    returned_obj.es_meta.primary_term = 1
+    es_repository.object_type.model_validate.return_value = returned_obj
 
     es_repository.update(obj)
 
+    # update() now uses to_es_dict() which applies mode="json" serialization
+    # (UUIDs become strings)
     document_mock.update.assert_called_once_with(
         deduplication_fingerprint=obj.deduplication_fingerprint,
-        sort_unique=obj.sort_unique,
+        sort_unique=str(obj.sort_unique),
         hidden=obj.hidden,
         test_int=obj.test_int,
         test_str=obj.test_str,
         test_str_list=obj.test_str_list,
         using=es_repository.elasticsearch_mock,
         refresh=True,
-        retry_on_conflict=UPDATE_RETRY_ON_CONFLICT_COUNT,
+        if_seq_no=original_seq_no,
+        if_primary_term=original_primary_term,
     )
 
 
@@ -1043,7 +1071,22 @@ def test_es_repository_update_include(obj: _TestEsRepositoryObject):
         mock_types=True,
     )
     document_mock = MagicMock(spec=_TestEsDocument)
+    # Configure meta attributes that update() accesses after the update
+    document_mock.meta = MagicMock()
+    document_mock.meta.seq_no = 1
+    document_mock.meta.primary_term = 1
     es_repository.document_type.return_value = document_mock
+
+    # Capture original values before update (update modifies obj.es_meta)
+    original_seq_no = obj.es_meta.seq_no
+    original_primary_term = obj.es_meta.primary_term
+
+    # Configure object_type.model_validate to return an object with valid es_meta
+    # (this is called by _document_to_object internally)
+    returned_obj = obj.model_copy(deep=True)
+    returned_obj.es_meta.seq_no = 2
+    returned_obj.es_meta.primary_term = 1
+    es_repository.object_type.model_validate.return_value = returned_obj
 
     es_repository.update(obj, include={"test_int", "test_str"})
 
@@ -1052,7 +1095,8 @@ def test_es_repository_update_include(obj: _TestEsRepositoryObject):
         test_str=obj.test_str,
         using=es_repository.elasticsearch_mock,
         refresh=True,
-        retry_on_conflict=UPDATE_RETRY_ON_CONFLICT_COUNT,
+        if_seq_no=original_seq_no,
+        if_primary_term=original_primary_term,
     )
 
 
@@ -1067,18 +1111,36 @@ def test_es_repository_update_exclude(obj: _TestEsRepositoryObject):
         mock_types=True,
     )
     document_mock = MagicMock(spec=_TestEsDocument)
+    # Configure meta attributes that update() accesses after the update
+    document_mock.meta = MagicMock()
+    document_mock.meta.seq_no = 1
+    document_mock.meta.primary_term = 1
     es_repository.document_type.return_value = document_mock
+
+    # Capture original values before update (update modifies obj.es_meta)
+    original_seq_no = obj.es_meta.seq_no
+    original_primary_term = obj.es_meta.primary_term
+
+    # Configure object_type.model_validate to return an object with valid es_meta
+    # (this is called by _document_to_object internally)
+    returned_obj = obj.model_copy(deep=True)
+    returned_obj.es_meta.seq_no = 2
+    returned_obj.es_meta.primary_term = 1
+    es_repository.object_type.model_validate.return_value = returned_obj
 
     es_repository.update(obj, exclude={"test_int", "test_str"})
 
+    # update() now uses to_es_dict() which applies mode="json" serialization
+    # (UUIDs become strings)
     document_mock.update.assert_called_once_with(
         deduplication_fingerprint=obj.deduplication_fingerprint,
-        sort_unique=obj.sort_unique,
+        sort_unique=str(obj.sort_unique),
         hidden=obj.hidden,
         test_str_list=obj.test_str_list,
         using=es_repository.elasticsearch_mock,
         refresh=True,
-        retry_on_conflict=UPDATE_RETRY_ON_CONFLICT_COUNT,
+        if_seq_no=original_seq_no,
+        if_primary_term=original_primary_term,
     )
 
 
@@ -1140,3 +1202,110 @@ def test_es_repository_open_point_in_time():
 
     es_repository.elasticsearch_mock.open_point_in_time.assert_called_once()
     assert point_in_time_id == mock_point_in_time_id
+
+
+@pytest.mark.parametrize(
+    "obj",
+    get_test_repository_object_instances(),
+)
+def test_es_repository_is_fresh_returns_true_when_version_matches(
+    obj: _TestEsRepositoryObject,
+):
+    es_repository = _TestEsRepository(
+        query_builder=get_query_builder(),
+        pubsub_service=get_pubsub_service(),
+        mock_types=True,
+    )
+    es_repository.document_type.exists.return_value = True
+
+    result = es_repository.is_fresh(obj)
+
+    assert result is True
+    es_repository.document_type.exists.assert_called_once_with(
+        id=str(obj.id_),
+        using=es_repository.elasticsearch_mock,
+        version=obj.es_meta.version,
+    )
+
+
+@pytest.mark.parametrize(
+    "obj",
+    get_test_repository_object_instances(),
+)
+def test_es_repository_is_fresh_returns_false_when_exists_returns_false(
+    obj: _TestEsRepositoryObject,
+):
+    es_repository = _TestEsRepository(
+        query_builder=get_query_builder(),
+        pubsub_service=get_pubsub_service(),
+        mock_types=True,
+    )
+    es_repository.document_type.exists.return_value = False
+
+    result = es_repository.is_fresh(obj)
+
+    assert result is False
+
+
+@pytest.mark.parametrize(
+    "obj",
+    get_test_repository_object_instances(),
+)
+def test_es_repository_is_fresh_returns_false_when_version_is_none(
+    obj: _TestEsRepositoryObject,
+):
+    es_repository = _TestEsRepository(
+        query_builder=get_query_builder(),
+        pubsub_service=get_pubsub_service(),
+        mock_types=True,
+    )
+    # Set version to None to trigger short-circuit
+    obj.es_meta.version = None
+
+    result = es_repository.is_fresh(obj)
+
+    assert result is False
+    # Verify exists() is NOT called (short-circuit)
+    es_repository.document_type.exists.assert_not_called()
+
+
+@pytest.mark.parametrize(
+    "obj",
+    get_test_repository_object_instances(),
+)
+def test_es_repository_is_fresh_returns_false_on_not_found_error(
+    obj: _TestEsRepositoryObject,
+):
+    es_repository = _TestEsRepository(
+        query_builder=get_query_builder(),
+        pubsub_service=get_pubsub_service(),
+        mock_types=True,
+    )
+    es_repository.document_type.exists.side_effect = NotFoundError(
+        "document not found", MagicMock(), None
+    )
+
+    result = es_repository.is_fresh(obj)
+
+    assert result is False
+
+
+@pytest.mark.parametrize(
+    "obj",
+    get_test_repository_object_instances(),
+)
+def test_es_repository_is_fresh_returns_false_on_conflict_error(
+    obj: _TestEsRepositoryObject,
+):
+    es_repository = _TestEsRepository(
+        query_builder=get_query_builder(),
+        pubsub_service=get_pubsub_service(),
+        mock_types=True,
+    )
+    es_repository.document_type.exists.side_effect = ConflictError(
+        "version conflict", MagicMock(), None
+    )
+
+    result = es_repository.is_fresh(obj)
+
+    assert result is False
