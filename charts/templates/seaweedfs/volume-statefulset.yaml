@@ -114,6 +114,9 @@ spec:
       spec:
         accessModes:
           - ReadWriteOnce
+        {{- if .Values.seaweedfs.volume.pvc.storageClass -}}
+        storageClassName: {{ .Values.seaweedfs.volume.pvc.storageClass }}
+        {{- end }}
         resources:
           requests:
             storage: {{ .Values.seaweedfs.volume.pvc.storage }}

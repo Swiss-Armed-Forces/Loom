@@ -90,6 +90,9 @@ spec:
       spec:
         accessModes:
           - ReadWriteOnce
+        {{- if .Values.seaweedfs.filerMetaBackup.pvc.storageClass -}}
+        storageClassName: {{ .Values.seaweedfs.filerMetaBackup.pvc.storageClass }}
+        {{- end }}
         resources:
           requests:
             storage: {{ printf "%d" $pvcStorageBytes }}

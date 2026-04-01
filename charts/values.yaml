@@ -297,6 +297,7 @@ elasticsearch:
     port: 9200
   pvc:
     storage: 50Gi
+    storageClass: null
   ingress: *default-ingress-config
   readinessProbe:
     enabled: true
@@ -488,6 +489,7 @@ seaweedfs:
     volumeSizeLimitMB: 1024
     pvc:
       storage: 1Gi
+      storageClass: null
     resources:
       requests:
         cpu: "0.1"
@@ -509,6 +511,7 @@ seaweedfs:
     metricsPort: 9328
     pvc:
       storage: 20Gi
+      storageClass: null
     resources:
       requests:
         cpu: "0.15"
@@ -577,6 +580,7 @@ seaweedfs:
       # PVC size = redis-filer memory limit * storageMultiplier
       # This ensures enough space to store all metadata that could fit in Redis + headroom.
       storageMultiplier: 2
+      storageClass: null
     # SQLite filer sidecar for restore operations
     sqliteFiler:
       port: 18889
@@ -609,6 +613,7 @@ mongodb:
     enabled: true
   pvc:
     storage: 50Gi
+    storageClass: null
   resources:
     requests:
       cpu: "0.15"
@@ -660,6 +665,7 @@ rabbit:
       prometheus: 15692
   pvc:
     storage: 30Gi
+    storageClass: null
   ingress:
     http: *default-ingress-config
     amqp:
@@ -700,6 +706,7 @@ ollama: &ollama
   pvc:
     enabled: true
     storage: 30Gi
+    storageClass: null
   ingress: *default-ingress-config
   readinessProbe:
     enabled: false
@@ -741,6 +748,7 @@ open_webui:
     port: 8080
   pvc:
     storage: 10Gi
+    storageClass: null
   ingress: *default-ingress-config
   resources:
     requests:
@@ -764,6 +772,7 @@ dovecot:
       imap: 143
   pvc:
     storage: 10Gi
+    storageClass: null
   ingress:
     imaps: *default-ingress-config
     imap:
@@ -821,6 +830,7 @@ prometheus:
     port: 9090
   pvc:
     storage: 10Gi
+    storageClass: null
   ingress: *default-ingress-config
   readinessProbe:
     enabled: false
@@ -860,6 +870,7 @@ redis: &redis
     # Multiplier for PVC storage size relative to memory limit.
     # PVC size = memory limit * storageMultiplier
     storageMultiplier: 5
+    storageClass: null
   # Percentage of memory limit to use for Redis maxmemory setting.
   # This reserves headroom for Redis overhead and fragmentation
   memoryLimitThresholdPercent: 0.6
