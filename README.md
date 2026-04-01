@@ -98,7 +98,7 @@ To ensure Loom runs smoothly, your system should ideally meet these minimum requ
 * **CPU:** 8 Cores
 * **Disk Space:** 200 GiB
 * **GPU (Optional):** For enhanced performance with certain features, we recommend using at least 2 GPUs.
-Please see the list of supported GPUs here: [https://github.com/ollama/ollama/blob/main/docs/gpu.md](https://github.com/ollama/ollama/blob/main/docs/gpu.md)
+Please see the list of supported GPUs here: [https://docs.ollama.com/gpu](https://docs.ollama.com/gpu)
 
 #### Single Node Installation Steps
 
