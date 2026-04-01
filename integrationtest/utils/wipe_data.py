@@ -17,6 +17,7 @@ from common.dependencies import (
 )
 from common.dependencies import init as init_common_dependencies
 from common.elasticsearch import init_elasticsearch
+from common.utils.celery_inspect import is_celery_idle, iterate_celery_tasks
 from common.utils.flush_s3_bucket import flush_s3_bucket
 from crawler.dependencies import get_s3_client
 from crawler.dependencies import init as init_crawler_dependencies
@@ -24,7 +25,6 @@ from crawler.settings import settings as crawler_settings
 from pymongo import MongoClient
 from worker.dependencies import init as init_worker_dependencies
 
-from utils.celery_inspect import is_celery_idle, iterate_celery_tasks
 from utils.settings import settings
 
 logger = logging.getLogger(__name__)

@@ -1,4 +1,4 @@
-from utils.celery_inspect import get_celery_tasks_count, get_messages_in_queues
+from common.utils.celery_inspect import get_celery_tasks_count, get_messages_in_queues
 
 
 def test_get_messages_in_queues():
