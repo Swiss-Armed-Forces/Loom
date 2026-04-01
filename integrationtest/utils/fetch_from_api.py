@@ -23,9 +23,9 @@ from api.routers.files import (
 )
 from common.models.es_repository import DEFAULT_PAGE_SIZE
 from common.services.query_builder import QueryParameters
+from common.utils.celery_inspect import is_celery_idle
 from requests import Response
 
-from utils.celery_inspect import is_celery_idle
 from utils.consts import ARCHIVE_ENDPOINT, FILES_ENDPOINT, REQUEST_TIMEOUT
 
 DEFAULT_MAX_WAIT_TIME_PER_FILE = 300

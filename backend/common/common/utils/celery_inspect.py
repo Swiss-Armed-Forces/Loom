@@ -2,12 +2,7 @@ import logging
 from concurrent.futures import ThreadPoolExecutor
 from typing import TYPE_CHECKING, Iterator, Union
 
-import requests
-from api.models.queues_model import OverallQueuesStats
-from common.dependencies import get_celery_app
-from requests import Response
-
-from utils.consts import QUEUES_ENDPOINT, REQUEST_TIMEOUT
+from common.dependencies import get_celery_app, get_queues_service
 
 if TYPE_CHECKING:
     from celery.app.control import _TaskInfo, _TaskScheduledInfo
@@ -17,10 +12,8 @@ logger = logging.getLogger(__name__)
 
 
 def get_messages_in_queues() -> int:
-    response: Response = requests.get(f"{QUEUES_ENDPOINT}/", timeout=REQUEST_TIMEOUT)
-    response.raise_for_status()
-    queues = OverallQueuesStats.model_validate(response.json())
-    return queues.messages_in_queues
+    queues = get_queues_service()
+    return queues.get_message_count()
 
 
 def iterate_celery_tasks() -> Iterator[Union["_TaskScheduledInfo", "_TaskInfo"]]:
@@ -49,8 +42,10 @@ def get_celery_tasks_count() -> int:
     return sum(1 for _ in iterate_celery_tasks())
 
 
-def is_celery_idle() -> bool:
+def is_celery_idle(called_from_task=False) -> bool:
     celery_tasks_count = get_celery_tasks_count()
     messages_in_queues = get_messages_in_queues()
-
+    if called_from_task:
+        # We are called from a celery task, so we need to subtract the task itself
+        celery_tasks_count -= 1
     return messages_in_queues <= 0 and celery_tasks_count <= 0

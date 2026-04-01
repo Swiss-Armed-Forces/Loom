@@ -1,8 +1,8 @@
 import logging
 
 from celery import chain, group
-from common.dependencies import get_celery_app, get_queues_service
-from common.settings import settings
+from common.dependencies import get_celery_app
+from common.utils.celery_inspect import is_celery_idle
 
 from worker.periodic.infra.periodic_task import PeriodicTask
 from worker.periodic.tasks import flush_cache, flush_lazybytes
@@ -19,13 +19,8 @@ def flush_complete(*_, **__):
 
 @app.task(base=PeriodicTask)
 def flush_on_idle_task():
-    queues_service = get_queues_service()
-
-    if (
-        queues_service.get_message_count()
-        > settings.periodic_consider_queue_idle_threshold
-    ):
-        logger.info("Queues not empty: do nothing")
+    if is_celery_idle(called_from_task=True):
+        logger.info("Celery not idle: do nothing")
         return
 
     logger.info("Queues empty: flush indexing data")

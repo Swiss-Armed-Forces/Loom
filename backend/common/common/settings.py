@@ -73,10 +73,6 @@ class Settings(BaseSettings):
     persister_total: int = 1  # Total number of PERSISTER workers
     persister_id: int = Field(default_factory=_get_persister_id_from_hostname)
 
-    # Threshold for considering queues "idle" in periodic tasks.
-    # Set > 0 because the periodic task itself is counted in the queue.
-    periodic_consider_queue_idle_threshold: int = 5
-
     mongo_db_host: MongoDsn = MongoDsn(f"mongodb://mongodb.{DOMAIN}")
     mongo_db_file_storage_name: str = "files"
     mongo_db_system_file_storage_name: str = "systemfiles"
