@@ -192,8 +192,6 @@ def generate_commit_message_via_claude(
                 "--print",
                 "--output-format",
                 "text",
-                "--max-turns",
-                "1",
                 "--no-session-persistence",
             ],
             input=prompt,
