@@ -579,7 +579,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | pylint-pydantic                       | 0.4.1           | GPLv3                                                                            |
 | dnspython                             | 2.6.1           | ISC License (ISCL)                                                               |
 | click-repl                            | 0.3.0           | MIT                                                                              |
-| identify                              | 2.6.17          | MIT                                                                              |
+| identify                              | 2.6.18          | MIT                                                                              |
 | pycodestyle                           | 2.14.0          | MIT                                                                              |
 | pytest-cov                            | 6.3.0           | MIT                                                                              |
 | PyYAML                                | 6.0.1           | MIT License                                                                      |
