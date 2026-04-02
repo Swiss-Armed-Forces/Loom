@@ -407,10 +407,8 @@ in
       })
     ]);
 
-  # Disable cachix because cachix might cause
-  # instabilities when fetching tarball for
-  # nixpkgs-unstable
-  #cachix.enable = false;
+  # Configure Cachix
+  cachix.pull = [ "loom" ];
 
   # https://devenv.sh/languages/
   languages.nix.enable = true;
