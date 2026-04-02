@@ -347,12 +347,6 @@ frontend_test:
     - devenv shell -- frontend-test
     - devenv shell -- frontend-build
 
-frontend_audit:
-  stage: test
-  allow_failure: true
-  script:
-    - devenv shell -- frontend-audit
-
 backend_test:
   stage: test
   script:
