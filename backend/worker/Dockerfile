@@ -5,7 +5,7 @@ ARG PYTHON_IMAGE_VERSION="3.11.13-bookworm"
 ARG DOCKER_REGISTRY="docker.io"
 FROM ${DOCKER_REGISTRY}/python:${PYTHON_BUILDER_IMAGE_VERSION} AS builder-base
 
-ARG POETRY_VERSION="2.2.1"
+ARG POETRY_VERSION="2.3.1"
 RUN set -exu \
     && pip install --no-cache-dir poetry==${POETRY_VERSION}
 

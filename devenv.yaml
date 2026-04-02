@@ -5,10 +5,10 @@ inputs:
     inputs:
       nixpkgs:
         follows: nixpkgs
+  pre-commit-hooks:
+    follows: git-hooks
   nixpkgs:
     url: github:cachix/devenv-nixpkgs/rolling
-  nixpkgs-24-11:
-    url: github:NixOS/nixpkgs/nixos-24.11
   nixpkgs-stable:
     url: github:NixOS/nixpkgs/nixos-25.11
   nixpkgs-unstable:

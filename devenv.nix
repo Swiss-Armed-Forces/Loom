@@ -11,7 +11,8 @@ let
 
   pkgs-stable = nixpkgsWithConfig inputs.nixpkgs-stable;
   pkgs-unstable = nixpkgsWithConfig inputs.nixpkgs-unstable;
-  pkgs-24-11 = nixpkgsWithConfig inputs.nixpkgs-24-11;
+
+  binwalk-v2 = pkgs.python3Packages.callPackage ./backend/worker/binwalk.nix { };
 
   # fix locale
   use-locale = "C.UTF-8";
@@ -71,7 +72,7 @@ let
       top_pylintrc = "${config.devenv.root}/.pylintrc";
     in
     {
-      "isort::${subdirName}" = {
+      "isort_${subdirName}" = {
         enable = true;
         entry =
           createToolWrapper "isort" subdir subdirName
@@ -80,35 +81,35 @@ let
         types = [ "python" ];
       };
 
-      "autoflake::${subdirName}" = {
+      "autoflake_${subdirName}" = {
         enable = true;
         entry = createToolWrapper "autoflake" subdir subdirName "--config '${top_pyproject_toml}'";
         files = "^${subdir}/.*\\.py$";
         types = [ "python" ];
       };
 
-      "docormatter::${subdirName}" = {
+      "docformatter_${subdirName}" = {
         enable = true;
         entry = createToolWrapper "docformatter" subdir subdirName "--config '${top_pyproject_toml}'";
         files = "^${subdir}/.*\\.py$";
         types = [ "python" ];
       };
 
-      "black::${subdirName}" = {
+      "black_${subdirName}" = {
         enable = true;
         entry = createToolWrapper "black" subdir subdirName "--config '${top_pyproject_toml}' --preview";
         files = "^${subdir}/.*\\.py$";
         types = [ "python" ];
       };
 
-      "flake8::${subdirName}" = {
+      "flake8_${subdirName}" = {
         enable = true;
         entry = createToolWrapper "flake8" subdir subdirName "--config '${top_flake8}'";
         files = "^${subdir}/.*\\.py$";
         types = [ "python" ];
       };
 
-      "pylint::${subdirName}" = {
+      "pylint_${subdirName}" = {
         enable = true;
         entry = createToolWrapper "pylint" subdir subdirName "--rcfile '${top_pylintrc}'";
         files = "^${subdir}/.*\\.py$";
@@ -118,7 +119,7 @@ let
         require_serial = true;
       };
 
-      "mypy::${subdirName}" = {
+      "mypy_${subdirName}" = {
         enable = true;
         entry = createToolWrapper "mypy" subdir subdirName "";
         files = "^${subdir}/.*\\.py$";
@@ -130,7 +131,7 @@ let
         require_serial = true;
       };
 
-      "poetry-lock::${subdirName}" = {
+      "poetry-lock_${subdirName}" = {
         enable = true;
         entry = createToolWrapper "poetry" subdir subdirName "lock";
         files = "^${subdir}/(pyproject.toml)|(poetry.lock)$";
@@ -146,28 +147,28 @@ let
       subdirName = builtins.replaceStrings [ "/" ] [ "-" ] subdir;
     in
     {
-      "eslint::${subdirName}" = {
+      "eslint_${subdirName}" = {
         enable = true;
         entry = createToolWrapper "eslint" subdir subdirName "--max-warnings 0 --fix ./.";
         files = "^${subdir}/.*$";
         pass_filenames = false;
       };
 
-      "prettier::${subdirName}" = {
+      "prettier_${subdirName}" = {
         enable = true;
         entry = createToolWrapper "prettier" subdir subdirName "--write ./.";
         files = "^${subdir}/.*$";
         pass_filenames = false;
       };
 
-      "tsc::${subdirName}" = {
+      "tsc_${subdirName}" = {
         enable = true;
         entry = createToolWrapper "tsc" subdir subdirName "--noEmit";
         files = "^${subdir}/.*$";
         pass_filenames = false;
       };
 
-      "vite-build::${subdirName}" = {
+      "vite-build_${subdirName}" = {
         enable = true;
         entry = createToolWrapper "vite" subdir subdirName "build";
         files = "^${subdir}/.*$";
@@ -181,13 +182,13 @@ let
       subdirName = builtins.replaceStrings [ "/" ] [ "-" ] subdir;
     in
     {
-      "helm-lint::${subdirName}" = {
+      "helm-lint_${subdirName}" = {
         enable = true;
         entry = createToolWrapper "helm" subdir subdirName "lint ./.";
         files = "^${subdir}/.*$";
         pass_filenames = false;
       };
-      "check-requests::${subdirName}" = {
+      "check-requests_${subdirName}" = {
         enable = true;
         entry = createToolWrapper "${config.devenv.root}/cicd/check_requests.sh" subdir subdirName "./.";
         files = "^${subdir}/.*$";
@@ -304,7 +305,7 @@ in
       # We can probably remove this when:
       # * debian packaged the 3.* version of binwalk
       # * .. or we install binwalk from source in the worker
-      pkgs-24-11.binwalk
+      binwalk-v2
 
       cabextract
       imagemagick
@@ -399,8 +400,8 @@ in
               # https://marketplace.visualstudio.com/items?itemName=vitest.explorer
               name = "explorer";
               publisher = "vitest";
-              version = "1.36.0";
-              sha256 = "sha256-ic1Gk3jJyyD7WnXjXMymr/5YV2z3tK5VPToWeCkhqyU=";
+              version = "1.50.0";
+              sha256 = "sha256-Fl9HtEavM1Cyxf5IMBN7/12s+JGF3MfLRFeut2pEp+s=";
             }
           ];
       })
@@ -439,7 +440,6 @@ in
   languages.javascript = {
     enable = true;
     directory = "${config.devenv.root}/Frontend";
-    corepack.enable = true;
     pnpm = {
       enable = true;
       # Run this to update the node_modules always:
@@ -451,6 +451,9 @@ in
 
   # https://devenv.sh/git-hooks/
   git-hooks.hooks = {
+    # Recommended by git-hooks.nix
+    git-hooks.package = pkgs.prek;
+
     dos2unix = {
       enable = true;
       entry = "dos2unix";
@@ -464,7 +467,7 @@ in
 
     trim-trailing-whitespace.enable = true;
 
-    nixfmt-rfc-style.enable = true;
+    nixfmt.enable = true;
 
     shellcheck = {
       enable = true;
@@ -502,7 +505,7 @@ in
       ];
       settings = {
         strict = true;
-        configData = ''{ extends: default, rules: { document-start: disable, line-length: {max: 165} } }'';
+        configData = "{ extends: default, rules: { document-start: disable, line-length: {max: 165} } }";
       };
     };
 

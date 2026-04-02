@@ -6,8 +6,9 @@ ARG DOCKER_REGISTRY="docker.io"
 FROM ${DOCKER_REGISTRY}/node:${NODE_IMAGE_VERSION} AS base
 WORKDIR /code
 # Copy dependencies separately and install them once
+ARG PNPM_VERSION="10.32.1"
 RUN set -exu \
-  && corepack enable
+  && npm install -g "pnpm@$PNPM_VERSION"
 COPY package.json pnpm-lock.yaml .npmrc ./
 RUN set -exu \
   && pnpm install --frozen-lockfile

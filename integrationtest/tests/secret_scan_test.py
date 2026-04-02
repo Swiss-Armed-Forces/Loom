@@ -40,7 +40,7 @@ class TestSecretScan:
         fetch_files_from_api(search_string="trufflehog_secrets.line_number: 1")
 
 
-def test_upoad_file_with_no_secret():
+def test_upload_file_with_no_secret():
     upload_asset("text.txt")
 
     fetch_files_from_api(

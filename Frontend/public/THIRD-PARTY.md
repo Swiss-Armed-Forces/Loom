@@ -531,7 +531,6 @@ The complete source code for Traefik is publicly available at [https://github.co
 | packaging                             | 24.2            | Apache Software License; BSD License                                             |
 | python-dateutil                       | 2.9.0.post0     | Apache Software License; BSD License                                             |
 | pycryptodome                          | 3.20.0          | Apache Software License; BSD License; Public Domain                              |
-| pycryptodome                          | 3.20.0          | Apache Software License; BSD License; Public Domain                              |
 | luqum                                 | 0.14.0          | Apache Software License; GNU Lesser General Public License v3 or later (LGPLv3+) |
 | orjson                                | 3.10.5          | Apache Software License; MIT License                                             |
 | sniffio                               | 1.3.1           | Apache Software License; MIT License                                             |
@@ -647,7 +646,6 @@ The complete source code for Traefik is publicly available at [https://github.co
 | pathspec                              | 1.0.4           | Mozilla Public License 2.0 (MPL 2.0)                                             |
 | annotated-doc                         | 0.0.4           | UNKNOWN                                                                          |
 | astroid                               | 4.0.4           | UNKNOWN                                                                          |
-| binwalk                               | 2.4.3           | UNKNOWN                                                                          |
 | black                                 | 26.1.0          | UNKNOWN                                                                          |
 | cffi                                  | 2.0.0           | UNKNOWN                                                                          |
 | cryptography                          | 46.0.0          | UNKNOWN                                                                          |
@@ -660,7 +658,6 @@ The complete source code for Traefik is publicly available at [https://github.co
 | opentelemetry-sdk                     | 1.39.1          | UNKNOWN                                                                          |
 | opentelemetry-semantic-conventions    | 0.60b1          | UNKNOWN                                                                          |
 | prometheus_client                     | 0.24.1          | UNKNOWN                                                                          |
-| pycrypto                              | 3.20.0          | UNKNOWN                                                                          |
 | pylint                                | 4.0.5           | UNKNOWN                                                                          |
 | pytest                                | 9.0.2           | UNKNOWN                                                                          |
 | pytest-asyncio                        | 1.3.0           | UNKNOWN                                                                          |
@@ -1110,8 +1107,6 @@ The complete source code for Traefik is publicly available at [https://github.co
 | argon2-cffi | 25.1.0 | MIT | python-installed-package-cataloger |
 | argon2-cffi-bindings | 25.1.0 | MIT | python-installed-package-cataloger |
 | asgiref | 3.11.1 | BSD-3-Clause | python-installed-package-cataloger |
-| autocommand | 2.2.2 |  | python-installed-package-cataloger |
-| backports-tarfile | 1.2.0 | MIT | python-installed-package-cataloger |
 | base-files | 12.4+deb12u12 |  | dpkg-db-cataloger |
 | base-passwd | 3.6.1 | GPL-2.0-only | dpkg-db-cataloger |
 | bash | 5.2.15-2+b9 | BSD-4-Clause-UC, GFDL-1.3-only, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, Latex2e | dpkg-db-cataloger |
@@ -1124,12 +1119,8 @@ The complete source code for Traefik is publicly available at [https://github.co
 | cffi | 2.0.0 | MIT | python-installed-package-cataloger |
 | charset-normalizer | 3.4.1 | MIT | python-installed-package-cataloger |
 | cli | UNKNOWN |  | pe-binary-package-cataloger |
-| cli | UNKNOWN |  | pe-binary-package-cataloger |
-| cli-32 | UNKNOWN |  | pe-binary-package-cataloger |
 | cli-32 | UNKNOWN |  | pe-binary-package-cataloger |
 | cli-64 | UNKNOWN |  | pe-binary-package-cataloger |
-| cli-64 | UNKNOWN |  | pe-binary-package-cataloger |
-| cli-arm64 | UNKNOWN |  | pe-binary-package-cataloger |
 | cli-arm64 | UNKNOWN |  | pe-binary-package-cataloger |
 | click | 8.1.8 | BSD-3-Clause | python-installed-package-cataloger |
 | click-didyoumean | 0.3.1 | MIT | python-installed-package-cataloger |
@@ -1154,12 +1145,8 @@ The complete source code for Traefik is publicly available at [https://github.co
 | gpgv | 2.2.40-1.1+deb12u1 | BSD-3-Clause, CC0-1.0, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
 | grep | 3.8-5 | GPL-3.0-only, GPL-3.0-or-later | dpkg-db-cataloger |
 | gui | UNKNOWN |  | pe-binary-package-cataloger |
-| gui | UNKNOWN |  | pe-binary-package-cataloger |
-| gui-32 | UNKNOWN |  | pe-binary-package-cataloger |
 | gui-32 | UNKNOWN |  | pe-binary-package-cataloger |
 | gui-64 | UNKNOWN |  | pe-binary-package-cataloger |
-| gui-64 | UNKNOWN |  | pe-binary-package-cataloger |
-| gui-arm64 | UNKNOWN |  | pe-binary-package-cataloger |
 | gui-arm64 | UNKNOWN |  | pe-binary-package-cataloger |
 | gzip | 1.12-1 | GPL-3.0-only, GPL-3.0-or-later | dpkg-db-cataloger |
 | h11 | 0.14.0 | MIT | python-installed-package-cataloger |
@@ -1169,11 +1156,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | idna | 3.10 | BSD-3-Clause | python-installed-package-cataloger |
 | imapclient | 3.1.0 |  | python-installed-package-cataloger |
 | importlib-metadata | 8.7.1 | Apache-2.0 | python-installed-package-cataloger |
-| importlib-metadata | 8.7.1 | Apache-2.0 | python-installed-package-cataloger |
 | init-system-helpers | 1.65.2+deb12u1 | BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
-| jaraco-context | 6.1.0 | MIT | python-installed-package-cataloger |
-| jaraco-functools | 4.4.0 | MIT | python-installed-package-cataloger |
-| jaraco-text | 4.0.0 | MIT | python-installed-package-cataloger |
 | joblib | 1.4.2 |  | python-installed-package-cataloger |
 | kombu | 5.5.4 | BSD-3-Clause | python-installed-package-cataloger |
 | libacl1 | 2.3.1-3 | GPL-2.0-only, GPL-2.0-or-later, LGPL-2.0-or-later, LGPL-2.1-only | dpkg-db-cataloger |
@@ -1246,7 +1229,6 @@ The complete source code for Traefik is publicly available at [https://github.co
 | luqum | 0.14.0 | LGPL-3.0-only | python-installed-package-cataloger |
 | mawk | 1.3.4.20200120-3.1 | CC-BY-3.0, GPL-2.0-only, X11 | dpkg-db-cataloger |
 | minio | 7.2.20 | Apache-2.0 | python-installed-package-cataloger |
-| more-itertools | 10.8.0 | MIT | python-installed-package-cataloger |
 | mount | 2.38.1-5+deb12u3 | BSD-3-Clause, BSD-4-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, MIT | dpkg-db-cataloger |
 | ncurses-base | 6.4-4 | BSD-3-Clause, X11 | dpkg-db-cataloger |
 | ncurses-bin | 6.4-4 | BSD-3-Clause, X11 | dpkg-db-cataloger |
@@ -1263,12 +1245,10 @@ The complete source code for Traefik is publicly available at [https://github.co
 | opentelemetry-semantic-conventions | 0.60b1 | Apache-2.0 | python-installed-package-cataloger |
 | opentelemetry-util-http | 0.60b1 | Apache-2.0 | python-installed-package-cataloger |
 | packaging | 25.0 |  | python-installed-package-cataloger |
-| packaging | 26.0 | Apache-2.0 OR BSD-2-Clause | python-installed-package-cataloger |
 | passwd | 1:4.13+dfsg1-1+deb12u1 | BSD-3-Clause, GPL-1.0-only, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
 | perl-base | 5.36.0-7+deb12u3 | Artistic-2.0, Artistic-dist, BSD-3-Clause, GPL-1.0-only, GPL-1.0-or-later, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.1-only, Zlib | dpkg-db-cataloger |
 | pip | 24.0 | MIT | python-installed-package-cataloger |
 | pip | 26.0.1 | MIT | python-installed-package-cataloger |
-| platformdirs | 4.4.0 | MIT | python-installed-package-cataloger |
 | ply | 3.11 |  | python-installed-package-cataloger |
 | prometheus-client | 0.24.1 | Apache-2.0 AND BSD-2-Clause | python-installed-package-cataloger |
 | prompt-toolkit | 3.0.50 |  | python-installed-package-cataloger |
@@ -1290,14 +1270,12 @@ The complete source code for Traefik is publicly available at [https://github.co
 | scipy | 1.15.2 | BSD-3-Clause | python-installed-package-cataloger |
 | sed | 4.9-1 | BSD-4-Clause-UC, BSL-1.0, GFDL-1.3-only, GPL-3.0-only, GPL-3.0-or-later, ISC, X11 | dpkg-db-cataloger |
 | setuptools | 65.5.1 | MIT | python-installed-package-cataloger |
-| setuptools | 82.0.0 | MIT | python-installed-package-cataloger |
 | six | 1.17.0 | MIT | python-installed-package-cataloger |
 | sniffio | 1.3.1 | MIT OR Apache-2.0 | python-installed-package-cataloger |
 | starlette | 0.46.1 | BSD-3-Clause | python-installed-package-cataloger |
 | sysvinit-utils | 3.06-4 | GPL-2.0-only, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-only | dpkg-db-cataloger |
 | tar | 1.34+dfsg-1.2+deb12u1 | GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
 | threadpoolctl | 3.5.0 | BSD-3-Clause | python-installed-package-cataloger |
-| tomli | 2.4.0 | MIT | python-installed-package-cataloger |
 | types-cffi | 1.17.0.20250915 | Apache-2.0 | python-installed-package-cataloger |
 | types-pyopenssl | 24.1.0.20240722 |  | python-installed-package-cataloger |
 | types-redis | 4.6.0.20241004 | Apache-2.0 | python-installed-package-cataloger |
@@ -1316,9 +1294,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | wcwidth | 0.2.13 | MIT | python-installed-package-cataloger |
 | websockets | 13.1 | BSD-3-Clause | python-installed-package-cataloger |
 | wheel | 0.45.1 | MIT | python-installed-package-cataloger |
-| wheel | 0.46.3 | MIT | python-installed-package-cataloger |
 | wrapt | 1.17.3 |  | python-installed-package-cataloger |
-| zipp | 3.23.0 | MIT | python-installed-package-cataloger |
 | zipp | 3.23.0 | MIT | python-installed-package-cataloger |
 | zlib1g | 1:1.2.13.dfsg-1 | Zlib | dpkg-db-cataloger |
 
@@ -2236,8 +2212,6 @@ The complete source code for Traefik is publicly available at [https://github.co
 | apt | 2.6.1 | BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
 | argon2-cffi | 23.1.0 | MIT | python-installed-package-cataloger |
 | argon2-cffi-bindings | 21.2.0 | MIT | python-installed-package-cataloger |
-| autocommand | 2.2.2 |  | python-installed-package-cataloger |
-| backports-tarfile | 1.2.0 | MIT | python-installed-package-cataloger |
 | base-files | 12.4+deb12u12 |  | dpkg-db-cataloger |
 | base-passwd | 3.6.1 | GPL-2.0-only | dpkg-db-cataloger |
 | bash | 5.2.15-2+b9 | BSD-4-Clause-UC, GFDL-1.3-only, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, Latex2e | dpkg-db-cataloger |
@@ -2250,12 +2224,8 @@ The complete source code for Traefik is publicly available at [https://github.co
 | cffi | 2.0.0 | MIT | python-installed-package-cataloger |
 | charset-normalizer | 3.4.0 | MIT | python-installed-package-cataloger |
 | cli | UNKNOWN |  | pe-binary-package-cataloger |
-| cli | UNKNOWN |  | pe-binary-package-cataloger |
-| cli-32 | UNKNOWN |  | pe-binary-package-cataloger |
 | cli-32 | UNKNOWN |  | pe-binary-package-cataloger |
 | cli-64 | UNKNOWN |  | pe-binary-package-cataloger |
-| cli-64 | UNKNOWN |  | pe-binary-package-cataloger |
-| cli-arm64 | UNKNOWN |  | pe-binary-package-cataloger |
 | cli-arm64 | UNKNOWN |  | pe-binary-package-cataloger |
 | click | 8.1.7 | BSD-3-Clause | python-installed-package-cataloger |
 | click-didyoumean | 0.3.1 | MIT | python-installed-package-cataloger |
@@ -2281,12 +2251,8 @@ The complete source code for Traefik is publicly available at [https://github.co
 | gpgv | 2.2.40-1.1+deb12u1 | BSD-3-Clause, CC0-1.0, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
 | grep | 3.8-5 | GPL-3.0-only, GPL-3.0-or-later | dpkg-db-cataloger |
 | gui | UNKNOWN |  | pe-binary-package-cataloger |
-| gui | UNKNOWN |  | pe-binary-package-cataloger |
-| gui-32 | UNKNOWN |  | pe-binary-package-cataloger |
 | gui-32 | UNKNOWN |  | pe-binary-package-cataloger |
 | gui-64 | UNKNOWN |  | pe-binary-package-cataloger |
-| gui-64 | UNKNOWN |  | pe-binary-package-cataloger |
-| gui-arm64 | UNKNOWN |  | pe-binary-package-cataloger |
 | gui-arm64 | UNKNOWN |  | pe-binary-package-cataloger |
 | gzip | 1.12-1 | GPL-3.0-only, GPL-3.0-or-later | dpkg-db-cataloger |
 | h11 | 0.16.0 | MIT | python-installed-package-cataloger |
@@ -2295,11 +2261,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | httpx | 0.28.1 | BSD-3-Clause | python-installed-package-cataloger |
 | idna | 3.10 | BSD-3-Clause | python-installed-package-cataloger |
 | imapclient | 3.1.0 |  | python-installed-package-cataloger |
-| importlib-metadata | 8.7.1 | Apache-2.0 | python-installed-package-cataloger |
 | init-system-helpers | 1.65.2+deb12u1 | BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
-| jaraco-context | 6.1.0 | MIT | python-installed-package-cataloger |
-| jaraco-functools | 4.4.0 | MIT | python-installed-package-cataloger |
-| jaraco-text | 4.0.0 | MIT | python-installed-package-cataloger |
 | kombu | 5.5.4 | BSD-3-Clause | python-installed-package-cataloger |
 | libacl1 | 2.3.1-3 | GPL-2.0-only, GPL-2.0-or-later, LGPL-2.0-or-later, LGPL-2.1-only | dpkg-db-cataloger |
 | libapt-pkg6.0 | 2.6.1 | BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
@@ -2371,7 +2333,6 @@ The complete source code for Traefik is publicly available at [https://github.co
 | luqum | 0.14.0 | LGPL-3.0-only | python-installed-package-cataloger |
 | mawk | 1.3.4.20200120-3.1 | CC-BY-3.0, GPL-2.0-only, X11 | dpkg-db-cataloger |
 | minio | 7.2.20 | Apache-2.0 | python-installed-package-cataloger |
-| more-itertools | 10.8.0 | MIT | python-installed-package-cataloger |
 | mount | 2.38.1-5+deb12u3 | BSD-3-Clause, BSD-4-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, MIT | dpkg-db-cataloger |
 | ncurses-base | 6.4-4 | BSD-3-Clause, X11 | dpkg-db-cataloger |
 | ncurses-bin | 6.4-4 | BSD-3-Clause, X11 | dpkg-db-cataloger |
@@ -2379,12 +2340,10 @@ The complete source code for Traefik is publicly available at [https://github.co
 | ollama | 0.6.1 | MIT | python-installed-package-cataloger |
 | openssl | 3.0.17-1~deb12u2 | Apache-2.0, GPL-1.0-only, GPL-1.0-or-later | dpkg-db-cataloger |
 | packaging | 25.0 |  | python-installed-package-cataloger |
-| packaging | 26.0 | Apache-2.0 OR BSD-2-Clause | python-installed-package-cataloger |
 | passwd | 1:4.13+dfsg1-1+deb12u1 | BSD-3-Clause, GPL-1.0-only, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
 | perl-base | 5.36.0-7+deb12u3 | Artistic-2.0, Artistic-dist, BSD-3-Clause, GPL-1.0-only, GPL-1.0-or-later, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.1-only, Zlib | dpkg-db-cataloger |
 | pip | 24.0 | MIT | python-installed-package-cataloger |
 | pip | 26.0.1 | MIT | python-installed-package-cataloger |
-| platformdirs | 4.4.0 | MIT | python-installed-package-cataloger |
 | ply | 3.11 |  | python-installed-package-cataloger |
 | prompt-toolkit | 3.0.48 |  | python-installed-package-cataloger |
 | pycparser | 2.22 | BSD-3-Clause | python-installed-package-cataloger |
@@ -2402,13 +2361,11 @@ The complete source code for Traefik is publicly available at [https://github.co
 | requests | 2.32.3 | Apache-2.0 | python-installed-package-cataloger |
 | sed | 4.9-1 | BSD-4-Clause-UC, BSL-1.0, GFDL-1.3-only, GPL-3.0-only, GPL-3.0-or-later, ISC, X11 | dpkg-db-cataloger |
 | setuptools | 65.5.1 | MIT | python-installed-package-cataloger |
-| setuptools | 82.0.0 | MIT | python-installed-package-cataloger |
 | six | 1.17.0 | MIT | python-installed-package-cataloger |
 | sniffio | 1.3.1 | MIT OR Apache-2.0 | python-installed-package-cataloger |
 | starlette | 0.46.1 | BSD-3-Clause | python-installed-package-cataloger |
 | sysvinit-utils | 3.06-4 | GPL-2.0-only, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-only | dpkg-db-cataloger |
 | tar | 1.34+dfsg-1.2+deb12u1 | GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
-| tomli | 2.4.0 | MIT | python-installed-package-cataloger |
 | types-cffi | 1.17.0.20250915 | Apache-2.0 | python-installed-package-cataloger |
 | types-pyopenssl | 24.1.0.20240722 |  | python-installed-package-cataloger |
 | types-redis | 4.6.0.20241004 | Apache-2.0 | python-installed-package-cataloger |
@@ -2425,8 +2382,6 @@ The complete source code for Traefik is publicly available at [https://github.co
 | watchdog | 6.0.0 | Apache-2.0 | python-installed-package-cataloger |
 | wcwidth | 0.2.13 | MIT | python-installed-package-cataloger |
 | wheel | 0.45.1 | MIT | python-installed-package-cataloger |
-| wheel | 0.46.3 | MIT | python-installed-package-cataloger |
-| zipp | 3.23.0 | MIT | python-installed-package-cataloger |
 | zlib1g | 1:1.2.13.dfsg-1 | Zlib | dpkg-db-cataloger |
 
 ### registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/frontend
@@ -3024,8 +2979,8 @@ The complete source code for Traefik is publicly available at [https://github.co
 | ------- | --------| ------- | -------- |
 | HdrHistogram | 2.1.9 |  | java-archive-cataloger |
 | SparseBitSet | 1.3 |  | java-archive-cataloger |
-| accessors-smart | 2.5.2 |  | java-archive-cataloger |
-| accessors-smart | 2.5.2 |  | java-archive-cataloger |
+| accessors-smart | 2.5.2 | Apache-2.0 | java-archive-cataloger |
+| accessors-smart | 2.5.2 | Apache-2.0 | java-archive-cataloger |
 | aggregations | 9.0.2 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
 | aggregations | 9.0.2 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
 | alternatives | 1.24-2.el9 | GPL-2.0-only | rpm-db-cataloger |
@@ -3207,14 +3162,14 @@ The complete source code for Traefik is publicly available at [https://github.co
 | commons-io | 2.18.0 | Apache-2.0 | java-archive-cataloger |
 | commons-lang3 | 3.17.0 | Apache-2.0 | java-archive-cataloger |
 | commons-lang3 | 3.9 | Apache-2.0 | java-archive-cataloger |
-| commons-logging | 1.2 |  | java-archive-cataloger |
-| commons-logging | 1.2 |  | java-archive-cataloger |
-| commons-logging | 1.2 |  | java-archive-cataloger |
-| commons-logging | 1.2 |  | java-archive-cataloger |
-| commons-logging | 1.2 |  | java-archive-cataloger |
-| commons-math3 | 3.6.1 |  | java-archive-cataloger |
-| commons-math3 | 3.6.1 |  | java-archive-cataloger |
-| commons-math3 | 3.6.1 |  | java-archive-cataloger |
+| commons-logging | 1.2 | Apache-2.0 | java-archive-cataloger |
+| commons-logging | 1.2 | Apache-2.0 | java-archive-cataloger |
+| commons-logging | 1.2 | Apache-2.0 | java-archive-cataloger |
+| commons-logging | 1.2 | Apache-2.0 | java-archive-cataloger |
+| commons-logging | 1.2 | Apache-2.0 | java-archive-cataloger |
+| commons-math3 | 3.6.1 | Apache-2.0 | java-archive-cataloger |
+| commons-math3 | 3.6.1 | Apache-2.0 | java-archive-cataloger |
+| commons-math3 | 3.6.1 | Apache-2.0 | java-archive-cataloger |
 | compiler | 0.9.10 |  | java-archive-cataloger |
 | compiler | 0.9.10 |  | java-archive-cataloger |
 | compiler | 0.9.10 |  | java-archive-cataloger |
@@ -3278,10 +3233,10 @@ The complete source code for Traefik is publicly available at [https://github.co
 | elasticsearch-x-content | 9.0.2 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
 | endpoints-spi | 2.28.13 | Apache-2.0 | java-archive-cataloger |
 | eventstream | 1.0.1 |  | java-archive-cataloger |
-| failureaccess | 1.0.1 |  | java-archive-cataloger |
-| failureaccess | 1.0.1 |  | java-archive-cataloger |
-| failureaccess | 1.0.1 |  | java-archive-cataloger |
-| failureaccess | 1.0.1 |  | java-archive-cataloger |
+| failureaccess | 1.0.1 | Apache-2.0 | java-archive-cataloger |
+| failureaccess | 1.0.1 | Apache-2.0 | java-archive-cataloger |
+| failureaccess | 1.0.1 | Apache-2.0 | java-archive-cataloger |
+| failureaccess | 1.0.1 | Apache-2.0 | java-archive-cataloger |
 | file-libs | 5.39-16.el9 |  | rpm-db-cataloger |
 | filesystem | 3.16-5.el9 |  | rpm-db-cataloger |
 | findutils | 1:4.8.0-7.el9 |  | rpm-db-cataloger |
@@ -3302,8 +3257,8 @@ The complete source code for Traefik is publicly available at [https://github.co
 | gnupg2 | 2.3.3-4.el9 |  | rpm-db-cataloger |
 | gnutls | 3.8.3-6.el9 |  | rpm-db-cataloger |
 | gobject-introspection | 1.68.0-11.el9 |  | rpm-db-cataloger |
-| google-api-client | 2.1.1 |  | java-archive-cataloger |
-| google-api-client | 2.1.1 |  | java-archive-cataloger |
+| google-api-client | 2.1.1 | Apache-2.0 | java-archive-cataloger |
+| google-api-client | 2.1.1 | Apache-2.0 | java-archive-cataloger |
 | google-api-services-storage | v1-rev20220705-2.0.0 |  | java-archive-cataloger |
 | google-api-services-storage-v1-rev20220705 | 2.0.0 |  | java-archive-cataloger |
 | google-auth-library-credentials | 1.11.0 |  | java-archive-cataloger |
@@ -3313,8 +3268,8 @@ The complete source code for Traefik is publicly available at [https://github.co
 | google-cloud-core | 2.8.28 |  | java-archive-cataloger |
 | google-cloud-core-http | 2.8.28 |  | java-archive-cataloger |
 | google-cloud-storage | 2.13.1 | Apache-2.0 | java-archive-cataloger |
-| google-http-client | 1.42.3 |  | java-archive-cataloger |
-| google-http-client | 1.42.3 |  | java-archive-cataloger |
+| google-http-client | 1.42.3 | Apache-2.0 | java-archive-cataloger |
+| google-http-client | 1.42.3 | Apache-2.0 | java-archive-cataloger |
 | google-http-client-appengine | 1.42.3 |  | java-archive-cataloger |
 | google-http-client-appengine | 1.42.3 |  | java-archive-cataloger |
 | google-http-client-gson | 1.42.3 |  | java-archive-cataloger |
@@ -3334,13 +3289,13 @@ The complete source code for Traefik is publicly available at [https://github.co
 | gson | 2.11.0 |  | java-archive-cataloger |
 | gson | 2.12.1 | Apache-2.0 | java-archive-cataloger |
 | gson | 2.12.1 | Apache-2.0 | java-archive-cataloger |
-| guava | 32.0.1-jre |  | java-archive-cataloger |
-| guava | 32.0.1-jre |  | java-archive-cataloger |
-| guava | 32.0.1-jre |  | java-archive-cataloger |
-| guava | 32.0.1-jre |  | java-archive-cataloger |
-| guava | 32.0.1-jre |  | java-archive-cataloger |
+| guava | 32.0.1-jre | Apache-2.0 | java-archive-cataloger |
+| guava | 32.0.1-jre | Apache-2.0 | java-archive-cataloger |
+| guava | 32.0.1-jre | Apache-2.0 | java-archive-cataloger |
+| guava | 32.0.1-jre | Apache-2.0 | java-archive-cataloger |
+| guava | 32.0.1-jre | Apache-2.0 | java-archive-cataloger |
 | health-shards-availability | 9.0.2 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
-| hppc | 0.8.1 |  | java-archive-cataloger |
+| hppc | 0.8.1 | Apache-2.0 | java-archive-cataloger |
 | http-auth | 2.28.13 | Apache-2.0 | java-archive-cataloger |
 | http-auth-aws | 2.28.13 | Apache-2.0 | java-archive-cataloger |
 | http-auth-aws-eventstream | 2.28.13 | Apache-2.0 | java-archive-cataloger |
@@ -3402,17 +3357,17 @@ The complete source code for Traefik is publicly available at [https://github.co
 | jackson-dataformat-cbor | 2.17.2 |  | java-archive-cataloger |
 | jackson-dataformat-smile | 2.17.2 |  | java-archive-cataloger |
 | jackson-dataformat-smile | 2.17.2 |  | java-archive-cataloger |
-| jackson-dataformat-xml | 2.15.0 |  | java-archive-cataloger |
+| jackson-dataformat-xml | 2.15.0 | Apache-2.0 | java-archive-cataloger |
 | jackson-dataformat-yaml | 2.17.2 |  | java-archive-cataloger |
 | jackson-dataformat-yaml | 2.17.2 |  | java-archive-cataloger |
-| jackson-datatype-jsr310 | 2.15.0 |  | java-archive-cataloger |
+| jackson-datatype-jsr310 | 2.15.0 | Apache-2.0 | java-archive-cataloger |
 | jackson-module-jaxb-annotations | 2.15.0 | Apache-2.0 | java-archive-cataloger |
-| jakarta.activation | 1.2.1 |  | java-archive-cataloger |
-| jakarta.activation-api | 1.2.1 |  | java-archive-cataloger |
+| jakarta.activation | 1.2.1 | BSD-3-Clause | java-archive-cataloger |
+| jakarta.activation-api | 1.2.1 | BSD-3-Clause | java-archive-cataloger |
 | jakarta.mail | 1.6.3 |  | java-archive-cataloger |
 | jakarta.mail | 1.6.4 |  | java-archive-cataloger |
-| jakarta.xml.bind-api | 2.3.3 |  | java-archive-cataloger |
-| jansi | 2.4.0 |  | java-archive-cataloger |
+| jakarta.xml.bind-api | 2.3.3 | BSD-3-Clause | java-archive-cataloger |
+| jansi | 2.4.0 | Apache-2.0 | java-archive-cataloger |
 | java-support | 8.4.0 |  | java-archive-cataloger |
 | java-support | 8.4.0 |  | java-archive-cataloger |
 | java-version-checker | 9.0.2 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
@@ -3429,7 +3384,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | jctools-core | 4.0.5 |  | java-archive-cataloger |
 | jctools-core | 4.0.5 |  | java-archive-cataloger |
 | jdk | 24+36-3646 |  | java-jvm-cataloger |
-| jempbox | 1.8.17 |  | java-archive-cataloger |
+| jempbox | 1.8.17 | Apache-2.0 | java-archive-cataloger |
 | jline-reader | 3.21.0 |  | java-archive-cataloger |
 | jline-style | 3.21.0 |  | java-archive-cataloger |
 | jline-terminal | 3.21.0 |  | java-archive-cataloger |
@@ -3446,11 +3401,11 @@ The complete source code for Traefik is publicly available at [https://github.co
 | json-c | 0.14-11.el9 | MIT | rpm-db-cataloger |
 | json-glib | 1.6.6-1.el9 |  | rpm-db-cataloger |
 | json-schema-validator | 1.0.48 |  | java-archive-cataloger |
-| json-smart | 2.5.2 |  | java-archive-cataloger |
-| json-smart | 2.5.2 |  | java-archive-cataloger |
+| json-smart | 2.5.2 | Apache-2.0 | java-archive-cataloger |
+| json-smart | 2.5.2 | Apache-2.0 | java-archive-cataloger |
 | json-utils | 2.28.13 | Apache-2.0 | java-archive-cataloger |
-| jsr305 | 3.0.2 |  | java-archive-cataloger |
-| jsr305 | 3.0.2 |  | java-archive-cataloger |
+| jsr305 | 3.0.2 | Apache-2.0 | java-archive-cataloger |
+| jsr305 | 3.0.2 | Apache-2.0 | java-archive-cataloger |
 | jts-core | 1.15.0 |  | java-archive-cataloger |
 | jul-ecs-formatter | 1.6.0 |  | java-archive-cataloger |
 | juniversalchardet | 1.0.3 |  | java-archive-cataloger |
@@ -3661,7 +3616,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | opentelemetry-api | 1.31.0 |  | java-archive-cataloger |
 | opentelemetry-context | 1.31.0 |  | java-archive-cataloger |
 | opentelemetry-semconv | 1.21.0-alpha |  | java-archive-cataloger |
-| owasp-java-html-sanitizer | 20211018.2 |  | java-archive-cataloger |
+| owasp-java-html-sanitizer | 20211018.2 | Apache-2.0 | java-archive-cataloger |
 | p11-kit | 0.25.3-3.el9_5 | BSD-3-Clause | rpm-db-cataloger |
 | p11-kit-trust | 0.25.3-3.el9_5 | BSD-3-Clause | rpm-db-cataloger |
 | parent-join | 9.0.2 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
@@ -3737,12 +3692,12 @@ The complete source code for Traefik is publicly available at [https://github.co
 | snakeyaml | 2.0 |  | java-archive-cataloger |
 | snakeyaml | 2.0 |  | java-archive-cataloger |
 | spatial | 9.0.2 |  | java-archive-cataloger |
-| spatial4j | 0.7 |  | java-archive-cataloger |
+| spatial4j | 0.7 | Apache-2.0 | java-archive-cataloger |
 | sql-action | 9.0.2 |  | java-archive-cataloger |
 | sql-proto | 9.0.2 |  | java-archive-cataloger |
 | sqlite-libs | 3.34.1-7.el9_3 |  | rpm-db-cataloger |
 | stax2-api | 4.2.2 |  | java-archive-cataloger |
-| super-csv | 2.4.0 |  | java-archive-cataloger |
+| super-csv | 2.4.0 | Apache-2.0 | java-archive-cataloger |
 | systemd-libs | 252-51.el9_6.1 |  | rpm-db-cataloger |
 | tagsoup | 1.2.1 |  | java-archive-cataloger |
 | third-party-jackson-core | 2.28.13 | Apache-2.0 | java-archive-cataloger |
@@ -3769,7 +3724,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | vector-tile | 9.0.2 |  | java-archive-cataloger |
 | weak-lock-free | 0.18 |  | java-archive-cataloger |
 | windows-service-cli | 9.0.2 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
-| woodstox-core | 6.7.0 |  | java-archive-cataloger |
+| woodstox-core | 6.7.0 | Apache-2.0 | java-archive-cataloger |
 | x-pack-aggregate-metric | 9.0.2 |  | java-archive-cataloger |
 | x-pack-analytics | 9.0.2 |  | java-archive-cataloger |
 | x-pack-apm-data | 9.0.2 |  | java-archive-cataloger |
@@ -5729,6 +5684,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | gopkg.in/square/go-jose.v2 | v2.6.0 |  | go-module-binary-cataloger |
 | gopkg.in/yaml.v2 | v2.4.0 |  | go-module-binary-cataloger |
 | gopkg.in/yaml.v3 | v3.0.1 |  | go-module-binary-cataloger |
+| grafana | 10.4.3 |  | binary-classifier-cataloger |
 | k8s.io/api | v0.29.0 |  | go-module-binary-cataloger |
 | k8s.io/apimachinery | v0.29.0 |  | go-module-binary-cataloger |
 | k8s.io/apiserver | v0.29.0 |  | go-module-binary-cataloger |
