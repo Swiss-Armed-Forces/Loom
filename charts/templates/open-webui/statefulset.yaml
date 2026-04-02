@@ -69,7 +69,7 @@ spec:
         resources:
             requests:
               storage: {{ .Values.open_webui.pvc.storage }}
-        {{- if .Values.open_webui.pvc.storageClass -}}
+        {{- if .Values.open_webui.pvc.storageClass }}
         storageClassName: {{ .Values.open_webui.pvc.storageClass }}
         {{- end }}
 {{- end }}

@@ -108,6 +108,6 @@ spec:
         resources:
             requests:
               storage: {{ .Values.elasticsearch.pvc.storage }}
-        {{- if .Values.elasticsearch.pvc.storageClass -}}
+        {{- if .Values.elasticsearch.pvc.storageClass }}
         storageClassName: {{ .Values.elasticsearch.pvc.storageClass }}
         {{- end }}

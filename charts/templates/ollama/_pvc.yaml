@@ -15,7 +15,7 @@ spec:
   resources:
     requests:
       storage: {{ $values.pvc.storage }}
-  {{- if $values.pvc.storageClass -}}
+  {{- if $values.pvc.storageClass }}
   storageClassName: {{ $values.pvc.storageClass }}
   {{- end }}
 {{- end }}

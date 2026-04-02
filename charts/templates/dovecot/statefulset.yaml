@@ -61,6 +61,6 @@ spec:
         resources:
             requests:
               storage: {{ .Values.dovecot.pvc.storage }}
-        {{- if .Values.dovecot.pvc.storageClass -}}
+        {{- if .Values.dovecot.pvc.storageClass }}
         storageClassName: {{ .Values.dovecot.pvc.storageClass }}
         {{- end }}

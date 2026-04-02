@@ -100,7 +100,7 @@ spec:
       spec:
         accessModes:
           - {{ .Values.prometheus.pvc.accessModes | default "ReadWriteOnce" | quote }}
-        {{- if .Values.prometheus.pvc.storageClass -}}
+        {{- if .Values.prometheus.pvc.storageClass }}
         storageClassName: {{ .Values.prometheus.pvc.storageClass }}
         {{- end }}
         resources:
