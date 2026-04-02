@@ -93,6 +93,6 @@ spec:
         resources:
             requests:
               storage: {{ .Values.mongodb.pvc.storage }}
-        {{- if .Values.mongodb.pvc.storageClass -}}
+        {{- if .Values.mongodb.pvc.storageClass }}
         storageClassName: {{ .Values.mongodb.pvc.storageClass }}
         {{- end }}
