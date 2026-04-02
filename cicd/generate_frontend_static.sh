@@ -38,10 +38,10 @@ write_chart_data(){
 }
 
 fix_frontend(){
-    pre-commit \
+    prek \
         run \
         --all-files \
-        prettier::Frontend \
+        prettier_Frontend \
     || true
 }
 
