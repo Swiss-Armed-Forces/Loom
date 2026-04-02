@@ -296,3 +296,13 @@ def test_delete(in_memory_lazy_bytes_service: InMemoryLazyBytesService):
     assert lazy.service_id in in_memory_lazy_bytes_service._storage
     in_memory_lazy_bytes_service.delete(lazy)
     assert lazy.service_id not in in_memory_lazy_bytes_service._storage
+
+
+def test_flush(in_memory_lazy_bytes_service: InMemoryLazyBytesService):
+    """Test that flush() clears all stored data."""
+    obj = bytes(in_memory_lazy_bytes_service.threshold_bytes + 1)
+    lazy = in_memory_lazy_bytes_service.from_bytes(obj)
+    assert lazy.service_id in in_memory_lazy_bytes_service._storage
+    in_memory_lazy_bytes_service.flush()
+    assert lazy.service_id not in in_memory_lazy_bytes_service._storage
+    assert len(in_memory_lazy_bytes_service._storage) == 0

@@ -1,4 +1,5 @@
 import logging
+from datetime import timedelta
 
 from celery.canvas import Signature
 from common.dependencies import get_celery_app, get_lazybytes_service
@@ -9,6 +10,8 @@ logger = logging.getLogger(__name__)
 
 app = get_celery_app()
 
+FLUSH_LAZYBYTES_MIN_AGE = timedelta(minutes=5)
+
 
 def signature() -> Signature:
     return flush_lazybytes.s()
@@ -17,4 +20,4 @@ def signature() -> Signature:
 @app.task(base=PeriodicTask)
 def flush_lazybytes(*_, **__):
     logger.info("Flushing lazybytes")
-    get_lazybytes_service().flush()
+    get_lazybytes_service().flush(min_age=FLUSH_LAZYBYTES_MIN_AGE)

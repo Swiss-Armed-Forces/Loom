@@ -1,4 +1,5 @@
 import io
+from datetime import timedelta
 
 import pytest
 from common.utils.flush_s3_bucket import flush_s3_bucket
@@ -84,3 +85,25 @@ class TestFlushS3Bucket:
         # Verify bucket is empty
         objects_after = list(client.list_objects(TEST_BUCKET_NAME, recursive=True))
         assert len(objects_after) == 0
+
+    def test_flush_with_min_age_preserves_new_objects(self, client: Minio):
+        # Add some objects to the bucket
+        for i in range(3):
+            data = f"test content {i}".encode()
+            client.put_object(
+                TEST_BUCKET_NAME,
+                f"new-object-{i}.txt",
+                io.BytesIO(data),
+                len(data),
+            )
+
+        # Verify objects exist
+        objects_before = list(client.list_objects(TEST_BUCKET_NAME, recursive=True))
+        assert len(objects_before) == 3
+
+        # Flush with min_age=1 minute - objects just created should be preserved
+        flush_s3_bucket(client, TEST_BUCKET_NAME, min_age=timedelta(minutes=1))
+
+        # Verify objects are still there (they are less than 1 minute old)
+        objects_after = list(client.list_objects(TEST_BUCKET_NAME, recursive=True))
+        assert len(objects_after) == 3

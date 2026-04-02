@@ -19,7 +19,7 @@ def flush_complete(*_, **__):
 
 @app.task(base=PeriodicTask)
 def flush_on_idle_task():
-    if is_celery_idle(called_from_task=True):
+    if not is_celery_idle(called_from_task=True):
         logger.info("Celery not idle: do nothing")
         return
 

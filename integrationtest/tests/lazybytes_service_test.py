@@ -1,5 +1,7 @@
 import pickle
 import random
+import time
+from datetime import timedelta
 
 import pytest
 from common.dependencies import (
@@ -24,16 +26,12 @@ class SampleModel(BaseModel):
 # pylint: disable=redefined-outer-name
 
 
-def random_large_data():
+@pytest.fixture
+def large_data() -> bytes:
     return random.randbytes(settings.lazy_threshold_bytes * 3 + 1)
 
 
-@pytest.fixture
-def large_data():
-    return random_large_data()
-
-
-def data_generator(large_data):
+def data_generator(large_data: bytes):
     chunks = 30
     chunksize = max(1, len(large_data) // chunks)
     for i in range(0, len(large_data), chunksize):
@@ -54,7 +52,9 @@ def lazy_bytes_service(request) -> LazyBytesService:
 class TestLazyBytes:
     # pylint: disable=too-many-public-methods
 
-    def test_load_memoryview(self, lazy_bytes_service: LazyBytesService, large_data):
+    def test_load_memoryview(
+        self, lazy_bytes_service: LazyBytesService, large_data: bytes
+    ):
         lazy_bytes = lazy_bytes_service.from_bytes(large_data)
         with lazy_bytes_service.load_memoryview(lazy_bytes) as memory:
             assert memory == large_data
@@ -64,7 +64,7 @@ class TestLazyBytes:
         with lazy_bytes_service.load_memoryview(lazy_bytes) as memory:
             assert memory == b"asdfasdf"
 
-    def test_load_file(self, lazy_bytes_service: LazyBytesService, large_data):
+    def test_load_file(self, lazy_bytes_service: LazyBytesService, large_data: bytes):
         lazy_bytes = lazy_bytes_service.from_bytes(large_data)
         with lazy_bytes_service.load_file(lazy_bytes) as tempfile:
             assert tempfile.read() == large_data
@@ -74,7 +74,9 @@ class TestLazyBytes:
         with lazy_bytes_service.load_file(lazy_bytes) as tempfile:
             assert tempfile.read() == b"{}"
 
-    def test_load_generator(self, lazy_bytes_service: LazyBytesService, large_data):
+    def test_load_generator(
+        self, lazy_bytes_service: LazyBytesService, large_data: bytes
+    ):
         lazy_bytes = lazy_bytes_service.from_bytes(large_data)
         lazy_generator = lazy_bytes_service.load_generator(lazy_bytes)
         assert b"".join(lazy_generator) == large_data
@@ -84,13 +86,15 @@ class TestLazyBytes:
         lazy_generator = lazy_bytes_service.load_generator(lazy_bytes)
         assert next(lazy_generator) == b"generate meeee"
 
-    def test_from_generator(self, lazy_bytes_service: LazyBytesService, large_data):
+    def test_from_generator(
+        self, lazy_bytes_service: LazyBytesService, large_data: bytes
+    ):
         lazy_bytes = lazy_bytes_service.from_generator(data_generator(large_data))
         with lazy_bytes_service.load_memoryview(lazy_bytes) as memory:
             assert memory == large_data
 
     def test_from_generator_with_len(
-        self, lazy_bytes_service: LazyBytesService, large_data
+        self, lazy_bytes_service: LazyBytesService, large_data: bytes
     ):
         lazy_bytes = lazy_bytes_service.from_generator(
             data_generator(large_data), len(large_data)
@@ -142,7 +146,7 @@ class TestLazyBytes:
             LazyBytes(service_id=1234, embedded_data=None)
         )
 
-    def test_pickle(self, lazy_bytes_service: LazyBytesService, large_data):
+    def test_pickle(self, lazy_bytes_service: LazyBytesService, large_data: bytes):
         lazy_bytes = lazy_bytes_service.from_bytes(large_data)
         lazy_bytes = pickle.loads(pickle.dumps(lazy_bytes))
         with lazy_bytes_service.load_memoryview(lazy_bytes) as memory:
@@ -188,7 +192,7 @@ class TestLazyBytes:
         result = lazy_bytes_service.load_object(lazy)
         assert result == original
 
-    def test_delete(self, lazy_bytes_service: LazyBytesService, large_data):
+    def test_delete(self, lazy_bytes_service: LazyBytesService, large_data: bytes):
         lazy_bytes = lazy_bytes_service.from_bytes(large_data)
         # Verify data is accessible
         with lazy_bytes_service.load_memoryview(lazy_bytes) as memory:
@@ -218,7 +222,7 @@ class TestLazyBytes:
             assert memory == small_data
 
     def test_delete_then_load_fails(
-        self, lazy_bytes_service: LazyBytesService, large_data
+        self, lazy_bytes_service: LazyBytesService, large_data: bytes
     ):
         lazy_bytes = lazy_bytes_service.from_bytes(large_data)
         assert lazy_bytes.service_id is not None
@@ -227,3 +231,44 @@ class TestLazyBytes:
         with pytest.raises(Exception, match="."):
             with lazy_bytes_service.load_memoryview(lazy_bytes) as memory:
                 _ = bytes(memory)  # Force load
+
+    def test_flush_deletes_all(
+        self, lazy_bytes_service: LazyBytesService, large_data: bytes
+    ):
+        """Test that flush() with no args deletes all stored data."""
+        lazy_bytes = lazy_bytes_service.from_bytes(large_data)
+        assert lazy_bytes.service_id is not None
+        lazy_bytes_service.flush()
+        # Data should be deleted
+        with pytest.raises(Exception, match="."):
+            with lazy_bytes_service.load_memoryview(lazy_bytes) as memory:
+                _ = bytes(memory)
+
+    def test_flush_with_min_age_preserves_recent(
+        self, lazy_bytes_service: LazyBytesService, large_data: bytes
+    ):
+        """Test that flush(min_age=...) preserves recently-created data."""
+        # Store data and immediately flush with a min_age
+        lazy_bytes = lazy_bytes_service.from_bytes(large_data)
+        assert lazy_bytes.service_id is not None
+        # Flush only objects older than 5 minutes - our data is brand new
+        lazy_bytes_service.flush(min_age=timedelta(seconds=10))
+        # Data should still be accessible since it was just created
+        with lazy_bytes_service.load_memoryview(lazy_bytes) as memory:
+            assert bytes(memory) == large_data
+
+    def test_flush_with_min_age_deletes_old(
+        self, lazy_bytes_service: LazyBytesService, large_data: bytes
+    ):
+        """Test that flush(min_age=...) deletes data older than threshold."""
+        # Store data
+        lazy_bytes = lazy_bytes_service.from_bytes(large_data)
+        assert lazy_bytes.service_id is not None
+        # Wait for the data to age
+        time.sleep(2)
+        # Flush objects older than 1 second
+        lazy_bytes_service.flush(min_age=timedelta(seconds=1))
+        # Data should be deleted since it's older than 1 second
+        with pytest.raises(Exception, match="."):
+            with lazy_bytes_service.load_memoryview(lazy_bytes) as memory:
+                _ = bytes(memory)
