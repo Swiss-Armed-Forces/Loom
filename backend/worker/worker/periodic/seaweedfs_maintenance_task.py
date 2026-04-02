@@ -25,7 +25,7 @@ def seaweedfs_maintenance_task(
         command_args: Optional arguments for the command.
         check_idle: If True, only run when queues are idle.
     """
-    if check_idle and is_celery_idle(called_from_task=True):
+    if check_idle and not is_celery_idle(called_from_task=True):
         logger.info("Celery not idle: do nothing")
         return
 

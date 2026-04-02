@@ -136,8 +136,12 @@ class LazyBytesService(ABC):
         """Stores the data in the service returning a service id."""
 
     @abstractmethod
-    def flush(self):
-        """Flush the data in the service."""
+    def flush(self, min_age: timedelta | None = None):
+        """Flush the data in the service.
+
+        Args:
+            min_age: Only delete objects older than this. If None, delete all.
+        """
 
     @abstractmethod
     def _load_to(self, service_id: Any, dst: IO):
@@ -298,20 +302,29 @@ class GridFSLazyBytesService(LazyBytesService):
         with self._bucket.open_download_stream(service_id) as stream:
             yield from chunked_iterator_for_stream(stream)
 
-    def flush(self):
+    def flush(self, min_age: timedelta | None = None):
         # Deletes lazybytes assuming they are no longer used because it's only
         # only called once the system is idle.
         # To prevent deleting of incomplete uploads we check if the number of
         # chunks is what we expect.
         # If a file is older than one hour it is deleted regardless.
         now = datetime.now()
-        one_minute_ago = now - timedelta(minutes=1)
         one_hour_ago = now - timedelta(hours=1)
-        query = {"uploadDate": {"$lt": one_minute_ago}}
+
+        if min_age is not None:
+            cutoff_time = now - min_age
+            query = {"uploadDate": {"$lt": cutoff_time}}
+        else:
+            query = {}  # Delete all
+
         files_to_delete = self._bucket.find(query)
         for file in files_to_delete:
             file_id = file._id  # pylint: disable=protected-access
-            if file.length > file.chunk_size and file.upload_date > one_hour_ago:
+            if (
+                min_age is not None
+                and file.length > file.chunk_size
+                and file.upload_date > one_hour_ago
+            ):
                 # file has many chunks and was recently uploaded, might still be uploading:
                 expected_chunks = ceil(file.length / file.chunk_size)
                 actual_chunks = self._database.fs.chunks.count_documents(
@@ -363,8 +376,8 @@ class S3LazyBytesService(LazyBytesService):
         response = self._client.get_object(self._bucket, str(service_id))
         yield from response.stream()
 
-    def flush(self):
-        flush_s3_bucket(self._client, self._bucket)
+    def flush(self, min_age: timedelta | None = None):
+        flush_s3_bucket(self._client, self._bucket, min_age=min_age)
 
     def _delete(self, service_id: Any):
         self._client.remove_object(self._bucket, str(service_id))
@@ -397,7 +410,8 @@ class InMemoryLazyBytesService(LazyBytesService):
     def _load_to_generator(self, service_id: Any) -> Generator[bytes, None, None]:
         yield self._storage[service_id]
 
-    def flush(self):
+    def flush(self, min_age: timedelta | None = None):
+        # InMemoryLazyBytesService doesn't track timestamps, so min_age is ignored
         self._storage = {}
 
     def _delete(self, service_id: Any):
