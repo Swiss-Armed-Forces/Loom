@@ -26,6 +26,7 @@ from worker.index_file.extractor.pst_extractor import (
 )
 from worker.index_file.extractor.strings_extractor import StringsExtractor
 from worker.index_file.extractor.tar_extractor import TarExtractor
+from worker.index_file.extractor.xz_extractor import XZExtractor
 from worker.index_file.extractor.zip_extractor import ZipExtractor
 from worker.index_file.extractor.zstd_extractor import ZstdExtractor
 from worker.index_file.infra.file_indexing_task import FileIndexingTask
@@ -113,6 +114,7 @@ class TikaExtractorFallback(TikaFallback):
 # Fallback objects to be used in the case of an unsuccessful unpack by Tika.
 # Ordered list indicating the order of fallback extractor to be used.
 FALLBACKS: list[TikaFallback] = [
+    TikaExtractorFallback(XZExtractor()),
     TikaExtractorFallback(ZstdExtractor()),
     TikaExtractorFallback(TarExtractor()),
     TikaExtractorFallback(ZipExtractor()),

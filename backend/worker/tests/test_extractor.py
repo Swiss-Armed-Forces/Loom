@@ -1,9 +1,10 @@
-import os
-import tarfile
-import tempfile
 from contextlib import contextmanager
+from lzma import FILTER_LZMA2
+from lzma import open as xz_open
+from os import walk
 from pathlib import Path
-from tempfile import NamedTemporaryFile, TemporaryFile
+from tarfile import open as tar_open
+from tempfile import NamedTemporaryFile, TemporaryDirectory, TemporaryFile
 from typing import IO, Callable, ContextManager, Iterator
 from zipfile import ZipFile
 
@@ -24,13 +25,18 @@ from worker.index_file.extractor.pst_extractor import (
     PstExtractor,
 )
 from worker.index_file.extractor.tar_extractor import TarExtractor
+from worker.index_file.extractor.xz_extractor import (
+    XZ_EXTRACTOR_READ_CHUNK_SIZE_BYTES,
+    XZExtractor,
+)
 from worker.index_file.extractor.zip_extractor import ZipExtractor
 from worker.index_file.extractor.zstd_extractor import (
-    ZSTD_EXTRACTOR_READ_CHUNK_SIZE__BYTES,
+    ZSTD_EXTRACTOR_READ_CHUNK_SIZE_BYTES,
     ZstdExtractor,
 )
 
 TEST_ASSETS_DIR = Path(__file__).parent / "assets"
+GB = 1024**3
 
 
 class ExpectedDirectoryStructure(BaseModel):
@@ -69,7 +75,7 @@ def assert_directory_structure(
 
 def count_files(directory: str) -> int:
     """Count total number of files in a directory recursively."""
-    return sum(len(filenames) for _, _, filenames in os.walk(directory))
+    return sum(len(filenames) for _, _, filenames in walk(directory))
 
 
 @pytest.mark.parametrize(
@@ -96,8 +102,8 @@ def test_extractor_unsupported(
 
     with (
         filepath.open("rb") as f,
-        tempfile.TemporaryDirectory() as d,
-        tempfile.NamedTemporaryFile() as out_content,
+        TemporaryDirectory() as d,
+        NamedTemporaryFile() as out_content,
     ):
         lazy_bytes = lazybytes_service_inmemory.from_file(f)
         with pytest.raises(ExtractNotSupported):
@@ -210,6 +216,17 @@ def test_extractor_unsupported(
                 dirs=[],
             ),
         ),
+        (
+            XZExtractor,
+            "empty_file.tar.xz",
+            "application/x-xz",
+            1,
+            False,
+            ExpectedDirectoryStructure(
+                files=[Path("0")],
+                dirs=[],
+            ),
+        ),
     ],
 )
 def test_extractor_extraction(
@@ -227,8 +244,8 @@ def test_extractor_extraction(
 
     with (
         filepath.open("rb") as f,
-        tempfile.TemporaryDirectory() as d,
-        tempfile.NamedTemporaryFile() as out_content,
+        TemporaryDirectory() as d,
+        NamedTemporaryFile() as out_content,
     ):
         lazy_bytes = lazybytes_service_inmemory.from_file(f)
         processor.extract(lazy_bytes, file_type, d, out_content)
@@ -252,7 +269,7 @@ ArchiveFactory = Callable[[Path, int], ContextManager[IO]]
 def create_tar_test_archive(tmp_path: Path, random_file_size: int) -> Iterator[IO]:
     """Create a tar archive with a large random file for memory testing."""
     with TemporaryFile(dir=tmp_path) as tar_file:
-        with tarfile.open(fileobj=tar_file, mode="w") as archive:
+        with tar_open(fileobj=tar_file, mode="w") as archive:
             with random_file(tmp_path, random_file_size) as fd:
                 tarinfo = archive.gettarinfo(arcname="random_file", fileobj=fd)
                 archive.addfile(tarinfo, fd)
@@ -284,23 +301,70 @@ def create_zstd_test_archive(tmp_path: Path, random_file_size: int) -> Iterator[
         )
         with random_file(tmp_path, random_file_size) as fd:
             with cctx.stream_writer(zstd_file, closefd=False) as compressor:
-                while chunk := fd.read(ZSTD_EXTRACTOR_READ_CHUNK_SIZE__BYTES):
+                while chunk := fd.read(ZSTD_EXTRACTOR_READ_CHUNK_SIZE_BYTES):
                     compressor.write(chunk)
         zstd_file.flush()
         zstd_file.seek(0)
         yield zstd_file
 
 
+@contextmanager
+def create_xz_test_archive(tmp_path: Path, random_file_size: int) -> Iterator[IO]:
+    # Those are the minimum allowed filters so it takes the least amount of
+    # resource when decompressing
+    minimum_filters = [
+        {
+            "id": FILTER_LZMA2,
+            "dict_size": 4096,  # The minimum 4 KiB
+        }
+    ]
+
+    with NamedTemporaryFile(dir=tmp_path, suffix=".xz") as xz_file:
+        with (
+            xz_open(xz_file, "wb", filters=minimum_filters) as compressor,
+            random_file(tmp_path, random_file_size) as fd,
+        ):
+            while chunk := fd.read(XZ_EXTRACTOR_READ_CHUNK_SIZE_BYTES):
+                compressor.write(chunk)
+        xz_file.flush()
+        xz_file.seek(0)
+        yield xz_file
+
+
 @pytest.mark.parametrize(
     "extractor_class,archive_factory,file_type,expected_output_file",
     [
-        (TarExtractor, create_tar_test_archive, "application/x-tar", "random_file"),
-        (ZipExtractor, create_zip_test_archive, "application/zip", "random_file"),
-        (ZstdExtractor, create_zstd_test_archive, "application/zstd", "0"),
+        pytest.param(
+            TarExtractor,
+            create_tar_test_archive,
+            "application/x-tar",
+            "random_file",
+            marks=pytest.mark.limit_memory("2 MB"),
+        ),
+        pytest.param(
+            ZipExtractor,
+            create_zip_test_archive,
+            "application/zip",
+            "random_file",
+            marks=pytest.mark.limit_memory("2 MB"),
+        ),
+        pytest.param(
+            ZstdExtractor,
+            create_zstd_test_archive,
+            "application/zstd",
+            "0",
+            marks=pytest.mark.limit_memory("2 MB"),
+        ),
+        pytest.param(
+            XZExtractor,
+            create_xz_test_archive,
+            "application/x-xz",
+            "0",
+            marks=pytest.mark.limit_memory("3 MB"),
+        ),
     ],
 )
-@pytest.mark.parametrize("random_file_size", [1 << 30, 2 << 30])
-@pytest.mark.limit_memory("2 MB")
+@pytest.mark.parametrize("random_file_size", [1 * GB, 2 * GB])
 def test_extractor_memory_usage(
     extractor_class: type[NamedFileExtractorBase],
     archive_factory: ArchiveFactory,
