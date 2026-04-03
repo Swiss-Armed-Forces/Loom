@@ -137,6 +137,8 @@ from utils.upload_asset import upload_asset
         ("http.pcap", ["http.pcap"]),
         # Zstd extraction test
         ("file.txt.zst", ["file.txt.zst", "file.txt.zst/0"]),
+        # XZ extraction test
+        ("file.txt.xz", ["file.txt.xz", "file.txt.xz/0"]),
     ],
 )
 def test_extraction(file: str, expected_content: list[str]):

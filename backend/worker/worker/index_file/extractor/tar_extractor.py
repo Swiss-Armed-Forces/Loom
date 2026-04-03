@@ -13,7 +13,7 @@ class TarExtractor(NamedFileExtractorBase):
     def extract_file(
         self, fileobj: IO[bytes], file_type: str, out_dir: str, _: IO[bytes]
     ):
-        # tarfile is very genorous when trying to extract files,
+        # tarfile is very generous when trying to extract files,
         # hence it won't raise TarError for many file types which
         # are not actually tar files: This is why we limit here
         # to what we process with this extractor.

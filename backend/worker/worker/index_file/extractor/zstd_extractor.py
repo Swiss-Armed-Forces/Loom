@@ -8,7 +8,7 @@ from worker.index_file.extractor.base import (
     NamedFileExtractorBase,
 )
 
-ZSTD_EXTRACTOR_READ_CHUNK_SIZE__BYTES = 8192
+ZSTD_EXTRACTOR_READ_CHUNK_SIZE_BYTES = 8192
 
 
 class ZstdExtractor(NamedFileExtractorBase):
@@ -23,7 +23,7 @@ class ZstdExtractor(NamedFileExtractorBase):
             with dctx.stream_reader(fileobj) as reader:
                 with open(outpath, "wb") as f:
                     # Read and write in chunks to avoid loading everything into memory
-                    while chunk := reader.read(ZSTD_EXTRACTOR_READ_CHUNK_SIZE__BYTES):
+                    while chunk := reader.read(ZSTD_EXTRACTOR_READ_CHUNK_SIZE_BYTES):
                         f.write(chunk)
         except ZstdError as ex:
             raise ExtractNotSupported from ex
