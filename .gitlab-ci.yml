@@ -42,7 +42,55 @@ variables:
   RUNNER_SCRIPT_TIMEOUT: 3h
   RUNNER_AFTER_SCRIPT_TIMEOUT: 30m
   # Set Script Log Level
-  LOG_LEVEL: "DEBUG"
+  LOG_LEVEL: "INFO"
+
+# ---------------------------------------------#
+#               CACHE DEFINITIONS
+# ---------------------------------------------#
+
+# Dependencies cache: venv + node_modules
+.cache_dependencies: &cache_dependencies
+  key:
+    files:
+      - poetry.lock
+      - Frontend/pnpm-lock.yaml
+  paths:
+    - .venv
+    - Frontend/node_modules/
+  unprotect: true
+  when: 'always'
+
+# Build cache: docker + skaffold
+.cache_build: &cache_build
+  key: ${CI_JOB_GROUP_NAME}-build-cache
+  paths:
+    - docker-cache
+    - ${SKAFFOLD_HOME}
+  unprotect: true
+  when: 'always'
+
+# Kubernetes cache: minikube + kubernetes
+.cache_kubernetes: &cache_kubernetes
+  key:
+    files:
+      - up.sh  # pins minikube invocation
+      - devenv.lock  # pins minikube version
+    prefix: ${CI_JOB_GROUP_NAME}-kubernetes-cache-${CI_RUNNER_TAGS}
+  paths:
+    - ${MINIKUBE_HOME}
+    - kubernetes-cache
+  unprotect: true
+  when: 'always'
+
+# Third party cache (job-specific)
+.cache_third_party: &cache_third_party
+  key:
+    files:
+      - cicd/generate_third_party.sh
+  paths:
+    - third-party-cache
+  unprotect: true
+  when: 'always'
 
 default:
   # Allow cancellation of running tasks
@@ -101,20 +149,7 @@ default:
     when: always
   # Dependency caching
   cache:
-    - key:
-        files:
-          - poetry.lock
-      paths:
-        - .venv
-      unprotect: true
-      when: 'always'
-    - key:
-        files:
-          - Frontend/pnpm-lock.yaml
-      paths:
-        - Frontend/node_modules/
-      unprotect: true
-      when: 'always'
+    - *cache_dependencies
 
 .default-docker:
   extends: default
@@ -148,17 +183,8 @@ default:
     #
     - section_end .default-docker-after_script
   cache:
-    - !reference [default, cache]
-    - key: ${CI_JOB_GROUP_NAME}-docker-cache
-      paths:
-        - docker-cache
-      unprotect: true
-      when: 'always'
-    - key: ${CI_JOB_GROUP_NAME}-skaffold-cache
-      paths:
-        - ${SKAFFOLD_HOME}
-      unprotect: true
-      when: 'always'
+    - *cache_dependencies
+    - *cache_build
 
 .default-k8s:
   extends: .default-docker
@@ -195,24 +221,9 @@ default:
     #
     - section_end .default-k8s-after_script
   cache:
-    - !reference [.default-docker, cache]
-    # Cache per runner tags: minikube setup is dependent
-    # on runner hardware - we assume here that all
-    # runners with the same tags are very similar
-    - key:
-        files:
-          - up.sh  # pins minikube invocation
-          - devenv.lock  # pins minikube version
-        prefix: ${CI_JOB_GROUP_NAME}-minikube-cache-${CI_RUNNER_TAGS}
-      paths:
-        - ${MINIKUBE_HOME}
-      unprotect: true
-      when: 'always'
-    - key: ${CI_JOB_GROUP_NAME}-kubernetes-cache
-      paths:
-        - kubernetes-cache
-      unprotect: true
-      when: 'always'
+    - *cache_dependencies
+    - *cache_build
+    - *cache_kubernetes
 
 .default-up:
   extends: .default-k8s
@@ -305,14 +316,9 @@ generate_third_party:
     - devenv shell -- generate-third-party
     - devenv shell -- git-file-changed
   cache:
-    - !reference [.default-docker, cache]
-    - key:
-        files:
-          - cicd/generate_third_party.sh
-      paths:
-        - third-party-cache
-      unprotect: true
-      when: 'always'
+    - *cache_dependencies
+    - *cache_build
+    - *cache_third_party
 
 # ---------------------------------------------#
 #
