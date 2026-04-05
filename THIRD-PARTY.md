@@ -675,7 +675,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | @emotion/styled                     | MIT          | 11.14.1           |
 | @mui/icons-material                 | MIT          | 7.3.9             |
 | @mui/material                       | MIT          | 7.3.9             |
-| @mui/x-charts                       | MIT          | 8.28.0            |
+| @mui/x-charts                       | MIT          | 8.28.2            |
 | @mui/x-tree-view                    | MIT          | 8.27.2            |
 | @reduxjs/toolkit                    | MIT          | 2.11.2            |
 | ace-builds                          | BSD-3-Clause | 1.43.6            |
@@ -691,7 +691,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | react-intersection-observer         | MIT          | 9.16.0            |
 | react-pdf                           | MIT          | 10.4.1            |
 | react-redux                         | MIT          | 9.2.0             |
-| react-router-dom                    | MIT          | 7.13.2            |
+| react-router-dom                    | MIT          | 7.14.0            |
 | react-toastify                      | MIT          | 11.0.5            |
 | uuid                                | MIT          | 12.0.0            |
 | @eslint/js                          | MIT          | 9.39.4            |
@@ -699,7 +699,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | @openapitools/openapi-generator-cli | Apache-2.0   | 2.31.0            |
 | @testing-library/jest-dom           | MIT          | 6.9.1             |
 | @testing-library/react              | MIT          | 16.3.2            |
-| @types/node                         | MIT          | 24.12.0           |
+| @types/node                         | MIT          | 24.12.2           |
 | @types/react                        | MIT          | 19.2.14           |
 | @types/react-dom                    | MIT          | 19.2.3            |
 | @typescript-eslint/eslint-plugin    | MIT          | 8.58.0            |

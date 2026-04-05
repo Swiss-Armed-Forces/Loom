@@ -186,13 +186,9 @@ wait_for is_nix_daemon_ready
 if ! is_taiscale_ready; then
     fork tailscaled
 
-    echo "[*]"
-    echo "[*]"
     echo "[*] ============================================================"
     echo "[*] Joining tailscale network as: '${TAILSCALE_HOSTNAME_SAFE}'"
     echo "[*] ============================================================"
-    echo "[*]"
-    echo "[*]"
     # Do not use tailscale dns.
     # We have seen issues like the following:
     # format("dns: resolver: forward: no upstream resolvers set, returning SERVFAIL")
@@ -218,7 +214,8 @@ wait_for is_taiscale_ready
 #     this is so that bash source files in
 #     /etc/profile.d/* which then populates the
 #     environment for nix usage
-echo "Running command: '${CMD_TO_RUN[*]}'"
+#
+# echo "Running command: '${CMD_TO_RUN[*]}'"
 "${CMD_SUDO}" \
     --user "${NIX_USER_NAME}" \
     --group "${NIX_GROUP_NAME}" \
