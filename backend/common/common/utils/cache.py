@@ -2,7 +2,7 @@ import logging
 from functools import wraps
 from hashlib import sha256
 from pickle import dumps, loads
-from time import time
+from time import monotonic
 from typing import Any, Callable, Generic, TypeVar
 
 from pydantic import BaseModel, Field, RootModel, computed_field
@@ -179,7 +179,7 @@ def cache_get(
 
     if result is not None:
         redis_client.incr(stats_hit_key)
-        redis_client.zadd(keys_key, {key: time()})
+        redis_client.zadd(keys_key, {key: monotonic()})
         return CacheResult(hit=True, value=loads(result))
 
     redis_client.incr(stats_miss_key)
@@ -203,13 +203,15 @@ def cache_set(
 
     redis_client = get_redis_cache_client()
     redis_client.hset(vals_key, key, dumps(value))
-    redis_client.zadd(keys_key, {key: time()})
+    redis_client.zadd(keys_key, {key: monotonic()})
     redis_client.hset(settings_key, "max_size", max_size)
     redis_client.hexpire(vals_key, ttl_seconds, key)  # type: ignore[attr-defined]
     redis_client.expire(vals_key, ttl_seconds)
 
 
-def invalidate(namespace: str, key_function: Callable | None, *args, **kwargs) -> bool:
+def cache_invalidate(
+    namespace: str, key_function: Callable | None, *args, **kwargs
+) -> bool:
     """Invalidate (delete) a specific cache entry.
 
     Returns:
@@ -269,7 +271,7 @@ def cache(
                 # increment hits stats
                 redis_client.incr(stats_hit_key)
                 # for LRU: increment score of key in keys set
-                redis_client.zadd(keys_key, {key: time()})
+                redis_client.zadd(keys_key, {key: monotonic()})
                 parsed_result = loads(result)
             else:
                 parsed_result = func(*args, **kwargs)
@@ -295,7 +297,7 @@ def cache(
                     redis_client.incr(stats_hit_key)
 
                 # LRU bookkeeping
-                redis_client.zadd(keys_key, {key: time()})
+                redis_client.zadd(keys_key, {key: monotonic()})
 
             # set/refresh ttl for vals_key
             redis_client.expire(vals_key, ttl_seconds)

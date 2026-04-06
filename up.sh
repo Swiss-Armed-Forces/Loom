@@ -578,7 +578,7 @@ expose_minikube(){
     echo "[*] Exposing application on ${EXPOSE_IP}"
     sudo \
         --background \
-        --preserve-env \
+        --preserve-env=HOME,MINIKUBE_HOME \
         sh -c "
             mkdir --parents '${TUNNEL_PIDFILE_DIR}'
             echo \$\$ > '${TUNNEL_PIDFILE}'

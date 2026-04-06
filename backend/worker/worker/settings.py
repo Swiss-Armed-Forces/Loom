@@ -220,6 +220,14 @@ class Settings(CommonSettings):
     # SeaweedFS Maintenance Settings
     seaweedfs_shell_timeout: int = 3600  # 1 hour
 
+    # Persister timing settings
+    persister_debounce_window: float = 2.5  # seconds to wait for more mutations
+    persister_max_delay: float = 5  # max seconds before forced flush
+    persister_max_delay_forget_multiplier: int = (
+        10  # multiplier for stale object eviction
+    )
+    persister_save_max_retries: int = 3  # max conflict retries before giving up
+
     @property
     def rendered_pdf_page_size(self) -> PageSize:
         return PageSize(

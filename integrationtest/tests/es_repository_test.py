@@ -9,7 +9,6 @@ from common.models.base_repository import RepositoryObject
 from common.models.es_repository import ES_REPOSITORY_TYPES, BaseEsRepository
 from common.services.lazybytes_service import LazyBytes
 from common.services.query_builder import QueryParameters
-from elasticsearch import NotFoundError
 
 ES_REPOSITORY_MINIMAL_OBJECTS: dict[type[BaseEsRepository], RepositoryObject] = {
     FileRepository: File(
@@ -99,8 +98,7 @@ def test_delete_by_id_existing_document(repository_type: type[BaseEsRepository])
     assert result is True
 
     # Verify it's gone
-    with pytest.raises(NotFoundError):
-        repository.get_by_id(_object.id_)
+    assert repository.get_by_id(_object.id_) is None
 
 
 @pytest.mark.parametrize(
@@ -117,6 +115,21 @@ def test_delete_by_id_nonexistent_objects(repository_type: type[BaseEsRepository
     nonexistent_id = uuid4()
     result = repository.delete_by_id(nonexistent_id)
     assert result is False
+
+
+@pytest.mark.parametrize(
+    "repository_type",
+    ES_REPOSITORY_TYPES,
+)
+def test_get_by_id_nonexistent_returns_none(repository_type: type[BaseEsRepository]):
+    """Test that get_by_id returns None for non-existent objects."""
+    repository = repository_type(
+        query_builder=get_query_builder(), pubsub_service=get_pubsub_service()
+    )
+
+    nonexistent_id = uuid4()
+    result = repository.get_by_id(nonexistent_id)
+    assert result is None
 
 
 @pytest.mark.parametrize(
@@ -146,95 +159,3 @@ def test_update_partial_fields(repository_type: type[BaseEsRepository]):
 
     # Cleanup
     repository.delete_by_id(_object.id_)
-
-
-@pytest.mark.parametrize(
-    "repository_type",
-    ES_REPOSITORY_TYPES,
-)
-def test_is_fresh_returns_true_for_unchanged_document(
-    repository_type: type[BaseEsRepository],
-):
-    """Test that is_fresh returns True for a freshly saved document."""
-    repository = repository_type(
-        query_builder=get_query_builder(), pubsub_service=get_pubsub_service()
-    )
-
-    # Create and save a minimal object
-    _object = ES_REPOSITORY_MINIMAL_OBJECTS[repository_type].model_copy(deep=True)
-    repository.save(_object)
-
-    # Immediately check freshness - should be True
-    assert repository.is_fresh(_object) is True
-
-
-@pytest.mark.parametrize(
-    "repository_type",
-    ES_REPOSITORY_TYPES,
-)
-def test_is_fresh_returns_false_after_external_update(
-    repository_type: type[BaseEsRepository],
-):
-    """Test that is_fresh returns False after the document is updated externally."""
-    repository = repository_type(
-        query_builder=get_query_builder(), pubsub_service=get_pubsub_service()
-    )
-
-    # Create and save a minimal object
-    _object = ES_REPOSITORY_MINIMAL_OBJECTS[repository_type].model_copy(deep=True)
-    repository.save(_object)
-
-    # Keep a cached copy of the object
-    cached_object = _object.model_copy(deep=True)
-
-    # Update the object in ES (this changes the version)
-    _object.hidden = not _object.hidden
-    repository.update(_object, include={"hidden"})
-
-    # Check freshness of the cached copy - should be False
-    assert repository.is_fresh(cached_object) is False
-
-
-@pytest.mark.parametrize(
-    "repository_type",
-    ES_REPOSITORY_TYPES,
-)
-def test_is_fresh_returns_false_for_deleted_document(
-    repository_type: type[BaseEsRepository],
-):
-    """Test that is_fresh returns False for a deleted document."""
-    repository = repository_type(
-        query_builder=get_query_builder(), pubsub_service=get_pubsub_service()
-    )
-
-    # Create and save a minimal object
-    _object = ES_REPOSITORY_MINIMAL_OBJECTS[repository_type].model_copy(deep=True)
-    repository.save(_object)
-
-    # Delete the object
-    repository.delete_by_id(_object.id_)
-
-    # Check freshness - should be False since document no longer exists
-    assert repository.is_fresh(_object) is False
-
-
-@pytest.mark.parametrize(
-    "repository_type",
-    ES_REPOSITORY_TYPES,
-)
-def test_is_fresh_returns_false_for_object_without_version(
-    repository_type: type[BaseEsRepository],
-):
-    """Test that is_fresh returns False for an object without version metadata."""
-    repository = repository_type(
-        query_builder=get_query_builder(), pubsub_service=get_pubsub_service()
-    )
-
-    # Create an object WITHOUT saving (no version metadata)
-    _object = ES_REPOSITORY_MINIMAL_OBJECTS[repository_type].model_copy(deep=True)
-
-    # Verify the object has no version
-    assert _object.es_meta.version is None
-
-    # Check freshness - should be False since there's no version to compare
-    assert repository.is_fresh(_object) is False

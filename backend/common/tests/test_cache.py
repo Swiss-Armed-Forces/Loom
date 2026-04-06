@@ -2,7 +2,7 @@ from hashlib import sha256
 from pickle import dumps, loads
 
 from common.dependencies import get_redis_cache_client
-from common.utils.cache import cache, cache_get, cache_set, invalidate
+from common.utils.cache import cache, cache_get, cache_invalidate, cache_set
 
 
 @cache(key_function=lambda: "my-key")
@@ -88,7 +88,7 @@ def test_invalidate_existing_key():
     redis_client = get_redis_cache_client()
     redis_client.hdel.return_value = 1  # 1 key deleted
 
-    result = invalidate("test.namespace", lambda x: (x,), "key123")
+    result = cache_invalidate("test.namespace", lambda x: (x,), "key123")
 
     assert result is True
     assert redis_client.hdel.called
@@ -100,6 +100,6 @@ def test_invalidate_nonexistent_key():
     redis_client = get_redis_cache_client()
     redis_client.hdel.return_value = 0  # No keys deleted
 
-    result = invalidate("test.namespace", lambda x: (x,), "key123")
+    result = cache_invalidate("test.namespace", lambda x: (x,), "key123")
 
     assert result is False

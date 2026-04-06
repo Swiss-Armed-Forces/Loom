@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
-from typing import Any, Generic, TypeVar
+from dataclasses import dataclass
+from typing import Any, Generic, Iterator, Sequence, TypeVar
 
 import typing_extensions
 from pydantic import BaseModel, ConfigDict
@@ -24,6 +25,19 @@ class RepositoryObject(BaseModel, ABC):
 RepositoryObjectT = TypeVar("RepositoryObjectT", bound=RepositoryObject)
 
 
+class RepositoryBulkSaveError(Exception):
+    """Raised when a bulk_save operation fails."""
+
+
+@dataclass
+class BulkOperationResult:
+    """Result for a single object in a bulk operation."""
+
+    object_id: Any
+    success: bool
+    error: RepositoryBulkSaveError | None = None
+
+
 class BaseRepository(ABC, Generic[RepositoryObjectT]):
     """Repository for CRUD operations."""
 
@@ -33,10 +47,6 @@ class BaseRepository(ABC, Generic[RepositoryObjectT]):
     @property
     @abstractmethod
     def _object_type(self) -> type[RepositoryObjectT]:
-        pass
-
-    @abstractmethod
-    def is_fresh(self, obj: RepositoryObjectT) -> bool:
         pass
 
     @abstractmethod
@@ -55,6 +65,24 @@ class BaseRepository(ABC, Generic[RepositoryObjectT]):
         exclude: IncEx = None,
     ):
         """Partial update of specific fields."""
+
+    def bulk_save(
+        self, objects: Sequence[RepositoryObjectT]
+    ) -> Iterator[BulkOperationResult]:
+        """Persist multiple objects.
+
+        Yields results as they complete.
+        """
+        for obj in objects:
+            try:
+                self.save(obj)
+                yield BulkOperationResult(object_id=obj.id_, success=True)
+            except Exception as ex:  # pylint: disable=broad-exception-caught
+                yield BulkOperationResult(
+                    object_id=obj.id_,
+                    success=False,
+                    error=RepositoryBulkSaveError(f"{ex}"),
+                )
 
 
 REPOSITORY_INSTANCES: dict[type[BaseRepository], BaseRepository] = {}

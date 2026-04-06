@@ -107,18 +107,3 @@ def test_es_repository_save(obj: _TestMongoRepositoryObject):
     repository.save(obj)
 
     repository.repo.save.assert_called_once_with(obj)
-
-
-@pytest.mark.parametrize(
-    "obj",
-    get_test_repository_object_instances(),
-)
-def test_mongo_repository_is_fresh_raises_not_implemented(
-    obj: _TestMongoRepositoryObject,
-):
-    repository = _TestMongoRepository(mock_types=True)
-
-    with pytest.raises(NotImplementedError) as exc_info:
-        repository.is_fresh(obj)
-
-    assert str(exc_info.value) == "is_fresh is not yet implemented"

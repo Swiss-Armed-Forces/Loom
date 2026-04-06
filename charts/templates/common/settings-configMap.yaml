@@ -52,6 +52,25 @@ data:
     {{- end }}
     persister_total: {{ .Values.persister.replicaCount | quote }}
 
+    # memory watermark
+    {{- if ne .Values.persister.memoryWatermarkPercent nil }}
+    memory_watermark_percent: {{ .Values.persister.memoryWatermarkPercent | quote }}
+    {{- end }}
+
+    # persister timing
+    {{- if ne .Values.persister.debounceWindow nil }}
+    persister_debounce_window: {{ .Values.persister.debounceWindow | quote }}
+    {{- end }}
+    {{- if ne .Values.persister.maxDelay nil }}
+    persister_max_delay: {{ .Values.persister.maxDelay | quote }}
+    {{- end }}
+    {{- if ne .Values.persister.maxDelayForgetMultiplier nil }}
+    persister_max_delay_forget_multiplier: {{ .Values.persister.maxDelayForgetMultiplier | quote }}
+    {{- end }}
+    {{- if ne .Values.persister.saveMaxRetries nil }}
+    persister_save_max_retries: {{ .Values.persister.saveMaxRetries | quote }}
+    {{- end }}
+
     # crawler
     {{- if .Values.crawler.s3Buckets }}
     s3_buckets: {{ .Values.crawler.s3Buckets | join "," | quote }}
