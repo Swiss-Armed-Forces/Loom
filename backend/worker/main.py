@@ -56,8 +56,6 @@ match settings.worker_type:
         argv = argv + [
             "--queues",
             ",".join(my_queues),
-            "--autoscale",
-            "1,0",
         ]
     case "FLOWER":
         argv = argv + [

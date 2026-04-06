@@ -23,12 +23,6 @@ class _TestRepository(BaseRepository[_TestRepositoryObject]):
     def _object_type(self) -> type[_TestRepositoryObject]:
         return _TestRepositoryObject
 
-    def is_fresh(self, obj: _TestRepositoryObject) -> bool:
-        if obj.id_ not in self._repo:
-            return False
-        stored = self._repo[obj.id_]
-        return stored.model_dump() == obj.model_dump()
-
     def save(self, obj: _TestRepositoryObject):
         self._repo[obj.id_] = obj
 
@@ -80,18 +74,3 @@ def test_base_repo_update():
 
     retrieved = repo.get_by_id(obj.id_)
     assert retrieved.name == "updated"
-
-
-def test_base_repo_is_fresh():
-    repo = _TestRepository()
-    obj = _TestRepositoryObject(name="test")
-    repo.save(obj)
-    assert repo.is_fresh(obj) is True
-
-    # Create a cached copy, then modify the stored object
-    cached = obj.model_copy(deep=True)
-    obj.name = "modified"
-    repo.save(obj)  # Update the store with modified version
-
-    # The cached copy is no longer fresh
-    assert repo.is_fresh(cached) is False

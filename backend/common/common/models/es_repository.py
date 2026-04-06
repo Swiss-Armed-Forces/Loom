@@ -2,14 +2,24 @@ import logging
 import time
 from abc import abstractmethod
 from contextlib import contextmanager
-from typing import Any, Callable, Generator, Generic, Literal, TypeVar
+from typing import (
+    Any,
+    Callable,
+    Generator,
+    Generic,
+    Iterator,
+    Literal,
+    Sequence,
+    TypeVar,
+)
 from uuid import UUID, uuid4
 
 from elastic_transport import ObjectApiResponse
-from elasticsearch import ConflictError, Elasticsearch, NotFoundError
+from elasticsearch import Elasticsearch, NotFoundError
 from elasticsearch.dsl import Boolean, Document, Index, Keyword, Search
 from elasticsearch.dsl.connections import get_connection
 from elasticsearch.dsl.response import Response
+from elasticsearch.helpers import streaming_bulk
 from pydantic import BaseModel, Field, computed_field
 
 from common.messages.messages import (
@@ -18,7 +28,13 @@ from common.messages.messages import (
     PubSubMessage,
 )
 from common.messages.pubsub_service import PubSubService
-from common.models.base_repository import BaseRepository, IncEx, RepositoryObject
+from common.models.base_repository import (
+    BaseRepository,
+    BulkOperationResult,
+    IncEx,
+    RepositoryBulkSaveError,
+    RepositoryObject,
+)
 from common.services.query_builder import (
     DEFAULT_PIT_KEEPALIVE,
     KeepAlive,
@@ -371,35 +387,11 @@ class BaseEsRepository(
         point_in_time_id: str = point_in_time["id"]
         return point_in_time_id
 
-    def is_fresh(self, obj: EsRepositoryObjectT) -> bool:
-        """Check if a object is still the latest version in Elasticsearch.
-
-        Uses a HEAD request with if_seq_no and if_primary_term to efficiently
-        validate cache freshness without fetching the document body.
-
-        Args:
-            obj: The cached object to validate
-
-        Returns:
-            True if the cached object matches the current ES version, False otherwise
-        """
-        # If object doesn't have version metadata, consider it stale
-        if obj.es_meta.version is None:
-            return False
-
-        try:
-            exists = self._document_type.exists(
-                id=str(obj.id_),
-                using=self._elasticsearch,
-                version=obj.es_meta.version,
-            )
-            return exists
-        except (NotFoundError, ConflictError):
-            # Document doesn't exist or version mismatch
-            return False
-
     def get_by_id(self, id_: UUID) -> EsRepositoryObjectT | None:
-        document = self._document_type.get(str(id_), using=self._elasticsearch)
+        try:
+            document = self._document_type.get(str(id_), using=self._elasticsearch)
+        except NotFoundError:
+            return None
         if document is None:
             return document
         obj = self._document_to_object(document)
@@ -566,7 +558,7 @@ class BaseEsRepository(
     def save(self, obj: EsRepositoryObjectT):
         """Persists the object and updates its ES metadata in-place."""
         document = self._object_to_document(obj)
-        document.save(refresh=True, using=self._elasticsearch)
+        document.save(refresh="wait_for", using=self._elasticsearch)
 
         # Update object metadata
         new_obj = self._document_to_object(document)
@@ -584,7 +576,7 @@ class BaseEsRepository(
         # Build update kwargs with optimistic concurrency control
         update_kwargs: dict[str, Any] = {
             "using": self._elasticsearch,
-            "refresh": True,
+            "refresh": "wait_for",
         }
         if obj.es_meta.seq_no is not None and obj.es_meta.primary_term is not None:
             update_kwargs["if_seq_no"] = obj.es_meta.seq_no
@@ -598,6 +590,54 @@ class BaseEsRepository(
 
         self._send_file_update_message_by_id(obj.id_)
 
+    def bulk_save(
+        self, objects: Sequence[EsRepositoryObjectT]
+    ) -> Iterator[BulkOperationResult]:
+        """Persist multiple objects using ES streaming bulk API."""
+        if not objects:
+            return
+
+        actions = []
+        for obj in objects:
+            doc = self._object_to_document(obj)
+            action: dict[str, Any] = {
+                "_op_type": "index",
+                "_index": self._index._name,  # pylint: disable=protected-access
+                "_id": str(obj.id_),
+                "_source": doc.to_dict(),
+            }
+            # Add optimistic concurrency if available
+            if obj.es_meta.seq_no is not None and obj.es_meta.primary_term is not None:
+                action["if_seq_no"] = obj.es_meta.seq_no
+                action["if_primary_term"] = obj.es_meta.primary_term
+            actions.append(action)
+
+        # streaming_bulk yields results in same order as input actions
+        for obj, (ok, item) in zip(
+            objects,
+            streaming_bulk(
+                self._elasticsearch,
+                actions,
+                raise_on_error=False,
+                raise_on_exception=False,
+                refresh="wait_for",
+            ),
+        ):
+            _op_type, info = item.popitem()
+
+            if ok:
+                # Update object's es_meta with new seq_no/primary_term
+                obj.es_meta.seq_no = info.get("_seq_no")
+                obj.es_meta.primary_term = info.get("_primary_term")
+                self._send_file_update_message_by_id(obj.id_)
+                yield BulkOperationResult(object_id=obj.id_, success=True)
+            else:
+                yield BulkOperationResult(
+                    object_id=obj.id_,
+                    success=False,
+                    error=RepositoryBulkSaveError(f"Bulk save failed: {info}"),
+                )
+
     def delete_by_id(self, id_: UUID) -> bool:
         """Delete a document by ID.
 
@@ -606,7 +646,7 @@ class BaseEsRepository(
         """
         try:
             document = self._document_type({"_id": id_})
-            document.delete(using=self._elasticsearch, refresh=True)
+            document.delete(using=self._elasticsearch, refresh="wait_for")
             self._send_file_update_message_by_id(id_)
             return True
         except NotFoundError:

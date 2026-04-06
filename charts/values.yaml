@@ -202,6 +202,11 @@ persister:
     limits:
       cpu: "1"
       memory: "2Gi"
+  memoryWatermarkPercent: null
+  debounceWindow: null  # seconds to wait for more mutations before saving
+  maxDelay: null  # max seconds before forced flush
+  maxDelayForgetMultiplier: null  # multiplier for stale object eviction
+  saveMaxRetries: null  # max conflict retries before giving up
   sharding:
     # Total number of shards
     numShards: null

@@ -59,9 +59,6 @@ class BaseMongoRepository(
         super().__init_subclass__(**kwargs)
         MONGO_REPOSITORY_TYPES.append(cls)
 
-    def is_fresh(self, obj: MongoRepositoryObjectT) -> bool:
-        raise NotImplementedError("is_fresh is not yet implemented")
-
     def save(self, obj: MongoRepositoryObjectT):
         self._repo.save(obj)
 

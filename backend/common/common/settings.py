@@ -134,6 +134,10 @@ class Settings(BaseSettings):
 
     automatic_indexing: bool = True
 
+    # Memory watermark for memory pressure detection
+    # E.g., 0.9 means memory pressure when container uses 90% of memory limit
+    memory_watermark_percent: float = 0.9
+
     @field_validator("archive_enc_master_key", mode="before")
     @classmethod
     def parse_archive_enc_master_key(cls, value: str) -> AESMasterKey:

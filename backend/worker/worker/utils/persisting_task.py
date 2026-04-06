@@ -1,6 +1,7 @@
 from typing import Any, Callable, Concatenate, ParamSpec, Type
 
 from celery import Celery
+from celery.result import AsyncResult
 from common.celery_app import BaseTask
 from common.models.base_repository import BaseRepository
 from common.settings import settings
@@ -81,9 +82,14 @@ def persisting_task(
 
             def apply_async(  # type: ignore[override]  # pylint: disable=arguments-differ
                 self, args=None, kwargs=None, **options
-            ):
+            ) -> AsyncResult:
                 """Route to persister shard queue based on entity ID."""
                 # Last argument is always the entity object
+                if args is None:
+                    raise RuntimeError(
+                        "Cannot call apply_async without args. "
+                        "This should not happen."
+                    )
                 obj: RepositoryTaskObjectT = args[-1]
                 shard = compute_shard(obj.id_, settings.num_persister_shards)
                 options["queue"] = get_persister_shard_queue_name(shard)
@@ -93,8 +99,8 @@ def persisting_task(
             def run(self, *args, **kwargs) -> Any:
                 passed_args = args[:-1]
                 obj: RepositoryTaskObjectT = args[-1]
-                with persister_type(obj.id_) as persister:
-                    persist_fcn(persister, *passed_args, **kwargs)
+                persister = persister_type(obj.id_)
+                persist_fcn(persister, *passed_args, **kwargs)
 
                 if len(passed_args) <= 0:
                     return None

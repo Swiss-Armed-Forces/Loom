@@ -4,7 +4,7 @@ from typing import Generator
 from unittest.mock import MagicMock
 
 import pytest
-from elasticsearch import ConflictError, Elasticsearch, NotFoundError
+from elasticsearch import Elasticsearch, NotFoundError
 from elasticsearch.dsl import Integer, Search, Text
 from pydantic import BaseModel, ConfigDict
 
@@ -1010,7 +1010,7 @@ def test_es_repository_save(obj: _TestEsRepositoryObject):
 
     document_mock.save.assert_called_once_with(
         using=es_repository.elasticsearch_mock,
-        refresh=True,
+        refresh="wait_for",
     )
 
 
@@ -1054,7 +1054,7 @@ def test_es_repository_update(obj: _TestEsRepositoryObject):
         test_str=obj.test_str,
         test_str_list=obj.test_str_list,
         using=es_repository.elasticsearch_mock,
-        refresh=True,
+        refresh="wait_for",
         if_seq_no=original_seq_no,
         if_primary_term=original_primary_term,
     )
@@ -1094,7 +1094,7 @@ def test_es_repository_update_include(obj: _TestEsRepositoryObject):
         test_int=obj.test_int,
         test_str=obj.test_str,
         using=es_repository.elasticsearch_mock,
-        refresh=True,
+        refresh="wait_for",
         if_seq_no=original_seq_no,
         if_primary_term=original_primary_term,
     )
@@ -1138,7 +1138,7 @@ def test_es_repository_update_exclude(obj: _TestEsRepositoryObject):
         hidden=obj.hidden,
         test_str_list=obj.test_str_list,
         using=es_repository.elasticsearch_mock,
-        refresh=True,
+        refresh="wait_for",
         if_seq_no=original_seq_no,
         if_primary_term=original_primary_term,
     )
@@ -1162,7 +1162,7 @@ def test_es_repository_delete_by_id(obj: _TestEsRepositoryObject):
     assert result is True
     document_mock.delete.assert_called_once_with(
         using=es_repository.elasticsearch_mock,
-        refresh=True,
+        refresh="wait_for",
     )
 
 
@@ -1202,110 +1202,3 @@ def test_es_repository_open_point_in_time():
 
     es_repository.elasticsearch_mock.open_point_in_time.assert_called_once()
     assert point_in_time_id == mock_point_in_time_id
-
-
-@pytest.mark.parametrize(
-    "obj",
-    get_test_repository_object_instances(),
-)
-def test_es_repository_is_fresh_returns_true_when_version_matches(
-    obj: _TestEsRepositoryObject,
-):
-    es_repository = _TestEsRepository(
-        query_builder=get_query_builder(),
-        pubsub_service=get_pubsub_service(),
-        mock_types=True,
-    )
-    es_repository.document_type.exists.return_value = True
-
-    result = es_repository.is_fresh(obj)
-
-    assert result is True
-    es_repository.document_type.exists.assert_called_once_with(
-        id=str(obj.id_),
-        using=es_repository.elasticsearch_mock,
-        version=obj.es_meta.version,
-    )
-
-
-@pytest.mark.parametrize(
-    "obj",
-    get_test_repository_object_instances(),
-)
-def test_es_repository_is_fresh_returns_false_when_exists_returns_false(
-    obj: _TestEsRepositoryObject,
-):
-    es_repository = _TestEsRepository(
-        query_builder=get_query_builder(),
-        pubsub_service=get_pubsub_service(),
-        mock_types=True,
-    )
-    es_repository.document_type.exists.return_value = False
-
-    result = es_repository.is_fresh(obj)
-
-    assert result is False
-
-
-@pytest.mark.parametrize(
-    "obj",
-    get_test_repository_object_instances(),
-)
-def test_es_repository_is_fresh_returns_false_when_version_is_none(
-    obj: _TestEsRepositoryObject,
-):
-    es_repository = _TestEsRepository(
-        query_builder=get_query_builder(),
-        pubsub_service=get_pubsub_service(),
-        mock_types=True,
-    )
-    # Set version to None to trigger short-circuit
-    obj.es_meta.version = None
-
-    result = es_repository.is_fresh(obj)
-
-    assert result is False
-    # Verify exists() is NOT called (short-circuit)
-    es_repository.document_type.exists.assert_not_called()
-
-
-@pytest.mark.parametrize(
-    "obj",
-    get_test_repository_object_instances(),
-)
-def test_es_repository_is_fresh_returns_false_on_not_found_error(
-    obj: _TestEsRepositoryObject,
-):
-    es_repository = _TestEsRepository(
-        query_builder=get_query_builder(),
-        pubsub_service=get_pubsub_service(),
-        mock_types=True,
-    )
-    es_repository.document_type.exists.side_effect = NotFoundError(
-        "document not found", MagicMock(), None
-    )
-
-    result = es_repository.is_fresh(obj)
-
-    assert result is False
-
-
-@pytest.mark.parametrize(
-    "obj",
-    get_test_repository_object_instances(),
-)
-def test_es_repository_is_fresh_returns_false_on_conflict_error(
-    obj: _TestEsRepositoryObject,
-):
-    es_repository = _TestEsRepository(
-        query_builder=get_query_builder(),
-        pubsub_service=get_pubsub_service(),
-        mock_types=True,
-    )
-    es_repository.document_type.exists.side_effect = ConflictError(
-        "version conflict", MagicMock(), None
-    )
-
-    result = es_repository.is_fresh(obj)
-
-    assert result is False

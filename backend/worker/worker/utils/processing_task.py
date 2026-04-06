@@ -103,8 +103,8 @@ def _persist_task_status_task(
             assert repository is not None
             return repository
 
-    with RepoBoundTaskInfoPersister(object_id) as persister:
-        persist_callback(task_id, persister)
+    persister: TaskInfoPersister = RepoBoundTaskInfoPersister(object_id)
+    persist_callback(task_id, persister)
 
 
 def _get_object_id_from_task(task: Task) -> UUID:
