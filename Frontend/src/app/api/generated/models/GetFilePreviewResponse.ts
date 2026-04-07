@@ -38,13 +38,19 @@ export interface GetFilePreviewResponse {
      * @type {string}
      * @memberof GetFilePreviewResponse
      */
-    partentId?: string;
+    parentId?: string;
     /**
      *
      * @type {Array<string>}
      * @memberof GetFilePreviewResponse
      */
     tags?: Array<string>;
+    /**
+     *
+     * @type {boolean}
+     * @memberof GetFilePreviewResponse
+     */
+    flagged: boolean;
     /**
      *
      * @type {boolean}
@@ -154,6 +160,7 @@ export interface GetFilePreviewResponse {
  */
 export function instanceOfGetFilePreviewResponse(value: object): boolean {
     if (!("fileId" in value)) return false;
+    if (!("flagged" in value)) return false;
     if (!("hidden" in value)) return false;
     if (!("content" in value)) return false;
     if (!("contentPreviewIsTruncated" in value)) return false;
@@ -179,8 +186,9 @@ export function GetFilePreviewResponseFromJSONTyped(
     }
     return {
         fileId: json["file_id"],
-        partentId: json["partent_id"] == null ? undefined : json["partent_id"],
+        parentId: json["parent_id"] == null ? undefined : json["parent_id"],
         tags: json["tags"] == null ? undefined : json["tags"],
+        flagged: json["flagged"],
         hidden: json["hidden"],
         content: json["content"],
         contentPreviewIsTruncated: json["content_preview_is_truncated"],
@@ -226,8 +234,9 @@ export function GetFilePreviewResponseToJSON(
     }
     return {
         file_id: value["fileId"],
-        partent_id: value["partentId"],
+        parent_id: value["parentId"],
         tags: value["tags"],
+        flagged: value["flagged"],
         hidden: value["hidden"],
         content: value["content"],
         content_preview_is_truncated: value["contentPreviewIsTruncated"],

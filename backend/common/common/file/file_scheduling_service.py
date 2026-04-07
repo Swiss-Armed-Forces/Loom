@@ -14,7 +14,10 @@ from common.file.file_repository import (
 )
 from common.services.file_storage_service import FileStorageService
 from common.services.lazybytes_service import LazyBytes, LazyBytesService
-from common.services.task_scheduling_service import TaskSchedulingService
+from common.services.task_scheduling_service import (
+    TaskSchedulingService,
+    UpdateFileRequest,
+)
 from common.settings import settings
 from common.utils.iterhash import CountingHash, iterhash
 
@@ -176,17 +179,13 @@ class FileSchedulingService:
 
         self._task_scheduling_service.summarize_files_by_id(file_id, system_prompt)
 
-    def set_hidden_state(self, file_id: UUID, hidden: bool):
-        file_to_hide = self._file_repository.get_by_id(file_id)
-        if not file_to_hide:
+    def update_file(self, file_id: UUID, request: UpdateFileRequest):
+        file = self._file_repository.get_by_id(file_id)
+        if not file:
             raise FileNotFoundException("No file to hide found")
-        if hidden:
-            file_to_hide.state = "hiding"
-        else:
-            file_to_hide.state = "showing"
-
-        self._file_repository.update(file_to_hide, include={"state"})
-        self._task_scheduling_service.set_hidden_state_by_id(file_id, hidden)
+        file.state = "updating"
+        self._file_repository.update(file, include={"state"})
+        self._task_scheduling_service.update_by_id(file_id, request)
 
     def add_tags(self, file_id: UUID, tags: list[Tag]):
         # Add Tags to File

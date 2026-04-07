@@ -1,3 +1,4 @@
+import { CSSProperties } from "react";
 import { useAppDispatch, useAppSelector } from "../../../app/hooks";
 import { updateFilenameOfQuery } from "../SearchQueryUtils";
 import { selectQuery, updateQuery } from "../searchSlice";
@@ -5,9 +6,10 @@ import { Breadcrumbs, Link } from "@mui/material";
 
 interface ClickableFilePathProps {
     fullPath: string;
+    style?: CSSProperties;
 }
 
-export function ClickableFilePath({ fullPath }: ClickableFilePathProps) {
+export function ClickableFilePath({ fullPath, style }: ClickableFilePathProps) {
     const searchQuery = useAppSelector(selectQuery);
     const dispatch = useAppDispatch();
 
@@ -42,6 +44,7 @@ export function ClickableFilePath({ fullPath }: ClickableFilePathProps) {
             maxItems={4}
             itemsBeforeCollapse={0}
             itemsAfterCollapse={3}
+            style={style}
         >
             {fullPathPartsExtended.map((part, idx) => (
                 <Link

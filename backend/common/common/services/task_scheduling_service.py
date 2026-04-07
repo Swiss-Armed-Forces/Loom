@@ -3,6 +3,7 @@
 from uuid import UUID, uuid4
 
 from celery import Celery
+from pydantic import BaseModel
 
 from common.ai_context.ai_context_repository import AiContext
 from common.archive.archive_repository import Archive
@@ -14,6 +15,11 @@ from common.task_object.root_task_information_repository import (
     RootTaskInformation,
     RootTaskInformationRepository,
 )
+
+
+class UpdateFileRequest(BaseModel):
+    hidden: bool | None = None
+    flagged: bool | None = None
 
 
 class TaskSchedulingService:
@@ -137,15 +143,15 @@ class TaskSchedulingService:
             root_id=str(root_task_id),
         ).forget()
 
-    def dispatch_set_hidden_state(self, query: QueryParameters, hidden: bool):
+    def dispatch_update(self, query: QueryParameters, request: UpdateFileRequest):
         root_task_id = uuid4()
         self._celery_app.send_task(
-            "worker.index_file.set_hidden_state_task.dispatch_set_hidden_state_for_files",
-            args=[query, hidden],
+            "worker.index_file.update_file_task.dispatch_update_for_files",
+            args=[query, request],
             root_id=str(root_task_id),
         ).forget()
 
-    def set_hidden_state_by_id(self, file_id: UUID, hidden: bool):
+    def update_by_id(self, file_id: UUID, request: UpdateFileRequest):
         root_task_id = uuid4()
         self._root_task_information_repository.save(
             RootTaskInformation(
@@ -154,8 +160,8 @@ class TaskSchedulingService:
             )
         )
         self._celery_app.send_task(
-            "worker.index_file.set_hidden_state_task.set_hidden_state_task",
-            args=[file_id, hidden],
+            "worker.index_file.update_file_task.update_task",
+            args=[file_id, request],
             task_id=str(root_task_id),
             root_id=str(root_task_id),
         ).forget()

@@ -86,19 +86,37 @@
         "content": "Content"
     },
     "updateFileState": {
-        "scheduledErrorToast": "Couldn't change visibility of files. Code: {{err.status}}, Text: {{err.text}}",
-        "scheduledHideFilesToast": "Hiding files successfully scheduled, this might take a while",
-        "scheduledShowFilesToast": "Showing files successfully scheduled, this might take a while",
-        "scheduledHideFileToast": "Hiding file successfully scheduled, this might take a while",
-        "scheduledShowFileToast": "Showing file successfully scheduled, this might take a while",
-        "hide": "Hide file",
-        "show": "Show file",
-        "hideFiles": "Hide files",
-        "showFiles": "Show files",
-        "openDialog": "Hide / Show files",
-        "dialog": {
-            "title": "Edit visibility",
-            "text": "Would you like to change the visibility of {{numberOfResults}} files?"
+        "hidden": {
+            "scheduledErrorToast": "Couldn't change visibility of files. Code: {{err.status}}, Text: {{err.text}}",
+            "scheduledEnableFilesToast": "Hiding files successfully scheduled, this might take a while",
+            "scheduledDisableFilesToast": "Showing files successfully scheduled, this might take a while",
+            "scheduledEnableFileToast": "Hiding file successfully scheduled",
+            "scheduledDisableFileToast": "Showing file successfully scheduled",
+            "enable": "Hide file",
+            "disable": "Show file",
+            "enableFiles": "Hide files",
+            "disableFiles": "Show files",
+            "openDialog": "Hide / Show files",
+            "dialog": {
+                "title": "Edit visibility",
+                "text": "Would you like to change the visibility of {{numberOfResults}} files?"
+            }
+        },
+        "flagged": {
+            "scheduledErrorToast": "Couldn't change the flag of files. Code: {{err.status}}, Text: {{err.text}}",
+            "scheduledEnableFilesToast": "Flagging files successfully scheduled, this might take a while",
+            "scheduledDisableFilesToast": "Unflagging files successfully scheduled, this might take a while",
+            "scheduledEnableFileToast": "Flagging file successfully scheduled",
+            "scheduledDisableFileToast": "Unflagging file successfully scheduled",
+            "enable": "Flag file",
+            "disable": "Unflag file",
+            "enableFiles": "Flag files",
+            "disableFiles": "Unflag files",
+            "openDialog": "Flag / Unflag files",
+            "dialog": {
+                "title": "Edit flag",
+                "text": "Would you like to change the flag of {{numberOfResults}} files?"
+            }
         }
     },
     "reIndex": {

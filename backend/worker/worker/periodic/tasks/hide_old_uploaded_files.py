@@ -5,8 +5,9 @@ from typing import Literal
 from celery.canvas import Signature
 from common.dependencies import get_celery_app, get_file_repository
 from common.services.query_builder import QueryParameters
+from common.services.task_scheduling_service import UpdateFileRequest
 
-from worker.index_file.set_hidden_state_task import dispatch_set_hidden_state_for_files
+from worker.index_file.update_file_task import dispatch_update_for_files
 from worker.periodic.infra.periodic_task import PeriodicTask
 from worker.settings import settings
 
@@ -39,4 +40,4 @@ def hide_old_uploaded_files_task(
         search_string=f"uploaded:[* TO {cutoff_date_str}] AND hidden:false",
     )
 
-    dispatch_set_hidden_state_for_files.s(query, True).delay().forget()
+    dispatch_update_for_files.s(query, UpdateFileRequest(hidden=True)).delay().forget()

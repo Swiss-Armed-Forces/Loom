@@ -1287,7 +1287,6 @@ export class FilesApi extends runtime.BaseAPI {
     }
 
     /**
-     * Update file.
      * Update File
      */
     async updateFileV1FilesFileIdPutRaw(
@@ -1338,7 +1337,6 @@ export class FilesApi extends runtime.BaseAPI {
     }
 
     /**
-     * Update file.
      * Update File
      */
     async updateFileV1FilesFileIdPut(

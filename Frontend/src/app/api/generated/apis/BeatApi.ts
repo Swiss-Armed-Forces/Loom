@@ -89,6 +89,7 @@ export const TriggerScheduledTaskV1BeatScheduleNamePostScheduleNameEnum = {
     ShrinkCache: "shrink-cache",
     HideOldUploadedFiles: "hide-old-uploaded-files",
     UnsubscribeOldImapFolders: "unsubscribe-old-imap-folders",
+    SyncFlaggedEmails: "sync-flagged-emails",
     SeaweedfsFixReplicationOnIdle: "seaweedfs-fix-replication-on-idle",
     SeaweedfsBalanceOnIdle: "seaweedfs-balance-on-idle",
     SeaweedfsVacuumOnIdle: "seaweedfs-vacuum-on-idle",

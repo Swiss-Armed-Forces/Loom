@@ -28,6 +28,7 @@ from common.file.file_statistics import (
 from common.models.es_repository import EsIdObject, _EsMeta
 from common.services.lazybytes_service import LazyBytes
 from common.services.query_builder import QueryParameters
+from common.services.task_scheduling_service import UpdateFileRequest
 from fastapi.testclient import TestClient
 
 from api.models.statistics_model import (
@@ -43,7 +44,6 @@ from api.routers.files import (
     GetFilePreviewResponse,
     GetFilesCountResponse,
     GetFilesQuery,
-    UpdateFileRequest,
     UpdateFilesRequest,
 )
 
@@ -137,7 +137,7 @@ def test_get_files_count_searches_in_repository(client: TestClient):
     get_file_repository().count_by_query.assert_called_once_with(query=query)
 
 
-def test_update_hidden_state_file_by_id(client: TestClient):
+def test_update_file_by_id(client: TestClient):
     file = File(
         full_name=FilePurePath("/path/to/file.txt"),
         storage_data=LazyBytes(service_id=str(ObjectId())),
@@ -146,19 +146,20 @@ def test_update_hidden_state_file_by_id(client: TestClient):
         size=0,
     )
 
-    request = UpdateFileRequest(hidden=True)
+    request = UpdateFileRequest(hidden=True, flagged=True)
 
     get_file_repository().get_by_id.return_value = file
 
     response = client.put(f"v1/files/{file.id_}", json=request.model_dump())
 
     assert response.status_code == 200
-    get_file_repository().update.assert_called_once_with(file, include={"hidden"})
+    get_file_scheduling_service().update_file.assert_called_once_with(file.id_, request)
 
 
-def test_update_hidden_state_files_by_query(client: TestClient):
+def test_update_files_by_query(client: TestClient):
     request = UpdateFilesRequest(
-        query=QueryParameters(query_id="0123456789"), hidden=True
+        query=QueryParameters(query_id="0123456789"),
+        request=UpdateFileRequest(hidden=True, flagged=True),
     )
 
     file = File(
@@ -174,8 +175,8 @@ def test_update_hidden_state_files_by_query(client: TestClient):
     response = client.put("v1/files/", json=request.model_dump())
 
     assert response.status_code == 200
-    get_task_scheduling_service().dispatch_set_hidden_state.assert_called_once_with(
-        query=request.query, hidden=request.hidden
+    get_task_scheduling_service().dispatch_update.assert_called_once_with(
+        query=request.query, request=request.request
     )
 
 
