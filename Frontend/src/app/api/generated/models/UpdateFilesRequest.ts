@@ -20,9 +20,15 @@ import {
     QueryParametersFromJSONTyped,
     QueryParametersToJSON,
 } from "./QueryParameters";
+import type { UpdateFileRequest } from "./UpdateFileRequest";
+import {
+    UpdateFileRequestFromJSON,
+    UpdateFileRequestFromJSONTyped,
+    UpdateFileRequestToJSON,
+} from "./UpdateFileRequest";
 
 /**
- * Hides file model.
+ *
  * @export
  * @interface UpdateFilesRequest
  */
@@ -35,10 +41,10 @@ export interface UpdateFilesRequest {
     query: QueryParameters;
     /**
      *
-     * @type {boolean}
+     * @type {UpdateFileRequest}
      * @memberof UpdateFilesRequest
      */
-    hidden: boolean;
+    request: UpdateFileRequest;
 }
 
 /**
@@ -46,7 +52,7 @@ export interface UpdateFilesRequest {
  */
 export function instanceOfUpdateFilesRequest(value: object): boolean {
     if (!("query" in value)) return false;
-    if (!("hidden" in value)) return false;
+    if (!("request" in value)) return false;
     return true;
 }
 
@@ -63,7 +69,7 @@ export function UpdateFilesRequestFromJSONTyped(
     }
     return {
         query: QueryParametersFromJSON(json["query"]),
-        hidden: json["hidden"],
+        request: UpdateFileRequestFromJSON(json["request"]),
     };
 }
 
@@ -75,6 +81,6 @@ export function UpdateFilesRequestToJSON(
     }
     return {
         query: QueryParametersToJSON(value["query"]),
-        hidden: value["hidden"],
+        request: UpdateFileRequestToJSON(value["request"]),
     };
 }

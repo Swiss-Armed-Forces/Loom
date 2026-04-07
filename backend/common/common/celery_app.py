@@ -55,6 +55,12 @@ def get_beat_schedule() -> dict:
             "task": (
                 "worker.periodic.unsubscribe_old_imap_folders_periodically_task.unsubscribe_old_imap_folders_periodically_task"  # noqa: E501 pylint: disable=line-too-long
             ),
+            "schedule": crontab(minute="30", hour="0"),
+        },
+        "sync-flagged-emails": {
+            "task": (
+                "worker.periodic.sync_flagged_emails_periodically_task.sync_flagged_emails_periodically_task"  # noqa: E501 pylint: disable=line-too-long
+            ),
             "schedule": crontab(minute="0", hour="1"),
         },
         # SeaweedFS Maintenance Tasks - frequent "on-idle" variants (check_idle=True)

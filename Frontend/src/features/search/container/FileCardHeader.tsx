@@ -51,10 +51,15 @@ export function FileCardHeader({
             }
             title={
                 <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                    {filePreview.partentId && (
-                        <NavigateToParent parentId={filePreview.partentId} />
+                    {filePreview.parentId && (
+                        <NavigateToParent parentId={filePreview.parentId} />
                     )}
-                    <ClickableFilePath fullPath={filePreview.path} />
+                    <ClickableFilePath
+                        fullPath={filePreview.path}
+                        style={{
+                            color: filePreview.flagged ? "red" : undefined,
+                        }}
+                    />
                     {filePreview.contentIsTruncated && (
                         <ContentCut
                             fontSize="small"

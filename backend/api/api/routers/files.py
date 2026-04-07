@@ -13,6 +13,7 @@ from common.file.file_repository import (
     TREE_PATH_MAX_ELEMENT_COUNT,
     Attachment,
     File,
+    FileNotFoundException,
     FileRepository,
     ImapInfo,
     Stat,
@@ -30,7 +31,10 @@ from common.services.query_builder import (
     KeepAlive,
     QueryParameters,
 )
-from common.services.task_scheduling_service import TaskSchedulingService
+from common.services.task_scheduling_service import (
+    TaskSchedulingService,
+    UpdateFileRequest,
+)
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, UploadFile
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, RootModel
@@ -144,10 +148,8 @@ def get_files(
 
 
 class UpdateFilesRequest(BaseModel):
-    """Hides file model."""
-
     query: QueryParameters
-    hidden: bool
+    request: UpdateFileRequest
 
 
 @router.put("/")
@@ -155,8 +157,8 @@ def update_files_by_query(
     update_files_model: UpdateFilesRequest,
     task_scheduling_service: TaskSchedulingService = default_task_scheduling_service,
 ):
-    task_scheduling_service.dispatch_set_hidden_state(
-        query=update_files_model.query, hidden=update_files_model.hidden
+    task_scheduling_service.dispatch_update(
+        query=update_files_model.query, request=update_files_model.request
     )
 
 
@@ -229,24 +231,16 @@ def get_generic_stats(
     return GenericStatisticsModel.from_statistics_generic(stats)
 
 
-class UpdateFileRequest(BaseModel):
-    """Update file model."""
-
-    hidden: bool
-
-
 @router.put("/{file_id}")
 def update_file(
     file_id: UUID,
     update_file_request: UpdateFileRequest,
-    file_repository: FileRepository = default_file_repository,
+    file_scheduling_service: FileSchedulingService = default_file_scheduling_service,
 ):
-    """Update file."""
-    file = file_repository.get_by_id(file_id)
-    if file is None:
-        raise HTTPException(status_code=404, detail="Invalid file")
-    file.hidden = update_file_request.hidden
-    file_repository.update(file, include={"hidden"})
+    try:
+        file_scheduling_service.update_file(file_id, update_file_request)
+    except FileNotFoundException as e:
+        raise HTTPException(status_code=404, detail="Invalid file") from e
 
 
 class GetFileLanguageTranslations(BaseModel):
@@ -337,8 +331,9 @@ def get_file(
 
 class GetFilePreviewResponse(BaseModel):
     file_id: UUID
-    partent_id: UUID | None
+    parent_id: UUID | None
     tags: list[Tag] = []
+    flagged: bool
     hidden: bool
     content: str
     content_preview_is_truncated: bool
@@ -375,8 +370,9 @@ def get_file_preview(
         file.content = ""
     return GetFilePreviewResponse(
         file_id=file.id_,
-        partent_id=file.parent_id,
+        parent_id=file.parent_id,
         tags=file.tags,
+        flagged=file.flagged,
         hidden=file.hidden,
         content=str(file.content[:CONTENT_PREVIEW_LENGTH]),
         # Determine if the content preview of the file is truncated based on the file content

@@ -61,9 +61,11 @@ def test_email_not_seen_after_indexing(imap_service: IMAPService, email: str):
     indexed_email = get_file_by_name(email)
     assert indexed_email.imap is not None
     indexed_email_full_path = imap_service.get_folder(indexed_email.imap.folder)
-    unseen_messages = imap_service.get_emails(
-        folder=indexed_email_full_path,
-        search_criteria=["UNSEEN"],
+    unseen_messages = list(
+        imap_service.get_emails(
+            folder=indexed_email_full_path,
+            search_criteria=["UNSEEN"],
+        )
     )
     assert len(unseen_messages) == 1
     assert unseen_messages[0] == indexed_email.imap

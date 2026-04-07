@@ -6,7 +6,12 @@ from urllib.parse import urlencode
 from celery import chain, group
 from celery.canvas import Signature
 from common.dependencies import get_celery_app, get_imap_service, get_lazybytes_service
-from common.file.file_repository import File, ImapInfo
+from common.file.file_repository import (
+    EMAIL_EXTENSIONS,
+    EMAIL_MIMETYPES,
+    File,
+    ImapInfo,
+)
 from common.services.lazybytes_service import LazyBytes
 from httpx import HTTPStatusError
 from pydantic import BaseModel
@@ -25,11 +30,6 @@ logger = logging.getLogger(__name__)
 
 app = get_celery_app()
 
-# see /etc/mime.types
-EMAIL_MIMETYPES = ["message/rfc822"]
-EMAIL_EXTENSIONS = [
-    ".eml",
-]
 EMAIL_RENDER_EXPRESSION_JAVASCRIPT = """
 (
     document.readyState === 'complete'

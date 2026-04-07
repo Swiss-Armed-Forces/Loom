@@ -15,7 +15,7 @@
 
 import { mapValues } from "../runtime";
 /**
- * Update file model.
+ *
  * @export
  * @interface UpdateFileRequest
  */
@@ -25,14 +25,19 @@ export interface UpdateFileRequest {
      * @type {boolean}
      * @memberof UpdateFileRequest
      */
-    hidden: boolean;
+    hidden?: boolean;
+    /**
+     *
+     * @type {boolean}
+     * @memberof UpdateFileRequest
+     */
+    flagged?: boolean;
 }
 
 /**
  * Check if a given object implements the UpdateFileRequest interface.
  */
 export function instanceOfUpdateFileRequest(value: object): boolean {
-    if (!("hidden" in value)) return false;
     return true;
 }
 
@@ -48,7 +53,8 @@ export function UpdateFileRequestFromJSONTyped(
         return json;
     }
     return {
-        hidden: json["hidden"],
+        hidden: json["hidden"] == null ? undefined : json["hidden"],
+        flagged: json["flagged"] == null ? undefined : json["flagged"],
     };
 }
 
@@ -58,5 +64,6 @@ export function UpdateFileRequestToJSON(value?: UpdateFileRequest | null): any {
     }
     return {
         hidden: value["hidden"],
+        flagged: value["flagged"],
     };
 }

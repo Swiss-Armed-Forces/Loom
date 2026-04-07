@@ -1,7 +1,7 @@
 import { MoreVert, Preview } from "@mui/icons-material";
 import { IconButton, Menu, MenuItem, useMediaQuery } from "@mui/material";
 import { t } from "i18next";
-import { UpdateVisibilityButton } from "../../common/components/files/UpdateVisibilityStateButton";
+import { UpdateHiddenButton } from "../../common/components/files/UpdateHiddenButton";
 import styles from "./FileActions.module.css";
 import { DownloadButton } from "../../common/components/DownloadButton";
 import { ReIndexButton } from "../components/ReIndexButton";
@@ -15,6 +15,7 @@ import { TagsInput } from "../../common/components/tags/TagsInput";
 import { ShareButton } from "../components/ShareButton";
 import { selectQuery, setFileDetailData } from "../searchSlice";
 import { OpenButton } from "../components/OpenButton";
+import { UpdateFlaggedButton } from "../../common/components/files/UpdateFlaggedButton";
 
 interface FileActionsProps {
     filePreview: GetFilePreviewResponse;
@@ -49,6 +50,12 @@ export function FileActions({
     }, [dispatch, filePreview, searchQuery]);
 
     const actions: ReactNode[] = [
+        <UpdateFlaggedButton
+            key="flag"
+            icon_only={true}
+            file_id={filePreview.fileId}
+            fileFlagged={filePreview.flagged}
+        />,
         <TagsInput
             key="tags-input"
             icon_only={true}
@@ -72,7 +79,7 @@ export function FileActions({
         <ReIndexButton key="re-index" file_id={filePreview.fileId} />,
         <OpenButton key="open" file_id={filePreview.fileId} />,
         <DownloadButton key="download" fileId={filePreview.fileId} />,
-        <UpdateVisibilityButton
+        <UpdateHiddenButton
             key="visibility"
             icon_only={true}
             file_id={filePreview.fileId}

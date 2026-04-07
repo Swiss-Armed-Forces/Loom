@@ -20,6 +20,7 @@ import {
     TreeNodeModel,
     GetQueryResponse,
     GetFilesCountResponse,
+    UpdateFileRequest,
 } from "./generated";
 
 const filesApi = new FilesApi();
@@ -126,19 +127,17 @@ export const uploadFile = async (file: File): Promise<FileUploadResponse> => {
 
 export const updateFile = async (
     fileId: string,
-    hidden: boolean,
+    request: UpdateFileRequest,
 ): Promise<void> => {
     return filesApi.updateFileV1FilesFileIdPut({
         fileId: fileId,
-        updateFileRequest: {
-            hidden: hidden,
-        },
+        updateFileRequest: request,
     });
 };
 
 export const updateFiles = async (
     query: SearchQuery,
-    hidden: boolean,
+    request: UpdateFileRequest,
 ): Promise<void> => {
     return filesApi.updateFilesByQueryV1FilesPut({
         updateFilesRequest: {
@@ -148,7 +147,7 @@ export const updateFiles = async (
                 searchString: query.query,
                 languages: query.languages?.map((l) => l.code),
             },
-            hidden: hidden,
+            request: request,
         },
     });
 };

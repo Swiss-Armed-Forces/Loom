@@ -117,8 +117,12 @@ def _add_archive(obj: File, archive_id: UUID) -> None:
     obj.archives.append(str(archive_id))
 
 
-def _set_hidden_state_file(obj: File, hidden: bool) -> None:
+def _set_hidden(obj: File, hidden: bool) -> None:
     obj.hidden = hidden
+
+
+def _set_flagged(obj: File, flagged: bool) -> None:
+    obj.flagged = flagged
 
 
 def _add_tag(obj: File, tag: Tag) -> None:
@@ -177,7 +181,8 @@ class IndexingPersister(PersisterBase[File]):
     set_imap_info = mutation(_set_imap_info)
     add_or_replace_attachment = mutation(_add_or_replace_attachment)
     add_archive = mutation(_add_archive)
-    set_hidden_state_file = mutation(_set_hidden_state_file)
+    set_hidden = mutation(_set_hidden)
+    set_flagged = mutation(_set_flagged)
     add_tag = mutation(_add_tag)
     remove_tag = mutation(_remove_tag)
     set_summary = mutation(_set_summary)

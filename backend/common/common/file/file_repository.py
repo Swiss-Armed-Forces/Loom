@@ -29,6 +29,7 @@ from elasticsearch.dsl import (
     Search,
     Text,
 )
+from elasticsearch.dsl.query import Query
 from elasticsearch.dsl.response import Response
 from libretranslatepy import LibreTranslateAPI
 from pydantic import (
@@ -399,6 +400,7 @@ class File(RepositoryTaskObject):
     trufflehog_secrets: list[Secret] | None = None
     ripsecrets_secrets: list[Secret] | None = None
     imap: ImapInfo | None = None
+    flagged: bool = False
 
     @field_validator("tags")
     @classmethod
@@ -480,6 +482,7 @@ class _EsFile(_EsTaskDocument):
     trufflehog_secrets = Object(_EsSecret, multi=True)
     ripsecrets_secrets = Object(_EsSecret, multi=True)
     imap = Object(_EsImapInfo)
+    flagged = Boolean()
 
     def to_es_dict(self) -> dict:
         es_dict = super().to_es_dict()
@@ -556,6 +559,13 @@ class Stat(enum.Enum):
     LANGUAGE_TIKA = "language_tika"
     LANGUAGE_LIBRETRANSLATE = "language_libretranslate"
     IS_SPAM = "is_spam"
+
+
+EMAIL_EXTENSIONS = [
+    ".eml",
+]
+# see /etc/mime.types
+EMAIL_MIMETYPES = ["message/rfc822"]
 
 
 class FileRepository(BaseEsRepository[_EsFile, File]):
@@ -805,3 +815,113 @@ class FileRepository(BaseEsRepository[_EsFile, File]):
             )
 
         return nodes
+
+    def _build_email_filter(self) -> Query:
+        email_filters = []
+
+        if EMAIL_MIMETYPES:
+            email_filters.append(Q("terms", tika_file_type=EMAIL_MIMETYPES))
+
+        if EMAIL_EXTENSIONS:
+            email_filters.append(Q("terms", extension=EMAIL_EXTENSIONS))
+
+        return Q("bool", should=email_filters, minimum_should_match=1)
+
+    def get_emails(
+        self,
+        query: QueryParameters,
+        pagination_params: PaginationParameters | None = None,
+        sort_params: SortingParameters | None = None,
+    ) -> Generator[File, None, None]:
+        if sort_params is None:
+            sort_params = SortingParameters()
+
+        search: Search[_EsFile] = (
+            self._document_type.search(using=self._elasticsearch)
+            .extra(pit={"id": query.query_id, "keep_alive": query.keep_alive})
+            .index()
+        )
+
+        filter_query = self._build_email_filter()
+
+        if query.search_string:
+            query_string = Q(
+                "query_string",
+                query=self._query_builder.build(query),
+                default_operator="AND",
+                lenient=True,
+            )
+
+            search = search.query(
+                Q(
+                    "bool",
+                    must=[
+                        filter_query,
+                        query_string,
+                    ],
+                )
+            )
+        else:
+            search = search.query(
+                Q(
+                    "bool",
+                    must=[filter_query],
+                )
+            )
+
+        def page_handler(result: Response[_EsFile]):
+            for hit in result.hits:
+                yield self._document_to_object(hit)
+
+        yield from self._paginate_search(
+            search=search,
+            query=query,
+            sort_params=sort_params,
+            pagination_params=pagination_params,
+            per_page_callback=page_handler,
+        )
+
+    def get_email_from_imap_info(
+        self, query: QueryParameters, imap_info: ImapInfo
+    ) -> File:
+
+        query_id = self.open_point_in_time(keep_alive=query.keep_alive)
+
+        search: Search[_EsFile] = self._document_type.search(using=self._elasticsearch)
+
+        search = search.extra(
+            pit={"id": query_id, "keep_alive": query.keep_alive}
+        ).index()
+
+        email_filter = self._build_email_filter()
+
+        imap_filter = Q(
+            "bool",
+            must=[
+                Q("term", imap__uid=imap_info.uid),
+                Q("term", imap__folder__keyword=str(imap_info.folder)),
+            ],
+        )
+
+        final_query = Q(
+            "bool",
+            must=[email_filter, imap_filter],
+        )
+
+        search = search.query(final_query)
+
+        # Fetch 2 hits to check for duplicates
+        search = search[0:2]
+        result = search.execute()
+
+        if not result.hits:
+            raise FileNotFoundException(
+                f"No email found for folder={imap_info.folder}, uid={imap_info.uid}"
+            )
+
+        if len(result.hits) > 1:
+            raise ValueError(
+                f"Multiple emails found for folder={imap_info.folder}, uid={imap_info.uid}"
+            )
+
+        return self._document_to_object(result.hits[0])

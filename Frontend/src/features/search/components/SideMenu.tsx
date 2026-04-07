@@ -37,9 +37,10 @@ import { TagsList } from "../../common/components/tags/TagsList.tsx";
 import { CustomQueriesList } from "./CustomQueries/CustomQueries.tsx";
 import { ReIndexButton } from "./ReIndexButton.tsx";
 import { SummaryButton } from "./SummaryButton.tsx";
-import { UpdateVisibilityButton } from "../../common/components/files/UpdateVisibilityStateButton.tsx";
+import { UpdateHiddenButton } from "../../common/components/files/UpdateHiddenButton.tsx";
 import { scheduleArchiveCreation } from "../../../app/api/search.ts";
 import { useEffect } from "react";
+import { UpdateFlaggedButton } from "../../common/components/files/UpdateFlaggedButton.tsx";
 
 const expertModeKey = "loomExpertMode";
 
@@ -159,7 +160,14 @@ export function SideMenu() {
                                 />
                             </ListItem>
                             <ListItem>
-                                <UpdateVisibilityButton
+                                <UpdateHiddenButton
+                                    icon_only={!isMenuExpanded}
+                                    button_full_width
+                                    disabled={numberOfResults === 0}
+                                />
+                            </ListItem>
+                            <ListItem>
+                                <UpdateFlaggedButton
                                     icon_only={!isMenuExpanded}
                                     button_full_width
                                     disabled={numberOfResults === 0}
