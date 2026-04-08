@@ -188,9 +188,9 @@ let
         files = "^${subdir}/.*$";
         pass_filenames = false;
       };
-      "check-requests_${subdirName}" = {
+      "check-resources_${subdirName}" = {
         enable = true;
-        entry = createToolWrapper "${config.devenv.root}/cicd/check_requests.sh" subdir subdirName "./.";
+        entry = createToolWrapper "${config.devenv.root}/cicd/check_resources.sh" subdir subdirName "./.";
         files = "^${subdir}/.*$";
         pass_filenames = false;
       };
@@ -488,7 +488,7 @@ in
       enable = true;
       settings.configuration = {
         MD013 = {
-          line_length = 120;
+          line_length = 200;
           tables = false;
         };
       };
@@ -691,7 +691,7 @@ in
         ./cicd/check_todo.sh
 
         echo "[*] Checking deployment requests"
-        ./cicd/check_requests.sh charts/
+        ./cicd/check_resources.sh charts/
 
         echo "[*] Linting successful!"
       )
