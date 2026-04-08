@@ -34,6 +34,7 @@ python-gitlab = "^6.0.0"
 docker = "^7.1.0"
 zstandard = "^0.25.0"
 identify = "^2.6.12"
+pyyaml = "^6.0.3"
 
 [tool.poetry.group.test.dependencies]
 pytest = "^9.0.0"

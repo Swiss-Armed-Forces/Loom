@@ -581,7 +581,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | identify                              | 2.6.18          | MIT                                                                              |
 | pycodestyle                           | 2.14.0          | MIT                                                                              |
 | pytest-cov                            | 6.3.0           | MIT                                                                              |
-| PyYAML                                | 6.0.1           | MIT License                                                                      |
+| PyYAML                                | 6.0.3           | MIT License                                                                      |
 | Wand                                  | 0.6.13          | MIT License                                                                      |
 | annotated-types                       | 0.7.0           | MIT License                                                                      |
 | anyio                                 | 4.9.0           | MIT License                                                                      |
