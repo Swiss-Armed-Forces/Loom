@@ -519,11 +519,11 @@ seaweedfs:
       storageClass: null
     resources:
       requests:
+        cpu: "0.05"
+        memory: "256Mi"
+      limits:
         cpu: "0.15"
         memory: "512Mi"
-      limits:
-        cpu: "1"
-        memory: "2Gi"
 
   filer:
     replicaCount: 1

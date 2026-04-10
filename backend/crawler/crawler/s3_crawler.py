@@ -59,7 +59,7 @@ class _BucketCrawlerThread(Thread):
         self._poll_for_new_files()
 
     def _download_file(self, file_name: str):
-        logger.info("Crawler downloading file %s", file_name)
+        logger.info("Downloading file %s", file_name)
         self.processed_files.add(file_name)
         full_name = Path(f"//{self.bucket.name}/{file_name}")
         source = f"{settings.crawler_source_id}/{self.bucket}"
