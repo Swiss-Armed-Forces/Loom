@@ -108,7 +108,7 @@ export function EmptySearchResults() {
                                 {createSearchTip("hidden:true", "hidden")}
                                 {createSearchTip("hidden:*", "allHidden")}
                                 {createSearchTip(
-                                    "file_type:image/png",
+                                    'file_type:"image/png"',
                                     "fileType",
                                 )}
                                 {createSearchTip(
