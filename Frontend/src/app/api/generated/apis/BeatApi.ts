@@ -92,12 +92,14 @@ export const TriggerScheduledTaskV1BeatScheduleNamePostScheduleNameEnum = {
     SyncFlaggedEmails: "sync-flagged-emails",
     SeaweedfsFixReplicationOnIdle: "seaweedfs-fix-replication-on-idle",
     SeaweedfsBalanceOnIdle: "seaweedfs-balance-on-idle",
-    SeaweedfsVacuumOnIdle: "seaweedfs-vacuum-on-idle",
     SeaweedfsScrubOnIdle: "seaweedfs-scrub-on-idle",
+    SeaweedfsS3CleanUploadsOnIdle: "seaweedfs-s3-clean-uploads-on-idle",
+    SeaweedfsVacuumOnIdle: "seaweedfs-vacuum-on-idle",
     SeaweedfsFixReplication: "seaweedfs-fix-replication",
     SeaweedfsBalance: "seaweedfs-balance",
-    SeaweedfsVacuum: "seaweedfs-vacuum",
     SeaweedfsScrub: "seaweedfs-scrub",
+    SeaweedfsS3CleanUploads: "seaweedfs-s3-clean-uploads",
+    SeaweedfsVacuum: "seaweedfs-vacuum",
 } as const;
 export type TriggerScheduledTaskV1BeatScheduleNamePostScheduleNameEnum =
     (typeof TriggerScheduledTaskV1BeatScheduleNamePostScheduleNameEnum)[keyof typeof TriggerScheduledTaskV1BeatScheduleNamePostScheduleNameEnum];

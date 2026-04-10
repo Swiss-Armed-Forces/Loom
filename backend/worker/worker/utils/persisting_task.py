@@ -11,10 +11,8 @@ from common.task_object.task_object import (
 )
 from common.utils.sharding import compute_shard, get_persister_shard_queue_name
 
-from worker.utils.persister_base import PersisterBase, PersistingException
+from worker.utils.persister_base import PersisterBase
 from worker.utils.processing_task import ProcessingTask
-
-PERSIST_MAX_RETRIES = 20
 
 P = ParamSpec("P")
 
@@ -61,10 +59,6 @@ def persisting_task(
                 persist_fcn.__name__, persist_fcn.__module__
             )
 
-            def __init__(self, max_retries: int):
-                self.max_retries = max_retries
-                super().__init__()
-
             # pylint does not consider metaclass:
             # https://stackoverflow.com/questions/22186843/pylint-w0223-method-is-abstract-in-class-but-is-not-overridden
             # pylint: disable=abstract-method
@@ -106,9 +100,9 @@ def persisting_task(
                     return None
                 return passed_args[0]
 
-        task_instance = PersistingTask(PERSIST_MAX_RETRIES)
+        task_instance = PersistingTask()
         celery_app.register_task(
-            task_instance, autoretry_for=[PersistingException], retry_backoff=True
+            task_instance,
         )
         return task_instance
 

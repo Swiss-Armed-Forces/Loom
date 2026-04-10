@@ -1,4 +1,5 @@
 import asyncio
+import gc
 import logging
 import queue
 from abc import ABC, abstractmethod
@@ -28,6 +29,7 @@ from worker.settings import settings
 
 logger = logging.getLogger(__name__)
 
+PERSISTER_EVICTION_GC_RUN = 10
 
 # ParamSpec for mutation function parameters (after obj)
 P = ParamSpec("P")
@@ -240,6 +242,7 @@ class GlobalPersisterWorker(Generic[RepositoryObjectT]):
                 # Pop mutations as we process them so they're removed from the list.
                 # If an exception occurs, already-processed mutations won't be retried.
                 deferred_mutations = 0
+                len_object_mutations = len(object_mutations)
                 while object_mutations:
                     object_mutation = object_mutations.pop(0)
                     applied_mutation = await self._apply_mutation(
@@ -250,7 +253,7 @@ class GlobalPersisterWorker(Generic[RepositoryObjectT]):
                         deferred_mutations += 1
                 logger.info(
                     "Applied %d mutations, deferred: %d, cached objects: %d",
-                    len(object_mutations) - deferred_mutations,
+                    len_object_mutations - deferred_mutations,
                     deferred_mutations,
                     len(objects),
                 )
@@ -410,10 +413,15 @@ class GlobalPersisterWorker(Generic[RepositoryObjectT]):
             ]
             evictable.sort(key=lambda x: x[1].last_update_ts)
 
+            evicted_count = 0
             for obj_id, _ in evictable:
+                # Run GC periodically to actually free memory and check pressure
+                if evicted_count % PERSISTER_EVICTION_GC_RUN == 0:
+                    gc.collect()
                 if not is_memory_pressure():
                     break
                 objects.pop(obj_id)
+                evicted_count += 1
                 logger.debug("Evicted object %s (LRU)", obj_id)
 
 

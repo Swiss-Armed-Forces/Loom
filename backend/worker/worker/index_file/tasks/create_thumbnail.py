@@ -121,10 +121,7 @@ def _thumbnail_image_png_task(file_content: LazyBytes | None) -> Thumbnail | Non
             image.unsharp_mask()
             blob = image.make_blob(format="png")
     except (MissingDelegateError, WandException):
-        logger.warning(
-            "Unable to render thumbnail with Wand",
-            exc_info=True,
-        )
+        logger.debug("Unable to render thumbnail with Wand")
         return None
 
     if not isinstance(blob, bytes):

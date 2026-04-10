@@ -1,17 +1,15 @@
-{{- $component := "persister" -}}
-{{- $values := index .Values $component -}}
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "app.fullname" . }}-{{ $component }}
+  name: {{ include "app.fullname" . }}-persister
   labels:
     {{- include "app.labels.custom" (dict "context" . "component" "worker") | nindent 4 }}
-    app.kubernetes.io/component: "{{ $component }}"
+    app.kubernetes.io/component: "persister"
 spec:
   clusterIP: None  # Headless service for StatefulSet
   ports:
-    - port: {{ $values.service.port }}
-      name: {{ $component }}
-      targetPort: {{ $values.service.port }}
+    - port: {{ .Values.persister.service.port }}
+      name: persister
+      targetPort: {{ .Values.persister.service.port }}
   selector:
-    app: {{ include "app.name" . }}-{{ $component }}
+    app: {{ include "app.name" . }}-persister

@@ -1,31 +1,30 @@
-{{- $component := "persister" -}}
-{{- $values := index .Values $component -}}
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: {{ include "app.fullname" . }}-{{ $component }}
+  name: {{ include "app.fullname" . }}-persister
   labels:
     {{- include "app.labels.custom" (dict "context" . "component" "worker") | nindent 4 }}
-    app.kubernetes.io/component: "{{ $component }}"
+    app.kubernetes.io/component: "persister"
 spec:
-  serviceName: {{ include "app.fullname" . }}-{{ $component }}
-  replicas: {{ $values.replicaCount }}
+  serviceName: {{ include "app.fullname" . }}-persister
+  replicas: {{ .Values.persister.replicaCount }}
+
   selector:
     matchLabels:
-      app: {{ include "app.name" . }}-{{ $component }}
+      app: {{ include "app.name" . }}-persister
   template:
     metadata:
       labels:
-        app: {{ include "app.name" . }}-{{ $component }}
+        app: {{ include "app.name" . }}-persister
         {{- include "app.labels.custom" (dict "context" . "component" "worker") | nindent 8 }}
     spec:
       containers:
-        - name: {{ $component }}
-          image: {{ .Values.image.registry }}/{{ $values.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) $values.image.tag }}
+        - name: persister
+          image: {{ .Values.image.registry }}/{{ .Values.persister.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) .Values.persister.image.tag }}
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports:
-            - name: {{ $component }}
-              containerPort: {{ $values.service.port }}
+            - name: persister
+              containerPort: {{ .Values.persister.service.port }}
           env:
             - name: WORKER_TYPE
               value: "PERSISTER"
@@ -37,8 +36,8 @@ spec:
           envFrom:
             - configMapRef:
                 name: {{ include "app.fullname" . }}-settings
-          {{- if $values.command }}
-          command: {{- toYaml $values.command | nindent 12 }}
+          {{- if .Values.persister.command }}
+          command: {{- toYaml .Values.persister.command | nindent 12 }}
           {{- else }}
           command:
             - "python"
@@ -47,30 +46,30 @@ spec:
             - "--loglevel"
             - "INFO"
           {{- end }}
-          {{- if $values.readinessProbe.enabled }}
+          {{- if .Values.persister.readinessProbe.enabled }}
           readinessProbe:
             exec:
               command:
                 - /bin/sh
                 - -c
                 - WORKER_TYPE=INSPECT python main.py inspect ping --timeout 99999 --destination "celery@${HOSTNAME}"
-            initialDelaySeconds: {{ default 10 $values.readinessProbe.initialDelaySeconds }}
-            periodSeconds: {{ default 120 $values.readinessProbe.periodSeconds }}
-            timeoutSeconds: {{ default 60 $values.readinessProbe.timeoutSeconds }}
-            failureThreshold: {{ default 6 $values.readinessProbe.failureThreshold }}
+            initialDelaySeconds: {{ default 10 .Values.persister.readinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ default 120 .Values.persister.readinessProbe.periodSeconds }}
+            timeoutSeconds: {{ default 60 .Values.persister.readinessProbe.timeoutSeconds }}
+            failureThreshold: {{ default 6 .Values.persister.readinessProbe.failureThreshold }}
           {{- end }}
-          {{- if $values.livenessProbe.enabled }}
+          {{- if .Values.persister.livenessProbe.enabled }}
           livenessProbe:
             exec:
               command:
                 - /bin/sh
                 - -c
                 - WORKER_TYPE=INSPECT python main.py inspect ping --timeout 99999 --destination "celery@${HOSTNAME}"
-            initialDelaySeconds: {{ default 10 $values.livenessProbe.initialDelaySeconds }}
-            periodSeconds: {{ default 120 $values.livenessProbe.periodSeconds }}
-            timeoutSeconds: {{ default 60 $values.livenessProbe.timeoutSeconds }}
-            failureThreshold: {{ default 6 $values.livenessProbe.failureThreshold }}
+            initialDelaySeconds: {{ default 10 .Values.persister.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ default 120 .Values.persister.livenessProbe.periodSeconds }}
+            timeoutSeconds: {{ default 60 .Values.persister.livenessProbe.timeoutSeconds }}
+            failureThreshold: {{ default 6 .Values.persister.livenessProbe.failureThreshold }}
           {{- end }}
-          {{- if $values.resources }}
-          resources: {{- toYaml $values.resources | nindent 12 }}
+          {{- if .Values.persister.resources }}
+          resources: {{- toYaml .Values.persister.resources | nindent 12 }}
           {{- end }}
