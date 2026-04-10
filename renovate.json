@@ -130,6 +130,15 @@
       ]
     },
     {
+      "matchManagers": [
+        "dockerfile"
+      ],
+      "matchDepNames": [
+        "docker.io/chrislusf/seaweedfs"
+      ],
+      "versioning": "regex:^(?<major>\\d+)\\.(?<minor>\\d+)_(?<compatibility>full)$"
+    },
+    {
       "matchUpdateTypes": [
         "major"
       ],
