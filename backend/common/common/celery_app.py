@@ -33,19 +33,20 @@ def get_beat_schedule() -> dict:
     app.
     """
     return {
+        # Magick trick: use prime numbers for all */X tasks -> then we will have less conflicts
+        "shrink-cache": {
+            "task": "worker.periodic.shrink_periodically_task.shrink_periodically_task",
+            "schedule": crontab(minute="*/3"),
+        },
         "cleanup-on-idle": {
             "task": "worker.periodic.flush_on_idle_task.flush_on_idle_task",
-            "schedule": crontab(minute="*/15"),
+            "schedule": crontab(minute="*/11"),
         },
         "reindex-lost-files-on-idle": {
             "task": (
                 "worker.periodic.reindex_lost_files_on_idle_task.reindex_lost_files_on_idle_task"  # noqa: E501 pylint: disable=line-too-long
             ),
             "schedule": crontab(minute="5", hour="22-05"),
-        },
-        "shrink-cache": {
-            "task": "worker.periodic.shrink_periodically_task.shrink_periodically_task",
-            "schedule": crontab(minute="*/3"),
         },
         "hide-old-uploaded-files": {
             "task": "worker.periodic.hide_periodically_task.hide_periodically_task",
