@@ -100,14 +100,6 @@ To ensure Loom runs smoothly, your system should ideally meet these minimum requ
 - **GPU (Optional):** For enhanced performance with certain features, we recommend using at least 3 GPUs.
   Please see the list of supported GPUs here: [https://docs.ollama.com/gpu](https://docs.ollama.com/gpu)
 
-In shared cluster with [Resource Quotas](https://kubernetes.io/docs/concepts/policy/resource-quotas/) enforced,
-your quota must have at list those [minimum upper limit](https://kubernetes.io/docs/concepts/policy/resource-quotas/#compute-resource-quota) requirements:
-
-- **RAM:** 85Gi
-- **CPU:** 65 Cores
-- **Disk Space:** 200 GiB
-- **GPU (Optional):** 3
-
 #### Single Node Installation Steps
 
 1. Clone the repository:
@@ -160,6 +152,16 @@ For a more scalable setup, you can deploy Loom using its Helm chart on your Kube
 
 > ⚠️ We currently only support Traefik as the ingress controller. We are tracking progress on
 > integrating Nginx in issue #161.
+
+#### Minimal Upper Limits
+
+In shared cluster with [Resource Quotas](https://kubernetes.io/docs/concepts/policy/resource-quotas/) enforced,
+your quota must have at list those [minimum upper limit](https://kubernetes.io/docs/concepts/policy/resource-quotas/#compute-resource-quota) requirements:
+
+- **RAM:** 85Gi
+- **CPU:** 65 Cores
+- **Disk Space:** 200 GiB
+- **GPU (Optional):** 3
 
 #### Multi Node Installation Steps
 
