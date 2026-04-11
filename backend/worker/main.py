@@ -4,6 +4,7 @@ import logging
 import sys
 from shlex import quote
 
+from celery import signals
 from common.celery_app import CELERY_DEAD_QUEUE_NAME, CELERY_GRAVEYARD_QUEUE_NAME
 from common.dependencies import get_celery_app
 from common.dependencies import init as init_common_dependencies
@@ -18,8 +19,21 @@ from worker.dependencies import init
 logger = logging.getLogger(__name__)
 
 
-init_common_dependencies()
-init()
+def init_all():
+    init_common_dependencies()
+    init()
+
+
+# Runs for each worker subprocess
+@signals.worker_process_init.connect
+def pool_worker_main(*_, **__):
+    # re-Initialize all dependencies
+    init_all()
+
+
+init_all()
+
+
 # Required for celery auto discovery
 app = get_celery_app()
 
@@ -65,6 +79,7 @@ match settings.worker_type:
         ]
     case _:
         pass
+
 
 logger.info(
     "Starting (%s): %s", settings.worker_type, " ".join(quote(arg) for arg in argv)
