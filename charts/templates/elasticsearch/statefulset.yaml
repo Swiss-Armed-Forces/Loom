@@ -38,25 +38,29 @@ spec:
               subPath: elasticsearch.yml
             - mountPath: /usr/share/elasticsearch/data
               name: elasticsearch-data
+          ports:
+            - name: http
+              containerPort: {{ .Values.elasticsearch.service.port }}
+            - name: readiness
+              containerPort: 8081
           {{- if .Values.elasticsearch.readinessProbe.enabled }}
           readinessProbe:
-            httpGet:
-              path: /_cluster/health?wait_for_status=yellow&timeout=10s
-              port: {{ .Values.elasticsearch.service.port }}
-            initialDelaySeconds: {{ default 5 .Values.elasticsearch.readinessProbe.initialDelaySeconds }}
-            periodSeconds: {{ default 15 .Values.elasticsearch.readinessProbe.periodSeconds }}
-            timeoutSeconds: {{ default 12 .Values.elasticsearch.readinessProbe.timeoutSeconds }}
-            failureThreshold: {{ default 10 .Values.elasticsearch.readinessProbe.failureThreshold }}
+            tcpSocket:
+              port: readiness
+            initialDelaySeconds: {{ default 10 .Values.elasticsearch.readinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ default 10 .Values.elasticsearch.readinessProbe.periodSeconds }}
+            timeoutSeconds: {{ default 5 .Values.elasticsearch.readinessProbe.timeoutSeconds }}
+            failureThreshold: {{ default 3 .Values.elasticsearch.readinessProbe.failureThreshold }}
           {{- end }}
           {{- if .Values.elasticsearch.livenessProbe.enabled }}
           livenessProbe:
             httpGet:
-              path: /_cluster/health?wait_for_status=yellow&timeout=10s
-              port: {{ .Values.elasticsearch.service.port }}
-            initialDelaySeconds: {{ default 5 .Values.elasticsearch.livenessProbe.initialDelaySeconds }}
+              path: /_cluster/health?local=true
+              port: http
+            initialDelaySeconds: {{ default 30 .Values.elasticsearch.livenessProbe.initialDelaySeconds }}
             periodSeconds: {{ default 15 .Values.elasticsearch.livenessProbe.periodSeconds }}
-            timeoutSeconds: {{ default 12 .Values.elasticsearch.livenessProbe.timeoutSeconds }}
-            failureThreshold: {{ default 15 .Values.elasticsearch.livenessProbe.failureThreshold }}
+            timeoutSeconds: {{ default 5 .Values.elasticsearch.livenessProbe.timeoutSeconds }}
+            failureThreshold: {{ default 5 .Values.elasticsearch.livenessProbe.failureThreshold }}
           {{- end }}
           {{- if .Values.elasticsearch.resources }}
           resources:
