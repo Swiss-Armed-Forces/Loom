@@ -1,0 +1,17 @@
+{{- if .Values.kubeStateMetrics.enabled }}
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ include "app.fullname" . }}-kube-state-metrics
+  labels:
+    {{- include "app.labels.custom" (dict "context" . "component" "kubeStateMetrics") | nindent 4 }}
+    app.kubernetes.io/component: monitoring
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: {{ include "app.fullname" . }}-kube-state-metrics
+subjects:
+  - kind: ServiceAccount
+    namespace: {{ .Release.Namespace }}
+    name: {{ include "app.fullname" . }}-kube-state-metrics
+{{- end }}

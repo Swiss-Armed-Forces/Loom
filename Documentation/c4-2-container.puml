@@ -16,6 +16,7 @@
 !include <logos/grafana>
 !include <logos/aws-s3>
 !include <logos/sqlite>
+!include <logos/kubernetes>
 
 !include <office/Concepts/email>
 !include <office/Concepts/anti_spam>
@@ -81,6 +82,7 @@ System_Boundary(loom, "") {
         Container(grafana, "Grafana", "grafana", "Visualizes: Logs, System, Queues", $sprite="grafana", $tags="exposed")
 
         Container(traefik, "Traefik", "Traefik", "Reverse Proxy, TLS", $sprite="reverse_proxy", $tags="exposed")
+        Container(kubeStateMetrics, "kube-state-metrics", "kube-state-metrics", "Collect Kubernetes Metrics", $sprite="kubernetes")
     '}
 }
 
@@ -138,6 +140,8 @@ Rel(redis, prometheus, "")
 Rel(translate, prometheus, "")
 Rel(gotenberg, prometheus, "")
 Rel(seaweedfs_master, prometheus, "")
+Rel(kubeStateMetrics, prometheus, "")
+Rel(api, prometheus, "")
 
 Rel(gotenberg, email_client, "")
 

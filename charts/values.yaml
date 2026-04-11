@@ -1024,3 +1024,34 @@ gotenberg:
   # Example:
   # app-tier: processing
   # service-type: content-extraction
+
+kubeStateMetrics:
+  enabled: true
+  replicaCount: 1
+  image:
+    repository: swiss-armed-forces/cyber-command/cea/loom/kube-state-metrics
+  service:
+    port: 8080
+    telemetryPort: 8081
+  readinessProbe:
+    enabled: true
+    initialDelaySeconds: 5
+    periodSeconds: 10
+    failureThreshold: 3
+  livenessProbe:
+    enabled: true
+    initialDelaySeconds: 5
+    periodSeconds: 10
+    failureThreshold: 6
+  resources:
+    requests:
+      cpu: "0.1"
+      memory: "250Mi"
+    limits:
+      cpu: "0.5"
+      memory: "500Mi"
+  # Custom labels specific to kubeStateMetrics resources
+  customLabels: {}
+  # Example:
+  # monitoring-tier: "infrastructure"
+  # service-type: metrics

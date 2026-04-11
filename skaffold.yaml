@@ -312,6 +312,15 @@ build:
       hooks:
         after:
           - command: ["./cicd/tag_latest.sh"]
+    - image: registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/kube-state-metrics
+      context: kube-state-metrics
+      docker:
+        dockerfile: Dockerfile
+        cacheFrom:
+          - "registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/kube-state-metrics"
+      hooks:
+        after:
+          - command: ["./cicd/tag_latest.sh"]
 
 # Production manifests configuration as default
 manifests:

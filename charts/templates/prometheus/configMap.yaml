@@ -28,11 +28,9 @@ data:
               names:
                 - {{ .Release.Namespace }}
         relabel_configs:
-          # Only keep endpoints from the gotenberg service
           - source_labels: [__meta_kubernetes_service_name]
             action: keep
             regex: {{ include "app.fullname" . }}-gotenberg
-          # Add pod name as a label for per-instance metrics
           - source_labels: [__meta_kubernetes_pod_name]
             action: replace
             target_label: pod
@@ -109,11 +107,9 @@ data:
               names:
                 - {{ .Release.Namespace }}
         relabel_configs:
-          # Only keep endpoints from the translate service
           - source_labels: [__meta_kubernetes_service_name]
             action: keep
             regex: {{ include "app.fullname" . }}-translate
-          # Add pod name as a label for per-instance metrics
           - source_labels: [__meta_kubernetes_pod_name]
             action: replace
             target_label: pod
@@ -199,10 +195,20 @@ data:
             action: replace
             target_label: service
 {{- end }}
+{{- if .Values.kubeStateMetrics.enabled }}
+      - job_name: 'kube-state-metrics'
+        scrape_interval: 30s
+        static_configs:
+          - targets: ['{{ include "app.fullname" . }}-kube-state-metrics:{{ .Values.kubeStateMetrics.service.port }}']
+        metric_relabel_configs:
+          - action: keep
+            source_labels: [namespace]
+            regex: {{ .Release.Namespace }}
+{{- end }}
 {{- if .Values.prometheus.collectClusterMetrics }}
       - job_name: 'cadvisor'
-        scrape_interval: 5s
-        scrape_timeout: 5s
+        scrape_interval: 30s
+        scrape_timeout: 10s
         kubernetes_sd_configs:
           - role: node
         scheme: https
@@ -217,13 +223,34 @@ data:
           - source_labels: [__meta_kubernetes_node_name]
             target_label: __metrics_path__
             replacement: /api/v1/nodes/${1}/proxy/metrics/cadvisor
+          - source_labels: [__meta_kubernetes_node_name]
+            target_label: node
         metric_relabel_configs:
           - action: keep
             source_labels: [namespace]
             regex: {{ .Release.Namespace }}
-          - action: replace
-            source_labels: [id]
-            regex: '^/machine.slice/machine-rktx2d([^]+).+/([^/]+).service'
-            target_label: id
+      - job_name: 'resource'
+        scrape_interval: 30s
+        scrape_timeout: 10s
+        kubernetes_sd_configs:
+          - role: node
+        scheme: https
+        tls_config:
+          ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+        bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+        relabel_configs:
+          - action: labelmap
+            regex: __meta_kubernetes_node_label_(.+)
+          - target_label: __address__
+            replacement: kubernetes.default.svc:443
+          - source_labels: [__meta_kubernetes_node_name]
+            target_label: __metrics_path__
+            replacement: /api/v1/nodes/${1}/proxy/metrics/resource
+          - source_labels: [__meta_kubernetes_node_name]
+            target_label: node
+        metric_relabel_configs:
+          - action: keep
+            source_labels: [namespace]
+            regex: {{ .Release.Namespace }}
 {{- end }}
 {{- end }}

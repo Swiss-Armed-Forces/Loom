@@ -1,0 +1,19 @@
+{{- if .Values.kubeStateMetrics.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "app.fullname" . }}-kube-state-metrics
+  labels:
+    {{- include "app.labels.custom" (dict "context" . "component" "kubeStateMetrics") | nindent 4 }}
+    app.kubernetes.io/component: monitoring
+spec:
+  ports:
+    - port: {{ .Values.kubeStateMetrics.service.port }}
+      name: http-metrics
+      targetPort: {{ .Values.kubeStateMetrics.service.port }}
+    - port: {{ .Values.kubeStateMetrics.service.telemetryPort }}
+      name: telemetry
+      targetPort: {{ .Values.kubeStateMetrics.service.telemetryPort }}
+  selector:
+    app: {{ include "app.name" . }}-kube-state-metrics
+{{- end }}
