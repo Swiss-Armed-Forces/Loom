@@ -45,6 +45,10 @@ discovery:
   type: multi-node
 
 
+# Readiness TCP port for Kubernetes probes
+readiness:
+  port: 8081
+
 # HTTP
 http:
   max_content_length: 1024mb
