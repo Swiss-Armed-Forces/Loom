@@ -159,7 +159,7 @@ In shared cluster with [Resource Quotas](https://kubernetes.io/docs/concepts/pol
 your quota must have at list those [minimum upper limit](https://kubernetes.io/docs/concepts/policy/resource-quotas/#compute-resource-quota) requirements:
 
 - **RAM:** 85Gi
-- **CPU:** 65 Cores
+- **CPU:** 66 Cores
 - **Disk Space:** 200 GiB
 - **GPU (Optional):** 3
 

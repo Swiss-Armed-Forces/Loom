@@ -27,7 +27,7 @@ MAX_MEMORY="25Gi"
 MAX_GPU="3"
 
 # Max allowed limits (resource limits)
-MAX_CPU_LIMITS="65"
+MAX_CPU_LIMITS="66"
 MAX_MEMORY_LIMITS="85Gi"
 MAX_GPU_LIMITS="3"
 
