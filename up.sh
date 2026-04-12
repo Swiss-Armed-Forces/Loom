@@ -71,6 +71,7 @@ STEPS_SETUP_SYSTEM=(
     compute_minikube_cpu_resources
     compute_minikube_memory_resources
     create_cluster
+    default_use_csi-hostpath-driver
     install_host_entries
 )
 
@@ -454,8 +455,16 @@ create_cluster(){
         --memory "${MINIKUBE_MEMORY_KIB}" \
         --cpus "${MINIKUBE_CPUS}" \
         --cni calico \
-        --addons metrics-server \
+        --addons metrics-server,csi-hostpath-driver \
         --gpus "${GPUS}"
+}
+
+default_use_csi-hostpath-driver(){
+    minikube addons disable storage-provisioner
+    minikube addons disable default-storageclass
+
+    kubectl patch storageclass csi-hostpath-sc \
+        -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"true"}}}'
 }
 
 create_namespace(){
