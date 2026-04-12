@@ -1,8 +1,8 @@
 from typing import Any
+from uuid import UUID
 
 from celery import chain
 from celery.canvas import Signature
-from common.archive.archive_repository import Archive
 from common.dependencies import get_celery_app
 
 from worker.create_archive.infra.archive_creation_persister import (
@@ -13,10 +13,10 @@ from worker.utils.persisting_task import persisting_task
 app = get_celery_app()
 
 
-def signature(archive: Archive) -> Signature:
+def signature(archive_id: UUID) -> Signature:
     """Create the signature for the task that persists the processing done status."""
     return chain(
-        persist_processing_done_task.s(archive),
+        persist_processing_done_task.s(archive_id),
     )
 
 

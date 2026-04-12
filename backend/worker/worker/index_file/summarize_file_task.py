@@ -53,5 +53,5 @@ def summarize_file_task(file_id: UUID, system_prompt: str | None = None):
             file=file,
             system_prompt=system_prompt,
         ),
-        persist_processing_done.signature(file),
+        persist_processing_done.signature(file_id),
     ).delay().forget()

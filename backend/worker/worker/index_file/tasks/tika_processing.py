@@ -222,12 +222,12 @@ def signature(file_content: LazyBytes, file: File) -> Signature:
                         choose_tika_processing_result_task.s(),
                     ),
                     group(
-                        persist_tika_handled_by.s(file),
+                        persist_tika_handled_by.s(file.id_),
                         chain(
                             extract_tika_result_from_tika_processing_result_task.s(),
                             group(
-                                persist_tika_result_task.s(file),
-                                persist_tika_meta_task.s(file),
+                                persist_tika_result_task.s(file.id_),
+                                persist_tika_meta_task.s(file.id_),
                                 schedule_attachments.s(file),
                                 chain(
                                     extract_text_from_lazy_tika_result.s(),
@@ -246,11 +246,11 @@ def signature(file_content: LazyBytes, file: File) -> Signature:
         ),
         chain(
             tika_get_language_task.s(file_content, file),
-            persist_tika_language_task.s(file),
+            persist_tika_language_task.s(file.id_),
         ),
         chain(
             tika_get_file_type_task.s(file_content, file),
-            persist_tika_file_type_task.s(file),
+            persist_tika_file_type_task.s(file.id_),
         ),
     )
 

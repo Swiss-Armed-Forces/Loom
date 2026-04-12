@@ -49,5 +49,5 @@ def index_file_task(file: File, file_content: LazyBytes):
             tika_processing.signature(file_content, file),
             extract_loom_archive.signature(file, file_content),
         ),
-        persist_processing_done.signature(file),
+        persist_processing_done.signature(file.id_),
     ).delay().forget()

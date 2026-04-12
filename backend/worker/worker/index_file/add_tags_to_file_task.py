@@ -14,11 +14,6 @@ from worker.index_file.infra.file_indexing_task import FileIndexingTask
 from worker.index_file.tasks import persist_processing_done
 from worker.index_file.tasks.persist_tags import persist_add_tags
 
-
-class FileNotFoundException(BaseException):
-    pass
-
-
 logger = logging.getLogger(__name__)
 
 app = get_celery_app()
@@ -46,10 +41,6 @@ def dispatch_add_tags_to_file(
 @app.task(base=FileIndexingTask)
 def add_tags_to_file_task(file_id: UUID, tags: list[Tag]):
     logger.info("adding tag to file with id '%s'", file_id)
-    file = get_file_repository().get_by_id(file_id)
-    if file is None:
-        raise FileNotFoundException("no file found")
-
     chain(
-        persist_add_tags.s(tags, file), persist_processing_done.signature(file)
+        persist_add_tags.s(tags, file_id), persist_processing_done.signature(file_id)
     ).delay().forget()

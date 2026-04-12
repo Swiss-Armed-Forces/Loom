@@ -204,17 +204,17 @@ def signature(file: File, file_content: LazyBytes) -> Signature:
         chain(
             render_image_png_task.s(file_content, render_file),
             upload_rendered_task.s(),
-            persist_rendered_file_image_data_task.s(file),
+            persist_rendered_file_image_data_task.s(file.id_),
         ),
         chain(
             render_browser_to_pdf_task.s(file_content, render_file),
             upload_rendered_task.s(),
-            persist_rendered_file_browser_pdf_data_task.s(file),
+            persist_rendered_file_browser_pdf_data_task.s(file.id_),
         ),
         chain(
             render_office_to_pdf_task.s(file_content, render_file),
             upload_rendered_task.s(),
-            persist_rendered_file_office_pdf_data_task.s(file),
+            persist_rendered_file_office_pdf_data_task.s(file.id_),
         ),
     )
 
@@ -227,17 +227,17 @@ def signature_pass_file_content(
         chain(
             render_image_png_task.s(render_file),
             upload_rendered_task.s(),
-            persist_rendered_file_image_data_task.s(file),
+            persist_rendered_file_image_data_task.s(file.id_),
         ),
         chain(
             render_browser_to_pdf_task.s(render_file),
             upload_rendered_task.s(),
-            persist_rendered_file_browser_pdf_data_task.s(file),
+            persist_rendered_file_browser_pdf_data_task.s(file.id_),
         ),
         chain(
             render_office_to_pdf_task.s(render_file),
             upload_rendered_task.s(),
-            persist_rendered_file_office_pdf_data_task.s(file),
+            persist_rendered_file_office_pdf_data_task.s(file.id_),
         ),
     )
 
