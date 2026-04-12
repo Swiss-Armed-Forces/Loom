@@ -26,4 +26,18 @@ spec:
         target:
           type: Utilization
           averageUtilization: {{ .Values.seaweedfs.filer.hpa.targetCPUUtilizationPercentage }}
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: {{ .Values.seaweedfs.filer.hpa.scaleDown.stabilizationWindowSeconds | default 300 }}
+      policies:
+        - type: Pods
+          value: {{ .Values.seaweedfs.filer.hpa.scaleDown.maxPodsPerMinute | default 1 }}
+          periodSeconds: 60
+      selectPolicy: Min
+    scaleUp:
+      stabilizationWindowSeconds: 0
+      policies:
+        - type: Percent
+          value: 100
+          periodSeconds: 15
 {{- end }}

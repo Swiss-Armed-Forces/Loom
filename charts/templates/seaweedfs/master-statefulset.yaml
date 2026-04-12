@@ -29,6 +29,10 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.name
+            {{- if .Values.seaweedfs.master.resources.limits.memory }}
+            - name: GOMEMLIMIT
+              value: "{{ include "gomemlimit" (dict "memory" .Values.seaweedfs.master.resources.limits.memory "factor" .Values.seaweedfs.goMemoryLimitFactor) }}"
+            {{- end }}
           command:
             - weed
             - master
@@ -52,6 +56,9 @@ spec:
           volumeMounts:
             - name: data
               mountPath: /data
+            - name: config
+              mountPath: /etc/seaweedfs
+              readOnly: true
           livenessProbe:
             httpGet:
               path: /cluster/status
@@ -71,6 +78,10 @@ spec:
           {{- if .Values.seaweedfs.master.resources }}
           resources: {{- toYaml .Values.seaweedfs.master.resources | nindent 12 }}
           {{- end }}
+      volumes:
+        - name: config
+          configMap:
+            name: {{ include "app.fullname" . }}-seaweedfs-master-config
   volumeClaimTemplates:
     - metadata:
         name: data

@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "app.fullname" . }}-seaweedfs-master-config
+  labels:
+    {{- include "app.labels.custom" (dict "context" . "component" "seaweedfs") | nindent 4 }}
+    app.kubernetes.io/component: seaweedfs-master
+data:
+  master.toml: |
+    [master.volume_growth]
+    copy_1 = {{ .Values.seaweedfs.master.volumeGrowth.copy_1 }}
+    copy_2 = {{ .Values.seaweedfs.master.volumeGrowth.copy_2 }}
+    copy_3 = {{ .Values.seaweedfs.master.volumeGrowth.copy_3 }}
+    copy_other = {{ .Values.seaweedfs.master.volumeGrowth.copy_other }}

@@ -18,6 +18,7 @@ spec:
         app: {{ include "app.name" . }}-seaweedfs-filer
         {{- include "app.labels.custom" (dict "context" . "component" "seaweedfs") | nindent 8 }}
     spec:
+      terminationGracePeriodSeconds: {{ .Values.seaweedfs.filer.terminationGracePeriodSeconds | default 180 }}
       securityContext:
         runAsUser: 1000
         fsGroup: 1000
@@ -61,6 +62,10 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: status.podIP
+            {{- if .Values.seaweedfs.filer.resources.limits.memory }}
+            - name: GOMEMLIMIT
+              value: "{{ include "gomemlimit" (dict "memory" .Values.seaweedfs.filer.resources.limits.memory "factor" .Values.seaweedfs.goMemoryLimitFactor) }}"
+            {{- end }}
           command:
             - weed
             - filer
@@ -112,6 +117,13 @@ spec:
           {{- if .Values.seaweedfs.filer.resources }}
           resources: {{- toYaml .Values.seaweedfs.filer.resources | nindent 12 }}
           {{- end }}
+          lifecycle:
+            preStop:
+              exec:
+                command:
+                  - /bin/sh
+                  - -c
+                  - sleep {{ .Values.seaweedfs.filer.preStopSleepSeconds | default 5 }}
       volumes:
         - name: filer-config
           configMap:
