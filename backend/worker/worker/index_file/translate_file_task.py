@@ -60,7 +60,7 @@ def translate_file_task(lang: str, file_id: UUID):
     chain(
         group(
             translate_task.s((file_content, [libretranslate_language]), file),
-            persist_best_detected_language.s(libretranslate_language.language, file),
+            persist_best_detected_language.s(libretranslate_language.language, file_id),
         ),
-        persist_processing_done.signature(file),
+        persist_processing_done.signature(file_id),
     ).delay().forget()

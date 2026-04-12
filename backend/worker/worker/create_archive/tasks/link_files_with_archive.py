@@ -14,7 +14,7 @@ app = get_celery_app()
 @app.task(base=ArchiveProcessingTask)
 def link_files_with_archive(files: List[File], archive_id: UUID):
     for file in files:
-        persist_file_to_archive_link.s(archive_id, file).delay().forget()
+        persist_file_to_archive_link.s(archive_id, file.id_).delay().forget()
 
 
 @persisting_task(app, IndexingPersister, get_archive_repository)

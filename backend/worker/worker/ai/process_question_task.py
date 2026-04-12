@@ -17,5 +17,5 @@ def process_question_task(context: AiContext, question: str):
     logger.info("Processing question: '%s' for context: '%s", question, context.id_)
     chain(
         rag.signature(context, question),
-        persist_processing_done.signature(context),
+        persist_processing_done.signature(context.id_),
     ).delay().forget()

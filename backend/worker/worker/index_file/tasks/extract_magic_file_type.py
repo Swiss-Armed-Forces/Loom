@@ -19,7 +19,7 @@ app = get_celery_app()
 def signature(file_content: LazyBytes, file: File) -> Signature:
     """Create the signature for the tasks chain that determines the file type and
     persists it by using the file magic library."""
-    return chain(get_file_type.s(file_content), persist_file_type.s(file))
+    return chain(get_file_type.s(file_content), persist_file_type.s(file.id_))
 
 
 @app.task(base=FileIndexingTask)

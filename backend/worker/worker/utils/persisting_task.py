@@ -1,4 +1,5 @@
 from typing import Any, Callable, Concatenate, ParamSpec, Type
+from uuid import UUID
 
 from celery import Celery
 from celery.result import AsyncResult
@@ -78,22 +79,22 @@ def persisting_task(
                 self, args=None, kwargs=None, **options
             ) -> AsyncResult:
                 """Route to persister shard queue based on entity ID."""
-                # Last argument is always the entity object
+                # Last argument is always the entity UUID
                 if args is None:
                     raise RuntimeError(
                         "Cannot call apply_async without args. "
                         "This should not happen."
                     )
-                obj: RepositoryTaskObjectT = args[-1]
-                shard = compute_shard(obj.id_, settings.num_persister_shards)
+                entity_id: UUID = args[-1]
+                shard = compute_shard(entity_id, settings.num_persister_shards)
                 options["queue"] = get_persister_shard_queue_name(shard)
                 return super().apply_async(args, kwargs, **options)
 
             @persisting_cache_decorator(persist_fcn)
             def run(self, *args, **kwargs) -> Any:
                 passed_args = args[:-1]
-                obj: RepositoryTaskObjectT = args[-1]
-                persister = persister_type(obj.id_)
+                entity_id: UUID = args[-1]
+                persister = persister_type(entity_id)
                 persist_fcn(persister, *passed_args, **kwargs)
 
                 if len(passed_args) <= 0:

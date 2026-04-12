@@ -62,11 +62,11 @@ def signature(file_content: LazyBytes, file: File) -> Signature:
     return chain(
         detect_email_task.s(file.extension),
         group(
-            chain(detect_spam_task.s(file_content), persist_spam_task.s(file)),
+            chain(detect_spam_task.s(file_content), persist_spam_task.s(file.id_)),
             chain(
                 upload_email_to_imap_task.s(file_content, file),
                 group(
-                    persist_imap_info.s(file),
+                    persist_imap_info.s(file.id_),
                     subscribe_to_imap_folder.s(),
                     chain(
                         render_email_to_image.s(),

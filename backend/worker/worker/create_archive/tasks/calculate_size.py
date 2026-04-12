@@ -1,5 +1,6 @@
+from uuid import UUID
+
 from celery import chain
-from common.archive.archive_repository import Archive
 from common.dependencies import get_celery_app, get_file_storage_service
 from common.services.lazybytes_service import LazyBytes
 
@@ -12,17 +13,17 @@ from worker.utils.persisting_task import persisting_task
 app = get_celery_app()
 
 
-def signature_plain_file(archive_info: Archive):
+def signature_plain_file(archive_id: UUID):
     return chain(
         calculate_size_task.s(),
-        persist_size_plain_file_task.s(archive_info),
+        persist_size_plain_file_task.s(archive_id),
     )
 
 
-def signature_encrypted_file(archive_info: Archive):
+def signature_encrypted_file(archive_id: UUID):
     return chain(
         calculate_size_task.s(),
-        persist_size_encrypted_file_task.s(archive_info),
+        persist_size_encrypted_file_task.s(archive_id),
     )
 
 

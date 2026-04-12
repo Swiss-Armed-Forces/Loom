@@ -46,11 +46,11 @@ def signature(file: File, file_content: LazyBytes) -> Signature:
         chain(
             thumbnail_image_png_task.s(file_content, thumbnail_file),
             group(
-                persist_thumbnail_total_frames.s(file),
+                persist_thumbnail_total_frames.s(file.id_),
                 chain(
                     upload_thumbnail_task.s(),
                     group(
-                        persist_thumbnail_task.s(file),
+                        persist_thumbnail_task.s(file.id_),
                         chain(
                             group(
                                 thumbnail_fallback_render_office_to_pdf_task.s(
@@ -63,10 +63,10 @@ def signature(file: File, file_content: LazyBytes) -> Signature:
                             thumbnail_fallback_pick.s(),
                             thumbnail_fallback_image_png_task.s(thumbnail_file),
                             group(
-                                persist_thumbnail_total_frames.s(file),
+                                persist_thumbnail_total_frames.s(file.id_),
                                 chain(
                                     upload_thumbnail_task.s(),
-                                    persist_thumbnail_task.s(file),
+                                    persist_thumbnail_task.s(file.id_),
                                 ),
                             ),
                         ),
@@ -84,10 +84,10 @@ def signature_pass_file_content(
     return chain(
         thumbnail_image_png_task.s(thumbnail_file),
         group(
-            persist_thumbnail_total_frames.s(file),
+            persist_thumbnail_total_frames.s(file.id_),
             chain(
                 upload_thumbnail_task.s(),
-                persist_thumbnail_task.s(file),
+                persist_thumbnail_task.s(file.id_),
             ),
         ),
     )

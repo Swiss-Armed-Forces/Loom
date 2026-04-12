@@ -35,7 +35,7 @@ def schedule_attachments(lazy_tika_result: TypedLazyBytes[TikaResult], file: Fil
     # but it's not feasible for files with many attachments.
     for attachment in tika_result.attachments:
         chain(
-            schedule_attachment.s(attachment, file), persist_attachment.s(file)
+            schedule_attachment.s(attachment, file), persist_attachment.s(file.id_)
         ).delay().forget()
 
 

@@ -1,7 +1,7 @@
 import hashlib
+from uuid import UUID
 
 from celery import chain
-from common.archive.archive_repository import Archive
 from common.dependencies import (
     get_celery_app,
     get_file_storage_service,
@@ -17,17 +17,17 @@ from worker.utils.persisting_task import persisting_task
 app = get_celery_app()
 
 
-def signature_plain_file(archive: Archive):
+def signature_plain_file(archive_id: UUID):
     return chain(
         calculate_checksum_task.s(),
-        persist_checksum_plain_file_task.s(archive),
+        persist_checksum_plain_file_task.s(archive_id),
     )
 
 
-def signature_encrypted_file(archive: Archive):
+def signature_encrypted_file(archive_id: UUID):
     return chain(
         calculate_checksum_task.s(),
-        persist_checksum_encrypted_file_task.s(archive),
+        persist_checksum_encrypted_file_task.s(archive_id),
     )
 
 

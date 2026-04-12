@@ -82,7 +82,7 @@ def summarize_task(
             chain(
                 summarize.s(),
                 refine_summary.s(system_prompt),
-                persist_summary.s(file),
+                persist_summary.s(file.id_),
             ),
         )
     )

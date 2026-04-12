@@ -20,11 +20,11 @@ def signature(file: File) -> Signature:
     return group(
         chain(
             trufflehog_scan_task.s(file.extension),
-            persist_trufflehog_scan_task.s(file),
+            persist_trufflehog_scan_task.s(file.id_),
         ),
         chain(
             ripsecrets_scan_task.s(file.extension),
-            persist_ripsecrets_scan_task.s(file),
+            persist_ripsecrets_scan_task.s(file.id_),
         ),
     )
 

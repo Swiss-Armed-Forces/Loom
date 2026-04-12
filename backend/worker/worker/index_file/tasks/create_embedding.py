@@ -67,7 +67,7 @@ def create_embedding_task(
                 for fragment in text_fragments
                 if is_natural_language(fragment)
             ],
-            persist_embeddings.s(file),
+            persist_embeddings.s(file.id_),
         )
     )
 

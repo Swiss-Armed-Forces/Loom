@@ -57,54 +57,52 @@ class _PubSubAsync:
         )
 
     async def subscribe(self, channels: set[str]):
-        receivers = await self.publish_message(
+        await self.publish_message(
             PubSubMessage(
                 channel=self._pubsub_client_meta_channel_name,
                 message=MessageSubscribe(channels=channels),
             ),
         )
-        assert receivers == 1
 
     async def _do_subscribe(self, message: MessageSubscribe):
         if len(message.channels) <= 0:
             return
         await self._pubsub_client.subscribe(*message.channels)
-        receivers = await self.publish_message(
+        await self.publish_message(
             PubSubMessage(
                 message=MessageSubscribeConfirmation(channels=message.channels),
             ),
         )
-        assert receivers == 1
 
     async def unsubscribe(self, channels: set[str]):
-        receivers = await self.publish_message(
+        await self.publish_message(
             PubSubMessage(
                 channel=self._pubsub_client_meta_channel_name,
                 message=MessageUnsubscribe(channels=channels),
             ),
         )
-        assert receivers == 1
 
     async def _do_unsubscribe(self, message: MessageUnsubscribe):
         if len(message.channels) <= 0:
             return
         await self._pubsub_client.unsubscribe(*message.channels)
-        receivers = await self.publish_message(
+        await self.publish_message(
             PubSubMessage(
                 message=MessageUnsubscribeConfirmation(channels=message.channels),
             ),
         )
-        assert receivers == 1
 
     async def _handle_subscription_messages(self, message: PubSubMessage) -> bool:
         inner_message = message.message
-        if isinstance(inner_message, MessageSubscribe):
-            await self._do_subscribe(inner_message)
-            return True
-        if isinstance(inner_message, MessageUnsubscribe):
-            await self._do_unsubscribe(inner_message)
-            return True
-        return False
+        match inner_message:
+            case MessageSubscribe():
+                await self._do_subscribe(inner_message)
+                return True
+            case MessageUnsubscribe():
+                await self._do_unsubscribe(inner_message)
+                return True
+            case _:
+                return False
 
     async def get_message(self) -> PubSubMessage:
 

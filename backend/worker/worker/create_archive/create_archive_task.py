@@ -30,23 +30,23 @@ def create_archive_task(archive: Archive):
             chain(
                 compress_files_task.s(),
                 group(
-                    persist_plain_file_storage_data_task.s(archive),
+                    persist_plain_file_storage_data_task.s(archive.id_),
                     group(
-                        calculate_checksum.signature_plain_file(archive),
-                        calculate_size.signature_plain_file(archive),
+                        calculate_checksum.signature_plain_file(archive.id_),
+                        calculate_size.signature_plain_file(archive.id_),
                     ),
                     chain(
                         encrypt_file_task.s(),
                         group(
-                            persist_encrypted_file_storage_data_task.s(archive),
-                            calculate_checksum.signature_encrypted_file(archive),
-                            calculate_size.signature_encrypted_file(archive),
+                            persist_encrypted_file_storage_data_task.s(archive.id_),
+                            calculate_checksum.signature_encrypted_file(archive.id_),
+                            calculate_size.signature_encrypted_file(archive.id_),
                         ),
                     ),
                 ),
             ),
         ),
-        persist_processing_done.signature(archive),
+        persist_processing_done.signature(archive.id_),
     ).delay().forget()
 
 

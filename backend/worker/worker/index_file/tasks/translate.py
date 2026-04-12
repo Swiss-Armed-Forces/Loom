@@ -63,7 +63,7 @@ def signature(file: File) -> Signature:
             translate_task.s(file),
             chain(
                 translate_get_best_detected_language.s(),
-                persist_best_detected_language.s(file),
+                persist_best_detected_language.s(file.id_),
             ),
         ),
     )
@@ -176,7 +176,7 @@ def translate_task(
                     ],
                     chain(
                         combine_translation.s(detected_language),
-                        persist_translation.s(file),
+                        persist_translation.s(file.id_),
                     ),
                 )
                 for detected_language in detected_languages
