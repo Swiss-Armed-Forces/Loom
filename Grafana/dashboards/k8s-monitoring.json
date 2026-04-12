@@ -212,9 +212,9 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "avg by (persistentvolumeclaim) (kubelet_volume_stats_used_bytes)\n/ sum by (persistentvolumeclaim) (kube_persistentvolumeclaim_resource_requests_storage_bytes)",
+          "expr": "sum by (namespace, volume) (\n  label_replace(\n    kubelet_volume_stats_used_bytes,\n    \"volume\",\n    \"$1\",\n    \"persistentvolumeclaim\",\n    \"(.+)-[0-9]+\"\n  )\n)\n/\nsum by (namespace, volume) (\n  label_replace(\n    kubelet_volume_stats_capacity_bytes,\n    \"volume\",\n    \"$1\",\n    \"persistentvolumeclaim\",\n    \"(.+)-[0-9]+\"\n  )\n)",
           "instant": false,
-          "legendFormat": "{{persistentvolumeclaim}}",
+          "legendFormat": "{{volume}}",
           "range": true,
           "refId": "A"
         }
