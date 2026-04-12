@@ -150,3 +150,14 @@ ArgoCD's declarative sync model without false drift detection.
   {{- end -}}
   {{- $cpuCount | int64 -}}
 {{- end -}}
+
+{{/*
+Calculate GOMEMLIMIT from Kubernetes memory limit.
+Usage: {{ include "gomemlimit" (dict "memory" "1Gi" "factor" 0.9) }}
+Returns: byte value for GOMEMLIMIT (e.g., "966367641")
+*/}}
+{{- define "gomemlimit" -}}
+{{- $memoryBytes := include "SI-to-bytes" .memory | int64 -}}
+{{- $factor := .factor | default 0.9 -}}
+{{- mulf $memoryBytes $factor | floor | int64 -}}
+{{- end -}}

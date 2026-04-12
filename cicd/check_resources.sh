@@ -28,7 +28,7 @@ MAX_GPU="3"
 
 # Max allowed limits (resource limits)
 MAX_CPU_LIMITS="66"
-MAX_MEMORY_LIMITS="85Gi"
+MAX_MEMORY_LIMITS="90Gi"
 MAX_GPU_LIMITS="3"
 
 # Run the resource checker

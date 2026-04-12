@@ -1,5 +1,16 @@
+{{- /* All calculations in MB for consistency with SeaweedFS flags */ -}}
 {{- $minFreeSpaceMultiplier := .Values.seaweedfs.volume.minFreeSpaceMultiplier | default 2 -}}
-{{- $minFreeSpaceMB := mulf .Values.seaweedfs.master.volumeSizeLimitMB $minFreeSpaceMultiplier | int64 -}}
+{{- $volumeSizeMB := .Values.seaweedfs.master.volumeSizeLimitMB | int64 -}}
+{{- $minFreeSpaceMB := mulf $volumeSizeMB $minFreeSpaceMultiplier | int64 -}}
+{{- $pvcStorageBytes := include "SI-to-bytes" .Values.seaweedfs.volume.pvc.storage | int64 -}}
+{{- $pvcStorageMB := divf $pvcStorageBytes (mul 1024 1024) | floor | int64 -}}
+{{- /* Calculate max volumes: floor((diskSize - minFreeSpace) / volumeSize) */ -}}
+{{- $usableSpaceMB := sub $pvcStorageMB $minFreeSpaceMB -}}
+{{- $maxVolumes := divf $usableSpaceMB $volumeSizeMB | floor | int64 -}}
+{{- /* Ensure at least 1 volume, otherwise fail loudly */ -}}
+{{- if le $maxVolumes 0 -}}
+  {{- fail (printf "SeaweedFS volume PVC too small: %s provides %dMB, but minFreeSpace=%dMB + 1 volume=%dMB requires at least %dMB" .Values.seaweedfs.volume.pvc.storage $pvcStorageMB $minFreeSpaceMB $volumeSizeMB (add $minFreeSpaceMB $volumeSizeMB)) -}}
+{{- end -}}
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
@@ -62,6 +73,10 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: spec.nodeName
+            {{- if .Values.seaweedfs.volume.resources.limits.memory }}
+            - name: GOMEMLIMIT
+              value: "{{ include "gomemlimit" (dict "memory" .Values.seaweedfs.volume.resources.limits.memory "factor" .Values.seaweedfs.goMemoryLimitFactor) }}"
+            {{- end }}
           command:
             - weed
             - volume
@@ -70,8 +85,9 @@ spec:
             - -ip.bind=0.0.0.0
             - -port={{ .Values.seaweedfs.volume.port }}
             - -port.grpc={{ .Values.seaweedfs.volume.grpcPort }}
+            - -index=leveldb
             - -dir=/data
-            - -max=0
+            - -max={{ $maxVolumes }}
             - -minFreeSpace={{ $minFreeSpaceMB }}MB
             - -dataCenter={{ include "app.fullname" . }}
             - -rack=$(NODE_NAME)

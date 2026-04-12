@@ -472,6 +472,10 @@ seaweedfs:
   # SeaweedFS is a distributed storage system for blobs, objects, files, and data lake
   # It provides S3-compatible API through the filer component
 
+  # Factor to multiply memory limit by for GOMEMLIMIT (0.0-1.0)
+  # Default 0.9 leaves 10% headroom for non-Go memory usage
+  goMemoryLimitFactor: 0.9
+
   master:
     replicaCount: 1
     image:
@@ -492,6 +496,11 @@ seaweedfs:
     # better replication distribution, faster garbage collection.
     # Default: 1024 (1GB). SeaweedFS default is 30000 (30GB).
     volumeSizeLimitMB: 1024
+    volumeGrowth:
+      copy_1: 4
+      copy_2: 2
+      copy_3: 2
+      copy_other: 1
     pvc:
       storage: 1Gi
       storageClass: null
@@ -522,17 +531,23 @@ seaweedfs:
         cpu: "0.05"
         memory: "256Mi"
       limits:
-        cpu: "0.15"
-        memory: "512Mi"
+        cpu: "0.5"
+        memory: "1.5Gi"
 
   filer:
-    replicaCount: 1
+    replicaCount: 2
+    # Graceful shutdown configuration for S3 multipart uploads
+    terminationGracePeriodSeconds: 180
+    preStopSleepSeconds: 5
     hpa:
       enabled: true
       maxReplicas: 5
-      minReplicas: 1
-      targetCPUUtilizationPercentage: 100
-      targetMemoryUtilizationPercentage: 100
+      minReplicas: 2
+      targetCPUUtilizationPercentage: 70
+      targetMemoryUtilizationPercentage: 80
+      scaleDown:
+        stabilizationWindowSeconds: 300
+        maxPodsPerMinute: 1
     image:
       repository: swiss-armed-forces/cyber-command/cea/loom/seaweedfs
     port: 8888
@@ -543,8 +558,8 @@ seaweedfs:
         cpu: "0.1"
         memory: "256Mi"
       limits:
-        cpu: "0.5"
-        memory: "512Mi"
+        cpu: "1"
+        memory: "2Gi"
 
   s3:
     port: 8333
@@ -1002,6 +1017,9 @@ tika:
   # service-type: content-extraction
 
 gotenberg:
+  # Factor to multiply memory limit by for GOMEMLIMIT (0.0-1.0)
+  # Default 0.9 leaves 10% headroom for non-Go memory usage
+  goMemoryLimitFactor: 0.9
   replicaCount: 1
   hpa:
     enabled: true

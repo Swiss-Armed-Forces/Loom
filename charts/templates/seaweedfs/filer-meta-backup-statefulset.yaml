@@ -62,6 +62,10 @@ spec:
               value: "{{ include "app.fullname" . }}-seaweedfs-master"
             - name: MASTER_PORT
               value: "{{ .Values.seaweedfs.master.port }}"
+            {{- if .Values.seaweedfs.filerMetaBackup.resources.limits.memory }}
+            - name: GOMEMLIMIT
+              value: "{{ include "gomemlimit" (dict "memory" .Values.seaweedfs.filerMetaBackup.resources.limits.memory "factor" .Values.seaweedfs.goMemoryLimitFactor) }}"
+            {{- end }}
           volumeMounts:
             - name: backup-config
               mountPath: /etc/seaweedfs/filer.toml

@@ -193,6 +193,9 @@ translate:
     enabled: false
 
 seaweedfs:
+  filer:
+    hpa:
+      enabled: false
   s3:
     ingress: *default-ingress-config
   admin:

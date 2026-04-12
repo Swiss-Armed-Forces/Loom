@@ -158,7 +158,7 @@ For a more scalable setup, you can deploy Loom using its Helm chart on your Kube
 In shared cluster with [Resource Quotas](https://kubernetes.io/docs/concepts/policy/resource-quotas/) enforced,
 your quota must have at list those [minimum upper limit](https://kubernetes.io/docs/concepts/policy/resource-quotas/#compute-resource-quota) requirements:
 
-- **RAM:** 85Gi
+- **RAM:** 90Gi
 - **CPU:** 66 Cores
 - **Disk Space:** 200 GiB
 - **GPU (Optional):** 3

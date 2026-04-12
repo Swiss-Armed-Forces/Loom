@@ -40,6 +40,11 @@ spec:
         - name: admin
           image: {{ .Values.image.registry }}/{{ .Values.seaweedfs.admin.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) .Values.seaweedfs.admin.image.tag }}
           imagePullPolicy: {{ .Values.image.pullPolicy }}
+          {{- if .Values.seaweedfs.admin.resources.limits.memory }}
+          env:
+            - name: GOMEMLIMIT
+              value: "{{ include "gomemlimit" (dict "memory" .Values.seaweedfs.admin.resources.limits.memory "factor" .Values.seaweedfs.goMemoryLimitFactor) }}"
+          {{- end }}
           command:
             - weed
             - admin
