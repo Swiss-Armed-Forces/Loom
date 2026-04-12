@@ -749,6 +749,12 @@ open_webui:
     ENV: "prod"
     WEBUI_AUTH: "false"
     ENABLE_SIGNUP: "false"
+    USER_PERMISSIONS_CHAT_TEMPORARY_ENFORCED: "true"
+    OFFLINE_MODE: "true"
+    HF_HUB_OFFLINE: 1
+    RAG_EMBEDDING_MODEL_AUTO_UPDATE: "false"
+    RAG_RERANKING_MODEL_AUTO_UPDATE: "false"
+    WHISPER_MODEL_AUTO_UPDATE: "false"
   service:
     port: 8080
   pvc:
