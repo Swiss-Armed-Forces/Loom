@@ -37,10 +37,14 @@ spec:
               value: "http://localhost:{{ .Values.open_webui.service.port }}"
             - name: WEBUI_AUTH
               value: {{ .Values.open_webui.env.WEBUI_AUTH | quote }}
+            - name: WEBUI_NAME
+              value: "{{ include "app.name" . }}-open-webui"
             - name: ENABLE_SIGNUP
               value: {{ .Values.open_webui.env.ENABLE_SIGNUP | quote }}
             - name: DEFAULT_MODELS
               value: {{ .Values.llm.model | quote }}
+            - name: USER_PERMISSIONS_CHAT_TEMPORARY_ENFORCED
+              value: {{ .Values.open_webui.env.USER_PERMISSIONS_CHAT_TEMPORARY_ENFORCED | quote }}
             - name: TOOL_SERVER_CONNECTIONS
               value: |
                 [
@@ -53,7 +57,16 @@ spec:
                       "info": { "name": "Loom-Api", "description": "" }
                   }
                 ]
-
+            - name: OFFLINE_MODE
+              value: {{ .Values.open_webui.env.OFFLINE_MODE | quote }}
+            - name: HF_HUB_OFFLINE
+              value: {{ .Values.open_webui.env.HF_HUB_OFFLINE | quote }}
+            - name: RAG_EMBEDDING_MODEL_AUTO_UPDATE
+              value: {{ .Values.open_webui.env.RAG_EMBEDDING_MODEL_AUTO_UPDATE | quote }}
+            - name: RAG_RERANKING_MODEL_AUTO_UPDATE
+              value: {{ .Values.open_webui.env.RAG_RERANKING_MODEL_AUTO_UPDATE | quote }}
+            - name: WHISPER_MODEL_AUTO_UPDATE
+              value: {{ .Values.open_webui.env.WHISPER_MODEL_AUTO_UPDATE | quote }}
           volumeMounts:
             - mountPath: /app/backend/data
               name: open-webui

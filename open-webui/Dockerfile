@@ -1,5 +1,5 @@
 # Image version
-ARG OPEN_WEBUI_IMAGE_VERSION="0.6.43"
+ARG OPEN_WEBUI_IMAGE_VERSION="0.8.12-slim"
 
 # We can not pull this through CI_DEPENDENCY_PROXY_DIRECT_GROUP_IMAGE_PREFIX
 # as this is not hosted on dockerhub
