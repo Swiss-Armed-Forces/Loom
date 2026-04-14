@@ -25,10 +25,14 @@ from common.utils.sharding import get_all_persister_shard_queues
 logger = logging.getLogger(__name__)
 
 
+def _never_nowfun():
+    return datetime(year=1970, month=1, day=1, hour=0)
+
+
 SCHEDULE_NEVER = crontab(
     minute="0",
     hour="1",
-    nowfun=lambda: datetime(year=1970, month=1, day=1, hour=0),
+    nowfun=_never_nowfun,
 )
 
 
