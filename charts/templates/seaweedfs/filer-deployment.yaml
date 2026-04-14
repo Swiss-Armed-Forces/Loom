@@ -62,7 +62,7 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: status.podIP
-            {{- if .Values.seaweedfs.filer.resources.limits.memory }}
+            {{- if and .Values.seaweedfs.filer.resources .Values.seaweedfs.filer.resources.limits .Values.seaweedfs.filer.resources.limits.memory }}
             - name: GOMEMLIMIT
               value: "{{ include "gomemlimit" (dict "memory" .Values.seaweedfs.filer.resources.limits.memory "factor" .Values.seaweedfs.goMemoryLimitFactor) }}"
             {{- end }}

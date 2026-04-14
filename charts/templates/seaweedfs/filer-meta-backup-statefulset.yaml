@@ -1,6 +1,7 @@
 {{- if .Values.seaweedfs.filerMetaBackup.enabled }}
 {{- $redisFilerValues := index .Values "redis-filer" -}}
-{{- $redisMemoryLimitBytes := include "SI-to-bytes" $redisFilerValues.resources.limits.memory | int64 -}}
+{{- $memoryValue := default (dig "resources" "requests" "memory" "" $redisFilerValues) (dig "resources" "limits" "memory" "" $redisFilerValues) -}}
+{{- $redisMemoryLimitBytes := include "SI-to-bytes" $memoryValue | int64 -}}
 {{- $pvcStorageMultiplier := .Values.seaweedfs.filerMetaBackup.pvc.storageMultiplier | default 2 -}}
 {{- $pvcStorageBytes := mulf $redisMemoryLimitBytes $pvcStorageMultiplier | int64 -}}
 apiVersion: apps/v1
@@ -62,7 +63,7 @@ spec:
               value: "{{ include "app.fullname" . }}-seaweedfs-master"
             - name: MASTER_PORT
               value: "{{ .Values.seaweedfs.master.port }}"
-            {{- if .Values.seaweedfs.filerMetaBackup.resources.limits.memory }}
+            {{- if and .Values.seaweedfs.filerMetaBackup.resources .Values.seaweedfs.filerMetaBackup.resources.limits .Values.seaweedfs.filerMetaBackup.resources.limits.memory }}
             - name: GOMEMLIMIT
               value: "{{ include "gomemlimit" (dict "memory" .Values.seaweedfs.filerMetaBackup.resources.limits.memory "factor" .Values.seaweedfs.goMemoryLimitFactor) }}"
             {{- end }}

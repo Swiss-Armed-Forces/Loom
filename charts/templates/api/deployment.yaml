@@ -55,6 +55,10 @@ spec:
         - name: api
           image: {{ .Values.image.registry }}/{{ .Values.api.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) .Values.api.image.tag }}
           imagePullPolicy: {{ .Values.image.pullPolicy }}
+          {{- $cpuValue := "4" -}}
+          {{- if and .Values.api.resources .Values.api.resources.limits .Values.api.resources.limits.cpu -}}
+            {{- $cpuValue = .Values.api.resources.limits.cpu -}}
+          {{- end -}}
           {{- if .Values.api.command }}
           command: {{- toYaml .Values.api.command | nindent 10 }}
           {{- else }}
@@ -64,7 +68,7 @@ spec:
             - "uvicorn"
             - "api.main:app"
             - "--workers"
-            - {{ include "cpu-limit-to-count" .Values.api.resources.limits.cpu | quote }}
+            - {{ include "cpu-limit-to-count" $cpuValue | quote }}
             - "--port"
             - {{ .Values.api.service.port | quote }}
             - "--host"

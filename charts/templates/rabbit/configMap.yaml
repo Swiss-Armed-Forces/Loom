@@ -1,6 +1,5 @@
-{{- $memoryLimitBytes := include "SI-to-bytes" .Values.rabbit.resources.limits.memory | int64 -}}
+{{- $memoryLimit := dig "resources" "limits" "memory" "" .Values.rabbit -}}
 {{- $memoryLimitHighWatermarkThresholdPercent := 0.8 -}}
-{{- $memoryLimitHighWatermarkBytes := mulf $memoryLimitBytes $memoryLimitHighWatermarkThresholdPercent | int64 -}}
 
 {{- $taskTimeLimitMilliseconds := mulf .Values.pipeline.taskTimeLimitSeconds 1000 | int64 -}}
 {{- $taskTimeLimitAddMilliseconds := 300000 -}}
@@ -14,7 +13,13 @@ metadata:
     {{- include "app.labels.custom" (dict "context" . "component" "rabbit") | nindent 4 }}
 data:
   rabbitmq.conf: |
+    {{- if $memoryLimit }}
+    {{- $memoryLimitBytes := include "SI-to-bytes" $memoryLimit | int64 -}}
+    {{- $memoryLimitHighWatermarkBytes := mulf $memoryLimitBytes $memoryLimitHighWatermarkThresholdPercent | int64 }}
     vm_memory_high_watermark.absolute = {{ printf "%d" $memoryLimitHighWatermarkBytes }}
+    {{- else }}
+    vm_memory_high_watermark.relative = {{ $memoryLimitHighWatermarkThresholdPercent }}
+    {{- end }}
 
     # according to recommendations in:
     # https://www.rabbitmq.com/docs/prometheus#prometheus-configuration

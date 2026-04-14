@@ -1,0 +1,169 @@
+preInstall:
+  resources:
+    limits: null
+
+globalHttpRedirect:
+  resources:
+    limits: null
+
+api:
+  resources:
+    limits: null
+  initContainer:
+    resources:
+      limits: null
+
+frontend:
+  resources:
+    limits: null
+
+worker: &worker
+  resources:
+    limits: null
+
+reaper: *worker
+
+persister:
+  resources:
+    limits: null
+
+beat:
+  resources:
+    limits: null
+
+flower:
+  resources:
+    limits: null
+
+crawler:
+  resources:
+    limits: null
+  initContainer:
+    resources:
+      limits: null
+
+elasticsearch:
+  resources:
+    limits: null
+  exporter:
+    resources:
+      limits: null
+
+elasticvue:
+  resources:
+    limits: null
+
+fluentd:
+  resources:
+    limits: null
+  initContainer:
+    resources:
+      limits: null
+
+grafana:
+  resources:
+    limits: null
+
+translate:
+  resources:
+    limits: null
+
+seaweedfs:
+  master:
+    resources:
+      limits: null
+
+  volume:
+    resources:
+      limits: null
+
+  filer:
+    resources:
+      limits: null
+
+  admin:
+    resources:
+      limits: null
+
+  initContainer:
+    resources:
+      limits: null
+
+  filerMetaBackup:
+    resources:
+      limits: null
+
+mongodb:
+  resources:
+    limits: null
+  exporter:
+    resources:
+      limits: null
+  express:
+    resources:
+      limits: null
+
+rabbit:
+  resources:
+    limits: null
+
+ollama: &ollama
+  resources:
+    limits: null
+  initContainer:
+    resources:
+      limits: null
+
+ollama-tool: *ollama
+
+open_webui:
+  resources:
+    limits: null
+
+dovecot:
+  resources:
+    limits: null
+  initContainer:
+    resources:
+      limits: null
+
+roundcube:
+  resources:
+    limits: null
+
+prometheus:
+  resources:
+    limits: null
+  initContainer:
+    resources:
+      limits: null
+
+redis: &redis
+  resources:
+    limits: null
+  initContainer:
+    resources:
+      limits: null
+  exporter:
+    resources:
+      limits: null
+
+redis-cache: *redis
+
+redis-filer: *redis
+
+redisinsight:
+  resources:
+    limits: null
+
+rspamd:
+  resources:
+    limits: null
+
+tika:
+  resources:
+    limits: null
+
+gotenberg:
+  resources:
+    limits: null

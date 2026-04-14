@@ -50,9 +50,11 @@ spec:
           {{- end }}
           {{- if .Values.mongodb.resources }}
           resources:
+            {{- if .Values.mongodb.resources.limits }}
             limits:
               cpu: {{ .Values.mongodb.resources.limits.cpu }}
               memory: {{ .Values.mongodb.resources.limits.memory }}
+            {{- end }}
             requests:
               cpu: {{ .Values.mongodb.resources.requests.cpu }}
               memory: {{ .Values.mongodb.resources.requests.memory }}

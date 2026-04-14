@@ -22,7 +22,7 @@ spec:
         - name: gotenberg
           image: {{ .Values.image.registry }}/{{ .Values.gotenberg.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) .Values.gotenberg.image.tag }}
           imagePullPolicy: {{ .Values.image.pullPolicy }}
-          {{- if .Values.gotenberg.resources.limits.memory }}
+          {{- if and .Values.gotenberg.resources .Values.gotenberg.resources.limits .Values.gotenberg.resources.limits.memory }}
           env:
             - name: GOMEMLIMIT
               value: "{{ include "gomemlimit" (dict "memory" .Values.gotenberg.resources.limits.memory "factor" .Values.gotenberg.goMemoryLimitFactor) }}"

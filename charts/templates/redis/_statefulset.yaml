@@ -1,7 +1,8 @@
 {{- define "app.redis.statefulset" -}}
 {{- $component := .component -}}
 {{- $values := index .Values $component -}}
-{{- $redisMemoryLimitBytes := include "SI-to-bytes" $values.resources.limits.memory | int64 -}}
+{{- $memoryValue := default (dig "resources" "requests" "memory" "" $values) (dig "resources" "limits" "memory" "" $values) -}}
+{{- $redisMemoryLimitBytes := include "SI-to-bytes" $memoryValue | int64 -}}
 {{- $pvcStorageMultiplier := dig "pvc" "storageMultiplier" 4 $values -}}
 {{- $pvcStorageBytes := mulf $redisMemoryLimitBytes $pvcStorageMultiplier | int64 -}}
 

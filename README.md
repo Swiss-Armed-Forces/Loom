@@ -146,6 +146,10 @@ To customize the deployment configuration, add your value
 overrides to `charts/values-overwrite.yaml`. This file is intentionally left empty and
 is automatically included during Skaffold deployments.
 
+To deploy without resource limits (where you want
+containers to use as much CPU/memory as needed), copy the content of
+`charts/values-no-limits.yaml` into `charts/values-overwrite.yaml`.
+
 ### Multi Node Deployment
 
 For a more scalable setup, you can deploy Loom using its Helm chart on your Kubernetes cluster.
