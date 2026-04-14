@@ -1,7 +1,8 @@
 {{- define "app.redis.configMap" -}}
 {{- $component := .component -}}
 {{- $values := index .Values $component -}}
-{{- $memoryLimitBytes := include "SI-to-bytes" $values.resources.limits.memory | int64 -}}
+{{- $memoryValue := default (dig "resources" "requests" "memory" "" $values) (dig "resources" "limits" "memory" "" $values) -}}
+{{- $memoryLimitBytes := include "SI-to-bytes" $memoryValue | int64 -}}
 {{- $memoryLimitThresholdPercent := dig "memoryLimitThresholdPercent" 0.6 $values -}}
 {{- $memoryLimitBytes := mulf $memoryLimitBytes $memoryLimitThresholdPercent | int64 -}}
 {{- $maxmemoryPolicy := dig "maxmemoryPolicy" "volatile-ttl" . -}}

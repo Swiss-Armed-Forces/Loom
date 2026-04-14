@@ -73,7 +73,7 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: spec.nodeName
-            {{- if .Values.seaweedfs.volume.resources.limits.memory }}
+            {{- if and .Values.seaweedfs.volume.resources .Values.seaweedfs.volume.resources.limits .Values.seaweedfs.volume.resources.limits.memory }}
             - name: GOMEMLIMIT
               value: "{{ include "gomemlimit" (dict "memory" .Values.seaweedfs.volume.resources.limits.memory "factor" .Values.seaweedfs.goMemoryLimitFactor) }}"
             {{- end }}

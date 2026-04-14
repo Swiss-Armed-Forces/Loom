@@ -54,6 +54,16 @@ helm template "${CHARTS_DIR}" --values "${CHARTS_DIR}/values-gpu.yaml" \
     --threshold-limit "memory=${MAX_MEMORY_LIMITS}" \
     --threshold-limit "nvidia.com/gpu=${MAX_GPU_LIMITS}"
 
+echo "No resources limit check"
+
+helm template "${CHARTS_DIR}" --values "${CHARTS_DIR}/values-no-limits.yaml" \
+| poetry run python "${SCRIPT_DIR}/check_resources.py" \
+    --exclude-ephemeral \
+    --threshold-request "cpu=${MAX_CPU}" \
+    --threshold-request "memory=${MAX_MEMORY}" \
+    --threshold-limit "cpu=${MAX_CPU_LIMITS}" \
+    --threshold-limit "memory=${MAX_MEMORY_LIMITS}"
+
 # Check if README.md contains the expected resource requirements block
 # This ensures the README stays in sync with the actual threshold values
 

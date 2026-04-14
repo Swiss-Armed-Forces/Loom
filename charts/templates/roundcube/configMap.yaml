@@ -1,6 +1,8 @@
+{{- $memoryLimit := "-1" -}}
+{{- if and .Values.roundcube.resources .Values.roundcube.resources.limits .Values.roundcube.resources.limits.memory }}
 {{- $memoryLimitBytes := include "SI-to-bytes" .Values.roundcube.resources.limits.memory | int64 -}}
-{{- $memoryLimitThresholdPercent := 0.8 -}}
-{{- $memoryLimitBytes := mulf $memoryLimitBytes $memoryLimitThresholdPercent | int64 -}}
+{{- $memoryLimit = mulf $memoryLimitBytes 0.8 | int64 | printf "%d" -}}
+{{- end }}
 
 apiVersion: v1
 kind: ConfigMap
@@ -10,4 +12,4 @@ metadata:
     {{- include "app.labels.custom" (dict "context" . "component" "roundcube") | nindent 4 }}
 data:
   zzz_roundcube-custom.ini: |
-    memory_limit = {{ printf "%d" $memoryLimitBytes }}
+    memory_limit = {{ $memoryLimit }}
