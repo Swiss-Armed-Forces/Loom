@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 app = get_celery_app()
 
 
-@app.task(base=AiContextProcessingTask, queue="celery.interactive")
+@app.task(base=AiContextProcessingTask)
 def process_question_task(context: AiContext, question: str):
     logger.info("Processing question: '%s' for context: '%s", question, context.id_)
     chain(
