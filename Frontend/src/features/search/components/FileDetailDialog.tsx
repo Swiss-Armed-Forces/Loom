@@ -41,8 +41,6 @@ import { FileCardHeader } from "../container/FileCardHeader";
 import { toast } from "react-toastify";
 import { inferAceModeFromMimeType } from "../../common/inferAceModeFromMimeType";
 
-const FILE_FETCH_DEBOUNCE__MS = 2_000;
-
 export function FileDetailDialog() {
     const webSocketPubSubMessage = useAppSelector(selectWebSocketPubSubMessage);
     const fileDetailData = useAppSelector(selectFileDetailData);
@@ -54,14 +52,6 @@ export function FileDetailDialog() {
     const [file, setFile] = useState<GetFileResponse>();
 
     const [isFullscreen, setIsFullscreen] = useState(false);
-
-    const fileDetailDataFetchDebounceTimeout = useRef<
-        ReturnType<typeof setTimeout> | undefined
-    >(undefined);
-
-    const fileFetchDebounceTimeout = useRef<
-        ReturnType<typeof setTimeout> | undefined
-    >(undefined); // see: https://stackoverflow.com/a/56239226/3215929
 
     const openDialog = !!(
         fileDetailData.filePreview && fileDetailData.searchQuery
@@ -129,12 +119,7 @@ export function FileDetailDialog() {
 
         const fileId = message.fileId;
         if (fileId !== fileDetailData.filePreview?.fileId) return;
-        clearTimeout(fileDetailDataFetchDebounceTimeout.current);
-        const newTimeout = setTimeout(() => {
-            if (!openDialogRef.current) return; // Check current value via ref
-            dispatch(fetchFileDetailData({ fileId }));
-        }, FILE_FETCH_DEBOUNCE__MS);
-        fileDetailDataFetchDebounceTimeout.current = newTimeout;
+        dispatch(fetchFileDetailData({ fileId }));
     }, [webSocketPubSubMessage]); // eslint-disable-line react-hooks/exhaustive-deps
 
     // fetch file on change
@@ -145,19 +130,10 @@ export function FileDetailDialog() {
 
         const fileId = message.fileId;
         if (fileId !== fileDetailData.filePreview?.fileId) return;
-
-        clearTimeout(fileFetchDebounceTimeout.current);
-        const newTimeout = setTimeout(() => {
-            fetchFile();
-            fileFetchDebounceTimeout.current = undefined;
-        }, FILE_FETCH_DEBOUNCE__MS);
-        fileFetchDebounceTimeout.current = newTimeout;
+        fetchFile();
     }, [webSocketPubSubMessage]); // eslint-disable-line react-hooks/exhaustive-deps
 
     const close = useCallback(() => {
-        // Cancel any pending debounced fetch
-        clearTimeout(fileFetchDebounceTimeout.current);
-        clearTimeout(fileDetailDataFetchDebounceTimeout.current);
         // Unset the data
         dispatch(setFileDetailData({ searchQuery: null, filePreview: null }));
         setFile(undefined);
