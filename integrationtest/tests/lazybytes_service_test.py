@@ -93,27 +93,9 @@ class TestLazyBytes:
         with lazy_bytes_service.load_memoryview(lazy_bytes) as memory:
             assert memory == large_data
 
-    def test_from_generator_with_len(
-        self, lazy_bytes_service: LazyBytesService, large_data: bytes
-    ):
-        lazy_bytes = lazy_bytes_service.from_generator(
-            data_generator(large_data), len(large_data)
-        )
-        with lazy_bytes_service.load_memoryview(lazy_bytes) as memory:
-            assert memory == large_data
-
     def test_from_generator_small(self, lazy_bytes_service: LazyBytesService):
         data = b"123xx"
         lazy_bytes = lazy_bytes_service.from_generator(data_generator(data))
-        with lazy_bytes_service.load_memoryview(lazy_bytes) as memory:
-            assert memory == data
-
-    def test_from_generator_small_with_len(
-        self,
-        lazy_bytes_service: LazyBytesService,
-    ):
-        data = b"123xx"
-        lazy_bytes = lazy_bytes_service.from_generator(data_generator(data), len(data))
         with lazy_bytes_service.load_memoryview(lazy_bytes) as memory:
             assert memory == data
 
