@@ -128,30 +128,9 @@ def test_from_generator(
         assert memory == large_data
 
 
-def test_from_generator_with_len(
-    in_memory_lazy_bytes_service: InMemoryLazyBytesService, large_data
-):
-    lazy_bytes = in_memory_lazy_bytes_service.from_generator(
-        data_generator(large_data), len(large_data)
-    )
-    with in_memory_lazy_bytes_service.load_memoryview(lazy_bytes) as memory:
-        assert memory == large_data
-
-
 def test_from_generator_small(in_memory_lazy_bytes_service: InMemoryLazyBytesService):
     data = b"123xx"
     lazy_bytes = in_memory_lazy_bytes_service.from_generator(data_generator(data))
-    with in_memory_lazy_bytes_service.load_memoryview(lazy_bytes) as memory:
-        assert memory == data
-
-
-def test_from_generator_small_with_len(
-    in_memory_lazy_bytes_service: InMemoryLazyBytesService,
-):
-    data = b"123xx"
-    lazy_bytes = in_memory_lazy_bytes_service.from_generator(
-        data_generator(data), len(data)
-    )
     with in_memory_lazy_bytes_service.load_memoryview(lazy_bytes) as memory:
         assert memory == data
 

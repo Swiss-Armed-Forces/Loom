@@ -23,6 +23,7 @@ from pymongo.database import Database
 
 from common.settings import settings
 from common.utils.flush_s3_bucket import flush_s3_bucket
+from common.utils.generator import FileLikeStream, bytecount_lte
 from common.utils.gridfs import chunked_iterator_for_stream
 
 logger = logging.getLogger(__name__)
@@ -76,21 +77,13 @@ class LazyBytesService(ABC):
         service_id = self._store(BytesIO(data))
         return LazyBytes(service_id=service_id)
 
-    def from_generator(
-        self, data: Iterator[bytes], data_len: int | None = None
-    ) -> LazyBytes:
+    def from_generator(self, data: Iterator[bytes]) -> LazyBytes:
         """Stores the given data in this service."""
-        if data_len is not None and data_len <= self._threshold_bytes:
-            return LazyBytes(
-                embedded_data=bytes(int.from_bytes(b, byteorder="little") for b in data)
-            )
-        # buffer generator into temporary file
-        with TemporaryFile(dir=self.tempfile_dir) as tmp:
-            for i in data:
-                tmp.write(i)
-            tmp.flush()
-            tmp.seek(0)
-            return self.from_file(tmp)
+        is_small, data = bytecount_lte(data, limit=self.threshold_bytes)
+        if is_small:
+            return LazyBytes(embedded_data=b"".join(data))
+        service_id = self._store(data)
+        return LazyBytes(service_id=service_id)
 
     def from_file(self, fd: IO[bytes]) -> LazyBytes:
         """Stores the given data in this service."""
@@ -132,7 +125,7 @@ class LazyBytesService(ABC):
         """Deletes the data in the service."""
 
     @abstractmethod
-    def _store(self, data: IO[bytes]) -> Any:
+    def _store(self, data: Iterator[bytes] | IO[bytes]) -> Any:
         """Stores the data in the service returning a service id."""
 
     @abstractmethod
@@ -283,7 +276,7 @@ class GridFSLazyBytesService(LazyBytesService):
         self._database = database
         self._bucket = GridFSBucket(database)
 
-    def _store(self, data: IO[bytes]) -> Any:
+    def _store(self, data: Iterator[bytes] | IO[bytes]) -> Any:
         id_ = self._bucket.upload_from_stream(
             # We leave the filename empty in the upload because
             # this service is only concerned by the data itself.
@@ -352,8 +345,11 @@ class S3LazyBytesService(LazyBytesService):
         self._client = client
         self._bucket = bucket
 
-    def _store(self, data: IO[bytes]) -> Any:
+    def _store(self, data: Iterator[bytes] | IO[bytes]) -> Any:
         id_ = uuid.uuid4()
+        file_like = data
+        if not hasattr(data, "read"):
+            file_like = FileLikeStream(data)
         if not self._client.bucket_exists(self._bucket):
             self._client.make_bucket(self._bucket)
         self._client.put_object(
@@ -361,7 +357,7 @@ class S3LazyBytesService(LazyBytesService):
             str(id_),
             # This function should be taking IO[bytes] instead of
             # BytesIO, as IO[bytes] is the parent class
-            data,  # type: ignore
+            file_like,  # type: ignore
             length=-1,
             part_size=S3_PART_SIZE,
         )
@@ -394,14 +390,14 @@ class InMemoryLazyBytesService(LazyBytesService):
         self._storage: dict[int, bytes] = {}
         self._counter = 0
 
+    def _store(self, data: Iterator[bytes] | IO[bytes]) -> Any:
+        service_id = len(self._storage)
+        self._storage[service_id] = b"".join(data)
+        return service_id
+
     def _get_service_id(self) -> int:
         service_id = self._counter
         self._counter += 1
-        return service_id
-
-    def _store(self, data: IO[bytes]) -> Any:
-        service_id = self._get_service_id()
-        self._storage[service_id] = data.read()
         return service_id
 
     def _load_to(self, service_id: Any, dst: IO):
