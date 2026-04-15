@@ -41,7 +41,6 @@ import { useSearchParams } from "react-router-dom";
 import { t } from "i18next";
 
 const RELOAD_TIMEOUT__MS = 5_000;
-const FILE_FETCH_DEBOUNCE__MS = 2_000;
 const UPDATE_QUERY_DEBOUNCE__MS = 2_000;
 
 export function Search() {
@@ -65,10 +64,6 @@ export function Search() {
         if (!searchQuery?.id) return;
         searchResultWrapper.current?.scrollTo(0, 0);
     }, [searchQuery?.id]);
-
-    const fileFetchDebounceTimeouts = useRef(
-        new Map<string, ReturnType<typeof setTimeout>>(),
-    );
 
     const updateQueryDebounceTimeouts = useRef(
         new Map<string, ReturnType<typeof setTimeout>>(),
@@ -213,13 +208,7 @@ export function Search() {
         const message = webSocketPubSubMessage.message as MessageFileUpdate;
 
         const fileId = message.fileId;
-        const existingTimeout = fileFetchDebounceTimeouts.current.get(fileId);
-        clearTimeout(existingTimeout);
-        const newTimeout = setTimeout(() => {
-            dispatch(fetchPreview({ fileId: fileId }));
-            fileFetchDebounceTimeouts.current.delete(fileId);
-        }, FILE_FETCH_DEBOUNCE__MS);
-        fileFetchDebounceTimeouts.current.set(fileId, newTimeout);
+        dispatch(fetchPreview({ fileId: fileId }));
     }, [webSocketPubSubMessage]); // eslint-disable-line react-hooks/exhaustive-deps
 
     // update query id and show toast
