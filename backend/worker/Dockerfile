@@ -53,8 +53,6 @@ ARG GHOSTSCRIPT_VERSION="10.0.*"
 ARG LIBLEPTONICA_DEV_VERSION="1.82.*"
 ARG PST_UTILS_VERSION="0.6.*"
 ARG TSHARK_VERSION="4.0.*"
-ARG BINWALK_VERSION="2.3.*"
-ARG CABEXTRACT_VERSION="1.9-*"
 ARG RIPSECRETS_VERSION="0.1.11"
 ARG CURL_VERSION="7.88.*"
 ARG TRUFFLEHOG_VERSION="v3.90.6"
@@ -72,8 +70,6 @@ RUN set -exu \
     libleptonica-dev=${LIBLEPTONICA_DEV_VERSION} \
     pst-utils=${PST_UTILS_VERSION} \
     tshark=${TSHARK_VERSION} \
-    binwalk=${BINWALK_VERSION} \
-    cabextract=${CABEXTRACT_VERSION} \
     curl=${CURL_VERSION} \
     binutils=${BINUTILS_VERSION} \
     && curl -sSfL https://raw.githubusercontent.com/trufflesecurity/trufflehog/main/scripts/install.sh \

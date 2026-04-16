@@ -123,16 +123,6 @@ from utils.upload_asset import upload_asset
                 "sample.pst/sample/myInbox/2.eml/rtf-body.rtfrtf-body.rtf",
             ],
         ),
-        # binwalk extraction test
-        (
-            "test_installer.msi",
-            [
-                "test_installer.msi",
-                "test_installer.msi/0x5000/5000.cab",
-                "test_installer.msi/0x5000/wireguard.exe",
-                "test_installer.msi/0x5000/wg.exe",
-            ],
-        ),
         # Pcap extraction test
         ("http.pcap", ["http.pcap"]),
         # Zstd extraction test

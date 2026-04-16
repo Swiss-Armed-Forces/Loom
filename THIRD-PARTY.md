@@ -1363,12 +1363,9 @@ The complete source code for Traefik is publicly available at [https://github.co
 | binutils | 2.40-2 |  | dpkg-db-cataloger |
 | binutils-common | 2.40-2 |  | dpkg-db-cataloger |
 | binutils-x86-64-linux-gnu | 2.40-2 |  | dpkg-db-cataloger |
-| binwalk | 2.3.3 |  | python-installed-package-cataloger |
-| binwalk | 2.3.4+dfsg1-1 |  | dpkg-db-cataloger |
 | bsdutils | 1:2.38.1-5+deb12u3 | BSD-3-Clause, BSD-4-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, MIT | dpkg-db-cataloger |
 | bzip2 | 1.0.8-5+b1 | GPL-2.0-only | dpkg-db-cataloger |
 | ca-certificates | 20230311+deb12u1 | GPL-2.0-only, GPL-2.0-or-later, MPL-2.0 | dpkg-db-cataloger |
-| cabextract | 1.9-3 |  | dpkg-db-cataloger |
 | cel.dev/expr | v0.25.1 |  | go-module-binary-cataloger |
 | celery | 5.5.3 | BSD-3-Clause | python-installed-package-cataloger |
 | celery-types | 0.24.0 | Apache-2.0 | python-installed-package-cataloger |
@@ -1931,7 +1928,6 @@ The complete source code for Traefik is publicly available at [https://github.co
 | libmount1 | 2.38.1-5+deb12u3 | BSD-3-Clause, BSD-4-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, MIT | dpkg-db-cataloger |
 | libmpc3 | 1.3.1-1 | LGPL-3.0-only | dpkg-db-cataloger |
 | libmpfr6 | 4.2.0-1 | LGPL-3.0-only | dpkg-db-cataloger |
-| libmspack0 | 0.11-1 | LGPL-2.1-only | dpkg-db-cataloger |
 | libncurses-dev | 6.4-4 | BSD-3-Clause, X11 | dpkg-db-cataloger |
 | libncurses5-dev | 6.4-4 | BSD-3-Clause, X11 | dpkg-db-cataloger |
 | libncurses6 | 6.4-4 | BSD-3-Clause, X11 | dpkg-db-cataloger |
@@ -2139,7 +2135,6 @@ The complete source code for Traefik is publicly available at [https://github.co
 | python-dotenv | 1.1.0 | BSD-3-Clause | python-installed-package-cataloger |
 | python-magic | 0.4.27 | MIT | python-installed-package-cataloger |
 | python3 | 3.11.2-1+b1 |  | dpkg-db-cataloger |
-| python3-binwalk | 2.3.4+dfsg1-1 |  | dpkg-db-cataloger |
 | python3-distutils | 3.11.2-3 |  | dpkg-db-cataloger |
 | python3-lib2to3 | 3.11.2-3 |  | dpkg-db-cataloger |
 | python3-minimal | 3.11.2-1+b1 |  | dpkg-db-cataloger |

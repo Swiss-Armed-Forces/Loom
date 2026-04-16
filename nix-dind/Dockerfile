@@ -169,9 +169,6 @@ COPY --chown=${NIX_USER_NAME} \
 COPY --chown=${NIX_USER_NAME} \
     nix-dind/devenv.local.nix \
     "${NIX_USER_HOMEDIR}"/nix-dind/
-COPY --chown=${NIX_USER_NAME} \
-    backend/worker/binwalk.nix \
-    "${NIX_USER_HOMEDIR}"/backend/worker/
 
 
 # hadolint ignore=DL3004

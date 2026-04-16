@@ -12,8 +12,6 @@ let
   pkgs-stable = nixpkgsWithConfig inputs.nixpkgs-stable;
   pkgs-unstable = nixpkgsWithConfig inputs.nixpkgs-unstable;
 
-  binwalk-v2 = pkgs.python3Packages.callPackage ./backend/worker/binwalk.nix { };
-
   # fix locale
   use-locale = "C.UTF-8";
   custom-locales = pkgs.pkgs.glibcLocalesUtf8.override {
@@ -297,15 +295,6 @@ in
       tshark
       trufflehog
       ripsecrets
-
-      # we have to use an outdated binwalk version
-      # here to stay compatible with the very old
-      # binwalk version installed in the worker
-      # (debian: 2.3.4).
-      # We can probably remove this when:
-      # * debian packaged the 3.* version of binwalk
-      # * .. or we install binwalk from source in the worker
-      binwalk-v2
 
       cabextract
       imagemagick
