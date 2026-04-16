@@ -106,6 +106,13 @@ spec:
             periodSeconds: 30
             timeoutSeconds: 10
             failureThreshold: 6
+          startupProbe:
+            tcpSocket:
+              port: {{ .Values.seaweedfs.filer.grpcPort }}
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 5
+            failureThreshold: 30
           readinessProbe:
             httpGet:
               path: /

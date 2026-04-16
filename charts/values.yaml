@@ -535,14 +535,14 @@ seaweedfs:
         memory: "1.5Gi"
 
   filer:
-    replicaCount: 2
+    replicaCount: 1
     # Graceful shutdown configuration for S3 multipart uploads
     terminationGracePeriodSeconds: 180
     preStopSleepSeconds: 5
     hpa:
       enabled: true
       maxReplicas: 5
-      minReplicas: 2
+      minReplicas: 1
       targetCPUUtilizationPercentage: 70
       targetMemoryUtilizationPercentage: 80
       scaleDown:

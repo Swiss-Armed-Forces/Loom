@@ -12,9 +12,11 @@ _websocket_service: WebsocketService | None = None
 logger = logging.getLogger(__name__)
 
 
-def init():
+def init(subprocess_reinit: bool = False):
     # pylint: disable=global-statement
-    logger.info("Initializes api dependencies")
+    logger.info(
+        "Initializes api dependencies (subprocess_reinit=%s)", subprocess_reinit
+    )
 
     global _websocket_service
     _websocket_service = WebsocketService(common_dependencies.get_pubsub_service())

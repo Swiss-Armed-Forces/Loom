@@ -188,8 +188,20 @@ class GlobalPersisterWorker(Generic[RepositoryObjectT]):
     loop thread.
     """
 
-    def __init__(self, get_repository: Callable[[], BaseRepository[RepositoryObjectT]]):
-        self._get_repository = get_repository
+    # No lock needed: Celery prefork pool uses separate processes, each single-threaded
+    _instance_counter: ClassVar[int] = 0
+
+    def __init__(self, repository: BaseRepository[RepositoryObjectT]):
+        self._repository = repository
+
+        # Create unique instance ID
+        GlobalPersisterWorker._instance_counter += 1
+        instance_id = GlobalPersisterWorker._instance_counter
+
+        # Create instance-specific logger
+        repo_name = type(repository).__name__
+        self._logger = logging.getLogger(f"{__name__}.{repo_name}.{instance_id}")
+
         self._mutation_queue: queue.Queue[_ObjectMutation] = queue.Queue()
         self._loop = asyncio.new_event_loop()
 
@@ -251,7 +263,7 @@ class GlobalPersisterWorker(Generic[RepositoryObjectT]):
                     if not applied_mutation:
                         self._mutation_queue.put(object_mutation)
                         deferred_mutations += 1
-                logger.info(
+                self._logger.info(
                     "Applied %d mutations, deferred: %d, cached objects: %d",
                     len_object_mutations - deferred_mutations,
                     deferred_mutations,
@@ -268,7 +280,7 @@ class GlobalPersisterWorker(Generic[RepositoryObjectT]):
                 await self._forget_stale(now, objects)
 
             except Exception:  # pylint: disable=broad-exception-caught
-                logger.exception("Error in global worker loop, continuing...")
+                self._logger.exception("Error in global worker loop, continuing...")
 
     async def _apply_mutation(
         self,
@@ -292,10 +304,10 @@ class GlobalPersisterWorker(Generic[RepositoryObjectT]):
 
             # Load object
             obj = await asyncio.to_thread(
-                self._get_repository().get_by_id, object_mutation.object_id
+                self._repository.get_by_id, object_mutation.object_id
             )
             if obj is None:
-                logger.warning("Object %s not found", object_mutation.object_id)
+                self._logger.warning("Object %s not found", object_mutation.object_id)
                 return True
 
             state = _ObjectState(obj=obj, now=now)
@@ -326,7 +338,7 @@ class GlobalPersisterWorker(Generic[RepositoryObjectT]):
             return
 
         results = await asyncio.to_thread(
-            lambda: list(self._get_repository().bulk_save(objects_to_save))
+            lambda: list(self._repository.bulk_save(objects_to_save))
         )
 
         for op_result in results:
@@ -334,10 +346,10 @@ class GlobalPersisterWorker(Generic[RepositoryObjectT]):
             state = objects[obj_id]
 
             if op_result.success:
-                logger.debug("Saved object %s", obj_id)
+                self._logger.debug("Saved object %s", obj_id)
                 state.mark_saved()
             else:
-                logger.warning("Failed to save %s: %s", obj_id, op_result.error)
+                self._logger.warning("Failed to save %s: %s", obj_id, op_result.error)
                 state.mark_error()
 
     async def _handle_errors(
@@ -361,24 +373,24 @@ class GlobalPersisterWorker(Generic[RepositoryObjectT]):
 
             # Check max retries (after increment)
             if state.recovery_attempts > settings.persister_save_max_retries:
-                logger.error("Max recovery retries exceeded for %s", obj_id)
+                self._logger.error("Max recovery retries exceeded for %s", obj_id)
                 objects.pop(obj_id)
                 continue
 
             # Reload from repository
-            reloaded_obj = await asyncio.to_thread(
-                self._get_repository().get_by_id, obj_id
-            )
+            reloaded_obj = await asyncio.to_thread(self._repository.get_by_id, obj_id)
 
             if reloaded_obj is None:
                 objects.pop(obj_id)
-                logger.warning("Object %s disappeared during error recovery", obj_id)
+                self._logger.warning(
+                    "Object %s disappeared during error recovery", obj_id
+                )
                 continue
 
             # Replace object and replay mutations (clears error flag)
             state.replace_obj(reloaded_obj, now)
 
-            logger.info(
+            self._logger.info(
                 "Recovery for %s (attempt %d/%d)",
                 obj_id,
                 state.recovery_attempts,
@@ -401,7 +413,7 @@ class GlobalPersisterWorker(Generic[RepositoryObjectT]):
 
         for obj_id in stale_ids:
             objects.pop(obj_id)
-            logger.debug("Forgot stale object %s", obj_id)
+            self._logger.debug("Forgot stale object %s", obj_id)
 
         # LRU eviction if under memory pressure (after flush cleared replay logs)
         if is_memory_pressure():
@@ -422,7 +434,7 @@ class GlobalPersisterWorker(Generic[RepositoryObjectT]):
                     break
                 objects.pop(obj_id)
                 evicted_count += 1
-                logger.debug("Evicted object %s (LRU)", obj_id)
+                self._logger.debug("Evicted object %s (LRU)", obj_id)
 
 
 class PersisterBase(ABC, Generic[RepositoryObjectT]):
@@ -432,6 +444,7 @@ class PersisterBase(ABC, Generic[RepositoryObjectT]):
     """
 
     # Each subclass gets its own worker instance
+    # No lock needed: Celery prefork pool uses separate processes, each single-threaded
     _worker: ClassVar[GlobalPersisterWorker[Any] | None] = None
 
     @classmethod
@@ -443,7 +456,7 @@ class PersisterBase(ABC, Generic[RepositoryObjectT]):
     def _get_worker(cls) -> GlobalPersisterWorker[RepositoryObjectT]:
         """Get or create the worker for this persister class."""
         if cls._worker is None:
-            cls._worker = GlobalPersisterWorker(cls.get_repository)
+            cls._worker = GlobalPersisterWorker(cls.get_repository())
         return cls._worker
 
     @classmethod

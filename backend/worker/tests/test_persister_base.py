@@ -370,7 +370,7 @@ class TestGlobalPersisterWorker:
         ]
 
         worker: GlobalPersisterWorker[MockRepositoryObject] = GlobalPersisterWorker(
-            lambda: mock_repo
+            mock_repo
         )
 
         def set_name(obj: MockRepositoryObject):
@@ -401,7 +401,7 @@ class TestGlobalPersisterWorker:
         ]
 
         worker: GlobalPersisterWorker[MockRepositoryObject] = GlobalPersisterWorker(
-            lambda: mock_repo
+            mock_repo
         )
 
         def mutate1(obj: MockRepositoryObject):
@@ -440,7 +440,7 @@ class TestGlobalPersisterWorker:
         ]
 
         worker: GlobalPersisterWorker[MockRepositoryObject] = GlobalPersisterWorker(
-            lambda: mock_repo
+            mock_repo
         )
 
         def set_name(obj: MockRepositoryObject):

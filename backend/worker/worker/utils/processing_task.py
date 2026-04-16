@@ -5,13 +5,14 @@ from uuid import UUID
 from celery.utils.log import get_task_logger
 from common.celery_app import BaseTask
 from common.dependencies import get_celery_app, get_root_task_information_repository
-from common.models.base_repository import REPOSITORY_INSTANCES, BaseRepository
+from common.models.base_repository import BaseRepository
 from common.task_object.task_object import (
     RepositoryTaskObjectT,
     SecondaryRepositoryTaskObjectT,
 )
 from common.utils.sharding import compute_shard, get_persister_shard_queue_name
 
+from worker.dependencies import get_task_info_persister
 from worker.settings import settings
 from worker.utils.task_info_persister import TaskInfoPersister
 
@@ -107,12 +108,7 @@ def _persist_task_status_task(
     task_id: UUID,
     persist_callback: Callable[[UUID, TaskInfoPersister], None],
 ):
-    class RepoBoundTaskInfoPersister(TaskInfoPersister[RepositoryTaskObjectT]):
-        @classmethod
-        def get_repository(cls) -> BaseRepository[RepositoryTaskObjectT]:
-            repository = REPOSITORY_INSTANCES.get(repository_type)
-            assert repository is not None
-            return repository
-
-    persister: TaskInfoPersister = RepoBoundTaskInfoPersister(object_id)
+    # Get pre-registered persister class (worker already initialized)
+    persister_class = get_task_info_persister(repository_type)
+    persister = persister_class(object_id)
     persist_callback(task_id, persister)

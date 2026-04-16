@@ -19,19 +19,20 @@ from worker.dependencies import init
 logger = logging.getLogger(__name__)
 
 
-def init_all():
-    init_common_dependencies()
-    init()
+def init_all(subprocess_reinit: bool = False):
+    init_common_dependencies(subprocess_reinit=subprocess_reinit)
+    init(subprocess_reinit=subprocess_reinit)
 
 
 # Runs for each worker subprocess
 @signals.worker_process_init.connect
 def pool_worker_main(*_, **__):
-    # re-Initialize all dependencies
-    init_all()
+    # Only reinit fork-unsafe connections, not Celery/tasks
+    init_all(subprocess_reinit=True)
 
 
-init_all()
+# Initial load (parent process)
+init_all(subprocess_reinit=False)
 
 
 # Required for celery auto discovery

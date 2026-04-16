@@ -13,9 +13,11 @@ _s3_client: Minio | None = None
 logger = logging.getLogger(__name__)
 
 
-def init():
+def init(subprocess_reinit: bool = False):
     # pylint: disable=global-statement
-    logger.info("Initializes crawler dependencies")
+    logger.info(
+        "Initializes crawler dependencies (subprocess_reinit=%s)", subprocess_reinit
+    )
 
     global _s3_client
     _s3_client = Minio(

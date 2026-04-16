@@ -260,10 +260,7 @@ def render_image_png_task(
             image.unsharp_mask()
             blob = image.make_blob(format="png")
     except (MissingDelegateError, WandException):
-        logger.warning(
-            "Unable to render image with Wand",
-            exc_info=True,
-        )
+        logger.debug("Unable to render image with Wand")
         return None
 
     if not isinstance(blob, bytes):

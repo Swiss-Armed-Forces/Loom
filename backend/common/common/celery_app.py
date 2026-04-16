@@ -161,6 +161,7 @@ CELERY_DELIVER_LIMIT = 5
 CELERY_GRAVEYARD_DELIVER_LIMIT = 3
 CELERY_GRAVEYARD_QUEUE_NAME = f"{CELERY_QUEUE_NAME_PREFIX}.graveyard"
 CELERY_DEAD_QUEUE_NAME = f"{CELERY_QUEUE_NAME_PREFIX}.dead"
+CELERY_DEFAULT_EXCHANGE_TYPE = "topic"
 
 
 class DeadTask(Exception):
@@ -220,10 +221,21 @@ def _patch_group(app: "Celery[BaseTask]") -> None:
     celery.group = patched_group  # type: ignore[misc, assignment]
 
 
+def _get_exchange(exchange_name: str) -> Exchange:
+    return Exchange(
+        exchange_name,
+        type=CELERY_DEFAULT_EXCHANGE_TYPE,
+        delivery_mode="persistent",
+        passive=False,
+        durable=True,
+        auto_delete=False,
+    )
+
+
 def _get_queue(queue_name: str) -> Queue:
     return Queue(
         queue_name,
-        Exchange(queue_name, delivery_mode="persistent"),
+        _get_exchange(queue_name),
         routing_key=queue_name,
         queue_arguments={
             # We are using Quorum Queues in order to profit from the
@@ -242,7 +254,7 @@ def _get_queue(queue_name: str) -> Queue:
 def _get_graveyard_queue(queue_name: str) -> Queue:
     return Queue(
         queue_name,
-        Exchange(queue_name, delivery_mode="persistent"),
+        _get_exchange(queue_name),
         routing_key=queue_name,
         queue_arguments={
             # We are using Quorum Queues in order to profit from the
@@ -261,7 +273,7 @@ def _get_graveyard_queue(queue_name: str) -> Queue:
 def _get_dead_queue(queue_name: str) -> Queue:
     return Queue(
         queue_name,
-        Exchange(queue_name, delivery_mode="persistent"),
+        _get_exchange(queue_name),
         routing_key=queue_name,
         queue_arguments={
             # We are using Quorum Queues in order to profit from the
@@ -307,7 +319,10 @@ def init_celery_app() -> "Celery[BaseTask]":  # pylint: disable=too-many-stateme
     app.conf.task_compression = "bzip2"
     app.conf.result_compression = "bzip2"
 
-    app.conf.worker_hijack_root_logger = True
+    # Prevent Celery from hijacking the root logger configuration.
+    # We manage our own logging setup and don't want Celery to override it.
+    app.conf.worker_hijack_root_logger = False
+
     # We do use the prefork pool here, because it is
     # a) more robust against worker failure
     # b) splits signalling and task processing (worker online)
@@ -385,6 +400,7 @@ def init_celery_app() -> "Celery[BaseTask]":  # pylint: disable=too-many-stateme
     app.conf.task_queues = [_get_queue("celery")]
     app.conf.task_default_queue = "celery"
     app.conf.task_default_exchange = "celery"
+    app.conf.task_default_exchange_type = CELERY_DEFAULT_EXCHANGE_TYPE
 
     # Define dead letter queues
     app.conf.task_queues.append(_get_graveyard_queue(CELERY_GRAVEYARD_QUEUE_NAME))
