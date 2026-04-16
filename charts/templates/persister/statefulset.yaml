@@ -7,8 +7,8 @@ metadata:
     app.kubernetes.io/component: "persister"
 spec:
   serviceName: {{ include "app.fullname" . }}-persister
+  podManagementPolicy: Parallel
   replicas: {{ .Values.persister.replicaCount }}
-
   selector:
     matchLabels:
       app: {{ include "app.name" . }}-persister

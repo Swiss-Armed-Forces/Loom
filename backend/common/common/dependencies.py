@@ -73,10 +73,22 @@ logger = logging.getLogger(__name__)
 
 
 # pylint: disable=too-many-statements
-def init(init_elasticsearch_documents: bool = False):
+def init(init_elasticsearch_documents: bool = False, subprocess_reinit: bool = False):
     # pylint: disable=global-statement
-    logger.info("Initializes common dependencies")
+    logger.info(
+        "Initializes common dependencies (subprocess_reinit=%s)", subprocess_reinit
+    )
 
+    # NOTE: On subprocess_reinit, we do NOT close the inherited connections.
+    # After fork(), the child has copies of the parent's connection objects
+    # sharing the same underlying sockets. Calling close() in the child
+    # could affect the parent's connections.
+    #
+    # Instead, we simply overwrite the globals with fresh connections.
+    # The orphaned connection objects in the child will be cleaned up
+    # when the subprocess exits.
+
+    # --- Fork-unsafe: connection clients ---
     global _libretranslate_api
     _libretranslate_api = LibreTranslateAPI(str(settings.translate_host))
 
@@ -96,8 +108,11 @@ def init(init_elasticsearch_documents: bool = False):
     _pubsub_service = PubSubService(_redis_client, _redis_client_async)
 
     global _elasticsearch
+    # Only init documents on first init, not subprocess reinit
     _elasticsearch = init_elasticsearch(
-        _query_builder, _pubsub_service, init_elasticsearch_documents
+        _query_builder,
+        _pubsub_service,
+        init_elasticsearch_documents and not subprocess_reinit,
     )
 
     global _mongo
@@ -108,12 +123,7 @@ def init(init_elasticsearch_documents: bool = False):
         uuidRepresentation="standard",
     )
 
-    global _celery_app
-    _celery_app = init_celery_app()
-
-    global _queues_service
-    _queues_service = QueuesService(str(settings.rabbit_mq_management_host))
-
+    # --- Fork-unsafe: services with direct connection references ---
     global _file_storage_service
     _file_storage_service = S3LazyBytesService(
         Minio(
@@ -133,15 +143,6 @@ def init(init_elasticsearch_documents: bool = False):
         _mongo.get_database(settings.mongo_db_file_storage_name)
     )
 
-    global _archive_repository
-    _archive_repository = ArchiveRepository(_query_builder, _pubsub_service)
-
-    global _file_repository
-    _file_repository = FileRepository(_query_builder, _pubsub_service)
-
-    global _ai_context_repository
-    _ai_context_repository = AiContextRepository(_query_builder, _pubsub_service)
-
     global _root_task_information_repository
     _root_task_information_repository = RootTaskInformationRepository(
         _mongo.get_database(settings.mongo_db_repositories_storage_name)
@@ -159,38 +160,56 @@ def init(init_elasticsearch_documents: bool = False):
         threshold_bytes=settings.lazy_threshold_bytes,
     )
 
-    global _task_scheduling_service
-    _task_scheduling_service = TaskSchedulingService(
-        _celery_app,
-        _root_task_information_repository,
-    )
+    # --- Fork-safe: skip on subprocess_reinit ---
+    if not subprocess_reinit:
+        global _celery_app
+        _celery_app = init_celery_app()
 
-    global _file_scheduling_service
-    _file_scheduling_service = FileSchedulingService(
-        _file_repository,
-        _file_storage_service,
-        _task_scheduling_service,
-        _lazybytes_service,
-        _file_storage_service_legacy,
-    )
+        global _queues_service
+        _queues_service = QueuesService(str(settings.rabbit_mq_management_host))
 
-    global _archive_scheduling_service
-    _archive_scheduling_service = ArchiveSchedulingService(
-        _archive_repository,
-        _task_scheduling_service,
-    )
+        global _archive_repository
+        _archive_repository = ArchiveRepository(_query_builder, _pubsub_service)
 
-    global _ai_scheduling_service
-    _ai_scheduling_service = AiSchedulingService(
-        _ai_context_repository,
-        _task_scheduling_service,
-    )
+        global _file_repository
+        _file_repository = FileRepository(_query_builder, _pubsub_service)
 
-    global _archive_encryption_service
-    _archive_encryption_service = ArchiveEncryptionService(
-        settings.archive_enc_master_key
-    )
+        global _ai_context_repository
+        _ai_context_repository = AiContextRepository(_query_builder, _pubsub_service)
 
+        global _task_scheduling_service
+        _task_scheduling_service = TaskSchedulingService(
+            _celery_app,
+            _root_task_information_repository,
+        )
+
+        global _file_scheduling_service
+        _file_scheduling_service = FileSchedulingService(
+            _file_repository,
+            _file_storage_service,
+            _task_scheduling_service,
+            _lazybytes_service,
+            _file_storage_service_legacy,
+        )
+
+        global _archive_scheduling_service
+        _archive_scheduling_service = ArchiveSchedulingService(
+            _archive_repository,
+            _task_scheduling_service,
+        )
+
+        global _ai_scheduling_service
+        _ai_scheduling_service = AiSchedulingService(
+            _ai_context_repository,
+            _task_scheduling_service,
+        )
+
+        global _archive_encryption_service
+        _archive_encryption_service = ArchiveEncryptionService(
+            settings.archive_enc_master_key
+        )
+
+    # --- Fork-unsafe: HTTP clients ---
     global _ollama_client
     _ollama_client = Client(str(settings.ollama_host), timeout=settings.ollama_timeout)
 
