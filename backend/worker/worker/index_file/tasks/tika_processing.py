@@ -19,7 +19,6 @@ from worker.index_file.extractor.base import (
     ExtractNotSupported,
     ExtractorBase,
 )
-from worker.index_file.extractor.binwalk_extractor import BinwalkExtractor
 from worker.index_file.extractor.pcap_extractor import PcapExtractor
 from worker.index_file.extractor.pst_extractor import (
     PstExtractor,
@@ -123,12 +122,6 @@ FALLBACKS: list[TikaFallback] = [
 ]
 
 FALLBACKS_LEVEL2: list[TikaFallback] = [
-    # Run binwalk only when no other extractor can deal with the file
-    TikaExtractorFallback(BinwalkExtractor()),
-]
-
-FALLBACKS_LEVEL3: list[TikaFallback] = [
-    # Run binwalk only when no other extractor can deal with the file
     TikaExtractorFallback(StringsExtractor()),
 ]
 
@@ -196,9 +189,6 @@ FALLBACK_TASKS: list[Task] = [_create_fallback_task(fb) for fb in FALLBACKS]
 FALLBACK_TASKS_LEVEL2: list[Task] = [
     _create_fallback_task(fb) for fb in FALLBACKS_LEVEL2
 ]
-FALLBACK_TASKS_LEVEL3: list[Task] = [
-    _create_fallback_task(fb) for fb in FALLBACKS_LEVEL3
-]
 
 
 def signature(file_content: LazyBytes, file: File) -> Signature:
@@ -215,10 +205,6 @@ def signature(file_content: LazyBytes, file: File) -> Signature:
                     ),
                     chord(
                         (task.s(file_content, file) for task in FALLBACK_TASKS_LEVEL2),
-                        choose_tika_processing_result_task.s(),
-                    ),
-                    chord(
-                        (task.s(file_content, file) for task in FALLBACK_TASKS_LEVEL3),
                         choose_tika_processing_result_task.s(),
                     ),
                     group(

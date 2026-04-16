@@ -19,7 +19,6 @@ from worker.index_file.extractor.base import (
     ExtractorBase,
     NamedFileExtractorBase,
 )
-from worker.index_file.extractor.binwalk_extractor import BinwalkExtractor
 from worker.index_file.extractor.pcap_extractor import PcapExtractor
 from worker.index_file.extractor.pst_extractor import (
     PstExtractor,
@@ -83,7 +82,6 @@ def count_files(directory: str) -> int:
     [
         (PstExtractor, "evil.zip", "application/zip"),
         (PcapExtractor, "evil.zip", "application/zip"),
-        (BinwalkExtractor, "actually_text.wav", "audio/x-wav"),
         (TarExtractor, "pdf-annotated.pdf", "application/pdf"),
         (TarExtractor, "testarchive.zip", "application/zip"),
         (TarExtractor, "testiso.iso", "application/x-iso9660-image"),
@@ -129,28 +127,6 @@ def test_extractor_unsupported(
             None,
             True,
             None,
-        ),
-        (
-            BinwalkExtractor,
-            "single_file.tar.gz",
-            "application/gzip",
-            None,
-            False,
-            ExpectedDirectoryStructure(
-                files=[Path("0x0/0"), Path("0x0/0.gz")],
-                dirs=[Path("0x0")],
-            ),
-        ),
-        (
-            BinwalkExtractor,
-            "testiso.iso",
-            "application/x-iso9660-image",
-            None,
-            False,
-            ExpectedDirectoryStructure(
-                files=[Path("0x0/0.iso"), Path("0x0/iso-root/TESTFILE.TXT")],
-                dirs=[Path("0x0"), Path("0x0/iso-root")],
-            ),
         ),
         (TarExtractor, "empty_file.tar", "application/x-tar", 1, False, None),
         (TarExtractor, "empty_file.tar.gz", "application/x-tar", 1, False, None),
