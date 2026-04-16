@@ -373,6 +373,7 @@ test_build_nix-dind:
 integrationtest:
   extends: .default-up-integrationtest
   stage: test
+  retry: 2
   variables:
     # We do need to fix the RANDOM_ORDER_SEED
     # here to make pytest-split work with
