@@ -49,6 +49,14 @@ data:
     tika_ocr_languages: {{ .Values.pipeline.tika_ocr_languages | join "," | quote }}
     {{- end }}
 
+    # worker concurrency
+    {{- if ne .Values.worker.minConcurrency nil }}
+    worker_min_concurrency: {{ .Values.worker.minConcurrency | quote }}
+    {{- end }}
+    {{- if ne .Values.worker.maxConcurrency nil }}
+    worker_max_concurrency: {{ .Values.worker.maxConcurrency | quote }}
+    {{- end }}
+
     # persister sharding
     {{- if ne .Values.persister.sharding.numShards nil }}
     num_persister_shards: {{ .Values.persister.sharding.numShards | quote }}

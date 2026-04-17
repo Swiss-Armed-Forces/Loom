@@ -52,7 +52,7 @@ match settings.worker_type:
             "--exclude-queues",
             ",".join(exclude_queues),
             "--autoscale",
-            f"{settings.worker_max_concurrency},0",
+            f"{settings.worker_max_concurrency},{settings.worker_min_concurrency}",
         ]
     case "REAPER":
         argv = argv + [
