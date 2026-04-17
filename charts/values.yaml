@@ -43,6 +43,7 @@ pipeline:
   imap_folder_days_before_unsubscribe: null
   skip_summarize_while_indexing: true
   skip_translate_while_indexing: true
+  skip_embedding_while_indexing: false
   automatic_indexing: true
   tika_ocr_languages: null
 

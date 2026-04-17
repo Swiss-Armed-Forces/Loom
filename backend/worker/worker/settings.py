@@ -171,6 +171,7 @@ class Settings(CommonSettings):
 
     skip_translate_while_indexing: bool = True
     skip_summarize_while_indexing: bool = True
+    skip_embedding_while_indexing: bool = False
     min_language_detection_confidence: float = 95.0
     persist_success_tasks: bool = False
     persist_retry_tasks: bool = True

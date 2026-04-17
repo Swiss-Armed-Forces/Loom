@@ -39,6 +39,9 @@ data:
     {{- if ne .Values.pipeline.skip_translate_while_indexing nil }}
     skip_translate_while_indexing: {{ .Values.pipeline.skip_translate_while_indexing | quote }}
     {{- end }}
+    {{- if ne .Values.pipeline.skip_embedding_while_indexing nil }}
+    skip_embedding_while_indexing: {{ .Values.pipeline.skip_embedding_while_indexing | quote }}
+    {{- end }}
     {{- if ne .Values.pipeline.automatic_indexing nil }}
     automatic_indexing: {{ .Values.pipeline.automatic_indexing | quote }}
     {{- end }}
