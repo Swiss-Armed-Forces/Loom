@@ -8,7 +8,7 @@ from worker.index_file.extractor.base import (
     NamedFileExtractorBase,
 )
 
-XZ_EXTRACTOR_READ_CHUNK_SIZE_BYTES = 131072  # 128KB
+XZ_EXTRACTOR_READ_CHUNK_SIZE_BYTES = 128 * 1024
 
 
 class XZExtractor(NamedFileExtractorBase):
