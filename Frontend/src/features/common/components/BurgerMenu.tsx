@@ -75,6 +75,7 @@ export function BurgerMenu() {
             link: openWebuifrontendHost,
             text: "Open WebUI",
             icon: <SmartToyOutlined />,
+            params: { "temporary-chat": "true" },
         },
         {
             link: roundcubeHost,
@@ -189,7 +190,15 @@ export function BurgerMenu() {
                 {menuItems.map((item, index) => (
                     <MenuItem
                         component="a"
-                        href={item.link.toString()}
+                        href={(() => {
+                            const url = new URL(item.link.toString());
+                            if (item.params) {
+                                Object.entries(item.params).forEach(([k, v]) =>
+                                    url.searchParams.set(k, v),
+                                );
+                            }
+                            return url.toString();
+                        })()}
                         target="_blank"
                         rel="noopener noreferrer"
                         key={index}
