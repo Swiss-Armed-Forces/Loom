@@ -16,12 +16,6 @@ spec:
   metrics:
     - type: Resource
       resource:
-        name: memory
-        target:
-          type: Utilization
-          averageUtilization: {{ .Values.tika.hpa.targetMemoryUtilizationPercentage }}
-    - type: Resource
-      resource:
         name: cpu
         target:
           type: Utilization

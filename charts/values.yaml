@@ -439,8 +439,7 @@ translate:
     enabled: true
     maxReplicas: 2
     minReplicas: 1
-    targetCPUUtilizationPercentage: 100
-    targetMemoryUtilizationPercentage: 100
+    targetCPUUtilizationPercentage: 80
   image:
     repository: swiss-armed-forces/cyber-command/cea/loom/libretranslate
   env:
@@ -715,8 +714,7 @@ ollama: &ollama
     enabled: true
     maxReplicas: 2
     minReplicas: 1
-    targetCPUUtilizationPercentage: 100
-    targetMemoryUtilizationPercentage: 100
+    targetCPUUtilizationPercentage: 80
   image:
     repository: swiss-armed-forces/cyber-command/cea/loom/ollama
   service:
@@ -994,7 +992,6 @@ tika:
     maxReplicas: 10
     minReplicas: 1
     targetCPUUtilizationPercentage: 100
-    targetMemoryUtilizationPercentage: 100
   image:
     repository: swiss-armed-forces/cyber-command/cea/loom/tika
   service:
@@ -1026,8 +1023,7 @@ gotenberg:
     enabled: true
     maxReplicas: 10
     minReplicas: 1
-    targetCPUUtilizationPercentage: 100
-    targetMemoryUtilizationPercentage: 100
+    targetCPUUtilizationPercentage: 80
   image:
     repository: swiss-armed-forces/cyber-command/cea/loom/gotenberg
   service:
