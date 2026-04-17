@@ -26,6 +26,9 @@ CREATE_EMBEDDING_MAX_RETRIES = 15
 
 def signature(file: File) -> Signature:
     """Create the signature for vectorization."""
+    if settings.skip_embedding_while_indexing:
+        return noop.s()
+
     return chain(
         create_embedding_task.s(file),
     )
