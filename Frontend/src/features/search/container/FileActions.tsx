@@ -6,16 +6,20 @@ import styles from "./FileActions.module.css";
 import { DownloadButton } from "../../common/components/DownloadButton";
 import { ReIndexButton } from "../components/ReIndexButton";
 import { SummaryButton } from "../components/SummaryButton";
-import { TranslationDialog } from "../components/TranslationDialog";
 import { useState, ReactNode, useCallback } from "react";
 import { useAppDispatch, useAppSelector } from "../../../app/hooks";
 import { GetFilePreviewResponse } from "../../../app/api";
 import { TagsList } from "../../common/components/tags/TagsList";
 import { TagsInput } from "../../common/components/tags/TagsInput";
 import { ShareButton } from "../components/ShareButton";
-import { selectQuery, setFileDetailData } from "../searchSlice";
-import { OpenButton } from "../components/OpenButton";
+import {
+    selectQuery,
+    setFileDetailData,
+    setIsDetailsOpen,
+} from "../searchSlice";
 import { UpdateFlaggedButton } from "../../common/components/files/UpdateFlaggedButton";
+import { UpdateSeenButton } from "../../common/components/files/UpdateSeenButton";
+import { TranslationButton } from "../components/TranslationButton";
 
 interface FileActionsProps {
     filePreview: GetFilePreviewResponse;
@@ -47,20 +51,26 @@ export function FileActions({
                 searchQuery: searchQuery,
             }),
         );
+        dispatch(setIsDetailsOpen(true));
     }, [dispatch, filePreview, searchQuery]);
 
     const actions: ReactNode[] = [
         <UpdateFlaggedButton
             key="flag"
             icon_only={true}
-            file_id={filePreview.fileId}
+            filePreview={filePreview}
             fileFlagged={filePreview.flagged}
+        />,
+        <UpdateSeenButton
+            key="seen"
+            icon_only={true}
+            filePreview={filePreview}
+            fileSeen={filePreview.seen}
         />,
         <TagsInput
             key="tags-input"
             icon_only={true}
-            tagsAlreadyAssignedToFile={filePreview.tags}
-            file_id={filePreview.fileId}
+            filePreview={filePreview}
         />,
         <ShareButton key="share" fileId={filePreview.fileId} />,
         <IconButton
@@ -74,15 +84,14 @@ export function FileActions({
         >
             <Preview />
         </IconButton>,
-        <TranslationDialog key="translate" file_id={filePreview.fileId} />,
-        <SummaryButton key="summarize" file_id={filePreview.fileId} />,
+        <TranslationButton key="translate" filePreview={filePreview} />,
+        <SummaryButton key="summarize" filePreview={filePreview} />,
         <ReIndexButton key="re-index" file_id={filePreview.fileId} />,
-        <OpenButton key="open" file_id={filePreview.fileId} />,
         <DownloadButton key="download" fileId={filePreview.fileId} />,
         <UpdateHiddenButton
             key="visibility"
             icon_only={true}
-            file_id={filePreview.fileId}
+            filePreview={filePreview}
             fileHidden={filePreview.hidden}
         />,
     ];
@@ -115,10 +124,7 @@ export function FileActions({
 
     return (
         <div className={styles.fileActions}>
-            <TagsList
-                tags={filePreview.tags || []}
-                fileId={filePreview.fileId}
-            />
+            <TagsList tags={filePreview.tags || []} filePreview={filePreview} />
             <div className={styles.fileActionButtons}>{actionButtons}</div>
         </div>
     );

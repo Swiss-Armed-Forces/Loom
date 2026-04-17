@@ -117,6 +117,22 @@
                 "title": "Edit flag",
                 "text": "Would you like to change the flag of {{numberOfResults}} files?"
             }
+        },
+        "seen": {
+            "scheduledErrorToast": "Couldn't mark files as seen. Code: {{err.status}}, Text: {{err.text}}",
+            "scheduledEnableFilesToast": "Marking files as seen successfully scheduled, this might take a while",
+            "scheduledDisableFilesToast": "Marking files as unseen successfully scheduled, this might take a while",
+            "scheduledEnableFileToast": "Marking file as seen successfully scheduled",
+            "scheduledDisableFileToast": "Marking file as unseen successfully scheduled",
+            "enable": "Mark file as seen",
+            "disable": "Mark file as unseen",
+            "enableFiles": "Mark files as seen",
+            "disableFiles": "Mark files as unseen",
+            "openDialog": "Seen / Unseen files",
+            "dialog": {
+                "title": "Edit flag",
+                "text": "Would you like to change the seen state of {{numberOfResults}} files?"
+            }
         }
     },
     "reIndex": {
@@ -216,7 +232,6 @@
             "default": "Few tips for search"
         },
         "advancedGuide": "For advanced usecases see official documentation",
-        "chatbotGuide": "On the right-hand top corner, there is a button titled “Chatbot.” The Chatbot functionality allows you to ask the chatbot a question and get an answer back using the queried files on the left. When you enter a search term into the top search bar, Loom returns the most relevant files. When you click the Chatbot button and ask the Chatbot a question in the side menu’s bottom chatbot bar, the chatbot uses those queried, relevant files to answer your question. To start, click the Chatbot button in the top right, and, when the right-hand side menu for the chatbot pops out, type your relevant question in the bottom search bar.",
         "description": "Just type your query in search input above and hit Enter",
         "tips": {
             "title": "Try these tips to refine your search",
@@ -235,6 +250,8 @@
             "tagsNegate": "search for files NOT tagged with \"interesting\"",
             "and": "search for all files tagged with \"interesting\" and have a timestamp from today",
             "or": "search for all files tagged with \"interesting\" or have a timestamp from today",
+            "seen": "search seen files",
+            "flagged": "search flagged files",
             "hidden": "search hidden files",
             "allHidden": "search for both hidden and not hidden files",
             "fileType": "search by detected MIME type",
@@ -250,6 +267,27 @@
             "name": "sort all files by name in A-Z order",
             "uploaded": "sort to show most recently uploaded files first",
             "created": "sort by date created"
+        },
+        "hotkeys": {
+            "title": "Keyboard shortcuts for faster navigation",
+            "addTags": "Add tags",
+            "clear": "Clear selection",
+            "download": "Download",
+            "moveUp": "Move selection up",
+            "moveDown": "Move selection down",
+            "openDetails": "Open details",
+            "reindex": "Re-index file",
+            "search": "Focus search",
+            "share": "Share file",
+            "summarize": "Summarize content",
+            "translate": "Translate content",
+            "flag": "Toggle flag",
+            "see": "Toggle seen property",
+            "detailsTitle": "When viewing file details",
+            "close": "Close details",
+            "nextTab": "Go to next tab",
+            "previousTab": "Go to previous tab",
+            "fullscreen": "Toggle fullscreen"
         }
     },
     "statisticsView": {

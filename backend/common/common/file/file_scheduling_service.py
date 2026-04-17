@@ -183,8 +183,6 @@ class FileSchedulingService:
         file = self._file_repository.get_by_id(file_id)
         if not file:
             raise FileNotFoundException("No file to hide found")
-        file.state = "updating"
-        self._file_repository.update(file, include={"state"})
         self._task_scheduling_service.update_by_id(file_id, request)
 
     def add_tags(self, file_id: UUID, tags: list[Tag]):

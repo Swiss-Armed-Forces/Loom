@@ -39,6 +39,9 @@ import { MessageError } from "../../app/api";
 import ChatMenu from "./components/ChatMenu.tsx";
 import { useSearchParams } from "react-router-dom";
 import { t } from "i18next";
+import { TagsInputDialog } from "../common/components/tags/TagsInputDialog.tsx";
+import { TranslationDialog } from "./components/TranslationDialog.tsx";
+import { SummaryDialog } from "./components/SummaryDialog.tsx";
 
 const RELOAD_TIMEOUT__MS = 5_000;
 const UPDATE_QUERY_DEBOUNCE__MS = 2_000;
@@ -255,6 +258,9 @@ export function Search() {
                 </div>
 
                 <FileDetailDialog />
+                <TagsInputDialog />
+                <TranslationDialog />
+                <SummaryDialog />
             </div>
             <ChatMenu isOpen={chatbotOpen} toggleMenu={toggleChatbot} />
         </div>

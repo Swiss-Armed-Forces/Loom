@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Close, Translate, TranslateOutlined } from "@mui/icons-material";
+import { useCallback, useState } from "react";
+import { Close, TranslateOutlined } from "@mui/icons-material";
 import {
     Autocomplete,
     Box,
@@ -9,6 +9,7 @@ import {
     DialogContent,
     DialogTitle,
     IconButton,
+    LinearProgress,
     TextField,
 } from "@mui/material";
 import { useTranslation } from "react-i18next";
@@ -20,31 +21,27 @@ import {
     scheduleSingleFileTranslation,
 } from "../../../app/api";
 import {
+    ActionType,
+    selectAction,
+    setAction,
     selectTranslationLanguage,
     selectQuery,
     selectLanguages,
     setTranslationLanguage,
+    selectFileDetailData,
 } from "../searchSlice";
 import styles from "./TranslationDialog.module.css";
 import { setBackgroundTaskSpinnerActive } from "../../common/commonSlice.ts";
 
-interface TranslationProps {
-    file_id?: string;
-    disabled?: boolean;
-    icon_only?: boolean;
-}
-
-export function TranslationDialog({
-    file_id,
-    disabled = false,
-    icon_only = false,
-}: TranslationProps) {
+export function TranslationDialog() {
+    const fileDetailData = useAppSelector(selectFileDetailData);
+    const action = useAppSelector(selectAction);
     const { t } = useTranslation();
     const dispatch = useAppDispatch();
     const searchQuery = useAppSelector(selectQuery);
     const languages = useAppSelector(selectLanguages);
     const translationLanguage = useAppSelector(selectTranslationLanguage);
-    const [showTranslationDialog, setShowTranslationDialog] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
 
     const startFileTranslation = async () => {
         if (!searchQuery) return;
@@ -52,10 +49,12 @@ export function TranslationDialog({
 
         dispatch(setBackgroundTaskSpinnerActive());
         try {
-            if (file_id) {
+            dispatch(setBackgroundTaskSpinnerActive());
+            setIsLoading(true);
+            if (fileDetailData.filePreview?.fileId) {
                 await scheduleSingleFileTranslation(
                     translationLanguage.code,
-                    file_id,
+                    fileDetailData.filePreview?.fileId,
                 );
             } else {
                 await scheduleFileTranslation(
@@ -70,119 +69,97 @@ export function TranslationDialog({
                     err: err,
                 }),
             );
+        } finally {
+            setIsLoading(false);
+            handleClose();
         }
-        setShowTranslationDialog(false);
     };
 
-    const handleClose = (_: unknown, reason: string) => {
-        if (reason && reason == "backdropClick") {
-            return;
-        }
-        setShowTranslationDialog(false);
-    };
+    const handleClose = useCallback(() => {
+        dispatch(setAction(ActionType.SEARCH));
+    }, [dispatch]);
+
+    // dialog not open: don't render dom element
+    if (action != ActionType.TRANSLATE) return;
 
     return (
-        <>
-            {file_id || icon_only ? (
+        <Dialog open fullWidth={true} onClose={handleClose}>
+            <DialogTitle>
+                {t("translateFilesDialog.title")}
                 <IconButton
-                    onClick={() => setShowTranslationDialog(true)}
-                    disabled={disabled}
-                    title="Translate"
-                    aria-label="translate"
+                    aria-label="close"
+                    onClick={handleClose}
+                    title={t("common.close")}
+                    sx={{
+                        position: "absolute",
+                        right: 8,
+                        top: 8,
+                        color: (theme) => theme.palette.grey[500],
+                    }}
                 >
-                    <Translate />
+                    <Close />
                 </IconButton>
-            ) : (
+            </DialogTitle>
+            <DialogContent>
+                <Autocomplete
+                    className={styles.addTranslationDialogContent}
+                    options={languages ?? []}
+                    defaultValue={translationLanguage}
+                    multiple={false}
+                    freeSolo={false}
+                    autoHighlight
+                    isOptionEqualToValue={(option, value) =>
+                        option.code === value.code
+                    }
+                    onChange={(
+                        _e,
+                        value: LibretranslateSupportedLanguages | null,
+                    ) => dispatch(setTranslationLanguage(value))}
+                    getOptionLabel={(option) => option.name}
+                    renderOption={(props, option) => {
+                        // eslint-disable-next-line react/prop-types
+                        const { key, ...otherProps } = props;
+                        return (
+                            <Box component="li" key={key} {...otherProps}>
+                                {option.name}
+                            </Box>
+                        );
+                    }}
+                    renderInput={(params) => (
+                        <TextField
+                            {...params}
+                            autoFocus
+                            label={t("translateFilesDialog.languageInput")}
+                        />
+                    )}
+                />
+            </DialogContent>
+            <DialogActions>
                 <Button
-                    onClick={() => setShowTranslationDialog(true)}
-                    disabled={disabled}
+                    startIcon={<Close />}
+                    variant="outlined"
                     color="secondary"
-                    fullWidth={true}
-                    variant={"contained"}
-                    startIcon={<Translate />}
+                    tabIndex={2}
+                    onClick={handleClose}
                 >
-                    <span className="btn-label">
-                        {t("sideMenu.translateQueriedFiles")}
-                    </span>
+                    {t("common.cancel")}
                 </Button>
+                <Button
+                    startIcon={<TranslateOutlined />}
+                    onClick={startFileTranslation}
+                    color="primary"
+                    variant="contained"
+                    tabIndex={1}
+                >
+                    {t("translateFilesDialog.executeButton")}
+                </Button>
+            </DialogActions>
+            {isLoading && (
+                <div className="loadingIndicator">
+                    <LinearProgress color="primary" />
+                </div>
             )}
-            <Dialog
-                open={showTranslationDialog}
-                fullWidth={true}
-                onClose={handleClose}
-            >
-                <DialogTitle>
-                    {t("translateFilesDialog.title")}
-                    <IconButton
-                        aria-label="close"
-                        onClick={() => setShowTranslationDialog(false)}
-                        title={t("common.close")}
-                        sx={{
-                            position: "absolute",
-                            right: 8,
-                            top: 8,
-                        }}
-                    >
-                        <Close />
-                    </IconButton>
-                </DialogTitle>
-                <DialogContent>
-                    <Autocomplete
-                        className={styles.addTranslationDialogContent}
-                        options={languages ?? []}
-                        defaultValue={translationLanguage}
-                        multiple={false}
-                        freeSolo={false}
-                        autoHighlight
-                        isOptionEqualToValue={(option, value) =>
-                            option.code === value.code
-                        }
-                        onChange={(
-                            _e,
-                            value: LibretranslateSupportedLanguages | null,
-                        ) => dispatch(setTranslationLanguage(value))}
-                        getOptionLabel={(option) => option.name}
-                        renderOption={(props, option) => {
-                            // eslint-disable-next-line react/prop-types
-                            const { key, ...otherProps } = props;
-                            return (
-                                <Box component="li" key={key} {...otherProps}>
-                                    {option.name}
-                                </Box>
-                            );
-                        }}
-                        renderInput={(params) => (
-                            <TextField
-                                {...params}
-                                autoFocus
-                                label={t("translateFilesDialog.languageInput")}
-                            />
-                        )}
-                    />
-                </DialogContent>
-                <DialogActions>
-                    <Button
-                        startIcon={<Close />}
-                        variant="outlined"
-                        color="secondary"
-                        tabIndex={2}
-                        onClick={() => {
-                            setShowTranslationDialog(false);
-                        }}
-                    >
-                        {t("common.cancel")}
-                    </Button>
-                    <Button
-                        startIcon={<TranslateOutlined />}
-                        onClick={startFileTranslation}
-                        color="primary"
-                        variant="contained"
-                        tabIndex={1}
-                    >
-                        {t("translateFilesDialog.executeButton")}
-                    </Button>
-                </DialogActions>
-            </Dialog>
-        </>
+            {!isLoading && <div className="loadingIndicatorPlaceholder"></div>}
+        </Dialog>
     );
 }

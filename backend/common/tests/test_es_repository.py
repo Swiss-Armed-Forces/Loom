@@ -293,6 +293,7 @@ ES_REPOSITORY_TEST_INSTANCES: dict[type[BaseEsRepository], list[_TestInstances]]
                     folder=TestValueDefaults.test_imappure_path,
                 ),
                 flagged=TestValueDefaults.test_bool,
+                seen=TestValueDefaults.test_bool,
             ),
             document=_EsFile(
                 {
@@ -446,6 +447,7 @@ ES_REPOSITORY_TEST_INSTANCES: dict[type[BaseEsRepository], list[_TestInstances]]
                     ),  # no unicode chars so it matches folder
                 ),
                 flagged=TestValueDefaults.test_bool,
+                seen=TestValueDefaults.test_bool,
             ),
         )
     ],

@@ -1,9 +1,10 @@
 import { SvgIconComponent } from "@mui/icons-material";
-import { UpdateFileRequest } from "../../../../app/api";
+import { GetFilePreviewResponse, UpdateFileRequest } from "../../../../app/api";
 
 export enum UpdateFileProperty {
     hidden = "hidden",
     flagged = "flagged",
+    seen = "seen",
 }
 
 export enum IconColor {
@@ -19,11 +20,12 @@ export enum IconColor {
 }
 
 export interface UpdateFileButtonPropsBase {
-    file_id?: string;
+    filePreview?: GetFilePreviewResponse;
     button_full_width?: boolean;
     disabled?: boolean;
     icon_only?: boolean;
     colorSecondary?: boolean;
+    ariaLabel?: string;
 }
 
 export interface UpdateFileButtonProps extends UpdateFileButtonPropsBase {

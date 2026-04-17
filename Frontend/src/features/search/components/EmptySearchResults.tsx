@@ -51,6 +51,18 @@ export function EmptySearchResults() {
         </li>
     );
 
+    const createHotkey = (keys: string[], searchKey: string) => (
+        <li>
+            {keys.map((key, i) => (
+                <span key={key}>
+                    <kbd>{key}</kbd>
+                    {i < keys.length - 1 && " / "}
+                </span>
+            ))}
+            - {t("emptySearch.hotkeys." + searchKey)}
+        </li>
+    );
+
     return (
         <Box className={styles.emptyCard}>
             {queryError && (
@@ -105,6 +117,8 @@ export function EmptySearchResults() {
                                     "tags:interesting OR modified:today",
                                     "or",
                                 )}
+                                {createSearchTip("seen:true", "seen")}
+                                {createSearchTip("flagged:true", "flagged")}
                                 {createSearchTip("hidden:true", "hidden")}
                                 {createSearchTip("hidden:*", "allHidden")}
                                 {createSearchTip(
@@ -192,7 +206,38 @@ export function EmptySearchResults() {
                             >
                                 {t("emptySearch.advancedGuide")}
                             </span>
-                            <p>{t("emptySearch.chatbotGuide")} </p>
+                        </div>
+                        <div>
+                            <p>{t("emptySearch.hotkeys.title")}</p>
+
+                            <ul>
+                                {createHotkey(["j", "↓"], "moveDown")}
+                                {createHotkey(["k", "↑"], "moveUp")}
+                                {createHotkey(
+                                    ["Enter", "Space", "i"],
+                                    "openDetails",
+                                )}
+                                {createHotkey(["Escape"], "clear")}
+                                {createHotkey(["/"], "search")}
+                                {createHotkey(["g"], "flag")}
+                                {createHotkey(["b"], "see")}
+                                {createHotkey(["c"], "share")}
+                                {createHotkey(["d"], "download")}
+                                {createHotkey(["r"], "reindex")}
+                                {createHotkey(["s"], "summarize")}
+                                {createHotkey(["t"], "addTags")}
+                                {createHotkey(["Shift + t"], "translate")}
+                            </ul>
+                            <p>{t("emptySearch.hotkeys.detailsTitle")}</p>
+                            <ul>
+                                {createHotkey(["h", "←"], "previousTab")}
+                                {createHotkey(["l", "→"], "nextTab")}
+                                {createHotkey(["f"], "fullscreen")}
+                                {createHotkey(
+                                    ["Escape", "Enter", "Space", "i"],
+                                    "close",
+                                )}
+                            </ul>
                         </div>
                     </div>
                 </CardContent>

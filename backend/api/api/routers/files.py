@@ -335,6 +335,7 @@ class GetFilePreviewResponse(BaseModel):
     tags: list[Tag] = []
     flagged: bool
     hidden: bool
+    seen: bool
     content: str
     content_preview_is_truncated: bool
     content_is_truncated: bool
@@ -374,6 +375,7 @@ def get_file_preview(
         tags=file.tags,
         flagged=file.flagged,
         hidden=file.hidden,
+        seen=file.seen,
         content=str(file.content[:CONTENT_PREVIEW_LENGTH]),
         # Determine if the content preview of the file is truncated based on the file content
         # length and the content preview length

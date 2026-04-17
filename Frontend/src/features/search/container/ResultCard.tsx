@@ -10,13 +10,16 @@ import {
     Typography,
     TypographyProps,
 } from "@mui/material";
+import { toast } from "react-toastify";
 
 import {
     selectQuery,
     selectFileById,
     setFileInViewState,
     setFileDetailData,
+    setFilePreview,
     setHighlightedIndex,
+    setIsDetailsOpen,
 } from "../searchSlice";
 import { useAppDispatch, useAppSelector } from "../../../app/hooks";
 
@@ -32,6 +35,7 @@ import { HighlightList } from "./HighlightList";
 import { useMediaQuery } from "@mui/material";
 import { TagsList } from "../../common/components/tags/TagsList";
 import { FileCardHeader } from "./FileCardHeader";
+import { GetFilePreviewResponse, updateFile } from "../../../app/api";
 
 const FieldTypography = styled(Typography)<TypographyProps>`
     line-height: 1.2;
@@ -56,6 +60,7 @@ export const ResultCard: React.FC<ResultCardProps> = React.memo(
         const { ref: inViewRef, inView } = useInView({
             threshold: [0.2],
         });
+        const hasUpdatedSeen = useRef<boolean>(true);
 
         // Custom scroll function that scrolls within the results container only
         const scrollCardIntoView = () => {
@@ -101,10 +106,40 @@ export const ResultCard: React.FC<ResultCardProps> = React.memo(
             }
         }, [isHighlighted]);
 
+        // Reset hasUpdatedSeen when file changes
+        // Do not reset it if the file is still highlighted
+        useEffect(() => {
+            if (
+                isHighlighted ||
+                !hasUpdatedSeen ||
+                filePreview?.seen == undefined ||
+                filePreview?.seen
+            ) {
+                return;
+            }
+            hasUpdatedSeen.current = false;
+        }, [filePreview?.seen, isHighlighted]);
+
         // Re-scroll when content loads (skeleton replaced with actual content)
         // This handles the case where card height changes after preview loads
         useEffect(() => {
+            const markFileAsSeen = async (file: GetFilePreviewResponse) => {
+                try {
+                    updateFile(file.fileId, { seen: true });
+                    hasUpdatedSeen.current = true;
+                    dispatch(setFilePreview({ ...file, seen: true }));
+                } catch (err) {
+                    toast.error(
+                        t("updateFileState.seen.scheduledErrorToast", {
+                            err,
+                        }),
+                    );
+                }
+            };
             if (isHighlighted && filePreview && cardRef.current) {
+                if (!filePreview.seen && !hasUpdatedSeen.current) {
+                    markFileAsSeen(filePreview);
+                }
                 // Small delay to allow DOM to update after content renders
                 const timeoutId = setTimeout(() => {
                     scrollCardIntoView();
@@ -112,7 +147,7 @@ export const ResultCard: React.FC<ResultCardProps> = React.memo(
                 cardRef.current.focus();
                 return () => clearTimeout(timeoutId);
             }
-        }, [isHighlighted, filePreview]);
+        }, [isHighlighted, filePreview, t, dispatch]);
 
         // Combine refs
         const setRefs = (element: HTMLDivElement | null) => {
@@ -134,9 +169,28 @@ export const ResultCard: React.FC<ResultCardProps> = React.memo(
             dispatch,
         ]);
 
-        const handleCardClick = () => {
-            // Select this card when clicked
-            dispatch(setHighlightedIndex(index));
+        const handleCardClick = (
+            e:
+                | React.MouseEvent<HTMLDivElement>
+                | React.FocusEvent<HTMLDivElement>,
+        ) => {
+            const target = e.target as HTMLElement;
+
+            // Ignore clicks from IconButtons
+            if (!target.closest(".MuiIconButton-root")) {
+                dispatch(setHighlightedIndex(index));
+            }
+        };
+
+        const handleOpenDetailsOnTabClick = (tab: FileDetailTab) => {
+            dispatch(
+                setFileDetailData({
+                    filePreview: filePreview,
+                    searchQuery: searchQuery,
+                    tab,
+                }),
+            );
+            dispatch(setIsDetailsOpen(true));
         };
 
         return (
@@ -213,17 +267,11 @@ export const ResultCard: React.FC<ResultCardProps> = React.memo(
                                     {filePreview.content}
                                     {filePreview.contentPreviewIsTruncated && (
                                         <EllipsisButton
-                                            click={() => {
-                                                dispatch(
-                                                    setFileDetailData({
-                                                        filePreview:
-                                                            filePreview,
-                                                        searchQuery:
-                                                            searchQuery,
-                                                        tab: FileDetailTab.Content,
-                                                    }),
-                                                );
-                                            }}
+                                            onClick={() =>
+                                                handleOpenDetailsOnTabClick(
+                                                    FileDetailTab.Content,
+                                                )
+                                            }
                                             title={t(
                                                 "generalSearchView.viewDetails",
                                             )}
@@ -241,7 +289,7 @@ export const ResultCard: React.FC<ResultCardProps> = React.memo(
                                 {isMobile && (
                                     <TagsList
                                         tags={filePreview.tags || []}
-                                        fileId={filePreview.fileId}
+                                        filePreview={filePreview}
                                     />
                                 )}
                             </div>
@@ -259,15 +307,11 @@ export const ResultCard: React.FC<ResultCardProps> = React.memo(
                                     className={styles.thumbnailBadge}
                                 >
                                     <img
-                                        onClick={() => {
-                                            dispatch(
-                                                setFileDetailData({
-                                                    filePreview: filePreview,
-                                                    searchQuery: searchQuery,
-                                                    tab: FileDetailTab.Rendered,
-                                                }),
-                                            );
-                                        }}
+                                        onClick={() =>
+                                            handleOpenDetailsOnTabClick(
+                                                FileDetailTab.Rendered,
+                                            )
+                                        }
                                         className={styles.resultImage}
                                         src={webApiGetFileThumbnail(
                                             filePreview.fileId,

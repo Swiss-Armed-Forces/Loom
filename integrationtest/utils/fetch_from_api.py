@@ -206,6 +206,7 @@ def fetch_files_from_api(
     max_wait_time_per_file: int | None = None,
     bad_states: tuple[str, ...] = ("failed",),
     wait_for_celery_idle: bool = False,
+    allow_more_files: bool = False,
 ) -> GetFilesResponse:
     if max_wait_time_per_file is None:
         max_wait_time_per_file = DEFAULT_MAX_WAIT_TIME_PER_FILE
@@ -214,7 +215,7 @@ def fetch_files_from_api(
     if sort_id is None:
         sort_id = []
 
-    max_wait_time = expected_no_of_files * max_wait_time_per_file
+    max_wait_time = max(1, expected_no_of_files) * max_wait_time_per_file
     wait_cycles = (max_wait_time // BATCH_WAIT_TIME) + 1
     error_msgs = []
 
@@ -269,7 +270,12 @@ def fetch_files_from_api(
             file_response_bad_state,
         )
 
-        if response_file_count > expected_no_of_files:
+        if wait_for_celery_idle:
+            if not is_celery_idle():
+                logging.debug("Celery not idle yet")
+                continue
+
+        if not allow_more_files and response_file_count > expected_no_of_files:
             error_msgs.append(
                 "More files than expected."
                 f" got: {response_file_count}"
@@ -282,11 +288,6 @@ def fetch_files_from_api(
                 "Results are in the wrong states:" f" {file_response_bad_state}"
             )
             break
-
-        if wait_for_celery_idle:
-            if not is_celery_idle():
-                logging.debug("Celery not idle yet")
-                continue
 
         if response_file_count == expected_no_of_files:
             # Successful response with expected number of results

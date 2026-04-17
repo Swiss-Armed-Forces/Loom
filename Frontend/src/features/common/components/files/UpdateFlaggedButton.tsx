@@ -12,7 +12,7 @@ interface UpdateFlaggedButtonProps extends UpdateFileButtonPropsBase {
 }
 
 export function UpdateFlaggedButton({
-    file_id,
+    filePreview,
     button_full_width = false,
     disabled = false,
     fileFlagged = false,
@@ -21,7 +21,8 @@ export function UpdateFlaggedButton({
 }: UpdateFlaggedButtonProps) {
     return (
         <UpdateFileButton
-            file_id={file_id}
+            ariaLabel="flagged"
+            filePreview={filePreview}
             button_full_width={button_full_width}
             disabled={disabled}
             icon_only={icon_only}

@@ -20,9 +20,11 @@ from common.task_object.root_task_information_repository import (
 class UpdateFileRequest(BaseModel):
     hidden: bool | None = None
     flagged: bool | None = None
+    seen: bool | None = None
 
 
 class TaskSchedulingService:
+    # pylint: disable=too-many-public-methods
     """Schedules tasks to be executed by the worker."""
 
     def __init__(
