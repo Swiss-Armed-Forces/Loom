@@ -177,6 +177,8 @@ worker: &worker
     limits:
       cpu: "1.5"
       memory: "4Gi"
+  minConcurrency: null
+  maxConcurrency: null
   # Custom labels specific to worker resources
   customLabels: {}
   # Example:
