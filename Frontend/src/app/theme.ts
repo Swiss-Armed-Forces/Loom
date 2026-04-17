@@ -1,6 +1,7 @@
 import { createTheme } from "@mui/material";
 
 export const globalTheme = createTheme({
+    cssVariables: true,
     transitions: {
         create: () => "none",
     },

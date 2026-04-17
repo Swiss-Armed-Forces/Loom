@@ -125,6 +125,10 @@ def _set_flagged(obj: File, flagged: bool) -> None:
     obj.flagged = flagged
 
 
+def _set_seen(obj: File, seen: bool) -> None:
+    obj.seen = seen
+
+
 def _add_tag(obj: File, tag: Tag) -> None:
     if tag not in obj.tags:
         obj.tags.append(tag)
@@ -183,6 +187,7 @@ class IndexingPersister(PersisterBase[File]):
     add_archive = mutation(_add_archive)
     set_hidden = mutation(_set_hidden)
     set_flagged = mutation(_set_flagged)
+    set_seen = mutation(_set_seen)
     add_tag = mutation(_add_tag)
     remove_tag = mutation(_remove_tag)
     set_summary = mutation(_set_summary)

@@ -1,10 +1,15 @@
 import { Chip } from "@mui/material";
 import { updateTagOfQuery } from "../../../search/SearchQueryUtils.ts";
-import { selectQuery, updateQuery } from "../../../search/searchSlice.ts";
+import {
+    selectQuery,
+    setFilePreview,
+    updateQuery,
+} from "../../../search/searchSlice.ts";
 import {
     deleteTagFromFile,
     deleteTagFromFiles,
     GenericStatisticsModel,
+    GetFilePreviewResponse,
 } from "../../../../app/api";
 import { FC, useState, useMemo } from "react";
 import { useAppDispatch, useAppSelector } from "../../../../app/hooks.ts";
@@ -24,14 +29,14 @@ import {
 
 interface TagsListProps {
     tags: string[];
-    fileId?: string;
+    filePreview?: GetFilePreviewResponse;
     tagStats?: GenericStatisticsModel;
     icon_only?: boolean;
 }
 
 export const TagsList: FC<TagsListProps> = ({
     tags,
-    fileId,
+    filePreview,
     tagStats,
     icon_only = false,
 }) => {
@@ -39,6 +44,7 @@ export const TagsList: FC<TagsListProps> = ({
     const [showConfirmDialog, setShowConfirmDialog] = useState(false);
     const dispatch = useAppDispatch();
     const searchQuery = useAppSelector(selectQuery);
+    const fileId = filePreview?.fileId;
 
     const sortedTags = useMemo(
         () => tags.slice().sort((a, b) => a.localeCompare(b)),
@@ -66,6 +72,14 @@ export const TagsList: FC<TagsListProps> = ({
         try {
             dispatch(startLoadingIndicator());
             await deleteTagFromFile(fileId, tag);
+            dispatch(
+                setFilePreview({
+                    ...filePreview,
+                    tags: filePreview.tags
+                        ? filePreview.tags.filter((t) => t !== tag)
+                        : [],
+                }),
+            );
             toast.success(t("tagsList.scheduledRemoveTagFromFileToast"));
         } catch (err) {
             toast.error(t("tagsList.scheduledRemoveErrorToast", { err }));

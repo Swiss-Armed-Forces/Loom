@@ -10,6 +10,9 @@ import {
     setHighlightedIndex,
     setFileDetailData,
     updateQuery,
+    selectAction,
+    ActionType,
+    selectIsDetailsOpen,
 } from "../searchSlice";
 import { selectIsLoading } from "../../common/commonSlice";
 import { FileDetailTab } from "../model";
@@ -17,6 +20,8 @@ import { FileDetailTab } from "../model";
 export function useKeyboardNavigation() {
     const dispatch = useAppDispatch();
     const fileDetailData = useAppSelector(selectFileDetailData);
+    const isDetailsOpen = useAppSelector(selectIsDetailsOpen);
+    const action = useAppSelector(selectAction);
     const highlightedIndex = useAppSelector(selectHighlightedIndex);
     const totalFiles = useAppSelector(selectTotalFiles);
     const loadedFiles = useAppSelector(selectLoadedFiles);
@@ -24,14 +29,15 @@ export function useKeyboardNavigation() {
     const query = useAppSelector(selectQuery);
     const isLoading = useAppSelector(selectIsLoading);
 
-    const isDialogOpen = !!(
-        fileDetailData.filePreview && fileDetailData.searchQuery
-    );
-
     const currentTab = fileDetailData.tab ?? FileDetailTab.Rendered;
 
     const shouldIgnoreKeyEvent = useCallback(
         (event: KeyboardEvent): boolean => {
+            // Ignore if performing an action other than SEARCH
+            if (action != ActionType.SEARCH) {
+                return true;
+            }
+
             // Ignore if modifiers are pressed
             if (event.ctrlKey || event.metaKey || event.altKey) {
                 return true;
@@ -76,7 +82,7 @@ export function useKeyboardNavigation() {
 
             return false;
         },
-        [],
+        [action],
     );
 
     const handleResultNavigation = useCallback(
@@ -144,25 +150,6 @@ export function useKeyboardNavigation() {
         return enabledTabs;
     }, []);
 
-    const handleTabNavigation = useCallback(() => {
-        // Round robin through enabled tabs, skipping disabled ones
-        const enabledTabs = getEnabledTabs();
-        if (enabledTabs.length === 0) return;
-
-        // Find current tab's position in enabled tabs
-        const currentIndex = enabledTabs.indexOf(currentTab);
-
-        // Move to next enabled tab, wrap around to first if at end
-        let nextIndex: number;
-        if (currentIndex === -1) {
-            nextIndex = 0;
-        } else {
-            nextIndex = (currentIndex + 1) % enabledTabs.length;
-        }
-
-        dispatch(setFileDetailData({ tab: enabledTabs[nextIndex] }));
-    }, [currentTab, getEnabledTabs, dispatch]);
-
     const handleTabNavigationDirection = useCallback(
         (direction: "left" | "right") => {
             const enabledTabs = getEnabledTabs();
@@ -176,11 +163,13 @@ export function useKeyboardNavigation() {
                 // If current tab not found in enabled, start from first or last
                 nextIndex = direction === "right" ? 0 : enabledTabs.length - 1;
             } else if (direction === "right") {
-                // Move right, stop at end (no wrap)
-                nextIndex = Math.min(enabledTabs.length - 1, currentIndex + 1);
+                // Move right
+                nextIndex = (currentIndex + 1) % enabledTabs.length;
             } else {
-                // Move left, stop at beginning (no wrap)
-                nextIndex = Math.max(0, currentIndex - 1);
+                // Move left
+                nextIndex =
+                    (currentIndex - 1 + enabledTabs.length) %
+                    enabledTabs.length;
             }
 
             dispatch(setFileDetailData({ tab: enabledTabs[nextIndex] }));
@@ -249,7 +238,7 @@ export function useKeyboardNavigation() {
     // Click a button by aria-label or title within the appropriate container
     const clickActionButton = useCallback(
         (actionKey: string) => {
-            const container = isDialogOpen
+            const container = isDetailsOpen
                 ? document.querySelector("[role='dialog']")
                 : document.querySelector("[data-highlighted='true']");
 
@@ -270,7 +259,7 @@ export function useKeyboardNavigation() {
                 clickable.click();
             }
         },
-        [isDialogOpen],
+        [isDetailsOpen],
     );
 
     const handleKeyDown = useCallback(
@@ -280,13 +269,8 @@ export function useKeyboardNavigation() {
             }
 
             // Handle dialog-specific navigation
-            if (isDialogOpen) {
+            if (isDetailsOpen) {
                 switch (event.key) {
-                    case "n":
-                        // Tab/n key cycles through tabs (round robin)
-                        handleTabNavigation();
-                        event.preventDefault();
-                        return;
                     case "j":
                     case "ArrowDown":
                         // Scroll dialog content down
@@ -401,14 +385,21 @@ export function useKeyboardNavigation() {
                     clickActionButton("translate");
                     event.preventDefault();
                     return;
+                case "g":
+                    clickActionButton("flagged");
+                    event.preventDefault();
+                    return;
+                case "b":
+                    clickActionButton("seen");
+                    event.preventDefault();
+                    return;
             }
         },
         [
             shouldIgnoreKeyEvent,
-            isDialogOpen,
+            isDetailsOpen,
             highlightedIndex,
             dispatch,
-            handleTabNavigation,
             handleTabNavigationDirection,
             handleDialogScroll,
             handleResultNavigation,

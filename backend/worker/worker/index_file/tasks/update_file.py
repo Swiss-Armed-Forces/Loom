@@ -14,3 +14,6 @@ def update_file(persister: IndexingPersister, request: UpdateFileRequest):
 
     if request.flagged is not None:
         persister.set_flagged(request.flagged)
+
+    if request.seen is not None:
+        persister.set_seen(request.seen)

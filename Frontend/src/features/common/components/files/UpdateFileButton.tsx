@@ -8,7 +8,13 @@ import {
     IconButton,
 } from "@mui/material";
 import { t } from "i18next";
-import { selectTotalFiles, selectQuery } from "../../../search/searchSlice";
+import {
+    selectTotalFiles,
+    selectQuery,
+    setFilePreview,
+    setFileDetailData,
+    selectFileDetailData,
+} from "../../../search/searchSlice";
 import { useAppDispatch, useAppSelector } from "../../../../app/hooks";
 import { toast } from "react-toastify";
 import { useState } from "react";
@@ -34,7 +40,8 @@ interface UpdateFileDialogProps {
 }
 
 export function UpdateFileButton({
-    file_id,
+    ariaLabel,
+    filePreview,
     button_full_width = false,
     disabled = false,
     icon_only = false,
@@ -47,6 +54,7 @@ export function UpdateFileButton({
     request,
 }: UpdateFileButtonProps) {
     const dispatch = useAppDispatch();
+    const fileDetailData = useAppSelector(selectFileDetailData);
     const numberOfResults = useAppSelector(selectTotalFiles);
     const searchQuery = useAppSelector(selectQuery);
     const [showDialog, setShowDialog] = useState(false);
@@ -55,6 +63,7 @@ export function UpdateFileButton({
         text: action.text,
         onClick: () => updateSingleOrMultipleFiles(action.request),
     }));
+    const fileId = filePreview?.fileId;
 
     const handleClose = (_: unknown, reason: string) => {
         if (reason === "backdropClick") return;
@@ -62,20 +71,30 @@ export function UpdateFileButton({
     };
 
     const handleIconClick = () => {
-        if (file_id) {
+        if (fileId) {
             updateSingleOrMultipleFiles(request);
         } else {
             setShowDialog(true);
         }
     };
 
+    const updateLocalFile = () => {
+        if (!fileId) return;
+        const updatedFilePreview = { ...filePreview, ...request };
+        dispatch(setFilePreview(updatedFilePreview));
+        if (fileDetailData?.filePreview?.fileId == updatedFilePreview.fileId) {
+            dispatch(setFileDetailData({ filePreview: updatedFilePreview }));
+        }
+    };
+
     const updateSingleOrMultipleFiles = async (request: UpdateFileRequest) => {
-        if (!file_id && !searchQuery) return;
+        if (!fileId && !searchQuery) return;
 
         try {
             dispatch(startLoadingIndicator());
-            if (file_id) {
-                await updateFile(file_id, request);
+            if (fileId) {
+                await updateFile(fileId, request);
+                updateLocalFile();
             } else {
                 setShowDialog(false);
                 // searchQuery will always be != from undefined
@@ -97,14 +116,14 @@ export function UpdateFileButton({
         return (
             <>
                 <IconButton
-                    aria-label={iconTitle}
+                    aria-label={ariaLabel}
                     onClick={handleIconClick}
                     disabled={disabled}
                     title={iconTitle}
                 >
                     <Icon color={iconColor} />
                 </IconButton>
-                {!file_id && (
+                {!fileId && (
                     <UpdateFileDialog
                         open={showDialog}
                         numberOfResults={numberOfResults}
@@ -121,6 +140,7 @@ export function UpdateFileButton({
     return (
         <>
             <Button
+                aria-label={ariaLabel}
                 onClick={() => setShowDialog(true)}
                 color="secondary"
                 disabled={disabled}

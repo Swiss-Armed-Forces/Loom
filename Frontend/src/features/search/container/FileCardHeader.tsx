@@ -47,6 +47,7 @@ export function FileCardHeader({
                             filePreview.fileExtension,
                         )
                     }
+                    hasBadge={!filePreview.seen}
                 />
             }
             title={
@@ -58,6 +59,7 @@ export function FileCardHeader({
                         fullPath={filePreview.path}
                         style={{
                             color: filePreview.flagged ? "red" : undefined,
+                            fontWeight: filePreview.seen ? undefined : "bold",
                         }}
                     />
                     {filePreview.contentIsTruncated && (

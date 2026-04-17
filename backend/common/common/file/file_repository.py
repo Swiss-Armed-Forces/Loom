@@ -401,6 +401,7 @@ class File(RepositoryTaskObject):
     ripsecrets_secrets: list[Secret] | None = None
     imap: ImapInfo | None = None
     flagged: bool = False
+    seen: bool = False
 
     @field_validator("tags")
     @classmethod
@@ -483,6 +484,7 @@ class _EsFile(_EsTaskDocument):
     ripsecrets_secrets = Object(_EsSecret, multi=True)
     imap = Object(_EsImapInfo)
     flagged = Boolean()
+    seen = Boolean()
 
     def to_es_dict(self) -> dict:
         es_dict = super().to_es_dict()

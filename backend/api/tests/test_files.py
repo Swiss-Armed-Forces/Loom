@@ -146,7 +146,7 @@ def test_update_file_by_id(client: TestClient):
         size=0,
     )
 
-    request = UpdateFileRequest(hidden=True, flagged=True)
+    request = UpdateFileRequest(hidden=True, flagged=True, seen=True)
 
     get_file_repository().get_by_id.return_value = file
 
@@ -159,7 +159,7 @@ def test_update_file_by_id(client: TestClient):
 def test_update_files_by_query(client: TestClient):
     request = UpdateFilesRequest(
         query=QueryParameters(query_id="0123456789"),
-        request=UpdateFileRequest(hidden=True, flagged=True),
+        request=UpdateFileRequest(hidden=True, flagged=True, seen=True),
     )
 
     file = File(

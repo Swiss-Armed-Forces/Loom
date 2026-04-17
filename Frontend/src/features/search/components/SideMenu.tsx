@@ -32,7 +32,6 @@ import styles from "./SideMenu.module.css";
 import { UploadFileDialog } from "./UploadFileDialog";
 import { TagsInput } from "../../common/components/tags/TagsInput.tsx";
 import { ConfirmDialog } from "./ConfirmDialog";
-import { TranslationDialog } from "./TranslationDialog";
 import { TagsList } from "../../common/components/tags/TagsList.tsx";
 import { CustomQueriesList } from "./CustomQueries/CustomQueries.tsx";
 import { ReIndexButton } from "./ReIndexButton.tsx";
@@ -41,6 +40,8 @@ import { UpdateHiddenButton } from "../../common/components/files/UpdateHiddenBu
 import { scheduleArchiveCreation } from "../../../app/api/search.ts";
 import { useEffect } from "react";
 import { UpdateFlaggedButton } from "../../common/components/files/UpdateFlaggedButton.tsx";
+import { UpdateSeenButton } from "../../common/components/files/UpdateSeenButton.tsx";
+import { TranslationButton } from "./TranslationButton.tsx";
 
 const expertModeKey = "loomExpertMode";
 
@@ -160,6 +161,13 @@ export function SideMenu() {
                                 />
                             </ListItem>
                             <ListItem>
+                                <UpdateSeenButton
+                                    icon_only={!isMenuExpanded}
+                                    button_full_width
+                                    disabled={numberOfResults === 0}
+                                />
+                            </ListItem>
+                            <ListItem>
                                 <UpdateHiddenButton
                                     icon_only={!isMenuExpanded}
                                     button_full_width
@@ -223,7 +231,7 @@ export function SideMenu() {
                                 />
                             </ListItem>
                             <ListItem>
-                                <TranslationDialog
+                                <TranslationButton
                                     icon_only={!isMenuExpanded}
                                     disabled={numberOfResults === 0}
                                 />

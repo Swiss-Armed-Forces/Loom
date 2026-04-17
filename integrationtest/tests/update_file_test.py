@@ -48,14 +48,14 @@ def _update_files(update_files_request: UpdateFilesRequest):
 
 
 @pytest.mark.parametrize(
-    "field_name,field_value",
+    "field_name",
     [
-        ("hidden", True),
-        ("flagged", True),
+        "flagged",
+        "seen",
     ],
 )
-def test_update_single_file(field_name: str, field_value: bool):
-    """Test updating a single file's hidden or flagged state."""
+def test_update_single_file(field_name: str):
+    """Test updating a single file's hidden, flagged or seen state."""
     asset_name = "basic_email.eml"
     upload_asset(asset_name)
 
@@ -64,13 +64,35 @@ def test_update_single_file(field_name: str, field_value: bool):
     assert getattr(file, field_name) is False
 
     # Update the field
-    update_request = UpdateFileRequest(**{field_name: field_value})
+    update_request = UpdateFileRequest(**{field_name: True})
+    _update_file(file.file_id, update_request)
+
+    # Should find it when explicitly searching for the field
+    fetch_files_from_api(
+        search_string=f'full_name:"{asset_name}" AND {field_name}:true',
+        expected_no_of_files=1,
+    )
+
+
+def test_hide_single_file():
+    field_name = "hidden"
+    asset_name = "basic_email.eml"
+    upload_asset(asset_name)
+
+    # Verify initial state
+    file = get_file_preview_by_name(asset_name)
+    assert getattr(file, field_name) is False
+
+    # Update the field
+    update_request = UpdateFileRequest(**{field_name: True})
     _update_file(file.file_id, update_request)
 
     # Should not find it in default search
     fetch_files_from_api(
         search_string=f'full_name:"{asset_name}"',
         expected_no_of_files=0,
+        wait_for_celery_idle=True,
+        allow_more_files=True,
     )
 
     # Should find it when explicitly searching for the field
@@ -82,10 +104,10 @@ def test_update_single_file(field_name: str, field_value: bool):
 
 @pytest.mark.parametrize(
     "field_name",
-    ["hidden", "flagged"],
+    ["hidden", "flagged", "seen"],
 )
 def test_update_multiple_files(field_name: str):
-    """Test updating multiple files' hidden or flagged state."""
+    """Test updating multiple files' hidden, flagged or seen state."""
     assets = ["basic_email.eml", "text.txt"]
 
     upload_many_assets(assets)
@@ -104,10 +126,10 @@ def test_update_multiple_files(field_name: str):
 
 @pytest.mark.parametrize(
     "field_name",
-    ["hidden", "flagged"],
+    ["hidden", "flagged", "seen"],
 )
 def test_toggle_file_state(field_name: str):
-    """Test toggling a file's hidden or flagged state on and off."""
+    """Test toggling a file's hidden, flagged or seen state on and off."""
     assets = ["basic_email.eml", "text.txt"]
 
     upload_many_assets(assets)

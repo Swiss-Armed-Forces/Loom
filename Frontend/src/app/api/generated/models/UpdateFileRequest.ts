@@ -32,6 +32,12 @@ export interface UpdateFileRequest {
      * @memberof UpdateFileRequest
      */
     flagged?: boolean;
+    /**
+     *
+     * @type {boolean}
+     * @memberof UpdateFileRequest
+     */
+    seen?: boolean;
 }
 
 /**
@@ -55,6 +61,7 @@ export function UpdateFileRequestFromJSONTyped(
     return {
         hidden: json["hidden"] == null ? undefined : json["hidden"],
         flagged: json["flagged"] == null ? undefined : json["flagged"],
+        seen: json["seen"] == null ? undefined : json["seen"],
     };
 }
 
@@ -65,5 +72,6 @@ export function UpdateFileRequestToJSON(value?: UpdateFileRequest | null): any {
     return {
         hidden: value["hidden"],
         flagged: value["flagged"],
+        seen: value["seen"],
     };
 }

@@ -88,6 +88,13 @@ export interface KeyboardNavigationState {
     highlightedIndex: number | null;
 }
 
+export enum ActionType {
+    SEARCH = "search",
+    TAGS = "tags",
+    TRANSLATE = "translate",
+    SUMMARIZE = "summarize",
+}
+
 export interface SearchState {
     query: SearchQuery | null;
     queryError?: string;
@@ -114,6 +121,8 @@ export interface SearchState {
     chatbotOpen: boolean;
     summarizationSystemPrompt: string | null;
     keyboardNavigation: KeyboardNavigationState;
+    action: ActionType;
+    isDetailsOpen: boolean;
 }
 
 export const CUSTOM_QUERIES_LOCAL_STORAGE_KEY = "CUSTOM_QUERIES";
@@ -183,6 +192,8 @@ const initialState: SearchState = {
     keyboardNavigation: {
         highlightedIndex: null,
     },
+    action: ActionType.SEARCH,
+    isDetailsOpen: false,
 };
 
 export const updateQuery = createAsyncThunk(
@@ -517,6 +528,22 @@ export const searchSlice = createSlice({
         setHighlightedIndex: (state, action: PayloadAction<number | null>) => {
             state.keyboardNavigation.highlightedIndex = action.payload;
         },
+        setFilePreview: (
+            state,
+            action: PayloadAction<GetFilePreviewResponse>,
+        ) => {
+            const preview = action.payload;
+            const fileId = preview.fileId;
+            if (state.files[fileId]) {
+                state.files[fileId].preview = preview;
+            }
+        },
+        setAction: (state, action: PayloadAction<ActionType>) => {
+            state.action = action.payload;
+        },
+        setIsDetailsOpen: (state, action: PayloadAction<boolean>) => {
+            state.isDetailsOpen = action.payload;
+        },
     },
     extraReducers: (builder) => {
         builder.addCase(
@@ -646,7 +673,10 @@ export const {
     setChatbotOpen,
     setSummarizationSystemPrompt,
     setFileDetailData,
+    setFilePreview,
     setHighlightedIndex,
+    setAction,
+    setIsDetailsOpen,
 } = searchSlice.actions;
 
 export const selectSearch = (state: RootState) => state.search;
@@ -753,6 +783,16 @@ export const selectFileDetailDataSelectedTranslationLanguage = createSelector(
 export const selectHighlightedIndex = createSelector(
     selectSearch,
     (search) => search.keyboardNavigation.highlightedIndex,
+);
+
+export const selectAction = createSelector(
+    selectSearch,
+    (search) => search.action,
+);
+
+export const selectIsDetailsOpen = createSelector(
+    selectSearch,
+    (search) => search.isDetailsOpen,
 );
 
 export default searchSlice.reducer;

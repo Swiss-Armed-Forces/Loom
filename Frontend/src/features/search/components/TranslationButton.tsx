@@ -1,55 +1,50 @@
-import { useCallback } from "react";
-import { SummarizeOutlined } from "@mui/icons-material";
+import { Translate } from "@mui/icons-material";
 import { Button, IconButton } from "@mui/material";
 import { useTranslation } from "react-i18next";
-
-import { useAppDispatch, useAppSelector } from "../../../app/hooks";
+import { useAppSelector, useAppDispatch } from "../../../app/hooks";
+import { GetFilePreviewResponse } from "../../../app/api";
 import {
     ActionType,
     setAction,
     selectQuery,
-    selectTotalFiles,
     setFileDetailData,
 } from "../searchSlice";
-import { GetFilePreviewResponse } from "../../../app/api";
+import { useCallback } from "react";
 
-interface SummarizeProps {
+interface TranslationProps {
     filePreview?: GetFilePreviewResponse;
-    system_prompt?: string;
     disabled?: boolean;
     icon_only?: boolean;
 }
 
-export function SummaryButton({
+export function TranslationButton({
     filePreview,
     disabled = false,
     icon_only = false,
-}: SummarizeProps) {
+}: TranslationProps) {
     const { t } = useTranslation();
     const dispatch = useAppDispatch();
     const searchQuery = useAppSelector(selectQuery);
-    const filesCount = useAppSelector(selectTotalFiles);
 
     const handleClick = useCallback(() => {
-        if ((!searchQuery && !filePreview?.fileId) || filesCount === 0) return;
         dispatch(
             setFileDetailData({
                 filePreview: filePreview,
                 searchQuery: searchQuery,
             }),
         );
-        dispatch(setAction(ActionType.SUMMARIZE));
-    }, [dispatch, filesCount, filePreview, searchQuery]);
+        dispatch(setAction(ActionType.TRANSLATE));
+    }, [dispatch, filePreview, searchQuery]);
 
     if (filePreview?.fileId || icon_only) {
         return (
             <IconButton
                 onClick={handleClick}
                 disabled={disabled}
-                title="Summarize"
-                aria-label="summarize"
+                title="Translate"
+                aria-label="translate"
             >
-                <SummarizeOutlined />
+                <Translate />
             </IconButton>
         );
     }
@@ -60,10 +55,10 @@ export function SummaryButton({
             color="secondary"
             fullWidth={true}
             variant={"contained"}
-            startIcon={<SummarizeOutlined />}
+            startIcon={<Translate />}
         >
             <span className="btn-label">
-                {t("summarizationDialog.executeButton")}
+                {t("sideMenu.translateQueriedFiles")}
             </span>
         </Button>
     );

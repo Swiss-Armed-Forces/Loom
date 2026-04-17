@@ -16,6 +16,7 @@ import {
     MessageFileUpdate,
     getFile as getFile,
     getShortRunningQuery,
+    updateFile,
 } from "../../../app/api";
 import AceEditor from "react-ace";
 import {
@@ -23,6 +24,8 @@ import {
     selectFileDetailData,
     selectWebSocketPubSubMessage,
     setFileDetailData,
+    selectIsDetailsOpen,
+    setIsDetailsOpen,
 } from "../searchSlice";
 import styles from "./FileDetailDialog.module.css";
 import { HighlightList } from "../container/HighlightList";
@@ -44,6 +47,7 @@ import { inferAceModeFromMimeType } from "../../common/inferAceModeFromMimeType"
 export function FileDetailDialog() {
     const webSocketPubSubMessage = useAppSelector(selectWebSocketPubSubMessage);
     const fileDetailData = useAppSelector(selectFileDetailData);
+    const isDetailsOpen = useAppSelector(selectIsDetailsOpen);
     const dispatch = useAppDispatch();
     const { t } = useTranslation();
 
@@ -54,10 +58,13 @@ export function FileDetailDialog() {
     const [isFullscreen, setIsFullscreen] = useState(false);
 
     const openDialog = !!(
-        fileDetailData.filePreview && fileDetailData.searchQuery
+        isDetailsOpen &&
+        fileDetailData.filePreview &&
+        fileDetailData.searchQuery
     );
 
     const openDialogRef = useRef(openDialog);
+    const hasUpdatedSeen = useRef<boolean>(false);
 
     // Track current fileId to prevent stale closure race conditions
     const currentFileIdRef = useRef<string | undefined>(undefined);
@@ -66,6 +73,18 @@ export function FileDetailDialog() {
     useEffect(() => {
         openDialogRef.current = openDialog;
     }, [openDialog]);
+
+    useEffect(() => {
+        if (
+            hasUpdatedSeen ||
+            !openDialog ||
+            !fileDetailData?.filePreview ||
+            fileDetailData.filePreview.seen
+        ) {
+            return;
+        }
+        updateFile(fileDetailData.filePreview.fileId, { seen: true });
+    }, [openDialog, fileDetailData?.filePreview]);
 
     // Update ref whenever fileId changes
     useEffect(() => {
@@ -133,9 +152,10 @@ export function FileDetailDialog() {
         fetchFile();
     }, [webSocketPubSubMessage]); // eslint-disable-line react-hooks/exhaustive-deps
 
-    const close = useCallback(() => {
+    const handleClose = useCallback(() => {
         // Unset the data
         dispatch(setFileDetailData({ searchQuery: null, filePreview: null }));
+        dispatch(setIsDetailsOpen(false));
         setFile(undefined);
     }, [dispatch]);
 
@@ -158,7 +178,7 @@ export function FileDetailDialog() {
     return (
         <Dialog
             open={openDialog}
-            onClose={close}
+            onClose={handleClose}
             maxWidth="xl"
             fullWidth={true}
             fullScreen={isFullscreen}
@@ -203,7 +223,7 @@ export function FileDetailDialog() {
                             <IconButton
                                 key="close"
                                 aria-label="close"
-                                onClick={close}
+                                onClick={handleClose}
                                 title={t("common.close")}
                             >
                                 <Close />

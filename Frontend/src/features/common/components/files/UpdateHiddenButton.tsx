@@ -13,7 +13,7 @@ interface UpdateHiddenButtonProps extends UpdateFileButtonPropsBase {
 }
 
 export function UpdateHiddenButton({
-    file_id,
+    filePreview,
     button_full_width = false,
     disabled = false,
     fileHidden = false,
@@ -22,7 +22,8 @@ export function UpdateHiddenButton({
 }: UpdateHiddenButtonProps) {
     return (
         <UpdateFileButton
-            file_id={file_id}
+            ariaLabel="hidden"
+            filePreview={filePreview}
             button_full_width={button_full_width}
             disabled={disabled}
             icon_only={icon_only}

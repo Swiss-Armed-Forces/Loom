@@ -4,16 +4,16 @@ import { IconButton } from "@mui/material";
 import styles from "./EllipsisButton.module.css";
 
 interface EllipsisButtonProps {
-    click: () => void;
+    onClick: () => void;
     title?: string;
 }
-export const EllipsisButton: FC<EllipsisButtonProps> = ({ click, title }) => {
+export const EllipsisButton: FC<EllipsisButtonProps> = ({ onClick, title }) => {
     return (
         <IconButton
             className={styles.ellipsisButton}
             size="large"
             title={title}
-            onClick={click}
+            onClick={onClick}
         >
             <MoreHoriz />
         </IconButton>
