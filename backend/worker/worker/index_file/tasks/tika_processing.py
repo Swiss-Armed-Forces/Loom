@@ -19,6 +19,7 @@ from worker.index_file.extractor.base import (
     ExtractNotSupported,
     ExtractorBase,
 )
+from worker.index_file.extractor.gzip_extractor import GzipExtractor
 from worker.index_file.extractor.pcap_extractor import PcapExtractor
 from worker.index_file.extractor.pst_extractor import (
     PstExtractor,
@@ -116,6 +117,7 @@ FALLBACKS: list[TikaFallback] = [
     TikaExtractorFallback(XZExtractor()),
     TikaExtractorFallback(ZstdExtractor()),
     TikaExtractorFallback(TarExtractor()),
+    TikaExtractorFallback(GzipExtractor()),
     TikaExtractorFallback(ZipExtractor()),
     TikaExtractorFallback(PstExtractor()),
     TikaExtractorFallback(PcapExtractor()),

@@ -1,4 +1,5 @@
 from contextlib import contextmanager
+from gzip import open as gzip_open
 from lzma import FILTER_LZMA2
 from lzma import open as xz_open
 from os import walk
@@ -18,6 +19,10 @@ from worker.index_file.extractor.base import (
     ExtractNotSupported,
     ExtractorBase,
     NamedFileExtractorBase,
+)
+from worker.index_file.extractor.gzip_extractor import (
+    GZIP_EXTRACTOR_READ_CHUNK_SIZE_BYTES,
+    GzipExtractor,
 )
 from worker.index_file.extractor.pcap_extractor import PcapExtractor
 from worker.index_file.extractor.pst_extractor import (
@@ -203,6 +208,17 @@ def test_extractor_unsupported(
                 dirs=[],
             ),
         ),
+        (
+            GzipExtractor,
+            "empty_file.tar.gz",
+            "application/gzip",
+            1,
+            False,
+            ExpectedDirectoryStructure(
+                files=[Path("0")],
+                dirs=[],
+            ),
+        ),
     ],
 )
 def test_extractor_extraction(
@@ -285,6 +301,21 @@ def create_zstd_test_archive(tmp_path: Path, random_file_size: int) -> Iterator[
 
 
 @contextmanager
+def create_gz_test_archive(tmp_path: Path, random_file_size: int) -> Iterator[IO]:
+
+    with NamedTemporaryFile(dir=tmp_path, suffix=".gz") as gz_file:
+        with (
+            gzip_open(gz_file, "wb", compresslevel=1) as compressor,
+            random_file(tmp_path, random_file_size) as fd,
+        ):
+            while chunk := fd.read(GZIP_EXTRACTOR_READ_CHUNK_SIZE_BYTES):
+                compressor.write(chunk)
+        gz_file.flush()
+        gz_file.seek(0)
+        yield gz_file
+
+
+@contextmanager
 def create_xz_test_archive(tmp_path: Path, random_file_size: int) -> Iterator[IO]:
     # Those are the minimum allowed filters so it takes the least amount of
     # resource when decompressing
@@ -337,6 +368,13 @@ def create_xz_test_archive(tmp_path: Path, random_file_size: int) -> Iterator[IO
             "application/x-xz",
             "0",
             marks=pytest.mark.limit_memory("3 MB"),
+        ),
+        pytest.param(
+            GzipExtractor,
+            create_gz_test_archive,
+            "application/gzip",
+            "0",
+            marks=pytest.mark.limit_memory("2 MB"),
         ),
     ],
 )
