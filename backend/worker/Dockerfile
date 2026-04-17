@@ -72,8 +72,12 @@ RUN set -exu \
     tshark=${TSHARK_VERSION} \
     curl=${CURL_VERSION} \
     binutils=${BINUTILS_VERSION} \
-    && curl -sSfL https://raw.githubusercontent.com/trufflesecurity/trufflehog/main/scripts/install.sh \
-    | sh -s -- -b /usr/local/bin "${TRUFFLEHOG_VERSION}" \
+    && curl -sSfL "https://github.com/trufflesecurity/trufflehog/releases/download/${TRUFFLEHOG_VERSION}/trufflehog_${TRUFFLEHOG_VERSION#v}_linux_amd64.tar.gz" \
+        -o /tmp/trufflehog.tar.gz \
+    && tar -xzf /tmp/trufflehog.tar.gz -C /usr/local/bin trufflehog \
+    && chmod +x /usr/local/bin/trufflehog \
+    && rm /tmp/trufflehog.tar.gz \
+    && trufflehog --version \
     && curl -LO "https://github.com/sirwart/ripsecrets/releases/download/v${RIPSECRETS_VERSION}/ripsecrets-${RIPSECRETS_VERSION}-x86_64-unknown-linux-gnu.tar.gz" \
     && tar -xzf "ripsecrets-${RIPSECRETS_VERSION}-x86_64-unknown-linux-gnu.tar.gz" \
     && mv "ripsecrets-${RIPSECRETS_VERSION}-x86_64-unknown-linux-gnu/ripsecrets" /usr/local/bin/ripsecrets \
