@@ -606,7 +606,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | pylint-pydantic                       | 0.4.1           | GPLv3                                                                            |
 | dnspython                             | 2.6.1           | ISC License (ISCL)                                                               |
 | click-repl                            | 0.3.0           | MIT                                                                              |
-| identify                              | 2.6.18          | MIT                                                                              |
+| identify                              | 2.6.19          | MIT                                                                              |
 | pycodestyle                           | 2.14.0          | MIT                                                                              |
 | pytest-cov                            | 6.3.0           | MIT                                                                              |
 | PyYAML                                | 6.0.3           | MIT License                                                                      |
@@ -687,7 +687,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | opentelemetry-semantic-conventions    | 0.60b1          | UNKNOWN                                                                          |
 | prometheus_client                     | 0.24.1          | UNKNOWN                                                                          |
 | pylint                                | 4.0.5           | UNKNOWN                                                                          |
-| pytest                                | 9.0.2           | UNKNOWN                                                                          |
+| pytest                                | 9.0.3           | UNKNOWN                                                                          |
 | pytest-asyncio                        | 1.3.0           | UNKNOWN                                                                          |
 | types-cffi                            | 1.17.0.20250915 | UNKNOWN                                                                          |
 | types-setuptools                      | 82.0.0.20260210 | UNKNOWN                                                                          |
