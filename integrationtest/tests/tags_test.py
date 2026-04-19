@@ -13,16 +13,16 @@ from utils.fetch_from_api import (
 from utils.upload_asset import upload_asset, upload_many_assets
 
 
-def _add_tag(file_id: str, tag: Tag):
+def _add_tags(file_id: str, tags: list[Tag]):
     response = requests.post(
         f"{FILES_ENDPOINT}/{file_id}/tags/",
-        json=AddTagsRequest(tags=[tag]).model_dump(),
+        json=AddTagsRequest(tags=tags).model_dump(),
         timeout=REQUEST_TIMEOUT,
     )
     response.raise_for_status()
 
 
-def _add_tags(set_tag_request: AddTagsByQueryRequest):
+def _add_tags_by_query(set_tag_request: AddTagsByQueryRequest):
     response = requests.post(
         f"{TAGS_ENDPOINT}/",
         json=set_tag_request.model_dump(),
@@ -66,7 +66,7 @@ def test_add_tag():
 
     tag = "test_tag"
 
-    _add_tag(str(file.file_id), tag)
+    _add_tags(str(file.file_id), [tag])
 
     file = get_file_preview_by_name("basic_email.eml", wait_for_celery_idle=True)
     assert file.tags == [tag]
@@ -83,7 +83,7 @@ def test_add_tag_by_query():
         tags=[tag],
         query=QueryParameters(search_string="*", query_id=fetch_query_id()),
     )
-    _add_tags(set_tag_request)
+    _add_tags_by_query(set_tag_request)
 
     fetch_files_from_api(
         "*", expected_no_of_files=len(assets), wait_for_celery_idle=True
@@ -104,7 +104,7 @@ def test_add_tags_by_query():
     set_tag_request = AddTagsByQueryRequest(
         tags=tags, query=QueryParameters(search_string="*", query_id=fetch_query_id())
     )
-    _add_tags(set_tag_request)
+    _add_tags_by_query(set_tag_request)
 
     fetch_files_from_api(
         "*", expected_no_of_files=len(assets), wait_for_celery_idle=True
@@ -123,8 +123,7 @@ def test_delete_tag():
     keep_tag = "keep_tag"
     wrong_tag = "wrong_tag"
 
-    _add_tag(file_id, keep_tag)
-    _add_tag(file_id, wrong_tag)
+    _add_tags(file_id, [keep_tag, wrong_tag])
     file = get_file_preview_by_name("basic_email.eml", wait_for_celery_idle=True)
     assert len(file.tags) == 2
 
@@ -136,7 +135,7 @@ def test_delete_tag():
     file = get_file_preview_by_name("basic_email.eml", wait_for_celery_idle=True)
     assert not file.tags
 
-    _add_tag(file_id, keep_tag)
+    _add_tags(file_id, [keep_tag])
     file = get_file_preview_by_name("basic_email.eml", wait_for_celery_idle=True)
     assert file.tags == [keep_tag]
 
@@ -152,7 +151,7 @@ def test_delete_tags():
         tags=[tag],
         query=QueryParameters(search_string="*", query_id=fetch_query_id()),
     )
-    _add_tags(set_tag_request)
+    _add_tags_by_query(set_tag_request)
 
     fetch_files_from_api(
         "tags:test", expected_no_of_files=len(assets), wait_for_celery_idle=True
@@ -176,11 +175,11 @@ def test_add_tag_is_idempotent():
 
     tag = "test_tag"
 
-    _add_tag(file_id, tag)
+    _add_tags(file_id, [tag])
     file = get_file_preview_by_name("basic_email.eml", wait_for_celery_idle=True)
     assert file.tags == [tag]
 
-    _add_tag(file_id, tag)
+    _add_tags(file_id, [tag])
     file = get_file_preview_by_name("basic_email.eml", wait_for_celery_idle=True)
     assert file.tags == [tag]
 
@@ -191,7 +190,7 @@ def test_all_tags():
 
     tag = "test_tag"
 
-    _add_tag(str(file.file_id), tag)
+    _add_tags(str(file.file_id), [tag])
 
     fetch_files_from_api(wait_for_celery_idle=True)
 
@@ -206,8 +205,7 @@ def test_all_tags_with_multiple_tags():
     tag1 = "test_tag1"
     tag2 = "test_tag2"
 
-    _add_tag(str(file.file_id), tag1)
-    _add_tag(str(file.file_id), tag2)
+    _add_tags(str(file.file_id), [tag1, tag2])
 
     fetch_files_from_api(wait_for_celery_idle=True)
 
@@ -221,13 +219,13 @@ def test_all_tags_with_multiple_files_and_multiple_tags():
 
     tag1 = "test_tag1"
 
-    _add_tag(str(file1.file_id), tag1)
+    _add_tags(str(file1.file_id), [tag1])
 
     upload_asset("text.txt")
     file2 = get_file_preview_by_name("text.txt")
     tag2 = "test_tag2"
 
-    _add_tag(str(file2.file_id), tag2)
+    _add_tags(str(file2.file_id), [tag2])
 
     fetch_files_from_api(expected_no_of_files=2, wait_for_celery_idle=True)
 
@@ -236,3 +234,22 @@ def test_all_tags_with_multiple_files_and_multiple_tags():
     assert len(all_tags) == 2
     assert tag1 in all_tags
     assert tag2 in all_tags
+
+
+def test_many_separate_tag_additions_do_not_overwrite():
+    """Regression test: verify that many separate _add_tags calls don't race/overwrite."""
+    upload_asset("empty_file.txt")
+    file = get_file_preview_by_name("empty_file.txt")
+    file_id = str(file.file_id)
+
+    num_tags = 100
+    expected_tags = [f"tag_{i}" for i in range(num_tags)]
+
+    for tag in expected_tags:
+        _add_tags(file_id, [tag])
+
+    file = get_file_preview_by_name("empty_file.txt", wait_for_celery_idle=True)
+
+    assert len(file.tags) == num_tags
+    for tag in expected_tags:
+        assert tag in file.tags

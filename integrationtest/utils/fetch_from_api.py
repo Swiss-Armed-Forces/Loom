@@ -29,7 +29,7 @@ from requests import Response
 from utils.consts import ARCHIVE_ENDPOINT, FILES_ENDPOINT, REQUEST_TIMEOUT
 
 DEFAULT_MAX_WAIT_TIME_PER_FILE = 300
-BATCH_WAIT_TIME = 10
+BATCH_WAIT_TIME = 5
 
 
 class FetchException(Exception):
@@ -112,7 +112,7 @@ def fetch_archives_from_api(
         bad_state for bad_state in bad_states if bad_state != expected_state
     )
 
-    # Retry the get request maximally 3 times
+    # Retry the request
     for retry_attempts in range(wait_cycles):
         time.sleep(BATCH_WAIT_TIME)  # wait before trying to fetch
         response = requests.get(
@@ -225,8 +225,7 @@ def fetch_files_from_api(
     )
 
     for retry_attempts in range(0, wait_cycles):
-        if retry_attempts != 0:
-            time.sleep(BATCH_WAIT_TIME)  # wait before trying to fetch
+        time.sleep(BATCH_WAIT_TIME)  # wait before trying to fetch
 
         # search for expected state
         files_query = GetFilesQuery(
