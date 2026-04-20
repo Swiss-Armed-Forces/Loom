@@ -48,7 +48,7 @@ function handleChildrenAddedAction(
 
     currentDirectory.children ??= {};
     for (const child of action.children) {
-        const path = child.fullPath!;
+        const path = child.fullPath;
         const fileName = path.split(PATH_SEPARATOR).at(-1);
         currentDirectory.children[path] = {
             id: path,

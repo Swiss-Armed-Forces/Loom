@@ -31,10 +31,12 @@ export function UploadFileDialog({ icon_only = false }: UploadFileDialogProps) {
     const dispatch = useAppDispatch();
     const { t } = useTranslation();
 
-    const addFiles = (filesToUpload: File[]) =>
+    const addFiles = (filesToUpload: File[]) => {
         setFiles([...files, ...filesToUpload]);
-    const removeFile = (file: File) =>
+    };
+    const removeFile = (file: File) => {
         setFiles(files.filter((f) => f !== file));
+    };
 
     const upload = () => {
         uploadFiles(files);
@@ -74,7 +76,9 @@ export function UploadFileDialog({ icon_only = false }: UploadFileDialogProps) {
         <>
             {icon_only ? (
                 <IconButton
-                    onClick={() => setOpen(true)}
+                    onClick={() => {
+                        setOpen(true);
+                    }}
                     title={t("uploadFileDialog.uploadButton")}
                 >
                     <UploadFile />
@@ -84,7 +88,9 @@ export function UploadFileDialog({ icon_only = false }: UploadFileDialogProps) {
                     variant="contained"
                     startIcon={<UploadFile />}
                     color="secondary"
-                    onClick={() => setOpen(true)}
+                    onClick={() => {
+                        setOpen(true);
+                    }}
                     fullWidth={true}
                 >
                     {t("uploadFileDialog.uploadButton")}

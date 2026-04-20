@@ -40,9 +40,12 @@ export function FileTranslations({ translations }: FileTranslationsProps) {
 
     return (
         <Box
-            width="100%"
-            height="100%"
-            sx={{ display: "flex", flexDirection: "column", height: "100%" }}
+            sx={{
+                width: "100%",
+                height: "100%",
+                display: "flex",
+                flexDirection: "column",
+            }}
         >
             <Box sx={{ p: 2, borderBottom: 1, borderColor: "divider" }}>
                 <ToggleButtonGroup
@@ -74,7 +77,6 @@ export function FileTranslations({ translations }: FileTranslationsProps) {
                     ))}
                 </ToggleButtonGroup>
             </Box>
-
             <Box sx={{ flex: 1, overflow: "hidden" }}>
                 <AceEditor
                     mode={"text"}

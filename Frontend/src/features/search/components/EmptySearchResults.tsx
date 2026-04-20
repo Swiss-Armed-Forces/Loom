@@ -16,7 +16,7 @@ export function EmptySearchResults() {
     const performSearch = (
         query: string,
         sortField?: string,
-        sortDirection?: "asc" | "desc" | undefined,
+        sortDirection?: "asc" | "desc",
     ) => {
         type SearchParams = {
             query: string;

@@ -128,7 +128,9 @@ export function UpdateFileButton({
                         open={showDialog}
                         numberOfResults={numberOfResults}
                         onClose={handleClose}
-                        onCancel={() => setShowDialog(false)}
+                        onCancel={() => {
+                            setShowDialog(false);
+                        }}
                         actions={dialogActions}
                         property={property}
                     />
@@ -156,7 +158,9 @@ export function UpdateFileButton({
                 open={showDialog}
                 numberOfResults={numberOfResults}
                 onClose={handleClose}
-                onCancel={() => setShowDialog(false)}
+                onCancel={() => {
+                    setShowDialog(false);
+                }}
                 actions={dialogActions}
                 property={property}
             />

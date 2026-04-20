@@ -138,6 +138,7 @@ export function Search() {
                     (c) =>
                         ({
                             code: c,
+
                             name:
                                 languages?.find((l) => l.code === c)?.name ??
                                 "missing",
@@ -179,9 +180,9 @@ export function Search() {
         });
         // Map to multiple language params, join with `newSearchParams()`
         if (searchQuery.languages) {
-            searchQuery.languages.map((l) =>
-                newSearchParams.append("languages", l.code),
-            );
+            searchQuery.languages.map((l) => {
+                newSearchParams.append("languages", l.code);
+            });
         }
 
         // Update URL with new search params

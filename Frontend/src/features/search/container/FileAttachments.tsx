@@ -117,9 +117,9 @@ export function FileAttachments({
                     {attachments.map((attachment) => (
                         <MenuItem
                             key={attachment.id}
-                            onClick={() =>
-                                handleAttachmentsClick(attachment.id)
-                            }
+                            onClick={() => {
+                                handleAttachmentsClick(attachment.id);
+                            }}
                             sx={{
                                 display: "flex",
                                 alignItems: "center",
@@ -147,7 +147,9 @@ export function FileAttachments({
                         label={attachment.name}
                         size="small"
                         variant="outlined"
-                        onClick={() => handleAttachmentsClick(attachment.id)}
+                        onClick={() => {
+                            handleAttachmentsClick(attachment.id);
+                        }}
                         className={styles.attachmentChip}
                     />
                 ))}

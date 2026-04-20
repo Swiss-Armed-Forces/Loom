@@ -80,19 +80,28 @@ export function AboutDialog({ open, closeDialog }: AboutDialogProps) {
         <Dialog maxWidth="md" open={open} onClose={closeDialog}>
             <DialogTitle>
                 <Box
-                    display="flex"
-                    alignItems="center"
-                    justifyContent="space-between"
+                    sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                    }}
                 >
                     <Box>
                         <Typography
                             variant="h5"
                             component="div"
-                            fontWeight="bold"
+                            sx={{
+                                fontWeight: "bold",
+                            }}
                         >
                             {t("about.title")}
                         </Typography>
-                        <Typography variant="subtitle1" color="text.secondary">
+                        <Typography
+                            variant="subtitle1"
+                            sx={{
+                                color: "text.secondary",
+                            }}
+                        >
                             {helmChartMetadata?.name} v
                             {helmChartMetadata?.appVersion}
                         </Typography>
@@ -107,12 +116,11 @@ export function AboutDialog({ open, closeDialog }: AboutDialogProps) {
                     </IconButton>
                 </Box>
             </DialogTitle>
-
             <DialogContent dividers>
                 <Stack spacing={3}>
                     {/* Description Section */}
                     <Box>
-                        <Typography variant="body1" paragraph>
+                        <Typography variant="body1" component="p">
                             {helmChartMetadata?.description}
                         </Typography>
                     </Box>
@@ -121,8 +129,10 @@ export function AboutDialog({ open, closeDialog }: AboutDialogProps) {
                     <Box>
                         <Typography
                             variant="subtitle2"
-                            fontWeight="bold"
                             gutterBottom
+                            sx={{
+                                fontWeight: "bold",
+                            }}
                         >
                             {t("about.linkTitle")}
                         </Typography>
@@ -140,8 +150,10 @@ export function AboutDialog({ open, closeDialog }: AboutDialogProps) {
                     <Box>
                         <Typography
                             variant="subtitle2"
-                            fontWeight="bold"
                             gutterBottom
+                            sx={{
+                                fontWeight: "bold",
+                            }}
                         >
                             License
                         </Typography>
@@ -172,8 +184,10 @@ export function AboutDialog({ open, closeDialog }: AboutDialogProps) {
                     <Box>
                         <Typography
                             variant="subtitle2"
-                            fontWeight="bold"
                             gutterBottom
+                            sx={{
+                                fontWeight: "bold",
+                            }}
                         >
                             Downloads
                         </Typography>

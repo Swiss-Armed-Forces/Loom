@@ -55,9 +55,7 @@ export function BurgerMenu() {
     const [openAboutDialog, setOpenAboutDialog] = useState(false);
     const { t } = useTranslation();
 
-    const handleMenuOpen = (
-        event: React.MouseEvent<HTMLButtonElement, MouseEvent>,
-    ) => {
+    const handleMenuOpen = (event: React.MouseEvent<HTMLButtonElement>) => {
         setAnchorEl(event.currentTarget);
     };
 
@@ -221,7 +219,9 @@ export function BurgerMenu() {
             </Menu>
             <AboutDialog
                 open={openAboutDialog}
-                closeDialog={() => setOpenAboutDialog(false)}
+                closeDialog={() => {
+                    setOpenAboutDialog(false);
+                }}
             />
         </div>
     );

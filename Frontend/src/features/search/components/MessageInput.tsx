@@ -30,7 +30,9 @@ const MessageInput: React.FC<MessageInputProps> = ({
                 disabled={disabled}
                 variant="outlined"
                 value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
+                onChange={(e) => {
+                    setInputValue(e.target.value);
+                }}
                 onKeyUp={handleKeyPress}
                 sx={{ flexGrow: 1, marginRight: "16px" }} // This will make the TextField expand
             />

@@ -184,11 +184,11 @@ export function SideMenu() {
                             <ListItem>
                                 {isMenuExpanded ? (
                                     <Button
-                                        onClick={() =>
+                                        onClick={() => {
                                             setOpenConfirmArchiveCreationDialog(
                                                 true,
-                                            )
-                                        }
+                                            );
+                                        }}
                                         disabled={numberOfResults === 0}
                                         color="secondary"
                                         variant="contained"
@@ -201,11 +201,11 @@ export function SideMenu() {
                                     </Button>
                                 ) : (
                                     <IconButton
-                                        onClick={() =>
+                                        onClick={() => {
                                             setOpenConfirmArchiveCreationDialog(
                                                 true,
-                                            )
-                                        }
+                                            );
+                                        }}
                                         disabled={numberOfResults === 0}
                                         title={t("sideMenu.createArchive")}
                                     >
@@ -222,11 +222,11 @@ export function SideMenu() {
                                         "confirmDialog.confirmArchiveCreation",
                                     )}
                                     handleConfirmation={startArchiveCreation}
-                                    cancel={() =>
+                                    cancel={() => {
                                         setOpenConfirmArchiveCreationDialog(
                                             false,
-                                        )
-                                    }
+                                        );
+                                    }}
                                     icon={<ArchiveOutlined />}
                                 />
                             </ListItem>

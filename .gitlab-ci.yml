@@ -48,7 +48,7 @@ variables:
 #               CACHE DEFINITIONS
 # ---------------------------------------------#
 
-# Dependencies cache: venv + node_modules
+# Dependencies cache: venv + pnpm-store
 .cache_dependencies: &cache_dependencies
   key:
     files:
@@ -56,9 +56,9 @@ variables:
       - Frontend/pnpm-lock.yaml
   paths:
     - .venv
-    - Frontend/node_modules/
+    - Frontend/.pnpm-store
   unprotect: true
-  when: 'always'
+  when: "always"
 
 # Build cache: docker + skaffold
 .cache_build: &cache_build
@@ -67,7 +67,7 @@ variables:
     - docker-cache
     - ${SKAFFOLD_HOME}
   unprotect: true
-  when: 'always'
+  when: "always"
 
 # Kubernetes cache: minikube + kubernetes
 .cache_kubernetes: &cache_kubernetes
@@ -80,7 +80,7 @@ variables:
     - ${MINIKUBE_HOME}
     - kubernetes-cache
   unprotect: true
-  when: 'always'
+  when: "always"
 
 # Third party cache (job-specific)
 .cache_third_party: &cache_third_party
@@ -90,7 +90,7 @@ variables:
   paths:
     - third-party-cache
   unprotect: true
-  when: 'always'
+  when: "always"
 
 default:
   # Allow cancellation of running tasks
@@ -258,7 +258,6 @@ default:
     # END SECTION
     #
     - section_end .default-up-integrationtest-before_script
-
 
 # ---------------------------------------------#
 #
@@ -430,8 +429,8 @@ publish_helm_dev:
   script:
     - devenv shell -- build-helm
       --publish
-        "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/helm/api/dev/charts"
-        gitlab-ci-token:${CI_JOB_TOKEN}
+      "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/helm/api/dev/charts"
+      gitlab-ci-token:${CI_JOB_TOKEN}
 
 publish_helm_test:
   stage: publish
@@ -440,8 +439,8 @@ publish_helm_test:
   script:
     - devenv shell -- build-helm
       --publish
-        "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/helm/api/test/charts"
-        gitlab-ci-token:${CI_JOB_TOKEN}
+      "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/helm/api/test/charts"
+      gitlab-ci-token:${CI_JOB_TOKEN}
 
 publish_helm_prod:
   stage: publish
@@ -450,5 +449,5 @@ publish_helm_prod:
   script:
     - devenv shell -- build-helm
       --publish
-        "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/helm/api/prod/charts"
-        gitlab-ci-token:${CI_JOB_TOKEN}
+      "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/helm/api/prod/charts"
+      gitlab-ci-token:${CI_JOB_TOKEN}
