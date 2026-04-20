@@ -79,7 +79,9 @@ export function SearchTranslateDialog() {
             <IconButton
                 className={styles.icon}
                 title="Translate"
-                onClick={() => setOpen(true)}
+                onClick={() => {
+                    setOpen(true);
+                }}
             >
                 <Translate />
             </IconButton>
@@ -88,7 +90,9 @@ export function SearchTranslateDialog() {
                     <Typography>{t("translateFilesDialog.title")}</Typography>
                     <IconButton
                         aria-label="close"
-                        onClick={() => setOpen(false)}
+                        onClick={() => {
+                            setOpen(false);
+                        }}
                         title={t("common.close")}
                         sx={{
                             position: "absolute",
@@ -111,7 +115,9 @@ export function SearchTranslateDialog() {
                         onChange={(
                             _e,
                             value: LibretranslateSupportedLanguages[] | null,
-                        ) => setSearchTranslationLanguage(value ?? [])}
+                        ) => {
+                            setSearchTranslationLanguage(value ?? []);
+                        }}
                         getOptionLabel={(option) => option.name}
                         renderOption={(props, option) => {
                             // eslint-disable-next-line react/prop-types
@@ -137,13 +143,17 @@ export function SearchTranslateDialog() {
                         startIcon={<Close />}
                         variant="outlined"
                         color="secondary"
-                        onClick={() => handleClose(null)}
+                        onClick={() => {
+                            handleClose(null);
+                        }}
                     >
                         {t("common.cancel")}
                     </Button>
                     <Button
                         startIcon={<TranslateOutlined />}
-                        onClick={() => save()}
+                        onClick={() => {
+                            save();
+                        }}
                         color="primary"
                         variant="contained"
                     >

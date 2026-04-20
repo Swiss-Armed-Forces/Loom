@@ -1,4 +1,4 @@
-import { configureStore, ThunkAction, AnyAction } from "@reduxjs/toolkit";
+import { configureStore, ThunkAction, UnknownAction } from "@reduxjs/toolkit";
 import commonReducer from "../features/common/commonSlice";
 import searchReducer from "../features/search/searchSlice";
 import archiveReducer from "../features/archives/archiveSlice";
@@ -24,5 +24,5 @@ export type AppThunk<ReturnType = void> = ThunkAction<
     ReturnType,
     RootState,
     unknown,
-    AnyAction
+    UnknownAction
 >;

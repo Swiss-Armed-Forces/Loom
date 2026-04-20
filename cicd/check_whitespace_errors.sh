@@ -8,5 +8,6 @@ git diff-tree --check \
     HEAD \
     -- \
         . \
+        ':!Frontend/patches/*.patch' \
         ':!integrationtest/assets' \
         ':!backend/api/static'

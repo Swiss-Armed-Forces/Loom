@@ -42,11 +42,11 @@ export function FileCardHeader({
             avatar={
                 <FileAvatar
                     fileExtension={filePreview.fileExtension}
-                    performSearch={() =>
+                    performSearch={() => {
                         handleQueryReplaceFileExtension(
                             filePreview.fileExtension,
-                        )
-                    }
+                        );
+                    }}
                     hasBadge={!filePreview.seen}
                 />
             }

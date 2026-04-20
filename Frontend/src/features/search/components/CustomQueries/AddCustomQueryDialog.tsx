@@ -117,7 +117,9 @@ export function AddCustomQueryDialog({
                         width: "10px",
                         marginLeft: "-4px",
                     }}
-                    onClick={() => setShowAddCustomQueryDialog(true)}
+                    onClick={() => {
+                        setShowAddCustomQueryDialog(true);
+                    }}
                     color="success"
                     disabled={disabled}
                     title={t("sideMenu.savedQueries.saveNew")}
@@ -131,7 +133,9 @@ export function AddCustomQueryDialog({
                 </IconButton>
             ) : (
                 <Button
-                    onClick={() => setShowAddCustomQueryDialog(true)}
+                    onClick={() => {
+                        setShowAddCustomQueryDialog(true);
+                    }}
                     color="success"
                     variant="contained"
                     disabled={disabled}
@@ -153,7 +157,9 @@ export function AddCustomQueryDialog({
                     {t("addCustomQueryDialog.title")}
                     <IconButton
                         aria-label="close"
-                        onClick={() => setShowAddCustomQueryDialog(false)}
+                        onClick={() => {
+                            setShowAddCustomQueryDialog(false);
+                        }}
                         title={t("common.close")}
                         sx={{
                             position: "absolute",

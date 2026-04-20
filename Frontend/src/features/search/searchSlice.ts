@@ -334,7 +334,7 @@ export const fetchFileDetailData = createAsyncThunk(
             pageSize: null,
         } satisfies SearchQuery;
         try {
-            return await {
+            return {
                 query: query,
                 filePreview: await getFilePreview(fileId, query),
             };
@@ -643,7 +643,7 @@ export const searchSlice = createSlice({
         });
         builder.addCase(setFileInViewState.fulfilled, (state, action) => {
             const { fileId, inView } = action.payload;
-            if (fileId in state.files === false) return;
+            if (!(fileId in state.files)) return;
             if (inView) {
                 if (!state.filesInView.includes(fileId)) {
                     state.filesInView = [...state.filesInView, fileId];

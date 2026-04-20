@@ -247,16 +247,16 @@ export function useKeyboardNavigation() {
             // Find by aria-label first, then fall back to title
             let clickable = container.querySelector(
                 `button[aria-label="${actionKey}"], a[aria-label="${actionKey}"]`,
-            ) as HTMLElement | null;
+            );
 
             if (!clickable) {
                 clickable = container.querySelector(
                     `button[title="${actionKey}"], a[title="${actionKey}"]`,
-                ) as HTMLElement | null;
+                );
             }
 
             if (clickable && !(clickable as HTMLButtonElement).disabled) {
-                clickable.click();
+                (clickable as HTMLElement).click();
             }
         },
         [isDetailsOpen],
@@ -345,9 +345,9 @@ export function useKeyboardNavigation() {
                         {
                             const searchInput = document.querySelector(
                                 "[data-search-input]",
-                            ) as HTMLInputElement | null;
+                            );
                             if (searchInput) {
-                                searchInput.focus();
+                                (searchInput as HTMLElement).focus();
                                 event.preventDefault();
                             }
                         }

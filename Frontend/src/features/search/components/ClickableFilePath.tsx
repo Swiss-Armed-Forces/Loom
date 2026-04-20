@@ -50,7 +50,9 @@ export function ClickableFilePath({ fullPath, style }: ClickableFilePathProps) {
                 <Link
                     key={idx}
                     color="inherit"
-                    onClick={() => handleQueryReplaceFilename(part.pathToPart)}
+                    onClick={() => {
+                        handleQueryReplaceFilename(part.pathToPart);
+                    }}
                     sx={{
                         cursor: "pointer",
                         textDecoration: "none",

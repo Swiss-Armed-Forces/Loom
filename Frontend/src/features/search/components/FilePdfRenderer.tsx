@@ -33,7 +33,9 @@ export function FilePdfRenderer({ renderedFileUrl }: FilePdfRendererProps) {
 
         updateWidth();
         window.addEventListener("resize", updateWidth);
-        return () => window.removeEventListener("resize", updateWidth);
+        return () => {
+            window.removeEventListener("resize", updateWidth);
+        };
     }, []);
 
     function onPdfDocumentLoadSuccess({

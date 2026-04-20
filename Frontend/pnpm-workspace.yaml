@@ -1,0 +1,2 @@
+patchedDependencies:
+    rolldown: patches/rolldown.patch
