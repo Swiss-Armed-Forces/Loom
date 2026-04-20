@@ -71,7 +71,7 @@ class Settings(BaseSettings):
         "INSPECT",
     ] = "INSPECT"
     worker_max_concurrency: int = 4
-    worker_min_concurrency: int = 4
+    worker_min_concurrency: int = 0
     num_persister_shards: int = 16
     persister_total: int = 1  # Total number of PERSISTER workers
     persister_id: int = Field(default_factory=_get_persister_id_from_hostname)
