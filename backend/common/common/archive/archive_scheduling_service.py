@@ -1,8 +1,17 @@
 """ "ArchiveSchedulingService handles the creation of new archives."""
 
-from common.archive.archive_repository import Archive, ArchiveRepository
+from uuid import UUID
+
+from common.archive.archive_repository import (
+    Archive,
+    ArchiveNotFoundException,
+    ArchiveRepository,
+)
 from common.services.query_builder import QueryParameters
-from common.services.task_scheduling_service import TaskSchedulingService
+from common.services.task_scheduling_service import (
+    TaskSchedulingService,
+    UpdateArchiveRequest,
+)
 
 
 class ArchiveSchedulingService:
@@ -26,3 +35,10 @@ class ArchiveSchedulingService:
         self._task_scheduling_service.create_archive(archive)
 
         return archive
+
+    def update_archive(self, archive_id: UUID, request: UpdateArchiveRequest) -> None:
+        """Dispatch an update for an existing archive."""
+        archive = self._archive_repository.get_by_id(archive_id)
+        if archive is None:
+            raise ArchiveNotFoundException("No archive found")
+        self._task_scheduling_service.update_archive_by_id(archive_id, request)

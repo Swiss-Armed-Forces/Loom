@@ -15,45 +15,44 @@
 
 import { mapValues } from "../runtime";
 /**
- * Update archive model.
+ *
  * @export
- * @interface UpdateArchiveModel
+ * @interface UpdateArchiveRequest
  */
-export interface UpdateArchiveModel {
+export interface UpdateArchiveRequest {
     /**
      *
      * @type {boolean}
-     * @memberof UpdateArchiveModel
+     * @memberof UpdateArchiveRequest
      */
-    hidden: boolean;
+    hidden?: boolean;
 }
 
 /**
- * Check if a given object implements the UpdateArchiveModel interface.
+ * Check if a given object implements the UpdateArchiveRequest interface.
  */
-export function instanceOfUpdateArchiveModel(value: object): boolean {
-    if (!("hidden" in value)) return false;
+export function instanceOfUpdateArchiveRequest(value: object): boolean {
     return true;
 }
 
-export function UpdateArchiveModelFromJSON(json: any): UpdateArchiveModel {
-    return UpdateArchiveModelFromJSONTyped(json, false);
+export function UpdateArchiveRequestFromJSON(json: any): UpdateArchiveRequest {
+    return UpdateArchiveRequestFromJSONTyped(json, false);
 }
 
-export function UpdateArchiveModelFromJSONTyped(
+export function UpdateArchiveRequestFromJSONTyped(
     json: any,
     ignoreDiscriminator: boolean,
-): UpdateArchiveModel {
+): UpdateArchiveRequest {
     if (json == null) {
         return json;
     }
     return {
-        hidden: json["hidden"],
+        hidden: json["hidden"] == null ? undefined : json["hidden"],
     };
 }
 
-export function UpdateArchiveModelToJSON(
-    value?: UpdateArchiveModel | null,
+export function UpdateArchiveRequestToJSON(
+    value?: UpdateArchiveRequest | null,
 ): any {
     if (value == null) {
         return value;

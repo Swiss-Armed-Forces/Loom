@@ -71,7 +71,7 @@ models/SummaryStatisticsModel.ts
 models/TranslateAllRequest.ts
 models/TranslateFileRequest.ts
 models/TreeNodeModel.ts
-models/UpdateArchiveModel.ts
+models/UpdateArchiveRequest.ts
 models/UpdateFileRequest.ts
 models/UpdateFilesRequest.ts
 models/ValidationError.ts

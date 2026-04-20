@@ -7,6 +7,7 @@ from common.dependencies import (
 )
 from common.services.lazybytes_service import LazyBytes
 from common.services.query_builder import QueryParameters
+from common.services.task_scheduling_service import UpdateArchiveRequest
 from fastapi.testclient import TestClient
 
 from api.models.archives_model import ArchivesModel
@@ -91,24 +92,15 @@ def test_download_archive(client: TestClient):
 
 def test_hide_archive(client: TestClient):
     query = QueryParameters(query_id="0123456789", search_string="*")
-    content = [b"file content", b"and", b"another", b"chunk"]
-    content_encrypted = [b"encrypted file content", b"and", b"another", b"chunk"]
-    archive = Archive(
-        query=query,
-        plain_file=StoredArchive(
-            storage_data=LazyBytes(service_id=str(ObjectId())),
-            sha256="",
-            size=len(content),
-        ),
-        encrypted_file=StoredArchive(
-            storage_data=LazyBytes(service_id=str(ObjectId())),
-            sha256="",
-            size=len(content_encrypted),
-        ),
-    )
-    get_archive_repository().get_by_id.return_value = archive
+    archive = Archive(query=query)
 
-    response = client.post(f"/v1/archive/{archive.id_}", json={"hidden": True})
+    request = UpdateArchiveRequest(hidden=True)
+
+    get_archive_scheduling_service().update_archive.return_value = None
+
+    response = client.put(f"/v1/archive/{archive.id_}", json=request.model_dump())
 
     assert response.status_code == 200
-    get_archive_repository().update.assert_called_once_with(archive, include={"hidden"})
+    get_archive_scheduling_service().update_archive.assert_called_once_with(
+        archive.id_, request
+    )

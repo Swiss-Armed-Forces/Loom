@@ -5,10 +5,9 @@ import numpy as np
 from common.dependencies import get_queues_service
 from common.services.queues_service import QueuesService
 from fastapi import APIRouter, Depends
-from pydantic import BaseModel
 from sklearn.linear_model import LinearRegression
 
-from api.models.queues_model import OverallQueuesStats
+from api.models.queues_model import CompleteEstimate, OverallQueuesStats
 
 router = APIRouter()
 
@@ -58,12 +57,6 @@ def get_message_count(
 ) -> int:
     message_count = queues_service.get_message_count(queue_name=queue_name)
     return message_count
-
-
-class CompleteEstimate(BaseModel):
-    samples_count: int
-    samples_period__s: int
-    estimate_timestamp: int
 
 
 def get_completed_estimate_for_period(

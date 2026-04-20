@@ -11,6 +11,10 @@ from common.settings import settings
 from common.task_object.task_object import RepositoryTaskObject, _EsTaskDocument
 
 
+class ArchiveNotFoundException(Exception):
+    pass
+
+
 class StoredArchive(BaseModel):
     storage_data: LazyBytes | None = None
     sha256: str | None = None

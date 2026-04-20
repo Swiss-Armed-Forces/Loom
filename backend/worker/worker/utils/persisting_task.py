@@ -1,4 +1,5 @@
-from typing import Any, Callable, Concatenate, ParamSpec, Type
+from abc import ABC
+from typing import Any, Callable, Concatenate, Generic, ParamSpec, Type
 from uuid import UUID
 
 from celery import Celery
@@ -10,12 +11,23 @@ from common.task_object.task_object import (
     RepositoryTaskObjectT,
     SecondaryRepositoryTaskObjectT,
 )
-from common.utils.sharding import compute_shard, get_persister_shard_queue_name
+from common.utils.sharding import (
+    compute_shard,
+    get_persister_shard_name,
+)
 
 from worker.utils.persister_base import PersisterBase
 from worker.utils.processing_task import ProcessingTask
 
 P = ParamSpec("P")
+
+
+class PersistingTaskBase(
+    ProcessingTask[RepositoryTaskObjectT, SecondaryRepositoryTaskObjectT],
+    ABC,
+    Generic[RepositoryTaskObjectT, SecondaryRepositoryTaskObjectT],
+):
+    pass
 
 
 def _default_persisting_cache(*_, **__):
@@ -52,7 +64,7 @@ def persisting_task(
 
     def inner_decorator(persist_fcn: Callable[Concatenate[PersisterBase, P], None]):
         class PersistingTask(
-            ProcessingTask[RepositoryTaskObjectT, SecondaryRepositoryTaskObjectT]
+            PersistingTaskBase[RepositoryTaskObjectT, SecondaryRepositoryTaskObjectT]
         ):
             """Base class for persisting tasks."""
 
@@ -87,7 +99,8 @@ def persisting_task(
                     )
                 entity_id: UUID = args[-1]
                 shard = compute_shard(entity_id, settings.num_persister_shards)
-                options["queue"] = get_persister_shard_queue_name(shard)
+                shard_name = get_persister_shard_name(shard)
+                options["routing_key"] = shard_name
                 return super().apply_async(args, kwargs, **options)
 
             @persisting_cache_decorator(persist_fcn)

@@ -103,15 +103,17 @@ def _summarization_testcase(
 
     # demand summarization
     on_demand_summarization(summarization_file, system_prompt)
-    # Note: we have to wait until celery is idle, because `on_demand_summarization`
-    # is an async operation and `get_file_by_name` might return before
-    # summarization even started.
-    file = get_file_by_name(
+
+    # Wait until celery is idle AND the summary has been persisted.
+    # The GlobalPersisterWorker batches mutations asynchronously, so the summary
+    # may not be visible immediately after Celery becomes idle. The checker
+    # keeps retrying until the summary appears in the database.
+    get_file_by_name(
         file_name,
         max_wait_time_per_file=max_wait_time_per_file,
         wait_for_celery_idle=True,
+        checker=lambda f: f.summary is not None,
     )
-    assert file.summary is not None
 
 
 @pytest.mark.parametrize(
