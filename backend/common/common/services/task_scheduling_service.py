@@ -23,6 +23,10 @@ class UpdateFileRequest(BaseModel):
     seen: bool | None = None
 
 
+class UpdateArchiveRequest(BaseModel):
+    hidden: bool | None = None
+
+
 class TaskSchedulingService:
     # pylint: disable=too-many-public-methods
     """Schedules tasks to be executed by the worker."""
@@ -141,6 +145,21 @@ class TaskSchedulingService:
         self._celery_app.send_task(
             "worker.index_file.summarize_file_task.summarize_file_task",
             args=[file_id, system_prompt],
+            task_id=str(root_task_id),
+            root_id=str(root_task_id),
+        ).forget()
+
+    def update_archive_by_id(self, archive_id: UUID, request: UpdateArchiveRequest):
+        root_task_id = uuid4()
+        self._root_task_information_repository.save(
+            RootTaskInformation(
+                root_task_id=root_task_id,
+                object_id=archive_id,
+            )
+        )
+        self._celery_app.send_task(
+            "worker.create_archive.update_archive_task.update_task",
+            args=[archive_id, request],
             task_id=str(root_task_id),
             root_id=str(root_task_id),
         ).forget()

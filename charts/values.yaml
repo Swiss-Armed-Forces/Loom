@@ -46,6 +46,18 @@ pipeline:
   skip_embedding_while_indexing: false
   automatic_indexing: true
   tika_ocr_languages: null
+  celery_queue_name_prefix: null
+  celery_deliver_limit: null
+  celery_graveyard_deliver_limit: null
+  celery_graveyard_task_name: null
+  celery_dead_task_name: null
+  celery_persister_shard_prefix: null
+  celery_unroubtable_ttl__seconds: null
+  celery_unroubtable_task_name: null
+  celery_default_exchange_name: null
+  celery_default_exchange_type: null
+  celery_alternate_exchange_name: null
+  celery_alternate_exchange_type: null
 
 llm:
   model: huihui_ai/qwen3.5-abliterated:9b

@@ -4,12 +4,12 @@ from uuid import UUID, uuid4
 
 import pytest
 
+from common.settings import settings
 from common.utils.sharding import (
-    PERSISTER_SHARD_QUEUE_PREFIX,
     compute_shard,
-    get_all_persister_shard_queues,
-    get_persister_shard_queue_name,
-    get_persister_shard_queues_for_worker,
+    get_all_persister_shards,
+    get_persister_shard_for_worker,
+    get_persister_shard_name,
     get_shards_for_persister,
 )
 
@@ -63,50 +63,55 @@ class TestComputeShard:
             assert 0 <= shard < num_shards
 
 
-class TestGetPersisterShardQueueName:
-    """Tests for get_persister_shard_queue_name function."""
+class TestGetPersisterShardName:
+    """Tests for get_persister_shard_name function."""
 
     def test_format(self):
-        """Queue name should follow expected format."""
-        assert get_persister_shard_queue_name(0) == f"{PERSISTER_SHARD_QUEUE_PREFIX}.0"
-        assert get_persister_shard_queue_name(5) == f"{PERSISTER_SHARD_QUEUE_PREFIX}.5"
+        """Shard name should follow expected format."""
         assert (
-            get_persister_shard_queue_name(15) == f"{PERSISTER_SHARD_QUEUE_PREFIX}.15"
+            get_persister_shard_name(0) == f"{settings.celery_persister_shard_prefix}.0"
+        )
+        assert (
+            get_persister_shard_name(5) == f"{settings.celery_persister_shard_prefix}.5"
+        )
+        assert (
+            get_persister_shard_name(15)
+            == f"{settings.celery_persister_shard_prefix}.15"
         )
 
-    def test_uses_prefix_constant(self):
-        """Queue name should use the PERSISTER_SHARD_QUEUE_PREFIX constant."""
-        queue_name = get_persister_shard_queue_name(0)
-        assert queue_name.startswith(PERSISTER_SHARD_QUEUE_PREFIX)
+    def test_uses_prefix(self):
+        """Shard name should use the celery_persister_shard_prefix."""
+        shard_name = get_persister_shard_name(0)
+        assert shard_name.startswith(settings.celery_persister_shard_prefix)
 
 
-class TestGetAllPersisterShardQueues:
-    """Tests for get_all_persister_shard_queues function."""
+class TestGetAllPersisterShards:
+    """Tests for get_all_persister_shards function."""
 
     def test_returns_correct_count(self):
-        """Should return specified number of queues."""
-        queues = get_all_persister_shard_queues(num_shards=8)
-        assert len(queues) == 8
+        """Should return specified number of shards."""
+        shards = get_all_persister_shards(num_shards=8)
+        assert len(shards) == 8
 
-    def test_queues_are_ordered(self):
-        """Queues should be returned in order from 0 to num_shards - 1."""
-        queues = get_all_persister_shard_queues(num_shards=4)
-        assert queues == [
-            f"{PERSISTER_SHARD_QUEUE_PREFIX}.0",
-            f"{PERSISTER_SHARD_QUEUE_PREFIX}.1",
-            f"{PERSISTER_SHARD_QUEUE_PREFIX}.2",
-            f"{PERSISTER_SHARD_QUEUE_PREFIX}.3",
+    def test_names_are_ordered(self):
+        """Shards should be returned in order from 0 to num_shards - 1."""
+        shards = get_all_persister_shards(num_shards=4)
+        assert shards == [
+            f"{settings.celery_persister_shard_prefix}.0",
+            f"{settings.celery_persister_shard_prefix}.1",
+            f"{settings.celery_persister_shard_prefix}.2",
+            f"{settings.celery_persister_shard_prefix}.3",
         ]
 
-    def test_queues_are_unique(self):
-        """All queue names should be unique."""
-        queues = get_all_persister_shard_queues(num_shards=16)
-        assert len(queues) == len(set(queues))
+    def test_names_are_unique(self):
+        """All shard names should be unique."""
+        shards = get_all_persister_shards(num_shards=16)
+        assert len(shards) == len(set(shards))
 
     def test_single_shard(self):
-        """Single shard should return one queue."""
-        queues = get_all_persister_shard_queues(num_shards=1)
-        assert queues == [f"{PERSISTER_SHARD_QUEUE_PREFIX}.0"]
+        """Single shard should return one shard."""
+        shards = get_all_persister_shards(num_shards=1)
+        assert shards == [f"{settings.celery_persister_shard_prefix}.0"]
 
 
 class TestGetShardsForPersister:
@@ -193,47 +198,47 @@ class TestGetShardsForPersister:
         assert sorted(all_shards) == list(range(num_shards))
 
 
-class TestGetPersisterShardQueuesForWorker:
-    """Tests for get_persister_shard_queues_for_worker function."""
+class TestGetPersisterShardForWorker:
+    """Tests for get_persister_shard_for_worker function."""
 
-    def test_returns_correct_queue_names(self):
-        """Should return queue names for assigned shards."""
-        queues = get_persister_shard_queues_for_worker(
+    def test_returns_correct_names(self):
+        """Should return shard names for assigned shards."""
+        shards = get_persister_shard_for_worker(
             persister_id=0, persister_total=2, num_shards=4
         )
-        assert queues == [
-            f"{PERSISTER_SHARD_QUEUE_PREFIX}.0",
-            f"{PERSISTER_SHARD_QUEUE_PREFIX}.2",
+        assert shards == [
+            f"{settings.celery_persister_shard_prefix}.0",
+            f"{settings.celery_persister_shard_prefix}.2",
         ]
 
-    def test_single_persister_gets_all_queues(self):
-        """Single persister should get all queues."""
-        queues = get_persister_shard_queues_for_worker(
+    def test_single_persister_gets_all_shards(self):
+        """Single persister should get all shards."""
+        shards = get_persister_shard_for_worker(
             persister_id=0, persister_total=1, num_shards=4
         )
-        assert queues == get_all_persister_shard_queues(num_shards=4)
+        assert shards == get_all_persister_shards(num_shards=4)
 
-    def test_two_persisters_split_queues(self):
-        """Two persisters should split queues evenly."""
-        queues_0 = get_persister_shard_queues_for_worker(
+    def test_two_persisters_split_names(self):
+        """Two persisters should split names evenly."""
+        shards_0 = get_persister_shard_for_worker(
             persister_id=0, persister_total=2, num_shards=4
         )
-        queues_1 = get_persister_shard_queues_for_worker(
+        shards_1 = get_persister_shard_for_worker(
             persister_id=1, persister_total=2, num_shards=4
         )
 
-        assert queues_0 == [
-            f"{PERSISTER_SHARD_QUEUE_PREFIX}.0",
-            f"{PERSISTER_SHARD_QUEUE_PREFIX}.2",
+        assert shards_0 == [
+            f"{settings.celery_persister_shard_prefix}.0",
+            f"{settings.celery_persister_shard_prefix}.2",
         ]
-        assert queues_1 == [
-            f"{PERSISTER_SHARD_QUEUE_PREFIX}.1",
-            f"{PERSISTER_SHARD_QUEUE_PREFIX}.3",
+        assert shards_1 == [
+            f"{settings.celery_persister_shard_prefix}.1",
+            f"{settings.celery_persister_shard_prefix}.3",
         ]
 
     def test_single_persister_with_16_shards(self):
         """Single persister should get all 16 shards."""
-        queues = get_persister_shard_queues_for_worker(
+        shards = get_persister_shard_for_worker(
             persister_id=0, persister_total=1, num_shards=16
         )
-        assert len(queues) == 16
+        assert len(shards) == 16

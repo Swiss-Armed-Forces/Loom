@@ -7,7 +7,7 @@
 import logging
 import time
 from collections import Counter
-from typing import Any, Iterable, Literal
+from typing import Any, Callable, Iterable, Literal
 from uuid import UUID
 
 import requests
@@ -29,7 +29,8 @@ from requests import Response
 from utils.consts import ARCHIVE_ENDPOINT, FILES_ENDPOINT, REQUEST_TIMEOUT
 
 DEFAULT_MAX_WAIT_TIME_PER_FILE = 300
-BATCH_WAIT_TIME = 10
+FETCH_WAIT_TIME = 2
+INITIAL_FETCH_WAIT_TIME = FETCH_WAIT_TIME * 5
 
 
 class FetchException(Exception):
@@ -104,7 +105,7 @@ def fetch_archives_from_api(
         max_wait_time_per_archive = DEFAULT_MAX_WAIT_TIME_PER_FILE
 
     max_wait_time = expected_no_of_archives * max_wait_time_per_archive
-    wait_cycles = (max_wait_time // BATCH_WAIT_TIME) + 1
+    wait_cycles = (max_wait_time // FETCH_WAIT_TIME) + 1
     error_msgs = []
 
     # remove expected state from bad states
@@ -112,9 +113,9 @@ def fetch_archives_from_api(
         bad_state for bad_state in bad_states if bad_state != expected_state
     )
 
-    # Retry the get request maximally 3 times
+    # Retry the request
     for retry_attempts in range(wait_cycles):
-        time.sleep(BATCH_WAIT_TIME)  # wait before trying to fetch
+        time.sleep(FETCH_WAIT_TIME if retry_attempts > 0 else INITIAL_FETCH_WAIT_TIME)
         response = requests.get(
             f"{ARCHIVE_ENDPOINT}/",
             timeout=REQUEST_TIMEOUT,
@@ -207,6 +208,7 @@ def fetch_files_from_api(
     bad_states: tuple[str, ...] = ("failed",),
     wait_for_celery_idle: bool = False,
     allow_more_files: bool = False,
+    checker: Callable[[GetFilesResponse], bool] | None = None,
 ) -> GetFilesResponse:
     if max_wait_time_per_file is None:
         max_wait_time_per_file = DEFAULT_MAX_WAIT_TIME_PER_FILE
@@ -216,7 +218,7 @@ def fetch_files_from_api(
         sort_id = []
 
     max_wait_time = max(1, expected_no_of_files) * max_wait_time_per_file
-    wait_cycles = (max_wait_time // BATCH_WAIT_TIME) + 1
+    wait_cycles = (max_wait_time // FETCH_WAIT_TIME) + 1
     error_msgs = []
 
     # remove expected state from bad states
@@ -225,8 +227,7 @@ def fetch_files_from_api(
     )
 
     for retry_attempts in range(0, wait_cycles):
-        if retry_attempts != 0:
-            time.sleep(BATCH_WAIT_TIME)  # wait before trying to fetch
+        time.sleep(FETCH_WAIT_TIME if retry_attempts > 0 else INITIAL_FETCH_WAIT_TIME)
 
         # search for expected state
         files_query = GetFilesQuery(
@@ -289,14 +290,19 @@ def fetch_files_from_api(
             )
             break
 
-        if response_file_count == expected_no_of_files:
-            # Successful response with expected number of results
-            # and all results processed.
-            #    => log response and return immediately.
-            logging.debug("Successful response after %d tries", retry_attempts)
+        if response_file_count != expected_no_of_files:
+            continue
 
-            file_response_expected_state = fetch_files_by_query_from_api(files_query)
-            return file_response_expected_state
+        file_response_expected_state = fetch_files_by_query_from_api(files_query)
+        if checker is not None and not checker(file_response_expected_state):
+            logging.debug("Checker not satisfied yet")
+            continue
+
+        # Successful response with expected number of results,
+        # all results processed, and checker (if any) satisfied.
+        #    => log response and return immediately.
+        logging.debug("Successful response after %d tries", retry_attempts)
+        return file_response_expected_state
 
     # The requests have not returned the correct response, so log
     #    what we can and raise an exception to fail the test.
@@ -324,6 +330,7 @@ def get_file_preview_by_name(
     max_wait_time_per_file: int | None = None,
     bad_states: tuple[str, ...] = ("failed",),
     wait_for_celery_idle: bool = False,
+    checker: Callable[[GetFilePreviewResponse], bool] | None = None,
 ) -> GetFilePreviewResponse:
     if max_wait_time_per_file is None:
         max_wait_time_per_file = DEFAULT_MAX_WAIT_TIME_PER_FILE
@@ -331,6 +338,21 @@ def get_file_preview_by_name(
     search_string = build_search_string(
         search_string=search_string, field="short_name", field_value=file_name
     )
+
+    files_checker: Callable[[GetFilesResponse], bool] | None = None
+    if checker is not None:
+
+        def _check_preview(files_response: GetFilesResponse) -> bool:
+            return checker(
+                get_file_preview_by_file_id_without_waiting(
+                    file_id=files_response.files[0].file_id,
+                    search_string=search_string,
+                    languages=languages or [],
+                )
+            )
+
+        files_checker = _check_preview
+
     response = fetch_files_from_api(
         search_string=search_string,
         languages=languages,
@@ -339,6 +361,7 @@ def get_file_preview_by_name(
         max_wait_time_per_file=max_wait_time_per_file,
         bad_states=bad_states,
         wait_for_celery_idle=wait_for_celery_idle,
+        checker=files_checker,
     )
 
     return get_file_preview_by_file_id_without_waiting(
@@ -377,6 +400,7 @@ def get_file_by_name(
     max_wait_time_per_file: int | None = None,
     bad_states: tuple[str, ...] = ("failed",),
     wait_for_celery_idle: bool = False,
+    checker: Callable[[GetFileResponse], bool] | None = None,
 ) -> GetFileResponse:
     if max_wait_time_per_file is None:
         max_wait_time_per_file = DEFAULT_MAX_WAIT_TIME_PER_FILE
@@ -387,6 +411,26 @@ def get_file_by_name(
     search_string = build_search_string(
         search_string=search_string, field="short_name", field_value=file_name
     )
+
+    files_checker: Callable[[GetFilesResponse], bool] | None = None
+    if checker is not None:
+
+        def _check_file(files_response: GetFilesResponse) -> bool:
+            file_id = files_response.files[0].file_id
+            resp = requests.get(
+                f"{FILES_ENDPOINT}/{file_id}",
+                params=QueryParameters(
+                    query_id=fetch_query_id(),
+                    search_string=search_string,
+                    languages=languages,
+                ).model_dump(),
+                timeout=REQUEST_TIMEOUT,
+            )
+            resp.raise_for_status()
+            return checker(GetFileResponse.model_validate(resp.json()))
+
+        files_checker = _check_file
+
     files = fetch_files_from_api(
         search_string=search_string,
         languages=languages,
@@ -395,6 +439,7 @@ def get_file_by_name(
         max_wait_time_per_file=max_wait_time_per_file,
         bad_states=bad_states,
         wait_for_celery_idle=wait_for_celery_idle,
+        checker=files_checker,
     )
 
     response = requests.get(

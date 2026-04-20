@@ -141,7 +141,7 @@ export const HighlightEntry: FC<HighlightEntryProps> = ({
 
     return (
         <Accordion
-            TransitionProps={{ timeout: 0 }}
+            slotProps={{ transition: { timeout: 0 } }}
             key={field}
             expanded={expanded}
             onChange={() => {

@@ -13,7 +13,9 @@ export const HighlightContent: FC<HighlightContentProps> = ({ highlight }) => {
                 className={styles.resultHighlightText}
                 variant="body2"
                 component="div"
-                color="text.secondary"
+                sx={{
+                    color: "text.secondary",
+                }}
             >
                 {highlight}
             </Typography>

@@ -69,7 +69,7 @@ export const ResultCard: React.FC<ResultCardProps> = React.memo(
             // Find the scrollable parent container (searchResultWrapper)
             const scrollContainer = cardRef.current.closest(
                 "[class*='searchResultWrapper']",
-            ) as HTMLElement | null;
+            );
 
             if (!scrollContainer) {
                 // Fallback to basic scrollIntoView if container not found
@@ -145,7 +145,9 @@ export const ResultCard: React.FC<ResultCardProps> = React.memo(
                     scrollCardIntoView();
                 }, 100);
                 cardRef.current.focus();
-                return () => clearTimeout(timeoutId);
+                return () => {
+                    clearTimeout(timeoutId);
+                };
             }
         }, [isHighlighted, filePreview, t, dispatch]);
 
@@ -325,8 +327,10 @@ export const ResultCard: React.FC<ResultCardProps> = React.memo(
                         <CardActions className={styles.cardActions}>
                             <Typography
                                 variant="caption"
-                                color="text.secondary"
                                 className={styles.sortFieldCaption}
+                                sx={{
+                                    color: "text.secondary",
+                                }}
                             >{`${searchQuery?.sortField ?? "score"}: ${sortFieldValue}`}</Typography>
                             <Tasks
                                 tasksSucceeded={

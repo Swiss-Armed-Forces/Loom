@@ -606,7 +606,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | pylint-pydantic                       | 0.4.1           | GPLv3                                                                            |
 | dnspython                             | 2.6.1           | ISC License (ISCL)                                                               |
 | click-repl                            | 0.3.0           | MIT                                                                              |
-| identify                              | 2.6.18          | MIT                                                                              |
+| identify                              | 2.6.19          | MIT                                                                              |
 | pycodestyle                           | 2.14.0          | MIT                                                                              |
 | pytest-cov                            | 6.3.0           | MIT                                                                              |
 | PyYAML                                | 6.0.3           | MIT License                                                                      |
@@ -687,7 +687,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | opentelemetry-semantic-conventions    | 0.60b1          | UNKNOWN                                                                          |
 | prometheus_client                     | 0.24.1          | UNKNOWN                                                                          |
 | pylint                                | 4.0.5           | UNKNOWN                                                                          |
-| pytest                                | 9.0.2           | UNKNOWN                                                                          |
+| pytest                                | 9.0.3           | UNKNOWN                                                                          |
 | pytest-asyncio                        | 1.3.0           | UNKNOWN                                                                          |
 | types-cffi                            | 1.17.0.20250915 | UNKNOWN                                                                          |
 | types-setuptools                      | 82.0.0.20260210 | UNKNOWN                                                                          |
@@ -701,38 +701,38 @@ The complete source code for Traefik is publicly available at [https://github.co
 | Name                                | License type | Installed version |
 | :---------------------------------- | :----------- | :---------------- |
 | @emotion/styled                     | MIT          | 11.14.1           |
-| @mui/icons-material                 | MIT          | 7.3.9             |
-| @mui/material                       | MIT          | 7.3.9             |
-| @mui/x-charts                       | MIT          | 8.28.2            |
-| @mui/x-tree-view                    | MIT          | 8.27.2            |
+| @mui/icons-material                 | MIT          | 9.0.0             |
+| @mui/material                       | MIT          | 9.0.0             |
+| @mui/x-charts                       | MIT          | 9.0.1             |
+| @mui/x-tree-view                    | MIT          | 9.0.1             |
 | @reduxjs/toolkit                    | MIT          | 2.11.2            |
 | ace-builds                          | BSD-3-Clause | 1.43.6            |
 | ajv                                 | MIT          | 8.18.0            |
 | date-fns                            | MIT          | 4.1.0             |
-| i18next                             | MIT          | 25.10.10          |
+| i18next                             | MIT          | 26.0.5            |
 | i18next-http-backend                | MIT          | 3.0.4             |
-| react                               | MIT          | 19.2.4            |
+| react                               | MIT          | 19.2.5            |
 | react-ace                           | MIT          | 14.0.1            |
-| react-dom                           | MIT          | 19.2.4            |
-| react-dropzone                      | MIT          | 14.4.1            |
-| react-i18next                       | MIT          | 15.7.4            |
-| react-intersection-observer         | MIT          | 9.16.0            |
+| react-dom                           | MIT          | 19.2.5            |
+| react-dropzone                      | MIT          | 15.0.0            |
+| react-i18next                       | MIT          | 17.0.3            |
+| react-intersection-observer         | MIT          | 10.0.3            |
 | react-pdf                           | MIT          | 10.4.1            |
 | react-redux                         | MIT          | 9.2.0             |
-| react-router-dom                    | MIT          | 7.14.0            |
+| react-router-dom                    | MIT          | 7.14.1            |
 | react-toastify                      | MIT          | 11.0.5            |
-| uuid                                | MIT          | 12.0.0            |
+| uuid                                | MIT          | 13.0.0            |
 | @eslint/js                          | MIT          | 9.39.4            |
-| @mui/types                          | MIT          | 7.4.12            |
-| @openapitools/openapi-generator-cli | Apache-2.0   | 2.31.0            |
+| @mui/types                          | MIT          | 9.0.0             |
+| @openapitools/openapi-generator-cli | Apache-2.0   | 2.31.1            |
 | @testing-library/jest-dom           | MIT          | 6.9.1             |
 | @testing-library/react              | MIT          | 16.3.2            |
 | @types/node                         | MIT          | 24.12.2           |
 | @types/react                        | MIT          | 19.2.14           |
 | @types/react-dom                    | MIT          | 19.2.3            |
-| @typescript-eslint/eslint-plugin    | MIT          | 8.58.0            |
-| @typescript-eslint/parser           | MIT          | 8.58.0            |
-| @vitejs/plugin-react                | MIT          | 5.2.0             |
+| @typescript-eslint/eslint-plugin    | MIT          | 8.58.2            |
+| @typescript-eslint/parser           | MIT          | 8.58.2            |
+| @vitejs/plugin-react                | MIT          | 6.0.1             |
 | eslint                              | MIT          | 9.39.4            |
 | eslint-config-prettier              | MIT          | 10.1.8            |
 | eslint-plugin-prettier              | MIT          | 5.5.5             |
@@ -740,16 +740,16 @@ The complete source code for Traefik is publicly available at [https://github.co
 | eslint-plugin-react-hooks           | MIT          | 7.0.1             |
 | eslint-plugin-react-refresh         | MIT          | 0.5.2             |
 | eslint-plugin-unused-imports        | MIT          | 4.4.1             |
-| globals                             | MIT          | 17.4.0            |
-| jsdom                               | MIT          | 26.1.0            |
+| globals                             | MIT          | 17.5.0            |
+| jsdom                               | MIT          | 29.0.2            |
 | license-report                      | MIT          | 6.8.2             |
-| prettier                            | MIT          | 3.8.1             |
-| typescript                          | Apache-2.0   | 5.9.3             |
-| typescript-eslint                   | MIT          | 8.58.0            |
-| vite                                | MIT          | 7.3.1             |
-| vite-plugin-static-copy             | MIT          | 3.4.0             |
-| vite-plugin-svgr                    | MIT          | 4.5.0             |
-| vitest                              | MIT          | 4.1.2             |
+| prettier                            | MIT          | 3.8.3             |
+| typescript                          | Apache-2.0   | 6.0.2             |
+| typescript-eslint                   | MIT          | 8.58.2            |
+| vite                                | MIT          | 8.0.8             |
+| vite-plugin-static-copy             | MIT          | 4.0.1             |
+| vite-plugin-svgr                    | MIT          | 5.2.0             |
+| vitest                              | MIT          | 4.1.4             |
 
 
 ## Container
@@ -2411,74 +2411,78 @@ The complete source code for Traefik is publicly available at [https://github.co
 
 | Package | Version | License | Found by |
 | ------- | --------| ------- | -------- |
-| alpine-baselayout | 3.6.8-r1 | GPL-2.0-only | apk-db-cataloger |
-| alpine-baselayout-data | 3.6.8-r1 | GPL-2.0-only | apk-db-cataloger |
-| alpine-keys | 2.5-r0 | MIT | apk-db-cataloger |
-| alpine-release | 3.21.3-r0 | MIT | apk-db-cataloger |
-| aom-libs | 3.11.0-r0 | BSD-2-Clause | apk-db-cataloger |
-| apk-tools | 2.14.6-r3 | GPL-2.0-only | apk-db-cataloger |
-| brotli-libs | 1.1.0-r2 | MIT | apk-db-cataloger |
-| busybox | 1.37.0-r12 | GPL-2.0-only | apk-db-cataloger |
-| busybox-binsh | 1.37.0-r12 | GPL-2.0-only | apk-db-cataloger |
-| c-ares | 1.34.5-r0 | MIT | apk-db-cataloger |
-| ca-certificates | 20241121-r1 | MPL-2.0 AND MIT | apk-db-cataloger |
-| ca-certificates-bundle | 20241121-r1 | MPL-2.0 AND MIT | apk-db-cataloger |
-| curl | 8.12.1-r1 | curl | apk-db-cataloger |
-| fontconfig | 2.15.0-r1 | MIT | apk-db-cataloger |
-| freetype | 2.13.3-r0 | FTL OR GPL-2.0-or-later | apk-db-cataloger |
-| geoip | 1.6.12-r5 | LGPL-2.1-or-later | apk-db-cataloger |
-| gettext-envsubst | 0.22.5-r0 | GPL-3.0-or-later AND LGPL-2.1-or-later AND MIT | apk-db-cataloger |
-| libavif | 1.0.4-r0 | BSD-2-Clause | apk-db-cataloger |
+| alpine-baselayout | 3.7.2-r0 | GPL-2.0-only | apk-db-cataloger |
+| alpine-baselayout-data | 3.7.2-r0 | GPL-2.0-only | apk-db-cataloger |
+| alpine-keys | 2.6-r0 | MIT | apk-db-cataloger |
+| alpine-release | 3.23.4-r0 | MIT | apk-db-cataloger |
+| aom-libs | 3.13.1-r1 | BSD-2-Clause | apk-db-cataloger |
+| apk-tools | 3.0.6-r0 | GPL-2.0-only | apk-db-cataloger |
+| brotli-libs | 1.2.0-r0 | MIT | apk-db-cataloger |
+| busybox | 1.37.0-r30 | GPL-2.0-only | apk-db-cataloger |
+| busybox-binsh | 1.37.0-r30 | GPL-2.0-only | apk-db-cataloger |
+| c-ares | 1.34.6-r0 | MIT | apk-db-cataloger |
+| ca-certificates | 20260413-r0 | MPL-2.0 AND MIT | apk-db-cataloger |
+| ca-certificates-bundle | 20260413-r0 | MPL-2.0 AND MIT | apk-db-cataloger |
+| curl | 8.17.0-r1 | curl | apk-db-cataloger |
+| fontconfig | 2.17.1-r0 | MIT | apk-db-cataloger |
+| freetype | 2.14.1-r0 | FTL OR GPL-2.0-or-later | apk-db-cataloger |
+| geoip | 1.6.12-r6 | LGPL-2.1-or-later | apk-db-cataloger |
+| gettext-envsubst | 0.24.1-r1 | GPL-3.0-or-later AND LGPL-2.1-or-later AND MIT | apk-db-cataloger |
+| libapk | 3.0.6-r0 | GPL-2.0-only | apk-db-cataloger |
+| libavif | 1.3.0-r0 | BSD-2-Clause | apk-db-cataloger |
 | libbsd | 0.12.2-r0 | BSD-3-Clause | apk-db-cataloger |
 | libbz2 | 1.0.8-r6 | bzip2-1.0.6 | apk-db-cataloger |
-| libcrypto3 | 3.3.3-r0 | Apache-2.0 | apk-db-cataloger |
-| libcurl | 8.12.1-r1 | curl | apk-db-cataloger |
-| libdav1d | 1.5.0-r0 | BSD-2-Clause | apk-db-cataloger |
-| libedit | 20240808.3.1-r0 | BSD-3-Clause | apk-db-cataloger |
-| libexpat | 2.7.0-r0 | MIT | apk-db-cataloger |
-| libgcrypt | 1.10.3-r1 | LGPL-2.1-or-later AND GPL-2.0-or-later | apk-db-cataloger |
-| libgd | 2.3.3-r9 | GD | apk-db-cataloger |
-| libgpg-error | 1.51-r0 | GPL-2.0-or-later AND LGPL-2.1-or-later | apk-db-cataloger |
-| libice | 1.1.1-r6 | X11 | apk-db-cataloger |
-| libidn2 | 2.3.7-r0 | GPL-2.0-or-later OR LGPL-3.0-or-later | apk-db-cataloger |
-| libintl | 0.22.5-r0 | LGPL-2.1-or-later | apk-db-cataloger |
-| libjpeg-turbo | 3.0.4-r0 | BSD-3-Clause AND IJG AND Zlib | apk-db-cataloger |
+| libcrypto3 | 3.5.6-r0 | Apache-2.0 | apk-db-cataloger |
+| libcurl | 8.17.0-r1 | curl | apk-db-cataloger |
+| libdav1d | 1.5.2-r0 | BSD-2-Clause | apk-db-cataloger |
+| libedit | 20251016.3.1-r0 | BSD-3-Clause | apk-db-cataloger |
+| libexpat | 2.7.5-r0 | MIT | apk-db-cataloger |
+| libgcc | 15.2.0-r2 | GPL-2.0-or-later AND LGPL-2.1-or-later | apk-db-cataloger |
+| libgd | 2.3.3-r10 | GD | apk-db-cataloger |
+| libice | 1.1.2-r0 | X11 | apk-db-cataloger |
+| libidn2 | 2.3.8-r0 | GPL-2.0-or-later OR LGPL-3.0-or-later | apk-db-cataloger |
+| libintl | 0.24.1-r1 | LGPL-2.1-or-later | apk-db-cataloger |
+| libjpeg-turbo | 3.1.2-r0 | BSD-3-Clause AND IJG AND Zlib | apk-db-cataloger |
 | libmd | 1.1.0-r0 | BSD-2-Clause, BSD-3-Clause, Beerware, ISC | apk-db-cataloger |
-| libncursesw | 6.5_p20241006-r3 | X11 | apk-db-cataloger |
-| libpng | 1.6.47-r0 | Libpng | apk-db-cataloger |
+| libncursesw | 6.5_p20251123-r0 | X11 | apk-db-cataloger |
+| libpng | 1.6.57-r0 | Libpng | apk-db-cataloger |
 | libpsl | 0.21.5-r3 | MIT | apk-db-cataloger |
-| libsharpyuv | 1.4.0-r0 | BSD-3-Clause | apk-db-cataloger |
-| libsm | 1.2.4-r4 | MIT | apk-db-cataloger |
-| libssl3 | 3.3.3-r0 | Apache-2.0 | apk-db-cataloger |
-| libunistring | 1.2-r0 | GPL-2.0-or-later OR LGPL-3.0-or-later | apk-db-cataloger |
-| libuuid | 2.40.4-r1 | BSD-3-Clause | apk-db-cataloger |
-| libwebp | 1.4.0-r0 | BSD-3-Clause | apk-db-cataloger |
-| libx11 | 1.8.10-r0 | X11 | apk-db-cataloger |
-| libxau | 1.0.11-r4 | MIT | apk-db-cataloger |
-| libxcb | 1.16.1-r0 | MIT | apk-db-cataloger |
+| libsharpyuv | 1.6.0-r0 | BSD-3-Clause | apk-db-cataloger |
+| libsm | 1.2.6-r0 | MIT | apk-db-cataloger |
+| libssl3 | 3.5.6-r0 | Apache-2.0 | apk-db-cataloger |
+| libstdc++ | 15.2.0-r2 | GPL-2.0-or-later AND LGPL-2.1-or-later | apk-db-cataloger |
+| libunistring | 1.4.1-r0 | GPL-2.0-or-later OR LGPL-3.0-or-later | apk-db-cataloger |
+| libuuid | 2.41.4-r0 | BSD-3-Clause | apk-db-cataloger |
+| libwebp | 1.6.0-r0 | BSD-3-Clause | apk-db-cataloger |
+| libx11 | 1.8.12-r1 | X11 | apk-db-cataloger |
+| libxau | 1.0.12-r0 | MIT | apk-db-cataloger |
+| libxcb | 1.17.0-r1 | MIT | apk-db-cataloger |
 | libxdmcp | 1.1.5-r1 | MIT | apk-db-cataloger |
 | libxext | 1.3.6-r2 | MIT | apk-db-cataloger |
-| libxml2 | 2.13.4-r5 | MIT | apk-db-cataloger |
+| libxml2 | 2.13.9-r0 | MIT | apk-db-cataloger |
 | libxpm | 3.5.17-r0 | X11 | apk-db-cataloger |
-| libxslt | 1.1.42-r2 | X11 | apk-db-cataloger |
+| libxslt | 1.1.43-r3 | X11 | apk-db-cataloger |
 | libxt | 1.3.1-r0 | MIT | apk-db-cataloger |
-| musl | 1.2.5-r9 | MIT | apk-db-cataloger |
-| musl-utils | 1.2.5-r9 | MIT AND BSD-2-Clause AND GPL-2.0-or-later | apk-db-cataloger |
-| ncurses-terminfo-base | 6.5_p20241006-r3 | X11 | apk-db-cataloger |
-| nghttp2-libs | 1.64.0-r0 | MIT | apk-db-cataloger |
-| nginx | 1.27.5-r1 |  | apk-db-cataloger |
-| nginx-module-geoip | 1.27.5-r1 |  | apk-db-cataloger |
-| nginx-module-image-filter | 1.27.5-r1 |  | apk-db-cataloger |
-| nginx-module-njs | 1.27.5.0.8.10-r1 |  | apk-db-cataloger |
-| nginx-module-xslt | 1.27.5-r1 |  | apk-db-cataloger |
-| pcre2 | 10.43-r0 | BSD-3-Clause | apk-db-cataloger |
-| scanelf | 1.3.8-r1 | GPL-2.0-only | apk-db-cataloger |
-| ssl_client | 1.37.0-r12 | GPL-2.0-only | apk-db-cataloger |
-| tiff | 4.7.0-r0 | libtiff | apk-db-cataloger |
-| tzdata | 2025b-r0 |  | apk-db-cataloger |
-| xz-libs | 5.6.3-r1 | 0BSD, GPL-2.0-or-later, LGPL-2.1-or-later | apk-db-cataloger |
-| zlib | 1.3.1-r2 | Zlib | apk-db-cataloger |
-| zstd-libs | 1.5.6-r2 | BSD-3-Clause OR GPL-2.0-or-later | apk-db-cataloger |
+| libyuv | 0.0.1887.20251502-r1 | BSD-3-Clause | apk-db-cataloger |
+| musl | 1.2.5-r23 | MIT | apk-db-cataloger |
+| musl-utils | 1.2.5-r23 | MIT AND BSD-2-Clause AND GPL-2.0-or-later | apk-db-cataloger |
+| ncurses-terminfo-base | 6.5_p20251123-r0 | X11 | apk-db-cataloger |
+| nghttp2-libs | 1.68.0-r0 | MIT | apk-db-cataloger |
+| nghttp3 | 1.13.1-r0 | MIT | apk-db-cataloger |
+| nginx | 1.29.8-r1 |  | apk-db-cataloger |
+| nginx-module-acme | 1.29.8.0.3.1-r1 |  | apk-db-cataloger |
+| nginx-module-geoip | 1.29.8-r1 |  | apk-db-cataloger |
+| nginx-module-image-filter | 1.29.8-r1 |  | apk-db-cataloger |
+| nginx-module-njs | 1.29.8.0.9.6-r1 |  | apk-db-cataloger |
+| nginx-module-xslt | 1.29.8-r1 |  | apk-db-cataloger |
+| pcre2 | 10.47-r0 | BSD-3-Clause | apk-db-cataloger |
+| scanelf | 1.3.8-r2 | GPL-2.0-only | apk-db-cataloger |
+| ssl_client | 1.37.0-r30 | GPL-2.0-only | apk-db-cataloger |
+| tiff | 4.7.1-r0 | libtiff | apk-db-cataloger |
+| tzdata | 2026a-r0 |  | apk-db-cataloger |
+| xz-libs | 5.8.2-r0 | 0BSD, GPL-2.0-or-later, LGPL-2.1-or-later | apk-db-cataloger |
+| zlib | 1.3.2-r0 | Zlib | apk-db-cataloger |
+| zstd-libs | 1.5.7-r2 | BSD-3-Clause OR GPL-2.0-or-later | apk-db-cataloger |
 
 ### registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/mongodb
 

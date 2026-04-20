@@ -34,6 +34,10 @@ def _set_encrypted_file_size(obj: Archive, size: int) -> None:
     obj.encrypted_file.size = size
 
 
+def _set_hidden(obj: Archive, hidden: bool) -> None:
+    obj.hidden = hidden
+
+
 class ArchiveCreationPersister(PersisterBase[Archive]):
     @classmethod
     def get_repository(cls) -> ArchiveRepository:
@@ -48,3 +52,4 @@ class ArchiveCreationPersister(PersisterBase[Archive]):
     set_encrypted_file_checksum = mutation(_set_encrypted_file_checksum)
     set_plain_file_size = mutation(_set_plain_file_size)
     set_encrypted_file_size = mutation(_set_encrypted_file_size)
+    set_hidden = mutation(_set_hidden)

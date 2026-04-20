@@ -167,7 +167,7 @@ const Chatbot: React.FC<ChatbotProps> = () => {
 
         try {
             // generate bot response
-            await processQuestion(aiContext, message!);
+            await processQuestion(aiContext, message);
         } catch (err: any) {
             console.error(err);
             toast.error("Cannot get chatbot response");
@@ -206,16 +206,16 @@ const Chatbot: React.FC<ChatbotProps> = () => {
             </Box>
             <Box
                 component="form"
-                position="relative"
-                sx={{
-                    display: "flex",
-                    padding: "16px",
-                    alignItems: "center",
-                }}
                 onSubmit={(e) => {
                     e.preventDefault();
                     //handleSendMessage(e.currentTarget.message.value);
                     //e.currentTarget.message.value = "";
+                }}
+                sx={{
+                    position: "relative",
+                    display: "flex",
+                    padding: "16px",
+                    alignItems: "center",
                 }}
             >
                 <MessageInput

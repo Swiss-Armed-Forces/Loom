@@ -88,7 +88,9 @@ export function ReIndexButton({
         <>
             {file_id || icon_only ? (
                 <IconButton
-                    onClick={() => startReindexProcess()}
+                    onClick={() => {
+                        startReindexProcess();
+                    }}
                     disabled={disabled}
                     title="Re-index"
                     aria-label="re-index"
@@ -97,7 +99,9 @@ export function ReIndexButton({
                 </IconButton>
             ) : (
                 <Button
-                    onClick={() => startReindexProcess()}
+                    onClick={() => {
+                        startReindexProcess();
+                    }}
                     disabled={disabled}
                     color="secondary"
                     fullWidth={true}
@@ -118,7 +122,9 @@ export function ReIndexButton({
                     {t("reIndex.confirmationTitle")}
                     <IconButton
                         aria-label="close"
-                        onClick={() => setShowDialog(false)}
+                        onClick={() => {
+                            setShowDialog(false);
+                        }}
                         title={t("common.close")}
                         sx={{
                             position: "absolute",
@@ -142,7 +148,9 @@ export function ReIndexButton({
                         startIcon={<Close />}
                         variant="outlined"
                         color="secondary"
-                        onClick={() => setShowDialog(false)}
+                        onClick={() => {
+                            setShowDialog(false);
+                        }}
                     >
                         {t("common.cancel")}
                     </Button>

@@ -1,8 +1,7 @@
 import re
 
 import requests
-from api.models.queues_model import OverallQueuesStats
-from api.routers.queues import CompleteEstimate
+from api.models.queues_model import CompleteEstimate, OverallQueuesStats
 from common.dependencies import get_celery_app
 from common.services.queues_service import QUEUES_NAME_REGEX
 from kombu import Queue

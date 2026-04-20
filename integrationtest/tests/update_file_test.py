@@ -2,10 +2,12 @@ from uuid import UUID
 
 import pytest
 import requests
-from api.routers.archives import UpdateArchiveModel
 from api.routers.files import UpdateFilesRequest
 from common.services.query_builder import QueryParameters
-from common.services.task_scheduling_service import UpdateFileRequest
+from common.services.task_scheduling_service import (
+    UpdateArchiveRequest,
+    UpdateFileRequest,
+)
 
 from utils.consts import ARCHIVE_ENDPOINT, FILES_ENDPOINT, REQUEST_TIMEOUT
 from utils.create_archive import create_archive
@@ -19,9 +21,9 @@ from utils.upload_asset import upload_asset, upload_many_assets
 
 
 def _hide_archive(archive_id: UUID):
-    response = requests.post(
+    response = requests.put(
         f"{ARCHIVE_ENDPOINT}/{archive_id}",
-        json=UpdateArchiveModel(hidden=True).model_dump(),
+        json=UpdateArchiveRequest(hidden=True).model_dump(),
         timeout=REQUEST_TIMEOUT,
     )
     response.raise_for_status()

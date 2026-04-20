@@ -21,9 +21,7 @@ export function ArchiveActions({ archive }: ArchiveActions) {
     const matchMedia = useMediaQuery("(max-width: 1300px)");
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
 
-    const handleMenuOpen = (
-        event: React.MouseEvent<HTMLButtonElement, MouseEvent>,
-    ) => {
+    const handleMenuOpen = (event: React.MouseEvent<HTMLButtonElement>) => {
         setAnchorEl(event.currentTarget);
     };
 
@@ -82,7 +80,9 @@ export function ArchiveActions({ archive }: ArchiveActions) {
                             {t("tableView.actions.download_encrypted")}
                         </MenuItem>
                         <MenuItem
-                            onClick={() => showArchiveQuery(archive.fileId)}
+                            onClick={() => {
+                                showArchiveQuery(archive.fileId);
+                            }}
                         >
                             <Search color="secondary" />
                             {t("tableView.actions.search")}
@@ -120,7 +120,9 @@ export function ArchiveActions({ archive }: ArchiveActions) {
                         <Lock color="secondary" />
                     </IconButton>
                     <IconButton
-                        onClick={() => showArchiveQuery(archive.fileId)}
+                        onClick={() => {
+                            showArchiveQuery(archive.fileId);
+                        }}
                         title={t("tableView.actions.search")}
                     >
                         <Search color="secondary" />

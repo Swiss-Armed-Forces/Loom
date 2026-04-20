@@ -4,12 +4,12 @@ from urllib.parse import quote
 import requests
 from requests import Response
 
-from common.celery_app import CELERY_QUEUE_NAME_PREFIX
+from common.settings import settings
 
 RABBITMQ_MANAGEMENT_REQUEST_TIMEOUT = 30  # in seconds
 
-# All application relevant queues must start with: CELERY_QUEUE_NAME_PREFIX
-QUEUES_NAME_REGEX = rf"^{CELERY_QUEUE_NAME_PREFIX}.*$"
+# All application relevant queues must start with: celery_queue_name_prefix
+QUEUES_NAME_REGEX = rf"^{settings.celery_queue_name_prefix}.*$"
 
 
 class QueuesService:

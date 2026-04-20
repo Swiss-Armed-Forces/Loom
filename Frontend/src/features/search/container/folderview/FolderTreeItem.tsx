@@ -89,7 +89,9 @@ export function FolderViewNode({
                 <Chip label={tree.fileCount} size="small" />
             )}
             <IconButton
-                onClick={() => handleUpdateQueryFilename(tree.id)}
+                onClick={() => {
+                    handleUpdateQueryFilename(tree.id);
+                }}
                 title={t("folderView.addPathToQueryTooltip")}
             >
                 <Search />
@@ -123,7 +125,9 @@ export function FolderViewNode({
             itemId={tree.id}
             label={label}
             slots={{ icon: getIconOfNode(tree) }}
-            onClick={() => onClick(tree.id)}
+            onClick={() => {
+                onClick(tree.id);
+            }}
         >
             {!!tree.loading && (
                 <Skeleton key="loading-indicator" variant="text" />

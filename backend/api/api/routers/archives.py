@@ -2,7 +2,10 @@ import logging
 from typing import Annotated
 from uuid import UUID
 
-from common.archive.archive_repository import ArchiveRepository
+from common.archive.archive_repository import (
+    ArchiveNotFoundException,
+    ArchiveRepository,
+)
 from common.archive.archive_scheduling_service import ArchiveSchedulingService
 from common.dependencies import (
     get_archive_repository,
@@ -11,6 +14,7 @@ from common.dependencies import (
 )
 from common.services.lazybytes_service import LazyBytesService
 from common.services.query_builder import QueryParameters
+from common.services.task_scheduling_service import UpdateArchiveRequest
 from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
@@ -37,12 +41,6 @@ class ArchiveRequest(BaseModel):
     """Query to filter archives."""
 
     query: QueryParameters
-
-
-class UpdateArchiveModel(BaseModel):
-    """Update archive model."""
-
-    hidden: bool
 
 
 @router.get("/")
@@ -107,15 +105,13 @@ def download_archive(
     )
 
 
-@router.post("/{archive_id}")
+@router.put("/{archive_id}")
 def update_archive(
     archive_id: UUID,
-    update_file_model: UpdateArchiveModel,
-    archive_repository: ArchiveRepository = default_archive_repository,
+    update_archive_request: UpdateArchiveRequest,
+    archive_scheduling_service: ArchiveSchedulingService = default_archive_scheduling_service,
 ):
-    """Update archive."""
-    archive = archive_repository.get_by_id(archive_id)
-    if archive is None:
-        raise HTTPException(status_code=404, detail="Invalid archive")
-    archive.hidden = update_file_model.hidden
-    archive_repository.update(archive, include={"hidden"})
+    try:
+        archive_scheduling_service.update_archive(archive_id, update_archive_request)
+    except ArchiveNotFoundException as e:
+        raise HTTPException(status_code=404, detail="Invalid archive") from e

@@ -19,6 +19,28 @@ def _get_email_deduplication_fingerprint(raw_email: bytes) -> str:
     return hashlib.sha256(raw_email).hexdigest()
 
 
+def _get_raw_email_with_deduplication_fingerprint(raw_email: bytes) -> bytes:
+    """Return raw_email with the X-Deduplication-Upload-Hash header injected.
+
+    Operates on raw bytes directly to avoid BytesGenerator's ASCII round-trip corrupting
+    non-ASCII bytes in the body (UnicodeEncodeError on U+FFFD).
+    """
+    fingerprint = _get_email_deduplication_fingerprint(raw_email)
+    separator_match = re.search(rb"\r?\n\r?\n", raw_email)
+    if separator_match:
+        headers_with_sep = raw_email[: separator_match.end()]
+        body_only = raw_email[separator_match.end() :]
+    else:
+        headers_with_sep = raw_email
+        body_only = b""
+    header_parser = BytesHeaderParser()
+    email_headers = header_parser.parsebytes(headers_with_sep)
+    email_headers[IMAP_DEDUPLICATION_HEADER] = fingerprint
+    # as_bytes() is safe here: the headers portion is ASCII-only.
+    # Concatenate with the original body bytes to preserve them exactly.
+    return email_headers.as_bytes() + body_only
+
+
 class IMAPServiceError(Exception):
     pass
 
@@ -240,13 +262,8 @@ class IMAPService:
     def append_email(
         self, raw_email: bytes, folder: FilePurePath | ImapPurePath | None = None
     ) -> ImapInfo:
-        deduplication_finterprint = _get_email_deduplication_fingerprint(raw_email)
-
         imap_folder = self.get_imap_folder(folder)
-        # Append with deterministic header
-        header_parser = BytesHeaderParser()
-        email_parsed = header_parser.parsebytes(raw_email)
-        email_parsed[IMAP_DEDUPLICATION_HEADER] = deduplication_finterprint
+        email_with_header = _get_raw_email_with_deduplication_fingerprint(raw_email)
 
         with self._imap_context() as client:
             try:
@@ -254,11 +271,11 @@ class IMAPService:
             except IMAPServiceErrorFolderExists:
                 pass
 
-            # Check if server supports UIDPLUS
-            response = client.append(str(imap_folder), email_parsed.as_bytes())
+            response = client.append(str(imap_folder), email_with_header)
             if not isinstance(response, bytes):
                 raise IMAPServiceError("Append response not bytes")
 
+            # Check if server supports UIDPLUS
             # Response format: [APPENDUID uidvalidity uid]
             match_regex = rb"\[APPENDUID\s+(\d+)\s+(\d+)\]"
             match = re.search(match_regex, response)

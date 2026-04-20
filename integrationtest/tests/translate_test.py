@@ -181,10 +181,18 @@ def _translation_testcase(
             on_demand_translation(
                 translation_file, expected_on_demand_translation.language
             )
-        # Note: we have to wait until celery is idle, because `on_demand_translation`
-        # is an async operation and `get_file_by_name` might return before
-        # translation even started.
-        file = get_file_by_name(file_name, wait_for_celery_idle=True)
+        # Wait until celery is idle AND the translations have been persisted.
+        # The GlobalPersisterWorker batches mutations asynchronously, so translations
+        # may not be visible immediately after Celery becomes idle.
+        expected_count = len(expected_translations) + len(
+            expected_on_demand_translations
+        )
+        file = get_file_by_name(
+            file_name,
+            wait_for_celery_idle=True,
+            checker=lambda f: len(f.libretranslate_language_translations or [])
+            >= expected_count,
+        )
         _assert_all_translation(
             expected_translations + expected_on_demand_translations,
             file.libretranslate_language_translations,

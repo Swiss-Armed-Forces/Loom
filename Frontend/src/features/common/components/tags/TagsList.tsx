@@ -135,7 +135,11 @@ export const TagsList: FC<TagsListProps> = ({
                         label={getTagLabel(tag)}
                         onSearch={searchForTag}
                         onDelete={
-                            icon_only ? undefined : () => handleDeleteClick(tag)
+                            icon_only
+                                ? undefined
+                                : () => {
+                                      handleDeleteClick(tag);
+                                  }
                         }
                     />
                 ))}
@@ -149,7 +153,9 @@ export const TagsList: FC<TagsListProps> = ({
                     })}
                     buttonText={t("confirmDialog.confirmTagDeletion")}
                     handleConfirmation={handleDeleteTagGlobally}
-                    cancel={() => setShowConfirmDialog(false)}
+                    cancel={() => {
+                        setShowConfirmDialog(false);
+                    }}
                     icon={<LabelIcon />}
                 />
             )}
@@ -182,7 +188,9 @@ const TagChip: FC<TagChipProps> = ({
             sx={{ backgroundColor, color }}
             label={iconOnly ? undefined : label}
             title={iconOnly ? tag : undefined}
-            onClick={() => onSearch(tag)}
+            onClick={() => {
+                onSearch(tag);
+            }}
             onDelete={onDelete}
         />
     );

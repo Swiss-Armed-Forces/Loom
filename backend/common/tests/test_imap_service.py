@@ -1,13 +1,26 @@
+import hashlib
 from pathlib import PurePath
 
 import pytest
 
 from common.file.file_repository import FilePurePath, ImapPurePath
 from common.services.imap_service import (
+    IMAP_DEDUPLICATION_HEADER,
     IMAP_DIRECTORY_BASE,
     IMAP_FLAG_NOSELECT,
     ImapFolderInfo,
     IMAPService,
+    _get_raw_email_with_deduplication_fingerprint,
+)
+
+_NON_ASCII_BODY_EMAIL = (
+    b"From: sender@example.com\r\n"
+    b"To: recipient@example.com\r\n"
+    b"Subject: Non-ASCII body\r\n"
+    b"Content-Type: text/html\r\n"
+    b"Content-Transfer-Encoding: quoted-printable\r\n"
+    b"\r\n"
+    b"H\xc3\xa4ndler und B\xc3\xb6rsenmakler"
 )
 
 
@@ -178,6 +191,29 @@ class TestIMAPService:
         """Test that get_folder returns None for IMAP_DIRECTORY_BASE."""
         result = IMAPService.get_folder(ImapPurePath(IMAP_DIRECTORY_BASE))
         assert result is None
+
+
+class TestGetRawEmailWithDeduplicationFingerprint:
+    def test_does_not_raise_on_non_ascii_body(self):
+        _get_raw_email_with_deduplication_fingerprint(_NON_ASCII_BODY_EMAIL)
+
+    def test_preserves_body_bytes(self):
+        result = _get_raw_email_with_deduplication_fingerprint(_NON_ASCII_BODY_EMAIL)
+        assert b"H\xc3\xa4ndler und B\xc3\xb6rsenmakler" in result
+
+    def test_injects_dedup_header(self):
+        result = _get_raw_email_with_deduplication_fingerprint(_NON_ASCII_BODY_EMAIL)
+        assert f"{IMAP_DEDUPLICATION_HEADER}:".encode() in result
+
+    def test_dedup_header_is_sha256_of_original(self):
+        result = _get_raw_email_with_deduplication_fingerprint(_NON_ASCII_BODY_EMAIL)
+        expected = hashlib.sha256(_NON_ASCII_BODY_EMAIL).hexdigest().encode()
+        assert expected in result
+
+    def test_email_without_body_separator(self):
+        headers_only = b"From: sender@example.com\r\nSubject: No body"
+        result = _get_raw_email_with_deduplication_fingerprint(headers_only)
+        assert f"{IMAP_DEDUPLICATION_HEADER}:".encode() in result
 
 
 class TestImapFolderInfo:

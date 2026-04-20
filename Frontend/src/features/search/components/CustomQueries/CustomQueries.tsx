@@ -130,7 +130,9 @@ const CustomQueryItem: FC<SavedQueryItemProps> = ({
                 text={t("confirmDialog.confirmCustomQueryRemoval")}
                 buttonText={t("confirmDialog.confirmRemoval")}
                 handleConfirmation={handleConfirmation}
-                cancel={() => setOpenConfirmDialog(false)}
+                cancel={() => {
+                    setOpenConfirmDialog(false);
+                }}
                 icon={<Delete />}
             ></ConfirmDialog>
         </>

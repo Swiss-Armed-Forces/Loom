@@ -37,10 +37,6 @@ class AiSchedulingService:
         if context is None:
             raise AiContextNotFoundException("Invalid context")
 
-        # update state
-        context.state = "processing"
-        self._ai_repository.update(context, include={"state"})
-
         self._task_scheduling_service.ai_process_question(
             context=context, question=question
         )

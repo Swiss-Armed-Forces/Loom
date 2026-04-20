@@ -1,6 +1,6 @@
 # Image version
-ARG NODE_IMAGE_VERSION="24.2.0-alpine3.22"
-ARG NGINX_IMAGE_VERSION="1.27.5-alpine3.21"
+ARG NODE_IMAGE_VERSION="24.14.1-alpine3.23"
+ARG NGINX_IMAGE_VERSION="1.29.8-alpine3.23"
 
 ARG DOCKER_REGISTRY="docker.io"
 FROM ${DOCKER_REGISTRY}/node:${NODE_IMAGE_VERSION} AS base
@@ -9,7 +9,13 @@ WORKDIR /code
 ARG PNPM_VERSION="10.32.1"
 RUN set -exu \
   && npm install -g "pnpm@$PNPM_VERSION"
-COPY package.json pnpm-lock.yaml .npmrc ./
+COPY \
+  package.json \
+  pnpm-workspace.yaml \
+  pnpm-lock.yaml \
+  .npmrc \
+  ./
+COPY patches patches
 RUN set -exu \
   && pnpm install --frozen-lockfile
 COPY ./ ./

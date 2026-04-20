@@ -19,7 +19,7 @@ import type {
     ArchiveRequest,
     ArchivesModel,
     HTTPValidationError,
-    UpdateArchiveModel,
+    UpdateArchiveRequest,
 } from "../models/index";
 import {
     ArchiveCreatedResponseFromJSON,
@@ -30,8 +30,8 @@ import {
     ArchivesModelToJSON,
     HTTPValidationErrorFromJSON,
     HTTPValidationErrorToJSON,
-    UpdateArchiveModelFromJSON,
-    UpdateArchiveModelToJSON,
+    UpdateArchiveRequestFromJSON,
+    UpdateArchiveRequestToJSON,
 } from "../models/index";
 
 export interface CreateNewArchiveV1ArchivePostRequest {
@@ -43,9 +43,9 @@ export interface DownloadArchiveV1ArchiveArchiveIdGetRequest {
     encrypted?: boolean;
 }
 
-export interface UpdateArchiveV1ArchiveArchiveIdPostRequest {
+export interface UpdateArchiveV1ArchiveArchiveIdPutRequest {
     archiveId: string;
-    updateArchiveModel: UpdateArchiveModel;
+    updateArchiveRequest: UpdateArchiveRequest;
 }
 
 /**
@@ -201,24 +201,23 @@ export class ArchivesApi extends runtime.BaseAPI {
     }
 
     /**
-     * Update archive.
      * Update Archive
      */
-    async updateArchiveV1ArchiveArchiveIdPostRaw(
-        requestParameters: UpdateArchiveV1ArchiveArchiveIdPostRequest,
+    async updateArchiveV1ArchiveArchiveIdPutRaw(
+        requestParameters: UpdateArchiveV1ArchiveArchiveIdPutRequest,
         initOverrides?: RequestInit | runtime.InitOverrideFunction,
     ): Promise<runtime.ApiResponse<any>> {
         if (requestParameters["archiveId"] == null) {
             throw new runtime.RequiredError(
                 "archiveId",
-                'Required parameter "archiveId" was null or undefined when calling updateArchiveV1ArchiveArchiveIdPost().',
+                'Required parameter "archiveId" was null or undefined when calling updateArchiveV1ArchiveArchiveIdPut().',
             );
         }
 
-        if (requestParameters["updateArchiveModel"] == null) {
+        if (requestParameters["updateArchiveRequest"] == null) {
             throw new runtime.RequiredError(
-                "updateArchiveModel",
-                'Required parameter "updateArchiveModel" was null or undefined when calling updateArchiveV1ArchiveArchiveIdPost().',
+                "updateArchiveRequest",
+                'Required parameter "updateArchiveRequest" was null or undefined when calling updateArchiveV1ArchiveArchiveIdPut().',
             );
         }
 
@@ -234,11 +233,11 @@ export class ArchivesApi extends runtime.BaseAPI {
                     `{${"archive_id"}}`,
                     encodeURIComponent(String(requestParameters["archiveId"])),
                 ),
-                method: "POST",
+                method: "PUT",
                 headers: headerParameters,
                 query: queryParameters,
-                body: UpdateArchiveModelToJSON(
-                    requestParameters["updateArchiveModel"],
+                body: UpdateArchiveRequestToJSON(
+                    requestParameters["updateArchiveRequest"],
                 ),
             },
             initOverrides,
@@ -252,14 +251,13 @@ export class ArchivesApi extends runtime.BaseAPI {
     }
 
     /**
-     * Update archive.
      * Update Archive
      */
-    async updateArchiveV1ArchiveArchiveIdPost(
-        requestParameters: UpdateArchiveV1ArchiveArchiveIdPostRequest,
+    async updateArchiveV1ArchiveArchiveIdPut(
+        requestParameters: UpdateArchiveV1ArchiveArchiveIdPutRequest,
         initOverrides?: RequestInit | runtime.InitOverrideFunction,
     ): Promise<any> {
-        const response = await this.updateArchiveV1ArchiveArchiveIdPostRaw(
+        const response = await this.updateArchiveV1ArchiveArchiveIdPutRaw(
             requestParameters,
             initOverrides,
         );

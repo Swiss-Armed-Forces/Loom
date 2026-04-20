@@ -160,9 +160,6 @@ class FileSchedulingService:
             raise FileNotFoundException("No file to translate found")
 
         logger.info("Scheduling translation of file '%s'", file_to_translate.full_name)
-        file_to_translate.state = "translating"
-        self._file_repository.update(file_to_translate, include={"state"})
-
         self._task_scheduling_service.translate_files_by_id(file_id, lang)
 
     def summarize_file(self, file_id: UUID, system_prompt: str | None = None):
@@ -174,9 +171,6 @@ class FileSchedulingService:
         logger.info(
             "Scheduling summarization of file '%s'", file_to_summarize.full_name
         )
-        file_to_summarize.state = "summarizing"
-        self._file_repository.update(file_to_summarize, include={"state"})
-
         self._task_scheduling_service.summarize_files_by_id(file_id, system_prompt)
 
     def update_file(self, file_id: UUID, request: UpdateFileRequest):
@@ -190,8 +184,6 @@ class FileSchedulingService:
         file_to_add_tag = self._file_repository.get_by_id(file_id)
         if not file_to_add_tag:
             raise FileNotFoundException("No file to add tag found")
-        file_to_add_tag.state = "tagging"
-        self._file_repository.update(file_to_add_tag, include={"state"})
         self._task_scheduling_service.add_tag_to_file_by_id(file_id, tags)
 
     def remove_tag(self, file_id: UUID, tag: Tag):
@@ -199,6 +191,4 @@ class FileSchedulingService:
         file_to_remove_tag = self._file_repository.get_by_id(file_id)
         if not file_to_remove_tag:
             raise FileNotFoundException("No file to remove tag found")
-        file_to_remove_tag.state = "untagging"
-        self._file_repository.update(file_to_remove_tag, include={"state"})
         self._task_scheduling_service.remove_tag_from_file_by_id(file_id, tag)

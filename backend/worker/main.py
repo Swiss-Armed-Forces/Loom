@@ -5,13 +5,12 @@ import sys
 from shlex import quote
 
 from celery import signals
-from common.celery_app import CELERY_DEAD_QUEUE_NAME, CELERY_GRAVEYARD_QUEUE_NAME
 from common.dependencies import get_celery_app
 from common.dependencies import init as init_common_dependencies
 from common.settings import settings
 from common.utils.sharding import (
-    get_all_persister_shard_queues,
-    get_persister_shard_queues_for_worker,
+    get_all_persister_shards,
+    get_persister_shard_for_worker,
 )
 
 from worker.dependencies import init
@@ -39,15 +38,23 @@ init_all(subprocess_reinit=False)
 app = get_celery_app()
 
 argv = sys.argv[1:]
-persister_shard_queues = get_all_persister_shard_queues(settings.num_persister_shards)
+
+
+def get_queue_from_task(task: str) -> str:
+    return f"{settings.celery_queue_name_prefix}{task}"
+
+
 match settings.worker_type:
     case "WORKER":
         # Exclude graveyard, dead, and persister shard queues from normal workers
-        exclude_queues = [
-            CELERY_GRAVEYARD_QUEUE_NAME,
-            CELERY_DEAD_QUEUE_NAME,
-            *persister_shard_queues,
+        all_persister_shards = get_all_persister_shards(settings.num_persister_shards)
+        all_persister_queues = [
+            get_queue_from_task(shard) for shard in all_persister_shards
         ]
+        exclude_queues = [
+            get_queue_from_task(settings.celery_graveyard_task_name),
+            get_queue_from_task(settings.celery_dead_task_name),
+        ] + all_persister_queues
         argv = argv + [
             "--exclude-queues",
             ",".join(exclude_queues),
@@ -57,20 +64,28 @@ match settings.worker_type:
     case "REAPER":
         argv = argv + [
             "--queues",
-            f"{CELERY_GRAVEYARD_QUEUE_NAME},{CELERY_DEAD_QUEUE_NAME}",
+            ",".join(
+                [
+                    get_queue_from_task(settings.celery_graveyard_task_name),
+                    get_queue_from_task(settings.celery_dead_task_name),
+                ]
+            ),
             "--autoscale",
             "1,0",
         ]
     case "PERSISTER":
         # Persister workers only consume their assigned shard queues
-        my_queues = get_persister_shard_queues_for_worker(
+        this_persister_shards = get_persister_shard_for_worker(
             settings.persister_id,
             settings.persister_total,
             settings.num_persister_shards,
         )
+        this_persister_queues = [
+            get_queue_from_task(shard) for shard in this_persister_shards
+        ]
         argv = argv + [
             "--queues",
-            ",".join(my_queues),
+            ",".join(this_persister_queues),
         ]
     case "FLOWER":
         argv = argv + [
