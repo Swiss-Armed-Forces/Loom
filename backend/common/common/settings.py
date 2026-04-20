@@ -91,18 +91,18 @@ class Settings(BaseSettings):
     )
     celery_broker_host: AnyUrl = AnyUrl(f"amqp://rabbit-amqp.{DOMAIN}")
     celery_backend_host: AnyUrl = AnyUrl(f"redis://redis.{DOMAIN}:6379/0?protocol=3")
-    celery_queue_name_prefix: str = "celery:"
+    celery_queue_name_prefix: str = "loom:"
     celery_deliver_limit: int = 5
     celery_graveyard_deliver_limit: int = 3
-    celery_default_task_name: str = "celery"
+    celery_default_task_name: str = "default"
     celery_graveyard_task_name: str = "graveyard"
     celery_dead_task_name: str = "dead"
     celery_persister_shard_prefix: str = "persister.shard"
     celery_unroubtable_ttl__seconds: int = 24 * 60 * 60
     celery_unroubtable_task_name: str = "unroutable"
-    celery_default_exchange_name: str = "celery"
+    celery_default_exchange_name: str = "loom"
     celery_default_exchange_type: str = "topic"
-    celery_alternate_exchange_name: str = "ae-celery"
+    celery_alternate_exchange_name: str = "ae-loom"
     celery_alternate_exchange_type: str = "topic"
     redis_cache_host: AnyUrl = AnyUrl(f"redis://redis-cache.{DOMAIN}:6380/0?protocol=3")
     lazy_threshold_bytes: int = 1024  # 1KiB
