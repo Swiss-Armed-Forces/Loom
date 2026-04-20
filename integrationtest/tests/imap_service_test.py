@@ -41,6 +41,16 @@ FOLDER_NAMES = [
 
 FOLDER_PATHS = [FilePurePath(f) for f in FOLDER_NAMES]
 
+_NON_ASCII_BODY_EMAIL = (
+    b"From: sender@example.com\r\n"
+    b"To: recipient@example.com\r\n"
+    b"Subject: Non-ASCII body\r\n"
+    b"Content-Type: text/html\r\n"
+    b"Content-Transfer-Encoding: quoted-printable\r\n"
+    b"\r\n"
+    b"H\xc3\xa4ndler und B\xc3\xb6rsenmakler"
+)
+
 
 @pytest.fixture()
 def imap_service() -> IMAPService:
@@ -56,6 +66,11 @@ def test_imap_append_and_count(imap_service: IMAPService, email: bytes):
 
     message_count = imap_service.count_messages()
     assert message_count == 1
+
+
+def test_imap_append_email_with_non_ascii_body(imap_service: IMAPService):
+    imap_service.append_email(_NON_ASCII_BODY_EMAIL)
+    assert imap_service.count_messages() == 1
 
 
 @pytest.mark.parametrize("recurse", (True, False))

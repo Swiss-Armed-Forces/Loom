@@ -57,7 +57,7 @@ export * from "./SummaryStatisticsModel";
 export * from "./TranslateAllRequest";
 export * from "./TranslateFileRequest";
 export * from "./TreeNodeModel";
-export * from "./UpdateArchiveModel";
+export * from "./UpdateArchiveRequest";
 export * from "./UpdateFileRequest";
 export * from "./UpdateFilesRequest";
 export * from "./ValidationError";

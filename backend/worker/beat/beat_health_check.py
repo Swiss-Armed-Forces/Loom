@@ -24,14 +24,17 @@ def beat_health(cb_schedule: str = CB_SCHEDULE) -> bool:
 
         with shelve.open(temp_file.name, flag="r") as file_data:
             for task_name, task in file_data["entries"].items():
-                if task.is_due():
-                    if task.schedule.remaining_estimate(task.last_run_at) < timedelta(
-                        minutes=-TOLERANCE_IN_MINUTES
-                    ):
-                        logger.error("Task: %s is critically overdue", task_name)
-                        healthy = False
-                    else:
-                        logger.warning("Task: %s is overdue", task_name)
+                if not task.is_due().is_due:
+                    logger.info("Task: %s is not due", task_name)
+                    continue
+
+                if task.schedule.remaining_estimate(task.last_run_at) < timedelta(
+                    minutes=-TOLERANCE_IN_MINUTES
+                ):
+                    logger.error("Task: %s is critically overdue", task_name)
+                    healthy = False
+                else:
+                    logger.warning("Task: %s is overdue", task_name)
 
     return healthy
 

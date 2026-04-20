@@ -68,8 +68,9 @@ def test_add_tag():
 
     _add_tags(str(file.file_id), [tag])
 
-    file = get_file_preview_by_name("basic_email.eml", wait_for_celery_idle=True)
-    assert file.tags == [tag]
+    get_file_preview_by_name(
+        "basic_email.eml", wait_for_celery_idle=True, checker=lambda f: f.tags == [tag]
+    )
 
 
 def test_add_tag_by_query():
@@ -90,8 +91,7 @@ def test_add_tag_by_query():
     )
 
     for file in assets:
-        file_preview = get_file_preview_by_name(file)
-        assert tag in file_preview.tags
+        get_file_preview_by_name(file, checker=lambda f: tag in (f.tags or []))
 
 
 def test_add_tags_by_query():
@@ -111,9 +111,9 @@ def test_add_tags_by_query():
     )
 
     for file in assets:
-        file_preview = get_file_preview_by_name(file)
-        for tag_name in tags:
-            assert tag_name in file_preview.tags
+        get_file_preview_by_name(
+            file, checker=lambda f: all(t in (f.tags or []) for t in tags)
+        )
 
 
 def test_delete_tag():
@@ -124,20 +124,30 @@ def test_delete_tag():
     wrong_tag = "wrong_tag"
 
     _add_tags(file_id, [keep_tag, wrong_tag])
-    file = get_file_preview_by_name("basic_email.eml", wait_for_celery_idle=True)
-    assert len(file.tags) == 2
+    get_file_preview_by_name(
+        "basic_email.eml",
+        wait_for_celery_idle=True,
+        checker=lambda f: len(f.tags or []) == 2,
+    )
 
     _delete_tag(file_id, wrong_tag)
-    file = get_file_preview_by_name("basic_email.eml", wait_for_celery_idle=True)
-    assert file.tags == [keep_tag]
+    get_file_preview_by_name(
+        "basic_email.eml",
+        wait_for_celery_idle=True,
+        checker=lambda f: f.tags == [keep_tag],
+    )
 
     _delete_tag(file_id, keep_tag)
-    file = get_file_preview_by_name("basic_email.eml", wait_for_celery_idle=True)
-    assert not file.tags
+    get_file_preview_by_name(
+        "basic_email.eml", wait_for_celery_idle=True, checker=lambda f: not f.tags
+    )
 
     _add_tags(file_id, [keep_tag])
-    file = get_file_preview_by_name("basic_email.eml", wait_for_celery_idle=True)
-    assert file.tags == [keep_tag]
+    get_file_preview_by_name(
+        "basic_email.eml",
+        wait_for_celery_idle=True,
+        checker=lambda f: f.tags == [keep_tag],
+    )
 
 
 def test_delete_tags():
@@ -164,8 +174,7 @@ def test_delete_tags():
     )
 
     for file in assets:
-        file_preview = get_file_preview_by_name(file)
-        assert tag not in file_preview.tags
+        get_file_preview_by_name(file, checker=lambda f: tag not in (f.tags or []))
 
 
 def test_add_tag_is_idempotent():
@@ -176,12 +185,14 @@ def test_add_tag_is_idempotent():
     tag = "test_tag"
 
     _add_tags(file_id, [tag])
-    file = get_file_preview_by_name("basic_email.eml", wait_for_celery_idle=True)
-    assert file.tags == [tag]
+    get_file_preview_by_name(
+        "basic_email.eml", wait_for_celery_idle=True, checker=lambda f: f.tags == [tag]
+    )
 
     _add_tags(file_id, [tag])
-    file = get_file_preview_by_name("basic_email.eml", wait_for_celery_idle=True)
-    assert file.tags == [tag]
+    get_file_preview_by_name(
+        "basic_email.eml", wait_for_celery_idle=True, checker=lambda f: f.tags == [tag]
+    )
 
 
 def test_all_tags():
@@ -248,8 +259,8 @@ def test_many_separate_tag_additions_do_not_overwrite():
     for tag in expected_tags:
         _add_tags(file_id, [tag])
 
-    file = get_file_preview_by_name("empty_file.txt", wait_for_celery_idle=True)
-
-    assert len(file.tags) == num_tags
-    for tag in expected_tags:
-        assert tag in file.tags
+    get_file_preview_by_name(
+        "empty_file.txt",
+        wait_for_celery_idle=True,
+        checker=lambda f: set(f.tags or []) == set(expected_tags),
+    )

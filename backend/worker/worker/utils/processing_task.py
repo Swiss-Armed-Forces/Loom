@@ -10,7 +10,7 @@ from common.task_object.task_object import (
     RepositoryTaskObjectT,
     SecondaryRepositoryTaskObjectT,
 )
-from common.utils.sharding import compute_shard, get_persister_shard_queue_name
+from common.utils.sharding import compute_shard, get_persister_shard_name
 
 from worker.dependencies import get_task_info_persister
 from worker.settings import settings
@@ -76,7 +76,7 @@ class ProcessingTask(
         if object_id is None:
             return
         shard = compute_shard(object_id, settings.num_persister_shards)
-        queue = get_persister_shard_queue_name(shard)
+        queue = get_persister_shard_name(shard)
         _persist_task_status_task.apply_async(
             args=(object_id, type(self._repository), UUID(task_id), persist_callback),
             queue=queue,

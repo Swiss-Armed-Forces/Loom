@@ -3,8 +3,7 @@ from datetime import datetime
 from common.dependencies import get_queues_service
 from fastapi.testclient import TestClient
 
-from api.models.queues_model import OverallQueuesStats
-from api.routers.queues import CompleteEstimate
+from api.models.queues_model import CompleteEstimate, OverallQueuesStats
 
 
 def test_get_overall_queue_stats(client: TestClient):

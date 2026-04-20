@@ -4,7 +4,7 @@ We have to include here all modules containing top-level tasks.
 """
 
 from worker.ai import process_question_task
-from worker.create_archive import create_archive_task
+from worker.create_archive import create_archive_task, update_archive_task
 from worker.index_file import (
     add_tags_to_file_task,
     index_file_task,
@@ -28,6 +28,7 @@ from worker.test import canvas_test_task, sigkill_pgroup_task
 # the (then considered unused) imports would be removed by autoflake
 tasks = [
     create_archive_task,
+    update_archive_task,
     index_file_task,
     add_tags_to_file_task,
     remove_tag_from_file_task,

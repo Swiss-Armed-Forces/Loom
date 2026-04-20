@@ -14,13 +14,13 @@ from celery.schedules import crontab
 from kombu import Exchange, Queue, serialization
 from pydantic import BaseModel, Field, RootModel
 
-from common.settings import settings
+from common.settings import CELERY_QUEUE_NAME_MAXLEN, settings
 from common.utils.cgroup_memory_limit import (
     MemoryLimitNotFoundError,
     get_cgroup_memory_limit,
 )
 from common.utils.oom_score_adjust import adjust_oom_score
-from common.utils.sharding import get_all_persister_shard_queues
+from common.utils.sharding import get_all_persister_shards
 
 logger = logging.getLogger(__name__)
 
@@ -29,7 +29,7 @@ def _never_nowfun():
     return datetime(year=1970, month=1, day=1, hour=0)
 
 
-SCHEDULE_NEVER = crontab(
+CELERY_SCHEDULE_NEVER = crontab(
     minute="0",
     hour="1",
     nowfun=_never_nowfun,
@@ -73,7 +73,7 @@ def get_beat_schedule() -> dict:
             "task": (
                 "worker.periodic.sync_flagged_emails_periodically_task.sync_flagged_emails_periodically_task"  # noqa: E501 pylint: disable=line-too-long
             ),
-            "schedule": SCHEDULE_NEVER,
+            "schedule": CELERY_SCHEDULE_NEVER,
         },
         # SeaweedFS Maintenance Tasks - frequent "on-idle" variants (check_idle=True)
         "seaweedfs-fix-replication-on-idle": {
@@ -155,15 +155,6 @@ def get_beat_schedule() -> dict:
     }
 
 
-CELERY_QUEUE_NAME_PREFIX = "celery"
-
-CELERY_DELIVER_LIMIT = 5
-CELERY_GRAVEYARD_DELIVER_LIMIT = 3
-CELERY_GRAVEYARD_QUEUE_NAME = f"{CELERY_QUEUE_NAME_PREFIX}.graveyard"
-CELERY_DEAD_QUEUE_NAME = f"{CELERY_QUEUE_NAME_PREFIX}.dead"
-CELERY_DEFAULT_EXCHANGE_TYPE = "topic"
-
-
 class DeadTask(Exception):
     """Exception raised when a task comes from a dead letter queue."""
 
@@ -221,10 +212,24 @@ def _patch_group(app: "Celery[BaseTask]") -> None:
     celery.group = patched_group  # type: ignore[misc, assignment]
 
 
-def _get_exchange(exchange_name: str) -> Exchange:
+def _get_shared_exchange() -> Exchange:
+    # All queues share one exchange.
+    # Using a single exchange means delayed_delivery only
     return Exchange(
-        exchange_name,
-        type=CELERY_DEFAULT_EXCHANGE_TYPE,
+        name=settings.celery_default_exchange_name,
+        type=settings.celery_default_exchange_type,
+        delivery_mode="persistent",
+        passive=False,
+        durable=True,
+        auto_delete=False,
+        arguments={"alternate-exchange": settings.celery_alternate_exchange_name},
+    )
+
+
+def _get_alternate_exchange() -> Exchange:
+    return Exchange(
+        name=settings.celery_alternate_exchange_name,
+        type=settings.celery_alternate_exchange_type,
         delivery_mode="persistent",
         passive=False,
         durable=True,
@@ -232,11 +237,16 @@ def _get_exchange(exchange_name: str) -> Exchange:
     )
 
 
-def _get_queue(queue_name: str) -> Queue:
+def _get_queue(name: str) -> Queue:
+    queue_name = f"{settings.celery_queue_name_prefix}{name}"
+    queue_name = queue_name[:CELERY_QUEUE_NAME_MAXLEN]
     return Queue(
-        queue_name,
-        _get_exchange(queue_name),
-        routing_key=queue_name,
+        name=queue_name,
+        exchange=_get_shared_exchange(),
+        routing_key=name,
+        passive=False,
+        durable=True,
+        auto_delete=False,
         queue_arguments={
             # We are using Quorum Queues in order to profit from the
             # broker's poison message handling mechanism and thus avoid
@@ -244,18 +254,25 @@ def _get_queue(queue_name: str) -> Queue:
             #
             # https://www.rabbitmq.com/docs/quorum-queues#poison-message-handling
             "x-queue-type": "quorum",
-            "x-delivery-limit": CELERY_DELIVER_LIMIT,
-            "x-dead-letter-exchange": CELERY_GRAVEYARD_QUEUE_NAME,
-            "x-dead-letter-routing-key": CELERY_GRAVEYARD_QUEUE_NAME,
+            "x-delivery-limit": settings.celery_deliver_limit,
+            "x-dead-letter-exchange": settings.celery_default_exchange_name,
+            "x-dead-letter-routing-key": settings.celery_graveyard_task_name,
         },
     )
 
 
-def _get_graveyard_queue(queue_name: str) -> Queue:
+def _get_unroutable_queue() -> Queue:
+    queue_name = (
+        f"{settings.celery_queue_name_prefix}{settings.celery_unroubtable_task_name}"
+    )
+    queue_name = queue_name[:CELERY_QUEUE_NAME_MAXLEN]
     return Queue(
-        queue_name,
-        _get_exchange(queue_name),
-        routing_key=queue_name,
+        name=queue_name,
+        exchange=_get_alternate_exchange(),
+        routing_key="*",
+        passive=False,
+        durable=True,
+        auto_delete=False,
         queue_arguments={
             # We are using Quorum Queues in order to profit from the
             # broker's poison message handling mechanism and thus avoid
@@ -263,18 +280,47 @@ def _get_graveyard_queue(queue_name: str) -> Queue:
             #
             # https://www.rabbitmq.com/docs/quorum-queues#poison-message-handling
             "x-queue-type": "quorum",
-            "x-delivery-limit": CELERY_GRAVEYARD_DELIVER_LIMIT,
-            "x-dead-letter-exchange": CELERY_DEAD_QUEUE_NAME,
-            "x-dead-letter-routing-key": CELERY_DEAD_QUEUE_NAME,
+            "x-message-ttl": settings.celery_unroubtable_ttl__seconds * 1000,
         },
     )
 
 
-def _get_dead_queue(queue_name: str) -> Queue:
+def _get_graveyard_queue() -> Queue:
+    queue_name = (
+        f"{settings.celery_queue_name_prefix}{settings.celery_graveyard_task_name}"
+    )
+    queue_name = queue_name[:CELERY_QUEUE_NAME_MAXLEN]
     return Queue(
-        queue_name,
-        _get_exchange(queue_name),
-        routing_key=queue_name,
+        name=queue_name,
+        exchange=_get_shared_exchange(),
+        routing_key=settings.celery_graveyard_task_name,
+        passive=False,
+        durable=True,
+        auto_delete=False,
+        queue_arguments={
+            # We are using Quorum Queues in order to profit from the
+            # broker's poison message handling mechanism and thus avoid
+            # processing poison messages repeatedly.
+            #
+            # https://www.rabbitmq.com/docs/quorum-queues#poison-message-handling
+            "x-queue-type": "quorum",
+            "x-delivery-limit": settings.celery_graveyard_deliver_limit,
+            "x-dead-letter-exchange": settings.celery_default_exchange_name,
+            "x-dead-letter-routing-key": settings.celery_dead_task_name,
+        },
+    )
+
+
+def _get_dead_queue() -> Queue:
+    queue_name = f"{settings.celery_queue_name_prefix}{settings.celery_dead_task_name}"
+    queue_name = queue_name[:CELERY_QUEUE_NAME_MAXLEN]
+    return Queue(
+        name=queue_name,
+        exchange=_get_shared_exchange(),
+        routing_key=settings.celery_dead_task_name,
+        passive=False,
+        durable=True,
+        auto_delete=False,
         queue_arguments={
             # We are using Quorum Queues in order to profit from the
             # broker's poison message handling mechanism and thus avoid
@@ -397,18 +443,48 @@ def init_celery_app() -> "Celery[BaseTask]":  # pylint: disable=too-many-stateme
     # to celery.
     #
     # For example, the api will post to this queue.
-    app.conf.task_queues = [_get_queue("celery")]
-    app.conf.task_default_queue = "celery"
-    app.conf.task_default_exchange = "celery"
-    app.conf.task_default_exchange_type = CELERY_DEFAULT_EXCHANGE_TYPE
+    default_queue = _get_queue(settings.celery_default_task_name)
+    app.conf.task_queues = [default_queue]
+    app.conf.task_routes = {
+        settings.celery_default_task_name: {
+            "routing_key": settings.celery_default_task_name
+        }
+    }
+    app.conf.task_default_queue = default_queue.name
+    app.conf.task_default_routing_key = settings.celery_default_task_name
+    app.conf.task_default_exchange = settings.celery_default_exchange_name
+    app.conf.task_default_exchange_type = settings.celery_default_exchange_type
+    app.conf.task_default_delivery_mode = "persistent"
+
+    # We want to be implicit here: Disable auto queue creation
+    app.conf.task_create_missing_queues = False
 
     # Define dead letter queues
-    app.conf.task_queues.append(_get_graveyard_queue(CELERY_GRAVEYARD_QUEUE_NAME))
-    app.conf.task_queues.append(_get_dead_queue(CELERY_DEAD_QUEUE_NAME))
+    graveyard_queue = _get_graveyard_queue()
+    app.conf.task_queues.append(graveyard_queue)
+    app.conf.task_routes = {
+        settings.celery_graveyard_task_name: {
+            "routing_key": settings.celery_graveyard_task_name
+        }
+    }
+    dead_queue = _get_dead_queue()
+    app.conf.task_queues.append(dead_queue)
+    app.conf.task_routes = {
+        settings.celery_dead_task_name: {"routing_key": settings.celery_dead_task_name}
+    }
+
+    # Define unroutable queues
+    unroutable_queue = _get_unroutable_queue()
+    app.conf.task_queues.append(unroutable_queue)
+    app.conf.task_routes = {settings.celery_unroubtable_task_name: {"routing_key": "*"}}
 
     # Define persister shard queues for serialized persistence per entity
-    for queue_name in get_all_persister_shard_queues(settings.num_persister_shards):
-        app.conf.task_queues.append(_get_queue(queue_name))
+    for persister_shard_name in get_all_persister_shards(settings.num_persister_shards):
+        persister_shard_queue = _get_queue(persister_shard_name)
+        app.conf.task_queues.append(persister_shard_queue)
+        app.conf.task_routes = {
+            persister_shard_name: {"routing_key": persister_shard_name}
+        }
 
     # Worker type specific configuration
     match settings.worker_type:
@@ -459,24 +535,19 @@ def _register_task_queues(app: Celery):
     Args:
         app: The Celery app instance.
     """
+    from worker.utils.persisting_task import (  # pylint: disable=import-outside-toplevel
+        PersistingTaskBase,
+    )
 
-    task_queues: list[Queue] = app.conf.task_queues or []
-    task_routes = app.conf.task_routes or {}
-
-    for task_name in app.tasks.keys():
-        queue_name = f"{CELERY_QUEUE_NAME_PREFIX}:{task_name}"
-
-        if queue_name in {q.name for q in task_queues}:
-            # do not add duplicate queues
+    for task_name, task in app.tasks.items():
+        if isinstance(task, PersistingTaskBase):
+            # do not register persisting tasks
             continue
 
-        logger.info("Adding Queue: %s", queue_name)
-
-        task_queues.append(_get_queue(queue_name))
-        task_routes[task_name] = {"queue": queue_name}
-
-    app.conf.task_queues = task_queues
-    app.conf.task_routes = task_routes
+        queue = _get_queue(task_name)
+        app.conf.task_queues.append(queue)
+        app.conf.task_routes[task_name] = {"routing_key": task_name}
+        logger.info("Added Queue for task: %s", task_name)
 
 
 def register_tasks_for_package(app: Celery, package: str):
