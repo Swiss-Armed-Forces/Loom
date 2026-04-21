@@ -251,7 +251,7 @@ class GlobalPersisterWorker(Generic[RepositoryObjectT]):
 
         while not self._shutdown_event.is_set():
             try:
-                # Debounce — interruptible by shutdown signal
+                # Debounce - interruptible by shutdown signal
                 before_sleep = monotonic()
                 sleep_time = max(
                     0, settings.persister_debounce_window - (before_sleep - now)
