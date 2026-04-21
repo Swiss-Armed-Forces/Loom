@@ -500,6 +500,9 @@ def init_celery_app() -> "Celery[BaseTask]":  # pylint: disable=too-many-stateme
             # conflicts. However, we can safely prefetch many tasks.
             app.conf.worker_concurrency = 1
             app.conf.worker_prefetch_multiplier = 16
+            # Do not restart child processes
+            app.conf.worker_max_memory_per_child = None
+            app.conf.worker_max_tasks_per_child = None
         case _:
             pass
 
