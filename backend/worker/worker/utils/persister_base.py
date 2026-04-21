@@ -191,7 +191,8 @@ class GlobalPersisterWorker(Generic[RepositoryObjectT]):
     """Manages a single global worker that batches and persists mutations.
 
     Thread-safe submission via stdlib queue.Queue. Worker loop runs in a dedicated event
-    loop thread.
+    loop thread. Supports graceful shutdown via the Celery worker_process_shutdown
+    signal or by calling shutdown() directly.
     """
 
     # No lock needed: Celery prefork pool uses separate processes, each single-threaded
@@ -229,9 +230,7 @@ class GlobalPersisterWorker(Generic[RepositoryObjectT]):
 
         Thread-safe.
 
-        Raises WorkerShuttingDownError if the worker is shutting down. Celery tasks
-        should declare autoretry_for=(WorkerShuttingDownError,) so the task is requeued
-        on another worker instead of losing the mutation.
+        Raises WorkerShuttingDownError if the worker is shutting down.
         """
         if self._shutdown_event.is_set():
             raise WorkerShuttingDownError(
@@ -303,36 +302,43 @@ class GlobalPersisterWorker(Generic[RepositoryObjectT]):
             except Exception:  # pylint: disable=broad-exception-caught
                 self._logger.exception("Error in global worker loop, continuing...")
 
-        # --- Shutdown final flush ---
+        await self._shutdown_flush(object_mutations, objects)
+
+    async def _shutdown_flush(
+        self,
+        object_mutations: list[_ObjectMutation[RepositoryObjectT]],
+        objects: dict[UUID, _ObjectState[RepositoryObjectT]],
+    ) -> None:
+        """Drain queue, apply all pending mutations, and force-flush everything.
+
+        Called once after the worker loop exits. Best-effort: errors are logged but do
+        not abort the flush.
+        """
         self._logger.info("Shutdown: draining queue and flushing all objects...")
-        try:
-            # Drain any remaining queue items submitted before _is_shutting_down was set
-            while True:
-                try:
-                    object_mutations.append(self._mutation_queue.get_nowait())
-                except queue.Empty:
-                    break
+        # Drain any remaining queue items
+        while True:
+            try:
+                object_mutations.append(self._mutation_queue.get_nowait())
+            except queue.Empty:
+                break
 
-            # Apply all pending mutations (best-effort, log and skip on error)
-            now = monotonic()
-            while object_mutations:
-                om = object_mutations.pop(0)
-                try:
-                    await self._apply_mutation(now, objects, om)
-                except Exception:  # pylint: disable=broad-exception-caught
-                    self._logger.exception(
-                        "Shutdown: error applying mutation for %s", om.object_id
-                    )
+        # Apply all pending mutations (best-effort, log and skip on error)
+        now = monotonic()
+        while object_mutations:
+            om = object_mutations.pop(0)
+            try:
+                await self._apply_mutation(now, objects, om)
+            except Exception:  # pylint: disable=broad-exception-caught
+                self._logger.exception(
+                    "Shutdown: error applying mutation for %s", om.object_id
+                )
 
-            # Force-flush all objects with pending mutations (bypass debounce)
-            await self._flush_all_forced(objects)
+        # Force-flush all objects with pending mutations (bypass debounce)
+        await self._flush_all_forced(objects)
 
-            # One round of error recovery, then a second forced flush
-            await self._handle_errors(monotonic(), objects)
-            await self._flush_all_forced(objects)
-
-        except Exception:  # pylint: disable=broad-exception-caught
-            self._logger.exception("Shutdown: error during final flush")
+        # One round of error recovery, then a second forced flush
+        await self._handle_errors(monotonic(), objects)
+        await self._flush_all_forced(objects)
 
         self._logger.info("Shutdown: worker loop exited cleanly")
 
@@ -344,10 +350,9 @@ class GlobalPersisterWorker(Generic[RepositoryObjectT]):
     ) -> bool:
         """Apply mutation to object, lazy-loading if needed.
 
-        If memory pressure and object not cached, adds mutation to deferred_mutations
-        instead of loading.
-
-        Always loads if cache is empty to prevent deadlocks.
+        Returns False (and re-queues the mutation) if the object is not cached and
+        memory pressure is detected. Always loads if the cache is empty to prevent
+        deadlocks.
         """
         state = objects.get(object_mutation.object_id)
 
