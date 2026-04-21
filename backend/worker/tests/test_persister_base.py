@@ -17,6 +17,7 @@ from worker.settings import settings
 from worker.utils.persister_base import (
     GlobalPersisterWorker,
     PersisterBase,
+    WorkerShuttingDownError,
     _ObjectMutation,
     _ObjectState,
     mutation,
@@ -770,3 +771,65 @@ class TestObjectState:
         state.mark_saved()
 
         assert state.recovery_attempts == 0
+
+
+class TestGlobalPersisterWorkerShutdown:
+    """Tests for graceful shutdown behavior."""
+
+    def test_shutdown_flushes_pending_mutations(self) -> None:
+        """Shutdown() must flush mutations without waiting for the debounce window."""
+        object_id = uuid4()
+        obj = MockRepositoryObject(id=object_id, name="original")
+
+        mock_repo = MagicMock(spec=BaseRepository)
+        mock_repo.get_by_id.return_value = obj
+        mock_repo.bulk_save.return_value = [
+            BulkOperationResult(object_id=object_id, success=True)
+        ]
+
+        worker: GlobalPersisterWorker[MockRepositoryObject] = GlobalPersisterWorker(
+            mock_repo
+        )
+
+        def set_name(o: MockRepositoryObject) -> None:
+            o.name = "modified"
+
+        worker.submit(_ObjectMutation(object_id=object_id, mutation_fn=set_name))
+
+        # Shut down immediately — well before the debounce window expires
+        worker.shutdown()
+
+        mock_repo.bulk_save.assert_called()
+        saved_objs = mock_repo.bulk_save.call_args[0][0]
+        assert saved_objs[0].name == "modified"
+
+    def test_shutdown_raises_on_submit_after_shutdown(self) -> None:
+        """Submit() must raise WorkerShuttingDownError after shutdown starts."""
+        object_id = uuid4()
+
+        mock_repo = MagicMock(spec=BaseRepository)
+        mock_repo.get_by_id.return_value = None
+
+        worker: GlobalPersisterWorker[MockRepositoryObject] = GlobalPersisterWorker(
+            mock_repo
+        )
+        worker.shutdown()
+
+        def noop(_: MockRepositoryObject) -> None:
+            pass
+
+        with pytest.raises(WorkerShuttingDownError):
+            worker.submit(_ObjectMutation(object_id=object_id, mutation_fn=noop))
+
+    def test_shutdown_stops_loop_thread(self) -> None:
+        """Loop thread must not be alive after shutdown() returns."""
+        mock_repo = MagicMock(spec=BaseRepository)
+
+        worker: GlobalPersisterWorker[MockRepositoryObject] = GlobalPersisterWorker(
+            mock_repo
+        )
+        assert worker._loop_thread.is_alive()
+
+        worker.shutdown()
+
+        assert not worker._loop_thread.is_alive()

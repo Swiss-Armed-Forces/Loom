@@ -2,6 +2,7 @@ import asyncio
 import gc
 import logging
 import queue
+import threading
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from functools import wraps
@@ -18,6 +19,7 @@ from typing import (
 )
 from uuid import UUID
 
+from celery.signals import worker_process_shutdown
 from common.models.base_repository import (
     BaseRepository,
     RepositoryObject,
@@ -78,8 +80,12 @@ def mutation(
     return wrapper
 
 
-class PersistingException(Exception):
-    """Exception raised when persisting a file fails."""
+class WorkerShuttingDownError(Exception):
+    """Raised when a mutation is submitted to a worker that is shutting down.
+
+    Celery tasks should set autoretry_for=(WorkerShuttingDownError,) so that the task is
+    requeued and picked up by another worker process.
+    """
 
 
 class _ObjectState(Generic[RepositoryObjectT]):
@@ -204,6 +210,7 @@ class GlobalPersisterWorker(Generic[RepositoryObjectT]):
 
         self._mutation_queue: queue.Queue[_ObjectMutation] = queue.Queue()
         self._loop = asyncio.new_event_loop()
+        self._shutdown_event = threading.Event()
 
         def run():
             asyncio.set_event_loop(self._loop)
@@ -215,30 +222,44 @@ class GlobalPersisterWorker(Generic[RepositoryObjectT]):
             self._worker_loop(), self._loop
         )
 
+        worker_process_shutdown.connect(self._on_worker_shutdown, weak=False)
+
     def submit(self, object_mutation: _ObjectMutation[RepositoryObjectT]) -> None:
         """Submit a mutation.
 
         Thread-safe.
+
+        Raises WorkerShuttingDownError if the worker is shutting down. Celery tasks
+        should declare autoretry_for=(WorkerShuttingDownError,) so the task is requeued
+        on another worker instead of losing the mutation.
         """
+        if self._shutdown_event.is_set():
+            raise WorkerShuttingDownError(
+                "Worker is shutting down, "
+                f"cannot accept mutation for {object_mutation.object_id}"
+            )
         self._mutation_queue.put(object_mutation)
 
     async def _worker_loop(self) -> None:
         """Single global worker.
 
-        Never terminates.
+        Runs until shutdown is signaled via _shutdown_event, then performs a final flush
+        before returning.
         """
         objects: dict[UUID, _ObjectState[RepositoryObjectT]] = {}
         object_mutations: list[_ObjectMutation[RepositoryObjectT]] = []
         now = monotonic()
 
-        while True:
+        while not self._shutdown_event.is_set():
             try:
-                # Debounce
+                # Debounce — interruptible by shutdown signal
                 before_sleep = monotonic()
                 sleep_time = max(
                     0, settings.persister_debounce_window - (before_sleep - now)
                 )
                 await asyncio.sleep(sleep_time)
+                if self._shutdown_event.is_set():
+                    break
 
                 # Update now
                 now = monotonic()
@@ -281,6 +302,39 @@ class GlobalPersisterWorker(Generic[RepositoryObjectT]):
 
             except Exception:  # pylint: disable=broad-exception-caught
                 self._logger.exception("Error in global worker loop, continuing...")
+
+        # --- Shutdown final flush ---
+        self._logger.info("Shutdown: draining queue and flushing all objects...")
+        try:
+            # Drain any remaining queue items submitted before _is_shutting_down was set
+            while True:
+                try:
+                    object_mutations.append(self._mutation_queue.get_nowait())
+                except queue.Empty:
+                    break
+
+            # Apply all pending mutations (best-effort, log and skip on error)
+            now = monotonic()
+            while object_mutations:
+                om = object_mutations.pop(0)
+                try:
+                    await self._apply_mutation(now, objects, om)
+                except Exception:  # pylint: disable=broad-exception-caught
+                    self._logger.exception(
+                        "Shutdown: error applying mutation for %s", om.object_id
+                    )
+
+            # Force-flush all objects with pending mutations (bypass debounce)
+            await self._flush_all_forced(objects)
+
+            # One round of error recovery, then a second forced flush
+            await self._handle_errors(monotonic(), objects)
+            await self._flush_all_forced(objects)
+
+        except Exception:  # pylint: disable=broad-exception-caught
+            self._logger.exception("Shutdown: error during final flush")
+
+        self._logger.info("Shutdown: worker loop exited cleanly")
 
     async def _apply_mutation(
         self,
@@ -350,6 +404,34 @@ class GlobalPersisterWorker(Generic[RepositoryObjectT]):
                 state.mark_saved()
             else:
                 self._logger.warning("Failed to save %s: %s", obj_id, op_result.error)
+                state.mark_error()
+
+    async def _flush_all_forced(
+        self, objects: dict[UUID, _ObjectState[RepositoryObjectT]]
+    ) -> None:
+        """Flush all objects with pending mutations, ignoring debounce timing.
+
+        Used during shutdown to guarantee no buffered mutations are lost.
+        """
+        objects_to_save = [
+            state.obj for state in objects.values() if state.has_pending_mutations
+        ]
+        if not objects_to_save:
+            return
+
+        results = await asyncio.to_thread(
+            lambda: list(self._repository.bulk_save(objects_to_save))
+        )
+        for op_result in results:
+            obj_id = op_result.object_id
+            state = objects[obj_id]
+            if op_result.success:
+                self._logger.debug("Shutdown flush: saved %s", obj_id)
+                state.mark_saved()
+            else:
+                self._logger.warning(
+                    "Shutdown flush: failed %s: %s", obj_id, op_result.error
+                )
                 state.mark_error()
 
     async def _handle_errors(
@@ -435,6 +517,33 @@ class GlobalPersisterWorker(Generic[RepositoryObjectT]):
                 objects.pop(obj_id)
                 evicted_count += 1
                 self._logger.debug("Evicted object %s (LRU)", obj_id)
+
+    def _on_worker_shutdown(self, **_kwargs: object) -> None:
+        """Celery worker_process_shutdown signal handler."""
+        self._logger.info(
+            "worker_process_shutdown received, initiating graceful shutdown"
+        )
+        self.shutdown()
+
+    def shutdown(self, timeout: float = 30.0) -> None:
+        """Stop the worker: drain queue, flush all pending mutations, stop event loop thread.
+
+        Blocks until the worker loop has exited and the thread has been joined.
+        Safe to call from any thread.
+        """
+        self._shutdown_event.set()
+
+        # Wait for _worker_loop coroutine to complete (performs the final flush internally)
+        try:
+            self._worker_result.result(timeout=timeout)
+        except Exception:  # pylint: disable=broad-exception-caught
+            self._logger.exception("Shutdown: worker loop raised an exception")
+
+        # Stop the event loop and wait for the thread to exit
+        self._loop.call_soon_threadsafe(self._loop.stop)
+        self._loop_thread.join(timeout=5.0)
+        if self._loop_thread.is_alive():
+            self._logger.error("Shutdown: loop thread did not exit within timeout")
 
 
 class PersisterBase(ABC, Generic[RepositoryObjectT]):
