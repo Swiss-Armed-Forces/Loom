@@ -217,7 +217,7 @@ class GlobalPersisterWorker(Generic[RepositoryObjectT]):
             asyncio.set_event_loop(self._loop)
             self._loop.run_forever()
 
-        self._loop_thread = Thread(target=run, daemon=True)
+        self._loop_thread = Thread(target=run, daemon=False)
         self._loop_thread.start()
         self._worker_result = asyncio.run_coroutine_threadsafe(
             self._worker_loop(), self._loop
