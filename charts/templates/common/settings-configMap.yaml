@@ -119,10 +119,10 @@ data:
     {{- end }}
 
     # crawler
-    {{- if .Values.crawler.s3Buckets }}
+    {{- if ne .Values.crawler.s3Buckets nil }}
     s3_buckets: {{ .Values.crawler.s3Buckets | join "," | quote }}
     {{- end }}
-    {{- if .Values.crawler.s3BucketAliases }}
+    {{- if ne .Values.crawler.s3BucketAliases nil }}
     s3_bucket_aliases: {{ .Values.s3BucketAliases | toJson }}
     {{- end }}
 
