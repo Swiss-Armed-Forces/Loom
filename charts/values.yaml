@@ -284,6 +284,7 @@ crawler:
   # List of S3 buckets to crawl (will be created if they don't exist)
   s3Buckets:
     - default
+  s3BucketAliases: null
   resources:
     requests:
       cpu: "0.2"

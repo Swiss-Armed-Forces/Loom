@@ -17,9 +17,12 @@ S3_READ_CHUNK_SIZE: int = 64 * 1024
 
 
 class S3Crawler:
-    def __init__(self, s3_client: Minio, buckets: list[str]):
+    def __init__(
+        self, s3_client: Minio, buckets: list[str], bucket_aliases: dict[str, str]
+    ):
         self.client = s3_client
         self.buckets = buckets
+        self.bucket_aliases = bucket_aliases
         self.bucket_crawlers: dict[Bucket, Thread] = {
             Bucket(bucket, None): Thread(target=None) for bucket in buckets
         }
@@ -36,7 +39,8 @@ class S3Crawler:
                 self._create_bucket_crawler_thread(bucket)
 
     def _create_bucket_crawler_thread(self, bucket: Bucket):
-        bucket_crawler_thread = _BucketCrawlerThread(self.client, bucket)
+        bucket_name = self.bucket_aliases.get(bucket.name, bucket.name)
+        bucket_crawler_thread = _BucketCrawlerThread(self.client, bucket, bucket_name)
         bucket_crawler_thread.start()
         self.bucket_crawlers[bucket] = bucket_crawler_thread
 
@@ -49,10 +53,11 @@ class S3Crawler:
 
 class _BucketCrawlerThread(Thread):
 
-    def __init__(self, client: Minio, bucket: Bucket):
+    def __init__(self, client: Minio, bucket: Bucket, bucket_name: str | None = None):
         super().__init__()
         self.client = client
         self.bucket = bucket
+        self.bucket_name = bucket.name if bucket_name is None else bucket_name
         self.processed_files: set[str] = set()
 
     def run(self):
@@ -61,7 +66,7 @@ class _BucketCrawlerThread(Thread):
     def _download_file(self, file_name: str):
         logger.info("Downloading file %s", file_name)
         self.processed_files.add(file_name)
-        full_name = Path(f"//{self.bucket.name}/{file_name}")
+        full_name = Path(f"//{self.bucket_name}/{file_name}")
         source = f"{settings.crawler_source_id}/{self.bucket}"
 
         def stream_generator():

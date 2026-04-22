@@ -122,6 +122,9 @@ data:
     {{- if .Values.crawler.s3Buckets }}
     s3_buckets: {{ .Values.crawler.s3Buckets | join "," | quote }}
     {{- end }}
+    {{- if .Values.crawler.s3BucketAliases }}
+    s3_bucket_aliases: {{ .Values.crawler.s3BucketAliases | quote }}
+    {{- end }}
 
     # llm
     {{- if ne .Values.llm.model nil }}

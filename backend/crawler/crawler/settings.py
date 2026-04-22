@@ -31,6 +31,7 @@ class Settings(CommonSettings):
     s3_secure_connection: bool = False
 
     s3_bucket_names: list[str] = ["default"]
+    s3_bucket_aliases: dict[str, str] = {}
 
 
 settings = Settings()
