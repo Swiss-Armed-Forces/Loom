@@ -703,9 +703,7 @@ class FileRepository(BaseEsRepository[_EsFile, File]):
         """Get all tags in the database."""
         search = self._document_type.search(using=self._elasticsearch)
         tags_aggregation: Agg[_EsFile] = A(
-            "terms",
-            field="tags",
-            order={"_key": "asc"},  # alphebetic order
+            "terms", field="tags", order={"_key": "asc"}, size=1_000
         )
         search.aggs.bucket("all_tags", tags_aggregation)
         search = search[0:0]  # do not fetch hits
