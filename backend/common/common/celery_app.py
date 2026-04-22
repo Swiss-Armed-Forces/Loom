@@ -437,19 +437,21 @@ def init_celery_app() -> "Celery[BaseTask]":  # pylint: disable=too-many-stateme
     # Register periodic tasks
     app.conf.beat_schedule = get_beat_schedule()
 
-    # Define the celery default queues
+    # Task queues & routes setup
+    app.conf.task_queues = []
+    app.conf.task_routes = {}
+    # Define the celery default queues & routes
     # This queue will be used when external components
     # without insight about all the tasks send tasks
     # to celery.
     #
     # For example, the api will post to this queue.
     default_queue = _get_queue(settings.celery_default_task_name)
-    app.conf.task_queues = [default_queue]
-    app.conf.task_routes = {
-        settings.celery_default_task_name: {
-            "routing_key": settings.celery_default_task_name
-        }
+    app.conf.task_queues.append(default_queue)
+    app.conf.task_routes[settings.celery_default_task_name] = {
+        "routing_key": settings.celery_default_task_name
     }
+
     app.conf.task_default_queue = default_queue.name
     app.conf.task_default_routing_key = settings.celery_default_task_name
     app.conf.task_default_exchange = settings.celery_default_exchange_name
@@ -462,28 +464,26 @@ def init_celery_app() -> "Celery[BaseTask]":  # pylint: disable=too-many-stateme
     # Define dead letter queues
     graveyard_queue = _get_graveyard_queue()
     app.conf.task_queues.append(graveyard_queue)
-    app.conf.task_routes = {
-        settings.celery_graveyard_task_name: {
-            "routing_key": settings.celery_graveyard_task_name
-        }
+    app.conf.task_routes[settings.celery_graveyard_task_name] = {
+        "routing_key": settings.celery_graveyard_task_name
     }
     dead_queue = _get_dead_queue()
     app.conf.task_queues.append(dead_queue)
-    app.conf.task_routes = {
-        settings.celery_dead_task_name: {"routing_key": settings.celery_dead_task_name}
+    app.conf.task_routes[settings.celery_dead_task_name] = {
+        "routing_key": settings.celery_dead_task_name
     }
 
     # Define unroutable queues
     unroutable_queue = _get_unroutable_queue()
     app.conf.task_queues.append(unroutable_queue)
-    app.conf.task_routes = {settings.celery_unroubtable_task_name: {"routing_key": "*"}}
+    app.conf.task_routes[settings.celery_unroubtable_task_name] = {"routing_key": "*"}
 
     # Define persister shard queues for serialized persistence per entity
     for persister_shard_name in get_all_persister_shards(settings.num_persister_shards):
         persister_shard_queue = _get_queue(persister_shard_name)
         app.conf.task_queues.append(persister_shard_queue)
-        app.conf.task_routes = {
-            persister_shard_name: {"routing_key": persister_shard_name}
+        app.conf.task_routes[persister_shard_name] = {
+            "routing_key": persister_shard_name
         }
 
     # Worker type specific configuration

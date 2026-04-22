@@ -76,10 +76,11 @@ class ProcessingTask(
         if object_id is None:
             return
         shard = compute_shard(object_id, settings.num_persister_shards)
-        queue = get_persister_shard_name(shard)
+        shard_name = get_persister_shard_name(shard)
+
         _persist_task_status_task.apply_async(
             args=(object_id, type(self._repository), UUID(task_id), persist_callback),
-            queue=queue,
+            routing_key=shard_name,
         ).forget()
 
     def on_failure(
