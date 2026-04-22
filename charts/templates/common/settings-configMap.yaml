@@ -123,7 +123,7 @@ data:
     s3_buckets: {{ .Values.crawler.s3Buckets | join "," | quote }}
     {{- end }}
     {{- if ne .Values.crawler.s3BucketAliases nil }}
-    s3_bucket_aliases: {{ .Values.crawler.s3BucketAliases | toJson }}
+    s3_bucket_aliases: {{ .Values.crawler.s3BucketAliases | toJson | quote }}
     {{- end }}
 
     # llm
