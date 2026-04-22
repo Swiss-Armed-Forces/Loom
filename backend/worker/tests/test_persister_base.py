@@ -1,5 +1,4 @@
 # pylint: disable=protected-access, too-many-lines
-import asyncio
 import time
 from unittest.mock import MagicMock
 from uuid import UUID, uuid4
@@ -37,34 +36,6 @@ def reset_persister_state():
 
     # stop worker
     worker.shutdown()
-
-    loop = worker._loop
-    if loop is None:
-        return
-
-    # Cancel all tasks and wait
-    async def cleanup():
-        tasks = [t for t in asyncio.all_tasks(loop) if t is not asyncio.current_task()]
-        for task in tasks:
-            task.cancel()
-        # Wait for cancellation
-        await asyncio.gather(*tasks, return_exceptions=True)
-
-    # Run cleanup
-    future = asyncio.run_coroutine_threadsafe(cleanup(), loop)
-    future.result(timeout=5.0)  # Wait for tasks to cancel
-
-    # Stop loop
-    loop.call_soon_threadsafe(loop.stop)
-
-    # Wait for thread
-    loop_thread = MockPersister._worker._loop_thread
-    if loop_thread:
-        loop_thread.join()
-
-    # Close loop
-    if not loop.is_closed():
-        loop.close()
 
 
 @pytest.fixture
