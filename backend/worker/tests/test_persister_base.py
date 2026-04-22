@@ -23,16 +23,22 @@ from worker.utils.persister_base import (
     mutation,
 )
 
+# pylint: disable=redefined-outer-name
+
 
 @pytest.fixture(autouse=True)
 def reset_persister_state():
     """Reset the persister state between tests."""
     MockPersister._worker = None
     yield
-    if MockPersister._worker is None:
+    worker = MockPersister._worker
+    if worker is None:
         return
 
-    loop = MockPersister._worker._loop
+    # stop worker
+    worker.shutdown()
+
+    loop = worker._loop
     if loop is None:
         return
 
@@ -54,11 +60,28 @@ def reset_persister_state():
     # Wait for thread
     loop_thread = MockPersister._worker._loop_thread
     if loop_thread:
-        loop_thread.join(timeout=2.0)
+        loop_thread.join()
 
     # Close loop
     if not loop.is_closed():
         loop.close()
+
+
+@pytest.fixture
+def make_worker():
+    """Factory fixture that ensures every GlobalPersisterWorker is shut down after the
+    test."""
+    workers: list[GlobalPersisterWorker] = []
+
+    def _factory(repository: BaseRepository) -> GlobalPersisterWorker:
+        worker: GlobalPersisterWorker = GlobalPersisterWorker(repository)
+        workers.append(worker)
+        return worker
+
+    yield _factory
+
+    for worker in workers:
+        worker.shutdown()
 
 
 class MockRepositoryObject(RepositoryObject):
@@ -359,7 +382,7 @@ class TestPersisterBaseSubmit:
 class TestGlobalPersisterWorker:
     """Tests for GlobalPersisterWorker in isolation."""
 
-    def test_worker_processes_mutations(self) -> None:
+    def test_worker_processes_mutations(self, make_worker) -> None:
         """Worker applies mutations from queue."""
         object_id = uuid4()
         obj = MockRepositoryObject(id=object_id, name="original")
@@ -370,9 +393,7 @@ class TestGlobalPersisterWorker:
             BulkOperationResult(object_id=object_id, success=True)
         ]
 
-        worker: GlobalPersisterWorker[MockRepositoryObject] = GlobalPersisterWorker(
-            mock_repo
-        )
+        worker: GlobalPersisterWorker[MockRepositoryObject] = make_worker(mock_repo)
 
         def set_name(obj: MockRepositoryObject):
             obj.name = "modified"
@@ -385,7 +406,7 @@ class TestGlobalPersisterWorker:
         saved_objs = mock_repo.bulk_save.call_args[0][0]
         assert saved_objs[0].name == "modified"
 
-    def test_worker_batches_multiple_objects(self) -> None:
+    def test_worker_batches_multiple_objects(self, make_worker) -> None:
         """Multiple objects saved in single bulk_save call."""
         object_id_1 = uuid4()
         object_id_2 = uuid4()
@@ -401,9 +422,7 @@ class TestGlobalPersisterWorker:
             BulkOperationResult(object_id=object_id_2, success=True),
         ]
 
-        worker: GlobalPersisterWorker[MockRepositoryObject] = GlobalPersisterWorker(
-            mock_repo
-        )
+        worker: GlobalPersisterWorker[MockRepositoryObject] = make_worker(mock_repo)
 
         def mutate1(obj: MockRepositoryObject):
             obj.name = "modified1"
@@ -421,7 +440,7 @@ class TestGlobalPersisterWorker:
         saved_objs = mock_repo.bulk_save.call_args[0][0]
         assert len(saved_objs) == 2
 
-    def test_worker_handles_conflict_with_reload_replay(self) -> None:
+    def test_worker_handles_conflict_with_reload_replay(self, make_worker) -> None:
         """ConflictError triggers reload and replay."""
         object_id = uuid4()
         original_obj = MockRepositoryObject(id=object_id, name="original")
@@ -440,9 +459,7 @@ class TestGlobalPersisterWorker:
             [BulkOperationResult(object_id=object_id, success=True)],
         ]
 
-        worker: GlobalPersisterWorker[MockRepositoryObject] = GlobalPersisterWorker(
-            mock_repo
-        )
+        worker: GlobalPersisterWorker[MockRepositoryObject] = make_worker(mock_repo)
 
         def set_name(obj: MockRepositoryObject):
             obj.name = "modified"
