@@ -192,7 +192,7 @@ data:
     gotenberg_host: http://{{ include "app.fullname" . }}-gotenberg:{{ .Values.gotenberg.service.port }}
     seaweedfs_master_host: http://{{ include "app.fullname" . }}-seaweedfs-master:{{ .Values.seaweedfs.master.port }}
 
-    # storage services
+    # file storage
     file_storage__host: {{ .Values.fileStorage.s3Storage.host | default (printf "%s-seaweedfs-filer:%s" (include "app.fullname" .) (.Values.seaweedfs.s3.port | toString)) | quote }}
     {{- if ne .Values.fileStorage.s3Storage.bucketName nil }}
     file_storage__bucket_name: {{ .Values.fileStorage.s3Storage.bucketName | quote }}
@@ -203,6 +203,8 @@ data:
     {{- if ne .Values.fileStorage.s3Storage.secretKey nil }}
     file_storage__secret_key: {{ .Values.fileStorage.s3Storage.secretKey | quote }}
     {{- end }}
+
+    # lazybytes storage
     lazybytes_storage__host: {{ .Values.lazyBytes.s3Storage.host | default (printf "%s-seaweedfs-filer:%s" (include "app.fullname" .) (.Values.seaweedfs.s3.port | toString)) | quote }}
     {{- if ne .Values.lazyBytes.s3Storage.bucketName nil }}
     lazybytes_storage__bucket_name: {{ .Values.lazyBytes.s3Storage.bucketName | quote }}
