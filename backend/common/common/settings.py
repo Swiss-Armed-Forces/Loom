@@ -71,7 +71,11 @@ class Settings(BaseSettings):
         "INSPECT",
     ] = "INSPECT"
     worker_max_concurrency: int = 4
-    worker_min_concurrency: int = 0
+    # NOTE: worker_min_concurrency MUST equal worker_max_concurrency (no scaling allowed).
+    # Due to a suspected Celery bug, tasks get stuck on the worker when concurrency
+    # is scaled dynamically — they are accepted but never executed. Until this is
+    # understood and fixed, scaling is disabled by enforcing a fixed concurrency.
+    worker_min_concurrency: int = 4
     num_persister_shards: int = 16
     persister_total: int = 1  # Total number of PERSISTER workers
     persister_id: int = Field(default_factory=_get_persister_id_from_hostname)
@@ -168,6 +172,13 @@ class Settings(BaseSettings):
             raise ValueError(
                 f"worker_min_concurrency ({self.worker_min_concurrency}) must be equal or"
                 f"less than worker_max_concurrency ({self.worker_max_concurrency})"
+            )
+        if self.worker_min_concurrency != self.worker_max_concurrency:
+            raise ValueError(
+                f"worker_min_concurrency ({self.worker_min_concurrency}) must equal "
+                f"worker_max_concurrency ({self.worker_max_concurrency}): dynamic "
+                f"concurrency scaling is disabled due to a suspected Celery bug that "
+                f"causes tasks to get stuck when the worker pool is scaled"
             )
         return self
 
