@@ -203,6 +203,9 @@ data:
     {{- if ne .Values.fileStorage.s3Storage.secretKey nil }}
     file_storage__secret_key: {{ .Values.fileStorage.s3Storage.secretKey | quote }}
     {{- end }}
+    {{- if ne .Values.fileStorage.s3Storage.secureConnection nil }}
+    file_storage__secure_connection: {{ .Values.fileStorage.s3Storage.secureConnection | quote }}
+    {{- end }}
 
     # lazybytes storage
     lazybytes_storage__host: {{ .Values.lazyBytes.s3Storage.host | default (printf "%s-seaweedfs-filer:%s" (include "app.fullname" .) (.Values.seaweedfs.s3.port | toString)) | quote }}
@@ -214,6 +217,9 @@ data:
     {{- end }}
     {{- if ne .Values.lazyBytes.s3Storage.secretKey nil }}
     lazybytes_storage__secret_key: {{ .Values.lazyBytes.s3Storage.secretKey | quote }}
+    {{- end }}
+    {{- if ne .Values.lazyBytes.s3Storage.secureConnection nil }}
+    lazybytes_storage__secure_connection: {{ .Values.lazyBytes.s3Storage.secureConnection | quote }}
     {{- end }}
 
     # crawler
@@ -229,6 +235,9 @@ data:
     {{- end }}
     {{- if ne .Values.crawler.s3Storage.secretKey nil }}
     s3_storage__secret_key: {{ .Values.crawler.s3Storage.secretKey | quote }}
+    {{- end }}
+    {{- if ne .Values.crawler.s3Storage.secureConnection nil }}
+    s3_storage__secure_connection: {{ .Values.crawler.s3Storage.secureConnection | quote }}
     {{- end }}
 
     # flower
