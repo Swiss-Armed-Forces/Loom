@@ -194,7 +194,9 @@ data:
 
     # storage services
     file_storage__host: {{ .Values.fileStorage.s3Storage.host | default (printf "%s-seaweedfs-filer:%s" (include "app.fullname" .) (.Values.seaweedfs.s3.port | toString)) | quote }}
-    file_storage__bucket_name: {{ .Values.fileStorage.s3Storage.bucketName | default "loom-filestorage" | quote }}
+    {{- if ne .Values.fileStorage.s3Storage.bucketName nil }}
+    file_storage__bucket_name: {{ .Values.fileStorage.s3Storage.bucketName | quote }}
+    {{- end }}
     {{- if ne .Values.fileStorage.s3Storage.accessKey nil }}
     file_storage__access_key: {{ .Values.fileStorage.s3Storage.accessKey | quote }}
     {{- end }}
@@ -202,7 +204,9 @@ data:
     file_storage__secret_key: {{ .Values.fileStorage.s3Storage.secretKey | quote }}
     {{- end }}
     lazybytes_storage__host: {{ .Values.lazyBytes.s3Storage.host | default (printf "%s-seaweedfs-filer:%s" (include "app.fullname" .) (.Values.seaweedfs.s3.port | toString)) | quote }}
-    lazybytes_storage__bucket_name: {{ .Values.lazyBytes.s3Storage.bucketName | default "loom-lazybytes" | quote }}
+    {{- if ne .Values.lazyBytes.s3Storage.bucketName nil }}
+    lazybytes_storage__bucket_name: {{ .Values.lazyBytes.s3Storage.bucketName | quote }}
+    {{- end }}
     {{- if ne .Values.lazyBytes.s3Storage.accessKey nil }}
     lazybytes_storage__access_key: {{ .Values.lazyBytes.s3Storage.accessKey | quote }}
     {{- end }}
@@ -212,7 +216,9 @@ data:
 
     # crawler
     s3_storage__host: {{ .Values.crawler.s3Storage.host | default (printf "%s-seaweedfs-filer:%s" (include "app.fullname" .) (.Values.seaweedfs.s3.port | toString)) | quote }}
-    s3_storage__bucket_name: {{ .Values.crawler.s3Storage.bucketName | default "default" | quote }}
+    {{- if ne .Values.crawler.s3Storage.bucketName nil }}
+    s3_storage__bucket_name: {{ .Values.crawler.s3Storage.bucketName | quote }}
+    {{- end }}
     {{- if ne .Values.crawler.s3Storage.bucketAlias nil }}
     s3_bucket_alias: {{ .Values.crawler.s3Storage.bucketAlias | quote }}
     {{- end }}
