@@ -298,7 +298,7 @@ crawler:
   # S3 bucket to crawl (will be created if it doesn't exist)
   s3Storage:
     host: null
-    bucketName: default
+    bucketName: null
     bucketAlias: null
     accessKey: null
     secretKey: null
