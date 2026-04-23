@@ -821,3 +821,61 @@ class TestGlobalPersisterWorkerShutdown:
         worker.shutdown()
 
         assert not worker._loop_thread.is_alive()
+
+
+class TestSubmitMemoryPressure:
+    """Tests for submit() blocking under memory pressure."""
+
+    def test_submit_blocks_then_succeeds_when_pressure_clears(
+        self, make_worker, monkeypatch
+    ) -> None:
+        """Submit() must block while is_memory_pressure() is True, then succeed."""
+        mock_repo = MagicMock(spec=BaseRepository)
+        worker: GlobalPersisterWorker[MockRepositoryObject] = make_worker(mock_repo)
+
+        call_count = 0
+
+        def pressure_then_clear() -> bool:
+            nonlocal call_count
+            call_count += 1
+            # First 3 calls report pressure, then clear
+            return call_count <= 3
+
+        monkeypatch.setattr(
+            "worker.utils.persister_base.is_memory_pressure", pressure_then_clear
+        )
+        monkeypatch.setattr("worker.utils.persister_base.time.sleep", lambda _: None)
+
+        def noop(_: MockRepositoryObject) -> None:
+            pass
+
+        object_id = uuid4()
+        # Should not raise — pressure clears after 3 checks
+        worker.submit(_ObjectMutation(object_id=object_id, mutation_fn=noop))
+        assert call_count > 3
+
+    def test_submit_raises_on_shutdown_during_pressure(
+        self, make_worker, monkeypatch
+    ) -> None:
+        """Submit() must raise WorkerShuttingDownError if shutdown is signaled while
+        blocking under memory pressure."""
+        mock_repo = MagicMock(spec=BaseRepository)
+        worker: GlobalPersisterWorker[MockRepositoryObject] = make_worker(mock_repo)
+
+        def pressure_and_signal_shutdown() -> bool:
+            # Signal shutdown on second check so the first iteration sleeps once
+            worker._shutdown_event.set()
+            return True
+
+        monkeypatch.setattr(
+            "worker.utils.persister_base.is_memory_pressure",
+            pressure_and_signal_shutdown,
+        )
+        monkeypatch.setattr("worker.utils.persister_base.time.sleep", lambda _: None)
+
+        def noop(_: MockRepositoryObject) -> None:
+            pass
+
+        object_id = uuid4()
+        with pytest.raises(WorkerShuttingDownError):
+            worker.submit(_ObjectMutation(object_id=object_id, mutation_fn=noop))

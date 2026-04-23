@@ -3,7 +3,9 @@ import gc
 import logging
 import queue
 import threading
+import time
 from abc import ABC, abstractmethod
+from collections import deque
 from dataclasses import dataclass
 from functools import wraps
 from threading import Thread
@@ -230,13 +232,25 @@ class GlobalPersisterWorker(Generic[RepositoryObjectT]):
 
         Thread-safe.
 
-        Raises WorkerShuttingDownError if the worker is shutting down.
+        Blocks if the container is under memory pressure to give the worker time to
+        drain the queue and evict cached objects. Raises WorkerShuttingDownError if the
+        worker is shutting down or if memory pressure persists beyond
+        persister_submit_timeout.
         """
         if self._shutdown_event.is_set():
             raise WorkerShuttingDownError(
                 "Worker is shutting down, "
                 f"cannot accept mutation for {object_mutation.object_id}"
             )
+
+        while is_memory_pressure():
+            if self._shutdown_event.is_set():
+                raise WorkerShuttingDownError(
+                    "Worker is shutting down during memory pressure wait, "
+                    f"cannot accept mutation for {object_mutation.object_id}"
+                )
+            time.sleep(settings.persister_debounce_window)
+
         self._mutation_queue.put(object_mutation)
 
     async def _worker_loop(self) -> None:
@@ -246,7 +260,7 @@ class GlobalPersisterWorker(Generic[RepositoryObjectT]):
         before returning.
         """
         objects: dict[UUID, _ObjectState[RepositoryObjectT]] = {}
-        object_mutations: list[_ObjectMutation[RepositoryObjectT]] = []
+        object_mutations: deque[_ObjectMutation[RepositoryObjectT]] = deque()
         now = monotonic()
 
         while not self._shutdown_event.is_set():
@@ -276,7 +290,7 @@ class GlobalPersisterWorker(Generic[RepositoryObjectT]):
                 deferred_mutations = 0
                 len_object_mutations = len(object_mutations)
                 while object_mutations:
-                    object_mutation = object_mutations.pop(0)
+                    object_mutation = object_mutations.popleft()
                     applied_mutation = await self._apply_mutation(
                         now, objects, object_mutation
                     )
@@ -306,7 +320,7 @@ class GlobalPersisterWorker(Generic[RepositoryObjectT]):
 
     async def _shutdown_flush(
         self,
-        object_mutations: list[_ObjectMutation[RepositoryObjectT]],
+        object_mutations: deque[_ObjectMutation[RepositoryObjectT]],
         objects: dict[UUID, _ObjectState[RepositoryObjectT]],
     ) -> None:
         """Drain queue, apply all pending mutations, and force-flush everything.
@@ -325,7 +339,7 @@ class GlobalPersisterWorker(Generic[RepositoryObjectT]):
         # Apply all pending mutations (best-effort, log and skip on error)
         now = monotonic()
         while object_mutations:
-            om = object_mutations.pop(0)
+            om = object_mutations.popleft()
             try:
                 await self._apply_mutation(now, objects, om)
             except Exception:  # pylint: disable=broad-exception-caught
