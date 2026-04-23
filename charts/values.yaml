@@ -36,6 +36,18 @@ ingress: &default-ingress-config
 egress:
   enabled: false
 
+fileStorage:
+  s3Host: null
+  bucketName: null
+  s3AccessKey: null
+  s3SecretKey: null
+
+lazyBytes:
+  s3Host: null
+  bucketName: null
+  s3AccessKey: null
+  s3SecretKey: null
+
 pipeline:
   taskTimeLimitSeconds: 86400  # 24h
   lazy_threshold_bytes: null
@@ -281,10 +293,12 @@ crawler:
     repository: swiss-armed-forces/cyber-command/cea/loom/crawler
   service:
     port: 80
-  # List of S3 buckets to crawl (will be created if they don't exist)
-  s3Buckets:
-    - default
-  s3BucketAliases: null
+  # S3 bucket to crawl (will be created if it doesn't exist)
+  s3Host: null
+  s3BucketName: default
+  s3BucketAlias: null
+  s3AccessKey: null
+  s3SecretKey: null
   resources:
     requests:
       cpu: "0.2"

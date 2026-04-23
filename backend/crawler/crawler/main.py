@@ -13,7 +13,9 @@ if __name__ == "__main__":
     init()
     s3_client = get_s3_client()
     s3_crawler = S3Crawler(
-        s3_client, settings.s3_bucket_names, settings.s3_bucket_aliases
+        s3_client,
+        settings.s3_storage.bucket_name,
+        settings.s3_bucket_alias,
     )
     # Start crawling
     s3_crawler.crawl()
