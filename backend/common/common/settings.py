@@ -48,6 +48,14 @@ class S3StorageSettings(BaseModel):
     secure_connection: bool = False
 
 
+class FileStorageSettings(S3StorageSettings):
+    bucket_name: str = "loom-filestorage"
+
+
+class LazybytesStorageSettings(S3StorageSettings):
+    bucket_name: str = "loom-lazybytes"
+
+
 class Settings(BaseSettings):
     """Settings for the common module They can be overridden by environment
     variables."""
@@ -211,10 +219,8 @@ class Settings(BaseSettings):
         f"ws://api.{DOMAIN}",
     )
 
-    file_storage: S3StorageSettings = S3StorageSettings(bucket_name="loom-filestorage")
-    lazybytes_storage: S3StorageSettings = S3StorageSettings(
-        bucket_name="loom-lazybytes"
-    )
+    file_storage: FileStorageSettings = FileStorageSettings()
+    lazybytes_storage: LazybytesStorageSettings = LazybytesStorageSettings()
 
 
 settings = Settings()
