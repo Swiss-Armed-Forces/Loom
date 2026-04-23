@@ -1,15 +1,16 @@
 import asyncio
 import gc
 import logging
+import os
 import queue
+import signal
 import threading
-import time
 from abc import ABC, abstractmethod
 from collections import deque
 from dataclasses import dataclass
 from functools import wraps
 from threading import Thread
-from time import monotonic
+from time import monotonic, sleep
 from typing import (
     Any,
     Callable,
@@ -243,15 +244,7 @@ class GlobalPersisterWorker(Generic[RepositoryObjectT]):
                 f"cannot accept mutation for {object_mutation.object_id}"
             )
 
-        while is_memory_pressure():
-            if self._shutdown_event.is_set():
-                raise WorkerShuttingDownError(
-                    "Worker is shutting down during memory pressure wait, "
-                    f"cannot accept mutation for {object_mutation.object_id}"
-                )
-            logger.warning("Memory pressure detected: deferring mutation submit")
-            time.sleep(settings.persister_debounce_window)
-
+        self._wait_for_memory_pressure()
         self._mutation_queue.put(object_mutation)
 
     async def _worker_loop(self) -> None:
@@ -538,7 +531,42 @@ class GlobalPersisterWorker(Generic[RepositoryObjectT]):
                 evicted_count += 1
                 self._logger.debug("Evicted object %s (LRU)", obj_id)
 
-    def _on_worker_shutdown(self, **_kwargs: object) -> None:
+    def _wait_for_memory_pressure(self) -> None:
+        """Block while under memory pressure, then return when pressure is relieved.
+
+        Calls gc.collect() on first detection. Sends SIGTERM to trigger a Celery warm
+        shutdown and raises WorkerShuttingDownError if pressure persists beyond
+        persister_memory_pressure_timeout.
+        """
+        memory_pressure_start: float | None = None
+        while is_memory_pressure():
+            if self._shutdown_event.is_set():
+                raise WorkerShuttingDownError(
+                    "Worker is shutting down during memory pressure wait"
+                )
+            now = monotonic()
+            if memory_pressure_start is None:
+                memory_pressure_start = now
+                gc.collect()
+            elapsed = now - memory_pressure_start
+            if elapsed >= settings.persister_memory_pressure_timeout:
+                logger.error(
+                    "Memory pressure persisted for %.1fs (timeout=%.1fs), shutting down worker",
+                    elapsed,
+                    settings.persister_memory_pressure_timeout,
+                )
+                os.kill(os.getpid(), signal.SIGTERM)
+                raise WorkerShuttingDownError(
+                    f"Memory pressure timeout exceeded after {elapsed:.1f}s"
+                )
+            logger.warning(
+                "Memory pressure detected: deferring mutation submit (%.1fs/%.1fs)",
+                elapsed,
+                settings.persister_memory_pressure_timeout,
+            )
+            sleep(settings.persister_debounce_window)
+
+    def _on_worker_shutdown(self, **__: object) -> None:
         """Celery worker_process_shutdown signal handler."""
         self._logger.info(
             "worker_process_shutdown received, initiating graceful shutdown"
