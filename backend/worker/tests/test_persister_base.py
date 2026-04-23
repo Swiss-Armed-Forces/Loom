@@ -844,7 +844,7 @@ class TestSubmitMemoryPressure:
         monkeypatch.setattr(
             "worker.utils.persister_base.is_memory_pressure", pressure_then_clear
         )
-        monkeypatch.setattr("worker.utils.persister_base.time.sleep", lambda _: None)
+        monkeypatch.setattr("worker.utils.persister_base.sleep", lambda _: None)
 
         def noop(_: MockRepositoryObject) -> None:
             pass
@@ -871,7 +871,7 @@ class TestSubmitMemoryPressure:
             "worker.utils.persister_base.is_memory_pressure",
             pressure_and_signal_shutdown,
         )
-        monkeypatch.setattr("worker.utils.persister_base.time.sleep", lambda _: None)
+        monkeypatch.setattr("worker.utils.persister_base.sleep", lambda _: None)
 
         def noop(_: MockRepositoryObject) -> None:
             pass
