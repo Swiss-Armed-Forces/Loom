@@ -249,6 +249,7 @@ class GlobalPersisterWorker(Generic[RepositoryObjectT]):
                     "Worker is shutting down during memory pressure wait, "
                     f"cannot accept mutation for {object_mutation.object_id}"
                 )
+            logger.warning("Memory pressure detected: deferring mutation submit")
             time.sleep(settings.persister_debounce_window)
 
         self._mutation_queue.put(object_mutation)
