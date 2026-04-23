@@ -42,10 +42,10 @@ DOMAIN: str = str(os.getenv("DOMAIN", "loom"))
 
 class S3StorageSettings(BaseModel):
     bucket_name: str
-    s3_host: str = f"s3.{DOMAIN}"
-    s3_secret_key: str | None = None
-    s3_access_key: str | None = None
-    s3_secure_connection: bool = False
+    host: str = f"s3.{DOMAIN}"
+    secret_key: str | None = None
+    access_key: str | None = None
+    secure_connection: bool = False
 
 
 class Settings(BaseSettings):

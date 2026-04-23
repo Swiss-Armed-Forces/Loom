@@ -37,16 +37,18 @@ egress:
   enabled: false
 
 fileStorage:
-  s3Host: null
-  bucketName: null
-  s3AccessKey: null
-  s3SecretKey: null
+  s3Storage:
+    host: null
+    bucketName: null
+    accessKey: null
+    secretKey: null
 
 lazyBytes:
-  s3Host: null
-  bucketName: null
-  s3AccessKey: null
-  s3SecretKey: null
+  s3Storage:
+    host: null
+    bucketName: null
+    accessKey: null
+    secretKey: null
 
 pipeline:
   taskTimeLimitSeconds: 86400  # 24h
@@ -294,11 +296,12 @@ crawler:
   service:
     port: 80
   # S3 bucket to crawl (will be created if it doesn't exist)
-  s3Host: null
-  s3BucketName: default
-  s3BucketAlias: null
-  s3AccessKey: null
-  s3SecretKey: null
+  s3Storage:
+    host: null
+    bucketName: default
+    bucketAlias: null
+    accessKey: null
+    secretKey: null
   resources:
     requests:
       cpu: "0.2"
