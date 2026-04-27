@@ -1,5 +1,6 @@
 import logging
 
+from common.dependencies import get_lazybytes_service
 from common.dependencies import init as init_common_dependencies
 
 from crawler.dependencies import get_s3_client, init
@@ -16,6 +17,7 @@ if __name__ == "__main__":
         s3_client,
         settings.s3_storage.bucket_name,
         settings.s3_bucket_alias,
+        get_lazybytes_service(),
     )
     # Start crawling
     s3_crawler.crawl()
