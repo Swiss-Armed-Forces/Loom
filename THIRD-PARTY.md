@@ -598,7 +598,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | vine                                  | 5.1.0           | BSD License                                                                      |
 | websockets                            | 13.1            | BSD License                                                                      |
 | wrapt                                 | 1.17.3          | BSD License                                                                      |
-| GitPython                             | 3.1.46          | BSD-3-Clause                                                                     |
+| GitPython                             | 3.1.47          | BSD-3-Clause                                                                     |
 | psutil                                | 7.2.1           | BSD-3-Clause                                                                     |
 | pytest-timeout                        | 2.4.0           | DFSG approved; MIT License                                                       |
 | pylint-plugin-utils                   | 0.8.2           | GNU General Public License v2 or later (GPLv2+)                                  |
