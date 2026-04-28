@@ -114,9 +114,9 @@ def _wipe_redis():
 def _wipe_crawled_buckets():
     logger.info("Wiping: crawled buckets")
     client = get_s3_client()
-    for bucket_name in crawler_settings.s3_bucket_names:
-        logger.info("Clearing bucket: %s", bucket_name)
-        flush_s3_bucket(client, bucket_name)
+    bucket_name = crawler_settings.s3_storage.bucket_name
+    logger.info("Clearing bucket: %s", bucket_name)
+    flush_s3_bucket(client, bucket_name)
 
 
 def _wipe_file_storage_service():

@@ -663,7 +663,7 @@
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "avg by (container) (rate(container_cpu_usage_seconds_total{container!=\"\"}[5m]))",
+          "expr": "sum by (container) (rate(container_cpu_usage_seconds_total{container!=\"\"}[5m]))",
           "format": "time_series",
           "instant": false,
           "legendFormat": "{{container}}",

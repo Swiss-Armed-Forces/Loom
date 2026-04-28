@@ -19,6 +19,11 @@ data:
         metrics_path: /v1/metrics
         static_configs:
           - targets: ['{{ include "app.fullname" . }}-api:{{ .Values.api.service.port }}']
+      - job_name: 'flower'
+        scrape_interval: 15s
+        metrics_path: /metrics
+        static_configs:
+          - targets: ['{{ include "app.fullname" . }}-flower:{{ .Values.flower.service.port }}']
       - job_name: 'gotenberg'
         scrape_interval: 15s
         metrics_path: /prometheus/metrics

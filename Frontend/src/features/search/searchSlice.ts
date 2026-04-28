@@ -630,6 +630,7 @@ export const searchSlice = createSlice({
                 searchQuery: query,
                 filePreview: filePreview,
             } as FileDetailData;
+            state.isDetailsOpen = true;
         });
         builder.addCase(fetchFileDetailData.rejected, (state, action) => {
             const { fileId } = action.payload as {

@@ -42,10 +42,18 @@ DOMAIN: str = str(os.getenv("DOMAIN", "loom"))
 
 class S3StorageSettings(BaseModel):
     bucket_name: str
-    s3_host: str = f"s3.{DOMAIN}"
-    s3_secret_key: str | None = None
-    s3_access_key: str | None = None
-    s3_secure_connection: bool = False
+    host: str = f"s3.{DOMAIN}"
+    secret_key: str | None = None
+    access_key: str | None = None
+    secure_connection: bool = False
+
+
+class FileStorageSettings(S3StorageSettings):
+    bucket_name: str = "loom-filestorage"
+
+
+class LazybytesStorageSettings(S3StorageSettings):
+    bucket_name: str = "loom-lazybytes"
 
 
 class Settings(BaseSettings):
@@ -71,6 +79,10 @@ class Settings(BaseSettings):
         "INSPECT",
     ] = "INSPECT"
     worker_max_concurrency: int = 4
+    # NOTE: worker_min_concurrency MUST equal worker_max_concurrency (no scaling allowed).
+    # Due to a suspected Celery bug, tasks get stuck on the worker when concurrency
+    # is scaled dynamically — they are accepted but never executed. Until this is
+    # understood and fixed, scaling is disabled by enforcing a fixed concurrency.
     worker_min_concurrency: int = 4
     num_persister_shards: int = 16
     persister_total: int = 1  # Total number of PERSISTER workers
@@ -91,18 +103,18 @@ class Settings(BaseSettings):
     )
     celery_broker_host: AnyUrl = AnyUrl(f"amqp://rabbit-amqp.{DOMAIN}")
     celery_backend_host: AnyUrl = AnyUrl(f"redis://redis.{DOMAIN}:6379/0?protocol=3")
-    celery_queue_name_prefix: str = "celery:"
+    celery_queue_name_prefix: str = "loom:"
     celery_deliver_limit: int = 5
     celery_graveyard_deliver_limit: int = 3
-    celery_default_task_name: str = "celery"
+    celery_default_task_name: str = "default"
     celery_graveyard_task_name: str = "graveyard"
     celery_dead_task_name: str = "dead"
     celery_persister_shard_prefix: str = "persister.shard"
     celery_unroubtable_ttl__seconds: int = 24 * 60 * 60
     celery_unroubtable_task_name: str = "unroutable"
-    celery_default_exchange_name: str = "celery"
+    celery_default_exchange_name: str = "loom"
     celery_default_exchange_type: str = "topic"
-    celery_alternate_exchange_name: str = "ae-celery"
+    celery_alternate_exchange_name: str = "ae-loom"
     celery_alternate_exchange_type: str = "topic"
     redis_cache_host: AnyUrl = AnyUrl(f"redis://redis-cache.{DOMAIN}:6380/0?protocol=3")
     lazy_threshold_bytes: int = 1024  # 1KiB
@@ -169,6 +181,13 @@ class Settings(BaseSettings):
                 f"worker_min_concurrency ({self.worker_min_concurrency}) must be equal or"
                 f"less than worker_max_concurrency ({self.worker_max_concurrency})"
             )
+        if self.worker_min_concurrency != self.worker_max_concurrency:
+            raise ValueError(
+                f"worker_min_concurrency ({self.worker_min_concurrency}) must equal "
+                f"worker_max_concurrency ({self.worker_max_concurrency}): dynamic "
+                f"concurrency scaling is disabled due to a suspected Celery bug that "
+                f"causes tasks to get stuck when the worker pool is scaled"
+            )
         return self
 
     @model_validator(mode="after")
@@ -200,10 +219,8 @@ class Settings(BaseSettings):
         f"ws://api.{DOMAIN}",
     )
 
-    file_storage: S3StorageSettings = S3StorageSettings(bucket_name="loom-filestorage")
-    lazybytes_storage: S3StorageSettings = S3StorageSettings(
-        bucket_name="loom-lazybytes"
-    )
+    file_storage: FileStorageSettings = FileStorageSettings()
+    lazybytes_storage: LazybytesStorageSettings = LazybytesStorageSettings()
 
 
 settings = Settings()

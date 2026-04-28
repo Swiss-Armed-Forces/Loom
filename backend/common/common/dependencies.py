@@ -127,10 +127,10 @@ def init(init_elasticsearch_documents: bool = False, subprocess_reinit: bool = F
     global _file_storage_service
     _file_storage_service = S3LazyBytesService(
         Minio(
-            settings.file_storage.s3_host,
-            settings.file_storage.s3_access_key,
-            settings.file_storage.s3_secret_key,
-            secure=settings.file_storage.s3_secure_connection,
+            settings.file_storage.host,
+            settings.file_storage.access_key,
+            settings.file_storage.secret_key,
+            secure=settings.file_storage.secure_connection,
         ),
         settings.file_storage.bucket_name,
         # We always want to store data in the file storage service, to
@@ -151,10 +151,10 @@ def init(init_elasticsearch_documents: bool = False, subprocess_reinit: bool = F
     global _lazybytes_service
     _lazybytes_service = S3LazyBytesService(
         Minio(
-            settings.lazybytes_storage.s3_host,
-            settings.lazybytes_storage.s3_access_key,
-            settings.lazybytes_storage.s3_secret_key,
-            secure=settings.lazybytes_storage.s3_secure_connection,
+            settings.lazybytes_storage.host,
+            settings.lazybytes_storage.access_key,
+            settings.lazybytes_storage.secret_key,
+            secure=settings.lazybytes_storage.secure_connection,
         ),
         settings.lazybytes_storage.bucket_name,
         threshold_bytes=settings.lazy_threshold_bytes,

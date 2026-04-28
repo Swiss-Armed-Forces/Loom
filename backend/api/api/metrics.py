@@ -145,6 +145,23 @@ def count_files_by_state(_: CallbackOptions) -> Iterable[Observation]:
 
 
 @with_adaptive_cache()
+def count_files_by_source(_: CallbackOptions) -> Iterable[Observation]:
+    file_repository = get_file_repository()
+    query_id = file_repository.open_point_in_time()
+    source_stat = file_repository.get_stat_generic(
+        query=QueryParameters(
+            query_id=query_id,
+            search_string="hidden:*",
+        ),
+        stat=Stat.SOURCES,
+    )
+    for source_data in source_stat.data:
+        yield Observation(
+            value=source_data.hits_count, attributes={"source": source_data.name}
+        )
+
+
+@with_adaptive_cache()
 def count_files_hidden(_: CallbackOptions) -> Iterable[Observation]:
     file_repository = get_file_repository()
     query_id = file_repository.open_point_in_time()
@@ -282,6 +299,12 @@ def init_metrics(api: FastAPI):
         callbacks=[count_files_by_state],
         unit="file",
         description="Number of files by state",
+    )
+    data_meter.create_observable_up_down_counter(
+        name="data.files_by_source",
+        callbacks=[count_files_by_source],
+        unit="file",
+        description="Number of files by source",
     )
     data_meter.create_observable_up_down_counter(
         name="data.files_hidden",

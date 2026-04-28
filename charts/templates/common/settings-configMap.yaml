@@ -118,11 +118,6 @@ data:
     persister_save_max_retries: {{ .Values.persister.saveMaxRetries | quote }}
     {{- end }}
 
-    # crawler
-    {{- if .Values.crawler.s3Buckets }}
-    s3_buckets: {{ .Values.crawler.s3Buckets | join "," | quote }}
-    {{- end }}
-
     # llm
     {{- if ne .Values.llm.model nil }}
     llm_model: {{ .Values.llm.model }}
@@ -197,11 +192,53 @@ data:
     gotenberg_host: http://{{ include "app.fullname" . }}-gotenberg:{{ .Values.gotenberg.service.port }}
     seaweedfs_master_host: http://{{ include "app.fullname" . }}-seaweedfs-master:{{ .Values.seaweedfs.master.port }}
 
-    # storage services
-    file_storage__s3_host: *s3-host
-    file_storage__bucket_name: loom-filestorage
-    lazybytes_storage__s3_host: *s3-host
-    lazybytes_storage__bucket_name: loom-lazybytes
+    # file storage
+    file_storage__host: {{ .Values.fileStorage.s3Storage.host | default (printf "%s-seaweedfs-filer:%s" (include "app.fullname" .) (.Values.seaweedfs.s3.port | toString)) | quote }}
+    {{- if ne .Values.fileStorage.s3Storage.bucketName nil }}
+    file_storage__bucket_name: {{ .Values.fileStorage.s3Storage.bucketName | quote }}
+    {{- end }}
+    {{- if ne .Values.fileStorage.s3Storage.accessKey nil }}
+    file_storage__access_key: {{ .Values.fileStorage.s3Storage.accessKey | quote }}
+    {{- end }}
+    {{- if ne .Values.fileStorage.s3Storage.secretKey nil }}
+    file_storage__secret_key: {{ .Values.fileStorage.s3Storage.secretKey | quote }}
+    {{- end }}
+    {{- if ne .Values.fileStorage.s3Storage.secureConnection nil }}
+    file_storage__secure_connection: {{ .Values.fileStorage.s3Storage.secureConnection | quote }}
+    {{- end }}
+
+    # lazybytes storage
+    lazybytes_storage__host: {{ .Values.lazyBytes.s3Storage.host | default (printf "%s-seaweedfs-filer:%s" (include "app.fullname" .) (.Values.seaweedfs.s3.port | toString)) | quote }}
+    {{- if ne .Values.lazyBytes.s3Storage.bucketName nil }}
+    lazybytes_storage__bucket_name: {{ .Values.lazyBytes.s3Storage.bucketName | quote }}
+    {{- end }}
+    {{- if ne .Values.lazyBytes.s3Storage.accessKey nil }}
+    lazybytes_storage__access_key: {{ .Values.lazyBytes.s3Storage.accessKey | quote }}
+    {{- end }}
+    {{- if ne .Values.lazyBytes.s3Storage.secretKey nil }}
+    lazybytes_storage__secret_key: {{ .Values.lazyBytes.s3Storage.secretKey | quote }}
+    {{- end }}
+    {{- if ne .Values.lazyBytes.s3Storage.secureConnection nil }}
+    lazybytes_storage__secure_connection: {{ .Values.lazyBytes.s3Storage.secureConnection | quote }}
+    {{- end }}
+
+    # crawler
+    s3_storage__host: {{ .Values.crawler.s3Storage.host | default (printf "%s-seaweedfs-filer:%s" (include "app.fullname" .) (.Values.seaweedfs.s3.port | toString)) | quote }}
+    {{- if ne .Values.crawler.s3Storage.bucketName nil }}
+    s3_storage__bucket_name: {{ .Values.crawler.s3Storage.bucketName | quote }}
+    {{- end }}
+    {{- if ne .Values.crawler.s3Storage.bucketAlias nil }}
+    s3_bucket_alias: {{ .Values.crawler.s3Storage.bucketAlias | quote }}
+    {{- end }}
+    {{- if ne .Values.crawler.s3Storage.accessKey nil }}
+    s3_storage__access_key: {{ .Values.crawler.s3Storage.accessKey | quote }}
+    {{- end }}
+    {{- if ne .Values.crawler.s3Storage.secretKey nil }}
+    s3_storage__secret_key: {{ .Values.crawler.s3Storage.secretKey | quote }}
+    {{- end }}
+    {{- if ne .Values.crawler.s3Storage.secureConnection nil }}
+    s3_storage__secure_connection: {{ .Values.crawler.s3Storage.secureConnection | quote }}
+    {{- end }}
 
     # flower
     FLOWER_BROKER_API: http://guest:guest@{{ include "app.fullname" . }}-rabbit:{{ .Values.rabbit.service.port.http }}/api/

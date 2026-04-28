@@ -25,14 +25,38 @@ CI_SERVER_HOST = os.getenv("CI_SERVER_HOST", "gitlab.com")
 GITLAB_TOKEN = os.getenv("GITLAB_TOKEN") or os.getenv("PROJECT_ACCESS_TOKEN")
 CI_PROJECT_ID = os.getenv("CI_PROJECT_ID")
 CLAUDE_TIMEOUT = int(os.getenv("CLAUDE_TIMEOUT", "120"))
+MAX_DIFF_CHARS = int(os.getenv("MAX_DIFF_CHARS", "50000"))
+
+# Pathspecs for files to exclude from diffs (lockfiles, generated files)
+EXCLUDED_PATHSPECS = [
+    ":(exclude)**/poetry.lock",
+    ":(exclude)**/pnpm-lock.yaml",
+    ":(exclude)Frontend/src/app/api/generated/**",
+]
 
 
 def get_branch_diff(repo: Repo) -> str:
-    """Return the diff between current branch and origin/main."""
+    """Return the diff between current branch and origin/main.
+
+    Excludes lockfiles and generated files. Prepends a --stat summary so the
+    AI always sees which files changed. Truncates the diff body if it exceeds
+    MAX_DIFF_CHARS.
+    """
     repo.git.fetch("origin", "main")
-    diff = repo.git.diff("origin/main...HEAD")
-    logger.debug("Branch diff retrieved: %d characters", len(diff) if diff else 0)
-    return diff
+
+    stat = repo.git.diff("origin/main...HEAD", "--stat", "--", *EXCLUDED_PATHSPECS)
+    diff = repo.git.diff("origin/main...HEAD", "--", *EXCLUDED_PATHSPECS)
+
+    if len(diff) > MAX_DIFF_CHARS:
+        diff = diff[:MAX_DIFF_CHARS] + (
+            f"\n\n[Diff truncated at {MAX_DIFF_CHARS} characters."
+            " See stat summary above for full file list.]"
+        )
+        logger.warning("Diff truncated to %d characters", MAX_DIFF_CHARS)
+
+    result = f"Changed files:\n{stat}\n\nDiff:\n{diff}" if stat else f"Diff:\n{diff}"
+    logger.debug("Branch diff retrieved: %d characters", len(result))
+    return result
 
 
 def load_mr_template(repo: Repo) -> str:
@@ -127,7 +151,10 @@ def generate_commit_message_via_duo(
         return None
 
     prompt = build_prompt(
-        mr_template, current_title, current_description, user_instructions=user_instructions
+        mr_template,
+        current_title,
+        current_description,
+        user_instructions=user_instructions,
     )
 
     url = f"https://{CI_SERVER_HOST}/api/v4/chat/completions"
@@ -203,7 +230,11 @@ def generate_commit_message_via_claude(
         )
 
         if result.returncode != 0:
-            logger.warning("Claude CLI returned non-zero exit code: %s", result.returncode)
+            logger.warning(
+                "Claude CLI returned non-zero exit code: %s", result.returncode
+            )
+            if result.stdout:
+                logger.warning("Claude CLI stdout: %s", result.stdout)
             if result.stderr:
                 logger.warning("Claude CLI stderr: %s", result.stderr)
             return None
@@ -262,7 +293,9 @@ def find_open_mr_for_branch(
         # Try to infer from git remote
         project_id = get_project_id_from_remote(repo)
         if not project_id:
-            logger.error("Could not determine project ID from CI_PROJECT_ID or git remote")
+            logger.error(
+                "Could not determine project ID from CI_PROJECT_ID or git remote"
+            )
             return None
 
     logger.info("Using project ID: %s", project_id)
@@ -333,7 +366,12 @@ def main() -> None:
             logger.error("Claude CLI not installed and GitLab Duo unavailable.")
             sys.exit(1)
         message = generate_commit_message_via_claude(
-            diff, mr_template, repo, current_title, current_description, user_instructions
+            diff,
+            mr_template,
+            repo,
+            current_title,
+            current_description,
+            user_instructions,
         )
         if not message:
             logger.error("Failed to generate commit message via both methods.")

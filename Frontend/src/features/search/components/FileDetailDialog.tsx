@@ -18,7 +18,8 @@ import {
     getShortRunningQuery,
     updateFile,
 } from "../../../app/api";
-import AceEditor from "react-ace";
+import AceEditorImport from "react-ace";
+const AceEditor = AceEditorImport.default || AceEditorImport;
 import {
     fetchFileDetailData,
     selectFileDetailData,
