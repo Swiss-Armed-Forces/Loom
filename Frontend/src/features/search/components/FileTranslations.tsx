@@ -1,6 +1,7 @@
 import { Box, ToggleButton, ToggleButtonGroup, Tooltip } from "@mui/material";
 import TranslateIcon from "@mui/icons-material/Translate";
-import AceEditor from "react-ace";
+import AceEditorImport from "react-ace";
+const AceEditor = AceEditorImport.default || AceEditorImport;
 import {
     selectFileDetailDataSelectedTranslationLanguage,
     setFileDetailData,

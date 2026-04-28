@@ -31,14 +31,14 @@ class TestCrawler:
         with open(file_src, "rb") as file:
             f = file.read()
             client.put_object(
-                settings.s3_bucket_names[0],
+                settings.s3_storage.bucket_name,
                 filename,
                 io.BytesIO(f),
                 -1,
                 part_size=10 * 1024 * 1024,
             )
         fileprev = get_file_preview_by_name(filename)
-        res_path = f"//{settings.s3_bucket_names[0]}/{filename}"
+        res_path = f"//{settings.s3_storage.bucket_name}/{filename}"
         assert fileprev
         assert fileprev.name == filename
         assert fileprev.path == res_path
@@ -49,14 +49,14 @@ class TestCrawler:
         with open(file_src, "rb") as file:
             f = file.read()
             client.put_object(
-                settings.s3_bucket_names[0],
+                settings.s3_storage.bucket_name,
                 filename,
                 io.BytesIO(f),
                 -1,
                 part_size=10 * 1024 * 1024,
             )
         fileprev = get_file_preview_by_name(filename)
-        res_path = f"//{settings.s3_bucket_names[0]}/{filename}"
+        res_path = f"//{settings.s3_storage.bucket_name}/{filename}"
         assert fileprev
         assert fileprev.name == filename
         assert fileprev.path == res_path
@@ -67,14 +67,14 @@ class TestCrawler:
         with open(file_src, "rb") as file:
             f = file.read()
             client.put_object(
-                settings.s3_bucket_names[0],
+                settings.s3_storage.bucket_name,
                 filename,
                 io.BytesIO(f),
                 -1,
                 part_size=10 * 1024 * 1024,
             )
         fileprev = get_file_preview_by_name(filename)
-        res_path = f"//{settings.s3_bucket_names[0]}/{filename}"
+        res_path = f"//{settings.s3_storage.bucket_name}/{filename}"
         assert fileprev
         assert fileprev.name == filename
         assert fileprev.path == res_path

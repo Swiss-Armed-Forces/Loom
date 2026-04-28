@@ -16,10 +16,12 @@ from common.utils.sharding import (
     get_persister_shard_name,
 )
 
-from worker.utils.persister_base import PersisterBase
+from worker.utils.persister_base import PersisterBase, WorkerShuttingDownError
 from worker.utils.processing_task import ProcessingTask
 
 P = ParamSpec("P")
+
+PERSIST_MAX_RETRIES = 20
 
 
 class PersistingTaskBase(
@@ -117,6 +119,9 @@ def persisting_task(
         task_instance = PersistingTask()
         celery_app.register_task(
             task_instance,
+            autoretry_for=[WorkerShuttingDownError],
+            max_retries=PERSIST_MAX_RETRIES,
+            retry_backoff=True,
         )
         return task_instance
 

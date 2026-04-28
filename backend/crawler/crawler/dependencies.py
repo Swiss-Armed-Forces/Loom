@@ -21,8 +21,10 @@ def init(subprocess_reinit: bool = False):
 
     global _s3_client
     _s3_client = Minio(
-        settings.s3_host,
-        secure=settings.s3_secure_connection,
+        settings.s3_storage.host,
+        access_key=settings.s3_storage.access_key,
+        secret_key=settings.s3_storage.secret_key,
+        secure=settings.s3_storage.secure_connection,
     )
 
 

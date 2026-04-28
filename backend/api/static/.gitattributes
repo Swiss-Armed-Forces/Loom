@@ -1,0 +1,6 @@
+*.js filter=lfs diff=lfs merge=lfs -text
+*.css filter=lfs diff=lfs merge=lfs -text
+
+# Collapse generated files
+*.js gitlab-generated
+*.css gitlab-generated

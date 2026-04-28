@@ -1,5 +1,4 @@
 # pylint: disable=protected-access, too-many-lines
-import asyncio
 import time
 from unittest.mock import MagicMock
 from uuid import UUID, uuid4
@@ -17,10 +16,13 @@ from worker.settings import settings
 from worker.utils.persister_base import (
     GlobalPersisterWorker,
     PersisterBase,
+    WorkerShuttingDownError,
     _ObjectMutation,
     _ObjectState,
     mutation,
 )
+
+# pylint: disable=redefined-outer-name
 
 
 @pytest.fixture(autouse=True)
@@ -28,36 +30,29 @@ def reset_persister_state():
     """Reset the persister state between tests."""
     MockPersister._worker = None
     yield
-    if MockPersister._worker is None:
+    worker = MockPersister._worker
+    if worker is None:
         return
 
-    loop = MockPersister._worker._loop
-    if loop is None:
-        return
+    # stop worker
+    worker.shutdown()
 
-    # Cancel all tasks and wait
-    async def cleanup():
-        tasks = [t for t in asyncio.all_tasks(loop) if t is not asyncio.current_task()]
-        for task in tasks:
-            task.cancel()
-        # Wait for cancellation
-        await asyncio.gather(*tasks, return_exceptions=True)
 
-    # Run cleanup
-    future = asyncio.run_coroutine_threadsafe(cleanup(), loop)
-    future.result(timeout=5.0)  # Wait for tasks to cancel
+@pytest.fixture
+def make_worker():
+    """Factory fixture that ensures every GlobalPersisterWorker is shut down after the
+    test."""
+    workers: list[GlobalPersisterWorker] = []
 
-    # Stop loop
-    loop.call_soon_threadsafe(loop.stop)
+    def _factory(repository: BaseRepository) -> GlobalPersisterWorker:
+        worker: GlobalPersisterWorker = GlobalPersisterWorker(repository)
+        workers.append(worker)
+        return worker
 
-    # Wait for thread
-    loop_thread = MockPersister._worker._loop_thread
-    if loop_thread:
-        loop_thread.join(timeout=2.0)
+    yield _factory
 
-    # Close loop
-    if not loop.is_closed():
-        loop.close()
+    for worker in workers:
+        worker.shutdown()
 
 
 class MockRepositoryObject(RepositoryObject):
@@ -358,7 +353,7 @@ class TestPersisterBaseSubmit:
 class TestGlobalPersisterWorker:
     """Tests for GlobalPersisterWorker in isolation."""
 
-    def test_worker_processes_mutations(self) -> None:
+    def test_worker_processes_mutations(self, make_worker) -> None:
         """Worker applies mutations from queue."""
         object_id = uuid4()
         obj = MockRepositoryObject(id=object_id, name="original")
@@ -369,9 +364,7 @@ class TestGlobalPersisterWorker:
             BulkOperationResult(object_id=object_id, success=True)
         ]
 
-        worker: GlobalPersisterWorker[MockRepositoryObject] = GlobalPersisterWorker(
-            mock_repo
-        )
+        worker: GlobalPersisterWorker[MockRepositoryObject] = make_worker(mock_repo)
 
         def set_name(obj: MockRepositoryObject):
             obj.name = "modified"
@@ -384,7 +377,7 @@ class TestGlobalPersisterWorker:
         saved_objs = mock_repo.bulk_save.call_args[0][0]
         assert saved_objs[0].name == "modified"
 
-    def test_worker_batches_multiple_objects(self) -> None:
+    def test_worker_batches_multiple_objects(self, make_worker) -> None:
         """Multiple objects saved in single bulk_save call."""
         object_id_1 = uuid4()
         object_id_2 = uuid4()
@@ -400,9 +393,7 @@ class TestGlobalPersisterWorker:
             BulkOperationResult(object_id=object_id_2, success=True),
         ]
 
-        worker: GlobalPersisterWorker[MockRepositoryObject] = GlobalPersisterWorker(
-            mock_repo
-        )
+        worker: GlobalPersisterWorker[MockRepositoryObject] = make_worker(mock_repo)
 
         def mutate1(obj: MockRepositoryObject):
             obj.name = "modified1"
@@ -420,7 +411,7 @@ class TestGlobalPersisterWorker:
         saved_objs = mock_repo.bulk_save.call_args[0][0]
         assert len(saved_objs) == 2
 
-    def test_worker_handles_conflict_with_reload_replay(self) -> None:
+    def test_worker_handles_conflict_with_reload_replay(self, make_worker) -> None:
         """ConflictError triggers reload and replay."""
         object_id = uuid4()
         original_obj = MockRepositoryObject(id=object_id, name="original")
@@ -439,9 +430,7 @@ class TestGlobalPersisterWorker:
             [BulkOperationResult(object_id=object_id, success=True)],
         ]
 
-        worker: GlobalPersisterWorker[MockRepositoryObject] = GlobalPersisterWorker(
-            mock_repo
-        )
+        worker: GlobalPersisterWorker[MockRepositoryObject] = make_worker(mock_repo)
 
         def set_name(obj: MockRepositoryObject):
             obj.name = "modified"
@@ -770,3 +759,123 @@ class TestObjectState:
         state.mark_saved()
 
         assert state.recovery_attempts == 0
+
+
+class TestGlobalPersisterWorkerShutdown:
+    """Tests for graceful shutdown behavior."""
+
+    def test_shutdown_flushes_pending_mutations(self) -> None:
+        """Shutdown() must flush mutations without waiting for the debounce window."""
+        object_id = uuid4()
+        obj = MockRepositoryObject(id=object_id, name="original")
+
+        mock_repo = MagicMock(spec=BaseRepository)
+        mock_repo.get_by_id.return_value = obj
+        mock_repo.bulk_save.return_value = [
+            BulkOperationResult(object_id=object_id, success=True)
+        ]
+
+        worker: GlobalPersisterWorker[MockRepositoryObject] = GlobalPersisterWorker(
+            mock_repo
+        )
+
+        def set_name(o: MockRepositoryObject) -> None:
+            o.name = "modified"
+
+        worker.submit(_ObjectMutation(object_id=object_id, mutation_fn=set_name))
+
+        # Shut down immediately — well before the debounce window expires
+        worker.shutdown()
+
+        mock_repo.bulk_save.assert_called()
+        saved_objs = mock_repo.bulk_save.call_args[0][0]
+        assert saved_objs[0].name == "modified"
+
+    def test_shutdown_raises_on_submit_after_shutdown(self) -> None:
+        """Submit() must raise WorkerShuttingDownError after shutdown starts."""
+        object_id = uuid4()
+
+        mock_repo = MagicMock(spec=BaseRepository)
+        mock_repo.get_by_id.return_value = None
+
+        worker: GlobalPersisterWorker[MockRepositoryObject] = GlobalPersisterWorker(
+            mock_repo
+        )
+        worker.shutdown()
+
+        def noop(_: MockRepositoryObject) -> None:
+            pass
+
+        with pytest.raises(WorkerShuttingDownError):
+            worker.submit(_ObjectMutation(object_id=object_id, mutation_fn=noop))
+
+    def test_shutdown_stops_loop_thread(self) -> None:
+        """Loop thread must not be alive after shutdown() returns."""
+        mock_repo = MagicMock(spec=BaseRepository)
+
+        worker: GlobalPersisterWorker[MockRepositoryObject] = GlobalPersisterWorker(
+            mock_repo
+        )
+        assert worker._loop_thread.is_alive()
+
+        worker.shutdown()
+
+        assert not worker._loop_thread.is_alive()
+
+
+class TestSubmitMemoryPressure:
+    """Tests for submit() blocking under memory pressure."""
+
+    def test_submit_blocks_then_succeeds_when_pressure_clears(
+        self, make_worker, monkeypatch
+    ) -> None:
+        """Submit() must block while is_memory_pressure() is True, then succeed."""
+        mock_repo = MagicMock(spec=BaseRepository)
+        worker: GlobalPersisterWorker[MockRepositoryObject] = make_worker(mock_repo)
+
+        call_count = 0
+
+        def pressure_then_clear() -> bool:
+            nonlocal call_count
+            call_count += 1
+            # First 3 calls report pressure, then clear
+            return call_count <= 3
+
+        monkeypatch.setattr(
+            "worker.utils.persister_base.is_memory_pressure", pressure_then_clear
+        )
+        monkeypatch.setattr("worker.utils.persister_base.sleep", lambda _: None)
+
+        def noop(_: MockRepositoryObject) -> None:
+            pass
+
+        object_id = uuid4()
+        # Should not raise — pressure clears after 3 checks
+        worker.submit(_ObjectMutation(object_id=object_id, mutation_fn=noop))
+        assert call_count > 3
+
+    def test_submit_raises_on_shutdown_during_pressure(
+        self, make_worker, monkeypatch
+    ) -> None:
+        """Submit() must raise WorkerShuttingDownError if shutdown is signaled while
+        blocking under memory pressure."""
+        mock_repo = MagicMock(spec=BaseRepository)
+        worker: GlobalPersisterWorker[MockRepositoryObject] = make_worker(mock_repo)
+
+        def pressure_and_signal_shutdown() -> bool:
+            # Signal shutdown on second check so the first iteration sleeps once
+            worker._shutdown_event.set()
+            return True
+
+        monkeypatch.setattr(
+            "worker.utils.persister_base.is_memory_pressure",
+            pressure_and_signal_shutdown,
+        )
+        monkeypatch.setattr("worker.utils.persister_base.sleep", lambda _: None)
+
+        def noop(_: MockRepositoryObject) -> None:
+            pass
+
+        object_id = uuid4()
+        with pytest.raises(WorkerShuttingDownError):
+            worker.submit(_ObjectMutation(object_id=object_id, mutation_fn=noop))

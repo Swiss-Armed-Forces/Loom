@@ -228,6 +228,9 @@ class Settings(CommonSettings):
         10  # multiplier for stale object eviction
     )
     persister_save_max_retries: int = 3  # max conflict retries before giving up
+    persister_memory_pressure_timeout: float = (
+        60.0  # seconds before terminating under memory pressure
+    )
 
     @property
     def rendered_pdf_page_size(self) -> PageSize:

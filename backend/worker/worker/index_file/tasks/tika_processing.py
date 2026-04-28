@@ -3,6 +3,7 @@ import logging
 import os
 import tempfile
 from pathlib import Path
+from traceback import format_exception
 from typing import Generator
 
 from celery import Task, chain, chord, group
@@ -56,12 +57,16 @@ logger = logging.getLogger(__name__)
 app = get_celery_app()
 
 
+def _exception_as_str(ex: Exception) -> str:
+    return "".join(format_exception(type(ex), ex, ex.__traceback__))
+
+
 class TikaProcessingResult(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
     file_type: str
     result: TypedLazyBytes[TikaResult] | None = None
-    exceptions: list[Exception] = []
+    exceptions: list[str] = []
     handled_by: str | None = None
 
 
@@ -174,7 +179,7 @@ def _create_fallback_task(fallback: TikaFallback) -> Task:
             # otherwise one exception from a fallback might stop the whole
             # tika processing pipeline.
             logger.exception("Tika fallback failed: %s", fallback_name)
-            tika_processing_result.exceptions.append(ex)
+            tika_processing_result.exceptions.append(_exception_as_str(ex))
         if result is None:
             return tika_processing_result
         return TikaProcessingResult(
@@ -264,10 +269,15 @@ def tika_processor_task(
     try:
         result = get_tika_service().parse_from_generator(generator)
     except Exception as ex:  # pylint: disable=broad-exception-caught
-        if ex in TIKA_RETRY_EXCEPTIONS and self.request.retries < TIKA_MAX_RETRIES:
+        if (
+            isinstance(ex, TIKA_RETRY_EXCEPTIONS)
+            and self.request.retries < TIKA_MAX_RETRIES
+        ):
             raise ex
         # will proceed to fallback
-        return TikaProcessingResult(file_type=file_type, exceptions=[ex])
+        return TikaProcessingResult(
+            file_type=file_type, exceptions=[_exception_as_str(ex)]
+        )
 
     return TikaProcessingResult(
         file_type=file_type,
@@ -281,7 +291,7 @@ def choose_tika_processing_result_task(
     tika_processing_results: list[TikaProcessingResult],
 ) -> TikaProcessingResult:
     """Task to choose a TikaResult generated from the fallback tasks."""
-    # To explain why the following logic is sufficient, we consider the following
+    # To explain why the following logic is sufficient, we consider the
     # possible scenarios:
     #   - in case of a successful parse, all results are the same and all
     #     correspond to what was been returned by the initial Tika task.
@@ -292,7 +302,7 @@ def choose_tika_processing_result_task(
     for tika_processing_result in tika_processing_results:
         if tika_processing_result.result is not None:
             return tika_processing_result
-    # if all invalid, merge resulsts
+    # if all invalid, merge results
     merged_tika_processing_result = TikaProcessingResult(
         file_type=tika_processing_results[0].file_type,
         exceptions=[
