@@ -25,17 +25,6 @@ from common.utils.sharding import get_all_persister_shards
 logger = logging.getLogger(__name__)
 
 
-def _never_nowfun():
-    return datetime(year=1970, month=1, day=1, hour=0)
-
-
-CELERY_SCHEDULE_NEVER = crontab(
-    minute="0",
-    hour="1",
-    nowfun=_never_nowfun,
-)
-
-
 def get_beat_schedule() -> dict:
     """Return the Celery Beat schedule configuration.
 
@@ -73,7 +62,7 @@ def get_beat_schedule() -> dict:
             "task": (
                 "worker.periodic.sync_flagged_emails_periodically_task.sync_flagged_emails_periodically_task"  # noqa: E501 pylint: disable=line-too-long
             ),
-            "schedule": CELERY_SCHEDULE_NEVER,
+            "schedule": crontab(minute="0", hour="2"),
         },
         # SeaweedFS Maintenance Tasks - frequent "on-idle" variants (check_idle=True)
         "seaweedfs-fix-replication-on-idle": {
