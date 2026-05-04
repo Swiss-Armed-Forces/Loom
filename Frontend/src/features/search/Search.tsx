@@ -256,7 +256,8 @@ export const Search = () => {
 
     // update query id and show toast
     useEffect(() => {
-        const message = webSocketPubSubMessage.message as MessageQueryIdExpired;
+        const message =
+            webSocketPubSubMessage?.message as MessageQueryIdExpired;
         if (message?.type !== "queryIdExpired") return;
         const oldQueryId = message.oldId;
         if (searchQuery?.id !== oldQueryId) return;
