@@ -10,6 +10,7 @@ import reactHooks from "eslint-plugin-react-hooks";
 
 import reactRefresh from "eslint-plugin-react-refresh";
 import unusedImports from "eslint-plugin-unused-imports";
+import importPlugin from "eslint-plugin-import";
 
 import prettierRecommended from "eslint-plugin-prettier/recommended";
 
@@ -50,9 +51,12 @@ export default defineConfig([
 
     // Project-specific behavior and overrides.
     {
+        // Only applies to source file
+        files: ["src/**/*.{ts,tsx}"],
         plugins: {
             "react-refresh": reactRefresh,
             "unused-imports": unusedImports,
+            import: importPlugin,
         },
 
         linterOptions: {
@@ -69,11 +73,30 @@ export default defineConfig([
             // Preserve the previous behavior of using the TypeScript parser.
             // (This keeps parsing/lint behavior consistent with your original config.)
             parser: tsParser,
+
+            // Add parser options for TypeScript project for imports
+            parserOptions: {
+                projectService: true,
+                ecmaFeatures: {
+                    jsx: true,
+                },
+            },
         },
 
         settings: {
             // Let eslint-plugin-react detect the installed React version automatically.
             react: { version: "detect" },
+
+            // TS import resolver configuration
+            "import/resolver": {
+                typescript: {
+                    alwaysTryTypes: true,
+                    project: "./tsconfig.json",
+                },
+                node: {
+                    extensions: [".js", ".jsx", ".ts", ".tsx", ".css"],
+                },
+            },
         },
 
         rules: {
@@ -81,6 +104,15 @@ export default defineConfig([
             "react-refresh/only-export-components": [
                 "warn",
                 { allowConstantExport: true },
+            ],
+
+            // Enforce arrow functions for React components
+            "react/function-component-definition": [
+                "error",
+                {
+                    namedComponents: "arrow-function",
+                    unnamedComponents: "arrow-function",
+                },
             ],
 
             // Your TypeScript rule overrides.
@@ -98,8 +130,23 @@ export default defineConfig([
                 },
             ],
 
+            // Disallow file extensions in imports
+            "import/extensions": [
+                "error",
+                "ignorePackages",
+                {
+                    js: "never",
+                    jsx: "never",
+                    ts: "never",
+                    tsx: "never",
+                },
+            ],
+
             // Enforce double quotes (this intentionally may differ from Prettier defaults).
             quotes: ["error", "double", { avoidEscape: true }],
+
+            // Prefer const for component declarations
+            "prefer-const": "error",
 
             // Ensure formatting issues are reported as lint errors.
             // (The Prettier preset already enables this, but keeping it here preserves your explicit intent.)
@@ -107,6 +154,79 @@ export default defineConfig([
 
             // Modern React doesn't require React in scope for JSX; keep this off.
             "react/react-in-jsx-scope": "off",
+
+            // Disallow function declarations
+            "func-style": ["error", "expression"],
+
+            // Import rules (optional but recommended)
+            "import/no-unresolved": "error",
+            "import/order": [
+                "error",
+                {
+                    groups: [
+                        "builtin",
+                        "external",
+                        "internal",
+                        "parent",
+                        "sibling",
+                        "index",
+                    ],
+                    "newlines-between": "always",
+                    alphabetize: {
+                        order: "asc",
+                        caseInsensitive: true,
+                    },
+                },
+            ],
+
+            "@typescript-eslint/naming-convention": [
+                "error",
+                {
+                    selector: "typeLike",
+                    format: ["PascalCase"],
+                },
+                {
+                    selector: "variable",
+                    format: ["camelCase", "UPPER_CASE", "PascalCase"],
+                    leadingUnderscore: "allow",
+                },
+                {
+                    selector: "function",
+                    format: ["camelCase", "PascalCase"], // PascalCase for React components
+                },
+                {
+                    selector: "parameter",
+                    format: ["camelCase", "PascalCase"],
+                    leadingUnderscore: "allow",
+                    trailingUnderscore: "allow",
+                },
+                {
+                    selector: "parameter",
+                    filter: {
+                        regex: "^_+$", // Allows _, __, ___, etc.
+                        match: true,
+                    },
+                    format: null, // Disable format check for these
+                },
+            ],
+        },
+    },
+    {
+        // Only applies to config files
+        files: ["*.config.{js,mjs,ts}", "vite.config.ts"],
+        languageOptions: {
+            globals: {
+                ...globals.node,
+            },
+            parser: tsParser,
+        },
+        settings: {
+            // Let eslint-plugin-react detect the installed React version automatically.
+            react: { version: "detect" },
+        },
+        rules: {
+            "@typescript-eslint/no-require-imports": "off",
+            "import/no-unresolved": "off", // Config files may have special imports
         },
     },
 ]);

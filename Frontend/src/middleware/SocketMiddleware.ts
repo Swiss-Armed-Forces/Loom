@@ -1,9 +1,10 @@
-import { toast } from "react-toastify";
-import { PubSubMessage, PubSubMessageFromJSON } from "../app/api";
-import SocketApi from "../app/api/socketApi";
-import { webSocket } from "../features/common/urls";
-import { setWebSocketPubSubMessage } from "../features/search/searchSlice";
 import { t } from "i18next";
+import { toast } from "react-toastify";
+
+import { PubSubMessage, PubSubMessageFromJSON } from "@app/api";
+import SocketApi from "@app/api/socketApi";
+import { setWebSocketPubSubMessage } from "@app/slices/searchSlice";
+import { webSocket } from "@features/common/urls";
 
 export const websocketConnect = { type: "webSocket/connect" };
 export const webSocketSendMessage = (message: PubSubMessage) => ({

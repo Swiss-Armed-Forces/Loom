@@ -1,0 +1,102 @@
+diff --git a/index.js b/index.js
+index 40df6d824af420ec10cc9e7270cbc399bdcc38c9..300be1d9c9f3d7bff29a2b2aa12caf6d03c8333a 100644
+--- a/index.js
++++ b/index.js
+@@ -6,14 +6,16 @@
+ const { createRequire } = require('node:module')
+ require = createRequire(__filename)
+
+-const { readFileSync } = require('node:fs')
++const { readFileSync, openSync, readSync, close } = require("node:fs");
+ let nativeBinding = null
+ const loadErrors = []
+
+ const isMusl = () => {
+   let musl = false
+   if (process.platform === 'linux') {
+-    musl = isMuslFromFilesystem()
++    musl = isMuslFromInterpreter();
++    // devenv/Nix environments always use glibc — skip musl detection entirely
++    if (isNixOrDevenv()) return false;
+     if (musl === null) {
+       musl = isMuslFromReport()
+     }
+@@ -23,7 +25,77 @@ const isMusl = () => {
+   }
+   return musl
+ }
+-
++const isNixOrDevenv = () => {
++  // devenv sets DEVENV_ACTIVE and DEVENV_ROOT
++  if (process.env.DEVENV_ACTIVE || process.env.DEVENV_ROOT) return true;
++  // Nix shells set IN_NIX_SHELL
++  if (process.env.IN_NIX_SHELL) return true;
++  // Nix build environments set NIX_BUILD_TOP
++  if (process.env.NIX_BUILD_TOP) return true;
++  // Fallback: detect Nix by the presence of /nix/store in PATH or the exe
++  try {
++    const selfExe = process.execPath;
++    if (selfExe && selfExe.includes("/nix/store")) return true;
++    const pathEnv = process.env.PATH || "";
++    if (pathEnv.split(":").some((p) => p.startsWith("/nix/store"))) return true;
++  } catch (e) {}
++  return false;
++};
++const isMuslFromInterpreter = () => {
++  try {
++    const SELF_PATH = '/proc/self/exe';
++    const MAX_LENGTH = 2048;
++    const fd = openSync(SELF_PATH, 'r');
++    const buffer = Buffer.alloc(MAX_LENGTH);
++    const bytesRead = readSync(fd, buffer, 0, MAX_LENGTH, 0);
++    close(fd);
++    const selfContent = buffer.subarray(0, bytesRead);
++    const path = interpreterPath(selfContent);
++    return isMuslFromInterpreterPath(path);
++  } catch (e) {}
++  return null;
++}
++const interpreterPath = (elf) => {
++  if (elf.length < 64) {
++    return null;
++  }
++  if (elf.readUInt32BE(0) !== 0x7F454C46) {
++    // Unexpected magic bytes
++    return null;
++  }
++  if (elf.readUInt8(4) !== 2) {
++    // Not a 64-bit ELF
++    return null;
++  }
++  if (elf.readUInt8(5) !== 1) {
++    // Not little-endian
++    return null;
++  }
++  const offset = elf.readUInt32LE(32);
++  const size = elf.readUInt16LE(54);
++  const count = elf.readUInt16LE(56);
++  for (let i = 0; i < count; i++) {
++    const headerOffset = offset + (i * size);
++    const type = elf.readUInt32LE(headerOffset);
++    if (type === 3) {
++    const fileOffset = elf.readUInt32LE(headerOffset + 8);
++    const fileSize = elf.readUInt32LE(headerOffset + 32);
++    return elf.subarray(fileOffset, fileOffset + fileSize).toString().replace(/\0.*$/g, '');
++    }
++  }
++  return null;
++  };
++
++  const isMuslFromInterpreterPath = (path) => {
++  if (path) {
++    if (path.includes('/ld-musl-')) {
++    return true;
++    } else if (path.includes('/ld-linux-')) {
++    return false;
++    }
++  }
++  return null;
++};
+ const isFileMusl = (f) => f.includes('libc.musl-') || f.includes('ld-musl-')
+
+ const isMuslFromFilesystem = () => {

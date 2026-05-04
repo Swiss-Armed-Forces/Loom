@@ -1,8 +1,11 @@
 import { configureStore, ThunkAction, UnknownAction } from "@reduxjs/toolkit";
-import commonReducer from "../features/common/commonSlice";
-import searchReducer from "../features/search/searchSlice";
-import archiveReducer from "../features/archives/archiveSlice";
+
+import archiveReducer from "@app/slices/archiveSlice";
+import commonReducer from "@app/slices/commonSlice";
+import searchReducer from "@app/slices/searchSlice";
+
 import socketMiddleware from "../middleware/SocketMiddleware";
+
 import SocketApi from "./api/socketApi";
 import { localStorageCustomQueriesMiddleware } from "./middlewares";
 

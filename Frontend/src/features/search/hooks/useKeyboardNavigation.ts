@@ -1,27 +1,26 @@
 import { useCallback, useEffect } from "react";
-import { useAppDispatch, useAppSelector } from "../../../app/hooks";
+
+import { useAppDispatch, useAppSelector } from "@app/hooks";
 import {
-    selectFileDetailData,
+    selectIsLoading,
+    selectTopDialog,
+    updateDialogPropsById,
+} from "@app/slices/commonSlice";
+import {
     selectHighlightedIndex,
     selectTotalFiles,
     selectLoadedFiles,
     selectLastFileSortId,
     selectQuery,
     setHighlightedIndex,
-    setFileDetailData,
     updateQuery,
-    selectAction,
-    ActionType,
-    selectIsDetailsOpen,
-} from "../searchSlice";
-import { selectIsLoading } from "../../common/commonSlice";
-import { FileDetailTab } from "../model";
+} from "@app/slices/searchSlice";
+import { DialogType } from "@features/common/utils/enums";
+import { FileDetailTab } from "@features/common/utils/enums";
 
-export function useKeyboardNavigation() {
+export const useKeyboardNavigation = () => {
     const dispatch = useAppDispatch();
-    const fileDetailData = useAppSelector(selectFileDetailData);
-    const isDetailsOpen = useAppSelector(selectIsDetailsOpen);
-    const action = useAppSelector(selectAction);
+    const topDialog = useAppSelector(selectTopDialog);
     const highlightedIndex = useAppSelector(selectHighlightedIndex);
     const totalFiles = useAppSelector(selectTotalFiles);
     const loadedFiles = useAppSelector(selectLoadedFiles);
@@ -29,14 +28,10 @@ export function useKeyboardNavigation() {
     const query = useAppSelector(selectQuery);
     const isLoading = useAppSelector(selectIsLoading);
 
-    const currentTab = fileDetailData.tab ?? FileDetailTab.Rendered;
-
     const shouldIgnoreKeyEvent = useCallback(
         (event: KeyboardEvent): boolean => {
-            // Ignore if performing an action other than SEARCH
-            if (action != ActionType.SEARCH) {
+            if (topDialog && topDialog.type != DialogType.FileDetail)
                 return true;
-            }
 
             // Ignore if modifiers are pressed
             if (event.ctrlKey || event.metaKey || event.altKey) {
@@ -82,7 +77,7 @@ export function useKeyboardNavigation() {
 
             return false;
         },
-        [action],
+        [topDialog],
     );
 
     const handleResultNavigation = useCallback(
@@ -103,8 +98,6 @@ export function useKeyboardNavigation() {
                                 sortId: lastFileSortId,
                             }),
                         );
-                        // Optimistically advance to next item (will be valid when results arrive)
-                        dispatch(setHighlightedIndex(highlightedIndex + 1));
                     }
                     return;
                 }
@@ -127,7 +120,8 @@ export function useKeyboardNavigation() {
     );
 
     const getEnabledTabs = useCallback((): FileDetailTab[] => {
-        const dialog = document.querySelector("[role='dialog']");
+        if (!topDialog || topDialog.type != DialogType.FileDetail) return [];
+        const dialog = document.getElementById(`file-detail-${topDialog.id}`);
         if (!dialog) return [];
 
         const tabElements = dialog.querySelectorAll("[role='tab']");
@@ -148,7 +142,7 @@ export function useKeyboardNavigation() {
         });
 
         return enabledTabs;
-    }, []);
+    }, [topDialog]);
 
     const handleTabNavigationDirection = useCallback(
         (direction: "left" | "right") => {
@@ -156,7 +150,9 @@ export function useKeyboardNavigation() {
             if (enabledTabs.length === 0) return;
 
             // Find current tab's position in enabled tabs
-            const currentIndex = enabledTabs.indexOf(currentTab);
+            const currentIndex = enabledTabs.indexOf(
+                topDialog.props.tab ?? FileDetailTab.Rendered,
+            );
 
             let nextIndex: number;
             if (currentIndex === -1) {
@@ -172,9 +168,14 @@ export function useKeyboardNavigation() {
                     enabledTabs.length;
             }
 
-            dispatch(setFileDetailData({ tab: enabledTabs[nextIndex] }));
+            dispatch(
+                updateDialogPropsById({
+                    id: topDialog.id,
+                    props: { tab: enabledTabs[nextIndex] },
+                }),
+            );
         },
-        [currentTab, getEnabledTabs, dispatch],
+        [topDialog, getEnabledTabs, dispatch],
     );
 
     const handleDialogScroll = useCallback((direction: "up" | "down") => {
@@ -238,7 +239,7 @@ export function useKeyboardNavigation() {
     // Click a button by aria-label or title within the appropriate container
     const clickActionButton = useCallback(
         (actionKey: string) => {
-            const container = isDetailsOpen
+            const container = topDialog
                 ? document.querySelector("[role='dialog']")
                 : document.querySelector("[data-highlighted='true']");
 
@@ -259,7 +260,7 @@ export function useKeyboardNavigation() {
                 (clickable as HTMLElement).click();
             }
         },
-        [isDetailsOpen],
+        [topDialog],
     );
 
     const handleKeyDown = useCallback(
@@ -269,7 +270,7 @@ export function useKeyboardNavigation() {
             }
 
             // Handle dialog-specific navigation
-            if (isDetailsOpen) {
+            if (topDialog && topDialog.type === DialogType.FileDetail) {
                 switch (event.key) {
                     case "j":
                     case "ArrowDown":
@@ -311,7 +312,7 @@ export function useKeyboardNavigation() {
                         event.preventDefault();
                         return;
                 }
-            } else {
+            } else if (!topDialog) {
                 // Handle result list navigation
                 switch (event.key) {
                     case "Escape":
@@ -397,7 +398,7 @@ export function useKeyboardNavigation() {
         },
         [
             shouldIgnoreKeyEvent,
-            isDetailsOpen,
+            topDialog,
             highlightedIndex,
             dispatch,
             handleTabNavigationDirection,
@@ -413,4 +414,4 @@ export function useKeyboardNavigation() {
             document.removeEventListener("keydown", handleKeyDown);
         };
     }, [handleKeyDown]);
-}
+};

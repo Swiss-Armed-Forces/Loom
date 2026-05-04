@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
-export function Home() {
+export const Home = () => {
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -9,4 +9,4 @@ export function Home() {
     });
 
     return <></>;
-}
+};

@@ -8,7 +8,7 @@ const apiProtocol = isHttps ? "https" : "http";
 export const socketUrl = `${wsProtocol}://${window.location.hostname}/api`;
 export const apiUrl = `${apiProtocol}://${window.location.hostname}/api`;
 
-function getHost(host: string): URL {
+const getHost = (host: string): URL => {
     const urlCopy = new URL(thisUrl);
     if (!urlCopy.hostname.includes("frontend")) {
         urlCopy.hostname = `frontend.${urlCopy.hostname}`;
@@ -18,7 +18,7 @@ function getHost(host: string): URL {
     urlCopy.search = "";
     urlCopy.hash = "";
     return urlCopy;
-}
+};
 
 export const frontendHost = getHost("frontend");
 export const flowerHost = getHost("flower");
@@ -46,11 +46,11 @@ export const webApiGetFile = (fileId: string) =>
 export const webApiGetFileOpen = (fileId: string) =>
     `${apiUrl}/v1/files/${fileId}/download?content_disposition=inline`;
 export const webApiGetFileThumbnail = (
-    file_id: string,
-    thumbnail_file_id: string,
-) => `${apiUrl}/v1/files/${file_id}/thumbnail/${thumbnail_file_id}`;
-export const webApiGetFileRendered = (file_id: string, rendered_id: string) =>
-    `${apiUrl}/v1/files/${file_id}/rendered/${rendered_id}`;
+    fileId: string,
+    thumbnailFileId: string,
+) => `${apiUrl}/v1/files/${fileId}/thumbnail/${thumbnailFileId}`;
+export const webApiGetFileRendered = (fileId: string, renderedId: string) =>
+    `${apiUrl}/v1/files/${fileId}/rendered/${renderedId}`;
 export const webApiGetArchive = (fileId: string) =>
     `${apiUrl}/v1/archive/${fileId}`;
 export const webApiGetArchiveEncrypted = (fileId: string) =>
