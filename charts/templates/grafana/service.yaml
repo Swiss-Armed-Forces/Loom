@@ -6,6 +6,10 @@ metadata:
   labels:
     {{- include "app.labels.custom" (dict "context" . "component" "grafana") | nindent 4 }}
     app.kubernetes.io/component: monitoring
+  {{- with include "app.annotations.custom" (dict "context" . "component" "grafana") }}
+  annotations:
+    {{- . | nindent 4 }}
+  {{- end }}
 spec:
   ports:
     - port: {{ .Values.grafana.service.port }}

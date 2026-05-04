@@ -5,6 +5,10 @@ metadata:
   labels:
     {{- include "app.labels.custom" (dict "context" . "component" "frontend") | nindent 4 }}
     app.kubernetes.io/component: frontend
+  {{- with include "app.annotations.custom" (dict "context" . "component" "frontend") }}
+  annotations:
+    {{- . | nindent 4 }}
+  {{- end }}
 spec:
   replicas: {{ .Values.frontend.replicaCount }}
   selector:
@@ -15,6 +19,10 @@ spec:
       labels:
         app: {{ include "app.name" . }}-frontend
         {{- include "app.labels.custom" (dict "context" . "component" "frontend") | nindent 8 }}
+      {{- with include "app.annotations.custom" (dict "context" . "component" "frontend") }}
+      annotations:
+        {{- . | nindent 8 }}
+      {{- end }}
     spec:
       containers:
         - name: frontend

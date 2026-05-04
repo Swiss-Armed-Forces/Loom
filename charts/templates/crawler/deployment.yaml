@@ -6,6 +6,10 @@ metadata:
   labels:
     {{- include "app.labels.custom" (dict "context" . "component" "crawler") | nindent 4 }}
     app.kubernetes.io/component: crawler
+  {{- with include "app.annotations.custom" (dict "context" . "component" "crawler") }}
+  annotations:
+    {{- . | nindent 4 }}
+  {{- end }}
 spec:
   replicas: {{ .Values.crawler.replicaCount }}
   selector:
@@ -16,6 +20,10 @@ spec:
       labels:
         app: {{ include "app.name" . }}-crawler
         {{- include "app.labels.custom" (dict "context" . "component" "crawler") | nindent 8 }}
+      {{- with include "app.annotations.custom" (dict "context" . "component" "crawler") }}
+      annotations:
+        {{- . | nindent 8 }}
+      {{- end }}
     spec:
       initContainers:
         - name: check-seaweedfs-ready

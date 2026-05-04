@@ -5,6 +5,10 @@ metadata:
   labels:
     {{- include "app.labels.custom" (dict "context" . "component" "dovecot") | nindent 4 }}
     app.kubernetes.io/component: dovecot
+  {{- with include "app.annotations.custom" (dict "context" . "component" "dovecot") }}
+  annotations:
+    {{- . | nindent 4 }}
+  {{- end }}
 spec:
   serviceName: {{ include "app.fullname" . }}-dovecot
   replicas: {{ .Values.dovecot.replicaCount }}
@@ -16,6 +20,10 @@ spec:
       labels:
         app: {{ include "app.name" . }}-dovecot
         {{- include "app.labels.custom" (dict "context" . "component" "dovecot") | nindent 8 }}
+      {{- with include "app.annotations.custom" (dict "context" . "component" "dovecot") }}
+      annotations:
+        {{- . | nindent 8 }}
+      {{- end }}
     spec:
       initContainers:
         - name: fix-perms

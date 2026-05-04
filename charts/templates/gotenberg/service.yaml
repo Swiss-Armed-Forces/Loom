@@ -5,6 +5,10 @@ metadata:
   labels:
     {{- include "app.labels.custom" (dict "context" . "component" "gotenberg") | nindent 4 }}
     app.kubernetes.io/component: gotenberg
+  {{- with include "app.annotations.custom" (dict "context" . "component" "gotenberg") }}
+  annotations:
+    {{- . | nindent 4 }}
+  {{- end }}
 spec:
   ports:
     - port: {{ .Values.gotenberg.service.port }}

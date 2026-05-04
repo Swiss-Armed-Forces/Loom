@@ -6,6 +6,10 @@ metadata:
   labels:
     {{- include "app.labels.custom" (dict "context" . "component" "openWebui") | nindent 4 }}
     app.kubernetes.io/component: ollama
+  {{- with include "app.annotations.custom" (dict "context" . "component" "openWebui") }}
+  annotations:
+    {{- . | nindent 4 }}
+  {{- end }}
 spec:
   replicas: {{ .Values.open_webui.replicaCount }}
   selector:
@@ -16,6 +20,10 @@ spec:
       labels:
         app: {{ include "app.name" . }}-open-webui
         {{- include "app.labels.custom" (dict "context" . "component" "openWebui") | nindent 8 }}
+      {{- with include "app.annotations.custom" (dict "context" . "component" "openWebui") }}
+      annotations:
+        {{- . | nindent 8 }}
+      {{- end }}
     spec:
       volumes:
         - name: config-volume

@@ -5,6 +5,10 @@ metadata:
   labels:
     {{- include "app.labels.custom" (dict "context" . "component" "beat") | nindent 4 }}
     app.kubernetes.io/component: "beat"
+  {{- with include "app.annotations.custom" (dict "context" . "component" "beat") }}
+  annotations:
+    {{- . | nindent 4 }}
+  {{- end }}
 spec:
   replicas: {{ .Values.beat.replicaCount }}
   selector:
@@ -15,6 +19,10 @@ spec:
       labels:
         app: {{ include "app.name" . }}-beat
         {{- include "app.labels.custom" (dict "context" . "component" "beat") | nindent 8 }}
+      {{- with include "app.annotations.custom" (dict "context" . "component" "beat") }}
+      annotations:
+        {{- . | nindent 8 }}
+      {{- end }}
     spec:
       containers:
         - name: beat

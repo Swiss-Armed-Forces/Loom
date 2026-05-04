@@ -5,6 +5,10 @@ metadata:
   labels:
     {{- include "app.labels.custom" (dict "context" . "component" "api") | nindent 4 }}
     app.kubernetes.io/component: "api"
+  {{- with include "app.annotations.custom" (dict "context" . "component" "api") }}
+  annotations:
+    {{- . | nindent 4 }}
+  {{- end }}
 spec:
   replicas: {{ .Values.api.replicaCount }}
   selector:
@@ -15,6 +19,10 @@ spec:
       labels:
         app: {{ include "app.name" . }}-api
         {{- include "app.labels.custom" (dict "context" . "component" "api") | nindent 8 }}
+      {{- with include "app.annotations.custom" (dict "context" . "component" "api") }}
+      annotations:
+        {{- . | nindent 8 }}
+      {{- end }}
     spec:
       initContainers:
         - name: check-elasticsearch-ready

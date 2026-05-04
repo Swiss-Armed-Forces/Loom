@@ -5,6 +5,10 @@ metadata:
   labels:
     {{- include "app.labels.custom" (dict "context" . "component" "elasticsearch") | nindent 4 }}
     app.kubernetes.io/component: elasticsearch
+  {{- with include "app.annotations.custom" (dict "context" . "component" "elasticsearch") }}
+  annotations:
+    {{- . | nindent 4 }}
+  {{- end }}
 spec:
   serviceName: {{ include "app.fullname" . }}-elasticsearch
   # for cluster forming: must start all pods in parallel
@@ -18,6 +22,10 @@ spec:
       labels:
         app: {{ include "app.name" . }}-elasticsearch
         {{- include "app.labels.custom" (dict "context" . "component" "elasticsearch") | nindent 8 }}
+      {{- with include "app.annotations.custom" (dict "context" . "component" "elasticsearch") }}
+      annotations:
+        {{- . | nindent 8 }}
+      {{- end }}
     spec:
       securityContext:
         runAsUser: 1000

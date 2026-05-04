@@ -6,6 +6,10 @@ metadata:
   labels:
     {{- include "app.labels.custom" (dict "context" . "component" "translate") | nindent 4 }}
     app.kubernetes.io/component: translate
+  {{- with include "app.annotations.custom" (dict "context" . "component" "translate") }}
+  annotations:
+    {{- . | nindent 4 }}
+  {{- end }}
 spec:
   ports:
     - port: {{ .Values.translate.service.port }}

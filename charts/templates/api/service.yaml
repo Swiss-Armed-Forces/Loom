@@ -5,6 +5,10 @@ metadata:
   labels:
     {{- include "app.labels.custom" (dict "context" . "component" "api") | nindent 4 }}
     app.kubernetes.io/component: "api"
+  {{- with include "app.annotations.custom" (dict "context" . "component" "api") }}
+  annotations:
+    {{- . | nindent 4 }}
+  {{- end }}
 spec:
   ports:
     - port: {{ .Values.api.service.port }}

@@ -6,6 +6,10 @@ metadata:
   labels:
     {{- include "app.labels.custom" (dict "context" . "component" "translate") | nindent 4 }}
     app.kubernetes.io/component: translate
+  {{- with include "app.annotations.custom" (dict "context" . "component" "translate") }}
+  annotations:
+    {{- . | nindent 4 }}
+  {{- end }}
 spec:
   {{- if not .Values.translate.hpa.enabled }}
   replicas: {{ .Values.translate.replicaCount }}
@@ -18,6 +22,10 @@ spec:
       labels:
         app: {{ include "app.name" . }}-translate
         {{- include "app.labels.custom" (dict "context" . "component" "translate") | nindent 8 }}
+      {{- with include "app.annotations.custom" (dict "context" . "component" "translate") }}
+      annotations:
+        {{- . | nindent 8 }}
+      {{- end }}
     spec:
       containers:
         - name: translate

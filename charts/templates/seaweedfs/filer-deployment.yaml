@@ -5,6 +5,10 @@ metadata:
   labels:
     {{- include "app.labels.custom" (dict "context" . "component" "seaweedfs") | nindent 4 }}
     app.kubernetes.io/component: seaweedfs-filer
+  {{- with include "app.annotations.custom" (dict "context" . "component" "seaweedfs") }}
+  annotations:
+    {{- . | nindent 4 }}
+  {{- end }}
 spec:
   {{- if not .Values.seaweedfs.filer.hpa.enabled }}
   replicas: {{ .Values.seaweedfs.filer.replicaCount }}
@@ -17,6 +21,10 @@ spec:
       labels:
         app: {{ include "app.name" . }}-seaweedfs-filer
         {{- include "app.labels.custom" (dict "context" . "component" "seaweedfs") | nindent 8 }}
+      {{- with include "app.annotations.custom" (dict "context" . "component" "seaweedfs") }}
+      annotations:
+        {{- . | nindent 8 }}
+      {{- end }}
     spec:
       terminationGracePeriodSeconds: {{ .Values.seaweedfs.filer.terminationGracePeriodSeconds | default 180 }}
       securityContext:

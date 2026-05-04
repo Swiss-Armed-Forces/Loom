@@ -5,6 +5,10 @@ metadata:
   labels:
     {{- include "app.labels.custom" (dict "context" . "component" "tika") | nindent 4 }}
     app.kubernetes.io/component: tika
+  {{- with include "app.annotations.custom" (dict "context" . "component" "tika") }}
+  annotations:
+    {{- . | nindent 4 }}
+  {{- end }}
 spec:
   {{- if not .Values.tika.hpa.enabled }}
   replicas: {{ .Values.tika.replicaCount }}
@@ -17,6 +21,10 @@ spec:
       labels:
         app: {{ include "app.name" . }}-tika
         {{- include "app.labels.custom" (dict "context" . "component" "tika") | nindent 8 }}
+      {{- with include "app.annotations.custom" (dict "context" . "component" "tika") }}
+      annotations:
+        {{- . | nindent 8 }}
+      {{- end }}
     spec:
       containers:
         - name: tika

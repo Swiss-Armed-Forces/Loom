@@ -5,6 +5,10 @@ metadata:
   labels:
     {{- include "app.labels.custom" (dict "context" . "component" "roundcube") | nindent 4 }}
     app.kubernetes.io/component: roundcube
+  {{- with include "app.annotations.custom" (dict "context" . "component" "roundcube") }}
+  annotations:
+    {{- . | nindent 4 }}
+  {{- end }}
 spec:
   replicas: {{ .Values.roundcube.replicaCount }}
   selector:
@@ -15,6 +19,10 @@ spec:
       labels:
         app: {{ include "app.name" . }}-roundcube
         {{- include "app.labels.custom" (dict "context" . "component" "roundcube") | nindent 8 }}
+      {{- with include "app.annotations.custom" (dict "context" . "component" "roundcube") }}
+      annotations:
+        {{- . | nindent 8 }}
+      {{- end }}
     spec:
       containers:
         - name: roundcube

@@ -5,6 +5,10 @@ metadata:
   labels:
     {{- include "app.labels.custom" (dict "context" . "component" "flower") | nindent 4 }}
     app.kubernetes.io/component: "flower"
+  {{- with include "app.annotations.custom" (dict "context" . "component" "flower") }}
+  annotations:
+    {{- . | nindent 4 }}
+  {{- end }}
 spec:
   ports:
     - port: {{ .Values.flower.service.port }}

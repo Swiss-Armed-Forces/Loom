@@ -7,6 +7,10 @@ metadata:
   labels:
     {{- include "app.labels.custom" (dict "context" . "component" "prometheus") | nindent 4 }}
     app.kubernetes.io/component: monitoring
+  {{- with include "app.annotations.custom" (dict "context" . "component" "prometheus") }}
+  annotations:
+    {{- . | nindent 4 }}
+  {{- end }}
 rules:
   - apiGroups: [""]
     resources:

@@ -6,6 +6,10 @@ metadata:
   labels:
     {{- include "app.labels.custom" (dict "context" . "component" "grafana") | nindent 4 }}
     app.kubernetes.io/component: monitoring
+  {{- with include "app.annotations.custom" (dict "context" . "component" "grafana") }}
+  annotations:
+    {{- . | nindent 4 }}
+  {{- end }}
 spec:
   replicas: {{ .Values.grafana.replicaCount }}
   selector:
@@ -16,6 +20,10 @@ spec:
       labels:
         app: {{ include "app.name" . }}-grafana
         {{- include "app.labels.custom" (dict "context" . "component" "grafana") | nindent 8 }}
+      {{- with include "app.annotations.custom" (dict "context" . "component" "grafana") }}
+      annotations:
+        {{- . | nindent 8 }}
+      {{- end }}
     spec:
       containers:
         - name: grafana

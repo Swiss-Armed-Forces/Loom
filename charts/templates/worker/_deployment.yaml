@@ -8,6 +8,10 @@ metadata:
   labels:
     {{- include "app.labels.custom" (dict "context" . "component" "worker") | nindent 4 }}
     app.kubernetes.io/component: "{{ $component }}"
+  {{- with include "app.annotations.custom" (dict "context" . "component" "worker") }}
+  annotations:
+    {{- . | nindent 4 }}
+  {{- end }}
 spec:
   {{- if not $values.hpa.enabled }}
   replicas: {{ $values.replicaCount }}
@@ -20,6 +24,10 @@ spec:
       labels:
         app: {{ include "app.name" . }}-{{ $component }}
         {{- include "app.labels.custom" (dict "context" . "component" "worker") | nindent 8 }}
+      {{- with include "app.annotations.custom" (dict "context" . "component" "worker") }}
+      annotations:
+        {{- . | nindent 8 }}
+      {{- end }}
     spec:
       containers:
         - name: {{ $component }}

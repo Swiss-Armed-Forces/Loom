@@ -13,6 +13,10 @@ metadata:
   labels:
     {{- include "app.labels.custom" (dict "context" . "component" $component) | nindent 4 }}
     app.kubernetes.io/component: "{{ $component }}"
+  {{- with include "app.annotations.custom" (dict "context" . "component" $component) }}
+  annotations:
+    {{- . | nindent 4 }}
+  {{- end }}
 spec:
   serviceName: {{ include "app.fullname" . }}-{{ $component }}
   replicas: {{ $values.replicaCount }}
@@ -24,6 +28,10 @@ spec:
       labels:
         app: {{ include "app.name" . }}-{{ $component }}
         {{- include "app.labels.custom" (dict "context" . "component" $component) | nindent 8 }}
+      {{- with include "app.annotations.custom" (dict "context" . "component" $component) }}
+      annotations:
+        {{- . | nindent 8 }}
+      {{- end }}
     spec:
       initContainers:
         - name: delete-redis-tmp-files

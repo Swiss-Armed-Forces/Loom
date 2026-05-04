@@ -4,6 +4,10 @@ metadata:
   name: {{ include "app.fullname" . }}-elasticvue-config
   labels:
     {{- include "app.labels.custom" (dict "context" . "component" "elasticvue") | nindent 4 }}
+  {{- with include "app.annotations.custom" (dict "context" . "component" "elasticvue") }}
+  annotations:
+    {{- . | nindent 4 }}
+  {{- end }}
 data:
   default_clusters.json: |
     [

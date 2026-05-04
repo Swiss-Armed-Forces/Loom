@@ -7,6 +7,10 @@ metadata:
     {{- include "app.labels.custom" (dict "context" . "component" "dovecot") | nindent 4 }}
     ingressclass: {{ .Values.dovecot.ingress.imaps.className }}
     app.kubernetes.io/component: dovecot
+  {{- with include "app.annotations.custom" (dict "context" . "component" "dovecot") }}
+  annotations:
+    {{- . | nindent 4 }}
+  {{- end }}
 spec:
   entryPoints:
     - websecure
@@ -37,6 +41,10 @@ metadata:
     {{- include "app.labels.custom" (dict "context" . "component" "dovecot") | nindent 4 }}
     ingressclass: {{ .Values.dovecot.ingress.imap.className }}
     app.kubernetes.io/component: dovecot
+  {{- with include "app.annotations.custom" (dict "context" . "component" "dovecot") }}
+  annotations:
+    {{- . | nindent 4 }}
+  {{- end }}
 spec:
   entryPoints:
     - imap

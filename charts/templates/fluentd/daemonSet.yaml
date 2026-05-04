@@ -6,6 +6,10 @@ metadata:
   labels:
     {{- include "app.labels.custom" (dict "context" . "component" "fluentd") | nindent 4 }}
     app.kubernetes.io/component: monitoring
+  {{- with include "app.annotations.custom" (dict "context" . "component" "fluentd") }}
+  annotations:
+    {{- . | nindent 4 }}
+  {{- end }}
 spec:
   selector:
     matchLabels:
@@ -15,6 +19,10 @@ spec:
       labels:
         app: {{ include "app.name" . }}-fluentd
         {{- include "app.labels.custom" (dict "context" . "component" "fluentd") | nindent 8 }}
+      {{- with include "app.annotations.custom" (dict "context" . "component" "fluentd") }}
+      annotations:
+        {{- . | nindent 8 }}
+      {{- end }}
     spec:
       serviceAccountName: {{ include "app.fullname" . }}-fluentd
       initContainers:

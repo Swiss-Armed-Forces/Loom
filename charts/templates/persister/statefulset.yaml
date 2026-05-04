@@ -5,6 +5,10 @@ metadata:
   labels:
     {{- include "app.labels.custom" (dict "context" . "component" "worker") | nindent 4 }}
     app.kubernetes.io/component: "persister"
+  {{- with include "app.annotations.custom" (dict "context" . "component" "worker") }}
+  annotations:
+    {{- . | nindent 4 }}
+  {{- end }}
 spec:
   serviceName: {{ include "app.fullname" . }}-persister
   podManagementPolicy: Parallel
@@ -17,6 +21,10 @@ spec:
       labels:
         app: {{ include "app.name" . }}-persister
         {{- include "app.labels.custom" (dict "context" . "component" "worker") | nindent 8 }}
+      {{- with include "app.annotations.custom" (dict "context" . "component" "worker") }}
+      annotations:
+        {{- . | nindent 8 }}
+      {{- end }}
     spec:
       containers:
         - name: persister
