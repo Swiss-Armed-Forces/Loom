@@ -1,7 +1,6 @@
 import logging
 from uuid import UUID
 
-from celery import chain
 from common.dependencies import (
     get_celery_app,
     get_file_repository,
@@ -12,7 +11,6 @@ from common.file.file_repository import FileNotFoundException
 from common.services.query_builder import QueryParameters
 
 from worker.index_file.infra.file_indexing_task import FileIndexingTask
-from worker.index_file.tasks import persist_processing_done
 from worker.index_file.tasks.summarize import summarize_task
 
 logger = logging.getLogger(__name__)
@@ -47,11 +45,8 @@ def summarize_file_task(file_id: UUID, system_prompt: str | None = None):
 
     content = file.content if file.content is not None else ""
     file_content = get_lazybytes_service().from_bytes(content.encode())
-    chain(
-        summarize_task.s(
-            text_lazy=file_content,
-            file=file,
-            system_prompt=system_prompt,
-        ),
-        persist_processing_done.signature(file_id),
+    summarize_task.s(
+        text_lazy=file_content,
+        file=file,
+        system_prompt=system_prompt,
     ).delay().forget()
