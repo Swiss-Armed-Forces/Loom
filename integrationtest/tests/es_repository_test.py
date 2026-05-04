@@ -9,6 +9,10 @@ from common.models.base_repository import RepositoryObject
 from common.models.es_repository import ES_REPOSITORY_TYPES, BaseEsRepository
 from common.services.lazybytes_service import LazyBytes
 from common.services.query_builder import QueryParameters
+from common.task_object.root_task_information_repository import (
+    RootTaskInformation,
+    RootTaskInformationRepository,
+)
 
 ES_REPOSITORY_MINIMAL_OBJECTS: dict[type[BaseEsRepository], RepositoryObject] = {
     FileRepository: File(
@@ -28,6 +32,10 @@ ES_REPOSITORY_MINIMAL_OBJECTS: dict[type[BaseEsRepository], RepositoryObject] = 
         query=QueryParameters(
             query_id="000000000000000000000000",
         ),
+    ),
+    RootTaskInformationRepository: RootTaskInformation(
+        root_task_id=uuid4(),
+        object_id=uuid4(),
     ),
 }
 

@@ -56,6 +56,11 @@ from common.models.es_repository import (
 from common.services.lazybytes_service import LazyBytes
 from common.services.query_builder import QueryBuilder, QueryParameters
 from common.settings import settings
+from common.task_object.root_task_information_repository import (
+    RootTaskInformation,
+    RootTaskInformationRepository,
+    _EsRootTaskInformation,
+)
 from mocks.test_value_defaults import TestValueDefaults
 
 logger = logging.getLogger(__name__)
@@ -604,6 +609,47 @@ ES_REPOSITORY_TEST_INSTANCES: dict[type[BaseEsRepository], list[_TestInstances]]
                 ),
                 chat_message_history_id=str(TestValueDefaults.test_uuid),
                 created_at=TestValueDefaults.test_datetime.isoformat(),
+            ),
+        )
+    ],
+    RootTaskInformationRepository: [
+        _TestInstances(
+            object=RootTaskInformation(
+                # RepositoryObject
+                # EsRepositoryObject
+                es_meta=_EsMeta(
+                    id=TestValueDefaults.test_uuid,
+                    highlight=TestValueDefaults.test_empty_dict,
+                    index=TestValueDefaults.test_str,
+                    score=TestValueDefaults.test_float,
+                    version=TestValueDefaults.test_int,
+                    seq_no=TestValueDefaults.test_int,
+                    primary_term=TestValueDefaults.test_int,
+                ),
+                sort_unique=TestValueDefaults.test_uuid,
+                hidden=TestValueDefaults.test_bool,
+                # RootTaskInformation
+                root_task_id=TestValueDefaults.test_uuid,
+                object_id=TestValueDefaults.test_uuid,
+            ),
+            document=_EsRootTaskInformation(
+                {
+                    # Document
+                    "_id": TestValueDefaults.test_uuid,
+                    # _EsRepositoryDocument
+                    "_highlight": TestValueDefaults.test_empty_dict,
+                    "_index": TestValueDefaults.test_str,
+                    "_score": TestValueDefaults.test_float,
+                    "_version": TestValueDefaults.test_int,
+                    "_seq_no": TestValueDefaults.test_int,
+                    "_primary_term": TestValueDefaults.test_int,
+                },
+                deduplication_fingerprint=str(TestValueDefaults.test_uuid),
+                sort_unique=str(TestValueDefaults.test_uuid),
+                hidden=TestValueDefaults.test_bool,
+                # _EsRootTaskInformation
+                root_task_id=str(TestValueDefaults.test_uuid),
+                object_id=str(TestValueDefaults.test_uuid),
             ),
         )
     ],
@@ -1206,3 +1252,88 @@ def test_es_repository_open_point_in_time():
 
     es_repository.elasticsearch_mock.open_point_in_time.assert_called_once()
     assert point_in_time_id == mock_point_in_time_id
+
+
+class _TestRootTaskInformationRepository(RootTaskInformationRepository):
+    """Test subclass with mocked document_type and elasticsearch."""
+
+    def __init__(
+        self,
+        query_builder: QueryBuilder,
+        pubsub_service: PubSubService,
+    ):
+        super().__init__(query_builder, pubsub_service)
+        self.document_type_mock: MagicMock = MagicMock(spec=_EsRootTaskInformation)
+        self.elasticsearch_mock: Elasticsearch = MagicMock(spec=Elasticsearch)
+
+    @property
+    def _document_type(self) -> type[_EsRootTaskInformation]:
+        return self.document_type_mock  # type: ignore[return-value]
+
+    @property
+    def _elasticsearch(self) -> Elasticsearch:
+        return self.elasticsearch_mock
+
+
+def test_root_task_information_repository_get_by_root_task_id():
+    """Test RootTaskInformationRepository.get_by_root_task_id method."""
+    es_repository = _TestRootTaskInformationRepository(
+        query_builder=get_query_builder(),
+        pubsub_service=get_pubsub_service(),
+    )
+
+    # setup document that will be returned
+    document = _EsRootTaskInformation(
+        {
+            "_id": TestValueDefaults.test_uuid,
+            "_highlight": TestValueDefaults.test_empty_dict,
+            "_index": TestValueDefaults.test_str,
+            "_score": TestValueDefaults.test_float,
+            "_version": TestValueDefaults.test_int,
+            "_seq_no": TestValueDefaults.test_int,
+            "_primary_term": TestValueDefaults.test_int,
+        },
+        deduplication_fingerprint=str(TestValueDefaults.test_uuid),
+        sort_unique=str(TestValueDefaults.test_uuid),
+        hidden=TestValueDefaults.test_bool,
+        root_task_id=str(TestValueDefaults.test_uuid),
+        object_id=str(TestValueDefaults.test_uuid),
+    )
+
+    # setup search mock
+    search_mock = MagicMock(spec=Search)
+    es_repository.document_type_mock.search.return_value = search_mock
+
+    # setup hits - response[0] should return the document
+    hits_mock = MagicMock()
+    hits_mock.__len__.return_value = 1
+    hits_mock.__getitem__.return_value = document
+    search_mock.query.return_value.execute.return_value = hits_mock
+
+    result = es_repository.get_by_root_task_id(TestValueDefaults.test_uuid)
+
+    search_mock.query.assert_called_once_with(
+        "match", root_task_id=str(TestValueDefaults.test_uuid)
+    )
+    assert result.root_task_id == TestValueDefaults.test_uuid
+    assert result.object_id == TestValueDefaults.test_uuid
+
+
+def test_root_task_information_repository_get_by_root_task_id_not_found():
+    """Test RootTaskInformationRepository.get_by_root_task_id raises when not found."""
+    es_repository = _TestRootTaskInformationRepository(
+        query_builder=get_query_builder(),
+        pubsub_service=get_pubsub_service(),
+    )
+
+    # setup search mock
+    search_mock = MagicMock(spec=Search)
+    es_repository.document_type_mock.search.return_value = search_mock
+
+    # setup empty hits
+    hits_mock = MagicMock()
+    hits_mock.__len__.return_value = 0
+    search_mock.query.return_value.execute.return_value = hits_mock
+
+    with pytest.raises(ValueError, match="Root task info with id .* not found"):
+        es_repository.get_by_root_task_id(TestValueDefaults.test_uuid)
