@@ -531,7 +531,6 @@ The complete source code for Traefik is publicly available at [https://github.co
 | Name                                  | Version         | License                                                                          |
 |---------------------------------------|-----------------|----------------------------------------------------------------------------------|
 | celery-types                          | 0.24.0          | Apache Software License                                                          |
-| coverage                              | 7.5.4           | Apache Software License                                                          |
 | docker                                | 7.1.0           | Apache Software License                                                          |
 | elastic-transport                     | 9.2.1           | Apache Software License                                                          |
 | elasticsearch                         | 9.3.0           | Apache Software License                                                          |
@@ -562,6 +561,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | luqum                                 | 0.14.0          | Apache Software License; GNU Lesser General Public License v3 or later (LGPLv3+) |
 | orjson                                | 3.10.5          | Apache Software License; MIT License                                             |
 | sniffio                               | 1.3.1           | Apache Software License; MIT License                                             |
+| coverage                              | 7.13.5          | Apache-2.0                                                                       |
 | freezegun                             | 1.5.5           | Apache-2.0                                                                       |
 | ply                                   | 3.11            | BSD                                                                              |
 | IMAPClient                            | 3.0.1           | BSD License                                                                      |
@@ -608,7 +608,6 @@ The complete source code for Traefik is publicly available at [https://github.co
 | click-repl                            | 0.3.0           | MIT                                                                              |
 | identify                              | 2.6.19          | MIT                                                                              |
 | pycodestyle                           | 2.14.0          | MIT                                                                              |
-| pytest-cov                            | 6.3.0           | MIT                                                                              |
 | PyYAML                                | 6.0.3           | MIT License                                                                      |
 | Wand                                  | 0.6.13          | MIT License                                                                      |
 | annotated-types                       | 0.7.0           | MIT License                                                                      |
@@ -651,6 +650,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | pydantic-settings                     | 2.3.4           | MIT License                                                                      |
 | pydantic_core                         | 2.27.1          | MIT License                                                                      |
 | pyflakes                              | 3.4.0           | MIT License                                                                      |
+| pytest-cov                            | 7.1.0           | MIT License                                                                      |
 | pytest-mock                           | 3.15.1          | MIT License                                                                      |
 | pytest-random-order                   | 1.1.1           | MIT License                                                                      |
 | pytest-split                          | 0.11.0          | MIT License                                                                      |
