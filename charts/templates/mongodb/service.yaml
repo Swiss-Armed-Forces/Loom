@@ -5,6 +5,10 @@ metadata:
   labels:
     {{- include "app.labels.custom" (dict "context" . "component" "mongodb") | nindent 4 }}
     app.kubernetes.io/component: mongodb
+  {{- with include "app.annotations.custom" (dict "context" . "component" "mongodb") }}
+  annotations:
+    {{- . | nindent 4 }}
+  {{- end }}
 spec:
   ports:
     - port: {{ .Values.mongodb.service.port }}

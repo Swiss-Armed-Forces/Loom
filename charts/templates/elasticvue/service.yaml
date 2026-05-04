@@ -5,6 +5,10 @@ metadata:
   labels:
     {{- include "app.labels.custom" (dict "context" . "component" "elasticvue") | nindent 4 }}
     app.kubernetes.io/component: elasticsearch
+  {{- with include "app.annotations.custom" (dict "context" . "component" "elasticvue") }}
+  annotations:
+    {{- . | nindent 4 }}
+  {{- end }}
 spec:
   ports:
     - port: {{ .Values.elasticvue.service.port }}

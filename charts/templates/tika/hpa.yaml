@@ -6,6 +6,10 @@ metadata:
   labels:
     {{- include "app.labels.custom" (dict "context" . "component" "tika") | nindent 4 }}
     app.kubernetes.io/component: "tika"
+  {{- with include "app.annotations.custom" (dict "context" . "component" "tika") }}
+  annotations:
+    {{- . | nindent 4 }}
+  {{- end }}
 spec:
   maxReplicas: {{ .Values.tika.hpa.maxReplicas }}
   minReplicas: {{ .Values.tika.hpa.minReplicas }}

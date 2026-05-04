@@ -5,6 +5,10 @@ metadata:
   labels:
     {{- include "app.labels.custom" (dict "context" . "component" "rabbit") | nindent 4 }}
     app.kubernetes.io/component: rabbit
+  {{- with include "app.annotations.custom" (dict "context" . "component" "rabbit") }}
+  annotations:
+    {{- . | nindent 4 }}
+  {{- end }}
 spec:
   ports:
     - port: {{ .Values.rabbit.service.port.amqp }}

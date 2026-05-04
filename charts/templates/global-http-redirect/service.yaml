@@ -6,6 +6,10 @@ metadata:
   labels:
     {{- include "app.labels.custom" (dict "context" . "component" "globalHttpRedirect") | nindent 4 }}
     app.kubernetes.io/component: "global-http-redirect"
+  {{- with include "app.annotations.custom" (dict "context" . "component" "globalHttpRedirect") }}
+  annotations:
+    {{- . | nindent 4 }}
+  {{- end }}
 spec:
   ports:
     - port: {{ .Values.globalHttpRedirect.service.port }}

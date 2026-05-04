@@ -5,6 +5,10 @@ metadata:
   labels:
     {{- include "app.labels.custom" (dict "context" . "component" "rabbit") | nindent 4 }}
     app.kubernetes.io/component: rabbit
+  {{- with include "app.annotations.custom" (dict "context" . "component" "rabbit") }}
+  annotations:
+    {{- . | nindent 4 }}
+  {{- end }}
 spec:
   serviceName: {{ include "app.fullname" . }}-rabbit
   replicas: {{ .Values.rabbit.replicaCount }}
@@ -16,6 +20,10 @@ spec:
       labels:
         app: {{ include "app.name" . }}-rabbit
         {{- include "app.labels.custom" (dict "context" . "component" "rabbit") | nindent 8 }}
+      {{- with include "app.annotations.custom" (dict "context" . "component" "rabbit") }}
+      annotations:
+        {{- . | nindent 8 }}
+      {{- end }}
     spec:
       containers:
         - name: rabbit

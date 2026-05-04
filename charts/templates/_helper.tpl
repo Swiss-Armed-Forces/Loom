@@ -59,6 +59,33 @@ Usage: {{ include "app.labels.custom" (dict "context" . "component" "prometheus"
 {{- end -}}
 
 {{/*
+Custom annotations for a component
+Merges global custom annotations and component-specific custom annotations
+Usage: {{ include "app.annotations.custom" (dict "context" . "component" "prometheus") }}
+*/}}
+{{- define "app.annotations.custom" -}}
+{{- $context := .context -}}
+{{- $component := .component -}}
+{{- if $context.Values.global }}
+{{- if $context.Values.global.customAnnotations }}
+{{- range $key, $value := $context.Values.global.customAnnotations }}
+{{ $key }}: {{ $value | quote }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- if $component }}
+{{- $componentValues := index $context.Values $component -}}
+{{- if $componentValues }}
+{{- if $componentValues.customAnnotations }}
+{{- range $key, $value := $componentValues.customAnnotations }}
+{{ $key }}: {{ $value | quote }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- end -}}
+
+{{/*
 Generate a hash suffix based on values to ensure unique job names on configuration changes.
 
 This approach is specifically designed for ArgoCD deployments where using {{ .Release.Revision }}

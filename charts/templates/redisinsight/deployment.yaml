@@ -6,6 +6,10 @@ metadata:
   labels:
     {{- include "app.labels.custom" (dict "context" . "component" "redisinsight") | nindent 4 }}
     app.kubernetes.io/component: redisinsight
+  {{- with include "app.annotations.custom" (dict "context" . "component" "redisinsight") }}
+  annotations:
+    {{- . | nindent 4 }}
+  {{- end }}
 spec:
   replicas: {{ .Values.redisinsight.replicaCount }}
   selector:
@@ -16,6 +20,10 @@ spec:
       labels:
         app: {{ include "app.name" . }}-redisinsight
         {{- include "app.labels.custom" (dict "context" . "component" "redisinsight") | nindent 8 }}
+      {{- with include "app.annotations.custom" (dict "context" . "component" "redisinsight") }}
+      annotations:
+        {{- . | nindent 8 }}
+      {{- end }}
     spec:
       containers:
         - name: redisinsight

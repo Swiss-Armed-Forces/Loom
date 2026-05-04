@@ -6,6 +6,10 @@ metadata:
   labels:
     {{- include "app.labels.custom" (dict "context" . "component" "mongodb") | nindent 4 }}
     app.kubernetes.io/component: mongodb
+  {{- with include "app.annotations.custom" (dict "context" . "component" "mongodb") }}
+  annotations:
+    {{- . | nindent 4 }}
+  {{- end }}
 spec:
   replicas: {{ .Values.mongodb.express.replicaCount }}
   selector:
@@ -16,6 +20,10 @@ spec:
       labels:
         app: {{ include "app.name" . }}-mongodb-express
         {{- include "app.labels.custom" (dict "context" . "component" "mongodb") | nindent 8 }}
+      {{- with include "app.annotations.custom" (dict "context" . "component" "mongodb") }}
+      annotations:
+        {{- . | nindent 8 }}
+      {{- end }}
     spec:
       containers:
         - name: mongodb-express

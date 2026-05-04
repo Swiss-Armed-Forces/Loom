@@ -6,6 +6,10 @@ metadata:
   labels:
     {{- include "app.labels.custom" (dict "context" . "component" "seaweedfs") | nindent 4 }}
     app.kubernetes.io/component: seaweedfs-filer-meta-backup
+  {{- with include "app.annotations.custom" (dict "context" . "component" "seaweedfs") }}
+  annotations:
+    {{- . | nindent 4 }}
+  {{- end }}
 data:
   filer.toml: |
     # SQLite store for filer metadata backup

@@ -5,6 +5,10 @@ metadata:
   labels:
     {{- include "app.labels.custom" (dict "context" . "component" "worker") | nindent 4 }}
     app.kubernetes.io/component: "persister"
+  {{- with include "app.annotations.custom" (dict "context" . "component" "worker") }}
+  annotations:
+    {{- . | nindent 4 }}
+  {{- end }}
 spec:
   clusterIP: None  # Headless service for StatefulSet
   ports:

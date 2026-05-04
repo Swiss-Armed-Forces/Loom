@@ -18,6 +18,10 @@ metadata:
   labels:
     {{- include "app.labels.custom" (dict "context" . "component" "seaweedfs") | nindent 4 }}
     app.kubernetes.io/component: seaweedfs-volume
+  {{- with include "app.annotations.custom" (dict "context" . "component" "seaweedfs") }}
+  annotations:
+    {{- . | nindent 4 }}
+  {{- end }}
 spec:
   serviceName: {{ include "app.fullname" . }}-seaweedfs-volume-headless
   replicas: {{ .Values.seaweedfs.volume.replicaCount }}
@@ -30,6 +34,10 @@ spec:
       labels:
         app: {{ include "app.name" . }}-seaweedfs-volume
         {{- include "app.labels.custom" (dict "context" . "component" "seaweedfs") | nindent 8 }}
+      {{- with include "app.annotations.custom" (dict "context" . "component" "seaweedfs") }}
+      annotations:
+        {{- . | nindent 8 }}
+      {{- end }}
     spec:
       affinity:
         podAntiAffinity:

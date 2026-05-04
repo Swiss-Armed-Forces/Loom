@@ -5,6 +5,10 @@ metadata:
   labels:
     {{- include "app.labels.custom" (dict "context" . "component" "elasticvue") | nindent 4 }}
     app.kubernetes.io/component: elasticsearch
+  {{- with include "app.annotations.custom" (dict "context" . "component" "elasticvue") }}
+  annotations:
+    {{- . | nindent 4 }}
+  {{- end }}
 spec:
   replicas: {{ .Values.elasticvue.replicaCount }}
   selector:
@@ -15,6 +19,10 @@ spec:
       labels:
         app: {{ include "app.name" . }}-elasticvue
         {{- include "app.labels.custom" (dict "context" . "component" "elasticvue") | nindent 8 }}
+      {{- with include "app.annotations.custom" (dict "context" . "component" "elasticvue") }}
+      annotations:
+        {{- . | nindent 8 }}
+      {{- end }}
     spec:
       containers:
         - name: elasticvue

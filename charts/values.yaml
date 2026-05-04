@@ -9,6 +9,11 @@ global:
   # environment: production
   # team: platform
   # cost-center: "12345"
+  # Custom annotations to add to all resources and pod templates.
+  # Example:
+  # prometheus.io/scrape: "true"
+  # iam.amazonaws.com/role: "arn:aws:iam::123456789:role/loom"
+  customAnnotations: {}
 
 domain: &default-domain loom
 
@@ -121,6 +126,7 @@ globalHttpRedirect:
       memory: "100Mi"
   # Custom labels specific to globalHttpRedirect resources
   customLabels: {}
+  customAnnotations: {}
   # Example:
   # environment: production
   # team: infrastructure
@@ -155,6 +161,7 @@ api:
         memory: "100Mi"
   # Custom labels specific to api resources
   customLabels: {}
+  customAnnotations: {}
   # Example:
   # app-tier: backend
   # service-type: api
@@ -179,6 +186,7 @@ frontend:
       memory: "500Mi"
   # Custom labels specific to frontend resources
   customLabels: {}
+  customAnnotations: {}
   # Example:
   # app-tier: frontend
   # service-type: web
@@ -209,6 +217,7 @@ worker: &worker
   maxConcurrency: null
   # Custom labels specific to worker resources
   customLabels: {}
+  customAnnotations: {}
   # Example:
   # app-tier: worker
   # workload-type: async
@@ -242,6 +251,7 @@ persister:
     # Total number of shards
     numShards: null
   customLabels: {}
+  customAnnotations: {}
 
 beat:
   replicaCount: 1
@@ -262,6 +272,7 @@ beat:
       memory: "500Mi"
   # Custom labels specific to beat resources
   customLabels: {}
+  customAnnotations: {}
   # Example:
   # app-tier: scheduler
   # service-type: beat
@@ -286,6 +297,7 @@ flower:
       memory: "1Gi"
   # Custom labels specific to flower resources
   customLabels: {}
+  customAnnotations: {}
   # Example:
   # app-tier: monitoring
   # service-type: flower
@@ -324,6 +336,7 @@ crawler:
         memory: "100Mi"
   # Custom labels specific to crawler resources
   customLabels: {}
+  customAnnotations: {}
   # Example:
   # app-tier: crawler
   # service-type: ingestion
@@ -353,6 +366,7 @@ elasticsearch:
       memory: "8Gi"
   # Custom labels specific to elasticsearch resources
   customLabels: {}
+  customAnnotations: {}
   # Example:
   # datastore-type: search
   # persistence: required
@@ -386,6 +400,7 @@ elasticvue:
       memory: "500Mi"
   # Custom labels specific to elasticvue resources
   customLabels: {}
+  customAnnotations: {}
   # Example:
   # app-tier: management
   # service-type: ui
@@ -438,6 +453,7 @@ fluentd:
       numberOfReplicas: 0
   # Custom labels specific to fluentd resources
   customLabels: {}
+  customAnnotations: {}
   # Example:
   # app-tier: logging
   # service-type: aggregator
@@ -463,6 +479,7 @@ grafana:
       memory: "2Gi"
   # Custom labels specific to grafana resources
   customLabels: {}
+  customAnnotations: {}
   # Example:
   # app-tier: monitoring
   # service-type: visualization
@@ -499,6 +516,7 @@ translate:
   timeout: 300
   # Custom labels specific to translate resources
   customLabels: {}
+  customAnnotations: {}
   # Example:
   # app-tier: ml
   # service-type: translation
@@ -650,6 +668,7 @@ seaweedfs:
 
   # Custom labels specific to seaweedfs resources
   customLabels: {}
+  customAnnotations: {}
   # Example:
   # datastore-type: object
   # persistence: required
@@ -678,6 +697,7 @@ mongodb:
       memory: "3Gi"
   # Custom labels specific to mongodb resources
   customLabels: {}
+  customAnnotations: {}
   # Example:
   # datastore-type: document
   # persistence: required
@@ -738,6 +758,7 @@ rabbit:
       memory: "3Gi"
   # Custom labels specific to rabbit resources
   customLabels: {}
+  customAnnotations: {}
   # Example:
   # app-tier: messaging
   # service-type: queue
@@ -783,6 +804,7 @@ ollama: &ollama
         memory: "100Mi"
   # Custom labels specific to ollama resources
   customLabels: {}
+  customAnnotations: {}
   # Example:
   # app-tier: ml
   # service-type: llm
@@ -819,6 +841,7 @@ open_webui:
       memory: "1500Mi"
   # Custom labels specific to open_webui resources
   customLabels: {}
+  customAnnotations: {}
   # Example:
   # app-tier: frontend
   # service-type: chat-ui
@@ -857,6 +880,7 @@ dovecot:
         memory: "100Mi"
   # Custom labels specific to dovecot resources
   customLabels: {}
+  customAnnotations: {}
   # Example:
   # app-tier: email
   # service-type: imap
@@ -877,6 +901,7 @@ roundcube:
       memory: "500Mi"
   # Custom labels specific to roundcube resources
   customLabels: {}
+  customAnnotations: {}
   # Example:
   # app-tier: frontend
   # service-type: webmail
@@ -916,6 +941,7 @@ prometheus:
         memory: "100Mi"
   # Custom labels specific to prometheus resources
   customLabels: {}
+  customAnnotations: {}
   # Example:
   # monitoring-tier: "primary"
   # sla: "99.9"
@@ -971,6 +997,7 @@ redis: &redis
         memory: "100Mi"
   # Custom labels specific to redis resources
   customLabels: {}
+  customAnnotations: {}
   # Example:
   # datastore-type: cache
   # persistence: optional
@@ -1016,6 +1043,7 @@ rspamd:
       port: 11334
   # Custom labels specific to rspamd resources
   customLabels: {}
+  customAnnotations: {}
   # Example:
   # app-tier: email
   # service-type: spam-filter
@@ -1045,6 +1073,7 @@ tika:
       memory: "6Gi"
   # Custom labels specific to tika resources
   customLabels: {}
+  customAnnotations: {}
   # Example:
   # app-tier: processing
   # service-type: content-extraction
@@ -1077,6 +1106,7 @@ gotenberg:
       memory: "2Gi"
   # Custom labels specific to gotenberg resources
   customLabels: {}
+  customAnnotations: {}
   # Example:
   # app-tier: processing
   # service-type: content-extraction
@@ -1108,6 +1138,7 @@ kubeStateMetrics:
       memory: "500Mi"
   # Custom labels specific to kubeStateMetrics resources
   customLabels: {}
+  customAnnotations: {}
   # Example:
   # monitoring-tier: "infrastructure"
 

@@ -5,6 +5,10 @@ metadata:
   name: {{ include "app.fullname" . }}-certificate
   labels:
     {{- include "app.labels.custom" (dict "context" . "component" "") | nindent 4 }}
+  {{- with include "app.annotations.custom" (dict "context" . "component" "") }}
+  annotations:
+    {{- . | nindent 4 }}
+  {{- end }}
 spec:
   # name of the secret where the private key, certificate and CA will be stored
   secretName: {{ include "app.fullname" . }}-certificate

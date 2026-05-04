@@ -9,6 +9,7 @@ metadata:
   annotations:
     traefik.ingress.kubernetes.io/router.entrypoints: web
     traefik.ingress.kubernetes.io/router.middlewares: {{ .Release.Namespace }}-{{ include "app.fullname" . }}-global-http-redirect@kubernetescrd
+    {{- include "app.annotations.custom" (dict "context" . "component" "globalHttpRedirect") | nindent 4 }}
 spec:
   ingressClassName: {{ .Values.ingress.className }}
   rules:

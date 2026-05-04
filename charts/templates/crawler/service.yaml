@@ -6,6 +6,10 @@ metadata:
   labels:
     {{- include "app.labels.custom" (dict "context" . "component" "crawler") | nindent 4 }}
     app.kubernetes.io/component: crawler
+  {{- with include "app.annotations.custom" (dict "context" . "component" "crawler") }}
+  annotations:
+    {{- . | nindent 4 }}
+  {{- end }}
 spec:
   ports:
     - port: {{ .Values.crawler.service.port }}

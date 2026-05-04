@@ -15,6 +15,10 @@ metadata:
   name: {{ include "app.fullname" . }}-{{ $component }}-config
   labels:
     {{- include "app.labels.custom" (dict "context" . "component" $component) | nindent 4 }}
+  {{- with include "app.annotations.custom" (dict "context" . "component" $component) }}
+  annotations:
+    {{- . | nindent 4 }}
+  {{- end }}
 data:
   redis.conf: |
     {{- tpl (.Files.Get "files/redis/redis.conf.tpl") (dict "memoryLimitBytes" $memoryLimitBytes "maxmemoryPolicy" $maxmemoryPolicy "stopWritesOnBgsaveError" $stopWritesOnBgsaveError "aofLoadTruncated" $aofLoadTruncated) | nindent 4 }}

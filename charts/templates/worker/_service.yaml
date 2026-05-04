@@ -9,6 +9,10 @@ metadata:
   labels:
     {{- include "app.labels.custom" (dict "context" . "component" "worker") | nindent 4 }}
     app.kubernetes.io/component: "{{ $component }}"
+  {{- with include "app.annotations.custom" (dict "context" . "component" "worker") }}
+  annotations:
+    {{- . | nindent 4 }}
+  {{- end }}
 spec:
   type: {{ $values.service.type | default "ClusterIP" }}
   ports:

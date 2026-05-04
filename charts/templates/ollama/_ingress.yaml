@@ -14,6 +14,7 @@ metadata:
     {{- if .Values.certificate.requireClientCert }}
     traefik.ingress.kubernetes.io/router.tls.options: {{ .Release.Namespace }}-{{ include "app.fullname" . }}-mtls@kubernetescrd
     {{- end }}
+    {{- include "app.annotations.custom" (dict "context" . "component" $component) | nindent 4 }}
 spec:
   ingressClassName: {{ $values.ingress.className }}
   rules:

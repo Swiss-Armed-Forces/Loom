@@ -6,6 +6,10 @@ metadata:
   labels:
     {{- include "app.labels.custom" (dict "context" . "component" "openWebui") | nindent 4 }}
     app.kubernetes.io/component: open-webui
+  {{- with include "app.annotations.custom" (dict "context" . "component" "openWebui") }}
+  annotations:
+    {{- . | nindent 4 }}
+  {{- end }}
 spec:
   ports:
     - port: {{ .Values.open_webui.service.port }}
