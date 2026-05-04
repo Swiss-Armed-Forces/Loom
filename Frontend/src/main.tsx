@@ -1,15 +1,17 @@
+import { ThemeProvider } from "@mui/material";
 import React from "react";
 import { createRoot } from "react-dom/client";
 import { Provider } from "react-redux";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { store } from "./app/store";
+
+import { store } from "@app/store";
+import { globalTheme } from "@app/theme";
+import { Archives } from "@features/archives/Archives";
+import { Search } from "@features/search/Search";
+
 import App from "./App";
 import "./main.css";
-import { Search } from "./features/search/Search";
-import { ThemeProvider } from "@mui/material";
-import { globalTheme } from "./app/theme";
 import { Home } from "./home";
-import { Archives } from "./features/archives/Archives";
 
 const container = document.getElementById("root")!;
 const root = createRoot(container);

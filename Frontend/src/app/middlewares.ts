@@ -1,11 +1,13 @@
 import { createListenerMiddleware, isAnyOf } from "@reduxjs/toolkit";
+
 import {
     addCustomQuery,
     CUSTOM_QUERIES_LOCAL_STORAGE_KEY,
     deleteCustomQuery,
     fetchFilesCountForCustomQuery,
     markCustomQueryAsRead,
-} from "../features/search/searchSlice";
+} from "@app/slices/searchSlice";
+
 import { RootState } from "./store";
 
 export const localStorageCustomQueriesMiddleware = createListenerMiddleware();

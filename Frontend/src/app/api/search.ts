@@ -1,4 +1,5 @@
-import { SearchQuery } from "../../features/search/model";
+import { SearchQuery } from "@features/common/utils/model";
+
 import {
     AiApi,
     ArchivesApi,
@@ -266,10 +267,10 @@ export const scheduleFileTranslation = async (
 
 export const scheduleSingleFileTranslation = async (
     lang: string,
-    file_id: string,
+    fileId: string,
 ): Promise<void> => {
     return filesApi.translateFileV1FilesFileIdTranslatePost({
-        fileId: file_id,
+        fileId: fileId,
         translateFileRequest: {
             lang: lang,
         },
@@ -277,11 +278,11 @@ export const scheduleSingleFileTranslation = async (
 };
 
 export const scheduleSingleFileSummarization = async (
-    file_id: string,
+    fileId: string,
     systemPrompt?: string | null,
 ): Promise<void> => {
     return filesApi.summarizeFileV1FilesFileIdSummarizePost({
-        fileId: file_id,
+        fileId: fileId,
         summarizeFileRequest: {
             systemPrompt: systemPrompt ?? undefined,
         },
@@ -321,10 +322,10 @@ export const scheduleFileIndexing = async (
 };
 
 export const scheduleSingleFileIndexing = async (
-    file_id: string,
+    fileId: string,
 ): Promise<void> => {
     return filesApi.indexFileV1FilesFileIdIndexPost({
-        fileId: file_id,
+        fileId: fileId,
     });
 };
 

@@ -703,31 +703,32 @@ The complete source code for Traefik is publicly available at [https://github.co
 | @emotion/styled                     | MIT          | 11.14.1           |
 | @mui/icons-material                 | MIT          | 9.0.0             |
 | @mui/material                       | MIT          | 9.0.0             |
-| @mui/x-charts                       | MIT          | 9.0.1             |
-| @mui/x-tree-view                    | MIT          | 9.0.1             |
+| @mui/x-charts                       | MIT          | 9.0.2             |
+| @mui/x-tree-view                    | MIT          | 9.0.2             |
 | @reduxjs/toolkit                    | MIT          | 2.11.2            |
 | ace-builds                          | BSD-3-Clause | 1.43.6            |
 | ajv                                 | MIT          | 8.20.0            |
 | date-fns                            | MIT          | 4.1.0             |
-| i18next                             | MIT          | 26.0.5            |
-| i18next-http-backend                | MIT          | 3.0.4             |
+| eslint-plugin-import                | MIT          | 2.32.0            |
+| i18next                             | MIT          | 26.0.6            |
+| i18next-http-backend                | MIT          | 3.0.5             |
 | react                               | MIT          | 19.2.5            |
 | react-ace                           | MIT          | 14.0.1            |
 | react-dom                           | MIT          | 19.2.5            |
 | react-dropzone                      | MIT          | 15.0.0            |
-| react-i18next                       | MIT          | 17.0.3            |
+| react-i18next                       | MIT          | 17.0.4            |
 | react-intersection-observer         | MIT          | 10.0.3            |
 | react-pdf                           | MIT          | 10.4.1            |
 | react-redux                         | MIT          | 9.2.0             |
 | react-router-dom                    | MIT          | 7.14.1            |
 | react-toastify                      | MIT          | 11.1.0            |
-| uuid                                | MIT          | 13.0.0            |
+| uuid                                | MIT          | 14.0.0            |
 | @eslint/js                          | MIT          | 9.39.4            |
 | @mui/types                          | MIT          | 9.0.0             |
 | @openapitools/openapi-generator-cli | Apache-2.0   | 2.31.1            |
 | @testing-library/jest-dom           | MIT          | 6.9.1             |
 | @testing-library/react              | MIT          | 16.3.2            |
-| @types/node                         | MIT          | 24.12.2           |
+| @types/node                         | MIT          | 25.6.0            |
 | @types/react                        | MIT          | 19.2.14           |
 | @types/react-dom                    | MIT          | 19.2.3            |
 | @typescript-eslint/eslint-plugin    | MIT          | 8.59.0            |
@@ -735,6 +736,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | @vitejs/plugin-react                | MIT          | 6.0.1             |
 | eslint                              | MIT          | 9.39.4            |
 | eslint-config-prettier              | MIT          | 10.1.8            |
+| eslint-import-resolver-typescript   | ISC          | 4.4.4             |
 | eslint-plugin-prettier              | MIT          | 5.5.5             |
 | eslint-plugin-react                 | MIT          | 7.37.5            |
 | eslint-plugin-react-hooks           | MIT          | 7.1.1             |
@@ -744,9 +746,9 @@ The complete source code for Traefik is publicly available at [https://github.co
 | jsdom                               | MIT          | 29.0.2            |
 | license-report                      | MIT          | 6.8.2             |
 | prettier                            | MIT          | 3.8.3             |
-| typescript                          | Apache-2.0   | 6.0.2             |
+| typescript                          | Apache-2.0   | 6.0.3             |
 | typescript-eslint                   | MIT          | 8.59.0            |
-| vite                                | MIT          | 8.0.8             |
+| vite                                | MIT          | 8.0.9             |
 | vite-plugin-static-copy             | MIT          | 4.1.0             |
 | vite-plugin-svgr                    | MIT          | 5.2.0             |
 | vitest                              | MIT          | 4.1.4             |
@@ -1276,7 +1278,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | passwd | 1:4.13+dfsg1-1+deb12u1 | BSD-3-Clause, GPL-1.0-only, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
 | perl-base | 5.36.0-7+deb12u3 | Artistic-2.0, Artistic-dist, BSD-3-Clause, GPL-1.0-only, GPL-1.0-or-later, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.1-only, Zlib | dpkg-db-cataloger |
 | pip | 24.0 | MIT | python-installed-package-cataloger |
-| pip | 26.0.1 | MIT | python-installed-package-cataloger |
+| pip | 26.1 | MIT | python-installed-package-cataloger |
 | ply | 3.11 |  | python-installed-package-cataloger |
 | prometheus-client | 0.24.1 | Apache-2.0 AND BSD-2-Clause | python-installed-package-cataloger |
 | prompt-toolkit | 3.0.50 |  | python-installed-package-cataloger |
@@ -2113,7 +2115,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | perl-modules-5.36 | 5.36.0-7+deb12u3 | Artistic-2.0, Artistic-dist, BSD-3-Clause, GPL-1.0-only, GPL-1.0-or-later, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.1-only, Zlib | dpkg-db-cataloger |
 | pinentry-curses | 1.2.1-1 | GPL-2.0-only, GPL-2.0-or-later, LGPL-3.0-only, LGPL-3.0-or-later, X11 | dpkg-db-cataloger |
 | pip | 24.0 | MIT | python-installed-package-cataloger |
-| pip | 26.0.1 | MIT | python-installed-package-cataloger |
+| pip | 26.1 | MIT | python-installed-package-cataloger |
 | pkg-config | 1.8.1-1 | GPL-2.0-only, GPL-2.0-or-later, ISC, X11 | dpkg-db-cataloger |
 | pkgconf | 1.8.1-1 | GPL-2.0-only, GPL-2.0-or-later, ISC, X11 | dpkg-db-cataloger |
 | pkgconf-bin | 1.8.1-1 | GPL-2.0-only, GPL-2.0-or-later, ISC, X11 | dpkg-db-cataloger |
@@ -2366,7 +2368,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | passwd | 1:4.13+dfsg1-1+deb12u1 | BSD-3-Clause, GPL-1.0-only, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
 | perl-base | 5.36.0-7+deb12u3 | Artistic-2.0, Artistic-dist, BSD-3-Clause, GPL-1.0-only, GPL-1.0-or-later, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.1-only, Zlib | dpkg-db-cataloger |
 | pip | 24.0 | MIT | python-installed-package-cataloger |
-| pip | 26.0.1 | MIT | python-installed-package-cataloger |
+| pip | 26.1 | MIT | python-installed-package-cataloger |
 | ply | 3.11 |  | python-installed-package-cataloger |
 | prompt-toolkit | 3.0.48 |  | python-installed-package-cataloger |
 | pycparser | 2.22 | BSD-3-Clause | python-installed-package-cataloger |

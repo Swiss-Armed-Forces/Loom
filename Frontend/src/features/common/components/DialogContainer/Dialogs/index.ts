@@ -1,0 +1,25 @@
+import { AboutDialog } from "./AboutDialog/AboutDialog";
+import { AddTagsDialog } from "./AddTagsDialog/AddTagsDialog";
+import { ConfirmDialog } from "./ConfirmDialog/ConfirmDialog";
+import { CreateArchiveDialog } from "./CreateArchiveDialog/CreateArchiveDialog";
+import { DeleteCustomQueryDialog } from "./DeleteCustomQueryDialog/DeleteCustomQueryDialog";
+import { DeleteTagGloballyDialog } from "./DeleteTagGloballyDialog/DeleteTagGloballyDialog";
+import { DialogBase } from "./DialogBase";
+import { FileDetailDialog } from "./FileDetailDialog/FileDetailDialog";
+import { SummaryDialog } from "./SummaryDialog/SummaryDialog";
+import { TranslationDialog } from "./TranslationDialog/TranslationDialog";
+import { UploadFileDialog } from "./UploadFileDialog/UploadFileDialog";
+
+export {
+    AboutDialog,
+    AddTagsDialog,
+    ConfirmDialog,
+    CreateArchiveDialog,
+    DeleteCustomQueryDialog,
+    DeleteTagGloballyDialog,
+    DialogBase,
+    FileDetailDialog,
+    SummaryDialog,
+    TranslationDialog,
+    UploadFileDialog,
+};

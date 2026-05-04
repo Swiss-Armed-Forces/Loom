@@ -1,3 +1,4 @@
+import { Delete, Policy } from "@mui/icons-material";
 import {
     Badge,
     Chip,
@@ -8,46 +9,40 @@ import {
     ListItemText,
     ListSubheader,
 } from "@mui/material";
-import { FC, useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import styles from "./CustomQueries.module.css";
-import {
-    AddCustomQueryDialog,
-    availableCustomQueryIcons,
-} from "./AddCustomQueryDialog.tsx";
-import { useAppDispatch, useAppSelector } from "../../../../app/hooks.ts";
+
+import { useAppDispatch, useAppSelector } from "@app/hooks.ts";
+import { openDialog } from "@app/slices/commonSlice";
 import {
     CustomQuery,
-    deleteCustomQuery,
     updateQuery,
     selectCustomQueries,
     fetchFilesCountForCustomQuery,
     markCustomQueryAsRead,
-} from "../../searchSlice.ts";
-import { Delete, Policy } from "@mui/icons-material";
-import { ConfirmDialog } from "../ConfirmDialog.tsx";
+} from "@app/slices/searchSlice";
+import { DialogType } from "@features/common/utils/enums";
 
-const CUSTOM_QUERY_FILES_COUNT_POLL_INTERVAL__MS = 30_000;
+import {
+    AddCustomQueryDialog,
+    availableCustomQueryIcons,
+} from "./AddCustomQueryDialog";
+import styles from "./CustomQueries.module.css";
+
+const CUSTOM_QUERY_FILES_COUNT_POLL_INTERVAL_MS = 30_000;
 
 interface SavedQueryItemProps {
     customQuery: CustomQuery;
-    icon_only?: boolean;
+    iconOnly?: boolean;
 }
 
-const CustomQueryItem: FC<SavedQueryItemProps> = ({
+const CustomQueryItem = ({
     customQuery,
-    icon_only = false,
-}) => {
+    iconOnly = false,
+}: SavedQueryItemProps) => {
     const dispatch = useAppDispatch();
-    const [openConfirmDialog, setOpenConfirmDialog] = useState<boolean>(false);
-    const { t } = useTranslation();
 
-    const handleConfirmation = async () => {
-        dispatch(deleteCustomQuery(customQuery));
-        setOpenConfirmDialog(false);
-    };
-
-    const onCustomQueryClick = useCallback(() => {
+    const handleClick = useCallback(() => {
         dispatch(markCustomQueryAsRead(customQuery));
         dispatch(
             updateQuery({
@@ -57,101 +52,92 @@ const CustomQueryItem: FC<SavedQueryItemProps> = ({
         );
     }, [dispatch, customQuery]);
 
+    const handleDeleteClick = useCallback(() => {
+        dispatch(
+            openDialog({
+                id: "",
+                type: DialogType.DeleteCustomQuery,
+                props: { customQuery },
+            }),
+        );
+    }, [dispatch, customQuery]);
+
     useEffect(() => {
         const customQueryFilesCountInterval = setInterval(async () => {
             await dispatch(fetchFilesCountForCustomQuery({ customQuery }));
-        }, CUSTOM_QUERY_FILES_COUNT_POLL_INTERVAL__MS);
+        }, CUSTOM_QUERY_FILES_COUNT_POLL_INTERVAL_MS);
 
         return () => {
             clearInterval(customQueryFilesCountInterval);
         };
-    }, [customQuery, dispatch]);
+    }, [customQuery]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    if (iconOnly) {
+        return (
+            <ListItemButton onClick={handleClick} title={customQuery.name}>
+                <Badge
+                    invisible={!customQuery.hasNewFiles}
+                    color="primary"
+                    anchorOrigin={{
+                        vertical: "top",
+                        horizontal: "left",
+                    }}
+                    variant="dot"
+                >
+                    <ListItemIcon>
+                        {availableCustomQueryIcons.find(
+                            (ac) => ac.key == customQuery.icon,
+                        )?.icon ?? <Policy key="Policy" />}
+                    </ListItemIcon>
+                </Badge>
+            </ListItemButton>
+        );
+    }
 
     return (
-        <>
-            {icon_only ? (
-                <ListItemButton
-                    onClick={onCustomQueryClick}
-                    title={customQuery.name}
-                >
-                    <Badge
-                        invisible={!customQuery.hasNewFiles}
-                        color="primary"
-                        anchorOrigin={{
-                            vertical: "top",
-                            horizontal: "left",
-                        }}
-                        variant="dot"
-                    >
-                        <ListItemIcon>
-                            {availableCustomQueryIcons.find(
-                                (ac) => ac.key == customQuery.icon,
-                            )?.icon ?? <Policy key="Policy" />}
-                        </ListItemIcon>
-                    </Badge>
-                </ListItemButton>
-            ) : (
-                <ListItemButton onClick={onCustomQueryClick}>
-                    <Badge
-                        invisible={!customQuery.hasNewFiles}
-                        color="primary"
-                        anchorOrigin={{
-                            vertical: "top",
-                            horizontal: "left",
-                        }}
-                        variant="dot"
-                    >
-                        <ListItemIcon>
-                            {availableCustomQueryIcons.find(
-                                (ac) => ac.key == customQuery.icon,
-                            )?.icon ?? <Policy key="Policy" />}
-                        </ListItemIcon>
-                    </Badge>
-                    <ListItemText className={styles.listItemText}>
-                        {customQuery.name}{" "}
-                        <Chip
-                            label={customQuery.fileCount.toString()}
-                            size="small"
-                        ></Chip>
-                    </ListItemText>
-                    <ListItemIcon
-                        onClick={(e) => {
-                            setOpenConfirmDialog(true);
-                            e.stopPropagation();
-                        }}
-                    >
-                        <Delete color="error" />
-                    </ListItemIcon>
-                </ListItemButton>
-            )}
-
-            <ConfirmDialog
-                open={openConfirmDialog}
-                text={t("confirmDialog.confirmCustomQueryRemoval")}
-                buttonText={t("confirmDialog.confirmRemoval")}
-                handleConfirmation={handleConfirmation}
-                cancel={() => {
-                    setOpenConfirmDialog(false);
+        <ListItemButton onClick={handleClick}>
+            <Badge
+                invisible={!customQuery.hasNewFiles}
+                color="primary"
+                anchorOrigin={{
+                    vertical: "top",
+                    horizontal: "left",
                 }}
-                icon={<Delete />}
-            ></ConfirmDialog>
-        </>
+                variant="dot"
+            >
+                <ListItemIcon>
+                    {availableCustomQueryIcons.find(
+                        (ac) => ac.key == customQuery.icon,
+                    )?.icon ?? <Policy key="Policy" />}
+                </ListItemIcon>
+            </Badge>
+            <ListItemText className={styles.listItemText}>
+                {customQuery.name}{" "}
+                <Chip
+                    label={customQuery.fileCount.toString()}
+                    size="small"
+                ></Chip>
+            </ListItemText>
+            <ListItemIcon onClick={handleDeleteClick}>
+                <Delete color="error" />
+            </ListItemIcon>
+        </ListItemButton>
     );
 };
 
 interface CustomQueriesListProps {
-    icon_only?: boolean;
+    iconOnly?: boolean;
 }
 
-export const CustomQueriesList: FC<CustomQueriesListProps> = ({
-    icon_only = false,
+export const CustomQueriesList = ({
+    iconOnly = false,
 }: CustomQueriesListProps) => {
     const { t } = useTranslation();
     const customQueries = useAppSelector(selectCustomQueries);
 
     return (
         <List className={styles.savedQueries}>
-            {icon_only ? (
+            {iconOnly ? (
                 <ListSubheader>
                     <hr />
                 </ListSubheader>
@@ -164,11 +150,11 @@ export const CustomQueriesList: FC<CustomQueriesListProps> = ({
                 <CustomQueryItem
                     key={i}
                     customQuery={q}
-                    icon_only={icon_only}
+                    iconOnly={iconOnly}
                 ></CustomQueryItem>
             ))}
             <ListItem>
-                <AddCustomQueryDialog icon_only={icon_only} />
+                <AddCustomQueryDialog iconOnly={iconOnly} />
             </ListItem>
         </List>
     );

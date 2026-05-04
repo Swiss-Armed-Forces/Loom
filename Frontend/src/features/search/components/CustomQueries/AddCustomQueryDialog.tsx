@@ -1,4 +1,3 @@
-import { useState } from "react";
 import {
     Add,
     AttachFile,
@@ -31,19 +30,22 @@ import {
     Select,
     TextField,
 } from "@mui/material";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useAppDispatch, useAppSelector } from "../../../../app/hooks.ts";
+
+import { useAppDispatch, useAppSelector } from "@app/hooks.ts";
 import {
     addCustomQuery,
     initCustomQuery,
     selectQuery,
     selectTotalFiles,
-} from "../../searchSlice.ts";
+} from "@app/slices/searchSlice";
+
 import styles from "./AddCustomQueryDialog.module.css";
 
 interface TranslationProps {
     disabled?: boolean;
-    icon_only?: boolean;
+    iconOnly?: boolean;
 }
 
 // eslint-disable-next-line react-refresh/only-export-components
@@ -69,10 +71,10 @@ export const availableCustomQueryIcons = [
     { key: "Filter5", icon: <Filter5 key="Filter5" /> },
 ];
 
-export function AddCustomQueryDialog({
+export const AddCustomQueryDialog = ({
     disabled = false,
-    icon_only = false,
-}: TranslationProps) {
+    iconOnly = false,
+}: TranslationProps) => {
     const { t } = useTranslation();
     const dispatch = useAppDispatch();
     const searchQuery = useAppSelector(selectQuery);
@@ -111,7 +113,7 @@ export function AddCustomQueryDialog({
 
     return (
         <>
-            {icon_only ? (
+            {iconOnly ? (
                 <IconButton
                     sx={{
                         width: "10px",
@@ -229,4 +231,4 @@ export function AddCustomQueryDialog({
             </Dialog>
         </>
     );
-}
+};

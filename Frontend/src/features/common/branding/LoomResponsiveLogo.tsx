@@ -1,9 +1,10 @@
-import { useTranslation } from "react-i18next";
 import { useMediaQuery } from "@mui/material";
-import LoomLogoFull from "./loom-logo-full-contour.svg?react";
-import LoomLogoCompact from "./loom-logo-compact.svg?react";
+import { useTranslation } from "react-i18next";
 
-export function LoomResponsiveLogo() {
+import LoomLogoCompact from "./loom-logo-compact.svg?react";
+import LoomLogoFull from "./loom-logo-full-contour.svg?react";
+
+export const LoomResponsiveLogo = () => {
     const { t } = useTranslation();
     const isMobile = useMediaQuery("(max-width: 1100px)");
 
@@ -20,4 +21,4 @@ export function LoomResponsiveLogo() {
             )}
         </div>
     );
-}
+};

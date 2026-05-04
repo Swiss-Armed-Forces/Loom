@@ -1,14 +1,15 @@
 import { Container, Typography, useMediaQuery } from "@mui/material";
 import { useTranslation } from "react-i18next";
 import { toast } from "react-toastify";
-import { useAppDispatch } from "../../app/hooks";
-import { getAll } from "../../app/api";
+
+import { getAll } from "@app/api";
+import { useAppDispatch } from "@app/hooks";
+import { fillArchives } from "@app/slices/archiveSlice";
+
 import styles from "./Archives.module.css";
+import { TableView } from "./views/TableView";
 
-import { fillArchives } from "./archiveSlice";
-import { TableView } from "./container/TableView";
-
-export function Archives() {
+export const Archives = () => {
     const { t } = useTranslation();
     const dispatch = useAppDispatch();
     const matchMedia = useMediaQuery("(max-width: 2200px)");
@@ -39,4 +40,4 @@ export function Archives() {
             </div>
         </Container>
     );
-}
+};

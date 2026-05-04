@@ -1,14 +1,15 @@
+import { LinearProgress } from "@mui/material";
 import { Outlet } from "react-router-dom";
-import LinearProgress from "@mui/material/LinearProgress";
 import "./App.css";
 import "react-toastify/dist/ReactToastify.css";
-import { useAppSelector } from "./app/hooks";
-import { selectIsLoading } from "./features/common/commonSlice";
 import { ToastContainer } from "react-toastify";
-import "./features/common/i18n";
-import { Header } from "./features/common/header";
 
-function App() {
+import { useAppSelector } from "@app/hooks";
+import { selectIsLoading } from "@app/slices/commonSlice";
+import "@features/common/i18n";
+import { DialogContainer, Header } from "@features/common/components";
+
+const App = () => {
     const fetching = useAppSelector(selectIsLoading);
 
     return (
@@ -30,12 +31,12 @@ function App() {
                 draggable
                 pauseOnHover
             />
-
+            <DialogContainer />
             <Header />
 
             <Outlet />
         </div>
     );
-}
+};
 
 export default App;

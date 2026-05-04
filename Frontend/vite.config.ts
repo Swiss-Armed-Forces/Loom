@@ -1,13 +1,12 @@
-import path from "node:path";
 import { createRequire } from "node:module";
+import path from "node:path";
 
 import react from "@vitejs/plugin-react";
-import svgr from "vite-plugin-svgr";
-import { defineConfig } from "vitest/config";
 import { loadEnv } from "vite";
-
 import { normalizePath } from "vite";
 import { viteStaticCopy } from "vite-plugin-static-copy";
+import svgr from "vite-plugin-svgr";
+import { defineConfig } from "vitest/config";
 
 /**
  * react-pdf related paths
@@ -63,6 +62,13 @@ export default ({ mode }) => {
             globals: true,
             environment: "jsdom",
             setupFiles: "./src/test/setup.ts",
+        },
+        resolve: {
+            alias: {
+                "@app": path.resolve(__dirname, "./src/app"),
+                "@features": path.resolve(__dirname, "./src/features"),
+                "@middleware": path.resolve(__dirname, "./src/middleware"),
+            },
         },
     });
 };

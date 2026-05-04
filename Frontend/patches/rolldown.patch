@@ -1,8 +1,8 @@
-diff --git a/dist/shared/binding-s-V_wTpj.mjs b/dist/shared/binding-s-V_wTpj.mjs
-index 01316e9c93e935130c7c2f2fdf607e695e2bfa6c..487e9bffdd4cf07521a452b803e4018ae4b1c0d7 100644
---- a/dist/shared/binding-s-V_wTpj.mjs
-+++ b/dist/shared/binding-s-V_wTpj.mjs
-@@ -48,18 +48,81 @@ var require_webcontainer_fallback = /* @__PURE__ */ __commonJSMin(((exports, mod
+diff --git a/dist/shared/binding-DI_PGVIh.mjs b/dist/shared/binding-DI_PGVIh.mjs
+index fca85434e92caa0e30626102c378c3cbd95aa17d..009ad0cee038a7e2ddd8d179d1e97285420db71f 100644
+--- a/dist/shared/binding-DI_PGVIh.mjs
++++ b/dist/shared/binding-DI_PGVIh.mjs
+@@ -48,18 +48,103 @@ var require_webcontainer_fallback = /* @__PURE__ */ __commonJSMin(((exports, mod
  //#endregion
  //#region src/binding.cjs
  var require_binding = /* @__PURE__ */ __commonJSMin(((exports, module) => {
@@ -10,79 +10,101 @@ index 01316e9c93e935130c7c2f2fdf607e695e2bfa6c..487e9bffdd4cf07521a452b803e4018a
 +	const { readFileSync, openSync, readSync, close } = __require("node:fs");
  	let nativeBinding = null;
  	const loadErrors = [];
-+  // Patch related to the following issues
-+  // https://github.com/napi-rs/napi-rs/pull/3241
-+  // https://github.com/napi-rs/napi-rs/issues/3223
-+  // https://github.com/rolldown/rolldown/issues/9133
-+  // https://github.com/lovell/detect-libc/issues/29
-+  // https://github.com/lovell/detect-libc/commit/4d6eafecb2bd6c45f8a95822966cf7c08f79d21b (fix copied from here)
++	// Patch related to the following issues
++	// https://github.com/napi-rs/napi-rs/pull/3241
++	// https://github.com/napi-rs/napi-rs/issues/3223
++	// https://github.com/rolldown/rolldown/issues/9133
++	// https://github.com/lovell/detect-libc/issues/29
++	// https://github.com/lovell/detect-libc/commit/4d6eafecb2bd6c45f8a95822966cf7c08f79d21b (fix copied from here)
++	//
++	// Additionally, force glibc when running inside devenv/Nix since those
++	// environments always use glibc but the ELF interpreter path detection
++	// can misclassify them as musl (the Nix-built ld-linux interpreter
++	// lives under /nix/store/... and doesn't always match expected patterns).
  	const isMusl = () => {
  		let musl = false;
  		if (process.platform === "linux") {
 -			musl = isMuslFromFilesystem();
 +			musl = isMuslFromInterpreter();
++			// devenv/Nix environments always use glibc — skip musl detection entirely
++			if (isNixOrDevenv()) return false;
 +			if (musl === null) musl = isMuslFromFilesystem();
  			if (musl === null) musl = isMuslFromReport();
  			if (musl === null) musl = isMuslFromChildProcess();
  		}
  		return musl;
  	};
-+  const isMuslFromInterpreter = () => {
-+    try {
-+      const SELF_PATH = '/proc/self/exe';
-+      const MAX_LENGTH = 2048;
-+      const fd = openSync(SELF_PATH, 'r');
-+      const buffer = Buffer.alloc(MAX_LENGTH);
-+      const bytesRead = readSync(fd, buffer, 0, MAX_LENGTH, 0);
-+      close(fd);
-+      const selfContent = buffer.subarray(0, bytesRead);
-+      const path = interpreterPath(selfContent);
-+      return isMuslFromInterpreterPath(path);
-+    } catch (e) {}
-+    return null;
-+  }
++	const isNixOrDevenv = () => {
++		// devenv sets DEVENV_ACTIVE and DEVENV_ROOT
++		if (process.env.DEVENV_ACTIVE || process.env.DEVENV_ROOT) return true;
++		// Nix shells set IN_NIX_SHELL
++		if (process.env.IN_NIX_SHELL) return true;
++		// Nix build environments set NIX_BUILD_TOP
++		if (process.env.NIX_BUILD_TOP) return true;
++		// Fallback: detect Nix by the presence of /nix/store in PATH or the exe
++		try {
++			const selfExe = process.execPath;
++			if (selfExe && selfExe.includes("/nix/store")) return true;
++			const pathEnv = process.env.PATH || "";
++			if (pathEnv.split(":").some((p) => p.startsWith("/nix/store"))) return true;
++		} catch (e) {}
++		return false;
++	};
++	const isMuslFromInterpreter = () => {
++		try {
++			const SELF_PATH = '/proc/self/exe';
++			const MAX_LENGTH = 2048;
++			const fd = openSync(SELF_PATH, 'r');
++			const buffer = Buffer.alloc(MAX_LENGTH);
++			const bytesRead = readSync(fd, buffer, 0, MAX_LENGTH, 0);
++			close(fd);
++			const selfContent = buffer.subarray(0, bytesRead);
++			const path = interpreterPath(selfContent);
++			return isMuslFromInterpreterPath(path);
++		} catch (e) {}
++		return null;
++	}
++	const interpreterPath = (elf) => {
++		if (elf.length < 64) {
++			return null;
++		}
++		if (elf.readUInt32BE(0) !== 0x7F454C46) {
++			// Unexpected magic bytes
++			return null;
++		}
++		if (elf.readUInt8(4) !== 2) {
++			// Not a 64-bit ELF
++			return null;
++		}
++		if (elf.readUInt8(5) !== 1) {
++			// Not little-endian
++			return null;
++		}
++		const offset = elf.readUInt32LE(32);
++		const size = elf.readUInt16LE(54);
++		const count = elf.readUInt16LE(56);
++		for (let i = 0; i < count; i++) {
++			const headerOffset = offset + (i * size);
++			const type = elf.readUInt32LE(headerOffset);
++			if (type === 3) {
++			const fileOffset = elf.readUInt32LE(headerOffset + 8);
++			const fileSize = elf.readUInt32LE(headerOffset + 32);
++			return elf.subarray(fileOffset, fileOffset + fileSize).toString().replace(/\0.*$/g, '');
++			}
++		}
++		return null;
++		};
 +
-+  const interpreterPath = (elf) => {
-+    if (elf.length < 64) {
-+      return null;
-+    }
-+    if (elf.readUInt32BE(0) !== 0x7F454C46) {
-+      // Unexpected magic bytes
-+      return null;
-+    }
-+    if (elf.readUInt8(4) !== 2) {
-+      // Not a 64-bit ELF
-+      return null;
-+    }
-+    if (elf.readUInt8(5) !== 1) {
-+      // Not little-endian
-+      return null;
-+    }
-+    const offset = elf.readUInt32LE(32);
-+    const size = elf.readUInt16LE(54);
-+    const count = elf.readUInt16LE(56);
-+    for (let i = 0; i < count; i++) {
-+      const headerOffset = offset + (i * size);
-+      const type = elf.readUInt32LE(headerOffset);
-+      if (type === 3) {
-+        const fileOffset = elf.readUInt32LE(headerOffset + 8);
-+        const fileSize = elf.readUInt32LE(headerOffset + 32);
-+        return elf.subarray(fileOffset, fileOffset + fileSize).toString().replace(/\0.*$/g, '');
-+      }
-+    }
-+    return null;
-+  };
-+
-+  const isMuslFromInterpreterPath = (path) => {
-+    if (path) {
-+      if (path.includes('/ld-musl-')) {
-+        return true;
-+      } else if (path.includes('/ld-linux-')) {
-+        return false;
-+      }
-+    }
-+    return null;
-+  };
++		const isMuslFromInterpreterPath = (path) => {
++		if (path) {
++			if (path.includes('/ld-musl-')) {
++			return true;
++			} else if (path.includes('/ld-linux-')) {
++			return false;
++			}
++		}
++		return null;
++	};
  	const isFileMusl = (f) => f.includes("libc.musl-") || f.includes("ld-musl-");
  	const isMuslFromFilesystem = () => {
  		try {

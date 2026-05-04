@@ -1,5 +1,29 @@
-import { BaseSyntheticEvent, useEffect, useRef, useState } from "react";
-import { useAppDispatch, useAppSelector } from "../../app/hooks";
+import { t } from "i18next";
+import {
+    BaseSyntheticEvent,
+    useEffect,
+    useRef,
+    useState,
+    useCallback,
+} from "react";
+import { useSearchParams } from "react-router-dom";
+import { toast } from "react-toastify";
+
+import {
+    loadLanguages,
+    loadTags,
+    MessageFileUpdate,
+    loadSummarizationSystemPrompt,
+    MessageQueryIdExpired,
+    MessageError,
+} from "@app/api";
+import { useAppDispatch, useAppSelector } from "@app/hooks";
+import {
+    openDialog,
+    selectDialogs,
+    startLoadingIndicator,
+    stopLoadingIndicator,
+} from "@app/slices/commonSlice";
 import {
     fetchPreview,
     selectWebSocketPubSubMessage,
@@ -8,52 +32,36 @@ import {
     updateQuery,
     setSummarizationSystemPrompt,
     setTags,
-    selectFileDetailData,
-    fetchFileDetailData,
     selectQuery,
     selectLanguages,
-} from "./searchSlice";
-import { useKeyboardNavigation } from "./hooks/useKeyboardNavigation.ts";
+} from "@app/slices/searchSlice";
+import { DialogType } from "@features/common/utils/enums";
+import { FileDetailTab } from "@features/common/utils/enums";
 import {
-    loadLanguages,
-    LibretranslateSupportedLanguages,
-    loadTags,
-    MessageFileUpdate,
-    loadSummarizationSystemPrompt,
-    MessageQueryIdExpired,
-} from "../../app/api";
-import {
-    startLoadingIndicator,
-    stopLoadingIndicator,
-} from "../common/commonSlice";
-import { SearchResults } from "./container/SearchResults";
-import { SideMenu } from "./components/SideMenu";
+    ChatMenu,
+    ScrollToTop,
+    SideMenu,
+    Toolbar,
+} from "@features/search/components";
+import { useKeyboardNavigation } from "@features/search/hooks/useKeyboardNavigation";
+import { SearchResults } from "@features/search/views/SearchResults";
+
+import { websocketConnect } from "../../middleware/SocketMiddleware";
+import { isSortDirection, SearchQuery } from "../common/utils/model";
+
 import styles from "./Search.module.css";
-import { FileDetailDialog } from "./components/FileDetailDialog.tsx";
-import { Toolbar } from "./components/Toolbar.tsx";
-import { ScrollToTop } from "./components/ScrollToTop.tsx";
-import { isSortDirection, SearchQuery } from "./model";
-import { websocketConnect } from "../../middleware/SocketMiddleware.ts";
-import { toast } from "react-toastify";
-import { MessageError } from "../../app/api";
-import ChatMenu from "./components/ChatMenu.tsx";
-import { useSearchParams } from "react-router-dom";
-import { t } from "i18next";
-import { TagsInputDialog } from "../common/components/tags/TagsInputDialog.tsx";
-import { TranslationDialog } from "./components/TranslationDialog.tsx";
-import { SummaryDialog } from "./components/SummaryDialog.tsx";
 
-const RELOAD_TIMEOUT__MS = 5_000;
-const UPDATE_QUERY_DEBOUNCE__MS = 2_000;
+const RELOAD_TIMEOUT_MS = 5_000;
+const UPDATE_QUERY_DEBOUNCE_MS = 2_000;
 
-export function Search() {
+export const Search = () => {
     const dispatch = useAppDispatch();
     const languages = useAppSelector(selectLanguages);
     const searchQuery = useAppSelector(selectQuery);
-    const fileDetailData = useAppSelector(selectFileDetailData);
     const webSocketPubSubMessage = useAppSelector(selectWebSocketPubSubMessage);
-
     const chatbotOpen = useAppSelector((state) => state.search.chatbotOpen);
+    const dialogs = useAppSelector(selectDialogs);
+    const dialogFileIdRef = useRef<string>("");
 
     // Initialize keyboard navigation
     useKeyboardNavigation();
@@ -64,175 +72,210 @@ export function Search() {
 
     // Reset scroll position when search query changes
     useEffect(() => {
-        if (!searchQuery?.id) return;
-        searchResultWrapper.current?.scrollTo(0, 0);
+        if (searchQuery?.id) {
+            searchResultWrapper.current?.scrollTo(0, 0);
+        }
     }, [searchQuery?.id]);
 
-    const updateQueryDebounceTimeouts = useRef(
-        new Map<string, ReturnType<typeof setTimeout>>(),
-    );
+    const updateQueryDebounceTimeoutRef = useRef<ReturnType<
+        typeof setTimeout
+    > | null>(null);
 
-    const toggleChatbot = () => {
+    const toggleChatbot = useCallback(() => {
         dispatch(setChatbotOpen(!chatbotOpen));
-    };
+    }, [dispatch, chatbotOpen]);
 
     useEffect(() => {
-        async function fetchInitialSearchState() {
-            await Promise.all([
-                fetchSearchState(),
-                dispatch(websocketConnect),
-                dispatch(setLanguages(await loadLanguages())),
-                dispatch(
-                    setSummarizationSystemPrompt(
-                        await loadSummarizationSystemPrompt(),
-                    ),
-                ),
-            ]).catch((errorPayload) => {
-                toast.error(
-                    `Error in fetchInitialSearchState: ${errorPayload}`,
-                );
-            });
-        }
-        async function fetchSearchState() {
-            await Promise.all([dispatch(setTags(await loadTags()))]).catch(
-                (errorPayload) => {
-                    toast.error(`Error in fetchSearchState: ${errorPayload}`);
-                },
-            );
-        }
+        const fetchSearchState = async () => {
+            try {
+                const tags = await loadTags();
+                dispatch(setTags(tags));
+            } catch (error) {
+                toast.error(`Error in fetchSearchState: ${error}`);
+            }
+        };
 
-        async function load() {
+        const fetchInitialSearchState = async () => {
             dispatch(startLoadingIndicator());
             try {
-                await fetchInitialSearchState();
+                const [langs, prompt] = await Promise.all([
+                    loadLanguages(),
+                    loadSummarizationSystemPrompt(),
+                    fetchSearchState(),
+                    dispatch(websocketConnect),
+                ]);
+                dispatch(setLanguages(langs));
+                dispatch(setSummarizationSystemPrompt(prompt));
+            } catch (error) {
+                toast.error(`Error in fetchInitialSearchState: ${error}`);
             } finally {
                 dispatch(stopLoadingIndicator());
             }
-        }
-        load();
+        };
+
+        fetchInitialSearchState();
 
         // refresh search state after timeout
         const fetchSearchStateInterval = setInterval(
             fetchSearchState,
-            RELOAD_TIMEOUT__MS,
+            RELOAD_TIMEOUT_MS,
         );
 
-        return () => {
-            clearInterval(fetchSearchStateInterval);
-        };
+        return () => clearInterval(fetchSearchStateInterval);
     }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+    // sync URL searchParams to Redux state
     useEffect(() => {
-        if (searchQuery) return;
-        if (!languages) return;
+        if (searchQuery || !languages) return;
+
         const query = searchParams.get("query");
         const languageCodes = searchParams.getAll("languages");
         const sortField = searchParams.get("sortField");
         const sortDirection = searchParams.get("sortDirection");
-        const newQuery = {
-            ...(query && {
-                query: query,
-            }),
-            ...(languageCodes.length > 0 && {
-                languages: languageCodes.map(
-                    (c) =>
-                        ({
-                            code: c,
 
-                            name:
-                                languages?.find((l) => l.code === c)?.name ??
-                                "missing",
-                        }) as LibretranslateSupportedLanguages,
-                ),
-            }),
-            ...(sortField && {
-                sortField: sortField,
-            }),
-            ...(sortDirection &&
-                isSortDirection(sortDirection) && {
-                    sortDirection: sortDirection,
-                }),
-        } as SearchQuery;
+        const mappedLanguages =
+            languageCodes.length > 0
+                ? languageCodes.map((code) => ({
+                      code,
+                      name:
+                          languages.find((l) => l.code === code)?.name ??
+                          "missing",
+                  }))
+                : undefined;
+
+        const newQuery: Partial<SearchQuery> = {
+            query: query || undefined,
+            languages: mappedLanguages,
+            sortField: sortField || undefined,
+            sortDirection: isSortDirection(sortDirection)
+                ? sortDirection
+                : undefined,
+        };
+
         dispatch(updateQuery(newQuery));
-    }, [languages]); // eslint-disable-line react-hooks/exhaustive-deps
+    }, [languages, searchParams, searchQuery]); // eslint-disable-line react-hooks/exhaustive-deps
 
     // load file detail
     useEffect(() => {
-        if (!searchQuery) return;
-        // load fileId
-        const fileId = window.location.hash.substring(1); // substring: remove '#'
-        if (!fileId) return;
-        dispatch(fetchFileDetailData({ fileId }));
-    }, [searchQuery]); // eslint-disable-line react-hooks/exhaustive-deps
+        const handleHashChange = () => {
+            const fileId = window.location.hash.substring(1);
+
+            // Clear ref if hash is removed
+            if (!fileId) {
+                dialogFileIdRef.current = undefined;
+                return;
+            }
+
+            // Check if dialog is already open for this fileId
+            const isDialogAlreadyOpen =
+                dialogFileIdRef.current === fileId ||
+                dialogs.some(
+                    (d) =>
+                        d.type === DialogType.FileDetail &&
+                        d.props.fileId === fileId,
+                );
+
+            if (isDialogAlreadyOpen) {
+                return;
+            }
+
+            // Open new dialog
+            dispatch(
+                openDialog({
+                    id: "",
+                    type: DialogType.FileDetail,
+                    props: { fileId, tab: FileDetailTab.Rendered },
+                }),
+            );
+            dialogFileIdRef.current = fileId;
+        };
+
+        // Run on mount and when hash changes
+        handleHashChange();
+
+        window.addEventListener("hashchange", handleHashChange);
+
+        return () => {
+            window.removeEventListener("hashchange", handleHashChange);
+        };
+    }, [dialogs]); // eslint-disable-line react-hooks/exhaustive-deps
 
     // persist in query params
     useEffect(() => {
         if (!searchQuery) return;
 
-        const newSearchParams = new URLSearchParams({
-            ...(searchQuery.query && { query: searchQuery.query }),
-            ...(searchQuery.sortField && {
-                sortField: searchQuery.sortField,
-            }),
-            ...(searchQuery.sortDirection && {
-                sortDirection: searchQuery.sortDirection,
-            }),
+        const params = new URLSearchParams();
+        const fields: (keyof SearchQuery)[] = [
+            "query",
+            "sortField",
+            "sortDirection",
+        ];
+
+        fields.forEach((field) => {
+            const value = searchQuery[field];
+            if (value) params.set(field as string, String(value));
         });
-        // Map to multiple language params, join with `newSearchParams()`
-        if (searchQuery.languages) {
-            searchQuery.languages.map((l) => {
-                newSearchParams.append("languages", l.code);
-            });
+
+        searchQuery.languages?.forEach((l) => {
+            params.append("languages", l.code);
+        });
+
+        // Sync with Router
+        // We use { replace: true } to avoid polluting the history stack
+        const currentHash = window.location.hash;
+        setSearchParams(params, { replace: true });
+
+        if (currentHash) {
+            window.history.replaceState(
+                null,
+                "",
+                `${window.location.pathname}?${params.toString()}${currentHash}`,
+            );
         }
+    }, [searchQuery, setSearchParams]);
 
-        // Update URL with new search params
-        setSearchParams(newSearchParams);
-
-        // If there was an selected file id previously, add it back to the URL
-        if (!fileDetailData.filePreview) return;
-        window.history.replaceState(
-            null,
-            "",
-            `${window.location.pathname}?${newSearchParams.toString()}#${fileDetailData.filePreview.fileId}`,
-        );
-    }, [searchQuery, fileDetailData, setSearchParams, location.hash]); // eslint-disable-line react-hooks/exhaustive-deps
-
-    // print error messages as toasts
     useEffect(() => {
         if (!webSocketPubSubMessage) return;
-        if (webSocketPubSubMessage.message.type !== "error") return;
-        const message = webSocketPubSubMessage.message as MessageError;
-        toast.error(message.message);
-    }, [webSocketPubSubMessage]);
+        const { message } = webSocketPubSubMessage;
 
-    // fetch file preview on change
-    useEffect(() => {
-        if (!webSocketPubSubMessage) return;
-        if (webSocketPubSubMessage.message.type !== "fileUpdate") return;
-        const message = webSocketPubSubMessage.message as MessageFileUpdate;
+        switch (message.type) {
+            case "error":
+                toast.error((message as MessageError).message);
+                break;
 
-        const fileId = message.fileId;
-        dispatch(fetchPreview({ fileId: fileId }));
+            case "fileUpdate":
+                // fetch file preview on change
+                dispatch(
+                    fetchPreview({
+                        fileId: (message as MessageFileUpdate).fileId,
+                    }),
+                );
+                break;
+        }
     }, [webSocketPubSubMessage]); // eslint-disable-line react-hooks/exhaustive-deps
 
     // update query id and show toast
     useEffect(() => {
-        if (!webSocketPubSubMessage) return;
-        if (webSocketPubSubMessage.message.type !== "queryIdExpired") return;
         const message = webSocketPubSubMessage.message as MessageQueryIdExpired;
-        if (searchQuery?.id !== message.oldId) return;
-
+        if (message?.type !== "queryIdExpired") return;
         const oldQueryId = message.oldId;
-        const existingTimeout =
-            updateQueryDebounceTimeouts.current.get(oldQueryId);
-        clearTimeout(existingTimeout);
-        const newTimeout = setTimeout(() => {
+        if (searchQuery?.id !== oldQueryId) return;
+
+        if (updateQueryDebounceTimeoutRef.current)
+            clearTimeout(updateQueryDebounceTimeoutRef.current);
+
+        updateQueryDebounceTimeoutRef.current = setTimeout(() => {
             dispatch(updateQuery({ id: message.newId }));
             toast.info(t("generalSearchView.queryExpired"));
-            updateQueryDebounceTimeouts.current.delete(oldQueryId);
-        }, UPDATE_QUERY_DEBOUNCE__MS);
-        updateQueryDebounceTimeouts.current.set(oldQueryId, newTimeout);
-    }, [webSocketPubSubMessage, searchQuery]); // eslint-disable-line react-hooks/exhaustive-deps
+            updateQueryDebounceTimeoutRef.current = null;
+        }, UPDATE_QUERY_DEBOUNCE_MS);
+
+        return () => {
+            if (updateQueryDebounceTimeoutRef.current) {
+                clearTimeout(updateQueryDebounceTimeoutRef.current);
+            }
+        };
+    }, [webSocketPubSubMessage, searchQuery?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
     const updateScrollOffset = (ev: BaseSyntheticEvent) => {
         setHasScrollOffset(ev.target.scrollTop > 0);
@@ -257,13 +300,8 @@ export function Search() {
                         }}
                     />
                 </div>
-
-                <FileDetailDialog />
-                <TagsInputDialog />
-                <TranslationDialog />
-                <SummaryDialog />
             </div>
             <ChatMenu isOpen={chatbotOpen} toggleMenu={toggleChatbot} />
         </div>
     );
-}
+};
