@@ -3062,14 +3062,14 @@ cli = ["click (>=5.0)"]
 
 [[package]]
 name = "python-gitlab"
-version = "6.0.0"
+version = "8.3.0"
 description = "The python wrapper for the GitLab REST and GraphQL APIs."
 optional = false
-python-versions = ">=3.9.0"
+python-versions = ">=3.10.0"
 groups = ["dev"]
 files = [
-    {file = "python_gitlab-6.0.0-py3-none-any.whl", hash = "sha256:d63bb56b5f7781a7eb0a9846a3aed9b783c8036f67107d9d48653e17242a7130"},
-    {file = "python_gitlab-6.0.0.tar.gz", hash = "sha256:704bf548c258f1cfe2f09b8ece9af1cc8fa6ae828ac6fe6a1cbe957c98431414"},
+    {file = "python_gitlab-8.3.0-py3-none-any.whl", hash = "sha256:7aace3585d57ee97ebcb74bc776f30af3e861e285290082a91646348aca3f22a"},
+    {file = "python_gitlab-8.3.0.tar.gz", hash = "sha256:2ca67cf64b8d9290fe64463cfef6e77dbde066285dd848db2eb7816d6a7e9ec9"},
 ]
 
 [package.dependencies]
@@ -3078,7 +3078,7 @@ requests-toolbelt = ">=1.0.0"
 
 [package.extras]
 autocompletion = ["argcomplete (>=1.10.0,<3)"]
-graphql = ["gql[httpx] (>=3.5.0,<4)"]
+graphql = ["gql[httpx] (>=3.5.0,<5)"]
 yaml = ["PyYaml (>=6.0.1)"]
 
 [[package]]
@@ -4273,4 +4273,4 @@ cffi = ["cffi (>=1.17,<2.0) ; platform_python_implementation != \"PyPy\" and pyt
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.11"
-content-hash = "edec3855747d7eb721ac55713239e7d3e18eff1d80427df20844fedf872f6c04"
+content-hash = "c54fb3617032b38f17000e5efe6834dd8464d6f2a427eb08ac7f70face7e538a"

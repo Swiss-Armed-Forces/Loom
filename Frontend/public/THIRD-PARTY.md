@@ -602,7 +602,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | psutil                                | 7.2.1           | BSD-3-Clause                                                                     |
 | pytest-timeout                        | 2.4.0           | DFSG approved; MIT License                                                       |
 | pylint-plugin-utils                   | 0.8.2           | GNU General Public License v2 or later (GPLv2+)                                  |
-| python-gitlab                         | 6.0.0           | GNU Lesser General Public License v3 (LGPLv3)                                    |
+| python-gitlab                         | 8.3.0           | GNU Lesser General Public License v3 (LGPLv3)                                    |
 | pylint-pydantic                       | 0.4.1           | GPLv3                                                                            |
 | dnspython                             | 2.6.1           | ISC License (ISCL)                                                               |
 | click-repl                            | 0.3.0           | MIT                                                                              |
