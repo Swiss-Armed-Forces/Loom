@@ -64,8 +64,8 @@ System_Boundary(loom, "") {
 
         ContainerQueue(rabbit, "Message Queue", "Rabbit MQ", "Task Queue", $sprite="rabbitmq", $tags="exposed")
         ContainerDb(redis, "KV-Store", "Redis", "Stores: Cache | Celery Results | SeaweedFS Filer", $sprite="redis")
-        ContainerDb(mongo, "Metadata Storage", "mongoDB", "Stores: Task Metadata", $sprite="mongodb")
-        ContainerDb(es, "Database", "Elasticsearch", "Stores: Analyzed Data, Logs", $sprite="elasticsearch", $tags="exposed")
+        ContainerDb(mongo, "Legacy File Storage", "mongoDB", "deprecated", $sprite="mongodb")
+        ContainerDb(es, "Database", "Elasticsearch", "Stores: Analyzed Data, Logs, Task Metadata", $sprite="elasticsearch", $tags="exposed")
         Container(tika, "Content Extraction", "Tika", "Analyzes files", $sprite="apache", $tags="exposed")
         Container(gotenberg, "File Rendering", "Gotenberg", "Generates Rendered Files", $sprite="go", $tags="exposed")
         Container(ai, "AI Server", "Ollama", "Provides AI Services", $sprite="robot", $tags="exposed")

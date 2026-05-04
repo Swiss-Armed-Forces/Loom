@@ -145,7 +145,7 @@ def init(init_elasticsearch_documents: bool = False, subprocess_reinit: bool = F
 
     global _root_task_information_repository
     _root_task_information_repository = RootTaskInformationRepository(
-        _mongo.get_database(settings.mongo_db_repositories_storage_name)
+        _query_builder, _pubsub_service
     )
 
     global _lazybytes_service
