@@ -1,7 +1,6 @@
 import logging
 from uuid import UUID
 
-from celery import chain
 from common.dependencies import (
     get_celery_app,
     get_file_repository,
@@ -11,7 +10,6 @@ from common.file.file_repository import Tag
 from common.services.query_builder import QueryParameters
 
 from worker.index_file.infra.file_indexing_task import FileIndexingTask
-from worker.index_file.tasks import persist_processing_done
 from worker.index_file.tasks.persist_tags import persist_add_tags
 
 logger = logging.getLogger(__name__)
@@ -41,6 +39,5 @@ def dispatch_add_tags_to_file(
 @app.task(base=FileIndexingTask)
 def add_tags_to_file_task(file_id: UUID, tags: list[Tag]):
     logger.info("adding tag to file with id '%s'", file_id)
-    chain(
-        persist_add_tags.s(tags, file_id), persist_processing_done.signature(file_id)
-    ).delay().forget()
+
+    persist_add_tags.s(tags, file_id).delay().forget()
