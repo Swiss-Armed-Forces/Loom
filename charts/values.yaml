@@ -1110,4 +1110,12 @@ kubeStateMetrics:
   customLabels: {}
   # Example:
   # monitoring-tier: "infrastructure"
-  # service-type: metrics
+
+# Extra environment variables injected into all pods via the settings ConfigMap.
+# These are appended verbatim to the ConfigMap data and propagated to every pod
+# that mounts it. Do NOT use this for sensitive values — use Kubernetes Secrets instead.
+# Example:
+#   extraEnv:
+#     MY_CUSTOM_SETTING: "some-value"
+#     FEATURE_FLAG_X: "true"
+extraEnv: {}
