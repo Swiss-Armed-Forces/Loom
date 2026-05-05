@@ -698,7 +698,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | uuid                                | MIT          | 14.0.0            |
 | @eslint/js                          | MIT          | 9.39.4            |
 | @mui/types                          | MIT          | 9.0.0             |
-| @openapitools/openapi-generator-cli | Apache-2.0   | 2.31.1            |
+| @openapitools/openapi-generator-cli | Apache-2.0   | 2.32.0            |
 | @testing-library/jest-dom           | MIT          | 6.9.1             |
 | @testing-library/react              | MIT          | 16.3.2            |
 | @types/node                         | MIT          | 25.6.0            |
@@ -715,8 +715,8 @@ The complete source code for Traefik is publicly available at [https://github.co
 | eslint-plugin-react-hooks           | MIT          | 7.1.1             |
 | eslint-plugin-react-refresh         | MIT          | 0.5.2             |
 | eslint-plugin-unused-imports        | MIT          | 4.4.1             |
-| globals                             | MIT          | 17.5.0            |
-| jsdom                               | MIT          | 29.0.2            |
+| globals                             | MIT          | 17.6.0            |
+| jsdom                               | MIT          | 29.1.1            |
 | license-report                      | MIT          | 6.8.2             |
 | prettier                            | MIT          | 3.8.3             |
 | typescript                          | Apache-2.0   | 6.0.3             |
