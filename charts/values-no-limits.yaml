@@ -93,16 +93,6 @@ seaweedfs:
     resources:
       limits: null
 
-mongodb:
-  resources:
-    limits: null
-  exporter:
-    resources:
-      limits: null
-  express:
-    resources:
-      limits: null
-
 rabbit:
   resources:
     limits: null

@@ -22,10 +22,7 @@ from common.utils.flush_s3_bucket import flush_s3_bucket
 from crawler.dependencies import get_s3_client
 from crawler.dependencies import init as init_crawler_dependencies
 from crawler.settings import settings as crawler_settings
-from pymongo import MongoClient
 from worker.dependencies import init as init_worker_dependencies
-
-from utils.settings import settings
 
 logger = logging.getLogger(__name__)
 
@@ -39,7 +36,6 @@ class WipeException(Exception):
 
 def wipe_data():
     _wipe_celery()
-    _wipe_mongo()
     _wipe_elasticsearch()
     _wipe_redis()
     _wipe_crawled_buckets()
@@ -67,17 +63,6 @@ def _wipe_celery():
         if is_celery_idle():
             break
         sleep(WAIT_FOR_CELERY_IDLE_SLEEP_TIME__S)
-
-
-MONGO_PRESERVE_DBS = ["admin", "config", "local"]
-
-
-def _wipe_mongo():
-    logger.info("Wiping: mongodb")
-    client = MongoClient(str(settings.mongo_db_host))
-    for db in client.list_database_names():
-        if db not in MONGO_PRESERVE_DBS:
-            client.drop_database(db)
 
 
 def _wipe_elasticsearch():

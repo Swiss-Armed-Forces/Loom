@@ -177,7 +177,6 @@ data:
     {{- end }}
 
     # hosts
-    mongo_db_host: mongodb://{{ include "app.fullname" . }}-mongodb:{{ .Values.mongodb.service.port }}
     es_host: http://{{ include "app.fullname" . }}-elasticsearch:{{ .Values.elasticsearch.service.port }}
     rabbit_mq_management_host: http://guest:guest@{{ include "app.fullname" . }}-rabbit:{{ .Values.rabbit.service.port.http }}
     celery_broker_host: amqp://{{ include "app.fullname" . }}-rabbit:{{ .Values.rabbit.service.port.amqp }}

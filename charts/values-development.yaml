@@ -201,12 +201,6 @@ seaweedfs:
   admin:
     ingress: *default-ingress-config
 
-mongodb:
-  ingress:
-    enabled: true
-  express:
-    ingress: *default-ingress-config
-
 rabbit:
   ingress:
     http: *default-ingress-config

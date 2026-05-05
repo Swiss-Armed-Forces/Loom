@@ -184,8 +184,7 @@ ES_REPOSITORY_TEST_INSTANCES: dict[type[BaseEsRepository], list[_TestInstances]]
                 tasks_retried=TestValueDefaults.test_uuid_list,
                 tasks_failed=TestValueDefaults.test_uuid_list,
                 # File
-                storage_data=LazyBytes(service_id=TestValueDefaults.test_object_id_str),
-                storage_id=TestValueDefaults.test_object_id_str,
+                storage_data=LazyBytes(service_id=str(TestValueDefaults.test_uuid)),
                 content=TestValueDefaults.test_str,
                 content_truncated=TestValueDefaults.test_bool,
                 full_name=TestValueDefaults.test_file_pure_path,
@@ -195,19 +194,15 @@ ES_REPOSITORY_TEST_INSTANCES: dict[type[BaseEsRepository], list[_TestInstances]]
                 uploaded_datetime=TestValueDefaults.test_datetime,
                 size=TestValueDefaults.test_long,
                 reindex_count=TestValueDefaults.test_long,
-                thumbnail_data=LazyBytes(
-                    service_id=TestValueDefaults.test_object_id_str
-                ),
+                thumbnail_data=LazyBytes(service_id=str(TestValueDefaults.test_uuid)),
                 thumbnail_total_frames=TestValueDefaults.test_int,
                 rendered_file=RenderedFile(
-                    image_data=LazyBytes(
-                        service_id=TestValueDefaults.test_object_id_str
-                    ),
+                    image_data=LazyBytes(service_id=str(TestValueDefaults.test_uuid)),
                     office_pdf_data=LazyBytes(
-                        service_id=TestValueDefaults.test_object_id_str
+                        service_id=str(TestValueDefaults.test_uuid)
                     ),
                     browser_pdf_data=LazyBytes(
-                        service_id=TestValueDefaults.test_object_id_str
+                        service_id=str(TestValueDefaults.test_uuid)
                     ),
                 ),
                 tags=TestValueDefaults.test_str_list_no_duplicates,
@@ -325,9 +320,8 @@ ES_REPOSITORY_TEST_INSTANCES: dict[type[BaseEsRepository], list[_TestInstances]]
                 tasks_failed=list(map(str, TestValueDefaults.test_uuid_list)),
                 # _EsFile
                 storage_data=_EsLazyBytes(
-                    service_id=TestValueDefaults.test_object_id_str, embedded_data=None
+                    service_id=str(TestValueDefaults.test_uuid), embedded_data=None
                 ),
-                storage_id=TestValueDefaults.test_object_id_str,
                 content=TestValueDefaults.test_str,
                 content_truncated=TestValueDefaults.test_bool,
                 full_name=str(TestValueDefaults.test_file_pure_path),
@@ -341,21 +335,21 @@ ES_REPOSITORY_TEST_INSTANCES: dict[type[BaseEsRepository], list[_TestInstances]]
                 size=TestValueDefaults.test_long,
                 reindex_count=TestValueDefaults.test_long,
                 thumbnail_data=_EsLazyBytes(
-                    service_id=TestValueDefaults.test_object_id_str,
+                    service_id=str(TestValueDefaults.test_uuid),
                     embedded_data=None,
                 ),
                 thumbnail_total_frames=TestValueDefaults.test_int,
                 rendered_file=_EsRenderedFile(
                     image_data=_EsLazyBytes(
-                        service_id=TestValueDefaults.test_object_id_str,
+                        service_id=str(TestValueDefaults.test_uuid),
                         embedded_data=None,
                     ),
                     office_pdf_data=_EsLazyBytes(
-                        service_id=TestValueDefaults.test_object_id_str,
+                        service_id=str(TestValueDefaults.test_uuid),
                         embedded_data=None,
                     ),
                     browser_pdf_data=_EsLazyBytes(
-                        service_id=TestValueDefaults.test_object_id_str,
+                        service_id=str(TestValueDefaults.test_uuid),
                         embedded_data=None,
                     ),
                 ),
@@ -479,22 +473,18 @@ ES_REPOSITORY_TEST_INSTANCES: dict[type[BaseEsRepository], list[_TestInstances]]
                 tasks_failed=TestValueDefaults.test_uuid_list,
                 # Archive
                 query=QueryParameters(
-                    query_id=TestValueDefaults.test_object_id_str,
+                    query_id=str(TestValueDefaults.test_uuid),
                     search_string=TestValueDefaults.test_str,
                     languages=TestValueDefaults.test_str_list,
                     keep_alive=TestValueDefaults.test_keep_alive,
                 ),
                 plain_file=StoredArchive(
-                    storage_data=LazyBytes(
-                        service_id=TestValueDefaults.test_object_id_str
-                    ),
+                    storage_data=LazyBytes(service_id=str(TestValueDefaults.test_uuid)),
                     sha256=TestValueDefaults.test_str,
                     size=TestValueDefaults.test_long,
                 ),
                 encrypted_file=StoredArchive(
-                    storage_data=LazyBytes(
-                        service_id=TestValueDefaults.test_object_id_str
-                    ),
+                    storage_data=LazyBytes(service_id=str(TestValueDefaults.test_uuid)),
                     sha256=TestValueDefaults.test_str,
                     size=TestValueDefaults.test_long,
                 ),
@@ -522,14 +512,14 @@ ES_REPOSITORY_TEST_INSTANCES: dict[type[BaseEsRepository], list[_TestInstances]]
                 tasks_failed=list(map(str, TestValueDefaults.test_uuid_list)),
                 # _EsArchive
                 query=_EsQueryParameters(
-                    query_id=TestValueDefaults.test_object_id_str,
+                    query_id=str(TestValueDefaults.test_uuid),
                     search_string=TestValueDefaults.test_str,
                     languages=TestValueDefaults.test_str_list,
                     keep_alive=TestValueDefaults.test_keep_alive,
                 ),
                 plain_file=_EsStoredArchive(
                     storage_data=_EsLazyBytes(
-                        service_id=TestValueDefaults.test_object_id_str,
+                        service_id=str(TestValueDefaults.test_uuid),
                         embedded_data=None,
                     ),
                     sha256=TestValueDefaults.test_str,
@@ -537,7 +527,7 @@ ES_REPOSITORY_TEST_INSTANCES: dict[type[BaseEsRepository], list[_TestInstances]]
                 ),
                 encrypted_file=_EsStoredArchive(
                     storage_data=_EsLazyBytes(
-                        service_id=TestValueDefaults.test_object_id_str,
+                        service_id=str(TestValueDefaults.test_uuid),
                         embedded_data=None,
                     ),
                     sha256=TestValueDefaults.test_str,
@@ -572,7 +562,7 @@ ES_REPOSITORY_TEST_INSTANCES: dict[type[BaseEsRepository], list[_TestInstances]]
                 tasks_failed=TestValueDefaults.test_uuid_list,
                 # AiContext
                 query=QueryParameters(
-                    query_id=TestValueDefaults.test_object_id_str,
+                    query_id=str(TestValueDefaults.test_uuid),
                     search_string=TestValueDefaults.test_str,
                     languages=TestValueDefaults.test_str_list_no_duplicates,
                     keep_alive=TestValueDefaults.test_keep_alive,
@@ -602,7 +592,7 @@ ES_REPOSITORY_TEST_INSTANCES: dict[type[BaseEsRepository], list[_TestInstances]]
                 tasks_failed=list(map(str, TestValueDefaults.test_uuid_list)),
                 # _EsAiContext
                 query=_EsQueryParameters(
-                    query_id=TestValueDefaults.test_object_id_str,
+                    query_id=str(TestValueDefaults.test_uuid),
                     search_string=TestValueDefaults.test_str,
                     languages=TestValueDefaults.test_str_list_no_duplicates,
                     keep_alive=TestValueDefaults.test_keep_alive,

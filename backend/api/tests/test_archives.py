@@ -1,4 +1,5 @@
-from bson import ObjectId
+from uuid import uuid4
+
 from common.archive.archive_repository import Archive, StoredArchive
 from common.dependencies import (
     get_archive_repository,
@@ -61,12 +62,12 @@ def test_download_archive(client: TestClient):
     archive = Archive(
         query=query,
         plain_file=StoredArchive(
-            storage_data=LazyBytes(service_id=str(ObjectId())),
+            storage_data=LazyBytes(service_id=str(uuid4())),
             sha256="",
             size=len(content),
         ),
         encrypted_file=StoredArchive(
-            storage_data=LazyBytes(service_id=str(ObjectId())),
+            storage_data=LazyBytes(service_id=str(uuid4())),
             sha256="",
             size=len(content_encrypted),
         ),
