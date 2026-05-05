@@ -35,7 +35,6 @@ spec:
     - dovecot.{{ .Values.domain }}
     - seaweedfs.{{ .Values.domain }}
     - s3.{{ .Values.domain }}
-    - mongo-web.{{ .Values.domain }}
     - tika.{{ .Values.domain }}
     - redisinsight.{{ .Values.domain }}
     - gotenberg.{{ .Values.domain }}

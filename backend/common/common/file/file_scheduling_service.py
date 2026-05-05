@@ -3,16 +3,14 @@
 import logging
 from uuid import UUID
 
-from bson import ObjectId
-
 from common.file.file_repository import (
     File,
     FileNotFoundException,
     FilePurePath,
     FileRepository,
+    FileWithoutStorageDataException,
     Tag,
 )
-from common.services.file_storage_service import FileStorageService
 from common.services.lazybytes_service import LazyBytes, LazyBytesService
 from common.services.task_scheduling_service import (
     TaskSchedulingService,
@@ -34,13 +32,11 @@ class FileSchedulingService:
         file_storage_service: LazyBytesService,
         task_scheduling_service: TaskSchedulingService,
         lazybytes_service: LazyBytesService,
-        file_storage_service_legacy: FileStorageService | None = None,
     ):
         self._file_repository = file_repository
         self._file_storage_service = file_storage_service
         self._task_scheduling_service = task_scheduling_service
         self._lazybytes_service = lazybytes_service
-        self._file_storage_service_legacy = file_storage_service_legacy
 
     def index_file(
         self,
@@ -95,42 +91,15 @@ class FileSchedulingService:
     def reindex_file(self, file_id: UUID):
         old_file = self._file_repository.get_by_id(file_id)
         if old_file is None:
-            raise FileNotFoundException("Invalid file")
-
-        # Handle legacy files: migrate from legacy file storage
-        if old_file.storage_data is None:
-            if old_file.storage_id is None:
-                raise ValueError(
-                    f"Cannot reindex file '{old_file.full_name}': "
-                    "no storage data or storage_id"
-                )
-
-            logger.info(
-                "Migrating file '%s' from legacy file storage",
-                old_file.full_name,
-            )
-
-            # Load from legacy GridFS storage
-            if self._file_storage_service_legacy is None:
-                raise ValueError(
-                    f"Cannot migrate file '{old_file.full_name}': "
-                    "legacy file storage service not configured"
-                )
-
-            legacy_data_stream = (
-                self._file_storage_service_legacy.open_download_iterator(
-                    file_id=ObjectId(old_file.storage_id)
-                )
-            )
-
-            # Upload to new file storage service
-            storage_data = self._file_storage_service.from_generator(legacy_data_stream)
-        else:
-            storage_data = old_file.storage_data
-
-        logger.info("Scheduling re-index of file '%s'", old_file.full_name)
+            raise FileNotFoundException(f"Could not find file with id: {file_id}")
 
         # Create a new minimal file object (same pattern as index_file)
+        storage_data = old_file.storage_data
+        if storage_data is None:
+            raise FileWithoutStorageDataException(
+                f"Can not reindex file (id: {file_id}) with no storage data"
+            )
+
         file = File(
             storage_data=storage_data,
             full_name=old_file.full_name,
@@ -151,6 +120,8 @@ class FileSchedulingService:
         # Load file content and schedule indexing
         storage_data_stream = self._file_storage_service.load_generator(storage_data)
         lazybytes = self._lazybytes_service.from_generator(storage_data_stream)
+
+        logger.info("Scheduling re-index of file '%s'", old_file.full_name)
         self._task_scheduling_service.index_file(file, lazybytes)
 
     def translate_file(self, file_id: UUID, lang: str):

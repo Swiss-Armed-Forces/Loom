@@ -4,9 +4,8 @@ import uuid
 from abc import ABC, abstractmethod
 from collections.abc import Iterator
 from contextlib import contextmanager
-from datetime import datetime, timedelta
+from datetime import timedelta
 from io import SEEK_END, BytesIO
-from math import ceil
 from mmap import PROT_READ, mmap
 from tempfile import (
     NamedTemporaryFile,
@@ -16,15 +15,12 @@ from tempfile import (
 )
 from typing import IO, Any, Generator, Generic, TypeVar
 
-from gridfs import GridFSBucket
 from minio import Minio
 from pydantic import BaseModel, ConfigDict, model_validator
-from pymongo.database import Database
 
 from common.settings import settings
 from common.utils.flush_s3_bucket import flush_s3_bucket
 from common.utils.generator import FileLikeStream, bytecount_lte
-from common.utils.gridfs import chunked_iterator_for_stream
 
 logger = logging.getLogger(__name__)
 
@@ -268,75 +264,6 @@ class LazyBytesService(ABC):
         """
         with self.load_memoryview(lazy_bytes) as memview:
             return pickle.loads(memview)
-
-
-class GridFSLazyBytesService(LazyBytesService):
-    def __init__(self, database: Database, *, threshold_bytes: int):
-        super().__init__(threshold_bytes=threshold_bytes)
-        self._database = database
-        self._bucket = GridFSBucket(database)
-
-    def _store(self, data: Iterator[bytes] | IO[bytes]) -> Any:
-        id_ = self._bucket.upload_from_stream(
-            # We leave the filename empty in the upload because
-            # this service is only concerned by the data itself.
-            # Two writes to the same filename (in this case the
-            # empty string) does not mean that data will be
-            # overwritten in GridFS.
-            "",
-            data,
-        )
-        return id_
-
-    def _load_to(self, service_id: Any, dst: IO):
-        self._bucket.download_to_stream(service_id, dst)
-
-    def _load_to_generator(self, service_id: Any) -> Generator[bytes, None, None]:
-        with self._bucket.open_download_stream(service_id) as stream:
-            yield from chunked_iterator_for_stream(stream)
-
-    def flush(self, min_age: timedelta | None = None):
-        # Deletes lazybytes assuming they are no longer used because it's only
-        # only called once the system is idle.
-        # To prevent deleting of incomplete uploads we check if the number of
-        # chunks is what we expect.
-        # If a file is older than one hour it is deleted regardless.
-        now = datetime.now()
-        one_hour_ago = now - timedelta(hours=1)
-
-        if min_age is not None:
-            cutoff_time = now - min_age
-            query = {"uploadDate": {"$lt": cutoff_time}}
-        else:
-            query = {}  # Delete all
-
-        files_to_delete = self._bucket.find(query)
-        for file in files_to_delete:
-            file_id = file._id  # pylint: disable=protected-access
-            if (
-                min_age is not None
-                and file.length > file.chunk_size
-                and file.upload_date > one_hour_ago
-            ):
-                # file has many chunks and was recently uploaded, might still be uploading:
-                expected_chunks = ceil(file.length / file.chunk_size)
-                actual_chunks = self._database.fs.chunks.count_documents(
-                    {"files_id": file_id}
-                )
-
-                if actual_chunks < expected_chunks:
-                    # not all chunks uploaded yet: skip delete
-                    logger.info("Not Flushing: %s", file_id)
-                    continue
-            logger.info("Flushing: %s", file_id)
-            self._bucket.delete(file_id)
-        # Compact Collections in Database
-        logger.info("Compacting collections")
-        self._database.command("compact", "fs.files")
-        self._database.command("compact", "fs.chunks")
-
-    def _delete(self, service_id: Any):
-        self._bucket.delete(service_id)
 
 
 class S3LazyBytesService(LazyBytesService):

@@ -35,9 +35,6 @@ ports:
   amqp:
     port: 5672
     hostPort: 5672
-  mongo:
-    hostPort: 27017
-    port: 27017
   redis:
     hostPort: 6379
     port: 6379
@@ -51,7 +48,6 @@ ports:
 additionalArguments:
   - "--entrypoints.imap.address=:143"
   - "--entrypoints.amqp.address=:5672"
-  - "--entrypoints.mongo.address=:27017"
   - "--entrypoints.redis.address=:6379"
   - "--entrypoints.redis-cache.address=:6380"
   - "--entrypoints.prometheus.address=:9090"

@@ -69,7 +69,15 @@ ES_RESERVED_PATTERN = re.compile(r"([\".?+*|{}\][\\()])")
 KNN_CANDIDATES_FACTOR = 5  # how many more candidates to select for KNN per shared
 
 
-class FileNotFoundException(Exception):
+class FileRepositoryException(Exception):
+    pass
+
+
+class FileNotFoundException(FileRepositoryException):
+    pass
+
+
+class FileWithoutStorageDataException(FileRepositoryException):
     pass
 
 
@@ -342,7 +350,6 @@ class FilePurePath(PurePosixPath):
 
 class File(RepositoryTaskObject):
     storage_data: LazyBytes | None = None
-    storage_id: str | None = None  # Legacy GridFS ObjectId (for migration)
 
     content: str | None = None
     content_truncated: bool = False
@@ -428,7 +435,6 @@ class File(RepositoryTaskObject):
 
 class _EsFile(_EsTaskDocument):
     storage_data = Object(_EsLazyBytes)
-    storage_id = Keyword()  # Legacy GridFS ObjectId (for migration)
     content = Text(
         term_vector="with_positions_offsets",
         fields={

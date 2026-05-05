@@ -10,7 +10,6 @@ from pydantic import (
     AnyWebsocketUrl,
     BaseModel,
     Field,
-    MongoDsn,
     field_validator,
     model_validator,
 )
@@ -87,12 +86,6 @@ class Settings(BaseSettings):
     num_persister_shards: int = 16
     persister_total: int = 1  # Total number of PERSISTER workers
     persister_id: int = Field(default_factory=_get_persister_id_from_hostname)
-
-    mongo_db_host: MongoDsn = MongoDsn(f"mongodb://mongodb.{DOMAIN}")
-    mongo_db_file_storage_name: str = "files"
-    mongo_db_system_file_storage_name: str = "systemfiles"
-    mongo_db_lazybytes_storage_name: str = "lazybytes"
-    mongo_db_repositories_storage_name: str = "repositories"
 
     es_host: AnyHttpUrl = AnyHttpUrl(f"http://elasticsearch.{DOMAIN}")
     es_timeout: int = 120

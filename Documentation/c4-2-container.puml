@@ -7,7 +7,6 @@
 !include <logos/nodejs>
 !include <logos/python>
 !include <logos/go>
-!include <logos/mongodb>
 !include <logos/rabbitmq>
 !include <logos/elasticsearch>
 !include <logos/redis>
@@ -64,7 +63,6 @@ System_Boundary(loom, "") {
 
         ContainerQueue(rabbit, "Message Queue", "Rabbit MQ", "Task Queue", $sprite="rabbitmq", $tags="exposed")
         ContainerDb(redis, "KV-Store", "Redis", "Stores: Cache | Celery Results | SeaweedFS Filer", $sprite="redis")
-        ContainerDb(mongo, "Legacy File Storage", "mongoDB", "deprecated", $sprite="mongodb")
         ContainerDb(es, "Database", "Elasticsearch", "Stores: Analyzed Data, Logs, Task Metadata", $sprite="elasticsearch", $tags="exposed")
         Container(tika, "Content Extraction", "Tika", "Analyzes files", $sprite="apache", $tags="exposed")
         Container(gotenberg, "File Rendering", "Gotenberg", "Generates Rendered Files", $sprite="go", $tags="exposed")
@@ -76,7 +74,6 @@ System_Boundary(loom, "") {
         Container(flower, "Flower", "Celery Flower", "Visualizes Tasks", $sprite="&task,scale=5", $tags="exposed")
 
         Container(elasticvue, "Elasticvue", "Elasticvue", "Elasticsearch GUI", $sprite="elasticsearch", $tags="exposed")
-        Container(mongoexpress, "Mongo Express", "Mongo Express", "MongoDB GUI", $sprite="mongodb", $tags="exposed")
         Container(rediswebui, "Redis Admin UI", "Redis Insight", "GUI for Redis", $sprite="redis", $tags="exposed")
 
         Container(grafana, "Grafana", "grafana", "Visualizes: Logs, System, Queues", $sprite="grafana", $tags="exposed")
@@ -113,7 +110,6 @@ Rel(beat, rabbit, "")
 
 Rel(worker, flower, "")
 Rel(worker, redis, "")
-Rel(worker, mongo, "")
 Rel(worker, es, "")
 Rel(worker, tika, "")
 Rel(worker, gotenberg, "")
@@ -123,7 +119,6 @@ Rel(worker, imap, "")
 Rel(worker, rspamd, "")
 Rel(worker, seaweedfs_filer, "")
 
-Rel(mongoexpress, mongo, "")
 Rel(elasticvue, es, "")
 Rel(rediswebui, redis, "")
 Rel(fluentd, es, "")
@@ -133,7 +128,6 @@ Rel(es, grafana, "Queries logs", "Elasticsearch DSL")
 
 Rel(rabbit, prometheus, "")
 Rel(es, prometheus, "")
-Rel(mongo, prometheus, "")
 
 Rel(redis, prometheus, "")
 

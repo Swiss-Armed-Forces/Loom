@@ -673,62 +673,6 @@ seaweedfs:
   # datastore-type: object
   # persistence: required
 
-mongodb:
-  replicaCount: 1
-  image:
-    repository: swiss-armed-forces/cyber-command/cea/loom/mongodb
-  service:
-    port: 27017
-  ingress:
-    enabled: false
-  readinessProbe:
-    enabled: false
-  livenessProbe:
-    enabled: true
-  pvc:
-    storage: 50Gi
-    storageClass: null
-  resources:
-    requests:
-      cpu: "0.15"
-      memory: "1Gi"
-    limits:
-      cpu: "2"
-      memory: "3Gi"
-  # Custom labels specific to mongodb resources
-  customLabels: {}
-  customAnnotations: {}
-  # Example:
-  # datastore-type: document
-  # persistence: required
-  exporter:
-    enabled: true
-    image:
-      repository: swiss-armed-forces/cyber-command/cea/loom/mongodb-exporter
-    port: 9216
-    resources:
-      requests:
-        cpu: "0.05"
-        memory: "50Mi"
-      limits:
-        cpu: "0.2"
-        memory: "100Mi"
-  express:
-    enabled: true
-    replicaCount: 1
-    image:
-      repository: swiss-armed-forces/cyber-command/cea/loom/mongo-express
-    service:
-      port: 8081
-    ingress: *default-ingress-config
-    resources:
-      requests:
-        cpu: "0.1"
-        memory: "300Mi"
-      limits:
-        cpu: "0.5"
-        memory: "500Mi"
-
 rabbit:
   replicaCount: 1
   image:

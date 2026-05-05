@@ -7,7 +7,6 @@ from elasticsearch import Elasticsearch
 from libretranslatepy import LibreTranslateAPI
 from minio import Minio
 from ollama import Client
-from pymongo import MongoClient
 from redis import StrictRedis
 from redis.asyncio import StrictRedis as StrictRedisAsync
 
@@ -21,7 +20,6 @@ from common.elasticsearch import init_elasticsearch
 from common.file.file_repository import FileRepository
 from common.file.file_scheduling_service import FileSchedulingService
 from common.messages.pubsub_service import PubSubService
-from common.services.file_storage_service import FileStorageService
 from common.services.imap_service import IMAPService
 from common.services.lazybytes_service import (
     LazyBytesService,
@@ -45,7 +43,6 @@ class DependencyException(Exception):
 _libretranslate_api: LibreTranslateAPI | None = None
 _query_builder: QueryBuilder | None = None
 _elasticsearch: Elasticsearch | None = None
-_mongo: MongoClient | None = None
 _celery_app: Optional["Celery[BaseTask]"] = None
 _redis_client: StrictRedis | None = None
 _redis_client_async: StrictRedisAsync | None = None
@@ -53,7 +50,6 @@ _redis_cache_client: StrictRedis | None = None
 _pubsub_service: PubSubService | None = None
 _queues_service: QueuesService | None = None
 _file_storage_service: LazyBytesService | None = None
-_file_storage_service_legacy: FileStorageService | None = None
 _archive_repository: ArchiveRepository | None = None
 _file_repository: FileRepository | None = None
 _ai_context_repository: AiContextRepository | None = None
@@ -115,14 +111,6 @@ def init(init_elasticsearch_documents: bool = False, subprocess_reinit: bool = F
         init_elasticsearch_documents and not subprocess_reinit,
     )
 
-    global _mongo
-    # pymongo uuid representation:
-    # https://pymongo.readthedocs.io/en/stable/examples/uuid.html
-    _mongo = MongoClient(
-        str(settings.mongo_db_host),
-        uuidRepresentation="standard",
-    )
-
     # --- Fork-unsafe: services with direct connection references ---
     global _file_storage_service
     _file_storage_service = S3LazyBytesService(
@@ -136,11 +124,6 @@ def init(init_elasticsearch_documents: bool = False, subprocess_reinit: bool = F
         # We always want to store data in the file storage service, to
         # avoid embedded data in ElasticSearch
         threshold_bytes=-1,
-    )
-
-    global _file_storage_service_legacy
-    _file_storage_service_legacy = FileStorageService(
-        _mongo.get_database(settings.mongo_db_file_storage_name)
     )
 
     global _root_task_information_repository
@@ -189,7 +172,6 @@ def init(init_elasticsearch_documents: bool = False, subprocess_reinit: bool = F
             _file_storage_service,
             _task_scheduling_service,
             _lazybytes_service,
-            _file_storage_service_legacy,
         )
 
         global _archive_scheduling_service
@@ -237,9 +219,6 @@ def mock_init():
 
     global _elasticsearch
     _elasticsearch = MagicMock(spec=Elasticsearch)
-
-    global _mongo
-    _mongo = MagicMock(spec=MongoClient)
 
     global _celery_app
     _celery_app = MagicMock(spec=Celery)
@@ -362,12 +341,6 @@ def get_file_storage_service() -> LazyBytesService:
     if _file_storage_service is None:
         raise DependencyException("File Storage Service missing")
     return _file_storage_service
-
-
-def get_file_storage_service_legacy() -> FileStorageService:
-    if _file_storage_service_legacy is None:
-        raise DependencyException("File Storage Service missing")
-    return _file_storage_service_legacy
 
 
 def get_archive_repository() -> ArchiveRepository:
