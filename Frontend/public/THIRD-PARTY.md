@@ -509,7 +509,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | celery-types                          | 0.24.0          | Apache Software License                                                          |
 | docker                                | 7.1.0           | Apache Software License                                                          |
 | elastic-transport                     | 9.2.1           | Apache Software License                                                          |
-| elasticsearch                         | 9.3.0           | Apache Software License                                                          |
+| elasticsearch                         | 9.2.1           | Apache Software License                                                          |
 | memray                                | 1.17.2          | Apache Software License                                                          |
 | minio                                 | 7.2.20          | Apache Software License                                                          |
 | opentelemetry-instrumentation         | 0.60b1          | Apache Software License                                                          |
@@ -519,7 +519,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | pytest-memray                         | 1.7.0           | Apache Software License                                                          |
 | pytest_docker_tools                   | 3.1.9           | Apache Software License                                                          |
 | python-multipart                      | 0.0.22          | Apache Software License                                                          |
-| requests                              | 2.32.3          | Apache Software License                                                          |
+| requests                              | 2.32.5          | Apache Software License                                                          |
 | requests-toolbelt                     | 1.0.0           | Apache Software License                                                          |
 | requirements-parser                   | 0.13.0          | Apache Software License                                                          |
 | tenacity                              | 9.1.2           | Apache Software License                                                          |
@@ -527,19 +527,18 @@ The complete source code for Traefik is publicly available at [https://github.co
 | types-docker                          | 7.1.0.20240626  | Apache Software License                                                          |
 | types-pyOpenSSL                       | 24.1.0.20240722 | Apache Software License                                                          |
 | types-redis                           | 4.6.0.20241004  | Apache Software License                                                          |
-| types-requests                        | 2.32.0.20240622 | Apache Software License                                                          |
+| types-requests                        | 2.32.0.20240523 | Apache Software License                                                          |
 | tzdata                                | 2025.2          | Apache Software License                                                          |
 | watchdog                              | 6.0.0           | Apache Software License                                                          |
 | packaging                             | 24.2            | Apache Software License; BSD License                                             |
 | python-dateutil                       | 2.9.0.post0     | Apache Software License; BSD License                                             |
-| pycryptodome                          | 3.20.0          | Apache Software License; BSD License; Public Domain                              |
 | luqum                                 | 0.14.0          | Apache Software License; GNU Lesser General Public License v3 or later (LGPLv3+) |
 | orjson                                | 3.10.5          | Apache Software License; MIT License                                             |
 | sniffio                               | 1.3.1           | Apache Software License; MIT License                                             |
 | coverage                              | 7.13.5          | Apache-2.0                                                                       |
 | freezegun                             | 1.5.5           | Apache-2.0                                                                       |
 | ply                                   | 3.11            | BSD                                                                              |
-| IMAPClient                            | 3.0.1           | BSD License                                                                      |
+| IMAPClient                            | 3.1.0           | BSD License                                                                      |
 | Jinja2                                | 3.1.6           | BSD License                                                                      |
 | MarkupSafe                            | 3.0.2           | BSD License                                                                      |
 | Pygments                              | 2.19.1          | BSD License                                                                      |
@@ -573,12 +572,14 @@ The complete source code for Traefik is publicly available at [https://github.co
 | vine                                  | 5.1.0           | BSD License                                                                      |
 | websockets                            | 13.1            | BSD License                                                                      |
 | wrapt                                 | 1.17.3          | BSD License                                                                      |
+| pycryptodome                          | 3.23.0          | BSD License; Public Domain                                                       |
 | GitPython                             | 3.1.47          | BSD-3-Clause                                                                     |
 | psutil                                | 7.2.1           | BSD-3-Clause                                                                     |
 | pytest-timeout                        | 2.4.0           | DFSG approved; MIT License                                                       |
 | pylint-plugin-utils                   | 0.8.2           | GNU General Public License v2 or later (GPLv2+)                                  |
 | python-gitlab                         | 8.3.0           | GNU Lesser General Public License v3 (LGPLv3)                                    |
 | pylint-pydantic                       | 0.4.1           | GPLv3                                                                            |
+| dnspython                             | 2.6.1           | ISC License (ISCL)                                                               |
 | click-repl                            | 0.3.0           | MIT                                                                              |
 | identify                              | 2.6.19          | MIT                                                                              |
 | pycodestyle                           | 2.14.0          | MIT                                                                              |
@@ -619,9 +620,8 @@ The complete source code for Traefik is publicly available at [https://github.co
 | mypy-extensions                       | 1.0.0           | MIT License                                                                      |
 | platformdirs                          | 4.2.2           | MIT License                                                                      |
 | pluggy                                | 1.5.0           | MIT License                                                                      |
-| pydantic                              | 2.10.3          | MIT License                                                                      |
-| pydantic-settings                     | 2.3.4           | MIT License                                                                      |
-| pydantic_core                         | 2.27.1          | MIT License                                                                      |
+| pydantic-mongo                        | 2.4.0           | MIT License                                                                      |
+| pydantic-settings                     | 2.12.0          | MIT License                                                                      |
 | pyflakes                              | 3.4.0           | MIT License                                                                      |
 | pytest-cov                            | 7.1.0           | MIT License                                                                      |
 | pytest-mock                           | 3.15.1          | MIT License                                                                      |
@@ -650,7 +650,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | black                                 | 26.1.0          | UNKNOWN                                                                          |
 | cffi                                  | 2.0.0           | UNKNOWN                                                                          |
 | cryptography                          | 46.0.0          | UNKNOWN                                                                          |
-| fastapi                               | 0.128.0         | UNKNOWN                                                                          |
+| fastapi                               | 0.128.8         | UNKNOWN                                                                          |
 | humanize                              | 4.12.3          | UNKNOWN                                                                          |
 | importlib_metadata                    | 8.7.1           | UNKNOWN                                                                          |
 | ollama                                | 0.6.1           | UNKNOWN                                                                          |
@@ -659,11 +659,15 @@ The complete source code for Traefik is publicly available at [https://github.co
 | opentelemetry-sdk                     | 1.39.1          | UNKNOWN                                                                          |
 | opentelemetry-semantic-conventions    | 0.60b1          | UNKNOWN                                                                          |
 | prometheus_client                     | 0.24.1          | UNKNOWN                                                                          |
+| pydantic                              | 2.12.5          | UNKNOWN                                                                          |
+| pydantic_core                         | 2.41.5          | UNKNOWN                                                                          |
 | pylint                                | 4.0.5           | UNKNOWN                                                                          |
+| pymongo                               | 4.16.0          | UNKNOWN                                                                          |
 | pytest                                | 9.0.3           | UNKNOWN                                                                          |
 | pytest-asyncio                        | 1.3.0           | UNKNOWN                                                                          |
 | types-cffi                            | 1.17.0.20250915 | UNKNOWN                                                                          |
 | types-setuptools                      | 82.0.0.20260210 | UNKNOWN                                                                          |
+| typing-inspection                     | 0.4.2           | UNKNOWN                                                                          |
 | typing_extensions                     | 4.15.0          | UNKNOWN                                                                          |
 | uvicorn                               | 0.40.0          | UNKNOWN                                                                          |
 | zipp                                  | 3.23.0          | UNKNOWN                                                                          |
@@ -1137,10 +1141,11 @@ The complete source code for Traefik is publicly available at [https://github.co
 | debian-archive-keyring | 2023.3+deb12u2 |  | dpkg-db-cataloger |
 | debianutils | 5.7-0.5~deb12u1 | GPL-2.0-only, GPL-2.0-or-later, SMAIL-GPL | dpkg-db-cataloger |
 | diffutils | 1:3.8-4 | FSFAP, FSFULLR, GFDL-1.3-only, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, X11 | dpkg-db-cataloger |
+| dnspython | 2.7.0 | ISC | python-installed-package-cataloger |
 | dpkg | 1.21.22 | BSD-2-Clause, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
 | e2fsprogs | 1.47.0-2+b2 | Apache-2.0, Apache-2.0, BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later, ISC, Kazlib, LGPL-2.0-only, Latex2e | dpkg-db-cataloger |
-| elastic-transport | 8.17.0 | Apache-2.0 | python-installed-package-cataloger |
-| elasticsearch | 9.0.2 | Apache-2.0 | python-installed-package-cataloger |
+| elastic-transport | 9.2.1 |  | python-installed-package-cataloger |
+| elasticsearch | 9.2.1 | Apache-2.0 | python-installed-package-cataloger |
 | fastapi | 0.128.8 | MIT | python-installed-package-cataloger |
 | findutils | 4.9.0-4 | BSD-3-Clause, FSFAP, FSFULLR, GFDL-1.3-only, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, ISC, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, X11 | dpkg-db-cataloger |
 | gcc-12-base | 12.2.0-14+deb12u1 | GFDL-1.2-only, GPL-2.0-only, GPL-3.0-only | dpkg-db-cataloger |
@@ -1256,16 +1261,18 @@ The complete source code for Traefik is publicly available at [https://github.co
 | prompt-toolkit | 3.0.50 |  | python-installed-package-cataloger |
 | pycparser | 3.0 | BSD-3-Clause | python-installed-package-cataloger |
 | pycryptodome | 3.23.0 |  | python-installed-package-cataloger |
-| pydantic | 2.10.6 | MIT | python-installed-package-cataloger |
-| pydantic-core | 2.27.2 | MIT | python-installed-package-cataloger |
-| pydantic-settings | 2.8.1 | MIT | python-installed-package-cataloger |
+| pydantic | 2.12.5 | MIT | python-installed-package-cataloger |
+| pydantic-core | 2.41.5 | MIT | python-installed-package-cataloger |
+| pydantic-mongo | 2.4.0 | MIT | python-installed-package-cataloger |
+| pydantic-settings | 2.12.0 | MIT | python-installed-package-cataloger |
+| pymongo | 4.16.0 | Apache-2.0 | python-installed-package-cataloger |
 | python | 3.11.13 |  | binary-classifier-cataloger |
 | python-dateutil | 2.9.0.post0 |  | python-installed-package-cataloger |
 | python-dotenv | 1.0.1 | BSD-3-Clause | python-installed-package-cataloger |
 | python-multipart | 0.0.22 | Apache-2.0 | python-installed-package-cataloger |
 | readline-common | 8.2-1.3 | GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later | dpkg-db-cataloger |
 | redis | 5.2.1 | MIT | python-installed-package-cataloger |
-| requests | 2.32.3 | Apache-2.0 | python-installed-package-cataloger |
+| requests | 2.32.5 | Apache-2.0 | python-installed-package-cataloger |
 | scikit-learn | 1.8.0 | BSD-3-Clause | python-installed-package-cataloger |
 | scipy | 1.15.2 | BSD-3-Clause | python-installed-package-cataloger |
 | sed | 4.9-1 | BSD-4-Clause-UC, BSL-1.0, GFDL-1.3-only, GPL-3.0-only, GPL-3.0-or-later, ISC, X11 | dpkg-db-cataloger |
@@ -1279,7 +1286,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | types-cffi | 1.17.0.20250915 | Apache-2.0 | python-installed-package-cataloger |
 | types-pyopenssl | 24.1.0.20240722 |  | python-installed-package-cataloger |
 | types-redis | 4.6.0.20241004 | Apache-2.0 | python-installed-package-cataloger |
-| types-requests | 2.32.0.20250306 | Apache-2.0 | python-installed-package-cataloger |
+| types-requests | 2.32.0.20240523 |  | python-installed-package-cataloger |
 | types-setuptools | 82.0.0.20260210 | Apache-2.0 | python-installed-package-cataloger |
 | typing-extensions | 4.15.0 | PSF-2.0 | python-installed-package-cataloger |
 | typing-inspection | 0.4.2 | MIT | python-installed-package-cataloger |
@@ -1377,12 +1384,13 @@ The complete source code for Traefik is publicly available at [https://github.co
 | default-libmysqlclient-dev | 1.1.0 | GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
 | diffutils | 1:3.8-4 | FSFAP, FSFULLR, GFDL-1.3-only, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, X11 | dpkg-db-cataloger |
 | dirmngr | 2.2.40-1.1+deb12u1 | BSD-3-Clause, CC0-1.0, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
+| dnspython | 2.7.0 | ISC | python-installed-package-cataloger |
 | dpkg | 1.21.22 | BSD-2-Clause, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
 | dpkg-dev | 1.21.22 | BSD-2-Clause, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
 | e2fsprogs | 1.47.0-2+b2 | Apache-2.0, Apache-2.0, BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later, ISC, Kazlib, LGPL-2.0-only, Latex2e | dpkg-db-cataloger |
-| elastic-transport | 8.17.1 |  | python-installed-package-cataloger |
-| elasticsearch | 9.0.2 | Apache-2.0 | python-installed-package-cataloger |
-| fastapi | 0.128.0 | MIT | python-installed-package-cataloger |
+| elastic-transport | 9.2.1 |  | python-installed-package-cataloger |
+| elasticsearch | 9.2.1 | Apache-2.0 | python-installed-package-cataloger |
+| fastapi | 0.128.8 | MIT | python-installed-package-cataloger |
 | file | 1:5.44-3 | BSD-2-Clause | dpkg-db-cataloger |
 | filippo.io/edwards25519 | v1.1.1 |  | go-module-binary-cataloger |
 | findutils | 4.9.0-4 | BSD-3-Clause, FSFAP, FSFULLR, GFDL-1.3-only, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, ISC, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, X11 | dpkg-db-cataloger |
@@ -1697,7 +1705,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | imagemagick | 8:6.9.11.60+dfsg-1.6+deb12u9 | GPL-1.0-only, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, ImageMagick, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
 | imagemagick-6-common | 8:6.9.11.60+dfsg-1.6+deb12u9 | GPL-1.0-only, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, ImageMagick, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
 | imagemagick-6.q16 | 8:6.9.11.60+dfsg-1.6+deb12u9 | GPL-1.0-only, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, ImageMagick, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
-| imapclient | 3.0.1 |  | python-installed-package-cataloger |
+| imapclient | 3.1.0 |  | python-installed-package-cataloger |
 | init-system-helpers | 1.65.2+deb12u1 | BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
 | joblib | 1.5.1 |  | python-installed-package-cataloger |
 | jsonpatch | 1.33 |  | python-installed-package-cataloger |
@@ -2096,9 +2104,11 @@ The complete source code for Traefik is publicly available at [https://github.co
 | pst-utils | 0.6.76-1 | GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
 | pycparser | 2.22 | BSD-3-Clause | python-installed-package-cataloger |
 | pycryptodome | 3.23.0 |  | python-installed-package-cataloger |
-| pydantic | 2.11.5 | MIT | python-installed-package-cataloger |
-| pydantic-core | 2.33.2 | MIT | python-installed-package-cataloger |
-| pydantic-settings | 2.9.1 | MIT | python-installed-package-cataloger |
+| pydantic | 2.12.5 | MIT | python-installed-package-cataloger |
+| pydantic-core | 2.41.5 | MIT | python-installed-package-cataloger |
+| pydantic-mongo | 2.4.0 | MIT | python-installed-package-cataloger |
+| pydantic-settings | 2.12.0 | MIT | python-installed-package-cataloger |
+| pymongo | 4.16.0 | Apache-2.0 | python-installed-package-cataloger |
 | python | 3.11.13 |  | binary-classifier-cataloger |
 | python-dateutil | 2.9.0.post0 |  | python-installed-package-cataloger |
 | python-dotenv | 1.1.0 | BSD-3-Clause | python-installed-package-cataloger |
@@ -2146,10 +2156,10 @@ The complete source code for Traefik is publicly available at [https://github.co
 | types-cffi | 1.17.0.20250915 | Apache-2.0 | python-installed-package-cataloger |
 | types-pyopenssl | 24.1.0.20240722 |  | python-installed-package-cataloger |
 | types-redis | 4.6.0.20241004 | Apache-2.0 | python-installed-package-cataloger |
-| types-requests | 2.32.4.20250611 | Apache-2.0 | python-installed-package-cataloger |
+| types-requests | 2.32.0.20240523 |  | python-installed-package-cataloger |
 | types-setuptools | 82.0.0.20260210 | Apache-2.0 | python-installed-package-cataloger |
 | typing-extensions | 4.15.0 | PSF-2.0 | python-installed-package-cataloger |
-| typing-inspection | 0.4.1 | MIT | python-installed-package-cataloger |
+| typing-inspection | 0.4.2 | MIT | python-installed-package-cataloger |
 | tzdata | 2025.2 | Apache-2.0 | python-installed-package-cataloger |
 | tzdata | 2025b-0+deb12u2 |  | dpkg-db-cataloger |
 | ucf | 3.0043+nmu1+deb12u1 | GPL-2.0-only | dpkg-db-cataloger |
@@ -2232,11 +2242,12 @@ The complete source code for Traefik is publicly available at [https://github.co
 | debian-archive-keyring | 2023.3+deb12u2 |  | dpkg-db-cataloger |
 | debianutils | 5.7-0.5~deb12u1 | GPL-2.0-only, GPL-2.0-or-later, SMAIL-GPL | dpkg-db-cataloger |
 | diffutils | 1:3.8-4 | FSFAP, FSFULLR, GFDL-1.3-only, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, X11 | dpkg-db-cataloger |
+| dnspython | 2.7.0 | ISC | python-installed-package-cataloger |
 | dpkg | 1.21.22 | BSD-2-Clause, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
 | e2fsprogs | 1.47.0-2+b2 | Apache-2.0, Apache-2.0, BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later, ISC, Kazlib, LGPL-2.0-only, Latex2e | dpkg-db-cataloger |
-| elastic-transport | 8.15.1 | Apache-2.0 | python-installed-package-cataloger |
-| elasticsearch | 9.0.2 | Apache-2.0 | python-installed-package-cataloger |
-| fastapi | 0.128.0 | MIT | python-installed-package-cataloger |
+| elastic-transport | 9.2.1 |  | python-installed-package-cataloger |
+| elasticsearch | 9.2.1 | Apache-2.0 | python-installed-package-cataloger |
+| fastapi | 0.128.8 | MIT | python-installed-package-cataloger |
 | findutils | 4.9.0-4 | BSD-3-Clause, FSFAP, FSFULLR, GFDL-1.3-only, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, ISC, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, X11 | dpkg-db-cataloger |
 | gcc-12-base | 12.2.0-14+deb12u1 | GFDL-1.2-only, GPL-2.0-only, GPL-3.0-only | dpkg-db-cataloger |
 | gpgv | 2.2.40-1.1+deb12u1 | BSD-3-Clause, CC0-1.0, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
@@ -2338,16 +2349,18 @@ The complete source code for Traefik is publicly available at [https://github.co
 | ply | 3.11 |  | python-installed-package-cataloger |
 | prompt-toolkit | 3.0.48 |  | python-installed-package-cataloger |
 | pycparser | 2.22 | BSD-3-Clause | python-installed-package-cataloger |
-| pycryptodome | 3.21.0 |  | python-installed-package-cataloger |
-| pydantic | 2.10.3 | MIT | python-installed-package-cataloger |
-| pydantic-core | 2.27.1 | MIT | python-installed-package-cataloger |
-| pydantic-settings | 2.6.1 | MIT | python-installed-package-cataloger |
+| pycryptodome | 3.23.0 |  | python-installed-package-cataloger |
+| pydantic | 2.12.5 | MIT | python-installed-package-cataloger |
+| pydantic-core | 2.41.5 | MIT | python-installed-package-cataloger |
+| pydantic-mongo | 2.4.0 | MIT | python-installed-package-cataloger |
+| pydantic-settings | 2.12.0 | MIT | python-installed-package-cataloger |
+| pymongo | 4.16.0 | Apache-2.0 | python-installed-package-cataloger |
 | python | 3.11.13 |  | binary-classifier-cataloger |
 | python-dateutil | 2.9.0.post0 |  | python-installed-package-cataloger |
 | python-dotenv | 1.0.1 | BSD-3-Clause | python-installed-package-cataloger |
 | readline-common | 8.2-1.3 | GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later | dpkg-db-cataloger |
 | redis | 5.2.1 | MIT | python-installed-package-cataloger |
-| requests | 2.32.3 | Apache-2.0 | python-installed-package-cataloger |
+| requests | 2.32.5 | Apache-2.0 | python-installed-package-cataloger |
 | sed | 4.9-1 | BSD-4-Clause-UC, BSL-1.0, GFDL-1.3-only, GPL-3.0-only, GPL-3.0-or-later, ISC, X11 | dpkg-db-cataloger |
 | setuptools | 65.5.1 | MIT | python-installed-package-cataloger |
 | six | 1.17.0 | MIT | python-installed-package-cataloger |
@@ -2358,9 +2371,10 @@ The complete source code for Traefik is publicly available at [https://github.co
 | types-cffi | 1.17.0.20250915 | Apache-2.0 | python-installed-package-cataloger |
 | types-pyopenssl | 24.1.0.20240722 |  | python-installed-package-cataloger |
 | types-redis | 4.6.0.20241004 | Apache-2.0 | python-installed-package-cataloger |
-| types-requests | 2.32.0.20241016 | Apache-2.0 | python-installed-package-cataloger |
+| types-requests | 2.32.0.20240523 |  | python-installed-package-cataloger |
 | types-setuptools | 82.0.0.20260210 | Apache-2.0 | python-installed-package-cataloger |
 | typing-extensions | 4.15.0 | PSF-2.0 | python-installed-package-cataloger |
+| typing-inspection | 0.4.2 | MIT | python-installed-package-cataloger |
 | tzdata | 2025.2 | Apache-2.0 | python-installed-package-cataloger |
 | tzdata | 2025b-0+deb12u2 |  | dpkg-db-cataloger |
 | urllib3 | 2.2.3 |  | python-installed-package-cataloger |
@@ -2458,151 +2472,156 @@ The complete source code for Traefik is publicly available at [https://github.co
 | SparseBitSet | 1.3 |  | java-archive-cataloger |
 | accessors-smart | 2.5.2 | Apache-2.0 | java-archive-cataloger |
 | accessors-smart | 2.5.2 | Apache-2.0 | java-archive-cataloger |
-| aggregations | 9.0.2 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
-| aggregations | 9.0.2 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
+| aggregations | 9.2.0 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
+| aggregations | 9.2.0 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
 | alternatives | 1.24-2.el9 | GPL-2.0-only | rpm-db-cataloger |
-| analysis-common | 9.0.2 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
-| analysis-icu | 9.0.2 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
-| analysis-smartcn | 9.0.2 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
-| analysis-stempel | 9.0.2 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
-| analysis-ukrainian | 9.0.2 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
-| annotations | 2.28.13 | Apache-2.0 | java-archive-cataloger |
+| analysis-common | 9.2.0 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
+| analysis-icu | 9.2.0 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
+| analysis-smartcn | 9.2.0 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
+| analysis-stempel | 9.2.0 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
+| analysis-ukrainian | 9.2.0 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
+| annotations | 2.31.78 | Apache-2.0 | java-archive-cataloger |
+| annotations | 2.31.78 | Apache-2.0 | java-archive-cataloger |
 | antlr4-runtime | 4.13.1 |  | java-archive-cataloger |
 | antlr4-runtime | 4.13.1 |  | java-archive-cataloger |
 | antlr4-runtime | 4.13.1 |  | java-archive-cataloger |
 | antlr4-runtime | 4.13.1 |  | java-archive-cataloger |
 | antlr4-runtime | 4.13.1 |  | java-archive-cataloger |
-| apache-mime4j-core | 0.8.12 | Apache-2.0 | java-archive-cataloger |
-| apache-mime4j-dom | 0.8.12 | Apache-2.0 | java-archive-cataloger |
-| api-common | 2.3.1 |  | java-archive-cataloger |
-| apm | 9.0.2 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
-| apm-agent | 1.52.2 |  | java-archive-cataloger |
-| apm-agent-cached-lookup-key | 1.52.2 |  | java-archive-cataloger |
-| apm-agent-common | 1.52.2 |  | java-archive-cataloger |
-| apm-agent-common | 1.52.2 |  | java-archive-cataloger |
-| apm-agent-core | 1.52.2 |  | java-archive-cataloger |
-| apm-agent-plugin-sdk | 1.52.2 |  | java-archive-cataloger |
-| apm-agent-tracer | 1.52.2 |  | java-archive-cataloger |
-| apm-apache-httpclient-common | 1.52.2 |  | java-archive-cataloger |
-| apm-apache-httpclient3-plugin | 1.52.2 |  | java-archive-cataloger |
-| apm-apache-httpclient4-plugin | 1.52.2 |  | java-archive-cataloger |
-| apm-apache-httpclient5-plugin | 1.52.2 |  | java-archive-cataloger |
-| apm-api-plugin | 1.52.2 |  | java-archive-cataloger |
-| apm-asynchttpclient-plugin | 1.52.2 |  | java-archive-cataloger |
-| apm-aws-sdk-1-plugin | 1.52.2 |  | java-archive-cataloger |
-| apm-aws-sdk-2-plugin | 1.52.2 |  | java-archive-cataloger |
-| apm-aws-sdk-common | 1.52.2 |  | java-archive-cataloger |
-| apm-awslambda-plugin | 1.52.2 |  | java-archive-cataloger |
-| apm-cassandra-core-plugin | 1.52.2 |  | java-archive-cataloger |
-| apm-cassandra3-plugin | 1.52.2 |  | java-archive-cataloger |
-| apm-cassandra4-plugin | 1.52.2 |  | java-archive-cataloger |
-| apm-dubbo-plugin | 1.52.2 |  | java-archive-cataloger |
-| apm-ecs-logging-plugin | 1.52.2 |  | java-archive-cataloger |
-| apm-es-restclient-plugin-5_6 | 1.52.2 |  | java-archive-cataloger |
-| apm-es-restclient-plugin-6_4 | 1.52.2 |  | java-archive-cataloger |
-| apm-es-restclient-plugin-7_x | 1.52.2 |  | java-archive-cataloger |
-| apm-es-restclient-plugin-8_x | 1.52.2 |  | java-archive-cataloger |
-| apm-es-restclient-plugin-common | 1.52.2 |  | java-archive-cataloger |
-| apm-finagle-httpclient-plugin | 1.52.2 |  | java-archive-cataloger |
-| apm-grails-plugin | 1.52.2 |  | java-archive-cataloger |
-| apm-grpc-plugin | 1.52.2 |  | java-archive-cataloger |
-| apm-hibernate-search-plugin-5_x | 1.52.2 |  | java-archive-cataloger |
-| apm-hibernate-search-plugin-6_x | 1.52.2 |  | java-archive-cataloger |
-| apm-hibernate-search-plugin-common | 1.52.2 |  | java-archive-cataloger |
-| apm-httpclient-core | 1.52.2 |  | java-archive-cataloger |
-| apm-httpserver-core | 1.52.2 |  | java-archive-cataloger |
-| apm-jakarta-websocket-plugin | 1.52.2 |  | java-archive-cataloger |
-| apm-java-concurrent-plugin | 1.52.2 |  | java-archive-cataloger |
-| apm-java-ldap-plugin | 1.52.2 |  | java-archive-cataloger |
-| apm-javalin-plugin | 1.52.2 |  | java-archive-cataloger |
-| apm-jaxrs-plugin | 1.52.2 |  | java-archive-cataloger |
-| apm-jaxws-plugin | 1.52.2 |  | java-archive-cataloger |
-| apm-jboss-logging-plugin | 1.52.2 |  | java-archive-cataloger |
-| apm-jdbc-plugin | 1.52.2 |  | java-archive-cataloger |
-| apm-jdk-httpclient-plugin | 1.52.2 |  | java-archive-cataloger |
-| apm-jdk-httpserver-plugin | 1.52.2 |  | java-archive-cataloger |
-| apm-jedis-4-plugin | 1.52.2 |  | java-archive-cataloger |
-| apm-jedis-plugin | 1.52.2 |  | java-archive-cataloger |
-| apm-jms-jakarta | 1.52.2 |  | java-archive-cataloger |
-| apm-jms-javax | 1.52.2 |  | java-archive-cataloger |
-| apm-jms-plugin-base | 1.52.2 |  | java-archive-cataloger |
-| apm-jmx-plugin | 1.52.2 |  | java-archive-cataloger |
-| apm-jsf-plugin | 1.52.2 |  | java-archive-cataloger |
-| apm-jul-plugin | 1.52.2 |  | java-archive-cataloger |
-| apm-kafka-base-plugin | 1.52.2 |  | java-archive-cataloger |
-| apm-kafka-headers-plugin | 1.52.2 |  | java-archive-cataloger |
-| apm-kafka-spring-plugin | 1.52.2 |  | java-archive-cataloger |
-| apm-lettuce-plugin | 1.52.2 |  | java-archive-cataloger |
-| apm-log4j1-plugin | 1.52.2 |  | java-archive-cataloger |
-| apm-log4j2-plugin | 1.52.2 |  | java-archive-cataloger |
-| apm-logback-plugin-impl | 1.52.2 |  | java-archive-cataloger |
-| apm-logging-plugin-common | 1.52.2 |  | java-archive-cataloger |
-| apm-micrometer-plugin | 1.52.2 |  | java-archive-cataloger |
-| apm-mongodb-common | 1.52.2 |  | java-archive-cataloger |
-| apm-mongodb3-plugin | 1.52.2 |  | java-archive-cataloger |
-| apm-mongodb4-plugin | 1.52.2 |  | java-archive-cataloger |
-| apm-okhttp-plugin | 1.52.2 |  | java-archive-cataloger |
-| apm-opentelemetry-embedded-metrics-sdk | 1.52.2 |  | java-archive-cataloger |
-| apm-opentelemetry-metrics-bridge-common | 1.52.2 |  | java-archive-cataloger |
-| apm-opentelemetry-metrics-bridge-latest | 1.52.2 |  | java-archive-cataloger |
-| apm-opentelemetry-metrics-bridge-v1_14 | 1.52.2 |  | java-archive-cataloger |
-| apm-opentelemetry-metricsdk-plugin | 1.52.2 |  | java-archive-cataloger |
-| apm-opentelemetry-plugin | 1.52.2 |  | java-archive-cataloger |
-| apm-opentracing-plugin | 1.52.2 |  | java-archive-cataloger |
-| apm-process-plugin | 1.52.2 |  | java-archive-cataloger |
-| apm-profiling-plugin | 1.52.2 |  | java-archive-cataloger |
-| apm-quartz-common | 1.52.2 |  | java-archive-cataloger |
-| apm-quartz-plugin-1 | 1.52.2 |  | java-archive-cataloger |
-| apm-quartz-plugin-2 | 1.52.2 |  | java-archive-cataloger |
-| apm-rabbitmq-plugin | 1.52.2 |  | java-archive-cataloger |
-| apm-rabbitmq-spring5 | 1.52.2 |  | java-archive-cataloger |
-| apm-reactor-plugin | 1.52.2 |  | java-archive-cataloger |
-| apm-redis-common | 1.52.2 |  | java-archive-cataloger |
-| apm-redisson-plugin | 1.52.2 |  | java-archive-cataloger |
-| apm-scala-concurrent-plugin | 1.52.2 |  | java-archive-cataloger |
-| apm-scheduled-annotation-plugin | 1.52.2 |  | java-archive-cataloger |
-| apm-servlet-plugin | 1.52.2 |  | java-archive-cataloger |
-| apm-slf4j-plugin | 1.52.2 |  | java-archive-cataloger |
-| apm-sparkjava-plugin | 1.52.2 |  | java-archive-cataloger |
-| apm-spring-resttemplate-plugin | 1.52.2 |  | java-archive-cataloger |
-| apm-spring-webclient-plugin | 1.52.2 |  | java-archive-cataloger |
-| apm-spring-webflux-common | 1.52.2 |  | java-archive-cataloger |
-| apm-spring-webflux-common-spring5 | 1.52.2 |  | java-archive-cataloger |
-| apm-spring-webflux-plugin | 1.52.2 |  | java-archive-cataloger |
-| apm-spring-webflux-spring5 | 1.52.2 |  | java-archive-cataloger |
-| apm-spring-webmvc-plugin | 1.52.2 |  | java-archive-cataloger |
-| apm-spring-webmvc-spring5 | 1.52.2 |  | java-archive-cataloger |
-| apm-struts-plugin | 1.52.2 |  | java-archive-cataloger |
-| apm-tomcat-logging-plugin | 1.52.2 |  | java-archive-cataloger |
-| apm-urlconnection-plugin | 1.52.2 |  | java-archive-cataloger |
-| apm-vertx-common | 1.52.2 |  | java-archive-cataloger |
-| apm-vertx3-plugin | 1.52.2 |  | java-archive-cataloger |
-| apm-vertx4-plugin | 1.52.2 |  | java-archive-cataloger |
-| arrow | 9.0.2 |  | java-archive-cataloger |
-| arrow-format | 16.1.0 | Apache-2.0 | java-archive-cataloger |
-| arrow-memory-core | 16.1.0 | Apache-2.0 | java-archive-cataloger |
-| arrow-vector | 16.1.0 | Apache-2.0 | java-archive-cataloger |
-| asm | 7.2 |  | java-archive-cataloger |
-| asm | 7.2 |  | java-archive-cataloger |
-| asm | 9.7.1 |  | java-archive-cataloger |
-| asm | 9.7.1 |  | java-archive-cataloger |
-| asm | 9.7.1 |  | java-archive-cataloger |
-| asm-analysis | 7.2 |  | java-archive-cataloger |
-| asm-analysis | 7.2 |  | java-archive-cataloger |
-| asm-commons | 7.2 |  | java-archive-cataloger |
-| asm-commons | 7.2 |  | java-archive-cataloger |
-| asm-jdk-bridge | 0.0.2 |  | java-archive-cataloger |
-| asm-tree | 7.2 |  | java-archive-cataloger |
-| asm-tree | 7.2 |  | java-archive-cataloger |
-| asm-tree | 9.7.1 |  | java-archive-cataloger |
-| asm-util | 7.2 |  | java-archive-cataloger |
+| apache-client | 2.31.78 | Apache-2.0 | java-archive-cataloger |
+| apache-client | 2.31.78 | Apache-2.0 | java-archive-cataloger |
+| apache-mime4j-core | 0.8.13 | Apache-2.0 | java-archive-cataloger |
+| apache-mime4j-dom | 0.8.13 | Apache-2.0 | java-archive-cataloger |
+| api-common | 2.46.1 |  | java-archive-cataloger |
+| apm | 9.2.0 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
+| apm-agent-cached-lookup-key | 1.55.0 |  | java-archive-cataloger |
+| apm-agent-common | 1.55.0 |  | java-archive-cataloger |
+| apm-agent-common | 1.55.0 |  | java-archive-cataloger |
+| apm-agent-core | 1.55.0 |  | java-archive-cataloger |
+| apm-agent-java8 | 1.55.0 |  | java-archive-cataloger |
+| apm-agent-plugin-sdk | 1.55.0 |  | java-archive-cataloger |
+| apm-agent-tracer | 1.55.0 |  | java-archive-cataloger |
+| apm-apache-httpclient-common | 1.55.0 |  | java-archive-cataloger |
+| apm-apache-httpclient3-plugin | 1.55.0 |  | java-archive-cataloger |
+| apm-apache-httpclient4-plugin | 1.55.0 |  | java-archive-cataloger |
+| apm-apache-httpclient5-plugin | 1.55.0 |  | java-archive-cataloger |
+| apm-api-plugin | 1.55.0 |  | java-archive-cataloger |
+| apm-asynchttpclient-plugin | 1.55.0 |  | java-archive-cataloger |
+| apm-aws-sdk-1-plugin | 1.55.0 |  | java-archive-cataloger |
+| apm-aws-sdk-2-plugin | 1.55.0 |  | java-archive-cataloger |
+| apm-aws-sdk-common | 1.55.0 |  | java-archive-cataloger |
+| apm-awslambda-plugin | 1.55.0 |  | java-archive-cataloger |
+| apm-cassandra-core-plugin | 1.55.0 |  | java-archive-cataloger |
+| apm-cassandra3-plugin | 1.55.0 |  | java-archive-cataloger |
+| apm-cassandra4-plugin | 1.55.0 |  | java-archive-cataloger |
+| apm-dubbo-plugin | 1.55.0 |  | java-archive-cataloger |
+| apm-ecs-logging-plugin | 1.55.0 |  | java-archive-cataloger |
+| apm-es-restclient-plugin-5_6 | 1.55.0 |  | java-archive-cataloger |
+| apm-es-restclient-plugin-6_4 | 1.55.0 |  | java-archive-cataloger |
+| apm-es-restclient-plugin-7_x | 1.55.0 |  | java-archive-cataloger |
+| apm-es-restclient-plugin-8_x | 1.55.0 |  | java-archive-cataloger |
+| apm-es-restclient-plugin-common | 1.55.0 |  | java-archive-cataloger |
+| apm-finagle-httpclient-plugin | 1.55.0 |  | java-archive-cataloger |
+| apm-grails-plugin | 1.55.0 |  | java-archive-cataloger |
+| apm-grpc-plugin | 1.55.0 |  | java-archive-cataloger |
+| apm-hibernate-search-plugin-5_x | 1.55.0 |  | java-archive-cataloger |
+| apm-hibernate-search-plugin-6_x | 1.55.0 |  | java-archive-cataloger |
+| apm-hibernate-search-plugin-common | 1.55.0 |  | java-archive-cataloger |
+| apm-httpclient-core | 1.55.0 |  | java-archive-cataloger |
+| apm-httpserver-core | 1.55.0 |  | java-archive-cataloger |
+| apm-jakarta-websocket-plugin | 1.55.0 |  | java-archive-cataloger |
+| apm-java-concurrent-plugin | 1.55.0 |  | java-archive-cataloger |
+| apm-java-ldap-plugin | 1.55.0 |  | java-archive-cataloger |
+| apm-javalin-plugin | 1.55.0 |  | java-archive-cataloger |
+| apm-jaxrs-plugin | 1.55.0 |  | java-archive-cataloger |
+| apm-jaxws-plugin | 1.55.0 |  | java-archive-cataloger |
+| apm-jboss-logging-plugin | 1.55.0 |  | java-archive-cataloger |
+| apm-jdbc-plugin | 1.55.0 |  | java-archive-cataloger |
+| apm-jdk-httpclient-plugin | 1.55.0 |  | java-archive-cataloger |
+| apm-jdk-httpserver-plugin | 1.55.0 |  | java-archive-cataloger |
+| apm-jedis-4-plugin | 1.55.0 |  | java-archive-cataloger |
+| apm-jedis-plugin | 1.55.0 |  | java-archive-cataloger |
+| apm-jms-jakarta | 1.55.0 |  | java-archive-cataloger |
+| apm-jms-javax | 1.55.0 |  | java-archive-cataloger |
+| apm-jms-plugin-base | 1.55.0 |  | java-archive-cataloger |
+| apm-jmx-plugin | 1.55.0 |  | java-archive-cataloger |
+| apm-jsf-plugin | 1.55.0 |  | java-archive-cataloger |
+| apm-jul-plugin | 1.55.0 |  | java-archive-cataloger |
+| apm-kafka-base-plugin | 1.55.0 |  | java-archive-cataloger |
+| apm-kafka-headers-plugin | 1.55.0 |  | java-archive-cataloger |
+| apm-kafka-spring-plugin | 1.55.0 |  | java-archive-cataloger |
+| apm-lettuce-plugin | 1.55.0 |  | java-archive-cataloger |
+| apm-log4j1-plugin | 1.55.0 |  | java-archive-cataloger |
+| apm-log4j2-plugin | 1.55.0 |  | java-archive-cataloger |
+| apm-logback-plugin-impl | 1.55.0 |  | java-archive-cataloger |
+| apm-logging-plugin-common | 1.55.0 |  | java-archive-cataloger |
+| apm-micrometer-plugin | 1.55.0 |  | java-archive-cataloger |
+| apm-mongodb-common | 1.55.0 |  | java-archive-cataloger |
+| apm-mongodb3-plugin | 1.55.0 |  | java-archive-cataloger |
+| apm-mongodb4-plugin | 1.55.0 |  | java-archive-cataloger |
+| apm-okhttp-plugin | 1.55.0 |  | java-archive-cataloger |
+| apm-opentelemetry-embedded-metrics-sdk | 1.55.0 |  | java-archive-cataloger |
+| apm-opentelemetry-metrics-bridge-common | 1.55.0 |  | java-archive-cataloger |
+| apm-opentelemetry-metrics-bridge-latest | 1.55.0 |  | java-archive-cataloger |
+| apm-opentelemetry-metrics-bridge-v1_14 | 1.55.0 |  | java-archive-cataloger |
+| apm-opentelemetry-metricsdk-plugin | 1.55.0 |  | java-archive-cataloger |
+| apm-opentelemetry-plugin | 1.55.0 |  | java-archive-cataloger |
+| apm-opentracing-plugin | 1.55.0 |  | java-archive-cataloger |
+| apm-process-plugin | 1.55.0 |  | java-archive-cataloger |
+| apm-profiling-plugin | 1.55.0 |  | java-archive-cataloger |
+| apm-quartz-common | 1.55.0 |  | java-archive-cataloger |
+| apm-quartz-plugin-1 | 1.55.0 |  | java-archive-cataloger |
+| apm-quartz-plugin-2 | 1.55.0 |  | java-archive-cataloger |
+| apm-rabbitmq-plugin | 1.55.0 |  | java-archive-cataloger |
+| apm-rabbitmq-spring5 | 1.55.0 |  | java-archive-cataloger |
+| apm-reactor-plugin | 1.55.0 |  | java-archive-cataloger |
+| apm-redis-common | 1.55.0 |  | java-archive-cataloger |
+| apm-redisson-plugin | 1.55.0 |  | java-archive-cataloger |
+| apm-scala-concurrent-plugin | 1.55.0 |  | java-archive-cataloger |
+| apm-scheduled-annotation-plugin | 1.55.0 |  | java-archive-cataloger |
+| apm-servlet-plugin | 1.55.0 |  | java-archive-cataloger |
+| apm-slf4j-plugin | 1.55.0 |  | java-archive-cataloger |
+| apm-sparkjava-plugin | 1.55.0 |  | java-archive-cataloger |
+| apm-spring-resttemplate-plugin | 1.55.0 |  | java-archive-cataloger |
+| apm-spring-webclient-plugin | 1.55.0 |  | java-archive-cataloger |
+| apm-spring-webflux-common | 1.55.0 |  | java-archive-cataloger |
+| apm-spring-webflux-common-spring5 | 1.55.0 |  | java-archive-cataloger |
+| apm-spring-webflux-plugin | 1.55.0 |  | java-archive-cataloger |
+| apm-spring-webflux-spring5 | 1.55.0 |  | java-archive-cataloger |
+| apm-spring-webmvc-plugin | 1.55.0 |  | java-archive-cataloger |
+| apm-spring-webmvc-spring5 | 1.55.0 |  | java-archive-cataloger |
+| apm-struts-plugin | 1.55.0 |  | java-archive-cataloger |
+| apm-tomcat-logging-plugin | 1.55.0 |  | java-archive-cataloger |
+| apm-urlconnection-plugin | 1.55.0 |  | java-archive-cataloger |
+| apm-vertx-common | 1.55.0 |  | java-archive-cataloger |
+| apm-vertx3-plugin | 1.55.0 |  | java-archive-cataloger |
+| apm-vertx4-plugin | 1.55.0 |  | java-archive-cataloger |
+| arns | 2.31.78 | Apache-2.0 | java-archive-cataloger |
+| arrow | 9.2.0 |  | java-archive-cataloger |
+| arrow-format | 18.3.0 | Apache-2.0 | java-archive-cataloger |
+| arrow-memory-core | 18.3.0 | Apache-2.0 | java-archive-cataloger |
+| arrow-vector | 18.3.0 | Apache-2.0 | java-archive-cataloger |
+| asm | 9.8 |  | java-archive-cataloger |
+| asm | 9.8 |  | java-archive-cataloger |
+| asm | 9.8 |  | java-archive-cataloger |
+| asm | 9.8 |  | java-archive-cataloger |
+| asm | 9.8 |  | java-archive-cataloger |
+| asm-analysis | 9.8 |  | java-archive-cataloger |
+| asm-analysis | 9.8 |  | java-archive-cataloger |
+| asm-commons | 9.8 |  | java-archive-cataloger |
+| asm-commons | 9.8 |  | java-archive-cataloger |
+| asm-jdk-bridge | 0.0.10 |  | java-archive-cataloger |
+| asm-tree | 9.8 |  | java-archive-cataloger |
+| asm-tree | 9.8 |  | java-archive-cataloger |
+| asm-tree | 9.8 |  | java-archive-cataloger |
+| asm-util | 9.8 |  | java-archive-cataloger |
 | audit-libs | 3.1.5-4.el9 |  | rpm-db-cataloger |
-| auth | 2.28.13 | Apache-2.0 | java-archive-cataloger |
-| aws-core | 2.28.13 | Apache-2.0 | java-archive-cataloger |
-| aws-java-sdk-core | 1.12.746 |  | java-archive-cataloger |
-| aws-java-sdk-s3 | 1.12.746 |  | java-archive-cataloger |
-| aws-java-sdk-sts | 1.12.746 |  | java-archive-cataloger |
-| aws-json-protocol | 2.28.13 | Apache-2.0 | java-archive-cataloger |
+| auth | 2.31.78 | Apache-2.0 | java-archive-cataloger |
+| auth | 2.31.78 | Apache-2.0 | java-archive-cataloger |
+| aws-core | 2.31.78 | Apache-2.0 | java-archive-cataloger |
+| aws-core | 2.31.78 | Apache-2.0 | java-archive-cataloger |
+| aws-json-protocol | 2.31.78 | Apache-2.0 | java-archive-cataloger |
+| aws-query-protocol | 2.31.78 | Apache-2.0 | java-archive-cataloger |
+| aws-xml-protocol | 2.31.78 | Apache-2.0 | java-archive-cataloger |
 | azure-core | 1.51.0 |  | java-archive-cataloger |
 | azure-core-http-netty | 1.15.3 |  | java-archive-cataloger |
 | azure-identity | 1.13.2 |  | java-archive-cataloger |
@@ -2614,170 +2633,195 @@ The complete source code for Traefik is publicly available at [https://github.co
 | azure-xml | 1.1.0 |  | java-archive-cataloger |
 | basesystem | 11-13.el9 |  | rpm-db-cataloger |
 | bash | 5.1.8-9.el9 |  | rpm-db-cataloger |
-| bc-fips | 1.0.2.5 |  | java-archive-cataloger |
+| bc-fips | 1.0.2.6 |  | java-archive-cataloger |
 | bcpg-fips | 1.0.7.1 |  | java-archive-cataloger |
-| bcpkix-jdk18on | 1.78.1 |  | java-archive-cataloger |
-| bcprov-jdk18on | 1.78.1 |  | java-archive-cataloger |
-| bcutil-jdk18on | 1.78.1 |  | java-archive-cataloger |
-| bedrockruntime | 2.28.13 | Apache-2.0 | java-archive-cataloger |
-| blob-cache | 9.0.2 |  | java-archive-cataloger |
-| byte-buddy-dep | 1.17.0 |  | java-archive-cataloger |
+| bcpkix-jdk18on | 1.79 |  | java-archive-cataloger |
+| bcprov-jdk18on | 1.79 |  | java-archive-cataloger |
+| bcutil-jdk18on | 1.79 |  | java-archive-cataloger |
+| bedrockruntime | 2.31.78 | Apache-2.0 | java-archive-cataloger |
+| blob-cache | 9.2.0 |  | java-archive-cataloger |
+| byte-buddy-dep | 1.17.6 |  | java-archive-cataloger |
 | bzip2-libs | 1.0.8-10.el9_5 |  | rpm-db-cataloger |
 | ca-certificates | 2024.2.69_v8.0.303-91.4.el9_4 | MIT AND GPL-2.0-or-later | rpm-db-cataloger |
 | checker-qual | 3.42.0 | MIT | java-archive-cataloger |
-| checksums | 2.28.13 | Apache-2.0 | java-archive-cataloger |
-| checksums-spi | 2.28.13 | Apache-2.0 | java-archive-cataloger |
-| cli-launcher | 9.0.2 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
+| checker-qual | 3.49.0 | MIT | java-archive-cataloger |
+| checksums | 2.31.78 | Apache-2.0 | java-archive-cataloger |
+| checksums | 2.31.78 | Apache-2.0 | java-archive-cataloger |
+| checksums-spi | 2.31.78 | Apache-2.0 | java-archive-cataloger |
+| checksums-spi | 2.31.78 | Apache-2.0 | java-archive-cataloger |
+| cli-launcher | 9.2.0 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
+| collate | 77.1 |  | java-archive-cataloger |
+| collate | 77.1 |  | java-archive-cataloger |
+| collate | 77.1 |  | java-archive-cataloger |
+| collate | 77.1 |  | java-archive-cataloger |
 | commons-codec | 1.15 | Apache-2.0 | java-archive-cataloger |
 | commons-codec | 1.15 | Apache-2.0 | java-archive-cataloger |
 | commons-codec | 1.15 | Apache-2.0 | java-archive-cataloger |
 | commons-codec | 1.15 | Apache-2.0 | java-archive-cataloger |
 | commons-codec | 1.15 | Apache-2.0 | java-archive-cataloger |
-| commons-codec | 1.18.0 | Apache-2.0 | java-archive-cataloger |
-| commons-collections4 | 4.4 | Apache-2.0 | java-archive-cataloger |
-| commons-compress | 1.27.1 | Apache-2.0 | java-archive-cataloger |
-| commons-io | 2.18.0 | Apache-2.0 | java-archive-cataloger |
-| commons-lang3 | 3.17.0 | Apache-2.0 | java-archive-cataloger |
+| commons-codec | 1.19.0 | Apache-2.0 | java-archive-cataloger |
+| commons-collections4 | 4.5.0 | Apache-2.0 | java-archive-cataloger |
+| commons-compress | 1.28.0 | Apache-2.0 | java-archive-cataloger |
+| commons-io | 2.20.0 | Apache-2.0 | java-archive-cataloger |
+| commons-lang3 | 3.18.0 | Apache-2.0 | java-archive-cataloger |
+| commons-lang3 | 3.9 | Apache-2.0 | java-archive-cataloger |
 | commons-lang3 | 3.9 | Apache-2.0 | java-archive-cataloger |
 | commons-logging | 1.2 | Apache-2.0 | java-archive-cataloger |
 | commons-logging | 1.2 | Apache-2.0 | java-archive-cataloger |
 | commons-logging | 1.2 | Apache-2.0 | java-archive-cataloger |
 | commons-logging | 1.2 | Apache-2.0 | java-archive-cataloger |
-| commons-logging | 1.2 | Apache-2.0 | java-archive-cataloger |
 | commons-math3 | 3.6.1 | Apache-2.0 | java-archive-cataloger |
 | commons-math3 | 3.6.1 | Apache-2.0 | java-archive-cataloger |
 | commons-math3 | 3.6.1 | Apache-2.0 | java-archive-cataloger |
+| commons-text | 1.4 | Apache-2.0 | java-archive-cataloger |
 | compiler | 0.9.10 |  | java-archive-cataloger |
 | compiler | 0.9.10 |  | java-archive-cataloger |
 | compiler | 0.9.10 |  | java-archive-cataloger |
 | concurrentlinkedhashmap-lru | 1.4.2 |  | java-archive-cataloger |
 | content-type | 2.3 | Apache-2.0 | java-archive-cataloger |
-| core | 9.0.2 | Apache-2.0 | java-archive-cataloger |
+| content-type | 2.3 | Apache-2.0 | java-archive-cataloger |
+| core | 77.1 |  | java-archive-cataloger |
+| core | 77.1 |  | java-archive-cataloger |
+| core | 77.1 |  | java-archive-cataloger |
+| core | 77.1 |  | java-archive-cataloger |
+| core | 9.2.0 | Apache-2.0 | java-archive-cataloger |
 | coreutils-single | 8.32-39.el9 |  | rpm-db-cataloger |
 | cryptacular | 1.2.5 |  | java-archive-cataloger |
 | cryptacular | 1.2.5 |  | java-archive-cataloger |
 | crypto-policies | 20250128-1.git5269e22.el9 | LGPL-2.1-or-later | rpm-db-cataloger |
-| curl-minimal | 7.76.1-31.el9 | MIT | rpm-db-cataloger |
+| curl-minimal | 7.76.1-31.el9_6.1 | MIT | rpm-db-cataloger |
+| currdata | 77.1 |  | java-archive-cataloger |
+| currdata | 77.1 |  | java-archive-cataloger |
+| currdata | 77.1 |  | java-archive-cataloger |
+| currdata | 77.1 |  | java-archive-cataloger |
+| cuvs-java | 25.10.0 |  | java-archive-cataloger |
 | cyrus-sasl-lib | 2.1.27-21.el9 |  | rpm-db-cataloger |
-| data-streams | 9.0.2 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
+| data-streams | 9.2.0 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
 | dejavu-sans-fonts | 2.37-18.el9 |  | rpm-db-cataloger |
 | dnf-data | 4.14.0-25.el9 |  | rpm-db-cataloger |
-| dot-prefix-validation | 9.0.2 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
+| dot-prefix-validation | 9.2.0 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
 | dsl-json | 1.9.3 |  | java-archive-cataloger |
 | ecs-logging-core | 1.2.0 | Apache-2.0 | java-archive-cataloger |
-| ecs-logging-core | 1.6.0 |  | java-archive-cataloger |
-| elastic-apm-agent | 1.52.2 | Apache-2.0 | java-archive-cataloger |
-| elastic-apm-agent-premain | 1.52.2 |  | java-archive-cataloger |
-| elasticsearch | 9.0.2 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
-| elasticsearch-ansi-console | 9.0.2 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
-| elasticsearch-cli | 9.0.2 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
-| elasticsearch-core | 9.0.2 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
-| elasticsearch-core | 9.0.2 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
-| elasticsearch-dissect | 9.0.2 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
-| elasticsearch-dissect | 9.0.2 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
-| elasticsearch-dissect | 9.0.2 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
-| elasticsearch-entitlement | 9.0.2 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
-| elasticsearch-entitlement | 9.0.2 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
-| elasticsearch-entitlement-agent | 9.0.2 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
-| elasticsearch-entitlement-bridge | 9.0.2 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
-| elasticsearch-geo | 9.0.2 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
-| elasticsearch-geoip-cli | 9.0.2 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
-| elasticsearch-grok | 9.0.2 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
-| elasticsearch-h3 | 9.0.2 | Apache-2.0 | java-archive-cataloger |
-| elasticsearch-logging | 9.0.2 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
-| elasticsearch-lz4 | 9.0.2 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
-| elasticsearch-native | 9.0.2 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
-| elasticsearch-plugin-analysis-api | 9.0.2 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
-| elasticsearch-plugin-api | 9.0.2 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
-| elasticsearch-plugin-api | 9.0.2 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
-| elasticsearch-plugin-cli | 9.0.2 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
-| elasticsearch-plugin-scanner | 9.0.2 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
-| elasticsearch-rest-client | 9.0.2 | Apache-2.0 | java-archive-cataloger |
-| elasticsearch-rest-client | 9.0.2 | Apache-2.0 | java-archive-cataloger |
-| elasticsearch-rest-client | 9.0.2 | Apache-2.0 | java-archive-cataloger |
-| elasticsearch-rest-client-sniffer | 9.0.2 | Apache-2.0 | java-archive-cataloger |
-| elasticsearch-scripting-painless-spi | 9.0.2 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
-| elasticsearch-secure-sm | 9.0.2 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
-| elasticsearch-security-cli | 9.0.2 |  | java-archive-cataloger |
-| elasticsearch-simdvec | 9.0.2 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
-| elasticsearch-sql-cli | 9.0.2 | Apache-2.0, LGPL-2.1-only | java-archive-cataloger |
-| elasticsearch-ssl-config | 9.0.2 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
-| elasticsearch-ssl-config | 9.0.2 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
-| elasticsearch-ssl-config | 9.0.2 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
-| elasticsearch-ssl-config | 9.0.2 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
-| elasticsearch-tdigest | 9.0.2 | Apache-2.0 | java-archive-cataloger |
-| elasticsearch-x-content | 9.0.2 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
-| elasticsearch-x-content | 9.0.2 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
-| endpoints-spi | 2.28.13 | Apache-2.0 | java-archive-cataloger |
+| ecs-logging-core | 1.7.0 |  | java-archive-cataloger |
+| elastic-apm-agent-java8 | 1.55.0 | Apache-2.0 | java-archive-cataloger |
+| elastic-apm-agent-premain | 1.55.0 |  | java-archive-cataloger |
+| elasticsearch | 9.2.0 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
+| elasticsearch-ansi-console | 9.2.0 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
+| elasticsearch-cli | 9.2.0 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
+| elasticsearch-core | 9.2.0 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
+| elasticsearch-core | 9.2.0 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
+| elasticsearch-dissect | 9.2.0 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
+| elasticsearch-dissect | 9.2.0 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
+| elasticsearch-dissect | 9.2.0 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
+| elasticsearch-entitlement | 9.2.0 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
+| elasticsearch-entitlement | 9.2.0 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
+| elasticsearch-entitlement-agent | 9.2.0 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
+| elasticsearch-entitlement-bridge | 9.2.0 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
+| elasticsearch-exponential-histogram | 9.2.0 | Apache-2.0 | java-archive-cataloger |
+| elasticsearch-exponential-histogram | 9.2.0 | Apache-2.0 | java-archive-cataloger |
+| elasticsearch-geo | 9.2.0 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
+| elasticsearch-geoip-cli | 9.2.0 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
+| elasticsearch-grok | 9.2.0 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
+| elasticsearch-h3 | 9.2.0 | Apache-2.0 | java-archive-cataloger |
+| elasticsearch-h3 | 9.2.0 | Apache-2.0 | java-archive-cataloger |
+| elasticsearch-logging | 9.2.0 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
+| elasticsearch-lz4 | 9.2.0 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
+| elasticsearch-native | 9.2.0 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
+| elasticsearch-plugin-analysis-api | 9.2.0 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
+| elasticsearch-plugin-api | 9.2.0 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
+| elasticsearch-plugin-api | 9.2.0 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
+| elasticsearch-plugin-cli | 9.2.0 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
+| elasticsearch-plugin-scanner | 9.2.0 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
+| elasticsearch-rest-client | 9.2.0 | Apache-2.0 | java-archive-cataloger |
+| elasticsearch-rest-client | 9.2.0 | Apache-2.0 | java-archive-cataloger |
+| elasticsearch-rest-client | 9.2.0 | Apache-2.0 | java-archive-cataloger |
+| elasticsearch-rest-client-sniffer | 9.2.0 | Apache-2.0 | java-archive-cataloger |
+| elasticsearch-scripting-painless-spi | 9.2.0 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
+| elasticsearch-security-cli | 9.2.0 |  | java-archive-cataloger |
+| elasticsearch-simdvec | 9.2.0 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
+| elasticsearch-sql-cli | 9.2.0 | Apache-2.0, LGPL-2.1-only | java-archive-cataloger |
+| elasticsearch-ssl-config | 9.2.0 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
+| elasticsearch-ssl-config | 9.2.0 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
+| elasticsearch-ssl-config | 9.2.0 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
+| elasticsearch-ssl-config | 9.2.0 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
+| elasticsearch-tdigest | 9.2.0 | Apache-2.0 | java-archive-cataloger |
+| elasticsearch-x-content | 9.2.0 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
+| elasticsearch-x-content | 9.2.0 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
+| endpoints-spi | 2.31.78 | Apache-2.0 | java-archive-cataloger |
+| endpoints-spi | 2.31.78 | Apache-2.0 | java-archive-cataloger |
 | eventstream | 1.0.1 |  | java-archive-cataloger |
 | failureaccess | 1.0.1 | Apache-2.0 | java-archive-cataloger |
 | failureaccess | 1.0.1 | Apache-2.0 | java-archive-cataloger |
 | failureaccess | 1.0.1 | Apache-2.0 | java-archive-cataloger |
-| failureaccess | 1.0.1 | Apache-2.0 | java-archive-cataloger |
+| failureaccess | 1.0.2 | Apache-2.0 | java-archive-cataloger |
 | file-libs | 5.39-16.el9 |  | rpm-db-cataloger |
 | filesystem | 3.16-5.el9 |  | rpm-db-cataloger |
 | findutils | 1:4.8.0-7.el9 |  | rpm-db-cataloger |
 | flatbuffers-java | 23.5.26 |  | java-archive-cataloger |
-| fontbox | 2.0.33 | Apache-2.0 | java-archive-cataloger |
+| fontbox | 3.0.5 | Apache-2.0 | java-archive-cataloger |
 | fonts-filesystem | 1:2.0.5-7.el9.1 | MIT | rpm-db-cataloger |
 | gawk | 5.1.0-6.el9 |  | rpm-db-cataloger |
-| gax | 2.20.1 |  | java-archive-cataloger |
+| gax | 2.63.1 |  | java-archive-cataloger |
 | gax-httpjson | 0.105.1 |  | java-archive-cataloger |
-| gax-httpjson | 0.105.1 |  | java-archive-cataloger |
+| gax-httpjson | 2.63.1 |  | java-archive-cataloger |
 | gdbm-libs | 1:1.23-1.el9 |  | rpm-db-cataloger |
-| geoip2 | 4.2.0 |  | java-archive-cataloger |
-| glib2 | 2.68.4-16.el9 |  | rpm-db-cataloger |
-| glibc | 2.34-168.el9_6.20 |  | rpm-db-cataloger |
-| glibc-common | 2.34-168.el9_6.20 |  | rpm-db-cataloger |
-| glibc-minimal-langpack | 2.34-168.el9_6.20 |  | rpm-db-cataloger |
+| geoip2 | 4.2.1 |  | java-archive-cataloger |
+| glib2 | 2.68.4-16.el9_6.2 |  | rpm-db-cataloger |
+| glibc | 2.34-168.el9_6.23 |  | rpm-db-cataloger |
+| glibc-common | 2.34-168.el9_6.23 |  | rpm-db-cataloger |
+| glibc-minimal-langpack | 2.34-168.el9_6.23 |  | rpm-db-cataloger |
 | gmp | 1:6.2.0-13.el9 |  | rpm-db-cataloger |
 | gnupg2 | 2.3.3-4.el9 |  | rpm-db-cataloger |
-| gnutls | 3.8.3-6.el9 |  | rpm-db-cataloger |
+| gnutls | 3.8.3-6.el9_6.2 |  | rpm-db-cataloger |
 | gobject-introspection | 1.68.0-11.el9 |  | rpm-db-cataloger |
 | google-api-client | 2.1.1 | Apache-2.0 | java-archive-cataloger |
-| google-api-client | 2.1.1 | Apache-2.0 | java-archive-cataloger |
-| google-api-services-storage | v1-rev20220705-2.0.0 |  | java-archive-cataloger |
-| google-api-services-storage-v1-rev20220705 | 2.0.0 |  | java-archive-cataloger |
+| google-api-client | 2.7.2 | Apache-2.0 | java-archive-cataloger |
+| google-api-services-storage | v1-rev20250224-2.0.0 |  | java-archive-cataloger |
+| google-api-services-storage-v1-rev20250224 | 2.0.0 |  | java-archive-cataloger |
 | google-auth-library-credentials | 1.11.0 |  | java-archive-cataloger |
-| google-auth-library-credentials | 1.11.0 |  | java-archive-cataloger |
+| google-auth-library-credentials | 1.33.1 |  | java-archive-cataloger |
 | google-auth-library-oauth2-http | 1.11.0 |  | java-archive-cataloger |
-| google-auth-library-oauth2-http | 1.11.0 |  | java-archive-cataloger |
-| google-cloud-core | 2.8.28 |  | java-archive-cataloger |
-| google-cloud-core-http | 2.8.28 |  | java-archive-cataloger |
-| google-cloud-storage | 2.13.1 | Apache-2.0 | java-archive-cataloger |
+| google-auth-library-oauth2-http | 1.33.1 |  | java-archive-cataloger |
+| google-cloud-core | 2.53.1 |  | java-archive-cataloger |
+| google-cloud-core-http | 2.53.1 |  | java-archive-cataloger |
+| google-cloud-storage | 2.50.0 | Apache-2.0 | java-archive-cataloger |
 | google-http-client | 1.42.3 | Apache-2.0 | java-archive-cataloger |
-| google-http-client | 1.42.3 | Apache-2.0 | java-archive-cataloger |
+| google-http-client | 1.46.3 | Apache-2.0 | java-archive-cataloger |
 | google-http-client-appengine | 1.42.3 |  | java-archive-cataloger |
-| google-http-client-appengine | 1.42.3 |  | java-archive-cataloger |
+| google-http-client-appengine | 1.46.3 |  | java-archive-cataloger |
 | google-http-client-gson | 1.42.3 |  | java-archive-cataloger |
-| google-http-client-gson | 1.42.3 |  | java-archive-cataloger |
+| google-http-client-gson | 1.46.3 |  | java-archive-cataloger |
 | google-http-client-jackson2 | 1.42.3 |  | java-archive-cataloger |
-| google-http-client-jackson2 | 1.42.3 |  | java-archive-cataloger |
+| google-http-client-jackson2 | 1.46.3 |  | java-archive-cataloger |
 | google-oauth-client | 1.34.1 | Apache-2.0 | java-archive-cataloger |
 | google-oauth-client | 1.34.1 | Apache-2.0 | java-archive-cataloger |
 | gpg-pubkey | 5a6340b3-6229229e |  | rpm-db-cataloger |
 | gpg-pubkey | fd431d51-4ae0493b |  | rpm-db-cataloger |
 | gpgme | 1.15.1-6.el9 |  | rpm-db-cataloger |
 | grep | 3.6-5.el9 |  | rpm-db-cataloger |
+| grpc-api | 1.70.0 |  | java-archive-cataloger |
 | grpc-context | 1.49.2 |  | java-archive-cataloger |
-| grpc-context | 1.49.2 |  | java-archive-cataloger |
-| gson | 2.10 |  | java-archive-cataloger |
 | gson | 2.10 |  | java-archive-cataloger |
 | gson | 2.11.0 |  | java-archive-cataloger |
 | gson | 2.12.1 | Apache-2.0 | java-archive-cataloger |
+| gson | 2.12.1 |  | java-archive-cataloger |
 | gson | 2.12.1 | Apache-2.0 | java-archive-cataloger |
 | guava | 32.0.1-jre | Apache-2.0 | java-archive-cataloger |
 | guava | 32.0.1-jre | Apache-2.0 | java-archive-cataloger |
 | guava | 32.0.1-jre | Apache-2.0 | java-archive-cataloger |
 | guava | 32.0.1-jre | Apache-2.0 | java-archive-cataloger |
-| guava | 32.0.1-jre | Apache-2.0 | java-archive-cataloger |
-| health-shards-availability | 9.0.2 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
+| guava | 33.4.0-jre | Apache-2.0 | java-archive-cataloger |
+| health-shards-availability | 9.2.0 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
 | hppc | 0.8.1 | Apache-2.0 | java-archive-cataloger |
-| http-auth | 2.28.13 | Apache-2.0 | java-archive-cataloger |
-| http-auth-aws | 2.28.13 | Apache-2.0 | java-archive-cataloger |
-| http-auth-aws-eventstream | 2.28.13 | Apache-2.0 | java-archive-cataloger |
-| http-auth-spi | 2.28.13 | Apache-2.0 | java-archive-cataloger |
-| http-client-spi | 2.28.13 | Apache-2.0 | java-archive-cataloger |
+| http-auth | 2.31.78 | Apache-2.0 | java-archive-cataloger |
+| http-auth | 2.31.78 | Apache-2.0 | java-archive-cataloger |
+| http-auth-aws | 2.31.78 | Apache-2.0 | java-archive-cataloger |
+| http-auth-aws | 2.31.78 | Apache-2.0 | java-archive-cataloger |
+| http-auth-aws-eventstream | 2.31.78 | Apache-2.0 | java-archive-cataloger |
+| http-auth-spi | 2.31.78 | Apache-2.0 | java-archive-cataloger |
+| http-auth-spi | 2.31.78 | Apache-2.0 | java-archive-cataloger |
+| http-client-spi | 2.31.78 | Apache-2.0 | java-archive-cataloger |
+| http-client-spi | 2.31.78 | Apache-2.0 | java-archive-cataloger |
 | httpasyncclient | 4.1.5 | Apache-2.0 | java-archive-cataloger |
 | httpasyncclient | 4.1.5 | Apache-2.0 | java-archive-cataloger |
 | httpclient | 4.5.14 | Apache-2.0 | java-archive-cataloger |
@@ -2787,6 +2831,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | httpclient | 4.5.14 | Apache-2.0 | java-archive-cataloger |
 | httpclient-cache | 4.5.14 | Apache-2.0 | java-archive-cataloger |
 | httpclient-cache | 4.5.14 | Apache-2.0 | java-archive-cataloger |
+| httpclient5 | 5.5 | Apache-2.0 | java-archive-cataloger |
 | httpcore | 4.4.16 | Apache-2.0 | java-archive-cataloger |
 | httpcore | 4.4.16 | Apache-2.0 | java-archive-cataloger |
 | httpcore | 4.4.16 | Apache-2.0 | java-archive-cataloger |
@@ -2794,17 +2839,20 @@ The complete source code for Traefik is publicly available at [https://github.co
 | httpcore | 4.4.16 | Apache-2.0 | java-archive-cataloger |
 | httpcore-nio | 4.4.16 | Apache-2.0 | java-archive-cataloger |
 | httpcore-nio | 4.4.16 | Apache-2.0 | java-archive-cataloger |
-| icu4j | 68.2 |  | java-archive-cataloger |
-| icu4j | 68.2 |  | java-archive-cataloger |
-| icu4j | 68.2 |  | java-archive-cataloger |
-| icu4j | 68.2 |  | java-archive-cataloger |
-| identity-spi | 2.28.13 | Apache-2.0 | java-archive-cataloger |
-| ingest-attachment | 9.0.2 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
-| ingest-common | 9.0.2 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
-| ingest-geoip | 9.0.2 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
-| ingest-user-agent | 9.0.2 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
+| httpcore5 | 5.3.5 | Apache-2.0 | java-archive-cataloger |
+| httpcore5-h2 | 5.3.5 | Apache-2.0 | java-archive-cataloger |
+| icu4j | 77.1 | Unicode-3.0 | java-archive-cataloger |
+| icu4j | 77.1 | Unicode-3.0 | java-archive-cataloger |
+| icu4j | 77.1 | Unicode-3.0 | java-archive-cataloger |
+| icu4j | 77.1 | Unicode-3.0 | java-archive-cataloger |
+| identity-spi | 2.31.78 | Apache-2.0 | java-archive-cataloger |
+| identity-spi | 2.31.78 | Apache-2.0 | java-archive-cataloger |
+| ingest-attachment | 9.2.0 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
+| ingest-common | 9.2.0 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
+| ingest-geoip | 9.2.0 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
+| ingest-otel | 9.2.0 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
+| ingest-user-agent | 9.2.0 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
 | isorelax | 20090621 |  | java-archive-cataloger |
-| jackson-annotations | 2.15.0 | Apache-2.0 | java-archive-cataloger |
 | jackson-annotations | 2.15.0 | Apache-2.0 | java-archive-cataloger |
 | jackson-annotations | 2.15.0 | Apache-2.0 | java-archive-cataloger |
 | jackson-annotations | 2.15.0 | Apache-2.0 | java-archive-cataloger |
@@ -2819,16 +2867,13 @@ The complete source code for Traefik is publicly available at [https://github.co
 | jackson-core | 2.15.0 | Apache-2.0 | java-archive-cataloger |
 | jackson-core | 2.15.0 | Apache-2.0 | java-archive-cataloger |
 | jackson-core | 2.15.0 | Apache-2.0 | java-archive-cataloger |
-| jackson-core | 2.15.0 | Apache-2.0 | java-archive-cataloger |
 | jackson-core | 2.17.2 |  | java-archive-cataloger |
 | jackson-core | 2.17.2 |  | java-archive-cataloger |
-| jackson-databind | 2.15.0 | Apache-2.0 | java-archive-cataloger |
 | jackson-databind | 2.15.0 | Apache-2.0 | java-archive-cataloger |
 | jackson-databind | 2.15.0 | Apache-2.0 | java-archive-cataloger |
 | jackson-databind | 2.15.0 | Apache-2.0 | java-archive-cataloger |
 | jackson-databind | 2.15.0 | Apache-2.0 | java-archive-cataloger |
 | jackson-dataformat-cbor | 2.15.0 |  | java-archive-cataloger |
-| jackson-dataformat-cbor | 2.15.0 | Apache-2.0 | java-archive-cataloger |
 | jackson-dataformat-cbor | 2.15.0 | Apache-2.0 | java-archive-cataloger |
 | jackson-dataformat-cbor | 2.17.2 |  | java-archive-cataloger |
 | jackson-dataformat-cbor | 2.17.2 |  | java-archive-cataloger |
@@ -2841,32 +2886,30 @@ The complete source code for Traefik is publicly available at [https://github.co
 | jackson-module-jaxb-annotations | 2.15.0 | Apache-2.0 | java-archive-cataloger |
 | jakarta.activation | 1.2.1 | BSD-3-Clause | java-archive-cataloger |
 | jakarta.activation-api | 1.2.1 | BSD-3-Clause | java-archive-cataloger |
-| jakarta.mail | 1.6.3 |  | java-archive-cataloger |
-| jakarta.mail | 1.6.4 |  | java-archive-cataloger |
+| jakarta.mail | 1.6.8 |  | java-archive-cataloger |
+| jakarta.mail | 1.6.8 |  | java-archive-cataloger |
 | jakarta.xml.bind-api | 2.3.3 | BSD-3-Clause | java-archive-cataloger |
 | jansi | 2.4.0 | Apache-2.0 | java-archive-cataloger |
 | java-support | 8.4.0 |  | java-archive-cataloger |
 | java-support | 8.4.0 |  | java-archive-cataloger |
-| java-version-checker | 9.0.2 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
-| jaxb-api | 2.2.2 | CDDL-1.0, GPL-2.0-only | java-archive-cataloger |
+| java-version-checker | 9.2.0 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
 | jcip-annotations | 1.0 |  | java-archive-cataloger |
 | jcip-annotations | 1.0-1 |  | java-archive-cataloger |
 | jcip-annotations | 1.0-1 |  | java-archive-cataloger |
 | jcip-annotations | 1.0-1 |  | java-archive-cataloger |
-| jcl-over-slf4j | 2.0.16 | Apache-2.0 | java-archive-cataloger |
+| jcl-over-slf4j | 2.0.17 | Apache-2.0 | java-archive-cataloger |
 | jcodings | 1.0.44 |  | java-archive-cataloger |
 | jctools-core | 4.0.5 |  | java-archive-cataloger |
 | jctools-core | 4.0.5 |  | java-archive-cataloger |
 | jctools-core | 4.0.5 |  | java-archive-cataloger |
 | jctools-core | 4.0.5 |  | java-archive-cataloger |
 | jctools-core | 4.0.5 |  | java-archive-cataloger |
-| jdk | 24+36-3646 |  | java-jvm-cataloger |
+| jdk | 25+36-3489 |  | java-jvm-cataloger |
 | jempbox | 1.8.17 | Apache-2.0 | java-archive-cataloger |
 | jline-reader | 3.21.0 |  | java-archive-cataloger |
 | jline-style | 3.21.0 |  | java-archive-cataloger |
 | jline-terminal | 3.21.0 |  | java-archive-cataloger |
 | jline-terminal-jna | 3.21.0 |  | java-archive-cataloger |
-| jmespath-java | 1.12.746 |  | java-archive-cataloger |
 | jna | 5.12.1 | Apache-2.0, LGPL-2.1-only | java-archive-cataloger |
 | jna-platform | 5.12.1 | Apache-2.0, LGPL-2.1-only | java-archive-cataloger |
 | joda-time | 2.10.10 |  | java-archive-cataloger |
@@ -2874,42 +2917,48 @@ The complete source code for Traefik is publicly available at [https://github.co
 | joni | 2.1.29 |  | java-archive-cataloger |
 | jopt-simple | 5.0.2 |  | java-archive-cataloger |
 | jopt-simple | 5.0.2 |  | java-archive-cataloger |
-| jrt-fs | 24 |  | java-archive-cataloger |
+| jrt-fs | 25 |  | java-archive-cataloger |
 | json-c | 0.14-11.el9 | MIT | rpm-db-cataloger |
 | json-glib | 1.6.6-1.el9 |  | rpm-db-cataloger |
 | json-schema-validator | 1.0.48 |  | java-archive-cataloger |
 | json-smart | 2.5.2 | Apache-2.0 | java-archive-cataloger |
 | json-smart | 2.5.2 | Apache-2.0 | java-archive-cataloger |
-| json-utils | 2.28.13 | Apache-2.0 | java-archive-cataloger |
+| json-utils | 2.31.78 | Apache-2.0 | java-archive-cataloger |
+| json-utils | 2.31.78 | Apache-2.0 | java-archive-cataloger |
+| jsoup | 1.21.1 |  | java-archive-cataloger |
 | jsr305 | 3.0.2 | Apache-2.0 | java-archive-cataloger |
 | jsr305 | 3.0.2 | Apache-2.0 | java-archive-cataloger |
 | jts-core | 1.15.0 |  | java-archive-cataloger |
-| jul-ecs-formatter | 1.6.0 |  | java-archive-cataloger |
+| jul-ecs-formatter | 1.7.0 |  | java-archive-cataloger |
 | juniversalchardet | 1.0.3 |  | java-archive-cataloger |
-| keystore-cli | 9.0.2 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
+| keystore-cli | 9.2.0 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
 | keyutils-libs | 1.6.3-1.el9 |  | rpm-db-cataloger |
-| kibana | 9.0.2 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
+| kibana | 9.2.0 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
 | krb5-libs | 1.21.1-8.el9_6 | MIT | rpm-db-cataloger |
-| lang-expression | 9.0.2 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
-| lang-mustache | 9.0.2 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
-| lang-mustache | 9.0.2 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
-| lang-mustache | 9.0.2 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
-| lang-painless | 9.0.2 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
+| lang-expression | 9.2.0 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
+| lang-mustache | 9.2.0 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
+| lang-mustache | 9.2.0 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
+| lang-mustache | 9.2.0 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
+| lang-painless | 9.2.0 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
 | lang-tag | 1.7 | Apache-2.0 | java-archive-cataloger |
 | lang-tag | 1.7 | Apache-2.0 | java-archive-cataloger |
+| langdata | 77.1 |  | java-archive-cataloger |
+| langdata | 77.1 |  | java-archive-cataloger |
+| langdata | 77.1 |  | java-archive-cataloger |
+| langdata | 77.1 |  | java-archive-cataloger |
 | langpacks-core-en | 3.0-16.el9 |  | rpm-db-cataloger |
 | langpacks-core-font-en | 3.0-16.el9 |  | rpm-db-cataloger |
 | langpacks-en | 3.0-16.el9 |  | rpm-db-cataloger |
-| legacy-geo | 9.0.2 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
+| legacy-geo | 9.2.0 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
 | libacl | 2.3.1-4.el9 |  | rpm-db-cataloger |
-| libarchive | 3.5.3-5.el9_6 |  | rpm-db-cataloger |
+| libarchive | 3.5.3-6.el9_6 |  | rpm-db-cataloger |
 | libassuan | 2.5.5-3.el9 |  | rpm-db-cataloger |
 | libattr | 2.5.1-3.el9 |  | rpm-db-cataloger |
 | libblkid | 2.37.4-21.el9 |  | rpm-db-cataloger |
 | libcap | 2.48-9.el9_2 |  | rpm-db-cataloger |
 | libcap-ng | 0.8.2-7.el9 |  | rpm-db-cataloger |
 | libcom_err | 1.46.5-7.el9 | MIT | rpm-db-cataloger |
-| libcurl-minimal | 7.76.1-31.el9 | MIT | rpm-db-cataloger |
+| libcurl-minimal | 7.76.1-31.el9_6.1 | MIT | rpm-db-cataloger |
 | libdnf | 0.69.0-13.el9 |  | rpm-db-cataloger |
 | libevent | 2.1.12-8.el9_4 |  | rpm-db-cataloger |
 | libffi | 3.4.2-8.el9 | MIT | rpm-db-cataloger |
@@ -2942,111 +2991,112 @@ The complete source code for Traefik is publicly available at [https://github.co
 | libuuid | 2.37.4-21.el9 |  | rpm-db-cataloger |
 | libverto | 0.3.2-3.el9 | MIT | rpm-db-cataloger |
 | libxcrypt | 4.4.18-3.el9 |  | rpm-db-cataloger |
-| libxml2 | 2.9.13-9.el9_6 | MIT | rpm-db-cataloger |
+| libxml2 | 2.9.13-12.el9_6 | MIT | rpm-db-cataloger |
 | libyaml | 0.2.5-7.el9 | MIT | rpm-db-cataloger |
 | libzstd | 1.5.5-1.el9 |  | rpm-db-cataloger |
 | log4j-1.2-api | 2.19.0 | Apache-2.0 | java-archive-cataloger |
 | log4j-1.2-api | 2.19.0 | Apache-2.0 | java-archive-cataloger |
 | log4j-1.2-api | 2.19.0 | Apache-2.0 | java-archive-cataloger |
-| log4j-1.2-api | 2.19.0 | Apache-2.0 | java-archive-cataloger |
-| log4j-api | 2.12.4 |  | java-archive-cataloger |
 | log4j-api | 2.19.0 | Apache-2.0 | java-archive-cataloger |
-| log4j-core | 2.12.4 |  | java-archive-cataloger |
+| log4j-api | 2.25.0 | Apache-2.0 | java-archive-cataloger |
 | log4j-core | 2.19.0 |  | java-archive-cataloger |
-| log4j-ecs-layout | 1.6.0 |  | java-archive-cataloger |
-| log4j-slf4j-impl | 2.12.4 |  | java-archive-cataloger |
+| log4j-core | 2.25.0 | Apache-2.0 | java-archive-cataloger |
+| log4j-ecs-layout | 1.7.0 |  | java-archive-cataloger |
 | log4j-slf4j-impl | 2.19.0 | Apache-2.0 | java-archive-cataloger |
+| log4j-slf4j-impl | 2.25.0 | Apache-2.0 | java-archive-cataloger |
 | log4j2-ecs-layout | 1.2.0 | Apache-2.0 | java-archive-cataloger |
-| log4j2-ecs-layout | 1.6.0 |  | java-archive-cataloger |
-| logback-ecs-encoder | 1.6.0 |  | java-archive-cataloger |
+| log4j2-ecs-layout | 1.7.0 |  | java-archive-cataloger |
+| logback-ecs-encoder | 1.7.0 |  | java-archive-cataloger |
 | lua-libs | 5.4.4-4.el9 | MIT | rpm-db-cataloger |
-| lucene-analysis-common | 10.1.0 | Apache-2.0, BSD-2-Clause, BSD-3-Clause, ICU, MIT | java-archive-cataloger |
-| lucene-analysis-icu | 10.1.0 | Apache-2.0, BSD-2-Clause, BSD-3-Clause, ICU, MIT | java-archive-cataloger |
-| lucene-analysis-icu | 10.1.0 | Apache-2.0, BSD-2-Clause, BSD-3-Clause, ICU, MIT | java-archive-cataloger |
-| lucene-analysis-kuromoji | 10.1.0 | Apache-2.0, BSD-2-Clause, BSD-3-Clause, ICU, MIT | java-archive-cataloger |
-| lucene-analysis-morfologik | 10.1.0 | Apache-2.0, BSD-2-Clause, BSD-3-Clause, ICU, MIT | java-archive-cataloger |
-| lucene-analysis-smartcn | 10.1.0 | Apache-2.0, BSD-2-Clause, BSD-3-Clause, ICU, MIT | java-archive-cataloger |
-| lucene-analysis-stempel | 10.1.0 | Apache-2.0, BSD-2-Clause, BSD-3-Clause, ICU, MIT | java-archive-cataloger |
-| lucene-backward-codecs | 10.1.0 | Apache-2.0, BSD-2-Clause, BSD-3-Clause, ICU, MIT | java-archive-cataloger |
-| lucene-codecs | 10.1.0 | Apache-2.0, BSD-2-Clause, BSD-3-Clause, ICU, MIT | java-archive-cataloger |
-| lucene-core | 10.1.0 | Apache-2.0, BSD-2-Clause, BSD-3-Clause, ICU, MIT | java-archive-cataloger |
-| lucene-expressions | 10.1.0 | Apache-2.0, BSD-2-Clause, BSD-3-Clause, ICU, MIT | java-archive-cataloger |
-| lucene-facet | 10.1.0 | Apache-2.0, BSD-2-Clause, BSD-3-Clause, ICU, MIT | java-archive-cataloger |
-| lucene-grouping | 10.1.0 | Apache-2.0, BSD-2-Clause, BSD-3-Clause, ICU, MIT | java-archive-cataloger |
-| lucene-highlighter | 10.1.0 | Apache-2.0, BSD-2-Clause, BSD-3-Clause, ICU, MIT | java-archive-cataloger |
-| lucene-join | 10.1.0 | Apache-2.0, BSD-2-Clause, BSD-3-Clause, ICU, MIT | java-archive-cataloger |
-| lucene-memory | 10.1.0 | Apache-2.0, BSD-2-Clause, BSD-3-Clause, ICU, MIT | java-archive-cataloger |
-| lucene-misc | 10.1.0 | Apache-2.0, BSD-2-Clause, BSD-3-Clause, ICU, MIT | java-archive-cataloger |
-| lucene-queries | 10.1.0 | Apache-2.0, BSD-2-Clause, BSD-3-Clause, ICU, MIT | java-archive-cataloger |
-| lucene-queryparser | 10.1.0 | Apache-2.0, BSD-2-Clause, BSD-3-Clause, ICU, MIT | java-archive-cataloger |
-| lucene-sandbox | 10.1.0 | Apache-2.0, BSD-2-Clause, BSD-3-Clause, ICU, MIT | java-archive-cataloger |
-| lucene-spatial-extras | 10.1.0 | Apache-2.0, BSD-2-Clause, BSD-3-Clause, ICU, MIT | java-archive-cataloger |
-| lucene-spatial3d | 10.1.0 | Apache-2.0, BSD-2-Clause, BSD-3-Clause, ICU, MIT | java-archive-cataloger |
-| lucene-suggest | 10.1.0 | Apache-2.0, BSD-2-Clause, BSD-3-Clause, ICU, MIT | java-archive-cataloger |
+| lucene-analysis-common | 10.3.1 | Apache-2.0, BSD-2-Clause, BSD-3-Clause, ICU, MIT | java-archive-cataloger |
+| lucene-analysis-icu | 10.3.1 | Apache-2.0, BSD-2-Clause, BSD-3-Clause, ICU, MIT | java-archive-cataloger |
+| lucene-analysis-icu | 10.3.1 | Apache-2.0, BSD-2-Clause, BSD-3-Clause, ICU, MIT | java-archive-cataloger |
+| lucene-analysis-kuromoji | 10.3.1 | Apache-2.0, BSD-2-Clause, BSD-3-Clause, ICU, MIT | java-archive-cataloger |
+| lucene-analysis-morfologik | 10.3.1 | Apache-2.0, BSD-2-Clause, BSD-3-Clause, ICU, MIT | java-archive-cataloger |
+| lucene-analysis-smartcn | 10.3.1 | Apache-2.0, BSD-2-Clause, BSD-3-Clause, ICU, MIT | java-archive-cataloger |
+| lucene-analysis-stempel | 10.3.1 | Apache-2.0, BSD-2-Clause, BSD-3-Clause, ICU, MIT | java-archive-cataloger |
+| lucene-backward-codecs | 10.3.1 | Apache-2.0, BSD-2-Clause, BSD-3-Clause, ICU, MIT | java-archive-cataloger |
+| lucene-codecs | 10.3.1 | Apache-2.0, BSD-2-Clause, BSD-3-Clause, ICU, MIT | java-archive-cataloger |
+| lucene-core | 10.3.1 | Apache-2.0, BSD-2-Clause, BSD-3-Clause, ICU, MIT | java-archive-cataloger |
+| lucene-expressions | 10.3.1 | Apache-2.0, BSD-2-Clause, BSD-3-Clause, ICU, MIT | java-archive-cataloger |
+| lucene-facet | 10.3.1 | Apache-2.0, BSD-2-Clause, BSD-3-Clause, ICU, MIT | java-archive-cataloger |
+| lucene-grouping | 10.3.1 | Apache-2.0, BSD-2-Clause, BSD-3-Clause, ICU, MIT | java-archive-cataloger |
+| lucene-highlighter | 10.3.1 | Apache-2.0, BSD-2-Clause, BSD-3-Clause, ICU, MIT | java-archive-cataloger |
+| lucene-join | 10.3.1 | Apache-2.0, BSD-2-Clause, BSD-3-Clause, ICU, MIT | java-archive-cataloger |
+| lucene-memory | 10.3.1 | Apache-2.0, BSD-2-Clause, BSD-3-Clause, ICU, MIT | java-archive-cataloger |
+| lucene-misc | 10.3.1 | Apache-2.0, BSD-2-Clause, BSD-3-Clause, ICU, MIT | java-archive-cataloger |
+| lucene-queries | 10.3.1 | Apache-2.0, BSD-2-Clause, BSD-3-Clause, ICU, MIT | java-archive-cataloger |
+| lucene-queryparser | 10.3.1 | Apache-2.0, BSD-2-Clause, BSD-3-Clause, ICU, MIT | java-archive-cataloger |
+| lucene-sandbox | 10.3.1 | Apache-2.0, BSD-2-Clause, BSD-3-Clause, ICU, MIT | java-archive-cataloger |
+| lucene-spatial-extras | 10.3.1 | Apache-2.0, BSD-2-Clause, BSD-3-Clause, ICU, MIT | java-archive-cataloger |
+| lucene-spatial3d | 10.3.1 | Apache-2.0, BSD-2-Clause, BSD-3-Clause, ICU, MIT | java-archive-cataloger |
+| lucene-spatial3d | 10.3.1 | Apache-2.0, BSD-2-Clause, BSD-3-Clause, ICU, MIT | java-archive-cataloger |
+| lucene-suggest | 10.3.1 | Apache-2.0, BSD-2-Clause, BSD-3-Clause, ICU, MIT | java-archive-cataloger |
 | lz4-java | 1.8.0 |  | java-archive-cataloger |
 | lz4-libs | 1.9.3-5.el9 |  | rpm-db-cataloger |
 | mapbox-vector-tile | 3.1.0 |  | java-archive-cataloger |
-| mapper-extras | 9.0.2 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
-| maxmind-db | 3.1.0 |  | java-archive-cataloger |
+| mapper-extras | 9.2.0 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
+| mapper-extras | 9.2.0 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
+| maxmind-db | 3.1.1 |  | java-archive-cataloger |
 | metrics-core | 4.1.4 | Apache-2.0 | java-archive-cataloger |
 | metrics-core | 4.1.4 | Apache-2.0 | java-archive-cataloger |
-| metrics-spi | 2.28.13 | Apache-2.0 | java-archive-cataloger |
+| metrics-spi | 2.31.78 | Apache-2.0 | java-archive-cataloger |
+| metrics-spi | 2.31.78 | Apache-2.0 | java-archive-cataloger |
 | microdnf | 3.9.1-3.el9 |  | rpm-db-cataloger |
-| ml-package-loader | 9.0.2 |  | java-archive-cataloger |
+| ml-package-loader | 9.2.0 |  | java-archive-cataloger |
 | morfologik-fsa | 2.1.1 |  | java-archive-cataloger |
 | morfologik-stemming | 2.1.1 |  | java-archive-cataloger |
 | morfologik-ukrainian-search | 3.7.5 |  | java-archive-cataloger |
 | mpfr | 4.1.0-7.el9 |  | rpm-db-cataloger |
 | msal4j | 1.16.2 |  | java-archive-cataloger |
 | msal4j-persistence-extension | 1.3.0 |  | java-archive-cataloger |
-| ncurses-base | 6.2-10.20210508.el9 | MIT | rpm-db-cataloger |
-| ncurses-libs | 6.2-10.20210508.el9 | MIT | rpm-db-cataloger |
+| ncurses-base | 6.2-10.20210508.el9_6.2 | MIT | rpm-db-cataloger |
+| ncurses-libs | 6.2-10.20210508.el9_6.2 | MIT | rpm-db-cataloger |
 | nettle | 3.10.1-1.el9 |  | rpm-db-cataloger |
-| netty-buffer | 4.1.118.Final | Apache-2.0 | java-archive-cataloger |
-| netty-buffer | 4.1.118.Final | Apache-2.0 | java-archive-cataloger |
-| netty-buffer | 4.1.118.Final | Apache-2.0 | java-archive-cataloger |
-| netty-buffer | 4.1.118.Final | Apache-2.0 | java-archive-cataloger |
-| netty-codec | 4.1.118.Final | Apache-2.0 | java-archive-cataloger |
-| netty-codec | 4.1.118.Final | Apache-2.0 | java-archive-cataloger |
-| netty-codec | 4.1.118.Final | Apache-2.0 | java-archive-cataloger |
-| netty-codec | 4.1.118.Final | Apache-2.0 | java-archive-cataloger |
-| netty-codec-dns | 4.1.118.Final | Apache-2.0 | java-archive-cataloger |
-| netty-codec-dns | 4.1.118.Final | Apache-2.0 | java-archive-cataloger |
-| netty-codec-http | 4.1.118.Final | Apache-2.0 | java-archive-cataloger |
-| netty-codec-http | 4.1.118.Final | Apache-2.0 | java-archive-cataloger |
-| netty-codec-http | 4.1.118.Final | Apache-2.0 | java-archive-cataloger |
-| netty-codec-http | 4.1.118.Final | Apache-2.0 | java-archive-cataloger |
-| netty-codec-http2 | 4.1.118.Final | Apache-2.0 | java-archive-cataloger |
-| netty-codec-http2 | 4.1.118.Final | Apache-2.0 | java-archive-cataloger |
-| netty-codec-socks | 4.1.118.Final | Apache-2.0 | java-archive-cataloger |
-| netty-common | 4.1.118.Final | Apache-2.0 | java-archive-cataloger |
-| netty-common | 4.1.118.Final | Apache-2.0 | java-archive-cataloger |
-| netty-common | 4.1.118.Final | Apache-2.0 | java-archive-cataloger |
-| netty-common | 4.1.118.Final | Apache-2.0 | java-archive-cataloger |
-| netty-handler | 4.1.118.Final | Apache-2.0 | java-archive-cataloger |
-| netty-handler | 4.1.118.Final | Apache-2.0 | java-archive-cataloger |
-| netty-handler | 4.1.118.Final | Apache-2.0 | java-archive-cataloger |
-| netty-handler | 4.1.118.Final | Apache-2.0 | java-archive-cataloger |
-| netty-handler-proxy | 4.1.118.Final | Apache-2.0 | java-archive-cataloger |
-| netty-nio-client | 2.28.13 | Apache-2.0 | java-archive-cataloger |
-| netty-resolver | 4.1.118.Final | Apache-2.0 | java-archive-cataloger |
-| netty-resolver | 4.1.118.Final | Apache-2.0 | java-archive-cataloger |
-| netty-resolver | 4.1.118.Final | Apache-2.0 | java-archive-cataloger |
-| netty-resolver | 4.1.118.Final | Apache-2.0 | java-archive-cataloger |
-| netty-resolver-dns | 4.1.118.Final | Apache-2.0 | java-archive-cataloger |
-| netty-resolver-dns | 4.1.118.Final | Apache-2.0 | java-archive-cataloger |
-| netty-transport | 4.1.118.Final | Apache-2.0 | java-archive-cataloger |
-| netty-transport | 4.1.118.Final | Apache-2.0 | java-archive-cataloger |
-| netty-transport | 4.1.118.Final | Apache-2.0 | java-archive-cataloger |
-| netty-transport | 4.1.118.Final | Apache-2.0 | java-archive-cataloger |
-| netty-transport-classes-epoll | 4.1.118.Final | Apache-2.0 | java-archive-cataloger |
-| netty-transport-native-unix-common | 4.1.118.Final | Apache-2.0 | java-archive-cataloger |
-| netty-transport-native-unix-common | 4.1.118.Final | Apache-2.0 | java-archive-cataloger |
-| netty-transport-native-unix-common | 4.1.118.Final | Apache-2.0 | java-archive-cataloger |
-| netty-transport-native-unix-common | 4.1.118.Final | Apache-2.0 | java-archive-cataloger |
+| netty-buffer | 4.1.126.Final | Apache-2.0 | java-archive-cataloger |
+| netty-buffer | 4.1.126.Final | Apache-2.0 | java-archive-cataloger |
+| netty-buffer | 4.1.126.Final | Apache-2.0 | java-archive-cataloger |
+| netty-buffer | 4.1.126.Final | Apache-2.0 | java-archive-cataloger |
+| netty-codec | 4.1.126.Final | Apache-2.0 | java-archive-cataloger |
+| netty-codec | 4.1.126.Final | Apache-2.0 | java-archive-cataloger |
+| netty-codec | 4.1.126.Final | Apache-2.0 | java-archive-cataloger |
+| netty-codec | 4.1.126.Final | Apache-2.0 | java-archive-cataloger |
+| netty-codec-dns | 4.1.126.Final | Apache-2.0 | java-archive-cataloger |
+| netty-codec-dns | 4.1.126.Final | Apache-2.0 | java-archive-cataloger |
+| netty-codec-http | 4.1.126.Final | Apache-2.0 | java-archive-cataloger |
+| netty-codec-http | 4.1.126.Final | Apache-2.0 | java-archive-cataloger |
+| netty-codec-http | 4.1.126.Final | Apache-2.0 | java-archive-cataloger |
+| netty-codec-http | 4.1.126.Final | Apache-2.0 | java-archive-cataloger |
+| netty-codec-http2 | 4.1.126.Final | Apache-2.0 | java-archive-cataloger |
+| netty-codec-http2 | 4.1.126.Final | Apache-2.0 | java-archive-cataloger |
+| netty-codec-socks | 4.1.126.Final | Apache-2.0 | java-archive-cataloger |
+| netty-common | 4.1.126.Final | Apache-2.0 | java-archive-cataloger |
+| netty-common | 4.1.126.Final | Apache-2.0 | java-archive-cataloger |
+| netty-common | 4.1.126.Final | Apache-2.0 | java-archive-cataloger |
+| netty-common | 4.1.126.Final | Apache-2.0 | java-archive-cataloger |
+| netty-handler | 4.1.126.Final | Apache-2.0 | java-archive-cataloger |
+| netty-handler | 4.1.126.Final | Apache-2.0 | java-archive-cataloger |
+| netty-handler | 4.1.126.Final | Apache-2.0 | java-archive-cataloger |
+| netty-handler | 4.1.126.Final | Apache-2.0 | java-archive-cataloger |
+| netty-handler-proxy | 4.1.126.Final | Apache-2.0 | java-archive-cataloger |
+| netty-nio-client | 2.31.78 | Apache-2.0 | java-archive-cataloger |
+| netty-resolver | 4.1.126.Final | Apache-2.0 | java-archive-cataloger |
+| netty-resolver | 4.1.126.Final | Apache-2.0 | java-archive-cataloger |
+| netty-resolver | 4.1.126.Final | Apache-2.0 | java-archive-cataloger |
+| netty-resolver | 4.1.126.Final | Apache-2.0 | java-archive-cataloger |
+| netty-resolver-dns | 4.1.126.Final | Apache-2.0 | java-archive-cataloger |
+| netty-resolver-dns | 4.1.126.Final | Apache-2.0 | java-archive-cataloger |
+| netty-transport | 4.1.126.Final | Apache-2.0 | java-archive-cataloger |
+| netty-transport | 4.1.126.Final | Apache-2.0 | java-archive-cataloger |
+| netty-transport | 4.1.126.Final | Apache-2.0 | java-archive-cataloger |
+| netty-transport | 4.1.126.Final | Apache-2.0 | java-archive-cataloger |
+| netty-transport-classes-epoll | 4.1.126.Final | Apache-2.0 | java-archive-cataloger |
+| netty-transport-native-unix-common | 4.1.126.Final | Apache-2.0 | java-archive-cataloger |
+| netty-transport-native-unix-common | 4.1.126.Final | Apache-2.0 | java-archive-cataloger |
+| netty-transport-native-unix-common | 4.1.126.Final | Apache-2.0 | java-archive-cataloger |
+| netty-transport-native-unix-common | 4.1.126.Final | Apache-2.0 | java-archive-cataloger |
 | nimbus-jose-jwt | 10.0.2 | Apache-2.0 | java-archive-cataloger |
-| nimbus-jose-jwt | 10.0.2 |  | java-archive-cataloger |
-| nimbus-jose-jwt-modified | 9.0.2 |  | java-archive-cataloger |
+| nimbus-jose-jwt | 10.0.2 | Apache-2.0 | java-archive-cataloger |
 | nmap-ncat | 3:7.92-3.el9 |  | rpm-db-cataloger |
 | npth | 1.6-8.el9 |  | rpm-db-cataloger |
 | oauth2-oidc-sdk | 11.22.2 |  | java-archive-cataloger |
@@ -3091,36 +3141,44 @@ The complete source code for Traefik is publicly available at [https://github.co
 | openssl-fips-provider-so | 3.0.7-6.el9_5 |  | rpm-db-cataloger |
 | openssl-libs | 1:3.2.2-6.el9_5.1 |  | rpm-db-cataloger |
 | opentelemetry-api | 1.31.0 |  | java-archive-cataloger |
+| opentelemetry-api | 1.47.0 |  | java-archive-cataloger |
 | opentelemetry-context | 1.31.0 |  | java-archive-cataloger |
+| opentelemetry-context | 1.47.0 |  | java-archive-cataloger |
 | opentelemetry-semconv | 1.21.0-alpha |  | java-archive-cataloger |
 | owasp-java-html-sanitizer | 20211018.2 | Apache-2.0 | java-archive-cataloger |
 | p11-kit | 0.25.3-3.el9_5 | BSD-3-Clause | rpm-db-cataloger |
 | p11-kit-trust | 0.25.3-3.el9_5 | BSD-3-Clause | rpm-db-cataloger |
-| parent-join | 9.0.2 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
+| parent-join | 9.2.0 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
 | pcre | 8.44-4.el9 |  | rpm-db-cataloger |
 | pcre2 | 10.40-6.el9 |  | rpm-db-cataloger |
 | pcre2-syntax | 10.40-6.el9 |  | rpm-db-cataloger |
-| pdfbox | 2.0.33 | Apache-2.0 | java-archive-cataloger |
-| percolator | 9.0.2 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
-| poi | 5.4.0 | Apache-2.0, MIT | java-archive-cataloger |
-| poi-ooxml | 5.4.0 | Apache-2.0, MIT | java-archive-cataloger |
-| poi-ooxml-lite | 5.4.0 | Apache-2.0, MIT | java-archive-cataloger |
-| poi-scratchpad | 5.4.0 | Apache-2.0, MIT | java-archive-cataloger |
+| pdfbox | 3.0.5 | Apache-2.0 | java-archive-cataloger |
+| pdfbox-io | 3.0.5 | Apache-2.0 | java-archive-cataloger |
+| percolator | 9.2.0 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
+| poi | 5.4.1 | Apache-2.0, MIT | java-archive-cataloger |
+| poi-ooxml | 5.4.1 | Apache-2.0, MIT | java-archive-cataloger |
+| poi-ooxml-lite | 5.4.1 | Apache-2.0, MIT | java-archive-cataloger |
+| poi-scratchpad | 5.4.1 | Apache-2.0, MIT | java-archive-cataloger |
 | popt | 1.18-8.el9 | MIT | rpm-db-cataloger |
 | procps-ng | 3.3.17-14.el9 |  | rpm-db-cataloger |
-| profiles | 2.28.13 | Apache-2.0 | java-archive-cataloger |
-| proto-google-common-protos | 2.9.6 | Apache-2.0 | java-archive-cataloger |
+| profiles | 2.31.78 | Apache-2.0 | java-archive-cataloger |
+| profiles | 2.31.78 | Apache-2.0 | java-archive-cataloger |
+| proto-google-cloud-storage-v2 | 2.50.0 |  | java-archive-cataloger |
+| proto-google-common-protos | 2.54.1 | Apache-2.0 | java-archive-cataloger |
+| proto-google-iam-v1 | 1.49.1 | Apache-2.0 | java-archive-cataloger |
 | proto-google-iam-v1 | 1.6.2 | Apache-2.0 | java-archive-cataloger |
-| proto-google-iam-v1 | 1.6.2 | Apache-2.0 | java-archive-cataloger |
 | protobuf-java | 3.25.5 | BSD-3-Clause | java-archive-cataloger |
 | protobuf-java | 3.25.5 | BSD-3-Clause | java-archive-cataloger |
 | protobuf-java | 3.25.5 | BSD-3-Clause | java-archive-cataloger |
+| protobuf-java | 4.32.0 | BSD-3-Clause | java-archive-cataloger |
 | protobuf-java-util | 3.25.5 | BSD-3-Clause | java-archive-cataloger |
 | protobuf-java-util | 3.25.5 | BSD-3-Clause | java-archive-cataloger |
-| protocol-core | 2.28.13 | Apache-2.0 | java-archive-cataloger |
-| rank-eval | 9.0.2 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
-| rank-rrf | 9.0.2 |  | java-archive-cataloger |
-| rank-vectors | 9.0.2 |  | java-archive-cataloger |
+| protocol-core | 2.31.78 | Apache-2.0 | java-archive-cataloger |
+| protocol-core | 2.31.78 | Apache-2.0 | java-archive-cataloger |
+| rank-eval | 9.2.0 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
+| rank-rrf | 9.2.0 |  | java-archive-cataloger |
+| rank-vectors | 9.2.0 |  | java-archive-cataloger |
+| reactive-streams | 1.0.4 |  | java-archive-cataloger |
 | reactive-streams | 1.0.4 |  | java-archive-cataloger |
 | reactive-streams | 1.0.4 |  | java-archive-cataloger |
 | reactive-streams-tck | 1.0.4 |  | java-archive-cataloger |
@@ -3129,139 +3187,152 @@ The complete source code for Traefik is publicly available at [https://github.co
 | reactor-netty-http | 1.0.45 |  | java-archive-cataloger |
 | readline | 8.1-4.el9 |  | rpm-db-cataloger |
 | redhat-release | 9.6-0.1.el9 |  | rpm-db-cataloger |
-| regions | 2.28.13 | Apache-2.0 | java-archive-cataloger |
-| reindex | 9.0.2 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
-| reindex | 9.0.2 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
-| repository-azure | 9.0.2 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
-| repository-gcs | 9.0.2 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
-| repository-s3 | 9.0.2 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
-| repository-url | 9.0.2 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
-| rest-root | 9.0.2 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
-| retries | 2.28.13 | Apache-2.0 | java-archive-cataloger |
-| retries-spi | 2.28.13 | Apache-2.0 | java-archive-cataloger |
+| regiondata | 77.1 |  | java-archive-cataloger |
+| regiondata | 77.1 |  | java-archive-cataloger |
+| regiondata | 77.1 |  | java-archive-cataloger |
+| regiondata | 77.1 |  | java-archive-cataloger |
+| regions | 2.31.78 | Apache-2.0 | java-archive-cataloger |
+| regions | 2.31.78 | Apache-2.0 | java-archive-cataloger |
+| reindex | 9.2.0 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
+| reindex | 9.2.0 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
+| repository-azure | 9.2.0 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
+| repository-gcs | 9.2.0 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
+| repository-s3 | 9.2.0 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
+| repository-url | 9.2.0 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
+| rest-root | 9.2.0 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
+| retries | 2.31.78 | Apache-2.0 | java-archive-cataloger |
+| retries | 2.31.78 | Apache-2.0 | java-archive-cataloger |
+| retries-spi | 2.31.78 | Apache-2.0 | java-archive-cataloger |
+| retries-spi | 2.31.78 | Apache-2.0 | java-archive-cataloger |
 | rootfiles | 8.1-34.el9 |  | rpm-db-cataloger |
 | rpm | 4.16.1.3-37.el9 |  | rpm-db-cataloger |
 | rpm-libs | 4.16.1.3-37.el9 |  | rpm-db-cataloger |
-| runtime-fields-common | 9.0.2 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
+| runtime-fields-common | 9.2.0 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
 | s2-geometry-library-java | 1.0.1 |  | java-archive-cataloger |
-| sdk-core | 2.28.13 | Apache-2.0 | java-archive-cataloger |
+| s3 | 2.31.78 | Apache-2.0 | java-archive-cataloger |
+| sagemakerruntime | 2.31.78 | Apache-2.0 | java-archive-cataloger |
+| sdk-core | 2.31.78 | Apache-2.0 | java-archive-cataloger |
+| sdk-core | 2.31.78 | Apache-2.0 | java-archive-cataloger |
 | sed | 4.8-9.el9 |  | rpm-db-cataloger |
-| server-cli | 9.0.2 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
+| server-cli | 9.2.0 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
 | setup | 2.13.7-10.el9 |  | rpm-db-cataloger |
 | shadow-utils | 2:4.9-12.el9 |  | rpm-db-cataloger |
 | siv-mode | 1.5.2 |  | java-archive-cataloger |
 | slf4j-api | 1.7.36 |  | java-archive-cataloger |
-| slf4j-api | 2.0.16 |  | java-archive-cataloger |
+| slf4j-api | 2.0.17 |  | java-archive-cataloger |
 | slf4j-api | 2.0.6 |  | java-archive-cataloger |
 | slf4j-api | 2.0.6 |  | java-archive-cataloger |
 | slf4j-api | 2.0.6 |  | java-archive-cataloger |
 | slf4j-api | 2.0.6 |  | java-archive-cataloger |
-| slf4j-api | 2.0.6 |  | java-archive-cataloger |
-| slf4j-api | 2.0.6 |  | java-archive-cataloger |
-| slf4j-api | 2.0.6 |  | java-archive-cataloger |
-| slf4j-nop | 2.0.16 |  | java-archive-cataloger |
-| slf4j-nop | 2.0.6 |  | java-archive-cataloger |
-| slf4j-nop | 2.0.6 |  | java-archive-cataloger |
+| slf4j-nop | 2.0.17 |  | java-archive-cataloger |
 | slf4j-nop | 2.0.6 |  | java-archive-cataloger |
 | slf4j-nop | 2.0.6 |  | java-archive-cataloger |
 | slf4j-nop | 2.0.6 |  | java-archive-cataloger |
 | slf4j-nop | 2.0.6 |  | java-archive-cataloger |
 | snakeyaml | 2.0 |  | java-archive-cataloger |
 | snakeyaml | 2.0 |  | java-archive-cataloger |
-| spatial | 9.0.2 |  | java-archive-cataloger |
+| spatial | 9.2.0 |  | java-archive-cataloger |
 | spatial4j | 0.7 | Apache-2.0 | java-archive-cataloger |
-| sql-action | 9.0.2 |  | java-archive-cataloger |
-| sql-proto | 9.0.2 |  | java-archive-cataloger |
-| sqlite-libs | 3.34.1-7.el9_3 |  | rpm-db-cataloger |
+| sql-action | 9.2.0 |  | java-archive-cataloger |
+| sql-proto | 9.2.0 |  | java-archive-cataloger |
+| sqlite-libs | 3.34.1-8.el9_6 |  | rpm-db-cataloger |
 | stax2-api | 4.2.2 |  | java-archive-cataloger |
+| streams | 9.2.0 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
+| sts | 2.31.78 | Apache-2.0 | java-archive-cataloger |
 | super-csv | 2.4.0 | Apache-2.0 | java-archive-cataloger |
-| systemd-libs | 252-51.el9_6.1 |  | rpm-db-cataloger |
-| tagsoup | 1.2.1 |  | java-archive-cataloger |
-| third-party-jackson-core | 2.28.13 | Apache-2.0 | java-archive-cataloger |
-| threetenbp | 1.6.5 |  | java-archive-cataloger |
-| tika-core | 2.9.3 | Apache-2.0 | java-archive-cataloger |
-| tika-langdetect-tika | 2.9.3 | Apache-2.0 | java-archive-cataloger |
-| tika-parser-apple-module | 2.9.3 | Apache-2.0 | java-archive-cataloger |
-| tika-parser-html-module | 2.9.3 | Apache-2.0 | java-archive-cataloger |
-| tika-parser-microsoft-module | 2.9.3 | Apache-2.0 | java-archive-cataloger |
-| tika-parser-miscoffice-module | 2.9.3 | Apache-2.0 | java-archive-cataloger |
-| tika-parser-pdf-module | 2.9.3 | Apache-2.0 | java-archive-cataloger |
-| tika-parser-text-module | 2.9.3 | Apache-2.0 | java-archive-cataloger |
-| tika-parser-xml-module | 2.9.3 | Apache-2.0 | java-archive-cataloger |
-| tika-parser-xmp-commons | 2.9.3 | Apache-2.0 | java-archive-cataloger |
-| tika-parser-zip-commons | 2.9.3 | Apache-2.0 | java-archive-cataloger |
-| transform | 9.0.2 |  | java-archive-cataloger |
-| transport-netty4 | 9.0.2 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
-| transport-netty4 | 9.0.2 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
-| transport-netty4 | 9.0.2 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
+| systemd-libs | 252-51.el9_6.2 |  | rpm-db-cataloger |
+| third-party-jackson-core | 2.31.78 | Apache-2.0 | java-archive-cataloger |
+| third-party-jackson-core | 2.31.78 | Apache-2.0 | java-archive-cataloger |
+| threetenbp | 1.7.0 |  | java-archive-cataloger |
+| tika-core | 3.2.2 | Apache-2.0 | java-archive-cataloger |
+| tika-langdetect-tika | 3.2.2 | Apache-2.0 | java-archive-cataloger |
+| tika-parser-apple-module | 3.2.2 | Apache-2.0 | java-archive-cataloger |
+| tika-parser-html-module | 3.2.2 | Apache-2.0 | java-archive-cataloger |
+| tika-parser-microsoft-module | 3.2.2 | Apache-2.0 | java-archive-cataloger |
+| tika-parser-miscoffice-module | 3.2.2 | Apache-2.0 | java-archive-cataloger |
+| tika-parser-pdf-module | 3.2.2 | Apache-2.0 | java-archive-cataloger |
+| tika-parser-text-module | 3.2.2 | Apache-2.0 | java-archive-cataloger |
+| tika-parser-xml-module | 3.2.2 | Apache-2.0 | java-archive-cataloger |
+| tika-parser-xmp-commons | 3.2.2 | Apache-2.0 | java-archive-cataloger |
+| tika-parser-zip-commons | 3.2.2 | Apache-2.0 | java-archive-cataloger |
+| transform | 9.2.0 |  | java-archive-cataloger |
+| translit | 77.1 |  | java-archive-cataloger |
+| translit | 77.1 |  | java-archive-cataloger |
+| translit | 77.1 |  | java-archive-cataloger |
+| translit | 77.1 |  | java-archive-cataloger |
+| transport-netty4 | 9.2.0 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
+| transport-netty4 | 9.2.0 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
+| transport-netty4 | 9.2.0 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
 | tzdata | 2025b-1.el9 |  | rpm-db-cataloger |
 | unboundid-ldapsdk | 6.0.3 | GPL-2.0-only, LGPL-2.1-only | java-archive-cataloger |
 | unzip | 6.0-58.el9_5 |  | rpm-db-cataloger |
-| utils | 2.28.13 | Apache-2.0 | java-archive-cataloger |
-| vector-tile | 9.0.2 |  | java-archive-cataloger |
+| utils | 2.31.78 | Apache-2.0 | java-archive-cataloger |
+| utils | 2.31.78 | Apache-2.0 | java-archive-cataloger |
+| vector-tile | 9.2.0 |  | java-archive-cataloger |
 | weak-lock-free | 0.18 |  | java-archive-cataloger |
-| windows-service-cli | 9.0.2 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
+| windows-service-cli | 9.2.0 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
 | woodstox-core | 6.7.0 | Apache-2.0 | java-archive-cataloger |
-| x-pack-aggregate-metric | 9.0.2 |  | java-archive-cataloger |
-| x-pack-analytics | 9.0.2 |  | java-archive-cataloger |
-| x-pack-apm-data | 9.0.2 |  | java-archive-cataloger |
-| x-pack-async | 9.0.2 |  | java-archive-cataloger |
-| x-pack-async-search | 9.0.2 |  | java-archive-cataloger |
-| x-pack-autoscaling | 9.0.2 |  | java-archive-cataloger |
-| x-pack-ccr | 9.0.2 |  | java-archive-cataloger |
-| x-pack-constant-keyword | 9.0.2 |  | java-archive-cataloger |
-| x-pack-core | 9.0.2 |  | java-archive-cataloger |
-| x-pack-counted-keyword | 9.0.2 |  | java-archive-cataloger |
-| x-pack-deprecation | 9.0.2 |  | java-archive-cataloger |
-| x-pack-downsample | 9.0.2 |  | java-archive-cataloger |
-| x-pack-enrich | 9.0.2 |  | java-archive-cataloger |
-| x-pack-ent-search | 9.0.2 |  | java-archive-cataloger |
-| x-pack-eql | 9.0.2 |  | java-archive-cataloger |
-| x-pack-esql | 9.0.2 |  | java-archive-cataloger |
-| x-pack-esql-compute | 9.0.2 |  | java-archive-cataloger |
-| x-pack-esql-compute-ann | 9.0.2 |  | java-archive-cataloger |
-| x-pack-esql-core | 9.0.2 |  | java-archive-cataloger |
-| x-pack-fleet | 9.0.2 |  | java-archive-cataloger |
-| x-pack-frozen-indices | 9.0.2 |  | java-archive-cataloger |
-| x-pack-geoip-enterprise-downloader | 9.0.2 |  | java-archive-cataloger |
-| x-pack-graph | 9.0.2 |  | java-archive-cataloger |
-| x-pack-identity-provider | 9.0.2 |  | java-archive-cataloger |
-| x-pack-ilm | 9.0.2 |  | java-archive-cataloger |
-| x-pack-inference | 9.0.2 |  | java-archive-cataloger |
-| x-pack-kql | 9.0.2 |  | java-archive-cataloger |
-| x-pack-kql | 9.0.2 |  | java-archive-cataloger |
-| x-pack-logsdb | 9.0.2 |  | java-archive-cataloger |
-| x-pack-logstash | 9.0.2 |  | java-archive-cataloger |
-| x-pack-mapper-version | 9.0.2 |  | java-archive-cataloger |
-| x-pack-mapper-version | 9.0.2 |  | java-archive-cataloger |
-| x-pack-mapper-version | 9.0.2 |  | java-archive-cataloger |
-| x-pack-migrate | 9.0.2 |  | java-archive-cataloger |
-| x-pack-ml | 9.0.2 |  | java-archive-cataloger |
-| x-pack-monitoring | 9.0.2 |  | java-archive-cataloger |
-| x-pack-old-lucene-versions | 9.0.2 |  | java-archive-cataloger |
-| x-pack-otel-data | 9.0.2 |  | java-archive-cataloger |
-| x-pack-profiling | 9.0.2 |  | java-archive-cataloger |
-| x-pack-ql | 9.0.2 |  | java-archive-cataloger |
-| x-pack-redact | 9.0.2 |  | java-archive-cataloger |
-| x-pack-repositories-metering-api | 9.0.2 |  | java-archive-cataloger |
-| x-pack-rollup | 9.0.2 |  | java-archive-cataloger |
-| x-pack-searchable-snapshots | 9.0.2 |  | java-archive-cataloger |
-| x-pack-searchbusinessrules | 9.0.2 |  | java-archive-cataloger |
-| x-pack-searchbusinessrules | 9.0.2 |  | java-archive-cataloger |
-| x-pack-security | 9.0.2 |  | java-archive-cataloger |
-| x-pack-shutdown | 9.0.2 |  | java-archive-cataloger |
-| x-pack-slm | 9.0.2 |  | java-archive-cataloger |
-| x-pack-snapshot-based-recoveries | 9.0.2 |  | java-archive-cataloger |
-| x-pack-snapshot-repo-test-kit | 9.0.2 |  | java-archive-cataloger |
-| x-pack-sql | 9.0.2 |  | java-archive-cataloger |
-| x-pack-stack | 9.0.2 |  | java-archive-cataloger |
-| x-pack-template-resources | 9.0.2 |  | java-archive-cataloger |
-| x-pack-text-structure | 9.0.2 |  | java-archive-cataloger |
-| x-pack-unsigned-long | 9.0.2 |  | java-archive-cataloger |
-| x-pack-voting-only-node | 9.0.2 |  | java-archive-cataloger |
-| x-pack-watcher | 9.0.2 |  | java-archive-cataloger |
-| x-pack-wildcard | 9.0.2 |  | java-archive-cataloger |
-| x-pack-write-load-forecaster | 9.0.2 |  | java-archive-cataloger |
+| x-pack-aggregate-metric | 9.2.0 |  | java-archive-cataloger |
+| x-pack-analytics | 9.2.0 |  | java-archive-cataloger |
+| x-pack-apm-data | 9.2.0 |  | java-archive-cataloger |
+| x-pack-async | 9.2.0 |  | java-archive-cataloger |
+| x-pack-async-search | 9.2.0 |  | java-archive-cataloger |
+| x-pack-autoscaling | 9.2.0 |  | java-archive-cataloger |
+| x-pack-ccr | 9.2.0 |  | java-archive-cataloger |
+| x-pack-constant-keyword | 9.2.0 |  | java-archive-cataloger |
+| x-pack-core | 9.2.0 |  | java-archive-cataloger |
+| x-pack-counted-keyword | 9.2.0 |  | java-archive-cataloger |
+| x-pack-deprecation | 9.2.0 |  | java-archive-cataloger |
+| x-pack-downsample | 9.2.0 |  | java-archive-cataloger |
+| x-pack-enrich | 9.2.0 |  | java-archive-cataloger |
+| x-pack-ent-search | 9.2.0 |  | java-archive-cataloger |
+| x-pack-eql | 9.2.0 |  | java-archive-cataloger |
+| x-pack-esql | 9.2.0 |  | java-archive-cataloger |
+| x-pack-esql-compute | 9.2.0 |  | java-archive-cataloger |
+| x-pack-esql-compute-ann | 9.2.0 |  | java-archive-cataloger |
+| x-pack-esql-core | 9.2.0 |  | java-archive-cataloger |
+| x-pack-exponential-histogram | 9.2.0 |  | java-archive-cataloger |
+| x-pack-fleet | 9.2.0 |  | java-archive-cataloger |
+| x-pack-frozen-indices | 9.2.0 |  | java-archive-cataloger |
+| x-pack-geoip-enterprise-downloader | 9.2.0 |  | java-archive-cataloger |
+| x-pack-gpu | 9.2.0 |  | java-archive-cataloger |
+| x-pack-graph | 9.2.0 |  | java-archive-cataloger |
+| x-pack-identity-provider | 9.2.0 |  | java-archive-cataloger |
+| x-pack-ilm | 9.2.0 |  | java-archive-cataloger |
+| x-pack-inference | 9.2.0 |  | java-archive-cataloger |
+| x-pack-kql | 9.2.0 |  | java-archive-cataloger |
+| x-pack-kql | 9.2.0 |  | java-archive-cataloger |
+| x-pack-logsdb | 9.2.0 |  | java-archive-cataloger |
+| x-pack-logstash | 9.2.0 |  | java-archive-cataloger |
+| x-pack-mapper-version | 9.2.0 |  | java-archive-cataloger |
+| x-pack-mapper-version | 9.2.0 |  | java-archive-cataloger |
+| x-pack-mapper-version | 9.2.0 |  | java-archive-cataloger |
+| x-pack-migrate | 9.2.0 |  | java-archive-cataloger |
+| x-pack-ml | 9.2.0 |  | java-archive-cataloger |
+| x-pack-monitoring | 9.2.0 |  | java-archive-cataloger |
+| x-pack-old-lucene-versions | 9.2.0 |  | java-archive-cataloger |
+| x-pack-otel-data | 9.2.0 |  | java-archive-cataloger |
+| x-pack-profiling | 9.2.0 |  | java-archive-cataloger |
+| x-pack-ql | 9.2.0 |  | java-archive-cataloger |
+| x-pack-redact | 9.2.0 |  | java-archive-cataloger |
+| x-pack-repositories-metering-api | 9.2.0 |  | java-archive-cataloger |
+| x-pack-rollup | 9.2.0 |  | java-archive-cataloger |
+| x-pack-searchable-snapshots | 9.2.0 |  | java-archive-cataloger |
+| x-pack-searchbusinessrules | 9.2.0 |  | java-archive-cataloger |
+| x-pack-security | 9.2.0 |  | java-archive-cataloger |
+| x-pack-shutdown | 9.2.0 |  | java-archive-cataloger |
+| x-pack-slm | 9.2.0 |  | java-archive-cataloger |
+| x-pack-snapshot-based-recoveries | 9.2.0 |  | java-archive-cataloger |
+| x-pack-snapshot-repo-test-kit | 9.2.0 |  | java-archive-cataloger |
+| x-pack-sql | 9.2.0 |  | java-archive-cataloger |
+| x-pack-stack | 9.2.0 |  | java-archive-cataloger |
+| x-pack-template-resources | 9.2.0 |  | java-archive-cataloger |
+| x-pack-text-structure | 9.2.0 |  | java-archive-cataloger |
+| x-pack-unsigned-long | 9.2.0 |  | java-archive-cataloger |
+| x-pack-voting-only-node | 9.2.0 |  | java-archive-cataloger |
+| x-pack-watcher | 9.2.0 |  | java-archive-cataloger |
+| x-pack-wildcard | 9.2.0 |  | java-archive-cataloger |
+| x-pack-write-load-forecaster | 9.2.0 |  | java-archive-cataloger |
 | xmlbeans | 5.3.0 | Apache-2.0, W3C-19980720 | java-archive-cataloger |
 | xmlsec | 2.3.4 | Apache-2.0 | java-archive-cataloger |
 | xmlsec | 2.3.4 | Apache-2.0 | java-archive-cataloger |
