@@ -21,7 +21,7 @@ def _get_fully_qualified_name(obj: type | Callable):
 
 EMAIL_ASSET_LIST = [
     "unicode_email.eml",
-    "very_long_email.eml",
+    "2020-05-05-phishing-email-example-02.eml",
     "basic_email.eml",
 ]
 

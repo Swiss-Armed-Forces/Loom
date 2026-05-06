@@ -82,7 +82,15 @@ class FileWithoutStorageDataException(FileRepositoryException):
 
 
 class Embedding(BaseModel):
-    vector: list[float]
+    # ES 9.2+ excludes dense_vector fields from _source by default
+    # (exclude_vectors feature). The elasticsearch-dsl library sets
+    # exclude_vectors=False for top-level searches, but this does
+    # not propagate to nested InnerDoc DenseVector fields, so vector
+    # may be absent on read. Vectors are only needed in the write
+    # path and KNN queries (passed directly),never for display.
+    # see:
+    # https://www.elastic.co/search-labs/blog/elasticsearch-exclude-vectors-from-source
+    vector: list[float] | None = None
     text: str
 
 

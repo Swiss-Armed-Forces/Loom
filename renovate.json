@@ -10,16 +10,11 @@
     "workarounds:all"
   ],
   "timezone": "UTC",
-  "schedule": [
-    "before 6am on sunday"
-  ],
+  "schedule": ["before 6am on sunday"],
   "prConcurrentLimit": 10,
   "prHourlyLimit": 2,
   "branchPrefix": "renovate/",
-  "labels": [
-    "dependencies",
-    "renovate"
-  ],
+  "labels": ["dependencies", "renovate"],
   "enabledManagers": [
     "npm",
     "poetry",
@@ -35,141 +30,91 @@
   },
   "vulnerabilityAlerts": {
     "enabled": true,
-    "schedule": [
-      "at any time"
-    ],
+    "schedule": ["at any time"],
     "minimumReleaseAge": null,
     "prCreation": "immediate",
-    "labels": [
-      "security",
-      "vulnerability"
-    ],
+    "labels": ["security", "vulnerability"],
     "groupName": null,
     "groupSlug": null
   },
   "lockFileMaintenance": {
     "enabled": true,
-    "schedule": [
-      "before 6am on the first day of the month"
-    ],
+    "schedule": ["before 6am on the first day of the month"],
     "commitMessageAction": "lock file maintenance",
     "branchTopic": "lock-file-maintenance"
   },
   "packageRules": [
     {
-      "matchManagers": [
-        "npm"
-      ],
-      "matchFileNames": [
-        "Frontend/**"
-      ],
+      "matchManagers": ["npm"],
+      "matchFileNames": ["Frontend/**"],
       "groupName": "Frontend Dependencies",
-      "matchDepTypes": [
-        "dependencies",
-        "devDependencies"
-      ],
+      "matchDepTypes": ["dependencies", "devDependencies"],
       "prPriority": 5,
-      "automerge": true,
-      "matchUpdateTypes": [
-        "minor",
-        "patch"
-      ]
+      "matchUpdateTypes": ["minor", "patch"]
     },
     {
-      "matchManagers": [
-        "poetry"
-      ],
-      "matchFileNames": [
-        "backend/**",
-        "integrationtest/**"
-      ],
+      "matchManagers": ["poetry"],
+      "matchFileNames": ["backend/**", "integrationtest/**"],
       "groupName": "Backend Dependencies",
       "prPriority": 4,
-      "automerge": true,
-      "matchUpdateTypes": [
-        "minor",
-        "patch"
-      ]
+      "matchUpdateTypes": ["minor", "patch"]
     },
     {
-      "matchManagers": [
-        "poetry"
-      ],
-      "matchFileNames": [
-        "pyproject.toml"
-      ],
+      "matchManagers": ["poetry"],
+      "matchFileNames": ["pyproject.toml"],
       "groupName": "Root Dev Dependencies",
       "prPriority": 3,
-      "automerge": true,
-      "matchUpdateTypes": [
-        "minor",
-        "patch"
-      ]
+      "matchUpdateTypes": ["minor", "patch"]
     },
     {
-      "matchManagers": [
-        "poetry"
-      ],
-      "matchDepNames": [
-        "python"
-      ],
+      "matchManagers": ["poetry"],
+      "matchDepNames": ["python"],
       "enabled": false
     },
     {
-      "matchManagers": [
-        "dockerfile",
-        "gitlabci"
-      ],
+      "matchManagers": ["dockerfile", "gitlabci"],
       "groupName": "Docker images",
       "prPriority": 3,
-      "automerge": true,
-      "matchUpdateTypes": [
-        "minor",
-        "patch",
-        "digest"
-      ]
+      "matchUpdateTypes": ["minor", "patch", "digest"]
     },
     {
-      "matchManagers": [
-        "dockerfile"
-      ],
-      "matchDepNames": [
-        "docker.io/chrislusf/seaweedfs"
-      ],
+      "matchManagers": ["dockerfile"],
+      "matchDepNames": ["docker.io/chrislusf/seaweedfs"],
       "versioning": "regex:^(?<major>\\d+)\\.(?<minor>\\d+)_(?<compatibility>full)$"
     },
     {
-      "matchUpdateTypes": [
-        "major"
-      ],
+      "matchFileNames": ["backend/common/pyproject.toml"],
+      "postUpgradeTasks": {
+        "commands": [
+          "poetry lock --no-update --directory backend/api",
+          "poetry lock --no-update --directory backend/worker",
+          "poetry lock --no-update --directory backend/crawler",
+          "poetry lock --no-update"
+        ],
+        "fileFilters": [
+          "backend/api/poetry.lock",
+          "backend/worker/poetry.lock",
+          "backend/crawler/poetry.lock",
+          "poetry.lock"
+        ],
+        "executionMode": "update"
+      }
+    },
+    {
+      "matchUpdateTypes": ["major"],
       "prPriority": 10,
-      "schedule": [
-        "before 6am on the first day of the month"
-      ]
+      "schedule": ["before 6am on the first day of the month"]
     },
     {
-      "matchManagers": [
-        "nix"
-      ],
+      "matchManagers": ["nix"],
       "groupName": "Nix Development Environment",
-      "matchFileNames": [
-        "devenv.yaml",
-        "devenv.nix",
-        "devenv.lock"
-      ],
+      "matchFileNames": ["devenv.yaml", "devenv.nix", "devenv.lock"],
       "prPriority": 2,
-      "schedule": [
-        "before 6am on sunday"
-      ],
-      "labels": [
-        "nix",
-        "devenv"
-      ]
+      "schedule": ["before 6am on sunday"],
+      "labels": ["nix", "devenv"]
     },
     {
-      "matchManagers": [
-        "nix"
-      ],
+      "matchManagers": ["nix"],
       "matchDepNames": [
         "nixpkgs",
         "nixpkgs-stable",
@@ -178,41 +123,23 @@
       ],
       "groupName": "Nix Package Channels",
       "prPriority": 1,
-      "schedule": [
-        "before 6am on the first day of the month"
-      ],
-      "labels": [
-        "nix",
-        "nixpkgs"
-      ]
+      "schedule": ["before 6am on the first day of the month"],
+      "labels": ["nix", "nixpkgs"]
     },
     {
-      "matchManagers": [
-        "nix"
-      ],
-      "matchDepNames": [
-        "devenv",
-        "git-hooks"
-      ],
+      "matchManagers": ["nix"],
+      "matchDepNames": ["devenv", "git-hooks"],
       "groupName": "Nix Development Tools",
       "prPriority": 3,
-      "schedule": [
-        "before 6am on sunday"
-      ],
-      "automerge": true,
-      "labels": [
-        "nix",
-        "dev-tools"
-      ]
+      "schedule": ["before 6am on sunday"],
+      "labels": ["nix", "dev-tools"]
     }
   ],
   "customManagers": [
     {
       "customType": "regex",
       "description": "Update package manager versions in package.json",
-      "managerFilePatterns": [
-        "/(^|/)package\\.json$/"
-      ],
+      "managerFilePatterns": ["/(^|/)package\\.json$/"],
       "matchStrings": [
         "\"packageManager\":\\s*\"(?<depName>pnpm)@(?<currentValue>\\S+)\""
       ],
@@ -239,10 +166,9 @@
     "**/log/**",
     "**/out/**"
   ],
+  "allowedPostUpgradeCommands": ["^poetry lock --no-update"],
   "rebaseWhen": "behind-base-branch",
-  "automergeSchedule": [
-    "before 6am"
-  ],
+  "automergeSchedule": ["before 6am"],
   "platformAutomerge": true,
   "dependencyDashboardTitle": "Dependency Dashboard",
   "dependencyDashboardApproval": false,

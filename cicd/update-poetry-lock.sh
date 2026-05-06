@@ -3,13 +3,19 @@ set -euxo pipefail
 
 GIT_TOPLEVEL=$(git rev-parse --show-toplevel)
 
-PYTHON_PROJECTS="$(git -C "${GIT_TOPLEVEL}" ls-files '*pyproject.toml')"
-readarray -t PYTHON_PROJECTS <<< "${PYTHON_PROJECTS}"
+# common must be first so dependent packages resolve against its updated lock
+PYTHON_PROJECTS=(
+    "backend/common"
+    "backend/api"
+    "backend/worker"
+    "backend/crawler"
+    "integrationtest"
+    "."
+)
 
-for project in "${PYTHON_PROJECTS[@]}"; do
-    dir=$(dirname "${project}")
+for dir in "${PYTHON_PROJECTS[@]}"; do
     (
-        cd "${dir}"
+        cd "${GIT_TOPLEVEL}/${dir}"
         poetry lock
     )
 done
