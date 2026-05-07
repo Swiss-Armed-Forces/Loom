@@ -36,16 +36,18 @@ EXCLUDED_PATHSPECS = [
 
 
 def get_branch_diff(repo: Repo) -> str:
-    """Return the diff between current branch and origin/main.
+    """Return the diff of commits on the current branch relative to origin/main.
 
-    Excludes lockfiles and generated files. Prepends a --stat summary so the
-    AI always sees which files changed. Truncates the diff body if it exceeds
-    MAX_DIFF_CHARS.
+    Uses the merge base so that commits in main that are not yet in this branch
+    are excluded. Excludes lockfiles and generated files. Prepends a --stat
+    summary. Truncates the diff body if it exceeds MAX_DIFF_CHARS.
     """
     repo.git.fetch("origin", "main")
+    merge_base = repo.git.merge_base("origin/main", "HEAD").strip()
+    logger.debug("Merge base: %s", merge_base)
 
-    stat = repo.git.diff("origin/main...HEAD", "--stat", "--", *EXCLUDED_PATHSPECS)
-    diff = repo.git.diff("origin/main...HEAD", "--", *EXCLUDED_PATHSPECS)
+    stat = repo.git.diff(merge_base, "HEAD", "--stat", "--", *EXCLUDED_PATHSPECS)
+    diff = repo.git.diff(merge_base, "HEAD", "--", *EXCLUDED_PATHSPECS)
 
     if len(diff) > MAX_DIFF_CHARS:
         diff = diff[:MAX_DIFF_CHARS] + (
@@ -350,7 +352,7 @@ def main() -> None:
     # Get diff against origin/main
     diff = get_branch_diff(repo)
     if not diff:
-        logger.info("No changes compared to origin/main.")
+        logger.info("No changes on this branch compared to its merge base.")
         return
 
     # Load MR template and generate commit message
