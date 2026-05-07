@@ -3,7 +3,6 @@ import re
 from typing import Generator, Sequence
 from uuid import UUID, uuid4
 
-import numpy as np
 from celery import chain, chord, group
 from celery.canvas import Signature
 from common.ai_context.ai_context_repository import AiContext
@@ -23,14 +22,13 @@ from common.messages.messages import (
 from common.services.lazybytes_service import LazyBytes, TypedLazyBytes
 from common.services.query_builder import QueryParameters
 from httpx import HTTPError
-from numpy import array, linspace
+from numpy import array, mean
 from ollama import Message, Options
 from pydantic import BaseModel, computed_field
-from scipy.signal import argrelextrema
-from sklearn.neighbors import KernelDensity
 
 from worker.ai.infra.ai_context_processing_task import AiContextProcessingTask
 from worker.settings import settings
+from worker.utils.clustering import kde_filter_highest_cluster
 
 logger = logging.getLogger(__name__)
 
@@ -219,8 +217,8 @@ def aggregate_embeddings(
         get_lazybytes_service().load_object(lazy_embedding)
         for lazy_embedding in [lazy_embedding_question] + lazy_embeddings_hyde
     ]
-    embeddings_array = np.array(embeddings)
-    mean_embedding: list[float] = np.mean(embeddings_array, axis=0).tolist()
+    embeddings_array = array(embeddings)
+    mean_embedding: list[float] = mean(embeddings_array, axis=0).tolist()
 
     logger.info(
         "Aggregated %d embeddings into %d-dim vector",
@@ -390,42 +388,13 @@ def apply_rerank_threshold(
 def filter_ranked_search_embeddings(
     ranked_search_embeddings: list[RankedSearchEmbedding],
 ) -> list[RankedSearchEmbedding]:
-    # can not operate on less than one sample
     if len(ranked_search_embeddings) < 1:
         return ranked_search_embeddings
-    # sort input
-    sorted_ranked_search_embeddings = sorted(
-        ranked_search_embeddings, key=lambda s: s.scored_rank
+
+    filtered_ranked_search_embeddings = kde_filter_highest_cluster(
+        ranked_search_embeddings, lambda rse: rse.scored_rank
     )
 
-    # fit kernel density
-    reshaped_sorted_ranked_search_embeddings = array(
-        [s.scored_rank for s in sorted_ranked_search_embeddings]
-    ).reshape(-1, 1)
-    kde = KernelDensity(bandwidth="silverman").fit(
-        reshaped_sorted_ranked_search_embeddings
-    )
-
-    # we span a linspace from [min, max], which we can then sample
-    # to generate the linspace we oversample a bit on purpose
-    linspace_samples = linspace(
-        sorted_ranked_search_embeddings[0].scored_rank,
-        sorted_ranked_search_embeddings[-1].scored_rank,
-        len(sorted_ranked_search_embeddings) * 4,  # = oversampling
-    ).reshape(-1, 1)
-    linspace_samples_ranked = kde.score_samples(linspace_samples)
-    minimas = argrelextrema(linspace_samples_ranked, np.less)[0]
-
-    if len(minimas) < 1:
-        # no minia found:
-        return ranked_search_embeddings
-
-    # Filter all but the ones after the last minima -> last cluster
-    last_minima = minimas[-1]
-    last_minima_value = linspace_samples[last_minima][0]
-    filtered_ranked_search_embeddings = [
-        s for s in ranked_search_embeddings if s.scored_rank > last_minima_value
-    ]
     logging.info(
         "filtering ranked file texts. before: %d after: %d",
         len(ranked_search_embeddings),
