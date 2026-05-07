@@ -44,7 +44,7 @@ def upload_asset(
 
 
 def upload_many_assets(
-    asset_names: list,
+    asset_names: list[str],
     upload_file_names: Optional[list] = None,
     request_timeout=REQUEST_TIMEOUT,
 ) -> list[FileUploadResponse]:

@@ -1,7 +1,7 @@
 # pylint: disable=duplicate-code
 import logging
 
-from celery import chain, chord
+from celery import chain, chord, group
 from celery.canvas import Signature
 from common.dependencies import get_celery_app, get_lazybytes_service, get_ollama_client
 from common.file.file_repository import Embedding, File
@@ -13,6 +13,7 @@ from ollama import Options
 
 from worker.index_file.infra.file_indexing_task import FileIndexingTask
 from worker.index_file.infra.indexing_persister import IndexingPersister
+from worker.index_file.tasks.auto_tag_file import signature as auto_tag_file_signature
 from worker.settings import settings
 from worker.utils.natural_language_detection import is_natural_language
 from worker.utils.persisting_task import persisting_task
@@ -70,7 +71,10 @@ def create_embedding_task(
                 for fragment in text_fragments
                 if is_natural_language(fragment)
             ],
-            persist_embeddings.s(file.id_),
+            group(
+                persist_embeddings.s(file.id_),
+                auto_tag_file_signature(file),
+            ),
         )
     )
 
