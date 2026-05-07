@@ -91,7 +91,7 @@ def embed_text(text: str) -> TypedLazyBytes[Embedding]:
     try:
         response = client.embed(
             model=settings.llm_model_embedding,
-            input="{settings.llm_embedding_document_prefix}{text}",
+            input=f"{settings.llm_embedding_document_prefix}{text}",
             dimensions=settings.llm_embedding_dimensions,
             options=Options(
                 temperature=settings.llm_embedding_temperature,
