@@ -110,6 +110,7 @@ class FileSchedulingService:
             state="reindexing",
             reindex_count=old_file.reindex_count + 1,
             tags=old_file.tags,
+            flagged=old_file.flagged,
         )
         # Preserve the original file ID
         file.es_meta.id = file_id
