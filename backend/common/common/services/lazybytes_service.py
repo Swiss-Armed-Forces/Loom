@@ -54,6 +54,29 @@ class TypedLazyBytes(LazyBytes, Generic[T]):
     Uses pickle for serialization, preserving type information.
     """
 
+    def __reduce__(self):
+        return (_rebuild_typed_lazy_bytes, (self.model_dump(),))
+
+
+def _rebuild_typed_lazy_bytes(data: dict) -> "TypedLazyBytes":
+    """Reconstruct a TypedLazyBytes instance during unpickling.
+
+    This function exists to work around a known Pydantic v2 limitation: when a
+    generic model (e.g. TypedLazyBytes[TikaResult]) is used as a field type in
+    another Pydantic model, Pydantic creates a concrete parameterized subclass at
+    runtime (e.g. TypedLazyBytes[TikaResult]). That subclass is not a module-level
+    attribute, so pickle cannot find it by qualified name and raises PicklingError.
+
+    By defining __reduce__ on TypedLazyBytes to point here, pickle always
+    reconstructs instances using the base (unparameterized) TypedLazyBytes class,
+    which IS importable.
+
+    References:
+    - https://github.com/pydantic/pydantic/issues/8913 (closed as not planned)
+    - https://docs.pydantic.dev/latest/concepts/models/#dynamic-model-creation
+    """
+    return TypedLazyBytes.model_validate(data)
+
 
 class LazyBytesService(ABC):
     def __init__(self, *, threshold_bytes: int):

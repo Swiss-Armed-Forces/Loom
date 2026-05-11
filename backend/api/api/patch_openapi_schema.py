@@ -28,10 +28,10 @@ def remove_null_from_any_of(schema: Dict[str, Any]) -> Dict[str, Any]:
 def patch_openapi_schema(schema: Dict[str, Any]) -> Dict[str, Any]:
     """Patching the openapi schema so the frontend code generator can handle it.
 
-    If a model has a property that is optional (e.g.`sha256: str | None`) this
-    will be represented as `anyOf` in the openapi schema.
-    The frontend code generator does not handle this correctly, so we remove the
-    `null` type from the `anyOf` and remove the property from the `required` list.
+    If a model has a property that is optional (e.g.`sha256: str | None`) this will be
+    represented as `anyOf` in the openapi schema. The frontend code generator does not
+    handle this correctly, so we remove the `null` type from the `anyOf` and remove the
+    property from the `required` list.
     """
     for component_name, component_schema in schema["components"]["schemas"].items():
         schema["components"]["schemas"][component_name] = remove_null_from_any_of(

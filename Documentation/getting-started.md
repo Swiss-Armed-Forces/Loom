@@ -244,13 +244,6 @@ Note: The above guide is based on the provided question document. However, pleas
 - Connect to the ElasticSearch instance.
 - Use the search bar to find and locate the file.
 
-### Find the file in MongoDB
-
-- Access the MongoDB via a link in the project README.
-- Log in with the given credentials in the README.
-- Click on the "files" table, then click on the "fs.files" collection.
-- Locate the file using the names under "file-name".
-
 ### Inspect the RabbitMQ message queue
 
 - Access RabbitMQ using the burger menu.
@@ -264,13 +257,6 @@ And here is a beginner's guide for a developer:
 1. Open ElasticSearch using the burger menu.
 2. Connect to the ElasticSearch instance.
 3. Use the search bar to find and locate the file.
-
-**Finding Files in MongoDB**
-
-1. Access the MongoDB via a link in the project README.
-2. Log in with the given credentials in the README.
-3. Click on the "files" table, then click on the "fs.files" collection.
-4. Locate the file using the names under "file-name".
 
 **Inspecting RabbitMQ Message Queue**
 

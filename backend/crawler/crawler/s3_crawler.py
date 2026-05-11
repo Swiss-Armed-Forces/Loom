@@ -1,4 +1,5 @@
 import logging
+from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 from time import sleep
@@ -12,10 +13,16 @@ from crawler.settings import settings
 
 logger = logging.getLogger(__name__)
 
-S3_FILE_POLL_INTERVAL_S: int = 5
+S3_OBJECT_POLL_INTERVAL_S: int = 5
 S3_READ_CHUNK_SIZE: int = 64 * 1024
 S3_RETRY_MAX_ATTEMPTS: int = 5
 S3_RETRY_WAIT_S: int = 10
+
+
+@dataclass(frozen=True)
+class _ProcessedObject:
+    object_name: str
+    last_modified: datetime
 
 
 class S3Crawler:
@@ -30,21 +37,21 @@ class S3Crawler:
         self.bucket_name = bucket_name
         self.display_name = bucket_alias if bucket_alias else bucket_name
         self.lazybytes_service = lazybytes_service
-        self.processed_files: set[str] = set()
+        self.processed_objects: set[_ProcessedObject] = set()
 
     def _ensure_bucket(self):
         if not retry(lambda: self.client.bucket_exists(self.bucket_name)):
             logger.info("Creating bucket: %s", self.bucket_name)
             retry(lambda: self.client.make_bucket(self.bucket_name))
 
-    def _download_file(self, file_name: str):
-        logger.info("Downloading file %s", file_name)
-        self.processed_files.add(file_name)
-        full_name = Path(f"//{self.display_name}/{file_name}")
+    def _download_object(self, object_name: str, last_modified: datetime):
+        logger.info("Downloading object %s", object_name)
+        self.processed_objects.add(_ProcessedObject(object_name, last_modified))
+        full_name = Path(f"//{self.display_name}/{object_name}")
         source = f"{settings.crawler_source_id}/{self.bucket_name}"
 
         def stream_generator():
-            yield from self.client.get_object(self.bucket_name, file_name).stream(
+            yield from self.client.get_object(self.bucket_name, object_name).stream(
                 S3_READ_CHUNK_SIZE
             )
 
@@ -64,14 +71,19 @@ class S3Crawler:
             raw = retry(
                 lambda: list(self.client.list_objects(self.bucket_name, recursive=True))
             )
-            files = sorted(
+            objects = sorted(
                 raw,
                 key=lambda o: o.last_modified
                 or datetime.min.replace(tzinfo=timezone.utc),
                 reverse=True,
             )
-            for file in files:
-                if file.object_name and file.object_name not in self.processed_files:
-                    logger.info("New file detected via polling: %s", file.object_name)
-                    self._download_file(file.object_name)
-            sleep(S3_FILE_POLL_INTERVAL_S)
+            for obj in objects:
+                if (
+                    obj.object_name
+                    and obj.last_modified
+                    and _ProcessedObject(obj.object_name, obj.last_modified)
+                    not in self.processed_objects
+                ):
+                    logger.info("New object detected via polling: %s", obj.object_name)
+                    self._download_object(obj.object_name, obj.last_modified)
+            sleep(S3_OBJECT_POLL_INTERVAL_S)

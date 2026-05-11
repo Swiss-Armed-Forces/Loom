@@ -2,8 +2,8 @@
 # shellcheck disable=SC2034
 set -eou pipefail
 
-TRAEFIK_HELM_VERSION="36.0.0"
-TRAEFIK_IMAGE_VERSION="v3.4.1"
+TRAEFIK_HELM_VERSION="39.0.9"
+TRAEFIK_IMAGE_VERSION="v3.6.15"
 
 LOOM_HOSTS=(
     "rabbit"

@@ -16,6 +16,7 @@ PYTHON_PROJECTS=(
 for dir in "${PYTHON_PROJECTS[@]}"; do
     (
         cd "${GIT_TOPLEVEL}/${dir}"
+        poetry env remove --all || true
         poetry lock
     )
 done

@@ -248,7 +248,8 @@ def test_all_tags_with_multiple_files_and_multiple_tags():
 
 
 def test_many_separate_tag_additions_do_not_overwrite():
-    """Regression test: verify that many separate _add_tags calls don't race/overwrite."""
+    """Regression test: verify that many separate _add_tags calls don't
+    race/overwrite."""
     upload_asset("empty_file.txt")
     file = get_file_preview_by_name("empty_file.txt")
     file_id = str(file.file_id)

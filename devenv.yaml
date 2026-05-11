@@ -1,16 +1,20 @@
-# yaml-language-server: $schema=https://devenv.sh/devenv.schema.json
 inputs:
   git-hooks:
     url: github:cachix/git-hooks.nix
     inputs:
       nixpkgs:
         follows: nixpkgs
-  pre-commit-hooks:
-    follows: git-hooks
   nixpkgs:
     url: github:cachix/devenv-nixpkgs/rolling
+  nixpkgs-python:
+    url: github:cachix/nixpkgs-python
+    inputs:
+      nixpkgs:
+        follows: nixpkgs
   nixpkgs-stable:
     url: github:NixOS/nixpkgs/nixos-25.11
   nixpkgs-unstable:
     url: github:NixOS/nixpkgs/nixpkgs-unstable
+  pre-commit-hooks:
+    follows: git-hooks
 allowUnfree: true

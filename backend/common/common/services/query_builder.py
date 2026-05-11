@@ -80,7 +80,6 @@ class RFTransformer(TreeTransformer):
     def visit_search_field(self, node: SearchField, context: dict):
         """If node.name matches old_field_name the node.expr is transformed to a
         OrOperation of all possible new fieldnames."""
-
         if node.name != self.old_field_name:
             yield from self.generic_visit(node, context)
             return
@@ -279,7 +278,6 @@ class NumberTransformer(TreeTransformer):
 
     def visit_word(self, node: Word, context: dict):
         """Resolve unit prefixes to full numbers."""
-
         # Check if the word is a number with a unit prefix
         # which might start with a <, <=, >= or > sign
         number_regex = re.compile(r"^([<>]=?)?(\d+)([A-Za-z])$")

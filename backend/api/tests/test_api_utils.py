@@ -36,7 +36,6 @@ def test_get_content_disposition_header(
 )
 def test_get_content_disposition_header_filename_encoding(file_name: str):
     """Test the encoding of various UTF-8 strings as content_disposition_name."""
-
     header_value = get_content_disposition_header("attachment", file_name)[
         "Content-Disposition"
     ]

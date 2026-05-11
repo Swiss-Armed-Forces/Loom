@@ -1,5 +1,5 @@
 # Image version
-ARG ALPINE_IMAGE_VERSION="3.22.0"
+ARG ALPINE_IMAGE_VERSION="3.23.4"
 
 ARG DOCKER_REGISTRY="docker.io"
 FROM ${DOCKER_REGISTRY}/alpine:${ALPINE_IMAGE_VERSION}
@@ -7,7 +7,7 @@ FROM ${DOCKER_REGISTRY}/alpine:${ALPINE_IMAGE_VERSION}
 #
 # bash
 #
-ARG BASH_VERSION="5.2"
+ARG BASH_VERSION="5.3"
 RUN set -exu \
     && apk add --no-cache \
     bash~=${BASH_VERSION}
@@ -16,7 +16,7 @@ SHELL ["/bin/bash", "--login", "-c"]
 #
 # kubectl
 #
-ARG KUBECTL_VERSION="1.33"
+ARG KUBECTL_VERSION="1.34"
 RUN set -exu \
     && apk add --no-cache \
     kubectl~=${KUBECTL_VERSION}

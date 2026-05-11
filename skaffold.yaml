@@ -13,6 +13,7 @@ build:
     customTemplate:
       template: "prod-{{.INPUT_DIGEST}}"
   artifacts:
+    # NOTE: index 0 — must stay here; patched by the dev profile (target, sync)
     - image: registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/api
       context: backend
       docker:
@@ -25,6 +26,7 @@ build:
       hooks:
         after:
           - command: ["./cicd/tag_latest.sh"]
+    # NOTE: index 1 — must stay here; patched by the dev profile (target, sync)
     - image: registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/worker
       context: backend
       docker:
@@ -37,6 +39,7 @@ build:
       hooks:
         after:
           - command: ["./cicd/tag_latest.sh"]
+    # NOTE: index 2 — must stay here; patched by the dev profile (target, sync)
     - image: registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/crawler
       context: backend
       docker:
@@ -49,6 +52,7 @@ build:
       hooks:
         after:
           - command: ["./cicd/tag_latest.sh"]
+    # NOTE: index 3 — must stay here; patched by the dev profile (target, sync)
     - image: registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/frontend
       context: Frontend
       docker:
@@ -58,6 +62,16 @@ build:
           DOCKER_REGISTRY: "{{or .CI_DEPENDENCY_PROXY_DIRECT_GROUP_IMAGE_PREFIX \"docker.io\"}}"
         cacheFrom:
           - "registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/frontend"
+      hooks:
+        after:
+          - command: ["./cicd/tag_latest.sh"]
+    # NOTE: index 4 — must stay here; patched by the dev profile (runtimeType)
+    - image: registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/open-webui
+      context: open-webui
+      docker:
+        dockerfile: Dockerfile
+        cacheFrom:
+          - "registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/open-webui"
       hooks:
         after:
           - command: ["./cicd/tag_latest.sh"]
@@ -138,17 +152,6 @@ build:
       hooks:
         after:
           - command: ["./cicd/tag_latest.sh"]
-    - image: registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/fluentd
-      context: fluentd
-      docker:
-        dockerfile: Dockerfile
-        buildArgs:
-          DOCKER_REGISTRY: "{{or .CI_DEPENDENCY_PROXY_DIRECT_GROUP_IMAGE_PREFIX \"docker.io\"}}"
-        cacheFrom:
-          - "registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/fluentd"
-      hooks:
-        after:
-          - command: ["./cicd/tag_latest.sh"]
     - image: registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/prometheus
       context: Prometheus
       docker:
@@ -190,15 +193,6 @@ build:
           DOCKER_REGISTRY: "{{or .CI_DEPENDENCY_PROXY_DIRECT_GROUP_IMAGE_PREFIX \"docker.io\"}}"
         cacheFrom:
           - "registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/libretranslate"
-      hooks:
-        after:
-          - command: ["./cicd/tag_latest.sh"]
-    - image: registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/open-webui
-      context: open-webui
-      docker:
-        dockerfile: Dockerfile
-        cacheFrom:
-          - "registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/open-webui"
       hooks:
         after:
           - command: ["./cicd/tag_latest.sh"]
@@ -358,7 +352,7 @@ profiles:
               dest: /code
       # Patch open-webui artifact for nodejs runtime
       - op: add
-        path: /build/artifacts/16/runtimeType
+        path: /build/artifacts/4/runtimeType
         value: nodejs
       # Patch manifests for development
       - op: replace

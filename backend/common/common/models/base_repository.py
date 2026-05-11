@@ -2,13 +2,8 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Any, Generic, Iterator, Sequence, TypeVar
 
-import typing_extensions
 from pydantic import BaseModel, ConfigDict
-
-# Type alias for Pydantic's include/exclude format
-IncEx: typing_extensions.TypeAlias = (
-    set[int] | set[str] | dict[int, Any] | dict[str, Any] | None
-)
+from pydantic.main import IncEx
 
 
 class RepositoryObject(BaseModel, ABC):
@@ -61,8 +56,8 @@ class BaseRepository(ABC, Generic[RepositoryObjectT]):
     def update(
         self,
         obj: RepositoryObjectT,
-        include: IncEx = None,
-        exclude: IncEx = None,
+        include: IncEx | None = None,
+        exclude: IncEx | None = None,
     ):
         """Partial update of specific fields."""
 

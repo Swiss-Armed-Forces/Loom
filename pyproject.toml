@@ -8,7 +8,7 @@ readme = "README.md"
 license = "MIT"
 
 [tool.poetry.dependencies]
-python = "^3.11"
+python = "~3.14"
 common = {path = "backend/common", develop = true}
 worker = {path = "backend/worker", develop = true}
 api = {path = "backend/api", develop = true}
@@ -22,7 +22,7 @@ flake8 = "^7.0.0"
 flake8-bugbear = "^25.0.0"
 autoflake = "^2.3.1"
 black = "^26.0.0"
-docformatter = "^1.7.5"
+docformatter = "^1.7.8"
 isort = "^7.0.0"
 mypy = "^1.10.0"
 pylint-pydantic = "^0.4.0"
@@ -41,7 +41,7 @@ pytest = "^9.0.0"
 pytest-mock = "^3.14.0"
 pytest-cov = "^7.0.0"
 pytest-celery = "^1.0.0"
-pytest-memray = "^1.6.0"
+pytest-memray = "^1.8.0"
 pytest-asyncio = "^1.3.0"
 freezegun = "^1.5.1"
 pytest-random-order = "^1.1.1"
@@ -68,6 +68,13 @@ remove-unused-variables = true
 recursive = true
 in-place = true
 black = true
+# We have to exclude a few files which do create
+# issues with docformatter 1.7.8.
+# We should try to remove this again when a new version
+# of docformatter was released.
+# see:
+# https://github.com/PyCQA/docformatter/issues/344
+exclude = ["tests/test_secret_scan.py", "common/settings.py"]
 
 [tool.black]
 quiet = true

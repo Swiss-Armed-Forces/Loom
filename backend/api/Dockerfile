@@ -1,6 +1,6 @@
 # Image version
-ARG PYTHON_BUILDER_IMAGE_VERSION="3.11.13-bookworm"
-ARG PYTHON_IMAGE_VERSION="3.11.13-slim-bookworm"
+ARG PYTHON_BUILDER_IMAGE_VERSION="3.14.4-bookworm"
+ARG PYTHON_IMAGE_VERSION="3.14.4-slim-bookworm"
 
 ARG DOCKER_REGISTRY="docker.io"
 FROM ${DOCKER_REGISTRY}/python:${PYTHON_BUILDER_IMAGE_VERSION} AS builder-base
@@ -71,7 +71,7 @@ COPY --from=builder-dev ${BUILDER_VIRTUAL_ENV} ${VIRTUAL_ENV}
 EXPOSE 4401
 EXPOSE 8084
 CMD ["python", "-Xfrozen_modules=off", "-m", "debugpy", "--listen", "127.0.0.1:4401", \
-    "-m", "uvicorn", "api.main:app", \
+    "-m", "uvicorn", "main:app", \
     "--workers", "1", \
     "--log-level", "debug", \
     "--port", "8084", \
@@ -85,7 +85,7 @@ FROM runtime-base AS production
 COPY --from=builder-prod ${BUILDER_VIRTUAL_ENV} ${VIRTUAL_ENV}
 EXPOSE 8084
 CMD ["python", \
-    "-m", "uvicorn", "api.main:app", \
+    "-m", "uvicorn", "main:app", \
     "--workers", "4", \
     "--port", "8084", \
     "--host", "0.0.0.0" \

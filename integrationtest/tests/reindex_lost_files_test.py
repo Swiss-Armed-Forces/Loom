@@ -23,8 +23,7 @@ ASSET_LIST = ["empty_file.txt"]
 
 
 def _set_files_to_started_state():
-    """simulate: file stuck in started state"""
-
+    """Simulate: file stuck in started state."""
     # get all files
     search_string = "*"
     file_count = len(ASSET_LIST)

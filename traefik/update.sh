@@ -22,4 +22,5 @@ helm repo update
 helm \
     pull \
         --version "${TRAEFIK_HELM_VERSION}" \
+        --destination "${SCRIPT_DIR}" \
         traefik/traefik

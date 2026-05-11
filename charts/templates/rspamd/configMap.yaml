@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "app.fullname" . }}-rspamd-config
+  labels:
+    {{- include "app.labels.custom" (dict "context" . "component" "rspamd") | nindent 4 }}
+  {{- with include "app.annotations.custom" (dict "context" . "component" "rspamd") }}
+  annotations:
+    {{- . | nindent 4 }}
+  {{- end }}
+data:
+  worker-normal.inc: |
+    bind_socket = "0.0.0.0:{{ .Values.rspamd.worker.service.port }}";
+  worker-controller.inc: |
+    bind_socket = "0.0.0.0:{{ .Values.rspamd.controller.service.port }}";
+    secure_ip = "0.0.0.0/0";
+  hfilter.conf: |
+    hostname_enabled = false;
