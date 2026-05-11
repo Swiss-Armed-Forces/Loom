@@ -121,7 +121,7 @@ Rel(worker, seaweedfs_filer, "")
 Rel(elasticvue, es, "")
 Rel(rediswebui, redis, "")
 Rel(prometheus, grafana, "")
-Rel(es, grafana, "Queries logs", "Elasticsearch DSL")
+Rel(es, grafana, "")
 
 Rel(rabbit, prometheus, "")
 Rel(es, prometheus, "")
@@ -133,6 +133,7 @@ Rel(gotenberg, prometheus, "")
 Rel(seaweedfs_master, prometheus, "")
 Rel(kubeStateMetrics, prometheus, "")
 Rel(api, prometheus, "")
+Rel(flower, prometheus, "")
 
 Rel(gotenberg, email_client, "")
 
