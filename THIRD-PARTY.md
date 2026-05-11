@@ -592,7 +592,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | humanize                              | 4.15.0          | MIT                                                                              |
 | identify                              | 2.6.19          | MIT                                                                              |
 | iniconfig                             | 2.3.0           | MIT                                                                              |
-| isort                                 | 7.0.0           | MIT                                                                              |
+| isort                                 | 8.0.1           | MIT                                                                              |
 | langsmith                             | 0.8.2           | MIT                                                                              |
 | librt                                 | 0.10.0          | MIT                                                                              |
 | mypy                                  | 1.20.2          | MIT                                                                              |
