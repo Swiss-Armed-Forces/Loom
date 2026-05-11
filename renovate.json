@@ -166,7 +166,9 @@
     "**/log/**",
     "**/out/**"
   ],
-  "allowedPostUpgradeCommands": ["^poetry lock --no-update"],
+  "allowedCommands": [
+    "^poetry lock --no-update"
+  ],
   "rebaseWhen": "behind-base-branch",
   "automergeSchedule": ["before 6am"],
   "platformAutomerge": true,
