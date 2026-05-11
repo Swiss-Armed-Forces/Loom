@@ -254,6 +254,31 @@ def test_typed_lazy_bytes_can_be_pickled(
     assert result == original
 
 
+def test_typed_lazy_bytes_parameterized_can_be_pickled(
+    in_memory_lazy_bytes_service: InMemoryLazyBytesService,
+):
+    """TypedLazyBytes[X] (Pydantic-parameterized subclass) must survive pickling.
+
+    Pydantic creates a concrete subclass (e.g. TypedLazyBytes[dict]) when the type is
+    used as a model field annotation. That subclass is not a module-level attribute, so
+    pickle cannot find it by qualified name and raises PicklingError. See
+    https://github.com/pydantic/pydantic/issues/8913.
+    """
+    original = {"test": "data"}
+    lazy = in_memory_lazy_bytes_service.from_object(original)
+
+    # Instantiate via the parameterized class directly, as Pydantic does when validating
+    # a field typed TypedLazyBytes[dict] — the resulting instance has
+    # __class__ = TypedLazyBytes[dict], a runtime-only class not importable by pickle.
+    parameterized_cls = TypedLazyBytes[dict]
+    coerced = parameterized_cls.model_validate(lazy.model_dump())
+    assert type(coerced).__qualname__ == "TypedLazyBytes[dict]"
+
+    restored = pickle.loads(pickle.dumps(coerced))
+    result = in_memory_lazy_bytes_service.load_object(restored)
+    assert result == original
+
+
 def test_typed_lazy_bytes_large_can_be_pickled(
     in_memory_lazy_bytes_service: InMemoryLazyBytesService,
 ):

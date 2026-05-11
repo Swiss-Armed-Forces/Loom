@@ -196,7 +196,7 @@ class Settings(CommonSettings):
 
     llm_rerank_temperature: float | None = None
     llm_rerank_system_prompt: str = (
-        """You are an expert reranking machine called Loom"""
+        """You are an expert reranking machine called Loom."""
     )
 
     llm_chat_system_prompt: str = """You are an expert english chatbot called Loom"""

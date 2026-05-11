@@ -53,13 +53,6 @@ elasticvue:
   resources:
     limits: null
 
-fluentd:
-  resources:
-    limits: null
-  initContainer:
-    resources:
-      limits: null
-
 grafana:
   resources:
     limits: null

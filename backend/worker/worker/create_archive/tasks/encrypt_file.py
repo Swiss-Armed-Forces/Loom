@@ -18,7 +18,6 @@ def encrypt_file_task(storage_data: LazyBytes) -> LazyBytes:
 
     :param storage_data: The file storage id for the file to encrypt
     """
-
     file_storage_service = get_file_storage_service()
     archive_encryption_service = get_archive_encryption_service()
 

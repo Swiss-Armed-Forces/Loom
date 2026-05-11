@@ -28,7 +28,7 @@ api:
     "python", "-Xfrozen_modules=off",
     "-m", "debugpy",
       "--listen", "127.0.0.1:4401",
-    "-m", "uvicorn", "api.main:app",
+    "-m", "uvicorn", "main:app",
       "--workers", "1",
       "--log-level", "debug",
       "--port", "8084",

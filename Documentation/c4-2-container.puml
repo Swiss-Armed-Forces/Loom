@@ -68,7 +68,6 @@ System_Boundary(loom, "") {
         Container(gotenberg, "File Rendering", "Gotenberg", "Generates Rendered Files", $sprite="go", $tags="exposed")
         Container(ai, "AI Server", "Ollama", "Provides AI Services", $sprite="robot", $tags="exposed")
 
-        Container(fluentd, "Fluentd", "Fluentd", "Collects Logs", $sprite="docker")
         Container(prometheus, "Prometheus", "prometheus", "Collect System Statistics", $sprite="prometheus", $tags="exposed")
 
         Container(flower, "Flower", "Celery Flower", "Visualizes Tasks", $sprite="&task,scale=5", $tags="exposed")
@@ -121,8 +120,6 @@ Rel(worker, seaweedfs_filer, "")
 
 Rel(elasticvue, es, "")
 Rel(rediswebui, redis, "")
-Rel(fluentd, es, "")
-
 Rel(prometheus, grafana, "")
 Rel(es, grafana, "Queries logs", "Elasticsearch DSL")
 

@@ -191,7 +191,6 @@ def get_files_tree(
     file_repository: FileRepository = default_file_repository,
 ) -> GetFilesTreeResponse:
     """Get a node out of the tree of files non-recursively."""
-
     logger.info("Get file tree node with query: '%s'", query)
 
     tree_paths = file_repository.get_full_paths_by_query(
@@ -205,7 +204,6 @@ def get_files_tree(
 @router.get("/tree/max_element_count")
 def get_tree_max_element_count() -> int:
     """Expose this constant for the frontend in case we need to change it."""
-
     return TREE_PATH_MAX_ELEMENT_COUNT
 
 

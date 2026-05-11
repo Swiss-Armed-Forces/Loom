@@ -236,7 +236,7 @@ default:
     # start stack
     - devenv shell -- up --expose "$(tailscale ip -4)"
     # everything should be running now: prune rest
-    - devenv shell -- kubernetes-prune
+    - devenv shell -- kubernetes-prune --all --force --volumes
     #
     # END SECTION
     #
@@ -253,7 +253,7 @@ default:
     # start stack
     - devenv shell -- up --integrationtest --expose "$(tailscale ip -4)"
     # everything should be running now: prune rest
-    - devenv shell -- kubernetes-prune
+    - devenv shell -- kubernetes-prune --all --force --volumes
     #
     # END SECTION
     #

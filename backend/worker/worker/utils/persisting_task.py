@@ -54,14 +54,14 @@ def persisting_task(
     The callable must accept an IndexingPersister as first argument and the rest of the
     arguments are passed through to the task.
 
-    :param get_task_object_repository: By default, the status of this task will be reported
-        to the same repository as the persister_type is persisting. You can use this
-        parameter if the persister_type is not persisting to the same repository as the
-        task is reporting its state to.
-    :param persisting_cache_decorator: Decorator is used before running the task allowing
-        caching. The decorator needs to return a cache decorator and accept the persisting
-        function which can be used to create the actually cache name.
-        This can be used with `persisting_cache`.
+    :param get_task_object_repository: By default, the status of this task will be
+        reported to the same repository as the persister_type is persisting. You can use
+        this parameter if the persister_type is not persisting to the same repository as
+        the task is reporting its state to.
+    :param persisting_cache_decorator: Decorator is used before running the task
+        allowing caching. The decorator needs to return a cache decorator and accept the
+        persisting function which can be used to create the actually cache name. This
+        can be used with `persisting_cache`.
     """
 
     def inner_decorator(persist_fcn: Callable[Concatenate[PersisterBase, P], None]):

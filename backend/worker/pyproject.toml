@@ -8,26 +8,28 @@ license = "MIT"
 packages = [{ include = "worker" }]
 
 [tool.poetry.dependencies]
-python = "^3.11"
+python = "~3.14"
 wand = "^0.6.13"
 common = {path = "../common", develop=true}
 python-magic = "^0.4.27"
 stream-zip = "^0.0.84"
 requests = "^2.31.0"
-scipy = "^1.15.3"
+scipy = "^1.17.1"
 scikit-learn = "^1.7.0"
-langchain-text-splitters = "^0.3.2"
+langchain-text-splitters = "^1.1.2"
 flower = "^2.0.1"
 gotenberg-client = "^0.13.1"
 
-# Can be removed once we migrate to python ^3.14
+# zstandard can be removed once refactored
+# see:
+# https://gitlab.com/swiss-armed-forces/cyber-command/cea/loom/-/work_items/174
 zstandard = "^0.25.0"
 minio = "^7.2.20"
 
 [tool.poetry.group.dev.dependencies]
 debugpy = "^1.8.1"
 watchdog = "^6.0.0"
-scipy-stubs = "^1.15.3.0"
+scipy-stubs = "^1.17.1.4"
 
 [tool.poetry.group.test.dependencies]
 #

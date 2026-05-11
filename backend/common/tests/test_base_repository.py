@@ -1,8 +1,9 @@
 from uuid import UUID, uuid4
 
 from pydantic import Field
+from pydantic.main import IncEx
 
-from common.models.base_repository import BaseRepository, IncEx, RepositoryObject
+from common.models.base_repository import BaseRepository, RepositoryObject
 
 
 class _TestRepositoryObject(RepositoryObject):
@@ -35,8 +36,8 @@ class _TestRepository(BaseRepository[_TestRepositoryObject]):
     def update(
         self,
         obj: _TestRepositoryObject,
-        include: IncEx = None,
-        exclude: IncEx = None,
+        include: IncEx | None = None,
+        exclude: IncEx | None = None,
     ):
         del include, exclude  # unused in test implementation
         self._repo[obj.id_] = obj

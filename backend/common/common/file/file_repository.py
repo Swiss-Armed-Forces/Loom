@@ -40,6 +40,7 @@ from pydantic import (
     computed_field,
     field_validator,
 )
+from pydantic.main import IncEx
 from pydantic_core import core_schema
 
 from common.file.file_statistics import (
@@ -47,7 +48,6 @@ from common.file.file_statistics import (
     StatisticsGeneric,
     StatisticsSummary,
 )
-from common.models.base_repository import IncEx
 from common.models.es_repository import (
     BaseEsRepository,
     PaginationParameters,
@@ -428,7 +428,9 @@ class File(RepositoryTaskObject):
     def unique_archives(cls, archives: list[str]) -> list[str]:
         return unique_list(archives)
 
-    def to_es_dict(self, include: IncEx = None, exclude: IncEx = None) -> dict:
+    def to_es_dict(
+        self, include: IncEx | None = None, exclude: IncEx | None = None
+    ) -> dict:
         es_dict = super().to_es_dict(include=include, exclude=exclude)
         if "libretranslate_translations" in es_dict:
             # expand translations to object
@@ -800,7 +802,6 @@ class FileRepository(BaseEsRepository[_EsFile, File]):
         self, query: QueryParameters, tree_node_directory_path: str
     ) -> list[TreePathsNode]:
         """Generate the tree path structure for all matching files."""
-
         escaped_directory = re.sub(
             ES_RESERVED_PATTERN, r"\\\1", tree_node_directory_path
         )

@@ -574,10 +574,11 @@ class GlobalPersisterWorker(Generic[RepositoryObjectT]):
         self.shutdown()
 
     def shutdown(self, timeout: float = 30.0) -> None:
-        """Stop the worker: drain queue, flush all pending mutations, stop event loop thread.
+        """Stop the worker: drain queue, flush all pending mutations, stop event loop
+        thread.
 
-        Blocks until the worker loop has exited and the thread has been joined.
-        Safe to call from any thread.
+        Blocks until the worker loop has exited and the thread has been joined. Safe to
+        call from any thread.
         """
         self._shutdown_event.set()
 

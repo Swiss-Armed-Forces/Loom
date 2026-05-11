@@ -21,6 +21,7 @@ from elasticsearch.dsl.connections import get_connection
 from elasticsearch.dsl.response import Response
 from elasticsearch.helpers import streaming_bulk
 from pydantic import BaseModel, Field, computed_field
+from pydantic.main import IncEx
 
 from common.messages.messages import (
     MessageFileUpdate,
@@ -31,7 +32,6 @@ from common.messages.pubsub_service import PubSubService
 from common.models.base_repository import (
     BaseRepository,
     BulkOperationResult,
-    IncEx,
     RepositoryBulkSaveError,
     RepositoryObject,
 )
@@ -87,7 +87,9 @@ class EsRepositoryObject(RepositoryObject):
     sort_unique: UUID = Field(default_factory=uuid4)
     hidden: bool = False
 
-    def to_es_dict(self, include: IncEx = None, exclude: IncEx = None) -> dict:
+    def to_es_dict(
+        self, include: IncEx | None = None, exclude: IncEx | None = None
+    ) -> dict:
         es_dict = self.model_dump(mode="json", include=include, exclude=exclude)
         return es_dict
 
@@ -295,7 +297,6 @@ class BaseEsRepository(
     ) -> Generator[Any, None, None]:
         """Runs the given search over several pages and calls the per_page_callback for
         every page."""
-
         search_after: list[Any] | None = None
 
         sort_by_field = self._get_sort_by_field(sort_params.sort_by_field)
@@ -484,9 +485,11 @@ class BaseEsRepository(
                 else:
                     paths = sort_by_field.split(".")
                     current_val = document_dict
+                    # descend into document
                     for path in paths:
-                        current_val = current_val.get(path, None)
-                        if current_val is None:
+                        try:
+                            current_val = current_val[path]
+                        except KeyError:
                             break
                     sort_value = str(current_val) if current_val is not None else ""
                 document_dict.update({"sort_value": sort_value})
@@ -567,7 +570,10 @@ class BaseEsRepository(
         self._send_file_update_message_by_id(obj.id_)
 
     def update(
-        self, obj: EsRepositoryObjectT, include: IncEx = None, exclude: IncEx = None
+        self,
+        obj: EsRepositoryObjectT,
+        include: IncEx | None = None,
+        exclude: IncEx | None = None,
     ):
         """Update the object and updates its ES metadata in-place."""
         document = self._object_to_document(obj)

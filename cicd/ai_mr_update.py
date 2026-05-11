@@ -380,8 +380,16 @@ def main() -> None:
             sys.exit(1)
 
     title, body = parse_commit_message(message)
-    logger.info("Generated title: %s", title)
-    logger.info("Generated body:\n%s", body)
+
+    print("\n--- Preview ---")
+    print(f"Title: {title}\n")
+    print(f"Description:\n{body}")
+    print("--- End Preview ---\n")
+
+    answer = input(f"Update MR !{mr.iid} with the above? [Y/n]: ").strip().lower()
+    if answer not in ("", "y"):
+        print("Aborted.")
+        return
 
     # Update MR
     update_mr(mr, title, body)

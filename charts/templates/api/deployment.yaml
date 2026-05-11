@@ -74,7 +74,7 @@ spec:
             - "python"
             - "-m"
             - "uvicorn"
-            - "api.main:app"
+            - "main:app"
             - "--workers"
             - {{ include "cpu-limit-to-count" $cpuValue | quote }}
             - "--port"

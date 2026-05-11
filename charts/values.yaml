@@ -406,59 +406,6 @@ elasticvue:
   # app-tier: management
   # service-type: ui
 
-fluentd:
-  enabled: true
-  image:
-    repository: swiss-armed-forces/cyber-command/cea/loom/fluentd
-  service:
-    port: 24224
-  resources:
-    requests:
-      cpu: "0.1"
-      memory: "100Mi"
-    limits:
-      cpu: "0.5"
-      memory: "500Mi"
-  initContainer:
-    image:
-      repository: swiss-armed-forces/cyber-command/cea/loom/alpine
-    resources:
-      requests:
-        cpu: "0.05"
-        memory: "50Mi"
-      limits:
-        cpu: "0.1"
-        memory: "100Mi"
-  # Fluentd configuration settings
-  config:
-    elasticsearch:
-      # Optional: override to use external ES. If null, defaults to internal ES instance
-      host: null
-      port: null
-    buffer:
-      flushThreadCount: 8
-      flushInterval: "5s"
-      chunkLimitSize: "2M"
-      queueLimitLength: 32
-      retryMaxInterval: 30
-    dataStream:
-      name: "docker-logs"
-      templateName: "docker-logs-template"
-      ilmName: "5d-hot-15-warm-log-op"
-      hotMaxAge: "1d"
-      hotMaxShardSize: "20gb"
-      warmMinAge: "5d"
-      deleteMinAge: "15d"
-    indexTemplate:
-      numberOfShards: 1
-      numberOfReplicas: 0
-  # Custom labels specific to fluentd resources
-  customLabels: {}
-  customAnnotations: {}
-  # Example:
-  # app-tier: logging
-  # service-type: aggregator
-
 grafana:
   enabled: true
   replicaCount: 1

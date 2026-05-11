@@ -292,7 +292,6 @@ Multiple services that are useful for production and development purposes are st
 | RabbitMQ      | [https://rabbit.loom](https://rabbit.loom)               | Monitor rabbit messages                       | user: `guest` password: `guest`                |
 | Elasticvue    | [https://elasticvue.loom](https://elasticvue.loom)       | ElasticSearch management                      | use "predefined clusters"                      |
 | ElasticSearch | [https://elasticsearch.loom](https://elasticsearch.loom) | Elasticsearch Database                        |                                                |
-| Mongo Express | [https://mongo-web.loom](https://mongo-web.loom)         | mongoDB management (deprecated)               |                                                |
 | Rspamd        | [https://rspamd.loom](https://rspamd.loom)               | Rspamd spam detection engine                  |                                                |
 | RedisInsight  | [https://redisinsight.loom](https://redisinsight.loom)   | Manage the redis DB                           |                                                |
 | Prometheus    | [https://prometheus.loom](https://prometheus.loom)       | Manage prometheus                             |                                                |

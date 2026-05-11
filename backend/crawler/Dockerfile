@@ -1,6 +1,6 @@
 # Image version
-ARG PYTHON_BUILDER_IMAGE_VERSION="3.11.13-bookworm"
-ARG PYTHON_IMAGE_VERSION="3.11.13-slim-bookworm"
+ARG PYTHON_BUILDER_IMAGE_VERSION="3.14.4-bookworm"
+ARG PYTHON_IMAGE_VERSION="3.14.4-slim-bookworm"
 
 ARG DOCKER_REGISTRY="docker.io"
 FROM ${DOCKER_REGISTRY}/python:${PYTHON_BUILDER_IMAGE_VERSION} AS builder-base
@@ -68,9 +68,9 @@ EXPOSE 6601
 CMD ["python", "-Xfrozen_modules=off", "-m", "debugpy", "--listen", "127.0.0.1:6601", \
     "-m", "watchdog.watchmedo", "auto-restart", "--verbose", "--recursive", "--signal", "SIGTERM", "--patterns", "*.py", "--directory", "/code/common", "--directory", "/code/crawler",  "--debounce-interval", "3",\
     "--", \
-    "python", "-Xfrozen_modules=off", "-m", "crawler.main" \
+    "python", "-Xfrozen_modules=off", "main.py" \
     ]
 
 FROM runtime-base AS production
 COPY --from=builder-prod ${BUILDER_VIRTUAL_ENV} ${VIRTUAL_ENV}
-CMD ["python", "-m", "crawler.main"]
+CMD ["python", "main.py"]

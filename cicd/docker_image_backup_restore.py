@@ -6,15 +6,12 @@ import re
 import shlex
 import shutil
 import subprocess
-from concurrent.futures import ProcessPoolExecutor, as_completed
-from logging.handlers import QueueHandler, QueueListener
-from multiprocessing import Queue
-from multiprocessing.queues import Queue as MPQueue
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
 import docker
 import zstandard as zstd
-from docker.errors import ImageLoadError, ImageNotFound
+from docker.errors import ImageNotFound
 from pydantic import BaseModel, RootModel
 
 # -------------------------------
@@ -23,24 +20,14 @@ from pydantic import BaseModel, RootModel
 DOCKER_CLIENT_TIMEOUT = 20 * 60
 DOCKER_SAVE_CHUNK_SIZE = 100 * 1024**2
 ZSTD_COMPRESSION_LEVEL = 3
+PER_IMAGE_TIMEOUT_SECONDS = 5 * 60
 LOG_LEVEL = logging.INFO
 LATEST_TAG_NAME = "latest"
 
 # -------------------------------
 # Logging Setup
 # -------------------------------
-log_queue: MPQueue = Queue()
 logger = logging.getLogger()
-logger.setLevel(LOG_LEVEL)
-
-queue_handler = QueueHandler(log_queue)
-logger.addHandler(queue_handler)
-
-console_handler = logging.StreamHandler()
-console_handler.setFormatter(
-    logging.Formatter("%(asctime)s [%(levelname)s] %(message)s", "%Y-%m-%d %H:%M:%S")
-)
-listener = QueueListener(log_queue, console_handler)
 
 
 # -------------------------------
@@ -148,19 +135,9 @@ def get_image_map(pattern: str) -> list[ImageMetadata]:
 
 
 # -------------------------------
-# Logging in Subprocesses
-# -------------------------------
-def setup_subprocess_logging() -> None:
-    logging.getLogger().handlers.clear()
-    logging.getLogger().addHandler(QueueHandler(log_queue))
-    logging.getLogger().setLevel(LOG_LEVEL)
-
-
-# -------------------------------
 # Docker Backup & Restore
 # -------------------------------
 def docker_backup_image(meta: ImageMetadata, backup_dir: Path) -> None:
-    setup_subprocess_logging()
     client = get_docker_client()
 
     image_dir = backup_dir / meta.id
@@ -208,7 +185,6 @@ def docker_backup_image(meta: ImageMetadata, backup_dir: Path) -> None:
 
 
 def docker_restore_image(image_id: str, backup_dir: Path) -> None:
-    setup_subprocess_logging()
     client = get_docker_client()
 
     image_dir = backup_dir / image_id
@@ -293,13 +269,13 @@ def cmd_backup(parallel: int, image_dir: Path, pattern: str, prune: str | None) 
             elif child.is_dir():
                 shutil.rmtree(child)
 
-    with ProcessPoolExecutor(max_workers=parallel or None) as executor:
+    with ThreadPoolExecutor(max_workers=parallel or None) as executor:
         futures = [
             executor.submit(docker_backup_image, meta, image_dir)
             for meta in image_metadata
         ]
         for future in as_completed(futures):
-            future.result()
+            future.result(timeout=PER_IMAGE_TIMEOUT_SECONDS)
 
     # Print total size of image_dir directory
     total_size = sum(f.stat().st_size for f in image_dir.glob("**/*") if f.is_file())
@@ -315,12 +291,12 @@ def cmd_restore(
         return
     image_dirs = [p for p in image_dir.iterdir() if (p / "meta.json").exists()]
     logger.info("Found %d images to restore.", len(image_dirs))
-    with ProcessPoolExecutor(max_workers=parallel or None) as executor:
+    with ThreadPoolExecutor(max_workers=parallel or None) as executor:
         futures = [
             executor.submit(docker_restore_image, p.name, image_dir) for p in image_dirs
         ]
         for future in as_completed(futures):
-            future.result()
+            future.result(timeout=PER_IMAGE_TIMEOUT_SECONDS)
 
 
 def main() -> None:
@@ -359,18 +335,23 @@ def main() -> None:
     minikube: bool = args.minikube
     command: str = args.command
 
-    listener.start()
-    try:
-        if minikube:
-            load_minikube_env()
+    console_handler = logging.StreamHandler()
+    console_handler.setFormatter(
+        logging.Formatter(
+            "%(asctime)s [%(levelname)s] %(message)s", "%Y-%m-%d %H:%M:%S"
+        )
+    )
+    logger.addHandler(console_handler)
+    logger.setLevel(LOG_LEVEL)
 
-        match command:
-            case "backup":
-                cmd_backup(args.parallel, args.directory, args.pattern, args.prune)
-            case "restore":
-                cmd_restore(args.parallel, args.directory)
-    finally:
-        listener.stop()
+    if minikube:
+        load_minikube_env()
+
+    match command:
+        case "backup":
+            cmd_backup(args.parallel, args.directory, args.pattern, args.prune)
+        case "restore":
+            cmd_restore(args.parallel, args.directory)
 
 
 if __name__ == "__main__":

@@ -129,7 +129,6 @@ def search(
     HTTPException
         May be raised if the LLM or search backend fails to respond.
     """
-
     prompt = f"""
 TASK: Translate the QUERY_DESCRIPTION to an Elasticsearch QUERY_STRING.
 --------------------
@@ -220,7 +219,6 @@ def get_file_by_id(
     HTTPException (status_code=404)
         Raised if no file with the given ID exists in the repository.
     """
-
     file = file_repository.get_by_id(file_id)
     if file is None:
         raise HTTPException(status_code=404, detail="file not found")

@@ -9,7 +9,7 @@ packages = [{ include = "crawler" }]
 
 
 [tool.poetry.dependencies]
-python = "^3.11"
+python = "~3.14"
 common = { path = "../common", develop = true }
 watchdog = "^6.0.0"
 minio = "^7.2.12"

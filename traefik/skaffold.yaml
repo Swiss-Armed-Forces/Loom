@@ -34,6 +34,8 @@ manifests:
         chartPath: "{{.TRAEFIK_CHART_PATH}}/traefik"
         valuesFiles:
           - values.yaml
+        setValueTemplates:
+          image.tag: "{{.TRAEFIK_IMAGE_VERSION}}"
 
 # Minimal profiles - only overrides
 profiles:

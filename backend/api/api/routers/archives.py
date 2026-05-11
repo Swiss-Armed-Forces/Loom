@@ -64,7 +64,6 @@ def create_new_archive(
     archive_scheduling_service: ArchiveSchedulingService = default_archive_scheduling_service,
 ) -> ArchiveCreatedResponse:
     """Create a new archive containing all files that match the query."""
-
     archive = archive_scheduling_service.create_archive(query=archive_request.query)
 
     return ArchiveCreatedResponse(archive_id=archive.id_)

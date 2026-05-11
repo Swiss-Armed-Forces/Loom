@@ -397,7 +397,10 @@ in
     ]);
 
   # Configure Cachix
-  cachix.pull = [ "loom" ];
+  cachix.pull = [
+    "loom"
+    "nixpkgs-python"
+  ];
 
   # https://devenv.sh/languages/
   languages.nix.enable = true;
@@ -408,7 +411,7 @@ in
     # that the debugger (when attached) can resolve
     # python libraries. When you update this, you probably
     # also need to update quite a few Dockerfiles.
-    package = pkgs.python311;
+    version = "3.14";
     # Note: we have to disable manylinux here,
     # because otherwise when using cli tools
     # from within python will segfault

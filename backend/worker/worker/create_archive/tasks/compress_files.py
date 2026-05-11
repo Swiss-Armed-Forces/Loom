@@ -47,7 +47,6 @@ def compress_files_task(files: list[File]) -> LazyBytes:
     :param files: The files to load and compress :param
     :return: the destination file
     """
-
     file_storage_service = get_file_storage_service()
 
     zipped_chunks = stream_zip(_archive_data(files))

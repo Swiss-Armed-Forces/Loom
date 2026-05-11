@@ -862,59 +862,6 @@
       ],
       "title": "I/O Tx",
       "type": "timeseries"
-    },
-    {
-      "datasource": {
-        "type": "elasticsearch",
-        "uid": "P61E7A9AD0246CD05"
-      },
-      "gridPos": {
-        "h": 11,
-        "w": 24,
-        "x": 0,
-        "y": 31
-      },
-      "id": 10,
-      "options": {
-        "dedupStrategy": "numbers",
-        "enableLogDetails": true,
-        "prettifyLogMessage": false,
-        "showCommonLabels": false,
-        "showLabels": false,
-        "showTime": true,
-        "sortOrder": "Descending",
-        "wrapLogMessage": true
-      },
-      "targets": [
-        {
-          "alias": "",
-          "bucketAggs": [
-            {
-              "field": "@timestamp",
-              "id": "2",
-              "settings": {
-                "interval": "auto"
-              },
-              "type": "date_histogram"
-            }
-          ],
-          "datasource": {
-            "type": "elasticsearch",
-            "uid": "P61E7A9AD0246CD05"
-          },
-          "metrics": [
-            {
-              "id": "1",
-              "type": "logs"
-            }
-          ],
-          "query": "pod:${pod}",
-          "refId": "A",
-          "timeField": "uploaded_datetime"
-        }
-      ],
-      "title": "Log",
-      "type": "logs"
     }
   ],
   "refresh": "10s",

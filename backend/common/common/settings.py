@@ -139,7 +139,7 @@ class Settings(BaseSettings):
     )
     llm_system_prompt: str = """You are an expert english AI called Loom"""
     llm_summarize_system_prompt: str = (
-        """You are an expert english summarization machine called Loom"""
+        """You are an expert english summarization machine called Loom."""
     )
 
     roundcube_host: AnyHttpUrl = AnyHttpUrl(f"http://roundcube.{DOMAIN}")
