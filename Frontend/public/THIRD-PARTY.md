@@ -664,14 +664,14 @@ The complete source code for Traefik is publicly available at [https://github.co
 | @emotion/styled                     | MIT          | 11.14.1           |
 | @mui/icons-material                 | MIT          | 9.0.0             |
 | @mui/material                       | MIT          | 9.0.0             |
-| @mui/x-charts                       | MIT          | 9.0.2             |
-| @mui/x-tree-view                    | MIT          | 9.0.2             |
+| @mui/x-charts                       | MIT          | 9.1.0             |
+| @mui/x-tree-view                    | MIT          | 9.1.0             |
 | @reduxjs/toolkit                    | MIT          | 2.11.2            |
-| ace-builds                          | BSD-3-Clause | 1.43.6            |
+| ace-builds                          | BSD-3-Clause | 1.44.0            |
 | ajv                                 | MIT          | 8.20.0            |
 | date-fns                            | MIT          | 4.1.0             |
 | eslint-plugin-import                | MIT          | 2.32.0            |
-| i18next                             | MIT          | 26.0.6            |
+| i18next                             | MIT          | 26.1.0            |
 | i18next-http-backend                | MIT          | 3.0.5             |
 | react                               | MIT          | 19.2.5            |
 | react-ace                           | MIT          | 14.0.1            |
@@ -681,7 +681,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | react-intersection-observer         | MIT          | 10.0.3            |
 | react-pdf                           | MIT          | 10.4.1            |
 | react-redux                         | MIT          | 9.2.0             |
-| react-router-dom                    | MIT          | 7.14.1            |
+| react-router-dom                    | MIT          | 7.15.0            |
 | react-toastify                      | MIT          | 11.1.0            |
 | uuid                                | MIT          | 14.0.0            |
 | @eslint/js                          | MIT          | 9.39.4            |
