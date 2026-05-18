@@ -588,6 +588,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | cffi                                  | 2.0.0           | MIT                                                                              |
 | charset-normalizer                    | 3.4.7           | MIT                                                                              |
 | click-repl                            | 0.3.0           | MIT                                                                              |
+| deptry                                | 0.25.1          | MIT                                                                              |
 | fastapi                               | 0.128.8         | MIT                                                                              |
 | humanize                              | 4.15.0          | MIT                                                                              |
 | identify                              | 2.6.19          | MIT                                                                              |
@@ -605,6 +606,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | pydantic_core                         | 2.46.4          | MIT                                                                              |
 | pytest                                | 9.0.3           | MIT                                                                              |
 | pytest-cov                            | 7.1.0           | MIT                                                                              |
+| tomli                                 | 2.4.1           | MIT                                                                              |
 | typing-inspection                     | 0.4.2           | MIT                                                                              |
 | urllib3                               | 2.6.3           | MIT                                                                              |
 | zipp                                  | 3.23.1          | MIT                                                                              |
@@ -616,7 +618,6 @@ The complete source code for Traefik is publicly available at [https://github.co
 | common                                | 0.1.0           | MIT License                                                                      |
 | crawler                               | 0.1.0           | MIT License                                                                      |
 | debugpy                               | 1.8.20          | MIT License                                                                      |
-| deptry                                | 0.24.0          | MIT License                                                                      |
 | flake8                                | 7.3.0           | MIT License                                                                      |
 | flake8-bugbear                        | 25.11.29        | MIT License                                                                      |
 | h11                                   | 0.16.0          | MIT License                                                                      |
