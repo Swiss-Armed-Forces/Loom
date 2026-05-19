@@ -1740,8 +1740,8 @@ The complete source code for Traefik is publicly available at [https://github.co
 | libcairo2 | 1.16.0-7 | LGPL-2.1-only | dpkg-db-cataloger |
 | libcairo2-dev | 1.16.0-7 | LGPL-2.1-only | dpkg-db-cataloger |
 | libcap-ng0 | 0.8.3-1+b3 | GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
-| libcap2 | 1:2.66-4+deb12u2+b2 | BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
-| libcap2-bin | 1:2.66-4+deb12u2+b2 | BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
+| libcap2 | 1:2.66-4+deb12u3+b1 | BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
+| libcap2-bin | 1:2.66-4+deb12u3+b1 | BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
 | libcbor0.8 | 0.8.0-2+b1 |  | dpkg-db-cataloger |
 | libcc1-0 | 12.2.0-14+deb12u1 | GFDL-1.2-only, GPL-2.0-only, GPL-3.0-only | dpkg-db-cataloger |
 | libcom-err2 | 1.47.0-2+b2 | Apache-2.0, Apache-2.0, BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later, ISC, Kazlib, LGPL-2.0-only, Latex2e | dpkg-db-cataloger |
@@ -7219,7 +7219,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | flask-swagger-ui | 4.11.1 | MIT | python-installed-package-cataloger |
 | flatbuffers | 25.12.19 |  | python-installed-package-cataloger |
 | gcc-12-base | 12.3.0-1ubuntu1~22.04 | GFDL-1.2-only, GPL-2.0-only, GPL-3.0-only | dpkg-db-cataloger |
-| gevent | 25.9.1 | MIT | python-installed-package-cataloger |
+| gevent | 26.4.0 | MIT | python-installed-package-cataloger |
 | gnupg | 2.2.27-3ubuntu2.1 | BSD-3-Clause, CC0-1.0, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
 | gnupg-l10n | 2.2.27-3ubuntu2.1 | BSD-3-Clause, CC0-1.0, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
 | gnupg-utils | 2.2.27-3ubuntu2.1 | BSD-3-Clause, CC0-1.0, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
@@ -7231,7 +7231,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | gpgconf | 2.2.27-3ubuntu2.1 | BSD-3-Clause, CC0-1.0, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
 | gpgsm | 2.2.27-3ubuntu2.1 | BSD-3-Clause, CC0-1.0, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
 | gpgv | 2.2.27-3ubuntu2.1 | BSD-3-Clause, CC0-1.0, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
-| greenlet | 3.3.2 | MIT AND PSF-2.0 | python-installed-package-cataloger |
+| greenlet | 3.5.0 | MIT AND PSF-2.0 | python-installed-package-cataloger |
 | grep | 3.7-1build1 | GPL-3.0-only, GPL-3.0-or-later | dpkg-db-cataloger |
 | gui | UNKNOWN |  | pe-binary-package-cataloger |
 | gui-32 | UNKNOWN |  | pe-binary-package-cataloger |
@@ -7353,7 +7353,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | onnxruntime-gpu | 1.23.2 |  | python-installed-package-cataloger |
 | openssl | 3.0.2-0ubuntu1.15 | Apache-2.0, GPL-1.0-only, GPL-1.0-or-later | dpkg-db-cataloger |
 | packaging | 23.1 | Apache-2.0, BSD-2-Clause | python-installed-package-cataloger |
-| packaging | 26.0 | Apache-2.0 OR BSD-2-Clause | python-installed-package-cataloger |
+| packaging | 26.2 | Apache-2.0 OR BSD-2-Clause | python-installed-package-cataloger |
 | passwd | 1:4.8.1-2ubuntu2.2 | GPL-2.0-only | dpkg-db-cataloger |
 | perl-base | 5.34.0-3ubuntu1.3 | Artistic-2.0, Artistic-dist, BSD-3-Clause, GPL-1.0-only, GPL-1.0-or-later, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.1-only, Zlib | dpkg-db-cataloger |
 | pinentry-curses | 1.1.1-1build2 | GPL-2.0-only, GPL-2.0-or-later, LGPL-3.0-only, LGPL-3.0-or-later, X11 | dpkg-db-cataloger |
@@ -7406,8 +7406,8 @@ The complete source code for Traefik is publicly available at [https://github.co
 | wheel | 0.37.1 | MIT | python-installed-package-cataloger |
 | wrapt | 2.1.1 | BSD-2-Clause | python-installed-package-cataloger |
 | zlib1g | 1:1.2.11.dfsg-2ubuntu9.2 | Zlib | dpkg-db-cataloger |
-| zope-event | 6.1 | ZPL-2.1 | python-installed-package-cataloger |
-| zope-interface | 8.2 | ZPL-2.1 | python-installed-package-cataloger |
+| zope-event | 6.2 | ZPL-2.1 | python-installed-package-cataloger |
+| zope-interface | 8.4 | ZPL-2.1 | python-installed-package-cataloger |
 
 ### registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/dovecot
 

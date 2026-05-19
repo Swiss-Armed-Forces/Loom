@@ -21,6 +21,7 @@ def beat_health(cb_schedule: str = CB_SCHEDULE) -> bool:
     with NamedTemporaryFile() as temp_file:
         with open(cb_schedule, "rb") as src:
             temp_file.write(src.read())
+        temp_file.flush()
 
         with shelve.open(temp_file.name, flag="r") as file_data:
             for task_name, task in file_data["entries"].items():
