@@ -40,13 +40,13 @@ def get_beat_schedule() -> dict:
         },
         "cleanup-on-idle": {
             "task": "worker.periodic.flush_on_idle_task.flush_on_idle_task",
-            "schedule": crontab(minute="*/11"),
+            "schedule": crontab(minute="*/5"),
         },
         "reindex-lost-files-on-idle": {
             "task": (
                 "worker.periodic.reindex_lost_files_on_idle_task.reindex_lost_files_on_idle_task"  # noqa: E501 pylint: disable=line-too-long
             ),
-            "schedule": crontab(minute="5", hour="22-05"),
+            "schedule": crontab(minute="11", hour="22-05"),
         },
         "hide-old-uploaded-files": {
             "task": "worker.periodic.hide_periodically_task.hide_periodically_task",
@@ -69,35 +69,35 @@ def get_beat_schedule() -> dict:
             "task": (
                 "worker.periodic.seaweedfs_maintenance_task.seaweedfs_maintenance_task"
             ),
-            "schedule": crontab(minute="35", hour="0,5,10,15,20"),
+            "schedule": crontab(minute="43", hour="0-23/5"),
             "args": ("volume.fix.replication", ["-apply"]),
         },
         "seaweedfs-balance-on-idle": {
             "task": (
                 "worker.periodic.seaweedfs_maintenance_task.seaweedfs_maintenance_task"
             ),
-            "schedule": crontab(minute="35", hour="1,6,11,16,21"),
+            "schedule": crontab(minute="43", hour="1-23/5"),
             "args": ("volume.balance", ["-apply"]),
         },
         "seaweedfs-scrub-on-idle": {
             "task": (
                 "worker.periodic.seaweedfs_maintenance_task.seaweedfs_maintenance_task"
             ),
-            "schedule": crontab(minute="35", hour="2,7,12,17,22"),
+            "schedule": crontab(minute="43", hour="2-23/5"),
             "args": ("volume.scrub",),
         },
         "seaweedfs-s3-clean-uploads-on-idle": {
             "task": (
                 "worker.periodic.seaweedfs_maintenance_task.seaweedfs_maintenance_task"
             ),
-            "schedule": crontab(minute="35", hour="3,8,13,18,23"),
+            "schedule": crontab(minute="43", hour="3-23/5"),
             "args": ("s3.clean.uploads",),
         },
         "seaweedfs-vacuum-on-idle": {
             "task": (
                 "worker.periodic.seaweedfs_maintenance_task.seaweedfs_maintenance_task"
             ),
-            "schedule": crontab(minute="35", hour="4,9,14,19"),
+            "schedule": crontab(minute="43", hour="4-23/5"),
             "args": ("volume.vacuum", "-garbageThreshold=0.01"),
         },
         # SeaweedFS Maintenance Tasks - weekly forced runs at night (check_idle=False)
