@@ -13,6 +13,7 @@ apis/SummarizationApi.ts
 apis/TagsApi.ts
 apis/TranslationApi.ts
 apis/WebsocketApi.ts
+apis/WipeDataApi.ts
 apis/index.ts
 index.ts
 models/AddTagsByQueryRequest.ts
@@ -26,6 +27,7 @@ models/ArchivesModel.ts
 models/Attachment.ts
 models/CacheStatisticsEntryModel.ts
 models/CompleteEstimate.ts
+models/Components.ts
 models/ContextCreateResponse.ts
 models/FileUploadResponse.ts
 models/Folder.ts
@@ -76,5 +78,6 @@ models/UpdateFileRequest.ts
 models/UpdateFilesRequest.ts
 models/ValidationError.ts
 models/ValidationErrorLocInner.ts
+models/WipeComponent.ts
 models/index.ts
 runtime.ts

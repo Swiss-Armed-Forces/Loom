@@ -21,6 +21,7 @@ _seaweedfs_shell_service: SeaweedFSShellService | None = None
 
 # Task info persisters - cached per repository type to avoid creating new classes per call
 _task_info_persisters: dict[type[BaseRepository], type[TaskInfoPersister]] = {}
+_tasks_registered: bool = False
 
 logger = logging.getLogger(__name__)
 
@@ -36,16 +37,17 @@ def _register_task_info_persister(repo_type: type[BaseRepository]) -> None:
     _task_info_persisters[repo_type] = BoundTaskInfoPersister
 
 
-def init(subprocess_reinit: bool = False):
+def init():
     # pylint: disable=global-statement
-    logger.info(
-        "Initializes worker dependencies (subprocess_reinit=%s)", subprocess_reinit
-    )
+    logger.info("Initializes worker dependencies")
 
-    if not subprocess_reinit:
-        # Only register tasks on first init (parent process)
+    global _tasks_registered
+    if not _tasks_registered:
         app = get_celery_app()
         register_tasks_for_package(app=app, package="worker")  # type: ignore[arg-type]
+        for repo_type in REPOSITORY_INSTANCES:
+            _register_task_info_persister(repo_type)
+        _tasks_registered = True
 
     # Always reinit HTTP clients (fork-unsafe)
     global _tika_service
@@ -64,11 +66,6 @@ def init(subprocess_reinit: bool = False):
         master_host=settings.seaweedfs_master_host,
         timeout=settings.seaweedfs_shell_timeout,
     )
-
-    if not subprocess_reinit:
-        # Task info persisters only need to be created once
-        for repo_type in REPOSITORY_INSTANCES:
-            _register_task_info_persister(repo_type)
 
 
 def mock_init():

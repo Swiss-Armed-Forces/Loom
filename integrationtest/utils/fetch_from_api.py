@@ -21,9 +21,9 @@ from api.routers.files import (
     GetQuery,
     GetQueryResponse,
 )
+from common.dependencies import get_celery_inspect_service
 from common.models.es_repository import DEFAULT_PAGE_SIZE
 from common.services.query_builder import QueryParameters
-from common.utils.celery_inspect import is_celery_idle
 from requests import Response
 
 from utils.consts import ARCHIVE_ENDPOINT, FILES_ENDPOINT, REQUEST_TIMEOUT
@@ -162,7 +162,7 @@ def fetch_archives_from_api(
             break
 
         if wait_for_celery_idle:
-            if not is_celery_idle():
+            if not get_celery_inspect_service().is_idle():
                 logging.debug("Celery not idle yet")
                 continue
 
@@ -272,7 +272,7 @@ def fetch_files_from_api(
         )
 
         if wait_for_celery_idle:
-            if not is_celery_idle():
+            if not get_celery_inspect_service().is_idle():
                 logging.debug("Celery not idle yet")
                 continue
 

@@ -4,8 +4,9 @@ from collections.abc import Generator
 from datetime import timedelta
 
 import pytest
+from common.dependencies import get_s3_intake_client
+from common.dependencies import init as init_common_dependencies
 from common.utils.flush_s3_bucket import flush_s3_bucket
-from crawler.dependencies import get_s3_client, init
 from minio.error import S3Error
 
 from utils.consts import ASSETS_DIR
@@ -16,12 +17,12 @@ _TEST_BUCKET_NAME = "test"
 
 @pytest.fixture(autouse=True)
 def setup_crawler_dependencies():
-    init()
+    init_common_dependencies()
 
 
 @pytest.fixture
 def test_bucket() -> Generator[str, None, None]:
-    client = get_s3_client()
+    client = get_s3_intake_client()
     flush_s3_bucket(client, _TEST_BUCKET_NAME)
     try:
         client.remove_bucket(_TEST_BUCKET_NAME)
@@ -36,10 +37,10 @@ def test_bucket() -> Generator[str, None, None]:
 class TestS3Client:
 
     def test_check_bucket_exists(self, test_bucket: str):
-        assert get_s3_client().bucket_exists(test_bucket)
+        assert get_s3_intake_client().bucket_exists(test_bucket)
 
     def test_upload_file(self, test_bucket: str):
-        client = get_s3_client()
+        client = get_s3_intake_client()
         file_src = ASSETS_DIR / _TEST_FILENAME
         with open(file_src, "rb") as file:
             f = file.read()
@@ -52,7 +53,7 @@ class TestS3Client:
         assert client.stat_object(test_bucket, _TEST_FILENAME)
 
     def test_multipart_upload_file(self, test_bucket: str):
-        client = get_s3_client()
+        client = get_s3_intake_client()
         file_src = ASSETS_DIR / _TEST_FILENAME
         with open(file_src, "rb") as file:
             f = file.read()
@@ -69,17 +70,17 @@ class TestS3Client:
 class TestFlushS3Bucket:
 
     def test_flush_empty_bucket(self, test_bucket: str):
-        client = get_s3_client()
+        client = get_s3_intake_client()
         # Flushing an empty bucket should not raise
         flush_s3_bucket(client, test_bucket)
         assert client.bucket_exists(test_bucket)
 
     def test_flush_nonexistent_bucket(self):
         # Flushing a non-existent bucket should not raise
-        flush_s3_bucket(get_s3_client(), "nonexistent-bucket-12345")
+        flush_s3_bucket(get_s3_intake_client(), "nonexistent-bucket-12345")
 
     def test_flush_removes_all_objects(self, test_bucket: str):
-        client = get_s3_client()
+        client = get_s3_intake_client()
         # Add some objects to the bucket
         for i in range(5):
             data = f"test content {i}".encode()
@@ -103,7 +104,7 @@ class TestFlushS3Bucket:
         assert len(objects_after) == 0
 
     def test_flush_removes_nested_objects(self, test_bucket: str):
-        client = get_s3_client()
+        client = get_s3_intake_client()
         # Add objects with nested paths
         paths = [
             "root.txt",
@@ -133,7 +134,7 @@ class TestFlushS3Bucket:
         assert len(objects_after) == 0
 
     def test_flush_with_min_age_preserves_new_objects(self, test_bucket: str):
-        client = get_s3_client()
+        client = get_s3_intake_client()
         # Add some objects to the bucket
         for i in range(3):
             data = f"test content {i}".encode()

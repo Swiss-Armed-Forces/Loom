@@ -1,7 +1,8 @@
 import io
 
 import pytest
-from crawler.dependencies import get_s3_client, init
+from common.dependencies import get_s3_intake_client
+from common.dependencies import init as init_common_dependencies
 from crawler.settings import settings
 
 from utils.consts import ASSETS_DIR
@@ -10,7 +11,7 @@ from utils.fetch_from_api import fetch_files_from_api, get_file_preview_by_name
 
 @pytest.fixture(autouse=True)
 def setup_crawler_dependencies():
-    init()
+    init_common_dependencies()
 
 
 @pytest.mark.parametrize(
@@ -22,7 +23,7 @@ def setup_crawler_dependencies():
     ],
 )
 def test_upload_file(upload_name: str, src_filename: str):
-    client = get_s3_client()
+    client = get_s3_intake_client()
     file_src = ASSETS_DIR / src_filename
     with open(file_src, "rb") as file:
         f = file.read()
@@ -40,7 +41,7 @@ def test_upload_file(upload_name: str, src_filename: str):
 
 
 def test_reupload_file_creates_new_entry():
-    client = get_s3_client()
+    client = get_s3_intake_client()
     upload_name = "empty_file.txt"
     src = ASSETS_DIR / "empty_file.txt"
     with open(src, "rb") as f:

@@ -25,6 +25,7 @@ from api.routers import (
     tags,
     translation,
     websocket,
+    wipe_data,
 )
 from api.settings import settings
 
@@ -80,6 +81,7 @@ def init_api(collect_metrics=True) -> FastAPI:
     api.include_router(files.router, prefix="/v1/files", tags=["files"])
     api.include_router(imap.router, prefix="/v1/imap", tags=["imap"])
     api.include_router(beat.router, prefix="/v1/beat", tags=["beat"])
+    api.include_router(wipe_data.router, prefix="/v1/wipe-data", tags=["wipe-data"])
 
     def custom_openapi() -> dict[str, Any]:
         if api.openapi_schema:

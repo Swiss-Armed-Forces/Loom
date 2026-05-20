@@ -1,8 +1,7 @@
 import logging
 
 from celery import chain
-from common.dependencies import get_celery_app
-from common.utils.celery_inspect import is_celery_idle
+from common.dependencies import get_celery_app, get_celery_inspect_service
 
 from worker.periodic.infra.periodic_task import PeriodicTask
 from worker.periodic.tasks import reindex_lost_files
@@ -19,7 +18,7 @@ def reindex_lost_files_on_idle_complete(*_, **__):
 
 @app.task(base=PeriodicTask)
 def reindex_lost_files_on_idle_task():
-    if not is_celery_idle(called_from_task=True):
+    if not get_celery_inspect_service().is_idle(called_from_task=True):
         logger.info("Celery not idle: do nothing")
         return
 
