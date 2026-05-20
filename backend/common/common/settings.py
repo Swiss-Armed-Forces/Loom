@@ -55,6 +55,10 @@ class LazybytesStorageSettings(S3StorageSettings):
     bucket_name: str = "loom-lazybytes"
 
 
+class IntakeS3StorageSettings(S3StorageSettings):
+    bucket_name: str = "default"
+
+
 class Settings(BaseSettings):
     """Settings for the common module They can be overridden by environment
     variables."""
@@ -214,6 +218,7 @@ class Settings(BaseSettings):
 
     file_storage: FileStorageSettings = FileStorageSettings()
     lazybytes_storage: LazybytesStorageSettings = LazybytesStorageSettings()
+    s3_storage: IntakeS3StorageSettings = IntakeS3StorageSettings()
 
 
 settings = Settings()

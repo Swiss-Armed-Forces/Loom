@@ -15,3 +15,4 @@ export * from "./SummarizationApi";
 export * from "./TagsApi";
 export * from "./TranslationApi";
 export * from "./WebsocketApi";
+export * from "./WipeDataApi";

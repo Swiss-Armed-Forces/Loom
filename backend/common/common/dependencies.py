@@ -20,6 +20,7 @@ from common.elasticsearch import init_elasticsearch
 from common.file.file_repository import FileRepository
 from common.file.file_scheduling_service import FileSchedulingService
 from common.messages.pubsub_service import PubSubService
+from common.services.celery_inspect_service import CeleryInspectService
 from common.services.imap_service import IMAPService
 from common.services.lazybytes_service import (
     LazyBytesService,
@@ -28,6 +29,7 @@ from common.services.lazybytes_service import (
 from common.services.query_builder import QueryBuilder
 from common.services.queues_service import QueuesService
 from common.services.task_scheduling_service import TaskSchedulingService
+from common.services.wipe_service import WipeService
 from common.settings import settings
 from common.task_object.root_task_information_repository import (
     RootTaskInformationRepository,
@@ -63,19 +65,20 @@ _lazybytes_service: LazyBytesService | None = None
 _ollama_client: Client | None = None
 _ollama_tool_client: Client | None = None
 _imap_service: IMAPService | None = None
+_s3_intake_client: Minio | None = None
+_celery_inspect_service: CeleryInspectService | None = None
+_wipe_service: WipeService | None = None
 
 
 logger = logging.getLogger(__name__)
 
 
 # pylint: disable=too-many-statements
-def init(init_elasticsearch_documents: bool = False, subprocess_reinit: bool = False):
+def init(init_elasticsearch_documents: bool = False):
     # pylint: disable=global-statement
-    logger.info(
-        "Initializes common dependencies (subprocess_reinit=%s)", subprocess_reinit
-    )
+    logger.info("Initializes common dependencies")
 
-    # NOTE: On subprocess_reinit, we do NOT close the inherited connections.
+    # NOTE: We do NOT close inherited connections before reinitializing.
     # After fork(), the child has copies of the parent's connection objects
     # sharing the same underlying sockets. Calling close() in the child
     # could affect the parent's connections.
@@ -84,7 +87,6 @@ def init(init_elasticsearch_documents: bool = False, subprocess_reinit: bool = F
     # The orphaned connection objects in the child will be cleaned up
     # when the subprocess exits.
 
-    # --- Fork-unsafe: connection clients ---
     global _libretranslate_api
     _libretranslate_api = LibreTranslateAPI(str(settings.translate_host))
 
@@ -104,14 +106,12 @@ def init(init_elasticsearch_documents: bool = False, subprocess_reinit: bool = F
     _pubsub_service = PubSubService(_redis_client, _redis_client_async)
 
     global _elasticsearch
-    # Only init documents on first init, not subprocess reinit
     _elasticsearch = init_elasticsearch(
         _query_builder,
         _pubsub_service,
-        init_elasticsearch_documents and not subprocess_reinit,
+        init_elasticsearch_documents,
     )
 
-    # --- Fork-unsafe: services with direct connection references ---
     global _file_storage_service
     _file_storage_service = S3LazyBytesService(
         Minio(
@@ -143,66 +143,94 @@ def init(init_elasticsearch_documents: bool = False, subprocess_reinit: bool = F
         threshold_bytes=settings.lazy_threshold_bytes,
     )
 
-    # --- Fork-safe: skip on subprocess_reinit ---
-    if not subprocess_reinit:
-        global _celery_app
+    global _imap_service
+    _imap_service = IMAPService(
+        settings.imap_host, settings.imap_user, settings.imap_password
+    )
+
+    global _s3_intake_client
+    _s3_intake_client = Minio(
+        settings.s3_storage.host,
+        access_key=settings.s3_storage.access_key,
+        secret_key=settings.s3_storage.secret_key,
+        secure=settings.s3_storage.secure_connection,
+    )
+
+    # NOTE: _celery_app must only be initialized once. init_celery_app() calls
+    # app.set_current() and app.set_default(), which would replace the global/thread-local
+    # Celery app reference in forked subprocesses with a new app that lacks registered tasks,
+    # breaking task dispatch. The "init once" guard ensures it is never replaced.
+    global _celery_app
+    if _celery_app is None or isinstance(_celery_app, MagicMock):
         _celery_app = init_celery_app()
 
-        global _queues_service
-        _queues_service = QueuesService(str(settings.rabbit_mq_management_host))
+    global _queues_service
+    _queues_service = QueuesService(str(settings.rabbit_mq_management_host))
 
-        global _archive_repository
-        _archive_repository = ArchiveRepository(_query_builder, _pubsub_service)
+    global _archive_repository
+    _archive_repository = ArchiveRepository(_query_builder, _pubsub_service)
 
-        global _file_repository
-        _file_repository = FileRepository(_query_builder, _pubsub_service)
+    global _file_repository
+    _file_repository = FileRepository(_query_builder, _pubsub_service)
 
-        global _ai_context_repository
-        _ai_context_repository = AiContextRepository(_query_builder, _pubsub_service)
+    global _ai_context_repository
+    _ai_context_repository = AiContextRepository(_query_builder, _pubsub_service)
 
-        global _task_scheduling_service
-        _task_scheduling_service = TaskSchedulingService(
-            _celery_app,
-            _root_task_information_repository,
-        )
+    global _task_scheduling_service
+    _task_scheduling_service = TaskSchedulingService(
+        _celery_app,
+        _root_task_information_repository,
+    )
 
-        global _file_scheduling_service
-        _file_scheduling_service = FileSchedulingService(
-            _file_repository,
-            _file_storage_service,
-            _task_scheduling_service,
-            _lazybytes_service,
-        )
+    global _file_scheduling_service
+    _file_scheduling_service = FileSchedulingService(
+        _file_repository,
+        _file_storage_service,
+        _task_scheduling_service,
+        _lazybytes_service,
+    )
 
-        global _archive_scheduling_service
-        _archive_scheduling_service = ArchiveSchedulingService(
-            _archive_repository,
-            _task_scheduling_service,
-        )
+    global _archive_scheduling_service
+    _archive_scheduling_service = ArchiveSchedulingService(
+        _archive_repository,
+        _task_scheduling_service,
+    )
 
-        global _ai_scheduling_service
-        _ai_scheduling_service = AiSchedulingService(
-            _ai_context_repository,
-            _task_scheduling_service,
-        )
+    global _ai_scheduling_service
+    _ai_scheduling_service = AiSchedulingService(
+        _ai_context_repository,
+        _task_scheduling_service,
+    )
 
-        global _archive_encryption_service
-        _archive_encryption_service = ArchiveEncryptionService(
-            settings.archive_enc_master_key
-        )
+    global _archive_encryption_service
+    _archive_encryption_service = ArchiveEncryptionService(
+        settings.archive_enc_master_key
+    )
 
-    # --- Fork-unsafe: HTTP clients ---
+    global _celery_inspect_service
+    _celery_inspect_service = CeleryInspectService(_celery_app, _queues_service)
+
+    global _wipe_service
+    _wipe_service = WipeService(
+        celery_app=_celery_app,
+        elasticsearch=_elasticsearch,
+        query_builder=_query_builder,
+        pubsub_service=_pubsub_service,
+        redis_client=_redis_client,
+        redis_cache_client=_redis_cache_client,
+        s3_intake_client=_s3_intake_client,
+        file_storage_service=_file_storage_service,
+        lazybytes_service=_lazybytes_service,
+        imap_service=_imap_service,
+        celery_inspect_service=_celery_inspect_service,
+    )
+
     global _ollama_client
     _ollama_client = Client(str(settings.ollama_host), timeout=settings.ollama_timeout)
 
     global _ollama_tool_client
     _ollama_tool_client = Client(
         str(settings.ollama_tool_host), timeout=settings.ollama_timeout
-    )
-
-    global _imap_service
-    _imap_service = IMAPService(
-        settings.imap_host, settings.imap_user, settings.imap_password
     )
 
 
@@ -217,20 +245,6 @@ def mock_init():
     global _query_builder
     _query_builder = MagicMock(spec=QueryBuilder)
 
-    global _elasticsearch
-    _elasticsearch = MagicMock(spec=Elasticsearch)
-
-    global _celery_app
-    _celery_app = MagicMock(spec=Celery)
-    # make the task decorator work: needed if we want to tests tasks
-    _celery_app.task = noop_decorator
-
-    global _queues_service
-    _queues_service = MagicMock(spec=QueuesService)
-
-    global _pubsub_service
-    _pubsub_service = MagicMock(spec=PubSubService)
-
     global _redis_client
     _redis_client = MagicMock(spec=StrictRedis)
 
@@ -240,8 +254,34 @@ def mock_init():
     global _redis_cache_client
     _redis_cache_client = MagicMock(spec=StrictRedis)
 
+    global _pubsub_service
+    _pubsub_service = MagicMock(spec=PubSubService)
+
+    global _elasticsearch
+    _elasticsearch = MagicMock(spec=Elasticsearch)
+
     global _file_storage_service
     _file_storage_service = MagicMock(spec=LazyBytesService)
+
+    global _root_task_information_repository
+    _root_task_information_repository = MagicMock(spec=RootTaskInformationRepository)
+
+    global _lazybytes_service
+    _lazybytes_service = MagicMock(spec=LazyBytesService)
+
+    global _imap_service
+    _imap_service = MagicMock(spec=IMAPService)
+
+    global _s3_intake_client
+    _s3_intake_client = MagicMock(spec=Minio)
+
+    global _celery_app
+    _celery_app = MagicMock(spec=Celery)
+    # make the task decorator work: needed if we want to tests tasks
+    _celery_app.task = noop_decorator
+
+    global _queues_service
+    _queues_service = MagicMock(spec=QueuesService)
 
     global _archive_repository
     _archive_repository = MagicMock(spec=ArchiveRepository)
@@ -252,17 +292,11 @@ def mock_init():
     global _ai_context_repository
     _ai_context_repository = MagicMock(spec=AiContextRepository)
 
-    global _root_task_information_repository
-    _root_task_information_repository = MagicMock(spec=RootTaskInformationRepository)
-
-    global _lazybytes_service
-    _lazybytes_service = MagicMock(spec=LazyBytesService)
+    global _task_scheduling_service
+    _task_scheduling_service = MagicMock(spec=TaskSchedulingService)
 
     global _file_scheduling_service
     _file_scheduling_service = MagicMock(spec=FileSchedulingService)
-
-    global _task_scheduling_service
-    _task_scheduling_service = MagicMock(spec=TaskSchedulingService)
 
     global _archive_scheduling_service
     _archive_scheduling_service = MagicMock(spec=ArchiveSchedulingService)
@@ -273,14 +307,17 @@ def mock_init():
     global _archive_encryption_service
     _archive_encryption_service = MagicMock(spec=ArchiveEncryptionService)
 
+    global _celery_inspect_service
+    _celery_inspect_service = MagicMock(spec=CeleryInspectService)
+
+    global _wipe_service
+    _wipe_service = MagicMock(spec=WipeService)
+
     global _ollama_client
     _ollama_client = MagicMock(spec=Client)
 
     global _ollama_tool_client
     _ollama_tool_client = MagicMock(spec=Client)
-
-    global _imap_service
-    _imap_service = MagicMock(spec=IMAPService)
 
 
 def get_libretranslate_api() -> LibreTranslateAPI:
@@ -419,3 +456,21 @@ def get_imap_service() -> IMAPService:
     if _imap_service is None:
         raise DependencyException("IMAP Service missing")
     return _imap_service
+
+
+def get_s3_intake_client() -> Minio:
+    if _s3_intake_client is None:
+        raise DependencyException("S3 intake client missing")
+    return _s3_intake_client
+
+
+def get_celery_inspect_service() -> CeleryInspectService:
+    if _celery_inspect_service is None:
+        raise DependencyException("CeleryInspect Service missing")
+    return _celery_inspect_service
+
+
+def get_wipe_service() -> WipeService:
+    if _wipe_service is None:
+        raise DependencyException("Wipe service missing")
+    return _wipe_service

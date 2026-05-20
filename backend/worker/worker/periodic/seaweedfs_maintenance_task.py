@@ -1,7 +1,6 @@
 import logging
 
-from common.dependencies import get_celery_app
-from common.utils.celery_inspect import is_celery_idle
+from common.dependencies import get_celery_app, get_celery_inspect_service
 
 from worker.dependencies import get_seaweedfs_shell_service
 from worker.periodic.infra.periodic_task import PeriodicTask
@@ -25,7 +24,7 @@ def seaweedfs_maintenance_task(
         command_args: Optional arguments for the command.
         check_idle: If True, only run when queues are idle.
     """
-    if check_idle and not is_celery_idle(called_from_task=True):
+    if check_idle and not get_celery_inspect_service().is_idle(called_from_task=True):
         logger.info("Celery not idle: do nothing")
         return
 
