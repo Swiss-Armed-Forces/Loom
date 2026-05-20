@@ -181,30 +181,16 @@ class Settings(CommonSettings):
 
     rspam_host: AnyHttpUrl = AnyHttpUrl(f"http://rspamd-worker.{DOMAIN}")
 
-    llm_summarize_text_chunk_size: int = 3000
-    llm_summarize_text_chunk_overlap: int = 100
     summary_max_chunks: int = 5
     uploaded_files_days_before_hidden: int | None = None
     imap_folder_days_before_unsubscribe: int | None = None
 
-    llm_embedding_document_prefix: str = "search_document:"
-    llm_embedding_query_prefix: str = "search_query:"
-    llm_embedding_temperature: float | None = 0
-
-    llm_embedding_text_chunk_size: int = 400
-    llm_embedding_text_chunk_overlap: int = 50
-
-    llm_rerank_temperature: float | None = None
     llm_rerank_system_prompt: str = (
         """You are an expert reranking machine called Loom."""
     )
 
     llm_chat_system_prompt: str = """You are an expert english chatbot called Loom"""
     llm_chat_message_history_index: str = "message_history"
-
-    # HyDE (Hypothetical Document Embeddings) settings
-    llm_hyde_num_documents: int = 5
-    llm_hyde_temperature: float | None = 0.7
 
     auto_tag_file_similarity_threshold: float = 0.75
 

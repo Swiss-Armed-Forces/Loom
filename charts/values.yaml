@@ -81,20 +81,43 @@ pipeline:
   celery_alternate_exchange_name: null
   celery_alternate_exchange_type: null
 
-llm:
+# Shared LLM defaults — override per sub-key via YAML anchors
+_llmDefaults: &llm-defaults
+  endpoint: null      # set per sub-key in configmap when null
+  api_key: null
   model: huihui_ai/qwen3.5-abliterated:9b
-  model_embedding: nomic-embed-text-v2-moe
-  model_tool: huihui_ai/qwen3.5-abliterated:9b
   temperature: null
-  summarize_text_chunk_size: null
-  summarize_text_chunk_overlap: null
-  embedding_temperature: null
-  embedding_text_chunk_size: null
-  embedding_text_chunk_overlap: null
-  rerank_temperature: null
-  # HyDE (Hypothetical Document Embeddings) settings
-  hyde_num_documents: null  # Number of hypothetical docs to generate
-  hyde_temperature: null
+  think: null
+  timeout: null
+
+llm:
+  embedding:
+    <<: *llm-defaults
+    model: nomic-embed-text-v2-moe
+    dimensions: null
+    text_chunk_size: null
+    text_chunk_overlap: null
+    document_prefix: null
+    query_prefix: null
+
+  tool:
+    <<: *llm-defaults
+
+  summarization:
+    <<: *llm-defaults
+    text_chunk_size: null
+    text_chunk_overlap: null
+    system_prompt: null
+
+  hyde:
+    <<: *llm-defaults
+    num_documents: null
+
+  rerank:
+    <<: *llm-defaults
+
+  chat:
+    <<: *llm-defaults
 
 preInstall:
   image:

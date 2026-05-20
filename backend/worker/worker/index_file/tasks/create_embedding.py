@@ -3,13 +3,16 @@ import logging
 
 from celery import chain, chord, group
 from celery.canvas import Signature
-from common.dependencies import get_celery_app, get_lazybytes_service, get_ollama_client
+from common.dependencies import (
+    get_celery_app,
+    get_lazybytes_service,
+    get_llm_embedding_client,
+)
 from common.file.file_repository import Embedding, File
 from common.services.lazybytes_service import LazyBytes, TypedLazyBytes
 from common.utils.cache import cache
 from httpx import HTTPError
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from ollama import Options
 
 from worker.index_file.infra.file_indexing_task import FileIndexingTask
 from worker.index_file.infra.indexing_persister import IndexingPersister
@@ -56,8 +59,8 @@ def create_embedding_task(
         return None
 
     text_splitter = RecursiveCharacterTextSplitter(
-        chunk_size=settings.llm_embedding_text_chunk_size,
-        chunk_overlap=settings.llm_embedding_text_chunk_overlap,
+        chunk_size=settings.llm.embedding.text_chunk_size,
+        chunk_overlap=settings.llm.embedding.text_chunk_overlap,
     )
 
     text = load_text_from_text_lazy(text_lazy=text_lazy)
@@ -91,21 +94,18 @@ class LLMError(Exception):
 )
 @cache()
 def embed_text(text: str) -> TypedLazyBytes[Embedding]:
-    client = get_ollama_client()
+    client = get_llm_embedding_client()
     try:
-        response = client.embed(
-            model=settings.llm_model_embedding,
-            input=f"{settings.llm_embedding_document_prefix}{text}",
-            dimensions=settings.llm_embedding_dimensions,
-            options=Options(
-                temperature=settings.llm_embedding_temperature,
-            ),
+        response = client.embeddings.create(
+            model=settings.llm.embedding.model,
+            input=f"{settings.llm.embedding.document_prefix}{text}",
+            dimensions=settings.llm.embedding.dimensions,
         )
     except HTTPError as ex:
         raise LLMError() from ex
     embedding = Embedding(
         text=text,
-        vector=list(response.embeddings[0]),
+        vector=list(response.data[0].embedding),
     )
 
     return get_lazybytes_service().from_object(embedding)

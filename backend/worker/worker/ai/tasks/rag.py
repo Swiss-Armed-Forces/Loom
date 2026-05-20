@@ -10,7 +10,10 @@ from common.dependencies import (
     get_celery_app,
     get_file_repository,
     get_lazybytes_service,
-    get_ollama_client,
+    get_llm_chat_client,
+    get_llm_embedding_client,
+    get_llm_hyde_client,
+    get_llm_rerank_client,
     get_pubsub_service,
 )
 from common.messages.messages import (
@@ -23,7 +26,11 @@ from common.services.lazybytes_service import LazyBytes, TypedLazyBytes
 from common.services.query_builder import QueryParameters
 from httpx import HTTPError
 from numpy import array, mean
-from ollama import Message, Options
+from openai.types.chat import (
+    ChatCompletionMessageParam,
+    ChatCompletionSystemMessageParam,
+    ChatCompletionUserMessageParam,
+)
 from pydantic import BaseModel, computed_field
 
 from worker.ai.infra.ai_context_processing_task import AiContextProcessingTask
@@ -102,7 +109,7 @@ def signature(context: AiContext, question: str) -> Signature:
                         generate_hypothetical_document.s(question),
                         embed_document.s(),
                     )
-                    for _ in range(settings.llm_hyde_num_documents)
+                    for _ in range(settings.llm.hyde.num_documents)
                 ),
             ],
             aggregate_embeddings.s(),
@@ -125,20 +132,17 @@ class LLMError(Exception):
 )
 def embed_question(question: str) -> TypedLazyBytes[Sequence[float]]:
     """Embed a single question."""
-    client = get_ollama_client()
+    client = get_llm_embedding_client()
     try:
-        response = client.embed(
-            model=settings.llm_model_embedding,
-            input=[f"{settings.llm_embedding_query_prefix}{question}"],
-            dimensions=settings.llm_embedding_dimensions,
-            options=Options(
-                temperature=settings.llm_embedding_temperature,
-            ),
+        response = client.embeddings.create(
+            model=settings.llm.embedding.model,
+            input=[f"{settings.llm.embedding.query_prefix}{question}"],
+            dimensions=settings.llm.embedding.dimensions,
         )
     except HTTPError as ex:
         raise LLMError("Document embedding failed") from ex
 
-    embedding = response.embeddings[0]
+    embedding = response.data[0].embedding
     logger.debug("Embedded question into %d-dim vector", len(embedding))
     return get_lazybytes_service().from_object(embedding)
 
@@ -154,27 +158,29 @@ def generate_hypothetical_document(question: str) -> str:
     prompt = f"""Given the question below, write a short factual passage that would
 directly answer it. Do not explain or preface your answer. Just write the passage
 as if it were from a document. Keep your answer in a paragraph of
-{settings.llm_embedding_text_chunk_size} tokens or less.
+{settings.llm.embedding.text_chunk_size} tokens or less.
 
 Question: {question}
 
 Passage:"""
-    client = get_ollama_client()
+    client = get_llm_hyde_client()
+    messages = [
+        ChatCompletionUserMessageParam(role="user", content=prompt),
+    ]
 
     try:
-        response = client.generate(
-            model=settings.llm_model,
-            prompt=prompt,
-            options=Options(
-                temperature=settings.llm_hyde_temperature,
-                num_predict=settings.llm_embedding_text_chunk_size,
-            ),
-            think=settings.llm_think,
+        response = client.chat.completions.create(
+            model=settings.llm.hyde.model,
+            messages=messages,
+            temperature=settings.llm.hyde.temperature,
+            max_tokens=settings.llm.embedding.text_chunk_size,
+            extra_headers={"X-Think": "true"} if settings.llm.hyde.think else None,
         )
     except HTTPError as ex:
         raise LLMError("Hypothetical document generation failed") from ex
 
-    doc = response.response.strip()
+    doc = (response.choices[0].message.content or "").strip()
+
     logger.debug("Hypothetical generated document: %.100s...", doc)
     return doc
 
@@ -187,20 +193,17 @@ Passage:"""
 )
 def embed_document(document: str) -> TypedLazyBytes[Sequence[float]]:
     """Embed a single document."""
-    client = get_ollama_client()
+    client = get_llm_embedding_client()
     try:
-        response = client.embed(
-            model=settings.llm_model_embedding,
-            input=[f"{settings.llm_embedding_document_prefix}{document}"],
-            dimensions=settings.llm_embedding_dimensions,
-            options=Options(
-                temperature=settings.llm_embedding_temperature,
-            ),
+        response = client.embeddings.create(
+            model=settings.llm.embedding.model,
+            input=[f"{settings.llm.embedding.document_prefix}{document}"],
+            dimensions=settings.llm.embedding.dimensions,
         )
     except HTTPError as ex:
         raise LLMError("Document embedding failed") from ex
 
-    embedding = response.embeddings[0]
+    embedding = response.data[0].embedding
     logger.debug("Embedded document into %d-dim vector", len(embedding))
     return get_lazybytes_service().from_object(embedding)
 
@@ -292,22 +295,25 @@ def rerank_scored_search_embeddings(
 def _invoke_rerank_llm(
     prompt: str,
 ) -> float:
-    client = get_ollama_client()
+    client = get_llm_rerank_client()
+    messages = [
+        ChatCompletionUserMessageParam(role="user", content=prompt),
+    ]
+
     try:
-        response = client.generate(
-            model=settings.llm_model,
-            prompt=prompt,
-            system=settings.llm_rerank_system_prompt,
-            options=Options(
-                temperature=settings.llm_rerank_temperature,
-            ),
-            think=settings.llm_think,
+        response = client.chat.completions.create(
+            model=settings.llm.rerank.model,
+            messages=messages,
+            temperature=settings.llm.rerank.temperature,
+            extra_headers={"X-Think": "true"} if settings.llm.rerank.think else None,
         )
     except HTTPError as ex:
         raise LLMError() from ex
 
     # search and extract rank
-    rank_search = re.search(r"^\s*(?P<rank>[0-9.]+)", response.response)
+    rank_search = re.search(
+        r"^\s*(?P<rank>[0-9.]+)", response.choices[0].message.content or ""
+    )
     rank = float(
         rank_search.group("rank") if rank_search is not None else RERANK_MIN_RANK
     )
@@ -418,26 +424,28 @@ def limit_and_sort_ranked_search_embeddings(
 
 
 def _stream_chat_llm(
-    messages: Sequence[Message],
+    messages: Sequence[ChatCompletionMessageParam],
 ) -> Generator[str, None, None]:
-    client = get_ollama_client()
-    messages = [Message(role="system", content=settings.llm_chat_system_prompt)] + list(
-        messages
-    )
+    client = get_llm_chat_client()
+    all_messages: list[ChatCompletionMessageParam] = [
+        ChatCompletionSystemMessageParam(
+            role="system", content=settings.llm_chat_system_prompt
+        ),
+        *messages,
+    ]
+
     try:
-        stream = client.chat(
-            model=settings.llm_model,
-            messages=messages,
+        stream = client.chat.completions.create(
+            model=settings.llm.chat.model,
+            messages=all_messages,
             stream=True,
-            options=Options(
-                temperature=settings.llm_temperature,
-            ),
-            think=settings.llm_think,
+            temperature=settings.llm.chat.temperature,
+            extra_headers={"X-Think": "true"} if settings.llm.chat.think else None,
         )
     except HTTPError as ex:
         raise LLMError() from ex
     for token in stream:
-        message_content = token.message.content
+        message_content = token.choices[0].delta.content
         if message_content is None:
             continue
         yield message_content
@@ -462,11 +470,9 @@ def chatbot_query(
         text = load_text_from_text_lazy(sorted_ranked_search_embedding.text_lazy)
         answer_context += f"* {text}\n"
 
+    messages: list[ChatCompletionMessageParam]
     if len(sorted_ranked_search_embeddings) > 0:
-        messages = [
-            Message(
-                role="system",
-                content=f"""TASK: Your task is to answer the human's QUESTION
+        task_prompt = f"""TASK: Your task is to answer the human's QUESTION
 using the CONTEXT below.
 
 Do NOT use any previous knowledge which is not contained in the CONTEXT.
@@ -475,21 +481,22 @@ Keep your answer in a paragraph of {LLM_MAX_TOKENS_RAG} tokens or less.
 Keep your answer concise and brief.
 Always answer in the following language: {settings.translate_target}
 --------------------
-CONTEXT: {answer_context}""",
+CONTEXT: {answer_context}"""
+        messages = [
+            ChatCompletionUserMessageParam(role="user", content=task_prompt),
+            ChatCompletionUserMessageParam(
+                role="user", content=f"QUESTION: {question}"
             ),
-            Message(role="user", content=f"""QUESTION: {question}"""),
         ]
 
     else:
-        messages = [
-            Message(
-                role="system",
-                content=f"""TASK: Tell the user that he should refine their QUERY
-or QUESTION because you could not find enough information in the data to answer his QUESTION.
+        task_prompt = f"""TASK: Tell the user that they should refine their QUERY
+or QUESTION because you could not find enough information in the data to answer their QUESTION.
 
 Keep your answer in a paragraph of {LLM_MAX_TOKENS_RAG} tokens or less.
-Keep your answer concise and brief.""",
-            )
+Keep your answer concise and brief."""
+        messages = [
+            ChatCompletionUserMessageParam(role="user", content=task_prompt),
         ]
 
     # send all the tokens to the pubsub channel

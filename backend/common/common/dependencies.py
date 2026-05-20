@@ -6,7 +6,7 @@ from celery import Celery
 from elasticsearch import Elasticsearch
 from libretranslatepy import LibreTranslateAPI
 from minio import Minio
-from ollama import Client
+from openai import OpenAI
 from redis import StrictRedis
 from redis.asyncio import StrictRedis as StrictRedisAsync
 
@@ -44,28 +44,32 @@ class DependencyException(Exception):
 # Note, "= None" assignments are needed here to make flake8 happy
 _libretranslate_api: LibreTranslateAPI | None = None
 _query_builder: QueryBuilder | None = None
-_elasticsearch: Elasticsearch | None = None
-_celery_app: Optional["Celery[BaseTask]"] = None
 _redis_client: StrictRedis | None = None
 _redis_client_async: StrictRedisAsync | None = None
 _redis_cache_client: StrictRedis | None = None
 _pubsub_service: PubSubService | None = None
-_queues_service: QueuesService | None = None
+_elasticsearch: Elasticsearch | None = None
 _file_storage_service: LazyBytesService | None = None
+_root_task_information_repository: RootTaskInformationRepository | None = None
+_lazybytes_service: LazyBytesService | None = None
+_imap_service: IMAPService | None = None
+_s3_intake_client: Minio | None = None
+_celery_app: Optional["Celery[BaseTask]"] = None
+_queues_service: QueuesService | None = None
 _archive_repository: ArchiveRepository | None = None
 _file_repository: FileRepository | None = None
 _ai_context_repository: AiContextRepository | None = None
-_root_task_information_repository: RootTaskInformationRepository | None = None
-_file_scheduling_service: FileSchedulingService | None = None
 _task_scheduling_service: TaskSchedulingService | None = None
+_file_scheduling_service: FileSchedulingService | None = None
 _archive_scheduling_service: ArchiveSchedulingService | None = None
 _ai_scheduling_service: AiSchedulingService | None = None
 _archive_encryption_service: ArchiveEncryptionService | None = None
-_lazybytes_service: LazyBytesService | None = None
-_ollama_client: Client | None = None
-_ollama_tool_client: Client | None = None
-_imap_service: IMAPService | None = None
-_s3_intake_client: Minio | None = None
+_llm_summarization_client: OpenAI | None = None
+_llm_hyde_client: OpenAI | None = None
+_llm_rerank_client: OpenAI | None = None
+_llm_chat_client: OpenAI | None = None
+_llm_embedding_client: OpenAI | None = None
+_llm_tool_client: OpenAI | None = None
 _celery_inspect_service: CeleryInspectService | None = None
 _wipe_service: WipeService | None = None
 
@@ -76,7 +80,7 @@ logger = logging.getLogger(__name__)
 # pylint: disable=too-many-statements
 def init(init_elasticsearch_documents: bool = False):
     # pylint: disable=global-statement
-    logger.info("Initializes common dependencies")
+    logger.info("Initialize common dependencies")
 
     # NOTE: We do NOT close inherited connections before reinitializing.
     # After fork(), the child has copies of the parent's connection objects
@@ -207,6 +211,48 @@ def init(init_elasticsearch_documents: bool = False):
         settings.archive_enc_master_key
     )
 
+    global _llm_summarization_client
+    _llm_summarization_client = OpenAI(
+        base_url=str(settings.llm.summarization.endpoint),
+        api_key=settings.llm.summarization.api_key,
+        timeout=settings.llm.summarization.timeout,
+    )
+
+    global _llm_hyde_client
+    _llm_hyde_client = OpenAI(
+        base_url=str(settings.llm.hyde.endpoint),
+        api_key=settings.llm.hyde.api_key,
+        timeout=settings.llm.hyde.timeout,
+    )
+
+    global _llm_rerank_client
+    _llm_rerank_client = OpenAI(
+        base_url=str(settings.llm.rerank.endpoint),
+        api_key=settings.llm.rerank.api_key,
+        timeout=settings.llm.rerank.timeout,
+    )
+
+    global _llm_chat_client
+    _llm_chat_client = OpenAI(
+        base_url=str(settings.llm.chat.endpoint),
+        api_key=settings.llm.chat.api_key,
+        timeout=settings.llm.chat.timeout,
+    )
+
+    global _llm_embedding_client
+    _llm_embedding_client = OpenAI(
+        base_url=str(settings.llm.embedding.endpoint),
+        api_key=settings.llm.embedding.api_key,
+        timeout=settings.llm.embedding.timeout,
+    )
+
+    global _llm_tool_client
+    _llm_tool_client = OpenAI(
+        base_url=str(settings.llm.tool.endpoint),
+        api_key=settings.llm.tool.api_key,
+        timeout=settings.llm.tool.timeout,
+    )
+
     global _celery_inspect_service
     _celery_inspect_service = CeleryInspectService(_celery_app, _queues_service)
 
@@ -225,19 +271,11 @@ def init(init_elasticsearch_documents: bool = False):
         celery_inspect_service=_celery_inspect_service,
     )
 
-    global _ollama_client
-    _ollama_client = Client(str(settings.ollama_host), timeout=settings.ollama_timeout)
-
-    global _ollama_tool_client
-    _ollama_tool_client = Client(
-        str(settings.ollama_tool_host), timeout=settings.ollama_timeout
-    )
-
 
 # pylint: disable=too-many-statements
 def mock_init():
     # pylint: disable=global-statement
-    logger.info("Initializes global mock dependencies")
+    logger.info("Initialize global mock dependencies")
 
     global _libretranslate_api
     _libretranslate_api = MagicMock(spec=LibreTranslateAPI)
@@ -307,17 +345,29 @@ def mock_init():
     global _archive_encryption_service
     _archive_encryption_service = MagicMock(spec=ArchiveEncryptionService)
 
+    global _llm_summarization_client
+    _llm_summarization_client = MagicMock(spec=OpenAI)
+
+    global _llm_hyde_client
+    _llm_hyde_client = MagicMock(spec=OpenAI)
+
+    global _llm_rerank_client
+    _llm_rerank_client = MagicMock(spec=OpenAI)
+
+    global _llm_chat_client
+    _llm_chat_client = MagicMock(spec=OpenAI)
+
+    global _llm_embedding_client
+    _llm_embedding_client = MagicMock(spec=OpenAI)
+
+    global _llm_tool_client
+    _llm_tool_client = MagicMock(spec=OpenAI)
+
     global _celery_inspect_service
     _celery_inspect_service = MagicMock(spec=CeleryInspectService)
 
     global _wipe_service
     _wipe_service = MagicMock(spec=WipeService)
-
-    global _ollama_client
-    _ollama_client = MagicMock(spec=Client)
-
-    global _ollama_tool_client
-    _ollama_tool_client = MagicMock(spec=Client)
 
 
 def get_libretranslate_api() -> LibreTranslateAPI:
@@ -330,24 +380,6 @@ def get_query_builder() -> QueryBuilder:
     if _query_builder is None:
         raise DependencyException("QueryBuilder missing")
     return _query_builder
-
-
-def get_elasticsearch() -> Elasticsearch:
-    if _elasticsearch is None:
-        raise DependencyException("Elasticsearch not initialized")
-    return _elasticsearch
-
-
-def get_celery_app() -> "Celery[BaseTask]":
-    if _celery_app is None:
-        raise DependencyException("Celery app not initialized")
-    return _celery_app
-
-
-def get_queues_service() -> QueuesService:
-    if _queues_service is None:
-        raise DependencyException("Queues service is missing")
-    return _queues_service
 
 
 def get_redis_client() -> StrictRedis:
@@ -374,10 +406,52 @@ def get_pubsub_service() -> PubSubService:
     return _pubsub_service
 
 
+def get_elasticsearch() -> Elasticsearch:
+    if _elasticsearch is None:
+        raise DependencyException("Elasticsearch not initialized")
+    return _elasticsearch
+
+
 def get_file_storage_service() -> LazyBytesService:
     if _file_storage_service is None:
         raise DependencyException("File Storage Service missing")
     return _file_storage_service
+
+
+def get_root_task_information_repository() -> RootTaskInformationRepository:
+    if _root_task_information_repository is None:
+        raise DependencyException("Root task information repository not loaded")
+    return _root_task_information_repository
+
+
+def get_lazybytes_service() -> LazyBytesService:
+    if _lazybytes_service is None:
+        raise DependencyException("Lazybytes Service missing")
+    return _lazybytes_service
+
+
+def get_imap_service() -> IMAPService:
+    if _imap_service is None:
+        raise DependencyException("IMAP Service missing")
+    return _imap_service
+
+
+def get_s3_intake_client() -> Minio:
+    if _s3_intake_client is None:
+        raise DependencyException("S3 intake client missing")
+    return _s3_intake_client
+
+
+def get_celery_app() -> "Celery[BaseTask]":
+    if _celery_app is None:
+        raise DependencyException("Celery app not initialized")
+    return _celery_app
+
+
+def get_queues_service() -> QueuesService:
+    if _queues_service is None:
+        raise DependencyException("Queues service is missing")
+    return _queues_service
 
 
 def get_archive_repository() -> ArchiveRepository:
@@ -398,22 +472,16 @@ def get_ai_context_repository() -> AiContextRepository:
     return _ai_context_repository
 
 
-def get_root_task_information_repository() -> RootTaskInformationRepository:
-    if _root_task_information_repository is None:
-        raise DependencyException("Root task information repository not loaded")
-    return _root_task_information_repository
+def get_task_scheduling_service() -> TaskSchedulingService:
+    if _task_scheduling_service is None:
+        raise DependencyException("Task Scheduling Service missing")
+    return _task_scheduling_service
 
 
 def get_file_scheduling_service() -> FileSchedulingService:
     if _file_scheduling_service is None:
         raise DependencyException("File Scheduling Service missing")
     return _file_scheduling_service
-
-
-def get_task_scheduling_service() -> TaskSchedulingService:
-    if _task_scheduling_service is None:
-        raise DependencyException("Task Scheduling Service missing")
-    return _task_scheduling_service
 
 
 def get_archive_scheduling_service() -> ArchiveSchedulingService:
@@ -434,34 +502,40 @@ def get_archive_encryption_service() -> ArchiveEncryptionService:
     return _archive_encryption_service
 
 
-def get_lazybytes_service() -> LazyBytesService:
-    if _lazybytes_service is None:
-        raise DependencyException("Lazybytes Service missing")
-    return _lazybytes_service
+def get_llm_summarization_client() -> OpenAI:
+    if _llm_summarization_client is None:
+        raise DependencyException("LLM summarization client missing")
+    return _llm_summarization_client
 
 
-def get_ollama_client() -> Client:
-    if _ollama_client is None:
-        raise DependencyException("Ollama Client missing")
-    return _ollama_client
+def get_llm_hyde_client() -> OpenAI:
+    if _llm_hyde_client is None:
+        raise DependencyException("LLM hyde client missing")
+    return _llm_hyde_client
 
 
-def get_ollama_tool_client() -> Client:
-    if _ollama_tool_client is None:
-        raise DependencyException("Ollama Tool Client missing")
-    return _ollama_tool_client
+def get_llm_rerank_client() -> OpenAI:
+    if _llm_rerank_client is None:
+        raise DependencyException("LLM rerank client missing")
+    return _llm_rerank_client
 
 
-def get_imap_service() -> IMAPService:
-    if _imap_service is None:
-        raise DependencyException("IMAP Service missing")
-    return _imap_service
+def get_llm_chat_client() -> OpenAI:
+    if _llm_chat_client is None:
+        raise DependencyException("LLM chat client missing")
+    return _llm_chat_client
 
 
-def get_s3_intake_client() -> Minio:
-    if _s3_intake_client is None:
-        raise DependencyException("S3 intake client missing")
-    return _s3_intake_client
+def get_llm_embedding_client() -> OpenAI:
+    if _llm_embedding_client is None:
+        raise DependencyException("LLM embedding client missing")
+    return _llm_embedding_client
+
+
+def get_llm_tool_client() -> OpenAI:
+    if _llm_tool_client is None:
+        raise DependencyException("LLM tool client missing")
+    return _llm_tool_client
 
 
 def get_celery_inspect_service() -> CeleryInspectService:

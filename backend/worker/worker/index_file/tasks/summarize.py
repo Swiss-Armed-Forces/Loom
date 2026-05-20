@@ -2,13 +2,16 @@ import logging
 
 from celery import chain, chord
 from celery.canvas import Signature
-from common.dependencies import get_celery_app, get_lazybytes_service, get_ollama_client
+from common.dependencies import (
+    get_celery_app,
+    get_lazybytes_service,
+    get_llm_summarization_client,
+)
 from common.file.file_repository import File
 from common.services.lazybytes_service import LazyBytes
 from common.utils.cache import cache
 from httpx import HTTPError
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from ollama import Options
 
 from worker.index_file.infra.file_indexing_task import FileIndexingTask
 from worker.index_file.infra.indexing_persister import IndexingPersister
@@ -66,8 +69,8 @@ def summarize_task(
         return None
 
     text_splitter = RecursiveCharacterTextSplitter(
-        chunk_size=settings.llm_summarize_text_chunk_size,
-        chunk_overlap=settings.llm_summarize_text_chunk_overlap,
+        chunk_size=settings.llm.summarization.text_chunk_size,
+        chunk_overlap=settings.llm.summarization.text_chunk_overlap,
     )
     text = load_text_from_text_lazy(text_lazy)
 
@@ -94,27 +97,26 @@ class LLMError(Exception):
 
 def _invoke_llm(
     prompt: str,
-    max_tokens: int = -1,
+    max_tokens: int | None = None,
     system_prompt: str | None = None,
 ) -> str:
     if system_prompt is None:
-        system_prompt = settings.llm_summarize_system_prompt
+        system_prompt = settings.llm.summarization.system_prompt
 
-    client = get_ollama_client()
+    client = get_llm_summarization_client()
     try:
-        response = client.generate(
-            model=settings.llm_model,
+        response = client.completions.create(
+            model=settings.llm.summarization.model,
             prompt=prompt,
-            system=system_prompt,
-            options=Options(
-                temperature=settings.llm_temperature,
-                num_predict=max_tokens,
+            temperature=settings.llm.summarization.temperature,
+            max_tokens=max_tokens if max_tokens and max_tokens > 0 else None,
+            extra_headers=(
+                {"X-Think": "true"} if settings.llm.summarization.think else None
             ),
-            think=settings.llm_think,
         )
     except HTTPError as ex:
         raise LLMError() from ex
-    return response.response
+    return response.choices[0].text
 
 
 @app.task(

@@ -102,7 +102,7 @@ class KnnSearchEmbedding(BaseModel):
 
 
 class _EsEmbedding(InnerDoc):
-    vector = DenseVector(dims=settings.llm_embedding_dimensions, similarity="cosine")
+    vector = DenseVector(dims=settings.llm.embedding.dimensions, similarity="cosine")
     text = Text(term_vector="with_positions_offsets")
 
 

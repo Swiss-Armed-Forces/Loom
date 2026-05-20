@@ -39,7 +39,7 @@ def _register_task_info_persister(repo_type: type[BaseRepository]) -> None:
 
 def init():
     # pylint: disable=global-statement
-    logger.info("Initializes worker dependencies")
+    logger.info("Initialize worker dependencies")
 
     global _tasks_registered
     if not _tasks_registered:

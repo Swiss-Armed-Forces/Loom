@@ -125,46 +125,6 @@ data:
     persister_save_max_retries: {{ .Values.persister.saveMaxRetries | quote }}
     {{- end }}
 
-    # llm
-    {{- if ne .Values.llm.model nil }}
-    llm_model: {{ .Values.llm.model }}
-    {{- end }}
-    {{- if ne .Values.llm.model_embedding nil }}
-    llm_model_embedding: {{ .Values.llm.model_embedding }}
-    {{- end }}
-    {{- if ne .Values.llm.model_tool nil }}
-    llm_model_tool: {{ .Values.llm.model_tool }}
-    {{- end }}
-    {{- if ne .Values.llm.think nil }}
-    llm_think: {{ .Values.llm.think | quote }}
-    {{- end }}
-    {{- if ne .Values.llm.temperature nil }}
-    llm_temperature: {{ .Values.llm.temperature | quote }}
-    {{- end }}
-    {{- if ne .Values.llm.summarize_text_chunk_size nil }}
-    llm_summarize_text_chunk_size: {{ .Values.llm.summarize_text_chunk_size | quote  }}
-    {{- end }}
-    {{- if ne .Values.llm.summarize_text_chunk_overlap nil }}
-    llm_summarize_text_chunk_overlap: {{ .Values.llm.summarize_text_chunk_overlap | quote  }}
-    {{- end }}
-    {{- if ne .Values.llm.embedding_temperature nil }}
-    llm_embedding_temperature: {{ .Values.llm.embedding_temperature | quote  }}
-    {{- end }}
-    {{- if ne .Values.llm.embedding_text_chunk_size nil }}
-    llm_embedding_text_chunk_size: {{ .Values.llm.embedding_text_chunk_size | quote  }}
-    {{- end }}
-    {{- if ne .Values.llm.embedding_text_chunk_overlap nil }}
-    llm_embedding_text_chunk_overlap: {{ .Values.llm.embedding_text_chunk_overlap | quote  }}
-    {{- end }}
-    {{- if ne .Values.llm.rerank_temperature nil }}
-    llm_rerank_temperature: {{ .Values.llm.rerank_temperature | quote  }}
-    {{- end }}
-    {{- if ne .Values.llm.hyde_num_documents nil }}
-    llm_hyde_num_documents: {{ .Values.llm.hyde_num_documents | quote  }}
-    {{- end }}
-    {{- if ne .Values.llm.hyde_temperature nil }}
-    llm_hyde_temperature: {{ .Values.llm.hyde_temperature | quote  }}
-    {{- end }}
 
     # elasticsearch
     {{- if ne .Values.elasticsearch.shardsCount nil }}
@@ -188,8 +148,7 @@ data:
     tika_server_host: http://{{ include "app.fullname" . }}-tika:{{ .Values.tika.service.port }}
     rspam_host: http://{{ include "app.fullname" . }}-rspamd:{{ .Values.rspamd.worker.service.port }}
     translate_host: http://{{ .Values.translate.service.externalHost | default (printf "%s-translate" (include "app.fullname" .)) }}:{{ .Values.translate.service.port }}
-    ollama_host: http://{{ .Values.ollama.service.externalHost | default (printf "%s-ollama" (include "app.fullname" .)) }}:{{ .Values.ollama.service.port }}
-    ollama_tool_host: http://{{ index .Values "ollama-tool" "service" "externalHost" | default (printf "%s-ollama-tool" (include "app.fullname" .)) }}:{{ index .Values "ollama-tool" "service" "port" }}
+
     api_host: http://{{ include "app.fullname" . }}-api:{{ .Values.api.service.port }}
     ws_host: ws://{{ include "app.fullname" . }}-api:{{ .Values.api.service.port }}
     imap_host: imap://{{ include "app.fullname" . }}-dovecot:{{ .Values.dovecot.service.port.imap }}
@@ -226,6 +185,144 @@ data:
     {{- end }}
     {{- if ne .Values.lazyBytes.s3Storage.secureConnection nil }}
     lazybytes_storage__secure_connection: {{ .Values.lazyBytes.s3Storage.secureConnection | quote }}
+    {{- end }}
+
+    {{- $ollamaEndpoint := printf "http://%s-ollama:%s/v1/" (include "app.fullname" .) (.Values.ollama.service.port | toString) }}
+    {{- $ollamaToolEndpoint := printf "http://%s-ollama-tool:%s/v1/" (include "app.fullname" .) (index .Values "ollama-tool" "service" "port" | toString) }}
+
+    # llm embedding
+    llm__embedding__endpoint: {{ .Values.llm.embedding.endpoint | default $ollamaEndpoint | quote }}
+    {{- if ne .Values.llm.embedding.api_key nil }}
+    llm__embedding__api_key: {{ .Values.llm.embedding.api_key | quote }}
+    {{- end }}
+    {{- if ne .Values.llm.embedding.model nil }}
+    llm__embedding__model: {{ .Values.llm.embedding.model | quote }}
+    {{- end }}
+    {{- if ne .Values.llm.embedding.temperature nil }}
+    llm__embedding__temperature: {{ .Values.llm.embedding.temperature | quote }}
+    {{- end }}
+    {{- if ne .Values.llm.embedding.think nil }}
+    llm__embedding__think: {{ .Values.llm.embedding.think | quote }}
+    {{- end }}
+    {{- if ne .Values.llm.embedding.timeout nil }}
+    llm__embedding__timeout: {{ .Values.llm.embedding.timeout | quote }}
+    {{- end }}
+    {{- if ne .Values.llm.embedding.dimensions nil }}
+    llm__embedding__dimensions: {{ .Values.llm.embedding.dimensions | quote }}
+    {{- end }}
+    {{- if ne .Values.llm.embedding.text_chunk_size nil }}
+    llm__embedding__text_chunk_size: {{ .Values.llm.embedding.text_chunk_size | quote }}
+    {{- end }}
+    {{- if ne .Values.llm.embedding.text_chunk_overlap nil }}
+    llm__embedding__text_chunk_overlap: {{ .Values.llm.embedding.text_chunk_overlap | quote }}
+    {{- end }}
+    {{- if ne .Values.llm.embedding.document_prefix nil }}
+    llm__embedding__document_prefix: {{ .Values.llm.embedding.document_prefix | quote }}
+    {{- end }}
+    {{- if ne .Values.llm.embedding.query_prefix nil }}
+    llm__embedding__query_prefix: {{ .Values.llm.embedding.query_prefix | quote }}
+    {{- end }}
+
+    # llm tool
+    llm__tool__endpoint: {{ .Values.llm.tool.endpoint | default $ollamaToolEndpoint | quote }}
+    {{- if ne .Values.llm.tool.api_key nil }}
+    llm__tool__api_key: {{ .Values.llm.tool.api_key | quote }}
+    {{- end }}
+    {{- if ne .Values.llm.tool.model nil }}
+    llm__tool__model: {{ .Values.llm.tool.model | quote }}
+    {{- end }}
+    {{- if ne .Values.llm.tool.temperature nil }}
+    llm__tool__temperature: {{ .Values.llm.tool.temperature | quote }}
+    {{- end }}
+    {{- if ne .Values.llm.tool.think nil }}
+    llm__tool__think: {{ .Values.llm.tool.think | quote }}
+    {{- end }}
+    {{- if ne .Values.llm.tool.timeout nil }}
+    llm__tool__timeout: {{ .Values.llm.tool.timeout | quote }}
+    {{- end }}
+
+    # llm summarization
+    llm__summarization__endpoint: {{ .Values.llm.summarization.endpoint | default $ollamaEndpoint | quote }}
+    {{- if ne .Values.llm.summarization.api_key nil }}
+    llm__summarization__api_key: {{ .Values.llm.summarization.api_key | quote }}
+    {{- end }}
+    {{- if ne .Values.llm.summarization.model nil }}
+    llm__summarization__model: {{ .Values.llm.summarization.model | quote }}
+    {{- end }}
+    {{- if ne .Values.llm.summarization.temperature nil }}
+    llm__summarization__temperature: {{ .Values.llm.summarization.temperature | quote }}
+    {{- end }}
+    {{- if ne .Values.llm.summarization.think nil }}
+    llm__summarization__think: {{ .Values.llm.summarization.think | quote }}
+    {{- end }}
+    {{- if ne .Values.llm.summarization.timeout nil }}
+    llm__summarization__timeout: {{ .Values.llm.summarization.timeout | quote }}
+    {{- end }}
+    {{- if ne .Values.llm.summarization.text_chunk_size nil }}
+    llm__summarization__text_chunk_size: {{ .Values.llm.summarization.text_chunk_size | quote }}
+    {{- end }}
+    {{- if ne .Values.llm.summarization.text_chunk_overlap nil }}
+    llm__summarization__text_chunk_overlap: {{ .Values.llm.summarization.text_chunk_overlap | quote }}
+    {{- end }}
+    {{- if ne .Values.llm.summarization.system_prompt nil }}
+    llm__summarization__system_prompt: {{ .Values.llm.summarization.system_prompt | quote }}
+    {{- end }}
+
+    # llm hyde
+    llm__hyde__endpoint: {{ .Values.llm.hyde.endpoint | default $ollamaEndpoint | quote }}
+    {{- if ne .Values.llm.hyde.api_key nil }}
+    llm__hyde__api_key: {{ .Values.llm.hyde.api_key | quote }}
+    {{- end }}
+    {{- if ne .Values.llm.hyde.model nil }}
+    llm__hyde__model: {{ .Values.llm.hyde.model | quote }}
+    {{- end }}
+    {{- if ne .Values.llm.hyde.temperature nil }}
+    llm__hyde__temperature: {{ .Values.llm.hyde.temperature | quote }}
+    {{- end }}
+    {{- if ne .Values.llm.hyde.think nil }}
+    llm__hyde__think: {{ .Values.llm.hyde.think | quote }}
+    {{- end }}
+    {{- if ne .Values.llm.hyde.timeout nil }}
+    llm__hyde__timeout: {{ .Values.llm.hyde.timeout | quote }}
+    {{- end }}
+    {{- if ne .Values.llm.hyde.num_documents nil }}
+    llm__hyde__num_documents: {{ .Values.llm.hyde.num_documents | quote }}
+    {{- end }}
+
+    # llm rerank
+    llm__rerank__endpoint: {{ .Values.llm.rerank.endpoint | default $ollamaEndpoint | quote }}
+    {{- if ne .Values.llm.rerank.api_key nil }}
+    llm__rerank__api_key: {{ .Values.llm.rerank.api_key | quote }}
+    {{- end }}
+    {{- if ne .Values.llm.rerank.model nil }}
+    llm__rerank__model: {{ .Values.llm.rerank.model | quote }}
+    {{- end }}
+    {{- if ne .Values.llm.rerank.temperature nil }}
+    llm__rerank__temperature: {{ .Values.llm.rerank.temperature | quote }}
+    {{- end }}
+    {{- if ne .Values.llm.rerank.think nil }}
+    llm__rerank__think: {{ .Values.llm.rerank.think | quote }}
+    {{- end }}
+    {{- if ne .Values.llm.rerank.timeout nil }}
+    llm__rerank__timeout: {{ .Values.llm.rerank.timeout | quote }}
+    {{- end }}
+
+    # llm chat
+    llm__chat__endpoint: {{ .Values.llm.chat.endpoint | default $ollamaEndpoint | quote }}
+    {{- if ne .Values.llm.chat.api_key nil }}
+    llm__chat__api_key: {{ .Values.llm.chat.api_key | quote }}
+    {{- end }}
+    {{- if ne .Values.llm.chat.model nil }}
+    llm__chat__model: {{ .Values.llm.chat.model | quote }}
+    {{- end }}
+    {{- if ne .Values.llm.chat.temperature nil }}
+    llm__chat__temperature: {{ .Values.llm.chat.temperature | quote }}
+    {{- end }}
+    {{- if ne .Values.llm.chat.think nil }}
+    llm__chat__think: {{ .Values.llm.chat.think | quote }}
+    {{- end }}
+    {{- if ne .Values.llm.chat.timeout nil }}
+    llm__chat__timeout: {{ .Values.llm.chat.timeout | quote }}
     {{- end }}
 
     # crawler
