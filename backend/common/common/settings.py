@@ -62,7 +62,7 @@ class IntakeS3StorageSettings(S3StorageSettings):
 class LLMClientSettings(BaseModel):
     endpoint: AnyHttpUrl = AnyHttpUrl(f"http://ollama.{DOMAIN}/v1/")
     api_key: str = "ollama"
-    model: str = "smollm2:135m"
+    model: str = "huihui_ai/qwen3.5-abliterated:9b"
     temperature: float | None = None
     think: bool = False
     timeout: int = 5 * 60

@@ -1,7 +1,11 @@
+import json
+import logging
 from typing import Optional
 
 from common.settings import DOMAIN
 from common.settings import Settings as CommonSettings
+
+logger = logging.getLogger(__name__)
 
 
 class Settings(CommonSettings):
@@ -24,3 +28,8 @@ class Settings(CommonSettings):
 
 
 settings = Settings()
+
+logger.debug(
+    "Effective settings:\n%s",
+    json.dumps(settings.model_dump(), indent=2, default=str),
+)

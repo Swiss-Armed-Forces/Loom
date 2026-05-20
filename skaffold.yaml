@@ -174,10 +174,12 @@ build:
       hooks:
         after:
           - command: ["./cicd/tag_latest.sh"]
+    # NOTE: index 14 — must stay here; patched by the dev profile (target)
     - image: registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/ollama
       context: ollama
       docker:
         dockerfile: Dockerfile
+        target: production
         buildArgs:
           DOCKER_REGISTRY: "{{or .CI_DEPENDENCY_PROXY_DIRECT_GROUP_IMAGE_PREFIX \"docker.io\"}}"
         cacheFrom:
@@ -354,6 +356,10 @@ profiles:
       - op: add
         path: /build/artifacts/4/runtimeType
         value: nodejs
+      # Patch ollama artifact for dev target
+      - op: replace
+        path: /build/artifacts/14/docker/target
+        value: dev
       # Patch manifests for development
       - op: replace
         path: /manifests/helm/releases/0/name

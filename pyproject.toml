@@ -74,7 +74,7 @@ black = true
 # of docformatter was released.
 # see:
 # https://github.com/PyCQA/docformatter/issues/344
-exclude = ["tests/test_secret_scan.py", "common/settings.py"]
+exclude = ["tests/test_secret_scan.py"]
 
 [tool.black]
 quiet = true
