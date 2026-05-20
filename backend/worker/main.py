@@ -92,6 +92,11 @@ match settings.worker_type:
             "--purge_offline_workers=600",
             "--max_tasks=50000",
         ]
+    case "BEAT":
+        argv = argv + [
+            "--scheduler",
+            "heartbeat_scheduler:HeartbeatScheduler",
+        ]
     case _:
         pass
 
