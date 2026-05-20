@@ -46,8 +46,9 @@ spec:
           readinessProbe:
             exec:
               command:
-                - python
-                - beat/beat_health_check.py
+                - test
+                - -f
+                - /tmp/beat_heartbeat
             initialDelaySeconds: {{ default 0 .Values.beat.readinessProbe.initialDelaySeconds }}
             periodSeconds: {{ default 60 .Values.beat.readinessProbe.periodSeconds }}
             timeoutSeconds: {{ default 5 .Values.beat.readinessProbe.timeoutSeconds }}
@@ -57,8 +58,9 @@ spec:
           livenessProbe:
             exec:
               command:
-                - python
-                - beat/beat_health_check.py
+                - sh
+                - -c
+                - "find /tmp/beat_heartbeat -mmin -3 | grep -q ."
             initialDelaySeconds: {{ default 0 .Values.beat.livenessProbe.initialDelaySeconds }}
             periodSeconds: {{ default 60 .Values.beat.livenessProbe.periodSeconds }}
             timeoutSeconds: {{ default 5 .Values.beat.livenessProbe.timeoutSeconds }}
