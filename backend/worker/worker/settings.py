@@ -1,26 +1,13 @@
-from typing import Any, Literal, Tuple, Type
+import json
+import logging
+from typing import Any, Literal
 
 from common.settings import DOMAIN
 from common.settings import Settings as CommonSettings
 from gotenberg_client.options import Measurement, MeasurementUnitType, PageSize
-from pydantic import AnyHttpUrl
-from pydantic.fields import FieldInfo
-from pydantic_settings import (
-    BaseSettings,
-    EnvSettingsSource,
-    PydanticBaseSettingsSource,
-)
+from pydantic import AnyHttpUrl, field_validator
 
-
-class SettingsSource(EnvSettingsSource):
-    def prepare_field_value(
-        self, field_name: str, field: FieldInfo, value: Any, value_is_complex: bool
-    ) -> Any:
-        if field_name == "tika_ocr_languages":
-            if value:
-                return list(value.split(","))
-        return value
-
+logger = logging.getLogger(__name__)
 
 # from https://tesseract-ocr.github.io/tessdoc/Data-Files-in-different-versions.html
 TikaAllowedOcrLanguage = Literal[
@@ -157,17 +144,12 @@ TikaAllowedOcrLanguage = Literal[
 class Settings(CommonSettings):
     """All settings for the worker service."""
 
-    # pylint: disable=too-many-arguments, too-many-positional-arguments
+    @field_validator("tika_ocr_languages", mode="before")
     @classmethod
-    def settings_customise_sources(
-        cls,
-        settings_cls: Type[BaseSettings],
-        init_settings: PydanticBaseSettingsSource,
-        env_settings: PydanticBaseSettingsSource,
-        dotenv_settings: PydanticBaseSettingsSource,
-        file_secret_settings: PydanticBaseSettingsSource,
-    ) -> Tuple[PydanticBaseSettingsSource, ...]:
-        return (SettingsSource(settings_cls),)
+    def _parse_tika_ocr_languages(cls, v: Any) -> Any:
+        if isinstance(v, str):
+            return [lang.strip() for lang in v.split(",") if lang.strip()]
+        return v
 
     skip_translate_while_indexing: bool = True
     skip_summarize_while_indexing: bool = True
@@ -236,3 +218,8 @@ class Settings(CommonSettings):
 
 
 settings = Settings()
+
+logger.debug(
+    "Effective settings:\n%s",
+    json.dumps(settings.model_dump(), indent=2, default=str),
+)

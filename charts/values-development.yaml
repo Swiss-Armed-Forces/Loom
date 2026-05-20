@@ -1,27 +1,29 @@
 environment: development
 
 llm:
-  endpoint: null
-  api_key: null
-  model: smollm2:135m
-  temperature: null
-  summarize_text_chunk_size: 1000
-  summarize_text_chunk_overlap: 33
-  embedding_text_chunk_size: 250
-  embedding_text_chunk_overlap: 25
-  llm_rerank_temperature: 0
-  hyde_num_documents: 1
+  embedding:
+    text_chunk_size: 250
+    text_chunk_overlap: 25
 
-llm_embedding:
-  endpoint: null
-  api_key: null
-  model: nomic-embed-text-v2-moe
+  tool:
+    # Warning! This model is not intelligent enough to understand how tools work
+    model: smollm2:135m
 
-llm_tool:
-  endpoint: null
-  api_key: null
-  # Warning ! This model is not intelligent enough to understand how tools work
-  model: smollm2:135m
+  summarization:
+    model: smollm2:135m
+    text_chunk_size: 1000
+    text_chunk_overlap: 33
+
+  hyde:
+    model: smollm2:135m
+    num_documents: 1
+
+  rerank:
+    model: smollm2:135m
+    temperature: 0
+
+  chat:
+    model: smollm2:135m
 
 ingress: &default-ingress-config
   annotations:
