@@ -34,7 +34,7 @@ usage(){
     echo "  -h|--help                         show this help"
     echo "  -v|--verbose                      show verbose output"
     echo "  -b|--background                   fetch logs but in the background"
-    echo "  -s|--subdor SUBDIR                write logs to a subdirectory SUBDIR"
+    echo "  -s|--subdir SUBDIR                write logs to a subdirectory SUBDIR"
 }
 
 #

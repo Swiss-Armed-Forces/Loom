@@ -1,13 +1,16 @@
 import logging
 from uuid import UUID
 
-from common.dependencies import get_file_repository, get_ollama_tool_client
+from common.dependencies import (
+    get_file_repository,
+    get_llm_tool_client,
+)
 from common.file.file_repository import FileRepository
 from common.models.es_repository import PaginationParameters
 from common.services.query_builder import QueryParameters
 from common.settings import settings
 from fastapi import APIRouter, Depends, FastAPI, HTTPException
-from ollama import Client, Options
+from openai import OpenAI
 from pydantic import BaseModel
 
 from api.patch_openapi_schema import patch_openapi_schema_for_app
@@ -18,7 +21,7 @@ router = APIRouter()
 logger = logging.getLogger(__name__)
 
 default_file_repository = Depends(get_file_repository)
-default_ollama_tool_client = Depends(get_ollama_tool_client)
+default_llm_tool_client = Depends(get_llm_tool_client)
 
 FILES_SEARCH_MAX_RESULTS = 10
 
@@ -47,7 +50,7 @@ class GetSearchResponse(BaseModel):
 @router.get("/files/search")
 def search(
     query_description: str,
-    ollama_tool_client: Client = default_ollama_tool_client,
+    llm_tool_client: OpenAI = default_llm_tool_client,
     file_repository: FileRepository = default_file_repository,
 ) -> GetSearchResponse:
     """Perform a smart full-text search over files using natural language input.
@@ -65,9 +68,9 @@ def search(
         A natural language phrase describing what to search for.
         Example: "Meeting notes with roadmap updates from 2024"
 
-    ollama_tool_client : Client, optional
-        A client that interacts with a local LLM to generate a Lucene query.
-        Defaults to `default_ollama_tool_client`.
+    llm_tool_client : OpenAI
+        A client that interacts with an OpenAI compatible endpoint to generate a Lucene query.
+        Defaults to `default_llm_tool_client`.
 
     file_repository : FileRepository, optional
         An interface for searching and retrieving file metadata.
@@ -146,16 +149,13 @@ QUERY_DESCRIPTION: {query_description}
 --------------------
 QUERY_STRING:"""
 
-    response = ollama_tool_client.generate(
-        model=settings.llm_model_tool,
+    response = llm_tool_client.completions.create(
+        model=settings.llm.tool.model,
         prompt=prompt,
-        system=settings.llm_system_prompt,
-        options=Options(
-            temperature=settings.llm_temperature,
-        ),
-        think=settings.llm_think,
+        temperature=settings.llm.tool.temperature,
+        extra_headers={"X-Think": "true"} if settings.llm.tool.think else None,
     )
-    search_string = response.response
+    search_string = response.choices[0].text
 
     logger.info("Getting files with search string: '%s'", search_string)
     query = QueryParameters(

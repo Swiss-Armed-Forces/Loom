@@ -59,6 +59,59 @@ class IntakeS3StorageSettings(S3StorageSettings):
     bucket_name: str = "default"
 
 
+class LLMClientSettings(BaseModel):
+    endpoint: AnyHttpUrl = AnyHttpUrl(f"http://ollama.{DOMAIN}/v1/")
+    api_key: str = "ollama"
+    model: str = "smollm2:135m"
+    temperature: float | None = None
+    think: bool = False
+    timeout: int = 5 * 60
+
+
+class LLMEmbeddingSettings(LLMClientSettings):
+    model: str = "nomic-embed-text-v2-moe"
+    dimensions: int = (
+        # Note: 4096 is largest vector supported by ElasticSearch
+        768  # -> nomic-embed-text-v2-moe
+    )
+    text_chunk_size: int = 400
+    text_chunk_overlap: int = 50
+    document_prefix: str = "search_document:"
+    query_prefix: str = "search_query:"
+
+
+class LLMSummarizationSettings(LLMClientSettings):
+    text_chunk_size: int = 3000
+    text_chunk_overlap: int = 100
+    system_prompt: str = "You are an expert english summarization machine called Loom."
+
+
+class LLMHydeSettings(LLMClientSettings):
+    num_documents: int = 5
+    temperature: float | None = 0.7
+
+
+class LLMRerankSettings(LLMClientSettings):
+    pass
+
+
+class LLMChatSettings(LLMClientSettings):
+    pass
+
+
+class LLMToolSettings(LLMClientSettings):
+    pass
+
+
+class LLMSettings(BaseModel):
+    embedding: LLMEmbeddingSettings = LLMEmbeddingSettings()
+    tool: LLMToolSettings = LLMToolSettings()
+    summarization: LLMSummarizationSettings = LLMSummarizationSettings()
+    hyde: LLMHydeSettings = LLMHydeSettings()
+    rerank: LLMRerankSettings = LLMRerankSettings()
+    chat: LLMChatSettings = LLMChatSettings()
+
+
 class Settings(BaseSettings):
     """Settings for the common module They can be overridden by environment
     variables."""
@@ -121,30 +174,11 @@ class Settings(BaseSettings):
         10  # used only for fetching languages during app startup
     )
 
-    ollama_host: AnyHttpUrl = AnyHttpUrl(f"http://ollama.{DOMAIN}")
-    ollama_tool_host: AnyHttpUrl = AnyHttpUrl(f"http://ollama-tool.{DOMAIN}")
-    ollama_timeout: int = 5 * 60
-
     imap_host: AnyUrl = AnyUrl(f"imap://dovecot.{DOMAIN}:143")
     imap_user: str = "user"
     imap_password: str = "pass"
 
-    llm_model: str = "smollm2:135m"
-    llm_model_embedding: str = "nomic-embed-text-v2-moe"
-    llm_model_tool: str = "smollm2:135m"
-    llm_think: bool = False
-    llm_temperature: float | None = None
-
     task_time_limit__seconds: int = 60 * 60 * 24
-
-    llm_embedding_dimensions: int = (
-        # Note: 4096 is largest vector supported by ElasticSearch
-        768  # -> nomic-embed-text-v2-moe
-    )
-    llm_system_prompt: str = """You are an expert english AI called Loom"""
-    llm_summarize_system_prompt: str = (
-        """You are an expert english summarization machine called Loom."""
-    )
 
     roundcube_host: AnyHttpUrl = AnyHttpUrl(f"http://roundcube.{DOMAIN}")
 
@@ -219,6 +253,8 @@ class Settings(BaseSettings):
     file_storage: FileStorageSettings = FileStorageSettings()
     lazybytes_storage: LazybytesStorageSettings = LazybytesStorageSettings()
     s3_storage: IntakeS3StorageSettings = IntakeS3StorageSettings()
+
+    llm: LLMSettings = LLMSettings()
 
 
 settings = Settings()
