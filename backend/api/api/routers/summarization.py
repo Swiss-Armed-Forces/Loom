@@ -33,7 +33,7 @@ def get_system_prompt() -> str:
     return settings.llm.summarization.system_prompt
 
 
-@router.post("/", status_code=200)
+@router.post("/", status_code=202)
 def summarize_files_on_demand(
     summarization_request: SummarizationRequest,
     task_scheduling_service: TaskSchedulingService = default_task_scheduling_service,

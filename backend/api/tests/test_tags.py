@@ -29,7 +29,7 @@ def test_add_tags(client: TestClient):
 
     response = client.post(ENDPOINT, json=set_tag_request.model_dump())
 
-    assert response.status_code == 200
+    assert response.status_code == 202
     get_task_scheduling_service().dispatch_add_tags_to_files.assert_called_once_with(
         query=set_tag_request.query, tags=set_tag_request.tags
     )
@@ -50,7 +50,7 @@ def test_delete_tags(client: TestClient):
 
     response = client.delete(f"{ENDPOINT}{tag}")
 
-    assert response.status_code == 200
+    assert response.status_code == 202
     get_task_scheduling_service().dispatch_remove_tag.assert_called_once_with(tag=tag)
 
 

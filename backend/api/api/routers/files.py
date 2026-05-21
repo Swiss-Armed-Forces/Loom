@@ -151,7 +151,7 @@ class UpdateFilesRequest(BaseModel):
     request: UpdateFileRequest
 
 
-@router.put("/")
+@router.put("/", status_code=202)
 def update_files_by_query(
     update_files_model: UpdateFilesRequest,
     task_scheduling_service: TaskSchedulingService = default_task_scheduling_service,
@@ -228,7 +228,7 @@ def get_generic_stats(
     return GenericStatisticsModel.from_statistics_generic(stats)
 
 
-@router.put("/{file_id}")
+@router.put("/{file_id}", status_code=202)
 def update_file(
     file_id: UUID,
     update_file_request: UpdateFileRequest,
@@ -443,7 +443,7 @@ def get_rendered(
     )
 
 
-@router.post("/{file_id}/index", status_code=200)
+@router.post("/{file_id}/index", status_code=202)
 def index_file(
     file_id: UUID,
     task_scheduling_service: TaskSchedulingService = default_task_scheduling_service,
@@ -455,7 +455,7 @@ class TranslateFileRequest(BaseModel):
     lang: str
 
 
-@router.post("/{file_id}/translate", status_code=200)
+@router.post("/{file_id}/translate", status_code=202)
 def translate_file(
     file_id: UUID,
     translation_request: TranslateFileRequest,
@@ -471,7 +471,7 @@ class SummarizeFileRequest(BaseModel):
     system_prompt: str | None = None
 
 
-@router.post("/{file_id}/summarize", status_code=200)
+@router.post("/{file_id}/summarize", status_code=202)
 def summarize_file(
     file_id: UUID,
     summarize_request: SummarizeFileRequest,
@@ -507,7 +507,7 @@ class AddTagsRequest(BaseModel):
     tags: List[Tag]
 
 
-@router.post("/{file_id}/tags")
+@router.post("/{file_id}/tags", status_code=202)
 def add_tags(
     file_id: UUID,
     request: AddTagsRequest,
@@ -518,7 +518,7 @@ def add_tags(
     )
 
 
-@router.delete("/{file_id}/tags/{tag_to_remove}")
+@router.delete("/{file_id}/tags/{tag_to_remove}", status_code=202)
 def delete_tag(
     file_id: UUID,
     tag_to_remove: Tag,

@@ -32,7 +32,7 @@ class ProcessQuestionQuery(BaseModel):
     question: str = Field(min_length=1)
 
 
-@router.post("/{context_id}/process_question")
+@router.post("/{context_id}/process_question", status_code=202)
 def process_question(
     context_id: UUID,
     query: ProcessQuestionQuery,

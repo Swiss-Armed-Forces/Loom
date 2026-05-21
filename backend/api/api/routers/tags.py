@@ -34,7 +34,7 @@ def get_tags(file_repository: FileRepository = default_file_repository) -> AllTa
     return file_repository.get_all_tags()
 
 
-@router.post("/", status_code=200)
+@router.post("/", status_code=202)
 def add_tags(
     tags_to_add_request: AddTagsByQueryRequest,
     task_scheduling_service: TaskSchedulingService = default_task_scheduling_service,
@@ -44,7 +44,7 @@ def add_tags(
     )
 
 
-@router.delete("/{tag_to_delete}", status_code=200)
+@router.delete("/{tag_to_delete}", status_code=202)
 def delete_tag(
     tag_to_delete: str,
     task_scheduling_service: TaskSchedulingService = default_task_scheduling_service,
