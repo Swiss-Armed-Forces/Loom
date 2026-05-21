@@ -13,13 +13,13 @@ from common.file.file_repository import (
     TikaMeta,
 )
 from common.models.base_repository import BaseRepository
-from common.services.lazybytes_service import LazyBytes
+from common.services.lazybytes_service import FileStorageLazyBytes
 
 from worker.utils.persister_base import PersisterBase, mutation
 
 
 # Module-level mutation functions
-def _set_thumbnail_data(obj: File, thumbnail_data: LazyBytes) -> None:
+def _set_thumbnail_data(obj: File, thumbnail_data: FileStorageLazyBytes) -> None:
     obj.thumbnail_data = thumbnail_data
 
 
@@ -28,19 +28,19 @@ def _set_thumbnail_total_frames(obj: File, thumbnail_total_frames: int) -> None:
 
 
 def _set_rendered_file_image_data(
-    obj: File, rendered_file_image_data: LazyBytes
+    obj: File, rendered_file_image_data: FileStorageLazyBytes
 ) -> None:
     obj.rendered_file.image_data = rendered_file_image_data
 
 
 def _set_rendered_file_office_pdf_data(
-    obj: File, rendered_file_office_pdf_data: LazyBytes
+    obj: File, rendered_file_office_pdf_data: FileStorageLazyBytes
 ) -> None:
     obj.rendered_file.office_pdf_data = rendered_file_office_pdf_data
 
 
 def _set_rendered_file_browser_pdf_data(
-    obj: File, rendered_file_browser_pdf_data: LazyBytes
+    obj: File, rendered_file_browser_pdf_data: FileStorageLazyBytes
 ) -> None:
     obj.rendered_file.browser_pdf_data = rendered_file_browser_pdf_data
 

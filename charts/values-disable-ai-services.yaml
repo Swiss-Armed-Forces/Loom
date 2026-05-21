@@ -4,11 +4,10 @@
 # Use this configuration when you don't want to run AI services internally within the Loom cluster.
 #
 # Note: If you still want AI functionality to be available, you will need to configure
-# external service endpoints for each disabled service:
-#   - translate.service.externalHost
-#   - ollama.service.externalHost
-#   - ollama-tool.service.externalHost
-#   - open_webui.service.externalHost
+# external service endpoints for each disabled service.
+#
+# If you don't want to use AI features at all, also configure Loom to skip all
+# AI-powered steps during indexing — otherwise disabled services will cause indexing failures.
 translate:
   enabled: false
 ollama:

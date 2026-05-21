@@ -1,7 +1,10 @@
 from typing import IO
 
 import pytest
-from common.services.lazybytes_service import LazyBytes, LazyBytesService
+from common.services.lazybytes_service import (
+    InMemoryTempLazyBytesService,
+    TempLazyBytes,
+)
 
 from worker.index_file.extractor.base import (
     ExtractNotSupported,
@@ -15,7 +18,7 @@ from worker.services.tika_service import TikaResult
 class ExtractorSuccessStub(ExtractorBase):
     def extract(
         self,
-        file_content: LazyBytes,
+        file_content: TempLazyBytes,
         file_type: str,
         out_dir: str,
         out_content: IO[bytes],
@@ -26,7 +29,7 @@ class ExtractorSuccessStub(ExtractorBase):
 class ExtractorNotSupportedStub(ExtractorBase):
     def extract(
         self,
-        file_content: LazyBytes,
+        file_content: TempLazyBytes,
         file_type: str,
         out_dir: str,
         out_content: IO[bytes],
@@ -37,7 +40,7 @@ class ExtractorNotSupportedStub(ExtractorBase):
 class ExtractorExceptionStub(ExtractorBase):
     def extract(
         self,
-        file_content: LazyBytes,
+        file_content: TempLazyBytes,
         file_type: str,
         out_dir: str,
         out_content: IO[bytes],
@@ -61,7 +64,7 @@ def test_extractor(
     extractor: ExtractorBase,
     file_bytes: bytes,
     excepting: bool,
-    lazybytes_service_inmemory: LazyBytesService,
+    lazybytes_service_inmemory: InMemoryTempLazyBytesService,
 ):
     processor = TikaExtractorFallback(extractor)
     content = lazybytes_service_inmemory.from_bytes(data=file_bytes)

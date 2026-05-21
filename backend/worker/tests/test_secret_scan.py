@@ -2,7 +2,7 @@ from textwrap import dedent
 
 import pytest
 from common.file.file_repository import Secret
-from common.services.lazybytes_service import LazyBytesService
+from common.services.lazybytes_service import InMemoryTempLazyBytesService
 
 from worker.index_file.tasks.secret_scan import (
     parse_ripsecrets_output,
@@ -72,7 +72,7 @@ def test_ripsecrets_scan_task(
     extension: str,
     file_content: str,
     result: list[Secret],
-    lazybytes_service_inmemory: LazyBytesService,
+    lazybytes_service_inmemory: InMemoryTempLazyBytesService,
 ):
     lazy_bytes_obj = lazybytes_service_inmemory.from_bytes(file_content.encode())
     secrets: list[Secret] = ripsecrets_scan_task(lazy_bytes_obj, extension)
@@ -133,7 +133,7 @@ def test_trufflehog_scan_task(
     extension: str,
     file_content: str,
     result: list[Secret],
-    lazybytes_service_inmemory: LazyBytesService,
+    lazybytes_service_inmemory: InMemoryTempLazyBytesService,
 ):
     lazy_bytes_obj = lazybytes_service_inmemory.from_bytes(file_content.encode())
     secrets = trufflehog_scan_task(lazy_bytes_obj, extension)

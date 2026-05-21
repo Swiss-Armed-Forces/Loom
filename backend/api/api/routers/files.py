@@ -1,31 +1,32 @@
 import logging
-from typing import Annotated, Any, List, Literal
+from datetime import datetime
+from typing import Annotated, Any, List, Literal, cast
 from uuid import UUID
 
 from common.dependencies import (
     get_file_repository,
-    get_file_scheduling_service,
     get_file_storage_service,
-    get_lazybytes_service,
     get_task_scheduling_service,
 )
 from common.file.file_repository import (
     TREE_PATH_MAX_ELEMENT_COUNT,
     Attachment,
     File,
-    FileNotFoundException,
     FileRepository,
     ImapInfo,
     Stat,
     Tag,
 )
-from common.file.file_scheduling_service import FileSchedulingService
 from common.models.es_repository import (
     InvalidSortFieldExceptions,
     PaginationParameters,
     SortingParameters,
 )
-from common.services.lazybytes_service import LazyBytes, LazyBytesService
+from common.services.lazybytes_service import (
+    FileStorageLazyBytes,
+    FileStorageLazyBytesService,
+    LazyBytes,
+)
 from common.services.query_builder import (
     DEFAULT_PIT_KEEPALIVE,
     KeepAlive,
@@ -51,34 +52,32 @@ MAX_ATTACHMENTS_PREVIEW = 20
 SOURCE_ID = "api-upload"
 router = APIRouter()
 
-default_file_scheduling_service = Depends(get_file_scheduling_service)
 default_file_repository = Depends(get_file_repository)
-default_lazybytes_service = Depends(get_lazybytes_service)
 default_file_storage_service = Depends(get_file_storage_service)
 default_task_scheduling_service = Depends(get_task_scheduling_service)
 
 
-class FileUploadResponse(BaseModel):
-    """File id of the created archive."""
-
-    file_id: UUID
-
-
-@router.post("/")
+@router.post("/", status_code=202)
 def upload_file(
     file: UploadFile,
-    file_scheduling_service: FileSchedulingService = default_file_scheduling_service,
-    lazybytes_service: LazyBytesService = default_lazybytes_service,
-) -> FileUploadResponse:
-    """Upload new file that will be processed by Loom."""
-    file_content = lazybytes_service.from_file(file.file)
-    scheduled_file = file_scheduling_service.index_file(
+    file_storage_service: FileStorageLazyBytesService = default_file_storage_service,
+    task_scheduling_service: TaskSchedulingService = default_task_scheduling_service,
+):
+    """Upload new file that will be processed by Loom.
+
+    Returns immediately after storing the file and dispatching the indexing task. The
+    file will be indexed asynchronously.
+    """
+    uploaded_at = datetime.now()
+    file_content = file_storage_service.from_file(file.file)
+
+    task_scheduling_service.dispatch_index_file(
         full_name=file.filename if file.filename is not None else "",
         file_content=file_content,
         source_id=SOURCE_ID,
         parent_id=None,
+        uploaded_datetime=uploaded_at,
     )
-    return FileUploadResponse(file_id=scheduled_file.id_)
 
 
 class GetQueryResponse(BaseModel):
@@ -233,12 +232,12 @@ def get_generic_stats(
 def update_file(
     file_id: UUID,
     update_file_request: UpdateFileRequest,
-    file_scheduling_service: FileSchedulingService = default_file_scheduling_service,
+    file_repository: FileRepository = default_file_repository,
+    task_scheduling_service: TaskSchedulingService = default_task_scheduling_service,
 ):
-    try:
-        file_scheduling_service.update_file(file_id, update_file_request)
-    except FileNotFoundException as e:
-        raise HTTPException(status_code=404, detail="Invalid file") from e
+    if file_repository.get_by_id(file_id) is None:
+        raise HTTPException(status_code=404, detail="Invalid file")
+    task_scheduling_service.update_by_id(file_id, update_file_request)
 
 
 class GetFileLanguageTranslations(BaseModel):
@@ -305,7 +304,7 @@ class GetFileResponse(BaseModel):
         )
 
 
-def service_id(lb: LazyBytes | None) -> str | None:
+def service_id(lb: FileStorageLazyBytes | None) -> str | None:
     if not lb:
         return None
     return lb.service_id
@@ -401,7 +400,7 @@ def get_thumbnail(
     file_id: UUID,
     thumbnail_file_id: str,
     file_repository: FileRepository = default_file_repository,
-    file_storage_service: LazyBytesService = default_file_storage_service,
+    file_storage_service: FileStorageLazyBytesService = default_file_storage_service,
 ) -> Response:
     """Get thumbnail of a file."""
     file = file_repository.get_by_id(file_id)
@@ -409,7 +408,7 @@ def get_thumbnail(
         raise HTTPException(status_code=404, detail="Invalid file")
 
     file_stream = file_storage_service.load_generator(
-        LazyBytes(service_id=thumbnail_file_id)
+        cast(FileStorageLazyBytes, LazyBytes(service_id=thumbnail_file_id))
     )
     return StreamingResponse(
         content=file_stream,
@@ -426,14 +425,16 @@ def get_rendered(
     file_id: UUID,
     rendered_id: str,
     file_repository: FileRepository = default_file_repository,
-    file_storage_service: LazyBytesService = default_file_storage_service,
+    file_storage_service: FileStorageLazyBytesService = default_file_storage_service,
 ) -> Response:
     """Get rendered version of a file."""
     file = file_repository.get_by_id(file_id)
     if file is None:
         raise HTTPException(status_code=404, detail="Invalid file")
 
-    file_stream = file_storage_service.load_generator(LazyBytes(service_id=rendered_id))
+    file_stream = file_storage_service.load_generator(
+        cast(FileStorageLazyBytes, LazyBytes(service_id=rendered_id))
+    )
     return StreamingResponse(
         content=file_stream,
         headers={
@@ -486,7 +487,7 @@ def download_file(
     file_id: UUID,
     content_disposition: Literal["inline", "attachment"] = "attachment",
     file_repository: FileRepository = default_file_repository,
-    file_storage_service: LazyBytesService = default_file_storage_service,
+    file_storage_service: FileStorageLazyBytesService = default_file_storage_service,
 ) -> Response:
     file = file_repository.get_by_id(file_id)
     if file is None:

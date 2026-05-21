@@ -13,7 +13,6 @@ import {
     SummaryStatisticsModel,
     Stat,
     GenericStatisticsModel,
-    FileUploadResponse,
     GetFileResponse,
     GetFilePreviewResponse,
     ArchiveCreatedResponse,
@@ -120,7 +119,7 @@ export const getStatGeneric = async (
     });
 };
 
-export const uploadFile = async (file: File): Promise<FileUploadResponse> => {
+export const uploadFile = async (file: File): Promise<void> => {
     return filesApi.uploadFileV1FilesPost({
         file: file,
     });

@@ -13,7 +13,7 @@ from tempfile import (
     TemporaryFile,
     _TemporaryFileWrapper,
 )
-from typing import IO, Any, Generator, Generic, TypeVar
+from typing import IO, Any, Generator, Generic, TypeVar, cast
 
 from minio import Minio
 from pydantic import BaseModel, ConfigDict, model_validator
@@ -27,10 +27,16 @@ logger = logging.getLogger(__name__)
 S3_PART_SIZE = 10 * 1024 * 1024
 
 T = TypeVar("T")
+_Tag = TypeVar("_Tag")
 
 
-class LazyBytes(BaseModel):
-    """Serializable container for lazy-loadable byte data."""
+class LazyBytes(BaseModel, Generic[_Tag]):
+    """Serializable container for lazy-loadable byte data.
+
+    The _Tag type parameter is a phantom type indicating which LazyBytesService instance
+    this data belongs to (e.g. FileStorageTag or TempStorageTag). It carries no runtime
+    information — it exists only for static type checking.
+    """
 
     model_config = ConfigDict(frozen=True)
 
@@ -38,7 +44,7 @@ class LazyBytes(BaseModel):
     embedded_data: bytes | None = None
 
     @model_validator(mode="after")
-    def check_either_service_id_or_embedded_data(self) -> "LazyBytes":
+    def check_either_service_id_or_embedded_data(self) -> "LazyBytes[_Tag]":
         if self.service_id is None and self.embedded_data is None:
             msg = "no service id but no embedded data"
             raise ValueError(msg)
@@ -47,11 +53,30 @@ class LazyBytes(BaseModel):
             raise ValueError(msg)
         return self
 
+    def __reduce__(self):
+        return (_rebuild_lazy_bytes, (self.model_dump(),))
 
-class TypedLazyBytes(LazyBytes, Generic[T]):
+
+def _rebuild_lazy_bytes(data: dict) -> "LazyBytes[Any]":
+    """Reconstruct a LazyBytes instance during unpickling.
+
+    Mirrors the TypedLazyBytes pattern: always reconstructs as the base
+    (unparameterized) LazyBytes so pickle can find the class by qualified name.
+    """
+    return LazyBytes.model_validate(data)
+
+
+class TypedLazyBytes(LazyBytes[_Tag], Generic[T, _Tag]):
     """Serializable container for typed lazy-loadable objects.
 
+    T: the deserialized object type.
+    _Tag: phantom service tag indicating which LazyBytesService produced this.
+
     Uses pickle for serialization, preserving type information.
+
+    Note: __reduce__ reconstructs as unparameterized TypedLazyBytes[Any, Any],
+    so both T and _Tag are lost after pickle/unpickle (same limitation as before
+    for T). This is a known Pydantic v2 constraint — see _rebuild_typed_lazy_bytes.
     """
 
     def __reduce__(self):
@@ -78,7 +103,7 @@ def _rebuild_typed_lazy_bytes(data: dict) -> "TypedLazyBytes":
     return TypedLazyBytes.model_validate(data)
 
 
-class LazyBytesService(ABC):
+class LazyBytesService(ABC, Generic[_Tag]):
     def __init__(self, *, threshold_bytes: int):
         self._threshold_bytes = threshold_bytes
         self.tempfile_dir = settings.tempfile_dir
@@ -89,22 +114,22 @@ class LazyBytesService(ABC):
     def threshold_bytes(self) -> int:
         return self._threshold_bytes
 
-    def from_bytes(self, data: bytes) -> LazyBytes:
+    def from_bytes(self, data: bytes) -> "LazyBytes[_Tag]":
         """Stores the given data in this service."""
         if len(data) <= self._threshold_bytes:
-            return LazyBytes(embedded_data=data)
+            return cast("LazyBytes[_Tag]", LazyBytes(embedded_data=data))
         service_id = self._store(BytesIO(data))
-        return LazyBytes(service_id=service_id)
+        return cast("LazyBytes[_Tag]", LazyBytes(service_id=service_id))
 
-    def from_generator(self, data: Iterator[bytes]) -> LazyBytes:
+    def from_generator(self, data: Iterator[bytes]) -> "LazyBytes[_Tag]":
         """Stores the given data in this service."""
         is_small, data = bytecount_lte(data, limit=self.threshold_bytes)
         if is_small:
-            return LazyBytes(embedded_data=b"".join(data))
+            return cast("LazyBytes[_Tag]", LazyBytes(embedded_data=b"".join(data)))
         service_id = self._store(data)
-        return LazyBytes(service_id=service_id)
+        return cast("LazyBytes[_Tag]", LazyBytes(service_id=service_id))
 
-    def from_file(self, fd: IO[bytes]) -> LazyBytes:
+    def from_file(self, fd: IO[bytes]) -> "LazyBytes[_Tag]":
         """Stores the given data in this service."""
         # get filesize without calling .fileno()
         # -> calling .fileno will have the effect that
@@ -114,11 +139,11 @@ class LazyBytesService(ABC):
         fd_size = fd.tell()
         fd.seek(0, curr)
         if fd_size <= self._threshold_bytes:
-            return LazyBytes(embedded_data=fd.read())
+            return cast("LazyBytes[_Tag]", LazyBytes(embedded_data=fd.read()))
         service_id = self._store(fd)
-        return LazyBytes(service_id=service_id)
+        return cast("LazyBytes[_Tag]", LazyBytes(service_id=service_id))
 
-    def from_object(self, obj: T) -> TypedLazyBytes[T]:
+    def from_object(self, obj: T) -> "TypedLazyBytes[T, _Tag]":
         """Serializes an object using pickle and stores it as TypedLazyBytes.
 
         Args:
@@ -129,11 +154,11 @@ class LazyBytesService(ABC):
         """
         data = pickle.dumps(obj)
         if len(data) <= self._threshold_bytes:
-            return TypedLazyBytes(embedded_data=data)
+            return cast("TypedLazyBytes[T, _Tag]", TypedLazyBytes(embedded_data=data))
         service_id = self._store(BytesIO(data))
-        return TypedLazyBytes(service_id=service_id)
+        return cast("TypedLazyBytes[T, _Tag]", TypedLazyBytes(service_id=service_id))
 
-    def delete(self, lazy_bytes: LazyBytes):
+    def delete(self, lazy_bytes: "LazyBytes[_Tag]"):
         """Deletes the data if stored in the service."""
         if lazy_bytes.service_id is None:
             return
@@ -154,6 +179,10 @@ class LazyBytesService(ABC):
         Args:
             min_age: Only delete objects older than this. If None, delete all.
         """
+
+    @abstractmethod
+    def get_total_size_bytes(self) -> int:
+        """Get total size of all stored lazybytes in bytes."""
 
     @abstractmethod
     def _load_to(self, service_id: Any, dst: IO):
@@ -177,7 +206,7 @@ class LazyBytesService(ABC):
     # ref: https://github.com/pylint-dev/pylint/issues/9625
     @contextmanager
     def load_memoryview(  # pylint: disable=contextmanager-generator-missing-cleanup
-        self, lazy_bytes: LazyBytes
+        self, lazy_bytes: "LazyBytes[_Tag]"
     ) -> Generator[memoryview, None, None]:
         # pylint: disable=protected-access
         def yield_release(
@@ -209,7 +238,9 @@ class LazyBytesService(ABC):
                 # better:
                 # yield from yield_release(memoryview(mmap_memory))
 
-    def load_generator(self, lazy_bytes: LazyBytes) -> Generator[bytes, None, None]:
+    def load_generator(
+        self, lazy_bytes: "LazyBytes[_Tag]"
+    ) -> Generator[bytes, None, None]:
         if lazy_bytes.embedded_data is not None:
             yield lazy_bytes.embedded_data
         else:
@@ -217,7 +248,7 @@ class LazyBytesService(ABC):
 
     @contextmanager
     def load_file(
-        self, lazy_bytes: LazyBytes
+        self, lazy_bytes: "LazyBytes[_Tag]"
     ) -> Generator[SpooledTemporaryFile[bytes], None, None]:
         # pylint: disable=protected-access
         #
@@ -247,7 +278,7 @@ class LazyBytesService(ABC):
     @contextmanager
     def load_file_named(
         self,
-        lazy_bytes: LazyBytes,
+        lazy_bytes: "LazyBytes[_Tag]",
         prefix: str | None = None,
         suffix: str | None = None,
     ) -> Generator[_TemporaryFileWrapper, None, None]:
@@ -276,7 +307,7 @@ class LazyBytesService(ABC):
             dst.seek(0)
             yield dst
 
-    def load_object(self, lazy_bytes: TypedLazyBytes[T]) -> T:
+    def load_object(self, lazy_bytes: "TypedLazyBytes[T, _Tag]") -> T:
         """Deserializes TypedLazyBytes back to an object.
 
         Args:
@@ -289,7 +320,7 @@ class LazyBytesService(ABC):
             return pickle.loads(memview)
 
 
-class S3LazyBytesService(LazyBytesService):
+class S3LazyBytesService(LazyBytesService[_Tag]):
     def __init__(self, client: Minio, bucket: str, *, threshold_bytes: int):
         super().__init__(threshold_bytes=threshold_bytes)
         self._client = client
@@ -328,8 +359,41 @@ class S3LazyBytesService(LazyBytesService):
     def _delete(self, service_id: Any):
         self._client.remove_object(self._bucket, str(service_id))
 
+    def get_total_size_bytes(self) -> int:
+        total = 0
+        if not self._client.bucket_exists(self._bucket):
+            return 0
+        for obj in self._client.list_objects(self._bucket):
+            if obj.size is not None:
+                total += obj.size
+        return total
 
-class InMemoryLazyBytesService(LazyBytesService):
+
+class FileStorageTag:  # pylint: disable=too-few-public-methods
+    """Phantom tag for LazyBytes stored in the permanent file storage service."""
+
+
+class TempStorageTag:  # pylint: disable=too-few-public-methods
+    """Phantom tag for LazyBytes stored in the ephemeral pipeline lazybytes service."""
+
+
+# Convenience aliases — prefer these over bare LazyBytes/TypedLazyBytes[..., Tag]
+FileStorageLazyBytes = LazyBytes[FileStorageTag]
+TempLazyBytes = LazyBytes[TempStorageTag]
+
+type FileStorageTypedLazyBytes[T] = TypedLazyBytes[T, FileStorageTag]
+type TempTypedLazyBytes[T] = TypedLazyBytes[T, TempStorageTag]
+
+
+class FileStorageLazyBytesService(S3LazyBytesService[FileStorageTag]):
+    """S3-backed service for permanent file storage."""
+
+
+class TempLazyBytesService(S3LazyBytesService[TempStorageTag]):
+    """S3-backed service for ephemeral pipeline storage."""
+
+
+class InMemoryLazyBytesService(LazyBytesService[_Tag]):
     """All in-memory lazybytes service for testing.
 
     **!!DO NOT USE THIS IN PRODUCTION!!**.
@@ -358,7 +422,25 @@ class InMemoryLazyBytesService(LazyBytesService):
 
     def flush(self, min_age: timedelta | None = None):
         # InMemoryLazyBytesService doesn't track timestamps, so min_age is ignored
+        del min_age  # unused
         self._storage = {}
 
     def _delete(self, service_id: Any):
         del self._storage[service_id]
+
+    def get_total_size_bytes(self) -> int:
+        return sum(len(data) for data in self._storage.values())
+
+
+class InMemoryFileStorageLazyBytesService(InMemoryLazyBytesService[FileStorageTag]):
+    """In-memory variant of FileStorageLazyBytesService.
+
+    For testing only.
+    """
+
+
+class InMemoryTempLazyBytesService(InMemoryLazyBytesService[TempStorageTag]):
+    """In-memory variant of TempLazyBytesService.
+
+    For testing only.
+    """

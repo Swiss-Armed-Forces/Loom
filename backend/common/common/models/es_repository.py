@@ -658,6 +658,19 @@ class BaseEsRepository(
         except NotFoundError:
             return False
 
+    def count(self) -> int:
+        """Count all documents in this index."""
+        search = self._document_type.search(using=self._elasticsearch)
+        search = search[0:0].extra(track_total_hits=True)
+        response = search.execute()
+        return response.hits.total.value  # type: ignore
+
+    def flush(self) -> None:
+        """Delete all documents in this index."""
+        search = self._document_type.search(using=self._elasticsearch)
+        search = search.query("match_all")
+        search.params(refresh=True).delete()
+
     def init(self):
         # make sure the index is closed before initialization
         if self._index.exists(using=self._elasticsearch) and not self._index.is_closed(

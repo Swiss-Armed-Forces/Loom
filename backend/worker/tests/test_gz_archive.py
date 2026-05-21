@@ -3,7 +3,7 @@ from pathlib import Path
 from tempfile import NamedTemporaryFile, TemporaryDirectory
 
 import pytest
-from common.services.lazybytes_service import LazyBytesService
+from common.services.lazybytes_service import InMemoryTempLazyBytesService
 
 from worker.index_file.extractor.gzip_extractor import GzipExtractor
 
@@ -28,7 +28,9 @@ TEST_ASSETS_DIR = Path(__file__).parent / "assets"
     ],
 )
 def test_gz_archive_extraction_hash(
-    filename: str, content_hash: str, lazybytes_service_inmemory: LazyBytesService
+    filename: str,
+    content_hash: str,
+    lazybytes_service_inmemory: InMemoryTempLazyBytesService,
 ):
     gz_processor = GzipExtractor()
 

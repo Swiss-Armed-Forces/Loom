@@ -6,7 +6,7 @@ from celery import chain, group
 from celery.canvas import Signature
 from common.dependencies import get_celery_app, get_lazybytes_service
 from common.file.file_repository import File, Secret
-from common.services.lazybytes_service import LazyBytes
+from common.services.lazybytes_service import TempLazyBytes
 
 from worker.index_file.infra.file_indexing_task import FileIndexingTask
 from worker.index_file.infra.indexing_persister import IndexingPersister
@@ -31,7 +31,7 @@ def signature(file: File) -> Signature:
 
 @app.task(base=FileIndexingTask)
 def ripsecrets_scan_task(
-    tika_text: LazyBytes | None, extension: str
+    tika_text: TempLazyBytes | None, extension: str
 ) -> list[Secret] | None:
     if tika_text is None:
         return None
@@ -53,7 +53,7 @@ def ripsecrets_scan_task(
 
 @app.task(base=FileIndexingTask)
 def trufflehog_scan_task(
-    tika_text: LazyBytes | None, extension: str
+    tika_text: TempLazyBytes | None, extension: str
 ) -> list[Secret] | None:
     if tika_text is None:
         return None

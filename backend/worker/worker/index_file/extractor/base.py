@@ -4,7 +4,7 @@ from typing import IO
 
 # pylint: disable=no-name-in-module
 from common.dependencies import get_lazybytes_service
-from common.services.lazybytes_service import LazyBytes
+from common.services.lazybytes_service import TempLazyBytes
 
 # pylint: enable=no-name-in-module
 
@@ -21,7 +21,7 @@ class ExtractorBase(abc.ABC):
     @abc.abstractmethod
     def extract(
         self,
-        file_content: LazyBytes,
+        file_content: TempLazyBytes,
         file_type: str,
         out_dir: str,
         out_content: IO[bytes],
@@ -42,7 +42,7 @@ class ExtractorBase(abc.ABC):
 class NamedFileExtractorBase(ExtractorBase):
     def extract(
         self,
-        file_content: LazyBytes,
+        file_content: TempLazyBytes,
         file_type: str,
         out_dir: str,
         out_content: IO[bytes],
@@ -70,7 +70,7 @@ class NamedFileExtractorBase(ExtractorBase):
 class MemoryviewExtractorBase(ExtractorBase):
     def extract(
         self,
-        file_content: LazyBytes,
+        file_content: TempLazyBytes,
         file_type: str,
         out_dir: str,
         out_content: IO[bytes],

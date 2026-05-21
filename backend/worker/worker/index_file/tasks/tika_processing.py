@@ -10,7 +10,7 @@ from celery import Task, chain, chord, group
 from celery.canvas import Signature
 from common.dependencies import get_celery_app, get_lazybytes_service
 from common.file.file_repository import File
-from common.services.lazybytes_service import LazyBytes, TypedLazyBytes
+from common.services.lazybytes_service import TempLazyBytes, TempTypedLazyBytes
 from common.utils.cache import cache
 from pydantic import BaseModel, ConfigDict
 from requests import RequestException
@@ -65,7 +65,7 @@ class TikaProcessingResult(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
     file_type: str
-    result: TypedLazyBytes[TikaResult] | None = None
+    result: TempTypedLazyBytes[TikaResult] | None = None
     exceptions: list[str] = []
     handled_by: str | None = None
 
@@ -74,7 +74,7 @@ class TikaFallback:
     """Base class for implementing fallbacks creating TikaResults."""
 
     @abc.abstractmethod
-    def handle(self, file_content: LazyBytes, file_type: str) -> TikaResult | None:
+    def handle(self, file_content: TempLazyBytes, file_type: str) -> TikaResult | None:
         """Creates a TikaResult based on the given file content and type."""
 
 
@@ -83,7 +83,7 @@ class TikaExtractorFallback(TikaFallback):
         self.extractor = extractor
         self.lazybytes_service = get_lazybytes_service()
 
-    def handle(self, file_content: LazyBytes, file_type: str) -> TikaResult | None:
+    def handle(self, file_content: TempLazyBytes, file_type: str) -> TikaResult | None:
         with tempfile.TemporaryDirectory(
             dir=settings.tempfile_dir
         ) as out_dir, tempfile.NamedTemporaryFile(
@@ -165,7 +165,7 @@ def _create_fallback_task(fallback: TikaFallback) -> Task:
     @cache(key_function=lambda _, __, file: file.sha256, namespace=task_name)
     def task_handler(
         tika_processing_result: TikaProcessingResult,
-        file_content: LazyBytes,
+        file_content: TempLazyBytes,
         _: File,
     ) -> TikaProcessingResult:
         if tika_processing_result.result is not None:
@@ -198,7 +198,7 @@ FALLBACK_TASKS_LEVEL2: list[Task] = [
 ]
 
 
-def signature(file_content: LazyBytes, file: File) -> Signature:
+def signature(file_content: TempLazyBytes, file: File) -> Signature:
     return group(
         chain(
             extract_magic_file_type.signature(file_content, file),
@@ -257,7 +257,7 @@ def signature(file_content: LazyBytes, file: File) -> Signature:
 )
 @cache(key_function=lambda _, __, ___, file: file.sha256)
 def tika_processor_task(
-    self: FileIndexingTask, file_type: str, file_content: LazyBytes, _: File
+    self: FileIndexingTask, file_type: str, file_content: TempLazyBytes, _: File
 ) -> TikaProcessingResult:
     lazybytes_service = get_lazybytes_service()
 
@@ -317,7 +317,7 @@ def choose_tika_processing_result_task(
 @app.task(base=FileIndexingTask)
 def extract_tika_result_from_tika_processing_result_task(
     tika_processing_result: TikaProcessingResult,
-) -> TypedLazyBytes[TikaResult]:
+) -> TempTypedLazyBytes[TikaResult]:
     if tika_processing_result.result is None:
         raise TikaError(tika_processing_result.exceptions)
     return tika_processing_result.result
@@ -334,7 +334,7 @@ def persist_tika_handled_by(
 
 @persisting_task(app, IndexingPersister)
 def persist_tika_result_task(
-    persister: IndexingPersister, lazy_tika_result: TypedLazyBytes[TikaResult]
+    persister: IndexingPersister, lazy_tika_result: TempTypedLazyBytes[TikaResult]
 ):
     lazybytes_service = get_lazybytes_service()
     tika_result = lazybytes_service.load_object(lazy_tika_result)
@@ -351,7 +351,7 @@ def persist_tika_result_task(
 
 @persisting_task(app, IndexingPersister)
 def persist_tika_meta_task(
-    persister: IndexingPersister, lazy_tika_result: TypedLazyBytes[TikaResult]
+    persister: IndexingPersister, lazy_tika_result: TempTypedLazyBytes[TikaResult]
 ):
     lazybytes_service = get_lazybytes_service()
     tika_result = lazybytes_service.load_object(lazy_tika_result)
@@ -365,7 +365,7 @@ def persist_tika_meta_task(
     retry_backoff=True,
 )
 @cache(key_function=lambda _, file: file.sha256)
-def tika_get_language_task(file_content: LazyBytes, file: File) -> str:
+def tika_get_language_task(file_content: TempLazyBytes, file: File) -> str:
     """Task to get the tika detected language."""
     logger.info("Getting language for %s with tika", file.full_name)
     file_generator = get_lazybytes_service().load_generator(file_content)
@@ -384,7 +384,7 @@ def persist_tika_language_task(persister: IndexingPersister, tika_language: str)
     retry_backoff=True,
 )
 @cache(key_function=lambda _, file: file.sha256)
-def tika_get_file_type_task(file_content: LazyBytes, file: File) -> str:
+def tika_get_file_type_task(file_content: TempLazyBytes, file: File) -> str:
     """Task to get the tika detected file type."""
     logger.info("Getting file type for %s with tika", file.full_name)
     file_generator = get_lazybytes_service().load_generator(file_content)
@@ -398,7 +398,7 @@ def persist_tika_file_type_task(persister: IndexingPersister, tika_file_type: st
 
 @app.task(base=FileIndexingTask)
 def extract_text_from_lazy_tika_result(
-    lazy_tika_result: TypedLazyBytes[TikaResult],
-) -> LazyBytes | None:
+    lazy_tika_result: TempTypedLazyBytes[TikaResult],
+) -> TempLazyBytes | None:
     tika_result = get_lazybytes_service().load_object(lazy_tika_result)
     return tika_result.text

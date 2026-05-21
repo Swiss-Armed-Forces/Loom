@@ -1,15 +1,13 @@
 import random
 import re
 import string
-from unittest.mock import MagicMock
+from unittest.mock import ANY, MagicMock
 from uuid import uuid4
 
 import pytest
 from common.dependencies import (
     get_file_repository,
-    get_file_scheduling_service,
     get_file_storage_service,
-    get_lazybytes_service,
     get_task_scheduling_service,
 )
 from common.file.file_repository import (
@@ -39,7 +37,6 @@ from api.routers.files import (
     CONTENT_PREVIEW_LENGTH,
     SOURCE_ID,
     AddTagsRequest,
-    FileUploadResponse,
     GetFilePreviewResponse,
     GetFilesCountResponse,
     GetFilesQuery,
@@ -57,21 +54,19 @@ def test_upload_file(client: TestClient):
         size=len(file_content),
     )
     file_content_mock = MagicMock(spec=LazyBytes)
-    get_file_scheduling_service().index_file.return_value = file
-    get_lazybytes_service().from_file.return_value = file_content_mock
+    get_file_storage_service().from_file.return_value = file_content_mock
 
     response = client.post(
         "/v1/files/", files={"file": (file.short_name, file_content)}
     )
 
-    assert response.status_code == 200
-    file_upload_response = FileUploadResponse.model_validate(response.json())
-    assert file_upload_response.file_id == file.id_
-    get_file_scheduling_service().index_file.assert_called_once_with(
+    assert response.status_code == 202
+    get_task_scheduling_service().dispatch_index_file.assert_called_once_with(
         full_name=file.short_name,
         file_content=file_content_mock,
         source_id=SOURCE_ID,
         parent_id=None,
+        uploaded_datetime=ANY,
     )
 
 
@@ -147,12 +142,23 @@ def test_update_file_by_id(client: TestClient):
 
     request = UpdateFileRequest(hidden=True, flagged=True, seen=True)
 
-    get_file_repository().get_by_id.return_value = file
-
     response = client.put(f"v1/files/{file.id_}", json=request.model_dump())
 
     assert response.status_code == 200
-    get_file_scheduling_service().update_file.assert_called_once_with(file.id_, request)
+    get_task_scheduling_service().update_by_id.assert_called_once_with(
+        file.id_, request
+    )
+
+
+def test_update_file_by_id_not_found(client: TestClient):
+    get_file_repository().get_by_id.return_value = None
+
+    request = UpdateFileRequest(hidden=True, flagged=True, seen=True)
+
+    response = client.put(f"v1/files/{uuid4()}", json=request.model_dump())
+
+    assert response.status_code == 404
+    get_task_scheduling_service().update_by_id.assert_not_called()
 
 
 def test_update_files_by_query(client: TestClient):

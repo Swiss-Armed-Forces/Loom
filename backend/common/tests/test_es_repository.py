@@ -1327,3 +1327,40 @@ def test_root_task_information_repository_get_by_root_task_id_not_found():
 
     with pytest.raises(ValueError, match="Root task info with id .* not found"):
         es_repository.get_by_root_task_id(TestValueDefaults.test_uuid)
+
+
+def test_es_repository_count():
+    es_repository = _TestEsRepository(
+        query_builder=get_query_builder(),
+        pubsub_service=get_pubsub_service(),
+        mock_types=True,
+    )
+    search_mock = MagicMock(spec=Search)
+    es_repository.document_type.search.return_value = search_mock
+    # pylint: disable=unnecessary-dunder-call
+    search_pre_execute_mock = search_mock.__getitem__(slice(0, 0, None)).extra().execute
+    hits_mock = MagicMock()
+    hits_mock.hits.total.value = 42  # pylint: disable=no-member
+    search_pre_execute_mock.return_value = hits_mock
+
+    count = es_repository.count()
+
+    assert count == 42
+
+
+def test_es_repository_flush():
+    es_repository = _TestEsRepository(
+        query_builder=get_query_builder(),
+        pubsub_service=get_pubsub_service(),
+        mock_types=True,
+    )
+    search_mock = MagicMock(spec=Search)
+    query_mock = MagicMock(spec=Search)
+    search_mock.query.return_value = query_mock
+    es_repository.document_type.search.return_value = search_mock
+
+    es_repository.flush()
+
+    search_mock.query.assert_called_once_with("match_all")
+    query_mock.params.assert_called_once_with(refresh=True)
+    query_mock.params.return_value.delete.assert_called_once()

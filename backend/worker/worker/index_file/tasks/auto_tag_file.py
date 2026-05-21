@@ -9,7 +9,7 @@ from common.dependencies import (
     get_lazybytes_service,
 )
 from common.file.file_repository import Embedding, File
-from common.services.lazybytes_service import TypedLazyBytes
+from common.services.lazybytes_service import TempTypedLazyBytes
 from common.services.query_builder import QueryParameters
 from pydantic import BaseModel
 
@@ -57,7 +57,7 @@ def noop(*_, **__):
 
 @app.task(base=FileIndexingTask)
 def fetch_files_embeddings(
-    embeddings_bytes_lazy: list[TypedLazyBytes[Embedding]], file: File
+    embeddings_bytes_lazy: list[TempTypedLazyBytes[Embedding]], file: File
 ) -> list[FileScore]:
     files: list[FileScore] = []
 

@@ -39,12 +39,19 @@ class CeleryInspectService:
         """Count total celery tasks across all workers and states."""
         return sum(1 for _ in self.iterate_tasks())
 
-    def count_messages_in_queues(self) -> int:
-        return self._queues_service.get_message_count()
+    def count_messages_in_queues(self, exclude_queues: list[str] | None = None) -> int:
+        all_counts = self._queues_service.get_all_queue_message_counts()
+        exclude = set(exclude_queues or [])
+        return sum(count for name, count in all_counts.items() if name not in exclude)
 
-    def is_idle(self, called_from_task: bool = False) -> bool:
+    def is_idle(
+        self, called_from_task: bool = False, exclude_queues: list[str] | None = None
+    ) -> bool:
         tasks_count = self.count_tasks()
-        messages_in_queues = self.count_messages_in_queues()
+        messages_in_queues = self.count_messages_in_queues(
+            exclude_queues=exclude_queues
+        )
         if called_from_task:
+            # We are called from a celery task, so we need to subtract the task itself
             tasks_count -= 1
         return messages_in_queues <= 0 and tasks_count <= 0

@@ -1,14 +1,16 @@
 from pathlib import Path
 from tempfile import NamedTemporaryFile, TemporaryDirectory
 
-from common.services.lazybytes_service import LazyBytesService
+from common.services.lazybytes_service import InMemoryTempLazyBytesService
 
 from worker.index_file.extractor.zip_extractor import ZipExtractor
 
 TEST_ASSETS_DIR = Path(__file__).parent / "assets"
 
 
-def test_zip_archive_extraction_traversal(lazybytes_service_inmemory: LazyBytesService):
+def test_zip_archive_extraction_traversal(
+    lazybytes_service_inmemory: InMemoryTempLazyBytesService,
+):
     processor = ZipExtractor()
 
     # evil.zip contains:

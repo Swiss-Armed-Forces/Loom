@@ -2,7 +2,7 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
-from common.services.lazybytes_service import LazyBytesService
+from common.services.lazybytes_service import InMemoryTempLazyBytesService
 from wand.exceptions import MissingDelegateError, WandException
 
 from worker.index_file.tasks.create_thumbnail import (
@@ -45,7 +45,7 @@ class TestThumbnailImagePngTask:
 
     def test_creates_thumbnail_for_simple_image(
         self,
-        lazybytes_service_inmemory: LazyBytesService,
+        lazybytes_service_inmemory: InMemoryTempLazyBytesService,
         sample_png_bytes: bytes,
         thumbnail_file: ThumbnailFile,
     ) -> None:
@@ -62,7 +62,7 @@ class TestThumbnailImagePngTask:
 
     def test_returns_lazybytes_from_blob(
         self,
-        lazybytes_service_inmemory: LazyBytesService,
+        lazybytes_service_inmemory: InMemoryTempLazyBytesService,
         sample_png_bytes: bytes,
         thumbnail_file: ThumbnailFile,
     ) -> None:
@@ -87,7 +87,7 @@ class TestThumbnailImagePngTask:
         self,
         mock_image_class: MagicMock,
         exception_class: type[Exception],
-        lazybytes_service_inmemory: LazyBytesService,
+        lazybytes_service_inmemory: InMemoryTempLazyBytesService,
         sample_png_bytes: bytes,
         thumbnail_file: ThumbnailFile,
     ) -> None:
@@ -110,7 +110,7 @@ class TestThumbnailImagePngTask:
     def test_returns_none_when_blob_is_not_bytes(
         self,
         mock_image_class: MagicMock,
-        lazybytes_service_inmemory: LazyBytesService,
+        lazybytes_service_inmemory: InMemoryTempLazyBytesService,
         sample_png_bytes: bytes,
         thumbnail_file: ThumbnailFile,
     ) -> None:
@@ -136,7 +136,7 @@ class TestThumbnailImagePngTask:
     def test_returns_none_when_blob_is_none(
         self,
         mock_image_class: MagicMock,
-        lazybytes_service_inmemory: LazyBytesService,
+        lazybytes_service_inmemory: InMemoryTempLazyBytesService,
         sample_png_bytes: bytes,
         thumbnail_file: ThumbnailFile,
     ) -> None:

@@ -12,7 +12,7 @@ from common.file.file_repository import (
     File,
     ImapInfo,
 )
-from common.services.lazybytes_service import LazyBytes
+from common.services.lazybytes_service import TempLazyBytes
 from httpx import HTTPStatusError
 from pydantic import BaseModel
 from requests.exceptions import ConnectionError as RequestsConnectionError
@@ -45,7 +45,7 @@ RSPAMD_MAX_RETRIES = 15
 RSPAMD_RETRY_EXCEPTIONS = (RequestsConnectionError,)
 
 
-def signature(file_content: LazyBytes, file: File) -> Signature:
+def signature(file_content: TempLazyBytes, file: File) -> Signature:
     # Create rendered file and thumbnail with modified SHA256 to break cache.
     # We append "+1" to the original file's SHA256 because:
     # 1. The actual SHA256 of the rendered PDF cannot be computed yet (rendering happens later)
@@ -119,7 +119,7 @@ def detect_email_task(
 )
 def detect_spam_task(
     is_email_detected: bool,
-    file_content: LazyBytes,
+    file_content: TempLazyBytes,
 ) -> bool:
     if not is_email_detected:
         return False
@@ -139,7 +139,7 @@ def persist_spam_task(persister: IndexingPersister, is_spam: bool):
 @app.task(base=FileIndexingTask)
 def upload_email_to_imap_task(
     is_email_detected: bool,
-    file_content: LazyBytes,
+    file_content: TempLazyBytes,
     file: File,
 ) -> ImapInfo | None:
 
@@ -195,7 +195,7 @@ def _get_roundcube_email_url(imap_info: ImapInfo) -> str:
 
 
 class RenderEmailReturn(BaseModel):
-    rendered_content: LazyBytes
+    rendered_content: TempLazyBytes
     imap_info: ImapInfo
 
 
@@ -248,7 +248,7 @@ def render_email_to_pdf(
 @app.task(base=FileIndexingTask)
 def get_rendered_content_from_render_email_return(
     render_email_return: RenderEmailReturn | None,
-) -> LazyBytes | None:
+) -> TempLazyBytes | None:
     if render_email_return is None:
         return None
     return render_email_return.rendered_content

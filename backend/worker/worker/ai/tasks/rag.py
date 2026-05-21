@@ -22,7 +22,7 @@ from common.messages.messages import (
     MessageChatBotToken,
     PubSubMessage,
 )
-from common.services.lazybytes_service import LazyBytes, TypedLazyBytes
+from common.services.lazybytes_service import TempLazyBytes, TempTypedLazyBytes
 from common.services.query_builder import QueryParameters
 from httpx import HTTPError
 from numpy import array, mean
@@ -65,7 +65,7 @@ class ScoredSearchEmbedding(BaseModel):
     file_id: UUID
     file_score: float
     text_score: float
-    text_lazy: LazyBytes
+    text_lazy: TempLazyBytes
 
     @computed_field  # type: ignore[misc]
     @property
@@ -86,7 +86,7 @@ class RankedSearchEmbedding(ScoredSearchEmbedding):
         )
 
 
-def load_text_from_text_lazy(text_lazy: LazyBytes) -> str:
+def load_text_from_text_lazy(text_lazy: TempLazyBytes) -> str:
     with get_lazybytes_service().load_memoryview(text_lazy) as memview:
         text = (
             memview[:MAX_TEXT_LENGTH]
@@ -130,7 +130,7 @@ class LLMError(Exception):
     max_retries=RAG_MAX_RETRIES,
     retry_backoff=True,
 )
-def embed_question(question: str) -> TypedLazyBytes[Sequence[float]]:
+def embed_question(question: str) -> TempTypedLazyBytes[Sequence[float]]:
     """Embed a single question."""
     client = get_llm_embedding_client()
     try:
@@ -191,7 +191,7 @@ Passage:"""
     max_retries=RAG_MAX_RETRIES,
     retry_backoff=True,
 )
-def embed_document(document: str) -> TypedLazyBytes[Sequence[float]]:
+def embed_document(document: str) -> TempTypedLazyBytes[Sequence[float]]:
     """Embed a single document."""
     client = get_llm_embedding_client()
     try:
@@ -211,9 +211,9 @@ def embed_document(document: str) -> TypedLazyBytes[Sequence[float]]:
 @app.task(base=AiContextProcessingTask)
 def aggregate_embeddings(
     lazy_embeddings_generated: tuple[
-        TypedLazyBytes[Sequence[float]], list[TypedLazyBytes[Sequence[float]]]
+        TempTypedLazyBytes[Sequence[float]], list[TempTypedLazyBytes[Sequence[float]]]
     ],
-) -> TypedLazyBytes[Sequence[float]]:
+) -> TempTypedLazyBytes[Sequence[float]]:
     """Aggregate embeddings by computing their mean."""
     lazy_embedding_question, lazy_embeddings_hyde = lazy_embeddings_generated
     embeddings = [
@@ -234,7 +234,7 @@ def aggregate_embeddings(
 
 @app.task(base=AiContextProcessingTask)
 def fetch_scored_search_embeddings(
-    embedding_lazy: TypedLazyBytes[Sequence[float]], query: QueryParameters
+    embedding_lazy: TempTypedLazyBytes[Sequence[float]], query: QueryParameters
 ) -> list[ScoredSearchEmbedding]:
     embedding = get_lazybytes_service().load_object(embedding_lazy)
 

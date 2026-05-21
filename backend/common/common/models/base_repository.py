@@ -61,6 +61,14 @@ class BaseRepository(ABC, Generic[RepositoryObjectT]):
     ):
         """Partial update of specific fields."""
 
+    @abstractmethod
+    def count(self) -> int:
+        """Count all objects in the repository."""
+
+    @abstractmethod
+    def flush(self) -> None:
+        """Delete all objects from the repository."""
+
     def bulk_save(
         self, objects: Sequence[RepositoryObjectT]
     ) -> Iterator[BulkOperationResult]:

@@ -8,7 +8,7 @@ from common.dependencies import (
     get_lazybytes_service,
 )
 from common.file.file_repository import File
-from common.services.lazybytes_service import LazyBytes
+from common.services.lazybytes_service import FileStorageLazyBytes, TempLazyBytes
 from common.utils.cache import cache
 from pydantic import BaseModel
 from wand.exceptions import MissingDelegateError, WandException
@@ -40,7 +40,7 @@ class ThumbnailFile(BaseModel):
         )
 
 
-def signature(file: File, file_content: LazyBytes) -> Signature:
+def signature(file: File, file_content: TempLazyBytes) -> Signature:
     thumbnail_file = ThumbnailFile.from_file(file)
     return group(
         chain(
@@ -94,11 +94,11 @@ def signature_pass_file_content(
 
 
 class Thumbnail(BaseModel):
-    thumbnail: LazyBytes
+    thumbnail: TempLazyBytes
     total_frames: int = 0
 
 
-def _thumbnail_image_png_task(file_content: LazyBytes | None) -> Thumbnail | None:
+def _thumbnail_image_png_task(file_content: TempLazyBytes | None) -> Thumbnail | None:
     if file_content is None:
         return None
 
@@ -138,13 +138,13 @@ def _thumbnail_image_png_task(file_content: LazyBytes | None) -> Thumbnail | Non
 @app.task(base=FileIndexingTask)
 @cache(key_function=lambda _, thumbnail_file: thumbnail_file.cache_key)
 def thumbnail_image_png_task(
-    file_content: LazyBytes | None, _: ThumbnailFile
+    file_content: TempLazyBytes | None, _: ThumbnailFile
 ) -> Thumbnail | None:
     return _thumbnail_image_png_task(file_content)
 
 
 @app.task(base=FileIndexingTask)
-def upload_thumbnail_task(thumbnail: Thumbnail | None) -> LazyBytes | None:
+def upload_thumbnail_task(thumbnail: Thumbnail | None) -> FileStorageLazyBytes | None:
     if thumbnail is None:
         return None
     data = get_lazybytes_service().load_generator(thumbnail.thumbnail)
@@ -163,10 +163,10 @@ def persist_thumbnail_total_frames(
 
 @app.task(base=FileIndexingTask)
 def thumbnail_fallback_render_office_to_pdf_task(
-    thumbnail_storage_data: LazyBytes | None,
-    file_content: LazyBytes | None,
+    thumbnail_storage_data: FileStorageLazyBytes | None,
+    file_content: TempLazyBytes | None,
     thumbnail_file: ThumbnailFile,
-) -> LazyBytes | None:
+) -> TempLazyBytes | None:
     if thumbnail_storage_data is not None:
         return None
     return render_office_to_pdf_task(file_content, thumbnail_file.render_file)
@@ -174,17 +174,19 @@ def thumbnail_fallback_render_office_to_pdf_task(
 
 @app.task(base=FileIndexingTask)
 def thumbnail_fallback_render_browser_to_pdf_task(
-    thumbnail_storage_data: LazyBytes | None,
-    file_content: LazyBytes | None,
+    thumbnail_storage_data: FileStorageLazyBytes | None,
+    file_content: TempLazyBytes | None,
     thumbnail_file: ThumbnailFile,
-) -> LazyBytes | None:
+) -> TempLazyBytes | None:
     if thumbnail_storage_data is not None:
         return None
     return render_browser_to_pdf_task(file_content, thumbnail_file.render_file)
 
 
 @app.task(base=FileIndexingTask)
-def thumbnail_fallback_pick(fallbacks: list[LazyBytes | None]) -> LazyBytes | None:
+def thumbnail_fallback_pick(
+    fallbacks: list[TempLazyBytes | None],
+) -> TempLazyBytes | None:
     for fallback in fallbacks:
         if fallback is not None:
             return fallback
@@ -195,14 +197,14 @@ def thumbnail_fallback_pick(fallbacks: list[LazyBytes | None]) -> LazyBytes | No
 @app.task(base=FileIndexingTask)
 @cache(key_function=lambda _, thumbnail_file: thumbnail_file.cache_key)
 def thumbnail_fallback_image_png_task(
-    file_content: LazyBytes | None, _: ThumbnailFile
+    file_content: TempLazyBytes | None, _: ThumbnailFile
 ) -> Thumbnail | None:
     return _thumbnail_image_png_task(file_content)
 
 
 @persisting_task(app, IndexingPersister)
 def persist_thumbnail_task(
-    persister: IndexingPersister, thumbnail_storage_data: LazyBytes | None
+    persister: IndexingPersister, thumbnail_storage_data: FileStorageLazyBytes | None
 ):
     if thumbnail_storage_data is None:
         return

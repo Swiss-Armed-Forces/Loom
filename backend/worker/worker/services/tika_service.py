@@ -19,7 +19,7 @@ from zipfile import ZipFile
 
 import requests
 from common.file.file_repository import TikaMeta
-from common.services.lazybytes_service import LazyBytes, LazyBytesService
+from common.services.lazybytes_service import TempLazyBytes, TempLazyBytesService
 from pydantic import BaseModel, ConfigDict, Field
 from requests import HTTPError
 
@@ -39,13 +39,13 @@ class TikaAttachment(BaseModel):
     model_config = ConfigDict(frozen=True)
 
     name: str
-    data: LazyBytes
+    data: TempLazyBytes
 
 
 class TikaResult(BaseModel):
     """Tika Parser result."""
 
-    text: LazyBytes | None = None
+    text: TempLazyBytes | None = None
     text_truncated: bool = False
     meta: TikaMeta = Field(default_factory=TikaMeta)
     attachments: list[TikaAttachment] = []
@@ -60,7 +60,7 @@ class TikaService:
 
     def __init__(
         self,
-        lazybytes_service: LazyBytesService,
+        lazybytes_service: TempLazyBytesService,
         timeout: int = TIKA_TIMEOUT_SECONDS,
     ):
         self.timeout = timeout

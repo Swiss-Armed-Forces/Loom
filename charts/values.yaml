@@ -67,6 +67,8 @@ pipeline:
   skip_embedding_while_indexing: null
   skip_auto_tag_file_while_indexing: null
   automatic_indexing: true
+  throttle_max_lazybytes__bytes: null
+  throttle_max_root_tasks: null
   tika_ocr_languages: null
   celery_queue_name_prefix: null
   celery_deliver_limit: null

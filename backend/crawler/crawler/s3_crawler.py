@@ -4,8 +4,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from time import sleep
 
-from common.dependencies import get_file_scheduling_service
-from common.services.lazybytes_service import LazyBytesService
+from common.services.lazybytes_service import FileStorageLazyBytesService
+from common.services.task_scheduling_service import TaskSchedulingService
 from common.utils.retry import retry
 from minio import Minio
 
@@ -31,12 +31,14 @@ class S3Crawler:
         s3_client: Minio,
         bucket_name: str,
         bucket_alias: str | None,
-        lazybytes_service: LazyBytesService,
-    ):
+        file_storage_service: FileStorageLazyBytesService,
+        task_scheduling_service: TaskSchedulingService,
+    ):  # pylint: disable=too-many-arguments,too-many-positional-arguments
         self.client = s3_client
         self.bucket_name = bucket_name
         self.display_name = bucket_alias if bucket_alias else bucket_name
-        self.lazybytes_service = lazybytes_service
+        self.file_storage_service = file_storage_service
+        self.task_scheduling_service = task_scheduling_service
         self.processed_objects: set[_ProcessedObject] = set()
 
     def _ensure_bucket(self):
@@ -55,14 +57,16 @@ class S3Crawler:
                 S3_READ_CHUNK_SIZE
             )
 
+        uploaded_at = datetime.now()
         file_content = retry(
-            lambda: self.lazybytes_service.from_generator(stream_generator())
+            lambda: self.file_storage_service.from_generator(stream_generator())
         )
-        get_file_scheduling_service().index_file(
+        self.task_scheduling_service.dispatch_index_file(
             full_name=str(full_name),
             file_content=file_content,
             source_id=source,
             parent_id=None,
+            uploaded_datetime=uploaded_at,
         )
 
     def crawl(self):

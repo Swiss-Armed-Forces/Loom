@@ -9,7 +9,7 @@ from common.dependencies import (
     get_libretranslate_api,
 )
 from common.file.file_repository import File, LibretranslateTranslatedLanguage
-from common.services.lazybytes_service import LazyBytes
+from common.services.lazybytes_service import TempLazyBytes
 from common.utils.cache import cache
 from langchain_text_splitters import RecursiveCharacterTextSplitter, TextSplitter
 from pydantic import BaseModel
@@ -82,9 +82,9 @@ def noop(*_, **__):
 )
 @cache(key_function=lambda _, file: file.sha256)
 def translate_detect_language_task(
-    text_lazy: LazyBytes | None,
+    text_lazy: TempLazyBytes | None,
     file: File,  # pylint: disable=unused-argument
-) -> tuple[LazyBytes | None, LibreTranslateLanguageDetectResult | None]:
+) -> tuple[TempLazyBytes | None, LibreTranslateLanguageDetectResult | None]:
     if text_lazy is None:
         return text_lazy, None
 
@@ -149,7 +149,7 @@ def get_translation_text_splitter() -> TextSplitter:
 def translate_task(
     self: FileIndexingTask,
     translate_detect_language_result: tuple[
-        LazyBytes | None, LibreTranslateLanguageDetectResult | None
+        TempLazyBytes | None, LibreTranslateLanguageDetectResult | None
     ],
     file: File,
 ):
@@ -243,7 +243,7 @@ def persist_translation(
 @app.task(base=FileIndexingTask)
 def translate_get_best_detected_language(
     translate_detect_language_result: tuple[
-        LazyBytes | None, LibreTranslateLanguageDetectResult | None
+        TempLazyBytes | None, LibreTranslateLanguageDetectResult | None
     ],
 ) -> str | None:
     _, detected_languages = translate_detect_language_result

@@ -144,6 +144,41 @@ def test_get_by_id_nonexistent_returns_none(repository_type: type[BaseEsReposito
     "repository_type",
     ES_REPOSITORY_TYPES,
 )
+def test_count(repository_type: type[BaseEsRepository]):
+    """Test that count() reflects the number of saved documents."""
+    repository = repository_type(
+        query_builder=get_query_builder(), pubsub_service=get_pubsub_service()
+    )
+
+    _object = ES_REPOSITORY_MINIMAL_OBJECTS[repository_type].model_copy(deep=True)
+    count_before = repository.count()
+    repository.save(_object)
+    assert repository.count() == count_before + 1
+
+    # Cleanup
+    repository.delete_by_id(_object.id_)
+
+
+@pytest.mark.parametrize(
+    "repository_type",
+    ES_REPOSITORY_TYPES,
+)
+def test_flush(repository_type: type[BaseEsRepository]):
+    """Test that flush() removes all documents from the index."""
+    repository = repository_type(
+        query_builder=get_query_builder(), pubsub_service=get_pubsub_service()
+    )
+
+    _object = ES_REPOSITORY_MINIMAL_OBJECTS[repository_type].model_copy(deep=True)
+    repository.save(_object)
+    repository.flush()
+    assert repository.count() == 0
+
+
+@pytest.mark.parametrize(
+    "repository_type",
+    ES_REPOSITORY_TYPES,
+)
 def test_update_partial_fields(repository_type: type[BaseEsRepository]):
     """Test that update() only updates specified fields."""
     repository = repository_type(
