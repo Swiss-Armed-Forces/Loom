@@ -11,12 +11,7 @@ from common.dependencies import (
 )
 from common.file.file_repository import Stat
 from common.services.query_builder import QueryParameters
-from common.utils.cache import (
-    CacheStatistics,
-    cache_get,
-    cache_set,
-    get_cache_statistics,
-)
+from common.utils.cache import cache_get, cache_set, get_cache_statistics
 from fastapi import FastAPI
 from opentelemetry.exporter.prometheus import PrometheusMetricReader
 from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
@@ -35,6 +30,8 @@ logger = logging.getLogger(__name__)
 PERIODIC_METRICS_REFRESH__MS = 60 * 1000
 ADAPTIVE_CACHE_TIMEOUT_SAFETY_FACTOR = 0.8
 ADAPTIVE_CACHE_MAX_AGE_FACTOR = 10  # max_age = this × PERIODIC_METRICS_REFRESH__MS
+ADAPTIVE_CACHE_TIMEOUT_CAP__MS = 60 * 60 * 1000  # 1 hour
+ADAPTIVE_CACHE_REDIS_TTL_FACTOR = 3  # Redis TTL = this × max_age
 
 
 class LoggingMetricExporter(MetricExporter):
@@ -86,7 +83,7 @@ def with_adaptive_cache(max_age: timedelta | None = None):
         def wrapper(options: CallbackOptions) -> Iterable[Observation]:
             # Cap timeout_millis before building a timedelta: the periodic reader
             # passes math.inf, which causes OverflowError inside timedelta().
-            timeout_ms = min(options.timeout_millis, 86_400_000)  # cap at 1 day
+            timeout_ms = min(options.timeout_millis, ADAPTIVE_CACHE_TIMEOUT_CAP__MS)
             timeout = timedelta(
                 milliseconds=timeout_ms * ADAPTIVE_CACHE_TIMEOUT_SAFETY_FACTOR
             )
@@ -124,7 +121,9 @@ def with_adaptive_cache(max_age: timedelta | None = None):
                     observations_raw=[(o.value, o.attributes) for o in observations],
                     collection_time=collection_time,
                 ),
-                ttl_seconds=int(max_age.total_seconds() * 3),
+                ttl_seconds=int(
+                    max_age.total_seconds() * ADAPTIVE_CACHE_REDIS_TTL_FACTOR
+                ),
             )
 
             logger.info(
@@ -220,52 +219,16 @@ def count_imap_emails(_: CallbackOptions) -> Iterable[Observation]:
     yield Observation(value=email_count)
 
 
-def with_cached_cache_statistics(ttl: timedelta | None = None):
-    """Decorator factory that provides cached cache statistics to the function."""
-    if ttl is None:
-        ttl = timedelta(seconds=10)
-
-    class CacheState(BaseModel):
-        stats: CacheStatistics
-        timestamp: datetime = Field(default_factory=datetime.now)
-
-    # Cache state stored in closure
-    cache: CacheState | None = None
-
-    def decorator(
-        func: Callable[[CallbackOptions, CacheStatistics], Iterable[Observation]],
-    ) -> Callable:
-        @wraps(func)
-        def wrapper(options: CallbackOptions) -> Iterable[Observation]:
-            current_time = datetime.now()
-            # Check if cache is expired or empty
-            nonlocal cache
-            if cache is None or (current_time - cache.timestamp) > ttl:
-                redis_client = get_redis_cache_client()
-                cache = CacheState(stats=get_cache_statistics(redis_client))
-
-            # Call the original function with cached stats
-            return func(options, cache.stats)
-
-        return wrapper
-
-    return decorator
-
-
 @with_adaptive_cache()
-@with_cached_cache_statistics()
-def observe_cache_mem_size(
-    _: CallbackOptions, stats: CacheStatistics
-) -> Iterable[Observation]:
+def observe_cache_mem_size(_: CallbackOptions) -> Iterable[Observation]:
+    stats = get_cache_statistics(get_redis_cache_client())
     for namespace, entry in stats.root.items():
         yield Observation(value=entry.mem_size, attributes={"namespace": namespace})
 
 
 @with_adaptive_cache()
-@with_cached_cache_statistics()
-def observe_cache_entries(
-    _: CallbackOptions, stats: CacheStatistics
-) -> Iterable[Observation]:
+def observe_cache_entries(_: CallbackOptions) -> Iterable[Observation]:
+    stats = get_cache_statistics(get_redis_cache_client())
     for namespace, entry in stats.root.items():
         yield Observation(
             value=entry.entries_count, attributes={"namespace": namespace}
@@ -273,19 +236,15 @@ def observe_cache_entries(
 
 
 @with_adaptive_cache()
-@with_cached_cache_statistics()
-def observe_cache_hits(
-    _: CallbackOptions, stats: CacheStatistics
-) -> Iterable[Observation]:
+def observe_cache_hits(_: CallbackOptions) -> Iterable[Observation]:
+    stats = get_cache_statistics(get_redis_cache_client())
     for namespace, entry in stats.root.items():
         yield Observation(value=entry.hits_count, attributes={"namespace": namespace})
 
 
 @with_adaptive_cache()
-@with_cached_cache_statistics()
-def observe_cache_misses(
-    _: CallbackOptions, stats: CacheStatistics
-) -> Iterable[Observation]:
+def observe_cache_misses(_: CallbackOptions) -> Iterable[Observation]:
+    stats = get_cache_statistics(get_redis_cache_client())
     for namespace, entry in stats.root.items():
         yield Observation(value=entry.miss_count, attributes={"namespace": namespace})
 
