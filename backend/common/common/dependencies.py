@@ -23,8 +23,8 @@ from common.messages.pubsub_service import PubSubService
 from common.services.celery_inspect_service import CeleryInspectService
 from common.services.imap_service import IMAPService
 from common.services.lazybytes_service import (
-    LazyBytesService,
-    S3LazyBytesService,
+    FileStorageLazyBytesService,
+    TempLazyBytesService,
 )
 from common.services.query_builder import QueryBuilder
 from common.services.queues_service import QueuesService
@@ -49,9 +49,9 @@ _redis_client_async: StrictRedisAsync | None = None
 _redis_cache_client: StrictRedis | None = None
 _pubsub_service: PubSubService | None = None
 _elasticsearch: Elasticsearch | None = None
-_file_storage_service: LazyBytesService | None = None
+_file_storage_service: FileStorageLazyBytesService | None = None
 _root_task_information_repository: RootTaskInformationRepository | None = None
-_lazybytes_service: LazyBytesService | None = None
+_lazybytes_service: TempLazyBytesService | None = None
 _imap_service: IMAPService | None = None
 _s3_intake_client: Minio | None = None
 _celery_app: Optional["Celery[BaseTask]"] = None
@@ -117,7 +117,7 @@ def init(init_elasticsearch_documents: bool = False):
     )
 
     global _file_storage_service
-    _file_storage_service = S3LazyBytesService(
+    _file_storage_service = FileStorageLazyBytesService(
         Minio(
             settings.file_storage.host,
             settings.file_storage.access_key,
@@ -136,7 +136,7 @@ def init(init_elasticsearch_documents: bool = False):
     )
 
     global _lazybytes_service
-    _lazybytes_service = S3LazyBytesService(
+    _lazybytes_service = TempLazyBytesService(
         Minio(
             settings.lazybytes_storage.host,
             settings.lazybytes_storage.access_key,
@@ -299,13 +299,13 @@ def mock_init():
     _elasticsearch = MagicMock(spec=Elasticsearch)
 
     global _file_storage_service
-    _file_storage_service = MagicMock(spec=LazyBytesService)
+    _file_storage_service = MagicMock(spec=FileStorageLazyBytesService)
 
     global _root_task_information_repository
     _root_task_information_repository = MagicMock(spec=RootTaskInformationRepository)
 
     global _lazybytes_service
-    _lazybytes_service = MagicMock(spec=LazyBytesService)
+    _lazybytes_service = MagicMock(spec=TempLazyBytesService)
 
     global _imap_service
     _imap_service = MagicMock(spec=IMAPService)
@@ -412,7 +412,7 @@ def get_elasticsearch() -> Elasticsearch:
     return _elasticsearch
 
 
-def get_file_storage_service() -> LazyBytesService:
+def get_file_storage_service() -> FileStorageLazyBytesService:
     if _file_storage_service is None:
         raise DependencyException("File Storage Service missing")
     return _file_storage_service
@@ -424,7 +424,7 @@ def get_root_task_information_repository() -> RootTaskInformationRepository:
     return _root_task_information_repository
 
 
-def get_lazybytes_service() -> LazyBytesService:
+def get_lazybytes_service() -> TempLazyBytesService:
     if _lazybytes_service is None:
         raise DependencyException("Lazybytes Service missing")
     return _lazybytes_service

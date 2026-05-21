@@ -10,7 +10,7 @@ from typing import IO, Callable, ContextManager, Iterator
 from zipfile import ZipFile
 
 import pytest
-from common.services.lazybytes_service import LazyBytesService
+from common.services.lazybytes_service import InMemoryTempLazyBytesService
 from common.utils.random_file import random_file
 from pydantic import BaseModel
 from zstandard import ZstdCompressionParameters, ZstdCompressor
@@ -97,7 +97,7 @@ def test_extractor_unsupported(
     extractor_class: type[ExtractorBase],
     unsupported_file: str,
     file_type: str,
-    lazybytes_service_inmemory: LazyBytesService,
+    lazybytes_service_inmemory: InMemoryTempLazyBytesService,
 ):
     """Test that extractors raise ExtractNotSupported for unsupported files."""
     processor = extractor_class()
@@ -228,7 +228,7 @@ def test_extractor_extraction(
     file_count: int | None,
     has_stdout: bool,
     expected_structure: ExpectedDirectoryStructure | None,
-    lazybytes_service_inmemory: LazyBytesService,
+    lazybytes_service_inmemory: InMemoryTempLazyBytesService,
 ):
     """Test that extractors correctly extract supported files."""
     processor = extractor_class()

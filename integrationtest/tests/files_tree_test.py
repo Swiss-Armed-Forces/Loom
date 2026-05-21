@@ -10,7 +10,11 @@ from common.file.file_repository import (
 from requests import HTTPError
 
 from utils.consts import FILES_ENDPOINT, REQUEST_TIMEOUT
-from utils.fetch_from_api import build_search_string, fetch_query_id
+from utils.fetch_from_api import (
+    build_search_string,
+    fetch_files_from_api,
+    fetch_query_id,
+)
 from utils.upload_asset import upload_asset
 
 FILE_COUNT_TOP_LEVEL = 3
@@ -65,21 +69,19 @@ class TestFileTree:
         _upload_test_assets(
             FILE_COUNT_ABOVE_BACKEND_LIMIT, Path(TREE_ASSET_BACKEND_PASSED_FOLDER_NAME)
         )
-        # We intentionally don't wait here, because for the tree view
-        # the indexing state of the files is quite irrelevant...
-        #
-        # if we'd need to wait here we should use something like
-        # this:
-        #
-        # fetch_files_from_api(
-        #    search_string="*",
-        #    expected_no_of_files=(
-        #        FILE_COUNT_TOP_LEVEL
-        #        + FILE_COUNT_BELOW_FRONTEND_LIMIT
-        #        + FILE_COUNT_BELOW_BACKEND_LIMIT
-        #        + FILE_COUNT_ABOVE_BACKEND_LIMIT
-        #    ),
-        # )
+        # We intentionally don't wait here for the files to be processed,
+        # because for the tree view the indexing state of the files
+        # is quite irrelevant...
+        fetch_files_from_api(
+            search_string="*",
+            expected_no_of_files=(
+                FILE_COUNT_TOP_LEVEL
+                + FILE_COUNT_BELOW_FRONTEND_LIMIT
+                + FILE_COUNT_BELOW_BACKEND_LIMIT
+                + FILE_COUNT_ABOVE_BACKEND_LIMIT
+            ),
+            expected_state=None,
+        )
 
     def test_unfiltered_level(self):
         tree_models = _files_tree("*", "/")

@@ -4,7 +4,7 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
-from common.services.lazybytes_service import LazyBytes, LazyBytesService
+from common.services.lazybytes_service import InMemoryTempLazyBytesService, LazyBytes
 from wand.exceptions import MissingDelegateError, WandException
 
 from worker.index_file.tasks.render import RenderFile, render_image_png_task
@@ -41,7 +41,7 @@ class TestRenderImagePngTask:
 
     def test_creates_rendered_image_for_simple_image(
         self,
-        lazybytes_service_inmemory: LazyBytesService,
+        lazybytes_service_inmemory: InMemoryTempLazyBytesService,
         sample_png_bytes: bytes,
         render_file: RenderFile,
     ) -> None:
@@ -58,7 +58,7 @@ class TestRenderImagePngTask:
 
     def test_returns_lazybytes_from_blob(
         self,
-        lazybytes_service_inmemory: LazyBytesService,
+        lazybytes_service_inmemory: InMemoryTempLazyBytesService,
         sample_png_bytes: bytes,
         render_file: RenderFile,
     ) -> None:
@@ -83,7 +83,7 @@ class TestRenderImagePngTask:
         self,
         mock_image_class: MagicMock,
         exception_class: type[Exception],
-        lazybytes_service_inmemory: LazyBytesService,
+        lazybytes_service_inmemory: InMemoryTempLazyBytesService,
         sample_png_bytes: bytes,
         render_file: RenderFile,
     ) -> None:
@@ -106,7 +106,7 @@ class TestRenderImagePngTask:
     def test_returns_none_when_blob_is_not_bytes(
         self,
         mock_image_class: MagicMock,
-        lazybytes_service_inmemory: LazyBytesService,
+        lazybytes_service_inmemory: InMemoryTempLazyBytesService,
         sample_png_bytes: bytes,
         render_file: RenderFile,
     ) -> None:
@@ -131,7 +131,7 @@ class TestRenderImagePngTask:
     def test_returns_none_when_blob_is_none(
         self,
         mock_image_class: MagicMock,
-        lazybytes_service_inmemory: LazyBytesService,
+        lazybytes_service_inmemory: InMemoryTempLazyBytesService,
         sample_png_bytes: bytes,
         render_file: RenderFile,
     ) -> None:

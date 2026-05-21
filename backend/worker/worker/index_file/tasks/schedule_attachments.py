@@ -5,10 +5,12 @@ from celery import chain
 from common.dependencies import (
     get_celery_app,
     get_file_scheduling_service,
+    get_file_storage_service,
     get_lazybytes_service,
 )
 from common.file.file_repository import Attachment, File
-from common.services.lazybytes_service import TypedLazyBytes
+from common.services.lazybytes_service import TempTypedLazyBytes
+from common.utils.iterhash import iterhash
 
 from worker.index_file.infra.file_indexing_task import FileIndexingTask
 from worker.index_file.infra.indexing_persister import IndexingPersister
@@ -21,7 +23,7 @@ app = get_celery_app()
 
 
 @app.task(base=FileIndexingTask)
-def schedule_attachments(lazy_tika_result: TypedLazyBytes[TikaResult], file: File):
+def schedule_attachments(lazy_tika_result: TempTypedLazyBytes[TikaResult], file: File):
     tika_result = get_lazybytes_service().load_object(lazy_tika_result)
 
     # We spawn each attachment sub-pipeline independently rather than using
@@ -43,14 +45,20 @@ def schedule_attachments(lazy_tika_result: TypedLazyBytes[TikaResult], file: Fil
 def schedule_attachment(
     tika_attachment: TikaAttachment, file: File
 ) -> Attachment | None:
-    file_data_hash = sha256()
-    file_chunk_generator = get_lazybytes_service().load_generator(tika_attachment.data)
-    for file_chunk in file_chunk_generator:
-        file_data_hash.update(file_chunk)
+    """Schedule an attachment for indexing."""
+    lazybytes_service = get_lazybytes_service()
+    file_storage_service = get_file_storage_service()
+
+    # Copy from lazybytes to file_storage while computing hash in a single pass
+    data_hash = sha256()
+    data = iterhash(data_hash, lazybytes_service.load_generator(tika_attachment.data))
+    file_content = file_storage_service.from_generator(data)
 
     attachment_name = str(file.full_name / tika_attachment.name)
-    if file.sha256 == file_data_hash.hexdigest():
-        # avoid scheduling same file again: will lead to endless indexing loops
+    if file.sha256 == data_hash.hexdigest():
+        # Avoid scheduling same file again: would lead to endless indexing loops
+        # Delete the file_storage entry we just created
+        file_storage_service.delete(file_content)
         logger.info(
             "Attachment ('%s') has same sha256 hash as parent ('%s'): skipping",
             attachment_name,
@@ -60,7 +68,7 @@ def schedule_attachment(
 
     new_file = get_file_scheduling_service().index_file(
         full_name=attachment_name,
-        file_content=tika_attachment.data,
+        file_content=file_content,
         source_id=file.source,
         parent_id=file.id_,
     )

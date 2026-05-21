@@ -42,6 +42,12 @@ class _TestRepository(BaseRepository[_TestRepositoryObject]):
         del include, exclude  # unused in test implementation
         self._repo[obj.id_] = obj
 
+    def count(self) -> int:
+        return len(self._repo)
+
+    def flush(self) -> None:
+        self._repo.clear()
+
 
 def test_base_repo_save_and_get():
     repo = _TestRepository()
@@ -75,3 +81,19 @@ def test_base_repo_update():
 
     retrieved = repo.get_by_id(obj.id_)
     assert retrieved.name == "updated"
+
+
+def test_base_repo_count():
+    repo = _TestRepository()
+    assert repo.count() == 0
+    repo.save(_TestRepositoryObject())
+    repo.save(_TestRepositoryObject())
+    assert repo.count() == 2
+
+
+def test_base_repo_flush():
+    repo = _TestRepository()
+    repo.save(_TestRepositoryObject())
+    repo.save(_TestRepositoryObject())
+    repo.flush()
+    assert repo.count() == 0

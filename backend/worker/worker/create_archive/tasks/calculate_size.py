@@ -2,7 +2,7 @@ from uuid import UUID
 
 from celery import chain
 from common.dependencies import get_celery_app, get_file_storage_service
-from common.services.lazybytes_service import LazyBytes
+from common.services.lazybytes_service import FileStorageLazyBytes
 
 from worker.create_archive.infra.archive_creation_persister import (
     ArchiveCreationPersister,
@@ -28,7 +28,7 @@ def signature_encrypted_file(archive_id: UUID):
 
 
 @app.task(base=ArchiveProcessingTask)
-def calculate_size_task(storage_data: LazyBytes) -> int:
+def calculate_size_task(storage_data: FileStorageLazyBytes) -> int:
     size = 0
     for chunk in get_file_storage_service().load_generator(storage_data):
         size += len(chunk)

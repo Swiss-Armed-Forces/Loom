@@ -3,7 +3,7 @@ from common.dependencies import (
     get_celery_app,
     get_file_storage_service,
 )
-from common.services.lazybytes_service import LazyBytes
+from common.services.lazybytes_service import FileStorageLazyBytes
 
 from worker.create_archive.infra.archive_processing_task import ArchiveProcessingTask
 
@@ -13,7 +13,7 @@ app = get_celery_app()
 @app.task(
     base=ArchiveProcessingTask,
 )
-def encrypt_file_task(storage_data: LazyBytes) -> LazyBytes:
+def encrypt_file_task(storage_data: FileStorageLazyBytes) -> FileStorageLazyBytes:
     """Load files from storage and encryptes it.
 
     :param storage_data: The file storage id for the file to encrypt

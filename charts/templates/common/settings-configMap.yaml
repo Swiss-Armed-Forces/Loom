@@ -52,6 +52,12 @@ data:
     {{- if ne .Values.pipeline.automatic_indexing nil }}
     automatic_indexing: {{ .Values.pipeline.automatic_indexing | quote }}
     {{- end }}
+    {{- if ne .Values.pipeline.throttle_max_lazybytes__bytes nil }}
+    throttle_max_lazybytes__bytes: {{ .Values.pipeline.throttle_max_lazybytes__bytes | quote }}
+    {{- end }}
+    {{- if ne .Values.pipeline.throttle_max_root_tasks nil }}
+    throttle_max_root_tasks: {{ .Values.pipeline.throttle_max_root_tasks | quote }}
+    {{- end }}
     {{- if ne .Values.pipeline.tika_ocr_languages nil }}
     tika_ocr_languages: {{ .Values.pipeline.tika_ocr_languages | join "," | quote }}
     {{- end }}

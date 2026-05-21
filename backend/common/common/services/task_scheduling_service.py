@@ -1,15 +1,17 @@
 """Provides a service for scheduling tasks to be executed by the worker."""
 
+from datetime import datetime
 from uuid import UUID, uuid4
 
 from celery import Celery
+from celery.result import AsyncResult
 from pydantic import BaseModel
 
 from common.ai_context.ai_context_repository import AiContext
 from common.archive.archive_repository import Archive
 from common.celery_app import BaseTask, get_beat_schedule
 from common.file.file_repository import File, Tag
-from common.services.lazybytes_service import LazyBytes
+from common.services.lazybytes_service import FileStorageLazyBytes, TempLazyBytes
 from common.services.query_builder import QueryParameters
 from common.task_object.root_task_information_repository import (
     RootTaskInformation,
@@ -39,6 +41,34 @@ class TaskSchedulingService:
         self._celery_app = celery_app
         self._root_task_information_repository = root_task_information_repository
 
+    def _send_task(
+        self,
+        task_name: str,
+        args: list,
+        root_id: str,
+        task_id: str | None = None,
+    ) -> AsyncResult:
+        """Send a task to its dedicated queue via the shared exchange routing key.
+
+        Always sets routing_key=task_name so the shared exchange routes the message to
+        the correct dedicated queue, regardless of whether task_routes has been
+        populated in the sending process (e.g. the API process never calls
+        register_tasks_for_package, so task_routes is empty there).
+
+        Returns the AsyncResult so the caller can decide whether to .forget() it or
+        track it.
+        """
+        kwargs: dict = {}
+        if task_id is not None:
+            kwargs["task_id"] = task_id
+        return self._celery_app.send_task(
+            task_name,
+            args=args,
+            root_id=root_id,
+            routing_key=task_name,
+            **kwargs,
+        )
+
     def create_archive(self, archive: Archive):
         """Schedule the creation of an archive."""
         root_task_id = uuid4()
@@ -48,15 +78,40 @@ class TaskSchedulingService:
                 object_id=archive.id_,
             )
         )
-        self._celery_app.send_task(
+        self._send_task(
             "worker.create_archive.create_archive_task.create_archive_task",
             args=[archive],
             root_id=str(root_task_id),
         ).forget()
 
+    # pylint: disable=too-many-arguments, too-many-positional-arguments
+    def dispatch_index_file(
+        self,
+        full_name: str,
+        file_content: FileStorageLazyBytes,
+        source_id: str,
+        parent_id: UUID | None = None,
+        uploaded_datetime: datetime | None = None,
+    ):
+        """Dispatch file for indexing.
+
+        Args:
+            full_name: The full path/name of the file.
+            file_content: LazyBytes handle pointing to file_storage_service (permanent).
+            source_id: Source identifier for the file.
+            parent_id: Optional parent file ID for nested files.
+            uploaded_datetime: Timestamp captured at dispatch time to preserve ordering.
+        """
+        root_task_id = uuid4()
+        self._send_task(
+            "worker.index_file.index_file_task.dispatch_index_file",
+            args=[full_name, file_content, source_id, parent_id, uploaded_datetime],
+            root_id=str(root_task_id),
+        ).forget()
+
     def dispatch_reindex_files(self, query: QueryParameters):
         root_task_id = uuid4()
-        self._celery_app.send_task(
+        self._send_task(
             "worker.index_file.index_file_task.dispatch_reindex_files",
             args=[query],
             root_id=str(root_task_id),
@@ -64,13 +119,13 @@ class TaskSchedulingService:
 
     def dispatch_reindex_file(self, file_id: UUID):
         root_task_id = uuid4()
-        self._celery_app.send_task(
+        self._send_task(
             "worker.index_file.index_file_task.dispatch_reindex_file",
             args=[file_id],
             root_id=str(root_task_id),
         ).forget()
 
-    def index_file(self, file: File, file_content: LazyBytes):
+    def index_file(self, file: File, file_content: TempLazyBytes):
         """Schedule the indexing of a file."""
         root_task_id = uuid4()
         self._root_task_information_repository.save(
@@ -79,7 +134,7 @@ class TaskSchedulingService:
                 object_id=file.id_,
             )
         )
-        self._celery_app.send_task(
+        self._send_task(
             "worker.index_file.index_file_task.index_file_task",
             args=[file, file_content],
             root_id=str(root_task_id),
@@ -87,7 +142,7 @@ class TaskSchedulingService:
 
     def dispatch_translate_files(self, query: QueryParameters, lang: str):
         root_task_id = uuid4()
-        self._celery_app.send_task(
+        self._send_task(
             "worker.index_file.translate_file_task.dispatch_translate_files",
             args=[query, lang],
             root_id=str(root_task_id),
@@ -95,7 +150,7 @@ class TaskSchedulingService:
 
     def dispatch_translate_file(self, file_id: UUID, lang: str):
         root_task_id = uuid4()
-        self._celery_app.send_task(
+        self._send_task(
             "worker.index_file.translate_file_task.dispatch_translate_file",
             args=[file_id, lang],
             root_id=str(root_task_id),
@@ -109,16 +164,16 @@ class TaskSchedulingService:
                 object_id=file_id,
             )
         )
-        self._celery_app.send_task(
+        self._send_task(
             "worker.index_file.translate_file_task.translate_file_task",
             args=[lang, file_id],
-            task_id=str(root_task_id),
             root_id=str(root_task_id),
+            task_id=str(root_task_id),
         ).forget()
 
     def dispatch_summarize_file(self, file_id: UUID, system_prompt: str | None = None):
         root_task_id = uuid4()
-        self._celery_app.send_task(
+        self._send_task(
             "worker.index_file.summarize_file_task.dispatch_summarize_file",
             args=[file_id, system_prompt],
             root_id=str(root_task_id),
@@ -128,7 +183,7 @@ class TaskSchedulingService:
         self, query: QueryParameters, system_prompt: str | None = None
     ):
         root_task_id = uuid4()
-        self._celery_app.send_task(
+        self._send_task(
             "worker.index_file.summarize_file_task.dispatch_summarize_files",
             args=[query, system_prompt],
             root_id=str(root_task_id),
@@ -142,11 +197,11 @@ class TaskSchedulingService:
                 object_id=file_id,
             )
         )
-        self._celery_app.send_task(
+        self._send_task(
             "worker.index_file.summarize_file_task.summarize_file_task",
             args=[file_id, system_prompt],
-            task_id=str(root_task_id),
             root_id=str(root_task_id),
+            task_id=str(root_task_id),
         ).forget()
 
     def update_archive_by_id(self, archive_id: UUID, request: UpdateArchiveRequest):
@@ -157,16 +212,16 @@ class TaskSchedulingService:
                 object_id=archive_id,
             )
         )
-        self._celery_app.send_task(
+        self._send_task(
             "worker.create_archive.update_archive_task.update_task",
             args=[archive_id, request],
-            task_id=str(root_task_id),
             root_id=str(root_task_id),
+            task_id=str(root_task_id),
         ).forget()
 
     def dispatch_update(self, query: QueryParameters, request: UpdateFileRequest):
         root_task_id = uuid4()
-        self._celery_app.send_task(
+        self._send_task(
             "worker.index_file.update_file_task.dispatch_update_for_files",
             args=[query, request],
             root_id=str(root_task_id),
@@ -180,16 +235,16 @@ class TaskSchedulingService:
                 object_id=file_id,
             )
         )
-        self._celery_app.send_task(
+        self._send_task(
             "worker.index_file.update_file_task.update_task",
             args=[file_id, request],
-            task_id=str(root_task_id),
             root_id=str(root_task_id),
+            task_id=str(root_task_id),
         ).forget()
 
     def dispatch_add_tags_to_files(self, query: QueryParameters, tags: list[Tag]):
         root_task_id = uuid4()
-        self._celery_app.send_task(
+        self._send_task(
             "worker.index_file.add_tags_to_file_task.dispatch_add_tags_to_files",
             args=[query, tags],
             root_id=str(root_task_id),
@@ -197,7 +252,7 @@ class TaskSchedulingService:
 
     def dispatch_add_tags_to_file(self, file_id: UUID, tags: list[Tag]):
         root_task_id = uuid4()
-        self._celery_app.send_task(
+        self._send_task(
             "worker.index_file.add_tags_to_file_task.dispatch_add_tags_to_file",
             args=[file_id, tags],
             root_id=str(root_task_id),
@@ -211,16 +266,16 @@ class TaskSchedulingService:
                 object_id=file_id,
             )
         )
-        self._celery_app.send_task(
+        self._send_task(
             "worker.index_file.add_tags_to_file_task.add_tags_to_file_task",
             args=[file_id, tags],
-            task_id=str(root_task_id),
             root_id=str(root_task_id),
+            task_id=str(root_task_id),
         ).forget()
 
     def dispatch_remove_tag(self, tag):
         root_task_id = uuid4()
-        self._celery_app.send_task(
+        self._send_task(
             "worker.index_file.remove_tag_from_file_task.dispatch_remove_tag",
             args=[tag],
             root_id=str(root_task_id),
@@ -228,7 +283,7 @@ class TaskSchedulingService:
 
     def dispatch_remove_tag_from_file(self, file_id: UUID, tag):
         root_task_id = uuid4()
-        self._celery_app.send_task(
+        self._send_task(
             "worker.index_file.remove_tag_from_file_task.dispatch_remove_tag_from_file",
             args=[file_id, tag],
             root_id=str(root_task_id),
@@ -242,11 +297,11 @@ class TaskSchedulingService:
                 object_id=file_id,
             )
         )
-        self._celery_app.send_task(
+        self._send_task(
             "worker.index_file.remove_tag_from_file_task.remove_tag_from_file_task",
             args=[file_id, tag],
-            task_id=str(root_task_id),
             root_id=str(root_task_id),
+            task_id=str(root_task_id),
         ).forget()
 
     def ai_process_question(self, context: AiContext, question: str):
@@ -257,18 +312,18 @@ class TaskSchedulingService:
                 object_id=context.id_,
             )
         )
-        self._celery_app.send_task(
+        self._send_task(
             "worker.ai.process_question_task.process_question_task",
             args=[context, question],
-            task_id=str(root_task_id),
             root_id=str(root_task_id),
+            task_id=str(root_task_id),
         ).forget()
 
     def trigger_scheduled_task(self, schedule_name: str):
         """Trigger a scheduled (beat) task by name.
 
         Args:
-            schedule_name: The name from beat_schedule (e.g., "cleanup-on-idle")
+            schedule_name: The name from beat_schedule (e.g., "flush-on-idle")
 
         Raises:
             KeyError: If schedule_name not found in beat_schedule
@@ -295,4 +350,5 @@ class TaskSchedulingService:
             args=task_args,
             kwargs=task_kwargs,
             root_id=str(root_task_id),
+            routing_key=task_name,
         ).forget()

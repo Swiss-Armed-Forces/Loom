@@ -9,7 +9,7 @@ from common.dependencies import (
     get_llm_embedding_client,
 )
 from common.file.file_repository import Embedding, File
-from common.services.lazybytes_service import LazyBytes, TypedLazyBytes
+from common.services.lazybytes_service import TempLazyBytes, TempTypedLazyBytes
 from common.utils.cache import cache
 from httpx import HTTPError
 from langchain_text_splitters import RecursiveCharacterTextSplitter
@@ -43,7 +43,7 @@ def noop(*_, **__):
     pass
 
 
-def load_text_from_text_lazy(text_lazy: LazyBytes) -> str:
+def load_text_from_text_lazy(text_lazy: TempLazyBytes) -> str:
     with get_lazybytes_service().load_memoryview(text_lazy) as memview:
         text = memview.tobytes().decode(errors=settings.decode_error_handler)
         return text
@@ -52,7 +52,7 @@ def load_text_from_text_lazy(text_lazy: LazyBytes) -> str:
 @app.task(bind=True, base=FileIndexingTask)
 def create_embedding_task(
     self: FileIndexingTask,
-    text_lazy: LazyBytes | None,
+    text_lazy: TempLazyBytes | None,
     file: File,
 ):
     if text_lazy is None:
@@ -93,7 +93,7 @@ class LLMError(Exception):
     retry_backoff=True,
 )
 @cache()
-def embed_text(text: str) -> TypedLazyBytes[Embedding]:
+def embed_text(text: str) -> TempTypedLazyBytes[Embedding]:
     client = get_llm_embedding_client()
     try:
         response = client.embeddings.create(
@@ -117,7 +117,7 @@ def embed_text(text: str) -> TypedLazyBytes[Embedding]:
 )
 def persist_embeddings(
     persister: IndexingPersister,
-    embeddings_lazy: list[TypedLazyBytes[Embedding]],
+    embeddings_lazy: list[TempTypedLazyBytes[Embedding]],
 ):
     embeddings = [
         get_lazybytes_service().load_object(embedding_lazy)

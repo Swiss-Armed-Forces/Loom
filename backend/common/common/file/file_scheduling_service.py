@@ -1,6 +1,7 @@
 """Service to schedule new files for processing."""
 
 import logging
+from datetime import datetime
 from uuid import UUID
 
 from common.file.file_repository import (
@@ -11,7 +12,12 @@ from common.file.file_repository import (
     FileWithoutStorageDataException,
     Tag,
 )
-from common.services.lazybytes_service import LazyBytes, LazyBytesService
+from common.services.lazybytes_service import (
+    FileStorageLazyBytes,
+    FileStorageTag,
+    LazyBytesService,
+    TempStorageTag,
+)
 from common.services.task_scheduling_service import (
     TaskSchedulingService,
     UpdateFileRequest,
@@ -29,9 +35,9 @@ class FileSchedulingService:
     def __init__(
         self,
         file_repository: FileRepository,
-        file_storage_service: LazyBytesService,
+        file_storage_service: LazyBytesService[FileStorageTag],
         task_scheduling_service: TaskSchedulingService,
-        lazybytes_service: LazyBytesService,
+        lazybytes_service: LazyBytesService[TempStorageTag],
     ):
         self._file_repository = file_repository
         self._file_storage_service = file_storage_service
@@ -41,30 +47,53 @@ class FileSchedulingService:
     def index_file(
         self,
         full_name: str,
-        file_content: LazyBytes,
+        file_content: FileStorageLazyBytes,
         source_id: str,
         parent_id: UUID | None,
+        uploaded_datetime: datetime | None = None,
     ) -> File:
+        """Schedule indexing of a file.
+
+        Args:
+            full_name: The full path/name of the file.
+            file_content: LazyBytes handle pointing to file_storage_service (permanent).
+            source_id: Source identifier for the file.
+            parent_id: Optional parent file ID for nested files.
+            uploaded_datetime: Timestamp to use as the file's upload time. Should be
+                captured at dispatch time to preserve ordering when tasks run in
+                parallel. Defaults to now() if not provided.
+
+        Returns:
+            The created File object.
+
+        Note:
+            file_content is expected to already be in file_storage_service.
+            This method copies it to lazybytes_service for processing (disposable copy),
+            while keeping file_content as the permanent storage_data reference.
+        """
         logger.info("Scheduling indexing of file: '%s'", full_name)
 
-        logger.info("Uploading '%s' to file storage", full_name)
+        # file_content is already in file_storage_service (permanent storage)
+        # Load from file_storage_service and copy to lazybytes_service (for processing)
+        logger.info("Creating lazybytes copy for processing: '%s'", full_name)
 
         # Wrap data stream with hash and byte count tracking
         data_hash = CountingHash("sha256")
-        data = iterhash(data_hash, self._lazybytes_service.load_generator(file_content))
+        data = iterhash(
+            data_hash, self._file_storage_service.load_generator(file_content)
+        )
 
-        # Upload to file storage
-        file_storage_handle = self._file_storage_service.from_generator(data)
-
-        logger.info("Uploaded '%s' to file storage", full_name)
+        # Copy to lazybytes for processing (disposable copy)
+        lazybytes_handle = self._lazybytes_service.from_generator(data)
 
         file = File(
-            storage_data=file_storage_handle,
+            storage_data=file_content,
             full_name=FilePurePath(full_name),
             source=source_id,
             parent_id=parent_id,
             sha256=data_hash.hexdigest(),
             size=data_hash.bytes_count,
+            uploaded_datetime=uploaded_datetime or datetime.now(),
         )
 
         # deduplicate file -> do not index the same file twice
@@ -73,18 +102,22 @@ class FileSchedulingService:
         )
         if deduplicated_file is not None:
             # duplicate found:
-            # - delete uploaded raw file
+            # - delete uploaded raw file from permanent storage
+            # - delete lazybytes copy
             # - return duplicate
             logger.info("Deduplication of file: '%s'", full_name)
-            self._file_storage_service.delete(file_storage_handle)
+            self._file_storage_service.delete(file_content)
+            self._lazybytes_service.delete(lazybytes_handle)
             return deduplicated_file
 
         self._file_repository.save(file)
 
         if not settings.automatic_indexing:
+            # Clean up lazybytes copy since we won't be indexing
+            self._lazybytes_service.delete(lazybytes_handle)
             return file
 
-        self._task_scheduling_service.index_file(file, file_content)
+        self._task_scheduling_service.index_file(file, lazybytes_handle)
 
         return file
 

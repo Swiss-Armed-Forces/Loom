@@ -1,4 +1,5 @@
 import logging
+from datetime import datetime
 from uuid import UUID
 
 from celery import chain, group
@@ -8,7 +9,7 @@ from common.dependencies import (
     get_file_scheduling_service,
 )
 from common.file.file_repository import File
-from common.services.lazybytes_service import LazyBytes
+from common.services.lazybytes_service import FileStorageLazyBytes, TempLazyBytes
 from common.services.query_builder import QueryParameters
 
 from worker.index_file.infra.file_indexing_task import FileIndexingTask
@@ -26,6 +27,24 @@ app = get_celery_app()
 
 
 @app.task()
+def dispatch_index_file(
+    full_name: str,
+    file_content: FileStorageLazyBytes,
+    source_id: str,
+    parent_id: UUID | None = None,
+    uploaded_datetime: datetime | None = None,
+):
+    """Dispatch file for indexing."""
+    get_file_scheduling_service().index_file(
+        full_name=full_name,
+        file_content=file_content,
+        source_id=source_id,
+        parent_id=parent_id,
+        uploaded_datetime=uploaded_datetime,
+    )
+
+
+@app.task()
 def dispatch_reindex_files(query: QueryParameters):
     logger.info("Dispatching tasks to reindex files with query '%s'", query)
     for file in get_file_repository().get_id_generator_by_query(query=query):
@@ -39,7 +58,7 @@ def dispatch_reindex_file(file_id: UUID):
 
 
 @app.task(base=FileIndexingTask)
-def index_file_task(file: File, file_content: LazyBytes):
+def index_file_task(file: File, file_content: TempLazyBytes):
     logger.info("Indexing file with id '%s'", file.id_)
 
     chain(

@@ -11,7 +11,7 @@ from common.dependencies import (
     get_lazybytes_service,
 )
 from common.file.file_repository import File, ImapInfo
-from common.services.lazybytes_service import TypedLazyBytes
+from common.services.lazybytes_service import TempTypedLazyBytes
 from common.services.query_builder import QueryParameters
 from common.services.task_scheduling_service import UpdateFileRequest
 from pydantic import BaseModel
@@ -48,7 +48,7 @@ def fetch_flagged_emails_from_imap():
 
 
 @app.task(base=PeriodicTask)
-def get_id_from_imap_info_task(imap_info_lb: TypedLazyBytes[ImapInfo]) -> UUID:
+def get_id_from_imap_info_task(imap_info_lb: TempTypedLazyBytes[ImapInfo]) -> UUID:
     imap_info = get_lazybytes_service().load_object(imap_info_lb)
 
     file_repository = get_file_repository()
@@ -91,7 +91,7 @@ def fetch_flagged_emails_from_loom():
 
 
 @app.task(base=PeriodicTask)
-def process_email_to_unflag(file_lb: TypedLazyBytes[File]) -> UUID | None:
+def process_email_to_unflag(file_lb: TempTypedLazyBytes[File]) -> UUID | None:
     file = get_lazybytes_service().load_object(file_lb)
 
     if file.imap is None or b"\\Flagged" in get_imap_service().get_flags_from_imap_info(

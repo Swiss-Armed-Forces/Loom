@@ -6,7 +6,7 @@ from common.dependencies import (
     get_file_storage_service,
 )
 from common.file.file_repository import File
-from common.services.lazybytes_service import LazyBytes
+from common.services.lazybytes_service import FileStorageLazyBytes
 from stream_zip import ZIP_32, stream_zip
 
 from worker.create_archive.infra.archive_processing_task import ArchiveProcessingTask
@@ -41,7 +41,7 @@ def _archive_data(files: list[File]):
 @app.task(
     base=ArchiveProcessingTask,
 )
-def compress_files_task(files: list[File]) -> LazyBytes:
+def compress_files_task(files: list[File]) -> FileStorageLazyBytes:
     """Load files from storage and compress them.
 
     :param files: The files to load and compress :param

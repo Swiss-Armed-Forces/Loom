@@ -30,17 +30,17 @@ class TestGetShortFile:
     @pytest.fixture(scope="class")
     def file_info(self) -> FileInfo:
         asset = "text.txt"
-        upload_file_response = upload_asset(asset)
+        upload_asset(asset)
 
         # wait for assets to be processes
         search_string = "*"
         file_count = 1
-        fetch_files_from_api(
+        files_response = fetch_files_from_api(
             search_string=search_string, expected_no_of_files=file_count
         )
         return FileInfo(
             name=asset,
-            id=upload_file_response.file_id,
+            id=files_response.files[0].file_id,
         )
 
     def test_get_file(self, file_info: FileInfo):
@@ -86,18 +86,16 @@ class TestGetLongFile:
             tmp.write("a" * (TIKA_MAX_TEXT_SIZE + 1))
             tmp.flush()
             file_name = Path(tmp.name).name
-            file_upload_response = upload_asset(
-                file_name, request_timeout=REQUEST_TIMEOUT * 10
-            )
+            upload_asset(file_name, request_timeout=REQUEST_TIMEOUT * 10)
 
         search_string = "*"
         file_count = 1
-        fetch_files_from_api(
+        files_response = fetch_files_from_api(
             search_string=search_string, expected_no_of_files=file_count
         )
         return FileInfo(
             name=file_name,
-            id=file_upload_response.file_id,
+            id=files_response.files[0].file_id,
         )
 
     def test_get_file_preview_truncate_text(self, file_info: FileInfo):

@@ -88,7 +88,9 @@ persistent=yes
 
 # Minimum Python version to use for version dependent checks. Will default to
 # the version used to run pylint.
-py-version=3.11
+# py-version is intentionally commented out: devenv pins the Python interpreter
+# version, so pylint auto-detects the correct version from it.
+# py-version=3.14
 
 # Discover python modules and packages in the file system subtree.
 recursive=no

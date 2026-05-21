@@ -12,7 +12,7 @@ from common.dependencies import (
     get_archive_scheduling_service,
     get_file_storage_service,
 )
-from common.services.lazybytes_service import LazyBytesService
+from common.services.lazybytes_service import FileStorageLazyBytesService
 from common.services.query_builder import QueryParameters
 from common.services.task_scheduling_service import UpdateArchiveRequest
 from fastapi import APIRouter, Depends, HTTPException, Query, Response
@@ -78,7 +78,7 @@ def download_archive(
     archive_id: UUID,
     query: Annotated[DownloadArchiveQuery, Query()],
     archive_repository: ArchiveRepository = default_archive_repository,
-    file_storage_service: LazyBytesService = default_file_storage_service,
+    file_storage_service: FileStorageLazyBytesService = default_file_storage_service,
 ) -> Response:
     """Download an archive by id."""
     archive = archive_repository.get_by_id(archive_id)

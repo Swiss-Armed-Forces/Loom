@@ -193,6 +193,12 @@ class Settings(BaseSettings):
 
     automatic_indexing: bool = True
 
+    # Indexing throttle settings
+    # Max lazybytes storage before throttling new indexing
+    throttle_max_lazybytes__bytes: int = 10 * (1024**3)  # 10 GB
+    # Max root tasks in the repository before throttling new indexing
+    throttle_max_root_tasks: int = 10_000
+
     # Memory watermark for memory pressure detection
     # E.g., 0.9 means memory pressure when container uses 90% of memory limit
     memory_watermark_percent: float = 0.9

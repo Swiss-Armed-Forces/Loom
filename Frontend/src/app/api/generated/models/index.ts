@@ -14,7 +14,6 @@ export * from "./CacheStatisticsEntryModel";
 export * from "./CompleteEstimate";
 export * from "./Components";
 export * from "./ContextCreateResponse";
-export * from "./FileUploadResponse";
 export * from "./Folder";
 export * from "./GenericStatisticsModel";
 export * from "./GetFileLanguageTranslations";

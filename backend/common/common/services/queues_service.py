@@ -48,6 +48,30 @@ class QueuesService:
 
         return int(queue["messages"])
 
+    def get_consumer_count(self, queue_name: str) -> int:
+        response: Response = requests.get(
+            self.__rabbit_mq_management_host
+            + f"api/queues/{quote('/', safe='')}/{quote(queue_name, safe='')}",
+            params={"columns": "consumers"},
+            timeout=RABBITMQ_MANAGEMENT_REQUEST_TIMEOUT,
+        )
+        response.raise_for_status()
+        return int(response.json()["consumers"])
+
+    def get_all_queue_message_counts(self) -> dict[str, int]:
+        response: Response = requests.get(
+            self.__rabbit_mq_management_host + "api/queues/%2F",
+            params={"columns": "name,messages"},
+            timeout=RABBITMQ_MANAGEMENT_REQUEST_TIMEOUT,
+        )
+        response.raise_for_status()
+        prefix = settings.celery_queue_name_prefix
+        return {
+            q["name"]: int(q.get("messages", 0))
+            for q in response.json()
+            if q["name"].startswith(prefix)
+        }
+
     def get_queue_samples(
         self,
         sample_period__s: int,

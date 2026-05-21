@@ -53,7 +53,7 @@ from common.models.es_repository import (
     PaginationParameters,
     SortingParameters,
 )
-from common.services.lazybytes_service import LazyBytes
+from common.services.lazybytes_service import FileStorageLazyBytes
 from common.services.query_builder import QueryParameters
 from common.settings import settings
 from common.task_object.task_object import RepositoryTaskObject, _EsTaskDocument
@@ -218,9 +218,9 @@ class _EsLazyBytes(InnerDoc):
 
 
 class RenderedFile(BaseModel):
-    image_data: LazyBytes | None = None
-    office_pdf_data: LazyBytes | None = None
-    browser_pdf_data: LazyBytes | None = None
+    image_data: FileStorageLazyBytes | None = None
+    office_pdf_data: FileStorageLazyBytes | None = None
+    browser_pdf_data: FileStorageLazyBytes | None = None
 
 
 class _EsRenderedFile(InnerDoc):
@@ -357,7 +357,7 @@ class FilePurePath(PurePosixPath):
 
 
 class File(RepositoryTaskObject):
-    storage_data: LazyBytes | None = None
+    storage_data: FileStorageLazyBytes | None = None
 
     content: str | None = None
     content_truncated: bool = False
@@ -394,7 +394,7 @@ class File(RepositoryTaskObject):
     uploaded_datetime: datetime = Field(default_factory=datetime.now)
     size: int
     reindex_count: int = 0
-    thumbnail_data: LazyBytes | None = None
+    thumbnail_data: FileStorageLazyBytes | None = None
     thumbnail_total_frames: int | None = None
     rendered_file: RenderedFile = RenderedFile()
     tags: list[Tag] = []

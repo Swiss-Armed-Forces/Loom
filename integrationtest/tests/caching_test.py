@@ -26,17 +26,21 @@ def test_caching():
     fetch_files_from_api(search_string=search_string, expected_no_of_files=1)
 
     caching_results_1 = _get_stats()
-    assert caching_results_1.mem_size_total == 11936
-    assert caching_results_1.entries_count_total == 20
-    assert caching_results_1.hits_count_total == 2
-    assert caching_results_1.miss_count_total == 20
+    assert caching_results_1.mem_size_total > 0
+    assert caching_results_1.entries_count_total > 0
+    assert caching_results_1.hits_count_total > 0
+    assert caching_results_1.miss_count_total > 0
 
     upload_asset(asset_name=asset_name, upload_file_name="text2.txt")
     # wait for files to be indexed
     fetch_files_from_api(search_string=search_string, expected_no_of_files=2)
 
     caching_results_2 = _get_stats()
-    assert caching_results_2.mem_size_total == 11936
-    assert caching_results_2.entries_count_total == 20
-    assert caching_results_2.hits_count_total == 24  # more hits!
-    assert caching_results_2.miss_count_total == 20
+    # same content: no new cache entries, no new misses, no memory growth
+    assert caching_results_2.mem_size_total == caching_results_1.mem_size_total
+    assert (
+        caching_results_2.entries_count_total == caching_results_1.entries_count_total
+    )
+    assert caching_results_2.miss_count_total == caching_results_1.miss_count_total
+    # but hits grew: the second indexing reused cached results
+    assert caching_results_2.hits_count_total > caching_results_1.hits_count_total

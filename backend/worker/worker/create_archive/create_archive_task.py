@@ -1,7 +1,7 @@
 from celery import chain, group
 from common.archive.archive_repository import Archive
 from common.dependencies import get_celery_app
-from common.services.lazybytes_service import LazyBytes
+from common.services.lazybytes_service import FileStorageLazyBytes
 
 from worker.create_archive.infra.archive_creation_persister import (
     ArchiveCreationPersister,
@@ -52,13 +52,13 @@ def create_archive_task(archive: Archive):
 
 @persisting_task(app, ArchiveCreationPersister)
 def persist_plain_file_storage_data_task(
-    persister: ArchiveCreationPersister, storage_data: LazyBytes
+    persister: ArchiveCreationPersister, storage_data: FileStorageLazyBytes
 ):
     persister.set_plain_file_storage_data(storage_data)
 
 
 @persisting_task(app, ArchiveCreationPersister)
 def persist_encrypted_file_storage_data_task(
-    persister: ArchiveCreationPersister, storage_data: LazyBytes
+    persister: ArchiveCreationPersister, storage_data: FileStorageLazyBytes
 ):
     persister.set_encrypted_file_storage_data(storage_data)

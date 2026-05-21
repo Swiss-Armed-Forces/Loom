@@ -3,7 +3,6 @@ from io import BytesIO
 from typing import Any, Optional
 
 import requests
-from api.routers.files import FileUploadResponse
 from requests import Response
 from requests_toolbelt import MultipartEncoder
 
@@ -14,7 +13,7 @@ def upload_asset(
     asset_name: str,
     upload_file_name: Optional[str] = None,
     request_timeout=REQUEST_TIMEOUT,
-) -> FileUploadResponse:
+) -> None:
     """Upload a file from the assets dir to the API.
 
     :param asset_name: Name of the file in the assets dir
@@ -40,14 +39,12 @@ def upload_asset(
         )
         api_response.raise_for_status()
 
-    return FileUploadResponse.model_validate(api_response.json())
-
 
 def upload_many_assets(
     asset_names: list[str],
     upload_file_names: Optional[list] = None,
     request_timeout=REQUEST_TIMEOUT,
-) -> list[FileUploadResponse]:
+) -> None:
     """Upload a list of files from the assets dir to the API.
 
     :param asset_names: List of names of the files in the assets dir
@@ -59,29 +56,24 @@ def upload_many_assets(
     if len(upload_file_names) < len(asset_names):
         upload_file_names.extend([None] * (len(asset_names) - len(upload_file_names)))
 
-    responses = []
-
     for index, asset_name in enumerate(asset_names):
         upload_file_name = (
             upload_file_names[index]
             if upload_file_names[index] is not None
             else asset_name
         )
-        response = upload_asset(
+        upload_asset(
             asset_name=asset_name,
             upload_file_name=upload_file_name,
             request_timeout=request_timeout,
         )
-        responses.append(response)
-
-    return responses
 
 
 def upload_bytes_asset(
     bytes_to_upload: bytes,
     upload_file_name: str | None = None,
     request_timeout=REQUEST_TIMEOUT,
-) -> FileUploadResponse:
+) -> None:
     """Upload a file which contains the given bytes.
 
     :param string_to_upload: The string to upload
@@ -103,5 +95,3 @@ def upload_bytes_asset(
         timeout=request_timeout,
     )
     api_response.raise_for_status()
-
-    return FileUploadResponse.model_validate(api_response.json())

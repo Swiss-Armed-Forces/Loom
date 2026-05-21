@@ -8,6 +8,7 @@ from pydantic import BaseModel
 from common.services.lazybytes_service import (
     InMemoryLazyBytesService,
     LazyBytes,
+    TempStorageTag,
     TypedLazyBytes,
 )
 from common.settings import settings
@@ -268,11 +269,12 @@ def test_typed_lazy_bytes_parameterized_can_be_pickled(
     lazy = in_memory_lazy_bytes_service.from_object(original)
 
     # Instantiate via the parameterized class directly, as Pydantic does when validating
-    # a field typed TypedLazyBytes[dict] — the resulting instance has
-    # __class__ = TypedLazyBytes[dict], a runtime-only class not importable by pickle.
-    parameterized_cls = TypedLazyBytes[dict]
+    # a field typed TypedLazyBytes[dict, TempStorageTag] — the resulting instance has
+    # __class__ = TypedLazyBytes[dict, TempStorageTag], a runtime-only class
+    # not importable by pickle.
+    parameterized_cls = TypedLazyBytes[dict, TempStorageTag]
     coerced = parameterized_cls.model_validate(lazy.model_dump())
-    assert type(coerced).__qualname__ == "TypedLazyBytes[dict]"
+    assert type(coerced).__qualname__ == "TypedLazyBytes[dict, TempStorageTag]"
 
     restored = pickle.loads(pickle.dumps(coerced))
     result = in_memory_lazy_bytes_service.load_object(restored)

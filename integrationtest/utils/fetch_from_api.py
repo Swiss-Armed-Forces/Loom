@@ -201,7 +201,7 @@ def fetch_files_from_api(
     sort_by_field: str = "_score",
     sort_direction: Literal["asc", "desc"] = "asc",
     expected_no_of_files: int = 1,
-    expected_state: str = "processed",
+    expected_state: str | None = "processed",
     sort_id: list[Any] | None = None,
     page_size: int = DEFAULT_PAGE_SIZE,
     max_wait_time_per_file: int | None = None,
@@ -230,13 +230,15 @@ def fetch_files_from_api(
         time.sleep(FETCH_WAIT_TIME if retry_attempts > 0 else INITIAL_FETCH_WAIT_TIME)
 
         # search for expected state
+        if expected_state is not None:
+            effective_search_string = build_search_string(
+                search_string, field="state", field_value=expected_state
+            )
+        else:
+            effective_search_string = search_string
         files_query = GetFilesQuery(
             query_id=fetch_query_id(),
-            search_string=build_search_string(
-                search_string=search_string,
-                field="state",
-                field_value=expected_state,
-            ),
+            search_string=effective_search_string,
             languages=languages,
             sort_id=sort_id,
             page_size=page_size,
@@ -326,7 +328,7 @@ def get_file_preview_by_name(
     file_name: str,
     search_string: str = "*",
     languages: list[str] | None = None,
-    expected_state: str = "processed",
+    expected_state: str | None = "processed",
     max_wait_time_per_file: int | None = None,
     bad_states: tuple[str, ...] = ("failed",),
     wait_for_celery_idle: bool = False,
@@ -396,7 +398,7 @@ def get_file_by_name(
     file_name: str,
     search_string: str = "*",
     languages: list[str] | None = None,
-    expected_state: str = "processed",
+    expected_state: str | None = "processed",
     max_wait_time_per_file: int | None = None,
     bad_states: tuple[str, ...] = ("failed",),
     wait_for_celery_idle: bool = False,

@@ -16,7 +16,6 @@
 import * as runtime from "../runtime";
 import type {
     AddTagsRequest,
-    FileUploadResponse,
     GenericStatisticsModel,
     GetFilePreviewResponse,
     GetFileResponse,
@@ -35,8 +34,6 @@ import type {
 import {
     AddTagsRequestFromJSON,
     AddTagsRequestToJSON,
-    FileUploadResponseFromJSON,
-    FileUploadResponseToJSON,
     GenericStatisticsModelFromJSON,
     GenericStatisticsModelToJSON,
     GetFilePreviewResponseFromJSON,
@@ -1405,13 +1402,13 @@ export class FilesApi extends runtime.BaseAPI {
     }
 
     /**
-     * Upload new file that will be processed by Loom.
+     * Upload new file that will be processed by Loom.  Returns immediately after storing the file and dispatching the indexing task. The file will be indexed asynchronously.
      * Upload File
      */
     async uploadFileV1FilesPostRaw(
         requestParameters: UploadFileV1FilesPostRequest,
         initOverrides?: RequestInit | runtime.InitOverrideFunction,
-    ): Promise<runtime.ApiResponse<FileUploadResponse>> {
+    ): Promise<runtime.ApiResponse<any>> {
         if (requestParameters["file"] == null) {
             throw new runtime.RequiredError(
                 "file",
@@ -1454,19 +1451,21 @@ export class FilesApi extends runtime.BaseAPI {
             initOverrides,
         );
 
-        return new runtime.JSONApiResponse(response, (jsonValue) =>
-            FileUploadResponseFromJSON(jsonValue),
-        );
+        if (this.isJsonMime(response.headers.get("content-type"))) {
+            return new runtime.JSONApiResponse<any>(response);
+        } else {
+            return new runtime.TextApiResponse(response) as any;
+        }
     }
 
     /**
-     * Upload new file that will be processed by Loom.
+     * Upload new file that will be processed by Loom.  Returns immediately after storing the file and dispatching the indexing task. The file will be indexed asynchronously.
      * Upload File
      */
     async uploadFileV1FilesPost(
         requestParameters: UploadFileV1FilesPostRequest,
         initOverrides?: RequestInit | runtime.InitOverrideFunction,
-    ): Promise<FileUploadResponse> {
+    ): Promise<any> {
         const response = await this.uploadFileV1FilesPostRaw(
             requestParameters,
             initOverrides,

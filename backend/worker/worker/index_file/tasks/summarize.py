@@ -8,7 +8,7 @@ from common.dependencies import (
     get_llm_summarization_client,
 )
 from common.file.file_repository import File
-from common.services.lazybytes_service import LazyBytes
+from common.services.lazybytes_service import TempLazyBytes
 from common.utils.cache import cache
 from httpx import HTTPError
 from langchain_text_splitters import RecursiveCharacterTextSplitter
@@ -48,7 +48,7 @@ def noop(*_, **__):
     pass
 
 
-def load_text_from_text_lazy(text_lazy: LazyBytes) -> str:
+def load_text_from_text_lazy(text_lazy: TempLazyBytes) -> str:
     with get_lazybytes_service().load_memoryview(text_lazy) as memview:
         text = (
             memview[:MAX_SUMMARIZATION_INPUT_TEXT_LENGTH]
@@ -61,7 +61,7 @@ def load_text_from_text_lazy(text_lazy: LazyBytes) -> str:
 @app.task(bind=True, base=FileIndexingTask)
 def summarize_task(
     self: FileIndexingTask,
-    text_lazy: LazyBytes | None,
+    text_lazy: TempLazyBytes | None,
     file: File,
     system_prompt: str | None = None,
 ):

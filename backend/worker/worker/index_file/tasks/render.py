@@ -10,7 +10,7 @@ from common.dependencies import (
     get_lazybytes_service,
 )
 from common.file.file_repository import File
-from common.services.lazybytes_service import LazyBytes
+from common.services.lazybytes_service import FileStorageLazyBytes, TempLazyBytes
 from common.utils.cache import cache
 from httpx import HTTPStatusError
 from pydantic import BaseModel
@@ -198,7 +198,7 @@ OFFICE_RENDER_EXTENSIONS = {
 }
 
 
-def signature(file: File, file_content: LazyBytes) -> Signature:
+def signature(file: File, file_content: TempLazyBytes) -> Signature:
     render_file = RenderFile.from_file(file)
     return group(
         chain(
@@ -245,8 +245,8 @@ def signature_pass_file_content(
 @app.task(base=FileIndexingTask)
 @cache(key_function=lambda _, render_file: render_file.cache_key)
 def render_image_png_task(
-    file_content: LazyBytes | None, _: RenderFile
-) -> LazyBytes | None:
+    file_content: TempLazyBytes | None, _: RenderFile
+) -> TempLazyBytes | None:
     if file_content is None:
         return None
 
@@ -273,9 +273,9 @@ def render_image_png_task(
 @app.task(base=FileIndexingTask)
 @cache(key_function=lambda _, render_file: render_file.cache_key)
 def render_browser_to_pdf_task(
-    file_content: LazyBytes | None,
+    file_content: TempLazyBytes | None,
     render_file: RenderFile,
-) -> LazyBytes | None:
+) -> TempLazyBytes | None:
     if file_content is None:
         return None
 
@@ -301,9 +301,9 @@ def render_browser_to_pdf_task(
 @app.task(base=FileIndexingTask)
 @cache(key_function=lambda _, render_file: render_file.cache_key)
 def render_office_to_pdf_task(
-    file_content: LazyBytes,
+    file_content: TempLazyBytes,
     render_file: RenderFile,
-) -> LazyBytes | None:
+) -> TempLazyBytes | None:
     if file_content is None:
         return None
     if render_file.extension not in OFFICE_RENDER_EXTENSIONS:
@@ -326,8 +326,8 @@ def render_office_to_pdf_task(
 
 @app.task(base=FileIndexingTask)
 def upload_rendered_task(
-    rendered_lazy: LazyBytes | None,
-) -> LazyBytes | None:
+    rendered_lazy: TempLazyBytes | None,
+) -> FileStorageLazyBytes | None:
     if rendered_lazy is None:
         return None
     data = get_lazybytes_service().load_generator(rendered_lazy)
@@ -336,7 +336,7 @@ def upload_rendered_task(
 
 @persisting_task(app, IndexingPersister)
 def persist_rendered_file_image_data_task(
-    persister: IndexingPersister, rendered_file_image_data: LazyBytes | None
+    persister: IndexingPersister, rendered_file_image_data: FileStorageLazyBytes | None
 ):
     if rendered_file_image_data is None:
         return
@@ -345,7 +345,8 @@ def persist_rendered_file_image_data_task(
 
 @persisting_task(app, IndexingPersister)
 def persist_rendered_file_browser_pdf_data_task(
-    persister: IndexingPersister, rendered_file_browser_pdf_data: LazyBytes | None
+    persister: IndexingPersister,
+    rendered_file_browser_pdf_data: FileStorageLazyBytes | None,
 ):
     if rendered_file_browser_pdf_data is None:
         return
@@ -354,7 +355,8 @@ def persist_rendered_file_browser_pdf_data_task(
 
 @persisting_task(app, IndexingPersister)
 def persist_rendered_file_office_pdf_data_task(
-    persister: IndexingPersister, rendered_file_office_pdf_data: LazyBytes | None
+    persister: IndexingPersister,
+    rendered_file_office_pdf_data: FileStorageLazyBytes | None,
 ):
     if rendered_file_office_pdf_data is None:
         return

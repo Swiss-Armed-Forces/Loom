@@ -1,6 +1,6 @@
 from common.archive.archive_repository import Archive, ArchiveRepository
 from common.dependencies import get_archive_repository
-from common.services.lazybytes_service import LazyBytes
+from common.services.lazybytes_service import FileStorageLazyBytes
 
 from worker.utils.persister_base import PersisterBase, mutation
 
@@ -10,11 +10,15 @@ def _set_state(obj: Archive, state: str) -> None:
     obj.state = state
 
 
-def _set_plain_file_storage_data(obj: Archive, storage_data: LazyBytes) -> None:
+def _set_plain_file_storage_data(
+    obj: Archive, storage_data: FileStorageLazyBytes
+) -> None:
     obj.plain_file.storage_data = storage_data
 
 
-def _set_encrypted_file_storage_data(obj: Archive, storage_data: LazyBytes) -> None:
+def _set_encrypted_file_storage_data(
+    obj: Archive, storage_data: FileStorageLazyBytes
+) -> None:
     obj.encrypted_file.storage_data = storage_data
 
 
