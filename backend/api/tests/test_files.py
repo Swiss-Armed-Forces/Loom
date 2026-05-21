@@ -144,7 +144,7 @@ def test_update_file_by_id(client: TestClient):
 
     response = client.put(f"v1/files/{file.id_}", json=request.model_dump())
 
-    assert response.status_code == 200
+    assert response.status_code == 202
     get_task_scheduling_service().update_by_id.assert_called_once_with(
         file.id_, request
     )
@@ -179,7 +179,7 @@ def test_update_files_by_query(client: TestClient):
 
     response = client.put("v1/files/", json=request.model_dump())
 
-    assert response.status_code == 200
+    assert response.status_code == 202
     get_task_scheduling_service().dispatch_update.assert_called_once_with(
         query=request.query, request=request.request
     )
@@ -222,7 +222,7 @@ def test_add_valid_tag(client: TestClient, tag_name: str):
     tags_request = AddTagsRequest(tags=[tag_name])
     response = client.post(f"/v1/files/{file.id_}/tags", json=tags_request.model_dump())
 
-    assert response.status_code == 200
+    assert response.status_code == 202
     get_task_scheduling_service().dispatch_add_tags_to_file.assert_called_once_with(
         file_id=file.id_, tags=[tag_name]
     )
@@ -241,7 +241,7 @@ def test_delete_tag(client: TestClient):
 
     response = client.delete(f"/v1/files/{file.id_}/tags/{tag}")
 
-    assert response.status_code == 200
+    assert response.status_code == 202
     get_task_scheduling_service().dispatch_remove_tag_from_file.assert_called_once_with(
         file_id=file.id_, tag=tag
     )

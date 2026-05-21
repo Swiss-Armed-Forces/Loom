@@ -39,7 +39,7 @@ def get_supported_languages() -> list[LibretranslateSupportedLanguages]:
     return LIBRETRANSLATE_SUPPORTED_LANGUAGES
 
 
-@router.post("/", status_code=200)
+@router.post("/", status_code=202)
 def translate_files_on_demand(
     translation_request: TranslateAllRequest,
     task_scheduling_service: TaskSchedulingService = default_task_scheduling_service,

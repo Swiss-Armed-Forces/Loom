@@ -104,7 +104,7 @@ def download_archive(
     )
 
 
-@router.put("/{archive_id}")
+@router.put("/{archive_id}", status_code=202)
 def update_archive(
     archive_id: UUID,
     update_archive_request: UpdateArchiveRequest,

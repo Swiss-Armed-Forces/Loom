@@ -101,7 +101,7 @@ def test_hide_archive(client: TestClient):
 
     response = client.put(f"/v1/archive/{archive.id_}", json=request.model_dump())
 
-    assert response.status_code == 200
+    assert response.status_code == 202
     get_archive_scheduling_service().update_archive.assert_called_once_with(
         archive.id_, request
     )
