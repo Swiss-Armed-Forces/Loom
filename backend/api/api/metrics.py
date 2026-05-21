@@ -2,7 +2,7 @@ import logging
 import math
 from datetime import datetime, timedelta
 from functools import wraps
-from typing import Callable, Iterable
+from typing import Any, Callable, Iterable
 
 from common.dependencies import (
     get_file_repository,
@@ -11,7 +11,12 @@ from common.dependencies import (
 )
 from common.file.file_repository import Stat
 from common.services.query_builder import QueryParameters
-from common.utils.cache import CacheStatistics, get_cache_statistics
+from common.utils.cache import (
+    CacheStatistics,
+    cache_get,
+    cache_set,
+    get_cache_statistics,
+)
 from fastapi import FastAPI
 from opentelemetry.exporter.prometheus import PrometheusMetricReader
 from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
@@ -29,6 +34,7 @@ logger = logging.getLogger(__name__)
 
 PERIODIC_METRICS_REFRESH__MS = 60 * 1000
 ADAPTIVE_CACHE_TIMEOUT_SAFETY_FACTOR = 0.8
+ADAPTIVE_CACHE_MAX_AGE_FACTOR = 10  # max_age = this × PERIODIC_METRICS_REFRESH__MS
 
 
 class LoggingMetricExporter(MetricExporter):
@@ -51,43 +57,58 @@ class LoggingMetricExporter(MetricExporter):
         return True
 
 
-def with_adaptive_cache():
-    """Decorator that caches metric Observations based on collection time."""
+def with_adaptive_cache(max_age: timedelta | None = None):
+    """Decorator that caches metric Observations based on collection time.
+
+    Cached results are returned when the previous collection took longer than the
+    available timeout budget. A ``max_age`` TTL forces re-collection after the cache
+    expires, preventing indefinitely stale metrics.
+    """
+    if max_age is None:
+        max_age = timedelta(
+            milliseconds=PERIODIC_METRICS_REFRESH__MS * ADAPTIVE_CACHE_MAX_AGE_FACTOR
+        )
 
     class MetricCache(BaseModel):
-        # Allow Observation type which doesn't have Pydantic schema
-        model_config = {"arbitrary_types_allowed": True}
-
-        observations: list[Observation]
+        # Store raw (value, attributes) tuples rather than Observation objects
+        # so that the Pydantic model is safely picklable by the Redis cache layer.
+        observations_raw: list[tuple[Any, Any]]
         timestamp: datetime = Field(default_factory=datetime.now)
         collection_time: timedelta
 
     def decorator(
         func: Callable[[CallbackOptions], Iterable[Observation]],
     ) -> Callable:
-        cache: MetricCache | None = None
+        # One Redis namespace per decorated function — shared across all workers.
+        namespace = f"metrics:{func.__qualname__}"
 
         @wraps(func)
         def wrapper(options: CallbackOptions) -> Iterable[Observation]:
-            nonlocal cache
-
-            # Return cached result if we won't be able to collect them in time
+            # Cap timeout_millis before building a timedelta: the periodic reader
+            # passes math.inf, which causes OverflowError inside timedelta().
+            timeout_ms = min(options.timeout_millis, 86_400_000)  # cap at 1 day
             timeout = timedelta(
-                milliseconds=(
-                    options.timeout_millis * ADAPTIVE_CACHE_TIMEOUT_SAFETY_FACTOR
-                )
+                milliseconds=timeout_ms * ADAPTIVE_CACHE_TIMEOUT_SAFETY_FACTOR
             )
 
+            # Load cache entry from Redis (shared across all Uvicorn workers).
+            result = cache_get(namespace, None)
+            cache: MetricCache | None = result.value if result.hit else None
+
             if cache:
+                cache_age = datetime.now() - cache.timestamp
                 enough_time_to_compute = cache.collection_time < timeout
-                if not enough_time_to_compute:
+                not_expired = cache_age < max_age
+
+                if not enough_time_to_compute and not_expired:
                     logger.info(
-                        "Returning cached metric %s (collected in %s, at: %s)",
+                        "Returning cached metric %s (collected in %s, age: %s)",
                         func.__name__,
                         cache.collection_time,
-                        cache.timestamp,
+                        cache_age,
                     )
-                    yield from cache.observations
+                    for value, attrs in cache.observations_raw:
+                        yield Observation(value=value, attributes=attrs)
                     return
 
             # Collect new metric and measure time
@@ -95,10 +116,15 @@ def with_adaptive_cache():
             observations = list(func(options))
             collection_time = datetime.now() - start_time
 
-            # Update cache
-            cache = MetricCache(
-                observations=observations,
-                collection_time=collection_time,
+            # Persist to Redis so all workers share the same cached value.
+            cache_set(
+                namespace,
+                None,
+                MetricCache(
+                    observations_raw=[(o.value, o.attributes) for o in observations],
+                    collection_time=collection_time,
+                ),
+                ttl_seconds=int(max_age.total_seconds() * 3),
             )
 
             logger.info(
