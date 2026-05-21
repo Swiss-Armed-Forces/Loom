@@ -51,6 +51,7 @@ class FileSchedulingService:
         source_id: str,
         parent_id: UUID | None,
         uploaded_datetime: datetime | None = None,
+        recursion_depth: int = 0,
     ) -> File:
         """Schedule indexing of a file.
 
@@ -62,6 +63,9 @@ class FileSchedulingService:
             uploaded_datetime: Timestamp to use as the file's upload time. Should be
                 captured at dispatch time to preserve ordering when tasks run in
                 parallel. Defaults to now() if not provided.
+            recursion_depth: Nesting depth of this file within the attachment hierarchy.
+                0 for root files, incremented by 1 for each level of attachment
+                extraction. Used to enforce settings.max_recursion_depth limits.
 
         Returns:
             The created File object.
@@ -94,6 +98,7 @@ class FileSchedulingService:
             sha256=data_hash.hexdigest(),
             size=data_hash.bytes_count,
             uploaded_datetime=uploaded_datetime or datetime.now(),
+            recursion_depth=recursion_depth,
         )
 
         # deduplicate file -> do not index the same file twice
@@ -144,6 +149,7 @@ class FileSchedulingService:
             reindex_count=old_file.reindex_count + 1,
             tags=old_file.tags,
             flagged=old_file.flagged,
+            recursion_depth=old_file.recursion_depth,
         )
         # Preserve the original file ID
         file.es_meta.id = file_id

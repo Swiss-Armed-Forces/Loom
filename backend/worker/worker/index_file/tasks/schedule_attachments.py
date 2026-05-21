@@ -10,6 +10,7 @@ from common.dependencies import (
 )
 from common.file.file_repository import Attachment, File
 from common.services.lazybytes_service import TempTypedLazyBytes
+from common.settings import settings
 from common.utils.iterhash import iterhash
 
 from worker.index_file.infra.file_indexing_task import FileIndexingTask
@@ -45,7 +46,19 @@ def schedule_attachments(lazy_tika_result: TempTypedLazyBytes[TikaResult], file:
 def schedule_attachment(
     tika_attachment: TikaAttachment, file: File
 ) -> Attachment | None:
-    """Schedule an attachment for indexing."""
+    attachment_name = str(file.full_name / tika_attachment.name)
+    if (
+        settings.max_recursion_depth is not None
+        and file.recursion_depth >= settings.max_recursion_depth
+    ):
+        logger.info(
+            "Skipping attachment '%s': max recursion depth %d reached (file depth: %d)",
+            attachment_name,
+            settings.max_recursion_depth,
+            file.recursion_depth,
+        )
+        return None
+
     lazybytes_service = get_lazybytes_service()
     file_storage_service = get_file_storage_service()
 
@@ -54,7 +67,6 @@ def schedule_attachment(
     data = iterhash(data_hash, lazybytes_service.load_generator(tika_attachment.data))
     file_content = file_storage_service.from_generator(data)
 
-    attachment_name = str(file.full_name / tika_attachment.name)
     if file.sha256 == data_hash.hexdigest():
         # Avoid scheduling same file again: would lead to endless indexing loops
         # Delete the file_storage entry we just created
@@ -71,6 +83,7 @@ def schedule_attachment(
         file_content=file_content,
         source_id=file.source,
         parent_id=file.id_,
+        recursion_depth=file.recursion_depth + 1,
     )
     return Attachment(
         id=new_file.id_,

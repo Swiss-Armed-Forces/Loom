@@ -410,6 +410,7 @@ class File(RepositoryTaskObject):
     tika_meta: TikaMeta = Field(default_factory=TikaMeta)
     tika_handled_by: str | None = None
     attachments: list[Attachment] = []
+    recursion_depth: int = 0
     summary: str | None = None
     embeddings: list[Embedding] = []
     trufflehog_secrets: list[Secret] | None = None
@@ -487,6 +488,7 @@ class _EsFile(_EsTaskDocument):
     tika_meta = Object(_EsTikaMeta)
     tika_handled_by = Keyword()
     attachments = Object(_EsAttachment, multi=True)
+    recursion_depth = Long()
     summary = Text(
         term_vector="with_positions_offsets",
         fields={

@@ -92,6 +92,7 @@ class TaskSchedulingService:
         source_id: str,
         parent_id: UUID | None = None,
         uploaded_datetime: datetime | None = None,
+        recursion_depth: int = 0,
     ):
         """Dispatch file for indexing.
 
@@ -101,11 +102,19 @@ class TaskSchedulingService:
             source_id: Source identifier for the file.
             parent_id: Optional parent file ID for nested files.
             uploaded_datetime: Timestamp captured at dispatch time to preserve ordering.
+            recursion_depth: Nesting depth within the attachment hierarchy.
         """
         root_task_id = uuid4()
         self._send_task(
             "worker.index_file.index_file_task.dispatch_index_file",
-            args=[full_name, file_content, source_id, parent_id, uploaded_datetime],
+            args=[
+                full_name,
+                file_content,
+                source_id,
+                parent_id,
+                uploaded_datetime,
+                recursion_depth,
+            ],
             root_id=str(root_task_id),
         ).forget()
 

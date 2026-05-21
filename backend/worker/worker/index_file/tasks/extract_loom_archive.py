@@ -26,7 +26,10 @@ app = get_celery_app()
 
 def signature(file: File, file_content: TempLazyBytes) -> Signature:
     """Decrypt and import archive."""
-    return chain(decrypt_archive.s(file_content), unzip_loom_archive.s(file.id_))
+    return chain(
+        decrypt_archive.s(file_content),
+        unzip_loom_archive.s(file.id_, file.recursion_depth + 1),
+    )
 
 
 @app.task(base=FileIndexingTask)
@@ -46,8 +49,11 @@ def decrypt_archive(encrypted_file: TempLazyBytes) -> TempLazyBytes | None:
 
 
 @app.task(base=FileIndexingTask)
-def unzip_loom_archive(decrypted_archive: TempLazyBytes | None, parent_file_id: UUID):
-    """Extract files from a decrypted Loom archive and dispatch them for indexing."""
+def unzip_loom_archive(
+    decrypted_archive: TempLazyBytes | None,
+    parent_file_id: UUID,
+    recursion_depth: int = 0,
+):
     if decrypted_archive is None:
         return
 
@@ -66,4 +72,5 @@ def unzip_loom_archive(decrypted_archive: TempLazyBytes | None, parent_file_id: 
                     file_content=file_content,
                     source_id=ARCHIVE_IMPORT_SOURCE_ID,
                     parent_id=parent_file_id,
+                    recursion_depth=recursion_depth,
                 )
