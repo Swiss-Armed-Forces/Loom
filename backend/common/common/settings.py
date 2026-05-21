@@ -199,6 +199,9 @@ class Settings(BaseSettings):
     # Max root tasks in the repository before throttling new indexing
     throttle_max_root_tasks: int = 10_000
 
+    # Maximum attachment recursion depth. None = unlimited.
+    max_recursion_depth: int | None = None
+
     # Memory watermark for memory pressure detection
     # E.g., 0.9 means memory pressure when container uses 90% of memory limit
     memory_watermark_percent: float = 0.9

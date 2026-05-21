@@ -27,12 +27,14 @@ app = get_celery_app()
 
 
 @app.task()
+# pylint: disable=too-many-arguments, too-many-positional-arguments
 def dispatch_index_file(
     full_name: str,
     file_content: FileStorageLazyBytes,
     source_id: str,
     parent_id: UUID | None = None,
     uploaded_datetime: datetime | None = None,
+    recursion_depth: int = 0,
 ):
     """Dispatch file for indexing."""
     get_file_scheduling_service().index_file(
@@ -41,6 +43,7 @@ def dispatch_index_file(
         source_id=source_id,
         parent_id=parent_id,
         uploaded_datetime=uploaded_datetime,
+        recursion_depth=recursion_depth,
     )
 
 
