@@ -102,7 +102,7 @@ class WipeService:
 
     def wipe_s3(self) -> None:
         logger.info("Wiping: crawled buckets")
-        bucket_name = settings.s3_storage.bucket_name
+        bucket_name = settings.intake_storage.bucket_name
         logger.info("Clearing bucket: %s", bucket_name)
         flush_s3_bucket(self._s3_intake_client, bucket_name)
 

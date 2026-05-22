@@ -154,10 +154,10 @@ def init(init_elasticsearch_documents: bool = False):
 
     global _s3_intake_client
     _s3_intake_client = Minio(
-        settings.s3_storage.host,
-        access_key=settings.s3_storage.access_key,
-        secret_key=settings.s3_storage.secret_key,
-        secure=settings.s3_storage.secure_connection,
+        settings.intake_storage.host,
+        access_key=settings.intake_storage.access_key,
+        secret_key=settings.intake_storage.secret_key,
+        secure=settings.intake_storage.secure_connection,
     )
 
     # NOTE: _celery_app must only be initialized once. init_celery_app() calls

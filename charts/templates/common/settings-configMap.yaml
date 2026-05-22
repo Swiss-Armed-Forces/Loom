@@ -196,6 +196,21 @@ data:
     lazybytes_storage__secure_connection: {{ .Values.lazyBytes.s3Storage.secureConnection | quote }}
     {{- end }}
 
+    # intake storage
+    intake_storage__host: {{ .Values.intakeStorage.s3Storage.host | default (printf "%s-seaweedfs-filer:%s" (include "app.fullname" .) (.Values.seaweedfs.s3.port | toString)) | quote }}
+    {{- if ne .Values.intakeStorage.s3Storage.bucketName nil }}
+    intake_storage__bucket_name: {{ .Values.intakeStorage.s3Storage.bucketName | quote }}
+    {{- end }}
+    {{- if ne .Values.intakeStorage.s3Storage.accessKey nil }}
+    intake_storage__access_key: {{ .Values.intakeStorage.s3Storage.accessKey | quote }}
+    {{- end }}
+    {{- if ne .Values.intakeStorage.s3Storage.secretKey nil }}
+    intake_storage__secret_key: {{ .Values.intakeStorage.s3Storage.secretKey | quote }}
+    {{- end }}
+    {{- if ne .Values.intakeStorage.s3Storage.secureConnection nil }}
+    intake_storage__secure_connection: {{ .Values.intakeStorage.s3Storage.secureConnection | quote }}
+    {{- end }}
+
     {{- $ollamaEndpoint := printf "http://%s-ollama:%s/v1/" (include "app.fullname" .) (.Values.ollama.service.port | toString) }}
     {{- $ollamaToolEndpoint := printf "http://%s-ollama-tool:%s/v1/" (include "app.fullname" .) (index .Values "ollama-tool" "service" "port" | toString) }}
 
@@ -335,21 +350,8 @@ data:
     {{- end }}
 
     # crawler
-    s3_storage__host: {{ .Values.crawler.s3Storage.host | default (printf "%s-seaweedfs-filer:%s" (include "app.fullname" .) (.Values.seaweedfs.s3.port | toString)) | quote }}
-    {{- if ne .Values.crawler.s3Storage.bucketName nil }}
-    s3_storage__bucket_name: {{ .Values.crawler.s3Storage.bucketName | quote }}
-    {{- end }}
-    {{- if ne .Values.crawler.s3Storage.bucketAlias nil }}
-    s3_bucket_alias: {{ .Values.crawler.s3Storage.bucketAlias | quote }}
-    {{- end }}
-    {{- if ne .Values.crawler.s3Storage.accessKey nil }}
-    s3_storage__access_key: {{ .Values.crawler.s3Storage.accessKey | quote }}
-    {{- end }}
-    {{- if ne .Values.crawler.s3Storage.secretKey nil }}
-    s3_storage__secret_key: {{ .Values.crawler.s3Storage.secretKey | quote }}
-    {{- end }}
-    {{- if ne .Values.crawler.s3Storage.secureConnection nil }}
-    s3_storage__secure_connection: {{ .Values.crawler.s3Storage.secureConnection | quote }}
+    {{- if ne .Values.crawler.bucketAlias nil }}
+    s3_bucket_alias: {{ .Values.crawler.bucketAlias | quote }}
     {{- end }}
 
     # flower

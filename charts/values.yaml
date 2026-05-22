@@ -57,6 +57,14 @@ lazyBytes:
     secretKey: null
     secureConnection: null
 
+intakeStorage:
+  s3Storage:
+    host: null
+    bucketName: null
+    accessKey: null
+    secretKey: null
+    secureConnection: null
+
 pipeline:
   taskTimeLimitSeconds: 86400  # 24h
   lazy_threshold_bytes: null
@@ -336,14 +344,8 @@ crawler:
     repository: swiss-armed-forces/cyber-command/cea/loom/crawler
   service:
     port: 80
-  # S3 bucket to crawl (will be created if it doesn't exist)
-  s3Storage:
-    host: null
-    bucketName: null
-    bucketAlias: null
-    accessKey: null
-    secretKey: null
-    secureConnection: null
+  # Alias for the intake S3 bucket (displayed in file paths)
+  bucketAlias: null
   resources:
     requests:
       cpu: "0.2"

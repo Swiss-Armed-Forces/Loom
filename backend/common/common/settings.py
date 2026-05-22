@@ -261,7 +261,7 @@ class Settings(BaseSettings):
 
     file_storage: FileStorageSettings = FileStorageSettings()
     lazybytes_storage: LazybytesStorageSettings = LazybytesStorageSettings()
-    s3_storage: IntakeS3StorageSettings = IntakeS3StorageSettings()
+    intake_storage: IntakeS3StorageSettings = IntakeS3StorageSettings()
 
     llm: LLMSettings = LLMSettings()
 
