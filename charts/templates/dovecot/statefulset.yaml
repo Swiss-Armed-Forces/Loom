@@ -63,6 +63,14 @@ spec:
   volumeClaimTemplates:
     - metadata:
         name: dovecot
+        {{- with include "app.pvc.labels.custom" (dict "context" . "component" "dovecot") }}
+        labels:
+          {{- . | nindent 10 }}
+        {{- end }}
+        {{- with include "app.pvc.annotations.custom" (dict "context" . "component" "dovecot") }}
+        annotations:
+          {{- . | nindent 10 }}
+        {{- end }}
       spec:
         accessModes:
           - {{ .Values.dovecot.pvc.accessModes | default "ReadWriteOnce" | quote }}

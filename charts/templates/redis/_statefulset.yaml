@@ -127,6 +127,14 @@ spec:
   volumeClaimTemplates:
     - metadata:
         name: redis
+        {{- with include "app.pvc.labels.custom" (dict "context" . "component" $component) }}
+        labels:
+          {{- . | nindent 10 }}
+        {{- end }}
+        {{- with include "app.pvc.annotations.custom" (dict "context" . "component" $component) }}
+        annotations:
+          {{- . | nindent 10 }}
+        {{- end }}
       spec:
         accessModes:
           - {{ default "ReadWriteOnce" (dig "pvc" "accessModes" "" $values) | quote }}

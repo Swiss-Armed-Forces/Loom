@@ -84,6 +84,14 @@ spec:
   volumeClaimTemplates:
     - metadata:
         name: open-webui
+        {{- with include "app.pvc.labels.custom" (dict "context" . "component" "open_webui") }}
+        labels:
+          {{- . | nindent 10 }}
+        {{- end }}
+        {{- with include "app.pvc.annotations.custom" (dict "context" . "component" "open_webui") }}
+        annotations:
+          {{- . | nindent 10 }}
+        {{- end }}
       spec:
         accessModes:
           - {{ .Values.open_webui.pvc.accessModes | default "ReadWriteOnce" | quote }}

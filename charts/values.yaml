@@ -14,6 +14,13 @@ global:
   # prometheus.io/scrape: "true"
   # iam.amazonaws.com/role: "arn:aws:iam::123456789:role/loom"
   customAnnotations: {}
+  # Custom labels to add to all PVCs created from StatefulSet volumeClaimTemplates.
+  # Note: volumeClaimTemplates are immutable after StatefulSet creation. To apply
+  # labels to existing PVCs, delete and recreate the StatefulSet (PVCs are retained),
+  # or label them manually with: kubectl label pvc <name> <key>=<value>
+  customPvcLabels: {}
+  # Custom annotations to add to all PVCs created from StatefulSet volumeClaimTemplates.
+  customPvcAnnotations: {}
 
 domain: &default-domain loom
 
@@ -381,6 +388,8 @@ elasticsearch:
   pvc:
     storage: 50Gi
     storageClass: null
+    customLabels: {}
+    customAnnotations: {}
   ingress: *default-ingress-config
   readinessProbe:
     enabled: true
@@ -533,6 +542,8 @@ seaweedfs:
     pvc:
       storage: 1Gi
       storageClass: null
+      customLabels: {}
+      customAnnotations: {}
     resources:
       requests:
         cpu: "0.1"
@@ -555,6 +566,8 @@ seaweedfs:
     pvc:
       storage: 20Gi
       storageClass: null
+      customLabels: {}
+      customAnnotations: {}
     resources:
       requests:
         cpu: "0.05"
@@ -630,6 +643,8 @@ seaweedfs:
       # This ensures enough space to store all metadata that could fit in Redis + headroom.
       storageMultiplier: 2
       storageClass: null
+      customLabels: {}
+      customAnnotations: {}
     # SQLite filer sidecar for restore operations
     sqliteFiler:
       port: 18889
@@ -661,6 +676,8 @@ rabbit:
   pvc:
     storage: 30Gi
     storageClass: null
+    customLabels: {}
+    customAnnotations: {}
   ingress:
     http: *default-ingress-config
     amqp:
@@ -751,6 +768,8 @@ open_webui:
   pvc:
     storage: 10Gi
     storageClass: null
+    customLabels: {}
+    customAnnotations: {}
   ingress: *default-ingress-config
   resources:
     requests:
@@ -776,6 +795,8 @@ dovecot:
   pvc:
     storage: 10Gi
     storageClass: null
+    customLabels: {}
+    customAnnotations: {}
   ingress:
     imaps: *default-ingress-config
     imap:
@@ -836,6 +857,8 @@ prometheus:
   pvc:
     storage: 10Gi
     storageClass: null
+    customLabels: {}
+    customAnnotations: {}
   ingress: *default-ingress-config
   readinessProbe:
     enabled: false
@@ -877,6 +900,8 @@ redis: &redis
     # PVC size = memory limit * storageMultiplier
     storageMultiplier: 5
     storageClass: null
+    customLabels: {}
+    customAnnotations: {}
   # Percentage of memory limit to use for Redis maxmemory setting.
   # This reserves headroom for Redis overhead and fragmentation
   memoryLimitThresholdPercent: 0.6

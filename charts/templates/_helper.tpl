@@ -125,6 +125,85 @@ Usage: {{ include "app.annotations.custom" (dict "context" . "component" "promet
   {{- $bytes | int64 -}}
 {{- end -}}
 
+{{/*
+Custom labels for a PVC from a StatefulSet volumeClaimTemplate.
+Only includes user-defined labels (no standard Kubernetes/Helm labels, which are immutable on PVCs).
+Accepts either:
+  - component: top-level values key (e.g. "elasticsearch") → reads {component}.pvc.customLabels
+  - pvcConfig: direct pvc values dict (e.g. .Values.seaweedfs.master.pvc) → reads pvcConfig.customLabels
+Usage:
+  {{ include "app.pvc.labels.custom" (dict "context" . "component" "elasticsearch") }}
+  {{ include "app.pvc.labels.custom" (dict "context" . "pvcConfig" .Values.seaweedfs.master.pvc) }}
+*/}}
+{{- define "app.pvc.labels.custom" -}}
+{{- $context := .context -}}
+{{- $component := .component -}}
+{{- $pvcConfig := .pvcConfig -}}
+{{- if $context.Values.global }}
+{{- if $context.Values.global.customPvcLabels }}
+{{- range $key, $value := $context.Values.global.customPvcLabels }}
+{{ $key }}: {{ $value | quote }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- if $component }}
+{{- $componentValues := index $context.Values $component -}}
+{{- if $componentValues }}
+{{- if $componentValues.pvc }}
+{{- if $componentValues.pvc.customLabels }}
+{{- range $key, $value := $componentValues.pvc.customLabels }}
+{{ $key }}: {{ $value | quote }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- if $pvcConfig }}
+{{- if $pvcConfig.customLabels }}
+{{- range $key, $value := $pvcConfig.customLabels }}
+{{ $key }}: {{ $value | quote }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- end -}}
+
+{{/*
+Custom annotations for a PVC from a StatefulSet volumeClaimTemplate.
+Same usage as app.pvc.labels.custom.
+*/}}
+{{- define "app.pvc.annotations.custom" -}}
+{{- $context := .context -}}
+{{- $component := .component -}}
+{{- $pvcConfig := .pvcConfig -}}
+{{- if $context.Values.global }}
+{{- if $context.Values.global.customPvcAnnotations }}
+{{- range $key, $value := $context.Values.global.customPvcAnnotations }}
+{{ $key }}: {{ $value | quote }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- if $component }}
+{{- $componentValues := index $context.Values $component -}}
+{{- if $componentValues }}
+{{- if $componentValues.pvc }}
+{{- if $componentValues.pvc.customAnnotations }}
+{{- range $key, $value := $componentValues.pvc.customAnnotations }}
+{{ $key }}: {{ $value | quote }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- if $pvcConfig }}
+{{- if $pvcConfig.customAnnotations }}
+{{- range $key, $value := $pvcConfig.customAnnotations }}
+{{ $key }}: {{ $value | quote }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- end -}}
+
+
 {{- define "cpu-limit-to-count" -}}
   {{/*
   This template converts Kubernetes CPU resource limit to integer CPU count.

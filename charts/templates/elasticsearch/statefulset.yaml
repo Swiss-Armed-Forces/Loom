@@ -116,6 +116,14 @@ spec:
   volumeClaimTemplates:
     - metadata:
         name: elasticsearch-data
+        {{- with include "app.pvc.labels.custom" (dict "context" . "component" "elasticsearch") }}
+        labels:
+          {{- . | nindent 10 }}
+        {{- end }}
+        {{- with include "app.pvc.annotations.custom" (dict "context" . "component" "elasticsearch") }}
+        annotations:
+          {{- . | nindent 10 }}
+        {{- end }}
       spec:
         accessModes:
           - {{ .Values.elasticsearch.pvc.accessModes | default "ReadWriteOnce" | quote }}
