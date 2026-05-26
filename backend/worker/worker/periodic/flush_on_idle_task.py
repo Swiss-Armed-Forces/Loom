@@ -12,6 +12,7 @@ from common.settings import CELERY_QUEUE_NAME_MAXLEN, settings
 from common.task_object.root_task_information_repository import (
     RootTaskInformationRepository,
 )
+from common.utils.task_lock import task_lock
 
 from worker.index_file.index_file_task import dispatch_index_file
 from worker.periodic.infra.periodic_task import PeriodicTask
@@ -24,6 +25,8 @@ from worker.periodic.tasks import (
 logger = logging.getLogger(__name__)
 
 app = get_celery_app()
+
+_FLUSH_ON_IDLE_LOCK_TTL_SECONDS = 60 * 15  # 15 minutes
 
 
 def _get_dispatch_index_file_queue() -> str:
@@ -81,6 +84,7 @@ def flush_complete(*_, **__):
 
 
 @app.task(bind=True, base=PeriodicTask)
+@task_lock(ttl_seconds=_FLUSH_ON_IDLE_LOCK_TTL_SECONDS, blocking=False)
 def flush_on_idle_task(self: PeriodicTask):
     """Manage lazybytes cleanup and queue throttling.
 
@@ -103,18 +107,20 @@ def flush_on_idle_task(self: PeriodicTask):
         pause_index_file_queue(pause=True)
 
     # Check idle EXCLUDING the throttled queue
-    if get_celery_inspect_service().is_idle(
+    if not get_celery_inspect_service().is_idle(
         called_from_task=True, exclude_queues=[_get_dispatch_index_file_queue()]
     ):
-        logger.info("Celery idle: flushing")
-        return self.replace(
-            chain(
-                group(
-                    flush_cache.signature(),
-                    flush_lazybytes.signature(),
-                    flush_root_task_information.signature(),
-                ),
-                flush_complete.s(),
-            )
+        logger.info("Celery not idle")
+        return None
+
+    logger.info("Celery idle: flushing")
+    return self.replace(
+        chain(
+            group(
+                flush_cache.signature(),
+                flush_lazybytes.signature(),
+                flush_root_task_information.signature(),
+            ),
+            flush_complete.s(),
         )
-    return None
+    )
