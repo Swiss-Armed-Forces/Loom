@@ -547,7 +547,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | jsonpatch                             | 1.33            | BSD License                                                                      |
 | jsonpointer                           | 3.1.1           | BSD License                                                                      |
 | kombu                                 | 5.5.4           | BSD License                                                                      |
-| pika                                  | 1.4.0           | BSD License                                                                      |
+| pika                                  | 1.4.1           | BSD License                                                                      |
 | prompt_toolkit                        | 3.0.52          | BSD License                                                                      |
 | pytest-celery                         | 1.3.0           | BSD License                                                                      |
 | scipy                                 | 1.17.1          | BSD License                                                                      |
