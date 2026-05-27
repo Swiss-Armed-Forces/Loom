@@ -16,6 +16,11 @@ spec:
   {{- if not $values.hpa.enabled }}
   replicas: {{ $values.replicaCount }}
   {{- end }}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: {{ $values.strategy.rollingUpdate.maxSurge }}
+      maxUnavailable: {{ $values.strategy.rollingUpdate.maxUnavailable }}
   selector:
     matchLabels:
       app: {{ include "app.name" . }}-{{ $component }}
@@ -29,6 +34,9 @@ spec:
         {{- . | nindent 8 }}
       {{- end }}
     spec:
+      {{- with $values.priorityClass }}
+      priorityClassName: {{ include "app.fullname" $ }}-{{ . }}
+      {{- end }}
       containers:
         - name: {{ $component }}
           image: {{ .Values.image.registry }}/{{ $values.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) $values.image.tag }}

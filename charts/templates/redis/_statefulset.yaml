@@ -33,6 +33,9 @@ spec:
         {{- . | nindent 8 }}
       {{- end }}
     spec:
+      {{- with $values.priorityClass }}
+      priorityClassName: {{ include "app.fullname" $ }}-{{ . }}
+      {{- end }}
       initContainers:
         - name: delete-redis-tmp-files
           image: {{ .Values.image.registry }}/{{ $values.initContainer.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) $values.initContainer.image.tag }}

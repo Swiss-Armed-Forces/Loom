@@ -48,6 +48,15 @@ ingress: &default-ingress-config
 egress:
   enabled: false
 
+# Priority classes for pod scheduling preemption.
+# Infrastructure pods get higher priority so the scheduler evicts scalable pods
+# (HPA-scaled workers) when quota is exhausted during redeployment.
+priorityClasses:
+  infrastructure:
+    value: 1000
+  scalable:
+    value: 100
+
 fileStorage:
   s3Storage:
     host: null
@@ -235,6 +244,11 @@ frontend:
 
 worker: &worker
   replicaCount: 1
+  priorityClass: scalable
+  strategy:
+    rollingUpdate:
+      maxSurge: 0
+      maxUnavailable: 1
   image:
     repository: swiss-armed-forces/cyber-command/cea/loom/worker
   hpa:
@@ -269,6 +283,7 @@ reaper: *worker
 persister:
   # Number of persister replicas - each gets a unique shard assignment.
   replicaCount: 1
+  priorityClass: infrastructure
   image:
     repository: swiss-armed-forces/cyber-command/cea/loom/worker
   service:
@@ -379,6 +394,7 @@ crawler:
 
 elasticsearch:
   replicaCount: 1
+  priorityClass: infrastructure
   shardsCount: null
   shardsReplicasCount: null
   image:
@@ -472,6 +488,11 @@ grafana:
 translate:
   enabled: true
   replicaCount: 1
+  priorityClass: scalable
+  strategy:
+    rollingUpdate:
+      maxSurge: 0
+      maxUnavailable: 1
   hpa:
     enabled: true
     maxReplicas: 2
@@ -578,6 +599,11 @@ seaweedfs:
 
   filer:
     replicaCount: 1
+    priorityClass: scalable
+    strategy:
+      rollingUpdate:
+        maxSurge: 0
+        maxUnavailable: 1
     # Graceful shutdown configuration for S3 multipart uploads
     terminationGracePeriodSeconds: 180
     preStopSleepSeconds: 5
@@ -666,6 +692,7 @@ seaweedfs:
 
 rabbit:
   replicaCount: 1
+  priorityClass: infrastructure
   image:
     repository: swiss-armed-forces/cyber-command/cea/loom/rabbit
   service:
@@ -703,6 +730,11 @@ rabbit:
 ollama: &ollama
   enabled: true
   replicaCount: 1
+  priorityClass: scalable
+  strategy:
+    rollingUpdate:
+      maxSurge: 0
+      maxUnavailable: 1
   hpa:
     enabled: true
     maxReplicas: 2
@@ -891,6 +923,7 @@ prometheus:
 
 redis: &redis
   replicaCount: 1
+  priorityClass: infrastructure
   image:
     repository: swiss-armed-forces/cyber-command/cea/loom/redis
   service:
@@ -995,6 +1028,11 @@ rspamd:
 
 tika:
   replicaCount: 1
+  priorityClass: scalable
+  strategy:
+    rollingUpdate:
+      maxSurge: 0
+      maxUnavailable: 1
   hpa:
     enabled: true
     maxReplicas: 10
@@ -1028,6 +1066,11 @@ gotenberg:
   # Default 0.9 leaves 10% headroom for non-Go memory usage
   goMemoryLimitFactor: 0.9
   replicaCount: 1
+  priorityClass: scalable
+  strategy:
+    rollingUpdate:
+      maxSurge: 0
+      maxUnavailable: 1
   hpa:
     enabled: true
     maxReplicas: 10
