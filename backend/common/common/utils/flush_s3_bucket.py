@@ -16,11 +16,11 @@ _T = TypeVar("_T")
 _S3_MAX_DELETE_BATCH_SIZE = 1000
 
 
-@dataclass(frozen=True)
+@dataclass
 class _DeleteResult:
-    deleted: int
-    failures: int
-    batch_count: int
+    deleted: int = 0
+    failures: int = 0
+    batch_count: int = 0
 
 
 def _chunks(iterable: Iterator[_T], size: int) -> Iterator[list[_T]]:
@@ -53,15 +53,13 @@ def _run_concurrent_deletes(
     workers: int,
 ) -> _DeleteResult:
     """Submit delete batches concurrently and collect results."""
-    total_deleted = 0
-    total_failures = 0
-    batch_count = 0
+    result = _DeleteResult()
 
     with ThreadPoolExecutor(max_workers=workers) as executor:
         futures: dict[Future[list[DeleteError]], int] = {}
 
         for batch in _chunks(delete_objects, batch_size):
-            batch_count += 1
+            result.batch_count += 1
             future = executor.submit(_delete_batch, client, bucket_name, batch)
             futures[future] = len(batch)
 
@@ -75,11 +73,11 @@ def _run_concurrent_deletes(
                     bucket_name,
                     submitted_count,
                 )
-                total_failures += submitted_count
+                result.failures += submitted_count
                 continue
 
-            total_deleted += submitted_count - len(errors)
-            total_failures += len(errors)
+            result.deleted += submitted_count - len(errors)
+            result.failures += len(errors)
 
             for error in errors:
                 logger.error(
@@ -96,11 +94,7 @@ def _run_concurrent_deletes(
                 bucket_name,
             )
 
-    return _DeleteResult(
-        deleted=total_deleted,
-        failures=total_failures,
-        batch_count=batch_count,
-    )
+    return result
 
 
 def flush_s3_bucket(
