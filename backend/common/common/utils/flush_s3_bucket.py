@@ -1,6 +1,7 @@
 import logging
 import time
 from concurrent.futures import Future, ThreadPoolExecutor, as_completed
+from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from itertools import islice
 from typing import Iterator, TypeVar
@@ -13,6 +14,13 @@ logger = logging.getLogger(__name__)
 _T = TypeVar("_T")
 
 _S3_MAX_DELETE_BATCH_SIZE = 1000
+
+
+@dataclass(frozen=True)
+class _DeleteResult:
+    deleted: int
+    failures: int
+    batch_count: int
 
 
 def _chunks(iterable: Iterator[_T], size: int) -> Iterator[list[_T]]:
@@ -43,12 +51,8 @@ def _run_concurrent_deletes(
     delete_objects: Iterator[DeleteObject],
     batch_size: int,
     workers: int,
-) -> tuple[int, int, int]:
-    """Submit delete batches concurrently and collect results.
-
-    Returns:
-        Tuple of (total_deleted, total_failures, batch_count).
-    """
+) -> _DeleteResult:
+    """Submit delete batches concurrently and collect results."""
     total_deleted = 0
     total_failures = 0
     batch_count = 0
@@ -92,7 +96,11 @@ def _run_concurrent_deletes(
                 bucket_name,
             )
 
-    return total_deleted, total_failures, batch_count
+    return _DeleteResult(
+        deleted=total_deleted,
+        failures=total_failures,
+        batch_count=batch_count,
+    )
 
 
 def flush_s3_bucket(
@@ -144,7 +152,7 @@ def flush_s3_bucket(
 
     effective_batch_size = min(batch_size, _S3_MAX_DELETE_BATCH_SIZE)
     start_time = time.monotonic()
-    total_deleted, total_failures, batch_count = _run_concurrent_deletes(
+    result = _run_concurrent_deletes(
         client, bucket_name, delete_objects, effective_batch_size, workers
     )
     elapsed = time.monotonic() - start_time
@@ -152,8 +160,8 @@ def flush_s3_bucket(
     logger.info(
         "Bucket flush complete: bucket=%s batches=%d deleted=%d failures=%d elapsed=%.2fs",
         bucket_name,
-        batch_count,
-        total_deleted,
-        total_failures,
+        result.batch_count,
+        result.deleted,
+        result.failures,
         elapsed,
     )
