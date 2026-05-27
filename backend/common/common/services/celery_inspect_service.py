@@ -54,4 +54,7 @@ class CeleryInspectService:
         if called_from_task:
             # We are called from a celery task, so we need to subtract the task itself
             tasks_count -= 1
+            # With task_acks_late=True the running task remains as an unacknowledged
+            # message in its queue until it completes, so subtract that as well.
+            messages_in_queues -= 1
         return messages_in_queues <= 0 and tasks_count <= 0
