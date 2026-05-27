@@ -24,8 +24,8 @@ from common.messages.messages import (
 )
 from common.services.lazybytes_service import TempLazyBytes, TempTypedLazyBytes
 from common.services.query_builder import QueryParameters
-from httpx import HTTPError
 from numpy import array, mean
+from openai import APIError
 from openai.types.chat import (
     ChatCompletionMessageParam,
     ChatCompletionSystemMessageParam,
@@ -139,7 +139,7 @@ def embed_question(question: str) -> TempTypedLazyBytes[Sequence[float]]:
             input=[f"{settings.llm.embedding.query_prefix}{question}"],
             dimensions=settings.llm.embedding.dimensions,
         )
-    except HTTPError as ex:
+    except APIError as ex:
         raise LLMError("Document embedding failed") from ex
 
     embedding = response.data[0].embedding
@@ -176,7 +176,7 @@ Passage:"""
             max_tokens=settings.llm.embedding.text_chunk_size,
             extra_headers={"X-Think": "true"} if settings.llm.hyde.think else None,
         )
-    except HTTPError as ex:
+    except APIError as ex:
         raise LLMError("Hypothetical document generation failed") from ex
 
     doc = (response.choices[0].message.content or "").strip()
@@ -200,7 +200,7 @@ def embed_document(document: str) -> TempTypedLazyBytes[Sequence[float]]:
             input=[f"{settings.llm.embedding.document_prefix}{document}"],
             dimensions=settings.llm.embedding.dimensions,
         )
-    except HTTPError as ex:
+    except APIError as ex:
         raise LLMError("Document embedding failed") from ex
 
     embedding = response.data[0].embedding
@@ -307,7 +307,7 @@ def _invoke_rerank_llm(
             temperature=settings.llm.rerank.temperature,
             extra_headers={"X-Think": "true"} if settings.llm.rerank.think else None,
         )
-    except HTTPError as ex:
+    except APIError as ex:
         raise LLMError() from ex
 
     # search and extract rank
@@ -442,7 +442,7 @@ def _stream_chat_llm(
             temperature=settings.llm.chat.temperature,
             extra_headers={"X-Think": "true"} if settings.llm.chat.think else None,
         )
-    except HTTPError as ex:
+    except APIError as ex:
         raise LLMError() from ex
     for token in stream:
         message_content = token.choices[0].delta.content
