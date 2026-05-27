@@ -37,8 +37,24 @@ spec:
             - name: openwebui
               containerPort: {{ .Values.open_webui.service.port }}
           env:
+            {{- if .Values.ollama.enabled }}
             - name: OLLAMA_BASE_URL
               value: http://{{ include "app.fullname" . }}-ollama:{{ .Values.ollama.service.port }}
+            {{- else }}
+            - name: ENABLE_OLLAMA_API
+              value: "false"
+            {{- end }}
+            {{- if .Values.llm.chat.endpoint }}
+            - name: OPENAI_API_BASE_URL
+              value: {{ .Values.llm.chat.endpoint | quote }}
+            {{- if .Values.llm.chat.api_key }}
+            - name: OPENAI_API_KEY
+              value: {{ .Values.llm.chat.api_key | quote }}
+            {{- end }}
+            {{- else }}
+            - name: ENABLE_OPENAI_API
+              value: "false"
+            {{- end }}
             - name: ENV
               value: {{ .Values.open_webui.env.ENV | quote }}
             - name: WEBUI_URL
@@ -50,7 +66,7 @@ spec:
             - name: ENABLE_SIGNUP
               value: {{ .Values.open_webui.env.ENABLE_SIGNUP | quote }}
             - name: DEFAULT_MODELS
-              value: {{ .Values.llm.model | quote }}
+              value: {{ .Values.llm.chat.model | quote }}
             - name: USER_PERMISSIONS_CHAT_TEMPORARY_ENFORCED
               value: {{ .Values.open_webui.env.USER_PERMISSIONS_CHAT_TEMPORARY_ENFORCED | quote }}
             - name: TOOL_SERVER_CONNECTIONS
