@@ -2,6 +2,7 @@ import logging
 from typing import Optional
 from unittest.mock import AsyncMock, MagicMock
 
+import urllib3
 from celery import Celery
 from elasticsearch import Elasticsearch
 from libretranslatepy import LibreTranslateAPI
@@ -123,6 +124,9 @@ def init(init_elasticsearch_documents: bool = False):
             settings.file_storage.access_key,
             settings.file_storage.secret_key,
             secure=settings.file_storage.secure_connection,
+            http_client=urllib3.PoolManager(
+                maxsize=settings.file_storage.connection_pool_size
+            ),
         ),
         settings.file_storage.bucket_name,
         # We always want to store data in the file storage service, to
@@ -142,6 +146,9 @@ def init(init_elasticsearch_documents: bool = False):
             settings.lazybytes_storage.access_key,
             settings.lazybytes_storage.secret_key,
             secure=settings.lazybytes_storage.secure_connection,
+            http_client=urllib3.PoolManager(
+                maxsize=settings.lazybytes_storage.connection_pool_size
+            ),
         ),
         settings.lazybytes_storage.bucket_name,
         threshold_bytes=settings.lazy_threshold_bytes,
@@ -158,6 +165,9 @@ def init(init_elasticsearch_documents: bool = False):
         access_key=settings.intake_storage.access_key,
         secret_key=settings.intake_storage.secret_key,
         secure=settings.intake_storage.secure_connection,
+        http_client=urllib3.PoolManager(
+            maxsize=settings.intake_storage.connection_pool_size
+        ),
     )
 
     # NOTE: _celery_app must only be initialized once. init_celery_app() calls

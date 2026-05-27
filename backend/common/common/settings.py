@@ -45,6 +45,7 @@ class S3StorageSettings(BaseModel):
     secret_key: str | None = None
     access_key: str | None = None
     secure_connection: bool = False
+    connection_pool_size: int = 64
 
 
 class FileStorageSettings(S3StorageSettings):

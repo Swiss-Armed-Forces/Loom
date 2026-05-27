@@ -68,6 +68,7 @@ fileStorage:
     accessKey: null
     secretKey: null
     secureConnection: null
+    connectionPoolSize: null
 
 lazyBytes:
   s3Storage:
@@ -76,6 +77,7 @@ lazyBytes:
     accessKey: null
     secretKey: null
     secureConnection: null
+    connectionPoolSize: null
 
 intakeStorage:
   s3Storage:
@@ -84,6 +86,7 @@ intakeStorage:
     accessKey: null
     secretKey: null
     secureConnection: null
+    connectionPoolSize: null
 
 pipeline:
   taskTimeLimitSeconds: 86400  # 24h

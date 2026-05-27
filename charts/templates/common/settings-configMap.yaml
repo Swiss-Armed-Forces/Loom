@@ -180,6 +180,9 @@ data:
     {{- if ne .Values.fileStorage.s3Storage.secureConnection nil }}
     file_storage__secure_connection: {{ .Values.fileStorage.s3Storage.secureConnection | quote }}
     {{- end }}
+    {{- if ne .Values.fileStorage.s3Storage.connectionPoolSize nil }}
+    file_storage__connection_pool_size: {{ .Values.fileStorage.s3Storage.connectionPoolSize | quote }}
+    {{- end }}
 
     # lazybytes storage
     lazybytes_storage__host: {{ .Values.lazyBytes.s3Storage.host | default (printf "%s-seaweedfs-filer:%s" (include "app.fullname" .) (.Values.seaweedfs.s3.port | toString)) | quote }}
@@ -195,6 +198,9 @@ data:
     {{- if ne .Values.lazyBytes.s3Storage.secureConnection nil }}
     lazybytes_storage__secure_connection: {{ .Values.lazyBytes.s3Storage.secureConnection | quote }}
     {{- end }}
+    {{- if ne .Values.lazyBytes.s3Storage.connectionPoolSize nil }}
+    lazybytes_storage__connection_pool_size: {{ .Values.lazyBytes.s3Storage.connectionPoolSize | quote }}
+    {{- end }}
 
     # intake storage
     intake_storage__host: {{ .Values.intakeStorage.s3Storage.host | default (printf "%s-seaweedfs-filer:%s" (include "app.fullname" .) (.Values.seaweedfs.s3.port | toString)) | quote }}
@@ -209,6 +215,9 @@ data:
     {{- end }}
     {{- if ne .Values.intakeStorage.s3Storage.secureConnection nil }}
     intake_storage__secure_connection: {{ .Values.intakeStorage.s3Storage.secureConnection | quote }}
+    {{- end }}
+    {{- if ne .Values.intakeStorage.s3Storage.connectionPoolSize nil }}
+    intake_storage__connection_pool_size: {{ .Values.intakeStorage.s3Storage.connectionPoolSize | quote }}
     {{- end }}
 
     {{- $ollamaEndpoint := printf "http://%s-ollama:%s/v1/" (include "app.fullname" .) (.Values.ollama.service.port | toString) }}
