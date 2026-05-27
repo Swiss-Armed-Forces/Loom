@@ -7,9 +7,9 @@ kind: Deployment
 metadata:
   name: {{ include "app.fullname" . }}-{{ $component }}
   labels:
-    {{- include "app.labels.custom" (dict "context" . "component" "${component}") | nindent 4 }}
+    {{- include "app.labels.custom" (dict "context" . "component" $component) | nindent 4 }}
     app.kubernetes.io/component: "{{ $component }}"
-  {{- with include "app.annotations.custom" (dict "context" . "component" "${component}") }}
+  {{- with include "app.annotations.custom" (dict "context" . "component" $component) }}
   annotations:
     {{- . | nindent 4 }}
   {{- end }}
@@ -24,8 +24,8 @@ spec:
     metadata:
       labels:
         app: {{ include "app.name" . }}-{{ $component }}
-        {{- include "app.labels.custom" (dict "context" . "component" "${component}") | nindent 8 }}
-      {{- with include "app.annotations.custom" (dict "context" . "component" "${component}") }}
+        {{- include "app.labels.custom" (dict "context" . "component" $component) | nindent 8 }}
+      {{- with include "app.annotations.custom" (dict "context" . "component" $component) }}
       annotations:
         {{- . | nindent 8 }}
       {{- end }}

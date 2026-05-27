@@ -5,7 +5,7 @@ metadata:
   namespace: {{ .Release.Namespace }}
   labels:
     {{- include "app.labels.custom" (dict "context" . "component" "preInstall") | nindent 4 }}
-    app.kubernetes.io/component: monitoring
+    app.kubernetes.io/component: pre-install
   annotations:
     helm.sh/hook: pre-install,pre-upgrade
     helm.sh/hook-delete-policy: before-hook-creation
