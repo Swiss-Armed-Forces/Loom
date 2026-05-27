@@ -27,6 +27,8 @@ logger = logging.getLogger(__name__)
 app = get_celery_app()
 
 _FLUSH_ON_IDLE_LOCK_TTL_SECONDS = 60 * 15  # 15 minutes
+_WAIT_FOR_IDLE_TIMEOUT_SECONDS = 60 * 10  # 10 minutes (well under lock TTL)
+_WAIT_FOR_IDLE_POLL_INTERVAL_SECONDS = 10.0
 
 
 def _get_dispatch_index_file_queue() -> str:
@@ -106,11 +108,14 @@ def flush_on_idle_task(self: PeriodicTask):
         # Pause: tell all workers to stop consuming from index_file queue
         pause_index_file_queue(pause=True)
 
-    # Check idle EXCLUDING the throttled queue
-    if not get_celery_inspect_service().is_idle(
-        called_from_task=True, exclude_queues=[_get_dispatch_index_file_queue()]
+    # Wait for idle EXCLUDING the throttled queue
+    if not get_celery_inspect_service().wait_for_idle(
+        timeout=_WAIT_FOR_IDLE_TIMEOUT_SECONDS,
+        poll_interval=_WAIT_FOR_IDLE_POLL_INTERVAL_SECONDS,
+        called_from_task=True,
+        exclude_queues=[_get_dispatch_index_file_queue()],
     ):
-        logger.info("Celery not idle")
+        logger.info("Celery not idle: timed out waiting for idle")
         return None
 
     logger.info("Celery idle: flushing")

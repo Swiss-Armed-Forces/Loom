@@ -10,6 +10,9 @@ logger = logging.getLogger(__name__)
 
 app = get_celery_app()
 
+_WAIT_FOR_IDLE_TIMEOUT_SECONDS = 30
+_WAIT_FOR_IDLE_POLL_INTERVAL_SECONDS = 5.0
+
 
 @app.task(base=PeriodicTask)
 def seaweedfs_maintenance_task(
@@ -24,8 +27,12 @@ def seaweedfs_maintenance_task(
         command_args: Optional arguments for the command.
         check_idle: If True, only run when queues are idle.
     """
-    if check_idle and not get_celery_inspect_service().is_idle(called_from_task=True):
-        logger.info("Celery not idle: do nothing")
+    if check_idle and not get_celery_inspect_service().wait_for_idle(
+        timeout=_WAIT_FOR_IDLE_TIMEOUT_SECONDS,
+        poll_interval=_WAIT_FOR_IDLE_POLL_INTERVAL_SECONDS,
+        called_from_task=True,
+    ):
+        logger.info("Celery not idle: timed out waiting for idle")
         return
 
     logger.info("Running SeaweedFS %s", command)

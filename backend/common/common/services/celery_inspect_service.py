@@ -1,4 +1,5 @@
 import logging
+import time
 from concurrent.futures import ThreadPoolExecutor
 from typing import TYPE_CHECKING, Iterator, Union
 
@@ -58,3 +59,25 @@ class CeleryInspectService:
             # message in its queue until it completes, so subtract that as well.
             messages_in_queues -= 1
         return messages_in_queues <= 0 and tasks_count <= 0
+
+    def wait_for_idle(
+        self,
+        timeout: float,
+        poll_interval: float = 10.0,
+        called_from_task: bool = False,
+        exclude_queues: list[str] | None = None,
+    ) -> bool:
+        """Poll is_idle() until the system is idle or timeout is reached.
+
+        Returns True if idle was reached within the timeout, False otherwise.
+        """
+        deadline = time.monotonic() + timeout
+        while True:
+            if self.is_idle(
+                called_from_task=called_from_task, exclude_queues=exclude_queues
+            ):
+                return True
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                return False
+            time.sleep(min(poll_interval, remaining))
