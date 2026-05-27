@@ -2,7 +2,7 @@ import logging
 from functools import wraps
 from typing import Callable
 
-from common.dependencies import get_redis_cache_client
+from common.dependencies import get_redis_client
 
 logger = logging.getLogger(__name__)
 
@@ -39,7 +39,7 @@ def task_lock(
 
         @wraps(func)
         def wrapper(*args, **kwargs):
-            redis_client = get_redis_cache_client()
+            redis_client = get_redis_client()
             lock = redis_client.lock(lock_key, timeout=ttl_seconds)
             acquired = lock.acquire(blocking=blocking)
             if not acquired:
