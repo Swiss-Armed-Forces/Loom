@@ -1,10 +1,17 @@
+import itertools
 import logging
 from datetime import datetime, timedelta, timezone
 
 from minio import Minio
 from minio.deleteobjects import DeleteObject
+from urllib3.exceptions import ReadTimeoutError
 
 logger = logging.getLogger(__name__)
+
+# Minio's internal batch size for multi-object delete. We chunk at the same size
+# so that a timeout on one batch only affects that batch's objects, which we can
+# then retry individually.
+_BATCH_SIZE = 1000
 
 
 def flush_s3_bucket(
@@ -44,6 +51,20 @@ def flush_s3_bucket(
             if obj.object_name is not None
         )
 
-    errors = client.remove_objects(bucket_name, delete_objects)
-    for error in errors:
-        logger.error("Failed to delete object %s: %s", error.name, error.message)
+    it = iter(delete_objects)
+    while batch := list(itertools.islice(it, _BATCH_SIZE)):
+        try:
+            for error in client.remove_objects(bucket_name, iter(batch)):
+                logger.error(
+                    "Failed to delete object %s: %s", error.name, error.message
+                )
+        except ReadTimeoutError:
+            logger.warning(
+                "Batch delete of %d objects timed out, retrying individually",
+                len(batch),
+            )
+            for obj in batch:
+                try:
+                    client.remove_object(bucket_name, obj.name)
+                except ReadTimeoutError:
+                    logger.error("Timed out deleting object %s individually", obj.name)
