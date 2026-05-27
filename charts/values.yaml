@@ -51,7 +51,11 @@ egress:
 # Priority classes for pod scheduling preemption.
 # Infrastructure pods get higher priority so the scheduler evicts scalable pods
 # (HPA-scaled workers) when quota is exhausted during redeployment.
+# NOTE: PriorityClass is a cluster-scoped resource and requires cluster-level
+# RBAC permissions to create. Set create: false if Helm lacks those permissions
+# and create the PriorityClasses manually (or skip preemption entirely).
 priorityClasses:
+  create: true
   infrastructure:
     value: 1000
   scalable:
