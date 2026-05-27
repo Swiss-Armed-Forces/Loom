@@ -1,7 +1,6 @@
 """Service for executing SeaweedFS shell commands."""
 
 import logging
-import shlex
 import subprocess
 from dataclasses import dataclass
 from typing import Literal
@@ -49,6 +48,8 @@ WeedShellCommand = Literal[
     "volume.fix.replication",
     "volume.balance",
     "volume.vacuum",
+    "volume.scrub",
+    "s3.clean.uploads",
 ]
 
 DEFAULT_MASTER_PORT = 9333
@@ -78,8 +79,7 @@ class SeaweedFSShellService:
         """
         # Build the command with properly escaped arguments
         if args:
-            escaped_args = " ".join(shlex.quote(arg) for arg in args)
-            full_command = f"{command} {escaped_args}"
+            full_command = f"{command} {' '.join(args)}"
         else:
             full_command = command
 

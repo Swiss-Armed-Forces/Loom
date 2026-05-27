@@ -98,7 +98,7 @@ def get_beat_schedule() -> dict:
                 "worker.periodic.seaweedfs_maintenance_task.seaweedfs_maintenance_task"
             ),
             "schedule": crontab(minute="43", hour="4-23/5"),
-            "args": ("volume.vacuum", "-garbageThreshold=0.01"),
+            "args": ("volume.vacuum", ["-garbageThreshold=0.01"]),
         },
         # SeaweedFS Maintenance Tasks - weekly forced runs at night (check_idle=False)
         "seaweedfs-fix-replication": {
@@ -138,7 +138,7 @@ def get_beat_schedule() -> dict:
                 "worker.periodic.seaweedfs_maintenance_task.seaweedfs_maintenance_task"
             ),
             "schedule": crontab(minute="0", hour="4", day_of_week="0,6"),
-            "args": ("volume.vacuum", "-garbageThreshold=0.01"),
+            "args": ("volume.vacuum", ["-garbageThreshold=0.01"]),
             "kwargs": {"check_idle": False},
         },
     }
