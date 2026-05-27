@@ -11,8 +11,8 @@ from common.dependencies import (
 from common.file.file_repository import Embedding, File
 from common.services.lazybytes_service import TempLazyBytes, TempTypedLazyBytes
 from common.utils.cache import cache
-from httpx import HTTPError
 from langchain_text_splitters import RecursiveCharacterTextSplitter
+from openai import APIError
 
 from worker.index_file.infra.file_indexing_task import FileIndexingTask
 from worker.index_file.infra.indexing_persister import IndexingPersister
@@ -101,8 +101,9 @@ def embed_text(text: str) -> TempTypedLazyBytes[Embedding]:
             input=f"{settings.llm.embedding.document_prefix}{text}",
             dimensions=settings.llm.embedding.dimensions,
         )
-    except HTTPError as ex:
+    except APIError as ex:
         raise LLMError() from ex
+
     embedding = Embedding(
         text=text,
         vector=list(response.data[0].embedding),

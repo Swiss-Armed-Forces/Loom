@@ -10,8 +10,8 @@ from common.dependencies import (
 from common.file.file_repository import File
 from common.services.lazybytes_service import TempLazyBytes
 from common.utils.cache import cache
-from httpx import HTTPError
 from langchain_text_splitters import RecursiveCharacterTextSplitter
+from openai import APIError
 
 from worker.index_file.infra.file_indexing_task import FileIndexingTask
 from worker.index_file.infra.indexing_persister import IndexingPersister
@@ -114,7 +114,7 @@ def _invoke_llm(
                 {"X-Think": "true"} if settings.llm.summarization.think else None
             ),
         )
-    except HTTPError as ex:
+    except APIError as ex:
         raise LLMError() from ex
     return response.choices[0].text
 
