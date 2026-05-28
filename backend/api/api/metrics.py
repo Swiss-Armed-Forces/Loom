@@ -54,6 +54,15 @@ class LoggingMetricExporter(MetricExporter):
         return True
 
 
+class MetricCache(BaseModel):
+    # Store raw (value, attributes) tuples rather than Observation objects
+    # so that the Pydantic model is safely picklable by the Redis cache layer.
+    # Must be defined at module level (not inside a function) for pickle to work.
+    observations_raw: list[tuple[Any, Any]]
+    timestamp: datetime = Field(default_factory=datetime.now)
+    collection_time: timedelta
+
+
 def with_adaptive_cache(max_age: timedelta | None = None):
     """Decorator that caches metric Observations based on collection time.
 
@@ -65,13 +74,6 @@ def with_adaptive_cache(max_age: timedelta | None = None):
         max_age = timedelta(
             milliseconds=PERIODIC_METRICS_REFRESH__MS * ADAPTIVE_CACHE_MAX_AGE_FACTOR
         )
-
-    class MetricCache(BaseModel):
-        # Store raw (value, attributes) tuples rather than Observation objects
-        # so that the Pydantic model is safely picklable by the Redis cache layer.
-        observations_raw: list[tuple[Any, Any]]
-        timestamp: datetime = Field(default_factory=datetime.now)
-        collection_time: timedelta
 
     def decorator(
         func: Callable[[CallbackOptions], Iterable[Observation]],
