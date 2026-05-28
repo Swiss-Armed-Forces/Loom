@@ -22,7 +22,7 @@ from worker.periodic import (
     sync_flagged_emails_periodically_task,
     unsubscribe_old_imap_folders_periodically_task,
 )
-from worker.test import canvas_test_task, sigkill_pgroup_task
+from worker.test import autoretry_test_task, canvas_test_task, sigkill_pgroup_task
 
 # DO NOT REMOVE THIS ARRAY!!!
 # the (then considered unused) imports would be removed by autoflake
@@ -38,6 +38,7 @@ tasks = [
     flush_on_idle_task,
     shrink_periodically_task,
     process_question_task,
+    autoretry_test_task,
     canvas_test_task,
     sigkill_pgroup_task,
     hide_periodically_task,

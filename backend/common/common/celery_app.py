@@ -467,7 +467,8 @@ def init_celery_app() -> "Celery[BaseTask]":  # pylint: disable=too-many-stateme
     default_queue = _get_queue(settings.celery_default_task_name)
     app.conf.task_queues.append(default_queue)
     app.conf.task_routes[settings.celery_default_task_name] = {
-        "routing_key": settings.celery_default_task_name
+        "routing_key": settings.celery_default_task_name,
+        "exchange_type": settings.celery_default_exchange_type,
     }
 
     app.conf.task_default_queue = default_queue.name
@@ -483,25 +484,31 @@ def init_celery_app() -> "Celery[BaseTask]":  # pylint: disable=too-many-stateme
     graveyard_queue = _get_graveyard_queue()
     app.conf.task_queues.append(graveyard_queue)
     app.conf.task_routes[settings.celery_graveyard_task_name] = {
-        "routing_key": settings.celery_graveyard_task_name
+        "routing_key": settings.celery_graveyard_task_name,
+        "exchange_type": settings.celery_default_exchange_type,
     }
     dead_queue = _get_dead_queue()
     app.conf.task_queues.append(dead_queue)
     app.conf.task_routes[settings.celery_dead_task_name] = {
-        "routing_key": settings.celery_dead_task_name
+        "routing_key": settings.celery_dead_task_name,
+        "exchange_type": settings.celery_default_exchange_type,
     }
 
     # Define unroutable queues
     unroutable_queue = _get_unroutable_queue()
     app.conf.task_queues.append(unroutable_queue)
-    app.conf.task_routes[settings.celery_unroubtable_task_name] = {"routing_key": "*"}
+    app.conf.task_routes[settings.celery_unroubtable_task_name] = {
+        "routing_key": "*",
+        "exchange_type": settings.celery_alternate_exchange_type,
+    }
 
     # Define persister shard queues for serialized persistence per entity
     for persister_shard_name in get_all_persister_shards(settings.num_persister_shards):
         persister_shard_queue = _get_queue(persister_shard_name)
         app.conf.task_queues.append(persister_shard_queue)
         app.conf.task_routes[persister_shard_name] = {
-            "routing_key": persister_shard_name
+            "routing_key": persister_shard_name,
+            "exchange_type": settings.celery_default_exchange_type,
         }
 
     # Worker type specific configuration
@@ -567,7 +574,10 @@ def _register_task_queues(app: Celery):
 
         queue = _get_queue(task_name)
         app.conf.task_queues.append(queue)
-        app.conf.task_routes[task_name] = {"routing_key": task_name}
+        app.conf.task_routes[task_name] = {
+            "routing_key": task_name,
+            "exchange_type": settings.celery_default_exchange_type,
+        }
         logger.info("Added Queue for task: %s", task_name)
 
 
