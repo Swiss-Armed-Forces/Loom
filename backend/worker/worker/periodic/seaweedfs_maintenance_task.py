@@ -39,7 +39,9 @@ def seaweedfs_maintenance_task(
     service = get_seaweedfs_shell_service()
     result = service.execute_command(command, args=command_args, with_lock=True)
     logger.info(
-        "SeaweedFS %s completed: %s",
+        "SeaweedFS %s completed (exit code %s): stdout=%s stderr=%s",
         command,
+        result.return_code,
         result.stdout[:1000] if result.stdout else "(no output)",
+        result.stderr[:1000] if result.stderr else "(no output)",
     )
