@@ -190,7 +190,7 @@ class Settings(CommonSettings):
     rendered_pdf_page_height__mm: int = 297  # A4
 
     # SeaweedFS Maintenance Settings
-    seaweedfs_shell_timeout: int = 60 * 60 * 2  # 2 hour(s)
+    seaweedfs_shell_timeout: int = int(60 * 60 * 1.5)  # 1.5 hour(s)
 
     # Persister timing settings
     persister_debounce_window: float = 2.5  # seconds to wait for more mutations
