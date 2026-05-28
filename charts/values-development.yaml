@@ -25,6 +25,9 @@ llm:
   chat:
     model: smollm2:135m
 
+  vision:
+    model: moondream:1.8b
+
 ingress: &default-ingress-config
   annotations:
     traefik.ingress.kubernetes.io/router.entrypoints: web, websecure

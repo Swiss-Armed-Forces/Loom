@@ -1,6 +1,6 @@
 {
-    "integrationtest/tests/ai_test.py::TestChatbot::test_chatbot": 900.8392318747938,
-    "integrationtest/tests/ai_test.py::test_create_context": 3.4599022140027955,
+    "integrationtest/tests/ai_test.py::TestChatbot::test_chatbot": 44.5990565000011,
+    "integrationtest/tests/ai_test.py::test_create_context": 6.096407508000993,
     "integrationtest/tests/archive_test.py::test_archive_extraction[\".zip-2-expected_archive_content13]": 24.740721775015118,
     "integrationtest/tests/archive_test.py::test_archive_extraction[archive.tar.zst-2-expected_archive_content0]": 0.0008507300008204766,
     "integrationtest/tests/archive_test.py::test_archive_extraction[archive.zip-2-expected_archive_content12]": 24.835764015995665,

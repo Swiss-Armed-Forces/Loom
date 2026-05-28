@@ -213,6 +213,39 @@ class TaskSchedulingService:
             task_id=str(root_task_id),
         ).forget()
 
+    def dispatch_describe_images(
+        self, query: QueryParameters, system_prompt: str | None = None
+    ):
+        root_task_id = uuid4()
+        self._send_task(
+            "worker.index_file.image_description_task.dispatch_describe_images",
+            args=[query, system_prompt],
+            root_id=str(root_task_id),
+        ).forget()
+
+    def dispatch_describe_image(self, file_id: UUID, system_prompt: str | None = None):
+        root_task_id = uuid4()
+        self._send_task(
+            "worker.index_file.image_description_task.dispatch_describe_image",
+            args=[file_id, system_prompt],
+            root_id=str(root_task_id),
+        ).forget()
+
+    def describe_image_by_id(self, file_id: UUID, system_prompt: str | None = None):
+        root_task_id = uuid4()
+        self._root_task_information_repository.save(
+            RootTaskInformation(
+                root_task_id=root_task_id,
+                object_id=file_id,
+            )
+        )
+        self._send_task(
+            "worker.index_file.image_description_task.image_description_task",
+            args=[file_id, system_prompt],
+            task_id=str(root_task_id),
+            root_id=str(root_task_id),
+        ).forget()
+
     def update_archive_by_id(self, archive_id: UUID, request: UpdateArchiveRequest):
         root_task_id = uuid4()
         self._root_task_information_repository.save(

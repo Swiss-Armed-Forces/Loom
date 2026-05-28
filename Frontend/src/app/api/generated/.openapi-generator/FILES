@@ -5,6 +5,7 @@ apis/ArchivesApi.ts
 apis/BeatApi.ts
 apis/CachingApi.ts
 apis/FilesApi.ts
+apis/ImageDescriptionApi.ts
 apis/ImapApi.ts
 apis/IndexApi.ts
 apis/MetricsApi.ts
@@ -42,6 +43,8 @@ models/GetSearchResponse.ts
 models/GetSearchResponseFile.ts
 models/HTTPValidationError.ts
 models/HitsPerGroupEntryModel.ts
+models/ImageDescriptionFileRequest.ts
+models/ImageDescriptionRequest.ts
 models/ImapInfo.ts
 models/IndexAllRequest.ts
 models/LibretranslateSupportedLanguages.ts

@@ -7,6 +7,7 @@ from worker.ai import process_question_task
 from worker.create_archive import create_archive_task, update_archive_task
 from worker.index_file import (
     add_tags_to_file_task,
+    image_description_task,
     index_file_task,
     remove_tag_from_file_task,
     summarize_file_task,
@@ -40,6 +41,7 @@ tasks = [
     process_question_task,
     canvas_test_task,
     sigkill_pgroup_task,
+    image_description_task,
     hide_periodically_task,
     sync_flagged_emails_periodically_task,
     reindex_lost_files_on_idle_task,

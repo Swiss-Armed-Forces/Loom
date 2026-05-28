@@ -155,6 +155,12 @@ export interface GetFilePreviewResponse {
     summary?: string;
     /**
      *
+     * @type {string}
+     * @memberof GetFilePreviewResponse
+     */
+    imageDescription?: string;
+    /**
+     *
      * @type {boolean}
      * @memberof GetFilePreviewResponse
      */
@@ -230,6 +236,10 @@ export function GetFilePreviewResponseFromJSONTyped(
         tasksFailed:
             json["tasks_failed"] == null ? undefined : json["tasks_failed"],
         summary: json["summary"] == null ? undefined : json["summary"],
+        imageDescription:
+            json["image_description"] == null
+                ? undefined
+                : json["image_description"],
         isSpam: json["is_spam"] == null ? undefined : json["is_spam"],
     };
 }
@@ -265,6 +275,7 @@ export function GetFilePreviewResponseToJSON(
         tasks_retried: value["tasksRetried"],
         tasks_failed: value["tasksFailed"],
         summary: value["summary"],
+        image_description: value["imageDescription"],
         is_spam: value["isSpam"],
     };
 }

@@ -37,6 +37,7 @@ import {
 import { EllipsisButton } from "./EllipsisButton";
 import { FileTasksList } from "./FileTasksList";
 import styles from "./ResultCard.module.css";
+import { Summary } from "./Summary";
 
 const FieldTypography = styled(Typography)<TypographyProps>`
     line-height: 1.2;
@@ -241,26 +242,7 @@ export const ResultCard = React.memo(
                         <FileCardHeader filePreview={filePreview} />
                         <CardContent className={styles.cardContent}>
                             <div className={styles.contentColumn}>
-                                {filePreview.summary == null ||
-                                filePreview.summary == "" ? null : (
-                                    <fieldset
-                                        className={styles.summaryHighlightText}
-                                    >
-                                        <div className={styles.summaryText}>
-                                            {filePreview.summary}
-                                        </div>
-
-                                        <legend
-                                            className={
-                                                styles.summaryHighlightTitle
-                                            }
-                                        >
-                                            <div className={styles.summaryText}>
-                                                {t("generalSearchView.summary")}
-                                            </div>
-                                        </legend>
-                                    </fieldset>
-                                )}
+                                <Summary filePreview={filePreview} />
 
                                 <FieldTypography
                                     className={`${styles.resultHighlightText} ${styles.contentText}`}

@@ -34,6 +34,7 @@ import {
     UploadFileButton,
     CreateArchiveButton,
 } from "@features/search/components/FileActionButtons";
+import { ImageDescriptionButton } from "@features/search/components/FileActionButtons";
 
 import { CustomQueriesList } from "../CustomQueries/CustomQueries";
 
@@ -173,6 +174,12 @@ export const SideMenu = () => {
                             </ListItem>
                             <ListItem>
                                 <SummaryButton
+                                    iconOnly={!isMenuExpanded}
+                                    disabled={numberOfResults === 0}
+                                />
+                            </ListItem>
+                            <ListItem>
+                                <ImageDescriptionButton
                                     iconOnly={!isMenuExpanded}
                                     disabled={numberOfResults === 0}
                                 />

@@ -92,6 +92,12 @@ export interface GetFileResponse {
      * @type {string}
      * @memberof GetFileResponse
      */
+    imageDescription?: string;
+    /**
+     *
+     * @type {string}
+     * @memberof GetFileResponse
+     */
     type?: string;
     /**
      *
@@ -143,6 +149,10 @@ export function GetFileResponseFromJSONTyped(
         ).map(GetFileLanguageTranslationsFromJSON),
         raw: json["raw"],
         summary: json["summary"] == null ? undefined : json["summary"],
+        imageDescription:
+            json["image_description"] == null
+                ? undefined
+                : json["image_description"],
         type: json["type"] == null ? undefined : json["type"],
         imap: json["imap"] == null ? undefined : ImapInfoFromJSON(json["imap"]),
         renderedFile: RenderedFileFromJSON(json["rendered_file"]),
@@ -164,6 +174,7 @@ export function GetFileResponseToJSON(value?: GetFileResponse | null): any {
         ).map(GetFileLanguageTranslationsToJSON),
         raw: value["raw"],
         summary: value["summary"],
+        image_description: value["imageDescription"],
         type: value["type"],
         imap: ImapInfoToJSON(value["imap"]),
         rendered_file: RenderedFileToJSON(value["renderedFile"]),

@@ -184,6 +184,16 @@ class FileSchedulingService:
         )
         self._task_scheduling_service.summarize_files_by_id(file_id, system_prompt)
 
+    def describe_image(self, file_id: UUID, system_prompt: str | None = None):
+        file_to_describe = self._file_repository.get_by_id(file_id)
+        if not file_to_describe:
+            raise FileNotFoundException("No file to describe found")
+
+        logger.info(
+            "Scheduling image description of file '%s'", file_to_describe.full_name
+        )
+        self._task_scheduling_service.describe_image_by_id(file_id, system_prompt)
+
     def update_file(self, file_id: UUID, request: UpdateFileRequest):
         file = self._file_repository.get_by_id(file_id)
         if not file:

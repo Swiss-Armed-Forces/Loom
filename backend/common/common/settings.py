@@ -103,6 +103,11 @@ class LLMToolSettings(LLMClientSettings):
     pass
 
 
+class LLMVisionSettings(LLMClientSettings):
+    model: str = "huihui_ai/qwen3.5-abliterated:9b"
+    system_prompt: str = "You are an expert at analysing what's in an image"
+
+
 class LLMSettings(BaseModel):
     embedding: LLMEmbeddingSettings = LLMEmbeddingSettings()
     tool: LLMToolSettings = LLMToolSettings()
@@ -110,6 +115,7 @@ class LLMSettings(BaseModel):
     hyde: LLMHydeSettings = LLMHydeSettings()
     rerank: LLMRerankSettings = LLMRerankSettings()
     chat: LLMChatSettings = LLMChatSettings()
+    vision: LLMVisionSettings = LLMVisionSettings()
 
 
 class Settings(BaseSettings):

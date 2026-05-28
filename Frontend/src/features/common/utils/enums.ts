@@ -7,6 +7,7 @@ export const DialogType = {
     DeleteCustomQuery: "deleteCustomQuery",
     DeleteTagGlobally: "deleteTagGlobally",
     FileDetail: "fileDetail",
+    ImageDescription: "imageDescriptionDialog",
     Summary: "summary",
     Translation: "translation",
     UploadFile: "uploadFile",
@@ -27,8 +28,15 @@ export const FileDetailTab = {
     RAW: 3,
     Summary: 4,
     Translations: 5,
+    ImageDescription: 6,
 } as const;
 export type FileDetailTab = (typeof FileDetailTab)[keyof typeof FileDetailTab];
+
+export const SummaryTab = {
+    Summary: "summary",
+    ImageDescription: "imageDescription",
+} as const;
+export type SummaryTab = (typeof SummaryTab)[keyof typeof SummaryTab];
 
 export const FileRendererType = {
     Image: 0,

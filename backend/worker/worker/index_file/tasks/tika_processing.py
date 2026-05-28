@@ -32,7 +32,11 @@ from worker.index_file.extractor.zip_extractor import ZipExtractor
 from worker.index_file.extractor.zstd_extractor import ZstdExtractor
 from worker.index_file.infra.file_indexing_task import FileIndexingTask
 from worker.index_file.infra.indexing_persister import IndexingPersister
-from worker.index_file.tasks import email_processing, extract_magic_file_type
+from worker.index_file.tasks import (
+    email_processing,
+    extract_magic_file_type,
+    image_description,
+)
 from worker.index_file.tasks.create_embedding import (
     signature as create_embedding_signature,
 )
@@ -204,6 +208,7 @@ def signature(file_content: TempLazyBytes, file: File) -> Signature:
             extract_magic_file_type.signature(file_content, file),
             group(
                 email_processing.signature(file_content, file),
+                image_description.signature(file_content, file),
                 chain(
                     tika_processor_task.s(file_content, file),
                     chord(

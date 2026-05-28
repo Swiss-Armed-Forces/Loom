@@ -9,6 +9,7 @@ import { TagsList } from "@features/search/components";
 import {
     AddTagsButton,
     DownloadButton,
+    ImageDescriptionButton,
     ReIndexButton,
     ShareButton,
     SummaryButton,
@@ -65,6 +66,11 @@ export const FileActions = ({
             iconOnly
         />,
         <SummaryButton key="summarize" filePreview={filePreview} iconOnly />,
+        <ImageDescriptionButton
+            key="describe-image"
+            filePreview={filePreview}
+            iconOnly
+        />,
         <ReIndexButton key="re-index" fileId={filePreview.fileId} />,
         <DownloadButton key="download" fileId={filePreview.fileId} />,
         <UpdateHiddenButton
