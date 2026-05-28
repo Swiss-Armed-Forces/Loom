@@ -20,7 +20,7 @@ S3_RETRY_WAIT_S: int = 10
 
 
 @dataclass(frozen=True)
-class _ProcessedObject:
+class _S3ObjectKey:
     object_name: str
     last_modified: datetime
 
@@ -39,16 +39,18 @@ class S3Crawler:
         self.display_name = bucket_alias if bucket_alias else bucket_name
         self.file_storage_service = file_storage_service
         self.task_scheduling_service = task_scheduling_service
-        self.processed_objects: set[_ProcessedObject] = set()
+        self.processed_objects: set[_S3ObjectKey] = set()
 
     def _ensure_bucket(self):
         if not retry(lambda: self.client.bucket_exists(self.bucket_name)):
-            logger.info("Creating bucket: %s", self.bucket_name)
+            logger.info("Bucket does not exist, creating: %s", self.bucket_name)
             retry(lambda: self.client.make_bucket(self.bucket_name))
+        else:
+            logger.info("Bucket already exists: %s", self.bucket_name)
 
     def _download_object(self, object_name: str, last_modified: datetime):
         logger.info("Downloading object %s", object_name)
-        self.processed_objects.add(_ProcessedObject(object_name, last_modified))
+        self.processed_objects.add(_S3ObjectKey(object_name, last_modified))
         full_name = Path(f"//{self.display_name}/{object_name}")
         source = f"{settings.crawler_source_id}/{self.bucket_name}"
 
@@ -70,8 +72,16 @@ class S3Crawler:
         )
 
     def crawl(self):
+        logger.info(
+            "Starting crawler for bucket '%s' (display name: '%s'), poll interval: %ds",
+            self.bucket_name,
+            self.display_name,
+            S3_OBJECT_POLL_INTERVAL_S,
+        )
         self._ensure_bucket()
+        logger.info("Entering poll loop")
         while True:
+            logger.debug("Polling bucket '%s' for objects", self.bucket_name)
             raw = retry(
                 lambda: list(self.client.list_objects(self.bucket_name, recursive=True))
             )
@@ -81,13 +91,22 @@ class S3Crawler:
                 or datetime.min.replace(tzinfo=timezone.utc),
                 reverse=True,
             )
-            for obj in objects:
-                if (
-                    obj.object_name
-                    and obj.last_modified
-                    and _ProcessedObject(obj.object_name, obj.last_modified)
-                    not in self.processed_objects
-                ):
-                    logger.info("New object detected via polling: %s", obj.object_name)
-                    self._download_object(obj.object_name, obj.last_modified)
+            new_objects: list[_S3ObjectKey] = [
+                _S3ObjectKey(obj.object_name, obj.last_modified)
+                for obj in objects
+                if obj.object_name
+                and obj.last_modified
+                and _S3ObjectKey(obj.object_name, obj.last_modified)
+                not in self.processed_objects
+            ]
+            logger.info(
+                "Poll result: %d object(s) in bucket, %d new, %d already processed",
+                len(objects),
+                len(new_objects),
+                len(self.processed_objects),
+            )
+            for key in new_objects:
+                logger.info("New object detected via polling: %s", key.object_name)
+                self._download_object(key.object_name, key.last_modified)
+            logger.debug("Sleeping %ds until next poll", S3_OBJECT_POLL_INTERVAL_S)
             sleep(S3_OBJECT_POLL_INTERVAL_S)

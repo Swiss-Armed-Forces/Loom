@@ -14,6 +14,11 @@ logger = logging.getLogger(__name__)
 
 if __name__ == "__main__":
     init_common_dependencies()
+    logger.info(
+        "Initializing S3Crawler — bucket: '%s', alias: '%s'",
+        settings.intake_storage.bucket_name,
+        settings.s3_bucket_alias,
+    )
     s3_client = get_s3_intake_client()
     s3_crawler = S3Crawler(
         s3_client,
