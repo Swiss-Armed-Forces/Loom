@@ -7,6 +7,7 @@ export * from "./ArchivesApi";
 export * from "./BeatApi";
 export * from "./CachingApi";
 export * from "./FilesApi";
+export * from "./ImageDescriptionApi";
 export * from "./ImapApi";
 export * from "./IndexApi";
 export * from "./MetricsApi";

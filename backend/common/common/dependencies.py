@@ -70,6 +70,7 @@ _llm_rerank_client: OpenAI | None = None
 _llm_chat_client: OpenAI | None = None
 _llm_embedding_client: OpenAI | None = None
 _llm_tool_client: OpenAI | None = None
+_llm_vision_client: OpenAI | None = None
 _celery_inspect_service: CeleryInspectService | None = None
 _wipe_service: WipeService | None = None
 
@@ -253,6 +254,13 @@ def init(init_elasticsearch_documents: bool = False):
         timeout=settings.llm.tool.timeout,
     )
 
+    global _llm_vision_client
+    _llm_vision_client = OpenAI(
+        base_url=str(settings.llm.vision.endpoint),
+        api_key=settings.llm.vision.api_key,
+        timeout=settings.llm.vision.timeout,
+    )
+
     global _celery_inspect_service
     _celery_inspect_service = CeleryInspectService(_celery_app, _queues_service)
 
@@ -345,23 +353,32 @@ def mock_init():
     global _archive_encryption_service
     _archive_encryption_service = MagicMock(spec=ArchiveEncryptionService)
 
+    # OpenAI's sub-clients (chat, embeddings, ...) are set on the instance in
+    # __init__, not as class attributes, so `MagicMock(spec=OpenAI)` rejects them.
+    # Spec against a real instance instead -- no network calls happen at
+    # construction, the dummy api_key is just stored.
+    openai_spec = OpenAI(api_key="test")
+
     global _llm_summarization_client
-    _llm_summarization_client = MagicMock(spec=OpenAI)
+    _llm_summarization_client = MagicMock(spec=openai_spec)
 
     global _llm_hyde_client
-    _llm_hyde_client = MagicMock(spec=OpenAI)
+    _llm_hyde_client = MagicMock(spec=openai_spec)
 
     global _llm_rerank_client
-    _llm_rerank_client = MagicMock(spec=OpenAI)
+    _llm_rerank_client = MagicMock(spec=openai_spec)
 
     global _llm_chat_client
-    _llm_chat_client = MagicMock(spec=OpenAI)
+    _llm_chat_client = MagicMock(spec=openai_spec)
 
     global _llm_embedding_client
-    _llm_embedding_client = MagicMock(spec=OpenAI)
+    _llm_embedding_client = MagicMock(spec=openai_spec)
 
     global _llm_tool_client
-    _llm_tool_client = MagicMock(spec=OpenAI)
+    _llm_tool_client = MagicMock(spec=openai_spec)
+
+    global _llm_vision_client
+    _llm_vision_client = MagicMock(spec=openai_spec)
 
     global _celery_inspect_service
     _celery_inspect_service = MagicMock(spec=CeleryInspectService)
@@ -536,6 +553,12 @@ def get_llm_tool_client() -> OpenAI:
     if _llm_tool_client is None:
         raise DependencyException("LLM tool client missing")
     return _llm_tool_client
+
+
+def get_llm_vision_client() -> OpenAI:
+    if _llm_vision_client is None:
+        raise DependencyException("LLM vision client missing")
+    return _llm_vision_client
 
 
 def get_celery_inspect_service() -> CeleryInspectService:

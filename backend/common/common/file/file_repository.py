@@ -412,6 +412,7 @@ class File(RepositoryTaskObject):
     attachments: list[Attachment] = []
     recursion_depth: int = 0
     summary: str | None = None
+    image_description: str | None = None
     embeddings: list[Embedding] = []
     trufflehog_secrets: list[Secret] | None = None
     ripsecrets_secrets: list[Secret] | None = None
@@ -490,6 +491,14 @@ class _EsFile(_EsTaskDocument):
     attachments = Object(_EsAttachment, multi=True)
     recursion_depth = Long()
     summary = Text(
+        term_vector="with_positions_offsets",
+        fields={
+            "ngram": Text(
+                term_vector="with_positions_offsets", analyzer="ngram_analyzer"
+            ),
+        },
+    )
+    image_description = Text(
         term_vector="with_positions_offsets",
         fields={
             "ngram": Text(

@@ -150,6 +150,7 @@ export const FileDetailDialog = ({
             hasHighlights:
                 !!file?.highlight && Object.keys(file.highlight).length > 0,
             hasSummary: !!file?.summary?.trim(),
+            hasImageDescription: !!file?.imageDescription?.trim(),
             hasTranslations:
                 (file?.libretranslateLanguageTranslations?.length ?? 0) > 0,
         }),
@@ -246,6 +247,11 @@ export const FileDetailDialog = ({
                             disabled={!properties.hasSummary}
                         />
                         <Tab
+                            label="Image Description"
+                            value={FileDetailTab.ImageDescription}
+                            disabled={!properties.hasImageDescription}
+                        />
+                        <Tab
                             label="Translations"
                             value={FileDetailTab.Translations}
                             disabled={!properties.hasTranslations}
@@ -330,6 +336,15 @@ const renderTabContent = (
                 <AceEditor
                     mode={inferAceModeFromMimeType(file.type)}
                     value={file.summary ?? ""}
+                    {...aceProps}
+                    wrapEnabled
+                />
+            );
+        case FileDetailTab.ImageDescription:
+            return (
+                <AceEditor
+                    mode="text"
+                    value={file.imageDescription ?? ""}
                     {...aceProps}
                     wrapEnabled
                 />

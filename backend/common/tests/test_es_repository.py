@@ -259,6 +259,7 @@ ES_REPOSITORY_TEST_INSTANCES: dict[type[BaseEsRepository], list[_TestInstances]]
                 ],
                 recursion_depth=TestValueDefaults.test_long,
                 summary=TestValueDefaults.test_str,
+                image_description=TestValueDefaults.test_str,
                 trufflehog_secrets=[
                     Secret(
                         line_number=TestValueDefaults.test_long,
@@ -410,6 +411,7 @@ ES_REPOSITORY_TEST_INSTANCES: dict[type[BaseEsRepository], list[_TestInstances]]
                 ],
                 recursion_depth=TestValueDefaults.test_long,
                 summary=TestValueDefaults.test_str,
+                image_description=TestValueDefaults.test_str,
                 trufflehog_secrets=[
                     _EsSecret(
                         line_number=TestValueDefaults.test_long,

@@ -25,10 +25,6 @@ spec:
         {{- . | nindent 8 }}
       {{- end }}
     spec:
-      volumes:
-        - name: config-volume
-          configMap:
-            name: {{ include "app.fullname" . }}-webui-import
       containers:
         - name: open-webui
           image: {{ .Values.image.registry }}/{{ .Values.open_webui.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) .Values.open_webui.image.tag }}

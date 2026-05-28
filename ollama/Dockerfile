@@ -22,7 +22,7 @@ ENTRYPOINT ["/bin/ollama_wrapper.py", "entry"]
 CMD ["serve"]
 
 FROM base AS dev
-ARG LLM_MODELS="smollm2:135m nomic-embed-text-v2-moe"
+ARG LLM_MODELS="smollm2:135m moondream:1.8b nomic-embed-text-v2-moe"
 ENV LLM_MODELS=${LLM_MODELS}
 RUN set -exu \
   && for llm_model in ${LLM_MODELS}; do \

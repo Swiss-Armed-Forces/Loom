@@ -40,6 +40,9 @@ data:
     {{- if ne .Values.pipeline.skip_summarize_while_indexing nil }}
     skip_summarize_while_indexing: {{ .Values.pipeline.skip_summarize_while_indexing | quote }}
     {{- end }}
+    {{- if ne .Values.pipeline.skip_image_description_while_indexing nil }}
+    skip_image_description_while_indexing: {{ .Values.pipeline.skip_image_description_while_indexing | quote }}
+    {{- end }}
     {{- if ne .Values.pipeline.skip_translate_while_indexing nil }}
     skip_translate_while_indexing: {{ .Values.pipeline.skip_translate_while_indexing | quote }}
     {{- end }}
@@ -133,7 +136,6 @@ data:
     {{- if ne .Values.persister.saveMaxRetries nil }}
     persister_save_max_retries: {{ .Values.persister.saveMaxRetries | quote }}
     {{- end }}
-
 
     # elasticsearch
     {{- if ne .Values.elasticsearch.shardsCount nil }}
@@ -332,6 +334,27 @@ data:
     {{- end }}
     {{- if ne .Values.llm.chat.timeout nil }}
     llm__chat__timeout: {{ .Values.llm.chat.timeout | quote }}
+    {{- end }}
+
+    # llm vision
+    llm__vision__endpoint: {{ .Values.llm.vision.endpoint | default $ollamaEndpoint | quote }}
+    {{- if ne .Values.llm.vision.api_key nil }}
+    llm__vision__api_key: {{ .Values.llm.vision.api_key | quote }}
+    {{- end }}
+    {{- if ne .Values.llm.vision.model nil }}
+    llm__vision__model: {{ .Values.llm.vision.model | quote }}
+    {{- end }}
+    {{- if ne .Values.llm.vision.temperature nil }}
+    llm__vision__temperature: {{ .Values.llm.vision.temperature | quote }}
+    {{- end }}
+    {{- if ne .Values.llm.vision.think nil }}
+    llm__vision__think: {{ .Values.llm.vision.think | quote }}
+    {{- end }}
+    {{- if ne .Values.llm.vision.timeout nil }}
+    llm__vision__timeout: {{ .Values.llm.vision.timeout | quote }}
+    {{- end }}
+    {{- if ne .Values.llm.vision.system_prompt nil }}
+    llm__vision__system_prompt: {{ .Values.llm.vision.system_prompt | quote }}
     {{- end }}
 
     # crawler

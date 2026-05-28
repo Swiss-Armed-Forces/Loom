@@ -26,6 +26,7 @@
     },
     "generalSearchView": {
         "summary": "Summary",
+        "imageDescription": "Image Description",
         "viewDetails": "View details",
         "loadMore": "Load more...",
         "download": "Download file",
@@ -71,6 +72,16 @@
         "executeButton": "Summarize",
         "scheduledToast": "Summarization successfully scheduled, this might take a while",
         "scheduledErrorToast": "Can not summarize files. Code: {{err.status}}, Text: {{err.text}}"
+    },
+    "imageDescriptionButton": {
+        "describeImage": "Describe Image"
+    },
+    "imageDescriptionDialog": {
+        "title": "Describe Image",
+        "systemPromptHint": "Define a system prompt for the image description",
+        "executeButton": "Describe",
+        "scheduledToast": "Image description successfully scheduled, this might take a while",
+        "scheduledErrorToast": "Can not describe images. {{err}}"
     },
     "confirmDialog": {
         "title": "Confirm action",

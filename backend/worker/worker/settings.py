@@ -153,6 +153,7 @@ class Settings(CommonSettings):
 
     skip_translate_while_indexing: bool = True
     skip_summarize_while_indexing: bool = True
+    skip_image_description_while_indexing: bool = True
     skip_embedding_while_indexing: bool = False
     skip_auto_tag_file_while_indexing: bool = False
     min_language_detection_confidence: float = 95.0

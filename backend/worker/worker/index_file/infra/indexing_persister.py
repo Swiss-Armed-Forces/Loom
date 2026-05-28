@@ -142,6 +142,10 @@ def _set_summary(obj: File, summary: str) -> None:
     obj.summary = summary
 
 
+def _set_image_description(obj: File, image_description: str) -> None:
+    obj.image_description = image_description
+
+
 def _set_embeddings(obj: File, embeddings: list[Embedding]) -> None:
     obj.embeddings = embeddings
 
@@ -191,6 +195,7 @@ class IndexingPersister(PersisterBase[File]):
     add_tag = mutation(_add_tag)
     remove_tag = mutation(_remove_tag)
     set_summary = mutation(_set_summary)
+    set_image_description = mutation(_set_image_description)
     set_embeddings = mutation(_set_embeddings)
     set_ripsecrets_secret = mutation(_set_ripsecrets_secret)
     set_trufflehog_secret = mutation(_set_trufflehog_secret)

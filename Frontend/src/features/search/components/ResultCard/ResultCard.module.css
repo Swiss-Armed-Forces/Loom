@@ -5,29 +5,6 @@
     white-space: pre-wrap;
 }
 
-.summaryHighlightText {
-    font-style: normal !important;
-    background: rgb(249, 249, 249) !important;
-    display: inline-block !important;
-    border-radius: 5px;
-    border: gray 1px solid;
-    padding: 10px;
-    transform: rotate(180deg);
-    width: auto !important;
-    position: relative !important;
-    grid-area: 1 / 1;
-}
-
-.summaryHighlightTitle {
-    position: relative;
-    font-size: 10px;
-    margin-left: auto;
-}
-
-.summaryText {
-    transform: rotate(180deg);
-}
-
 :global .resultCardParent:target {
     outline: auto;
 }

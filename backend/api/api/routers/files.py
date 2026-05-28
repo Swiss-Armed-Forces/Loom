@@ -261,6 +261,7 @@ class GetFileResponse(BaseModel):
     libretranslate_language_translations: list[GetFileLanguageTranslations]
     raw: str
     summary: str | None
+    image_description: str | None
     type: str | None
     imap: ImapInfo | None
     rendered_file: RenderedFile
@@ -294,6 +295,7 @@ class GetFileResponse(BaseModel):
                 exclude_unset=True,
             ),
             summary=file.summary,
+            image_description=file.image_description,
             type=file.magic_file_type,
             imap=file.imap,
             rendered_file=RenderedFile(
@@ -348,6 +350,7 @@ class GetFilePreviewResponse(BaseModel):
     tasks_retried: list[UUID] = []
     tasks_failed: list[UUID] = []
     summary: str | None
+    image_description: str | None
     is_spam: bool | None = False
 
 
@@ -391,6 +394,7 @@ def get_file_preview(
         tasks_failed=file.tasks_failed,
         tasks_retried=file.tasks_retried,
         summary=file.summary,
+        image_description=file.image_description,
         is_spam=file.is_spam,
     )
 
@@ -479,6 +483,22 @@ def summarize_file(
 ):
     task_scheduling_service.dispatch_summarize_file(
         file_id=file_id, system_prompt=summarize_request.system_prompt
+    )
+
+
+class ImageDescriptionFileRequest(BaseModel):
+    system_prompt: str | None = None
+
+
+@router.post("/{file_id}/image_description", status_code=202)
+def image_description(
+    file_id: UUID,
+    image_description_request: ImageDescriptionFileRequest,
+    task_scheduling_service: TaskSchedulingService = default_task_scheduling_service,
+):
+    """Describe image."""
+    task_scheduling_service.dispatch_describe_image(
+        file_id=file_id, system_prompt=image_description_request.system_prompt
     )
 
 

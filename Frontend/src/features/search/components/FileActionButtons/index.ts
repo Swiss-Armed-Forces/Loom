@@ -3,6 +3,7 @@ import { GetFilePreviewResponse } from "@app/api";
 import { AddTagsButton } from "./AddTagsButton";
 import { CreateArchiveButton } from "./CreateArchiveButton";
 import { DownloadButton } from "./DownloadButton";
+import { ImageDescriptionButton } from "./ImageDescriptionButton";
 import { ReIndexButton } from "./ReIndexButton";
 import { ShareButton } from "./ShareButton";
 import { SummaryButton } from "./SummaryButton";
@@ -23,6 +24,7 @@ export {
     AddTagsButton,
     CreateArchiveButton,
     DownloadButton,
+    ImageDescriptionButton,
     ReIndexButton,
     ShareButton,
     SummaryButton,

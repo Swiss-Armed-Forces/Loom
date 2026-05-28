@@ -23,6 +23,7 @@ import type {
     GetFilesResponse,
     GetQueryResponse,
     HTTPValidationError,
+    ImageDescriptionFileRequest,
     Stat,
     SummarizeFileRequest,
     SummaryStatisticsModel,
@@ -48,6 +49,8 @@ import {
     GetQueryResponseToJSON,
     HTTPValidationErrorFromJSON,
     HTTPValidationErrorToJSON,
+    ImageDescriptionFileRequestFromJSON,
+    ImageDescriptionFileRequestToJSON,
     StatFromJSON,
     StatToJSON,
     SummarizeFileRequestFromJSON,
@@ -148,6 +151,11 @@ export interface GetSummaryStatsV1FilesStatsSummaryGetRequest {
 export interface GetThumbnailV1FilesFileIdThumbnailThumbnailFileIdGetRequest {
     fileId: string;
     thumbnailFileId: string;
+}
+
+export interface ImageDescriptionV1FilesFileIdImageDescriptionPostRequest {
+    fileId: string;
+    imageDescriptionFileRequest: ImageDescriptionFileRequest;
 }
 
 export interface IndexFileV1FilesFileIdIndexPostRequest {
@@ -1098,6 +1106,73 @@ export class FilesApi extends runtime.BaseAPI {
     ): Promise<number> {
         const response =
             await this.getTreeMaxElementCountV1FilesTreeMaxElementCountGetRaw(
+                initOverrides,
+            );
+        return await response.value();
+    }
+
+    /**
+     * Describe image.
+     * Image Description
+     */
+    async imageDescriptionV1FilesFileIdImageDescriptionPostRaw(
+        requestParameters: ImageDescriptionV1FilesFileIdImageDescriptionPostRequest,
+        initOverrides?: RequestInit | runtime.InitOverrideFunction,
+    ): Promise<runtime.ApiResponse<any>> {
+        if (requestParameters["fileId"] == null) {
+            throw new runtime.RequiredError(
+                "fileId",
+                'Required parameter "fileId" was null or undefined when calling imageDescriptionV1FilesFileIdImageDescriptionPost().',
+            );
+        }
+
+        if (requestParameters["imageDescriptionFileRequest"] == null) {
+            throw new runtime.RequiredError(
+                "imageDescriptionFileRequest",
+                'Required parameter "imageDescriptionFileRequest" was null or undefined when calling imageDescriptionV1FilesFileIdImageDescriptionPost().',
+            );
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        headerParameters["Content-Type"] = "application/json";
+
+        const response = await this.request(
+            {
+                path: `/v1/files/{file_id}/image_description`.replace(
+                    `{${"file_id"}}`,
+                    encodeURIComponent(String(requestParameters["fileId"])),
+                ),
+                method: "POST",
+                headers: headerParameters,
+                query: queryParameters,
+                body: ImageDescriptionFileRequestToJSON(
+                    requestParameters["imageDescriptionFileRequest"],
+                ),
+            },
+            initOverrides,
+        );
+
+        if (this.isJsonMime(response.headers.get("content-type"))) {
+            return new runtime.JSONApiResponse<any>(response);
+        } else {
+            return new runtime.TextApiResponse(response) as any;
+        }
+    }
+
+    /**
+     * Describe image.
+     * Image Description
+     */
+    async imageDescriptionV1FilesFileIdImageDescriptionPost(
+        requestParameters: ImageDescriptionV1FilesFileIdImageDescriptionPostRequest,
+        initOverrides?: RequestInit | runtime.InitOverrideFunction,
+    ): Promise<any> {
+        const response =
+            await this.imageDescriptionV1FilesFileIdImageDescriptionPostRaw(
+                requestParameters,
                 initOverrides,
             );
         return await response.value();

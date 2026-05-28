@@ -17,6 +17,7 @@ from api.routers import (
     caching,
     docs,
     files,
+    image_description,
     imap,
     index,
     metrics,
@@ -75,6 +76,11 @@ def init_api(collect_metrics=True) -> FastAPI:
     api.include_router(websocket.router, prefix="/v1/websocket", tags=["websocket"])
     api.include_router(
         summarization.router, prefix="/v1/files/summarization", tags=["summarization"]
+    )
+    api.include_router(
+        image_description.router,
+        prefix="/v1/files/image_description",
+        tags=["image_description"],
     )
     api.include_router(ai.router, prefix="/v1/ai", tags=["ai"])
     api.include_router(aitools.router, prefix="/v1/aitools", tags=["aitools"])

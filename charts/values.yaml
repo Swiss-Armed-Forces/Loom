@@ -64,6 +64,7 @@ pipeline:
   imap_folder_days_before_unsubscribe: null
   skip_summarize_while_indexing: null
   skip_translate_while_indexing: null
+  skip_image_description_while_indexing: null
   skip_embedding_while_indexing: null
   skip_auto_tag_file_while_indexing: null
   automatic_indexing: true
@@ -121,6 +122,10 @@ llm:
 
   chat:
     <<: *llm-defaults
+
+  vision:
+    <<: *llm-defaults
+    system_prompt: null
 
 preInstall:
   image:

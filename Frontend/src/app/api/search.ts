@@ -4,6 +4,7 @@ import {
     AiApi,
     ArchivesApi,
     FilesApi,
+    ImageDescriptionApi,
     IndexApi,
     SummarizationApi,
     TagsApi,
@@ -30,6 +31,7 @@ const indexApi = new IndexApi();
 const summarizationApi = new SummarizationApi();
 const tagsApi = new TagsApi();
 const aiApi = new AiApi();
+const imageDescriptionApi = new ImageDescriptionApi();
 
 export const loadTags = async (): Promise<string[]> => {
     return tagsApi.getTagsV1FilesTagsGet();
@@ -286,6 +288,37 @@ export const scheduleSingleFileSummarization = async (
             systemPrompt: systemPrompt ?? undefined,
         },
     });
+};
+
+export const scheduleSingleImageDescription = async (
+    fileId: string,
+    systemPrompt?: string | null,
+): Promise<void> => {
+    return filesApi.imageDescriptionV1FilesFileIdImageDescriptionPost({
+        fileId: fileId,
+        imageDescriptionFileRequest: {
+            systemPrompt: systemPrompt ?? undefined,
+        },
+    });
+};
+
+export const scheduleImageDescriptionByQuery = async (
+    query: SearchQuery,
+    systemPrompt?: string | null,
+): Promise<void> => {
+    return imageDescriptionApi.describeImagesOnDemandV1FilesImageDescriptionPost(
+        {
+            imageDescriptionRequest: {
+                query: {
+                    queryId: query.id,
+                    keepAlive: query.keepAlive ?? undefined,
+                    searchString: query.query,
+                    languages: query.languages?.map((l) => l.code),
+                },
+                systemPrompt: systemPrompt ?? undefined,
+            },
+        },
+    );
 };
 
 export const scheduleFileSummarization = async (

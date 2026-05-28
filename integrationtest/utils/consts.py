@@ -13,6 +13,7 @@ CACHING_ENDPOINT = f"{settings.api_host}v1/caching"
 WEBSOCKET_ENDPOINT = f"{settings.ws_host}v1/websocket"
 SUMMARIZATION_ENDPOINT = f"{settings.api_host}v1/files/summarization"
 AI_ENDPOINT = f"{settings.api_host}v1/ai"
+IMAGE_DESCRIPTION_ENDPOINT = f"{settings.api_host}v1/files/image_description"
 TESTS_ENDPOINT = f"{settings.api_host}v1/tests"
 BEAT_ENDPOINT = f"{settings.api_host}v1/beat"
 REQUEST_TIMEOUT = 60
