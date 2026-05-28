@@ -108,7 +108,6 @@ def get_beat_schedule() -> dict:
             "args": (
                 "volume.fsck",
                 [
-                    "-verifyNeedles=true",
                     "-findMissingChunksInFiler=true",
                     "-reallyDeleteFromVolume=true",
                     "-reallyDeleteFilerEntries=true",
@@ -164,7 +163,6 @@ def get_beat_schedule() -> dict:
             "args": (
                 "volume.fsck",
                 [
-                    "-verifyNeedles=true",
                     "-findMissingChunksInFiler=true",
                     "-reallyDeleteFromVolume=true",
                     "-reallyDeleteFilerEntries=true",
