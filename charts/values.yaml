@@ -256,8 +256,8 @@ worker: &worker
   priorityClass: scalable
   strategy:
     rollingUpdate:
-      maxSurge: 0
-      maxUnavailable: 1
+      maxSurge: "34%"
+      maxUnavailable: "34%"
   image:
     repository: swiss-armed-forces/cyber-command/cea/loom/worker
   hpa:
