@@ -48,14 +48,14 @@ class S3Crawler:
         else:
             logger.info("Bucket already exists: %s", self.bucket_name)
 
-    def _download_object(self, object_name: str, last_modified: datetime):
-        logger.info("Downloading object %s", object_name)
-        self.processed_objects.add(_S3ObjectKey(object_name, last_modified))
-        full_name = Path(f"//{self.display_name}/{object_name}")
+    def _download_object(self, key: _S3ObjectKey):
+        logger.info("Downloading object %s", key.object_name)
+        self.processed_objects.add(key)
+        full_name = Path(f"//{self.display_name}/{key.object_name}")
         source = f"{settings.crawler_source_id}/{self.bucket_name}"
 
         def stream_generator():
-            yield from self.client.get_object(self.bucket_name, object_name).stream(
+            yield from self.client.get_object(self.bucket_name, key.object_name).stream(
                 S3_READ_CHUNK_SIZE
             )
 
@@ -107,6 +107,6 @@ class S3Crawler:
             )
             for key in new_objects:
                 logger.info("New object detected via polling: %s", key.object_name)
-                self._download_object(key.object_name, key.last_modified)
+                self._download_object(key)
             logger.debug("Sleeping %ds until next poll", S3_OBJECT_POLL_INTERVAL_S)
             sleep(S3_OBJECT_POLL_INTERVAL_S)
