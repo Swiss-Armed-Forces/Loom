@@ -13,17 +13,19 @@ logger = logging.getLogger(__name__)
 class SeaweedFSShellError(Exception):
     """Exception raised when a weed shell command fails."""
 
-    command: str
-    return_code: int
-    stdout: str
-    stderr: str
-
-    def __init__(self, message: str):
-        super().__init__(message)
-        self.command = ""
-        self.return_code = 0
-        self.stdout = ""
-        self.stderr = ""
+    def __init__(  # pylint: disable=too-many-arguments,too-many-positional-arguments
+        self,
+        message: str,
+        command: str = "",
+        return_code: int = 0,
+        stdout: str = "",
+        stderr: str = "",
+    ):
+        super().__init__(message, command, return_code, stdout, stderr)
+        self.command = command
+        self.return_code = return_code
+        self.stdout = stdout
+        self.stderr = stderr
 
 
 class SeaweedFSShellTimeoutError(SeaweedFSShellError):
@@ -49,6 +51,7 @@ WeedShellCommand = Literal[
     "volume.balance",
     "volume.vacuum",
     "volume.scrub",
+    "volume.fsck",
     "s3.clean.uploads",
 ]
 
@@ -111,14 +114,13 @@ class SeaweedFSShellService:
             )
 
             if not result.success:
-                err = SeaweedFSShellError(
-                    f"Command '{full_command}' failed: {proc.stderr}"
+                raise SeaweedFSShellError(
+                    f"Command '{full_command}' failed: {proc.stderr}",
+                    command=full_command,
+                    return_code=proc.returncode,
+                    stdout=proc.stdout,
+                    stderr=proc.stderr,
                 )
-                err.command = full_command
-                err.return_code = proc.returncode
-                err.stdout = proc.stdout
-                err.stderr = proc.stderr
-                raise err
 
             logger.info("SeaweedFS command completed: %s", full_command)
             return result
@@ -129,11 +131,10 @@ class SeaweedFSShellService:
                 stdout_val = (
                     e.stdout if isinstance(e.stdout, str) else e.stdout.decode()
                 )
-            err = SeaweedFSShellTimeoutError(
-                f"Command '{full_command}' timed out after {self.timeout}s"
-            )
-            err.command = full_command
-            err.return_code = -1
-            err.stdout = stdout_val
-            err.stderr = f"Command timed out after {self.timeout} seconds"
-            raise err from e
+            raise SeaweedFSShellTimeoutError(
+                f"Command '{full_command}' timed out after {self.timeout}s",
+                command=full_command,
+                return_code=-1,
+                stdout=stdout_val,
+                stderr=f"Command timed out after {self.timeout} seconds",
+            ) from e
