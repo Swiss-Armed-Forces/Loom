@@ -1,11 +1,12 @@
 import json
 import logging
-from typing import Any, Literal
+from typing import Annotated, Any, Literal
 
 from common.settings import DOMAIN
 from common.settings import Settings as CommonSettings
 from gotenberg_client.options import Measurement, MeasurementUnitType, PageSize
 from pydantic import AnyHttpUrl, field_validator
+from pydantic_settings import NoDecode
 
 logger = logging.getLogger(__name__)
 
@@ -158,7 +159,11 @@ class Settings(CommonSettings):
     min_language_detection_confidence: float = 95.0
     persist_success_tasks: bool = False
     persist_retry_tasks: bool = True
-    tika_ocr_languages: list[TikaAllowedOcrLanguage] = ["eng", "deu", "fra"]
+    tika_ocr_languages: Annotated[list[TikaAllowedOcrLanguage], NoDecode] = [
+        "eng",
+        "deu",
+        "fra",
+    ]
     tika_server_host: AnyHttpUrl = AnyHttpUrl(f"http://tika.{DOMAIN}")
 
     rspam_host: AnyHttpUrl = AnyHttpUrl(f"http://rspamd-worker.{DOMAIN}")
