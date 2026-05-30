@@ -24,6 +24,7 @@ import {
 import { useAppDispatch, useAppSelector } from "@app/hooks";
 import {
     DialogProps,
+    setLastFileDetailTab,
     startLoadingIndicator,
     stopLoadingIndicator,
     updateDialogPropsById,
@@ -142,6 +143,7 @@ export const FileDetailDialog = ({
 
     const setTab = (value: FileDetailTab) => {
         dispatch(updateDialogPropsById({ id, props: { tab: value } }));
+        dispatch(setLastFileDetailTab(value));
     };
 
     const properties = useMemo(
