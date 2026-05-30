@@ -8,7 +8,7 @@ router = APIRouter()
 _redis_client = Depends(get_redis_cache_client)
 
 
-@router.get("/")
+@router.get("")
 def get_caching_stats(
     redis_client: StrictRedis = _redis_client,
 ) -> CacheStatistics:

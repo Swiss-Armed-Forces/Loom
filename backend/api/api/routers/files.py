@@ -57,7 +57,7 @@ default_file_storage_service = Depends(get_file_storage_service)
 default_task_scheduling_service = Depends(get_task_scheduling_service)
 
 
-@router.post("/", status_code=202)
+@router.post("", status_code=202)
 def upload_file(
     file: UploadFile,
     file_storage_service: FileStorageLazyBytesService = default_file_storage_service,
@@ -113,7 +113,7 @@ class GetFilesQuery(QueryParameters, SortingParameters, PaginationParameters):
     pass
 
 
-@router.get("/")
+@router.get("")
 def get_files(
     query: Annotated[GetFilesQuery, Query()],
     file_repository: FileRepository = default_file_repository,
@@ -151,7 +151,7 @@ class UpdateFilesRequest(BaseModel):
     request: UpdateFileRequest
 
 
-@router.put("/", status_code=202)
+@router.put("", status_code=202)
 def update_files_by_query(
     update_files_model: UpdateFilesRequest,
     task_scheduling_service: TaskSchedulingService = default_task_scheduling_service,

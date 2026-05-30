@@ -163,7 +163,7 @@ export class QueuesApi extends runtime.BaseAPI {
 
         const response = await this.request(
             {
-                path: `/v1/queues/`,
+                path: `/v1/queues`,
                 method: "GET",
                 headers: headerParameters,
                 query: queryParameters,

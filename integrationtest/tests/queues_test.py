@@ -17,7 +17,7 @@ def _is_default_queue(queue: Queue) -> bool:
 
 def _get_overall_queue_stats() -> OverallQueuesStats:
     response = requests.get(
-        f"{QUEUES_ENDPOINT}/",
+        f"{QUEUES_ENDPOINT}",
         timeout=REQUEST_TIMEOUT,
     )
     response.raise_for_status()

@@ -20,7 +20,7 @@ class IndexAllRequest(BaseModel):
     query: QueryParameters
 
 
-@router.post("/", status_code=202)
+@router.post("", status_code=202)
 def index_files_on_demand(
     index_request: IndexAllRequest,
     task_scheduling_service: TaskSchedulingService = default_task_scheduling_service,

@@ -11,7 +11,7 @@ from utils.upload_asset import upload_asset, upload_many_assets
 
 def _reindex_file(file_id: UUID):
     response = requests.post(
-        f"{FILES_ENDPOINT}/{file_id}/index/",
+        f"{FILES_ENDPOINT}/{file_id}/index",
         timeout=REQUEST_TIMEOUT,
     )
     response.raise_for_status()
@@ -19,7 +19,7 @@ def _reindex_file(file_id: UUID):
 
 def _reindex(query: QueryParameters):
     response = requests.post(
-        f"{INDEX_ENDPOINT}/",
+        f"{INDEX_ENDPOINT}",
         json=IndexAllRequest(query=query).model_dump(),
         timeout=REQUEST_TIMEOUT,
     )

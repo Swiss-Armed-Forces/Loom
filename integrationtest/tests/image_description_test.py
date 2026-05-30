@@ -40,7 +40,7 @@ def _on_demand_image_description_by_query(
     query: QueryParameters,
 ):
     response: Response = requests.post(
-        f"{IMAGE_DESCRIPTION_ENDPOINT}/",
+        f"{IMAGE_DESCRIPTION_ENDPOINT}",
         json=ImageDescriptionRequest(query=query).model_dump(),
         timeout=REQUEST_TIMEOUT,
     )
@@ -51,7 +51,7 @@ def _on_demand_image_description_by_file(
     file: ImageDescriptionFileTest,
 ):
     response: Response = requests.post(
-        f"{FILES_ENDPOINT}/{file.file_id}/image_description/",
+        f"{FILES_ENDPOINT}/{file.file_id}/image_description",
         json=ImageDescriptionFileRequest().model_dump(),
         timeout=REQUEST_TIMEOUT,
     )

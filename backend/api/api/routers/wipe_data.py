@@ -35,7 +35,7 @@ _WIPE_DISPATCH: dict[WipeComponent, Callable[[WipeService], None]] = {
 }
 
 
-@router.post("/")
+@router.post("")
 def wipe_data_endpoint(
     confirmation: Annotated[
         str,

@@ -84,7 +84,7 @@ def fetch_files_count_from_api(files_query: GetFilesQuery) -> GetFilesCountRespo
 
 def fetch_files_by_query_from_api(files_query: GetFilesQuery) -> GetFilesResponse:
     response = requests.get(
-        f"{FILES_ENDPOINT}/",
+        f"{FILES_ENDPOINT}",
         params=files_query.model_dump(),
         timeout=REQUEST_TIMEOUT,
     )
@@ -117,7 +117,7 @@ def fetch_archives_from_api(
     for retry_attempts in range(wait_cycles):
         time.sleep(FETCH_WAIT_TIME if retry_attempts > 0 else INITIAL_FETCH_WAIT_TIME)
         response = requests.get(
-            f"{ARCHIVE_ENDPOINT}/",
+            f"{ARCHIVE_ENDPOINT}",
             timeout=REQUEST_TIMEOUT,
         )
         response.raise_for_status()

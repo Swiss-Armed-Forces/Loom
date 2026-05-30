@@ -75,7 +75,7 @@ export class ArchivesApi extends runtime.BaseAPI {
 
         const response = await this.request(
             {
-                path: `/v1/archive/`,
+                path: `/v1/archive`,
                 method: "POST",
                 headers: headerParameters,
                 query: queryParameters,
@@ -175,7 +175,7 @@ export class ArchivesApi extends runtime.BaseAPI {
 
         const response = await this.request(
             {
-                path: `/v1/archive/`,
+                path: `/v1/archive`,
                 method: "GET",
                 headers: headerParameters,
                 query: queryParameters,

@@ -59,7 +59,7 @@ export class TagsApi extends runtime.BaseAPI {
 
         const response = await this.request(
             {
-                path: `/v1/files/tags/`,
+                path: `/v1/files/tags`,
                 method: "POST",
                 headers: headerParameters,
                 query: queryParameters,
@@ -157,7 +157,7 @@ export class TagsApi extends runtime.BaseAPI {
 
         const response = await this.request(
             {
-                path: `/v1/files/tags/`,
+                path: `/v1/files/tags`,
                 method: "GET",
                 headers: headerParameters,
                 query: queryParameters,

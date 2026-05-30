@@ -19,7 +19,7 @@ class ContextCreateResponse(BaseModel):
     context_id: UUID
 
 
-@router.post("/")
+@router.post("")
 def create_context(
     query: QueryParameters,
     ai_scheduling_service: AiSchedulingService = default_ai_scheduling_service,

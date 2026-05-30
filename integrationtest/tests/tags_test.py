@@ -15,7 +15,7 @@ from utils.upload_asset import upload_asset, upload_many_assets
 
 def _add_tags(file_id: str, tags: list[Tag]):
     response = requests.post(
-        f"{FILES_ENDPOINT}/{file_id}/tags/",
+        f"{FILES_ENDPOINT}/{file_id}/tags",
         json=AddTagsRequest(tags=tags).model_dump(),
         timeout=REQUEST_TIMEOUT,
     )
@@ -24,7 +24,7 @@ def _add_tags(file_id: str, tags: list[Tag]):
 
 def _add_tags_by_query(set_tag_request: AddTagsByQueryRequest):
     response = requests.post(
-        f"{TAGS_ENDPOINT}/",
+        f"{TAGS_ENDPOINT}",
         json=set_tag_request.model_dump(),
         timeout=REQUEST_TIMEOUT,
     )
@@ -39,7 +39,7 @@ def _delete_tag(file_id: str, tag: Tag):
 
 
 def _get_all_tags() -> AllTags:
-    response = requests.get(f"{TAGS_ENDPOINT}/", timeout=REQUEST_TIMEOUT)
+    response = requests.get(f"{TAGS_ENDPOINT}", timeout=REQUEST_TIMEOUT)
     response.raise_for_status()
     return AllTags(tag for tag in response.json())
 

@@ -66,7 +66,7 @@ export class AiApi extends runtime.BaseAPI {
 
         const response = await this.request(
             {
-                path: `/v1/ai/`,
+                path: `/v1/ai`,
                 method: "POST",
                 headers: headerParameters,
                 query: queryParameters,

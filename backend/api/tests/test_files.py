@@ -56,9 +56,7 @@ def test_upload_file(client: TestClient):
     file_content_mock = MagicMock(spec=LazyBytes)
     get_file_storage_service().from_file.return_value = file_content_mock
 
-    response = client.post(
-        "/v1/files/", files={"file": (file.short_name, file_content)}
-    )
+    response = client.post("/v1/files", files={"file": (file.short_name, file_content)})
 
     assert response.status_code == 202
     get_task_scheduling_service().dispatch_index_file.assert_called_once_with(
@@ -106,7 +104,7 @@ def test_get_files_searches_in_repository(client: TestClient):
     )
 
     response = client.get(
-        "/v1/files/",
+        "/v1/files",
         params=query.model_dump(),
     )
     assert response.status_code == 200
@@ -177,7 +175,7 @@ def test_update_files_by_query(client: TestClient):
 
     get_file_repository().get_generator_by_query.return_value = [file]
 
-    response = client.put("v1/files/", json=request.model_dump())
+    response = client.put("v1/files", json=request.model_dump())
 
     assert response.status_code == 202
     get_task_scheduling_service().dispatch_update.assert_called_once_with(

@@ -29,12 +29,12 @@ class AddTagsByQueryRequest(BaseModel):
     query: QueryParameters
 
 
-@router.get("/")
+@router.get("")
 def get_tags(file_repository: FileRepository = default_file_repository) -> AllTags:
     return file_repository.get_all_tags()
 
 
-@router.post("/", status_code=202)
+@router.post("", status_code=202)
 def add_tags(
     tags_to_add_request: AddTagsByQueryRequest,
     task_scheduling_service: TaskSchedulingService = default_task_scheduling_service,

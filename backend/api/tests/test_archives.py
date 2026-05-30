@@ -17,7 +17,7 @@ from api.routers.archives import ArchiveCreatedResponse, ArchiveRequest
 
 def test_create_archive_with_empty_query_fails(client: TestClient):
     # query is required -> bad request
-    response = client.post("/v1/archive/", json={})
+    response = client.post("/v1/archive", json={})
     assert response.status_code == 422
 
 
@@ -30,7 +30,7 @@ def test_create_archive(
     archive = Archive(query=query)
     get_archive_scheduling_service().create_archive.return_value = archive
 
-    response = client.post("/v1/archive/", json=archive_request.model_dump())
+    response = client.post("/v1/archive", json=archive_request.model_dump())
     response.raise_for_status()
     assert response.status_code == 201
     archive_create_response = ArchiveCreatedResponse.model_validate(response.json())
@@ -45,7 +45,7 @@ def test_archive_get_all(client: TestClient):
     get_archive_repository().get_generator_by_query.return_value = [archive1, archive2]
     get_archive_repository().open_point_in_time.return_value = "0123456789"
 
-    response = client.get("/v1/archive/")
+    response = client.get("/v1/archive")
     assert response.status_code == 200
     archives = ArchivesModel.model_validate(response.json())
     assert len(archives.hits) == 2

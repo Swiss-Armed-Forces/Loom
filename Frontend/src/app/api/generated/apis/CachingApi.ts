@@ -38,7 +38,7 @@ export class CachingApi extends runtime.BaseAPI {
 
         const response = await this.request(
             {
-                path: `/v1/caching/`,
+                path: `/v1/caching`,
                 method: "GET",
                 headers: headerParameters,
                 query: queryParameters,

@@ -34,7 +34,7 @@ MIN_R_SQ = 0.5
 logger = logging.getLogger(__name__)
 
 
-@router.get("/")
+@router.get("")
 def get_overall_queue_stats(
     queues_service: QueuesService = default_queues_service,
 ) -> OverallQueuesStats:

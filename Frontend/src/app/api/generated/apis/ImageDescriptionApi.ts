@@ -55,7 +55,7 @@ export class ImageDescriptionApi extends runtime.BaseAPI {
 
         const response = await this.request(
             {
-                path: `/v1/files/image_description/`,
+                path: `/v1/files/image_description`,
                 method: "POST",
                 headers: headerParameters,
                 query: queryParameters,

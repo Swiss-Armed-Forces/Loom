@@ -26,7 +26,7 @@ class ImageDescriptionRequest(BaseModel):
     system_prompt: str | None = None
 
 
-@router.post("/", status_code=202)
+@router.post("", status_code=202)
 def describe_images_on_demand(
     image_description_request: ImageDescriptionRequest,
     task_scheduling_service: TaskSchedulingService = default_task_scheduling_service,
