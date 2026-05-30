@@ -44,7 +44,7 @@
         }
     },
     "addCustomQueryDialog": {
-        "title": "Add current query to saved queries",
+        "title": "Save query",
         "add": "Add",
         "nameLabel": "Name"
     },
