@@ -2,23 +2,26 @@ import { SvgIconComponent } from "@mui/icons-material";
 
 import { GetFilePreviewResponse, UpdateFileRequest } from "@app/api";
 
-export enum UpdateFileProperty {
-    hidden = "hidden",
-    flagged = "flagged",
-    seen = "seen",
-}
+export const UpdateFileProperty = {
+    hidden: "hidden",
+    flagged: "flagged",
+    seen: "seen",
+} as const;
+export type UpdateFileProperty =
+    (typeof UpdateFileProperty)[keyof typeof UpdateFileProperty];
 
-export enum IconColor {
-    inherit = "inherit",
-    action = "action",
-    disabled = "disabled",
-    primary = "primary",
-    secondary = "secondary",
-    error = "error",
-    info = "info",
-    success = "success",
-    warning = "warning",
-}
+export const IconColor = {
+    inherit: "inherit",
+    action: "action",
+    disabled: "disabled",
+    primary: "primary",
+    secondary: "secondary",
+    error: "error",
+    info: "info",
+    success: "success",
+    warning: "warning",
+} as const;
+export type IconColor = (typeof IconColor)[keyof typeof IconColor];
 
 export interface UpdateFileButtonPropsBase {
     filePreview?: GetFilePreviewResponse;

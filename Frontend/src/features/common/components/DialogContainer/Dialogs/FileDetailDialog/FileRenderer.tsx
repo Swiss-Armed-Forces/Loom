@@ -97,7 +97,7 @@ export const FileRenderer = ({
         }
     };
 
-    const handleChange = (_, newType: FileRendererType) => {
+    const handleChange = (_: unknown, newType: FileRendererType) => {
         if (newType != type) setType(newType);
     };
 

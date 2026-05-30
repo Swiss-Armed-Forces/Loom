@@ -40,7 +40,7 @@ export const CreateArchiveDialog = ({
                 "Creation of archive successfully scheduled. Please go to archives.",
             );
             onClose();
-        } catch (error) {
+        } catch (error: any) {
             toast.error(
                 "Cannot schedule archive creation. Code: " +
                     error.status +

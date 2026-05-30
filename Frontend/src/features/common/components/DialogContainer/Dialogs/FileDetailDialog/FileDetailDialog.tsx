@@ -43,7 +43,7 @@ import { FileTranslations } from "./FileTranslations";
 
 import "ace-builds/esm-resolver";
 
-const AceEditor = AceEditorImport.default || AceEditorImport;
+const AceEditor = (AceEditorImport as any).default ?? AceEditorImport;
 
 interface FileDetailDialogProps extends DialogProps {
     fileId: string;
@@ -58,7 +58,7 @@ export const FileDetailDialog = ({
 }: FileDetailDialogProps) => {
     const dispatch = useAppDispatch();
     const { t } = useTranslation();
-    const editorRef = useRef<AceEditor>(null);
+    const editorRef = useRef<InstanceType<typeof AceEditorImport>>(null);
     const hasUpdatedSeen = useRef<boolean>(false);
 
     const [file, setFile] = useState<GetFileResponse>();
@@ -89,7 +89,7 @@ export const FileDetailDialog = ({
     // Initial Load & Preview Fetch
     useEffect(() => {
         if (lastFetchedFileId.current === fileId) return;
-        dispatch(fetchPreview({ fileId, query }));
+        dispatch(fetchPreview({ fileId, query: query ?? undefined }));
         lastFetchedFileId.current = fileId;
 
         if (window.location.hash.substring(1) !== fileId) {
@@ -134,7 +134,7 @@ export const FileDetailDialog = ({
         if (webSocketPubSubMessage?.message.type === "fileUpdate") {
             const message = webSocketPubSubMessage.message as MessageFileUpdate;
             if (message.fileId === fileId) {
-                dispatch(fetchPreview({ fileId, query }));
+                dispatch(fetchPreview({ fileId, query: query ?? undefined }));
                 fetchFileContent();
             }
         }
@@ -284,7 +284,7 @@ const FileSkeleton = () => (
 const renderTabContent = (
     tab: FileDetailTab,
     file: GetFileResponse,
-    ref: React.RefObject<AceEditor>,
+    ref: React.RefObject<InstanceType<typeof AceEditorImport> | null>,
 ) => {
     const aceProps = {
         ref,

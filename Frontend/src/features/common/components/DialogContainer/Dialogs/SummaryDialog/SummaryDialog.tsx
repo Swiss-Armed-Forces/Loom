@@ -36,7 +36,7 @@ export const SummaryDialog = ({
     const summarizationSystemPrompt = useAppSelector(
         selectSummarizationSystemPrompt,
     );
-    const [systemPrompt, setSystemPrompt] = useState<string>("");
+    const [systemPrompt, setSystemPrompt] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
 
     const getErrorMessage = async (error: unknown): Promise<string> => {

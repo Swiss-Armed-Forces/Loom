@@ -34,7 +34,7 @@ export const SummaryButton = ({
                 id: "",
                 type: DialogType.Summary,
                 props: {
-                    fileId: filePreview.fileId,
+                    fileId: filePreview?.fileId,
                     searchQuery: searchQuery,
                 },
             }),

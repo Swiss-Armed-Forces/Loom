@@ -20,39 +20,53 @@ export interface FolderViewState {
     expandedNodes: string[];
 }
 
-export const enum FolderViewActionType {
-    EXPANDED_NODES_CHANGED = "expandedNodesChanged",
-    CHILDREN_ADDED = "childrenAdded",
-    QUERY_CHANGED = "queryChanged",
-    INITIAL_DATA_LOADED = "initialDataLoaded",
-    CHILDREN_LOAD_STARTED = "childrenLoadStarted",
-    CHILDREN_LOAD_FINISHED = "childrenLoadFinished",
-}
+export const FolderViewActionType = {
+    EXPANDED_NODES_CHANGED: "expandedNodesChanged",
+    CHILDREN_ADDED: "childrenAdded",
+    QUERY_CHANGED: "queryChanged",
+    INITIAL_DATA_LOADED: "initialDataLoaded",
+    CHILDREN_LOAD_STARTED: "childrenLoadStarted",
+    CHILDREN_LOAD_FINISHED: "childrenLoadFinished",
+} as const;
+export type FolderViewActionType =
+    (typeof FolderViewActionType)[keyof typeof FolderViewActionType];
 
 interface BaseFolderViewAction<TYPE extends FolderViewActionType> {
     type: TYPE;
 }
 
-export interface ChildrenAddedAction extends BaseFolderViewAction<FolderViewActionType.CHILDREN_ADDED> {
+export interface ChildrenAddedAction extends BaseFolderViewAction<
+    typeof FolderViewActionType.CHILDREN_ADDED
+> {
     children: TreeNodeModel[];
     parentPath: string;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type
-export interface QueryChangedAction extends BaseFolderViewAction<FolderViewActionType.QUERY_CHANGED> {}
+export interface QueryChangedAction extends BaseFolderViewAction<
+    typeof FolderViewActionType.QUERY_CHANGED
+> {}
 
-export interface ExpandedNodesChangedAction extends BaseFolderViewAction<FolderViewActionType.EXPANDED_NODES_CHANGED> {
+export interface ExpandedNodesChangedAction extends BaseFolderViewAction<
+    typeof FolderViewActionType.EXPANDED_NODES_CHANGED
+> {
     expandedNodes: string[];
 }
 
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type
-export interface InitialDataLoadedAction extends BaseFolderViewAction<FolderViewActionType.INITIAL_DATA_LOADED> {}
+export interface InitialDataLoadedAction extends BaseFolderViewAction<
+    typeof FolderViewActionType.INITIAL_DATA_LOADED
+> {}
 
-export interface ChildrenLoadStartedAction extends BaseFolderViewAction<FolderViewActionType.CHILDREN_LOAD_STARTED> {
+export interface ChildrenLoadStartedAction extends BaseFolderViewAction<
+    typeof FolderViewActionType.CHILDREN_LOAD_STARTED
+> {
     parentPath: string;
 }
 
-export interface ChildrenLoadFinishedAction extends BaseFolderViewAction<FolderViewActionType.CHILDREN_LOAD_FINISHED> {
+export interface ChildrenLoadFinishedAction extends BaseFolderViewAction<
+    typeof FolderViewActionType.CHILDREN_LOAD_FINISHED
+> {
     parentPath: string;
 }
 export type FolderViewAction =

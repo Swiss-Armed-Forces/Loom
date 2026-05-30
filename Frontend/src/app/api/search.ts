@@ -239,9 +239,9 @@ export const scheduleArchiveCreation = async (
 };
 
 export const hideArchive = async (archiveId: string): Promise<void> => {
-    return archivesApi.updateArchiveV1ArchiveArchiveIdPost({
+    return archivesApi.updateArchiveV1ArchiveArchiveIdPut({
         archiveId: archiveId,
-        updateArchiveModel: {
+        updateArchiveRequest: {
             hidden: true,
         },
     });
