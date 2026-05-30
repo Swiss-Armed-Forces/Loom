@@ -67,6 +67,7 @@ pipeline:
   skip_image_description_while_indexing: null
   skip_embedding_while_indexing: null
   skip_auto_tag_file_while_indexing: null
+  auto_tag_file_similarity_threshold: null
   automatic_indexing: true
   throttle_max_lazybytes__bytes: null
   throttle_max_root_tasks: null

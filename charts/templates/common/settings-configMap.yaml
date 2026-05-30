@@ -52,6 +52,9 @@ data:
     {{- if ne .Values.pipeline.skip_auto_tag_file_while_indexing nil }}
     skip_auto_tag_file_while_indexing: {{ .Values.pipeline.skip_auto_tag_file_while_indexing | quote }}
     {{- end }}
+    {{- if ne .Values.pipeline.auto_tag_file_similarity_threshold nil }}
+    auto_tag_file_similarity_threshold: {{ .Values.pipeline.auto_tag_file_similarity_threshold | quote }}
+    {{- end }}
     {{- if ne .Values.pipeline.automatic_indexing nil }}
     automatic_indexing: {{ .Values.pipeline.automatic_indexing | quote }}
     {{- end }}
