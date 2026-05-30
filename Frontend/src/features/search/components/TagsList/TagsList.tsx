@@ -1,5 +1,5 @@
 import { ExpandMore, Label } from "@mui/icons-material";
-import { Chip, Menu, MenuItem } from "@mui/material";
+import { Chip, Menu, MenuItem, Tooltip } from "@mui/material";
 import { t } from "i18next";
 import { FC, useMemo, useState } from "react";
 import { toast } from "react-toastify";
@@ -216,17 +216,32 @@ const TagChip: FC<TagChipProps> = ({
     const backgroundColor = getColorFromString(tag);
     const color = getFontColorFromBackGroundColor(backgroundColor);
 
-    return (
+    const chip = (
         <Chip
             className={styles.tagChip}
-            size={iconOnly ? undefined : "small"}
+            size="small"
             sx={{ backgroundColor, color }}
-            label={iconOnly ? undefined : label}
-            title={iconOnly ? tag : undefined}
+            label={
+                iconOnly
+                    ? tag.length > 5
+                        ? tag.slice(0, 5) + "…"
+                        : tag
+                    : label
+            }
             onClick={() => {
                 onSearch(tag);
             }}
             onDelete={onDelete}
         />
     );
+
+    if (iconOnly) {
+        return (
+            <Tooltip title={tag} placement="right" enterDelay={200}>
+                {chip}
+            </Tooltip>
+        );
+    }
+
+    return chip;
 };

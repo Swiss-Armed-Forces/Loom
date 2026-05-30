@@ -143,7 +143,7 @@
     "sideMenu": {
         "actions": "Actions",
         "results": "Results",
-        "expertMode": "Expert Mode",
+        "bulkActions": "Bulk Actions",
 
         "timeRange": {
             "title": "Time ranges",

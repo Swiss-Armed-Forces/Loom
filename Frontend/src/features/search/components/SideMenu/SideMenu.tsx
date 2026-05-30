@@ -1,23 +1,18 @@
-import { Delete, ChevronLeft, ChevronRight } from "@mui/icons-material";
+import { ChevronLeft, ChevronRight, ExpandMore } from "@mui/icons-material";
 import {
+    Accordion,
+    AccordionDetails,
+    AccordionSummary,
     List,
     ListItem,
-    ListItemButton,
-    ListItemIcon,
-    ListItemText,
-    ListSubheader,
     IconButton,
-    useMediaQuery,
-    Switch,
-    FormControlLabel,
+    Typography,
 } from "@mui/material";
 import { useState } from "react";
-import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 
-import { useAppDispatch, useAppSelector } from "@app/hooks";
+import { useAppSelector } from "@app/hooks";
 import {
-    updateQuery,
     selectTotalFiles,
     selectQuery,
     selectTags,
@@ -39,25 +34,30 @@ import { CustomQueriesList } from "../CustomQueries/CustomQueries";
 
 import styles from "./SideMenu.module.css";
 
-const expertModeKey = "loomExpertMode";
+const accordionSx = {
+    background: "transparent",
+    "&:before": { display: "none" },
+};
+
+const accordionSummarySx = {
+    minHeight: 0,
+    px: 2,
+    py: 0.5,
+    transition: "opacity 0.2s ease",
+    "&:hover": { opacity: 0.7 },
+};
 
 export const SideMenu = () => {
     const numberOfResults = useAppSelector(selectTotalFiles);
     const searchQuery = useAppSelector(selectQuery);
     const tags = useAppSelector(selectTags);
-    const [isMenuExpanded, setIsMenuExpanded] = useState(true);
-    const [isMenuAnimationRunning, setIsMenuAnimationRunning] = useState(true);
-    const [expertMode, setExpertMode] = useState(
-        () => window.localStorage.getItem(expertModeKey) === "true",
-    );
+    const [isMenuExpanded, setIsMenuExpanded] = useState(false);
+    const [isMenuAnimationRunning, setIsMenuAnimationRunning] = useState(false);
+    const [isBulkActionsExpanded, setIsBulkActionsExpanded] = useState(false);
+    const [isTagsExpanded, setIsTagsExpanded] = useState(true);
+    const [isQueriesExpanded, setIsQueriesExpanded] = useState(true);
 
-    const dispatch = useAppDispatch();
-    const matchMedia = useMediaQuery("(min-width: 1200px)");
     const { t } = useTranslation();
-
-    const handleShowHiddenFiles = () => {
-        dispatch(updateQuery({ query: "hidden:true" }));
-    };
 
     const toggleSideMenu = () => {
         // Run animation
@@ -70,10 +70,22 @@ export const SideMenu = () => {
         }, 230);
     };
 
-    useEffect(() => {
-        setIsMenuExpanded(matchMedia);
-        setIsMenuAnimationRunning(matchMedia);
-    }, [matchMedia]);
+    const bulkActionButtons = (
+        <>
+            <UpdateFlaggedButton iconOnly disabled={numberOfResults === 0} />
+            <UpdateSeenButton iconOnly disabled={numberOfResults === 0} />
+            <AddTagsButton iconOnly disabled={numberOfResults === 0} />
+            <TranslationButton iconOnly disabled={numberOfResults === 0} />
+            <SummaryButton iconOnly disabled={numberOfResults === 0} />
+            <ReIndexButton iconOnly disabled={numberOfResults === 0} />
+            <UpdateHiddenButton iconOnly disabled={numberOfResults === 0} />
+            <CreateArchiveButton
+                searchQuery={searchQuery}
+                iconOnly
+                disabled={numberOfResults === 0}
+            />
+        </>
+    );
 
     return (
         <div
@@ -88,6 +100,14 @@ export const SideMenu = () => {
                             onClick={toggleSideMenu}
                             size="large"
                             title="Expand/Collapse Menu"
+                            sx={{
+                                transition:
+                                    "transform 0.2s ease, opacity 0.2s ease",
+                                "&:hover": {
+                                    transform: "scale(1.1)",
+                                    opacity: 0.8,
+                                },
+                            }}
                         >
                             {isMenuExpanded ? (
                                 <ChevronLeft />
@@ -96,132 +116,121 @@ export const SideMenu = () => {
                             )}
                         </IconButton>
                     </ListItem>
-                    <ListItem>
+                    <ListItem
+                        sx={!isMenuExpanded ? { justifyContent: "center" } : {}}
+                    >
                         <UploadFileButton iconOnly={!isMenuExpanded} />
                     </ListItem>
-                    {isMenuExpanded && (
-                        <ListItem>
-                            <FormControlLabel
-                                control={
-                                    <Switch
-                                        sx={{
-                                            ".MuiSwitch-switchBase": {
-                                                padding: "9px",
-                                            },
-                                        }}
-                                        checked={expertMode}
-                                        onChange={(e) => {
-                                            setExpertMode(e.target.checked);
-                                            window.localStorage.setItem(
-                                                expertModeKey,
-                                                e.target.checked.toString(),
-                                            );
-                                        }}
-                                    />
-                                }
-                                label={t("sideMenu.expertMode")}
-                            />
-                        </ListItem>
-                    )}
-                    {expertMode && (
-                        <>
-                            <ListItem>
-                                <AddTagsButton
-                                    iconOnly={!isMenuExpanded}
-                                    disabled={numberOfResults === 0}
-                                />
-                            </ListItem>
-                            <ListItem>
-                                <UpdateSeenButton
-                                    iconOnly={!isMenuExpanded}
-                                    buttonFullWidth
-                                    disabled={numberOfResults === 0}
-                                />
-                            </ListItem>
-                            <ListItem>
-                                <UpdateHiddenButton
-                                    iconOnly={!isMenuExpanded}
-                                    buttonFullWidth
-                                    disabled={numberOfResults === 0}
-                                />
-                            </ListItem>
-                            <ListItem>
-                                <UpdateFlaggedButton
-                                    iconOnly={!isMenuExpanded}
-                                    buttonFullWidth
-                                    disabled={numberOfResults === 0}
-                                />
-                            </ListItem>
-                            <ListItem>
-                                <CreateArchiveButton
-                                    searchQuery={searchQuery}
-                                    iconOnly={!isMenuExpanded}
-                                    disabled={numberOfResults === 0}
-                                />
-                            </ListItem>
-                            <ListItem>
-                                <TranslationButton
-                                    iconOnly={!isMenuExpanded}
-                                    disabled={numberOfResults === 0}
-                                />
-                            </ListItem>
-                            <ListItem>
-                                <ReIndexButton
-                                    iconOnly={!isMenuExpanded}
-                                    disabled={numberOfResults === 0}
-                                />
-                            </ListItem>
-                            <ListItem>
-                                <SummaryButton
-                                    iconOnly={!isMenuExpanded}
-                                    disabled={numberOfResults === 0}
-                                />
-                            </ListItem>
-                        </>
-                    )}
                 </List>
-                <List
-                    subheader={
-                        isMenuExpanded ? (
-                            <ListSubheader component="div">
+
+                {isMenuExpanded ? (
+                    <Accordion
+                        expanded={isBulkActionsExpanded}
+                        onChange={() => setIsBulkActionsExpanded((v) => !v)}
+                        disableGutters
+                        elevation={0}
+                        sx={accordionSx}
+                    >
+                        <AccordionSummary
+                            expandIcon={<ExpandMore />}
+                            sx={accordionSummarySx}
+                        >
+                            <Typography variant="body2">
+                                {t("sideMenu.bulkActions")}
+                            </Typography>
+                        </AccordionSummary>
+                        <AccordionDetails
+                            className={styles.bulkActionButtons}
+                            sx={{
+                                display: "flex",
+                                flexWrap: "wrap",
+                                gap: 0.5,
+                                px: 1,
+                                py: 0.5,
+                            }}
+                        >
+                            {bulkActionButtons}
+                        </AccordionDetails>
+                    </Accordion>
+                ) : (
+                    isBulkActionsExpanded && (
+                        <List>
+                            <ListItem
+                                className={styles.bulkActionButtons}
+                                sx={{
+                                    flexWrap: "wrap",
+                                    gap: 0.5,
+                                    px: 0.5,
+                                    justifyContent: "center",
+                                }}
+                            >
+                                {bulkActionButtons}
+                            </ListItem>
+                        </List>
+                    )
+                )}
+
+                {isMenuExpanded ? (
+                    <Accordion
+                        expanded={isTagsExpanded}
+                        onChange={() => setIsTagsExpanded((v) => !v)}
+                        disableGutters
+                        elevation={0}
+                        sx={accordionSx}
+                    >
+                        <AccordionSummary
+                            expandIcon={<ExpandMore />}
+                            sx={accordionSummarySx}
+                        >
+                            <Typography variant="body2">
                                 {t("sideMenu.tags")}
-                            </ListSubheader>
-                        ) : (
-                            <ListSubheader component="div">
-                                <hr />
-                            </ListSubheader>
-                        )
-                    }
-                >
-                    <div className={styles.tagListContainer}>
-                        <TagsList iconOnly={!isMenuExpanded} tags={tags} />
-                    </div>
-                </List>
-                <List
-                    subheader={
-                        isMenuExpanded ? (
-                            <ListSubheader component="div">
+                            </Typography>
+                        </AccordionSummary>
+                        <AccordionDetails sx={{ p: 0 }}>
+                            <div className={styles.tagListContainer}>
+                                <TagsList tags={tags} />
+                            </div>
+                        </AccordionDetails>
+                    </Accordion>
+                ) : (
+                    isTagsExpanded && (
+                        <div
+                            className={styles.tagListContainer}
+                            style={{
+                                justifyContent: "center",
+                                padding: "4px 8px",
+                            }}
+                        >
+                            <TagsList iconOnly tags={tags} />
+                        </div>
+                    )
+                )}
+
+                {isMenuExpanded ? (
+                    <Accordion
+                        expanded={isQueriesExpanded}
+                        onChange={() => setIsQueriesExpanded((v) => !v)}
+                        disableGutters
+                        elevation={0}
+                        sx={accordionSx}
+                    >
+                        <AccordionSummary
+                            expandIcon={<ExpandMore />}
+                            sx={accordionSummarySx}
+                        >
+                            <Typography variant="body2">
                                 {t("sideMenu.savedQueries.title")}
-                            </ListSubheader>
-                        ) : (
-                            <ListSubheader component="div">
-                                <hr />
-                            </ListSubheader>
-                        )
-                    }
-                >
-                    <ListItemButton onClick={handleShowHiddenFiles}>
-                        <ListItemIcon title={t("sideMenu.hiddenFiles")}>
-                            <Delete />
-                        </ListItemIcon>
-                        {isMenuExpanded ? (
-                            <ListItemText primary={t("sideMenu.hiddenFiles")} />
-                        ) : (
-                            <></>
-                        )}
-                    </ListItemButton>
-                </List>
-                <CustomQueriesList iconOnly={!isMenuExpanded} />
+                            </Typography>
+                        </AccordionSummary>
+                        <AccordionDetails sx={{ p: 0 }}>
+                            <CustomQueriesList hideHeader />
+                        </AccordionDetails>
+                    </Accordion>
+                ) : (
+                    isQueriesExpanded && (
+                        <CustomQueriesList hideHeader iconOnly />
+                    )
+                )}
             </div>
         </div>
     );

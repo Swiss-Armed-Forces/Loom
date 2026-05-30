@@ -90,7 +90,7 @@ export const ReIndexButton = ({
                         startReindexProcess();
                     }}
                     disabled={disabled}
-                    title="Re-index"
+                    title={t("sideMenu.reIndexQueriedFiles")}
                     aria-label="re-index"
                 >
                     <YoutubeSearchedForOutlined />

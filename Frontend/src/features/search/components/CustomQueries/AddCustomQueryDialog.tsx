@@ -115,10 +115,6 @@ export const AddCustomQueryDialog = ({
         <>
             {iconOnly ? (
                 <IconButton
-                    sx={{
-                        width: "10px",
-                        marginLeft: "-4px",
-                    }}
                     onClick={() => {
                         setShowAddCustomQueryDialog(true);
                     }}
@@ -126,12 +122,7 @@ export const AddCustomQueryDialog = ({
                     disabled={disabled}
                     title={t("sideMenu.savedQueries.saveNew")}
                 >
-                    <Add
-                        sx={{
-                            display: "inline-flex",
-                            marginLeft: "-12px",
-                        }}
-                    />
+                    <Add />
                 </IconButton>
             ) : (
                 <Button
