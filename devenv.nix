@@ -161,7 +161,14 @@ let
 
       "tsc_${subdirName}" = {
         enable = true;
-        entry = createToolWrapper "tsc" subdir subdirName "--noEmit";
+        entry = createToolWrapper "tsc" subdir subdirName "";
+        files = "^${subdir}/.*$";
+        pass_filenames = false;
+      };
+
+      "tsc-node_${subdirName}" = {
+        enable = true;
+        entry = createToolWrapper "tsc" subdir subdirName "--project 'tsconfig.node.json'";
         files = "^${subdir}/.*$";
         pass_filenames = false;
       };

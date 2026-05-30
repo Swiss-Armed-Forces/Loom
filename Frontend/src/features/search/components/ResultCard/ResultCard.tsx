@@ -57,7 +57,7 @@ export const ResultCard = React.memo(
         const searchQuery = useAppSelector(selectQuery);
         const file = useAppSelector(selectFileById(fileId));
         const filePreview = file?.preview;
-        const sortFieldValue = file?.meta.sortFieldValue ?? "";
+        const sortFieldValue = file?.meta?.sortFieldValue ?? "";
         const cardRef = useRef<HTMLDivElement>(null);
         const { ref: inViewRef, inView } = useInView({
             threshold: [0.2],
@@ -182,6 +182,7 @@ export const ResultCard = React.memo(
         };
 
         const handleOpenDetailsOnTabClick = (tab: FileDetailTab) => {
+            if (!filePreview) return;
             dispatch(
                 openDialog({
                     id: "",

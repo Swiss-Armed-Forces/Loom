@@ -62,7 +62,7 @@ export const AddTagsDialog = ({
         dispatch(setBackgroundTaskSpinnerActive());
         setIsLoading(true);
         try {
-            if (filePreview.fileId) {
+            if (filePreview && filePreview.fileId) {
                 await addTagsToFile(filePreview?.fileId, selectedTagsToAdd);
 
                 // Save tags locally
@@ -131,9 +131,9 @@ export const AddTagsDialog = ({
                 options={existingTags}
                 onChange={(_e, value) => setSelectedTagsToAdd(value)}
                 getOptionDisabled={(option) => {
-                    if (!filePreview.tags) return false;
+                    if (!filePreview?.tags) return false;
                     return (
-                        filePreview.tags.filter((t) => t === option).length > 0
+                        filePreview?.tags.filter((t) => t === option).length > 0
                     );
                 }}
                 renderInput={(params) => (

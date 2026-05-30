@@ -4,7 +4,7 @@ import { useState } from "react";
 import AceEditorImport from "react-ace";
 
 import { GetFileLanguageTranslations } from "@app/api";
-const AceEditor = AceEditorImport.default || AceEditorImport;
+const AceEditor = (AceEditorImport as any).default ?? AceEditorImport;
 
 interface FileTranslationsProps {
     translations: GetFileLanguageTranslations[];
@@ -15,7 +15,7 @@ export const FileTranslations = ({ translations }: FileTranslationsProps) => {
         translations[0],
     );
 
-    const handleChange = (_, language: string | null) => {
+    const handleChange = (_: unknown, language: string | null) => {
         if (language === null) return;
         const newTranslation = translations.find(
             (t) => t.language === language,

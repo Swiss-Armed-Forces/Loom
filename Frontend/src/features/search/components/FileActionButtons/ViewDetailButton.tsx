@@ -13,7 +13,7 @@ import { FileActionButtonProps } from ".";
 
 interface ViewDetailButtonProps extends FileActionButtonProps {
     fileId: string;
-    searchQuery: SearchQuery;
+    searchQuery: SearchQuery | null;
 }
 
 export const ViewDetailButton = ({

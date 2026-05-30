@@ -35,7 +35,7 @@ export const FileAttachments = ({
         if (
             containerRef.current &&
             parentRef.current &&
-            attachments.length > 1
+            (attachments?.length ?? 0) > 1
         ) {
             const chipsWidth = containerRef.current.scrollWidth;
             const parentWidth = parentRef.current.offsetWidth;
@@ -59,16 +59,16 @@ export const FileAttachments = ({
     );
 
     const summaryLabel = useMemo(() => {
-        const count = totalCount ?? attachments.length;
+        const count = totalCount ?? attachments?.length ?? 0;
         const base = `${count} attachment${count !== 1 ? "s" : ""}`;
         const suffix =
-            totalCount && totalCount > attachments.length
-                ? ` (showing ${attachments.length})`
+            totalCount && totalCount > (attachments?.length ?? 0)
+                ? ` (showing ${attachments?.length ?? 0})`
                 : "";
         return `${base}${suffix}`;
-    }, [attachments.length, totalCount]);
+    }, [attachments?.length, totalCount]);
 
-    if (!attachments.length) {
+    if (!attachments?.length) {
         return null;
     }
 
