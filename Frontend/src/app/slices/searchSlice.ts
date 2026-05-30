@@ -571,6 +571,10 @@ export const searchSlice = createSlice({
             .addCase(updateQuery.fulfilled, (state, action) => {
                 if (!action.payload) {
                     if (state.query) state.query.query = "";
+                    state.totalFiles = 0;
+                    Object.keys(state.files).forEach((fileId) => {
+                        state.files[fileId].meta = null;
+                    });
                     return;
                 }
                 const isNewQuery = state.query?.id !== action.payload.query.id;

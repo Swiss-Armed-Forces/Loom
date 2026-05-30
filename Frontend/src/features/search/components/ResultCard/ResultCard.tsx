@@ -166,7 +166,7 @@ export const ResultCard = React.memo(
                     query: searchQuery,
                 }),
             );
-        }, [inView, fileId, searchQuery]); // eslint-disable-line react-hooks/exhaustive-deps
+        }, [inView, fileId]); // eslint-disable-line react-hooks/exhaustive-deps
 
         const handleCardClick = (
             e:
