@@ -53,15 +53,19 @@ const CustomQueryItem = ({
         );
     }, [dispatch, customQuery]);
 
-    const handleDeleteClick = useCallback(() => {
-        dispatch(
-            openDialog({
-                id: "",
-                type: DialogType.DeleteCustomQuery,
-                props: { customQuery },
-            }),
-        );
-    }, [dispatch, customQuery]);
+    const handleDeleteClick = useCallback(
+        (e: React.MouseEvent) => {
+            e.stopPropagation();
+            dispatch(
+                openDialog({
+                    id: "",
+                    type: DialogType.DeleteCustomQuery,
+                    props: { customQuery },
+                }),
+            );
+        },
+        [dispatch, customQuery],
+    );
 
     useEffect(() => {
         const customQueryFilesCountInterval = setInterval(async () => {
