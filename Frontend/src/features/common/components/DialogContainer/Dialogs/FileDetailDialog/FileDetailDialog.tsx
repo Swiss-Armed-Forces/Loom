@@ -215,6 +215,7 @@ export const FileDetailDialog = ({
                             </IconButton>,
                             <IconButton
                                 key="close"
+                                aria-label="close"
                                 onClick={handleClose}
                                 title={t("common.close")}
                             >
