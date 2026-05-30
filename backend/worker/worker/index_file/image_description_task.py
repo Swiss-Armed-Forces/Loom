@@ -16,7 +16,7 @@ from common.file.file_repository import (
 from common.services.query_builder import QueryParameters
 
 from worker.index_file.infra.file_indexing_task import FileIndexingTask
-from worker.index_file.tasks import image_description, persist_processing_done
+from worker.index_file.tasks import image_description
 
 logger = logging.getLogger(__name__)
 app = get_celery_app()
@@ -72,5 +72,4 @@ def image_description_task(file_id: UUID, system_prompt: str | None = None):
             True, file_content, file, system_prompt
         ),
         image_description.persist_image_description_task.s(file.id_),
-        persist_processing_done.signature(file.id_),
     ).apply_async()
