@@ -11,11 +11,16 @@ import {
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import { useAppSelector } from "@app/hooks";
+import { useAppDispatch, useAppSelector } from "@app/hooks";
 import {
     selectTotalFiles,
     selectQuery,
     selectTags,
+    selectSideMenu,
+    toggleSideMenu,
+    toggleSideMenuBulkActions,
+    toggleSideMenuTags,
+    toggleSideMenuQueries,
 } from "@app/slices/searchSlice";
 import { TagsList } from "@features/search/components";
 import {
@@ -48,23 +53,26 @@ const accordionSummarySx = {
 };
 
 export const SideMenu = () => {
+    const dispatch = useAppDispatch();
     const numberOfResults = useAppSelector(selectTotalFiles);
     const searchQuery = useAppSelector(selectQuery);
     const tags = useAppSelector(selectTags);
-    const [isMenuExpanded, setIsMenuExpanded] = useState(false);
+    const {
+        isExpanded: isMenuExpanded,
+        isBulkActionsExpanded,
+        isTagsExpanded,
+        isQueriesExpanded,
+    } = useAppSelector(selectSideMenu);
     const [isMenuAnimationRunning, setIsMenuAnimationRunning] = useState(false);
-    const [isBulkActionsExpanded, setIsBulkActionsExpanded] = useState(false);
-    const [isTagsExpanded, setIsTagsExpanded] = useState(true);
-    const [isQueriesExpanded, setIsQueriesExpanded] = useState(true);
 
     const { t } = useTranslation();
 
-    const toggleSideMenu = () => {
+    const handleToggleSideMenu = () => {
         // Run animation
         setIsMenuAnimationRunning(true);
         // Because .sideMenuContainer CSS class uses 0.2s ease-in-out
         setTimeout(() => {
-            setIsMenuExpanded(!isMenuExpanded);
+            dispatch(toggleSideMenu());
             // Animation finished
             setIsMenuAnimationRunning(false);
         }, 230);
@@ -97,7 +105,7 @@ export const SideMenu = () => {
                 <List className={styles.sideMenuActions}>
                     <ListItem>
                         <IconButton
-                            onClick={toggleSideMenu}
+                            onClick={handleToggleSideMenu}
                             size="large"
                             title="Expand/Collapse Menu"
                             sx={{
@@ -126,7 +134,7 @@ export const SideMenu = () => {
                 {isMenuExpanded ? (
                     <Accordion
                         expanded={isBulkActionsExpanded}
-                        onChange={() => setIsBulkActionsExpanded((v) => !v)}
+                        onChange={() => dispatch(toggleSideMenuBulkActions())}
                         disableGutters
                         elevation={0}
                         sx={accordionSx}
@@ -173,7 +181,7 @@ export const SideMenu = () => {
                 {isMenuExpanded ? (
                     <Accordion
                         expanded={isTagsExpanded}
-                        onChange={() => setIsTagsExpanded((v) => !v)}
+                        onChange={() => dispatch(toggleSideMenuTags())}
                         disableGutters
                         elevation={0}
                         sx={accordionSx}
@@ -209,7 +217,7 @@ export const SideMenu = () => {
                 {isMenuExpanded ? (
                     <Accordion
                         expanded={isQueriesExpanded}
-                        onChange={() => setIsQueriesExpanded((v) => !v)}
+                        onChange={() => dispatch(toggleSideMenuQueries())}
                         disableGutters
                         elevation={0}
                         sx={accordionSx}
