@@ -359,16 +359,20 @@ export const setFileInViewState = createAsyncThunk(
         {
             fileId,
             inView,
+            query,
         }: {
             fileId: string;
             inView: boolean;
+            query?: SearchQuery | null;
         },
         thunkAPI,
     ) => {
         const dispatch = thunkAPI.dispatch;
         if (inView) {
             await Promise.all([
-                dispatch(fetchPreview({ fileId: fileId })),
+                dispatch(
+                    fetchPreview({ fileId: fileId, query: query ?? undefined }),
+                ),
                 dispatch(
                     webSocketSendMessage({
                         message: {
