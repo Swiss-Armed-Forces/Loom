@@ -115,7 +115,11 @@ export const FileActions = ({
 
     return (
         <div className={styles.fileActions}>
-            <TagsList tags={filePreview.tags || []} filePreview={filePreview} />
+            <TagsList
+                tags={filePreview.tags || []}
+                filePreview={filePreview}
+                maxVisible={3}
+            />
             <div className={styles.fileActionButtons}>{actionButtons}</div>
         </div>
     );

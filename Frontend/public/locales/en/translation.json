@@ -214,7 +214,8 @@
     "tagsList": {
         "scheduledRemoveTagFromFileToast": "Untagging file successfully scheduled, this might take a while",
         "scheduledRemoveTagToast": "Removal of tag successfully scheduled, this might take a while",
-        "scheduledRemoveErrorToast": "Couldn't remove tag(s). Code: {{err.status}}, Text: {{err.text}}"
+        "scheduledRemoveErrorToast": "Couldn't remove tag(s). Code: {{err.status}}, Text: {{err.text}}",
+        "moreTagsTooltip": "{{count}} more tag(s)"
     },
     "toolbar": {
         "views": {
