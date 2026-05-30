@@ -61,7 +61,7 @@ export const Search = () => {
     const webSocketPubSubMessage = useAppSelector(selectWebSocketPubSubMessage);
     const chatbotOpen = useAppSelector((state) => state.search.chatbotOpen);
     const dialogs = useAppSelector(selectDialogs);
-    const dialogFileIdRef = useRef<string>("");
+    const dialogFileIdRef = useRef<string | undefined>("");
 
     // Initialize keyboard navigation
     useKeyboardNavigation();
@@ -147,9 +147,10 @@ export const Search = () => {
             query: query || undefined,
             languages: mappedLanguages,
             sortField: sortField || undefined,
-            sortDirection: isSortDirection(sortDirection)
-                ? sortDirection
-                : undefined,
+            sortDirection:
+                sortDirection !== null && isSortDirection(sortDirection)
+                    ? sortDirection
+                    : undefined,
         };
 
         dispatch(updateQuery(newQuery));
@@ -172,7 +173,7 @@ export const Search = () => {
                 dialogs.some(
                     (d) =>
                         d.type === DialogType.FileDetail &&
-                        d.props.fileId === fileId,
+                        d.props?.fileId === fileId,
                 );
 
             if (isDialogAlreadyOpen) {

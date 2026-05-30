@@ -97,7 +97,7 @@ export interface SearchState {
     stats: CombinedStats;
     files: {
         [fileId: string]: {
-            meta: GetFilesFileEntry;
+            meta: GetFilesFileEntry | null;
             preview: GetFilePreviewResponse | null;
             query: SearchQuery | null;
         };

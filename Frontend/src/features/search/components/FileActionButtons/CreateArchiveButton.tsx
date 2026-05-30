@@ -14,7 +14,7 @@ interface CreateArchiveButtonProps extends Omit<
     FileActionButtonProps,
     "filePreview"
 > {
-    searchQuery: SearchQuery;
+    searchQuery: SearchQuery | null;
 }
 
 export const CreateArchiveButton = ({

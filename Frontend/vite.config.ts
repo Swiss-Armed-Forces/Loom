@@ -2,7 +2,7 @@ import { createRequire } from "node:module";
 import path from "node:path";
 
 import react from "@vitejs/plugin-react";
-import { loadEnv } from "vite";
+import { type ConfigEnv, loadEnv } from "vite";
 import { normalizePath } from "vite";
 import { viteStaticCopy } from "vite-plugin-static-copy";
 import svgr from "vite-plugin-svgr";
@@ -31,7 +31,7 @@ const wasmDir = normalizePath(
 
 // https://vitejs.dev/config/
 
-export default ({ mode }) => {
+export default ({ mode }: ConfigEnv) => {
     process.env = { ...process.env, ...loadEnv(mode, process.cwd()) };
     return defineConfig({
         plugins: [

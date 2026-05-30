@@ -151,7 +151,7 @@ export const useKeyboardNavigation = () => {
 
             // Find current tab's position in enabled tabs
             const currentIndex = enabledTabs.indexOf(
-                topDialog.props.tab ?? FileDetailTab.Rendered,
+                topDialog.props?.tab ?? FileDetailTab.Rendered,
             );
 
             let nextIndex: number;
