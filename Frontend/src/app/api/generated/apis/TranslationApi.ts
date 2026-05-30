@@ -96,7 +96,7 @@ export class TranslationApi extends runtime.BaseAPI {
 
         const response = await this.request(
             {
-                path: `/v1/files/translation/`,
+                path: `/v1/files/translation`,
                 method: "POST",
                 headers: headerParameters,
                 query: queryParameters,

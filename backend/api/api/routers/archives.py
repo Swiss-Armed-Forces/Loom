@@ -43,7 +43,7 @@ class ArchiveRequest(BaseModel):
     query: QueryParameters
 
 
-@router.get("/")
+@router.get("")
 def get_all_archives(
     archive_repository: ArchiveRepository = default_archive_repository,
 ) -> ArchivesModel:
@@ -58,7 +58,7 @@ def get_all_archives(
     return ArchivesModel.from_archive_list(all_archives)
 
 
-@router.post("/", status_code=201)
+@router.post("", status_code=201)
 def create_new_archive(
     archive_request: ArchiveRequest,
     archive_scheduling_service: ArchiveSchedulingService = default_archive_scheduling_service,

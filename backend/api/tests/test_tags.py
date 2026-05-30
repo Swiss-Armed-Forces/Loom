@@ -8,7 +8,7 @@ from fastapi.testclient import TestClient
 
 from api.routers.tags import AddTagsByQueryRequest
 
-ENDPOINT = "/v1/files/tags/"
+ENDPOINT = "/v1/files/tags"
 
 
 def test_add_tags(client: TestClient):
@@ -48,7 +48,7 @@ def test_delete_tags(client: TestClient):
         )
     ]
 
-    response = client.delete(f"{ENDPOINT}{tag}")
+    response = client.delete(f"{ENDPOINT}/{tag}")
 
     assert response.status_code == 202
     get_task_scheduling_service().dispatch_remove_tag.assert_called_once_with(tag=tag)

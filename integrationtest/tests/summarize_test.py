@@ -61,7 +61,7 @@ def _on_demand_summarize_by_query(
     query: QueryParameters, system_prompt: str | None = None
 ):
     response: Response = requests.post(
-        f"{SUMMARIZATION_ENDPOINT}/",
+        f"{SUMMARIZATION_ENDPOINT}",
         json=SummarizationRequest(
             query=query, system_prompt=system_prompt
         ).model_dump(),
@@ -74,7 +74,7 @@ def _on_demand_summarize_by_file(
     file: SummarizationFileTest, system_prompt: str | None = None
 ):
     response: Response = requests.post(
-        f"{FILES_ENDPOINT}/{file.file_id}/summarize/",
+        f"{FILES_ENDPOINT}/{file.file_id}/summarize",
         json=SummarizeFileRequest(system_prompt=system_prompt).model_dump(),
         timeout=REQUEST_TIMEOUT,
     )

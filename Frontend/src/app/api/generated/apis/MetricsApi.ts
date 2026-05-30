@@ -31,7 +31,7 @@ export class MetricsApi extends runtime.BaseAPI {
 
         const response = await this.request(
             {
-                path: `/v1/metrics/`,
+                path: `/v1/metrics`,
                 method: "GET",
                 headers: headerParameters,
                 query: queryParameters,

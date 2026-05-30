@@ -10,7 +10,7 @@ from utils.upload_asset import upload_asset
 
 def _get_stats() -> CacheStatistics:
     response = requests.get(
-        f"{CACHING_ENDPOINT}/",
+        f"{CACHING_ENDPOINT}",
         timeout=REQUEST_TIMEOUT,
     )
     response.raise_for_status()

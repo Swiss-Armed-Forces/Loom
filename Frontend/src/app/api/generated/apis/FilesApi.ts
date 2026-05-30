@@ -718,7 +718,7 @@ export class FilesApi extends runtime.BaseAPI {
 
         const response = await this.request(
             {
-                path: `/v1/files/`,
+                path: `/v1/files`,
                 method: "GET",
                 headers: headerParameters,
                 query: queryParameters,
@@ -1444,7 +1444,7 @@ export class FilesApi extends runtime.BaseAPI {
 
         const response = await this.request(
             {
-                path: `/v1/files/`,
+                path: `/v1/files`,
                 method: "PUT",
                 headers: headerParameters,
                 query: queryParameters,
@@ -1517,7 +1517,7 @@ export class FilesApi extends runtime.BaseAPI {
 
         const response = await this.request(
             {
-                path: `/v1/files/`,
+                path: `/v1/files`,
                 method: "POST",
                 headers: headerParameters,
                 query: queryParameters,

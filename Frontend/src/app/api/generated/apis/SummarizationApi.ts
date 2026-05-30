@@ -95,7 +95,7 @@ export class SummarizationApi extends runtime.BaseAPI {
 
         const response = await this.request(
             {
-                path: `/v1/files/summarization/`,
+                path: `/v1/files/summarization`,
                 method: "POST",
                 headers: headerParameters,
                 query: queryParameters,

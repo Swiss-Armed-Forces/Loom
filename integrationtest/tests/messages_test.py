@@ -28,7 +28,7 @@ logger = logging.getLogger(__name__)
 
 def _add_tag(file_id: str, tag: Tag):
     response = requests.post(
-        f"{FILES_ENDPOINT}/{file_id}/tags/",
+        f"{FILES_ENDPOINT}/{file_id}/tags",
         json=AddTagsRequest(tags=[tag]).model_dump(),
         timeout=REQUEST_TIMEOUT,
     )

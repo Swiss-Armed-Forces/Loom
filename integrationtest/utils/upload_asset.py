@@ -32,7 +32,7 @@ def upload_asset(
         encoder = MultipartEncoder(multipart_form_data)
 
         api_response: Response = requests.post(
-            f"{FILES_ENDPOINT}/",
+            f"{FILES_ENDPOINT}",
             data=encoder,
             headers={"Content-Type": encoder.content_type},
             timeout=request_timeout,
@@ -90,7 +90,7 @@ def upload_bytes_asset(
     }
 
     api_response: Response = requests.post(
-        f"{FILES_ENDPOINT}/",
+        f"{FILES_ENDPOINT}",
         files=files,
         timeout=request_timeout,
     )

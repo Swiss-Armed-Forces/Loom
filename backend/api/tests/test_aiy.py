@@ -7,7 +7,7 @@ from fastapi.testclient import TestClient
 
 from api.routers.ai import ContextCreateResponse, ProcessQuestionQuery
 
-ENDPOINT = "/v1/ai/"
+ENDPOINT = "/v1/ai"
 
 
 def test_create_context(client: TestClient):
@@ -34,7 +34,7 @@ def test_process_question(client: TestClient):
     get_ai_scheduling_service().process_ai_question.return_value = None
 
     response = client.post(
-        f"{ENDPOINT}{context_id}/process_question", json=query.model_dump()
+        f"{ENDPOINT}/{context_id}/process_question", json=query.model_dump()
     )
     response.raise_for_status()
 

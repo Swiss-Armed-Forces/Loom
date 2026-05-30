@@ -52,7 +52,7 @@ export class IndexApi extends runtime.BaseAPI {
 
         const response = await this.request(
             {
-                path: `/v1/files/index/`,
+                path: `/v1/files/index`,
                 method: "POST",
                 headers: headerParameters,
                 query: queryParameters,

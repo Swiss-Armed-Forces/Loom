@@ -29,7 +29,7 @@ def test_get_overall_queue_stats(client: TestClient):
     queues_service_mock.task_queues_names = [queue]
 
     # do call
-    response = client.get("/v1/queues/")
+    response = client.get("/v1/queues")
     response.raise_for_status()
     overall_queue_stats = OverallQueuesStats.model_validate(response.json())
 

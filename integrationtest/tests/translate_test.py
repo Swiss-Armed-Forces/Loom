@@ -84,7 +84,7 @@ def test_get_libretranslate_languages():
 
 def _on_demand_translate_by_query(query: QueryParameters, lang: str):
     response: Response = requests.post(
-        f"{TRANSLATION_ENDPOINT}/",
+        f"{TRANSLATION_ENDPOINT}",
         json=TranslateAllRequest(
             lang=lang,
             query=query,

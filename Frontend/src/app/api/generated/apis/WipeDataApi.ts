@@ -59,7 +59,7 @@ export class WipeDataApi extends runtime.BaseAPI {
 
         const response = await this.request(
             {
-                path: `/v1/wipe-data/`,
+                path: `/v1/wipe-data`,
                 method: "POST",
                 headers: headerParameters,
                 query: queryParameters,
