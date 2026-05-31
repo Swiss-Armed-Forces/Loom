@@ -1,7 +1,6 @@
 import { Delete, Policy } from "@mui/icons-material";
 import {
     Badge,
-    Chip,
     List,
     ListItem,
     ListItemButton,
@@ -86,7 +85,52 @@ const CustomQueryItem = ({
                     transition: "opacity 0.2s ease",
                     "&:hover": { opacity: 0.7 },
                     justifyContent: "center",
-                    gap: 0.5,
+                }}
+            >
+                <Badge
+                    badgeContent={customQuery.fileCount}
+                    color="primary"
+                    showZero
+                    anchorOrigin={{
+                        vertical: "bottom",
+                        horizontal: "right",
+                    }}
+                >
+                    <Badge
+                        invisible={!customQuery.hasNewFiles}
+                        color="primary"
+                        anchorOrigin={{
+                            vertical: "top",
+                            horizontal: "left",
+                        }}
+                        variant="dot"
+                    >
+                        <ListItemIcon>
+                            {availableCustomQueryIcons.find(
+                                (ac) => ac.key == customQuery.icon,
+                            )?.icon ?? <Policy key="Policy" />}
+                        </ListItemIcon>
+                    </Badge>
+                </Badge>
+            </ListItemButton>
+        );
+    }
+
+    return (
+        <ListItemButton
+            onClick={handleClick}
+            sx={{
+                transition: "opacity 0.2s ease",
+                "&:hover": { opacity: 0.7 },
+            }}
+        >
+            <Badge
+                badgeContent={customQuery.fileCount}
+                color="primary"
+                showZero
+                anchorOrigin={{
+                    vertical: "bottom",
+                    horizontal: "right",
                 }}
             >
                 <Badge
@@ -104,53 +148,9 @@ const CustomQueryItem = ({
                         )?.icon ?? <Policy key="Policy" />}
                     </ListItemIcon>
                 </Badge>
-                <Chip
-                    label={customQuery.fileCount.toString()}
-                    size="small"
-                    sx={{
-                        pointerEvents: "none",
-                        bgcolor: "grey.300",
-                        color: "text.primary",
-                    }}
-                />
-            </ListItemButton>
-        );
-    }
-
-    return (
-        <ListItemButton
-            onClick={handleClick}
-            sx={{
-                transition: "opacity 0.2s ease",
-                "&:hover": { opacity: 0.7 },
-            }}
-        >
-            <Badge
-                invisible={!customQuery.hasNewFiles}
-                color="primary"
-                anchorOrigin={{
-                    vertical: "top",
-                    horizontal: "left",
-                }}
-                variant="dot"
-            >
-                <ListItemIcon>
-                    {availableCustomQueryIcons.find(
-                        (ac) => ac.key == customQuery.icon,
-                    )?.icon ?? <Policy key="Policy" />}
-                </ListItemIcon>
             </Badge>
             <ListItemText className={styles.listItemText}>
-                {customQuery.name}{" "}
-                <Chip
-                    label={customQuery.fileCount.toString()}
-                    size="small"
-                    sx={{
-                        pointerEvents: "none",
-                        bgcolor: "grey.300",
-                        color: "text.primary",
-                    }}
-                ></Chip>
+                {customQuery.name}
             </ListItemText>
             <ListItemIcon
                 className={styles.deleteIcon}
