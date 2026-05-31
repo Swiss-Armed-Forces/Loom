@@ -33,7 +33,7 @@
         "restore": "Restore file",
         "showThumbnail": "Show thumbnail",
         "resultCounts": "Showing {{actualCount}} of {{totalCount}} results.",
-        "queryExpired": "Query has expired, trying again: Your search results might change",
+        "queryExpired": "Query expired – refreshing results",
         "queryThisField": "Query by this field",
         "sortThisField": "Sort by this field",
         "shareContent": {
@@ -74,7 +74,7 @@
     },
     "confirmDialog": {
         "title": "Confirm action",
-        "confirmCustomQueryRemoval": "Would you like to remove the custom query?",
+        "confirmCustomQueryRemoval": "Delete this saved query?",
         "confirmRemoval": "Confirm removal",
         "confirmArchiveCreationText": "Would you like to create an archive from the search results?",
         "confirmArchiveCreation": "Start archive creation",
@@ -130,7 +130,7 @@
             "disableFiles": "Mark files as unseen",
             "openDialog": "Seen / Unseen files",
             "dialog": {
-                "title": "Edit flag",
+                "title": "Edit seen state",
                 "text": "Would you like to change the seen state of {{numberOfResults}} files?"
             }
         }
@@ -292,7 +292,7 @@
         }
     },
     "statisticsView": {
-        "summaryTitle": "Queries files statistics",
+        "summaryTitle": "Query file statistics",
         "numberOfFiles": "Number of files",
         "minFileSize": "Smallest file",
         "maxFileSize": "Largest file",
