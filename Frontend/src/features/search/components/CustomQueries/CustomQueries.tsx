@@ -7,6 +7,7 @@ import {
     ListItemIcon,
     ListItemText,
     ListSubheader,
+    Tooltip,
 } from "@mui/material";
 import { useCallback, useEffect } from "react";
 import { useTranslation } from "react-i18next";
@@ -78,41 +79,46 @@ const CustomQueryItem = ({
 
     if (iconOnly) {
         return (
-            <ListItemButton
-                onClick={handleClick}
+            <Tooltip
                 title={customQuery.name}
-                sx={{
-                    transition: "opacity 0.2s ease",
-                    "&:hover": { opacity: 0.7 },
-                    justifyContent: "center",
-                }}
+                placement="right"
+                enterDelay={200}
             >
-                <Badge
-                    badgeContent={customQuery.fileCount}
-                    color="primary"
-                    showZero
-                    anchorOrigin={{
-                        vertical: "bottom",
-                        horizontal: "right",
+                <ListItemButton
+                    onClick={handleClick}
+                    sx={{
+                        transition: "opacity 0.2s ease",
+                        "&:hover": { opacity: 0.7 },
+                        justifyContent: "center",
                     }}
                 >
                     <Badge
-                        invisible={!customQuery.hasNewFiles}
+                        badgeContent={customQuery.fileCount}
                         color="primary"
+                        showZero
                         anchorOrigin={{
-                            vertical: "top",
-                            horizontal: "left",
+                            vertical: "bottom",
+                            horizontal: "right",
                         }}
-                        variant="dot"
                     >
-                        <ListItemIcon>
-                            {availableCustomQueryIcons.find(
-                                (ac) => ac.key == customQuery.icon,
-                            )?.icon ?? <Policy key="Policy" />}
-                        </ListItemIcon>
+                        <Badge
+                            invisible={!customQuery.hasNewFiles}
+                            color="primary"
+                            anchorOrigin={{
+                                vertical: "top",
+                                horizontal: "left",
+                            }}
+                            variant="dot"
+                        >
+                            <ListItemIcon>
+                                {availableCustomQueryIcons.find(
+                                    (ac) => ac.key == customQuery.icon,
+                                )?.icon ?? <Policy key="Policy" />}
+                            </ListItemIcon>
+                        </Badge>
                     </Badge>
-                </Badge>
-            </ListItemButton>
+                </ListItemButton>
+            </Tooltip>
         );
     }
 
