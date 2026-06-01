@@ -948,6 +948,7 @@ Examples:
                     f"Note: resourceQuotas.scalable.enabled is false in {args.quota_values} "
                     "— skipping quota check."
                 )
+                sys.stdin.read()
                 return 0
             # Explicit thresholds were given alongside --quota-values; proceed without quota thresholds
         else:
