@@ -4,20 +4,30 @@ from concurrent.futures import ThreadPoolExecutor
 from typing import TYPE_CHECKING, Iterator, Union
 
 from celery import Celery
+from redis import StrictRedis
 
-from common.celery_app import BaseTask
 from common.services.queues_service import QueuesService
 
 if TYPE_CHECKING:
     from celery.app.control import _TaskInfo, _TaskScheduledInfo
 
+    from common.celery_app import BaseTask
+
 logger = logging.getLogger(__name__)
+
+QUEUE_PAUSED_KEY_PREFIX = "queue_paused"
 
 
 class CeleryInspectService:
-    def __init__(self, celery_app: "Celery[BaseTask]", queues_service: QueuesService):
+    def __init__(
+        self,
+        celery_app: "Celery[BaseTask]",
+        queues_service: QueuesService,
+        redis_client: StrictRedis,
+    ):
         self._celery_app = celery_app
         self._queues_service = queues_service
+        self._redis_client = redis_client
 
     def iterate_tasks(self) -> Iterator[Union["_TaskScheduledInfo", "_TaskInfo"]]:
         """Generator that yields individual celery tasks from all workers and states."""
@@ -81,3 +91,35 @@ class CeleryInspectService:
             if remaining <= 0:
                 return False
             time.sleep(min(poll_interval, remaining))
+
+    def set_queue_paused(self, queue_name: str, paused: bool) -> None:
+        """Persist queue pause state in Redis and broadcast to all current workers."""
+        key = f"{QUEUE_PAUSED_KEY_PREFIX}:{queue_name}"
+        if paused:
+            self._redis_client.set(key, "1")
+        else:
+            self._redis_client.delete(key)
+        if paused:
+            result = self._celery_app.control.cancel_consumer(queue_name, reply=True)
+        else:
+            result = self._celery_app.control.add_consumer(queue_name, reply=True)
+        logger.info(
+            "%s queue %s, result=%s",
+            "Paused" if paused else "Resumed",
+            queue_name,
+            result,
+        )
+
+    def is_queue_paused(self, queue_name: str) -> bool:
+        """Check if a queue is currently paused according to Redis state."""
+        return bool(
+            self._redis_client.exists(f"{QUEUE_PAUSED_KEY_PREFIX}:{queue_name}")
+        )
+
+    def get_paused_queues(self) -> list[str]:
+        """Return all queue names that are currently paused in Redis."""
+        prefix = f"{QUEUE_PAUSED_KEY_PREFIX}:"
+        return [
+            key.decode().removeprefix(prefix)
+            for key in self._redis_client.keys(f"{prefix}*")
+        ]

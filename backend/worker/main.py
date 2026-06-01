@@ -5,7 +5,7 @@ import sys
 from shlex import quote
 
 from celery import signals
-from common.dependencies import get_celery_app
+from common.dependencies import get_celery_app, get_celery_inspect_service
 from common.dependencies import init as init_common_dependencies
 from common.settings import settings
 from common.utils.sharding import (
@@ -27,6 +27,25 @@ def init_all():
 @signals.worker_process_init.connect
 def pool_worker_main(*_, **__):
     init_all()
+
+
+@signals.worker_ready.connect
+def restore_queue_pause_state(sender, **__):
+    """Cancel consumption of any queues that are currently paused in Redis.
+
+    Celery's cancel_consumer broadcast only reaches currently running workers. This
+    handler ensures a newly started worker also stops consuming from any queue that was
+    paused before it started.
+    """
+    paused = get_celery_inspect_service().get_paused_queues()
+    if not paused:
+        return
+    celery_app = get_celery_app()
+    for queue in paused:
+        logger.info("Queue %s is paused; cancelling consumer on this worker", queue)
+        celery_app.control.cancel_consumer(
+            queue, destination=[sender.hostname], reply=True
+        )
 
 
 # Initial load (parent process)

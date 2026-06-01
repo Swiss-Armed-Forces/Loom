@@ -264,7 +264,9 @@ def init(init_elasticsearch_documents: bool = False):
     )
 
     global _celery_inspect_service
-    _celery_inspect_service = CeleryInspectService(_celery_app, _queues_service)
+    _celery_inspect_service = CeleryInspectService(
+        _celery_app, _queues_service, _redis_client
+    )
 
     global _wipe_service
     _wipe_service = WipeService(

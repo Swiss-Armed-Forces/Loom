@@ -8,10 +8,7 @@ from common.dependencies import (
 )
 from common.settings import settings
 from common.task_object.root_task_information_repository import RootTaskInformation
-from worker.periodic.flush_on_idle_task import (
-    flush_on_idle_task,
-    pause_index_file_queue,
-)
+from worker.periodic.flush_on_idle_task import flush_on_idle_task
 
 from utils.fetch_from_api import fetch_files_from_api
 from utils.upload_asset import upload_asset
@@ -73,10 +70,6 @@ def test_root_task_count_throttle_pauses_and_resumes_indexing():
         for _ in range(settings.throttle_max_root_tasks + 1)
     ]
     list(get_root_task_information_repository().bulk_save(entries))
-
-    # Simulate the throttle-triggered pause. flush-on-idle may undo this before the flush
-    # runs, but _wait_for_flush_to_complete handles that case transparently.
-    pause_index_file_queue(pause=True)
 
     _wait_for_flush_to_complete()
 
