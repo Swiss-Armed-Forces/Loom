@@ -64,6 +64,14 @@ helm template "${CHARTS_DIR}" --values "${CHARTS_DIR}/values-no-limits.yaml" \
     --threshold-limit "cpu=${MAX_CPU_LIMITS}" \
     --threshold-limit "memory=${MAX_MEMORY_LIMITS}"
 
+echo "Scalable quota consistency check"
+
+helm template "${CHARTS_DIR}" \
+| poetry run python "${SCRIPT_DIR}/check_resources.py" \
+    --exclude-ephemeral \
+    --filter-priority-class "*-scalable" \
+    --quota-values "${CHARTS_DIR}/values.yaml"
+
 # Check if README.md contains the expected resource requirements block
 # This ensures the README stays in sync with the actual threshold values
 
