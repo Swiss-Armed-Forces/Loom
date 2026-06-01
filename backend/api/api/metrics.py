@@ -99,12 +99,18 @@ def with_adaptive_cache(max_age: timedelta | None = None):
                 enough_time_to_compute = cache.collection_time < timeout
                 not_expired = cache_age < max_age
 
-                if not enough_time_to_compute and not_expired:
+                if not enough_time_to_compute:
+                    # Can't afford to recompute inline — return cached value even if stale.
+                    # This prevents the Prometheus scrape from blocking and timing out when
+                    # the cache has expired or the periodic reader hasn't populated it yet.
+                    # The PeriodicExportingMetricReader (which always has a large timeout budget
+                    # and therefore always recomputes) will refresh the cache in the background.
                     logger.info(
-                        "Returning cached metric %s (collected in %s, age: %s)",
+                        "Returning cached metric %s (collected in %s, age: %s, expired: %s)",
                         func.__name__,
                         cache.collection_time,
                         cache_age,
+                        not not_expired,
                     )
                     for value, attrs in cache.observations_raw:
                         yield Observation(value=value, attributes=attrs)
