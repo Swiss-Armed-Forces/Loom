@@ -18,7 +18,7 @@ class WipeComponent(StrEnum):
     CELERY = "celery"
     ELASTICSEARCH = "elasticsearch"
     REDIS = "redis"
-    S3 = "s3"
+    INTAKE = "intake"
     FILE_STORAGE = "file_storage"
     LAZYBYTES = "lazybytes"
     IMAP = "imap"
@@ -28,7 +28,7 @@ _WIPE_DISPATCH: dict[WipeComponent, Callable[[WipeService], None]] = {
     WipeComponent.CELERY: lambda s: s.wipe_celery(),
     WipeComponent.ELASTICSEARCH: lambda s: s.wipe_elasticsearch(),
     WipeComponent.REDIS: lambda s: s.wipe_redis(),
-    WipeComponent.S3: lambda s: s.wipe_s3(),
+    WipeComponent.INTAKE: lambda s: s.wipe_intake(),
     WipeComponent.FILE_STORAGE: lambda s: s.wipe_file_storage(),
     WipeComponent.LAZYBYTES: lambda s: s.wipe_lazybytes(),
     WipeComponent.IMAP: lambda s: s.wipe_imap(),
