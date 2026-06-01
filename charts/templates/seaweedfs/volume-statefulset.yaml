@@ -39,6 +39,9 @@ spec:
         {{- . | nindent 8 }}
       {{- end }}
     spec:
+      {{- with .Values.seaweedfs.volume.priorityClass }}
+      priorityClassName: {{ include "app.fullname" $ }}-{{ . }}
+      {{- end }}
       affinity:
         podAntiAffinity:
           # Prefer scheduling volume pods on different nodes for better data distribution

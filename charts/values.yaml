@@ -63,6 +63,29 @@ priorityClasses:
   customLabels: {}
   customAnnotations: {}
 
+# Priority-scoped ResourceQuotas to prevent scalable workloads from exhausting
+# namespace quota and starving infrastructure StatefulSets during updates.
+#
+# How it works: Kubernetes ResourceQuota enforcement runs at admission time, before
+# the scheduler's preemption logic. Even infrastructure-priority pods are rejected
+# at admission if the namespace quota is full. Scoping a quota to the scalable
+# priority class caps scalable pods separately, reserving headroom for infrastructure.
+#
+# Usage: Enable and set `hard` limits below (namespace quota) - (infrastructure requests).
+# Example: if namespace quota is 32 CPU and infrastructure uses ~12 CPU, set
+# requests.cpu to "20" to leave 12 CPU guaranteed for infrastructure.
+resourceQuotas:
+  customLabels: {}
+  customAnnotations: {}
+  scalable:
+    enabled: false
+    hard:
+      requests.cpu: "20"
+      requests.memory: "50Gi"
+      limits.cpu: "40"
+      limits.memory: "100Gi"
+      pods: "200"
+
 fileStorage:
   s3Storage:
     host: null
@@ -547,6 +570,7 @@ seaweedfs:
 
   master:
     replicaCount: 1
+    priorityClass: infrastructure
     image:
       repository: swiss-armed-forces/cyber-command/cea/loom/seaweedfs
     port: 9333
@@ -585,6 +609,7 @@ seaweedfs:
 
   volume:
     replicaCount: 2
+    priorityClass: infrastructure
     # Multiplier for volumeSizeLimitMB to reserve space for compaction.
     # Volume compaction requires free disk space approximately equal to the volume being compacted.
     # With multiplier 2 and volumeSizeLimitMB 1024, reserves 2048MB (2GB) for compaction.
@@ -672,6 +697,7 @@ seaweedfs:
   # Backs up filer metadata to a local SQLite database for disaster recovery
   filerMetaBackup:
     enabled: true
+    priorityClass: infrastructure
     filerDir: "/"
     pvc:
       # Multiplier for PVC storage size relative to redis-filer memory limit.
@@ -793,6 +819,7 @@ ollama-tool: *ollama
 open_webui:
   enabled: true
   replicaCount: 1
+  priorityClass: infrastructure
   image:
     repository: swiss-armed-forces/cyber-command/cea/loom/open-webui
   env:
@@ -829,6 +856,7 @@ open_webui:
 
 dovecot:
   replicaCount: 1
+  priorityClass: infrastructure
   image:
     repository: swiss-armed-forces/cyber-command/cea/loom/dovecot
   service:
@@ -892,6 +920,7 @@ roundcube:
 prometheus:
   enabled: true
   replicaCount: 1
+  priorityClass: infrastructure
   image:
     repository: swiss-armed-forces/cyber-command/cea/loom/prometheus
   service:

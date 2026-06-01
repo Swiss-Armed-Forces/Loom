@@ -28,6 +28,9 @@ spec:
         {{- . | nindent 8 }}
       {{- end }}
     spec:
+      {{- with .Values.prometheus.priorityClass }}
+      priorityClassName: {{ include "app.fullname" $ }}-{{ . }}
+      {{- end }}
       serviceAccountName: {{ include "app.fullname" . }}-prometheus
       securityContext:
         runAsUser: 65534

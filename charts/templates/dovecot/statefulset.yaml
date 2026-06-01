@@ -25,6 +25,9 @@ spec:
         {{- . | nindent 8 }}
       {{- end }}
     spec:
+      {{- with .Values.dovecot.priorityClass }}
+      priorityClassName: {{ include "app.fullname" $ }}-{{ . }}
+      {{- end }}
       initContainers:
         - name: fix-perms
           image: {{ .Values.image.registry }}/{{ .Values.dovecot.initContainer.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) .Values.dovecot.initContainer.image.tag }}
