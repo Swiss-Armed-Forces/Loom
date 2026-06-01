@@ -1,4 +1,5 @@
 import logging
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -17,6 +18,7 @@ S3_OBJECT_POLL_INTERVAL_S: int = 5
 S3_READ_CHUNK_SIZE: int = 64 * 1024
 S3_RETRY_MAX_ATTEMPTS: int = 5
 S3_RETRY_WAIT_S: int = 10
+S3_MAX_CONCURRENT_DOWNLOADS: int = 4
 
 
 @dataclass(frozen=True)
@@ -40,15 +42,15 @@ class S3Crawler:
         self.file_storage_service = file_storage_service
         self.task_scheduling_service = task_scheduling_service
         self.processed_objects: set[_ProcessedObject] = set()
+        self._executor = ThreadPoolExecutor(max_workers=S3_MAX_CONCURRENT_DOWNLOADS)
 
     def _ensure_bucket(self):
         if not retry(lambda: self.client.bucket_exists(self.bucket_name)):
             logger.info("Creating bucket: %s", self.bucket_name)
             retry(lambda: self.client.make_bucket(self.bucket_name))
 
-    def _download_object(self, object_name: str, last_modified: datetime):
+    def _download_object(self, object_name: str):
         logger.info("Downloading object %s", object_name)
-        self.processed_objects.add(_ProcessedObject(object_name, last_modified))
         full_name = Path(f"//{self.display_name}/{object_name}")
         source = f"{settings.crawler_source_id}/{self.bucket_name}"
 
@@ -89,5 +91,17 @@ class S3Crawler:
                     not in self.processed_objects
                 ):
                     logger.info("New object detected via polling: %s", obj.object_name)
-                    self._download_object(obj.object_name, obj.last_modified)
+                    self.processed_objects.add(
+                        _ProcessedObject(obj.object_name, obj.last_modified)
+                    )
+                    future = self._executor.submit(
+                        self._download_object, obj.object_name
+                    )
+                    future.add_done_callback(
+                        lambda f: (
+                            logger.error("Failed to download object: %s", f.exception())
+                            if f.exception()
+                            else None
+                        )
+                    )
             sleep(S3_OBJECT_POLL_INTERVAL_S)
