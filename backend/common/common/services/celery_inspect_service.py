@@ -7,6 +7,7 @@ from celery import Celery
 from redis import StrictRedis
 
 from common.services.queues_service import QueuesService
+from common.settings import settings
 
 if TYPE_CHECKING:
     from celery.app.control import _TaskInfo, _TaskScheduledInfo
@@ -58,9 +59,16 @@ class CeleryInspectService:
     def is_idle(
         self, called_from_task: bool = False, exclude_queues: list[str] | None = None
     ) -> bool:
+        # Always exclude terminal queues — they have no consumers and can never be
+        # drained by workers, so their message count must not block idle detection.
+        terminal_queues = {
+            f"{settings.celery_queue_name_prefix}{settings.celery_abyss_task_name}",
+            f"{settings.celery_queue_name_prefix}{settings.celery_unroutable_task_name}",
+        }
+        effective_excludes = list(terminal_queues | set(exclude_queues or []))
         tasks_count = self.count_tasks()
         messages_in_queues = self.count_messages_in_queues(
-            exclude_queues=exclude_queues
+            exclude_queues=effective_excludes
         )
         if called_from_task:
             # We are called from a celery task, so we need to subtract the task itself
