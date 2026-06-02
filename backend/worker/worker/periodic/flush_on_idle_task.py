@@ -14,7 +14,7 @@ from common.task_object.root_task_information_repository import (
 )
 from common.utils.task_lock import task_lock
 
-from worker.index_file.index_file_task import dispatch_index_file
+from worker.index_file.index_file_task import dispatch_index_file, dispatch_reindex_file
 from worker.periodic.infra.periodic_task import PeriodicTask
 from worker.periodic.tasks import (
     flush_cache,
@@ -35,6 +35,16 @@ def _get_dispatch_index_file_queue() -> str:
     return (f"{settings.celery_queue_name_prefix}{dispatch_index_file.name}")[
         :CELERY_QUEUE_NAME_MAXLEN
     ]
+
+
+def _get_dispatch_reindex_file_queue() -> str:
+    return (f"{settings.celery_queue_name_prefix}{dispatch_reindex_file.name}")[
+        :CELERY_QUEUE_NAME_MAXLEN
+    ]
+
+
+def _get_throttled_queues() -> list[str]:
+    return [_get_dispatch_index_file_queue(), _get_dispatch_reindex_file_queue()]
 
 
 def _should_throttle(
@@ -65,9 +75,9 @@ def _should_throttle(
 
 @app.task(base=PeriodicTask)
 def flush_complete(*_, **__):
-    get_celery_inspect_service().set_queue_paused(
-        _get_dispatch_index_file_queue(), False
-    )
+    inspect = get_celery_inspect_service()
+    for queue in _get_throttled_queues():
+        inspect.set_queue_paused(queue, False)
     logger.info("Flushing complete")
 
 
@@ -92,16 +102,16 @@ def flush_on_idle_task(self: PeriodicTask):
 
     if throttling:
         # Pause: persist state and tell all current workers to stop consuming
-        get_celery_inspect_service().set_queue_paused(
-            _get_dispatch_index_file_queue(), True
-        )
+        inspect = get_celery_inspect_service()
+        for queue in _get_throttled_queues():
+            inspect.set_queue_paused(queue, True)
 
-    # Wait for idle EXCLUDING the throttled queue
+    # Wait for idle EXCLUDING the throttled queues
     if not get_celery_inspect_service().wait_for_idle(
         timeout=_WAIT_FOR_IDLE_TIMEOUT_SECONDS,
         poll_interval=_WAIT_FOR_IDLE_POLL_INTERVAL_SECONDS,
         called_from_task=True,
-        exclude_queues=[_get_dispatch_index_file_queue()],
+        exclude_queues=_get_throttled_queues(),
     ):
         logger.info("Celery not idle: timed out waiting for idle")
         return None
