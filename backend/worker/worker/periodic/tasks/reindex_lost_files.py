@@ -11,12 +11,12 @@ from common.services.query_builder import QueryParameters
 
 from worker.index_file.index_file_task import dispatch_reindex_file
 from worker.periodic.infra.periodic_task import PeriodicTask
+from worker.settings import settings
 
 logger = logging.getLogger(__name__)
 
 app = get_celery_app()
 
-MAX_REINDEX_FILES = 100
 MAX_REINDEX_COUNT = 5
 LOST_FILES_QUERY = (
     f'NOT state:("failed" OR "processed") AND reindex_count:<{MAX_REINDEX_COUNT}'
@@ -46,7 +46,7 @@ def reindex_lost_files(self: PeriodicTask, *_, **__):
                 file_repository.get_id_generator_by_query(
                     query=query, sort_params=sort_params
                 ),
-                MAX_REINDEX_FILES,
+                settings.reindex_lost_files_max_files,
             )
         )
     )

@@ -118,6 +118,7 @@ pipeline:
   lazy_threshold_bytes: null
   uploaded_files_days_before_hidden: null
   imap_folder_days_before_unsubscribe: null
+  reindex_lost_files_max_files: null
   skip_summarize_while_indexing: null
   skip_translate_while_indexing: null
   skip_embedding_while_indexing: null
