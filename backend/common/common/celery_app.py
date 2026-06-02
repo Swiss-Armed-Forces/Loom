@@ -202,10 +202,17 @@ class BaseTask(ABC, Task):
     def __call__(self, *args, **kwargs) -> None:
         headers = getattr(self.request, "headers", {}) or {}
 
-        # x-death is an AMQP 0.9.1 header set by RabbitMQ when a message is dead-lettered
+        # x-death is an AMQP 0.9.1 header set by RabbitMQ when a message is dead-lettered.
+        # Raise DeadTask only when the message has previously been dead-lettered out of
+        # the graveyard queue — i.e. it already went through graveyard processing.
+        # We cannot use a simple count because Native Delayed Delivery also adds one
+        # x-death entry per TTL level traversed (e.g. a 3s countdown passes through
+        # celery_delayed_0 and celery_delayed_1, producing two entries).
         x_death = XDeathHeader.model_validate(headers.get("x-death", []))
-        if len(x_death) > 1:
-            # More than one death: reap the task
+        graveyard_queue = (
+            f"{settings.celery_queue_name_prefix}{settings.celery_graveyard_task_name}"
+        )
+        if any(d.queue == graveyard_queue for d in x_death.root):
             raise DeadTask(f"Task died: {x_death}")
 
         return self.run(*args, **kwargs)
