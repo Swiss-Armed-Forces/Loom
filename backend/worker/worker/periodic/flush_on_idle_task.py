@@ -1,6 +1,6 @@
 import logging
 
-from celery import chain, group
+from celery import chord
 from common.dependencies import (
     get_celery_app,
     get_celery_inspect_service,
@@ -108,12 +108,12 @@ def flush_on_idle_task(self: PeriodicTask):
 
     logger.info("Celery idle: flushing")
     return self.replace(
-        chain(
-            group(
+        chord(
+            [
                 flush_cache.signature(),
                 flush_lazybytes.signature(),
                 flush_root_task_information.signature(),
-            ),
+            ],
             flush_complete.s(),
         )
     )
