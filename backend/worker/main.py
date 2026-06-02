@@ -72,6 +72,7 @@ match settings.worker_type:
         exclude_queues = [
             get_queue_from_task(settings.celery_graveyard_task_name),
             get_queue_from_task(settings.celery_dead_task_name),
+            get_queue_from_task(settings.celery_unroutable_task_name),
         ] + all_persister_queues
         argv = argv + [
             "--exclude-queues",

@@ -85,11 +85,11 @@ data:
     {{- if ne .Values.pipeline.celery_persister_shard_prefix nil }}
     celery_persister_shard_prefix: {{ .Values.pipeline.celery_persister_shard_prefix | quote }}
     {{- end }}
-    {{- if ne .Values.pipeline.celery_unroubtable_ttl__seconds nil }}
-    celery_unroubtable_ttl__seconds: {{ .Values.pipeline.celery_unroubtable_ttl__seconds | quote }}
+    {{- if ne .Values.pipeline.celery_unroutable_ttl__seconds nil }}
+    celery_unroutable_ttl__seconds: {{ .Values.pipeline.celery_unroutable_ttl__seconds | quote }}
     {{- end }}
-    {{- if ne .Values.pipeline.celery_unroubtable_task_name nil }}
-    celery_unroubtable_task_name: {{ .Values.pipeline.celery_unroubtable_task_name | quote }}
+    {{- if ne .Values.pipeline.celery_unroutable_task_name nil }}
+    celery_unroutable_task_name: {{ .Values.pipeline.celery_unroutable_task_name | quote }}
     {{- end }}
     {{- if ne .Values.pipeline.celery_default_exchange_name nil }}
     celery_default_exchange_name: {{ .Values.pipeline.celery_default_exchange_name | quote }}

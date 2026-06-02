@@ -281,7 +281,7 @@ def _get_queue(name: str) -> Queue:
 
 def _get_unroutable_queue() -> Queue:
     queue_name = (
-        f"{settings.celery_queue_name_prefix}{settings.celery_unroubtable_task_name}"
+        f"{settings.celery_queue_name_prefix}{settings.celery_unroutable_task_name}"
     )
     queue_name = queue_name[:CELERY_QUEUE_NAME_MAXLEN]
     return Queue(
@@ -298,7 +298,7 @@ def _get_unroutable_queue() -> Queue:
             #
             # https://www.rabbitmq.com/docs/quorum-queues#poison-message-handling
             "x-queue-type": "quorum",
-            "x-message-ttl": settings.celery_unroubtable_ttl__seconds * 1000,
+            "x-message-ttl": settings.celery_unroutable_ttl__seconds * 1000,
         },
     )
 
@@ -497,7 +497,7 @@ def init_celery_app() -> "Celery[BaseTask]":  # pylint: disable=too-many-stateme
     # Define unroutable queues
     unroutable_queue = _get_unroutable_queue()
     app.conf.task_queues.append(unroutable_queue)
-    app.conf.task_routes[settings.celery_unroubtable_task_name] = {
+    app.conf.task_routes[settings.celery_unroutable_task_name] = {
         "routing_key": "*",
         "exchange_type": settings.celery_alternate_exchange_type,
     }

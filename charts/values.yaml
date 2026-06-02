@@ -134,8 +134,8 @@ pipeline:
   celery_graveyard_task_name: null
   celery_dead_task_name: null
   celery_persister_shard_prefix: null
-  celery_unroubtable_ttl__seconds: null
-  celery_unroubtable_task_name: null
+  celery_unroutable_ttl__seconds: null
+  celery_unroutable_task_name: null
   celery_default_exchange_name: null
   celery_default_exchange_type: null
   celery_alternate_exchange_name: null

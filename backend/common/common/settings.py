@@ -161,8 +161,8 @@ class Settings(BaseSettings):
     celery_graveyard_task_name: str = "graveyard"
     celery_dead_task_name: str = "dead"
     celery_persister_shard_prefix: str = "persister.shard"
-    celery_unroubtable_ttl__seconds: int = 24 * 60 * 60
-    celery_unroubtable_task_name: str = "unroutable"
+    celery_unroutable_ttl__seconds: int = 24 * 60 * 60
+    celery_unroutable_task_name: str = "unroutable"
     celery_default_exchange_name: str = "loom"
     celery_default_exchange_type: str = "topic"
     celery_alternate_exchange_name: str = "ae-loom"
