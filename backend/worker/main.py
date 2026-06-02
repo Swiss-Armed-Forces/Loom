@@ -5,6 +5,7 @@ import sys
 from shlex import quote
 
 from celery import signals
+from common.celery_app import register_persister_shard_queues
 from common.dependencies import get_celery_app, get_celery_inspect_service
 from common.dependencies import init as init_common_dependencies
 from common.settings import settings
@@ -93,6 +94,12 @@ match settings.worker_type:
             "1,0",
         ]
     case "PERSISTER":
+        # Declare persister shard queues in RabbitMQ and register them in
+        # task_queues. This is done here (not in init_celery_app) so that
+        # non-PERSISTER workers never see these queues in task_queues and
+        # the delayed-delivery binding bootstep doesn't fail on undeclared
+        # queues (https://github.com/celery/celery/issues/9960).
+        register_persister_shard_queues(app)
         # Persister workers only consume their assigned shard queues
         this_persister_shards = get_persister_shard_for_worker(
             settings.persister_id,

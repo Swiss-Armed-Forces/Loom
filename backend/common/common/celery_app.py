@@ -509,10 +509,13 @@ def init_celery_app() -> "Celery[BaseTask]":  # pylint: disable=too-many-stateme
         "exchange_type": settings.celery_alternate_exchange_type,
     }
 
-    # Define persister shard queues for serialized persistence per entity
+    # Register persister shard routes globally so any worker type can dispatch
+    # to them. Queue *declaration* is deferred to register_persister_shard_queues()
+    # which is called only by PERSISTER workers. Keeping the queues out of
+    # task_queues for non-PERSISTER workers prevents Celery's delayed-delivery
+    # binding bootstep from crashing on queues that are not yet declared in
+    # RabbitMQ (see https://github.com/celery/celery/issues/9960).
     for persister_shard_name in get_all_persister_shards(settings.num_persister_shards):
-        persister_shard_queue = _get_queue(persister_shard_name)
-        app.conf.task_queues.append(persister_shard_queue)
         app.conf.task_routes[persister_shard_name] = {
             "routing_key": persister_shard_name,
             "exchange_type": settings.celery_default_exchange_type,
@@ -596,6 +599,19 @@ def register_tasks_for_package(app: Celery, package: str):
     _register_task_queues(app)
     # See comment in: init_celery_app
     random.shuffle(app.conf.task_queues)
+
+
+def register_persister_shard_queues(app: "Celery[Any]"):
+    """Declare persister shard queues and add them to task_queues.
+
+    Must be called only by PERSISTER workers. Shard queue routes are already registered
+    globally in init_celery_app() so any worker can dispatch to them; this function
+    handles the queue *declaration* side that is only needed on the workers that
+    actually consume the queues.
+    """
+    for persister_shard_name in get_all_persister_shards(settings.num_persister_shards):
+        persister_shard_queue = _get_queue(persister_shard_name)
+        app.conf.task_queues.append(persister_shard_queue)
 
 
 # Set oom scores for the pool worker
