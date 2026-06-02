@@ -353,6 +353,34 @@ def _get_dead_queue() -> Queue:
             #
             # https://www.rabbitmq.com/docs/quorum-queues#poison-message-handling
             "x-queue-type": "quorum",
+            "x-delivery-limit": settings.celery_dead_deliver_limit,
+            "x-dead-letter-exchange": settings.celery_default_exchange_name,
+            "x-dead-letter-routing-key": settings.celery_abyss_task_name,
+        },
+    )
+
+
+def _get_abyss_queue() -> Queue:
+    queue_name = f"{settings.celery_queue_name_prefix}{settings.celery_abyss_task_name}"
+    queue_name = queue_name[:CELERY_QUEUE_NAME_MAXLEN]
+    return Queue(
+        name=queue_name,
+        exchange=_get_shared_exchange(),
+        routing_key=settings.celery_abyss_task_name,
+        passive=False,
+        durable=True,
+        auto_delete=False,
+        queue_arguments={
+            # We are using Quorum Queues in order to profit from the
+            # broker's poison message handling mechanism and thus avoid
+            # processing poison messages repeatedly.
+            #
+            # https://www.rabbitmq.com/docs/quorum-queues#poison-message-handling
+            "x-queue-type": "quorum",
+            # Messages that could not be processed even from the dead queue (e.g. the reaper
+            # was OOM-killed during deserialization) end up here. No worker consumes this
+            # queue; messages expire after the configured TTL.
+            "x-message-ttl": settings.celery_abyss_ttl__seconds * 1000,
         },
     )
 
@@ -498,6 +526,12 @@ def init_celery_app() -> "Celery[BaseTask]":  # pylint: disable=too-many-stateme
     app.conf.task_queues.append(dead_queue)
     app.conf.task_routes[settings.celery_dead_task_name] = {
         "routing_key": settings.celery_dead_task_name,
+        "exchange_type": settings.celery_default_exchange_type,
+    }
+    abyss_queue = _get_abyss_queue()
+    app.conf.task_queues.append(abyss_queue)
+    app.conf.task_routes[settings.celery_abyss_task_name] = {
+        "routing_key": settings.celery_abyss_task_name,
         "exchange_type": settings.celery_default_exchange_type,
     }
 

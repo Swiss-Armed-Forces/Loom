@@ -85,6 +85,15 @@ data:
     {{- if ne .Values.pipeline.celery_dead_task_name nil }}
     celery_dead_task_name: {{ .Values.pipeline.celery_dead_task_name | quote }}
     {{- end }}
+    {{- if ne .Values.pipeline.celery_dead_deliver_limit nil }}
+    celery_dead_deliver_limit: {{ .Values.pipeline.celery_dead_deliver_limit | quote }}
+    {{- end }}
+    {{- if ne .Values.pipeline.celery_abyss_task_name nil }}
+    celery_abyss_task_name: {{ .Values.pipeline.celery_abyss_task_name | quote }}
+    {{- end }}
+    {{- if ne .Values.pipeline.celery_abyss_ttl__seconds nil }}
+    celery_abyss_ttl__seconds: {{ .Values.pipeline.celery_abyss_ttl__seconds | quote }}
+    {{- end }}
     {{- if ne .Values.pipeline.celery_persister_shard_prefix nil }}
     celery_persister_shard_prefix: {{ .Values.pipeline.celery_persister_shard_prefix | quote }}
     {{- end }}

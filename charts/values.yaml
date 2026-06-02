@@ -134,6 +134,9 @@ pipeline:
   celery_graveyard_deliver_limit: null
   celery_graveyard_task_name: null
   celery_dead_task_name: null
+  celery_dead_deliver_limit: null
+  celery_abyss_task_name: null
+  celery_abyss_ttl__seconds: null
   celery_persister_shard_prefix: null
   celery_unroutable_ttl__seconds: null
   celery_unroutable_task_name: null
