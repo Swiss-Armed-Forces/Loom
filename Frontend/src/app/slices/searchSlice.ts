@@ -325,15 +325,26 @@ export const fetchPreview = createAsyncThunk(
         thunkAPI: GetThunkAPI<AsyncThunkConfig>,
     ) => {
         const { search } = thunkAPI.getState() as RootState;
-        const activeQuery = query ?? search.query;
-        if (!activeQuery) return;
+        // Use explicit query if provided; otherwise fall back to the active search query
+        // only if the file is in the current search results (to get highlights). Files
+        // outside the current results (e.g. parent navigation) use "hidden:*" so they
+        // load regardless of the active search context.
+        const fileIsInResults = search.files[fileId]?.meta != null;
+        const activeQuery = query ?? (fileIsInResults ? search.query : null);
 
         const queryId = (await getShortRunningQuery()).queryId;
-        const searchQuery: SearchQuery = {
-            ...activeQuery,
-            query: activeQuery.query ?? "",
-            id: queryId,
-        };
+        const searchQuery: SearchQuery = activeQuery
+            ? { ...activeQuery, query: activeQuery.query ?? "", id: queryId }
+            : {
+                  id: queryId,
+                  query: "hidden:*",
+                  keepAlive: null,
+                  languages: null,
+                  sortField: null,
+                  sortDirection: null,
+                  sortId: null,
+                  pageSize: null,
+              };
         try {
             return {
                 query: searchQuery,
