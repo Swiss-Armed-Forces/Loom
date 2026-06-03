@@ -324,24 +324,16 @@ export const fetchPreview = createAsyncThunk(
         },
         thunkAPI: GetThunkAPI<AsyncThunkConfig>,
     ) => {
-        const queryId = (await getShortRunningQuery()).queryId;
+        const { search } = thunkAPI.getState() as RootState;
+        const activeQuery = query ?? search.query;
+        if (!activeQuery) return;
 
-        const searchQuery: SearchQuery = query
-            ? {
-                  ...query,
-                  query: query.query ?? "",
-                  id: queryId,
-              }
-            : {
-                  id: queryId,
-                  query: "hidden:*",
-                  keepAlive: null,
-                  languages: null,
-                  sortField: null,
-                  sortDirection: null,
-                  sortId: null,
-                  pageSize: null,
-              };
+        const queryId = (await getShortRunningQuery()).queryId;
+        const searchQuery: SearchQuery = {
+            ...activeQuery,
+            query: activeQuery.query ?? "",
+            id: queryId,
+        };
         try {
             return {
                 query: searchQuery,
@@ -600,10 +592,7 @@ export const searchSlice = createSlice({
                 }
                 const isNewQuery = state.query?.id !== action.payload.query.id;
                 if (isNewQuery) {
-                    // new query: reset files and keyboard navigation
-                    Object.keys(state.files).forEach((fileId) => {
-                        state.files[fileId].meta = null;
-                    });
+                    state.files = {};
                     state.keyboardNavigation = {
                         highlightedIndex: null,
                     };
@@ -611,7 +600,6 @@ export const searchSlice = createSlice({
 
                 state.query = action.payload.query;
                 action.payload.files.forEach((file) => {
-                    // Check if file already exists to preserve preview if this is just a page load/refresh
                     if (!state.files[file.fileId]) {
                         state.files[file.fileId] = {
                             meta: file,
@@ -619,6 +607,7 @@ export const searchSlice = createSlice({
                             query: null,
                         };
                     } else {
+                        // same query, new page: preserve preview
                         state.files[file.fileId].meta = file;
                     }
                 });
