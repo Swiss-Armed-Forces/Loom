@@ -1,4 +1,4 @@
-import { ContentCut, Whatshot } from "@mui/icons-material";
+import { ContentCut, LinkOff, Whatshot } from "@mui/icons-material";
 import { CardHeader, Box } from "@mui/material";
 import { ReactNode } from "react";
 
@@ -72,6 +72,12 @@ export const FileCardHeader = ({
                         <ContentCut
                             fontSize="small"
                             titleAccess="Content is truncated"
+                        />
+                    )}
+                    {filePreview.attachmentsSkipped && (
+                        <LinkOff
+                            fontSize="small"
+                            titleAccess="Attachments skipped (max recursion depth reached)"
                         />
                     )}
                     {filePreview.isSpam && (

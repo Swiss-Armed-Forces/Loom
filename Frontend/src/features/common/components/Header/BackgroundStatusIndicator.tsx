@@ -1,4 +1,4 @@
-import { ContentCut } from "@mui/icons-material";
+import { ContentCut, LinkOff } from "@mui/icons-material";
 import {
     Badge,
     BadgeProps,
@@ -20,10 +20,13 @@ import {
     selectQueuesStatistics,
 } from "@app/slices/commonSlice";
 import {
+    fetchAttachmentsSkippedFiles,
     fetchContentTruncatedFiles,
     fetchFailedFiles,
+    QUERY_ATTACHMENTS_SKIPPED_FILES,
     QUERY_CONTENT_TRUNCATED_FILES,
     QUERY_FAILED_FILES,
+    selectAttachmentsSkippedFilesCount,
     selectContentTruncatedFilesCount,
     selectFailedFilesCount,
     updateQuery,
@@ -33,6 +36,7 @@ import { TaskStatusIcon } from "@features/common/components";
 import { TaskStatus } from "@features/common/utils/enums";
 
 const CONTENT_TRUNCATED_FILES_POLL_INTERVAL_MS = 180_000;
+const ATTACHMENTS_SKIPPED_FILES_POLL_INTERVAL_MS = 180_000;
 const FAILED_FILES_POLL_INTERVAL_MS = 180_000;
 const QUEUE_STATISTICS_POLL_INTERVAL_MS = 5_000;
 
@@ -60,6 +64,9 @@ export const BackgroundStatusIndicator: FC = () => {
     const contentTruncatedFilesCount = useAppSelector(
         selectContentTruncatedFilesCount,
     );
+    const attachmentsSkippedFilesCount = useAppSelector(
+        selectAttachmentsSkippedFilesCount,
+    );
     const failedBackgroundTaskCount = useAppSelector(selectFailedFilesCount);
     const queueStatistics = useAppSelector(selectQueuesStatistics);
     const { t } = useTranslation();
@@ -69,6 +76,7 @@ export const BackgroundStatusIndicator: FC = () => {
         const load = async () => {
             await Promise.all([
                 dispatch(fetchContentTruncatedFiles()),
+                dispatch(fetchAttachmentsSkippedFiles()),
                 dispatch(fetchFailedFiles()),
                 dispatch(fetchQueueStatistics()),
             ]).catch((errorPayload) => {
@@ -87,6 +95,16 @@ export const BackgroundStatusIndicator: FC = () => {
             );
         }, CONTENT_TRUNCATED_FILES_POLL_INTERVAL_MS);
 
+        const attachmentsSkippedFilesInterval = setInterval(async () => {
+            await dispatch(fetchAttachmentsSkippedFiles()).catch(
+                (errorPayload) => {
+                    toast.error(
+                        `Error in attachmentsSkippedFilesInterval: ${errorPayload}`,
+                    );
+                },
+            );
+        }, ATTACHMENTS_SKIPPED_FILES_POLL_INTERVAL_MS);
+
         const failedFilesInterval = setInterval(async () => {
             await dispatch(fetchFailedFiles()).catch((errorPayload) => {
                 toast.error(`Error in failedFilesInterval: ${errorPayload}`);
@@ -103,6 +121,7 @@ export const BackgroundStatusIndicator: FC = () => {
 
         return () => {
             clearInterval(contentTruncatedFilesInterval);
+            clearInterval(attachmentsSkippedFilesInterval);
             clearInterval(failedFilesInterval);
             clearInterval(queueStatisticsInterval);
         };
@@ -112,6 +131,14 @@ export const BackgroundStatusIndicator: FC = () => {
         dispatch(
             updateQuery({
                 query: QUERY_CONTENT_TRUNCATED_FILES,
+            }),
+        );
+    };
+
+    const queryAttachmentsSkippedFiles = () => {
+        dispatch(
+            updateQuery({
+                query: QUERY_ATTACHMENTS_SKIPPED_FILES,
             }),
         );
     };
@@ -194,6 +221,21 @@ export const BackgroundStatusIndicator: FC = () => {
                         onClick={queryContentTruncatedFiles}
                     >
                         <ContentCut />
+                    </ErrorCountBadge>
+                </Tooltip>
+            )}
+            {attachmentsSkippedFilesCount > 0 && (
+                <Tooltip
+                    title={t("header.attachmentsSkippedTooltip", {
+                        attachmentsSkippedCount: attachmentsSkippedFilesCount,
+                    })}
+                >
+                    <ErrorCountBadge
+                        badgeContent={attachmentsSkippedFilesCount}
+                        color="primary"
+                        onClick={queryAttachmentsSkippedFiles}
+                    >
+                        <LinkOff />
                     </ErrorCountBadge>
                 </Tooltip>
             )}

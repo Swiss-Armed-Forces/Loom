@@ -57,6 +57,10 @@ def _set_content_truncated(obj: File, content_truncated: bool) -> None:
     obj.content_truncated = content_truncated
 
 
+def _set_attachments_skipped(obj: File, attachments_skipped: bool) -> None:
+    obj.attachments_skipped = attachments_skipped
+
+
 def _set_magic_file_type(obj: File, file_type: str) -> None:
     obj.magic_file_type = file_type
 
@@ -172,6 +176,7 @@ class IndexingPersister(PersisterBase[File]):
     set_state = mutation(_set_state)
     set_content = mutation(_set_content)
     set_content_truncated = mutation(_set_content_truncated)
+    set_attachments_skipped = mutation(_set_attachments_skipped)
     set_magic_file_type = mutation(_set_magic_file_type)
     set_tika_file_type = mutation(_set_tika_file_type)
     set_tika_language = mutation(_set_tika_language)

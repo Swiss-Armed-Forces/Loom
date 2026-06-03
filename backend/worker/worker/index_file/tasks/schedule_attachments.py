@@ -39,6 +39,7 @@ def schedule_attachments(lazy_tika_result: TempTypedLazyBytes[TikaResult], file:
             settings.max_recursion_depth,
             file.recursion_depth,
         )
+        persist_attachments_skipped.s(file.id_).delay().forget()
         return
 
     # We spawn each attachment sub-pipeline independently rather than using
@@ -88,6 +89,14 @@ def schedule_attachment(tika_attachment: TikaAttachment, file: File) -> None:
         ),
         persist_attachment.s(file.id_),
     ).delay().forget()
+
+
+@persisting_task(
+    app,
+    IndexingPersister,
+)
+def persist_attachments_skipped(persister: IndexingPersister):
+    persister.set_attachments_skipped(True)
 
 
 @persisting_task(

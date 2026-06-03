@@ -7,6 +7,7 @@
         "runningTasksTooltip": "{{taskCount}} task(s) are running.",
         "failedTasksTooltip": "{{failedTaskCount}} files have failed tasks. Click to query for them.",
         "contentTruncatedTooltip": "{{contentTruncatedCount}} files have truncated content. Click to query for them.",
+        "attachmentsSkippedTooltip": "{{attachmentsSkippedCount}} files have skipped attachments. Click to query for them.",
         "estimateLessThanFiveMinutes": "Estimated completion time: Less than 5 minutes.",
         "estimateMinutes": "Estimated completion time: {{minutes}} minute(s).",
         "estimateHours": "Estimated completion time: {{hours}} hours(s).",

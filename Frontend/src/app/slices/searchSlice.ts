@@ -118,6 +118,7 @@ export interface SearchState {
     customQueries: CustomQuery[];
     sideMenu: SideMenuState;
     contentTruncatedFilesCount: number;
+    attachmentsSkippedFilesCount: number;
     failedFilesCount: number;
     displayStat: Stat;
     webSocketPubSubMessage: PubSubMessage | null;
@@ -130,6 +131,7 @@ export const CUSTOM_QUERIES_LOCAL_STORAGE_KEY = "CUSTOM_QUERIES";
 export const SIDE_MENU_LOCAL_STORAGE_KEY = "SIDE_MENU";
 export const QUERY_FAILED_FILES = "state:failed";
 export const QUERY_CONTENT_TRUNCATED_FILES = "content_truncated:true";
+export const QUERY_ATTACHMENTS_SKIPPED_FILES = "attachments_skipped:true";
 const AJV = new Ajv();
 
 const SideMenuStateSchema: JSONSchemaType<SideMenuState> = {
@@ -212,6 +214,7 @@ const initialState: SearchState = {
     customQueries: loadCustomQueries(),
     sideMenu: loadSideMenuState(),
     contentTruncatedFilesCount: 0,
+    attachmentsSkippedFilesCount: 0,
     failedFilesCount: 0,
     displayStat: Stat.Extensions,
     webSocketPubSubMessage: null,
@@ -384,6 +387,17 @@ export const fetchContentTruncatedFiles = createAsyncThunk(
         return getFilesCount({
             id: (await getShortRunningQuery()).queryId,
             query: QUERY_CONTENT_TRUNCATED_FILES,
+            keepAlive: null,
+        });
+    },
+);
+
+export const fetchAttachmentsSkippedFiles = createAsyncThunk(
+    "fetchAttachmentsSkippedFilesThunk",
+    async () => {
+        return getFilesCount({
+            id: (await getShortRunningQuery()).queryId,
+            query: QUERY_ATTACHMENTS_SKIPPED_FILES,
             keepAlive: null,
         });
     },
@@ -565,6 +579,13 @@ export const searchSlice = createSlice({
             .addCase(fetchContentTruncatedFiles.fulfilled, (state, action) => {
                 state.contentTruncatedFilesCount = action.payload.totalFiles;
             })
+            .addCase(
+                fetchAttachmentsSkippedFiles.fulfilled,
+                (state, action) => {
+                    state.attachmentsSkippedFilesCount =
+                        action.payload.totalFiles;
+                },
+            )
             .addCase(fetchFailedFiles.fulfilled, (state, action) => {
                 state.failedFilesCount = action.payload.totalFiles;
             })
@@ -729,6 +750,11 @@ export const selectStatsData = createSelector(
 export const selectContentTruncatedFilesCount = createSelector(
     selectSearch,
     (search) => search.contentTruncatedFilesCount,
+);
+
+export const selectAttachmentsSkippedFilesCount = createSelector(
+    selectSearch,
+    (search) => search.attachmentsSkippedFilesCount,
 );
 
 export const selectFailedFilesCount = createSelector(

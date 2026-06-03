@@ -349,6 +349,7 @@ class GetFilePreviewResponse(BaseModel):
     tasks_failed: list[UUID] = []
     summary: str | None
     is_spam: bool | None = False
+    attachments_skipped: bool = False
 
 
 @router.get("/{file_id}/preview")
@@ -392,6 +393,7 @@ def get_file_preview(
         tasks_retried=file.tasks_retried,
         summary=file.summary,
         is_spam=file.is_spam,
+        attachments_skipped=file.attachments_skipped,
     )
 
 
