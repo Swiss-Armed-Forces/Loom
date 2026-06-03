@@ -35,9 +35,9 @@ def dispatch_index_file(
     parent_id: UUID | None = None,
     uploaded_datetime: datetime | None = None,
     recursion_depth: int = 0,
-):
+) -> File:
     """Dispatch file for indexing."""
-    get_file_scheduling_service().index_file(
+    return get_file_scheduling_service().index_file(
         full_name=full_name,
         file_content=file_content,
         source_id=source_id,

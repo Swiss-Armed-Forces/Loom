@@ -4,7 +4,6 @@ from hashlib import sha256
 from celery import chain
 from common.dependencies import (
     get_celery_app,
-    get_file_scheduling_service,
     get_file_storage_service,
     get_lazybytes_service,
 )
@@ -13,6 +12,7 @@ from common.services.lazybytes_service import TempTypedLazyBytes
 from common.settings import settings
 from common.utils.iterhash import iterhash
 
+from worker.index_file.index_file_task import dispatch_index_file
 from worker.index_file.infra.file_indexing_task import FileIndexingTask
 from worker.index_file.infra.indexing_persister import IndexingPersister
 from worker.services.tika_service import TikaAttachment, TikaResult
@@ -27,6 +27,20 @@ app = get_celery_app()
 def schedule_attachments(lazy_tika_result: TempTypedLazyBytes[TikaResult], file: File):
     tika_result = get_lazybytes_service().load_object(lazy_tika_result)
 
+    if (
+        settings.max_recursion_depth is not None
+        and file.recursion_depth >= settings.max_recursion_depth
+    ):
+        logger.info(
+            "Skipping %d attachment(s) of '%s': max recursion depth %d reached"
+            " (file depth: %d)",
+            len(tika_result.attachments),
+            file.full_name,
+            settings.max_recursion_depth,
+            file.recursion_depth,
+        )
+        return
+
     # We spawn each attachment sub-pipeline independently rather than using
     # self.replace(group(...)) because constructing a Celery group with many
     # attachments (e.g., large archives) causes memory blowup - the entire group
@@ -37,27 +51,12 @@ def schedule_attachments(lazy_tika_result: TempTypedLazyBytes[TikaResult], file:
     # becomes independent. The "correct" approach would be self.replace(group(...))
     # but it's not feasible for files with many attachments.
     for attachment in tika_result.attachments:
-        chain(
-            schedule_attachment.s(attachment, file), persist_attachment.s(file.id_)
-        ).delay().forget()
+        schedule_attachment.s(attachment, file).delay().forget()
 
 
 @app.task(base=FileIndexingTask)
-def schedule_attachment(
-    tika_attachment: TikaAttachment, file: File
-) -> Attachment | None:
+def schedule_attachment(tika_attachment: TikaAttachment, file: File) -> None:
     attachment_name = str(file.full_name / tika_attachment.name)
-    if (
-        settings.max_recursion_depth is not None
-        and file.recursion_depth >= settings.max_recursion_depth
-    ):
-        logger.info(
-            "Skipping attachment '%s': max recursion depth %d reached (file depth: %d)",
-            attachment_name,
-            settings.max_recursion_depth,
-            file.recursion_depth,
-        )
-        return None
 
     lazybytes_service = get_lazybytes_service()
     file_storage_service = get_file_storage_service()
@@ -76,26 +75,28 @@ def schedule_attachment(
             attachment_name,
             file.full_name,
         )
-        return None
+        return
 
-    new_file = get_file_scheduling_service().index_file(
-        full_name=attachment_name,
-        file_content=file_content,
-        source_id=file.source,
-        parent_id=file.id_,
-        recursion_depth=file.recursion_depth + 1,
-    )
-    return Attachment(
-        id=new_file.id_,
-        name=tika_attachment.name,
-    )
+    chain(
+        dispatch_index_file.s(
+            attachment_name,
+            file_content,
+            file.source,
+            file.id_,
+            None,  # uploaded_datetime
+            file.recursion_depth + 1,
+        ),
+        persist_attachment.s(file.id_),
+    ).delay().forget()
 
 
 @persisting_task(
     app,
     IndexingPersister,
 )
-def persist_attachment(persister: IndexingPersister, attachment: Attachment | None):
-    if attachment is None:
+def persist_attachment(persister: IndexingPersister, new_file: File | None):
+    if new_file is None:
         return
-    persister.add_or_replace_attachment(attachment)
+    persister.add_or_replace_attachment(
+        Attachment(id=new_file.id_, name=new_file.full_name.name)
+    )
