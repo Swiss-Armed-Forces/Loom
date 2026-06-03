@@ -7,6 +7,7 @@ from worker.ai import process_question_task
 from worker.create_archive import create_archive_task, update_archive_task
 from worker.index_file import (
     add_tags_to_file_task,
+    dispatch_tasks,
     index_file_task,
     remove_tag_from_file_task,
     summarize_file_task,
@@ -29,6 +30,7 @@ from worker.test import autoretry_test_task, canvas_test_task, sigkill_pgroup_ta
 tasks = [
     create_archive_task,
     update_archive_task,
+    dispatch_tasks,
     index_file_task,
     add_tags_to_file_task,
     remove_tag_from_file_task,

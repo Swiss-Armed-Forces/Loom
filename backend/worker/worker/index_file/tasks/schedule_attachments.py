@@ -12,7 +12,7 @@ from common.services.lazybytes_service import TempTypedLazyBytes
 from common.settings import settings
 from common.utils.iterhash import iterhash
 
-from worker.index_file.index_file_task import dispatch_index_file
+from worker.index_file.dispatch_tasks import dispatch_index_file
 from worker.index_file.infra.file_indexing_task import FileIndexingTask
 from worker.index_file.infra.indexing_persister import IndexingPersister
 from worker.services.tika_service import TikaAttachment, TikaResult

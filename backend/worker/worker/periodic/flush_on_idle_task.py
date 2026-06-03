@@ -14,7 +14,7 @@ from common.task_object.root_task_information_repository import (
 )
 from common.utils.task_lock import task_lock
 
-from worker.index_file.index_file_task import dispatch_index_file, dispatch_reindex_file
+from worker.index_file.dispatch_tasks import dispatch_index_file, dispatch_reindex_file
 from worker.periodic.infra.periodic_task import PeriodicTask
 from worker.periodic.tasks import (
     flush_cache,

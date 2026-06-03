@@ -5,11 +5,9 @@ from celery import group
 from common.dependencies import (
     get_celery_app,
     get_file_repository,
-    get_file_scheduling_service,
     get_lazybytes_service,
 )
 from common.file.file_repository import FileNotFoundException
-from common.services.query_builder import QueryParameters
 
 from worker.index_file.infra.file_indexing_task import FileIndexingTask
 from worker.index_file.tasks.translate import (
@@ -23,25 +21,6 @@ logger = logging.getLogger(__name__)
 app = get_celery_app()
 
 ON_DEMAND_TRANSLATION_CONFIDENCE = 100.0
-
-
-@app.task()
-def dispatch_translate_files(query: QueryParameters, lang: str):
-    logger.info("Dispatching tasks to translate files with query '%s'", query)
-    for file in get_file_repository().get_id_generator_by_query(query=query):
-        dispatch_translate_file.s(
-            file_id=file.id_,
-            lang=lang,
-        ).delay().forget()
-
-
-@app.task()
-def dispatch_translate_file(file_id: UUID, lang: str):
-    logger.info("Dispatching tasks to translate files with id '%s'", file_id)
-    get_file_scheduling_service().translate_file(
-        file_id=file_id,
-        lang=lang,
-    )
 
 
 @app.task(base=FileIndexingTask)

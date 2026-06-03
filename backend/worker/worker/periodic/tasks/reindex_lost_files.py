@@ -9,7 +9,7 @@ from common.dependencies import (
 from common.models.es_repository import SortingParameters
 from common.services.query_builder import QueryParameters
 
-from worker.index_file.index_file_task import dispatch_reindex_file
+from worker.index_file.dispatch_tasks import dispatch_reindex_file
 from worker.periodic.infra.periodic_task import PeriodicTask
 from worker.settings import settings
 
