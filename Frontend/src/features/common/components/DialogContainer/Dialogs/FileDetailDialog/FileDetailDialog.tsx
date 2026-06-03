@@ -231,26 +231,38 @@ export const FileDetailDialog = ({
             <DialogContent sx={{ display: "flex", flexDirection: "column" }}>
                 <Box sx={{ borderBottom: 1, borderColor: "divider" }}>
                     <Tabs value={tab} onChange={(_, v) => setTab(v)}>
-                        <Tab label="Rendered" value={FileDetailTab.Rendered} />
+                        <Tab
+                            label="Rendered"
+                            value={FileDetailTab.Rendered}
+                            data-tab-value={FileDetailTab.Rendered}
+                        />
                         <Tab
                             label="Content"
                             value={FileDetailTab.Content}
+                            data-tab-value={FileDetailTab.Content}
                             disabled={!properties.hasContent}
                         />
                         <Tab
                             label="Highlights"
                             value={FileDetailTab.Highlights}
+                            data-tab-value={FileDetailTab.Highlights}
                             disabled={!properties.hasHighlights}
                         />
-                        <Tab label="Raw" value={FileDetailTab.RAW} />
+                        <Tab
+                            label="Raw"
+                            value={FileDetailTab.RAW}
+                            data-tab-value={FileDetailTab.RAW}
+                        />
                         <Tab
                             label="Summary"
                             value={FileDetailTab.Summary}
+                            data-tab-value={FileDetailTab.Summary}
                             disabled={!properties.hasSummary}
                         />
                         <Tab
                             label="Translations"
                             value={FileDetailTab.Translations}
+                            data-tab-value={FileDetailTab.Translations}
                             disabled={!properties.hasTranslations}
                         />
                     </Tabs>
