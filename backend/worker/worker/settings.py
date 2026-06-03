@@ -180,7 +180,7 @@ class Settings(CommonSettings):
     llm_chat_system_prompt: str = """You are an expert english chatbot called Loom"""
     llm_chat_message_history_index: str = "message_history"
 
-    auto_tag_file_similarity_threshold: float = 0.75
+    auto_tag_file_similarity_threshold: float = 0.95
 
     gotenberg_host: AnyHttpUrl = AnyHttpUrl(f"http://gotenberg.{DOMAIN}")
     gotenberg_timeout: int = 1 * 60
