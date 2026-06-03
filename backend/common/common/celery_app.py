@@ -656,6 +656,20 @@ def set_oom_score_for_pool_worker(*_, **__):
     adjust_oom_score(1000)
 
 
+@signals.worker_ready.connect
+def _declare_terminal_queues(sender: Any, **__: Any) -> None:
+    """Declare terminal queues that no worker consumes.
+
+    Celery only declares queues a worker actively subscribes to. The abyss and
+    unroutable queues are terminal destinations with no consumers, so they must be
+    declared explicitly to ensure dead-letter and alternate-exchange routing works
+    correctly on fresh deployments.
+    """
+    with sender.app.pool.acquire(block=True) as conn:
+        for queue in [_get_abyss_queue(), _get_unroutable_queue()]:
+            queue(conn.default_channel).declare()  # type: ignore[operator]
+
+
 @signals.task_prerun.connect
 def log_task_start(
     _: Task | None = None,
