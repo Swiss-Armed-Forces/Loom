@@ -97,7 +97,7 @@ def test_index_file_sets_recursion_depth(
     assert saved_file.recursion_depth == 3
 
 
-def test_reindex_file_preserves_recursion_depth(
+def test_reindex_file_resets_recursion_depth(
     lazybytes_service_inmemory: InMemoryTempLazyBytesService,
 ):
     file_repository = get_file_repository()
@@ -127,4 +127,4 @@ def test_reindex_file_preserves_recursion_depth(
 
     file_repository.save.assert_called_once()
     saved_file = file_repository.save.call_args.args[0]
-    assert saved_file.recursion_depth == 2
+    assert saved_file.recursion_depth == 0

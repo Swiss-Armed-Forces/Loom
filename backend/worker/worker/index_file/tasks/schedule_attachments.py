@@ -28,7 +28,8 @@ def schedule_attachments(lazy_tika_result: TempTypedLazyBytes[TikaResult], file:
     tika_result = get_lazybytes_service().load_object(lazy_tika_result)
 
     if (
-        settings.max_recursion_depth is not None
+        tika_result.attachments
+        and settings.max_recursion_depth is not None
         and file.recursion_depth >= settings.max_recursion_depth
     ):
         logger.info(
