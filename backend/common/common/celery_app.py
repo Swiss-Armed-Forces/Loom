@@ -3,7 +3,7 @@ import random
 from abc import ABC
 from datetime import datetime, timedelta
 from pprint import pformat
-from typing import Any
+from typing import Any, Protocol
 
 import celery
 from celery import Celery, Task, chord
@@ -661,8 +661,18 @@ def get_terminal_queues() -> list[Queue]:
     return [_get_abyss_queue(), _get_unroutable_queue()]
 
 
+class _WorkerReadySender(Protocol):  # pylint: disable=too-few-public-methods
+    # The celery-stubs package does not type the `app` attribute on
+    # celery.worker.components.Consumer (the actual runtime sender of
+    # worker_ready), nor does the kombu-stubs package type
+    # ProducerPool.acquire. This Protocol captures the subset we actually
+    # use so mypy/Pyright can follow the chain.
+    # Remove once upstream stubs are complete.
+    app: Celery
+
+
 @signals.worker_ready.connect
-def declare_terminal_queues(sender: Any, **__: Any) -> None:
+def declare_terminal_queues(sender: _WorkerReadySender, **__: Any) -> None:
     """Declare terminal queues that no worker consumes.
 
     Celery only declares queues a worker actively subscribes to. The abyss and
@@ -670,7 +680,7 @@ def declare_terminal_queues(sender: Any, **__: Any) -> None:
     declared explicitly to ensure dead-letter and alternate-exchange routing works
     correctly on fresh deployments.
     """
-    with sender.app.pool.acquire(block=True) as conn:
+    with sender.app.pool.acquire(block=True) as conn:  # type: ignore[attr-defined]
         for queue in get_terminal_queues():
             queue(conn.default_channel).declare()  # type: ignore[operator]
 

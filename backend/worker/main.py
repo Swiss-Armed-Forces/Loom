@@ -3,6 +3,7 @@
 import logging
 import sys
 from shlex import quote
+from typing import Protocol
 
 from celery import signals
 from common.celery_app import get_terminal_queues, register_persister_shard_queues
@@ -19,6 +20,15 @@ from worker.dependencies import init
 logger = logging.getLogger(__name__)
 
 
+class _WorkerReadySender(Protocol):  # pylint: disable=too-few-public-methods
+    # The celery-stubs package does not type the `hostname` attribute on
+    # celery.worker.components.Consumer (the actual runtime sender of
+    # worker_ready). This Protocol captures the subset we actually use so
+    # mypy/Pyright can follow the chain.
+    # Remove once upstream stubs are complete.
+    hostname: str
+
+
 def init_all():
     init_common_dependencies()
     init()
@@ -31,7 +41,7 @@ def pool_worker_main(*_, **__):
 
 
 @signals.worker_ready.connect
-def restore_queue_pause_state(sender, **__):
+def restore_queue_pause_state(sender: _WorkerReadySender, **__):
     """Cancel consumption of any queues that are currently paused in Redis.
 
     Celery's cancel_consumer broadcast only reaches currently running workers. This
