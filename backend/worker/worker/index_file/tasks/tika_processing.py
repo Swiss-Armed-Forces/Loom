@@ -2,9 +2,9 @@ import abc
 import logging
 import os
 import tempfile
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from traceback import format_exception
-from typing import Generator
 
 from celery import Task, chain, chord, group
 from celery.canvas import Signature
@@ -97,7 +97,7 @@ class TikaExtractorFallback(TikaFallback):
                 self.extractor.extract(file_content, file_type, out_dir, out_content)
             except ExtractNotSupported:
                 return None
-            attachments = list(self._collect_tika_attachments(Path(out_dir)))
+            attachments = self._collect_tika_attachments(Path(out_dir))
             # read text
             out_content.flush()
             out_content.seek(0)
@@ -108,16 +108,22 @@ class TikaExtractorFallback(TikaFallback):
             attachments=attachments,
         )
 
-    def _collect_tika_attachments(
-        self, directory: Path
-    ) -> Generator[TikaAttachment, None, None]:
-        for dirpath, _, filenames in os.walk(directory):
-            for filename in filenames:
-                filepath = Path(dirpath, filename)
-                with filepath.open("rb") as fd:
-                    lazybytes = get_lazybytes_service().from_file(fd)
-                name = str(filepath.relative_to(directory))
-                yield TikaAttachment(name=name, data=lazybytes)
+    def _collect_tika_attachments(self, directory: Path) -> list[TikaAttachment]:
+        filepaths = (
+            Path(dirpath, filename)
+            for dirpath, _, filenames in os.walk(directory)
+            for filename in filenames
+        )
+
+        def _process(filepath: Path) -> TikaAttachment:
+            with filepath.open("rb") as fd:
+                lazybytes = get_lazybytes_service().from_file(fd)
+            return TikaAttachment(
+                name=str(filepath.relative_to(directory)), data=lazybytes
+            )
+
+        with ThreadPoolExecutor() as executor:
+            return list(executor.map(_process, filepaths))
 
 
 # Fallback objects to be used in the case of an unsuccessful unpack by Tika.
