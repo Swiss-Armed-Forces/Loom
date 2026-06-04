@@ -1,4 +1,4 @@
-import { ContentCut, LinkOff, PauseCircle } from "@mui/icons-material";
+import { ContentCut, LinkOff, Pause } from "@mui/icons-material";
 import {
     Badge,
     BadgeProps,
@@ -56,7 +56,6 @@ const RunningTasksProgress = styled(CircularProgress)<CircularProgressProps>`
 `;
 
 const ErrorCountBadge = styled(Badge)<BadgeProps>`
-    margin-right: 0.5rem;
     cursor: pointer;
 `;
 
@@ -208,22 +207,34 @@ export const BackgroundStatusIndicator: FC = () => {
             {queueStatistics.messagesInQueues > 0 && (
                 <Tooltip title={getActiveSpinnerTooltip()}>
                     <Badge
-                        badgeContent={
-                            queueStatistics.pausedQueuesCount > 0 ? (
-                                <PauseCircle
+                        badgeContent={queueStatistics.messagesInQueues}
+                        color="primary"
+                    >
+                        {queueStatistics.pausedQueuesCount > 0 ? (
+                            <Box
+                                sx={{
+                                    position: "relative",
+                                    display: "inline-flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    cursor: "pointer",
+                                }}
+                                onClick={queryFilesNotProcessed}
+                            >
+                                <RunningTasksProgress size="1.5rem" />
+                                <Pause
                                     sx={{
-                                        fontSize: "0.75rem",
-                                        color: "warning.main",
+                                        position: "absolute",
+                                        fontSize: "0.9rem",
                                     }}
                                 />
-                            ) : null
-                        }
-                        overlap="circular"
-                    >
-                        <RunningTasksProgress
-                            size="1.5rem"
-                            onClick={queryFilesNotProcessed}
-                        />
+                            </Box>
+                        ) : (
+                            <RunningTasksProgress
+                                size="1.5rem"
+                                onClick={queryFilesNotProcessed}
+                            />
+                        )}
                     </Badge>
                 </Tooltip>
             )}
