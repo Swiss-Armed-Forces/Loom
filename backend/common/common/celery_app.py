@@ -656,8 +656,13 @@ def set_oom_score_for_pool_worker(*_, **__):
     adjust_oom_score(1000)
 
 
+def get_terminal_queues() -> list[Queue]:
+    """Return all terminal queues — queues that no worker consumes."""
+    return [_get_abyss_queue(), _get_unroutable_queue()]
+
+
 @signals.worker_ready.connect
-def _declare_terminal_queues(sender: Any, **__: Any) -> None:
+def declare_terminal_queues(sender: Any, **__: Any) -> None:
     """Declare terminal queues that no worker consumes.
 
     Celery only declares queues a worker actively subscribes to. The abyss and
@@ -666,7 +671,7 @@ def _declare_terminal_queues(sender: Any, **__: Any) -> None:
     correctly on fresh deployments.
     """
     with sender.app.pool.acquire(block=True) as conn:
-        for queue in [_get_abyss_queue(), _get_unroutable_queue()]:
+        for queue in get_terminal_queues():
             queue(conn.default_channel).declare()  # type: ignore[operator]
 
 

@@ -5,7 +5,7 @@ import sys
 from shlex import quote
 
 from celery import signals
-from common.celery_app import register_persister_shard_queues
+from common.celery_app import get_terminal_queues, register_persister_shard_queues
 from common.dependencies import get_celery_app, get_celery_inspect_service
 from common.dependencies import init as init_common_dependencies
 from common.settings import settings
@@ -73,8 +73,7 @@ match settings.worker_type:
         exclude_queues = [
             get_queue_from_task(settings.celery_graveyard_task_name),
             get_queue_from_task(settings.celery_dead_task_name),
-            get_queue_from_task(settings.celery_unroutable_task_name),
-            get_queue_from_task(settings.celery_abyss_task_name),
+            *[q.name for q in get_terminal_queues()],
         ] + all_persister_queues
         argv = argv + [
             "--exclude-queues",

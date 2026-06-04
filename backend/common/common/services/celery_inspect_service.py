@@ -6,8 +6,8 @@ from typing import TYPE_CHECKING, Iterator, Union
 from celery import Celery
 from redis import StrictRedis
 
+from common.celery_app import get_terminal_queues
 from common.services.queues_service import QueuesService
-from common.settings import settings
 
 if TYPE_CHECKING:
     from celery.app.control import _TaskInfo, _TaskScheduledInfo
@@ -61,11 +61,9 @@ class CeleryInspectService:
     ) -> bool:
         # Always exclude terminal queues — they have no consumers and can never be
         # drained by workers, so their message count must not block idle detection.
-        terminal_queues = {
-            f"{settings.celery_queue_name_prefix}{settings.celery_abyss_task_name}",
-            f"{settings.celery_queue_name_prefix}{settings.celery_unroutable_task_name}",
-        }
-        effective_excludes = list(terminal_queues | set(exclude_queues or []))
+        effective_excludes = list(
+            {q.name for q in get_terminal_queues()} | set(exclude_queues or [])
+        )
         tasks_count = self.count_tasks()
         messages_in_queues = self.count_messages_in_queues(
             exclude_queues=effective_excludes
