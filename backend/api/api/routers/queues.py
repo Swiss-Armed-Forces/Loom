@@ -2,7 +2,8 @@ import logging
 from datetime import datetime
 
 import numpy as np
-from common.dependencies import get_queues_service
+from common.dependencies import get_celery_inspect_service, get_queues_service
+from common.services.celery_inspect_service import CeleryInspectService
 from common.services.queues_service import QueuesService
 from fastapi import APIRouter, Depends
 from sklearn.linear_model import LinearRegression
@@ -12,6 +13,7 @@ from api.models.queues_model import CompleteEstimate, OverallQueuesStats
 router = APIRouter()
 
 default_queues_service = Depends(get_queues_service)
+default_celery_inspect_service = Depends(get_celery_inspect_service)
 
 SAMPLE_PERIODS__S = [
     # 8 hours
@@ -37,9 +39,11 @@ logger = logging.getLogger(__name__)
 @router.get("/")
 def get_overall_queue_stats(
     queues_service: QueuesService = default_queues_service,
+    celery_inspect_service: CeleryInspectService = default_celery_inspect_service,
 ) -> OverallQueuesStats:
     messages_in_queues = get_message_count(queues_service=queues_service)
     complete_estimate_timestamp = get_completed_estimate(queues_service=queues_service)
+    paused_queues = celery_inspect_service.get_paused_queues()
     return OverallQueuesStats(
         messages_in_queues=messages_in_queues,
         complete_estimate_timestamp=(
@@ -47,6 +51,7 @@ def get_overall_queue_stats(
             if complete_estimate_timestamp is not None
             else None
         ),
+        paused_queues_count=len(paused_queues),
     )
 
 

@@ -1,4 +1,4 @@
-import { ContentCut, LinkOff } from "@mui/icons-material";
+import { ContentCut, LinkOff, PauseCircle } from "@mui/icons-material";
 import {
     Badge,
     BadgeProps,
@@ -163,7 +163,11 @@ export const BackgroundStatusIndicator: FC = () => {
         const completeEstimateTimestamp =
             queueStatistics.completeEstimateTimestamp;
         let estimatedTimeAddition = "";
-        if (completeEstimateTimestamp != undefined) {
+        if (queueStatistics.pausedQueuesCount > 0) {
+            estimatedTimeAddition = t("header.indexingThrottled", {
+                pausedQueuesCount: queueStatistics.pausedQueuesCount,
+            });
+        } else if (completeEstimateTimestamp != undefined) {
             const nowTimestamp = new Date().getTime() / 1000;
             const completedin = completeEstimateTimestamp - nowTimestamp;
 
@@ -203,10 +207,24 @@ export const BackgroundStatusIndicator: FC = () => {
         <Indicator>
             {queueStatistics.messagesInQueues > 0 && (
                 <Tooltip title={getActiveSpinnerTooltip()}>
-                    <RunningTasksProgress
-                        size="1.5rem"
-                        onClick={queryFilesNotProcessed}
-                    />
+                    <Badge
+                        badgeContent={
+                            queueStatistics.pausedQueuesCount > 0 ? (
+                                <PauseCircle
+                                    sx={{
+                                        fontSize: "0.75rem",
+                                        color: "warning.main",
+                                    }}
+                                />
+                            ) : null
+                        }
+                        overlap="circular"
+                    >
+                        <RunningTasksProgress
+                            size="1.5rem"
+                            onClick={queryFilesNotProcessed}
+                        />
+                    </Badge>
                 </Tooltip>
             )}
             {contentTruncatedFilesCount > 0 && (

@@ -11,7 +11,8 @@
         "estimateLessThanFiveMinutes": "Estimated completion time: Less than 5 minutes.",
         "estimateMinutes": "Estimated completion time: {{minutes}} minute(s).",
         "estimateHours": "Estimated completion time: {{hours}} hours(s).",
-        "estimateDays": "Estimated completion time: {{days}} days(s)."
+        "estimateDays": "Estimated completion time: {{days}} days(s).",
+        "indexingThrottled": "Indexing is throttled ({{pausedQueuesCount}} queue(s) paused)."
     },
     "common": {
         "close": "Close",
