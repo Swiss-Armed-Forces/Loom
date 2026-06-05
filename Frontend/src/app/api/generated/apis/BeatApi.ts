@@ -95,11 +95,13 @@ export const TriggerScheduledTaskV1BeatScheduleNamePostScheduleNameEnum = {
     SeaweedfsScrubOnIdle: "seaweedfs-scrub-on-idle",
     SeaweedfsS3CleanUploadsOnIdle: "seaweedfs-s3-clean-uploads-on-idle",
     SeaweedfsVacuumOnIdle: "seaweedfs-vacuum-on-idle",
+    SeaweedfsFsckOnIdle: "seaweedfs-fsck-on-idle",
     SeaweedfsFixReplication: "seaweedfs-fix-replication",
     SeaweedfsBalance: "seaweedfs-balance",
     SeaweedfsScrub: "seaweedfs-scrub",
     SeaweedfsS3CleanUploads: "seaweedfs-s3-clean-uploads",
     SeaweedfsVacuum: "seaweedfs-vacuum",
+    SeaweedfsFsck: "seaweedfs-fsck",
 } as const;
 export type TriggerScheduledTaskV1BeatScheduleNamePostScheduleNameEnum =
     (typeof TriggerScheduledTaskV1BeatScheduleNamePostScheduleNameEnum)[keyof typeof TriggerScheduledTaskV1BeatScheduleNamePostScheduleNameEnum];

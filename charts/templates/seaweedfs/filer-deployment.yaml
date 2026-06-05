@@ -13,6 +13,11 @@ spec:
   {{- if not .Values.seaweedfs.filer.hpa.enabled }}
   replicas: {{ .Values.seaweedfs.filer.replicaCount }}
   {{- end }}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: {{ .Values.seaweedfs.filer.strategy.rollingUpdate.maxSurge }}
+      maxUnavailable: {{ .Values.seaweedfs.filer.strategy.rollingUpdate.maxUnavailable }}
   selector:
     matchLabels:
       app: {{ include "app.name" . }}-seaweedfs-filer
@@ -26,6 +31,9 @@ spec:
         {{- . | nindent 8 }}
       {{- end }}
     spec:
+      {{- with .Values.seaweedfs.filer.priorityClass }}
+      priorityClassName: {{ include "app.fullname" $ }}-{{ . }}
+      {{- end }}
       terminationGracePeriodSeconds: {{ .Values.seaweedfs.filer.terminationGracePeriodSeconds | default 180 }}
       securityContext:
         runAsUser: 1000

@@ -13,6 +13,11 @@ spec:
   {{- if not .Values.gotenberg.hpa.enabled }}
   replicas: {{ .Values.gotenberg.replicaCount }}
   {{- end }}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: {{ .Values.gotenberg.strategy.rollingUpdate.maxSurge }}
+      maxUnavailable: {{ .Values.gotenberg.strategy.rollingUpdate.maxUnavailable }}
   selector:
     matchLabels:
       app: {{ include "app.name" . }}-gotenberg
@@ -26,6 +31,9 @@ spec:
         {{- . | nindent 8 }}
       {{- end }}
     spec:
+      {{- with .Values.gotenberg.priorityClass }}
+      priorityClassName: {{ include "app.fullname" $ }}-{{ . }}
+      {{- end }}
       containers:
         - name: gotenberg
           image: {{ .Values.image.registry }}/{{ .Values.gotenberg.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) .Values.gotenberg.image.tag }}

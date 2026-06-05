@@ -33,6 +33,9 @@ spec:
         {{- . | nindent 8 }}
       {{- end }}
     spec:
+      {{- with $values.priorityClass }}
+      priorityClassName: {{ include "app.fullname" $ }}-{{ . }}
+      {{- end }}
       initContainers:
         - name: delete-redis-tmp-files
           image: {{ .Values.image.registry }}/{{ $values.initContainer.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) $values.initContainer.image.tag }}
@@ -127,6 +130,14 @@ spec:
   volumeClaimTemplates:
     - metadata:
         name: redis
+        {{- with include "app.pvc.labels.custom" (dict "context" . "component" $component) }}
+        labels:
+          {{- . | nindent 10 }}
+        {{- end }}
+        {{- with include "app.pvc.annotations.custom" (dict "context" . "component" $component) }}
+        annotations:
+          {{- . | nindent 10 }}
+        {{- end }}
       spec:
         accessModes:
           - {{ default "ReadWriteOnce" (dig "pvc" "accessModes" "" $values) | quote }}

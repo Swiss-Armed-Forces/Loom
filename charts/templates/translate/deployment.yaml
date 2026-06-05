@@ -13,7 +13,12 @@ metadata:
 spec:
   {{- if not .Values.translate.hpa.enabled }}
   replicas: {{ .Values.translate.replicaCount }}
-  {{- end}}
+  {{- end }}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: {{ .Values.translate.strategy.rollingUpdate.maxSurge }}
+      maxUnavailable: {{ .Values.translate.strategy.rollingUpdate.maxUnavailable }}
   selector:
     matchLabels:
       app: {{ include "app.name" . }}-translate
@@ -27,6 +32,9 @@ spec:
         {{- . | nindent 8 }}
       {{- end }}
     spec:
+      {{- with .Values.translate.priorityClass }}
+      priorityClassName: {{ include "app.fullname" $ }}-{{ . }}
+      {{- end }}
       containers:
         - name: translate
           image: {{ .Values.image.registry }}/{{ .Values.translate.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) .Values.translate.image.tag }}

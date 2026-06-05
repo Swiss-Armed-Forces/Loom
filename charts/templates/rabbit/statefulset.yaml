@@ -25,6 +25,9 @@ spec:
         {{- . | nindent 8 }}
       {{- end }}
     spec:
+      {{- with .Values.rabbit.priorityClass }}
+      priorityClassName: {{ include "app.fullname" $ }}-{{ . }}
+      {{- end }}
       containers:
         - name: rabbit
           image: {{ .Values.image.registry }}/{{ .Values.rabbit.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) .Values.rabbit.image.tag }}
@@ -80,6 +83,14 @@ spec:
   volumeClaimTemplates:
     - metadata:
         name: rabbit
+        {{- with include "app.pvc.labels.custom" (dict "context" . "component" "rabbit") }}
+        labels:
+          {{- . | nindent 10 }}
+        {{- end }}
+        {{- with include "app.pvc.annotations.custom" (dict "context" . "component" "rabbit") }}
+        annotations:
+          {{- . | nindent 10 }}
+        {{- end }}
       spec:
         accessModes:
           - {{ .Values.rabbit.pvc.accessModes | default "ReadWriteOnce" | quote }}

@@ -106,7 +106,7 @@ class TaskSchedulingService:
         """
         root_task_id = uuid4()
         self._send_task(
-            "worker.index_file.index_file_task.dispatch_index_file",
+            "worker.index_file.dispatch_tasks.dispatch_index_file",
             args=[
                 full_name,
                 file_content,
@@ -121,7 +121,7 @@ class TaskSchedulingService:
     def dispatch_reindex_files(self, query: QueryParameters):
         root_task_id = uuid4()
         self._send_task(
-            "worker.index_file.index_file_task.dispatch_reindex_files",
+            "worker.index_file.dispatch_tasks.dispatch_reindex_files",
             args=[query],
             root_id=str(root_task_id),
         ).forget()
@@ -129,7 +129,7 @@ class TaskSchedulingService:
     def dispatch_reindex_file(self, file_id: UUID):
         root_task_id = uuid4()
         self._send_task(
-            "worker.index_file.index_file_task.dispatch_reindex_file",
+            "worker.index_file.dispatch_tasks.dispatch_reindex_file",
             args=[file_id],
             root_id=str(root_task_id),
         ).forget()
@@ -152,7 +152,7 @@ class TaskSchedulingService:
     def dispatch_translate_files(self, query: QueryParameters, lang: str):
         root_task_id = uuid4()
         self._send_task(
-            "worker.index_file.translate_file_task.dispatch_translate_files",
+            "worker.index_file.dispatch_tasks.dispatch_translate_files",
             args=[query, lang],
             root_id=str(root_task_id),
         ).forget()
@@ -160,7 +160,7 @@ class TaskSchedulingService:
     def dispatch_translate_file(self, file_id: UUID, lang: str):
         root_task_id = uuid4()
         self._send_task(
-            "worker.index_file.translate_file_task.dispatch_translate_file",
+            "worker.index_file.dispatch_tasks.dispatch_translate_file",
             args=[file_id, lang],
             root_id=str(root_task_id),
         ).forget()
@@ -183,7 +183,7 @@ class TaskSchedulingService:
     def dispatch_summarize_file(self, file_id: UUID, system_prompt: str | None = None):
         root_task_id = uuid4()
         self._send_task(
-            "worker.index_file.summarize_file_task.dispatch_summarize_file",
+            "worker.index_file.dispatch_tasks.dispatch_summarize_file",
             args=[file_id, system_prompt],
             root_id=str(root_task_id),
         ).forget()
@@ -193,7 +193,7 @@ class TaskSchedulingService:
     ):
         root_task_id = uuid4()
         self._send_task(
-            "worker.index_file.summarize_file_task.dispatch_summarize_files",
+            "worker.index_file.dispatch_tasks.dispatch_summarize_files",
             args=[query, system_prompt],
             root_id=str(root_task_id),
         ).forget()
@@ -264,7 +264,7 @@ class TaskSchedulingService:
     def dispatch_update(self, query: QueryParameters, request: UpdateFileRequest):
         root_task_id = uuid4()
         self._send_task(
-            "worker.index_file.update_file_task.dispatch_update_for_files",
+            "worker.index_file.dispatch_tasks.dispatch_update_for_files",
             args=[query, request],
             root_id=str(root_task_id),
         ).forget()
@@ -287,7 +287,7 @@ class TaskSchedulingService:
     def dispatch_add_tags_to_files(self, query: QueryParameters, tags: list[Tag]):
         root_task_id = uuid4()
         self._send_task(
-            "worker.index_file.add_tags_to_file_task.dispatch_add_tags_to_files",
+            "worker.index_file.dispatch_tasks.dispatch_add_tags_to_files",
             args=[query, tags],
             root_id=str(root_task_id),
         ).forget()
@@ -295,7 +295,7 @@ class TaskSchedulingService:
     def dispatch_add_tags_to_file(self, file_id: UUID, tags: list[Tag]):
         root_task_id = uuid4()
         self._send_task(
-            "worker.index_file.add_tags_to_file_task.dispatch_add_tags_to_file",
+            "worker.index_file.dispatch_tasks.dispatch_add_tags_to_file",
             args=[file_id, tags],
             root_id=str(root_task_id),
         ).forget()
@@ -318,7 +318,7 @@ class TaskSchedulingService:
     def dispatch_remove_tag(self, tag):
         root_task_id = uuid4()
         self._send_task(
-            "worker.index_file.remove_tag_from_file_task.dispatch_remove_tag",
+            "worker.index_file.dispatch_tasks.dispatch_remove_tag",
             args=[tag],
             root_id=str(root_task_id),
         ).forget()
@@ -326,7 +326,7 @@ class TaskSchedulingService:
     def dispatch_remove_tag_from_file(self, file_id: UUID, tag):
         root_task_id = uuid4()
         self._send_task(
-            "worker.index_file.remove_tag_from_file_task.dispatch_remove_tag_from_file",
+            "worker.index_file.dispatch_tasks.dispatch_remove_tag_from_file",
             args=[file_id, tag],
             root_id=str(root_task_id),
         ).forget()

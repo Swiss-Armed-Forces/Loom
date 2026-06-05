@@ -21,7 +21,7 @@ export const WipeComponent = {
     Celery: "celery",
     Elasticsearch: "elasticsearch",
     Redis: "redis",
-    S3: "s3",
+    Intake: "intake",
     FileStorage: "file_storage",
     Lazybytes: "lazybytes",
     Imap: "imap",

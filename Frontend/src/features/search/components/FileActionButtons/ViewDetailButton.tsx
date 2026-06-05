@@ -3,10 +3,9 @@ import { IconButton } from "@mui/material";
 import { useCallback } from "react";
 import { useTranslation } from "react-i18next";
 
-import { useAppDispatch } from "@app/hooks";
-import { openDialog } from "@app/slices/commonSlice";
+import { useAppDispatch, useAppSelector } from "@app/hooks";
+import { openDialog, selectLastFileDetailTab } from "@app/slices/commonSlice";
 import { DialogType } from "@features/common/utils/enums";
-import { FileDetailTab } from "@features/common/utils/enums";
 import { SearchQuery } from "@features/common/utils/model";
 
 import { FileActionButtonProps } from ".";
@@ -23,6 +22,7 @@ export const ViewDetailButton = ({
 }: ViewDetailButtonProps) => {
     const { t } = useTranslation();
     const dispatch = useAppDispatch();
+    const lastTab = useAppSelector(selectLastFileDetailTab);
 
     const handleViewDetail = useCallback(() => {
         dispatch(
@@ -32,11 +32,11 @@ export const ViewDetailButton = ({
                 props: {
                     fileId,
                     searchQuery,
-                    tab: FileDetailTab.Rendered,
+                    tab: lastTab,
                 },
             }),
         );
-    }, [dispatch, fileId, searchQuery]);
+    }, [dispatch, fileId, searchQuery, lastTab]);
 
     return (
         <IconButton

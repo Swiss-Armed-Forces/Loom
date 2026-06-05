@@ -14,7 +14,7 @@ def wipe_data():
     service.wipe_celery()
     service.wipe_elasticsearch()
     service.wipe_redis()
-    service.wipe_s3()
+    service.wipe_intake()
     service.wipe_file_storage()
     service.wipe_lazybytes()
     service.wipe_imap()

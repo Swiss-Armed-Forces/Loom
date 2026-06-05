@@ -20,33 +20,19 @@ class QueuesService:
         self,
         queue_name: str | None = None,
     ) -> int:
-        params: Dict[str, Union[int, str]]
         if queue_name is None:
-            api_endpoint = "api/overview"
-            params = {
-                "columns": "queue_totals.messages",
-                "name": quote(QUEUES_NAME_REGEX, safe=""),
-                "use_regex": "true",
-            }
-        else:
-            api_endpoint = (
-                f"api/queues/{quote('/', safe='')}/{quote(queue_name, safe='')}"
-            )
-            params = {
-                "columns": "messages",
-            }
+            return sum(self.get_all_queue_message_counts().values())
+        api_endpoint = f"api/queues/{quote('/', safe='')}/{quote(queue_name, safe='')}"
+        params: Dict[str, Union[int, str]] = {
+            "columns": "messages",
+        }
         response: Response = requests.get(
             self.__rabbit_mq_management_host + api_endpoint,
             params=params,
             timeout=RABBITMQ_MANAGEMENT_REQUEST_TIMEOUT,
         )
         response.raise_for_status()
-        queue = response.json()
-
-        if queue_name is None:
-            queue = queue["queue_totals"]
-
-        return int(queue["messages"])
+        return int(response.json()["messages"])
 
     def get_consumer_count(self, queue_name: str) -> int:
         response: Response = requests.get(

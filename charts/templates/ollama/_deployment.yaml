@@ -7,9 +7,9 @@ kind: Deployment
 metadata:
   name: {{ include "app.fullname" . }}-{{ $component }}
   labels:
-    {{- include "app.labels.custom" (dict "context" . "component" "${component}") | nindent 4 }}
+    {{- include "app.labels.custom" (dict "context" . "component" $component) | nindent 4 }}
     app.kubernetes.io/component: "{{ $component }}"
-  {{- with include "app.annotations.custom" (dict "context" . "component" "${component}") }}
+  {{- with include "app.annotations.custom" (dict "context" . "component" $component) }}
   annotations:
     {{- . | nindent 4 }}
   {{- end }}
@@ -17,6 +17,11 @@ spec:
   {{- if not $values.hpa.enabled }}
   replicas: {{ $values.replicaCount }}
   {{- end }}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: {{ $values.strategy.rollingUpdate.maxSurge }}
+      maxUnavailable: {{ $values.strategy.rollingUpdate.maxUnavailable }}
   selector:
     matchLabels:
       app: {{ include "app.name" . }}-{{ $component }}
@@ -24,12 +29,15 @@ spec:
     metadata:
       labels:
         app: {{ include "app.name" . }}-{{ $component }}
-        {{- include "app.labels.custom" (dict "context" . "component" "${component}") | nindent 8 }}
-      {{- with include "app.annotations.custom" (dict "context" . "component" "${component}") }}
+        {{- include "app.labels.custom" (dict "context" . "component" $component) | nindent 8 }}
+      {{- with include "app.annotations.custom" (dict "context" . "component" $component) }}
       annotations:
         {{- . | nindent 8 }}
       {{- end }}
     spec:
+      {{- with $values.priorityClass }}
+      priorityClassName: {{ include "app.fullname" $ }}-{{ . }}
+      {{- end }}
       containers:
         - name: {{ $component }}
           image: {{ .Values.image.registry }}/{{ $values.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) $values.image.tag }}

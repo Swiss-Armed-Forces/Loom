@@ -164,9 +164,10 @@ export const ResultCard = React.memo(
                 setFileInViewState({
                     fileId: fileId,
                     inView: inView,
+                    query: searchQuery,
                 }),
             );
-        }, [inView, fileId, searchQuery]); // eslint-disable-line react-hooks/exhaustive-deps
+        }, [inView, fileId, searchQuery?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
         const handleCardClick = (
             e:

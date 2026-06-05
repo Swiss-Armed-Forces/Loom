@@ -46,8 +46,10 @@ class S3Crawler:
 
     def _ensure_bucket(self):
         if not retry(lambda: self.client.bucket_exists(self.bucket_name)):
-            logger.info("Creating bucket: %s", self.bucket_name)
+            logger.info("Bucket does not exist, creating: %s", self.bucket_name)
             retry(lambda: self.client.make_bucket(self.bucket_name))
+        else:
+            logger.info("Bucket already exists: %s", self.bucket_name)
 
     def _download_object(self, object_name: str):
         logger.info("Downloading object %s", object_name)
@@ -72,8 +74,16 @@ class S3Crawler:
         )
 
     def crawl(self):
+        logger.info(
+            "Starting crawler for bucket '%s' (display name: '%s'), poll interval: %ds",
+            self.bucket_name,
+            self.display_name,
+            S3_OBJECT_POLL_INTERVAL_S,
+        )
         self._ensure_bucket()
+        logger.info("Entering poll loop")
         while True:
+            logger.debug("Polling bucket '%s' for objects", self.bucket_name)
             raw = retry(
                 lambda: list(self.client.list_objects(self.bucket_name, recursive=True))
             )

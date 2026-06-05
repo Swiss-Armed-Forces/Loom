@@ -13,6 +13,11 @@ spec:
   {{- if not .Values.tika.hpa.enabled }}
   replicas: {{ .Values.tika.replicaCount }}
   {{- end }}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: {{ .Values.tika.strategy.rollingUpdate.maxSurge }}
+      maxUnavailable: {{ .Values.tika.strategy.rollingUpdate.maxUnavailable }}
   selector:
     matchLabels:
       app: {{ include "app.name" . }}-tika
@@ -26,6 +31,9 @@ spec:
         {{- . | nindent 8 }}
       {{- end }}
     spec:
+      {{- with .Values.tika.priorityClass }}
+      priorityClassName: {{ include "app.fullname" $ }}-{{ . }}
+      {{- end }}
       containers:
         - name: tika
           image: {{ .Values.image.registry }}/{{ .Values.tika.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) .Values.tika.image.tag }}

@@ -3,7 +3,7 @@ import random
 from abc import ABC
 from datetime import datetime, timedelta
 from pprint import pformat
-from typing import Any
+from typing import Any, Protocol
 
 import celery
 from celery import Celery, Task, chord
@@ -69,36 +69,50 @@ def get_beat_schedule() -> dict:
             "task": (
                 "worker.periodic.seaweedfs_maintenance_task.seaweedfs_maintenance_task"
             ),
-            "schedule": crontab(minute="43", hour="0-23/5"),
+            "schedule": crontab(minute="43", hour="0-23/6"),
             "args": ("volume.fix.replication", ["-apply"]),
         },
         "seaweedfs-balance-on-idle": {
             "task": (
                 "worker.periodic.seaweedfs_maintenance_task.seaweedfs_maintenance_task"
             ),
-            "schedule": crontab(minute="43", hour="1-23/5"),
+            "schedule": crontab(minute="43", hour="1-23/6"),
             "args": ("volume.balance", ["-apply"]),
         },
         "seaweedfs-scrub-on-idle": {
             "task": (
                 "worker.periodic.seaweedfs_maintenance_task.seaweedfs_maintenance_task"
             ),
-            "schedule": crontab(minute="43", hour="2-23/5"),
+            "schedule": crontab(minute="43", hour="2-23/6"),
             "args": ("volume.scrub",),
         },
         "seaweedfs-s3-clean-uploads-on-idle": {
             "task": (
                 "worker.periodic.seaweedfs_maintenance_task.seaweedfs_maintenance_task"
             ),
-            "schedule": crontab(minute="43", hour="3-23/5"),
+            "schedule": crontab(minute="43", hour="3-23/6"),
             "args": ("s3.clean.uploads",),
         },
         "seaweedfs-vacuum-on-idle": {
             "task": (
                 "worker.periodic.seaweedfs_maintenance_task.seaweedfs_maintenance_task"
             ),
-            "schedule": crontab(minute="43", hour="4-23/5"),
-            "args": ("volume.vacuum", "-garbageThreshold=0.01"),
+            "schedule": crontab(minute="43", hour="4-23/6"),
+            "args": ("volume.vacuum", ["-garbageThreshold=0.01"]),
+        },
+        "seaweedfs-fsck-on-idle": {
+            "task": (
+                "worker.periodic.seaweedfs_maintenance_task.seaweedfs_maintenance_task"
+            ),
+            "schedule": crontab(minute="43", hour="5-23/6"),
+            "args": (
+                "volume.fsck",
+                [
+                    "-findMissingChunksInFiler=true",
+                    "-reallyDeleteFromVolume=true",
+                    "-reallyDeleteFilerEntries=true",
+                ],
+            ),
         },
         # SeaweedFS Maintenance Tasks - weekly forced runs at night (check_idle=False)
         "seaweedfs-fix-replication": {
@@ -138,7 +152,22 @@ def get_beat_schedule() -> dict:
                 "worker.periodic.seaweedfs_maintenance_task.seaweedfs_maintenance_task"
             ),
             "schedule": crontab(minute="0", hour="4", day_of_week="0,6"),
-            "args": ("volume.vacuum", "-garbageThreshold=0.01"),
+            "args": ("volume.vacuum", ["-garbageThreshold=0.01"]),
+            "kwargs": {"check_idle": False},
+        },
+        "seaweedfs-fsck": {
+            "task": (
+                "worker.periodic.seaweedfs_maintenance_task.seaweedfs_maintenance_task"
+            ),
+            "schedule": crontab(minute="0", hour="6", day_of_week="0,6"),
+            "args": (
+                "volume.fsck",
+                [
+                    "-findMissingChunksInFiler=true",
+                    "-reallyDeleteFromVolume=true",
+                    "-reallyDeleteFilerEntries=true",
+                ],
+            ),
             "kwargs": {"check_idle": False},
         },
     }
@@ -173,10 +202,17 @@ class BaseTask(ABC, Task):
     def __call__(self, *args, **kwargs) -> None:
         headers = getattr(self.request, "headers", {}) or {}
 
-        # x-death is an AMQP 0.9.1 header set by RabbitMQ when a message is dead-lettered
+        # x-death is an AMQP 0.9.1 header set by RabbitMQ when a message is dead-lettered.
+        # Raise DeadTask only when the message has previously been dead-lettered out of
+        # the graveyard queue — i.e. it already went through graveyard processing.
+        # We cannot use a simple count because Native Delayed Delivery also adds one
+        # x-death entry per TTL level traversed (e.g. a 3s countdown passes through
+        # celery_delayed_0 and celery_delayed_1, producing two entries).
         x_death = XDeathHeader.model_validate(headers.get("x-death", []))
-        if len(x_death) > 1:
-            # More than one death: reap the task
+        graveyard_queue = (
+            f"{settings.celery_queue_name_prefix}{settings.celery_graveyard_task_name}"
+        )
+        if any(d.queue == graveyard_queue for d in x_death.root):
             raise DeadTask(f"Task died: {x_death}")
 
         return self.run(*args, **kwargs)
@@ -252,7 +288,7 @@ def _get_queue(name: str) -> Queue:
 
 def _get_unroutable_queue() -> Queue:
     queue_name = (
-        f"{settings.celery_queue_name_prefix}{settings.celery_unroubtable_task_name}"
+        f"{settings.celery_queue_name_prefix}{settings.celery_unroutable_task_name}"
     )
     queue_name = queue_name[:CELERY_QUEUE_NAME_MAXLEN]
     return Queue(
@@ -269,7 +305,7 @@ def _get_unroutable_queue() -> Queue:
             #
             # https://www.rabbitmq.com/docs/quorum-queues#poison-message-handling
             "x-queue-type": "quorum",
-            "x-message-ttl": settings.celery_unroubtable_ttl__seconds * 1000,
+            "x-message-ttl": settings.celery_unroutable_ttl__seconds * 1000,
         },
     )
 
@@ -317,6 +353,34 @@ def _get_dead_queue() -> Queue:
             #
             # https://www.rabbitmq.com/docs/quorum-queues#poison-message-handling
             "x-queue-type": "quorum",
+            "x-delivery-limit": settings.celery_dead_deliver_limit,
+            "x-dead-letter-exchange": settings.celery_default_exchange_name,
+            "x-dead-letter-routing-key": settings.celery_abyss_task_name,
+        },
+    )
+
+
+def _get_abyss_queue() -> Queue:
+    queue_name = f"{settings.celery_queue_name_prefix}{settings.celery_abyss_task_name}"
+    queue_name = queue_name[:CELERY_QUEUE_NAME_MAXLEN]
+    return Queue(
+        name=queue_name,
+        exchange=_get_shared_exchange(),
+        routing_key=settings.celery_abyss_task_name,
+        passive=False,
+        durable=True,
+        auto_delete=False,
+        queue_arguments={
+            # We are using Quorum Queues in order to profit from the
+            # broker's poison message handling mechanism and thus avoid
+            # processing poison messages repeatedly.
+            #
+            # https://www.rabbitmq.com/docs/quorum-queues#poison-message-handling
+            "x-queue-type": "quorum",
+            # Messages that could not be processed even from the dead queue (e.g. the reaper
+            # was OOM-killed during deserialization) end up here. No worker consumes this
+            # queue; messages expire after the configured TTL.
+            "x-message-ttl": settings.celery_abyss_ttl__seconds * 1000,
         },
     )
 
@@ -464,19 +528,28 @@ def init_celery_app() -> "Celery[BaseTask]":  # pylint: disable=too-many-stateme
         "routing_key": settings.celery_dead_task_name,
         "exchange_type": settings.celery_default_exchange_type,
     }
+    abyss_queue = _get_abyss_queue()
+    app.conf.task_queues.append(abyss_queue)
+    app.conf.task_routes[settings.celery_abyss_task_name] = {
+        "routing_key": settings.celery_abyss_task_name,
+        "exchange_type": settings.celery_default_exchange_type,
+    }
 
     # Define unroutable queues
     unroutable_queue = _get_unroutable_queue()
     app.conf.task_queues.append(unroutable_queue)
-    app.conf.task_routes[settings.celery_unroubtable_task_name] = {
+    app.conf.task_routes[settings.celery_unroutable_task_name] = {
         "routing_key": "*",
         "exchange_type": settings.celery_alternate_exchange_type,
     }
 
-    # Define persister shard queues for serialized persistence per entity
+    # Register persister shard routes globally so any worker type can dispatch
+    # to them. Queue *declaration* is deferred to register_persister_shard_queues()
+    # which is called only by PERSISTER workers. Keeping the queues out of
+    # task_queues for non-PERSISTER workers prevents Celery's delayed-delivery
+    # binding bootstep from crashing on queues that are not yet declared in
+    # RabbitMQ (see https://github.com/celery/celery/issues/9960).
     for persister_shard_name in get_all_persister_shards(settings.num_persister_shards):
-        persister_shard_queue = _get_queue(persister_shard_name)
-        app.conf.task_queues.append(persister_shard_queue)
         app.conf.task_routes[persister_shard_name] = {
             "routing_key": persister_shard_name,
             "exchange_type": settings.celery_default_exchange_type,
@@ -562,12 +635,54 @@ def register_tasks_for_package(app: Celery, package: str):
     random.shuffle(app.conf.task_queues)
 
 
+def register_persister_shard_queues(app: "Celery[Any]"):
+    """Declare persister shard queues and add them to task_queues.
+
+    Must be called only by PERSISTER workers. Shard queue routes are already registered
+    globally in init_celery_app() so any worker can dispatch to them; this function
+    handles the queue *declaration* side that is only needed on the workers that
+    actually consume the queues.
+    """
+    for persister_shard_name in get_all_persister_shards(settings.num_persister_shards):
+        persister_shard_queue = _get_queue(persister_shard_name)
+        app.conf.task_queues.append(persister_shard_queue)
+
+
 # Set oom scores for the pool worker
 # such that the pool worker is more likely to be
 # killed under memory pressure..
 @signals.worker_process_init.connect
 def set_oom_score_for_pool_worker(*_, **__):
     adjust_oom_score(1000)
+
+
+def get_terminal_queues() -> list[Queue]:
+    """Return all terminal queues — queues that no worker consumes."""
+    return [_get_abyss_queue(), _get_unroutable_queue()]
+
+
+class _WorkerReadySender(Protocol):  # pylint: disable=too-few-public-methods
+    # The celery-stubs package does not type the `app` attribute on
+    # celery.worker.components.Consumer (the actual runtime sender of
+    # worker_ready), nor does the kombu-stubs package type
+    # ProducerPool.acquire. This Protocol captures the subset we actually
+    # use so mypy/Pyright can follow the chain.
+    # Remove once upstream stubs are complete.
+    app: Celery
+
+
+@signals.worker_ready.connect
+def declare_terminal_queues(sender: _WorkerReadySender, **__: Any) -> None:
+    """Declare terminal queues that no worker consumes.
+
+    Celery only declares queues a worker actively subscribes to. The abyss and
+    unroutable queues are terminal destinations with no consumers, so they must be
+    declared explicitly to ensure dead-letter and alternate-exchange routing works
+    correctly on fresh deployments.
+    """
+    with sender.app.pool.acquire(block=True) as conn:  # type: ignore[attr-defined]
+        for queue in get_terminal_queues():
+            queue(conn.default_channel).declare()  # type: ignore[operator]
 
 
 @signals.task_prerun.connect

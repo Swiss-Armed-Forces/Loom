@@ -361,6 +361,7 @@ class File(RepositoryTaskObject):
 
     content: str | None = None
     content_truncated: bool = False
+    attachments_skipped: bool = False
     full_name: FilePurePath
 
     @computed_field  # type: ignore[misc]
@@ -456,6 +457,7 @@ class _EsFile(_EsTaskDocument):
         },
     )
     content_truncated = Boolean()
+    attachments_skipped = Boolean()
     full_name = Text(fields={"keyword": Keyword()})
     full_path = Text(
         fielddata=True,

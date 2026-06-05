@@ -99,7 +99,6 @@ def embed_text(text: str) -> TempTypedLazyBytes[Embedding]:
         response = client.embeddings.create(
             model=settings.llm.embedding.model,
             input=f"{settings.llm.embedding.document_prefix}{text}",
-            dimensions=settings.llm.embedding.dimensions,
         )
     except APIError as ex:
         raise LLMError() from ex

@@ -1,6 +1,7 @@
-import { Chip } from "@mui/material";
+import { ExpandMore, Label } from "@mui/icons-material";
+import { Chip, Menu, MenuItem, Tooltip } from "@mui/material";
 import { t } from "i18next";
-import { FC, useMemo } from "react";
+import { FC, useMemo, useState } from "react";
 import { toast } from "react-toastify";
 
 import {
@@ -33,6 +34,7 @@ interface TagsListProps {
     filePreview?: GetFilePreviewResponse;
     tagStats?: GenericStatisticsModel;
     iconOnly?: boolean;
+    maxVisible?: number;
 }
 
 export const TagsList = ({
@@ -40,10 +42,14 @@ export const TagsList = ({
     filePreview,
     tagStats,
     iconOnly = false,
+    maxVisible,
 }: TagsListProps) => {
     const dispatch = useAppDispatch();
     const searchQuery = useAppSelector(selectQuery);
     const fileId = filePreview?.fileId;
+    const [overflowAnchor, setOverflowAnchor] = useState<null | HTMLElement>(
+        null,
+    );
 
     const sortedTags = useMemo(
         () => tags.slice().sort((a, b) => a.localeCompare(b)),
@@ -111,6 +117,11 @@ export const TagsList = ({
         return `${tag} (${hitRate.toFixed(1)}%)`;
     };
 
+    const visibleTags =
+        maxVisible !== undefined ? sortedTags.slice(0, maxVisible) : sortedTags;
+    const overflowTags =
+        maxVisible !== undefined ? sortedTags.slice(maxVisible) : [];
+
     return (
         <div
             className={
@@ -119,7 +130,7 @@ export const TagsList = ({
                     : styles.tagsList
             }
         >
-            {sortedTags.map((tag) => (
+            {visibleTags.map((tag) => (
                 <TagChip
                     key={fileId + tag}
                     tag={tag}
@@ -131,6 +142,58 @@ export const TagsList = ({
                     }
                 />
             ))}
+            {overflowTags.length > 0 && (
+                <>
+                    <Chip
+                        className={styles.tagChip}
+                        size="small"
+                        icon={<Label />}
+                        label={`+${overflowTags.length}`}
+                        onClick={(e) => setOverflowAnchor(e.currentTarget)}
+                        onDelete={(e) => setOverflowAnchor(e.currentTarget)}
+                        deleteIcon={<ExpandMore />}
+                        title={t("tagsList.moreTagsTooltip", {
+                            count: overflowTags.length,
+                        })}
+                    />
+                    <Menu
+                        anchorEl={overflowAnchor}
+                        open={Boolean(overflowAnchor)}
+                        onClose={() => setOverflowAnchor(null)}
+                        anchorOrigin={{
+                            vertical: "bottom",
+                            horizontal: "left",
+                        }}
+                        transformOrigin={{
+                            vertical: "top",
+                            horizontal: "left",
+                        }}
+                    >
+                        {overflowTags.map((tag) => (
+                            <MenuItem
+                                key={fileId + tag + "-overflow"}
+                                sx={{ gap: 1 }}
+                                disableRipple
+                            >
+                                <TagChip
+                                    tag={tag}
+                                    iconOnly={false}
+                                    label={getTagLabel(tag)}
+                                    onSearch={(t) => {
+                                        setOverflowAnchor(null);
+                                        searchForTag(t);
+                                    }}
+                                    onDelete={
+                                        iconOnly
+                                            ? undefined
+                                            : () => handleDeleteClick(tag)
+                                    }
+                                />
+                            </MenuItem>
+                        ))}
+                    </Menu>
+                </>
+            )}
         </div>
     );
 };
@@ -153,17 +216,32 @@ const TagChip: FC<TagChipProps> = ({
     const backgroundColor = getColorFromString(tag);
     const color = getFontColorFromBackGroundColor(backgroundColor);
 
-    return (
+    const chip = (
         <Chip
             className={styles.tagChip}
-            size={iconOnly ? undefined : "small"}
+            size="small"
             sx={{ backgroundColor, color }}
-            label={iconOnly ? undefined : label}
-            title={iconOnly ? tag : undefined}
+            label={
+                iconOnly
+                    ? tag.length > 5
+                        ? tag.slice(0, 5) + "…"
+                        : tag
+                    : label
+            }
             onClick={() => {
                 onSearch(tag);
             }}
             onDelete={onDelete}
         />
     );
+
+    if (iconOnly) {
+        return (
+            <Tooltip title={tag} placement="right" enterDelay={200}>
+                {chip}
+            </Tooltip>
+        );
+    }
+
+    return chip;
 };

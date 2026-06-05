@@ -1,0 +1,31 @@
+{{- if .Values.priorityClasses.create -}}
+apiVersion: scheduling.k8s.io/v1
+kind: PriorityClass
+metadata:
+  name: {{ include "app.fullname" . }}-infrastructure
+  labels:
+    {{- include "app.labels.custom" (dict "context" . "component" "priorityClasses") | nindent 4 }}
+    app.kubernetes.io/component: "priority-class-infrastructure"
+  {{- with include "app.annotations.custom" (dict "context" . "component" "priorityClasses") }}
+  annotations:
+    {{- . | nindent 4 }}
+  {{- end }}
+value: {{ .Values.priorityClasses.infrastructure.value }}
+globalDefault: false
+description: "Core Loom infrastructure pods (StatefulSets). Higher priority ensures scheduling over scalable workloads."
+---
+apiVersion: scheduling.k8s.io/v1
+kind: PriorityClass
+metadata:
+  name: {{ include "app.fullname" . }}-scalable
+  labels:
+    {{- include "app.labels.custom" (dict "context" . "component" "priorityClasses") | nindent 4 }}
+    app.kubernetes.io/component: "priority-class-scalable"
+  {{- with include "app.annotations.custom" (dict "context" . "component" "priorityClasses") }}
+  annotations:
+    {{- . | nindent 4 }}
+  {{- end }}
+value: {{ .Values.priorityClasses.scalable.value }}
+globalDefault: false
+description: "HPA-managed scalable Loom workloads. Lower priority allows preemption in favour of infrastructure pods."
+{{- end -}}

@@ -14,6 +14,7 @@ import re
 import sys
 from dataclasses import dataclass, field
 from enum import StrEnum
+from fnmatch import fnmatch
 from typing import Any, TextIO
 
 import yaml
@@ -305,6 +306,39 @@ def parse_threshold(value: str) -> tuple[str, int, str | None]:
     return name, parsed_val, warning
 
 
+def load_quota_thresholds(
+    values_path: str,
+) -> tuple[dict[str, int], dict[str, int], bool]:
+    """
+    Read resourceQuotas.scalable from a Helm values file.
+
+    Returns (request_thresholds, limit_thresholds, enabled).
+    Maps Kubernetes ResourceQuota hard keys (e.g. 'requests.cpu', 'limits.memory')
+    to the resource names used by this tool. 'pods' is ignored.
+    """
+    with open(values_path, encoding="utf-8") as f:
+        values = yaml.safe_load(f)
+
+    rq = (values or {}).get("resourceQuotas", {}).get("scalable", {})
+    enabled = bool(rq.get("enabled", False))
+    hard: dict[str, Any] = rq.get("hard") or {}
+
+    request_thresholds: dict[str, int] = {}
+    limit_thresholds: dict[str, int] = {}
+
+    for key, value in hard.items():
+        if key.startswith("requests."):
+            resource = key[len("requests."):]
+            if resource in (ResourceName.CPU, ResourceName.MEMORY, ResourceName.EPHEMERAL_STORAGE):
+                request_thresholds[resource] = parse_resource_value(resource, value)
+        elif key.startswith("limits."):
+            resource = key[len("limits."):]
+            if resource in (ResourceName.CPU, ResourceName.MEMORY, ResourceName.EPHEMERAL_STORAGE):
+                limit_thresholds[resource] = parse_resource_value(resource, value)
+
+    return request_thresholds, limit_thresholds, enabled
+
+
 def extract_resources(
     resource_spec: dict[str, Any] | None,
 ) -> tuple[ResourceQuantity, ResourceQuantity]:
@@ -344,9 +378,15 @@ def extract_resources(
 class ManifestResourceCalculator:
     """Resource calculator reading directly from manifests."""
 
-    def __init__(self, node_count: int = 1, exclude_ephemeral: bool = False):
+    def __init__(
+        self,
+        node_count: int = 1,
+        exclude_ephemeral: bool = False,
+        priority_class_filter: str | None = None,
+    ):
         self.node_count = max(1, node_count)
         self.exclude_ephemeral = exclude_ephemeral
+        self.priority_class_filter = priority_class_filter
 
     def extract_replica_count(self, doc: dict[str, Any]) -> tuple[int, str, bool]:
         """Extract replica count directly from manifest fields."""
@@ -469,6 +509,18 @@ class ManifestResourceCalculator:
 
         name = str(metadata.get("name", "unknown"))
         namespace = str(metadata.get("namespace", "default"))
+
+        if self.priority_class_filter:
+            _spec = doc.get("spec") or {}
+            if kind == WorkloadKind.CRON_JOB:
+                _pod_spec = _spec.get("jobTemplate", {}).get("spec", {}).get("template", {}).get("spec") or {}
+            elif kind == WorkloadKind.POD:
+                _pod_spec = _spec
+            else:
+                _pod_spec = _spec.get("template", {}).get("spec") or {}
+            priority_class_name = _pod_spec.get("priorityClassName", "")
+            if not fnmatch(priority_class_name, self.priority_class_filter):
+                return None
 
         replicas, source, is_daemonset = self.extract_replica_count(doc)
         containers = self.extract_containers(doc)
@@ -839,6 +891,23 @@ Examples:
         action="store_true",
         help="Exclude ephemeral workloads (Job, CronJob) from resource calculation.",
     )
+    parser.add_argument(
+        "--filter-priority-class",
+        "-fpc",
+        metavar="GLOB",
+        default=None,
+        help="Only count workloads whose pod priorityClassName matches this glob pattern "
+        "(e.g. '*-scalable'). Workloads without a priorityClassName are excluded.",
+    )
+    parser.add_argument(
+        "--quota-values",
+        "-qv",
+        metavar="FILE",
+        default=None,
+        help="Helm values YAML file from which to read resourceQuotas.scalable.hard as "
+        "thresholds. If resourceQuotas.scalable.enabled is false and no explicit "
+        "--threshold-* args are given, the check is skipped (exit 0).",
+    )
     args = parser.parse_args()
 
     if args.nodes < 1:
@@ -865,17 +934,46 @@ Examples:
         print(f"Error: {e}", file=sys.stderr)
         return 1
 
+    # --quota-values: load resourceQuotas.scalable.hard from a Helm values file
+    if args.quota_values:
+        try:
+            quota_req, quota_lim, quota_enabled = load_quota_thresholds(args.quota_values)
+        except Exception as e:
+            print(f"Error reading quota values from {args.quota_values}: {e}", file=sys.stderr)
+            return 1
+
+        if not quota_enabled:
+            if not request_thresholds and not limit_thresholds:
+                print(
+                    f"Note: resourceQuotas.scalable.enabled is false in {args.quota_values} "
+                    "— skipping quota check."
+                )
+                sys.stdin.read()
+                return 0
+            # Explicit thresholds were given alongside --quota-values; proceed without quota thresholds
+        else:
+            request_thresholds.update(quota_req)
+            limit_thresholds.update(quota_lim)
+
     # Print any warnings about unit-less memory values before proceeding
     for warning in all_warnings:
         print(warning, file=sys.stderr)
 
     try:
         calculator = ManifestResourceCalculator(
-            node_count=args.nodes, exclude_ephemeral=args.exclude_ephemeral
+            node_count=args.nodes,
+            exclude_ephemeral=args.exclude_ephemeral,
+            priority_class_filter=args.filter_priority_class,
         )
         report = calculator.calculate(args.file)
 
         if not report.workloads:
+            if args.filter_priority_class:
+                print(
+                    f"No workloads found matching priority class filter '{args.filter_priority_class}'",
+                    file=sys.stderr,
+                )
+                return 0
             print("No workloads found", file=sys.stderr)
             return 1
 

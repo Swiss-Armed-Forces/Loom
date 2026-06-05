@@ -1,0 +1,23 @@
+{{- if .Values.resourceQuotas.scalable.enabled }}
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: {{ include "app.fullname" . }}-scalable-quota
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "app.labels.custom" (dict "context" . "component" "resourceQuotas") | nindent 4 }}
+    app.kubernetes.io/component: "resource-quota-scalable"
+  {{- with include "app.annotations.custom" (dict "context" . "component" "resourceQuotas") }}
+  annotations:
+    {{- . | nindent 4 }}
+  {{- end }}
+spec:
+  scopeSelector:
+    matchExpressions:
+      - operator: In
+        scopeName: PriorityClass
+        values:
+          - {{ include "app.fullname" . }}-scalable
+  hard:
+    {{- toYaml .Values.resourceQuotas.scalable.hard | nindent 4 }}
+{{- end }}

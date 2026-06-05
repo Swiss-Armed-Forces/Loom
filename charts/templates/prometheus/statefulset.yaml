@@ -28,6 +28,9 @@ spec:
         {{- . | nindent 8 }}
       {{- end }}
     spec:
+      {{- with .Values.prometheus.priorityClass }}
+      priorityClassName: {{ include "app.fullname" $ }}-{{ . }}
+      {{- end }}
       serviceAccountName: {{ include "app.fullname" . }}-prometheus
       securityContext:
         runAsUser: 65534
@@ -105,6 +108,14 @@ spec:
   volumeClaimTemplates:
     - metadata:
         name: prometheus
+        {{- with include "app.pvc.labels.custom" (dict "context" . "component" "prometheus") }}
+        labels:
+          {{- . | nindent 10 }}
+        {{- end }}
+        {{- with include "app.pvc.annotations.custom" (dict "context" . "component" "prometheus") }}
+        annotations:
+          {{- . | nindent 10 }}
+        {{- end }}
       spec:
         accessModes:
           - {{ .Values.prometheus.pvc.accessModes | default "ReadWriteOnce" | quote }}

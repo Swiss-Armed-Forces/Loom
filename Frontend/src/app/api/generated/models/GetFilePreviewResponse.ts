@@ -165,6 +165,12 @@ export interface GetFilePreviewResponse {
      * @memberof GetFilePreviewResponse
      */
     isSpam?: boolean;
+    /**
+     *
+     * @type {boolean}
+     * @memberof GetFilePreviewResponse
+     */
+    attachmentsSkipped?: boolean;
 }
 
 /**
@@ -241,6 +247,10 @@ export function GetFilePreviewResponseFromJSONTyped(
                 ? undefined
                 : json["image_description"],
         isSpam: json["is_spam"] == null ? undefined : json["is_spam"],
+        attachmentsSkipped:
+            json["attachments_skipped"] == null
+                ? undefined
+                : json["attachments_skipped"],
     };
 }
 
@@ -277,5 +287,6 @@ export function GetFilePreviewResponseToJSON(
         summary: value["summary"],
         image_description: value["imageDescription"],
         is_spam: value["isSpam"],
+        attachments_skipped: value["attachmentsSkipped"],
     };
 }

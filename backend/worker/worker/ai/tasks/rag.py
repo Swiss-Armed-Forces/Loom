@@ -137,7 +137,6 @@ def embed_question(question: str) -> TempTypedLazyBytes[Sequence[float]]:
         response = client.embeddings.create(
             model=settings.llm.embedding.model,
             input=[f"{settings.llm.embedding.query_prefix}{question}"],
-            dimensions=settings.llm.embedding.dimensions,
         )
     except APIError as ex:
         raise LLMError("Document embedding failed") from ex
@@ -198,7 +197,6 @@ def embed_document(document: str) -> TempTypedLazyBytes[Sequence[float]]:
         response = client.embeddings.create(
             model=settings.llm.embedding.model,
             input=[f"{settings.llm.embedding.document_prefix}{document}"],
-            dimensions=settings.llm.embedding.dimensions,
         )
     except APIError as ex:
         raise LLMError("Document embedding failed") from ex
