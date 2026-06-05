@@ -90,18 +90,16 @@ def test_get_queue_samples_per_queue_is_sorted_ascending():
 
 def test_get_consumer_count_is_non_negative_for_each_loom_queue():
     service = get_queues_service()
-    for queue in get_celery_app().conf.task_queues:
-        if _is_loom_queue(queue):
-            assert service.get_consumer_count(queue.name) >= 0
+    for queue_name in service.get_all_queue_message_counts():
+        assert service.get_consumer_count(queue_name) >= 0
 
 
 def test_get_consumer_count_is_positive_for_some_loom_queue():
     """At least one loom queue must have an active consumer when workers are running."""
     service = get_queues_service()
     counts = [
-        service.get_consumer_count(queue.name)
-        for queue in get_celery_app().conf.task_queues
-        if _is_loom_queue(queue)
+        service.get_consumer_count(queue_name)
+        for queue_name in service.get_all_queue_message_counts()
     ]
     assert any(
         c > 0 for c in counts

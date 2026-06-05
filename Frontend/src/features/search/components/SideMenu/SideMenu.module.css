@@ -1,6 +1,7 @@
 .sideMenuContainer {
     overflow: auto;
     padding: 0;
+    scrollbar-gutter: stable;
 }
 
 .sideMenu {
@@ -9,7 +10,7 @@
 }
 
 .sideMenuCentered {
-    align-items: center;
+    align-items: stretch;
 }
 
 ul.sideMenuActions > li {
@@ -28,6 +29,18 @@ ul.sideMenuActions > li {
 
 .sideMenuActions > div > button > .MuiButton-startIcon {
     justify-self: flex-start;
+}
+
+.bulkActionButtons > * {
+    cursor: pointer;
+    transition:
+        transform 0.2s ease,
+        opacity 0.2s ease;
+}
+
+.bulkActionButtons > *:hover {
+    transform: scale(1.1);
+    opacity: 0.8;
 }
 
 .tagListContainer {

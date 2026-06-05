@@ -1,6 +1,6 @@
 import logging
 
-from celery import chain, group
+from celery import chord
 from common.dependencies import (
     get_celery_app,
     get_celery_inspect_service,
@@ -12,8 +12,9 @@ from common.settings import CELERY_QUEUE_NAME_MAXLEN, settings
 from common.task_object.root_task_information_repository import (
     RootTaskInformationRepository,
 )
+from common.utils.task_lock import task_lock
 
-from worker.index_file.index_file_task import dispatch_index_file
+from worker.index_file.dispatch_tasks import dispatch_index_file, dispatch_reindex_file
 from worker.periodic.infra.periodic_task import PeriodicTask
 from worker.periodic.tasks import (
     flush_cache,
@@ -25,6 +26,10 @@ logger = logging.getLogger(__name__)
 
 app = get_celery_app()
 
+_FLUSH_ON_IDLE_LOCK_TTL_SECONDS = 60 * 15  # 15 minutes
+_WAIT_FOR_IDLE_TIMEOUT_SECONDS = 60 * 10  # 10 minutes (well under lock TTL)
+_WAIT_FOR_IDLE_POLL_INTERVAL_SECONDS = 10.0
+
 
 def _get_dispatch_index_file_queue() -> str:
     return (f"{settings.celery_queue_name_prefix}{dispatch_index_file.name}")[
@@ -32,19 +37,23 @@ def _get_dispatch_index_file_queue() -> str:
     ]
 
 
+def _get_dispatch_reindex_file_queue() -> str:
+    return (f"{settings.celery_queue_name_prefix}{dispatch_reindex_file.name}")[
+        :CELERY_QUEUE_NAME_MAXLEN
+    ]
+
+
+def _get_throttled_queues() -> list[str]:
+    return [_get_dispatch_index_file_queue(), _get_dispatch_reindex_file_queue()]
+
+
 def _should_throttle(
     lazybytes_service: TempLazyBytesService,
     root_task_information_repository: RootTaskInformationRepository,
 ) -> bool:
     """Check if indexing should be throttled based on resource accumulation."""
-    lazybytes_total_size_bytes = lazybytes_service.get_total_size_bytes()
-    if lazybytes_total_size_bytes >= settings.throttle_max_lazybytes__bytes:
-        logger.info(
-            "Throttling: lazybytes usage %d GiB >= %d GiB",
-            lazybytes_total_size_bytes // (1024**3),
-            settings.throttle_max_lazybytes__bytes // (1024**3),
-        )
-        return True
+    # Check the fast Elasticsearch count first to avoid the expensive S3 scan
+    # when the root task limit alone is sufficient to trigger throttling.
     root_task_count = root_task_information_repository.count()
     if root_task_count >= settings.throttle_max_root_tasks:
         logger.info(
@@ -53,34 +62,27 @@ def _should_throttle(
             settings.throttle_max_root_tasks,
         )
         return True
+    lazybytes_total_size_bytes = lazybytes_service.get_total_size_bytes()
+    if lazybytes_total_size_bytes >= settings.throttle_max_lazybytes__bytes:
+        logger.info(
+            "Throttling: lazybytes usage %d GiB >= %d GiB",
+            lazybytes_total_size_bytes // (1024**3),
+            settings.throttle_max_lazybytes__bytes // (1024**3),
+        )
+        return True
     return False
-
-
-def pause_index_file_queue(pause: bool = True):
-    queue = _get_dispatch_index_file_queue()
-    celery_app = get_celery_app()
-    if pause:
-        result = celery_app.control.cancel_consumer(
-            queue,
-            reply=True,
-        )
-    else:
-        result = celery_app.control.add_consumer(
-            queue,
-            reply=True,
-        )
-    logger.info(
-        "%s: index_file queue, result=%s", "Pause" if pause else "Resume", result
-    )
 
 
 @app.task(base=PeriodicTask)
 def flush_complete(*_, **__):
-    pause_index_file_queue(pause=False)
+    inspect = get_celery_inspect_service()
+    for queue in _get_throttled_queues():
+        inspect.set_queue_paused(queue, False)
     logger.info("Flushing complete")
 
 
 @app.task(bind=True, base=PeriodicTask)
+@task_lock(ttl_seconds=_FLUSH_ON_IDLE_LOCK_TTL_SECONDS, blocking=False)
 def flush_on_idle_task(self: PeriodicTask):
     """Manage lazybytes cleanup and queue throttling.
 
@@ -99,22 +101,29 @@ def flush_on_idle_task(self: PeriodicTask):
     throttling = _should_throttle(lazybytes_service, root_task_information_repository)
 
     if throttling:
-        # Pause: tell all workers to stop consuming from index_file queue
-        pause_index_file_queue(pause=True)
+        # Pause: persist state and tell all current workers to stop consuming
+        inspect = get_celery_inspect_service()
+        for queue in _get_throttled_queues():
+            inspect.set_queue_paused(queue, True)
 
-    # Check idle EXCLUDING the throttled queue
-    if get_celery_inspect_service().is_idle(
-        called_from_task=True, exclude_queues=[_get_dispatch_index_file_queue()]
+    # Wait for idle EXCLUDING the throttled queues
+    if not get_celery_inspect_service().wait_for_idle(
+        timeout=_WAIT_FOR_IDLE_TIMEOUT_SECONDS,
+        poll_interval=_WAIT_FOR_IDLE_POLL_INTERVAL_SECONDS,
+        called_from_task=True,
+        exclude_queues=_get_throttled_queues(),
     ):
-        logger.info("Celery idle: flushing")
-        return self.replace(
-            chain(
-                group(
-                    flush_cache.signature(),
-                    flush_lazybytes.signature(),
-                    flush_root_task_information.signature(),
-                ),
-                flush_complete.s(),
-            )
+        logger.info("Celery not idle: timed out waiting for idle")
+        return None
+
+    logger.info("Celery idle: flushing")
+    return self.replace(
+        chord(
+            [
+                flush_cache.signature(),
+                flush_lazybytes.signature(),
+                flush_root_task_information.signature(),
+            ],
+            flush_complete.s(),
         )
-    return None
+    )

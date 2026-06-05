@@ -149,7 +149,7 @@ class FileSchedulingService:
             reindex_count=old_file.reindex_count + 1,
             tags=old_file.tags,
             flagged=old_file.flagged,
-            recursion_depth=old_file.recursion_depth,
+            recursion_depth=0,
         )
         # Preserve the original file ID
         file.es_meta.id = file_id

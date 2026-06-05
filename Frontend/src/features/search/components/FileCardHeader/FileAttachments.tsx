@@ -3,10 +3,9 @@ import { Chip, Menu, MenuItem, Box } from "@mui/material";
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 
 import { Attachment } from "@app/api";
-import { useAppDispatch } from "@app/hooks";
-import { openDialog } from "@app/slices/commonSlice";
+import { useAppDispatch, useAppSelector } from "@app/hooks";
+import { openDialog, selectLastFileDetailTab } from "@app/slices/commonSlice";
 import { DialogType } from "@features/common/utils/enums";
-import { FileDetailTab } from "@features/common/utils/enums";
 
 import styles from "./FileAttachments.module.css";
 
@@ -22,6 +21,7 @@ export const FileAttachments = ({
     maxWidthRatio = 0.8,
 }: FileAttachmentsProps) => {
     const dispatch = useAppDispatch();
+    const lastTab = useAppSelector(selectLastFileDetailTab);
 
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
     const [shouldCollapse, setShouldCollapse] = useState(false);
@@ -50,12 +50,12 @@ export const FileAttachments = ({
                 openDialog({
                     id: "",
                     type: DialogType.FileDetail,
-                    props: { fileId, tab: FileDetailTab.Rendered },
+                    props: { fileId, tab: lastTab },
                 }),
             );
             setAnchorEl(null);
         },
-        [dispatch],
+        [dispatch, lastTab],
     );
 
     const summaryLabel = useMemo(() => {

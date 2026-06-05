@@ -7,7 +7,10 @@ import searchReducer from "@app/slices/searchSlice";
 import socketMiddleware from "../middleware/SocketMiddleware";
 
 import SocketApi from "./api/socketApi";
-import { localStorageCustomQueriesMiddleware } from "./middlewares";
+import {
+    localStorageCustomQueriesMiddleware,
+    localStorageSideMenuMiddleware,
+} from "./middlewares";
 
 export const store = configureStore({
     reducer: {
@@ -18,6 +21,7 @@ export const store = configureStore({
     middleware: (getDefaultMiddleware) =>
         getDefaultMiddleware()
             .prepend(localStorageCustomQueriesMiddleware.middleware)
+            .prepend(localStorageSideMenuMiddleware.middleware)
             .concat(socketMiddleware(new SocketApi())),
 });
 

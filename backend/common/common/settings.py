@@ -45,6 +45,7 @@ class S3StorageSettings(BaseModel):
     secret_key: str | None = None
     access_key: str | None = None
     secure_connection: bool = False
+    connection_pool_size: int = 64
 
 
 class FileStorageSettings(S3StorageSettings):
@@ -165,9 +166,12 @@ class Settings(BaseSettings):
     celery_default_task_name: str = "default"
     celery_graveyard_task_name: str = "graveyard"
     celery_dead_task_name: str = "dead"
+    celery_dead_deliver_limit: int = 3
+    celery_abyss_task_name: str = "abyss"
+    celery_abyss_ttl__seconds: int = 7 * 24 * 60 * 60  # 7 days
     celery_persister_shard_prefix: str = "persister.shard"
-    celery_unroubtable_ttl__seconds: int = 24 * 60 * 60
-    celery_unroubtable_task_name: str = "unroutable"
+    celery_unroutable_ttl__seconds: int = 24 * 60 * 60
+    celery_unroutable_task_name: str = "unroutable"
     celery_default_exchange_name: str = "loom"
     celery_default_exchange_type: str = "topic"
     celery_alternate_exchange_name: str = "ae-loom"
@@ -267,7 +271,7 @@ class Settings(BaseSettings):
 
     file_storage: FileStorageSettings = FileStorageSettings()
     lazybytes_storage: LazybytesStorageSettings = LazybytesStorageSettings()
-    s3_storage: IntakeS3StorageSettings = IntakeS3StorageSettings()
+    intake_storage: IntakeS3StorageSettings = IntakeS3StorageSettings()
 
     llm: LLMSettings = LLMSettings()
 

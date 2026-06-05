@@ -1,13 +1,13 @@
 import { Delete, Policy } from "@mui/icons-material";
 import {
     Badge,
-    Chip,
     List,
     ListItem,
     ListItemButton,
     ListItemIcon,
     ListItemText,
     ListSubheader,
+    Tooltip,
 } from "@mui/material";
 import { useCallback, useEffect } from "react";
 import { useTranslation } from "react-i18next";
@@ -18,6 +18,7 @@ import {
     CustomQuery,
     updateQuery,
     selectCustomQueries,
+    selectQuery,
     fetchFilesCountForCustomQuery,
     markCustomQueryAsRead,
 } from "@app/slices/searchSlice";
@@ -52,15 +53,19 @@ const CustomQueryItem = ({
         );
     }, [dispatch, customQuery]);
 
-    const handleDeleteClick = useCallback(() => {
-        dispatch(
-            openDialog({
-                id: "",
-                type: DialogType.DeleteCustomQuery,
-                props: { customQuery },
-            }),
-        );
-    }, [dispatch, customQuery]);
+    const handleDeleteClick = useCallback(
+        (e: React.MouseEvent) => {
+            e.stopPropagation();
+            dispatch(
+                openDialog({
+                    id: "",
+                    type: DialogType.DeleteCustomQuery,
+                    props: { customQuery },
+                }),
+            );
+        },
+        [dispatch, customQuery],
+    );
 
     useEffect(() => {
         const customQueryFilesCountInterval = setInterval(async () => {
@@ -74,7 +79,66 @@ const CustomQueryItem = ({
 
     if (iconOnly) {
         return (
-            <ListItemButton onClick={handleClick} title={customQuery.name}>
+            <Tooltip
+                title={customQuery.name}
+                placement="right"
+                enterDelay={200}
+            >
+                <ListItemButton
+                    onClick={handleClick}
+                    sx={{
+                        transition: "opacity 0.2s ease",
+                        "&:hover": { opacity: 0.7 },
+                        justifyContent: "center",
+                    }}
+                >
+                    <Badge
+                        badgeContent={customQuery.fileCount}
+                        color="primary"
+                        showZero
+                        anchorOrigin={{
+                            vertical: "bottom",
+                            horizontal: "right",
+                        }}
+                    >
+                        <Badge
+                            invisible={!customQuery.hasNewFiles}
+                            color="primary"
+                            anchorOrigin={{
+                                vertical: "top",
+                                horizontal: "left",
+                            }}
+                            variant="dot"
+                        >
+                            <ListItemIcon>
+                                {availableCustomQueryIcons.find(
+                                    (ac) => ac.key == customQuery.icon,
+                                )?.icon ?? <Policy key="Policy" />}
+                            </ListItemIcon>
+                        </Badge>
+                    </Badge>
+                </ListItemButton>
+            </Tooltip>
+        );
+    }
+
+    return (
+        <ListItemButton
+            onClick={handleClick}
+            sx={{
+                transition: "opacity 0.2s ease",
+                "&:hover": { opacity: 0.7 },
+            }}
+        >
+            <Badge
+                badgeContent={customQuery.fileCount}
+                color="primary"
+                showZero
+                anchorOrigin={{
+                    vertical: "bottom",
+                    horizontal: "right",
+                }}
+            >
                 <Badge
                     invisible={!customQuery.hasNewFiles}
                     color="primary"
@@ -90,35 +154,14 @@ const CustomQueryItem = ({
                         )?.icon ?? <Policy key="Policy" />}
                     </ListItemIcon>
                 </Badge>
-            </ListItemButton>
-        );
-    }
-
-    return (
-        <ListItemButton onClick={handleClick}>
-            <Badge
-                invisible={!customQuery.hasNewFiles}
-                color="primary"
-                anchorOrigin={{
-                    vertical: "top",
-                    horizontal: "left",
-                }}
-                variant="dot"
-            >
-                <ListItemIcon>
-                    {availableCustomQueryIcons.find(
-                        (ac) => ac.key == customQuery.icon,
-                    )?.icon ?? <Policy key="Policy" />}
-                </ListItemIcon>
             </Badge>
             <ListItemText className={styles.listItemText}>
-                {customQuery.name}{" "}
-                <Chip
-                    label={customQuery.fileCount.toString()}
-                    size="small"
-                ></Chip>
+                {customQuery.name}
             </ListItemText>
-            <ListItemIcon onClick={handleDeleteClick}>
+            <ListItemIcon
+                className={styles.deleteIcon}
+                onClick={handleDeleteClick}
+            >
                 <Delete color="error" />
             </ListItemIcon>
         </ListItemButton>
@@ -127,25 +170,29 @@ const CustomQueryItem = ({
 
 interface CustomQueriesListProps {
     iconOnly?: boolean;
+    hideHeader?: boolean;
 }
 
 export const CustomQueriesList = ({
     iconOnly = false,
+    hideHeader = false,
 }: CustomQueriesListProps) => {
     const { t } = useTranslation();
     const customQueries = useAppSelector(selectCustomQueries);
+    const searchQuery = useAppSelector(selectQuery);
 
     return (
         <List className={styles.savedQueries}>
-            {iconOnly ? (
-                <ListSubheader>
-                    <hr />
-                </ListSubheader>
-            ) : (
-                <ListSubheader>
-                    {t("sideMenu.savedQueries.title")}
-                </ListSubheader>
-            )}
+            {!hideHeader &&
+                (iconOnly ? (
+                    <ListSubheader>
+                        <hr />
+                    </ListSubheader>
+                ) : (
+                    <ListSubheader>
+                        {t("sideMenu.savedQueries.title")}
+                    </ListSubheader>
+                ))}
             {customQueries.map((q, i) => (
                 <CustomQueryItem
                     key={i}
@@ -153,8 +200,11 @@ export const CustomQueriesList = ({
                     iconOnly={iconOnly}
                 ></CustomQueryItem>
             ))}
-            <ListItem>
-                <AddCustomQueryDialog iconOnly={iconOnly} />
+            <ListItem sx={iconOnly ? { justifyContent: "center" } : {}}>
+                <AddCustomQueryDialog
+                    iconOnly={iconOnly}
+                    disabled={!searchQuery}
+                />
             </ListItem>
         </List>
     );

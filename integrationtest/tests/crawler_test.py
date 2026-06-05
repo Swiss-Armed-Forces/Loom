@@ -28,13 +28,13 @@ def test_upload_file(upload_name: str, src_filename: str):
     with open(file_src, "rb") as file:
         f = file.read()
         client.put_object(
-            settings.s3_storage.bucket_name,
+            settings.intake_storage.bucket_name,
             upload_name,
             io.BytesIO(f),
             len(f),
         )
     fileprev = get_file_preview_by_name(upload_name)
-    res_path = f"//{settings.s3_storage.bucket_name}/{upload_name}"
+    res_path = f"//{settings.intake_storage.bucket_name}/{upload_name}"
     assert fileprev
     assert fileprev.name == upload_name
     assert fileprev.path == res_path
@@ -47,7 +47,7 @@ def test_reupload_file_creates_new_entry():
     with open(src, "rb") as f:
         data = f.read()
     client.put_object(
-        settings.s3_storage.bucket_name,
+        settings.intake_storage.bucket_name,
         upload_name,
         io.BytesIO(data),
         len(data),
@@ -60,7 +60,7 @@ def test_reupload_file_creates_new_entry():
     with open(src, "rb") as f:
         data = f.read()
     client.put_object(
-        settings.s3_storage.bucket_name,
+        settings.intake_storage.bucket_name,
         upload_name,
         io.BytesIO(data),
         len(data),

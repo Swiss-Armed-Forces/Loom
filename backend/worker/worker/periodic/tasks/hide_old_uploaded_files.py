@@ -7,7 +7,7 @@ from common.dependencies import get_celery_app, get_file_repository
 from common.services.query_builder import QueryParameters
 from common.services.task_scheduling_service import UpdateFileRequest
 
-from worker.index_file.update_file_task import dispatch_update_for_files
+from worker.index_file.dispatch_tasks import dispatch_update_for_files
 from worker.periodic.infra.periodic_task import PeriodicTask
 from worker.settings import settings
 

@@ -31,6 +31,9 @@ spec:
         {{- . | nindent 8 }}
       {{- end }}
     spec:
+      {{- with .Values.seaweedfs.filerMetaBackup.priorityClass }}
+      priorityClassName: {{ include "app.fullname" $ }}-{{ . }}
+      {{- end }}
       securityContext:
         runAsUser: 1000
         fsGroup: 1000
@@ -100,6 +103,14 @@ spec:
   volumeClaimTemplates:
     - metadata:
         name: data
+        {{- with include "app.pvc.labels.custom" (dict "context" . "pvcConfig" .Values.seaweedfs.filerMetaBackup.pvc) }}
+        labels:
+          {{- . | nindent 10 }}
+        {{- end }}
+        {{- with include "app.pvc.annotations.custom" (dict "context" . "pvcConfig" .Values.seaweedfs.filerMetaBackup.pvc) }}
+        annotations:
+          {{- . | nindent 10 }}
+        {{- end }}
       spec:
         accessModes:
           - ReadWriteOnce

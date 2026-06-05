@@ -1,11 +1,12 @@
 import json
 import logging
-from typing import Any, Literal
+from typing import Annotated, Any, Literal
 
 from common.settings import DOMAIN
 from common.settings import Settings as CommonSettings
 from gotenberg_client.options import Measurement, MeasurementUnitType, PageSize
 from pydantic import AnyHttpUrl, field_validator
+from pydantic_settings import NoDecode
 
 logger = logging.getLogger(__name__)
 
@@ -159,7 +160,11 @@ class Settings(CommonSettings):
     min_language_detection_confidence: float = 95.0
     persist_success_tasks: bool = False
     persist_retry_tasks: bool = True
-    tika_ocr_languages: list[TikaAllowedOcrLanguage] = ["eng", "deu", "fra"]
+    tika_ocr_languages: Annotated[list[TikaAllowedOcrLanguage], NoDecode] = [
+        "eng",
+        "deu",
+        "fra",
+    ]
     tika_server_host: AnyHttpUrl = AnyHttpUrl(f"http://tika.{DOMAIN}")
 
     rspam_host: AnyHttpUrl = AnyHttpUrl(f"http://rspamd-worker.{DOMAIN}")
@@ -167,6 +172,7 @@ class Settings(CommonSettings):
     summary_max_chunks: int = 5
     uploaded_files_days_before_hidden: int | None = None
     imap_folder_days_before_unsubscribe: int | None = None
+    reindex_lost_files_max_files: int = 100
 
     llm_rerank_system_prompt: str = (
         """You are an expert reranking machine called Loom."""
@@ -191,7 +197,7 @@ class Settings(CommonSettings):
     rendered_pdf_page_height__mm: int = 297  # A4
 
     # SeaweedFS Maintenance Settings
-    seaweedfs_shell_timeout: int = 3600  # 1 hour
+    seaweedfs_shell_timeout: int = int(60 * 60 * 1.5)  # 1.5 hour(s)
 
     # Persister timing settings
     persister_debounce_window: float = 2.5  # seconds to wait for more mutations

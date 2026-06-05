@@ -25,6 +25,9 @@ spec:
         {{- . | nindent 8 }}
       {{- end }}
     spec:
+      {{- with .Values.dovecot.priorityClass }}
+      priorityClassName: {{ include "app.fullname" $ }}-{{ . }}
+      {{- end }}
       initContainers:
         - name: fix-perms
           image: {{ .Values.image.registry }}/{{ .Values.dovecot.initContainer.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) .Values.dovecot.initContainer.image.tag }}
@@ -63,6 +66,14 @@ spec:
   volumeClaimTemplates:
     - metadata:
         name: dovecot
+        {{- with include "app.pvc.labels.custom" (dict "context" . "component" "dovecot") }}
+        labels:
+          {{- . | nindent 10 }}
+        {{- end }}
+        {{- with include "app.pvc.annotations.custom" (dict "context" . "component" "dovecot") }}
+        annotations:
+          {{- . | nindent 10 }}
+        {{- end }}
       spec:
         accessModes:
           - {{ .Values.dovecot.pvc.accessModes | default "ReadWriteOnce" | quote }}

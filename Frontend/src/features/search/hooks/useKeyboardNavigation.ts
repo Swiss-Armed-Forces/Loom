@@ -304,7 +304,11 @@ export const useKeyboardNavigation = () => {
                         event.preventDefault();
                         return;
                     case "Escape":
-                        // Close dialog (already handled by MUI Dialog)
+                        // Close dialog explicitly. MUI only handles ESC when focus is
+                        // inside the dialog container; a highlighted ResultCard can steal
+                        // focus outside the dialog, in which case MUI never sees the event.
+                        clickActionButton("close");
+                        event.preventDefault();
                         return;
                     case "f":
                         // Toggle fullscreen (dialog only)

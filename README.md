@@ -15,7 +15,7 @@ and metadata, enables tagging, and offers powerful search and interaction capabi
 - **🔍 Powerful Search:** Experience Google-like search across your documents and
   image content with a rich set of syntax options (see [Search Capabilities](#-search-capabilities)).
 - **⚙️ Automatic Indexing:** Loom automatically monitors configured data sources
-  and processes new, updated, or deleted files.
+  and processes new and updated files.
 - **📤 Flexible Data Ingestion:** Easily index data by uploading files directly through
   the simple file upload provided in the Loom frontend.
 - **📚 Comprehensive Content Extraction:** Handles a vast array of file formats,
@@ -31,7 +31,8 @@ and metadata, enables tagging, and offers powerful search and interaction capabi
 - **📦 Archive Creation:** Easily bundle selected search results or individual documents
   into archives for convenient data extraction and transfer.
 - **📌 Tagging:** Organize and categorize your document collection with custom,
-  user-defined tags.
+  user-defined tags. Loom also supports AI-powered auto tagging: once a tag is applied,
+  the AI will automatically find and tag similar documents across the entire index.
 - **🌍 Translation:** Built-in functionality to translate content from various languages
   into English.
 - **🔗 REST API:** Seamlessly integrate Loom's powerful search and other functionalities
@@ -143,12 +144,12 @@ git checkout tags/<tag-name>  # Check out a specific tag (e.g., tags/v1.0.0)
 #### Overriding Helm Values
 
 To customize the deployment configuration, add your value
-overrides to `charts/values-overwrite.yaml`. This file is intentionally left empty and
+overrides to `charts/values-overwrites.yaml`. This file is intentionally left empty and
 is automatically included during Skaffold deployments.
 
 To deploy without resource limits (where you want
 containers to use as much CPU/memory as needed), copy the content of
-`charts/values-no-limits.yaml` into `charts/values-overwrite.yaml`.
+`charts/values-no-limits.yaml` into `charts/values-overwrites.yaml`.
 
 ### Multi Node Deployment
 

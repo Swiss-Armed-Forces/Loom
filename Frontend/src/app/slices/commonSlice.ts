@@ -12,6 +12,7 @@ import {
     OverallQueuesStats,
 } from "@app/api";
 import { RootState } from "@app/store";
+import { FileDetailTab } from "@features/common/utils/enums";
 import { DialogComponent } from "@features/common/utils/model";
 
 export interface DialogProps {
@@ -26,14 +27,17 @@ export interface CommonState {
     loading: number;
     queueStats: OverallQueuesStats;
     dialogs: DialogComponent[];
+    lastFileDetailTab: FileDetailTab;
 }
 const initialState: CommonState = {
     loading: 0,
     queueStats: {
         messagesInQueues: 0,
         completeEstimateTimestamp: undefined,
+        pausedQueuesCount: 0,
     },
     dialogs: [],
+    lastFileDetailTab: FileDetailTab.Rendered,
 };
 
 export const loadConfigAsync = createAsyncThunk(
@@ -92,6 +96,9 @@ export const commonSlice = createSlice({
                 };
             }
         },
+        setLastFileDetailTab: (state, action: PayloadAction<FileDetailTab>) => {
+            state.lastFileDetailTab = action.payload;
+        },
     },
     extraReducers: (builder) => {
         builder.addCase(fetchQueueStatistics.fulfilled, (state, action) => {
@@ -117,6 +124,7 @@ export const {
     openDialog,
     closeDialog,
     updateDialogPropsById,
+    setLastFileDetailTab,
 } = commonSlice.actions;
 
 export const selectCommon = (state: RootState) => state.common;
@@ -137,6 +145,11 @@ export const selectDialogs = createSelector(
 export const selectTopDialog = createSelector(
     selectCommon,
     (common) => common.dialogs[common.dialogs.length - 1] || undefined,
+);
+
+export const selectLastFileDetailTab = createSelector(
+    selectCommon,
+    (common) => common.lastFileDetailTab,
 );
 
 export default commonSlice.reducer;

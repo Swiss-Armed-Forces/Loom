@@ -21,6 +21,7 @@ import { useAppDispatch, useAppSelector } from "@app/hooks";
 import {
     openDialog,
     selectDialogs,
+    selectLastFileDetailTab,
     startLoadingIndicator,
     stopLoadingIndicator,
 } from "@app/slices/commonSlice";
@@ -36,7 +37,6 @@ import {
     selectLanguages,
 } from "@app/slices/searchSlice";
 import { DialogType } from "@features/common/utils/enums";
-import { FileDetailTab } from "@features/common/utils/enums";
 import {
     ChatMenu,
     ScrollToTop,
@@ -61,6 +61,7 @@ export const Search = () => {
     const webSocketPubSubMessage = useAppSelector(selectWebSocketPubSubMessage);
     const chatbotOpen = useAppSelector((state) => state.search.chatbotOpen);
     const dialogs = useAppSelector(selectDialogs);
+    const lastTab = useAppSelector(selectLastFileDetailTab);
     const dialogFileIdRef = useRef<string | undefined>("");
 
     // Initialize keyboard navigation
@@ -185,7 +186,7 @@ export const Search = () => {
                 openDialog({
                     id: "",
                     type: DialogType.FileDetail,
-                    props: { fileId, tab: FileDetailTab.Rendered },
+                    props: { fileId, tab: lastTab },
                 }),
             );
             dialogFileIdRef.current = fileId;

@@ -85,31 +85,6 @@ Usage: {{ include "app.annotations.custom" (dict "context" . "component" "promet
 {{- end }}
 {{- end -}}
 
-{{/*
-Generate a hash suffix based on values to ensure unique job names on configuration changes.
-
-This approach is specifically designed for ArgoCD deployments where using {{ .Release.Revision }}
-can cause persistent out-of-sync states. Here's why:
-
-ArgoCD vs Helm Revision Tracking:
-- Helm tracks revisions sequentially (1, 2, 3...) for each install/upgrade operation
-- ArgoCD renders templates using its own Git-based revision system, not Helm's counter
-- This mismatch causes ArgoCD to see different revision numbers than what exists in the cluster
-- Result: ArgoCD shows perpetual drift between desired state and live resources
-
-Benefits of Value Hashing:
-1. Deterministic: Same values always produce the same hash, ensuring ArgoCD sync consistency
-2. Change-sensitive: Hash changes only when actual configuration values change
-3. ArgoCD-compatible: No dependency on Helm's revision tracking system
-4. Automatic job recreation: New hash triggers job deletion/recreation when config changes
-5. Stable when unchanged: Prevents unnecessary job churn when values remain static
-
-This ensures jobs run on every meaningful configuration change while maintaining
-ArgoCD's declarative sync model without false drift detection.
-*/}}
-{{- define "app.valuesHash" -}}
-{{- .Values | toYaml | sha256sum | trunc 8 -}}
-{{- end -}}
 
 {{- define "SI-to-bytes" -}}
   {{/*
@@ -149,6 +124,85 @@ ArgoCD's declarative sync model without false drift detection.
   {{- end -}}
   {{- $bytes | int64 -}}
 {{- end -}}
+
+{{/*
+Custom labels for a PVC from a StatefulSet volumeClaimTemplate.
+Only includes user-defined labels (no standard Kubernetes/Helm labels, which are immutable on PVCs).
+Accepts either:
+  - component: top-level values key (e.g. "elasticsearch") → reads {component}.pvc.customLabels
+  - pvcConfig: direct pvc values dict (e.g. .Values.seaweedfs.master.pvc) → reads pvcConfig.customLabels
+Usage:
+  {{ include "app.pvc.labels.custom" (dict "context" . "component" "elasticsearch") }}
+  {{ include "app.pvc.labels.custom" (dict "context" . "pvcConfig" .Values.seaweedfs.master.pvc) }}
+*/}}
+{{- define "app.pvc.labels.custom" -}}
+{{- $context := .context -}}
+{{- $component := .component -}}
+{{- $pvcConfig := .pvcConfig -}}
+{{- if $context.Values.global }}
+{{- if $context.Values.global.customPvcLabels }}
+{{- range $key, $value := $context.Values.global.customPvcLabels }}
+{{ $key }}: {{ $value | quote }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- if $component }}
+{{- $componentValues := index $context.Values $component -}}
+{{- if $componentValues }}
+{{- if $componentValues.pvc }}
+{{- if $componentValues.pvc.customLabels }}
+{{- range $key, $value := $componentValues.pvc.customLabels }}
+{{ $key }}: {{ $value | quote }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- if $pvcConfig }}
+{{- if $pvcConfig.customLabels }}
+{{- range $key, $value := $pvcConfig.customLabels }}
+{{ $key }}: {{ $value | quote }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- end -}}
+
+{{/*
+Custom annotations for a PVC from a StatefulSet volumeClaimTemplate.
+Same usage as app.pvc.labels.custom.
+*/}}
+{{- define "app.pvc.annotations.custom" -}}
+{{- $context := .context -}}
+{{- $component := .component -}}
+{{- $pvcConfig := .pvcConfig -}}
+{{- if $context.Values.global }}
+{{- if $context.Values.global.customPvcAnnotations }}
+{{- range $key, $value := $context.Values.global.customPvcAnnotations }}
+{{ $key }}: {{ $value | quote }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- if $component }}
+{{- $componentValues := index $context.Values $component -}}
+{{- if $componentValues }}
+{{- if $componentValues.pvc }}
+{{- if $componentValues.pvc.customAnnotations }}
+{{- range $key, $value := $componentValues.pvc.customAnnotations }}
+{{ $key }}: {{ $value | quote }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- if $pvcConfig }}
+{{- if $pvcConfig.customAnnotations }}
+{{- range $key, $value := $pvcConfig.customAnnotations }}
+{{ $key }}: {{ $value | quote }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- end -}}
+
 
 {{- define "cpu-limit-to-count" -}}
   {{/*

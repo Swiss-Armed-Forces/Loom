@@ -8,13 +8,12 @@ import {
     processQuestion,
 } from "@app/api";
 import { useAppDispatch, useAppSelector } from "@app/hooks";
-import { openDialog } from "@app/slices/commonSlice";
+import { openDialog, selectLastFileDetailTab } from "@app/slices/commonSlice";
 import {
     selectQuery,
     selectWebSocketPubSubMessage,
 } from "@app/slices/searchSlice";
 import { DialogType } from "@features/common/utils/enums";
-import { FileDetailTab } from "@features/common/utils/enums";
 import { webSocketSendMessage } from "@middleware/SocketMiddleware";
 
 import styles from "./Chatbot.module.css";
@@ -33,6 +32,7 @@ export const Chatbot = () => {
 
     const searchQuery = useAppSelector(selectQuery);
     const webSocketPubSubMessage = useAppSelector(selectWebSocketPubSubMessage);
+    const lastTab = useAppSelector(selectLastFileDetailTab);
 
     const [messages, setMessages] = useState<ChatMessage[]>([]);
     const [aiContext, setAiContext] = useState<ContextCreateResponse | null>(
@@ -79,7 +79,7 @@ export const Chatbot = () => {
                 openDialog({
                     id: "",
                     type: DialogType.FileDetail,
-                    props: { fileId, tab: FileDetailTab.Rendered },
+                    props: { fileId, tab: lastTab },
                 }),
             );
         };

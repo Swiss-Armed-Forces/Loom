@@ -63,7 +63,7 @@
 ## Setup verification
 
 Wait for the k8s process to settle, it might take a few minutes.
-Then navigate to the frontend: <http://frontend.loom>
+Then navigate to the frontend: <https://frontend.loom>
 
 Upload a file, check if analysis is working and it's indexed.
 

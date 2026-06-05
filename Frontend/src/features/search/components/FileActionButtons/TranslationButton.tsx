@@ -39,7 +39,7 @@ export const TranslationButton = ({
             <IconButton
                 onClick={handleClick}
                 disabled={disabled}
-                title="Translate"
+                title={t("sideMenu.translateQueriedFiles")}
                 aria-label="translate"
             >
                 <Translate />

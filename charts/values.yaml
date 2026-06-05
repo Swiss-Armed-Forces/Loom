@@ -14,6 +14,13 @@ global:
   # prometheus.io/scrape: "true"
   # iam.amazonaws.com/role: "arn:aws:iam::123456789:role/loom"
   customAnnotations: {}
+  # Custom labels to add to all PVCs created from StatefulSet volumeClaimTemplates.
+  # Note: volumeClaimTemplates are immutable after StatefulSet creation. To apply
+  # labels to existing PVCs, delete and recreate the StatefulSet (PVCs are retained),
+  # or label them manually with: kubectl label pvc <name> <key>=<value>
+  customPvcLabels: {}
+  # Custom annotations to add to all PVCs created from StatefulSet volumeClaimTemplates.
+  customPvcAnnotations: {}
 
 domain: &default-domain loom
 
@@ -41,6 +48,44 @@ ingress: &default-ingress-config
 egress:
   enabled: false
 
+# Priority classes for pod scheduling preemption.
+# Infrastructure pods get higher priority so the scheduler evicts scalable pods
+# (HPA-scaled workers) when quota is exhausted during redeployment.
+# NOTE: PriorityClass is a cluster-scoped resource and requires cluster-level
+# RBAC permissions to create. Set create: false if Helm lacks those permissions
+# and create the PriorityClasses manually (or skip preemption entirely).
+priorityClasses:
+  create: true
+  infrastructure:
+    value: 1000
+  scalable:
+    value: 100
+  customLabels: {}
+  customAnnotations: {}
+
+# Priority-scoped ResourceQuotas to prevent scalable workloads from exhausting
+# namespace quota and starving infrastructure StatefulSets during updates.
+#
+# How it works: Kubernetes ResourceQuota enforcement runs at admission time, before
+# the scheduler's preemption logic. Even infrastructure-priority pods are rejected
+# at admission if the namespace quota is full. Scoping a quota to the scalable
+# priority class caps scalable pods separately, reserving headroom for infrastructure.
+#
+# Usage: Enable and set `hard` limits below (namespace quota) - (infrastructure requests).
+# Example: if namespace quota is 32 CPU and infrastructure uses ~12 CPU, set
+# requests.cpu to "20" to leave 12 CPU guaranteed for infrastructure.
+resourceQuotas:
+  customLabels: {}
+  customAnnotations: {}
+  scalable:
+    enabled: false
+    hard:
+      requests.cpu: "20"
+      requests.memory: "50Gi"
+      limits.cpu: "40"
+      limits.memory: "100Gi"
+      pods: "200"
+
 fileStorage:
   s3Storage:
     host: null
@@ -48,6 +93,7 @@ fileStorage:
     accessKey: null
     secretKey: null
     secureConnection: null
+    connectionPoolSize: null
 
 lazyBytes:
   s3Storage:
@@ -56,12 +102,23 @@ lazyBytes:
     accessKey: null
     secretKey: null
     secureConnection: null
+    connectionPoolSize: null
+
+intakeStorage:
+  s3Storage:
+    host: null
+    bucketName: null
+    accessKey: null
+    secretKey: null
+    secureConnection: null
+    connectionPoolSize: null
 
 pipeline:
   taskTimeLimitSeconds: 86400  # 24h
   lazy_threshold_bytes: null
   uploaded_files_days_before_hidden: null
   imap_folder_days_before_unsubscribe: null
+  reindex_lost_files_max_files: null
   skip_summarize_while_indexing: null
   skip_translate_while_indexing: null
   skip_image_description_while_indexing: null
@@ -78,9 +135,12 @@ pipeline:
   celery_graveyard_deliver_limit: null
   celery_graveyard_task_name: null
   celery_dead_task_name: null
+  celery_dead_deliver_limit: null
+  celery_abyss_task_name: null
+  celery_abyss_ttl__seconds: null
   celery_persister_shard_prefix: null
-  celery_unroubtable_ttl__seconds: null
-  celery_unroubtable_task_name: null
+  celery_unroutable_ttl__seconds: null
+  celery_unroutable_task_name: null
   celery_default_exchange_name: null
   celery_default_exchange_type: null
   celery_alternate_exchange_name: null
@@ -226,6 +286,11 @@ frontend:
 
 worker: &worker
   replicaCount: 1
+  priorityClass: scalable
+  strategy:
+    rollingUpdate:
+      maxSurge: "34%"
+      maxUnavailable: "34%"
   image:
     repository: swiss-armed-forces/cyber-command/cea/loom/worker
   hpa:
@@ -260,6 +325,7 @@ reaper: *worker
 persister:
   # Number of persister replicas - each gets a unique shard assignment.
   replicaCount: 1
+  priorityClass: infrastructure
   image:
     repository: swiss-armed-forces/cyber-command/cea/loom/worker
   service:
@@ -342,14 +408,8 @@ crawler:
     repository: swiss-armed-forces/cyber-command/cea/loom/crawler
   service:
     port: 80
-  # S3 bucket to crawl (will be created if it doesn't exist)
-  s3Storage:
-    host: null
-    bucketName: null
-    bucketAlias: null
-    accessKey: null
-    secretKey: null
-    secureConnection: null
+  # Alias for the intake S3 bucket (displayed in file paths)
+  bucketAlias: null
   resources:
     requests:
       cpu: "0.2"
@@ -376,6 +436,7 @@ crawler:
 
 elasticsearch:
   replicaCount: 1
+  priorityClass: infrastructure
   shardsCount: null
   shardsReplicasCount: null
   image:
@@ -385,6 +446,8 @@ elasticsearch:
   pvc:
     storage: 50Gi
     storageClass: null
+    customLabels: {}
+    customAnnotations: {}
   ingress: *default-ingress-config
   readinessProbe:
     enabled: true
@@ -467,6 +530,11 @@ grafana:
 translate:
   enabled: true
   replicaCount: 1
+  priorityClass: scalable
+  strategy:
+    rollingUpdate:
+      maxSurge: 0
+      maxUnavailable: 1
   hpa:
     enabled: true
     maxReplicas: 2
@@ -511,6 +579,7 @@ seaweedfs:
 
   master:
     replicaCount: 1
+    priorityClass: infrastructure
     image:
       repository: swiss-armed-forces/cyber-command/cea/loom/seaweedfs
     port: 9333
@@ -537,6 +606,8 @@ seaweedfs:
     pvc:
       storage: 1Gi
       storageClass: null
+      customLabels: {}
+      customAnnotations: {}
     resources:
       requests:
         cpu: "0.1"
@@ -547,6 +618,7 @@ seaweedfs:
 
   volume:
     replicaCount: 2
+    priorityClass: infrastructure
     # Multiplier for volumeSizeLimitMB to reserve space for compaction.
     # Volume compaction requires free disk space approximately equal to the volume being compacted.
     # With multiplier 2 and volumeSizeLimitMB 1024, reserves 2048MB (2GB) for compaction.
@@ -559,6 +631,8 @@ seaweedfs:
     pvc:
       storage: 20Gi
       storageClass: null
+      customLabels: {}
+      customAnnotations: {}
     resources:
       requests:
         cpu: "0.05"
@@ -569,6 +643,11 @@ seaweedfs:
 
   filer:
     replicaCount: 1
+    priorityClass: scalable
+    strategy:
+      rollingUpdate:
+        maxSurge: 0
+        maxUnavailable: 1
     # Graceful shutdown configuration for S3 multipart uploads
     terminationGracePeriodSeconds: 180
     preStopSleepSeconds: 5
@@ -627,6 +706,7 @@ seaweedfs:
   # Backs up filer metadata to a local SQLite database for disaster recovery
   filerMetaBackup:
     enabled: true
+    priorityClass: infrastructure
     filerDir: "/"
     pvc:
       # Multiplier for PVC storage size relative to redis-filer memory limit.
@@ -634,6 +714,8 @@ seaweedfs:
       # This ensures enough space to store all metadata that could fit in Redis + headroom.
       storageMultiplier: 2
       storageClass: null
+      customLabels: {}
+      customAnnotations: {}
     # SQLite filer sidecar for restore operations
     sqliteFiler:
       port: 18889
@@ -655,6 +737,7 @@ seaweedfs:
 
 rabbit:
   replicaCount: 1
+  priorityClass: infrastructure
   image:
     repository: swiss-armed-forces/cyber-command/cea/loom/rabbit
   service:
@@ -665,6 +748,8 @@ rabbit:
   pvc:
     storage: 30Gi
     storageClass: null
+    customLabels: {}
+    customAnnotations: {}
   ingress:
     http: *default-ingress-config
     amqp:
@@ -690,6 +775,11 @@ rabbit:
 ollama: &ollama
   enabled: true
   replicaCount: 1
+  priorityClass: scalable
+  strategy:
+    rollingUpdate:
+      maxSurge: 0
+      maxUnavailable: 1
   hpa:
     enabled: true
     maxReplicas: 2
@@ -738,6 +828,7 @@ ollama-tool: *ollama
 open_webui:
   enabled: true
   replicaCount: 1
+  priorityClass: infrastructure
   image:
     repository: swiss-armed-forces/cyber-command/cea/loom/open-webui
   env:
@@ -755,6 +846,8 @@ open_webui:
   pvc:
     storage: 10Gi
     storageClass: null
+    customLabels: {}
+    customAnnotations: {}
   ingress: *default-ingress-config
   resources:
     requests:
@@ -772,6 +865,7 @@ open_webui:
 
 dovecot:
   replicaCount: 1
+  priorityClass: infrastructure
   image:
     repository: swiss-armed-forces/cyber-command/cea/loom/dovecot
   service:
@@ -780,6 +874,8 @@ dovecot:
   pvc:
     storage: 10Gi
     storageClass: null
+    customLabels: {}
+    customAnnotations: {}
   ingress:
     imaps: *default-ingress-config
     imap:
@@ -833,6 +929,7 @@ roundcube:
 prometheus:
   enabled: true
   replicaCount: 1
+  priorityClass: infrastructure
   image:
     repository: swiss-armed-forces/cyber-command/cea/loom/prometheus
   service:
@@ -840,6 +937,8 @@ prometheus:
   pvc:
     storage: 10Gi
     storageClass: null
+    customLabels: {}
+    customAnnotations: {}
   ingress: *default-ingress-config
   readinessProbe:
     enabled: false
@@ -851,7 +950,7 @@ prometheus:
       memory: "200Mi"
     limits:
       cpu: "1"
-      memory: "1Gi"
+      memory: "2Gi"
   collectClusterMetrics: true
   initContainer:
     image:
@@ -872,6 +971,7 @@ prometheus:
 
 redis: &redis
   replicaCount: 1
+  priorityClass: infrastructure
   image:
     repository: swiss-armed-forces/cyber-command/cea/loom/redis
   service:
@@ -881,6 +981,8 @@ redis: &redis
     # PVC size = memory limit * storageMultiplier
     storageMultiplier: 5
     storageClass: null
+    customLabels: {}
+    customAnnotations: {}
   # Percentage of memory limit to use for Redis maxmemory setting.
   # This reserves headroom for Redis overhead and fragmentation
   memoryLimitThresholdPercent: 0.6
@@ -974,6 +1076,11 @@ rspamd:
 
 tika:
   replicaCount: 1
+  priorityClass: scalable
+  strategy:
+    rollingUpdate:
+      maxSurge: 0
+      maxUnavailable: 1
   hpa:
     enabled: true
     maxReplicas: 10
@@ -1007,6 +1114,11 @@ gotenberg:
   # Default 0.9 leaves 10% headroom for non-Go memory usage
   goMemoryLimitFactor: 0.9
   replicaCount: 1
+  priorityClass: scalable
+  strategy:
+    rollingUpdate:
+      maxSurge: 0
+      maxUnavailable: 1
   hpa:
     enabled: true
     maxReplicas: 10

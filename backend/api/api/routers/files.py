@@ -352,6 +352,7 @@ class GetFilePreviewResponse(BaseModel):
     summary: str | None
     image_description: str | None
     is_spam: bool | None = False
+    attachments_skipped: bool = False
 
 
 @router.get("/{file_id}/preview")
@@ -396,6 +397,7 @@ def get_file_preview(
         summary=file.summary,
         image_description=file.image_description,
         is_spam=file.is_spam,
+        attachments_skipped=file.attachments_skipped,
     )
 
 

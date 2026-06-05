@@ -11,7 +11,6 @@ import {
     PictureAsPdfOutlined,
     InsightsOutlined,
     WhatshotOutlined,
-    DataObjectOutlined,
     Menu as MenuIcon,
     TranslateOutlined,
     CloudUploadOutlined,
@@ -35,7 +34,6 @@ import {
     grafanaHost,
     translateHost,
     s3Host,
-    mongoWebHost,
     openWebuifrontendHost,
     prometheusHost,
     rabbitHost,
@@ -118,11 +116,6 @@ export const BurgerMenu = () => {
             link: elasticVueHost,
             text: "ElasticVue",
             icon: <SearchOutlined />,
-        },
-        {
-            link: mongoWebHost,
-            text: "MongoDB",
-            icon: <DataObjectOutlined />,
         },
         {
             link: rspamdHost,

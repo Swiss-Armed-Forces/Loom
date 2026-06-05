@@ -90,6 +90,13 @@ export interface KeyboardNavigationState {
     highlightedIndex: number | null;
 }
 
+export interface SideMenuState {
+    isExpanded: boolean;
+    isBulkActionsExpanded: boolean;
+    isTagsExpanded: boolean;
+    isQueriesExpanded: boolean;
+}
+
 export interface SearchState {
     query: SearchQuery | null;
     queryError?: string;
@@ -109,7 +116,9 @@ export interface SearchState {
     languages: LibretranslateSupportedLanguages[] | null;
     translationLanguage: LibretranslateSupportedLanguages | null;
     customQueries: CustomQuery[];
+    sideMenu: SideMenuState;
     contentTruncatedFilesCount: number;
+    attachmentsSkippedFilesCount: number;
     failedFilesCount: number;
     displayStat: Stat;
     webSocketPubSubMessage: PubSubMessage | null;
@@ -119,9 +128,48 @@ export interface SearchState {
 }
 
 export const CUSTOM_QUERIES_LOCAL_STORAGE_KEY = "CUSTOM_QUERIES";
+export const SIDE_MENU_LOCAL_STORAGE_KEY = "SIDE_MENU";
 export const QUERY_FAILED_FILES = "state:failed";
 export const QUERY_CONTENT_TRUNCATED_FILES = "content_truncated:true";
+export const QUERY_ATTACHMENTS_SKIPPED_FILES = "attachments_skipped:true";
 const AJV = new Ajv();
+
+const SideMenuStateSchema: JSONSchemaType<SideMenuState> = {
+    type: "object",
+    properties: {
+        isExpanded: { type: "boolean" },
+        isBulkActionsExpanded: { type: "boolean" },
+        isTagsExpanded: { type: "boolean" },
+        isQueriesExpanded: { type: "boolean" },
+    },
+    required: [
+        "isExpanded",
+        "isBulkActionsExpanded",
+        "isTagsExpanded",
+        "isQueriesExpanded",
+    ],
+    additionalProperties: false,
+};
+
+const loadSideMenuState = (): SideMenuState => {
+    const defaults: SideMenuState = {
+        isExpanded: false,
+        isBulkActionsExpanded: false,
+        isTagsExpanded: true,
+        isQueriesExpanded: true,
+    };
+    const data = window.localStorage.getItem(SIDE_MENU_LOCAL_STORAGE_KEY);
+    if (!data) return defaults;
+    try {
+        const parsed = JSON.parse(data);
+        const validate = AJV.compile(SideMenuStateSchema);
+        if (validate(parsed)) return parsed;
+        console.warn("Invalid side menu state in localStorage, using defaults");
+        return defaults;
+    } catch {
+        return defaults;
+    }
+};
 
 const loadCustomQueries = (): CustomQuery[] => {
     const data = window.localStorage.getItem(CUSTOM_QUERIES_LOCAL_STORAGE_KEY);
@@ -164,7 +212,9 @@ const initialState: SearchState = {
     languages: null,
     translationLanguage: null,
     customQueries: loadCustomQueries(),
+    sideMenu: loadSideMenuState(),
     contentTruncatedFilesCount: 0,
+    attachmentsSkippedFilesCount: 0,
     failedFilesCount: 0,
     displayStat: Stat.Extensions,
     webSocketPubSubMessage: null,
@@ -274,14 +324,17 @@ export const fetchPreview = createAsyncThunk(
         },
         thunkAPI: GetThunkAPI<AsyncThunkConfig>,
     ) => {
-        const queryId = (await getShortRunningQuery()).queryId;
+        const { search } = thunkAPI.getState() as RootState;
+        // Use explicit query if provided; otherwise fall back to the active search query
+        // only if the file is in the current search results (to get highlights). Files
+        // outside the current results (e.g. parent navigation) use "hidden:*" so they
+        // load regardless of the active search context.
+        const fileIsInResults = search.files[fileId]?.meta != null;
+        const activeQuery = query ?? (fileIsInResults ? search.query : null);
 
-        const searchQuery: SearchQuery = query
-            ? {
-                  ...query,
-                  query: query.query ?? "",
-                  id: queryId,
-              }
+        const queryId = (await getShortRunningQuery()).queryId;
+        const searchQuery: SearchQuery = activeQuery
+            ? { ...activeQuery, query: activeQuery.query ?? "", id: queryId }
             : {
                   id: queryId,
                   query: "hidden:*",
@@ -342,6 +395,17 @@ export const fetchContentTruncatedFiles = createAsyncThunk(
     },
 );
 
+export const fetchAttachmentsSkippedFiles = createAsyncThunk(
+    "fetchAttachmentsSkippedFilesThunk",
+    async () => {
+        return getFilesCount({
+            id: (await getShortRunningQuery()).queryId,
+            query: QUERY_ATTACHMENTS_SKIPPED_FILES,
+            keepAlive: null,
+        });
+    },
+);
+
 export const fetchFailedFiles = createAsyncThunk(
     "fetchFailedFilesThunk",
     async () => {
@@ -359,16 +423,20 @@ export const setFileInViewState = createAsyncThunk(
         {
             fileId,
             inView,
+            query,
         }: {
             fileId: string;
             inView: boolean;
+            query?: SearchQuery | null;
         },
         thunkAPI,
     ) => {
         const dispatch = thunkAPI.dispatch;
         if (inView) {
             await Promise.all([
-                dispatch(fetchPreview({ fileId: fileId })),
+                dispatch(
+                    fetchPreview({ fileId: fileId, query: query ?? undefined }),
+                ),
                 dispatch(
                     webSocketSendMessage({
                         message: {
@@ -467,6 +535,20 @@ export const searchSlice = createSlice({
         ) => {
             state.summarizationSystemPrompt = action.payload;
         },
+        toggleSideMenu: (state) => {
+            state.sideMenu.isExpanded = !state.sideMenu.isExpanded;
+        },
+        toggleSideMenuBulkActions: (state) => {
+            state.sideMenu.isBulkActionsExpanded =
+                !state.sideMenu.isBulkActionsExpanded;
+        },
+        toggleSideMenuTags: (state) => {
+            state.sideMenu.isTagsExpanded = !state.sideMenu.isTagsExpanded;
+        },
+        toggleSideMenuQueries: (state) => {
+            state.sideMenu.isQueriesExpanded =
+                !state.sideMenu.isQueriesExpanded;
+        },
         setHighlightedIndex: (state, action: PayloadAction<number | null>) => {
             state.keyboardNavigation.highlightedIndex = action.payload;
         },
@@ -500,20 +582,28 @@ export const searchSlice = createSlice({
             .addCase(fetchContentTruncatedFiles.fulfilled, (state, action) => {
                 state.contentTruncatedFilesCount = action.payload.totalFiles;
             })
+            .addCase(
+                fetchAttachmentsSkippedFiles.fulfilled,
+                (state, action) => {
+                    state.attachmentsSkippedFilesCount =
+                        action.payload.totalFiles;
+                },
+            )
             .addCase(fetchFailedFiles.fulfilled, (state, action) => {
                 state.failedFilesCount = action.payload.totalFiles;
             })
             .addCase(updateQuery.fulfilled, (state, action) => {
                 if (!action.payload) {
                     if (state.query) state.query.query = "";
+                    state.totalFiles = 0;
+                    Object.keys(state.files).forEach((fileId) => {
+                        state.files[fileId].meta = null;
+                    });
                     return;
                 }
                 const isNewQuery = state.query?.id !== action.payload.query.id;
                 if (isNewQuery) {
-                    // new query: reset files and keyboard navigation
-                    Object.keys(state.files).forEach((fileId) => {
-                        state.files[fileId].meta = null;
-                    });
+                    state.files = {};
                     state.keyboardNavigation = {
                         highlightedIndex: null,
                     };
@@ -521,7 +611,6 @@ export const searchSlice = createSlice({
 
                 state.query = action.payload.query;
                 action.payload.files.forEach((file) => {
-                    // Check if file already exists to preserve preview if this is just a page load/refresh
                     if (!state.files[file.fileId]) {
                         state.files[file.fileId] = {
                             meta: file,
@@ -529,6 +618,7 @@ export const searchSlice = createSlice({
                             query: null,
                         };
                     } else {
+                        // same query, new page: preserve preview
                         state.files[file.fileId].meta = file;
                     }
                 });
@@ -602,6 +692,10 @@ export const {
     setSummarizationSystemPrompt,
     setFilePreview,
     setHighlightedIndex,
+    toggleSideMenu,
+    toggleSideMenuBulkActions,
+    toggleSideMenuTags,
+    toggleSideMenuQueries,
 } = searchSlice.actions;
 
 export const selectSearch = (state: RootState) => state.search;
@@ -609,6 +703,11 @@ export const selectSearch = (state: RootState) => state.search;
 export const selectCustomQueries = createSelector(
     selectSearch,
     (search) => search.customQueries,
+);
+
+export const selectSideMenu = createSelector(
+    selectSearch,
+    (search) => search.sideMenu,
 );
 
 export const selectQuery = createSelector(
@@ -651,6 +750,11 @@ export const selectStatsData = createSelector(
 export const selectContentTruncatedFilesCount = createSelector(
     selectSearch,
     (search) => search.contentTruncatedFilesCount,
+);
+
+export const selectAttachmentsSkippedFilesCount = createSelector(
+    selectSearch,
+    (search) => search.attachmentsSkippedFilesCount,
 );
 
 export const selectFailedFilesCount = createSelector(

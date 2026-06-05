@@ -7,10 +7,12 @@
         "runningTasksTooltip": "{{taskCount}} task(s) are running.",
         "failedTasksTooltip": "{{failedTaskCount}} files have failed tasks. Click to query for them.",
         "contentTruncatedTooltip": "{{contentTruncatedCount}} files have truncated content. Click to query for them.",
+        "attachmentsSkippedTooltip": "{{attachmentsSkippedCount}} files have skipped attachments. Click to query for them.",
         "estimateLessThanFiveMinutes": "Estimated completion time: Less than 5 minutes.",
         "estimateMinutes": "Estimated completion time: {{minutes}} minute(s).",
         "estimateHours": "Estimated completion time: {{hours}} hours(s).",
-        "estimateDays": "Estimated completion time: {{days}} days(s)."
+        "estimateDays": "Estimated completion time: {{days}} days(s).",
+        "indexingThrottled": "Indexing is throttled ({{pausedQueuesCount}} queue(s) paused)."
     },
     "common": {
         "close": "Close",
@@ -34,7 +36,7 @@
         "restore": "Restore file",
         "showThumbnail": "Show thumbnail",
         "resultCounts": "Showing {{actualCount}} of {{totalCount}} results.",
-        "queryExpired": "Query has expired, trying again: Your search results might change",
+        "queryExpired": "Query expired – refreshing results",
         "queryThisField": "Query by this field",
         "sortThisField": "Sort by this field",
         "shareContent": {
@@ -45,7 +47,7 @@
         }
     },
     "addCustomQueryDialog": {
-        "title": "Add current query to saved queries",
+        "title": "Save query",
         "add": "Add",
         "nameLabel": "Name"
     },
@@ -85,7 +87,7 @@
     },
     "confirmDialog": {
         "title": "Confirm action",
-        "confirmCustomQueryRemoval": "Would you like to remove the custom query?",
+        "confirmCustomQueryRemoval": "Delete this saved query?",
         "confirmRemoval": "Confirm removal",
         "confirmArchiveCreationText": "Would you like to create an archive from the search results?",
         "confirmArchiveCreation": "Start archive creation",
@@ -141,7 +143,7 @@
             "disableFiles": "Mark files as unseen",
             "openDialog": "Seen / Unseen files",
             "dialog": {
-                "title": "Edit flag",
+                "title": "Edit seen state",
                 "text": "Would you like to change the seen state of {{numberOfResults}} files?"
             }
         }
@@ -154,7 +156,7 @@
     "sideMenu": {
         "actions": "Actions",
         "results": "Results",
-        "expertMode": "Expert Mode",
+        "bulkActions": "Bulk Actions",
 
         "timeRange": {
             "title": "Time ranges",
@@ -225,7 +227,8 @@
     "tagsList": {
         "scheduledRemoveTagFromFileToast": "Untagging file successfully scheduled, this might take a while",
         "scheduledRemoveTagToast": "Removal of tag successfully scheduled, this might take a while",
-        "scheduledRemoveErrorToast": "Couldn't remove tag(s). Code: {{err.status}}, Text: {{err.text}}"
+        "scheduledRemoveErrorToast": "Couldn't remove tag(s). Code: {{err.status}}, Text: {{err.text}}",
+        "moreTagsTooltip": "{{count}} more tag(s)"
     },
     "toolbar": {
         "views": {
@@ -302,7 +305,7 @@
         }
     },
     "statisticsView": {
-        "summaryTitle": "Queries files statistics",
+        "summaryTitle": "Query file statistics",
         "numberOfFiles": "Number of files",
         "minFileSize": "Smallest file",
         "maxFileSize": "Largest file",

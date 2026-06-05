@@ -12,6 +12,18 @@
     justify-self: flex-start;
 }
 
+.deleteIcon {
+    cursor: pointer;
+    transition:
+        transform 0.2s ease,
+        opacity 0.2s ease;
+}
+
+.deleteIcon:hover {
+    transform: scale(1.1);
+    opacity: 0.8;
+}
+
 .listItemText > span {
     display: flex;
     flex-direction: row;

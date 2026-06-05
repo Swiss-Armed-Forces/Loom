@@ -30,7 +30,6 @@ export const apiHost = getHost("api");
 export const rabbitHost = getHost("rabbit");
 export const elasticSearchHost = getHost("elasticsearch");
 export const elasticVueHost = getHost("elasticvue");
-export const mongoWebHost = getHost("mongo-web");
 export const rspamdHost = getHost("rspamd");
 export const redisInsightHost = getHost("redisinsight");
 export const prometheusHost = getHost("prometheus");

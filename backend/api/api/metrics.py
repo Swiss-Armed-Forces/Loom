@@ -54,6 +54,15 @@ class LoggingMetricExporter(MetricExporter):
         return True
 
 
+class MetricCache(BaseModel):
+    # Store raw (value, attributes) tuples rather than Observation objects
+    # so that the Pydantic model is safely picklable by the Redis cache layer.
+    # Must be defined at module level (not inside a function) for pickle to work.
+    observations_raw: list[tuple[Any, Any]]
+    timestamp: datetime = Field(default_factory=datetime.now)
+    collection_time: timedelta
+
+
 def with_adaptive_cache(max_age: timedelta | None = None):
     """Decorator that caches metric Observations based on collection time.
 
@@ -65,13 +74,6 @@ def with_adaptive_cache(max_age: timedelta | None = None):
         max_age = timedelta(
             milliseconds=PERIODIC_METRICS_REFRESH__MS * ADAPTIVE_CACHE_MAX_AGE_FACTOR
         )
-
-    class MetricCache(BaseModel):
-        # Store raw (value, attributes) tuples rather than Observation objects
-        # so that the Pydantic model is safely picklable by the Redis cache layer.
-        observations_raw: list[tuple[Any, Any]]
-        timestamp: datetime = Field(default_factory=datetime.now)
-        collection_time: timedelta
 
     def decorator(
         func: Callable[[CallbackOptions], Iterable[Observation]],
@@ -97,12 +99,18 @@ def with_adaptive_cache(max_age: timedelta | None = None):
                 enough_time_to_compute = cache.collection_time < timeout
                 not_expired = cache_age < max_age
 
-                if not enough_time_to_compute and not_expired:
+                if not enough_time_to_compute:
+                    # Can't afford to recompute inline — return cached value even if stale.
+                    # This prevents the Prometheus scrape from blocking and timing out when
+                    # the cache has expired or the periodic reader hasn't populated it yet.
+                    # The PeriodicExportingMetricReader (which always has a large timeout budget
+                    # and therefore always recomputes) will refresh the cache in the background.
                     logger.info(
-                        "Returning cached metric %s (collected in %s, age: %s)",
+                        "Returning cached metric %s (collected in %s, age: %s, expired: %s)",
                         func.__name__,
                         cache.collection_time,
                         cache_age,
+                        not not_expired,
                     )
                     for value, attrs in cache.observations_raw:
                         yield Observation(value=value, attributes=attrs)
