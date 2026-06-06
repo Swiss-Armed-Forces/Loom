@@ -537,7 +537,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | opentelemetry-sdk                     | 1.39.1          | Apache-2.0                                                                       |
 | opentelemetry-semantic-conventions    | 0.60b1          | Apache-2.0                                                                       |
 | opentelemetry-util-http               | 0.60b1          | Apache-2.0                                                                       |
-| pytest-asyncio                        | 1.3.0           | Apache-2.0                                                                       |
+| pytest-asyncio                        | 1.4.0           | Apache-2.0                                                                       |
 | pytest-memray                         | 1.8.0           | Apache-2.0                                                                       |
 | python-multipart                      | 0.0.22          | Apache-2.0                                                                       |
 | types-cffi                            | 2.0.0.20260518  | Apache-2.0                                                                       |
@@ -592,7 +592,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | numpy                                 | 2.4.4           | BSD-3-Clause AND 0BSD AND MIT AND Zlib AND CC0-1.0                               |
 | pytest-timeout                        | 2.4.0           | DFSG approved; MIT License                                                       |
 | pylint-plugin-utils                   | 0.9.0           | GNU General Public License v2 or later (GPLv2+)                                  |
-| python-gitlab                         | 8.3.0           | GNU Lesser General Public License v3 (LGPLv3)                                    |
+| python-gitlab                         | 8.4.0           | GNU Lesser General Public License v3 (LGPLv3)                                    |
 | pylint                                | 4.0.5           | GPL-2.0-or-later                                                                 |
 | pylint-pydantic                       | 0.4.1           | GPLv3                                                                            |
 | astroid                               | 4.0.4           | LGPL-2.1-or-later                                                                |
@@ -602,7 +602,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | argon2-cffi-bindings                  | 25.1.0          | MIT                                                                              |
 | attrs                                 | 26.1.0          | MIT                                                                              |
 | autoflake                             | 2.3.3           | MIT                                                                              |
-| black                                 | 26.3.1          | MIT                                                                              |
+| black                                 | 26.5.1          | MIT                                                                              |
 | cffi                                  | 2.0.0           | MIT                                                                              |
 | charset-normalizer                    | 3.4.7           | MIT                                                                              |
 | click-repl                            | 0.3.0           | MIT                                                                              |
