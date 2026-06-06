@@ -5,27 +5,27 @@ Follow the steps below to set up Tailscale and connect to GitLab runners.
 ## Instructions
 
 1. **Receive Invite**
-   - Ask a project owner for an invite.
-   - Log in using a separate identity provider (e.g., GitHub).
+    - Ask a project owner for an invite.
+    - Log in using a separate identity provider (e.g., GitHub).
 
 2. **Install Tailscale**
-   - Download and install Tailscale: [Tailscale Download](https://tailscale.com/download).
+    - Download and install Tailscale: [Tailscale Download](https://tailscale.com/download).
 
 3. **Start Tailscale**
-   - Run the following command to start Tailscale:
+    - Run the following command to start Tailscale:
 
-     ```bash
-     sudo tailscale up
-     ```
+      ```bash
+      sudo tailscale up
+      ```
 
 4. **Verify Network State**
-   - Check the state of your network by running:
+    - Check the state of your network by running:
 
-     ```bash
-     tailscale status
-     ```
+      ```bash
+      tailscale status
+      ```
 
-   - You should see some previous GitLab runners listed.
+    - You should see some previous GitLab runners listed.
 
 ## Additional Resources
 

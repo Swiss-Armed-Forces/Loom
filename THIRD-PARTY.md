@@ -59,6 +59,7 @@ The Elasticsearch source code, subject to the tri-licensing model described abov
 
 Any party incorporating Elasticsearch into their workflow is responsible for **reviewing, understanding, and complying** with all licensing requirements. This includes potential obligations to disclose source code when offering network-accessible modifications under the AGPLv3 and observing the prohibitions on providing Elasticsearch as a managed service under the Elastic License v2.0.
 
+
 ### Grafana
 
 <!-- markdownlint-disable -->
@@ -93,6 +94,7 @@ The source code for Grafana is publicly available on GitHub:
 
 This repository contains complete version histories, issue tracking, and guidance for contributions, reflecting Grafana’s open and transparent development practices.
 
+
 ### Prometheus
 
 <!-- markdownlint-disable -->
@@ -109,6 +111,7 @@ The official website for the Prometheus project is [https://prometheus.io/](http
 
 **Source Code:**
 Prometheus source code is publicly available and can be accessed via the official repository on [GitHub](https://github.com/prometheus/prometheus). The Loom project includes Prometheus in its Docker images without introducing modifications to the core functionality unless explicitly stated. Loom includes or makes available the Apache License 2.0 and, if applicable, any required `NOTICE` file contents in accordance with the license terms.
+
 
 ### Rabbit
 
@@ -129,6 +132,7 @@ RabbitMQ’s name and logo are protected by trademark guidelines. These guidelin
 
 **Source Code:**
 RabbitMQ’s source code is available on its [GitHub repository](https://github.com/rabbitmq). The repository includes license files, contributing guidelines, and instructions for building and deploying the software.
+
 
 ### Redis
 
@@ -167,6 +171,7 @@ The license file can be found within that repository, specifically at:
 [https://github.com/redis/redis/blob/unstable/LICENSE.txt](https://github.com/redis/redis/blob/unstable/LICENSE.txt)
 
 Please review this file to confirm and fulfill all relevant licensing requirements when incorporating Redis within Loom.
+
 
 ### alpine
 
@@ -223,6 +228,7 @@ Loom utilizes the Dovecot Community Edition as a standalone Docker image.
 
 **Source Code:** <https://github.com/dovecot/core>
 
+
 ### elasticvue
 
 <!-- markdownlint-disable -->
@@ -240,6 +246,7 @@ The official website for “Elasticvue” is: [https://elasticvue.com/](https://
 
 **Source Code:**
 The source code for “Elasticvue” can be found at: [https://github.com/cars10/elasticvue](https://github.com/cars10/elasticvue). This repository includes documentation, issue tracking (including trademark discussions and considerations), and the latest updates for the project.
+
 
 ### gotenberg
 
@@ -310,6 +317,7 @@ The Loom project references these trademarks solely for nominative and descripti
 **Source Code:**
 https://github.com/kubernetes/kube-state-metrics
 
+
 ### libretranslate
 
 <!-- markdownlint-disable -->
@@ -328,6 +336,7 @@ The name "LibreTranslate" is a registered trademark. The LibreTranslate Trademar
 
 **Source Code:** The authoritative source code for LibreTranslate, including all license files, is available at: <https://github.com/LibreTranslate/LibreTranslate>
 
+
 ### ollama
 
 <!-- markdownlint-disable -->
@@ -344,6 +353,7 @@ Ollama’s official website is [https://ollama.com/](https://ollama.com/). It ho
 
 **Source Code:**
 The Ollama source code is publicly available at the following GitHub repository: [https://github.com/ollama/ollama](https://github.com/ollama/ollama). Interested users may review the repository for updates, contributions, and further technical details.
+
 
 ### open-webui
 
@@ -366,6 +376,7 @@ Based on the available information, there are no confirmed or registered tradema
 **Source Code:**
 Open WebUI’s primary development occurs on GitHub at [https://github.com/open-webui/open-webui](https://github.com/open-webui/open-webui). The GitHub repository includes the project’s core source code, licensing files, issue tracker, and additional technical documentation.
 
+
 ### roundcube
 
 <!-- markdownlint-disable -->
@@ -382,6 +393,7 @@ Available information does not confirm a registered trademark for the name “Ro
 
 **Source Code:**
 The Roundcube source code is publicly available on GitHub at [https://github.com/roundcube/roundcubemail](https://github.com/roundcube/roundcubemail). This repository enables transparency, collaboration, and the opportunity to adapt Roundcube to specific needs within the Loom project.
+
 
 ### rspamd
 
@@ -412,6 +424,7 @@ The Rspamd source code is available through its [GitHub repository](https://gith
 
 This declaration reflects the information accessible at the time of writing. Users of the “Loom” project are responsible for verifying any updates to Rspamd’s licensing terms or trademark status to ensure continuous compliance with applicable legal requirements.
 
+
 ### seaweedfs
 
 <!-- markdownlint-disable -->
@@ -422,18 +435,18 @@ Loom utilizes the SeaweedFS as a standalone Docker image.
 SeaweedFS is subject to a dual-licensing model:
 
 1. **Community Edition – Apache License, Version 2.0**
-   - Copyright © 2016–2026 Chris Lu and contributors.
-   - Licensed under the Apache License, Version 2.0.
-   - This license grants a perpetual, worldwide, non-exclusive, no-charge, royalty-free, and irrevocable copyright and patent license.
-   - Redistribution in Docker image form requires inclusion of the license text and preservation of all copyright, patent, and attribution notices.
-   - The software is provided on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND.
+    - Copyright © 2016–2026 Chris Lu and contributors.
+    - Licensed under the Apache License, Version 2.0.
+    - This license grants a perpetual, worldwide, non-exclusive, no-charge, royalty-free, and irrevocable copyright and patent license.
+    - Redistribution in Docker image form requires inclusion of the license text and preservation of all copyright, patent, and attribution notices.
+    - The software is provided on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND.
 
 2. **Enterprise Edition – Seaweed Data End User License Agreement (EULA)**
-   - Applicable when deployment exceeds 25TB of managed storage or when enterprise features are used.
-   - Publisher: Seaweed Data.
-   - Free usage permitted below 25TB; above this threshold requires a commercial license.
-   - Includes additional restrictions, including limitations on reverse engineering and certain hosting or resale scenarios.
-   - May impose indemnification obligations on the user.
+    - Applicable when deployment exceeds 25TB of managed storage or when enterprise features are used.
+    - Publisher: Seaweed Data.
+    - Free usage permitted below 25TB; above this threshold requires a commercial license.
+    - Includes additional restrictions, including limitations on reverse engineering and certain hosting or resale scenarios.
+    - May impose indemnification obligations on the user.
 
 **Component Website:**
 - https://seaweedfs.com
@@ -446,6 +459,7 @@ SeaweedFS is subject to a dual-licensing model:
 
 **Source Code:**
 - https://github.com/seaweedfs/seaweedfs
+
 
 ### tika-server
 
@@ -468,6 +482,7 @@ Apache Tika, Tika, Apache, the Apache feather logo, and the Apache Tika project 
 
 The Apache Tika source code can be found on its official website and associated repositories. It is strongly recommended that Loom contributors and users periodically review the applicable license texts and trademark policies, as changes or updates may occur. This third-party license declaration is provided for informational purposes only and does not constitute legal advice.
 
+
 ### traefik
 
 <!-- markdownlint-disable -->
@@ -484,6 +499,7 @@ The name “Traefik” is claimed as a trademark by Traefik Labs pursuant to the
 
 **Source Code:**
 The complete source code for Traefik is publicly available at [https://github.com/traefik/traefik](https://github.com/traefik/traefik), which also includes the full text of the MIT License. If distributing Traefik within your own software, ensure that you adhere to the license requirements by including all required notices and disclaimers.
+
 
 ## Python
 
@@ -7231,7 +7247,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | flask-swagger-ui | 4.11.1 | MIT | python-installed-package-cataloger |
 | flatbuffers | 25.12.19 |  | python-installed-package-cataloger |
 | gcc-12-base | 12.3.0-1ubuntu1~22.04 | GFDL-1.2-only, GPL-2.0-only, GPL-3.0-only | dpkg-db-cataloger |
-| gevent | 26.4.0 | MIT | python-installed-package-cataloger |
+| gevent | 26.5.0 | MIT | python-installed-package-cataloger |
 | gnupg | 2.2.27-3ubuntu2.1 | BSD-3-Clause, CC0-1.0, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
 | gnupg-l10n | 2.2.27-3ubuntu2.1 | BSD-3-Clause, CC0-1.0, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
 | gnupg-utils | 2.2.27-3ubuntu2.1 | BSD-3-Clause, CC0-1.0, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
@@ -7243,7 +7259,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | gpgconf | 2.2.27-3ubuntu2.1 | BSD-3-Clause, CC0-1.0, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
 | gpgsm | 2.2.27-3ubuntu2.1 | BSD-3-Clause, CC0-1.0, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
 | gpgv | 2.2.27-3ubuntu2.1 | BSD-3-Clause, CC0-1.0, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
-| greenlet | 3.5.0 | MIT AND PSF-2.0 | python-installed-package-cataloger |
+| greenlet | 3.5.1 | MIT AND PSF-2.0 | python-installed-package-cataloger |
 | grep | 3.7-1build1 | GPL-3.0-only, GPL-3.0-or-later | dpkg-db-cataloger |
 | gui | UNKNOWN |  | pe-binary-package-cataloger |
 | gui-32 | UNKNOWN |  | pe-binary-package-cataloger |
@@ -7419,7 +7435,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | wrapt | 2.1.1 | BSD-2-Clause | python-installed-package-cataloger |
 | zlib1g | 1:1.2.11.dfsg-2ubuntu9.2 | Zlib | dpkg-db-cataloger |
 | zope-event | 6.2 | ZPL-2.1 | python-installed-package-cataloger |
-| zope-interface | 8.4 | ZPL-2.1 | python-installed-package-cataloger |
+| zope-interface | 8.5 | ZPL-2.1 | python-installed-package-cataloger |
 
 ### registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/dovecot
 
@@ -7617,7 +7633,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | gcc-12 | 12.2.0-14 | GFDL-1.2-only, GPL-2.0-only, GPL-3.0-only | dpkg-db-cataloger |
 | gcc-12-base | 12.2.0-14 | GFDL-1.2-only, GPL-2.0-only, GPL-3.0-only | dpkg-db-cataloger |
 | gd | 8.1.31 |  | php-interpreter-cataloger |
-| germancoding/tls_icon | 1.4.1 | MIT | php-composer-installed-cataloger |
+| germancoding/tls_icon | 2.0.0 | MIT | php-composer-installed-cataloger |
 | gnupg | 2.2.40-1.1 | BSD-3-Clause, CC0-1.0, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
 | gnupg-l10n | 2.2.40-1.1 | BSD-3-Clause, CC0-1.0, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
 | gnupg-utils | 2.2.40-1.1 | BSD-3-Clause, CC0-1.0, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
