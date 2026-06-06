@@ -90,10 +90,10 @@ def search(
     How It Works:
     -------------
     1. The LLM receives a prompt that asks it to convert the user query into a
-       Lucene-compatible search string.
+        Lucene-compatible search string.
 
     2. The generated string is used to search for matching files via the
-       Elasticsearch backend.
+        Elasticsearch backend.
 
     3. Matching files are returned with score and optional highlights.
 

@@ -105,23 +105,23 @@ To ensure Loom runs smoothly, your system should ideally meet these minimum requ
 
 1. Clone the repository:
 
-   ```bash
-   git clone https://gitlab.com/swiss-armed-forces/cyber-command/cea/loom.git
-   cd loom
-   ```
+    ```bash
+    git clone https://gitlab.com/swiss-armed-forces/cyber-command/cea/loom.git
+    cd loom
+    ```
 
 2. Run the setup script:
-   - For a standard deployment (without GPU support):
+    - For a standard deployment (without GPU support):
 
-     ```bash
-     ./up.sh
-     ```
+      ```bash
+      ./up.sh
+      ```
 
-   - If you have compatible GPUs and want to enable GPU support:
+    - If you have compatible GPUs and want to enable GPU support:
 
-     ```bash
-     ./up.sh --gpus all
-     ```
+      ```bash
+      ./up.sh --gpus all
+      ```
 
 After the up process is complete, you can open your web browser
 and navigate to [https://frontend.loom](https://frontend.loom) to access Loom.
@@ -172,13 +172,13 @@ your quota must have at list those [minimum upper limit](https://kubernetes.io/d
 
 1. You can find and deploy the Helm chart from our official package registry:
 
-   ```bash
-   helm repo add loom-prod https://gitlab.com/api/v4/projects/68343701/packages/helm/prod
-   ```
+    ```bash
+    helm repo add loom-prod https://gitlab.com/api/v4/projects/68343701/packages/helm/prod
+    ```
 
 2. To customize your deployment, we provide a set of value files located in the
-   [`./charts`](./charts) directory of this repository. These files document all the available
-   deployment variables, allowing you to tailor the installation to your specific needs.
+    [`./charts`](./charts) directory of this repository. These files document all the available
+    deployment variables, allowing you to tailor the installation to your specific needs.
 
 #### Multi Node Offline usage
 
@@ -197,12 +197,12 @@ instructions, please refer to the full [Getting Started Guide](Documentation/get
 To index your data, use the simple file upload feature available directly in the Loom frontend:
 
 1. **Open the Loom Frontend:** Navigate to [https://frontend.loom](https://frontend.loom)
-   in your web browser.
+    in your web browser.
 2. **Upload Files:** Look for the "Upload" option in the user interface (typically in a
-   sidebar or as a button). Click on it to open a file selection dialog.
+    sidebar or as a button). Click on it to open a file selection dialog.
 3. **Select Files:** Choose the files you want to index and click "Open" or the equivalent button.
 4. **Automatic Processing:** Once the files are selected and uploaded through the frontend,
-   Loom will automatically process them.
+    Loom will automatically process them.
 
 **Searching for a File:**
 

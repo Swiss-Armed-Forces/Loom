@@ -20,13 +20,13 @@ ARG PYTHON3_SKIMAGE_VERSION="0.22.*"
 # install language package for OCR, zstd-jni for compression support, and dependencies for custom-entry-point
 # ImageMagick and python3-skimage are required for Tika's image preprocessing (rotation detection, normalization)
 RUN set -exu \
-	&& apt-get update \
-	&& apt-get install -y --no-install-recommends \
-	tesseract-ocr-all="${TESSERACT_OCR_ALL_VERSION}" \
-	imagemagick="${IMAGEMAGICK_VERSION}" \
-	python3-skimage="${PYTHON3_SKIMAGE_VERSION}" \
-	&& apt-get clean \
-	&& rm -rf /var/lib/apt/lists/*
+  && apt-get update \
+  && apt-get install -y --no-install-recommends \
+  tesseract-ocr-all="${TESSERACT_OCR_ALL_VERSION}" \
+  imagemagick="${IMAGEMAGICK_VERSION}" \
+  python3-skimage="${PYTHON3_SKIMAGE_VERSION}" \
+  && apt-get clean \
+  && rm -rf /var/lib/apt/lists/*
 
 # Copy ImageMagick security policy to restrict dangerous operations
 COPY imagemagick-policy.xml /etc/ImageMagick-6/policy.xml
@@ -35,12 +35,12 @@ COPY imagemagick-policy.xml /etc/ImageMagick-6/policy.xml
 ARG ZSTD_JNI_VERSION="1.5.7-7"
 
 RUN set -exu \
-	&& mkdir --parents /tika-extras \
-	&& wget \
-		--directory-prefix=/tika-extras \
-		--quiet \
-		"https://repo1.maven.org/maven2/com/github/luben/zstd-jni/${ZSTD_JNI_VERSION}/zstd-jni-${ZSTD_JNI_VERSION}.jar" \
-	&& chmod 644 /tika-extras/zstd-jni-${ZSTD_JNI_VERSION}.jar
+  && mkdir --parents /tika-extras \
+  && wget \
+    --directory-prefix=/tika-extras \
+    --quiet \
+    "https://repo1.maven.org/maven2/com/github/luben/zstd-jni/${ZSTD_JNI_VERSION}/zstd-jni-${ZSTD_JNI_VERSION}.jar" \
+  && chmod 644 /tika-extras/zstd-jni-${ZSTD_JNI_VERSION}.jar
 
 COPY tika-config.xml /tika-config.xml
 

@@ -9,56 +9,56 @@
 ## Setting up Loom
 
 1. Set up git:
-   - Set username (must match your displayed name on gitlab):
-     `git config --global user.name "USERNAME"`
-   - Set email (must match your email on gitlab):
-     `git config --global user.email "EMAIL"`
+    - Set username (must match your displayed name on gitlab):
+      `git config --global user.name "USERNAME"`
+    - Set email (must match your email on gitlab):
+      `git config --global user.email "EMAIL"`
 2. Clone git repository:
-   - Clone repo: `git clone --recursive $repository`
+    - Clone repo: `git clone --recursive $repository`
 3. Install docker:
-   - Install docker-engine (do not install the alternative called docker-desktop) using the [official instructions](https://docs.docker.com/engine/install/)
-   - Add user to docker group: `sudo gpasswd -a $USER docker`
-   - Reboot your system
+    - Install docker-engine (do not install the alternative called docker-desktop) using the [official instructions](https://docs.docker.com/engine/install/)
+    - Add user to docker group: `sudo gpasswd -a $USER docker`
+    - Reboot your system
 4. Configure docker:
-   - Create a [personal access token](https://docs.gitlab.com/ee/user/profile/personal_access_tokens.html#create-a-personal-access-token)
-     - Check all boxes when selecting the scopes
-   - Use the Access token instead of the password in the next steps
-   - Login to the docker registry: `docker login registry.gitlab.com`
-   - Login to the docker cache: `docker login gitlab.com`
+    - Create a [personal access token](https://docs.gitlab.com/ee/user/profile/personal_access_tokens.html#create-a-personal-access-token)
+      - Check all boxes when selecting the scopes
+    - Use the Access token instead of the password in the next steps
+    - Login to the docker registry: `docker login registry.gitlab.com`
+    - Login to the docker cache: `docker login gitlab.com`
 5. Install devenv
-   - In /etc/selinux/config, set `SELINUX=disabled` and reboot
-   - Install [Nix](https://nixos.org/)
+    - In /etc/selinux/config, set `SELINUX=disabled` and reboot
+    - Install [Nix](https://nixos.org/)
 
-     ```sh
-     sh <(curl -L https://nixos.org/nix/install) --daemon
-     ```
+      ```sh
+      sh <(curl -L https://nixos.org/nix/install) --daemon
+      ```
 
-   - Install [devenv](https://devenv.sh/getting-started/) with `nix-env` from stable channel
+    - Install [devenv](https://devenv.sh/getting-started/) with `nix-env` from stable channel
 
-     ```sh
-     nix-env --install --attr devenv -f https://github.com/NixOS/nixpkgs/tarball/nixos-25.11
-     ```
+      ```sh
+      nix-env --install --attr devenv -f https://github.com/NixOS/nixpkgs/tarball/nixos-25.11
+      ```
 
-   - ❗**Workaround for fedora**:
-     After installing nix open the file `/nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh`
-     and comment out the first two lines
+    - ❗**Workaround for fedora**:
+      After installing nix open the file `/nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh`
+      and comment out the first two lines
 
 6. Install direnv
-   - Install direnv using the [official instructions](https://direnv.net/docs/installation.html)
-   - Don't forget to hook direnv into your shell [instructions](https://direnv.net/docs/hook.html)
-   - Open file `/etc/nix/nix.conf` and add the following lines
+    - Install direnv using the [official instructions](https://direnv.net/docs/installation.html)
+    - Don't forget to hook direnv into your shell [instructions](https://direnv.net/docs/hook.html)
+    - Open file `/etc/nix/nix.conf` and add the following lines
 
-   ```bash
-   extra-substituters = https://devenv.cachix.org
-   extra-trusted-public-keys = devenv.cachix.org-1:w1cLUi8dv3hnoSPGAuibQv+f9TZLr6cv/Hm9XgU50cw=
-   ```
+    ```bash
+    extra-substituters = https://devenv.cachix.org
+    extra-trusted-public-keys = devenv.cachix.org-1:w1cLUi8dv3hnoSPGAuibQv+f9TZLr6cv/Hm9XgU50cw=
+    ```
 
-   - Run `sudo systemctl restart nix-daemon.service` to restart the Nix daemon
-   - Allow direnv to run in the loom directory: `cd loom/ && direnv allow`
+    - Run `sudo systemctl restart nix-daemon.service` to restart the Nix daemon
+    - Allow direnv to run in the loom directory: `cd loom/ && direnv allow`
 
 7. Start the development environment:
-   - Loom: `cd loom/ && up --development`
-   - VS Code: `cd loom/ && code .`
+    - Loom: `cd loom/ && up --development`
+    - VS Code: `cd loom/ && code .`
 
 ## Setup verification
 
@@ -128,18 +128,18 @@ from git.
 
 2. Create the file `devenv.local.nix` in the repository root:
 
-   ```nix
-   { ... }:
-   {
-     env.GITLAB_TOKEN = "glpat-xxxxxxxxxxxxxxxxxxxx";
-   }
-   ```
+    ```nix
+    { ... }:
+    {
+      env.GITLAB_TOKEN = "glpat-xxxxxxxxxxxxxxxxxxxx";
+    }
+    ```
 
 3. Reload the devenv environment:
 
-   ```sh
-   direnv reload
-   ```
+    ```sh
+    direnv reload
+    ```
 
 The `devenv.local.nix` file is gitignored, so your token stays local and won't be committed.
 See the [devenv documentation](https://devenv.sh/files-and-variables/) for more options.

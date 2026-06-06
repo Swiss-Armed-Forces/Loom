@@ -52,7 +52,7 @@ let
           if [[ "''${file}" == "${subdir}"* ]]; then
             relative_files+=("''${file#${subdir}/}")
           else
-             >&2 echo "Warning: Skipping file outside ${subdir}: ''${file}"
+            >&2 echo "Warning: Skipping file outside ${subdir}: ''${file}"
           fi
         done
 
@@ -127,6 +127,14 @@ let
         # following issue:
         # - https://github.com/python/mypy/issues/14521
         require_serial = true;
+      };
+
+      "poetry-check_${subdirName}" = {
+        enable = true;
+        entry = createToolWrapper "poetry" subdir subdirName "check";
+        files = "^${subdir}/(pyproject.toml)|(poetry.lock)$";
+        types = [ "toml" ];
+        pass_filenames = false;
       };
 
       "poetry-lock_${subdirName}" = {
@@ -347,12 +355,14 @@ in
         vscodeExtensions =
           with vscode-extensions;
           [
-            bbenoist.nix
             mkhl.direnv
+            editorconfig.editorconfig
 
             gitlab.gitlab-workflow
 
             ms-vscode.hexeditor
+
+            bbenoist.nix
 
             ms-python.python
             ms-python.vscode-pylance
@@ -463,6 +473,19 @@ in
     };
 
     trim-trailing-whitespace.enable = true;
+    end-of-file-fixer = {
+      enable = true;
+      excludes = [
+        ".*/assets/.*"
+      ];
+    };
+
+    check-executables-have-shebangs.enable = true;
+    check-shebang-scripts-are-executable.enable = true;
+
+    check-symlinks.enable = true;
+
+    editorconfig-checker.enable = true;
 
     nixfmt.enable = true;
 

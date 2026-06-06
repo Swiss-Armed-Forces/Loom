@@ -3,8 +3,8 @@
   <server>
     <params>
       <!-- maximum time to allow per parse before shutting down and restarting
-           the forked parser. Not allowed if nofork=true. -->
-       <taskTimeoutMillis>99999999999</taskTimeoutMillis>
+          the forked parser. Not allowed if nofork=true. -->
+      <taskTimeoutMillis>99999999999</taskTimeoutMillis>
     </params>
   </server>
   <parsers>
@@ -21,7 +21,7 @@
     </parser>
 
     <!-- Do not use the pst parser, we have implemented our own pst extraction
-         The default apache tika pst parser does not work very well.  -->
+        The default apache tika pst parser does not work very well. -->
     <parser class="org.apache.tika.parser.mbox.OutlookPSTParser">
       <mime-exclude>application/vnd.ms-outlook-pst</mime-exclude>
     </parser>

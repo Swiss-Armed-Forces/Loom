@@ -431,11 +431,11 @@ class QueryBuilder:
 
         Raises:
             QueryBuilderException: Something is wrong with the
-                                   search-string as-is
+                                  search-string as-is
 
         Returns:
             Tree.Item: A query tree representing the query
-                       in Lucene-tree form
+                      in Lucene-tree form
         """
         try:
             tree = parse(query.search_string)
