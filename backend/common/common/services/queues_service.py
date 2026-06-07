@@ -2,6 +2,7 @@ from typing import Dict, Union
 from urllib.parse import quote
 
 import requests
+from redis import StrictRedis
 from requests import Response
 
 from common.settings import settings
@@ -11,10 +12,35 @@ RABBITMQ_MANAGEMENT_REQUEST_TIMEOUT = 30  # in seconds
 # All application relevant queues must start with: celery_queue_name_prefix
 QUEUES_NAME_REGEX = rf"^{settings.celery_queue_name_prefix}.*$"
 
+QUEUE_PAUSED_KEY_PREFIX = "queue_paused"
+
 
 class QueuesService:
-    def __init__(self, rabbit_mq_management_host: str):
+    def __init__(self, rabbit_mq_management_host: str, redis_client: StrictRedis):
         self.__rabbit_mq_management_host = rabbit_mq_management_host
+        self._redis_client = redis_client
+
+    def set_queue_paused(self, queue_name: str, paused: bool) -> None:
+        """Persist queue pause state in Redis."""
+        key = f"{QUEUE_PAUSED_KEY_PREFIX}:{queue_name}"
+        if paused:
+            self._redis_client.set(key, "1")
+        else:
+            self._redis_client.delete(key)
+
+    def is_queue_paused(self, queue_name: str) -> bool:
+        """Check if a queue is currently paused according to Redis state."""
+        return bool(
+            self._redis_client.exists(f"{QUEUE_PAUSED_KEY_PREFIX}:{queue_name}")
+        )
+
+    def get_paused_queues(self) -> list[str]:
+        """Return all queue names that are currently paused in Redis."""
+        prefix = f"{QUEUE_PAUSED_KEY_PREFIX}:"
+        return [
+            key.decode().removeprefix(prefix)
+            for key in self._redis_client.keys(f"{prefix}*")
+        ]
 
     def get_message_count(
         self,
@@ -33,16 +59,6 @@ class QueuesService:
         )
         response.raise_for_status()
         return int(response.json()["messages"])
-
-    def get_consumer_count(self, queue_name: str) -> int:
-        response: Response = requests.get(
-            self.__rabbit_mq_management_host
-            + f"api/queues/{quote('/', safe='')}/{quote(queue_name, safe='')}",
-            params={"columns": "consumers"},
-            timeout=RABBITMQ_MANAGEMENT_REQUEST_TIMEOUT,
-        )
-        response.raise_for_status()
-        return int(response.json()["consumers"])
 
     def get_all_queue_message_counts(self) -> dict[str, int]:
         response: Response = requests.get(

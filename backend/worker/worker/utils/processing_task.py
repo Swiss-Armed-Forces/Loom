@@ -2,10 +2,16 @@ from abc import ABC, abstractmethod
 from typing import Callable, Generic
 from uuid import UUID
 
+from celery import Celery
 from celery.utils.log import get_task_logger
 from common.celery_app import BaseTask
-from common.dependencies import get_celery_app, get_root_task_information_repository
+from common.dependencies import (
+    get_celery_app,
+    get_celery_inspect_service,
+    get_root_task_information_repository,
+)
 from common.models.base_repository import BaseRepository
+from common.services.celery_inspect_service import TaskGroupName, register_task
 from common.task_object.task_object import (
     RepositoryTaskObjectT,
     SecondaryRepositoryTaskObjectT,
@@ -27,6 +33,14 @@ class ProcessingTask(
 
     It keeps track of the status of task and subtask
     """
+
+    _task_group_name: TaskGroupName = TaskGroupName.PROCESSING
+
+    @classmethod
+    def on_bound(cls, app: Celery) -> None:  # pylint: disable=redefined-outer-name
+        super().on_bound(app)
+        task_name: str = cls.name
+        register_task(cls._task_group_name, task_name)
 
     # pylint does not consider metaclass:
     # https://stackoverflow.com/questions/22186843/pylint-w0223-method-is-abstract-in-class-but-is-not-overridden
@@ -82,6 +96,35 @@ class ProcessingTask(
             args=(object_id, type(self._repository), UUID(task_id), persist_callback),
             routing_key=shard_name,
         ).forget()
+
+    def retry(
+        self,
+        args=None,
+        kwargs=None,
+        exc=None,
+        throw=True,
+        eta=None,
+        countdown=None,
+        max_retries=None,
+        **options
+    ):  # pylint: disable=too-many-arguments, too-many-positional-arguments
+        if get_celery_inspect_service().is_throttled():
+            logger.info(
+                "Throttled: re-queuing %s immediately (countdown=0) instead of backing off",
+                self.name,
+            )
+            eta = None
+            countdown = 0
+        return super().retry(
+            args=args,
+            kwargs=kwargs,
+            exc=exc,
+            throw=throw,
+            eta=eta,
+            countdown=countdown,
+            max_retries=max_retries,
+            **options
+        )
 
     def on_failure(
         self, exc, task_id, args, kwargs, einfo

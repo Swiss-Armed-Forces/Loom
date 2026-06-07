@@ -34,10 +34,10 @@ export interface OverallQueuesStats {
     completeEstimateTimestamp?: number;
     /**
      *
-     * @type {number}
+     * @type {Array<string>}
      * @memberof OverallQueuesStats
      */
-    pausedQueuesCount: number;
+    pausedQueues: Array<string>;
 }
 
 /**
@@ -45,7 +45,7 @@ export interface OverallQueuesStats {
  */
 export function instanceOfOverallQueuesStats(value: object): boolean {
     if (!("messagesInQueues" in value)) return false;
-    if (!("pausedQueuesCount" in value)) return false;
+    if (!("pausedQueues" in value)) return false;
     return true;
 }
 
@@ -66,7 +66,7 @@ export function OverallQueuesStatsFromJSONTyped(
             json["complete_estimate_timestamp"] == null
                 ? undefined
                 : json["complete_estimate_timestamp"],
-        pausedQueuesCount: json["paused_queues_count"],
+        pausedQueues: json["paused_queues"],
     };
 }
 
@@ -79,6 +79,6 @@ export function OverallQueuesStatsToJSON(
     return {
         messages_in_queues: value["messagesInQueues"],
         complete_estimate_timestamp: value["completeEstimateTimestamp"],
-        paused_queues_count: value["pausedQueuesCount"],
+        paused_queues: value["pausedQueues"],
     };
 }

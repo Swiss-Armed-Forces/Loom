@@ -8,13 +8,12 @@ from common.dependencies import (
     get_root_task_information_repository,
 )
 from common.services.lazybytes_service import TempLazyBytesService
-from common.settings import CELERY_QUEUE_NAME_MAXLEN, settings
+from common.settings import settings
 from common.task_object.root_task_information_repository import (
     RootTaskInformationRepository,
 )
 from common.utils.task_lock import task_lock
 
-from worker.index_file.dispatch_tasks import dispatch_index_file, dispatch_reindex_file
 from worker.periodic.infra.periodic_task import PeriodicTask
 from worker.periodic.tasks import (
     flush_cache,
@@ -29,22 +28,6 @@ app = get_celery_app()
 _FLUSH_ON_IDLE_LOCK_TTL_SECONDS = 60 * 15  # 15 minutes
 _WAIT_FOR_IDLE_TIMEOUT_SECONDS = 60 * 10  # 10 minutes (well under lock TTL)
 _WAIT_FOR_IDLE_POLL_INTERVAL_SECONDS = 10.0
-
-
-def _get_dispatch_index_file_queue() -> str:
-    return (f"{settings.celery_queue_name_prefix}{dispatch_index_file.name}")[
-        :CELERY_QUEUE_NAME_MAXLEN
-    ]
-
-
-def _get_dispatch_reindex_file_queue() -> str:
-    return (f"{settings.celery_queue_name_prefix}{dispatch_reindex_file.name}")[
-        :CELERY_QUEUE_NAME_MAXLEN
-    ]
-
-
-def _get_throttled_queues() -> list[str]:
-    return [_get_dispatch_index_file_queue(), _get_dispatch_reindex_file_queue()]
 
 
 def _should_throttle(
@@ -75,43 +58,43 @@ def _should_throttle(
 
 @app.task(base=PeriodicTask)
 def flush_complete(*_, **__):
-    inspect = get_celery_inspect_service()
-    for queue in _get_throttled_queues():
-        inspect.set_queue_paused(queue, False)
+    get_celery_inspect_service().set_throttled(False)
     logger.info("Flushing complete")
 
 
 @app.task(bind=True, base=PeriodicTask)
 @task_lock(ttl_seconds=_FLUSH_ON_IDLE_LOCK_TTL_SECONDS, blocking=False)
 def flush_on_idle_task(self: PeriodicTask):
-    """Manage lazybytes cleanup and queue throttling.
+    """Manage lazybytes cleanup and throttling.
 
-    When lazybytes accumulates beyond the threshold, this task pauses
-    the index_file queue by cancelling consumers. This allows:
+    When lazybytes accumulates beyond the threshold, this task throttles
+    the system by cancelling dispatch consumers. This allows:
     1. Currently active tasks to complete
-    2. System to become idle (excluding the paused queue)
+    2. System to become idle (excluding throttled tasks)
     3. This task to clean up intermediate lazybytes
-    4. Queue to resume after lazybytes pressure is reduced
+    4. Throttle to be lifted after lazybytes pressure is reduced
 
     Files are safe in file_storage_service, so queued tasks can resume
-    processing after the pause.
+    processing after throttling ends.
     """
     lazybytes_service = get_lazybytes_service()
     root_task_information_repository = get_root_task_information_repository()
-    throttling = _should_throttle(lazybytes_service, root_task_information_repository)
+    should_throttle = _should_throttle(
+        lazybytes_service, root_task_information_repository
+    )
 
-    if throttling:
-        # Pause: persist state and tell all current workers to stop consuming
-        inspect = get_celery_inspect_service()
-        for queue in _get_throttled_queues():
-            inspect.set_queue_paused(queue, True)
+    inspect = get_celery_inspect_service()
 
-    # Wait for idle EXCLUDING the throttled queues
-    if not get_celery_inspect_service().wait_for_idle(
+    if should_throttle:
+        # Throttle: set system flag and pause dispatch consumers
+        inspect.set_throttled(True)
+
+    # Wait for idle EXCLUDING dispatch tasks (they are throttled while flushing)
+    if not inspect.wait_for_idle(
         timeout=_WAIT_FOR_IDLE_TIMEOUT_SECONDS,
         poll_interval=_WAIT_FOR_IDLE_POLL_INTERVAL_SECONDS,
         called_from_task=True,
-        exclude_queues=_get_throttled_queues(),
+        exclude_tasks=inspect.get_throttled_tasks(),
     ):
         logger.info("Celery not idle: timed out waiting for idle")
         return None
