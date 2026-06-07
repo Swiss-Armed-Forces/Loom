@@ -15,7 +15,7 @@ class AutoRetryTestException(Exception):
 @app.task(
     bind=True,
     base=TestTask,
-    autoretry_for=tuple([AutoRetryTestException]),
+    autoretry_for=(AutoRetryTestException,),
     max_retries=5,
     retry_backoff=False,
     default_retry_delay=3,
@@ -34,6 +34,7 @@ def autoretry_test_task(self, fail_count: int) -> int:
     Regression tests for:
     - KeyError('exchange_type') during autoretry_for retry
     - False DeadTask for tasks arriving via >=2 delayed TTL levels (Bug A)
+    - Spurious copies landing in loom:unroutable on every delayed retry (Bug B)
     """
     if self.request.retries < fail_count:
         raise AutoRetryTestException()

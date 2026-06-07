@@ -12,6 +12,7 @@ logger = logging.getLogger(__name__)
 def wipe_data():
     service = get_wipe_service()
     service.wipe_celery()
+    service.wipe_rabbit()
     service.wipe_elasticsearch()
     service.wipe_redis()
     service.wipe_intake()

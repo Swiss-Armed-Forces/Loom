@@ -14,6 +14,7 @@ from common.services.celery_inspect_service import CeleryInspectService
 from common.services.imap_service import IMAPService
 from common.services.lazybytes_service import LazyBytesService
 from common.services.query_builder import QueryBuilder
+from common.services.queues_service import QueuesService
 from common.settings import settings
 from common.utils.flush_s3_bucket import flush_s3_bucket
 
@@ -38,6 +39,7 @@ class WipeService:
         lazybytes_service: LazyBytesService,
         imap_service: IMAPService,
         celery_inspect_service: CeleryInspectService,
+        queues_service: QueuesService,
     ):
         self._celery_app = celery_app
         self._elasticsearch = elasticsearch
@@ -50,6 +52,7 @@ class WipeService:
         self._lazybytes_service = lazybytes_service
         self._imap_service = imap_service
         self._celery_inspect_service = celery_inspect_service
+        self._queues_service = queues_service
 
     def wipe_celery(self) -> None:
         logger.info("Wiping: celery")
@@ -117,3 +120,12 @@ class WipeService:
     def wipe_imap(self) -> None:
         logger.info("Wiping: IMAP")
         self._imap_service.wipe()
+
+    def wipe_rabbit(self) -> None:
+        """Purge all RabbitMQ queues — both task queues and terminal queues (abyss,
+        unroutable) which have no workers and are therefore not reached by
+        celery_control.purge()."""
+        logger.info("Wiping: RabbitMQ")
+        for queue_name in self._queues_service.get_all_queue_message_counts():
+            logger.info("Purging queue: %s", queue_name)
+            self._queues_service.purge_queue(queue_name)

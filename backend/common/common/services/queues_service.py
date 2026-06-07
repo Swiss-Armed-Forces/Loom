@@ -58,6 +58,14 @@ class QueuesService:
             if q["name"].startswith(prefix)
         }
 
+    def purge_queue(self, queue_name: str) -> None:
+        response: Response = requests.delete(
+            self.__rabbit_mq_management_host
+            + f"api/queues/{quote('/', safe='')}/{quote(queue_name, safe='')}/contents",
+            timeout=RABBITMQ_MANAGEMENT_REQUEST_TIMEOUT,
+        )
+        response.raise_for_status()
+
     def get_queue_samples(
         self,
         sample_period__s: int,

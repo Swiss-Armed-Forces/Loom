@@ -144,7 +144,7 @@ pipeline:
   celery_default_exchange_name: null
   celery_default_exchange_type: null
   celery_alternate_exchange_name: null
-  celery_alternate_exchange_type: null
+
 
 # Shared LLM defaults — override per sub-key via YAML anchors
 _llmDefaults: &llm-defaults
