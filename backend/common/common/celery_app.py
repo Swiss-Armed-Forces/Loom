@@ -24,6 +24,20 @@ from common.utils.sharding import get_all_persister_shards
 
 logger = logging.getLogger(__name__)
 
+# The alternate exchange (ae-loom) must be fanout, not topic.
+#
+# When the loom exchange cannot route a message it forwards the message to
+# ae-loom with the original routing key intact. If ae-loom were a topic
+# exchange, the loom:unroutable binding would need a pattern that matches every
+# possible routing key. "*" only matches single-word keys, so dotted Celery
+# task names (e.g. "worker.foo.bar_task") would be silently dropped. "#"
+# would work but is fragile if additional queues are ever bound to ae-loom.
+#
+# A fanout exchange delivers unconditionally to all bound queues, so the
+# routing key is irrelevant — every unroutable message lands in loom:unroutable
+# regardless of its name, with no pattern to maintain.
+_ALTERNATE_EXCHANGE_TYPE = "fanout"
+
 
 def get_beat_schedule() -> dict:
     """Return the Celery Beat schedule configuration.
@@ -254,7 +268,7 @@ def _get_shared_exchange() -> Exchange:
 def _get_alternate_exchange() -> Exchange:
     return Exchange(
         name=settings.celery_alternate_exchange_name,
-        type=settings.celery_alternate_exchange_type,
+        type=_ALTERNATE_EXCHANGE_TYPE,
         delivery_mode="persistent",
         passive=False,
         durable=True,
@@ -294,7 +308,7 @@ def _get_unroutable_queue() -> Queue:
     return Queue(
         name=queue_name,
         exchange=_get_alternate_exchange(),
-        routing_key="*",
+        routing_key="",  # fanout exchange ignores the routing key
         passive=False,
         durable=True,
         auto_delete=False,
@@ -535,13 +549,16 @@ def init_celery_app() -> "Celery[BaseTask]":  # pylint: disable=too-many-stateme
         "exchange_type": settings.celery_default_exchange_type,
     }
 
-    # Define unroutable queues
-    unroutable_queue = _get_unroutable_queue()
-    app.conf.task_queues.append(unroutable_queue)
-    app.conf.task_routes[settings.celery_unroutable_task_name] = {
-        "routing_key": "*",
-        "exchange_type": settings.celery_alternate_exchange_type,
-    }
+    # The unroutable queue is intentionally NOT added to task_queues or
+    # task_routes. Adding it would cause Celery's DelayedDelivery bootstep
+    # (_bind_queues) to call bind_queue_to_native_delayed_delivery_exchange on
+    # it, which — because the queue's routing_key is "*" — produces a
+    # "#.*" binding from ae-loom onto celery_delayed_delivery. That wildcard
+    # matches every delayed-retry message, creating a spurious copy in
+    # loom:unroutable for each countdown-based retry.
+    #
+    # The queue itself is declared by declare_terminal_queues (worker_ready
+    # signal) so the alternate-exchange routing still works correctly.
 
     # Register persister shard routes globally so any worker type can dispatch
     # to them. Queue *declaration* is deferred to register_persister_shard_queues()

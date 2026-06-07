@@ -175,7 +175,7 @@ class Settings(BaseSettings):
     celery_default_exchange_name: str = "loom"
     celery_default_exchange_type: str = "topic"
     celery_alternate_exchange_name: str = "ae-loom"
-    celery_alternate_exchange_type: str = "topic"
+
     redis_cache_host: AnyUrl = AnyUrl(f"redis://redis-cache.{DOMAIN}:6380/0?protocol=3")
     lazy_threshold_bytes: int = 1024  # 1KiB
     translate_host: AnyHttpUrl = AnyHttpUrl(f"http://translate.{DOMAIN}")
