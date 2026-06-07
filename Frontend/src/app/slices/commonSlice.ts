@@ -34,7 +34,7 @@ const initialState: CommonState = {
     queueStats: {
         messagesInQueues: 0,
         completeEstimateTimestamp: undefined,
-        pausedQueuesCount: 0,
+        pausedQueues: [],
     },
     dialogs: [],
     lastFileDetailTab: FileDetailTab.Rendered,

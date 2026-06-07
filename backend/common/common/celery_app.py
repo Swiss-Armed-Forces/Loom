@@ -1,12 +1,13 @@
 import logging
 import random
 from abc import ABC
+from collections.abc import Callable
 from datetime import datetime, timedelta
 from pprint import pformat
 from typing import Any, Protocol
 
 import celery
-from celery import Celery, Task, chord
+from celery import Celery, Task, bootsteps, chord
 from celery import group as original_group
 from celery import signals
 from celery.canvas import Signature
@@ -14,7 +15,7 @@ from celery.schedules import crontab
 from kombu import Exchange, Queue, serialization
 from pydantic import BaseModel, Field, RootModel
 
-from common.settings import CELERY_QUEUE_NAME_MAXLEN, settings
+from common.settings import CELERY_QUEUE_NAME_MAXLEN, WorkerType, settings
 from common.utils.cgroup_memory_limit import (
     MemoryLimitNotFoundError,
     get_cgroup_memory_limit,
@@ -574,13 +575,13 @@ def init_celery_app() -> "Celery[BaseTask]":  # pylint: disable=too-many-stateme
 
     # Worker type specific configuration
     match settings.worker_type:
-        case "REAPER":
+        case WorkerType.REAPER:
             # We have to disable concurrency and prefetching here (=1),
             # because we will be consuming tasks in the dead-letter queue
             # and we have to process them one-by-one.
             app.conf.worker_concurrency = 1
             app.conf.worker_prefetch_multiplier = 1
-        case "PERSISTER":
+        case WorkerType.PERSISTER:
             # Persister workers run with concurrency=1 to ensure sequential
             # processing per shard, avoiding optimistic concurrency control
             # conflicts. However, we can safely prefetch many tasks.
@@ -663,6 +664,45 @@ def register_persister_shard_queues(app: "Celery[Any]"):
     for persister_shard_name in get_all_persister_shards(settings.num_persister_shards):
         persister_shard_queue = _get_queue(persister_shard_name)
         app.conf.task_queues.append(persister_shard_queue)
+
+
+def make_queue_guard(is_allowed: Callable[[str], bool]) -> type:
+    """Return a Consumer bootstep that blocks dynamic queue subscriptions.
+
+    Usage::
+
+        app.steps['consumer'].add(make_queue_guard(lambda q: q in allowed_set))
+
+    Wraps ``consumer.add_task_queue`` on the Consumer instance at startup via
+    Celery's official bootstep extension API. Any subsequent ``add_consumer``
+    control command for a queue where ``is_allowed`` returns False is silently
+    dropped with an info log.
+
+    Note: the pidbox ``add_consumer`` panel command calls
+    ``consumer.add_task_queue`` (via ``call_soon``), so this is the correct
+    intercept point — not ``add_consumer`` or ``add_queue``.
+
+    This prevents broadcast ``add_consumer`` signals (e.g. from throttle resume)
+    from causing workers to consume queues outside their designated scope.
+    """
+
+    class _QueueGuardStep(bootsteps.StartStopStep):
+        def start(self, parent: Any) -> None:
+            _orig = parent.add_task_queue
+
+            def _guarded(queue: Any, *args: Any, **kw: Any) -> Any:
+                if not is_allowed(queue):
+                    logger.info(
+                        "Ignoring add_task_queue for queue %r "
+                        "(not in this worker's allowed set)",
+                        queue,
+                    )
+                    return None
+                return _orig(queue, *args, **kw)
+
+            parent.add_task_queue = _guarded
+
+    return _QueueGuardStep
 
 
 # Set oom scores for the pool worker

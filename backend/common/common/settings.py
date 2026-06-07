@@ -1,8 +1,8 @@
 import logging
 import os
+from enum import StrEnum
 from pathlib import Path
 from socket import gethostname
-from typing import Literal
 
 from pydantic import (
     AnyHttpUrl,
@@ -113,6 +113,15 @@ class LLMSettings(BaseModel):
     chat: LLMChatSettings = LLMChatSettings()
 
 
+class WorkerType(StrEnum):
+    WORKER = "WORKER"
+    REAPER = "REAPER"
+    PERSISTER = "PERSISTER"
+    FLOWER = "FLOWER"
+    BEAT = "BEAT"
+    INSPECT = "INSPECT"
+
+
 class Settings(BaseSettings):
     """Settings for the common module They can be overridden by environment
     variables."""
@@ -127,14 +136,7 @@ class Settings(BaseSettings):
     translate_target: str = "en"
     tempfile_dir: Path = Path.home() / ".loomcache"
 
-    worker_type: Literal[
-        "WORKER",
-        "REAPER",
-        "FLOWER",
-        "BEAT",
-        "PERSISTER",
-        "INSPECT",
-    ] = "INSPECT"
+    worker_type: WorkerType = WorkerType.INSPECT
     worker_max_concurrency: int = 4
     # NOTE: worker_min_concurrency MUST equal worker_max_concurrency (no scaling allowed).
     # Due to a suspected Celery bug, tasks get stuck on the worker when concurrency
@@ -236,7 +238,7 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def adjust_lazy_threshold_for_reaper(self) -> "Settings":
-        if self.worker_type == "REAPER":
+        if self.worker_type == WorkerType.REAPER:
             self.lazy_threshold_bytes = 0
         return self
 

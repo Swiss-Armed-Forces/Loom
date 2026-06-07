@@ -8,6 +8,7 @@ from common.dependencies import (
     get_file_scheduling_service,
 )
 from common.file.file_repository import File, Tag
+from common.services.celery_inspect_service import TaskGroupName, task_group
 from common.services.lazybytes_service import FileStorageLazyBytes
 from common.services.query_builder import QueryParameters
 from common.services.task_scheduling_service import UpdateFileRequest
@@ -17,6 +18,7 @@ logger = logging.getLogger(__name__)
 app = get_celery_app()
 
 
+@task_group(TaskGroupName.DISPATCH)
 @app.task()
 # pylint: disable=too-many-arguments, too-many-positional-arguments
 def dispatch_index_file(
@@ -45,6 +47,7 @@ def dispatch_reindex_files(query: QueryParameters):
         dispatch_reindex_file.s(file_id=file.id_).delay().forget()
 
 
+@task_group(TaskGroupName.DISPATCH)
 @app.task()
 def dispatch_reindex_file(file_id: UUID):
     logger.info("Dispatching tasks to reindex files with id '%s'", file_id)

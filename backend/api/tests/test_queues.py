@@ -6,6 +6,19 @@ from fastapi.testclient import TestClient
 from api.models.queues_model import CompleteEstimate, OverallQueuesStats
 
 
+def test_get_all_queues(client: TestClient):
+    queues_service_mock = get_queues_service()
+    queues_service_mock.get_all_queue_message_counts.return_value = {
+        "queue-a": 10,
+        "queue-b": 5,
+    }
+
+    response = client.get("/v1/queues/")
+    response.raise_for_status()
+
+    assert response.json() == {"queue-a": 10, "queue-b": 5}
+
+
 def test_get_overall_queue_stats(client: TestClient):
     # setup mock
     now = datetime.now()
@@ -83,3 +96,13 @@ def test_get_messages(client: TestClient):
     messages = int(response.json())
 
     assert messages == 100
+
+
+def test_list_paused_queues(client: TestClient):
+    queues_service_mock = get_queues_service()
+    queues_service_mock.get_paused_queues.return_value = ["queue-a", "queue-b"]
+
+    response = client.get("/v1/queues/paused")
+    response.raise_for_status()
+
+    assert set(response.json()) == {"queue-a", "queue-b"}

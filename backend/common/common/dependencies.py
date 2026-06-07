@@ -179,7 +179,9 @@ def init(init_elasticsearch_documents: bool = False):
         _celery_app = init_celery_app()
 
     global _queues_service
-    _queues_service = QueuesService(str(settings.rabbit_mq_management_host))
+    _queues_service = QueuesService(
+        str(settings.rabbit_mq_management_host), _redis_client
+    )
 
     global _archive_repository
     _archive_repository = ArchiveRepository(_query_builder, _pubsub_service)

@@ -1,33 +1,24 @@
-import re
-
-from common.dependencies import get_celery_app, get_queues_service
-from common.services.queues_service import QUEUES_NAME_REGEX
+import pytest
+from common.dependencies import get_queues_service
 from common.settings import settings
-from kombu import Queue
 
 
-def _is_loom_queue(queue: Queue) -> bool:
-    return re.match(QUEUES_NAME_REGEX, queue.name) is not None
-
-
-# --- get_message_count (total) ---
+@pytest.fixture(autouse=True)
+def resume_all_queues_after_test():
+    yield
+    service = get_queues_service()
+    for queue in service.get_paused_queues():
+        service.set_queue_paused(queue, False)
 
 
 def test_get_message_count_total_is_zero_when_idle():
     assert get_queues_service().get_message_count() == 0
 
 
-# --- get_message_count (per queue) ---
-
-
 def test_get_message_count_per_queue_is_zero_when_idle():
     service = get_queues_service()
-    for queue in get_celery_app().conf.task_queues:
-        if _is_loom_queue(queue):
-            assert service.get_message_count(queue_name=queue.name) == 0
-
-
-# --- get_all_queue_message_counts ---
+    for queue_name in service.get_all_queue_message_counts():
+        assert service.get_message_count(queue_name=queue_name) == 0
 
 
 def test_get_all_queue_message_counts_returns_dict():
@@ -48,9 +39,6 @@ def test_get_all_queue_message_counts_all_zero_when_idle():
         assert count == 0, f"Queue {name!r} has {count} messages, expected 0"
 
 
-# --- get_queue_samples ---
-
-
 def test_get_queue_samples_total_returns_list():
     samples = get_queues_service().get_queue_samples(sample_period__s=60)
     assert isinstance(samples, list)
@@ -64,43 +52,40 @@ def test_get_queue_samples_total_is_sorted_ascending():
 
 def test_get_queue_samples_per_queue_returns_list():
     service = get_queues_service()
-    for queue in get_celery_app().conf.task_queues:
-        if _is_loom_queue(queue):
-            samples = service.get_queue_samples(
-                sample_period__s=60, queue_name=queue.name
-            )
-            assert isinstance(samples, list)
-            break
+    queue_name = next(iter(service.get_all_queue_message_counts()))
+    samples = service.get_queue_samples(sample_period__s=60, queue_name=queue_name)
+    assert isinstance(samples, list)
 
 
 def test_get_queue_samples_per_queue_is_sorted_ascending():
     service = get_queues_service()
-    for queue in get_celery_app().conf.task_queues:
-        if _is_loom_queue(queue):
-            samples = service.get_queue_samples(
-                sample_period__s=60, queue_name=queue.name
-            )
-            timestamps = [ts for ts, _ in samples]
-            assert timestamps == sorted(timestamps)
-            break
+    queue_name = next(iter(service.get_all_queue_message_counts()))
+    samples = service.get_queue_samples(sample_period__s=60, queue_name=queue_name)
+    timestamps = [ts for ts, _ in samples]
+    assert timestamps == sorted(timestamps)
 
 
-# --- get_consumer_count ---
-
-
-def test_get_consumer_count_is_non_negative_for_each_loom_queue():
+def test_set_queue_paused_and_is_queue_paused():
     service = get_queues_service()
-    for queue_name in service.get_all_queue_message_counts():
-        assert service.get_consumer_count(queue_name) >= 0
+    queue = "integration-test-queue"
+
+    assert service.is_queue_paused(queue) is False
+
+    service.set_queue_paused(queue, True)
+    assert service.is_queue_paused(queue) is True
+
+    service.set_queue_paused(queue, False)
+    assert service.is_queue_paused(queue) is False
 
 
-def test_get_consumer_count_is_positive_for_some_loom_queue():
-    """At least one loom queue must have an active consumer when workers are running."""
+def test_get_paused_queues_reflects_pause_state():
     service = get_queues_service()
-    counts = [
-        service.get_consumer_count(queue_name)
-        for queue_name in service.get_all_queue_message_counts()
-    ]
-    assert any(
-        c > 0 for c in counts
-    ), "Expected at least one loom queue with a consumer"
+    queue = "integration-test-queue"
+
+    assert queue not in service.get_paused_queues()
+
+    service.set_queue_paused(queue, True)
+    assert queue in service.get_paused_queues()
+
+    service.set_queue_paused(queue, False)
+    assert queue not in service.get_paused_queues()

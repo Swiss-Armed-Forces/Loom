@@ -1,20 +1,21 @@
 import pytest
-from common.dependencies import get_celery_inspect_service
+from common.dependencies import get_celery_inspect_service, get_redis_client
+from common.services.celery_inspect_service import _TASK_GROUP_KEY_PREFIX
+
+_TEST_TASK_NAME = "integration.test.task"
+_TEST_GROUP_NAME = "integration-test-group"
 
 
 @pytest.fixture(autouse=True)
-def resume_all_queues_after_test():
+def clean_state():
     yield
     service = get_celery_inspect_service()
-    for queue in service.get_paused_queues():
-        service.set_queue_paused(queue, False)
+    service.set_throttled(False)
+    service.set_task_paused(_TEST_TASK_NAME, False)
+    get_redis_client().delete(f"{_TASK_GROUP_KEY_PREFIX}:{_TEST_GROUP_NAME}")
 
 
-def test_count_messages_in_queues():
-    assert get_celery_inspect_service().count_messages_in_queues() == 0
-
-
-def test_get_celery_tasks_count():
+def test_count_tasks_is_zero_when_idle():
     assert get_celery_inspect_service().count_tasks() == 0
 
 
@@ -22,27 +23,30 @@ def test_wait_for_idle_returns_true_when_already_idle():
     assert get_celery_inspect_service().wait_for_idle(timeout=30) is True
 
 
-def test_set_queue_paused_and_is_queue_paused():
+def test_throttle_roundtrip():
     service = get_celery_inspect_service()
-    queue = "integration-test-queue"
-
-    assert service.is_queue_paused(queue) is False
-
-    service.set_queue_paused(queue, True)
-    assert service.is_queue_paused(queue) is True
-
-    service.set_queue_paused(queue, False)
-    assert service.is_queue_paused(queue) is False
+    assert service.is_throttled() is False
+    service.set_throttled(True)
+    assert service.is_throttled() is True
+    service.set_throttled(False)
+    assert service.is_throttled() is False
 
 
-def test_get_paused_queues_reflects_pause_state():
+def test_set_task_paused_and_is_task_paused():
     service = get_celery_inspect_service()
-    queue = "integration-test-queue"
+    assert service.is_task_paused(_TEST_TASK_NAME) is False
+    service.set_task_paused(_TEST_TASK_NAME, True)
+    assert service.is_task_paused(_TEST_TASK_NAME) is True
+    service.set_task_paused(_TEST_TASK_NAME, False)
+    assert service.is_task_paused(_TEST_TASK_NAME) is False
 
-    assert queue not in service.get_paused_queues()
 
-    service.set_queue_paused(queue, True)
-    assert queue in service.get_paused_queues()
-
-    service.set_queue_paused(queue, False)
-    assert queue not in service.get_paused_queues()
+def test_register_and_get_task_names_in_group():
+    service = get_celery_inspect_service()
+    assert service.get_task_names_in_group(_TEST_GROUP_NAME) == []
+    service.register_task_in_group(_TEST_GROUP_NAME, "task.a")
+    service.register_task_in_group(_TEST_GROUP_NAME, "task.b")
+    assert set(service.get_task_names_in_group(_TEST_GROUP_NAME)) == {
+        "task.a",
+        "task.b",
+    }

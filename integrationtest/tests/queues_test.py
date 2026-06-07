@@ -1,5 +1,6 @@
 import re
 
+import pytest
 import requests
 from api.models.queues_model import CompleteEstimate, OverallQueuesStats
 from common.dependencies import get_celery_app
@@ -48,69 +49,42 @@ def _get_message_count(queue: Queue) -> int:
     return int(response.json())
 
 
-def test_get_overall_queue_stats():
-    asset_list = [
-        "search_test_files/confused_lorem_ipsum_search_file_test_6",
-        "search_test_files/divergent_lorem_ipsum_search_file_test_7",
-    ]
+class TestQueues:
 
-    upload_many_assets(asset_names=asset_list)
+    asset_list = ["empty_file.txt"]
 
-    # ensure all files are processed
-    fetch_files_from_api(
-        search_string="*",
-        expected_no_of_files=len(asset_list),
-        wait_for_celery_idle=True,
-    )
+    @pytest.fixture(scope="class", autouse=True)
+    def setup_testfiles(self):
+        upload_many_assets(asset_names=self.asset_list)
 
-    # should be idle now
-    queue_stats = _get_overall_queue_stats()
-    assert queue_stats.complete_estimate_timestamp is None
-    assert queue_stats.messages_in_queues == 0
+        # ensure all files are processed
+        fetch_files_from_api(
+            search_string="*",
+            expected_no_of_files=len(self.asset_list),
+            wait_for_celery_idle=True,
+        )
 
+    def test_get_overall_queue_stats(self):
+        # should be idle now
+        queue_stats = _get_overall_queue_stats()
+        assert queue_stats.complete_estimate_timestamp is None
+        assert queue_stats.messages_in_queues == 0
 
-def test_get_complete_estimate():
-    app = get_celery_app()
-    asset_list = [
-        "search_test_files/confused_lorem_ipsum_search_file_test_6",
-        "search_test_files/divergent_lorem_ipsum_search_file_test_7",
-    ]
+    def test_get_complete_estimate(self):
+        app = get_celery_app()
 
-    upload_many_assets(asset_names=asset_list)
+        # all queues should be idle now
+        for queue in app.conf.task_queues:
+            if _is_default_queue(queue):
+                complete_estimate = _get_complete_estimate(queue)
+                assert complete_estimate is None
 
-    # ensure all files are processed
-    fetch_files_from_api(
-        search_string="*",
-        expected_no_of_files=len(asset_list),
-        wait_for_celery_idle=True,
-    )
+    def test_get_messages(self):
+        app = get_celery_app()
 
-    # all queues should be idle now
-    for queue in app.conf.task_queues:
-        if _is_default_queue(queue):
-            complete_estimate = _get_complete_estimate(queue)
-            assert complete_estimate is None
-
-
-def test_get_messages():
-    app = get_celery_app()
-    asset_list = [
-        "search_test_files/confused_lorem_ipsum_search_file_test_6",
-        "search_test_files/divergent_lorem_ipsum_search_file_test_7",
-    ]
-
-    upload_many_assets(asset_names=asset_list)
-
-    # ensure all files are processed
-    fetch_files_from_api(
-        search_string="*",
-        expected_no_of_files=len(asset_list),
-        wait_for_celery_idle=True,
-    )
-
-    # all queues should be idle now
-    queue: Queue
-    for queue in app.conf.task_queues:
-        if _is_default_queue(queue):
-            message_count = _get_message_count(queue)
-            assert message_count == 0
+        # all queues should be idle now
+        queue: Queue
+        for queue in app.conf.task_queues:
+            if _is_default_queue(queue):
+                message_count = _get_message_count(queue)
+                assert message_count == 0

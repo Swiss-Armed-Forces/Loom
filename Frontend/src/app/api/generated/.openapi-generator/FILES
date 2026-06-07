@@ -4,6 +4,7 @@ apis/AitoolsApi.ts
 apis/ArchivesApi.ts
 apis/BeatApi.ts
 apis/CachingApi.ts
+apis/CeleryInspectApi.ts
 apis/FilesApi.ts
 apis/ImapApi.ts
 apis/IndexApi.ts
@@ -69,6 +70,7 @@ models/Stat.ts
 models/SummarizationRequest.ts
 models/SummarizeFileRequest.ts
 models/SummaryStatisticsModel.ts
+models/TaskGroupName.ts
 models/TranslateAllRequest.ts
 models/TranslateFileRequest.ts
 models/TreeNodeModel.ts

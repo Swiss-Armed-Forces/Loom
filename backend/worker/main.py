@@ -2,14 +2,20 @@
 
 import logging
 import sys
-from shlex import quote
 from typing import Protocol
 
 from celery import signals
-from common.celery_app import get_terminal_queues, register_persister_shard_queues
-from common.dependencies import get_celery_app, get_celery_inspect_service
+from common.celery_app import (
+    get_terminal_queues,
+    make_queue_guard,
+    register_persister_shard_queues,
+)
+from common.dependencies import (
+    get_celery_app,
+    get_celery_inspect_service,
+)
 from common.dependencies import init as init_common_dependencies
-from common.settings import settings
+from common.settings import CELERY_QUEUE_NAME_MAXLEN, WorkerType, settings
 from common.utils.sharding import (
     get_all_persister_shards,
     get_persister_shard_for_worker,
@@ -18,15 +24,6 @@ from common.utils.sharding import (
 from worker.dependencies import init
 
 logger = logging.getLogger(__name__)
-
-
-class _WorkerReadySender(Protocol):  # pylint: disable=too-few-public-methods
-    # The celery-stubs package does not type the `hostname` attribute on
-    # celery.worker.components.Consumer (the actual runtime sender of
-    # worker_ready). This Protocol captures the subset we actually use so
-    # mypy/Pyright can follow the chain.
-    # Remove once upstream stubs are complete.
-    hostname: str
 
 
 def init_all():
@@ -41,22 +38,29 @@ def pool_worker_main(*_, **__):
 
 
 @signals.worker_ready.connect
-def restore_queue_pause_state(sender: _WorkerReadySender, **__):
-    """Cancel consumption of any queues that are currently paused in Redis.
+def publish_task_groups(**__):
+    """Publish in-process task group registrations to Redis so the API can read them."""
+    get_celery_inspect_service().register_task_groups()
+
+
+class _WorkerReadySender(Protocol):  # pylint: disable=too-few-public-methods
+    # The celery-stubs package does not type the `hostname` attribute on
+    # celery.worker.components.Consumer (the actual runtime sender of
+    # worker_ready). This Protocol captures the subset we actually use so
+    # mypy/Pyright can follow the chain.
+    # Remove once upstream stubs are complete.
+    hostname: str
+
+
+@signals.worker_ready.connect
+def on_worker_ready(sender: _WorkerReadySender, **__):
+    """Cancel consumers for paused queues on this newly started worker.
 
     Celery's cancel_consumer broadcast only reaches currently running workers. This
-    handler ensures a newly started worker also stops consuming from any queue that was
-    paused before it started.
+    ensures a newly started worker also stops consuming any queue that was paused before
+    it came online.
     """
-    paused = get_celery_inspect_service().get_paused_queues()
-    if not paused:
-        return
-    celery_app = get_celery_app()
-    for queue in paused:
-        logger.info("Queue %s is paused; cancelling consumer on this worker", queue)
-        celery_app.control.cancel_consumer(
-            queue, destination=[sender.hostname], reply=True
-        )
+    get_celery_inspect_service().restore_pause_state_on_worker([sender.hostname])
 
 
 # Initial load (parent process)
@@ -70,11 +74,11 @@ argv = sys.argv[1:]
 
 
 def get_queue_from_task(task: str) -> str:
-    return f"{settings.celery_queue_name_prefix}{task}"
+    return f"{settings.celery_queue_name_prefix}{task}"[:CELERY_QUEUE_NAME_MAXLEN]
 
 
 match settings.worker_type:
-    case "WORKER":
+    case WorkerType.WORKER:
         # Exclude graveyard, dead, and persister shard queues from normal workers
         all_persister_shards = get_all_persister_shards(settings.num_persister_shards)
         all_persister_queues = [
@@ -91,19 +95,22 @@ match settings.worker_type:
             "--autoscale",
             f"{settings.worker_max_concurrency},{settings.worker_min_concurrency}",
         ]
-    case "REAPER":
+        _disallowed = frozenset(exclude_queues)
+        app.steps["consumer"].add(make_queue_guard(lambda q: q not in _disallowed))
+    case WorkerType.REAPER:
+        _reaper_queues = [
+            get_queue_from_task(settings.celery_graveyard_task_name),
+            get_queue_from_task(settings.celery_dead_task_name),
+        ]
         argv = argv + [
             "--queues",
-            ",".join(
-                [
-                    get_queue_from_task(settings.celery_graveyard_task_name),
-                    get_queue_from_task(settings.celery_dead_task_name),
-                ]
-            ),
+            ",".join(_reaper_queues),
             "--autoscale",
             "1,0",
         ]
-    case "PERSISTER":
+        _reaper_set = frozenset(_reaper_queues)
+        app.steps["consumer"].add(make_queue_guard(lambda q: q in _reaper_set))
+    case WorkerType.PERSISTER:
         # Declare persister shard queues in RabbitMQ and register them in
         # task_queues. This is done here (not in init_celery_app) so that
         # non-PERSISTER workers never see these queues in task_queues and
@@ -123,13 +130,15 @@ match settings.worker_type:
             "--queues",
             ",".join(this_persister_queues),
         ]
-    case "FLOWER":
+        _persister_set = frozenset(this_persister_queues)
+        app.steps["consumer"].add(make_queue_guard(lambda q: q in _persister_set))
+    case WorkerType.FLOWER:
         argv = argv + [
             f"--broker-api={settings.rabbit_mq_management_host}api/",
             "--purge_offline_workers=600",
             "--max_tasks=50000",
         ]
-    case "BEAT":
+    case WorkerType.BEAT:
         argv = argv + [
             "--scheduler",
             "heartbeat_scheduler:HeartbeatScheduler",
@@ -138,7 +147,5 @@ match settings.worker_type:
         pass
 
 
-logger.info(
-    "Starting (%s): %s", settings.worker_type, " ".join(quote(arg) for arg in argv)
-)
+logger.info("Starting (%s): %s", settings.worker_type, " ".join(argv))
 app.start(argv=argv)

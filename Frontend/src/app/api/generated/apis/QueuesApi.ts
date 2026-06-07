@@ -39,10 +39,47 @@ export interface GetMessageCountV1QueuesQueueNameMessageCountGetRequest {
     queueName: QueueName;
 }
 
+export interface IsQueuePausedV1QueuesQueueNamePausedGetRequest {
+    queueName: string;
+}
+
 /**
  *
  */
 export class QueuesApi extends runtime.BaseAPI {
+    /**
+     * Get All Queues
+     */
+    async getAllQueuesV1QueuesGetRaw(
+        initOverrides?: RequestInit | runtime.InitOverrideFunction,
+    ): Promise<runtime.ApiResponse<{ [key: string]: number }>> {
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        const response = await this.request(
+            {
+                path: `/v1/queues`,
+                method: "GET",
+                headers: headerParameters,
+                query: queryParameters,
+            },
+            initOverrides,
+        );
+
+        return new runtime.JSONApiResponse<any>(response);
+    }
+
+    /**
+     * Get All Queues
+     */
+    async getAllQueuesV1QueuesGet(
+        initOverrides?: RequestInit | runtime.InitOverrideFunction,
+    ): Promise<{ [key: string]: number }> {
+        const response = await this.getAllQueuesV1QueuesGetRaw(initOverrides);
+        return await response.value();
+    }
+
     /**
      * Get Completed Estimate
      */
@@ -154,7 +191,7 @@ export class QueuesApi extends runtime.BaseAPI {
     /**
      * Get Overall Queue Stats
      */
-    async getOverallQueueStatsV1QueuesGetRaw(
+    async getOverallQueueStatsV1QueuesStatsGetRaw(
         initOverrides?: RequestInit | runtime.InitOverrideFunction,
     ): Promise<runtime.ApiResponse<OverallQueuesStats>> {
         const queryParameters: any = {};
@@ -179,11 +216,97 @@ export class QueuesApi extends runtime.BaseAPI {
     /**
      * Get Overall Queue Stats
      */
-    async getOverallQueueStatsV1QueuesGet(
+    async getOverallQueueStatsV1QueuesStatsGet(
         initOverrides?: RequestInit | runtime.InitOverrideFunction,
     ): Promise<OverallQueuesStats> {
         const response =
-            await this.getOverallQueueStatsV1QueuesGetRaw(initOverrides);
+            await this.getOverallQueueStatsV1QueuesStatsGetRaw(initOverrides);
+        return await response.value();
+    }
+
+    /**
+     * Is Queue Paused
+     */
+    async isQueuePausedV1QueuesQueueNamePausedGetRaw(
+        requestParameters: IsQueuePausedV1QueuesQueueNamePausedGetRequest,
+        initOverrides?: RequestInit | runtime.InitOverrideFunction,
+    ): Promise<runtime.ApiResponse<boolean>> {
+        if (requestParameters["queueName"] == null) {
+            throw new runtime.RequiredError(
+                "queueName",
+                'Required parameter "queueName" was null or undefined when calling isQueuePausedV1QueuesQueueNamePausedGet().',
+            );
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        const response = await this.request(
+            {
+                path: `/v1/queues/{queue_name}/paused`.replace(
+                    `{${"queue_name"}}`,
+                    encodeURIComponent(String(requestParameters["queueName"])),
+                ),
+                method: "GET",
+                headers: headerParameters,
+                query: queryParameters,
+            },
+            initOverrides,
+        );
+
+        if (this.isJsonMime(response.headers.get("content-type"))) {
+            return new runtime.JSONApiResponse<boolean>(response);
+        } else {
+            return new runtime.TextApiResponse(response) as any;
+        }
+    }
+
+    /**
+     * Is Queue Paused
+     */
+    async isQueuePausedV1QueuesQueueNamePausedGet(
+        requestParameters: IsQueuePausedV1QueuesQueueNamePausedGetRequest,
+        initOverrides?: RequestInit | runtime.InitOverrideFunction,
+    ): Promise<boolean> {
+        const response = await this.isQueuePausedV1QueuesQueueNamePausedGetRaw(
+            requestParameters,
+            initOverrides,
+        );
+        return await response.value();
+    }
+
+    /**
+     * List Paused Queues
+     */
+    async listPausedQueuesV1QueuesPausedGetRaw(
+        initOverrides?: RequestInit | runtime.InitOverrideFunction,
+    ): Promise<runtime.ApiResponse<Array<string>>> {
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        const response = await this.request(
+            {
+                path: `/v1/queues/paused`,
+                method: "GET",
+                headers: headerParameters,
+                query: queryParameters,
+            },
+            initOverrides,
+        );
+
+        return new runtime.JSONApiResponse<any>(response);
+    }
+
+    /**
+     * List Paused Queues
+     */
+    async listPausedQueuesV1QueuesPausedGet(
+        initOverrides?: RequestInit | runtime.InitOverrideFunction,
+    ): Promise<Array<string>> {
+        const response =
+            await this.listPausedQueuesV1QueuesPausedGetRaw(initOverrides);
         return await response.value();
     }
 }
