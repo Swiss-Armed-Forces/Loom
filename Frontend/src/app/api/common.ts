@@ -12,5 +12,5 @@ export const fetchCount = (amount = 1) => {
 
 export const fetchOverallQueueStatistics =
     async (): Promise<OverallQueuesStats> => {
-        return queuesApi.getOverallQueueStatsV1QueuesGet();
+        return queuesApi.getOverallQueueStatsV1QueuesStatsGet();
     };

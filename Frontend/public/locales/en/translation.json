@@ -12,7 +12,7 @@
         "estimateMinutes": "Estimated completion time: {{minutes}} minute(s).",
         "estimateHours": "Estimated completion time: {{hours}} hours(s).",
         "estimateDays": "Estimated completion time: {{days}} days(s).",
-        "indexingThrottled": "Indexing is throttled ({{pausedQueuesCount}} queue(s) paused)."
+        "pausedQueuesCount": "{{pausedQueuesCount}} queue(s) paused."
     },
     "common": {
         "close": "Close",

@@ -56,6 +56,7 @@ export * from "./Stat";
 export * from "./SummarizationRequest";
 export * from "./SummarizeFileRequest";
 export * from "./SummaryStatisticsModel";
+export * from "./TaskGroupName";
 export * from "./TranslateAllRequest";
 export * from "./TranslateFileRequest";
 export * from "./TreeNodeModel";

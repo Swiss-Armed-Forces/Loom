@@ -6,6 +6,7 @@ from celery import Celery
 from celery.result import AsyncResult
 from common.celery_app import BaseTask
 from common.models.base_repository import BaseRepository
+from common.services.celery_inspect_service import TaskGroupName
 from common.settings import settings
 from common.task_object.task_object import (
     RepositoryTaskObjectT,
@@ -29,7 +30,7 @@ class PersistingTaskBase(
     ABC,
     Generic[RepositoryTaskObjectT, SecondaryRepositoryTaskObjectT],
 ):
-    pass
+    _task_group_name = TaskGroupName.PERSISTING
 
 
 def _default_persisting_cache(*_, **__):

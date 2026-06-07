@@ -162,11 +162,7 @@ export const BackgroundStatusIndicator: FC = () => {
         const completeEstimateTimestamp =
             queueStatistics.completeEstimateTimestamp;
         let estimatedTimeAddition = "";
-        if (queueStatistics.pausedQueuesCount > 0) {
-            estimatedTimeAddition = t("header.indexingThrottled", {
-                pausedQueuesCount: queueStatistics.pausedQueuesCount,
-            });
-        } else if (completeEstimateTimestamp != undefined) {
+        if (completeEstimateTimestamp != undefined) {
             const nowTimestamp = new Date().getTime() / 1000;
             const completedin = completeEstimateTimestamp - nowTimestamp;
 
@@ -192,12 +188,22 @@ export const BackgroundStatusIndicator: FC = () => {
 
         return (
             <div>
-                <div>
-                    {t("header.runningTasksTooltip", {
-                        taskCount: queueStatistics.messagesInQueues,
-                    })}
-                </div>
+                {queueStatistics.messagesInQueues > 0 && (
+                    <div>
+                        {t("header.runningTasksTooltip", {
+                            taskCount: queueStatistics.messagesInQueues,
+                        })}
+                    </div>
+                )}
                 <div>{estimatedTimeAddition}</div>
+                {queueStatistics.pausedQueues.length > 0 && (
+                    <div>
+                        {t("header.pausedQueuesCount", {
+                            pausedQueuesCount:
+                                queueStatistics.pausedQueues.length,
+                        })}
+                    </div>
+                )}
             </div>
         );
     };
@@ -210,7 +216,7 @@ export const BackgroundStatusIndicator: FC = () => {
                         badgeContent={queueStatistics.messagesInQueues}
                         color="primary"
                     >
-                        {queueStatistics.pausedQueuesCount > 0 ? (
+                        {queueStatistics.pausedQueues.length > 0 ? (
                             <Box
                                 sx={{
                                     position: "relative",
@@ -238,6 +244,12 @@ export const BackgroundStatusIndicator: FC = () => {
                     </Badge>
                 </Tooltip>
             )}
+            {queueStatistics.pausedQueues.length > 0 &&
+                queueStatistics.messagesInQueues <= 0 && (
+                    <Tooltip title={getActiveSpinnerTooltip()}>
+                        <Pause sx={{ cursor: "pointer" }} />
+                    </Tooltip>
+                )}
             {contentTruncatedFilesCount > 0 && (
                 <Tooltip
                     title={t("header.contentTruncatedTooltip", {
