@@ -103,12 +103,17 @@ To ensure Loom runs smoothly, your system should ideally meet these minimum requ
 
 #### Single Node Installation Steps
 
-1. Clone the repository:
+> ℹ️ Always install from the latest release tag. The `main` branch is for development only and may be unstable.
+
+1. Clone the repository and check out the latest release:
 
     ```bash
     git clone https://gitlab.com/swiss-armed-forces/cyber-command/cea/loom.git
     cd loom
+    git checkout tags/<tag-name>  # replace with the tag from the latest release
     ```
+
+    Find the latest release tag on the [releases page](https://gitlab.com/swiss-armed-forces/cyber-command/cea/loom/-/releases/permalink/latest).
 
 2. Run the setup script:
     - For a standard deployment (without GPU support):
@@ -133,13 +138,7 @@ at least once **while connected to the internet** before you can disconnect your
 and re-start Loom in full offline mode: `./up.sh --offline`.
 
 ⚠️ Offline mode only works when you have checked out a specific Git tag (not on a branch like `main`).
-To check out a tag:
-
-```bash
-git fetch --tags
-git tag -l                    # List available tags
-git checkout tags/<tag-name>  # Check out a specific tag (e.g., tags/v1.0.0)
-```
+If you followed the installation steps above, you are already on a release tag.
 
 #### Overriding Helm Values
 
