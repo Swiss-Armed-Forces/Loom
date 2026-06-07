@@ -112,9 +112,7 @@ data:
     {{- if ne .Values.pipeline.celery_alternate_exchange_name nil }}
     celery_alternate_exchange_name: {{ .Values.pipeline.celery_alternate_exchange_name | quote }}
     {{- end }}
-    {{- if ne .Values.pipeline.celery_alternate_exchange_type nil }}
-    celery_alternate_exchange_type: {{ .Values.pipeline.celery_alternate_exchange_type | quote }}
-    {{- end }}
+
 
     # worker concurrency
     {{- if ne .Values.worker.minConcurrency nil }}

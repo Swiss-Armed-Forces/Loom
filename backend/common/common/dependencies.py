@@ -281,6 +281,7 @@ def init(init_elasticsearch_documents: bool = False):
         lazybytes_service=_lazybytes_service,
         imap_service=_imap_service,
         celery_inspect_service=_celery_inspect_service,
+        queues_service=_queues_service,
     )
 
 

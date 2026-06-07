@@ -22,6 +22,7 @@ class WipeComponent(StrEnum):
     FILE_STORAGE = "file_storage"
     LAZYBYTES = "lazybytes"
     IMAP = "imap"
+    RABBIT = "rabbit"
 
 
 _WIPE_DISPATCH: dict[WipeComponent, Callable[[WipeService], None]] = {
@@ -32,6 +33,7 @@ _WIPE_DISPATCH: dict[WipeComponent, Callable[[WipeService], None]] = {
     WipeComponent.FILE_STORAGE: lambda s: s.wipe_file_storage(),
     WipeComponent.LAZYBYTES: lambda s: s.wipe_lazybytes(),
     WipeComponent.IMAP: lambda s: s.wipe_imap(),
+    WipeComponent.RABBIT: lambda s: s.wipe_rabbit(),
 }
 
 

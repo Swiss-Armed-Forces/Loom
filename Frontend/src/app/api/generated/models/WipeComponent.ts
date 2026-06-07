@@ -25,6 +25,7 @@ export const WipeComponent = {
     FileStorage: "file_storage",
     Lazybytes: "lazybytes",
     Imap: "imap",
+    Rabbit: "rabbit",
 } as const;
 export type WipeComponent = (typeof WipeComponent)[keyof typeof WipeComponent];
 
