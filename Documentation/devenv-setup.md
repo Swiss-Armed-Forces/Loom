@@ -15,6 +15,7 @@
       `git config --global user.email "EMAIL"`
 2. Clone git repository:
     - Clone repo: `git clone --recursive $repository`
+    - Development uses the `main` branch. For stable/production deployments, check out the latest release tag instead (see the [installation instructions](../README.md#installation)).
 3. Install docker:
     - Install docker-engine (do not install the alternative called docker-desktop) using the [official instructions](https://docs.docker.com/engine/install/)
     - Add user to docker group: `sudo gpasswd -a $USER docker`
