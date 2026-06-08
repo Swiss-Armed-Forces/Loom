@@ -110,7 +110,7 @@ class TestCliLs:
 
 
 class TestCliCp:
-    def test_copies_file_to_path(
+    def test_copies_file_to_dest_base(
         self,
         tmp_path: Path,
         file_storage_service_inmemory: InMemoryFileStorageLazyBytesService,
@@ -120,30 +120,29 @@ class TestCliCp:
             simple_entries({"report.pdf": b"pdf content"}),
             file_storage_service_inmemory,
         )
-        dest = tmp_path / "out.pdf"
+        dest = tmp_path / "out"
 
         result = _run(archive_dir, ["cp", "report.pdf", str(dest)])
 
         assert result.returncode == 0
-        assert dest.read_bytes() == b"pdf content"
+        assert (dest / "report.pdf" / "report.pdf").read_bytes() == b"pdf content"
 
-    def test_copies_file_into_directory(
+    def test_copies_nested_file_preserving_hierarchy(
         self,
         tmp_path: Path,
         file_storage_service_inmemory: InMemoryFileStorageLazyBytesService,
     ) -> None:
         archive_dir = build_archive(
             tmp_path,
-            simple_entries({"report.pdf": b"data"}),
+            simple_entries({"docs/report.pdf": b"data"}),
             file_storage_service_inmemory,
         )
         dest_dir = tmp_path / "output"
-        dest_dir.mkdir()
 
         result = _run(archive_dir, ["cp", "report.pdf", str(dest_dir)])
 
         assert result.returncode == 0
-        assert (dest_dir / "report.pdf").read_bytes() == b"data"
+        assert (dest_dir / "docs" / "report.pdf" / "report.pdf").read_bytes() == b"data"
 
     def test_suffix_match(
         self,
@@ -155,12 +154,14 @@ class TestCliCp:
             simple_entries({"deep/path/notes.txt": b"hello"}),
             file_storage_service_inmemory,
         )
-        dest = tmp_path / "out.txt"
+        dest = tmp_path / "out"
 
         result = _run(archive_dir, ["cp", "notes.txt", str(dest)])
 
         assert result.returncode == 0
-        assert dest.read_bytes() == b"hello"
+        assert (
+            dest / "deep" / "path" / "notes.txt" / "notes.txt"
+        ).read_bytes() == b"hello"
 
     def test_glob_copies_multiple_files(
         self,
@@ -179,30 +180,48 @@ class TestCliCp:
             file_storage_service_inmemory,
         )
         dest_dir = tmp_path / "output"
-        dest_dir.mkdir()
 
         result = _run(archive_dir, ["cp", "docs/*.txt", str(dest_dir)])
 
         assert result.returncode == 0
-        assert (dest_dir / "a.txt").read_bytes() == b"a"
-        assert (dest_dir / "b.txt").read_bytes() == b"b"
-        assert not (dest_dir / "c.md").exists()
+        assert (dest_dir / "docs" / "a.txt" / "a.txt").read_bytes() == b"a"
+        assert (dest_dir / "docs" / "b.txt" / "b.txt").read_bytes() == b"b"
+        assert not (dest_dir / "docs" / "c.md").exists()
 
-    def test_glob_requires_directory_for_multiple_matches(
+    def test_dir_like_without_recursive_errors(
         self,
         tmp_path: Path,
         file_storage_service_inmemory: InMemoryFileStorageLazyBytesService,
     ) -> None:
         archive_dir = build_archive(
             tmp_path,
-            simple_entries({"a.txt": b"a", "b.txt": b"b"}),
+            simple_entries({"doc.pdf": b"pdf", "doc.pdf/image.png": b"img"}),
             file_storage_service_inmemory,
         )
 
-        result = _run(archive_dir, ["cp", "*.txt", str(tmp_path / "out.txt")])
+        result = _run(archive_dir, ["cp", "doc.pdf", str(tmp_path / "out")])
 
         assert result.returncode != 0
-        assert "destination must be an existing directory" in result.stderr
+        assert "is a directory" in result.stderr
+        assert "-r" in result.stderr
+
+    def test_recursive_copies_dir_like_with_children(
+        self,
+        tmp_path: Path,
+        file_storage_service_inmemory: InMemoryFileStorageLazyBytesService,
+    ) -> None:
+        archive_dir = build_archive(
+            tmp_path,
+            simple_entries({"doc.pdf": b"pdf", "doc.pdf/image.png": b"img"}),
+            file_storage_service_inmemory,
+        )
+        dest = tmp_path / "out"
+
+        result = _run(archive_dir, ["cp", "doc.pdf", str(dest), "-r"])
+
+        assert result.returncode == 0
+        assert (dest / "doc.pdf" / "doc.pdf").read_bytes() == b"pdf"
+        assert (dest / "doc.pdf" / "image.png" / "image.png").read_bytes() == b"img"
 
     def test_glob_no_matches(
         self,

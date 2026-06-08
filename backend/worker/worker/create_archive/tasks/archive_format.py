@@ -13,7 +13,7 @@ import shutil
 import sys
 from collections.abc import Iterable, Iterator
 from dataclasses import dataclass
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from typing import NamedTuple
 
 # ---------------------------------------------------------------------------
@@ -120,27 +120,41 @@ def cmd_cp(
     index_dir: Path = FILES_INDEX,
     files_dir: Path = FILES,
 ) -> None:
-    matches = resolve_name(load_entries(index_dir=index_dir), args.name)
+    all_entries = list(load_entries(index_dir=index_dir))
+    matches = resolve_name(all_entries, args.name)
+    all_names = {e.name for e in all_entries}
+
+    final_matches: list[IndexEntry] = []
+    for entry in matches:
+        is_dir_like = any(n.startswith(entry.name + "/") for n in all_names)
+        if is_dir_like and not args.recursive:
+            print(
+                f"cp: {entry.name}: is a directory (use -r to copy recursively)",
+                file=sys.stderr,
+            )
+            sys.exit(1)
+        elif is_dir_like:
+            final_matches.append(entry)
+            final_matches.extend(
+                e for e in all_entries if e.name.startswith(entry.name + "/")
+            )
+        else:
+            final_matches.append(entry)
+
+    deduped = list({e.name: e for e in final_matches}.values())
 
     dest = Path(args.destination)
 
-    if len(matches) > 1 and (not dest.exists() or not dest.is_dir()):
-        print(
-            "Error: destination must be an existing directory when copying multiple files",
-            file=sys.stderr,
-        )
-        sys.exit(1)
-
-    for entry in matches:
+    for entry in deduped:
         src = files_dir / entry.storage_id
 
         if not src.exists():
             print(f"Error: raw file not found in archive: {src}", file=sys.stderr)
             sys.exit(1)
 
-        dest_path = dest
-        if dest.is_dir():
-            dest_path = dest / Path(entry.name).name
+        rel_parts = PurePosixPath(entry.name.lstrip("/")).parts
+        dest_path = dest.joinpath(*rel_parts, rel_parts[-1])
+        dest_path.parent.mkdir(parents=True, exist_ok=True)
 
         shutil.copy2(src, dest_path)
         print(f"Copied '{entry.name}' -> {dest_path}")
@@ -350,7 +364,13 @@ def build_parser() -> argparse.ArgumentParser:
     )
     cp_parser.add_argument(
         "destination",
-        help="Destination path or directory",
+        help="Destination base directory",
+    )
+    cp_parser.add_argument(
+        "-r",
+        "--recursive",
+        action="store_true",
+        help="Copy directories recursively",
     )
 
     search_parser = subparsers.add_parser(
