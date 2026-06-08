@@ -20,7 +20,7 @@ from elasticsearch.dsl import Boolean, Document, Index, Keyword, Search
 from elasticsearch.dsl.connections import get_connection
 from elasticsearch.dsl.response import Response
 from elasticsearch.helpers import streaming_bulk
-from pydantic import BaseModel, Field, computed_field
+from pydantic import BaseModel, Field, computed_field, model_validator
 from pydantic.main import IncEx
 
 from common.messages.messages import (
@@ -66,6 +66,24 @@ class _EsMeta(BaseModel):
 
 
 class EsRepositoryObject(RepositoryObject):
+    @model_validator(mode="before")
+    @classmethod
+    def _load_id(cls, data: Any) -> Any:
+        if not isinstance(data, dict):
+            return data
+        es_meta = data.get("es_meta", {})
+        es_meta_id = es_meta.get("id") if isinstance(es_meta, dict) else None
+        if es_meta_id is None:
+            # Loading from serialised JSON (e.g. MANIFEST): promote id_ or id → es_meta.id
+            id_val = data.get("id_") or data.get("id")
+            if id_val is not None:
+                if isinstance(es_meta, dict):
+                    data["es_meta"] = {"id": id_val, **es_meta}
+                else:
+                    data["es_meta"] = {"id": id_val}
+        return data
+
+    @computed_field  # type: ignore[misc]
     @property
     def id_(self) -> UUID:
         return self.es_meta.id  # pylint: disable=no-member
@@ -91,6 +109,9 @@ class EsRepositoryObject(RepositoryObject):
         self, include: IncEx | None = None, exclude: IncEx | None = None
     ) -> dict:
         es_dict = self.model_dump(mode="json", include=include, exclude=exclude)
+        # Expose id_ as 'id' in the ES body so it is searchable as id:<uuid>
+        if "id_" in es_dict:
+            es_dict["id"] = es_dict.pop("id_")
         return es_dict
 
 
@@ -109,6 +130,7 @@ class EsIdObject(RepositoryObject):
 
 
 class _EsRepositoryDocument(Document):
+    id = Keyword()
     deduplication_fingerprint = Keyword()
     sort_unique = (
         Keyword()

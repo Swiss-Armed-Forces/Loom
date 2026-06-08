@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from elasticsearch.dsl import Date, InnerDoc, Keyword, Long, Object, Text
+from elasticsearch.dsl import Date, InnerDoc, Integer, Keyword, Long, Object, Text
 from pydantic import BaseModel, Field, computed_field
 
 from common.file.file_repository import _EsLazyBytes
@@ -9,6 +9,10 @@ from common.services.lazybytes_service import FileStorageLazyBytes
 from common.services.query_builder import QueryParameters
 from common.settings import settings
 from common.task_object.task_object import RepositoryTaskObject, _EsTaskDocument
+
+LOOM_ARCHIVE_VERSION = 2
+ARCHIVE_STATE_CREATED = "created"
+ARCHIVE_STATE_IMPORTED = "imported"
 
 
 class ArchiveNotFoundException(Exception):
@@ -22,6 +26,7 @@ class StoredArchive(BaseModel):
 
 
 class Archive(RepositoryTaskObject):
+    version: int = LOOM_ARCHIVE_VERSION
     query: QueryParameters
     plain_file: StoredArchive = Field(default_factory=StoredArchive)
     encrypted_file: StoredArchive = Field(default_factory=StoredArchive)
@@ -30,12 +35,12 @@ class Archive(RepositoryTaskObject):
     @computed_field  # type: ignore[misc]
     @property
     def name(self) -> str:
-        return f"loom_archive_{self.created_at}.zip"
+        return f"loom_archive_{self.created_at.strftime('%Y-%m-%d_%H_%M_%S.%f')}.zip"
 
     @computed_field  # type: ignore[misc]
     @property
     def name_encrypted(self) -> str:
-        return f"loom_archive_{self.created_at}.loom"
+        return f"loom_archive_{self.created_at.strftime('%Y-%m-%d_%H_%M_%S.%f')}.loom"
 
 
 class _EsQueryParameters(InnerDoc):
@@ -52,6 +57,7 @@ class _EsStoredArchive(InnerDoc):
 
 
 class _EsArchive(_EsTaskDocument):
+    version = Integer()
     query = Object(_EsQueryParameters)
     langs = Text(multi=True)
     plain_file = Object(_EsStoredArchive)

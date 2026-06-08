@@ -11,11 +11,17 @@ from common.dependencies import (
     get_archive_repository,
     get_archive_scheduling_service,
     get_file_storage_service,
+    get_task_scheduling_service,
 )
+from common.models.es_repository import SortingParameters
 from common.services.lazybytes_service import FileStorageLazyBytesService
 from common.services.query_builder import QueryParameters
-from common.services.task_scheduling_service import UpdateArchiveRequest
-from fastapi import APIRouter, Depends, HTTPException, Query, Response
+from common.services.task_scheduling_service import (
+    TaskSchedulingService,
+    UpdateArchiveRequest,
+)
+from common.settings import settings
+from fastapi import APIRouter, Depends, HTTPException, Query, Response, UploadFile
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
@@ -29,6 +35,7 @@ logger = logging.getLogger(__name__)
 default_archive_repository = Depends(get_archive_repository)
 default_archive_scheduling_service = Depends(get_archive_scheduling_service)
 default_file_storage_service = Depends(get_file_storage_service)
+default_task_scheduling_service = Depends(get_task_scheduling_service)
 
 
 class ArchiveCreatedResponse(BaseModel):
@@ -43,6 +50,21 @@ class ArchiveRequest(BaseModel):
     query: QueryParameters
 
 
+class EncryptionKeyResponse(BaseModel):
+    encryption_key: str | None
+
+
+@router.get("/encryption-key")
+def get_encryption_key() -> EncryptionKeyResponse:
+    """Return the archive encryption master key, or null if not configured."""
+    master_key = settings.archive_enc_master_key
+    if master_key is None:
+        return EncryptionKeyResponse(encryption_key=None)
+    return EncryptionKeyResponse(
+        encryption_key=master_key.key.get_secret_value().decode()
+    )
+
+
 @router.get("")
 def get_all_archives(
     archive_repository: ArchiveRepository = default_archive_repository,
@@ -52,7 +74,10 @@ def get_all_archives(
         archive_repository.get_generator_by_query(
             QueryParameters(
                 query_id=archive_repository.open_point_in_time(), search_string="*"
-            )
+            ),
+            sort_params=SortingParameters(
+                sort_by_field="created_at", sort_direction="desc"
+            ),
         )
     )
     return ArchivesModel.from_archive_list(all_archives)
@@ -102,6 +127,17 @@ def download_archive(
             **get_content_disposition_header("attachment", archive_name),
         },
     )
+
+
+@router.post("/import", status_code=202)
+def import_archive(
+    file: UploadFile,
+    file_storage_service: FileStorageLazyBytesService = default_file_storage_service,
+    task_scheduling_service: TaskSchedulingService = default_task_scheduling_service,
+):
+    """Import files from a loom archive (.zip or .loom)."""
+    file_content = file_storage_service.from_file(file.file)
+    task_scheduling_service.dispatch_index_archive(file_content)
 
 
 @router.put("/{archive_id}", status_code=202)

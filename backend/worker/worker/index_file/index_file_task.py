@@ -8,7 +8,6 @@ from common.services.lazybytes_service import TempLazyBytes
 from worker.index_file.infra.file_indexing_task import FileIndexingTask
 from worker.index_file.tasks import (
     create_thumbnail,
-    extract_loom_archive,
     persist_processing_done,
     render,
     tika_processing,
@@ -28,7 +27,6 @@ def index_file_task(file: File, file_content: TempLazyBytes):
             create_thumbnail.signature(file, file_content),
             render.signature(file, file_content),
             tika_processing.signature(file_content, file),
-            extract_loom_archive.signature(file, file_content),
         ),
         persist_processing_done.signature(file.id_),
     ).delay().forget()

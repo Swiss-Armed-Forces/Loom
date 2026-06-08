@@ -44,9 +44,15 @@ class ArchiveHit(BaseModel):
         return ArchiveHit(
             meta=ArchiveMeta.from_archive(archive),
             content=ArchiveContent.from_archive(archive),
-            sha256=archive.plain_file.sha256 if archive.plain_file else None,
+            sha256=(
+                archive.plain_file.sha256
+                if archive.plain_file.storage_data is not None
+                else None
+            ),
             sha256_encrypted=(
-                archive.encrypted_file.sha256 if archive.encrypted_file else None
+                archive.encrypted_file.sha256
+                if archive.encrypted_file.storage_data is not None
+                else None
             ),
             hidden=False,
             file_id=archive.id_,

@@ -993,14 +993,14 @@ in
     '';
   };
 
-  scripts.docker-prune = {
-    description = "Prune all docker resources";
+  scripts.docker-prune-stale-tags = {
+    description = "Remove docker image tags that differ from the latest tag of the same repository";
     exec = ''
       (
         set -euo pipefail
         cd '${config.devenv.root}'
 
-        ./cicd/docker_prune.sh \
+        ./cicd/docker_prune_stale_tags.py \
           "''${@}"
       )
     '';

@@ -2,7 +2,7 @@ import logging
 
 from common.services.encryption_service import AESMasterKey, FileEncryptionService
 
-LOOM_ARCHIVE_MAGIC_BYTES = b"LOOMARCHIVE"
+LOOM_ARCHIVE_MAGIC_BYTES = b"LOOMARCHIVEV2"
 
 logger = logging.getLogger(__name__)
 

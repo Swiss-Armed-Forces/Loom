@@ -18,6 +18,7 @@ import type {
     ArchiveCreatedResponse,
     ArchiveRequest,
     ArchivesModel,
+    EncryptionKeyResponse,
     HTTPValidationError,
     UpdateArchiveRequest,
 } from "../models/index";
@@ -28,6 +29,8 @@ import {
     ArchiveRequestToJSON,
     ArchivesModelFromJSON,
     ArchivesModelToJSON,
+    EncryptionKeyResponseFromJSON,
+    EncryptionKeyResponseToJSON,
     HTTPValidationErrorFromJSON,
     HTTPValidationErrorToJSON,
     UpdateArchiveRequestFromJSON,
@@ -41,6 +44,10 @@ export interface CreateNewArchiveV1ArchivePostRequest {
 export interface DownloadArchiveV1ArchiveArchiveIdGetRequest {
     archiveId: string;
     encrypted?: boolean;
+}
+
+export interface ImportArchiveV1ArchiveImportPostRequest {
+    file: Blob;
 }
 
 export interface UpdateArchiveV1ArchiveArchiveIdPutRequest {
@@ -197,6 +204,118 @@ export class ArchivesApi extends runtime.BaseAPI {
     ): Promise<ArchivesModel> {
         const response =
             await this.getAllArchivesV1ArchiveGetRaw(initOverrides);
+        return await response.value();
+    }
+
+    /**
+     * Return the archive encryption master key, or null if not configured.
+     * Get Encryption Key
+     */
+    async getEncryptionKeyV1ArchiveEncryptionKeyGetRaw(
+        initOverrides?: RequestInit | runtime.InitOverrideFunction,
+    ): Promise<runtime.ApiResponse<EncryptionKeyResponse>> {
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        const response = await this.request(
+            {
+                path: `/v1/archive/encryption-key`,
+                method: "GET",
+                headers: headerParameters,
+                query: queryParameters,
+            },
+            initOverrides,
+        );
+
+        return new runtime.JSONApiResponse(response, (jsonValue) =>
+            EncryptionKeyResponseFromJSON(jsonValue),
+        );
+    }
+
+    /**
+     * Return the archive encryption master key, or null if not configured.
+     * Get Encryption Key
+     */
+    async getEncryptionKeyV1ArchiveEncryptionKeyGet(
+        initOverrides?: RequestInit | runtime.InitOverrideFunction,
+    ): Promise<EncryptionKeyResponse> {
+        const response =
+            await this.getEncryptionKeyV1ArchiveEncryptionKeyGetRaw(
+                initOverrides,
+            );
+        return await response.value();
+    }
+
+    /**
+     * Import files from a loom archive (.zip or .loom).
+     * Import Archive
+     */
+    async importArchiveV1ArchiveImportPostRaw(
+        requestParameters: ImportArchiveV1ArchiveImportPostRequest,
+        initOverrides?: RequestInit | runtime.InitOverrideFunction,
+    ): Promise<runtime.ApiResponse<any>> {
+        if (requestParameters["file"] == null) {
+            throw new runtime.RequiredError(
+                "file",
+                'Required parameter "file" was null or undefined when calling importArchiveV1ArchiveImportPost().',
+            );
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        const consumes: runtime.Consume[] = [
+            { contentType: "multipart/form-data" },
+        ];
+        // @ts-ignore: canConsumeForm may be unused
+        const canConsumeForm = runtime.canConsumeForm(consumes);
+
+        let formParams: { append(param: string, value: any): any };
+        let useForm = false;
+        // use FormData to transmit files using content-type "multipart/form-data"
+        useForm = canConsumeForm;
+        if (useForm) {
+            formParams = new FormData();
+        } else {
+            formParams = new URLSearchParams();
+        }
+
+        if (requestParameters["file"] != null) {
+            formParams.append("file", requestParameters["file"] as any);
+        }
+
+        const response = await this.request(
+            {
+                path: `/v1/archive/import`,
+                method: "POST",
+                headers: headerParameters,
+                query: queryParameters,
+                body: formParams,
+            },
+            initOverrides,
+        );
+
+        if (this.isJsonMime(response.headers.get("content-type"))) {
+            return new runtime.JSONApiResponse<any>(response);
+        } else {
+            return new runtime.TextApiResponse(response) as any;
+        }
+    }
+
+    /**
+     * Import files from a loom archive (.zip or .loom).
+     * Import Archive
+     */
+    async importArchiveV1ArchiveImportPost(
+        requestParameters: ImportArchiveV1ArchiveImportPostRequest,
+        initOverrides?: RequestInit | runtime.InitOverrideFunction,
+    ): Promise<any> {
+        const response = await this.importArchiveV1ArchiveImportPostRaw(
+            requestParameters,
+            initOverrides,
+        );
         return await response.value();
     }
 

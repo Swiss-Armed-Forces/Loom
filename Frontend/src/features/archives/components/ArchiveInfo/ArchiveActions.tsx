@@ -47,6 +47,9 @@ export const ArchiveActions = ({ archive }: ArchiveActions) => {
         await hideArchive(archiveId);
         dispatch(removeArchive(archiveId));
     };
+    const hasPlainFile = archive.sha256 != null;
+    const hasEncryptedFile = archive.sha256Encrypted != null;
+
     return (
         <>
             {matchMedia ? (
@@ -68,20 +71,30 @@ export const ArchiveActions = ({ archive }: ArchiveActions) => {
                     >
                         <MenuItem
                             component="a"
-                            href={webApiGetArchive(archive.fileId)}
+                            href={
+                                hasPlainFile
+                                    ? webApiGetArchive(archive.fileId)
+                                    : undefined
+                            }
                             target="_blank"
                             rel="noopener noreferrer"
+                            disabled={!hasPlainFile}
                         >
-                            <Download color="secondary" />
+                            <Download />
                             {t("tableView.actions.download")}
                         </MenuItem>
                         <MenuItem
                             component="a"
-                            href={webApiGetArchiveEncrypted(archive.fileId)}
+                            href={
+                                hasEncryptedFile
+                                    ? webApiGetArchiveEncrypted(archive.fileId)
+                                    : undefined
+                            }
                             target="_blank"
                             rel="noopener noreferrer"
+                            disabled={!hasEncryptedFile}
                         >
-                            <Lock color="secondary" />
+                            <Lock />
                             {t("tableView.actions.download_encrypted")}
                         </MenuItem>
                         <MenuItem
@@ -89,7 +102,7 @@ export const ArchiveActions = ({ archive }: ArchiveActions) => {
                                 showArchiveQuery(archive.fileId);
                             }}
                         >
-                            <Search color="secondary" />
+                            <Search />
                             {t("tableView.actions.search")}
                         </MenuItem>
                         {!archive.hidden && (
@@ -98,7 +111,7 @@ export const ArchiveActions = ({ archive }: ArchiveActions) => {
                                     handleHideArchive(archive.fileId)
                                 }
                             >
-                                <Delete color="secondary" />
+                                <Delete />
                                 {t("generalSearchView.remove")}
                             </MenuItem>
                         )}
@@ -108,36 +121,74 @@ export const ArchiveActions = ({ archive }: ArchiveActions) => {
                 <>
                     <IconButton
                         component="a"
-                        href={webApiGetArchive(archive.fileId)}
+                        href={
+                            hasPlainFile
+                                ? webApiGetArchive(archive.fileId)
+                                : undefined
+                        }
                         target="_blank"
                         rel="noopener noreferrer"
                         title={t("tableView.actions.download")}
+                        disabled={!hasPlainFile}
+                        sx={{
+                            "&:hover": {
+                                backgroundColor: "action.hover",
+                                transform: "scale(1.1)",
+                            },
+                            transition: "all 0.2s ease-in-out",
+                        }}
                     >
-                        <Download color="secondary" />
+                        <Download />
                     </IconButton>
                     <IconButton
                         component="a"
-                        href={webApiGetArchiveEncrypted(archive.fileId)}
+                        href={
+                            hasEncryptedFile
+                                ? webApiGetArchiveEncrypted(archive.fileId)
+                                : undefined
+                        }
                         target="_blank"
                         rel="noopener noreferrer"
                         title={t("tableView.actions.download_encrypted")}
+                        disabled={!hasEncryptedFile}
+                        sx={{
+                            "&:hover": {
+                                backgroundColor: "action.hover",
+                                transform: "scale(1.1)",
+                            },
+                            transition: "all 0.2s ease-in-out",
+                        }}
                     >
-                        <Lock color="secondary" />
+                        <Lock />
                     </IconButton>
                     <IconButton
                         onClick={() => {
                             showArchiveQuery(archive.fileId);
                         }}
                         title={t("tableView.actions.search")}
+                        sx={{
+                            "&:hover": {
+                                backgroundColor: "action.hover",
+                                transform: "scale(1.1)",
+                            },
+                            transition: "all 0.2s ease-in-out",
+                        }}
                     >
-                        <Search color="secondary" />
+                        <Search />
                     </IconButton>
                     {!archive.hidden && (
                         <IconButton
                             onClick={() => handleHideArchive(archive.fileId)}
                             title={t("generalSearchView.remove")}
+                            sx={{
+                                "&:hover": {
+                                    backgroundColor: "action.hover",
+                                    transform: "scale(1.1)",
+                                },
+                                transition: "all 0.2s ease-in-out",
+                            }}
                         >
-                            <Delete color="secondary" />
+                            <Delete />
                         </IconButton>
                     )}
                 </>

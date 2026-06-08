@@ -1,5 +1,4 @@
-import { Container, Typography, useMediaQuery } from "@mui/material";
-import { useTranslation } from "react-i18next";
+import { Container, useMediaQuery } from "@mui/material";
 import { toast } from "react-toastify";
 
 import { getAll } from "@app/api";
@@ -10,7 +9,6 @@ import styles from "./Archives.module.css";
 import { TableView } from "./views/TableView";
 
 export const Archives = () => {
-    const { t } = useTranslation();
     const dispatch = useAppDispatch();
     const matchMedia = useMediaQuery("(max-width: 2200px)");
     const smallMatchMedia = useMediaQuery("(max-width: 1100px)");
@@ -31,11 +29,10 @@ export const Archives = () => {
                     width: smallMatchMedia
                         ? "100%"
                         : matchMedia
-                          ? "75%"
-                          : "50%",
+                          ? "95%"
+                          : "80%",
                 }}
             >
-                <Typography variant="h2">{t("archives.title")}</Typography>
                 <TableView />
             </div>
         </Container>

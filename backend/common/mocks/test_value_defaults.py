@@ -36,4 +36,4 @@ class TestValueDefaults:  # pylint: disable=too-few-public-methods
         languages=["us", "cz", "de"],
         keep_alive=test_keep_alive,
     )
-    test_vector = [0.1, 0.3, 3.1415, 123]
+    test_vector = [0.1, 0.3, 3.1415, 123.0]

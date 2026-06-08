@@ -10,6 +10,7 @@ import {
     CreateArchiveDialog,
     DeleteCustomQueryDialog,
     DeleteTagGloballyDialog,
+    EncryptionKeyInfoDialog,
     FileDetailDialog,
     ImageDescriptionDialog,
     SummaryDialog,
@@ -19,6 +20,7 @@ import {
 
 const dialogRegistry: Record<DialogType, React.ComponentType<any>> = {
     [DialogType.About]: AboutDialog,
+    [DialogType.EncryptionKeyInfo]: EncryptionKeyInfoDialog,
     [DialogType.AddTagsDialog]: AddTagsDialog,
     [DialogType.CreateArchive]: CreateArchiveDialog,
     [DialogType.DeleteCustomQuery]: DeleteCustomQueryDialog,

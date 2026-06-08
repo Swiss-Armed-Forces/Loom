@@ -81,15 +81,26 @@ export const TableView = () => {
                             <b>{archive.meta.shortName}</b>
                             <br />
                             <small className={styles.checksumText}>
-                                {t("tableView.header.checksum")}:
-                                <br />
-                                <b>{t("tableView.header.checksumZip")}:</b>
-                                <code> {archive.sha256}</code>
-                                <br />
-                                <b>
-                                    {t("tableView.header.checksumEncrypted")}:
-                                </b>
-                                <code> {archive.sha256Encrypted}</code>
+                                {archive.sha256 != null && (
+                                    <>
+                                        <b>
+                                            {t("tableView.header.checksumZip")}:
+                                        </b>
+                                        <code> {archive.sha256}</code>
+                                        <br />
+                                    </>
+                                )}
+                                {archive.sha256Encrypted != null && (
+                                    <>
+                                        <b>
+                                            {t(
+                                                "tableView.header.checksumEncrypted",
+                                            )}
+                                            :
+                                        </b>
+                                        <code> {archive.sha256Encrypted}</code>
+                                    </>
+                                )}
                             </small>
                             {matchMedia && (
                                 <Table sx={{ marginTop: "0.5rem" }}>

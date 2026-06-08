@@ -149,6 +149,24 @@ class TaskSchedulingService:
             root_id=str(root_task_id),
         ).forget()
 
+    def dispatch_index_archive(self, file_content: FileStorageLazyBytes) -> None:
+        """Dispatch a loom archive for import."""
+        root_task_id = uuid4()
+        self._send_task(
+            "worker.create_archive.dispatch_tasks.dispatch_index_archive",
+            args=[file_content],
+            root_id=str(root_task_id),
+        ).forget()
+
+    def index_archive(self, file_content: FileStorageLazyBytes) -> None:
+        """Schedule the import of a loom archive."""
+        root_task_id = uuid4()
+        self._send_task(
+            "worker.create_archive.index_archive.index_archive_task",
+            args=[file_content],
+            root_id=str(root_task_id),
+        ).forget()
+
     def dispatch_translate_files(self, query: QueryParameters, lang: str):
         root_task_id = uuid4()
         self._send_task(
