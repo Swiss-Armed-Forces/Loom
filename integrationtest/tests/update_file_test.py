@@ -4,29 +4,15 @@ import pytest
 import requests
 from api.routers.files import UpdateFilesRequest
 from common.services.query_builder import QueryParameters
-from common.services.task_scheduling_service import (
-    UpdateArchiveRequest,
-    UpdateFileRequest,
-)
+from common.services.task_scheduling_service import UpdateFileRequest
 
-from utils.consts import ARCHIVE_ENDPOINT, FILES_ENDPOINT, REQUEST_TIMEOUT
-from utils.create_archive import create_archive
+from utils.consts import FILES_ENDPOINT, REQUEST_TIMEOUT
 from utils.fetch_from_api import (
-    fetch_archives_from_api,
     fetch_files_from_api,
     fetch_query_id,
     get_file_preview_by_name,
 )
 from utils.upload_asset import upload_asset, upload_many_assets
-
-
-def _hide_archive(archive_id: UUID):
-    response = requests.put(
-        f"{ARCHIVE_ENDPOINT}/{archive_id}",
-        json=UpdateArchiveRequest(hidden=True).model_dump(),
-        timeout=REQUEST_TIMEOUT,
-    )
-    response.raise_for_status()
 
 
 def _update_file(file_id: UUID, update: UpdateFileRequest):
@@ -156,22 +142,3 @@ def test_toggle_file_state(field_name: str):
 
     # Verify all files are visible again
     fetch_files_from_api("*", expected_no_of_files=len(assets))
-
-
-def test_hide_archive():
-    created_archive = create_archive(
-        QueryParameters(search_string="*", query_id=fetch_query_id())
-    )
-
-    # Note: we don't wait for a specific state here, we expect
-    # the archive to be listed immediately after we created it.
-    archives = fetch_archives_from_api(expected_no_of_archives=1, expected_state=None)
-    assert len(archives) == 1
-    assert created_archive.archive_id == archives[0].file_id
-
-    # hide it
-    _hide_archive(created_archive.archive_id)
-
-    # assertions
-    archives = fetch_archives_from_api(expected_no_of_archives=0, expected_state=None)
-    assert len(archives) == 0

@@ -16,7 +16,8 @@
     },
     "common": {
         "close": "Close",
-        "cancel": "Cancel"
+        "cancel": "Cancel",
+        "copy": "Copy"
     },
     "error": {
         "searchResultLoadingError": "Cannot load search results. {{- error}}",
@@ -199,9 +200,8 @@
             "query": "Query",
             "author": "Author",
             "uploaded_datetime": "Last modified",
-            "checksum": "Checksums (sha256)",
-            "checksumZip": "ZIP",
-            "checksumEncrypted": "Encrypted",
+            "checksumZip": "ZIP (sha256)",
+            "checksumEncrypted": "Encrypted (sha256)",
             "actions": "Actions"
         },
         "actions": {
@@ -323,7 +323,15 @@
         "summarize": "Summarize Chart"
     },
     "archives": {
-        "title": "Archives"
+        "title": "Archives",
+        "importButton": "Import Archive",
+        "importSuccess": "Archive import started",
+        "importError": "Archive import failed: ",
+        "encryptionKeyTitle": "Archive encryption key",
+        "encryptionKeyCopied": "Archive encryption key copied",
+        "encryptionKeyInfoTitle": "Archive Encryption Key",
+        "encryptionKeyInfoDescription": "This is the master key used to encrypt all .loom archive files created by this Loom instance.",
+        "encryptionKeyInfoSyncNote": "To seamlessly import archives between two Loom instances, both must share the same master key. Set the ARCHIVE_ENC_MASTER_KEY environment variable to this value on the other instance."
     },
     "about": {
         "title": "About",

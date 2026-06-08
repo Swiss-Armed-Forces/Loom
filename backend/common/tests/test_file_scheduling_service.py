@@ -119,6 +119,7 @@ def test_reindex_file_resets_recursion_depth(
     old_file.size = 7
     old_file.reindex_count = 0
     old_file.tags = []
+    old_file.archives = []
     old_file.flagged = False
 
     file_repository.get_by_id.return_value = old_file

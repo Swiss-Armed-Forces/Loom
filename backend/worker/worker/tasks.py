@@ -4,7 +4,21 @@ We have to include here all modules containing top-level tasks.
 """
 
 from worker.ai import process_question_task
-from worker.create_archive import create_archive_task, update_archive_task
+from worker.create_archive import (
+    create_archive_task,
+)
+from worker.create_archive import dispatch_tasks as create_archive_dispatch_tasks
+from worker.create_archive import (
+    index_archive,
+    update_archive_task,
+)
+from worker.create_archive.tasks import (
+    detect_loom_archive as detect_loom_archive_module,
+)
+from worker.create_archive.tasks import (
+    load_loom_archive_encrypted as load_loom_archive_encrypted_module,
+)
+from worker.create_archive.tasks import unzip_loom_archive as unzip_loom_archive_module
 from worker.index_file import (
     add_tags_to_file_task,
     dispatch_tasks,
@@ -30,7 +44,12 @@ from worker.test import autoretry_test_task, canvas_test_task, sigkill_pgroup_ta
 # the (then considered unused) imports would be removed by autoflake
 tasks = [
     create_archive_task,
+    create_archive_dispatch_tasks,
+    index_archive,
     update_archive_task,
+    detect_loom_archive_module,
+    load_loom_archive_encrypted_module,
+    unzip_loom_archive_module,
     dispatch_tasks,
     index_file_task,
     add_tags_to_file_task,

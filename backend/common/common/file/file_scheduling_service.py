@@ -148,6 +148,7 @@ class FileSchedulingService:
             state="reindexing",
             reindex_count=old_file.reindex_count + 1,
             tags=old_file.tags,
+            archives=old_file.archives,
             flagged=old_file.flagged,
             recursion_depth=0,
         )

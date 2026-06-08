@@ -3,6 +3,7 @@ from uuid import UUID
 
 from celery import chain
 from celery.canvas import Signature
+from common.archive.archive_repository import ARCHIVE_STATE_CREATED
 from common.dependencies import get_celery_app
 
 from worker.create_archive.infra.archive_creation_persister import (
@@ -23,4 +24,4 @@ def signature(archive_id: UUID) -> Signature:
 @persisting_task(app, ArchiveCreationPersister)
 def persist_processing_done_task(persister: ArchiveCreationPersister, _: Any):
     """Task that persists the processing done status."""
-    persister.set_state("created")
+    persister.set_state(ARCHIVE_STATE_CREATED)

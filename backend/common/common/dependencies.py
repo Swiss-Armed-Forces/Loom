@@ -211,6 +211,7 @@ def init(init_elasticsearch_documents: bool = False):
     _archive_scheduling_service = ArchiveSchedulingService(
         _archive_repository,
         _task_scheduling_service,
+        _file_storage_service,
     )
 
     global _ai_scheduling_service

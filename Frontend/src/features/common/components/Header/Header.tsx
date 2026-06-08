@@ -8,10 +8,12 @@ import { getColorFromString } from "@features/common/utils/helpers";
 
 import { LoomResponsiveLogo } from "../../branding/LoomResponsiveLogo";
 
+import { ArchiveEncryptionKeyDisplay } from "./ArchiveEncryptionKeyDisplay";
 import { BackgroundStatusIndicator } from "./BackgroundStatusIndicator";
 import { BurgerMenu } from "./BurgerMenu";
 import { GlobalSearchBox } from "./GlobalSearchBox";
 import styles from "./Header.module.css";
+import { ImportArchiveButton } from "./ImportArchiveButton";
 
 export const Header = () => {
     const location = useLocation();
@@ -58,9 +60,14 @@ export const Header = () => {
                 (location.pathname === "/search" ||
                     location.pathname === "/") ? (
                     <GlobalSearchBox />
+                ) : location.pathname === "/archives" ? (
+                    <div style={{ flex: 1 }}>
+                        <ArchiveEncryptionKeyDisplay />
+                    </div>
                 ) : (
                     <div className="globalSearchBoxWrapperPlaceholder" />
                 )}
+                {location.pathname === "/archives" && <ImportArchiveButton />}
                 <BackgroundStatusIndicator />
                 <Box className={styles.headerButtons}>
                     <Tabs

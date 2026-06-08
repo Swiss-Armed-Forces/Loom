@@ -14,6 +14,7 @@ from common.ai_context.ai_context_repository import (
     _EsAiContext,
 )
 from common.archive.archive_repository import (
+    LOOM_ARCHIVE_VERSION,
     Archive,
     ArchiveRepository,
     StoredArchive,
@@ -310,6 +311,7 @@ ES_REPOSITORY_TEST_INSTANCES: dict[type[BaseEsRepository], list[_TestInstances]]
                     "_seq_no": TestValueDefaults.test_int,
                     "_primary_term": TestValueDefaults.test_int,
                 },
+                id=str(TestValueDefaults.test_uuid),
                 deduplication_fingerprint=(
                     # computed in File
                     "b05da1c3eafe7b3545b322421b097efec85e7f55e9f01b8f1a1c7eff6d47fc47"
@@ -508,6 +510,7 @@ ES_REPOSITORY_TEST_INSTANCES: dict[type[BaseEsRepository], list[_TestInstances]]
                     "_seq_no": TestValueDefaults.test_int,
                     "_primary_term": TestValueDefaults.test_int,
                 },
+                id=str(TestValueDefaults.test_uuid),
                 deduplication_fingerprint=str(TestValueDefaults.test_uuid),
                 sort_unique=str(TestValueDefaults.test_uuid),
                 hidden=TestValueDefaults.test_bool,
@@ -517,6 +520,7 @@ ES_REPOSITORY_TEST_INSTANCES: dict[type[BaseEsRepository], list[_TestInstances]]
                 tasks_retried=list(map(str, TestValueDefaults.test_uuid_list)),
                 tasks_failed=list(map(str, TestValueDefaults.test_uuid_list)),
                 # _EsArchive
+                version=LOOM_ARCHIVE_VERSION,
                 query=_EsQueryParameters(
                     query_id=str(TestValueDefaults.test_uuid),
                     search_string=TestValueDefaults.test_str,
@@ -540,8 +544,16 @@ ES_REPOSITORY_TEST_INSTANCES: dict[type[BaseEsRepository], list[_TestInstances]]
                     size=TestValueDefaults.test_long,
                 ),
                 created_at=TestValueDefaults.test_datetime.isoformat(),
-                name=f"loom_archive_{TestValueDefaults.test_datetime}.zip",
-                name_encrypted=f"loom_archive_{TestValueDefaults.test_datetime}.loom",
+                name=(
+                    "loom_archive_"
+                    f"{TestValueDefaults.test_datetime.strftime('%Y-%m-%d_%H_%M_%S.%f')}"
+                    ".zip"
+                ),
+                name_encrypted=(
+                    "loom_archive_"
+                    f"{TestValueDefaults.test_datetime.strftime('%Y-%m-%d_%H_%M_%S.%f')}"
+                    ".loom"
+                ),
             ),
         )
     ],
@@ -588,6 +600,7 @@ ES_REPOSITORY_TEST_INSTANCES: dict[type[BaseEsRepository], list[_TestInstances]]
                     "_seq_no": TestValueDefaults.test_int,
                     "_primary_term": TestValueDefaults.test_int,
                 },
+                id=str(TestValueDefaults.test_uuid),
                 deduplication_fingerprint=str(TestValueDefaults.test_uuid),
                 sort_unique=str(TestValueDefaults.test_uuid),
                 hidden=TestValueDefaults.test_bool,
@@ -640,6 +653,7 @@ ES_REPOSITORY_TEST_INSTANCES: dict[type[BaseEsRepository], list[_TestInstances]]
                     "_seq_no": TestValueDefaults.test_int,
                     "_primary_term": TestValueDefaults.test_int,
                 },
+                id=str(TestValueDefaults.test_uuid),
                 deduplication_fingerprint=str(TestValueDefaults.test_uuid),
                 sort_unique=str(TestValueDefaults.test_uuid),
                 hidden=TestValueDefaults.test_bool,
@@ -1093,6 +1107,7 @@ def test_es_repository_update(obj: _TestEsRepositoryObject):
     # update() now uses to_es_dict() which applies mode="json" serialization
     # (UUIDs become strings)
     document_mock.update.assert_called_once_with(
+        id=str(obj.id_),
         deduplication_fingerprint=obj.deduplication_fingerprint,
         sort_unique=str(obj.sort_unique),
         hidden=obj.hidden,
@@ -1179,6 +1194,7 @@ def test_es_repository_update_exclude(obj: _TestEsRepositoryObject):
     # update() now uses to_es_dict() which applies mode="json" serialization
     # (UUIDs become strings)
     document_mock.update.assert_called_once_with(
+        id=str(obj.id_),
         deduplication_fingerprint=obj.deduplication_fingerprint,
         sort_unique=str(obj.sort_unique),
         hidden=obj.hidden,

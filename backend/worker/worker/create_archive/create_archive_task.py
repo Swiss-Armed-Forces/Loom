@@ -25,24 +25,20 @@ app = get_celery_app()
 def create_archive_task(archive: Archive):
     chain(
         query_file_list_for_archive_task.s(archive.query),
+        link_files_with_archive.s(archive.id_),
+        compress_files_task.s(archive),
         group(
-            link_files_with_archive.s(archive.id_),
+            persist_plain_file_storage_data_task.s(archive.id_),
+            group(
+                calculate_checksum.signature_plain_file(archive.id_),
+                calculate_size.signature_plain_file(archive.id_),
+            ),
             chain(
-                compress_files_task.s(),
+                encrypt_file_task.s(),
                 group(
-                    persist_plain_file_storage_data_task.s(archive.id_),
-                    group(
-                        calculate_checksum.signature_plain_file(archive.id_),
-                        calculate_size.signature_plain_file(archive.id_),
-                    ),
-                    chain(
-                        encrypt_file_task.s(),
-                        group(
-                            persist_encrypted_file_storage_data_task.s(archive.id_),
-                            calculate_checksum.signature_encrypted_file(archive.id_),
-                            calculate_size.signature_encrypted_file(archive.id_),
-                        ),
-                    ),
+                    persist_encrypted_file_storage_data_task.s(archive.id_),
+                    calculate_checksum.signature_encrypted_file(archive.id_),
+                    calculate_size.signature_encrypted_file(archive.id_),
                 ),
             ),
         ),

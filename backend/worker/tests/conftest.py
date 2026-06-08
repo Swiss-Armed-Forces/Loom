@@ -2,7 +2,10 @@ from unittest.mock import patch
 
 import pytest
 from common import dependencies
-from common.services.lazybytes_service import InMemoryTempLazyBytesService
+from common.services.lazybytes_service import (
+    InMemoryFileStorageLazyBytesService,
+    InMemoryTempLazyBytesService,
+)
 
 from worker.dependencies import mock_init
 
@@ -52,3 +55,14 @@ def lazybytes_service_inmemory() -> InMemoryTempLazyBytesService:
         lazybytes_service
     )
     return lazybytes_service
+
+
+@pytest.fixture()
+def file_storage_service_inmemory() -> InMemoryFileStorageLazyBytesService:
+    file_storage_service = InMemoryFileStorageLazyBytesService(
+        threshold_bytes=LAZYBYTES_THRESHOLD_BYTES
+    )
+    dependencies._file_storage_service = (  # pylint: disable=protected-access
+        file_storage_service
+    )
+    return file_storage_service

@@ -173,6 +173,16 @@ class LazyBytesService(ABC, Generic[_Tag]):
         """Stores the data in the service returning a service id."""
 
     @abstractmethod
+    def _store_at_id(self, data: IO[bytes], service_id: Any) -> None:
+        """Stores the data in the service at the given service_id."""
+
+    def from_file_with_id(self, fd: IO[bytes], service_id: Any) -> "LazyBytes[_Tag]":
+        """Stores data from fd at the specified service_id and returns a LazyBytes
+        pointing to it."""
+        self._store_at_id(fd, service_id)
+        return cast("LazyBytes[_Tag]", LazyBytes(service_id=service_id))
+
+    @abstractmethod
     def flush(self, min_age: timedelta | None = None):
         """Flush the data in the service.
 
@@ -344,6 +354,17 @@ class S3LazyBytesService(LazyBytesService[_Tag]):
         )
         return id_
 
+    def _store_at_id(self, data: IO[bytes], service_id: Any) -> None:
+        if not self._client.bucket_exists(self._bucket):
+            self._client.make_bucket(self._bucket)
+        self._client.put_object(
+            self._bucket,
+            str(service_id),
+            data,  # type: ignore
+            length=-1,
+            part_size=S3_PART_SIZE,
+        )
+
     def _load_to(self, service_id: Any, dst: IO):
         response = self._client.get_object(self._bucket, str(service_id))
         for chunk in response.stream():
@@ -408,6 +429,9 @@ class InMemoryLazyBytesService(LazyBytesService[_Tag]):
         service_id = len(self._storage)
         self._storage[service_id] = b"".join(data)
         return service_id
+
+    def _store_at_id(self, data: IO[bytes], service_id: Any) -> None:
+        self._storage[service_id] = data.read()
 
     def _get_service_id(self) -> int:
         service_id = self._counter
