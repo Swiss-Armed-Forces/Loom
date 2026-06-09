@@ -2,7 +2,7 @@ import logging
 
 from celery.canvas import Signature
 from common.dependencies import get_celery_app, get_redis_cache_client
-from common.utils.cache import CACHE_KEY_PREFIX
+from common.utils.cache import CACHE_KEY_PREFIX, CACHE_SCAN_COUNT
 
 from worker.periodic.infra.periodic_task import PeriodicTask
 
@@ -18,7 +18,15 @@ def signature() -> Signature:
 @app.task(base=PeriodicTask)
 def flush_cache(*_, **__):
     logger.info("Flushing cache")
-    keys_to_delete = get_redis_cache_client().keys(f"*{CACHE_KEY_PREFIX}*")
-    logger.info(keys_to_delete)
-    for key in keys_to_delete:
-        get_redis_cache_client().delete(key)
+    client = get_redis_cache_client()
+    pipe = client.pipeline()
+    count = 0
+    for key in client.scan_iter(f"*{CACHE_KEY_PREFIX}*", count=CACHE_SCAN_COUNT):
+        pipe.delete(key)
+        count += 1
+        if count % CACHE_SCAN_COUNT == 0:
+            pipe.execute()
+            pipe = client.pipeline()
+    if count % CACHE_SCAN_COUNT != 0:
+        pipe.execute()
+    logger.info("Flushed %d cache keys", count)
