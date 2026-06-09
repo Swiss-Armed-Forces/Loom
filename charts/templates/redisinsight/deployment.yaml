@@ -25,6 +25,9 @@ spec:
         {{- . | nindent 8 }}
       {{- end }}
     spec:
+      {{- with .Values.redisinsight.priorityClass }}
+      priorityClassName: {{ include "app.fullname" $ }}-{{ . }}
+      {{- end }}
       containers:
         - name: redisinsight
           image: {{ .Values.image.registry }}/{{ .Values.redisinsight.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) .Values.redisinsight.image.tag }}
