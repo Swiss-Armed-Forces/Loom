@@ -519,7 +519,7 @@ grafana:
     port: 3000
   ingress: *default-ingress-config
   readinessProbe:
-    enabled: false
+    enabled: true
   livenessProbe:
     enabled: true
   resources:
@@ -765,7 +765,7 @@ rabbit:
     amqp:
       enabled: false
   readinessProbe:
-    enabled: false
+    enabled: true
   livenessProbe:
     enabled: true
   resources:
@@ -808,7 +808,7 @@ ollama: &ollama
     storageClass: null
   ingress: *default-ingress-config
   readinessProbe:
-    enabled: false
+    enabled: true
   livenessProbe:
     enabled: true
   resources:
@@ -898,6 +898,10 @@ dovecot:
     limits:
       cpu: "0.5"
       memory: "500Mi"
+  readinessProbe:
+    enabled: true
+  livenessProbe:
+    enabled: true
   initContainer:
     image:
       repository: swiss-armed-forces/cyber-command/cea/loom/alpine
@@ -952,7 +956,7 @@ prometheus:
     customAnnotations: {}
   ingress: *default-ingress-config
   readinessProbe:
-    enabled: false
+    enabled: true
   livenessProbe:
     enabled: true
   resources:
@@ -1092,8 +1096,8 @@ tika:
   priorityClass: null
   strategy:
     rollingUpdate:
-      maxSurge: 0
-      maxUnavailable: 1
+      maxSurge: 1
+      maxUnavailable: 0
   hpa:
     enabled: true
     maxReplicas: 10
@@ -1105,7 +1109,7 @@ tika:
     port: 9998
   ingress: *default-ingress-config
   readinessProbe:
-    enabled: false
+    enabled: true
   livenessProbe:
     enabled: true
   resources:

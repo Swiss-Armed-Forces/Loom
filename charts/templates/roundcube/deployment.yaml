@@ -27,6 +27,9 @@ spec:
       {{- with .Values.roundcube.priorityClass }}
       priorityClassName: {{ include "app.fullname" $ }}-{{ . }}
       {{- end }}
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: roundcube
           image: {{ .Values.image.registry }}/{{ .Values.roundcube.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) .Values.roundcube.image.tag }}

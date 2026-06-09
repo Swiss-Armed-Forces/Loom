@@ -38,6 +38,9 @@ spec:
       {{- with $values.priorityClass }}
       priorityClassName: {{ include "app.fullname" $ }}-{{ . }}
       {{- end }}
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: {{ $component }}
           image: {{ .Values.image.registry }}/{{ $values.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) $values.image.tag }}
@@ -52,6 +55,14 @@ spec:
             - name: OLLAMA_MODELS
               value: /ollama-models
             {{- end }}
+          startupProbe:
+            httpGet:
+              path: /api/ps
+              port: {{ $values.service.port }}
+            initialDelaySeconds: 10
+            periodSeconds: 15
+            timeoutSeconds: 10
+            failureThreshold: 80
           {{- if $values.readinessProbe.enabled }}
           readinessProbe:
             httpGet:

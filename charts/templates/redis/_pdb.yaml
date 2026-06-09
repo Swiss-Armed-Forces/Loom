@@ -1,0 +1,14 @@
+{{- define "app.redis.pdb" -}}
+{{- $component := .component -}}
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "app.fullname" . }}-{{ $component }}-pdb
+  labels:
+    {{- include "app.labels.custom" (dict "context" . "component" $component) | nindent 4 }}
+spec:
+  maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: {{ include "app.name" . }}-{{ $component }}
+{{- end -}}

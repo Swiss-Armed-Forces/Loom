@@ -33,6 +33,8 @@ spec:
       securityContext:
         runAsUser: 1000
         fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: elasticsearch
           image: {{ .Values.image.registry }}/{{ .Values.elasticsearch.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) .Values.elasticsearch.image.tag }}
@@ -54,23 +56,32 @@ spec:
               containerPort: {{ .Values.elasticsearch.service.port }}
             - name: readiness
               containerPort: 8081
+          startupProbe:
+            httpGet:
+              path: /
+              port: 9200
+            initialDelaySeconds: 15
+            periodSeconds: 15
+            timeoutSeconds: 10
+            failureThreshold: 40
           {{- if .Values.elasticsearch.readinessProbe.enabled }}
           readinessProbe:
-            tcpSocket:
-              port: readiness
-            initialDelaySeconds: {{ default 10 .Values.elasticsearch.readinessProbe.initialDelaySeconds }}
+            httpGet:
+              path: /
+              port: 9200
+            initialDelaySeconds: {{ default 0 .Values.elasticsearch.readinessProbe.initialDelaySeconds }}
             periodSeconds: {{ default 10 .Values.elasticsearch.readinessProbe.periodSeconds }}
-            timeoutSeconds: {{ default 5 .Values.elasticsearch.readinessProbe.timeoutSeconds }}
+            timeoutSeconds: {{ default 10 .Values.elasticsearch.readinessProbe.timeoutSeconds }}
             failureThreshold: {{ default 3 .Values.elasticsearch.readinessProbe.failureThreshold }}
           {{- end }}
           {{- if .Values.elasticsearch.livenessProbe.enabled }}
           livenessProbe:
             httpGet:
-              path: /_cluster/health?local=true
-              port: http
-            initialDelaySeconds: {{ default 30 .Values.elasticsearch.livenessProbe.initialDelaySeconds }}
+              path: /
+              port: 9200
+            initialDelaySeconds: {{ default 0 .Values.elasticsearch.livenessProbe.initialDelaySeconds }}
             periodSeconds: {{ default 15 .Values.elasticsearch.livenessProbe.periodSeconds }}
-            timeoutSeconds: {{ default 5 .Values.elasticsearch.livenessProbe.timeoutSeconds }}
+            timeoutSeconds: {{ default 10 .Values.elasticsearch.livenessProbe.timeoutSeconds }}
             failureThreshold: {{ default 5 .Values.elasticsearch.livenessProbe.failureThreshold }}
           {{- end }}
           {{- if .Values.elasticsearch.resources }}

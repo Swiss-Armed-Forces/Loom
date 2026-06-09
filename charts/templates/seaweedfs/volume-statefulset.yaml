@@ -34,6 +34,8 @@ metadata:
 spec:
   serviceName: {{ include "app.fullname" . }}-seaweedfs-volume-headless
   replicas: {{ .Values.seaweedfs.volume.replicaCount }}
+  updateStrategy:
+    type: RollingUpdate
   podManagementPolicy: Parallel
   selector:
     matchLabels:
@@ -64,6 +66,8 @@ spec:
       securityContext:
         runAsUser: 1000
         fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
       initContainers:
         - name: wait-for-master
           image: {{ .Values.image.registry }}/{{ .Values.seaweedfs.initContainer.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) .Values.seaweedfs.initContainer.image.tag }}

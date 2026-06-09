@@ -34,6 +34,9 @@ spec:
       {{- with .Values.tika.priorityClass }}
       priorityClassName: {{ include "app.fullname" $ }}-{{ . }}
       {{- end }}
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: tika
           image: {{ .Values.image.registry }}/{{ .Values.tika.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) .Values.tika.image.tag }}
@@ -41,6 +44,14 @@ spec:
           ports:
             - name: tika
               containerPort: {{ .Values.tika.service.port }}
+          startupProbe:
+            httpGet:
+              path: /tika
+              port: {{ .Values.tika.service.port }}
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 10
+            failureThreshold: 30
           {{- if .Values.tika.readinessProbe.enabled }}
           readinessProbe:
             httpGet:

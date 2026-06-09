@@ -27,6 +27,9 @@ spec:
       {{- with .Values.flower.priorityClass }}
       priorityClassName: {{ include "app.fullname" $ }}-{{ . }}
       {{- end }}
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: flower
           image: {{ .Values.image.registry }}/{{ .Values.flower.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) .Values.flower.image.tag }}

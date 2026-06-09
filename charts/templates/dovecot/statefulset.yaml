@@ -28,6 +28,10 @@ spec:
       {{- with .Values.dovecot.priorityClass }}
       priorityClassName: {{ include "app.fullname" $ }}-{{ . }}
       {{- end }}
+      securityContext:
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
       initContainers:
         - name: fix-perms
           image: {{ .Values.image.registry }}/{{ .Values.dovecot.initContainer.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) .Values.dovecot.initContainer.image.tag }}
@@ -52,11 +56,31 @@ spec:
             - name: imap
               containerPort: {{ .Values.dovecot.service.port.imap }}
               protocol: TCP
-            #- name: submission
-            #  containerPort: {{ .Values.dovecot.service.port.submission }}
-            #  protocol: TCP
-          # securityContext:
-          #   fsGroup: 2000
+          startupProbe:
+            tcpSocket:
+              port: imap
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 5
+            failureThreshold: 30
+          {{- if .Values.dovecot.livenessProbe.enabled }}
+          livenessProbe:
+            tcpSocket:
+              port: imap
+            initialDelaySeconds: {{ default 0 .Values.dovecot.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ default 30 .Values.dovecot.livenessProbe.periodSeconds }}
+            timeoutSeconds: {{ default 5 .Values.dovecot.livenessProbe.timeoutSeconds }}
+            failureThreshold: {{ default 5 .Values.dovecot.livenessProbe.failureThreshold }}
+          {{- end }}
+          {{- if .Values.dovecot.readinessProbe.enabled }}
+          readinessProbe:
+            tcpSocket:
+              port: imap
+            initialDelaySeconds: {{ default 0 .Values.dovecot.readinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ default 10 .Values.dovecot.readinessProbe.periodSeconds }}
+            timeoutSeconds: {{ default 5 .Values.dovecot.readinessProbe.timeoutSeconds }}
+            failureThreshold: {{ default 3 .Values.dovecot.readinessProbe.failureThreshold }}
+          {{- end }}
           volumeMounts:
             - mountPath: /srv/mail
               name: dovecot
