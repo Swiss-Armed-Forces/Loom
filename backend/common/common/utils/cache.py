@@ -19,6 +19,7 @@ CACHE_KEY_PREFIX = "rc"
 CACHE_KEY_FORMAT = "{{rc:{namespace}}}:{key}"
 CACHE_DEFAULT_TTL_SECONDS = 60 * 60 * 24  # 1 day
 CACHE_DEFAULT_MAX_SIZE = 5 * (1024**3)  # 5 GB
+CACHE_SCAN_COUNT = 200
 
 
 class CacheStatisticsEntryModel(BaseModel):
@@ -62,7 +63,11 @@ def get_cache_statistics(redis_client: StrictRedis) -> CacheStatistics:
     """Get statistics for all cache namespaces."""
     result = CacheStatistics()
 
-    keys_bytes = redis_client.keys(f"{{{CACHE_KEY_PREFIX}*[miss|hits]?")
+    keys_bytes = list(
+        redis_client.scan_iter(
+            f"{{{CACHE_KEY_PREFIX}*[miss|hits]?", count=CACHE_SCAN_COUNT
+        )
+    )
     keys = [key.decode() for key in keys_bytes]
 
     namespaces = {key.split(":")[1][:-1] for key in keys}
@@ -91,7 +96,11 @@ def get_cache_statistics(redis_client: StrictRedis) -> CacheStatistics:
 
 def shrink_cache(redis_client: StrictRedis) -> None:
     """Shrink all cache namespaces that exceed their configured max size."""
-    keys_bytes = redis_client.keys(f"{{{CACHE_KEY_PREFIX}*[settings]?")
+    keys_bytes = list(
+        redis_client.scan_iter(
+            f"{{{CACHE_KEY_PREFIX}*[settings]?", count=CACHE_SCAN_COUNT
+        )
+    )
     keys = [key.decode() for key in keys_bytes]
     namespaces = [key.split(":")[1][:-1] for key in keys]
 
