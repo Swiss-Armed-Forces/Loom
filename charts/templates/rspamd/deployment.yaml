@@ -24,6 +24,9 @@ spec:
         {{- . | nindent 8 }}
       {{- end }}
     spec:
+      {{- with .Values.rspamd.priorityClass }}
+      priorityClassName: {{ include "app.fullname" $ }}-{{ . }}
+      {{- end }}
       # Disable DNS for pod:
       # Rspamd will lookup spam lists using
       # DNS, and this is really not something

@@ -59,7 +59,7 @@ priorityClasses:
   infrastructure:
     value: 1000
   scalable:
-    value: 100
+    value: -1000
   customLabels: {}
   customAnnotations: {}
 
@@ -207,6 +207,7 @@ preInstall:
 
 globalHttpRedirect:
   enabled: true
+  priorityClass: null
   image:
     repository: swiss-armed-forces/cyber-command/cea/loom/alpine
   service:
@@ -227,6 +228,7 @@ globalHttpRedirect:
 
 api:
   replicaCount: 1
+  priorityClass: null
   image:
     repository: swiss-armed-forces/cyber-command/cea/loom/api
   service:
@@ -262,6 +264,7 @@ api:
 
 frontend:
   replicaCount: 1
+  priorityClass: null
   image:
     repository: swiss-armed-forces/cyber-command/cea/loom/frontend
   service:
@@ -355,6 +358,7 @@ persister:
 
 beat:
   replicaCount: 1
+  priorityClass: infrastructure
   image:
     repository: swiss-armed-forces/cyber-command/cea/loom/worker
   service:
@@ -379,6 +383,7 @@ beat:
 
 flower:
   replicaCount: 1
+  priorityClass: null
   image:
     repository: swiss-armed-forces/cyber-command/cea/loom/worker
   service:
@@ -405,6 +410,7 @@ flower:
 crawler:
   enabled: true
   replicaCount: 1
+  priorityClass: null
   image:
     repository: swiss-armed-forces/cyber-command/cea/loom/crawler
   service:
@@ -483,6 +489,7 @@ elasticsearch:
 elasticvue:
   enabled: true
   replicaCount: 1
+  priorityClass: null
   image:
     repository: swiss-armed-forces/cyber-command/cea/loom/elasticvue
   service:
@@ -505,6 +512,7 @@ elasticvue:
 grafana:
   enabled: true
   replicaCount: 1
+  priorityClass: infrastructure
   image:
     repository: swiss-armed-forces/cyber-command/cea/loom/grafana
   service:
@@ -531,7 +539,7 @@ grafana:
 translate:
   enabled: true
   replicaCount: 1
-  priorityClass: scalable
+  priorityClass: null
   strategy:
     rollingUpdate:
       maxSurge: 0
@@ -644,7 +652,7 @@ seaweedfs:
 
   filer:
     replicaCount: 1
-    priorityClass: scalable
+    priorityClass: infrastructure
     strategy:
       rollingUpdate:
         maxSurge: 0
@@ -680,6 +688,7 @@ seaweedfs:
 
   admin:
     enabled: true
+    priorityClass: null
     port: 23646
     image:
       repository: swiss-armed-forces/cyber-command/cea/loom/seaweedfs
@@ -776,7 +785,7 @@ rabbit:
 ollama: &ollama
   enabled: true
   replicaCount: 1
-  priorityClass: scalable
+  priorityClass: null
   strategy:
     rollingUpdate:
       maxSurge: 0
@@ -829,7 +838,7 @@ ollama-tool: *ollama
 open_webui:
   enabled: true
   replicaCount: 1
-  priorityClass: infrastructure
+  priorityClass: null
   image:
     repository: swiss-armed-forces/cyber-command/cea/loom/open-webui
   env:
@@ -908,6 +917,7 @@ dovecot:
 
 roundcube:
   replicaCount: 1
+  priorityClass: null
   image:
     repository: swiss-armed-forces/cyber-command/cea/loom/roundcube
   service:
@@ -1036,6 +1046,7 @@ redis-filer: *redis
 redisinsight:
   enabled: true
   replicaCount: 1
+  priorityClass: null
   image:
     repository: swiss-armed-forces/cyber-command/cea/loom/redisinsight
   service:
@@ -1051,6 +1062,7 @@ redisinsight:
 
 rspamd:
   replicaCount: 1
+  priorityClass: infrastructure
   image:
     repository: swiss-armed-forces/cyber-command/cea/loom/rspamd
   worker:
@@ -1077,7 +1089,7 @@ rspamd:
 
 tika:
   replicaCount: 1
-  priorityClass: scalable
+  priorityClass: null
   strategy:
     rollingUpdate:
       maxSurge: 0
@@ -1115,7 +1127,7 @@ gotenberg:
   # Default 0.9 leaves 10% headroom for non-Go memory usage
   goMemoryLimitFactor: 0.9
   replicaCount: 1
-  priorityClass: scalable
+  priorityClass: infrastructure
   strategy:
     rollingUpdate:
       maxSurge: 0
@@ -1151,6 +1163,7 @@ gotenberg:
 kubeStateMetrics:
   enabled: true
   replicaCount: 1
+  priorityClass: infrastructure
   image:
     repository: swiss-armed-forces/cyber-command/cea/loom/kube-state-metrics
   service:

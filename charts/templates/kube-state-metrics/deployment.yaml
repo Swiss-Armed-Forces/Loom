@@ -27,6 +27,9 @@ spec:
     spec:
       serviceAccountName: {{ include "app.fullname" . }}-kube-state-metrics
       automountServiceAccountToken: true
+      {{- with .Values.kubeStateMetrics.priorityClass }}
+      priorityClassName: {{ include "app.fullname" $ }}-{{ . }}
+      {{- end }}
       securityContext:
         runAsUser: 65534
         runAsGroup: 65534
