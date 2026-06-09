@@ -12,6 +12,8 @@ metadata:
 spec:
   serviceName: {{ include "app.fullname" . }}-rabbit
   replicas: {{ .Values.rabbit.replicaCount }}
+  updateStrategy:
+    type: RollingUpdate
   selector:
     matchLabels:
       app: {{ include "app.name" . }}-rabbit
@@ -28,6 +30,9 @@ spec:
       {{- with .Values.rabbit.priorityClass }}
       priorityClassName: {{ include "app.fullname" $ }}-{{ . }}
       {{- end }}
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: rabbit
           image: {{ .Values.image.registry }}/{{ .Values.rabbit.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) .Values.rabbit.image.tag }}
@@ -49,6 +54,16 @@ spec:
               subPath: rabbitmq.conf
             - mountPath: /var/lib/rabbitmq
               name: rabbit
+          startupProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - rabbitmq-diagnostics -q ping
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 15
+            failureThreshold: 60
           {{- if .Values.rabbit.readinessProbe.enabled }}
           readinessProbe:
             exec:

@@ -6,9 +6,9 @@ kind: Deployment
 metadata:
   name: {{ include "app.fullname" . }}-{{ $component }}
   labels:
-    {{- include "app.labels.custom" (dict "context" . "component" "worker") | nindent 4 }}
+    {{- include "app.labels.custom" (dict "context" . "component" $component) | nindent 4 }}
     app.kubernetes.io/component: "{{ $component }}"
-  {{- with include "app.annotations.custom" (dict "context" . "component" "worker") }}
+  {{- with include "app.annotations.custom" (dict "context" . "component" $component) }}
   annotations:
     {{- . | nindent 4 }}
   {{- end }}
@@ -28,8 +28,8 @@ spec:
     metadata:
       labels:
         app: {{ include "app.name" . }}-{{ $component }}
-        {{- include "app.labels.custom" (dict "context" . "component" "worker") | nindent 8 }}
-      {{- with include "app.annotations.custom" (dict "context" . "component" "worker") }}
+        {{- include "app.labels.custom" (dict "context" . "component" $component) | nindent 8 }}
+      {{- with include "app.annotations.custom" (dict "context" . "component" $component) }}
       annotations:
         {{- . | nindent 8 }}
       {{- end }}
@@ -37,6 +37,9 @@ spec:
       {{- with $values.priorityClass }}
       priorityClassName: {{ include "app.fullname" $ }}-{{ . }}
       {{- end }}
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: {{ $component }}
           image: {{ .Values.image.registry }}/{{ $values.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) $values.image.tag }}
@@ -71,10 +74,10 @@ spec:
               command:
                 - /bin/sh
                 - -c
-                - WORKER_TYPE=INSPECT python main.py inspect ping --timeout 99999 --destination "celery@${HOSTNAME}"
+                - WORKER_TYPE=INSPECT python main.py inspect ping --timeout {{ sub (default 45 $values.readinessProbe.timeoutSeconds) 10 }} --destination "celery@${HOSTNAME}"
             initialDelaySeconds: {{ default 10 $values.readinessProbe.initialDelaySeconds }}
             periodSeconds: {{ default 120 $values.readinessProbe.periodSeconds }}
-            timeoutSeconds: {{ default 60 $values.readinessProbe.timeoutSeconds }}
+            timeoutSeconds: {{ default 45 $values.readinessProbe.timeoutSeconds }}
             failureThreshold: {{ default 6 $values.readinessProbe.failureThreshold }}
           {{- end }}
           {{- if $values.livenessProbe.enabled }}
@@ -83,10 +86,10 @@ spec:
               command:
                 - /bin/sh
                 - -c
-                - WORKER_TYPE=INSPECT python main.py inspect ping --timeout 99999 --destination "celery@${HOSTNAME}"
+                - WORKER_TYPE=INSPECT python main.py inspect ping --timeout {{ sub (default 45 $values.livenessProbe.timeoutSeconds) 10 }} --destination "celery@${HOSTNAME}"
             initialDelaySeconds: {{ default 10 $values.livenessProbe.initialDelaySeconds }}
             periodSeconds: {{ default 120 $values.livenessProbe.periodSeconds }}
-            timeoutSeconds: {{ default 60 $values.livenessProbe.timeoutSeconds }}
+            timeoutSeconds: {{ default 45 $values.livenessProbe.timeoutSeconds }}
             failureThreshold: {{ default 6 $values.livenessProbe.failureThreshold }}
           {{- end }}
           {{- if $values.resources }}

@@ -36,6 +36,9 @@ spec:
       {{- with $values.priorityClass }}
       priorityClassName: {{ include "app.fullname" $ }}-{{ . }}
       {{- end }}
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
       initContainers:
         - name: delete-redis-tmp-files
           image: {{ .Values.image.registry }}/{{ $values.initContainer.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) $values.initContainer.image.tag }}
@@ -68,6 +71,16 @@ spec:
               subPath: redis.conf
             - mountPath: /data
               name: redis
+          startupProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - redis-cli ping
+            initialDelaySeconds: 0
+            periodSeconds: 5
+            timeoutSeconds: 5
+            failureThreshold: 120
           {{- if $values.readinessProbe.enabled }}
           readinessProbe:
             exec:

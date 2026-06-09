@@ -28,6 +28,9 @@ spec:
       {{- with .Values.globalHttpRedirect.priorityClass }}
       priorityClassName: {{ include "app.fullname" $ }}-{{ . }}
       {{- end }}
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: global-http-redirect
           image: {{ .Values.image.registry }}/{{ .Values.globalHttpRedirect.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) .Values.globalHttpRedirect.image.tag }}
