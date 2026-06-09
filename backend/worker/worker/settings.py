@@ -184,6 +184,7 @@ class Settings(CommonSettings):
     auto_tag_file_similarity_threshold: float = 0.75
 
     gotenberg_host: AnyHttpUrl = AnyHttpUrl(f"http://gotenberg.{DOMAIN}")
+    tika_timeout_seconds: int = 5 * 60
     gotenberg_timeout: int = 1 * 60
 
     thumbnail_width: int = 300

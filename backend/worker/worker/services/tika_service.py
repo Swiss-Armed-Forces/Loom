@@ -25,7 +25,6 @@ from requests import HTTPError
 
 from worker.settings import settings
 
-TIKA_TIMEOUT_SECONDS = 1200
 TIKA_METADATA_JOIN_CHAR = ","
 TIKA_SPOOLED_MAX_SIZE = int(1 * (1024**2))  # 1 MiB
 TIKA_UNPACK_MAX_SIZE = int(512 * (1024**2))  # 512 MiB
@@ -61,7 +60,7 @@ class TikaService:
     def __init__(
         self,
         lazybytes_service: TempLazyBytesService,
-        timeout: int = TIKA_TIMEOUT_SECONDS,
+        timeout: int,
     ):
         self.timeout = timeout
         self.lazybytes_service = lazybytes_service
