@@ -73,7 +73,9 @@ def load_entries(*, index_dir: Path = FILES_INDEX) -> Iterator[IndexEntry]:
             yield IndexEntry(name=full_name, storage_id=storage_id, meta=data)
 
 
-def resolve_name(entries: Iterable[IndexEntry], name: str) -> list[IndexEntry]:
+def resolve_name(
+    entries: Iterable[IndexEntry], name: str, *, wildcards: bool = True
+) -> list[IndexEntry]:
     exact: list[IndexEntry] = []
     suffix: list[IndexEntry] = []
     prefix: list[IndexEntry] = []
@@ -86,7 +88,7 @@ def resolve_name(entries: Iterable[IndexEntry], name: str) -> list[IndexEntry]:
             suffix.append(e)
         elif name.endswith("/") and e.name.startswith(name):
             prefix.append(e)
-        elif fnmatch.fnmatch(e.name, name):
+        elif wildcards and fnmatch.fnmatch(e.name, name):
             glob_matches.append(e)
 
     matches = exact or suffix or prefix or glob_matches
@@ -114,26 +116,29 @@ def cmd_ls(args: argparse.Namespace, *, index_dir: Path = FILES_INDEX) -> None:
         print(entry.name)
 
 
-def cmd_cp(
+def cmd_extract(
     args: argparse.Namespace,
     *,
     index_dir: Path = FILES_INDEX,
     files_dir: Path = FILES,
 ) -> None:
     all_entries = list(load_entries(index_dir=index_dir))
-    matches = resolve_name(all_entries, args.name)
     all_names = {e.name for e in all_entries}
 
-    final_matches: list[IndexEntry] = []
-    for entry in matches:
-        is_dir_like = any(n.startswith(entry.name + "/") for n in all_names)
-        if is_dir_like and not args.recursive:
-            print(
-                f"cp: {entry.name}: is a directory (use -r to copy recursively)",
-                file=sys.stderr,
+    if not args.members:
+        initial_matches = list(all_entries)
+    else:
+        initial_matches = []
+        for pattern in args.members:
+            initial_matches.extend(
+                resolve_name(all_entries, pattern, wildcards=args.wildcards)
             )
-            sys.exit(1)
-        elif is_dir_like:
+        initial_matches = list({e.name: e for e in initial_matches}.values())
+
+    final_matches: list[IndexEntry] = []
+    for entry in initial_matches:
+        is_dir_like = any(n.startswith(entry.name + "/") for n in all_names)
+        if is_dir_like and not args.no_recursion:
             final_matches.append(entry)
             final_matches.extend(
                 e for e in all_entries if e.name.startswith(entry.name + "/")
@@ -143,21 +148,66 @@ def cmd_cp(
 
     deduped = list({e.name: e for e in final_matches}.values())
 
-    dest = Path(args.destination)
+    if args.exclude:
+        deduped = [
+            e
+            for e in deduped
+            if not any(fnmatch.fnmatch(e.name, pat) for pat in args.exclude)
+        ]
+
+    dest = Path(args.directory) if args.directory else Path.cwd()
+
+    skip: frozenset[str] = frozenset(
+        s
+        for flag, s in [
+            (args.no_meta or args.no_thumbnails, "thumbnails"),
+            (args.no_meta or args.no_rendered, "rendered"),
+            (args.no_meta or args.no_index, "index"),
+        ]
+        if flag
+    )
 
     for entry in deduped:
-        src = files_dir / entry.storage_id
+        _extract_entry(entry, dest, files_dir=files_dir, skip=skip)
 
-        if not src.exists():
-            print(f"Error: raw file not found in archive: {src}", file=sys.stderr)
-            sys.exit(1)
 
-        rel_parts = PurePosixPath(entry.name.lstrip("/")).parts
-        dest_path = dest.joinpath(*rel_parts, rel_parts[-1])
-        dest_path.parent.mkdir(parents=True, exist_ok=True)
+def _extract_entry(
+    entry: IndexEntry,
+    dest: Path,
+    *,
+    files_dir: Path,
+    skip: frozenset[str],
+) -> None:
+    rel_parts = PurePosixPath(entry.name.lstrip("/")).parts
+    entry_dir = dest.joinpath(*rel_parts)
+    entry_dir.mkdir(parents=True, exist_ok=True)
 
-        shutil.copy2(src, dest_path)
-        print(f"Copied '{entry.name}' -> {dest_path}")
+    src = files_dir / entry.storage_id
+    if not src.exists():
+        print(f"Error: raw file not found in archive: {src}", file=sys.stderr)
+        sys.exit(1)
+    shutil.copy2(src, entry_dir / rel_parts[-1])
+    print(entry.name)
+
+    if "thumbnails" not in skip:
+        thumb_id = (entry.meta.get("thumbnail_data") or {}).get("service_id")
+        if thumb_id and (files_dir / thumb_id).exists():
+            shutil.copy2(files_dir / thumb_id, entry_dir / "thumbnail.png")
+
+    if "rendered" not in skip:
+        for render_name, render_data in (entry.meta.get("rendered_file") or {}).items():
+            render_id = (render_data or {}).get("service_id")
+            if render_id and (files_dir / render_id).exists():
+                ext = ".png" if "image" in render_name else ".pdf"
+                shutil.copy2(
+                    files_dir / render_id,
+                    entry_dir / f"rendered-{render_name}{ext}",
+                )
+
+    if "index" not in skip:
+        (entry_dir / "index.json").write_text(
+            json.dumps(entry.meta, indent=JSON_INDENT), encoding="utf-8"
+        )
 
 
 def cmd_search(args: argparse.Namespace, *, index_dir: Path = FILES_INDEX) -> None:
@@ -353,24 +403,60 @@ def build_parser() -> argparse.ArgumentParser:
         help="Optional path, suffix, or glob pattern",
     )
 
-    cp_parser = subparsers.add_parser(
-        "cp",
-        aliases=["copy"],
-        help="Copy file(s) from the archive",
+    x_parser = subparsers.add_parser(
+        "x",
+        aliases=["extract"],
+        help="Extract file(s) from the archive",
     )
-    cp_parser.add_argument(
-        "name",
-        help="Human-readable file name (full path, suffix, or glob pattern)",
+    x_parser.add_argument(
+        "members",
+        nargs="*",
+        metavar="MEMBER",
+        help="Files to extract (path, suffix, or glob if --wildcards); omit to extract all",
     )
-    cp_parser.add_argument(
-        "destination",
-        help="Destination base directory",
+    x_parser.add_argument(
+        "-C",
+        "--directory",
+        default=None,
+        metavar="DIR",
+        help="Change to DIR before extracting (default: current directory)",
     )
-    cp_parser.add_argument(
-        "-r",
-        "--recursive",
+    x_parser.add_argument(
+        "--no-recursion",
         action="store_true",
-        help="Copy directories recursively",
+        help="Do not descend into directories (recursion is on by default)",
+    )
+    x_parser.add_argument(
+        "--wildcards",
+        action="store_true",
+        help="Use glob wildcards when matching member patterns",
+    )
+    x_parser.add_argument(
+        "--exclude",
+        action="append",
+        default=[],
+        metavar="PATTERN",
+        help="Exclude files matching PATTERN (glob); repeatable",
+    )
+    x_parser.add_argument(
+        "--no-thumbnails",
+        action="store_true",
+        help="Do not extract thumbnails",
+    )
+    x_parser.add_argument(
+        "--no-rendered",
+        action="store_true",
+        help="Do not extract rendered file variants",
+    )
+    x_parser.add_argument(
+        "--no-index",
+        action="store_true",
+        help="Do not extract index.json metadata",
+    )
+    x_parser.add_argument(
+        "--no-meta",
+        action="store_true",
+        help="Do not extract any metadata (thumbnails, rendered, index.json)",
     )
 
     search_parser = subparsers.add_parser(
@@ -429,8 +515,8 @@ def main() -> None:
 
     if args.command in ("ls", "list"):
         cmd_ls(args)
-    elif args.command in ("cp", "copy"):
-        cmd_cp(args)
+    elif args.command in ("x", "extract"):
+        cmd_extract(args)
     elif args.command == "search":
         cmd_search(args)
     elif args.command == "info":
