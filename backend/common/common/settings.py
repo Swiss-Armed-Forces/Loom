@@ -168,7 +168,7 @@ class Settings(BaseSettings):
     celery_default_task_name: str = "default"
     celery_graveyard_task_name: str = "graveyard"
     celery_dead_task_name: str = "dead"
-    celery_dead_deliver_limit: int = 3
+    celery_dead_deliver_limit: int = 1
     celery_abyss_task_name: str = "abyss"
     celery_abyss_ttl__seconds: int = 7 * 24 * 60 * 60  # 7 days
     celery_persister_shard_prefix: str = "persister.shard"
