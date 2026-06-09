@@ -12,7 +12,7 @@ RABBITMQ_MANAGEMENT_REQUEST_TIMEOUT = 30  # in seconds
 # All application relevant queues must start with: celery_queue_name_prefix
 QUEUES_NAME_REGEX = rf"^{settings.celery_queue_name_prefix}.*$"
 
-QUEUE_PAUSED_KEY_PREFIX = "queue_paused"
+PAUSED_QUEUES_SET_KEY = "paused_queues_index"
 
 
 class QueuesService:
@@ -22,24 +22,20 @@ class QueuesService:
 
     def set_queue_paused(self, queue_name: str, paused: bool) -> None:
         """Persist queue pause state in Redis."""
-        key = f"{QUEUE_PAUSED_KEY_PREFIX}:{queue_name}"
         if paused:
-            self._redis_client.set(key, "1")
+            self._redis_client.sadd(PAUSED_QUEUES_SET_KEY, queue_name)
         else:
-            self._redis_client.delete(key)
+            self._redis_client.srem(PAUSED_QUEUES_SET_KEY, queue_name)
 
     def is_queue_paused(self, queue_name: str) -> bool:
         """Check if a queue is currently paused according to Redis state."""
-        return bool(
-            self._redis_client.exists(f"{QUEUE_PAUSED_KEY_PREFIX}:{queue_name}")
-        )
+        return bool(self._redis_client.sismember(PAUSED_QUEUES_SET_KEY, queue_name))
 
     def get_paused_queues(self) -> list[str]:
         """Return all queue names that are currently paused in Redis."""
-        prefix = f"{QUEUE_PAUSED_KEY_PREFIX}:"
         return [
-            key.decode().removeprefix(prefix)
-            for key in self._redis_client.keys(f"{prefix}*")
+            member.decode()
+            for member in self._redis_client.smembers(PAUSED_QUEUES_SET_KEY)
         ]
 
     def get_message_count(

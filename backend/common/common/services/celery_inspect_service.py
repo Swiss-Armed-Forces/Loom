@@ -19,8 +19,6 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-QUEUE_PAUSED_KEY_PREFIX = "queue_paused"
-
 
 class TaskGroupName(str, Enum):
     PROCESSING = "processing"

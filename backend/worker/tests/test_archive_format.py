@@ -109,8 +109,52 @@ class TestCliLs:
         assert "images/photo.jpg" not in result.stdout
 
 
-class TestCliCp:
-    def test_copies_file_to_path(
+def _make_archive_with_meta(
+    tmp_path: Path,
+    file_storage_service: InMemoryFileStorageLazyBytesService,
+) -> Path:
+    return build_archive(
+        tmp_path,
+        [
+            ArchiveEntry(
+                file=File(
+                    full_name=FilePurePath("report.pdf"),
+                    source="test",
+                    sha256="abc",
+                    size=3,
+                    storage_data=LazyBytes(service_id=uuid4()),
+                    thumbnail_data=LazyBytes(service_id=uuid4()),
+                    rendered_file=RenderedFile(
+                        image_data=LazyBytes(service_id=uuid4())
+                    ),
+                ),
+                content=b"main",
+            )
+        ],
+        file_storage_service,
+    )
+
+
+class TestCliExtract:
+    def test_extracts_all_by_default(
+        self,
+        tmp_path: Path,
+        file_storage_service_inmemory: InMemoryFileStorageLazyBytesService,
+    ) -> None:
+        archive_dir = build_archive(
+            tmp_path,
+            simple_entries({"docs/a.txt": b"a", "docs/b.txt": b"b"}),
+            file_storage_service_inmemory,
+        )
+        dest = tmp_path / "out"
+
+        result = _run(archive_dir, ["x", "-C", str(dest)])
+
+        assert result.returncode == 0
+        assert (dest / "docs" / "a.txt" / "a.txt").read_bytes() == b"a"
+        assert (dest / "docs" / "b.txt" / "b.txt").read_bytes() == b"b"
+
+    def test_extracts_single_member(
         self,
         tmp_path: Path,
         file_storage_service_inmemory: InMemoryFileStorageLazyBytesService,
@@ -120,32 +164,29 @@ class TestCliCp:
             simple_entries({"report.pdf": b"pdf content"}),
             file_storage_service_inmemory,
         )
-        dest = tmp_path / "out.pdf"
+        dest = tmp_path / "out"
 
-        result = _run(archive_dir, ["cp", "report.pdf", str(dest)])
+        result = _run(archive_dir, ["x", "-C", str(dest), "report.pdf"])
 
         assert result.returncode == 0
-        assert dest.read_bytes() == b"pdf content"
+        assert (dest / "report.pdf" / "report.pdf").read_bytes() == b"pdf content"
 
-    def test_copies_file_into_directory(
+    def test_extracts_to_cwd_by_default(
         self,
         tmp_path: Path,
         file_storage_service_inmemory: InMemoryFileStorageLazyBytesService,
     ) -> None:
         archive_dir = build_archive(
             tmp_path,
-            simple_entries({"report.pdf": b"data"}),
+            simple_entries({"note.txt": b"hi"}),
             file_storage_service_inmemory,
         )
-        dest_dir = tmp_path / "output"
-        dest_dir.mkdir()
 
-        result = _run(archive_dir, ["cp", "report.pdf", str(dest_dir)])
+        result = _run(archive_dir, ["x", "note.txt"])
 
         assert result.returncode == 0
-        assert (dest_dir / "report.pdf").read_bytes() == b"data"
 
-    def test_suffix_match(
+    def test_extracts_nested_preserving_hierarchy(
         self,
         tmp_path: Path,
         file_storage_service_inmemory: InMemoryFileStorageLazyBytesService,
@@ -155,56 +196,114 @@ class TestCliCp:
             simple_entries({"deep/path/notes.txt": b"hello"}),
             file_storage_service_inmemory,
         )
-        dest = tmp_path / "out.txt"
+        dest = tmp_path / "out"
 
-        result = _run(archive_dir, ["cp", "notes.txt", str(dest)])
+        result = _run(archive_dir, ["x", "-C", str(dest), "notes.txt"])
 
         assert result.returncode == 0
-        assert dest.read_bytes() == b"hello"
+        assert (
+            dest / "deep" / "path" / "notes.txt" / "notes.txt"
+        ).read_bytes() == b"hello"
 
-    def test_glob_copies_multiple_files(
+    def test_wildcards_glob_pattern(
         self,
         tmp_path: Path,
         file_storage_service_inmemory: InMemoryFileStorageLazyBytesService,
     ) -> None:
         archive_dir = build_archive(
             tmp_path,
-            simple_entries(
-                {
-                    "docs/a.txt": b"a",
-                    "docs/b.txt": b"b",
-                    "docs/c.md": b"c",
-                }
-            ),
+            simple_entries({"docs/a.txt": b"a", "docs/b.md": b"b"}),
             file_storage_service_inmemory,
         )
-        dest_dir = tmp_path / "output"
-        dest_dir.mkdir()
+        dest = tmp_path / "out"
 
-        result = _run(archive_dir, ["cp", "docs/*.txt", str(dest_dir)])
+        # Without --wildcards, glob pattern is not recognised
+        result_no_wc = _run(archive_dir, ["x", "-C", str(dest), "docs/*.txt"])
+        assert result_no_wc.returncode != 0
 
-        assert result.returncode == 0
-        assert (dest_dir / "a.txt").read_bytes() == b"a"
-        assert (dest_dir / "b.txt").read_bytes() == b"b"
-        assert not (dest_dir / "c.md").exists()
+        # With --wildcards, glob pattern works
+        result_wc = _run(
+            archive_dir, ["x", "-C", str(dest), "--wildcards", "docs/*.txt"]
+        )
+        assert result_wc.returncode == 0
+        assert (dest / "docs" / "a.txt" / "a.txt").read_bytes() == b"a"
+        assert not (dest / "docs" / "b.md").exists()
 
-    def test_glob_requires_directory_for_multiple_matches(
+    def test_multiple_explicit_members(
         self,
         tmp_path: Path,
         file_storage_service_inmemory: InMemoryFileStorageLazyBytesService,
     ) -> None:
         archive_dir = build_archive(
             tmp_path,
-            simple_entries({"a.txt": b"a", "b.txt": b"b"}),
+            simple_entries({"a.txt": b"a", "b.txt": b"b", "c.md": b"c"}),
             file_storage_service_inmemory,
         )
+        dest = tmp_path / "out"
 
-        result = _run(archive_dir, ["cp", "*.txt", str(tmp_path / "out.txt")])
+        result = _run(archive_dir, ["x", "-C", str(dest), "a.txt", "b.txt"])
 
-        assert result.returncode != 0
-        assert "destination must be an existing directory" in result.stderr
+        assert result.returncode == 0
+        assert (dest / "a.txt" / "a.txt").read_bytes() == b"a"
+        assert (dest / "b.txt" / "b.txt").read_bytes() == b"b"
+        assert not (dest / "c.md").exists()
 
-    def test_glob_no_matches(
+    def test_dir_like_recursive_by_default(
+        self,
+        tmp_path: Path,
+        file_storage_service_inmemory: InMemoryFileStorageLazyBytesService,
+    ) -> None:
+        archive_dir = build_archive(
+            tmp_path,
+            simple_entries({"doc.pdf": b"pdf", "doc.pdf/image.png": b"img"}),
+            file_storage_service_inmemory,
+        )
+        dest = tmp_path / "out"
+
+        result = _run(archive_dir, ["x", "-C", str(dest), "doc.pdf"])
+
+        assert result.returncode == 0
+        assert (dest / "doc.pdf" / "doc.pdf").read_bytes() == b"pdf"
+        assert (dest / "doc.pdf" / "image.png" / "image.png").read_bytes() == b"img"
+
+    def test_no_recursion_extracts_only_matched_entry(
+        self,
+        tmp_path: Path,
+        file_storage_service_inmemory: InMemoryFileStorageLazyBytesService,
+    ) -> None:
+        archive_dir = build_archive(
+            tmp_path,
+            simple_entries({"doc.pdf": b"pdf", "doc.pdf/image.png": b"img"}),
+            file_storage_service_inmemory,
+        )
+        dest = tmp_path / "out"
+
+        result = _run(archive_dir, ["x", "-C", str(dest), "--no-recursion", "doc.pdf"])
+
+        assert result.returncode == 0
+        assert (dest / "doc.pdf" / "doc.pdf").read_bytes() == b"pdf"
+        assert not (dest / "doc.pdf" / "image.png").exists()
+
+    def test_exclude_filters_output(
+        self,
+        tmp_path: Path,
+        file_storage_service_inmemory: InMemoryFileStorageLazyBytesService,
+    ) -> None:
+        archive_dir = build_archive(
+            tmp_path,
+            simple_entries({"a.txt": b"a", "b.txt": b"b", "c.md": b"c"}),
+            file_storage_service_inmemory,
+        )
+        dest = tmp_path / "out"
+
+        result = _run(archive_dir, ["x", "-C", str(dest), "--exclude=*.txt"])
+
+        assert result.returncode == 0
+        assert not (dest / "a.txt").exists()
+        assert not (dest / "b.txt").exists()
+        assert (dest / "c.md" / "c.md").read_bytes() == b"c"
+
+    def test_no_matches_errors(
         self,
         tmp_path: Path,
         file_storage_service_inmemory: InMemoryFileStorageLazyBytesService,
@@ -215,10 +314,115 @@ class TestCliCp:
             file_storage_service_inmemory,
         )
 
-        result = _run(archive_dir, ["cp", "*.txt", str(tmp_path / "out")])
+        result = _run(archive_dir, ["x", "nonexistent.txt"])
 
         assert result.returncode != 0
         assert "no file found matching" in result.stderr
+
+    def test_extracts_thumbnail_by_default(
+        self,
+        tmp_path: Path,
+        file_storage_service_inmemory: InMemoryFileStorageLazyBytesService,
+    ) -> None:
+        archive_dir = _make_archive_with_meta(tmp_path, file_storage_service_inmemory)
+        dest = tmp_path / "out"
+
+        result = _run(archive_dir, ["x", "-C", str(dest), "report.pdf"])
+
+        assert result.returncode == 0
+        assert (dest / "report.pdf" / "thumbnail.png").exists()
+
+    def test_extracts_rendered_by_default(
+        self,
+        tmp_path: Path,
+        file_storage_service_inmemory: InMemoryFileStorageLazyBytesService,
+    ) -> None:
+        archive_dir = _make_archive_with_meta(tmp_path, file_storage_service_inmemory)
+        dest = tmp_path / "out"
+
+        result = _run(archive_dir, ["x", "-C", str(dest), "report.pdf"])
+
+        assert result.returncode == 0
+        assert (dest / "report.pdf" / "rendered-image_data.png").exists()
+
+    def test_extracts_index_json_by_default(
+        self,
+        tmp_path: Path,
+        file_storage_service_inmemory: InMemoryFileStorageLazyBytesService,
+    ) -> None:
+        archive_dir = _make_archive_with_meta(tmp_path, file_storage_service_inmemory)
+        dest = tmp_path / "out"
+
+        result = _run(archive_dir, ["x", "-C", str(dest), "report.pdf"])
+
+        assert result.returncode == 0
+        index_path = dest / "report.pdf" / "index.json"
+        assert index_path.exists()
+        data = json.loads(index_path.read_text())
+        assert data.get("full_name") == "report.pdf"
+
+    def test_no_thumbnails_suppresses_thumbnail(
+        self,
+        tmp_path: Path,
+        file_storage_service_inmemory: InMemoryFileStorageLazyBytesService,
+    ) -> None:
+        archive_dir = _make_archive_with_meta(tmp_path, file_storage_service_inmemory)
+        dest = tmp_path / "out"
+
+        result = _run(
+            archive_dir, ["x", "-C", str(dest), "--no-thumbnails", "report.pdf"]
+        )
+
+        assert result.returncode == 0
+        assert not (dest / "report.pdf" / "thumbnail.png").exists()
+        assert (dest / "report.pdf" / "report.pdf").exists()
+
+    def test_no_rendered_suppresses_rendered(
+        self,
+        tmp_path: Path,
+        file_storage_service_inmemory: InMemoryFileStorageLazyBytesService,
+    ) -> None:
+        archive_dir = _make_archive_with_meta(tmp_path, file_storage_service_inmemory)
+        dest = tmp_path / "out"
+
+        result = _run(
+            archive_dir, ["x", "-C", str(dest), "--no-rendered", "report.pdf"]
+        )
+
+        assert result.returncode == 0
+        assert not (dest / "report.pdf" / "rendered-image_data.png").exists()
+        assert (dest / "report.pdf" / "report.pdf").exists()
+
+    def test_no_index_suppresses_index_json(
+        self,
+        tmp_path: Path,
+        file_storage_service_inmemory: InMemoryFileStorageLazyBytesService,
+    ) -> None:
+        archive_dir = _make_archive_with_meta(tmp_path, file_storage_service_inmemory)
+        dest = tmp_path / "out"
+
+        result = _run(archive_dir, ["x", "-C", str(dest), "--no-index", "report.pdf"])
+
+        assert result.returncode == 0
+        assert not (dest / "report.pdf" / "index.json").exists()
+        assert (dest / "report.pdf" / "report.pdf").exists()
+
+    def test_no_meta_suppresses_all(
+        self,
+        tmp_path: Path,
+        file_storage_service_inmemory: InMemoryFileStorageLazyBytesService,
+    ) -> None:
+        archive_dir = _make_archive_with_meta(tmp_path, file_storage_service_inmemory)
+        dest = tmp_path / "out"
+
+        result = _run(archive_dir, ["x", "-C", str(dest), "--no-meta", "report.pdf"])
+
+        assert result.returncode == 0
+        entry_dir = dest / "report.pdf"
+        assert not (entry_dir / "thumbnail.png").exists()
+        assert not (entry_dir / "rendered-image_data.png").exists()
+        assert not (entry_dir / "index.json").exists()
+        assert (entry_dir / "report.pdf").exists()
 
 
 class TestCliSearch:
