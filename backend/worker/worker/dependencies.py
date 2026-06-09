@@ -51,7 +51,10 @@ def init():
 
     # Always reinit HTTP clients (fork-unsafe)
     global _tika_service
-    _tika_service = TikaService(common_dependencies.get_lazybytes_service())
+    _tika_service = TikaService(
+        common_dependencies.get_lazybytes_service(),
+        timeout=settings.tika_timeout_seconds,
+    )
 
     global _rspamd_service
     _rspamd_service = RspamdService(settings.rspam_host)

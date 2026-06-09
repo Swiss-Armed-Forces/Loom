@@ -130,6 +130,7 @@ pipeline:
   throttle_max_root_tasks: null
   max_recursion_depth: null
   tika_ocr_languages: null
+  tika_timeout_seconds: null
   celery_queue_name_prefix: null
   celery_deliver_limit: null
   celery_graveyard_deliver_limit: null
