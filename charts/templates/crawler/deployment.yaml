@@ -25,6 +25,9 @@ spec:
         {{- . | nindent 8 }}
       {{- end }}
     spec:
+      {{- with .Values.crawler.priorityClass }}
+      priorityClassName: {{ include "app.fullname" $ }}-{{ . }}
+      {{- end }}
       initContainers:
         - name: check-seaweedfs-ready
           image: {{ .Values.image.registry }}/{{ .Values.crawler.initContainer.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) .Values.crawler.initContainer.image.tag }}

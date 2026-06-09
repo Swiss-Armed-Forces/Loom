@@ -25,6 +25,9 @@ spec:
         {{- . | nindent 8 }}
       {{- end }}
     spec:
+      {{- with .Values.globalHttpRedirect.priorityClass }}
+      priorityClassName: {{ include "app.fullname" $ }}-{{ . }}
+      {{- end }}
       containers:
         - name: global-http-redirect
           image: {{ .Values.image.registry }}/{{ .Values.globalHttpRedirect.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) .Values.globalHttpRedirect.image.tag }}

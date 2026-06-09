@@ -24,6 +24,9 @@ spec:
         {{- . | nindent 8 }}
       {{- end }}
     spec:
+      {{- with .Values.flower.priorityClass }}
+      priorityClassName: {{ include "app.fullname" $ }}-{{ . }}
+      {{- end }}
       containers:
         - name: flower
           image: {{ .Values.image.registry }}/{{ .Values.flower.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) .Values.flower.image.tag }}

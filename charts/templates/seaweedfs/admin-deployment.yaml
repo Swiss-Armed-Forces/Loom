@@ -25,6 +25,9 @@ spec:
         {{- . | nindent 8 }}
       {{- end }}
     spec:
+      {{- with .Values.seaweedfs.admin.priorityClass }}
+      priorityClassName: {{ include "app.fullname" $ }}-{{ . }}
+      {{- end }}
       securityContext:
         runAsUser: 1000
         fsGroup: 1000
