@@ -29,6 +29,9 @@ spec:
       {{- with .Values.persister.priorityClass }}
       priorityClassName: {{ include "app.fullname" $ }}-{{ . }}
       {{- end }}
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: persister
           image: {{ .Values.image.registry }}/{{ .Values.persister.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) .Values.persister.image.tag }}
@@ -63,10 +66,10 @@ spec:
               command:
                 - /bin/sh
                 - -c
-                - WORKER_TYPE=INSPECT python main.py inspect ping --timeout 99999 --destination "celery@${HOSTNAME}"
+                - WORKER_TYPE=INSPECT python main.py inspect ping --timeout {{ sub (default 45 .Values.persister.readinessProbe.timeoutSeconds) 10 }} --destination "celery@${HOSTNAME}"
             initialDelaySeconds: {{ default 10 .Values.persister.readinessProbe.initialDelaySeconds }}
             periodSeconds: {{ default 120 .Values.persister.readinessProbe.periodSeconds }}
-            timeoutSeconds: {{ default 60 .Values.persister.readinessProbe.timeoutSeconds }}
+            timeoutSeconds: {{ default 45 .Values.persister.readinessProbe.timeoutSeconds }}
             failureThreshold: {{ default 6 .Values.persister.readinessProbe.failureThreshold }}
           {{- end }}
           {{- if .Values.persister.livenessProbe.enabled }}
@@ -75,10 +78,10 @@ spec:
               command:
                 - /bin/sh
                 - -c
-                - WORKER_TYPE=INSPECT python main.py inspect ping --timeout 99999 --destination "celery@${HOSTNAME}"
+                - WORKER_TYPE=INSPECT python main.py inspect ping --timeout {{ sub (default 45 .Values.persister.livenessProbe.timeoutSeconds) 10 }} --destination "celery@${HOSTNAME}"
             initialDelaySeconds: {{ default 10 .Values.persister.livenessProbe.initialDelaySeconds }}
             periodSeconds: {{ default 120 .Values.persister.livenessProbe.periodSeconds }}
-            timeoutSeconds: {{ default 60 .Values.persister.livenessProbe.timeoutSeconds }}
+            timeoutSeconds: {{ default 45 .Values.persister.livenessProbe.timeoutSeconds }}
             failureThreshold: {{ default 6 .Values.persister.livenessProbe.failureThreshold }}
           {{- end }}
           {{- if .Values.persister.resources }}

@@ -42,6 +42,22 @@ MINIKUBE_HOST_CPU_RESERVE_CORES="0"
 MINIKUBE_HOST_MEM_RESERVE_KIB="0"
 
 #
+# Kubelet resource configuration
+# CPU and ephemeral-storage are fixed; memory values are computed dynamically
+# in compute_kubelet_config() as percentages of the minikube node's RAM allocation.
+#
+KUBELET_SYSTEM_RESERVED_CPU="250m"
+KUBELET_SYSTEM_RESERVED_EPHEMERAL="10Gi"
+KUBELET_KUBE_RESERVED_CPU="250m"
+KUBELET_KUBE_RESERVED_EPHEMERAL="5Gi"
+KUBELET_EVICTION_SOFT_GRACE_PERIOD_MEMORY="90s"
+# Set by compute_kubelet_config():
+KUBELET_SYSTEM_RESERVED_MEMORY=""
+KUBELET_KUBE_RESERVED_MEMORY=""
+KUBELET_EVICTION_HARD_MEMORY=""
+KUBELET_EVICTION_SOFT_MEMORY=""
+
+#
 # Shared variables
 #
 
@@ -70,6 +86,7 @@ STEPS_SETUP_SYSTEM=(
     setup_system
     compute_minikube_cpu_resources
     compute_minikube_memory_resources
+    compute_kubelet_config
     create_cluster
     default_use_csi-hostpath-driver
     install_host_entries
@@ -443,10 +460,48 @@ compute_minikube_memory_resources() {
     MINIKUBE_MEMORY_KIB="${usable_kib}kb"
 }
 
+compute_kubelet_config() {
+    # Determine the minikube node's RAM in MiB.
+    # compute_minikube_memory_resources() already ran and set MINIKUBE_MEMORY_KIB.
+    local node_mem_mib
+    if [[ "${MINIKUBE_MEMORY_KIB}" == "max" ]]; then
+        # minikube will use all available host RAM
+        node_mem_mib="$(awk '$1 == "MemTotal:" { printf("%d", $2 / 1024); exit }' /proc/meminfo)"
+    else
+        # MINIKUBE_MEMORY_KIB is "<value>kb"
+        local node_mem_kib="${MINIKUBE_MEMORY_KIB%kb}"
+        node_mem_mib=$(( node_mem_kib / 1024 ))
+    fi
+
+    # Compute memory reservations as percentages of node RAM:
+    #   system-reserved: 8%  (min 1024 MiB)  — OS, Docker daemon, kernel buffers
+    #   kube-reserved:   4%  (min  512 MiB)  — kubelet, CNI, kube-proxy
+    #   eviction-hard:   6%  (min  500 MiB)  — hard eviction floor (OOM prevention)
+    #   eviction-soft:   8%  (min  750 MiB)  — soft warning with grace period
+    local awk_result
+    awk_result="$(awk -v mem="${node_mem_mib}" 'BEGIN {
+        sys  = int(mem * 0.08); if (sys  < 1024) sys  = 1024;
+        kube = int(mem * 0.04); if (kube <  512) kube =  512;
+        hard = int(mem * 0.06); if (hard <  500) hard =  500;
+        soft = int(mem * 0.08); if (soft <  750) soft =  750;
+        printf("%dMi %dMi %dMi %dMi\n", sys, kube, hard, soft);
+    }')"
+    read -r KUBELET_SYSTEM_RESERVED_MEMORY \
+            KUBELET_KUBE_RESERVED_MEMORY \
+            KUBELET_EVICTION_HARD_MEMORY \
+            KUBELET_EVICTION_SOFT_MEMORY \
+        <<< "${awk_result}"
+}
+
 create_cluster(){
     echo "[*] Minikube resources:"
     echo "[*]   Host CPU reserve: ${MINIKUBE_HOST_CPU_RESERVE_CORES} -> using: ${MINIKUBE_CPUS}"
     echo "[*]   Host Mem reserve: ${MINIKUBE_HOST_MEM_RESERVE_KIB}KiB -> using: ${MINIKUBE_MEMORY_KIB}"
+    echo "[*] Kubelet memory reservations:"
+    echo "[*]   system-reserved: ${KUBELET_SYSTEM_RESERVED_MEMORY}"
+    echo "[*]   kube-reserved:   ${KUBELET_KUBE_RESERVED_MEMORY}"
+    echo "[*]   eviction-hard:   memory.available<${KUBELET_EVICTION_HARD_MEMORY}"
+    echo "[*]   eviction-soft:   memory.available<${KUBELET_EVICTION_SOFT_MEMORY} (grace: ${KUBELET_EVICTION_SOFT_GRACE_PERIOD_MEMORY})"
 
     minikube start \
         --driver docker \
@@ -456,6 +511,11 @@ create_cluster(){
         --cpus "${MINIKUBE_CPUS}" \
         --cni calico \
         --addons metrics-server,csi-hostpath-driver \
+        --extra-config="kubelet.system-reserved=cpu=${KUBELET_SYSTEM_RESERVED_CPU},memory=${KUBELET_SYSTEM_RESERVED_MEMORY},ephemeral-storage=${KUBELET_SYSTEM_RESERVED_EPHEMERAL}" \
+        --extra-config="kubelet.kube-reserved=cpu=${KUBELET_KUBE_RESERVED_CPU},memory=${KUBELET_KUBE_RESERVED_MEMORY},ephemeral-storage=${KUBELET_KUBE_RESERVED_EPHEMERAL}" \
+        --extra-config="kubelet.eviction-hard=memory.available<${KUBELET_EVICTION_HARD_MEMORY},nodefs.available<10%,imagefs.available<10%" \
+        --extra-config="kubelet.eviction-soft=memory.available<${KUBELET_EVICTION_SOFT_MEMORY}" \
+        --extra-config="kubelet.eviction-soft-grace-period=memory.available=${KUBELET_EVICTION_SOFT_GRACE_PERIOD_MEMORY}" \
         --gpus "${GPUS}"
 }
 

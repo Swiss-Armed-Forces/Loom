@@ -28,6 +28,9 @@ spec:
       {{- with .Values.open_webui.priorityClass }}
       priorityClassName: {{ include "app.fullname" $ }}-{{ . }}
       {{- end }}
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: open-webui
           image: {{ .Values.image.registry }}/{{ .Values.open_webui.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) .Values.open_webui.image.tag }}

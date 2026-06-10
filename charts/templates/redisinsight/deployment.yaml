@@ -28,6 +28,9 @@ spec:
       {{- with .Values.redisinsight.priorityClass }}
       priorityClassName: {{ include "app.fullname" $ }}-{{ . }}
       {{- end }}
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: redisinsight
           image: {{ .Values.image.registry }}/{{ .Values.redisinsight.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) .Values.redisinsight.image.tag }}

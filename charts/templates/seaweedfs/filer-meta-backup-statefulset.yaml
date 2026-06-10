@@ -37,6 +37,8 @@ spec:
       securityContext:
         runAsUser: 1000
         fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
       initContainers:
         - name: wait-for-filer
           image: {{ .Values.image.registry }}/{{ .Values.seaweedfs.initContainer.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) .Values.seaweedfs.initContainer.image.tag }}
@@ -89,6 +91,16 @@ spec:
               readOnly: true
             - name: data
               mountPath: /data
+          livenessProbe:
+            exec:
+              command:
+                - test
+                - -f
+                - /data/filer.db
+            initialDelaySeconds: 60
+            periodSeconds: 120
+            timeoutSeconds: 5
+            failureThreshold: 3
           {{- if .Values.seaweedfs.filerMetaBackup.resources }}
           resources: {{- toYaml .Values.seaweedfs.filerMetaBackup.resources | nindent 12 }}
           {{- end }}

@@ -31,6 +31,8 @@ spec:
       securityContext:
         runAsUser: 1000
         fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: master
           image: {{ .Values.image.registry }}/{{ .Values.seaweedfs.master.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) .Values.seaweedfs.master.image.tag }}

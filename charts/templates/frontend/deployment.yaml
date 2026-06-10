@@ -27,6 +27,9 @@ spec:
       {{- with .Values.frontend.priorityClass }}
       priorityClassName: {{ include "app.fullname" $ }}-{{ . }}
       {{- end }}
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: frontend
           image: {{ .Values.image.registry }}/{{ .Values.frontend.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) .Values.frontend.image.tag }}

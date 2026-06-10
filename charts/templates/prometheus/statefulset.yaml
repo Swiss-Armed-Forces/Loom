@@ -35,6 +35,8 @@ spec:
       securityContext:
         runAsUser: 65534
         fsGroup: 65534
+        seccompProfile:
+          type: RuntimeDefault
       initContainers:
         - name: clear-tsdb-lock
           image: {{ .Values.image.registry }}/{{ .Values.prometheus.initContainer.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) .Values.prometheus.initContainer.image.tag }}

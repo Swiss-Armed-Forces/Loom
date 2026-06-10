@@ -81,9 +81,7 @@ resourceQuotas:
     enabled: false
     hard:
       requests.cpu: "20"
-      requests.memory: "50Gi"
-      limits.cpu: "40"
-      limits.memory: "100Gi"
+      requests.memory: "70Gi"
       pods: "200"
 
 fileStorage:
@@ -240,8 +238,8 @@ api:
     enabled: true
   resources:
     requests:
-      cpu: "0.2"
-      memory: "200Mi"
+      cpu: "0.5"
+      memory: "500Mi"
     limits:
       cpu: "2"
       memory: "4Gi"
@@ -298,7 +296,7 @@ worker: &worker
   image:
     repository: swiss-armed-forces/cyber-command/cea/loom/worker
   hpa:
-    enabled: true
+    enabled: false
     maxReplicas: 100
     minReplicas: 1
     targetCPUUtilizationPercentage: 100
@@ -310,8 +308,8 @@ worker: &worker
     enabled: true
   resources:
     requests:
-      cpu: "0.2"
-      memory: "500Mi"
+      cpu: "0.5"
+      memory: "1.5Gi"
     limits:
       cpu: "1.5"
       memory: "4Gi"
@@ -519,7 +517,7 @@ grafana:
     port: 3000
   ingress: *default-ingress-config
   readinessProbe:
-    enabled: false
+    enabled: true
   livenessProbe:
     enabled: true
   resources:
@@ -545,7 +543,7 @@ translate:
       maxSurge: 0
       maxUnavailable: 1
   hpa:
-    enabled: true
+    enabled: false
     maxReplicas: 2
     minReplicas: 1
     targetCPUUtilizationPercentage: 80
@@ -661,7 +659,7 @@ seaweedfs:
     terminationGracePeriodSeconds: 180
     preStopSleepSeconds: 5
     hpa:
-      enabled: true
+      enabled: false
       maxReplicas: 5
       minReplicas: 1
       targetCPUUtilizationPercentage: 70
@@ -765,13 +763,13 @@ rabbit:
     amqp:
       enabled: false
   readinessProbe:
-    enabled: false
+    enabled: true
   livenessProbe:
     enabled: true
   resources:
     requests:
       cpu: "0.3"
-      memory: "1Gi"
+      memory: "1.5Gi"
     limits:
       cpu: "2"
       memory: "3Gi"
@@ -791,7 +789,7 @@ ollama: &ollama
       maxSurge: 0
       maxUnavailable: 1
   hpa:
-    enabled: true
+    enabled: false
     maxReplicas: 2
     minReplicas: 1
     targetCPUUtilizationPercentage: 80
@@ -808,7 +806,7 @@ ollama: &ollama
     storageClass: null
   ingress: *default-ingress-config
   readinessProbe:
-    enabled: false
+    enabled: true
   livenessProbe:
     enabled: true
   resources:
@@ -898,6 +896,10 @@ dovecot:
     limits:
       cpu: "0.5"
       memory: "500Mi"
+  readinessProbe:
+    enabled: true
+  livenessProbe:
+    enabled: true
   initContainer:
     image:
       repository: swiss-armed-forces/cyber-command/cea/loom/alpine
@@ -952,7 +954,7 @@ prometheus:
     customAnnotations: {}
   ingress: *default-ingress-config
   readinessProbe:
-    enabled: false
+    enabled: true
   livenessProbe:
     enabled: true
   resources:
@@ -1092,10 +1094,10 @@ tika:
   priorityClass: null
   strategy:
     rollingUpdate:
-      maxSurge: 0
-      maxUnavailable: 1
+      maxSurge: 1
+      maxUnavailable: 0
   hpa:
-    enabled: true
+    enabled: false
     maxReplicas: 10
     minReplicas: 1
     targetCPUUtilizationPercentage: 100
@@ -1105,7 +1107,7 @@ tika:
     port: 9998
   ingress: *default-ingress-config
   readinessProbe:
-    enabled: false
+    enabled: true
   livenessProbe:
     enabled: true
   resources:
@@ -1133,7 +1135,7 @@ gotenberg:
       maxSurge: 0
       maxUnavailable: 1
   hpa:
-    enabled: true
+    enabled: false
     maxReplicas: 10
     minReplicas: 1
     targetCPUUtilizationPercentage: 80

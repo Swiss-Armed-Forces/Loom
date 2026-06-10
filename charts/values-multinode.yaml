@@ -1,7 +1,10 @@
-prometheus:
-  customLabels:
-    pulse/enabled: true
-  collectClusterMetrics: false
+worker:
+  hpa:
+    enabled: true
+
+reaper:
+  hpa:
+    enabled: true
 
 elasticsearch:
   replicaCount: 3
@@ -13,8 +16,49 @@ elasticsearch:
         allocation:
           disk:
             threshold_enabled: true
+
+translate:
+  hpa:
+    enabled: true
+
 seaweedfs:
   master:
     defaultReplication: "010"
   volume:
     replicaCount: 3
+  filer:
+    hpa:
+      enabled: true
+
+ollama:
+  hpa:
+    enabled: true
+
+ollama-tool:
+  hpa:
+    enabled: true
+
+prometheus:
+  customLabels:
+    pulse/enabled: true
+  collectClusterMetrics: false
+
+tika:
+  hpa:
+    enabled: true
+
+gotenberg:
+  hpa:
+    enabled: true
+
+resourceQuotas:
+  scalable:
+    enabled: true
+    # Tune hard limits to match your cluster's total allocatable resources
+    # minus the headroom needed for infrastructure pods.
+    # Default assumes ~3 nodes with ~90 GiB / 24 cores total allocatable,
+    # reserving ~20 GiB / 4 cores for infrastructure.
+    hard:
+      requests.cpu: "20"
+      requests.memory: "70Gi"
+      pods: "200"

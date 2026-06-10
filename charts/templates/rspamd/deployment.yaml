@@ -37,6 +37,9 @@ spec:
           - 127.0.0.1
         searches: []
         options: []
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: rspamd
           image: {{ .Values.image.registry }}/{{ .Values.rspamd.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) .Values.rspamd.image.tag }}

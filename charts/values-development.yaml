@@ -86,8 +86,6 @@ worker:
       "--loglevel", "DEBUG"
   ]
   # yamllint enable rule:indentation
-  hpa:
-    enabled: false
 
 reaper:
   # yamllint disable rule:indentation
@@ -111,8 +109,6 @@ reaper:
       "--loglevel", "DEBUG"
   ]
   # yamllint enable rule:indentation
-  hpa:
-    enabled: false
 
 persister:
   # yamllint disable rule:indentation
@@ -203,13 +199,8 @@ grafana:
 
 translate:
   ingress: *default-ingress-config
-  hpa:
-    enabled: false
 
 seaweedfs:
-  filer:
-    hpa:
-      enabled: false
   s3:
     ingress: *default-ingress-config
   admin:
@@ -222,8 +213,6 @@ rabbit:
       enabled: true
 
 ollama: &ollama
-  hpa:
-    enabled: false
   pvc:
     enabled: false
   ingress: *default-ingress-config
@@ -262,11 +251,7 @@ rspamd:
     ingress: *default-ingress-config
 
 tika:
-  hpa:
-    enabled: false
   ingress: *default-ingress-config
 
 gotenberg:
-  hpa:
-    enabled: false
   ingress: *default-ingress-config

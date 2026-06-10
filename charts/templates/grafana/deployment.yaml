@@ -28,6 +28,9 @@ spec:
       {{- with .Values.grafana.priorityClass }}
       priorityClassName: {{ include "app.fullname" $ }}-{{ . }}
       {{- end }}
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: grafana
           image: {{ .Values.image.registry }}/{{ .Values.grafana.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) .Values.grafana.image.tag }}
@@ -48,7 +51,7 @@ spec:
             failureThreshold: {{ default 3 .Values.grafana.readinessProbe.failureThreshold }}
           {{- end }}
           {{- if .Values.grafana.livenessProbe.enabled }}
-          readinessProbe:
+          livenessProbe:
             httpGet:
               path: /api/health
               port: {{ .Values.grafana.service.port }}
