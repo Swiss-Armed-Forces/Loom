@@ -118,6 +118,36 @@ def test_is_taskgroup_paused_returns_false_when_empty_group(
     assert result is False
 
 
+def test_is_idle_returns_true_when_no_messages(
+    celery_inspect_service: CeleryInspectService,
+):
+    queues_service: Any = get_queues_service()
+    queues_service.get_all_queue_message_counts.return_value = {}
+
+    assert celery_inspect_service.is_idle() is True
+
+
+def test_is_idle_returns_false_when_messages_pending(
+    celery_inspect_service: CeleryInspectService,
+):
+    queues_service: Any = get_queues_service()
+    queues_service.get_all_queue_message_counts.return_value = {"loom:some.task": 1}
+
+    assert celery_inspect_service.is_idle() is False
+
+
+def test_is_idle_called_from_task_subtracts_own_message(
+    celery_inspect_service: CeleryInspectService,
+):
+    queues_service: Any = get_queues_service()
+    # Only the calling task's own unacked message is in the queue
+    queues_service.get_all_queue_message_counts.return_value = {
+        "loom:worker.periodic.flush_on_idle_task.flush_on_idle_task": 1
+    }
+
+    assert celery_inspect_service.is_idle(called_from_task=True) is True
+
+
 def test_register_task_groups_persists_to_redis(
     celery_inspect_service: CeleryInspectService,
 ):
