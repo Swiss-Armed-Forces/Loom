@@ -84,10 +84,6 @@ class CeleryInspectService:
                 for _, tasks in worker_tasks.items():
                     yield from tasks
 
-    def count_tasks(self) -> int:
-        """Count total celery tasks across all workers and states."""
-        return sum(1 for _ in self.iterate_tasks())
-
     def is_idle(
         self,
         called_from_task: bool = False,
@@ -99,17 +95,19 @@ class CeleryInspectService:
             self._task_name_to_queue(task_name) for task_name in exclude_tasks or []
         } | {q.name for q in get_terminal_queues()}
         all_counts = self._queues_service.get_all_queue_message_counts()
-        tasks_count = self.count_tasks()
         messages_in_queues = sum(
             count for name, count in all_counts.items() if name not in excluded_queues
         )
         if called_from_task:
-            # We are called from a celery task, so we need to subtract the task itself
-            tasks_count -= 1
             # With task_acks_late=True the running task remains as an unacknowledged
             # message in its queue until it completes, so subtract that as well.
             messages_in_queues -= 1
-        return messages_in_queues <= 0 and tasks_count <= 0
+        # RabbitMQ message count (ready + unacknowledged) is the source of truth.
+        # With task_acks_late=True every legitimate in-flight task holds an unacked
+        # message, so zero messages means no real work is pending. Celery's inspect
+        # state can be stale (phantom tasks after worker restarts or the known
+        # prefork concurrency-scaling bug) and must not block idle detection.
+        return messages_in_queues <= 0
 
     def wait_for_idle(
         self,

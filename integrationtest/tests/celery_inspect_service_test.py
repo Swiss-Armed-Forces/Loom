@@ -15,10 +15,6 @@ def clean_state():
     get_redis_client().delete(f"{_TASK_GROUP_KEY_PREFIX}:{_TEST_GROUP_NAME}")
 
 
-def test_count_tasks_is_zero_when_idle():
-    assert get_celery_inspect_service().count_tasks() == 0
-
-
 def test_wait_for_idle_returns_true_when_already_idle():
     assert get_celery_inspect_service().wait_for_idle(timeout=30) is True
 
