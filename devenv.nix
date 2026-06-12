@@ -351,6 +351,9 @@ in
       # the terminal in VScode work (or not ..)
       bashInteractive
 
+      # A.I
+      claude-code
+
       (vscode-with-extensions.override {
         vscodeExtensions =
           with vscode-extensions;
