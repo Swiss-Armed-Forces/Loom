@@ -48,39 +48,6 @@ export interface IsQueuePausedV1QueuesQueueNamePausedGetRequest {
  */
 export class QueuesApi extends runtime.BaseAPI {
     /**
-     * Get All Queues
-     */
-    async getAllQueuesV1QueuesGetRaw(
-        initOverrides?: RequestInit | runtime.InitOverrideFunction,
-    ): Promise<runtime.ApiResponse<{ [key: string]: number }>> {
-        const queryParameters: any = {};
-
-        const headerParameters: runtime.HTTPHeaders = {};
-
-        const response = await this.request(
-            {
-                path: `/v1/queues`,
-                method: "GET",
-                headers: headerParameters,
-                query: queryParameters,
-            },
-            initOverrides,
-        );
-
-        return new runtime.JSONApiResponse<any>(response);
-    }
-
-    /**
-     * Get All Queues
-     */
-    async getAllQueuesV1QueuesGet(
-        initOverrides?: RequestInit | runtime.InitOverrideFunction,
-    ): Promise<{ [key: string]: number }> {
-        const response = await this.getAllQueuesV1QueuesGetRaw(initOverrides);
-        return await response.value();
-    }
-
-    /**
      * Get Completed Estimate
      */
     async getCompletedEstimateV1QueuesQueueNameCompleteEstimateGetRaw(
@@ -191,7 +158,7 @@ export class QueuesApi extends runtime.BaseAPI {
     /**
      * Get Overall Queue Stats
      */
-    async getOverallQueueStatsV1QueuesStatsGetRaw(
+    async getOverallQueueStatsV1QueuesGetRaw(
         initOverrides?: RequestInit | runtime.InitOverrideFunction,
     ): Promise<runtime.ApiResponse<OverallQueuesStats>> {
         const queryParameters: any = {};
@@ -216,11 +183,11 @@ export class QueuesApi extends runtime.BaseAPI {
     /**
      * Get Overall Queue Stats
      */
-    async getOverallQueueStatsV1QueuesStatsGet(
+    async getOverallQueueStatsV1QueuesGet(
         initOverrides?: RequestInit | runtime.InitOverrideFunction,
     ): Promise<OverallQueuesStats> {
         const response =
-            await this.getOverallQueueStatsV1QueuesStatsGetRaw(initOverrides);
+            await this.getOverallQueueStatsV1QueuesGetRaw(initOverrides);
         return await response.value();
     }
 
