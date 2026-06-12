@@ -1,14 +1,39 @@
 #!/usr/bin/env python3
 """Archive format constants and standalone CLI for Loom archives.
 
-This module doubles as a runnable CLI script: it is bundled into every archive as
-``cli.py`` so that users can interact with extracted archives without needing any
-additional tooling beyond a standard Python installation.
+`cli.py` is bundled into every archive and requires only a standard Python
+installation — no extra dependencies needed.
+
+## Usage
+
+### Interactive shell (recommended for exploration)
+
+Run without arguments to enter an interactive REPL:
+
+    python cli.py
+    python cli.py shell
+
+You will see a `loom>` prompt. Type any command and press Enter.
+Type `help` for a command overview, `exit` or press Ctrl-D to quit.
+
+### Standalone commands (for scripting and pipelines)
+
+Pass a command and its arguments directly:
+
+    python cli.py ls
+    python cli.py grep -l report
+    python cli.py x -C /tmp/output docs/
+    python cli.py info report.pdf
+
+Exit codes follow Unix conventions: 0 on success, 1 on no results (`grep`),
+2 on usage/pattern errors.
 """
 
 import argparse
 import fnmatch
 import json
+import re
+import shlex
 import shutil
 import sys
 from collections.abc import Iterable, Iterator
@@ -28,6 +53,7 @@ FILES_INDEX_DIR = "files_index"
 JSON_SUFFIX = ".json"
 ZIP_EXTENSION = ".zip"
 JSON_INDENT = 2
+CLI_DOC: str = __doc__ or ""
 
 # ---------------------------------------------------------------------------
 # CLI — data types
@@ -130,9 +156,7 @@ def cmd_extract(
     else:
         initial_matches = []
         for pattern in args.members:
-            initial_matches.extend(
-                resolve_name(all_entries, pattern, wildcards=args.wildcards)
-            )
+            initial_matches.extend(resolve_name(all_entries, pattern))
         initial_matches = list({e.name: e for e in initial_matches}.values())
 
     final_matches: list[IndexEntry] = []
@@ -210,29 +234,50 @@ def _extract_entry(
         )
 
 
-def cmd_search(args: argparse.Namespace, *, index_dir: Path = FILES_INDEX) -> None:
-    query = args.query.lower()
-    results: list[str] = []
+def _iter_values(data: object, prefix: str = "") -> Iterator[tuple[str, str]]:
+    if isinstance(data, dict):
+        for k, v in data.items():
+            path = f"{prefix}.{k}" if prefix else k
+            yield from _iter_values(v, path)
+    elif isinstance(data, list):
+        for i, v in enumerate(data):
+            yield from _iter_values(v, f"{prefix}[{i}]")
+    elif data is not None:
+        yield (prefix, str(data))
 
-    for meta_path in index_dir.glob("*.json"):
-        raw = meta_path.read_text()
 
-        if query in raw.lower():
-            data = json.loads(raw)
-            name = (
-                data.get("full_name") or data.get("full_path") or data.get("short_name")
-            )
+def cmd_grep(args: argparse.Namespace, *, index_dir: Path = FILES_INDEX) -> None:
+    flags = re.IGNORECASE if args.ignore_case else 0
+    try:
+        pattern = re.compile(args.pattern, flags)
+    except re.error as exc:
+        print(f"grep: invalid pattern: {exc}", file=sys.stderr)
+        sys.exit(2)
 
-            if name:
-                results.append(name)
+    found = False
 
-    found = bool(results)
+    for meta_path in sorted(index_dir.glob("*.json")):
+        with open(meta_path, encoding="utf-8") as f:
+            data = json.load(f)
+        name = data.get("full_name") or data.get("full_path") or data.get("short_name")
+        if not name:
+            continue
 
-    for name in sorted(results):
-        print(name)
+        if args.files_with_matches:
+            for _key_path, value in _iter_values(data):
+                if pattern.search(value):
+                    print(name)
+                    found = True
+                    break
+        else:
+            for key_path, value in _iter_values(data):
+                for line in value.splitlines() or [value]:
+                    if pattern.search(line):
+                        print(f"{name} [{key_path}]: {line}")
+                        found = True
 
     if not found:
-        print(f"No results for '{args.query}'")
+        sys.exit(1)
 
 
 def _print_info(
@@ -389,7 +434,7 @@ def cmd_tree(_args: argparse.Namespace, *, index_dir: Path = FILES_INDEX) -> Non
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Loom archive CLI")
-    subparsers = parser.add_subparsers(dest="command", required=True)
+    subparsers = parser.add_subparsers(dest="command", required=False)
 
     ls_parser = subparsers.add_parser(
         "ls",
@@ -412,7 +457,7 @@ def build_parser() -> argparse.ArgumentParser:
         "members",
         nargs="*",
         metavar="MEMBER",
-        help="Files to extract (path, suffix, or glob if --wildcards); omit to extract all",
+        help="Files to extract (path, suffix, or glob pattern); omit to extract all",
     )
     x_parser.add_argument(
         "-C",
@@ -425,11 +470,6 @@ def build_parser() -> argparse.ArgumentParser:
         "--no-recursion",
         action="store_true",
         help="Do not descend into directories (recursion is on by default)",
-    )
-    x_parser.add_argument(
-        "--wildcards",
-        action="store_true",
-        help="Use glob wildcards when matching member patterns",
     )
     x_parser.add_argument(
         "--exclude",
@@ -459,13 +499,31 @@ def build_parser() -> argparse.ArgumentParser:
         help="Do not extract any metadata (thumbnails, rendered, index.json)",
     )
 
-    search_parser = subparsers.add_parser(
-        "search",
-        help="Search files in the index",
+    grep_parser = subparsers.add_parser(
+        "grep",
+        help="Search archive metadata using a regex pattern",
+        description=(
+            "Search archive metadata using a regex pattern. "
+            "Prints 'name [field.path]: line' for every matching line in a metadata value. "
+            "Use -l to list only filenames. Use -i for case-insensitive matching. "
+            "Exits with code 1 when no matches are found."
+        ),
     )
-    search_parser.add_argument(
-        "query",
-        help="Search string",
+    grep_parser.add_argument(
+        "pattern",
+        help="Regex pattern to search for in metadata values",
+    )
+    grep_parser.add_argument(
+        "-i",
+        "--ignore-case",
+        action="store_true",
+        help="Case-insensitive matching",
+    )
+    grep_parser.add_argument(
+        "-l",
+        "--files-with-matches",
+        action="store_true",
+        help="Only print filenames of entries with at least one match",
     )
 
     info_parser = subparsers.add_parser(
@@ -502,29 +560,86 @@ def build_parser() -> argparse.ArgumentParser:
         help="Show this help message",
     )
 
+    subparsers.add_parser(
+        "shell",
+        help="Start an interactive shell (default when run with no arguments)",
+    )
+
     return parser
 
 
-def main() -> None:
-    parser = build_parser()
-    args = parser.parse_args()
-
-    if args.command == "help":
-        parser.print_help()
-        return
-
+def _dispatch(args: argparse.Namespace) -> None:
     if args.command in ("ls", "list"):
         cmd_ls(args)
     elif args.command in ("x", "extract"):
         cmd_extract(args)
-    elif args.command == "search":
-        cmd_search(args)
+    elif args.command == "grep":
+        cmd_grep(args)
     elif args.command == "info":
         cmd_info(args)
     elif args.command == "tree":
         cmd_tree(args)
     elif args.command == "id":
         cmd_id(args)
+
+
+def cmd_shell(_args: argparse.Namespace) -> None:
+    parser = build_parser()
+    print("Loom archive shell. Type 'help' for available commands, 'exit' to quit.")
+    while True:
+        try:
+            line = input("loom> ").strip()
+        except (EOFError, KeyboardInterrupt):
+            print()
+            break
+
+        if not line:
+            continue
+        if line in ("exit", "quit"):
+            break
+        if line == "help":
+            parser.print_help()
+            continue
+
+        try:
+            tokens = shlex.split(line)
+        except ValueError as exc:
+            print(f"Parse error: {exc}", file=sys.stderr)
+            continue
+
+        try:
+            cmd_args = parser.parse_args(tokens)
+        except SystemExit:
+            # argparse already printed its error; stay in the loop
+            continue
+
+        if cmd_args.command == "shell":
+            print("Already in shell.", file=sys.stderr)
+            continue
+        if cmd_args.command == "help":
+            parser.print_help()
+            continue
+
+        try:
+            _dispatch(cmd_args)
+        except SystemExit:
+            # command errors (e.g. resolve_name calling sys.exit) should not kill the shell
+            pass
+
+
+def main() -> None:
+    parser = build_parser()
+    args = parser.parse_args()
+
+    if args.command is None or args.command == "shell":
+        cmd_shell(args)
+        return
+
+    if args.command == "help":
+        parser.print_help()
+        return
+
+    _dispatch(args)
 
 
 if __name__ == "__main__":
