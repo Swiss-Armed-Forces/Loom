@@ -23,6 +23,7 @@ from stream_zip import ZIP_32, stream_zip
 
 from worker.create_archive.infra.archive_processing_task import ArchiveProcessingTask
 from worker.create_archive.tasks.archive_format import (
+    CLI_DOC,
     CLI_FILENAME,
     FILES_DIR,
     FILES_INDEX_DIR,
@@ -47,7 +48,7 @@ def _readme_content(archive_name: str) -> bytes:
     lbl_index = f"- `{FILES_INDEX_DIR}/`"
     col = max(len(lbl_manifest), len(lbl_cli), len(lbl_files), len(lbl_index))
     cli_help = build_parser().format_help()
-    body = dedent(f"""\
+    header = dedent(f"""\
         # Loom Archive — {archive_name}
 
         This archive was created by Loom.
@@ -62,13 +63,14 @@ def _readme_content(archive_name: str) -> bytes:
         Each `{FILES_INDEX_DIR}/{{id}}{JSON_SUFFIX}` holds the indexed metadata for one file.
         Raw bytes (if available) are stored at `{FILES_DIR}/{{uuid}}`.
 
-        ## CLI
-
-        Run `python {CLI_FILENAME} <command> [args]` from the extracted archive directory.
-
-        ```
         """)
-    return (body + cli_help + "```\n").encode()
+    return (
+        header
+        + CLI_DOC.strip()
+        + "\n\n### Command reference\n\n```\n"
+        + cli_help
+        + "```\n"
+    ).encode()
 
 
 def _collect_lazybytes(model: BaseModel) -> list[FileStorageLazyBytes]:
