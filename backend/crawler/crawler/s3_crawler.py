@@ -93,25 +93,26 @@ class S3Crawler:
                 or datetime.min.replace(tzinfo=timezone.utc),
                 reverse=True,
             )
+            future_to_object = {}
             for obj in objects:
                 if (
-                    obj.object_name
-                    and obj.last_modified
-                    and _ProcessedObject(obj.object_name, obj.last_modified)
-                    not in self.processed_objects
+                    not obj.object_name
+                    or not obj.last_modified
+                    or _ProcessedObject(obj.object_name, obj.last_modified)
+                    in self.processed_objects
                 ):
-                    logger.info("New object detected via polling: %s", obj.object_name)
-                    self.processed_objects.add(
-                        _ProcessedObject(obj.object_name, obj.last_modified)
-                    )
-                    future = self._executor.submit(
-                        self._download_object, obj.object_name
-                    )
-                    future.add_done_callback(
-                        lambda f: (
-                            logger.error("Failed to download object: %s", f.exception())
-                            if f.exception()
-                            else None
-                        )
-                    )
+                    continue
+
+                logger.info("New object detected via polling: %s", obj.object_name)
+                processed_object = _ProcessedObject(obj.object_name, obj.last_modified)
+                future_to_object[
+                    self._executor.submit(self._download_object, obj.object_name)
+                ] = processed_object
+
+            for future, processed_object in future_to_object.items():
+                if exc := future.exception():
+                    logger.error("Failed to download object: %s", exc)
+                else:
+                    self.processed_objects.add(processed_object)
+
             sleep(S3_OBJECT_POLL_INTERVAL_S)

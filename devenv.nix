@@ -290,6 +290,9 @@ in
       pv
       openssl
 
+      # testing
+      bats
+
       # k8s
       minikube
       kubectl
@@ -351,6 +354,9 @@ in
       # the terminal in VScode work (or not ..)
       bashInteractive
 
+      # A.I
+      claude-code
+
       (vscode-with-extensions.override {
         vscodeExtensions =
           with vscode-extensions;
@@ -382,6 +388,7 @@ in
             esbenp.prettier-vscode
 
             timonwong.shellcheck
+            jetmartin.bats
 
             davidanson.vscode-markdownlint
 
@@ -1106,6 +1113,17 @@ in
 
         ./cicd/run_integrationtest.sh \
           "''${@}"
+      )
+    '';
+  };
+
+  scripts.run-bats-integrationtest = {
+    description = "Run BATS integration tests. Extra args are forwarded to bats (e.g. --verbose-run, --print-output-on-failure).";
+    exec = ''
+      (
+        set -euo pipefail
+        cd '${config.devenv.root}'
+        bats "$@" integrationtest/bats/
       )
     '';
   };

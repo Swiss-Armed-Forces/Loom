@@ -35,6 +35,7 @@ class CiContext:
     # Source branch is only meaningful when running in an MR pipeline
     is_mr: bool
     source_branch: str  # empty when not MR
+    source_project_path: Optional[str]  # CI_MERGE_REQUEST_SOURCE_PROJECT_PATH
 
     # User-tunable (CLI-capable)
     project_access_token: Optional[str]
@@ -169,6 +170,7 @@ def build_context(ns: argparse.Namespace) -> CiContext:
         gitlab_user_login=os.getenv("GITLAB_USER_LOGIN"),
         is_mr=is_mr,
         source_branch=source_branch,
+        source_project_path=os.getenv("CI_MERGE_REQUEST_SOURCE_PROJECT_PATH"),
         project_access_token=ns.project_access_token
         or os.getenv("PROJECT_ACCESS_TOKEN"),
         mr_iid=mr_iid,
@@ -355,6 +357,38 @@ def count_consecutive_ci_commits(
         else:
             break
     return count
+
+
+# ----------------------------
+# Fork / cross-project MR helpers
+# ----------------------------
+
+
+def is_cross_project_mr(ctx: CiContext) -> bool:
+    """True when the MR source branch is in a different project (fork MR in upstream context)."""
+    if not ctx.is_mr or not ctx.source_project_path:
+        return False
+    return ctx.source_project_path != ctx.project_path
+
+
+def generate_patch(repo: git.Repo, ctx: CiContext) -> Path:
+    """
+    Stage all unstaged changes, produce a unified diff patch, then unstage.
+    Returns the path of the written patch file.
+    """
+    patch_path = ctx.changed_out_dir / "fork-update.patch"
+    if ctx.dry_run:
+        logging.info("[DRY RUN] Would generate patch at %s", patch_path)
+        return patch_path
+
+    repo.git.add("--all")
+    patch_content = repo.git.diff("--cached", "--binary")
+    repo.git.reset("HEAD")
+
+    patch_path.parent.mkdir(parents=True, exist_ok=True)
+    patch_path.write_text(patch_content, encoding="utf-8")
+    logging.info("Patch written to: %s", patch_path)
+    return patch_path
 
 
 # ----------------------------
@@ -565,6 +599,24 @@ def main(argv: list[str] | None = None) -> int:
     if not unstaged_before:
         logging.info("No changes detected. Nothing to do.")
         return 0
+
+    # Cross-project fork MR: cannot push to the fork; emit patch instead
+    if is_cross_project_mr(ctx):
+        patch_path = generate_patch(repo, ctx)
+        logging.error(
+            "Cannot push generated files to fork branch '%s' (project: %s) "
+            "because this pipeline runs in the upstream project context.\n\n"
+            "  To fix this, download the patch from the job artifacts and apply it:\n\n"
+            "    git apply %s\n"
+            "    git add -A && git commit -m 'chore: update generated files'\n"
+            "    git push\n\n"
+            "  Artifact path: %s",
+            ctx.source_branch,
+            ctx.source_project_path,
+            patch_path,
+            patch_path,
+        )
+        return 1
 
     # Max consecutive CI commits safeguard
     consecutive = count_consecutive_ci_commits(repo, ctx)

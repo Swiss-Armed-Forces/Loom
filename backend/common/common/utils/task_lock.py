@@ -2,6 +2,8 @@ import logging
 from functools import wraps
 from typing import Callable
 
+from redis.exceptions import LockError
+
 from common.dependencies import get_redis_client
 
 logger = logging.getLogger(__name__)
@@ -52,7 +54,16 @@ def task_lock(
             try:
                 return func(*args, **kwargs)
             finally:
-                lock.release()
+                try:
+                    lock.release()
+                except LockError:
+                    # lock expired while the task was running, do not fail the task
+                    logger.warning(
+                        "Task lock %s expired before release "
+                        "(task ran longer than ttl_seconds=%d)",
+                        lock_key,
+                        ttl_seconds,
+                    )
 
         return wrapper
 

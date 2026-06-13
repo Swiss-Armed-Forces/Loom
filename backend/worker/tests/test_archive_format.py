@@ -87,6 +87,29 @@ class TestCliLs:
         assert "docs/report.pdf" not in result.stdout
         assert "images/photo.jpg" not in result.stdout
 
+    def test_glob_matches_across_directories(
+        self,
+        tmp_path: Path,
+        file_storage_service_inmemory: InMemoryFileStorageLazyBytesService,
+    ) -> None:
+        archive_dir = build_archive(
+            tmp_path,
+            simple_entries(
+                {
+                    "a/foo.txt": b"a",
+                    "b/bar.txt": b"b",
+                    "c/img.png": b"c",
+                }
+            ),
+            file_storage_service_inmemory,
+        )
+        result = _run(archive_dir, ["ls", "*.txt"])
+
+        assert result.returncode == 0
+        assert "a/foo.txt" in result.stdout
+        assert "b/bar.txt" in result.stdout
+        assert "c/img.png" not in result.stdout
+
     def test_directory_prefix(
         self,
         tmp_path: Path,
@@ -205,7 +228,7 @@ class TestCliExtract:
             dest / "deep" / "path" / "notes.txt" / "notes.txt"
         ).read_bytes() == b"hello"
 
-    def test_wildcards_glob_pattern(
+    def test_glob_pattern_extracts_matching_files(
         self,
         tmp_path: Path,
         file_storage_service_inmemory: InMemoryFileStorageLazyBytesService,
@@ -217,15 +240,9 @@ class TestCliExtract:
         )
         dest = tmp_path / "out"
 
-        # Without --wildcards, glob pattern is not recognised
-        result_no_wc = _run(archive_dir, ["x", "-C", str(dest), "docs/*.txt"])
-        assert result_no_wc.returncode != 0
+        result = _run(archive_dir, ["x", "-C", str(dest), "*.txt"])
 
-        # With --wildcards, glob pattern works
-        result_wc = _run(
-            archive_dir, ["x", "-C", str(dest), "--wildcards", "docs/*.txt"]
-        )
-        assert result_wc.returncode == 0
+        assert result.returncode == 0
         assert (dest / "docs" / "a.txt" / "a.txt").read_bytes() == b"a"
         assert not (dest / "docs" / "b.md").exists()
 
@@ -425,8 +442,8 @@ class TestCliExtract:
         assert (entry_dir / "report.pdf").exists()
 
 
-class TestCliSearch:
-    def test_finds_match(
+class TestCliGrep:
+    def test_finds_match_shows_field_and_value(
         self,
         tmp_path: Path,
         file_storage_service_inmemory: InMemoryFileStorageLazyBytesService,
@@ -436,12 +453,28 @@ class TestCliSearch:
             simple_entries({"important_doc.txt": b"data"}),
             file_storage_service_inmemory,
         )
-        result = _run(archive_dir, ["search", "important"])
+        result = _run(archive_dir, ["grep", "important"])
 
         assert result.returncode == 0
-        assert "important_doc.txt" in result.stdout
+        assert "important_doc.txt [full_name]: important_doc.txt" in result.stdout
 
-    def test_no_match(
+    def test_keys_not_searched(
+        self,
+        tmp_path: Path,
+        file_storage_service_inmemory: InMemoryFileStorageLazyBytesService,
+    ) -> None:
+        # "full_name" is a JSON key — it should only match if also present as a value
+        archive_dir = build_archive(
+            tmp_path,
+            simple_entries({"report.pdf": b"data"}),
+            file_storage_service_inmemory,
+        )
+        # "full_name" is a key; searching for it should not match (it's not a value)
+        result = _run(archive_dir, ["grep", "^full_name$"])
+
+        assert result.returncode != 0
+
+    def test_no_match_exits_nonzero(
         self,
         tmp_path: Path,
         file_storage_service_inmemory: InMemoryFileStorageLazyBytesService,
@@ -451,10 +484,101 @@ class TestCliSearch:
             simple_entries({"report.pdf": b"data"}),
             file_storage_service_inmemory,
         )
-        result = _run(archive_dir, ["search", "xyzzy_no_match"])
+        result = _run(archive_dir, ["grep", "xyzzy_no_match"])
+
+        assert result.returncode != 0
+        assert result.stdout == ""
+
+    def test_case_sensitive_by_default(
+        self,
+        tmp_path: Path,
+        file_storage_service_inmemory: InMemoryFileStorageLazyBytesService,
+    ) -> None:
+        archive_dir = build_archive(
+            tmp_path,
+            simple_entries({"important_doc.txt": b"data"}),
+            file_storage_service_inmemory,
+        )
+        result = _run(archive_dir, ["grep", "IMPORTANT"])
+
+        assert result.returncode != 0
+
+    def test_ignore_case_flag(
+        self,
+        tmp_path: Path,
+        file_storage_service_inmemory: InMemoryFileStorageLazyBytesService,
+    ) -> None:
+        archive_dir = build_archive(
+            tmp_path,
+            simple_entries({"important_doc.txt": b"data"}),
+            file_storage_service_inmemory,
+        )
+        result = _run(archive_dir, ["grep", "-i", "IMPORTANT"])
 
         assert result.returncode == 0
-        assert "No results" in result.stdout
+        assert "important_doc.txt" in result.stdout
+
+    def test_files_with_matches_flag(
+        self,
+        tmp_path: Path,
+        file_storage_service_inmemory: InMemoryFileStorageLazyBytesService,
+    ) -> None:
+        archive_dir = build_archive(
+            tmp_path,
+            simple_entries({"report.pdf": b"data"}),
+            file_storage_service_inmemory,
+        )
+        result = _run(archive_dir, ["grep", "-l", "report"])
+
+        assert result.returncode == 0
+        assert result.stdout.strip() == "report.pdf"
+        assert "[" not in result.stdout
+
+    def test_regex_pattern(
+        self,
+        tmp_path: Path,
+        file_storage_service_inmemory: InMemoryFileStorageLazyBytesService,
+    ) -> None:
+        archive_dir = build_archive(
+            tmp_path,
+            simple_entries({"report.pdf": b"pdf", "image.jpg": b"img"}),
+            file_storage_service_inmemory,
+        )
+        result = _run(archive_dir, ["grep", r"report\.(pdf|txt)"])
+
+        assert result.returncode == 0
+        assert "report.pdf" in result.stdout
+        assert "image.jpg" not in result.stdout
+
+    def test_invalid_regex_exits_with_error(
+        self,
+        tmp_path: Path,
+        file_storage_service_inmemory: InMemoryFileStorageLazyBytesService,
+    ) -> None:
+        archive_dir = build_archive(
+            tmp_path,
+            simple_entries({"report.pdf": b"data"}),
+            file_storage_service_inmemory,
+        )
+        result = _run(archive_dir, ["grep", "[unclosed"])
+
+        assert result.returncode == 2
+        assert "invalid pattern" in result.stderr
+
+    def test_help_describes_usage(
+        self,
+        tmp_path: Path,
+        file_storage_service_inmemory: InMemoryFileStorageLazyBytesService,
+    ) -> None:
+        archive_dir = build_archive(
+            tmp_path,
+            simple_entries({"report.pdf": b"data"}),
+            file_storage_service_inmemory,
+        )
+        result = _run(archive_dir, ["grep", "--help"])
+
+        assert result.returncode == 0
+        assert "field.path" in result.stdout
 
 
 class TestCliInfo:
@@ -491,6 +615,21 @@ class TestCliInfo:
 
         parsed = json.loads(result.stdout)
         assert parsed["full_name"] == "report.pdf"
+
+    def test_glob_pattern_single_match(
+        self,
+        tmp_path: Path,
+        file_storage_service_inmemory: InMemoryFileStorageLazyBytesService,
+    ) -> None:
+        archive_dir = build_archive(
+            tmp_path,
+            simple_entries({"docs/report.pdf": b"data"}),
+            file_storage_service_inmemory,
+        )
+        result = _run(archive_dir, ["info", "*.pdf"])
+
+        assert result.returncode == 0
+        assert "report.pdf" in result.stdout
 
     def test_ambiguous_suffix_match_errors(
         self,
@@ -648,6 +787,158 @@ class TestCliId:
 
         assert result.returncode != 0
         assert "no file found with id" in result.stderr
+
+
+def _run_shell(archive_dir: Path, commands: str) -> subprocess.CompletedProcess:
+    return subprocess.run(
+        [sys.executable, str(archive_dir / CLI_FILENAME)],
+        input=commands,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+
+class TestCliShell:
+    def test_no_args_launches_shell(
+        self,
+        tmp_path: Path,
+        file_storage_service_inmemory: InMemoryFileStorageLazyBytesService,
+    ) -> None:
+        archive_dir = build_archive(
+            tmp_path,
+            simple_entries({"report.pdf": b"data"}),
+            file_storage_service_inmemory,
+        )
+        result = _run_shell(archive_dir, "exit\n")
+
+        assert result.returncode == 0
+        assert "loom>" in result.stdout
+
+    def test_shell_subcommand_launches_shell(
+        self,
+        tmp_path: Path,
+        file_storage_service_inmemory: InMemoryFileStorageLazyBytesService,
+    ) -> None:
+        archive_dir = build_archive(
+            tmp_path,
+            simple_entries({"report.pdf": b"data"}),
+            file_storage_service_inmemory,
+        )
+        result = subprocess.run(
+            [sys.executable, str(archive_dir / CLI_FILENAME), "shell"],
+            input="exit\n",
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+
+        assert result.returncode == 0
+        assert "loom>" in result.stdout
+
+    def test_shell_ls_lists_files(
+        self,
+        tmp_path: Path,
+        file_storage_service_inmemory: InMemoryFileStorageLazyBytesService,
+    ) -> None:
+        archive_dir = build_archive(
+            tmp_path,
+            simple_entries({"report.pdf": b"data"}),
+            file_storage_service_inmemory,
+        )
+        result = _run_shell(archive_dir, "ls\nexit\n")
+
+        assert result.returncode == 0
+        assert "report.pdf" in result.stdout
+
+    def test_shell_search_finds_file(
+        self,
+        tmp_path: Path,
+        file_storage_service_inmemory: InMemoryFileStorageLazyBytesService,
+    ) -> None:
+        archive_dir = build_archive(
+            tmp_path,
+            simple_entries({"report.pdf": b"data"}),
+            file_storage_service_inmemory,
+        )
+        result = _run_shell(archive_dir, "grep report\nexit\n")
+
+        assert result.returncode == 0
+        assert "report.pdf" in result.stdout
+
+    def test_shell_tree_shows_hierarchy(
+        self,
+        tmp_path: Path,
+        file_storage_service_inmemory: InMemoryFileStorageLazyBytesService,
+    ) -> None:
+        archive_dir = build_archive(
+            tmp_path,
+            simple_entries({"docs/report.pdf": b"pdf", "images/photo.jpg": b"img"}),
+            file_storage_service_inmemory,
+        )
+        result = _run_shell(archive_dir, "tree\nexit\n")
+
+        assert result.returncode == 0
+        assert "docs" in result.stdout
+        assert "images" in result.stdout
+
+    def test_shell_invalid_command_stays_running(
+        self,
+        tmp_path: Path,
+        file_storage_service_inmemory: InMemoryFileStorageLazyBytesService,
+    ) -> None:
+        archive_dir = build_archive(
+            tmp_path,
+            simple_entries({"report.pdf": b"data"}),
+            file_storage_service_inmemory,
+        )
+        result = _run_shell(archive_dir, "invalidcmd\nexit\n")
+
+        assert result.returncode == 0
+
+    def test_shell_error_command_stays_running(
+        self,
+        tmp_path: Path,
+        file_storage_service_inmemory: InMemoryFileStorageLazyBytesService,
+    ) -> None:
+        archive_dir = build_archive(
+            tmp_path,
+            simple_entries({"report.pdf": b"data"}),
+            file_storage_service_inmemory,
+        )
+        result = _run_shell(archive_dir, "ls nonexistent\nexit\n")
+
+        assert result.returncode == 0
+        assert "no file found matching" in result.stderr
+
+    def test_shell_help_prints_help(
+        self,
+        tmp_path: Path,
+        file_storage_service_inmemory: InMemoryFileStorageLazyBytesService,
+    ) -> None:
+        archive_dir = build_archive(
+            tmp_path,
+            simple_entries({"report.pdf": b"data"}),
+            file_storage_service_inmemory,
+        )
+        result = _run_shell(archive_dir, "help\nexit\n")
+
+        assert result.returncode == 0
+        assert "Loom archive CLI" in result.stdout
+
+    def test_shell_eof_exits_cleanly(
+        self,
+        tmp_path: Path,
+        file_storage_service_inmemory: InMemoryFileStorageLazyBytesService,
+    ) -> None:
+        archive_dir = build_archive(
+            tmp_path,
+            simple_entries({"report.pdf": b"data"}),
+            file_storage_service_inmemory,
+        )
+        result = _run_shell(archive_dir, "")
+
+        assert result.returncode == 0
 
 
 # ---------------------------------------------------------------------------
