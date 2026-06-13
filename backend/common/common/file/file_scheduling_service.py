@@ -22,7 +22,6 @@ from common.services.task_scheduling_service import (
     TaskSchedulingService,
     UpdateFileRequest,
 )
-from common.settings import settings
 from common.utils.iterhash import CountingHash, iterhash
 
 logger = logging.getLogger(__name__)
@@ -116,11 +115,6 @@ class FileSchedulingService:
             return deduplicated_file
 
         self._file_repository.save(file)
-
-        if not settings.automatic_indexing:
-            # Clean up lazybytes copy since we won't be indexing
-            self._lazybytes_service.delete(lazybytes_handle)
-            return file
 
         self._task_scheduling_service.index_file(file, lazybytes_handle)
 

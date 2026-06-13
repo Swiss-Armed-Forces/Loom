@@ -1,13 +1,6 @@
 from pydantic import BaseModel
 
 
-class CompleteEstimate(BaseModel):
-    samples_count: int
-    samples_period__s: int
-    estimate_timestamp: int
-
-
-class OverallQueuesStats(BaseModel):
+class QueuesStats(BaseModel):
     messages_in_queues: int
-    complete_estimate_timestamp: int | None
     paused_queues: list[str]

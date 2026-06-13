@@ -16,6 +16,7 @@ from api.routers import (
     beat,
     caching,
     celery_inspect,
+    complete_estimate,
     docs,
     files,
     image_description,
@@ -69,6 +70,11 @@ def init_api(collect_metrics=True) -> FastAPI:
     api.include_router(archives.router, prefix="/v1/archive", tags=["archives"])
     api.include_router(tags.router, prefix="/v1/files/tags", tags=["tags"])
     api.include_router(queues.router, prefix="/v1/queues", tags=["queues"])
+    api.include_router(
+        complete_estimate.router,
+        prefix="/v1/complete-estimate",
+        tags=["complete-estimate"],
+    )
     api.include_router(
         celery_inspect.router,
         prefix="/v1/celery-inspect",

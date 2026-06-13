@@ -22,6 +22,7 @@ from common.file.file_repository import FileRepository
 from common.file.file_scheduling_service import FileSchedulingService
 from common.messages.pubsub_service import PubSubService
 from common.services.celery_inspect_service import CeleryInspectService
+from common.services.complete_estimate_service import CompleteEstimateService
 from common.services.imap_service import IMAPService
 from common.services.lazybytes_service import (
     FileStorageLazyBytesService,
@@ -73,6 +74,7 @@ _llm_embedding_client: OpenAI | None = None
 _llm_tool_client: OpenAI | None = None
 _llm_vision_client: OpenAI | None = None
 _celery_inspect_service: CeleryInspectService | None = None
+_complete_estimate_service: CompleteEstimateService | None = None
 _wipe_service: WipeService | None = None
 
 
@@ -279,6 +281,14 @@ def init(init_elasticsearch_documents: bool = False):
         _celery_app, _queues_service, _redis_client
     )
 
+    global _complete_estimate_service
+    _complete_estimate_service = CompleteEstimateService(
+        _redis_client,
+        _queues_service,
+        _celery_inspect_service,
+        _file_repository,
+    )
+
     global _wipe_service
     _wipe_service = WipeService(
         celery_app=_celery_app,
@@ -398,6 +408,9 @@ def mock_init():
 
     global _celery_inspect_service
     _celery_inspect_service = MagicMock(spec=CeleryInspectService)
+
+    global _complete_estimate_service
+    _complete_estimate_service = MagicMock(spec=CompleteEstimateService)
 
     global _wipe_service
     _wipe_service = MagicMock(spec=WipeService)
@@ -581,6 +594,12 @@ def get_celery_inspect_service() -> CeleryInspectService:
     if _celery_inspect_service is None:
         raise DependencyException("CeleryInspect Service missing")
     return _celery_inspect_service
+
+
+def get_complete_estimate_service() -> CompleteEstimateService:
+    if _complete_estimate_service is None:
+        raise DependencyException("CompleteEstimate service missing")
+    return _complete_estimate_service
 
 
 def get_wipe_service() -> WipeService:

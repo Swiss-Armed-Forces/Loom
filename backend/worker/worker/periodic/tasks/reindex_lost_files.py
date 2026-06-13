@@ -17,9 +17,9 @@ logger = logging.getLogger(__name__)
 
 app = get_celery_app()
 
-MAX_REINDEX_COUNT = 5
 LOST_FILES_QUERY = (
-    f'NOT state:("failed" OR "processed") AND reindex_count:<{MAX_REINDEX_COUNT}'
+    f'NOT state:("failed" OR "processed")'
+    f" AND reindex_count:<{settings.max_reindex_count}"
 )
 
 

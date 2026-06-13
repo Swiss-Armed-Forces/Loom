@@ -203,8 +203,6 @@ class Settings(BaseSettings):
 
     archive_enc_master_key: AESMasterKey | None = None
 
-    automatic_indexing: bool = True
-
     # Indexing throttle settings
     # Max lazybytes storage before throttling new indexing
     throttle_max_lazybytes__bytes: int = 10 * (1024**3)  # 10 GB
@@ -213,6 +211,9 @@ class Settings(BaseSettings):
 
     # Maximum attachment recursion depth. None = unlimited.
     max_recursion_depth: int | None = None
+
+    # Maximum number of times a lost file is reindexed before giving up.
+    max_reindex_count: int = 2
 
     # Memory watermark for memory pressure detection
     # E.g., 0.9 means memory pressure when container uses 90% of memory limit

@@ -5,6 +5,7 @@ apis/ArchivesApi.ts
 apis/BeatApi.ts
 apis/CachingApi.ts
 apis/CeleryInspectApi.ts
+apis/CompleteEstimateApi.ts
 apis/FilesApi.ts
 apis/ImageDescriptionApi.ts
 apis/ImapApi.ts
@@ -28,7 +29,7 @@ models/ArchiveRequest.ts
 models/ArchivesModel.ts
 models/Attachment.ts
 models/CacheStatisticsEntryModel.ts
-models/CompleteEstimate.ts
+models/CompleteEstimateResult.ts
 models/Components.ts
 models/ContextCreateResponse.ts
 models/EncryptionKeyResponse.ts
@@ -63,13 +64,12 @@ models/MessageSubscribe.ts
 models/MessageSubscribeConfirmation.ts
 models/MessageUnsubscribe.ts
 models/MessageUnsubscribeConfirmation.ts
-models/OverallQueuesStats.ts
 models/ProcessQuestionQuery.ts
 models/PubSubMessage.ts
 models/QueryParameters.ts
 models/QueueName.ts
+models/QueuesStats.ts
 models/RenderedFile.ts
-models/ResponseGetCompletedEstimateV1QueuesQueueNameCompleteEstimateGet.ts
 models/Stat.ts
 models/SummarizationRequest.ts
 models/SummarizeFileRequest.ts

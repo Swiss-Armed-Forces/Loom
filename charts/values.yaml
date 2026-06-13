@@ -117,13 +117,13 @@ pipeline:
   uploaded_files_days_before_hidden: null
   imap_folder_days_before_unsubscribe: null
   reindex_lost_files_max_files: null
+  max_reindex_count: null
   skip_summarize_while_indexing: null
   skip_translate_while_indexing: null
   skip_image_description_while_indexing: null
   skip_embedding_while_indexing: null
   skip_auto_tag_file_while_indexing: null
   auto_tag_file_similarity_threshold: null
-  automatic_indexing: true
   throttle_max_lazybytes__bytes: null
   throttle_max_root_tasks: null
   max_recursion_depth: null

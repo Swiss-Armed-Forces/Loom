@@ -49,6 +49,12 @@ def get_beat_schedule() -> dict:
     """
     return {
         # Magic trick: use prime numbers for all */X tasks -> then we will have less conflicts
+        "compute-complete-estimate": {
+            "task": (
+                "worker.periodic.compute_complete_estimate_task.compute_complete_estimate_task"
+            ),
+            "schedule": crontab(minute="*/1"),
+        },
         "flush-on-idle": {
             "task": "worker.periodic.flush_on_idle_task.flush_on_idle_task",
             "schedule": crontab(minute="*/2"),
