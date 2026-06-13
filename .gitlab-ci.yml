@@ -393,6 +393,12 @@ integrationtest_debug:
   rules:
     - when: manual
 
+bats_integrationtest:
+  extends: .default-k8s
+  stage: test
+  script:
+    - devenv shell -- run-bats-integrationtest
+
 # ---------------------------------------------#
 #
 #

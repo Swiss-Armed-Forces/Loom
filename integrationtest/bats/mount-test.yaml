@@ -1,0 +1,47 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: mount-test
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mount-test-pvc
+  namespace: mount-test
+spec:
+  accessModes: [ReadWriteOnce]
+  resources:
+    requests:
+      storage: 128Mi
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: mount-test-writer
+  namespace: mount-test
+spec:
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: writer
+          image: busybox:stable
+          command:
+            - sh
+            - -c
+            - |
+              echo "=== existing files ==="
+              ls -la /data/
+              echo "=== existing log ==="
+              cat /data/mount-test.log 2>/dev/null || echo "(none)"
+              echo "=== appending ==="
+              echo "run at: $(date)" >> /data/mount-test.log
+              cat /data/mount-test.log
+          volumeMounts:
+            - name: data
+              mountPath: /data
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: mount-test-pvc
