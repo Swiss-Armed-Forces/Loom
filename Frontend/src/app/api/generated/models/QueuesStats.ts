@@ -17,68 +17,55 @@ import { mapValues } from "../runtime";
 /**
  *
  * @export
- * @interface OverallQueuesStats
+ * @interface QueuesStats
  */
-export interface OverallQueuesStats {
+export interface QueuesStats {
     /**
      *
      * @type {number}
-     * @memberof OverallQueuesStats
+     * @memberof QueuesStats
      */
     messagesInQueues: number;
     /**
      *
-     * @type {number}
-     * @memberof OverallQueuesStats
-     */
-    completeEstimateTimestamp?: number;
-    /**
-     *
      * @type {Array<string>}
-     * @memberof OverallQueuesStats
+     * @memberof QueuesStats
      */
     pausedQueues: Array<string>;
 }
 
 /**
- * Check if a given object implements the OverallQueuesStats interface.
+ * Check if a given object implements the QueuesStats interface.
  */
-export function instanceOfOverallQueuesStats(value: object): boolean {
+export function instanceOfQueuesStats(value: object): boolean {
     if (!("messagesInQueues" in value)) return false;
     if (!("pausedQueues" in value)) return false;
     return true;
 }
 
-export function OverallQueuesStatsFromJSON(json: any): OverallQueuesStats {
-    return OverallQueuesStatsFromJSONTyped(json, false);
+export function QueuesStatsFromJSON(json: any): QueuesStats {
+    return QueuesStatsFromJSONTyped(json, false);
 }
 
-export function OverallQueuesStatsFromJSONTyped(
+export function QueuesStatsFromJSONTyped(
     json: any,
     ignoreDiscriminator: boolean,
-): OverallQueuesStats {
+): QueuesStats {
     if (json == null) {
         return json;
     }
     return {
         messagesInQueues: json["messages_in_queues"],
-        completeEstimateTimestamp:
-            json["complete_estimate_timestamp"] == null
-                ? undefined
-                : json["complete_estimate_timestamp"],
         pausedQueues: json["paused_queues"],
     };
 }
 
-export function OverallQueuesStatsToJSON(
-    value?: OverallQueuesStats | null,
-): any {
+export function QueuesStatsToJSON(value?: QueuesStats | null): any {
     if (value == null) {
         return value;
     }
     return {
         messages_in_queues: value["messagesInQueues"],
-        complete_estimate_timestamp: value["completeEstimateTimestamp"],
         paused_queues: value["pausedQueues"],
     };
 }

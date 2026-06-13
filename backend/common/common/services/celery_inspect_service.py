@@ -19,6 +19,9 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
+_WAIT_FOR_PROCESSING_IDLE_DEFAULT_TIMEOUT: float = 60 * 10
+_WAIT_FOR_PROCESSING_IDLE_DEFAULT_POLL_INTERVAL: float = 10.0
+
 
 class TaskGroupName(str, Enum):
     PROCESSING = "processing"
@@ -86,8 +89,8 @@ class CeleryInspectService:
 
     def is_idle(
         self,
-        called_from_task: bool = False,
         exclude_tasks: list[str] | None = None,
+        include_tasks: list[str] | None = None,
     ) -> bool:
         # Always exclude terminal queues — they have no consumers and can never be
         # drained by workers, so their message count must not block idle detection.
@@ -95,13 +98,19 @@ class CeleryInspectService:
             self._task_name_to_queue(task_name) for task_name in exclude_tasks or []
         } | {q.name for q in get_terminal_queues()}
         all_counts = self._queues_service.get_all_queue_message_counts()
-        messages_in_queues = sum(
-            count for name, count in all_counts.items() if name not in excluded_queues
-        )
-        if called_from_task:
-            # With task_acks_late=True the running task remains as an unacknowledged
-            # message in its queue until it completes, so subtract that as well.
-            messages_in_queues -= 1
+        if include_tasks is not None:
+            included_queues = {self._task_name_to_queue(name) for name in include_tasks}
+            messages_in_queues = sum(
+                count
+                for name, count in all_counts.items()
+                if name in included_queues and name not in excluded_queues
+            )
+        else:
+            messages_in_queues = sum(
+                count
+                for name, count in all_counts.items()
+                if name not in excluded_queues
+            )
         # RabbitMQ message count (ready + unacknowledged) is the source of truth.
         # With task_acks_late=True every legitimate in-flight task holds an unacked
         # message, so zero messages means no real work is pending. Celery's inspect
@@ -113,8 +122,8 @@ class CeleryInspectService:
         self,
         timeout: float,
         poll_interval: float = 10.0,
-        called_from_task: bool = False,
         exclude_tasks: list[str] | None = None,
+        include_tasks: list[str] | None = None,
     ) -> bool:
         """Poll is_idle() until the system is idle or timeout is reached.
 
@@ -123,14 +132,31 @@ class CeleryInspectService:
         deadline = time.monotonic() + timeout
         while True:
             if self.is_idle(
-                called_from_task=called_from_task,
                 exclude_tasks=exclude_tasks,
+                include_tasks=include_tasks,
             ):
                 return True
             remaining = deadline - time.monotonic()
             if remaining <= 0:
                 return False
             time.sleep(min(poll_interval, remaining))
+
+    def wait_for_processing_idle(
+        self,
+        timeout: float = _WAIT_FOR_PROCESSING_IDLE_DEFAULT_TIMEOUT,
+        poll_interval: float = _WAIT_FOR_PROCESSING_IDLE_DEFAULT_POLL_INTERVAL,
+    ) -> bool:
+        """Poll until all PROCESSING tasks are idle or timeout is reached.
+
+        Periodic tasks are excluded so they never block idle detection. Returns True if
+        idle was reached within the timeout, False otherwise.
+        """
+        processing_tasks = self.get_task_names_in_group(TaskGroupName.PROCESSING.value)
+        return self.wait_for_idle(
+            timeout=timeout,
+            poll_interval=poll_interval,
+            include_tasks=processing_tasks,
+        )
 
     def set_throttled(self, throttled: bool) -> None:
         """Set the system-wide throttle state and pause/resume the DISPATCH task
