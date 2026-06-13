@@ -84,6 +84,7 @@ def parse_ripsecrets_output(output: str) -> list[Secret]:
             secret_entry_parts = line.split(":", 2)
             if len(secret_entry_parts) != 3:
                 raise ValueError("ripsecret output does not contain 3 parts")
+            line_number = int(secret_entry_parts[1])
         except ValueError as ex:
             logger.warning(
                 "Could not parse ripsecrets results line: '%s'", line, exc_info=ex
@@ -92,7 +93,7 @@ def parse_ripsecrets_output(output: str) -> list[Secret]:
 
         secrets.append(
             Secret(
-                line_number=int(secret_entry_parts[1]),
+                line_number=line_number,
                 secret=secret_entry_parts[2],
             )
         )
@@ -106,7 +107,8 @@ def parse_trufflehog_output(output: str) -> list[Secret]:
             data = json.loads(line)
             secret_value = data["Raw"]
             fs_meta = data["SourceMetadata"]["Data"]["Filesystem"]
-            line_number = fs_meta.get("line", None)
+            # trufflehog omits "line" e.g. for binary files
+            line_number = fs_meta.get("line", 0) or 0
         except (json.JSONDecodeError, KeyError) as ex:
             logger.warning(
                 "Could not parse trufflehog results line: '%s'", line, exc_info=ex

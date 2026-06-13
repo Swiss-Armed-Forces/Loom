@@ -142,8 +142,8 @@ def calculate_tag_score(
     for valid_tag in valid_tags:
         logger.info(
             "Candidate tag %s with score %.4f for file %s",
-            valid_tag.score,
             valid_tag.tag,
+            valid_tag.score,
             file_info.short_name,
         )
 
