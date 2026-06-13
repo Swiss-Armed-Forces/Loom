@@ -29,6 +29,7 @@ TRAEFIK_SKAFFOLD_CMD="${SCRIPT_DIR}/traefik/skaffold"
 ONLINE_TEST_URL="https://gitlab.com"
 OFFLINE_IMAGE_TAG="latest"
 CERTIFICATE_SECRET_NAME="self-signed-cert"
+MINIKUBE_HOSTPATH_PROVISIONER_DIR="/var/hostpath-provisioner"
 
 WAIT_MAX_RETRIES=30
 
@@ -51,6 +52,8 @@ KUBELET_SYSTEM_RESERVED_EPHEMERAL="10Gi"
 KUBELET_KUBE_RESERVED_CPU="250m"
 KUBELET_KUBE_RESERVED_EPHEMERAL="5Gi"
 KUBELET_EVICTION_SOFT_GRACE_PERIOD_MEMORY="90s"
+KUBELET_EVICTION_HARD_NODEFS="2Gi"
+KUBELET_EVICTION_HARD_IMAGEFS="2Gi"
 # Set by compute_kubelet_config():
 KUBELET_SYSTEM_RESERVED_MEMORY=""
 KUBELET_KUBE_RESERVED_MEMORY=""
@@ -125,6 +128,7 @@ SKAFFOLD_COMMAND="run"
 SKAFFOLD_CACHE_FILE="${SKAFFOLD_HOME}/cache"
 SKAFFOLD_REMOTE_CACHE_DIR="${SKAFFOLD_HOME}/remote-cache"
 CERTIFICATE=false
+MINIKUBE_MOUNT_STRING=""
 
 # Computed Minikube resources
 MINIKUBE_CPUS=""
@@ -320,6 +324,7 @@ validate_environment() {
     check_command pidwait
     check_command nproc
     check_command awk
+    check_command df
     check_command pkill
     check_command tee
     check_command realpath
@@ -391,6 +396,18 @@ setup_system(){
         sudo sysctl -w "fs.inotify.max_user_instances=${FS_INOTIFY_MAX_INSTANCES}"
         sysctl_changed=true
     fi
+    FS_FILE_MAX=2097152
+    fs_file_max="$(sysctl -n fs.file-max)"
+    if [[ "${fs_file_max}" -lt "${FS_FILE_MAX}" ]]; then
+        sudo sysctl -w "fs.file-max=${FS_FILE_MAX}"
+        sysctl_changed=true
+    fi
+    VM_SWAPPINESS=1
+    vm_swappiness="$(sysctl -n vm.swappiness)"
+    if [[ "${vm_swappiness}" != "${VM_SWAPPINESS}" ]]; then
+        sudo sysctl -w "vm.swappiness=${VM_SWAPPINESS}"
+        sysctl_changed=true
+    fi
     SYSCTL_CONF_FILE="/etc/sysctl.d/99-loom.conf"
     if [[ ! -f "${SYSCTL_CONF_FILE}" ]] || [[ "${sysctl_changed}" = true ]]; then
         sudo tee "${SYSCTL_CONF_FILE}" <<EOF
@@ -398,6 +415,8 @@ vm.max_map_count=${VM_MAX_MAP_COUNT}
 vm.overcommit_memory=${VM_OVERCOMMIT_MEMORY}
 fs.inotify.max_user_watches=${FS_INOTIFY_MAX_WATCHES}
 fs.inotify.max_user_instances=${FS_INOTIFY_MAX_INSTANCES}
+fs.file-max=${FS_FILE_MAX}
+vm.swappiness=${VM_SWAPPINESS}
 EOF
     fi
 }
@@ -493,6 +512,32 @@ compute_kubelet_config() {
         <<< "${awk_result}"
 }
 
+check_mount_string_disk_space() {
+    # Parse e.g. "2Gi" into KiB for comparison with df -k output
+    local threshold_str="${KUBELET_EVICTION_HARD_NODEFS}"
+    local threshold_kib
+    threshold_kib="$(awk -v t="${threshold_str}" 'BEGIN {
+        val = t + 0
+        unit = substr(t, length(t)-1)
+        if (unit == "Gi") val = val * 1024 * 1024
+        else if (unit == "Mi") val = val * 1024
+        else if (unit == "Ki") val = val
+        print int(val)
+    }')"
+
+    local avail_kib
+    avail_kib="$(df -k "${MINIKUBE_MOUNT_STRING}" | awk 'NR==2 { print $4 }')"
+
+    if (( avail_kib < threshold_kib )); then
+        local avail_gib
+        avail_gib="$(awk -v k="${avail_kib}" 'BEGIN { printf("%.1f", k/1024/1024) }')"
+        echo >&2 "[!] --mount-string path '${MINIKUBE_MOUNT_STRING}' is on a filesystem with only ${avail_gib} GiB free."
+        echo >&2 "[!] At least ${threshold_str} is required (kubelet eviction threshold)."
+        echo >&2 "[!] Please free up disk space or choose a path on a less-full filesystem."
+        exit 1
+    fi
+}
+
 create_cluster(){
     echo "[*] Minikube resources:"
     echo "[*]   Host CPU reserve: ${MINIKUBE_HOST_CPU_RESERVE_CORES} -> using: ${MINIKUBE_CPUS}"
@@ -503,6 +548,20 @@ create_cluster(){
     echo "[*]   eviction-hard:   memory.available<${KUBELET_EVICTION_HARD_MEMORY}"
     echo "[*]   eviction-soft:   memory.available<${KUBELET_EVICTION_SOFT_MEMORY} (grace: ${KUBELET_EVICTION_SOFT_GRACE_PERIOD_MEMORY})"
 
+    local mount_args=()
+    local addons="metrics-server,csi-hostpath-driver"
+    if [[ -n "${MINIKUBE_MOUNT_STRING}" ]]; then
+        check_mount_string_disk_space
+        # With --mount-string we use the standard storage-provisioner (deterministic
+        # paths keyed by namespace/pvc-name) instead of CSI (random UUID paths).
+        # This allows PVC data to survive a full cluster rebuild as long as the host
+        # directory is preserved.
+        addons="metrics-server"
+        mount_args=(
+            "--mount-string=${MINIKUBE_MOUNT_STRING}:${MINIKUBE_HOSTPATH_PROVISIONER_DIR}"
+        )
+    fi
+
     minikube start \
         --driver docker \
         --wait all \
@@ -510,16 +569,21 @@ create_cluster(){
         --memory "${MINIKUBE_MEMORY_KIB}" \
         --cpus "${MINIKUBE_CPUS}" \
         --cni calico \
-        --addons metrics-server,csi-hostpath-driver \
+        --addons "${addons}" \
         --extra-config="kubelet.system-reserved=cpu=${KUBELET_SYSTEM_RESERVED_CPU},memory=${KUBELET_SYSTEM_RESERVED_MEMORY},ephemeral-storage=${KUBELET_SYSTEM_RESERVED_EPHEMERAL}" \
         --extra-config="kubelet.kube-reserved=cpu=${KUBELET_KUBE_RESERVED_CPU},memory=${KUBELET_KUBE_RESERVED_MEMORY},ephemeral-storage=${KUBELET_KUBE_RESERVED_EPHEMERAL}" \
-        --extra-config="kubelet.eviction-hard=memory.available<${KUBELET_EVICTION_HARD_MEMORY},nodefs.available<10%,imagefs.available<10%" \
+        --extra-config="kubelet.eviction-hard=memory.available<${KUBELET_EVICTION_HARD_MEMORY},nodefs.available<${KUBELET_EVICTION_HARD_NODEFS},imagefs.available<${KUBELET_EVICTION_HARD_IMAGEFS}" \
         --extra-config="kubelet.eviction-soft=memory.available<${KUBELET_EVICTION_SOFT_MEMORY}" \
         --extra-config="kubelet.eviction-soft-grace-period=memory.available=${KUBELET_EVICTION_SOFT_GRACE_PERIOD_MEMORY}" \
-        --gpus "${GPUS}"
+        --gpus "${GPUS}" \
+        "${mount_args[@]}"
 }
 
 default_use_csi-hostpath-driver(){
+    if [[ -n "${MINIKUBE_MOUNT_STRING}" ]]; then
+        # storage-provisioner is already the default; nothing to do.
+        return
+    fi
     minikube addons disable storage-provisioner
     minikube addons disable default-storageclass
 
@@ -775,6 +839,7 @@ usage(){
     echo "  -c|--certificate CERT KEY             install certificate (CERT) with key (KEY)"
     echo "  --minikube-host-cpu-reserve N         reserve N CPU cores on the host (default: ${MINIKUBE_HOST_CPU_RESERVE_CORES})"
     echo "  --minikube-host-mem-reserve-kib KiB   reserve KiB of RAM on the host (default: ${MINIKUBE_HOST_MEM_RESERVE_KIB})"
+    echo "  --mount-string PATH                   mount host PATH into minikube for persistent PVC storage; switches from CSI (UUID-based) to storage-provisioner (namespace/pvc-name paths) so data survives cluster rebuilds"
     echo "  --delete                              delete the deployment after startup"
     echo "  --skip-STEP                           skip step STEP"
 }
@@ -840,6 +905,11 @@ while [[ $# -gt 0 ]]; do
         --minikube-host-mem-reserve-kib)
             shift
             MINIKUBE_HOST_MEM_RESERVE_KIB="${1?Missing reserve memory KiB value (e.g. 512000)}"
+            shift
+        ;;
+        --mount-string)
+            shift
+            MINIKUBE_MOUNT_STRING="${1?Missing host path for --mount-string (e.g. /mnt/loom-data)}"
             shift
         ;;
         --delete)
