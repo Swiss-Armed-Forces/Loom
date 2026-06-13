@@ -28,6 +28,10 @@ def kde_filter_highest_cluster(
 
     sorted_items = sorted(items, key=get_score)
 
+    # constant scores form a single cluster and break silverman bandwidth estimation
+    if get_score(sorted_items[0]) == get_score(sorted_items[-1]):
+        return items
+
     # fit kernel density
     reshaped_scores = array([get_score(t) for t in sorted_items]).reshape(-1, 1)
     kde = KernelDensity(bandwidth="silverman").fit(reshaped_scores)

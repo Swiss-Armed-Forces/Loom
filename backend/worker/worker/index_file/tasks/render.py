@@ -318,7 +318,7 @@ def render_office_to_pdf_task(
         try:
             response = route.run()
         except HTTPStatusError:
-            logger.warning("Unable to render pdf in libretranslate", exc_info=True)
+            logger.warning("Unable to render pdf in libreoffice", exc_info=True)
             return None
         pdf_lazy = get_lazybytes_service().from_bytes(response.content)
         return pdf_lazy

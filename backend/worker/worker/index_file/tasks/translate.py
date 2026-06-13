@@ -101,7 +101,7 @@ def translate_detect_language_task(
 
         # Do not attempt detecting languages if the text just consists of
         # whitespace characters
-        if len(text.strip()) < 0:
+        if len(text.strip()) <= 0:
             return text_lazy, None
 
         detected_languages = translate_detect_language(text)
