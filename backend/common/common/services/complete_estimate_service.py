@@ -79,9 +79,11 @@ class CompleteEstimateService:
         now = time.time()
         current_pending = self._get_pending_work()
 
-        _lp = self._redis.get(_KEY_FILES_PENDING)
-        _lt = self._redis.get(_KEY_LAST_TIMESTAMP)
-        _pe = self._redis.get(_KEY_EMA_THROUGHPUT)
+        pipe = self._redis.pipeline()
+        pipe.get(_KEY_FILES_PENDING)
+        pipe.get(_KEY_LAST_TIMESTAMP)
+        pipe.get(_KEY_EMA_THROUGHPUT)
+        _lp, _lt, _pe = pipe.execute()
         last_pending: int | None = int(_lp) if _lp is not None else None
         last_ts: float | None = float(_lt) if _lt is not None else None
         prev_ema: float | None = float(_pe) if _pe is not None else None
@@ -103,7 +105,9 @@ class CompleteEstimateService:
         self._redis.set(_KEY_FILES_PENDING, current_pending)
         self._redis.set(_KEY_LAST_TIMESTAMP, now)
         if new_ema is not None:
-            self._redis.set(_KEY_EMA_THROUGHPUT, new_ema)
+            self._redis.set(_KEY_EMA_THROUGHPUT, max(0.0, new_ema))
+        if current_pending == 0:
+            self._redis.delete(_KEY_EMA_THROUGHPUT)
         if estimate_ts is not None:
             self._redis.set(_KEY_ESTIMATE_TS, estimate_ts)
         else:
@@ -120,7 +124,10 @@ class CompleteEstimateService:
         """Return the last cached estimate and files_pending count from Redis."""
         _et = self._redis.get(_KEY_ESTIMATE_TS)
         _fp = self._redis.get(_KEY_FILES_PENDING)
+        estimate_ts = int(_et) if _et is not None else None
+        if estimate_ts is not None and estimate_ts < int(time.time()):
+            estimate_ts = None
         return CompleteEstimateResult(
-            estimate_timestamp=int(_et) if _et is not None else None,
+            estimate_timestamp=estimate_ts,
             files_pending=int(_fp) if _fp is not None else None,
         )

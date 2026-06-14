@@ -172,6 +172,17 @@ export const BackgroundStatusIndicator: FC = () => {
         );
     };
 
+    const getEstimateBadgeLabel = (): string | undefined => {
+        const ts = completeEstimate.estimateTimestamp;
+        if (ts == null) return undefined;
+        const remaining = ts - Date.now() / 1000;
+        if (remaining < 60 * 5) return "<5m";
+        if (remaining < 60 * 60 * 3) return `${Math.ceil(remaining / 60)}m`;
+        if (remaining < 60 * 60 * 52)
+            return `${Math.ceil(remaining / (60 * 60))}h`;
+        return `${Math.ceil(remaining / (60 * 60 * 24))}d`;
+    };
+
     const getActiveSpinnerTooltip = () => {
         const completeEstimateTimestamp = completeEstimate.estimateTimestamp;
         let estimatedTimeAddition = "";
@@ -226,7 +237,7 @@ export const BackgroundStatusIndicator: FC = () => {
             {queueStatistics.messagesInQueues > 0 && (
                 <Tooltip title={getActiveSpinnerTooltip()}>
                     <Badge
-                        badgeContent={queueStatistics.messagesInQueues}
+                        badgeContent={getEstimateBadgeLabel()}
                         color="primary"
                     >
                         {queueStatistics.pausedQueues.length > 0 ? (

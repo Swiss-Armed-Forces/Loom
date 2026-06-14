@@ -123,6 +123,7 @@ def test_is_idle_returns_true_when_no_messages(
 ):
     queues_service: Any = get_queues_service()
     queues_service.get_all_queue_message_counts.return_value = {}
+    queues_service.get_delayed_queue_message_count.return_value = 0
 
     assert celery_inspect_service.is_idle() is True
 
@@ -132,6 +133,7 @@ def test_is_idle_returns_false_when_messages_pending(
 ):
     queues_service: Any = get_queues_service()
     queues_service.get_all_queue_message_counts.return_value = {"loom:some.task": 1}
+    queues_service.get_delayed_queue_message_count.return_value = 0
 
     assert celery_inspect_service.is_idle() is False
 
@@ -145,6 +147,7 @@ def test_is_idle_include_tasks_only_counts_included_queues(
         "loom:worker.processing_task": 0,
         "loom:worker.periodic_task": 1,
     }
+    queues_service.get_delayed_queue_message_count.return_value = 0
 
     assert (
         celery_inspect_service.is_idle(include_tasks=["worker.processing_task"]) is True
@@ -159,6 +162,7 @@ def test_is_idle_include_tasks_returns_false_when_included_queue_has_messages(
         "loom:worker.processing_task": 2,
         "loom:worker.periodic_task": 1,
     }
+    queues_service.get_delayed_queue_message_count.return_value = 0
 
     assert (
         celery_inspect_service.is_idle(include_tasks=["worker.processing_task"])
@@ -173,8 +177,34 @@ def test_is_idle_include_tasks_empty_list_is_always_idle(
     queues_service.get_all_queue_message_counts.return_value = {
         "loom:worker.some_task": 99,
     }
+    queues_service.get_delayed_queue_message_count.return_value = 0
 
     assert celery_inspect_service.is_idle(include_tasks=[]) is True
+
+
+def test_is_idle_returns_false_when_delayed_queue_has_messages(
+    celery_inspect_service: CeleryInspectService,
+):
+    queues_service: Any = get_queues_service()
+    queues_service.get_all_queue_message_counts.return_value = {}
+    queues_service.get_delayed_queue_message_count.return_value = 1
+
+    assert celery_inspect_service.is_idle() is False
+
+
+def test_is_idle_include_tasks_returns_false_when_delayed_queue_has_messages(
+    celery_inspect_service: CeleryInspectService,
+):
+    queues_service: Any = get_queues_service()
+    queues_service.get_all_queue_message_counts.return_value = {
+        "loom:worker.processing_task": 0,
+    }
+    queues_service.get_delayed_queue_message_count.return_value = 1
+
+    assert (
+        celery_inspect_service.is_idle(include_tasks=["worker.processing_task"])
+        is False
+    )
 
 
 def test_register_task_groups_persists_to_redis(
