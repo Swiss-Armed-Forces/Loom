@@ -7,9 +7,11 @@ import {
 import { UUIDTypes, v4 as uuidv4 } from "uuid";
 
 import {
+    CompleteEstimateResult,
+    fetchCompleteEstimate as fetchCompleteEstimateApi,
     fetchCount,
-    fetchOverallQueueStatistics,
-    OverallQueuesStats,
+    fetchQueueStats,
+    QueuesStats,
 } from "@app/api";
 import { RootState } from "@app/store";
 import { FileDetailTab } from "@features/common/utils/enums";
@@ -25,7 +27,8 @@ export const DefaultErrorMessage =
 
 export interface CommonState {
     loading: number;
-    queueStats: OverallQueuesStats;
+    queueStats: QueuesStats;
+    completeEstimate: CompleteEstimateResult;
     dialogs: DialogComponent[];
     lastFileDetailTab: FileDetailTab;
 }
@@ -33,9 +36,9 @@ const initialState: CommonState = {
     loading: 0,
     queueStats: {
         messagesInQueues: 0,
-        completeEstimateTimestamp: undefined,
         pausedQueues: [],
     },
+    completeEstimate: {},
     dialogs: [],
     lastFileDetailTab: FileDetailTab.Rendered,
 };
@@ -51,7 +54,14 @@ export const loadConfigAsync = createAsyncThunk(
 export const fetchQueueStatistics = createAsyncThunk(
     "fetchQueueStatistics",
     async () => {
-        return await fetchOverallQueueStatistics();
+        return await fetchQueueStats();
+    },
+);
+
+export const fetchCompleteEstimate = createAsyncThunk(
+    "fetchCompleteEstimate",
+    async () => {
+        return await fetchCompleteEstimateApi();
     },
 );
 
@@ -104,6 +114,9 @@ export const commonSlice = createSlice({
         builder.addCase(fetchQueueStatistics.fulfilled, (state, action) => {
             state.queueStats = action.payload;
         });
+        builder.addCase(fetchCompleteEstimate.fulfilled, (state, action) => {
+            state.completeEstimate = action.payload;
+        });
         builder
             .addCase(loadConfigAsync.pending, (state) => {
                 state.loading += 1;
@@ -136,6 +149,11 @@ export const selectIsLoading = createSelector(
 export const selectQueuesStatistics = createSelector(
     selectCommon,
     (common) => common.queueStats,
+);
+
+export const selectCompleteEstimate = createSelector(
+    selectCommon,
+    (common) => common.completeEstimate,
 );
 
 export const selectDialogs = createSelector(

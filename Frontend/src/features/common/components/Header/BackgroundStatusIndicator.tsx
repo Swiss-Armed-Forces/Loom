@@ -16,7 +16,9 @@ import { toast } from "react-toastify";
 
 import { useAppSelector } from "@app/hooks";
 import {
+    fetchCompleteEstimate,
     fetchQueueStatistics,
+    selectCompleteEstimate,
     selectQueuesStatistics,
 } from "@app/slices/commonSlice";
 import {
@@ -39,6 +41,7 @@ const CONTENT_TRUNCATED_FILES_POLL_INTERVAL_MS = 180_000;
 const ATTACHMENTS_SKIPPED_FILES_POLL_INTERVAL_MS = 180_000;
 const FAILED_FILES_POLL_INTERVAL_MS = 180_000;
 const QUEUE_STATISTICS_POLL_INTERVAL_MS = 10_000;
+const COMPLETE_ESTIMATE_POLL_INTERVAL_MS = 60_000;
 
 export const QUERY_FILES_NOT_PROCESSED =
     "NOT state:processed AND NOT state:failed";
@@ -68,6 +71,7 @@ export const BackgroundStatusIndicator: FC = () => {
     );
     const failedBackgroundTaskCount = useAppSelector(selectFailedFilesCount);
     const queueStatistics = useAppSelector(selectQueuesStatistics);
+    const completeEstimate = useAppSelector(selectCompleteEstimate);
     const { t } = useTranslation();
     const dispatch = useDispatch<AppDispatch>();
 
@@ -78,6 +82,7 @@ export const BackgroundStatusIndicator: FC = () => {
                 dispatch(fetchAttachmentsSkippedFiles()),
                 dispatch(fetchFailedFiles()),
                 dispatch(fetchQueueStatistics()),
+                dispatch(fetchCompleteEstimate()),
             ]).catch((errorPayload) => {
                 toast.error(`Error in load: ${errorPayload}`);
             });
@@ -118,11 +123,20 @@ export const BackgroundStatusIndicator: FC = () => {
             });
         }, QUEUE_STATISTICS_POLL_INTERVAL_MS);
 
+        const completeEstimateInterval = setInterval(async () => {
+            await dispatch(fetchCompleteEstimate()).catch((errorPayload) => {
+                toast.error(
+                    `Error in completeEstimateInterval: ${errorPayload}`,
+                );
+            });
+        }, COMPLETE_ESTIMATE_POLL_INTERVAL_MS);
+
         return () => {
             clearInterval(contentTruncatedFilesInterval);
             clearInterval(attachmentsSkippedFilesInterval);
             clearInterval(failedFilesInterval);
             clearInterval(queueStatisticsInterval);
+            clearInterval(completeEstimateInterval);
         };
     }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -159,8 +173,7 @@ export const BackgroundStatusIndicator: FC = () => {
     };
 
     const getActiveSpinnerTooltip = () => {
-        const completeEstimateTimestamp =
-            queueStatistics.completeEstimateTimestamp;
+        const completeEstimateTimestamp = completeEstimate.estimateTimestamp;
         let estimatedTimeAddition = "";
         if (completeEstimateTimestamp != undefined) {
             const nowTimestamp = new Date().getTime() / 1000;

@@ -136,16 +136,45 @@ def test_is_idle_returns_false_when_messages_pending(
     assert celery_inspect_service.is_idle() is False
 
 
-def test_is_idle_called_from_task_subtracts_own_message(
+def test_is_idle_include_tasks_only_counts_included_queues(
     celery_inspect_service: CeleryInspectService,
 ):
     queues_service: Any = get_queues_service()
-    # Only the calling task's own unacked message is in the queue
+    # PROCESSING queue has 0 messages, but a periodic task queue has 1
     queues_service.get_all_queue_message_counts.return_value = {
-        "loom:worker.periodic.flush_on_idle_task.flush_on_idle_task": 1
+        "loom:worker.processing_task": 0,
+        "loom:worker.periodic_task": 1,
     }
 
-    assert celery_inspect_service.is_idle(called_from_task=True) is True
+    assert (
+        celery_inspect_service.is_idle(include_tasks=["worker.processing_task"]) is True
+    )
+
+
+def test_is_idle_include_tasks_returns_false_when_included_queue_has_messages(
+    celery_inspect_service: CeleryInspectService,
+):
+    queues_service: Any = get_queues_service()
+    queues_service.get_all_queue_message_counts.return_value = {
+        "loom:worker.processing_task": 2,
+        "loom:worker.periodic_task": 1,
+    }
+
+    assert (
+        celery_inspect_service.is_idle(include_tasks=["worker.processing_task"])
+        is False
+    )
+
+
+def test_is_idle_include_tasks_empty_list_is_always_idle(
+    celery_inspect_service: CeleryInspectService,
+):
+    queues_service: Any = get_queues_service()
+    queues_service.get_all_queue_message_counts.return_value = {
+        "loom:worker.some_task": 99,
+    }
+
+    assert celery_inspect_service.is_idle(include_tasks=[]) is True
 
 
 def test_register_task_groups_persists_to_redis(

@@ -30,6 +30,7 @@ from worker.index_file import (
     update_file_task,
 )
 from worker.periodic import (
+    compute_complete_estimate_task,
     flush_on_idle_task,
     hide_periodically_task,
     reindex_lost_files_on_idle_task,
@@ -57,6 +58,7 @@ tasks = [
     update_file_task,
     summarize_file_task,
     translate_file_task,
+    compute_complete_estimate_task,
     flush_on_idle_task,
     shrink_periodically_task,
     process_question_task,

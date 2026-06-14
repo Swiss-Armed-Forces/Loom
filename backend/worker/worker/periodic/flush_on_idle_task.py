@@ -89,12 +89,11 @@ def flush_on_idle_task(self: PeriodicTask):
         # Throttle: set system flag and pause dispatch consumers
         inspect.set_throttled(True)
 
-    # Wait for idle EXCLUDING dispatch tasks (they are throttled while flushing)
-    if not inspect.wait_for_idle(
+    # Wait for idle considering only PROCESSING tasks. Periodic tasks (including
+    # this one) and dispatch tasks are excluded so they never block idle detection.
+    if not inspect.wait_for_processing_idle(
         timeout=_WAIT_FOR_IDLE_TIMEOUT_SECONDS,
         poll_interval=_WAIT_FOR_IDLE_POLL_INTERVAL_SECONDS,
-        called_from_task=True,
-        exclude_tasks=inspect.get_throttled_tasks(),
     ):
         logger.info("Celery not idle: timed out waiting for idle")
         return None

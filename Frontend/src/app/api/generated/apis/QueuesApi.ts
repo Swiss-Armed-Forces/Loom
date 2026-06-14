@@ -16,24 +16,17 @@
 import * as runtime from "../runtime";
 import type {
     HTTPValidationError,
-    OverallQueuesStats,
     QueueName,
-    ResponseGetCompletedEstimateV1QueuesQueueNameCompleteEstimateGet,
+    QueuesStats,
 } from "../models/index";
 import {
     HTTPValidationErrorFromJSON,
     HTTPValidationErrorToJSON,
-    OverallQueuesStatsFromJSON,
-    OverallQueuesStatsToJSON,
     QueueNameFromJSON,
     QueueNameToJSON,
-    ResponseGetCompletedEstimateV1QueuesQueueNameCompleteEstimateGetFromJSON,
-    ResponseGetCompletedEstimateV1QueuesQueueNameCompleteEstimateGetToJSON,
+    QueuesStatsFromJSON,
+    QueuesStatsToJSON,
 } from "../models/index";
-
-export interface GetCompletedEstimateV1QueuesQueueNameCompleteEstimateGetRequest {
-    queueName: QueueName;
-}
 
 export interface GetMessageCountV1QueuesQueueNameMessageCountGetRequest {
     queueName: QueueName;
@@ -77,61 +70,6 @@ export class QueuesApi extends runtime.BaseAPI {
         initOverrides?: RequestInit | runtime.InitOverrideFunction,
     ): Promise<{ [key: string]: number }> {
         const response = await this.getAllQueuesV1QueuesGetRaw(initOverrides);
-        return await response.value();
-    }
-
-    /**
-     * Get Completed Estimate
-     */
-    async getCompletedEstimateV1QueuesQueueNameCompleteEstimateGetRaw(
-        requestParameters: GetCompletedEstimateV1QueuesQueueNameCompleteEstimateGetRequest,
-        initOverrides?: RequestInit | runtime.InitOverrideFunction,
-    ): Promise<
-        runtime.ApiResponse<ResponseGetCompletedEstimateV1QueuesQueueNameCompleteEstimateGet>
-    > {
-        if (requestParameters["queueName"] == null) {
-            throw new runtime.RequiredError(
-                "queueName",
-                'Required parameter "queueName" was null or undefined when calling getCompletedEstimateV1QueuesQueueNameCompleteEstimateGet().',
-            );
-        }
-
-        const queryParameters: any = {};
-
-        const headerParameters: runtime.HTTPHeaders = {};
-
-        const response = await this.request(
-            {
-                path: `/v1/queues/{queue_name}/complete_estimate`.replace(
-                    `{${"queue_name"}}`,
-                    encodeURIComponent(String(requestParameters["queueName"])),
-                ),
-                method: "GET",
-                headers: headerParameters,
-                query: queryParameters,
-            },
-            initOverrides,
-        );
-
-        return new runtime.JSONApiResponse(response, (jsonValue) =>
-            ResponseGetCompletedEstimateV1QueuesQueueNameCompleteEstimateGetFromJSON(
-                jsonValue,
-            ),
-        );
-    }
-
-    /**
-     * Get Completed Estimate
-     */
-    async getCompletedEstimateV1QueuesQueueNameCompleteEstimateGet(
-        requestParameters: GetCompletedEstimateV1QueuesQueueNameCompleteEstimateGetRequest,
-        initOverrides?: RequestInit | runtime.InitOverrideFunction,
-    ): Promise<ResponseGetCompletedEstimateV1QueuesQueueNameCompleteEstimateGet> {
-        const response =
-            await this.getCompletedEstimateV1QueuesQueueNameCompleteEstimateGetRaw(
-                requestParameters,
-                initOverrides,
-            );
         return await response.value();
     }
 
@@ -193,7 +131,7 @@ export class QueuesApi extends runtime.BaseAPI {
      */
     async getOverallQueueStatsV1QueuesStatsGetRaw(
         initOverrides?: RequestInit | runtime.InitOverrideFunction,
-    ): Promise<runtime.ApiResponse<OverallQueuesStats>> {
+    ): Promise<runtime.ApiResponse<QueuesStats>> {
         const queryParameters: any = {};
 
         const headerParameters: runtime.HTTPHeaders = {};
@@ -209,7 +147,7 @@ export class QueuesApi extends runtime.BaseAPI {
         );
 
         return new runtime.JSONApiResponse(response, (jsonValue) =>
-            OverallQueuesStatsFromJSON(jsonValue),
+            QueuesStatsFromJSON(jsonValue),
         );
     }
 
@@ -218,7 +156,7 @@ export class QueuesApi extends runtime.BaseAPI {
      */
     async getOverallQueueStatsV1QueuesStatsGet(
         initOverrides?: RequestInit | runtime.InitOverrideFunction,
-    ): Promise<OverallQueuesStats> {
+    ): Promise<QueuesStats> {
         const response =
             await this.getOverallQueueStatsV1QueuesStatsGetRaw(initOverrides);
         return await response.value();
