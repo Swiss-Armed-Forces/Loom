@@ -13,6 +13,7 @@ RABBITMQ_MANAGEMENT_REQUEST_TIMEOUT = 30  # in seconds
 QUEUES_NAME_REGEX = rf"^{settings.celery_queue_name_prefix}.*$"
 
 PAUSED_QUEUES_SET_KEY = "paused_queues_index"
+CELERY_DELAYED_QUEUE_PREFIX = "celery_delayed"
 
 
 class QueuesService:
@@ -43,7 +44,10 @@ class QueuesService:
         queue_name: str | None = None,
     ) -> int:
         if queue_name is None:
-            return sum(self.get_all_queue_message_counts().values())
+            return (
+                sum(self.get_all_queue_message_counts().values())
+                + self.get_delayed_queue_message_count()
+            )
         api_endpoint = f"api/queues/{quote('/', safe='')}/{quote(queue_name, safe='')}"
         params: Dict[str, Union[int, str]] = {
             "columns": "messages",
@@ -69,6 +73,19 @@ class QueuesService:
             for q in response.json()
             if q["name"].startswith(prefix)
         }
+
+    def get_delayed_queue_message_count(self) -> int:
+        response: Response = requests.get(
+            self.__rabbit_mq_management_host + "api/queues/%2F",
+            params={"columns": "name,messages"},
+            timeout=RABBITMQ_MANAGEMENT_REQUEST_TIMEOUT,
+        )
+        response.raise_for_status()
+        return sum(
+            int(q.get("messages", 0))
+            for q in response.json()
+            if q["name"].startswith(CELERY_DELAYED_QUEUE_PREFIX)
+        )
 
     def purge_queue(self, queue_name: str) -> None:
         response: Response = requests.delete(

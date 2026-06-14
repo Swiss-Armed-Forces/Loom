@@ -15,7 +15,6 @@ from common.services.complete_estimate_service import (
     _KEY_EMA_THROUGHPUT,
     _KEY_ESTIMATE_TS,
     _KEY_FILES_PENDING,
-    _KEY_LAST_TIMESTAMP,
     CompleteEstimateService,
 )
 from common.services.query_builder import QueryParameters
@@ -74,7 +73,7 @@ def test_compute_and_store_first_tick(service: CompleteEstimateService):
     file_repository.count_by_query.return_value = 100
 
     # No previous state in Redis
-    redis.get.return_value = None
+    redis.pipeline.return_value.execute.return_value = [None, None, None]
 
     service.compute_and_store()
 
@@ -99,16 +98,11 @@ def test_compute_and_store_second_tick_produces_estimate(
     now = time.time()
 
     # Simulate previous tick: 100 pending, 60 seconds ago, no EMA yet
-    def redis_get_side_effect(key: str):
-        if key == _KEY_FILES_PENDING:
-            return b"100"
-        if key == _KEY_LAST_TIMESTAMP:
-            return str(now - 60).encode()
-        if key == _KEY_EMA_THROUGHPUT:
-            return None
-        return None
-
-    redis.get.side_effect = redis_get_side_effect
+    redis.pipeline.return_value.execute.return_value = [
+        b"100",
+        str(now - 60).encode(),
+        None,
+    ]
 
     service.compute_and_store()
 
@@ -122,7 +116,7 @@ def test_compute_and_store_second_tick_produces_estimate(
     redis.delete.assert_not_called()
 
 
-def test_compute_and_store_no_progress_clears_estimate(
+def test_compute_and_store_idle_clears_estimate_and_ema(
     service: CompleteEstimateService,
 ):
     redis: Any = get_redis_client()
@@ -133,33 +127,67 @@ def test_compute_and_store_no_progress_clears_estimate(
     celery_inspect.get_task_names_in_group.return_value = []
     queues_service.get_all_queue_message_counts.return_value = {}
     file_repository.open_point_in_time.return_value = "pit-id"
-    file_repository.count_by_query.return_value = 100  # same as before → no progress
+    file_repository.count_by_query.return_value = 0  # all work done → idle
 
     now = time.time()
 
-    def redis_get_side_effect(key: str):
-        if key == _KEY_FILES_PENDING:
-            return b"100"
-        if key == _KEY_LAST_TIMESTAMP:
-            return str(now - 60).encode()
-        if key == _KEY_EMA_THROUGHPUT:
-            return b"0.0"
-        return None
-
-    redis.get.side_effect = redis_get_side_effect
+    redis.pipeline.return_value.execute.return_value = [
+        b"10",
+        str(now - 60).encode(),
+        b"0.1",
+    ]
 
     service.compute_and_store()
 
-    # EMA converges toward 0, estimate should be cleared
-    redis.delete.assert_called_once_with(_KEY_ESTIMATE_TS)
+    # Both EMA and estimate_ts must be cleared when system goes idle
+    deleted_keys = {call.args[0] for call in redis.delete.call_args_list}
+    assert _KEY_EMA_THROUGHPUT in deleted_keys
+    assert _KEY_ESTIMATE_TS in deleted_keys
+
+
+def test_compute_and_store_negative_ema_clamped_to_zero(
+    service: CompleteEstimateService,
+):
+    redis: Any = get_redis_client()
+    queues_service: Any = get_queues_service()
+    celery_inspect: Any = get_celery_inspect_service()
+    file_repository: Any = get_file_repository()
+
+    celery_inspect.get_task_names_in_group.return_value = []
+    queues_service.get_all_queue_message_counts.return_value = {}
+    file_repository.open_point_in_time.return_value = "pit-id"
+    file_repository.count_by_query.return_value = (
+        120  # more than before → negative rate
+    )
+
+    now = time.time()
+
+    # Previous tick: 100 files, positive EMA
+    redis.pipeline.return_value.execute.return_value = [
+        b"100",
+        str(now - 60).encode(),
+        b"0.5",
+    ]
+
+    service.compute_and_store()
+
+    # Negative rate blends into EMA; clamped value stored must be >= 0
+    ema_set_calls = [
+        call for call in redis.set.call_args_list if call.args[0] == _KEY_EMA_THROUGHPUT
+    ]
+    assert len(ema_set_calls) == 1
+    stored_ema = ema_set_calls[0].args[1]
+    assert stored_ema >= 0.0
 
 
 def test_get_cached_result_returns_values(service: CompleteEstimateService):
     redis: Any = get_redis_client()
 
+    future_ts = int(time.time()) + 300  # 5 minutes in the future
+
     def redis_get_side_effect(key: str):
         if key == _KEY_ESTIMATE_TS:
-            return b"9999"
+            return str(future_ts).encode()
         if key == _KEY_FILES_PENDING:
             return b"42"
         return None
@@ -168,7 +196,7 @@ def test_get_cached_result_returns_values(service: CompleteEstimateService):
 
     result = service.get_cached_result()
 
-    assert result.estimate_timestamp == 9999
+    assert result.estimate_timestamp == future_ts
     assert result.files_pending == 42
 
 
@@ -180,3 +208,25 @@ def test_get_cached_result_returns_none_when_empty(service: CompleteEstimateServ
 
     assert result.estimate_timestamp is None
     assert result.files_pending is None
+
+
+def test_get_cached_result_returns_none_for_past_timestamp(
+    service: CompleteEstimateService,
+):
+    redis: Any = get_redis_client()
+
+    past_ts = int(time.time()) - 300  # 5 minutes in the past
+
+    def redis_get_side_effect(key: str):
+        if key == _KEY_ESTIMATE_TS:
+            return str(past_ts).encode()
+        if key == _KEY_FILES_PENDING:
+            return b"10"
+        return None
+
+    redis.get.side_effect = redis_get_side_effect
+
+    result = service.get_cached_result()
+
+    assert result.estimate_timestamp is None
+    assert result.files_pending == 10

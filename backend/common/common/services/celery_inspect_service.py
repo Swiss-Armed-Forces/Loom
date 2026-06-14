@@ -111,6 +111,12 @@ class CeleryInspectService:
                 for name, count in all_counts.items()
                 if name not in excluded_queues
             )
+        # Also include messages sitting in Celery's native delayed-delivery queues
+        # (celery_delayed_*). These are broker-internal TTL queues used when a task
+        # calls self.retry(countdown=N). They do not carry the loom: prefix so they
+        # are invisible to get_all_queue_message_counts(). Including them prevents a
+        # false-idle signal while a retry countdown is in progress.
+        messages_in_queues += self._queues_service.get_delayed_queue_message_count()
         # RabbitMQ message count (ready + unacknowledged) is the source of truth.
         # With task_acks_late=True every legitimate in-flight task holds an unacked
         # message, so zero messages means no real work is pending. Celery's inspect
