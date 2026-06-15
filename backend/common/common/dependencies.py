@@ -5,6 +5,7 @@ from unittest.mock import AsyncMock, MagicMock
 import urllib3
 from celery import Celery
 from elasticsearch import Elasticsearch
+from elasticsearch.dsl.connections import create_connection
 from libretranslatepy import LibreTranslateAPI
 from minio import Minio
 from openai import OpenAI
@@ -17,7 +18,6 @@ from common.archive.archive_encryption_service import ArchiveEncryptionService
 from common.archive.archive_repository import ArchiveRepository
 from common.archive.archive_scheduling_service import ArchiveSchedulingService
 from common.celery_app import BaseTask, init_celery_app
-from common.elasticsearch import init_elasticsearch
 from common.file.file_repository import FileRepository
 from common.file.file_scheduling_service import FileSchedulingService
 from common.messages.pubsub_service import PubSubService
@@ -82,7 +82,7 @@ logger = logging.getLogger(__name__)
 
 
 # pylint: disable=too-many-statements
-def init(init_elasticsearch_documents: bool = False):
+def init():
     # pylint: disable=global-statement
     logger.info("Initialize common dependencies")
 
@@ -114,10 +114,12 @@ def init(init_elasticsearch_documents: bool = False):
     _pubsub_service = PubSubService(_redis_client, _redis_client_async)
 
     global _elasticsearch
-    _elasticsearch = init_elasticsearch(
-        _query_builder,
-        _pubsub_service,
-        init_elasticsearch_documents,
+    _elasticsearch = create_connection(
+        hosts=[
+            # pylint: disable=no-member
+            f"{settings.es_host.scheme}://{settings.es_host.host}:{settings.es_host.port}"
+        ],
+        request_timeout=settings.es_timeout,
     )
 
     global _file_storage_service
