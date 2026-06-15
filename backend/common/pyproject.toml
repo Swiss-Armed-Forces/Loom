@@ -30,7 +30,7 @@ types-redis = "4.6.0.20241004"
 openai = "1.72.0"
 # Using a patched fork until https://github.com/mjs/imapclient/pull/641 is merged and released,
 # at which point this should be reverted to a plain version pin: imapclient = "<version>"
-imapclient = {git = "https://github.com/736-c41-2c1-e464fc974/imapclient.git", branch = "bugfix/3.14-compatibility-IMAP4.file-read-only"}
+imapclient = {git = "https://github.com/736-c41-2c1-e464fc974/imapclient.git", rev = "ee967b861ec7b71854372fe7a20a5adc01b2d6aa"}
 
 [tool.poetry.group.test.dependencies]
 #

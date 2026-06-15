@@ -1,5 +1,6 @@
 import logging
 import random
+import re
 from abc import ABC
 from collections.abc import Callable
 from datetime import datetime, timedelta
@@ -219,17 +220,41 @@ class XDeathHeader(RootModel[list[XDeathEntry]]):
         return len(self.root)
 
 
+# Kombu NDL routing key format: 28 binary digits separated by dots, then a dot,
+# then the original routing key.  Example (countdown=3):
+#   "0000000000000000000000000011.loom:my_task"
+# Each retry through NDL prepends another 56-character prefix, so after ~4
+# retries the routing key exceeds AMQP's 255-byte shortstr limit and Celery
+# raises struct.error.  We strip the prefix in BaseTask.__call__ so that
+# signature_from_request() always copies the original routing key into the
+# next retry message.
+_NDL_ROUTING_KEY_RE = re.compile(r"^[01](?:\.[01]){27}\.(.+)$")
+
+
 class BaseTask(ABC, Task):
     def __call__(self, *args, **kwargs) -> None:
         headers = getattr(self.request, "headers", {}) or {}
 
-        # x-death is an AMQP 0.9.1 header set by RabbitMQ when a message is dead-lettered.
+        x_death = XDeathHeader.model_validate(headers.get("x-death", []))
+
+        # Remove x-death from headers before calling run(). Celery's retry() copies
+        # self.request.headers into each new retry message; without removal, celery_delayed_N
+        # entries accumulate across NDL retries and interfere with RabbitMQ's x-delivery-count
+        # tracking. Removing x-death entirely is safe: RabbitMQ ignores x-death on published
+        # messages and sets its own on dead-lettering.
+        headers.pop("x-death", None)
+        x_death = XDeathHeader(
+            root=[d for d in x_death.root if not d.queue.startswith("celery_delayed")]
+        )
+
+        # Strip NDL routing key prefix from delivery_info so that retry()
+        # publishes a clean routing key instead of a growing binary prefix chain.
+        delivery_info = getattr(self.request, "delivery_info", {}) or {}
+        if m := _NDL_ROUTING_KEY_RE.match(delivery_info.get("routing_key", "")):
+            delivery_info["routing_key"] = m.group(1)
+
         # Raise DeadTask only when the message has previously been dead-lettered out of
         # the graveyard queue — i.e. it already went through graveyard processing.
-        # We cannot use a simple count because Native Delayed Delivery also adds one
-        # x-death entry per TTL level traversed (e.g. a 3s countdown passes through
-        # celery_delayed_0 and celery_delayed_1, producing two entries).
-        x_death = XDeathHeader.model_validate(headers.get("x-death", []))
         graveyard_queue = (
             f"{settings.celery_queue_name_prefix}{settings.celery_graveyard_task_name}"
         )
@@ -659,7 +684,7 @@ def register_tasks_for_package(app: Celery, package: str):
     random.shuffle(app.conf.task_queues)
 
 
-def register_persister_shard_queues(app: "Celery[Any]"):
+def register_persister_shard_queues(app: "Celery[Any]") -> None:
     """Declare persister shard queues and add them to task_queues.
 
     Must be called only by PERSISTER workers. Shard queue routes are already registered

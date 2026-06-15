@@ -25,6 +25,7 @@
     "integrationtest/tests/auto_tag_test.py::TestAutoTag::test_no_auto_tag": 82.79621431499254,
     "integrationtest/tests/auto_tag_test.py::TestAutoTag::test_single_auto_tag[filetag0]": 19.033009088991093,
     "integrationtest/tests/auto_tag_test.py::TestAutoTag::test_single_auto_tag[filetag1]": 10.368734835006762,
+    "integrationtest/tests/autoretry_exhaustion_test.py::test_autoretry_exhaustion_does_not_send_to_graveyard_or_abyss": 17.539468563976698,
     "integrationtest/tests/caching_test.py::test_caching": 28.203776025009574,
     "integrationtest/tests/canvas_test.py::test_raise_exception[worker.test.canvas_test_task.test_self_replace_complex_canvas1]": 3.7810601969904383,
     "integrationtest/tests/canvas_test.py::test_raise_exception[worker.test.canvas_test_task.test_self_replace_raise_exception]": 4.441478549000749,
