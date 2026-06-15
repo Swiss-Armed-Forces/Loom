@@ -583,7 +583,7 @@ celery = {version = "5.5.3", extras = ["redis"]}
 celery-types = "0.24.0"
 elasticsearch = "9.2.1"
 fastapi = "0.128.8"
-imapclient = {git = "https://github.com/736-c41-2c1-e464fc974/imapclient.git", branch = "bugfix/3.14-compatibility-IMAP4.file-read-only"}
+imapclient = {git = "https://github.com/736-c41-2c1-e464fc974/imapclient.git", rev = "ee967b861ec7b71854372fe7a20a5adc01b2d6aa"}
 libretranslatepy = "2.1.4"
 luqum = "0.14.0"
 openai = "1.72.0"
@@ -991,7 +991,7 @@ doc = ["sphinx"]
 type = "git"
 url = "https://github.com/736-c41-2c1-e464fc974/imapclient.git"
 reference = "bugfix/3.14-compatibility-IMAP4.file-read-only"
-resolved_reference = "d87a08ca52dfd2d21f50785ca6395ccc7aaf985f"
+resolved_reference = "ee967b861ec7b71854372fe7a20a5adc01b2d6aa"
 
 [[package]]
 name = "importlib-metadata"
