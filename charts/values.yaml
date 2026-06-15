@@ -224,6 +224,21 @@ globalHttpRedirect:
   # environment: production
   # team: infrastructure
 
+esInit:
+  # Set to true on a deploy to migrate all ES indexes to the current schema.
+  # Runs reindex() on each repository (backup -> delete -> recreate -> copy data).
+  # Reset to false after the migration deploy to avoid re-running on subsequent deploys.
+  recreateSchema: false
+  image:
+    tag: ""
+  resources:
+    requests:
+      cpu: "0.5"
+      memory: "500Mi"
+    limits:
+      cpu: "1"
+      memory: "2Gi"
+
 api:
   replicaCount: 1
   priorityClass: null

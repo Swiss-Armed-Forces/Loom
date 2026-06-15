@@ -8,8 +8,8 @@ from minio import Minio
 from redis import StrictRedis
 
 from common.celery_app import BaseTask
-from common.elasticsearch import init_elasticsearch
 from common.messages.pubsub_service import PubSubService
+from common.models.es_repository import ES_REPOSITORY_TYPES
 from common.services.celery_inspect_service import CeleryInspectService
 from common.services.imap_service import IMAPService
 from common.services.lazybytes_service import LazyBytesService
@@ -93,7 +93,10 @@ class WipeService:
         with allow_destructive_without_name():
             self._elasticsearch.indices.delete(index="*")
 
-        init_elasticsearch(self._query_builder, self._pubsub_service, True)
+        for repository_type in ES_REPOSITORY_TYPES:
+            repository_type(
+                query_builder=self._query_builder, pubsub_service=self._pubsub_service
+            ).init()
 
         # Using this would be faster, but doesn't fully work :(
         # self._elasticsearch.delete_by_query(index="*", body={"query": {"match_all": {}}})

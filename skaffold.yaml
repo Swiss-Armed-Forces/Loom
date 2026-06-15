@@ -296,10 +296,11 @@ manifests:
           - charts/values.yaml
           - charts/values-overwrites.yaml
         setValueTemplates:
-          # Skaffold's post-renderer does not process Helm hook resources, so the alpine image
-          # tag used by pre-install hook Jobs must be injected explicitly via setValueTemplates.
+          # Skaffold's post-renderer does not process Helm hook resources, so image tags used
+          # by hook Jobs must be injected explicitly via setValueTemplates.
           # See: https://github.com/GoogleContainerTools/skaffold/issues/7989
           preInstall.image.tag: "{{or .IMAGE_TAG_registry_gitlab_com_swiss_armed_forces_cyber_command_cea_loom_alpine \"\"}}"
+          esInit.image.tag: "{{or .IMAGE_TAG_registry_gitlab_com_swiss_armed_forces_cyber_command_cea_loom_api \"\"}}"
 
 # Minimal profiles - only overrides
 profiles:
