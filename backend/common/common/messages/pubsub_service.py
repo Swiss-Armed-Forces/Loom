@@ -41,7 +41,7 @@ class _PubSubAsync:
         return self
 
     async def close(self):
-        await self._pubsub_client.close()
+        await self._pubsub_client.aclose()
 
     async def publish_message(self, message: PubSubMessage) -> int:
         """Publish ``message`` Returns the number of subscribers the message was

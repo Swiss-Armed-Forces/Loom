@@ -55,7 +55,7 @@ async def test_open_async():
     redis_pubsub_client = AsyncMock(spec=PubSub)
     redis_pubsub_client.get_message = AsyncMock()
     redis_pubsub_client.subscribe = AsyncMock()
-    redis_pubsub_client.close = AsyncMock()
+    redis_pubsub_client.aclose = AsyncMock()
 
     redis_client_async = get_redis_client_async()
     redis_client_async.pubsub.return_value = redis_pubsub_client
@@ -68,7 +68,7 @@ async def test_open_async():
         pass
 
     redis_pubsub_client.subscribe.assert_called_once()
-    redis_pubsub_client.close.assert_called_once()
+    redis_pubsub_client.aclose.assert_called_once()
 
 
 @pytest.mark.asyncio
