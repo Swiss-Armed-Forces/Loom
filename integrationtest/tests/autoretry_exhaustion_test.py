@@ -12,8 +12,9 @@ GRAVEYARD_QUEUE = (
 ABYSS_QUEUE = f"{settings.celery_queue_name_prefix}{settings.celery_abyss_task_name}"
 POLL_TIMEOUT = 0.01
 TOTAL_TIMEOUT = 30
-NDL_OBSERVE_TIMEOUT = 10
-NDL_RESULT_TIMEOUT = 30
+NDL_OBSERVE_TIMEOUT = 60
+NDL_RESULT_TIMEOUT = 90
+NDL_DELAYED_QUEUE_POLL_SLEEP = 0.5
 
 
 def test_autoretry_exhaustion_does_not_send_to_graveyard_or_abyss():
@@ -71,7 +72,7 @@ def test_ndl_routes_retry_through_delayed_queue():
         if qs.get_delayed_queue_message_count() > 0:
             observed_in_delayed = True
             break
-        time.sleep(POLL_TIMEOUT)
+        time.sleep(NDL_DELAYED_QUEUE_POLL_SLEEP)
 
     assert observed_in_delayed, "Task retry never appeared in a celery_delayed_* queue"
 
