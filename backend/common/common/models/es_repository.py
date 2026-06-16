@@ -48,6 +48,8 @@ logger = logging.getLogger(__name__)
 # I didn't find a way to disable the timeout. None and False
 # does not work...
 INDEX_OPERATION_TIMEOUT = "9999d"
+INDEX_CLOSE_TIMEOUT_S = 60
+INDEX_CLOSE_POLL_INTERVAL_S = 0.5
 DEFAULT_PAGE_SIZE = 10
 
 
@@ -694,20 +696,58 @@ class BaseEsRepository(
         search.params(refresh=True).delete()
 
     def init(self):
-        # make sure the index is closed before initialization
+        with self._temporarily_closed_index():
+            # set settings before initializing
+            self._index.settings(
+                query={"default_field": self._document_type.get_default_fields()}
+            )
+            # initialize
+            self._document_type.init(using=self._elasticsearch)
+
+    @contextmanager
+    def _temporarily_closed_index(self) -> Generator[None, None, None]:
+        """Close the index for the duration of the block, reopening it afterwards.
+
+        Guarantees the index is reopened even if an exception is raised inside the
+        block.
+
+        This is a workaround for a gap in elasticsearch-py's Index.save(): it uses the
+        old close-manually -> put_settings -> open-manually pattern instead of the
+        put_settings(reopen=True) API introduced in ES 8.12, which handles the
+        close/update/open atomically. Without closing the index first, ES rejects
+        put_settings with non-dynamic settings (e.g. analysis) on open indices with a
+        BadRequestError. There is currently no upstream issue or PR tracking this in
+        elastic/elasticsearch-py.
+        """
         if self._index.exists(using=self._elasticsearch) and not self._index.is_closed(
             using=self._elasticsearch
         ):
-            self._index.close(using=self._elasticsearch)
-        # set settings before initializing
-        self._index.settings(
-            query={"default_field": self._document_type.get_default_fields()}
-        )
-        # initialize
-        self._document_type.init(using=self._elasticsearch)
-        # after initialization: open the index
+            self._close_index_blocking()
+        try:
+            yield
+        finally:
+            self._open_index_blocking()
+
+    def _close_index_blocking(self) -> None:
+        """Close the index, polling until cluster state confirms it is closed.
+
+        Falls back to polling is_closed() if shards_acknowledged is False in the close
+        response. Note: the semantics of shards_acknowledged for indices.close() are not
+        clearly documented by Elasticsearch.
+        """
+        close_response = self._index.close(using=self._elasticsearch)
+        if not close_response.get("shards_acknowledged", True):
+            deadline = time.time() + INDEX_CLOSE_TIMEOUT_S
+            while not self._index.is_closed(using=self._elasticsearch):
+                if time.time() > deadline:
+                    raise TimeoutError(
+                        f"Index {self._index_name!r} did not close within timeout"
+                    )
+                time.sleep(INDEX_CLOSE_POLL_INTERVAL_S)
+
+    def _open_index_blocking(self) -> None:
+        """Open the index and wait until it is healthy."""
         self._index.open(using=self._elasticsearch)
-        # Wait for the init operation to complete
         self._elasticsearch.cluster.health(
             index=self._index_name,
             wait_for_status="green",
