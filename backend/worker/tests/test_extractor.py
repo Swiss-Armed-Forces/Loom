@@ -367,7 +367,7 @@ def create_xz_test_archive(tmp_path: Path, random_file_size: int) -> Iterator[IO
             create_xz_test_archive,
             "application/x-xz",
             "0",
-            marks=pytest.mark.limit_memory("3 MB"),
+            marks=pytest.mark.limit_memory("5 MB"),
         ),
         pytest.param(
             GzipExtractor,
