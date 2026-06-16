@@ -28,9 +28,26 @@ spec:
       securityContext:
         seccompProfile:
           type: RuntimeDefault
+      initContainers:
+        - name: check-elasticsearch-ready
+          image: {{ .Values.image.registry }}/{{ .Values.esInit.initContainer.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) .Values.esInit.initContainer.image.tag }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command:
+            - 'sh'
+            - '-c'
+            - |
+              set -eu
+
+              until nc -vz {{ include "app.fullname" . }}-elasticsearch {{ .Values.elasticsearch.service.port }}; do
+                echo "Waiting for elasticsearch service";
+                sleep 1;
+              done;
+          {{- if .Values.esInit.initContainer.resources }}
+          resources: {{- toYaml .Values.esInit.initContainer.resources | nindent 12 }}
+          {{- end }}
       containers:
         - name: init-elasticsearch
-          image: {{ .Values.image.registry }}/{{ .Values.api.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) .Values.esInit.image.tag }}
+          image: {{ .Values.image.registry }}/{{ .Values.esInit.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) .Values.esInit.image.tag }}
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           command:
             - python
