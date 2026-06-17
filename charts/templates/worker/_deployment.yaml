@@ -58,6 +58,7 @@ spec:
           envFrom:
             - configMapRef:
                 name: {{ include "app.fullname" . }}-settings
+            {{- with include "app.externalSecrets.envFrom" . }}{{ . | nindent 12 }}{{- end }}
           {{- if $values.command }}
           command: {{- toYaml $values.command | nindent 10 }}
           {{- else }}

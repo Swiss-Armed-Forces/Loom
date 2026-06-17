@@ -37,6 +37,91 @@ certificate:
     name: null
   requireClientCert: false
 
+externalSecrets:
+  refreshInterval: "1h"
+  secretStoreRef:
+    name: secret-vault
+    kind: SecretStore
+  # Per-secret External Secrets Operator configuration. Each entry corresponds to
+  # one env var that can be sourced from a Vault-backed K8s Secret instead of the
+  # settings ConfigMap. Set enabled: true and fill in remoteRef to activate.
+  # The key is the env var name injected into pods; name is the K8s Secret that
+  # ESO will create; remoteRef.key is the path in the secret store (e.g. Vault),
+  # remoteRef.property is the sub-key within that path.
+  secrets:
+    file_storage__access_key:
+      enabled: false
+      name: loom-file-storage-access-key
+      remoteRef:
+        key: ""
+        property: ""
+    file_storage__secret_key:
+      enabled: false
+      name: loom-file-storage-secret-key
+      remoteRef:
+        key: ""
+        property: ""
+    lazybytes_storage__access_key:
+      enabled: false
+      name: loom-lazybytes-storage-access-key
+      remoteRef:
+        key: ""
+        property: ""
+    lazybytes_storage__secret_key:
+      enabled: false
+      name: loom-lazybytes-storage-secret-key
+      remoteRef:
+        key: ""
+        property: ""
+    intake_storage__access_key:
+      enabled: false
+      name: loom-intake-storage-access-key
+      remoteRef:
+        key: ""
+        property: ""
+    intake_storage__secret_key:
+      enabled: false
+      name: loom-intake-storage-secret-key
+      remoteRef:
+        key: ""
+        property: ""
+    llm__embedding__api_key:
+      enabled: false
+      name: loom-llm-embedding-api-key
+      remoteRef:
+        key: ""
+        property: ""
+    llm__tool__api_key:
+      enabled: false
+      name: loom-llm-tool-api-key
+      remoteRef:
+        key: ""
+        property: ""
+    llm__summarization__api_key:
+      enabled: false
+      name: loom-llm-summarization-api-key
+      remoteRef:
+        key: ""
+        property: ""
+    llm__hyde__api_key:
+      enabled: false
+      name: loom-llm-hyde-api-key
+      remoteRef:
+        key: ""
+        property: ""
+    llm__rerank__api_key:
+      enabled: false
+      name: loom-llm-rerank-api-key
+      remoteRef:
+        key: ""
+        property: ""
+    llm__chat__api_key:
+      enabled: false
+      name: loom-llm-chat-api-key
+      remoteRef:
+        key: ""
+        property: ""
+
 ingress: &default-ingress-config
   enabled: true
   className: traefik
