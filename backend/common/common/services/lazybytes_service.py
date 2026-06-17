@@ -341,8 +341,6 @@ class S3LazyBytesService(LazyBytesService[_Tag]):
         file_like = data
         if not hasattr(data, "read"):
             file_like = FileLikeStream(data)
-        if not self._client.bucket_exists(self._bucket):
-            self._client.make_bucket(self._bucket)
         self._client.put_object(
             self._bucket,
             str(id_),
@@ -355,8 +353,6 @@ class S3LazyBytesService(LazyBytesService[_Tag]):
         return id_
 
     def _store_at_id(self, data: IO[bytes], service_id: Any) -> None:
-        if not self._client.bucket_exists(self._bucket):
-            self._client.make_bucket(self._bucket)
         self._client.put_object(
             self._bucket,
             str(service_id),
