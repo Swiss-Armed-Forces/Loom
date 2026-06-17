@@ -49,7 +49,6 @@ def init():
             _register_task_info_persister(repo_type)
         _tasks_registered = True
 
-    # Always reinit HTTP clients (fork-unsafe)
     global _tika_service
     _tika_service = TikaService(
         common_dependencies.get_lazybytes_service(),
@@ -61,7 +60,7 @@ def init():
 
     global _gotenberg_client
     _gotenberg_client = GotenbergClient(
-        str(settings.gotenberg_host), timeout=settings.gotenberg_timeout
+        str(settings.gotenberg_host), timeout=settings.gotenberg_timeout_seconds
     )
 
     global _seaweedfs_shell_service

@@ -197,7 +197,7 @@ intakeStorage:
     connectionPoolSize: null
 
 pipeline:
-  taskTimeLimitSeconds: 86400  # 24h
+  task_time_limit_seconds: null
   lazy_threshold_bytes: null
   uploaded_files_days_before_hidden: null
   imap_folder_days_before_unsubscribe: null
@@ -214,6 +214,7 @@ pipeline:
   max_recursion_depth: null
   tika_ocr_languages: null
   tika_timeout_seconds: null
+  imagemagick_timeout_seconds: null
   celery_queue_name_prefix: null
   celery_deliver_limit: null
   celery_graveyard_deliver_limit: null

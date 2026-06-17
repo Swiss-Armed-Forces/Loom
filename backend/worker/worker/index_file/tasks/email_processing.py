@@ -13,7 +13,7 @@ from common.file.file_repository import (
     ImapInfo,
 )
 from common.services.lazybytes_service import TempLazyBytes
-from httpx import HTTPStatusError
+from httpx import HTTPStatusError, TimeoutException
 from pydantic import BaseModel
 from requests.exceptions import ConnectionError as RequestsConnectionError
 
@@ -43,6 +43,9 @@ EMAIL_RENDER_EXPRESSION_JAVASCRIPT = """
 
 RSPAMD_MAX_RETRIES = 15
 RSPAMD_RETRY_EXCEPTIONS = (RequestsConnectionError,)
+
+GOTENBERG_MAX_RETRIES = 15
+GOTENBERG_RETRY_EXCEPTIONS = (TimeoutException,)
 
 
 def signature(file_content: TempLazyBytes, file: File) -> Signature:
@@ -199,7 +202,12 @@ class RenderEmailReturn(BaseModel):
     imap_info: ImapInfo
 
 
-@app.task(base=FileIndexingTask)
+@app.task(
+    base=FileIndexingTask,
+    autoretry_for=GOTENBERG_RETRY_EXCEPTIONS,
+    max_retries=GOTENBERG_MAX_RETRIES,
+    retry_backoff=True,
+)
 def render_email_to_image(
     imap_info: ImapInfo | None,
 ) -> RenderEmailReturn | None:
@@ -223,7 +231,12 @@ def render_email_to_image(
         return RenderEmailReturn(rendered_content=lazy_bytes, imap_info=imap_info)
 
 
-@app.task(base=FileIndexingTask)
+@app.task(
+    base=FileIndexingTask,
+    autoretry_for=GOTENBERG_RETRY_EXCEPTIONS,
+    max_retries=GOTENBERG_MAX_RETRIES,
+    retry_backoff=True,
+)
 def render_email_to_pdf(
     imap_info: ImapInfo | None,
 ) -> RenderEmailReturn | None:

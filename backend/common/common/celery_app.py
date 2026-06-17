@@ -40,6 +40,9 @@ logger = logging.getLogger(__name__)
 # regardless of its name, with no pattern to maintain.
 _ALTERNATE_EXCHANGE_TYPE = "fanout"
 
+# Fraction of task_time_limit_seconds used as the Celery soft time limit (see below).
+_SOFT_TIME_LIMIT_RATIO = 0.98
+
 
 def get_beat_schedule() -> dict:
     """Return the Celery Beat schedule configuration.
@@ -488,10 +491,13 @@ def init_celery_app() -> "Celery[BaseTask]":  # pylint: disable=too-many-stateme
     # a few tasks.
     app.conf.worker_prefetch_multiplier = 1
 
-    # We do set only the soft time limit here, for a hard time limit we use
-    # RabbitMQ consumer_timeout to rely on the task being re-delived to a different
-    # worker.
-    app.conf.task_soft_time_limit = int(settings.task_time_limit__seconds * 0.98)
+    # We set only the soft time limit here; for a hard time limit we rely on
+    # RabbitMQ's consumer_timeout to redeliver the task to a different worker.
+    # The soft limit fires slightly before consumer_timeout, giving the
+    # SoftTimeLimitExceeded handler time to clean up and ack before redelivery.
+    app.conf.task_soft_time_limit = int(
+        settings.task_time_limit_seconds * _SOFT_TIME_LIMIT_RATIO
+    )
     app.conf.task_time_limit = None
 
     app.conf.task_acks_late = True

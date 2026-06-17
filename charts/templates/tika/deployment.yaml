@@ -75,3 +75,11 @@ spec:
           {{- if .Values.tika.resources }}
           resources: {{- toYaml .Values.tika.resources | nindent 12 }}
           {{- end }}
+          volumeMounts:
+            - name: imagemagick-policy
+              mountPath: /etc/ImageMagick-6/policy.xml
+              subPath: policy.xml
+      volumes:
+        - name: imagemagick-policy
+          configMap:
+            name: {{ include "app.fullname" . }}-tika-imagemagick-policy

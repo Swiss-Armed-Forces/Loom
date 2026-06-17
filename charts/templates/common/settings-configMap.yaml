@@ -25,8 +25,8 @@ data:
     DOMAIN: {{ .Values.domain }}
 
     # pipeline
-    {{- if ne .Values.pipeline.taskTimeLimitSeconds nil }}
-    task_time_limit__seconds: {{ .Values.pipeline.taskTimeLimitSeconds | quote }}
+    {{- if ne .Values.pipeline.task_time_limit_seconds nil }}
+    task_time_limit_seconds: {{ .Values.pipeline.task_time_limit_seconds | quote }}
     {{- end }}
     {{- if ne .Values.pipeline.uploaded_files_days_before_hidden nil }}
     uploaded_files_days_before_hidden: {{ .Values.pipeline.uploaded_files_days_before_hidden | quote }}
@@ -75,6 +75,9 @@ data:
     {{- end }}
     {{- if ne .Values.pipeline.tika_timeout_seconds nil }}
     tika_timeout_seconds: {{ .Values.pipeline.tika_timeout_seconds | quote }}
+    {{- end }}
+    {{- if ne .Values.pipeline.imagemagick_timeout_seconds nil }}
+    imagemagick_timeout_seconds: {{ .Values.pipeline.imagemagick_timeout_seconds | quote }}
     {{- end }}
     {{- if ne .Values.pipeline.celery_queue_name_prefix nil }}
     celery_queue_name_prefix: {{ .Values.pipeline.celery_queue_name_prefix | quote }}
