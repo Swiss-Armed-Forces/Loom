@@ -1,4 +1,5 @@
 import logging
+from concurrent.futures import ThreadPoolExecutor
 from hashlib import sha256
 
 from celery import chain
@@ -52,8 +53,16 @@ def schedule_attachments(lazy_tika_result: TempTypedLazyBytes[TikaResult], file:
     # the parent task. Exceptions won't propagate to the parent, and task tracking
     # becomes independent. The "correct" approach would be self.replace(group(...))
     # but it's not feasible for files with many attachments.
-    for attachment in tika_result.attachments:
+    #
+    # Publishes run concurrently via a thread pool: each .delay() is an I/O-bound
+    # AMQP round-trip, so threads hide per-publish latency. The `with` block
+    # (shutdown(wait=True)) ensures all publishes complete before the task exits.
+    def _publish(attachment: TikaAttachment) -> None:
         schedule_attachment.s(attachment, file).delay().forget()
+
+    with ThreadPoolExecutor() as executor:
+        for attachment in tika_result.attachments:
+            executor.submit(_publish, attachment)
 
 
 @app.task(base=FileIndexingTask)
