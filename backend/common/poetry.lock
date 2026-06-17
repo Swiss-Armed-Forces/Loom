@@ -712,8 +712,8 @@ doc = ["sphinx"]
 [package.source]
 type = "git"
 url = "https://github.com/736-c41-2c1-e464fc974/imapclient.git"
-reference = "bugfix/3.14-compatibility-IMAP4.file-read-only"
-resolved_reference = "d87a08ca52dfd2d21f50785ca6395ccc7aaf985f"
+reference = "ee967b861ec7b71854372fe7a20a5adc01b2d6aa"
+resolved_reference = "ee967b861ec7b71854372fe7a20a5adc01b2d6aa"
 
 [[package]]
 name = "jiter"
@@ -1497,4 +1497,4 @@ files = [
 [metadata]
 lock-version = "2.1"
 python-versions = "~3.14"
-content-hash = "67b226c62e2a1052c66899e1d90695c4bbe27516dd0e6063d436ceea342c4d82"
+content-hash = "bfcce19cc98bcf0d8fce920e5cd7e143a0373966609f51831f3a39c4c5b4ed45"
