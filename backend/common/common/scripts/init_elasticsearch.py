@@ -15,7 +15,6 @@ from common.dependencies import get_pubsub_service, get_query_builder, init
 from common.models.es_repository import ES_REPOSITORY_TYPES
 from common.settings import settings
 
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 init()

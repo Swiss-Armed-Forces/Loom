@@ -44,13 +44,6 @@ class S3Crawler:
         self.processed_objects: set[_ProcessedObject] = set()
         self._executor = ThreadPoolExecutor(max_workers=S3_MAX_CONCURRENT_DOWNLOADS)
 
-    def _ensure_bucket(self):
-        if not retry(lambda: self.client.bucket_exists(self.bucket_name)):
-            logger.info("Bucket does not exist, creating: %s", self.bucket_name)
-            retry(lambda: self.client.make_bucket(self.bucket_name))
-        else:
-            logger.info("Bucket already exists: %s", self.bucket_name)
-
     def _download_object(self, object_name: str):
         logger.info("Downloading object %s", object_name)
         full_name = Path(f"//{self.display_name}/{object_name}")
@@ -80,7 +73,6 @@ class S3Crawler:
             self.display_name,
             S3_OBJECT_POLL_INTERVAL_S,
         )
-        self._ensure_bucket()
         logger.info("Entering poll loop")
         while True:
             logger.debug("Polling bucket '%s' for objects", self.bucket_name)
