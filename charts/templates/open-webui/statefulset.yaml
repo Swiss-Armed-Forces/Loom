@@ -49,7 +49,13 @@ spec:
             {{- if .Values.llm.chat.endpoint }}
             - name: OPENAI_API_BASE_URL
               value: {{ .Values.llm.chat.endpoint | quote }}
-            {{- if .Values.llm.chat.api_key }}
+            {{- if .Values.externalSecrets.secrets.llm__chat__api_key.enabled }}
+            - name: OPENAI_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.externalSecrets.secrets.llm__chat__api_key.name }}
+                  key: llm__chat__api_key
+            {{- else if .Values.llm.chat.api_key }}
             - name: OPENAI_API_KEY
               value: {{ .Values.llm.chat.api_key | quote }}
             {{- end }}
