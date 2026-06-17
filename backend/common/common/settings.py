@@ -191,7 +191,7 @@ class Settings(BaseSettings):
     imap_user: str = "user"
     imap_password: str = "pass"
 
-    task_time_limit__seconds: int = 60 * 60 * 24
+    task_time_limit_seconds: int = 60 * 60 * 24
 
     roundcube_host: AnyHttpUrl = AnyHttpUrl(f"http://roundcube.{DOMAIN}")
 

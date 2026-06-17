@@ -12,7 +12,7 @@ from common.dependencies import (
 from common.file.file_repository import File
 from common.services.lazybytes_service import FileStorageLazyBytes, TempLazyBytes
 from common.utils.cache import cache
-from httpx import HTTPStatusError
+from httpx import HTTPStatusError, TimeoutException
 from pydantic import BaseModel
 from wand.exceptions import MissingDelegateError, WandException
 from wand.image import Image
@@ -22,6 +22,9 @@ from worker.index_file.infra.file_indexing_task import FileIndexingTask
 from worker.index_file.infra.indexing_persister import IndexingPersister
 from worker.settings import settings
 from worker.utils.persisting_task import persisting_task
+
+GOTENBERG_MAX_RETRIES = 15
+GOTENBERG_RETRY_EXCEPTIONS = (TimeoutException,)
 
 logger = logging.getLogger(__name__)
 
@@ -242,7 +245,7 @@ def signature_pass_file_content(
     )
 
 
-@app.task(base=FileIndexingTask)
+@app.task(base=FileIndexingTask, time_limit=settings.imagemagick_timeout_seconds)
 @cache(key_function=lambda _, render_file: render_file.cache_key)
 def render_image_png_task(
     file_content: TempLazyBytes | None, _: RenderFile
@@ -270,7 +273,12 @@ def render_image_png_task(
     return blob_lazy
 
 
-@app.task(base=FileIndexingTask)
+@app.task(
+    base=FileIndexingTask,
+    autoretry_for=GOTENBERG_RETRY_EXCEPTIONS,
+    max_retries=GOTENBERG_MAX_RETRIES,
+    retry_backoff=True,
+)
 @cache(key_function=lambda _, render_file: render_file.cache_key)
 def render_browser_to_pdf_task(
     file_content: TempLazyBytes | None,
@@ -298,7 +306,12 @@ def render_browser_to_pdf_task(
         return pdf_lazy
 
 
-@app.task(base=FileIndexingTask)
+@app.task(
+    base=FileIndexingTask,
+    autoretry_for=GOTENBERG_RETRY_EXCEPTIONS,
+    max_retries=GOTENBERG_MAX_RETRIES,
+    retry_backoff=True,
+)
 @cache(key_function=lambda _, render_file: render_file.cache_key)
 def render_office_to_pdf_task(
     file_content: TempLazyBytes,

@@ -5724,8 +5724,8 @@ The complete source code for Traefik is publicly available at [https://github.co
 | python3-numpy | 1:1.26.4+ds-6ubuntu1 | Apache-2.0, Apache-2.0, BSD-3-Clause, Zlib, Zlib | dpkg-db-cataloger |
 | python3-oauthlib | 3.2.2-1 | BSD-3-Clause | dpkg-db-cataloger |
 | python3-packaging | 24.0-1 | Apache-2.0, BSD-3-Clause | dpkg-db-cataloger |
-| python3-pil | 10.2.0-1ubuntu1 |  | dpkg-db-cataloger |
-| python3-pil.imagetk | 10.2.0-1ubuntu1 |  | dpkg-db-cataloger |
+| python3-pil | 10.2.0-1ubuntu1.2 |  | dpkg-db-cataloger |
+| python3-pil.imagetk | 10.2.0-1ubuntu1.2 |  | dpkg-db-cataloger |
 | python3-pkg-resources | 68.1.2-2ubuntu1 | Apache-2.0, BSD-3-Clause | dpkg-db-cataloger |
 | python3-pyparsing | 3.1.1-1 | BSD-2-Clause, BSD-3-Clause | dpkg-db-cataloger |
 | python3-scipy | 1.11.4-6build1 | Apache-2.0, BSD-2-Clause, BSD-3-Clause, BSD-3-Clause, PSF-2.0 | dpkg-db-cataloger |

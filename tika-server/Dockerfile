@@ -28,9 +28,6 @@ RUN set -exu \
   && apt-get clean \
   && rm -rf /var/lib/apt/lists/*
 
-# Copy ImageMagick security policy to restrict dangerous operations
-COPY imagemagick-policy.xml /etc/ImageMagick-6/policy.xml
-
 # Download and install zstd-jni JAR to tika-extras directory
 ARG ZSTD_JNI_VERSION="1.5.7-7"
 
