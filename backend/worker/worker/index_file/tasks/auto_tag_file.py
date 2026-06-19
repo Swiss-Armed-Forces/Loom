@@ -74,7 +74,7 @@ def fetch_files_embeddings(
 
     query = QueryParameters(
         query_id=get_file_repository().open_point_in_time(),
-        search_string=f"tags:* !sort_unique:{file.sort_unique}",
+        search_string=f'tags:* !id:"{file.id_}"',
     )
 
     for embedding_bytes_lazy in embeddings_bytes_lazy:
