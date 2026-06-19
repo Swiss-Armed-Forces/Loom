@@ -408,3 +408,6 @@ fork-logs/
 dmesg.txt
 logs/
 changed-files/
+
+# CI diagnosis folders
+.loom_diagnose_*/

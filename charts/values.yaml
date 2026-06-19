@@ -1249,6 +1249,7 @@ tika:
     limits:
       cpu: "4"
       memory: "6Gi"
+  javaOpts: "-XX:InitialRAMPercentage=90 -XX:MaxRAMPercentage=90"
   # Custom labels specific to tika resources
   customLabels: {}
   customAnnotations: {}
