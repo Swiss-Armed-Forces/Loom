@@ -277,14 +277,7 @@ in
       git
       git-lfs
 
-      # shell completions – nix adds $out/share to XDG_DATA_DIRS automatically,
-      # so bash-completion's lazy loader finds aitools without any .envrc change
       bash-completion
-      (pkgs.writeTextFile {
-        name = "aitools-bash-completion";
-        text = builtins.readFile ./cicd/aitools.completions;
-        destination = "/share/bash-completion/completions/aitools";
-      })
 
       # utils
       sysctl
@@ -632,8 +625,8 @@ in
       echo "WARNING: Could not login to dependency proxy at ''${CI_DEPENDENCY_PROXY_SERVER}. You may face Docker Hub rate limit issues when pulling images"
     fi
 
-    # Shell completion for aitools (sources the canonical completion file)
-    source '${config.devenv.root}/cicd/aitools.completions'
+    # Shell completion for aitools
+    source <(aitools completions)
   '';
 
   scripts.devenv-help = {
