@@ -10,10 +10,18 @@ import subprocess
 import sys
 import tempfile
 import zipfile
+from typing import NamedTuple
 
 import gitlab
 from git import Repo
-from gitlab.v4.objects import ProjectMergeRequest
+from gitlab.v4.objects import (
+    Project,
+    ProjectIssue,
+    ProjectJob,
+    ProjectMergeRequest,
+    ProjectMergeRequestDiscussion,
+    ProjectMilestone,
+)
 
 # Configure logging
 logging.basicConfig(
@@ -35,6 +43,28 @@ EXCLUDED_PATHSPECS = [
     ":(exclude)**/pnpm-lock.yaml",
     ":(exclude)Frontend/src/app/api/generated/**",
 ]
+
+
+class CommitMessage(NamedTuple):
+    """Parsed commit message split into title and body."""
+
+    title: str
+    body: str
+
+
+class JobRef(NamedTuple):
+    """Parsed GitLab job reference from a URL or bare job ID."""
+
+    project_path: str | None
+    job_id: int
+
+
+class DiscussionReply(NamedTuple):
+    """A generated reply for a single MR review discussion."""
+
+    discussion: ProjectMergeRequestDiscussion
+    location: str
+    reply: str
 
 
 def get_branch_diff(repo: Repo) -> str:
@@ -208,12 +238,12 @@ def generate_commit_message_via_claude(
         return None
 
 
-def parse_commit_message(message: str) -> tuple[str, str]:
+def parse_commit_message(message: str) -> CommitMessage:
     """Split commit message into title (first line) and body (rest)."""
     lines = message.strip().split("\n", 1)
     title = lines[0].strip()
     body = lines[1].strip() if len(lines) > 1 else ""
-    return title, body
+    return CommitMessage(title=title, body=body)
 
 
 def get_gitlab_client() -> gitlab.Gitlab | None:
@@ -268,7 +298,7 @@ def update_mr(mr: ProjectMergeRequest, title: str, description: str) -> None:
     mr.save()
 
 
-def fetch_issue(gl: gitlab.Gitlab, repo: Repo, issue_number: int):  # type: ignore[return]
+def fetch_issue(gl: gitlab.Gitlab, repo: Repo, issue_number: int) -> ProjectIssue:
     """Fetch a GitLab issue by number."""
     project_id = CI_PROJECT_ID or get_project_id_from_remote(repo)
     if not project_id:
@@ -278,7 +308,7 @@ def fetch_issue(gl: gitlab.Gitlab, repo: Repo, issue_number: int):  # type: igno
     return project.issues.get(issue_number)
 
 
-def build_implement_prompt(issue, context_dir: str) -> str:  # type: ignore[no-untyped-def]
+def build_implement_prompt(issue: ProjectIssue, context_dir: str) -> str:
     """Build the prompt for implementing a GitLab issue."""
     labels = ", ".join(issue.labels) if issue.labels else "(none)"
 
@@ -303,7 +333,7 @@ is complete. Do NOT commit or push the changes.
 """
 
 
-def fetch_unresolved_discussions(mr: ProjectMergeRequest) -> list:
+def fetch_unresolved_discussions(mr: ProjectMergeRequest) -> list[ProjectMergeRequestDiscussion]:
     """Return unresolved MR discussions."""
     discussions = mr.discussions.list(all=True)
     unresolved = []
@@ -317,7 +347,7 @@ def fetch_unresolved_discussions(mr: ProjectMergeRequest) -> list:
     return unresolved
 
 
-def format_discussions_for_prompt(discussions: list) -> str:
+def format_discussions_for_prompt(discussions: list[ProjectMergeRequestDiscussion]) -> str:
     """Format unresolved MR discussions for inclusion in a prompt."""
     parts = []
     for discussion in discussions:
@@ -346,6 +376,90 @@ def format_discussions_for_prompt(discussions: list) -> str:
     return "\n\n---\n\n".join(parts)
 
 
+def extract_discussion_location(discussion: ProjectMergeRequestDiscussion) -> str:
+    """Return a human-readable location string for a discussion."""
+    notes = discussion.attributes.get("notes", [])
+    if not notes:
+        return "(general comment)"
+    position = notes[0].get("position") or {}
+    new_path = position.get("new_path")
+    new_line = position.get("new_line")
+    if new_path:
+        return f"{new_path}:{new_line}" if new_line else new_path
+    return "(general comment)"
+
+
+def extract_discussion_thread(discussion: ProjectMergeRequestDiscussion) -> str:
+    """Return the thread text of a discussion as '@author: body' lines."""
+    notes = discussion.attributes.get("notes", [])
+    lines = []
+    for note in notes:
+        author = note.get("author", {}).get("username", "unknown")
+        body = note.get("body", "")
+        lines.append(f"@{author}: {body}")
+    return "\n".join(lines)
+
+
+def build_comment_reply_prompt(location: str, thread: str, diff: str) -> str:
+    """Build the Claude prompt for generating a reply to a single review comment."""
+    return f"""You just addressed a GitLab code review comment by modifying the source code.
+Write a concise reply to the reviewer explaining what you changed to address their feedback.
+
+Comment location: {location}
+
+Review thread:
+{thread}
+
+Branch diff (your changes):
+{diff}
+
+Instructions:
+- Reference the specific change you made
+- Keep it to 1-3 sentences
+- Sound natural and professional
+- Do NOT use greetings like "Hi" or sign-offs like "Thanks"
+- Output only the reply text, nothing else
+"""
+
+
+def generate_discussion_reply(
+    discussion: ProjectMergeRequestDiscussion, diff: str, repo: Repo
+) -> str | None:
+    """Generate a reply to a single review discussion using Claude."""
+    if not repo.working_dir:
+        return None
+
+    location = extract_discussion_location(discussion)
+    thread = extract_discussion_thread(discussion)
+    prompt = build_comment_reply_prompt(location, thread, diff)
+
+    try:
+        result = subprocess.run(
+            ["claude", "--print", "--output-format", "text", "--no-session-persistence"],
+            input=prompt,
+            capture_output=True,
+            text=True,
+            timeout=CLAUDE_TIMEOUT,
+            cwd=repo.working_dir,
+            check=False,
+        )
+        if result.returncode != 0:
+            logger.warning(
+                "Claude CLI returned non-zero for reply generation: %s", result.returncode
+            )
+            return None
+        reply = result.stdout.strip()
+        return reply if reply else None
+    except (subprocess.TimeoutExpired, OSError) as e:
+        logger.warning("Failed to generate reply for %s: %s", location, e)
+        return None
+
+
+def post_discussion_reply(discussion: ProjectMergeRequestDiscussion, reply_text: str) -> None:
+    """Post a reply note to a GitLab MR discussion."""
+    discussion.notes.create({"body": reply_text})
+
+
 def build_mr_fix_prompt(mr: ProjectMergeRequest, context_dir: str) -> str:
     """Build the prompt for fixing MR review comments."""
     return f"""You are addressing code review comments on a GitLab merge request.
@@ -368,18 +482,18 @@ Follow the existing code style and project conventions. Do NOT commit or push th
 """
 
 
-def parse_job_url_or_id(value: str) -> tuple[str | None, int]:
-    """Parse a GitLab job URL or bare ID into (project_path_or_None, job_id)."""
+def parse_job_url_or_id(value: str) -> JobRef:
+    """Parse a GitLab job URL or bare ID into a JobRef."""
     url_match = re.match(r"https?://[^/]+/(.+?)/-/jobs/(\d+)", value)
     if url_match:
-        return url_match.group(1), int(url_match.group(2))
+        return JobRef(project_path=url_match.group(1), job_id=int(url_match.group(2)))
     try:
-        return None, int(value)
+        return JobRef(project_path=None, job_id=int(value))
     except ValueError:
         raise ValueError(f"Cannot parse job URL or ID: {value!r}")
 
 
-def fetch_job_log(job) -> str:  # type: ignore[no-untyped-def]
+def fetch_job_log(job: ProjectJob) -> str:
     """Fetch the trace/log of a GitLab job."""
     trace = job.trace()
     if isinstance(trace, bytes):
@@ -387,7 +501,7 @@ def fetch_job_log(job) -> str:  # type: ignore[no-untyped-def]
     return str(trace)
 
 
-def extract_job_artifacts(job, dest_dir: str) -> bool:  # type: ignore[no-untyped-def]
+def extract_job_artifacts(job: ProjectJob, dest_dir: str) -> bool:
     """Download job artifacts zip and extract to dest_dir. Returns True if artifacts were found."""
     try:
         artifact_bytes = job.artifacts()
@@ -408,7 +522,7 @@ def extract_job_artifacts(job, dest_dir: str) -> bool:  # type: ignore[no-untype
     return True
 
 
-def build_diagnose_prompt(job, context_dir: str) -> str:  # type: ignore[no-untyped-def]
+def build_diagnose_prompt(job: ProjectJob, context_dir: str) -> str:
     """Build the prompt for diagnosing a CI/CD job failure."""
     return f"""You are diagnosing a failed GitLab CI/CD job in the Loom project.
 
@@ -500,11 +614,11 @@ def cmd_mr_update(args: argparse.Namespace) -> None:
         logger.error("Failed to generate commit message via Claude.")
         sys.exit(1)
 
-    title, body = parse_commit_message(message)
+    parsed = parse_commit_message(message)
 
     print("\n--- Preview ---")
-    print(f"Title: {title}\n")
-    print(f"Description:\n{body}")
+    print(f"Title: {parsed.title}\n")
+    print(f"Description:\n{parsed.body}")
     print("--- End Preview ---\n")
 
     answer = input(f"Update MR !{mr.iid} with the above? [Y/n]: ").strip().lower()
@@ -512,7 +626,7 @@ def cmd_mr_update(args: argparse.Namespace) -> None:
         print("Aborted.")
         return
 
-    update_mr(mr, title, body)
+    update_mr(mr, parsed.title, parsed.body)
     logger.info("Updated MR !%s", mr.iid)
 
 
@@ -581,11 +695,6 @@ def cmd_mr_fix(_args: argparse.Namespace) -> None:
         print(f"  @{author} on {new_path}: {body[:80]}")
     print()
 
-    answer = input("Proceed with fixing? [Y/n]: ").strip().lower()
-    if answer not in ("", "y"):
-        print("Aborted.")
-        return
-
     with tempfile.TemporaryDirectory(prefix=".loom_mrfix_", dir=repo.working_dir) as context_dir:
         with open(os.path.join(context_dir, "review_comments.txt"), "w", encoding="utf-8") as f:
             f.write(format_discussions_for_prompt(discussions))
@@ -593,6 +702,39 @@ def cmd_mr_fix(_args: argparse.Namespace) -> None:
             f.write(get_branch_diff(repo))
         prompt = build_mr_fix_prompt(mr, context_dir)
         run_claude_agentic(prompt, repo)
+
+    updated_diff = get_branch_diff(repo)
+
+    # Generate all replies first so the user can review them before anything is posted
+    replies: list[DiscussionReply] = []
+    for i, discussion in enumerate(discussions, 1):
+        location = extract_discussion_location(discussion)
+        logger.info("Generating reply %d/%d for %s...", i, len(discussions), location)
+        reply = generate_discussion_reply(discussion, updated_diff, repo)
+        if reply:
+            replies.append(DiscussionReply(discussion=discussion, location=location, reply=reply))
+        else:
+            logger.warning("Could not generate reply for %s — skipping", location)
+
+    if not replies:
+        logger.warning("No replies were generated.")
+        return
+
+    print("\n--- Reply Preview ---")
+    for dr in replies:
+        print(f"\n[{dr.location}]\n{dr.reply}")
+    print("--- End Preview ---\n")
+
+    answer = input(f"Post {len(replies)} reply/replies to MR !{mr.iid}? [Y/n]: ").strip().lower()
+    if answer not in ("", "y"):
+        print("Aborted.")
+        return
+
+    for dr in replies:
+        post_discussion_reply(dr.discussion, dr.reply)
+        logger.info("Posted reply for %s", location)
+
+    print(f"Posted {len(replies)} reply/replies.")
 
 
 def cmd_completions(_args: argparse.Namespace) -> None:
@@ -614,7 +756,7 @@ def cmd_diagnose(args: argparse.Namespace) -> None:
     repo = Repo(os.getcwd())
 
     try:
-        project_path, job_id = parse_job_url_or_id(args.job)
+        job_ref = parse_job_url_or_id(args.job)
     except ValueError as e:
         logger.error("%s", e)
         sys.exit(1)
@@ -624,8 +766,7 @@ def cmd_diagnose(args: argparse.Namespace) -> None:
         logger.error("Could not create GitLab client.")
         sys.exit(1)
 
-    if project_path is None:
-        project_path = CI_PROJECT_ID or get_project_id_from_remote(repo)
+    project_path = job_ref.project_path or CI_PROJECT_ID or get_project_id_from_remote(repo)
     if not project_path:
         logger.error(
             "Could not determine project. Provide a full job URL or set CI_PROJECT_ID."
@@ -634,7 +775,7 @@ def cmd_diagnose(args: argparse.Namespace) -> None:
 
     logger.info("Using project: %s", project_path)
     project = gl.projects.get(project_path)
-    job = project.jobs.get(job_id)
+    job = project.jobs.get(job_ref.job_id)
 
     print(f"\nJob #{job.id}: {job.name}")
     print(f"Stage: {job.stage} | Status: {job.status}")
@@ -658,6 +799,321 @@ def cmd_diagnose(args: argparse.Namespace) -> None:
 
         prompt = build_diagnose_prompt(job, context_dir)
         run_claude_agentic(prompt, repo)
+
+
+def get_project(gl: gitlab.Gitlab, repo: Repo) -> Project:
+    """Get the GitLab project object."""
+    project_id = CI_PROJECT_ID or get_project_id_from_remote(repo)
+    if not project_id:
+        logger.error("Could not determine project ID from CI_PROJECT_ID or git remote")
+        sys.exit(1)
+    return gl.projects.get(project_id)
+
+
+def fetch_and_sort_tags(repo: Repo) -> list[str]:
+    """Fetch all remote tags and return them sorted by semver (newest first)."""
+    repo.git.fetch("--tags", "--force")
+    raw = repo.git.tag("--list").strip()
+    if not raw:
+        return []
+    tags = [t.strip() for t in raw.split("\n") if t.strip()]
+
+    def semver_key(tag: str):
+        clean = tag.lstrip("v")
+        try:
+            return tuple(int(x) for x in clean.split("."))
+        except ValueError:
+            return (0, 0, 0)
+
+    return sorted(tags, key=semver_key, reverse=True)
+
+
+def prompt_tag_selection(tags: list[str]) -> str:
+    """Prompt the user to select a tag for the release."""
+    print("\nAvailable tags (newest first):")
+    shown = tags[:20]
+    for i, tag in enumerate(shown):
+        print(f"  {i + 1}. {tag}")
+    if len(tags) > 20:
+        print(f"  ... and {len(tags) - 20} more")
+    print()
+
+    while True:
+        answer = input("Enter tag name or number: ").strip()
+        if not answer:
+            continue
+        try:
+            idx = int(answer) - 1
+            if 0 <= idx < len(tags):
+                return tags[idx]
+            print(f"Invalid number. Enter 1-{len(tags)}.")
+            continue
+        except ValueError:
+            pass
+        if answer in tags:
+            return answer
+        print(f"Tag {answer!r} not found.")
+
+
+def find_previous_tag(tags: list[str], current_tag: str) -> str | None:
+    """Return the tag immediately before current_tag in the sorted list."""
+    try:
+        idx = tags.index(current_tag)
+        if idx + 1 < len(tags):
+            return tags[idx + 1]
+    except ValueError:
+        pass
+    return None
+
+
+def get_tag_diff(repo: Repo, from_tag: str, to_tag: str) -> str:
+    """Return the diff between two tags, excluding lockfiles and generated files."""
+    stat = repo.git.diff(from_tag, to_tag, "--stat", "--", *EXCLUDED_PATHSPECS)
+    diff = repo.git.diff(from_tag, to_tag, "--", *EXCLUDED_PATHSPECS)
+
+    if len(diff) > MAX_DIFF_CHARS:
+        diff = diff[:MAX_DIFF_CHARS] + (
+            f"\n\n[Diff truncated at {MAX_DIFF_CHARS} characters."
+            " See stat summary above for full file list.]"
+        )
+        logger.warning("Diff truncated to %d characters", MAX_DIFF_CHARS)
+
+    result = f"Changed files:\n{stat}\n\nDiff:\n{diff}" if stat else f"Diff:\n{diff}"
+    logger.debug("Tag diff retrieved: %d characters", len(result))
+    return result
+
+
+def fetch_milestone_for_tag(project: Project, tag_name: str) -> ProjectMilestone | None:
+    """Find a GitLab milestone whose title exactly matches the tag name."""
+    for state in ("active", "closed"):
+        milestones = project.milestones.list(search=tag_name, state=state, all=True)
+        for m in milestones:
+            if m.title == tag_name:
+                return m
+    return None
+
+
+def format_milestone_items(mrs: list[ProjectMergeRequest], issues: list[ProjectIssue]) -> str:
+    """Format milestone MRs and issues into a markdown string for the prompt."""
+    parts: list[str] = []
+
+    if mrs:
+        parts.append("## Merged Merge Requests\n")
+        for mr in mrs:
+            parts.append(f"- !{mr.iid}: {mr.title}")
+            if mr.description:
+                desc = mr.description[:500]
+                if len(mr.description) > 500:
+                    desc += " [truncated]"
+                parts.append(f"  Description: {desc}")
+        parts.append("")
+
+    if issues:
+        parts.append("## Issues\n")
+        for issue in issues:
+            labels = f"  Labels: {', '.join(issue.labels)}" if issue.labels else ""
+            parts.append(f"- #{issue.iid}: {issue.title}")
+            if labels:
+                parts.append(labels)
+        parts.append("")
+
+    return "\n".join(parts)
+
+
+def build_release_notes_prompt(
+    tag_name: str,
+    previous_tag: str | None,
+    milestone_info: str,
+    diff: str,
+) -> str:
+    """Build the Claude prompt for generating release notes."""
+    prev_info = f"Previous release: {previous_tag}" if previous_tag else "First release (no previous tag)"
+    diff_header = f"{previous_tag or 'initial'} → {tag_name}"
+
+    milestone_section = ""
+    if milestone_info:
+        milestone_section = f"\n## Milestone Items\n\n{milestone_info}\n"
+
+    return f"""Generate release notes for version {tag_name} of the Loom project.
+
+## Release Information
+
+Tag: {tag_name}
+{prev_info}
+{milestone_section}
+## Git Diff ({diff_header})
+
+{diff}
+
+## Instructions
+
+Write concise, user-friendly release notes with this structure:
+
+# {tag_name}
+
+A short paragraph summarising the highlights of this release.
+
+## Added
+- New features
+
+## Changed
+- Changes to existing functionality
+
+## Fixed
+- Bug fixes
+
+## Removed
+- Removed features (omit this section entirely if there are none)
+
+Rules:
+- Focus on user-visible changes, not internal implementation details
+- Reference MR/issue numbers where relevant (e.g. !123, #456)
+- Be specific but concise
+- Output only the raw release notes text, nothing else
+- Do NOT wrap output in code fences or markdown code blocks
+"""
+
+
+def generate_release_notes_via_claude(
+    tag_name: str,
+    previous_tag: str | None,
+    milestone_info: str,
+    diff: str,
+    repo: Repo,
+) -> str | None:
+    """Generate release notes using the Claude Code CLI."""
+    if not repo.working_dir:
+        logger.warning("No working directory available (bare repo?)")
+        return None
+
+    prompt = build_release_notes_prompt(tag_name, previous_tag, milestone_info, diff)
+
+    try:
+        logger.info("Sending context to Claude CLI for release notes generation...")
+        result = subprocess.run(
+            [
+                "claude",
+                "--print",
+                "--output-format",
+                "text",
+                "--no-session-persistence",
+            ],
+            input=prompt,
+            capture_output=True,
+            text=True,
+            timeout=CLAUDE_TIMEOUT,
+            cwd=repo.working_dir,
+            check=False,
+        )
+
+        if result.returncode != 0:
+            logger.warning("Claude CLI returned non-zero exit code: %s", result.returncode)
+            if result.stdout:
+                logger.warning("Claude CLI stdout: %s", result.stdout)
+            if result.stderr:
+                logger.warning("Claude CLI stderr: %s", result.stderr)
+            return None
+
+        message = result.stdout.strip()
+        logger.debug("Claude CLI response: %s", message)
+        return message if message else None
+
+    except subprocess.TimeoutExpired:
+        logger.warning("Claude CLI timed out after %s seconds", CLAUDE_TIMEOUT)
+        return None
+    except OSError as e:
+        logger.warning("Failed to run Claude CLI: %s", e)
+        return None
+
+
+def cmd_release(_args: argparse.Namespace) -> None:
+    """Create a GitLab release with AI-generated release notes."""
+    repo = Repo(os.getcwd())
+
+    gl = get_gitlab_client()
+    if not gl:
+        logger.error("Could not create GitLab client.")
+        sys.exit(1)
+
+    project = get_project(gl, repo)
+
+    # Step 1: Fetch tags and let the user pick one
+    logger.info("Fetching tags...")
+    tags = fetch_and_sort_tags(repo)
+    if not tags:
+        logger.error("No tags found in this repository.")
+        sys.exit(1)
+
+    tag_name = prompt_tag_selection(tags)
+    previous_tag = find_previous_tag(tags, tag_name)
+    logger.info("Selected tag: %s (previous: %s)", tag_name, previous_tag or "none")
+
+    # Step 2: Warn if a release already exists for this tag
+    try:
+        existing = project.releases.get(tag_name)
+        print(f"\nRelease {tag_name!r} already exists: {existing.name}")
+        answer = input("Overwrite existing release? [y/N]: ").strip().lower()
+        if answer != "y":
+            print("Aborted.")
+            return
+    except Exception:
+        pass  # Release doesn't exist yet — proceed normally
+
+    # Step 3: Look up the matching milestone and its linked items
+    milestone_info = ""
+    logger.info("Looking up milestone for tag %s...", tag_name)
+    milestone = fetch_milestone_for_tag(project, tag_name)
+    if milestone:
+        logger.info("Found milestone: %s", milestone.title)
+        mrs = project.mergerequests.list(milestone=milestone.title, state="merged", all=True)
+        issues = project.issues.list(milestone=milestone.title, all=True)
+        logger.info("Milestone contains %d MR(s) and %d issue(s)", len(mrs), len(issues))
+        milestone_info = format_milestone_items(mrs, issues)
+    else:
+        logger.info("No milestone found matching tag %s", tag_name)
+
+    # Step 4: Compute the diff from the previous tag
+    if previous_tag:
+        logger.info("Computing diff %s → %s...", previous_tag, tag_name)
+        diff = get_tag_diff(repo, previous_tag, tag_name)
+    else:
+        diff = "(No previous tag — this appears to be the first release.)"
+
+    # Step 5: Generate release notes via Claude
+    if not is_claude_cli_installed():
+        logger.error("Claude CLI not installed.")
+        sys.exit(1)
+
+    release_notes = generate_release_notes_via_claude(
+        tag_name, previous_tag, milestone_info, diff, repo
+    )
+    if not release_notes:
+        logger.error("Failed to generate release notes via Claude.")
+        sys.exit(1)
+
+    # Step 6: Preview and confirm
+    print("\n--- Release Notes Preview ---")
+    print(f"Tag: {tag_name}\n")
+    print(release_notes)
+    print("--- End Preview ---\n")
+
+    answer = input(
+        f"Create GitLab release for {tag_name!r} with the above notes? [Y/n]: "
+    ).strip().lower()
+    if answer not in ("", "y"):
+        print("Aborted.")
+        return
+
+    # Step 7: Create the release in GitLab
+    project.releases.create(
+        {
+            "name": tag_name,
+            "tag_name": tag_name,
+            "description": release_notes,
+        }
+    )
+    logger.info("Created release %s", tag_name)
+    print(f"Release {tag_name!r} created successfully.")
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -715,6 +1171,13 @@ def build_parser() -> argparse.ArgumentParser:
         help="GitLab job URL (e.g. https://gitlab.com/group/project/-/jobs/123) or bare job ID",
     )
     diagnose_parser.set_defaults(func=cmd_diagnose)
+
+    # release subcommand
+    release_parser = subparsers.add_parser(
+        "release",
+        help="Create a GitLab release with AI-generated release notes",
+    )
+    release_parser.set_defaults(func=cmd_release)
 
     return parser
 
