@@ -47,16 +47,6 @@ def test_upload_mbox_email_with_attachment():
     assert "Just attaching" in mail_content.content
 
 
-def test_upload_pst():
-    upload_asset("sample.pst")
-
-    attachment = get_file_preview_by_name("rtf-body.rtfrtf-body.rtf")
-    assert (
-        attachment.path
-        == "//api-upload/sample.pst/sample/myInbox/2.eml/rtf-body.rtfrtf-body.rtf"
-    )
-
-
 def test_upload_png():
     upload_asset("1.png")
 

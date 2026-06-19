@@ -120,7 +120,7 @@ from utils.upload_asset import upload_asset
             [
                 "sample.pst",
                 "sample.pst/sample/myInbox/2.eml",
-                "sample.pst/sample/myInbox/2.eml/rtf-body.rtfrtf-body.rtf",
+                "sample.pst/sample/myInbox/2.eml/rtf-body.rtf",
             ],
         ),
         # Pcap extraction test
