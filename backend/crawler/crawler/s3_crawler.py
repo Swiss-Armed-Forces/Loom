@@ -15,7 +15,7 @@ from crawler.settings import settings
 logger = logging.getLogger(__name__)
 
 S3_OBJECT_POLL_INTERVAL_S: int = 5
-S3_READ_CHUNK_SIZE: int = 64 * 1024
+S3_READ_CHUNK_SIZE: int = 1 * 1024 * 1024
 S3_RETRY_MAX_ATTEMPTS: int = 5
 S3_RETRY_WAIT_S: int = 10
 S3_MAX_CONCURRENT_DOWNLOADS: int = 4
