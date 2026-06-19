@@ -4,7 +4,7 @@ from celery import chain
 from common.dependencies import get_celery_app
 
 from worker.periodic.infra.periodic_task import PeriodicTask
-from worker.periodic.tasks import sync_flagged_emails
+from worker.periodic.tasks import sync_flagged_emails_from_imap
 
 logger = logging.getLogger(__name__)
 
@@ -19,6 +19,6 @@ def sync_complete(*_, **__):
 @app.task(base=PeriodicTask)
 def sync_flagged_emails_periodically_task():
     chain(
-        sync_flagged_emails.signature(),
+        sync_flagged_emails_from_imap.signature(),
         sync_complete.s(),
     ).delay().forget()

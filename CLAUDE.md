@@ -249,6 +249,10 @@ Override Helm values in `charts/values-overwrites.yaml` (empty by default, autom
 
 ## Testing Requirements
 
+- Before adding a test, ask yourself: will this test actually test critical functionality, and will it
+  add real value? Since we have types, tests that merely verify type constraints or trivially re-test
+  what types already enforce are not valuable. Focus on behaviour, edge cases, and logic that types
+  cannot capture.
 - All new backend features require unit tests
 - Integration tests for user-facing workflows
 - Maintain test coverage (coverage reports generated automatically)
