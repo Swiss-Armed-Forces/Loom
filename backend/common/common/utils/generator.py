@@ -33,25 +33,27 @@ class FileLikeStream(RawIOBase):
 
     def __init__(self, stream: Iterator[bytes]):
         self._stream = stream
-        self._buffer = b""
+        self._buffer = bytearray()
 
     def read(self, size: int = -1, /) -> bytes:
         # Return everything.
         if size is None or size < 0:
-            data = self._buffer + b"".join(self._stream)
-            self._buffer = b""
+            for chunk in self._stream:
+                self._buffer.extend(chunk)
+            data = bytes(self._buffer)
+            self._buffer = bytearray()
             return data
 
         # Try to satisfy request from buffer first.
         while len(self._buffer) < size:
             try:
                 chunk = next(self._stream)
-                self._buffer += chunk
+                self._buffer.extend(chunk)
             except StopIteration:
                 break
 
         # Extract the requested size and save the remainder.
-        out = self._buffer[:size]
-        self._buffer = self._buffer[size:]
+        out = bytes(self._buffer[:size])
+        del self._buffer[:size]
 
         return out
