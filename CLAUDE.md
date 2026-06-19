@@ -231,6 +231,9 @@ Override Helm values in `charts/values-overwrites.yaml` (empty by default, autom
 
 - Python: Follow PEP 8, enforced by black + flake8 + pylint
 - Use type hints everywhere (mypy enforced)
+- **Never use `dict`, `tuple`, or other generic collection types as function return types.** Always
+  define and use a proper named type (Pydantic model, dataclass, `TypedDict`, or `NamedTuple`).
+  Define a new type if one does not already exist. This applies to all functions, including helpers.
 - Pydantic models for validation and serialization
 - Repository pattern for data access (see `common/models/`)
 - Dependency injection via FastAPI dependencies and Celery task context
