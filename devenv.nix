@@ -278,6 +278,13 @@ in
       git-lfs
 
       bash-completion
+      (pkgs.writeTextFile {
+        name = "aitools-bash-completion";
+        text = ''
+          eval "$(aitools completions 2>/dev/null)"
+        '';
+        destination = "/share/bash-completion/completions/aitools";
+      })
 
       # utils
       sysctl
@@ -625,8 +632,6 @@ in
       echo "WARNING: Could not login to dependency proxy at ''${CI_DEPENDENCY_PROXY_SERVER}. You may face Docker Hub rate limit issues when pulling images"
     fi
 
-    # Shell completion for aitools
-    source <(aitools completions)
   '';
 
   scripts.devenv-help = {

@@ -190,6 +190,14 @@ Per `CONTRIBUTING.md`:
 - Use `Closes #issue-number` in MR description
 - Remove Draft status only when ready for review
 
+### Git Commit Format
+
+- First line: conventional commit format — `type(scope): description`, max 72 characters
+- Blank line after the title
+- Body in markdown (headers with `#`, bullet points with `-`)
+- Describe **what** changed, not why
+- Do **not** add `Co-Authored-By` or any self-referencing author trailer
+
 ### Debugging
 
 - Check pod logs: `kubectl logs <pod-name> -n loom`
