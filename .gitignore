@@ -409,5 +409,5 @@ dmesg.txt
 logs/
 changed-files/
 
-# CI diagnosis folders
-.loom_diagnose_*/
+# AI context folders
+.loom_*/
