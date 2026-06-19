@@ -629,6 +629,20 @@ def cmd_mr_fix(_args: argparse.Namespace) -> None:
     run_claude_agentic(prompt, repo)
 
 
+def cmd_completions(_args: argparse.Namespace) -> None:
+    """Print bash completion script for aitools.
+
+    Source with: source <(aitools completions)
+    Or add to your bashrc: aitools completions > ~/.bash_completion.d/aitools
+    """
+    parser = build_parser()
+    subparsers_action = next(
+        a for a in parser._actions if isinstance(a, argparse._SubParsersAction)
+    )
+    subcommands = " ".join(subparsers_action.choices.keys())
+    print(f'complete -W "{subcommands}" aitools')
+
+
 def cmd_diagnose(args: argparse.Namespace) -> None:
     """Diagnose a CI/CD job failure using Claude in agentic mode."""
     repo = Repo(os.getcwd())
@@ -675,7 +689,7 @@ def cmd_diagnose(args: argparse.Namespace) -> None:
     run_claude_agentic(prompt, repo)
 
 
-def main() -> None:
+def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description="Loom AI developer tools.",
     )
@@ -713,6 +727,13 @@ def main() -> None:
     )
     mr_fix_parser.set_defaults(func=cmd_mr_fix)
 
+    # completions subcommand
+    completions_parser = subparsers.add_parser(
+        "completions",
+        help="Print bash completion script (source with: source <(aitools completions))",
+    )
+    completions_parser.set_defaults(func=cmd_completions)
+
     # diagnose subcommand
     diagnose_parser = subparsers.add_parser(
         "diagnose",
@@ -724,6 +745,11 @@ def main() -> None:
     )
     diagnose_parser.set_defaults(func=cmd_diagnose)
 
+    return parser
+
+
+def main() -> None:
+    parser = build_parser()
     args = parser.parse_args()
     args.func(args)
 
