@@ -58,6 +58,7 @@ spec:
           envFrom:
             - configMapRef:
                 name: {{ include "app.fullname" . }}-settings
+            {{- with include "app.externalSecrets.envFrom" . }}{{ . | nindent 12 }}{{- end }}
           {{- if $values.command }}
           command: {{- toYaml $values.command | nindent 10 }}
           {{- else }}
@@ -95,4 +96,12 @@ spec:
           {{- if $values.resources }}
           resources: {{- toYaml $values.resources | nindent 12 }}
           {{- end }}
+          volumeMounts:
+            - name: imagemagick-policy
+              mountPath: /etc/ImageMagick-6/policy.xml
+              subPath: policy.xml
+      volumes:
+        - name: imagemagick-policy
+          configMap:
+            name: {{ include "app.fullname" . }}-imagemagick-policy
 {{- end -}}

@@ -1,7 +1,7 @@
 {{- $memoryLimit := dig "resources" "limits" "memory" "" .Values.rabbit -}}
 {{- $memoryLimitHighWatermarkThresholdPercent := 0.8 -}}
 
-{{- $taskTimeLimitMilliseconds := mulf .Values.pipeline.taskTimeLimitSeconds 1000 | int64 -}}
+{{- $taskTimeLimitMilliseconds := mulf (.Values.pipeline.task_time_limit_seconds | default 86400) 1000 | int64 -}}
 {{- $taskTimeLimitAddMilliseconds := 300000 -}}
 {{- $consumerTimeoutMilliseconds := add $taskTimeLimitMilliseconds $taskTimeLimitAddMilliseconds | int64 -}}
 

@@ -15,7 +15,7 @@ from crawler.settings import settings
 logger = logging.getLogger(__name__)
 
 S3_OBJECT_POLL_INTERVAL_S: int = 5
-S3_READ_CHUNK_SIZE: int = 64 * 1024
+S3_READ_CHUNK_SIZE: int = 1 * 1024 * 1024
 S3_RETRY_MAX_ATTEMPTS: int = 5
 S3_RETRY_WAIT_S: int = 10
 S3_MAX_CONCURRENT_DOWNLOADS: int = 4
@@ -43,13 +43,6 @@ class S3Crawler:
         self.task_scheduling_service = task_scheduling_service
         self.processed_objects: set[_ProcessedObject] = set()
         self._executor = ThreadPoolExecutor(max_workers=S3_MAX_CONCURRENT_DOWNLOADS)
-
-    def _ensure_bucket(self):
-        if not retry(lambda: self.client.bucket_exists(self.bucket_name)):
-            logger.info("Bucket does not exist, creating: %s", self.bucket_name)
-            retry(lambda: self.client.make_bucket(self.bucket_name))
-        else:
-            logger.info("Bucket already exists: %s", self.bucket_name)
 
     def _download_object(self, object_name: str):
         logger.info("Downloading object %s", object_name)
@@ -80,7 +73,6 @@ class S3Crawler:
             self.display_name,
             S3_OBJECT_POLL_INTERVAL_S,
         )
-        self._ensure_bucket()
         logger.info("Entering poll loop")
         while True:
             logger.debug("Polling bucket '%s' for objects", self.bucket_name)

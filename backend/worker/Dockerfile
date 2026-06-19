@@ -97,7 +97,6 @@ RUN set -exu \
     && ln -snf /usr/share/zoneinfo/$TZ /etc/localtime \
     && echo $TZ > /etc/timezone
 
-COPY ./worker/imagemagic-policy.xml /etc/ImageMagick-6/policy.xml
 WORKDIR /usr/share/misc/magic
 COPY ./worker/magic/email.magic /usr/share/misc/magic/email.magic
 RUN set -exu \

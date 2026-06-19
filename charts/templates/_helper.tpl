@@ -204,6 +204,19 @@ Same usage as app.pvc.labels.custom.
 {{- end -}}
 
 
+{{/*
+Render envFrom secretRef entries for all enabled ExternalSecrets.
+Usage: {{- with include "app.externalSecrets.envFrom" . }}{{ . | nindent 12 }}{{- end }}
+*/}}
+{{- define "app.externalSecrets.envFrom" -}}
+{{- range $secretKey, $secret := .Values.externalSecrets.secrets -}}
+{{- if $secret.enabled }}
+- secretRef:
+    name: {{ $secret.name }}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+
 {{- define "cpu-limit-to-count" -}}
   {{/*
   This template converts Kubernetes CPU resource limit to integer CPU count.

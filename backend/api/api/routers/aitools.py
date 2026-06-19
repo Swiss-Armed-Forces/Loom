@@ -10,6 +10,7 @@ from common.models.es_repository import PaginationParameters
 from common.services.query_builder import QueryParameters
 from common.settings import settings
 from fastapi import APIRouter, Depends, FastAPI, HTTPException
+from fastapi.responses import JSONResponse
 from openai import OpenAI
 from pydantic import BaseModel
 
@@ -27,13 +28,13 @@ FILES_SEARCH_MAX_RESULTS = 10
 
 
 @router.get("/openapi.json", include_in_schema=False)
-def openapi_json():
+def openapi_json() -> JSONResponse:
     # Create a mini-app just for this module
     api = FastAPI(title="AI Tools API")
     api.include_router(router)
     # Call the function to patch the openapi schema
     patch_openapi_schema_for_app(api)
-    return api.openapi_schema
+    return JSONResponse(content=api.openapi())
 
 
 class GetSearchResponseFile(BaseModel):
@@ -155,7 +156,9 @@ QUERY_STRING:"""
         temperature=settings.llm.tool.temperature,
         extra_headers={"X-Think": "true"} if settings.llm.tool.think else None,
     )
-    search_string = response.choices[0].text
+    if not response.choices:
+        raise HTTPException(status_code=502, detail="LLM returned no choices")
+    search_string = response.choices[0].text.strip()
 
     logger.info("Getting files with search string: '%s'", search_string)
     query = QueryParameters(

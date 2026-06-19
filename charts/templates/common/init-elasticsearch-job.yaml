@@ -1,0 +1,62 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "app.fullname" . }}-init-elasticsearch
+  labels:
+    {{- include "app.labels.custom" (dict "context" . "component" "init-elasticsearch") | nindent 4 }}
+    app.kubernetes.io/component: init-elasticsearch
+  annotations:
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-weight": "0"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+    {{- with include "app.annotations.custom" (dict "context" . "component" "init-elasticsearch") }}
+    {{- . | nindent 4 }}
+    {{- end }}
+spec:
+  backoffLimit: 5
+  template:
+    metadata:
+      labels:
+        app: {{ include "app.name" . }}-init-elasticsearch
+        {{- include "app.labels.custom" (dict "context" . "component" "init-elasticsearch") | nindent 8 }}
+      {{- with include "app.annotations.custom" (dict "context" . "component" "init-elasticsearch") }}
+      annotations:
+        {{- . | nindent 8 }}
+      {{- end }}
+    spec:
+      restartPolicy: OnFailure
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
+      initContainers:
+        - name: check-elasticsearch-ready
+          image: {{ .Values.image.registry }}/{{ .Values.esInit.initContainer.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) .Values.esInit.initContainer.image.tag }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command:
+            - 'sh'
+            - '-c'
+            - |
+              set -eu
+
+              until nc -vz {{ include "app.fullname" . }}-elasticsearch {{ .Values.elasticsearch.service.port }}; do
+                echo "Waiting for elasticsearch service";
+                sleep 1;
+              done;
+          {{- if .Values.esInit.initContainer.resources }}
+          resources: {{- toYaml .Values.esInit.initContainer.resources | nindent 12 }}
+          {{- end }}
+      containers:
+        - name: init-elasticsearch
+          image: {{ .Values.image.registry }}/{{ .Values.esInit.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) .Values.esInit.image.tag }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command:
+            - python
+            - -m
+            - common.scripts.init_elasticsearch
+          envFrom:
+            - configMapRef:
+                name: {{ include "app.fullname" . }}-settings
+            {{- with include "app.externalSecrets.envFrom" . }}{{ . | nindent 12 }}{{- end }}
+          {{- if .Values.esInit.resources }}
+          resources: {{- toYaml .Values.esInit.resources | nindent 12 }}
+          {{- end }}

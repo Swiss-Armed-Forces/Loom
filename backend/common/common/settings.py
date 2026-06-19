@@ -157,6 +157,7 @@ class Settings(BaseSettings):
     es_timeout: int = 120
     es_number_of_shards: int = 1
     es_number_of_replicas: int = 0
+    es_recreate_schema: bool = False
     rabbit_mq_management_host: AnyHttpUrl = AnyHttpUrl(
         f"http://guest:guest@rabbit.{DOMAIN}"
     )
@@ -190,7 +191,7 @@ class Settings(BaseSettings):
     imap_user: str = "user"
     imap_password: str = "pass"
 
-    task_time_limit__seconds: int = 60 * 60 * 24
+    task_time_limit_seconds: int = 60 * 60 * 24
 
     roundcube_host: AnyHttpUrl = AnyHttpUrl(f"http://roundcube.{DOMAIN}")
 

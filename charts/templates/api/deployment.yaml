@@ -90,9 +90,16 @@ spec:
           {{- end }}
           ports:
             - containerPort: {{ .Values.api.service.port }}
+          env:
+            - name: archive_enc_master_key
+              valueFrom:
+                secretKeyRef:
+                  name: archive-enc-master-key
+                  key: secretkey
           envFrom:
             - configMapRef:
                 name: {{ include "app.fullname" . }}-settings
+            {{- with include "app.externalSecrets.envFrom" . }}{{ . | nindent 12 }}{{- end }}
           {{- if .Values.api.readinessProbe.enabled }}
           readinessProbe:
             httpGet:

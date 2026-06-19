@@ -5,6 +5,7 @@ from unittest.mock import AsyncMock, MagicMock
 import urllib3
 from celery import Celery
 from elasticsearch import Elasticsearch
+from elasticsearch.dsl.connections import create_connection
 from libretranslatepy import LibreTranslateAPI
 from minio import Minio
 from openai import OpenAI
@@ -17,7 +18,6 @@ from common.archive.archive_encryption_service import ArchiveEncryptionService
 from common.archive.archive_repository import ArchiveRepository
 from common.archive.archive_scheduling_service import ArchiveSchedulingService
 from common.celery_app import BaseTask, init_celery_app
-from common.elasticsearch import init_elasticsearch
 from common.file.file_repository import FileRepository
 from common.file.file_scheduling_service import FileSchedulingService
 from common.messages.pubsub_service import PubSubService
@@ -51,8 +51,10 @@ _redis_client_async: StrictRedisAsync | None = None
 _redis_cache_client: StrictRedis | None = None
 _pubsub_service: PubSubService | None = None
 _elasticsearch: Elasticsearch | None = None
+_s3_file_storage_client: Minio | None = None
 _file_storage_service: FileStorageLazyBytesService | None = None
 _root_task_information_repository: RootTaskInformationRepository | None = None
+_s3_lazybytes_client: Minio | None = None
 _lazybytes_service: TempLazyBytesService | None = None
 _imap_service: IMAPService | None = None
 _s3_intake_client: Minio | None = None
@@ -82,7 +84,7 @@ logger = logging.getLogger(__name__)
 
 
 # pylint: disable=too-many-statements
-def init(init_elasticsearch_documents: bool = False):
+def init():
     # pylint: disable=global-statement
     logger.info("Initialize common dependencies")
 
@@ -114,23 +116,28 @@ def init(init_elasticsearch_documents: bool = False):
     _pubsub_service = PubSubService(_redis_client, _redis_client_async)
 
     global _elasticsearch
-    _elasticsearch = init_elasticsearch(
-        _query_builder,
-        _pubsub_service,
-        init_elasticsearch_documents,
+    _elasticsearch = create_connection(
+        hosts=[
+            # pylint: disable=no-member
+            f"{settings.es_host.scheme}://{settings.es_host.host}:{settings.es_host.port}"
+        ],
+        request_timeout=settings.es_timeout,
+    )
+
+    global _s3_file_storage_client
+    _s3_file_storage_client = Minio(
+        settings.file_storage.host,
+        settings.file_storage.access_key,
+        settings.file_storage.secret_key,
+        secure=settings.file_storage.secure_connection,
+        http_client=urllib3.PoolManager(
+            maxsize=settings.file_storage.connection_pool_size
+        ),
     )
 
     global _file_storage_service
     _file_storage_service = FileStorageLazyBytesService(
-        Minio(
-            settings.file_storage.host,
-            settings.file_storage.access_key,
-            settings.file_storage.secret_key,
-            secure=settings.file_storage.secure_connection,
-            http_client=urllib3.PoolManager(
-                maxsize=settings.file_storage.connection_pool_size
-            ),
-        ),
+        _s3_file_storage_client,
         settings.file_storage.bucket_name,
         # We always want to store data in the file storage service, to
         # avoid embedded data in ElasticSearch
@@ -142,17 +149,20 @@ def init(init_elasticsearch_documents: bool = False):
         _query_builder, _pubsub_service
     )
 
+    global _s3_lazybytes_client
+    _s3_lazybytes_client = Minio(
+        settings.lazybytes_storage.host,
+        settings.lazybytes_storage.access_key,
+        settings.lazybytes_storage.secret_key,
+        secure=settings.lazybytes_storage.secure_connection,
+        http_client=urllib3.PoolManager(
+            maxsize=settings.lazybytes_storage.connection_pool_size
+        ),
+    )
+
     global _lazybytes_service
     _lazybytes_service = TempLazyBytesService(
-        Minio(
-            settings.lazybytes_storage.host,
-            settings.lazybytes_storage.access_key,
-            settings.lazybytes_storage.secret_key,
-            secure=settings.lazybytes_storage.secure_connection,
-            http_client=urllib3.PoolManager(
-                maxsize=settings.lazybytes_storage.connection_pool_size
-            ),
-        ),
+        _s3_lazybytes_client,
         settings.lazybytes_storage.bucket_name,
         threshold_bytes=settings.lazy_threshold_bytes,
     )
@@ -332,11 +342,17 @@ def mock_init():
     global _elasticsearch
     _elasticsearch = MagicMock(spec=Elasticsearch)
 
+    global _s3_file_storage_client
+    _s3_file_storage_client = MagicMock(spec=Minio)
+
     global _file_storage_service
     _file_storage_service = MagicMock(spec=FileStorageLazyBytesService)
 
     global _root_task_information_repository
     _root_task_information_repository = MagicMock(spec=RootTaskInformationRepository)
+
+    global _s3_lazybytes_client
+    _s3_lazybytes_client = MagicMock(spec=Minio)
 
     global _lazybytes_service
     _lazybytes_service = MagicMock(spec=TempLazyBytesService)
@@ -480,6 +496,18 @@ def get_imap_service() -> IMAPService:
     if _imap_service is None:
         raise DependencyException("IMAP Service missing")
     return _imap_service
+
+
+def get_s3_file_storage_client() -> Minio:
+    if _s3_file_storage_client is None:
+        raise DependencyException("S3 file storage client missing")
+    return _s3_file_storage_client
+
+
+def get_s3_lazybytes_client() -> Minio:
+    if _s3_lazybytes_client is None:
+        raise DependencyException("S3 lazybytes client missing")
+    return _s3_lazybytes_client
 
 
 def get_s3_intake_client() -> Minio:

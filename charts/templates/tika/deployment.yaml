@@ -75,3 +75,23 @@ spec:
           {{- if .Values.tika.resources }}
           resources: {{- toYaml .Values.tika.resources | nindent 12 }}
           {{- end }}
+          env:
+            - name: TIKA_JAVA_OPS
+              value: {{ .Values.tika.javaOpts | quote }}
+          args:
+            - "-c"
+            - "/tika-config/tika-config.xml"
+          volumeMounts:
+            - name: imagemagick-policy
+              mountPath: /etc/ImageMagick-7/policy.xml
+              subPath: policy.xml
+            - name: tika-config
+              mountPath: /tika-config/tika-config.xml
+              subPath: tika-config.xml
+      volumes:
+        - name: imagemagick-policy
+          configMap:
+            name: {{ include "app.fullname" . }}-imagemagick-policy
+        - name: tika-config
+          configMap:
+            name: {{ include "app.fullname" . }}-tika-config

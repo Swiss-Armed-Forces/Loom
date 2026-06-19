@@ -185,7 +185,8 @@ class Settings(CommonSettings):
 
     gotenberg_host: AnyHttpUrl = AnyHttpUrl(f"http://gotenberg.{DOMAIN}")
     tika_timeout_seconds: int = 5 * 60
-    gotenberg_timeout: int = 1 * 60
+    imagemagick_timeout_seconds: int = 10 * 60
+    gotenberg_timeout_seconds: int = 1 * 60
 
     thumbnail_width: int = 300
     thumbnail_height: int = 200

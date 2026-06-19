@@ -7,54 +7,6 @@
     name NMTOKEN #IMPLIED pattern CDATA #IMPLIED rights NMTOKEN #IMPLIED
     stealth NMTOKEN #IMPLIED value CDATA #IMPLIED>
 ]>
-<!--
-  Configure ImageMagick policies.
-
-  Domains include system, delegate, coder, filter, path, or resource.
-
-  Rights include none, read, write, execute and all.  Use | to combine them,
-  for example: "read | write" to permit read from, or write to, a path.
-
-  Use a glob expression as a pattern.
-
-  Suppose we do not want users to process MPEG video images:
-
-    <policy domain="delegate" rights="none" pattern="mpeg:decode" />
-
-  Here we do not want users reading images from HTTP:
-
-    <policy domain="coder" rights="none" pattern="HTTP" />
-
-  The /repository file system is restricted to read only.  We use a glob
-  expression to match all paths that start with /repository:
-
-    <policy domain="path" rights="read" pattern="/repository/*" />
-
-  Lets prevent users from executing any image filters:
-
-    <policy domain="filter" rights="none" pattern="*" />
-
-  Any large image is cached to disk rather than memory:
-
-    <policy domain="resource" name="area" value="1GP"/>
-
-  Use the default system font unless overwritten by the application:
-
-    <policy domain="system" name="font" value="/usr/share/fonts/favorite.ttf"/>
-
-  Define arguments for the memory, map, area, width, height and disk resources
-  with SI prefixes (.e.g 100MB).  In addition, resource policies are maximums
-  for each instance of ImageMagick (e.g. policy memory limit 1GB, -limit 2GB
-  exceeds policy maximum so memory limit is 1GB).
-
-  Rules are processed in order.  Here we want to restrict ImageMagick to only
-  read or write a small subset of proven web-safe image types:
-
-    <policy domain="delegate" rights="none" pattern="*" />
-    <policy domain="filter" rights="none" pattern="*" />
-    <policy domain="coder" rights="none" pattern="*" />
-    <policy domain="coder" rights="read|write" pattern="{GIF,JPEG,PNG,WEBP}" />
--->
 <policymap>
   <!-- <policy domain="resource" name="temporary-path" value="/tmp"/> -->
   <policy domain="resource" name="memory" value="256MiB" />
@@ -67,7 +19,11 @@
   <!-- <policy domain="resource" name="file" value="768"/> -->
   <!-- <policy domain="resource" name="thread" value="4"/> -->
   <!-- <policy domain="resource" name="throttle" value="0"/> -->
-  <!-- <policy domain="resource" name="time" value="3600"/> -->
+  <!-- time limit omitted: ImageMagick's time resource acts as a process-wide deadline,
+  not a per-image limit. Long-lived Celery worker processes would exceed it and crash
+  the entire worker (exit code 1 via ImageMagick fatal()). Per-task timeouts are
+  handled by Celery's task-level time_limit instead. -->
+  <!-- <policy domain="resource" name="time" value="{{ .imagemagickTimeoutSeconds }}"/> -->
   <!-- <policy domain="coder" rights="none" pattern="MVG" /> -->
   <!-- <policy domain="module" rights="none" pattern="{PS,PDF,XPS}" /> -->
   <!-- <policy domain="path" rights="none" pattern="@*" /> -->

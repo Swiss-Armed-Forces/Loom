@@ -135,7 +135,7 @@ def _thumbnail_image_png_task(file_content: TempLazyBytes | None) -> Thumbnail |
 
 
 # This task is different from fallback_thumbnail_image_png_task because of caching
-@app.task(base=FileIndexingTask)
+@app.task(base=FileIndexingTask, time_limit=settings.imagemagick_timeout_seconds)
 @cache(key_function=lambda _, thumbnail_file: thumbnail_file.cache_key)
 def thumbnail_image_png_task(
     file_content: TempLazyBytes | None, _: ThumbnailFile
@@ -194,7 +194,7 @@ def thumbnail_fallback_pick(
 
 
 # This task is different from thumbnail_image_png_task because of caching
-@app.task(base=FileIndexingTask)
+@app.task(base=FileIndexingTask, time_limit=settings.imagemagick_timeout_seconds)
 @cache(key_function=lambda _, thumbnail_file: thumbnail_file.cache_key)
 def thumbnail_fallback_image_png_task(
     file_content: TempLazyBytes | None, _: ThumbnailFile

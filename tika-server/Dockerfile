@@ -1,5 +1,5 @@
 # Image version
-ARG TIKA_IMAGE_VERSION="2.9.2.1-full"
+ARG TIKA_IMAGE_VERSION="3.3.1.0-full"
 
 ARG DOCKER_REGISTRY="docker.io"
 FROM ${DOCKER_REGISTRY}/apache/tika:${TIKA_IMAGE_VERSION}
@@ -13,9 +13,9 @@ ARG UID_GID="35002:35002"
 USER root:root
 
 # Package versions
-ARG TESSERACT_OCR_ALL_VERSION="5.3.*"
-ARG IMAGEMAGICK_VERSION="8:6.9.*"
-ARG PYTHON3_SKIMAGE_VERSION="0.22.*"
+ARG TESSERACT_OCR_ALL_VERSION="5.5.*"
+ARG IMAGEMAGICK_VERSION="8:7.*"
+ARG PYTHON3_SKIMAGE_VERSION="0.26.*"
 
 # install language package for OCR, zstd-jni for compression support, and dependencies for custom-entry-point
 # ImageMagick and python3-skimage are required for Tika's image preprocessing (rotation detection, normalization)
@@ -28,9 +28,6 @@ RUN set -exu \
   && apt-get clean \
   && rm -rf /var/lib/apt/lists/*
 
-# Copy ImageMagick security policy to restrict dangerous operations
-COPY imagemagick-policy.xml /etc/ImageMagick-6/policy.xml
-
 # Download and install zstd-jni JAR to tika-extras directory
 ARG ZSTD_JNI_VERSION="1.5.7-7"
 
@@ -42,14 +39,8 @@ RUN set -exu \
     "https://repo1.maven.org/maven2/com/github/luben/zstd-jni/${ZSTD_JNI_VERSION}/zstd-jni-${ZSTD_JNI_VERSION}.jar" \
   && chmod 644 /tika-extras/zstd-jni-${ZSTD_JNI_VERSION}.jar
 
-COPY tika-config.xml /tika-config.xml
-
 USER $UID_GID
-
-ENV TIKA_JAVA_OPS="-XX:InitialRAMPercentage=90 -XX:MaxRAMPercentage=90"
 
 EXPOSE 8000
 
 ENTRYPOINT [ "/bin/sh", "-c", "exec java ${TIKA_JAVA_OPS} -cp \"/tika-server-standard-${TIKA_VERSION}.jar:/tika-extras/*\" org.apache.tika.server.core.TikaServerCli -h 0.0.0.0 $0 $@"]
-
-CMD [ "-c", "/tika-config.xml"]

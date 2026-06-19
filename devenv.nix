@@ -277,6 +277,15 @@ in
       git
       git-lfs
 
+      bash-completion
+      (pkgs.writeTextFile {
+        name = "aitools-bash-completion";
+        text = ''
+          eval "$(aitools completions 2>/dev/null)"
+        '';
+        destination = "/share/bash-completion/completions/aitools";
+      })
+
       # utils
       sysctl
       coreutils
@@ -622,6 +631,7 @@ in
     else
       echo "WARNING: Could not login to dependency proxy at ''${CI_DEPENDENCY_PROXY_SERVER}. You may face Docker Hub rate limit issues when pulling images"
     fi
+
   '';
 
   scripts.devenv-help = {
@@ -1091,15 +1101,13 @@ in
     '';
   };
 
-  scripts.ai-mr-update = {
-    description = "Update GitLab MR title/description using AI";
+  scripts.aitools = {
+    description = "Loom AI developer tools (mr-update, implement, mr-fix)";
     exec = ''
       (
         set -euo pipefail
         cd '${config.devenv.root}'
-
-        poetry run ./cicd/ai_mr_update.py \
-          "''${@}"
+        poetry run ./cicd/aitools.py "''${@}"
       )
     '';
   };

@@ -190,6 +190,14 @@ Per `CONTRIBUTING.md`:
 - Use `Closes #issue-number` in MR description
 - Remove Draft status only when ready for review
 
+### Git Commit Format
+
+- First line: conventional commit format — `type(scope): description`, max 72 characters
+- Blank line after the title
+- Body in markdown (headers with `#`, bullet points with `-`)
+- Describe **what** changed, not why
+- Do **not** add `Co-Authored-By` or any self-referencing author trailer
+
 ### Debugging
 
 - Check pod logs: `kubectl logs <pod-name> -n loom`
@@ -231,6 +239,9 @@ Override Helm values in `charts/values-overwrites.yaml` (empty by default, autom
 
 - Python: Follow PEP 8, enforced by black + flake8 + pylint
 - Use type hints everywhere (mypy enforced)
+- **Never use `dict`, `tuple`, or other generic collection types as function return types.** Always
+  define and use a proper named type (Pydantic model, dataclass, `TypedDict`, or `NamedTuple`).
+  Define a new type if one does not already exist. This applies to all functions, including helpers.
 - Pydantic models for validation and serialization
 - Repository pattern for data access (see `common/models/`)
 - Dependency injection via FastAPI dependencies and Celery task context
