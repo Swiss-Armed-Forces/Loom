@@ -61,10 +61,12 @@ def test_sync_flagged_emails_flags_new_emails(imap_service: IMAPService):
     fetch_files_from_api(search_string=search_string, expected_no_of_files=2)
 
 
-def test_sync_flagged_emails_mixed_operations(imap_service: IMAPService):
+def test_sync_flagged_emails_preserves_loom_flags_when_imap_flag_removed(
+    imap_service: IMAPService,
+):
     emails = list(imap_service.get_emails(recurse=True))
 
-    # Flag first 2 emails
+    # Flag first 2 emails in IMAP
     for email in emails[:2]:
         imap_service.add_flags_to_emails(email.folder, [email.uid], [b"\\Flagged"])
 
@@ -73,19 +75,19 @@ def test_sync_flagged_emails_mixed_operations(imap_service: IMAPService):
     )
     get_celery_app().send_task(fully_qualified_name).get(timeout=GET_TIMEOUT)
 
-    # Verify 2 flagged
+    # Verify 2 flagged in Loom
     search_string = "flagged:true"
     fetch_files_from_api(search_string=search_string, expected_no_of_files=2)
 
+    # Remove IMAP flag from first email — Loom flag must be preserved
     imap_service.remove_flags_from_emails(
         emails[0].folder, [emails[0].uid], [b"\\Flagged"]
     )
 
     get_celery_app().send_task(fully_qualified_name).get(timeout=GET_TIMEOUT)
-    fetch_files_from_api(
-        search_string="flagged:false", expected_no_of_files=(len(emails) - 1)
-    )
+    fetch_files_from_api(search_string=search_string, expected_no_of_files=2)
 
+    # Flag a third email in IMAP — sync picks it up, total becomes 3
     imap_service.add_flags_to_emails(emails[2].folder, [emails[2].uid], [b"\\Flagged"])
     get_celery_app().send_task(fully_qualified_name).get(timeout=GET_TIMEOUT)
-    fetch_files_from_api(search_string=search_string, expected_no_of_files=2)
+    fetch_files_from_api(search_string=search_string, expected_no_of_files=3)

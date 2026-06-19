@@ -1,7 +1,7 @@
 import logging
 from uuid import UUID
 
-from celery import chain, group
+from celery import chain
 from celery.canvas import Signature
 from common.dependencies import (
     get_celery_app,
@@ -10,11 +10,10 @@ from common.dependencies import (
     get_imap_service,
     get_lazybytes_service,
 )
-from common.file.file_repository import File, ImapInfo
+from common.file.file_repository import ImapInfo
 from common.services.lazybytes_service import TempTypedLazyBytes
 from common.services.query_builder import QueryParameters
 from common.services.task_scheduling_service import UpdateFileRequest
-from pydantic import BaseModel
 
 from worker.periodic.infra.periodic_task import PeriodicTask
 
@@ -23,15 +22,8 @@ logger = logging.getLogger(__name__)
 app = get_celery_app()
 
 
-class FlaggedEmailsChanges(BaseModel):
-    # emails that are flagged in imap and not in loom, we only have the ImapInfo
-    emails_to_flag: list[ImapInfo]
-    # emails that are flagged in loom but not in imap
-    emails_to_unflag: list[UUID]
-
-
 def signature() -> Signature:
-    return group(fetch_flagged_emails_from_imap.s(), fetch_flagged_emails_from_loom.s())
+    return fetch_flagged_emails_from_imap.s()
 
 
 @app.task(base=PeriodicTask)
@@ -72,33 +64,6 @@ def process_email_to_flag(
         return None
 
     return file_id
-
-
-@app.task(base=PeriodicTask)
-def fetch_flagged_emails_from_loom():
-    lazybytes_service = get_lazybytes_service()
-    file_repository = get_file_repository()
-
-    query = QueryParameters(
-        query_id=file_repository.open_point_in_time(),
-        search_string="flagged:true",
-    )
-    for file in file_repository.get_emails(query):
-        chain(
-            process_email_to_unflag.s(lazybytes_service.from_object(file)),
-            set_flag_for_file.s(False),
-        ).delay().forget()
-
-
-@app.task(base=PeriodicTask)
-def process_email_to_unflag(file_lb: TempTypedLazyBytes[File]) -> UUID | None:
-    file = get_lazybytes_service().load_object(file_lb)
-
-    if file.imap is None or b"\\Flagged" in get_imap_service().get_flags_from_imap_info(
-        file.imap
-    ):
-        return None
-    return file.id_
 
 
 @app.task(base=PeriodicTask)
