@@ -8,6 +8,7 @@ import re
 import shutil
 import subprocess
 import sys
+import tempfile
 import zipfile
 
 import gitlab
@@ -26,7 +27,6 @@ CI_SERVER_HOST = os.getenv("CI_SERVER_HOST", "gitlab.com")
 GITLAB_TOKEN = os.getenv("GITLAB_TOKEN") or os.getenv("PROJECT_ACCESS_TOKEN")
 CI_PROJECT_ID = os.getenv("CI_PROJECT_ID")
 CLAUDE_TIMEOUT = int(os.getenv("CLAUDE_TIMEOUT", "120"))
-CLAUDE_AGENTIC_TIMEOUT = int(os.getenv("CLAUDE_AGENTIC_TIMEOUT", "600"))
 MAX_DIFF_CHARS = int(os.getenv("MAX_DIFF_CHARS", "50000"))
 
 # Pathspecs for files to exclude from diffs (lockfiles, generated files)
@@ -79,19 +79,6 @@ def load_mr_template(repo: Repo) -> str:
         logger.warning("MR template not found at %s", template_path)
         return ""
 
-
-def load_claude_md(repo: Repo) -> str:
-    """Load CLAUDE.md from the repository root."""
-    if not repo.working_dir:
-        return ""
-
-    claude_md_path = os.path.join(repo.working_dir, "CLAUDE.md")
-    try:
-        with open(claude_md_path, encoding="utf-8") as f:
-            return f.read()
-    except FileNotFoundError:
-        logger.warning("CLAUDE.md not found at %s", claude_md_path)
-        return ""
 
 
 def build_mr_update_prompt(
@@ -291,18 +278,9 @@ def fetch_issue(gl: gitlab.Gitlab, repo: Repo, issue_number: int):  # type: igno
     return project.issues.get(issue_number)
 
 
-def build_implement_prompt(issue, claude_md: str) -> str:  # type: ignore[no-untyped-def]
+def build_implement_prompt(issue, context_dir: str) -> str:  # type: ignore[no-untyped-def]
     """Build the prompt for implementing a GitLab issue."""
     labels = ", ".join(issue.labels) if issue.labels else "(none)"
-    description = issue.description or "(no description)"
-
-    claude_md_section = ""
-    if claude_md:
-        claude_md_section = f"""
-## Project Guide (CLAUDE.md)
-
-{claude_md}
-"""
 
     return f"""You are implementing a GitLab issue for the Loom project.
 
@@ -312,14 +290,16 @@ Title: {issue.title}
 URL: {issue.web_url}
 Labels: {labels}
 
-Description:
-{description}
-{claude_md_section}
+## Context
+
+All context files are in: {context_dir}
+- issue.md — full issue description
+
 ## Task
 
-Implement the changes described in the issue above. Follow the project conventions
-described in CLAUDE.md. Make the necessary code changes, write tests where appropriate,
-and ensure the implementation is complete. Do NOT commit or push the changes.
+Implement the changes described in the issue. Follow the project conventions in CLAUDE.md.
+Make the necessary code changes, write tests where appropriate, and ensure the implementation
+is complete. Do NOT commit or push the changes.
 """
 
 
@@ -366,7 +346,7 @@ def format_discussions_for_prompt(discussions: list) -> str:
     return "\n\n---\n\n".join(parts)
 
 
-def build_mr_fix_prompt(mr: ProjectMergeRequest, discussions_text: str, diff: str) -> str:
+def build_mr_fix_prompt(mr: ProjectMergeRequest, context_dir: str) -> str:
     """Build the prompt for fixing MR review comments."""
     return f"""You are addressing code review comments on a GitLab merge request.
 
@@ -375,17 +355,15 @@ def build_mr_fix_prompt(mr: ProjectMergeRequest, discussions_text: str, diff: st
 Title: {mr.title}
 URL: {mr.web_url}
 
-## Unresolved Review Comments
+## Context
 
-{discussions_text}
-
-## Branch Diff
-
-{diff}
+All context files are in: {context_dir}
+- review_comments.txt — unresolved review threads
+- branch.diff — current branch diff
 
 ## Task
 
-Address each unresolved review comment above by modifying the relevant source files.
+Address each unresolved review comment by modifying the relevant source files.
 Follow the existing code style and project conventions. Do NOT commit or push the changes.
 """
 
@@ -409,47 +387,29 @@ def fetch_job_log(job) -> str:  # type: ignore[no-untyped-def]
     return str(trace)
 
 
-def fetch_job_artifacts_text(job) -> str:  # type: ignore[no-untyped-def]
-    """Download job artifacts zip and return text content of all readable files."""
+def extract_job_artifacts(job, dest_dir: str) -> bool:  # type: ignore[no-untyped-def]
+    """Download job artifacts zip and extract to dest_dir. Returns True if artifacts were found."""
     try:
         artifact_bytes = job.artifacts()
     except Exception as e:
         logger.debug("No artifacts available: %s", e)
-        return ""
+        return False
 
     if not artifact_bytes:
-        return ""
+        return False
 
-    parts = []
     try:
         with zipfile.ZipFile(io.BytesIO(artifact_bytes)) as zf:
-            for name in zf.namelist():
-                info = zf.getinfo(name)
-                if info.is_dir():
-                    continue
-                if info.file_size > 500_000:
-                    parts.append(
-                        f"### {name}\n[File too large to include ({info.file_size} bytes)]"
-                    )
-                    continue
-                try:
-                    content = zf.read(name).decode("utf-8", errors="replace")
-                    parts.append(f"### {name}\n{content}")
-                except Exception as e:
-                    parts.append(f"### {name}\n[Could not read: {e}]")
+            zf.extractall(dest_dir)
     except zipfile.BadZipFile as e:
         logger.warning("Could not read artifacts zip: %s", e)
-        return ""
+        return False
 
-    return "\n\n".join(parts)
+    return True
 
 
-def build_diagnose_prompt(job, log: str, artifacts_text: str) -> str:  # type: ignore[no-untyped-def]
+def build_diagnose_prompt(job, context_dir: str) -> str:  # type: ignore[no-untyped-def]
     """Build the prompt for diagnosing a CI/CD job failure."""
-    artifacts_section = ""
-    if artifacts_text:
-        artifacts_section = f"\n## Job Artifacts\n\n{artifacts_text}\n"
-
     return f"""You are diagnosing a failed GitLab CI/CD job in the Loom project.
 
 ## Job Details
@@ -460,10 +420,12 @@ Stage: {job.stage}
 Status: {job.status}
 URL: {job.web_url}
 
-## Job Log
+## Context
 
-{log}
-{artifacts_section}
+All context files are in: {context_dir}
+- job_log.txt — full job log
+- artifacts/ — extracted job artifacts (empty if none)
+
 ## Task
 
 Using the job log, artifacts (if any), and the project source code, find the root cause
@@ -485,7 +447,6 @@ def run_claude_agentic(prompt: str, repo: Repo) -> None:
     subprocess.run(
         ["claude", prompt],
         cwd=repo.working_dir,
-        timeout=CLAUDE_AGENTIC_TIMEOUT,
         check=False,
     )
 
@@ -577,9 +538,11 @@ def cmd_implement(args: argparse.Namespace) -> None:
         print("Aborted.")
         return
 
-    claude_md = load_claude_md(repo)
-    prompt = build_implement_prompt(issue, claude_md)
-    run_claude_agentic(prompt, repo)
+    with tempfile.TemporaryDirectory(prefix=".loom_implement_", dir=repo.working_dir) as context_dir:
+        with open(os.path.join(context_dir, "issue.md"), "w", encoding="utf-8") as f:
+            f.write(f"# {issue.title}\n\n{issue.description or ''}")
+        prompt = build_implement_prompt(issue, context_dir)
+        run_claude_agentic(prompt, repo)
 
 
 def cmd_mr_fix(_args: argparse.Namespace) -> None:
@@ -623,10 +586,13 @@ def cmd_mr_fix(_args: argparse.Namespace) -> None:
         print("Aborted.")
         return
 
-    discussions_text = format_discussions_for_prompt(discussions)
-    diff = get_branch_diff(repo)
-    prompt = build_mr_fix_prompt(mr, discussions_text, diff)
-    run_claude_agentic(prompt, repo)
+    with tempfile.TemporaryDirectory(prefix=".loom_mrfix_", dir=repo.working_dir) as context_dir:
+        with open(os.path.join(context_dir, "review_comments.txt"), "w", encoding="utf-8") as f:
+            f.write(format_discussions_for_prompt(discussions))
+        with open(os.path.join(context_dir, "branch.diff"), "w", encoding="utf-8") as f:
+            f.write(get_branch_diff(repo))
+        prompt = build_mr_fix_prompt(mr, context_dir)
+        run_claude_agentic(prompt, repo)
 
 
 def cmd_completions(_args: argparse.Namespace) -> None:
@@ -678,15 +644,20 @@ def cmd_diagnose(args: argparse.Namespace) -> None:
     log = fetch_job_log(job)
     logger.info("Job log: %d characters", len(log))
 
-    logger.info("Fetching job artifacts...")
-    artifacts_text = fetch_job_artifacts_text(job)
-    if artifacts_text:
-        logger.info("Artifacts: %d characters", len(artifacts_text))
-    else:
-        logger.info("No artifacts found")
+    with tempfile.TemporaryDirectory(prefix=".loom_diagnose_", dir=repo.working_dir) as context_dir:
+        with open(os.path.join(context_dir, "job_log.txt"), "w", encoding="utf-8") as f:
+            f.write(log)
 
-    prompt = build_diagnose_prompt(job, log, artifacts_text)
-    run_claude_agentic(prompt, repo)
+        logger.info("Fetching job artifacts...")
+        artifacts_dir = os.path.join(context_dir, "artifacts")
+        os.makedirs(artifacts_dir)
+        if extract_job_artifacts(job, artifacts_dir):
+            logger.info("Artifacts extracted to %s", artifacts_dir)
+        else:
+            logger.info("No artifacts found")
+
+        prompt = build_diagnose_prompt(job, context_dir)
+        run_claude_agentic(prompt, repo)
 
 
 def build_parser() -> argparse.ArgumentParser:
