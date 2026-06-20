@@ -1,9 +1,11 @@
 import pytest
+from common.celery_app import TaskGroupName
 from common.dependencies import get_celery_inspect_service, get_redis_client
 from common.services.celery_inspect_service import _TASK_GROUP_KEY_PREFIX
 
 _TEST_TASK_NAME = "integration.test.task"
-_TEST_GROUP_NAME = "integration-test-group"
+_TEST_TASK_NAMES_IN_GROUP = ("task.a", "task.b")
+_TEST_GROUP = TaskGroupName.ALL
 
 
 @pytest.fixture(autouse=True)
@@ -12,7 +14,9 @@ def clean_state():
     service = get_celery_inspect_service()
     service.set_throttled(False)
     service.set_task_paused(_TEST_TASK_NAME, False)
-    get_redis_client().delete(f"{_TASK_GROUP_KEY_PREFIX}:{_TEST_GROUP_NAME}")
+    get_redis_client().srem(
+        f"{_TASK_GROUP_KEY_PREFIX}:{_TEST_GROUP.value}", *_TEST_TASK_NAMES_IN_GROUP
+    )
 
 
 def test_wait_for_idle_returns_true_when_already_idle():
@@ -39,10 +43,8 @@ def test_set_task_paused_and_is_task_paused():
 
 def test_register_and_get_task_names_in_group():
     service = get_celery_inspect_service()
-    assert service.get_task_names_in_group(_TEST_GROUP_NAME) == []
-    service.register_task_in_group(_TEST_GROUP_NAME, "task.a")
-    service.register_task_in_group(_TEST_GROUP_NAME, "task.b")
-    assert set(service.get_task_names_in_group(_TEST_GROUP_NAME)) == {
-        "task.a",
-        "task.b",
-    }
+    for task_name in _TEST_TASK_NAMES_IN_GROUP:
+        service.register_task_in_group(_TEST_GROUP, task_name)
+    assert set(_TEST_TASK_NAMES_IN_GROUP).issubset(
+        set(service.get_task_names_in_group(_TEST_GROUP))
+    )

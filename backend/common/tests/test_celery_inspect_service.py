@@ -5,13 +5,9 @@ from unittest.mock import MagicMock
 import pytest
 from celery import Task
 
+from common.celery_app import TaskGroupName, _task_groups, task_group
 from common.dependencies import get_celery_app, get_queues_service, get_redis_client
-from common.services.celery_inspect_service import (
-    CeleryInspectService,
-    TaskGroupName,
-    _task_groups,
-    task_group,
-)
+from common.services.celery_inspect_service import CeleryInspectService
 
 
 @pytest.fixture()
@@ -32,7 +28,7 @@ def test_task_group_decorator_registers_task():
     result = task_group(TaskGroupName.DISPATCH)(mock_task)
 
     assert result is mock_task
-    assert "some.task" in _task_groups[TaskGroupName.DISPATCH.value]
+    assert "some.task" in _task_groups[TaskGroupName.DISPATCH]
 
     _task_groups.clear()
 
@@ -212,7 +208,7 @@ def test_register_task_groups_persists_to_redis(
 ):
     redis_client: Any = get_redis_client()
     _task_groups.clear()
-    _task_groups[TaskGroupName.DISPATCH.value] = ["my.task"]
+    _task_groups[TaskGroupName.DISPATCH] = ["my.task"]
 
     try:
         celery_inspect_service.register_task_groups()

@@ -1,14 +1,12 @@
 import logging
 import time
-from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor
-from enum import Enum
 from typing import TYPE_CHECKING, Iterator, Union
 
-from celery import Celery, Task
+from celery import Celery
 from redis import StrictRedis
 
-from common.celery_app import get_terminal_queues
+from common.celery_app import TaskGroupName, _task_groups, get_terminal_queues
 from common.services.queues_service import QueuesService
 from common.settings import CELERY_QUEUE_NAME_MAXLEN, settings
 
@@ -21,38 +19,6 @@ logger = logging.getLogger(__name__)
 
 _WAIT_FOR_PROCESSING_IDLE_DEFAULT_TIMEOUT: float = 60 * 10
 _WAIT_FOR_PROCESSING_IDLE_DEFAULT_POLL_INTERVAL: float = 10.0
-
-
-class TaskGroupName(str, Enum):
-    PROCESSING = "processing"
-    PERSISTING = "persisting"
-    DISPATCH = "dispatch"
-
-
-_task_groups: dict[str, list[str]] = {}
-
-
-def register_task(group_name: TaskGroupName, task_name: str) -> None:
-    """Register a task name into a named group."""
-    _task_groups.setdefault(group_name.value, []).append(task_name)
-
-
-def task_group(group_name: TaskGroupName) -> Callable[[Task], Task]:
-    """Register a Celery task into a named group.
-
-    Apply as the outermost decorator so the Celery task object (with .name) is
-    received:
-
-        @task_group(TaskGroupName.DISPATCH)
-        @app.task()
-        def my_task(...): ...
-    """
-
-    def decorator(task: Task) -> Task:
-        _task_groups.setdefault(group_name.value, []).append(task.name)
-        return task
-
-    return decorator
 
 
 _TASK_GROUP_KEY_PREFIX = "task_group"
@@ -157,7 +123,7 @@ class CeleryInspectService:
         Periodic tasks are excluded so they never block idle detection. Returns True if
         idle was reached within the timeout, False otherwise.
         """
-        processing_tasks = self.get_task_names_in_group(TaskGroupName.PROCESSING.value)
+        processing_tasks = self.get_task_names_in_group(TaskGroupName.PROCESSING)
         return self.wait_for_idle(
             timeout=timeout,
             poll_interval=poll_interval,
@@ -180,20 +146,24 @@ class CeleryInspectService:
     def get_throttled_tasks(self) -> list[str]:
         """Return the task names that are paused during throttling (the DISPATCH
         group)."""
-        return self.get_task_names_in_group(TaskGroupName.DISPATCH.value)
+        return self.get_task_names_in_group(TaskGroupName.DISPATCH)
 
     def _task_name_to_queue(self, task_name: str) -> str:
         return f"{settings.celery_queue_name_prefix}{task_name}"[
             :CELERY_QUEUE_NAME_MAXLEN
         ]
 
-    def register_task_in_group(self, group_name: str, task_name: str) -> None:
+    def register_task_in_group(self, group_name: TaskGroupName, task_name: str) -> None:
         """Persist a task name into a group registry in Redis."""
-        self._redis_client.sadd(f"{_TASK_GROUP_KEY_PREFIX}:{group_name}", task_name)
+        self._redis_client.sadd(
+            f"{_TASK_GROUP_KEY_PREFIX}:{group_name.value}", task_name
+        )
 
-    def get_task_names_in_group(self, group_name: str) -> list[str]:
+    def get_task_names_in_group(self, group_name: TaskGroupName) -> list[str]:
         """Return task names registered in the given group (reads from Redis)."""
-        members = self._redis_client.smembers(f"{_TASK_GROUP_KEY_PREFIX}:{group_name}")
+        members = self._redis_client.smembers(
+            f"{_TASK_GROUP_KEY_PREFIX}:{group_name.value}"
+        )
         return [m.decode() if isinstance(m, bytes) else m for m in members]
 
     def register_task_groups(self) -> None:
@@ -209,12 +179,12 @@ class CeleryInspectService:
         self, task_group_name: TaskGroupName, paused: bool
     ) -> None:
         """Pause or resume all tasks in the given group."""
-        for task_name in self.get_task_names_in_group(task_group_name.value):
+        for task_name in self.get_task_names_in_group(task_group_name):
             self.set_task_paused(task_name, paused)
 
     def is_taskgroup_paused(self, task_group_name: TaskGroupName) -> bool:
         """Return True if all tasks in the given group are paused."""
-        task_names = self.get_task_names_in_group(task_group_name.value)
+        task_names = self.get_task_names_in_group(task_group_name)
         return bool(task_names) and all(
             self.is_task_paused(name) for name in task_names
         )

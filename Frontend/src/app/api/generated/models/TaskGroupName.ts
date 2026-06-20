@@ -18,9 +18,11 @@
  * @export
  */
 export const TaskGroupName = {
+    All: "all",
     Processing: "processing",
     Persisting: "persisting",
     Dispatch: "dispatch",
+    Periodic: "periodic",
 } as const;
 export type TaskGroupName = (typeof TaskGroupName)[keyof typeof TaskGroupName];
 

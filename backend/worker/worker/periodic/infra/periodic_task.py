@@ -1,7 +1,7 @@
 from abc import ABC
 
-from common.celery_app import BaseTask
+from common.celery_app import BaseTask, TaskGroupName
 
 
 class PeriodicTask(BaseTask, ABC):
-    pass
+    _task_group_name = TaskGroupName.PERIODIC

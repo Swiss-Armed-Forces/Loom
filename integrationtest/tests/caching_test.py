@@ -1,11 +1,14 @@
 from http.client import REQUEST_TIMEOUT
 
+import pytest
 import requests
 from common.utils.cache import CacheStatistics
 
 from utils.consts import CACHING_ENDPOINT
 from utils.fetch_from_api import fetch_files_from_api
 from utils.upload_asset import upload_asset
+
+pytestmark = pytest.mark.usefixtures("disable_periodic_tasks")
 
 
 def _get_stats() -> CacheStatistics:

@@ -14,6 +14,7 @@ logger = logging.getLogger(__name__)
 
 def init():
     # pylint: disable=global-statement
+    common_dependencies.init()
     logger.info("Initializes api dependencies")
 
     global _websocket_service

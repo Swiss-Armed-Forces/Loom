@@ -4,13 +4,13 @@ from typing import Any
 
 import pytest
 
+from common.celery_app import TaskGroupName
 from common.dependencies import (
     get_celery_inspect_service,
     get_file_repository,
     get_queues_service,
     get_redis_client,
 )
-from common.services.celery_inspect_service import TaskGroupName
 from common.services.complete_estimate_service import (
     _KEY_EMA_THROUGHPUT,
     _KEY_ESTIMATE_TS,

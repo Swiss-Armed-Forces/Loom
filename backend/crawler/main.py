@@ -5,15 +5,15 @@ from common.dependencies import (
     get_s3_intake_client,
     get_task_scheduling_service,
 )
-from common.dependencies import init as init_common_dependencies
 
+from crawler.dependencies import init
 from crawler.s3_crawler import S3Crawler
 from crawler.settings import settings
 
 logger = logging.getLogger(__name__)
 
 if __name__ == "__main__":
-    init_common_dependencies()
+    init()
     logger.info(
         "Initializing S3Crawler — bucket: '%s', alias: '%s'",
         settings.intake_storage.bucket_name,
