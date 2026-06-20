@@ -301,6 +301,7 @@ manifests:
           # See: https://github.com/GoogleContainerTools/skaffold/issues/7989
           preInstall.image.tag: "{{or .IMAGE_TAG_registry_gitlab_com_swiss_armed_forces_cyber_command_cea_loom_alpine \"\"}}"
           esInit.image.tag: "{{or .IMAGE_TAG_registry_gitlab_com_swiss_armed_forces_cyber_command_cea_loom_api \"\"}}"
+          s3Init.image.tag: "{{or .IMAGE_TAG_registry_gitlab_com_swiss_armed_forces_cyber_command_cea_loom_api \"\"}}"
 
 # Minimal profiles - only overrides
 profiles:
