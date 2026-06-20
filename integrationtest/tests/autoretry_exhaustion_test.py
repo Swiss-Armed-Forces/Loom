@@ -12,9 +12,9 @@ GRAVEYARD_QUEUE = (
 ABYSS_QUEUE = f"{settings.celery_queue_name_prefix}{settings.celery_abyss_task_name}"
 POLL_TIMEOUT = 0.01
 TOTAL_TIMEOUT = 30
-NDL_OBSERVE_TIMEOUT = 60
-NDL_RESULT_TIMEOUT = 90
-NDL_DELAYED_QUEUE_POLL_SLEEP = 0.5
+NDL_OBSERVE_TIMEOUT = 90
+NDL_RESULT_TIMEOUT = 150
+NDL_DELAYED_QUEUE_POLL_SLEEP = 0.1
 
 
 def test_autoretry_exhaustion_does_not_send_to_graveyard_or_abyss():
@@ -56,16 +56,16 @@ def test_ndl_routes_retry_through_delayed_queue():
     """
     qs = get_queues_service()
 
-    # autoretry_test_task uses default_retry_delay=3 (NDL path) and fails
+    # ndl_observation_test_task uses default_retry_delay=30 (NDL path) and fails
     # fail_count times before succeeding.
     result = get_celery_app().send_task(
-        "worker.test.autoretry_test_task.autoretry_test_task",
+        "worker.test.autoretry_test_task.ndl_observation_test_task",
         args=[1],  # fail_count=1: fails once, retries once via NDL, then succeeds
     )
 
     # Wait for the message to appear in a celery_delayed_* queue.
     # The worker picks up the task, fails it, and publishes the retry via NDL —
-    # the message then sits in celery_delayed_* for ~3 s before being re-delivered.
+    # the message then sits in celery_delayed_* for ~30 s before being re-delivered.
     observed_in_delayed = False
     deadline = time.monotonic() + NDL_OBSERVE_TIMEOUT
     while time.monotonic() < deadline:
