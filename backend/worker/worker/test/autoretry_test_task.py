@@ -21,21 +21,41 @@ class AutoRetryTestException(Exception):
     retry_backoff=False,
     default_retry_delay=3,
 )
-def autoretry_test_task(self, fail_count: int) -> int:
+def autoretry_test_task(self: TestTask, fail_count: int) -> int:
     """Fails `fail_count` times then succeeds.
 
     Returns the number of retries so callers can assert the task was
     actually retried.
 
     Uses default_retry_delay=3 (3s = binary 11 = two TTL levels in Native
-    Delayed Delivery) to reproduce Bug A: BaseTask.__call__ sees two x-death
-    entries and raises DeadTask(). Before the fix the task never completes;
-    after the fix it retries correctly.
+    Delayed Delivery) to keep the test fast while still exercising Bug A
+    and Bug B regressions.
 
     Regression tests for:
     - KeyError('exchange_type') during autoretry_for retry
     - False DeadTask for tasks arriving via >=2 delayed TTL levels (Bug A)
     - Spurious copies landing in loom:unroutable on every delayed retry (Bug B)
+    """
+    if self.request.retries < fail_count:
+        raise AutoRetryTestException()
+    return self.request.retries
+
+
+@app.task(
+    bind=True,
+    base=TestTask,
+    autoretry_for=(AutoRetryTestException,),
+    max_retries=1,
+    retry_backoff=False,
+    default_retry_delay=30,
+)
+def ndl_observation_test_task(self: TestTask, fail_count: int) -> int:
+    """Fails `fail_count` times then succeeds, with a 30s retry delay.
+
+    Uses default_retry_delay=30 (30s = binary 11110 = 4 TTL levels in Native
+    Delayed Delivery: celery_delayed_1=2s, _2=4s, _3=8s, _4=16s) to give the
+    RabbitMQ Management API poll loop a wide observation window (~16s in the
+    largest level) to confirm the message sits in a celery_delayed_* queue.
     """
     if self.request.retries < fail_count:
         raise AutoRetryTestException()
