@@ -2,6 +2,7 @@ import time
 from collections.abc import Callable
 from uuid import uuid4
 
+import pytest
 from common.dependencies import (
     get_celery_app,
     get_root_task_information_repository,
@@ -12,6 +13,8 @@ from worker.periodic.flush_on_idle_task import flush_on_idle_task
 
 from utils.fetch_from_api import fetch_files_from_api
 from utils.upload_asset import upload_asset
+
+pytestmark = pytest.mark.usefixtures("disable_periodic_tasks")
 
 FLUSH_ON_IDLE_TIMEOUT = 60
 

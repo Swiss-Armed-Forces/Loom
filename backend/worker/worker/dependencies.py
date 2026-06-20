@@ -3,7 +3,12 @@ from unittest.mock import MagicMock
 
 from common import dependencies as common_dependencies
 from common.celery_app import register_tasks_for_package
-from common.dependencies import DependencyException, get_celery_app
+from common.dependencies import (
+    DependencyException,
+    get_celery_app,
+    get_celery_inspect_service,
+    get_lazybytes_service,
+)
 from common.models.base_repository import REPOSITORY_INSTANCES, BaseRepository
 from gotenberg_client import GotenbergClient
 
@@ -39,6 +44,7 @@ def _register_task_info_persister(repo_type: type[BaseRepository]) -> None:
 
 def init():
     # pylint: disable=global-statement
+    common_dependencies.init()
     logger.info("Initialize worker dependencies")
 
     global _tasks_registered
@@ -49,9 +55,11 @@ def init():
             _register_task_info_persister(repo_type)
         _tasks_registered = True
 
+    get_celery_inspect_service().register_task_groups()
+
     global _tika_service
     _tika_service = TikaService(
-        common_dependencies.get_lazybytes_service(),
+        get_lazybytes_service(),
         timeout=settings.tika_timeout_seconds,
     )
 

@@ -2,16 +2,14 @@ from abc import ABC, abstractmethod
 from typing import Callable, Generic
 from uuid import UUID
 
-from celery import Celery
 from celery.utils.log import get_task_logger
-from common.celery_app import BaseTask
+from common.celery_app import BaseTask, TaskGroupName
 from common.dependencies import (
     get_celery_app,
     get_celery_inspect_service,
     get_root_task_information_repository,
 )
 from common.models.base_repository import BaseRepository
-from common.services.celery_inspect_service import TaskGroupName, register_task
 from common.task_object.task_object import (
     RepositoryTaskObjectT,
     SecondaryRepositoryTaskObjectT,
@@ -34,13 +32,7 @@ class ProcessingTask(
     It keeps track of the status of task and subtask
     """
 
-    _task_group_name: TaskGroupName = TaskGroupName.PROCESSING
-
-    @classmethod
-    def on_bound(cls, app: Celery) -> None:  # pylint: disable=redefined-outer-name
-        super().on_bound(app)
-        task_name: str = cls.name
-        register_task(cls._task_group_name, task_name)
+    _task_group_name = TaskGroupName.PROCESSING
 
     # pylint does not consider metaclass:
     # https://stackoverflow.com/questions/22186843/pylint-w0223-method-is-abstract-in-class-but-is-not-overridden

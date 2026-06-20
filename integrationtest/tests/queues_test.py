@@ -36,6 +36,7 @@ def _get_message_count(queue: Queue) -> int:
     return int(response.json())
 
 
+@pytest.mark.usefixtures("disable_periodic_tasks")
 class TestQueues:
 
     asset_list = ["empty_file.txt"]

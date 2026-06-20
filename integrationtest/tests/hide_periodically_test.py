@@ -10,6 +10,8 @@ from utils.upload_asset import upload_many_assets
 
 logger = logging.getLogger(__name__)
 
+pytestmark = pytest.mark.usefixtures("disable_periodic_tasks")
+
 
 def _get_fully_qualified_name(obj: type | Callable):
     module_name = obj.__module__

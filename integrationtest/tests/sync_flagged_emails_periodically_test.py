@@ -12,6 +12,8 @@ from utils.upload_asset import upload_many_assets
 
 # pylint: disable=redefined-outer-name
 
+pytestmark = pytest.mark.usefixtures("disable_periodic_tasks")
+
 
 def _get_fully_qualified_name(obj: type | Callable):
     module_name = obj.__module__

@@ -4,8 +4,9 @@ import time
 from pydantic import BaseModel
 from redis import StrictRedis
 
+from common.celery_app import TaskGroupName
 from common.file.file_repository import FileRepository
-from common.services.celery_inspect_service import CeleryInspectService, TaskGroupName
+from common.services.celery_inspect_service import CeleryInspectService
 from common.services.query_builder import QueryParameters
 from common.services.queues_service import QueuesService
 from common.settings import CELERY_QUEUE_NAME_MAXLEN, settings
@@ -50,7 +51,7 @@ class CompleteEstimateService:
         remaining.
         """
         dispatch_names = self._celery_inspect_service.get_task_names_in_group(
-            TaskGroupName.DISPATCH.value
+            TaskGroupName.DISPATCH
         )
         all_counts = self._queues_service.get_all_queue_message_counts()
         prefix = settings.celery_queue_name_prefix

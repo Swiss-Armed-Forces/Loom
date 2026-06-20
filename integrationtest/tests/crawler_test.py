@@ -2,16 +2,10 @@ import io
 
 import pytest
 from common.dependencies import get_s3_intake_client
-from common.dependencies import init as init_common_dependencies
 from crawler.settings import settings
 
 from utils.consts import ASSETS_DIR
 from utils.fetch_from_api import fetch_files_from_api, get_file_preview_by_name
-
-
-@pytest.fixture(autouse=True)
-def setup_crawler_dependencies():
-    init_common_dependencies()
 
 
 @pytest.mark.parametrize(

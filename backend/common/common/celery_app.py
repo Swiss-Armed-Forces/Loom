@@ -4,6 +4,7 @@ import re
 from abc import ABC
 from collections.abc import Callable
 from datetime import datetime, timedelta
+from enum import Enum
 from pprint import pformat
 from typing import Any, Protocol
 
@@ -234,7 +235,50 @@ class XDeathHeader(RootModel[list[XDeathEntry]]):
 _NDL_ROUTING_KEY_RE = re.compile(r"^[01](?:\.[01]){27}\.(.+)$")
 
 
+class TaskGroupName(str, Enum):
+    ALL = "all"
+    PROCESSING = "processing"
+    PERSISTING = "persisting"
+    DISPATCH = "dispatch"
+    PERIODIC = "periodic"
+
+
+_task_groups: dict[TaskGroupName, list[str]] = {}
+
+
+def register_task(group_name: TaskGroupName, task_name: str) -> None:
+    """Register a task name into a named group."""
+    _task_groups.setdefault(group_name, []).append(task_name)
+
+
+def task_group(group_name: TaskGroupName) -> Callable[[Task], Task]:
+    """Register a Celery task into a named group.
+
+    Apply as the outermost decorator so the Celery task object (with .name) is
+    received:
+
+        @task_group(TaskGroupName.DISPATCH)
+        @app.task()
+        def my_task(...): ...
+    """
+
+    def decorator(task: Task) -> Task:
+        _task_groups.setdefault(group_name, []).append(task.name)
+        return task
+
+    return decorator
+
+
 class BaseTask(ABC, Task):
+    _task_group_name: TaskGroupName | None = None
+
+    @classmethod
+    def on_bound(cls, app: Celery) -> None:
+        super().on_bound(app)
+        register_task(TaskGroupName.ALL, cls.name)
+        if cls._task_group_name is not None:
+            register_task(cls._task_group_name, cls.name)
+
     def __call__(self, *args, **kwargs) -> None:
         headers = getattr(self.request, "headers", {}) or {}
 

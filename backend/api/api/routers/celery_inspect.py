@@ -1,5 +1,6 @@
+from common.celery_app import TaskGroupName
 from common.dependencies import get_celery_inspect_service
-from common.services.celery_inspect_service import CeleryInspectService, TaskGroupName
+from common.services.celery_inspect_service import CeleryInspectService
 from fastapi import APIRouter, Depends
 
 router = APIRouter()
@@ -12,7 +13,7 @@ def get_task_groups(
     celery_inspect_service: CeleryInspectService = default_celery_inspect_service,
 ) -> dict[str, list[str]]:
     return {
-        group.value: celery_inspect_service.get_task_names_in_group(group.value)
+        group.value: celery_inspect_service.get_task_names_in_group(group)
         for group in TaskGroupName
     }
 

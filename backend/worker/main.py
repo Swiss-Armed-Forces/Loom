@@ -10,11 +10,7 @@ from common.celery_app import (
     make_queue_guard,
     register_persister_shard_queues,
 )
-from common.dependencies import (
-    get_celery_app,
-    get_celery_inspect_service,
-)
-from common.dependencies import init as init_common_dependencies
+from common.dependencies import get_celery_app, get_celery_inspect_service
 from common.settings import CELERY_QUEUE_NAME_MAXLEN, WorkerType, settings
 from common.utils.sharding import (
     get_all_persister_shards,
@@ -27,7 +23,6 @@ logger = logging.getLogger(__name__)
 
 
 def init_all():
-    init_common_dependencies()
     init()
 
 
@@ -35,12 +30,6 @@ def init_all():
 @signals.worker_process_init.connect
 def pool_worker_main(*_, **__):
     init_all()
-
-
-@signals.worker_ready.connect
-def publish_task_groups(**__):
-    """Publish in-process task group registrations to Redis so the API can read them."""
-    get_celery_inspect_service().register_task_groups()
 
 
 class _WorkerReadySender(Protocol):  # pylint: disable=too-few-public-methods
