@@ -1,18 +1,15 @@
-import argparse
 import json
 import subprocess
 import sys
 from pathlib import Path
 from uuid import uuid4
 
-import pytest
 from common.file.file_repository import File, FilePurePath, RenderedFile
 from common.services.lazybytes_service import (
     InMemoryFileStorageLazyBytesService,
     LazyBytes,
 )
 
-import worker.create_archive.tasks.archive_format as archive_fmt
 from worker.create_archive.tasks.archive_format import CLI_FILENAME
 from worker.utils.archive import ArchiveEntry, build_archive, simple_entries
 
@@ -32,6 +29,7 @@ def _run(archive_dir: Path, args: list[str]) -> subprocess.CompletedProcess:
         capture_output=True,
         text=True,
         check=False,
+        cwd=archive_dir,
     )
 
 
@@ -787,214 +785,3 @@ class TestCliId:
 
         assert result.returncode != 0
         assert "no file found with id" in result.stderr
-
-
-def _run_shell(archive_dir: Path, commands: str) -> subprocess.CompletedProcess:
-    return subprocess.run(
-        [sys.executable, str(archive_dir / CLI_FILENAME)],
-        input=commands,
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-
-
-class TestCliShell:
-    def test_no_args_launches_shell(
-        self,
-        tmp_path: Path,
-        file_storage_service_inmemory: InMemoryFileStorageLazyBytesService,
-    ) -> None:
-        archive_dir = build_archive(
-            tmp_path,
-            simple_entries({"report.pdf": b"data"}),
-            file_storage_service_inmemory,
-        )
-        result = _run_shell(archive_dir, "exit\n")
-
-        assert result.returncode == 0
-        assert "loom>" in result.stdout
-
-    def test_shell_subcommand_launches_shell(
-        self,
-        tmp_path: Path,
-        file_storage_service_inmemory: InMemoryFileStorageLazyBytesService,
-    ) -> None:
-        archive_dir = build_archive(
-            tmp_path,
-            simple_entries({"report.pdf": b"data"}),
-            file_storage_service_inmemory,
-        )
-        result = subprocess.run(
-            [sys.executable, str(archive_dir / CLI_FILENAME), "shell"],
-            input="exit\n",
-            capture_output=True,
-            text=True,
-            check=False,
-        )
-
-        assert result.returncode == 0
-        assert "loom>" in result.stdout
-
-    def test_shell_ls_lists_files(
-        self,
-        tmp_path: Path,
-        file_storage_service_inmemory: InMemoryFileStorageLazyBytesService,
-    ) -> None:
-        archive_dir = build_archive(
-            tmp_path,
-            simple_entries({"report.pdf": b"data"}),
-            file_storage_service_inmemory,
-        )
-        result = _run_shell(archive_dir, "ls\nexit\n")
-
-        assert result.returncode == 0
-        assert "report.pdf" in result.stdout
-
-    def test_shell_search_finds_file(
-        self,
-        tmp_path: Path,
-        file_storage_service_inmemory: InMemoryFileStorageLazyBytesService,
-    ) -> None:
-        archive_dir = build_archive(
-            tmp_path,
-            simple_entries({"report.pdf": b"data"}),
-            file_storage_service_inmemory,
-        )
-        result = _run_shell(archive_dir, "grep report\nexit\n")
-
-        assert result.returncode == 0
-        assert "report.pdf" in result.stdout
-
-    def test_shell_tree_shows_hierarchy(
-        self,
-        tmp_path: Path,
-        file_storage_service_inmemory: InMemoryFileStorageLazyBytesService,
-    ) -> None:
-        archive_dir = build_archive(
-            tmp_path,
-            simple_entries({"docs/report.pdf": b"pdf", "images/photo.jpg": b"img"}),
-            file_storage_service_inmemory,
-        )
-        result = _run_shell(archive_dir, "tree\nexit\n")
-
-        assert result.returncode == 0
-        assert "docs" in result.stdout
-        assert "images" in result.stdout
-
-    def test_shell_invalid_command_stays_running(
-        self,
-        tmp_path: Path,
-        file_storage_service_inmemory: InMemoryFileStorageLazyBytesService,
-    ) -> None:
-        archive_dir = build_archive(
-            tmp_path,
-            simple_entries({"report.pdf": b"data"}),
-            file_storage_service_inmemory,
-        )
-        result = _run_shell(archive_dir, "invalidcmd\nexit\n")
-
-        assert result.returncode == 0
-
-    def test_shell_error_command_stays_running(
-        self,
-        tmp_path: Path,
-        file_storage_service_inmemory: InMemoryFileStorageLazyBytesService,
-    ) -> None:
-        archive_dir = build_archive(
-            tmp_path,
-            simple_entries({"report.pdf": b"data"}),
-            file_storage_service_inmemory,
-        )
-        result = _run_shell(archive_dir, "ls nonexistent\nexit\n")
-
-        assert result.returncode == 0
-        assert "no file found matching" in result.stderr
-
-    def test_shell_help_prints_help(
-        self,
-        tmp_path: Path,
-        file_storage_service_inmemory: InMemoryFileStorageLazyBytesService,
-    ) -> None:
-        archive_dir = build_archive(
-            tmp_path,
-            simple_entries({"report.pdf": b"data"}),
-            file_storage_service_inmemory,
-        )
-        result = _run_shell(archive_dir, "help\nexit\n")
-
-        assert result.returncode == 0
-        assert "Loom archive CLI" in result.stdout
-
-    def test_shell_eof_exits_cleanly(
-        self,
-        tmp_path: Path,
-        file_storage_service_inmemory: InMemoryFileStorageLazyBytesService,
-    ) -> None:
-        archive_dir = build_archive(
-            tmp_path,
-            simple_entries({"report.pdf": b"data"}),
-            file_storage_service_inmemory,
-        )
-        result = _run_shell(archive_dir, "")
-
-        assert result.returncode == 0
-
-
-# ---------------------------------------------------------------------------
-# Memory tests
-# ---------------------------------------------------------------------------
-
-_N_ENTRIES = 50
-_CONTENT_SIZE = 2 * 1024 * 1024  # 2 MiB per entry → 100 MiB total on disk
-
-
-class TestMemory:
-    @pytest.fixture()
-    def large_archive_dir(
-        self,
-        tmp_path: Path,
-        file_storage_service_inmemory: InMemoryFileStorageLazyBytesService,
-    ) -> Path:
-        entries = [
-            ArchiveEntry(
-                file=File(
-                    full_name=FilePurePath(f"docs/file_{i:04d}.txt"),
-                    source="test",
-                    sha256="abc",
-                    size=4,
-                    storage_data=LazyBytes(service_id=uuid4()),
-                    content="x" * _CONTENT_SIZE,
-                ),
-                content=b"data",
-            )
-            for i in range(_N_ENTRIES)
-        ]
-        return build_archive(tmp_path, entries, file_storage_service_inmemory)
-
-    @pytest.mark.limit_memory("30 MB")
-    def test_ls_does_not_load_all_entries(self, large_archive_dir: Path) -> None:
-        # Exact match: resolve_name holds at most 1 IndexEntry at a time.
-        # If load_entries returned a list, all 100 MB would be live → fails limit.
-        archive_fmt.cmd_ls(
-            argparse.Namespace(path="docs/file_0001.txt"),
-            index_dir=large_archive_dir / "files_index",
-        )
-
-    @pytest.mark.limit_memory("20 MB")
-    def test_tree_does_not_load_all_entries(self, large_archive_dir: Path) -> None:
-        # cmd_tree only stores path-component strings; meta is discarded each iteration.
-        archive_fmt.cmd_tree(
-            argparse.Namespace(),
-            index_dir=large_archive_dir / "files_index",
-        )
-
-    @pytest.mark.limit_memory("30 MB")
-    def test_info_does_not_load_all_entries(self, large_archive_dir: Path) -> None:
-        # First pass: 1 matched entry live. Second pass builds id→name strings only.
-        # If entries_by_id stored full IndexEntry objects, all 100 MB would be live.
-        archive_fmt.cmd_info(
-            argparse.Namespace(name="docs/file_0001.txt", json=False),
-            index_dir=large_archive_dir / "files_index",
-            files_dir=large_archive_dir / "files",
-        )

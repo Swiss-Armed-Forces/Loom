@@ -593,7 +593,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | pytest-timeout                        | 2.4.0           | DFSG approved; MIT License                                                       |
 | pylint-plugin-utils                   | 0.9.0           | GNU General Public License v2 or later (GPLv2+)                                  |
 | python-gitlab                         | 8.4.0           | GNU Lesser General Public License v3 (LGPLv3)                                    |
-| pylint                                | 4.0.5           | GPL-2.0-or-later                                                                 |
+| pylint                                | 4.0.6           | GPL-2.0-or-later                                                                 |
 | pylint-pydantic                       | 0.4.1           | GPLv3                                                                            |
 | astroid                               | 4.0.4           | LGPL-2.1-or-later                                                                |
 | annotated-doc                         | 0.0.4           | MIT                                                                              |

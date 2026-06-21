@@ -5,7 +5,6 @@ from datetime import timedelta
 
 import pytest
 from common.dependencies import get_s3_intake_client
-from common.dependencies import init as init_common_dependencies
 from common.utils.flush_s3_bucket import flush_s3_bucket
 from minio.error import S3Error
 
@@ -13,11 +12,6 @@ from utils.consts import ASSETS_DIR
 
 _TEST_FILENAME = "empty_file.txt"
 _TEST_BUCKET_NAME = "test"
-
-
-@pytest.fixture(autouse=True)
-def setup_crawler_dependencies():
-    init_common_dependencies()
 
 
 @pytest.fixture

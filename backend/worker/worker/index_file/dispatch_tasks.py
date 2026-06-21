@@ -2,13 +2,13 @@ import logging
 from datetime import datetime
 from uuid import UUID
 
+from common.celery_app import TaskGroupName, task_group
 from common.dependencies import (
     get_celery_app,
     get_file_repository,
     get_file_scheduling_service,
 )
 from common.file.file_repository import File, Tag
-from common.services.celery_inspect_service import TaskGroupName, task_group
 from common.services.lazybytes_service import FileStorageLazyBytes
 from common.services.query_builder import QueryParameters
 from common.services.task_scheduling_service import UpdateFileRequest

@@ -11,7 +11,7 @@ from utils.settings import settings
 logger = logging.getLogger(__name__)
 
 FAIL_COUNT = 3
-GET_TIMEOUT = 90  # allow for retry delays (3s each) + processing
+GET_TIMEOUT = 90  # allow for retry delays (3s × FAIL_COUNT=3) + processing
 
 _UNROUTABLE_QUEUE = (
     f"{settings.celery_queue_name_prefix}{settings.celery_unroutable_task_name}"

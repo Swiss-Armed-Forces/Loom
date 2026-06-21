@@ -10,10 +10,13 @@ logger = logging.getLogger(__name__)
 app = get_celery_app()
 
 IMAP_FLAGGED_FLAG = b"\\Flagged"
+IMAP_SEEN_FLAG = b"\\Seen"
 
 
 @app.task(base=FileIndexingTask)
-def sync_flag_to_imap(file_id: UUID, flag_state: bool):
+def sync_imap_flags_task(
+    file_id: UUID, flagged: bool | None = None, seen: bool | None = None
+):
     file = get_file_repository().get_by_id(file_id)
 
     if file is None:
@@ -23,16 +26,30 @@ def sync_flag_to_imap(file_id: UUID, flag_state: bool):
     if file.imap is None:
         return
 
+    flags_to_add = []
+    flags_to_remove = []
+
+    if flagged is True:
+        flags_to_add.append(IMAP_FLAGGED_FLAG)
+    elif flagged is False:
+        flags_to_remove.append(IMAP_FLAGGED_FLAG)
+
+    if seen is True:
+        flags_to_add.append(IMAP_SEEN_FLAG)
+    elif seen is False:
+        flags_to_remove.append(IMAP_SEEN_FLAG)
+
     imap_service = get_imap_service()
-    if flag_state:
+
+    if flags_to_add:
         imap_service.add_flags_to_emails(
             folder=file.imap.folder,
             uids=[file.imap.uid],
-            flags=[IMAP_FLAGGED_FLAG],
+            flags=flags_to_add,
         )
-    else:
+    if flags_to_remove:
         imap_service.remove_flags_from_emails(
             folder=file.imap.folder,
             uids=[file.imap.uid],
-            flags=[IMAP_FLAGGED_FLAG],
+            flags=flags_to_remove,
         )

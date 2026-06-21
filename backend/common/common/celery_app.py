@@ -1,11 +1,19 @@
+import dataclasses
 import logging
 import random
 import re
 from abc import ABC
 from collections.abc import Callable
 from datetime import datetime, timedelta
+from enum import Enum
 from pprint import pformat
-from typing import Any, Protocol
+from typing import (
+    Any,
+    Protocol,
+    get_args,
+    get_origin,
+    get_type_hints,
+)
 
 import celery
 from celery import Celery, Task, bootsteps, chord
@@ -16,6 +24,7 @@ from celery.schedules import crontab
 from kombu import Exchange, Queue, serialization
 from pydantic import BaseModel, Field, RootModel
 
+from common.services.lazybytes_service import LazyBytes, TempStorageTag
 from common.settings import CELERY_QUEUE_NAME_MAXLEN, WorkerType, settings
 from common.utils.cgroup_memory_limit import (
     MemoryLimitNotFoundError,
@@ -59,8 +68,10 @@ def get_beat_schedule() -> dict:
             ),
             "schedule": crontab(minute="*/1"),
         },
-        "flush-on-idle": {
-            "task": "worker.periodic.flush_on_idle_task.flush_on_idle_task",
+        "throttle-and-flush-lazybytes": {
+            "task": (
+                "worker.periodic.throttle_and_flush_lazybytes_task.throttle_and_flush_lazybytes_task"  # noqa: E501 pylint: disable=line-too-long
+            ),
             "schedule": crontab(minute="*/2"),
         },
         "shrink-cache": {
@@ -77,15 +88,21 @@ def get_beat_schedule() -> dict:
             "task": "worker.periodic.hide_periodically_task.hide_periodically_task",
             "schedule": crontab(minute="0", hour="0"),
         },
+        "flush-root-task-info-on-idle": {
+            "task": (
+                "worker.periodic.flush_root_task_info_on_idle_task.flush_root_task_info_on_idle_task"  # noqa: E501 pylint: disable=line-too-long
+            ),
+            "schedule": crontab(minute="0", hour="3"),
+        },
         "unsubscribe-old-imap-folders": {
             "task": (
                 "worker.periodic.unsubscribe_old_imap_folders_periodically_task.unsubscribe_old_imap_folders_periodically_task"  # noqa: E501 pylint: disable=line-too-long
             ),
             "schedule": crontab(minute="30", hour="0"),
         },
-        "sync-flagged-emails": {
+        "sync-imap-flags": {
             "task": (
-                "worker.periodic.sync_flagged_emails_periodically_task.sync_flagged_emails_periodically_task"  # noqa: E501 pylint: disable=line-too-long
+                "worker.periodic.sync_imap_flags_periodically_task.sync_imap_flags_periodically_task"  # noqa: E501 pylint: disable=line-too-long
             ),
             "schedule": crontab(minute="0", hour="2"),
         },
@@ -234,7 +251,105 @@ class XDeathHeader(RootModel[list[XDeathEntry]]):
 _NDL_ROUTING_KEY_RE = re.compile(r"^[01](?:\.[01]){27}\.(.+)$")
 
 
+class TaskGroupName(str, Enum):
+    ALL = "all"
+    PROCESSING = "processing"
+    PERSISTING = "persisting"
+    PERIODIC = "periodic"
+    DISPATCH = "dispatch"
+    LAZYBYTES_PRODUCING = "lazybytes_producing"
+    LAZYBYTES_CONSUMING = "lazybytes_consuming"
+
+
+_task_groups: dict[TaskGroupName, list[str]] = {}
+
+
+def register_task(group_name: TaskGroupName, task_name: str) -> None:
+    """Register a task name into a named group."""
+    _task_groups.setdefault(group_name, []).append(task_name)
+
+
+def task_group(group_name: TaskGroupName) -> Callable[[Task], Task]:
+    """Register a Celery task into a named group.
+
+    Apply as the outermost decorator so the Celery task object (with .name) is
+    received:
+
+        @task_group(TaskGroupName.DISPATCH)
+        @app.task()
+        def my_task(...): ...
+    """
+
+    def decorator(task: Task) -> Task:
+        _task_groups.setdefault(group_name, []).append(task.name)
+        return task
+
+    return decorator
+
+
+def _has_temp_lazybytes_type(hint: Any) -> bool:
+    """Return True if hint contains a TempStorageTag-flavoured LazyBytes anywhere."""
+    origin = get_origin(hint)
+    if origin is not None:
+        if isinstance(origin, type) and issubclass(origin, LazyBytes):
+            return TempStorageTag in get_args(hint)
+        return any(_has_temp_lazybytes_type(arg) for arg in get_args(hint))
+    # Pydantic generic models (e.g. LazyBytes[TempStorageTag]) are concrete classes,
+    # not typing aliases, so get_origin() returns None. Check Pydantic's own metadata.
+    pydantic_meta = getattr(hint, "__pydantic_generic_metadata__", None)
+    if pydantic_meta is not None:
+        pydantic_origin = pydantic_meta.get("origin")
+        pydantic_args = pydantic_meta.get("args", ())
+        if isinstance(pydantic_origin, type) and issubclass(pydantic_origin, LazyBytes):
+            return TempStorageTag in pydantic_args
+    # Plain Pydantic models: recurse into field annotations.
+    if isinstance(hint, type) and issubclass(hint, BaseModel):
+        return any(
+            _has_temp_lazybytes_type(field.annotation)
+            for field in hint.model_fields.values()
+            if field.annotation is not None
+        )
+    # Dataclasses: recurse into field annotations.
+    if dataclasses.is_dataclass(hint) and isinstance(hint, type):
+        return any(_has_temp_lazybytes_type(h) for h in get_type_hints(hint).values())
+    return False
+
+
+def register_if_lazybytes_task(task: type[Task]) -> None:
+    """Register task in the appropriate LAZYBYTES_* group based on type hints.
+
+    - LAZYBYTES_PRODUCING: return type has temp lazybytes, params do not.
+      Pure sources; throttled under lazybytes pressure to stop new lazybytes
+      from being created.
+    - LAZYBYTES_CONSUMING: params have temp lazybytes (regardless of return type).
+      Waited for before flushing; not throttled even if they also produce, since
+      throttling them while waiting for them to drain would deadlock.
+    """
+    try:
+        hints = get_type_hints(task.run)
+    except Exception:  # pylint: disable=broad-except
+        return
+    return_hint = hints.get("return")
+    param_hints = {k: v for k, v in hints.items() if k != "return"}
+    produces = return_hint is not None and _has_temp_lazybytes_type(return_hint)
+    consumes = any(_has_temp_lazybytes_type(h) for h in param_hints.values())
+    if produces and not consumes:
+        register_task(TaskGroupName.LAZYBYTES_PRODUCING, task.name)
+    if consumes:
+        register_task(TaskGroupName.LAZYBYTES_CONSUMING, task.name)
+
+
 class BaseTask(ABC, Task):
+    _task_group_name: TaskGroupName | None = None
+
+    @classmethod
+    def on_bound(cls, app: Celery) -> None:
+        super().on_bound(app)
+        register_task(TaskGroupName.ALL, cls.name)
+        if cls._task_group_name is not None:
+            register_task(cls._task_group_name, cls.name)
+        register_if_lazybytes_task(cls)
+
     def __call__(self, *args, **kwargs) -> None:
         headers = getattr(self.request, "headers", {}) or {}
 

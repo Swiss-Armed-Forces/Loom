@@ -10,11 +10,11 @@ def test_trigger_scheduled_task(client: TestClient):
     task_scheduling_service_mock.trigger_scheduled_task = MagicMock()
 
     # Use a real schedule name from get_beat_schedule()
-    response = client.post("/v1/beat/flush-on-idle")
+    response = client.post("/v1/beat/throttle-and-flush-lazybytes")
 
     assert response.status_code == 204
     task_scheduling_service_mock.trigger_scheduled_task.assert_called_once_with(
-        "flush-on-idle"
+        "throttle-and-flush-lazybytes"
     )
 
 

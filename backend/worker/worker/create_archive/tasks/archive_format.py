@@ -54,6 +54,9 @@ JSON_SUFFIX = ".json"
 ZIP_EXTENSION = ".zip"
 JSON_INDENT = 2
 CLI_DOC: str = __doc__ or ""
+SHELL_PROMPT = "loom>"
+CLI_DESCRIPTION = "Loom archive CLI"
+ERR_NO_FILE_FOUND = "no file found matching"
 
 # ---------------------------------------------------------------------------
 # CLI — data types
@@ -120,7 +123,7 @@ def resolve_name(
     matches = exact or suffix or prefix or glob_matches
 
     if not matches:
-        print(f"Error: no file found matching '{name}'", file=sys.stderr)
+        print(f"Error: {ERR_NO_FILE_FOUND} '{name}'", file=sys.stderr)
         sys.exit(1)
 
     return matches
@@ -433,7 +436,7 @@ def cmd_tree(_args: argparse.Namespace, *, index_dir: Path = FILES_INDEX) -> Non
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="Loom archive CLI")
+    parser = argparse.ArgumentParser(description=CLI_DESCRIPTION)
     subparsers = parser.add_subparsers(dest="command", required=False)
 
     ls_parser = subparsers.add_parser(
@@ -588,7 +591,7 @@ def cmd_shell(_args: argparse.Namespace) -> None:
     print("Loom archive shell. Type 'help' for available commands, 'exit' to quit.")
     while True:
         try:
-            line = input("loom> ").strip()
+            line = input(f"{SHELL_PROMPT} ").strip()
         except (EOFError, KeyboardInterrupt):
             print()
             break

@@ -64,9 +64,6 @@ data:
     {{- if ne .Values.pipeline.throttle_max_lazybytes__bytes nil }}
     throttle_max_lazybytes__bytes: {{ .Values.pipeline.throttle_max_lazybytes__bytes | quote }}
     {{- end }}
-    {{- if ne .Values.pipeline.throttle_max_root_tasks nil }}
-    throttle_max_root_tasks: {{ .Values.pipeline.throttle_max_root_tasks | quote }}
-    {{- end }}
     {{- if ne .Values.pipeline.max_recursion_depth nil }}
     max_recursion_depth: {{ .Values.pipeline.max_recursion_depth | quote }}
     {{- end }}

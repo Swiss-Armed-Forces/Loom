@@ -49,6 +49,7 @@ def lazy_bytes_service(request) -> LazyBytesService:
             raise AssertionError()
 
 
+@pytest.mark.usefixtures("disable_periodic_tasks")
 class TestLazyBytes:
     # pylint: disable=too-many-public-methods
 

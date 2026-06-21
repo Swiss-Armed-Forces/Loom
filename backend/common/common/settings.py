@@ -207,8 +207,6 @@ class Settings(BaseSettings):
     # Indexing throttle settings
     # Max lazybytes storage before throttling new indexing
     throttle_max_lazybytes__bytes: int = 10 * (1024**3)  # 10 GB
-    # Max root tasks in the repository before throttling new indexing
-    throttle_max_root_tasks: int = 10_000
 
     # Maximum attachment recursion depth. None = unlimited.
     max_recursion_depth: int | None = None

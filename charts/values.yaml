@@ -210,7 +210,6 @@ pipeline:
   skip_auto_tag_file_while_indexing: null
   auto_tag_file_similarity_threshold: null
   throttle_max_lazybytes__bytes: null
-  throttle_max_root_tasks: null
   max_recursion_depth: null
   tika_ocr_languages: null
   tika_timeout_seconds: null
