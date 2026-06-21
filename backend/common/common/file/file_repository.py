@@ -187,6 +187,8 @@ class ImapPurePath(PurePosixPath):
 
 
 class ImapInfo(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
     uid: int
     folder: ImapPurePath
 

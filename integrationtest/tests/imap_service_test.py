@@ -277,41 +277,6 @@ def test_imap_append_name_too_long(imap_service: IMAPService):
         imap_service.append_email(EMAIL_ASSETS[0], too_long)
 
 
-@pytest.mark.parametrize(
-    "folder_path,flags",
-    [
-        (
-            FilePurePath("email_test"),
-            [],
-        ),
-        (
-            FilePurePath("email_test"),
-            [b"\\Flagged"],
-        ),
-        (
-            FilePurePath("email_test"),
-            [b"\\Seen"],
-        ),
-    ],
-)
-def test_imap_get_flags_from_imap_info(
-    imap_service: IMAPService,
-    folder_path: FilePurePath,
-    flags: list[bytes],
-):
-    info = imap_service.append_email(EMAIL_ASSETS[0], folder_path)
-    flags_count = len(flags)
-    if flags_count > 0:
-        imap_service.add_flags_to_emails(info.folder, [info.uid], flags)
-
-    result = imap_service.get_flags_from_imap_info(info)
-
-    # When an email is created but no other flag is added, it still contains the \Recent flag
-    assert len(result) == flags_count if flags_count > 0 else 1
-    for flag in flags:
-        assert flag in result
-
-
 def test_imap_get_emails_correct_folder(imap_service: IMAPService):
     folders = [
         FilePurePath("test_folder_1"),

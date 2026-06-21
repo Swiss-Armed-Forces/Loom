@@ -450,27 +450,6 @@ class IMAPService:
             folder.name for folder in self._iter_subscriptions(client, imap_folder)
         )
 
-    def get_flags_from_imap_info(
-        self,
-        imap_info: ImapInfo,
-    ) -> list[bytes]:
-
-        with self._imap_context() as client:
-            with self._select_folder(client, imap_info.folder):
-                try:
-                    fetch_data = client.fetch([imap_info.uid], ["FLAGS"])
-                except IMAPClientError as e:
-                    raise IMAPServiceError(
-                        f"Failed to fetch email UID {imap_info.uid} from folder '{imap_info.folder}'"  # noqa: B950 pylint: disable=line-too-long
-                    ) from e
-
-        if not fetch_data or imap_info.uid not in fetch_data:
-            raise IMAPServiceError(
-                f"Email with UID {imap_info.uid} not found in folder '{imap_info.folder}'"
-            )
-
-        return fetch_data[imap_info.uid][b"FLAGS"]  # type: ignore
-
     def get_emails(
         self,
         search_criteria: list[str] | None = None,

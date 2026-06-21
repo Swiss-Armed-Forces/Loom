@@ -21,8 +21,10 @@ export const TaskGroupName = {
     All: "all",
     Processing: "processing",
     Persisting: "persisting",
-    Dispatch: "dispatch",
     Periodic: "periodic",
+    Dispatch: "dispatch",
+    LazybytesProducing: "lazybytes_producing",
+    LazybytesConsuming: "lazybytes_consuming",
 } as const;
 export type TaskGroupName = (typeof TaskGroupName)[keyof typeof TaskGroupName];
 
