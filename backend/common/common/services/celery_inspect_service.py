@@ -20,7 +20,6 @@ logger = logging.getLogger(__name__)
 _WAIT_FOR_PROCESSING_IDLE_DEFAULT_TIMEOUT: float = 60 * 10
 _WAIT_FOR_PROCESSING_IDLE_DEFAULT_POLL_INTERVAL: float = 10.0
 
-
 _TASK_GROUP_KEY_PREFIX = "task_group"
 _THROTTLED_KEY = "throttled"
 
@@ -131,22 +130,22 @@ class CeleryInspectService:
         )
 
     def set_throttled(self, throttled: bool) -> None:
-        """Set the system-wide throttle state and pause/resume the DISPATCH task
-        group."""
+        """Set the system-wide throttle state and pause/resume the LAZYBYTES_PRODUCING
+        task group.
+
+        Pausing lazybytes producers stops new temp lazybytes from being created at their
+        source. LAZYBYTES_CONSUMING tasks are not paused — pausing them while waiting
+        for them to drain would deadlock.
+        """
         if throttled:
             self._redis_client.set(_THROTTLED_KEY, "1")
         else:
             self._redis_client.delete(_THROTTLED_KEY)
-        self.set_taskgroup_paused(TaskGroupName.DISPATCH, throttled)
+        self.set_taskgroup_paused(TaskGroupName.LAZYBYTES_PRODUCING, throttled)
 
     def is_throttled(self) -> bool:
         """Return True if the system is currently throttled."""
         return bool(self._redis_client.exists(_THROTTLED_KEY))
-
-    def get_throttled_tasks(self) -> list[str]:
-        """Return the task names that are paused during throttling (the DISPATCH
-        group)."""
-        return self.get_task_names_in_group(TaskGroupName.DISPATCH)
 
     def _task_name_to_queue(self, task_name: str) -> str:
         return f"{settings.celery_queue_name_prefix}{task_name}"[

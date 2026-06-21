@@ -31,12 +31,13 @@ from worker.index_file import (
 )
 from worker.periodic import (
     compute_complete_estimate_task,
-    flush_on_idle_task,
+    flush_root_task_info_on_idle_task,
     hide_periodically_task,
     reindex_lost_files_on_idle_task,
     seaweedfs_maintenance_task,
     shrink_periodically_task,
-    sync_flagged_emails_periodically_task,
+    sync_imap_flags_periodically_task,
+    throttle_and_flush_lazybytes_task,
     unsubscribe_old_imap_folders_periodically_task,
 )
 from worker.test import autoretry_test_task, canvas_test_task, sigkill_pgroup_task
@@ -59,7 +60,8 @@ tasks = [
     summarize_file_task,
     translate_file_task,
     compute_complete_estimate_task,
-    flush_on_idle_task,
+    flush_root_task_info_on_idle_task,
+    throttle_and_flush_lazybytes_task,
     shrink_periodically_task,
     process_question_task,
     autoretry_test_task,
@@ -67,7 +69,7 @@ tasks = [
     sigkill_pgroup_task,
     image_description_task,
     hide_periodically_task,
-    sync_flagged_emails_periodically_task,
+    sync_imap_flags_periodically_task,
     reindex_lost_files_on_idle_task,
     unsubscribe_old_imap_folders_periodically_task,
     seaweedfs_maintenance_task,
