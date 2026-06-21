@@ -443,7 +443,15 @@ class QueryBuilder:
             tree = TimeTransformer().visit(tree, {})
             tree = NumberTransformer().visit(tree, {})
             tree = RFTransformer(
-                "filename", [r"short_name", r"full_name", r"full_path"]
+                "filename",
+                [
+                    r"short_name",
+                    r"short_name.keyword",
+                    r"full_name",
+                    r"full_name.keyword",
+                    r"full_path",
+                    r"full_path.keyword",
+                ],
             ).visit(tree, {})
             tree = RFTransformer(
                 "file_type",
