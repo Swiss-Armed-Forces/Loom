@@ -22,6 +22,7 @@ _WAIT_FOR_PROCESSING_IDLE_DEFAULT_POLL_INTERVAL: float = 10.0
 
 _TASK_GROUP_KEY_PREFIX = "task_group"
 _THROTTLED_KEY = "throttled"
+_BEAT_PAUSED_KEY = "beat_paused"
 
 
 class CeleryInspectService:
@@ -146,6 +147,22 @@ class CeleryInspectService:
     def is_throttled(self) -> bool:
         """Return True if the system is currently throttled."""
         return bool(self._redis_client.exists(_THROTTLED_KEY))
+
+    def set_beat_paused(self, paused: bool) -> None:
+        """Pause or resume the Celery beat scheduler.
+
+        When paused, the beat scheduler will advance its schedule entries but not
+        dispatch any tasks to the broker, preventing new periodic task messages from
+        accumulating in queues while consumers are being cancelled.
+        """
+        if paused:
+            self._redis_client.set(_BEAT_PAUSED_KEY, "1")
+        else:
+            self._redis_client.delete(_BEAT_PAUSED_KEY)
+
+    def is_beat_paused(self) -> bool:
+        """Return True if the Celery beat scheduler is currently paused."""
+        return bool(self._redis_client.exists(_BEAT_PAUSED_KEY))
 
     def _task_name_to_queue(self, task_name: str) -> str:
         return f"{settings.celery_queue_name_prefix}{task_name}"[
