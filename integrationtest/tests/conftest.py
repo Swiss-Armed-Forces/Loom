@@ -1,6 +1,5 @@
 import pytest
 from api.dependencies import init as init_api_dependencies
-from common.celery_app import TaskGroupName
 from common.dependencies import get_celery_inspect_service, mock_init
 from common.services.encryption_service import AESMasterKey
 from common.settings import settings
@@ -34,7 +33,7 @@ def wipe_data():
     """
     _wipe_data()
     # wipe_redis() flushes all Redis data including the task group registry;
-    # re-register so fixtures like disable_periodic_tasks can pause task groups.
+    # re-register so task group lookups work correctly after a wipe.
     get_celery_inspect_service().register_task_groups()
 
 
@@ -43,6 +42,6 @@ def disable_periodic_tasks(
     wipe_data,
 ):  # pylint: disable=redefined-outer-name,unused-argument
     service = get_celery_inspect_service()
-    service.set_taskgroup_paused(TaskGroupName.PERIODIC, True)
+    service.set_beat_paused(True)
     yield
-    service.set_taskgroup_paused(TaskGroupName.PERIODIC, False)
+    service.set_beat_paused(False)
