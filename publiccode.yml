@@ -18,22 +18,17 @@ organisation:
 description:
   en:
     localisedName: Loom
-    shortDescription: Loom is a powerful and easily deployable open-source document
-      search engine.
-    longDescription: Loom is a powerful and easily deployable open-source document
-      search engine that automates indexing of configured data sources, performs
-      OCR, extracts content and metadata, enables tagging, and offers powerful
-      search and interaction capabilities 🚀. Its key features include simple
-      deployment via a single script, Google-like search across documents and
-      images 🔍, and automatic monitoring of data sources for file changes ⚙️.
-      Loom supports flexible data ingestion through direct uploads and handles a
-      vast array of file formats including Office documents, PDFs, and emails
-      with robust content and metadata extraction 📚. Users can also utilize a
-      RAG chatbot for intelligent conversations based on document context 🤖,
-      access concise document summarization 📝, and create archives of search
-      results 📦. Additionally, it offers custom tagging for organization 📌,
-      built-in translation to English 🌍, and a comprehensive REST API for
-      seamless integration into existing workflows 🔗.
+    shortDescription: Loom is a powerful, easily deployable open-source document
+      search engine for secure, task-specific deployments.
+    longDescription: Loom is a powerful, easily deployable open-source document
+      search engine designed for secure, task-specific deployments 🚀. It automates
+      indexing of data sources, performs OCR, extracts content and metadata, and
+      enables powerful full-text search enriched by AI features such as RAG chat,
+      auto-tagging, summarization, and translation 🤖🌍. Loom handles a vast array
+      of file formats including Office documents, PDFs, emails, archives, and images 📚.
+      It provides secure rendered document previews and thumbnails 🖼️, archive
+      creation from search results 📦, custom tagging 📌, and a comprehensive
+      REST API for integration into existing workflows 🔗.
     documentation: https://gitlab.com/swiss-armed-forces/cyber-command/cea/loom/-/blob/main/README.md
     features:
       - Simple Deployment
@@ -42,8 +37,8 @@ description:
       - Flexible Data Ingestion
       - Comprehensive Content Extraction
       - Metadata Extraction
-      - RAG Chatbot
-      - Document Summarization
+      - AI Features (RAG chat, auto-tagging, summarization)
+      - Secure Document Rendering and Thumbnails
       - Archive Creation
       - Tagging
       - Translation

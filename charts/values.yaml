@@ -848,6 +848,9 @@ seaweedfs:
     priorityClass: infrastructure
     filerDir: "/"
     pvc:
+      # Direct PVC storage size override (e.g. "3Gi"). When set, storageMultiplier is ignored.
+      # When null, size is computed from redis-filer memory limit * storageMultiplier.
+      storage: null
       # Multiplier for PVC storage size relative to redis-filer memory limit.
       # PVC size = redis-filer memory limit * storageMultiplier
       # This ensures enough space to store all metadata that could fit in Redis + headroom.
@@ -1121,6 +1124,9 @@ redis: &redis
   service:
     port: 6379
   pvc:
+    # Direct PVC storage size override (e.g. "8Gi"). When set, storageMultiplier is ignored.
+    # When null, size is computed from memory limit * storageMultiplier.
+    storage: null
     # Multiplier for PVC storage size relative to memory limit.
     # PVC size = memory limit * storageMultiplier
     storageMultiplier: 5

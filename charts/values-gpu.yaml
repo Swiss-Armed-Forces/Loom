@@ -1,3 +1,11 @@
+# GPU Deployment
+#
+# Use this when your nodes have NVIDIA GPUs available and you want faster AI
+# inference and translation. Without this, all AI workloads run on CPU only.
+#
+# For single-node deployments, pass --gpus all to up.sh instead of applying
+# this file manually.
+#
 translate:
   env:
     ARGOS_DEVICE_TYPE: "cuda"

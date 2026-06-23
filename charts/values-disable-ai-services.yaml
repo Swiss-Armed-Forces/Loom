@@ -1,18 +1,17 @@
 # Disable AI Services
 #
-# This Helm values file disables all AI-related services in Loom.
-# Use this configuration when you don't want to run AI services internally within the Loom cluster.
+# Use this when you are not working on AI-related functionality
+# (summarization, translation, embeddings) and want to skip deploying
+# those services to speed up startup and reduce resource usage.
+# Note that any tasks depending on these services will fail.
 #
-# Note: If you still want AI functionality to be available, you will need to configure
-# external service endpoints for each disabled service.
+# Pass --disable-ai to up.sh to apply this file automatically.
 #
-# If you don't want to use AI features at all, also configure Loom to skip all
-# AI-powered steps during indexing — otherwise disabled services will cause indexing failures.
-translate:
-  enabled: false
 ollama:
   enabled: false
 ollama-tool:
   enabled: false
 open_webui:
+  enabled: false
+translate:
   enabled: false

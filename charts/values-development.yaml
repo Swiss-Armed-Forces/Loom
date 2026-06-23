@@ -1,3 +1,12 @@
+# Development Mode
+#
+# Use this when actively developing Loom locally. It trades model quality and
+# production-like behaviour for fast iteration: lightweight models reduce resource
+# usage, hot reload means code changes take effect without pod restarts, and all
+# internal services are reachable via ingress for direct inspection and debugging.
+#
+# Not suitable for production use.
+#
 environment: development
 
 llm:

@@ -16,20 +16,23 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
+# variables defined in vars.sh, here for shellcheck:
+LOOM_MIN_CPU=""
+LOOM_MIN_MEMORY=""
+LOOM_MIN_GPU=""
+# shellcheck disable=SC1091
+# shellcheck source=../vars.sh
+source "${SCRIPT_DIR}/../vars.sh"
+
 #
 # Arguments
 #
 CHARTS_DIR="${1?Missing Charts Dir}"
 
-# Max allowed requests (resource requests)
-MAX_CPU="8"
-MAX_MEMORY="25Gi"
-MAX_GPU="3"
-
-# Max allowed limits (resource limits)
-MAX_CPU_LIMITS="66"
-MAX_MEMORY_LIMITS="90Gi"
-MAX_GPU_LIMITS="3"
+# Maximum combined resource limits across all containers
+LOOM_MAX_CPU="66"
+LOOM_MAX_MEMORY="90Gi"
+LOOM_MAX_GPU="3"
 
 # Run the resource checker
 # --exclude-ephemeral: excludes Job and CronJob from calculations
@@ -37,32 +40,32 @@ echo "Default resources check"
 helm template "${CHARTS_DIR}" \
 | poetry run python "${SCRIPT_DIR}/check_resources.py" \
     --exclude-ephemeral \
-    --threshold-request "cpu=${MAX_CPU}" \
-    --threshold-request "memory=${MAX_MEMORY}" \
-    --threshold-limit "cpu=${MAX_CPU_LIMITS}" \
-    --threshold-limit "memory=${MAX_MEMORY_LIMITS}"
+    --threshold-request "cpu=${LOOM_MIN_CPU}" \
+    --threshold-request "memory=${LOOM_MIN_MEMORY}" \
+    --threshold-limit "cpu=${LOOM_MAX_CPU}" \
+    --threshold-limit "memory=${LOOM_MAX_MEMORY}"
 
 echo "GPU resources check"
 
 helm template "${CHARTS_DIR}" --values "${CHARTS_DIR}/values-gpu.yaml" \
 | poetry run python "${SCRIPT_DIR}/check_resources.py" \
     --exclude-ephemeral \
-    --threshold-request "cpu=${MAX_CPU}" \
-    --threshold-request "memory=${MAX_MEMORY}" \
-    --threshold-request "nvidia.com/gpu=${MAX_GPU}" \
-    --threshold-limit "cpu=${MAX_CPU_LIMITS}" \
-    --threshold-limit "memory=${MAX_MEMORY_LIMITS}" \
-    --threshold-limit "nvidia.com/gpu=${MAX_GPU_LIMITS}"
+    --threshold-request "cpu=${LOOM_MIN_CPU}" \
+    --threshold-request "memory=${LOOM_MIN_MEMORY}" \
+    --threshold-request "nvidia.com/gpu=${LOOM_MIN_GPU}" \
+    --threshold-limit "cpu=${LOOM_MAX_CPU}" \
+    --threshold-limit "memory=${LOOM_MAX_MEMORY}" \
+    --threshold-limit "nvidia.com/gpu=${LOOM_MAX_GPU}"
 
-echo "No resources limit check"
+echo "No resources check"
 
-helm template "${CHARTS_DIR}" --values "${CHARTS_DIR}/values-no-limits.yaml" \
+helm template "${CHARTS_DIR}" --values "${CHARTS_DIR}/values-no-resources.yaml" \
 | poetry run python "${SCRIPT_DIR}/check_resources.py" \
     --exclude-ephemeral \
-    --threshold-request "cpu=${MAX_CPU}" \
-    --threshold-request "memory=${MAX_MEMORY}" \
-    --threshold-limit "cpu=${MAX_CPU_LIMITS}" \
-    --threshold-limit "memory=${MAX_MEMORY_LIMITS}"
+    --threshold-request "cpu=${LOOM_MIN_CPU}" \
+    --threshold-request "memory=${LOOM_MIN_MEMORY}" \
+    --threshold-limit "cpu=${LOOM_MAX_CPU}" \
+    --threshold-limit "memory=${LOOM_MAX_MEMORY}"
 
 echo "Scalable quota consistency check"
 
@@ -86,12 +89,12 @@ MISSING_LINES=0
 
 # Define patterns to check - each line individually
 PATTERNS=(
-    "**RAM:** ${MAX_MEMORY}"
-    "**CPU:** ${MAX_CPU} Cores"
-    "**GPU (Optional):** For enhanced performance with certain features, we recommend using at least ${MAX_GPU} GPUs."
-    "**RAM:** ${MAX_MEMORY_LIMITS}"
-    "**CPU:** ${MAX_CPU_LIMITS} Cores"
-    "**GPU (Optional):** ${MAX_GPU}"
+    "**RAM:** ${LOOM_MIN_MEMORY}"
+    "**CPU:** ${LOOM_MIN_CPU} Cores"
+    "**GPU (Optional):** For enhanced performance with certain features, we recommend using at least ${LOOM_MIN_GPU} GPUs."
+    "**RAM:** ${LOOM_MAX_MEMORY}"
+    "**CPU:** ${LOOM_MAX_CPU} Cores"
+    "**GPU (Optional):** ${LOOM_MIN_GPU}"
 )
 
 for pattern in "${PATTERNS[@]}"; do
@@ -104,11 +107,11 @@ done
 if [[ ${MISSING_LINES} -gt 0 ]]; then
     echo "ERROR: README.md is missing ${MISSING_LINES} expected line(s)"
     echo "Please ensure the README.md contains the resource requirements with these values:"
-    echo "  - MAX_MEMORY: ${MAX_MEMORY}"
-    echo "  - MAX_CPU: ${MAX_CPU}"
-    echo "  - MAX_GPU: ${MAX_GPU}"
-    echo "  - MAX_MEMORY_LIMITS: ${MAX_MEMORY_LIMITS}"
-    echo "  - MAX_CPU_LIMITS: ${MAX_CPU_LIMITS}"
+    echo "  - LOOM_MIN_MEMORY: ${LOOM_MIN_MEMORY}"
+    echo "  - LOOM_MIN_CPU: ${LOOM_MIN_CPU}"
+    echo "  - LOOM_MIN_GPU: ${LOOM_MIN_GPU}"
+    echo "  - LOOM_MAX_MEMORY: ${LOOM_MAX_MEMORY}"
+    echo "  - LOOM_MAX_CPU: ${LOOM_MAX_CPU}"
     exit 1
 fi
 

@@ -2,9 +2,15 @@
 {{- $component := .component -}}
 {{- $values := index .Values $component -}}
 {{- $memoryValue := default (dig "resources" "requests" "memory" "" $values) (dig "resources" "limits" "memory" "" $values) -}}
-{{- $redisMemoryLimitBytes := include "SI-to-bytes" $memoryValue | int64 -}}
 {{- $pvcStorageMultiplier := dig "pvc" "storageMultiplier" 4 $values -}}
-{{- $pvcStorageBytes := mulf $redisMemoryLimitBytes $pvcStorageMultiplier | int64 -}}
+{{- $pvcStorageBytes := 0 -}}
+{{- if dig "pvc" "storage" "" $values -}}
+  {{- $pvcStorageBytes = include "SI-to-bytes" (dig "pvc" "storage" "" $values) | int64 -}}
+{{- else if $memoryValue -}}
+  {{- $pvcStorageBytes = mulf (include "SI-to-bytes" $memoryValue | int64) $pvcStorageMultiplier | int64 -}}
+{{- else -}}
+  {{- fail (printf "%s.pvc.storage must be set when %s has no memory resource defined" $component $component) -}}
+{{- end -}}
 
 apiVersion: apps/v1
 kind: StatefulSet

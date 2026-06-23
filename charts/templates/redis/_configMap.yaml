@@ -2,9 +2,10 @@
 {{- $component := .component -}}
 {{- $values := index .Values $component -}}
 {{- $memoryValue := default (dig "resources" "requests" "memory" "" $values) (dig "resources" "limits" "memory" "" $values) -}}
-{{- $memoryLimitBytes := include "SI-to-bytes" $memoryValue | int64 -}}
+{{- $memoryLimitBytes := 0 -}}
+{{- if $memoryValue -}}{{- $memoryLimitBytes = include "SI-to-bytes" $memoryValue | int64 -}}{{- end -}}
 {{- $memoryLimitThresholdPercent := dig "memoryLimitThresholdPercent" 0.6 $values -}}
-{{- $memoryLimitBytes := mulf $memoryLimitBytes $memoryLimitThresholdPercent | int64 -}}
+{{- $memoryLimitBytes = mulf $memoryLimitBytes $memoryLimitThresholdPercent | int64 -}}
 {{- $maxmemoryPolicy := dig "maxmemoryPolicy" "volatile-ttl" . -}}
 {{- $stopWritesOnBgsaveError := dig "stopWritesOnBgsaveError" "no" . -}}
 {{- $aofLoadTruncated := dig "aofLoadTruncated" "yes" . -}}

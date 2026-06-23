@@ -25,7 +25,12 @@ DOCKER_CONFIG_FILE="${HOME}/.docker/config.json"
 HOSTS_FILE="/etc/hosts"
 TUNNEL_PIDFILE_DIR="/run/user/${UID}/"
 TUNNEL_PIDFILE="${TUNNEL_PIDFILE_DIR}/${SCRIPT_NAME}.minikube.tunnel.pid"
-TRAEFIK_SKAFFOLD_CMD="${SCRIPT_DIR}/traefik/skaffold"
+TRAEFIK_DIR="${SCRIPT_DIR}/traefik"
+TRAEFIK_SKAFFOLD_CMD="${TRAEFIK_DIR}/skaffold"
+UP_FLAGS_VALUES_FILE="${SCRIPT_DIR}/charts/values-up-flags.yaml"
+NO_RESOURCES_VALUES_FILE="${SCRIPT_DIR}/charts/values-no-resources.yaml"
+GPU_VALUES_FILE="${SCRIPT_DIR}/charts/values-gpu.yaml"
+DISABLE_AI_VALUES_FILE="${SCRIPT_DIR}/charts/values-disable-ai-services.yaml"
 ONLINE_TEST_URL="https://gitlab.com"
 OFFLINE_IMAGE_TAG="latest"
 CERTIFICATE_SECRET_NAME="self-signed-cert"
@@ -68,6 +73,9 @@ KUBELET_EVICTION_SOFT_MEMORY=""
 LOOM_DOMAIN=""
 LOOM_HOSTS_FQDN=()
 TRAEFIK_HELM_VERSION=""
+LOOM_MIN_CPU=""
+LOOM_MIN_MEMORY=""
+LOOM_MIN_GPU=""
 
 VARS_FILE="${SCRIPT_DIR}/vars.sh"
 # shellcheck disable=SC1091
@@ -85,11 +93,13 @@ STEPS_SETUP_SYSTEM=(
     set_skaffold_profile
     set_skaffold_command
     set_skaffold_args
+    write_up_flags_values
     validate_environment
-    setup_system
     compute_minikube_cpu_resources
     compute_minikube_memory_resources
     compute_kubelet_config
+    check_host_resources
+    setup_system
     create_cluster
     default_use_csi-hostpath-driver
     install_host_entries
@@ -120,10 +130,12 @@ EXPOSE=false
 EXPOSE_IP=""
 GPUS=""
 OFFLINE_MODE=false
+NO_RESOURCES=false
 DELETE=false
 SKAFFOLD_PROFILE="prod"
 SKAFFOLD_ARGS=()
 TRAEFIK_SKAFFOLD_ARGS=()
+UP_FLAG_VALUES=()
 SKAFFOLD_COMMAND="run"
 SKAFFOLD_CACHE_FILE="${SKAFFOLD_HOME}/cache"
 SKAFFOLD_REMOTE_CACHE_DIR="${SKAFFOLD_HOME}/remote-cache"
@@ -289,6 +301,19 @@ set_skaffold_args(){
     )
 }
 
+write_up_flags_values() {
+    # Combine active flag-driven values files into UP_FLAGS_VALUES_FILE.
+    # Skaffold always includes this file (listed in skaffold.yaml before values-overwrites.yaml).
+    # Uses plain cat — no yq needed. For duplicate top-level YAML keys Helm/Go yaml keeps
+    # the last occurrence, so files appended last win on overlap.
+    # UP_FLAG_VALUES is populated during argument parsing — add new flags there.
+    if [[ ${#UP_FLAG_VALUES[@]} -eq 0 ]]; then
+        echo "{}" > "${UP_FLAGS_VALUES_FILE}"
+    else
+        cat "${UP_FLAG_VALUES[@]}" > "${UP_FLAGS_VALUES_FILE}"
+    fi
+}
+
 validate_environment() {
     # Check if not run as root
     if [[ "${EUID}" -eq 0 ]]; then
@@ -337,87 +362,10 @@ validate_environment() {
     check_command helm
     check_command minikube
     check_command skaffold
-}
 
-create_docker_secret_from_config() {
-    # shellcheck disable=SC2310
-    if ! is_serviceaccount_ready; then
-        wait_for is_serviceaccount_ready
-    fi
-
-    if [[ ! -f "${DOCKER_CONFIG_FILE}" ]]; then
-        echo "[*] Docker config file: '${DOCKER_CONFIG_FILE}' does not exist"
-        return
-    fi
-
-    if kubectl get secret "${DOCKER_SECRET_NAME}" &>/dev/null; then
-      echo "[*] Secret '${DOCKER_SECRET_NAME}' already exists"
-      return
-    fi
-
-    echo "[*] Creating Docker registry secret from ${DOCKER_CONFIG_FILE}"
-    kubectl \
-        create secret generic "${DOCKER_SECRET_NAME}" \
-            --namespace="${NAMESPACE}" \
-            --from-file=.dockerconfigjson="${DOCKER_CONFIG_FILE}" \
-            --type=kubernetes.io/dockerconfigjson
-
-    echo "[*] Patching 'default' service account to use docker image pull secret as default"
-    kubectl patch serviceaccount default \
-        --namespace="${NAMESPACE}" \
-        --patch="{\"imagePullSecrets\": [{\"name\": \"${DOCKER_SECRET_NAME}\"}]}"
-}
-
-setup_system(){
-    local sysctl_changed
-    sysctl_changed=false
-
-    VM_MAX_MAP_COUNT=1677720
-    vm_max_map_count="$(sysctl -n vm.max_map_count)"
-    if [[ "${vm_max_map_count}" -lt "${VM_MAX_MAP_COUNT}" ]]; then
-        sudo sysctl -w "vm.max_map_count=${VM_MAX_MAP_COUNT}"
-        sysctl_changed=true
-    fi
-    VM_OVERCOMMIT_MEMORY=1
-    vm_overcommit_memory="$(sysctl -n vm.overcommit_memory)"
-    if [[ "${vm_overcommit_memory}" != "${VM_OVERCOMMIT_MEMORY}" ]]; then
-        sudo sysctl -w "vm.overcommit_memory=${VM_OVERCOMMIT_MEMORY}"
-        sysctl_changed=true
-    fi
-    FS_INOTIFY_MAX_WATCHES=655360
-    fs_inotify_max_watches="$(sysctl -n fs.inotify.max_user_watches)"
-    if [[ "${fs_inotify_max_watches}" != "${FS_INOTIFY_MAX_WATCHES}" ]]; then
-        sudo sysctl -w "fs.inotify.max_user_watches=${FS_INOTIFY_MAX_WATCHES}"
-        sysctl_changed=true
-    fi
-    FS_INOTIFY_MAX_INSTANCES=1280
-    fs_inotify_max_instances="$(sysctl -n fs.inotify.max_user_instances)"
-    if [[ "${fs_inotify_max_instances}" != "${FS_INOTIFY_MAX_INSTANCES}" ]]; then
-        sudo sysctl -w "fs.inotify.max_user_instances=${FS_INOTIFY_MAX_INSTANCES}"
-        sysctl_changed=true
-    fi
-    FS_FILE_MAX=2097152
-    fs_file_max="$(sysctl -n fs.file-max)"
-    if [[ "${fs_file_max}" -lt "${FS_FILE_MAX}" ]]; then
-        sudo sysctl -w "fs.file-max=${FS_FILE_MAX}"
-        sysctl_changed=true
-    fi
-    VM_SWAPPINESS=1
-    vm_swappiness="$(sysctl -n vm.swappiness)"
-    if [[ "${vm_swappiness}" != "${VM_SWAPPINESS}" ]]; then
-        sudo sysctl -w "vm.swappiness=${VM_SWAPPINESS}"
-        sysctl_changed=true
-    fi
-    SYSCTL_CONF_FILE="/etc/sysctl.d/99-loom.conf"
-    if [[ ! -f "${SYSCTL_CONF_FILE}" ]] || [[ "${sysctl_changed}" = true ]]; then
-        sudo tee "${SYSCTL_CONF_FILE}" <<EOF
-vm.max_map_count=${VM_MAX_MAP_COUNT}
-vm.overcommit_memory=${VM_OVERCOMMIT_MEMORY}
-fs.inotify.max_user_watches=${FS_INOTIFY_MAX_WATCHES}
-fs.inotify.max_user_instances=${FS_INOTIFY_MAX_INSTANCES}
-fs.file-max=${FS_FILE_MAX}
-vm.swappiness=${VM_SWAPPINESS}
-EOF
+    # GPU tools (only required when --gpus is passed)
+    if [[ -n "${GPUS}" ]]; then
+        check_command nvidia-smi
     fi
 }
 
@@ -510,6 +458,137 @@ compute_kubelet_config() {
             KUBELET_EVICTION_HARD_MEMORY \
             KUBELET_EVICTION_SOFT_MEMORY \
         <<< "${awk_result}"
+}
+
+check_host_resources() {
+    if [[ "${NO_RESOURCES}" = true ]]; then
+        echo "[*] Skipping host resource check (--no-resources)"
+        return
+    fi
+
+    local errors=0
+
+    # CPU check
+    local host_cpu
+    host_cpu="$(nproc)"
+    if [[ "${host_cpu}" -lt "${LOOM_MIN_CPU}" ]]; then
+        echo >&2 "[!] Error: Host has ${host_cpu} CPU core(s), minimum required is ${LOOM_MIN_CPU}."
+        errors=$((errors + 1))
+    fi
+
+    # RAM check: /proc/meminfo reports MemTotal in kB; LOOM_MIN_MEMORY is in Gi.
+    # Add kubelet overhead (system-reserved + kube-reserved + eviction-hard) so the
+    # check reflects memory actually available to Loom workloads.
+    local host_mem_kib min_mem_kib
+    host_mem_kib="$(awk '/^MemTotal:/ { print $2 }' /proc/meminfo)"
+    min_mem_kib=$(( ${LOOM_MIN_MEMORY%Gi} * 1024 * 1024 ))
+    local kubelet_overhead_kib
+    kubelet_overhead_kib=$(( (${KUBELET_SYSTEM_RESERVED_MEMORY%Mi} + ${KUBELET_KUBE_RESERVED_MEMORY%Mi} + ${KUBELET_EVICTION_HARD_MEMORY%Mi}) * 1024 ))
+    min_mem_kib=$((min_mem_kib + kubelet_overhead_kib))
+    if [[ "${host_mem_kib}" -lt "${min_mem_kib}" ]]; then
+        local host_mem_gi min_mem_gi_total
+        host_mem_gi=$(awk "BEGIN { printf \"%.1f\", ${host_mem_kib} / 1048576 }")
+        min_mem_gi_total=$(awk "BEGIN { printf \"%.1f\", ${min_mem_kib} / 1048576 }")
+        echo >&2 "[!] Error: Host has ${host_mem_gi} GiB RAM, minimum required is ${min_mem_gi_total} GiB (${LOOM_MIN_MEMORY} for Loom + kubelet overhead)."
+        errors=$((errors + 1))
+    fi
+
+    # GPU check: only relevant when --gpus flag is passed
+    if [[ -n "${GPUS}" ]]; then
+        local host_gpu
+        host_gpu="$(nvidia-smi --list-gpus | wc -l)"
+        if [[ "${host_gpu}" -lt "${LOOM_MIN_GPU}" ]]; then
+            echo >&2 "[!] Error: Host has ${host_gpu} GPU(s), minimum required is ${LOOM_MIN_GPU}."
+            errors=$((errors + 1))
+        fi
+    fi
+
+    if [[ "${errors}" -gt 0 ]]; then
+        echo >&2 "[!] Error: Host does not meet minimum resource requirements."
+        exit 1
+    fi
+}
+
+create_docker_secret_from_config() {
+    # shellcheck disable=SC2310
+    if ! is_serviceaccount_ready; then
+        wait_for is_serviceaccount_ready
+    fi
+
+    if [[ ! -f "${DOCKER_CONFIG_FILE}" ]]; then
+        echo "[*] Docker config file: '${DOCKER_CONFIG_FILE}' does not exist"
+        return
+    fi
+
+    if kubectl get secret "${DOCKER_SECRET_NAME}" &>/dev/null; then
+      echo "[*] Secret '${DOCKER_SECRET_NAME}' already exists"
+      return
+    fi
+
+    echo "[*] Creating Docker registry secret from ${DOCKER_CONFIG_FILE}"
+    kubectl \
+        create secret generic "${DOCKER_SECRET_NAME}" \
+            --namespace="${NAMESPACE}" \
+            --from-file=.dockerconfigjson="${DOCKER_CONFIG_FILE}" \
+            --type=kubernetes.io/dockerconfigjson
+
+    echo "[*] Patching 'default' service account to use docker image pull secret as default"
+    kubectl patch serviceaccount default \
+        --namespace="${NAMESPACE}" \
+        --patch="{\"imagePullSecrets\": [{\"name\": \"${DOCKER_SECRET_NAME}\"}]}"
+}
+
+setup_system(){
+    local sysctl_changed
+    sysctl_changed=false
+
+    VM_MAX_MAP_COUNT=1677720
+    vm_max_map_count="$(sysctl -n vm.max_map_count)"
+    if [[ "${vm_max_map_count}" -lt "${VM_MAX_MAP_COUNT}" ]]; then
+        sudo sysctl -w "vm.max_map_count=${VM_MAX_MAP_COUNT}"
+        sysctl_changed=true
+    fi
+    VM_OVERCOMMIT_MEMORY=1
+    vm_overcommit_memory="$(sysctl -n vm.overcommit_memory)"
+    if [[ "${vm_overcommit_memory}" != "${VM_OVERCOMMIT_MEMORY}" ]]; then
+        sudo sysctl -w "vm.overcommit_memory=${VM_OVERCOMMIT_MEMORY}"
+        sysctl_changed=true
+    fi
+    FS_INOTIFY_MAX_WATCHES=655360
+    fs_inotify_max_watches="$(sysctl -n fs.inotify.max_user_watches)"
+    if [[ "${fs_inotify_max_watches}" != "${FS_INOTIFY_MAX_WATCHES}" ]]; then
+        sudo sysctl -w "fs.inotify.max_user_watches=${FS_INOTIFY_MAX_WATCHES}"
+        sysctl_changed=true
+    fi
+    FS_INOTIFY_MAX_INSTANCES=1280
+    fs_inotify_max_instances="$(sysctl -n fs.inotify.max_user_instances)"
+    if [[ "${fs_inotify_max_instances}" != "${FS_INOTIFY_MAX_INSTANCES}" ]]; then
+        sudo sysctl -w "fs.inotify.max_user_instances=${FS_INOTIFY_MAX_INSTANCES}"
+        sysctl_changed=true
+    fi
+    FS_FILE_MAX=2097152
+    fs_file_max="$(sysctl -n fs.file-max)"
+    if [[ "${fs_file_max}" -lt "${FS_FILE_MAX}" ]]; then
+        sudo sysctl -w "fs.file-max=${FS_FILE_MAX}"
+        sysctl_changed=true
+    fi
+    VM_SWAPPINESS=1
+    vm_swappiness="$(sysctl -n vm.swappiness)"
+    if [[ "${vm_swappiness}" != "${VM_SWAPPINESS}" ]]; then
+        sudo sysctl -w "vm.swappiness=${VM_SWAPPINESS}"
+        sysctl_changed=true
+    fi
+    SYSCTL_CONF_FILE="/etc/sysctl.d/99-loom.conf"
+    if [[ ! -f "${SYSCTL_CONF_FILE}" ]] || [[ "${sysctl_changed}" = true ]]; then
+        sudo tee "${SYSCTL_CONF_FILE}" <<EOF
+vm.max_map_count=${VM_MAX_MAP_COUNT}
+vm.overcommit_memory=${VM_OVERCOMMIT_MEMORY}
+fs.inotify.max_user_watches=${FS_INOTIFY_MAX_WATCHES}
+fs.inotify.max_user_instances=${FS_INOTIFY_MAX_INSTANCES}
+fs.file-max=${FS_FILE_MAX}
+vm.swappiness=${VM_SWAPPINESS}
+EOF
+    fi
 }
 
 check_mount_string_disk_space() {
@@ -609,7 +688,7 @@ use_namespace(){
 
 install_traefik(){
     (
-        cd "${SCRIPT_DIR}/traefik"
+        cd "${TRAEFIK_DIR}"
 
         # Deploy CRDs as skaffold won't do this
         # Related:
@@ -633,14 +712,16 @@ install_traefik(){
             apply \
                 --filename tls-store.yaml
 
-        # We always first delete the existing deployment.
-        # This is because skaffold will redeploy
-        # resources, which won't work as traefik
-        # holds exclusive access on certain ports
-        # Related:
-        #   - https://github.com/GoogleContainerTools/skaffold/issues/9222
-        "${TRAEFIK_SKAFFOLD_CMD}" delete \
-            --profile "${SKAFFOLD_PROFILE}"
+        # Delete all traefik deployments before redeploying.
+        # Traefik holds exclusive access on ports 80/443, so any previously
+        # active profile (prod or dev) must be removed first — not just the
+        # current one. Otherwise switching between -d and non-d runs leaves a
+        # stale release that blocks port binding.
+        # Run both deletes in parallel to save time.
+        # Related: https://github.com/GoogleContainerTools/skaffold/issues/9222
+        "${TRAEFIK_SKAFFOLD_CMD}" delete --profile prod || true &
+        "${TRAEFIK_SKAFFOLD_CMD}" delete --profile dev  || true &
+        wait
 
         "${TRAEFIK_SKAFFOLD_CMD}" run \
             --profile "${SKAFFOLD_PROFILE}" \
@@ -803,7 +884,7 @@ atexit(){
 
     if [[ "${DELETE}" = true ]]; then
         (
-            cd "${SCRIPT_DIR}/traefik"
+            cd "${TRAEFIK_DIR}"
 
             "${TRAEFIK_SKAFFOLD_CMD}" delete \
                 --profile "${SKAFFOLD_PROFILE}"
@@ -839,7 +920,9 @@ usage(){
     echo "  -c|--certificate CERT KEY             install certificate (CERT) with key (KEY)"
     echo "  --minikube-host-cpu-reserve N         reserve N CPU cores on the host (default: ${MINIKUBE_HOST_CPU_RESERVE_CORES})"
     echo "  --minikube-host-mem-reserve-kib KiB   reserve KiB of RAM on the host (default: ${MINIKUBE_HOST_MEM_RESERVE_KIB})"
-    echo "  --mount-string PATH                   mount host PATH into minikube for persistent PVC storage; switches from CSI (UUID-based) to storage-provisioner (namespace/pvc-name paths) so data survives cluster rebuilds"
+    echo "  --mount-string PATH                   mount host PATH into minikube; PVC data survives cluster rebuilds"
+    echo "  --no-resources                        deploy without resource requests or limits (see charts/values-no-resources.yaml)"
+    echo "  --disable-ai                          disable AI services: ollama, open-webui, translate (see charts/values-disable-ai-services.yaml)"
     echo "  --delete                              delete the deployment after startup"
     echo "  --skip-STEP                           skip step STEP"
 }
@@ -885,6 +968,7 @@ while [[ $# -gt 0 ]]; do
         -g|--gpus)
             shift
             GPUS="${1}"
+            UP_FLAG_VALUES+=("${GPU_VALUES_FILE}")
             shift
         ;;
         -o|--offline)
@@ -910,6 +994,15 @@ while [[ $# -gt 0 ]]; do
         --mount-string)
             shift
             MINIKUBE_MOUNT_STRING="${1?Missing host path for --mount-string (e.g. /mnt/loom-data)}"
+            shift
+        ;;
+        --no-resources)
+            NO_RESOURCES=true
+            UP_FLAG_VALUES+=("${NO_RESOURCES_VALUES_FILE}")
+            shift
+        ;;
+        --disable-ai)
+            UP_FLAG_VALUES+=("${DISABLE_AI_VALUES_FILE}")
             shift
         ;;
         --delete)

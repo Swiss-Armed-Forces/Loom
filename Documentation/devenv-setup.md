@@ -40,9 +40,9 @@
       nix-env --install --attr devenv -f https://github.com/NixOS/nixpkgs/tarball/nixos-25.11
       ```
 
-    - ❗**Workaround for fedora**:
-      After installing nix open the file `/nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh`
-      and comment out the first two lines
+    > ⚠️ **Workaround for Fedora:** After installing Nix, open
+    > `/nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh`
+    > and comment out the first two lines.
 
 6. Install direnv
     - Install direnv using the [official instructions](https://direnv.net/docs/installation.html)
@@ -76,34 +76,30 @@ Start a shell with `devenv shell` and run `devenv-help` to get an overview.
 ## Optimizing Development Deployment
 
 If you don't need certain features during development, you can significantly
-speed up deployment time and reduce resource usage by disabling them in
-`charts/values-overwrites.yaml`.
+speed up deployment time and reduce resource usage by passing flags to `up`.
 
 ### Disable AI Features (optional)
 
 If you're not working on AI-related functionality
 (summarization, translation, embeddings), disable these services:
 
-```yaml
-# charts/values-overwrites.yaml
-ollama:
-  enabled: false
-ollama-tool:
-  enabled: false
-open-webui:
-  enabled: false
-translate:
-  enabled: false
+```sh
+up --development --disable-ai
 ```
 
-Important: When services are disabled, any tasks that depend on them will fail.
+> ⚠️ When services are disabled, any tasks that depend on them will fail.
 
-### Remove Resource Limits (optional)
+### Remove Resource Requests and Limits (optional)
 
-By default, Loom deployments include CPU and memory limits for all containers.
-If you want containers to use as much resources as needed (useful for development
-environments with sufficient resources), copy the content of
-`charts/values-no-limits.yaml` into `charts/values-overwrites.yaml`.
+By default, Loom deployments include CPU and memory requests and limits for all containers.
+On low-memory machines, these limits can cause pods to be OOMKilled or fail to schedule.
+Pass `--no-resources` to `up` to deploy without any resource requests or limits:
+
+```sh
+up --development --no-resources
+```
+
+This flag can be combined with any other `up` flags.
 
 ## Tailscale (optional)
 
