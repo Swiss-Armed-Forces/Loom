@@ -1,4 +1,3 @@
-import dataclasses
 import logging
 import random
 import re
@@ -10,9 +9,6 @@ from pprint import pformat
 from typing import (
     Any,
     Protocol,
-    get_args,
-    get_origin,
-    get_type_hints,
 )
 
 import celery
@@ -24,7 +20,6 @@ from celery.schedules import crontab
 from kombu import Exchange, Queue, serialization
 from pydantic import BaseModel, Field, RootModel
 
-from common.services.lazybytes_service import LazyBytes, TempStorageTag
 from common.settings import CELERY_QUEUE_NAME_MAXLEN, WorkerType, settings
 from common.utils.cgroup_memory_limit import (
     MemoryLimitNotFoundError,
@@ -257,9 +252,6 @@ class TaskGroupName(str, Enum):
     PERSISTING = "persisting"
     PERIODIC = "periodic"
     DISPATCH = "dispatch"
-    LAZYBYTES_PRODUCING = "lazybytes_producing"
-    LAZYBYTES_CONSUMING = "lazybytes_consuming"
-    LAZYBYTES_CONSUMING_PRODUCING = "lazybytes_consuming_producing"
 
 
 _task_groups: dict[TaskGroupName, list[str]] = {}
@@ -288,60 +280,6 @@ def task_group(group_name: TaskGroupName) -> Callable[[Task], Task]:
     return decorator
 
 
-def _has_temp_lazybytes_type(hint: Any) -> bool:
-    """Return True if hint contains a TempStorageTag-flavoured LazyBytes anywhere."""
-    origin = get_origin(hint)
-    if origin is not None:
-        if isinstance(origin, type) and issubclass(origin, LazyBytes):
-            return TempStorageTag in get_args(hint)
-        return any(_has_temp_lazybytes_type(arg) for arg in get_args(hint))
-    # Pydantic generic models (e.g. LazyBytes[TempStorageTag]) are concrete classes,
-    # not typing aliases, so get_origin() returns None. Check Pydantic's own metadata.
-    pydantic_meta = getattr(hint, "__pydantic_generic_metadata__", None)
-    if pydantic_meta is not None:
-        pydantic_origin = pydantic_meta.get("origin")
-        pydantic_args = pydantic_meta.get("args", ())
-        if isinstance(pydantic_origin, type) and issubclass(pydantic_origin, LazyBytes):
-            return TempStorageTag in pydantic_args
-    # Plain Pydantic models: recurse into field annotations.
-    if isinstance(hint, type) and issubclass(hint, BaseModel):
-        return any(
-            _has_temp_lazybytes_type(field.annotation)
-            for field in hint.model_fields.values()
-            if field.annotation is not None
-        )
-    # Dataclasses: recurse into field annotations.
-    if dataclasses.is_dataclass(hint) and isinstance(hint, type):
-        return any(_has_temp_lazybytes_type(h) for h in get_type_hints(hint).values())
-    return False
-
-
-def register_if_lazybytes_task(task: type[Task]) -> None:
-    """Register task in the appropriate LAZYBYTES_* group based on type hints.
-
-    - LAZYBYTES_PRODUCING: return type has temp lazybytes, params do not.
-      Pure sources; throttled under lazybytes pressure to stop new lazybytes
-      from being created.
-    - LAZYBYTES_CONSUMING: params have temp lazybytes (regardless of return type).
-      Waited for before flushing; not throttled even if they also produce, since
-      throttling them while waiting for them to drain would deadlock.
-    """
-    try:
-        hints = get_type_hints(task.run)
-    except Exception:  # pylint: disable=broad-except
-        return
-    return_hint = hints.get("return")
-    param_hints = {k: v for k, v in hints.items() if k != "return"}
-    produces = return_hint is not None and _has_temp_lazybytes_type(return_hint)
-    consumes = any(_has_temp_lazybytes_type(h) for h in param_hints.values())
-    if produces and not consumes:
-        register_task(TaskGroupName.LAZYBYTES_PRODUCING, task.name)
-    if produces and consumes:
-        register_task(TaskGroupName.LAZYBYTES_CONSUMING_PRODUCING, task.name)
-    if consumes and not produces:
-        register_task(TaskGroupName.LAZYBYTES_CONSUMING, task.name)
-
-
 class BaseTask(ABC, Task):
     _task_group_name: TaskGroupName | None = None
 
@@ -351,7 +289,6 @@ class BaseTask(ABC, Task):
         register_task(TaskGroupName.ALL, cls.name)
         if cls._task_group_name is not None:
             register_task(cls._task_group_name, cls.name)
-        register_if_lazybytes_task(cls)
 
     def __call__(self, *args, **kwargs) -> None:
         headers = getattr(self.request, "headers", {}) or {}

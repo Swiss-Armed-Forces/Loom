@@ -22,7 +22,7 @@ _FLUSH_ROOT_TASK_INFO_LOCK_TTL_SECONDS = 60 * 15  # 15 minutes
 _WAIT_FOR_IDLE_TIMEOUT_SECONDS = 60 * 10  # 10 minutes (well under lock TTL)
 _WAIT_FOR_IDLE_POLL_INTERVAL_SECONDS = 10.0
 
-_PAUSED_GROUPS = (TaskGroupName.DISPATCH, TaskGroupName.LAZYBYTES_PRODUCING)
+_PAUSED_GROUPS = (TaskGroupName.DISPATCH,)
 
 
 def _wait_for_pipeline_idle(
@@ -59,9 +59,9 @@ def flush_root_task_info_on_idle_task(self: PeriodicTask):
     Two-phase approach:
     - Phase 1: wait for the full pipeline to be idle without pausing anything, to
       avoid disrupting the system unless it is actually quiet.
-    - Phase 2: pause DISPATCH and LAZYBYTES_PRODUCING, wait for full idle again to
-      close the race window, then replace with a chord that flushes root task info
-      and resumes the paused groups via flush_complete.
+    - Phase 2: pause DISPATCH, wait for full idle again to close the race window,
+      then replace with a chord that flushes root task info and resumes the paused
+      groups via flush_complete.
     """
     inspect = get_celery_inspect_service()
 

@@ -134,9 +134,7 @@ class CeleryInspectService:
         """Set the system-wide throttle state and pause/resume the DISPATCH task group.
 
         Pausing DISPATCH stops new file ingestion pipelines at the root, preventing any
-        new temp lazybytes from being created. LAZYBYTES_CONSUMING and
-        LAZYBYTES_CONSUMING_PRODUCING tasks are not paused — pausing them while waiting
-        for them to drain would deadlock.
+        new temp lazybytes from being created.
         """
         if throttled:
             self._redis_client.set(_THROTTLED_KEY, "1")
