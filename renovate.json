@@ -75,7 +75,11 @@
       "matchManagers": ["dockerfile", "gitlabci"],
       "groupName": "Docker images",
       "prPriority": 3,
-      "matchUpdateTypes": ["minor", "patch", "digest"]
+      "matchUpdateTypes": ["minor", "patch"]
+    },
+    {
+      "matchUpdateTypes": ["digest"],
+      "enabled": false
     },
     {
       "matchManagers": ["dockerfile"],
