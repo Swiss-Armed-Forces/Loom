@@ -177,44 +177,44 @@ def _make_task(name: str, run_func) -> type[Task]:
 
 
 @pytest.mark.parametrize(
-    "run_func, in_producing, in_consuming",
+    "run_func, in_producing, in_consuming, in_consuming_producing",
     [
-        (_run_no_lazybytes, False, False),
-        (_run_producing_only, True, False),
-        (_run_consuming_only, False, True),
-        # A task that both produces and consumes must only land in CONSUMING:
-        # throttling it while waiting for it to drain would deadlock.
-        (_run_producing_and_consuming, False, True),
-        (_run_wrong_tag_param, False, False),
-        (_run_wrong_tag_return, False, False),
-        (_run_optional_temp_return, True, False),
-        (_run_union_temp_return, True, False),
-        (_run_nested_return, True, False),
-        (_run_consuming_nested_param, False, True),
+        (_run_no_lazybytes, False, False, False),
+        (_run_producing_only, True, False, False),
+        (_run_consuming_only, False, True, False),
+        (_run_producing_and_consuming, False, False, True),
+        (_run_wrong_tag_param, False, False, False),
+        (_run_wrong_tag_return, False, False, False),
+        (_run_optional_temp_return, True, False, False),
+        (_run_union_temp_return, True, False, False),
+        (_run_nested_return, True, False, False),
+        (_run_consuming_nested_param, False, True, False),
         # Complex return types containing LazyBytes[TempStorageTag]
-        (_run_list_return, True, False),
-        (_run_dict_return, True, False),
-        (_run_deeply_nested_return, True, False),
+        (_run_list_return, True, False, False),
+        (_run_dict_return, True, False, False),
+        (_run_deeply_nested_return, True, False, False),
         # Complex param types containing LazyBytes[TempStorageTag]
-        (_run_list_param, False, True),
-        (_run_dict_param, False, True),
+        (_run_list_param, False, True, False),
+        (_run_dict_param, False, True, False),
         # Wrong tag inside a container – must not register
-        (_run_wrong_tag_in_list_return, False, False),
+        (_run_wrong_tag_in_list_return, False, False, False),
         # Pydantic BaseModel with LazyBytes field
-        (_run_pydantic_param, False, True),
-        (_run_pydantic_return, True, False),
-        (_run_pydantic_wrong_tag_param, False, False),
-        (_run_pydantic_no_lazybytes_param, False, False),
+        (_run_pydantic_param, False, True, False),
+        (_run_pydantic_return, True, False, False),
+        (_run_pydantic_wrong_tag_param, False, False, False),
+        (_run_pydantic_no_lazybytes_param, False, False, False),
         # Dataclass with LazyBytes field
-        (_run_dataclass_param, False, True),
-        (_run_dataclass_return, True, False),
-        (_run_dataclass_wrong_tag_param, False, False),
-        (_run_dataclass_no_lazybytes_param, False, False),
+        (_run_dataclass_param, False, True, False),
+        (_run_dataclass_return, True, False, False),
+        (_run_dataclass_wrong_tag_param, False, False, False),
+        (_run_dataclass_no_lazybytes_param, False, False, False),
         # Non-callable run – get_type_hints raises, task must not register
-        pytest.param("not a callable", False, False, id="bad_type_hints"),
+        pytest.param("not a callable", False, False, False, id="bad_type_hints"),
     ],
 )
-def test_registration(run_func, in_producing: bool, in_consuming: bool) -> None:
+def test_registration(
+    run_func, in_producing: bool, in_consuming: bool, in_consuming_producing: bool
+) -> None:
     name = f"test.{run_func.__name__ if callable(run_func) else 'bad_hints'}"
     task = _make_task(name, run_func)
     register_if_lazybytes_task(task)
@@ -224,3 +224,6 @@ def test_registration(run_func, in_producing: bool, in_consuming: bool) -> None:
     assert (
         name in _task_groups.get(TaskGroupName.LAZYBYTES_CONSUMING, [])
     ) == in_consuming
+    assert (
+        name in _task_groups.get(TaskGroupName.LAZYBYTES_CONSUMING_PRODUCING, [])
+    ) == in_consuming_producing

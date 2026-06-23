@@ -259,6 +259,7 @@ class TaskGroupName(str, Enum):
     DISPATCH = "dispatch"
     LAZYBYTES_PRODUCING = "lazybytes_producing"
     LAZYBYTES_CONSUMING = "lazybytes_consuming"
+    LAZYBYTES_CONSUMING_PRODUCING = "lazybytes_consuming_producing"
 
 
 _task_groups: dict[TaskGroupName, list[str]] = {}
@@ -335,7 +336,9 @@ def register_if_lazybytes_task(task: type[Task]) -> None:
     consumes = any(_has_temp_lazybytes_type(h) for h in param_hints.values())
     if produces and not consumes:
         register_task(TaskGroupName.LAZYBYTES_PRODUCING, task.name)
-    if consumes:
+    if produces and consumes:
+        register_task(TaskGroupName.LAZYBYTES_CONSUMING_PRODUCING, task.name)
+    if consumes and not produces:
         register_task(TaskGroupName.LAZYBYTES_CONSUMING, task.name)
 
 
