@@ -1,3 +1,12 @@
+# Multi-Node Deployment
+#
+# Use this when deploying Loom across multiple Kubernetes nodes and you need
+# services to scale out under load, storage and search to remain available if a
+# node goes down, and resource usage to stay within defined cluster boundaries.
+#
+# Tune the resourceQuotas.scalable.hard values to match your cluster's total
+# allocatable resources minus the headroom needed for infrastructure pods.
+#
 worker:
   hpa:
     enabled: true

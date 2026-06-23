@@ -1,9 +1,15 @@
 {{- if .Values.seaweedfs.filerMetaBackup.enabled }}
 {{- $redisFilerValues := index .Values "redis-filer" -}}
 {{- $memoryValue := default (dig "resources" "requests" "memory" "" $redisFilerValues) (dig "resources" "limits" "memory" "" $redisFilerValues) -}}
-{{- $redisMemoryLimitBytes := include "SI-to-bytes" $memoryValue | int64 -}}
 {{- $pvcStorageMultiplier := .Values.seaweedfs.filerMetaBackup.pvc.storageMultiplier | default 2 -}}
-{{- $pvcStorageBytes := mulf $redisMemoryLimitBytes $pvcStorageMultiplier | int64 -}}
+{{- $pvcStorageBytes := 0 -}}
+{{- if .Values.seaweedfs.filerMetaBackup.pvc.storage -}}
+  {{- $pvcStorageBytes = include "SI-to-bytes" .Values.seaweedfs.filerMetaBackup.pvc.storage | int64 -}}
+{{- else if $memoryValue -}}
+  {{- $pvcStorageBytes = mulf (include "SI-to-bytes" $memoryValue | int64) $pvcStorageMultiplier | int64 -}}
+{{- else -}}
+  {{- fail "seaweedfs.filerMetaBackup.pvc.storage must be set when redis-filer has no memory resource defined" -}}
+{{- end -}}
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:

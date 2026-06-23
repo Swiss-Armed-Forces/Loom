@@ -294,7 +294,8 @@ manifests:
         chartPath: charts
         valuesFiles:
           - charts/values.yaml
-          - charts/values-overwrites.yaml
+          - charts/values-up-flags.yaml   # runtime, written by up.sh; {} when no flags active
+          - charts/values-overwrites.yaml  # always highest priority
         setValueTemplates:
           # Skaffold's post-renderer does not process Helm hook resources, so image tags used
           # by hook Jobs must be injected explicitly via setValueTemplates.

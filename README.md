@@ -5,15 +5,18 @@
 [![GitLab Pipeline Status](https://gitlab.com/swiss-armed-forces/cyber-command/cea/loom/badges/main/pipeline.svg)](https://gitlab.com/swiss-armed-forces/cyber-command/cea/loom/-/pipelines?page=1&scope=all&ref=main)
 [![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-v2.1%20adopted-ff69b4.svg)](https://www.contributor-covenant.org/version/2/1/code_of_conduct/)
 
-**Loom** is a powerful and easily deployable open-source document search engine.
-It automates indexing of configured data sources, performs OCR, extracts content
-and metadata, enables tagging, and offers powerful search and interaction capabilities.
+**Loom** is a powerful, easily deployable open-source document search engine designed for
+secure, task-specific deployments. It automates indexing of data sources, performs OCR,
+extracts content and metadata, and enables powerful full-text search — enriched by AI features
+such as RAG chat, auto-tagging, summarization, and translation.
+
+[[_TOC_]]
 
 ## ✨ Key Features
 
 - **🚀 Simple Deployment:** Get up and running quickly with asingle `up.sh` script.
 - **🔍 Powerful Search:** Experience Google-like search across your documents and
-  image content with a rich set of syntax options (see [Search Capabilities](#-search-capabilities)).
+  image content with a rich set of syntax options.
 - **⚙️ Automatic Indexing:** Loom automatically monitors configured data sources
   and processes new and updated files.
 - **📤 Flexible Data Ingestion:** Easily index data by uploading files directly through
@@ -23,18 +26,16 @@ and metadata, enables tagging, and offers powerful search and interaction capabi
   OCR and efficient processing of large files.
 - **🏷️ Metadata Extraction:** Automatically identifies and extracts relevant metadata
   from all supported file types during the indexing process.
-- **🤖 RAG Chatbot:** Engage in intelligent conversations about your indexed documents.
-  Our Retrieval-Augmented Generation (RAG) chatbot uses the context of your search queries
-  to provide insightful answers directly based on your document content.
-- **📝 Document Summarization:** Quickly grasp the essence of lengthy documents with
-  automatically generated concise summaries, available directly within the user interface.
+- **🤖 AI Features:** Loom integrates AI throughout — chat with your documents via a
+  RAG chatbot, automatically tag new documents based on existing tags, and get
+  AI-generated summaries and image descriptions.
 - **📦 Archive Creation:** Easily bundle selected search results or individual documents
   into archives for convenient data extraction and transfer.
-- **📌 Tagging:** Organize and categorize your document collection with custom,
-  user-defined tags. Loom also supports AI-powered auto tagging: once a tag is applied,
-  the AI will automatically find and tag similar documents across the entire index.
+- **📌 Tagging:** Organize and categorize your document collection with custom, user-defined tags.
 - **🌍 Translation:** Built-in functionality to translate content from various languages
   into English.
+- **🖼️ Secure Document Rendering:** View sanitized, rendered versions of documents and
+  auto-generated thumbnails directly in the UI — without exposing the original file to the browser.
 - **🔗 REST API:** Seamlessly integrate Loom's powerful search and other functionalities
   into your existing applications and workflows through our comprehensive REST API.
 
@@ -78,6 +79,43 @@ This will help make the setup process smooth and easy!
 - `kubectl` (>= [v1.30.0](https://kubernetes.io/de/docs/tasks/tools/install-kubectl/))
 - `skaffold` (>= [v2.12.0](https://skaffold.dev/docs/install/))
 
+### System Requirements
+
+Loom's resource profile spans two boundaries: what it needs to start, and what it could consume at
+peak. Both matter depending on your deployment context.
+
+#### Minimum Deployment Resources
+
+The minimum resources required to deploy and run Loom:
+
+- **RAM:** 25Gi
+- **CPU:** 8 Cores
+- **Disk Space:** 200 GiB
+- **GPU (Optional):** For enhanced performance with certain features, we recommend using at least 3 GPUs.
+  Please see the list of supported GPUs here: [https://docs.ollama.com/gpu](https://docs.ollama.com/gpu)
+
+> ℹ️ The figures above are the resources Loom itself needs. `up.sh` additionally configures
+> kubelet reservations (system-reserved, kube-reserved, eviction thresholds) on the minikube node,
+> which are carved out of the host before Loom workloads are scheduled. The exact values are defined
+> in `up.sh` and add several GiB of RAM and ephemeral storage overhead on top of Loom's own needs.
+> If your machine is close to the minimum, pass `--no-resources` to `up.sh` to deploy without
+> resource requests or limits and skip the host resource check.
+
+#### Maximum Resource Limits
+
+The combined resource limits of all Loom containers — i.e., the maximum that could be consumed if
+every container simultaneously hits its limit. In a cluster with
+[Kubernetes ResourceQuotas](https://kubernetes.io/docs/concepts/policy/resource-quotas/#compute-resource-quota)
+enforced, your namespace quota must be at least:
+
+- **RAM:** 90Gi
+- **CPU:** 66 Cores
+- **Disk Space:** 200 GiB
+- **GPU (Optional):** 3
+
+For further scaling beyond a single node, see [Multi Node Deployment](#multi-node-deployment),
+which supports enabling HPAs to scale services horizontally under load.
+
 ### Deployment Schemas
 
 You have a couple of options for deploying Loom, depending on your needs:
@@ -90,16 +128,6 @@ You have a couple of options for deploying Loom, depending on your needs:
 ### Single Node Deployment
 
 This method is designed for simplicity and is a great starting point!
-
-#### Minimal System Specifications
-
-To ensure Loom runs smoothly, your system should ideally meet these minimum requirements:
-
-- **RAM:** 25Gi
-- **CPU:** 8 Cores
-- **Disk Space:** 200 GiB
-- **GPU (Optional):** For enhanced performance with certain features, we recommend using at least 3 GPUs.
-  Please see the list of supported GPUs here: [https://docs.ollama.com/gpu](https://docs.ollama.com/gpu)
 
 #### Single Node Installation Steps
 
@@ -137,8 +165,8 @@ If you want to use loom fully offline, you need to start Loom using `./up.sh --o
 at least once **while connected to the internet** before you can disconnect your host
 and re-start Loom in full offline mode: `./up.sh --offline`.
 
-⚠️ Offline mode only works when you have checked out a specific Git tag (not on a branch like `main`).
-If you followed the installation steps above, you are already on a release tag.
+> ⚠️ Offline mode only works when you have checked out a specific Git tag (not on a branch like `main`).
+> If you followed the installation steps above, you are already on a release tag.
 
 #### Overriding Helm Values
 
@@ -146,9 +174,7 @@ To customize the deployment configuration, add your value
 overrides to `charts/values-overwrites.yaml`. This file is intentionally left empty and
 is automatically included during Skaffold deployments.
 
-To deploy without resource limits (where you want
-containers to use as much CPU/memory as needed), copy the content of
-`charts/values-no-limits.yaml` into `charts/values-overwrites.yaml`.
+To deploy without resource requests or limits, pass `--no-resources` to `up.sh`.
 
 ### Multi Node Deployment
 
@@ -156,16 +182,6 @@ For a more scalable setup, you can deploy Loom using its Helm chart on your Kube
 
 > ⚠️ We currently only support Traefik as the ingress controller. We are tracking progress on
 > integrating Nginx in issue #161.
-
-#### Minimal Upper Limits
-
-In shared cluster with [Resource Quotas](https://kubernetes.io/docs/concepts/policy/resource-quotas/) enforced,
-your quota must have at list those [minimum upper limit](https://kubernetes.io/docs/concepts/policy/resource-quotas/#compute-resource-quota) requirements:
-
-- **RAM:** 90Gi
-- **CPU:** 66 Cores
-- **Disk Space:** 200 GiB
-- **GPU (Optional):** 3
 
 #### Multi Node Installation Steps
 
@@ -179,6 +195,14 @@ your quota must have at list those [minimum upper limit](https://kubernetes.io/d
     [`./charts`](./charts) directory of this repository. These files document all the available
     deployment variables, allowing you to tailor the installation to your specific needs.
 
+3. For a true multi-node setup, apply `charts/values-multinode.yaml` as an additional values file:
+
+    ```bash
+    helm install loom loom-prod/loom --values charts/values-multinode.yaml
+    ```
+
+    This enables horizontal scaling, high availability, and resource quotas suited for multi-node clusters.
+
 #### Multi Node Offline usage
 
 To run Loom in an offline Kubernetes cluster, you need at least
@@ -186,84 +210,40 @@ one container image registry that mirrors `registry.gitlab.com/swiss-armed-force
 within your offline network. Then, override the `image.registry` value in your
 deployment scripts to point to your internal image registry.
 
+### Helm Values Reference
+
+All values files are located in the [`./charts`](./charts) directory. They can be combined with
+`--values` (Helm) or added to `charts/values-overwrites.yaml` (Skaffold) to tailor your deployment.
+
+- **[`values-overwrites.yaml`](./charts/values-overwrites.yaml)** — Your personal override file.
+  Skaffold picks it up automatically on every deploy, so put any local customisations here rather
+  than editing the defaults.
+- **[`values-gpu.yaml`](./charts/values-gpu.yaml)** — Use this when your nodes have NVIDIA GPUs
+  and you want faster AI inference and translation. Without it, all AI workloads run on CPU only.
+- **[`values-multinode.yaml`](./charts/values-multinode.yaml)** — Use this when deploying across
+  multiple nodes and you need services to scale out under load, storage and search to remain
+  available if a node goes down, and resource usage to stay within defined cluster boundaries.
+- **[`values-disable-ai-services.yaml`](./charts/values-disable-ai-services.yaml)** — Use this when
+  you want to provide external AI endpoints or skip AI features entirely. Note: AI-powered indexing
+  steps must also be disabled, otherwise they will fail at runtime.
+- **[`values-external-tls-certificates.yaml`](./charts/values-external-tls-certificates.yaml)** —
+  Use this when your cluster manages TLS certificates centrally via Vault and you do not
+  want Loom to provision its own ClusterIssuer.
+- **[`values-no-resources.yaml`](./charts/values-no-resources.yaml)** — Use this when resource
+  requests are causing scheduling issues or limits are causing OOM kills or CPU throttling and you
+  want containers to burst freely. Note that without requests, the Kubernetes scheduler has no
+  resource information to base placement decisions on. Without limits, a single runaway container
+  can starve other workloads on the same node.
+- **[`values-development.yaml`](./charts/values-development.yaml)** — Use this when actively
+  developing Loom locally. It trades model quality for fast iteration: lightweight models, hot
+  reload, and all internal services exposed via ingress. Not suitable for production.
+
 ## 🚀 Getting Started
 
-This section provides a few quick examples to get you started with Loom. For more detailed
-instructions, please refer to the full [Getting Started Guide](Documentation/getting-started.md).
+Once Loom is running, navigate to [https://frontend.loom](https://frontend.loom) to upload files,
+search across your documents, tag results, and interact with the RAG chatbot.
 
-**Indexing Your Data:**
-
-To index your data, use the simple file upload feature available directly in the Loom frontend:
-
-1. **Open the Loom Frontend:** Navigate to [https://frontend.loom](https://frontend.loom)
-    in your web browser.
-2. **Upload Files:** Look for the "Upload" option in the user interface (typically in a
-    sidebar or as a button). Click on it to open a file selection dialog.
-3. **Select Files:** Choose the files you want to index and click "Open" or the equivalent button.
-4. **Automatic Processing:** Once the files are selected and uploaded through the frontend,
-    Loom will automatically process them.
-
-**Searching for a File:**
-
-Use the query box at the top to search for your documents. For example:
-
-- To search for a specific PDF file, try: `filename:"your_document.pdf"`
-- To find documents containing the phrase "important information", use: `"important information"`
-- To search for documents tagged as "project-report", try: `tags:project-report`
-
-**Viewing Raw JSON:**
-
-To see the raw indexed data of a file:
-
-1. Search for the file.
-2. Select it from the search results.
-3. Click on the "View content" button.
-4. Navigate to the "RAW" tab to see the underlying JSON structure.
-
-**Tagging Files:**
-
-You can tag files individually from the file details view (click the tag icon near the filename)
-or use the "Add tag" functionality in the left sidebar to tag multiple files.
-
-**Querying by File Extension:**
-
-To find files of a specific type, use the `extension:.` syntax. For example:
-
-- To find all PDF files: `extension:.pdf`
-- To find all text files: `extension:.txt`
-
-## 🔍 Search Capabilities
-
-Loom offers a flexible and intuitive search experience with the following options:
-
-- **Fuzzy Search:** Find terms even with minor typos using the tilde operator followed
-  by the maximum edit distance (e.g., `term~2`).
-- **Phrase Search:** Search for exact sequences of words by enclosing them in double
-  quotes (e.g., `"exact phrase"`).
-- **Metadata Filtering:** Narrow down your search results by specifying metadata fields
-  and their values. Supported fields include:
-  - `author:name` (e.g., `author:John Doe`)
-  - `filename:*.pdf` (e.g., `filename:report*.pdf`)
-  - `when:lastweek` (Supports various date/time formats and relative terms)
-  - `size>1M` (Supports size comparisons using units like `K`, `M`, `G`)
-  - `tags:important` (Search for documents tagged with "important")
-
-## 📚 Content Extraction
-
-Loom is designed to efficiently extract both text content and valuable metadata from a wide
-range of file types:
-
-- **Archives:** ZIP archives and Mail archives (PST).
-- **MS Office:** Documents created with Microsoft Word, Excel, PowerPoint, Visio, and Publisher.
-- **PDF:** Including full Optical Character Recognition (OCR) to extract text from scanned
-  documents and images within PDFs.
-- **Images:** Performs OCR to extract text content from various image formats.
-- **Emails:** Processes EML message files, including the content of attachments.
-- **Other Formats:** Supports OpenOffice documents, Rich Text Format (RTF), Plain Text files,
-  HTML, XHTML, and many other common document formats.
-
-Loom is engineered to handle **large files** effectively by utilizing multi-threaded processing,
-ensuring efficient indexing without excessive resource consumption.
+For detailed usage instructions see the [Getting Started Guide](Documentation/getting-started.md).
 
 ## 📜 License
 
@@ -304,11 +284,10 @@ Multiple services that are useful for production and development purposes are st
 
 ![Context Diagram](Documentation/ContainerDiagram.svg)
 
-**Note**: We allow external access to quite a few services. This is by design.
-Loom is supposed to be a powerful toolkit that enables users to use the tools and their
-APIs directly, if needed.
+> ℹ️ External access to most services is intentional. Loom is a toolkit — users may interact
+> with the underlying services and their APIs directly.
 
-### 🔗 More Documentation and Links
+## 🔗 More Documentation and Links
 
 - [Getting Started Guide](Documentation/getting-started.md)
 - [Development environment setup](Documentation/devenv-setup.md)

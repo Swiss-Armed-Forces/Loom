@@ -1,3 +1,8 @@
+# External TLS Certificates
+#
+# Use this when your cluster manages TLS certificates centrally via Vault
+# and you do not want Loom to provision its own ClusterIssuer.
+#
 clusterIssuer:
   enabled: false
 
