@@ -16,10 +16,10 @@ from typing import (
 )
 
 import celery
-from celery import Celery, Task, bootsteps, chord
+from celery import Celery, Task, bootsteps
 from celery import group as original_group
 from celery import signals
-from celery.canvas import Signature
+from celery.canvas import chord
 from celery.schedules import crontab
 from kombu import Exchange, Queue, serialization
 from pydantic import BaseModel, Field, RootModel
@@ -388,17 +388,20 @@ def _patch_group(app: "Celery[BaseTask]") -> None:
     See: https://github.com/celery/celery/issues/8182
     """
 
-    def patched_group(*signatures: Signature[Any], **options: Any) -> Signature[Any]:
-        """A patch for celery.group This is required, because celery does not work as
-        expected when using a mixture of nested groups & chains."""
-        return chord(original_group(*signatures, **options), __completer.s())
-
     @app.task()
-    def __completer(results):
+    def noop(results):
         """Task that does nothing, can be used in a chord to complete the chord."""
         return results
 
-    celery.group = patched_group  # type: ignore[misc, assignment]
+    # pylint: disable=invalid-name
+    class chordgroup(chord):
+        def __init__(self, *tasks, **options):
+            super().__init__(
+                header=original_group(*tasks, **options),
+                body=noop.s(),
+            )
+
+    celery.group = chordgroup  # type: ignore
 
 
 def _get_shared_exchange() -> Exchange:
