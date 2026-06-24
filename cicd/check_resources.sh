@@ -8,7 +8,7 @@ set -euo pipefail
 # against defined thresholds.
 #
 # Note: if you change the thresholds, you probably also
-# want to update the README.md
+# want to update Documentation/installation.md
 # Note: minikube declares a base load of:
 # - ~ 1200m CPU
 # - ~ 440Mi RAM
@@ -75,13 +75,13 @@ helm template "${CHARTS_DIR}" \
     --filter-priority-class "*-scalable" \
     --quota-values "${CHARTS_DIR}/values.yaml"
 
-# Check if README.md contains the expected resource requirements block
-# This ensures the README stays in sync with the actual threshold values
+# Check if Documentation/installation.md contains the expected resource requirements block
+# This ensures the installation docs stay in sync with the actual threshold values
 
-README_FILE="${SCRIPT_DIR}/../README.md"
+INSTALLATION_FILE="${SCRIPT_DIR}/../Documentation/installation.md"
 
-if [[ ! -f "${README_FILE}" ]]; then
-    echo "ERROR: README.md not found at ${README_FILE}"
+if [[ ! -f "${INSTALLATION_FILE}" ]]; then
+    echo "ERROR: Documentation/installation.md not found at ${INSTALLATION_FILE}"
     exit 1
 fi
 
@@ -98,15 +98,15 @@ PATTERNS=(
 )
 
 for pattern in "${PATTERNS[@]}"; do
-    if ! grep -qF "${pattern}" "${README_FILE}"; then
-        echo "ERROR: README.md is missing expected line: ${pattern}"
+    if ! grep -qF "${pattern}" "${INSTALLATION_FILE}"; then
+        echo "ERROR: Documentation/installation.md is missing expected line: ${pattern}"
         MISSING_LINES=$((MISSING_LINES + 1))
     fi
 done
 
 if [[ ${MISSING_LINES} -gt 0 ]]; then
-    echo "ERROR: README.md is missing ${MISSING_LINES} expected line(s)"
-    echo "Please ensure the README.md contains the resource requirements with these values:"
+    echo "ERROR: Documentation/installation.md is missing ${MISSING_LINES} expected line(s)"
+    echo "Please ensure the Documentation/installation.md contains the resource requirements with these values:"
     echo "  - LOOM_MIN_MEMORY: ${LOOM_MIN_MEMORY}"
     echo "  - LOOM_MIN_CPU: ${LOOM_MIN_CPU}"
     echo "  - LOOM_MIN_GPU: ${LOOM_MIN_GPU}"
@@ -115,4 +115,4 @@ if [[ ${MISSING_LINES} -gt 0 ]]; then
     exit 1
 fi
 
-echo "README.md resource requirements verification passed"
+echo "Documentation/installation.md resource requirements verification passed"
