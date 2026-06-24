@@ -1,5 +1,10 @@
 # Loom Development Environment
 
+This guide walks through setting up the Loom development environment using devenv (Nix-based),
+covering prerequisites, initial configuration, and optional tooling for development.
+
+[[_TOC_]]
+
 ## Prerequisites
 
 - `git` installed [official instructions](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git)

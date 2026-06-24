@@ -2,6 +2,9 @@
 
 # Getting Started Guide
 
+This guide covers the basic workflows for using Loom: uploading and searching files, tagging,
+translation, working with archives and emails, and monitoring system health.
+
 [TOC]
 
 ## Using Loom

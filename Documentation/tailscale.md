@@ -2,6 +2,8 @@
 
 Follow the steps below to set up Tailscale and connect to GitLab runners.
 
+[[_TOC_]]
+
 ## Instructions
 
 1. **Receive Invite**
