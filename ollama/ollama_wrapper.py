@@ -17,6 +17,7 @@ from contextlib import contextmanager
 MIN_RESERVED_VRAM_FOR_MODEL_BYTES = 1 * (1024**3)
 MIN_RESERVED_VRAM_FOR_CONTEXT_BYTES = 0.5 * (1024**3)
 DEFAULT_CONTEXT_BYTES = 4096
+MIN_PARALLELISM = 4
 OLLAMA_STARTUP_RETRIES = 10
 OLLAMA_RETRY_INTERVAL = 0.3
 
@@ -180,7 +181,7 @@ def calculate_parallelism(
         vram_bytes - total_model_size_bytes - MIN_RESERVED_VRAM_FOR_MODEL_BYTES
     )
     if usable_for_context_bytes <= 0:
-        return 1
+        return MIN_PARALLELISM
     if largest_context_byte is None:
         largest_context_byte = DEFAULT_CONTEXT_BYTES
     return floor(
@@ -190,7 +191,7 @@ def calculate_parallelism(
                 model_count
                 * (largest_context_byte + MIN_RESERVED_VRAM_FOR_CONTEXT_BYTES)
             ),
-            1,
+            MIN_PARALLELISM,
         )
     )
 
@@ -200,7 +201,7 @@ def estimate_parallelism() -> ParallelismEstimate:
     models = get_installed_models()
     if not models:
         print("⚠️ No installed models found.")
-        return ParallelismEstimate(parallelism=1)
+        return ParallelismEstimate(parallelism=MIN_PARALLELISM)
 
     total_model_size_bytes = sum(m.size_bytes for m in models)
     print(f"📦 Total model size: {size_bytes_to_human(total_model_size_bytes)}")
@@ -226,7 +227,7 @@ def estimate_parallelism() -> ParallelismEstimate:
     if vram_mb is None:
         print("⚠️ No GPU detected. Assuming CPU-only environment.")
         return ParallelismEstimate(
-            parallelism=1, largest_context_length=largest_context_length
+            parallelism=MIN_PARALLELISM, largest_context_length=largest_context_length
         )
     print(f"🧠 GPU detected: {vram_mb} MB VRAM")
 
@@ -256,6 +257,12 @@ def run_entry_command(ollama_args: list[str]) -> None:
 
     estimate = estimate_parallelism()
     if "OLLAMA_NUM_PARALLEL" in env:
+        if int(env["OLLAMA_NUM_PARALLEL"]) < MIN_PARALLELISM:
+            print(
+                f"❌ OLLAMA_NUM_PARALLEL={env['OLLAMA_NUM_PARALLEL']} is below the required"
+                f" minimum of {MIN_PARALLELISM}."
+            )
+            sys.exit(1)
         print(f"🔧 Using pre-defined OLLAMA_NUM_PARALLEL={env['OLLAMA_NUM_PARALLEL']}")
     else:
         print(f"✅ Dynamically setting OLLAMA_NUM_PARALLEL={estimate.parallelism}")

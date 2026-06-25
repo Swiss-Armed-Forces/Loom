@@ -43,10 +43,6 @@ ollama:
   hpa:
     enabled: true
 
-ollama-tool:
-  hpa:
-    enabled: true
-
 prometheus:
   customLabels:
     pulse/enabled: true

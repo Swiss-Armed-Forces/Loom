@@ -242,7 +242,6 @@ data:
     {{- end }}
 
     {{- $ollamaEndpoint := printf "http://%s-ollama:%s/v1/" (include "app.fullname" .) (.Values.ollama.service.port | toString) }}
-    {{- $ollamaToolEndpoint := printf "http://%s-ollama-tool:%s/v1/" (include "app.fullname" .) (index .Values "ollama-tool" "service" "port" | toString) }}
 
     # llm embedding
     llm__embedding__endpoint: {{ .Values.llm.embedding.endpoint | default $ollamaEndpoint | quote }}
@@ -278,7 +277,7 @@ data:
     {{- end }}
 
     # llm tool
-    llm__tool__endpoint: {{ .Values.llm.tool.endpoint | default $ollamaToolEndpoint | quote }}
+    llm__tool__endpoint: {{ .Values.llm.tool.endpoint | default $ollamaEndpoint | quote }}
     {{- if and (not .Values.externalSecrets.secrets.llm__tool__api_key.enabled) (ne .Values.llm.tool.api_key nil) }}
     llm__tool__api_key: {{ .Values.llm.tool.api_key | quote }}
     {{- end }}

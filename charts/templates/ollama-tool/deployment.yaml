@@ -1,2 +1,0 @@
-{{- $component := base (dir $.Template.Name) -}}
-{{- include "app.ollama.deployment" (dict "Values" .Values "Chart" .Chart "Release" .Release "component" $component) -}}

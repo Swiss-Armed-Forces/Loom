@@ -914,7 +914,7 @@ rabbit:
   # app-tier: messaging
   # service-type: queue
 
-ollama: &ollama
+ollama:
   enabled: true
   replicaCount: 1
   priorityClass: null
@@ -964,8 +964,6 @@ ollama: &ollama
   # Example:
   # app-tier: ml
   # service-type: llm
-
-ollama-tool: *ollama
 
 open_webui:
   enabled: true
