@@ -144,6 +144,7 @@ def thumbnail_image_png_task(
 
 
 @app.task(base=FileIndexingTask)
+@cache()
 def upload_thumbnail_task(thumbnail: Thumbnail | None) -> FileStorageLazyBytes | None:
     if thumbnail is None:
         return None
