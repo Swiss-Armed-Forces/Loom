@@ -13,6 +13,13 @@ export const webSocketSendMessage = (message: PubSubMessage) => ({
 });
 export const websocketDisconnect = { type: "webSocket/disconnect" };
 
+const PING_INTERVAL_MS = 20_000;
+const NOOP_PUB_SUB_MESSAGE: PubSubMessage = { message: { type: "noop" } };
+
+const pingInterval: { id: ReturnType<typeof setInterval> | null } = {
+    id: null,
+};
+
 const socketMiddleware =
     (socket: SocketApi) => (store: any) => (next: any) => (action: any) => {
         switch (action.type) {
@@ -28,11 +35,16 @@ const socketMiddleware =
                 });
                 socket.on("open", () => {});
                 socket.on("close", () => {
+                    clearInterval(pingInterval.id ?? undefined);
+                    pingInterval.id = null;
                     // Inform the user that the WebSocket connection has been closed.
                     toast.error(t("error.webSocketClosed"), {
                         toastId: "webSocketClosed",
                     });
                 });
+                pingInterval.id = setInterval(() => {
+                    socket.send(NOOP_PUB_SUB_MESSAGE);
+                }, PING_INTERVAL_MS);
                 break;
 
             case "webSocket/send_message": {
@@ -42,6 +54,8 @@ const socketMiddleware =
             }
 
             case "webSocket/disconnect":
+                clearInterval(pingInterval.id ?? undefined);
+                pingInterval.id = null;
                 socket.disconnect();
                 break;
         }
