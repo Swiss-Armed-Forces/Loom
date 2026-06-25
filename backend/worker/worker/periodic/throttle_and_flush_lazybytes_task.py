@@ -58,10 +58,13 @@ def throttle_and_flush_lazybytes_task(self: PeriodicTask):
     flush_complete resumes it. Files are safe in file_storage_service, so queued tasks
     can resume processing after throttling ends.
     """
+    inspect = get_celery_inspect_service()
     if not _should_throttle(get_lazybytes_service()):
+        if inspect.is_throttled():
+            inspect.set_throttled(False)
+            logger.info("Below threshold: resuming")
         return None
 
-    inspect = get_celery_inspect_service()
     inspect.set_throttled(True)
 
     exclude_tasks = inspect.get_throttled_tasks() + [self.name]
@@ -73,7 +76,7 @@ def throttle_and_flush_lazybytes_task(self: PeriodicTask):
         logger.info("Celery not idle: timed out waiting for idle")
         return None
 
-    logger.info("Celery idle: flushing lazybytes")
+    logger.info("Celery idle: flushing")
     return self.replace(
         chord(
             [
