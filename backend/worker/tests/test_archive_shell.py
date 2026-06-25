@@ -165,3 +165,17 @@ class TestCliShell:
         result = _run_shell(archive_dir, "")
 
         assert result.returncode == 0
+
+    def test_exit_command_exits_shell(
+        self,
+        tmp_path: Path,
+        file_storage_service_inmemory: InMemoryFileStorageLazyBytesService,
+    ) -> None:
+        archive_dir = build_archive(
+            tmp_path,
+            simple_entries({"report.pdf": b"data"}),
+            file_storage_service_inmemory,
+        )
+        result = _run_shell(archive_dir, "exit\n")
+
+        assert result.returncode == 0
