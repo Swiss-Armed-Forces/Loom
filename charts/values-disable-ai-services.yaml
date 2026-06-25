@@ -9,8 +9,6 @@
 #
 ollama:
   enabled: false
-ollama-tool:
-  enabled: false
 open_webui:
   enabled: false
 translate:

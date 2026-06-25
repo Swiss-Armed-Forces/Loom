@@ -146,7 +146,7 @@ rabbit:
     requests: null
     limits: null
 
-ollama: &ollama
+ollama:
   resources:
     requests: null
     limits: null
@@ -154,8 +154,6 @@ ollama: &ollama
     resources:
       requests: null
       limits: null
-
-ollama-tool: *ollama
 
 open_webui:
   resources:
