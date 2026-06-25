@@ -1,18 +1,58 @@
 import tarfile
+import time
 import zipfile
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 
 import pytest
+import requests
 from common.utils.random_file import random_file, random_file_printable
+from requests_toolbelt import MultipartEncoder
 from worker.services.tika_service import TIKA_MAX_TEXT_SIZE, TIKA_UNPACK_MAX_SIZE
 
-from utils.consts import ASSETS_DIR
+from utils.consts import ASSETS_DIR, FILES_ENDPOINT
 from utils.fetch_from_api import (
     DEFAULT_MAX_WAIT_TIME_PER_FILE,
     get_file_preview_by_name,
 )
 from utils.upload_asset import upload_asset
+
+# Traefik v3 default readTimeout for HTTP entrypoints.
+# See traefik/values.yaml – ports.web/websecure.transport.respondingTimeouts.readTimeout
+_TRAEFIK_DEFAULT_READ_TIMEOUT_SECONDS = 60
+
+
+class _ThrottledBytesIO:
+    """File-like wrapper that delays the first ``read()`` call by ``upload_duration``
+    seconds.
+
+    When passed as the file body to ``requests``, the HTTP headers are sent immediately
+    but the body bytes are withheld until the sleep ends.  Traefik receives the request
+    headers and starts its ``readTimeout`` clock; if the timeout fires before the sleep
+    ends the connection is dropped.
+    """
+
+    def __init__(self, data: bytes, upload_duration: float) -> None:
+        self._data = data
+        self._pos = 0
+        self._upload_duration = upload_duration
+        self._started = False
+
+    @property
+    def len(self) -> int:
+        return len(self._data) - self._pos
+
+    def read(self, size: int = -1) -> bytes:
+        if not self._started:
+            self._started = True
+            time.sleep(self._upload_duration)
+        if size < 0:
+            chunk = self._data[self._pos :]
+            self._pos = len(self._data)
+        else:
+            chunk = self._data[self._pos : self._pos + size]
+            self._pos += len(chunk)
+        return chunk
 
 
 def test_upload_email():
@@ -152,3 +192,31 @@ def test_upload_empty_file():
         upload_asset(name, request_timeout=300)
 
     get_file_preview_by_name(name)
+
+
+def test_upload_large_file_does_not_timeout():
+    """Upload whose body transfer spans longer than Traefik's default readTimeout must
+    succeed.
+
+    Traefik v3 defaults entrypoint readTimeout to 60 s.  Without an explicit
+    override, any upload that takes longer than one minute is silently dropped.
+    This test reproduces the failure by delaying the first body read so that
+    the total transfer time exceeds the default, then asserting the server
+    returns 202.
+
+    Fix: set readTimeout to "0s" on the web and websecure entrypoints in
+    traefik/values.yaml (ports.web/websecure.transport.respondingTimeouts.readTimeout).
+    """
+    upload_duration = _TRAEFIK_DEFAULT_READ_TIMEOUT_SECONDS + 5
+
+    throttled = _ThrottledBytesIO(b"x" * 1024, upload_duration=upload_duration)
+    encoder = MultipartEncoder(
+        {"file": ("slow_upload.bin", throttled, "application/octet-stream")}
+    )
+    response = requests.post(
+        FILES_ENDPOINT,
+        data=encoder,
+        headers={"Content-Type": encoder.content_type},
+        timeout=upload_duration + 30,
+    )
+    assert response.status_code == 202

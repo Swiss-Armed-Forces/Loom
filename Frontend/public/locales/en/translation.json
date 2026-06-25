@@ -59,7 +59,8 @@
     "uploadFileDialog": {
         "title": "Upload files",
         "uploadButton": "Upload",
-        "dropzoneText": "Drop some files here"
+        "dropzoneText": "Drop some files here",
+        "largeFileWarning": "One or more files are large (> 500 MiB). For reliable uploads of large files, consider using an S3 CLI client to upload directly to the intake bucket."
     },
     "translateFilesDialog": {
         "title": "Translate",
