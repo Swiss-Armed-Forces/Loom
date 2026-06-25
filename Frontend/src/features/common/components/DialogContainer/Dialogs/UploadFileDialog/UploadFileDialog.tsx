@@ -1,7 +1,7 @@
 import { Close, UploadFile } from "@mui/icons-material";
 import FileIcon from "@mui/icons-material/Attachment";
 import UploadIcon from "@mui/icons-material/CloudUpload";
-import { Avatar, Button, Chip } from "@mui/material";
+import { Alert, Avatar, Button, Chip } from "@mui/material";
 import { useState } from "react";
 import Dropzone from "react-dropzone";
 import { useTranslation } from "react-i18next";
@@ -25,6 +25,9 @@ export const UploadFileDialog = ({ id, onClose }: DialogProps) => {
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const dispatch = useAppDispatch();
     const { t } = useTranslation();
+
+    const LARGE_FILE_THRESHOLD_BYTES = 500 * 1024 * 1024; // 500 MiB
+    const hasLargeFile = files.some((f) => f.size > LARGE_FILE_THRESHOLD_BYTES);
 
     const addFiles = (filesToUpload: File[]) => {
         setFiles(files.concat(filesToUpload));
@@ -103,6 +106,11 @@ export const UploadFileDialog = ({ id, onClose }: DialogProps) => {
                     </div>
                 )}
             </Dropzone>
+            {hasLargeFile && (
+                <Alert severity="warning">
+                    {t("uploadFileDialog.largeFileWarning")}
+                </Alert>
+            )}
             {files.length > 0 && (
                 <div className={styles.fileList}>
                     {files.map((file, idx) => (

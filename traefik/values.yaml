@@ -24,8 +24,14 @@ logs:
 ports:
   web:
     hostPort: 80
+    transport:
+      respondingTimeouts:
+        readTimeout: "0s"
   websecure:
     hostPort: 443
+    transport:
+      respondingTimeouts:
+        readTimeout: "0s"
   imap:
     port: 143
     hostPort: 143
