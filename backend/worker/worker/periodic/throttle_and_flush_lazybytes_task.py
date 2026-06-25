@@ -64,10 +64,11 @@ def throttle_and_flush_lazybytes_task(self: PeriodicTask):
     inspect = get_celery_inspect_service()
     inspect.set_throttled(True)
 
+    exclude_tasks = inspect.get_throttled_tasks() + [self.name]
     if not inspect.wait_for_idle(
         timeout=_WAIT_FOR_IDLE_TIMEOUT_SECONDS,
         poll_interval=_WAIT_FOR_IDLE_POLL_INTERVAL_SECONDS,
-        exclude_tasks=inspect.get_throttled_tasks(),
+        exclude_tasks=exclude_tasks,
     ):
         logger.info("Celery not idle: timed out waiting for idle")
         return None
