@@ -592,9 +592,12 @@ def cmd_shell(_args: argparse.Namespace) -> None:
     while True:
         try:
             line = input(f"{SHELL_PROMPT} ").strip()
-        except (EOFError, KeyboardInterrupt):
+        except EOFError:
             print()
             break
+        except KeyboardInterrupt:
+            print("^C")
+            continue
 
         if not line:
             continue

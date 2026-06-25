@@ -1,7 +1,11 @@
+import argparse
+import io
 import json
 import subprocess
 import sys
+from contextlib import redirect_stdout
 from pathlib import Path
+from unittest.mock import patch
 from uuid import uuid4
 
 from common.file.file_repository import File, FilePurePath, RenderedFile
@@ -10,7 +14,7 @@ from common.services.lazybytes_service import (
     LazyBytes,
 )
 
-from worker.create_archive.tasks.archive_format import CLI_FILENAME
+from worker.create_archive.tasks.archive_format import CLI_FILENAME, cmd_shell
 from worker.utils.archive import ArchiveEntry, build_archive, simple_entries
 
 
@@ -785,3 +789,21 @@ class TestCliId:
 
         assert result.returncode != 0
         assert "no file found with id" in result.stderr
+
+
+class TestCliShell:
+    def test_ctrl_c_does_not_exit_shell(self) -> None:
+        call_count = 0
+
+        def mock_input(_prompt: str = "") -> str:
+            nonlocal call_count
+            call_count += 1
+            if call_count == 1:
+                raise KeyboardInterrupt
+            return "exit"
+
+        out = io.StringIO()
+        with patch("builtins.input", side_effect=mock_input), redirect_stdout(out):
+            cmd_shell(argparse.Namespace())
+
+        assert "^C" in out.getvalue()
