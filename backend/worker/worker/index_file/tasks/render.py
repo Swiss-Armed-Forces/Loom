@@ -338,6 +338,7 @@ def render_office_to_pdf_task(
 
 
 @app.task(base=FileIndexingTask)
+@cache()
 def upload_rendered_task(
     rendered_lazy: TempLazyBytes | None,
 ) -> FileStorageLazyBytes | None:
