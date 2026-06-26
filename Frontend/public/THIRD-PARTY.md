@@ -6005,6 +6005,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | tika-server-standard | 3.3.1 | Apache-2.0, EPL-2.0, GPL-2.0-only | java-archive-cataloger |
 | tika-translate | 3.3.1 |  | java-archive-cataloger |
 | tika-xmp | 3.3.1 |  | java-archive-cataloger |
+| tini | 0.19.0-6 |  | dpkg-db-cataloger |
 | tomli | 2.0.1 |  | python-installed-package-cataloger |
 | ttf-mscorefonts-installer | 3.8.1ubuntu2 |  | dpkg-db-cataloger |
 | txw2 | 4.0.8 |  | java-archive-cataloger |

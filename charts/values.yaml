@@ -212,7 +212,6 @@ pipeline:
   throttle_max_lazybytes__bytes: null
   max_recursion_depth: null
   tika_ocr_languages: null
-  tika_timeout_seconds: null
   imagemagick_timeout_seconds: null
   celery_queue_name_prefix: null
   celery_deliver_limit: null
@@ -1253,6 +1252,8 @@ tika:
       cpu: "4"
       memory: "6Gi"
   javaOpts: "-XX:InitialRAMPercentage=90 -XX:MaxRAMPercentage=90"
+  taskTimeoutSeconds: 300
+  tmpSizeLimit: 2Gi
   # Custom labels specific to tika resources
   customLabels: {}
   customAnnotations: {}

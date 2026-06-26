@@ -79,8 +79,14 @@ spec:
             - name: TIKA_JAVA_OPS
               value: {{ .Values.tika.javaOpts | quote }}
           args:
+            - "/bin/sh"
             - "-c"
-            - "/tika-config/tika-config.xml"
+            - >-
+              exec java ${TIKA_JAVA_OPS}
+              -cp "/tika-server-standard-${TIKA_VERSION}.jar:/tika-extras/*"
+              org.apache.tika.server.core.TikaServerCli
+              -h 0.0.0.0
+              -c /tika-config/tika-config.xml
           volumeMounts:
             - name: imagemagick-policy
               mountPath: /etc/ImageMagick-7/policy.xml
@@ -88,6 +94,8 @@ spec:
             - name: tika-config
               mountPath: /tika-config/tika-config.xml
               subPath: tika-config.xml
+            - name: tmp
+              mountPath: /tmp
       volumes:
         - name: imagemagick-policy
           configMap:
@@ -95,3 +103,7 @@ spec:
         - name: tika-config
           configMap:
             name: {{ include "app.fullname" . }}-tika-config
+        - name: tmp
+          emptyDir:
+            medium: Memory
+            sizeLimit: {{ .Values.tika.tmpSizeLimit }}
