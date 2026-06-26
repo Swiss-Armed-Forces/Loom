@@ -440,14 +440,16 @@ compute_kubelet_config() {
         node_mem_mib=$(( node_mem_kib / 1024 ))
     fi
 
-    # Compute memory reservations as percentages of node RAM:
-    #   system-reserved: 8%  (min 1024 MiB)  — OS, Docker daemon, kernel buffers
-    #   kube-reserved:   4%  (min  512 MiB)  — kubelet, CNI, kube-proxy
-    #   eviction-hard:   6%  (min  500 MiB)  — hard eviction floor (OOM prevention)
+    # Compute memory reservations. Loom runs on the Docker driver (no guest OS inside
+    # the minikube container), but pod count scales with node RAM via HPA, so:
+    #   system-reserved: fixed 1024 MiB       — init + containerd inside minikube container;
+    #                                            fixed overhead independent of pod count
+    #   kube-reserved:   4%  (min  512 MiB)  — kubelet tracks per-pod state, scales with pods
+    #   eviction-hard:   6%  (min  500 MiB)  — safety buffer scales with node size and pod count
     #   eviction-soft:   8%  (min  750 MiB)  — soft warning with grace period
     local awk_result
     awk_result="$(awk -v mem="${node_mem_mib}" 'BEGIN {
-        sys  = int(mem * 0.08); if (sys  < 1024) sys  = 1024;
+        sys  = 1024;
         kube = int(mem * 0.04); if (kube <  512) kube =  512;
         hard = int(mem * 0.06); if (hard <  500) hard =  500;
         soft = int(mem * 0.08); if (soft <  750) soft =  750;
