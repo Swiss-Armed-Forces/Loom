@@ -2,9 +2,12 @@
 <properties>
   <server>
     <params>
-      <!-- maximum time to allow per parse before shutting down and restarting
-          the forked parser. Not allowed if nofork=true. -->
-      <taskTimeoutMillis>99999999999</taskTimeoutMillis>
+      <!-- run each parse in an isolated forked child JVM so that crashes/OOMs
+          and taskTimeoutMillis kills cannot affect the main server process -->
+      <noFork>false</noFork>
+      <!-- maximum time to allow per parse before killing the forked child JVM
+          and all subprocesses (e.g. ImageMagick convert) it spawned -->
+      <taskTimeoutMillis>{{ .taskTimeoutMillis }}</taskTimeoutMillis>
     </params>
   </server>
   <parsers>

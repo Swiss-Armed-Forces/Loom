@@ -16,6 +16,7 @@ USER root:root
 ARG TESSERACT_OCR_ALL_VERSION="5.5.*"
 ARG IMAGEMAGICK_VERSION="8:7.*"
 ARG PYTHON3_SKIMAGE_VERSION="0.26.*"
+ARG TINI_VERSION="0.19.*"
 
 # install language package for OCR, zstd-jni for compression support, and dependencies for custom-entry-point
 # ImageMagick and python3-skimage are required for Tika's image preprocessing (rotation detection, normalization)
@@ -25,6 +26,7 @@ RUN set -exu \
   tesseract-ocr-all="${TESSERACT_OCR_ALL_VERSION}" \
   imagemagick="${IMAGEMAGICK_VERSION}" \
   python3-skimage="${PYTHON3_SKIMAGE_VERSION}" \
+  tini="${TINI_VERSION}" \
   && apt-get clean \
   && rm -rf /var/lib/apt/lists/*
 
@@ -43,4 +45,5 @@ USER $UID_GID
 
 EXPOSE 8000
 
-ENTRYPOINT [ "/bin/sh", "-c", "exec java ${TIKA_JAVA_OPS} -cp \"/tika-server-standard-${TIKA_VERSION}.jar:/tika-extras/*\" org.apache.tika.server.core.TikaServerCli -h 0.0.0.0 $0 $@"]
+ENTRYPOINT ["/usr/bin/tini", "--"]
+CMD ["/bin/sh", "-c", "exec java ${TIKA_JAVA_OPS} -cp \"/tika-server-standard-${TIKA_VERSION}.jar:/tika-extras/*\" org.apache.tika.server.core.TikaServerCli -h 0.0.0.0"]

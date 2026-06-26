@@ -70,9 +70,7 @@ data:
     {{- if ne .Values.pipeline.tika_ocr_languages nil }}
     tika_ocr_languages: {{ .Values.pipeline.tika_ocr_languages | join "," | quote }}
     {{- end }}
-    {{- if ne .Values.pipeline.tika_timeout_seconds nil }}
-    tika_timeout_seconds: {{ .Values.pipeline.tika_timeout_seconds | quote }}
-    {{- end }}
+    tika_timeout_seconds: {{ .Values.tika.taskTimeoutSeconds | quote }}
     {{- if ne .Values.pipeline.imagemagick_timeout_seconds nil }}
     imagemagick_timeout_seconds: {{ .Values.pipeline.imagemagick_timeout_seconds | quote }}
     {{- end }}

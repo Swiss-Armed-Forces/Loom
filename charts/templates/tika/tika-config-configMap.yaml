@@ -11,4 +11,4 @@ metadata:
   {{- end }}
 data:
   tika-config.xml: |
-    {{- .Files.Get "files/tika/tika-config.xml.tpl" | nindent 4 }}
+    {{- tpl (.Files.Get "files/tika/tika-config.xml.tpl") (dict "taskTimeoutMillis" (mul .Values.tika.taskTimeoutSeconds 1000)) | nindent 4 }}

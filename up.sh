@@ -580,6 +580,21 @@ setup_system(){
         sudo sysctl -w "vm.swappiness=${VM_SWAPPINESS}"
         sysctl_changed=true
     fi
+    # Allow more dirty pages to accumulate in RAM before processes are throttled
+    # waiting for writeback. Reduces I/O stalls during heavy document processing
+    # (e.g. concurrent ImageMagick convert jobs writing large temp files).
+    VM_DIRTY_BACKGROUND_RATIO=10
+    vm_dirty_background_ratio="$(sysctl -n vm.dirty_background_ratio)"
+    if [[ "${vm_dirty_background_ratio}" -lt "${VM_DIRTY_BACKGROUND_RATIO}" ]]; then
+        sudo sysctl -w "vm.dirty_background_ratio=${VM_DIRTY_BACKGROUND_RATIO}"
+        sysctl_changed=true
+    fi
+    VM_DIRTY_RATIO=40
+    vm_dirty_ratio="$(sysctl -n vm.dirty_ratio)"
+    if [[ "${vm_dirty_ratio}" -lt "${VM_DIRTY_RATIO}" ]]; then
+        sudo sysctl -w "vm.dirty_ratio=${VM_DIRTY_RATIO}"
+        sysctl_changed=true
+    fi
     SYSCTL_CONF_FILE="/etc/sysctl.d/99-loom.conf"
     if [[ ! -f "${SYSCTL_CONF_FILE}" ]] || [[ "${sysctl_changed}" = true ]]; then
         sudo tee "${SYSCTL_CONF_FILE}" <<EOF
@@ -589,6 +604,8 @@ fs.inotify.max_user_watches=${FS_INOTIFY_MAX_WATCHES}
 fs.inotify.max_user_instances=${FS_INOTIFY_MAX_INSTANCES}
 fs.file-max=${FS_FILE_MAX}
 vm.swappiness=${VM_SWAPPINESS}
+vm.dirty_background_ratio=${VM_DIRTY_BACKGROUND_RATIO}
+vm.dirty_ratio=${VM_DIRTY_RATIO}
 EOF
     fi
 }
