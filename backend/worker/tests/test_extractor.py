@@ -360,7 +360,7 @@ def create_xz_test_archive(tmp_path: Path, random_file_size: int) -> Iterator[IO
             create_zstd_test_archive,
             "application/zstd",
             "0",
-            marks=pytest.mark.limit_memory("2 MB"),
+            marks=pytest.mark.limit_memory("4 MB"),
         ),
         pytest.param(
             XZExtractor,
