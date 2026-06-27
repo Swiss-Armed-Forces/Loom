@@ -28,14 +28,12 @@ from worker.utils.persister_base import (
 @pytest.fixture(autouse=True)
 def reset_persister_state():
     """Reset the persister state between tests."""
-    MockPersister._worker = None
+    GlobalPersisterWorker._instances = {}
     yield
-    worker = MockPersister._worker
-    if worker is None:
-        return
-
-    # stop worker
-    worker.shutdown()
+    workers = list(GlobalPersisterWorker._instances.values())
+    GlobalPersisterWorker._instances = {}
+    for worker in workers:
+        worker.shutdown()
 
 
 @pytest.fixture

@@ -200,6 +200,26 @@ class GlobalPersisterWorker(Generic[RepositoryObjectT]):
 
     # No lock needed: Celery prefork pool uses separate processes, each single-threaded
     _instance_counter: ClassVar[int] = 0
+    _instances: ClassVar[
+        dict[type[BaseRepository[Any]], "GlobalPersisterWorker[Any]"]
+    ] = {}
+
+    @classmethod
+    def get_or_create(
+        cls, repository: BaseRepository[RepositoryObjectT]
+    ) -> "GlobalPersisterWorker[RepositoryObjectT]":
+        """Get or create the worker for the given repository type.
+
+        All persisters backed by the same repository type share one worker, one queue,
+        and one object cache. This prevents last-write-wins races when multiple
+        persister classes mutate the same repository objects.
+        """
+        repo_type = type(repository)
+        worker = cls._instances.get(repo_type)
+        if worker is None:
+            worker = cls(repository)
+            cls._instances[repo_type] = worker
+        return worker
 
     def __init__(self, repository: BaseRepository[RepositoryObjectT]):
         self._repository = repository
@@ -601,26 +621,17 @@ class PersisterBase(ABC, Generic[RepositoryObjectT]):
     Delegates to GlobalPersisterWorker.
     """
 
-    # Each subclass gets its own worker instance
-    # No lock needed: Celery prefork pool uses separate processes, each single-threaded
-    _worker: ClassVar[GlobalPersisterWorker[Any] | None] = None
-
     @classmethod
     @abstractmethod
     def get_repository(cls) -> BaseRepository[RepositoryObjectT]:
         pass
 
     @classmethod
-    def _get_worker(cls) -> GlobalPersisterWorker[RepositoryObjectT]:
-        """Get or create the worker for this persister class."""
-        if cls._worker is None:
-            cls._worker = GlobalPersisterWorker(cls.get_repository())
-        return cls._worker
-
-    @classmethod
     def submit(cls, object_mutation: _ObjectMutation[RepositoryObjectT]) -> None:
         """Submit a mutation to the global worker."""
-        cls._get_worker().submit(object_mutation)
+        GlobalPersisterWorker.get_or_create(cls.get_repository()).submit(
+            object_mutation
+        )
 
     def __init__(self, object_id: UUID):
         self._object_id = object_id
