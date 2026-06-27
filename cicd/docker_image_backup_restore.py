@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import argparse
+import errno
 import logging
 import os
 import re
@@ -11,7 +12,7 @@ from pathlib import Path
 
 import docker
 import zstandard as zstd
-from docker.errors import ImageNotFound
+from docker.errors import ImageLoadError, ImageNotFound
 from pydantic import BaseModel, RootModel
 
 # -------------------------------
@@ -166,6 +167,14 @@ def docker_backup_image(meta: ImageMetadata, backup_dir: Path) -> None:
                     ):
                         compressor.write(chunk)
             temp_path.replace(archive_path)
+        except OSError as e:
+            if e.errno == errno.ENOSPC:
+                logger.warning(
+                    "No space left on device while backing up image ID '%s'. Skipping.",
+                    meta.id,
+                )
+                return
+            raise
         finally:
             if temp_path.exists():
                 temp_path.unlink()
@@ -212,7 +221,18 @@ def docker_restore_image(image_id: str, backup_dir: Path) -> None:
     with open(archive_path, "rb") as raw:
         dctx = zstd.ZstdDecompressor()
         with dctx.stream_reader(raw) as reader:
-            client.images.load(reader)  # type: ignore
+            try:
+                client.images.load(reader)  # type: ignore
+            except ImageLoadError as e:
+                if os.strerror(errno.ENOSPC).lower() in str(e).lower():
+                    logger.warning(
+                        "No space left on device while loading image ID '%s'. "
+                        "Deleting cached archive to free disk space.",
+                        image_id,
+                    )
+                    shutil.rmtree(image_dir)
+                    return
+                raise
 
     image = client.images.get(image_id)
     for tag in meta.tags:
