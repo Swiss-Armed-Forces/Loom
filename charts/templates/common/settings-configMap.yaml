@@ -252,8 +252,11 @@ data:
     {{- if ne .Values.llm.embedding.temperature nil }}
     llm__embedding__temperature: {{ .Values.llm.embedding.temperature | quote }}
     {{- end }}
-    {{- if ne .Values.llm.embedding.think nil }}
-    llm__embedding__think: {{ .Values.llm.embedding.think | quote }}
+    {{- if .Values.llm.embedding.extra_headers }}
+    llm__embedding__extra_headers: {{ .Values.llm.embedding.extra_headers | toJson | quote }}
+    {{- end }}
+    {{- if .Values.llm.embedding.extra_body }}
+    llm__embedding__extra_body: {{ .Values.llm.embedding.extra_body | toJson | quote }}
     {{- end }}
     {{- if ne .Values.llm.embedding.timeout nil }}
     llm__embedding__timeout: {{ .Values.llm.embedding.timeout | quote }}
@@ -285,11 +288,50 @@ data:
     {{- if ne .Values.llm.tool.temperature nil }}
     llm__tool__temperature: {{ .Values.llm.tool.temperature | quote }}
     {{- end }}
-    {{- if ne .Values.llm.tool.think nil }}
-    llm__tool__think: {{ .Values.llm.tool.think | quote }}
+    {{- if .Values.llm.tool.extra_headers }}
+    llm__tool__extra_headers: {{ .Values.llm.tool.extra_headers | toJson | quote }}
+    {{- end }}
+    {{- if .Values.llm.tool.extra_body }}
+    llm__tool__extra_body: {{ .Values.llm.tool.extra_body | toJson | quote }}
     {{- end }}
     {{- if ne .Values.llm.tool.timeout nil }}
     llm__tool__timeout: {{ .Values.llm.tool.timeout | quote }}
+    {{- end }}
+    {{- if ne .Values.llm.tool.max_tokens nil }}
+    llm__tool__max_tokens: {{ .Values.llm.tool.max_tokens | quote }}
+    {{- end }}
+
+    # llm summarization key points
+    llm__summarization_key_points__endpoint: {{ .Values.llm.summarization_key_points.endpoint | default $ollamaEndpoint | quote }}
+    {{- if and (not .Values.externalSecrets.secrets.llm__summarization_key_points__api_key.enabled) (ne .Values.llm.summarization_key_points.api_key nil) }}
+    llm__summarization_key_points__api_key: {{ .Values.llm.summarization_key_points.api_key | quote }}
+    {{- end }}
+    {{- if ne .Values.llm.summarization_key_points.model nil }}
+    llm__summarization_key_points__model: {{ .Values.llm.summarization_key_points.model | quote }}
+    {{- end }}
+    {{- if ne .Values.llm.summarization_key_points.temperature nil }}
+    llm__summarization_key_points__temperature: {{ .Values.llm.summarization_key_points.temperature | quote }}
+    {{- end }}
+    {{- if .Values.llm.summarization_key_points.extra_headers }}
+    llm__summarization_key_points__extra_headers: {{ .Values.llm.summarization_key_points.extra_headers | toJson | quote }}
+    {{- end }}
+    {{- if .Values.llm.summarization_key_points.extra_body }}
+    llm__summarization_key_points__extra_body: {{ .Values.llm.summarization_key_points.extra_body | toJson | quote }}
+    {{- end }}
+    {{- if ne .Values.llm.summarization_key_points.timeout nil }}
+    llm__summarization_key_points__timeout: {{ .Values.llm.summarization_key_points.timeout | quote }}
+    {{- end }}
+    {{- if ne .Values.llm.summarization_key_points.text_chunk_size nil }}
+    llm__summarization_key_points__text_chunk_size: {{ .Values.llm.summarization_key_points.text_chunk_size | quote }}
+    {{- end }}
+    {{- if ne .Values.llm.summarization_key_points.text_chunk_overlap nil }}
+    llm__summarization_key_points__text_chunk_overlap: {{ .Values.llm.summarization_key_points.text_chunk_overlap | quote }}
+    {{- end }}
+    {{- if ne .Values.llm.summarization_key_points.system_prompt nil }}
+    llm__summarization_key_points__system_prompt: {{ .Values.llm.summarization_key_points.system_prompt | quote }}
+    {{- end }}
+    {{- if ne .Values.llm.summarization_key_points.max_tokens nil }}
+    llm__summarization_key_points__max_tokens: {{ .Values.llm.summarization_key_points.max_tokens | quote }}
     {{- end }}
 
     # llm summarization
@@ -303,20 +345,47 @@ data:
     {{- if ne .Values.llm.summarization.temperature nil }}
     llm__summarization__temperature: {{ .Values.llm.summarization.temperature | quote }}
     {{- end }}
-    {{- if ne .Values.llm.summarization.think nil }}
-    llm__summarization__think: {{ .Values.llm.summarization.think | quote }}
+    {{- if .Values.llm.summarization.extra_headers }}
+    llm__summarization__extra_headers: {{ .Values.llm.summarization.extra_headers | toJson | quote }}
+    {{- end }}
+    {{- if .Values.llm.summarization.extra_body }}
+    llm__summarization__extra_body: {{ .Values.llm.summarization.extra_body | toJson | quote }}
     {{- end }}
     {{- if ne .Values.llm.summarization.timeout nil }}
     llm__summarization__timeout: {{ .Values.llm.summarization.timeout | quote }}
     {{- end }}
-    {{- if ne .Values.llm.summarization.text_chunk_size nil }}
-    llm__summarization__text_chunk_size: {{ .Values.llm.summarization.text_chunk_size | quote }}
-    {{- end }}
-    {{- if ne .Values.llm.summarization.text_chunk_overlap nil }}
-    llm__summarization__text_chunk_overlap: {{ .Values.llm.summarization.text_chunk_overlap | quote }}
-    {{- end }}
     {{- if ne .Values.llm.summarization.system_prompt nil }}
     llm__summarization__system_prompt: {{ .Values.llm.summarization.system_prompt | quote }}
+    {{- end }}
+    {{- if ne .Values.llm.summarization.max_tokens nil }}
+    llm__summarization__max_tokens: {{ .Values.llm.summarization.max_tokens | quote }}
+    {{- end }}
+
+    # llm summarization refine
+    llm__summarization_refine__endpoint: {{ .Values.llm.summarization_refine.endpoint | default $ollamaEndpoint | quote }}
+    {{- if and (not .Values.externalSecrets.secrets.llm__summarization_refine__api_key.enabled) (ne .Values.llm.summarization_refine.api_key nil) }}
+    llm__summarization_refine__api_key: {{ .Values.llm.summarization_refine.api_key | quote }}
+    {{- end }}
+    {{- if ne .Values.llm.summarization_refine.model nil }}
+    llm__summarization_refine__model: {{ .Values.llm.summarization_refine.model | quote }}
+    {{- end }}
+    {{- if ne .Values.llm.summarization_refine.temperature nil }}
+    llm__summarization_refine__temperature: {{ .Values.llm.summarization_refine.temperature | quote }}
+    {{- end }}
+    {{- if .Values.llm.summarization_refine.extra_headers }}
+    llm__summarization_refine__extra_headers: {{ .Values.llm.summarization_refine.extra_headers | toJson | quote }}
+    {{- end }}
+    {{- if .Values.llm.summarization_refine.extra_body }}
+    llm__summarization_refine__extra_body: {{ .Values.llm.summarization_refine.extra_body | toJson | quote }}
+    {{- end }}
+    {{- if ne .Values.llm.summarization_refine.timeout nil }}
+    llm__summarization_refine__timeout: {{ .Values.llm.summarization_refine.timeout | quote }}
+    {{- end }}
+    {{- if ne .Values.llm.summarization_refine.system_prompt nil }}
+    llm__summarization_refine__system_prompt: {{ .Values.llm.summarization_refine.system_prompt | quote }}
+    {{- end }}
+    {{- if ne .Values.llm.summarization_refine.max_tokens nil }}
+    llm__summarization_refine__max_tokens: {{ .Values.llm.summarization_refine.max_tokens | quote }}
     {{- end }}
 
     # llm hyde
@@ -330,14 +399,20 @@ data:
     {{- if ne .Values.llm.hyde.temperature nil }}
     llm__hyde__temperature: {{ .Values.llm.hyde.temperature | quote }}
     {{- end }}
-    {{- if ne .Values.llm.hyde.think nil }}
-    llm__hyde__think: {{ .Values.llm.hyde.think | quote }}
+    {{- if .Values.llm.hyde.extra_headers }}
+    llm__hyde__extra_headers: {{ .Values.llm.hyde.extra_headers | toJson | quote }}
+    {{- end }}
+    {{- if .Values.llm.hyde.extra_body }}
+    llm__hyde__extra_body: {{ .Values.llm.hyde.extra_body | toJson | quote }}
     {{- end }}
     {{- if ne .Values.llm.hyde.timeout nil }}
     llm__hyde__timeout: {{ .Values.llm.hyde.timeout | quote }}
     {{- end }}
     {{- if ne .Values.llm.hyde.num_documents nil }}
     llm__hyde__num_documents: {{ .Values.llm.hyde.num_documents | quote }}
+    {{- end }}
+    {{- if ne .Values.llm.hyde.max_tokens nil }}
+    llm__hyde__max_tokens: {{ .Values.llm.hyde.max_tokens | quote }}
     {{- end }}
 
     # llm rerank
@@ -351,8 +426,11 @@ data:
     {{- if ne .Values.llm.rerank.temperature nil }}
     llm__rerank__temperature: {{ .Values.llm.rerank.temperature | quote }}
     {{- end }}
-    {{- if ne .Values.llm.rerank.think nil }}
-    llm__rerank__think: {{ .Values.llm.rerank.think | quote }}
+    {{- if .Values.llm.rerank.extra_headers }}
+    llm__rerank__extra_headers: {{ .Values.llm.rerank.extra_headers | toJson | quote }}
+    {{- end }}
+    {{- if .Values.llm.rerank.extra_body }}
+    llm__rerank__extra_body: {{ .Values.llm.rerank.extra_body | toJson | quote }}
     {{- end }}
     {{- if ne .Values.llm.rerank.timeout nil }}
     llm__rerank__timeout: {{ .Values.llm.rerank.timeout | quote }}
@@ -369,8 +447,11 @@ data:
     {{- if ne .Values.llm.chat.temperature nil }}
     llm__chat__temperature: {{ .Values.llm.chat.temperature | quote }}
     {{- end }}
-    {{- if ne .Values.llm.chat.think nil }}
-    llm__chat__think: {{ .Values.llm.chat.think | quote }}
+    {{- if .Values.llm.chat.extra_headers }}
+    llm__chat__extra_headers: {{ .Values.llm.chat.extra_headers | toJson | quote }}
+    {{- end }}
+    {{- if .Values.llm.chat.extra_body }}
+    llm__chat__extra_body: {{ .Values.llm.chat.extra_body | toJson | quote }}
     {{- end }}
     {{- if ne .Values.llm.chat.timeout nil }}
     llm__chat__timeout: {{ .Values.llm.chat.timeout | quote }}
@@ -387,14 +468,20 @@ data:
     {{- if ne .Values.llm.vision.temperature nil }}
     llm__vision__temperature: {{ .Values.llm.vision.temperature | quote }}
     {{- end }}
-    {{- if ne .Values.llm.vision.think nil }}
-    llm__vision__think: {{ .Values.llm.vision.think | quote }}
+    {{- if .Values.llm.vision.extra_headers }}
+    llm__vision__extra_headers: {{ .Values.llm.vision.extra_headers | toJson | quote }}
+    {{- end }}
+    {{- if .Values.llm.vision.extra_body }}
+    llm__vision__extra_body: {{ .Values.llm.vision.extra_body | toJson | quote }}
     {{- end }}
     {{- if ne .Values.llm.vision.timeout nil }}
     llm__vision__timeout: {{ .Values.llm.vision.timeout | quote }}
     {{- end }}
     {{- if ne .Values.llm.vision.system_prompt nil }}
     llm__vision__system_prompt: {{ .Values.llm.vision.system_prompt | quote }}
+    {{- end }}
+    {{- if ne .Values.llm.vision.max_tokens nil }}
+    llm__vision__max_tokens: {{ .Values.llm.vision.max_tokens | quote }}
     {{- end }}
 
     # crawler

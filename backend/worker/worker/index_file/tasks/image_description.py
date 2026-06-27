@@ -57,19 +57,19 @@ def signature(file_content: TempLazyBytes, file: File) -> Signature:
     )
 
 
+DESCRIBE_IMAGE_MAX_RETRIES = 15
+
+
 class ImageDescriptionError(Exception):
     pass
 
 
-LLM_MAX_TOKENS_KEY_POINTS = 500
-
-
 def describe_image(data: memoryview, system_prompt: str | None = None) -> str:
-    prompt = f"""PROMPT: Describe what's in the image.
-Return your response in a paragraph of {LLM_MAX_TOKENS_KEY_POINTS} tokens or less.
-If there's nothing or not enough content in the image just provide an empty answer.
-Do NOT use any previous knowledge.
-Always describe in the following language: {settings.translate_target}
+    prompt = f"""PROMPT: Describe the contents of the image in detail.
+Include any visible text, objects, people, scenes, colors, and layout.
+Your response must be written in the following language: {settings.translate_target}.
+Do NOT use any prior knowledge — only describe what is visible in the image.
+Respond with a description of at most {settings.llm.vision.max_tokens} tokens.
 
 DESCRIPTION:"""
     if system_prompt is None:
@@ -99,16 +99,15 @@ DESCRIPTION:"""
                 },
             ],
             temperature=settings.llm.vision.temperature,
-            max_tokens=LLM_MAX_TOKENS_KEY_POINTS,
-            extra_headers=({"X-Think": "true"} if settings.llm.vision.think else None),
+            extra_headers=settings.llm.vision.extra_headers,
+            extra_body=settings.llm.vision.extra_body,
         )
     except APIError as ex:
         raise ImageDescriptionError() from ex
 
-    content = response.choices[0].message.content
-    if content is None:
-        raise ImageDescriptionError("vision model returned no content")
-    return content
+    return settings.llm.vision.truncate_response(
+        response.choices[0].message.content or ""
+    )
 
 
 @app.task(base=FileIndexingTask)
@@ -116,7 +115,12 @@ def detect_image_task(file_type: str, file_extension: str) -> bool:
     return is_image(extension=file_extension, mimetype=file_type)
 
 
-@app.task(base=FileIndexingTask)
+@app.task(
+    base=FileIndexingTask,
+    autoretry_for=(ImageDescriptionError,),
+    max_retries=DESCRIBE_IMAGE_MAX_RETRIES,
+    retry_backoff=True,
+)
 @cache(
     key_function=lambda is_image_detected, _, file, system_prompt=None: (
         is_image_detected,

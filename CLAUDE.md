@@ -178,6 +178,21 @@ All commands below are provided by devenv scripts (run `devenv-help` to see full
 Always use the issue template at `.gitlab/issue_templates/Default.md` when creating GitLab issues.
 It covers both bug reports and feature requests in a single form.
 
+### Documentation Check Before Committing
+
+Before committing any implementation, review whether the changes affect user-facing behaviour,
+configuration, or deployment — and if so, update the relevant documentation:
+
+- **New Helm values files** (`charts/values-*.yaml`) → add an entry to the `## Helm Values Reference`
+  section in `Documentation/installation.md`
+- **New settings or configuration knobs** → check `Documentation/` for any guide that covers
+  configuration and update it
+- **New CLI flags, scripts, or devenv commands** → update `CLAUDE.md` (Common Commands) and any
+  relevant `Documentation/` page
+- **Changed defaults or behaviour** → update any doc that describes the old behaviour
+
+If none of the documentation files need updating, proceed directly to the commit.
+
 ### Git Workflow
 
 Per `CONTRIBUTING.md`:

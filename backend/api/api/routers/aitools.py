@@ -150,15 +150,18 @@ QUERY_DESCRIPTION: {query_description}
 --------------------
 QUERY_STRING:"""
 
-    response = llm_tool_client.completions.create(
+    response = llm_tool_client.chat.completions.create(
         model=settings.llm.tool.model,
-        prompt=prompt,
+        messages=[{"role": "user", "content": prompt}],
         temperature=settings.llm.tool.temperature,
-        extra_headers={"X-Think": "true"} if settings.llm.tool.think else None,
+        extra_headers=settings.llm.tool.extra_headers,
+        extra_body=settings.llm.tool.extra_body,
     )
     if not response.choices:
         raise HTTPException(status_code=502, detail="LLM returned no choices")
-    search_string = response.choices[0].text.strip()
+    search_string = settings.llm.tool.truncate_response(
+        (response.choices[0].message.content or "").strip()
+    )
 
     logger.info("Getting files with search string: '%s'", search_string)
     query = QueryParameters(

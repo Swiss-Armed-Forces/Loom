@@ -97,9 +97,21 @@ externalSecrets:
       remoteRef:
         key: ""
         property: ""
+    llm__summarization_key_points__api_key:
+      enabled: false
+      name: loom-llm-summarization-key-points-api-key
+      remoteRef:
+        key: ""
+        property: ""
     llm__summarization__api_key:
       enabled: false
       name: loom-llm-summarization-api-key
+      remoteRef:
+        key: ""
+        property: ""
+    llm__summarization_refine__api_key:
+      enabled: false
+      name: loom-llm-summarization-refine-api-key
       remoteRef:
         key: ""
         property: ""
@@ -235,7 +247,8 @@ _llmDefaults: &llm-defaults
   api_key: null
   model: huihui_ai/qwen3.5-abliterated:9b
   temperature: null
-  think: null
+  extra_headers: null
+  extra_body: null
   timeout: null
 
 llm:
@@ -250,16 +263,29 @@ llm:
 
   tool:
     <<: *llm-defaults
+    max_tokens: null
 
-  summarization:
+  summarization_key_points:
     <<: *llm-defaults
     text_chunk_size: null
     text_chunk_overlap: null
     system_prompt: null
+    max_tokens: null
+
+  summarization:
+    <<: *llm-defaults
+    system_prompt: null
+    max_tokens: null
+
+  summarization_refine:
+    <<: *llm-defaults
+    system_prompt: null
+    max_tokens: null
 
   hyde:
     <<: *llm-defaults
     num_documents: null
+    max_tokens: null          # should match embedding.text_chunk_size (default: 400)
 
   rerank:
     <<: *llm-defaults
@@ -270,6 +296,7 @@ llm:
   vision:
     <<: *llm-defaults
     system_prompt: null
+    max_tokens: null
 
 preInstall:
   image:

@@ -60,13 +60,29 @@ class IntakeS3StorageSettings(S3StorageSettings):
     bucket_name: str = "default"
 
 
+LLMExtraHeaders = dict[str, str]
+LLMExtraBody = dict[str, object]
+
+_AVG_CHARS_PER_TOKEN = 6
+
+_LLM_THINKING_EXTRA_HEADERS: LLMExtraHeaders = {"X-Think": "true"}
+_LLM_NO_THINKING_EXTRA_HEADERS: LLMExtraHeaders = {"X-Think": "false"}
+
+
 class LLMClientSettings(BaseModel):
     endpoint: AnyHttpUrl = AnyHttpUrl(f"http://ollama.{DOMAIN}/v1/")
     api_key: str = "ollama"
     model: str = "huihui_ai/qwen3.5-abliterated:9b"
     temperature: float | None = None
-    think: bool = False
+    extra_headers: LLMExtraHeaders | None = None
+    extra_body: LLMExtraBody | None = None
     timeout: int = 5 * 60
+    max_tokens: int | None = None
+
+    def truncate_response(self, text: str) -> str:
+        if self.max_tokens is None:
+            return text
+        return text[: self.max_tokens * _AVG_CHARS_PER_TOKEN]
 
 
 class LLMEmbeddingSettings(LLMClientSettings):
@@ -79,40 +95,67 @@ class LLMEmbeddingSettings(LLMClientSettings):
     text_chunk_overlap: int = 50
     document_prefix: str = "search_document:"
     query_prefix: str = "search_query:"
+    extra_headers: LLMExtraHeaders | None = _LLM_NO_THINKING_EXTRA_HEADERS
 
 
-class LLMSummarizationSettings(LLMClientSettings):
+class LLMSummarizationBaseSettings(LLMClientSettings):
+    system_prompt: str = "You are an expert english summarization machine called Loom."
+
+
+class LLMSummarizationKeyPointsSettings(LLMSummarizationBaseSettings):
     text_chunk_size: int = 3000
     text_chunk_overlap: int = 100
-    system_prompt: str = "You are an expert english summarization machine called Loom."
+    max_tokens: int | None = 500
+    extra_headers: LLMExtraHeaders | None = _LLM_NO_THINKING_EXTRA_HEADERS
+
+
+class LLMSummarizationSettings(LLMSummarizationBaseSettings):
+    max_tokens: int | None = 2000
+    extra_headers: LLMExtraHeaders | None = _LLM_THINKING_EXTRA_HEADERS
+
+
+class LLMSummarizationRefineSettings(LLMSummarizationBaseSettings):
+    max_tokens: int | None = 500
+    extra_headers: LLMExtraHeaders | None = _LLM_THINKING_EXTRA_HEADERS
 
 
 class LLMHydeSettings(LLMClientSettings):
     num_documents: int = 5
     temperature: float | None = 0.7
+    max_tokens: int | None = 400  # should match embedding.text_chunk_size
+    extra_headers: LLMExtraHeaders | None = _LLM_NO_THINKING_EXTRA_HEADERS
 
 
 class LLMRerankSettings(LLMClientSettings):
-    pass
+    extra_headers: LLMExtraHeaders | None = _LLM_THINKING_EXTRA_HEADERS
 
 
 class LLMChatSettings(LLMClientSettings):
-    pass
+    extra_headers: LLMExtraHeaders | None = _LLM_THINKING_EXTRA_HEADERS
 
 
 class LLMToolSettings(LLMClientSettings):
-    pass
+    max_tokens: int | None = 500
+    extra_headers: LLMExtraHeaders | None = _LLM_THINKING_EXTRA_HEADERS
 
 
 class LLMVisionSettings(LLMClientSettings):
     model: str = "huihui_ai/qwen3.5-abliterated:9b"
     system_prompt: str = "You are an expert at analysing what's in an image"
+    max_tokens: int | None = 500
+    extra_headers: LLMExtraHeaders | None = _LLM_NO_THINKING_EXTRA_HEADERS
 
 
 class LLMSettings(BaseModel):
     embedding: LLMEmbeddingSettings = LLMEmbeddingSettings()
     tool: LLMToolSettings = LLMToolSettings()
+    summarization_key_points: LLMSummarizationKeyPointsSettings = (
+        LLMSummarizationKeyPointsSettings()
+    )
     summarization: LLMSummarizationSettings = LLMSummarizationSettings()
+    summarization_refine: LLMSummarizationRefineSettings = (
+        LLMSummarizationRefineSettings()
+    )
     hyde: LLMHydeSettings = LLMHydeSettings()
     rerank: LLMRerankSettings = LLMRerankSettings()
     chat: LLMChatSettings = LLMChatSettings()

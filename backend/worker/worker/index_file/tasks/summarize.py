@@ -6,12 +6,15 @@ from common.dependencies import (
     get_celery_app,
     get_lazybytes_service,
     get_llm_summarization_client,
+    get_llm_summarization_key_points_client,
+    get_llm_summarization_refine_client,
 )
 from common.file.file_repository import File
 from common.services.lazybytes_service import TempLazyBytes
+from common.settings import LLMSummarizationBaseSettings
 from common.utils.cache import cache
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from openai import APIError
+from openai import APIError, OpenAI
 
 from worker.index_file.infra.file_indexing_task import FileIndexingTask
 from worker.index_file.infra.indexing_persister import IndexingPersister
@@ -25,10 +28,6 @@ logger = logging.getLogger(__name__)
 app = get_celery_app()
 
 MAX_SUMMARIZATION_INPUT_TEXT_LENGTH = TIKA_MAX_TEXT_SIZE
-
-LLM_MAX_TOKENS_KEY_POINTS = 500
-LLM_MAX_TOKENS_SUMMARIZE = 2000
-LLM_MAX_TOKENS_SUMMARIZE_REFINE = 500
 
 SUMMARIZE_MAX_RETRIES = 15
 
@@ -69,8 +68,8 @@ def summarize_task(
         return None
 
     text_splitter = RecursiveCharacterTextSplitter(
-        chunk_size=settings.llm.summarization.text_chunk_size,
-        chunk_overlap=settings.llm.summarization.text_chunk_overlap,
+        chunk_size=settings.llm.summarization_key_points.text_chunk_size,
+        chunk_overlap=settings.llm.summarization_key_points.text_chunk_overlap,
     )
     text = load_text_from_text_lazy(text_lazy)
 
@@ -97,26 +96,27 @@ class LLMError(Exception):
 
 def _invoke_llm(
     prompt: str,
-    max_tokens: int | None = None,
+    llm_settings: LLMSummarizationBaseSettings,
+    client: OpenAI,
     system_prompt: str | None = None,
 ) -> str:
-    if system_prompt is None:
-        system_prompt = settings.llm.summarization.system_prompt
-
-    client = get_llm_summarization_client()
+    resolved_system_prompt = (
+        system_prompt if system_prompt is not None else llm_settings.system_prompt
+    )
     try:
-        response = client.completions.create(
-            model=settings.llm.summarization.model,
-            prompt=prompt,
-            temperature=settings.llm.summarization.temperature,
-            max_tokens=max_tokens if max_tokens and max_tokens > 0 else None,
-            extra_headers=(
-                {"X-Think": "true"} if settings.llm.summarization.think else None
-            ),
+        response = client.chat.completions.create(
+            model=llm_settings.model,
+            messages=[
+                {"role": "system", "content": resolved_system_prompt},
+                {"role": "user", "content": prompt},
+            ],
+            temperature=llm_settings.temperature,
+            extra_headers=llm_settings.extra_headers,
+            extra_body=llm_settings.extra_body,
         )
     except APIError as ex:
         raise LLMError() from ex
-    return response.choices[0].text
+    return response.choices[0].message.content or ""
 
 
 @app.task(
@@ -132,17 +132,21 @@ def extract_key_points(text: str) -> str:
 
 --------------------
 PROMPT: Extract the KEY POINTS of the text above.
-Return your response in a paragraph of {LLM_MAX_TOKENS_KEY_POINTS} tokens or less.
+Return your response in a paragraph of
+{settings.llm.summarization_key_points.max_tokens} tokens or less.
 If there's nothing or not enough TEXT to extract key points just provide an empty answer.
 Do NOT use any previous knowledge.
 Always summarize in the following language: {settings.translate_target}
 
 KEY POINTS:"""
 
-    llm_response = _invoke_llm(
-        prompt=extract_prompt, max_tokens=LLM_MAX_TOKENS_KEY_POINTS
+    return settings.llm.summarization_key_points.truncate_response(
+        _invoke_llm(
+            extract_prompt,
+            settings.llm.summarization_key_points,
+            get_llm_summarization_key_points_client(),
+        )
     )
-    return llm_response
 
 
 @app.task(
@@ -164,7 +168,7 @@ def summarize(key_points: list[str]) -> str | None:
 
 --------------------
 PROMPT: Write a concise SUMMARY of the TEXT above.
-Return your response in a paragraph of {LLM_MAX_TOKENS_SUMMARIZE} tokens or less.
+Return your response in a paragraph of {settings.llm.summarization.max_tokens} tokens or less.
 Do NOT explain that you are giving a summary, just output the summary.
 If there's nothing or not enough TEXT to summarize just provide an empty answer.
 Do NOT use any previous knowledge.
@@ -172,10 +176,13 @@ Always summarize in the following language: {settings.translate_target}
 
 SUMMARY:"""
 
-    llm_response = _invoke_llm(
-        prompt=summarize_prompt, max_tokens=LLM_MAX_TOKENS_SUMMARIZE
+    return settings.llm.summarization.truncate_response(
+        _invoke_llm(
+            summarize_prompt,
+            settings.llm.summarization,
+            get_llm_summarization_client(),
+        )
     )
-    return llm_response
 
 
 @app.task(
@@ -185,7 +192,7 @@ SUMMARY:"""
     retry_backoff=True,
 )
 @cache()
-def refine_summary(summary: str | None, system_prompt: str) -> str | None:
+def refine_summary(summary: str | None, system_prompt: str | None) -> str | None:
     if summary is None:
         return None
     refine_prompt = f"""TEXT:
@@ -193,19 +200,22 @@ def refine_summary(summary: str | None, system_prompt: str) -> str | None:
 
 --------------------
 PROMPT: Write a concise SUMMARY of the TEXT above.
-Return your response in a paragraph of {LLM_MAX_TOKENS_SUMMARIZE_REFINE} tokens or less.
+Return your response in a paragraph of
+{settings.llm.summarization_refine.max_tokens} tokens or less.
 Do NOT explain that you are giving a summary, just output the summary.
 If there's nothing or not enough TEXT to summarize just provide an empty answer.
 Do NOT use any previous knowledge.
 
 SUMMARY:"""
 
-    llm_response = _invoke_llm(
-        prompt=refine_prompt,
-        max_tokens=LLM_MAX_TOKENS_SUMMARIZE_REFINE,
-        system_prompt=system_prompt,
+    return settings.llm.summarization_refine.truncate_response(
+        _invoke_llm(
+            refine_prompt,
+            settings.llm.summarization_refine,
+            get_llm_summarization_refine_client(),
+            system_prompt=system_prompt,
+        )
     )
-    return llm_response
 
 
 @persisting_task(app, IndexingPersister)

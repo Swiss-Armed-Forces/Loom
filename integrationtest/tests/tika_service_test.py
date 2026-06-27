@@ -149,7 +149,7 @@ class TestTikaService:
                     "Password",
                 ),
             ),
-            ("ocr.jpg", ("Block diagrams",)),
+            ("ocr.jpg", ("Red Cat",)),
         ],
     )
     def test_ocr(self, asset: str, expected_identified: tuple[str]):
