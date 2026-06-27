@@ -68,7 +68,9 @@ _file_scheduling_service: FileSchedulingService | None = None
 _archive_scheduling_service: ArchiveSchedulingService | None = None
 _ai_scheduling_service: AiSchedulingService | None = None
 _archive_encryption_service: ArchiveEncryptionService | None = None
+_llm_summarization_key_points_client: OpenAI | None = None
 _llm_summarization_client: OpenAI | None = None
+_llm_summarization_refine_client: OpenAI | None = None
 _llm_hyde_client: OpenAI | None = None
 _llm_rerank_client: OpenAI | None = None
 _llm_chat_client: OpenAI | None = None
@@ -237,11 +239,25 @@ def init():
         settings.archive_enc_master_key
     )
 
+    global _llm_summarization_key_points_client
+    _llm_summarization_key_points_client = OpenAI(
+        base_url=str(settings.llm.summarization_key_points.endpoint),
+        api_key=settings.llm.summarization_key_points.api_key,
+        timeout=settings.llm.summarization_key_points.timeout,
+    )
+
     global _llm_summarization_client
     _llm_summarization_client = OpenAI(
         base_url=str(settings.llm.summarization.endpoint),
         api_key=settings.llm.summarization.api_key,
         timeout=settings.llm.summarization.timeout,
+    )
+
+    global _llm_summarization_refine_client
+    _llm_summarization_refine_client = OpenAI(
+        base_url=str(settings.llm.summarization_refine.endpoint),
+        api_key=settings.llm.summarization_refine.api_key,
+        timeout=settings.llm.summarization_refine.timeout,
     )
 
     global _llm_hyde_client
@@ -401,8 +417,14 @@ def mock_init():
     # construction, the dummy api_key is just stored.
     openai_spec = OpenAI(api_key="test")
 
+    global _llm_summarization_key_points_client
+    _llm_summarization_key_points_client = MagicMock(spec=openai_spec)
+
     global _llm_summarization_client
     _llm_summarization_client = MagicMock(spec=openai_spec)
+
+    global _llm_summarization_refine_client
+    _llm_summarization_refine_client = MagicMock(spec=openai_spec)
 
     global _llm_hyde_client
     _llm_hyde_client = MagicMock(spec=openai_spec)
@@ -576,10 +598,22 @@ def get_archive_encryption_service() -> ArchiveEncryptionService:
     return _archive_encryption_service
 
 
+def get_llm_summarization_key_points_client() -> OpenAI:
+    if _llm_summarization_key_points_client is None:
+        raise DependencyException("LLM summarization key points client missing")
+    return _llm_summarization_key_points_client
+
+
 def get_llm_summarization_client() -> OpenAI:
     if _llm_summarization_client is None:
         raise DependencyException("LLM summarization client missing")
     return _llm_summarization_client
+
+
+def get_llm_summarization_refine_client() -> OpenAI:
+    if _llm_summarization_refine_client is None:
+        raise DependencyException("LLM summarization refine client missing")
+    return _llm_summarization_refine_client
 
 
 def get_llm_hyde_client() -> OpenAI:

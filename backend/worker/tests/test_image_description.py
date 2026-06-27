@@ -120,10 +120,11 @@ def test_describe_image_wraps_api_error(vision_client: MagicMock, api_error: API
         describe_image(memoryview(IMAGE_BYTES))
 
 
-def test_describe_image_raises_when_model_returns_no_content(
+def test_describe_image_returns_empty_string_when_model_returns_no_content(
     vision_client: MagicMock,
 ):
     vision_client.chat.completions.create.return_value = _vision_response(None)
 
-    with pytest.raises(ImageDescriptionError):
-        describe_image(memoryview(IMAGE_BYTES))
+    result = describe_image(memoryview(IMAGE_BYTES))
+
+    assert result == ""
