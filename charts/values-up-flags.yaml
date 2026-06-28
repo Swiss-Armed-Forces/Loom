@@ -1,0 +1,230 @@
+# No Resource Requests or Limits
+#
+# Use this when resource requests are causing scheduling issues or limits are
+# causing OOM kills or CPU throttling and you want containers to burst freely.
+# Note that without requests, the Kubernetes scheduler has no resource
+# information to base placement decisions on. Without limits, a single runaway
+# container can starve other workloads on the same node.
+#
+# For single-node deployments, copy this file's contents into
+# charts/values-overwrites.yaml to apply it via Skaffold.
+#
+esInit:
+  resources:
+    requests: null
+    limits: null
+  initContainer:
+    resources:
+      requests: null
+      limits: null
+
+s3Init:
+  resources:
+    requests: null
+    limits: null
+  initContainer:
+    resources:
+      requests: null
+      limits: null
+
+preInstall:
+  resources:
+    requests: null
+    limits: null
+
+globalHttpRedirect:
+  resources:
+    requests: null
+    limits: null
+
+api:
+  resources:
+    requests: null
+    limits: null
+  initContainer:
+    resources:
+      requests: null
+      limits: null
+
+frontend:
+  resources:
+    requests: null
+    limits: null
+
+worker: &worker
+  resources:
+    requests: null
+    limits: null
+
+reaper: *worker
+
+persister:
+  resources:
+    requests: null
+    limits: null
+
+beat:
+  resources:
+    requests: null
+    limits: null
+
+flower:
+  resources:
+    requests: null
+    limits: null
+
+crawler:
+  resources:
+    requests: null
+    limits: null
+  initContainer:
+    resources:
+      requests: null
+      limits: null
+
+elasticsearch:
+  resources:
+    requests: null
+    limits: null
+  exporter:
+    resources:
+      requests: null
+      limits: null
+
+elasticvue:
+  resources:
+    requests: null
+    limits: null
+
+grafana:
+  resources:
+    requests: null
+    limits: null
+
+translate:
+  resources:
+    requests: null
+    limits: null
+
+seaweedfs:
+  master:
+    resources:
+      requests: null
+      limits: null
+
+  volume:
+    resources:
+      requests: null
+      limits: null
+
+  filer:
+    resources:
+      requests: null
+      limits: null
+
+  admin:
+    resources:
+      requests: null
+      limits: null
+
+  initContainer:
+    resources:
+      requests: null
+      limits: null
+
+  filerMetaBackup:
+    pvc:
+      # redis-filer has no memory resource defined, so set PVC size explicitly.
+      # Default: redis-filer memory limit (1500Mi) * storageMultiplier (2) = 3Gi
+      storage: 3Gi
+    resources:
+      requests: null
+      limits: null
+
+rabbit:
+  resources:
+    requests: null
+    limits: null
+
+ollama:
+  resources:
+    requests: null
+    limits: null
+  initContainer:
+    resources:
+      requests: null
+      limits: null
+
+open_webui:
+  resources:
+    requests: null
+    limits: null
+
+dovecot:
+  resources:
+    requests: null
+    limits: null
+  initContainer:
+    resources:
+      requests: null
+      limits: null
+
+roundcube:
+  resources:
+    requests: null
+    limits: null
+
+prometheus:
+  resources:
+    requests: null
+    limits: null
+  initContainer:
+    resources:
+      requests: null
+      limits: null
+
+redis: &redis
+  pvc:
+    # redis has no memory resource defined, so set PVC size explicitly.
+    # Default: redis memory limit (1500Mi) * storageMultiplier (5) = 7500Mi ≈ 8Gi
+    storage: 8Gi
+  resources:
+    requests: null
+    limits: null
+  initContainer:
+    resources:
+      requests: null
+      limits: null
+  exporter:
+    resources:
+      requests: null
+      limits: null
+
+redis-cache: *redis
+
+redis-filer: *redis
+
+redisinsight:
+  resources:
+    requests: null
+    limits: null
+
+rspamd:
+  resources:
+    requests: null
+    limits: null
+
+tika:
+  resources:
+    requests: null
+    limits: null
+
+gotenberg:
+  resources:
+    requests: null
+    limits: null
+
+kubeStateMetrics:
+  resources:
+    requests: null
+    limits: null
