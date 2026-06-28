@@ -336,10 +336,6 @@ globalHttpRedirect:
   # team: infrastructure
 
 esInit:
-  # Set to true on a deploy to migrate all ES indexes to the current schema.
-  # Runs reindex() on each repository (backup -> delete -> recreate -> copy data).
-  # Reset to false after the migration deploy to avoid re-running on subsequent deploys.
-  recreateSchema: false
   image:
     repository: swiss-armed-forces/cyber-command/cea/loom/api
   resources:

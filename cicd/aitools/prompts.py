@@ -96,7 +96,8 @@ All context files are in: {context_dir}
 
 Implement the changes described in the issue. Follow the project conventions in CLAUDE.md.
 Make the necessary code changes, write tests where appropriate, and ensure the implementation
-is complete. Do NOT commit or push the changes.
+is complete. When done, commit all changes with a conventional commit message
+(type(scope): description), then push the branch.
 """
 
 
@@ -123,8 +124,8 @@ All context files are in: {context_dir}
 Implement the changes described in the issue. Follow the project conventions in CLAUDE.md.
 Make the necessary code changes, write tests where appropriate, and ensure the implementation
 is complete.
-When done, commit all changes with a conventional commit message (type(scope): description).
-Do NOT push the changes.
+When done, commit all changes with a conventional commit message (type(scope): description),
+then push the branch.
 """
 
 
@@ -146,7 +147,9 @@ All context files are in: {context_dir}
 ## Task
 
 Address each unresolved review comment by modifying the relevant source files.
-Follow the existing code style and project conventions. Do NOT commit or push the changes.
+Follow the existing code style and project conventions.
+When you have implemented all changes, commit them with a conventional commit message
+(type(scope): description), then push the branch.
 """
 
 
@@ -296,8 +299,8 @@ Instead, retry the pipeline by running this command in the terminal:
     aitools pipeline-retry {pipeline_id}
 
 **If the failure is caused by a code defect**, make the necessary changes to fix it, then
-commit all changes with a conventional commit message (type(scope): description).
-Do NOT push the changes.
+commit all changes with a conventional commit message (type(scope): description),
+then push the branch.
 """
 
 

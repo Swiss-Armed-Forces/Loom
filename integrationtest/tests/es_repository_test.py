@@ -76,7 +76,7 @@ def test_reindex_repositories(repository_type: type[BaseEsRepository]):
     repository = repository_type(
         query_builder=get_query_builder(), pubsub_service=get_pubsub_service()
     )
-    backup_index_name = repository.reindex()
+    backup_index_name = repository.reinit()
     assert repository.get_index_health()["status"] == "green"
     assert elasticsearch.cluster.health(index=backup_index_name)["status"] == "green"
 

@@ -10,6 +10,7 @@ apis/FilesApi.ts
 apis/ImageDescriptionApi.ts
 apis/ImapApi.ts
 apis/IndexApi.ts
+apis/InitApi.ts
 apis/MetricsApi.ts
 apis/QueuesApi.ts
 apis/SummarizationApi.ts
@@ -69,6 +70,8 @@ models/PubSubMessage.ts
 models/QueryParameters.ts
 models/QueueName.ts
 models/QueuesStats.ts
+models/ReinitAllResult.ts
+models/ReinitResult.ts
 models/RenderedFile.ts
 models/Stat.ts
 models/SummarizationRequest.ts

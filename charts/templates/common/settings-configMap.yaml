@@ -158,9 +158,6 @@ data:
     {{- if ne .Values.elasticsearch.shardsReplicasCount nil }}
     es_number_of_replicas: {{ .Values.elasticsearch.shardsReplicasCount | quote  }}
     {{- end }}
-    {{- if ne .Values.esInit.recreateSchema nil }}
-    es_recreate_schema: {{ .Values.esInit.recreateSchema | quote }}
-    {{- end }}
 
     # translate
     {{- if ne .Values.translate.timeout nil }}
