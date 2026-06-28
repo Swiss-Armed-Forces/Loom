@@ -75,6 +75,8 @@ RUN set -exu \
     && curl -sSfL "https://github.com/trufflesecurity/trufflehog/releases/download/${TRUFFLEHOG_VERSION}/trufflehog_${TRUFFLEHOG_VERSION#v}_linux_amd64.tar.gz" \
         -o /tmp/trufflehog.tar.gz \
     && tar -xzf /tmp/trufflehog.tar.gz -C /usr/local/bin trufflehog \
+    && mv /usr/local/bin/trufflehog /usr/local/bin/.trufflehog-wrapped \
+    && printf '#!/bin/sh\nexec /usr/local/bin/.trufflehog-wrapped --no-update "$@"\n' > /usr/local/bin/trufflehog \
     && chmod +x /usr/local/bin/trufflehog \
     && rm /tmp/trufflehog.tar.gz \
     && trufflehog --version \
