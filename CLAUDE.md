@@ -105,12 +105,7 @@ All commands below are provided by devenv scripts (run `devenv-help` to see full
 
 - `frontend-test` - Run frontend tests
 - `frontend-build` - Build frontend bundle
-- `generate-frontend-api` - Regenerate TypeScript API types from backend OpenAPI schema (also runs lint-fix)
-
-**Linting:**
-
-- `lint` - Run all linters (Python: black, isort, autoflake, pylint, mypy, flake8; Frontend: eslint, prettier; etc.)
-- `lint-fix` - Auto-fix linting issues where possible
+- `generate-frontend-api` - Regenerate TypeScript API types from backend OpenAPI schema
 
 **Integration tests:**
 
@@ -151,7 +146,7 @@ All commands below are provided by devenv scripts (run `devenv-help` to see full
 
 - Use `cd Frontend && pnpm <command>` or run via corepack
 - API types regenerated with `generate-frontend-api` - don't manually edit `src/app/api/generated/`
-- ESLint requires staged files (uses `git ls-files`), so stage deletions/renames before running `lint-fix`
+- ESLint requires staged files (uses `git ls-files`), so stage deletions/renames before committing
 - Changes auto-reload when `up --development` is running
 
 ### Testing Strategy
@@ -276,7 +271,7 @@ function, **stop and ask the user first** — there is almost certainly a better
 - Integration tests for user-facing workflows
 - Maintain test coverage (coverage reports generated automatically)
 - Tests must pass locally before pushing
-- CI/CD pipeline runs full test suite + linting
+- CI/CD pipeline runs full test suite + devenv test (linting via git-hooks)
 
 ### Monkey patching in tests
 
