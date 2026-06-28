@@ -61,7 +61,7 @@ def trufflehog_scan_task(
         lazy_bytes=tika_text, suffix=extension
     ) as fd:
         proc = subprocess.run(
-            ["trufflehog", "filesystem", fd.name, "--json"],
+            ["trufflehog", "--json", "filesystem", fd.name],
             capture_output=True,
             text=True,
             check=False,
