@@ -15,12 +15,8 @@ check_todo()
             TODO \
             -- \
                 ':!devenv.nix' \
-                ':!poetry.lock' \
-                ':!backend/common/poetry.lock' \
-                ':!backend/crawler/poetry.lock' \
-                ':!backend/worker/poetry.lock' \
-                ':!backend/api/poetry.lock' \
-                ':!integrationtest/poetry.lock' \
+                ':!*.lock' \
+                ':!**/*.lock' \
                 ':!backend/common/pyproject.toml' \
                 ':!.pylintrc' \
                 ':!cicd/check_todo.sh' \

@@ -29,6 +29,7 @@ pylint-pydantic = "^0.4.0"
 deptry = "^0.25.0"
 pika = "^1.3.2"
 pip-licenses = "^5.0.0"
+aitools = {path = "cicd/aitools", develop = true}
 gitpython = "^3.1.44"
 python-gitlab = "^8.0.0"
 docker = "^7.1.0"
