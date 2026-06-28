@@ -37,10 +37,13 @@ generate_frontend_api() {
             --enable-post-process-file \
             --output "${FRONTEND_API_DIR}"
 
-    echo "[*] Check and fixing syntax"
-    "${SCRIPT_DIR}/check-syntax.sh" \
-        --fix \
-        --skip-python
+    echo "[*] Running lint on generated files to fix formatting"
+    # Run hooks to auto-fix formatting (prettier, end-of-file-fixer, etc.).
+    # Exit code is ignored because auto-fixing hooks exit non-zero when they
+    # modify files; a second pass verifies everything is clean.
+    lint --directory "${FRONTEND_API_DIR}" &>/dev/null || true
+    lint --directory "${FRONTEND_API_DIR}"
+
 }
 
 post_process_typescript() {

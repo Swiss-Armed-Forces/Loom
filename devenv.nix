@@ -708,50 +708,6 @@ in
     '';
   };
 
-  scripts.lint = {
-    description = "Lint the code";
-    exec = ''
-      (
-        set -euo pipefail
-        cd '${config.devenv.root}'
-
-        echo "[*] Running lint.sh"
-        ./cicd/lint.sh
-
-        echo "[*] Running check-syntax.sh"
-        ./cicd/check-syntax.sh
-
-        echo "[*] Checking for whitespace errors"
-        ./cicd/check_whitespace_errors.sh
-
-        echo "[*] Checking for dos2unix errors"
-        ./cicd/check_dos2unix_errors.sh
-
-        echo "[*] Checking for leftover TODO's"
-        ./cicd/check_todo.sh
-
-        echo "[*] Checking deployment requests"
-        ./cicd/check_resources.sh charts/
-
-        echo "[*] Linting successful!"
-      )
-    '';
-  };
-
-  scripts.lint-fix = {
-    description = "Auto fix the code (if possible)";
-    exec = ''
-      (
-        set -euo pipefail
-        cd '${config.devenv.root}'
-
-        ./cicd/check-syntax.sh \
-          --fix \
-          "''${@}"
-      )
-    '';
-  };
-
   scripts.generate-openapi-schema = {
     description = "Print the openapi-schema.json";
     exec = ''
@@ -1033,6 +989,18 @@ in
 
         ./cicd/nix-dind.sh \
           "''${@}"
+      )
+    '';
+  };
+
+  scripts.lint = {
+    description = "Run linting and formatting hooks on all files";
+    exec = ''
+      (
+        set -euo pipefail
+        cd '${config.devenv.root}'
+
+        prek run "''${@:---all-files}"
       )
     '';
   };
