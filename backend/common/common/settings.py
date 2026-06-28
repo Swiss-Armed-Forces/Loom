@@ -200,7 +200,6 @@ class Settings(BaseSettings):
     es_timeout: int = 120
     es_number_of_shards: int = 1
     es_number_of_replicas: int = 0
-    es_recreate_schema: bool = False
     rabbit_mq_management_host: AnyHttpUrl = AnyHttpUrl(
         f"http://guest:guest@rabbit.{DOMAIN}"
     )

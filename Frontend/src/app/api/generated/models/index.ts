@@ -51,6 +51,8 @@ export * from "./PubSubMessage";
 export * from "./QueryParameters";
 export * from "./QueueName";
 export * from "./QueuesStats";
+export * from "./ReinitAllResult";
+export * from "./ReinitResult";
 export * from "./RenderedFile";
 export * from "./Stat";
 export * from "./SummarizationRequest";

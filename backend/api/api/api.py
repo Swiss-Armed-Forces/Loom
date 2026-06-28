@@ -22,6 +22,7 @@ from api.routers import (
     image_description,
     imap,
     index,
+    init_elasticsearch,
     metrics,
     queues,
     summarization,
@@ -100,6 +101,11 @@ def init_api(collect_metrics=True) -> FastAPI:
     api.include_router(imap.router, prefix="/v1/imap", tags=["imap"])
     api.include_router(beat.router, prefix="/v1/beat", tags=["beat"])
     api.include_router(wipe_data.router, prefix="/v1/wipe-data", tags=["wipe-data"])
+    api.include_router(
+        init_elasticsearch.router,
+        prefix="/v1/init/elasticsearch",
+        tags=["init"],
+    )
 
     def custom_openapi() -> dict[str, Any]:
         if api.openapi_schema:

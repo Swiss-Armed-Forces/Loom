@@ -12,6 +12,7 @@ export * from "./FilesApi";
 export * from "./ImageDescriptionApi";
 export * from "./ImapApi";
 export * from "./IndexApi";
+export * from "./InitApi";
 export * from "./MetricsApi";
 export * from "./QueuesApi";
 export * from "./SummarizationApi";

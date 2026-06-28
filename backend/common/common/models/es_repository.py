@@ -216,7 +216,7 @@ class PaginationParameters(BaseModel):
     page_size: int = DEFAULT_PAGE_SIZE
 
 
-class BaseEsRepository(
+class BaseEsRepository(  # pylint: disable=too-many-public-methods
     BaseRepository[EsRepositoryObjectT],
     Generic[EsRepositoryDocumentT, EsRepositoryObjectT],
 ):
@@ -244,6 +244,10 @@ class BaseEsRepository(
     @property
     def _index_name(self) -> str:
         return self._index._name  # pylint: disable=protected-access
+
+    @property
+    def index_name(self) -> str:
+        return self._index_name
 
     @property
     def _elasticsearch(self) -> Elasticsearch:
@@ -754,7 +758,7 @@ class BaseEsRepository(
             timeout=INDEX_OPERATION_TIMEOUT,
         )
 
-    def reindex(self) -> str:
+    def reinit(self) -> str:
         clone_index_name = f"{self._index_name}-reindex-{time.time()}"
 
         backup_index_name = self.backup_index(clone_index_name)
