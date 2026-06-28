@@ -26,6 +26,7 @@ let
     "backend/crawler"
     "backend/worker"
     "integrationtest"
+    "cicd/aitools"
   ];
 
   # JavaScript/TypeScript subdirectories
@@ -1107,7 +1108,7 @@ in
       (
         set -euo pipefail
         cd '${config.devenv.root}'
-        poetry run ./cicd/aitools.py "''${@}"
+        poetry run python -m cicd.aitools "''${@}"
       )
     '';
   };

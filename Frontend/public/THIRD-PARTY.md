@@ -631,6 +631,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | zipp                                  | 3.23.1          | MIT                                                                              |
 | PyYAML                                | 6.0.3           | MIT License                                                                      |
 | Wand                                  | 0.6.13          | MIT License                                                                      |
+| aitools                               | 0.1.0           | MIT License                                                                      |
 | annotated-types                       | 0.7.0           | MIT License                                                                      |
 | api                                   | 0.1.0           | MIT License                                                                      |
 | click-didyoumean                      | 0.3.1           | MIT License                                                                      |

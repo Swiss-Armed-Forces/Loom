@@ -249,8 +249,12 @@ Override Helm values in `charts/values-overwrites.yaml` (empty by default, autom
 
 **Always ask the user before:**
 
-- Adding imports inside functions (rather than at the top of the file)
 - Adding linter-disabling rules (e.g. `# noqa`, `# type: ignore`, `# pylint: disable`, `# flake8: noqa`)
+
+**NEVER put imports inside functions.** All imports must be at the top of the file. This is a hard rule
+with almost no exceptions. Putting an import inside a function hides dependencies, makes code harder to
+read and refactor, and is never necessary for normal code. If you think you need an import inside a
+function, **stop and ask the user first** — there is almost certainly a better way.
 
 - Python: Follow PEP 8, enforced by black + flake8 + pylint
 - Use type hints everywhere (mypy enforced)
@@ -273,6 +277,23 @@ Override Helm values in `charts/values-overwrites.yaml` (empty by default, autom
 - Maintain test coverage (coverage reports generated automatically)
 - Tests must pass locally before pushing
 - CI/CD pipeline runs full test suite + linting
+
+### Monkey patching in tests
+
+Avoid monkey patching (`monkeypatch`, `unittest.mock.patch`, etc.) by default. Patching replaces
+things at runtime behind the code's back, which couples tests to implementation details.
+Using `MagicMock` or other test doubles is fine — the issue is *how* they reach the code under
+test: pass them in via dependency injection rather than patching them into place.
+
+Before reaching for a patch, ask yourself:
+
+- **Is this test actually valuable?** If the only way to test something is to patch out most of its
+  internals, the test may be asserting implementation details rather than behaviour.
+- **Can the code be restructured for better testability?** Prefer dependency injection, small
+  focused functions, and clear boundaries so that test doubles can be passed in directly.
+
+Only patch when there is no reasonable alternative (e.g. a global external side effect that cannot
+be injected). If you find yourself patching, treat it as a signal to reconsider the design first.
 
 ## Additional Documentation
 

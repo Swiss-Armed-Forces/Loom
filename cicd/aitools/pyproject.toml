@@ -1,0 +1,26 @@
+[tool.poetry]
+name = "aitools"
+version = "0.1.0"
+description = "Loom AI developer tools"
+authors = []
+license = "MIT"
+packages = [
+    { include = "aitools", from = ".." },
+]
+
+[tool.poetry.dependencies]
+python = "~3.14"
+gitpython = "^3.1.44"
+python-gitlab = "^8.0.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+#
+# Modules with missing type stubs
+#
+
+[[tool.mypy.overrides]]
+module = "gitlab.*"
+ignore_missing_imports = true

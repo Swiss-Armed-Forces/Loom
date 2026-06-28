@@ -10,6 +10,7 @@ PYTHON_PROJECTS=(
     "backend/worker"
     "backend/crawler"
     "integrationtest"
+    "cicd/aitools"
     "."
 )
 
