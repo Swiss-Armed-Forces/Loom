@@ -30,6 +30,10 @@ spec:
       securityContext:
         seccompProfile:
           type: RuntimeDefault
+      {{- with include "app.trustedCerts.initContainer" . }}
+      initContainers:
+        {{- . | nindent 8 }}
+      {{- end }}
       containers:
         - name: roundcube
           image: {{ .Values.image.registry }}/{{ .Values.roundcube.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) .Values.roundcube.image.tag }}
@@ -45,6 +49,7 @@ spec:
               mountPath: /usr/local/etc/php/conf.d/zzz_roundcube-custom.ini
               readOnly: true
               subPath: zzz_roundcube-custom.ini
+            {{- with include "app.trustedCerts.volumeMount" . }}{{ . | nindent 12 }}{{- end }}
           {{- if .Values.roundcube.resources }}
           resources: {{- toYaml .Values.roundcube.resources | nindent 12 }}
           {{- end }}
@@ -52,3 +57,4 @@ spec:
         - name: roundcube-config
           configMap:
             name:  {{ include "app.fullname" . }}-roundcube-php-config
+        {{- with include "app.trustedCerts.volumes" . }}{{ . | nindent 8 }}{{- end }}

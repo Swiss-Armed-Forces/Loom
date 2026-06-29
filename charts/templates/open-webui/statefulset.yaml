@@ -31,6 +31,10 @@ spec:
       securityContext:
         seccompProfile:
           type: RuntimeDefault
+      {{- with include "app.trustedCerts.initContainer" . }}
+      initContainers:
+        {{- . | nindent 8 }}
+      {{- end }}
       containers:
         - name: open-webui
           image: {{ .Values.image.registry }}/{{ .Values.open_webui.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) .Values.open_webui.image.tag }}
@@ -102,9 +106,14 @@ spec:
           volumeMounts:
             - mountPath: /app/backend/data
               name: open-webui
+            {{- with include "app.trustedCerts.volumeMount" . }}{{ . | nindent 12 }}{{- end }}
           {{- if .Values.open_webui.resources }}
           resources: {{- toYaml .Values.open_webui.resources | nindent 12 }}
           {{- end }}
+      {{- with include "app.trustedCerts.volumes" . }}
+      volumes:
+        {{- . | nindent 8 }}
+      {{- end }}
   volumeClaimTemplates:
     - metadata:
         name: open-webui

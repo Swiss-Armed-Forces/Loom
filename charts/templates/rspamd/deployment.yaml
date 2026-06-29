@@ -40,6 +40,10 @@ spec:
       securityContext:
         seccompProfile:
           type: RuntimeDefault
+      {{- with include "app.trustedCerts.initContainer" . }}
+      initContainers:
+        {{- . | nindent 8 }}
+      {{- end }}
       containers:
         - name: rspamd
           image: {{ .Values.image.registry }}/{{ .Values.rspamd.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) .Values.rspamd.image.tag }}
@@ -62,7 +66,9 @@ spec:
             - name: rspamd-config
               mountPath: /etc/rspamd/local.d/hfilter.conf
               subPath: hfilter.conf
+            {{- with include "app.trustedCerts.volumeMount" . }}{{ . | nindent 12 }}{{- end }}
       volumes:
         - name: rspamd-config
           configMap:
             name: {{ include "app.fullname" . }}-rspamd-config
+        {{- with include "app.trustedCerts.volumes" . }}{{ . | nindent 8 }}{{- end }}

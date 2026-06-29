@@ -37,6 +37,10 @@ spec:
       securityContext:
         seccompProfile:
           type: RuntimeDefault
+      {{- with include "app.trustedCerts.initContainer" . }}
+      initContainers:
+        {{- . | nindent 8 }}
+      {{- end }}
       containers:
         - name: tika
           image: {{ .Values.image.registry }}/{{ .Values.tika.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) .Values.tika.image.tag }}
@@ -96,6 +100,7 @@ spec:
               subPath: tika-config.xml
             - name: tmp
               mountPath: /tmp
+            {{- with include "app.trustedCerts.volumeMount" . }}{{ . | nindent 12 }}{{- end }}
       volumes:
         - name: imagemagick-policy
           configMap:
@@ -107,3 +112,4 @@ spec:
           emptyDir:
             medium: Memory
             sizeLimit: {{ .Values.tika.tmpSizeLimit }}
+        {{- with include "app.trustedCerts.volumes" . }}{{ . | nindent 8 }}{{- end }}

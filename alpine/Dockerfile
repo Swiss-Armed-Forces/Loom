@@ -28,3 +28,11 @@ ARG OPENSSL_VERSION="3.5"
 RUN set -exu \
     && apk add --no-cache \
     openssl~=${OPENSSL_VERSION}
+
+#
+# ca-certificates
+#
+ARG CA_CERTIFICATES_VERSION="20260611"
+RUN set -exu \
+    && apk add --no-cache \
+    ca-certificates~=${CA_CERTIFICATES_VERSION}

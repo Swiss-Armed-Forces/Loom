@@ -33,6 +33,10 @@ spec:
       securityContext:
         seccompProfile:
           type: RuntimeDefault
+      {{- with include "app.trustedCerts.initContainer" . }}
+      initContainers:
+        {{- . | nindent 8 }}
+      {{- end }}
       containers:
         - name: rabbit
           image: {{ .Values.image.registry }}/{{ .Values.rabbit.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) .Values.rabbit.image.tag }}
@@ -54,6 +58,7 @@ spec:
               subPath: rabbitmq.conf
             - mountPath: /var/lib/rabbitmq
               name: rabbit
+            {{- with include "app.trustedCerts.volumeMount" . }}{{ . | nindent 12 }}{{- end }}
           startupProbe:
             exec:
               command:
@@ -95,6 +100,7 @@ spec:
         - name: rabbit-config
           configMap:
             name: {{ include "app.fullname" . }}-rabbit-config
+        {{- with include "app.trustedCerts.volumes" . }}{{ . | nindent 8 }}{{- end }}
   volumeClaimTemplates:
     - metadata:
         name: rabbit

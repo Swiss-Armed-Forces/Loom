@@ -30,6 +30,10 @@ spec:
       securityContext:
         seccompProfile:
           type: RuntimeDefault
+      {{- with include "app.trustedCerts.initContainer" . }}
+      initContainers:
+        {{- . | nindent 8 }}
+      {{- end }}
       containers:
         - name: flower
           image: {{ .Values.image.registry }}/{{ .Values.flower.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) .Values.flower.image.tag }}
@@ -69,3 +73,11 @@ spec:
           {{- if .Values.flower.resources }}
           resources: {{- toYaml .Values.flower.resources | nindent 12 }}
           {{- end }}
+          {{- with include "app.trustedCerts.volumeMount" . }}
+          volumeMounts:
+            {{- . | nindent 12 }}
+          {{- end }}
+      {{- with include "app.trustedCerts.volumes" . }}
+      volumes:
+        {{- . | nindent 8 }}
+      {{- end }}

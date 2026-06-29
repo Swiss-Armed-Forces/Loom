@@ -81,16 +81,20 @@ spec:
             periodSeconds: {{ default 20 $values.livenessProbe.periodSeconds }}
             failureThreshold: {{ default 6 $values.livenessProbe.failureThreshold }}
           {{- end }}
-          {{- if $values.pvc.enabled }}
+          {{- if or $values.pvc.enabled .Values.trustedCertificates.certs }}
           volumeMounts:
+            {{- if $values.pvc.enabled }}
             - name: ollama-models
               mountPath: /ollama-models
+            {{- end }}
+            {{- with include "app.trustedCerts.volumeMount" . }}{{ . | nindent 12 }}{{- end }}
           {{- end }}
           {{- if $values.resources }}
           resources: {{- toYaml $values.resources | nindent 12 }}
           {{- end }}
-      {{- if $values.pvc.enabled }}
+      {{- if or $values.pvc.enabled .Values.trustedCertificates.certs }}
       initContainers:
+        {{- if $values.pvc.enabled }}
         - name: copy-ollama-models
           image: {{ .Values.image.registry }}/{{ $values.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) $values.image.tag }}
           command:
@@ -105,12 +109,17 @@ spec:
           {{- if $values.initContainer.resources }}
           resources: {{- toYaml $values.initContainer.resources | nindent 12 }}
           {{- end }}
+        {{- end }}
+        {{- with include "app.trustedCerts.initContainer" . }}{{ . | nindent 8 }}{{- end }}
       {{- end }}
-      {{- if $values.pvc.enabled }}
+      {{- if or $values.pvc.enabled .Values.trustedCertificates.certs }}
       volumes:
+        {{- if $values.pvc.enabled }}
         - name: ollama-models
           persistentVolumeClaim:
             claimName: {{ include "app.fullname" . }}-{{ $component }}-ollama-models
+        {{- end }}
+        {{- with include "app.trustedCerts.volumes" . }}{{ . | nindent 8 }}{{- end }}
       {{- end }}
 {{- end }}
 {{- end -}}

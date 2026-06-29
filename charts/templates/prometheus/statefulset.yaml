@@ -54,6 +54,7 @@ spec:
           {{- if .Values.prometheus.initContainer.resources }}
           resources: {{- toYaml .Values.prometheus.initContainer.resources | nindent 12 }}
           {{- end }}
+        {{- with include "app.trustedCerts.initContainer" . }}{{ . | nindent 8 }}{{- end }}
       containers:
         - name: prometheus
           image: {{ .Values.image.registry }}/{{ .Values.prometheus.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) .Values.prometheus.image.tag }}
@@ -80,6 +81,7 @@ spec:
               subPath: prometheus.yml
             - name: prometheus
               mountPath: /prometheus
+            {{- with include "app.trustedCerts.volumeMount" . }}{{ . | nindent 12 }}{{- end }}
           {{- if .Values.prometheus.readinessProbe.enabled }}
           readinessProbe:
             httpGet:
@@ -107,6 +109,7 @@ spec:
         - name: prometheus-config
           configMap:
             name: {{ include "app.fullname" . }}-prometheus-config
+        {{- with include "app.trustedCerts.volumes" . }}{{ . | nindent 8 }}{{- end }}
   volumeClaimTemplates:
     - metadata:
         name: prometheus

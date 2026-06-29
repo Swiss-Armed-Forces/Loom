@@ -1,0 +1,12 @@
+{{- if .Values.trustedCertificates.certs }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "app.fullname" . }}-trusted-certificates
+  labels:
+    {{- include "app.labels.standard" . | nindent 4 }}
+data:
+  {{- range .Values.trustedCertificates.certs }}
+  {{ .name }}.crt: {{ .data | quote }}
+  {{- end }}
+{{- end }}

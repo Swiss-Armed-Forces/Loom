@@ -30,6 +30,10 @@ spec:
       securityContext:
         seccompProfile:
           type: RuntimeDefault
+      {{- with include "app.trustedCerts.initContainer" . }}
+      initContainers:
+        {{- . | nindent 8 }}
+      {{- end }}
       containers:
         - name: elasticvue
           image: {{ .Values.image.registry }}/{{ .Values.elasticvue.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) .Values.elasticvue.image.tag }}
@@ -39,6 +43,7 @@ spec:
               mountPath: /usr/share/nginx/html/api/default_clusters.json
               readOnly: true
               subPath: default_clusters.json
+            {{- with include "app.trustedCerts.volumeMount" . }}{{ . | nindent 12 }}{{- end }}
           ports:
             - name: elasticvue
               containerPort: {{ .Values.elasticvue.service.port }}
@@ -49,3 +54,4 @@ spec:
         - name: elasticvue-config
           configMap:
             name:  {{ include "app.fullname" . }}-elasticvue-config
+        {{- with include "app.trustedCerts.volumes" . }}{{ . | nindent 8 }}{{- end }}

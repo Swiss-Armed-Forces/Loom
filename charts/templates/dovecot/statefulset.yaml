@@ -48,6 +48,7 @@ spec:
           {{- if .Values.dovecot.initContainer.resources }}
           resources: {{- toYaml .Values.dovecot.initContainer.resources | nindent 12 }}
           {{- end }}
+        {{- with include "app.trustedCerts.initContainer" . }}{{ . | nindent 8 }}{{- end }}
       containers:
         - name: dovecot
           image: {{ .Values.image.registry }}/{{ .Values.dovecot.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) .Values.dovecot.image.tag }}
@@ -84,9 +85,14 @@ spec:
           volumeMounts:
             - mountPath: /srv/mail
               name: dovecot
+            {{- with include "app.trustedCerts.volumeMount" . }}{{ . | nindent 12 }}{{- end }}
           {{- if .Values.dovecot.resources }}
           resources: {{- toYaml .Values.dovecot.resources | nindent 12 }}
           {{- end }}
+      {{- with include "app.trustedCerts.volumes" . }}
+      volumes:
+        {{- . | nindent 8 }}
+      {{- end }}
   volumeClaimTemplates:
     - metadata:
         name: dovecot
