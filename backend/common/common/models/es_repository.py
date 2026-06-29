@@ -51,6 +51,7 @@ INDEX_OPERATION_TIMEOUT = "9999d"
 INDEX_CLOSE_TIMEOUT_S = 60
 INDEX_CLOSE_POLL_INTERVAL_S = 0.5
 DEFAULT_PAGE_SIZE = 10
+_ID_SCAN_PAGE_SIZE = 5000
 
 
 class InvalidSortFieldExceptions(Exception):
@@ -322,6 +323,7 @@ class BaseEsRepository(  # pylint: disable=too-many-public-methods
         per_page_callback: Callable[
             [Response[EsRepositoryDocumentT]], Generator[Any, None, None]
         ],
+        scan_page_size: int = DEFAULT_PAGE_SIZE,
     ) -> Generator[Any, None, None]:
         """Runs the given search over several pages and calls the per_page_callback for
         every page."""
@@ -346,6 +348,8 @@ class BaseEsRepository(  # pylint: disable=too-many-public-methods
             search = search.extra(
                 size=pagination_params.page_size,
             )
+        else:
+            search = search.extra(size=scan_page_size)
 
         while True:
             if search_after is not None:
@@ -530,6 +534,7 @@ class BaseEsRepository(  # pylint: disable=too-many-public-methods
             sort_params=sort_params,
             pagination_params=pagination_params,
             per_page_callback=page_handler,
+            scan_page_size=_ID_SCAN_PAGE_SIZE,
         )
 
     def _execute_search_with_query(
