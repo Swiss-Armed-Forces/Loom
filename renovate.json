@@ -68,6 +68,15 @@
     },
     {
       "matchManagers": ["poetry"],
+      "matchFileNames": ["pyproject.toml"],
+      "postUpgradeTasks": {
+        "commands": ["poetry lock --no-update"],
+        "fileFilters": ["poetry.lock"],
+        "executionMode": "update"
+      }
+    },
+    {
+      "matchManagers": ["poetry"],
       "matchDepNames": ["python"],
       "enabled": false
     },
