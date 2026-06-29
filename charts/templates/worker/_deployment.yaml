@@ -40,6 +40,10 @@ spec:
       securityContext:
         seccompProfile:
           type: RuntimeDefault
+      {{- with include "app.trustedCerts.initContainer" . }}
+      initContainers:
+        {{- . | nindent 8 }}
+      {{- end }}
       containers:
         - name: {{ $component }}
           image: {{ .Values.image.registry }}/{{ $values.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) $values.image.tag }}
@@ -100,8 +104,10 @@ spec:
             - name: imagemagick-policy
               mountPath: /etc/ImageMagick-6/policy.xml
               subPath: policy.xml
+            {{- with include "app.trustedCerts.volumeMount" . }}{{ . | nindent 12 }}{{- end }}
       volumes:
         - name: imagemagick-policy
           configMap:
             name: {{ include "app.fullname" . }}-imagemagick-policy
+        {{- with include "app.trustedCerts.volumes" . }}{{ . | nindent 8 }}{{- end }}
 {{- end -}}

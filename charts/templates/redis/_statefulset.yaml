@@ -63,6 +63,7 @@ spec:
           {{- if $values.initContainer.resources }}
           resources: {{- toYaml $values.initContainer.resources | nindent 12 }}
           {{- end }}
+        {{- with include "app.trustedCerts.initContainer" . }}{{ . | nindent 8 }}{{- end }}
       containers:
         - name: {{ $component }}
           image: {{ .Values.image.registry }}/{{ $values.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) $values.image.tag }}
@@ -77,6 +78,7 @@ spec:
               subPath: redis.conf
             - mountPath: /data
               name: redis
+            {{- with include "app.trustedCerts.volumeMount" . }}{{ . | nindent 12 }}{{- end }}
           startupProbe:
             exec:
               command:
@@ -146,6 +148,7 @@ spec:
         - name: redis-config
           configMap:
             name: {{ include "app.fullname" . }}-{{ $component }}-config
+        {{- with include "app.trustedCerts.volumes" . }}{{ . | nindent 8 }}{{- end }}
   volumeClaimTemplates:
     - metadata:
         name: redis

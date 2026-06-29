@@ -30,6 +30,10 @@ spec:
       securityContext:
         seccompProfile:
           type: RuntimeDefault
+      {{- with include "app.trustedCerts.initContainer" . }}
+      initContainers:
+        {{- . | nindent 8 }}
+      {{- end }}
       containers:
         - name: beat
           image: {{ .Values.image.registry }}/{{ .Values.beat.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) .Values.beat.image.tag }}
@@ -86,3 +90,11 @@ spec:
           {{- if .Values.beat.resources }}
           resources: {{- toYaml .Values.beat.resources | nindent 12 }}
           {{- end }}
+          {{- with include "app.trustedCerts.volumeMount" . }}
+          volumeMounts:
+            {{- . | nindent 12 }}
+          {{- end }}
+      {{- with include "app.trustedCerts.volumes" . }}
+      volumes:
+        {{- . | nindent 8 }}
+      {{- end }}

@@ -94,6 +94,7 @@ STEPS_SETUP_SYSTEM=(
     set_skaffold_command
     set_skaffold_args
     write_up_flags_values
+    write_trusted_ca_values
     validate_environment
     compute_minikube_cpu_resources
     compute_minikube_memory_resources
@@ -141,6 +142,7 @@ SKAFFOLD_CACHE_FILE="${SKAFFOLD_HOME}/cache"
 SKAFFOLD_REMOTE_CACHE_DIR="${SKAFFOLD_HOME}/remote-cache"
 CERTIFICATE=false
 MINIKUBE_MOUNT_STRING=""
+TRUSTED_CA_BUNDLE=""
 
 # Computed Minikube resources
 MINIKUBE_CPUS=""
@@ -301,6 +303,41 @@ set_skaffold_args(){
     )
 }
 
+write_trusted_ca_values() {
+    if [[ -z "${TRUSTED_CA_BUNDLE}" ]]; then
+        return
+    fi
+    if [[ ! -f "${TRUSTED_CA_BUNDLE}" ]]; then
+        echo >&2 "[!] Error: --trusted-ca-bundle: file not found: ${TRUSTED_CA_BUNDLE}"
+        exit 1
+    fi
+    # Parse the PEM bundle and append trustedCertificates YAML to the shared
+    # up-flags values file (last-occurrence wins in Helm's Go YAML parser).
+    awk '
+        /-----BEGIN CERTIFICATE-----/ { in_cert=1; cert=""; idx++ }
+        in_cert { cert = cert $0 "\n" }
+        /-----END CERTIFICATE-----/ {
+            in_cert = 0
+            if (idx == 1) {
+                print "trustedCertificates:"
+                print "  certs:"
+            }
+            printf "    - name: trusted-ca-%d\n", idx-1
+            printf "      data: |\n"
+            n = split(cert, lines, "\n")
+            for (i=1; i<=n; i++) {
+                if (lines[i] != "") printf "        %s\n", lines[i]
+            }
+        }
+        END {
+            if (idx == 0) {
+                print "[!] Error: no certificates found in --trusted-ca-bundle file" > "/dev/stderr"
+                exit 1
+            }
+        }
+    ' "${TRUSTED_CA_BUNDLE}" >> "${UP_FLAGS_VALUES_FILE}"
+}
+
 write_up_flags_values() {
     # Combine active flag-driven values files into UP_FLAGS_VALUES_FILE.
     # Skaffold always includes this file (listed in skaffold.yaml before values-overwrites.yaml).
@@ -308,7 +345,7 @@ write_up_flags_values() {
     # the last occurrence, so files appended last win on overlap.
     # UP_FLAG_VALUES is populated during argument parsing — add new flags there.
     if [[ ${#UP_FLAG_VALUES[@]} -eq 0 ]]; then
-        echo "{}" > "${UP_FLAGS_VALUES_FILE}"
+        true > "${UP_FLAGS_VALUES_FILE}"
     else
         cat "${UP_FLAG_VALUES[@]}" > "${UP_FLAGS_VALUES_FILE}"
     fi
@@ -939,7 +976,8 @@ usage(){
     echo "  -c|--certificate CERT KEY             install certificate (CERT) with key (KEY)"
     echo "  --minikube-host-cpu-reserve N         reserve N CPU cores on the host (default: ${MINIKUBE_HOST_CPU_RESERVE_CORES})"
     echo "  --minikube-host-mem-reserve-kib KiB   reserve KiB of RAM on the host (default: ${MINIKUBE_HOST_MEM_RESERVE_KIB})"
-    echo "  --mount-string PATH                   mount host PATH into minikube; PVC data survives cluster rebuilds"
+    echo "  --mount-string PATH                   mount host PATH into minikube; PVC data survives cluster rebuilds
+  --trusted-ca-bundle PATH              inject CA certificate(s) from PEM bundle PATH as trusted roots into all pods"
     echo "  --no-resources                        deploy without resource requests or limits (see charts/values-no-resources.yaml)"
     echo "  --disable-ai                          disable AI services: ollama, open-webui, translate (see charts/values-disable-ai-services.yaml)"
     echo "  --delete                              delete the deployment after startup"
@@ -1013,6 +1051,11 @@ while [[ $# -gt 0 ]]; do
         --mount-string)
             shift
             MINIKUBE_MOUNT_STRING="${1?Missing host path for --mount-string (e.g. /mnt/loom-data)}"
+            shift
+        ;;
+        --trusted-ca-bundle)
+            shift
+            TRUSTED_CA_BUNDLE="${1?Missing path to CA bundle PEM file for --trusted-ca-bundle}"
             shift
         ;;
         --no-resources)

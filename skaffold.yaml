@@ -305,6 +305,7 @@ manifests:
           esInit.initContainer.image.tag: "{{or .IMAGE_TAG_registry_gitlab_com_swiss_armed_forces_cyber_command_cea_loom_alpine \"\"}}"
           s3Init.image.tag: "{{or .IMAGE_TAG_registry_gitlab_com_swiss_armed_forces_cyber_command_cea_loom_api \"\"}}"
           s3Init.initContainer.image.tag: "{{or .IMAGE_TAG_registry_gitlab_com_swiss_armed_forces_cyber_command_cea_loom_alpine \"\"}}"
+          trustedCertificates.initContainer.image.tag: "{{or .IMAGE_TAG_registry_gitlab_com_swiss_armed_forces_cyber_command_cea_loom_alpine \"\"}}"
 
 # Minimal profiles - only overrides
 profiles:

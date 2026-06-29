@@ -1363,3 +1363,28 @@ kubeStateMetrics:
 #     MY_CUSTOM_SETTING: "some-value"
 #     FEATURE_FLAG_X: "true"
 extraEnv: {}
+
+# Trusted CA certificates to inject into all pods via an init container.
+# Only rendered (ConfigMap + init container) when certs is non-empty, so
+# deployments that don't require custom CAs incur no overhead.
+# Example:
+#   trustedCertificates:
+#     certs:
+#       - name: my-corporate-ca
+#         data: |
+#           -----BEGIN CERTIFICATE-----
+#           ...
+#           -----END CERTIFICATE-----
+trustedCertificates:
+  certs: []
+  initContainer:
+    image:
+      repository: swiss-armed-forces/cyber-command/cea/loom/alpine
+      tag: null
+    resources:
+      requests:
+        cpu: "0.05"
+        memory: "50Mi"
+      limits:
+        cpu: "0.1"
+        memory: "100Mi"
