@@ -89,7 +89,13 @@ for POD in ${PODS}; do
     echo "[*] Fetching logs for: ${POD_NAME}"
 
     if [[ "${DO_BACKGROUND}" = false ]]; then
+      set +e
       fetch_logs "${ARGS[@]}" > "${LOG_FILE_BASE}.log"
+      fetch_rc=$?
+      set -e
+      if [[ "${fetch_rc}" -ne 0 ]]; then
+        echo "[!] Failed to fetch logs for: ${POD_NAME}" >&2
+      fi
     else
       fetch_logs "${ARGS[@]}" > "${LOG_FILE_BASE}.log" &
     fi
