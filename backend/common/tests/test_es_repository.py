@@ -47,6 +47,7 @@ from common.file.file_repository import (
 from common.messages.pubsub_service import PubSubService
 from common.models.base_repository import RepositoryObject
 from common.models.es_repository import (
+    _ID_SCAN_PAGE_SIZE,
     ES_REPOSITORY_TYPES,
     BaseEsRepository,
     EsRepositoryObject,
@@ -785,6 +786,7 @@ def test_es_repository_get_generator_by_query():
         .query()
         # happens in: _paginate_search
         .sort()
+        .extra()  # scan_page_size
         # happens in: _execute_search_with_query
         .index()
         .extra()
@@ -822,7 +824,10 @@ def test_es_repository_get_generator_by_query_fetches_more_pages():
     hits_hits_mock = MagicMock()
     hits_hits_mock.sort = "sort value"
 
-    # 1st page
+    # after .extra(size=...) set in _paginate_search before the loop
+    search_pre_execute_mock = search_pre_execute_mock.extra()
+
+    # 1st page (no search_after yet)
     search_execute_mock = search_pre_execute_mock.index().extra().execute
     search_execute_mock.return_value.hits.__iter__.return_value = [
         _TestEsDocument(),
@@ -834,7 +839,7 @@ def test_es_repository_get_generator_by_query_fetches_more_pages():
         hits_hits_mock,
     ]
 
-    # 2nd page
+    # 2nd page (after search_after set from page 1)
     search_pre_execute_mock = search_pre_execute_mock.extra()
     search_page2_execute_mock = search_pre_execute_mock.index().extra().execute
     search_page2_execute_mock.return_value.hits.__iter__.return_value = [
@@ -891,7 +896,10 @@ def test_es_repository_get_generator_by_query_fetches_more_pages_with_expired_pi
     hits_hits_mock = MagicMock()
     hits_hits_mock.sort = "sort value"
 
-    # 1st page works
+    # after .extra(size=...) set in _paginate_search before the loop
+    search_pre_execute_mock = search_pre_execute_mock.extra()
+
+    # 1st page works (no search_after yet)
     search_execute_mock = search_pre_execute_mock.index().extra().execute
     search_execute_mock.return_value.hits.__iter__.return_value = [
         _TestEsDocument(),
@@ -957,6 +965,7 @@ def test_es_repository_get_id_generator_by_query():
         .query()
         # happens in: _paginate_search
         .sort()
+        .extra()  # scan_page_size
         # happens in: _execute_search_with_query
         .index()
         .extra()
@@ -968,6 +977,31 @@ def test_es_repository_get_id_generator_by_query():
         )
     )
     search_pre_execute_mock.execute.assert_called_once()
+
+
+def test_es_repository_get_id_generator_by_query_uses_large_scan_page_size():
+    """get_id_generator_by_query must use _ID_SCAN_PAGE_SIZE, not DEFAULT_PAGE_SIZE, so
+    that full-scan archive tasks make far fewer round trips to Elasticsearch."""
+    es_repository = _TestEsRepository(
+        query_builder=get_query_builder(),
+        pubsub_service=get_pubsub_service(),
+        mock_types=True,
+    )
+    search_mock = MagicMock(spec=Search)
+    es_repository.document_type.search.return_value = search_mock
+
+    # Follow the actual call chain inside get_id_generator_by_query:
+    # _get_search_by_query → .source() → _paginate_search: .sort()
+    sort_mock = search_mock.highlight_options().highlight().query().source().sort()
+
+    list(
+        es_repository.get_id_generator_by_query(
+            QueryParameters(query_id="0123456789", search_string="just a random query")
+        )
+    )
+
+    # The first .extra() call in _paginate_search must set size=_ID_SCAN_PAGE_SIZE
+    sort_mock.extra.assert_called_once_with(size=_ID_SCAN_PAGE_SIZE)
 
 
 def test_es_repository_count_by_query():
