@@ -87,6 +87,7 @@ export const TriggerScheduledTaskV1BeatScheduleNamePostScheduleNameEnum = {
     ComputeCompleteEstimate: "compute-complete-estimate",
     ThrottleAndFlushLazybytes: "throttle-and-flush-lazybytes",
     ShrinkCache: "shrink-cache",
+    FlushFileStorageService: "flush-file-storage-service",
     ReindexLostFilesOnIdle: "reindex-lost-files-on-idle",
     HideOldUploadedFiles: "hide-old-uploaded-files",
     FlushRootTaskInfoOnIdle: "flush-root-task-info-on-idle",

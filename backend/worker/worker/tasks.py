@@ -31,6 +31,7 @@ from worker.index_file import (
 )
 from worker.periodic import (
     compute_complete_estimate_task,
+    flush_file_storage_service_task,
     flush_root_task_info_on_idle_task,
     hide_periodically_task,
     reindex_lost_files_on_idle_task,
@@ -73,4 +74,5 @@ tasks = [
     reindex_lost_files_on_idle_task,
     unsubscribe_old_imap_folders_periodically_task,
     seaweedfs_maintenance_task,
+    flush_file_storage_service_task,
 ]

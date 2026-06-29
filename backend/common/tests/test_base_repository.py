@@ -48,6 +48,10 @@ class _TestRepository(BaseRepository[_TestRepositoryObject]):
     def flush(self) -> None:
         self._repo.clear()
 
+    def is_file_storage_service_id_referenced(self, service_id: UUID) -> bool:
+        del service_id  # unused in test implementation
+        return False
+
 
 def test_base_repo_save_and_get():
     repo = _TestRepository()

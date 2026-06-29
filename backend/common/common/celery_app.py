@@ -73,6 +73,12 @@ def get_beat_schedule() -> dict:
             "task": "worker.periodic.shrink_periodically_task.shrink_periodically_task",
             "schedule": crontab(minute="*/3"),
         },
+        "flush-file-storage-service": {
+            "task": (
+                "worker.periodic.flush_file_storage_service_task.flush_file_storage_service_task"  # noqa: E501 pylint: disable=line-too-long
+            ),
+            "schedule": crontab(minute="*/37"),
+        },
         "reindex-lost-files-on-idle": {
             "task": (
                 "worker.periodic.reindex_lost_files_on_idle_task.reindex_lost_files_on_idle_task"  # noqa: E501 pylint: disable=line-too-long

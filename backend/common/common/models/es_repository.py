@@ -16,7 +16,7 @@ from uuid import UUID, uuid4
 
 from elastic_transport import ObjectApiResponse
 from elasticsearch import Elasticsearch, NotFoundError
-from elasticsearch.dsl import Boolean, Document, Index, Keyword, Search
+from elasticsearch.dsl import Boolean, Document, Index, Keyword, Q, Search
 from elasticsearch.dsl.connections import get_connection
 from elasticsearch.dsl.response import Response
 from elasticsearch.helpers import streaming_bulk
@@ -35,12 +35,14 @@ from common.models.base_repository import (
     RepositoryBulkSaveError,
     RepositoryObject,
 )
+from common.services.lazybytes_service import FileStorageLazyBytes
 from common.services.query_builder import (
     DEFAULT_PIT_KEEPALIVE,
     KeepAlive,
     QueryBuilder,
     QueryParameters,
 )
+from common.utils.pydantic_field_paths import iter_field_paths_by_type
 
 logger = logging.getLogger(__name__)
 
@@ -569,6 +571,29 @@ class BaseEsRepository(  # pylint: disable=too-many-public-methods
         result = self._execute_search_with_query(search=search, query=query)
         # Cf. https://github.com/elastic/elasticsearch-dsl-py/issues/1897
         return result.hits.total.value  # type: ignore
+
+    def is_file_storage_service_id_referenced(self, service_id: UUID) -> bool:
+        """Return True if service_id is referenced by any FileStorageLazyBytes field in
+        this repository's index."""
+        paths = list(
+            iter_field_paths_by_type(
+                self._object_type, FileStorageLazyBytes, suffix=".service_id"
+            )
+        )
+        if not paths:
+            return False
+        return (
+            Search(using=self._elasticsearch, index=self._index_name)
+            .filter(
+                "bool",
+                should=[
+                    Q("term", **{p.replace(".", "__"): str(service_id)}) for p in paths
+                ],
+                minimum_should_match=1,
+            )
+            .count()
+            > 0
+        )
 
     def get_by_id_with_query(
         self,
