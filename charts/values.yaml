@@ -214,6 +214,7 @@ pipeline:
   uploaded_files_days_before_hidden: null
   imap_folder_days_before_unsubscribe: null
   reindex_lost_files_max_files: null
+  flush_file_storage_service_max_objects: null
   max_reindex_count: null
   skip_summarize_while_indexing: null
   skip_translate_while_indexing: null

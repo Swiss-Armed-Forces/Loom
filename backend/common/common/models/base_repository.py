@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Any, Generic, Iterator, Sequence, TypeVar
+from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict
 from pydantic.main import IncEx
@@ -18,6 +19,9 @@ class RepositoryObject(BaseModel, ABC):
 
 
 RepositoryObjectT = TypeVar("RepositoryObjectT", bound=RepositoryObject)
+
+# Populated via BaseRepository.__init__ when a repository is instantiated.
+REPOSITORY_INSTANCES: "dict[type[BaseRepository], BaseRepository]" = {}
 
 
 class RepositoryBulkSaveError(Exception):
@@ -69,6 +73,10 @@ class BaseRepository(ABC, Generic[RepositoryObjectT]):
     def flush(self) -> None:
         """Delete all objects from the repository."""
 
+    @abstractmethod
+    def is_file_storage_service_id_referenced(self, service_id: UUID) -> bool:
+        """Return True if service_id is referenced by any object in this repository."""
+
     def bulk_save(
         self, objects: Sequence[RepositoryObjectT]
     ) -> Iterator[BulkOperationResult]:
@@ -86,6 +94,3 @@ class BaseRepository(ABC, Generic[RepositoryObjectT]):
                     success=False,
                     error=RepositoryBulkSaveError(f"{ex}"),
                 )
-
-
-REPOSITORY_INSTANCES: dict[type[BaseRepository], BaseRepository] = {}

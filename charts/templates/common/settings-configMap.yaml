@@ -40,6 +40,9 @@ data:
     {{- if ne .Values.pipeline.reindex_lost_files_max_files nil }}
     reindex_lost_files_max_files: {{ .Values.pipeline.reindex_lost_files_max_files | quote }}
     {{- end }}
+    {{- if ne .Values.pipeline.flush_file_storage_service_max_objects nil }}
+    flush_file_storage_service_max_objects: {{ .Values.pipeline.flush_file_storage_service_max_objects | quote }}
+    {{- end }}
     {{- if ne .Values.pipeline.max_reindex_count nil }}
     max_reindex_count: {{ .Values.pipeline.max_reindex_count | quote }}
     {{- end }}

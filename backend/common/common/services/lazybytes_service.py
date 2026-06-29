@@ -4,7 +4,7 @@ import uuid
 from abc import ABC, abstractmethod
 from collections.abc import Iterator
 from contextlib import contextmanager
-from datetime import timedelta
+from datetime import datetime, timedelta
 from io import SEEK_END, BytesIO
 from mmap import PROT_READ, mmap
 from tempfile import (
@@ -16,7 +16,7 @@ from tempfile import (
 from typing import IO, Any, Generator, Generic, TypeVar, cast
 
 from minio import Minio
-from pydantic import BaseModel, ConfigDict, model_validator
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from common.settings import settings
 from common.utils.flush_s3_bucket import flush_s3_bucket
@@ -42,6 +42,7 @@ class LazyBytes(BaseModel, Generic[_Tag]):
 
     service_id: Any | None = None
     embedded_data: bytes | None = None
+    last_modified: datetime | None = Field(default=None, exclude=True)
 
     @model_validator(mode="after")
     def check_either_service_id_or_embedded_data(self) -> "LazyBytes[_Tag]":
@@ -188,6 +189,17 @@ class LazyBytesService(ABC, Generic[_Tag]):
 
         Args:
             min_age: Only delete objects older than this. If None, delete all.
+        """
+
+    @abstractmethod
+    def iterate(
+        self,
+        start_after_service_id: Any | None = None,
+    ) -> "Iterator[LazyBytes[_Tag]]":
+        """Iterate over all lazybytes stored in this service.
+
+        Args:
+            start_after_service_id: If given, start iteration after this service_id.
         """
 
     @abstractmethod
@@ -376,6 +388,23 @@ class S3LazyBytesService(LazyBytesService[_Tag]):
     def _delete(self, service_id: Any):
         self._client.remove_object(self._bucket, str(service_id))
 
+    def iterate(
+        self,
+        start_after_service_id: Any | None = None,
+    ) -> "Iterator[LazyBytes[_Tag]]":
+        if not self._client.bucket_exists(self._bucket):
+            return
+        start_after = (
+            str(start_after_service_id) if start_after_service_id is not None else None
+        )
+        for obj in self._client.list_objects(self._bucket, start_after=start_after):
+            if obj.object_name is None:
+                continue
+            yield cast(
+                "LazyBytes[_Tag]",
+                LazyBytes(service_id=obj.object_name, last_modified=obj.last_modified),
+            )
+
     def get_total_size_bytes(self) -> int:
         total = 0
         if not self._client.bucket_exists(self._bucket):
@@ -447,6 +476,14 @@ class InMemoryLazyBytesService(LazyBytesService[_Tag]):
 
     def _delete(self, service_id: Any):
         del self._storage[service_id]
+
+    def iterate(
+        self,
+        start_after_service_id: Any | None = None,
+    ) -> "Iterator[LazyBytes[_Tag]]":
+        del start_after_service_id  # not applicable for in-memory storage
+        for service_id in self._storage:
+            yield cast("LazyBytes[_Tag]", LazyBytes(service_id=service_id))
 
     def get_total_size_bytes(self) -> int:
         return sum(len(data) for data in self._storage.values())

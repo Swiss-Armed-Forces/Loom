@@ -173,6 +173,7 @@ class Settings(CommonSettings):
     uploaded_files_days_before_hidden: int | None = None
     imap_folder_days_before_unsubscribe: int | None = None
     reindex_lost_files_max_files: int = 100
+    flush_file_storage_service_max_objects: int = 1000
 
     llm_rerank_system_prompt: str = (
         """You are an expert reranking machine called Loom."""
