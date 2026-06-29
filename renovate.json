@@ -182,7 +182,7 @@
   "allowedCommands": [
     "^poetry lock --no-update"
   ],
-  "rebaseWhen": "behind-base-branch",
+  "rebaseWhen": "never",
   "automergeSchedule": ["before 6am"],
   "platformAutomerge": true,
   "dependencyDashboardTitle": "Dependency Dashboard",
