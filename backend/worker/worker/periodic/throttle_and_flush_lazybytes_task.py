@@ -6,7 +6,6 @@ from common.dependencies import (
     get_celery_inspect_service,
     get_lazybytes_service,
 )
-from common.services.celery_inspect_service import TaskGroupName
 from common.services.lazybytes_service import TempLazyBytesService
 from common.settings import settings
 from common.utils.task_lock import task_lock
@@ -51,30 +50,33 @@ def throttle_and_flush_lazybytes_task(self: PeriodicTask):
     """Manage lazybytes cleanup and throttling under resource pressure.
 
     Only acts when temp lazybytes usage exceeds the configured threshold. When
-    triggered, pauses LAZYBYTES_PRODUCING tasks (via set_throttled) so no new temp
-    lazybytes is created, then waits for all LAZYBYTES_CONSUMING tasks to drain before
-    flushing lazybytes and cache.
+    triggered, pauses DISPATCH tasks (via set_throttled) so no new file ingestion
+    pipelines start, then waits for all non-throttled queues to drain before flushing
+    lazybytes and cache.
 
-    If the idle wait times out, LAZYBYTES_PRODUCING remains paused until the next run
-    succeeds and flush_complete resumes it. Files are safe in file_storage_service, so
-    queued tasks can resume processing after throttling ends.
+    If the idle wait times out, DISPATCH remains paused until the next run succeeds and
+    flush_complete resumes it. Files are safe in file_storage_service, so queued tasks
+    can resume processing after throttling ends.
     """
+    inspect = get_celery_inspect_service()
     if not _should_throttle(get_lazybytes_service()):
+        if inspect.is_throttled():
+            inspect.set_throttled(False)
+            logger.info("Below threshold: resuming")
         return None
 
-    inspect = get_celery_inspect_service()
     inspect.set_throttled(True)
 
-    consuming_tasks = inspect.get_task_names_in_group(TaskGroupName.LAZYBYTES_CONSUMING)
+    exclude_tasks = inspect.get_throttled_tasks() + [self.name]
     if not inspect.wait_for_idle(
         timeout=_WAIT_FOR_IDLE_TIMEOUT_SECONDS,
         poll_interval=_WAIT_FOR_IDLE_POLL_INTERVAL_SECONDS,
-        include_tasks=consuming_tasks,
+        exclude_tasks=exclude_tasks,
     ):
-        logger.info("Celery not idle: timed out waiting for lazybytes idle")
+        logger.info("Celery not idle: timed out waiting for idle")
         return None
 
-    logger.info("Celery idle: flushing lazybytes")
+    logger.info("Celery idle: flushing")
     return self.replace(
         chord(
             [

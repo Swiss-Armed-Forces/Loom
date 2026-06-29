@@ -131,18 +131,20 @@ class CeleryInspectService:
         )
 
     def set_throttled(self, throttled: bool) -> None:
-        """Set the system-wide throttle state and pause/resume the LAZYBYTES_PRODUCING
-        task group.
+        """Set the system-wide throttle state and pause/resume the DISPATCH task group.
 
-        Pausing lazybytes producers stops new temp lazybytes from being created at their
-        source. LAZYBYTES_CONSUMING tasks are not paused — pausing them while waiting
-        for them to drain would deadlock.
+        Pausing DISPATCH stops new file ingestion pipelines at the root, preventing any
+        new temp lazybytes from being created.
         """
         if throttled:
             self._redis_client.set(_THROTTLED_KEY, "1")
         else:
             self._redis_client.delete(_THROTTLED_KEY)
-        self.set_taskgroup_paused(TaskGroupName.LAZYBYTES_PRODUCING, throttled)
+        self.set_taskgroup_paused(TaskGroupName.DISPATCH, throttled)
+
+    def get_throttled_tasks(self) -> list[str]:
+        """Return task names that are paused while the system is throttled."""
+        return self.get_task_names_in_group(TaskGroupName.DISPATCH)
 
     def is_throttled(self) -> bool:
         """Return True if the system is currently throttled."""
