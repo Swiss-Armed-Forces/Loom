@@ -2,68 +2,79 @@ import argparse
 import logging
 import os
 import sys
+import tempfile
 
 from git import Repo
+from git.exc import GitCommandError
 
-from ._common import _ask, _get_mr_for_current_branch
-from .claude import (
-    generate_commit_message_via_claude,
-    is_claude_cli_installed,
-    parse_commit_message,
-)
-from .git_helpers import get_branch_diff, load_mr_template
-from .gitlab_api import update_mr
-from .models import MRContext
+from .claude import is_claude_cli_installed, run_claude_agentic
+from .prompts import build_merge_conflict_prompt
 
 logger = logging.getLogger(__name__)
 
 
-def cmd_mr_update(args: argparse.Namespace) -> None:
-    """Update GitLab MR title and description using Claude."""
-    user_instructions = " ".join(args.instructions) if args.instructions else ""
-
-    if user_instructions:
-        logger.info("User instructions: %s", user_instructions)
-
+def cmd_mr_update(_args: argparse.Namespace) -> None:
+    """Merge origin/main into the current branch, resolve any conflicts, and push."""
     repo = Repo(os.getcwd())
-    mr = _get_mr_for_current_branch(repo)
+    branch_name = repo.active_branch.name
 
-    diff = get_branch_diff(repo)
-    if not diff:
-        logger.info("No changes on this branch compared to its merge base.")
-        return
-
-    mr_template = load_mr_template(repo)
+    if branch_name == "main":
+        logger.error("Cannot run mr-update on the main branch.")
+        sys.exit(1)
 
     if not is_claude_cli_installed():
         logger.error("Claude CLI not installed.")
         sys.exit(1)
 
-    message = generate_commit_message_via_claude(
-        diff,
-        mr_template,
-        repo,
-        MRContext(
-            title=mr.title or "",
-            description=mr.description or "",
-            user_instructions=user_instructions,
-        ),
-    )
-    if not message:
-        logger.error("Failed to generate commit message via Claude.")
-        sys.exit(1)
+    print("Fetching origin...")
+    repo.remotes.origin.fetch()
 
-    parsed = parse_commit_message(message)
-
-    print("\n--- Preview ---")
-    print(f"Title: {parsed.title}\n")
-    print(f"Description:\n{parsed.body}")
-    print("--- End Preview ---\n")
-
-    answer = _ask(f"Update MR !{mr.iid} with the above? [Y/n]: ")
-    if answer not in ("", "y"):
-        print("Aborted.")
+    ahead_commits = list(repo.iter_commits("HEAD..origin/main"))
+    if not ahead_commits:
+        print("Branch is already up to date with origin/main.")
         return
 
-    update_mr(mr, parsed.title, parsed.body)
-    logger.info("Updated MR !%s", mr.iid)
+    print(f"origin/main has {len(ahead_commits)} new commit(s) — merging...")
+
+    head_before = repo.head.commit.hexsha
+    conflicting: list[str] = []
+    try:
+        repo.git.merge("origin/main", "--no-edit")
+        print("Merged origin/main cleanly.")
+    except GitCommandError as e:
+        logger.warning(
+            "git merge failed (status %s):\nstdout: %s\nstderr: %s",
+            e.status,
+            e.stdout,
+            e.stderr,
+        )
+        conflicting = repo.git.diff("--name-only", "--diff-filter=U").splitlines()
+        if not conflicting and repo.head.commit.hexsha == head_before:
+            try:
+                repo.git.merge("--abort")
+            except GitCommandError:
+                pass
+            logger.error("Merge failed with no changes — aborting.")
+            sys.exit(1)
+        if conflicting:
+            print(
+                f"Merge conflict in {len(conflicting)} file(s): {', '.join(conflicting)}"
+            )
+
+    if conflicting:
+        with tempfile.TemporaryDirectory(
+            prefix=".loom_mrupdate_", dir=repo.working_dir
+        ) as ctx:
+            with open(os.path.join(ctx, "conflicts.txt"), "w", encoding="utf-8") as f:
+                f.write("\n".join(conflicting))
+            run_claude_agentic(
+                build_merge_conflict_prompt(branch_name, conflicting, ctx), repo
+            )
+        repo.git.add("-A")
+        repo.git.commit(
+            "--no-verify", "-m", f"chore: merge origin/main into {branch_name}"
+        )
+        print("Resolved merge conflicts and committed.")
+
+    repo.git.push("origin", branch_name)
+    print(f"Pushed {branch_name} to origin.")

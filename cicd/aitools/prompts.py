@@ -304,17 +304,30 @@ then push the branch.
 """
 
 
+def build_mr_create_commit_prompt(commit_title: str) -> str:
+    """Build the prompt for committing staged changes in mr-create."""
+    return f"""All changes are already staged with `git add -A`.
+
+Commit the staged changes with this exact message:
+
+    {commit_title}
+
+Run: git commit -m "{commit_title}"
+
+If pre-commit hooks fail (e.g. linting or formatting errors), fix the reported issues,
+re-stage the affected files, and retry the commit. Do NOT change the commit message.
+Do NOT push.
+"""
+
+
 def build_merge_conflict_prompt(
     branch_name: str, conflicting_files: list[str], context_dir: str
 ) -> str:
     """Build the prompt for resolving git merge conflicts after merging origin/main."""
     files_list = "\n".join(f"- {f}" for f in conflicting_files)
-    intro = (
-        f"You are resolving git merge conflicts on branch '{branch_name}'"
-        " in the Loom project.\n"
-        "A merge of origin/main was started but left unfinished due to conflicts."
-    )
-    return f"""{intro}
+    return f"""\
+You are resolving git merge conflicts on branch '{branch_name}' in the Loom project.
+A merge of origin/main was started but left unfinished due to conflicts.
 
 ## Conflicting files
 

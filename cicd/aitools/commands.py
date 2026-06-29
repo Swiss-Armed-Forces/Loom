@@ -5,6 +5,8 @@ from . import config
 from .cmd_implement import cmd_implement, cmd_milestone_implement
 from .cmd_issue_update import cmd_issue_update
 from .cmd_job_diagnose import cmd_job_diagnose
+from .cmd_mr_create import cmd_mr_create
+from .cmd_mr_describe import cmd_mr_describe
 from .cmd_mr_fix import cmd_mr_fix
 from .cmd_mr_update import cmd_mr_update
 from .cmd_mr_watch import cmd_mr_watch
@@ -41,17 +43,40 @@ def build_parser() -> tuple[argparse.ArgumentParser, list[str]]:
     subparsers = parser.add_subparsers(dest="subcommand")
     subparsers.required = True
 
+    # mr-create subcommand
+    mr_create_parser = subparsers.add_parser(
+        "mr-create",
+        help="Create a branch, commit all changes, push, and open a draft MR",
+    )
+    mr_create_parser.add_argument(
+        "type",
+        choices=["feature", "bugfix"],
+        help="Branch type prefix",
+    )
+    mr_create_parser.add_argument(
+        "name",
+        help="Branch name slug (e.g. 'my-feature' → feature/my-feature)",
+    )
+    mr_create_parser.set_defaults(func=cmd_mr_create)
+
     # mr-update subcommand
     mr_update_parser = subparsers.add_parser(
         "mr-update",
+        help="Merge origin/main into the current branch, resolve conflicts, and push",
+    )
+    mr_update_parser.set_defaults(func=cmd_mr_update)
+
+    # mr-describe subcommand
+    mr_describe_parser = subparsers.add_parser(
+        "mr-describe",
         help="Update GitLab MR title/description using AI",
     )
-    mr_update_parser.add_argument(
+    mr_describe_parser.add_argument(
         "instructions",
         nargs="*",
         help="Additional instructions to append to the AI prompt",
     )
-    mr_update_parser.set_defaults(func=cmd_mr_update)
+    mr_describe_parser.set_defaults(func=cmd_mr_describe)
 
     # implement subcommand
     implement_parser = subparsers.add_parser(
