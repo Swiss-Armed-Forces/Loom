@@ -9,7 +9,7 @@ from gitlab.v4.objects import ProjectMergeRequestDiscussion
 
 from . import config
 from .config import CLAUDE_TIMEOUT, MAX_DIFF_CHARS
-from .git_helpers import get_per_file_diffs
+from .git_helpers import get_per_file_diffs, get_per_file_tag_diffs
 from .gitlab_api import extract_discussion_location, extract_discussion_thread
 from .models import CommitMessage, DiffChunk, FileDiffMap, MRContext
 from .prompts import (
@@ -86,8 +86,7 @@ def _summarize_diff_chunk_via_claude(chunk: DiffChunk, repo: Repo) -> str | None
         return None
 
 
-def _build_chunked_summary(repo: Repo) -> str:
-    file_map = get_per_file_diffs(repo)
+def _build_chunked_summary(file_map: FileDiffMap, repo: Repo) -> str:
     chunks = _chunk_file_diffs(file_map)
     logger.info("Summarizing %d diff chunks in parallel", len(chunks))
 
@@ -140,7 +139,7 @@ def generate_commit_message_via_claude(
 
     if _DIFF_TRUNCATED_MARKER in diff:
         logger.info("Diff was truncated — switching to chunked summarization mode")
-        diff = _build_chunked_summary(repo)
+        diff = _build_chunked_summary(get_per_file_diffs(repo), repo)
 
     prompt = build_mr_update_prompt(
         mr_template,
@@ -249,6 +248,12 @@ def generate_release_notes_via_claude(
     if not repo.working_dir:
         logger.warning("No working directory available (bare repo?)")
         return None
+
+    if _DIFF_TRUNCATED_MARKER in diff and previous_tag is not None:
+        logger.info("Diff was truncated — switching to chunked summarization mode")
+        diff = _build_chunked_summary(
+            get_per_file_tag_diffs(repo, previous_tag, tag_name), repo
+        )
 
     prompt = build_release_notes_prompt(tag_name, previous_tag, milestone_info, diff)
 

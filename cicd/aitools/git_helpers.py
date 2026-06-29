@@ -101,6 +101,30 @@ def get_tag_diff(repo: Repo, from_tag: str, to_tag: str) -> str:
     return result
 
 
+def get_per_file_tag_diffs(repo: Repo, from_tag: str, to_tag: str) -> FileDiffMap:
+    """Return per-file diffs between two tags, excluding lockfiles and generated
+    files."""
+    stat = repo.git.diff(from_tag, to_tag, "--stat", "--", *EXCLUDED_PATHSPECS)
+    name_only = repo.git.diff(
+        from_tag, to_tag, "--name-only", "--", *EXCLUDED_PATHSPECS
+    )
+
+    files: dict[str, str] = {}
+    for file_path in name_only.strip().splitlines():
+        file_path = file_path.strip()
+        if not file_path:
+            continue
+        try:
+            file_diff = repo.git.diff(from_tag, to_tag, "--", file_path)
+        except git.exc.GitCommandError:
+            logger.warning("Failed to get diff for file: %s", file_path)
+            file_diff = ""
+        files[file_path] = file_diff
+
+    logger.debug("Per-file tag diffs retrieved for %d files", len(files))
+    return FileDiffMap(stat=stat, files=files)
+
+
 def fetch_and_sort_tags(repo: Repo) -> list[str]:
     """Fetch all remote tags and return them sorted by semver (newest first)."""
     repo.git.fetch("--tags", "--force")
