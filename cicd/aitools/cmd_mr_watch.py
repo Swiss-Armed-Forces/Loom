@@ -58,7 +58,7 @@ def _checkout_mr_branch(mr: ProjectMergeRequest, repo: Repo) -> str:
     local_branches = [b.name for b in repo.branches]
     if branch_name in local_branches:
         repo.git.checkout(branch_name)
-        repo.git.pull("origin", branch_name)
+        repo.git.reset("--hard", f"origin/{branch_name}")
     else:
         repo.git.checkout("-b", branch_name, f"origin/{branch_name}")
     return branch_name
