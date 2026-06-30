@@ -1,5 +1,7 @@
-import datetime
 import logging
+from collections.abc import Iterable, Iterator
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from datetime import datetime
 from pathlib import Path
 from textwrap import dedent
 from typing import cast
@@ -19,7 +21,7 @@ from common.services.lazybytes_service import (
     TempTypedLazyBytes,
 )
 from pydantic import BaseModel
-from stream_zip import ZIP_32, stream_zip
+from stream_zip import ZIP_32, MemberFile, stream_zip
 
 from worker.create_archive.infra.archive_processing_task import ArchiveProcessingTask
 from worker.create_archive.tasks.archive_format import (
@@ -39,6 +41,10 @@ from worker.create_archive.tasks.query_file_list import FileIdList
 logger = logging.getLogger(__name__)
 
 app = get_celery_app()
+
+_PERMS_FILE = 0o600
+_PERMS_META = 0o644
+_PERMS_EXEC = 0o755
 
 
 def _readme_content(archive_name: str) -> bytes:
@@ -98,62 +104,70 @@ def _manifest_content(archive: Archive) -> bytes:
     return archive.model_dump_json(indent=JSON_INDENT).encode()
 
 
-def _file_archive_entries(
-    file_id: UUID,
-    archive_id: UUID,
-    archive_name: str,
-    modified_at: datetime.datetime,
-    perms: int,
-):
-    """Yield ZIP entries for a single file, re-querying it from the repository for fresh
-    metadata."""
+def _fetch_file(file_id: UUID, archive_id: UUID) -> File | None:
+    """Fetch a single File from ES.
+
+    Runs in a worker thread.
+    """
     fresh_file = get_file_repository().get_by_id(file_id)
     if fresh_file is None:
         logger.warning(
             "Skipping file '%s' from archive: not found in repository", file_id
         )
-        return
+        return None
     if fresh_file.storage_data is None:
         logger.warning(
             "Skipping file '%s' from archive: no storage data", fresh_file.full_path
         )
-        return
-
+        return None
     # Inject the archive link in-memory — the async persist_file_to_archive_link tasks
     # may not have flushed to ES yet, so we ensure the serialized file is up-to-date.
     if str(archive_id) not in fresh_file.archives:
         fresh_file.archives = fresh_file.archives + [str(archive_id)]
+    return fresh_file
 
+
+def _file_archive_entries(
+    file_ids: list[UUID],
+    archive_id: UUID,
+    archive_name: str,
+    modified_at: datetime,
+) -> Iterator[MemberFile]:
+    """Yield ZIP entries for all files, fetching ES metadata in parallel."""
     file_storage_service = get_file_storage_service()
-    for storage in _file_storage_fields(fresh_file):
-        yield (
-            f"{archive_name}/{FILES_DIR}/{storage.service_id}",
-            modified_at,
-            perms,
-            ZIP_32,
-            file_storage_service.load_generator(storage),
-        )
+    with ThreadPoolExecutor() as executor:
+        futures = [executor.submit(_fetch_file, fid, archive_id) for fid in file_ids]
+        for future in as_completed(futures):
+            fresh_file = future.result()
+            if fresh_file is None:
+                continue
+            for storage in _file_storage_fields(fresh_file):
+                yield (
+                    f"{archive_name}/{FILES_DIR}/{storage.service_id}",
+                    modified_at,
+                    _PERMS_FILE,
+                    ZIP_32,
+                    file_storage_service.load_generator(storage),
+                )
+            file_json = fresh_file.model_dump_json(indent=JSON_INDENT).encode()
+            yield (
+                f"{archive_name}/{FILES_INDEX_DIR}/{fresh_file.id_}{JSON_SUFFIX}",
+                modified_at,
+                _PERMS_FILE,
+                ZIP_32,
+                iter([file_json]),
+            )
 
-    file_json = fresh_file.model_dump_json(indent=JSON_INDENT).encode()
-    yield (
-        f"{archive_name}/{FILES_INDEX_DIR}/{fresh_file.id_}{JSON_SUFFIX}",
-        modified_at,
-        perms,
-        ZIP_32,
-        iter([file_json]),
-    )
 
-
-def _archive_data(file_ids: list[UUID], archive: Archive):
+def _archive_data(file_ids: list[UUID], archive: Archive) -> Iterator[MemberFile]:
     archive_name = archive.name.removesuffix(ZIP_EXTENSION)
-    modified_at = datetime.datetime.now()
-    perms = 0o600
+    modified_at = datetime.now()
 
     manifest = _manifest_content(archive)
     yield (
         f"{archive_name}/{MANIFEST_FILENAME}",
         modified_at,
-        0o644,
+        _PERMS_META,
         ZIP_32,
         iter([manifest]),
     )
@@ -162,7 +176,7 @@ def _archive_data(file_ids: list[UUID], archive: Archive):
     yield (
         f"{archive_name}/{README_FILENAME}",
         modified_at,
-        0o644,
+        _PERMS_META,
         ZIP_32,
         iter([readme]),
     )
@@ -171,18 +185,15 @@ def _archive_data(file_ids: list[UUID], archive: Archive):
     yield (
         f"{archive_name}/{CLI_FILENAME}",
         modified_at,
-        0o755,
+        _PERMS_EXEC,
         ZIP_32,
         iter([cli]),
     )
 
-    for file_id in file_ids:
-        yield from _file_archive_entries(
-            file_id, archive.id_, archive_name, modified_at, perms
-        )
+    yield from _file_archive_entries(file_ids, archive.id_, archive_name, modified_at)
 
 
-def stream_archive(file_ids: list[UUID], archive: Archive):
+def stream_archive(file_ids: list[UUID], archive: Archive) -> Iterable[bytes]:
     """Return a stream_zip generator for the given archive."""
     return stream_zip(_archive_data(file_ids, archive))
 
