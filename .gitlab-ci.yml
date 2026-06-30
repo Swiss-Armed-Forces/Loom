@@ -249,7 +249,7 @@ default:
     #
     - section_start .default-up-integrationtest-before_script
     # start stack
-    - devenv shell -- up --integrationtest --expose "$(tailscale ip -4)"
+    - devenv shell -- bash -c 'up --integrationtest --expose "$(tailscale ip -4)" --trusted-ca-bundle "${NIX_SSL_CERT_FILE}"'
     #
     # END SECTION
     #
