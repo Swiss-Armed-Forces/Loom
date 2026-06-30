@@ -733,7 +733,12 @@ class BaseEsRepository(  # pylint: disable=too-many-public-methods
         with self._temporarily_closed_index():
             # set settings before initializing
             self._index.settings(
-                query={"default_field": self._document_type.get_default_fields()}
+                query={"default_field": self._document_type.get_default_fields()},
+                # When reinit() reindexes into a new index with updated mappings, a document
+                # whose stored value is incompatible with the new field type would otherwise be
+                # dropped entirely. With ignore_malformed=True, ES silently skips the offending
+                # field and still indexes the rest of the document (best-effort preservation).
+                mapping={"ignore_malformed": True},
             )
             # initialize
             self._document_type.init(using=self._elasticsearch)
