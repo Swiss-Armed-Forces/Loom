@@ -22,12 +22,18 @@ class ArchiveMeta(BaseModel):
 class ArchiveContent(BaseModel):
     state: str
     size: int
+    tasks_succeeded: list[UUID] = []
+    tasks_retried: list[UUID] = []
+    tasks_failed: list[UUID] = []
 
     @staticmethod
     def from_archive(archive: Archive):
         return ArchiveContent(
             state=archive.state,
             size=archive.plain_file.size if archive.plain_file.size is not None else 0,
+            tasks_succeeded=archive.tasks_succeeded,
+            tasks_retried=archive.tasks_retried,
+            tasks_failed=archive.tasks_failed,
         )
 
 

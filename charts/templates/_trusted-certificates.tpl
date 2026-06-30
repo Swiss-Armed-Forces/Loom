@@ -13,9 +13,10 @@ Usage: {{- with include "app.trustedCerts.initContainer" . }}{{ . | nindent 8 }}
     - -c
     - |
       set -eu
-      cp /ca-certificates-configmap/*.crt /usr/local/share/ca-certificates/
-      update-ca-certificates
-      cp -r /etc/ssl/. /ca-bundle/
+      cp /etc/ssl/certs/ca-certificates.crt /ca-bundle/ca-certificates.crt
+      for cert in /ca-certificates-configmap/*.crt; do
+        cat "$cert" >> /ca-bundle/ca-certificates.crt
+      done
   volumeMounts:
     - name: ca-certificates-configmap
       mountPath: /ca-certificates-configmap
@@ -51,6 +52,7 @@ Usage: {{- with include "app.trustedCerts.volumeMount" . }}{{ . | nindent 12 }}{
 {{- define "app.trustedCerts.volumeMount" -}}
 {{- if .Values.trustedCertificates.certs }}
 - name: ca-bundle
-  mountPath: /etc/ssl
+  mountPath: /etc/ssl/certs/ca-certificates.crt
+  subPath: ca-certificates.crt
 {{- end }}
 {{- end -}}

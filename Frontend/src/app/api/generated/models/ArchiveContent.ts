@@ -32,6 +32,24 @@ export interface ArchiveContent {
      * @memberof ArchiveContent
      */
     size: number;
+    /**
+     *
+     * @type {Array<string>}
+     * @memberof ArchiveContent
+     */
+    tasksSucceeded?: Array<string>;
+    /**
+     *
+     * @type {Array<string>}
+     * @memberof ArchiveContent
+     */
+    tasksRetried?: Array<string>;
+    /**
+     *
+     * @type {Array<string>}
+     * @memberof ArchiveContent
+     */
+    tasksFailed?: Array<string>;
 }
 
 /**
@@ -57,6 +75,14 @@ export function ArchiveContentFromJSONTyped(
     return {
         state: json["state"],
         size: json["size"],
+        tasksSucceeded:
+            json["tasks_succeeded"] == null
+                ? undefined
+                : json["tasks_succeeded"],
+        tasksRetried:
+            json["tasks_retried"] == null ? undefined : json["tasks_retried"],
+        tasksFailed:
+            json["tasks_failed"] == null ? undefined : json["tasks_failed"],
     };
 }
 
@@ -67,5 +93,8 @@ export function ArchiveContentToJSON(value?: ArchiveContent | null): any {
     return {
         state: value["state"],
         size: value["size"],
+        tasks_succeeded: value["tasksSucceeded"],
+        tasks_retried: value["tasksRetried"],
+        tasks_failed: value["tasksFailed"],
     };
 }
