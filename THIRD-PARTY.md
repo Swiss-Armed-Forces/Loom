@@ -1150,9 +1150,9 @@ The complete source code for Traefik is publicly available at [https://github.co
 | argon2-cffi | 25.1.0 | MIT | python-installed-package-cataloger |
 | argon2-cffi-bindings | 25.1.0 | MIT | python-installed-package-cataloger |
 | asgiref | 3.11.1 | BSD-3-Clause | python-installed-package-cataloger |
-| base-files | 12.4+deb12u13 |  | dpkg-db-cataloger |
+| base-files | 12.4+deb12u14 |  | dpkg-db-cataloger |
 | base-passwd | 3.6.1 | GPL-2.0-only | dpkg-db-cataloger |
-| bash | 5.2.15-2+b10 | BSD-4-Clause-UC, GFDL-1.3-only, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, Latex2e | dpkg-db-cataloger |
+| bash | 5.2.15-2+b13 | BSD-4-Clause-UC, GFDL-1.3-only, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, Latex2e | dpkg-db-cataloger |
 | billiard | 4.2.4 |  | python-installed-package-cataloger |
 | bsdutils | 1:2.38.1-5+deb12u3 | BSD-3-Clause, BSD-4-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, MIT | dpkg-db-cataloger |
 | ca-certificates | 20230311+deb12u1 | GPL-2.0-only, GPL-2.0-or-later, MPL-2.0 | dpkg-db-cataloger |
@@ -1174,7 +1174,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | debianutils | 5.7-0.5~deb12u1 | GPL-2.0-only, GPL-2.0-or-later, SMAIL-GPL | dpkg-db-cataloger |
 | diffutils | 1:3.8-4 | FSFAP, FSFULLR, GFDL-1.3-only, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, X11 | dpkg-db-cataloger |
 | distro | 1.9.0 |  | python-installed-package-cataloger |
-| dpkg | 1.21.22 | BSD-2-Clause, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
+| dpkg | 1.21.23 | BSD-2-Clause, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
 | e2fsprogs | 1.47.0-2+b2 | Apache-2.0, Apache-2.0, BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later, ISC, Kazlib, LGPL-2.0-only, Latex2e | dpkg-db-cataloger |
 | elastic-transport | 9.4.0 |  | python-installed-package-cataloger |
 | elasticsearch | 9.2.1 | Apache-2.0 | python-installed-package-cataloger |
@@ -1203,10 +1203,10 @@ The complete source code for Traefik is publicly available at [https://github.co
 | libaudit1 | 1:3.0.9-1 | GPL-1.0-only, GPL-2.0-only, LGPL-2.1-only | dpkg-db-cataloger |
 | libblkid1 | 2.38.1-5+deb12u3 | BSD-3-Clause, BSD-4-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, MIT | dpkg-db-cataloger |
 | libbz2-1.0 | 1.0.8-5+b1 | GPL-2.0-only | dpkg-db-cataloger |
-| libc-bin | 2.36-9+deb12u13 | GPL-2.0-only, LGPL-2.1-only | dpkg-db-cataloger |
-| libc6 | 2.36-9+deb12u13 | GPL-2.0-only, LGPL-2.1-only | dpkg-db-cataloger |
+| libc-bin | 2.36-9+deb12u14 | GPL-2.0-only, LGPL-2.1-only | dpkg-db-cataloger |
+| libc6 | 2.36-9+deb12u14 | GPL-2.0-only, LGPL-2.1-only | dpkg-db-cataloger |
 | libcap-ng0 | 0.8.3-1+b3 | GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
-| libcap2 | 1:2.66-4+deb12u2+b2 | BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
+| libcap2 | 1:2.66-4+deb12u3+b1 | BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
 | libcom-err2 | 1.47.0-2+b2 | Apache-2.0, Apache-2.0, BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later, ISC, Kazlib, LGPL-2.0-only, Latex2e | dpkg-db-cataloger |
 | libcrypt1 | 1:4.4.33-2 |  | dpkg-db-cataloger |
 | libdb5.3 | 5.3.28+dfsg2-1 | BSD-3-Clause, GPL-3.0-only, MS-PL, Sleepycat, X11, Zlib | dpkg-db-cataloger |
@@ -1214,10 +1214,10 @@ The complete source code for Traefik is publicly available at [https://github.co
 | libext2fs2 | 1.47.0-2+b2 | Apache-2.0, Apache-2.0, BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later, ISC, Kazlib, LGPL-2.0-only, Latex2e | dpkg-db-cataloger |
 | libffi8 | 3.4.4-1 | GPL-2.0-or-later, GPL-3.0-or-later, MPL-1.1, X11 | dpkg-db-cataloger |
 | libgcc-s1 | 12.2.0-14+deb12u1 | GFDL-1.2-only, GPL-2.0-only, GPL-3.0-only | dpkg-db-cataloger |
-| libgcrypt20 | 1.10.1-3 | GPL-2.0-only | dpkg-db-cataloger |
+| libgcrypt20 | 1.10.1-3+deb12u1 | GPL-2.0-only | dpkg-db-cataloger |
 | libgdbm6 | 1.23-3 | GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later | dpkg-db-cataloger |
 | libgmp10 | 2:6.2.1+dfsg1-1.1 | GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
-| libgnutls30 | 3.7.9-2+deb12u6 | Apache-2.0, BSD-3-Clause, GFDL-1.3-only, GPL-3.0-only, LGPL-3.0-only | dpkg-db-cataloger |
+| libgnutls30 | 3.7.9-2+deb12u7 | Apache-2.0, BSD-3-Clause, GFDL-1.3-only, GPL-3.0-only, LGPL-3.0-only | dpkg-db-cataloger |
 | libgpg-error0 | 1.46-1 | BSD-3-Clause, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
 | libhogweed6 | 3.8.1-2 | GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-3.0-or-later | dpkg-db-cataloger |
 | libidn2-0 | 2.3.3-1+b1 | GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
@@ -1243,12 +1243,12 @@ The complete source code for Traefik is publicly available at [https://github.co
 | libsmartcols1 | 2.38.1-5+deb12u3 | BSD-3-Clause, BSD-4-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, MIT | dpkg-db-cataloger |
 | libsqlite3-0 | 3.40.1-2+deb12u2 | GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
 | libss2 | 1.47.0-2+b2 | Apache-2.0, Apache-2.0, BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later, ISC, Kazlib, LGPL-2.0-only, Latex2e | dpkg-db-cataloger |
-| libssl3 | 3.0.19-1~deb12u2 | Apache-2.0, GPL-1.0-only, GPL-1.0-or-later | dpkg-db-cataloger |
+| libssl3 | 3.0.20-1~deb12u2 | Apache-2.0, GPL-1.0-only, GPL-1.0-or-later | dpkg-db-cataloger |
 | libstdc++6 | 12.2.0-14+deb12u1 | GFDL-1.2-only, GPL-2.0-only, GPL-3.0-only | dpkg-db-cataloger |
-| libsystemd0 | 252.39-1~deb12u1 | CC0-1.0, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
+| libsystemd0 | 252.39-1~deb12u2 | CC0-1.0, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
 | libtasn1-6 | 4.19.0-2+deb12u1 | GFDL-1.3-only, GPL-3.0-only, LGPL-2.1-only | dpkg-db-cataloger |
 | libtinfo6 | 6.4-4 | BSD-3-Clause, X11 | dpkg-db-cataloger |
-| libudev1 | 252.39-1~deb12u1 | CC0-1.0, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
+| libudev1 | 252.39-1~deb12u2 | CC0-1.0, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
 | libunistring2 | 1.0-2 | GFDL-1.2-only, GFDL-1.2-or-later, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-3.0-only, LGPL-3.0-or-later, MIT | dpkg-db-cataloger |
 | libuuid1 | 2.38.1-5+deb12u3 | BSD-3-Clause, BSD-4-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, MIT | dpkg-db-cataloger |
 | libxxhash0 | 0.8.1-1 | BSD-2-Clause, GPL-2.0-only | dpkg-db-cataloger |
@@ -1264,7 +1264,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | netbase | 6.4 | GPL-2.0-only | dpkg-db-cataloger |
 | numpy | 2.5.0 | BSD-3-Clause AND 0BSD AND MIT AND Zlib AND CC0-1.0 | python-installed-package-cataloger |
 | openai | 1.72.0 | Apache-2.0 | python-installed-package-cataloger |
-| openssl | 3.0.19-1~deb12u2 | Apache-2.0, GPL-1.0-only, GPL-1.0-or-later | dpkg-db-cataloger |
+| openssl | 3.0.20-1~deb12u2 | Apache-2.0, GPL-1.0-only, GPL-1.0-or-later | dpkg-db-cataloger |
 | opentelemetry-api | 1.39.1 | Apache-2.0 | python-installed-package-cataloger |
 | opentelemetry-exporter-prometheus | 0.60b1 | Apache-2.0 | python-installed-package-cataloger |
 | opentelemetry-instrumentation | 0.60b1 | Apache-2.0 | python-installed-package-cataloger |
@@ -1276,7 +1276,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | packaging | 26.2 | Apache-2.0 OR BSD-2-Clause | python-installed-package-cataloger |
 | passwd | 1:4.13+dfsg1-1+deb12u2 | BSD-3-Clause, GPL-1.0-only, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
 | perl-base | 5.36.0-7+deb12u3 | Artistic-2.0, Artistic-dist, BSD-3-Clause, GPL-1.0-only, GPL-1.0-or-later, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.1-only, Zlib | dpkg-db-cataloger |
-| pip | 26.0.1 | MIT | python-installed-package-cataloger |
+| pip | 26.1.2 | MIT | python-installed-package-cataloger |
 | pip | 26.1.2 | MIT | python-installed-package-cataloger |
 | ply | 3.11 |  | python-installed-package-cataloger |
 | prometheus-client | 0.24.1 | Apache-2.0 AND BSD-2-Clause | python-installed-package-cataloger |
@@ -1286,7 +1286,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | pydantic | 2.13.4 | MIT | python-installed-package-cataloger |
 | pydantic-core | 2.46.4 | MIT | python-installed-package-cataloger |
 | pydantic-settings | 2.14.2 | MIT | python-installed-package-cataloger |
-| python | 3.14.4 |  | binary-classifier-cataloger |
+| python | 3.14.6 |  | binary-classifier-cataloger |
 | python-dateutil | 2.9.0.post0 |  | python-installed-package-cataloger |
 | python-dotenv | 1.2.2 | BSD-3-Clause | python-installed-package-cataloger |
 | python-multipart | 0.0.32 | Apache-2.0 | python-installed-package-cataloger |
@@ -1295,7 +1295,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | requests | 2.32.5 | Apache-2.0 | python-installed-package-cataloger |
 | scikit-learn | 1.8.0 | BSD-3-Clause | python-installed-package-cataloger |
 | scipy | 1.17.1 | BSD-3-Clause | python-installed-package-cataloger |
-| sed | 4.9-1 | BSD-4-Clause-UC, BSL-1.0, GFDL-1.3-only, GPL-3.0-only, GPL-3.0-or-later, ISC, X11 | dpkg-db-cataloger |
+| sed | 4.9-1+deb12u1 | BSD-4-Clause-UC, BSL-1.0, GFDL-1.3-only, GPL-3.0-only, GPL-3.0-or-later, ISC, X11 | dpkg-db-cataloger |
 | six | 1.17.0 | MIT | python-installed-package-cataloger |
 | sniffio | 1.3.1 | MIT OR Apache-2.0 | python-installed-package-cataloger |
 | starlette | 0.52.1 | BSD-3-Clause | python-installed-package-cataloger |
@@ -1310,8 +1310,8 @@ The complete source code for Traefik is publicly available at [https://github.co
 | types-setuptools | 82.0.0.20260518 | Apache-2.0 | python-installed-package-cataloger |
 | typing-extensions | 4.15.0 | PSF-2.0 | python-installed-package-cataloger |
 | typing-inspection | 0.4.2 | MIT | python-installed-package-cataloger |
-| tzdata | 2025b-0+deb12u2 |  | dpkg-db-cataloger |
 | tzdata | 2026.2 | Apache-2.0 | python-installed-package-cataloger |
+| tzdata | 2026b-0+deb12u1 |  | dpkg-db-cataloger |
 | tzlocal | 5.4 | MIT | python-installed-package-cataloger |
 | urllib3 | 2.7.0 | MIT | python-installed-package-cataloger |
 | usr-is-merged | 37~deb12u1 | GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
@@ -1355,9 +1355,9 @@ The complete source code for Traefik is publicly available at [https://github.co
 | autoconf | 2.71-3 | GFDL-1.3-only, GFDL-1.3-or-later, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later | dpkg-db-cataloger |
 | automake | 1:1.16.5-1.3 | GFDL-1.3-only, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later | dpkg-db-cataloger |
 | autotools-dev | 20220109.1 | GPL-3.0-only | dpkg-db-cataloger |
-| base-files | 12.4+deb12u13 |  | dpkg-db-cataloger |
+| base-files | 12.4+deb12u14 |  | dpkg-db-cataloger |
 | base-passwd | 3.6.1 | GPL-2.0-only | dpkg-db-cataloger |
-| bash | 5.2.15-2+b10 | BSD-4-Clause-UC, GFDL-1.3-only, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, Latex2e | dpkg-db-cataloger |
+| bash | 5.2.15-2+b13 | BSD-4-Clause-UC, GFDL-1.3-only, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, Latex2e | dpkg-db-cataloger |
 | billiard | 4.2.4 |  | python-installed-package-cataloger |
 | binutils | 2.40-2 |  | dpkg-db-cataloger |
 | binutils-common | 2.40-2 |  | dpkg-db-cataloger |
@@ -1401,8 +1401,8 @@ The complete source code for Traefik is publicly available at [https://github.co
 | diffutils | 1:3.8-4 | FSFAP, FSFULLR, GFDL-1.3-only, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, X11 | dpkg-db-cataloger |
 | dirmngr | 2.2.40-1.1+deb12u2 | BSD-3-Clause, CC0-1.0, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
 | distro | 1.9.0 |  | python-installed-package-cataloger |
-| dpkg | 1.21.22 | BSD-2-Clause, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
-| dpkg-dev | 1.21.22 | BSD-2-Clause, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
+| dpkg | 1.21.23 | BSD-2-Clause, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
+| dpkg-dev | 1.21.23 | BSD-2-Clause, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
 | e2fsprogs | 1.47.0-2+b2 | Apache-2.0, Apache-2.0, BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later, ISC, Kazlib, LGPL-2.0-only, Latex2e | dpkg-db-cataloger |
 | elastic-transport | 9.4.0 |  | python-installed-package-cataloger |
 | elasticsearch | 9.2.1 | Apache-2.0 | python-installed-package-cataloger |
@@ -1725,7 +1725,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | jsonpatch | 1.33 |  | python-installed-package-cataloger |
 | jsonpointer | 3.1.1 |  | python-installed-package-cataloger |
 | kombu | 5.6.2 | BSD-3-Clause | python-installed-package-cataloger |
-| krb5-multidev | 1.20.1-2+deb12u4 | GPL-2.0-only | dpkg-db-cataloger |
+| krb5-multidev | 1.20.1-2+deb12u5 | GPL-2.0-only | dpkg-db-cataloger |
 | langchain-core | 1.4.0 | MIT | python-installed-package-cataloger |
 | langchain-protocol | 0.0.15 | MIT | python-installed-package-cataloger |
 | langchain-text-splitters | 1.1.2 | MIT | python-installed-package-cataloger |
@@ -1758,10 +1758,10 @@ The complete source code for Traefik is publicly available at [https://github.co
 | libbz2-1.0 | 1.0.8-5+b1 | GPL-2.0-only | dpkg-db-cataloger |
 | libbz2-dev | 1.0.8-5+b1 | GPL-2.0-only | dpkg-db-cataloger |
 | libc-ares2 | 1.18.1-3 |  | dpkg-db-cataloger |
-| libc-bin | 2.36-9+deb12u13 | GPL-2.0-only, LGPL-2.1-only | dpkg-db-cataloger |
-| libc-dev-bin | 2.36-9+deb12u13 | GPL-2.0-only, LGPL-2.1-only | dpkg-db-cataloger |
-| libc6 | 2.36-9+deb12u13 | GPL-2.0-only, LGPL-2.1-only | dpkg-db-cataloger |
-| libc6-dev | 2.36-9+deb12u13 | GPL-2.0-only, LGPL-2.1-only | dpkg-db-cataloger |
+| libc-bin | 2.36-9+deb12u14 | GPL-2.0-only, LGPL-2.1-only | dpkg-db-cataloger |
+| libc-dev-bin | 2.36-9+deb12u14 | GPL-2.0-only, LGPL-2.1-only | dpkg-db-cataloger |
+| libc6 | 2.36-9+deb12u14 | GPL-2.0-only, LGPL-2.1-only | dpkg-db-cataloger |
+| libc6-dev | 2.36-9+deb12u14 | GPL-2.0-only, LGPL-2.1-only | dpkg-db-cataloger |
 | libcairo-gobject2 | 1.16.0-7 | LGPL-2.1-only | dpkg-db-cataloger |
 | libcairo-script-interpreter2 | 1.16.0-7 | LGPL-2.1-only | dpkg-db-cataloger |
 | libcairo2 | 1.16.0-7 | LGPL-2.1-only | dpkg-db-cataloger |
@@ -1793,7 +1793,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | libdjvulibre-dev | 3.5.28-2.2~deb12u1 | GPL-2.0-only | dpkg-db-cataloger |
 | libdjvulibre-text | 3.5.28-2.2~deb12u1 | GPL-2.0-only | dpkg-db-cataloger |
 | libdjvulibre21 | 3.5.28-2.2~deb12u1 | GPL-2.0-only | dpkg-db-cataloger |
-| libdpkg-perl | 1.21.22 | BSD-2-Clause, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
+| libdpkg-perl | 1.21.23 | BSD-2-Clause, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
 | libedit2 | 3.1-20221030-2 | BSD-3-Clause | dpkg-db-cataloger |
 | libelf1 | 0.188-2.1 | BSD-2-Clause, GFDL-1.3-only, GPL-2.0-only, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
 | liberror-perl | 0.17029-2 | GPL-1.0-only, GPL-1.0-or-later | dpkg-db-cataloger |
@@ -1803,8 +1803,8 @@ The complete source code for Traefik is publicly available at [https://github.co
 | libevent-extra-2.1-7 | 2.1.12-stable-8 | BSD-2-Clause, BSD-3-Clause, FSFUL, FSFULLR, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, ISC, curl | dpkg-db-cataloger |
 | libevent-openssl-2.1-7 | 2.1.12-stable-8 | BSD-2-Clause, BSD-3-Clause, FSFUL, FSFULLR, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, ISC, curl | dpkg-db-cataloger |
 | libevent-pthreads-2.1-7 | 2.1.12-stable-8 | BSD-2-Clause, BSD-3-Clause, FSFUL, FSFULLR, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, ISC, curl | dpkg-db-cataloger |
-| libexif-dev | 0.6.24-1+b1 | BSD-2-Clause, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, MIT | dpkg-db-cataloger |
-| libexif12 | 0.6.24-1+b1 | BSD-2-Clause, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, MIT | dpkg-db-cataloger |
+| libexif-dev | 0.6.24-1+deb12u1 | BSD-2-Clause, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, MIT | dpkg-db-cataloger |
+| libexif12 | 0.6.24-1+deb12u1 | BSD-2-Clause, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, MIT | dpkg-db-cataloger |
 | libexpat1 | 2.5.0-1+deb12u2 | MIT | dpkg-db-cataloger |
 | libexpat1-dev | 2.5.0-1+deb12u2 | MIT | dpkg-db-cataloger |
 | libext2fs2 | 1.47.0-2+b2 | Apache-2.0, Apache-2.0, BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later, ISC, Kazlib, LGPL-2.0-only, Latex2e | dpkg-db-cataloger |
@@ -1822,7 +1822,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | libgav1-1 | 0.18.0-1+b1 | Apache-2.0, BSD-3-Clause | dpkg-db-cataloger |
 | libgcc-12-dev | 12.2.0-14+deb12u1 | GFDL-1.2-only, GPL-2.0-only, GPL-3.0-only | dpkg-db-cataloger |
 | libgcc-s1 | 12.2.0-14+deb12u1 | GFDL-1.2-only, GPL-2.0-only, GPL-3.0-only | dpkg-db-cataloger |
-| libgcrypt20 | 1.10.1-3 | GPL-2.0-only | dpkg-db-cataloger |
+| libgcrypt20 | 1.10.1-3+deb12u1 | GPL-2.0-only | dpkg-db-cataloger |
 | libgd3 | 2.3.3-9 | BSD-3-Clause, GD, GPL-2.0-only, GPL-2.0-or-later, HPND, MIT, Xfig | dpkg-db-cataloger |
 | libgdbm-compat4 | 1.23-3 | GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later | dpkg-db-cataloger |
 | libgdbm-dev | 1.23-3 | GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later | dpkg-db-cataloger |
@@ -1833,15 +1833,15 @@ The complete source code for Traefik is publicly available at [https://github.co
 | libgdk-pixbuf2.0-common | 2.42.10+dfsg-1+deb12u4 | CC0-1.0, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
 | libgif7 | 5.2.1-2.5 | ISC, MIT | dpkg-db-cataloger |
 | libgirepository-1.0-1 | 1.74.0-3 | AFL-2.0, Apache-2.0, BSD-2-Clause, CC-BY-SA-3.0, CC0-1.0, FSFAP, FSFULLR, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, MPL-1.1, Unicode-DFS-2016, bzip2-1.0.6 | dpkg-db-cataloger |
-| libglib2.0-0 | 2.74.6-2+deb12u8 | AFL-2.0, Apache-2.0, CC-BY-SA-3.0, CC0-1.0, FSFULLR, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, Unicode-DFS-2016, bzip2-1.0.6 | dpkg-db-cataloger |
-| libglib2.0-bin | 2.74.6-2+deb12u8 | AFL-2.0, Apache-2.0, CC-BY-SA-3.0, CC0-1.0, FSFULLR, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, Unicode-DFS-2016, bzip2-1.0.6 | dpkg-db-cataloger |
-| libglib2.0-data | 2.74.6-2+deb12u8 | AFL-2.0, Apache-2.0, CC-BY-SA-3.0, CC0-1.0, FSFULLR, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, Unicode-DFS-2016, bzip2-1.0.6 | dpkg-db-cataloger |
-| libglib2.0-dev | 2.74.6-2+deb12u8 | AFL-2.0, Apache-2.0, CC-BY-SA-3.0, CC0-1.0, FSFULLR, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, Unicode-DFS-2016, bzip2-1.0.6 | dpkg-db-cataloger |
-| libglib2.0-dev-bin | 2.74.6-2+deb12u8 | AFL-2.0, Apache-2.0, CC-BY-SA-3.0, CC0-1.0, FSFULLR, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, Unicode-DFS-2016, bzip2-1.0.6 | dpkg-db-cataloger |
+| libglib2.0-0 | 2.74.6-2+deb12u9 | AFL-2.0, Apache-2.0, CC-BY-SA-3.0, CC0-1.0, FSFULLR, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, Unicode-DFS-2016, bzip2-1.0.6 | dpkg-db-cataloger |
+| libglib2.0-bin | 2.74.6-2+deb12u9 | AFL-2.0, Apache-2.0, CC-BY-SA-3.0, CC0-1.0, FSFULLR, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, Unicode-DFS-2016, bzip2-1.0.6 | dpkg-db-cataloger |
+| libglib2.0-data | 2.74.6-2+deb12u9 | AFL-2.0, Apache-2.0, CC-BY-SA-3.0, CC0-1.0, FSFULLR, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, Unicode-DFS-2016, bzip2-1.0.6 | dpkg-db-cataloger |
+| libglib2.0-dev | 2.74.6-2+deb12u9 | AFL-2.0, Apache-2.0, CC-BY-SA-3.0, CC0-1.0, FSFULLR, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, Unicode-DFS-2016, bzip2-1.0.6 | dpkg-db-cataloger |
+| libglib2.0-dev-bin | 2.74.6-2+deb12u9 | AFL-2.0, Apache-2.0, CC-BY-SA-3.0, CC0-1.0, FSFULLR, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, Unicode-DFS-2016, bzip2-1.0.6 | dpkg-db-cataloger |
 | libgmp-dev | 2:6.2.1+dfsg1-1.1 | GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
 | libgmp10 | 2:6.2.1+dfsg1-1.1 | GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
 | libgmpxx4ldbl | 2:6.2.1+dfsg1-1.1 | GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
-| libgnutls30 | 3.7.9-2+deb12u6 | Apache-2.0, BSD-3-Clause, GFDL-1.3-only, GPL-3.0-only, LGPL-3.0-only | dpkg-db-cataloger |
+| libgnutls30 | 3.7.9-2+deb12u7 | Apache-2.0, BSD-3-Clause, GFDL-1.3-only, GPL-3.0-only, LGPL-3.0-only | dpkg-db-cataloger |
 | libgomp1 | 12.2.0-14+deb12u1 | GFDL-1.2-only, GPL-2.0-only, GPL-3.0-only | dpkg-db-cataloger |
 | libgpg-error0 | 1.46-1 | BSD-3-Clause, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
 | libgprofng0 | 2.40-2 |  | dpkg-db-cataloger |
@@ -1851,8 +1851,8 @@ The complete source code for Traefik is publicly available at [https://github.co
 | libgs10-common | 10.0.0~dfsg-11+deb12u8 | AGPL-3.0-only, AGPL-3.0-or-later, Apache-2.0, BSD-3-Clause, FTL, GPL-1.0-only, GPL-1.0-or-later, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, ISC, LGPL-2.1-only, MIT-open-group, X11, Zlib | dpkg-db-cataloger |
 | libgsf-1-114 | 1.14.50-1+deb12u1 | FSFUL, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.1-only | dpkg-db-cataloger |
 | libgsf-1-common | 1.14.50-1+deb12u1 | FSFUL, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.1-only | dpkg-db-cataloger |
-| libgssapi-krb5-2 | 1.20.1-2+deb12u4 | GPL-2.0-only | dpkg-db-cataloger |
-| libgssrpc4 | 1.20.1-2+deb12u4 | GPL-2.0-only | dpkg-db-cataloger |
+| libgssapi-krb5-2 | 1.20.1-2+deb12u5 | GPL-2.0-only | dpkg-db-cataloger |
+| libgssrpc4 | 1.20.1-2+deb12u5 | GPL-2.0-only | dpkg-db-cataloger |
 | libharfbuzz0b | 6.0.0+dfsg-3 | Apache-2.0, CC0-1.0, FSFAP, FSFUL, FSFULLR, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, ISC, LGPL-2.1-only, LGPL-2.1-or-later, MIT, OFL-1.1 | dpkg-db-cataloger |
 | libheif1 | 1.15.1-1+deb12u1 | BSD-3-Clause, BSD-4-Clause, GPL-3.0-only, GPL-3.0-or-later, LGPL-3.0-only, LGPL-3.0-or-later, MIT | dpkg-db-cataloger |
 | libhogweed6 | 3.8.1-2 | GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-3.0-or-later | dpkg-db-cataloger |
@@ -1874,17 +1874,17 @@ The complete source code for Traefik is publicly available at [https://github.co
 | libjpeg-dev | 1:2.1.5-2 | BSD-3-Clause, NTP, Zlib | dpkg-db-cataloger |
 | libjpeg62-turbo | 1:2.1.5-2 | BSD-3-Clause, NTP, Zlib | dpkg-db-cataloger |
 | libjpeg62-turbo-dev | 1:2.1.5-2 | BSD-3-Clause, NTP, Zlib | dpkg-db-cataloger |
-| libk5crypto3 | 1.20.1-2+deb12u4 | GPL-2.0-only | dpkg-db-cataloger |
-| libkadm5clnt-mit12 | 1.20.1-2+deb12u4 | GPL-2.0-only | dpkg-db-cataloger |
-| libkadm5srv-mit12 | 1.20.1-2+deb12u4 | GPL-2.0-only | dpkg-db-cataloger |
-| libkdb5-10 | 1.20.1-2+deb12u4 | GPL-2.0-only | dpkg-db-cataloger |
+| libk5crypto3 | 1.20.1-2+deb12u5 | GPL-2.0-only | dpkg-db-cataloger |
+| libkadm5clnt-mit12 | 1.20.1-2+deb12u5 | GPL-2.0-only | dpkg-db-cataloger |
+| libkadm5srv-mit12 | 1.20.1-2+deb12u5 | GPL-2.0-only | dpkg-db-cataloger |
+| libkdb5-10 | 1.20.1-2+deb12u5 | GPL-2.0-only | dpkg-db-cataloger |
 | libkeyutils1 | 1.6.3-2 | GPL-2.0-only, GPL-2.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later | dpkg-db-cataloger |
-| libkrb5-3 | 1.20.1-2+deb12u4 | GPL-2.0-only | dpkg-db-cataloger |
-| libkrb5-dev | 1.20.1-2+deb12u4 | GPL-2.0-only | dpkg-db-cataloger |
-| libkrb5support0 | 1.20.1-2+deb12u4 | GPL-2.0-only | dpkg-db-cataloger |
+| libkrb5-3 | 1.20.1-2+deb12u5 | GPL-2.0-only | dpkg-db-cataloger |
+| libkrb5-dev | 1.20.1-2+deb12u5 | GPL-2.0-only | dpkg-db-cataloger |
+| libkrb5support0 | 1.20.1-2+deb12u5 | GPL-2.0-only | dpkg-db-cataloger |
 | libksba8 | 1.6.3-2 | FSFUL, GPL-3.0-only, LGPL-2.1-or-later | dpkg-db-cataloger |
-| liblcms2-2 | 2.14-2 | GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, IJG, MIT | dpkg-db-cataloger |
-| liblcms2-dev | 2.14-2 | GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, IJG, MIT | dpkg-db-cataloger |
+| liblcms2-2 | 2.14-2+deb12u1 | GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, IJG, MIT | dpkg-db-cataloger |
+| liblcms2-dev | 2.14-2+deb12u1 | GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, IJG, MIT | dpkg-db-cataloger |
 | libldap-2.5-0 | 2.5.13+dfsg-5 | BSD-3-Clause, Beerware, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later | dpkg-db-cataloger |
 | liblept5 | 1.82.0-3+b3 | BSD-2-Clause | dpkg-db-cataloger |
 | libleptonica-dev | 1.82.0-3+b3 | BSD-2-Clause | dpkg-db-cataloger |
@@ -1928,7 +1928,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | libncursesw5-dev | 6.4-4 | BSD-3-Clause, X11 | dpkg-db-cataloger |
 | libncursesw6 | 6.4-4 | BSD-3-Clause, X11 | dpkg-db-cataloger |
 | libnettle8 | 3.8.1-2 | GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-3.0-or-later | dpkg-db-cataloger |
-| libnghttp2-14 | 1.52.0-1+deb12u2 | BSD-2-Clause, GPL-3.0-only, GPL-3.0-or-later, MIT | dpkg-db-cataloger |
+| libnghttp2-14 | 1.52.0-1+deb12u3 | BSD-2-Clause, GPL-3.0-only, GPL-3.0-or-later, MIT | dpkg-db-cataloger |
 | libnl-3-200 | 3.7.0-0.2+b1 | GPL-2.0-only, LGPL-2.1-only | dpkg-db-cataloger |
 | libnl-genl-3-200 | 3.7.0-0.2+b1 | GPL-2.0-only, LGPL-2.1-only | dpkg-db-cataloger |
 | libnpth0 | 1.6-3 | LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
@@ -1937,8 +1937,8 @@ The complete source code for Traefik is publicly available at [https://github.co
 | libnuma1 | 2.0.16-1 |  | dpkg-db-cataloger |
 | libopenexr-3-1-30 | 3.1.5-5 | BSD-3-Clause | dpkg-db-cataloger |
 | libopenexr-dev | 3.1.5-5 | BSD-3-Clause | dpkg-db-cataloger |
-| libopenjp2-7 | 2.5.0-2+deb12u2 | Libpng, libtiff, MIT, Zlib | dpkg-db-cataloger |
-| libopenjp2-7-dev | 2.5.0-2+deb12u2 | Libpng, libtiff, MIT, Zlib | dpkg-db-cataloger |
+| libopenjp2-7 | 2.5.0-2+deb12u3 | Libpng, libtiff, MIT, Zlib | dpkg-db-cataloger |
+| libopenjp2-7-dev | 2.5.0-2+deb12u3 | Libpng, libtiff, MIT, Zlib | dpkg-db-cataloger |
 | libp11-kit0 | 0.24.1-2 | Apache-2.0, BSD-3-Clause, ISC, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
 | libpam-modules | 1.5.2-6+deb12u2 | BSD-3-Clause, Beerware, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later | dpkg-db-cataloger |
 | libpam-modules-bin | 1.5.2-6+deb12u2 | BSD-3-Clause, Beerware, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later | dpkg-db-cataloger |
@@ -1958,17 +1958,17 @@ The complete source code for Traefik is publicly available at [https://github.co
 | libpixman-1-0 | 0.42.2-1 |  | dpkg-db-cataloger |
 | libpixman-1-dev | 0.42.2-1 |  | dpkg-db-cataloger |
 | libpkgconf3 | 1.8.1-1 | GPL-2.0-only, GPL-2.0-or-later, ISC, X11 | dpkg-db-cataloger |
-| libpng-dev | 1.6.39-2+deb12u4 | Apache-2.0, BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later, Libpng | dpkg-db-cataloger |
-| libpng16-16 | 1.6.39-2+deb12u4 | Apache-2.0, BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later, Libpng | dpkg-db-cataloger |
-| libpq-dev | 15.16-0+deb12u1 | BSD-2-Clause, BSD-3-Clause, BSD-3-Clause, GPL-1.0-only, PostgreSQL, TCL | dpkg-db-cataloger |
-| libpq5 | 15.16-0+deb12u1 | BSD-2-Clause, BSD-3-Clause, BSD-3-Clause, GPL-1.0-only, PostgreSQL, TCL | dpkg-db-cataloger |
+| libpng-dev | 1.6.39-2+deb12u5 | Apache-2.0, BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later, Libpng | dpkg-db-cataloger |
+| libpng16-16 | 1.6.39-2+deb12u5 | Apache-2.0, BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later, Libpng | dpkg-db-cataloger |
+| libpq-dev | 15.18-0+deb12u1 | BSD-2-Clause, BSD-3-Clause, BSD-3-Clause, GPL-1.0-only, PostgreSQL, TCL | dpkg-db-cataloger |
+| libpq5 | 15.18-0+deb12u1 | BSD-2-Clause, BSD-3-Clause, BSD-3-Clause, GPL-1.0-only, PostgreSQL, TCL | dpkg-db-cataloger |
 | libproc2-0 | 2:4.0.2-3 | GPL-2.0-only, GPL-2.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
 | libpsl5 | 0.21.2-1 | MIT | dpkg-db-cataloger |
 | libpst4 | 0.6.76-1 | GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
 | libpthread-stubs0-dev | 0.4-1 |  | dpkg-db-cataloger |
 | libpython3-stdlib | 3.11.2-1+b1 |  | dpkg-db-cataloger |
-| libpython3.11-minimal | 3.11.2-6+deb12u6 | GPL-2.0-only | dpkg-db-cataloger |
-| libpython3.11-stdlib | 3.11.2-6+deb12u6 | GPL-2.0-only | dpkg-db-cataloger |
+| libpython3.11-minimal | 3.11.2-6+deb12u7 | GPL-2.0-only | dpkg-db-cataloger |
+| libpython3.11-stdlib | 3.11.2-6+deb12u7 | GPL-2.0-only | dpkg-db-cataloger |
 | libquadmath0 | 12.2.0-14+deb12u1 | GFDL-1.2-only, GPL-2.0-only, GPL-3.0-only | dpkg-db-cataloger |
 | librav1e0 | 0.5.1-6 | BSD-2-Clause, BSD-2-Clause, ISC | dpkg-db-cataloger |
 | libreadline-dev | 8.2-1.3 | GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later | dpkg-db-cataloger |
@@ -2001,13 +2001,13 @@ The complete source code for Traefik is publicly available at [https://github.co
 | libss2 | 1.47.0-2+b2 | Apache-2.0, Apache-2.0, BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later, ISC, Kazlib, LGPL-2.0-only, Latex2e | dpkg-db-cataloger |
 | libssh-gcrypt-4 | 0.10.6-0+deb12u2 | BSD-2-Clause, BSD-3-Clause, LGPL-2.1-only | dpkg-db-cataloger |
 | libssh2-1 | 1.10.0-3+b1 |  | dpkg-db-cataloger |
-| libssl-dev | 3.0.19-1~deb12u2 | Apache-2.0, GPL-1.0-only, GPL-1.0-or-later | dpkg-db-cataloger |
-| libssl3 | 3.0.19-1~deb12u2 | Apache-2.0, GPL-1.0-only, GPL-1.0-or-later | dpkg-db-cataloger |
+| libssl-dev | 3.0.20-1~deb12u2 | Apache-2.0, GPL-1.0-only, GPL-1.0-or-later | dpkg-db-cataloger |
+| libssl3 | 3.0.20-1~deb12u2 | Apache-2.0, GPL-1.0-only, GPL-1.0-or-later | dpkg-db-cataloger |
 | libstdc++-12-dev | 12.2.0-14+deb12u1 | GFDL-1.2-only, GPL-2.0-only, GPL-3.0-only | dpkg-db-cataloger |
 | libstdc++6 | 12.2.0-14+deb12u1 | GFDL-1.2-only, GPL-2.0-only, GPL-3.0-only | dpkg-db-cataloger |
 | libsvn1 | 1.14.2-4+deb12u1 | AFL-3.0, Apache-2.0, BSD-2-Clause, BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later | dpkg-db-cataloger |
 | libsvtav1enc1 | 1.4.1+dfsg-1 | BSD-2-Clause, BSD-3-Clause-Clear, BSD-3-Clause, ISC, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
-| libsystemd0 | 252.39-1~deb12u1 | CC0-1.0, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
+| libsystemd0 | 252.39-1~deb12u2 | CC0-1.0, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
 | libtasn1-6 | 4.19.0-2+deb12u1 | GFDL-1.3-only, GPL-3.0-only, LGPL-2.1-only | dpkg-db-cataloger |
 | libtcl8.6 | 8.6.13+dfsg-2 |  | dpkg-db-cataloger |
 | libthai-data | 0.1.29-1 | GPL-2.0-only, GPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
@@ -2023,7 +2023,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | libtool | 2.4.7-7~deb12u1 | GFDL-1.3-only, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
 | libtsan2 | 12.2.0-14+deb12u1 | GFDL-1.2-only, GPL-2.0-only, GPL-3.0-only | dpkg-db-cataloger |
 | libubsan1 | 12.2.0-14+deb12u1 | GFDL-1.2-only, GPL-2.0-only, GPL-3.0-only | dpkg-db-cataloger |
-| libudev1 | 252.39-1~deb12u1 | CC0-1.0, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
+| libudev1 | 252.39-1~deb12u2 | CC0-1.0, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
 | libunistring2 | 1.0-2 | GFDL-1.2-only, GFDL-1.2-or-later, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-3.0-only, LGPL-3.0-or-later, MIT | dpkg-db-cataloger |
 | libutf8proc2 | 2.8.0-1 |  | dpkg-db-cataloger |
 | libuuid1 | 2.38.1-5+deb12u3 | BSD-3-Clause, BSD-4-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, MIT | dpkg-db-cataloger |
@@ -2061,8 +2061,8 @@ The complete source code for Traefik is publicly available at [https://github.co
 | libxpm4 | 1:3.5.12-1.1+deb12u1 | MIT | dpkg-db-cataloger |
 | libxrender-dev | 1:0.9.10-1.1 | HPND-sell-variant | dpkg-db-cataloger |
 | libxrender1 | 1:0.9.10-1.1 | HPND-sell-variant | dpkg-db-cataloger |
-| libxslt1-dev | 1.1.35-1+deb12u3 |  | dpkg-db-cataloger |
-| libxslt1.1 | 1.1.35-1+deb12u3 |  | dpkg-db-cataloger |
+| libxslt1-dev | 1.1.35-1+deb12u4 |  | dpkg-db-cataloger |
+| libxslt1.1 | 1.1.35-1+deb12u4 |  | dpkg-db-cataloger |
 | libxss-dev | 1:1.2.3-1 | MIT | dpkg-db-cataloger |
 | libxss1 | 1:1.2.3-1 | MIT | dpkg-db-cataloger |
 | libxt-dev | 1:1.2.1-1.1 |  | dpkg-db-cataloger |
@@ -2073,7 +2073,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | libyuv0 | 0.0~git20230123.b2528b0-1 | BSD-3-Clause | dpkg-db-cataloger |
 | libzstd-dev | 1.5.4+dfsg2-5 | BSD-3-Clause, GPL-2.0-only, Zlib | dpkg-db-cataloger |
 | libzstd1 | 1.5.4+dfsg2-5 | BSD-3-Clause, GPL-2.0-only, Zlib | dpkg-db-cataloger |
-| linux-libc-dev | 6.1.170-1 | BSD-2-Clause, GPL-2.0-only, LGPL-2.1-only | dpkg-db-cataloger |
+| linux-libc-dev | 6.1.174-1 | BSD-2-Clause, GPL-2.0-only, LGPL-2.1-only | dpkg-db-cataloger |
 | login | 1:4.13+dfsg1-1+deb12u2 | BSD-3-Clause, GPL-1.0-only, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
 | logsave | 1.47.0-2+b2 | Apache-2.0, Apache-2.0, BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later, ISC, Kazlib, LGPL-2.0-only, Latex2e | dpkg-db-cataloger |
 | luqum | 0.14.0 | LGPL-3.0-only | python-installed-package-cataloger |
@@ -2096,8 +2096,8 @@ The complete source code for Traefik is publicly available at [https://github.co
 | netbase | 6.4 | GPL-2.0-only | dpkg-db-cataloger |
 | numpy | 2.4.4 | BSD-3-Clause AND 0BSD AND MIT AND Zlib AND CC0-1.0 | python-installed-package-cataloger |
 | openai | 1.72.0 | Apache-2.0 | python-installed-package-cataloger |
-| openssh-client | 1:9.2p1-2+deb12u9 | BSD-2-Clause, BSD-3-Clause | dpkg-db-cataloger |
-| openssl | 3.0.19-1~deb12u2 | Apache-2.0, GPL-1.0-only, GPL-1.0-or-later | dpkg-db-cataloger |
+| openssh-client | 1:9.2p1-2+deb12u10 | BSD-2-Clause, BSD-3-Clause | dpkg-db-cataloger |
+| openssl | 3.0.20-1~deb12u2 | Apache-2.0, GPL-1.0-only, GPL-1.0-or-later | dpkg-db-cataloger |
 | orjson | 3.11.9 | MPL-2.0 AND (Apache-2.0 OR MIT) | python-installed-package-cataloger |
 | packaging | 26.2 | Apache-2.0 OR BSD-2-Clause | python-installed-package-cataloger |
 | passwd | 1:4.13+dfsg1-1+deb12u2 | BSD-3-Clause, GPL-1.0-only, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
@@ -2106,7 +2106,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | perl-base | 5.36.0-7+deb12u3 | Artistic-2.0, Artistic-dist, BSD-3-Clause, GPL-1.0-only, GPL-1.0-or-later, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.1-only, Zlib | dpkg-db-cataloger |
 | perl-modules-5.36 | 5.36.0-7+deb12u3 | Artistic-2.0, Artistic-dist, BSD-3-Clause, GPL-1.0-only, GPL-1.0-or-later, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.1-only, Zlib | dpkg-db-cataloger |
 | pinentry-curses | 1.2.1-1 | GPL-2.0-only, GPL-2.0-or-later, LGPL-3.0-only, LGPL-3.0-or-later, X11 | dpkg-db-cataloger |
-| pip | 26.0.1 | MIT | python-installed-package-cataloger |
+| pip | 26.1.2 | MIT | python-installed-package-cataloger |
 | pip | 26.1.2 | MIT | python-installed-package-cataloger |
 | pkg-config | 1.8.1-1 | GPL-2.0-only, GPL-2.0-or-later, ISC, X11 | dpkg-db-cataloger |
 | pkgconf | 1.8.1-1 | GPL-2.0-only, GPL-2.0-or-later, ISC, X11 | dpkg-db-cataloger |
@@ -2122,7 +2122,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | pydantic | 2.13.4 | MIT | python-installed-package-cataloger |
 | pydantic-core | 2.46.4 | MIT | python-installed-package-cataloger |
 | pydantic-settings | 2.14.2 | MIT | python-installed-package-cataloger |
-| python | 3.14.4 |  | binary-classifier-cataloger |
+| python | 3.14.6 |  | binary-classifier-cataloger |
 | python-dateutil | 2.9.0.post0 |  | python-installed-package-cataloger |
 | python-dotenv | 1.2.2 | BSD-3-Clause | python-installed-package-cataloger |
 | python-magic | 0.4.27 | MIT | python-installed-package-cataloger |
@@ -2130,8 +2130,8 @@ The complete source code for Traefik is publicly available at [https://github.co
 | python3-distutils | 3.11.2-3 |  | dpkg-db-cataloger |
 | python3-lib2to3 | 3.11.2-3 |  | dpkg-db-cataloger |
 | python3-minimal | 3.11.2-1+b1 |  | dpkg-db-cataloger |
-| python3.11 | 3.11.2-6+deb12u6 | GPL-2.0-only | dpkg-db-cataloger |
-| python3.11-minimal | 3.11.2-6+deb12u6 | GPL-2.0-only | dpkg-db-cataloger |
+| python3.11 | 3.11.2-6+deb12u7 | GPL-2.0-only | dpkg-db-cataloger |
+| python3.11-minimal | 3.11.2-6+deb12u7 | GPL-2.0-only | dpkg-db-cataloger |
 | pytz | 2026.2 | MIT | python-installed-package-cataloger |
 | pyyaml | 6.0.3 | MIT | python-installed-package-cataloger |
 | readline-common | 8.2-1.3 | GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later | dpkg-db-cataloger |
@@ -2141,7 +2141,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | rpcsvc-proto | 1.4.3-1 | BSD-3-Clause, GPL-2.0-only, GPL-3.0-only, MIT | dpkg-db-cataloger |
 | scikit-learn | 1.8.0 | BSD-3-Clause | python-installed-package-cataloger |
 | scipy | 1.17.1 | BSD-3-Clause | python-installed-package-cataloger |
-| sed | 4.9-1 | BSD-4-Clause-UC, BSL-1.0, GFDL-1.3-only, GPL-3.0-only, GPL-3.0-or-later, ISC, X11 | dpkg-db-cataloger |
+| sed | 4.9-1+deb12u1 | BSD-4-Clause-UC, BSL-1.0, GFDL-1.3-only, GPL-3.0-only, GPL-3.0-or-later, ISC, X11 | dpkg-db-cataloger |
 | sensible-utils | 0.0.17+nmu1 | GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
 | shared-mime-info | 2.2-1 |  | dpkg-db-cataloger |
 | six | 1.17.0 | MIT | python-installed-package-cataloger |
@@ -2173,8 +2173,8 @@ The complete source code for Traefik is publicly available at [https://github.co
 | types-setuptools | 82.0.0.20260518 | Apache-2.0 | python-installed-package-cataloger |
 | typing-extensions | 4.15.0 | PSF-2.0 | python-installed-package-cataloger |
 | typing-inspection | 0.4.2 | MIT | python-installed-package-cataloger |
-| tzdata | 2025b-0+deb12u2 |  | dpkg-db-cataloger |
 | tzdata | 2026.2 | Apache-2.0 | python-installed-package-cataloger |
+| tzdata | 2026b-0+deb12u1 |  | dpkg-db-cataloger |
 | tzlocal | 5.4 | MIT | python-installed-package-cataloger |
 | ucf | 3.0043+nmu1+deb12u1 | GPL-2.0-only | dpkg-db-cataloger |
 | unzip | 6.0-28 |  | dpkg-db-cataloger |
@@ -2227,9 +2227,9 @@ The complete source code for Traefik is publicly available at [https://github.co
 | apt | 2.6.1 | BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
 | argon2-cffi | 25.1.0 | MIT | python-installed-package-cataloger |
 | argon2-cffi-bindings | 25.1.0 | MIT | python-installed-package-cataloger |
-| base-files | 12.4+deb12u13 |  | dpkg-db-cataloger |
+| base-files | 12.4+deb12u14 |  | dpkg-db-cataloger |
 | base-passwd | 3.6.1 | GPL-2.0-only | dpkg-db-cataloger |
-| bash | 5.2.15-2+b10 | BSD-4-Clause-UC, GFDL-1.3-only, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, Latex2e | dpkg-db-cataloger |
+| bash | 5.2.15-2+b13 | BSD-4-Clause-UC, GFDL-1.3-only, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, Latex2e | dpkg-db-cataloger |
 | billiard | 4.2.4 |  | python-installed-package-cataloger |
 | bsdutils | 1:2.38.1-5+deb12u3 | BSD-3-Clause, BSD-4-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, MIT | dpkg-db-cataloger |
 | ca-certificates | 20230311+deb12u1 | GPL-2.0-only, GPL-2.0-or-later, MPL-2.0 | dpkg-db-cataloger |
@@ -2252,7 +2252,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | debianutils | 5.7-0.5~deb12u1 | GPL-2.0-only, GPL-2.0-or-later, SMAIL-GPL | dpkg-db-cataloger |
 | diffutils | 1:3.8-4 | FSFAP, FSFULLR, GFDL-1.3-only, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, X11 | dpkg-db-cataloger |
 | distro | 1.9.0 |  | python-installed-package-cataloger |
-| dpkg | 1.21.22 | BSD-2-Clause, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
+| dpkg | 1.21.23 | BSD-2-Clause, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
 | e2fsprogs | 1.47.0-2+b2 | Apache-2.0, Apache-2.0, BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later, ISC, Kazlib, LGPL-2.0-only, Latex2e | dpkg-db-cataloger |
 | elastic-transport | 9.4.0 |  | python-installed-package-cataloger |
 | elasticsearch | 9.2.1 | Apache-2.0 | python-installed-package-cataloger |
@@ -2279,10 +2279,10 @@ The complete source code for Traefik is publicly available at [https://github.co
 | libaudit1 | 1:3.0.9-1 | GPL-1.0-only, GPL-2.0-only, LGPL-2.1-only | dpkg-db-cataloger |
 | libblkid1 | 2.38.1-5+deb12u3 | BSD-3-Clause, BSD-4-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, MIT | dpkg-db-cataloger |
 | libbz2-1.0 | 1.0.8-5+b1 | GPL-2.0-only | dpkg-db-cataloger |
-| libc-bin | 2.36-9+deb12u13 | GPL-2.0-only, LGPL-2.1-only | dpkg-db-cataloger |
-| libc6 | 2.36-9+deb12u13 | GPL-2.0-only, LGPL-2.1-only | dpkg-db-cataloger |
+| libc-bin | 2.36-9+deb12u14 | GPL-2.0-only, LGPL-2.1-only | dpkg-db-cataloger |
+| libc6 | 2.36-9+deb12u14 | GPL-2.0-only, LGPL-2.1-only | dpkg-db-cataloger |
 | libcap-ng0 | 0.8.3-1+b3 | GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
-| libcap2 | 1:2.66-4+deb12u2+b2 | BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
+| libcap2 | 1:2.66-4+deb12u3+b1 | BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
 | libcom-err2 | 1.47.0-2+b2 | Apache-2.0, Apache-2.0, BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later, ISC, Kazlib, LGPL-2.0-only, Latex2e | dpkg-db-cataloger |
 | libcrypt1 | 1:4.4.33-2 |  | dpkg-db-cataloger |
 | libdb5.3 | 5.3.28+dfsg2-1 | BSD-3-Clause, GPL-3.0-only, MS-PL, Sleepycat, X11, Zlib | dpkg-db-cataloger |
@@ -2290,10 +2290,10 @@ The complete source code for Traefik is publicly available at [https://github.co
 | libext2fs2 | 1.47.0-2+b2 | Apache-2.0, Apache-2.0, BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later, ISC, Kazlib, LGPL-2.0-only, Latex2e | dpkg-db-cataloger |
 | libffi8 | 3.4.4-1 | GPL-2.0-or-later, GPL-3.0-or-later, MPL-1.1, X11 | dpkg-db-cataloger |
 | libgcc-s1 | 12.2.0-14+deb12u1 | GFDL-1.2-only, GPL-2.0-only, GPL-3.0-only | dpkg-db-cataloger |
-| libgcrypt20 | 1.10.1-3 | GPL-2.0-only | dpkg-db-cataloger |
+| libgcrypt20 | 1.10.1-3+deb12u1 | GPL-2.0-only | dpkg-db-cataloger |
 | libgdbm6 | 1.23-3 | GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later | dpkg-db-cataloger |
 | libgmp10 | 2:6.2.1+dfsg1-1.1 | GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
-| libgnutls30 | 3.7.9-2+deb12u6 | Apache-2.0, BSD-3-Clause, GFDL-1.3-only, GPL-3.0-only, LGPL-3.0-only | dpkg-db-cataloger |
+| libgnutls30 | 3.7.9-2+deb12u7 | Apache-2.0, BSD-3-Clause, GFDL-1.3-only, GPL-3.0-only, LGPL-3.0-only | dpkg-db-cataloger |
 | libgpg-error0 | 1.46-1 | BSD-3-Clause, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
 | libhogweed6 | 3.8.1-2 | GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-3.0-or-later | dpkg-db-cataloger |
 | libidn2-0 | 2.3.3-1+b1 | GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
@@ -2319,12 +2319,12 @@ The complete source code for Traefik is publicly available at [https://github.co
 | libsmartcols1 | 2.38.1-5+deb12u3 | BSD-3-Clause, BSD-4-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, MIT | dpkg-db-cataloger |
 | libsqlite3-0 | 3.40.1-2+deb12u2 | GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
 | libss2 | 1.47.0-2+b2 | Apache-2.0, Apache-2.0, BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later, ISC, Kazlib, LGPL-2.0-only, Latex2e | dpkg-db-cataloger |
-| libssl3 | 3.0.19-1~deb12u2 | Apache-2.0, GPL-1.0-only, GPL-1.0-or-later | dpkg-db-cataloger |
+| libssl3 | 3.0.20-1~deb12u2 | Apache-2.0, GPL-1.0-only, GPL-1.0-or-later | dpkg-db-cataloger |
 | libstdc++6 | 12.2.0-14+deb12u1 | GFDL-1.2-only, GPL-2.0-only, GPL-3.0-only | dpkg-db-cataloger |
-| libsystemd0 | 252.39-1~deb12u1 | CC0-1.0, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
+| libsystemd0 | 252.39-1~deb12u2 | CC0-1.0, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
 | libtasn1-6 | 4.19.0-2+deb12u1 | GFDL-1.3-only, GPL-3.0-only, LGPL-2.1-only | dpkg-db-cataloger |
 | libtinfo6 | 6.4-4 | BSD-3-Clause, X11 | dpkg-db-cataloger |
-| libudev1 | 252.39-1~deb12u1 | CC0-1.0, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
+| libudev1 | 252.39-1~deb12u2 | CC0-1.0, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
 | libunistring2 | 1.0-2 | GFDL-1.2-only, GFDL-1.2-or-later, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-3.0-only, LGPL-3.0-or-later, MIT | dpkg-db-cataloger |
 | libuuid1 | 2.38.1-5+deb12u3 | BSD-3-Clause, BSD-4-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, MIT | dpkg-db-cataloger |
 | libxxhash0 | 0.8.1-1 | BSD-2-Clause, GPL-2.0-only | dpkg-db-cataloger |
@@ -2339,11 +2339,11 @@ The complete source code for Traefik is publicly available at [https://github.co
 | ncurses-bin | 6.4-4 | BSD-3-Clause, X11 | dpkg-db-cataloger |
 | netbase | 6.4 | GPL-2.0-only | dpkg-db-cataloger |
 | openai | 1.72.0 | Apache-2.0 | python-installed-package-cataloger |
-| openssl | 3.0.19-1~deb12u2 | Apache-2.0, GPL-1.0-only, GPL-1.0-or-later | dpkg-db-cataloger |
+| openssl | 3.0.20-1~deb12u2 | Apache-2.0, GPL-1.0-only, GPL-1.0-or-later | dpkg-db-cataloger |
 | packaging | 26.2 | Apache-2.0 OR BSD-2-Clause | python-installed-package-cataloger |
 | passwd | 1:4.13+dfsg1-1+deb12u2 | BSD-3-Clause, GPL-1.0-only, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
 | perl-base | 5.36.0-7+deb12u3 | Artistic-2.0, Artistic-dist, BSD-3-Clause, GPL-1.0-only, GPL-1.0-or-later, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.1-only, Zlib | dpkg-db-cataloger |
-| pip | 26.0.1 | MIT | python-installed-package-cataloger |
+| pip | 26.1.2 | MIT | python-installed-package-cataloger |
 | pip | 26.1.2 | MIT | python-installed-package-cataloger |
 | ply | 3.11 |  | python-installed-package-cataloger |
 | prompt-toolkit | 3.0.52 |  | python-installed-package-cataloger |
@@ -2352,13 +2352,13 @@ The complete source code for Traefik is publicly available at [https://github.co
 | pydantic | 2.13.4 | MIT | python-installed-package-cataloger |
 | pydantic-core | 2.46.4 | MIT | python-installed-package-cataloger |
 | pydantic-settings | 2.14.2 | MIT | python-installed-package-cataloger |
-| python | 3.14.4 |  | binary-classifier-cataloger |
+| python | 3.14.6 |  | binary-classifier-cataloger |
 | python-dateutil | 2.9.0.post0 |  | python-installed-package-cataloger |
 | python-dotenv | 1.2.2 | BSD-3-Clause | python-installed-package-cataloger |
 | readline-common | 8.2-1.3 | GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later | dpkg-db-cataloger |
 | redis | 5.2.1 | MIT | python-installed-package-cataloger |
 | requests | 2.32.5 | Apache-2.0 | python-installed-package-cataloger |
-| sed | 4.9-1 | BSD-4-Clause-UC, BSL-1.0, GFDL-1.3-only, GPL-3.0-only, GPL-3.0-or-later, ISC, X11 | dpkg-db-cataloger |
+| sed | 4.9-1+deb12u1 | BSD-4-Clause-UC, BSL-1.0, GFDL-1.3-only, GPL-3.0-only, GPL-3.0-or-later, ISC, X11 | dpkg-db-cataloger |
 | six | 1.17.0 | MIT | python-installed-package-cataloger |
 | sniffio | 1.3.1 | MIT OR Apache-2.0 | python-installed-package-cataloger |
 | starlette | 0.52.1 | BSD-3-Clause | python-installed-package-cataloger |
@@ -2372,8 +2372,8 @@ The complete source code for Traefik is publicly available at [https://github.co
 | types-setuptools | 82.0.0.20260518 | Apache-2.0 | python-installed-package-cataloger |
 | typing-extensions | 4.15.0 | PSF-2.0 | python-installed-package-cataloger |
 | typing-inspection | 0.4.2 | MIT | python-installed-package-cataloger |
-| tzdata | 2025b-0+deb12u2 |  | dpkg-db-cataloger |
 | tzdata | 2026.2 | Apache-2.0 | python-installed-package-cataloger |
+| tzdata | 2026b-0+deb12u1 |  | dpkg-db-cataloger |
 | tzlocal | 5.4 | MIT | python-installed-package-cataloger |
 | urllib3 | 2.7.0 | MIT | python-installed-package-cataloger |
 | usr-is-merged | 37~deb12u1 | GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
@@ -2391,16 +2391,16 @@ The complete source code for Traefik is publicly available at [https://github.co
 | alpine-baselayout | 3.7.2-r0 | GPL-2.0-only | apk-db-cataloger |
 | alpine-baselayout-data | 3.7.2-r0 | GPL-2.0-only | apk-db-cataloger |
 | alpine-keys | 2.6-r0 | MIT | apk-db-cataloger |
-| alpine-release | 3.23.4-r0 | MIT | apk-db-cataloger |
-| aom-libs | 3.13.1-r1 | BSD-2-Clause | apk-db-cataloger |
+| alpine-release | 3.23.5-r0 | MIT | apk-db-cataloger |
+| aom-libs | 3.14.1-r0 | BSD-2-Clause | apk-db-cataloger |
 | apk-tools | 3.0.6-r0 | GPL-2.0-only | apk-db-cataloger |
 | brotli-libs | 1.2.0-r0 | MIT | apk-db-cataloger |
 | busybox | 1.37.0-r30 | GPL-2.0-only | apk-db-cataloger |
 | busybox-binsh | 1.37.0-r30 | GPL-2.0-only | apk-db-cataloger |
 | c-ares | 1.34.6-r0 | MIT | apk-db-cataloger |
-| ca-certificates | 20260413-r0 | MPL-2.0 AND MIT | apk-db-cataloger |
-| ca-certificates-bundle | 20260413-r0 | MPL-2.0 AND MIT | apk-db-cataloger |
-| curl | 8.17.0-r1 | curl | apk-db-cataloger |
+| ca-certificates | 20260611-r0 | MPL-2.0 AND MIT | apk-db-cataloger |
+| ca-certificates-bundle | 20260611-r0 | MPL-2.0 AND MIT | apk-db-cataloger |
+| curl | 8.19.0-r0 | curl | apk-db-cataloger |
 | fontconfig | 2.17.1-r0 | MIT | apk-db-cataloger |
 | freetype | 2.14.1-r0 | FTL OR GPL-2.0-or-later | apk-db-cataloger |
 | geoip | 1.6.12-r6 | LGPL-2.1-or-later | apk-db-cataloger |
@@ -2409,11 +2409,11 @@ The complete source code for Traefik is publicly available at [https://github.co
 | libavif | 1.3.0-r0 | BSD-2-Clause | apk-db-cataloger |
 | libbsd | 0.12.2-r0 | BSD-3-Clause | apk-db-cataloger |
 | libbz2 | 1.0.8-r6 | bzip2-1.0.6 | apk-db-cataloger |
-| libcrypto3 | 3.5.6-r0 | Apache-2.0 | apk-db-cataloger |
-| libcurl | 8.17.0-r1 | curl | apk-db-cataloger |
+| libcrypto3 | 3.5.7-r0 | Apache-2.0 | apk-db-cataloger |
+| libcurl | 8.19.0-r0 | curl | apk-db-cataloger |
 | libdav1d | 1.5.2-r0 | BSD-2-Clause | apk-db-cataloger |
 | libedit | 20251016.3.1-r0 | BSD-3-Clause | apk-db-cataloger |
-| libexpat | 2.7.5-r0 | MIT | apk-db-cataloger |
+| libexpat | 2.8.1-r0 | MIT | apk-db-cataloger |
 | libgcc | 15.2.0-r2 | GPL-2.0-or-later AND LGPL-2.1-or-later | apk-db-cataloger |
 | libgd | 2.3.3-r10 | GD | apk-db-cataloger |
 | libice | 1.1.2-r0 | X11 | apk-db-cataloger |
@@ -2422,11 +2422,11 @@ The complete source code for Traefik is publicly available at [https://github.co
 | libjpeg-turbo | 3.1.2-r0 | BSD-3-Clause AND IJG AND Zlib | apk-db-cataloger |
 | libmd | 1.1.0-r0 | BSD-2-Clause, BSD-3-Clause, Beerware, ISC | apk-db-cataloger |
 | libncursesw | 6.5_p20251123-r0 | X11 | apk-db-cataloger |
-| libpng | 1.6.57-r0 | Libpng | apk-db-cataloger |
+| libpng | 1.6.58-r1 | Libpng | apk-db-cataloger |
 | libpsl | 0.21.5-r3 | MIT | apk-db-cataloger |
 | libsharpyuv | 1.6.0-r0 | BSD-3-Clause | apk-db-cataloger |
 | libsm | 1.2.6-r0 | MIT | apk-db-cataloger |
-| libssl3 | 3.5.6-r0 | Apache-2.0 | apk-db-cataloger |
+| libssl3 | 3.5.7-r0 | Apache-2.0 | apk-db-cataloger |
 | libstdc++ | 15.2.0-r2 | GPL-2.0-or-later AND LGPL-2.1-or-later | apk-db-cataloger |
 | libunistring | 1.4.1-r0 | GPL-2.0-or-later OR LGPL-3.0-or-later | apk-db-cataloger |
 | libuuid | 2.41.4-r0 | BSD-3-Clause | apk-db-cataloger |
@@ -2436,28 +2436,27 @@ The complete source code for Traefik is publicly available at [https://github.co
 | libxcb | 1.17.0-r1 | MIT | apk-db-cataloger |
 | libxdmcp | 1.1.5-r1 | MIT | apk-db-cataloger |
 | libxext | 1.3.6-r2 | MIT | apk-db-cataloger |
-| libxml2 | 2.13.9-r0 | MIT | apk-db-cataloger |
-| libxpm | 3.5.17-r0 | X11 | apk-db-cataloger |
+| libxml2 | 2.13.9-r1 | MIT | apk-db-cataloger |
+| libxpm | 3.5.19-r0 | X11 | apk-db-cataloger |
 | libxslt | 1.1.43-r3 | X11 | apk-db-cataloger |
 | libxt | 1.3.1-r0 | MIT | apk-db-cataloger |
 | libyuv | 0.0.1887.20251502-r1 | BSD-3-Clause | apk-db-cataloger |
 | musl | 1.2.5-r23 | MIT | apk-db-cataloger |
 | musl-utils | 1.2.5-r23 | MIT AND BSD-2-Clause AND GPL-2.0-or-later | apk-db-cataloger |
 | ncurses-terminfo-base | 6.5_p20251123-r0 | X11 | apk-db-cataloger |
-| nghttp2-libs | 1.68.0-r0 | MIT | apk-db-cataloger |
-| nghttp3 | 1.13.1-r0 | MIT | apk-db-cataloger |
-| nginx | 1.30.0-r1 |  | apk-db-cataloger |
-| nginx-module-acme | 1.30.0.0.3.1-r1 |  | apk-db-cataloger |
-| nginx-module-geoip | 1.30.0-r1 |  | apk-db-cataloger |
-| nginx-module-image-filter | 1.30.0-r1 |  | apk-db-cataloger |
-| nginx-module-njs | 1.30.0.0.9.6-r1 |  | apk-db-cataloger |
-| nginx-module-xslt | 1.30.0-r1 |  | apk-db-cataloger |
+| nghttp2-libs | 1.69.0-r0 | MIT | apk-db-cataloger |
+| nginx | 1.30.3-r1 |  | apk-db-cataloger |
+| nginx-module-acme | 1.30.3.0.4.1-r1 |  | apk-db-cataloger |
+| nginx-module-geoip | 1.30.3-r1 |  | apk-db-cataloger |
+| nginx-module-image-filter | 1.30.3-r1 |  | apk-db-cataloger |
+| nginx-module-njs | 1.30.3.0.9.9-r1 |  | apk-db-cataloger |
+| nginx-module-xslt | 1.30.3-r1 |  | apk-db-cataloger |
 | pcre2 | 10.47-r0 | BSD-3-Clause | apk-db-cataloger |
 | scanelf | 1.3.8-r2 | GPL-2.0-only | apk-db-cataloger |
 | ssl_client | 1.37.0-r30 | GPL-2.0-only | apk-db-cataloger |
 | tiff | 4.7.1-r0 | libtiff | apk-db-cataloger |
-| tzdata | 2026a-r0 |  | apk-db-cataloger |
-| xz-libs | 5.8.2-r0 | 0BSD, GPL-2.0-or-later, LGPL-2.1-or-later | apk-db-cataloger |
+| tzdata | 2026b-r0 |  | apk-db-cataloger |
+| xz-libs | 5.8.3-r0 | 0BSD, GPL-2.0-or-later, LGPL-2.1-or-later | apk-db-cataloger |
 | zlib | 1.3.2-r0 | Zlib | apk-db-cataloger |
 | zstd-libs | 1.5.7-r2 | BSD-3-Clause OR GPL-2.0-or-later | apk-db-cataloger |
 
@@ -2481,7 +2480,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | aho-corasick | 1.1.4 |  | cargo-auditable-binary-cataloger |
 | aiocache | 0.12.3 | BSD-3-Clause | python-installed-package-cataloger |
 | aiofiles | 25.1.0 | Apache-2.0 | python-installed-package-cataloger |
-| aiohappyeyeballs | 2.6.1 | PSF-2.0 | python-installed-package-cataloger |
+| aiohappyeyeballs | 2.6.2 | PSF-2.0 | python-installed-package-cataloger |
 | aiohttp | 3.13.5 | Apache-2.0 AND MIT | python-installed-package-cataloger |
 | aiosignal | 1.4.0 |  | python-installed-package-cataloger |
 | aiosqlite | 0.21.0 | MIT | python-installed-package-cataloger |
@@ -2515,10 +2514,8 @@ The complete source code for Traefik is publicly available at [https://github.co
 | asn1-rs | 0.7.1 |  | cargo-auditable-binary-cataloger |
 | asn1-rs-impl | 0.2.0 |  | cargo-auditable-binary-cataloger |
 | asn1-rs-impl | 0.2.0 |  | cargo-auditable-binary-cataloger |
-| assert-json-diff | 2.0.2 |  | cargo-auditable-binary-cataloger |
-| assert-json-diff | 2.0.2 |  | cargo-auditable-binary-cataloger |
-| assert_cmd | 2.2.0 |  | cargo-auditable-binary-cataloger |
-| assert_cmd | 2.2.0 |  | cargo-auditable-binary-cataloger |
+| assert_cmd | 2.2.2 |  | cargo-auditable-binary-cataloger |
+| assert_cmd | 2.2.2 |  | cargo-auditable-binary-cataloger |
 | assert_fs | 1.1.3 |  | cargo-auditable-binary-cataloger |
 | assert_fs | 1.1.3 |  | cargo-auditable-binary-cataloger |
 | astral-pubgrub | 0.3.3 |  | cargo-auditable-binary-cataloger |
@@ -2529,14 +2526,14 @@ The complete source code for Traefik is publicly available at [https://github.co
 | astral-reqwest-retry | 0.9.1 |  | cargo-auditable-binary-cataloger |
 | astral-tl | 0.7.11 |  | cargo-auditable-binary-cataloger |
 | astral-tl | 0.7.11 |  | cargo-auditable-binary-cataloger |
-| astral-tokio-tar | 0.6.0 |  | cargo-auditable-binary-cataloger |
-| astral-tokio-tar | 0.6.0 |  | cargo-auditable-binary-cataloger |
+| astral-tokio-tar | 0.6.2 |  | cargo-auditable-binary-cataloger |
+| astral-tokio-tar | 0.6.2 |  | cargo-auditable-binary-cataloger |
 | astral-version-ranges | 0.1.4 |  | cargo-auditable-binary-cataloger |
 | astral-version-ranges | 0.1.4 |  | cargo-auditable-binary-cataloger |
 | astral_async_http_range_reader | 0.11.0 |  | cargo-auditable-binary-cataloger |
 | astral_async_http_range_reader | 0.11.0 |  | cargo-auditable-binary-cataloger |
-| astral_async_zip | 0.0.17 |  | cargo-auditable-binary-cataloger |
-| astral_async_zip | 0.0.17 |  | cargo-auditable-binary-cataloger |
+| astral_async_zip | 0.0.18 |  | cargo-auditable-binary-cataloger |
+| astral_async_zip | 0.0.18 |  | cargo-auditable-binary-cataloger |
 | async-broadcast | 0.7.2 |  | cargo-auditable-binary-cataloger |
 | async-broadcast | 0.7.2 |  | cargo-auditable-binary-cataloger |
 | async-channel | 2.5.0 |  | cargo-auditable-binary-cataloger |
@@ -2568,21 +2565,19 @@ The complete source code for Traefik is publicly available at [https://github.co
 | axoupdater | 0.10.0 |  | cargo-auditable-binary-cataloger |
 | azure-ai-documentintelligence | 1.0.2 |  | python-installed-package-cataloger |
 | azure-common | 1.1.28 |  | python-installed-package-cataloger |
-| azure-core | 1.39.0 | MIT | python-installed-package-cataloger |
+| azure-core | 1.41.0 | MIT | python-installed-package-cataloger |
 | azure-identity | 1.25.2 | MIT | python-installed-package-cataloger |
 | azure-search-documents | 11.6.0 |  | python-installed-package-cataloger |
 | azure-storage-blob | 12.28.0 |  | python-installed-package-cataloger |
 | backoff | 2.2.1 | MIT | python-installed-package-cataloger |
 | backports-tarfile | 1.2.0 | MIT | python-installed-package-cataloger |
-| base-files | 12.4+deb12u13 |  | dpkg-db-cataloger |
+| base-files | 12.4+deb12u14 |  | dpkg-db-cataloger |
 | base-passwd | 3.6.1 | GPL-2.0-only | dpkg-db-cataloger |
-| base64 | 0.21.7 |  | cargo-auditable-binary-cataloger |
-| base64 | 0.21.7 |  | cargo-auditable-binary-cataloger |
 | base64 | 0.22.1 |  | cargo-auditable-binary-cataloger |
 | base64 | 0.22.1 |  | cargo-auditable-binary-cataloger |
 | base64ct | 1.8.3 |  | cargo-auditable-binary-cataloger |
 | base64ct | 1.8.3 |  | cargo-auditable-binary-cataloger |
-| bash | 5.2.15-2+b10 | BSD-4-Clause-UC, GFDL-1.3-only, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, Latex2e | dpkg-db-cataloger |
+| bash | 5.2.15-2+b13 | BSD-4-Clause-UC, GFDL-1.3-only, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, Latex2e | dpkg-db-cataloger |
 | bcrypt | 5.0.0 | Apache-2.0 | python-installed-package-cataloger |
 | beautifulsoup4 | 4.14.3 |  | python-installed-package-cataloger |
 | bidict | 0.23.1 |  | python-installed-package-cataloger |
@@ -2590,10 +2585,8 @@ The complete source code for Traefik is publicly available at [https://github.co
 | binutils-common | 2.40-2 |  | dpkg-db-cataloger |
 | binutils-x86-64-linux-gnu | 2.40-2 |  | dpkg-db-cataloger |
 | bitarray | 3.8.1 | PSF-2.0 | python-installed-package-cataloger |
-| bitflags | 1.3.2 |  | cargo-auditable-binary-cataloger |
-| bitflags | 1.3.2 |  | cargo-auditable-binary-cataloger |
-| bitflags | 2.11.0 |  | cargo-auditable-binary-cataloger |
-| bitflags | 2.11.0 |  | cargo-auditable-binary-cataloger |
+| bitflags | 2.11.1 |  | cargo-auditable-binary-cataloger |
+| bitflags | 2.11.1 |  | cargo-auditable-binary-cataloger |
 | black | 26.3.1 | MIT | python-installed-package-cataloger |
 | blake2 | 0.10.6 |  | cargo-auditable-binary-cataloger |
 | blake2 | 0.10.6 |  | cargo-auditable-binary-cataloger |
@@ -2602,8 +2595,10 @@ The complete source code for Traefik is publicly available at [https://github.co
 | block-buffer | 0.10.4 |  | cargo-auditable-binary-cataloger |
 | block-padding | 0.3.3 |  | cargo-auditable-binary-cataloger |
 | block-padding | 0.3.3 |  | cargo-auditable-binary-cataloger |
+| borrow-or-share | 0.2.4 |  | cargo-auditable-binary-cataloger |
+| borrow-or-share | 0.2.4 |  | cargo-auditable-binary-cataloger |
 | boto3 | 1.42.62 | Apache-2.0 | python-installed-package-cataloger |
-| botocore | 1.42.95 | Apache-2.0 | python-installed-package-cataloger |
+| botocore | 1.42.97 | Apache-2.0 | python-installed-package-cataloger |
 | boxcar | 0.2.14 |  | cargo-auditable-binary-cataloger |
 | boxcar | 0.2.14 |  | cargo-auditable-binary-cataloger |
 | brotli | 1.2.0 | MIT | python-installed-package-cataloger |
@@ -2611,10 +2606,8 @@ The complete source code for Traefik is publicly available at [https://github.co
 | bsdutils | 1:2.38.1-5+deb12u3 | BSD-3-Clause, BSD-4-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, MIT | dpkg-db-cataloger |
 | bstr | 1.12.1 |  | cargo-auditable-binary-cataloger |
 | bstr | 1.12.1 |  | cargo-auditable-binary-cataloger |
-| build | 1.4.4 | MIT | python-installed-package-cataloger |
+| build | 1.5.0 | MIT | python-installed-package-cataloger |
 | build-essential | 12.9 |  | dpkg-db-cataloger |
-| bumpalo | 3.20.2 |  | cargo-auditable-binary-cataloger |
-| bumpalo | 3.20.2 |  | cargo-auditable-binary-cataloger |
 | bytecheck | 0.8.2 |  | cargo-auditable-binary-cataloger |
 | bytecheck | 0.8.2 |  | cargo-auditable-binary-cataloger |
 | bytemuck | 1.25.0 |  | cargo-auditable-binary-cataloger |
@@ -2625,20 +2618,18 @@ The complete source code for Traefik is publicly available at [https://github.co
 | bytes | 1.11.1 |  | cargo-auditable-binary-cataloger |
 | bzip2 | 0.5.2 |  | cargo-auditable-binary-cataloger |
 | bzip2 | 0.5.2 |  | cargo-auditable-binary-cataloger |
-| bzip2 | 0.6.1 |  | cargo-auditable-binary-cataloger |
-| bzip2 | 0.6.1 |  | cargo-auditable-binary-cataloger |
 | bzip2 | 1.0.8-5+b1 | GPL-2.0-only | dpkg-db-cataloger |
 | bzip2-sys | 0.1.13+1.0.8 |  | cargo-auditable-binary-cataloger |
 | bzip2-sys | 0.1.13+1.0.8 |  | cargo-auditable-binary-cataloger |
 | ca-certificates | 20230311+deb12u1 | GPL-2.0-only, GPL-2.0-or-later, MPL-2.0 | dpkg-db-cataloger |
-| cachetools | 7.0.6 | MIT | python-installed-package-cataloger |
+| cachetools | 7.1.4 | MIT | python-installed-package-cataloger |
 | camino | 1.2.2 |  | cargo-auditable-binary-cataloger |
 | camino | 1.2.2 |  | cargo-auditable-binary-cataloger |
-| cargo-util | 0.2.27 |  | cargo-auditable-binary-cataloger |
-| cargo-util | 0.2.27 |  | cargo-auditable-binary-cataloger |
+| cargo-util | 0.2.28 |  | cargo-auditable-binary-cataloger |
+| cargo-util | 0.2.28 |  | cargo-auditable-binary-cataloger |
 | cbc | 0.1.2 |  | cargo-auditable-binary-cataloger |
 | cbc | 0.1.2 |  | cargo-auditable-binary-cataloger |
-| certifi | 2026.4.22 | MPL-2.0 | python-installed-package-cataloger |
+| certifi | 2026.5.20 | MPL-2.0 | python-installed-package-cataloger |
 | cffi | 2.0.0 | MIT | python-installed-package-cataloger |
 | cfg-if | 1.0.4 |  | cargo-auditable-binary-cataloger |
 | cfg-if | 1.0.4 |  | cargo-auditable-binary-cataloger |
@@ -2649,8 +2640,8 @@ The complete source code for Traefik is publicly available at [https://github.co
 | chromadb | 1.5.2 |  | python-installed-package-cataloger |
 | cipher | 0.4.4 |  | cargo-auditable-binary-cataloger |
 | cipher | 0.4.4 |  | cargo-auditable-binary-cataloger |
-| clap | 4.6.0 |  | cargo-auditable-binary-cataloger |
-| clap | 4.6.0 |  | cargo-auditable-binary-cataloger |
+| clap | 4.6.1 |  | cargo-auditable-binary-cataloger |
+| clap | 4.6.1 |  | cargo-auditable-binary-cataloger |
 | clap_builder | 4.6.0 |  | cargo-auditable-binary-cataloger |
 | clap_builder | 4.6.0 |  | cargo-auditable-binary-cataloger |
 | clap_complete | 4.6.0 |  | cargo-auditable-binary-cataloger |
@@ -2665,7 +2656,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | cli-32 | UNKNOWN |  | pe-binary-package-cataloger |
 | cli-64 | UNKNOWN |  | pe-binary-package-cataloger |
 | cli-arm64 | UNKNOWN |  | pe-binary-package-cataloger |
-| click | 8.3.3 | BSD-3-Clause | python-installed-package-cataloger |
+| click | 8.4.1 | BSD-3-Clause | python-installed-package-cataloger |
 | colbert-ai | 0.2.22 |  | python-installed-package-cataloger |
 | colorchoice | 1.0.5 |  | cargo-auditable-binary-cataloger |
 | colorchoice | 1.0.5 |  | cargo-auditable-binary-cataloger |
@@ -2701,26 +2692,22 @@ The complete source code for Traefik is publicly available at [https://github.co
 | csv | 1.4.0 |  | cargo-auditable-binary-cataloger |
 | csv-core | 0.1.13 |  | cargo-auditable-binary-cataloger |
 | csv-core | 0.1.13 |  | cargo-auditable-binary-cataloger |
-| ctranslate2 | 4.7.1 | MIT | python-installed-package-cataloger |
+| ctranslate2 | 4.7.2 | MIT | python-installed-package-cataloger |
 | ctrlc | 3.5.2 |  | cargo-auditable-binary-cataloger |
 | ctrlc | 3.5.2 |  | cargo-auditable-binary-cataloger |
 | curl | 7.88.1-10+deb12u14 | BSD-3-Clause, BSD-3-Clause, BSD-4-Clause-UC, FSFULLR, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-or-later, ISC, OLDAP-2.8, X11, curl | dpkg-db-cataloger |
-| cyclonedx-bom | 0.8.0 |  | cargo-auditable-binary-cataloger |
-| cyclonedx-bom | 0.8.0 |  | cargo-auditable-binary-cataloger |
+| cyclonedx-bom | 0.8.1 |  | cargo-auditable-binary-cataloger |
+| cyclonedx-bom | 0.8.1 |  | cargo-auditable-binary-cataloger |
 | cyclonedx-bom-macros | 0.1.0 |  | cargo-auditable-binary-cataloger |
 | cyclonedx-bom-macros | 0.1.0 |  | cargo-auditable-binary-cataloger |
 | dash | 0.5.12-2 | BSD-3-Clause, BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
-| dashmap | 6.1.0 |  | cargo-auditable-binary-cataloger |
-| dashmap | 6.1.0 |  | cargo-auditable-binary-cataloger |
-| data-encoding | 2.10.0 |  | cargo-auditable-binary-cataloger |
-| data-encoding | 2.10.0 |  | cargo-auditable-binary-cataloger |
+| dashmap | 6.2.1 |  | cargo-auditable-binary-cataloger |
+| dashmap | 6.2.1 |  | cargo-auditable-binary-cataloger |
+| data-encoding | 2.11.0 |  | cargo-auditable-binary-cataloger |
+| data-encoding | 2.11.0 |  | cargo-auditable-binary-cataloger |
 | dataclasses-json | 0.6.7 | MIT | python-installed-package-cataloger |
 | datasets | 4.0.0 |  | python-installed-package-cataloger |
 | ddgs | 9.11.3 | MIT | python-installed-package-cataloger |
-| deadpool | 0.12.3 |  | cargo-auditable-binary-cataloger |
-| deadpool | 0.12.3 |  | cargo-auditable-binary-cataloger |
-| deadpool-runtime | 0.1.4 |  | cargo-auditable-binary-cataloger |
-| deadpool-runtime | 0.1.4 |  | cargo-auditable-binary-cataloger |
 | debconf | 1.5.82 | BSD-2-Clause | dpkg-db-cataloger |
 | debian-archive-keyring | 2023.3+deb12u2 |  | dpkg-db-cataloger |
 | debianutils | 5.7-0.5~deb12u1 | GPL-2.0-only, GPL-2.0-or-later, SMAIL-GPL | dpkg-db-cataloger |
@@ -2757,8 +2744,8 @@ The complete source code for Traefik is publicly available at [https://github.co
 | docx2txt | 0.9 |  | python-installed-package-cataloger |
 | dotenvy | 0.15.7 |  | cargo-auditable-binary-cataloger |
 | dotenvy | 0.15.7 |  | cargo-auditable-binary-cataloger |
-| dpkg | 1.21.22 | BSD-2-Clause, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
-| dpkg-dev | 1.21.22 | BSD-2-Clause, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
+| dpkg | 1.21.23 | BSD-2-Clause, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
+| dpkg-dev | 1.21.23 | BSD-2-Clause, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
 | dunce | 1.0.5 |  | cargo-auditable-binary-cataloger |
 | dunce | 1.0.5 |  | cargo-auditable-binary-cataloger |
 | durationpy | 0.10 | MIT | python-installed-package-cataloger |
@@ -2769,7 +2756,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | einops | 0.8.2 | MIT | python-installed-package-cataloger |
 | either | 1.15.0 |  | cargo-auditable-binary-cataloger |
 | either | 1.15.0 |  | cargo-auditable-binary-cataloger |
-| elastic-transport | 9.2.1 |  | python-installed-package-cataloger |
+| elastic-transport | 9.4.1 |  | python-installed-package-cataloger |
 | elasticsearch | 9.3.0 | Apache-2.0 | python-installed-package-cataloger |
 | emoji | 2.15.0 |  | python-installed-package-cataloger |
 | encoding_rs | 0.8.35 |  | cargo-auditable-binary-cataloger |
@@ -2797,14 +2784,14 @@ The complete source code for Traefik is publicly available at [https://github.co
 | fake-useragent | 2.2.0 | Apache-2.0 | python-installed-package-cataloger |
 | fastapi | 0.135.1 | MIT | python-installed-package-cataloger |
 | faster-whisper | 1.2.1 | MIT | python-installed-package-cataloger |
-| fastrand | 2.3.0 |  | cargo-auditable-binary-cataloger |
-| fastrand | 2.3.0 |  | cargo-auditable-binary-cataloger |
+| fastrand | 2.4.1 |  | cargo-auditable-binary-cataloger |
+| fastrand | 2.4.1 |  | cargo-auditable-binary-cataloger |
 | ffmpeg | 7.1 |  | binary-classifier-cataloger |
-| ffmpeg | 7:5.1.8-0+deb12u1 | BSD-1-Clause, BSD-2-Clause, BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, IJG, ISC, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, Zlib | dpkg-db-cataloger |
+| ffmpeg | 7:5.1.9-0+deb12u1 | BSD-1-Clause, BSD-2-Clause, BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, IJG, ISC, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, Zlib | dpkg-db-cataloger |
 | ffmpeg | 8.0.1 |  | binary-classifier-cataloger |
-| filelock | 3.25.2 | MIT | python-installed-package-cataloger |
-| filetime | 0.2.27 |  | cargo-auditable-binary-cataloger |
-| filetime | 0.2.27 |  | cargo-auditable-binary-cataloger |
+| filelock | 3.29.0 | MIT | python-installed-package-cataloger |
+| filetime | 0.2.29 |  | cargo-auditable-binary-cataloger |
+| filetime | 0.2.29 |  | cargo-auditable-binary-cataloger |
 | filetype | 1.2.0 | MIT | python-installed-package-cataloger |
 | findutils | 4.9.0-4 | BSD-3-Clause, FSFAP, FSFULLR, GFDL-1.3-only, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, ISC, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, X11 | dpkg-db-cataloger |
 | fixedbitset | 0.5.7 |  | cargo-auditable-binary-cataloger |
@@ -2815,8 +2802,8 @@ The complete source code for Traefik is publicly available at [https://github.co
 | flate2 | 1.1.9 |  | cargo-auditable-binary-cataloger |
 | float-cmp | 0.10.0 |  | cargo-auditable-binary-cataloger |
 | float-cmp | 0.10.0 |  | cargo-auditable-binary-cataloger |
-| fluent-uri | 0.1.4 |  | cargo-auditable-binary-cataloger |
-| fluent-uri | 0.1.4 |  | cargo-auditable-binary-cataloger |
+| fluent-uri | 0.4.1 |  | cargo-auditable-binary-cataloger |
+| fluent-uri | 0.4.1 |  | cargo-auditable-binary-cataloger |
 | fnv | 1.0.7 |  | cargo-auditable-binary-cataloger |
 | fnv | 1.0.7 |  | cargo-auditable-binary-cataloger |
 | foldhash | 0.1.5 |  | cargo-auditable-binary-cataloger |
@@ -2826,7 +2813,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | fontconfig | 2.14.1-4 | HPND-sell-variant | dpkg-db-cataloger |
 | fontconfig-config | 2.14.1-4 | HPND-sell-variant | dpkg-db-cataloger |
 | fonts-dejavu-core | 2.37-6 | GPL-2.0-only, GPL-2.0-or-later, Bitstream-Vera | dpkg-db-cataloger |
-| fonttools | 4.62.1 | MIT | python-installed-package-cataloger |
+| fonttools | 4.63.0 | MIT | python-installed-package-cataloger |
 | form_urlencoded | 1.2.2 |  | cargo-auditable-binary-cataloger |
 | form_urlencoded | 1.2.2 |  | cargo-auditable-binary-cataloger |
 | fpdf2 | 2.8.7 | LGPL-3.0-only | python-installed-package-cataloger |
@@ -2869,7 +2856,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | git | 1:2.39.5-0+deb12u3 | Apache-2.0, BSD-3-Clause, GPL-1.0-or-later, GPL-2.0-only, GPL-2.0-or-later, ISC, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, Zlib | dpkg-db-cataloger |
 | git-man | 1:2.39.5-0+deb12u3 | Apache-2.0, BSD-3-Clause, GPL-1.0-or-later, GPL-2.0-only, GPL-2.0-or-later, ISC, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, Zlib | dpkg-db-cataloger |
 | gitdb | 4.0.12 |  | python-installed-package-cataloger |
-| gitpython | 3.1.47 | BSD-3-Clause | python-installed-package-cataloger |
+| gitpython | 3.1.50 | BSD-3-Clause | python-installed-package-cataloger |
 | glob | 0.3.3 |  | cargo-auditable-binary-cataloger |
 | glob | 0.3.3 |  | cargo-auditable-binary-cataloger |
 | globset | 0.4.18 |  | cargo-auditable-binary-cataloger |
@@ -2880,17 +2867,17 @@ The complete source code for Traefik is publicly available at [https://github.co
 | goblin | 0.10.5 |  | cargo-auditable-binary-cataloger |
 | google-api-core | 2.30.3 |  | python-installed-package-cataloger |
 | google-api-python-client | 2.193.0 |  | python-installed-package-cataloger |
-| google-auth | 2.49.2 |  | python-installed-package-cataloger |
+| google-auth | 2.53.0 |  | python-installed-package-cataloger |
 | google-auth-httplib2 | 0.3.0 |  | python-installed-package-cataloger |
 | google-auth-oauthlib | 1.3.0 |  | python-installed-package-cataloger |
-| google-cloud-core | 2.5.1 |  | python-installed-package-cataloger |
+| google-cloud-core | 2.6.0 |  | python-installed-package-cataloger |
 | google-cloud-storage | 3.9.0 |  | python-installed-package-cataloger |
 | google-crc32c | 1.8.0 |  | python-installed-package-cataloger |
 | google-genai | 1.66.0 | Apache-2.0 | python-installed-package-cataloger |
-| google-resumable-media | 2.8.2 |  | python-installed-package-cataloger |
+| google-resumable-media | 2.9.0 |  | python-installed-package-cataloger |
 | googleapis-common-protos | 1.72.0 |  | python-installed-package-cataloger |
 | gpgv | 2.2.40-1.1+deb12u2 | BSD-3-Clause, CC0-1.0, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
-| greenlet | 3.4.0 | MIT AND PSF-2.0 | python-installed-package-cataloger |
+| greenlet | 3.5.1 | MIT AND PSF-2.0 | python-installed-package-cataloger |
 | grep | 3.8-5 | GPL-3.0-only, GPL-3.0-or-later | dpkg-db-cataloger |
 | grpcio | 1.78.0 | Apache-2.0 | python-installed-package-cataloger |
 | gui | UNKNOWN |  | pe-binary-package-cataloger |
@@ -2899,18 +2886,18 @@ The complete source code for Traefik is publicly available at [https://github.co
 | gui-arm64 | UNKNOWN |  | pe-binary-package-cataloger |
 | gzip | 1.12-1 | GPL-3.0-only, GPL-3.0-or-later | dpkg-db-cataloger |
 | h11 | 0.16.0 | MIT | python-installed-package-cataloger |
-| h2 | 0.4.13 |  | cargo-auditable-binary-cataloger |
-| h2 | 0.4.13 |  | cargo-auditable-binary-cataloger |
+| h2 | 0.4.14 |  | cargo-auditable-binary-cataloger |
+| h2 | 0.4.14 |  | cargo-auditable-binary-cataloger |
 | h2 | 4.3.0 | MIT | python-installed-package-cataloger |
 | hashbrown | 0.14.5 |  | cargo-auditable-binary-cataloger |
 | hashbrown | 0.14.5 |  | cargo-auditable-binary-cataloger |
 | hashbrown | 0.15.5 |  | cargo-auditable-binary-cataloger |
 | hashbrown | 0.15.5 |  | cargo-auditable-binary-cataloger |
-| hashbrown | 0.16.1 |  | cargo-auditable-binary-cataloger |
-| hashbrown | 0.16.1 |  | cargo-auditable-binary-cataloger |
+| hashbrown | 0.17.1 |  | cargo-auditable-binary-cataloger |
+| hashbrown | 0.17.1 |  | cargo-auditable-binary-cataloger |
 | hex | 0.4.3 |  | cargo-auditable-binary-cataloger |
 | hex | 0.4.3 |  | cargo-auditable-binary-cataloger |
-| hf-xet | 1.4.3 | Apache-2.0 | python-installed-package-cataloger |
+| hf-xet | 1.5.0 | Apache-2.0 | python-installed-package-cataloger |
 | hkdf | 0.12.4 |  | cargo-auditable-binary-cataloger |
 | hkdf | 0.12.4 |  | cargo-auditable-binary-cataloger |
 | hmac | 0.12.1 |  | cargo-auditable-binary-cataloger |
@@ -2936,10 +2923,10 @@ The complete source code for Traefik is publicly available at [https://github.co
 | httpdate | 1.0.3 |  | cargo-auditable-binary-cataloger |
 | httpdate | 1.0.3 |  | cargo-auditable-binary-cataloger |
 | httplib2 | 0.31.2 | MIT | python-installed-package-cataloger |
-| httptools | 0.7.1 | MIT | python-installed-package-cataloger |
+| httptools | 0.8.0 | MIT | python-installed-package-cataloger |
 | httpx | 0.28.1 | BSD-3-Clause | python-installed-package-cataloger |
 | httpx-sse | 0.4.3 | MIT | python-installed-package-cataloger |
-| huggingface-hub | 1.11.0 | Apache-2.0 | python-installed-package-cataloger |
+| huggingface-hub | 1.16.1 | Apache-2.0 | python-installed-package-cataloger |
 | hyper | 1.9.0 |  | cargo-auditable-binary-cataloger |
 | hyper | 1.9.0 |  | cargo-auditable-binary-cataloger |
 | hyper-rustls | 0.27.7 |  | cargo-auditable-binary-cataloger |
@@ -2963,7 +2950,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | icu_provider | 2.1.1 |  | cargo-auditable-binary-cataloger |
 | idna | 1.1.0 |  | cargo-auditable-binary-cataloger |
 | idna | 1.1.0 |  | cargo-auditable-binary-cataloger |
-| idna | 3.13 | BSD-3-Clause | python-installed-package-cataloger |
+| idna | 3.17 | BSD-3-Clause | python-installed-package-cataloger |
 | idna_adapter | 1.2.1 |  | cargo-auditable-binary-cataloger |
 | idna_adapter | 1.2.1 |  | cargo-auditable-binary-cataloger |
 | ignore | 0.4.25 |  | cargo-auditable-binary-cataloger |
@@ -2973,8 +2960,8 @@ The complete source code for Traefik is publicly available at [https://github.co
 | importlib-metadata | 8.0.0 | Apache-2.0 | python-installed-package-cataloger |
 | importlib-metadata | 8.7.1 | Apache-2.0 | python-installed-package-cataloger |
 | importlib-resources | 7.1.0 | Apache-2.0 | python-installed-package-cataloger |
-| indexmap | 2.13.1 |  | cargo-auditable-binary-cataloger |
-| indexmap | 2.13.1 |  | cargo-auditable-binary-cataloger |
+| indexmap | 2.14.0 |  | cargo-auditable-binary-cataloger |
+| indexmap | 2.14.0 |  | cargo-auditable-binary-cataloger |
 | indicatif | 0.18.4 |  | cargo-auditable-binary-cataloger |
 | indicatif | 0.18.4 |  | cargo-auditable-binary-cataloger |
 | indoc | 2.0.7 |  | cargo-auditable-binary-cataloger |
@@ -3008,10 +2995,10 @@ The complete source code for Traefik is publicly available at [https://github.co
 | jaraco-context | 5.3.0 | MIT | python-installed-package-cataloger |
 | jaraco-functools | 4.0.1 | MIT | python-installed-package-cataloger |
 | jaraco-text | 3.12.1 | MIT | python-installed-package-cataloger |
-| jiff | 0.2.23 |  | cargo-auditable-binary-cataloger |
-| jiff | 0.2.23 |  | cargo-auditable-binary-cataloger |
+| jiff | 0.2.24 |  | cargo-auditable-binary-cataloger |
+| jiff | 0.2.24 |  | cargo-auditable-binary-cataloger |
 | jinja2 | 3.1.6 |  | python-installed-package-cataloger |
-| jiter | 0.14.0 | MIT | python-installed-package-cataloger |
+| jiter | 0.15.0 | MIT | python-installed-package-cataloger |
 | jmespath | 1.1.0 | MIT | python-installed-package-cataloger |
 | joblib | 1.5.3 | BSD-3-Clause | python-installed-package-cataloger |
 | jobserver | 0.1.34 |  | cargo-auditable-binary-cataloger |
@@ -3023,18 +3010,19 @@ The complete source code for Traefik is publicly available at [https://github.co
 | jsonschema-specifications | 2025.9.1 | MIT | python-installed-package-cataloger |
 | jsonwebtoken | 10.3.0 |  | cargo-auditable-binary-cataloger |
 | jsonwebtoken | 10.3.0 |  | cargo-auditable-binary-cataloger |
-| kubernetes | 35.0.0 |  | python-installed-package-cataloger |
+| kubernetes | 36.0.2 |  | python-installed-package-cataloger |
 | langchain | 1.2.10 | MIT | python-installed-package-cataloger |
 | langchain-classic | 1.0.1 | MIT | python-installed-package-cataloger |
 | langchain-community | 0.4.1 | MIT | python-installed-package-cataloger |
-| langchain-core | 1.3.1 | MIT | python-installed-package-cataloger |
+| langchain-core | 1.4.0 | MIT | python-installed-package-cataloger |
+| langchain-protocol | 0.0.16 | MIT | python-installed-package-cataloger |
 | langchain-text-splitters | 1.1.1 | MIT | python-installed-package-cataloger |
 | langdetect | 1.0.9 | MIT | python-installed-package-cataloger |
 | langgraph | 1.0.10 | MIT | python-installed-package-cataloger |
-| langgraph-checkpoint | 4.0.2 | MIT | python-installed-package-cataloger |
-| langgraph-prebuilt | 1.0.10 | MIT | python-installed-package-cataloger |
-| langgraph-sdk | 0.3.13 | MIT | python-installed-package-cataloger |
-| langsmith | 0.7.35 | MIT | python-installed-package-cataloger |
+| langgraph-checkpoint | 4.1.1 | MIT | python-installed-package-cataloger |
+| langgraph-prebuilt | 1.0.13 | MIT | python-installed-package-cataloger |
+| langgraph-sdk | 0.3.15 | MIT | python-installed-package-cataloger |
+| langsmith | 0.8.8 | MIT | python-installed-package-cataloger |
 | lazy_static | 1.5.0 |  | cargo-auditable-binary-cataloger |
 | lazy_static | 1.5.0 |  | cargo-auditable-binary-cataloger |
 | ldap3 | 2.9.1 |  | python-installed-package-cataloger |
@@ -3051,11 +3039,11 @@ The complete source code for Traefik is publicly available at [https://github.co
 | libaudit-common | 1:3.0.9-1 | GPL-1.0-only, GPL-2.0-only, LGPL-2.1-only | dpkg-db-cataloger |
 | libaudit1 | 1:3.0.9-1 | GPL-1.0-only, GPL-2.0-only, LGPL-2.1-only | dpkg-db-cataloger |
 | libavc1394-0 | 0.5.4-5 | GPL-2.0-only, GPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
-| libavcodec59 | 7:5.1.8-0+deb12u1 | BSD-1-Clause, BSD-2-Clause, BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, IJG, ISC, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, Zlib | dpkg-db-cataloger |
-| libavdevice59 | 7:5.1.8-0+deb12u1 | BSD-1-Clause, BSD-2-Clause, BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, IJG, ISC, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, Zlib | dpkg-db-cataloger |
-| libavfilter8 | 7:5.1.8-0+deb12u1 | BSD-1-Clause, BSD-2-Clause, BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, IJG, ISC, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, Zlib | dpkg-db-cataloger |
-| libavformat59 | 7:5.1.8-0+deb12u1 | BSD-1-Clause, BSD-2-Clause, BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, IJG, ISC, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, Zlib | dpkg-db-cataloger |
-| libavutil57 | 7:5.1.8-0+deb12u1 | BSD-1-Clause, BSD-2-Clause, BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, IJG, ISC, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, Zlib | dpkg-db-cataloger |
+| libavcodec59 | 7:5.1.9-0+deb12u1 | BSD-1-Clause, BSD-2-Clause, BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, IJG, ISC, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, Zlib | dpkg-db-cataloger |
+| libavdevice59 | 7:5.1.9-0+deb12u1 | BSD-1-Clause, BSD-2-Clause, BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, IJG, ISC, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, Zlib | dpkg-db-cataloger |
+| libavfilter8 | 7:5.1.9-0+deb12u1 | BSD-1-Clause, BSD-2-Clause, BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, IJG, ISC, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, Zlib | dpkg-db-cataloger |
+| libavformat59 | 7:5.1.9-0+deb12u1 | BSD-1-Clause, BSD-2-Clause, BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, IJG, ISC, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, Zlib | dpkg-db-cataloger |
+| libavutil57 | 7:5.1.9-0+deb12u1 | BSD-1-Clause, BSD-2-Clause, BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, IJG, ISC, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, Zlib | dpkg-db-cataloger |
 | libbinutils | 2.40-2 |  | dpkg-db-cataloger |
 | libblas3 | 3.11.0-2 | BSD-3-Clause | dpkg-db-cataloger |
 | libblkid1 | 2.38.1-5+deb12u3 | BSD-3-Clause, BSD-4-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, MIT | dpkg-db-cataloger |
@@ -3064,19 +3052,17 @@ The complete source code for Traefik is publicly available at [https://github.co
 | libbs2b0 | 3.1.0+dfsg-7 | GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later | dpkg-db-cataloger |
 | libbsd0 | 0.11.7-2 | BSD-2-Clause, BSD-2-Clause, BSD-3-Clause, Beerware, ISC, libutil-David-Nugent | dpkg-db-cataloger |
 | libbz2-1.0 | 1.0.8-5+b1 | GPL-2.0-only | dpkg-db-cataloger |
-| libbz2-rs-sys | 0.2.2 |  | cargo-auditable-binary-cataloger |
-| libbz2-rs-sys | 0.2.2 |  | cargo-auditable-binary-cataloger |
 | libc | 0.2.183 |  | cargo-auditable-binary-cataloger |
 | libc | 0.2.183 |  | cargo-auditable-binary-cataloger |
-| libc-bin | 2.36-9+deb12u13 | GPL-2.0-only, LGPL-2.1-only | dpkg-db-cataloger |
-| libc-dev-bin | 2.36-9+deb12u13 | GPL-2.0-only, LGPL-2.1-only | dpkg-db-cataloger |
-| libc6 | 2.36-9+deb12u13 | GPL-2.0-only, LGPL-2.1-only | dpkg-db-cataloger |
-| libc6-dev | 2.36-9+deb12u13 | GPL-2.0-only, LGPL-2.1-only | dpkg-db-cataloger |
+| libc-bin | 2.36-9+deb12u14 | GPL-2.0-only, LGPL-2.1-only | dpkg-db-cataloger |
+| libc-dev-bin | 2.36-9+deb12u14 | GPL-2.0-only, LGPL-2.1-only | dpkg-db-cataloger |
+| libc6 | 2.36-9+deb12u14 | GPL-2.0-only, LGPL-2.1-only | dpkg-db-cataloger |
+| libc6-dev | 2.36-9+deb12u14 | GPL-2.0-only, LGPL-2.1-only | dpkg-db-cataloger |
 | libcaca0 | 0.99.beta20-3 | GPL-1.0-only, GPL-2.0-only, GPL-2.0-or-later, ISC, LGPL-2.0-only, LGPL-2.0-or-later | dpkg-db-cataloger |
 | libcairo-gobject2 | 1.16.0-7 | LGPL-2.1-only | dpkg-db-cataloger |
 | libcairo2 | 1.16.0-7 | LGPL-2.1-only | dpkg-db-cataloger |
 | libcap-ng0 | 0.8.3-1+b3 | GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
-| libcap2 | 1:2.66-4+deb12u2+b2 | BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
+| libcap2 | 1:2.66-4+deb12u3+b1 | BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
 | libcc1-0 | 12.2.0-14+deb12u1 | GFDL-1.2-only, GPL-2.0-only, GPL-3.0-only | dpkg-db-cataloger |
 | libcdio-cdda2 | 10.2+2.0.1-1 | GFDL-1.2-only, GPL-3.0-only | dpkg-db-cataloger |
 | libcdio-paranoia2 | 10.2+2.0.1-1 | GFDL-1.2-only, GPL-3.0-only | dpkg-db-cataloger |
@@ -3099,7 +3085,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | libdebconfclient0 | 0.270 | BSD-2-Clause, BSD-2-Clause, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
 | libdecor-0-0 | 0.1.1-2 | GPL-3.0-only, GPL-3.0-or-later | dpkg-db-cataloger |
 | libdeflate0 | 1.14-1 |  | dpkg-db-cataloger |
-| libdpkg-perl | 1.21.22 | BSD-2-Clause, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
+| libdpkg-perl | 1.21.23 | BSD-2-Clause, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
 | libdrm-amdgpu1 | 2.4.114-1+b1 |  | dpkg-db-cataloger |
 | libdrm-common | 2.4.114-1 |  | dpkg-db-cataloger |
 | libdrm-intel1 | 2.4.114-1+b1 |  | dpkg-db-cataloger |
@@ -3125,13 +3111,13 @@ The complete source code for Traefik is publicly available at [https://github.co
 | libgcrypt20 | 1.10.1-3 | GPL-2.0-only | dpkg-db-cataloger |
 | libgdbm-compat4 | 1.23-3 | GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later | dpkg-db-cataloger |
 | libgdbm6 | 1.23-3 | GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later | dpkg-db-cataloger |
-| libgdk-pixbuf-2.0-0 | 2.42.10+dfsg-1+deb12u3 | CC0-1.0, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
-| libgdk-pixbuf2.0-common | 2.42.10+dfsg-1+deb12u3 | CC0-1.0, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
+| libgdk-pixbuf-2.0-0 | 2.42.10+dfsg-1+deb12u4 | CC0-1.0, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
+| libgdk-pixbuf2.0-common | 2.42.10+dfsg-1+deb12u4 | CC0-1.0, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
 | libgfortran5 | 12.2.0-14+deb12u1 | GFDL-1.2-only, GPL-2.0-only, GPL-3.0-only | dpkg-db-cataloger |
 | libgl1 | 1.6.0-1 | Apache-2.0, BSD-1-Clause, GPL-3.0-only, GPL-3.0-or-later, MIT | dpkg-db-cataloger |
 | libgl1-mesa-dri | 22.3.6-1+deb12u1 | Apache-2.0, BSD-2-Clause, MIT | dpkg-db-cataloger |
 | libglapi-mesa | 22.3.6-1+deb12u1 | Apache-2.0, BSD-2-Clause, MIT | dpkg-db-cataloger |
-| libglib2.0-0 | 2.74.6-2+deb12u8 | AFL-2.0, Apache-2.0, CC-BY-SA-3.0, CC0-1.0, FSFULLR, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, Unicode-DFS-2016, bzip2-1.0.6 | dpkg-db-cataloger |
+| libglib2.0-0 | 2.74.6-2+deb12u9 | AFL-2.0, Apache-2.0, CC-BY-SA-3.0, CC0-1.0, FSFULLR, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, Unicode-DFS-2016, bzip2-1.0.6 | dpkg-db-cataloger |
 | libglvnd0 | 1.6.0-1 | Apache-2.0, BSD-1-Clause, GPL-3.0-only, GPL-3.0-or-later, MIT | dpkg-db-cataloger |
 | libglx-mesa0 | 22.3.6-1+deb12u1 | Apache-2.0, BSD-2-Clause, MIT | dpkg-db-cataloger |
 | libglx0 | 1.6.0-1 | Apache-2.0, BSD-1-Clause, GPL-3.0-only, GPL-3.0-or-later, MIT | dpkg-db-cataloger |
@@ -3167,7 +3153,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | libkrb5-3 | 1.20.1-2+deb12u4 | GPL-2.0-only | dpkg-db-cataloger |
 | libkrb5support0 | 1.20.1-2+deb12u4 | GPL-2.0-only | dpkg-db-cataloger |
 | liblapack3 | 3.11.0-2 | BSD-3-Clause | dpkg-db-cataloger |
-| liblcms2-2 | 2.14-2 | GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, IJG, MIT | dpkg-db-cataloger |
+| liblcms2-2 | 2.14-2+deb12u1 | GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, IJG, MIT | dpkg-db-cataloger |
 | libldap-2.5-0 | 2.5.13+dfsg-5 | BSD-3-Clause, Beerware, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later | dpkg-db-cataloger |
 | liblerc4 | 4.0.0+ds-2 | Apache-2.0 | dpkg-db-cataloger |
 | liblilv-0-0 | 0.24.14-1 | BSD-3-Clause, ISC | dpkg-db-cataloger |
@@ -3191,7 +3177,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | libmysofa1 | 1.3.1~dfsg0-1 | BSD-3-Clause, CC-BY-4.0, CC-BY-SA-3.0 | dpkg-db-cataloger |
 | libncursesw6 | 6.4-4 | BSD-3-Clause, X11 | dpkg-db-cataloger |
 | libnettle8 | 3.8.1-2 | GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-3.0-or-later | dpkg-db-cataloger |
-| libnghttp2-14 | 1.52.0-1+deb12u2 | BSD-2-Clause, GPL-3.0-only, GPL-3.0-or-later, MIT | dpkg-db-cataloger |
+| libnghttp2-14 | 1.52.0-1+deb12u3 | BSD-2-Clause, GPL-3.0-only, GPL-3.0-or-later, MIT | dpkg-db-cataloger |
 | libnorm1 | 1.5.9+dfsg-2 | BSD-2-Clause, BSD-3-Clause, BSD-4-Clause-UC | dpkg-db-cataloger |
 | libnsl-dev | 1.3.0-2 | BSD-3-Clause, GPL-2.0-only, GPL-3.0-only, LGPL-2.1-only, LGPL-2.1-or-later, MIT | dpkg-db-cataloger |
 | libnsl2 | 1.3.0-2 | BSD-3-Clause, GPL-2.0-only, GPL-3.0-only, LGPL-2.1-only, LGPL-2.1-or-later, MIT | dpkg-db-cataloger |
@@ -3200,7 +3186,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | libonig5 | 6.9.8-1 | BSD-2-Clause, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
 | libopenal-data | 1:1.19.1-2 | GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.0-or-later, LGPL-2.1-or-later | dpkg-db-cataloger |
 | libopenal1 | 1:1.19.1-2 | GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.0-or-later, LGPL-2.1-or-later | dpkg-db-cataloger |
-| libopenjp2-7 | 2.5.0-2+deb12u2 | Libpng, libtiff, MIT, Zlib | dpkg-db-cataloger |
+| libopenjp2-7 | 2.5.0-2+deb12u3 | Libpng, libtiff, MIT, Zlib | dpkg-db-cataloger |
 | libopenmpt0 | 0.6.9-1 | BSD-3-Clause, BSL-1.0, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, X11 | dpkg-db-cataloger |
 | libopus0 | 1.3.1-3 | BSD-2-Clause, BSD-3-Clause | dpkg-db-cataloger |
 | libp11-kit0 | 0.24.1-2 | Apache-2.0, BSD-3-Clause, ISC, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
@@ -3217,17 +3203,17 @@ The complete source code for Traefik is publicly available at [https://github.co
 | libpgm-5.3-0 | 5.3.128~dfsg-2 | BSD-3-Clause, ISC, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only | dpkg-db-cataloger |
 | libpixman-1-0 | 0.42.2-1 |  | dpkg-db-cataloger |
 | libplacebo208 | 4.208.0-3 | LGPL-2.1-only, LGPL-2.1-or-later, Zlib | dpkg-db-cataloger |
-| libpng16-16 | 1.6.39-2+deb12u3 | Apache-2.0, BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later, Libpng | dpkg-db-cataloger |
+| libpng16-16 | 1.6.39-2+deb12u5 | Apache-2.0, BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later, Libpng | dpkg-db-cataloger |
 | libpocketsphinx3 | 0.8+5prealpha+1-15 | BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
-| libpostproc56 | 7:5.1.8-0+deb12u1 | BSD-1-Clause, BSD-2-Clause, BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, IJG, ISC, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, Zlib | dpkg-db-cataloger |
+| libpostproc56 | 7:5.1.9-0+deb12u1 | BSD-1-Clause, BSD-2-Clause, BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, IJG, ISC, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, Zlib | dpkg-db-cataloger |
 | libpsl5 | 0.21.2-1 | MIT | dpkg-db-cataloger |
 | libpulse0 | 16.1+dfsg1-2+b1 | GPL-2.0-only, GPL-2.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
 | libpython3-dev | 3.11.2-1+b1 |  | dpkg-db-cataloger |
 | libpython3-stdlib | 3.11.2-1+b1 |  | dpkg-db-cataloger |
-| libpython3.11 | 3.11.2-6+deb12u6 | GPL-2.0-only | dpkg-db-cataloger |
-| libpython3.11-dev | 3.11.2-6+deb12u6 | GPL-2.0-only | dpkg-db-cataloger |
-| libpython3.11-minimal | 3.11.2-6+deb12u6 | GPL-2.0-only | dpkg-db-cataloger |
-| libpython3.11-stdlib | 3.11.2-6+deb12u6 | GPL-2.0-only | dpkg-db-cataloger |
+| libpython3.11 | 3.11.2-6+deb12u7 | GPL-2.0-only | dpkg-db-cataloger |
+| libpython3.11-dev | 3.11.2-6+deb12u7 | GPL-2.0-only | dpkg-db-cataloger |
+| libpython3.11-minimal | 3.11.2-6+deb12u7 | GPL-2.0-only | dpkg-db-cataloger |
+| libpython3.11-stdlib | 3.11.2-6+deb12u7 | GPL-2.0-only | dpkg-db-cataloger |
 | libquadmath0 | 12.2.0-14+deb12u1 | GFDL-1.2-only, GPL-2.0-only, GPL-3.0-only | dpkg-db-cataloger |
 | librabbitmq4 | 0.11.0-1+deb12u1 |  | dpkg-db-cataloger |
 | librav1e0 | 0.5.1-6 | BSD-2-Clause, BSD-2-Clause, ISC | dpkg-db-cataloger |
@@ -3267,19 +3253,19 @@ The complete source code for Traefik is publicly available at [https://github.co
 | libss2 | 1.47.0-2+b2 | Apache-2.0, Apache-2.0, BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later, ISC, Kazlib, LGPL-2.0-only, Latex2e | dpkg-db-cataloger |
 | libssh-gcrypt-4 | 0.10.6-0+deb12u2 | BSD-2-Clause, BSD-3-Clause, LGPL-2.1-only | dpkg-db-cataloger |
 | libssh2-1 | 1.10.0-3+b1 |  | dpkg-db-cataloger |
-| libssl-dev | 3.0.18-1~deb12u2 | Apache-2.0, GPL-1.0-only, GPL-1.0-or-later | dpkg-db-cataloger |
-| libssl3 | 3.0.18-1~deb12u2 | Apache-2.0, GPL-1.0-only, GPL-1.0-or-later | dpkg-db-cataloger |
+| libssl-dev | 3.0.20-1~deb12u1 | Apache-2.0, GPL-1.0-only, GPL-1.0-or-later | dpkg-db-cataloger |
+| libssl3 | 3.0.20-1~deb12u1 | Apache-2.0, GPL-1.0-only, GPL-1.0-or-later | dpkg-db-cataloger |
 | libstdc++-12-dev | 12.2.0-14+deb12u1 | GFDL-1.2-only, GPL-2.0-only, GPL-3.0-only | dpkg-db-cataloger |
 | libstdc++6 | 12.2.0-14+deb12u1 | GFDL-1.2-only, GPL-2.0-only, GPL-3.0-only | dpkg-db-cataloger |
 | libsvtav1enc1 | 1.4.1+dfsg-1 | BSD-2-Clause, BSD-3-Clause-Clear, BSD-3-Clause, ISC, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
-| libswresample4 | 7:5.1.8-0+deb12u1 | BSD-1-Clause, BSD-2-Clause, BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, IJG, ISC, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, Zlib | dpkg-db-cataloger |
-| libswscale6 | 7:5.1.8-0+deb12u1 | BSD-1-Clause, BSD-2-Clause, BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, IJG, ISC, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, Zlib | dpkg-db-cataloger |
-| libsystemd0 | 252.39-1~deb12u1 | CC0-1.0, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
+| libswresample4 | 7:5.1.9-0+deb12u1 | BSD-1-Clause, BSD-2-Clause, BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, IJG, ISC, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, Zlib | dpkg-db-cataloger |
+| libswscale6 | 7:5.1.9-0+deb12u1 | BSD-1-Clause, BSD-2-Clause, BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, IJG, ISC, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, Zlib | dpkg-db-cataloger |
+| libsystemd0 | 252.39-1~deb12u2 | CC0-1.0, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
 | libtasn1-6 | 4.19.0-2+deb12u1 | GFDL-1.3-only, GPL-3.0-only, LGPL-2.1-only | dpkg-db-cataloger |
 | libthai-data | 0.1.29-1 | GPL-2.0-only, GPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
 | libthai0 | 0.1.29-1 | GPL-2.0-only, GPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
 | libtheora0 | 1.1.1+dfsg.1-16.1+deb12u1 | BSD-3-Clause | dpkg-db-cataloger |
-| libtiff6 | 4.5.0-6+deb12u3 |  | dpkg-db-cataloger |
+| libtiff6 | 4.5.0-6+deb12u4 |  | dpkg-db-cataloger |
 | libtinfo6 | 6.4-4 | BSD-3-Clause, X11 | dpkg-db-cataloger |
 | libtirpc-common | 1.3.3+ds-1 | BSD-3-Clause, GPL-2.0-only, LGPL-2.1-only | dpkg-db-cataloger |
 | libtirpc-dev | 1.3.3+ds-1 | BSD-3-Clause, GPL-2.0-only, LGPL-2.1-only | dpkg-db-cataloger |
@@ -3287,7 +3273,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | libtsan2 | 12.2.0-14+deb12u1 | GFDL-1.2-only, GPL-2.0-only, GPL-3.0-only | dpkg-db-cataloger |
 | libtwolame0 | 0.4.0-2 | LGPL-2.0-only, LGPL-2.0-or-later | dpkg-db-cataloger |
 | libubsan1 | 12.2.0-14+deb12u1 | GFDL-1.2-only, GPL-2.0-only, GPL-3.0-only | dpkg-db-cataloger |
-| libudev1 | 252.39-1~deb12u1 | CC0-1.0, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
+| libudev1 | 252.39-1~deb12u2 | CC0-1.0, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
 | libudfread0 | 1.1.2-1 | GPL-2.0-only, GPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
 | libunistring2 | 1.0-2 | GFDL-1.2-only, GFDL-1.2-or-later, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-3.0-only, LGPL-3.0-or-later, MIT | dpkg-db-cataloger |
 | libusb-1.0-0 | 2:1.0.26-1 | GPL-2.0-only, LGPL-2.1-only | dpkg-db-cataloger |
@@ -3345,9 +3331,9 @@ The complete source code for Traefik is publicly available at [https://github.co
 | libzimg2 | 3.0.4+ds1-1 | GPL-3.0-only, GPL-3.0-or-later | dpkg-db-cataloger |
 | libzmq5 | 4.3.4-6 | LGPL-2.0-only, LGPL-2.0-or-later, LGPL-3.0-only, LGPL-3.0-or-later, MIT | dpkg-db-cataloger |
 | libzstd1 | 1.5.4+dfsg2-5 | BSD-3-Clause, GPL-2.0-only, Zlib | dpkg-db-cataloger |
-| libzvbi-common | 0.2.41-1 | BSD-2-Clause, BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, MIT | dpkg-db-cataloger |
-| libzvbi0 | 0.2.41-1 | BSD-2-Clause, BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, MIT | dpkg-db-cataloger |
-| linux-libc-dev | 6.1.162-1 | BSD-2-Clause, GPL-2.0-only, LGPL-2.1-only | dpkg-db-cataloger |
+| libzvbi-common | 0.2.41-1+deb12u1 | BSD-2-Clause, BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, MIT | dpkg-db-cataloger |
+| libzvbi0 | 0.2.41-1+deb12u1 | BSD-2-Clause, BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, MIT | dpkg-db-cataloger |
+| linux-libc-dev | 6.1.174-1 | BSD-2-Clause, GPL-2.0-only, LGPL-2.1-only | dpkg-db-cataloger |
 | linux-raw-sys | 0.12.1 |  | cargo-auditable-binary-cataloger |
 | linux-raw-sys | 0.12.1 |  | cargo-auditable-binary-cataloger |
 | litemap | 0.8.1 |  | cargo-auditable-binary-cataloger |
@@ -3362,18 +3348,16 @@ The complete source code for Traefik is publicly available at [https://github.co
 | loguru | 0.7.3 |  | python-installed-package-cataloger |
 | lru-slab | 0.1.2 |  | cargo-auditable-binary-cataloger |
 | lru-slab | 0.1.2 |  | cargo-auditable-binary-cataloger |
-| lxml | 6.1.0 | BSD-3-Clause | python-installed-package-cataloger |
-| lzma-rust2 | 0.16.2 |  | cargo-auditable-binary-cataloger |
-| lzma-rust2 | 0.16.2 |  | cargo-auditable-binary-cataloger |
+| lxml | 6.1.1 | BSD-3-Clause | python-installed-package-cataloger |
 | lzma-sys | 0.1.20 |  | cargo-auditable-binary-cataloger |
 | lzma-sys | 0.1.20 |  | cargo-auditable-binary-cataloger |
 | mailparse | 0.16.1 |  | cargo-auditable-binary-cataloger |
 | mailparse | 0.16.1 |  | cargo-auditable-binary-cataloger |
 | make | 4.3-4.1 | GPL-3.0-only, GPL-3.0-or-later | dpkg-db-cataloger |
-| mako | 1.3.11 | MIT | python-installed-package-cataloger |
+| mako | 1.3.12 | MIT | python-installed-package-cataloger |
 | mariadb-common | 1:10.11.14-0+deb12u2 | BSD-2-Clause, BSD-2-Clause, BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
 | markdown | 3.10.2 | BSD-3-Clause | python-installed-package-cataloger |
-| markdown-it-py | 4.0.0 |  | python-installed-package-cataloger |
+| markdown-it-py | 4.2.0 |  | python-installed-package-cataloger |
 | markupsafe | 3.0.3 | BSD-3-Clause | python-installed-package-cataloger |
 | marshmallow | 3.26.2 |  | python-installed-package-cataloger |
 | matchers | 0.2.0 |  | cargo-auditable-binary-cataloger |
@@ -3406,7 +3390,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | moxcms | 0.8.1 |  | cargo-auditable-binary-cataloger |
 | moxcms | 0.8.1 |  | cargo-auditable-binary-cataloger |
 | mpmath | 1.3.0 |  | python-installed-package-cataloger |
-| msal | 1.36.0 | MIT | python-installed-package-cataloger |
+| msal | 1.37.0 | MIT | python-installed-package-cataloger |
 | msal-extensions | 1.3.1 |  | python-installed-package-cataloger |
 | msoffcrypto-tool | 6.0.0 | MIT | python-installed-package-cataloger |
 | multidict | 6.7.1 |  | python-installed-package-cataloger |
@@ -3415,8 +3399,6 @@ The complete source code for Traefik is publicly available at [https://github.co
 | munge | 0.4.7 |  | cargo-auditable-binary-cataloger |
 | mypy-extensions | 1.1.0 | MIT | python-installed-package-cataloger |
 | mysql-common | 5.8+1.1.0 | GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
-| nanoid | 0.4.0 |  | cargo-auditable-binary-cataloger |
-| nanoid | 0.4.0 |  | cargo-auditable-binary-cataloger |
 | ncurses-base | 6.4-4 | BSD-3-Clause, X11 | dpkg-db-cataloger |
 | ncurses-bin | 6.4-4 | BSD-3-Clause, X11 | dpkg-db-cataloger |
 | netbase | 6.4 | GPL-2.0-only | dpkg-db-cataloger |
@@ -3453,10 +3435,8 @@ The complete source code for Traefik is publicly available at [https://github.co
 | num-rational | 0.4.2 |  | cargo-auditable-binary-cataloger |
 | num-traits | 0.2.19 |  | cargo-auditable-binary-cataloger |
 | num-traits | 0.2.19 |  | cargo-auditable-binary-cataloger |
-| num_cpus | 1.17.0 |  | cargo-auditable-binary-cataloger |
-| num_cpus | 1.17.0 |  | cargo-auditable-binary-cataloger |
 | numba | 0.65.1 |  | python-installed-package-cataloger |
-| numpy | 2.4.3 | BSD-3-Clause AND 0BSD AND MIT AND Zlib AND CC0-1.0 | python-installed-package-cataloger |
+| numpy | 2.4.4 | BSD-3-Clause AND 0BSD AND MIT AND Zlib AND CC0-1.0 | python-installed-package-cataloger |
 | oauthlib | 3.3.1 | BSD-3-Clause | python-installed-package-cataloger |
 | ocl-icd-libopencl1 | 2.3.1-1 | BSD-2-Clause | dpkg-db-cataloger |
 | oid-registry | 0.8.1 |  | cargo-auditable-binary-cataloger |
@@ -3465,16 +3445,16 @@ The complete source code for Traefik is publicly available at [https://github.co
 | once_cell | 1.21.4 |  | cargo-auditable-binary-cataloger |
 | once_cell | 1.21.4 |  | cargo-auditable-binary-cataloger |
 | onnxruntime | 1.24.3 |  | python-installed-package-cataloger |
-| open | 5.3.3 |  | cargo-auditable-binary-cataloger |
-| open | 5.3.3 |  | cargo-auditable-binary-cataloger |
-| open-webui | 0.9.2 |  | javascript-package-cataloger |
+| open | 5.3.5 |  | cargo-auditable-binary-cataloger |
+| open | 5.3.5 |  | cargo-auditable-binary-cataloger |
+| open-webui | 0.9.6 |  | javascript-package-cataloger |
 | openai | 2.29.0 | Apache-2.0 | python-installed-package-cataloger |
 | opencv-python | 4.13.0.92 |  | python-installed-package-cataloger |
 | opencv-python-headless | 4.13.0.92 |  | python-installed-package-cataloger |
 | openpyxl | 3.1.5 | MIT | python-installed-package-cataloger |
 | opensearch-protobufs | 0.19.0 | Apache-2.0 | python-installed-package-cataloger |
 | opensearch-py | 3.1.0 | Apache-2.0 | python-installed-package-cataloger |
-| openssl | 3.0.18-1~deb12u2 | Apache-2.0, GPL-1.0-only, GPL-1.0-or-later | dpkg-db-cataloger |
+| openssl | 3.0.20-1~deb12u1 | Apache-2.0, GPL-1.0-only, GPL-1.0-or-later | dpkg-db-cataloger |
 | openssl-probe | 0.2.1 |  | cargo-auditable-binary-cataloger |
 | openssl-probe | 0.2.1 |  | cargo-auditable-binary-cataloger |
 | opentelemetry-api | 1.40.0 | Apache-2.0 | python-installed-package-cataloger |
@@ -3499,13 +3479,13 @@ The complete source code for Traefik is publicly available at [https://github.co
 | option-ext | 0.2.0 |  | cargo-auditable-binary-cataloger |
 | option-ext | 0.2.0 |  | cargo-auditable-binary-cataloger |
 | oracledb | 3.4.2 | UPL-1.0 OR Apache-2.0 | python-installed-package-cataloger |
-| ordered-float | 4.6.0 |  | cargo-auditable-binary-cataloger |
-| ordered-float | 4.6.0 |  | cargo-auditable-binary-cataloger |
+| ordered-float | 5.3.0 |  | cargo-auditable-binary-cataloger |
+| ordered-float | 5.3.0 |  | cargo-auditable-binary-cataloger |
 | ordered-multimap | 0.7.3 |  | cargo-auditable-binary-cataloger |
 | ordered-multimap | 0.7.3 |  | cargo-auditable-binary-cataloger |
 | ordered-stream | 0.2.0 |  | cargo-auditable-binary-cataloger |
 | ordered-stream | 0.2.0 |  | cargo-auditable-binary-cataloger |
-| orjson | 3.11.8 | MPL-2.0 AND (Apache-2.0 OR MIT) | python-installed-package-cataloger |
+| orjson | 3.11.9 | MPL-2.0 AND (Apache-2.0 OR MIT) | python-installed-package-cataloger |
 | ormsgpack | 1.12.2 | Apache-2.0 OR MIT | python-installed-package-cataloger |
 | os_str_bytes | 6.6.1 |  | cargo-auditable-binary-cataloger |
 | os_str_bytes | 6.6.1 |  | cargo-auditable-binary-cataloger |
@@ -3513,7 +3493,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | owo-colors | 4.3.0 |  | cargo-auditable-binary-cataloger |
 | owo-colors | 4.3.0 |  | cargo-auditable-binary-cataloger |
 | packaging | 24.2 | Apache-2.0, BSD-2-Clause | python-installed-package-cataloger |
-| packaging | 26.1 | Apache-2.0 OR BSD-2-Clause | python-installed-package-cataloger |
+| packaging | 26.2 | Apache-2.0 OR BSD-2-Clause | python-installed-package-cataloger |
 | pandas | 3.0.1 |  | python-installed-package-cataloger |
 | pandoc | 2.17.1.1-2~deb12u1 | CC-BY-SA-3.0, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, ISC, MS-RL | dpkg-db-cataloger |
 | pandoc-data | 2.17.1.1-2~deb12u1 | CC-BY-SA-3.0, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, ISC, MS-RL | dpkg-db-cataloger |
@@ -3529,7 +3509,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | path-slash | 0.2.1 |  | cargo-auditable-binary-cataloger |
 | pathdiff | 0.2.3 |  | cargo-auditable-binary-cataloger |
 | pathdiff | 0.2.3 |  | cargo-auditable-binary-cataloger |
-| pathspec | 1.1.0 |  | python-installed-package-cataloger |
+| pathspec | 1.1.1 |  | python-installed-package-cataloger |
 | pbkdf2 | 0.12.2 |  | cargo-auditable-binary-cataloger |
 | pbkdf2 | 0.12.2 |  | cargo-auditable-binary-cataloger |
 | peewee | 3.19.0 |  | python-installed-package-cataloger |
@@ -3570,8 +3550,8 @@ The complete source code for Traefik is publicly available at [https://github.co
 | pkcs8 | 0.10.2 |  | cargo-auditable-binary-cataloger |
 | plain | 0.2.3 |  | cargo-auditable-binary-cataloger |
 | plain | 0.2.3 |  | cargo-auditable-binary-cataloger |
+| platformdirs | 4.10.0 | MIT | python-installed-package-cataloger |
 | platformdirs | 4.2.2 | MIT | python-installed-package-cataloger |
-| platformdirs | 4.9.6 | MIT | python-installed-package-cataloger |
 | playwright | 1.58.0 | Apache-2.0 | python-installed-package-cataloger |
 | playwright-core | 1.58.0 | Apache-2.0 | javascript-package-cataloger |
 | pluggy | 1.6.0 | MIT | python-installed-package-cataloger |
@@ -3602,8 +3582,8 @@ The complete source code for Traefik is publicly available at [https://github.co
 | procfs | 0.18.0 |  | cargo-auditable-binary-cataloger |
 | procfs-core | 0.18.0 |  | cargo-auditable-binary-cataloger |
 | procfs-core | 0.18.0 |  | cargo-auditable-binary-cataloger |
-| propcache | 0.4.1 | Apache-2.0 | python-installed-package-cataloger |
-| proto-plus | 1.27.2 |  | python-installed-package-cataloger |
+| propcache | 0.5.2 | Apache-2.0 | python-installed-package-cataloger |
+| proto-plus | 1.28.0 |  | python-installed-package-cataloger |
 | protobuf | 6.33.6 |  | python-installed-package-cataloger |
 | psutil | 7.2.2 | BSD-3-Clause | python-installed-package-cataloger |
 | psycopg | 3.2.9 |  | python-installed-package-cataloger |
@@ -3624,7 +3604,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | pycrdt | 0.12.47 |  | python-installed-package-cataloger |
 | pydantic | 2.12.5 | MIT | python-installed-package-cataloger |
 | pydantic-core | 2.41.5 | MIT | python-installed-package-cataloger |
-| pydantic-settings | 2.14.0 | MIT | python-installed-package-cataloger |
+| pydantic-settings | 2.14.1 | MIT | python-installed-package-cataloger |
 | pydub | 0.25.1 | MIT | python-installed-package-cataloger |
 | pyee | 13.0.1 | MIT | python-installed-package-cataloger |
 | pygments | 2.20.0 | BSD-2-Clause | python-installed-package-cataloger |
@@ -3637,15 +3617,15 @@ The complete source code for Traefik is publicly available at [https://github.co
 | pypandoc | 1.16.2 | MIT | python-installed-package-cataloger |
 | pyparsing | 3.3.2 | MIT | python-installed-package-cataloger |
 | pypdf | 6.7.5 | BSD-3-Clause | python-installed-package-cataloger |
-| pypdfium2 | 5.7.1 |  | python-installed-package-cataloger |
+| pypdfium2 | 5.9.0 |  | python-installed-package-cataloger |
 | pypika | 0.51.1 |  | python-installed-package-cataloger |
 | pyproject-hooks | 1.2.0 | MIT | python-installed-package-cataloger |
 | pytest | 8.4.2 | MIT | python-installed-package-cataloger |
 | pytest-docker | 3.2.5 | MIT | python-installed-package-cataloger |
-| python | 3.11.14 |  | binary-classifier-cataloger |
+| python | 3.11.15 |  | binary-classifier-cataloger |
 | python-dateutil | 2.9.0.post0 |  | python-installed-package-cataloger |
 | python-dotenv | 1.2.2 | BSD-3-Clause | python-installed-package-cataloger |
-| python-engineio | 4.13.1 | MIT | python-installed-package-cataloger |
+| python-engineio | 4.13.2 | MIT | python-installed-package-cataloger |
 | python-iso639 | 2026.4.20 | Apache-2.0 | python-installed-package-cataloger |
 | python-jose | 3.5.0 | MIT | python-installed-package-cataloger |
 | python-magic | 0.4.27 | MIT | python-installed-package-cataloger |
@@ -3659,9 +3639,9 @@ The complete source code for Traefik is publicly available at [https://github.co
 | python3-distutils | 3.11.2-3 |  | dpkg-db-cataloger |
 | python3-lib2to3 | 3.11.2-3 |  | dpkg-db-cataloger |
 | python3-minimal | 3.11.2-1+b1 |  | dpkg-db-cataloger |
-| python3.11 | 3.11.2-6+deb12u6 | GPL-2.0-only | dpkg-db-cataloger |
-| python3.11-dev | 3.11.2-6+deb12u6 | GPL-2.0-only | dpkg-db-cataloger |
-| python3.11-minimal | 3.11.2-6+deb12u6 | GPL-2.0-only | dpkg-db-cataloger |
+| python3.11 | 3.11.2-6+deb12u7 | GPL-2.0-only | dpkg-db-cataloger |
+| python3.11-dev | 3.11.2-6+deb12u7 | GPL-2.0-only | dpkg-db-cataloger |
+| python3.11-minimal | 3.11.2-6+deb12u7 | GPL-2.0-only | dpkg-db-cataloger |
 | pytokens | 0.4.1 | MIT | python-installed-package-cataloger |
 | pytube | 15.0.0 |  | python-installed-package-cataloger |
 | pytz | 2026.1.post1 | MIT | python-installed-package-cataloger |
@@ -3682,10 +3662,10 @@ The complete source code for Traefik is publicly available at [https://github.co
 | quoted_printable | 0.5.1 |  | cargo-auditable-binary-cataloger |
 | rancor | 0.1.1 |  | cargo-auditable-binary-cataloger |
 | rancor | 0.1.1 |  | cargo-auditable-binary-cataloger |
-| rand | 0.8.5 |  | cargo-auditable-binary-cataloger |
-| rand | 0.8.5 |  | cargo-auditable-binary-cataloger |
-| rand | 0.9.2 |  | cargo-auditable-binary-cataloger |
-| rand | 0.9.2 |  | cargo-auditable-binary-cataloger |
+| rand | 0.8.6 |  | cargo-auditable-binary-cataloger |
+| rand | 0.8.6 |  | cargo-auditable-binary-cataloger |
+| rand | 0.9.4 |  | cargo-auditable-binary-cataloger |
+| rand | 0.9.4 |  | cargo-auditable-binary-cataloger |
 | rand_chacha | 0.3.1 |  | cargo-auditable-binary-cataloger |
 | rand_chacha | 0.3.1 |  | cargo-auditable-binary-cataloger |
 | rand_chacha | 0.9.0 |  | cargo-auditable-binary-cataloger |
@@ -3697,8 +3677,8 @@ The complete source code for Traefik is publicly available at [https://github.co
 | rank-bm25 | 0.2.2 | Apache-2.0 | python-installed-package-cataloger |
 | rapidfuzz | 3.14.5 | MIT | python-installed-package-cataloger |
 | rapidocr-onnxruntime | 1.4.4 | Apache-2.0 | python-installed-package-cataloger |
-| rayon | 1.11.0 |  | cargo-auditable-binary-cataloger |
-| rayon | 1.11.0 |  | cargo-auditable-binary-cataloger |
+| rayon | 1.12.0 |  | cargo-auditable-binary-cataloger |
+| rayon | 1.12.0 |  | cargo-auditable-binary-cataloger |
 | rayon-core | 1.13.0 |  | cargo-auditable-binary-cataloger |
 | rayon-core | 1.13.0 |  | cargo-auditable-binary-cataloger |
 | readline-common | 8.2-1.3 | GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later | dpkg-db-cataloger |
@@ -3710,7 +3690,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | reflink-copy | 0.1.29 |  | cargo-auditable-binary-cataloger |
 | regex | 1.12.3 |  | cargo-auditable-binary-cataloger |
 | regex | 1.12.3 |  | cargo-auditable-binary-cataloger |
-| regex | 2026.4.4 | Apache-2.0 AND CNRI-Python | python-installed-package-cataloger |
+| regex | 2026.5.9 | Apache-2.0 AND CNRI-Python | python-installed-package-cataloger |
 | regex-automata | 0.4.14 |  | cargo-auditable-binary-cataloger |
 | regex-automata | 0.4.14 |  | cargo-auditable-binary-cataloger |
 | regex-syntax | 0.8.10 |  | cargo-auditable-binary-cataloger |
@@ -3721,6 +3701,8 @@ The complete source code for Traefik is publicly available at [https://github.co
 | reqsign | 0.20.0 |  | cargo-auditable-binary-cataloger |
 | reqsign-aws-v4 | 3.0.0 |  | cargo-auditable-binary-cataloger |
 | reqsign-aws-v4 | 3.0.0 |  | cargo-auditable-binary-cataloger |
+| reqsign-azure-storage | 3.0.0 |  | cargo-auditable-binary-cataloger |
+| reqsign-azure-storage | 3.0.0 |  | cargo-auditable-binary-cataloger |
 | reqsign-command-execute-tokio | 3.0.0 |  | cargo-auditable-binary-cataloger |
 | reqsign-command-execute-tokio | 3.0.0 |  | cargo-auditable-binary-cataloger |
 | reqsign-core | 3.0.0 |  | cargo-auditable-binary-cataloger |
@@ -3734,45 +3716,43 @@ The complete source code for Traefik is publicly available at [https://github.co
 | requests | 2.33.1 | Apache-2.0 | python-installed-package-cataloger |
 | requests-oauthlib | 2.0.0 | ISC | python-installed-package-cataloger |
 | requests-toolbelt | 1.0.0 |  | python-installed-package-cataloger |
-| reqwest | 0.13.2 |  | cargo-auditable-binary-cataloger |
-| reqwest | 0.13.2 |  | cargo-auditable-binary-cataloger |
+| reqwest | 0.13.3 |  | cargo-auditable-binary-cataloger |
+| reqwest | 0.13.3 |  | cargo-auditable-binary-cataloger |
 | restrictedpython | 8.1 | ZPL-2.1 | python-installed-package-cataloger |
 | retry-policies | 0.5.1 |  | cargo-auditable-binary-cataloger |
 | retry-policies | 0.5.1 |  | cargo-auditable-binary-cataloger |
 | rich | 13.9.4 | MIT | python-installed-package-cataloger |
 | ring | 0.17.14 |  | cargo-auditable-binary-cataloger |
 | ring | 0.17.14 |  | cargo-auditable-binary-cataloger |
-| rkyv | 0.8.15 |  | cargo-auditable-binary-cataloger |
-| rkyv | 0.8.15 |  | cargo-auditable-binary-cataloger |
+| rkyv | 0.8.16 |  | cargo-auditable-binary-cataloger |
+| rkyv | 0.8.16 |  | cargo-auditable-binary-cataloger |
 | rmp | 0.8.15 |  | cargo-auditable-binary-cataloger |
 | rmp | 0.8.15 |  | cargo-auditable-binary-cataloger |
 | rmp-serde | 1.3.1 |  | cargo-auditable-binary-cataloger |
 | rmp-serde | 1.3.1 |  | cargo-auditable-binary-cataloger |
 | rpcsvc-proto | 1.4.3-1 | BSD-3-Clause, GPL-2.0-only, GPL-3.0-only, MIT | dpkg-db-cataloger |
-| rpds-py | 0.30.0 | MIT | python-installed-package-cataloger |
+| rpds-py | 2026.5.1 | MIT | python-installed-package-cataloger |
 | rsa | 0.9.10 |  | cargo-auditable-binary-cataloger |
 | rsa | 0.9.10 |  | cargo-auditable-binary-cataloger |
 | rsa | 4.9.1 | Apache-2.0 | python-installed-package-cataloger |
 | rust-ini | 0.21.3 |  | cargo-auditable-binary-cataloger |
 | rust-ini | 0.21.3 |  | cargo-auditable-binary-cataloger |
-| rust-netrc | 0.1.2 |  | cargo-auditable-binary-cataloger |
-| rust-netrc | 0.1.2 |  | cargo-auditable-binary-cataloger |
 | rustc-hash | 2.1.2 |  | cargo-auditable-binary-cataloger |
 | rustc-hash | 2.1.2 |  | cargo-auditable-binary-cataloger |
 | rusticata-macros | 4.1.0 |  | cargo-auditable-binary-cataloger |
 | rusticata-macros | 4.1.0 |  | cargo-auditable-binary-cataloger |
 | rustix | 1.1.4 |  | cargo-auditable-binary-cataloger |
 | rustix | 1.1.4 |  | cargo-auditable-binary-cataloger |
-| rustls | 0.23.37 |  | cargo-auditable-binary-cataloger |
-| rustls | 0.23.37 |  | cargo-auditable-binary-cataloger |
+| rustls | 0.23.40 |  | cargo-auditable-binary-cataloger |
+| rustls | 0.23.40 |  | cargo-auditable-binary-cataloger |
 | rustls-native-certs | 0.8.3 |  | cargo-auditable-binary-cataloger |
 | rustls-native-certs | 0.8.3 |  | cargo-auditable-binary-cataloger |
-| rustls-pki-types | 1.14.0 |  | cargo-auditable-binary-cataloger |
-| rustls-pki-types | 1.14.0 |  | cargo-auditable-binary-cataloger |
-| rustls-platform-verifier | 0.6.2 |  | cargo-auditable-binary-cataloger |
-| rustls-platform-verifier | 0.6.2 |  | cargo-auditable-binary-cataloger |
-| rustls-webpki | 0.103.10 |  | cargo-auditable-binary-cataloger |
-| rustls-webpki | 0.103.10 |  | cargo-auditable-binary-cataloger |
+| rustls-pki-types | 1.14.1 |  | cargo-auditable-binary-cataloger |
+| rustls-pki-types | 1.14.1 |  | cargo-auditable-binary-cataloger |
+| rustls-platform-verifier | 0.7.0 |  | cargo-auditable-binary-cataloger |
+| rustls-platform-verifier | 0.7.0 |  | cargo-auditable-binary-cataloger |
+| rustls-webpki | 0.103.13 |  | cargo-auditable-binary-cataloger |
+| rustls-webpki | 0.103.13 |  | cargo-auditable-binary-cataloger |
 | ryu | 1.0.23 |  | cargo-auditable-binary-cataloger |
 | ryu | 1.0.23 |  | cargo-auditable-binary-cataloger |
 | s3transfer | 0.16.1 |  | python-installed-package-cataloger |
@@ -3797,7 +3777,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | secrecy | 0.10.3 |  | cargo-auditable-binary-cataloger |
 | secret-service | 5.1.0 |  | cargo-auditable-binary-cataloger |
 | secret-service | 5.1.0 |  | cargo-auditable-binary-cataloger |
-| sed | 4.9-1 | BSD-4-Clause-UC, BSL-1.0, GFDL-1.3-only, GPL-3.0-only, GPL-3.0-or-later, ISC, X11 | dpkg-db-cataloger |
+| sed | 4.9-1+deb12u1 | BSD-4-Clause-UC, BSL-1.0, GFDL-1.3-only, GPL-3.0-only, GPL-3.0-or-later, ISC, X11 | dpkg-db-cataloger |
 | semver | 1.0.27 |  | cargo-auditable-binary-cataloger |
 | semver | 1.0.27 |  | cargo-auditable-binary-cataloger |
 | sentence-transformers | 5.4.0 |  | python-installed-package-cataloger |
@@ -3812,8 +3792,8 @@ The complete source code for Traefik is publicly available at [https://github.co
 | serde_json | 1.0.149 |  | cargo-auditable-binary-cataloger |
 | serde_repr | 0.1.20 |  | cargo-auditable-binary-cataloger |
 | serde_repr | 0.1.20 |  | cargo-auditable-binary-cataloger |
-| serde_spanned | 1.0.4 |  | cargo-auditable-binary-cataloger |
-| serde_spanned | 1.0.4 |  | cargo-auditable-binary-cataloger |
+| serde_spanned | 1.1.1 |  | cargo-auditable-binary-cataloger |
+| serde_spanned | 1.1.1 |  | cargo-auditable-binary-cataloger |
 | serde_urlencoded | 0.7.1 |  | cargo-auditable-binary-cataloger |
 | serde_urlencoded | 0.7.1 |  | cargo-auditable-binary-cataloger |
 | setuptools | 79.0.1 |  | python-installed-package-cataloger |
@@ -3840,6 +3820,8 @@ The complete source code for Traefik is publicly available at [https://github.co
 | simdutf8 | 0.1.5 |  | cargo-auditable-binary-cataloger |
 | similar | 2.7.0 |  | cargo-auditable-binary-cataloger |
 | similar | 2.7.0 |  | cargo-auditable-binary-cataloger |
+| similar | 3.1.0 |  | cargo-auditable-binary-cataloger |
+| similar | 3.1.0 |  | cargo-auditable-binary-cataloger |
 | simple-websocket | 1.1.0 | MIT | python-installed-package-cataloger |
 | simple_asn1 | 0.6.4 |  | cargo-auditable-binary-cataloger |
 | simple_asn1 | 0.6.4 |  | cargo-auditable-binary-cataloger |
@@ -3856,9 +3838,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | socket2 | 0.6.3 |  | cargo-auditable-binary-cataloger |
 | socksio | 1.0.0 |  | python-installed-package-cataloger |
 | soundfile | 0.13.1 |  | python-installed-package-cataloger |
-| soupsieve | 2.8.3 | MIT | python-installed-package-cataloger |
-| spdx | 0.10.9 |  | cargo-auditable-binary-cataloger |
-| spdx | 0.10.9 |  | cargo-auditable-binary-cataloger |
+| soupsieve | 2.8.4 | MIT | python-installed-package-cataloger |
 | spdx | 0.13.4 |  | cargo-auditable-binary-cataloger |
 | spdx | 0.13.4 |  | cargo-auditable-binary-cataloger |
 | spin | 0.9.8 |  | cargo-auditable-binary-cataloger |
@@ -3866,16 +3846,16 @@ The complete source code for Traefik is publicly available at [https://github.co
 | spki | 0.7.3 |  | cargo-auditable-binary-cataloger |
 | spki | 0.7.3 |  | cargo-auditable-binary-cataloger |
 | sqlalchemy | 2.0.48 | MIT | python-installed-package-cataloger |
-| sse-starlette | 3.3.4 | BSD-3-Clause | python-installed-package-cataloger |
+| sse-starlette | 3.4.4 | BSD-3-Clause | python-installed-package-cataloger |
 | stable_deref_trait | 1.2.1 |  | cargo-auditable-binary-cataloger |
 | stable_deref_trait | 1.2.1 |  | cargo-auditable-binary-cataloger |
-| starlette | 1.0.0 | BSD-3-Clause | python-installed-package-cataloger |
+| starlette | 1.2.1 | BSD-3-Clause | python-installed-package-cataloger |
 | starlette-compress | 1.7.0 | 0BSD | python-installed-package-cataloger |
 | starsessions | 2.2.1 | MIT | python-installed-package-cataloger |
 | strsim | 0.11.1 |  | cargo-auditable-binary-cataloger |
 | strsim | 0.11.1 |  | cargo-auditable-binary-cataloger |
-| strum | 0.26.3 |  | cargo-auditable-binary-cataloger |
-| strum | 0.26.3 |  | cargo-auditable-binary-cataloger |
+| strum | 0.28.0 |  | cargo-auditable-binary-cataloger |
+| strum | 0.28.0 |  | cargo-auditable-binary-cataloger |
 | subtle | 2.6.1 |  | cargo-auditable-binary-cataloger |
 | subtle | 2.6.1 |  | cargo-auditable-binary-cataloger |
 | supports-color | 3.0.2 |  | cargo-auditable-binary-cataloger |
@@ -3892,8 +3872,6 @@ The complete source code for Traefik is publicly available at [https://github.co
 | synstructure | 0.13.2 |  | cargo-auditable-binary-cataloger |
 | synstructure | 0.13.2 |  | cargo-auditable-binary-cataloger |
 | sysvinit-utils | 3.06-4 | GPL-2.0-only, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-only | dpkg-db-cataloger |
-| tar | 0.4.45 |  | cargo-auditable-binary-cataloger |
-| tar | 0.4.45 |  | cargo-auditable-binary-cataloger |
 | tar | 1.34+dfsg-1.2+deb12u1 | GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
 | target-lexicon | 0.13.5 |  | cargo-auditable-binary-cataloger |
 | target-lexicon | 0.13.5 |  | cargo-auditable-binary-cataloger |
@@ -3908,8 +3886,6 @@ The complete source code for Traefik is publicly available at [https://github.co
 | termtree | 0.5.1 |  | cargo-auditable-binary-cataloger |
 | textwrap | 0.16.2 |  | cargo-auditable-binary-cataloger |
 | textwrap | 0.16.2 |  | cargo-auditable-binary-cataloger |
-| thiserror | 1.0.69 |  | cargo-auditable-binary-cataloger |
-| thiserror | 1.0.69 |  | cargo-auditable-binary-cataloger |
 | thiserror | 2.0.18 |  | cargo-auditable-binary-cataloger |
 | thiserror | 2.0.18 |  | cargo-auditable-binary-cataloger |
 | thread_local | 1.1.9 |  | cargo-auditable-binary-cataloger |
@@ -3931,28 +3907,24 @@ The complete source code for Traefik is publicly available at [https://github.co
 | tinyvec_macros | 0.1.1 |  | cargo-auditable-binary-cataloger |
 | tinyvec_macros | 0.1.1 |  | cargo-auditable-binary-cataloger |
 | tokenizers | 0.22.2 |  | python-installed-package-cataloger |
-| tokio | 1.51.0 |  | cargo-auditable-binary-cataloger |
-| tokio | 1.51.0 |  | cargo-auditable-binary-cataloger |
+| tokio | 1.52.3 |  | cargo-auditable-binary-cataloger |
+| tokio | 1.52.3 |  | cargo-auditable-binary-cataloger |
 | tokio-rustls | 0.26.4 |  | cargo-auditable-binary-cataloger |
 | tokio-rustls | 0.26.4 |  | cargo-auditable-binary-cataloger |
 | tokio-stream | 0.1.18 |  | cargo-auditable-binary-cataloger |
 | tokio-stream | 0.1.18 |  | cargo-auditable-binary-cataloger |
 | tokio-util | 0.7.18 |  | cargo-auditable-binary-cataloger |
 | tokio-util | 0.7.18 |  | cargo-auditable-binary-cataloger |
-| toml | 0.9.10+spec-1.1.0 |  | cargo-auditable-binary-cataloger |
-| toml | 0.9.10+spec-1.1.0 |  | cargo-auditable-binary-cataloger |
-| toml_datetime | 0.7.5+spec-1.1.0 |  | cargo-auditable-binary-cataloger |
-| toml_datetime | 0.7.5+spec-1.1.0 |  | cargo-auditable-binary-cataloger |
-| toml_datetime | 1.0.0+spec-1.1.0 |  | cargo-auditable-binary-cataloger |
-| toml_datetime | 1.0.0+spec-1.1.0 |  | cargo-auditable-binary-cataloger |
-| toml_edit | 0.24.0+spec-1.1.0 |  | cargo-auditable-binary-cataloger |
-| toml_edit | 0.24.0+spec-1.1.0 |  | cargo-auditable-binary-cataloger |
-| toml_edit | 0.25.4+spec-1.1.0 |  | cargo-auditable-binary-cataloger |
-| toml_edit | 0.25.4+spec-1.1.0 |  | cargo-auditable-binary-cataloger |
-| toml_parser | 1.0.9+spec-1.1.0 |  | cargo-auditable-binary-cataloger |
-| toml_parser | 1.0.9+spec-1.1.0 |  | cargo-auditable-binary-cataloger |
-| toml_writer | 1.0.6+spec-1.1.0 |  | cargo-auditable-binary-cataloger |
-| toml_writer | 1.0.6+spec-1.1.0 |  | cargo-auditable-binary-cataloger |
+| toml | 1.1.2+spec-1.1.0 |  | cargo-auditable-binary-cataloger |
+| toml | 1.1.2+spec-1.1.0 |  | cargo-auditable-binary-cataloger |
+| toml_datetime | 1.1.1+spec-1.1.0 |  | cargo-auditable-binary-cataloger |
+| toml_datetime | 1.1.1+spec-1.1.0 |  | cargo-auditable-binary-cataloger |
+| toml_edit | 0.25.11+spec-1.1.0 |  | cargo-auditable-binary-cataloger |
+| toml_edit | 0.25.11+spec-1.1.0 |  | cargo-auditable-binary-cataloger |
+| toml_parser | 1.1.2+spec-1.1.0 |  | cargo-auditable-binary-cataloger |
+| toml_parser | 1.1.2+spec-1.1.0 |  | cargo-auditable-binary-cataloger |
+| toml_writer | 1.1.1+spec-1.1.0 |  | cargo-auditable-binary-cataloger |
+| toml_writer | 1.1.1+spec-1.1.0 |  | cargo-auditable-binary-cataloger |
 | tomli | 2.0.1 | MIT | python-installed-package-cataloger |
 | torch | 2.9.1+cpu | BSD-3-Clause | python-installed-package-cataloger |
 | torchaudio | 2.11.0+cpu |  | python-installed-package-cataloger |
@@ -3974,8 +3946,6 @@ The complete source code for Traefik is publicly available at [https://github.co
 | tracing-core | 0.1.36 |  | cargo-auditable-binary-cataloger |
 | tracing-log | 0.2.0 |  | cargo-auditable-binary-cataloger |
 | tracing-log | 0.2.0 |  | cargo-auditable-binary-cataloger |
-| tracing-serde | 0.2.0 |  | cargo-auditable-binary-cataloger |
-| tracing-serde | 0.2.0 |  | cargo-auditable-binary-cataloger |
 | tracing-subscriber | 0.3.23 |  | cargo-auditable-binary-cataloger |
 | tracing-subscriber | 0.3.23 |  | cargo-auditable-binary-cataloger |
 | tracing-tree | 0.4.1 |  | cargo-auditable-binary-cataloger |
@@ -3983,23 +3953,21 @@ The complete source code for Traefik is publicly available at [https://github.co
 | transformers | 5.5.4 |  | python-installed-package-cataloger |
 | try-lock | 0.2.5 |  | cargo-auditable-binary-cataloger |
 | try-lock | 0.2.5 |  | cargo-auditable-binary-cataloger |
-| typed-path | 0.12.3 |  | cargo-auditable-binary-cataloger |
-| typed-path | 0.12.3 |  | cargo-auditable-binary-cataloger |
 | typeguard | 4.3.0 | MIT | python-installed-package-cataloger |
 | typeid | 1.0.3 |  | cargo-auditable-binary-cataloger |
 | typeid | 1.0.3 |  | cargo-auditable-binary-cataloger |
 | typenum | 1.19.0 |  | cargo-auditable-binary-cataloger |
 | typenum | 1.19.0 |  | cargo-auditable-binary-cataloger |
-| typer | 0.24.2 | MIT | python-installed-package-cataloger |
+| typer | 0.26.5 | MIT | python-installed-package-cataloger |
 | typing-extensions | 4.12.2 |  | python-installed-package-cataloger |
 | typing-extensions | 4.15.0 | PSF-2.0 | python-installed-package-cataloger |
 | typing-inspect | 0.9.0 | MIT | python-installed-package-cataloger |
 | typing-inspection | 0.4.2 | MIT | python-installed-package-cataloger |
-| tzdata | 2025b-0+deb12u2 |  | dpkg-db-cataloger |
+| tzdata | 2026b-0+deb12u1 |  | dpkg-db-cataloger |
 | tzlocal | 5.3.1 | MIT | python-installed-package-cataloger |
 | ucd-trie | 0.1.7 |  | cargo-auditable-binary-cataloger |
 | ucd-trie | 0.1.7 |  | cargo-auditable-binary-cataloger |
-| ujson | 5.12.0 | BSD-3-Clause AND TCL | python-installed-package-cataloger |
+| ujson | 5.12.1 | BSD-3-Clause AND TCL | python-installed-package-cataloger |
 | unicase | 2.9.0 |  | cargo-auditable-binary-cataloger |
 | unicase | 2.9.0 |  | cargo-auditable-binary-cataloger |
 | unicode-ident | 1.0.24 |  | cargo-auditable-binary-cataloger |
@@ -4023,7 +3991,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | uritemplate | 4.2.0 |  | python-installed-package-cataloger |
 | url | 2.5.8 |  | cargo-auditable-binary-cataloger |
 | url | 2.5.8 |  | cargo-auditable-binary-cataloger |
-| urllib3 | 2.6.3 | MIT | python-installed-package-cataloger |
+| urllib3 | 2.7.0 | MIT | python-installed-package-cataloger |
 | usr-is-merged | 37~deb12u1 | GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
 | utf8-width | 0.1.8 |  | cargo-auditable-binary-cataloger |
 | utf8-width | 0.1.8 |  | cargo-auditable-binary-cataloger |
@@ -4033,132 +4001,140 @@ The complete source code for Traefik is publicly available at [https://github.co
 | utf8parse | 0.2.2 |  | cargo-auditable-binary-cataloger |
 | util-linux | 2.38.1-5+deb12u3 | BSD-3-Clause, BSD-4-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, MIT | dpkg-db-cataloger |
 | util-linux-extra | 2.38.1-5+deb12u3 | BSD-3-Clause, BSD-4-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, MIT | dpkg-db-cataloger |
-| uuid | 1.23.0 |  | cargo-auditable-binary-cataloger |
-| uuid | 1.23.0 |  | cargo-auditable-binary-cataloger |
-| uuid-utils | 0.14.1 | BSD-3-Clause | python-installed-package-cataloger |
-| uv | 0.11.7 | MIT OR Apache-2.0 | python-installed-package-cataloger |
-| uv | 0.11.7 |  | cargo-auditable-binary-cataloger |
-| uv | 0.11.7 |  | cargo-auditable-binary-cataloger |
-| uv-audit | 0.0.40 |  | cargo-auditable-binary-cataloger |
-| uv-audit | 0.0.40 |  | cargo-auditable-binary-cataloger |
-| uv-auth | 0.0.40 |  | cargo-auditable-binary-cataloger |
-| uv-auth | 0.0.40 |  | cargo-auditable-binary-cataloger |
-| uv-bin-install | 0.0.40 |  | cargo-auditable-binary-cataloger |
-| uv-bin-install | 0.0.40 |  | cargo-auditable-binary-cataloger |
-| uv-build-backend | 0.0.40 |  | cargo-auditable-binary-cataloger |
-| uv-build-backend | 0.0.40 |  | cargo-auditable-binary-cataloger |
-| uv-build-frontend | 0.0.40 |  | cargo-auditable-binary-cataloger |
-| uv-build-frontend | 0.0.40 |  | cargo-auditable-binary-cataloger |
-| uv-cache | 0.0.40 |  | cargo-auditable-binary-cataloger |
-| uv-cache | 0.0.40 |  | cargo-auditable-binary-cataloger |
-| uv-cache-info | 0.0.40 |  | cargo-auditable-binary-cataloger |
-| uv-cache-info | 0.0.40 |  | cargo-auditable-binary-cataloger |
-| uv-cache-key | 0.0.40 |  | cargo-auditable-binary-cataloger |
-| uv-cache-key | 0.0.40 |  | cargo-auditable-binary-cataloger |
-| uv-cli | 0.0.40 |  | cargo-auditable-binary-cataloger |
-| uv-cli | 0.0.40 |  | cargo-auditable-binary-cataloger |
-| uv-client | 0.0.40 |  | cargo-auditable-binary-cataloger |
-| uv-client | 0.0.40 |  | cargo-auditable-binary-cataloger |
-| uv-configuration | 0.0.40 |  | cargo-auditable-binary-cataloger |
-| uv-configuration | 0.0.40 |  | cargo-auditable-binary-cataloger |
-| uv-console | 0.0.40 |  | cargo-auditable-binary-cataloger |
-| uv-console | 0.0.40 |  | cargo-auditable-binary-cataloger |
-| uv-dirs | 0.0.40 |  | cargo-auditable-binary-cataloger |
-| uv-dirs | 0.0.40 |  | cargo-auditable-binary-cataloger |
-| uv-dispatch | 0.0.40 |  | cargo-auditable-binary-cataloger |
-| uv-dispatch | 0.0.40 |  | cargo-auditable-binary-cataloger |
-| uv-distribution | 0.0.40 |  | cargo-auditable-binary-cataloger |
-| uv-distribution | 0.0.40 |  | cargo-auditable-binary-cataloger |
-| uv-distribution-filename | 0.0.40 |  | cargo-auditable-binary-cataloger |
-| uv-distribution-filename | 0.0.40 |  | cargo-auditable-binary-cataloger |
-| uv-distribution-types | 0.0.40 |  | cargo-auditable-binary-cataloger |
-| uv-distribution-types | 0.0.40 |  | cargo-auditable-binary-cataloger |
-| uv-extract | 0.0.40 |  | cargo-auditable-binary-cataloger |
-| uv-extract | 0.0.40 |  | cargo-auditable-binary-cataloger |
-| uv-flags | 0.0.40 |  | cargo-auditable-binary-cataloger |
-| uv-flags | 0.0.40 |  | cargo-auditable-binary-cataloger |
-| uv-fs | 0.0.40 |  | cargo-auditable-binary-cataloger |
-| uv-fs | 0.0.40 |  | cargo-auditable-binary-cataloger |
-| uv-git | 0.0.40 |  | cargo-auditable-binary-cataloger |
-| uv-git | 0.0.40 |  | cargo-auditable-binary-cataloger |
-| uv-git-types | 0.0.40 |  | cargo-auditable-binary-cataloger |
-| uv-git-types | 0.0.40 |  | cargo-auditable-binary-cataloger |
-| uv-globfilter | 0.0.40 |  | cargo-auditable-binary-cataloger |
-| uv-globfilter | 0.0.40 |  | cargo-auditable-binary-cataloger |
-| uv-install-wheel | 0.0.40 |  | cargo-auditable-binary-cataloger |
-| uv-install-wheel | 0.0.40 |  | cargo-auditable-binary-cataloger |
-| uv-installer | 0.0.40 |  | cargo-auditable-binary-cataloger |
-| uv-installer | 0.0.40 |  | cargo-auditable-binary-cataloger |
-| uv-keyring | 0.0.40 |  | cargo-auditable-binary-cataloger |
-| uv-keyring | 0.0.40 |  | cargo-auditable-binary-cataloger |
-| uv-logging | 0.0.40 |  | cargo-auditable-binary-cataloger |
-| uv-logging | 0.0.40 |  | cargo-auditable-binary-cataloger |
-| uv-metadata | 0.0.40 |  | cargo-auditable-binary-cataloger |
-| uv-metadata | 0.0.40 |  | cargo-auditable-binary-cataloger |
-| uv-normalize | 0.0.40 |  | cargo-auditable-binary-cataloger |
-| uv-normalize | 0.0.40 |  | cargo-auditable-binary-cataloger |
-| uv-once-map | 0.0.40 |  | cargo-auditable-binary-cataloger |
-| uv-once-map | 0.0.40 |  | cargo-auditable-binary-cataloger |
-| uv-options-metadata | 0.0.40 |  | cargo-auditable-binary-cataloger |
-| uv-options-metadata | 0.0.40 |  | cargo-auditable-binary-cataloger |
-| uv-pep440 | 0.0.40 |  | cargo-auditable-binary-cataloger |
-| uv-pep440 | 0.0.40 |  | cargo-auditable-binary-cataloger |
-| uv-pep508 | 0.0.40 |  | cargo-auditable-binary-cataloger |
-| uv-pep508 | 0.0.40 |  | cargo-auditable-binary-cataloger |
-| uv-performance-memory-allocator | 0.0.40 |  | cargo-auditable-binary-cataloger |
-| uv-performance-memory-allocator | 0.0.40 |  | cargo-auditable-binary-cataloger |
-| uv-platform | 0.0.40 |  | cargo-auditable-binary-cataloger |
-| uv-platform | 0.0.40 |  | cargo-auditable-binary-cataloger |
-| uv-platform-tags | 0.0.40 |  | cargo-auditable-binary-cataloger |
-| uv-platform-tags | 0.0.40 |  | cargo-auditable-binary-cataloger |
-| uv-preview | 0.0.40 |  | cargo-auditable-binary-cataloger |
-| uv-preview | 0.0.40 |  | cargo-auditable-binary-cataloger |
-| uv-publish | 0.0.40 |  | cargo-auditable-binary-cataloger |
-| uv-publish | 0.0.40 |  | cargo-auditable-binary-cataloger |
-| uv-pypi-types | 0.0.40 |  | cargo-auditable-binary-cataloger |
-| uv-pypi-types | 0.0.40 |  | cargo-auditable-binary-cataloger |
-| uv-python | 0.0.40 |  | cargo-auditable-binary-cataloger |
-| uv-python | 0.0.40 |  | cargo-auditable-binary-cataloger |
-| uv-redacted | 0.0.40 |  | cargo-auditable-binary-cataloger |
-| uv-redacted | 0.0.40 |  | cargo-auditable-binary-cataloger |
-| uv-requirements | 0.0.40 |  | cargo-auditable-binary-cataloger |
-| uv-requirements | 0.0.40 |  | cargo-auditable-binary-cataloger |
-| uv-requirements-txt | 0.0.40 |  | cargo-auditable-binary-cataloger |
-| uv-requirements-txt | 0.0.40 |  | cargo-auditable-binary-cataloger |
-| uv-resolver | 0.0.40 |  | cargo-auditable-binary-cataloger |
-| uv-resolver | 0.0.40 |  | cargo-auditable-binary-cataloger |
-| uv-scripts | 0.0.40 |  | cargo-auditable-binary-cataloger |
-| uv-scripts | 0.0.40 |  | cargo-auditable-binary-cataloger |
-| uv-settings | 0.0.40 |  | cargo-auditable-binary-cataloger |
-| uv-settings | 0.0.40 |  | cargo-auditable-binary-cataloger |
-| uv-shell | 0.0.40 |  | cargo-auditable-binary-cataloger |
-| uv-shell | 0.0.40 |  | cargo-auditable-binary-cataloger |
-| uv-small-str | 0.0.40 |  | cargo-auditable-binary-cataloger |
-| uv-small-str | 0.0.40 |  | cargo-auditable-binary-cataloger |
-| uv-state | 0.0.40 |  | cargo-auditable-binary-cataloger |
-| uv-state | 0.0.40 |  | cargo-auditable-binary-cataloger |
-| uv-static | 0.0.40 |  | cargo-auditable-binary-cataloger |
-| uv-static | 0.0.40 |  | cargo-auditable-binary-cataloger |
-| uv-test | 0.0.40 |  | cargo-auditable-binary-cataloger |
-| uv-test | 0.0.40 |  | cargo-auditable-binary-cataloger |
-| uv-tool | 0.0.40 |  | cargo-auditable-binary-cataloger |
-| uv-tool | 0.0.40 |  | cargo-auditable-binary-cataloger |
-| uv-torch | 0.0.40 |  | cargo-auditable-binary-cataloger |
-| uv-torch | 0.0.40 |  | cargo-auditable-binary-cataloger |
-| uv-trampoline-builder | 0.0.40 |  | cargo-auditable-binary-cataloger |
-| uv-trampoline-builder | 0.0.40 |  | cargo-auditable-binary-cataloger |
-| uv-types | 0.0.40 |  | cargo-auditable-binary-cataloger |
-| uv-types | 0.0.40 |  | cargo-auditable-binary-cataloger |
-| uv-unix | 0.0.40 |  | cargo-auditable-binary-cataloger |
-| uv-unix | 0.0.40 |  | cargo-auditable-binary-cataloger |
-| uv-version | 0.11.7 |  | cargo-auditable-binary-cataloger |
-| uv-version | 0.11.7 |  | cargo-auditable-binary-cataloger |
-| uv-virtualenv | 0.0.40 |  | cargo-auditable-binary-cataloger |
-| uv-virtualenv | 0.0.40 |  | cargo-auditable-binary-cataloger |
-| uv-warnings | 0.0.40 |  | cargo-auditable-binary-cataloger |
-| uv-warnings | 0.0.40 |  | cargo-auditable-binary-cataloger |
-| uv-workspace | 0.0.40 |  | cargo-auditable-binary-cataloger |
-| uv-workspace | 0.0.40 |  | cargo-auditable-binary-cataloger |
+| uuid | 1.23.1 |  | cargo-auditable-binary-cataloger |
+| uuid | 1.23.1 |  | cargo-auditable-binary-cataloger |
+| uuid-utils | 0.16.0 | BSD-3-Clause | python-installed-package-cataloger |
+| uv | 0.11.18 | MIT OR Apache-2.0 | python-installed-package-cataloger |
+| uv | 0.11.18 |  | cargo-auditable-binary-cataloger |
+| uv | 0.11.18 |  | cargo-auditable-binary-cataloger |
+| uv-audit | 0.0.51 |  | cargo-auditable-binary-cataloger |
+| uv-audit | 0.0.51 |  | cargo-auditable-binary-cataloger |
+| uv-auth | 0.0.51 |  | cargo-auditable-binary-cataloger |
+| uv-auth | 0.0.51 |  | cargo-auditable-binary-cataloger |
+| uv-bin-install | 0.0.51 |  | cargo-auditable-binary-cataloger |
+| uv-bin-install | 0.0.51 |  | cargo-auditable-binary-cataloger |
+| uv-build-backend | 0.0.51 |  | cargo-auditable-binary-cataloger |
+| uv-build-backend | 0.0.51 |  | cargo-auditable-binary-cataloger |
+| uv-build-frontend | 0.0.51 |  | cargo-auditable-binary-cataloger |
+| uv-build-frontend | 0.0.51 |  | cargo-auditable-binary-cataloger |
+| uv-cache | 0.0.51 |  | cargo-auditable-binary-cataloger |
+| uv-cache | 0.0.51 |  | cargo-auditable-binary-cataloger |
+| uv-cache-info | 0.0.51 |  | cargo-auditable-binary-cataloger |
+| uv-cache-info | 0.0.51 |  | cargo-auditable-binary-cataloger |
+| uv-cache-key | 0.0.51 |  | cargo-auditable-binary-cataloger |
+| uv-cache-key | 0.0.51 |  | cargo-auditable-binary-cataloger |
+| uv-cli | 0.0.51 |  | cargo-auditable-binary-cataloger |
+| uv-cli | 0.0.51 |  | cargo-auditable-binary-cataloger |
+| uv-client | 0.0.51 |  | cargo-auditable-binary-cataloger |
+| uv-client | 0.0.51 |  | cargo-auditable-binary-cataloger |
+| uv-configuration | 0.0.51 |  | cargo-auditable-binary-cataloger |
+| uv-configuration | 0.0.51 |  | cargo-auditable-binary-cataloger |
+| uv-console | 0.0.51 |  | cargo-auditable-binary-cataloger |
+| uv-console | 0.0.51 |  | cargo-auditable-binary-cataloger |
+| uv-dirs | 0.0.51 |  | cargo-auditable-binary-cataloger |
+| uv-dirs | 0.0.51 |  | cargo-auditable-binary-cataloger |
+| uv-dispatch | 0.0.51 |  | cargo-auditable-binary-cataloger |
+| uv-dispatch | 0.0.51 |  | cargo-auditable-binary-cataloger |
+| uv-distribution | 0.0.51 |  | cargo-auditable-binary-cataloger |
+| uv-distribution | 0.0.51 |  | cargo-auditable-binary-cataloger |
+| uv-distribution-filename | 0.0.51 |  | cargo-auditable-binary-cataloger |
+| uv-distribution-filename | 0.0.51 |  | cargo-auditable-binary-cataloger |
+| uv-distribution-types | 0.0.51 |  | cargo-auditable-binary-cataloger |
+| uv-distribution-types | 0.0.51 |  | cargo-auditable-binary-cataloger |
+| uv-errors | 0.0.51 |  | cargo-auditable-binary-cataloger |
+| uv-errors | 0.0.51 |  | cargo-auditable-binary-cataloger |
+| uv-extract | 0.0.51 |  | cargo-auditable-binary-cataloger |
+| uv-extract | 0.0.51 |  | cargo-auditable-binary-cataloger |
+| uv-fastid | 0.0.51 |  | cargo-auditable-binary-cataloger |
+| uv-fastid | 0.0.51 |  | cargo-auditable-binary-cataloger |
+| uv-flags | 0.0.51 |  | cargo-auditable-binary-cataloger |
+| uv-flags | 0.0.51 |  | cargo-auditable-binary-cataloger |
+| uv-fs | 0.0.51 |  | cargo-auditable-binary-cataloger |
+| uv-fs | 0.0.51 |  | cargo-auditable-binary-cataloger |
+| uv-git | 0.0.51 |  | cargo-auditable-binary-cataloger |
+| uv-git | 0.0.51 |  | cargo-auditable-binary-cataloger |
+| uv-git-types | 0.0.51 |  | cargo-auditable-binary-cataloger |
+| uv-git-types | 0.0.51 |  | cargo-auditable-binary-cataloger |
+| uv-globfilter | 0.0.51 |  | cargo-auditable-binary-cataloger |
+| uv-globfilter | 0.0.51 |  | cargo-auditable-binary-cataloger |
+| uv-install-wheel | 0.0.51 |  | cargo-auditable-binary-cataloger |
+| uv-install-wheel | 0.0.51 |  | cargo-auditable-binary-cataloger |
+| uv-installer | 0.0.51 |  | cargo-auditable-binary-cataloger |
+| uv-installer | 0.0.51 |  | cargo-auditable-binary-cataloger |
+| uv-keyring | 0.0.51 |  | cargo-auditable-binary-cataloger |
+| uv-keyring | 0.0.51 |  | cargo-auditable-binary-cataloger |
+| uv-logging | 0.0.51 |  | cargo-auditable-binary-cataloger |
+| uv-logging | 0.0.51 |  | cargo-auditable-binary-cataloger |
+| uv-metadata | 0.0.51 |  | cargo-auditable-binary-cataloger |
+| uv-metadata | 0.0.51 |  | cargo-auditable-binary-cataloger |
+| uv-netrc | 0.0.51 |  | cargo-auditable-binary-cataloger |
+| uv-netrc | 0.0.51 |  | cargo-auditable-binary-cataloger |
+| uv-normalize | 0.0.51 |  | cargo-auditable-binary-cataloger |
+| uv-normalize | 0.0.51 |  | cargo-auditable-binary-cataloger |
+| uv-once-map | 0.0.51 |  | cargo-auditable-binary-cataloger |
+| uv-once-map | 0.0.51 |  | cargo-auditable-binary-cataloger |
+| uv-options-metadata | 0.0.51 |  | cargo-auditable-binary-cataloger |
+| uv-options-metadata | 0.0.51 |  | cargo-auditable-binary-cataloger |
+| uv-pep440 | 0.0.51 |  | cargo-auditable-binary-cataloger |
+| uv-pep440 | 0.0.51 |  | cargo-auditable-binary-cataloger |
+| uv-pep508 | 0.0.51 |  | cargo-auditable-binary-cataloger |
+| uv-pep508 | 0.0.51 |  | cargo-auditable-binary-cataloger |
+| uv-performance-memory-allocator | 0.0.51 |  | cargo-auditable-binary-cataloger |
+| uv-performance-memory-allocator | 0.0.51 |  | cargo-auditable-binary-cataloger |
+| uv-platform | 0.0.51 |  | cargo-auditable-binary-cataloger |
+| uv-platform | 0.0.51 |  | cargo-auditable-binary-cataloger |
+| uv-platform-tags | 0.0.51 |  | cargo-auditable-binary-cataloger |
+| uv-platform-tags | 0.0.51 |  | cargo-auditable-binary-cataloger |
+| uv-preview | 0.0.51 |  | cargo-auditable-binary-cataloger |
+| uv-preview | 0.0.51 |  | cargo-auditable-binary-cataloger |
+| uv-publish | 0.0.51 |  | cargo-auditable-binary-cataloger |
+| uv-publish | 0.0.51 |  | cargo-auditable-binary-cataloger |
+| uv-pypi-types | 0.0.51 |  | cargo-auditable-binary-cataloger |
+| uv-pypi-types | 0.0.51 |  | cargo-auditable-binary-cataloger |
+| uv-python | 0.0.51 |  | cargo-auditable-binary-cataloger |
+| uv-python | 0.0.51 |  | cargo-auditable-binary-cataloger |
+| uv-redacted | 0.0.51 |  | cargo-auditable-binary-cataloger |
+| uv-redacted | 0.0.51 |  | cargo-auditable-binary-cataloger |
+| uv-requirements | 0.0.51 |  | cargo-auditable-binary-cataloger |
+| uv-requirements | 0.0.51 |  | cargo-auditable-binary-cataloger |
+| uv-requirements-txt | 0.0.51 |  | cargo-auditable-binary-cataloger |
+| uv-requirements-txt | 0.0.51 |  | cargo-auditable-binary-cataloger |
+| uv-resolver | 0.0.51 |  | cargo-auditable-binary-cataloger |
+| uv-resolver | 0.0.51 |  | cargo-auditable-binary-cataloger |
+| uv-scripts | 0.0.51 |  | cargo-auditable-binary-cataloger |
+| uv-scripts | 0.0.51 |  | cargo-auditable-binary-cataloger |
+| uv-settings | 0.0.51 |  | cargo-auditable-binary-cataloger |
+| uv-settings | 0.0.51 |  | cargo-auditable-binary-cataloger |
+| uv-shell | 0.0.51 |  | cargo-auditable-binary-cataloger |
+| uv-shell | 0.0.51 |  | cargo-auditable-binary-cataloger |
+| uv-small-str | 0.0.51 |  | cargo-auditable-binary-cataloger |
+| uv-small-str | 0.0.51 |  | cargo-auditable-binary-cataloger |
+| uv-state | 0.0.51 |  | cargo-auditable-binary-cataloger |
+| uv-state | 0.0.51 |  | cargo-auditable-binary-cataloger |
+| uv-static | 0.0.51 |  | cargo-auditable-binary-cataloger |
+| uv-static | 0.0.51 |  | cargo-auditable-binary-cataloger |
+| uv-test | 0.0.51 |  | cargo-auditable-binary-cataloger |
+| uv-test | 0.0.51 |  | cargo-auditable-binary-cataloger |
+| uv-toml | 0.0.51 |  | cargo-auditable-binary-cataloger |
+| uv-toml | 0.0.51 |  | cargo-auditable-binary-cataloger |
+| uv-tool | 0.0.51 |  | cargo-auditable-binary-cataloger |
+| uv-tool | 0.0.51 |  | cargo-auditable-binary-cataloger |
+| uv-torch | 0.0.51 |  | cargo-auditable-binary-cataloger |
+| uv-torch | 0.0.51 |  | cargo-auditable-binary-cataloger |
+| uv-trampoline-builder | 0.0.51 |  | cargo-auditable-binary-cataloger |
+| uv-trampoline-builder | 0.0.51 |  | cargo-auditable-binary-cataloger |
+| uv-types | 0.0.51 |  | cargo-auditable-binary-cataloger |
+| uv-types | 0.0.51 |  | cargo-auditable-binary-cataloger |
+| uv-unix | 0.0.51 |  | cargo-auditable-binary-cataloger |
+| uv-unix | 0.0.51 |  | cargo-auditable-binary-cataloger |
+| uv-version | 0.11.18 |  | cargo-auditable-binary-cataloger |
+| uv-version | 0.11.18 |  | cargo-auditable-binary-cataloger |
+| uv-virtualenv | 0.0.51 |  | cargo-auditable-binary-cataloger |
+| uv-virtualenv | 0.0.51 |  | cargo-auditable-binary-cataloger |
+| uv-warnings | 0.0.51 |  | cargo-auditable-binary-cataloger |
+| uv-warnings | 0.0.51 |  | cargo-auditable-binary-cataloger |
+| uv-workspace | 0.0.51 |  | cargo-auditable-binary-cataloger |
+| uv-workspace | 0.0.51 |  | cargo-auditable-binary-cataloger |
 | uvicorn | 0.41.0 | BSD-3-Clause | python-installed-package-cataloger |
 | uvloop | 0.22.1 |  | python-installed-package-cataloger |
 | validators | 0.35.0 | MIT | python-installed-package-cataloger |
@@ -4168,12 +4144,12 @@ The complete source code for Traefik is publicly available at [https://github.co
 | walkdir | 2.5.0 |  | cargo-auditable-binary-cataloger |
 | want | 0.3.1 |  | cargo-auditable-binary-cataloger |
 | want | 0.3.1 |  | cargo-auditable-binary-cataloger |
-| watchfiles | 1.1.1 | MIT | python-installed-package-cataloger |
-| wcwidth | 0.6.0 | MIT | python-installed-package-cataloger |
+| watchfiles | 1.2.0 | MIT | python-installed-package-cataloger |
+| wcwidth | 0.7.0 | MIT | python-installed-package-cataloger |
 | weaviate-client | 4.20.3 |  | python-installed-package-cataloger |
 | webencodings | 0.5.1 |  | python-installed-package-cataloger |
-| webpki-root-certs | 1.0.6 |  | cargo-auditable-binary-cataloger |
-| webpki-root-certs | 1.0.6 |  | cargo-auditable-binary-cataloger |
+| webpki-root-certs | 1.0.7 |  | cargo-auditable-binary-cataloger |
+| webpki-root-certs | 1.0.7 |  | cargo-auditable-binary-cataloger |
 | websocket-client | 1.9.0 | Apache-2.0 | python-installed-package-cataloger |
 | websockets | 16.0 | BSD-3-Clause | python-installed-package-cataloger |
 | werkzeug | 3.1.8 | BSD-3-Clause | python-installed-package-cataloger |
@@ -4181,10 +4157,8 @@ The complete source code for Traefik is publicly available at [https://github.co
 | wheel | 0.45.1 | MIT | python-installed-package-cataloger |
 | which | 8.0.2 |  | cargo-auditable-binary-cataloger |
 | which | 8.0.2 |  | cargo-auditable-binary-cataloger |
-| winnow | 0.7.15 |  | cargo-auditable-binary-cataloger |
-| winnow | 0.7.15 |  | cargo-auditable-binary-cataloger |
-| wiremock | 0.6.5 |  | cargo-auditable-binary-cataloger |
-| wiremock | 0.6.5 |  | cargo-auditable-binary-cataloger |
+| winnow | 1.0.3 |  | cargo-auditable-binary-cataloger |
+| winnow | 1.0.3 |  | cargo-auditable-binary-cataloger |
 | wrapt | 1.17.3 |  | python-installed-package-cataloger |
 | writeable | 0.6.2 |  | cargo-auditable-binary-cataloger |
 | writeable | 0.6.2 |  | cargo-auditable-binary-cataloger |
@@ -4199,22 +4173,22 @@ The complete source code for Traefik is publicly available at [https://github.co
 | xlsxwriter | 3.2.9 | BSD-2-Clause | python-installed-package-cataloger |
 | xml-rs | 0.8.28 |  | cargo-auditable-binary-cataloger |
 | xml-rs | 0.8.28 |  | cargo-auditable-binary-cataloger |
-| xxhash | 3.6.0 |  | python-installed-package-cataloger |
+| xxhash | 3.7.0 |  | python-installed-package-cataloger |
 | xz-utils | 5.4.1-1 | GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, LGPL-2.0-only, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
 | xz2 | 0.1.7 |  | cargo-auditable-binary-cataloger |
 | xz2 | 0.1.7 |  | cargo-auditable-binary-cataloger |
-| yarl | 1.23.0 | Apache-2.0 | python-installed-package-cataloger |
+| yarl | 1.24.2 | Apache-2.0 | python-installed-package-cataloger |
 | yoke | 0.8.1 |  | cargo-auditable-binary-cataloger |
 | yoke | 0.8.1 |  | cargo-auditable-binary-cataloger |
 | yoke-derive | 0.8.1 |  | cargo-auditable-binary-cataloger |
 | yoke-derive | 0.8.1 |  | cargo-auditable-binary-cataloger |
 | youtube-transcript-api | 1.2.4 | MIT | python-installed-package-cataloger |
-| zbus | 5.14.0 |  | cargo-auditable-binary-cataloger |
-| zbus | 5.14.0 |  | cargo-auditable-binary-cataloger |
-| zbus_macros | 5.14.0 |  | cargo-auditable-binary-cataloger |
-| zbus_macros | 5.14.0 |  | cargo-auditable-binary-cataloger |
-| zbus_names | 4.3.1 |  | cargo-auditable-binary-cataloger |
-| zbus_names | 4.3.1 |  | cargo-auditable-binary-cataloger |
+| zbus | 5.15.0 |  | cargo-auditable-binary-cataloger |
+| zbus | 5.15.0 |  | cargo-auditable-binary-cataloger |
+| zbus_macros | 5.15.0 |  | cargo-auditable-binary-cataloger |
+| zbus_macros | 5.15.0 |  | cargo-auditable-binary-cataloger |
+| zbus_names | 4.3.2 |  | cargo-auditable-binary-cataloger |
+| zbus_names | 4.3.2 |  | cargo-auditable-binary-cataloger |
 | zerocopy | 0.8.42 |  | cargo-auditable-binary-cataloger |
 | zerocopy | 0.8.42 |  | cargo-auditable-binary-cataloger |
 | zerocopy-derive | 0.8.42 |  | cargo-auditable-binary-cataloger |
@@ -4231,18 +4205,14 @@ The complete source code for Traefik is publicly available at [https://github.co
 | zerovec | 0.11.5 |  | cargo-auditable-binary-cataloger |
 | zerovec-derive | 0.11.2 |  | cargo-auditable-binary-cataloger |
 | zerovec-derive | 0.11.2 |  | cargo-auditable-binary-cataloger |
-| zip | 8.1.0 |  | cargo-auditable-binary-cataloger |
-| zip | 8.1.0 |  | cargo-auditable-binary-cataloger |
 | zipp | 3.19.2 | MIT | python-installed-package-cataloger |
-| zipp | 3.23.1 | MIT | python-installed-package-cataloger |
+| zipp | 4.1.0 | MIT | python-installed-package-cataloger |
 | zlib-rs | 0.6.3 |  | cargo-auditable-binary-cataloger |
 | zlib-rs | 0.6.3 |  | cargo-auditable-binary-cataloger |
 | zlib1g | 1:1.2.13.dfsg-1 | Zlib | dpkg-db-cataloger |
 | zlib1g-dev | 1:1.2.13.dfsg-1 | Zlib | dpkg-db-cataloger |
 | zmij | 1.0.21 |  | cargo-auditable-binary-cataloger |
 | zmij | 1.0.21 |  | cargo-auditable-binary-cataloger |
-| zopfli | 0.8.3 |  | cargo-auditable-binary-cataloger |
-| zopfli | 0.8.3 |  | cargo-auditable-binary-cataloger |
 | zstandard | 0.25.0 | BSD-3-Clause | python-installed-package-cataloger |
 | zstd | 0.13.3 |  | cargo-auditable-binary-cataloger |
 | zstd | 0.13.3 |  | cargo-auditable-binary-cataloger |
@@ -4251,12 +4221,12 @@ The complete source code for Traefik is publicly available at [https://github.co
 | zstd-safe | 7.2.4 |  | cargo-auditable-binary-cataloger |
 | zstd-sys | 2.0.16+zstd.1.5.7 |  | cargo-auditable-binary-cataloger |
 | zstd-sys | 2.0.16+zstd.1.5.7 |  | cargo-auditable-binary-cataloger |
-| zvariant | 5.10.0 |  | cargo-auditable-binary-cataloger |
-| zvariant | 5.10.0 |  | cargo-auditable-binary-cataloger |
-| zvariant_derive | 5.10.0 |  | cargo-auditable-binary-cataloger |
-| zvariant_derive | 5.10.0 |  | cargo-auditable-binary-cataloger |
-| zvariant_utils | 3.3.0 |  | cargo-auditable-binary-cataloger |
-| zvariant_utils | 3.3.0 |  | cargo-auditable-binary-cataloger |
+| zvariant | 5.11.0 |  | cargo-auditable-binary-cataloger |
+| zvariant | 5.11.0 |  | cargo-auditable-binary-cataloger |
+| zvariant_derive | 5.11.0 |  | cargo-auditable-binary-cataloger |
+| zvariant_derive | 5.11.0 |  | cargo-auditable-binary-cataloger |
+| zvariant_utils | 3.3.1 |  | cargo-auditable-binary-cataloger |
+| zvariant_utils | 3.3.1 |  | cargo-auditable-binary-cataloger |
 
 ### registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/elasticsearch
 
@@ -4266,14 +4236,14 @@ The complete source code for Traefik is publicly available at [https://github.co
 | SparseBitSet | 1.3 |  | java-archive-cataloger |
 | accessors-smart | 2.5.2 | Apache-2.0 | java-archive-cataloger |
 | accessors-smart | 2.5.2 | Apache-2.0 | java-archive-cataloger |
-| aggregations | 9.3.4 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
-| aggregations | 9.3.4 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
+| aggregations | 9.3.6 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
+| aggregations | 9.3.6 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
 | alternatives | 1.24-2.el9 | GPL-2.0-only | rpm-db-cataloger |
-| analysis-common | 9.3.4 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
-| analysis-icu | 9.3.4 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
-| analysis-smartcn | 9.3.4 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
-| analysis-stempel | 9.3.4 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
-| analysis-ukrainian | 9.3.4 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
+| analysis-common | 9.3.6 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
+| analysis-icu | 9.3.6 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
+| analysis-smartcn | 9.3.6 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
+| analysis-stempel | 9.3.6 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
+| analysis-ukrainian | 9.3.6 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
 | annotations | 2.31.78 | Apache-2.0 | java-archive-cataloger |
 | annotations | 2.31.78 | Apache-2.0 | java-archive-cataloger |
 | antlr4-runtime | 4.13.1 |  | java-archive-cataloger |
@@ -4286,111 +4256,111 @@ The complete source code for Traefik is publicly available at [https://github.co
 | apache-mime4j-core | 0.8.13 | Apache-2.0 | java-archive-cataloger |
 | apache-mime4j-dom | 0.8.13 | Apache-2.0 | java-archive-cataloger |
 | api-common | 2.46.1 |  | java-archive-cataloger |
-| apm | 9.3.4 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
-| apm-agent-cached-lookup-key | 1.55.0 |  | java-archive-cataloger |
-| apm-agent-common | 1.55.0 |  | java-archive-cataloger |
-| apm-agent-common | 1.55.0 |  | java-archive-cataloger |
-| apm-agent-core | 1.55.0 |  | java-archive-cataloger |
-| apm-agent-java8 | 1.55.0 |  | java-archive-cataloger |
-| apm-agent-plugin-sdk | 1.55.0 |  | java-archive-cataloger |
-| apm-agent-tracer | 1.55.0 |  | java-archive-cataloger |
-| apm-apache-httpclient-common | 1.55.0 |  | java-archive-cataloger |
-| apm-apache-httpclient3-plugin | 1.55.0 |  | java-archive-cataloger |
-| apm-apache-httpclient4-plugin | 1.55.0 |  | java-archive-cataloger |
-| apm-apache-httpclient5-plugin | 1.55.0 |  | java-archive-cataloger |
-| apm-api-plugin | 1.55.0 |  | java-archive-cataloger |
-| apm-asynchttpclient-plugin | 1.55.0 |  | java-archive-cataloger |
-| apm-aws-sdk-1-plugin | 1.55.0 |  | java-archive-cataloger |
-| apm-aws-sdk-2-plugin | 1.55.0 |  | java-archive-cataloger |
-| apm-aws-sdk-common | 1.55.0 |  | java-archive-cataloger |
-| apm-awslambda-plugin | 1.55.0 |  | java-archive-cataloger |
-| apm-cassandra-core-plugin | 1.55.0 |  | java-archive-cataloger |
-| apm-cassandra3-plugin | 1.55.0 |  | java-archive-cataloger |
-| apm-cassandra4-plugin | 1.55.0 |  | java-archive-cataloger |
-| apm-dubbo-plugin | 1.55.0 |  | java-archive-cataloger |
-| apm-ecs-logging-plugin | 1.55.0 |  | java-archive-cataloger |
-| apm-es-restclient-plugin-5_6 | 1.55.0 |  | java-archive-cataloger |
-| apm-es-restclient-plugin-6_4 | 1.55.0 |  | java-archive-cataloger |
-| apm-es-restclient-plugin-7_x | 1.55.0 |  | java-archive-cataloger |
-| apm-es-restclient-plugin-8_x | 1.55.0 |  | java-archive-cataloger |
-| apm-es-restclient-plugin-common | 1.55.0 |  | java-archive-cataloger |
-| apm-finagle-httpclient-plugin | 1.55.0 |  | java-archive-cataloger |
-| apm-grails-plugin | 1.55.0 |  | java-archive-cataloger |
-| apm-grpc-plugin | 1.55.0 |  | java-archive-cataloger |
-| apm-hibernate-search-plugin-5_x | 1.55.0 |  | java-archive-cataloger |
-| apm-hibernate-search-plugin-6_x | 1.55.0 |  | java-archive-cataloger |
-| apm-hibernate-search-plugin-common | 1.55.0 |  | java-archive-cataloger |
-| apm-httpclient-core | 1.55.0 |  | java-archive-cataloger |
-| apm-httpserver-core | 1.55.0 |  | java-archive-cataloger |
-| apm-jakarta-websocket-plugin | 1.55.0 |  | java-archive-cataloger |
-| apm-java-concurrent-plugin | 1.55.0 |  | java-archive-cataloger |
-| apm-java-ldap-plugin | 1.55.0 |  | java-archive-cataloger |
-| apm-javalin-plugin | 1.55.0 |  | java-archive-cataloger |
-| apm-jaxrs-plugin | 1.55.0 |  | java-archive-cataloger |
-| apm-jaxws-plugin | 1.55.0 |  | java-archive-cataloger |
-| apm-jboss-logging-plugin | 1.55.0 |  | java-archive-cataloger |
-| apm-jdbc-plugin | 1.55.0 |  | java-archive-cataloger |
-| apm-jdk-httpclient-plugin | 1.55.0 |  | java-archive-cataloger |
-| apm-jdk-httpserver-plugin | 1.55.0 |  | java-archive-cataloger |
-| apm-jedis-4-plugin | 1.55.0 |  | java-archive-cataloger |
-| apm-jedis-plugin | 1.55.0 |  | java-archive-cataloger |
-| apm-jms-jakarta | 1.55.0 |  | java-archive-cataloger |
-| apm-jms-javax | 1.55.0 |  | java-archive-cataloger |
-| apm-jms-plugin-base | 1.55.0 |  | java-archive-cataloger |
-| apm-jmx-plugin | 1.55.0 |  | java-archive-cataloger |
-| apm-jsf-plugin | 1.55.0 |  | java-archive-cataloger |
-| apm-jul-plugin | 1.55.0 |  | java-archive-cataloger |
-| apm-kafka-base-plugin | 1.55.0 |  | java-archive-cataloger |
-| apm-kafka-headers-plugin | 1.55.0 |  | java-archive-cataloger |
-| apm-kafka-spring-plugin | 1.55.0 |  | java-archive-cataloger |
-| apm-lettuce-plugin | 1.55.0 |  | java-archive-cataloger |
-| apm-log4j1-plugin | 1.55.0 |  | java-archive-cataloger |
-| apm-log4j2-plugin | 1.55.0 |  | java-archive-cataloger |
-| apm-logback-plugin-impl | 1.55.0 |  | java-archive-cataloger |
-| apm-logging-plugin-common | 1.55.0 |  | java-archive-cataloger |
-| apm-micrometer-plugin | 1.55.0 |  | java-archive-cataloger |
-| apm-mongodb-common | 1.55.0 |  | java-archive-cataloger |
-| apm-mongodb3-plugin | 1.55.0 |  | java-archive-cataloger |
-| apm-mongodb4-plugin | 1.55.0 |  | java-archive-cataloger |
-| apm-okhttp-plugin | 1.55.0 |  | java-archive-cataloger |
-| apm-opentelemetry-embedded-metrics-sdk | 1.55.0 |  | java-archive-cataloger |
-| apm-opentelemetry-metrics-bridge-common | 1.55.0 |  | java-archive-cataloger |
-| apm-opentelemetry-metrics-bridge-latest | 1.55.0 |  | java-archive-cataloger |
-| apm-opentelemetry-metrics-bridge-v1_14 | 1.55.0 |  | java-archive-cataloger |
-| apm-opentelemetry-metricsdk-plugin | 1.55.0 |  | java-archive-cataloger |
-| apm-opentelemetry-plugin | 1.55.0 |  | java-archive-cataloger |
-| apm-opentracing-plugin | 1.55.0 |  | java-archive-cataloger |
-| apm-process-plugin | 1.55.0 |  | java-archive-cataloger |
-| apm-profiling-plugin | 1.55.0 |  | java-archive-cataloger |
-| apm-quartz-common | 1.55.0 |  | java-archive-cataloger |
-| apm-quartz-plugin-1 | 1.55.0 |  | java-archive-cataloger |
-| apm-quartz-plugin-2 | 1.55.0 |  | java-archive-cataloger |
-| apm-rabbitmq-plugin | 1.55.0 |  | java-archive-cataloger |
-| apm-rabbitmq-spring5 | 1.55.0 |  | java-archive-cataloger |
-| apm-reactor-plugin | 1.55.0 |  | java-archive-cataloger |
-| apm-redis-common | 1.55.0 |  | java-archive-cataloger |
-| apm-redisson-plugin | 1.55.0 |  | java-archive-cataloger |
-| apm-scala-concurrent-plugin | 1.55.0 |  | java-archive-cataloger |
-| apm-scheduled-annotation-plugin | 1.55.0 |  | java-archive-cataloger |
-| apm-servlet-plugin | 1.55.0 |  | java-archive-cataloger |
-| apm-slf4j-plugin | 1.55.0 |  | java-archive-cataloger |
-| apm-sparkjava-plugin | 1.55.0 |  | java-archive-cataloger |
-| apm-spring-resttemplate-plugin | 1.55.0 |  | java-archive-cataloger |
-| apm-spring-webclient-plugin | 1.55.0 |  | java-archive-cataloger |
-| apm-spring-webflux-common | 1.55.0 |  | java-archive-cataloger |
-| apm-spring-webflux-common-spring5 | 1.55.0 |  | java-archive-cataloger |
-| apm-spring-webflux-plugin | 1.55.0 |  | java-archive-cataloger |
-| apm-spring-webflux-spring5 | 1.55.0 |  | java-archive-cataloger |
-| apm-spring-webmvc-plugin | 1.55.0 |  | java-archive-cataloger |
-| apm-spring-webmvc-spring5 | 1.55.0 |  | java-archive-cataloger |
-| apm-struts-plugin | 1.55.0 |  | java-archive-cataloger |
-| apm-tomcat-logging-plugin | 1.55.0 |  | java-archive-cataloger |
-| apm-urlconnection-plugin | 1.55.0 |  | java-archive-cataloger |
-| apm-vertx-common | 1.55.0 |  | java-archive-cataloger |
-| apm-vertx3-plugin | 1.55.0 |  | java-archive-cataloger |
-| apm-vertx4-plugin | 1.55.0 |  | java-archive-cataloger |
+| apm | 9.3.6 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
+| apm-agent-cached-lookup-key | 1.55.6 |  | java-archive-cataloger |
+| apm-agent-common | 1.55.6 |  | java-archive-cataloger |
+| apm-agent-common | 1.55.6 |  | java-archive-cataloger |
+| apm-agent-core | 1.55.6 |  | java-archive-cataloger |
+| apm-agent-java8 | 1.55.6 |  | java-archive-cataloger |
+| apm-agent-plugin-sdk | 1.55.6 |  | java-archive-cataloger |
+| apm-agent-tracer | 1.55.6 |  | java-archive-cataloger |
+| apm-apache-httpclient-common | 1.55.6 |  | java-archive-cataloger |
+| apm-apache-httpclient3-plugin | 1.55.6 |  | java-archive-cataloger |
+| apm-apache-httpclient4-plugin | 1.55.6 |  | java-archive-cataloger |
+| apm-apache-httpclient5-plugin | 1.55.6 |  | java-archive-cataloger |
+| apm-api-plugin | 1.55.6 |  | java-archive-cataloger |
+| apm-asynchttpclient-plugin | 1.55.6 |  | java-archive-cataloger |
+| apm-aws-sdk-1-plugin | 1.55.6 |  | java-archive-cataloger |
+| apm-aws-sdk-2-plugin | 1.55.6 |  | java-archive-cataloger |
+| apm-aws-sdk-common | 1.55.6 |  | java-archive-cataloger |
+| apm-awslambda-plugin | 1.55.6 |  | java-archive-cataloger |
+| apm-cassandra-core-plugin | 1.55.6 |  | java-archive-cataloger |
+| apm-cassandra3-plugin | 1.55.6 |  | java-archive-cataloger |
+| apm-cassandra4-plugin | 1.55.6 |  | java-archive-cataloger |
+| apm-dubbo-plugin | 1.55.6 |  | java-archive-cataloger |
+| apm-ecs-logging-plugin | 1.55.6 |  | java-archive-cataloger |
+| apm-es-restclient-plugin-5_6 | 1.55.6 |  | java-archive-cataloger |
+| apm-es-restclient-plugin-6_4 | 1.55.6 |  | java-archive-cataloger |
+| apm-es-restclient-plugin-7_x | 1.55.6 |  | java-archive-cataloger |
+| apm-es-restclient-plugin-8_x | 1.55.6 |  | java-archive-cataloger |
+| apm-es-restclient-plugin-common | 1.55.6 |  | java-archive-cataloger |
+| apm-finagle-httpclient-plugin | 1.55.6 |  | java-archive-cataloger |
+| apm-grails-plugin | 1.55.6 |  | java-archive-cataloger |
+| apm-grpc-plugin | 1.55.6 |  | java-archive-cataloger |
+| apm-hibernate-search-plugin-5_x | 1.55.6 |  | java-archive-cataloger |
+| apm-hibernate-search-plugin-6_x | 1.55.6 |  | java-archive-cataloger |
+| apm-hibernate-search-plugin-common | 1.55.6 |  | java-archive-cataloger |
+| apm-httpclient-core | 1.55.6 |  | java-archive-cataloger |
+| apm-httpserver-core | 1.55.6 |  | java-archive-cataloger |
+| apm-jakarta-websocket-plugin | 1.55.6 |  | java-archive-cataloger |
+| apm-java-concurrent-plugin | 1.55.6 |  | java-archive-cataloger |
+| apm-java-ldap-plugin | 1.55.6 |  | java-archive-cataloger |
+| apm-javalin-plugin | 1.55.6 |  | java-archive-cataloger |
+| apm-jaxrs-plugin | 1.55.6 |  | java-archive-cataloger |
+| apm-jaxws-plugin | 1.55.6 |  | java-archive-cataloger |
+| apm-jboss-logging-plugin | 1.55.6 |  | java-archive-cataloger |
+| apm-jdbc-plugin | 1.55.6 |  | java-archive-cataloger |
+| apm-jdk-httpclient-plugin | 1.55.6 |  | java-archive-cataloger |
+| apm-jdk-httpserver-plugin | 1.55.6 |  | java-archive-cataloger |
+| apm-jedis-4-plugin | 1.55.6 |  | java-archive-cataloger |
+| apm-jedis-plugin | 1.55.6 |  | java-archive-cataloger |
+| apm-jms-jakarta | 1.55.6 |  | java-archive-cataloger |
+| apm-jms-javax | 1.55.6 |  | java-archive-cataloger |
+| apm-jms-plugin-base | 1.55.6 |  | java-archive-cataloger |
+| apm-jmx-plugin | 1.55.6 |  | java-archive-cataloger |
+| apm-jsf-plugin | 1.55.6 |  | java-archive-cataloger |
+| apm-jul-plugin | 1.55.6 |  | java-archive-cataloger |
+| apm-kafka-base-plugin | 1.55.6 |  | java-archive-cataloger |
+| apm-kafka-headers-plugin | 1.55.6 |  | java-archive-cataloger |
+| apm-kafka-spring-plugin | 1.55.6 |  | java-archive-cataloger |
+| apm-lettuce-plugin | 1.55.6 |  | java-archive-cataloger |
+| apm-log4j1-plugin | 1.55.6 |  | java-archive-cataloger |
+| apm-log4j2-plugin | 1.55.6 |  | java-archive-cataloger |
+| apm-logback-plugin-impl | 1.55.6 |  | java-archive-cataloger |
+| apm-logging-plugin-common | 1.55.6 |  | java-archive-cataloger |
+| apm-micrometer-plugin | 1.55.6 |  | java-archive-cataloger |
+| apm-mongodb-common | 1.55.6 |  | java-archive-cataloger |
+| apm-mongodb3-plugin | 1.55.6 |  | java-archive-cataloger |
+| apm-mongodb4-plugin | 1.55.6 |  | java-archive-cataloger |
+| apm-okhttp-plugin | 1.55.6 |  | java-archive-cataloger |
+| apm-opentelemetry-embedded-metrics-sdk | 1.55.6 |  | java-archive-cataloger |
+| apm-opentelemetry-metrics-bridge-common | 1.55.6 |  | java-archive-cataloger |
+| apm-opentelemetry-metrics-bridge-latest | 1.55.6 |  | java-archive-cataloger |
+| apm-opentelemetry-metrics-bridge-v1_14 | 1.55.6 |  | java-archive-cataloger |
+| apm-opentelemetry-metricsdk-plugin | 1.55.6 |  | java-archive-cataloger |
+| apm-opentelemetry-plugin | 1.55.6 |  | java-archive-cataloger |
+| apm-opentracing-plugin | 1.55.6 |  | java-archive-cataloger |
+| apm-process-plugin | 1.55.6 |  | java-archive-cataloger |
+| apm-profiling-plugin | 1.55.6 |  | java-archive-cataloger |
+| apm-quartz-common | 1.55.6 |  | java-archive-cataloger |
+| apm-quartz-plugin-1 | 1.55.6 |  | java-archive-cataloger |
+| apm-quartz-plugin-2 | 1.55.6 |  | java-archive-cataloger |
+| apm-rabbitmq-plugin | 1.55.6 |  | java-archive-cataloger |
+| apm-rabbitmq-spring5 | 1.55.6 |  | java-archive-cataloger |
+| apm-reactor-plugin | 1.55.6 |  | java-archive-cataloger |
+| apm-redis-common | 1.55.6 |  | java-archive-cataloger |
+| apm-redisson-plugin | 1.55.6 |  | java-archive-cataloger |
+| apm-scala-concurrent-plugin | 1.55.6 |  | java-archive-cataloger |
+| apm-scheduled-annotation-plugin | 1.55.6 |  | java-archive-cataloger |
+| apm-servlet-plugin | 1.55.6 |  | java-archive-cataloger |
+| apm-slf4j-plugin | 1.55.6 |  | java-archive-cataloger |
+| apm-sparkjava-plugin | 1.55.6 |  | java-archive-cataloger |
+| apm-spring-resttemplate-plugin | 1.55.6 |  | java-archive-cataloger |
+| apm-spring-webclient-plugin | 1.55.6 |  | java-archive-cataloger |
+| apm-spring-webflux-common | 1.55.6 |  | java-archive-cataloger |
+| apm-spring-webflux-common-spring5 | 1.55.6 |  | java-archive-cataloger |
+| apm-spring-webflux-plugin | 1.55.6 |  | java-archive-cataloger |
+| apm-spring-webflux-spring5 | 1.55.6 |  | java-archive-cataloger |
+| apm-spring-webmvc-plugin | 1.55.6 |  | java-archive-cataloger |
+| apm-spring-webmvc-spring5 | 1.55.6 |  | java-archive-cataloger |
+| apm-struts-plugin | 1.55.6 |  | java-archive-cataloger |
+| apm-tomcat-logging-plugin | 1.55.6 |  | java-archive-cataloger |
+| apm-urlconnection-plugin | 1.55.6 |  | java-archive-cataloger |
+| apm-vertx-common | 1.55.6 |  | java-archive-cataloger |
+| apm-vertx3-plugin | 1.55.6 |  | java-archive-cataloger |
+| apm-vertx4-plugin | 1.55.6 |  | java-archive-cataloger |
 | arns | 2.31.78 | Apache-2.0 | java-archive-cataloger |
-| arrow | 9.3.4 |  | java-archive-cataloger |
+| arrow | 9.3.6 |  | java-archive-cataloger |
 | arrow-format | 18.3.0 | Apache-2.0 | java-archive-cataloger |
 | arrow-memory-core | 18.3.0 | Apache-2.0 | java-archive-cataloger |
 | arrow-vector | 18.3.0 | Apache-2.0 | java-archive-cataloger |
@@ -4403,12 +4373,12 @@ The complete source code for Traefik is publicly available at [https://github.co
 | asm-analysis | 9.9 |  | java-archive-cataloger |
 | asm-commons | 9.9 |  | java-archive-cataloger |
 | asm-commons | 9.9 |  | java-archive-cataloger |
-| asm-jdk-bridge | 0.0.10 |  | java-archive-cataloger |
+| asm-jdk-bridge | 0.0.13 |  | java-archive-cataloger |
 | asm-tree | 9.9 |  | java-archive-cataloger |
 | asm-tree | 9.9 |  | java-archive-cataloger |
 | asm-tree | 9.9 |  | java-archive-cataloger |
 | asm-util | 9.9 |  | java-archive-cataloger |
-| audit-libs | 3.1.5-7.el9 |  | rpm-db-cataloger |
+| audit-libs | 3.1.5-8.el9 |  | rpm-db-cataloger |
 | auth | 2.31.78 | Apache-2.0 | java-archive-cataloger |
 | auth | 2.31.78 | Apache-2.0 | java-archive-cataloger |
 | aws-core | 2.31.78 | Apache-2.0 | java-archive-cataloger |
@@ -4429,21 +4399,21 @@ The complete source code for Traefik is publicly available at [https://github.co
 | bash | 5.1.8-9.el9 |  | rpm-db-cataloger |
 | bc-fips | 1.0.2.6 |  | java-archive-cataloger |
 | bcpg-fips | 1.0.7.1 |  | java-archive-cataloger |
-| bcpkix-jdk18on | 1.79 |  | java-archive-cataloger |
-| bcprov-jdk18on | 1.79 |  | java-archive-cataloger |
-| bcutil-jdk18on | 1.79 |  | java-archive-cataloger |
+| bcpkix-jdk18on | 1.84 |  | java-archive-cataloger |
+| bcprov-jdk18on | 1.84 |  | java-archive-cataloger |
+| bcutil-jdk18on | 1.84 |  | java-archive-cataloger |
 | bedrockruntime | 2.31.78 | Apache-2.0 | java-archive-cataloger |
-| blob-cache | 9.3.4 |  | java-archive-cataloger |
-| byte-buddy-dep | 1.17.6 |  | java-archive-cataloger |
-| bzip2-libs | 1.0.8-10.el9_5 |  | rpm-db-cataloger |
-| ca-certificates | 2024.2.69_v8.0.303-91.4.el9_4 | MIT AND GPL-2.0-or-later | rpm-db-cataloger |
+| blob-cache | 9.3.6 |  | java-archive-cataloger |
+| byte-buddy-dep | 1.18.7-jdk5 |  | java-archive-cataloger |
+| bzip2-libs | 1.0.8-11.el9 |  | rpm-db-cataloger |
+| ca-certificates | 2025.2.80_v9.0.305-91.el9 | MIT AND GPL-2.0-or-later | rpm-db-cataloger |
 | checker-qual | 3.42.0 | MIT | java-archive-cataloger |
 | checker-qual | 3.49.0 | MIT | java-archive-cataloger |
 | checksums | 2.31.78 | Apache-2.0 | java-archive-cataloger |
 | checksums | 2.31.78 | Apache-2.0 | java-archive-cataloger |
 | checksums-spi | 2.31.78 | Apache-2.0 | java-archive-cataloger |
 | checksums-spi | 2.31.78 | Apache-2.0 | java-archive-cataloger |
-| cli-launcher | 9.3.4 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
+| cli-launcher | 9.3.6 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
 | collate | 77.1 |  | java-archive-cataloger |
 | collate | 77.1 |  | java-archive-cataloger |
 | commons-codec | 1.15 | Apache-2.0 | java-archive-cataloger |
@@ -4456,7 +4426,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | commons-compress | 1.28.0 | Apache-2.0 | java-archive-cataloger |
 | commons-io | 2.20.0 | Apache-2.0 | java-archive-cataloger |
 | commons-lang3 | 3.18.0 | Apache-2.0 | java-archive-cataloger |
-| commons-lang3 | 3.9 | Apache-2.0 | java-archive-cataloger |
+| commons-lang3 | 3.20.0 | Apache-2.0 | java-archive-cataloger |
 | commons-lang3 | 3.9 | Apache-2.0 | java-archive-cataloger |
 | commons-logging | 1.2 | Apache-2.0 | java-archive-cataloger |
 | commons-logging | 1.2 | Apache-2.0 | java-archive-cataloger |
@@ -4475,67 +4445,67 @@ The complete source code for Traefik is publicly available at [https://github.co
 | content-type | 2.3 | Apache-2.0 | java-archive-cataloger |
 | core | 77.1 |  | java-archive-cataloger |
 | core | 77.1 |  | java-archive-cataloger |
-| core | 9.3.4 | Apache-2.0 | java-archive-cataloger |
-| coreutils-single | 8.32-39.el9 |  | rpm-db-cataloger |
+| coreutils-single | 8.32-40.el9 |  | rpm-db-cataloger |
 | cryptacular | 1.2.5 |  | java-archive-cataloger |
 | cryptacular | 1.2.5 |  | java-archive-cataloger |
-| crypto-policies | 20250905-1.git377cc42.el9_7 | LGPL-2.1-or-later | rpm-db-cataloger |
-| curl-minimal | 7.76.1-35.el9_7.3 | MIT | rpm-db-cataloger |
+| crypto-policies | 20260224-1.gitea0f072.el9_8 | LGPL-2.1-or-later | rpm-db-cataloger |
+| curl-minimal | 7.76.1-40.el9 | MIT | rpm-db-cataloger |
 | currdata | 77.1 |  | java-archive-cataloger |
 | currdata | 77.1 |  | java-archive-cataloger |
 | cuvs-java | 25.12.0 |  | java-archive-cataloger |
 | cyrus-sasl-lib | 2.1.27-22.el9 |  | rpm-db-cataloger |
-| data-streams | 9.3.4 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
+| data-streams | 9.3.6 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
 | dejavu-sans-fonts | 2.37-18.el9 |  | rpm-db-cataloger |
-| dnf-data | 4.14.0-31.el9 |  | rpm-db-cataloger |
-| dot-prefix-validation | 9.3.4 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
+| dnf-data | 4.14.0-34.el9_8 |  | rpm-db-cataloger |
+| dot-prefix-validation | 9.3.6 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
 | dsl-json | 1.9.3 |  | java-archive-cataloger |
 | ecs-logging-core | 1.7.0 | Apache-2.0 | java-archive-cataloger |
 | ecs-logging-core | 1.7.0 |  | java-archive-cataloger |
-| elastic-apm-agent-java8 | 1.55.0 | Apache-2.0 | java-archive-cataloger |
-| elastic-apm-agent-premain | 1.55.0 |  | java-archive-cataloger |
-| elasticsearch | 9.3.4 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
-| elasticsearch-ansi-console | 9.3.4 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
-| elasticsearch-cli | 9.3.4 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
-| elasticsearch-core | 9.3.4 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
-| elasticsearch-core | 9.3.4 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
-| elasticsearch-dissect | 9.3.4 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
-| elasticsearch-dissect | 9.3.4 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
-| elasticsearch-dissect | 9.3.4 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
-| elasticsearch-entitlement | 9.3.4 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
-| elasticsearch-entitlement | 9.3.4 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
-| elasticsearch-entitlement-agent | 9.3.4 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
-| elasticsearch-entitlement-bridge | 9.3.4 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
-| elasticsearch-exponential-histogram | 9.3.4 | Apache-2.0 | java-archive-cataloger |
-| elasticsearch-geo | 9.3.4 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
-| elasticsearch-geoip-cli | 9.3.4 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
-| elasticsearch-gpu-codec | 9.3.4 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
-| elasticsearch-grok | 9.3.4 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
-| elasticsearch-h3 | 9.3.4 | Apache-2.0 | java-archive-cataloger |
-| elasticsearch-h3 | 9.3.4 | Apache-2.0 | java-archive-cataloger |
-| elasticsearch-logging | 9.3.4 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
-| elasticsearch-lz4 | 9.3.4 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
-| elasticsearch-native | 9.3.4 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
-| elasticsearch-plugin-analysis-api | 9.3.4 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
-| elasticsearch-plugin-api | 9.3.4 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
-| elasticsearch-plugin-api | 9.3.4 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
-| elasticsearch-plugin-cli | 9.3.4 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
-| elasticsearch-plugin-scanner | 9.3.4 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
-| elasticsearch-rest-client | 9.3.4 | Apache-2.0 | java-archive-cataloger |
-| elasticsearch-rest-client | 9.3.4 | Apache-2.0 | java-archive-cataloger |
-| elasticsearch-rest-client | 9.3.4 | Apache-2.0 | java-archive-cataloger |
-| elasticsearch-rest-client-sniffer | 9.3.4 | Apache-2.0 | java-archive-cataloger |
-| elasticsearch-scripting-painless-spi | 9.3.4 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
-| elasticsearch-security-cli | 9.3.4 |  | java-archive-cataloger |
-| elasticsearch-simdvec | 9.3.4 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
-| elasticsearch-sql-cli | 9.3.4 | Apache-2.0, LGPL-2.1-only | java-archive-cataloger |
-| elasticsearch-ssl-config | 9.3.4 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
-| elasticsearch-ssl-config | 9.3.4 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
-| elasticsearch-ssl-config | 9.3.4 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
-| elasticsearch-ssl-config | 9.3.4 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
-| elasticsearch-tdigest | 9.3.4 | Apache-2.0 | java-archive-cataloger |
-| elasticsearch-x-content | 9.3.4 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
-| elasticsearch-x-content | 9.3.4 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
+| elastic-apm-agent-java8 | 1.55.6 | Apache-2.0 | java-archive-cataloger |
+| elastic-apm-agent-premain | 1.55.6 |  | java-archive-cataloger |
+| elasticsearch | 9.3.6 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
+| elasticsearch-ansi-console | 9.3.6 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
+| elasticsearch-cli | 9.3.6 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
+| elasticsearch-core | 9.3.6 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
+| elasticsearch-core | 9.3.6 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
+| elasticsearch-dissect | 9.3.6 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
+| elasticsearch-dissect | 9.3.6 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
+| elasticsearch-dissect | 9.3.6 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
+| elasticsearch-entitlement | 9.3.6 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
+| elasticsearch-entitlement | 9.3.6 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
+| elasticsearch-entitlement-agent | 9.3.6 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
+| elasticsearch-entitlement-bridge | 9.3.6 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
+| elasticsearch-exponential-histogram | 9.3.6 | Apache-2.0 | java-archive-cataloger |
+| elasticsearch-geo | 9.3.6 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
+| elasticsearch-geoip-cli | 9.3.6 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
+| elasticsearch-gpu-codec | 9.3.6 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
+| elasticsearch-grok | 9.3.6 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
+| elasticsearch-h3 | 9.3.6 | Apache-2.0 | java-archive-cataloger |
+| elasticsearch-h3 | 9.3.6 | Apache-2.0 | java-archive-cataloger |
+| elasticsearch-log4j | 9.3.6 |  | java-archive-cataloger |
+| elasticsearch-logging | 9.3.6 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
+| elasticsearch-lz4 | 9.3.6 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
+| elasticsearch-native | 9.3.6 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
+| elasticsearch-plugin-analysis-api | 9.3.6 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
+| elasticsearch-plugin-api | 9.3.6 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
+| elasticsearch-plugin-api | 9.3.6 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
+| elasticsearch-plugin-cli | 9.3.6 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
+| elasticsearch-plugin-scanner | 9.3.6 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
+| elasticsearch-rest-client | 9.3.6 | Apache-2.0 | java-archive-cataloger |
+| elasticsearch-rest-client | 9.3.6 | Apache-2.0 | java-archive-cataloger |
+| elasticsearch-rest-client | 9.3.6 | Apache-2.0 | java-archive-cataloger |
+| elasticsearch-rest-client-sniffer | 9.3.6 | Apache-2.0 | java-archive-cataloger |
+| elasticsearch-scripting-painless-spi | 9.3.6 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
+| elasticsearch-security-cli | 9.3.6 |  | java-archive-cataloger |
+| elasticsearch-simdvec | 9.3.6 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
+| elasticsearch-sql-cli | 9.3.6 | Apache-2.0, LGPL-2.1-only | java-archive-cataloger |
+| elasticsearch-ssl-config | 9.3.6 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
+| elasticsearch-ssl-config | 9.3.6 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
+| elasticsearch-ssl-config | 9.3.6 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
+| elasticsearch-ssl-config | 9.3.6 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
+| elasticsearch-tdigest | 9.3.6 | Apache-2.0 | java-archive-cataloger |
+| elasticsearch-x-content | 9.3.6 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
+| elasticsearch-x-content | 9.3.6 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
 | endpoints-spi | 2.31.78 | Apache-2.0 | java-archive-cataloger |
 | endpoints-spi | 2.31.78 | Apache-2.0 | java-archive-cataloger |
 | eventstream | 1.0.1 |  | java-archive-cataloger |
@@ -4543,7 +4513,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | failureaccess | 1.0.1 | Apache-2.0 | java-archive-cataloger |
 | failureaccess | 1.0.1 | Apache-2.0 | java-archive-cataloger |
 | failureaccess | 1.0.2 | Apache-2.0 | java-archive-cataloger |
-| file-libs | 5.39-16.el9 |  | rpm-db-cataloger |
+| file-libs | 5.39-17.el9 |  | rpm-db-cataloger |
 | filesystem | 3.16-5.el9 |  | rpm-db-cataloger |
 | findutils | 1:4.8.0-7.el9 |  | rpm-db-cataloger |
 | flatbuffers-java | 23.5.26 |  | java-archive-cataloger |
@@ -4555,13 +4525,13 @@ The complete source code for Traefik is publicly available at [https://github.co
 | gax-httpjson | 2.63.1 |  | java-archive-cataloger |
 | gdbm-libs | 1:1.23-1.el9 |  | rpm-db-cataloger |
 | geoip2 | 4.2.1 |  | java-archive-cataloger |
-| glib2 | 2.68.4-18.el9_7.1 |  | rpm-db-cataloger |
-| glibc | 2.34-231.el9_7.10 |  | rpm-db-cataloger |
-| glibc-common | 2.34-231.el9_7.10 |  | rpm-db-cataloger |
-| glibc-minimal-langpack | 2.34-231.el9_7.10 |  | rpm-db-cataloger |
+| glib2 | 2.68.4-19.el9_8.1 |  | rpm-db-cataloger |
+| glibc | 2.34-270.el9_8 | LGPL-2.1-or-later AND SunPro AND LGPL-2.1-or-later WITH GCC-exception-2.0 AND BSD-3-Clause AND GPL-2.0-or-later AND LGPL-2.1-or-later WITH GNU-compiler-exception AND GPL-2.0-only AND ISC AND LicenseRef-Fedora-Public-Domain AND HPND AND CMU-Mach AND LGPL-2.0-or-later AND Unicode-3.0 AND GFDL-1.1-or-later AND GPL-1.0-or-later AND FSFUL AND MIT AND Inner-Net-2.0 AND X11 AND GPL-2.0-or-later WITH GCC-exception-2.0 AND GFDL-1.3-only AND GFDL-1.1-only AND GPL-3.0-or-later AND GPL-3.0-or-later WITH Autoconf-exception-generic-3.0 AND GPL-3.0-or-later WITH Texinfo-exception | rpm-db-cataloger |
+| glibc-common | 2.34-270.el9_8 | LGPL-2.1-or-later AND SunPro AND LGPL-2.1-or-later WITH GCC-exception-2.0 AND BSD-3-Clause AND GPL-2.0-or-later AND LGPL-2.1-or-later WITH GNU-compiler-exception AND GPL-2.0-only AND ISC AND LicenseRef-Fedora-Public-Domain AND HPND AND CMU-Mach AND LGPL-2.0-or-later AND Unicode-3.0 AND GFDL-1.1-or-later AND GPL-1.0-or-later AND FSFUL AND MIT AND Inner-Net-2.0 AND X11 AND GPL-2.0-or-later WITH GCC-exception-2.0 AND GFDL-1.3-only AND GFDL-1.1-only AND GPL-3.0-or-later AND GPL-3.0-or-later WITH Autoconf-exception-generic-3.0 AND GPL-3.0-or-later WITH Texinfo-exception | rpm-db-cataloger |
+| glibc-minimal-langpack | 2.34-270.el9_8 | LGPL-2.1-or-later AND SunPro AND LGPL-2.1-or-later WITH GCC-exception-2.0 AND BSD-3-Clause AND GPL-2.0-or-later AND LGPL-2.1-or-later WITH GNU-compiler-exception AND GPL-2.0-only AND ISC AND LicenseRef-Fedora-Public-Domain AND HPND AND CMU-Mach AND LGPL-2.0-or-later AND Unicode-3.0 AND GFDL-1.1-or-later AND GPL-1.0-or-later AND FSFUL AND MIT AND Inner-Net-2.0 AND X11 AND GPL-2.0-or-later WITH GCC-exception-2.0 AND GFDL-1.3-only AND GFDL-1.1-only AND GPL-3.0-or-later AND GPL-3.0-or-later WITH Autoconf-exception-generic-3.0 AND GPL-3.0-or-later WITH Texinfo-exception | rpm-db-cataloger |
 | gmp | 1:6.2.0-13.el9 |  | rpm-db-cataloger |
 | gnupg2 | 2.3.3-5.el9_7 |  | rpm-db-cataloger |
-| gnutls | 3.8.3-10.el9_7 |  | rpm-db-cataloger |
+| gnutls | 3.8.10-4.el9_8 |  | rpm-db-cataloger |
 | gobject-introspection | 1.68.0-11.el9 |  | rpm-db-cataloger |
 | google-api-client | 2.1.1 | Apache-2.0 | java-archive-cataloger |
 | google-api-client | 2.7.2 | Apache-2.0 | java-archive-cataloger |
@@ -4600,7 +4570,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | guava | 32.0.1-jre | Apache-2.0 | java-archive-cataloger |
 | guava | 32.0.1-jre | Apache-2.0 | java-archive-cataloger |
 | guava | 33.4.0-jre | Apache-2.0 | java-archive-cataloger |
-| health-shards-availability | 9.3.4 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
+| health-shards-availability | 9.3.6 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
 | hppc | 0.8.1 | Apache-2.0 | java-archive-cataloger |
 | http-auth | 2.31.78 | Apache-2.0 | java-archive-cataloger |
 | http-auth | 2.31.78 | Apache-2.0 | java-archive-cataloger |
@@ -4634,11 +4604,11 @@ The complete source code for Traefik is publicly available at [https://github.co
 | icu4j | 77.1 | Unicode-3.0 | java-archive-cataloger |
 | identity-spi | 2.31.78 | Apache-2.0 | java-archive-cataloger |
 | identity-spi | 2.31.78 | Apache-2.0 | java-archive-cataloger |
-| ingest-attachment | 9.3.4 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
-| ingest-common | 9.3.4 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
-| ingest-geoip | 9.3.4 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
-| ingest-otel | 9.3.4 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
-| ingest-user-agent | 9.3.4 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
+| ingest-attachment | 9.3.6 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
+| ingest-common | 9.3.6 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
+| ingest-geoip | 9.3.6 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
+| ingest-otel | 9.3.6 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
+| ingest-user-agent | 9.3.6 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
 | isorelax | 20090621 |  | java-archive-cataloger |
 | jackson-annotations | 2.15.0 | Apache-2.0 | java-archive-cataloger |
 | jackson-annotations | 2.15.0 | Apache-2.0 | java-archive-cataloger |
@@ -4679,7 +4649,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | jansi | 2.4.0 | Apache-2.0 | java-archive-cataloger |
 | java-support | 8.4.0 |  | java-archive-cataloger |
 | java-support | 8.4.0 |  | java-archive-cataloger |
-| java-version-checker | 9.3.4 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
+| java-version-checker | 9.3.6 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
 | jcip-annotations | 1.0 |  | java-archive-cataloger |
 | jcip-annotations | 1.0-1 |  | java-archive-cataloger |
 | jcip-annotations | 1.0-1 |  | java-archive-cataloger |
@@ -4690,8 +4660,8 @@ The complete source code for Traefik is publicly available at [https://github.co
 | jctools-core | 4.0.5 |  | java-archive-cataloger |
 | jctools-core | 4.0.5 |  | java-archive-cataloger |
 | jctools-core | 4.0.5 |  | java-archive-cataloger |
-| jctools-core | 4.0.5 |  | java-archive-cataloger |
-| jdk | 26+35-2893 |  | java-jvm-cataloger |
+| jctools-core | 4.0.6 |  | java-archive-cataloger |
+| jdk | 26.0.1+8-34 |  | java-jvm-cataloger |
 | jempbox | 1.8.17 | Apache-2.0 | java-archive-cataloger |
 | jline-reader | 3.21.0 |  | java-archive-cataloger |
 | jline-style | 3.21.0 |  | java-archive-cataloger |
@@ -4704,7 +4674,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | joni | 2.2.6 |  | java-archive-cataloger |
 | jopt-simple | 5.0.2 |  | java-archive-cataloger |
 | jopt-simple | 5.0.2 |  | java-archive-cataloger |
-| jrt-fs | 26 |  | java-archive-cataloger |
+| jrt-fs | 26.0.1 |  | java-archive-cataloger |
 | json-c | 0.14-11.el9 | MIT | rpm-db-cataloger |
 | json-glib | 1.6.6-1.el9 |  | rpm-db-cataloger |
 | json-schema-validator | 1.0.48 |  | java-archive-cataloger |
@@ -4718,15 +4688,15 @@ The complete source code for Traefik is publicly available at [https://github.co
 | jts-core | 1.20.0 |  | java-archive-cataloger |
 | jul-ecs-formatter | 1.7.0 |  | java-archive-cataloger |
 | juniversalchardet | 1.0.3 |  | java-archive-cataloger |
-| keystore-cli | 9.3.4 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
+| keystore-cli | 9.3.6 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
 | keyutils-libs | 1.6.3-1.el9 |  | rpm-db-cataloger |
-| kibana | 9.3.4 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
-| krb5-libs | 1.21.1-9.el9_7 | MIT | rpm-db-cataloger |
-| lang-expression | 9.3.4 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
-| lang-mustache | 9.3.4 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
-| lang-mustache | 9.3.4 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
-| lang-mustache | 9.3.4 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
-| lang-painless | 9.3.4 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
+| kibana | 9.3.6 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
+| krb5-libs | 1.21.1-10.el9_8 | MIT | rpm-db-cataloger |
+| lang-expression | 9.3.6 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
+| lang-mustache | 9.3.6 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
+| lang-mustache | 9.3.6 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
+| lang-mustache | 9.3.6 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
+| lang-painless | 9.3.6 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
 | lang-tag | 1.7 | Apache-2.0 | java-archive-cataloger |
 | lang-tag | 1.7 | Apache-2.0 | java-archive-cataloger |
 | langdata | 77.1 |  | java-archive-cataloger |
@@ -4734,62 +4704,62 @@ The complete source code for Traefik is publicly available at [https://github.co
 | langpacks-core-en | 3.0-16.el9 |  | rpm-db-cataloger |
 | langpacks-core-font-en | 3.0-16.el9 |  | rpm-db-cataloger |
 | langpacks-en | 3.0-16.el9 |  | rpm-db-cataloger |
-| legacy-geo | 9.3.4 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
+| legacy-geo | 9.3.6 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
 | libacl | 2.3.1-4.el9 |  | rpm-db-cataloger |
 | libarchive | 3.5.3-9.el9_7 |  | rpm-db-cataloger |
 | libassuan | 2.5.5-3.el9 |  | rpm-db-cataloger |
 | libattr | 2.5.1-3.el9 |  | rpm-db-cataloger |
-| libblkid | 2.37.4-21.el9_7 |  | rpm-db-cataloger |
-| libcap | 2.48-10.el9_7.1 |  | rpm-db-cataloger |
+| libblkid | 2.37.4-25.el9 |  | rpm-db-cataloger |
+| libcap | 2.48-10.el9_8.1 |  | rpm-db-cataloger |
 | libcap-ng | 0.8.2-7.el9 |  | rpm-db-cataloger |
 | libcom_err | 1.46.5-8.el9 | MIT | rpm-db-cataloger |
-| libcurl-minimal | 7.76.1-35.el9_7.3 | MIT | rpm-db-cataloger |
-| libdnf | 0.69.0-17.el9_7 |  | rpm-db-cataloger |
+| libcurl-minimal | 7.76.1-40.el9 | MIT | rpm-db-cataloger |
+| libdnf | 0.69.0-18.el9 |  | rpm-db-cataloger |
 | libevent | 2.1.12-8.el9_4 |  | rpm-db-cataloger |
 | libffi | 3.4.2-8.el9 | MIT | rpm-db-cataloger |
-| libgcc | 11.5.0-11.el9 |  | rpm-db-cataloger |
+| libgcc | 11.5.0-14.el9 |  | rpm-db-cataloger |
 | libgcrypt | 1.10.0-11.el9 |  | rpm-db-cataloger |
 | libgpg-error | 1.42-5.el9 |  | rpm-db-cataloger |
-| libibverbs | 57.0-2.el9 |  | rpm-db-cataloger |
+| libibverbs | 61.0-2.el9 |  | rpm-db-cataloger |
 | libidn2 | 2.3.0-7.el9 |  | rpm-db-cataloger |
 | libksba | 1.5.1-7.el9 |  | rpm-db-cataloger |
 | libmodulemd | 2.13.0-2.el9 | MIT | rpm-db-cataloger |
-| libmount | 2.37.4-21.el9_7 |  | rpm-db-cataloger |
-| libnghttp2 | 1.43.0-6.el9_7.1 | MIT | rpm-db-cataloger |
+| libmount | 2.37.4-25.el9 |  | rpm-db-cataloger |
+| libnghttp2 | 1.43.0-6.el9_8.1 | MIT | rpm-db-cataloger |
 | libnl3 | 3.11.0-1.el9 | LGPL-2.1-only | rpm-db-cataloger |
 | libpcap | 14:1.10.0-4.el9 |  | rpm-db-cataloger |
 | libpeas | 1.30.0-4.el9 |  | rpm-db-cataloger |
-| librepo | 1.14.5-3.el9 |  | rpm-db-cataloger |
+| librepo | 1.19.0-1.el9 | LGPL-2.1-or-later | rpm-db-cataloger |
 | libreport-filesystem | 2.15.2-6.el9 |  | rpm-db-cataloger |
 | librhsm | 0.0.3-9.el9 |  | rpm-db-cataloger |
 | libselinux | 3.6-3.el9 |  | rpm-db-cataloger |
 | libsemanage | 3.6-5.el9_6 |  | rpm-db-cataloger |
 | libsepol | 3.6-3.el9 |  | rpm-db-cataloger |
 | libsigsegv | 2.13-4.el9 |  | rpm-db-cataloger |
-| libsmartcols | 2.37.4-21.el9_7 |  | rpm-db-cataloger |
-| libsolv | 0.7.24-3.el9 |  | rpm-db-cataloger |
-| libstdc++ | 11.5.0-11.el9 |  | rpm-db-cataloger |
-| libtasn1 | 4.16.0-9.el9 |  | rpm-db-cataloger |
+| libsmartcols | 2.37.4-25.el9 |  | rpm-db-cataloger |
+| libsolv | 0.7.24-5.el9_8 |  | rpm-db-cataloger |
+| libstdc++ | 11.5.0-14.el9 |  | rpm-db-cataloger |
+| libtasn1 | 4.16.0-10.el9_8 |  | rpm-db-cataloger |
 | libtool-ltdl | 2.4.6-46.el9 |  | rpm-db-cataloger |
 | libunistring | 0.9.10-15.el9 |  | rpm-db-cataloger |
-| libusbx | 1.0.26-1.el9 |  | rpm-db-cataloger |
-| libuuid | 2.37.4-21.el9_7 |  | rpm-db-cataloger |
+| libusbx | 1.0.30-1.el9_8 |  | rpm-db-cataloger |
+| libuuid | 2.37.4-25.el9 |  | rpm-db-cataloger |
 | libverto | 0.3.2-3.el9 | MIT | rpm-db-cataloger |
 | libxcrypt | 4.4.18-3.el9 |  | rpm-db-cataloger |
-| libxml2 | 2.9.13-14.el9_7 | MIT | rpm-db-cataloger |
+| libxml2 | 2.9.13-14.el9_8.1 | MIT | rpm-db-cataloger |
 | libyaml | 0.2.5-7.el9 | MIT | rpm-db-cataloger |
 | libzstd | 1.5.5-1.el9 |  | rpm-db-cataloger |
-| log4j-1.2-api | 2.19.0 | Apache-2.0 | java-archive-cataloger |
-| log4j-1.2-api | 2.19.0 | Apache-2.0 | java-archive-cataloger |
-| log4j-1.2-api | 2.19.0 | Apache-2.0 | java-archive-cataloger |
-| log4j-api | 2.19.0 | Apache-2.0 | java-archive-cataloger |
-| log4j-api | 2.25.0 | Apache-2.0 | java-archive-cataloger |
-| log4j-core | 2.19.0 |  | java-archive-cataloger |
-| log4j-core | 2.25.0 | Apache-2.0 | java-archive-cataloger |
+| log4j-1.2-api | 2.26.0 |  | java-archive-cataloger |
+| log4j-1.2-api | 2.26.0 |  | java-archive-cataloger |
+| log4j-1.2-api | 2.26.0 |  | java-archive-cataloger |
+| log4j-api | 2.25.4 | Apache-2.0 | java-archive-cataloger |
+| log4j-api | 2.26.0 |  | java-archive-cataloger |
+| log4j-core | 2.25.4 | Apache-2.0 | java-archive-cataloger |
+| log4j-core | 2.26.0 | Apache-2.0 | java-archive-cataloger |
 | log4j-ecs-layout | 1.7.0 |  | java-archive-cataloger |
-| log4j-slf4j-impl | 2.25.0 | Apache-2.0 | java-archive-cataloger |
-| log4j-slf4j2-impl | 2.19.0 | Apache-2.0 | java-archive-cataloger |
-| log4j-slf4j2-impl | 2.19.0 | Apache-2.0 | java-archive-cataloger |
+| log4j-slf4j-impl | 2.25.4 | Apache-2.0 | java-archive-cataloger |
+| log4j-slf4j2-impl | 2.26.0 |  | java-archive-cataloger |
+| log4j-slf4j2-impl | 2.26.0 |  | java-archive-cataloger |
 | log4j2-ecs-layout | 1.7.0 | Apache-2.0 | java-archive-cataloger |
 | log4j2-ecs-layout | 1.7.0 |  | java-archive-cataloger |
 | logback-ecs-encoder | 1.7.0 |  | java-archive-cataloger |
@@ -4821,69 +4791,69 @@ The complete source code for Traefik is publicly available at [https://github.co
 | lz4-java | 1.10.1 |  | java-archive-cataloger |
 | lz4-libs | 1.9.3-5.el9 |  | rpm-db-cataloger |
 | mapbox-vector-tile | 3.1.0 |  | java-archive-cataloger |
-| mapper-extras | 9.3.4 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
-| mapper-extras | 9.3.4 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
+| mapper-extras | 9.3.6 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
+| mapper-extras | 9.3.6 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
 | maxmind-db | 3.1.1 |  | java-archive-cataloger |
 | metrics-core | 4.1.4 | Apache-2.0 | java-archive-cataloger |
 | metrics-core | 4.1.4 | Apache-2.0 | java-archive-cataloger |
 | metrics-spi | 2.31.78 | Apache-2.0 | java-archive-cataloger |
 | metrics-spi | 2.31.78 | Apache-2.0 | java-archive-cataloger |
 | microdnf | 3.9.1-3.el9 |  | rpm-db-cataloger |
-| ml-package-loader | 9.3.4 |  | java-archive-cataloger |
+| ml-package-loader | 9.3.6 |  | java-archive-cataloger |
 | morfologik-fsa | 2.1.1 |  | java-archive-cataloger |
 | morfologik-stemming | 2.1.1 |  | java-archive-cataloger |
 | morfologik-ukrainian-search | 3.7.5 |  | java-archive-cataloger |
-| mpfr | 4.1.0-7.el9 |  | rpm-db-cataloger |
+| mpfr | 4.1.0-10.el9 |  | rpm-db-cataloger |
 | msal4j | 1.16.2 |  | java-archive-cataloger |
 | msal4j-persistence-extension | 1.3.0 |  | java-archive-cataloger |
 | ncurses-base | 6.2-12.20210508.el9 | MIT | rpm-db-cataloger |
 | ncurses-libs | 6.2-12.20210508.el9 | MIT | rpm-db-cataloger |
 | nettle | 3.10.1-1.el9 |  | rpm-db-cataloger |
-| netty-buffer | 4.1.132.Final | Apache-2.0 | java-archive-cataloger |
-| netty-buffer | 4.1.132.Final | Apache-2.0 | java-archive-cataloger |
-| netty-buffer | 4.1.132.Final | Apache-2.0 | java-archive-cataloger |
-| netty-buffer | 4.1.132.Final | Apache-2.0 | java-archive-cataloger |
-| netty-codec | 4.1.132.Final | Apache-2.0 | java-archive-cataloger |
-| netty-codec | 4.1.132.Final | Apache-2.0 | java-archive-cataloger |
-| netty-codec | 4.1.132.Final | Apache-2.0 | java-archive-cataloger |
-| netty-codec | 4.1.132.Final | Apache-2.0 | java-archive-cataloger |
-| netty-codec-dns | 4.1.132.Final | Apache-2.0 | java-archive-cataloger |
-| netty-codec-dns | 4.1.132.Final | Apache-2.0 | java-archive-cataloger |
-| netty-codec-http | 4.1.132.Final | Apache-2.0 | java-archive-cataloger |
-| netty-codec-http | 4.1.132.Final | Apache-2.0 | java-archive-cataloger |
-| netty-codec-http | 4.1.132.Final | Apache-2.0 | java-archive-cataloger |
-| netty-codec-http | 4.1.132.Final | Apache-2.0 | java-archive-cataloger |
-| netty-codec-http2 | 4.1.132.Final | Apache-2.0 | java-archive-cataloger |
-| netty-codec-http2 | 4.1.132.Final | Apache-2.0 | java-archive-cataloger |
-| netty-codec-socks | 4.1.132.Final | Apache-2.0 | java-archive-cataloger |
-| netty-common | 4.1.132.Final | Apache-2.0 | java-archive-cataloger |
-| netty-common | 4.1.132.Final | Apache-2.0 | java-archive-cataloger |
-| netty-common | 4.1.132.Final | Apache-2.0 | java-archive-cataloger |
-| netty-common | 4.1.132.Final | Apache-2.0 | java-archive-cataloger |
-| netty-handler | 4.1.132.Final | Apache-2.0 | java-archive-cataloger |
-| netty-handler | 4.1.132.Final | Apache-2.0 | java-archive-cataloger |
-| netty-handler | 4.1.132.Final | Apache-2.0 | java-archive-cataloger |
-| netty-handler | 4.1.132.Final | Apache-2.0 | java-archive-cataloger |
-| netty-handler-proxy | 4.1.132.Final | Apache-2.0 | java-archive-cataloger |
+| netty-buffer | 4.1.135.Final | Apache-2.0 | java-archive-cataloger |
+| netty-buffer | 4.1.135.Final | Apache-2.0 | java-archive-cataloger |
+| netty-buffer | 4.1.135.Final | Apache-2.0 | java-archive-cataloger |
+| netty-buffer | 4.1.135.Final | Apache-2.0 | java-archive-cataloger |
+| netty-codec | 4.1.135.Final | Apache-2.0 | java-archive-cataloger |
+| netty-codec | 4.1.135.Final | Apache-2.0 | java-archive-cataloger |
+| netty-codec | 4.1.135.Final | Apache-2.0 | java-archive-cataloger |
+| netty-codec | 4.1.135.Final | Apache-2.0 | java-archive-cataloger |
+| netty-codec-dns | 4.1.135.Final | Apache-2.0 | java-archive-cataloger |
+| netty-codec-dns | 4.1.135.Final | Apache-2.0 | java-archive-cataloger |
+| netty-codec-http | 4.1.135.Final | Apache-2.0 | java-archive-cataloger |
+| netty-codec-http | 4.1.135.Final | Apache-2.0 | java-archive-cataloger |
+| netty-codec-http | 4.1.135.Final | Apache-2.0 | java-archive-cataloger |
+| netty-codec-http | 4.1.135.Final | Apache-2.0 | java-archive-cataloger |
+| netty-codec-http2 | 4.1.135.Final | Apache-2.0 | java-archive-cataloger |
+| netty-codec-http2 | 4.1.135.Final | Apache-2.0 | java-archive-cataloger |
+| netty-codec-socks | 4.1.135.Final | Apache-2.0 | java-archive-cataloger |
+| netty-common | 4.1.135.Final | Apache-2.0 | java-archive-cataloger |
+| netty-common | 4.1.135.Final | Apache-2.0 | java-archive-cataloger |
+| netty-common | 4.1.135.Final | Apache-2.0 | java-archive-cataloger |
+| netty-common | 4.1.135.Final | Apache-2.0 | java-archive-cataloger |
+| netty-handler | 4.1.135.Final | Apache-2.0 | java-archive-cataloger |
+| netty-handler | 4.1.135.Final | Apache-2.0 | java-archive-cataloger |
+| netty-handler | 4.1.135.Final | Apache-2.0 | java-archive-cataloger |
+| netty-handler | 4.1.135.Final | Apache-2.0 | java-archive-cataloger |
+| netty-handler-proxy | 4.1.135.Final | Apache-2.0 | java-archive-cataloger |
 | netty-nio-client | 2.31.78 | Apache-2.0 | java-archive-cataloger |
-| netty-resolver | 4.1.132.Final | Apache-2.0 | java-archive-cataloger |
-| netty-resolver | 4.1.132.Final | Apache-2.0 | java-archive-cataloger |
-| netty-resolver | 4.1.132.Final | Apache-2.0 | java-archive-cataloger |
-| netty-resolver | 4.1.132.Final | Apache-2.0 | java-archive-cataloger |
-| netty-resolver-dns | 4.1.132.Final | Apache-2.0 | java-archive-cataloger |
-| netty-resolver-dns | 4.1.132.Final | Apache-2.0 | java-archive-cataloger |
-| netty-transport | 4.1.132.Final | Apache-2.0 | java-archive-cataloger |
-| netty-transport | 4.1.132.Final | Apache-2.0 | java-archive-cataloger |
-| netty-transport | 4.1.132.Final | Apache-2.0 | java-archive-cataloger |
-| netty-transport | 4.1.132.Final | Apache-2.0 | java-archive-cataloger |
-| netty-transport-classes-epoll | 4.1.132.Final | Apache-2.0 | java-archive-cataloger |
-| netty-transport-native-unix-common | 4.1.132.Final | Apache-2.0 | java-archive-cataloger |
-| netty-transport-native-unix-common | 4.1.132.Final | Apache-2.0 | java-archive-cataloger |
-| netty-transport-native-unix-common | 4.1.132.Final | Apache-2.0 | java-archive-cataloger |
-| netty-transport-native-unix-common | 4.1.132.Final | Apache-2.0 | java-archive-cataloger |
+| netty-resolver | 4.1.135.Final | Apache-2.0 | java-archive-cataloger |
+| netty-resolver | 4.1.135.Final | Apache-2.0 | java-archive-cataloger |
+| netty-resolver | 4.1.135.Final | Apache-2.0 | java-archive-cataloger |
+| netty-resolver | 4.1.135.Final | Apache-2.0 | java-archive-cataloger |
+| netty-resolver-dns | 4.1.135.Final | Apache-2.0 | java-archive-cataloger |
+| netty-resolver-dns | 4.1.135.Final | Apache-2.0 | java-archive-cataloger |
+| netty-transport | 4.1.135.Final | Apache-2.0 | java-archive-cataloger |
+| netty-transport | 4.1.135.Final | Apache-2.0 | java-archive-cataloger |
+| netty-transport | 4.1.135.Final | Apache-2.0 | java-archive-cataloger |
+| netty-transport | 4.1.135.Final | Apache-2.0 | java-archive-cataloger |
+| netty-transport-classes-epoll | 4.1.135.Final | Apache-2.0 | java-archive-cataloger |
+| netty-transport-native-unix-common | 4.1.135.Final | Apache-2.0 | java-archive-cataloger |
+| netty-transport-native-unix-common | 4.1.135.Final | Apache-2.0 | java-archive-cataloger |
+| netty-transport-native-unix-common | 4.1.135.Final | Apache-2.0 | java-archive-cataloger |
+| netty-transport-native-unix-common | 4.1.135.Final | Apache-2.0 | java-archive-cataloger |
 | nimbus-jose-jwt | 10.0.2 | Apache-2.0 | java-archive-cataloger |
 | nimbus-jose-jwt | 10.0.2 | Apache-2.0 | java-archive-cataloger |
-| nmap-ncat | 3:7.92-3.el9 |  | rpm-db-cataloger |
+| nmap-ncat | 3:7.92-5.el9 |  | rpm-db-cataloger |
 | npth | 1.6-8.el9 |  | rpm-db-cataloger |
 | oauth2-oidc-sdk | 11.22.2 |  | java-archive-cataloger |
 | oauth2-oidc-sdk | 11.22.2 |  | java-archive-cataloger |
@@ -4923,24 +4893,25 @@ The complete source code for Traefik is publicly available at [https://github.co
 | opensaml-xmlsec-api | 4.3.0 |  | java-archive-cataloger |
 | opensaml-xmlsec-impl | 4.3.0 |  | java-archive-cataloger |
 | opensaml-xmlsec-impl | 4.3.0 |  | java-archive-cataloger |
-| openssl-fips-provider | 3.0.7-8.el9 |  | rpm-db-cataloger |
-| openssl-fips-provider-so | 3.0.7-8.el9 |  | rpm-db-cataloger |
-| openssl-libs | 1:3.5.1-7.el9_7 | Apache-2.0 | rpm-db-cataloger |
-| opentelemetry-api | 1.31.0 |  | java-archive-cataloger |
+| openssl-fips-provider | 3.0.7-11.el9_8 |  | rpm-db-cataloger |
+| openssl-fips-provider-so | 3.0.7-11.el9_8 |  | rpm-db-cataloger |
+| openssl-libs | 1:3.5.5-4.el9_8 | Apache-2.0 | rpm-db-cataloger |
 | opentelemetry-api | 1.47.0 |  | java-archive-cataloger |
-| opentelemetry-context | 1.31.0 |  | java-archive-cataloger |
+| opentelemetry-api | 1.62.0 |  | java-archive-cataloger |
+| opentelemetry-common | 1.62.0 |  | java-archive-cataloger |
 | opentelemetry-context | 1.47.0 |  | java-archive-cataloger |
+| opentelemetry-context | 1.62.0 |  | java-archive-cataloger |
 | opentelemetry-semconv | 1.21.0-alpha |  | java-archive-cataloger |
 | owasp-java-html-sanitizer | 20211018.2 | Apache-2.0 | java-archive-cataloger |
-| p11-kit | 0.25.3-3.el9_5 | BSD-3-Clause | rpm-db-cataloger |
-| p11-kit-trust | 0.25.3-3.el9_5 | BSD-3-Clause | rpm-db-cataloger |
-| parent-join | 9.3.4 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
+| p11-kit | 0.26.2-1.el9 | BSD-3-Clause | rpm-db-cataloger |
+| p11-kit-trust | 0.26.2-1.el9 | BSD-3-Clause | rpm-db-cataloger |
+| parent-join | 9.3.6 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
 | pcre | 8.44-4.el9 |  | rpm-db-cataloger |
 | pcre2 | 10.40-6.el9 |  | rpm-db-cataloger |
 | pcre2-syntax | 10.40-6.el9 |  | rpm-db-cataloger |
 | pdfbox | 3.0.5 | Apache-2.0 | java-archive-cataloger |
 | pdfbox-io | 3.0.5 | Apache-2.0 | java-archive-cataloger |
-| percolator | 9.3.4 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
+| percolator | 9.3.6 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
 | poi | 5.4.1 | Apache-2.0, MIT | java-archive-cataloger |
 | poi-ooxml | 5.4.1 | Apache-2.0, MIT | java-archive-cataloger |
 | poi-ooxml-lite | 5.4.1 | Apache-2.0, MIT | java-archive-cataloger |
@@ -4961,9 +4932,9 @@ The complete source code for Traefik is publicly available at [https://github.co
 | protobuf-java-util | 3.25.5 | BSD-3-Clause | java-archive-cataloger |
 | protocol-core | 2.31.78 | Apache-2.0 | java-archive-cataloger |
 | protocol-core | 2.31.78 | Apache-2.0 | java-archive-cataloger |
-| rank-eval | 9.3.4 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
-| rank-rrf | 9.3.4 |  | java-archive-cataloger |
-| rank-vectors | 9.3.4 |  | java-archive-cataloger |
+| rank-eval | 9.3.6 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
+| rank-rrf | 9.3.6 |  | java-archive-cataloger |
+| rank-vectors | 9.3.6 |  | java-archive-cataloger |
 | reactive-streams | 1.0.4 |  | java-archive-cataloger |
 | reactive-streams | 1.0.4 |  | java-archive-cataloger |
 | reactive-streams | 1.0.4 |  | java-archive-cataloger |
@@ -4972,60 +4943,59 @@ The complete source code for Traefik is publicly available at [https://github.co
 | reactor-netty-core | 1.0.45 |  | java-archive-cataloger |
 | reactor-netty-http | 1.0.45 |  | java-archive-cataloger |
 | readline | 8.1-4.el9 |  | rpm-db-cataloger |
-| redhat-release | 9.7-0.7.el9 |  | rpm-db-cataloger |
+| redhat-release | 9.8-1.0.el9 |  | rpm-db-cataloger |
 | regiondata | 77.1 |  | java-archive-cataloger |
 | regiondata | 77.1 |  | java-archive-cataloger |
 | regions | 2.31.78 | Apache-2.0 | java-archive-cataloger |
 | regions | 2.31.78 | Apache-2.0 | java-archive-cataloger |
-| reindex | 9.3.4 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
-| reindex | 9.3.4 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
-| reindex-management | 9.3.4 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
-| repository-azure | 9.3.4 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
-| repository-gcs | 9.3.4 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
-| repository-s3 | 9.3.4 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
-| repository-url | 9.3.4 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
-| rest-root | 9.3.4 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
+| reindex | 9.3.6 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
+| reindex | 9.3.6 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
+| reindex-management | 9.3.6 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
+| repository-azure | 9.3.6 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
+| repository-gcs | 9.3.6 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
+| repository-s3 | 9.3.6 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
+| repository-url | 9.3.6 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
+| rest-root | 9.3.6 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
 | retries | 2.31.78 | Apache-2.0 | java-archive-cataloger |
 | retries | 2.31.78 | Apache-2.0 | java-archive-cataloger |
 | retries-spi | 2.31.78 | Apache-2.0 | java-archive-cataloger |
 | retries-spi | 2.31.78 | Apache-2.0 | java-archive-cataloger |
 | rootfiles | 8.1-35.el9 |  | rpm-db-cataloger |
-| rpm | 4.16.1.3-39.el9 |  | rpm-db-cataloger |
-| rpm-libs | 4.16.1.3-39.el9 |  | rpm-db-cataloger |
-| runtime-fields-common | 9.3.4 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
+| rpm | 4.16.1.3-40.el9 |  | rpm-db-cataloger |
+| rpm-libs | 4.16.1.3-40.el9 |  | rpm-db-cataloger |
+| runtime-fields-common | 9.3.6 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
 | s2-geometry-library-java | 1.0.1 |  | java-archive-cataloger |
 | s3 | 2.31.78 | Apache-2.0 | java-archive-cataloger |
 | sagemakerruntime | 2.31.78 | Apache-2.0 | java-archive-cataloger |
 | sdk-core | 2.31.78 | Apache-2.0 | java-archive-cataloger |
 | sdk-core | 2.31.78 | Apache-2.0 | java-archive-cataloger |
-| sed | 4.8-9.el9 |  | rpm-db-cataloger |
-| server-cli | 9.3.4 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
+| sed | 4.8-10.el9 |  | rpm-db-cataloger |
+| server-cli | 9.3.6 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
 | setup | 2.13.7-10.el9 |  | rpm-db-cataloger |
-| shadow-utils | 2:4.9-15.el9 |  | rpm-db-cataloger |
+| shadow-utils | 2:4.9-16.el9 |  | rpm-db-cataloger |
 | siv-mode | 1.5.2 |  | java-archive-cataloger |
 | slf4j-api | 1.7.36 |  | java-archive-cataloger |
 | slf4j-api | 2.0.17 |  | java-archive-cataloger |
-| slf4j-api | 2.0.6 |  | java-archive-cataloger |
-| slf4j-api | 2.0.6 |  | java-archive-cataloger |
-| slf4j-api | 2.0.6 |  | java-archive-cataloger |
-| slf4j-api | 2.0.6 |  | java-archive-cataloger |
+| slf4j-api | 2.0.17 |  | java-archive-cataloger |
+| slf4j-api | 2.0.17 |  | java-archive-cataloger |
+| slf4j-api | 2.0.17 |  | java-archive-cataloger |
+| slf4j-api | 2.0.17 |  | java-archive-cataloger |
 | slf4j-nop | 2.0.17 |  | java-archive-cataloger |
-| slf4j-nop | 2.0.6 |  | java-archive-cataloger |
-| slf4j-nop | 2.0.6 |  | java-archive-cataloger |
-| slf4j-nop | 2.0.6 |  | java-archive-cataloger |
+| slf4j-nop | 2.0.17 |  | java-archive-cataloger |
+| slf4j-nop | 2.0.17 |  | java-archive-cataloger |
+| slf4j-nop | 2.0.17 |  | java-archive-cataloger |
 | snakeyaml | 2.0 |  | java-archive-cataloger |
 | snakeyaml | 2.0 |  | java-archive-cataloger |
-| spatial | 9.3.4 |  | java-archive-cataloger |
+| spatial | 9.3.6 |  | java-archive-cataloger |
 | spatial4j | 0.7 | Apache-2.0 | java-archive-cataloger |
-| sql-action | 9.3.4 |  | java-archive-cataloger |
-| sql-proto | 9.3.4 |  | java-archive-cataloger |
-| sqlite-libs | 3.34.1-9.el9_7 |  | rpm-db-cataloger |
-| stateless | 9.3.4 |  | java-archive-cataloger |
+| sql-action | 9.3.6 |  | java-archive-cataloger |
+| sql-proto | 9.3.6 |  | java-archive-cataloger |
+| sqlite-libs | 3.34.1-10.el9_8 |  | rpm-db-cataloger |
 | stax2-api | 4.2.2 |  | java-archive-cataloger |
-| streams | 9.3.4 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
+| streams | 9.3.6 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
 | sts | 2.31.78 | Apache-2.0 | java-archive-cataloger |
 | super-csv | 2.4.0 | Apache-2.0 | java-archive-cataloger |
-| systemd-libs | 252-55.el9_7.9 |  | rpm-db-cataloger |
+| systemd-libs | 252-67.el9_8.4 |  | rpm-db-cataloger |
 | third-party-jackson-core | 2.31.78 | Apache-2.0 | java-archive-cataloger |
 | third-party-jackson-core | 2.31.78 | Apache-2.0 | java-archive-cataloger |
 | threetenbp | 1.7.0 |  | java-archive-cataloger |
@@ -5040,84 +5010,84 @@ The complete source code for Traefik is publicly available at [https://github.co
 | tika-parser-xml-module | 3.2.3 | Apache-2.0 | java-archive-cataloger |
 | tika-parser-xmp-commons | 3.2.3 | Apache-2.0 | java-archive-cataloger |
 | tika-parser-zip-commons | 3.2.3 | Apache-2.0 | java-archive-cataloger |
-| transform | 9.3.4 |  | java-archive-cataloger |
+| transform | 9.3.6 |  | java-archive-cataloger |
 | translit | 77.1 |  | java-archive-cataloger |
 | translit | 77.1 |  | java-archive-cataloger |
-| transport-netty4 | 9.3.4 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
-| transport-netty4 | 9.3.4 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
-| transport-netty4 | 9.3.4 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
-| tzdata | 2026a-1.el9 |  | rpm-db-cataloger |
+| transport-netty4 | 9.3.6 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
+| transport-netty4 | 9.3.6 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
+| transport-netty4 | 9.3.6 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
+| tzdata | 2026b-1.el9 |  | rpm-db-cataloger |
 | unboundid-ldapsdk | 7.0.3 | GPL-2.0-only, LGPL-2.1-only | java-archive-cataloger |
-| unzip | 6.0-59.el9 |  | rpm-db-cataloger |
+| unzip | 6.0-60.el9 |  | rpm-db-cataloger |
 | utils | 2.31.78 | Apache-2.0 | java-archive-cataloger |
 | utils | 2.31.78 | Apache-2.0 | java-archive-cataloger |
-| vector-tile | 9.3.4 |  | java-archive-cataloger |
+| vector-tile | 9.3.6 |  | java-archive-cataloger |
 | weak-lock-free | 0.18 |  | java-archive-cataloger |
-| windows-service-cli | 9.3.4 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
+| windows-service-cli | 9.3.6 | AGPL-3.0-only, SSPL-1.0 | java-archive-cataloger |
 | woodstox-core | 6.7.0 | Apache-2.0 | java-archive-cataloger |
-| x-pack-aggregate-metric | 9.3.4 |  | java-archive-cataloger |
-| x-pack-analytics | 9.3.4 |  | java-archive-cataloger |
-| x-pack-analytics | 9.3.4 |  | java-archive-cataloger |
-| x-pack-apm-data | 9.3.4 |  | java-archive-cataloger |
-| x-pack-async | 9.3.4 |  | java-archive-cataloger |
-| x-pack-async-search | 9.3.4 |  | java-archive-cataloger |
-| x-pack-autoscaling | 9.3.4 |  | java-archive-cataloger |
-| x-pack-ccr | 9.3.4 |  | java-archive-cataloger |
-| x-pack-constant-keyword | 9.3.4 |  | java-archive-cataloger |
-| x-pack-core | 9.3.4 |  | java-archive-cataloger |
-| x-pack-counted-keyword | 9.3.4 |  | java-archive-cataloger |
-| x-pack-deprecation | 9.3.4 |  | java-archive-cataloger |
-| x-pack-diskbbq | 9.3.4 |  | java-archive-cataloger |
-| x-pack-downsample | 9.3.4 |  | java-archive-cataloger |
-| x-pack-enrich | 9.3.4 |  | java-archive-cataloger |
-| x-pack-ent-search | 9.3.4 |  | java-archive-cataloger |
-| x-pack-eql | 9.3.4 |  | java-archive-cataloger |
-| x-pack-esql | 9.3.4 |  | java-archive-cataloger |
-| x-pack-esql-compute | 9.3.4 |  | java-archive-cataloger |
-| x-pack-esql-compute-ann | 9.3.4 |  | java-archive-cataloger |
-| x-pack-esql-core | 9.3.4 |  | java-archive-cataloger |
-| x-pack-exponential-histogram | 9.3.4 |  | java-archive-cataloger |
-| x-pack-fleet | 9.3.4 |  | java-archive-cataloger |
-| x-pack-frozen-indices | 9.3.4 |  | java-archive-cataloger |
-| x-pack-geoip-enterprise-downloader | 9.3.4 |  | java-archive-cataloger |
-| x-pack-gpu | 9.3.4 |  | java-archive-cataloger |
-| x-pack-graph | 9.3.4 |  | java-archive-cataloger |
-| x-pack-identity-provider | 9.3.4 |  | java-archive-cataloger |
-| x-pack-ilm | 9.3.4 |  | java-archive-cataloger |
-| x-pack-inference | 9.3.4 |  | java-archive-cataloger |
-| x-pack-kql | 9.3.4 |  | java-archive-cataloger |
-| x-pack-kql | 9.3.4 |  | java-archive-cataloger |
-| x-pack-logsdb | 9.3.4 |  | java-archive-cataloger |
-| x-pack-logstash | 9.3.4 |  | java-archive-cataloger |
-| x-pack-mapper-version | 9.3.4 |  | java-archive-cataloger |
-| x-pack-mapper-version | 9.3.4 |  | java-archive-cataloger |
-| x-pack-mapper-version | 9.3.4 |  | java-archive-cataloger |
-| x-pack-migrate | 9.3.4 |  | java-archive-cataloger |
-| x-pack-ml | 9.3.4 |  | java-archive-cataloger |
-| x-pack-monitoring | 9.3.4 |  | java-archive-cataloger |
-| x-pack-old-lucene-versions | 9.3.4 |  | java-archive-cataloger |
-| x-pack-otel-data | 9.3.4 |  | java-archive-cataloger |
-| x-pack-profiling | 9.3.4 |  | java-archive-cataloger |
-| x-pack-ql | 9.3.4 |  | java-archive-cataloger |
-| x-pack-redact | 9.3.4 |  | java-archive-cataloger |
-| x-pack-repositories-metering-api | 9.3.4 |  | java-archive-cataloger |
-| x-pack-rollup | 9.3.4 |  | java-archive-cataloger |
-| x-pack-searchable-snapshots | 9.3.4 |  | java-archive-cataloger |
-| x-pack-searchbusinessrules | 9.3.4 |  | java-archive-cataloger |
-| x-pack-security | 9.3.4 |  | java-archive-cataloger |
-| x-pack-shutdown | 9.3.4 |  | java-archive-cataloger |
-| x-pack-slm | 9.3.4 |  | java-archive-cataloger |
-| x-pack-snapshot-based-recoveries | 9.3.4 |  | java-archive-cataloger |
-| x-pack-snapshot-repo-test-kit | 9.3.4 |  | java-archive-cataloger |
-| x-pack-sql | 9.3.4 |  | java-archive-cataloger |
-| x-pack-stack | 9.3.4 |  | java-archive-cataloger |
-| x-pack-template-resources | 9.3.4 |  | java-archive-cataloger |
-| x-pack-text-structure | 9.3.4 |  | java-archive-cataloger |
-| x-pack-unsigned-long | 9.3.4 |  | java-archive-cataloger |
-| x-pack-voting-only-node | 9.3.4 |  | java-archive-cataloger |
-| x-pack-watcher | 9.3.4 |  | java-archive-cataloger |
-| x-pack-wildcard | 9.3.4 |  | java-archive-cataloger |
-| x-pack-write-load-forecaster | 9.3.4 |  | java-archive-cataloger |
+| x-pack-aggregate-metric | 9.3.6 |  | java-archive-cataloger |
+| x-pack-analytics | 9.3.6 |  | java-archive-cataloger |
+| x-pack-analytics | 9.3.6 |  | java-archive-cataloger |
+| x-pack-apm-data | 9.3.6 |  | java-archive-cataloger |
+| x-pack-async | 9.3.6 |  | java-archive-cataloger |
+| x-pack-async-search | 9.3.6 |  | java-archive-cataloger |
+| x-pack-autoscaling | 9.3.6 |  | java-archive-cataloger |
+| x-pack-ccr | 9.3.6 |  | java-archive-cataloger |
+| x-pack-constant-keyword | 9.3.6 |  | java-archive-cataloger |
+| x-pack-core | 9.3.6 |  | java-archive-cataloger |
+| x-pack-counted-keyword | 9.3.6 |  | java-archive-cataloger |
+| x-pack-deprecation | 9.3.6 |  | java-archive-cataloger |
+| x-pack-diskbbq | 9.3.6 |  | java-archive-cataloger |
+| x-pack-downsample | 9.3.6 |  | java-archive-cataloger |
+| x-pack-enrich | 9.3.6 |  | java-archive-cataloger |
+| x-pack-ent-search | 9.3.6 |  | java-archive-cataloger |
+| x-pack-eql | 9.3.6 |  | java-archive-cataloger |
+| x-pack-esql | 9.3.6 |  | java-archive-cataloger |
+| x-pack-esql-compute | 9.3.6 |  | java-archive-cataloger |
+| x-pack-esql-compute-ann | 9.3.6 |  | java-archive-cataloger |
+| x-pack-esql-core | 9.3.6 |  | java-archive-cataloger |
+| x-pack-exponential-histogram | 9.3.6 |  | java-archive-cataloger |
+| x-pack-fleet | 9.3.6 |  | java-archive-cataloger |
+| x-pack-frozen-indices | 9.3.6 |  | java-archive-cataloger |
+| x-pack-geoip-enterprise-downloader | 9.3.6 |  | java-archive-cataloger |
+| x-pack-gpu | 9.3.6 |  | java-archive-cataloger |
+| x-pack-graph | 9.3.6 |  | java-archive-cataloger |
+| x-pack-identity-provider | 9.3.6 |  | java-archive-cataloger |
+| x-pack-ilm | 9.3.6 |  | java-archive-cataloger |
+| x-pack-inference | 9.3.6 |  | java-archive-cataloger |
+| x-pack-kql | 9.3.6 |  | java-archive-cataloger |
+| x-pack-kql | 9.3.6 |  | java-archive-cataloger |
+| x-pack-logsdb | 9.3.6 |  | java-archive-cataloger |
+| x-pack-logstash | 9.3.6 |  | java-archive-cataloger |
+| x-pack-mapper-version | 9.3.6 |  | java-archive-cataloger |
+| x-pack-mapper-version | 9.3.6 |  | java-archive-cataloger |
+| x-pack-mapper-version | 9.3.6 |  | java-archive-cataloger |
+| x-pack-migrate | 9.3.6 |  | java-archive-cataloger |
+| x-pack-ml | 9.3.6 |  | java-archive-cataloger |
+| x-pack-monitoring | 9.3.6 |  | java-archive-cataloger |
+| x-pack-old-lucene-versions | 9.3.6 |  | java-archive-cataloger |
+| x-pack-otel-data | 9.3.6 |  | java-archive-cataloger |
+| x-pack-profiling | 9.3.6 |  | java-archive-cataloger |
+| x-pack-ql | 9.3.6 |  | java-archive-cataloger |
+| x-pack-redact | 9.3.6 |  | java-archive-cataloger |
+| x-pack-repositories-metering-api | 9.3.6 |  | java-archive-cataloger |
+| x-pack-rollup | 9.3.6 |  | java-archive-cataloger |
+| x-pack-searchable-snapshots | 9.3.6 |  | java-archive-cataloger |
+| x-pack-searchbusinessrules | 9.3.6 |  | java-archive-cataloger |
+| x-pack-security | 9.3.6 |  | java-archive-cataloger |
+| x-pack-shutdown | 9.3.6 |  | java-archive-cataloger |
+| x-pack-slm | 9.3.6 |  | java-archive-cataloger |
+| x-pack-snapshot-based-recoveries | 9.3.6 |  | java-archive-cataloger |
+| x-pack-snapshot-repo-test-kit | 9.3.6 |  | java-archive-cataloger |
+| x-pack-sql | 9.3.6 |  | java-archive-cataloger |
+| x-pack-stack | 9.3.6 |  | java-archive-cataloger |
+| x-pack-template-resources | 9.3.6 |  | java-archive-cataloger |
+| x-pack-text-structure | 9.3.6 |  | java-archive-cataloger |
+| x-pack-unsigned-long | 9.3.6 |  | java-archive-cataloger |
+| x-pack-voting-only-node | 9.3.6 |  | java-archive-cataloger |
+| x-pack-watcher | 9.3.6 |  | java-archive-cataloger |
+| x-pack-wildcard | 9.3.6 |  | java-archive-cataloger |
+| x-pack-write-load-forecaster | 9.3.6 |  | java-archive-cataloger |
 | xmlbeans | 5.3.0 | Apache-2.0, W3C-19980720 | java-archive-cataloger |
 | xmlsec | 2.3.4 | Apache-2.0 | java-archive-cataloger |
 | xmlsec | 2.3.4 | Apache-2.0 | java-archive-cataloger |
@@ -5183,77 +5153,63 @@ The complete source code for Traefik is publicly available at [https://github.co
 
 | Package | Version | License | Found by |
 | ------- | --------| ------- | -------- |
-| .otp-run-deps | 20250701.222004 |  | apk-db-cataloger |
-| alpine-baselayout | 3.7.0-r0 | GPL-2.0-only | apk-db-cataloger |
-| alpine-baselayout-data | 3.7.0-r0 | GPL-2.0-only | apk-db-cataloger |
-| alpine-keys | 2.5-r0 | MIT | apk-db-cataloger |
-| alpine-release | 3.22.0-r0 | MIT | apk-db-cataloger |
-| apk-tools | 2.14.9-r2 | GPL-2.0-only | apk-db-cataloger |
-| bash | 5.2.37-r0 | GPL-3.0-or-later | apk-db-cataloger |
-| busybox | 1.37.0-r18 | GPL-2.0-only | apk-db-cataloger |
-| busybox-binsh | 1.37.0-r18 | GPL-2.0-only | apk-db-cataloger |
-| ca-certificates-bundle | 20241121-r2 | MPL-2.0 AND MIT | apk-db-cataloger |
-| erlang | 27.3.4.1 |  | binary-classifier-cataloger |
-| gdbm | 1.24-r0 | GPL-3.0-or-later | apk-db-cataloger |
-| libapk2 | 2.14.9-r2 | GPL-2.0-only | apk-db-cataloger |
-| libbz2 | 1.0.8-r6 | bzip2-1.0.6 | apk-db-cataloger |
-| libcrypto3 | 3.5.0-r0 | Apache-2.0 | apk-db-cataloger |
-| libexpat | 2.7.1-r0 | MIT | apk-db-cataloger |
-| libffi | 3.4.8-r0 | MIT | apk-db-cataloger |
-| libgcc | 14.2.0-r6 | GPL-2.0-or-later AND LGPL-2.1-or-later | apk-db-cataloger |
-| libintl | 0.24.1-r0 | LGPL-2.1-or-later | apk-db-cataloger |
-| libncursesw | 6.5_p20250503-r0 | X11 | apk-db-cataloger |
-| libpanelw | 6.5_p20250503-r0 | X11 | apk-db-cataloger |
-| libproc2 | 4.0.4-r3 | GPL-2.0-or-later AND LGPL-2.1-or-later | apk-db-cataloger |
-| libssl3 | 3.5.0-r0 | Apache-2.0 | apk-db-cataloger |
-| libstdc++ | 14.2.0-r6 | GPL-2.0-or-later AND LGPL-2.1-or-later | apk-db-cataloger |
-| mpdecimal | 4.0.1-r0 | BSD-2-Clause | apk-db-cataloger |
-| musl | 1.2.5-r10 | MIT | apk-db-cataloger |
-| musl-utils | 1.2.5-r10 | MIT AND BSD-2-Clause AND GPL-2.0-or-later | apk-db-cataloger |
-| ncurses-terminfo-base | 6.5_p20250503-r0 | X11 | apk-db-cataloger |
-| openssl | 3.3.4 |  | binary-classifier-cataloger |
-| procps-ng | 4.0.4-r3 | GPL-2.0-or-later AND LGPL-2.1-or-later | apk-db-cataloger |
-| pyc | 3.12.11-r0 | PSF-2.0 | apk-db-cataloger |
-| python3 | 3.12.11-r0 | PSF-2.0 | apk-db-cataloger |
-| python3-pyc | 3.12.11-r0 | PSF-2.0 | apk-db-cataloger |
-| python3-pycache-pyc0 | 3.12.11-r0 | PSF-2.0 | apk-db-cataloger |
-| readline | 8.2.13-r1 | GPL-3.0-or-later | apk-db-cataloger |
-| scanelf | 1.3.8-r1 | GPL-2.0-only | apk-db-cataloger |
+| .otp-run-deps | 20260622.200759 |  | apk-db-cataloger |
+| alpine-baselayout | 3.7.2-r0 | GPL-2.0-only | apk-db-cataloger |
+| alpine-baselayout-data | 3.7.2-r0 | GPL-2.0-only | apk-db-cataloger |
+| alpine-keys | 2.6-r0 | MIT | apk-db-cataloger |
+| alpine-release | 3.23.5-r0 | MIT | apk-db-cataloger |
+| apk-tools | 3.0.6-r0 | GPL-2.0-only | apk-db-cataloger |
+| bash | 5.3.3-r1 | GPL-3.0-or-later | apk-db-cataloger |
+| busybox | 1.37.0-r30 | GPL-2.0-only | apk-db-cataloger |
+| busybox-binsh | 1.37.0-r30 | GPL-2.0-only | apk-db-cataloger |
+| ca-certificates-bundle | 20260611-r0 | MPL-2.0 AND MIT | apk-db-cataloger |
+| erlang | 27.3.4.13 |  | binary-classifier-cataloger |
+| libapk | 3.0.6-r0 | GPL-2.0-only | apk-db-cataloger |
+| libcrypto3 | 3.5.7-r0 | Apache-2.0 | apk-db-cataloger |
+| libgcc | 15.2.0-r2 | GPL-2.0-or-later AND LGPL-2.1-or-later | apk-db-cataloger |
+| libintl | 0.24.1-r1 | LGPL-2.1-or-later | apk-db-cataloger |
+| libncursesw | 6.5_p20251123-r0 | X11 | apk-db-cataloger |
+| libproc2 | 4.0.5-r0 | GPL-2.0-or-later AND LGPL-2.1-or-later | apk-db-cataloger |
+| libssl3 | 3.5.7-r0 | Apache-2.0 | apk-db-cataloger |
+| libstdc++ | 15.2.0-r2 | GPL-2.0-or-later AND LGPL-2.1-or-later | apk-db-cataloger |
+| musl | 1.2.5-r23 | MIT | apk-db-cataloger |
+| musl-utils | 1.2.5-r23 | MIT AND BSD-2-Clause AND GPL-2.0-or-later | apk-db-cataloger |
+| ncurses-terminfo-base | 6.5_p20251123-r0 | X11 | apk-db-cataloger |
+| openssl | 3.5.7 |  | binary-classifier-cataloger |
+| procps-ng | 4.0.5-r0 | GPL-2.0-or-later AND LGPL-2.1-or-later | apk-db-cataloger |
+| readline | 8.3.1-r0 | GPL-3.0-or-later | apk-db-cataloger |
+| scanelf | 1.3.8-r2 | GPL-2.0-only | apk-db-cataloger |
 | skalibs-libs | 2.14.4.0-r0 | ISC | apk-db-cataloger |
-| sqlite-libs | 3.49.2-r0 | blessing | apk-db-cataloger |
-| ssl_client | 1.37.0-r18 | GPL-2.0-only | apk-db-cataloger |
-| su-exec | 0.2-r3 | MIT | apk-db-cataloger |
-| tzdata | 2025b-r0 |  | apk-db-cataloger |
+| ssl_client | 1.37.0-r30 | GPL-2.0-only | apk-db-cataloger |
+| su-exec | 0.3-r0 | MIT | apk-db-cataloger |
+| tzdata | 2026b-r0 |  | apk-db-cataloger |
 | utmps-libs | 0.1.3.1-r0 | ISC | apk-db-cataloger |
-| xz-libs | 5.8.1-r0 | 0BSD, GPL-2.0-or-later, LGPL-2.1-or-later | apk-db-cataloger |
-| zlib | 1.3.1-r2 | Zlib | apk-db-cataloger |
+| zlib | 1.3.2-r0 | Zlib | apk-db-cataloger |
 
 ### registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/redis
 
 | Package | Version | License | Found by |
 | ------- | --------| ------- | -------- |
-| .redis-rundeps | 20250530.001408 |  | apk-db-cataloger |
+| .redis-rundeps | 20260507.173448 |  | apk-db-cataloger |
 | alpine-baselayout | 3.6.8-r1 | GPL-2.0-only | apk-db-cataloger |
 | alpine-baselayout-data | 3.6.8-r1 | GPL-2.0-only | apk-db-cataloger |
 | alpine-keys | 2.5-r0 | MIT | apk-db-cataloger |
-| alpine-release | 3.21.3-r0 | MIT | apk-db-cataloger |
+| alpine-release | 3.21.7-r0 | MIT | apk-db-cataloger |
 | apk-tools | 2.14.6-r3 | GPL-2.0-only | apk-db-cataloger |
-| busybox | 1.37.0-r12 | GPL-2.0-only | apk-db-cataloger |
-| busybox-binsh | 1.37.0-r12 | GPL-2.0-only | apk-db-cataloger |
-| ca-certificates-bundle | 20241121-r1 | MPL-2.0 AND MIT | apk-db-cataloger |
-| github.com/moby/sys/user | v0.1.0 |  | go-module-binary-cataloger |
-| github.com/tianon/gosu | UNKNOWN |  | go-module-binary-cataloger |
-| golang.org/x/sys | v0.13.0 |  | go-module-binary-cataloger |
-| libcrypto3 | 3.3.3-r0 | Apache-2.0 | apk-db-cataloger |
-| libssl3 | 3.3.3-r0 | Apache-2.0 | apk-db-cataloger |
-| musl | 1.2.5-r9 | MIT | apk-db-cataloger |
-| musl-utils | 1.2.5-r9 | MIT AND BSD-2-Clause AND GPL-2.0-or-later | apk-db-cataloger |
-| redis | 7.4.4 |  | binary-classifier-cataloger |
+| busybox | 1.37.0-r14 | GPL-2.0-only | apk-db-cataloger |
+| busybox-binsh | 1.37.0-r14 | GPL-2.0-only | apk-db-cataloger |
+| ca-certificates-bundle | 20260413-r0 | MPL-2.0 AND MIT | apk-db-cataloger |
+| libcap-ng | 0.8.5-r0 | GPL-2.0-or-later AND LGPL-2.1-or-later | apk-db-cataloger |
+| libcrypto3 | 3.3.7-r0 | Apache-2.0 | apk-db-cataloger |
+| libssl3 | 3.3.7-r0 | Apache-2.0 | apk-db-cataloger |
+| musl | 1.2.5-r11 | MIT | apk-db-cataloger |
+| musl-utils | 1.2.5-r11 | MIT AND BSD-2-Clause AND GPL-2.0-or-later | apk-db-cataloger |
+| redis | 7.4.9 |  | binary-classifier-cataloger |
 | scanelf | 1.3.8-r1 | GPL-2.0-only | apk-db-cataloger |
-| ssl_client | 1.37.0-r12 | GPL-2.0-only | apk-db-cataloger |
-| stdlib | go1.18.2 | BSD-3-Clause | go-module-binary-cataloger |
-| tzdata | 2025b-r0 |  | apk-db-cataloger |
-| zlib | 1.3.1-r2 | Zlib | apk-db-cataloger |
+| setpriv | 2.40.4-r1 | GPL-2.0-or-later | apk-db-cataloger |
+| ssl_client | 1.37.0-r14 | GPL-2.0-only | apk-db-cataloger |
+| tzdata | 2026b-r0 |  | apk-db-cataloger |
+| zlib | 1.3.2-r0 | Zlib | apk-db-cataloger |
 
 ### registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/redis-exporter
 
@@ -6598,434 +6554,803 @@ The complete source code for Traefik is publicly available at [https://github.co
 
 | Package | Version | License | Found by |
 | ------- | --------| ------- | -------- |
-| @grafana-plugins/grafana-azure-monitor-datasource | 10.4.3 |  | javascript-package-cataloger |
-| @grafana-plugins/grafana-pyroscope-datasource | 10.4.3 |  | javascript-package-cataloger |
-| @grafana-plugins/grafana-testdata-datasource | 10.4.3 |  | javascript-package-cataloger |
-| @grafana-plugins/parca | 10.4.3 |  | javascript-package-cataloger |
-| @grafana-plugins/stackdriver | 10.4.3 |  | javascript-package-cataloger |
-| @grafana-plugins/tempo | 10.4.3 |  | javascript-package-cataloger |
-| alpine-baselayout | 3.4.3-r2 | GPL-2.0-only | apk-db-cataloger |
-| alpine-baselayout-data | 3.4.3-r2 | GPL-2.0-only | apk-db-cataloger |
-| alpine-keys | 2.4-r1 | MIT | apk-db-cataloger |
-| apk-tools | 2.14.0-r5 | GPL-2.0-only | apk-db-cataloger |
-| bash | 5.2.21-r0 | GPL-3.0-or-later | apk-db-cataloger |
-| brotli-libs | 1.1.0-r1 | MIT | apk-db-cataloger |
-| buf.build/gen/go/parca-dev/parca/bufbuild/connect-go | v1.4.1-20221222094228-8b1d3d0f62e6.1 |  | go-module-binary-cataloger |
-| buf.build/gen/go/parca-dev/parca/protocolbuffers/go | v1.28.1-20221222094228-8b1d3d0f62e6.4 |  | go-module-binary-cataloger |
-| busybox | 1.36.1-r15 | GPL-2.0-only | apk-db-cataloger |
-| busybox-binsh | 1.36.1-r15 | GPL-2.0-only | apk-db-cataloger |
-| c-ares | 1.27.0-r0 | MIT | apk-db-cataloger |
-| ca-certificates | 20240226-r0 | MPL-2.0 AND MIT | apk-db-cataloger |
-| ca-certificates-bundle | 20230506-r0 | MPL-2.0 AND MIT | apk-db-cataloger |
-| cloud.google.com/go | v0.112.0 |  | go-module-binary-cataloger |
-| cloud.google.com/go/compute/metadata | v0.2.3 |  | go-module-binary-cataloger |
-| cloud.google.com/go/iam | v1.1.5 |  | go-module-binary-cataloger |
-| cloud.google.com/go/kms | v1.15.5 |  | go-module-binary-cataloger |
-| cloud.google.com/go/storage | v1.36.0 |  | go-module-binary-cataloger |
-| curl | 8.5.0-r0 | curl | apk-db-cataloger |
-| filippo.io/age | v1.1.1 |  | go-module-binary-cataloger |
-| gcompat | 1.1.0-r4 | NCSA | apk-db-cataloger |
-| github.com/Azure/azure-pipeline-go | v0.2.3 |  | go-module-binary-cataloger |
-| github.com/Azure/azure-sdk-for-go | v68.0.0+incompatible |  | go-module-binary-cataloger |
-| github.com/Azure/azure-sdk-for-go/sdk/azcore | v1.9.1 |  | go-module-binary-cataloger |
-| github.com/Azure/azure-sdk-for-go/sdk/azidentity | v1.5.1 |  | go-module-binary-cataloger |
-| github.com/Azure/azure-sdk-for-go/sdk/internal | v1.5.1 |  | go-module-binary-cataloger |
-| github.com/Azure/azure-sdk-for-go/sdk/keyvault/azkeys | v0.9.0 |  | go-module-binary-cataloger |
-| github.com/Azure/azure-sdk-for-go/sdk/keyvault/internal | v0.7.0 |  | go-module-binary-cataloger |
-| github.com/Azure/azure-storage-blob-go | v0.15.0 |  | go-module-binary-cataloger |
-| github.com/Azure/go-autorest/autorest | v0.11.29 |  | go-module-binary-cataloger |
-| github.com/Azure/go-autorest/autorest/adal | v0.9.23 |  | go-module-binary-cataloger |
-| github.com/Azure/go-autorest/autorest/date | v0.3.0 |  | go-module-binary-cataloger |
-| github.com/Azure/go-autorest/autorest/to | v0.4.0 |  | go-module-binary-cataloger |
-| github.com/Azure/go-autorest/autorest/validation | v0.3.1 |  | go-module-binary-cataloger |
-| github.com/Azure/go-autorest/logger | v0.2.1 |  | go-module-binary-cataloger |
-| github.com/Azure/go-autorest/tracing | v0.6.0 |  | go-module-binary-cataloger |
-| github.com/Azure/go-ntlmssp | v0.0.0-20220621081337-cb9428e4ac1e |  | go-module-binary-cataloger |
-| github.com/AzureAD/microsoft-authentication-library-for-go | v1.2.1 |  | go-module-binary-cataloger |
-| github.com/BurntSushi/toml | v1.3.2 |  | go-module-binary-cataloger |
-| github.com/FZambia/eagle | v0.1.0 |  | go-module-binary-cataloger |
+| @grafana-plugins/grafana-azure-monitor-datasource | 13.1.0 |  | javascript-package-cataloger |
+| @grafana-plugins/grafana-postgresql-datasource | 13.1.0 |  | javascript-package-cataloger |
+| @grafana-plugins/grafana-pyroscope-datasource | 13.1.0 |  | javascript-package-cataloger |
+| @grafana-plugins/grafana-testdata-datasource | 13.1.0 |  | javascript-package-cataloger |
+| @grafana-plugins/graphite | 13.1.0 |  | javascript-package-cataloger |
+| @grafana-plugins/influxdb | 13.1.0 |  | javascript-package-cataloger |
+| @grafana-plugins/jaeger | 13.1.0 |  | javascript-package-cataloger |
+| @grafana-plugins/loki | 13.1.0 |  | javascript-package-cataloger |
+| @grafana-plugins/mssql | 13.1.0 |  | javascript-package-cataloger |
+| @grafana-plugins/mysql | 13.1.0 |  | javascript-package-cataloger |
+| @grafana-plugins/opentsdb | 13.1.0 |  | javascript-package-cataloger |
+| @grafana-plugins/parca | 13.1.0 |  | javascript-package-cataloger |
+| @grafana-plugins/stackdriver | 13.1.0 |  | javascript-package-cataloger |
+| @grafana-plugins/tempo | 13.1.0 |  | javascript-package-cataloger |
+| alpine-baselayout | 3.7.2-r1 | GPL-2.0-only | apk-db-cataloger |
+| alpine-baselayout-data | 3.7.2-r1 | GPL-2.0-only | apk-db-cataloger |
+| alpine-keys | 2.6-r0 | MIT | apk-db-cataloger |
+| alpine-release | 3.24.1-r0 | MIT | apk-db-cataloger |
+| apk-tools | 3.0.6-r0 | GPL-2.0-only | apk-db-cataloger |
+| bash | 5.3.9-r1 | GPL-3.0-or-later | apk-db-cataloger |
+| brotli-libs | 1.2.0-r1 | MIT | apk-db-cataloger |
+| bubblewrap | 0.11.2-r0 | LGPL-2.0-or-later | apk-db-cataloger |
+| buf.build/gen/go/parca-dev/parca/connectrpc/go | v1.18.1-20250703125925-3f0fcf4bff96.1 |  | go-module-binary-cataloger |
+| buf.build/gen/go/parca-dev/parca/protocolbuffers/go | v1.36.2-20250703125925-3f0fcf4bff96.1 |  | go-module-binary-cataloger |
+| busybox | 1.37.0-r31 | GPL-2.0-only | apk-db-cataloger |
+| busybox-binsh | 1.37.0-r31 | GPL-2.0-only | apk-db-cataloger |
+| c-ares | 1.34.6-r0 | MIT | apk-db-cataloger |
+| ca-certificates | 20260611-r0 | MPL-2.0 AND MIT | apk-db-cataloger |
+| ca-certificates-bundle | 20260611-r0 | MPL-2.0 AND MIT | apk-db-cataloger |
+| cel.dev/expr | v0.25.1 |  | go-module-binary-cataloger |
+| cloud.google.com/go | v0.123.0 |  | go-module-binary-cataloger |
+| cloud.google.com/go/aiplatform | v1.125.0 |  | go-module-binary-cataloger |
+| cloud.google.com/go/auth | v0.20.0 |  | go-module-binary-cataloger |
+| cloud.google.com/go/auth/oauth2adapt | v0.2.8 |  | go-module-binary-cataloger |
+| cloud.google.com/go/compute/metadata | v0.9.0 |  | go-module-binary-cataloger |
+| cloud.google.com/go/iam | v1.7.0 |  | go-module-binary-cataloger |
+| cloud.google.com/go/longrunning | v0.9.0 |  | go-module-binary-cataloger |
+| cloud.google.com/go/monitoring | v1.24.3 |  | go-module-binary-cataloger |
+| cloud.google.com/go/storage | v1.62.3 |  | go-module-binary-cataloger |
+| connectrpc.com/connect | v1.19.2 |  | go-module-binary-cataloger |
+| curl | 8.20.0-r1 | curl | apk-db-cataloger |
+| dario.cat/mergo | v1.0.2 |  | go-module-binary-cataloger |
+| filippo.io/age | v1.3.1 |  | go-module-binary-cataloger |
+| filippo.io/edwards25519 | v1.2.0 |  | go-module-binary-cataloger |
+| filippo.io/hpke | v0.4.0 |  | go-module-binary-cataloger |
+| github.com/Azure/azure-sdk-for-go/sdk/azcore | v1.22.0 |  | go-module-binary-cataloger |
+| github.com/Azure/azure-sdk-for-go/sdk/azidentity | v1.13.1 |  | go-module-binary-cataloger |
+| github.com/Azure/azure-sdk-for-go/sdk/internal | v1.12.0 |  | go-module-binary-cataloger |
+| github.com/Azure/azure-sdk-for-go/sdk/storage/azblob | v1.6.4 |  | go-module-binary-cataloger |
+| github.com/Azure/go-autorest/autorest/to | v0.4.1 |  | go-module-binary-cataloger |
+| github.com/Azure/go-ntlmssp | v0.1.1 |  | go-module-binary-cataloger |
+| github.com/AzureAD/microsoft-authentication-library-for-go | v1.6.0 |  | go-module-binary-cataloger |
+| github.com/BurntSushi/toml | v1.6.0 |  | go-module-binary-cataloger |
+| github.com/FZambia/eagle | v0.2.0 |  | go-module-binary-cataloger |
+| github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp | v1.31.0 |  | go-module-binary-cataloger |
+| github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/metric | v0.55.0 |  | go-module-binary-cataloger |
+| github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/resourcemapping | v0.55.0 |  | go-module-binary-cataloger |
+| github.com/IBM/pgxpoolprometheus | v1.1.2 |  | go-module-binary-cataloger |
+| github.com/Machiel/slugify | v1.0.1 |  | go-module-binary-cataloger |
 | github.com/Masterminds/goutils | v1.1.1 |  | go-module-binary-cataloger |
 | github.com/Masterminds/semver | v1.5.0 |  | go-module-binary-cataloger |
-| github.com/Masterminds/semver/v3 | v3.1.1 |  | go-module-binary-cataloger |
-| github.com/Masterminds/sprig/v3 | v3.2.2 |  | go-module-binary-cataloger |
+| github.com/Masterminds/semver/v3 | v3.5.0 |  | go-module-binary-cataloger |
+| github.com/Masterminds/sprig/v3 | v3.3.0 |  | go-module-binary-cataloger |
+| github.com/Masterminds/squirrel | v1.5.4 |  | go-module-binary-cataloger |
 | github.com/NYTimes/gziphandler | v1.1.1 |  | go-module-binary-cataloger |
-| github.com/ProtonMail/go-crypto | v0.0.0-20230828082145-3c4c8a2d2371 |  | go-module-binary-cataloger |
-| github.com/RoaringBitmap/roaring | v0.9.4 |  | go-module-binary-cataloger |
-| github.com/VividCortex/mysqlerr | v0.0.0-20170204212430-6c6b55f8796f |  | go-module-binary-cataloger |
-| github.com/agext/levenshtein | v1.2.1 |  | go-module-binary-cataloger |
-| github.com/alecthomas/units | v0.0.0-20231202071711-9a357b53e9c9 |  | go-module-binary-cataloger |
-| github.com/andybalholm/brotli | v1.0.5 |  | go-module-binary-cataloger |
-| github.com/antlr/antlr4/runtime/Go/antlr/v4 | v4.0.0-20230305170008-8188dc5388df |  | go-module-binary-cataloger |
-| github.com/apache/arrow/go/v15 | v15.0.0 |  | go-module-binary-cataloger |
+| github.com/PaesslerAG/gval | v1.0.0 |  | go-module-binary-cataloger |
+| github.com/PaesslerAG/jsonpath | v0.1.1 |  | go-module-binary-cataloger |
+| github.com/ProtonMail/go-crypto | v1.4.1 |  | go-module-binary-cataloger |
+| github.com/RoaringBitmap/roaring/v2 | v2.14.5 |  | go-module-binary-cataloger |
+| github.com/VividCortex/mysqlerr | v1.0.0 |  | go-module-binary-cataloger |
+| github.com/Yiling-J/theine-go | v0.6.2 |  | go-module-binary-cataloger |
+| github.com/agext/levenshtein | v1.2.3 |  | go-module-binary-cataloger |
+| github.com/alecthomas/units | v0.0.0-20240927000941-0f3dac36c52b |  | go-module-binary-cataloger |
+| github.com/andybalholm/brotli | v1.2.1 |  | go-module-binary-cataloger |
+| github.com/antlr4-go/antlr/v4 | v4.13.1 |  | go-module-binary-cataloger |
+| github.com/apache/arrow-go/v18 | v18.5.1 |  | go-module-binary-cataloger |
+| github.com/apache/arrow-go/v18 | v18.5.2 |  | go-module-binary-cataloger |
+| github.com/apache/arrow-go/v18 | v18.6.0 |  | go-module-binary-cataloger |
+| github.com/apache/thrift | v0.23.1-0.20260429145742-d2acd3c49e58 |  | go-module-binary-cataloger |
 | github.com/apapsch/go-jsonmerge/v2 | v2.0.0 |  | go-module-binary-cataloger |
-| github.com/apparentlymart/go-textseg/v13 | v13.0.0 |  | go-module-binary-cataloger |
+| github.com/apparentlymart/go-textseg/v15 | v15.0.0 |  | go-module-binary-cataloger |
 | github.com/armon/go-metrics | v0.4.1 |  | go-module-binary-cataloger |
 | github.com/armon/go-radix | v1.0.0 |  | go-module-binary-cataloger |
-| github.com/asaskevich/govalidator | v0.0.0-20230301143203-a9d515a09cc2 |  | go-module-binary-cataloger |
-| github.com/aws/aws-sdk-go | v1.50.8 |  | go-module-binary-cataloger |
-| github.com/axiomhq/hyperloglog | v0.0.0-20191112132149-a4c4c47bc57f |  | go-module-binary-cataloger |
-| github.com/beevik/etree | v1.2.0 |  | go-module-binary-cataloger |
+| github.com/at-wat/mqtt-go | v0.19.6 |  | go-module-binary-cataloger |
+| github.com/aws/aws-sdk-go | v1.55.8 |  | go-module-binary-cataloger |
+| github.com/aws/aws-sdk-go-v2 | v1.41.1 |  | go-module-binary-cataloger |
+| github.com/aws/aws-sdk-go-v2 | v1.41.9 |  | go-module-binary-cataloger |
+| github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream | v1.7.10 |  | go-module-binary-cataloger |
+| github.com/aws/aws-sdk-go-v2/config | v1.32.18 |  | go-module-binary-cataloger |
+| github.com/aws/aws-sdk-go-v2/config | v1.32.7 |  | go-module-binary-cataloger |
+| github.com/aws/aws-sdk-go-v2/credentials | v1.19.17 |  | go-module-binary-cataloger |
+| github.com/aws/aws-sdk-go-v2/credentials | v1.19.7 |  | go-module-binary-cataloger |
+| github.com/aws/aws-sdk-go-v2/feature/ec2/imds | v1.18.17 |  | go-module-binary-cataloger |
+| github.com/aws/aws-sdk-go-v2/feature/ec2/imds | v1.18.23 |  | go-module-binary-cataloger |
+| github.com/aws/aws-sdk-go-v2/feature/s3/manager | v1.20.12 |  | go-module-binary-cataloger |
+| github.com/aws/aws-sdk-go-v2/internal/configsources | v1.4.17 |  | go-module-binary-cataloger |
+| github.com/aws/aws-sdk-go-v2/internal/configsources | v1.4.25 |  | go-module-binary-cataloger |
+| github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 | v2.7.17 |  | go-module-binary-cataloger |
+| github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 | v2.7.25 |  | go-module-binary-cataloger |
+| github.com/aws/aws-sdk-go-v2/internal/ini | v1.8.4 |  | go-module-binary-cataloger |
+| github.com/aws/aws-sdk-go-v2/internal/v4a | v1.4.24 |  | go-module-binary-cataloger |
+| github.com/aws/aws-sdk-go-v2/service/bedrockruntime | v1.50.5 |  | go-module-binary-cataloger |
+| github.com/aws/aws-sdk-go-v2/service/cloudwatch | v1.45.3 |  | go-module-binary-cataloger |
+| github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs | v1.73.0 |  | go-module-binary-cataloger |
+| github.com/aws/aws-sdk-go-v2/service/ec2 | v1.304.0 |  | go-module-binary-cataloger |
+| github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding | v1.13.4 |  | go-module-binary-cataloger |
+| github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding | v1.13.9 |  | go-module-binary-cataloger |
+| github.com/aws/aws-sdk-go-v2/service/internal/checksum | v1.9.15 |  | go-module-binary-cataloger |
+| github.com/aws/aws-sdk-go-v2/service/internal/presigned-url | v1.13.17 |  | go-module-binary-cataloger |
+| github.com/aws/aws-sdk-go-v2/service/internal/presigned-url | v1.13.23 |  | go-module-binary-cataloger |
+| github.com/aws/aws-sdk-go-v2/service/internal/s3shared | v1.19.23 |  | go-module-binary-cataloger |
+| github.com/aws/aws-sdk-go-v2/service/oam | v1.18.3 |  | go-module-binary-cataloger |
+| github.com/aws/aws-sdk-go-v2/service/resourcegroupstaggingapi | v1.26.6 |  | go-module-binary-cataloger |
+| github.com/aws/aws-sdk-go-v2/service/s3 | v1.101.0 |  | go-module-binary-cataloger |
+| github.com/aws/aws-sdk-go-v2/service/signin | v1.0.11 |  | go-module-binary-cataloger |
+| github.com/aws/aws-sdk-go-v2/service/signin | v1.0.5 |  | go-module-binary-cataloger |
+| github.com/aws/aws-sdk-go-v2/service/sso | v1.30.17 |  | go-module-binary-cataloger |
+| github.com/aws/aws-sdk-go-v2/service/sso | v1.30.9 |  | go-module-binary-cataloger |
+| github.com/aws/aws-sdk-go-v2/service/ssooidc | v1.35.13 |  | go-module-binary-cataloger |
+| github.com/aws/aws-sdk-go-v2/service/ssooidc | v1.36.0 |  | go-module-binary-cataloger |
+| github.com/aws/aws-sdk-go-v2/service/sts | v1.41.6 |  | go-module-binary-cataloger |
+| github.com/aws/aws-sdk-go-v2/service/sts | v1.42.1 |  | go-module-binary-cataloger |
+| github.com/aws/smithy-go | v1.24.0 |  | go-module-binary-cataloger |
+| github.com/aws/smithy-go | v1.26.0 |  | go-module-binary-cataloger |
+| github.com/bahlo/generic-list-go | v0.2.0 |  | go-module-binary-cataloger |
+| github.com/barkimedes/go-deepcopy | v0.0.0-20220514131651-17c30cfc62df |  | go-module-binary-cataloger |
 | github.com/benbjohnson/clock | v1.3.5 |  | go-module-binary-cataloger |
 | github.com/beorn7/perks | v1.0.1 |  | go-module-binary-cataloger |
-| github.com/bits-and-blooms/bitset | v1.2.0 |  | go-module-binary-cataloger |
+| github.com/beorn7/perks | v1.0.1 |  | go-module-binary-cataloger |
+| github.com/beorn7/perks | v1.0.1 |  | go-module-binary-cataloger |
+| github.com/bits-and-blooms/bitset | v1.24.4 |  | go-module-binary-cataloger |
+| github.com/blang/semver | v3.5.1+incompatible |  | go-module-binary-cataloger |
 | github.com/blang/semver/v4 | v4.0.0 |  | go-module-binary-cataloger |
+| github.com/blevesearch/bleve/v2 | v2.5.7 |  | go-module-binary-cataloger |
+| github.com/blevesearch/bleve_index_api | v1.3.11 |  | go-module-binary-cataloger |
+| github.com/blevesearch/geo | v0.2.5 |  | go-module-binary-cataloger |
 | github.com/blevesearch/go-porterstemmer | v1.0.3 |  | go-module-binary-cataloger |
-| github.com/blevesearch/mmap-go | v1.0.4 |  | go-module-binary-cataloger |
-| github.com/blevesearch/segment | v0.9.0 |  | go-module-binary-cataloger |
+| github.com/blevesearch/gtreap | v0.1.1 |  | go-module-binary-cataloger |
+| github.com/blevesearch/mmap-go | v1.2.0 |  | go-module-binary-cataloger |
+| github.com/blevesearch/scorch_segment_api/v2 | v2.4.7 |  | go-module-binary-cataloger |
+| github.com/blevesearch/segment | v0.9.1 |  | go-module-binary-cataloger |
 | github.com/blevesearch/snowballstem | v0.9.0 |  | go-module-binary-cataloger |
-| github.com/blevesearch/vellum | v1.0.7 |  | go-module-binary-cataloger |
-| github.com/blugelabs/bluge | v0.1.9 |  | go-module-binary-cataloger |
-| github.com/blugelabs/bluge_segment_api | v0.2.0 |  | go-module-binary-cataloger |
-| github.com/blugelabs/ice | v1.0.0 |  | go-module-binary-cataloger |
-| github.com/bradfitz/gomemcache | v0.0.0-20190913173617-a41fca850d0b |  | go-module-binary-cataloger |
-| github.com/bufbuild/connect-go | v1.10.0 |  | go-module-binary-cataloger |
-| github.com/bufbuild/protocompile | v0.4.0 |  | go-module-binary-cataloger |
+| github.com/blevesearch/upsidedown_store_api | v1.0.2 |  | go-module-binary-cataloger |
+| github.com/blevesearch/vellum | v1.2.0 |  | go-module-binary-cataloger |
+| github.com/blevesearch/zapx/v11 | v11.4.3 |  | go-module-binary-cataloger |
+| github.com/blevesearch/zapx/v12 | v12.4.3 |  | go-module-binary-cataloger |
+| github.com/blevesearch/zapx/v13 | v13.4.3 |  | go-module-binary-cataloger |
+| github.com/blevesearch/zapx/v14 | v14.4.3 |  | go-module-binary-cataloger |
+| github.com/blevesearch/zapx/v15 | v15.4.3 |  | go-module-binary-cataloger |
+| github.com/blevesearch/zapx/v16 | v16.3.4 |  | go-module-binary-cataloger |
+| github.com/bradfitz/gomemcache | v0.0.0-20250403215159-8d39553ac7cf |  | go-module-binary-cataloger |
+| github.com/bufbuild/protocompile | v0.14.1 |  | go-module-binary-cataloger |
+| github.com/buger/jsonparser | v1.1.2 |  | go-module-binary-cataloger |
 | github.com/bwmarrin/snowflake | v0.3.0 |  | go-module-binary-cataloger |
-| github.com/caio/go-tdigest | v3.1.0+incompatible |  | go-module-binary-cataloger |
-| github.com/cenkalti/backoff/v4 | v4.2.1 |  | go-module-binary-cataloger |
-| github.com/centrifugal/centrifuge | v0.30.2 |  | go-module-binary-cataloger |
-| github.com/centrifugal/protocol | v0.10.0 |  | go-module-binary-cataloger |
-| github.com/cespare/xxhash/v2 | v2.2.0 |  | go-module-binary-cataloger |
+| github.com/c2h5oh/datasize | v0.0.0-20231215233829-aa82cc1e6500 |  | go-module-binary-cataloger |
+| github.com/cenkalti/backoff/v4 | v4.3.0 |  | go-module-binary-cataloger |
+| github.com/cenkalti/backoff/v5 | v5.0.3 |  | go-module-binary-cataloger |
+| github.com/cenkalti/backoff/v5 | v5.0.3 |  | go-module-binary-cataloger |
+| github.com/cenkalti/backoff/v5 | v5.0.3 |  | go-module-binary-cataloger |
+| github.com/centrifugal/centrifuge | v0.38.0 |  | go-module-binary-cataloger |
+| github.com/centrifugal/protocol | v0.17.0 |  | go-module-binary-cataloger |
+| github.com/cespare/xxhash/v2 | v2.3.0 |  | go-module-binary-cataloger |
+| github.com/cespare/xxhash/v2 | v2.3.0 |  | go-module-binary-cataloger |
+| github.com/cespare/xxhash/v2 | v2.3.0 |  | go-module-binary-cataloger |
 | github.com/cheekybits/genny | v1.0.0 |  | go-module-binary-cataloger |
-| github.com/chromedp/cdproto | v0.0.0-20230802225258-3cf4e6d46a89 |  | go-module-binary-cataloger |
-| github.com/cloudflare/circl | v1.3.7 |  | go-module-binary-cataloger |
+| github.com/cheekybits/genny | v1.0.0 |  | go-module-binary-cataloger |
+| github.com/cheekybits/genny | v1.0.0 |  | go-module-binary-cataloger |
+| github.com/chromedp/cdproto | v0.0.0-20250803210736-d308e07a266d |  | go-module-binary-cataloger |
+| github.com/clipperhouse/displaywidth | v0.10.0 |  | go-module-binary-cataloger |
+| github.com/clipperhouse/displaywidth | v0.11.0 |  | go-module-binary-cataloger |
+| github.com/clipperhouse/displaywidth | v0.6.2 |  | go-module-binary-cataloger |
+| github.com/clipperhouse/stringish | v0.1.1 |  | go-module-binary-cataloger |
+| github.com/clipperhouse/uax29/v2 | v2.3.0 |  | go-module-binary-cataloger |
+| github.com/clipperhouse/uax29/v2 | v2.6.0 |  | go-module-binary-cataloger |
+| github.com/clipperhouse/uax29/v2 | v2.7.0 |  | go-module-binary-cataloger |
+| github.com/cloudflare/circl | v1.6.3 |  | go-module-binary-cataloger |
+| github.com/cncf/xds/go | v0.0.0-20260202195803-dba9d589def2 |  | go-module-binary-cataloger |
 | github.com/cockroachdb/apd/v2 | v2.0.2 |  | go-module-binary-cataloger |
-| github.com/cockroachdb/errors | v1.9.1 |  | go-module-binary-cataloger |
-| github.com/cockroachdb/logtags | v0.0.0-20211118104740-dabe8e521a4f |  | go-module-binary-cataloger |
-| github.com/cockroachdb/redact | v1.1.3 |  | go-module-binary-cataloger |
+| github.com/containerd/errdefs | v1.0.0 |  | go-module-binary-cataloger |
+| github.com/containerd/errdefs/pkg | v0.3.0 |  | go-module-binary-cataloger |
 | github.com/coreos/go-semver | v0.3.1 |  | go-module-binary-cataloger |
-| github.com/coreos/go-systemd/v22 | v22.5.0 |  | go-module-binary-cataloger |
-| github.com/cpuguy83/go-md2man/v2 | v2.0.3 |  | go-module-binary-cataloger |
-| github.com/cristalhq/jwt/v4 | v4.0.2 |  | go-module-binary-cataloger |
+| github.com/coreos/go-systemd/v22 | v22.7.0 |  | go-module-binary-cataloger |
+| github.com/cpuguy83/go-md2man/v2 | v2.0.7 |  | go-module-binary-cataloger |
 | github.com/davecgh/go-spew | v1.1.2-0.20180830191138-d8f796af33cc |  | go-module-binary-cataloger |
-| github.com/deepmap/oapi-codegen | v1.12.4 |  | go-module-binary-cataloger |
+| github.com/davecgh/go-spew | v1.1.2-0.20180830191138-d8f796af33cc |  | go-module-binary-cataloger |
 | github.com/dennwc/varint | v1.0.0 |  | go-module-binary-cataloger |
-| github.com/dgraph-io/ristretto | v0.1.1 |  | go-module-binary-cataloger |
-| github.com/dgryski/go-metro | v0.0.0-20211217172704-adc40b04c140 |  | go-module-binary-cataloger |
-| github.com/dgryski/go-rendezvous | v0.0.0-20200823014737-9f7001d12a5f |  | go-module-binary-cataloger |
+| github.com/dgraph-io/badger/v4 | v4.9.1 |  | go-module-binary-cataloger |
+| github.com/dgraph-io/ristretto/v2 | v2.2.0 |  | go-module-binary-cataloger |
+| github.com/diegoholiveira/jsonlogic/v3 | v3.7.4 |  | go-module-binary-cataloger |
+| github.com/distribution/reference | v0.6.0 |  | go-module-binary-cataloger |
 | github.com/dlmiddlecote/sqlstats | v1.0.2 |  | go-module-binary-cataloger |
+| github.com/docker/go-connections | v0.7.0 |  | go-module-binary-cataloger |
 | github.com/docker/go-units | v0.5.0 |  | go-module-binary-cataloger |
+| github.com/dolthub/flatbuffers/v23 | v23.3.3-dh.2 |  | go-module-binary-cataloger |
+| github.com/dolthub/jsonpath | v0.0.2-0.20240227200619-19675ab05c71 |  | go-module-binary-cataloger |
+| github.com/dolthub/maphash | v0.1.0 |  | go-module-binary-cataloger |
 | github.com/dustin/go-humanize | v1.0.1 |  | go-module-binary-cataloger |
-| github.com/edsrzf/mmap-go | v1.1.0 |  | go-module-binary-cataloger |
-| github.com/elazarl/goproxy | v0.0.0-20230731152917-f99041a5c027 |  | go-module-binary-cataloger |
+| github.com/edsrzf/mmap-go | v1.2.1-0.20241212181136-fad1cd13edbd |  | go-module-binary-cataloger |
+| github.com/elazarl/goproxy | v1.8.3 |  | go-module-binary-cataloger |
 | github.com/emicklei/go-restful/v3 | v3.11.0 |  | go-module-binary-cataloger |
-| github.com/emicklei/proto | v1.10.0 |  | go-module-binary-cataloger |
-| github.com/evanphx/json-patch | v5.6.0+incompatible |  | go-module-binary-cataloger |
-| github.com/fatih/color | v1.15.0 |  | go-module-binary-cataloger |
-| github.com/fatih/color | v1.15.0 |  | go-module-binary-cataloger |
-| github.com/fatih/color | v1.15.0 |  | go-module-binary-cataloger |
+| github.com/emicklei/go-restful/v3 | v3.13.0 |  | go-module-binary-cataloger |
+| github.com/emirpasic/gods | v1.18.1 |  | go-module-binary-cataloger |
+| github.com/envoyproxy/go-control-plane/envoy | v1.37.0 |  | go-module-binary-cataloger |
+| github.com/envoyproxy/protoc-gen-validate | v1.3.3 |  | go-module-binary-cataloger |
+| github.com/facette/natsort | v0.0.0-20181210072756-2cd4dd1e2dcb |  | go-module-binary-cataloger |
+| github.com/fatih/color | v1.18.0 |  | go-module-binary-cataloger |
+| github.com/fatih/color | v1.18.0 |  | go-module-binary-cataloger |
+| github.com/fatih/color | v1.19.0 |  | go-module-binary-cataloger |
 | github.com/felixge/httpsnoop | v1.0.4 |  | go-module-binary-cataloger |
-| github.com/fsnotify/fsnotify | v1.7.0 |  | go-module-binary-cataloger |
-| github.com/fullstorydev/grpchan | v1.1.1 |  | go-module-binary-cataloger |
+| github.com/fsnotify/fsnotify | v1.10.1 |  | go-module-binary-cataloger |
+| github.com/fullstorydev/grpchan | v1.1.2 |  | go-module-binary-cataloger |
+| github.com/fxamacker/cbor/v2 | v2.9.0 |  | go-module-binary-cataloger |
+| github.com/gammazero/deque | v0.2.1 |  | go-module-binary-cataloger |
 | github.com/gchaincl/sqlhooks | v1.3.0 |  | go-module-binary-cataloger |
-| github.com/getkin/kin-openapi | v0.120.0 |  | go-module-binary-cataloger |
-| github.com/getsentry/sentry-go | v0.12.0 |  | go-module-binary-cataloger |
+| github.com/getkin/kin-openapi | v0.140.0 |  | go-module-binary-cataloger |
 | github.com/go-asn1-ber/asn1-ber | v1.5.4 |  | go-module-binary-cataloger |
-| github.com/go-jose/go-jose/v3 | v3.0.3 |  | go-module-binary-cataloger |
+| github.com/go-jose/go-jose/v4 | v4.1.4 |  | go-module-binary-cataloger |
+| github.com/go-json-experiment/json | v0.0.0-20260214004413-d219187c3433 |  | go-module-binary-cataloger |
 | github.com/go-kit/log | v0.2.1 |  | go-module-binary-cataloger |
 | github.com/go-ldap/ldap/v3 | v3.4.4 |  | go-module-binary-cataloger |
-| github.com/go-logfmt/logfmt | v0.6.0 |  | go-module-binary-cataloger |
-| github.com/go-logr/logr | v1.4.1 |  | go-module-binary-cataloger |
+| github.com/go-logfmt/logfmt | v0.6.1 |  | go-module-binary-cataloger |
+| github.com/go-logr/logr | v1.4.3 |  | go-module-binary-cataloger |
+| github.com/go-logr/logr | v1.4.3 |  | go-module-binary-cataloger |
+| github.com/go-logr/logr | v1.4.3 |  | go-module-binary-cataloger |
 | github.com/go-logr/stdr | v1.2.2 |  | go-module-binary-cataloger |
-| github.com/go-openapi/analysis | v0.22.2 |  | go-module-binary-cataloger |
-| github.com/go-openapi/errors | v0.21.0 |  | go-module-binary-cataloger |
-| github.com/go-openapi/jsonpointer | v0.20.2 |  | go-module-binary-cataloger |
-| github.com/go-openapi/jsonreference | v0.20.4 |  | go-module-binary-cataloger |
-| github.com/go-openapi/loads | v0.21.5 |  | go-module-binary-cataloger |
-| github.com/go-openapi/runtime | v0.27.1 |  | go-module-binary-cataloger |
-| github.com/go-openapi/spec | v0.20.14 |  | go-module-binary-cataloger |
-| github.com/go-openapi/strfmt | v0.22.0 |  | go-module-binary-cataloger |
-| github.com/go-openapi/swag | v0.22.9 |  | go-module-binary-cataloger |
-| github.com/go-openapi/validate | v0.23.0 |  | go-module-binary-cataloger |
-| github.com/go-redis/redis/v8 | v8.11.5 |  | go-module-binary-cataloger |
-| github.com/go-sourcemap/sourcemap | v2.1.3+incompatible |  | go-module-binary-cataloger |
-| github.com/go-sql-driver/mysql | v1.7.1 |  | go-module-binary-cataloger |
+| github.com/go-logr/stdr | v1.2.2 |  | go-module-binary-cataloger |
+| github.com/go-logr/stdr | v1.2.2 |  | go-module-binary-cataloger |
+| github.com/go-openapi/analysis | v0.25.2 |  | go-module-binary-cataloger |
+| github.com/go-openapi/errors | v0.22.8 |  | go-module-binary-cataloger |
+| github.com/go-openapi/jsonpointer | v0.22.5 |  | go-module-binary-cataloger |
+| github.com/go-openapi/jsonpointer | v0.23.1 |  | go-module-binary-cataloger |
+| github.com/go-openapi/jsonreference | v0.21.5 |  | go-module-binary-cataloger |
+| github.com/go-openapi/jsonreference | v0.21.6 |  | go-module-binary-cataloger |
+| github.com/go-openapi/loads | v0.24.0 |  | go-module-binary-cataloger |
+| github.com/go-openapi/runtime | v0.29.5 |  | go-module-binary-cataloger |
+| github.com/go-openapi/spec | v0.22.5 |  | go-module-binary-cataloger |
+| github.com/go-openapi/strfmt | v0.26.3 |  | go-module-binary-cataloger |
+| github.com/go-openapi/swag | v0.23.0 |  | go-module-binary-cataloger |
+| github.com/go-openapi/swag | v0.26.0 |  | go-module-binary-cataloger |
+| github.com/go-openapi/swag/cmdutils | v0.26.0 |  | go-module-binary-cataloger |
+| github.com/go-openapi/swag/conv | v0.26.1 |  | go-module-binary-cataloger |
+| github.com/go-openapi/swag/fileutils | v0.26.0 |  | go-module-binary-cataloger |
+| github.com/go-openapi/swag/jsonname | v0.25.5 |  | go-module-binary-cataloger |
+| github.com/go-openapi/swag/jsonname | v0.26.1 |  | go-module-binary-cataloger |
+| github.com/go-openapi/swag/jsonutils | v0.26.1 |  | go-module-binary-cataloger |
+| github.com/go-openapi/swag/loading | v0.26.1 |  | go-module-binary-cataloger |
+| github.com/go-openapi/swag/mangling | v0.26.1 |  | go-module-binary-cataloger |
+| github.com/go-openapi/swag/netutils | v0.26.0 |  | go-module-binary-cataloger |
+| github.com/go-openapi/swag/stringutils | v0.26.1 |  | go-module-binary-cataloger |
+| github.com/go-openapi/swag/typeutils | v0.26.1 |  | go-module-binary-cataloger |
+| github.com/go-openapi/swag/yamlutils | v0.26.1 |  | go-module-binary-cataloger |
+| github.com/go-openapi/validate | v0.25.2 |  | go-module-binary-cataloger |
+| github.com/go-sourcemap/sourcemap | v2.1.4+incompatible |  | go-module-binary-cataloger |
+| github.com/go-sql-driver/mysql | v1.10.0 |  | go-module-binary-cataloger |
 | github.com/go-stack/stack | v1.8.1 |  | go-module-binary-cataloger |
+| github.com/go-viper/mapstructure/v2 | v2.5.0 |  | go-module-binary-cataloger |
 | github.com/gobwas/glob | v0.2.3 |  | go-module-binary-cataloger |
-| github.com/goccy/go-json | v0.10.2 |  | go-module-binary-cataloger |
+| github.com/goccy/go-json | v0.10.6 |  | go-module-binary-cataloger |
 | github.com/gofrs/uuid | v4.4.0+incompatible |  | go-module-binary-cataloger |
 | github.com/gogo/googleapis | v1.4.1 |  | go-module-binary-cataloger |
+| github.com/gogo/googleapis | v1.4.1 |  | go-module-binary-cataloger |
+| github.com/gogo/googleapis | v1.4.1 |  | go-module-binary-cataloger |
+| github.com/gogo/protobuf | v1.3.2 |  | go-module-binary-cataloger |
+| github.com/gogo/protobuf | v1.3.2 |  | go-module-binary-cataloger |
 | github.com/gogo/protobuf | v1.3.2 |  | go-module-binary-cataloger |
 | github.com/gogo/status | v1.1.1 |  | go-module-binary-cataloger |
-| github.com/golang-jwt/jwt/v4 | v4.5.0 |  | go-module-binary-cataloger |
-| github.com/golang-jwt/jwt/v5 | v5.2.0 |  | go-module-binary-cataloger |
-| github.com/golang-migrate/migrate/v4 | v4.7.0 |  | go-module-binary-cataloger |
+| github.com/golang-jwt/jwt/v4 | v4.5.2 |  | go-module-binary-cataloger |
+| github.com/golang-jwt/jwt/v5 | v5.3.1 |  | go-module-binary-cataloger |
 | github.com/golang-sql/civil | v0.0.0-20220223132316-b832511892a9 |  | go-module-binary-cataloger |
 | github.com/golang-sql/sqlexp | v0.1.0 |  | go-module-binary-cataloger |
-| github.com/golang/glog | v1.2.0 |  | go-module-binary-cataloger |
-| github.com/golang/groupcache | v0.0.0-20210331224755-41bb18bfe9da |  | go-module-binary-cataloger |
-| github.com/golang/mock | v1.6.0 |  | go-module-binary-cataloger |
-| github.com/golang/protobuf | v1.5.3 |  | go-module-binary-cataloger |
-| github.com/golang/snappy | v0.0.4 |  | go-module-binary-cataloger |
-| github.com/google/btree | v1.1.2 |  | go-module-binary-cataloger |
-| github.com/google/cel-go | v0.17.7 |  | go-module-binary-cataloger |
-| github.com/google/flatbuffers | v23.5.26+incompatible |  | go-module-binary-cataloger |
-| github.com/google/gnostic-models | v0.6.8 |  | go-module-binary-cataloger |
-| github.com/google/go-cmp | v0.6.0 |  | go-module-binary-cataloger |
-| github.com/google/gofuzz | v1.2.0 |  | go-module-binary-cataloger |
-| github.com/google/s2a-go | v0.1.7 |  | go-module-binary-cataloger |
+| github.com/golang/mock | v1.7.0-rc.1 |  | go-module-binary-cataloger |
+| github.com/golang/protobuf | v1.5.4 |  | go-module-binary-cataloger |
+| github.com/golang/protobuf | v1.5.4 |  | go-module-binary-cataloger |
+| github.com/golang/protobuf | v1.5.4 |  | go-module-binary-cataloger |
+| github.com/golang/snappy | v1.0.0 |  | go-module-binary-cataloger |
+| github.com/google/btree | v1.1.3 |  | go-module-binary-cataloger |
+| github.com/google/cel-go | v0.28.0 |  | go-module-binary-cataloger |
+| github.com/google/flatbuffers | v25.12.19+incompatible |  | go-module-binary-cataloger |
+| github.com/google/flatbuffers | v25.12.19+incompatible |  | go-module-binary-cataloger |
+| github.com/google/flatbuffers | v25.12.19+incompatible |  | go-module-binary-cataloger |
+| github.com/google/gnostic | v0.7.1 |  | go-module-binary-cataloger |
+| github.com/google/gnostic-models | v0.7.0 |  | go-module-binary-cataloger |
+| github.com/google/gnostic-models | v0.7.1 |  | go-module-binary-cataloger |
+| github.com/google/go-cmp | v0.7.0 |  | go-module-binary-cataloger |
+| github.com/google/go-cmp | v0.7.0 |  | go-module-binary-cataloger |
+| github.com/google/go-cmp | v0.7.0 |  | go-module-binary-cataloger |
+| github.com/google/go-github/v82 | v82.0.0 |  | go-module-binary-cataloger |
+| github.com/google/go-querystring | v1.2.0 |  | go-module-binary-cataloger |
+| github.com/google/s2a-go | v0.1.9 |  | go-module-binary-cataloger |
 | github.com/google/uuid | v1.6.0 |  | go-module-binary-cataloger |
-| github.com/google/wire | v0.5.0 |  | go-module-binary-cataloger |
-| github.com/googleapis/enterprise-certificate-proxy | v0.3.2 |  | go-module-binary-cataloger |
-| github.com/googleapis/gax-go/v2 | v2.12.0 |  | go-module-binary-cataloger |
-| github.com/gorilla/mux | v1.8.0 |  | go-module-binary-cataloger |
-| github.com/gorilla/websocket | v1.5.0 |  | go-module-binary-cataloger |
-| github.com/grafana/alerting | v0.0.0-20240213130827-92f64f0f2a12 |  | go-module-binary-cataloger |
+| github.com/google/uuid | v1.6.0 |  | go-module-binary-cataloger |
+| github.com/google/uuid | v1.6.0 |  | go-module-binary-cataloger |
+| github.com/google/wire | v0.7.0 |  | go-module-binary-cataloger |
+| github.com/googleapis/enterprise-certificate-proxy | v0.3.16 |  | go-module-binary-cataloger |
+| github.com/googleapis/gax-go/v2 | v2.22.0 |  | go-module-binary-cataloger |
+| github.com/gorilla/mux | v1.8.1 |  | go-module-binary-cataloger |
+| github.com/gorilla/websocket | v1.5.4-0.20250319132907-e064f32e3674 |  | go-module-binary-cataloger |
+| github.com/grafana/alerting | v0.0.0-20260616104851-587c401ed754 |  | go-module-binary-cataloger |
+| github.com/grafana/authlib | v0.0.0-20260603144019-18cfcbc9496a |  | go-module-binary-cataloger |
+| github.com/grafana/authlib/types | v0.0.0-20260603144019-18cfcbc9496a |  | go-module-binary-cataloger |
 | github.com/grafana/cue | v0.0.0-20230926092038-971951014e3f |  | go-module-binary-cataloger |
-| github.com/grafana/cuetsy | v0.1.11 |  | go-module-binary-cataloger |
-| github.com/grafana/dataplane/sdata | v0.0.7 |  | go-module-binary-cataloger |
-| github.com/grafana/dskit | v0.0.0-20240104111617-ea101a3b86eb |  | go-module-binary-cataloger |
-| github.com/grafana/gofpdf | v0.0.0-20231002120153-857cc45be447 |  | go-module-binary-cataloger |
+| github.com/grafana/dataplane/sdata | v0.0.9 |  | go-module-binary-cataloger |
+| github.com/grafana/dataplane/sdata | v0.0.9 |  | go-module-binary-cataloger |
+| github.com/grafana/dskit | v0.0.0-20260427162712-0457a92dacc3 |  | go-module-binary-cataloger |
+| github.com/grafana/go-mysql-server | v0.20.2-grafana-4 |  | go-module-binary-cataloger |
+| github.com/grafana/gomemcache | v0.0.0-20251127154401-74f93547077b |  | go-module-binary-cataloger |
 | github.com/grafana/grafana | UNKNOWN |  | go-module-binary-cataloger |
-| github.com/grafana/grafana | UNKNOWN |  | go-module-binary-cataloger |
-| github.com/grafana/grafana | UNKNOWN |  | go-module-binary-cataloger |
-| github.com/grafana/grafana-aws-sdk | v0.25.1 |  | go-module-binary-cataloger |
-| github.com/grafana/grafana-azure-sdk-go | v1.12.0 |  | go-module-binary-cataloger |
-| github.com/grafana/grafana-google-sdk-go | v0.1.0 |  | go-module-binary-cataloger |
-| github.com/grafana/grafana-plugin-sdk-go | v0.218.0 |  | go-module-binary-cataloger |
-| github.com/grafana/kindsys | v0.0.0-20230508162304-452481b63482 |  | go-module-binary-cataloger |
-| github.com/grafana/prometheus-alertmanager | v0.25.1-0.20240208102907-e82436ce63e6 |  | go-module-binary-cataloger |
-| github.com/grafana/pyroscope-go/godeltaprof | v0.1.6 |  | go-module-binary-cataloger |
-| github.com/grafana/pyroscope/api | v0.3.0 |  | go-module-binary-cataloger |
-| github.com/grafana/regexp | v0.0.0-20221123153739-15dc172cd2db |  | go-module-binary-cataloger |
-| github.com/grafana/saml | v0.4.15-0.20231025143828-a6c0e9b86a4c |  | go-module-binary-cataloger |
-| github.com/grafana/sqlds/v3 | v3.2.0 |  | go-module-binary-cataloger |
-| github.com/grafana/tempo | v1.5.1-0.20230524121406-1dc1bfe7085b |  | go-module-binary-cataloger |
-| github.com/grafana/thema | v0.0.0-20230712153715-375c1b45f3ed |  | go-module-binary-cataloger |
+| github.com/grafana/grafana-app-sdk | v0.56.2 |  | go-module-binary-cataloger |
+| github.com/grafana/grafana-app-sdk/logging | v0.56.2 |  | go-module-binary-cataloger |
+| github.com/grafana/grafana-aws-sdk | v1.4.3 |  | go-module-binary-cataloger |
+| github.com/grafana/grafana-aws-sdk | v1.4.4 |  | go-module-binary-cataloger |
+| github.com/grafana/grafana-azure-sdk-go/v2 | v2.4.1 |  | go-module-binary-cataloger |
+| github.com/grafana/grafana-cloud-migration-snapshot | v1.11.0 |  | go-module-binary-cataloger |
+| github.com/grafana/grafana-elasticsearch-datasource | v0.0.0-20260612100722-e6ffa8b41781 |  | go-module-binary-cataloger |
+| github.com/grafana/grafana-google-sdk-go | v0.4.2 |  | go-module-binary-cataloger |
+| github.com/grafana/grafana-plugin-sdk-go | v0.290.0 |  | go-module-binary-cataloger |
+| github.com/grafana/grafana-plugin-sdk-go | v0.291.1 |  | go-module-binary-cataloger |
+| github.com/grafana/grafana-plugin-sdk-go | v0.292.1 |  | go-module-binary-cataloger |
+| github.com/grafana/grafana-prometheus-datasource/pkg/promlib | v0.0.11 |  | go-module-binary-cataloger |
+| github.com/grafana/grafana-zipkin-datasource | v0.0.0-20260504104403-712ed9bdeee0 |  | go-module-binary-cataloger |
+| github.com/grafana/grafana/apps/advisor | UNKNOWN |  | go-module-binary-cataloger |
+| github.com/grafana/grafana/apps/alerting/historian | UNKNOWN |  | go-module-binary-cataloger |
+| github.com/grafana/grafana/apps/alerting/notifications | UNKNOWN |  | go-module-binary-cataloger |
+| github.com/grafana/grafana/apps/alerting/rules | UNKNOWN |  | go-module-binary-cataloger |
+| github.com/grafana/grafana/apps/annotation | UNKNOWN |  | go-module-binary-cataloger |
+| github.com/grafana/grafana/apps/collections | UNKNOWN |  | go-module-binary-cataloger |
+| github.com/grafana/grafana/apps/correlations | UNKNOWN |  | go-module-binary-cataloger |
+| github.com/grafana/grafana/apps/dashboard | UNKNOWN |  | go-module-binary-cataloger |
+| github.com/grafana/grafana/apps/dashvalidator | UNKNOWN |  | go-module-binary-cataloger |
+| github.com/grafana/grafana/apps/example | UNKNOWN |  | go-module-binary-cataloger |
+| github.com/grafana/grafana/apps/folder | UNKNOWN |  | go-module-binary-cataloger |
+| github.com/grafana/grafana/apps/iam | UNKNOWN |  | go-module-binary-cataloger |
+| github.com/grafana/grafana/apps/live | UNKNOWN |  | go-module-binary-cataloger |
+| github.com/grafana/grafana/apps/logsdrilldown | UNKNOWN |  | go-module-binary-cataloger |
+| github.com/grafana/grafana/apps/playlist | UNKNOWN |  | go-module-binary-cataloger |
+| github.com/grafana/grafana/apps/plugins | UNKNOWN |  | go-module-binary-cataloger |
+| github.com/grafana/grafana/apps/preferences | UNKNOWN |  | go-module-binary-cataloger |
+| github.com/grafana/grafana/apps/provisioning | UNKNOWN |  | go-module-binary-cataloger |
+| github.com/grafana/grafana/apps/quotas | UNKNOWN |  | go-module-binary-cataloger |
+| github.com/grafana/grafana/apps/scope | UNKNOWN |  | go-module-binary-cataloger |
+| github.com/grafana/grafana/apps/secret | UNKNOWN |  | go-module-binary-cataloger |
+| github.com/grafana/grafana/apps/shorturl | UNKNOWN |  | go-module-binary-cataloger |
+| github.com/grafana/grafana/pkg/aggregator | UNKNOWN |  | go-module-binary-cataloger |
+| github.com/grafana/grafana/pkg/apimachinery | UNKNOWN |  | go-module-binary-cataloger |
+| github.com/grafana/grafana/pkg/apiserver | UNKNOWN |  | go-module-binary-cataloger |
+| github.com/grafana/grafana/pkg/infra/features | UNKNOWN |  | go-module-binary-cataloger |
+| github.com/grafana/grafana/pkg/plugins | UNKNOWN |  | go-module-binary-cataloger |
+| github.com/grafana/grafana/pkg/storage/unified/resource/kv | UNKNOWN |  | go-module-binary-cataloger |
+| github.com/grafana/grafana/pkg/storage/unified/resourcepb | UNKNOWN |  | go-module-binary-cataloger |
+| github.com/grafana/grafana/pkg/util/sqlite | UNKNOWN |  | go-module-binary-cataloger |
+| github.com/grafana/jsonparser | v0.0.0-20241004153430-023329977675 |  | go-module-binary-cataloger |
+| github.com/grafana/loki/pkg/push | v0.0.0-20250823105456-332df2b20000 |  | go-module-binary-cataloger |
+| github.com/grafana/loki/v3 | v3.7.2 |  | go-module-binary-cataloger |
+| github.com/grafana/memberlist | v0.3.1-0.20251126142931-6f9f62ab6f86 |  | go-module-binary-cataloger |
+| github.com/grafana/nanogit | v0.18.1 |  | go-module-binary-cataloger |
+| github.com/grafana/otel-profiling-go | v0.5.1 |  | go-module-binary-cataloger |
+| github.com/grafana/otel-profiling-go | v0.5.1 |  | go-module-binary-cataloger |
+| github.com/grafana/otel-profiling-go | v0.5.1 |  | go-module-binary-cataloger |
+| github.com/grafana/prometheus-alertmanager | v0.25.1-0.20260225120258-18275ca76b0c |  | go-module-binary-cataloger |
+| github.com/grafana/pyroscope-go/godeltaprof | v0.1.9 |  | go-module-binary-cataloger |
+| github.com/grafana/pyroscope-go/godeltaprof | v0.1.9 |  | go-module-binary-cataloger |
+| github.com/grafana/pyroscope-go/godeltaprof | v0.1.9 |  | go-module-binary-cataloger |
+| github.com/grafana/pyroscope/api | v1.3.0 |  | go-module-binary-cataloger |
+| github.com/grafana/regexp | v0.0.0-20250905093917-f7b3be9d1853 |  | go-module-binary-cataloger |
+| github.com/grafana/schemads | v0.0.8 |  | go-module-binary-cataloger |
+| github.com/grafana/schemads | v0.2.2 |  | go-module-binary-cataloger |
+| github.com/grafana/sqlds/v5 | v5.0.4 |  | go-module-binary-cataloger |
+| github.com/grafana/sqlds/v5 | v5.1.1 |  | go-module-binary-cataloger |
+| github.com/grafana/tempo | v1.5.1-0.20260427112133-525d1bab07e0 |  | go-module-binary-cataloger |
+| github.com/grafana/vitess | v0.0.0-grafana-2 |  | go-module-binary-cataloger |
 | github.com/grpc-ecosystem/go-grpc-middleware | v1.4.0 |  | go-module-binary-cataloger |
-| github.com/grpc-ecosystem/go-grpc-prometheus | v1.2.1-0.20191002090509-6af20e3a5340 |  | go-module-binary-cataloger |
-| github.com/grpc-ecosystem/grpc-gateway/v2 | v2.19.0 |  | go-module-binary-cataloger |
+| github.com/grpc-ecosystem/go-grpc-middleware/providers/prometheus | v1.1.0 |  | go-module-binary-cataloger |
+| github.com/grpc-ecosystem/go-grpc-middleware/providers/prometheus | v1.1.0 |  | go-module-binary-cataloger |
+| github.com/grpc-ecosystem/go-grpc-middleware/providers/prometheus | v1.1.0 |  | go-module-binary-cataloger |
+| github.com/grpc-ecosystem/go-grpc-middleware/v2 | v2.3.3 |  | go-module-binary-cataloger |
+| github.com/grpc-ecosystem/go-grpc-middleware/v2 | v2.3.3 |  | go-module-binary-cataloger |
+| github.com/grpc-ecosystem/go-grpc-middleware/v2 | v2.3.3 |  | go-module-binary-cataloger |
+| github.com/grpc-ecosystem/grpc-gateway/v2 | v2.27.7 |  | go-module-binary-cataloger |
+| github.com/grpc-ecosystem/grpc-gateway/v2 | v2.28.0 |  | go-module-binary-cataloger |
+| github.com/grpc-ecosystem/grpc-gateway/v2 | v2.29.0 |  | go-module-binary-cataloger |
+| github.com/hashicorp/consul/api | v1.33.7 |  | go-module-binary-cataloger |
 | github.com/hashicorp/errwrap | v1.1.0 |  | go-module-binary-cataloger |
 | github.com/hashicorp/go-cleanhttp | v0.5.2 |  | go-module-binary-cataloger |
-| github.com/hashicorp/go-hclog | v0.16.1 |  | go-module-binary-cataloger |
+| github.com/hashicorp/go-hclog | v1.6.3 |  | go-module-binary-cataloger |
+| github.com/hashicorp/go-hclog | v1.6.3 |  | go-module-binary-cataloger |
+| github.com/hashicorp/go-hclog | v1.6.3 |  | go-module-binary-cataloger |
 | github.com/hashicorp/go-immutable-radix | v1.3.1 |  | go-module-binary-cataloger |
-| github.com/hashicorp/go-msgpack | v0.5.5 |  | go-module-binary-cataloger |
+| github.com/hashicorp/go-metrics | v0.5.4 |  | go-module-binary-cataloger |
+| github.com/hashicorp/go-msgpack/v2 | v2.1.5 |  | go-module-binary-cataloger |
 | github.com/hashicorp/go-multierror | v1.1.1 |  | go-module-binary-cataloger |
-| github.com/hashicorp/go-plugin | v1.6.0 |  | go-module-binary-cataloger |
-| github.com/hashicorp/go-retryablehttp | v0.7.4 |  | go-module-binary-cataloger |
-| github.com/hashicorp/go-sockaddr | v1.0.6 |  | go-module-binary-cataloger |
-| github.com/hashicorp/go-version | v1.6.0 |  | go-module-binary-cataloger |
-| github.com/hashicorp/golang-lru | v0.6.0 |  | go-module-binary-cataloger |
+| github.com/hashicorp/go-plugin | v1.7.0 |  | go-module-binary-cataloger |
+| github.com/hashicorp/go-plugin | v1.7.0 |  | go-module-binary-cataloger |
+| github.com/hashicorp/go-plugin | v1.7.0 |  | go-module-binary-cataloger |
+| github.com/hashicorp/go-rootcerts | v1.0.2 |  | go-module-binary-cataloger |
+| github.com/hashicorp/go-secure-stdlib/plugincontainer | v0.5.0 |  | go-module-binary-cataloger |
+| github.com/hashicorp/go-sockaddr | v1.0.7 |  | go-module-binary-cataloger |
+| github.com/hashicorp/go-uuid | v1.0.3 |  | go-module-binary-cataloger |
+| github.com/hashicorp/go-version | v1.9.0 |  | go-module-binary-cataloger |
+| github.com/hashicorp/golang-lru | v1.0.2 |  | go-module-binary-cataloger |
 | github.com/hashicorp/golang-lru/v2 | v2.0.7 |  | go-module-binary-cataloger |
-| github.com/hashicorp/hcl/v2 | v2.17.0 |  | go-module-binary-cataloger |
-| github.com/hashicorp/memberlist | v0.5.0 |  | go-module-binary-cataloger |
-| github.com/hashicorp/yamux | v0.1.1 |  | go-module-binary-cataloger |
-| github.com/huandu/xstrings | v1.3.2 |  | go-module-binary-cataloger |
-| github.com/igm/sockjs-go/v3 | v3.0.2 |  | go-module-binary-cataloger |
-| github.com/imdario/mergo | v0.3.16 |  | go-module-binary-cataloger |
-| github.com/influxdata/influxdb-client-go/v2 | v2.12.3 |  | go-module-binary-cataloger |
-| github.com/influxdata/line-protocol | v0.0.0-20210311194329-9aa0e372d097 |  | go-module-binary-cataloger |
-| github.com/invopop/yaml | v0.2.0 |  | go-module-binary-cataloger |
-| github.com/jessevdk/go-flags | v1.5.0 |  | go-module-binary-cataloger |
-| github.com/jhump/protoreflect | v1.15.1 |  | go-module-binary-cataloger |
+| github.com/hashicorp/hcl/v2 | v2.24.0 |  | go-module-binary-cataloger |
+| github.com/hashicorp/serf | v0.10.2 |  | go-module-binary-cataloger |
+| github.com/hashicorp/yamux | v0.1.2 |  | go-module-binary-cataloger |
+| github.com/hashicorp/yamux | v0.1.2 |  | go-module-binary-cataloger |
+| github.com/hashicorp/yamux | v0.1.2 |  | go-module-binary-cataloger |
+| github.com/huandu/go-clone | v1.7.3 |  | go-module-binary-cataloger |
+| github.com/huandu/go-clone | v1.7.3 |  | go-module-binary-cataloger |
+| github.com/huandu/go-sqlbuilder | v1.39.1 |  | go-module-binary-cataloger |
+| github.com/huandu/go-sqlbuilder | v1.40.2 |  | go-module-binary-cataloger |
+| github.com/huandu/xstrings | v1.4.0 |  | go-module-binary-cataloger |
+| github.com/huandu/xstrings | v1.5.0 |  | go-module-binary-cataloger |
+| github.com/influxdata/influxdb-client-go/v2 | v2.14.0 |  | go-module-binary-cataloger |
+| github.com/influxdata/influxql | v1.4.1 |  | go-module-binary-cataloger |
+| github.com/influxdata/line-protocol | v0.0.0-20210922203350-b1ad95c89adf |  | go-module-binary-cataloger |
+| github.com/invopop/jsonschema | v0.14.0 |  | go-module-binary-cataloger |
+| github.com/jackc/pgpassfile | v1.0.0 |  | go-module-binary-cataloger |
+| github.com/jackc/pgservicefile | v0.0.0-20240606120523-5a60cdf6a761 |  | go-module-binary-cataloger |
+| github.com/jackc/pgx/v5 | v5.9.2 |  | go-module-binary-cataloger |
+| github.com/jackc/puddle/v2 | v2.2.2 |  | go-module-binary-cataloger |
+| github.com/jaegertracing/jaeger-idl | v0.6.0 |  | go-module-binary-cataloger |
+| github.com/jaegertracing/jaeger-idl | v0.6.0 |  | go-module-binary-cataloger |
+| github.com/jaegertracing/jaeger-idl | v0.6.0 |  | go-module-binary-cataloger |
+| github.com/jcmturner/aescts/v2 | v2.0.0 |  | go-module-binary-cataloger |
+| github.com/jcmturner/dnsutils/v2 | v2.0.0 |  | go-module-binary-cataloger |
+| github.com/jcmturner/gofork | v1.7.6 |  | go-module-binary-cataloger |
+| github.com/jcmturner/goidentity/v6 | v6.0.1 |  | go-module-binary-cataloger |
+| github.com/jcmturner/gokrb5/v8 | v8.4.4 |  | go-module-binary-cataloger |
+| github.com/jcmturner/rpc/v2 | v2.0.3 |  | go-module-binary-cataloger |
+| github.com/jessevdk/go-flags | v1.6.1 |  | go-module-binary-cataloger |
+| github.com/jhump/protoreflect | v1.17.0 |  | go-module-binary-cataloger |
+| github.com/jmespath-community/go-jmespath | v1.1.1 |  | go-module-binary-cataloger |
 | github.com/jmespath/go-jmespath | v0.4.0 |  | go-module-binary-cataloger |
-| github.com/jmoiron/sqlx | v1.3.5 |  | go-module-binary-cataloger |
-| github.com/jonboulle/clockwork | v0.4.0 |  | go-module-binary-cataloger |
+| github.com/jmoiron/sqlx | v1.4.0 |  | go-module-binary-cataloger |
 | github.com/josharian/intern | v1.0.0 |  | go-module-binary-cataloger |
+| github.com/josharian/intern | v1.0.0 |  | go-module-binary-cataloger |
+| github.com/joshlf/go-acl | v0.0.0-20200411065538-eae00ae38531 |  | go-module-binary-cataloger |
 | github.com/jpillora/backoff | v1.0.0 |  | go-module-binary-cataloger |
 | github.com/json-iterator/go | v1.1.12 |  | go-module-binary-cataloger |
-| github.com/klauspost/compress | v1.17.4 |  | go-module-binary-cataloger |
-| github.com/klauspost/cpuid/v2 | v2.2.5 |  | go-module-binary-cataloger |
-| github.com/kr/pretty | v0.3.1 |  | go-module-binary-cataloger |
-| github.com/kr/text | v0.2.0 |  | go-module-binary-cataloger |
+| github.com/json-iterator/go | v1.1.12 |  | go-module-binary-cataloger |
+| github.com/json-iterator/go | v1.1.12 |  | go-module-binary-cataloger |
+| github.com/jszwedko/go-datemath | v0.1.1-0.20230526204004-640a500621d6 |  | go-module-binary-cataloger |
+| github.com/jszwedko/go-datemath | v0.1.1-0.20230526204004-640a500621d6 |  | go-module-binary-cataloger |
+| github.com/klauspost/compress | v1.18.2 |  | go-module-binary-cataloger |
+| github.com/klauspost/compress | v1.18.4 |  | go-module-binary-cataloger |
+| github.com/klauspost/compress | v1.18.6 |  | go-module-binary-cataloger |
+| github.com/klauspost/cpuid/v2 | v2.3.0 |  | go-module-binary-cataloger |
+| github.com/klauspost/cpuid/v2 | v2.3.0 |  | go-module-binary-cataloger |
+| github.com/klauspost/cpuid/v2 | v2.3.0 |  | go-module-binary-cataloger |
+| github.com/klauspost/pgzip | v1.2.6 |  | go-module-binary-cataloger |
 | github.com/kylelemons/godebug | v1.1.0 |  | go-module-binary-cataloger |
-| github.com/lib/pq | v1.10.9 |  | go-module-binary-cataloger |
-| github.com/linkedin/goavro/v2 | v2.10.0 |  | go-module-binary-cataloger |
+| github.com/lann/builder | v0.0.0-20180802200727-47ae307949d0 |  | go-module-binary-cataloger |
+| github.com/lann/ps | v0.0.0-20150810152359-62de8c46ede0 |  | go-module-binary-cataloger |
+| github.com/lestrrat-go/strftime | v1.0.4 |  | go-module-binary-cataloger |
+| github.com/lib/pq | v1.12.3 |  | go-module-binary-cataloger |
 | github.com/m3db/prometheus_remote_client_golang | v0.4.4 |  | go-module-binary-cataloger |
-| github.com/magefile/mage | v1.15.0 |  | go-module-binary-cataloger |
 | github.com/mailru/easyjson | v0.7.7 |  | go-module-binary-cataloger |
-| github.com/mattermost/xml-roundtrip-validator | v0.1.0 |  | go-module-binary-cataloger |
+| github.com/mailru/easyjson | v0.9.1 |  | go-module-binary-cataloger |
+| github.com/mattbaird/jsonpatch | v0.0.0-20240118010651-0ba75a80ca38 |  | go-module-binary-cataloger |
 | github.com/mattetti/filebuffer | v1.0.1 |  | go-module-binary-cataloger |
-| github.com/mattn/go-colorable | v0.1.13 |  | go-module-binary-cataloger |
-| github.com/mattn/go-colorable | v0.1.13 |  | go-module-binary-cataloger |
-| github.com/mattn/go-colorable | v0.1.13 |  | go-module-binary-cataloger |
-| github.com/mattn/go-ieproxy | v0.0.3 |  | go-module-binary-cataloger |
-| github.com/mattn/go-isatty | v0.0.19 |  | go-module-binary-cataloger |
-| github.com/mattn/go-isatty | v0.0.19 |  | go-module-binary-cataloger |
-| github.com/mattn/go-isatty | v0.0.19 |  | go-module-binary-cataloger |
-| github.com/mattn/go-runewidth | v0.0.13 |  | go-module-binary-cataloger |
-| github.com/mattn/go-sqlite3 | v1.14.19 |  | go-module-binary-cataloger |
+| github.com/mattetti/filebuffer | v1.0.1 |  | go-module-binary-cataloger |
+| github.com/mattetti/filebuffer | v1.0.1 |  | go-module-binary-cataloger |
+| github.com/mattn/go-colorable | v0.1.14 |  | go-module-binary-cataloger |
+| github.com/mattn/go-colorable | v0.1.14 |  | go-module-binary-cataloger |
+| github.com/mattn/go-colorable | v0.1.14 |  | go-module-binary-cataloger |
+| github.com/mattn/go-isatty | v0.0.20 |  | go-module-binary-cataloger |
+| github.com/mattn/go-isatty | v0.0.20 |  | go-module-binary-cataloger |
+| github.com/mattn/go-isatty | v0.0.22 |  | go-module-binary-cataloger |
+| github.com/mattn/go-runewidth | v0.0.19 |  | go-module-binary-cataloger |
+| github.com/mattn/go-runewidth | v0.0.19 |  | go-module-binary-cataloger |
+| github.com/mattn/go-runewidth | v0.0.20 |  | go-module-binary-cataloger |
 | github.com/matttproud/golang_protobuf_extensions | v1.0.4 |  | go-module-binary-cataloger |
-| github.com/microsoft/go-mssqldb | v1.6.1-0.20240214161942-b65008136246 |  | go-module-binary-cataloger |
-| github.com/miekg/dns | v1.1.57 |  | go-module-binary-cataloger |
+| github.com/maypok86/otter | v1.2.4 |  | go-module-binary-cataloger |
+| github.com/mdlayher/socket | v0.5.1 |  | go-module-binary-cataloger |
+| github.com/mdlayher/vsock | v1.2.1 |  | go-module-binary-cataloger |
+| github.com/mfridman/interpolate | v0.0.2 |  | go-module-binary-cataloger |
+| github.com/microsoft/go-mssqldb | v1.10.0 |  | go-module-binary-cataloger |
+| github.com/miekg/dns | v1.1.72 |  | go-module-binary-cataloger |
 | github.com/mitchellh/copystructure | v1.2.0 |  | go-module-binary-cataloger |
 | github.com/mitchellh/go-homedir | v1.1.0 |  | go-module-binary-cataloger |
-| github.com/mitchellh/go-testing-interface | v1.14.1 |  | go-module-binary-cataloger |
+| github.com/mitchellh/go-homedir | v1.1.0 |  | go-module-binary-cataloger |
 | github.com/mitchellh/go-wordwrap | v1.0.1 |  | go-module-binary-cataloger |
-| github.com/mitchellh/mapstructure | v1.5.0 |  | go-module-binary-cataloger |
+| github.com/mitchellh/mapstructure | v1.5.1-0.20231216201459-8508981c8b6c |  | go-module-binary-cataloger |
 | github.com/mitchellh/reflectwalk | v1.0.2 |  | go-module-binary-cataloger |
-| github.com/mithrandie/csvq | v1.17.10 |  | go-module-binary-cataloger |
-| github.com/mithrandie/csvq-driver | v1.6.8 |  | go-module-binary-cataloger |
+| github.com/mithrandie/csvq | v1.18.1 |  | go-module-binary-cataloger |
+| github.com/mithrandie/csvq | v1.18.1 |  | go-module-binary-cataloger |
+| github.com/mithrandie/csvq-driver | v1.7.0 |  | go-module-binary-cataloger |
+| github.com/mithrandie/csvq-driver | v1.7.0 |  | go-module-binary-cataloger |
 | github.com/mithrandie/go-file/v2 | v2.1.0 |  | go-module-binary-cataloger |
-| github.com/mithrandie/go-text | v1.5.4 |  | go-module-binary-cataloger |
+| github.com/mithrandie/go-file/v2 | v2.1.0 |  | go-module-binary-cataloger |
+| github.com/mithrandie/go-text | v1.6.0 |  | go-module-binary-cataloger |
+| github.com/mithrandie/go-text | v1.6.0 |  | go-module-binary-cataloger |
 | github.com/mithrandie/ternary | v1.1.1 |  | go-module-binary-cataloger |
-| github.com/moby/spdystream | v0.2.0 |  | go-module-binary-cataloger |
+| github.com/mithrandie/ternary | v1.1.1 |  | go-module-binary-cataloger |
+| github.com/moby/docker-image-spec | v1.3.1 |  | go-module-binary-cataloger |
+| github.com/moby/moby/api | v1.54.2 |  | go-module-binary-cataloger |
+| github.com/moby/moby/client | v0.4.1 |  | go-module-binary-cataloger |
+| github.com/modern-go/concurrent | v0.0.0-20180306012644-bacd9c7ef1dd |  | go-module-binary-cataloger |
+| github.com/modern-go/concurrent | v0.0.0-20180306012644-bacd9c7ef1dd |  | go-module-binary-cataloger |
 | github.com/modern-go/concurrent | v0.0.0-20180306012644-bacd9c7ef1dd |  | go-module-binary-cataloger |
 | github.com/modern-go/reflect2 | v1.0.2 |  | go-module-binary-cataloger |
-| github.com/mohae/deepcopy | v0.0.0-20170929034955-c48cc78d4826 |  | go-module-binary-cataloger |
+| github.com/modern-go/reflect2 | v1.0.2 |  | go-module-binary-cataloger |
+| github.com/modern-go/reflect2 | v1.0.3-0.20250322232337-35a7c28c31ee |  | go-module-binary-cataloger |
 | github.com/mpvl/unique | v0.0.0-20150818121801-cbe035fff7de |  | go-module-binary-cataloger |
+| github.com/mschoch/smat | v0.2.0 |  | go-module-binary-cataloger |
+| github.com/munnerz/goautoneg | v0.0.0-20191010083416-a7dc8b61c822 |  | go-module-binary-cataloger |
+| github.com/munnerz/goautoneg | v0.0.0-20191010083416-a7dc8b61c822 |  | go-module-binary-cataloger |
 | github.com/munnerz/goautoneg | v0.0.0-20191010083416-a7dc8b61c822 |  | go-module-binary-cataloger |
 | github.com/mwitkow/go-conntrack | v0.0.0-20190716064945-2f068394615f |  | go-module-binary-cataloger |
-| github.com/mxk/go-flowrate | v0.0.0-20140419014527-cca7078d478f |  | go-module-binary-cataloger |
+| github.com/natefinch/wrap | v0.2.0 |  | go-module-binary-cataloger |
+| github.com/nikunjy/rules | v1.5.0 |  | go-module-binary-cataloger |
+| github.com/oapi-codegen/runtime | v1.0.0 |  | go-module-binary-cataloger |
+| github.com/oasdiff/yaml | v0.1.0 |  | go-module-binary-cataloger |
+| github.com/oasdiff/yaml3 | v0.0.13 |  | go-module-binary-cataloger |
 | github.com/oklog/run | v1.1.0 |  | go-module-binary-cataloger |
+| github.com/oklog/run | v1.1.0 |  | go-module-binary-cataloger |
+| github.com/oklog/run | v1.2.0 |  | go-module-binary-cataloger |
 | github.com/oklog/ulid | v1.3.1 |  | go-module-binary-cataloger |
-| github.com/olekukonko/tablewriter | v0.0.5 |  | go-module-binary-cataloger |
-| github.com/opentracing-contrib/go-stdlib | v1.0.0 |  | go-module-binary-cataloger |
-| github.com/opentracing/opentracing-go | v1.2.0 |  | go-module-binary-cataloger |
-| github.com/ory/fosite | v0.44.1-0.20230317114349-45a6785cc54f |  | go-module-binary-cataloger |
-| github.com/ory/go-convenience | v0.1.0 |  | go-module-binary-cataloger |
-| github.com/ory/x | v0.0.214 |  | go-module-binary-cataloger |
+| github.com/oklog/ulid/v2 | v2.1.1 |  | go-module-binary-cataloger |
+| github.com/olekukonko/cat | v0.0.0-20250911104152-50322a0618f6 |  | go-module-binary-cataloger |
+| github.com/olekukonko/cat | v0.0.0-20250911104152-50322a0618f6 |  | go-module-binary-cataloger |
+| github.com/olekukonko/cat | v0.0.0-20250911104152-50322a0618f6 |  | go-module-binary-cataloger |
+| github.com/olekukonko/errors | v1.1.0 |  | go-module-binary-cataloger |
+| github.com/olekukonko/errors | v1.2.0 |  | go-module-binary-cataloger |
+| github.com/olekukonko/errors | v1.2.0 |  | go-module-binary-cataloger |
+| github.com/olekukonko/ll | v0.1.4-0.20260115111900-9e59c2286df0 |  | go-module-binary-cataloger |
+| github.com/olekukonko/ll | v0.1.6 |  | go-module-binary-cataloger |
+| github.com/olekukonko/ll | v0.1.6 |  | go-module-binary-cataloger |
+| github.com/olekukonko/tablewriter | v1.1.3 |  | go-module-binary-cataloger |
+| github.com/olekukonko/tablewriter | v1.1.4 |  | go-module-binary-cataloger |
+| github.com/olekukonko/tablewriter | v1.1.4 |  | go-module-binary-cataloger |
+| github.com/open-feature/go-sdk | v1.17.2 |  | go-module-binary-cataloger |
+| github.com/open-feature/go-sdk-contrib/providers/ofrep | v0.1.7 |  | go-module-binary-cataloger |
+| github.com/openai/openai-go/v3 | v3.16.0 |  | go-module-binary-cataloger |
+| github.com/opencontainers/go-digest | v1.0.0 |  | go-module-binary-cataloger |
+| github.com/opencontainers/image-spec | v1.1.1 |  | go-module-binary-cataloger |
+| github.com/openfga/api/proto | v0.0.0-20260319214821-f153694bfc20 |  | go-module-binary-cataloger |
+| github.com/openfga/language/pkg/go | v0.2.1 |  | go-module-binary-cataloger |
+| github.com/openfga/openfga | v1.14.2 |  | go-module-binary-cataloger |
+| github.com/opentracing-contrib/go-grpc | v0.1.2 |  | go-module-binary-cataloger |
+| github.com/opentracing-contrib/go-stdlib | v1.1.1 |  | go-module-binary-cataloger |
+| github.com/opentracing/opentracing-go | v1.2.1-0.20220228012449-10b1cf09e00b |  | go-module-binary-cataloger |
+| github.com/openzipkin/zipkin-go | v0.4.3 |  | go-module-binary-cataloger |
 | github.com/patrickmn/go-cache | v2.1.0+incompatible |  | go-module-binary-cataloger |
-| github.com/pborman/uuid | v1.2.0 |  | go-module-binary-cataloger |
-| github.com/perimeterx/marshmallow | v1.1.5 |  | go-module-binary-cataloger |
-| github.com/pierrec/lz4/v4 | v4.1.18 |  | go-module-binary-cataloger |
+| github.com/patrickmn/go-cache | v2.1.0+incompatible |  | go-module-binary-cataloger |
+| github.com/patrickmn/go-cache | v2.1.0+incompatible |  | go-module-binary-cataloger |
+| github.com/pb33f/ordered-map/v2 | v2.3.1 |  | go-module-binary-cataloger |
+| github.com/pelletier/go-toml/v2 | v2.2.4 |  | go-module-binary-cataloger |
+| github.com/pgvector/pgvector-go | v0.3.0 |  | go-module-binary-cataloger |
+| github.com/pierrec/lz4/v4 | v4.1.23 |  | go-module-binary-cataloger |
+| github.com/pierrec/lz4/v4 | v4.1.25 |  | go-module-binary-cataloger |
+| github.com/pierrec/lz4/v4 | v4.1.26 |  | go-module-binary-cataloger |
+| github.com/pires/go-proxyproto | v0.11.0 |  | go-module-binary-cataloger |
 | github.com/pkg/browser | v0.0.0-20240102092130-5ac0b6a4141c |  | go-module-binary-cataloger |
 | github.com/pkg/errors | v0.9.1 |  | go-module-binary-cataloger |
+| github.com/planetscale/vtprotobuf | v0.6.1-0.20250313105119-ba97887b0a25 |  | go-module-binary-cataloger |
 | github.com/pmezard/go-difflib | v1.0.1-0.20181226105442-5d4384ee4fb2 |  | go-module-binary-cataloger |
-| github.com/prometheus/client_golang | v1.18.0 |  | go-module-binary-cataloger |
-| github.com/prometheus/client_model | v0.5.0 |  | go-module-binary-cataloger |
-| github.com/prometheus/common | v0.46.0 |  | go-module-binary-cataloger |
+| github.com/pmezard/go-difflib | v1.0.1-0.20181226105442-5d4384ee4fb2 |  | go-module-binary-cataloger |
+| github.com/pressly/goose/v3 | v3.27.1 |  | go-module-binary-cataloger |
+| github.com/prometheus/client_golang | v1.23.2 |  | go-module-binary-cataloger |
+| github.com/prometheus/client_golang | v1.23.2 |  | go-module-binary-cataloger |
+| github.com/prometheus/client_golang | v1.23.2 |  | go-module-binary-cataloger |
+| github.com/prometheus/client_golang/exp | v0.0.0-20260518105423-c9d5bc4c50a9 |  | go-module-binary-cataloger |
+| github.com/prometheus/client_model | v0.6.2 |  | go-module-binary-cataloger |
+| github.com/prometheus/client_model | v0.6.2 |  | go-module-binary-cataloger |
+| github.com/prometheus/client_model | v0.6.2 |  | go-module-binary-cataloger |
+| github.com/prometheus/common | v0.67.5 |  | go-module-binary-cataloger |
+| github.com/prometheus/common | v0.67.5 |  | go-module-binary-cataloger |
+| github.com/prometheus/common | v0.68.1 |  | go-module-binary-cataloger |
 | github.com/prometheus/common/sigv4 | v0.1.0 |  | go-module-binary-cataloger |
-| github.com/prometheus/exporter-toolkit | v0.11.0 |  | go-module-binary-cataloger |
-| github.com/prometheus/procfs | v0.12.0 |  | go-module-binary-cataloger |
-| github.com/prometheus/prometheus | v0.49.0 |  | go-module-binary-cataloger |
-| github.com/protocolbuffers/txtpbfmt | v0.0.0-20220428173112-74888fd59c2b |  | go-module-binary-cataloger |
-| github.com/redis/go-redis/v9 | v9.0.2 |  | go-module-binary-cataloger |
-| github.com/redis/rueidis | v1.0.16 |  | go-module-binary-cataloger |
-| github.com/rivo/uniseg | v0.3.4 |  | go-module-binary-cataloger |
-| github.com/robfig/cron/v3 | v3.0.1 |  | go-module-binary-cataloger |
-| github.com/rogpeppe/go-internal | v1.11.0 |  | go-module-binary-cataloger |
-| github.com/rs/cors | v1.10.1 |  | go-module-binary-cataloger |
-| github.com/russellhaering/goxmldsig | v1.4.0 |  | go-module-binary-cataloger |
+| github.com/prometheus/exporter-toolkit | v0.16.0 |  | go-module-binary-cataloger |
+| github.com/prometheus/otlptranslator | v1.0.0 |  | go-module-binary-cataloger |
+| github.com/prometheus/procfs | v0.16.1 |  | go-module-binary-cataloger |
+| github.com/prometheus/procfs | v0.16.1 |  | go-module-binary-cataloger |
+| github.com/prometheus/procfs | v0.20.1 |  | go-module-binary-cataloger |
+| github.com/prometheus/prometheus | v0.312.0 |  | go-module-binary-cataloger |
+| github.com/prometheus/sigv4 | v0.4.1 |  | go-module-binary-cataloger |
+| github.com/puzpuzpuz/xsync/v2 | v2.5.1 |  | go-module-binary-cataloger |
+| github.com/puzpuzpuz/xsync/v4 | v4.5.0 |  | go-module-binary-cataloger |
+| github.com/quagmt/udecimal | v1.9.0 |  | go-module-binary-cataloger |
+| github.com/redis/go-redis/v9 | v9.19.0 |  | go-module-binary-cataloger |
+| github.com/redis/rueidis | v1.0.72 |  | go-module-binary-cataloger |
+| github.com/remyoudompheng/bigfft | v0.0.0-20230129092748-24d4a6f8daec |  | go-module-binary-cataloger |
+| github.com/rs/cors | v1.11.1 |  | go-module-binary-cataloger |
 | github.com/russross/blackfriday/v2 | v2.1.0 |  | go-module-binary-cataloger |
+| github.com/sagikazarmark/locafero | v0.11.0 |  | go-module-binary-cataloger |
+| github.com/santhosh-tekuri/jsonschema/v6 | v6.0.2 |  | go-module-binary-cataloger |
 | github.com/sean-/seed | v0.0.0-20170313163322-e2103e2c3529 |  | go-module-binary-cataloger |
-| github.com/segmentio/asm | v1.2.0 |  | go-module-binary-cataloger |
-| github.com/segmentio/encoding | v0.3.6 |  | go-module-binary-cataloger |
-| github.com/sergi/go-diff | v1.3.1 |  | go-module-binary-cataloger |
-| github.com/shopspring/decimal | v1.2.0 |  | go-module-binary-cataloger |
+| github.com/segmentio/asm | v1.2.1 |  | go-module-binary-cataloger |
+| github.com/segmentio/encoding | v0.5.3 |  | go-module-binary-cataloger |
+| github.com/sercand/kuberesolver/v6 | v6.0.1 |  | go-module-binary-cataloger |
+| github.com/sethvargo/go-retry | v0.3.0 |  | go-module-binary-cataloger |
+| github.com/shadowspore/fossil-delta | v0.0.0-20241213113458-1d797d70cbe3 |  | go-module-binary-cataloger |
+| github.com/shopspring/decimal | v1.4.0 |  | go-module-binary-cataloger |
 | github.com/shurcooL/httpfs | v0.0.0-20230704072500-f1e31cf0ba5c |  | go-module-binary-cataloger |
-| github.com/shurcooL/vfsgen | v0.0.0-20200824052919-0d455de96546 |  | go-module-binary-cataloger |
-| github.com/spf13/cast | v1.5.0 |  | go-module-binary-cataloger |
-| github.com/spf13/cobra | v1.8.0 |  | go-module-binary-cataloger |
-| github.com/spf13/pflag | v1.0.5 |  | go-module-binary-cataloger |
-| github.com/spyzhov/ajson | v0.9.0 |  | go-module-binary-cataloger |
-| github.com/stoewer/go-strcase | v1.3.0 |  | go-module-binary-cataloger |
+| github.com/shurcooL/vfsgen | v0.0.0-20230704071429-0000e147ea92 |  | go-module-binary-cataloger |
+| github.com/sirupsen/logrus | v1.9.4 |  | go-module-binary-cataloger |
+| github.com/smallstep/pkcs7 | v0.2.1 |  | go-module-binary-cataloger |
+| github.com/sony/gobreaker/v2 | v2.4.0 |  | go-module-binary-cataloger |
+| github.com/sourcegraph/conc | v0.3.1-0.20240121214520-5f936abd7ae8 |  | go-module-binary-cataloger |
+| github.com/spf13/afero | v1.15.0 |  | go-module-binary-cataloger |
+| github.com/spf13/cast | v1.10.0 |  | go-module-binary-cataloger |
+| github.com/spf13/cobra | v1.10.2 |  | go-module-binary-cataloger |
+| github.com/spf13/pflag | v1.0.10 |  | go-module-binary-cataloger |
+| github.com/spf13/viper | v1.21.0 |  | go-module-binary-cataloger |
+| github.com/spiffe/go-spiffe/v2 | v2.6.0 |  | go-module-binary-cataloger |
 | github.com/stretchr/objx | v0.5.2 |  | go-module-binary-cataloger |
-| github.com/stretchr/testify | v1.9.0 |  | go-module-binary-cataloger |
-| github.com/teris-io/shortid | v0.0.0-20171029131806-771a37caa5cf |  | go-module-binary-cataloger |
-| github.com/ua-parser/uap-go | v0.0.0-20211112212520-00c877edfe0f |  | go-module-binary-cataloger |
+| github.com/stretchr/objx | v0.5.3 |  | go-module-binary-cataloger |
+| github.com/stretchr/testify | v1.11.1 |  | go-module-binary-cataloger |
+| github.com/stretchr/testify | v1.11.1 |  | go-module-binary-cataloger |
+| github.com/subosito/gotenv | v1.6.0 |  | go-module-binary-cataloger |
+| github.com/thomaspoignant/go-feature-flag | v1.42.0 |  | go-module-binary-cataloger |
+| github.com/tidwall/gjson | v1.18.0 |  | go-module-binary-cataloger |
+| github.com/tidwall/match | v1.1.1 |  | go-module-binary-cataloger |
+| github.com/tidwall/pretty | v1.2.1 |  | go-module-binary-cataloger |
+| github.com/tidwall/sjson | v1.2.5 |  | go-module-binary-cataloger |
+| github.com/tjhop/slog-gokit | v0.2.0 |  | go-module-binary-cataloger |
+| github.com/ua-parser/uap-go | v0.0.0-20251207011819-db9adb27a0b8 |  | go-module-binary-cataloger |
 | github.com/uber/jaeger-client-go | v2.30.0+incompatible |  | go-module-binary-cataloger |
 | github.com/uber/jaeger-lib | v2.4.1+incompatible |  | go-module-binary-cataloger |
-| github.com/unknwon/bra | v0.0.0-20200517080246-1e3013ecaff8 |  | go-module-binary-cataloger |
-| github.com/unknwon/com | v1.0.1 |  | go-module-binary-cataloger |
-| github.com/unknwon/log | v0.0.0-20150304194804-e617c87089d3 |  | go-module-binary-cataloger |
-| github.com/urfave/cli | v1.22.14 |  | go-module-binary-cataloger |
-| github.com/urfave/cli/v2 | v2.25.0 |  | go-module-binary-cataloger |
+| github.com/urfave/cli/v2 | v2.27.7 |  | go-module-binary-cataloger |
 | github.com/valyala/bytebufferpool | v1.0.0 |  | go-module-binary-cataloger |
-| github.com/vectordotdev/go-datemath | v0.1.1-0.20220323213446-f3954d0b18ae |  | go-module-binary-cataloger |
 | github.com/wk8/go-ordered-map | v1.0.0 |  | go-module-binary-cataloger |
+| github.com/x448/float16 | v0.8.4 |  | go-module-binary-cataloger |
 | github.com/xlab/treeprint | v1.2.0 |  | go-module-binary-cataloger |
-| github.com/xrash/smetrics | v0.0.0-20201216005158-039620a65673 |  | go-module-binary-cataloger |
-| github.com/yalue/merged_fs | v1.2.2 |  | go-module-binary-cataloger |
-| github.com/yudai/gojsondiff | v1.0.0 |  | go-module-binary-cataloger |
-| github.com/yudai/golcs | v0.0.0-20170316035057-ecda9a501e82 |  | go-module-binary-cataloger |
-| github.com/zclconf/go-cty | v1.13.0 |  | go-module-binary-cataloger |
+| github.com/xrash/smetrics | v0.0.0-20240521201337-686a1a2994c1 |  | go-module-binary-cataloger |
+| github.com/youmark/pkcs8 | v0.0.0-20240726163527-a2c0da244d78 |  | go-module-binary-cataloger |
+| github.com/zclconf/go-cty | v1.16.3 |  | go-module-binary-cataloger |
 | github.com/zeebo/xxh3 | v1.0.2 |  | go-module-binary-cataloger |
-| glibc | 2.35-r0 |  | apk-db-cataloger |
-| glibc-bin | 2.35-r0 |  | apk-db-cataloger |
-| go.etcd.io/etcd/api/v3 | v3.5.10 |  | go-module-binary-cataloger |
-| go.etcd.io/etcd/client/pkg/v3 | v3.5.10 |  | go-module-binary-cataloger |
-| go.etcd.io/etcd/client/v3 | v3.5.10 |  | go-module-binary-cataloger |
-| go.mongodb.org/mongo-driver | v1.13.1 |  | go-module-binary-cataloger |
-| go.opencensus.io | v0.24.0 |  | go-module-binary-cataloger |
-| go.opentelemetry.io/collector/pdata | v1.0.1 |  | go-module-binary-cataloger |
-| go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc | v0.49.0 |  | go-module-binary-cataloger |
-| go.opentelemetry.io/contrib/instrumentation/net/http/httptrace/otelhttptrace | v0.49.0 |  | go-module-binary-cataloger |
-| go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp | v0.46.1 |  | go-module-binary-cataloger |
-| go.opentelemetry.io/contrib/propagators/jaeger | v1.22.0 |  | go-module-binary-cataloger |
-| go.opentelemetry.io/contrib/samplers/jaegerremote | v0.18.0 |  | go-module-binary-cataloger |
-| go.opentelemetry.io/otel | v1.22.0 |  | go-module-binary-cataloger |
-| go.opentelemetry.io/otel/exporters/jaeger | v1.10.0 |  | go-module-binary-cataloger |
-| go.opentelemetry.io/otel/exporters/otlp/otlptrace | v1.24.0 |  | go-module-binary-cataloger |
-| go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc | v1.24.0 |  | go-module-binary-cataloger |
-| go.opentelemetry.io/otel/metric | v1.22.0 |  | go-module-binary-cataloger |
-| go.opentelemetry.io/otel/sdk | v1.24.0 |  | go-module-binary-cataloger |
-| go.opentelemetry.io/otel/trace | v1.22.0 |  | go-module-binary-cataloger |
-| go.opentelemetry.io/proto/otlp | v1.1.0 |  | go-module-binary-cataloger |
+| github.com/zeebo/xxh3 | v1.1.0 |  | go-module-binary-cataloger |
+| github.com/zeebo/xxh3 | v1.1.0 |  | go-module-binary-cataloger |
+| go.etcd.io/bbolt | v1.4.3 |  | go-module-binary-cataloger |
+| go.etcd.io/etcd/api/v3 | v3.6.9 |  | go-module-binary-cataloger |
+| go.etcd.io/etcd/client/pkg/v3 | v3.6.9 |  | go-module-binary-cataloger |
+| go.etcd.io/etcd/client/v3 | v3.6.9 |  | go-module-binary-cataloger |
+| go.opentelemetry.io/auto/sdk | v1.2.1 |  | go-module-binary-cataloger |
+| go.opentelemetry.io/auto/sdk | v1.2.1 |  | go-module-binary-cataloger |
+| go.opentelemetry.io/auto/sdk | v1.2.1 |  | go-module-binary-cataloger |
+| go.opentelemetry.io/collector/featuregate | v1.59.0 |  | go-module-binary-cataloger |
+| go.opentelemetry.io/collector/pdata | v1.59.0 |  | go-module-binary-cataloger |
+| go.opentelemetry.io/contrib/bridges/prometheus | v0.68.0 |  | go-module-binary-cataloger |
+| go.opentelemetry.io/contrib/detectors/gcp | v1.42.0 |  | go-module-binary-cataloger |
+| go.opentelemetry.io/contrib/exporters/autoexport | v0.68.0 |  | go-module-binary-cataloger |
+| go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc | v0.65.0 |  | go-module-binary-cataloger |
+| go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc | v0.67.0 |  | go-module-binary-cataloger |
+| go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc | v0.68.0 |  | go-module-binary-cataloger |
+| go.opentelemetry.io/contrib/instrumentation/net/http/httptrace/otelhttptrace | v0.65.0 |  | go-module-binary-cataloger |
+| go.opentelemetry.io/contrib/instrumentation/net/http/httptrace/otelhttptrace | v0.67.0 |  | go-module-binary-cataloger |
+| go.opentelemetry.io/contrib/instrumentation/net/http/httptrace/otelhttptrace | v0.69.0 |  | go-module-binary-cataloger |
+| go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp | v0.69.0 |  | go-module-binary-cataloger |
+| go.opentelemetry.io/contrib/propagators/jaeger | v1.40.0 |  | go-module-binary-cataloger |
+| go.opentelemetry.io/contrib/propagators/jaeger | v1.42.0 |  | go-module-binary-cataloger |
+| go.opentelemetry.io/contrib/propagators/jaeger | v1.43.0 |  | go-module-binary-cataloger |
+| go.opentelemetry.io/contrib/samplers/jaegerremote | v0.34.0 |  | go-module-binary-cataloger |
+| go.opentelemetry.io/contrib/samplers/jaegerremote | v0.36.0 |  | go-module-binary-cataloger |
+| go.opentelemetry.io/contrib/samplers/jaegerremote | v0.37.0 |  | go-module-binary-cataloger |
+| go.opentelemetry.io/otel | v1.40.0 |  | go-module-binary-cataloger |
+| go.opentelemetry.io/otel | v1.43.0 |  | go-module-binary-cataloger |
+| go.opentelemetry.io/otel | v1.44.0 |  | go-module-binary-cataloger |
+| go.opentelemetry.io/otel/exporters/jaeger | v1.17.0 |  | go-module-binary-cataloger |
+| go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploggrpc | v0.19.0 |  | go-module-binary-cataloger |
+| go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploghttp | v0.19.0 |  | go-module-binary-cataloger |
+| go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc | v1.43.0 |  | go-module-binary-cataloger |
+| go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetrichttp | v1.43.0 |  | go-module-binary-cataloger |
+| go.opentelemetry.io/otel/exporters/otlp/otlptrace | v1.40.0 |  | go-module-binary-cataloger |
+| go.opentelemetry.io/otel/exporters/otlp/otlptrace | v1.42.0 |  | go-module-binary-cataloger |
+| go.opentelemetry.io/otel/exporters/otlp/otlptrace | v1.44.0 |  | go-module-binary-cataloger |
+| go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc | v1.40.0 |  | go-module-binary-cataloger |
+| go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc | v1.42.0 |  | go-module-binary-cataloger |
+| go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc | v1.44.0 |  | go-module-binary-cataloger |
+| go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp | v1.44.0 |  | go-module-binary-cataloger |
+| go.opentelemetry.io/otel/exporters/prometheus | v0.65.0 |  | go-module-binary-cataloger |
+| go.opentelemetry.io/otel/exporters/stdout/stdoutlog | v0.19.0 |  | go-module-binary-cataloger |
+| go.opentelemetry.io/otel/exporters/stdout/stdoutmetric | v1.43.0 |  | go-module-binary-cataloger |
+| go.opentelemetry.io/otel/exporters/stdout/stdouttrace | v1.43.0 |  | go-module-binary-cataloger |
+| go.opentelemetry.io/otel/log | v0.19.0 |  | go-module-binary-cataloger |
+| go.opentelemetry.io/otel/metric | v1.40.0 |  | go-module-binary-cataloger |
+| go.opentelemetry.io/otel/metric | v1.43.0 |  | go-module-binary-cataloger |
+| go.opentelemetry.io/otel/metric | v1.44.0 |  | go-module-binary-cataloger |
+| go.opentelemetry.io/otel/sdk | v1.40.0 |  | go-module-binary-cataloger |
+| go.opentelemetry.io/otel/sdk | v1.43.0 |  | go-module-binary-cataloger |
+| go.opentelemetry.io/otel/sdk | v1.44.0 |  | go-module-binary-cataloger |
+| go.opentelemetry.io/otel/sdk/log | v0.19.0 |  | go-module-binary-cataloger |
+| go.opentelemetry.io/otel/sdk/metric | v1.44.0 |  | go-module-binary-cataloger |
+| go.opentelemetry.io/otel/trace | v1.40.0 |  | go-module-binary-cataloger |
+| go.opentelemetry.io/otel/trace | v1.43.0 |  | go-module-binary-cataloger |
+| go.opentelemetry.io/otel/trace | v1.44.0 |  | go-module-binary-cataloger |
+| go.opentelemetry.io/proto/otlp | v1.10.0 |  | go-module-binary-cataloger |
+| go.opentelemetry.io/proto/otlp | v1.9.0 |  | go-module-binary-cataloger |
+| go.opentelemetry.io/proto/otlp | v1.9.0 |  | go-module-binary-cataloger |
 | go.uber.org/atomic | v1.11.0 |  | go-module-binary-cataloger |
-| go.uber.org/goleak | v1.3.0 |  | go-module-binary-cataloger |
+| go.uber.org/mock | v0.6.0 |  | go-module-binary-cataloger |
 | go.uber.org/multierr | v1.11.0 |  | go-module-binary-cataloger |
-| go.uber.org/zap | v1.26.0 |  | go-module-binary-cataloger |
-| gocloud.dev | v0.25.0 |  | go-module-binary-cataloger |
-| golang.org/x/crypto | v0.23.0 |  | go-module-binary-cataloger |
-| golang.org/x/exp | v0.0.0-20231206192017-f3f8817b8deb |  | go-module-binary-cataloger |
-| golang.org/x/mod | v0.14.0 |  | go-module-binary-cataloger |
-| golang.org/x/net | v0.25.0 |  | go-module-binary-cataloger |
-| golang.org/x/oauth2 | v0.18.0 |  | go-module-binary-cataloger |
-| golang.org/x/sync | v0.6.0 |  | go-module-binary-cataloger |
-| golang.org/x/sys | v0.20.0 |  | go-module-binary-cataloger |
-| golang.org/x/sys | v0.20.0 |  | go-module-binary-cataloger |
-| golang.org/x/sys | v0.20.0 |  | go-module-binary-cataloger |
-| golang.org/x/term | v0.20.0 |  | go-module-binary-cataloger |
-| golang.org/x/text | v0.15.0 |  | go-module-binary-cataloger |
-| golang.org/x/time | v0.5.0 |  | go-module-binary-cataloger |
-| golang.org/x/xerrors | v0.0.0-20220907171357-04be3eba64a2 |  | go-module-binary-cataloger |
-| gonum.org/v1/gonum | v0.12.0 |  | go-module-binary-cataloger |
-| google.golang.org/api | v0.155.0 |  | go-module-binary-cataloger |
-| google.golang.org/genproto | v0.0.0-20240123012728-ef4313101c80 |  | go-module-binary-cataloger |
-| google.golang.org/genproto/googleapis/api | v0.0.0-20240123012728-ef4313101c80 |  | go-module-binary-cataloger |
-| google.golang.org/genproto/googleapis/rpc | v0.0.0-20240123012728-ef4313101c80 |  | go-module-binary-cataloger |
-| google.golang.org/grpc | v1.62.1 |  | go-module-binary-cataloger |
-| google.golang.org/protobuf | v1.33.0 |  | go-module-binary-cataloger |
-| gopkg.in/fsnotify/fsnotify.v1 | v1.4.7 |  | go-module-binary-cataloger |
+| go.uber.org/zap | v1.28.0 |  | go-module-binary-cataloger |
+| go.yaml.in/yaml/v2 | v2.4.3 |  | go-module-binary-cataloger |
+| go.yaml.in/yaml/v2 | v2.4.3 |  | go-module-binary-cataloger |
+| go.yaml.in/yaml/v2 | v2.4.4 |  | go-module-binary-cataloger |
+| go.yaml.in/yaml/v3 | v3.0.4 |  | go-module-binary-cataloger |
+| go.yaml.in/yaml/v3 | v3.0.4 |  | go-module-binary-cataloger |
+| go.yaml.in/yaml/v4 | v4.0.0-rc.4 |  | go-module-binary-cataloger |
+| go4.org/netipx | v0.0.0-20230125063823-8449b0a6169f |  | go-module-binary-cataloger |
+| gocloud.dev | v0.45.0 |  | go-module-binary-cataloger |
+| golang.org/x/crypto | v0.52.0 |  | go-module-binary-cataloger |
+| golang.org/x/crypto | v0.52.0 |  | go-module-binary-cataloger |
+| golang.org/x/exp | v0.0.0-20251002181428-27f1f14c8bb9 |  | go-module-binary-cataloger |
+| golang.org/x/exp | v0.0.0-20260112195511-716be5621a96 |  | go-module-binary-cataloger |
+| golang.org/x/exp | v0.0.0-20260410095643-746e56fc9e2f |  | go-module-binary-cataloger |
+| golang.org/x/net | v0.49.0 |  | go-module-binary-cataloger |
+| golang.org/x/net | v0.55.0 |  | go-module-binary-cataloger |
+| golang.org/x/net | v0.55.0 |  | go-module-binary-cataloger |
+| golang.org/x/oauth2 | v0.36.0 |  | go-module-binary-cataloger |
+| golang.org/x/sync | v0.20.0 |  | go-module-binary-cataloger |
+| golang.org/x/sync | v0.21.0 |  | go-module-binary-cataloger |
+| golang.org/x/sys | v0.40.0 |  | go-module-binary-cataloger |
+| golang.org/x/sys | v0.45.0 |  | go-module-binary-cataloger |
+| golang.org/x/sys | v0.45.0 |  | go-module-binary-cataloger |
+| golang.org/x/term | v0.43.0 |  | go-module-binary-cataloger |
+| golang.org/x/term | v0.43.0 |  | go-module-binary-cataloger |
+| golang.org/x/text | v0.33.0 |  | go-module-binary-cataloger |
+| golang.org/x/text | v0.37.0 |  | go-module-binary-cataloger |
+| golang.org/x/text | v0.37.0 |  | go-module-binary-cataloger |
+| golang.org/x/time | v0.15.0 |  | go-module-binary-cataloger |
+| golang.org/x/tools | v0.45.0 |  | go-module-binary-cataloger |
+| golang.org/x/xerrors | v0.0.0-20240903120638-7835f813f4da |  | go-module-binary-cataloger |
+| golang.org/x/xerrors | v0.0.0-20240903120638-7835f813f4da |  | go-module-binary-cataloger |
+| golang.org/x/xerrors | v0.0.0-20240903120638-7835f813f4da |  | go-module-binary-cataloger |
+| gomodules.xyz/jsonpatch/v2 | v2.5.0 |  | go-module-binary-cataloger |
+| gonum.org/v1/gonum | v0.17.0 |  | go-module-binary-cataloger |
+| google.golang.org/api | v0.283.0 |  | go-module-binary-cataloger |
+| google.golang.org/genproto | v0.0.0-20210630183607-d20f26d13c79 |  | go-module-binary-cataloger |
+| google.golang.org/genproto | v0.0.0-20210630183607-d20f26d13c79 |  | go-module-binary-cataloger |
+| google.golang.org/genproto | v0.0.0-20260319201613-d00831a3d3e7 |  | go-module-binary-cataloger |
+| google.golang.org/genproto/googleapis/api | v0.0.0-20260526163538-3dc84a4a5aaa |  | go-module-binary-cataloger |
+| google.golang.org/genproto/googleapis/rpc | v0.0.0-20260526163538-3dc84a4a5aaa |  | go-module-binary-cataloger |
+| google.golang.org/grpc | v1.79.3 |  | go-module-binary-cataloger |
+| google.golang.org/grpc | v1.79.3 |  | go-module-binary-cataloger |
+| google.golang.org/grpc | v1.81.1 |  | go-module-binary-cataloger |
+| google.golang.org/protobuf | v1.36.11 |  | go-module-binary-cataloger |
+| google.golang.org/protobuf | v1.36.11 |  | go-module-binary-cataloger |
+| google.golang.org/protobuf | v1.36.12-0.20260120151049-f2248ac996af |  | go-module-binary-cataloger |
+| gopkg.in/evanphx/json-patch.v4 | v4.13.0 |  | go-module-binary-cataloger |
 | gopkg.in/inf.v0 | v0.9.1 |  | go-module-binary-cataloger |
-| gopkg.in/ini.v1 | v1.67.0 |  | go-module-binary-cataloger |
+| gopkg.in/ini.v1 | v1.67.2 |  | go-module-binary-cataloger |
 | gopkg.in/mail.v2 | v2.3.1 |  | go-module-binary-cataloger |
 | gopkg.in/natefinch/lumberjack.v2 | v2.2.1 |  | go-module-binary-cataloger |
-| gopkg.in/square/go-jose.v2 | v2.6.0 |  | go-module-binary-cataloger |
+| gopkg.in/src-d/go-errors.v1 | v1.0.0 |  | go-module-binary-cataloger |
+| gopkg.in/telebot.v3 | v3.3.8 |  | go-module-binary-cataloger |
 | gopkg.in/yaml.v2 | v2.4.0 |  | go-module-binary-cataloger |
 | gopkg.in/yaml.v3 | v3.0.1 |  | go-module-binary-cataloger |
-| grafana | 10.4.3 |  | binary-classifier-cataloger |
-| k8s.io/api | v0.29.0 |  | go-module-binary-cataloger |
-| k8s.io/apimachinery | v0.29.0 |  | go-module-binary-cataloger |
-| k8s.io/apiserver | v0.29.0 |  | go-module-binary-cataloger |
-| k8s.io/client-go | v0.29.0 |  | go-module-binary-cataloger |
-| k8s.io/component-base | v0.29.0 |  | go-module-binary-cataloger |
-| k8s.io/klog/v2 | v2.110.1 |  | go-module-binary-cataloger |
-| k8s.io/kms | v0.29.0 |  | go-module-binary-cataloger |
-| k8s.io/kube-aggregator | v0.29.0 |  | go-module-binary-cataloger |
-| k8s.io/kube-openapi | v0.0.0-20240220201932-37d671a357a5 |  | go-module-binary-cataloger |
-| k8s.io/utils | v0.0.0-20230726121419-3b25d923346b |  | go-module-binary-cataloger |
-| libc-utils | 0.7.2-r5 | BSD-2-Clause AND BSD-3-Clause | apk-db-cataloger |
-| libcrypto3 | 3.1.4-r5 | Apache-2.0 | apk-db-cataloger |
-| libcurl | 8.5.0-r0 | curl | apk-db-cataloger |
-| libgcc | 13.2.1_git20231014-r0 | GPL-2.0-or-later AND LGPL-2.1-or-later | apk-db-cataloger |
-| libidn2 | 2.3.4-r4 | GPL-2.0-or-later OR LGPL-3.0-or-later | apk-db-cataloger |
-| libncursesw | 6.4_p20231125-r0 | X11 | apk-db-cataloger |
-| libssl3 | 3.1.4-r5 | Apache-2.0 | apk-db-cataloger |
-| libucontext | 1.2-r2 | ISC | apk-db-cataloger |
-| libunistring | 1.1-r2 | GPL-2.0-or-later OR LGPL-3.0-or-later | apk-db-cataloger |
-| musl | 1.2.4_git20230717-r4 | MIT | apk-db-cataloger |
-| musl-obstack | 1.2.3-r2 | GPL-2.0-or-later | apk-db-cataloger |
-| musl-utils | 1.2.4_git20230717-r4 | MIT AND BSD-2-Clause AND GPL-2.0-or-later | apk-db-cataloger |
-| ncurses-terminfo-base | 6.4_p20231125-r0 | X11 | apk-db-cataloger |
-| nghttp2-libs | 1.58.0-r0 | MIT | apk-db-cataloger |
-| react-router | 6.21.3 | MIT | javascript-package-cataloger |
-| readline | 8.2.1-r2 | GPL-2.0-or-later | apk-db-cataloger |
-| scanelf | 1.3.7-r2 | GPL-2.0-only | apk-db-cataloger |
-| sigs.k8s.io/apiserver-network-proxy/konnectivity-client | v0.28.0 |  | go-module-binary-cataloger |
-| sigs.k8s.io/json | v0.0.0-20221116044647-bc3834ca7abd |  | go-module-binary-cataloger |
-| sigs.k8s.io/structured-merge-diff/v4 | v4.4.1 |  | go-module-binary-cataloger |
-| sigs.k8s.io/yaml | v1.3.0 |  | go-module-binary-cataloger |
-| ssl_client | 1.36.1-r15 | GPL-2.0-only | apk-db-cataloger |
-| stdlib | go1.21.10 | BSD-3-Clause | go-module-binary-cataloger |
-| stdlib | go1.21.10 | BSD-3-Clause | go-module-binary-cataloger |
-| stdlib | go1.21.10 | BSD-3-Clause | go-module-binary-cataloger |
-| tzdata | 2024a-r0 |  | apk-db-cataloger |
-| xorm.io/builder | v0.3.6 |  | go-module-binary-cataloger |
-| xorm.io/core | v0.7.3 |  | go-module-binary-cataloger |
-| xorm.io/xorm | UNKNOWN |  | go-module-binary-cataloger |
-| zlib | 1.3.1-r0 | Zlib | apk-db-cataloger |
+| gopkg.in/yaml.v3 | v3.0.1 |  | go-module-binary-cataloger |
+| grafana | 13.1.0 |  | binary-classifier-cataloger |
+| k8s.io/api | v0.36.1 |  | go-module-binary-cataloger |
+| k8s.io/apiextensions-apiserver | v0.36.0 |  | go-module-binary-cataloger |
+| k8s.io/apimachinery | v0.36.1 |  | go-module-binary-cataloger |
+| k8s.io/apiserver | v0.36.0 |  | go-module-binary-cataloger |
+| k8s.io/client-go | v0.36.1 |  | go-module-binary-cataloger |
+| k8s.io/component-base | v0.36.0 |  | go-module-binary-cataloger |
+| k8s.io/klog/v2 | v2.140.0 |  | go-module-binary-cataloger |
+| k8s.io/kms | v0.36.0 |  | go-module-binary-cataloger |
+| k8s.io/kube-aggregator | v0.36.0 |  | go-module-binary-cataloger |
+| k8s.io/kube-openapi | v0.0.0-20260127142750-a19766b6e2d4 |  | go-module-binary-cataloger |
+| k8s.io/kube-openapi | v0.0.0-20260317180543-43fb72c5454a |  | go-module-binary-cataloger |
+| k8s.io/streaming | v0.36.1 |  | go-module-binary-cataloger |
+| k8s.io/utils | v0.0.0-20260210185600-b8788abfbbc2 |  | go-module-binary-cataloger |
+| libapk | 3.0.6-r0 | GPL-2.0-only | apk-db-cataloger |
+| libcap2 | 2.78-r0 | BSD-3-Clause OR GPL-2.0-only | apk-db-cataloger |
+| libcrypto3 | 3.5.7-r0 | Apache-2.0 | apk-db-cataloger |
+| libcurl | 8.20.0-r1 | curl | apk-db-cataloger |
+| libidn2 | 2.3.8-r0 | GPL-2.0-or-later OR LGPL-3.0-or-later | apk-db-cataloger |
+| libncursesw | 6.6_p20260516-r0 | X11 | apk-db-cataloger |
+| libpsl | 0.21.5-r3 | MIT | apk-db-cataloger |
+| libssl3 | 3.5.7-r0 | Apache-2.0 | apk-db-cataloger |
+| libunistring | 1.4.2-r0 | GPL-2.0-or-later OR LGPL-3.0-or-later | apk-db-cataloger |
+| modernc.org/libc | v1.72.3 |  | go-module-binary-cataloger |
+| modernc.org/mathutil | v1.7.1 |  | go-module-binary-cataloger |
+| modernc.org/memory | v1.11.0 |  | go-module-binary-cataloger |
+| modernc.org/sqlite | v1.52.0 |  | go-module-binary-cataloger |
+| musl | 1.2.6-r2 | MIT | apk-db-cataloger |
+| musl-utils | 1.2.6-r2 | MIT AND BSD-2-Clause AND GPL-2.0-or-later | apk-db-cataloger |
+| ncurses-terminfo-base | 6.6_p20260516-r0 | X11 | apk-db-cataloger |
+| nghttp2-libs | 1.69.0-r0 | MIT | apk-db-cataloger |
+| readline | 8.3.3-r1 | GPL-3.0-or-later | apk-db-cataloger |
+| scanelf | 1.3.9-r1 | GPL-2.0-only | apk-db-cataloger |
+| sigs.k8s.io/apiserver-network-proxy/konnectivity-client | v0.34.0 |  | go-module-binary-cataloger |
+| sigs.k8s.io/json | v0.0.0-20250730193827-2d320260d730 |  | go-module-binary-cataloger |
+| sigs.k8s.io/randfill | v1.0.0 |  | go-module-binary-cataloger |
+| sigs.k8s.io/randfill | v1.0.0 |  | go-module-binary-cataloger |
+| sigs.k8s.io/structured-merge-diff/v6 | v6.4.0 |  | go-module-binary-cataloger |
+| sigs.k8s.io/yaml | v1.6.0 |  | go-module-binary-cataloger |
+| software.sslmate.com/src/go-pkcs12 | v0.7.0 |  | go-module-binary-cataloger |
+| ssl_client | 1.37.0-r31 | GPL-2.0-only | apk-db-cataloger |
+| stdlib | go1.25.7 | BSD-3-Clause | go-module-binary-cataloger |
+| stdlib | go1.26.3 | BSD-3-Clause | go-module-binary-cataloger |
+| stdlib | go1.26.4 | BSD-3-Clause | go-module-binary-cataloger |
+| tzdata | 2026b-r0 |  | apk-db-cataloger |
+| xorm.io/builder | v0.3.13 |  | go-module-binary-cataloger |
+| zlib | 1.3.2-r0 | Zlib | apk-db-cataloger |
+| zstd-libs | 1.5.7-r2 | BSD-3-Clause OR GPL-2.0-or-later | apk-db-cataloger |
 
 ### registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/ollama
 
@@ -7633,351 +7958,359 @@ The complete source code for Traefik is publicly available at [https://github.co
 
 | Package | Version | License | Found by |
 | ------- | --------| ------- | -------- |
-| Archive_Tar | 1.4.14 |  | php-pear-serialized-cataloger |
+| Archive_Tar | 1.6.0 |  | php-pear-serialized-cataloger |
 | Console_Getopt | 1.4.3 | BSD-2-Clause | php-pear-serialized-cataloger |
-| PEAR | 1.10.15 |  | php-pear-serialized-cataloger |
-| Structures_Graph | 1.1.1 |  | php-pear-serialized-cataloger |
+| PEAR | 1.10.18 |  | php-pear-serialized-cataloger |
+| Structures_Graph | 1.2.0 |  | php-pear-serialized-cataloger |
 | XML_Util | 1.4.5 |  | php-pear-serialized-cataloger |
-| adduser | 3.134 | GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
-| apache2 | 2.4.62-1~deb12u2 | Apache-2.0, BSD-2-Clause-Darwin, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later | dpkg-db-cataloger |
-| apache2-bin | 2.4.62-1~deb12u2 | Apache-2.0, BSD-2-Clause-Darwin, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later | dpkg-db-cataloger |
-| apache2-data | 2.4.62-1~deb12u2 | Apache-2.0, BSD-2-Clause-Darwin, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later | dpkg-db-cataloger |
-| apache2-utils | 2.4.62-1~deb12u2 | Apache-2.0, BSD-2-Clause-Darwin, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later | dpkg-db-cataloger |
-| apt | 2.6.1 | BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
-| aspell | 0.60.8-4+b1 | GFDL-1.2-only, GFDL-1.2-or-later, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
+| adduser | 3.152 | GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
+| apache2 | 2.4.67-1~deb13u3 | Apache-2.0, BSD-2-Clause-Darwin, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later | dpkg-db-cataloger |
+| apache2-bin | 2.4.67-1~deb13u3 | Apache-2.0, BSD-2-Clause-Darwin, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later | dpkg-db-cataloger |
+| apache2-data | 2.4.67-1~deb13u3 | Apache-2.0, BSD-2-Clause-Darwin, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later | dpkg-db-cataloger |
+| apache2-utils | 2.4.67-1~deb13u3 | Apache-2.0, BSD-2-Clause-Darwin, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later | dpkg-db-cataloger |
+| apt | 3.0.3 | BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later, curl | dpkg-db-cataloger |
+| aspell | 0.60.8.1-4 | GFDL-1.2-only, GFDL-1.2-or-later, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
 | aspell-en | 2020.12.07-0-1 |  | dpkg-db-cataloger |
-| autoconf | 2.71-3 | GFDL-1.3-only, GFDL-1.3-or-later, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later | dpkg-db-cataloger |
+| autoconf | 2.72-3.1 | GFDL-1.3-only, GFDL-1.3-or-later, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later | dpkg-db-cataloger |
 | bacon/bacon-qr-code | 2.0.8 | BSD-2-Clause | php-composer-installed-cataloger |
 | bacon/bacon-qr-code | 2.0.8 | BSD-2-Clause | php-composer-installed-cataloger |
-| base-files | 12.4+deb12u9 |  | dpkg-db-cataloger |
-| base-passwd | 3.6.1 | GPL-2.0-only | dpkg-db-cataloger |
-| bash | 5.2.15-2+b7 | BSD-4-Clause-UC, GFDL-1.3-only, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, Latex2e | dpkg-db-cataloger |
-| binutils | 2.40-2 |  | dpkg-db-cataloger |
-| binutils-common | 2.40-2 |  | dpkg-db-cataloger |
-| binutils-x86-64-linux-gnu | 2.40-2 |  | dpkg-db-cataloger |
-| bsdutils | 1:2.38.1-5+deb12u3 | BSD-3-Clause, BSD-4-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, MIT | dpkg-db-cataloger |
-| bzip2 | 1.0.8-5+b1 | GPL-2.0-only | dpkg-db-cataloger |
-| ca-certificates | 20230311 | GPL-2.0-only, GPL-2.0-or-later, MPL-2.0 | dpkg-db-cataloger |
-| composer | 2.8.4 |  | binary-classifier-cataloger |
-| coreutils | 9.1-1 | BSD-4-Clause-UC, FSFULLR, GFDL-1.3-only, GPL-3.0-only, GPL-3.0-or-later, ISC | dpkg-db-cataloger |
-| cpp | 4:12.2.0-3 | GPL-2.0-only | dpkg-db-cataloger |
-| cpp-12 | 12.2.0-14 | GFDL-1.2-only, GPL-2.0-only, GPL-3.0-only | dpkg-db-cataloger |
-| curl | 7.88.1-10+deb12u8 | BSD-3-Clause, BSD-3-Clause, BSD-4-Clause-UC, FSFULLR, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-or-later, ISC, OLDAP-2.8, X11, curl | dpkg-db-cataloger |
-| dash | 0.5.12-2 | BSD-3-Clause, BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
-| dasprid/enum | 1.0.6 | BSD-2-Clause | php-composer-installed-cataloger |
-| dasprid/enum | 1.0.6 | BSD-2-Clause | php-composer-installed-cataloger |
-| debconf | 1.5.82 | BSD-2-Clause | dpkg-db-cataloger |
-| debian-archive-keyring | 2023.3+deb12u1 |  | dpkg-db-cataloger |
-| debianutils | 5.7-0.5~deb12u1 | GPL-2.0-only, GPL-2.0-or-later, SMAIL-GPL | dpkg-db-cataloger |
-| dictionaries-common | 1.29.5 | GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later | dpkg-db-cataloger |
-| diffutils | 1:3.8-4 | FSFAP, FSFULLR, GFDL-1.3-only, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, X11 | dpkg-db-cataloger |
-| dirmngr | 2.2.40-1.1 | BSD-3-Clause, CC0-1.0, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
-| dpkg | 1.21.22 | BSD-2-Clause, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
-| dpkg-dev | 1.21.22 | BSD-2-Clause, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
-| e2fsprogs | 1.47.0-2 | Apache-2.0, Apache-2.0, BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later, ISC, Kazlib, LGPL-2.0-only, Latex2e | dpkg-db-cataloger |
-| emacsen-common | 3.0.5 |  | dpkg-db-cataloger |
-| exif | 8.1.31 |  | php-interpreter-cataloger |
-| file | 1:5.44-3 | BSD-2-Clause | dpkg-db-cataloger |
-| findutils | 4.9.0-4 | BSD-3-Clause, FSFAP, FSFULLR, GFDL-1.3-only, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, ISC, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, X11 | dpkg-db-cataloger |
-| fontconfig-config | 2.14.1-4 | HPND-sell-variant | dpkg-db-cataloger |
-| fonts-dejavu-core | 2.37-6 | GPL-2.0-only, GPL-2.0-or-later, Bitstream-Vera | dpkg-db-cataloger |
-| g++ | 4:12.2.0-3 | GPL-2.0-only | dpkg-db-cataloger |
-| g++-12 | 12.2.0-14 | GFDL-1.2-only, GPL-2.0-only, GPL-3.0-only | dpkg-db-cataloger |
-| gcc | 4:12.2.0-3 | GPL-2.0-only | dpkg-db-cataloger |
-| gcc-12 | 12.2.0-14 | GFDL-1.2-only, GPL-2.0-only, GPL-3.0-only | dpkg-db-cataloger |
-| gcc-12-base | 12.2.0-14 | GFDL-1.2-only, GPL-2.0-only, GPL-3.0-only | dpkg-db-cataloger |
-| gd | 8.1.31 |  | php-interpreter-cataloger |
+| base-files | 13.8+deb13u5 | GPL-2.0-or-later | dpkg-db-cataloger |
+| base-passwd | 3.6.7 | GPL-2.0-only | dpkg-db-cataloger |
+| bash | 5.2.37-2+b9 | BSD-4-Clause-UC, GFDL-1.3-only, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, Latex2e | dpkg-db-cataloger |
+| binutils | 2.44-3 |  | dpkg-db-cataloger |
+| binutils-common | 2.44-3 |  | dpkg-db-cataloger |
+| binutils-x86-64-linux-gnu | 2.44-3 |  | dpkg-db-cataloger |
+| bsdutils | 1:2.41-5 | BSD-2-Clause, BSD-3-Clause, BSD-4-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, ISC, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
+| bzip2 | 1.0.8-6 | GPL-2.0-only | dpkg-db-cataloger |
+| ca-certificates | 20250419 | GPL-2.0-only, GPL-2.0-or-later, MPL-2.0 | dpkg-db-cataloger |
+| composer | 2.10.1 |  | binary-classifier-cataloger |
+| coreutils | 9.7-3 | BSD-4-Clause-UC, FSFULLR, GFDL-1.3-only, GPL-3.0-only, GPL-3.0-or-later, ISC | dpkg-db-cataloger |
+| cpp | 4:14.2.0-1 | GPL-2.0-only | dpkg-db-cataloger |
+| cpp-14 | 14.2.0-19 | GFDL-1.2-only, GPL-3.0-only | dpkg-db-cataloger |
+| cpp-14-x86-64-linux-gnu | 14.2.0-19 | GFDL-1.2-only, GPL-3.0-only | dpkg-db-cataloger |
+| cpp-x86-64-linux-gnu | 4:14.2.0-1 | GPL-2.0-only | dpkg-db-cataloger |
+| curl | 8.14.1-2+deb13u3 | BSD-3-Clause, BSD-3-Clause, BSD-4-Clause-UC, FSFULLR, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-or-later, ISC, OLDAP-2.8, X11, curl | dpkg-db-cataloger |
+| dash | 0.5.12-12 | BSD-3-Clause, BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
+| dasprid/enum | 1.0.7 | BSD-2-Clause | php-composer-installed-cataloger |
+| dasprid/enum | 1.0.7 | BSD-2-Clause | php-composer-installed-cataloger |
+| debconf | 1.5.91 | BSD-2-Clause | dpkg-db-cataloger |
+| debian-archive-keyring | 2025.1 |  | dpkg-db-cataloger |
+| debianutils | 5.23.2 | GPL-2.0-only, GPL-2.0-or-later, SMAIL-GPL | dpkg-db-cataloger |
+| dictionaries-common | 1.30.10 | GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later | dpkg-db-cataloger |
+| diffutils | 1:3.10-4 | FSFAP, FSFULLR, GFDL-1.3-only, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, X11 | dpkg-db-cataloger |
+| dirmngr | 2.4.7-21+deb13u1+b3 | BSD-3-Clause, CC0-1.0, GPL-2.0-or-later, GPL-2.0-only, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
+| dpkg | 1.22.22 | GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
+| dpkg-dev | 1.22.22 | GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
+| emacsen-common | 3.0.8 | GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
+| exif | 8.4.22 |  | php-interpreter-cataloger |
+| file | 1:5.46-5 | BSD-2-Clause | dpkg-db-cataloger |
+| findutils | 4.10.0-3 | BSD-3-Clause, FSFAP, FSFULLR, GFDL-1.3-only, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, ISC, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, X11 | dpkg-db-cataloger |
+| fontconfig-config | 2.15.0-2.3 | HPND-sell-variant | dpkg-db-cataloger |
+| fonts-dejavu-core | 2.37-8 | GPL-2.0-only, GPL-2.0-or-later, Bitstream-Vera | dpkg-db-cataloger |
+| fonts-dejavu-mono | 2.37-8 | GPL-2.0-only, GPL-2.0-or-later, Bitstream-Vera | dpkg-db-cataloger |
+| g++ | 4:14.2.0-1 | GPL-2.0-only | dpkg-db-cataloger |
+| g++-14 | 14.2.0-19 | GFDL-1.2-only, GPL-3.0-only | dpkg-db-cataloger |
+| g++-14-x86-64-linux-gnu | 14.2.0-19 | GFDL-1.2-only, GPL-3.0-only | dpkg-db-cataloger |
+| g++-x86-64-linux-gnu | 4:14.2.0-1 | GPL-2.0-only | dpkg-db-cataloger |
+| gcc | 4:14.2.0-1 | GPL-2.0-only | dpkg-db-cataloger |
+| gcc-14 | 14.2.0-19 | GFDL-1.2-only, GPL-3.0-only | dpkg-db-cataloger |
+| gcc-14-base | 14.2.0-19 | GFDL-1.2-only, GPL-3.0-only | dpkg-db-cataloger |
+| gcc-14-x86-64-linux-gnu | 14.2.0-19 | GFDL-1.2-only, GPL-3.0-only | dpkg-db-cataloger |
+| gcc-x86-64-linux-gnu | 4:14.2.0-1 | GPL-2.0-only | dpkg-db-cataloger |
+| gd | 8.4.22 |  | php-interpreter-cataloger |
 | germancoding/tls_icon | 2.0.0 | MIT | php-composer-installed-cataloger |
-| gnupg | 2.2.40-1.1 | BSD-3-Clause, CC0-1.0, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
-| gnupg-l10n | 2.2.40-1.1 | BSD-3-Clause, CC0-1.0, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
-| gnupg-utils | 2.2.40-1.1 | BSD-3-Clause, CC0-1.0, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
-| gpg | 2.2.40-1.1 | BSD-3-Clause, CC0-1.0, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
-| gpg-agent | 2.2.40-1.1 | BSD-3-Clause, CC0-1.0, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
-| gpg-wks-client | 2.2.40-1.1 | BSD-3-Clause, CC0-1.0, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
-| gpg-wks-server | 2.2.40-1.1 | BSD-3-Clause, CC0-1.0, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
-| gpgconf | 2.2.40-1.1 | BSD-3-Clause, CC0-1.0, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
-| gpgsm | 2.2.40-1.1 | BSD-3-Clause, CC0-1.0, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
-| gpgv | 2.2.40-1.1 | BSD-3-Clause, CC0-1.0, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
-| grep | 3.8-5 | GPL-3.0-only, GPL-3.0-or-later | dpkg-db-cataloger |
-| guzzlehttp/guzzle | 7.9.2 | MIT | php-composer-installed-cataloger |
-| guzzlehttp/guzzle | 7.9.2 | MIT | php-composer-installed-cataloger |
-| guzzlehttp/promises | 2.0.3 | MIT | php-composer-installed-cataloger |
-| guzzlehttp/promises | 2.0.3 | MIT | php-composer-installed-cataloger |
-| guzzlehttp/psr7 | 2.7.0 | MIT | php-composer-installed-cataloger |
-| guzzlehttp/psr7 | 2.7.0 | MIT | php-composer-installed-cataloger |
-| gzip | 1.12-1 | GPL-3.0-only, GPL-3.0-or-later | dpkg-db-cataloger |
-| hostname | 3.23+nmu1 | GPL-2.0-only | dpkg-db-cataloger |
-| imagemagick-6-common | 8:6.9.11.60+dfsg-1.6+deb12u2 | GPL-1.0-only, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, ImageMagick, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
-| init-system-helpers | 1.65.2 | BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
-| intl | 8.1.31 |  | php-interpreter-cataloger |
+| girepository-tools | 2.84.4-3~deb13u3 | AFL-2.0, Apache-2.0, CC-BY-SA-3.0, CC0-1.0, FSFULLR, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, MPL-1.1, Unicode-DFS-2016, bzip2-1.0.6 | dpkg-db-cataloger |
+| gnupg | 2.4.7-21+deb13u1 | BSD-3-Clause, CC0-1.0, GPL-2.0-or-later, GPL-2.0-only, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
+| gnupg-l10n | 2.4.7-21+deb13u1 | BSD-3-Clause, CC0-1.0, GPL-2.0-or-later, GPL-2.0-only, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
+| gpg | 2.4.7-21+deb13u1+b3 | BSD-3-Clause, CC0-1.0, GPL-2.0-or-later, GPL-2.0-only, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
+| gpg-agent | 2.4.7-21+deb13u1+b3 | BSD-3-Clause, CC0-1.0, GPL-2.0-or-later, GPL-2.0-only, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
+| gpgconf | 2.4.7-21+deb13u1+b3 | BSD-3-Clause, CC0-1.0, GPL-2.0-or-later, GPL-2.0-only, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
+| gpgsm | 2.4.7-21+deb13u1+b3 | BSD-3-Clause, CC0-1.0, GPL-2.0-or-later, GPL-2.0-only, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
+| grep | 3.11-4 | GPL-3.0-only, GPL-3.0-or-later | dpkg-db-cataloger |
+| guzzlehttp/guzzle | 7.10.4 | MIT | php-composer-installed-cataloger |
+| guzzlehttp/guzzle | 7.10.4 | MIT | php-composer-installed-cataloger |
+| guzzlehttp/promises | 2.4.1 | MIT | php-composer-installed-cataloger |
+| guzzlehttp/promises | 2.4.1 | MIT | php-composer-installed-cataloger |
+| guzzlehttp/psr7 | 2.10.1 | MIT | php-composer-installed-cataloger |
+| guzzlehttp/psr7 | 2.10.1 | MIT | php-composer-installed-cataloger |
+| gzip | 1.13-1 | GPL-3.0-only, GPL-3.0-or-later | dpkg-db-cataloger |
+| hostname | 3.25 | GPL-2.0-only | dpkg-db-cataloger |
+| imagemagick-7-common | 8:7.1.1.43+dfsg1-1+deb13u10 | GPL-1.0-only, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, ImageMagick, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
+| init-system-helpers | 1.69~deb13u1 | BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
+| intl | 8.4.22 |  | php-interpreter-cataloger |
 | johndoh/contextmenu | 3.3.1 | GPL-3.0-or-later | php-composer-installed-cataloger |
 | kolab/net_ldap3 | v1.1.5 | GPL-3.0-or-later | php-composer-installed-cataloger |
 | kolab/net_ldap3 | v1.1.5 | GPL-3.0-or-later | php-composer-installed-cataloger |
-| ldap | 8.1.31 |  | php-interpreter-cataloger |
-| libacl1 | 2.3.1-3 | GPL-2.0-only, GPL-2.0-or-later, LGPL-2.0-or-later, LGPL-2.1-only | dpkg-db-cataloger |
-| libaom3 | 3.6.0-1+deb12u1 | BSD-2-Clause, BSD-2-Clause, BSD-3-Clause, ISC | dpkg-db-cataloger |
-| libapr1 | 1.7.2-3+deb12u1 | Apache-2.0 | dpkg-db-cataloger |
-| libaprutil1 | 1.6.3-1 | Apache-2.0 | dpkg-db-cataloger |
-| libaprutil1-dbd-sqlite3 | 1.6.3-1 | Apache-2.0 | dpkg-db-cataloger |
-| libaprutil1-ldap | 1.6.3-1 | Apache-2.0 | dpkg-db-cataloger |
-| libapt-pkg6.0 | 2.6.1 | BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
-| libargon2-1 | 0~20171227-0.3+deb12u1 | Apache-2.0 | dpkg-db-cataloger |
-| libasan8 | 12.2.0-14 | GFDL-1.2-only, GPL-2.0-only, GPL-3.0-only | dpkg-db-cataloger |
-| libaspell15 | 0.60.8-4+b1 | GFDL-1.2-only, GFDL-1.2-or-later, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
-| libassuan0 | 2.5.5-5 | GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
-| libatomic1 | 12.2.0-14 | GFDL-1.2-only, GPL-2.0-only, GPL-3.0-only | dpkg-db-cataloger |
-| libattr1 | 1:2.5.1-4 | GPL-2.0-only, GPL-2.0-or-later, LGPL-2.0-or-later, LGPL-2.1-only | dpkg-db-cataloger |
-| libaudit-common | 1:3.0.9-1 | GPL-1.0-only, GPL-2.0-only, LGPL-2.1-only | dpkg-db-cataloger |
-| libaudit1 | 1:3.0.9-1 | GPL-1.0-only, GPL-2.0-only, LGPL-2.1-only | dpkg-db-cataloger |
-| libbinutils | 2.40-2 |  | dpkg-db-cataloger |
-| libblkid-dev | 2.38.1-5+deb12u3 | BSD-3-Clause, BSD-4-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, MIT | dpkg-db-cataloger |
-| libblkid1 | 2.38.1-5+deb12u3 | BSD-3-Clause, BSD-4-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, MIT | dpkg-db-cataloger |
-| libbrotli1 | 1.0.9-2+b6 | MIT | dpkg-db-cataloger |
-| libbsd0 | 0.11.7-2 | BSD-2-Clause, BSD-2-Clause, BSD-3-Clause, Beerware, ISC, libutil-David-Nugent | dpkg-db-cataloger |
-| libbz2-1.0 | 1.0.8-5+b1 | GPL-2.0-only | dpkg-db-cataloger |
-| libc-bin | 2.36-9+deb12u9 | GPL-2.0-only, LGPL-2.1-only | dpkg-db-cataloger |
-| libc-dev-bin | 2.36-9+deb12u9 | GPL-2.0-only, LGPL-2.1-only | dpkg-db-cataloger |
-| libc-l10n | 2.36-9+deb12u9 | GPL-2.0-only, LGPL-2.1-only | dpkg-db-cataloger |
-| libc6 | 2.36-9+deb12u9 | GPL-2.0-only, LGPL-2.1-only | dpkg-db-cataloger |
-| libc6-dev | 2.36-9+deb12u9 | GPL-2.0-only, LGPL-2.1-only | dpkg-db-cataloger |
-| libcap-ng0 | 0.8.3-1+b3 | GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
-| libcap2 | 1:2.66-4 | BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
-| libcc1-0 | 12.2.0-14 | GFDL-1.2-only, GPL-2.0-only, GPL-3.0-only | dpkg-db-cataloger |
-| libcom-err2 | 1.47.0-2 | Apache-2.0, Apache-2.0, BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later, ISC, Kazlib, LGPL-2.0-only, Latex2e | dpkg-db-cataloger |
-| libcrypt-dev | 1:4.4.33-2 |  | dpkg-db-cataloger |
-| libcrypt1 | 1:4.4.33-2 |  | dpkg-db-cataloger |
-| libctf-nobfd0 | 2.40-2 |  | dpkg-db-cataloger |
-| libctf0 | 2.40-2 |  | dpkg-db-cataloger |
-| libcurl4 | 7.88.1-10+deb12u8 | BSD-3-Clause, BSD-3-Clause, BSD-4-Clause-UC, FSFULLR, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-or-later, ISC, OLDAP-2.8, X11, curl | dpkg-db-cataloger |
-| libdav1d6 | 1.0.0-2+deb12u1 | BSD-2-Clause, ISC | dpkg-db-cataloger |
-| libdb5.3 | 5.3.28+dfsg2-1 | BSD-3-Clause, GPL-3.0-only, MS-PL, Sleepycat, X11, Zlib | dpkg-db-cataloger |
-| libde265-0 | 1.0.11-1+deb12u2 | BSD-4-Clause, GPL-3.0-only, GPL-3.0-or-later, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
-| libdebconfclient0 | 0.270 | BSD-2-Clause, BSD-2-Clause, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
-| libdeflate0 | 1.14-1 |  | dpkg-db-cataloger |
-| libdpkg-perl | 1.21.22 | BSD-2-Clause, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
-| libelf1 | 0.188-2.1 | BSD-2-Clause, GFDL-1.3-only, GPL-2.0-only, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
-| libexpat1 | 2.5.0-1+deb12u1 | MIT | dpkg-db-cataloger |
-| libext2fs2 | 1.47.0-2 | Apache-2.0, Apache-2.0, BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later, ISC, Kazlib, LGPL-2.0-only, Latex2e | dpkg-db-cataloger |
-| libffi-dev | 3.4.4-1 | GPL-2.0-or-later, GPL-3.0-or-later, MPL-1.1, X11 | dpkg-db-cataloger |
-| libffi8 | 3.4.4-1 | GPL-2.0-or-later, GPL-3.0-or-later, MPL-1.1, X11 | dpkg-db-cataloger |
-| libfftw3-double3 | 3.3.10-1 | GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
-| libfontconfig1 | 2.14.1-4 | HPND-sell-variant | dpkg-db-cataloger |
-| libfreetype6 | 2.12.1+dfsg-5+deb12u3 | BSD-3-Clause, BSL-1.0, FSFAP, FTL, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, MIT, Zlib | dpkg-db-cataloger |
-| libgcc-12-dev | 12.2.0-14 | GFDL-1.2-only, GPL-2.0-only, GPL-3.0-only | dpkg-db-cataloger |
-| libgcc-s1 | 12.2.0-14 | GFDL-1.2-only, GPL-2.0-only, GPL-3.0-only | dpkg-db-cataloger |
-| libgcrypt20 | 1.10.1-3 | GPL-2.0-only | dpkg-db-cataloger |
-| libgdbm-compat4 | 1.23-3 | GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later | dpkg-db-cataloger |
-| libgdbm6 | 1.23-3 | GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later | dpkg-db-cataloger |
-| libglib2.0-0 | 2.74.6-2+deb12u5 | AFL-2.0, Apache-2.0, CC-BY-SA-3.0, CC0-1.0, FSFULLR, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, Unicode-DFS-2016, bzip2-1.0.6 | dpkg-db-cataloger |
-| libglib2.0-bin | 2.74.6-2+deb12u5 | AFL-2.0, Apache-2.0, CC-BY-SA-3.0, CC0-1.0, FSFULLR, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, Unicode-DFS-2016, bzip2-1.0.6 | dpkg-db-cataloger |
-| libglib2.0-data | 2.74.6-2+deb12u5 | AFL-2.0, Apache-2.0, CC-BY-SA-3.0, CC0-1.0, FSFULLR, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, Unicode-DFS-2016, bzip2-1.0.6 | dpkg-db-cataloger |
-| libglib2.0-dev | 2.74.6-2+deb12u5 | AFL-2.0, Apache-2.0, CC-BY-SA-3.0, CC0-1.0, FSFULLR, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, Unicode-DFS-2016, bzip2-1.0.6 | dpkg-db-cataloger |
-| libglib2.0-dev-bin | 2.74.6-2+deb12u5 | AFL-2.0, Apache-2.0, CC-BY-SA-3.0, CC0-1.0, FSFULLR, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, Unicode-DFS-2016, bzip2-1.0.6 | dpkg-db-cataloger |
-| libgmp10 | 2:6.2.1+dfsg1-1.1 | GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
-| libgnutls30 | 3.7.9-2+deb12u3 | Apache-2.0, BSD-3-Clause, GFDL-1.3-only, GPL-3.0-only, LGPL-3.0-only | dpkg-db-cataloger |
-| libgomp1 | 12.2.0-14 | GFDL-1.2-only, GPL-2.0-only, GPL-3.0-only | dpkg-db-cataloger |
-| libgpg-error0 | 1.46-1 | BSD-3-Clause, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
-| libgprofng0 | 2.40-2 |  | dpkg-db-cataloger |
-| libgssapi-krb5-2 | 1.20.1-2+deb12u2 | GPL-2.0-only | dpkg-db-cataloger |
-| libheif1 | 1.15.1-1+deb12u1 | BSD-3-Clause, BSD-4-Clause, GPL-3.0-only, GPL-3.0-or-later, LGPL-3.0-only, LGPL-3.0-or-later, MIT | dpkg-db-cataloger |
-| libhogweed6 | 3.8.1-2 | GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-3.0-or-later | dpkg-db-cataloger |
-| libicu72 | 72.1-3 | GPL-3.0-only, MIT | dpkg-db-cataloger |
-| libidn2-0 | 2.3.3-1+b1 | GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
-| libisl23 | 0.25-1.1 | BSD-2-Clause, LGPL-2.0-only, LGPL-2.1-or-later, MIT | dpkg-db-cataloger |
-| libitm1 | 12.2.0-14 | GFDL-1.2-only, GPL-2.0-only, GPL-3.0-only | dpkg-db-cataloger |
-| libjansson4 | 2.14-2 |  | dpkg-db-cataloger |
-| libjbig0 | 2.1-6.1 | GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
-| libjpeg62-turbo | 1:2.1.5-2 | BSD-3-Clause, NTP, Zlib | dpkg-db-cataloger |
-| libk5crypto3 | 1.20.1-2+deb12u2 | GPL-2.0-only | dpkg-db-cataloger |
-| libkeyutils1 | 1.6.3-2 | GPL-2.0-only, GPL-2.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later | dpkg-db-cataloger |
-| libkrb5-3 | 1.20.1-2+deb12u2 | GPL-2.0-only | dpkg-db-cataloger |
-| libkrb5support0 | 1.20.1-2+deb12u2 | GPL-2.0-only | dpkg-db-cataloger |
-| libksba8 | 1.6.3-2 | FSFUL, GPL-3.0-only, LGPL-2.1-or-later | dpkg-db-cataloger |
-| liblcms2-2 | 2.14-2 | GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, IJG, MIT | dpkg-db-cataloger |
-| libldap-2.5-0 | 2.5.13+dfsg-5 | BSD-3-Clause, Beerware, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later | dpkg-db-cataloger |
-| liblerc4 | 4.0.0+ds-2 | Apache-2.0 | dpkg-db-cataloger |
-| liblqr-1-0 | 0.4.2-2.1 | GPL-3.0-only, LGPL-3.0-only | dpkg-db-cataloger |
-| liblsan0 | 12.2.0-14 | GFDL-1.2-only, GPL-2.0-only, GPL-3.0-only | dpkg-db-cataloger |
-| libltdl7 | 2.4.7-7~deb12u1 | GFDL-1.3-only, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
-| liblua5.3-0 | 5.3.6-2 |  | dpkg-db-cataloger |
-| liblz4-1 | 1.9.4-1 | BSD-2-Clause, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
-| liblzma5 | 5.4.1-0.2 | GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, LGPL-2.0-only, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
-| libmagic-mgc | 1:5.44-3 | BSD-2-Clause | dpkg-db-cataloger |
-| libmagic1 | 1:5.44-3 | BSD-2-Clause | dpkg-db-cataloger |
-| libmagickcore-6.q16-6 | 8:6.9.11.60+dfsg-1.6+deb12u2 | GPL-1.0-only, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, ImageMagick, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
-| libmagickwand-6.q16-6 | 8:6.9.11.60+dfsg-1.6+deb12u2 | GPL-1.0-only, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, ImageMagick, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
-| libmd0 | 1.0.4-2 | BSD-2-Clause, BSD-2-Clause, BSD-3-Clause, Beerware, ISC | dpkg-db-cataloger |
-| libmount-dev | 2.38.1-5+deb12u3 | BSD-3-Clause, BSD-4-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, MIT | dpkg-db-cataloger |
-| libmount1 | 2.38.1-5+deb12u3 | BSD-3-Clause, BSD-4-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, MIT | dpkg-db-cataloger |
-| libmpc3 | 1.3.1-1 | LGPL-3.0-only | dpkg-db-cataloger |
-| libmpfr6 | 4.2.0-1 | LGPL-3.0-only | dpkg-db-cataloger |
-| libncursesw6 | 6.4-4 | BSD-3-Clause, X11 | dpkg-db-cataloger |
-| libnettle8 | 3.8.1-2 | GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-3.0-or-later | dpkg-db-cataloger |
-| libnghttp2-14 | 1.52.0-1+deb12u2 | BSD-2-Clause, GPL-3.0-only, GPL-3.0-or-later, MIT | dpkg-db-cataloger |
-| libnpth0 | 1.6-3 | LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
-| libnsl-dev | 1.3.0-2 | BSD-3-Clause, GPL-2.0-only, GPL-3.0-only, LGPL-2.1-only, LGPL-2.1-or-later, MIT | dpkg-db-cataloger |
-| libnsl2 | 1.3.0-2 | BSD-3-Clause, GPL-2.0-only, GPL-3.0-only, LGPL-2.1-only, LGPL-2.1-or-later, MIT | dpkg-db-cataloger |
-| libnuma1 | 2.0.16-1 |  | dpkg-db-cataloger |
-| libonig5 | 6.9.8-1 | BSD-2-Clause, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
-| libopenjp2-7 | 2.5.0-2 | Libpng, libtiff, MIT, Zlib | dpkg-db-cataloger |
-| libp11-kit0 | 0.24.1-2 | Apache-2.0, BSD-3-Clause, ISC, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
-| libpam-modules | 1.5.2-6+deb12u1 | BSD-3-Clause, Beerware, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later | dpkg-db-cataloger |
-| libpam-modules-bin | 1.5.2-6+deb12u1 | BSD-3-Clause, Beerware, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later | dpkg-db-cataloger |
-| libpam-runtime | 1.5.2-6+deb12u1 | BSD-3-Clause, Beerware, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later | dpkg-db-cataloger |
-| libpam0g | 1.5.2-6+deb12u1 | BSD-3-Clause, Beerware, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later | dpkg-db-cataloger |
-| libpcre2-16-0 | 10.42-1 | BSD-2-Clause, BSD-3-Clause, X11 | dpkg-db-cataloger |
-| libpcre2-32-0 | 10.42-1 | BSD-2-Clause, BSD-3-Clause, X11 | dpkg-db-cataloger |
-| libpcre2-8-0 | 10.42-1 | BSD-2-Clause, BSD-3-Clause, X11 | dpkg-db-cataloger |
-| libpcre2-dev | 10.42-1 | BSD-2-Clause, BSD-3-Clause, X11 | dpkg-db-cataloger |
-| libpcre2-posix3 | 10.42-1 | BSD-2-Clause, BSD-3-Clause, X11 | dpkg-db-cataloger |
-| libperl5.36 | 5.36.0-7+deb12u1 | Artistic-2.0, Artistic-dist, BSD-3-Clause, GPL-1.0-only, GPL-1.0-or-later, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.1-only, Zlib | dpkg-db-cataloger |
-| libphp | 8.1.31 |  | php-interpreter-cataloger |
-| libpkgconf3 | 1.8.1-1 | GPL-2.0-only, GPL-2.0-or-later, ISC, X11 | dpkg-db-cataloger |
-| libpng16-16 | 1.6.39-2 | Apache-2.0, BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later, Libpng | dpkg-db-cataloger |
-| libpopt0 | 1.19+dfsg-1 | GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
-| libpq5 | 15.10-0+deb12u1 | BSD-2-Clause, BSD-3-Clause, BSD-3-Clause, GPL-1.0-only, PostgreSQL, TCL | dpkg-db-cataloger |
-| libproc2-0 | 2:4.0.2-3 | GPL-2.0-only, GPL-2.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
-| libpsl5 | 0.21.2-1 | MIT | dpkg-db-cataloger |
-| libpython3-stdlib | 3.11.2-1+b1 |  | dpkg-db-cataloger |
-| libpython3.11-minimal | 3.11.2-6+deb12u5 | GPL-2.0-only | dpkg-db-cataloger |
-| libpython3.11-stdlib | 3.11.2-6+deb12u5 | GPL-2.0-only | dpkg-db-cataloger |
-| libquadmath0 | 12.2.0-14 | GFDL-1.2-only, GPL-2.0-only, GPL-3.0-only | dpkg-db-cataloger |
-| libreadline8 | 8.2-1.3 | GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later | dpkg-db-cataloger |
-| librtmp1 | 2.4+20151223.gitfa8646d.1-2+b2 | GPL-2.0-only, LGPL-2.1-only | dpkg-db-cataloger |
-| libsasl2-2 | 2.1.28+dfsg-10 | BSD-2-Clause, BSD-3-Clause, BSD-4-Clause, BSD-4-Clause-UC, FSFULLR, GPL-3.0-only, GPL-3.0-or-later, MIT-CMU, OpenSSL, RSA-MD | dpkg-db-cataloger |
-| libsasl2-modules-db | 2.1.28+dfsg-10 | BSD-2-Clause, BSD-3-Clause, BSD-4-Clause, BSD-4-Clause-UC, FSFULLR, GPL-3.0-only, GPL-3.0-or-later, MIT-CMU, OpenSSL, RSA-MD | dpkg-db-cataloger |
-| libseccomp2 | 2.5.4-1+deb12u1 | LGPL-2.1-only | dpkg-db-cataloger |
-| libselinux1 | 3.4-1+b6 | GPL-2.0-only, LGPL-2.1-only | dpkg-db-cataloger |
-| libselinux1-dev | 3.4-1+b6 | GPL-2.0-only, LGPL-2.1-only | dpkg-db-cataloger |
-| libsemanage-common | 3.4-1 |  | dpkg-db-cataloger |
-| libsemanage2 | 3.4-1+b5 |  | dpkg-db-cataloger |
-| libsepol-dev | 3.4-2.1 | GPL-2.0-only, GPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, Zlib | dpkg-db-cataloger |
-| libsepol2 | 3.4-2.1 | GPL-2.0-only, GPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, Zlib | dpkg-db-cataloger |
-| libsmartcols1 | 2.38.1-5+deb12u3 | BSD-3-Clause, BSD-4-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, MIT | dpkg-db-cataloger |
-| libsodium23 | 1.0.18-1 | BSD-2-Clause, CC0-1.0, GPL-2.0-only, GPL-2.0-or-later, ISC, MIT | dpkg-db-cataloger |
-| libsqlite3-0 | 3.40.1-2+deb12u1 | GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
-| libss2 | 1.47.0-2 | Apache-2.0, Apache-2.0, BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later, ISC, Kazlib, LGPL-2.0-only, Latex2e | dpkg-db-cataloger |
-| libssh2-1 | 1.10.0-3+b1 |  | dpkg-db-cataloger |
-| libssl3 | 3.0.15-1~deb12u1 | Apache-2.0, GPL-1.0-only, GPL-1.0-or-later | dpkg-db-cataloger |
-| libstdc++-12-dev | 12.2.0-14 | GFDL-1.2-only, GPL-2.0-only, GPL-3.0-only | dpkg-db-cataloger |
-| libstdc++6 | 12.2.0-14 | GFDL-1.2-only, GPL-2.0-only, GPL-3.0-only | dpkg-db-cataloger |
-| libsystemd0 | 252.33-1~deb12u1 | CC0-1.0, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
-| libtasn1-6 | 4.19.0-2 | GFDL-1.3-only, GPL-3.0-only, LGPL-2.1-only | dpkg-db-cataloger |
-| libtext-iconv-perl | 1.7-8 | GPL-1.0-only, GPL-1.0-or-later | dpkg-db-cataloger |
-| libtiff6 | 4.5.0-6+deb12u2 |  | dpkg-db-cataloger |
-| libtinfo6 | 6.4-4 | BSD-3-Clause, X11 | dpkg-db-cataloger |
-| libtirpc-common | 1.3.3+ds-1 | BSD-3-Clause, GPL-2.0-only, LGPL-2.1-only | dpkg-db-cataloger |
-| libtirpc-dev | 1.3.3+ds-1 | BSD-3-Clause, GPL-2.0-only, LGPL-2.1-only | dpkg-db-cataloger |
-| libtirpc3 | 1.3.3+ds-1 | BSD-3-Clause, GPL-2.0-only, LGPL-2.1-only | dpkg-db-cataloger |
-| libtsan2 | 12.2.0-14 | GFDL-1.2-only, GPL-2.0-only, GPL-3.0-only | dpkg-db-cataloger |
-| libubsan1 | 12.2.0-14 | GFDL-1.2-only, GPL-2.0-only, GPL-3.0-only | dpkg-db-cataloger |
-| libudev1 | 252.33-1~deb12u1 | CC0-1.0, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
-| libunistring2 | 1.0-2 | GFDL-1.2-only, GFDL-1.2-or-later, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-3.0-only, LGPL-3.0-or-later, MIT | dpkg-db-cataloger |
-| libuuid1 | 2.38.1-5+deb12u3 | BSD-3-Clause, BSD-4-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, MIT | dpkg-db-cataloger |
-| libwebp7 | 1.2.4-0.2+deb12u1 | Apache-2.0 | dpkg-db-cataloger |
-| libwebpdemux2 | 1.2.4-0.2+deb12u1 | Apache-2.0 | dpkg-db-cataloger |
-| libwebpmux3 | 1.2.4-0.2+deb12u1 | Apache-2.0 | dpkg-db-cataloger |
-| libx11-6 | 2:1.8.4-2+deb12u2 | BSD-1-Clause, HPND, HPND-sell-variant, MIT | dpkg-db-cataloger |
-| libx11-data | 2:1.8.4-2+deb12u2 | BSD-1-Clause, HPND, HPND-sell-variant, MIT | dpkg-db-cataloger |
-| libx265-199 | 3.5-2+b1 | GPL-2.0-only, GPL-2.0-or-later, ISC, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
-| libxau6 | 1:1.0.9-1 |  | dpkg-db-cataloger |
-| libxcb1 | 1.15-1 |  | dpkg-db-cataloger |
-| libxdmcp6 | 1:1.1.2-3 |  | dpkg-db-cataloger |
-| libxext6 | 2:1.3.4-1+b1 |  | dpkg-db-cataloger |
-| libxml2 | 2.9.14+dfsg-1.3~deb12u1 | ISC | dpkg-db-cataloger |
-| libxxhash0 | 0.8.1-1 | BSD-2-Clause, GPL-2.0-only | dpkg-db-cataloger |
-| libzip4 | 1.7.3-1+b1 | GPL-3.0-only | dpkg-db-cataloger |
-| libzstd1 | 1.5.4+dfsg2-5 | BSD-3-Clause, GPL-2.0-only, Zlib | dpkg-db-cataloger |
-| linux-libc-dev | 6.1.124-1 | BSD-2-Clause, GPL-2.0-only, LGPL-2.1-only | dpkg-db-cataloger |
-| locales | 2.36-9+deb12u9 | GPL-2.0-only, LGPL-2.1-only | dpkg-db-cataloger |
-| login | 1:4.13+dfsg1-1+b1 | BSD-3-Clause, GPL-1.0-only, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
-| logsave | 1.47.0-2 | Apache-2.0, Apache-2.0, BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later, ISC, Kazlib, LGPL-2.0-only, Latex2e | dpkg-db-cataloger |
-| m4 | 1.4.19-3 |  | dpkg-db-cataloger |
-| make | 4.3-4.1 | GPL-3.0-only, GPL-3.0-or-later | dpkg-db-cataloger |
+| ldap | 8.4.22 |  | php-interpreter-cataloger |
+| libacl1 | 2.3.2-2+b1 | GPL-2.0-only, GPL-2.0-or-later, LGPL-2.0-or-later, LGPL-2.1-only | dpkg-db-cataloger |
+| libapr1t64 | 1.7.5-1 | Apache-2.0 | dpkg-db-cataloger |
+| libaprutil1-dbd-sqlite3 | 1.6.3-3+b1 | Apache-2.0 | dpkg-db-cataloger |
+| libaprutil1-ldap | 1.6.3-3+b1 | Apache-2.0 | dpkg-db-cataloger |
+| libaprutil1t64 | 1.6.3-3+b1 | Apache-2.0 | dpkg-db-cataloger |
+| libapt-pkg7.0 | 3.0.3 | BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later, curl | dpkg-db-cataloger |
+| libargon2-1 | 0~20190702+dfsg-4+b2 | Apache-2.0 | dpkg-db-cataloger |
+| libasan8 | 14.2.0-19 | GFDL-1.2-only, GPL-3.0-only | dpkg-db-cataloger |
+| libaspell15 | 0.60.8.1-4 | GFDL-1.2-only, GFDL-1.2-or-later, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
+| libassuan9 | 3.0.2-2 | FSFULLR, FSFULLRWD, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, X11 | dpkg-db-cataloger |
+| libatomic1 | 14.2.0-19 | GFDL-1.2-only, GPL-3.0-only | dpkg-db-cataloger |
+| libattr1 | 1:2.5.2-3 | GPL-2.0-only, GPL-2.0-or-later, LGPL-2.0-or-later, LGPL-2.1-only | dpkg-db-cataloger |
+| libaudit-common | 1:4.0.2-2 | GPL-1.0-only, GPL-2.0-only, LGPL-2.1-only | dpkg-db-cataloger |
+| libaudit1 | 1:4.0.2-2+b2 | GPL-1.0-only, GPL-2.0-only, LGPL-2.1-only | dpkg-db-cataloger |
+| libbinutils | 2.44-3 |  | dpkg-db-cataloger |
+| libblkid-dev | 2.41-5 | BSD-2-Clause, BSD-3-Clause, BSD-4-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, ISC, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
+| libblkid1 | 2.41-5 | BSD-2-Clause, BSD-3-Clause, BSD-4-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, ISC, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
+| libbrotli1 | 1.1.0-2+b7 | MIT | dpkg-db-cataloger |
+| libbsd0 | 0.12.2-2 | BSD-2-Clause, BSD-2-Clause, BSD-3-Clause, Beerware, ISC | dpkg-db-cataloger |
+| libbz2-1.0 | 1.0.8-6 | GPL-2.0-only | dpkg-db-cataloger |
+| libc-bin | 2.41-12+deb13u3 | BSD-2-Clause, BSL-1.0, FSFAP, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, ISC, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, SunPro, Unicode-DFS-2016 | dpkg-db-cataloger |
+| libc-dev-bin | 2.41-12+deb13u3 | BSD-2-Clause, BSL-1.0, FSFAP, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, ISC, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, SunPro, Unicode-DFS-2016 | dpkg-db-cataloger |
+| libc-l10n | 2.41-12+deb13u3 | BSD-2-Clause, BSL-1.0, FSFAP, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, ISC, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, SunPro, Unicode-DFS-2016 | dpkg-db-cataloger |
+| libc6 | 2.41-12+deb13u3 | BSD-2-Clause, BSL-1.0, FSFAP, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, ISC, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, SunPro, Unicode-DFS-2016 | dpkg-db-cataloger |
+| libc6-dev | 2.41-12+deb13u3 | BSD-2-Clause, BSL-1.0, FSFAP, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, ISC, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, SunPro, Unicode-DFS-2016 | dpkg-db-cataloger |
+| libcap-ng0 | 0.8.5-4+b1 | GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
+| libcap2 | 1:2.75-10+deb13u1+b1 | BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
+| libcc1-0 | 14.2.0-19 | GFDL-1.2-only, GPL-3.0-only | dpkg-db-cataloger |
+| libcom-err2 | 1.47.2-3+b11 | 0BSD, Apache-2.0, Apache-2.0, BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later, ISC, Kazlib, LGPL-2.0-only, Latex2e | dpkg-db-cataloger |
+| libcrypt-dev | 1:4.4.38-1 |  | dpkg-db-cataloger |
+| libcrypt1 | 1:4.4.38-1 |  | dpkg-db-cataloger |
+| libctf-nobfd0 | 2.44-3 |  | dpkg-db-cataloger |
+| libctf0 | 2.44-3 |  | dpkg-db-cataloger |
+| libcurl4t64 | 8.14.1-2+deb13u3 | BSD-3-Clause, BSD-3-Clause, BSD-4-Clause-UC, FSFULLR, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-or-later, ISC, OLDAP-2.8, X11, curl | dpkg-db-cataloger |
+| libdav1d7 | 1.5.1-1 | BSD-2-Clause, ISC | dpkg-db-cataloger |
+| libdb5.3t64 | 5.3.28+dfsg2-9 | BSD-3-Clause, GPL-3.0-only, MS-PL, Sleepycat, X11, Zlib | dpkg-db-cataloger |
+| libde265-0 | 1.0.15-1+b3 | BSD-4-Clause, GPL-3.0-only, GPL-3.0-or-later, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
+| libdebconfclient0 | 0.280 | BSD-2-Clause, BSD-2-Clause, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
+| libdeflate0 | 1.23-2 |  | dpkg-db-cataloger |
+| libdpkg-perl | 1.22.22 | GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
+| libelf1t64 | 0.192-4 | BSD-2-Clause, GFDL-1.3-only, GPL-2.0-only, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
+| libexpat1 | 2.7.1-2 | MIT | dpkg-db-cataloger |
+| libffi-dev | 3.4.8-2 | GPL-2.0-or-later, GPL-3.0-or-later, MPL-1.1, X11 | dpkg-db-cataloger |
+| libffi8 | 3.4.8-2 | GPL-2.0-or-later, GPL-3.0-or-later, MPL-1.1, X11 | dpkg-db-cataloger |
+| libfftw3-double3 | 3.3.10-2+b1 | GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
+| libfontconfig1 | 2.15.0-2.3 | HPND-sell-variant | dpkg-db-cataloger |
+| libfreetype6 | 2.13.3+dfsg-1+deb13u1 | BSD-3-Clause, BSL-1.0, FSFAP, FTL, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, MIT-Modern-Variant, Zlib | dpkg-db-cataloger |
+| libgcc-14-dev | 14.2.0-19 | GFDL-1.2-only, GPL-3.0-only | dpkg-db-cataloger |
+| libgcc-s1 | 14.2.0-19 | GFDL-1.2-only, GPL-3.0-only | dpkg-db-cataloger |
+| libgcrypt20 | 1.11.0-7+deb13u1 | GPL-2.0-only | dpkg-db-cataloger |
+| libgdbm-compat4t64 | 1.24-2 | GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later | dpkg-db-cataloger |
+| libgdbm6t64 | 1.24-2 | GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later | dpkg-db-cataloger |
+| libgio-2.0-dev | 2.84.4-3~deb13u3 | AFL-2.0, Apache-2.0, CC-BY-SA-3.0, CC0-1.0, FSFULLR, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, MPL-1.1, Unicode-DFS-2016, bzip2-1.0.6 | dpkg-db-cataloger |
+| libgio-2.0-dev-bin | 2.84.4-3~deb13u3 | AFL-2.0, Apache-2.0, CC-BY-SA-3.0, CC0-1.0, FSFULLR, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, MPL-1.1, Unicode-DFS-2016, bzip2-1.0.6 | dpkg-db-cataloger |
+| libgirepository-2.0-0 | 2.84.4-3~deb13u3 | AFL-2.0, Apache-2.0, CC-BY-SA-3.0, CC0-1.0, FSFULLR, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, MPL-1.1, Unicode-DFS-2016, bzip2-1.0.6 | dpkg-db-cataloger |
+| libglib2.0-0t64 | 2.84.4-3~deb13u3 | AFL-2.0, Apache-2.0, CC-BY-SA-3.0, CC0-1.0, FSFULLR, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, MPL-1.1, Unicode-DFS-2016, bzip2-1.0.6 | dpkg-db-cataloger |
+| libglib2.0-bin | 2.84.4-3~deb13u3 | AFL-2.0, Apache-2.0, CC-BY-SA-3.0, CC0-1.0, FSFULLR, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, MPL-1.1, Unicode-DFS-2016, bzip2-1.0.6 | dpkg-db-cataloger |
+| libglib2.0-data | 2.84.4-3~deb13u3 | AFL-2.0, Apache-2.0, CC-BY-SA-3.0, CC0-1.0, FSFULLR, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, MPL-1.1, Unicode-DFS-2016, bzip2-1.0.6 | dpkg-db-cataloger |
+| libglib2.0-dev | 2.84.4-3~deb13u3 | AFL-2.0, Apache-2.0, CC-BY-SA-3.0, CC0-1.0, FSFULLR, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, MPL-1.1, Unicode-DFS-2016, bzip2-1.0.6 | dpkg-db-cataloger |
+| libglib2.0-dev-bin | 2.84.4-3~deb13u3 | AFL-2.0, Apache-2.0, CC-BY-SA-3.0, CC0-1.0, FSFULLR, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, MPL-1.1, Unicode-DFS-2016, bzip2-1.0.6 | dpkg-db-cataloger |
+| libgmp10 | 2:6.3.0+dfsg-3 | GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
+| libgnutls30t64 | 3.8.9-3+deb13u4 | Apache-2.0, BSD-3-Clause, FSFAP, GFDL-1.3-only, GPL-3.0-only, LGPL-3.0-only | dpkg-db-cataloger |
+| libgomp1 | 14.2.0-19 | GFDL-1.2-only, GPL-3.0-only | dpkg-db-cataloger |
+| libgpg-error0 | 1.51-4 | BSD-3-Clause, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
+| libgprofng0 | 2.44-3 |  | dpkg-db-cataloger |
+| libgssapi-krb5-2 | 1.21.3-5+deb13u1 | GPL-2.0-only | dpkg-db-cataloger |
+| libheif-plugin-dav1d | 1.19.8-1 | BSD-2-Clause, BSD-3-Clause, BSD-4-Clause-UC, BSL-1.0, GPL-3.0-only, GPL-3.0-or-later, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
+| libheif-plugin-libde265 | 1.19.8-1 | BSD-2-Clause, BSD-3-Clause, BSD-4-Clause-UC, BSL-1.0, GPL-3.0-only, GPL-3.0-or-later, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
+| libheif1 | 1.19.8-1 | BSD-2-Clause, BSD-3-Clause, BSD-4-Clause-UC, BSL-1.0, GPL-3.0-only, GPL-3.0-or-later, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
+| libhogweed6t64 | 3.10.1-1 | GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-3.0-or-later | dpkg-db-cataloger |
+| libhwasan0 | 14.2.0-19 | GFDL-1.2-only, GPL-3.0-only | dpkg-db-cataloger |
+| libicu76 | 76.1-4 | GPL-3.0-only, MIT | dpkg-db-cataloger |
+| libidn2-0 | 2.3.8-2 | GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
+| libisl23 | 0.27-1 | BSD-2-Clause, LGPL-2.0-only, LGPL-2.1-or-later, MIT | dpkg-db-cataloger |
+| libitm1 | 14.2.0-19 | GFDL-1.2-only, GPL-3.0-only | dpkg-db-cataloger |
+| libjansson4 | 2.14-2+b3 |  | dpkg-db-cataloger |
+| libjbig0 | 2.1-6.1+b2 | GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
+| libjpeg62-turbo | 1:2.1.5-4 | BSD-3-Clause, NTP, Zlib | dpkg-db-cataloger |
+| libk5crypto3 | 1.21.3-5+deb13u1 | GPL-2.0-only | dpkg-db-cataloger |
+| libkeyutils1 | 1.6.3-6 | GPL-2.0-only, GPL-2.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later | dpkg-db-cataloger |
+| libkrb5-3 | 1.21.3-5+deb13u1 | GPL-2.0-only | dpkg-db-cataloger |
+| libkrb5support0 | 1.21.3-5+deb13u1 | GPL-2.0-only | dpkg-db-cataloger |
+| libksba8 | 1.6.7-2+b1 | FSFUL, GPL-3.0-only, LGPL-2.1-or-later | dpkg-db-cataloger |
+| liblastlog2-2 | 2.41-5 | BSD-2-Clause, BSD-3-Clause, BSD-4-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, ISC, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
+| liblcms2-2 | 2.16-2+deb13u2 | GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, IJG, MIT | dpkg-db-cataloger |
+| libldap2 | 2.6.10+dfsg-1 | BSD-3-Clause, Beerware, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later | dpkg-db-cataloger |
+| liblerc4 | 4.0.0+ds-5 | Apache-2.0 | dpkg-db-cataloger |
+| liblqr-1-0 | 0.4.2-2.1+b2 | GPL-3.0-only, LGPL-3.0-only | dpkg-db-cataloger |
+| liblsan0 | 14.2.0-19 | GFDL-1.2-only, GPL-3.0-only | dpkg-db-cataloger |
+| libltdl7 | 2.5.4-4 | GFDL-1.3-only, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
+| liblua5.4-0 | 5.4.7-1+b2 |  | dpkg-db-cataloger |
+| liblz4-1 | 1.10.0-4 | BSD-2-Clause, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
+| liblzma5 | 5.8.1-1 | 0BSD, FSFUL, FSFULLR, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
+| libmagic-mgc | 1:5.46-5 | BSD-2-Clause | dpkg-db-cataloger |
+| libmagic1t64 | 1:5.46-5 | BSD-2-Clause | dpkg-db-cataloger |
+| libmagickcore-7.q16-10 | 8:7.1.1.43+dfsg1-1+deb13u10 | GPL-1.0-only, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, ImageMagick, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
+| libmagickwand-7.q16-10 | 8:7.1.1.43+dfsg1-1+deb13u10 | GPL-1.0-only, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, ImageMagick, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
+| libmd0 | 1.1.0-2+b1 | BSD-2-Clause, BSD-2-Clause, BSD-3-Clause, Beerware, ISC | dpkg-db-cataloger |
+| libmount-dev | 2.41-5 | BSD-2-Clause, BSD-3-Clause, BSD-4-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, ISC, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
+| libmount1 | 2.41-5 | BSD-2-Clause, BSD-3-Clause, BSD-4-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, ISC, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
+| libmpc3 | 1.3.1-1+b3 | LGPL-3.0-only | dpkg-db-cataloger |
+| libmpfr6 | 4.2.2-1 | LGPL-3.0-only | dpkg-db-cataloger |
+| libncursesw6 | 6.5+20250216-2 | BSD-3-Clause, X11 | dpkg-db-cataloger |
+| libnettle8t64 | 3.10.1-1 | GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-3.0-or-later | dpkg-db-cataloger |
+| libnghttp2-14 | 1.64.0-1.1+deb13u1 | BSD-2-Clause, GPL-3.0-only, GPL-3.0-or-later, MIT | dpkg-db-cataloger |
+| libnghttp3-9 | 1.8.0-1 | FSFAP, FSFUL, FSFULLR, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, MIT | dpkg-db-cataloger |
+| libnpth0t64 | 1.8-3 | LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
+| libonig5 | 6.9.9-1+b1 | BSD-2-Clause, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
+| libopenjp2-7 | 2.5.3-2.1~deb13u2 | Libpng, libtiff, MIT, Zlib | dpkg-db-cataloger |
+| libp11-kit0 | 0.25.5-3 | Apache-2.0, BSD-3-Clause, FSFAP, FSFULLR, GPL-2.0-or-later, GPL-3.0-or-later, ISC, LGPL-2.1-only, LGPL-2.1-or-later, X11 | dpkg-db-cataloger |
+| libpam-modules | 1.7.0-5 | BSD-3-Clause, Beerware, GPL-1.0-only, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later | dpkg-db-cataloger |
+| libpam-modules-bin | 1.7.0-5 | BSD-3-Clause, Beerware, GPL-1.0-only, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later | dpkg-db-cataloger |
+| libpam-runtime | 1.7.0-5 | BSD-3-Clause, Beerware, GPL-1.0-only, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later | dpkg-db-cataloger |
+| libpam0g | 1.7.0-5 | BSD-3-Clause, Beerware, GPL-1.0-only, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later | dpkg-db-cataloger |
+| libpcre2-16-0 | 10.46-1~deb13u1 | BSD-2-Clause, BSD-3-Clause, X11 | dpkg-db-cataloger |
+| libpcre2-32-0 | 10.46-1~deb13u1 | BSD-2-Clause, BSD-3-Clause, X11 | dpkg-db-cataloger |
+| libpcre2-8-0 | 10.46-1~deb13u1 | BSD-2-Clause, BSD-3-Clause, X11 | dpkg-db-cataloger |
+| libpcre2-dev | 10.46-1~deb13u1 | BSD-2-Clause, BSD-3-Clause, X11 | dpkg-db-cataloger |
+| libpcre2-posix3 | 10.46-1~deb13u1 | BSD-2-Clause, BSD-3-Clause, X11 | dpkg-db-cataloger |
+| libperl5.40 | 5.40.1-6 | Artistic-2.0, Artistic-dist, BSD-3-Clause, FSFAP, GPL-1.0-only, GPL-1.0-or-later, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.1-only, Zlib | dpkg-db-cataloger |
+| libphp | 8.4.22 |  | php-interpreter-cataloger |
+| libpkgconf3 | 1.8.1-4 | GPL-2.0-only, GPL-2.0-or-later, ISC, X11 | dpkg-db-cataloger |
+| libpng16-16t64 | 1.6.48-1+deb13u5 | Apache-2.0, BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later, Libpng | dpkg-db-cataloger |
+| libpopt0 | 1.19+dfsg-2 | GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
+| libpq5 | 17.10-0+deb13u1 | BSD-2-Clause, BSD-3-Clause, BSD-3-Clause, GPL-1.0-only, PostgreSQL, TCL | dpkg-db-cataloger |
+| libproc2-0 | 2:4.0.4-9 | GPL-2.0-only, GPL-2.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
+| libpsl5t64 | 0.21.2-1.1+b1 | MIT | dpkg-db-cataloger |
+| libpython3-stdlib | 3.13.5-1 |  | dpkg-db-cataloger |
+| libpython3.13-minimal | 3.13.5-2+deb13u2 | GPL-2.0-only | dpkg-db-cataloger |
+| libpython3.13-stdlib | 3.13.5-2+deb13u2 | GPL-2.0-only | dpkg-db-cataloger |
+| libquadmath0 | 14.2.0-19 | GFDL-1.2-only, GPL-3.0-only | dpkg-db-cataloger |
+| libraw23t64 | 0.21.4-2 | CC-BY-SA-3.0, CDDL-1.0, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.1-only | dpkg-db-cataloger |
+| libreadline8t64 | 8.2-6 | GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later | dpkg-db-cataloger |
+| librtmp1 | 2.4+20151223.gitfa8646d.1-2+b5 | GPL-2.0-only, LGPL-2.1-only | dpkg-db-cataloger |
+| libsasl2-2 | 2.1.28+dfsg1-9 | BSD-2-Clause, BSD-3-Clause-Attribution, BSD-3-Clause, BSD-4-Clause-UC, FSFULLR, GPL-3.0-only, GPL-3.0-or-later, MIT-CMU, RSA-MD | dpkg-db-cataloger |
+| libsasl2-modules-db | 2.1.28+dfsg1-9 | BSD-2-Clause, BSD-3-Clause-Attribution, BSD-3-Clause, BSD-4-Clause-UC, FSFULLR, GPL-3.0-only, GPL-3.0-or-later, MIT-CMU, RSA-MD | dpkg-db-cataloger |
+| libseccomp2 | 2.6.0-2 | LGPL-2.1-only | dpkg-db-cataloger |
+| libselinux1 | 3.8.1-1 | GPL-2.0-only | dpkg-db-cataloger |
+| libselinux1-dev | 3.8.1-1 | GPL-2.0-only | dpkg-db-cataloger |
+| libsemanage-common | 3.8.1-1 | GPL-2.0-only, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
+| libsemanage2 | 3.8.1-1 | GPL-2.0-only, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
+| libsepol-dev | 3.8.1-1 | GPL-2.0-only, GPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, Zlib | dpkg-db-cataloger |
+| libsepol2 | 3.8.1-1 | GPL-2.0-only, GPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, Zlib | dpkg-db-cataloger |
+| libsframe1 | 2.44-3 |  | dpkg-db-cataloger |
+| libsharpyuv0 | 1.5.0-0.1 | Apache-2.0, BSD-3-Clause | dpkg-db-cataloger |
+| libsmartcols1 | 2.41-5 | BSD-2-Clause, BSD-3-Clause, BSD-4-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, ISC, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
+| libsodium23 | 1.0.18-1+deb13u1 | BSD-2-Clause, CC0-1.0, GPL-2.0-only, GPL-2.0-or-later, ISC, MIT | dpkg-db-cataloger |
+| libsqlite3-0 | 3.46.1-7+deb13u1 | GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
+| libssh2-1t64 | 1.11.1-1+deb13u1 | ISC | dpkg-db-cataloger |
+| libssl3t64 | 3.5.6-1~deb13u2 | Apache-2.0, GPL-1.0-only, GPL-1.0-or-later | dpkg-db-cataloger |
+| libstdc++-14-dev | 14.2.0-19 | GFDL-1.2-only, GPL-3.0-only | dpkg-db-cataloger |
+| libstdc++6 | 14.2.0-19 | GFDL-1.2-only, GPL-3.0-only | dpkg-db-cataloger |
+| libsysprof-capture-4-dev | 48.0-2 | BSD-2-Clause-Patent, BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
+| libsystemd0 | 257.13-1~deb13u1 | CC0-1.0, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
+| libtasn1-6 | 4.20.0-2 | GFDL-1.3-only, GPL-3.0-only, LGPL-2.1-only | dpkg-db-cataloger |
+| libtext-iconv-perl | 1.7-8+b4 | GPL-1.0-only, GPL-1.0-or-later | dpkg-db-cataloger |
+| libtiff6 | 4.7.0-3+deb13u2 |  | dpkg-db-cataloger |
+| libtinfo6 | 6.5+20250216-2 | BSD-3-Clause, X11 | dpkg-db-cataloger |
+| libtsan2 | 14.2.0-19 | GFDL-1.2-only, GPL-3.0-only | dpkg-db-cataloger |
+| libubsan1 | 14.2.0-19 | GFDL-1.2-only, GPL-3.0-only | dpkg-db-cataloger |
+| libudev1 | 257.13-1~deb13u1 | CC0-1.0, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
+| libunistring5 | 1.3-2 | BSD-3-Clause, GFDL-1.2-or-later, GFDL-1.3-or-later, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, ISC, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, Unicode-DFS-2016, X11, BSD-3-Clause, GFDL-1.2-or-later, GFDL-1.3-or-later, ISC, Unicode-DFS-2016 | dpkg-db-cataloger |
+| libuuid1 | 2.41-5 | BSD-2-Clause, BSD-3-Clause, BSD-4-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, ISC, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
+| libwebp7 | 1.5.0-0.1 | Apache-2.0, BSD-3-Clause | dpkg-db-cataloger |
+| libwebpdemux2 | 1.5.0-0.1 | Apache-2.0, BSD-3-Clause | dpkg-db-cataloger |
+| libwebpmux3 | 1.5.0-0.1 | Apache-2.0, BSD-3-Clause | dpkg-db-cataloger |
+| libx11-6 | 2:1.8.12-1 | BSD-1-Clause, HPND, HPND-sell-variant, MIT | dpkg-db-cataloger |
+| libx11-data | 2:1.8.12-1 | BSD-1-Clause, HPND, HPND-sell-variant, MIT | dpkg-db-cataloger |
+| libxau6 | 1:1.0.11-1 |  | dpkg-db-cataloger |
+| libxcb1 | 1.17.0-2+b1 |  | dpkg-db-cataloger |
+| libxdmcp6 | 1:1.1.5-1 |  | dpkg-db-cataloger |
+| libxext6 | 2:1.3.4-1+b3 |  | dpkg-db-cataloger |
+| libxml2 | 2.12.7+dfsg+really2.9.14-2.1+deb13u2 | ISC | dpkg-db-cataloger |
+| libxxhash0 | 0.8.3-2 | BSD-2-Clause, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
+| libzip5 | 1.11.3-2 | Apache-2.0, BSD-3-Clause, GPL-3.0-only | dpkg-db-cataloger |
+| libzstd1 | 1.5.7+dfsg-1 | BSD-3-Clause, GPL-2.0-only, Zlib | dpkg-db-cataloger |
+| linux-libc-dev | 6.12.94-1 | BSD-2-Clause, GPL-2.0-only, LGPL-2.1-only | dpkg-db-cataloger |
+| locales | 2.41-12+deb13u3 | BSD-2-Clause, BSL-1.0, FSFAP, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, ISC, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, SunPro, Unicode-DFS-2016 | dpkg-db-cataloger |
+| login | 1:4.16.0-2+really2.41-5 | BSD-2-Clause, BSD-3-Clause, BSD-4-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, ISC, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
+| login.defs | 1:4.17.4-2 | BSD-3-Clause, GPL-1.0-only, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
+| m4 | 1.4.19-8 |  | dpkg-db-cataloger |
+| make | 4.4.1-2 | GPL-3.0-only, GPL-3.0-or-later | dpkg-db-cataloger |
 | masterminds/html5 | 2.7.6 | MIT | php-composer-installed-cataloger |
 | masterminds/html5 | 2.7.6 | MIT | php-composer-installed-cataloger |
-| mawk | 1.3.4.20200120-3.1 | CC-BY-3.0, GPL-2.0-only, X11 | dpkg-db-cataloger |
-| media-types | 10.0.0 |  | dpkg-db-cataloger |
-| mount | 2.38.1-5+deb12u3 | BSD-3-Clause, BSD-4-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, MIT | dpkg-db-cataloger |
-| ncurses-base | 6.4-4 | BSD-3-Clause, X11 | dpkg-db-cataloger |
-| ncurses-bin | 6.4-4 | BSD-3-Clause, X11 | dpkg-db-cataloger |
-| opcache | 8.1.31 |  | php-interpreter-cataloger |
-| openssl | 3.0.15-1~deb12u1 | Apache-2.0, GPL-1.0-only, GPL-1.0-or-later | dpkg-db-cataloger |
-| passwd | 1:4.13+dfsg1-1+b1 | BSD-3-Clause, GPL-1.0-only, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
-| patch | 2.7.6-7 |  | dpkg-db-cataloger |
-| pdo_mysql | 8.1.31 |  | php-interpreter-cataloger |
-| pdo_pgsql | 8.1.31 |  | php-interpreter-cataloger |
-| pdo_sqlite | 8.1.31 |  | php-interpreter-cataloger |
+| mawk | 1.3.4.20250131-1 | CC-BY-3.0, GPL-2.0-only, GPL-2.0-only, X11 | dpkg-db-cataloger |
+| media-types | 13.0.0 |  | dpkg-db-cataloger |
+| mlocati/ip-lib | 1.22.0 | MIT | php-composer-installed-cataloger |
+| mlocati/ip-lib | 1.22.0 | MIT | php-composer-installed-cataloger |
+| mount | 2.41-5 | BSD-2-Clause, BSD-3-Clause, BSD-4-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, ISC, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
+| native-architecture | 0.2.6 | GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
+| ncurses-base | 6.5+20250216-2 | BSD-3-Clause, X11 | dpkg-db-cataloger |
+| ncurses-bin | 6.5+20250216-2 | BSD-3-Clause, X11 | dpkg-db-cataloger |
+| netbase | 6.5 | GPL-2.0-only | dpkg-db-cataloger |
+| opcache | 8.4.22 |  | php-interpreter-cataloger |
+| openssl | 3.5.6-1~deb13u2 | Apache-2.0, GPL-1.0-only, GPL-1.0-or-later | dpkg-db-cataloger |
+| openssl-provider-legacy | 3.5.6-1~deb13u2 | Apache-2.0, GPL-1.0-only, GPL-1.0-or-later | dpkg-db-cataloger |
+| packaging | 25.0 |  | python-installed-package-cataloger |
+| passwd | 1:4.17.4-2 | BSD-3-Clause, GPL-1.0-only, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
+| patch | 2.8-2 | GPL-3.0-only, GPL-3.0-or-later | dpkg-db-cataloger |
+| pdo_mysql | 8.4.22 |  | php-interpreter-cataloger |
+| pdo_pgsql | 8.4.22 |  | php-interpreter-cataloger |
+| pdo_sqlite | 8.4.22 |  | php-interpreter-cataloger |
 | pear/auth_sasl | v1.1.0 |  | php-composer-installed-cataloger |
 | pear/auth_sasl | v1.1.0 |  | php-composer-installed-cataloger |
 | pear/console_commandline | v1.2.6 | MIT | php-composer-installed-cataloger |
 | pear/console_commandline | v1.2.6 | MIT | php-composer-installed-cataloger |
 | pear/console_getopt | v1.4.3 | BSD-2-Clause | php-composer-installed-cataloger |
 | pear/console_getopt | v1.4.3 | BSD-2-Clause | php-composer-installed-cataloger |
-| pear/crypt_gpg | v1.6.9 | LGPL-2.1-only | php-composer-installed-cataloger |
-| pear/crypt_gpg | v1.6.9 | LGPL-2.1-only | php-composer-installed-cataloger |
+| pear/crypt_gpg | v1.6.11 | LGPL-2.1-only | php-composer-installed-cataloger |
+| pear/crypt_gpg | v1.6.11 | LGPL-2.1-only | php-composer-installed-cataloger |
 | pear/mail_mime | 1.10.12 | BSD-3-Clause | php-composer-installed-cataloger |
 | pear/mail_mime | 1.10.12 | BSD-3-Clause | php-composer-installed-cataloger |
 | pear/net_ldap2 | v2.3.0 | LGPL-3.0-only | php-composer-installed-cataloger |
 | pear/net_ldap2 | v2.3.0 | LGPL-3.0-only | php-composer-installed-cataloger |
-| pear/net_sieve | 1.4.7 | BSD-2-Clause | php-composer-installed-cataloger |
-| pear/net_sieve | 1.4.7 | BSD-2-Clause | php-composer-installed-cataloger |
+| pear/net_sieve | 1.4.8 | BSD-2-Clause | php-composer-installed-cataloger |
+| pear/net_sieve | 1.4.8 | BSD-2-Clause | php-composer-installed-cataloger |
 | pear/net_smtp | 1.10.1 | BSD-2-Clause | php-composer-installed-cataloger |
 | pear/net_smtp | 1.10.1 | BSD-2-Clause | php-composer-installed-cataloger |
 | pear/net_socket | v1.2.2 |  | php-composer-installed-cataloger |
 | pear/net_socket | v1.2.2 |  | php-composer-installed-cataloger |
-| pear/pear-core-minimal | v1.10.15 | BSD-3-Clause | php-composer-installed-cataloger |
-| pear/pear-core-minimal | v1.10.15 | BSD-3-Clause | php-composer-installed-cataloger |
+| pear/pear-core-minimal | v1.10.18 | BSD-3-Clause | php-composer-installed-cataloger |
+| pear/pear-core-minimal | v1.10.18 | BSD-3-Clause | php-composer-installed-cataloger |
 | pear/pear_exception | v1.0.2 | BSD-2-Clause | php-composer-installed-cataloger |
 | pear/pear_exception | v1.0.2 | BSD-2-Clause | php-composer-installed-cataloger |
-| perl | 5.36.0-7+deb12u1 | Artistic-2.0, Artistic-dist, BSD-3-Clause, GPL-1.0-only, GPL-1.0-or-later, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.1-only, Zlib | dpkg-db-cataloger |
-| perl-base | 5.36.0-7+deb12u1 | Artistic-2.0, Artistic-dist, BSD-3-Clause, GPL-1.0-only, GPL-1.0-or-later, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.1-only, Zlib | dpkg-db-cataloger |
-| perl-modules-5.36 | 5.36.0-7+deb12u1 | Artistic-2.0, Artistic-dist, BSD-3-Clause, GPL-1.0-only, GPL-1.0-or-later, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.1-only, Zlib | dpkg-db-cataloger |
-| php-cli | 8.1.31 |  | php-interpreter-cataloger |
-| pinentry-curses | 1.2.1-1 | GPL-2.0-only, GPL-2.0-or-later, LGPL-3.0-only, LGPL-3.0-or-later, X11 | dpkg-db-cataloger |
-| pkg-config | 1.8.1-1 | GPL-2.0-only, GPL-2.0-or-later, ISC, X11 | dpkg-db-cataloger |
-| pkgconf | 1.8.1-1 | GPL-2.0-only, GPL-2.0-or-later, ISC, X11 | dpkg-db-cataloger |
-| pkgconf-bin | 1.8.1-1 | GPL-2.0-only, GPL-2.0-or-later, ISC, X11 | dpkg-db-cataloger |
-| procps | 2:4.0.2-3 | GPL-2.0-only, GPL-2.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
-| pspell | 8.1.31 |  | php-interpreter-cataloger |
+| perl | 5.40.1-6 | Artistic-2.0, Artistic-dist, BSD-3-Clause, FSFAP, GPL-1.0-only, GPL-1.0-or-later, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.1-only, Zlib | dpkg-db-cataloger |
+| perl-base | 5.40.1-6 | Artistic-2.0, Artistic-dist, BSD-3-Clause, FSFAP, GPL-1.0-only, GPL-1.0-or-later, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.1-only, Zlib | dpkg-db-cataloger |
+| perl-modules-5.40 | 5.40.1-6 | Artistic-2.0, Artistic-dist, BSD-3-Clause, FSFAP, GPL-1.0-only, GPL-1.0-or-later, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.1-only, Zlib | dpkg-db-cataloger |
+| php-cli | 8.4.22 |  | php-interpreter-cataloger |
+| pinentry-curses | 1.3.1-2 | GPL-2.0-only, GPL-2.0-or-later, LGPL-3.0-only, LGPL-3.0-or-later, X11 | dpkg-db-cataloger |
+| pkg-config | 1.8.1-4 | GPL-2.0-only, GPL-2.0-or-later, ISC, X11 | dpkg-db-cataloger |
+| pkgconf | 1.8.1-4 | GPL-2.0-only, GPL-2.0-or-later, ISC, X11 | dpkg-db-cataloger |
+| pkgconf-bin | 1.8.1-4 | GPL-2.0-only, GPL-2.0-or-later, ISC, X11 | dpkg-db-cataloger |
+| procps | 2:4.0.4-9 | GPL-2.0-only, GPL-2.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
 | psr/http-client | 1.0.3 | MIT | php-composer-installed-cataloger |
 | psr/http-client | 1.0.3 | MIT | php-composer-installed-cataloger |
 | psr/http-factory | 1.1.0 | MIT | php-composer-installed-cataloger |
 | psr/http-factory | 1.1.0 | MIT | php-composer-installed-cataloger |
 | psr/http-message | 2.0 | MIT | php-composer-installed-cataloger |
 | psr/http-message | 2.0 | MIT | php-composer-installed-cataloger |
-| python3 | 3.11.2-1+b1 |  | dpkg-db-cataloger |
-| python3-distutils | 3.11.2-3 |  | dpkg-db-cataloger |
-| python3-lib2to3 | 3.11.2-3 |  | dpkg-db-cataloger |
-| python3-minimal | 3.11.2-1+b1 |  | dpkg-db-cataloger |
-| python3.11 | 3.11.2-6+deb12u5 | GPL-2.0-only | dpkg-db-cataloger |
-| python3.11-minimal | 3.11.2-6+deb12u5 | GPL-2.0-only | dpkg-db-cataloger |
+| python3 | 3.13.5-1 |  | dpkg-db-cataloger |
+| python3-minimal | 3.13.5-1 |  | dpkg-db-cataloger |
+| python3-packaging | 25.0-1 | Apache-2.0, BSD-2-Clause, BSD-3-Clause | dpkg-db-cataloger |
+| python3.13 | 3.13.5-2+deb13u2 | GPL-2.0-only | dpkg-db-cataloger |
+| python3.13-minimal | 3.13.5-2+deb13u2 | GPL-2.0-only | dpkg-db-cataloger |
 | ralouphie/getallheaders | 3.0.3 | MIT | php-composer-installed-cataloger |
 | ralouphie/getallheaders | 3.0.3 | MIT | php-composer-installed-cataloger |
-| re2c | 3.0-2 | Apache-2.0, Apache-2.0, PHP-3.01 | dpkg-db-cataloger |
-| readline-common | 8.2-1.3 | GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later | dpkg-db-cataloger |
-| roundcube/plugin-installer | 0.3.8 | GPL-3.0-or-later | php-composer-installed-cataloger |
-| roundcube/plugin-installer | 0.3.8 | GPL-3.0-or-later | php-composer-installed-cataloger |
+| re2c | 4.1-1 | Apache-2.0, Apache-2.0, PHP-3.01 | dpkg-db-cataloger |
+| readline-common | 8.2-6 | GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later | dpkg-db-cataloger |
+| roundcube/plugin-installer | 0.3.11 | GPL-3.0-or-later | php-composer-installed-cataloger |
+| roundcube/plugin-installer | 0.3.11 | GPL-3.0-or-later | php-composer-installed-cataloger |
 | roundcube/rtf-html-php | v2.2 | GPL-2.0-only | php-composer-installed-cataloger |
 | roundcube/rtf-html-php | v2.2 | GPL-2.0-only | php-composer-installed-cataloger |
 | rpcsvc-proto | 1.4.3-1 | BSD-3-Clause, GPL-2.0-only, GPL-3.0-only, MIT | dpkg-db-cataloger |
-| rsync | 3.2.7-1+deb12u2 | GPL-3.0-only | dpkg-db-cataloger |
-| sed | 4.9-1 | BSD-4-Clause-UC, BSL-1.0, GFDL-1.3-only, GPL-3.0-only, GPL-3.0-or-later, ISC, X11 | dpkg-db-cataloger |
-| sodium | 8.1.31 |  | php-interpreter-cataloger |
-| symfony/deprecation-contracts | v2.5.3 | MIT | php-composer-installed-cataloger |
-| symfony/deprecation-contracts | v2.5.3 | MIT | php-composer-installed-cataloger |
-| sysvinit-utils | 3.06-4 | GPL-2.0-only, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-only | dpkg-db-cataloger |
-| tar | 1.34+dfsg-1.2+deb12u1 | GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
-| tzdata | 2024b-0+deb12u1 |  | dpkg-db-cataloger |
-| unzip | 6.0-28 |  | dpkg-db-cataloger |
-| usr-is-merged | 37~deb12u1 | GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
-| util-linux | 2.38.1-5+deb12u3 | BSD-3-Clause, BSD-4-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, MIT | dpkg-db-cataloger |
-| util-linux-extra | 2.38.1-5+deb12u3 | BSD-3-Clause, BSD-4-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, MIT | dpkg-db-cataloger |
-| uuid-dev | 2.38.1-5+deb12u3 | BSD-3-Clause, BSD-4-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, MIT | dpkg-db-cataloger |
-| xz-utils | 5.4.1-0.2 | GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, LGPL-2.0-only, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
-| zip | 1.19.5 |  | php-interpreter-cataloger |
-| zlib1g | 1:1.2.13.dfsg-1 | Zlib | dpkg-db-cataloger |
-| zlib1g-dev | 1:1.2.13.dfsg-1 | Zlib | dpkg-db-cataloger |
+| rsync | 3.4.1+ds1-5+deb13u3 | FSFULLR, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, ISC, PostgreSQL, snprintf | dpkg-db-cataloger |
+| sed | 4.9-2+deb13u1 | BSD-4-Clause-UC, BSL-1.0, GFDL-1.3-only, GPL-3.0-only, GPL-3.0-or-later, ISC, X11 | dpkg-db-cataloger |
+| sodium | 8.4.22 |  | php-interpreter-cataloger |
+| sqv | 1.3.0-3+b2 | LGPL-2.0-only, LGPL-2.0-or-later | dpkg-db-cataloger |
+| symfony/deprecation-contracts | v2.5.4 | MIT | php-composer-installed-cataloger |
+| symfony/deprecation-contracts | v2.5.4 | MIT | php-composer-installed-cataloger |
+| sysvinit-utils | 3.14-4 | GPL-2.0-only, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-only, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
+| tar | 1.35+dfsg-3.1 | GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
+| tzdata | 2026b-0+deb13u1 |  | dpkg-db-cataloger |
+| unzip | 6.0-29 |  | dpkg-db-cataloger |
+| util-linux | 2.41-5 | BSD-2-Clause, BSD-3-Clause, BSD-4-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, ISC, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
+| uuid-dev | 2.41-5 | BSD-2-Clause, BSD-3-Clause, BSD-4-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, ISC, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
+| xz-utils | 5.8.1-1 | 0BSD, FSFUL, FSFULLR, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
+| zip | 1.22.8 |  | php-interpreter-cataloger |
+| zlib1g | 1:1.3.dfsg+really1.3.1-1+b1 | Zlib | dpkg-db-cataloger |
+| zlib1g-dev | 1:1.3.dfsg+really1.3.1-1+b1 | Zlib | dpkg-db-cataloger |
 
 ### registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/seaweedfs
 
@@ -8443,13 +8776,13 @@ The complete source code for Traefik is publicly available at [https://github.co
 | alpine-baselayout | 3.7.2-r0 | GPL-2.0-only | apk-db-cataloger |
 | alpine-baselayout-data | 3.7.2-r0 | GPL-2.0-only | apk-db-cataloger |
 | alpine-keys | 2.6-r0 | MIT | apk-db-cataloger |
-| alpine-release | 3.23.4-r0 | MIT | apk-db-cataloger |
+| alpine-release | 3.23.5-r0 | MIT | apk-db-cataloger |
 | apk-tools | 3.0.6-r0 | GPL-2.0-only | apk-db-cataloger |
 | bash | 5.3.3-r1 | GPL-3.0-or-later | apk-db-cataloger |
 | busybox | 1.37.0-r30 | GPL-2.0-only | apk-db-cataloger |
 | busybox-binsh | 1.37.0-r30 | GPL-2.0-only | apk-db-cataloger |
 | ca-certificates | 20260611-r0 | MPL-2.0 AND MIT | apk-db-cataloger |
-| ca-certificates-bundle | 20260413-r0 | MPL-2.0 AND MIT | apk-db-cataloger |
+| ca-certificates-bundle | 20260611-r0 | MPL-2.0 AND MIT | apk-db-cataloger |
 | github.com/MakeNowJust/heredoc | v1.0.0 |  | go-module-binary-cataloger |
 | github.com/beorn7/perks | v1.0.1 |  | go-module-binary-cataloger |
 | github.com/blang/semver/v4 | v4.0.0 |  | go-module-binary-cataloger |

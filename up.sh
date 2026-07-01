@@ -110,6 +110,7 @@ STEPS_SETUP_SYSTEM=(
 STEPS_SETUP_CLUSTER=(
     create_namespace
     use_namespace
+    inject_archive_enc_key
     create_docker_secret_from_config
     install_traefik
     install_certificate
@@ -143,6 +144,7 @@ SKAFFOLD_REMOTE_CACHE_DIR="${SKAFFOLD_HOME}/remote-cache"
 CERTIFICATE=false
 MINIKUBE_MOUNT_STRING=""
 TRUSTED_CA_BUNDLE=""
+ARCHIVE_ENC_KEY=""
 
 # Computed Minikube resources
 MINIKUBE_CPUS=""
@@ -546,6 +548,19 @@ check_host_resources() {
         echo >&2 "[!] Error: Host does not meet minimum resource requirements."
         exit 1
     fi
+}
+
+inject_archive_enc_key() {
+    if [[ -z "${ARCHIVE_ENC_KEY}" ]]; then
+        return
+    fi
+    echo "[*] Injecting archive encryption key into secret 'archive-enc-master-key'"
+    kubectl create secret generic archive-enc-master-key \
+        --namespace="${NAMESPACE}" \
+        --from-literal=secretkey="${ARCHIVE_ENC_KEY}" \
+        --dry-run=client \
+        --output yaml \
+    | kubectl apply -f -
 }
 
 create_docker_secret_from_config() {
@@ -976,8 +991,9 @@ usage(){
     echo "  -c|--certificate CERT KEY             install certificate (CERT) with key (KEY)"
     echo "  --minikube-host-cpu-reserve N         reserve N CPU cores on the host (default: ${MINIKUBE_HOST_CPU_RESERVE_CORES})"
     echo "  --minikube-host-mem-reserve-kib KiB   reserve KiB of RAM on the host (default: ${MINIKUBE_HOST_MEM_RESERVE_KIB})"
-    echo "  --mount-string PATH                   mount host PATH into minikube; PVC data survives cluster rebuilds
-  --trusted-ca-bundle PATH              inject CA certificate(s) from PEM bundle PATH as trusted roots into all pods"
+    echo "  --mount-string PATH                   mount host PATH into minikube; PVC data survives cluster rebuilds"
+    echo "  --trusted-ca-bundle PATH              inject CA certificate(s) from PEM bundle PATH as trusted roots into all pods"
+    echo "  --archive-enc-key KEY                 use KEY (exactly 32 chars) as the archive encryption master key"
     echo "  --no-resources                        deploy without resource requests or limits (see charts/values-no-resources.yaml)"
     echo "  --disable-ai                          disable AI services: ollama, open-webui, translate (see charts/values-disable-ai-services.yaml)"
     echo "  --delete                              delete the deployment after startup"
@@ -1056,6 +1072,15 @@ while [[ $# -gt 0 ]]; do
         --trusted-ca-bundle)
             shift
             TRUSTED_CA_BUNDLE="${1?Missing path to CA bundle PEM file for --trusted-ca-bundle}"
+            shift
+        ;;
+        --archive-enc-key)
+            shift
+            ARCHIVE_ENC_KEY="${1?Missing key value for --archive-enc-key}"
+            if [[ "${#ARCHIVE_ENC_KEY}" -ne 32 ]]; then
+                echo >&2 "[!] Error: --archive-enc-key must be exactly 32 characters"
+                exit 1
+            fi
             shift
         ;;
         --no-resources)

@@ -469,21 +469,21 @@ class QueryBuilder:
             tree = RFTransformer(
                 "created",
                 [
-                    r"tika_meta.dcterms\:created",
-                    r"tika_meta.pdf\:docinfo\:created",
+                    r"tika_meta.dcterms_created",
+                    r"tika_meta.pdf_docinfo_created",
                 ],
             ).visit(tree, {})
             tree = RFTransformer(
                 "modified",
-                [r"tika_meta.dcterms\:modified", r"tika_meta.pdf\:docinfo\:modified"],
+                [r"tika_meta.dcterms_modified", r"tika_meta.pdf_docinfo_modified"],
             ).visit(tree, {})
             tree = RFTransformer(
                 "author",
                 [
-                    r"tika_meta.dc\:creator",
-                    r"tika_meta.pdf:docinfo\:creator",
-                    r"tika_meta.Message\:From-Name",
-                    r"tika_meta.meta\:last-author",
+                    r"tika_meta.dc_creator",
+                    r"tika_meta.pdf_docinfo_creator",
+                    r"tika_meta.message_from_name",
+                    r"tika_meta.meta_last_author",
                 ],
             ).visit(tree, {})
             tree = RFTransformer(

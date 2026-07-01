@@ -95,6 +95,9 @@ This method is designed for simplicity and is a great starting point!
       ./up.sh --gpus all
       ```
 
+> 💡 `up.sh` supports many more options (custom encryption keys, CA bundles, resource tuning,
+> development mode, and more). Run `./up.sh --help` to see the full list.
+
 After the up process is complete, you can open your web browser
 and navigate to [https://frontend.loom](https://frontend.loom) to access Loom.
 

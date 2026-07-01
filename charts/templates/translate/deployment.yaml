@@ -68,6 +68,7 @@ spec:
           env:
             - name: ARGOS_DEVICE_TYPE
               value: {{ .Values.translate.env.ARGOS_DEVICE_TYPE | quote }}
+            {{- with include "app.trustedCerts.env" . }}{{ . | nindent 12 }}{{- end }}
           {{- if .Values.translate.readinessProbe.enabled }}
           readinessProbe:
             exec:

@@ -56,3 +56,19 @@ Usage: {{- with include "app.trustedCerts.volumeMount" . }}{{ . | nindent 12 }}{
   subPath: ca-certificates.crt
 {{- end }}
 {{- end -}}
+
+{{/*
+Environment variables that point Python and Node.js at the trusted CA bundle.
+Only rendered when .Values.trustedCertificates.certs is non-empty.
+Usage: {{- with include "app.trustedCerts.env" . }}{{ . | nindent 12 }}{{- end }}
+*/}}
+{{- define "app.trustedCerts.env" -}}
+{{- if .Values.trustedCertificates.certs }}
+- name: SSL_CERT_FILE
+  value: /etc/ssl/certs/ca-certificates.crt
+- name: REQUESTS_CA_BUNDLE
+  value: /etc/ssl/certs/ca-certificates.crt
+- name: NODE_EXTRA_CA_CERTS
+  value: /etc/ssl/certs/ca-certificates.crt
+{{- end }}
+{{- end -}}
