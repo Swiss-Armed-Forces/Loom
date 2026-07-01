@@ -44,6 +44,7 @@ spec:
           env:
             - name: WORKER_TYPE
               value: "BEAT"
+            {{- with include "app.trustedCerts.env" . }}{{ . | nindent 12 }}{{- end }}
           envFrom:
             - configMapRef:
                 name: {{ include "app.fullname" . }}-settings
