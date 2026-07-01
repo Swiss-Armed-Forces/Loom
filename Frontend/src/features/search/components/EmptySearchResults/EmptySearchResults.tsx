@@ -194,7 +194,7 @@ export const EmptySearchResults = () => {
                                         onClick={() => {
                                             performSearch(
                                                 "*",
-                                                "tika_meta.dcterms:created",
+                                                "tika_meta.dcterms_created",
                                                 "desc",
                                             );
                                         }}
