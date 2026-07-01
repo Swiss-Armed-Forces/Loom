@@ -1,5 +1,5 @@
 # Image version
-ARG RABBIT_IMAGE_VERSION="4.1.1-management-alpine"
+ARG RABBIT_IMAGE_VERSION="4.1.8-management-alpine"
 
 ARG DOCKER_REGISTRY="docker.io"
 FROM ${DOCKER_REGISTRY}/rabbitmq:${RABBIT_IMAGE_VERSION}
