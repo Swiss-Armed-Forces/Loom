@@ -50,7 +50,7 @@ class alwayslogon extends rcube_plugin
     {
         $args['user'] = 'user';
         $args['pass'] = 'pass';
-        $args['host'] = $_ENV['ROUNDCUBEMAIL_DEFAULT_HOST'];
+        $args['host'] = getenv('ROUNDCUBEMAIL_DEFAULT_HOST');
         $args['cookiecheck'] = false;
         $args['valid'] = true;
 
