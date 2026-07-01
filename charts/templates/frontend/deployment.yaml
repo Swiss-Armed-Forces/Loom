@@ -46,6 +46,7 @@ spec:
               value: {{ .Values.environment | quote }}
             - name: API_BACKEND_URL
               value: http://{{ include "app.fullname" . }}-api:{{ .Values.api.service.port }}
+            {{- with include "app.trustedCerts.env" . }}{{ . | nindent 12 }}{{- end }}
           {{- if .Values.frontend.readinessProbe.enabled }}
           readinessProbe:
             httpGet:

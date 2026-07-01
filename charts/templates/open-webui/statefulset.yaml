@@ -103,6 +103,7 @@ spec:
               value: {{ .Values.open_webui.env.RAG_RERANKING_MODEL_AUTO_UPDATE | quote }}
             - name: WHISPER_MODEL_AUTO_UPDATE
               value: {{ .Values.open_webui.env.WHISPER_MODEL_AUTO_UPDATE | quote }}
+            {{- with include "app.trustedCerts.env" . }}{{ . | nindent 12 }}{{- end }}
           volumeMounts:
             - mountPath: /app/backend/data
               name: open-webui
