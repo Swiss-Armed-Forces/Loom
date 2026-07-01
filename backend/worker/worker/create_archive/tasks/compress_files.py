@@ -1,6 +1,5 @@
 import logging
 from collections.abc import Iterable, Iterator
-from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
 from pathlib import Path
 from textwrap import dedent
@@ -45,6 +44,7 @@ app = get_celery_app()
 _PERMS_FILE = 0o600
 _PERMS_META = 0o644
 _PERMS_EXEC = 0o755
+_PROGRESS_LOG_INTERVAL_PCT = 5
 
 
 def _readme_content(archive_name: str) -> bytes:
@@ -105,26 +105,23 @@ def _manifest_content(archive: Archive) -> bytes:
 
 
 def _fetch_file(file_id: UUID, archive_id: UUID) -> File | None:
-    """Fetch a single File from ES.
-
-    Runs in a worker thread.
-    """
-    fresh_file = get_file_repository().get_by_id(file_id)
-    if fresh_file is None:
+    """Fetch a single File from ES."""
+    file_ = get_file_repository().get_by_id(file_id)
+    if file_ is None:
         logger.warning(
             "Skipping file '%s' from archive: not found in repository", file_id
         )
         return None
-    if fresh_file.storage_data is None:
+    if file_.storage_data is None:
         logger.warning(
-            "Skipping file '%s' from archive: no storage data", fresh_file.full_path
+            "Skipping file '%s' from archive: no storage data", file_.full_path
         )
         return None
     # Inject the archive link in-memory — the async persist_file_to_archive_link tasks
     # may not have flushed to ES yet, so we ensure the serialized file is up-to-date.
-    if str(archive_id) not in fresh_file.archives:
-        fresh_file.archives = fresh_file.archives + [str(archive_id)]
-    return fresh_file
+    if str(archive_id) not in file_.archives:
+        file_.archives = file_.archives + [str(archive_id)]
+    return file_
 
 
 def _file_archive_entries(
@@ -133,30 +130,38 @@ def _file_archive_entries(
     archive_name: str,
     modified_at: datetime,
 ) -> Iterator[MemberFile]:
-    """Yield ZIP entries for all files, fetching ES metadata in parallel."""
+    """Yield ZIP entries for all files."""
     file_storage_service = get_file_storage_service()
-    with ThreadPoolExecutor() as executor:
-        futures = [executor.submit(_fetch_file, fid, archive_id) for fid in file_ids]
-        for future in as_completed(futures):
-            fresh_file = future.result()
-            if fresh_file is None:
-                continue
-            for storage in _file_storage_fields(fresh_file):
-                yield (
-                    f"{archive_name}/{FILES_DIR}/{storage.service_id}",
-                    modified_at,
-                    _PERMS_FILE,
-                    ZIP_32,
-                    file_storage_service.load_generator(storage),
-                )
-            file_json = fresh_file.model_dump_json(indent=JSON_INDENT).encode()
+    total = len(file_ids)
+    last_logged_pct = -1
+    for index, file_id in enumerate(file_ids):
+        pct = (index * 100) // total if total else 100
+        if (
+            pct // _PROGRESS_LOG_INTERVAL_PCT
+            > last_logged_pct // _PROGRESS_LOG_INTERVAL_PCT
+        ):
+            last_logged_pct = pct
+            logger.info("Compressing archive: %d/%d files (%d%%)", index, total, pct)
+        file_ = _fetch_file(file_id, archive_id)
+        if file_ is None:
+            continue
+        for storage in _file_storage_fields(file_):
             yield (
-                f"{archive_name}/{FILES_INDEX_DIR}/{fresh_file.id_}{JSON_SUFFIX}",
+                f"{archive_name}/{FILES_DIR}/{storage.service_id}",
                 modified_at,
                 _PERMS_FILE,
                 ZIP_32,
-                iter([file_json]),
+                file_storage_service.load_generator(storage),
             )
+        file_json = file_.model_dump_json(indent=JSON_INDENT).encode()
+        yield (
+            f"{archive_name}/{FILES_INDEX_DIR}/{file_.id_}{JSON_SUFFIX}",
+            modified_at,
+            _PERMS_FILE,
+            ZIP_32,
+            iter([file_json]),
+        )
+    logger.info("Compressing archive: %d/%d files (100%%)", total, total)
 
 
 def _archive_data(file_ids: list[UUID], archive: Archive) -> Iterator[MemberFile]:
