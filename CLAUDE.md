@@ -149,24 +149,74 @@ All commands below are provided by devenv scripts (run `devenv-help` to see full
 - ESLint requires staged files (uses `git ls-files`), so stage deletions/renames before committing
 - Changes auto-reload when `up --development` is running
 
-### Testing Strategy
+### Testing
 
-**Unit tests:**
+**When to write tests:**
 
-- Backend: `backend-test` runs all tests in `backend/*/tests/`
-- Frontend: `frontend-test`
+- Before adding a test, ask yourself: will this test actually test critical functionality, and will
+  it add real value? Since we have types, tests that merely verify type constraints or trivially
+  re-test what types already enforce are not valuable. Focus on behaviour, edge cases, and logic
+  that types cannot capture.
+- All new backend features require unit tests
+- Integration tests for user-facing workflows
 
-**Integration tests:**
+**Running tests:**
 
-- Located in `integrationtest/`
-- Run with `run-integrationtest`
-- Simulates full workflows against running Loom instance
-
-**Test execution:**
-
+- Backend unit tests: `backend-test` (runs all tests in `backend/*/tests/`)
+- Frontend unit tests: `frontend-test`
+- Integration tests: `run-integrationtest` — simulates full workflows against a running Loom instance
 - Tests create temp artifacts in `.pytest_tmp` (not `/tmp`) to avoid RAM usage
-- Per-test timeout configured in `pytest.ini`
-- Coverage reports generated automatically
+- CI/CD pipeline runs the full test suite and linting via git-hooks
+
+**Integration test design — class vs. no class:**
+
+The `wipe_data` fixture in `conftest.py` is `scope="class"` and `autouse=True`. It purges all
+queues, terminates running Celery tasks, and waits for the worker to be idle before the test runs.
+The scope controls how often that cleanup happens:
+
+- **No class (module-level functions):** `wipe_data` runs before *every* test function. Use this
+  when each test needs a clean slate — e.g. it uploads files, dispatches tasks, or calls anything
+  that leaves queues non-empty or state dirty for subsequent tests.
+- **Class:** `wipe_data` runs once before the first test in the class, then the class shares that
+  state. Use a class only when tests genuinely share a common dataset and none of them contaminate
+  state for the others (e.g. a read-only search test suite that loads a fixed corpus once).
+
+**Key rule:** if a test uploads a file, triggers a Celery pipeline, or leaves RabbitMQ queues
+non-empty, it must not share a class with tests that depend on an idle worker — particularly any
+test that calls a task which internally calls `wait_for_idle`. When in doubt, use module-level
+functions (no class).
+
+**When to use `disable_periodic_tasks`:**
+
+Apply `pytestmark = pytest.mark.usefixtures("disable_periodic_tasks")` (or the fixture directly)
+when periodic beat tasks would interfere with what the test is asserting. Specifically:
+
+- The test calls a task that uses `wait_for_idle` — beat tasks continuously add messages to queues,
+  which prevents `wait_for_idle` from ever returning `True`.
+- The test inspects queue depths, task counts, or file storage contents and needs a stable
+  background with no surprise writes or deletions from periodic jobs.
+- The test is sensitive to the `flush_file_storage_service_task` or similar maintenance tasks
+  removing objects the test just created.
+
+You do **not** need it for tests that simply upload a file and wait for it to be indexed — those
+are not affected by periodic tasks running in the background.
+
+**Monkey patching:**
+
+Avoid monkey patching (`monkeypatch`, `unittest.mock.patch`, etc.) by default. Patching replaces
+things at runtime behind the code's back, which couples tests to implementation details.
+Using `MagicMock` or other test doubles is fine — the issue is *how* they reach the code under
+test: pass them in via dependency injection rather than patching them into place.
+
+Before reaching for a patch, ask yourself:
+
+- **Is this test actually valuable?** If the only way to test something is to patch out most of its
+  internals, the test may be asserting implementation details rather than behaviour.
+- **Can the code be restructured for better testability?** Prefer dependency injection, small
+  focused functions, and clear boundaries so that test doubles can be passed in directly.
+
+Only patch when there is no reasonable alternative (e.g. a global external side effect that cannot
+be injected). If you find yourself patching, treat it as a signal to reconsider the design first.
 
 ### Creating Issues (Bug Reports & Feature Requests)
 
@@ -260,35 +310,6 @@ function, **stop and ask the user first** — there is almost certainly a better
 - Repository pattern for data access (see `common/models/`)
 - Dependency injection via FastAPI dependencies and Celery task context
 - Async/await where appropriate (FastAPI routes)
-
-## Testing Requirements
-
-- Before adding a test, ask yourself: will this test actually test critical functionality, and will it
-  add real value? Since we have types, tests that merely verify type constraints or trivially re-test
-  what types already enforce are not valuable. Focus on behaviour, edge cases, and logic that types
-  cannot capture.
-- All new backend features require unit tests
-- Integration tests for user-facing workflows
-- Maintain test coverage (coverage reports generated automatically)
-- Tests must pass locally before pushing
-- CI/CD pipeline runs full test suite + devenv test (linting via git-hooks)
-
-### Monkey patching in tests
-
-Avoid monkey patching (`monkeypatch`, `unittest.mock.patch`, etc.) by default. Patching replaces
-things at runtime behind the code's back, which couples tests to implementation details.
-Using `MagicMock` or other test doubles is fine — the issue is *how* they reach the code under
-test: pass them in via dependency injection rather than patching them into place.
-
-Before reaching for a patch, ask yourself:
-
-- **Is this test actually valuable?** If the only way to test something is to patch out most of its
-  internals, the test may be asserting implementation details rather than behaviour.
-- **Can the code be restructured for better testability?** Prefer dependency injection, small
-  focused functions, and clear boundaries so that test doubles can be passed in directly.
-
-Only patch when there is no reasonable alternative (e.g. a global external side effect that cannot
-be injected). If you find yourself patching, treat it as a signal to reconsider the design first.
 
 ## Additional Documentation
 
