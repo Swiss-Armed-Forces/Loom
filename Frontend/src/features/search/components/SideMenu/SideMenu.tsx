@@ -1,14 +1,29 @@
-import { ChevronLeft, ChevronRight, ExpandMore } from "@mui/icons-material";
+import {
+    Check,
+    ChevronLeft,
+    ChevronRight,
+    Close,
+    ExpandMore,
+    FlagOutlined,
+    ImageSearch,
+    MarkEmailUnreadOutlined,
+    SummarizeOutlined,
+    Translate,
+    YoutubeSearchedForOutlined,
+} from "@mui/icons-material";
 import {
     Accordion,
     AccordionDetails,
     AccordionSummary,
+    Badge,
+    Box,
     List,
     ListItem,
     IconButton,
+    Tooltip,
     Typography,
 } from "@mui/material";
-import { useState } from "react";
+import { ReactNode, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { useAppDispatch, useAppSelector } from "@app/hooks";
@@ -17,7 +32,10 @@ import {
     selectQuery,
     selectTags,
     selectSideMenu,
+    selectAutoActionsPreferences,
+    setAutoActionPreference,
     toggleSideMenu,
+    toggleSideMenuAutoActions,
     toggleSideMenuBulkActions,
     toggleSideMenuTags,
     toggleSideMenuQueries,
@@ -53,6 +71,11 @@ const accordionSummarySx = {
     "&:hover": { opacity: 0.7 },
 };
 
+const accordionTitleSx = {
+    fontWeight: "medium",
+    lineHeight: 1,
+};
+
 export const SideMenu = () => {
     const dispatch = useAppDispatch();
     const numberOfResults = useAppSelector(selectTotalFiles);
@@ -63,8 +86,12 @@ export const SideMenu = () => {
         isBulkActionsExpanded,
         isTagsExpanded,
         isQueriesExpanded,
+        isAutoActionsExpanded,
     } = useAppSelector(selectSideMenu);
     const [isMenuAnimationRunning, setIsMenuAnimationRunning] = useState(false);
+    const preferences = useAppSelector(selectAutoActionsPreferences);
+    const setPreference = (key: BooleanAutoActionKey, value: boolean) =>
+        dispatch(setAutoActionPreference({ key, value }));
 
     const { t } = useTranslation();
 
@@ -95,6 +122,87 @@ export const SideMenu = () => {
                 disabled={numberOfResults === 0}
             />
         </>
+    );
+
+    type BooleanAutoActionKey =
+        | "markAsSeen"
+        | "flag"
+        | "reindex"
+        | "translate"
+        | "summarize"
+        | "describeImage";
+
+    const autoActionIconButton = (
+        actionKey: BooleanAutoActionKey,
+        icon: ReactNode,
+        label: string,
+    ) => {
+        const enabled = preferences[actionKey];
+        return (
+            <Tooltip key={actionKey} title={label}>
+                <IconButton
+                    size="small"
+                    onClick={() => setPreference(actionKey, !enabled)}
+                    sx={{
+                        transition: "opacity 0.2s ease",
+                        "&:hover": { opacity: 0.8 },
+                    }}
+                >
+                    <Badge
+                        overlap="circular"
+                        anchorOrigin={{
+                            vertical: "bottom",
+                            horizontal: "right",
+                        }}
+                        badgeContent={
+                            enabled ? (
+                                <Check sx={{ fontSize: 10 }} />
+                            ) : (
+                                <Close sx={{ fontSize: 10 }} />
+                            )
+                        }
+                        color={enabled ? "success" : "error"}
+                    >
+                        {icon}
+                    </Badge>
+                </IconButton>
+            </Tooltip>
+        );
+    };
+
+    const autoActionButtons = (
+        <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5 }}>
+            {autoActionIconButton(
+                "flag",
+                <FlagOutlined />,
+                t("sideMenu.autoActions.flag"),
+            )}
+            {autoActionIconButton(
+                "markAsSeen",
+                <MarkEmailUnreadOutlined />,
+                t("sideMenu.autoActions.markAsSeen"),
+            )}
+            {autoActionIconButton(
+                "translate",
+                <Translate />,
+                t("sideMenu.autoActions.translate"),
+            )}
+            {autoActionIconButton(
+                "summarize",
+                <SummarizeOutlined />,
+                t("sideMenu.autoActions.summarize"),
+            )}
+            {autoActionIconButton(
+                "describeImage",
+                <ImageSearch />,
+                t("sideMenu.autoActions.describeImage"),
+            )}
+            {autoActionIconButton(
+                "reindex",
+                <YoutubeSearchedForOutlined />,
+                t("sideMenu.autoActions.reindex"),
+            )}
+        </Box>
     );
 
     return (
@@ -145,7 +253,7 @@ export const SideMenu = () => {
                             expandIcon={<ExpandMore />}
                             sx={accordionSummarySx}
                         >
-                            <Typography variant="body2">
+                            <Typography variant="body2" sx={accordionTitleSx}>
                                 {t("sideMenu.bulkActions")}
                             </Typography>
                         </AccordionSummary>
@@ -182,6 +290,43 @@ export const SideMenu = () => {
 
                 {isMenuExpanded ? (
                     <Accordion
+                        expanded={isAutoActionsExpanded}
+                        onChange={() => dispatch(toggleSideMenuAutoActions())}
+                        disableGutters
+                        elevation={0}
+                        sx={accordionSx}
+                    >
+                        <AccordionSummary
+                            expandIcon={<ExpandMore />}
+                            sx={accordionSummarySx}
+                        >
+                            <Typography variant="body2" sx={accordionTitleSx}>
+                                {t("sideMenu.autoActions.title")}
+                            </Typography>
+                        </AccordionSummary>
+                        <AccordionDetails sx={{ px: 1, py: 0.5 }}>
+                            {autoActionButtons}
+                        </AccordionDetails>
+                    </Accordion>
+                ) : (
+                    isAutoActionsExpanded && (
+                        <List>
+                            <ListItem
+                                sx={{
+                                    flexWrap: "wrap",
+                                    gap: 0.5,
+                                    px: 0.5,
+                                    justifyContent: "center",
+                                }}
+                            >
+                                {autoActionButtons}
+                            </ListItem>
+                        </List>
+                    )
+                )}
+
+                {isMenuExpanded ? (
+                    <Accordion
                         expanded={isTagsExpanded}
                         onChange={() => dispatch(toggleSideMenuTags())}
                         disableGutters
@@ -192,7 +337,7 @@ export const SideMenu = () => {
                             expandIcon={<ExpandMore />}
                             sx={accordionSummarySx}
                         >
-                            <Typography variant="body2">
+                            <Typography variant="body2" sx={accordionTitleSx}>
                                 {t("sideMenu.tags")}
                             </Typography>
                         </AccordionSummary>
@@ -228,7 +373,7 @@ export const SideMenu = () => {
                             expandIcon={<ExpandMore />}
                             sx={accordionSummarySx}
                         >
-                            <Typography variant="body2">
+                            <Typography variant="body2" sx={accordionTitleSx}>
                                 {t("sideMenu.savedQueries.title")}
                             </Typography>
                         </AccordionSummary>

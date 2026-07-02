@@ -5,9 +5,7 @@ import {
     CardActions,
     CardContent,
     Skeleton,
-    styled,
     Typography,
-    TypographyProps,
 } from "@mui/material";
 import { useMediaQuery } from "@mui/material";
 import React, { useEffect, useRef } from "react";
@@ -15,12 +13,20 @@ import { useTranslation } from "react-i18next";
 import { useInView } from "react-intersection-observer";
 import { toast } from "react-toastify";
 
-import { GetFilePreviewResponse, updateFile } from "@app/api";
+import {
+    GetFilePreviewResponse,
+    scheduleSingleFileIndexing,
+    scheduleSingleFileSummarization,
+    scheduleSingleFileTranslation,
+    scheduleSingleImageDescription,
+    updateFile,
+} from "@app/api";
 import { useAppDispatch, useAppSelector } from "@app/hooks";
 import { openDialog } from "@app/slices/commonSlice";
 import {
     selectQuery,
     selectFileById,
+    selectAutoActionsPreferences,
     setFileInViewState,
     setFilePreview,
     setHighlightedIndex,
@@ -34,14 +40,9 @@ import {
     TagsList,
 } from "@features/search/components";
 
-import { EllipsisButton } from "./EllipsisButton";
 import { FileTasksList } from "./FileTasksList";
 import styles from "./ResultCard.module.css";
 import { Summary } from "./Summary";
-
-const FieldTypography = styled(Typography)<TypographyProps>`
-    line-height: 1.2;
-`;
 
 interface ResultCardProps {
     fileId: string;
@@ -62,7 +63,11 @@ export const ResultCard = React.memo(
         const { ref: inViewRef, inView } = useInView({
             threshold: [0.2],
         });
+        const autoActionsPreferences = useAppSelector(
+            selectAutoActionsPreferences,
+        );
         const hasUpdatedSeen = useRef<boolean>(true);
+        const hasHighlightActionsRun = useRef<boolean>(false);
 
         // Custom scroll function that scrolls within the results container only
         const scrollCardIntoView = () => {
@@ -120,27 +125,70 @@ export const ResultCard = React.memo(
                 return;
             }
             hasUpdatedSeen.current = false;
+            hasHighlightActionsRun.current = false;
         }, [filePreview?.seen, isHighlighted]);
 
         // Re-scroll when content loads (skeleton replaced with actual content)
         // This handles the case where card height changes after preview loads
         useEffect(() => {
-            const markFileAsSeen = async (file: GetFilePreviewResponse) => {
-                try {
-                    updateFile(file.fileId, { seen: true });
+            const runHighlightAutoActions = (file: GetFilePreviewResponse) => {
+                const prefs = autoActionsPreferences;
+                const optimisticUpdates: Partial<GetFilePreviewResponse> = {};
+
+                if (prefs.markAsSeen && !file.seen) {
+                    updateFile(file.fileId, { seen: true }).catch((err) =>
+                        toast.error(
+                            t("updateFileState.seen.scheduledErrorToast", {
+                                err,
+                            }),
+                        ),
+                    );
                     hasUpdatedSeen.current = true;
-                    dispatch(setFilePreview({ ...file, seen: true }));
-                } catch (err) {
-                    toast.error(
-                        t("updateFileState.seen.scheduledErrorToast", {
-                            err,
-                        }),
+                    optimisticUpdates.seen = true;
+                }
+
+                if (prefs.flag && !file.flagged) {
+                    updateFile(file.fileId, { flagged: true }).catch((err) =>
+                        toast.error(
+                            t("updateFileState.flagged.scheduledErrorToast", {
+                                err,
+                            }),
+                        ),
+                    );
+                    optimisticUpdates.flagged = true;
+                }
+
+                if (prefs.reindex) {
+                    scheduleSingleFileIndexing(file.fileId).catch(() => {});
+                }
+
+                if (prefs.summarize) {
+                    scheduleSingleFileSummarization(file.fileId, null).catch(
+                        () => {},
                     );
                 }
+
+                if (prefs.describeImage) {
+                    scheduleSingleImageDescription(file.fileId, null).catch(
+                        () => {},
+                    );
+                }
+
+                if (prefs.translate) {
+                    scheduleSingleFileTranslation("", file.fileId).catch(
+                        () => {},
+                    );
+                }
+
+                if (Object.keys(optimisticUpdates).length > 0) {
+                    dispatch(setFilePreview({ ...file, ...optimisticUpdates }));
+                }
             };
+
             if (isHighlighted && filePreview && cardRef.current) {
-                if (!filePreview.seen && !hasUpdatedSeen.current) {
-                    markFileAsSeen(filePreview);
+                if (!hasHighlightActionsRun.current) {
+                    hasHighlightActionsRun.current = true;
+                    runHighlightAutoActions(filePreview);
                 }
                 // Small delay to allow DOM to update after content renders
                 const timeoutId = setTimeout(() => {
@@ -244,25 +292,12 @@ export const ResultCard = React.memo(
                         <FileCardHeader filePreview={filePreview} />
                         <CardContent className={styles.cardContent}>
                             <div className={styles.contentColumn}>
-                                <Summary filePreview={filePreview} />
-
-                                <FieldTypography
-                                    className={`${styles.resultHighlightText} ${styles.contentText}`}
-                                >
-                                    {filePreview.content}
-                                    {filePreview.contentPreviewIsTruncated && (
-                                        <EllipsisButton
-                                            onClick={() =>
-                                                handleOpenDetailsOnTabClick(
-                                                    FileDetailTab.Content,
-                                                )
-                                            }
-                                            title={t(
-                                                "generalSearchView.viewDetails",
-                                            )}
-                                        />
-                                    )}
-                                </FieldTypography>
+                                <Summary
+                                    filePreview={filePreview}
+                                    onOpenDetailsTab={
+                                        handleOpenDetailsOnTabClick
+                                    }
+                                />
                                 <HighlightList
                                     highlights={
                                         filePreview.highlight as Record<

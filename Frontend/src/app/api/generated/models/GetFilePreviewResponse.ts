@@ -177,6 +177,24 @@ export interface GetFilePreviewResponse {
      * @memberof GetFilePreviewResponse
      */
     detectedLanguage?: string;
+    /**
+     *
+     * @type {string}
+     * @memberof GetFilePreviewResponse
+     */
+    translationPreview?: string;
+    /**
+     *
+     * @type {string}
+     * @memberof GetFilePreviewResponse
+     */
+    translationPreviewLanguage?: string;
+    /**
+     *
+     * @type {boolean}
+     * @memberof GetFilePreviewResponse
+     */
+    translationPreviewIsTruncated?: boolean;
 }
 
 /**
@@ -261,6 +279,18 @@ export function GetFilePreviewResponseFromJSONTyped(
             json["detected_language"] == null
                 ? undefined
                 : json["detected_language"],
+        translationPreview:
+            json["translation_preview"] == null
+                ? undefined
+                : json["translation_preview"],
+        translationPreviewLanguage:
+            json["translation_preview_language"] == null
+                ? undefined
+                : json["translation_preview_language"],
+        translationPreviewIsTruncated:
+            json["translation_preview_is_truncated"] == null
+                ? undefined
+                : json["translation_preview_is_truncated"],
     };
 }
 
@@ -299,5 +329,9 @@ export function GetFilePreviewResponseToJSON(
         is_spam: value["isSpam"],
         attachments_skipped: value["attachmentsSkipped"],
         detected_language: value["detectedLanguage"],
+        translation_preview: value["translationPreview"],
+        translation_preview_language: value["translationPreviewLanguage"],
+        translation_preview_is_truncated:
+            value["translationPreviewIsTruncated"],
     };
 }

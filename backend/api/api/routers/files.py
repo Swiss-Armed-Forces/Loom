@@ -356,6 +356,9 @@ class GetFilePreviewResponse(BaseModel):
     is_spam: bool | None = False
     attachments_skipped: bool = False
     detected_language: str | None = None
+    translation_preview: str | None = None
+    translation_preview_language: str | None = None
+    translation_preview_is_truncated: bool = False
 
 
 @router.get("/{file_id}/preview")
@@ -402,6 +405,19 @@ def get_file_preview(
         is_spam=file.is_spam,
         attachments_skipped=file.attachments_skipped,
         detected_language=file.detected_language,
+        translation_preview=(
+            str(file.translations[-1].text[:CONTENT_PREVIEW_LENGTH])
+            if file.translations
+            else None
+        ),
+        translation_preview_language=(
+            file.translations[-1].language if file.translations else None
+        ),
+        translation_preview_is_truncated=(
+            len(file.translations[-1].text) > CONTENT_PREVIEW_LENGTH
+            if file.translations
+            else False
+        ),
     )
 
 

@@ -34,8 +34,10 @@ export const FileDetailTab = {
 export type FileDetailTab = (typeof FileDetailTab)[keyof typeof FileDetailTab];
 
 export const SummaryTab = {
+    Content: "content",
     Summary: "summary",
     ImageDescription: "imageDescription",
+    Translation: "translation",
 } as const;
 export type SummaryTab = (typeof SummaryTab)[keyof typeof SummaryTab];
 
