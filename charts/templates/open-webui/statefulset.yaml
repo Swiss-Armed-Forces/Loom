@@ -50,6 +50,39 @@ spec:
             - name: ENABLE_OLLAMA_API
               value: "false"
             {{- end }}
+            {{- if .Values.llm.embedding.endpoint }}
+            - name: RAG_EMBEDDING_ENGINE
+              value: "openai"
+            - name: RAG_EMBEDDING_MODEL_URL
+              value: {{ .Values.llm.embedding.endpoint | quote }}
+            {{- if not .Values.llm.chat.endpoint }}
+            {{- if .Values.externalSecrets.secrets.llm__embedding__api_key.enabled }}
+            - name: OPENAI_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.externalSecrets.secrets.llm__embedding__api_key.name }}
+                  key: llm__embedding__api_key
+            {{- else if .Values.llm.embedding.api_key }}
+            - name: OPENAI_API_KEY
+              value: {{ .Values.llm.embedding.api_key | quote }}
+            {{- end }}
+            {{- end }}
+            {{- else if .Values.ollama.enabled }}
+            - name: RAG_EMBEDDING_ENGINE
+              value: "ollama"
+            {{- end }}
+            {{- if ne .Values.llm.embedding.model nil }}
+            - name: RAG_EMBEDDING_MODEL
+              value: {{ .Values.llm.embedding.model | quote }}
+            {{- end }}
+            {{- if ne .Values.llm.embedding.text_chunk_size nil }}
+            - name: CHUNK_SIZE
+              value: {{ .Values.llm.embedding.text_chunk_size | quote }}
+            {{- end }}
+            {{- if ne .Values.llm.embedding.text_chunk_overlap nil }}
+            - name: CHUNK_OVERLAP
+              value: {{ .Values.llm.embedding.text_chunk_overlap | quote }}
+            {{- end }}
             {{- if .Values.llm.chat.endpoint }}
             - name: OPENAI_API_BASE_URL
               value: {{ .Values.llm.chat.endpoint | quote }}

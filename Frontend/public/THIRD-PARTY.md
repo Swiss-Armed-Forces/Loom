@@ -2460,7 +2460,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | aiohappyeyeballs | 2.6.2 | PSF-2.0 | python-installed-package-cataloger |
 | aiohttp | 3.13.5 | Apache-2.0 AND MIT | python-installed-package-cataloger |
 | aiosignal | 1.4.0 |  | python-installed-package-cataloger |
-| aiosqlite | 0.21.0 | MIT | python-installed-package-cataloger |
+| aiosqlite | 0.22.1 |  | python-installed-package-cataloger |
 | alembic | 1.18.4 | MIT | python-installed-package-cataloger |
 | allocator-api2 | 0.2.21 |  | cargo-auditable-binary-cataloger |
 | allocator-api2 | 0.2.21 |  | cargo-auditable-binary-cataloger |
@@ -2479,7 +2479,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | anthropic | 0.86.0 | MIT | python-installed-package-cataloger |
 | anyhow | 1.0.102 |  | cargo-auditable-binary-cataloger |
 | anyhow | 1.0.102 |  | cargo-auditable-binary-cataloger |
-| anyio | 4.13.0 | MIT | python-installed-package-cataloger |
+| anyio | 4.14.1 | MIT | python-installed-package-cataloger |
 | apscheduler | 3.11.2 | MIT | python-installed-package-cataloger |
 | apt | 2.6.1 | BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
 | arcstr | 1.2.0 |  | cargo-auditable-binary-cataloger |
@@ -2491,10 +2491,12 @@ The complete source code for Traefik is publicly available at [https://github.co
 | asn1-rs | 0.7.1 |  | cargo-auditable-binary-cataloger |
 | asn1-rs-impl | 0.2.0 |  | cargo-auditable-binary-cataloger |
 | asn1-rs-impl | 0.2.0 |  | cargo-auditable-binary-cataloger |
+| assert-json-diff | 2.0.2 |  | cargo-auditable-binary-cataloger |
+| assert-json-diff | 2.0.2 |  | cargo-auditable-binary-cataloger |
 | assert_cmd | 2.2.2 |  | cargo-auditable-binary-cataloger |
 | assert_cmd | 2.2.2 |  | cargo-auditable-binary-cataloger |
-| assert_fs | 1.1.3 |  | cargo-auditable-binary-cataloger |
-| assert_fs | 1.1.3 |  | cargo-auditable-binary-cataloger |
+| assert_fs | 1.1.4 |  | cargo-auditable-binary-cataloger |
+| assert_fs | 1.1.4 |  | cargo-auditable-binary-cataloger |
 | astral-pubgrub | 0.3.3 |  | cargo-auditable-binary-cataloger |
 | astral-pubgrub | 0.3.3 |  | cargo-auditable-binary-cataloger |
 | astral-reqwest-middleware | 0.5.1 |  | cargo-auditable-binary-cataloger |
@@ -2503,8 +2505,8 @@ The complete source code for Traefik is publicly available at [https://github.co
 | astral-reqwest-retry | 0.9.1 |  | cargo-auditable-binary-cataloger |
 | astral-tl | 0.7.11 |  | cargo-auditable-binary-cataloger |
 | astral-tl | 0.7.11 |  | cargo-auditable-binary-cataloger |
-| astral-tokio-tar | 0.6.2 |  | cargo-auditable-binary-cataloger |
-| astral-tokio-tar | 0.6.2 |  | cargo-auditable-binary-cataloger |
+| astral-tokio-tar | 0.6.3 |  | cargo-auditable-binary-cataloger |
+| astral-tokio-tar | 0.6.3 |  | cargo-auditable-binary-cataloger |
 | astral-version-ranges | 0.1.4 |  | cargo-auditable-binary-cataloger |
 | astral-version-ranges | 0.1.4 |  | cargo-auditable-binary-cataloger |
 | astral_async_http_range_reader | 0.11.0 |  | cargo-auditable-binary-cataloger |
@@ -2525,7 +2527,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | atomic-waker | 1.1.2 |  | cargo-auditable-binary-cataloger |
 | atomic-waker | 1.1.2 |  | cargo-auditable-binary-cataloger |
 | attrs | 26.1.0 | MIT | python-installed-package-cataloger |
-| authlib | 1.6.10 | BSD-3-Clause | python-installed-package-cataloger |
+| authlib | 1.7.2 | BSD-3-Clause | python-installed-package-cataloger |
 | autocommand | 2.2.2 |  | python-installed-package-cataloger |
 | av | 14.0.1 |  | python-installed-package-cataloger |
 | aws-lc-rs | 1.16.2 |  | cargo-auditable-binary-cataloger |
@@ -2541,12 +2543,10 @@ The complete source code for Traefik is publicly available at [https://github.co
 | axoupdater | 0.10.0 |  | cargo-auditable-binary-cataloger |
 | axoupdater | 0.10.0 |  | cargo-auditable-binary-cataloger |
 | azure-ai-documentintelligence | 1.0.2 |  | python-installed-package-cataloger |
-| azure-common | 1.1.28 |  | python-installed-package-cataloger |
 | azure-core | 1.41.0 | MIT | python-installed-package-cataloger |
-| azure-identity | 1.25.2 | MIT | python-installed-package-cataloger |
-| azure-search-documents | 11.6.0 |  | python-installed-package-cataloger |
-| azure-storage-blob | 12.28.0 |  | python-installed-package-cataloger |
-| backoff | 2.2.1 | MIT | python-installed-package-cataloger |
+| azure-identity | 1.25.3 | MIT | python-installed-package-cataloger |
+| azure-search-documents | 12.0.0 | MIT | python-installed-package-cataloger |
+| azure-storage-blob | 12.29.0 |  | python-installed-package-cataloger |
 | backports-tarfile | 1.2.0 | MIT | python-installed-package-cataloger |
 | base-files | 12.4+deb12u14 |  | dpkg-db-cataloger |
 | base-passwd | 3.6.1 | GPL-2.0-only | dpkg-db-cataloger |
@@ -2561,13 +2561,14 @@ The complete source code for Traefik is publicly available at [https://github.co
 | binutils | 2.40-2 |  | dpkg-db-cataloger |
 | binutils-common | 2.40-2 |  | dpkg-db-cataloger |
 | binutils-x86-64-linux-gnu | 2.40-2 |  | dpkg-db-cataloger |
-| bitarray | 3.8.1 | PSF-2.0 | python-installed-package-cataloger |
-| bitflags | 2.11.1 |  | cargo-auditable-binary-cataloger |
-| bitflags | 2.11.1 |  | cargo-auditable-binary-cataloger |
-| black | 26.3.1 | MIT | python-installed-package-cataloger |
+| bitarray | 3.8.2 | PSF-2.0 | python-installed-package-cataloger |
+| bitflags | 2.13.0 |  | cargo-auditable-binary-cataloger |
+| bitflags | 2.13.0 |  | cargo-auditable-binary-cataloger |
+| black | 26.5.1 | MIT | python-installed-package-cataloger |
 | blake2 | 0.10.6 |  | cargo-auditable-binary-cataloger |
 | blake2 | 0.10.6 |  | cargo-auditable-binary-cataloger |
 | blinker | 1.9.0 | MIT | python-installed-package-cataloger |
+| blis | 1.3.3 |  | python-installed-package-cataloger |
 | block-buffer | 0.10.4 |  | cargo-auditable-binary-cataloger |
 | block-buffer | 0.10.4 |  | cargo-auditable-binary-cataloger |
 | block-padding | 0.3.3 |  | cargo-auditable-binary-cataloger |
@@ -2604,17 +2605,18 @@ The complete source code for Traefik is publicly available at [https://github.co
 | camino | 1.2.2 |  | cargo-auditable-binary-cataloger |
 | cargo-util | 0.2.28 |  | cargo-auditable-binary-cataloger |
 | cargo-util | 0.2.28 |  | cargo-auditable-binary-cataloger |
+| catalogue | 2.0.10 | MIT | python-installed-package-cataloger |
 | cbc | 0.1.2 |  | cargo-auditable-binary-cataloger |
 | cbc | 0.1.2 |  | cargo-auditable-binary-cataloger |
-| certifi | 2026.5.20 | MPL-2.0 | python-installed-package-cataloger |
+| certifi | 2026.6.17 | MPL-2.0 | python-installed-package-cataloger |
 | cffi | 2.0.0 | MIT | python-installed-package-cataloger |
 | cfg-if | 1.0.4 |  | cargo-auditable-binary-cataloger |
 | cfg-if | 1.0.4 |  | cargo-auditable-binary-cataloger |
-| chardet | 5.2.0 |  | python-installed-package-cataloger |
+| chardet | 7.4.3 | 0BSD | python-installed-package-cataloger |
 | charset | 0.1.5 |  | cargo-auditable-binary-cataloger |
 | charset | 0.1.5 |  | cargo-auditable-binary-cataloger |
 | charset-normalizer | 3.4.7 | MIT | python-installed-package-cataloger |
-| chromadb | 1.5.2 |  | python-installed-package-cataloger |
+| chromadb | 1.5.9 |  | python-installed-package-cataloger |
 | cipher | 0.4.4 |  | cargo-auditable-binary-cataloger |
 | cipher | 0.4.4 |  | cargo-auditable-binary-cataloger |
 | clap | 4.6.1 |  | cargo-auditable-binary-cataloger |
@@ -2633,14 +2635,16 @@ The complete source code for Traefik is publicly available at [https://github.co
 | cli-32 | UNKNOWN |  | pe-binary-package-cataloger |
 | cli-64 | UNKNOWN |  | pe-binary-package-cataloger |
 | cli-arm64 | UNKNOWN |  | pe-binary-package-cataloger |
-| click | 8.4.1 | BSD-3-Clause | python-installed-package-cataloger |
+| click | 8.4.2 | BSD-3-Clause | python-installed-package-cataloger |
+| cloudpathlib | 0.24.0 |  | python-installed-package-cataloger |
 | colbert-ai | 0.2.22 |  | python-installed-package-cataloger |
 | colorchoice | 1.0.5 |  | cargo-auditable-binary-cataloger |
 | colorchoice | 1.0.5 |  | cargo-auditable-binary-cataloger |
 | concurrent-queue | 2.5.0 |  | cargo-auditable-binary-cataloger |
 | concurrent-queue | 2.5.0 |  | cargo-auditable-binary-cataloger |
-| configparser | 3.1.0 |  | cargo-auditable-binary-cataloger |
-| configparser | 3.1.0 |  | cargo-auditable-binary-cataloger |
+| confection | 1.3.3 | MIT | python-installed-package-cataloger |
+| configparser | 3.2.0 |  | cargo-auditable-binary-cataloger |
+| configparser | 3.2.0 |  | cargo-auditable-binary-cataloger |
 | console | 0.16.3 |  | cargo-auditable-binary-cataloger |
 | console | 0.16.3 |  | cargo-auditable-binary-cataloger |
 | const-oid | 0.9.6 |  | cargo-auditable-binary-cataloger |
@@ -2664,12 +2668,12 @@ The complete source code for Traefik is publicly available at [https://github.co
 | crossbeam-utils | 0.8.21 |  | cargo-auditable-binary-cataloger |
 | crypto-common | 0.1.7 |  | cargo-auditable-binary-cataloger |
 | crypto-common | 0.1.7 |  | cargo-auditable-binary-cataloger |
-| cryptography | 46.0.5 | Apache-2.0 OR BSD-3-Clause | python-installed-package-cataloger |
+| cryptography | 48.0.0 | Apache-2.0 OR BSD-3-Clause | python-installed-package-cataloger |
 | csv | 1.4.0 |  | cargo-auditable-binary-cataloger |
 | csv | 1.4.0 |  | cargo-auditable-binary-cataloger |
 | csv-core | 0.1.13 |  | cargo-auditable-binary-cataloger |
 | csv-core | 0.1.13 |  | cargo-auditable-binary-cataloger |
-| ctranslate2 | 4.7.2 | MIT | python-installed-package-cataloger |
+| ctranslate2 | 4.8.0 | MIT | python-installed-package-cataloger |
 | ctrlc | 3.5.2 |  | cargo-auditable-binary-cataloger |
 | ctrlc | 3.5.2 |  | cargo-auditable-binary-cataloger |
 | curl | 7.88.1-10+deb12u14 | BSD-3-Clause, BSD-3-Clause, BSD-4-Clause-UC, FSFULLR, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-or-later, ISC, OLDAP-2.8, X11, curl | dpkg-db-cataloger |
@@ -2677,14 +2681,16 @@ The complete source code for Traefik is publicly available at [https://github.co
 | cyclonedx-bom | 0.8.1 |  | cargo-auditable-binary-cataloger |
 | cyclonedx-bom-macros | 0.1.0 |  | cargo-auditable-binary-cataloger |
 | cyclonedx-bom-macros | 0.1.0 |  | cargo-auditable-binary-cataloger |
+| cymem | 2.0.13 | MIT | python-installed-package-cataloger |
 | dash | 0.5.12-2 | BSD-3-Clause, BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
-| dashmap | 6.2.1 |  | cargo-auditable-binary-cataloger |
-| dashmap | 6.2.1 |  | cargo-auditable-binary-cataloger |
 | data-encoding | 2.11.0 |  | cargo-auditable-binary-cataloger |
 | data-encoding | 2.11.0 |  | cargo-auditable-binary-cataloger |
-| dataclasses-json | 0.6.7 | MIT | python-installed-package-cataloger |
 | datasets | 4.0.0 |  | python-installed-package-cataloger |
-| ddgs | 9.11.3 | MIT | python-installed-package-cataloger |
+| ddgs | 9.14.4 | MIT | python-installed-package-cataloger |
+| deadpool | 0.12.3 |  | cargo-auditable-binary-cataloger |
+| deadpool | 0.12.3 |  | cargo-auditable-binary-cataloger |
+| deadpool-runtime | 0.1.4 |  | cargo-auditable-binary-cataloger |
+| deadpool-runtime | 0.1.4 |  | cargo-auditable-binary-cataloger |
 | debconf | 1.5.82 | BSD-2-Clause | dpkg-db-cataloger |
 | debian-archive-keyring | 2023.3+deb12u2 |  | dpkg-db-cataloger |
 | debianutils | 5.7-0.5~deb12u1 | GPL-2.0-only, GPL-2.0-or-later, SMAIL-GPL | dpkg-db-cataloger |
@@ -2714,8 +2720,6 @@ The complete source code for Traefik is publicly available at [https://github.co
 | dlv-list | 0.5.2 |  | cargo-auditable-binary-cataloger |
 | dlv-list | 0.5.2 |  | cargo-auditable-binary-cataloger |
 | dnspython | 2.8.0 | ISC | python-installed-package-cataloger |
-| doc-comment | 0.3.4 |  | cargo-auditable-binary-cataloger |
-| doc-comment | 0.3.4 |  | cargo-auditable-binary-cataloger |
 | docker | 7.1.0 | Apache-2.0 | python-installed-package-cataloger |
 | docstring-parser | 0.18.0 | MIT | python-installed-package-cataloger |
 | docx2txt | 0.9 |  | python-installed-package-cataloger |
@@ -2731,10 +2735,10 @@ The complete source code for Traefik is publicly available at [https://github.co
 | e2fsprogs | 1.47.0-2+b2 | Apache-2.0, Apache-2.0, BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later, ISC, Kazlib, LGPL-2.0-only, Latex2e | dpkg-db-cataloger |
 | ecdsa | 0.19.2 | MIT | python-installed-package-cataloger |
 | einops | 0.8.2 | MIT | python-installed-package-cataloger |
-| either | 1.15.0 |  | cargo-auditable-binary-cataloger |
-| either | 1.15.0 |  | cargo-auditable-binary-cataloger |
-| elastic-transport | 9.4.1 |  | python-installed-package-cataloger |
-| elasticsearch | 9.3.0 | Apache-2.0 | python-installed-package-cataloger |
+| either | 1.16.0 |  | cargo-auditable-binary-cataloger |
+| either | 1.16.0 |  | cargo-auditable-binary-cataloger |
+| elastic-transport | 9.4.2 |  | python-installed-package-cataloger |
+| elasticsearch | 9.4.1 | Apache-2.0 | python-installed-package-cataloger |
 | emoji | 2.15.0 |  | python-installed-package-cataloger |
 | encoding_rs | 0.8.35 |  | cargo-auditable-binary-cataloger |
 | encoding_rs | 0.8.35 |  | cargo-auditable-binary-cataloger |
@@ -2759,7 +2763,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | event-listener-strategy | 0.5.4 |  | cargo-auditable-binary-cataloger |
 | events | 0.5 |  | python-installed-package-cataloger |
 | fake-useragent | 2.2.0 | Apache-2.0 | python-installed-package-cataloger |
-| fastapi | 0.135.1 | MIT | python-installed-package-cataloger |
+| fastapi | 0.136.3 | MIT | python-installed-package-cataloger |
 | faster-whisper | 1.2.1 | MIT | python-installed-package-cataloger |
 | fastrand | 2.4.1 |  | cargo-auditable-binary-cataloger |
 | fastrand | 2.4.1 |  | cargo-auditable-binary-cataloger |
@@ -2840,21 +2844,21 @@ The complete source code for Traefik is publicly available at [https://github.co
 | globset | 0.4.18 |  | cargo-auditable-binary-cataloger |
 | globwalk | 0.9.1 |  | cargo-auditable-binary-cataloger |
 | globwalk | 0.9.1 |  | cargo-auditable-binary-cataloger |
-| goblin | 0.10.5 |  | cargo-auditable-binary-cataloger |
-| goblin | 0.10.5 |  | cargo-auditable-binary-cataloger |
-| google-api-core | 2.30.3 |  | python-installed-package-cataloger |
-| google-api-python-client | 2.193.0 |  | python-installed-package-cataloger |
-| google-auth | 2.53.0 |  | python-installed-package-cataloger |
-| google-auth-httplib2 | 0.3.0 |  | python-installed-package-cataloger |
-| google-auth-oauthlib | 1.3.0 |  | python-installed-package-cataloger |
+| goblin | 0.10.7 |  | cargo-auditable-binary-cataloger |
+| goblin | 0.10.7 |  | cargo-auditable-binary-cataloger |
+| google-api-core | 2.31.0 |  | python-installed-package-cataloger |
+| google-api-python-client | 2.197.0 |  | python-installed-package-cataloger |
+| google-auth | 2.55.1 |  | python-installed-package-cataloger |
+| google-auth-httplib2 | 0.4.0 |  | python-installed-package-cataloger |
+| google-auth-oauthlib | 1.4.0 |  | python-installed-package-cataloger |
 | google-cloud-core | 2.6.0 |  | python-installed-package-cataloger |
 | google-cloud-storage | 3.9.0 |  | python-installed-package-cataloger |
 | google-crc32c | 1.8.0 |  | python-installed-package-cataloger |
 | google-genai | 1.66.0 | Apache-2.0 | python-installed-package-cataloger |
-| google-resumable-media | 2.9.0 |  | python-installed-package-cataloger |
-| googleapis-common-protos | 1.72.0 |  | python-installed-package-cataloger |
+| google-resumable-media | 2.10.0 |  | python-installed-package-cataloger |
+| googleapis-common-protos | 1.75.0 |  | python-installed-package-cataloger |
 | gpgv | 2.2.40-1.1+deb12u2 | BSD-3-Clause, CC0-1.0, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
-| greenlet | 3.5.1 | MIT AND PSF-2.0 | python-installed-package-cataloger |
+| greenlet | 3.5.3 | MIT AND PSF-2.0 | python-installed-package-cataloger |
 | grep | 3.8-5 | GPL-3.0-only, GPL-3.0-or-later | dpkg-db-cataloger |
 | grpcio | 1.78.0 | Apache-2.0 | python-installed-package-cataloger |
 | gui | UNKNOWN |  | pe-binary-package-cataloger |
@@ -2874,7 +2878,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | hashbrown | 0.17.1 |  | cargo-auditable-binary-cataloger |
 | hex | 0.4.3 |  | cargo-auditable-binary-cataloger |
 | hex | 0.4.3 |  | cargo-auditable-binary-cataloger |
-| hf-xet | 1.5.0 | Apache-2.0 | python-installed-package-cataloger |
+| hf-xet | 1.5.1 | Apache-2.0 | python-installed-package-cataloger |
 | hkdf | 0.12.4 |  | cargo-auditable-binary-cataloger |
 | hkdf | 0.12.4 |  | cargo-auditable-binary-cataloger |
 | hmac | 0.12.1 |  | cargo-auditable-binary-cataloger |
@@ -2882,12 +2886,12 @@ The complete source code for Traefik is publicly available at [https://github.co
 | homedir | 0.3.6 |  | cargo-auditable-binary-cataloger |
 | homedir | 0.3.6 |  | cargo-auditable-binary-cataloger |
 | hostname | 3.23+nmu1 | GPL-2.0-only | dpkg-db-cataloger |
-| hpack | 4.1.0 | MIT | python-installed-package-cataloger |
+| hpack | 4.2.0 | MIT | python-installed-package-cataloger |
 | html-escape | 0.2.13 |  | cargo-auditable-binary-cataloger |
 | html-escape | 0.2.13 |  | cargo-auditable-binary-cataloger |
 | html5lib | 1.1 |  | python-installed-package-cataloger |
-| http | 1.4.0 |  | cargo-auditable-binary-cataloger |
-| http | 1.4.0 |  | cargo-auditable-binary-cataloger |
+| http | 1.4.1 |  | cargo-auditable-binary-cataloger |
+| http | 1.4.1 |  | cargo-auditable-binary-cataloger |
 | http-body | 1.0.1 |  | cargo-auditable-binary-cataloger |
 | http-body | 1.0.1 |  | cargo-auditable-binary-cataloger |
 | http-body-util | 0.1.3 |  | cargo-auditable-binary-cataloger |
@@ -2899,13 +2903,13 @@ The complete source code for Traefik is publicly available at [https://github.co
 | httpcore | 1.0.9 | BSD-3-Clause | python-installed-package-cataloger |
 | httpdate | 1.0.3 |  | cargo-auditable-binary-cataloger |
 | httpdate | 1.0.3 |  | cargo-auditable-binary-cataloger |
-| httplib2 | 0.31.2 | MIT | python-installed-package-cataloger |
+| httplib2 | 0.32.0 | MIT | python-installed-package-cataloger |
 | httptools | 0.8.0 | MIT | python-installed-package-cataloger |
 | httpx | 0.28.1 | BSD-3-Clause | python-installed-package-cataloger |
 | httpx-sse | 0.4.3 | MIT | python-installed-package-cataloger |
-| huggingface-hub | 1.16.1 | Apache-2.0 | python-installed-package-cataloger |
-| hyper | 1.9.0 |  | cargo-auditable-binary-cataloger |
-| hyper | 1.9.0 |  | cargo-auditable-binary-cataloger |
+| huggingface-hub | 1.21.0 | Apache-2.0 | python-installed-package-cataloger |
+| hyper | 1.10.1 |  | cargo-auditable-binary-cataloger |
+| hyper | 1.10.1 |  | cargo-auditable-binary-cataloger |
 | hyper-rustls | 0.27.7 |  | cargo-auditable-binary-cataloger |
 | hyper-rustls | 0.27.7 |  | cargo-auditable-binary-cataloger |
 | hyper-util | 0.1.20 |  | cargo-auditable-binary-cataloger |
@@ -2927,15 +2931,14 @@ The complete source code for Traefik is publicly available at [https://github.co
 | icu_provider | 2.1.1 |  | cargo-auditable-binary-cataloger |
 | idna | 1.1.0 |  | cargo-auditable-binary-cataloger |
 | idna | 1.1.0 |  | cargo-auditable-binary-cataloger |
-| idna | 3.17 | BSD-3-Clause | python-installed-package-cataloger |
+| idna | 3.18 | BSD-3-Clause | python-installed-package-cataloger |
 | idna_adapter | 1.2.1 |  | cargo-auditable-binary-cataloger |
 | idna_adapter | 1.2.1 |  | cargo-auditable-binary-cataloger |
-| ignore | 0.4.25 |  | cargo-auditable-binary-cataloger |
-| ignore | 0.4.25 |  | cargo-auditable-binary-cataloger |
+| ignore | 0.4.26 |  | cargo-auditable-binary-cataloger |
+| ignore | 0.4.26 |  | cargo-auditable-binary-cataloger |
 | image | 0.25.10 |  | cargo-auditable-binary-cataloger |
 | image | 0.25.10 |  | cargo-auditable-binary-cataloger |
 | importlib-metadata | 8.0.0 | Apache-2.0 | python-installed-package-cataloger |
-| importlib-metadata | 8.7.1 | Apache-2.0 | python-installed-package-cataloger |
 | importlib-resources | 7.1.0 | Apache-2.0 | python-installed-package-cataloger |
 | indexmap | 2.14.0 |  | cargo-auditable-binary-cataloger |
 | indexmap | 2.14.0 |  | cargo-auditable-binary-cataloger |
@@ -2948,8 +2951,9 @@ The complete source code for Traefik is publicly available at [https://github.co
 | init-system-helpers | 1.65.2+deb12u1 | BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
 | inout | 0.1.4 |  | cargo-auditable-binary-cataloger |
 | inout | 0.1.4 |  | cargo-auditable-binary-cataloger |
-| insta | 1.47.2 |  | cargo-auditable-binary-cataloger |
-| insta | 1.47.2 |  | cargo-auditable-binary-cataloger |
+| insta | 1.48.0 |  | cargo-auditable-binary-cataloger |
+| insta | 1.48.0 |  | cargo-auditable-binary-cataloger |
+| installer | 0.7.0 | MIT | python-installed-package-cataloger |
 | ipnet | 2.12.0 |  | cargo-auditable-binary-cataloger |
 | ipnet | 2.12.0 |  | cargo-auditable-binary-cataloger |
 | iri-string | 0.7.10 |  | cargo-auditable-binary-cataloger |
@@ -2972,14 +2976,15 @@ The complete source code for Traefik is publicly available at [https://github.co
 | jaraco-context | 5.3.0 | MIT | python-installed-package-cataloger |
 | jaraco-functools | 4.0.1 | MIT | python-installed-package-cataloger |
 | jaraco-text | 3.12.1 | MIT | python-installed-package-cataloger |
-| jiff | 0.2.24 |  | cargo-auditable-binary-cataloger |
-| jiff | 0.2.24 |  | cargo-auditable-binary-cataloger |
+| jiff | 0.2.28 |  | cargo-auditable-binary-cataloger |
+| jiff | 0.2.28 |  | cargo-auditable-binary-cataloger |
 | jinja2 | 3.1.6 |  | python-installed-package-cataloger |
-| jiter | 0.15.0 | MIT | python-installed-package-cataloger |
+| jiter | 0.16.0 | MIT | python-installed-package-cataloger |
 | jmespath | 1.1.0 | MIT | python-installed-package-cataloger |
 | joblib | 1.5.3 | BSD-3-Clause | python-installed-package-cataloger |
 | jobserver | 0.1.34 |  | cargo-auditable-binary-cataloger |
 | jobserver | 0.1.34 |  | cargo-auditable-binary-cataloger |
+| joserfc | 1.7.2 | BSD-3-Clause | python-installed-package-cataloger |
 | jq | 1.6-2.1+deb12u1 | CC-BY-3.0, GPL-2.0-only, GPL-2.0-or-later, MIT | dpkg-db-cataloger |
 | jsonpatch | 1.33 |  | python-installed-package-cataloger |
 | jsonpointer | 3.1.1 |  | python-installed-package-cataloger |
@@ -2989,17 +2994,17 @@ The complete source code for Traefik is publicly available at [https://github.co
 | jsonwebtoken | 10.3.0 |  | cargo-auditable-binary-cataloger |
 | kubernetes | 36.0.2 |  | python-installed-package-cataloger |
 | langchain | 1.2.10 | MIT | python-installed-package-cataloger |
-| langchain-classic | 1.0.1 | MIT | python-installed-package-cataloger |
-| langchain-community | 0.4.1 | MIT | python-installed-package-cataloger |
-| langchain-core | 1.4.0 | MIT | python-installed-package-cataloger |
-| langchain-protocol | 0.0.16 | MIT | python-installed-package-cataloger |
-| langchain-text-splitters | 1.1.1 | MIT | python-installed-package-cataloger |
+| langchain-classic | 1.0.7 | MIT | python-installed-package-cataloger |
+| langchain-community | 0.4.2 | MIT | python-installed-package-cataloger |
+| langchain-core | 1.4.8 | MIT | python-installed-package-cataloger |
+| langchain-protocol | 0.0.18 | MIT | python-installed-package-cataloger |
+| langchain-text-splitters | 1.1.2 | MIT | python-installed-package-cataloger |
 | langdetect | 1.0.9 | MIT | python-installed-package-cataloger |
 | langgraph | 1.0.10 | MIT | python-installed-package-cataloger |
 | langgraph-checkpoint | 4.1.1 | MIT | python-installed-package-cataloger |
 | langgraph-prebuilt | 1.0.13 | MIT | python-installed-package-cataloger |
 | langgraph-sdk | 0.3.15 | MIT | python-installed-package-cataloger |
-| langsmith | 0.8.8 | MIT | python-installed-package-cataloger |
+| langsmith | 0.9.3 | MIT | python-installed-package-cataloger |
 | lazy_static | 1.5.0 |  | cargo-auditable-binary-cataloger |
 | lazy_static | 1.5.0 |  | cargo-auditable-binary-cataloger |
 | ldap3 | 2.9.1 |  | python-installed-package-cataloger |
@@ -3029,8 +3034,8 @@ The complete source code for Traefik is publicly available at [https://github.co
 | libbs2b0 | 3.1.0+dfsg-7 | GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later | dpkg-db-cataloger |
 | libbsd0 | 0.11.7-2 | BSD-2-Clause, BSD-2-Clause, BSD-3-Clause, Beerware, ISC, libutil-David-Nugent | dpkg-db-cataloger |
 | libbz2-1.0 | 1.0.8-5+b1 | GPL-2.0-only | dpkg-db-cataloger |
-| libc | 0.2.183 |  | cargo-auditable-binary-cataloger |
-| libc | 0.2.183 |  | cargo-auditable-binary-cataloger |
+| libc | 0.2.186 |  | cargo-auditable-binary-cataloger |
+| libc | 0.2.186 |  | cargo-auditable-binary-cataloger |
 | libc-bin | 2.36-9+deb12u14 | GPL-2.0-only, LGPL-2.1-only | dpkg-db-cataloger |
 | libc-dev-bin | 2.36-9+deb12u14 | GPL-2.0-only, LGPL-2.1-only | dpkg-db-cataloger |
 | libc6 | 2.36-9+deb12u14 | GPL-2.0-only, LGPL-2.1-only | dpkg-db-cataloger |
@@ -3085,7 +3090,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | libgbm1 | 22.3.6-1+deb12u1 | Apache-2.0, BSD-2-Clause, MIT | dpkg-db-cataloger |
 | libgcc-12-dev | 12.2.0-14+deb12u1 | GFDL-1.2-only, GPL-2.0-only, GPL-3.0-only | dpkg-db-cataloger |
 | libgcc-s1 | 12.2.0-14+deb12u1 | GFDL-1.2-only, GPL-2.0-only, GPL-3.0-only | dpkg-db-cataloger |
-| libgcrypt20 | 1.10.1-3 | GPL-2.0-only | dpkg-db-cataloger |
+| libgcrypt20 | 1.10.1-3+deb12u1 | GPL-2.0-only | dpkg-db-cataloger |
 | libgdbm-compat4 | 1.23-3 | GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later | dpkg-db-cataloger |
 | libgdbm6 | 1.23-3 | GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later | dpkg-db-cataloger |
 | libgdk-pixbuf-2.0-0 | 2.42.10+dfsg-1+deb12u4 | CC0-1.0, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
@@ -3100,13 +3105,13 @@ The complete source code for Traefik is publicly available at [https://github.co
 | libglx0 | 1.6.0-1 | Apache-2.0, BSD-1-Clause, GPL-3.0-only, GPL-3.0-or-later, MIT | dpkg-db-cataloger |
 | libgme0 | 0.6.3-6 | LGPL-2.1-only, LGPL-2.1-or-later, MIT | dpkg-db-cataloger |
 | libgmp10 | 2:6.2.1+dfsg1-1.1 | GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
-| libgnutls30 | 3.7.9-2+deb12u6 | Apache-2.0, BSD-3-Clause, GFDL-1.3-only, GPL-3.0-only, LGPL-3.0-only | dpkg-db-cataloger |
+| libgnutls30 | 3.7.9-2+deb12u7 | Apache-2.0, BSD-3-Clause, GFDL-1.3-only, GPL-3.0-only, LGPL-3.0-only | dpkg-db-cataloger |
 | libgomp1 | 12.2.0-14+deb12u1 | GFDL-1.2-only, GPL-2.0-only, GPL-3.0-only | dpkg-db-cataloger |
 | libgpg-error0 | 1.46-1 | BSD-3-Clause, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
 | libgprofng0 | 2.40-2 |  | dpkg-db-cataloger |
 | libgraphite2-3 | 1.3.14-1 | GPL-1.0-only, GPL-1.0-or-later, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, MPL-1.1 | dpkg-db-cataloger |
 | libgsm1 | 1.0.22-1 | TU-Berlin-2.0 | dpkg-db-cataloger |
-| libgssapi-krb5-2 | 1.20.1-2+deb12u4 | GPL-2.0-only | dpkg-db-cataloger |
+| libgssapi-krb5-2 | 1.20.1-2+deb12u5 | GPL-2.0-only | dpkg-db-cataloger |
 | libharfbuzz0b | 6.0.0+dfsg-3 | Apache-2.0, CC0-1.0, FSFAP, FSFUL, FSFULLR, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, ISC, LGPL-2.1-only, LGPL-2.1-or-later, MIT, OFL-1.1 | dpkg-db-cataloger |
 | libhogweed6 | 3.8.1-2 | GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-3.0-or-later | dpkg-db-cataloger |
 | libhwy1 | 1.0.3-3+deb12u1 | Apache-2.0 | dpkg-db-cataloger |
@@ -3125,10 +3130,10 @@ The complete source code for Traefik is publicly available at [https://github.co
 | libjs-sphinxdoc | 5.3.0-4 | BSD-2-Clause, BSD-3-Clause | dpkg-db-cataloger |
 | libjs-underscore | 1.13.4~dfsg+~1.11.4-3 | BSD-3-Clause, GPL-3.0-only, GPL-3.0-or-later | dpkg-db-cataloger |
 | libjxl0.7 | 0.7.0-10+deb12u1 |  | dpkg-db-cataloger |
-| libk5crypto3 | 1.20.1-2+deb12u4 | GPL-2.0-only | dpkg-db-cataloger |
+| libk5crypto3 | 1.20.1-2+deb12u5 | GPL-2.0-only | dpkg-db-cataloger |
 | libkeyutils1 | 1.6.3-2 | GPL-2.0-only, GPL-2.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later | dpkg-db-cataloger |
-| libkrb5-3 | 1.20.1-2+deb12u4 | GPL-2.0-only | dpkg-db-cataloger |
-| libkrb5support0 | 1.20.1-2+deb12u4 | GPL-2.0-only | dpkg-db-cataloger |
+| libkrb5-3 | 1.20.1-2+deb12u5 | GPL-2.0-only | dpkg-db-cataloger |
+| libkrb5support0 | 1.20.1-2+deb12u5 | GPL-2.0-only | dpkg-db-cataloger |
 | liblapack3 | 3.11.0-2 | BSD-3-Clause | dpkg-db-cataloger |
 | liblcms2-2 | 2.14-2+deb12u1 | GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, IJG, MIT | dpkg-db-cataloger |
 | libldap-2.5-0 | 2.5.13+dfsg-5 | BSD-3-Clause, Beerware, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later | dpkg-db-cataloger |
@@ -3230,8 +3235,8 @@ The complete source code for Traefik is publicly available at [https://github.co
 | libss2 | 1.47.0-2+b2 | Apache-2.0, Apache-2.0, BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later, ISC, Kazlib, LGPL-2.0-only, Latex2e | dpkg-db-cataloger |
 | libssh-gcrypt-4 | 0.10.6-0+deb12u2 | BSD-2-Clause, BSD-3-Clause, LGPL-2.1-only | dpkg-db-cataloger |
 | libssh2-1 | 1.10.0-3+b1 |  | dpkg-db-cataloger |
-| libssl-dev | 3.0.20-1~deb12u1 | Apache-2.0, GPL-1.0-only, GPL-1.0-or-later | dpkg-db-cataloger |
-| libssl3 | 3.0.20-1~deb12u1 | Apache-2.0, GPL-1.0-only, GPL-1.0-or-later | dpkg-db-cataloger |
+| libssl-dev | 3.0.20-1~deb12u2 | Apache-2.0, GPL-1.0-only, GPL-1.0-or-later | dpkg-db-cataloger |
+| libssl3 | 3.0.20-1~deb12u2 | Apache-2.0, GPL-1.0-only, GPL-1.0-or-later | dpkg-db-cataloger |
 | libstdc++-12-dev | 12.2.0-14+deb12u1 | GFDL-1.2-only, GPL-2.0-only, GPL-3.0-only | dpkg-db-cataloger |
 | libstdc++6 | 12.2.0-14+deb12u1 | GFDL-1.2-only, GPL-2.0-only, GPL-3.0-only | dpkg-db-cataloger |
 | libsvtav1enc1 | 1.4.1+dfsg-1 | BSD-2-Clause, BSD-3-Clause-Clear, BSD-3-Clause, ISC, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
@@ -3313,6 +3318,8 @@ The complete source code for Traefik is publicly available at [https://github.co
 | linux-libc-dev | 6.1.174-1 | BSD-2-Clause, GPL-2.0-only, LGPL-2.1-only | dpkg-db-cataloger |
 | linux-raw-sys | 0.12.1 |  | cargo-auditable-binary-cataloger |
 | linux-raw-sys | 0.12.1 |  | cargo-auditable-binary-cataloger |
+| linux-raw-sys | 0.4.15 |  | cargo-auditable-binary-cataloger |
+| linux-raw-sys | 0.4.15 |  | cargo-auditable-binary-cataloger |
 | litemap | 0.8.1 |  | cargo-auditable-binary-cataloger |
 | litemap | 0.8.1 |  | cargo-auditable-binary-cataloger |
 | llvmlite | 0.47.0 | BSD-2-Clause AND Apache-2.0 WITH LLVM-exception | python-installed-package-cataloger |
@@ -3336,17 +3343,16 @@ The complete source code for Traefik is publicly available at [https://github.co
 | markdown | 3.10.2 | BSD-3-Clause | python-installed-package-cataloger |
 | markdown-it-py | 4.2.0 |  | python-installed-package-cataloger |
 | markupsafe | 3.0.3 | BSD-3-Clause | python-installed-package-cataloger |
-| marshmallow | 3.26.2 |  | python-installed-package-cataloger |
 | matchers | 0.2.0 |  | cargo-auditable-binary-cataloger |
 | matchers | 0.2.0 |  | cargo-auditable-binary-cataloger |
 | mawk | 1.3.4.20200120-3.1 | CC-BY-3.0, GPL-2.0-only, X11 | dpkg-db-cataloger |
-| mcp | 1.26.0 | MIT | python-installed-package-cataloger |
+| mcp | 1.27.2 | MIT | python-installed-package-cataloger |
 | md-5 | 0.10.6 |  | cargo-auditable-binary-cataloger |
 | md-5 | 0.10.6 |  | cargo-auditable-binary-cataloger |
 | mdurl | 0.1.2 | MIT | python-installed-package-cataloger |
 | media-types | 10.0.0 |  | dpkg-db-cataloger |
-| memchr | 2.8.0 |  | cargo-auditable-binary-cataloger |
-| memchr | 2.8.0 |  | cargo-auditable-binary-cataloger |
+| memchr | 2.8.2 |  | cargo-auditable-binary-cataloger |
+| memchr | 2.8.2 |  | cargo-auditable-binary-cataloger |
 | memmap2 | 0.9.10 |  | cargo-auditable-binary-cataloger |
 | memmap2 | 0.9.10 |  | cargo-auditable-binary-cataloger |
 | miette | 7.6.0 |  | cargo-auditable-binary-cataloger |
@@ -3374,8 +3380,10 @@ The complete source code for Traefik is publicly available at [https://github.co
 | multiprocess | 0.70.16 | BSD-3-Clause | python-installed-package-cataloger |
 | munge | 0.4.7 |  | cargo-auditable-binary-cataloger |
 | munge | 0.4.7 |  | cargo-auditable-binary-cataloger |
+| murmurhash | 1.0.15 | MIT | python-installed-package-cataloger |
 | mypy-extensions | 1.1.0 | MIT | python-installed-package-cataloger |
 | mysql-common | 5.8+1.1.0 | GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
+| narwhals | 2.22.1 | MIT | python-installed-package-cataloger |
 | ncurses-base | 6.4-4 | BSD-3-Clause, X11 | dpkg-db-cataloger |
 | ncurses-bin | 6.4-4 | BSD-3-Clause, X11 | dpkg-db-cataloger |
 | netbase | 6.4 | GPL-2.0-only | dpkg-db-cataloger |
@@ -3384,10 +3392,10 @@ The complete source code for Traefik is publicly available at [https://github.co
 | ninja | 1.13.0 |  | python-installed-package-cataloger |
 | nix | 0.30.1 |  | cargo-auditable-binary-cataloger |
 | nix | 0.30.1 |  | cargo-auditable-binary-cataloger |
-| nix | 0.31.2 |  | cargo-auditable-binary-cataloger |
-| nix | 0.31.2 |  | cargo-auditable-binary-cataloger |
-| nltk | 3.9.3 |  | python-installed-package-cataloger |
-| node | 24.13.0 |  | binary-classifier-cataloger |
+| nix | 0.31.3 |  | cargo-auditable-binary-cataloger |
+| nix | 0.31.3 |  | cargo-auditable-binary-cataloger |
+| nltk | 3.9.4 |  | python-installed-package-cataloger |
+| node | 24.15.0 |  | binary-classifier-cataloger |
 | nom | 7.1.3 |  | cargo-auditable-binary-cataloger |
 | nom | 7.1.3 |  | cargo-auditable-binary-cataloger |
 | normalize-line-endings | 0.3.0 |  | cargo-auditable-binary-cataloger |
@@ -3412,6 +3420,8 @@ The complete source code for Traefik is publicly available at [https://github.co
 | num-rational | 0.4.2 |  | cargo-auditable-binary-cataloger |
 | num-traits | 0.2.19 |  | cargo-auditable-binary-cataloger |
 | num-traits | 0.2.19 |  | cargo-auditable-binary-cataloger |
+| num_cpus | 1.17.0 |  | cargo-auditable-binary-cataloger |
+| num_cpus | 1.17.0 |  | cargo-auditable-binary-cataloger |
 | numba | 0.65.1 |  | python-installed-package-cataloger |
 | numpy | 2.4.4 | BSD-3-Clause AND 0BSD AND MIT AND Zlib AND CC0-1.0 | python-installed-package-cataloger |
 | oauthlib | 3.3.1 | BSD-3-Clause | python-installed-package-cataloger |
@@ -3421,38 +3431,38 @@ The complete source code for Traefik is publicly available at [https://github.co
 | olefile | 0.47 |  | python-installed-package-cataloger |
 | once_cell | 1.21.4 |  | cargo-auditable-binary-cataloger |
 | once_cell | 1.21.4 |  | cargo-auditable-binary-cataloger |
-| onnxruntime | 1.24.3 |  | python-installed-package-cataloger |
+| onnxruntime | 1.26.0 |  | python-installed-package-cataloger |
 | open | 5.3.5 |  | cargo-auditable-binary-cataloger |
 | open | 5.3.5 |  | cargo-auditable-binary-cataloger |
-| open-webui | 0.9.6 |  | javascript-package-cataloger |
+| open-webui | 0.10.2 |  | javascript-package-cataloger |
 | openai | 2.29.0 | Apache-2.0 | python-installed-package-cataloger |
 | opencv-python | 4.13.0.92 |  | python-installed-package-cataloger |
 | opencv-python-headless | 4.13.0.92 |  | python-installed-package-cataloger |
 | openpyxl | 3.1.5 | MIT | python-installed-package-cataloger |
-| opensearch-protobufs | 0.19.0 | Apache-2.0 | python-installed-package-cataloger |
-| opensearch-py | 3.1.0 | Apache-2.0 | python-installed-package-cataloger |
-| openssl | 3.0.20-1~deb12u1 | Apache-2.0, GPL-1.0-only, GPL-1.0-or-later | dpkg-db-cataloger |
+| opensearch-protobufs | 1.2.0 | Apache-2.0 | python-installed-package-cataloger |
+| opensearch-py | 3.2.0 | Apache-2.0 | python-installed-package-cataloger |
+| openssl | 3.0.20-1~deb12u2 | Apache-2.0, GPL-1.0-only, GPL-1.0-or-later | dpkg-db-cataloger |
 | openssl-probe | 0.2.1 |  | cargo-auditable-binary-cataloger |
 | openssl-probe | 0.2.1 |  | cargo-auditable-binary-cataloger |
-| opentelemetry-api | 1.40.0 | Apache-2.0 | python-installed-package-cataloger |
-| opentelemetry-exporter-otlp | 1.40.0 | Apache-2.0 | python-installed-package-cataloger |
-| opentelemetry-exporter-otlp-proto-common | 1.40.0 | Apache-2.0 | python-installed-package-cataloger |
-| opentelemetry-exporter-otlp-proto-grpc | 1.40.0 | Apache-2.0 | python-installed-package-cataloger |
-| opentelemetry-exporter-otlp-proto-http | 1.40.0 | Apache-2.0 | python-installed-package-cataloger |
-| opentelemetry-instrumentation | 0.61b0 | Apache-2.0 | python-installed-package-cataloger |
-| opentelemetry-instrumentation-aiohttp-client | 0.61b0 | Apache-2.0 | python-installed-package-cataloger |
-| opentelemetry-instrumentation-asgi | 0.61b0 | Apache-2.0 | python-installed-package-cataloger |
-| opentelemetry-instrumentation-fastapi | 0.61b0 | Apache-2.0 | python-installed-package-cataloger |
-| opentelemetry-instrumentation-httpx | 0.61b0 | Apache-2.0 | python-installed-package-cataloger |
-| opentelemetry-instrumentation-logging | 0.61b0 | Apache-2.0 | python-installed-package-cataloger |
-| opentelemetry-instrumentation-redis | 0.61b0 | Apache-2.0 | python-installed-package-cataloger |
-| opentelemetry-instrumentation-requests | 0.61b0 | Apache-2.0 | python-installed-package-cataloger |
-| opentelemetry-instrumentation-sqlalchemy | 0.61b0 | Apache-2.0 | python-installed-package-cataloger |
-| opentelemetry-instrumentation-system-metrics | 0.61b0 | Apache-2.0 | python-installed-package-cataloger |
-| opentelemetry-proto | 1.40.0 | Apache-2.0 | python-installed-package-cataloger |
-| opentelemetry-sdk | 1.40.0 | Apache-2.0 | python-installed-package-cataloger |
-| opentelemetry-semantic-conventions | 0.61b0 | Apache-2.0 | python-installed-package-cataloger |
-| opentelemetry-util-http | 0.61b0 | Apache-2.0 | python-installed-package-cataloger |
+| opentelemetry-api | 1.42.1 | Apache-2.0 | python-installed-package-cataloger |
+| opentelemetry-exporter-otlp | 1.42.1 | Apache-2.0 | python-installed-package-cataloger |
+| opentelemetry-exporter-otlp-proto-common | 1.42.1 | Apache-2.0 | python-installed-package-cataloger |
+| opentelemetry-exporter-otlp-proto-grpc | 1.42.1 | Apache-2.0 | python-installed-package-cataloger |
+| opentelemetry-exporter-otlp-proto-http | 1.42.1 | Apache-2.0 | python-installed-package-cataloger |
+| opentelemetry-instrumentation | 0.63b1 | Apache-2.0 | python-installed-package-cataloger |
+| opentelemetry-instrumentation-aiohttp-client | 0.63b1 | Apache-2.0 | python-installed-package-cataloger |
+| opentelemetry-instrumentation-asgi | 0.63b1 | Apache-2.0 | python-installed-package-cataloger |
+| opentelemetry-instrumentation-fastapi | 0.63b1 | Apache-2.0 | python-installed-package-cataloger |
+| opentelemetry-instrumentation-httpx | 0.63b1 | Apache-2.0 | python-installed-package-cataloger |
+| opentelemetry-instrumentation-logging | 0.63b1 | Apache-2.0 | python-installed-package-cataloger |
+| opentelemetry-instrumentation-redis | 0.63b1 | Apache-2.0 | python-installed-package-cataloger |
+| opentelemetry-instrumentation-requests | 0.63b1 | Apache-2.0 | python-installed-package-cataloger |
+| opentelemetry-instrumentation-sqlalchemy | 0.63b1 | Apache-2.0 | python-installed-package-cataloger |
+| opentelemetry-instrumentation-system-metrics | 0.63b1 | Apache-2.0 | python-installed-package-cataloger |
+| opentelemetry-proto | 1.42.1 | Apache-2.0 | python-installed-package-cataloger |
+| opentelemetry-sdk | 1.42.1 | Apache-2.0 | python-installed-package-cataloger |
+| opentelemetry-semantic-conventions | 0.63b1 | Apache-2.0 | python-installed-package-cataloger |
+| opentelemetry-util-http | 0.63b1 | Apache-2.0 | python-installed-package-cataloger |
 | option-ext | 0.2.0 |  | cargo-auditable-binary-cataloger |
 | option-ext | 0.2.0 |  | cargo-auditable-binary-cataloger |
 | oracledb | 3.4.2 | UPL-1.0 OR Apache-2.0 | python-installed-package-cataloger |
@@ -3471,9 +3481,11 @@ The complete source code for Traefik is publicly available at [https://github.co
 | owo-colors | 4.3.0 |  | cargo-auditable-binary-cataloger |
 | packaging | 24.2 | Apache-2.0, BSD-2-Clause | python-installed-package-cataloger |
 | packaging | 26.2 | Apache-2.0 OR BSD-2-Clause | python-installed-package-cataloger |
-| pandas | 3.0.1 |  | python-installed-package-cataloger |
+| pandas | 3.0.3 |  | python-installed-package-cataloger |
 | pandoc | 2.17.1.1-2~deb12u1 | CC-BY-SA-3.0, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, ISC, MS-RL | dpkg-db-cataloger |
 | pandoc-data | 2.17.1.1-2~deb12u1 | CC-BY-SA-3.0, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, ISC, MS-RL | dpkg-db-cataloger |
+| papaya | 0.2.4 |  | cargo-auditable-binary-cataloger |
+| papaya | 0.2.4 |  | cargo-auditable-binary-cataloger |
 | parking | 2.2.1 |  | cargo-auditable-binary-cataloger |
 | parking | 2.2.1 |  | cargo-auditable-binary-cataloger |
 | parking_lot | 0.12.5 |  | cargo-auditable-binary-cataloger |
@@ -3489,8 +3501,6 @@ The complete source code for Traefik is publicly available at [https://github.co
 | pathspec | 1.1.1 |  | python-installed-package-cataloger |
 | pbkdf2 | 0.12.2 |  | cargo-auditable-binary-cataloger |
 | pbkdf2 | 0.12.2 |  | cargo-auditable-binary-cataloger |
-| peewee | 3.19.0 |  | python-installed-package-cataloger |
-| peewee-migrate | 1.14.3 | MIT | python-installed-package-cataloger |
 | pem | 3.0.6 |  | cargo-auditable-binary-cataloger |
 | pem | 3.0.6 |  | cargo-auditable-binary-cataloger |
 | pem-rfc7468 | 0.7.0 |  | cargo-auditable-binary-cataloger |
@@ -3511,7 +3521,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | petgraph | 0.8.3 |  | cargo-auditable-binary-cataloger |
 | petgraph | 0.8.3 |  | cargo-auditable-binary-cataloger |
 | pgvector | 0.4.2 | MIT | python-installed-package-cataloger |
-| pillow | 12.1.1 | MIT-CMU | python-installed-package-cataloger |
+| pillow | 12.2.0 | MIT-CMU | python-installed-package-cataloger |
 | pin-project | 1.1.11 |  | cargo-auditable-binary-cataloger |
 | pin-project | 1.1.11 |  | cargo-auditable-binary-cataloger |
 | pin-project-lite | 0.2.17 |  | cargo-auditable-binary-cataloger |
@@ -3529,13 +3539,12 @@ The complete source code for Traefik is publicly available at [https://github.co
 | plain | 0.2.3 |  | cargo-auditable-binary-cataloger |
 | platformdirs | 4.10.0 | MIT | python-installed-package-cataloger |
 | platformdirs | 4.2.2 | MIT | python-installed-package-cataloger |
-| playwright | 1.58.0 | Apache-2.0 | python-installed-package-cataloger |
-| playwright-core | 1.58.0 | Apache-2.0 | javascript-package-cataloger |
+| playwright | 1.60.0 | Apache-2.0 | python-installed-package-cataloger |
+| playwright-core | 1.60.0 | Apache-2.0 | javascript-package-cataloger |
 | pluggy | 1.6.0 | MIT | python-installed-package-cataloger |
 | portable-atomic | 1.13.1 |  | cargo-auditable-binary-cataloger |
 | portable-atomic | 1.13.1 |  | cargo-auditable-binary-cataloger |
 | portalocker | 3.2.0 | BSD-3-Clause | python-installed-package-cataloger |
-| posthog | 5.4.0 | MIT | python-installed-package-cataloger |
 | potential_utf | 0.1.4 |  | cargo-auditable-binary-cataloger |
 | potential_utf | 0.1.4 |  | cargo-auditable-binary-cataloger |
 | powerfmt | 0.2.0 |  | cargo-auditable-binary-cataloger |
@@ -3548,7 +3557,8 @@ The complete source code for Traefik is publicly available at [https://github.co
 | predicates-core | 1.0.10 |  | cargo-auditable-binary-cataloger |
 | predicates-tree | 1.0.13 |  | cargo-auditable-binary-cataloger |
 | predicates-tree | 1.0.13 |  | cargo-auditable-binary-cataloger |
-| primp | 1.1.3 |  | python-installed-package-cataloger |
+| preshed | 3.0.13 | MIT | python-installed-package-cataloger |
+| primp | 1.3.1 |  | python-installed-package-cataloger |
 | priority-queue | 2.7.0 |  | cargo-auditable-binary-cataloger |
 | priority-queue | 2.7.0 |  | cargo-auditable-binary-cataloger |
 | proc-macro-crate | 3.5.0 |  | cargo-auditable-binary-cataloger |
@@ -3563,9 +3573,9 @@ The complete source code for Traefik is publicly available at [https://github.co
 | proto-plus | 1.28.0 |  | python-installed-package-cataloger |
 | protobuf | 6.33.6 |  | python-installed-package-cataloger |
 | psutil | 7.2.2 | BSD-3-Clause | python-installed-package-cataloger |
-| psycopg | 3.2.9 |  | python-installed-package-cataloger |
-| psycopg-binary | 3.2.9 |  | python-installed-package-cataloger |
-| psycopg2-binary | 2.9.11 |  | python-installed-package-cataloger |
+| psycopg | 3.3.4 | LGPL-3.0-only | python-installed-package-cataloger |
+| psycopg-binary | 3.3.4 | LGPL-3.0-only | python-installed-package-cataloger |
+| psycopg2-binary | 2.9.12 |  | python-installed-package-cataloger |
 | ptr_meta | 0.3.1 |  | cargo-auditable-binary-cataloger |
 | ptr_meta | 0.3.1 |  | cargo-auditable-binary-cataloger |
 | purl | 0.1.6 |  | cargo-auditable-binary-cataloger |
@@ -3578,23 +3588,23 @@ The complete source code for Traefik is publicly available at [https://github.co
 | pybase64 | 1.4.3 | BSD-2-Clause | python-installed-package-cataloger |
 | pyclipper | 1.4.0 | MIT | python-installed-package-cataloger |
 | pycparser | 3.0 | BSD-3-Clause | python-installed-package-cataloger |
-| pycrdt | 0.12.47 |  | python-installed-package-cataloger |
-| pydantic | 2.12.5 | MIT | python-installed-package-cataloger |
-| pydantic-core | 2.41.5 | MIT | python-installed-package-cataloger |
-| pydantic-settings | 2.14.1 | MIT | python-installed-package-cataloger |
+| pycrdt | 0.13.1 |  | python-installed-package-cataloger |
+| pydantic | 2.13.4 | MIT | python-installed-package-cataloger |
+| pydantic-core | 2.46.4 | MIT | python-installed-package-cataloger |
+| pydantic-settings | 2.14.2 | MIT | python-installed-package-cataloger |
 | pydub | 0.25.1 | MIT | python-installed-package-cataloger |
 | pyee | 13.0.1 | MIT | python-installed-package-cataloger |
 | pygments | 2.20.0 | BSD-2-Clause | python-installed-package-cataloger |
-| pyjwt | 2.11.0 | MIT | python-installed-package-cataloger |
-| pymdown-extensions | 10.21 | MIT | python-installed-package-cataloger |
-| pymilvus | 2.6.9 |  | python-installed-package-cataloger |
-| pymongo | 4.16.0 | Apache-2.0 | python-installed-package-cataloger |
-| pymysql | 1.1.2 | MIT | python-installed-package-cataloger |
+| pyjwt | 2.13.0 | MIT | python-installed-package-cataloger |
+| pymdown-extensions | 10.21.3 | MIT | python-installed-package-cataloger |
+| pymilvus | 2.6.14 |  | python-installed-package-cataloger |
+| pymongo | 4.17.0 | Apache-2.0 | python-installed-package-cataloger |
+| pymysql | 1.2.0 | MIT | python-installed-package-cataloger |
 | pyodide | 0.28.3 | MPL-2.0 | javascript-package-cataloger |
-| pypandoc | 1.16.2 | MIT | python-installed-package-cataloger |
+| pypandoc | 1.17 | MIT | python-installed-package-cataloger |
 | pyparsing | 3.3.2 | MIT | python-installed-package-cataloger |
 | pypdf | 6.7.5 | BSD-3-Clause | python-installed-package-cataloger |
-| pypdfium2 | 5.9.0 |  | python-installed-package-cataloger |
+| pypdfium2 | 5.11.0 |  | python-installed-package-cataloger |
 | pypika | 0.51.1 |  | python-installed-package-cataloger |
 | pyproject-hooks | 1.2.0 | MIT | python-installed-package-cataloger |
 | pytest | 8.4.2 | MIT | python-installed-package-cataloger |
@@ -3602,15 +3612,15 @@ The complete source code for Traefik is publicly available at [https://github.co
 | python | 3.11.15 |  | binary-classifier-cataloger |
 | python-dateutil | 2.9.0.post0 |  | python-installed-package-cataloger |
 | python-dotenv | 1.2.2 | BSD-3-Clause | python-installed-package-cataloger |
-| python-engineio | 4.13.2 | MIT | python-installed-package-cataloger |
+| python-engineio | 4.13.3 | MIT | python-installed-package-cataloger |
 | python-iso639 | 2026.4.20 | Apache-2.0 | python-installed-package-cataloger |
 | python-jose | 3.5.0 | MIT | python-installed-package-cataloger |
 | python-magic | 0.4.27 | MIT | python-installed-package-cataloger |
 | python-mimeparse | 2.0.0 | MIT | python-installed-package-cataloger |
-| python-multipart | 0.0.22 | Apache-2.0 | python-installed-package-cataloger |
+| python-multipart | 0.0.27 | Apache-2.0 | python-installed-package-cataloger |
 | python-oxmsg | 0.0.2 | MIT | python-installed-package-cataloger |
 | python-pptx | 1.0.2 | MIT | python-installed-package-cataloger |
-| python-socketio | 5.16.1 | MIT | python-installed-package-cataloger |
+| python-socketio | 5.16.2 | MIT | python-installed-package-cataloger |
 | python3 | 3.11.2-1+b1 |  | dpkg-db-cataloger |
 | python3-dev | 3.11.2-1+b1 |  | dpkg-db-cataloger |
 | python3-distutils | 3.11.2-3 |  | dpkg-db-cataloger |
@@ -3621,10 +3631,10 @@ The complete source code for Traefik is publicly available at [https://github.co
 | python3.11-minimal | 3.11.2-6+deb12u7 | GPL-2.0-only | dpkg-db-cataloger |
 | pytokens | 0.4.1 | MIT | python-installed-package-cataloger |
 | pytube | 15.0.0 |  | python-installed-package-cataloger |
-| pytz | 2026.1.post1 | MIT | python-installed-package-cataloger |
+| pytz | 2026.2 | MIT | python-installed-package-cataloger |
 | pyxlsb | 1.0.10 |  | python-installed-package-cataloger |
 | pyyaml | 6.0.3 | MIT | python-installed-package-cataloger |
-| qdrant-client | 1.17.0 | Apache-2.0 | python-installed-package-cataloger |
+| qdrant-client | 1.18.0 | Apache-2.0 | python-installed-package-cataloger |
 | quick-xml | 0.39.2 |  | cargo-auditable-binary-cataloger |
 | quick-xml | 0.39.2 |  | cargo-auditable-binary-cataloger |
 | quinn | 0.11.9 |  | cargo-auditable-binary-cataloger |
@@ -3659,19 +3669,19 @@ The complete source code for Traefik is publicly available at [https://github.co
 | rayon-core | 1.13.0 |  | cargo-auditable-binary-cataloger |
 | rayon-core | 1.13.0 |  | cargo-auditable-binary-cataloger |
 | readline-common | 8.2-1.3 | GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later | dpkg-db-cataloger |
-| redis | 7.4.0 | MIT | python-installed-package-cataloger |
+| redis | 8.0.0 | MIT | python-installed-package-cataloger |
 | ref-cast | 1.0.25 |  | cargo-auditable-binary-cataloger |
 | ref-cast | 1.0.25 |  | cargo-auditable-binary-cataloger |
 | referencing | 0.37.0 | MIT | python-installed-package-cataloger |
 | reflink-copy | 0.1.29 |  | cargo-auditable-binary-cataloger |
 | reflink-copy | 0.1.29 |  | cargo-auditable-binary-cataloger |
-| regex | 1.12.3 |  | cargo-auditable-binary-cataloger |
-| regex | 1.12.3 |  | cargo-auditable-binary-cataloger |
-| regex | 2026.5.9 | Apache-2.0 AND CNRI-Python | python-installed-package-cataloger |
+| regex | 1.12.4 |  | cargo-auditable-binary-cataloger |
+| regex | 1.12.4 |  | cargo-auditable-binary-cataloger |
+| regex | 2026.6.28 | Apache-2.0 AND CNRI-Python | python-installed-package-cataloger |
 | regex-automata | 0.4.14 |  | cargo-auditable-binary-cataloger |
 | regex-automata | 0.4.14 |  | cargo-auditable-binary-cataloger |
-| regex-syntax | 0.8.10 |  | cargo-auditable-binary-cataloger |
-| regex-syntax | 0.8.10 |  | cargo-auditable-binary-cataloger |
+| regex-syntax | 0.8.11 |  | cargo-auditable-binary-cataloger |
+| regex-syntax | 0.8.11 |  | cargo-auditable-binary-cataloger |
 | rend | 0.5.3 |  | cargo-auditable-binary-cataloger |
 | rend | 0.5.3 |  | cargo-auditable-binary-cataloger |
 | reqsign | 0.20.0 |  | cargo-auditable-binary-cataloger |
@@ -3690,12 +3700,12 @@ The complete source code for Traefik is publicly available at [https://github.co
 | reqsign-google | 3.0.0 |  | cargo-auditable-binary-cataloger |
 | reqsign-http-send-reqwest | 4.0.0 |  | cargo-auditable-binary-cataloger |
 | reqsign-http-send-reqwest | 4.0.0 |  | cargo-auditable-binary-cataloger |
-| requests | 2.33.1 | Apache-2.0 | python-installed-package-cataloger |
+| requests | 2.34.2 | Apache-2.0 | python-installed-package-cataloger |
 | requests-oauthlib | 2.0.0 | ISC | python-installed-package-cataloger |
 | requests-toolbelt | 1.0.0 |  | python-installed-package-cataloger |
-| reqwest | 0.13.3 |  | cargo-auditable-binary-cataloger |
-| reqwest | 0.13.3 |  | cargo-auditable-binary-cataloger |
-| restrictedpython | 8.1 | ZPL-2.1 | python-installed-package-cataloger |
+| reqwest | 0.13.4 |  | cargo-auditable-binary-cataloger |
+| reqwest | 0.13.4 |  | cargo-auditable-binary-cataloger |
+| restrictedpython | 8.2 | ZPL-2.1 | python-installed-package-cataloger |
 | retry-policies | 0.5.1 |  | cargo-auditable-binary-cataloger |
 | retry-policies | 0.5.1 |  | cargo-auditable-binary-cataloger |
 | rich | 13.9.4 | MIT | python-installed-package-cataloger |
@@ -3718,12 +3728,14 @@ The complete source code for Traefik is publicly available at [https://github.co
 | rustc-hash | 2.1.2 |  | cargo-auditable-binary-cataloger |
 | rusticata-macros | 4.1.0 |  | cargo-auditable-binary-cataloger |
 | rusticata-macros | 4.1.0 |  | cargo-auditable-binary-cataloger |
+| rustix | 0.38.44 |  | cargo-auditable-binary-cataloger |
+| rustix | 0.38.44 |  | cargo-auditable-binary-cataloger |
 | rustix | 1.1.4 |  | cargo-auditable-binary-cataloger |
 | rustix | 1.1.4 |  | cargo-auditable-binary-cataloger |
 | rustls | 0.23.40 |  | cargo-auditable-binary-cataloger |
 | rustls | 0.23.40 |  | cargo-auditable-binary-cataloger |
-| rustls-native-certs | 0.8.3 |  | cargo-auditable-binary-cataloger |
-| rustls-native-certs | 0.8.3 |  | cargo-auditable-binary-cataloger |
+| rustls-native-certs | 0.8.4 |  | cargo-auditable-binary-cataloger |
+| rustls-native-certs | 0.8.4 |  | cargo-auditable-binary-cataloger |
 | rustls-pki-types | 1.14.1 |  | cargo-auditable-binary-cataloger |
 | rustls-pki-types | 1.14.1 |  | cargo-auditable-binary-cataloger |
 | rustls-platform-verifier | 0.7.0 |  | cargo-auditable-binary-cataloger |
@@ -3733,14 +3745,14 @@ The complete source code for Traefik is publicly available at [https://github.co
 | ryu | 1.0.23 |  | cargo-auditable-binary-cataloger |
 | ryu | 1.0.23 |  | cargo-auditable-binary-cataloger |
 | s3transfer | 0.16.1 |  | python-installed-package-cataloger |
-| safetensors | 0.7.0 |  | python-installed-package-cataloger |
+| safetensors | 0.8.0 |  | python-installed-package-cataloger |
 | salsa20 | 0.10.2 |  | cargo-auditable-binary-cataloger |
 | salsa20 | 0.10.2 |  | cargo-auditable-binary-cataloger |
 | same-file | 1.0.6 |  | cargo-auditable-binary-cataloger |
 | same-file | 1.0.6 |  | cargo-auditable-binary-cataloger |
 | schemars | 1.2.1 |  | cargo-auditable-binary-cataloger |
 | schemars | 1.2.1 |  | cargo-auditable-binary-cataloger |
-| scikit-learn | 1.8.0 | BSD-3-Clause | python-installed-package-cataloger |
+| scikit-learn | 1.9.0 | BSD-3-Clause | python-installed-package-cataloger |
 | scipy | 1.17.1 | BSD-3-Clause | python-installed-package-cataloger |
 | scopeguard | 1.2.0 |  | cargo-auditable-binary-cataloger |
 | scopeguard | 1.2.0 |  | cargo-auditable-binary-cataloger |
@@ -3755,9 +3767,11 @@ The complete source code for Traefik is publicly available at [https://github.co
 | secret-service | 5.1.0 |  | cargo-auditable-binary-cataloger |
 | secret-service | 5.1.0 |  | cargo-auditable-binary-cataloger |
 | sed | 4.9-1+deb12u1 | BSD-4-Clause-UC, BSL-1.0, GFDL-1.3-only, GPL-3.0-only, GPL-3.0-or-later, ISC, X11 | dpkg-db-cataloger |
+| seize | 0.5.1 |  | cargo-auditable-binary-cataloger |
+| seize | 0.5.1 |  | cargo-auditable-binary-cataloger |
 | semver | 1.0.27 |  | cargo-auditable-binary-cataloger |
 | semver | 1.0.27 |  | cargo-auditable-binary-cataloger |
-| sentence-transformers | 5.4.0 |  | python-installed-package-cataloger |
+| sentence-transformers | 5.5.1 |  | python-installed-package-cataloger |
 | sentencepiece | 0.2.1 |  | python-installed-package-cataloger |
 | serde | 1.0.228 |  | cargo-auditable-binary-cataloger |
 | serde | 1.0.228 |  | cargo-auditable-binary-cataloger |
@@ -3765,8 +3779,8 @@ The complete source code for Traefik is publicly available at [https://github.co
 | serde-untagged | 0.1.9 |  | cargo-auditable-binary-cataloger |
 | serde_core | 1.0.228 |  | cargo-auditable-binary-cataloger |
 | serde_core | 1.0.228 |  | cargo-auditable-binary-cataloger |
-| serde_json | 1.0.149 |  | cargo-auditable-binary-cataloger |
-| serde_json | 1.0.149 |  | cargo-auditable-binary-cataloger |
+| serde_json | 1.0.150 |  | cargo-auditable-binary-cataloger |
+| serde_json | 1.0.150 |  | cargo-auditable-binary-cataloger |
 | serde_repr | 0.1.20 |  | cargo-auditable-binary-cataloger |
 | serde_repr | 0.1.20 |  | cargo-auditable-binary-cataloger |
 | serde_spanned | 1.1.1 |  | cargo-auditable-binary-cataloger |
@@ -3797,16 +3811,17 @@ The complete source code for Traefik is publicly available at [https://github.co
 | simdutf8 | 0.1.5 |  | cargo-auditable-binary-cataloger |
 | similar | 2.7.0 |  | cargo-auditable-binary-cataloger |
 | similar | 2.7.0 |  | cargo-auditable-binary-cataloger |
-| similar | 3.1.0 |  | cargo-auditable-binary-cataloger |
-| similar | 3.1.0 |  | cargo-auditable-binary-cataloger |
+| similar | 3.1.1 |  | cargo-auditable-binary-cataloger |
+| similar | 3.1.1 |  | cargo-auditable-binary-cataloger |
 | simple-websocket | 1.1.0 | MIT | python-installed-package-cataloger |
 | simple_asn1 | 0.6.4 |  | cargo-auditable-binary-cataloger |
 | simple_asn1 | 0.6.4 |  | cargo-auditable-binary-cataloger |
 | six | 1.17.0 | MIT | python-installed-package-cataloger |
 | slab | 0.4.12 |  | cargo-auditable-binary-cataloger |
 | slab | 0.4.12 |  | cargo-auditable-binary-cataloger |
-| smallvec | 1.15.1 |  | cargo-auditable-binary-cataloger |
-| smallvec | 1.15.1 |  | cargo-auditable-binary-cataloger |
+| smallvec | 1.15.2 |  | cargo-auditable-binary-cataloger |
+| smallvec | 1.15.2 |  | cargo-auditable-binary-cataloger |
+| smart-open | 8.0.0 |  | python-installed-package-cataloger |
 | smawk | 0.3.2 |  | cargo-auditable-binary-cataloger |
 | smawk | 0.3.2 |  | cargo-auditable-binary-cataloger |
 | smmap | 5.0.3 | BSD-3-Clause | python-installed-package-cataloger |
@@ -3816,19 +3831,25 @@ The complete source code for Traefik is publicly available at [https://github.co
 | socksio | 1.0.0 |  | python-installed-package-cataloger |
 | soundfile | 0.13.1 |  | python-installed-package-cataloger |
 | soupsieve | 2.8.4 | MIT | python-installed-package-cataloger |
+| spacy | 3.8.14 | MIT | python-installed-package-cataloger |
+| spacy-legacy | 3.0.12 | MIT | python-installed-package-cataloger |
+| spacy-loggers | 1.0.5 | MIT | python-installed-package-cataloger |
 | spdx | 0.13.4 |  | cargo-auditable-binary-cataloger |
 | spdx | 0.13.4 |  | cargo-auditable-binary-cataloger |
 | spin | 0.9.8 |  | cargo-auditable-binary-cataloger |
 | spin | 0.9.8 |  | cargo-auditable-binary-cataloger |
 | spki | 0.7.3 |  | cargo-auditable-binary-cataloger |
 | spki | 0.7.3 |  | cargo-auditable-binary-cataloger |
-| sqlalchemy | 2.0.48 | MIT | python-installed-package-cataloger |
-| sse-starlette | 3.4.4 | BSD-3-Clause | python-installed-package-cataloger |
+| sqlalchemy | 2.0.50 | MIT | python-installed-package-cataloger |
+| srsly | 2.5.3 | MIT | python-installed-package-cataloger |
+| sse-starlette | 3.4.5 | BSD-3-Clause | python-installed-package-cataloger |
 | stable_deref_trait | 1.2.1 |  | cargo-auditable-binary-cataloger |
 | stable_deref_trait | 1.2.1 |  | cargo-auditable-binary-cataloger |
-| starlette | 1.2.1 | BSD-3-Clause | python-installed-package-cataloger |
-| starlette-compress | 1.7.0 | 0BSD | python-installed-package-cataloger |
+| starlette | 1.3.1 | BSD-3-Clause | python-installed-package-cataloger |
+| starlette-compress | 1.7.1 | 0BSD | python-installed-package-cataloger |
 | starsessions | 2.2.1 | MIT | python-installed-package-cataloger |
+| strip-ansi-escapes | 0.2.1 |  | cargo-auditable-binary-cataloger |
+| strip-ansi-escapes | 0.2.1 |  | cargo-auditable-binary-cataloger |
 | strsim | 0.11.1 |  | cargo-auditable-binary-cataloger |
 | strsim | 0.11.1 |  | cargo-auditable-binary-cataloger |
 | strum | 0.28.0 |  | cargo-auditable-binary-cataloger |
@@ -3849,6 +3870,10 @@ The complete source code for Traefik is publicly available at [https://github.co
 | synstructure | 0.13.2 |  | cargo-auditable-binary-cataloger |
 | synstructure | 0.13.2 |  | cargo-auditable-binary-cataloger |
 | sysvinit-utils | 3.06-4 | GPL-2.0-only, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-only | dpkg-db-cataloger |
+| t32 | UNKNOWN |  | pe-binary-package-cataloger |
+| t64 | UNKNOWN |  | pe-binary-package-cataloger |
+| t64-arm | UNKNOWN |  | pe-binary-package-cataloger |
+| t_arm | UNKNOWN |  | pe-binary-package-cataloger |
 | tar | 1.34+dfsg-1.2+deb12u1 | GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
 | target-lexicon | 0.13.5 |  | cargo-auditable-binary-cataloger |
 | target-lexicon | 0.13.5 |  | cargo-auditable-binary-cataloger |
@@ -3857,18 +3882,19 @@ The complete source code for Traefik is publicly available at [https://github.co
 | tempfile | 3.27.0 |  | cargo-auditable-binary-cataloger |
 | tempfile | 3.27.0 |  | cargo-auditable-binary-cataloger |
 | tenacity | 9.1.4 |  | python-installed-package-cataloger |
-| terminal_size | 0.4.3 |  | cargo-auditable-binary-cataloger |
-| terminal_size | 0.4.3 |  | cargo-auditable-binary-cataloger |
+| terminal_size | 0.4.4 |  | cargo-auditable-binary-cataloger |
+| terminal_size | 0.4.4 |  | cargo-auditable-binary-cataloger |
 | termtree | 0.5.1 |  | cargo-auditable-binary-cataloger |
 | termtree | 0.5.1 |  | cargo-auditable-binary-cataloger |
 | textwrap | 0.16.2 |  | cargo-auditable-binary-cataloger |
 | textwrap | 0.16.2 |  | cargo-auditable-binary-cataloger |
+| thinc | 8.3.13 | MIT | python-installed-package-cataloger |
 | thiserror | 2.0.18 |  | cargo-auditable-binary-cataloger |
 | thiserror | 2.0.18 |  | cargo-auditable-binary-cataloger |
 | thread_local | 1.1.9 |  | cargo-auditable-binary-cataloger |
 | thread_local | 1.1.9 |  | cargo-auditable-binary-cataloger |
 | threadpoolctl | 3.6.0 | BSD-3-Clause | python-installed-package-cataloger |
-| tiktoken | 0.12.0 | MIT | python-installed-package-cataloger |
+| tiktoken | 0.13.0 | MIT | python-installed-package-cataloger |
 | tikv-jemalloc-sys | 0.6.1+5.3.0-1-ge13ca993e8ccb9ba9847cc330696e02839f328f7 |  | cargo-auditable-binary-cataloger |
 | tikv-jemalloc-sys | 0.6.1+5.3.0-1-ge13ca993e8ccb9ba9847cc330696e02839f328f7 |  | cargo-auditable-binary-cataloger |
 | tikv-jemallocator | 0.6.1 |  | cargo-auditable-binary-cataloger |
@@ -3896,8 +3922,8 @@ The complete source code for Traefik is publicly available at [https://github.co
 | toml | 1.1.2+spec-1.1.0 |  | cargo-auditable-binary-cataloger |
 | toml_datetime | 1.1.1+spec-1.1.0 |  | cargo-auditable-binary-cataloger |
 | toml_datetime | 1.1.1+spec-1.1.0 |  | cargo-auditable-binary-cataloger |
-| toml_edit | 0.25.11+spec-1.1.0 |  | cargo-auditable-binary-cataloger |
-| toml_edit | 0.25.11+spec-1.1.0 |  | cargo-auditable-binary-cataloger |
+| toml_edit | 0.25.12+spec-1.1.0 |  | cargo-auditable-binary-cataloger |
+| toml_edit | 0.25.12+spec-1.1.0 |  | cargo-auditable-binary-cataloger |
 | toml_parser | 1.1.2+spec-1.1.0 |  | cargo-auditable-binary-cataloger |
 | toml_parser | 1.1.2+spec-1.1.0 |  | cargo-auditable-binary-cataloger |
 | toml_writer | 1.1.1+spec-1.1.0 |  | cargo-auditable-binary-cataloger |
@@ -3914,7 +3940,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | tower-layer | 0.3.3 |  | cargo-auditable-binary-cataloger |
 | tower-service | 0.3.3 |  | cargo-auditable-binary-cataloger |
 | tower-service | 0.3.3 |  | cargo-auditable-binary-cataloger |
-| tqdm | 4.67.3 | MPL-2.0 AND MIT | python-installed-package-cataloger |
+| tqdm | 4.68.3 | MPL-2.0 AND MIT | python-installed-package-cataloger |
 | tracing | 0.1.44 |  | cargo-auditable-binary-cataloger |
 | tracing | 0.1.44 |  | cargo-auditable-binary-cataloger |
 | tracing-attributes | 0.1.31 |  | cargo-auditable-binary-cataloger |
@@ -3935,16 +3961,15 @@ The complete source code for Traefik is publicly available at [https://github.co
 | typeid | 1.0.3 |  | cargo-auditable-binary-cataloger |
 | typenum | 1.19.0 |  | cargo-auditable-binary-cataloger |
 | typenum | 1.19.0 |  | cargo-auditable-binary-cataloger |
-| typer | 0.26.5 | MIT | python-installed-package-cataloger |
+| typer | 0.25.1 | MIT | python-installed-package-cataloger |
 | typing-extensions | 4.12.2 |  | python-installed-package-cataloger |
 | typing-extensions | 4.15.0 | PSF-2.0 | python-installed-package-cataloger |
-| typing-inspect | 0.9.0 | MIT | python-installed-package-cataloger |
 | typing-inspection | 0.4.2 | MIT | python-installed-package-cataloger |
 | tzdata | 2026b-0+deb12u1 |  | dpkg-db-cataloger |
-| tzlocal | 5.3.1 | MIT | python-installed-package-cataloger |
+| tzlocal | 5.4.4 | MIT | python-installed-package-cataloger |
 | ucd-trie | 0.1.7 |  | cargo-auditable-binary-cataloger |
 | ucd-trie | 0.1.7 |  | cargo-auditable-binary-cataloger |
-| ujson | 5.12.1 | BSD-3-Clause AND TCL | python-installed-package-cataloger |
+| ujson | 5.13.0 | BSD-3-Clause AND TCL | python-installed-package-cataloger |
 | unicase | 2.9.0 |  | cargo-auditable-binary-cataloger |
 | unicase | 2.9.0 |  | cargo-auditable-binary-cataloger |
 | unicode-ident | 1.0.24 |  | cargo-auditable-binary-cataloger |
@@ -3959,7 +3984,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | unit-prefix | 0.5.2 |  | cargo-auditable-binary-cataloger |
 | unscanny | 0.1.0 |  | cargo-auditable-binary-cataloger |
 | unscanny | 0.1.0 |  | cargo-auditable-binary-cataloger |
-| unstructured | 0.18.31 | Apache-2.0 | python-installed-package-cataloger |
+| unstructured | 0.22.31 | Apache-2.0 | python-installed-package-cataloger |
 | unstructured-client | 0.42.12 | MIT | python-installed-package-cataloger |
 | untrusted | 0.7.1 |  | cargo-auditable-binary-cataloger |
 | untrusted | 0.7.1 |  | cargo-auditable-binary-cataloger |
@@ -3978,151 +4003,159 @@ The complete source code for Traefik is publicly available at [https://github.co
 | utf8parse | 0.2.2 |  | cargo-auditable-binary-cataloger |
 | util-linux | 2.38.1-5+deb12u3 | BSD-3-Clause, BSD-4-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, MIT | dpkg-db-cataloger |
 | util-linux-extra | 2.38.1-5+deb12u3 | BSD-3-Clause, BSD-4-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, MIT | dpkg-db-cataloger |
-| uuid | 1.23.1 |  | cargo-auditable-binary-cataloger |
-| uuid | 1.23.1 |  | cargo-auditable-binary-cataloger |
-| uuid-utils | 0.16.0 | BSD-3-Clause | python-installed-package-cataloger |
-| uv | 0.11.18 | MIT OR Apache-2.0 | python-installed-package-cataloger |
-| uv | 0.11.18 |  | cargo-auditable-binary-cataloger |
-| uv | 0.11.18 |  | cargo-auditable-binary-cataloger |
-| uv-audit | 0.0.51 |  | cargo-auditable-binary-cataloger |
-| uv-audit | 0.0.51 |  | cargo-auditable-binary-cataloger |
-| uv-auth | 0.0.51 |  | cargo-auditable-binary-cataloger |
-| uv-auth | 0.0.51 |  | cargo-auditable-binary-cataloger |
-| uv-bin-install | 0.0.51 |  | cargo-auditable-binary-cataloger |
-| uv-bin-install | 0.0.51 |  | cargo-auditable-binary-cataloger |
-| uv-build-backend | 0.0.51 |  | cargo-auditable-binary-cataloger |
-| uv-build-backend | 0.0.51 |  | cargo-auditable-binary-cataloger |
-| uv-build-frontend | 0.0.51 |  | cargo-auditable-binary-cataloger |
-| uv-build-frontend | 0.0.51 |  | cargo-auditable-binary-cataloger |
-| uv-cache | 0.0.51 |  | cargo-auditable-binary-cataloger |
-| uv-cache | 0.0.51 |  | cargo-auditable-binary-cataloger |
-| uv-cache-info | 0.0.51 |  | cargo-auditable-binary-cataloger |
-| uv-cache-info | 0.0.51 |  | cargo-auditable-binary-cataloger |
-| uv-cache-key | 0.0.51 |  | cargo-auditable-binary-cataloger |
-| uv-cache-key | 0.0.51 |  | cargo-auditable-binary-cataloger |
-| uv-cli | 0.0.51 |  | cargo-auditable-binary-cataloger |
-| uv-cli | 0.0.51 |  | cargo-auditable-binary-cataloger |
-| uv-client | 0.0.51 |  | cargo-auditable-binary-cataloger |
-| uv-client | 0.0.51 |  | cargo-auditable-binary-cataloger |
-| uv-configuration | 0.0.51 |  | cargo-auditable-binary-cataloger |
-| uv-configuration | 0.0.51 |  | cargo-auditable-binary-cataloger |
-| uv-console | 0.0.51 |  | cargo-auditable-binary-cataloger |
-| uv-console | 0.0.51 |  | cargo-auditable-binary-cataloger |
-| uv-dirs | 0.0.51 |  | cargo-auditable-binary-cataloger |
-| uv-dirs | 0.0.51 |  | cargo-auditable-binary-cataloger |
-| uv-dispatch | 0.0.51 |  | cargo-auditable-binary-cataloger |
-| uv-dispatch | 0.0.51 |  | cargo-auditable-binary-cataloger |
-| uv-distribution | 0.0.51 |  | cargo-auditable-binary-cataloger |
-| uv-distribution | 0.0.51 |  | cargo-auditable-binary-cataloger |
-| uv-distribution-filename | 0.0.51 |  | cargo-auditable-binary-cataloger |
-| uv-distribution-filename | 0.0.51 |  | cargo-auditable-binary-cataloger |
-| uv-distribution-types | 0.0.51 |  | cargo-auditable-binary-cataloger |
-| uv-distribution-types | 0.0.51 |  | cargo-auditable-binary-cataloger |
-| uv-errors | 0.0.51 |  | cargo-auditable-binary-cataloger |
-| uv-errors | 0.0.51 |  | cargo-auditable-binary-cataloger |
-| uv-extract | 0.0.51 |  | cargo-auditable-binary-cataloger |
-| uv-extract | 0.0.51 |  | cargo-auditable-binary-cataloger |
-| uv-fastid | 0.0.51 |  | cargo-auditable-binary-cataloger |
-| uv-fastid | 0.0.51 |  | cargo-auditable-binary-cataloger |
-| uv-flags | 0.0.51 |  | cargo-auditable-binary-cataloger |
-| uv-flags | 0.0.51 |  | cargo-auditable-binary-cataloger |
-| uv-fs | 0.0.51 |  | cargo-auditable-binary-cataloger |
-| uv-fs | 0.0.51 |  | cargo-auditable-binary-cataloger |
-| uv-git | 0.0.51 |  | cargo-auditable-binary-cataloger |
-| uv-git | 0.0.51 |  | cargo-auditable-binary-cataloger |
-| uv-git-types | 0.0.51 |  | cargo-auditable-binary-cataloger |
-| uv-git-types | 0.0.51 |  | cargo-auditable-binary-cataloger |
-| uv-globfilter | 0.0.51 |  | cargo-auditable-binary-cataloger |
-| uv-globfilter | 0.0.51 |  | cargo-auditable-binary-cataloger |
-| uv-install-wheel | 0.0.51 |  | cargo-auditable-binary-cataloger |
-| uv-install-wheel | 0.0.51 |  | cargo-auditable-binary-cataloger |
-| uv-installer | 0.0.51 |  | cargo-auditable-binary-cataloger |
-| uv-installer | 0.0.51 |  | cargo-auditable-binary-cataloger |
-| uv-keyring | 0.0.51 |  | cargo-auditable-binary-cataloger |
-| uv-keyring | 0.0.51 |  | cargo-auditable-binary-cataloger |
-| uv-logging | 0.0.51 |  | cargo-auditable-binary-cataloger |
-| uv-logging | 0.0.51 |  | cargo-auditable-binary-cataloger |
-| uv-metadata | 0.0.51 |  | cargo-auditable-binary-cataloger |
-| uv-metadata | 0.0.51 |  | cargo-auditable-binary-cataloger |
-| uv-netrc | 0.0.51 |  | cargo-auditable-binary-cataloger |
-| uv-netrc | 0.0.51 |  | cargo-auditable-binary-cataloger |
-| uv-normalize | 0.0.51 |  | cargo-auditable-binary-cataloger |
-| uv-normalize | 0.0.51 |  | cargo-auditable-binary-cataloger |
-| uv-once-map | 0.0.51 |  | cargo-auditable-binary-cataloger |
-| uv-once-map | 0.0.51 |  | cargo-auditable-binary-cataloger |
-| uv-options-metadata | 0.0.51 |  | cargo-auditable-binary-cataloger |
-| uv-options-metadata | 0.0.51 |  | cargo-auditable-binary-cataloger |
-| uv-pep440 | 0.0.51 |  | cargo-auditable-binary-cataloger |
-| uv-pep440 | 0.0.51 |  | cargo-auditable-binary-cataloger |
-| uv-pep508 | 0.0.51 |  | cargo-auditable-binary-cataloger |
-| uv-pep508 | 0.0.51 |  | cargo-auditable-binary-cataloger |
-| uv-performance-memory-allocator | 0.0.51 |  | cargo-auditable-binary-cataloger |
-| uv-performance-memory-allocator | 0.0.51 |  | cargo-auditable-binary-cataloger |
-| uv-platform | 0.0.51 |  | cargo-auditable-binary-cataloger |
-| uv-platform | 0.0.51 |  | cargo-auditable-binary-cataloger |
-| uv-platform-tags | 0.0.51 |  | cargo-auditable-binary-cataloger |
-| uv-platform-tags | 0.0.51 |  | cargo-auditable-binary-cataloger |
-| uv-preview | 0.0.51 |  | cargo-auditable-binary-cataloger |
-| uv-preview | 0.0.51 |  | cargo-auditable-binary-cataloger |
-| uv-publish | 0.0.51 |  | cargo-auditable-binary-cataloger |
-| uv-publish | 0.0.51 |  | cargo-auditable-binary-cataloger |
-| uv-pypi-types | 0.0.51 |  | cargo-auditable-binary-cataloger |
-| uv-pypi-types | 0.0.51 |  | cargo-auditable-binary-cataloger |
-| uv-python | 0.0.51 |  | cargo-auditable-binary-cataloger |
-| uv-python | 0.0.51 |  | cargo-auditable-binary-cataloger |
-| uv-redacted | 0.0.51 |  | cargo-auditable-binary-cataloger |
-| uv-redacted | 0.0.51 |  | cargo-auditable-binary-cataloger |
-| uv-requirements | 0.0.51 |  | cargo-auditable-binary-cataloger |
-| uv-requirements | 0.0.51 |  | cargo-auditable-binary-cataloger |
-| uv-requirements-txt | 0.0.51 |  | cargo-auditable-binary-cataloger |
-| uv-requirements-txt | 0.0.51 |  | cargo-auditable-binary-cataloger |
-| uv-resolver | 0.0.51 |  | cargo-auditable-binary-cataloger |
-| uv-resolver | 0.0.51 |  | cargo-auditable-binary-cataloger |
-| uv-scripts | 0.0.51 |  | cargo-auditable-binary-cataloger |
-| uv-scripts | 0.0.51 |  | cargo-auditable-binary-cataloger |
-| uv-settings | 0.0.51 |  | cargo-auditable-binary-cataloger |
-| uv-settings | 0.0.51 |  | cargo-auditable-binary-cataloger |
-| uv-shell | 0.0.51 |  | cargo-auditable-binary-cataloger |
-| uv-shell | 0.0.51 |  | cargo-auditable-binary-cataloger |
-| uv-small-str | 0.0.51 |  | cargo-auditable-binary-cataloger |
-| uv-small-str | 0.0.51 |  | cargo-auditable-binary-cataloger |
-| uv-state | 0.0.51 |  | cargo-auditable-binary-cataloger |
-| uv-state | 0.0.51 |  | cargo-auditable-binary-cataloger |
-| uv-static | 0.0.51 |  | cargo-auditable-binary-cataloger |
-| uv-static | 0.0.51 |  | cargo-auditable-binary-cataloger |
-| uv-test | 0.0.51 |  | cargo-auditable-binary-cataloger |
-| uv-test | 0.0.51 |  | cargo-auditable-binary-cataloger |
-| uv-toml | 0.0.51 |  | cargo-auditable-binary-cataloger |
-| uv-toml | 0.0.51 |  | cargo-auditable-binary-cataloger |
-| uv-tool | 0.0.51 |  | cargo-auditable-binary-cataloger |
-| uv-tool | 0.0.51 |  | cargo-auditable-binary-cataloger |
-| uv-torch | 0.0.51 |  | cargo-auditable-binary-cataloger |
-| uv-torch | 0.0.51 |  | cargo-auditable-binary-cataloger |
-| uv-trampoline-builder | 0.0.51 |  | cargo-auditable-binary-cataloger |
-| uv-trampoline-builder | 0.0.51 |  | cargo-auditable-binary-cataloger |
-| uv-types | 0.0.51 |  | cargo-auditable-binary-cataloger |
-| uv-types | 0.0.51 |  | cargo-auditable-binary-cataloger |
-| uv-unix | 0.0.51 |  | cargo-auditable-binary-cataloger |
-| uv-unix | 0.0.51 |  | cargo-auditable-binary-cataloger |
-| uv-version | 0.11.18 |  | cargo-auditable-binary-cataloger |
-| uv-version | 0.11.18 |  | cargo-auditable-binary-cataloger |
-| uv-virtualenv | 0.0.51 |  | cargo-auditable-binary-cataloger |
-| uv-virtualenv | 0.0.51 |  | cargo-auditable-binary-cataloger |
-| uv-warnings | 0.0.51 |  | cargo-auditable-binary-cataloger |
-| uv-warnings | 0.0.51 |  | cargo-auditable-binary-cataloger |
-| uv-workspace | 0.0.51 |  | cargo-auditable-binary-cataloger |
-| uv-workspace | 0.0.51 |  | cargo-auditable-binary-cataloger |
+| uuid | 1.23.3 |  | cargo-auditable-binary-cataloger |
+| uuid | 1.23.3 |  | cargo-auditable-binary-cataloger |
+| uuid-utils | 0.16.2 | BSD-3-Clause | python-installed-package-cataloger |
+| uv | 0.11.25 | MIT OR Apache-2.0 | python-installed-package-cataloger |
+| uv | 0.11.25 |  | cargo-auditable-binary-cataloger |
+| uv | 0.11.25 |  | cargo-auditable-binary-cataloger |
+| uv-audit | 0.0.58 |  | cargo-auditable-binary-cataloger |
+| uv-audit | 0.0.58 |  | cargo-auditable-binary-cataloger |
+| uv-auth | 0.0.58 |  | cargo-auditable-binary-cataloger |
+| uv-auth | 0.0.58 |  | cargo-auditable-binary-cataloger |
+| uv-bin-install | 0.0.58 |  | cargo-auditable-binary-cataloger |
+| uv-bin-install | 0.0.58 |  | cargo-auditable-binary-cataloger |
+| uv-build-backend | 0.0.58 |  | cargo-auditable-binary-cataloger |
+| uv-build-backend | 0.0.58 |  | cargo-auditable-binary-cataloger |
+| uv-build-frontend | 0.0.58 |  | cargo-auditable-binary-cataloger |
+| uv-build-frontend | 0.0.58 |  | cargo-auditable-binary-cataloger |
+| uv-cache | 0.0.58 |  | cargo-auditable-binary-cataloger |
+| uv-cache | 0.0.58 |  | cargo-auditable-binary-cataloger |
+| uv-cache-info | 0.0.58 |  | cargo-auditable-binary-cataloger |
+| uv-cache-info | 0.0.58 |  | cargo-auditable-binary-cataloger |
+| uv-cache-key | 0.0.58 |  | cargo-auditable-binary-cataloger |
+| uv-cache-key | 0.0.58 |  | cargo-auditable-binary-cataloger |
+| uv-cli | 0.0.58 |  | cargo-auditable-binary-cataloger |
+| uv-cli | 0.0.58 |  | cargo-auditable-binary-cataloger |
+| uv-client | 0.0.58 |  | cargo-auditable-binary-cataloger |
+| uv-client | 0.0.58 |  | cargo-auditable-binary-cataloger |
+| uv-configuration | 0.0.58 |  | cargo-auditable-binary-cataloger |
+| uv-configuration | 0.0.58 |  | cargo-auditable-binary-cataloger |
+| uv-console | 0.0.58 |  | cargo-auditable-binary-cataloger |
+| uv-console | 0.0.58 |  | cargo-auditable-binary-cataloger |
+| uv-dirs | 0.0.58 |  | cargo-auditable-binary-cataloger |
+| uv-dirs | 0.0.58 |  | cargo-auditable-binary-cataloger |
+| uv-dispatch | 0.0.58 |  | cargo-auditable-binary-cataloger |
+| uv-dispatch | 0.0.58 |  | cargo-auditable-binary-cataloger |
+| uv-distribution | 0.0.58 |  | cargo-auditable-binary-cataloger |
+| uv-distribution | 0.0.58 |  | cargo-auditable-binary-cataloger |
+| uv-distribution-filename | 0.0.58 |  | cargo-auditable-binary-cataloger |
+| uv-distribution-filename | 0.0.58 |  | cargo-auditable-binary-cataloger |
+| uv-distribution-types | 0.0.58 |  | cargo-auditable-binary-cataloger |
+| uv-distribution-types | 0.0.58 |  | cargo-auditable-binary-cataloger |
+| uv-errors | 0.0.58 |  | cargo-auditable-binary-cataloger |
+| uv-errors | 0.0.58 |  | cargo-auditable-binary-cataloger |
+| uv-extract | 0.0.58 |  | cargo-auditable-binary-cataloger |
+| uv-extract | 0.0.58 |  | cargo-auditable-binary-cataloger |
+| uv-fastid | 0.0.58 |  | cargo-auditable-binary-cataloger |
+| uv-fastid | 0.0.58 |  | cargo-auditable-binary-cataloger |
+| uv-flags | 0.0.58 |  | cargo-auditable-binary-cataloger |
+| uv-flags | 0.0.58 |  | cargo-auditable-binary-cataloger |
+| uv-fs | 0.0.58 |  | cargo-auditable-binary-cataloger |
+| uv-fs | 0.0.58 |  | cargo-auditable-binary-cataloger |
+| uv-git | 0.0.58 |  | cargo-auditable-binary-cataloger |
+| uv-git | 0.0.58 |  | cargo-auditable-binary-cataloger |
+| uv-git-types | 0.0.58 |  | cargo-auditable-binary-cataloger |
+| uv-git-types | 0.0.58 |  | cargo-auditable-binary-cataloger |
+| uv-globfilter | 0.0.58 |  | cargo-auditable-binary-cataloger |
+| uv-globfilter | 0.0.58 |  | cargo-auditable-binary-cataloger |
+| uv-install-wheel | 0.0.58 |  | cargo-auditable-binary-cataloger |
+| uv-install-wheel | 0.0.58 |  | cargo-auditable-binary-cataloger |
+| uv-installer | 0.0.58 |  | cargo-auditable-binary-cataloger |
+| uv-installer | 0.0.58 |  | cargo-auditable-binary-cataloger |
+| uv-keyring | 0.0.58 |  | cargo-auditable-binary-cataloger |
+| uv-keyring | 0.0.58 |  | cargo-auditable-binary-cataloger |
+| uv-logging | 0.0.58 |  | cargo-auditable-binary-cataloger |
+| uv-logging | 0.0.58 |  | cargo-auditable-binary-cataloger |
+| uv-metadata | 0.0.58 |  | cargo-auditable-binary-cataloger |
+| uv-metadata | 0.0.58 |  | cargo-auditable-binary-cataloger |
+| uv-netrc | 0.0.58 |  | cargo-auditable-binary-cataloger |
+| uv-netrc | 0.0.58 |  | cargo-auditable-binary-cataloger |
+| uv-normalize | 0.0.58 |  | cargo-auditable-binary-cataloger |
+| uv-normalize | 0.0.58 |  | cargo-auditable-binary-cataloger |
+| uv-once-map | 0.0.58 |  | cargo-auditable-binary-cataloger |
+| uv-once-map | 0.0.58 |  | cargo-auditable-binary-cataloger |
+| uv-options-metadata | 0.0.58 |  | cargo-auditable-binary-cataloger |
+| uv-options-metadata | 0.0.58 |  | cargo-auditable-binary-cataloger |
+| uv-pep440 | 0.0.58 |  | cargo-auditable-binary-cataloger |
+| uv-pep440 | 0.0.58 |  | cargo-auditable-binary-cataloger |
+| uv-pep508 | 0.0.58 |  | cargo-auditable-binary-cataloger |
+| uv-pep508 | 0.0.58 |  | cargo-auditable-binary-cataloger |
+| uv-performance-memory-allocator | 0.0.58 |  | cargo-auditable-binary-cataloger |
+| uv-performance-memory-allocator | 0.0.58 |  | cargo-auditable-binary-cataloger |
+| uv-platform | 0.0.58 |  | cargo-auditable-binary-cataloger |
+| uv-platform | 0.0.58 |  | cargo-auditable-binary-cataloger |
+| uv-platform-tags | 0.0.58 |  | cargo-auditable-binary-cataloger |
+| uv-platform-tags | 0.0.58 |  | cargo-auditable-binary-cataloger |
+| uv-preview | 0.0.58 |  | cargo-auditable-binary-cataloger |
+| uv-preview | 0.0.58 |  | cargo-auditable-binary-cataloger |
+| uv-publish | 0.0.58 |  | cargo-auditable-binary-cataloger |
+| uv-publish | 0.0.58 |  | cargo-auditable-binary-cataloger |
+| uv-pypi-types | 0.0.58 |  | cargo-auditable-binary-cataloger |
+| uv-pypi-types | 0.0.58 |  | cargo-auditable-binary-cataloger |
+| uv-python | 0.0.58 |  | cargo-auditable-binary-cataloger |
+| uv-python | 0.0.58 |  | cargo-auditable-binary-cataloger |
+| uv-redacted | 0.0.58 |  | cargo-auditable-binary-cataloger |
+| uv-redacted | 0.0.58 |  | cargo-auditable-binary-cataloger |
+| uv-requirements | 0.0.58 |  | cargo-auditable-binary-cataloger |
+| uv-requirements | 0.0.58 |  | cargo-auditable-binary-cataloger |
+| uv-requirements-txt | 0.0.58 |  | cargo-auditable-binary-cataloger |
+| uv-requirements-txt | 0.0.58 |  | cargo-auditable-binary-cataloger |
+| uv-resolver | 0.0.58 |  | cargo-auditable-binary-cataloger |
+| uv-resolver | 0.0.58 |  | cargo-auditable-binary-cataloger |
+| uv-scripts | 0.0.58 |  | cargo-auditable-binary-cataloger |
+| uv-scripts | 0.0.58 |  | cargo-auditable-binary-cataloger |
+| uv-settings | 0.0.58 |  | cargo-auditable-binary-cataloger |
+| uv-settings | 0.0.58 |  | cargo-auditable-binary-cataloger |
+| uv-shell | 0.0.58 |  | cargo-auditable-binary-cataloger |
+| uv-shell | 0.0.58 |  | cargo-auditable-binary-cataloger |
+| uv-small-str | 0.0.58 |  | cargo-auditable-binary-cataloger |
+| uv-small-str | 0.0.58 |  | cargo-auditable-binary-cataloger |
+| uv-state | 0.0.58 |  | cargo-auditable-binary-cataloger |
+| uv-state | 0.0.58 |  | cargo-auditable-binary-cataloger |
+| uv-static | 0.0.58 |  | cargo-auditable-binary-cataloger |
+| uv-static | 0.0.58 |  | cargo-auditable-binary-cataloger |
+| uv-test | 0.0.58 |  | cargo-auditable-binary-cataloger |
+| uv-test | 0.0.58 |  | cargo-auditable-binary-cataloger |
+| uv-toml | 0.0.58 |  | cargo-auditable-binary-cataloger |
+| uv-toml | 0.0.58 |  | cargo-auditable-binary-cataloger |
+| uv-tool | 0.0.58 |  | cargo-auditable-binary-cataloger |
+| uv-tool | 0.0.58 |  | cargo-auditable-binary-cataloger |
+| uv-torch | 0.0.58 |  | cargo-auditable-binary-cataloger |
+| uv-torch | 0.0.58 |  | cargo-auditable-binary-cataloger |
+| uv-trampoline-builder | 0.0.58 |  | cargo-auditable-binary-cataloger |
+| uv-trampoline-builder | 0.0.58 |  | cargo-auditable-binary-cataloger |
+| uv-types | 0.0.58 |  | cargo-auditable-binary-cataloger |
+| uv-types | 0.0.58 |  | cargo-auditable-binary-cataloger |
+| uv-unix | 0.0.58 |  | cargo-auditable-binary-cataloger |
+| uv-unix | 0.0.58 |  | cargo-auditable-binary-cataloger |
+| uv-version | 0.11.25 |  | cargo-auditable-binary-cataloger |
+| uv-version | 0.11.25 |  | cargo-auditable-binary-cataloger |
+| uv-virtualenv | 0.0.58 |  | cargo-auditable-binary-cataloger |
+| uv-virtualenv | 0.0.58 |  | cargo-auditable-binary-cataloger |
+| uv-warnings | 0.0.58 |  | cargo-auditable-binary-cataloger |
+| uv-warnings | 0.0.58 |  | cargo-auditable-binary-cataloger |
+| uv-workspace | 0.0.58 |  | cargo-auditable-binary-cataloger |
+| uv-workspace | 0.0.58 |  | cargo-auditable-binary-cataloger |
 | uvicorn | 0.41.0 | BSD-3-Clause | python-installed-package-cataloger |
 | uvloop | 0.22.1 |  | python-installed-package-cataloger |
 | validators | 0.35.0 | MIT | python-installed-package-cataloger |
+| vte | 0.14.1 |  | cargo-auditable-binary-cataloger |
+| vte | 0.14.1 |  | cargo-auditable-binary-cataloger |
+| w32 | UNKNOWN |  | pe-binary-package-cataloger |
+| w64 | UNKNOWN |  | pe-binary-package-cataloger |
+| w64-arm | UNKNOWN |  | pe-binary-package-cataloger |
+| w_arm | UNKNOWN |  | pe-binary-package-cataloger |
 | wait-timeout | 0.2.1 |  | cargo-auditable-binary-cataloger |
 | wait-timeout | 0.2.1 |  | cargo-auditable-binary-cataloger |
 | walkdir | 2.5.0 |  | cargo-auditable-binary-cataloger |
 | walkdir | 2.5.0 |  | cargo-auditable-binary-cataloger |
 | want | 0.3.1 |  | cargo-auditable-binary-cataloger |
 | want | 0.3.1 |  | cargo-auditable-binary-cataloger |
+| wasabi | 1.1.3 | MIT | python-installed-package-cataloger |
 | watchfiles | 1.2.0 | MIT | python-installed-package-cataloger |
-| wcwidth | 0.7.0 | MIT | python-installed-package-cataloger |
+| wcwidth | 0.8.2 | MIT | python-installed-package-cataloger |
+| weasel | 1.0.0 | MIT | python-installed-package-cataloger |
 | weaviate-client | 4.20.3 |  | python-installed-package-cataloger |
 | webencodings | 0.5.1 |  | python-installed-package-cataloger |
 | webpki-root-certs | 1.0.7 |  | cargo-auditable-binary-cataloger |
@@ -4132,11 +4165,13 @@ The complete source code for Traefik is publicly available at [https://github.co
 | werkzeug | 3.1.8 | BSD-3-Clause | python-installed-package-cataloger |
 | wheel | 0.45.1 | MIT | python-installed-package-cataloger |
 | wheel | 0.45.1 | MIT | python-installed-package-cataloger |
-| which | 8.0.2 |  | cargo-auditable-binary-cataloger |
-| which | 8.0.2 |  | cargo-auditable-binary-cataloger |
+| which | 8.0.3 |  | cargo-auditable-binary-cataloger |
+| which | 8.0.3 |  | cargo-auditable-binary-cataloger |
 | winnow | 1.0.3 |  | cargo-auditable-binary-cataloger |
 | winnow | 1.0.3 |  | cargo-auditable-binary-cataloger |
-| wrapt | 1.17.3 |  | python-installed-package-cataloger |
+| wiremock | 0.6.5 |  | cargo-auditable-binary-cataloger |
+| wiremock | 0.6.5 |  | cargo-auditable-binary-cataloger |
+| wrapt | 2.2.2 | BSD-2-Clause | python-installed-package-cataloger |
 | writeable | 0.6.2 |  | cargo-auditable-binary-cataloger |
 | writeable | 0.6.2 |  | cargo-auditable-binary-cataloger |
 | wsproto | 1.3.2 | MIT | python-installed-package-cataloger |
@@ -4150,7 +4185,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | xlsxwriter | 3.2.9 | BSD-2-Clause | python-installed-package-cataloger |
 | xml-rs | 0.8.28 |  | cargo-auditable-binary-cataloger |
 | xml-rs | 0.8.28 |  | cargo-auditable-binary-cataloger |
-| xxhash | 3.7.0 |  | python-installed-package-cataloger |
+| xxhash | 3.8.0 | BSD-2-Clause | python-installed-package-cataloger |
 | xz-utils | 5.4.1-1 | GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, LGPL-2.0-only, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
 | xz2 | 0.1.7 |  | cargo-auditable-binary-cataloger |
 | xz2 | 0.1.7 |  | cargo-auditable-binary-cataloger |
@@ -4174,8 +4209,8 @@ The complete source code for Traefik is publicly available at [https://github.co
 | zerofrom | 0.1.6 |  | cargo-auditable-binary-cataloger |
 | zerofrom-derive | 0.1.6 |  | cargo-auditable-binary-cataloger |
 | zerofrom-derive | 0.1.6 |  | cargo-auditable-binary-cataloger |
-| zeroize | 1.8.2 |  | cargo-auditable-binary-cataloger |
-| zeroize | 1.8.2 |  | cargo-auditable-binary-cataloger |
+| zeroize | 1.9.0 |  | cargo-auditable-binary-cataloger |
+| zeroize | 1.9.0 |  | cargo-auditable-binary-cataloger |
 | zerotrie | 0.2.3 |  | cargo-auditable-binary-cataloger |
 | zerotrie | 0.2.3 |  | cargo-auditable-binary-cataloger |
 | zerovec | 0.11.5 |  | cargo-auditable-binary-cataloger |
@@ -4183,7 +4218,6 @@ The complete source code for Traefik is publicly available at [https://github.co
 | zerovec-derive | 0.11.2 |  | cargo-auditable-binary-cataloger |
 | zerovec-derive | 0.11.2 |  | cargo-auditable-binary-cataloger |
 | zipp | 3.19.2 | MIT | python-installed-package-cataloger |
-| zipp | 4.1.0 | MIT | python-installed-package-cataloger |
 | zlib-rs | 0.6.3 |  | cargo-auditable-binary-cataloger |
 | zlib-rs | 0.6.3 |  | cargo-auditable-binary-cataloger |
 | zlib1g | 1:1.2.13.dfsg-1 | Zlib | dpkg-db-cataloger |
