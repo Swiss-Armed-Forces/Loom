@@ -1,5 +1,4 @@
 import logging
-import re
 from typing import Generator, Sequence
 from uuid import UUID, uuid4
 
@@ -31,11 +30,15 @@ from openai.types.chat import (
     ChatCompletionSystemMessageParam,
     ChatCompletionUserMessageParam,
 )
-from pydantic import BaseModel, computed_field
+from pydantic import BaseModel, Field, computed_field
 
 from worker.ai.infra.ai_context_processing_task import AiContextProcessingTask
 from worker.settings import settings
 from worker.utils.clustering import kde_filter_highest_cluster
+from worker.utils.prompt_sanitizer import (
+    build_document_security_instructions,
+    sanitize_document_text,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -124,6 +127,10 @@ class LLMError(Exception):
     pass
 
 
+class _RerankResult(BaseModel):
+    rank: float = Field(ge=RERANK_MIN_RANK, le=RERANK_MAX_RANK)
+
+
 @app.task(
     base=AiContextProcessingTask,
     autoretry_for=tuple([LLMError]),
@@ -163,7 +170,11 @@ Question: {question}
 
 Passage:"""
     client = get_llm_hyde_client()
-    messages = [
+    messages: list[ChatCompletionMessageParam] = [
+        ChatCompletionSystemMessageParam(
+            role="system",
+            content=build_document_security_instructions(settings.translate_target),
+        ),
         ChatCompletionUserMessageParam(role="user", content=prompt),
     ]
 
@@ -296,58 +307,53 @@ def _invoke_rerank_llm(
     prompt: str,
 ) -> float:
     client = get_llm_rerank_client()
-    messages = [
+    messages: list[ChatCompletionMessageParam] = [
+        ChatCompletionSystemMessageParam(
+            role="system",
+            content=(
+                f"{settings.llm_rerank_system_prompt}\n\n"
+                f"{build_document_security_instructions(settings.translate_target)}"
+            ),
+        ),
         ChatCompletionUserMessageParam(role="user", content=prompt),
     ]
 
     try:
-        response = client.chat.completions.create(
+        response = client.beta.chat.completions.parse(
             model=settings.llm.rerank.model,
             messages=messages,
             temperature=settings.llm.rerank.temperature,
             extra_headers=settings.llm.rerank.extra_headers,
             extra_body=settings.llm.rerank.extra_body,
+            response_format=_RerankResult,
         )
     except APIError as ex:
         raise LLMError() from ex
 
-    # search and extract rank
-    rank_search = re.search(
-        r"^\s*(?P<rank>[0-9.]+)", response.choices[0].message.content or ""
-    )
-    rank = float(
-        rank_search.group("rank") if rank_search is not None else RERANK_MIN_RANK
-    )
-
-    # enforce bounds
-    if rank < RERANK_MIN_RANK:
-        return RERANK_MIN_RANK
-    if rank > RERANK_MAX_RANK:
-        return RERANK_MAX_RANK
-
-    return rank
+    result = response.choices[0].message.parsed
+    return result.rank if result is not None else RERANK_MIN_RANK
 
 
 def send_rerank_chatbot_query(text: str, question: str) -> float:
-    rerank_prompt = f"""PROMPT: Rank the relevance of the TEXT based in the context
-of the QUESTION on a scale from {RERANK_MIN_RANK} to {RERANK_MAX_RANK}.
+    sanitized_text = sanitize_document_text(text)
+    rerank_prompt = f"""Rank the relevance of the following document based on the QUESTION
+on a scale from {RERANK_MIN_RANK} to {RERANK_MAX_RANK}.
 
 Where the rankings mean the following:
 
-0: The TEXT is completely unrelevant to the QUESTION.
-1: The TEXT is unrelevant to the QUESTION.
-2: The TEXT is little relevant to the QUESTION.
-3: The TEXT is somewhat relevant to the QUESTION.
-4: The TEXT is relevant to the QUESTION.
-5: The TEXT is extremely relevant to the QUESTION.
+0: The document is completely unrelevant to the QUESTION.
+1: The document is unrelevant to the QUESTION.
+2: The document is little relevant to the QUESTION.
+3: The document is somewhat relevant to the QUESTION.
+4: The document is relevant to the QUESTION.
+5: The document is extremely relevant to the QUESTION.
 
 Do NOT use any previous knowledge.
 Only answer with one number and no additional text.
---------------------
-TEXT: {text}
---------------------
+<document>
+{sanitized_text}
+</document>
 QUESTION: {question}
---------------------
 RANK:"""
 
     rank = _invoke_rerank_llm(rerank_prompt)
@@ -430,7 +436,11 @@ def _stream_chat_llm(
     client = get_llm_chat_client()
     all_messages: list[ChatCompletionMessageParam] = [
         ChatCompletionSystemMessageParam(
-            role="system", content=settings.llm_chat_system_prompt
+            role="system",
+            content=(
+                f"{settings.llm_chat_system_prompt}\n\n"
+                f"{build_document_security_instructions(settings.translate_target)}"
+            ),
         ),
         *messages,
     ]
@@ -470,7 +480,8 @@ def chatbot_query(
     answer_context = ""
     for sorted_ranked_search_embedding in reversed(sorted_ranked_search_embeddings):
         text = load_text_from_text_lazy(sorted_ranked_search_embedding.text_lazy)
-        answer_context += f"* {text}\n"
+        sanitized_text = sanitize_document_text(text)
+        answer_context += f"<document>\n{sanitized_text}\n</document>\n"
 
     messages: list[ChatCompletionMessageParam]
     if len(sorted_ranked_search_embeddings) > 0:
@@ -481,9 +492,9 @@ Do NOT use any previous knowledge which is not contained in the CONTEXT.
 
 Keep your answer in a paragraph of {LLM_MAX_TOKENS_RAG} tokens or less.
 Keep your answer concise and brief.
-Always answer in the following language: {settings.translate_target}
---------------------
-CONTEXT: {answer_context}"""
+
+CONTEXT:
+{answer_context}"""
         messages = [
             ChatCompletionUserMessageParam(role="user", content=task_prompt),
             ChatCompletionUserMessageParam(

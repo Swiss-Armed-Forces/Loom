@@ -9,11 +9,12 @@ import {
     scheduleImageDescriptionByQuery,
     scheduleSingleImageDescription,
 } from "@app/api";
-import { useAppDispatch } from "@app/hooks";
+import { useAppDispatch, useAppSelector } from "@app/hooks";
 import {
     DialogProps,
     setBackgroundTaskSpinnerActive,
 } from "@app/slices/commonSlice";
+import { selectVisionSystemPrompt } from "@app/slices/searchSlice";
 import { SearchQuery } from "@features/common/utils/model";
 
 import { DialogBase } from "../DialogBase";
@@ -32,7 +33,8 @@ export const ImageDescriptionDialog = ({
 }: ImageDescriptionDialogProps) => {
     const { t } = useTranslation();
     const dispatch = useAppDispatch();
-    const [systemPrompt, setSystemPrompt] = useState<string>("");
+    const visionSystemPrompt = useAppSelector(selectVisionSystemPrompt);
+    const [systemPrompt, setSystemPrompt] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
 
     const getErrorMessage = async (error: unknown): Promise<string> => {
@@ -58,11 +60,14 @@ export const ImageDescriptionDialog = ({
         setIsLoading(true);
         try {
             if (fileId) {
-                await scheduleSingleImageDescription(fileId, systemPrompt);
+                await scheduleSingleImageDescription(
+                    fileId,
+                    systemPrompt ?? undefined,
+                );
             } else if (searchQuery) {
                 await scheduleImageDescriptionByQuery(
                     searchQuery,
-                    systemPrompt,
+                    systemPrompt ?? undefined,
                 );
             }
 
@@ -115,11 +120,12 @@ export const ImageDescriptionDialog = ({
                 variant="outlined"
                 autoFocus
                 multiline={true}
-                value={systemPrompt}
+                value={systemPrompt ?? ""}
+                placeholder={visionSystemPrompt ?? ""}
                 label="System Prompt"
                 minRows={2}
                 maxRows={4}
-                onChange={(e) => setSystemPrompt(e.target.value)}
+                onChange={(e) => setSystemPrompt(e.target.value || null)}
             />
         </DialogBase>
     );

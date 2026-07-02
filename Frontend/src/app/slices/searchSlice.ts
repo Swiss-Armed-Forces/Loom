@@ -121,6 +121,7 @@ export interface SearchState {
     webSocketPubSubMessage: PubSubMessage | null;
     chatbotOpen: boolean;
     summarizationSystemPrompt: string | null;
+    visionSystemPrompt: string | null;
     keyboardNavigation: KeyboardNavigationState;
 }
 
@@ -215,6 +216,7 @@ const initialState: SearchState = {
     webSocketPubSubMessage: null,
     chatbotOpen: false,
     summarizationSystemPrompt: null,
+    visionSystemPrompt: null,
     keyboardNavigation: {
         highlightedIndex: null,
     },
@@ -513,6 +515,9 @@ export const searchSlice = createSlice({
         ) => {
             state.summarizationSystemPrompt = action.payload;
         },
+        setVisionSystemPrompt: (state, action: PayloadAction<string>) => {
+            state.visionSystemPrompt = action.payload;
+        },
         toggleSideMenu: (state) => {
             state.sideMenu.isExpanded = !state.sideMenu.isExpanded;
         },
@@ -666,6 +671,7 @@ export const {
     setDisplayStat,
     setChatbotOpen,
     setSummarizationSystemPrompt,
+    setVisionSystemPrompt,
     setFilePreview,
     setHighlightedIndex,
     toggleSideMenu,
@@ -760,6 +766,11 @@ export const selectWebSocketPubSubMessage = createSelector(
 export const selectSummarizationSystemPrompt = createSelector(
     selectSearch,
     (search) => search.summarizationSystemPrompt,
+);
+
+export const selectVisionSystemPrompt = createSelector(
+    selectSearch,
+    (search) => search.visionSystemPrompt,
 );
 
 export const selectHighlightedIndex = createSelector(

@@ -87,4 +87,44 @@ export class ImageDescriptionApi extends runtime.BaseAPI {
             );
         return await response.value();
     }
+
+    /**
+     * Get System Prompt
+     */
+    async getSystemPromptV1FilesImageDescriptionSystemPromptGetRaw(
+        initOverrides?: RequestInit | runtime.InitOverrideFunction,
+    ): Promise<runtime.ApiResponse<string>> {
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        const response = await this.request(
+            {
+                path: `/v1/files/image_description/system_prompt`,
+                method: "GET",
+                headers: headerParameters,
+                query: queryParameters,
+            },
+            initOverrides,
+        );
+
+        if (this.isJsonMime(response.headers.get("content-type"))) {
+            return new runtime.JSONApiResponse<string>(response);
+        } else {
+            return new runtime.TextApiResponse(response) as any;
+        }
+    }
+
+    /**
+     * Get System Prompt
+     */
+    async getSystemPromptV1FilesImageDescriptionSystemPromptGet(
+        initOverrides?: RequestInit | runtime.InitOverrideFunction,
+    ): Promise<string> {
+        const response =
+            await this.getSystemPromptV1FilesImageDescriptionSystemPromptGetRaw(
+                initOverrides,
+            );
+        return await response.value();
+    }
 }

@@ -175,11 +175,9 @@ class Settings(CommonSettings):
     reindex_lost_files_max_files: int = 100
     flush_file_storage_service_max_objects: int = 1000
 
-    llm_rerank_system_prompt: str = (
-        """You are an expert reranking machine called Loom."""
-    )
+    llm_rerank_system_prompt: str = "You are an expert reranking machine called Loom."
 
-    llm_chat_system_prompt: str = """You are an expert english chatbot called Loom"""
+    llm_chat_system_prompt: str = "You are an expert english chatbot called Loom."
     llm_chat_message_history_index: str = "message_history"
 
     auto_tag_file_similarity_threshold: float = 0.75
