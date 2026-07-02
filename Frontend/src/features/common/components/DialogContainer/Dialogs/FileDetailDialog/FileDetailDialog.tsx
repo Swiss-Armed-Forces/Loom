@@ -19,6 +19,10 @@ import {
     MessageFileUpdate,
     getFile,
     getShortRunningQuery,
+    scheduleSingleFileIndexing,
+    scheduleSingleFileSummarization,
+    scheduleSingleFileTranslation,
+    scheduleSingleImageDescription,
     updateFile,
 } from "@app/api";
 import { useAppDispatch, useAppSelector } from "@app/hooks";
@@ -31,6 +35,7 @@ import {
 } from "@app/slices/commonSlice";
 import {
     fetchPreview,
+    selectAutoActionsPreferences,
     selectFileById,
     selectWebSocketPubSubMessage,
     setFilePreview,
@@ -61,12 +66,13 @@ export const FileDetailDialog = ({
     const dispatch = useAppDispatch();
     const { t } = useTranslation();
     const editorRef = useRef<InstanceType<typeof AceEditorImport>>(null);
-    const hasUpdatedSeen = useRef<boolean>(false);
+    const hasAutoActionsRun = useRef<boolean>(false);
 
     const [file, setFile] = useState<GetFileResponse>();
     const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
     const lastFetchedFileId = useRef<string>("");
 
+    const autoActionsPreferences = useAppSelector(selectAutoActionsPreferences);
     const webSocketPubSubMessage = useAppSelector(selectWebSocketPubSubMessage);
     const fileData = useAppSelector(selectFileById(fileId));
     const preview = fileData?.preview ?? null;
@@ -103,19 +109,50 @@ export const FileDetailDialog = ({
         }
     }, [fileId]); // eslint-disable-line react-hooks/exhaustive-deps
 
-    // Mark File as Seen
+    // Auto-actions on detail open
     useEffect(() => {
-        if (preview && !preview.seen && !hasUpdatedSeen.current) {
-            updateFile(fileId, { seen: true })
-                .then(() => {
-                    hasUpdatedSeen.current = true;
-                    dispatch(setFilePreview({ ...preview, seen: true }));
-                })
-                .catch((err) =>
-                    toast.error(
-                        t("updateFileState.seen.scheduledErrorToast", { err }),
-                    ),
-                );
+        if (!preview || hasAutoActionsRun.current) return;
+        hasAutoActionsRun.current = true;
+
+        const prefs = autoActionsPreferences;
+        const optimisticUpdates: Partial<typeof preview> = {};
+
+        if (prefs.markAsSeen && !preview.seen) {
+            updateFile(fileId, { seen: true }).catch((err) =>
+                toast.error(
+                    t("updateFileState.seen.scheduledErrorToast", { err }),
+                ),
+            );
+            optimisticUpdates.seen = true;
+        }
+
+        if (prefs.flag && !preview.flagged) {
+            updateFile(fileId, { flagged: true }).catch((err) =>
+                toast.error(
+                    t("updateFileState.flagged.scheduledErrorToast", { err }),
+                ),
+            );
+            optimisticUpdates.flagged = true;
+        }
+
+        if (Object.keys(optimisticUpdates).length > 0) {
+            dispatch(setFilePreview({ ...preview, ...optimisticUpdates }));
+        }
+
+        if (prefs.reindex) {
+            scheduleSingleFileIndexing(fileId).catch(() => {});
+        }
+
+        if (prefs.summarize) {
+            scheduleSingleFileSummarization(fileId, null).catch(() => {});
+        }
+
+        if (prefs.describeImage) {
+            scheduleSingleImageDescription(fileId, null).catch(() => {});
+        }
+
+        if (prefs.translate) {
+            scheduleSingleFileTranslation("", fileId).catch(() => {});
         }
     }, [fileId, preview]); // eslint-disable-line react-hooks/exhaustive-deps
 

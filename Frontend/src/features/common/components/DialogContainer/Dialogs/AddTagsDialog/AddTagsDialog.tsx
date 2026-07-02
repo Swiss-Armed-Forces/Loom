@@ -80,8 +80,8 @@ export const AddTagsDialog = ({
                 );
             } else {
                 await addTagsToFiles(searchQuery, selectedTagsToAdd);
+                toast.success(t("tags.scheduledToast"));
             }
-            toast.success(t("tags.scheduledToast"));
             onClose();
         } catch (error: any) {
             toast.error(

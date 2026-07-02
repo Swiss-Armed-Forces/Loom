@@ -8,6 +8,7 @@ import socketMiddleware from "../middleware/SocketMiddleware";
 
 import SocketApi from "./api/socketApi";
 import {
+    localStorageAutoActionsMiddleware,
     localStorageCustomQueriesMiddleware,
     localStorageSideMenuMiddleware,
 } from "./middlewares";
@@ -22,6 +23,7 @@ export const store = configureStore({
         getDefaultMiddleware()
             .prepend(localStorageCustomQueriesMiddleware.middleware)
             .prepend(localStorageSideMenuMiddleware.middleware)
+            .prepend(localStorageAutoActionsMiddleware.middleware)
             .concat(socketMiddleware(new SocketApi())),
 });
 
