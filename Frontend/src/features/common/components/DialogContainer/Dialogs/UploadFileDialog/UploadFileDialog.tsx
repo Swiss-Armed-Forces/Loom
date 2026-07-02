@@ -20,7 +20,7 @@ import { DialogBase } from "..";
 
 import styles from "./UploadFileDialog.module.css";
 
-export const UploadFileDialog = ({ id, onClose }: DialogProps) => {
+export const UploadFileDialog = ({ id, onClose, isTop }: DialogProps) => {
     const [files, setFiles] = useState<File[]>([]);
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const dispatch = useAppDispatch();
@@ -55,6 +55,7 @@ export const UploadFileDialog = ({ id, onClose }: DialogProps) => {
         <DialogBase
             id={id}
             onClose={onClose}
+            isTop={isTop}
             title={t("uploadFileDialog.title")}
             loading={isLoading}
             actions={

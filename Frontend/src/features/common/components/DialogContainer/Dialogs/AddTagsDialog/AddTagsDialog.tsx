@@ -30,6 +30,7 @@ interface AddTagsDialogProps extends DialogProps {
 export const AddTagsDialog = ({
     id,
     onClose,
+    isTop,
     filePreview,
 }: AddTagsDialogProps) => {
     const dispatch = useAppDispatch();
@@ -97,6 +98,7 @@ export const AddTagsDialog = ({
         <DialogBase
             id={id}
             onClose={onClose}
+            isTop={isTop}
             title={t("tags.tagDialogTitle")}
             loading={isLoading}
             actions={

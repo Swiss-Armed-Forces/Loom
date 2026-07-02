@@ -56,6 +56,7 @@ export const FileDetailDialog = ({
     fileId,
     tab = FileDetailTab.Rendered,
     onClose,
+    isTop,
 }: FileDetailDialogProps) => {
     const dispatch = useAppDispatch();
     const { t } = useTranslation();
@@ -176,6 +177,7 @@ export const FileDetailDialog = ({
         <Dialog
             id={`file-detail-${id}`}
             open
+            disableEnforceFocus={!isTop}
             onClose={handleClose}
             maxWidth="xl"
             fullWidth

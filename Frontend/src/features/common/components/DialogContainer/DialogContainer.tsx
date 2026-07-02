@@ -1,7 +1,11 @@
 import React, { useCallback } from "react";
 
 import { useAppDispatch, useAppSelector } from "@app/hooks";
-import { closeDialog, selectDialogs } from "@app/slices/commonSlice";
+import {
+    DialogProps,
+    closeDialog,
+    selectDialogs,
+} from "@app/slices/commonSlice";
 import { DialogType } from "@features/common/utils/enums";
 
 import {
@@ -18,18 +22,25 @@ import {
     UploadFileDialog,
 } from "./Dialogs";
 
+// Validates at registration time that a dialog component accepts DialogProps
+// (including isTop). The return type is kept as any so the heterogeneous
+// registry remains flexible at read time.
+const registerDialog = <P extends DialogProps>(
+    c: React.ComponentType<P>,
+): React.ComponentType<any> => c;
+
 const dialogRegistry: Record<DialogType, React.ComponentType<any>> = {
-    [DialogType.About]: AboutDialog,
-    [DialogType.EncryptionKeyInfo]: EncryptionKeyInfoDialog,
-    [DialogType.AddTagsDialog]: AddTagsDialog,
-    [DialogType.CreateArchive]: CreateArchiveDialog,
-    [DialogType.DeleteCustomQuery]: DeleteCustomQueryDialog,
-    [DialogType.DeleteTagGlobally]: DeleteTagGloballyDialog,
-    [DialogType.FileDetail]: FileDetailDialog,
-    [DialogType.ImageDescription]: ImageDescriptionDialog,
-    [DialogType.Summary]: SummaryDialog,
-    [DialogType.Translation]: TranslationDialog,
-    [DialogType.UploadFile]: UploadFileDialog,
+    [DialogType.About]: registerDialog(AboutDialog),
+    [DialogType.EncryptionKeyInfo]: registerDialog(EncryptionKeyInfoDialog),
+    [DialogType.AddTagsDialog]: registerDialog(AddTagsDialog),
+    [DialogType.CreateArchive]: registerDialog(CreateArchiveDialog),
+    [DialogType.DeleteCustomQuery]: registerDialog(DeleteCustomQueryDialog),
+    [DialogType.DeleteTagGlobally]: registerDialog(DeleteTagGloballyDialog),
+    [DialogType.FileDetail]: registerDialog(FileDetailDialog),
+    [DialogType.ImageDescription]: registerDialog(ImageDescriptionDialog),
+    [DialogType.Summary]: registerDialog(SummaryDialog),
+    [DialogType.Translation]: registerDialog(TranslationDialog),
+    [DialogType.UploadFile]: registerDialog(UploadFileDialog),
 };
 
 export const DialogContainer = () => {
@@ -42,6 +53,9 @@ export const DialogContainer = () => {
         },
         [dispatch],
     );
+    const topDialogId =
+        dialogs.length > 0 ? dialogs[dialogs.length - 1].id : null;
+
     return (
         <>
             {dialogs.map((dialog) => {
@@ -53,6 +67,7 @@ export const DialogContainer = () => {
                         key={dialog.id}
                         id={dialog.id}
                         {...dialog.props}
+                        isTop={dialog.id === topDialogId}
                         onClose={() => handleClose(dialog.id)}
                     />
                 );

@@ -17,6 +17,7 @@ interface ConfirmDialogProps extends DialogProps {
 export const ConfirmDialog = ({
     id,
     onClose,
+    isTop,
     text,
     buttonText,
     onConfirm,
@@ -29,6 +30,7 @@ export const ConfirmDialog = ({
         <DialogBase
             id={id}
             onClose={onClose}
+            isTop={isTop}
             title={t("confirmDialog.title")}
             loading={loading}
             actions={

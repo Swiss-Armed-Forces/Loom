@@ -26,6 +26,7 @@ interface ImageDescriptionDialogProps extends DialogProps {
 export const ImageDescriptionDialog = ({
     id,
     onClose,
+    isTop,
     fileId,
     searchQuery,
 }: ImageDescriptionDialogProps) => {
@@ -82,6 +83,7 @@ export const ImageDescriptionDialog = ({
         <DialogBase
             id={id}
             onClose={onClose}
+            isTop={isTop}
             title={t("imageDescriptionDialog.title")}
             loading={isLoading}
             actions={

@@ -21,6 +21,7 @@ interface DialogBaseProps extends DialogProps {
 export const DialogBase = ({
     id,
     onClose,
+    isTop,
     title,
     actions,
     children,
@@ -31,6 +32,7 @@ export const DialogBase = ({
     return (
         <Dialog
             open
+            disableEnforceFocus={!isTop}
             fullWidth
             onClose={onClose}
             aria-labelledby={`dialog-${id}`}

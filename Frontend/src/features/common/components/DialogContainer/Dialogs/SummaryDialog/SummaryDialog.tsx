@@ -28,6 +28,7 @@ interface SummaryDialogProps extends DialogProps {
 export const SummaryDialog = ({
     id,
     onClose,
+    isTop,
     fileId,
     searchQuery,
 }: SummaryDialogProps) => {
@@ -84,6 +85,7 @@ export const SummaryDialog = ({
         <DialogBase
             id={id}
             onClose={onClose}
+            isTop={isTop}
             title={t("summarizationDialog.title")}
             loading={isLoading}
             actions={
