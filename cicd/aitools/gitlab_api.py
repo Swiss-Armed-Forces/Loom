@@ -98,16 +98,6 @@ def update_mr(mr: ProjectMergeRequest, title: str, description: str) -> None:
     mr.save()
 
 
-def fetch_issue(gl: gitlab.Gitlab, repo: Repo, issue_number: int) -> ProjectIssue:
-    """Fetch a GitLab issue by number."""
-    project_id = CI_PROJECT_ID or get_project_id_from_remote(repo)
-    if not project_id:
-        logger.error("Could not determine project ID from CI_PROJECT_ID or git remote")
-        sys.exit(1)
-    project = gl.projects.get(project_id)
-    return project.issues.get(issue_number)
-
-
 def parse_issue_url_or_id(value: str) -> IssueRef:
     """Parse a GitLab issue URL or bare ID into an IssueRef."""
     url_match = re.match(r"https?://[^/]+/(.+?)/-/(?:issues|work_items)/(\d+)", value)

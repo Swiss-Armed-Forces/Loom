@@ -85,8 +85,7 @@ def build_parser() -> tuple[argparse.ArgumentParser, list[str]]:
     )
     implement_parser.add_argument(
         "issue_number",
-        type=int,
-        help="GitLab issue number to implement",
+        help="GitLab issue URL (https://.../issues/123 or .../work_items/123) or bare issue ID",
     )
     implement_parser.set_defaults(func=cmd_implement)
 
