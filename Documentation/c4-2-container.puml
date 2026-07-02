@@ -36,7 +36,6 @@ System_Boundary(loom, "") {
 
     'System_Boundary(frontend_services, "Frontend Services"){
         Container(frontend, "Frontend", "React, Material UI, Redux", "User interaction", $sprite="react", $tags="exposed")
-        Container(translate, "Translate", "LibeTranslate", "Translation", $sprite="&text,scale=5", $tags="exposed")
         Container(ai_ui, "AI User Interface", "Open Webui", "User Interaction with AI", $sprite="robot", $tags="exposed")
         Container(email_client, "Email Client", "Roundcube", "Visualizes Emails", $sprite="email", $tags="exposed")
 
@@ -93,7 +92,6 @@ Rel(seaweedfs_admin, seaweedfs_master, "")
 
 Rel(api, rabbit, "")
 Rel(api, es, "")
-Rel(api, translate, "")
 Rel(api, seaweedfs_filer, "")
 
 Rel(crawler, rabbit, "")
@@ -113,7 +111,6 @@ Rel(worker, es, "")
 Rel(worker, tika, "")
 Rel(worker, gotenberg, "")
 Rel(worker, ai, "")
-Rel(worker, translate, "")
 Rel(worker, imap, "")
 Rel(worker, rspamd, "")
 Rel(worker, seaweedfs_filer, "")
@@ -128,7 +125,6 @@ Rel(es, prometheus, "")
 
 Rel(redis, prometheus, "")
 
-Rel(translate, prometheus, "")
 Rel(gotenberg, prometheus, "")
 Rel(seaweedfs_master, prometheus, "")
 Rel(kubeStateMetrics, prometheus, "")

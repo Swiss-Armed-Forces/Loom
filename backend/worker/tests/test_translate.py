@@ -1,19 +1,34 @@
-from email.message import Message
 from math import floor
-from urllib.error import HTTPError
+from typing import cast
+from unittest.mock import MagicMock
 
 import pytest
-from common.dependencies import get_libretranslate_api
+from common.dependencies import get_llm_translation_client
+from openai import APIConnectionError
 
 from worker.index_file.tasks.translate import (
-    LIBRETRANSLATE_MAX_CHARACTERS_PER_REQUEST,
-    LibretranslateDetectedLanguage,
-    LibretranslateInternalException,
+    MAX_CHARACTERS_PER_CHUNK,
+    DetectedLanguage,
+    LLMTranslationException,
+    _LanguageDetectionResult,
+    _TranslationResult,
     get_translation_text_splitter,
     translate,
     translate_detect_language,
 )
 from worker.settings import settings
+
+
+def _make_parse_response(
+    parsed: _LanguageDetectionResult | _TranslationResult,
+) -> MagicMock:
+    response = MagicMock()
+    response.choices[0].message.parsed = parsed
+    return response
+
+
+def _llm_client() -> MagicMock:
+    return cast(MagicMock, get_llm_translation_client())
 
 
 @pytest.mark.parametrize(
@@ -27,14 +42,14 @@ from worker.settings import settings
     ],
 )
 def test_translate_detect_language(text, expected_language, expected_confidence):
-
-    libretranslate_api = get_libretranslate_api()
-    libretranslate_api.detect.return_value = [
-        {
-            "language": expected_language,
-            "confidence": expected_confidence,
-        }
-    ]
+    detection_result = _LanguageDetectionResult(
+        languages=[
+            DetectedLanguage(language=expected_language, confidence=expected_confidence)
+        ]
+    )
+    _llm_client().beta.chat.completions.parse.return_value = _make_parse_response(
+        detection_result
+    )
 
     result = translate_detect_language(text)
     assert result[0].language == expected_language
@@ -48,56 +63,38 @@ def test_translate_detect_language(text, expected_language, expected_confidence)
 def test_translate_detect_language_filters_low_confidence(
     text, expected_language, expected_confidence
 ):
-    libretranslate_api = get_libretranslate_api()
-    libretranslate_api.detect.return_value = [
-        {
-            "language": expected_language,
-            "confidence": expected_confidence,
-        }
-    ]
+    detection_result = _LanguageDetectionResult(
+        languages=[
+            DetectedLanguage(language=expected_language, confidence=expected_confidence)
+        ]
+    )
+    _llm_client().beta.chat.completions.parse.return_value = _make_parse_response(
+        detection_result
+    )
 
     result = translate_detect_language(text)
     assert len(result) == 0
 
 
 def test_translate_detect_language_empty_text():
-    libretranslate_api = get_libretranslate_api()
+    client = _llm_client()
     text = ""
     result = translate_detect_language(text)
-    assert not libretranslate_api.detect.called
+    assert not client.beta.chat.completions.parse.called
     assert len(result) == 0
 
 
-def test_translate_detect_http_internal_server_error():
-    libretranslate_api = get_libretranslate_api()
-    libretranslate_api.detect.side_effect = HTTPError(
-        url="http://...", code=500, msg="Internal error", fp=None, hdrs=Message()
+def test_translate_detect_llm_error():
+    _llm_client().beta.chat.completions.parse.side_effect = APIConnectionError(
+        request=MagicMock()
     )
 
-    with pytest.raises(LibretranslateInternalException):
-        translate_detect_language("a short text")
-
-
-def test_translate_detect_remote_disconnected():
-    libretranslate_api = get_libretranslate_api()
-    libretranslate_api.detect.side_effect = OSError("status line")
-
-    with pytest.raises(LibretranslateInternalException):
-        translate_detect_language("a short text")
-
-
-def test_translate_detect_http_client_error():
-    libretranslate_api = get_libretranslate_api()
-    libretranslate_api.detect.side_effect = HTTPError(
-        url="http://...", code=400, msg="Internal error", fp=None, hdrs=Message()
-    )
-
-    with pytest.raises(HTTPError):
+    with pytest.raises(LLMTranslationException):
         translate_detect_language("a short text")
 
 
 @pytest.mark.parametrize(
-    "text, expected_text, expected_language,expected_translate_calls",
+    "text, expected_text, expected_language, expected_translate_calls",
     [
         ("", "", "fr", 0),
         (
@@ -117,49 +114,26 @@ def test_translate_detect_http_client_error():
 def test_translate(
     text: str, expected_text: str, expected_language: str, expected_translate_calls: int
 ):
-    libretranslate_api = get_libretranslate_api()
-    libretranslate_api.translate.return_value = expected_text
+    client = _llm_client()
+    client.beta.chat.completions.parse.return_value = _make_parse_response(
+        _TranslationResult(text=expected_text)
+    )
 
     translation = translate(
-        text, LibretranslateDetectedLanguage(confidence=1, language=expected_language)
+        text, DetectedLanguage(confidence=1, language=expected_language)
     )
 
     assert translation == expected_text
-    assert libretranslate_api.translate.call_count == expected_translate_calls
+    assert client.beta.chat.completions.parse.call_count == expected_translate_calls
 
 
-def test_translate_http_internal_server_error():
-    libretranslate_api = get_libretranslate_api()
-    libretranslate_api.translate.side_effect = HTTPError(
-        url="http://...", code=500, msg="Internal error", fp=None, hdrs=Message()
+def test_translate_llm_error():
+    _llm_client().beta.chat.completions.parse.side_effect = APIConnectionError(
+        request=MagicMock()
     )
 
-    with pytest.raises(LibretranslateInternalException):
-        translate(
-            "a short text", LibretranslateDetectedLanguage(confidence=1, language="es")
-        )
-
-
-def test_translate_remote_disconnected():
-    libretranslate_api = get_libretranslate_api()
-    libretranslate_api.translate.side_effect = OSError("status line")
-
-    with pytest.raises(LibretranslateInternalException):
-        translate(
-            "a short text", LibretranslateDetectedLanguage(confidence=1, language="es")
-        )
-
-
-def test_translate_http_client_error():
-    libretranslate_api = get_libretranslate_api()
-    libretranslate_api.translate.side_effect = HTTPError(
-        url="http://...", code=400, msg="Internal error", fp=None, hdrs=Message()
-    )
-
-    with pytest.raises(HTTPError):
-        translate(
-            "a short text", LibretranslateDetectedLanguage(confidence=1, language="es")
-        )
+    with pytest.raises(LLMTranslationException):
+        translate("a short text", DetectedLanguage(confidence=1, language="es"))
 
 
 @pytest.mark.parametrize(
@@ -167,7 +141,7 @@ def test_translate_http_client_error():
     [0, 1, 10, 20, 100],
 )
 def test_translate_text_splitter_long_word(expected_text_chunks: int):
-    text = "x" * LIBRETRANSLATE_MAX_CHARACTERS_PER_REQUEST * expected_text_chunks
+    text = "x" * MAX_CHARACTERS_PER_CHUNK * expected_text_chunks
 
     text_splitter = get_translation_text_splitter()
     text_chunks = text_splitter.split_text(text)
@@ -185,11 +159,7 @@ def test_translate_text_splitter_long_word(expected_text_chunks: int):
 )
 def test_translate_text_splitter_long_text(expected_text_chunks: int):
     word = "x "
-    text = (
-        word
-        * floor(LIBRETRANSLATE_MAX_CHARACTERS_PER_REQUEST / len(word))
-        * expected_text_chunks
-    )
+    text = word * floor(MAX_CHARACTERS_PER_CHUNK / len(word)) * expected_text_chunks
 
     text_splitter = get_translation_text_splitter()
     text_chunks = text_splitter.split_text(text)

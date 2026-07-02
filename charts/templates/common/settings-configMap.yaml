@@ -162,11 +162,6 @@ data:
     es_number_of_replicas: {{ .Values.elasticsearch.shardsReplicasCount | quote  }}
     {{- end }}
 
-    # translate
-    {{- if ne .Values.translate.timeout nil }}
-    translate_timeout: {{ .Values.translate.timeout | quote }}
-    {{- end }}
-
     # hosts
     es_host: http://{{ include "app.fullname" . }}-elasticsearch:{{ .Values.elasticsearch.service.port }}
     rabbit_mq_management_host: http://guest:guest@{{ include "app.fullname" . }}-rabbit:{{ .Values.rabbit.service.port.http }}
@@ -175,7 +170,6 @@ data:
     redis_cache_host: redis://{{ include "app.fullname" . }}-redis-cache:{{ index .Values "redis-cache" "service" "port" }}/0?protocol=3
     tika_server_host: http://{{ include "app.fullname" . }}-tika:{{ .Values.tika.service.port }}
     rspam_host: http://{{ include "app.fullname" . }}-rspamd:{{ .Values.rspamd.worker.service.port }}
-    translate_host: http://{{ .Values.translate.service.externalHost | default (printf "%s-translate" (include "app.fullname" .)) }}:{{ .Values.translate.service.port }}
 
     api_host: http://{{ include "app.fullname" . }}-api:{{ .Values.api.service.port }}
     ws_host: ws://{{ include "app.fullname" . }}-api:{{ .Values.api.service.port }}
@@ -482,6 +476,27 @@ data:
     {{- end }}
     {{- if ne .Values.llm.vision.max_tokens nil }}
     llm__vision__max_tokens: {{ .Values.llm.vision.max_tokens | quote }}
+    {{- end }}
+
+    # llm translation
+    llm__translation__endpoint: {{ .Values.llm.translation.endpoint | default $ollamaEndpoint | quote }}
+    {{- if and (not .Values.externalSecrets.secrets.llm__translation__api_key.enabled) (ne .Values.llm.translation.api_key nil) }}
+    llm__translation__api_key: {{ .Values.llm.translation.api_key | quote }}
+    {{- end }}
+    {{- if ne .Values.llm.translation.model nil }}
+    llm__translation__model: {{ .Values.llm.translation.model | quote }}
+    {{- end }}
+    {{- if ne .Values.llm.translation.temperature nil }}
+    llm__translation__temperature: {{ .Values.llm.translation.temperature | quote }}
+    {{- end }}
+    {{- if .Values.llm.translation.extra_headers }}
+    llm__translation__extra_headers: {{ .Values.llm.translation.extra_headers | toJson | quote }}
+    {{- end }}
+    {{- if .Values.llm.translation.extra_body }}
+    llm__translation__extra_body: {{ .Values.llm.translation.extra_body | toJson | quote }}
+    {{- end }}
+    {{- if ne .Values.llm.translation.timeout nil }}
+    llm__translation__timeout: {{ .Values.llm.translation.timeout | quote }}
     {{- end }}
 
     # crawler

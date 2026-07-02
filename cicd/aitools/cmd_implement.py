@@ -12,11 +12,12 @@ from ._common import _ask, _get_gitlab_client_or_exit, _maybe_update_mr_descript
 from .claude import run_claude_agentic
 from .gitlab_api import (
     create_branch_and_mr_for_issue,
-    fetch_issue,
+    fetch_issue_by_ref,
     fetch_milestone_by_ref,
     fetch_open_issues_for_milestone,
     find_open_mr_for_issue,
     get_project,
+    parse_issue_url_or_id,
     parse_milestone_url_or_id,
 )
 from .models import IssueBranchResult
@@ -76,11 +77,17 @@ def _implement_issue(project: Project, issue: ProjectIssue, repo: Repo) -> None:
 
 def cmd_implement(args: argparse.Namespace) -> None:
     """Implement a GitLab issue using Claude in agentic mode."""
+    try:
+        ref = parse_issue_url_or_id(args.issue_number)
+    except ValueError as e:
+        logger.error("%s", e)
+        sys.exit(1)
+
     repo = Repo(os.getcwd())
 
     gl = _get_gitlab_client_or_exit()
 
-    issue = fetch_issue(gl, repo, args.issue_number)
+    issue = fetch_issue_by_ref(gl, repo, ref)
     labels = ", ".join(issue.labels) if issue.labels else "(none)"
 
     print(f"\nIssue #{issue.iid}: {issue.title}")

@@ -5,7 +5,7 @@ import sys
 from concurrent.futures import ThreadPoolExecutor
 
 from git import Repo
-from gitlab.v4.objects import ProjectMergeRequestDiscussion
+from gitlab.v4.objects import ProjectIssueDiscussion, ProjectMergeRequestDiscussion
 
 from . import config
 from .config import CLAUDE_TIMEOUT, MAX_DIFF_CHARS
@@ -15,6 +15,7 @@ from .models import CommitMessage, DiffChunk, FileDiffMap, MRContext
 from .prompts import (
     build_comment_reply_prompt,
     build_diff_chunk_summary_prompt,
+    build_issue_note_reply_prompt,
     build_mr_update_prompt,
     build_release_notes_prompt,
 )
@@ -234,6 +235,57 @@ def generate_discussion_reply(
         return reply if reply else None
     except (subprocess.TimeoutExpired, OSError) as e:
         logger.warning("Failed to generate reply for %s: %s", location, e)
+        return None
+
+
+def generate_issue_note_reply(
+    discussion: ProjectIssueDiscussion,
+    old_description: str,
+    new_description: str,
+    repo: Repo,
+) -> str | None:
+    """Generate a reply to a single issue comment thread using Claude."""
+    if not repo.working_dir:
+        return None
+
+    notes = discussion.attributes.get("notes", [])
+    if not notes:
+        return None
+    first_note = notes[0]
+    author = first_note.get("author", {}).get("username", "unknown")
+    body = first_note.get("body", "")
+    prompt = build_issue_note_reply_prompt(
+        author, body, old_description, new_description
+    )
+
+    try:
+        result = subprocess.run(
+            [
+                "claude",
+                "--print",
+                "--output-format",
+                "text",
+                "--no-session-persistence",
+            ],
+            input=prompt,
+            capture_output=True,
+            text=True,
+            timeout=CLAUDE_TIMEOUT,
+            cwd=repo.working_dir,
+            check=False,
+        )
+        if result.returncode != 0:
+            logger.warning(
+                "Claude CLI returned non-zero for issue reply generation: %s",
+                result.returncode,
+            )
+            return None
+        reply = result.stdout.strip()
+        return reply if reply else None
+    except (subprocess.TimeoutExpired, OSError) as e:
+        logger.warning(
+            "Failed to generate reply for discussion %s: %s", discussion.id, e
+        )
         return None
 
 

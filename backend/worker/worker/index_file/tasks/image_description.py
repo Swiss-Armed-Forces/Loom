@@ -13,11 +13,13 @@ from common.services.lazybytes_service import TempLazyBytes
 from common.settings import settings
 from common.utils.cache import cache
 from openai import APIError
+from pydantic import BaseModel
 
 from worker.index_file.infra.file_indexing_task import FileIndexingTask
 from worker.index_file.infra.indexing_persister import IndexingPersister
 from worker.settings import settings as worker_settings
 from worker.utils.persisting_task import persisting_task
+from worker.utils.prompt_sanitizer import build_document_security_instructions
 
 logger = logging.getLogger(__name__)
 
@@ -64,26 +66,33 @@ class ImageDescriptionError(Exception):
     pass
 
 
+class _ImageDescriptionResult(BaseModel):
+    description: str
+
+
 def describe_image(data: memoryview, system_prompt: str | None = None) -> str:
     prompt = f"""PROMPT: Describe the contents of the image in detail.
 Include any visible text, objects, people, scenes, colors, and layout.
-Your response must be written in the following language: {settings.translate_target}.
 Do NOT use any prior knowledge — only describe what is visible in the image.
 Respond with a description of at most {settings.llm.vision.max_tokens} tokens.
 
 DESCRIPTION:"""
-    if system_prompt is None:
-        system_prompt = settings.llm.vision.system_prompt
+    resolved_system_prompt = (
+        f"{settings.llm.vision.system_prompt}\n\n"
+        f"{build_document_security_instructions(settings.translate_target)}"
+    )
+    if system_prompt is not None:
+        resolved_system_prompt = f"{resolved_system_prompt}\n\n{system_prompt}"
 
     client = get_llm_vision_client()
 
     image = base64.b64encode(data).decode(errors=settings.decode_error_handler)
 
     try:
-        response = client.chat.completions.create(
+        response = client.beta.chat.completions.parse(
             model=settings.llm.vision.model,
             messages=[
-                {"role": "system", "content": system_prompt},
+                {"role": "system", "content": resolved_system_prompt},
                 {
                     "role": "user",
                     "content": [
@@ -101,12 +110,14 @@ DESCRIPTION:"""
             temperature=settings.llm.vision.temperature,
             extra_headers=settings.llm.vision.extra_headers,
             extra_body=settings.llm.vision.extra_body,
+            response_format=_ImageDescriptionResult,
         )
     except APIError as ex:
         raise ImageDescriptionError() from ex
 
+    result = response.choices[0].message.parsed
     return settings.llm.vision.truncate_response(
-        response.choices[0].message.content or ""
+        result.description if result is not None else ""
     )
 
 

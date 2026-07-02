@@ -38,12 +38,6 @@ export interface QueryParameters {
      * @memberof QueryParameters
      */
     searchString?: string;
-    /**
-     *
-     * @type {Array<string>}
-     * @memberof QueryParameters
-     */
-    languages?: Array<string>;
 }
 
 /**
@@ -80,7 +74,6 @@ export function QueryParametersFromJSONTyped(
         keepAlive: json["keep_alive"] == null ? undefined : json["keep_alive"],
         searchString:
             json["search_string"] == null ? undefined : json["search_string"],
-        languages: json["languages"] == null ? undefined : json["languages"],
     };
 }
 
@@ -92,6 +85,5 @@ export function QueryParametersToJSON(value?: QueryParameters | null): any {
         query_id: value["queryId"],
         keep_alive: value["keepAlive"],
         search_string: value["searchString"],
-        languages: value["languages"],
     };
 }

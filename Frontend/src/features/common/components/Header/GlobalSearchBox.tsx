@@ -7,7 +7,6 @@ import { useAppDispatch, useAppSelector } from "@app/hooks";
 import { selectQuery, updateQuery } from "@app/slices/searchSlice";
 
 import styles from "./GlobalSearchBox.module.css";
-import { SearchTranslateDialog } from "./SearchTranslateDialog";
 
 const StyledInputBase = styled(InputBase)(() => ({
     color: "inherit",
@@ -74,7 +73,6 @@ export const GlobalSearchBox = () => {
             <StyledInputBase
                 inputRef={searchInputRef}
                 startAdornment={<Search sx={{ p: 1 }} />}
-                endAdornment={<SearchTranslateDialog />}
                 placeholder={t("globalSearchBox.searchPlaceholder")}
                 inputProps={{
                     "aria-label": "search",

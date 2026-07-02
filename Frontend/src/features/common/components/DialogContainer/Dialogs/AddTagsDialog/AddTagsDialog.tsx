@@ -30,6 +30,7 @@ interface AddTagsDialogProps extends DialogProps {
 export const AddTagsDialog = ({
     id,
     onClose,
+    isTop,
     filePreview,
 }: AddTagsDialogProps) => {
     const dispatch = useAppDispatch();
@@ -79,8 +80,8 @@ export const AddTagsDialog = ({
                 );
             } else {
                 await addTagsToFiles(searchQuery, selectedTagsToAdd);
+                toast.success(t("tags.scheduledToast"));
             }
-            toast.success(t("tags.scheduledToast"));
             onClose();
         } catch (error: any) {
             toast.error(
@@ -97,6 +98,7 @@ export const AddTagsDialog = ({
         <DialogBase
             id={id}
             onClose={onClose}
+            isTop={isTop}
             title={t("tags.tagDialogTitle")}
             loading={isLoading}
             actions={

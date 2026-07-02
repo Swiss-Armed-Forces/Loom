@@ -20,6 +20,7 @@ interface DeleteTagGloballyDialogProps extends DialogProps {
 export const DeleteTagGloballyDialog = ({
     id,
     onClose,
+    isTop,
     tag,
 }: DeleteTagGloballyDialogProps) => {
     const dispatch = useAppDispatch();
@@ -50,6 +51,7 @@ export const DeleteTagGloballyDialog = ({
     return (
         <ConfirmDialog
             id={id}
+            isTop={isTop}
             text={t("confirmDialog.confirmTagDeletionText", { tag })}
             buttonText={t("confirmDialog.confirmTagDeletion")}
             onConfirm={handleDeleteTagGlobally}

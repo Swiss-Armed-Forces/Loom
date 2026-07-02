@@ -28,8 +28,10 @@
         "sortPlaceholder": "Score"
     },
     "generalSearchView": {
+        "content": "Content",
         "summary": "Summary",
         "imageDescription": "Image Description",
+        "translation": "Translation",
         "viewDetails": "View details",
         "loadMore": "Load more...",
         "download": "Download file",
@@ -40,6 +42,10 @@
         "queryExpired": "Query expired – refreshing results",
         "queryThisField": "Query by this field",
         "sortThisField": "Sort by this field",
+        "contentTruncatedIcon": "Content is truncated",
+        "attachmentsSkippedIcon": "Attachments skipped (max recursion depth reached)",
+        "spamIcon": "SPAM",
+        "detectedLanguageTooltip": "Detected language: {{language}}",
         "shareContent": {
             "title": "Copy link",
             "success": "Copied URL to clipboard",
@@ -105,8 +111,6 @@
             "scheduledErrorToast": "Couldn't change visibility of files. Code: {{err.status}}, Text: {{err.text}}",
             "scheduledEnableFilesToast": "Hiding files successfully scheduled, this might take a while",
             "scheduledDisableFilesToast": "Showing files successfully scheduled, this might take a while",
-            "scheduledEnableFileToast": "Hiding file successfully scheduled",
-            "scheduledDisableFileToast": "Showing file successfully scheduled",
             "enable": "Hide file",
             "disable": "Show file",
             "enableFiles": "Hide files",
@@ -121,8 +125,6 @@
             "scheduledErrorToast": "Couldn't change the flag of files. Code: {{err.status}}, Text: {{err.text}}",
             "scheduledEnableFilesToast": "Flagging files successfully scheduled, this might take a while",
             "scheduledDisableFilesToast": "Unflagging files successfully scheduled, this might take a while",
-            "scheduledEnableFileToast": "Flagging file successfully scheduled",
-            "scheduledDisableFileToast": "Unflagging file successfully scheduled",
             "enable": "Flag file",
             "disable": "Unflag file",
             "enableFiles": "Flag files",
@@ -137,8 +139,6 @@
             "scheduledErrorToast": "Couldn't mark files as seen. Code: {{err.status}}, Text: {{err.text}}",
             "scheduledEnableFilesToast": "Marking files as seen successfully scheduled, this might take a while",
             "scheduledDisableFilesToast": "Marking files as unseen successfully scheduled, this might take a while",
-            "scheduledEnableFileToast": "Marking file as seen successfully scheduled",
-            "scheduledDisableFileToast": "Marking file as unseen successfully scheduled",
             "enable": "Mark file as seen",
             "disable": "Mark file as unseen",
             "enableFiles": "Mark files as seen",
@@ -187,6 +187,15 @@
             "title": "Saved queries",
             "saveNew": "Save current query",
             "deleteQuery": "Delete this query"
+        },
+        "autoActions": {
+            "title": "Auto Actions",
+            "markAsSeen": "Mark as seen",
+            "flag": "Flag file",
+            "reindex": "Re-index file",
+            "summarize": "Summarize",
+            "describeImage": "Describe image",
+            "translate": "Translate"
         }
     },
     "tableView": {
@@ -226,7 +235,6 @@
         "scheduledErrorToast": "Can not tag files. {{- err}}"
     },
     "tagsList": {
-        "scheduledRemoveTagFromFileToast": "Untagging file successfully scheduled, this might take a while",
         "scheduledRemoveTagToast": "Removal of tag successfully scheduled, this might take a while",
         "scheduledRemoveErrorToast": "Couldn't remove tag(s). Code: {{err.status}}, Text: {{err.text}}",
         "moreTagsTooltip": "{{count}} more tag(s)"
@@ -317,7 +325,7 @@
         "file_type_tikaTitle": "Filetypes by Apache Tika",
         "file_type_magicTitle": "Filetypes by File Magic",
         "language_tikaTitle": "Language by Tika",
-        "language_libretranslateTitle": "Language by Translate",
+        "language_detectedTitle": "Language detected",
         "is_spamTitle": "Spam detected",
         "tagsTitle": "Tags",
         "autoReloadTitle": "Auto-refresh",

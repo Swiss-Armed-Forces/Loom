@@ -25,7 +25,7 @@ export const Stat = {
     FileTypeTika: "file_type_tika",
     FileTypeMagic: "file_type_magic",
     LanguageTika: "language_tika",
-    LanguageLibretranslate: "language_libretranslate",
+    LanguageDetected: "language_detected",
     IsSpam: "is_spam",
 } as const;
 export type Stat = (typeof Stat)[keyof typeof Stat];

@@ -29,6 +29,7 @@ interface EncryptionKeyInfoDialogProps extends DialogProps {
 export const EncryptionKeyInfoDialog = ({
     id,
     onClose,
+    isTop,
     encryptionKey,
 }: EncryptionKeyInfoDialogProps) => {
     const { t } = useTranslation();
@@ -43,6 +44,7 @@ export const EncryptionKeyInfoDialog = ({
         <DialogBase
             id={id}
             onClose={onClose}
+            isTop={isTop}
             title={t("archives.encryptionKeyInfoTitle")}
         >
             <Stack spacing={2}>

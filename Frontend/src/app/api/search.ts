@@ -9,7 +9,6 @@ import {
     SummarizationApi,
     TagsApi,
     TranslationApi,
-    LibretranslateSupportedLanguages,
     GetFilesResponse,
     SummaryStatisticsModel,
     Stat,
@@ -37,14 +36,12 @@ export const loadTags = async (): Promise<string[]> => {
     return tagsApi.getTagsV1FilesTagsGet();
 };
 
-export const loadLanguages = async (): Promise<
-    LibretranslateSupportedLanguages[]
-> => {
-    return translationApi.getSupportedLanguagesV1FilesTranslationLanguagesGet();
-};
-
 export const loadSummarizationSystemPrompt = async (): Promise<string> => {
     return summarizationApi.getSystemPromptV1FilesSummarizationSystemPromptGet();
+};
+
+export const loadVisionSystemPrompt = async (): Promise<string> => {
+    return imageDescriptionApi.getSystemPromptV1FilesImageDescriptionSystemPromptGet();
 };
 
 export const getShortRunningQuery = async (): Promise<GetQueryResponse> => {
@@ -62,7 +59,7 @@ export const searchFiles = async (
         queryId: query.id,
         keepAlive: query.keepAlive ?? undefined,
         searchString: query.query,
-        languages: query.languages?.map((l) => l.code),
+
         sortByField: query.sortField ?? undefined,
         sortDirection: query.sortDirection ?? undefined,
         sortId: query.sortId ?? undefined,
@@ -88,7 +85,7 @@ export const searchTree = async (
         queryId: query.id,
         keepAlive: query.keepAlive ?? undefined,
         searchString: query.query,
-        languages: query.languages?.map((l) => l.code),
+
         nodePath: childrenOfNode,
     });
 };
@@ -104,7 +101,6 @@ export const getStatSummary = async (
         queryId: query.id,
         keepAlive: query.keepAlive ?? undefined,
         searchString: query.query,
-        languages: query.languages?.map((l) => l.code),
     });
 };
 
@@ -117,7 +113,6 @@ export const getStatGeneric = async (
         queryId: query.id,
         keepAlive: query.keepAlive ?? undefined,
         searchString: query.query,
-        languages: query.languages?.map((l) => l.code),
     });
 };
 
@@ -147,7 +142,6 @@ export const updateFiles = async (
                 queryId: query.id,
                 keepAlive: query.keepAlive ?? undefined,
                 searchString: query.query,
-                languages: query.languages?.map((l) => l.code),
             },
             request: request,
         },
@@ -187,7 +181,6 @@ export const addTagsToFiles = async (
                 queryId: query.id,
                 keepAlive: query.keepAlive ?? undefined,
                 searchString: query.query,
-                languages: query.languages?.map((l) => l.code),
             },
         },
     });
@@ -208,7 +201,6 @@ export const getFile = async (
         keepAlive: query.keepAlive ?? undefined,
         fileId: fileId,
         searchString: query.query,
-        languages: query.languages?.map((l) => l.code),
     });
 };
 
@@ -221,7 +213,6 @@ export const getFilePreview = async (
         keepAlive: query.keepAlive ?? undefined,
         fileId: fileId,
         searchString: query.query,
-        languages: query.languages?.map((l) => l.code),
     });
 };
 
@@ -234,7 +225,6 @@ export const scheduleArchiveCreation = async (
                 queryId: query.id,
                 keepAlive: query.keepAlive ?? undefined,
                 searchString: query.query,
-                languages: query.languages?.map((l) => l.code),
             },
         },
     });
@@ -260,7 +250,6 @@ export const scheduleFileTranslation = async (
                 queryId: query.id,
                 keepAlive: query.keepAlive ?? undefined,
                 searchString: query.query,
-                languages: query.languages?.map((l) => l.code),
             },
         },
     });
@@ -313,7 +302,6 @@ export const scheduleImageDescriptionByQuery = async (
                     queryId: query.id,
                     keepAlive: query.keepAlive ?? undefined,
                     searchString: query.query,
-                    languages: query.languages?.map((l) => l.code),
                 },
                 systemPrompt: systemPrompt ?? undefined,
             },
@@ -331,7 +319,6 @@ export const scheduleFileSummarization = async (
                 queryId: query.id,
                 keepAlive: query.keepAlive ?? undefined,
                 searchString: query.query,
-                languages: query.languages?.map((l) => l.code),
             },
             systemPrompt: systemPrompt ?? undefined,
         },
@@ -347,7 +334,6 @@ export const scheduleFileIndexing = async (
                 queryId: query.id,
                 keepAlive: query.keepAlive ?? undefined,
                 searchString: query.query,
-                languages: query.languages?.map((l) => l.code),
             },
         },
     });
@@ -369,7 +355,6 @@ export const createAiContext = async (
             queryId: query.id,
             keepAlive: query.keepAlive ?? undefined,
             searchString: query.query,
-            languages: query.languages?.map((l) => l.code),
         },
     });
 };

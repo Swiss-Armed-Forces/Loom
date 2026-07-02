@@ -258,7 +258,8 @@ class GetFileResponse(BaseModel):
     content: str
     name: str
     full_path: str
-    libretranslate_language_translations: list[GetFileLanguageTranslations]
+    language_translations: list[GetFileLanguageTranslations]
+    detected_language: str | None
     raw: str
     summary: str | None
     image_description: str | None
@@ -274,21 +275,21 @@ class GetFileResponse(BaseModel):
             content=str(file.content if file.content is not None else ""),
             name=str(file.short_name),
             full_path=str(file.full_path),
-            libretranslate_language_translations=list(
+            language_translations=list(
                 map(
-                    lambda libretranslate_translations: GetFileLanguageTranslations(
-                        confidence=libretranslate_translations.confidence,
-                        language=libretranslate_translations.language,
-                        text=libretranslate_translations.text,
+                    lambda t: GetFileLanguageTranslations(
+                        confidence=t.confidence,
+                        language=t.language,
+                        text=t.text,
                     ),
-                    file.libretranslate_translations,
+                    file.translations,
                 )
             ),
             raw=file.model_dump_json(
                 exclude={
                     "embeddings",
                     "content",
-                    "libretranslate_translations",
+                    "translations",
                     "attachments",
                 },
                 exclude_none=True,
@@ -297,6 +298,7 @@ class GetFileResponse(BaseModel):
             summary=file.summary,
             image_description=file.image_description,
             type=file.magic_file_type,
+            detected_language=file.detected_language,
             imap=file.imap,
             rendered_file=RenderedFile(
                 image_file_id=service_id(file.rendered_file.image_data),
@@ -353,6 +355,10 @@ class GetFilePreviewResponse(BaseModel):
     image_description: str | None
     is_spam: bool | None = False
     attachments_skipped: bool = False
+    detected_language: str | None = None
+    translation_preview: str | None = None
+    translation_preview_language: str | None = None
+    translation_preview_is_truncated: bool = False
 
 
 @router.get("/{file_id}/preview")
@@ -398,6 +404,20 @@ def get_file_preview(
         image_description=file.image_description,
         is_spam=file.is_spam,
         attachments_skipped=file.attachments_skipped,
+        detected_language=file.detected_language,
+        translation_preview=(
+            str(file.translations[-1].text[:CONTENT_PREVIEW_LENGTH])
+            if file.translations
+            else None
+        ),
+        translation_preview_language=(
+            file.translations[-1].language if file.translations else None
+        ),
+        translation_preview_is_truncated=(
+            len(file.translations[-1].text) > CONTENT_PREVIEW_LENGTH
+            if file.translations
+            else False
+        ),
     )
 
 

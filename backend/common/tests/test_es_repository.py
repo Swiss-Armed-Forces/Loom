@@ -29,20 +29,19 @@ from common.file.file_repository import (
     File,
     FileRepository,
     ImapInfo,
-    LibretranslateTranslatedLanguage,
     RenderedFile,
     Secret,
     TikaMeta,
+    TranslatedLanguage,
     _EsAttachment,
     _EsEmbedding,
     _EsFile,
     _EsImapInfo,
     _EsLazyBytes,
-    _EsLibretranslateTranslatedLanguage,
-    _EsLibreTranslateTranslations,
     _EsRenderedFile,
     _EsSecret,
     _EsTikaMeta,
+    _EsTranslatedLanguage,
 )
 from common.messages.pubsub_service import PubSubService
 from common.models.base_repository import RepositoryObject
@@ -211,14 +210,9 @@ ES_REPOSITORY_TEST_INSTANCES: dict[type[BaseEsRepository], list[_TestInstances]]
                 tags=TestValueDefaults.test_str_list_no_duplicates,
                 magic_file_type=TestValueDefaults.test_str,
                 tika_language=TestValueDefaults.test_str,
-                libretranslate_language=TestValueDefaults.test_str,
-                libretranslate_translations=[
-                    # Note: we have to use here a language defined
-                    # in _EsLibreTranslateTranslations model. Which are fetched
-                    # dynamically from libretranslate but as libretranslate is not
-                    # available in unit testing, they are just set to:
-                    #   [settings.translate_target]
-                    LibretranslateTranslatedLanguage(
+                detected_language=TestValueDefaults.test_str,
+                translations=[
+                    TranslatedLanguage(
                         confidence=TestValueDefaults.test_float,
                         language=settings.translate_target,
                         text=TestValueDefaults.test_str,
@@ -363,21 +357,14 @@ ES_REPOSITORY_TEST_INSTANCES: dict[type[BaseEsRepository], list[_TestInstances]]
                 tags=TestValueDefaults.test_str_list_no_duplicates,
                 magic_file_type=TestValueDefaults.test_str,
                 tika_language=TestValueDefaults.test_str,
-                libretranslate_language=TestValueDefaults.test_str,
-                libretranslate_translations=_EsLibreTranslateTranslations(
-                    **{
-                        # Note: we have to use here a language defined
-                        # in _EsLibreTranslateTranslations model. Which are fetched
-                        # dynamically from libretranslate but as libretranslate is not
-                        # available in unit testing, they are just set to:
-                        #   [settings.translate_target]
-                        settings.translate_target: _EsLibretranslateTranslatedLanguage(
-                            confidence=TestValueDefaults.test_float,
-                            language=settings.translate_target,
-                            text=TestValueDefaults.test_str,
-                        )
-                    }
-                ),
+                detected_language=TestValueDefaults.test_str,
+                translations=[
+                    _EsTranslatedLanguage(
+                        confidence=TestValueDefaults.test_float,
+                        language=settings.translate_target,
+                        text=TestValueDefaults.test_str,
+                    )
+                ],
                 is_spam=TestValueDefaults.test_bool,
                 tika_file_type=TestValueDefaults.test_str,
                 archives=TestValueDefaults.test_str_list_no_duplicates,
@@ -484,7 +471,6 @@ ES_REPOSITORY_TEST_INSTANCES: dict[type[BaseEsRepository], list[_TestInstances]]
                 query=QueryParameters(
                     query_id=str(TestValueDefaults.test_uuid),
                     search_string=TestValueDefaults.test_str,
-                    languages=TestValueDefaults.test_str_list,
                     keep_alive=TestValueDefaults.test_keep_alive,
                 ),
                 plain_file=StoredArchive(
@@ -525,7 +511,6 @@ ES_REPOSITORY_TEST_INSTANCES: dict[type[BaseEsRepository], list[_TestInstances]]
                 query=_EsQueryParameters(
                     query_id=str(TestValueDefaults.test_uuid),
                     search_string=TestValueDefaults.test_str,
-                    languages=TestValueDefaults.test_str_list,
                     keep_alive=TestValueDefaults.test_keep_alive,
                 ),
                 plain_file=_EsStoredArchive(
@@ -583,7 +568,6 @@ ES_REPOSITORY_TEST_INSTANCES: dict[type[BaseEsRepository], list[_TestInstances]]
                 query=QueryParameters(
                     query_id=str(TestValueDefaults.test_uuid),
                     search_string=TestValueDefaults.test_str,
-                    languages=TestValueDefaults.test_str_list_no_duplicates,
                     keep_alive=TestValueDefaults.test_keep_alive,
                 ),
                 chat_message_history_id=TestValueDefaults.test_uuid,
@@ -614,7 +598,6 @@ ES_REPOSITORY_TEST_INSTANCES: dict[type[BaseEsRepository], list[_TestInstances]]
                 query=_EsQueryParameters(
                     query_id=str(TestValueDefaults.test_uuid),
                     search_string=TestValueDefaults.test_str,
-                    languages=TestValueDefaults.test_str_list_no_duplicates,
                     keep_alive=TestValueDefaults.test_keep_alive,
                 ),
                 chat_message_history_id=str(TestValueDefaults.test_uuid),

@@ -12,11 +12,12 @@ from worker.settings import settings
 from utils.consts import FILES_ENDPOINT, REQUEST_TIMEOUT, TRANSLATION_ENDPOINT
 from utils.fetch_from_api import (
     build_search_string,
-    fetch_files_from_api,
     fetch_query_id,
     get_file_by_name,
 )
 from utils.upload_asset import upload_bytes_asset
+
+pytestmark = pytest.mark.usefixtures("disable_periodic_tasks")
 
 
 class TranslationFileTest(BaseModel):
@@ -74,14 +75,6 @@ TRANSLATION_TESTCASES = [
 ]
 
 
-def test_get_libretranslate_languages():
-    langs = requests.get(
-        f"{TRANSLATION_ENDPOINT}/languages", timeout=REQUEST_TIMEOUT
-    ).json()
-    assert isinstance(langs, list)
-    assert len(langs) != 0
-
-
 def _on_demand_translate_by_query(query: QueryParameters, lang: str):
     response: Response = requests.post(
         f"{TRANSLATION_ENDPOINT}",
@@ -107,15 +100,16 @@ def _on_demand_translate_by_file(file: TranslationFileTest, lang: str):
 
 def _assert_all_translation(
     expected_translations: list[GetFileLanguageTranslations],
-    libretranslate_language_translations: list[GetFileLanguageTranslations],
+    language_translations: list[GetFileLanguageTranslations],
+    detected_language: str | None,
 ):
-    assert len(expected_translations) == len(libretranslate_language_translations)
+    assert len(expected_translations) == len(language_translations)
     for expected_translation in expected_translations:
         # Find matching translation by language and confidence (ignore text)
         matching_translation = next(
             (
                 t
-                for t in libretranslate_language_translations
+                for t in language_translations
                 if t.language == expected_translation.language
                 and t.confidence == expected_translation.confidence
             ),
@@ -144,13 +138,9 @@ def _assert_all_translation(
     )
     if expected_best_detected_language is None:
         return
-    fetch_files_from_api(
-        search_string=build_search_string(
-            search_string="*",
-            field="libretranslate_language",
-            field_value=expected_best_detected_language.language,
-        ),
-        max_wait_time_per_file=0,
+    assert detected_language == expected_best_detected_language.language, (
+        f"Expected detected_language={expected_best_detected_language.language!r}, "
+        f"got {detected_language!r}"
     )
 
 
@@ -172,7 +162,8 @@ def _translation_testcase(
     # test if all indexing translations are there
     _assert_all_translation(
         expected_translations,
-        file.libretranslate_language_translations,
+        file.language_translations,
+        file.detected_language,
     )
 
     if expected_on_demand_translations is not None:
@@ -190,12 +181,12 @@ def _translation_testcase(
         file = get_file_by_name(
             file_name,
             wait_for_celery_idle=True,
-            checker=lambda f: len(f.libretranslate_language_translations or [])
-            >= expected_count,
+            checker=lambda f: len(f.language_translations or []) >= expected_count,
         )
         _assert_all_translation(
             expected_translations + expected_on_demand_translations,
-            file.libretranslate_language_translations,
+            file.language_translations,
+            file.detected_language,
         )
 
 

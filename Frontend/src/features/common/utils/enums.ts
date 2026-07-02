@@ -34,8 +34,10 @@ export const FileDetailTab = {
 export type FileDetailTab = (typeof FileDetailTab)[keyof typeof FileDetailTab];
 
 export const SummaryTab = {
+    Content: "content",
     Summary: "summary",
     ImageDescription: "imageDescription",
+    Translation: "translation",
 } as const;
 export type SummaryTab = (typeof SummaryTab)[keyof typeof SummaryTab];
 
@@ -52,6 +54,10 @@ export const SearchQueryField = {
     Tags: "tags",
     Filename: "filename",
     Extension: "extension",
+    DetectedLanguage: "detected_language",
+    ContentTruncated: "content_truncated",
+    AttachmentsSkipped: "attachments_skipped",
+    IsSpam: "is_spam",
 };
 export type SearchQueryField =
     (typeof SearchQueryField)[keyof typeof SearchQueryField];

@@ -15,7 +15,6 @@ import {
     getFilePreview,
     GetFilePreviewResponse,
     GetFilesFileEntry,
-    LibretranslateSupportedLanguages,
     searchFiles,
     SummaryStatisticsModel,
     GenericStatisticsModel,
@@ -95,6 +94,16 @@ export interface SideMenuState {
     isBulkActionsExpanded: boolean;
     isTagsExpanded: boolean;
     isQueriesExpanded: boolean;
+    isAutoActionsExpanded: boolean;
+}
+
+export interface AutoActionsPreferences {
+    markAsSeen: boolean;
+    flag: boolean;
+    reindex: boolean;
+    translate: boolean;
+    summarize: boolean;
+    describeImage: boolean;
 }
 
 export interface SearchState {
@@ -113,10 +122,9 @@ export interface SearchState {
     lastFileSortId: any[] | null;
     filesInView: string[];
     tags: string[];
-    languages: LibretranslateSupportedLanguages[] | null;
-    translationLanguage: LibretranslateSupportedLanguages | null;
     customQueries: CustomQuery[];
     sideMenu: SideMenuState;
+    autoActionsPreferences: AutoActionsPreferences;
     contentTruncatedFilesCount: number;
     attachmentsSkippedFilesCount: number;
     failedFilesCount: number;
@@ -124,11 +132,14 @@ export interface SearchState {
     webSocketPubSubMessage: PubSubMessage | null;
     chatbotOpen: boolean;
     summarizationSystemPrompt: string | null;
+    visionSystemPrompt: string | null;
     keyboardNavigation: KeyboardNavigationState;
 }
 
 export const CUSTOM_QUERIES_LOCAL_STORAGE_KEY = "CUSTOM_QUERIES";
 export const SIDE_MENU_LOCAL_STORAGE_KEY = "SIDE_MENU";
+export const AUTO_ACTIONS_PREFERENCES_LOCAL_STORAGE_KEY =
+    "AUTO_ACTIONS_PREFERENCES";
 export const QUERY_FAILED_FILES = "state:failed";
 export const QUERY_CONTENT_TRUNCATED_FILES = "content_truncated:true";
 export const QUERY_ATTACHMENTS_SKIPPED_FILES = "attachments_skipped:true";
@@ -141,12 +152,14 @@ const SideMenuStateSchema: JSONSchemaType<SideMenuState> = {
         isBulkActionsExpanded: { type: "boolean" },
         isTagsExpanded: { type: "boolean" },
         isQueriesExpanded: { type: "boolean" },
+        isAutoActionsExpanded: { type: "boolean" },
     },
     required: [
         "isExpanded",
         "isBulkActionsExpanded",
         "isTagsExpanded",
         "isQueriesExpanded",
+        "isAutoActionsExpanded",
     ],
     additionalProperties: false,
 };
@@ -157,6 +170,7 @@ const loadSideMenuState = (): SideMenuState => {
         isBulkActionsExpanded: false,
         isTagsExpanded: true,
         isQueriesExpanded: true,
+        isAutoActionsExpanded: false,
     };
     const data = window.localStorage.getItem(SIDE_MENU_LOCAL_STORAGE_KEY);
     if (!data) return defaults;
@@ -168,6 +182,54 @@ const loadSideMenuState = (): SideMenuState => {
         return defaults;
     } catch {
         return defaults;
+    }
+};
+
+const DEFAULT_AUTO_ACTIONS_PREFERENCES: AutoActionsPreferences = {
+    markAsSeen: true,
+    flag: false,
+    reindex: false,
+    translate: false,
+    summarize: false,
+    describeImage: false,
+};
+
+const AutoActionsPreferencesSchema: JSONSchemaType<AutoActionsPreferences> = {
+    type: "object",
+    properties: {
+        markAsSeen: { type: "boolean" },
+        flag: { type: "boolean" },
+        reindex: { type: "boolean" },
+        translate: { type: "boolean" },
+        summarize: { type: "boolean" },
+        describeImage: { type: "boolean" },
+    },
+    required: [
+        "markAsSeen",
+        "flag",
+        "reindex",
+        "translate",
+        "summarize",
+        "describeImage",
+    ],
+    additionalProperties: false,
+};
+
+const loadAutoActionsPreferences = (): AutoActionsPreferences => {
+    const data = window.localStorage.getItem(
+        AUTO_ACTIONS_PREFERENCES_LOCAL_STORAGE_KEY,
+    );
+    if (!data) return DEFAULT_AUTO_ACTIONS_PREFERENCES;
+    try {
+        const parsed = JSON.parse(data);
+        const validate = AJV.compile(AutoActionsPreferencesSchema);
+        if (validate(parsed)) return parsed;
+        console.warn(
+            "Invalid auto-actions preferences in localStorage, using defaults",
+        );
+        return DEFAULT_AUTO_ACTIONS_PREFERENCES;
+    } catch {
+        return DEFAULT_AUTO_ACTIONS_PREFERENCES;
     }
 };
 
@@ -209,10 +271,9 @@ const initialState: SearchState = {
     totalFiles: 0,
     filesInView: [],
     tags: [],
-    languages: null,
-    translationLanguage: null,
     customQueries: loadCustomQueries(),
     sideMenu: loadSideMenuState(),
+    autoActionsPreferences: loadAutoActionsPreferences(),
     contentTruncatedFilesCount: 0,
     attachmentsSkippedFilesCount: 0,
     failedFilesCount: 0,
@@ -220,6 +281,7 @@ const initialState: SearchState = {
     webSocketPubSubMessage: null,
     chatbotOpen: false,
     summarizationSystemPrompt: null,
+    visionSystemPrompt: null,
     keyboardNavigation: {
         highlightedIndex: null,
     },
@@ -243,10 +305,6 @@ export const updateQuery = createAsyncThunk(
             id: queryId,
             query: queryQuery,
             keepAlive: query.keepAlive ?? lastQuery?.keepAlive ?? null,
-            languages:
-                query.languages?.length === 0
-                    ? null
-                    : (query.languages ?? lastQuery?.languages ?? null),
             sortField:
                 query.sortField !== undefined
                     ? query.sortField?.trim() || null
@@ -339,7 +397,6 @@ export const fetchPreview = createAsyncThunk(
                   id: queryId,
                   query: "hidden:*",
                   keepAlive: null,
-                  languages: null,
                   sortField: null,
                   sortDirection: null,
                   sortId: null,
@@ -505,18 +562,6 @@ export const searchSlice = createSlice({
         setTags: (state, action: PayloadAction<string[]>) => {
             state.tags = action.payload;
         },
-        setLanguages: (
-            state,
-            action: PayloadAction<LibretranslateSupportedLanguages[]>,
-        ) => {
-            state.languages = action.payload;
-        },
-        setTranslationLanguage: (
-            state,
-            action: PayloadAction<LibretranslateSupportedLanguages | null>,
-        ) => {
-            state.translationLanguage = action.payload;
-        },
         setWebSocketPubSubMessage: (
             state,
             action: PayloadAction<PubSubMessage>,
@@ -535,6 +580,9 @@ export const searchSlice = createSlice({
         ) => {
             state.summarizationSystemPrompt = action.payload;
         },
+        setVisionSystemPrompt: (state, action: PayloadAction<string>) => {
+            state.visionSystemPrompt = action.payload;
+        },
         toggleSideMenu: (state) => {
             state.sideMenu.isExpanded = !state.sideMenu.isExpanded;
         },
@@ -548,6 +596,20 @@ export const searchSlice = createSlice({
         toggleSideMenuQueries: (state) => {
             state.sideMenu.isQueriesExpanded =
                 !state.sideMenu.isQueriesExpanded;
+        },
+        toggleSideMenuAutoActions: (state) => {
+            state.sideMenu.isAutoActionsExpanded =
+                !state.sideMenu.isAutoActionsExpanded;
+        },
+        setAutoActionPreference: (
+            state,
+            action: PayloadAction<{
+                key: keyof AutoActionsPreferences;
+                value: boolean;
+            }>,
+        ) => {
+            state.autoActionsPreferences[action.payload.key] =
+                action.payload.value;
         },
         setHighlightedIndex: (state, action: PayloadAction<number | null>) => {
             state.keyboardNavigation.highlightedIndex = action.payload;
@@ -684,18 +746,19 @@ export const {
     fillStatsTags,
     fillStatsGeneric,
     setTags,
-    setLanguages,
-    setTranslationLanguage,
     setWebSocketPubSubMessage,
     setDisplayStat,
     setChatbotOpen,
     setSummarizationSystemPrompt,
+    setVisionSystemPrompt,
     setFilePreview,
     setHighlightedIndex,
     toggleSideMenu,
     toggleSideMenuBulkActions,
     toggleSideMenuTags,
     toggleSideMenuQueries,
+    toggleSideMenuAutoActions,
+    setAutoActionPreference,
 } = searchSlice.actions;
 
 export const selectSearch = (state: RootState) => state.search;
@@ -710,6 +773,11 @@ export const selectSideMenu = createSelector(
     (search) => search.sideMenu,
 );
 
+export const selectAutoActionsPreferences = createSelector(
+    selectSearch,
+    (search) => search.autoActionsPreferences,
+);
+
 export const selectQuery = createSelector(
     selectSearch,
     (search) => search.query,
@@ -722,14 +790,6 @@ export const selectQueryError = createSelector(
 
 export const selectTags = createSelector(selectSearch, (search) => search.tags);
 
-export const selectTranslationLanguage = createSelector(
-    selectSearch,
-    (search) => search.translationLanguage,
-);
-export const selectLanguages = createSelector(
-    selectSearch,
-    (search) => search.languages,
-);
 export const selectFiles = createSelector(
     selectSearch,
     (search) => search.files,
@@ -792,6 +852,11 @@ export const selectWebSocketPubSubMessage = createSelector(
 export const selectSummarizationSystemPrompt = createSelector(
     selectSearch,
     (search) => search.summarizationSystemPrompt,
+);
+
+export const selectVisionSystemPrompt = createSelector(
+    selectSearch,
+    (search) => search.visionSystemPrompt,
 );
 
 export const selectHighlightedIndex = createSelector(

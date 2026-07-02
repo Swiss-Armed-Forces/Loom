@@ -104,7 +104,7 @@ default:
   # Always use nix-dind image
   image: ${CI_REGISTRY_IMAGE}/nix-dind:latest
   before_script:
-    - source cicd/gitlab_job_sections.sh
+    - source cicd/ci_helpers.sh
     #
     # START SECTION
     #
@@ -122,7 +122,7 @@ default:
     #
     - section_end default-before_script
   after_script:
-    - source cicd/gitlab_job_sections.sh
+    - source cicd/ci_helpers.sh
     #
     # START SECTION
     #
@@ -165,7 +165,7 @@ default:
     - echo "${CI_REGISTRY_PASSWORD}" | docker login ${CI_REGISTRY} -u "${CI_REGISTRY_USER}" --password-stdin
     - echo "${CI_DEPENDENCY_PROXY_PASSWORD}" | docker login ${CI_DEPENDENCY_PROXY_SERVER} -u "${CI_DEPENDENCY_PROXY_USER}" --password-stdin
     # restore images
-    - devenv shell -- docker-image-backup-restore restore docker-cache/images/
+    - with_retry -- devenv shell -- docker-image-backup-restore restore docker-cache/images/
     #
     # END SECTION
     #
@@ -177,7 +177,7 @@ default:
     #
     - section_start .default-docker-after_script
     # backup images
-    - devenv shell -- docker-image-backup-restore backup --prune "${CI_REGISTRY_IMAGE}" '.*' docker-cache/images/
+    - with_retry -- devenv shell -- docker-image-backup-restore backup --prune "${CI_REGISTRY_IMAGE}" '.*' docker-cache/images/
     #
     # END SECTION
     #
@@ -199,9 +199,9 @@ default:
     # collect dmesg
     - devenv shell -- sudo --background dmesg --follow > dmesg.txt
     # start k8s
-    - devenv shell -- up --setup
+    - with_retry -- devenv shell -- up --setup
     # restore images
-    - devenv shell -- docker-image-backup-restore --minikube restore kubernetes-cache/images/
+    - with_retry -- devenv shell -- docker-image-backup-restore --minikube restore kubernetes-cache/images/
     #
     # END SECTION
     #
@@ -213,9 +213,9 @@ default:
     #
     - section_start .default-k8s-after_script
     # start k8s
-    - devenv shell -- up --setup
+    - with_retry -- devenv shell -- up --setup
     # backup images
-    - devenv shell -- docker-image-backup-restore --minikube backup --prune "${CI_REGISTRY_IMAGE}" '.*' kubernetes-cache/images/
+    - with_retry -- devenv shell -- docker-image-backup-restore --minikube backup --prune "${CI_REGISTRY_IMAGE}" '.*' kubernetes-cache/images/
     #
     # END SECTION
     #
@@ -249,7 +249,7 @@ default:
     #
     - section_start .default-up-integrationtest-before_script
     # start stack
-    - devenv shell -- bash -c 'up --integrationtest --expose "$(tailscale ip -4)" --trusted-ca-bundle "${NIX_SSL_CERT_FILE}"'
+    - with_retry -- devenv shell -- bash -c 'up --integrationtest --expose "$(tailscale ip -4)" --trusted-ca-bundle "${NIX_SSL_CERT_FILE}"'
     #
     # END SECTION
     #
@@ -363,7 +363,6 @@ test_build_nix-dind:
 integrationtest:
   extends: .default-up-integrationtest
   stage: test
-  retry: 2
   variables:
     # We do need to fix the RANDOM_ORDER_SEED
     # here to make pytest-split work with

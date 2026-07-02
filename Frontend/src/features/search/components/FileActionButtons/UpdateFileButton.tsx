@@ -98,9 +98,8 @@ export const UpdateFileButton = ({
                 // searchQuery will always be != from undefined
                 // because if both file_id and searchQuery are false it would exit early
                 await updateFiles(searchQuery!, request);
+                toast.success(successMessage);
             }
-
-            toast.success(successMessage);
         } catch (err) {
             toast.error(
                 t(`updateFileState.${property}.scheduledErrorToast`, { err }),

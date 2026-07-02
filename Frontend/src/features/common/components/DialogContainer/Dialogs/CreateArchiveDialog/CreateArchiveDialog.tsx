@@ -22,6 +22,7 @@ interface CreateArchiveDialogProps extends DialogProps {
 export const CreateArchiveDialog = ({
     id,
     onClose,
+    isTop,
     searchQuery,
 }: CreateArchiveDialogProps) => {
     const dispatch = useAppDispatch();
@@ -55,6 +56,7 @@ export const CreateArchiveDialog = ({
     return (
         <ConfirmDialog
             id={id}
+            isTop={isTop}
             text={t("confirmDialog.confirmArchiveCreationText")}
             buttonText={t("confirmDialog.confirmArchiveCreation")}
             onConfirm={startArchiveCreation}

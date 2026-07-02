@@ -1,20 +1,18 @@
 import { Close, TranslateOutlined } from "@mui/icons-material";
-import { Autocomplete, Box, Button, TextField } from "@mui/material";
+import { Button, TextField } from "@mui/material";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "react-toastify";
 
 import {
-    LibretranslateSupportedLanguages,
     scheduleFileTranslation,
     scheduleSingleFileTranslation,
 } from "@app/api";
-import { useAppDispatch, useAppSelector } from "@app/hooks";
+import { useAppDispatch } from "@app/hooks";
 import {
     DialogProps,
     setBackgroundTaskSpinnerActive,
 } from "@app/slices/commonSlice";
-import { selectLanguages } from "@app/slices/searchSlice";
 import { SearchQuery } from "@features/common/utils/model";
 
 import { DialogBase } from "..";
@@ -29,26 +27,28 @@ interface TranslationDialogProps extends DialogProps {
 export const TranslationDialog = ({
     id,
     onClose,
+    isTop,
     fileId,
     searchQuery,
 }: TranslationDialogProps) => {
     const { t } = useTranslation();
     const dispatch = useAppDispatch();
-    const languages = useAppSelector(selectLanguages);
-    const [language, setLanguage] =
-        useState<LibretranslateSupportedLanguages | null>(null);
+    const [languageCode, setLanguageCode] = useState<string>("");
     const [isLoading, setIsLoading] = useState(false);
 
     const startTranslation = async () => {
-        if (!searchQuery || !language) return;
+        if (!searchQuery || !languageCode.trim()) return;
 
         setIsLoading(true);
         dispatch(setBackgroundTaskSpinnerActive());
         try {
             if (fileId) {
-                await scheduleSingleFileTranslation(language.code, fileId);
+                await scheduleSingleFileTranslation(
+                    languageCode.trim(),
+                    fileId,
+                );
             } else {
-                await scheduleFileTranslation(language.code, searchQuery);
+                await scheduleFileTranslation(languageCode.trim(), searchQuery);
             }
             toast.success(t("translateFilesDialog.scheduledToast"));
             onClose();
@@ -63,6 +63,7 @@ export const TranslationDialog = ({
         <DialogBase
             id={id}
             onClose={onClose}
+            isTop={isTop}
             title={t("translateFilesDialog.title")}
             loading={isLoading}
             actions={
@@ -80,39 +81,20 @@ export const TranslationDialog = ({
                         onClick={startTranslation}
                         color="primary"
                         variant="contained"
-                        disabled={!language || isLoading}
+                        disabled={!languageCode.trim() || isLoading}
                     >
                         {t("translateFilesDialog.executeButton")}
                     </Button>
                 </>
             }
         >
-            <Autocomplete
+            <TextField
                 className={styles.addTranslationDialogContent}
-                options={languages ?? []}
-                value={language}
-                multiple={false}
-                autoHighlight
-                isOptionEqualToValue={(option, value) =>
-                    option.code === value.code
-                }
-                onChange={(_e, value) => setLanguage(value)}
-                getOptionLabel={(option) => option.name}
-                renderOption={(props, option) => {
-                    const { key, ...otherProps } = props;
-                    return (
-                        <Box component="li" key={key} {...otherProps}>
-                            {option.name}
-                        </Box>
-                    );
-                }}
-                renderInput={(params) => (
-                    <TextField
-                        {...params}
-                        autoFocus
-                        label={t("translateFilesDialog.languageInput")}
-                    />
-                )}
+                autoFocus
+                label={t("translateFilesDialog.languageInput")}
+                value={languageCode}
+                onChange={(e) => setLanguageCode(e.target.value)}
+                placeholder="e.g. en, de, fr"
             />
         </DialogBase>
     );

@@ -10,6 +10,7 @@ from git import Repo
 from gitlab.v4.objects import (
     Project,
     ProjectIssue,
+    ProjectIssueDiscussion,
     ProjectIssueNote,
     ProjectJob,
     ProjectMergeRequest,
@@ -97,19 +98,9 @@ def update_mr(mr: ProjectMergeRequest, title: str, description: str) -> None:
     mr.save()
 
 
-def fetch_issue(gl: gitlab.Gitlab, repo: Repo, issue_number: int) -> ProjectIssue:
-    """Fetch a GitLab issue by number."""
-    project_id = CI_PROJECT_ID or get_project_id_from_remote(repo)
-    if not project_id:
-        logger.error("Could not determine project ID from CI_PROJECT_ID or git remote")
-        sys.exit(1)
-    project = gl.projects.get(project_id)
-    return project.issues.get(issue_number)
-
-
 def parse_issue_url_or_id(value: str) -> IssueRef:
     """Parse a GitLab issue URL or bare ID into an IssueRef."""
-    url_match = re.match(r"https?://[^/]+/(.+?)/-/issues/(\d+)", value)
+    url_match = re.match(r"https?://[^/]+/(.+?)/-/(?:issues|work_items)/(\d+)", value)
     if url_match:
         return IssueRef(
             project_path=url_match.group(1), issue_id=int(url_match.group(2))
@@ -156,6 +147,21 @@ def update_issue_description(issue: ProjectIssue, description: str) -> None:
     """Update the description of a GitLab issue."""
     issue.description = description
     issue.save()
+
+
+def fetch_issue_discussions(issue: ProjectIssue) -> list[ProjectIssueDiscussion]:
+    """Return all non-system discussions (user comments) for a GitLab issue."""
+    result = []
+    for discussion in issue.discussions.list(all=True):
+        notes = discussion.attributes.get("notes", [])
+        if notes and not notes[0].get("system", False):
+            result.append(discussion)
+    return result
+
+
+def post_issue_discussion_reply(discussion: ProjectIssueDiscussion, body: str) -> None:
+    """Post a reply note in a GitLab issue discussion thread."""
+    discussion.notes.create({"body": body})
 
 
 def fetch_unresolved_discussions(

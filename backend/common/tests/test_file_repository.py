@@ -48,7 +48,7 @@ def test_get_stat_generic():
         # Make the search object return itself when sliced
         mock_search.return_value.__getitem__.return_value = mock_search.return_value
         mock_search.return_value.index().extra().execute.return_value = test_response
-        query = QueryParameters(query_id="0123456789", search_string="*", languages=[])
+        query = QueryParameters(query_id="0123456789", search_string="*")
         stats = repo.get_stat_generic(query=query, stat=Stat.EXTENSIONS)
 
         calls = [
@@ -95,7 +95,7 @@ def test_get_stat_summary():
         # Make the search object return itself when sliced
         mock_search.return_value.__getitem__.return_value = mock_search.return_value
         mock_search.return_value.index().extra().execute.return_value = test_response
-        query = QueryParameters(query_id="0123456789", search_string="*", languages=[])
+        query = QueryParameters(query_id="0123456789", search_string="*")
         stats = repo.get_stat_summary(query=query)
 
         calls = [

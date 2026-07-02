@@ -20,6 +20,7 @@ import { DialogComponent } from "@features/common/utils/model";
 export interface DialogProps {
     onClose: () => void;
     id: string;
+    isTop: boolean;
 }
 
 export const DefaultErrorMessage =

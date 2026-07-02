@@ -11,5 +11,3 @@ ollama:
   enabled: false
 open_webui:
   enabled: false
-translate:
-  enabled: false

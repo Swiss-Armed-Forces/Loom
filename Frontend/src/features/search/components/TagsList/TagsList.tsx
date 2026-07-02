@@ -89,7 +89,6 @@ export const TagsList = ({
                         : [],
                 }),
             );
-            toast.success(t("tagsList.scheduledRemoveTagFromFileToast"));
         } catch (err) {
             toast.error(t("tagsList.scheduledRemoveErrorToast", { err }));
         } finally {

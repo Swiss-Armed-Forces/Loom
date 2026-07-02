@@ -15,7 +15,7 @@ import styles from "./HighlightItem.module.css";
 const PATTERN_HIGHLIGHT_TAG = /(<highlight>.*?<\/highlight>)/g;
 const STRIP_TAGS = /<\/?highlight>/g;
 
-const DEFAULT_EXPANDED_REGEX = [/^content/, /^libretranslate_translations/];
+const DEFAULT_EXPANDED_REGEX = [/^content/, /^translations/];
 
 const FieldTypography = styled(Typography)`
     line-height: 2.5;

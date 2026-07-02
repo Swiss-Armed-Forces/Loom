@@ -16,7 +16,7 @@ const PRIORITIES = [
     /^full_name$/,
     /^short_name$/,
     /^content/,
-    /^libretranslate_translations/,
+    /^translations/,
     null, // Fallback for unmatched fields
     /^tika_meta/,
     /^tasks/,

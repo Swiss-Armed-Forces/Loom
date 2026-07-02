@@ -197,7 +197,6 @@ def fetch_archives_from_api(
 
 def fetch_files_from_api(
     search_string: str = "*",
-    languages: list[str] | None = None,
     sort_by_field: str = "_score",
     sort_direction: Literal["asc", "desc"] = "asc",
     expected_no_of_files: int = 1,
@@ -212,8 +211,6 @@ def fetch_files_from_api(
 ) -> GetFilesResponse:
     if max_wait_time_per_file is None:
         max_wait_time_per_file = DEFAULT_MAX_WAIT_TIME_PER_FILE
-    if languages is None:
-        languages = []
     if sort_id is None:
         sort_id = []
 
@@ -239,7 +236,6 @@ def fetch_files_from_api(
         files_query = GetFilesQuery(
             query_id=fetch_query_id(),
             search_string=effective_search_string,
-            languages=languages,
             sort_id=sort_id,
             page_size=page_size,
             sort_by_field=sort_by_field,
@@ -327,7 +323,6 @@ def fetch_files_from_api(
 def get_file_preview_by_name(
     file_name: str,
     search_string: str = "*",
-    languages: list[str] | None = None,
     expected_state: str | None = "processed",
     max_wait_time_per_file: int | None = None,
     bad_states: tuple[str, ...] = ("failed",),
@@ -349,7 +344,6 @@ def get_file_preview_by_name(
                 get_file_preview_by_file_id_without_waiting(
                     file_id=files_response.files[0].file_id,
                     search_string=search_string,
-                    languages=languages or [],
                 )
             )
 
@@ -357,7 +351,6 @@ def get_file_preview_by_name(
 
     response = fetch_files_from_api(
         search_string=search_string,
-        languages=languages,
         expected_no_of_files=1,
         expected_state=expected_state,
         max_wait_time_per_file=max_wait_time_per_file,
@@ -369,24 +362,18 @@ def get_file_preview_by_name(
     return get_file_preview_by_file_id_without_waiting(
         file_id=response.files[0].file_id,
         search_string=search_string,
-        languages=languages,
     )
 
 
 def get_file_preview_by_file_id_without_waiting(
     file_id: UUID,
     search_string: str = "*",
-    languages: list[str] | None = None,
 ) -> GetFilePreviewResponse:
-    if languages is None:
-        languages = []
-
     response = requests.get(
         f"{FILES_ENDPOINT}/{file_id}/preview",
         params=QueryParameters(
             query_id=fetch_query_id(),
             search_string=search_string,
-            languages=languages,
         ).model_dump(),
         timeout=REQUEST_TIMEOUT,
     )
@@ -397,7 +384,6 @@ def get_file_preview_by_file_id_without_waiting(
 def get_file_by_name(
     file_name: str,
     search_string: str = "*",
-    languages: list[str] | None = None,
     expected_state: str | None = "processed",
     max_wait_time_per_file: int | None = None,
     bad_states: tuple[str, ...] = ("failed",),
@@ -406,9 +392,6 @@ def get_file_by_name(
 ) -> GetFileResponse:
     if max_wait_time_per_file is None:
         max_wait_time_per_file = DEFAULT_MAX_WAIT_TIME_PER_FILE
-
-    if languages is None:
-        languages = []
 
     search_string = build_search_string(
         search_string=search_string, field="short_name", field_value=file_name
@@ -424,7 +407,6 @@ def get_file_by_name(
                 params=QueryParameters(
                     query_id=fetch_query_id(),
                     search_string=search_string,
-                    languages=languages,
                 ).model_dump(),
                 timeout=REQUEST_TIMEOUT,
             )
@@ -435,7 +417,6 @@ def get_file_by_name(
 
     files = fetch_files_from_api(
         search_string=search_string,
-        languages=languages,
         expected_no_of_files=1,
         expected_state=expected_state,
         max_wait_time_per_file=max_wait_time_per_file,
@@ -449,7 +430,6 @@ def get_file_by_name(
         params=QueryParameters(
             query_id=fetch_query_id(),
             search_string=search_string,
-            languages=languages,
         ).model_dump(),
         timeout=REQUEST_TIMEOUT,
     )
