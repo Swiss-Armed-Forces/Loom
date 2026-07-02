@@ -15,6 +15,7 @@ interface DeleteCustomQueryDialogProps extends DialogProps {
 export const DeleteCustomQueryDialog = ({
     id,
     onClose,
+    isTop,
     customQuery,
 }: DeleteCustomQueryDialogProps) => {
     const dispatch = useAppDispatch();
@@ -31,6 +32,7 @@ export const DeleteCustomQueryDialog = ({
     return (
         <ConfirmDialog
             id={id}
+            isTop={isTop}
             text={t("confirmDialog.confirmCustomQueryRemoval")}
             buttonText={t("confirmDialog.confirmRemoval")}
             onConfirm={handleConfirmation}

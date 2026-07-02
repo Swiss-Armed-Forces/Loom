@@ -27,6 +27,7 @@ interface TranslationDialogProps extends DialogProps {
 export const TranslationDialog = ({
     id,
     onClose,
+    isTop,
     fileId,
     searchQuery,
 }: TranslationDialogProps) => {
@@ -62,6 +63,7 @@ export const TranslationDialog = ({
         <DialogBase
             id={id}
             onClose={onClose}
+            isTop={isTop}
             title={t("translateFilesDialog.title")}
             loading={isLoading}
             actions={

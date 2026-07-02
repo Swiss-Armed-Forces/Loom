@@ -53,7 +53,7 @@ const loadHelmChartMetadata = (chartData: string): HelmChartMetadata | null => {
     }
 };
 
-export const AboutDialog = ({ onClose }: DialogProps) => {
+export const AboutDialog = ({ onClose, isTop }: DialogProps) => {
     const [licenseText, setLicenseText] = useState<string>("");
     const [helmChartMetadata, setHelmChartMetadata] =
         useState<HelmChartMetadata | null>(null);
@@ -74,7 +74,12 @@ export const AboutDialog = ({ onClose }: DialogProps) => {
     }, [t]);
 
     return (
-        <Dialog maxWidth="md" open onClose={onClose}>
+        <Dialog
+            maxWidth="md"
+            open
+            disableEnforceFocus={!isTop}
+            onClose={onClose}
+        >
             <DialogTitle>
                 <Box
                     sx={{
