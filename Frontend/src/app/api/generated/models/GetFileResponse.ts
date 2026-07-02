@@ -74,7 +74,13 @@ export interface GetFileResponse {
      * @type {Array<GetFileLanguageTranslations>}
      * @memberof GetFileResponse
      */
-    libretranslateLanguageTranslations: Array<GetFileLanguageTranslations>;
+    languageTranslations: Array<GetFileLanguageTranslations>;
+    /**
+     *
+     * @type {string}
+     * @memberof GetFileResponse
+     */
+    detectedLanguage?: string;
     /**
      *
      * @type {string}
@@ -121,7 +127,7 @@ export function instanceOfGetFileResponse(value: object): boolean {
     if (!("content" in value)) return false;
     if (!("name" in value)) return false;
     if (!("fullPath" in value)) return false;
-    if (!("libretranslateLanguageTranslations" in value)) return false;
+    if (!("languageTranslations" in value)) return false;
     if (!("raw" in value)) return false;
     if (!("renderedFile" in value)) return false;
     return true;
@@ -144,9 +150,13 @@ export function GetFileResponseFromJSONTyped(
         content: json["content"],
         name: json["name"],
         fullPath: json["full_path"],
-        libretranslateLanguageTranslations: (
-            json["libretranslate_language_translations"] as Array<any>
-        ).map(GetFileLanguageTranslationsFromJSON),
+        languageTranslations: (json["language_translations"] as Array<any>).map(
+            GetFileLanguageTranslationsFromJSON,
+        ),
+        detectedLanguage:
+            json["detected_language"] == null
+                ? undefined
+                : json["detected_language"],
         raw: json["raw"],
         summary: json["summary"] == null ? undefined : json["summary"],
         imageDescription:
@@ -169,9 +179,10 @@ export function GetFileResponseToJSON(value?: GetFileResponse | null): any {
         content: value["content"],
         name: value["name"],
         full_path: value["fullPath"],
-        libretranslate_language_translations: (
-            value["libretranslateLanguageTranslations"] as Array<any>
+        language_translations: (
+            value["languageTranslations"] as Array<any>
         ).map(GetFileLanguageTranslationsToJSON),
+        detected_language: value["detectedLanguage"],
         raw: value["raw"],
         summary: value["summary"],
         image_description: value["imageDescription"],

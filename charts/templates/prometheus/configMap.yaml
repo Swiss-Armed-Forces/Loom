@@ -106,23 +106,6 @@ data:
           - source_labels: [__meta_kubernetes_service_name]
             action: replace
             target_label: service
-{{- if .Values.translate.enabled }}
-      - job_name: 'translate'
-        scrape_interval: 15s
-        metrics_path: /metrics
-        kubernetes_sd_configs:
-          - role: endpoints
-            namespaces:
-              names:
-                - {{ .Release.Namespace }}
-        relabel_configs:
-          - source_labels: [__meta_kubernetes_service_name]
-            action: keep
-            regex: {{ include "app.fullname" . }}-translate
-          - source_labels: [__meta_kubernetes_pod_name]
-            action: replace
-            target_label: pod
-{{- end }}
 {{- if .Values.elasticsearch.exporter.enabled }}
       - job_name: 'elasticsearch'
         scrape_interval: 15s

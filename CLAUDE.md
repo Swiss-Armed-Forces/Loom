@@ -75,7 +75,6 @@ Located in `Frontend/`:
 - **Apache Tika** - Content extraction engine
 - **Gotenberg** - Document rendering to PDF
 - **Ollama** - AI inference server for LLM features
-- **LibreTranslate** - Translation service
 - **Traefik** - Reverse proxy and ingress controller
 
 All services accessible via `*.loom` domains (configured in /etc/hosts by `up.sh`).

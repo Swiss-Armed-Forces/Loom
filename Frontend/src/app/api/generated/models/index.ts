@@ -32,7 +32,6 @@ export * from "./ImageDescriptionFileRequest";
 export * from "./ImageDescriptionRequest";
 export * from "./ImapInfo";
 export * from "./IndexAllRequest";
-export * from "./LibretranslateSupportedLanguages";
 export * from "./Message";
 export * from "./MessageChatBotAnswerComplete";
 export * from "./MessageChatBotCitation";

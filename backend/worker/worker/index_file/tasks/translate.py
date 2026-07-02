@@ -1,17 +1,17 @@
 import logging
-from urllib.error import HTTPError
 
 from celery import chain, chord, group
 from celery.canvas import Signature
 from common.dependencies import (
     get_celery_app,
     get_lazybytes_service,
-    get_libretranslate_api,
+    get_llm_translation_client,
 )
-from common.file.file_repository import File, LibretranslateTranslatedLanguage
+from common.file.file_repository import File, TranslatedLanguage
 from common.services.lazybytes_service import TempLazyBytes
 from common.utils.cache import cache
 from langchain_text_splitters import RecursiveCharacterTextSplitter, TextSplitter
+from openai import APIError
 from pydantic import BaseModel
 
 from worker.index_file.infra.file_indexing_task import FileIndexingTask
@@ -20,19 +20,9 @@ from worker.services.tika_service import TIKA_MAX_TEXT_SIZE
 from worker.settings import settings
 from worker.utils.persisting_task import persisting_task
 
-LIBRETRANSLATE_MAX_TEXT_SIZE = TIKA_MAX_TEXT_SIZE
-LIBRETRANSLATE_CHARACTERS_PER_SECOND = 125  # An estimated average
-LIBRETRANSLATE_MAX_REQUEST_LEN_SECONDS = (
-    30  # From libretranslate/Dockerfile (--timeout)
-)
-LIBRETRANSLATE_SAFETY_MARGIN = 0.5
-LIBRETRANSLATE_MAX_CHARACTERS_PER_REQUEST = int(
-    LIBRETRANSLATE_CHARACTERS_PER_SECOND
-    * LIBRETRANSLATE_MAX_REQUEST_LEN_SECONDS
-    * LIBRETRANSLATE_SAFETY_MARGIN
-)
+MAX_TRANSLATION_TEXT_SIZE = TIKA_MAX_TEXT_SIZE
+MAX_CHARACTERS_PER_CHUNK = 2000
 TRANSLATE_MAX_RETRIES = 15
-CORRECT_TRANSLATION_MAX_TOKENS_FACTOR = 1.5
 
 
 logger = logging.getLogger(__name__)
@@ -40,15 +30,20 @@ logger = logging.getLogger(__name__)
 app = get_celery_app()
 
 
-class LibretranslateDetectedLanguage(BaseModel, frozen=True):
+class DetectedLanguage(BaseModel, frozen=True):
     confidence: float
     language: str
 
 
-LibreTranslateLanguageDetectResult = list[LibretranslateDetectedLanguage]
+class _LanguageDetectionResult(BaseModel):
+    languages: list[DetectedLanguage]
 
 
-class LibretranslateInternalException(Exception):
+class _TranslationResult(BaseModel):
+    text: str
+
+
+class LLMTranslationException(Exception):
     pass
 
 
@@ -76,7 +71,7 @@ def noop(*_, **__):
 
 @app.task(
     base=FileIndexingTask,
-    autoretry_for=tuple([LibretranslateInternalException]),
+    autoretry_for=tuple([LLMTranslationException]),
     retry_backoff=True,
     max_retries=TRANSLATE_MAX_RETRIES,
 )
@@ -84,20 +79,18 @@ def noop(*_, **__):
 def translate_detect_language_task(
     text_lazy: TempLazyBytes | None,
     file: File,  # pylint: disable=unused-argument
-) -> tuple[TempLazyBytes | None, LibreTranslateLanguageDetectResult | None]:
+) -> tuple[TempLazyBytes | None, list[DetectedLanguage] | None]:
     if text_lazy is None:
         return text_lazy, None
 
-    # Unfortunately libretranslate does not handle memoryviews well, it will silently always
-    # detect english with 0.0 confidence. We need to load it as string here.
     with get_lazybytes_service().load_memoryview(text_lazy) as memview:
         text = (
-            memview[:LIBRETRANSLATE_MAX_TEXT_SIZE]
+            memview[:MAX_TRANSLATION_TEXT_SIZE]
             .tobytes()
             .decode(errors=settings.decode_error_handler)
         )
         # limit text size used for language detection
-        text = text[:LIBRETRANSLATE_MAX_CHARACTERS_PER_REQUEST]
+        text = text[:MAX_CHARACTERS_PER_CHUNK]
 
         # Do not attempt detecting languages if the text just consists of
         # whitespace characters
@@ -108,27 +101,36 @@ def translate_detect_language_task(
     return text_lazy, detected_languages
 
 
-def translate_detect_language(text: str) -> LibreTranslateLanguageDetectResult:
-    result = LibreTranslateLanguageDetectResult()
+def translate_detect_language(text: str) -> list[DetectedLanguage]:
+    result: list[DetectedLanguage] = []
     if len(text) <= 0:
         return result
 
-    libre_translate = get_libretranslate_api()
+    client = get_llm_translation_client()
     try:
-        detected_languages = libre_translate.detect(
-            text, timeout=settings.translate_timeout
+        response = client.beta.chat.completions.parse(
+            model=settings.llm.translation.model,
+            messages=[
+                {
+                    "role": "system",
+                    "content": "You are a language detection service.",
+                },
+                {
+                    "role": "user",
+                    "content": f"Detect the language of this text:\n\n{text}",
+                },
+            ],
+            response_format=_LanguageDetectionResult,
+            extra_headers=settings.llm.translation.extra_headers,
         )
-    except HTTPError as ex:
-        if 500 <= ex.code < 600:
-            raise LibretranslateInternalException from ex
-        raise ex
-    except OSError as ex:
-        raise LibretranslateInternalException from ex
+    except APIError as ex:
+        raise LLMTranslationException from ex
 
-    for detected_language in detected_languages:
-        detected_language = LibretranslateDetectedLanguage.model_validate(
-            detected_language
-        )
+    detection_result = response.choices[0].message.parsed
+    if detection_result is None:
+        return result
+
+    for detected_language in detection_result.languages:
         if detected_language.confidence >= settings.min_language_detection_confidence:
             result.append(detected_language)
 
@@ -137,7 +139,7 @@ def translate_detect_language(text: str) -> LibreTranslateLanguageDetectResult:
 
 def get_translation_text_splitter() -> TextSplitter:
     return RecursiveCharacterTextSplitter(
-        chunk_size=LIBRETRANSLATE_MAX_CHARACTERS_PER_REQUEST,
+        chunk_size=MAX_CHARACTERS_PER_CHUNK,
         chunk_overlap=0,
         separators=["\n\n", "\n", ".", "!", "?", ":", ";", " "],
         keep_separator="end",
@@ -149,7 +151,7 @@ def get_translation_text_splitter() -> TextSplitter:
 def translate_task(
     self: FileIndexingTask,
     translate_detect_language_result: tuple[
-        TempLazyBytes | None, LibreTranslateLanguageDetectResult | None
+        TempLazyBytes | None, list[DetectedLanguage] | None
     ],
     file: File,
 ):
@@ -161,7 +163,7 @@ def translate_task(
 
     with get_lazybytes_service().load_memoryview(text_lazy) as memview:
         text = (
-            memview[:LIBRETRANSLATE_MAX_TEXT_SIZE]
+            memview[:MAX_TRANSLATION_TEXT_SIZE]
             .tobytes()
             .decode(errors=settings.decode_error_handler)
         )
@@ -186,12 +188,12 @@ def translate_task(
 
 @app.task(
     base=FileIndexingTask,
-    autoretry_for=tuple([LibretranslateInternalException]),
+    autoretry_for=tuple([LLMTranslationException]),
     retry_backoff=True,
     max_retries=TRANSLATE_MAX_RETRIES,
 )
 @cache()
-def translate(text: str, detected_language: LibretranslateDetectedLanguage) -> str:
+def translate(text: str, detected_language: DetectedLanguage) -> str:
     if len(text) <= 0:
         return text
 
@@ -199,32 +201,44 @@ def translate(text: str, detected_language: LibretranslateDetectedLanguage) -> s
     if detected_language.language == settings.translate_target:
         return text
 
-    libretranslate_api = get_libretranslate_api()
-
+    client = get_llm_translation_client()
     try:
-        translation_result: str = libretranslate_api.translate(
-            text,
-            detected_language.language,
-            settings.translate_target,
-            timeout=settings.translate_timeout,
+        response = client.beta.chat.completions.parse(
+            model=settings.llm.translation.model,
+            messages=[
+                {
+                    "role": "system",
+                    "content": (
+                        f"You are a translation service. "
+                        f"Translate to {settings.translate_target}. "
+                        f"Output only the translated text. "
+                        f"No explanations, no preamble, no commentary."
+                    ),
+                },
+                {
+                    "role": "user",
+                    "content": f"Translate to {settings.translate_target}:\n\n{text}",
+                },
+            ],
+            response_format=_TranslationResult,
+            extra_headers=settings.llm.translation.extra_headers,
         )
-    except HTTPError as ex:
-        if 500 <= ex.code < 600:
-            raise LibretranslateInternalException from ex
-        raise ex
-    except OSError as ex:
-        raise LibretranslateInternalException from ex
+    except APIError as ex:
+        raise LLMTranslationException from ex
 
-    return translation_result
+    translation_result = response.choices[0].message.parsed
+    if translation_result is None:
+        return text
+    return translation_result.text
 
 
 @app.task(base=FileIndexingTask)
 def combine_translation(
     translation_results: list[str],
-    detected_language: LibretranslateDetectedLanguage,
-) -> LibretranslateTranslatedLanguage:
+    detected_language: DetectedLanguage,
+) -> TranslatedLanguage:
     translation_result = "".join(translation_results)
-    return LibretranslateTranslatedLanguage(
+    return TranslatedLanguage(
         confidence=detected_language.confidence,
         language=detected_language.language,
         text=translation_result,
@@ -234,16 +248,16 @@ def combine_translation(
 @persisting_task(app, IndexingPersister)
 def persist_translation(
     persister: IndexingPersister,
-    translation: LibretranslateTranslatedLanguage,
+    translation: TranslatedLanguage,
 ):
     """Persists the translation result."""
-    persister.add_or_replace_libretranslate_translated_language(translation)
+    persister.add_or_replace_translated_language(translation)
 
 
 @app.task(base=FileIndexingTask)
 def translate_get_best_detected_language(
     translate_detect_language_result: tuple[
-        TempLazyBytes | None, LibreTranslateLanguageDetectResult | None
+        TempLazyBytes | None, list[DetectedLanguage] | None
     ],
 ) -> str | None:
     _, detected_languages = translate_detect_language_result
@@ -264,4 +278,4 @@ def persist_best_detected_language(
 ):
     if best_detected_language is None:
         return
-    persister.set_libretranslate_language(best_detected_language)
+    persister.set_detected_language(best_detected_language)

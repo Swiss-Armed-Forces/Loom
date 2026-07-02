@@ -12,7 +12,6 @@ import {
     InsightsOutlined,
     WhatshotOutlined,
     Menu as MenuIcon,
-    TranslateOutlined,
     CloudUploadOutlined,
     KeyOutlined,
     StorageOutlined,
@@ -32,7 +31,6 @@ import {
     elasticVueHost,
     flowerHost,
     grafanaHost,
-    translateHost,
     s3Host,
     openWebuifrontendHost,
     prometheusHost,
@@ -71,11 +69,6 @@ export const BurgerMenu = () => {
     };
 
     const menuItems = [
-        {
-            link: translateHost,
-            text: "Translate",
-            icon: <TranslateOutlined />,
-        },
         {
             link: openWebuifrontendHost,
             text: "Open WebUI",

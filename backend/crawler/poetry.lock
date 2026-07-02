@@ -543,7 +543,6 @@ celery-types = "0.24.0"
 elasticsearch = "9.2.1"
 fastapi = "0.128.8"
 imapclient = {git = "https://github.com/736-c41-2c1-e464fc974/imapclient.git", rev = "ee967b861ec7b71854372fe7a20a5adc01b2d6aa"}
-libretranslatepy = "2.1.4"
 luqum = "0.14.0"
 openai = "1.72.0"
 pycryptodome = "3.23.0"
@@ -995,18 +994,6 @@ sqlalchemy = ["sqlalchemy (>=1.4.48,<2.1)"]
 sqs = ["boto3 (>=1.26.143)", "pycurl (>=7.43.0.5) ; sys_platform != \"win32\" and platform_python_implementation == \"CPython\"", "urllib3 (>=1.26.16)"]
 yaml = ["PyYAML (>=3.10)"]
 zookeeper = ["kazoo (>=2.8.0)"]
-
-[[package]]
-name = "libretranslatepy"
-version = "2.1.4"
-description = "Python bindings for LibreTranslate API"
-optional = false
-python-versions = ">=2.6"
-groups = ["main"]
-files = [
-    {file = "libretranslatepy-2.1.4-py3-none-any.whl", hash = "sha256:84fd16181e021e87c2d34351d928c01d66dba36e01814500aee8731dd138b822"},
-    {file = "libretranslatepy-2.1.4.tar.gz", hash = "sha256:800e902eed1b8b32d310ec72b204c6cfdcf3e4aa7cda5bfbcb7bbce8933e6369"},
-]
 
 [[package]]
 name = "luqum"

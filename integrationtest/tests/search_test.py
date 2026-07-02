@@ -227,30 +227,6 @@ class TestSearchMultilanguage:
         assert file.highlight is not None
         assert file.highlight["content"][0].count("highlight") == 2
 
-    def search_single_language(self):
-        search_string = "house"
-
-        file = get_file_preview_by_name(
-            search_string=search_string,
-            languages=["de"],
-            file_name="multilanguage_file.txt",
-        )
-
-        assert file.highlight is not None
-        assert file.highlight["content"][0].count("highlight") == 4
-
-    def search_multi_language(self):
-        search_string = "house"
-
-        file = get_file_preview_by_name(
-            search_string=search_string,
-            languages=["de", "fr"],
-            file_name="multilanguage_file.txt",
-        )
-
-        assert file.highlight is not None
-        assert file.highlight["content"][0].count("highlight") == 6
-
 
 class TestEmailQueries:
     asset_list = [

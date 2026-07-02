@@ -153,8 +153,7 @@ export const FileDetailDialog = ({
                 !!file?.highlight && Object.keys(file.highlight).length > 0,
             hasSummary: !!file?.summary?.trim(),
             hasImageDescription: !!file?.imageDescription?.trim(),
-            hasTranslations:
-                (file?.libretranslateLanguageTranslations?.length ?? 0) > 0,
+            hasTranslations: (file?.languageTranslations?.length ?? 0) > 0,
         }),
         [file],
     );
@@ -367,7 +366,7 @@ const renderTabContent = (
         case FileDetailTab.Translations:
             return (
                 <FileTranslations
-                    translations={file.libretranslateLanguageTranslations ?? []}
+                    translations={file.languageTranslations ?? []}
                 />
             );
         case FileDetailTab.Rendered:

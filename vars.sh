@@ -26,7 +26,6 @@ LOOM_HOSTS=(
     "rspamd-worker"
     "rabbit-amqp"
     "tika"
-    "translate"
     "prometheus"
     "grafana"
     "open-webui"
