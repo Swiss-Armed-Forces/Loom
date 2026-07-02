@@ -22,7 +22,6 @@ const getHost = (host: string): URL => {
 
 export const frontendHost = getHost("frontend");
 export const flowerHost = getHost("flower");
-export const translateHost = getHost("translate");
 export const roundcubeHost = getHost("roundcube");
 export const seaweedfsHost = getHost("seaweedfs");
 export const s3Host = getHost("s3");

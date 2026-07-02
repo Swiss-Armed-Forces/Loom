@@ -2,9 +2,8 @@ import copy
 import logging
 import re
 from datetime import datetime, timedelta
-from typing import Generator, List, Literal
+from typing import List, Literal
 
-from libretranslatepy import LibreTranslateAPI
 from luqum.check import LuceneCheck
 from luqum.exceptions import ParseError
 from luqum.thread import parse
@@ -22,8 +21,6 @@ from luqum.tree import (
 )
 from luqum.visitor import TreeTransformer
 from pydantic import BaseModel, Field
-
-from common.settings import settings
 
 logger = logging.getLogger(__name__)
 
@@ -149,70 +146,6 @@ class OpTransformer(TreeTransformer):
             if isinstance(child, Word) and child.value.upper() in self.ops:
                 node.children[i].value = child.value.upper()
         yield from self.generic_visit(node, context)
-
-
-class TranslateTransformer(TreeTransformer):
-    """Translate Transformer:
-    Takes words or phrases and translates them to the languages passed"""
-
-    MIN_TRANSLATION_LENGTH = 4
-
-    def __init__(self, languages: list[str], translate: LibreTranslateAPI):
-        super().__init__(track_parents=True)
-        self._languages = languages
-        self._translate = translate
-
-    def _translate_node(self, node: Phrase) -> Generator[Group | Phrase, None, None]:
-        if len(self._languages) <= 0:
-            yield node
-            return
-        # phrases values must start and end with "
-        node_value = node.value.strip('"')
-        if len(node_value) < TranslateTransformer.MIN_TRANSLATION_LENGTH:
-            yield node
-            return
-        translation_nodes = [node]
-        for lang in self._languages:
-            translation = self._translate.translate(
-                node_value,
-                settings.translate_target,
-                lang,
-                timeout=settings.translate_timeout,
-            )
-            translation_node = Phrase(f'"{translation}"')
-            translation_nodes.append(translation_node)
-
-        for i, translation_node in enumerate(translation_nodes):
-            if i == 0:
-                # first node: Add space to tail
-                translation_node.tail = " "
-            elif i == len(translation_nodes) - 1:
-                # last node: Add space to head
-                translation_node.head = " "
-            else:
-                # else: add space to head and tail
-                translation_node.head = " "
-                translation_node.tail = " "
-
-        yield Group(OrOperation(*translation_nodes))
-
-    def visit_range(self, node: Range, _: dict):
-        """Do not translate Ranges."""
-        yield node
-
-    def visit_phrase(self, node: Phrase, _: dict):
-        """Replace phrases with their translations."""
-        yield from self._translate_node(node)
-
-    def visit_word(self, node: Word, _: dict):
-        """Replace words with their translations."""
-        if len(self._languages) <= 0:
-            yield node
-            return
-        if len(node.value) < TranslateTransformer.MIN_TRANSLATION_LENGTH:
-            yield node
-            return
-        yield from self._translate_node(Phrase(f'"{node.value}"'))
 
 
 class TimeTransformer(TreeTransformer):
@@ -414,14 +347,10 @@ class QueryParameters(BaseModel):
     query_id: str = Field(min_length=1)
     keep_alive: KeepAlive = Field(default=DEFAULT_PIT_KEEPALIVE)
     search_string: str = Field(default="*", min_length=1)
-    languages: list[str] = Field(default_factory=list)
 
 
 class QueryBuilder:
     """Builds ES queries."""
-
-    def __init__(self, translate: LibreTranslateAPI):
-        self.translate = translate
 
     def parse_and_transform(self, query: QueryParameters) -> Item:
         """Takes query parameters, parses it into a query-tree and then transforms it.
@@ -493,7 +422,6 @@ class QueryBuilder:
                     r"ripsecrets_secrets.secret",
                 ],
             ).visit(tree, {})
-            tree = TranslateTransformer(query.languages, self.translate).visit(tree, {})
             tree = HiddenTransformer().visit(tree, {})
 
         except ParseError as ex:

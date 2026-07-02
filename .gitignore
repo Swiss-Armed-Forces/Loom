@@ -414,3 +414,7 @@ changed-files/
 
 # AI context folders
 .loom_*/
+
+# Loom archives (downloaded zips and extracted directories)
+loom_archive_*/
+loom_archive_*.zip

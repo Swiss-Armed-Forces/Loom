@@ -146,6 +146,10 @@ class LLMVisionSettings(LLMClientSettings):
     extra_headers: LLMExtraHeaders | None = _LLM_NO_THINKING_EXTRA_HEADERS
 
 
+class LLMTranslationSettings(LLMClientSettings):
+    extra_headers: LLMExtraHeaders | None = _LLM_NO_THINKING_EXTRA_HEADERS
+
+
 class LLMSettings(BaseModel):
     embedding: LLMEmbeddingSettings = LLMEmbeddingSettings()
     tool: LLMToolSettings = LLMToolSettings()
@@ -160,6 +164,7 @@ class LLMSettings(BaseModel):
     rerank: LLMRerankSettings = LLMRerankSettings()
     chat: LLMChatSettings = LLMChatSettings()
     vision: LLMVisionSettings = LLMVisionSettings()
+    translation: LLMTranslationSettings = LLMTranslationSettings()
 
 
 class WorkerType(StrEnum):
@@ -223,11 +228,6 @@ class Settings(BaseSettings):
 
     redis_cache_host: AnyUrl = AnyUrl(f"redis://redis-cache.{DOMAIN}:6380/0?protocol=3")
     lazy_threshold_bytes: int = 1024  # 1KiB
-    translate_host: AnyHttpUrl = AnyHttpUrl(f"http://translate.{DOMAIN}")
-    translate_timeout: int = 3 * 60
-    translate_startup_timeout: int = (
-        10  # used only for fetching languages during app startup
-    )
 
     imap_host: AnyUrl = AnyUrl(f"imap://dovecot.{DOMAIN}:143")
     imap_user: str = "user"

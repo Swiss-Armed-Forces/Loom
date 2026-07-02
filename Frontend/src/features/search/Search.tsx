@@ -10,7 +10,6 @@ import { useSearchParams } from "react-router-dom";
 import { toast } from "react-toastify";
 
 import {
-    loadLanguages,
     loadTags,
     MessageFileUpdate,
     loadSummarizationSystemPrompt,
@@ -29,12 +28,10 @@ import {
     fetchPreview,
     selectWebSocketPubSubMessage,
     setChatbotOpen,
-    setLanguages,
     updateQuery,
     setSummarizationSystemPrompt,
     setTags,
     selectQuery,
-    selectLanguages,
 } from "@app/slices/searchSlice";
 import { DialogType } from "@features/common/utils/enums";
 import {
@@ -56,7 +53,6 @@ const UPDATE_QUERY_DEBOUNCE_MS = 2_000;
 
 export const Search = () => {
     const dispatch = useAppDispatch();
-    const languages = useAppSelector(selectLanguages);
     const searchQuery = useAppSelector(selectQuery);
     const webSocketPubSubMessage = useAppSelector(selectWebSocketPubSubMessage);
     const chatbotOpen = useAppSelector((state) => state.search.chatbotOpen);
@@ -99,13 +95,11 @@ export const Search = () => {
         const fetchInitialSearchState = async () => {
             dispatch(startLoadingIndicator());
             try {
-                const [langs, prompt] = await Promise.all([
-                    loadLanguages(),
+                const [prompt] = await Promise.all([
                     loadSummarizationSystemPrompt(),
                     fetchSearchState(),
                     dispatch(websocketConnect),
                 ]);
-                dispatch(setLanguages(langs));
                 dispatch(setSummarizationSystemPrompt(prompt));
             } catch (error) {
                 toast.error(`Error in fetchInitialSearchState: ${error}`);
@@ -127,26 +121,14 @@ export const Search = () => {
 
     // sync URL searchParams to Redux state
     useEffect(() => {
-        if (searchQuery || !languages) return;
+        if (searchQuery) return;
 
         const query = searchParams.get("query");
-        const languageCodes = searchParams.getAll("languages");
         const sortField = searchParams.get("sortField");
         const sortDirection = searchParams.get("sortDirection");
 
-        const mappedLanguages =
-            languageCodes.length > 0
-                ? languageCodes.map((code) => ({
-                      code,
-                      name:
-                          languages.find((l) => l.code === code)?.name ??
-                          "missing",
-                  }))
-                : undefined;
-
         const newQuery: Partial<SearchQuery> = {
             query: query || undefined,
-            languages: mappedLanguages,
             sortField: sortField || undefined,
             sortDirection:
                 sortDirection !== null && isSortDirection(sortDirection)
@@ -155,7 +137,7 @@ export const Search = () => {
         };
 
         dispatch(updateQuery(newQuery));
-    }, [languages, searchParams, searchQuery]); // eslint-disable-line react-hooks/exhaustive-deps
+    }, [searchParams, searchQuery]); // eslint-disable-line react-hooks/exhaustive-deps
 
     // load file detail
     useEffect(() => {
@@ -216,10 +198,6 @@ export const Search = () => {
         fields.forEach((field) => {
             const value = searchQuery[field];
             if (value) params.set(field as string, String(value));
-        });
-
-        searchQuery.languages?.forEach((l) => {
-            params.append("languages", l.code);
         });
 
         // Sync with Router

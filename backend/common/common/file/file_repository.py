@@ -5,10 +5,8 @@ import hashlib
 import logging
 import re
 from datetime import datetime
-from json import JSONDecodeError
 from pathlib import PurePosixPath
 from typing import Annotated, Any, Callable, Generator, Sequence, cast
-from urllib.error import URLError
 from uuid import UUID
 
 import imapclient.imap_utf7
@@ -31,7 +29,6 @@ from elasticsearch.dsl import (
 )
 from elasticsearch.dsl.query import Query
 from elasticsearch.dsl.response import Response
-from libretranslatepy import LibreTranslateAPI
 from pydantic import (
     BaseModel,
     ConfigDict,
@@ -40,7 +37,6 @@ from pydantic import (
     computed_field,
     field_validator,
 )
-from pydantic.main import IncEx
 from pydantic_core import core_schema
 
 from common.file.file_statistics import (
@@ -116,51 +112,16 @@ class _EsSecret(InnerDoc):
     secret = Text(term_vector="with_positions_offsets")
 
 
-class LibretranslateTranslatedLanguage(BaseModel):
+class TranslatedLanguage(BaseModel):
     confidence: float
     language: str
     text: str
 
 
-class _EsLibretranslateTranslatedLanguage(InnerDoc):
+class _EsTranslatedLanguage(InnerDoc):
     confidence = Float()
     language = Keyword()
     text = Text(term_vector="with_positions_offsets")
-
-
-LibreTranslateTranslations = list[LibretranslateTranslatedLanguage]
-
-
-class LibretranslateSupportedLanguages(BaseModel):
-    code: str
-    name: str
-
-
-try:
-    LIBRETRANSLATE_SUPPORTED_LANGUAGES = [
-        LibretranslateSupportedLanguages.model_validate(lang)
-        # Since this is run at import-time, we can not use the dependency module here
-        # to fetch a LibreTranslateAPI instance.
-        for lang in LibreTranslateAPI(str(settings.translate_host)).languages(
-            timeout=settings.translate_startup_timeout
-        )
-        if settings.translate_target in lang["targets"]
-    ]
-except (URLError, JSONDecodeError):
-    # Raised when libretranslate isn't available: for example while running unit-tests
-    logger.warning("LibreTranslate service unavailable: using fallback language list")
-    LIBRETRANSLATE_SUPPORTED_LANGUAGES = [
-        LibretranslateSupportedLanguages(
-            code=settings.translate_target, name="FallbackLanguage"
-        ),
-    ]
-
-
-class _EsLibreTranslateTranslations(InnerDoc):
-    """A wrapper for all available libretranslate languages."""
-
-    for lang in LIBRETRANSLATE_SUPPORTED_LANGUAGES:
-        locals()[lang.code] = Object(_EsLibretranslateTranslatedLanguage)
 
 
 class ImapPurePath(PurePosixPath):
@@ -403,10 +364,8 @@ class File(RepositoryTaskObject):
     tags: list[Tag] = []
     magic_file_type: str | None = None
     tika_language: str | None = None
-    libretranslate_language: str | None = None
-    libretranslate_translations: LibreTranslateTranslations = Field(
-        default_factory=LibreTranslateTranslations
-    )
+    detected_language: str | None = None
+    translations: list[TranslatedLanguage] = Field(default_factory=list)
     is_spam: bool | None = None
     tika_file_type: str | None = None
     archives: list[str] = []
@@ -432,20 +391,6 @@ class File(RepositoryTaskObject):
     @classmethod
     def unique_archives(cls, archives: list[str]) -> list[str]:
         return unique_list(archives)
-
-    def to_es_dict(
-        self, include: IncEx | None = None, exclude: IncEx | None = None
-    ) -> dict:
-        es_dict = super().to_es_dict(include=include, exclude=exclude)
-        if "libretranslate_translations" in es_dict:
-            # expand translations to object
-            libretranslate_translations = es_dict["libretranslate_translations"]
-            es_dict["libretranslate_translations"] = {}
-            for translation in libretranslate_translations:
-                es_dict["libretranslate_translations"][
-                    translation["language"]
-                ] = translation
-        return es_dict
 
 
 class _EsFile(_EsTaskDocument):
@@ -485,8 +430,8 @@ class _EsFile(_EsTaskDocument):
     tags = Keyword(multi=True)
     magic_file_type = Keyword()
     tika_language = Keyword()
-    libretranslate_language = Keyword()
-    libretranslate_translations = Object(_EsLibreTranslateTranslations)
+    detected_language = Keyword()
+    translations = Object(_EsTranslatedLanguage, multi=True)
     is_spam = Boolean()
     tika_file_type = Keyword()
     archives = Keyword(multi=True)
@@ -516,16 +461,6 @@ class _EsFile(_EsTaskDocument):
     imap = Object(_EsImapInfo)
     flagged = Boolean()
     seen = Boolean()
-
-    def to_es_dict(self) -> dict:
-        es_dict = super().to_es_dict()
-        # merge all translations into a list
-        libretranslate_translations = es_dict.get("libretranslate_translations", {})
-        es_dict["libretranslate_translations"] = list(
-            libretranslate_translations.values()
-        )
-
-        return es_dict
 
     class Meta:  # pylint: disable=too-few-public-methods
         dynamic_templates = MetaField(
@@ -590,7 +525,7 @@ class Stat(enum.Enum):
     FILE_TYPE_TIKA = "file_type_tika"
     FILE_TYPE_MAGIC = "file_type_magic"
     LANGUAGE_TIKA = "language_tika"
-    LANGUAGE_LIBRETRANSLATE = "language_libretranslate"
+    LANGUAGE_DETECTED = "language_detected"
     IS_SPAM = "is_spam"
 
 
@@ -666,9 +601,9 @@ class FileRepository(BaseEsRepository[_EsFile, File]):
                 kwargs={"field": "tika_language", "size": 100},
                 transforms={},
             ),
-            Stat.LANGUAGE_LIBRETRANSLATE: StatItem(
-                args=["all_language_libretranslate", "terms"],
-                kwargs={"field": "libretranslate_language", "size": 100},
+            Stat.LANGUAGE_DETECTED: StatItem(
+                args=["all_language_detected", "terms"],
+                kwargs={"field": "detected_language", "size": 100},
                 transforms={},
             ),
             Stat.IS_SPAM: StatItem(

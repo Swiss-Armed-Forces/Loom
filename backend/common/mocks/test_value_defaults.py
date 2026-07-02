@@ -33,7 +33,6 @@ class TestValueDefaults:  # pylint: disable=too-few-public-methods
     test_query = QueryParameters(
         query_id=str(uuid4()),
         search_string="Query something",
-        languages=["us", "cz", "de"],
         keep_alive=test_keep_alive,
     )
     test_vector = [0.1, 0.3, 3.1415, 123.0]

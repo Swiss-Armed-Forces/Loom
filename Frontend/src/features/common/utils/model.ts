@@ -1,10 +1,4 @@
-import { JSONSchemaType } from "ajv";
-
-import {
-    GenericStatisticsModel,
-    LibretranslateSupportedLanguages,
-    SummaryStatisticsModel,
-} from "@app/api";
+import { GenericStatisticsModel, SummaryStatisticsModel } from "@app/api";
 
 import { DialogType } from "./enums";
 
@@ -23,23 +17,11 @@ export interface SearchQuery {
     id: string;
     query: string;
     keepAlive: "10s" | "30m" | null;
-    languages: LibretranslateSupportedLanguages[] | null;
     sortField: string | null;
     sortDirection: SortDirection | null;
     sortId: any[] | null;
     pageSize: number | null;
 }
-
-export const LibretranslateSupportedLanguagesSchema: JSONSchemaType<LibretranslateSupportedLanguages> =
-    {
-        type: "object",
-        properties: {
-            code: { type: "string" },
-            name: { type: "string" },
-        },
-        required: ["code", "name"],
-        additionalProperties: false,
-    };
 
 export const SearchQuerySchema = {
     type: "object",
@@ -49,11 +31,6 @@ export const SearchQuerySchema = {
         query: { type: "string" },
 
         keepAlive: { type: ["string", "null"], enum: ["10s", "30m", null] },
-
-        languages: {
-            type: ["array", "null"],
-            items: LibretranslateSupportedLanguagesSchema,
-        },
 
         sortField: { type: ["string", "null"] },
 
@@ -70,7 +47,6 @@ export const SearchQuerySchema = {
         "id",
         "query",
         "keepAlive",
-        "languages",
         "sortField",
         "sortDirection",
         "sortId",

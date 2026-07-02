@@ -215,7 +215,7 @@ def get_file_by_id(
         - highlight (dict[str, list[str]] | None): Highlighted text per category.
         - content (str): Extracted or processed text content.
         - name (str): Short or display name for the file.
-        - libretranslate_language_translations (list[GetFileLanguageTranslations]):
+        - language_translations (list[GetFileLanguageTranslations]):
           List of language translations.
         - raw (str): Original unprocessed content.
         - summary (str | None): Optional summary text.

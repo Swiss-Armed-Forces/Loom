@@ -95,7 +95,6 @@ Multiple services that are useful for production and development purposes are st
 | Service       | Url                                                      | Description                                   | Remarks                                        |
 | ------------- | -------------------------------------------------------- | --------------------------------------------- | ---------------------------------------------- |
 | Frontend      | [https://frontend.loom](https://frontend.loom)           | The loom Frontend                             |                                                |
-| Translate     | [https://translate.loom](https://translate.loom)         | Translation service powered by LibreTranslate |                                                |
 | Open Webui    | [https://open-webui.loom](https://open-webui.loom)       | AI Webinterface                               |                                                |
 | Roundcube     | [https://roundcube.loom](https://roundcube.loom)         | Email Webinterface                            |                                                |
 | SeaweedFS     | [https://seaweedfs.loom](https://seaweedfs.loom)         | Admin UI for cluster management               |                                                |
@@ -130,7 +129,6 @@ Multiple services that are useful for production and development purposes are st
 - [Third Party Licenses](THIRD-PARTY.md)
 - [Frontend Documentation](Frontend/README.md)
 - [Backend Documentation](backend/README.md)
-- [LibreTranslate Image](libretranslate/README.md)
 - [Integration Testing Documentation](integrationtest/README.md)
 - [CI/CD Pipeline Documentation](cicd/README.md)
 - [Celery Flower canvas](https://docs.celeryq.dev/en/stable/userguide/canvas.html)

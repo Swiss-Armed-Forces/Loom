@@ -133,6 +133,12 @@ externalSecrets:
       remoteRef:
         key: ""
         property: ""
+    llm__translation__api_key:
+      enabled: false
+      name: loom-llm-translation-api-key
+      remoteRef:
+        key: ""
+        property: ""
 
 ingress: &default-ingress-config
   enabled: true
@@ -298,6 +304,9 @@ llm:
     <<: *llm-defaults
     system_prompt: null
     max_tokens: null
+
+  translation:
+    <<: *llm-defaults
 
 preInstall:
   image:
@@ -687,48 +696,6 @@ grafana:
   # Example:
   # app-tier: monitoring
   # service-type: visualization
-
-translate:
-  enabled: true
-  replicaCount: 1
-  priorityClass: null
-  strategy:
-    rollingUpdate:
-      maxSurge: 0
-      maxUnavailable: 1
-  hpa:
-    enabled: false
-    maxReplicas: 2
-    minReplicas: 1
-    targetCPUUtilizationPercentage: 80
-  image:
-    repository: swiss-armed-forces/cyber-command/cea/loom/libretranslate
-  env:
-    ARGOS_DEVICE_TYPE: "auto"
-  service:
-    port: 5000
-    # External hostname for the service.
-    # If set, routes to external service instead of internal pods.
-    externalHost: ""
-  ingress: *default-ingress-config
-  readinessProbe:
-    enabled: false
-  livenessProbe:
-    enabled: true
-  resources:
-    requests:
-      cpu: "0.5"
-      memory: "2Gi"
-    limits:
-      cpu: "4"
-      memory: "5Gi"
-  timeout: 300
-  # Custom labels specific to translate resources
-  customLabels: {}
-  customAnnotations: {}
-  # Example:
-  # app-tier: ml
-  # service-type: translation
 
 seaweedfs:
   # SeaweedFS is a distributed storage system for blobs, objects, files, and data lake

@@ -40,6 +40,9 @@ llm:
   chat:
     model: smollm2:135m
 
+  translation:
+    model: smollm2:135m
+
   vision:
     model: moondream:1.8b
 
@@ -210,9 +213,6 @@ elasticvue:
   ingress: *default-ingress-config
 
 grafana:
-  ingress: *default-ingress-config
-
-translate:
   ingress: *default-ingress-config
 
 seaweedfs:

@@ -3,13 +3,7 @@
 import logging
 
 from common.dependencies import (
-    get_file_repository,
-    get_file_scheduling_service,
     get_task_scheduling_service,
-)
-from common.file.file_repository import (
-    LIBRETRANSLATE_SUPPORTED_LANGUAGES,
-    LibretranslateSupportedLanguages,
 )
 from common.services.query_builder import QueryParameters
 from common.services.task_scheduling_service import TaskSchedulingService
@@ -20,11 +14,7 @@ router = APIRouter()
 
 logger = logging.getLogger(__name__)
 
-default_file_repository = Depends(get_file_repository)
-default_file_scheduling_service = Depends(get_file_scheduling_service)
 default_task_scheduling_service = Depends(get_task_scheduling_service)
-
-LIBRETRANSLATE_REQUEST_TIMEOUT = 5
 
 
 class TranslateAllRequest(BaseModel):
@@ -32,11 +22,6 @@ class TranslateAllRequest(BaseModel):
 
     lang: str
     query: QueryParameters
-
-
-@router.get("/languages", status_code=200)
-def get_supported_languages() -> list[LibretranslateSupportedLanguages]:
-    return LIBRETRANSLATE_SUPPORTED_LANGUAGES
 
 
 @router.post("", status_code=202)

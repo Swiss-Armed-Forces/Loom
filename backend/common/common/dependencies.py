@@ -6,7 +6,6 @@ import urllib3
 from celery import Celery
 from elasticsearch import Elasticsearch
 from elasticsearch.dsl.connections import create_connection
-from libretranslatepy import LibreTranslateAPI
 from minio import Minio
 from openai import OpenAI
 from redis import StrictRedis
@@ -44,7 +43,6 @@ class DependencyException(Exception):
 
 
 # Note, "= None" assignments are needed here to make flake8 happy
-_libretranslate_api: LibreTranslateAPI | None = None
 _query_builder: QueryBuilder | None = None
 _redis_client: StrictRedis | None = None
 _redis_client_async: StrictRedisAsync | None = None
@@ -77,6 +75,7 @@ _llm_chat_client: OpenAI | None = None
 _llm_embedding_client: OpenAI | None = None
 _llm_tool_client: OpenAI | None = None
 _llm_vision_client: OpenAI | None = None
+_llm_translation_client: OpenAI | None = None
 _celery_inspect_service: CeleryInspectService | None = None
 _complete_estimate_service: CompleteEstimateService | None = None
 _wipe_service: WipeService | None = None
@@ -99,11 +98,8 @@ def init():
     # The orphaned connection objects in the child will be cleaned up
     # when the subprocess exits.
 
-    global _libretranslate_api
-    _libretranslate_api = LibreTranslateAPI(str(settings.translate_host))
-
     global _query_builder
-    _query_builder = QueryBuilder(_libretranslate_api)
+    _query_builder = QueryBuilder()
 
     global _redis_client
     _redis_client = StrictRedis.from_url(str(settings.celery_backend_host))
@@ -302,6 +298,13 @@ def init():
         timeout=settings.llm.vision.timeout,
     )
 
+    global _llm_translation_client
+    _llm_translation_client = OpenAI(
+        base_url=str(settings.llm.translation.endpoint),
+        api_key=settings.llm.translation.api_key,
+        timeout=settings.llm.translation.timeout,
+    )
+
     global _celery_inspect_service
     _celery_inspect_service = CeleryInspectService(
         _celery_app, _queues_service, _redis_client
@@ -336,9 +339,6 @@ def init():
 def mock_init():
     # pylint: disable=global-statement
     logger.info("Initialize global mock dependencies")
-
-    global _libretranslate_api
-    _libretranslate_api = MagicMock(spec=LibreTranslateAPI)
 
     global _query_builder
     _query_builder = MagicMock(spec=QueryBuilder)
@@ -444,6 +444,9 @@ def mock_init():
     global _llm_vision_client
     _llm_vision_client = MagicMock(spec=openai_spec)
 
+    global _llm_translation_client
+    _llm_translation_client = MagicMock(spec=openai_spec)
+
     global _celery_inspect_service
     _celery_inspect_service = MagicMock(spec=CeleryInspectService)
 
@@ -452,12 +455,6 @@ def mock_init():
 
     global _wipe_service
     _wipe_service = MagicMock(spec=WipeService)
-
-
-def get_libretranslate_api() -> LibreTranslateAPI:
-    if _libretranslate_api is None:
-        raise DependencyException("Libretranslate api missing")
-    return _libretranslate_api
 
 
 def get_query_builder() -> QueryBuilder:
@@ -650,6 +647,12 @@ def get_llm_vision_client() -> OpenAI:
     if _llm_vision_client is None:
         raise DependencyException("LLM vision client missing")
     return _llm_vision_client
+
+
+def get_llm_translation_client() -> OpenAI:
+    if _llm_translation_client is None:
+        raise DependencyException("LLM translation client missing")
+    return _llm_translation_client
 
 
 def get_celery_inspect_service() -> CeleryInspectService:

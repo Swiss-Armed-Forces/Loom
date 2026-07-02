@@ -19,7 +19,6 @@ pycryptodome = "3.23.0"
 requests = "2.32.5"
 pydantic = "2.13.4"
 pydantic-settings = "2.14.2"
-libretranslatepy = "2.1.4"
 types-requests = "2.32.4.20260324"
 fastapi = "0.128.8"
 redis = "5.2.1"
@@ -48,10 +47,6 @@ build-backend = "poetry.core.masonry.api"
 
 [[tool.mypy.overrides]]
 module = "luqum.*"
-ignore_missing_imports = true
-
-[[tool.mypy.overrides]]
-module = "libretranslatepy.*"
 ignore_missing_imports = true
 
 [[tool.mypy.overrides]]

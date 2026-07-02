@@ -19,7 +19,6 @@ spec:
     - traefik.{{ .Values.domain }}
     - frontend.{{ .Values.domain }}
     - api.{{ .Values.domain }}
-    - translate.{{ .Values.domain }}
     - flower.{{ .Values.domain }}
     - rabbit.{{ .Values.domain }}
     - prometheus.{{ .Values.domain }}

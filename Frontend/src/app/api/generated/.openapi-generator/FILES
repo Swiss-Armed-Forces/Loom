@@ -51,7 +51,6 @@ models/ImageDescriptionFileRequest.ts
 models/ImageDescriptionRequest.ts
 models/ImapInfo.ts
 models/IndexAllRequest.ts
-models/LibretranslateSupportedLanguages.ts
 models/Message.ts
 models/MessageChatBotAnswerComplete.ts
 models/MessageChatBotCitation.ts

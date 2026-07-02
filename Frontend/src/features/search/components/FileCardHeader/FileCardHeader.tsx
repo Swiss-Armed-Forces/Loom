@@ -1,6 +1,7 @@
-import { ContentCut, LinkOff, Whatshot } from "@mui/icons-material";
-import { CardHeader, Box } from "@mui/material";
+import { ContentCut, LinkOff, Translate, Whatshot } from "@mui/icons-material";
+import { CardHeader, Box, Tooltip } from "@mui/material";
 import { ReactNode } from "react";
+import { useTranslation } from "react-i18next";
 
 import { GetFilePreviewResponse } from "@app/api";
 import { useAppDispatch, useAppSelector } from "@app/hooks";
@@ -27,18 +28,26 @@ export const FileCardHeader = ({
     hideDetail,
 }: FileCardHeaderProps) => {
     const dispatch = useAppDispatch();
+    const { t } = useTranslation();
     const searchQuery = useAppSelector(selectQuery);
 
-    const handleQueryReplaceFileExtension = (extension: string) => {
+    const handleFilterByField = (field: SearchQueryField, value: string) => {
         dispatch(
             updateQuery({
                 query: updateFieldOfQuery(
                     searchQuery?.query ?? "",
-                    SearchQueryField.Extension,
-                    extension,
+                    field,
+                    value,
                 ),
             }),
         );
+    };
+
+    const filterIconSx = {
+        cursor: "pointer",
+        transition: "transform 0.2s ease",
+        "&:hover": { transform: "scale(1.2)" },
+        "&:active": { transform: "scale(0.95)" },
     };
 
     return (
@@ -48,11 +57,12 @@ export const FileCardHeader = ({
             avatar={
                 <FileAvatar
                     fileExtension={filePreview.fileExtension}
-                    performSearch={() => {
-                        handleQueryReplaceFileExtension(
+                    performSearch={() =>
+                        handleFilterByField(
+                            SearchQueryField.Extension,
                             filePreview.fileExtension,
-                        );
-                    }}
+                        )
+                    }
                     hasBadge={!filePreview.seen}
                 />
             }
@@ -69,19 +79,75 @@ export const FileCardHeader = ({
                         }}
                     />
                     {filePreview.contentIsTruncated && (
-                        <ContentCut
-                            fontSize="small"
-                            titleAccess="Content is truncated"
-                        />
+                        <Tooltip
+                            title={t("generalSearchView.contentTruncatedIcon")}
+                        >
+                            <ContentCut
+                                fontSize="small"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleFilterByField(
+                                        SearchQueryField.ContentTruncated,
+                                        "true",
+                                    );
+                                }}
+                                sx={filterIconSx}
+                            />
+                        </Tooltip>
                     )}
                     {filePreview.attachmentsSkipped && (
-                        <LinkOff
-                            fontSize="small"
-                            titleAccess="Attachments skipped (max recursion depth reached)"
-                        />
+                        <Tooltip
+                            title={t(
+                                "generalSearchView.attachmentsSkippedIcon",
+                            )}
+                        >
+                            <LinkOff
+                                fontSize="small"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleFilterByField(
+                                        SearchQueryField.AttachmentsSkipped,
+                                        "true",
+                                    );
+                                }}
+                                sx={filterIconSx}
+                            />
+                        </Tooltip>
                     )}
                     {filePreview.isSpam && (
-                        <Whatshot fontSize="small" titleAccess="SPAM" />
+                        <Tooltip title={t("generalSearchView.spamIcon")}>
+                            <Whatshot
+                                fontSize="small"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleFilterByField(
+                                        SearchQueryField.IsSpam,
+                                        "true",
+                                    );
+                                }}
+                                sx={filterIconSx}
+                            />
+                        </Tooltip>
+                    )}
+                    {filePreview.detectedLanguage && (
+                        <Tooltip
+                            title={t(
+                                "generalSearchView.detectedLanguageTooltip",
+                                { language: filePreview.detectedLanguage },
+                            )}
+                        >
+                            <Translate
+                                fontSize="small"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleFilterByField(
+                                        SearchQueryField.DetectedLanguage,
+                                        filePreview.detectedLanguage!,
+                                    );
+                                }}
+                                sx={filterIconSx}
+                            />
+                        </Tooltip>
                     )}
                 </Box>
             }

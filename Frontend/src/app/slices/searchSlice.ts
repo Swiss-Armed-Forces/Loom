@@ -15,7 +15,6 @@ import {
     getFilePreview,
     GetFilePreviewResponse,
     GetFilesFileEntry,
-    LibretranslateSupportedLanguages,
     searchFiles,
     SummaryStatisticsModel,
     GenericStatisticsModel,
@@ -113,8 +112,6 @@ export interface SearchState {
     lastFileSortId: any[] | null;
     filesInView: string[];
     tags: string[];
-    languages: LibretranslateSupportedLanguages[] | null;
-    translationLanguage: LibretranslateSupportedLanguages | null;
     customQueries: CustomQuery[];
     sideMenu: SideMenuState;
     contentTruncatedFilesCount: number;
@@ -209,8 +206,6 @@ const initialState: SearchState = {
     totalFiles: 0,
     filesInView: [],
     tags: [],
-    languages: null,
-    translationLanguage: null,
     customQueries: loadCustomQueries(),
     sideMenu: loadSideMenuState(),
     contentTruncatedFilesCount: 0,
@@ -243,10 +238,6 @@ export const updateQuery = createAsyncThunk(
             id: queryId,
             query: queryQuery,
             keepAlive: query.keepAlive ?? lastQuery?.keepAlive ?? null,
-            languages:
-                query.languages?.length === 0
-                    ? null
-                    : (query.languages ?? lastQuery?.languages ?? null),
             sortField:
                 query.sortField !== undefined
                     ? query.sortField?.trim() || null
@@ -339,7 +330,6 @@ export const fetchPreview = createAsyncThunk(
                   id: queryId,
                   query: "hidden:*",
                   keepAlive: null,
-                  languages: null,
                   sortField: null,
                   sortDirection: null,
                   sortId: null,
@@ -504,18 +494,6 @@ export const searchSlice = createSlice({
         },
         setTags: (state, action: PayloadAction<string[]>) => {
             state.tags = action.payload;
-        },
-        setLanguages: (
-            state,
-            action: PayloadAction<LibretranslateSupportedLanguages[]>,
-        ) => {
-            state.languages = action.payload;
-        },
-        setTranslationLanguage: (
-            state,
-            action: PayloadAction<LibretranslateSupportedLanguages | null>,
-        ) => {
-            state.translationLanguage = action.payload;
         },
         setWebSocketPubSubMessage: (
             state,
@@ -684,8 +662,6 @@ export const {
     fillStatsTags,
     fillStatsGeneric,
     setTags,
-    setLanguages,
-    setTranslationLanguage,
     setWebSocketPubSubMessage,
     setDisplayStat,
     setChatbotOpen,
@@ -722,14 +698,6 @@ export const selectQueryError = createSelector(
 
 export const selectTags = createSelector(selectSearch, (search) => search.tags);
 
-export const selectTranslationLanguage = createSelector(
-    selectSearch,
-    (search) => search.translationLanguage,
-);
-export const selectLanguages = createSelector(
-    selectSearch,
-    (search) => search.languages,
-);
 export const selectFiles = createSelector(
     selectSearch,
     (search) => search.files,

@@ -87,7 +87,6 @@ export interface GetFilePreviewV1FilesFileIdPreviewGetRequest {
     queryId: string;
     keepAlive?: GetFilePreviewV1FilesFileIdPreviewGetKeepAliveEnum;
     searchString?: string;
-    languages?: Array<string>;
 }
 
 export interface GetFileV1FilesFileIdGetRequest {
@@ -95,21 +94,18 @@ export interface GetFileV1FilesFileIdGetRequest {
     queryId: string;
     keepAlive?: GetFileV1FilesFileIdGetKeepAliveEnum;
     searchString?: string;
-    languages?: Array<string>;
 }
 
 export interface GetFilesCountV1FilesCountGetRequest {
     queryId: string;
     keepAlive?: GetFilesCountV1FilesCountGetKeepAliveEnum;
     searchString?: string;
-    languages?: Array<string>;
 }
 
 export interface GetFilesTreeV1FilesTreeGetRequest {
     queryId: string;
     keepAlive?: GetFilesTreeV1FilesTreeGetKeepAliveEnum;
     searchString?: string;
-    languages?: Array<string>;
     nodePath?: string;
 }
 
@@ -121,7 +117,6 @@ export interface GetFilesV1FilesGetRequest {
     sortDirection?: GetFilesV1FilesGetSortDirectionEnum;
     keepAlive?: GetFilesV1FilesGetKeepAliveEnum;
     searchString?: string;
-    languages?: Array<string>;
 }
 
 export interface GetGenericStatsV1FilesStatsGenericStatGetRequest {
@@ -129,7 +124,6 @@ export interface GetGenericStatsV1FilesStatsGenericStatGetRequest {
     queryId: string;
     keepAlive?: GetGenericStatsV1FilesStatsGenericStatGetKeepAliveEnum;
     searchString?: string;
-    languages?: Array<string>;
 }
 
 export interface GetQueryV1FilesQueryPostRequest {
@@ -145,7 +139,6 @@ export interface GetSummaryStatsV1FilesStatsSummaryGetRequest {
     queryId: string;
     keepAlive?: GetSummaryStatsV1FilesStatsSummaryGetKeepAliveEnum;
     searchString?: string;
-    languages?: Array<string>;
 }
 
 export interface GetThumbnailV1FilesFileIdThumbnailThumbnailFileIdGetRequest {
@@ -412,10 +405,6 @@ export class FilesApi extends runtime.BaseAPI {
                 requestParameters["searchString"];
         }
 
-        if (requestParameters["languages"] != null) {
-            queryParameters["languages"] = requestParameters["languages"];
-        }
-
         const headerParameters: runtime.HTTPHeaders = {};
 
         const response = await this.request(
@@ -488,10 +477,6 @@ export class FilesApi extends runtime.BaseAPI {
                 requestParameters["searchString"];
         }
 
-        if (requestParameters["languages"] != null) {
-            queryParameters["languages"] = requestParameters["languages"];
-        }
-
         const headerParameters: runtime.HTTPHeaders = {};
 
         const response = await this.request(
@@ -557,10 +542,6 @@ export class FilesApi extends runtime.BaseAPI {
                 requestParameters["searchString"];
         }
 
-        if (requestParameters["languages"] != null) {
-            queryParameters["languages"] = requestParameters["languages"];
-        }
-
         const headerParameters: runtime.HTTPHeaders = {};
 
         const response = await this.request(
@@ -621,10 +602,6 @@ export class FilesApi extends runtime.BaseAPI {
         if (requestParameters["searchString"] != null) {
             queryParameters["search_string"] =
                 requestParameters["searchString"];
-        }
-
-        if (requestParameters["languages"] != null) {
-            queryParameters["languages"] = requestParameters["languages"];
         }
 
         if (requestParameters["nodePath"] != null) {
@@ -710,10 +687,6 @@ export class FilesApi extends runtime.BaseAPI {
                 requestParameters["searchString"];
         }
 
-        if (requestParameters["languages"] != null) {
-            queryParameters["languages"] = requestParameters["languages"];
-        }
-
         const headerParameters: runtime.HTTPHeaders = {};
 
         const response = await this.request(
@@ -780,10 +753,6 @@ export class FilesApi extends runtime.BaseAPI {
         if (requestParameters["searchString"] != null) {
             queryParameters["search_string"] =
                 requestParameters["searchString"];
-        }
-
-        if (requestParameters["languages"] != null) {
-            queryParameters["languages"] = requestParameters["languages"];
         }
 
         const headerParameters: runtime.HTTPHeaders = {};
@@ -962,10 +931,6 @@ export class FilesApi extends runtime.BaseAPI {
         if (requestParameters["searchString"] != null) {
             queryParameters["search_string"] =
                 requestParameters["searchString"];
-        }
-
-        if (requestParameters["languages"] != null) {
-            queryParameters["languages"] = requestParameters["languages"];
         }
 
         const headerParameters: runtime.HTTPHeaders = {};

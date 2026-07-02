@@ -14,16 +14,10 @@
  */
 
 import * as runtime from "../runtime";
-import type {
-    HTTPValidationError,
-    LibretranslateSupportedLanguages,
-    TranslateAllRequest,
-} from "../models/index";
+import type { HTTPValidationError, TranslateAllRequest } from "../models/index";
 import {
     HTTPValidationErrorFromJSON,
     HTTPValidationErrorToJSON,
-    LibretranslateSupportedLanguagesFromJSON,
-    LibretranslateSupportedLanguagesToJSON,
     TranslateAllRequestFromJSON,
     TranslateAllRequestToJSON,
 } from "../models/index";
@@ -36,44 +30,6 @@ export interface TranslateFilesOnDemandV1FilesTranslationPostRequest {
  *
  */
 export class TranslationApi extends runtime.BaseAPI {
-    /**
-     * Get Supported Languages
-     */
-    async getSupportedLanguagesV1FilesTranslationLanguagesGetRaw(
-        initOverrides?: RequestInit | runtime.InitOverrideFunction,
-    ): Promise<runtime.ApiResponse<Array<LibretranslateSupportedLanguages>>> {
-        const queryParameters: any = {};
-
-        const headerParameters: runtime.HTTPHeaders = {};
-
-        const response = await this.request(
-            {
-                path: `/v1/files/translation/languages`,
-                method: "GET",
-                headers: headerParameters,
-                query: queryParameters,
-            },
-            initOverrides,
-        );
-
-        return new runtime.JSONApiResponse(response, (jsonValue) =>
-            jsonValue.map(LibretranslateSupportedLanguagesFromJSON),
-        );
-    }
-
-    /**
-     * Get Supported Languages
-     */
-    async getSupportedLanguagesV1FilesTranslationLanguagesGet(
-        initOverrides?: RequestInit | runtime.InitOverrideFunction,
-    ): Promise<Array<LibretranslateSupportedLanguages>> {
-        const response =
-            await this.getSupportedLanguagesV1FilesTranslationLanguagesGetRaw(
-                initOverrides,
-            );
-        return await response.value();
-    }
-
     /**
      * Translate Files On Demand
      */

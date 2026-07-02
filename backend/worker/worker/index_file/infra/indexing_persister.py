@@ -6,11 +6,10 @@ from common.file.file_repository import (
     Embedding,
     File,
     ImapInfo,
-    LibretranslateTranslatedLanguage,
-    LibreTranslateTranslations,
     Secret,
     Tag,
     TikaMeta,
+    TranslatedLanguage,
 )
 from common.models.base_repository import BaseRepository
 from common.services.lazybytes_service import FileStorageLazyBytes
@@ -73,22 +72,22 @@ def _set_tika_language(obj: File, language: str) -> None:
     obj.tika_language = language
 
 
-def _set_libretranslate_language(obj: File, language: str) -> None:
-    obj.libretranslate_language = language
+def _set_detected_language(obj: File, language: str) -> None:
+    obj.detected_language = language
 
 
-def _add_or_replace_libretranslate_translated_language(
-    obj: File, libretranslate_translated_language: LibretranslateTranslatedLanguage
+def _add_or_replace_translated_language(
+    obj: File, translated_language: TranslatedLanguage
 ) -> None:
     # remove filter previous translation
-    filtered_translations = LibreTranslateTranslations(
+    filtered_translations = [
         translation
-        for translation in obj.libretranslate_translations
-        if translation.language != libretranslate_translated_language.language
-    )
-    obj.libretranslate_translations = filtered_translations
+        for translation in obj.translations
+        if translation.language != translated_language.language
+    ]
+    obj.translations = filtered_translations
     # add new translation
-    obj.libretranslate_translations.append(libretranslate_translated_language)
+    obj.translations.append(translated_language)
 
 
 def _set_tika_meta(obj: File, meta: TikaMeta) -> None:
@@ -184,10 +183,8 @@ class IndexingPersister(PersisterBase[File]):
     set_magic_file_type = mutation(_set_magic_file_type)
     set_tika_file_type = mutation(_set_tika_file_type)
     set_tika_language = mutation(_set_tika_language)
-    set_libretranslate_language = mutation(_set_libretranslate_language)
-    add_or_replace_libretranslate_translated_language = mutation(
-        _add_or_replace_libretranslate_translated_language
-    )
+    set_detected_language = mutation(_set_detected_language)
+    add_or_replace_translated_language = mutation(_add_or_replace_translated_language)
     set_tika_meta = mutation(_set_tika_meta)
     set_tika_handled_by = mutation(_set_tika_handled_by)
     set_is_spam = mutation(_set_is_spam)

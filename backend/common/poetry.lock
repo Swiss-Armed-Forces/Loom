@@ -873,18 +873,6 @@ yaml = ["PyYAML (>=3.10)"]
 zookeeper = ["kazoo (>=2.8.0)"]
 
 [[package]]
-name = "libretranslatepy"
-version = "2.1.4"
-description = "Python bindings for LibreTranslate API"
-optional = false
-python-versions = ">=2.6"
-groups = ["main"]
-files = [
-    {file = "libretranslatepy-2.1.4-py3-none-any.whl", hash = "sha256:84fd16181e021e87c2d34351d928c01d66dba36e01814500aee8731dd138b822"},
-    {file = "libretranslatepy-2.1.4.tar.gz", hash = "sha256:800e902eed1b8b32d310ec72b204c6cfdcf3e4aa7cda5bfbcb7bbce8933e6369"},
-]
-
-[[package]]
 name = "luqum"
 version = "0.14.0"
 description = "A Lucene query parser generating ElasticSearch queries and more !"
@@ -1517,4 +1505,4 @@ files = [
 [metadata]
 lock-version = "2.1"
 python-versions = "~3.14"
-content-hash = "a10f3baca2278b0f86638dfcf87ce354e6286d80bede3ac4b4fd43ff23de7f2e"
+content-hash = "cee62fcf824d223fc30ba045a5adeaf4bf18812cad5fc735c5199d9786afe71a"
