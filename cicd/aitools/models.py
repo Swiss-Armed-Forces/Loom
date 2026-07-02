@@ -1,6 +1,10 @@
 from typing import NamedTuple
 
-from gitlab.v4.objects import ProjectMergeRequest, ProjectMergeRequestDiscussion
+from gitlab.v4.objects import (
+    ProjectIssueDiscussion,
+    ProjectMergeRequest,
+    ProjectMergeRequestDiscussion,
+)
 
 
 class CommitMessage(NamedTuple):
@@ -65,6 +69,13 @@ class DiscussionReply(NamedTuple):
 
     discussion: ProjectMergeRequestDiscussion
     location: str
+    reply: str
+
+
+class IssueNoteReply(NamedTuple):
+    """A generated reply for a single issue comment thread."""
+
+    discussion: ProjectIssueDiscussion
     reply: str
 
 
