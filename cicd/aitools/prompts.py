@@ -175,6 +175,33 @@ Instructions:
 """
 
 
+def build_issue_note_reply_prompt(
+    author: str, note_body: str, old_description: str, new_description: str
+) -> str:
+    """Build the Claude prompt for generating a reply to a single issue comment."""
+    return f"""You just updated a GitLab issue description to address a comment left by a user.
+Write a concise reply to the commenter explaining how the description was updated to address
+their feedback.
+
+Comment by @{author}:
+{note_body}
+
+Old description:
+{old_description}
+
+New description:
+{new_description}
+
+Instructions:
+- Address @{author} by username at the start
+- Explain what was changed in the description to address their comment
+- Keep it to 1-3 sentences
+- Sound natural and professional
+- Do NOT use greetings like "Hi" or sign-offs like "Thanks"
+- Output only the reply text, nothing else
+"""
+
+
 def build_release_notes_prompt(
     tag_name: str,
     previous_tag: str | None,
