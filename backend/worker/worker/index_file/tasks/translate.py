@@ -19,6 +19,10 @@ from worker.index_file.infra.indexing_persister import IndexingPersister
 from worker.services.tika_service import TIKA_MAX_TEXT_SIZE
 from worker.settings import settings
 from worker.utils.persisting_task import persisting_task
+from worker.utils.prompt_sanitizer import (
+    build_document_security_instructions,
+    sanitize_document_text,
+)
 
 MAX_TRANSLATION_TEXT_SIZE = TIKA_MAX_TEXT_SIZE
 MAX_CHARACTERS_PER_CHUNK = 2000
@@ -113,11 +117,20 @@ def translate_detect_language(text: str) -> list[DetectedLanguage]:
             messages=[
                 {
                     "role": "system",
-                    "content": "You are a language detection service.",
+                    "content": (
+                        "You are a language detection service.\n\n"
+                        + build_document_security_instructions(
+                            settings.translate_target
+                        )
+                    ),
                 },
                 {
                     "role": "user",
-                    "content": f"Detect the language of this text:\n\n{text}",
+                    "content": (
+                        "Detect the language of the text in the following "
+                        "<document>...</document> tags:\n\n"
+                        f"<document>\n{sanitize_document_text(text)}\n</document>"
+                    ),
                 },
             ],
             response_format=_LanguageDetectionResult,
@@ -212,12 +225,19 @@ def translate(text: str, detected_language: DetectedLanguage) -> str:
                         f"You are a translation service. "
                         f"Translate to {settings.translate_target}. "
                         f"Output only the translated text. "
-                        f"No explanations, no preamble, no commentary."
+                        f"No explanations, no preamble, no commentary.\n\n"
+                        + build_document_security_instructions(
+                            settings.translate_target
+                        )
                     ),
                 },
                 {
                     "role": "user",
-                    "content": f"Translate to {settings.translate_target}:\n\n{text}",
+                    "content": (
+                        f"Translate the text in the following "
+                        f"<document>...</document> tags to {settings.translate_target}:\n\n"
+                        f"<document>\n{sanitize_document_text(text)}\n</document>"
+                    ),
                 },
             ],
             response_format=_TranslationResult,

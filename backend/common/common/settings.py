@@ -99,7 +99,7 @@ class LLMEmbeddingSettings(LLMClientSettings):
 
 
 class LLMSummarizationBaseSettings(LLMClientSettings):
-    system_prompt: str = "You are an expert english summarization machine called Loom."
+    system_prompt: str = "You are an expert summarization machine called Loom."
 
 
 class LLMSummarizationKeyPointsSettings(LLMSummarizationBaseSettings):

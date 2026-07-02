@@ -15,6 +15,7 @@ from common.settings import LLMSummarizationBaseSettings
 from common.utils.cache import cache
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from openai import APIError, OpenAI
+from pydantic import BaseModel
 
 from worker.index_file.infra.file_indexing_task import FileIndexingTask
 from worker.index_file.infra.indexing_persister import IndexingPersister
@@ -22,6 +23,10 @@ from worker.services.tika_service import TIKA_MAX_TEXT_SIZE
 from worker.settings import settings
 from worker.utils.natural_language_detection import is_natural_language
 from worker.utils.persisting_task import persisting_task
+from worker.utils.prompt_sanitizer import (
+    build_document_security_instructions,
+    sanitize_document_text,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -94,6 +99,10 @@ class LLMError(Exception):
     pass
 
 
+class _SummarizationResult(BaseModel):
+    text: str
+
+
 def _invoke_llm(
     prompt: str,
     llm_settings: LLMSummarizationBaseSettings,
@@ -101,10 +110,13 @@ def _invoke_llm(
     system_prompt: str | None = None,
 ) -> str:
     resolved_system_prompt = (
-        system_prompt if system_prompt is not None else llm_settings.system_prompt
+        f"{llm_settings.system_prompt}\n\n"
+        f"{build_document_security_instructions(settings.translate_target)}"
     )
+    if system_prompt is not None:
+        resolved_system_prompt = f"{resolved_system_prompt}\n\n{system_prompt}"
     try:
-        response = client.chat.completions.create(
+        response = client.beta.chat.completions.parse(
             model=llm_settings.model,
             messages=[
                 {"role": "system", "content": resolved_system_prompt},
@@ -113,10 +125,12 @@ def _invoke_llm(
             temperature=llm_settings.temperature,
             extra_headers=llm_settings.extra_headers,
             extra_body=llm_settings.extra_body,
+            response_format=_SummarizationResult,
         )
     except APIError as ex:
         raise LLMError() from ex
-    return response.choices[0].message.content or ""
+    result = response.choices[0].message.parsed
+    return result.text if result is not None else ""
 
 
 @app.task(
@@ -127,16 +141,16 @@ def _invoke_llm(
 )
 @cache()
 def extract_key_points(text: str) -> str:
-    extract_prompt = f"""TEXT:
-{text}
+    sanitized_text = sanitize_document_text(text)
+    extract_prompt = f"""<document>
+{sanitized_text}
+</document>
 
---------------------
-PROMPT: Extract the KEY POINTS of the text above.
+Extract the KEY POINTS of the document above.
 Return your response in a paragraph of
 {settings.llm.summarization_key_points.max_tokens} tokens or less.
-If there's nothing or not enough TEXT to extract key points just provide an empty answer.
+If there's nothing or not enough content to extract key points just provide an empty answer.
 Do NOT use any previous knowledge.
-Always summarize in the following language: {settings.translate_target}
 
 KEY POINTS:"""
 
@@ -163,16 +177,16 @@ def summarize(key_points: list[str]) -> str | None:
     # beginning of the document come last and are therefore more
     # relevant in the context window
     text = "\n".join(reversed(key_points))
-    summarize_prompt = f"""TEXT:
-{text}
+    sanitized_text = sanitize_document_text(text)
+    summarize_prompt = f"""<document>
+{sanitized_text}
+</document>
 
---------------------
-PROMPT: Write a concise SUMMARY of the TEXT above.
+Write a concise SUMMARY of the document above.
 Return your response in a paragraph of {settings.llm.summarization.max_tokens} tokens or less.
 Do NOT explain that you are giving a summary, just output the summary.
-If there's nothing or not enough TEXT to summarize just provide an empty answer.
+If there's nothing or not enough content to summarize just provide an empty answer.
 Do NOT use any previous knowledge.
-Always summarize in the following language: {settings.translate_target}
 
 SUMMARY:"""
 
@@ -195,15 +209,16 @@ SUMMARY:"""
 def refine_summary(summary: str | None, system_prompt: str | None) -> str | None:
     if summary is None:
         return None
-    refine_prompt = f"""TEXT:
-{summary}
+    sanitized_summary = sanitize_document_text(summary)
+    refine_prompt = f"""<document>
+{sanitized_summary}
+</document>
 
---------------------
-PROMPT: Write a concise SUMMARY of the TEXT above.
+Write a concise SUMMARY of the document above.
 Return your response in a paragraph of
 {settings.llm.summarization_refine.max_tokens} tokens or less.
 Do NOT explain that you are giving a summary, just output the summary.
-If there's nothing or not enough TEXT to summarize just provide an empty answer.
+If there's nothing or not enough content to summarize just provide an empty answer.
 Do NOT use any previous knowledge.
 
 SUMMARY:"""

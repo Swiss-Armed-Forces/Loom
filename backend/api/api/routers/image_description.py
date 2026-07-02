@@ -7,6 +7,7 @@ from common.dependencies import (
 )
 from common.services.query_builder import QueryParameters
 from common.services.task_scheduling_service import TaskSchedulingService
+from common.settings import settings
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 
@@ -24,6 +25,11 @@ class ImageDescriptionRequest(BaseModel):
 
     query: QueryParameters
     system_prompt: str | None = None
+
+
+@router.get("/system_prompt", status_code=200)
+def get_system_prompt() -> str:
+    return settings.llm.vision.system_prompt
 
 
 @router.post("", status_code=202)

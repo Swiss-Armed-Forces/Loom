@@ -10,6 +10,7 @@ from openai import APIConnectionError, APIError, InternalServerError
 
 from worker.index_file.tasks.image_description import (
     ImageDescriptionError,
+    _ImageDescriptionResult,
     describe_image,
     is_image,
 )
@@ -19,10 +20,15 @@ from worker.index_file.tasks.image_description import (
 IMAGE_BYTES = b"not-a-real-image-but-good-enough-for-base64"
 
 
-def _vision_response(content: str | None) -> SimpleNamespace:
-    """Build a minimal stand-in for an OpenAI chat completion response."""
+def _vision_response(description: str | None) -> SimpleNamespace:
+    """Build a minimal stand-in for an OpenAI structured chat completion response."""
+    parsed = (
+        _ImageDescriptionResult(description=description)
+        if description is not None
+        else None
+    )
     return SimpleNamespace(
-        choices=[SimpleNamespace(message=SimpleNamespace(content=content))]
+        choices=[SimpleNamespace(message=SimpleNamespace(parsed=parsed))]
     )
 
 
@@ -34,12 +40,12 @@ def vision_client() -> MagicMock:
     vision client as a ``MagicMock``; we fetch it through the public
     ``get_llm_vision_client`` accessor and configure it.
 
-    Tests that care about the response override ``create.return_value`` /
-    ``create.side_effect``; tests that only assert on the request arguments can use it
+    Tests that care about the response override ``parse.return_value`` /
+    ``parse.side_effect``; tests that only assert on the request arguments can use it
     as-is.
     """
     client = cast(MagicMock, get_llm_vision_client())
-    client.chat.completions.create.return_value = _vision_response("ok")
+    client.beta.chat.completions.parse.return_value = _vision_response("ok")
     return client
 
 
@@ -75,20 +81,20 @@ def test_is_image(extension: str, mimetype: str, expected: bool):
 
 
 def test_describe_image_returns_model_content(vision_client: MagicMock):
-    vision_client.chat.completions.create.return_value = _vision_response(
+    vision_client.beta.chat.completions.parse.return_value = _vision_response(
         "A photo of a cat."
     )
 
     result = describe_image(memoryview(IMAGE_BYTES))
 
     assert result == "A photo of a cat."
-    vision_client.chat.completions.create.assert_called_once()
+    vision_client.beta.chat.completions.parse.assert_called_once()
 
 
 def test_describe_image_sends_base64_encoded_image(vision_client: MagicMock):
     describe_image(memoryview(IMAGE_BYTES))
 
-    messages = vision_client.chat.completions.create.call_args.kwargs["messages"]
+    messages = vision_client.beta.chat.completions.parse.call_args.kwargs["messages"]
     image_part = messages[1]["content"][1]
     expected = base64.b64encode(IMAGE_BYTES).decode("utf-8")
     assert image_part["type"] == "image_url"
@@ -114,7 +120,7 @@ def test_describe_image_sends_base64_encoded_image(vision_client: MagicMock):
 def test_describe_image_wraps_api_error(vision_client: MagicMock, api_error: APIError):
     # The OpenAI SDK raises openai.APIError subclasses -- never
     # httpx.HTTPError -- for transport and HTTP failures.
-    vision_client.chat.completions.create.side_effect = api_error
+    vision_client.beta.chat.completions.parse.side_effect = api_error
 
     with pytest.raises(ImageDescriptionError):
         describe_image(memoryview(IMAGE_BYTES))
@@ -123,7 +129,7 @@ def test_describe_image_wraps_api_error(vision_client: MagicMock, api_error: API
 def test_describe_image_returns_empty_string_when_model_returns_no_content(
     vision_client: MagicMock,
 ):
-    vision_client.chat.completions.create.return_value = _vision_response(None)
+    vision_client.beta.chat.completions.parse.return_value = _vision_response(None)
 
     result = describe_image(memoryview(IMAGE_BYTES))
 

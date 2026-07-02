@@ -13,6 +13,7 @@ import {
     loadTags,
     MessageFileUpdate,
     loadSummarizationSystemPrompt,
+    loadVisionSystemPrompt,
     MessageQueryIdExpired,
     MessageError,
 } from "@app/api";
@@ -30,6 +31,7 @@ import {
     setChatbotOpen,
     updateQuery,
     setSummarizationSystemPrompt,
+    setVisionSystemPrompt,
     setTags,
     selectQuery,
 } from "@app/slices/searchSlice";
@@ -95,12 +97,14 @@ export const Search = () => {
         const fetchInitialSearchState = async () => {
             dispatch(startLoadingIndicator());
             try {
-                const [prompt] = await Promise.all([
+                const [prompt, visionPrompt] = await Promise.all([
                     loadSummarizationSystemPrompt(),
+                    loadVisionSystemPrompt(),
                     fetchSearchState(),
                     dispatch(websocketConnect),
                 ]);
                 dispatch(setSummarizationSystemPrompt(prompt));
+                dispatch(setVisionSystemPrompt(visionPrompt));
             } catch (error) {
                 toast.error(`Error in fetchInitialSearchState: ${error}`);
             } finally {

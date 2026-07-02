@@ -40,6 +40,10 @@ export const loadSummarizationSystemPrompt = async (): Promise<string> => {
     return summarizationApi.getSystemPromptV1FilesSummarizationSystemPromptGet();
 };
 
+export const loadVisionSystemPrompt = async (): Promise<string> => {
+    return imageDescriptionApi.getSystemPromptV1FilesImageDescriptionSystemPromptGet();
+};
+
 export const getShortRunningQuery = async (): Promise<GetQueryResponse> => {
     return filesApi.getQueryV1FilesQueryPost({ keepAlive: "10s" });
 };
