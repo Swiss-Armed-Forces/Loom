@@ -20,7 +20,7 @@ from common.services.lazybytes_service import (
     TempTypedLazyBytes,
 )
 from pydantic import BaseModel
-from stream_zip import ZIP_32, MemberFile, stream_zip
+from stream_zip import ZIP_64, MemberFile, stream_zip
 
 from worker.create_archive.infra.archive_processing_task import ArchiveProcessingTask
 from worker.create_archive.tasks.archive_format import (
@@ -150,7 +150,7 @@ def _file_archive_entries(
                 f"{archive_name}/{FILES_DIR}/{storage.service_id}",
                 modified_at,
                 _PERMS_FILE,
-                ZIP_32,
+                ZIP_64,
                 file_storage_service.load_generator(storage),
             )
         file_json = file_.model_dump_json(indent=JSON_INDENT).encode()
@@ -158,7 +158,7 @@ def _file_archive_entries(
             f"{archive_name}/{FILES_INDEX_DIR}/{file_.id_}{JSON_SUFFIX}",
             modified_at,
             _PERMS_FILE,
-            ZIP_32,
+            ZIP_64,
             iter([file_json]),
         )
     logger.info("Compressing archive: %d/%d files (100%%)", total, total)
@@ -173,7 +173,7 @@ def _archive_data(file_ids: list[UUID], archive: Archive) -> Iterator[MemberFile
         f"{archive_name}/{MANIFEST_FILENAME}",
         modified_at,
         _PERMS_META,
-        ZIP_32,
+        ZIP_64,
         iter([manifest]),
     )
 
@@ -182,7 +182,7 @@ def _archive_data(file_ids: list[UUID], archive: Archive) -> Iterator[MemberFile
         f"{archive_name}/{README_FILENAME}",
         modified_at,
         _PERMS_META,
-        ZIP_32,
+        ZIP_64,
         iter([readme]),
     )
 
@@ -191,7 +191,7 @@ def _archive_data(file_ids: list[UUID], archive: Archive) -> Iterator[MemberFile
         f"{archive_name}/{CLI_FILENAME}",
         modified_at,
         _PERMS_EXEC,
-        ZIP_32,
+        ZIP_64,
         iter([cli]),
     )
 
