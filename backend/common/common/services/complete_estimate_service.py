@@ -24,6 +24,13 @@ _KEY_ESTIMATE_TS = f"{_REDIS_KEY_PREFIX}:estimate_ts"
 # lower values produce a smoother but slower-adapting estimate.
 EMA_ALPHA = 0.3
 
+# Minimum throughput (files/s) required to emit an estimate.
+# Below this threshold the EMA has decayed so close to zero (due to stalls or
+# a growing backlog) that dividing pending/ema would produce astronomically large
+# and meaningless timestamps.  1 file/hour is already an extremely slow pace;
+# anything slower than that is treated as "can't estimate".
+_MIN_EMA_THROUGHPUT = 1.0 / 3600
+
 
 class CompleteEstimateResult(BaseModel):
     estimate_timestamp: int | None
@@ -100,15 +107,19 @@ class CompleteEstimateService:
                     new_ema = current_rate
 
         estimate_ts: int | None = None
-        if new_ema is not None and new_ema > 0 and current_pending > 0:
+        if (
+            new_ema is not None
+            and new_ema >= _MIN_EMA_THROUGHPUT
+            and current_pending > 0
+        ):
             estimate_ts = int(now + current_pending / new_ema)
 
         self._redis.set(_KEY_FILES_PENDING, current_pending)
         self._redis.set(_KEY_LAST_TIMESTAMP, now)
-        if new_ema is not None:
-            self._redis.set(_KEY_EMA_THROUGHPUT, max(0.0, new_ema))
         if current_pending == 0:
             self._redis.delete(_KEY_EMA_THROUGHPUT)
+        elif new_ema is not None:
+            self._redis.set(_KEY_EMA_THROUGHPUT, max(0.0, new_ema))
         if estimate_ts is not None:
             self._redis.set(_KEY_ESTIMATE_TS, estimate_ts)
         else:
