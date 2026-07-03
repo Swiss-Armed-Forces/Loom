@@ -8,6 +8,7 @@ from .cmd_job_diagnose import cmd_job_diagnose
 from .cmd_mr_create import cmd_mr_create
 from .cmd_mr_describe import cmd_mr_describe
 from .cmd_mr_fix import cmd_mr_fix
+from .cmd_mr_review import cmd_mr_review
 from .cmd_mr_update import cmd_mr_update
 from .cmd_mr_watch import cmd_mr_watch
 from .cmd_pipeline_retry import cmd_pipeline_retry
@@ -88,6 +89,21 @@ def build_parser() -> tuple[argparse.ArgumentParser, list[str]]:
         help="GitLab issue URL (https://.../issues/123 or .../work_items/123) or bare issue ID",
     )
     implement_parser.set_defaults(func=cmd_implement)
+
+    # mr-review subcommand
+    mr_review_parser = subparsers.add_parser(
+        "mr-review",
+        help="Run a multi-agent AI review of the current MR and post findings as comments",
+    )
+    mr_review_parser.add_argument(
+        "mr",
+        nargs="?",
+        help=(
+            "GitLab MR URL (https://.../merge_requests/123) or bare MR IID. "
+            "Omit to review the MR for the current branch."
+        ),
+    )
+    mr_review_parser.set_defaults(func=cmd_mr_review)
 
     # mr-fix subcommand
     mr_fix_parser = subparsers.add_parser(

@@ -1071,7 +1071,7 @@ in
   };
 
   scripts.aitools = {
-    description = "Loom AI developer tools (mr-update, implement, mr-fix)";
+    description = "Loom AI developer tools (mr-review, mr-watch, mr-update, mr-fix, ...)";
     exec = ''
       (
         set -euo pipefail

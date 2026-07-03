@@ -20,7 +20,7 @@ from gitlab.v4.objects import (
 )
 
 from .config import CI_PROJECT_ID, CI_SERVER_HOST, GITLAB_TOKEN
-from .models import IssueRef, JobRef, MilestoneRef, MRRef, PipelineRef
+from .models import IssueRef, JobRef, MilestoneRef, MRRef, PipelineRef, ReviewComment
 
 PIPELINE_WAITING_STATUSES: frozenset[str] = frozenset(
     {
@@ -88,7 +88,11 @@ def find_open_mr_for_branch(
     logger.info("Using project ID: %s", project_id)
     project = gl.projects.get(project_id)
     mrs = project.mergerequests.list(source_branch=branch, state="opened", per_page=1)
-    return mrs[0] if mrs else None
+    if not mrs:
+        return None
+    # Re-fetch via .get() so the full MR object is returned, including diff_refs
+    # (list() returns lightweight objects that omit diff_refs)
+    return project.mergerequests.get(mrs[0].iid)
 
 
 def update_mr(mr: ProjectMergeRequest, title: str, description: str) -> None:
@@ -527,3 +531,54 @@ def retry_pipeline(project: Project, pipeline_id: int) -> None:
     """Trigger a retry of the given pipeline."""
     pipeline = project.pipelines.get(pipeline_id)
     pipeline.retry()
+
+
+def post_review_comment(mr: ProjectMergeRequest, comment: ReviewComment) -> None:
+    """Post a single review comment to a GitLab MR.
+
+    Attempts to post as an inline discussion when file and line are available. Falls
+    back to a general MR comment (with location prepended) if the inline position is
+    rejected by GitLab (e.g. line not in diff).
+    """
+    diff_refs = getattr(mr, "diff_refs", None) or {}
+    can_inline = bool(
+        comment.file
+        and comment.line
+        and diff_refs.get("base_sha")
+        and diff_refs.get("start_sha")
+        and diff_refs.get("head_sha")
+    )
+
+    if can_inline:
+        try:
+            mr.discussions.create(
+                {
+                    "body": comment.body,
+                    "position": {
+                        "base_sha": diff_refs["base_sha"],
+                        "start_sha": diff_refs["start_sha"],
+                        "head_sha": diff_refs["head_sha"],
+                        "position_type": "text",
+                        "new_path": comment.file,
+                        "old_path": comment.file,
+                        "new_line": comment.line,
+                    },
+                }
+            )
+            return
+        except gitlab.exceptions.GitlabError as e:
+            logger.warning(
+                "Inline comment failed for %s:%s, falling back to general: %s",
+                comment.file,
+                comment.line,
+                e,
+            )
+
+    # General comment fallback: prepend location so context is not lost
+    location = (
+        f"{comment.file}:{comment.line}"
+        if (comment.file and comment.line)
+        else (comment.file or "(general)")
+    )
+    body = f"**[{location}]** ({comment.severity})\n\n{comment.body}"
+    mr.discussions.create({"body": body})
