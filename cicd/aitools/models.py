@@ -91,3 +91,13 @@ class DiffChunk(NamedTuple):
 
     files: list[str]  # file paths in this chunk
     diff: str  # concatenated diff text for those files
+
+
+class ReviewComment(NamedTuple):
+    """A single AI review comment with optional inline file/line position."""
+
+    file: str | None  # repo-relative path, or None for a general MR comment
+    line: int | None  # line number in the new file, or None if not applicable
+    severity: str  # "Critical", "High", or "Low"
+    body: str  # the comment text
+    context: str | None  # relevant code snippet(s) to show alongside the comment

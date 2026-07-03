@@ -10,19 +10,25 @@ from .models import FileDiffMap
 logger = logging.getLogger(__name__)
 
 
-def get_branch_diff(repo: Repo) -> str:
-    """Return the diff of commits on the current branch relative to origin/main.
+def get_branch_diff(repo: Repo, ref: str = "HEAD") -> str:
+    """Return the diff of commits on the given ref relative to origin/main.
+
+    Args:
+        repo: The git repository.
+        ref: The git ref to diff against origin/main. Pass "HEAD" for the currently
+            checked-out branch (default), or "origin/<branch>" to review a branch that
+            is not checked out locally.
 
     Uses the merge base so that commits in main that are not yet in this branch are
     excluded. Excludes lockfiles and generated files. Prepends a --stat summary.
     Truncates the diff body if it exceeds MAX_DIFF_CHARS.
     """
     repo.git.fetch("origin", "main")
-    merge_base = repo.git.merge_base("origin/main", "HEAD").strip()
+    merge_base = repo.git.merge_base("origin/main", ref).strip()
     logger.debug("Merge base: %s", merge_base)
 
-    stat = repo.git.diff(merge_base, "HEAD", "--stat", "--", *EXCLUDED_PATHSPECS)
-    diff = repo.git.diff(merge_base, "HEAD", "--", *EXCLUDED_PATHSPECS)
+    stat = repo.git.diff(merge_base, ref, "--stat", "--", *EXCLUDED_PATHSPECS)
+    diff = repo.git.diff(merge_base, ref, "--", *EXCLUDED_PATHSPECS)
 
     if len(diff) > MAX_DIFF_CHARS:
         diff = diff[:MAX_DIFF_CHARS] + (
