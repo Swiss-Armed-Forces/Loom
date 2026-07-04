@@ -105,6 +105,26 @@
       "justMyCode": false
     },
     {
+      "name": "Attach Notify Listener",
+      "type": "debugpy",
+      "request": "attach",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 5505
+      },
+      "pathMappings": [
+        {
+          "localRoot": "${workspaceFolder}/.venv",
+          "remoteRoot": "/code/.venv"
+        },
+        {
+          "localRoot": "${workspaceFolder}/backend",
+          "remoteRoot": "/code"
+        }
+      ],
+      "justMyCode": false
+    },
+    {
       "name": "Attach Crawler",
       "type": "debugpy",
       "request": "attach",

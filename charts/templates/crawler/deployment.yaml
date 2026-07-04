@@ -52,6 +52,9 @@ spec:
         - name: crawler
           image: {{ .Values.image.registry }}/{{ .Values.crawler.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) .Values.crawler.image.tag }}
           imagePullPolicy: {{ .Values.image.pullPolicy }}
+          env:
+            - name: CRAWLER_TYPE
+              value: "S3_CRAWLER"
           envFrom:
             - configMapRef:
                 name: {{ include "app.fullname" . }}-settings

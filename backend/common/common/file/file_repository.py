@@ -54,7 +54,7 @@ from common.models.es_repository import (
     SortingParameters,
 )
 from common.services.lazybytes_service import FileStorageLazyBytes
-from common.services.query_builder import QueryParameters
+from common.services.query_builder import DEFAULT_PIT_KEEPALIVE, QueryParameters
 from common.settings import settings
 from common.task_object.task_object import RepositoryTaskObject, _EsTaskDocument
 from common.utils.unique_list import unique_list
@@ -911,17 +911,14 @@ class FileRepository(BaseEsRepository[_EsFile, File]):
             per_page_callback=page_handler,
         )
 
-    def get_email_from_imap_info(
-        self, query: QueryParameters, imap_info: ImapInfo
-    ) -> File:
+    def get_email_from_imap_info(self, imap_info: ImapInfo) -> File:
 
-        query_id = self.open_point_in_time(keep_alive=query.keep_alive)
+        keep_alive = DEFAULT_PIT_KEEPALIVE
+        query_id = self.open_point_in_time(keep_alive=keep_alive)
 
         search: Search[_EsFile] = self._document_type.search(using=self._elasticsearch)
 
-        search = search.extra(
-            pit={"id": query_id, "keep_alive": query.keep_alive}
-        ).index()
+        search = search.extra(pit={"id": query_id, "keep_alive": keep_alive}).index()
 
         email_filter = self._build_email_filter()
 
