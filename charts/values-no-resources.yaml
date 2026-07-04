@@ -68,6 +68,11 @@ beat:
     requests: null
     limits: null
 
+notifyListener:
+  resources:
+    requests: null
+    limits: null
+
 flower:
   resources:
     requests: null
