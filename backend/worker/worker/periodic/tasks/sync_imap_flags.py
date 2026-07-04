@@ -12,7 +12,6 @@ from common.dependencies import (
 )
 from common.file.file_repository import FileNotFoundException, ImapInfo
 from common.services.lazybytes_service import TempTypedLazyBytes
-from common.services.query_builder import QueryParameters
 from common.services.task_scheduling_service import UpdateFileRequest
 
 from worker.periodic.infra.periodic_task import PeriodicTask
@@ -66,11 +65,8 @@ def get_id_from_imap_info_task(
     imap_info = get_lazybytes_service().load_object(imap_info_lb)
 
     file_repository = get_file_repository()
-    query = QueryParameters(
-        query_id=file_repository.open_point_in_time(),
-    )
     try:
-        file = file_repository.get_email_from_imap_info(query, imap_info)
+        file = file_repository.get_email_from_imap_info(imap_info)
     except FileNotFoundException:
         logger.warning(
             "No Loom file found for IMAP email folder=%s uid=%s, skipping flag sync",

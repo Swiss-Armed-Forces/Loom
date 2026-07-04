@@ -25,3 +25,11 @@ debugpy = "^1.8.1"
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+#
+# Modules with missing type stubs
+#
+
+[[tool.mypy.overrides]]
+module = "imapclient.*"
+ignore_missing_imports = true
