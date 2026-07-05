@@ -1,5 +1,5 @@
 import { Box, Tooltip } from "@mui/material";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { toast } from "react-toastify";
 
 import {
@@ -7,16 +7,17 @@ import {
     createAiContext,
     processQuestion,
 } from "@app/api";
-import { useAppDispatch, useAppSelector } from "@app/hooks";
-import { openDialog, selectLastFileDetailTab } from "@app/slices/commonSlice";
 import {
+    subscribeChannel,
+    unsubscribeChannel,
+} from "@app/channelSubscriptions";
+import { useAppDispatch, useAppSelector } from "@app/hooks";
+import {
+    openFileTabThunk,
     selectQuery,
     selectWebSocketPubSubMessage,
 } from "@app/slices/searchSlice";
-import { DialogType } from "@features/common/utils/enums";
-import { webSocketSendMessage } from "@middleware/SocketMiddleware";
 
-import styles from "./Chatbot.module.css";
 import { ChatWindow } from "./ChatWindow";
 import { MessageInput } from "./MessageInput";
 
@@ -32,40 +33,37 @@ export const Chatbot = () => {
 
     const searchQuery = useAppSelector(selectQuery);
     const webSocketPubSubMessage = useAppSelector(selectWebSocketPubSubMessage);
-    const lastTab = useAppSelector(selectLastFileDetailTab);
-
     const [messages, setMessages] = useState<ChatMessage[]>([]);
     const [aiContext, setAiContext] = useState<ContextCreateResponse | null>(
         null,
     );
+    // Keep a ref so the searchQuery effect always reads the latest aiContext
+    // without adding it as a dependency (which would cause double-unsubscribe).
+    const aiContextRef = useRef<ContextCreateResponse | null>(null);
+    aiContextRef.current = aiContext;
 
     useEffect(() => {
         if (!searchQuery) return;
-        if (aiContext)
-            dispatch(
-                webSocketSendMessage({
-                    message: {
-                        type: "unsubscribe",
-                        channels: [aiContext.contextId],
-                    },
-                }),
-            );
+        if (aiContextRef.current)
+            unsubscribeChannel(aiContextRef.current.contextId, dispatch);
         createAiContext(searchQuery).then(setAiContext).catch(toast.error);
-    }, [searchQuery]); // eslint-disable-line react-hooks/exhaustive-deps
+    }, [searchQuery, dispatch]);
 
     useEffect(() => {
         if (!aiContext) return;
         setMessages([]);
         // subscribe to context messages
-        dispatch(
-            webSocketSendMessage({
-                message: {
-                    type: "subscribe",
-                    channels: [aiContext.contextId],
-                },
-            }),
-        );
-    }, [aiContext]); // eslint-disable-line react-hooks/exhaustive-deps
+        subscribeChannel(aiContext.contextId, dispatch);
+    }, [aiContext, dispatch]);
+
+    // Unsubscribe from the current context channel when the component unmounts.
+    useEffect(() => {
+        return () => {
+            if (aiContextRef.current) {
+                unsubscribeChannel(aiContextRef.current.contextId, dispatch);
+            }
+        };
+    }, [dispatch]);
 
     useEffect(() => {
         if (!webSocketPubSubMessage) return;
@@ -75,13 +73,7 @@ export const Chatbot = () => {
             return;
 
         const handleViewDetail = (fileId: string) => {
-            dispatch(
-                openDialog({
-                    id: "",
-                    type: DialogType.FileDetail,
-                    props: { fileId, tab: lastTab },
-                }),
-            );
+            dispatch(openFileTabThunk({ fileId }));
         };
 
         setMessages((prev) => {
@@ -165,24 +157,20 @@ export const Chatbot = () => {
 
     return (
         <Box
-            className={styles.sticky}
             sx={{
                 display: "flex",
                 flexDirection: "column",
-                height: "95%",
-                width: 500,
+                flex: 1,
                 padding: 2,
-                position: "relative",
+                overflow: "hidden",
             }}
         >
             <Box
                 sx={{
                     flexGrow: 1,
                     overflowY: "auto",
-                    marginY: 2,
-                    height: 600,
-                    width: 450,
-                    padding: 2,
+                    marginY: 1,
+                    padding: 1,
                     border: "1px solid #ccc",
                     borderRadius: 1,
                 }}
@@ -195,9 +183,8 @@ export const Chatbot = () => {
                     e.preventDefault();
                 }}
                 sx={{
-                    position: "relative",
                     display: "flex",
-                    padding: "16px",
+                    paddingTop: "8px",
                     alignItems: "center",
                 }}
             >

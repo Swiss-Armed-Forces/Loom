@@ -1,22 +1,64 @@
 .statisticsContainer {
-    margin-top: 1rem;
+    display: flex;
+    flex-direction: column;
+    padding: 0;
     width: 100%;
-    padding: 2rem;
 }
 
-.statTagsContainer {
-    margin-top: 1rem;
+.summarySection {
+    padding: 0.75rem 1rem;
     display: flex;
-    align-items: flex-start;
-    flex-wrap: wrap;
+    flex-direction: column;
     gap: 0.5rem;
 }
 
-.extensionsGraphCell {
-    cursor: pointer;
+.sectionLabel {
+    font-size: 0.65rem !important;
+    font-weight: 600 !important;
+    letter-spacing: 0.08em !important;
+    opacity: 0.6;
+    line-height: 1.4 !important;
+}
+
+.summaryGrid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem 1rem;
+}
+
+.summaryItem {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.4rem;
+}
+
+.summaryIcon {
+    opacity: 0.5;
+    margin-top: 2px;
+    flex-shrink: 0;
+}
+
+.tagsContainer {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.3rem;
+    margin-top: 0.25rem;
+}
+
+.chartSection {
+    padding: 0.75rem 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.statSelector {
+    width: 100%;
 }
 
 .skeletonLoadingContainer {
-    width: 80%;
-    padding: 3rem;
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
 }

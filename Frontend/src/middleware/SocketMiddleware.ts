@@ -20,10 +20,16 @@ const pingInterval: { id: ReturnType<typeof setInterval> | null } = {
     id: null,
 };
 
+let intentionalDisconnect = false;
+window.addEventListener("beforeunload", () => {
+    intentionalDisconnect = true;
+});
+
 const socketMiddleware =
     (socket: SocketApi) => (store: any) => (next: any) => (action: any) => {
         switch (action.type) {
             case "webSocket/connect":
+                if (pingInterval.id !== null) break;
                 socket.connect(webSocket);
                 socket.on("message", (event) => {
                     const webSocketPubSubMessage = PubSubMessageFromJSON(
@@ -33,14 +39,16 @@ const socketMiddleware =
                         setWebSocketPubSubMessage(webSocketPubSubMessage),
                     );
                 });
-                socket.on("open", () => {});
                 socket.on("close", () => {
                     clearInterval(pingInterval.id ?? undefined);
                     pingInterval.id = null;
-                    // Inform the user that the WebSocket connection has been closed.
-                    toast.error(t("error.webSocketClosed"), {
-                        toastId: "webSocketClosed",
-                    });
+                    socket.disconnect();
+                    if (!intentionalDisconnect) {
+                        toast.error(t("error.webSocketClosed"), {
+                            toastId: "webSocketClosed",
+                        });
+                    }
+                    intentionalDisconnect = false;
                 });
                 pingInterval.id = setInterval(() => {
                     socket.send(NOOP_PUB_SUB_MESSAGE);
@@ -54,6 +62,7 @@ const socketMiddleware =
             }
 
             case "webSocket/disconnect":
+                intentionalDisconnect = true;
                 clearInterval(pingInterval.id ?? undefined);
                 pingInterval.id = null;
                 socket.disconnect();

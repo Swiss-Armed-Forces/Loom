@@ -10,10 +10,6 @@
     font-weight: 600;
 }
 
-.emptyCardTitle {
-    padding-bottom: 0 !important;
-}
-
 .link,
 .link:hover,
 .link:visited {
@@ -40,4 +36,17 @@ span.clickableSpan:active {
     background-color: #80deea;
     cursor: pointer;
     cursor: hand;
+}
+
+kbd {
+    display: inline-block;
+    padding: 0.1em 0.35em;
+    font-size: 0.78rem;
+    font-family: monospace;
+    line-height: 1.4;
+    background: #f3f3f3;
+    border: 1px solid #ccc;
+    border-bottom-width: 2px;
+    border-radius: 3px;
+    color: #333;
 }

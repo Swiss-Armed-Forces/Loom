@@ -56,24 +56,30 @@ export const TagsList = ({
         [tags],
     );
 
-    const searchForTag = (tagName: string) => {
+    const tagHitRateMap = useMemo(() => {
+        const tagData = tagStats?.data ?? [];
+        const total = tagStats?.fileCount ?? 1;
+        return new Map(
+            tagData.map((t) => [t.name, (t.hitsCount / total) * 100]),
+        );
+    }, [tagStats]);
+
+    const searchForTag = (tagName: string, negate = false) => {
         dispatch(
             updateQuery({
                 query: updateFieldOfQuery(
                     searchQuery?.query ?? "",
                     SearchQueryField.Tags,
                     tagName,
+                    false,
+                    negate,
                 ),
             }),
         );
     };
 
-    const getTagHitRate = (tagName: string): number => {
-        const tagData = tagStats?.data ?? [];
-        const total = tagStats?.fileCount ?? 1;
-        const tag = tagData.find((t) => t.name === tagName);
-        return tag ? (tag.hitsCount / total) * 100 : 0;
-    };
+    const getTagHitRate = (tagName: string): number =>
+        tagHitRateMap.get(tagName) ?? 0;
 
     const handleDeleteTagFromFile = async (tag: string) => {
         if (!fileId) return;
@@ -178,9 +184,9 @@ export const TagsList = ({
                                     tag={tag}
                                     iconOnly={false}
                                     label={getTagLabel(tag)}
-                                    onSearch={(t) => {
+                                    onSearch={(t, negate) => {
                                         setOverflowAnchor(null);
-                                        searchForTag(t);
+                                        searchForTag(t, negate);
                                     }}
                                     onDelete={
                                         iconOnly
@@ -201,7 +207,7 @@ interface TagChipProps {
     tag: string;
     iconOnly: boolean;
     label: string;
-    onSearch: (tag: string) => void;
+    onSearch: (tag: string, negate: boolean) => void;
     onDelete?: () => void;
 }
 
@@ -227,8 +233,8 @@ const TagChip: FC<TagChipProps> = ({
                         : tag
                     : label
             }
-            onClick={() => {
-                onSearch(tag);
+            onClick={(e) => {
+                onSearch(tag, e.shiftKey);
             }}
             onDelete={onDelete}
         />

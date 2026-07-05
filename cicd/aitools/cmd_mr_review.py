@@ -12,7 +12,7 @@ from .claude import run_claude_agentic
 from .git_helpers import get_branch_diff
 from .gitlab_api import post_review_comment
 from .models import ReviewComment
-from .prompts import build_mr_review_prompt
+from .prompts import build_mr_fix_prompt, build_mr_review_prompt
 
 logger = logging.getLogger(__name__)
 
@@ -85,6 +85,42 @@ def _review_comments_interactively(
     print(f"\nPosted {posted}/{len(comments)} comment(s) to MR !{mr.iid}.")
 
 
+def _format_comments_for_fix(comments: list[ReviewComment]) -> str:
+    """Format AI review findings into a text block suitable for the fix prompt."""
+    lines = []
+    for i, comment in enumerate(comments, 1):
+        location = f"{comment.file}:{comment.line}" if comment.file else "(general)"
+        lines.append(f"## Finding {i} [{comment.severity}] — {location}")
+        if comment.context:
+            lines.append("")
+            lines.append("```")
+            lines.append(comment.context)
+            lines.append("```")
+        lines.append("")
+        lines.append(comment.body)
+        lines.append("")
+    return "\n".join(lines)
+
+
+def _fix_from_comments(
+    mr: ProjectMergeRequest, comments: list[ReviewComment], repo: Repo, branch_ref: str
+) -> None:
+    """Run a Claude agent to fix all review findings without posting them as
+    comments."""
+    print(f"\nRunning fix agent for {len(comments)} finding(s)...")
+    with tempfile.TemporaryDirectory(
+        prefix=".loom_mrfix_", dir=repo.working_dir
+    ) as context_dir:
+        with open(
+            os.path.join(context_dir, "review_comments.txt"), "w", encoding="utf-8"
+        ) as f:
+            f.write(_format_comments_for_fix(comments))
+        with open(os.path.join(context_dir, "branch.diff"), "w", encoding="utf-8") as f:
+            f.write(get_branch_diff(repo, branch_ref))
+        prompt = build_mr_fix_prompt(mr, context_dir)
+        run_claude_agentic(prompt, repo)
+
+
 def _resolve_branch_ref(mr: ProjectMergeRequest, repo: Repo) -> str:
     """Return the git ref to use for diffing the MR branch.
 
@@ -126,11 +162,15 @@ def cmd_mr_review(args: argparse.Namespace) -> None:
 
     if not comments:
         print(f"\nReview complete. No issues found in MR !{mr.iid}.")
-        answer = _ask(f"Approve MR !{mr.iid}? [Y/n]: ")
-        if answer in ("", "y"):
-            mr.approve()
-            print(f"Approved MR !{mr.iid}.")
+        if not args.fix:
+            answer = _ask(f"Approve MR !{mr.iid}? [Y/n]: ")
+            if answer in ("", "y"):
+                mr.approve()
+                print(f"Approved MR !{mr.iid}.")
         return
 
     print(f"\nFound {len(comments)} review comment(s) for MR !{mr.iid}.")
-    _review_comments_interactively(mr, comments)
+    if args.fix:
+        _fix_from_comments(mr, comments, repo, branch_ref)
+    else:
+        _review_comments_interactively(mr, comments)

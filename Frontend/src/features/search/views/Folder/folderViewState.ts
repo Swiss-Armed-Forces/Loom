@@ -11,6 +11,11 @@ export interface FolderTree {
     id: string;
     label: React.ReactNode;
     fileCount?: number;
+    unseenCount?: number;
+    isUnseen?: boolean;
+    flaggedCount?: number;
+    isFlagged?: boolean;
+    fileId?: string;
     children?: Record<string, FolderTree>;
     loading?: boolean;
 }

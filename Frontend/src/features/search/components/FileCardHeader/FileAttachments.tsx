@@ -3,9 +3,8 @@ import { Chip, Menu, MenuItem, Box } from "@mui/material";
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 
 import { Attachment } from "@app/api";
-import { useAppDispatch, useAppSelector } from "@app/hooks";
-import { openDialog, selectLastFileDetailTab } from "@app/slices/commonSlice";
-import { DialogType } from "@features/common/utils/enums";
+import { useAppDispatch } from "@app/hooks";
+import { openFileTabThunk } from "@app/slices/searchSlice";
 
 import styles from "./FileAttachments.module.css";
 
@@ -21,7 +20,6 @@ export const FileAttachments = ({
     maxWidthRatio = 0.8,
 }: FileAttachmentsProps) => {
     const dispatch = useAppDispatch();
-    const lastTab = useAppSelector(selectLastFileDetailTab);
 
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
     const [shouldCollapse, setShouldCollapse] = useState(false);
@@ -45,17 +43,11 @@ export const FileAttachments = ({
     }, [attachments, maxWidthRatio]);
 
     const handleOpenDetail = useCallback(
-        (fileId: string) => {
-            dispatch(
-                openDialog({
-                    id: "",
-                    type: DialogType.FileDetail,
-                    props: { fileId, tab: lastTab },
-                }),
-            );
+        (fileId: string, background = false) => {
+            dispatch(openFileTabThunk({ fileId, background }));
             setAnchorEl(null);
         },
-        [dispatch, lastTab],
+        [dispatch],
     );
 
     const summaryLabel = useMemo(() => {
@@ -129,7 +121,9 @@ export const FileAttachments = ({
                         {attachments.map((attachment) => (
                             <MenuItem
                                 key={attachment.id}
-                                onClick={() => handleOpenDetail(attachment.id)}
+                                onClick={(e) =>
+                                    handleOpenDetail(attachment.id, e.ctrlKey)
+                                }
                                 sx={{
                                     display: "flex",
                                     alignItems: "center",
@@ -151,7 +145,9 @@ export const FileAttachments = ({
                             label={attachment.name}
                             size="small"
                             variant="outlined"
-                            onClick={() => handleOpenDetail(attachment.id)}
+                            onClick={(e) =>
+                                handleOpenDetail(attachment.id, e.ctrlKey)
+                            }
                             className={styles.attachmentChip}
                         />
                     ))}

@@ -129,11 +129,12 @@ All commands below are provided by devenv scripts (run `devenv-help` to see full
 
 **AI developer tools (`aitools` subcommands):**
 
-- `aitools mr-review [<MR URL or IID>]` - Run a multi-agent AI review of an MR and post
-  findings as inline GitLab comments; omit the argument to auto-detect the MR for the
-  current branch
+- `aitools mr-review [<MR URL or IID>] [--fix]` - Run a multi-agent AI review of an MR and
+  post findings as inline GitLab comments; omit the MR argument to auto-detect the MR for
+  the current branch; pass `--fix` to auto-apply findings instead of posting them as comments
 - `aitools mr-watch [<MR URL or IID>]` - Watch an MR's pipeline and auto-fix CI failures
-- `aitools mr-fix` - Diagnose and fix the current MR's failing CI job
+- `aitools mr-fix [<MR URL or IID>]` - Address unresolved MR review comments using Claude
+  in agentic mode; omit the argument to fix the MR for the current branch
 - `aitools mr-create` / `mr-describe` / `mr-update` - MR lifecycle helpers
 - `aitools job-diagnose <job-id>` - Diagnose a specific CI job failure
 

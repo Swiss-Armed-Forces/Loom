@@ -182,6 +182,7 @@ class GetFilesTreeResponse(RootModel):
 
 class GetFilesTreeQuery(QueryParameters):
     node_path: str = "/"
+    flat: bool = False
 
 
 @router.get("/tree")
@@ -189,11 +190,16 @@ def get_files_tree(
     query: Annotated[GetFilesTreeQuery, Query()],
     file_repository: FileRepository = default_file_repository,
 ) -> GetFilesTreeResponse:
-    """Get a node out of the tree of files non-recursively."""
+    """Get nodes from the file tree.
+
+    When flat=False (default), returns the direct children of node_path. When flat=True,
+    returns all matching files at any depth below node_path, without pagination —
+    callers should apply their own result limit.
+    """
     logger.info("Get file tree node with query: '%s'", query)
 
     tree_paths = file_repository.get_full_paths_by_query(
-        query=query, tree_node_directory_path=query.node_path
+        query=query, tree_node_directory_path=query.node_path, flat=query.flat
     )
     return GetFilesTreeResponse(
         [TreeNodeModel.model_validate(node.model_dump()) for node in tree_paths]

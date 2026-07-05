@@ -8,10 +8,7 @@ import { LoadMoreButton } from "./LoadMoreButton/LoadMoreButton";
 import { ResultCard } from "./ResultCard/ResultCard";
 import { ScrollToTop } from "./ScrollToTop/ScrollToTop";
 import { SearchResultCountText } from "./SearchResultCountText/SearchResultCountText";
-import { SideMenu } from "./SideMenu/SideMenu";
 import { TagsList } from "./TagsList/TagsList";
-import { Toolbar } from "./Toolbar/Toolbar";
-
 export {
     Chart,
     ChatMenu,
@@ -23,7 +20,5 @@ export {
     ResultCard,
     ScrollToTop,
     SearchResultCountText,
-    SideMenu,
     TagsList,
-    Toolbar,
 };

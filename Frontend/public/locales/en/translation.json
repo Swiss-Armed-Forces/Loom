@@ -220,10 +220,16 @@
             "search": "Search query"
         }
     },
+    "detailedView": {
+        "outsideCurrentResults": "Outside current results"
+    },
     "folderView": {
         "moreElementsHidden": "[more elements hidden]",
         "moreElementsHiddenTooltip": "Refine your query to view hidden elements",
-        "addPathToQueryTooltip": "Add this path to your query"
+        "addPathToQueryTooltip": "Add this path to your query",
+        "unseenCountTooltip": "Unseen files in this folder",
+        "flaggedCountTooltip": "Flagged files in this folder",
+        "filterResultsLimitNote": "Showing first {{limit}} results — refine your filter to narrow down"
     },
     "tags": {
         "addTag": "Add tag",
@@ -252,7 +258,7 @@
         "title": {
             "nothingFound": "Nothing found with your query",
             "queryError": "The query given contains errors",
-            "default": "Few tips for search"
+            "default": "Search tips"
         },
         "advancedGuide": "For advanced usecases see official documentation",
         "description": "Just type your query in search input above and hit Enter",
@@ -282,6 +288,9 @@
             "creationTime": "search for all files created after 2020 but before 2025",
             "modificationTime": "search for all files modified after 2020 but before 2025",
             "secrets": "search for all files containing secrets",
+            "source": "filter by data source name",
+            "stateFailed": "find files that failed processing",
+            "summary": "filter to files that have an AI-generated summary",
             "allFields": "search in all fields for \"John\" (including metadata fields)",
             "nameFields": "search for the substring \"txt\" in all fields containing the string \"name\""
         },
@@ -299,6 +308,8 @@
             "moveUp": "Move selection up",
             "moveDown": "Move selection down",
             "openDetails": "Open details",
+            "openDetailsBackground": "Open details in background tab",
+            "shiftClickNegate": "Shift + click any filter (path, extension, tag, icon) to negate it (adds NOT)",
             "reindex": "Re-index file",
             "search": "Focus search",
             "share": "Share file",

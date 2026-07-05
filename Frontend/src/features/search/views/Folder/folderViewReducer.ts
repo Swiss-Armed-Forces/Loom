@@ -7,11 +7,10 @@ import {
     FolderViewAction,
     FolderViewActionType,
     FolderViewState,
-    PATH_ROOT_NAME,
     PATH_SEPARATOR,
     ROOT_NODE,
 } from "./folderViewState";
-import { cloneTree, findTreeNode } from "./util";
+import { cloneSpineToPath, cloneTree, findTreeNode } from "./util";
 const DEFAULT_EXPANDED_NODES_DEPTH = 2;
 
 const handleQueryChangedAction = (state: FolderViewState): FolderViewState => {
@@ -22,38 +21,26 @@ const handleChildrenAddedAction = (
     state: FolderViewState,
     action: ChildrenAddedAction,
 ): FolderViewState => {
-    const directories = action.parentPath
-        .split(PATH_SEPARATOR)
-        .filter((v) => !!v);
-
-    const clonedTree = cloneTree(state.tree);
-    let currentDirectory = clonedTree;
-    let currentPartialPath = PATH_ROOT_NAME;
-    for (const dirPath of directories) {
-        let subDir = findTreeNode(currentDirectory, dirPath);
-        currentPartialPath += `${PATH_SEPARATOR}${dirPath}`;
-
-        if (!subDir) {
-            currentDirectory.children ??= {};
-            subDir = currentDirectory.children[currentPartialPath] = {
-                ...currentDirectory.children[currentPartialPath],
-                [currentPartialPath]: {
-                    id: currentPartialPath,
-                    label: dirPath,
-                },
-            } as FolderTree;
-        }
-        currentDirectory = subDir;
-    }
+    const clonedTree = cloneSpineToPath(state.tree, action.parentPath);
+    const currentDirectory = findTreeNode(clonedTree, action.parentPath);
+    if (!currentDirectory) return state;
 
     currentDirectory.children ??= {};
     for (const child of action.children) {
         const path = child.fullPath;
         const fileName = path.split(PATH_SEPARATOR).at(-1);
         currentDirectory.children[path] = {
+            // Preserve existing node (especially its loaded children) so that
+            // refreshing counts does not collapse already-expanded subtrees.
+            ...currentDirectory.children[path],
             id: path,
             label: fileName,
             fileCount: child.fileCount,
+            unseenCount: child.unseenCount ?? 0,
+            isUnseen: child.isUnseen ?? false,
+            flaggedCount: child.flaggedCount ?? 0,
+            isFlagged: child.isFlagged ?? false,
+            fileId: child.fileId ?? undefined,
         };
     }
 
@@ -70,7 +57,7 @@ const handleExpandedNodesChangedAction = (
 const handleInitialDataLoadedAction = (
     state: FolderViewState,
 ): FolderViewState => {
-    const expandedNodes = [...state.expandedNodes];
+    const expandedSet = new Set(state.expandedNodes);
 
     const handleChildren = (
         depth: number,
@@ -80,22 +67,21 @@ const handleInitialDataLoadedAction = (
         for (const node of Object.values(nodes)) {
             if (depth >= DEFAULT_EXPANDED_NODES_DEPTH) return;
 
-            if (!expandedNodes.includes(node.id)) expandedNodes.push(node.id);
+            expandedSet.add(node.id);
             handleChildren(depth + 1, node.children);
         }
     };
 
-    if (!expandedNodes.includes(state.tree.id))
-        expandedNodes.push(state.tree.id);
+    expandedSet.add(state.tree.id);
     handleChildren(1, state.tree?.children);
-    return { ...state, expandedNodes };
+    return { ...state, expandedNodes: [...expandedSet] };
 };
 
 const handleChildrenLoadStartedAction = (
     state: FolderViewState,
     action: ChildrenLoadStartedAction,
 ): FolderViewState => {
-    const clonedTree = cloneTree(state.tree);
+    const clonedTree = cloneSpineToPath(state.tree, action.parentPath);
     const parent = findTreeNode(clonedTree, action.parentPath);
     if (parent) parent.loading = true;
 
@@ -106,7 +92,7 @@ const handleChildrenLoadFinishedAction = (
     state: FolderViewState,
     action: ChildrenLoadFinishedAction,
 ): FolderViewState => {
-    const clonedTree = cloneTree(state.tree);
+    const clonedTree = cloneSpineToPath(state.tree, action.parentPath);
     const parent = findTreeNode(clonedTree, action.parentPath);
     delete parent?.loading;
 
@@ -130,5 +116,7 @@ export const folderViewReducer = (
             return handleChildrenLoadStartedAction(state, action);
         case FolderViewActionType.CHILDREN_LOAD_FINISHED:
             return handleChildrenLoadFinishedAction(state, action);
+        default:
+            return state;
     }
 };
