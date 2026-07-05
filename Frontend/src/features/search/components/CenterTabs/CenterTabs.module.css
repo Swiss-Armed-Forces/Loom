@@ -1,0 +1,58 @@
+.centerTabs {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+}
+
+.tabBar {
+    flex-shrink: 0;
+    background-color: inherit;
+    display: flex;
+    align-items: stretch;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.12);
+}
+
+.searchPanel {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    overflow-y: auto;
+    align-items: stretch;
+}
+
+.filePanel {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    overflow: hidden;
+}
+
+.fileTabLabel {
+    display: flex;
+    align-items: center;
+    gap: 0.15rem;
+    max-width: 180px;
+}
+
+.fileTabName {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 130px;
+    font-size: 0.8rem;
+}
+
+.resultsTabLabel {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.8rem;
+}
+
+.resultsTabCount {
+    font-size: 0.7rem;
+    color: var(--mui-palette-text-secondary, #9e9e9e);
+    margin-left: 0.15rem;
+}

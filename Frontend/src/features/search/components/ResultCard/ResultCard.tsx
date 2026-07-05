@@ -21,8 +21,8 @@ import {
     scheduleSingleImageDescription,
     updateFile,
 } from "@app/api";
+import { unsubscribeChannel } from "@app/channelSubscriptions";
 import { useAppDispatch, useAppSelector } from "@app/hooks";
-import { openDialog } from "@app/slices/commonSlice";
 import {
     selectQuery,
     selectFileById,
@@ -30,9 +30,9 @@ import {
     setFileInViewState,
     setFilePreview,
     setHighlightedIndex,
+    openFileTabThunk,
 } from "@app/slices/searchSlice";
 import { webApiGetFileThumbnail } from "@features/common/urls";
-import { DialogType } from "@features/common/utils/enums";
 import { FileDetailTab } from "@features/common/utils/enums";
 import {
     FileCardHeader,
@@ -46,12 +46,18 @@ import { Summary } from "./Summary";
 
 interface ResultCardProps {
     fileId: string;
-    index: number;
+    index?: number;
     isHighlighted?: boolean;
+    stale?: boolean;
 }
 
 export const ResultCard = React.memo(
-    ({ fileId, index, isHighlighted = false }: ResultCardProps) => {
+    ({
+        fileId,
+        index = 0,
+        isHighlighted = false,
+        stale = false,
+    }: ResultCardProps) => {
         const dispatch = useAppDispatch();
         const { t } = useTranslation();
         const isMobile = useMediaQuery("(max-width:900px)");
@@ -75,7 +81,7 @@ export const ResultCard = React.memo(
 
             // Find the scrollable parent container (searchResultWrapper)
             const scrollContainer = cardRef.current.closest(
-                "[class*='searchResultWrapper']",
+                "[class*='searchPanel']",
             );
 
             if (!scrollContainer) {
@@ -91,14 +97,17 @@ export const ResultCard = React.memo(
             const cardRect = card.getBoundingClientRect();
             const containerRect = scrollContainer.getBoundingClientRect();
 
-            // Calculate the target scroll position to center the card
-            // with some offset to show context (not perfectly centered, slightly above)
-            const cardCenterOffset = cardRect.top - containerRect.top;
+            const cardTop = cardRect.top - containerRect.top;
+            const cardBottom = cardTop + cardRect.height;
+
+            // Only scroll if card is outside the visible area
+            if (cardTop >= 0 && cardBottom <= containerRect.height) return;
+
             const containerVisibleHeight = containerRect.height;
             const targetScrollTop =
                 scrollContainer.scrollTop +
-                cardCenterOffset -
-                containerVisibleHeight / 3; // Position card at 1/3 from top
+                cardTop -
+                containerVisibleHeight / 3;
 
             scrollContainer.scrollTo({
                 top: Math.max(0, targetScrollTop),
@@ -194,12 +203,12 @@ export const ResultCard = React.memo(
                 const timeoutId = setTimeout(() => {
                     scrollCardIntoView();
                 }, 100);
-                cardRef.current.focus();
+                cardRef.current.focus({ preventScroll: true });
                 return () => {
                     clearTimeout(timeoutId);
                 };
             }
-        }, [isHighlighted, filePreview]); // eslint-disable-line react-hooks/exhaustive-deps
+        }, [isHighlighted, filePreview, autoActionsPreferences]); // eslint-disable-line react-hooks/exhaustive-deps
 
         // Combine refs
         const setRefs = (element: HTMLDivElement | null) => {
@@ -207,6 +216,10 @@ export const ResultCard = React.memo(
             inViewRef(element);
         };
 
+        // Manage the WS channel subscription. setFileInViewState is the single
+        // owner of subscribe/unsubscribe when inView changes; the cleanup only
+        // handles unmount. unsubscribeChannel is a no-op when not subscribed,
+        // so the cleanup is always safe to call.
         useEffect(() => {
             dispatch(
                 setFileInViewState({
@@ -215,6 +228,9 @@ export const ResultCard = React.memo(
                     query: searchQuery,
                 }),
             );
+            return () => {
+                unsubscribeChannel(fileId, dispatch);
+            };
         }, [inView, fileId, searchQuery?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
         const handleCardClick = (
@@ -230,17 +246,16 @@ export const ResultCard = React.memo(
             }
         };
 
-        const handleOpenDetailsOnTabClick = (tab: FileDetailTab) => {
+        const handleOpenDetailsOnTabClick = (
+            tab: FileDetailTab,
+            background = false,
+        ) => {
             if (!filePreview) return;
             dispatch(
-                openDialog({
-                    id: "",
-                    type: DialogType.FileDetail,
-                    props: {
-                        fileId: filePreview.fileId,
-                        searchQuery: searchQuery,
-                        tab,
-                    },
+                openFileTabThunk({
+                    fileId: filePreview.fileId,
+                    detailTab: tab,
+                    background,
                 }),
             );
         };
@@ -256,6 +271,7 @@ export const ResultCard = React.memo(
                 sx={{
                     cursor: "pointer",
                     position: "relative",
+                    ...(stale && { opacity: 0.7 }),
                     ...(isHighlighted && {
                         "&::before": {
                             content: '""',
@@ -327,9 +343,10 @@ export const ResultCard = React.memo(
                                     className={styles.thumbnailBadge}
                                 >
                                     <img
-                                        onClick={() =>
+                                        onClick={(e) =>
                                             handleOpenDetailsOnTabClick(
                                                 FileDetailTab.Rendered,
+                                                e.ctrlKey,
                                             )
                                         }
                                         className={styles.resultImage}

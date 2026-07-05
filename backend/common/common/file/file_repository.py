@@ -510,10 +510,27 @@ class _EsFile(_EsTaskDocument):
 
 
 class TreePathsNode(BaseModel):
-    """Node of tree of paths."""
+    """A node in the file path tree.
+
+    Attributes:
+        full_path: Absolute path of the node (directory or file).
+        file_count: Total number of descendant files under this path.
+        file_id: Set only when the node is a leaf file (not a directory).
+        unseen_count: Number of unseen descendant files, excluding the node
+            itself when is_unseen is True.
+        is_unseen: Whether the file at this node is unseen (leaf nodes only).
+        flagged_count: Number of flagged descendant files, excluding the node
+            itself when is_flagged is True.
+        is_flagged: Whether the file at this node is flagged (leaf nodes only).
+    """
 
     full_path: FilePurePath
     file_count: int
+    file_id: str | None = None
+    unseen_count: int = 0
+    is_unseen: bool = False
+    flagged_count: int = 0
+    is_flagged: bool = False
 
 
 class Stat(enum.Enum):
@@ -749,7 +766,10 @@ class FileRepository(BaseEsRepository[_EsFile, File]):
         )
 
     def get_full_paths_by_query(
-        self, query: QueryParameters, tree_node_directory_path: str
+        self,
+        query: QueryParameters,
+        tree_node_directory_path: str,
+        flat: bool = False,
     ) -> list[TreePathsNode]:
         """Generate the tree path structure for all matching files."""
         escaped_directory = re.sub(
@@ -760,26 +780,72 @@ class FileRepository(BaseEsRepository[_EsFile, File]):
 
         search = self._get_search_by_query(query=query)
 
-        dir_aggregation: Agg[_EsFile] = A(
-            "terms",
-            size=TREE_PATH_BUCKET_SIZE,
-            field="full_path.tree",
-            order={"_key": "asc"},  # alphebetic order by path name
-            include=pattern_directory,
-            exclude=pattern_contents,
+        agg_kwargs: dict[str, Any] = {
+            "size": TREE_PATH_BUCKET_SIZE,
+            "field": "full_path.tree",
+            "order": {"_key": "asc"},
+            "include": pattern_directory,
+        }
+        if not flat:
+            agg_kwargs["exclude"] = pattern_contents
+
+        dir_aggregation: Agg[_EsFile] = A("terms", **agg_kwargs)
+        dir_aggregation.bucket(
+            "first_hit",
+            A(
+                "top_hits",
+                size=1,
+                sort=[{"full_path.keyword": "asc"}],
+                _source=["full_path", "seen", "flagged"],
+            ),
+        )
+        dir_aggregation.bucket(
+            "unseen",
+            A("filter", filter=Q("term", seen=False)),
+        )
+        dir_aggregation.bucket(
+            "flagged",
+            A("filter", filter=Q("term", flagged=True)),
         )
         search.aggs.bucket("directory", dir_aggregation)
         search = search[0:0]  # do not fetch hits
-        result = self._execute_search_with_query(search=search, query=query)
+        # Tree counts must always reflect the live index state, not the query's
+        # point-in-time snapshot. Counts change when files are flagged/seen
+        # outside of the PIT window, so we execute directly against the index.
+        result = search.using(self._elasticsearch).execute()
 
-        nodes = []
-        for path in result.aggregations.directory.buckets:
-            dirpath = FilePurePath(str(path.key))
-            nodes.append(
-                TreePathsNode(full_path=dirpath, file_count=cast(int, path.doc_count))
-            )
+        return [
+            self._parse_tree_bucket(path)
+            for path in result.aggregations.directory.buckets
+        ]
 
-        return nodes
+    @staticmethod
+    def _parse_tree_bucket(path: Any) -> TreePathsNode:
+        """Build a TreePathsNode from a single directory aggregation bucket."""
+        dirpath = FilePurePath(str(path.key))
+        file_id = None
+        is_unseen = False
+        is_flagged = False
+        hits = path.first_hit.hits.hits
+        if hits and str(hits[0]["_source"]["full_path"]) == str(path.key):
+            file_id = hits[0]["_id"]
+            try:
+                is_unseen = not hits[0]["_source"]["seen"]
+            except KeyError:
+                pass
+            try:
+                is_flagged = bool(hits[0]["_source"]["flagged"])
+            except KeyError:
+                pass
+        return TreePathsNode(
+            full_path=dirpath,
+            file_count=cast(int, path.doc_count),
+            file_id=file_id,
+            unseen_count=cast(int, path.unseen.doc_count) - (1 if is_unseen else 0),
+            is_unseen=is_unseen,
+            flagged_count=cast(int, path.flagged.doc_count) - (1 if is_flagged else 0),
+            is_flagged=is_flagged,
+        )
 
     def _build_email_filter(self) -> Query:
         email_filters = []

@@ -80,6 +80,7 @@ export const getFilesCount = async (
 export const searchTree = async (
     query: SearchQuery,
     childrenOfNode?: string,
+    flat?: boolean,
 ): Promise<TreeNodeModel[]> => {
     return filesApi.getFilesTreeV1FilesTreeGet({
         queryId: query.id,
@@ -87,6 +88,7 @@ export const searchTree = async (
         searchString: query.query,
 
         nodePath: childrenOfNode,
+        flat,
     });
 };
 

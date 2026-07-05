@@ -1,14 +1,9 @@
 import { Equalizer, Numbers, StackedLineChart } from "@mui/icons-material";
 import {
-    Avatar,
+    Divider,
     FormControl,
-    Grid,
     InputLabel,
     MenuItem,
-    List,
-    ListItem,
-    ListItemAvatar,
-    ListItemText,
     Select,
     Skeleton,
     Typography,
@@ -41,12 +36,14 @@ import {
     formatFileSize,
     updateFieldOfQuery,
 } from "@features/common/utils/helpers";
-import { EmptySearchResults, TagsList } from "@features/search/components";
+import { TagsList } from "@features/search/components";
 import { Chart } from "@features/search/components";
 
 import styles from "./StatisticsView.module.css";
 
 const PIE_AMOUNT = 5;
+const CHART_HEIGHT = 280;
+const STAT_VALUES = Object.values(Stat);
 
 export const StatisticsView = () => {
     const searchQuery = useAppSelector(selectQuery);
@@ -133,87 +130,17 @@ export const StatisticsView = () => {
     }
 
     if (!isLoading && (!stats?.summary?.count || stats?.summary?.count === 0)) {
-        return <EmptySearchResults />;
+        return null;
     }
 
     return (
-        <Grid
-            container
-            spacing={2}
-            className={styles.statisticsContainer}
-            columns={12}
-        >
-            <Grid size={{ xs: 3 }}>
-                <Typography variant="h4">
-                    {t("statisticsView.summaryTitle")}
-                </Typography>
-                <List>
-                    <ListItem>
-                        <ListItemAvatar>
-                            <Avatar>
-                                <Numbers />
-                            </Avatar>
-                        </ListItemAvatar>
-                        <ListItemText
-                            primary={t("statisticsView.numberOfFiles")}
-                            secondary={stats?.summary?.count}
-                        />
-                    </ListItem>
-                    <ListItem>
-                        <ListItemAvatar>
-                            <Avatar>
-                                <Equalizer />
-                            </Avatar>
-                        </ListItemAvatar>
-                        <ListItemText
-                            primary={t("statisticsView.minFileSize")}
-                            secondary={formatFileSize(stats?.summary?.min ?? 0)}
-                        />
-                    </ListItem>
-                    <ListItem>
-                        <ListItemAvatar>
-                            <Avatar>
-                                <StackedLineChart />
-                            </Avatar>
-                        </ListItemAvatar>
-                        <ListItemText
-                            primary={t("statisticsView.avgFileSize")}
-                            secondary={formatFileSize(stats?.summary?.avg ?? 0)}
-                        />
-                    </ListItem>
-                    <ListItem>
-                        <ListItemAvatar>
-                            <Avatar>
-                                <Equalizer />
-                            </Avatar>
-                        </ListItemAvatar>
-                        <ListItemText
-                            primary={t("statisticsView.maxFileSize")}
-                            secondary={formatFileSize(stats?.summary?.max ?? 0)}
-                        />
-                    </ListItem>
-                    <br />
-                    {!!stats?.tags?.data && (
-                        <TagsList
-                            tags={stats.tags.data.map((e) => e.name)}
-                            tagStats={stats.tags}
-                        />
-                    )}
-                </List>
-            </Grid>
-            {!!stats?.generic && (
-                <Grid size={{ xs: 5 }}>
-                    <Chart
-                        entries={stats?.generic?.data}
-                        title={t(`statisticsView.${stats.generic?.stat}Title`)}
-                        handleUpdateQuery={handleUpdateQuery}
-                        queryKeyword={stats.generic?.key}
-                        compact={PIE_AMOUNT}
-                    />
-                </Grid>
-            )}
-            <Grid size={{ xs: 2 }}>
-                <FormControl fullWidth>
+        <div className={styles.statisticsContainer}>
+            <section className={styles.chartSection}>
+                <FormControl
+                    size="small"
+                    fullWidth
+                    className={styles.statSelector}
+                >
                     <InputLabel id="stat-select-label">Stat</InputLabel>
                     <Select
                         labelId="stat-select-label"
@@ -222,7 +149,7 @@ export const StatisticsView = () => {
                         label="Stat"
                         onChange={handleStatChange}
                     >
-                        {Object.values(Stat).map((value) => (
+                        {STAT_VALUES.map((value) => (
                             <MenuItem
                                 key={`key-${value}`}
                                 value={value}
@@ -234,7 +161,114 @@ export const StatisticsView = () => {
                         ))}
                     </Select>
                 </FormControl>
-            </Grid>
-        </Grid>
+                {!!stats?.generic && (
+                    <Chart
+                        entries={stats?.generic?.data}
+                        handleUpdateQuery={handleUpdateQuery}
+                        queryKeyword={stats.generic?.key}
+                        compact={PIE_AMOUNT}
+                        height={CHART_HEIGHT}
+                    />
+                )}
+            </section>
+
+            <Divider />
+
+            <section className={styles.summarySection}>
+                <Typography variant="overline" className={styles.sectionLabel}>
+                    {t("statisticsView.summaryTitle")}
+                </Typography>
+                <div className={styles.summaryGrid}>
+                    <div className={styles.summaryItem}>
+                        <Numbers
+                            fontSize="small"
+                            className={styles.summaryIcon}
+                        />
+                        <div>
+                            <Typography
+                                variant="caption"
+                                color="text.secondary"
+                            >
+                                {t("statisticsView.numberOfFiles")}
+                            </Typography>
+                            <Typography
+                                variant="body2"
+                                sx={{ fontWeight: "medium" }}
+                            >
+                                {stats?.summary?.count}
+                            </Typography>
+                        </div>
+                    </div>
+                    <div className={styles.summaryItem}>
+                        <Equalizer
+                            fontSize="small"
+                            className={styles.summaryIcon}
+                        />
+                        <div>
+                            <Typography
+                                variant="caption"
+                                color="text.secondary"
+                            >
+                                {t("statisticsView.minFileSize")}
+                            </Typography>
+                            <Typography
+                                variant="body2"
+                                sx={{ fontWeight: "medium" }}
+                            >
+                                {formatFileSize(stats?.summary?.min ?? 0)}
+                            </Typography>
+                        </div>
+                    </div>
+                    <div className={styles.summaryItem}>
+                        <StackedLineChart
+                            fontSize="small"
+                            className={styles.summaryIcon}
+                        />
+                        <div>
+                            <Typography
+                                variant="caption"
+                                color="text.secondary"
+                            >
+                                {t("statisticsView.avgFileSize")}
+                            </Typography>
+                            <Typography
+                                variant="body2"
+                                sx={{ fontWeight: "medium" }}
+                            >
+                                {formatFileSize(stats?.summary?.avg ?? 0)}
+                            </Typography>
+                        </div>
+                    </div>
+                    <div className={styles.summaryItem}>
+                        <Equalizer
+                            fontSize="small"
+                            className={styles.summaryIcon}
+                        />
+                        <div>
+                            <Typography
+                                variant="caption"
+                                color="text.secondary"
+                            >
+                                {t("statisticsView.maxFileSize")}
+                            </Typography>
+                            <Typography
+                                variant="body2"
+                                sx={{ fontWeight: "medium" }}
+                            >
+                                {formatFileSize(stats?.summary?.max ?? 0)}
+                            </Typography>
+                        </div>
+                    </div>
+                </div>
+                {!!stats?.tags?.data && (
+                    <div className={styles.tagsContainer}>
+                        <TagsList
+                            tags={stats.tags.data.map((e) => e.name)}
+                            tagStats={stats.tags}
+                        />
+                    </div>
+                )}
+            </section>
+        </div>
     );
 };

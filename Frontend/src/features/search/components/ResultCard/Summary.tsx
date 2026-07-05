@@ -10,7 +10,7 @@ import styles from "./Summary.module.css";
 
 interface SummaryProps {
     filePreview: GetFilePreviewResponse;
-    onOpenDetailsTab: (tab: FileDetailTab) => void;
+    onOpenDetailsTab: (tab: FileDetailTab, background?: boolean) => void;
 }
 
 export const Summary = ({ filePreview, onOpenDetailsTab }: SummaryProps) => {
@@ -70,7 +70,7 @@ export const Summary = ({ filePreview, onOpenDetailsTab }: SummaryProps) => {
 const renderTabContent = (
     tab: SummaryTab,
     filePreview: GetFilePreviewResponse,
-    onOpenDetailsTab: (tab: FileDetailTab) => void,
+    onOpenDetailsTab: (tab: FileDetailTab, background?: boolean) => void,
     t: (key: string) => string,
 ) => {
     switch (tab) {
@@ -80,8 +80,11 @@ const renderTabContent = (
                     {filePreview.content}
                     {filePreview.contentPreviewIsTruncated && (
                         <EllipsisButton
-                            onClick={() =>
-                                onOpenDetailsTab(FileDetailTab.Content)
+                            onClick={(e) =>
+                                onOpenDetailsTab(
+                                    FileDetailTab.Content,
+                                    e.ctrlKey,
+                                )
                             }
                             title={t("generalSearchView.viewDetails")}
                         />
@@ -98,8 +101,11 @@ const renderTabContent = (
                     {filePreview.translationPreview}
                     {filePreview.translationPreviewIsTruncated && (
                         <EllipsisButton
-                            onClick={() =>
-                                onOpenDetailsTab(FileDetailTab.Translations)
+                            onClick={(e) =>
+                                onOpenDetailsTab(
+                                    FileDetailTab.Translations,
+                                    e.ctrlKey,
+                                )
                             }
                             title={t("generalSearchView.viewDetails")}
                         />

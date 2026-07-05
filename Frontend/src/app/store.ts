@@ -10,7 +10,7 @@ import SocketApi from "./api/socketApi";
 import {
     localStorageAutoActionsMiddleware,
     localStorageCustomQueriesMiddleware,
-    localStorageSideMenuMiddleware,
+    localStorageUiStateMiddleware,
 } from "./middlewares";
 
 export const store = configureStore({
@@ -22,8 +22,8 @@ export const store = configureStore({
     middleware: (getDefaultMiddleware) =>
         getDefaultMiddleware()
             .prepend(localStorageCustomQueriesMiddleware.middleware)
-            .prepend(localStorageSideMenuMiddleware.middleware)
             .prepend(localStorageAutoActionsMiddleware.middleware)
+            .prepend(localStorageUiStateMiddleware.middleware)
             .concat(socketMiddleware(new SocketApi())),
 });
 

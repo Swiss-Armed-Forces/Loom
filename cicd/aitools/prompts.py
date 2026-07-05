@@ -410,7 +410,7 @@ what was added or removed.
 
 ## How to review
 
-Spawn 5 parallel review sub-agents using the Agent tool (subagent_type=Explore).
+Spawn 6 parallel review sub-agents using the Agent tool (subagent_type=Explore).
 Each agent examines the full changeset from a different angle:
 
 **Agent 1 — Protocol / runtime correctness (bug-free)**
@@ -441,12 +441,29 @@ Duplicated setup? Low-value tests that only verify what the type system enforces
 Missing high-value tests (failure paths, edge cases, rapid duplicate events)? Dead
 test helpers or unused imports?
 
-**Agent 5 — Deleted code completeness + test execution (complete + minimal)**
+**Agent 5 — Deleted code, duplication & pattern consistency (complete + minimal)**
 For every file deleted on this branch, search the entire repo for remaining references
 to the deleted symbols. Check imports, beat schedules, router registrations, and
 OpenAPI-generated frontend types. Look for logic in new files that already exists
-elsewhere and should be reused. Run `backend-test` and `frontend-test` and report any
-failures, including regressions in code outside the changeset.
+elsewhere and should be reused. Also examine new and changed code for pattern consistency:
+does it follow the conventions already established in the surrounding codebase (naming
+conventions, error handling style, repository/service patterns, how similar constructs are
+structured in existing files)? Flag deviations where the new code introduces an inconsistent
+approach that should instead mirror the existing pattern. Run `backend-test` and
+`frontend-test` and report any failures, including regressions in code outside the changeset.
+
+**Agent 6 — Performance and scalability with large datasets**
+Examine all new or modified code for behaviour under high data volumes. Will any logic
+become unreasonably slow as the number of documents, search results, or indexed files
+grows? Are there unbounded in-memory accumulations (loading all results into a list,
+building a large dict, etc.) that could exhaust memory? Could streaming or pagination
+replace a bulk fetch? Are there N+1 query patterns or repeated full-collection scans?
+On the frontend: will any UI element (lists, tables, dropdowns, search results) break
+visually or become unresponsive when rendered with many items — missing virtualisation,
+truncation, or pagination? Are there opportunities to run independent operations in
+parallel that would meaningfully reduce latency, without adding disproportionate complexity?
+Flag only genuine risks; do not suggest parallelisation or streaming where the current
+approach is already fast enough for realistic data sizes.
 
 ## Output
 

@@ -103,12 +103,25 @@ def build_parser() -> tuple[argparse.ArgumentParser, list[str]]:
             "Omit to review the MR for the current branch."
         ),
     )
+    mr_review_parser.add_argument(
+        "--fix",
+        action="store_true",
+        help=("Automatically fix all findings instead of posting them as MR comments"),
+    )
     mr_review_parser.set_defaults(func=cmd_mr_review)
 
     # mr-fix subcommand
     mr_fix_parser = subparsers.add_parser(
         "mr-fix",
         help="Address unresolved MR review comments using Claude in agentic mode",
+    )
+    mr_fix_parser.add_argument(
+        "mr",
+        nargs="?",
+        help=(
+            "GitLab MR URL (https://.../merge_requests/123) or bare MR IID. "
+            "Omit to fix the MR for the current branch."
+        ),
     )
     mr_fix_parser.set_defaults(func=cmd_mr_fix)
 

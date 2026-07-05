@@ -17,7 +17,7 @@ export default class SocketApi {
     }
 
     send(data: any): void {
-        if (!this.socket) return;
+        if (!this.socket || this.socket.readyState !== WebSocket.OPEN) return;
         this.socket.send(JSON.stringify(data));
     }
 

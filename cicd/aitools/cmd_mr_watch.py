@@ -12,6 +12,7 @@ from gitlab.v4.objects import Project, ProjectMergeRequest, ProjectPipeline
 from ._common import (
     _get_gitlab_client_or_exit,
     _maybe_update_mr_description,
+    checkout_mr_branch,
     resolve_mr_from_args_or_branch,
 )
 from .claude import run_claude_agentic
@@ -29,19 +30,6 @@ from .prompts import build_watch_fix_prompt
 logger = logging.getLogger(__name__)
 
 POLL_INTERVAL = 180  # seconds
-
-
-def _checkout_mr_branch(mr: ProjectMergeRequest, repo: Repo) -> str:
-    """Check out the MR's source branch locally and return the branch name."""
-    branch_name = mr.source_branch
-    repo.git.fetch("origin")
-    local_branches = [b.name for b in repo.branches]
-    if branch_name in local_branches:
-        repo.git.checkout(branch_name)
-        repo.git.reset("--hard", f"origin/{branch_name}")
-    else:
-        repo.git.checkout("-b", branch_name, f"origin/{branch_name}")
-    return branch_name
 
 
 def _fix_failing_job_and_push(
@@ -130,7 +118,7 @@ def _watch_approved_mrs(project: Project, repo: Repo) -> None:
                     continue
 
                 print(f"  -> Fixing MR !{mr.iid}: {mr.title}")
-                branch_name = _checkout_mr_branch(mr, repo)
+                branch_name = checkout_mr_branch(mr, repo)
                 _fix_failing_job_and_push(project, pipeline, branch_name, repo)
 
             time.sleep(POLL_INTERVAL)
@@ -151,7 +139,7 @@ def cmd_mr_watch(args: argparse.Namespace) -> None:
         return
 
     mr = resolve_mr_from_args_or_branch(gl, args, repo)
-    branch_name = _checkout_mr_branch(mr, repo)
+    branch_name = checkout_mr_branch(mr, repo)
 
     print(f"\nWatching MR !{mr.iid}: {mr.title}")
     print(f"Branch: {branch_name}")

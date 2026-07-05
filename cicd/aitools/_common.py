@@ -24,6 +24,19 @@ from .models import MRContext
 logger = logging.getLogger(__name__)
 
 
+def checkout_mr_branch(mr: ProjectMergeRequest, repo: Repo) -> str:
+    """Check out the MR's source branch locally and return the branch name."""
+    branch_name = mr.source_branch
+    repo.git.fetch("origin")
+    local_branches = [b.name for b in repo.branches]
+    if branch_name in local_branches:
+        repo.git.checkout(branch_name)
+        repo.git.reset("--hard", f"origin/{branch_name}")
+    else:
+        repo.git.checkout("-b", branch_name, f"origin/{branch_name}")
+    return branch_name
+
+
 def _ask(prompt: str) -> str:
     """Prompt the user for input, or auto-accept in --auto mode."""
     if config.AUTO_MODE:

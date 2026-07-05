@@ -1,21 +1,31 @@
-import { Typography } from "@mui/material";
 import {
     DefaultizedPieValueType,
     PieItemIdentifier,
     PieValueType,
 } from "@mui/x-charts/models";
 import { PieChart } from "@mui/x-charts/PieChart";
-import { Fragment } from "react";
+import { Fragment, useState } from "react";
 
 import { HitsPerGroupEntryModel } from "@app/api";
 
+import styles from "./Chart.module.css";
+
 interface ChartProps {
     entries: HitsPerGroupEntryModel[];
-    title: string;
     handleUpdateQuery: (key: string, value: string | string[]) => void;
     queryKeyword: string;
     compact: number;
+    height?: number;
 }
+
+// onHighlightChange provides dataIndex as optional — use a wider type for state
+type PieHighlightItem = {
+    type: "pie";
+    seriesId: string;
+    dataIndex?: number;
+} | null;
+
+const PIE_SERIES_ID = "pie";
 
 const MISC_ID = "misc_id";
 
@@ -31,27 +41,19 @@ const COLORS = [
 ];
 
 const arcLabel = (
-    item: Omit<DefaultizedPieValueType, "label"> & {
-        label?: string;
-    },
+    item: Omit<DefaultizedPieValueType, "label"> & { label?: string },
 ): string => {
-    return `${item.label} (${item.value})`;
+    return `${item.value}`;
 };
 
 const processEntries = (entries: HitsPerGroupEntryModel[]) => {
-    const result: PieValueType[] = [];
-    entries.map((e) => {
-        result.push({
+    return entries
+        .map((e) => ({
             id: `${e.name}_id`,
             value: e.hitsCount,
             label: e.name,
-        });
-    });
-    // return it sorted small to large
-    return result.sort(function (a, b) {
-        if (a.value < b.value) return -1;
-        return a.value == b.value ? 0 : 1;
-    });
+        }))
+        .sort((a, b) => (a.value < b.value ? -1 : a.value === b.value ? 0 : 1));
 };
 
 const summarizeEntries = (entries: PieValueType[], max: number) => {
@@ -64,21 +66,24 @@ const summarizeEntries = (entries: PieValueType[], max: number) => {
     });
     result.unshift({
         id: MISC_ID,
-        value: others.length,
+        value: others.reduce((sum, e) => sum + (e.value as number), 0),
         label: "others",
     } satisfies PieValueType);
-    return { data: result.reverse(), others }; // small to large
+    return { data: result.reverse(), others };
 };
 
 export const Chart = ({
     entries,
-    title,
     handleUpdateQuery,
     queryKeyword,
     compact,
+    height = 500,
 }: ChartProps) => {
     const dataAll = processEntries(entries);
     const { data, others } = summarizeEntries(dataAll, compact);
+
+    const [highlightedItem, setHighlightedItem] =
+        useState<PieHighlightItem>(null);
 
     const handleClick = (
         _: any,
@@ -94,35 +99,73 @@ export const Chart = ({
         handleUpdateQuery(queryKeyword, term);
     };
 
+    const anyHighlighted = highlightedItem !== null;
+
     return (
         <Fragment>
-            <center>
-                <Typography variant="h4">
-                    {title} ({entries.length})
-                </Typography>
-            </center>
             {entries && (
-                <PieChart
-                    height={500}
-                    onItemClick={handleClick}
-                    colors={COLORS}
-                    series={[
-                        {
-                            data,
-                            arcLabel,
-                            arcLabelMinAngle: 45,
-                            highlightScope: {
-                                fade: "global",
-                                highlight: "item",
+                <>
+                    <PieChart
+                        height={height}
+                        hideLegend
+                        onItemClick={handleClick}
+                        colors={COLORS}
+                        highlightedItem={highlightedItem}
+                        onHighlightChange={setHighlightedItem}
+                        series={[
+                            {
+                                id: PIE_SERIES_ID,
+                                data,
+                                arcLabel,
+                                arcLabelMinAngle: 45,
+                                highlightScope: {
+                                    fade: "global",
+                                    highlight: "item",
+                                },
+                                faded: {
+                                    innerRadius: 30,
+                                    additionalRadius: -30,
+                                    color: "gray",
+                                },
                             },
-                            faded: {
-                                innerRadius: 30,
-                                additionalRadius: -30,
-                                color: "gray",
-                            },
-                        },
-                    ]}
-                />
+                        ]}
+                    />
+                    <ul className={styles.legend}>
+                        {data.map((item, i) => {
+                            const isHighlighted =
+                                anyHighlighted &&
+                                highlightedItem?.dataIndex === i;
+                            const isFaded = anyHighlighted && !isHighlighted;
+                            return (
+                                <li
+                                    key={item.id as string}
+                                    className={`${styles.legendItem} ${isFaded ? styles.faded : ""} ${isHighlighted ? styles.highlighted : ""}`}
+                                    onMouseEnter={() =>
+                                        setHighlightedItem({
+                                            type: "pie",
+                                            seriesId: PIE_SERIES_ID,
+                                            dataIndex: i,
+                                        })
+                                    }
+                                    onMouseLeave={() =>
+                                        setHighlightedItem(null)
+                                    }
+                                >
+                                    <span
+                                        className={styles.legendSwatch}
+                                        style={{
+                                            background:
+                                                COLORS[i % COLORS.length],
+                                        }}
+                                    />
+                                    <span className={styles.legendLabel}>
+                                        {item.label as string}
+                                    </span>
+                                </li>
+                            );
+                        })}
+                    </ul>
+                </>
             )}
         </Fragment>
     );

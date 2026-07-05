@@ -107,6 +107,7 @@ export interface GetFilesTreeV1FilesTreeGetRequest {
     keepAlive?: GetFilesTreeV1FilesTreeGetKeepAliveEnum;
     searchString?: string;
     nodePath?: string;
+    flat?: boolean;
 }
 
 export interface GetFilesV1FilesGetRequest {
@@ -575,7 +576,7 @@ export class FilesApi extends runtime.BaseAPI {
     }
 
     /**
-     * Get a node out of the tree of files non-recursively.
+     * Get nodes from the file tree.  When flat=False (default), returns the direct children of node_path. When flat=True, returns all matching files at any depth below node_path, without pagination — callers should apply their own result limit.
      * Get Files Tree
      */
     async getFilesTreeV1FilesTreeGetRaw(
@@ -608,6 +609,10 @@ export class FilesApi extends runtime.BaseAPI {
             queryParameters["node_path"] = requestParameters["nodePath"];
         }
 
+        if (requestParameters["flat"] != null) {
+            queryParameters["flat"] = requestParameters["flat"];
+        }
+
         const headerParameters: runtime.HTTPHeaders = {};
 
         const response = await this.request(
@@ -626,7 +631,7 @@ export class FilesApi extends runtime.BaseAPI {
     }
 
     /**
-     * Get a node out of the tree of files non-recursively.
+     * Get nodes from the file tree.  When flat=False (default), returns the direct children of node_path. When flat=True, returns all matching files at any depth below node_path, without pagination — callers should apply their own result limit.
      * Get Files Tree
      */
     async getFilesTreeV1FilesTreeGet(
