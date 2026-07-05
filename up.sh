@@ -829,7 +829,7 @@ stop_expose_minikube(){
             --pidfile "${TUNNEL_PIDFILE}" \
         || true
 
-        rm \
+        sudo rm \
             --force \
             "${TUNNEL_PIDFILE}"
     fi
