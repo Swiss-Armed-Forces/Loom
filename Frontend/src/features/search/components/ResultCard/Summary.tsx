@@ -6,7 +6,6 @@ import { GetFilePreviewResponse } from "@app/api";
 import { FileDetailTab, SummaryTab } from "@features/common/utils/enums";
 
 import { EllipsisButton } from "./EllipsisButton";
-import styles from "./Summary.module.css";
 
 interface SummaryProps {
     filePreview: GetFilePreviewResponse;
@@ -27,7 +26,7 @@ export const Summary = ({ filePreview, onOpenDetailsTab }: SummaryProps) => {
         return null;
 
     return (
-        <Box className={styles.summaryContainer}>
+        <Box sx={{ bgcolor: "action.hover", borderRadius: 1, p: 1 }}>
             <Box sx={{ borderBottom: 1, borderColor: "divider" }}>
                 <Tabs
                     value={tab}
@@ -60,7 +59,7 @@ export const Summary = ({ filePreview, onOpenDetailsTab }: SummaryProps) => {
                     />
                 </Tabs>
             </Box>
-            <Box className={styles.summaryContent}>
+            <Box sx={{ pt: 1 }}>
                 {renderTabContent(tab, filePreview, onOpenDetailsTab, t)}
             </Box>
         </Box>

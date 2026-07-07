@@ -4,6 +4,7 @@ import { useAppDispatch, useAppSelector } from "@app/hooks";
 import { selectIsLoading, selectTopDialog } from "@app/slices/commonSlice";
 import {
     selectHighlightedIndex,
+    selectHighlightedFileId,
     selectTotalFiles,
     selectLoadedFiles,
     selectLastFileSortId,
@@ -13,6 +14,8 @@ import {
     selectActiveTabFileId,
     selectOpenFileTabs,
     setFileTabDetailTab,
+    setActiveTabFileId,
+    openFileTabThunk,
 } from "@app/slices/searchSlice";
 import { FileDetailTab } from "@features/common/utils/enums";
 
@@ -22,6 +25,7 @@ export const useKeyboardNavigation = () => {
     const activeTabFileId = useAppSelector(selectActiveTabFileId);
     const openFileTabs = useAppSelector(selectOpenFileTabs);
     const highlightedIndex = useAppSelector(selectHighlightedIndex);
+    const highlightedFileId = useAppSelector(selectHighlightedFileId);
     const totalFiles = useAppSelector(selectTotalFiles);
     const loadedFiles = useAppSelector(selectLoadedFiles);
     const lastFileSortId = useAppSelector(selectLastFileSortId);
@@ -211,6 +215,63 @@ export const useKeyboardNavigation = () => {
         [activeTabFileId, openFileTabs, getEnabledTabs, dispatch],
     );
 
+    const handleCenterTabNavigation = useCallback(
+        (direction: "left" | "right") => {
+            // Build ordered list: [null (Results), ...file tab IDs]
+            const tabIds: (string | null)[] = [
+                null,
+                ...openFileTabs.map((t) => t.fileId),
+            ];
+            if (tabIds.length <= 1) return; // Only Results tab, nothing to navigate
+
+            const currentIndex = tabIds.indexOf(activeTabFileId);
+            let nextIndex: number;
+            if (currentIndex === -1) {
+                nextIndex = direction === "right" ? 0 : tabIds.length - 1;
+            } else if (direction === "right") {
+                nextIndex = (currentIndex + 1) % tabIds.length;
+            } else {
+                nextIndex = (currentIndex - 1 + tabIds.length) % tabIds.length;
+            }
+
+            dispatch(setActiveTabFileId(tabIds[nextIndex]));
+        },
+        [activeTabFileId, openFileTabs, dispatch],
+    );
+
+    const handleSummaryTabNavigation = useCallback(
+        (direction: "left" | "right") => {
+            const card = document.querySelector("[data-highlighted='true']");
+            if (!card) return;
+
+            const allTabs = Array.from(card.querySelectorAll("[role='tab']"));
+            const enabledTabs = allTabs.filter(
+                (tab) =>
+                    tab.getAttribute("aria-disabled") !== "true" &&
+                    !tab.classList.contains("Mui-disabled"),
+            );
+            if (enabledTabs.length === 0) return;
+
+            const currentIndex = enabledTabs.findIndex(
+                (tab) => tab.getAttribute("aria-selected") === "true",
+            );
+
+            let nextIndex: number;
+            if (currentIndex === -1) {
+                nextIndex = direction === "right" ? 0 : enabledTabs.length - 1;
+            } else if (direction === "right") {
+                nextIndex = (currentIndex + 1) % enabledTabs.length;
+            } else {
+                nextIndex =
+                    (currentIndex - 1 + enabledTabs.length) %
+                    enabledTabs.length;
+            }
+
+            (enabledTabs[nextIndex] as HTMLElement).click();
+        },
+        [],
+    );
+
     const handleDialogScroll = useCallback(
         (direction: "up" | "down") => {
             // Find the scrollable element within the active file panel
@@ -338,15 +399,23 @@ export const useKeyboardNavigation = () => {
                         event.preventDefault();
                         return;
                     case "h":
+                    case "H":
                     case "ArrowLeft":
-                        // Tab navigation: h/ArrowLeft = left
-                        handleTabNavigationDirection("left");
+                        if (event.shiftKey) {
+                            handleTabNavigationDirection("left");
+                        } else {
+                            handleCenterTabNavigation("left");
+                        }
                         event.preventDefault();
                         return;
                     case "l":
+                    case "L":
                     case "ArrowRight":
-                        // Tab navigation: l/ArrowRight = right
-                        handleTabNavigationDirection("right");
+                        if (event.shiftKey) {
+                            handleTabNavigationDirection("right");
+                        } else {
+                            handleCenterTabNavigation("right");
+                        }
                         event.preventDefault();
                         return;
                     case "Enter":
@@ -363,21 +432,32 @@ export const useKeyboardNavigation = () => {
                         clickActionButton("close");
                         event.preventDefault();
                         return;
-                    case "f":
-                        // Toggle fullscreen (dialog only)
-                        clickActionButton("toggle fullscreen");
-                        event.preventDefault();
-                        return;
                 }
             } else if (activeTabFileId === null) {
                 // Handle result list navigation
                 switch (event.key) {
                     case "Escape":
-                        // Unselect the highlighted card
                         if (highlightedIndex !== null) {
+                            // Unselect the highlighted card
                             dispatch(setHighlightedIndex(null));
-                            event.preventDefault();
+                        } else {
+                            // No card selected — clear the search query and sort
+                            for (const label of [
+                                "clear search",
+                                "clear sort",
+                            ]) {
+                                const btn = document.querySelector(
+                                    `button[aria-label="${label}"]`,
+                                );
+                                if (
+                                    btn &&
+                                    !(btn as HTMLButtonElement).disabled
+                                ) {
+                                    (btn as HTMLElement).click();
+                                }
+                            }
                         }
+                        event.preventDefault();
                         return;
                     case "j":
                     case "ArrowDown":
@@ -391,11 +471,42 @@ export const useKeyboardNavigation = () => {
                         handleResultNavigation("up");
                         event.preventDefault();
                         return;
+                    case "h":
+                    case "H":
+                    case "ArrowLeft":
+                        if (event.shiftKey && highlightedIndex !== null) {
+                            handleSummaryTabNavigation("left");
+                        } else if (!event.shiftKey) {
+                            handleCenterTabNavigation("left");
+                        }
+                        event.preventDefault();
+                        return;
+                    case "l":
+                    case "L":
+                    case "ArrowRight":
+                        if (event.shiftKey && highlightedIndex !== null) {
+                            handleSummaryTabNavigation("right");
+                        } else if (!event.shiftKey) {
+                            handleCenterTabNavigation("right");
+                        }
+                        event.preventDefault();
+                        return;
                     case "Enter":
                     case " ":
                     case "i":
-                        // Open preview dialog for highlighted result
-                        clickActionButton("preview");
+                    case "I":
+                        if (event.shiftKey && highlightedFileId !== null) {
+                            // Open tab in background without switching to it
+                            dispatch(
+                                openFileTabThunk({
+                                    fileId: highlightedFileId,
+                                    background: true,
+                                }),
+                            );
+                        } else {
+                            // Open preview dialog for highlighted result
+                            clickActionButton("preview");
+                        }
                         event.preventDefault();
                         return;
                     case "/":
@@ -419,10 +530,6 @@ export const useKeyboardNavigation = () => {
                     clickActionButton("share");
                     event.preventDefault();
                     return;
-                case "o":
-                    clickActionButton("open");
-                    event.preventDefault();
-                    return;
                 case "d":
                     clickActionButton("download");
                     event.preventDefault();
@@ -432,6 +539,10 @@ export const useKeyboardNavigation = () => {
                     event.preventDefault();
                     return;
                 case "s":
+                    clickActionButton("seen");
+                    event.preventDefault();
+                    return;
+                case "S":
                     clickActionButton("summarize");
                     event.preventDefault();
                     return;
@@ -443,12 +554,8 @@ export const useKeyboardNavigation = () => {
                     clickActionButton("translate");
                     event.preventDefault();
                     return;
-                case "g":
+                case "f":
                     clickActionButton("flagged");
-                    event.preventDefault();
-                    return;
-                case "b":
-                    clickActionButton("seen");
                     event.preventDefault();
                     return;
             }
@@ -457,8 +564,11 @@ export const useKeyboardNavigation = () => {
             shouldIgnoreKeyEvent,
             activeTabFileId,
             highlightedIndex,
+            highlightedFileId,
             dispatch,
             handleTabNavigationDirection,
+            handleCenterTabNavigation,
+            handleSummaryTabNavigation,
             handleDialogScroll,
             handleResultNavigation,
             clickActionButton,

@@ -241,14 +241,15 @@ export const FolderView = ({ filter }: FolderViewProps) => {
         // Compute what the user toggled by diffing against the current display
         // state, then apply only that delta to the user snapshot.
         setUserExpandedNodes((prev) => {
-            const added = nodeIds.find(
+            const added = nodeIds.filter(
                 (id) => !folderState.expandedNodes.includes(id),
             );
-            const removed = folderState.expandedNodes.find(
+            const removed = folderState.expandedNodes.filter(
                 (id) => !nodeIds.includes(id),
             );
-            if (added) return [...prev, added];
-            if (removed) return prev.filter((id) => id !== removed);
+            if (added.length > 0) return [...prev, ...added];
+            if (removed.length > 0)
+                return prev.filter((id) => !removed.includes(id));
             return prev;
         });
         folderDispatch({
@@ -714,6 +715,7 @@ export const FolderView = ({ filter }: FolderViewProps) => {
                                                         SearchQueryField.Filename,
                                                         node.fullPath,
                                                         false,
+                                                        e.shiftKey,
                                                     ),
                                                 }),
                                             );

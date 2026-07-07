@@ -175,6 +175,7 @@ export const FolderViewNode = React.memo(function FolderViewNode({
                                     SearchQueryField.Filename,
                                     isRoot ? "*" : tree.id,
                                     isRoot,
+                                    e.shiftKey,
                                 ),
                             }),
                         );

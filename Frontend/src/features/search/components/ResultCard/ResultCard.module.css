@@ -48,39 +48,6 @@
     margin-bottom: 0.5rem;
 }
 
-.cardContent {
-    display: flex;
-    gap: 16px;
-    word-break: break-word;
-    flex-direction: column;
-
-    @media only screen and (min-width: 900px) {
-        flex-direction: row;
-    }
-}
-
-.contentColumn {
-    display: flex;
-    flex-direction: column;
-    flex: 1;
-    word-break: break-word;
-}
-
-.contentText {
-    padding: 10px;
-}
-
 .thumbnailBadge {
     align-self: flex-start;
-}
-
-.cardActions {
-    display: flex;
-    flex-direction: row;
-    justify-content: space-between;
-}
-
-.sortFieldCaption {
-    padding-left: 4px;
-    padding-right: 4px;
 }
