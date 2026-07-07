@@ -1,7 +1,8 @@
 import logging
 from itertools import islice
 
-from celery.canvas import Signature, group
+from celery import group
+from celery.canvas import Signature
 from common.dependencies import (
     get_celery_app,
     get_file_repository,
