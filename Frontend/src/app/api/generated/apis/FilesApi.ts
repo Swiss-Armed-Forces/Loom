@@ -16,17 +16,17 @@
 import * as runtime from "../runtime";
 import type {
     AddTagsRequest,
-    GenericStatisticsModel,
+    AvailableStat,
     GetFilePreviewResponse,
     GetFileResponse,
     GetFilesCountResponse,
     GetFilesResponse,
     GetQueryResponse,
+    GroupedHistogramStatisticsModel,
     HTTPValidationError,
     ImageDescriptionFileRequest,
-    Stat,
     SummarizeFileRequest,
-    SummaryStatisticsModel,
+    TermsStatisticsModel,
     TranslateFileRequest,
     TreeNodeModel,
     UpdateFileRequest,
@@ -35,8 +35,8 @@ import type {
 import {
     AddTagsRequestFromJSON,
     AddTagsRequestToJSON,
-    GenericStatisticsModelFromJSON,
-    GenericStatisticsModelToJSON,
+    AvailableStatFromJSON,
+    AvailableStatToJSON,
     GetFilePreviewResponseFromJSON,
     GetFilePreviewResponseToJSON,
     GetFileResponseFromJSON,
@@ -47,16 +47,16 @@ import {
     GetFilesResponseToJSON,
     GetQueryResponseFromJSON,
     GetQueryResponseToJSON,
+    GroupedHistogramStatisticsModelFromJSON,
+    GroupedHistogramStatisticsModelToJSON,
     HTTPValidationErrorFromJSON,
     HTTPValidationErrorToJSON,
     ImageDescriptionFileRequestFromJSON,
     ImageDescriptionFileRequestToJSON,
-    StatFromJSON,
-    StatToJSON,
     SummarizeFileRequestFromJSON,
     SummarizeFileRequestToJSON,
-    SummaryStatisticsModelFromJSON,
-    SummaryStatisticsModelToJSON,
+    TermsStatisticsModelFromJSON,
+    TermsStatisticsModelToJSON,
     TranslateFileRequestFromJSON,
     TranslateFileRequestToJSON,
     TreeNodeModelFromJSON,
@@ -80,6 +80,10 @@ export interface DeleteTagV1FilesFileIdTagsTagToRemoveDeleteRequest {
 export interface DownloadFileV1FilesFileIdDownloadGetRequest {
     fileId: string;
     contentDisposition?: DownloadFileV1FilesFileIdDownloadGetContentDispositionEnum;
+}
+
+export interface GetAvailableStatsByTypeV1FilesStatsRegistryTypeGetRequest {
+    registryType: GetAvailableStatsByTypeV1FilesStatsRegistryTypeGetRegistryTypeEnum;
 }
 
 export interface GetFilePreviewV1FilesFileIdPreviewGetRequest {
@@ -120,10 +124,18 @@ export interface GetFilesV1FilesGetRequest {
     searchString?: string;
 }
 
-export interface GetGenericStatsV1FilesStatsGenericStatGetRequest {
-    stat: Stat;
+export interface GetHistogramStatsGroupedV1FilesStatsHistogramStatGroupedGroupByGetRequest {
+    stat: string;
+    groupBy: string;
     queryId: string;
-    keepAlive?: GetGenericStatsV1FilesStatsGenericStatGetKeepAliveEnum;
+    keepAlive?: GetHistogramStatsGroupedV1FilesStatsHistogramStatGroupedGroupByGetKeepAliveEnum;
+    searchString?: string;
+}
+
+export interface GetHistogramStatsV1FilesStatsHistogramStatGetRequest {
+    stat: string;
+    queryId: string;
+    keepAlive?: GetHistogramStatsV1FilesStatsHistogramStatGetKeepAliveEnum;
     searchString?: string;
 }
 
@@ -136,10 +148,12 @@ export interface GetRenderedV1FilesFileIdRenderedRenderedIdGetRequest {
     renderedId: string;
 }
 
-export interface GetSummaryStatsV1FilesStatsSummaryGetRequest {
+export interface GetTermsStatsV1FilesStatsTermsStatGetRequest {
+    stat: string;
     queryId: string;
-    keepAlive?: GetSummaryStatsV1FilesStatsSummaryGetKeepAliveEnum;
+    keepAlive?: GetTermsStatsV1FilesStatsTermsStatGetKeepAliveEnum;
     searchString?: string;
+    size?: number;
 }
 
 export interface GetThumbnailV1FilesFileIdThumbnailThumbnailFileIdGetRequest {
@@ -366,6 +380,61 @@ export class FilesApi extends runtime.BaseAPI {
             requestParameters,
             initOverrides,
         );
+        return await response.value();
+    }
+
+    /**
+     * List stat fields of a specific registry type (terms, histogram).
+     * Get Available Stats By Type
+     */
+    async getAvailableStatsByTypeV1FilesStatsRegistryTypeGetRaw(
+        requestParameters: GetAvailableStatsByTypeV1FilesStatsRegistryTypeGetRequest,
+        initOverrides?: RequestInit | runtime.InitOverrideFunction,
+    ): Promise<runtime.ApiResponse<Array<AvailableStat>>> {
+        if (requestParameters["registryType"] == null) {
+            throw new runtime.RequiredError(
+                "registryType",
+                'Required parameter "registryType" was null or undefined when calling getAvailableStatsByTypeV1FilesStatsRegistryTypeGet().',
+            );
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        const response = await this.request(
+            {
+                path: `/v1/files/stats/{registry_type}`.replace(
+                    `{${"registry_type"}}`,
+                    encodeURIComponent(
+                        String(requestParameters["registryType"]),
+                    ),
+                ),
+                method: "GET",
+                headers: headerParameters,
+                query: queryParameters,
+            },
+            initOverrides,
+        );
+
+        return new runtime.JSONApiResponse(response, (jsonValue) =>
+            jsonValue.map(AvailableStatFromJSON),
+        );
+    }
+
+    /**
+     * List stat fields of a specific registry type (terms, histogram).
+     * Get Available Stats By Type
+     */
+    async getAvailableStatsByTypeV1FilesStatsRegistryTypeGet(
+        requestParameters: GetAvailableStatsByTypeV1FilesStatsRegistryTypeGetRequest,
+        initOverrides?: RequestInit | runtime.InitOverrideFunction,
+    ): Promise<Array<AvailableStat>> {
+        const response =
+            await this.getAvailableStatsByTypeV1FilesStatsRegistryTypeGetRaw(
+                requestParameters,
+                initOverrides,
+            );
         return await response.value();
     }
 
@@ -725,23 +794,30 @@ export class FilesApi extends runtime.BaseAPI {
     }
 
     /**
-     * Get Generic Stats
+     * Get Histogram Stats Grouped
      */
-    async getGenericStatsV1FilesStatsGenericStatGetRaw(
-        requestParameters: GetGenericStatsV1FilesStatsGenericStatGetRequest,
+    async getHistogramStatsGroupedV1FilesStatsHistogramStatGroupedGroupByGetRaw(
+        requestParameters: GetHistogramStatsGroupedV1FilesStatsHistogramStatGroupedGroupByGetRequest,
         initOverrides?: RequestInit | runtime.InitOverrideFunction,
-    ): Promise<runtime.ApiResponse<GenericStatisticsModel>> {
+    ): Promise<runtime.ApiResponse<GroupedHistogramStatisticsModel>> {
         if (requestParameters["stat"] == null) {
             throw new runtime.RequiredError(
                 "stat",
-                'Required parameter "stat" was null or undefined when calling getGenericStatsV1FilesStatsGenericStatGet().',
+                'Required parameter "stat" was null or undefined when calling getHistogramStatsGroupedV1FilesStatsHistogramStatGroupedGroupByGet().',
+            );
+        }
+
+        if (requestParameters["groupBy"] == null) {
+            throw new runtime.RequiredError(
+                "groupBy",
+                'Required parameter "groupBy" was null or undefined when calling getHistogramStatsGroupedV1FilesStatsHistogramStatGroupedGroupByGet().',
             );
         }
 
         if (requestParameters["queryId"] == null) {
             throw new runtime.RequiredError(
                 "queryId",
-                'Required parameter "queryId" was null or undefined when calling getGenericStatsV1FilesStatsGenericStatGet().',
+                'Required parameter "queryId" was null or undefined when calling getHistogramStatsGroupedV1FilesStatsHistogramStatGroupedGroupByGet().',
             );
         }
 
@@ -764,7 +840,85 @@ export class FilesApi extends runtime.BaseAPI {
 
         const response = await this.request(
             {
-                path: `/v1/files/stats/generic/{stat}`.replace(
+                path: `/v1/files/stats/histogram/{stat}/grouped/{group_by}`
+                    .replace(
+                        `{${"stat"}}`,
+                        encodeURIComponent(String(requestParameters["stat"])),
+                    )
+                    .replace(
+                        `{${"group_by"}}`,
+                        encodeURIComponent(
+                            String(requestParameters["groupBy"]),
+                        ),
+                    ),
+                method: "GET",
+                headers: headerParameters,
+                query: queryParameters,
+            },
+            initOverrides,
+        );
+
+        return new runtime.JSONApiResponse(response, (jsonValue) =>
+            GroupedHistogramStatisticsModelFromJSON(jsonValue),
+        );
+    }
+
+    /**
+     * Get Histogram Stats Grouped
+     */
+    async getHistogramStatsGroupedV1FilesStatsHistogramStatGroupedGroupByGet(
+        requestParameters: GetHistogramStatsGroupedV1FilesStatsHistogramStatGroupedGroupByGetRequest,
+        initOverrides?: RequestInit | runtime.InitOverrideFunction,
+    ): Promise<GroupedHistogramStatisticsModel> {
+        const response =
+            await this.getHistogramStatsGroupedV1FilesStatsHistogramStatGroupedGroupByGetRaw(
+                requestParameters,
+                initOverrides,
+            );
+        return await response.value();
+    }
+
+    /**
+     * Get Histogram Stats
+     */
+    async getHistogramStatsV1FilesStatsHistogramStatGetRaw(
+        requestParameters: GetHistogramStatsV1FilesStatsHistogramStatGetRequest,
+        initOverrides?: RequestInit | runtime.InitOverrideFunction,
+    ): Promise<runtime.ApiResponse<TermsStatisticsModel>> {
+        if (requestParameters["stat"] == null) {
+            throw new runtime.RequiredError(
+                "stat",
+                'Required parameter "stat" was null or undefined when calling getHistogramStatsV1FilesStatsHistogramStatGet().',
+            );
+        }
+
+        if (requestParameters["queryId"] == null) {
+            throw new runtime.RequiredError(
+                "queryId",
+                'Required parameter "queryId" was null or undefined when calling getHistogramStatsV1FilesStatsHistogramStatGet().',
+            );
+        }
+
+        const queryParameters: any = {};
+
+        if (requestParameters["queryId"] != null) {
+            queryParameters["query_id"] = requestParameters["queryId"];
+        }
+
+        if (requestParameters["keepAlive"] != null) {
+            queryParameters["keep_alive"] = requestParameters["keepAlive"];
+        }
+
+        if (requestParameters["searchString"] != null) {
+            queryParameters["search_string"] =
+                requestParameters["searchString"];
+        }
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        const response = await this.request(
+            {
+                path: `/v1/files/stats/histogram/{stat}`.replace(
                     `{${"stat"}}`,
                     encodeURIComponent(String(requestParameters["stat"])),
                 ),
@@ -776,19 +930,19 @@ export class FilesApi extends runtime.BaseAPI {
         );
 
         return new runtime.JSONApiResponse(response, (jsonValue) =>
-            GenericStatisticsModelFromJSON(jsonValue),
+            TermsStatisticsModelFromJSON(jsonValue),
         );
     }
 
     /**
-     * Get Generic Stats
+     * Get Histogram Stats
      */
-    async getGenericStatsV1FilesStatsGenericStatGet(
-        requestParameters: GetGenericStatsV1FilesStatsGenericStatGetRequest,
+    async getHistogramStatsV1FilesStatsHistogramStatGet(
+        requestParameters: GetHistogramStatsV1FilesStatsHistogramStatGetRequest,
         initOverrides?: RequestInit | runtime.InitOverrideFunction,
-    ): Promise<GenericStatisticsModel> {
+    ): Promise<TermsStatisticsModel> {
         const response =
-            await this.getGenericStatsV1FilesStatsGenericStatGetRaw(
+            await this.getHistogramStatsV1FilesStatsHistogramStatGetRaw(
                 requestParameters,
                 initOverrides,
             );
@@ -909,17 +1063,23 @@ export class FilesApi extends runtime.BaseAPI {
     }
 
     /**
-     * Get statistics about the files found by the provided query.
-     * Get Summary Stats
+     * Get Terms Stats
      */
-    async getSummaryStatsV1FilesStatsSummaryGetRaw(
-        requestParameters: GetSummaryStatsV1FilesStatsSummaryGetRequest,
+    async getTermsStatsV1FilesStatsTermsStatGetRaw(
+        requestParameters: GetTermsStatsV1FilesStatsTermsStatGetRequest,
         initOverrides?: RequestInit | runtime.InitOverrideFunction,
-    ): Promise<runtime.ApiResponse<SummaryStatisticsModel>> {
+    ): Promise<runtime.ApiResponse<TermsStatisticsModel>> {
+        if (requestParameters["stat"] == null) {
+            throw new runtime.RequiredError(
+                "stat",
+                'Required parameter "stat" was null or undefined when calling getTermsStatsV1FilesStatsTermsStatGet().',
+            );
+        }
+
         if (requestParameters["queryId"] == null) {
             throw new runtime.RequiredError(
                 "queryId",
-                'Required parameter "queryId" was null or undefined when calling getSummaryStatsV1FilesStatsSummaryGet().',
+                'Required parameter "queryId" was null or undefined when calling getTermsStatsV1FilesStatsTermsStatGet().',
             );
         }
 
@@ -938,11 +1098,18 @@ export class FilesApi extends runtime.BaseAPI {
                 requestParameters["searchString"];
         }
 
+        if (requestParameters["size"] != null) {
+            queryParameters["size"] = requestParameters["size"];
+        }
+
         const headerParameters: runtime.HTTPHeaders = {};
 
         const response = await this.request(
             {
-                path: `/v1/files/stats/summary`,
+                path: `/v1/files/stats/terms/{stat}`.replace(
+                    `{${"stat"}}`,
+                    encodeURIComponent(String(requestParameters["stat"])),
+                ),
                 method: "GET",
                 headers: headerParameters,
                 query: queryParameters,
@@ -951,19 +1118,18 @@ export class FilesApi extends runtime.BaseAPI {
         );
 
         return new runtime.JSONApiResponse(response, (jsonValue) =>
-            SummaryStatisticsModelFromJSON(jsonValue),
+            TermsStatisticsModelFromJSON(jsonValue),
         );
     }
 
     /**
-     * Get statistics about the files found by the provided query.
-     * Get Summary Stats
+     * Get Terms Stats
      */
-    async getSummaryStatsV1FilesStatsSummaryGet(
-        requestParameters: GetSummaryStatsV1FilesStatsSummaryGetRequest,
+    async getTermsStatsV1FilesStatsTermsStatGet(
+        requestParameters: GetTermsStatsV1FilesStatsTermsStatGetRequest,
         initOverrides?: RequestInit | runtime.InitOverrideFunction,
-    ): Promise<SummaryStatisticsModel> {
-        const response = await this.getSummaryStatsV1FilesStatsSummaryGetRaw(
+    ): Promise<TermsStatisticsModel> {
+        const response = await this.getTermsStatsV1FilesStatsTermsStatGetRaw(
             requestParameters,
             initOverrides,
         );
@@ -1531,6 +1697,16 @@ export type DownloadFileV1FilesFileIdDownloadGetContentDispositionEnum =
 /**
  * @export
  */
+export const GetAvailableStatsByTypeV1FilesStatsRegistryTypeGetRegistryTypeEnum =
+    {
+        Terms: "terms",
+        Histogram: "histogram",
+    } as const;
+export type GetAvailableStatsByTypeV1FilesStatsRegistryTypeGetRegistryTypeEnum =
+    (typeof GetAvailableStatsByTypeV1FilesStatsRegistryTypeGetRegistryTypeEnum)[keyof typeof GetAvailableStatsByTypeV1FilesStatsRegistryTypeGetRegistryTypeEnum];
+/**
+ * @export
+ */
 export const GetFilePreviewV1FilesFileIdPreviewGetKeepAliveEnum = {
     _10s: "10s",
     _30m: "30m",
@@ -1585,12 +1761,22 @@ export type GetFilesV1FilesGetKeepAliveEnum =
 /**
  * @export
  */
-export const GetGenericStatsV1FilesStatsGenericStatGetKeepAliveEnum = {
+export const GetHistogramStatsGroupedV1FilesStatsHistogramStatGroupedGroupByGetKeepAliveEnum =
+    {
+        _10s: "10s",
+        _30m: "30m",
+    } as const;
+export type GetHistogramStatsGroupedV1FilesStatsHistogramStatGroupedGroupByGetKeepAliveEnum =
+    (typeof GetHistogramStatsGroupedV1FilesStatsHistogramStatGroupedGroupByGetKeepAliveEnum)[keyof typeof GetHistogramStatsGroupedV1FilesStatsHistogramStatGroupedGroupByGetKeepAliveEnum];
+/**
+ * @export
+ */
+export const GetHistogramStatsV1FilesStatsHistogramStatGetKeepAliveEnum = {
     _10s: "10s",
     _30m: "30m",
 } as const;
-export type GetGenericStatsV1FilesStatsGenericStatGetKeepAliveEnum =
-    (typeof GetGenericStatsV1FilesStatsGenericStatGetKeepAliveEnum)[keyof typeof GetGenericStatsV1FilesStatsGenericStatGetKeepAliveEnum];
+export type GetHistogramStatsV1FilesStatsHistogramStatGetKeepAliveEnum =
+    (typeof GetHistogramStatsV1FilesStatsHistogramStatGetKeepAliveEnum)[keyof typeof GetHistogramStatsV1FilesStatsHistogramStatGetKeepAliveEnum];
 /**
  * @export
  */
@@ -1603,9 +1789,9 @@ export type GetQueryV1FilesQueryPostKeepAliveEnum =
 /**
  * @export
  */
-export const GetSummaryStatsV1FilesStatsSummaryGetKeepAliveEnum = {
+export const GetTermsStatsV1FilesStatsTermsStatGetKeepAliveEnum = {
     _10s: "10s",
     _30m: "30m",
 } as const;
-export type GetSummaryStatsV1FilesStatsSummaryGetKeepAliveEnum =
-    (typeof GetSummaryStatsV1FilesStatsSummaryGetKeepAliveEnum)[keyof typeof GetSummaryStatsV1FilesStatsSummaryGetKeepAliveEnum];
+export type GetTermsStatsV1FilesStatsTermsStatGetKeepAliveEnum =
+    (typeof GetTermsStatsV1FilesStatsTermsStatGetKeepAliveEnum)[keyof typeof GetTermsStatsV1FilesStatsTermsStatGetKeepAliveEnum];

@@ -1,6 +1,6 @@
+# pylint: disable=too-many-lines
 from __future__ import annotations
 
-import enum
 import hashlib
 import logging
 import re
@@ -40,17 +40,29 @@ from pydantic import (
 from pydantic_core import core_schema
 
 from common.file.file_statistics import (
+    BooleanTermsStat,
+    DateHistogramStat,
+    GroupedHistogramStatistics,
+    GroupedStatisticsEntry,
+    HistogramStat,
+    NumberHistogramStat,
     StatisticsEntry,
-    StatisticsGeneric,
-    StatisticsSummary,
+    TermsStat,
+    TermsStatistics,
+    discover_stats,
 )
+from common.messages.pubsub_service import PubSubService
 from common.models.es_repository import (
     BaseEsRepository,
     PaginationParameters,
     SortingParameters,
 )
 from common.services.lazybytes_service import FileStorageLazyBytes
-from common.services.query_builder import DEFAULT_PIT_KEEPALIVE, QueryParameters
+from common.services.query_builder import (
+    DEFAULT_PIT_KEEPALIVE,
+    QueryBuilder,
+    QueryParameters,
+)
 from common.settings import settings
 from common.task_object.task_object import RepositoryTaskObject, _EsTaskDocument
 from common.utils.unique_list import unique_list
@@ -114,7 +126,7 @@ class _EsSecret(InnerDoc):
 
 class TranslatedLanguage(BaseModel):
     confidence: float
-    language: str
+    language: Annotated[str, TermsStat()]
     text: str
 
 
@@ -202,31 +214,37 @@ class TikaMeta(BaseModel):
 
     dc_title: str | list[str] | None = Field(default=None, alias="dc:title")
     dc_description: str | list[str] | None = Field(default=None, alias="dc:description")
-    dc_subject: str | list[str] | None = Field(default=None, alias="dc:subject")
-    dc_creator: str | list[str] | None = Field(default=None, alias="dc:creator")
-    dcterms_created: datetime | list[datetime] | None = Field(
-        default=None, alias="dcterms:created"
+    dc_subject: Annotated[str | list[str] | None, TermsStat(keyword=True)] = Field(
+        default=None, alias="dc:subject"
     )
-    dcterms_modified: datetime | list[datetime] | None = Field(
-        default=None, alias="dcterms:modified"
+    dc_creator: Annotated[str | list[str] | None, TermsStat(keyword=True)] = Field(
+        default=None, alias="dc:creator"
     )
+    dcterms_created: Annotated[
+        datetime | list[datetime] | None, DateHistogramStat()
+    ] = Field(default=None, alias="dcterms:created")
+    dcterms_modified: Annotated[
+        datetime | list[datetime] | None, DateHistogramStat()
+    ] = Field(default=None, alias="dcterms:modified")
 
-    pdf_producer: str | list[str] | None = Field(default=None, alias="pdf:producer")
+    pdf_producer: Annotated[str | list[str] | None, TermsStat(keyword=True)] = Field(
+        default=None, alias="pdf:producer"
+    )
     pdf_docinfo_producer: str | list[str] | None = Field(
         default=None, alias="pdf:docinfo:producer"
     )
     pdf_docinfo_creator: str | list[str] | None = Field(
         default=None, alias="pdf:docinfo:creator"
     )
-    pdf_docinfo_creator_tool: str | list[str] | None = Field(
-        default=None, alias="pdf:docinfo:creator_tool"
-    )
-    pdf_docinfo_created: datetime | list[datetime] | None = Field(
-        default=None, alias="pdf:docinfo:created"
-    )
-    pdf_docinfo_modified: datetime | list[datetime] | None = Field(
-        default=None, alias="pdf:docinfo:modified"
-    )
+    pdf_docinfo_creator_tool: Annotated[
+        str | list[str] | None, TermsStat(keyword=True)
+    ] = Field(default=None, alias="pdf:docinfo:creator_tool")
+    pdf_docinfo_created: Annotated[
+        datetime | list[datetime] | None, DateHistogramStat()
+    ] = Field(default=None, alias="pdf:docinfo:created")
+    pdf_docinfo_modified: Annotated[
+        datetime | list[datetime] | None, DateHistogramStat()
+    ] = Field(default=None, alias="pdf:docinfo:modified")
     pdf_docinfo_keywords: str | list[str] | None = Field(
         default=None, alias="pdf:docinfo:keywords"
     )
@@ -234,56 +252,66 @@ class TikaMeta(BaseModel):
         default=None, alias="pdf:docinfo:title"
     )
 
-    message_from: str | list[str] | None = Field(default=None, alias="Message-From")
-    message_from_name: str | list[str] | None = Field(
-        default=None, alias="Message:From-Name"
+    message_from: Annotated[str | list[str] | None, TermsStat(keyword=True)] = Field(
+        default=None, alias="Message-From"
     )
-    message_from_email: str | list[str] | None = Field(
-        default=None, alias="Message:From-Email"
+    message_from_name: Annotated[str | list[str] | None, TermsStat(keyword=True)] = (
+        Field(default=None, alias="Message:From-Name")
     )
-    message_to: str | list[str] | None = Field(default=None, alias="Message-To")
-    message_to_name: str | list[str] | None = Field(
+    message_from_email: Annotated[str | list[str] | None, TermsStat(keyword=True)] = (
+        Field(default=None, alias="Message:From-Email")
+    )
+    message_to: Annotated[str | list[str] | None, TermsStat(keyword=True)] = Field(
+        default=None, alias="Message-To"
+    )
+    message_to_name: Annotated[str | list[str] | None, TermsStat(keyword=True)] = Field(
         default=None, alias="Message:To-Name"
     )
-    message_to_email: str | list[str] | None = Field(
-        default=None, alias="Message:To-Email"
+    message_to_email: Annotated[str | list[str] | None, TermsStat(keyword=True)] = (
+        Field(default=None, alias="Message:To-Email")
     )
-    message_cc: str | list[str] | None = Field(default=None, alias="Message-Cc")
-    message_bcc: str | list[str] | None = Field(default=None, alias="Message-Bcc")
+    message_cc: Annotated[str | list[str] | None, TermsStat(keyword=True)] = Field(
+        default=None, alias="Message-Cc"
+    )
+    message_bcc: Annotated[str | list[str] | None, TermsStat(keyword=True)] = Field(
+        default=None, alias="Message-Bcc"
+    )
 
-    meta_last_author: str | list[str] | None = Field(
-        default=None, alias="meta:last-author"
+    meta_last_author: Annotated[str | list[str] | None, TermsStat(keyword=True)] = (
+        Field(default=None, alias="meta:last-author")
     )
-    content_type: str | list[str] | None = Field(default=None, alias="Content-Type")
+    content_type: Annotated[str | list[str] | None, TermsStat(keyword=True)] = Field(
+        default=None, alias="Content-Type"
+    )
 
 
 class _EsTikaMeta(InnerDoc):
-    dc_title = Text(multi=True)
-    dc_description = Text(multi=True)
-    dc_subject = Text(multi=True)
-    dc_creator = Text(multi=True)
+    dc_title = Text(multi=True, fields={"keyword": Keyword()})
+    dc_description = Text(multi=True, fields={"keyword": Keyword()})
+    dc_subject = Text(multi=True, fields={"keyword": Keyword()})
+    dc_creator = Text(multi=True, fields={"keyword": Keyword()})
     dcterms_created = Date(multi=True)
     dcterms_modified = Date(multi=True)
 
-    pdf_producer = Text(multi=True)
-    pdf_docinfo_producer = Text(multi=True)
-    pdf_docinfo_creator = Text(multi=True)
-    pdf_docinfo_creator_tool = Text(multi=True)
+    pdf_producer = Text(multi=True, fields={"keyword": Keyword()})
+    pdf_docinfo_producer = Text(multi=True, fields={"keyword": Keyword()})
+    pdf_docinfo_creator = Text(multi=True, fields={"keyword": Keyword()})
+    pdf_docinfo_creator_tool = Text(multi=True, fields={"keyword": Keyword()})
     pdf_docinfo_created = Date(multi=True)
     pdf_docinfo_modified = Date(multi=True)
-    pdf_docinfo_keywords = Text(multi=True)
+    pdf_docinfo_keywords = Text(multi=True, fields={"keyword": Keyword()})
 
-    message_from = Text(multi=True)
-    message_from_name = Text(multi=True)
-    message_from_email = Text(multi=True)
-    message_to = Text(multi=True)
-    message_to_name = Text(multi=True)
-    message_to_email = Text(multi=True)
-    message_cc = Text(multi=True)
-    message_bcc = Text(multi=True)
+    message_from = Text(multi=True, fields={"keyword": Keyword()})
+    message_from_name = Text(multi=True, fields={"keyword": Keyword()})
+    message_from_email = Text(multi=True, fields={"keyword": Keyword()})
+    message_to = Text(multi=True, fields={"keyword": Keyword()})
+    message_to_name = Text(multi=True, fields={"keyword": Keyword()})
+    message_to_email = Text(multi=True, fields={"keyword": Keyword()})
+    message_cc = Text(multi=True, fields={"keyword": Keyword()})
+    message_bcc = Text(multi=True, fields={"keyword": Keyword()})
 
-    meta_last_author = Text(multi=True)
-    content_type = Text(multi=True)
+    meta_last_author = Text(multi=True, fields={"keyword": Keyword()})
+    content_type = Text(multi=True, fields={"keyword": Keyword()})
 
 
 class Attachment(BaseModel):
@@ -320,11 +348,13 @@ class FilePurePath(PurePosixPath):
 
 
 class File(RepositoryTaskObject):
+    state: Annotated[str, TermsStat()] = "started"
+
     storage_data: FileStorageLazyBytes | None = None
 
     content: str | None = None
-    content_truncated: bool = False
-    attachments_skipped: bool = False
+    content_truncated: Annotated[bool, BooleanTermsStat()] = False
+    attachments_skipped: Annotated[bool, BooleanTermsStat()] = False
     full_name: FilePurePath
 
     @computed_field  # type: ignore[misc]
@@ -349,38 +379,42 @@ class File(RepositoryTaskObject):
 
     @computed_field  # type: ignore[misc]
     @property
-    def extension(self) -> str:
+    def extension(self) -> Annotated[str, TermsStat()]:
         return self.full_name.suffix
 
-    source: str
+    source: Annotated[str, TermsStat()]
     parent_id: UUID | None = None
     sha256: str
-    uploaded_datetime: datetime = Field(default_factory=datetime.now)
-    size: int
-    reindex_count: int = 0
+    uploaded_datetime: Annotated[datetime, DateHistogramStat()] = Field(
+        default_factory=datetime.now
+    )
+    size: Annotated[int, NumberHistogramStat(label="File Size (bytes)")]
+    reindex_count: Annotated[int, NumberHistogramStat(label="Reindex Count")] = 0
     thumbnail_data: FileStorageLazyBytes | None = None
-    thumbnail_total_frames: int | None = None
+    thumbnail_total_frames: Annotated[
+        int | None, NumberHistogramStat(label="Frame Count")
+    ] = None
     rendered_file: RenderedFile = RenderedFile()
-    tags: list[Tag] = []
-    magic_file_type: str | None = None
-    tika_language: str | None = None
-    detected_language: str | None = None
+    tags: Annotated[list[Tag], TermsStat()] = []
+    magic_file_type: Annotated[str | None, TermsStat()] = None
+    tika_language: Annotated[str | None, TermsStat()] = None
+    detected_language: Annotated[str | None, TermsStat()] = None
     translations: list[TranslatedLanguage] = Field(default_factory=list)
-    is_spam: bool | None = None
-    tika_file_type: str | None = None
-    archives: list[str] = []
+    is_spam: Annotated[bool | None, BooleanTermsStat()] = None
+    tika_file_type: Annotated[str | None, TermsStat()] = None
+    archives: Annotated[list[str], TermsStat()] = []
     tika_meta: TikaMeta = Field(default_factory=TikaMeta)
-    tika_handled_by: str | None = None
+    tika_handled_by: Annotated[str | None, TermsStat()] = None
     attachments: list[Attachment] = []
-    recursion_depth: int = 0
+    recursion_depth: Annotated[int, NumberHistogramStat(label="Archive Depth")] = 0
     summary: str | None = None
     image_description: str | None = None
     embeddings: list[Embedding] = []
     trufflehog_secrets: list[Secret] | None = None
     ripsecrets_secrets: list[Secret] | None = None
     imap: ImapInfo | None = None
-    flagged: bool = False
-    seen: bool = False
+    flagged: Annotated[bool, BooleanTermsStat()] = False
+    seen: Annotated[bool, BooleanTermsStat()] = False
 
     @field_validator("tags")
     @classmethod
@@ -533,18 +567,13 @@ class TreePathsNode(BaseModel):
     is_flagged: bool = False
 
 
-class Stat(enum.Enum):
-    # SUMMARY = "summary"  # this is separate of the Stat enum -> too unconventional
-    TAGS = "tags"  # though not entirely generic, it's partially so.
-    SOURCES = "sources"
-    STATES = "states"
-    EXTENSIONS = "extensions"
-    FILE_TYPE_TIKA = "file_type_tika"
-    FILE_TYPE_MAGIC = "file_type_magic"
-    LANGUAGE_TIKA = "language_tika"
-    LANGUAGE_DETECTED = "language_detected"
-    IS_SPAM = "is_spam"
+TERMS_STAT_REGISTRY = discover_stats(File, TermsStat)
+HISTOGRAM_STAT_REGISTRY = discover_stats(File, HistogramStat)
 
+# Maximum number of distinct group values returned by the terms sub-aggregation
+# inside grouped histogram queries (date and number variants).  Capped here so
+# the three call sites stay in sync; raise this value to expose more groups.
+GROUP_SUB_AGG_SIZE = 100
 
 EMAIL_EXTENSIONS = [
     ".eml",
@@ -554,6 +583,26 @@ EMAIL_MIMETYPES = ["message/rfc822"]
 
 
 class FileRepository(BaseEsRepository[_EsFile, File]):
+    def __init__(
+        self,
+        query_builder: QueryBuilder,
+        pubsub_service: PubSubService,
+        search_factory: (
+            Callable[[QueryParameters, bool], Search[_EsFile]] | None
+        ) = None,
+    ):
+        super().__init__(query_builder, pubsub_service)
+        self._search_factory = search_factory
+
+    def _get_search_by_query(
+        self,
+        query: QueryParameters,
+        full_highlight_context: bool = False,
+    ) -> Search[_EsFile]:
+        if self._search_factory is not None:
+            return self._search_factory(query, full_highlight_context)
+        return super()._get_search_by_query(query, full_highlight_context)
+
     @property
     def _object_type(self) -> type[File]:
         return File
@@ -561,6 +610,15 @@ class FileRepository(BaseEsRepository[_EsFile, File]):
     @property
     def _document_type(self) -> type[_EsFile]:
         return _EsFile
+
+    @staticmethod
+    def _bucket_key(bucket: Any) -> str:
+        """Return the display key for a date-histogram bucket."""
+        return str(
+            bucket["key_as_string"]
+            if hasattr(bucket, "key_as_string")
+            else bucket["key"]
+        )
 
     @staticmethod
     def get_aggr(
@@ -576,111 +634,341 @@ class FileRepository(BaseEsRepository[_EsFile, File]):
         # this also prevents dataclass validation errors for int since None != 0
         return res if res is not None else default
 
-    def get_stat_generic(self, query: QueryParameters, stat: Stat) -> StatisticsGeneric:
-        class StatItem(BaseModel):
-            args: list[str]
-            kwargs: dict[str, Any]
-            transforms: dict[str, Callable[[str], str]]
+    def get_stat_terms(
+        self, query: QueryParameters, stat: str, size: int = 5
+    ) -> TermsStatistics:
+        if stat not in TERMS_STAT_REGISTRY:
+            raise FileRepositoryException(f"Unknown terms stat: {stat!r}")
 
-        search_dict = {
-            Stat.TAGS: StatItem(
-                args=["all_tags", "terms"],
-                kwargs={"field": "tags", "size": 100},
-                transforms={},
-            ),
-            Stat.SOURCES: StatItem(
-                args=["all_sources", "terms"],
-                kwargs={"field": "source", "size": 100},
-                transforms={},
-            ),
-            Stat.STATES: StatItem(
-                args=["all_states", "terms"],
-                kwargs={"field": "state", "size": 100},
-                transforms={},
-            ),
-            Stat.EXTENSIONS: StatItem(
-                args=["all_extensions", "terms"],
-                kwargs={"field": "extension", "size": 100},
-                transforms={},
-            ),
-            Stat.FILE_TYPE_TIKA: StatItem(
-                args=["all_file_type_tika", "terms"],
-                kwargs={"field": "tika_file_type", "size": 100},
-                transforms={},
-            ),
-            Stat.FILE_TYPE_MAGIC: StatItem(
-                args=["all_file_type_magic", "terms"],
-                kwargs={"field": "magic_file_type", "size": 100},
-                transforms={},
-            ),
-            Stat.LANGUAGE_TIKA: StatItem(
-                args=["all_language_tika", "terms"],
-                kwargs={"field": "tika_language", "size": 100},
-                transforms={},
-            ),
-            Stat.LANGUAGE_DETECTED: StatItem(
-                args=["all_language_detected", "terms"],
-                kwargs={"field": "detected_language", "size": 100},
-                transforms={},
-            ),
-            Stat.IS_SPAM: StatItem(
-                args=["all_is_spam", "terms"],
-                kwargs={"field": "is_spam", "size": 100},
-                transforms={"name": lambda s: str(bool(int(s))).lower()},
-            ),
-        }
+        defn = TERMS_STAT_REGISTRY[stat]
+        agg_name = f"all_{stat.replace('.', '_')}"
 
         search = self._get_search_by_query(query=query)
         search = search[0:0]  # do not fetch hits
-        search.aggs.metric(
-            "total_no_of_files", "value_count", field="size"
-        )  # required for % calculations
-        search.aggs.metric(*search_dict[stat].args, **search_dict[stat].kwargs)
+        search = search.extra(track_total_hits=True)
+        missing = {} if isinstance(defn, BooleanTermsStat) else {"missing": "(none)"}
+        search.aggs.metric(agg_name, "terms", field=stat, size=size, **missing)
+
         result = self._execute_search_with_query(search=search, query=query)
 
-        total_no_of_files = self.get_aggr(
-            result, ["total_no_of_files", "value"], default=0
-        )
-        stats = StatisticsGeneric(
-            stat=stat.value,
+        stats = TermsStatistics(
+            stat=stat,
             data=[],
-            total_no_of_files=total_no_of_files,
-            key=search_dict[stat].kwargs["field"],
+            total_no_of_files=result.hits.total.value,  # type: ignore[attr-defined]
+            key=stat,
         )
-        nest_key = search_dict[stat].args[0]
-        for bucket in self.get_aggr(result, [nest_key, "buckets"], []):
-            stat_entry = StatisticsEntry(
-                name=str(bucket["key"]), hits_count=int(bucket["doc_count"])
+        for bucket in self.get_aggr(result, [agg_name, "buckets"], []):
+            name = str(bucket["key"])
+            if defn.transform is not None:
+                name = defn.transform(name)
+            stats.data.append(
+                StatisticsEntry(name=name, hits_count=int(bucket["doc_count"]))
             )
-
-            # apply special transforms like the name adjustment for IS_SPAM
-            for stat_key, transformer in search_dict[stat].transforms.items():
-                setattr(
-                    stat_entry, stat_key, transformer(getattr(stat_entry, stat_key))
-                )
-
-            stats.data.append(stat_entry)
         return stats
 
-    def get_stat_summary(self, query: QueryParameters) -> StatisticsSummary:
+    def get_stat_histogram(self, query: QueryParameters, stat: str) -> TermsStatistics:
+        stat_defn = HISTOGRAM_STAT_REGISTRY.get(stat)
+        if stat_defn is None:
+            raise FileRepositoryException(f"Unknown histogram stat: {stat!r}")
+        if isinstance(stat_defn, DateHistogramStat):
+            return self._get_stat_date_histogram(query, stat)
+        return self._get_stat_number_histogram(query, stat)
+
+    def _get_stat_date_histogram(
+        self, query: QueryParameters, stat: str
+    ) -> TermsStatistics:
+        agg_name = f"all_{stat.replace('.', '_')}"
+
         search = self._get_search_by_query(query=query)
         search = search[0:0]  # do not fetch hits
-        search.aggs.metric("avg_file_size", "avg", field="size")
-        search.aggs.metric("max_file_size", "max", field="size")
-        search.aggs.metric("min_file_size", "min", field="size")
-        search.aggs.metric("total_no_of_files", "value_count", field="size")
+        search.aggs.metric("total_no_of_files", "value_count", field=stat)
+        search.aggs.metric(agg_name, "auto_date_histogram", field=stat, buckets=24)
+        search.aggs.metric("min_val", "min", field=stat)
+        search.aggs.metric("max_val", "max", field=stat)
+
         result = self._execute_search_with_query(search=search, query=query)
 
-        return StatisticsSummary(
-            avg_file_size=int(
-                round(self.get_aggr(result, ["avg_file_size", "value"], default=0))
-            ),
-            max_file_size=self.get_aggr(result, ["max_file_size", "value"], default=0),
-            min_file_size=self.get_aggr(result, ["min_file_size", "value"], default=0),
+        min_val = self.get_aggr(result, ["min_val", "value"], default=None)
+        max_val = self.get_aggr(result, ["max_val", "value"], default=None)
+
+        stats = TermsStatistics(
+            stat=stat,
+            data=[],
             total_no_of_files=self.get_aggr(
                 result, ["total_no_of_files", "value"], default=0
             ),
+            key=stat,
+            min_value=float(min_val) if min_val is not None else None,
+            max_value=float(max_val) if max_val is not None else None,
         )
+        for bucket in self.get_aggr(result, [agg_name, "buckets"], []):
+            stats.data.append(
+                StatisticsEntry(
+                    name=self._bucket_key(bucket), hits_count=int(bucket["doc_count"])
+                )
+            )
+        return stats
+
+    def _extract_sub_groups(
+        self, bucket: Any, sub_agg_name: str, terms_defn: TermsStat
+    ) -> dict[str, int]:
+        """Parse a histogram bucket's terms sub-aggregation into a group→count map."""
+        groups: dict[str, int] = {}
+        for sub_bucket in (
+            bucket[sub_agg_name]["buckets"] if sub_agg_name in bucket else []
+        ):
+            group_name = str(sub_bucket["key"])
+            if terms_defn.transform is not None:
+                group_name = terms_defn.transform(group_name)
+            groups[group_name] = int(sub_bucket["doc_count"])
+        return groups
+
+    def get_stat_histogram_grouped(
+        self, query: QueryParameters, stat: str, group_by: str
+    ) -> GroupedHistogramStatistics:
+        stat_defn = HISTOGRAM_STAT_REGISTRY.get(stat)
+        if stat_defn is None:
+            raise FileRepositoryException(f"Unknown histogram stat: {stat!r}")
+        if group_by not in TERMS_STAT_REGISTRY:
+            raise FileRepositoryException(f"Unknown terms stat: {group_by!r}")
+        if isinstance(stat_defn, DateHistogramStat):
+            return self._get_stat_date_histogram_grouped(query, stat, group_by)
+        return self._get_stat_number_histogram_grouped(query, stat, group_by)
+
+    def _get_stat_date_histogram_grouped(
+        self, query: QueryParameters, stat: str, group_by: str
+    ) -> GroupedHistogramStatistics:
+        terms_defn = TERMS_STAT_REGISTRY[group_by]
+
+        agg_name = f"grouped_{stat.replace('.', '_')}"
+        sub_agg_name = f"by_{group_by.replace('.', '_')}"
+
+        search = self._get_search_by_query(query=query)
+        search = search[0:0]
+        search.aggs.metric("total_no_of_files", "value_count", field=stat)
+        search.aggs.metric(agg_name, "auto_date_histogram", field=stat, buckets=24)
+        missing = (
+            {} if isinstance(terms_defn, BooleanTermsStat) else {"missing": "(none)"}
+        )
+        search.aggs[agg_name].metric(
+            sub_agg_name,
+            "terms",
+            field=group_by,
+            size=GROUP_SUB_AGG_SIZE,
+            **missing,
+        )
+        search.aggs.metric("min_val", "min", field=stat)
+        search.aggs.metric("max_val", "max", field=stat)
+
+        result = self._execute_search_with_query(search=search, query=query)
+
+        min_val = self.get_aggr(result, ["min_val", "value"], default=None)
+        max_val = self.get_aggr(result, ["max_val", "value"], default=None)
+
+        grouped = GroupedHistogramStatistics(
+            stat=stat,
+            group_by=group_by,
+            key=stat,
+            histogram_type="date",
+            data=[],
+            total_no_of_files=self.get_aggr(result, ["total_no_of_files", "value"], 0),
+            min_value=float(min_val) if min_val is not None else None,
+            max_value=float(max_val) if max_val is not None else None,
+        )
+        for bucket in self.get_aggr(result, [agg_name, "buckets"], []):
+            grouped.data.append(
+                GroupedStatisticsEntry(
+                    name=self._bucket_key(bucket),
+                    groups=self._extract_sub_groups(bucket, sub_agg_name, terms_defn),
+                    hits_count=int(bucket["doc_count"]),
+                )
+            )
+        return grouped
+
+    def _get_stat_number_histogram(
+        self, query: QueryParameters, stat: str
+    ) -> TermsStatistics:
+        agg_name = f"all_{stat.replace('.', '_')}"
+
+        # First query: get min + max + count to compute interval
+        search = self._get_search_by_query(query=query)
+        search = search[0:0]
+        search.aggs.metric("min_val", "min", field=stat)
+        search.aggs.metric("max_val", "max", field=stat)
+        search.aggs.metric("total_no_of_files", "value_count", field=stat)
+
+        result = self._execute_search_with_query(search=search, query=query)
+        min_val = self.get_aggr(result, ["min_val", "value"], default=None)
+        max_val = self.get_aggr(result, ["max_val", "value"], default=None)
+        total = int(self.get_aggr(result, ["total_no_of_files", "value"], default=0))
+
+        if min_val is None or max_val is None:
+            return TermsStatistics(
+                stat=stat,
+                data=[],
+                total_no_of_files=total,
+                key=stat,
+                min_value=None,
+                max_value=None,
+            )
+
+        if min_val == max_val:
+            return TermsStatistics(
+                stat=stat,
+                data=[StatisticsEntry(name=str(min_val), hits_count=total)],
+                total_no_of_files=total,
+                key=stat,
+                min_value=float(min_val),
+                max_value=float(max_val),
+            )
+
+        interval = max(1, round((max_val - min_val) / 24))
+
+        # Second query: histogram aggregation with computed interval
+        search2 = self._get_search_by_query(query=query)
+        search2 = search2[0:0]
+        search2.aggs.metric(agg_name, "histogram", field=stat, interval=interval)
+
+        result2 = self._execute_search_with_query(search=search2, query=query)
+
+        stats = TermsStatistics(
+            stat=stat,
+            data=[],
+            total_no_of_files=total,
+            key=stat,
+            min_value=float(min_val),
+            max_value=float(max_val),
+        )
+        for bucket in self.get_aggr(result2, [agg_name, "buckets"], []):
+            stats.data.append(
+                StatisticsEntry(
+                    name=str(bucket["key"]), hits_count=int(bucket["doc_count"])
+                )
+            )
+        return stats
+
+    def _get_stat_number_histogram_grouped(
+        self, query: QueryParameters, stat: str, group_by: str
+    ) -> GroupedHistogramStatistics:
+        terms_defn = TERMS_STAT_REGISTRY[group_by]
+
+        agg_name = f"grouped_{stat.replace('.', '_')}"
+
+        # First query: get min + max + count to compute interval
+        search = self._get_search_by_query(query=query)
+        search = search[0:0]
+        search.aggs.metric("min_val", "min", field=stat)
+        search.aggs.metric("max_val", "max", field=stat)
+        search.aggs.metric("total_no_of_files", "value_count", field=stat)
+
+        result = self._execute_search_with_query(search=search, query=query)
+        min_val = self.get_aggr(result, ["min_val", "value"], default=None)
+        max_val = self.get_aggr(result, ["max_val", "value"], default=None)
+        total = int(self.get_aggr(result, ["total_no_of_files", "value"], default=0))
+
+        if min_val is None or max_val is None:
+            return GroupedHistogramStatistics(
+                stat=stat,
+                group_by=group_by,
+                key=stat,
+                histogram_type="number",
+                data=[],
+                total_no_of_files=total,
+                min_value=None,
+                max_value=None,
+            )
+
+        if min_val == max_val:
+            # All documents share the same value — single bucket.
+            # Run a flat terms aggregation to get the group breakdown.
+            search = self._get_search_by_query(query=query)
+            search = search[0:0]
+            missing = (
+                {}
+                if isinstance(terms_defn, BooleanTermsStat)
+                else {"missing": "(none)"}
+            )
+            search.aggs.metric(
+                "groups",
+                "terms",
+                field=group_by,
+                size=GROUP_SUB_AGG_SIZE,
+                **missing,
+            )
+            return GroupedHistogramStatistics(
+                stat=stat,
+                group_by=group_by,
+                key=stat,
+                histogram_type="number",
+                data=[
+                    GroupedStatisticsEntry(
+                        name=str(min_val),
+                        groups=self._extract_sub_groups(
+                            {
+                                "groups": {
+                                    "buckets": self.get_aggr(
+                                        self._execute_search_with_query(
+                                            search=search, query=query
+                                        ),
+                                        ["groups", "buckets"],
+                                        [],
+                                    )
+                                }
+                            },
+                            "groups",
+                            terms_defn,
+                        ),
+                        hits_count=total,
+                    )
+                ],
+                total_no_of_files=total,
+                min_value=float(min_val),
+                max_value=float(max_val),
+            )
+
+        # Second query: histogram + terms sub-aggregation
+        search = self._get_search_by_query(query=query)
+        search = search[0:0]
+        search.aggs.metric(
+            agg_name,
+            "histogram",
+            field=stat,
+            interval=max(1, round((max_val - min_val) / 24)),
+        )
+        missing = (
+            {} if isinstance(terms_defn, BooleanTermsStat) else {"missing": "(none)"}
+        )
+        search.aggs[agg_name].metric(
+            f"by_{group_by.replace('.', '_')}",
+            "terms",
+            field=group_by,
+            size=GROUP_SUB_AGG_SIZE,
+            **missing,
+        )
+
+        result2 = self._execute_search_with_query(search=search, query=query)
+
+        grouped = GroupedHistogramStatistics(
+            stat=stat,
+            group_by=group_by,
+            key=stat,
+            histogram_type="number",
+            data=[],
+            total_no_of_files=total,
+            min_value=float(min_val),
+            max_value=float(max_val),
+        )
+        for bucket in self.get_aggr(result2, [agg_name, "buckets"], []):
+            grouped.data.append(
+                GroupedStatisticsEntry(
+                    name=str(bucket["key"]),
+                    groups=self._extract_sub_groups(
+                        bucket, f"by_{group_by.replace('.', '_')}", terms_defn
+                    ),
+                    hits_count=int(bucket["doc_count"]),
+                )
+            )
+        return grouped
 
     def get_all_tags(self) -> list[str]:
         """Get all tags in the database."""

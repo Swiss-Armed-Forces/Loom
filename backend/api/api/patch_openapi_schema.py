@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from fastapi.openapi.utils import get_openapi
 
 
-def remove_null_from_any_of(schema: Dict[str, Any]) -> Dict[str, Any]:
+def _remove_null_from_any_of(schema: Dict[str, Any]) -> Dict[str, Any]:
     if "properties" in schema:
         for prop, prop_schema in schema["properties"].items():
             if "anyOf" in prop_schema:
@@ -25,18 +25,19 @@ def remove_null_from_any_of(schema: Dict[str, Any]) -> Dict[str, Any]:
     return schema
 
 
-def patch_openapi_schema(schema: Dict[str, Any]) -> Dict[str, Any]:
-    """Patching the openapi schema so the frontend code generator can handle it.
+def _flatten_nullable_anyof(schema: Dict[str, Any]) -> Dict[str, Any]:
+    """Rewrite nullable ``anyOf`` properties across all component schemas.
 
-    If a model has a property that is optional (e.g.`sha256: str | None`) this will be
-    represented as `anyOf` in the openapi schema. The frontend code generator does not
-    handle this correctly, so we remove the `null` type from the `anyOf` and remove the
-    property from the `required` list.
+    OpenAPI represents ``str | None`` (and similar optional types) as ``anyOf: [{...},
+    {"type": "null"}]``. The frontend code generator does not handle this representation
+    correctly, so this transformation removes the ``null`` branch from the ``anyOf`` and
+    marks the property as optional by removing it from the schema's ``required`` list.
     """
     for component_name, component_schema in schema["components"]["schemas"].items():
-        schema["components"]["schemas"][component_name] = remove_null_from_any_of(
+        schema["components"]["schemas"][component_name] = _remove_null_from_any_of(
             component_schema
         )
+
     return schema
 
 
@@ -57,4 +58,5 @@ def patch_openapi_schema_for_app(app: FastAPI):
         servers=app.servers,
         separate_input_output_schemas=app.separate_input_output_schemas,
     )
-    app.openapi_schema = patch_openapi_schema(openapi_schema)
+    openapi_schema = _flatten_nullable_anyof(openapi_schema)
+    app.openapi_schema = openapi_schema

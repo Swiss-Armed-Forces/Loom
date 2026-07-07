@@ -1,137 +1,253 @@
-import { Equalizer, Numbers, StackedLineChart } from "@mui/icons-material";
+import {
+    BarChart,
+    Description,
+    VerticalAlignBottom,
+    VerticalAlignTop,
+} from "@mui/icons-material";
 import {
     Divider,
     FormControl,
     InputLabel,
     MenuItem,
     Select,
-    Skeleton,
     Typography,
 } from "@mui/material";
 import { SelectChangeEvent } from "@mui/material/Select";
-import { useEffect } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useDispatch } from "react-redux";
 import { toast } from "react-toastify";
 
-import { getStatSummary, getStatGeneric, Stat } from "@app/api";
-import { useAppSelector } from "@app/hooks";
 import {
-    selectIsLoading,
-    startLoadingIndicator,
-    stopLoadingIndicator,
-} from "@app/slices/commonSlice";
+    getTermsStat,
+    getHistogramStat,
+    getTermsStats,
+    getHistogramStats,
+    getShortRunningQuery,
+} from "@app/api";
+import { useAppSelector } from "@app/hooks";
 import {
     selectQuery,
     selectStatsData,
     selectDisplayStat,
+    selectDisplayHistogramStat,
+    selectTermsStats,
+    selectHistogramStats,
+    selectHistogramData,
     updateQuery,
-    fillStatsSummary,
-    fillStatsGeneric,
-    fillStatsTags,
+    clearStats,
+    fillTermsData,
+    fillHistogramData,
+    fillTermsStats,
+    fillHistogramStats,
     setDisplayStat,
+    setDisplayHistogramStat,
 } from "@app/slices/searchSlice";
 import { AppDispatch } from "@app/store";
 import {
     formatFileSize,
     updateFieldOfQuery,
 } from "@features/common/utils/helpers";
-import { TagsList } from "@features/search/components";
-import { Chart } from "@features/search/components";
+import {
+    Chart,
+    HistogramChart,
+    computeOthersCount,
+} from "@features/search/components";
 
 import styles from "./StatisticsView.module.css";
+import {
+    DATE_STAT_ORDER,
+    NUMBER_STAT_ORDER,
+    TERMS_STAT_ORDER,
+} from "./statOrder";
 
+const CHART_HEIGHT = 230;
+const AUTO_REFRESH_MS = 60_000;
 const PIE_AMOUNT = 5;
-const CHART_HEIGHT = 280;
-const STAT_VALUES = Object.values(Stat);
+
+/** Strip Dublin Core / Tika namespace prefixes that add noise for end users. */
+const cleanStatLabel = (label: string): string =>
+    label.replace(/^(Dcterms|Dc|Tika)\s+/i, "");
+
+const sortStats = <T extends { id: string; label: string }>(
+    stats: T[],
+    order: string[],
+): T[] =>
+    [...stats].sort((a, b) => {
+        const ai = order.indexOf(a.id);
+        const bi = order.indexOf(b.id);
+        if (ai === -1 && bi === -1) return a.label.localeCompare(b.label);
+        if (ai === -1) return 1;
+        if (bi === -1) return -1;
+        return ai - bi;
+    });
+
+const HISTOGRAM_STAT_ORDER = [...DATE_STAT_ORDER, ...NUMBER_STAT_ORDER];
+
+const translationKey = (id: string) =>
+    id.replace(/\.keyword$/, "").replace(/\./g, "_");
 
 export const StatisticsView = () => {
     const searchQuery = useAppSelector(selectQuery);
     const stats = useAppSelector(selectStatsData);
-    const isLoading = useAppSelector(selectIsLoading);
+    const histogramData = useAppSelector(selectHistogramData);
     const displayStat = useAppSelector(selectDisplayStat);
+    const displayHistogramStat = useAppSelector(selectDisplayHistogramStat);
+    const termsStats = useAppSelector(selectTermsStats);
+    const histogramStats = useAppSelector(selectHistogramStats);
     const dispatch = useDispatch<AppDispatch>();
     const { t } = useTranslation();
+    const [highlightedGroup, setHighlightedGroup] = useState<string | null>(
+        null,
+    );
+    const abortControllerRef = useRef<AbortController | null>(null);
+
+    // Group names in pie-chart color-index order (ascending by count), used to
+    // colour the bar chart consistently with the pie chart.
+    const groupColorOrder = useMemo((): string[] => {
+        if (!stats?.termsData?.data) return [];
+        return [...stats.termsData.data]
+            .sort((a, b) => a.hitsCount - b.hitsCount)
+            .map((e) => e.name);
+    }, [stats?.termsData?.data]);
+
+    // When the pie has an "others" slice at index 0, named slices start at
+    // CHART_COLORS[1]. The histogram must apply the same offset.
+    const groupColorOffset = useMemo((): number => {
+        if (!stats?.termsData?.data) return 0;
+        return computeOthersCount(
+            stats.termsData.data,
+            stats.termsData.fileCount,
+        ) > 0
+            ? 1
+            : 0;
+    }, [stats?.termsData?.data, stats?.termsData?.fileCount]);
+
+    const sortedTermsStats = sortStats(termsStats, TERMS_STAT_ORDER);
+    const sortedHistogramStats = sortStats(
+        histogramStats,
+        HISTOGRAM_STAT_ORDER,
+    );
+
+    const isNumberHistogram = histogramData?.histogramType === "number";
+
+    // Fetch available stats once on mount — they don't change with the query.
+    useEffect(() => {
+        Promise.all([getTermsStats(), getHistogramStats()])
+            .then(([terms, histograms]) => {
+                dispatch(fillTermsStats(terms));
+                dispatch(fillHistogramStats(histograms));
+            })
+            .catch((err) => {
+                toast.error(
+                    "Cannot load available stats. Error: " +
+                        (err["detail"] ? err["detail"] : err),
+                );
+            });
+    }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+    const fetchStats = useCallback(() => {
+        if (!searchQuery?.query?.trim()) {
+            dispatch(clearStats());
+            return;
+        }
+        // Abort any previous in-flight fetch so stale responses don't overwrite
+        // results from a newer fetch that completes first.
+        abortControllerRef.current?.abort();
+        const controller = new AbortController();
+        abortControllerRef.current = controller;
+
+        getShortRunningQuery().then(({ queryId }) => {
+            if (controller.signal.aborted) return;
+            const statsQuery = { ...searchQuery, id: queryId };
+            getTermsStat(statsQuery, displayStat, PIE_AMOUNT)
+                .then((result) => {
+                    if (!controller.signal.aborted)
+                        dispatch(fillTermsData(result));
+                })
+                .catch((err) => {
+                    if (!controller.signal.aborted)
+                        toast.error(
+                            "Cannot load statistic results. Error: " +
+                                (err["detail"] ? err["detail"] : err),
+                        );
+                });
+            getHistogramStat(statsQuery, displayHistogramStat, displayStat)
+                .then((result) => {
+                    if (!controller.signal.aborted)
+                        dispatch(fillHistogramData(result));
+                })
+                .catch((err) => {
+                    if (!controller.signal.aborted)
+                        toast.error(
+                            "Cannot load grouped statistic results. Error: " +
+                                (err["detail"] ? err["detail"] : err),
+                        );
+                });
+        });
+    }, [searchQuery, displayStat, displayHistogramStat, dispatch]);
 
     useEffect(() => {
-        if (!searchQuery) return;
-        dispatch(startLoadingIndicator());
-        getStatGeneric(searchQuery, Stat.Tags)
-            .then((result) => {
-                dispatch(fillStatsTags(result));
-            })
-            .catch((err) => {
-                toast.error(
-                    "Cannot load GENERIC statistic results. Error: " +
-                        (err["detail"] ? err["detail"] : err),
-                );
-                dispatch(fillStatsGeneric(null));
-            });
-        getStatSummary(searchQuery)
-            .then((result) => {
-                dispatch(fillStatsSummary(result));
-            })
-            .catch((err) => {
-                toast.error(
-                    "Cannot load statistic results. Error: " +
-                        (err["detail"] ? err["detail"] : err),
-                );
-                dispatch(fillStatsSummary(null));
-            })
-            .finally(() => {
-                dispatch(stopLoadingIndicator());
-            });
-    }, [searchQuery]); // eslint-disable-line react-hooks/exhaustive-deps
+        fetchStats();
+    }, [fetchStats]);
 
     useEffect(() => {
-        if (!searchQuery) return;
-        getStatGeneric(searchQuery, displayStat)
-            .then((result) => {
-                dispatch(fillStatsGeneric(result));
-            })
-            .catch((err) => {
-                toast.error(
-                    "Cannot load GENERIC statistic results. Error: " +
-                        (err["detail"] ? err["detail"] : err),
-                );
-                dispatch(fillStatsGeneric(null));
-            });
-    }, [searchQuery, displayStat]); // eslint-disable-line react-hooks/exhaustive-deps
+        const interval = setInterval(fetchStats, AUTO_REFRESH_MS);
+        return () => clearInterval(interval);
+    }, [fetchStats]);
+
+    const handleStatChange = (event: SelectChangeEvent) => {
+        dispatch(setDisplayStat(event.target.value));
+    };
+
+    const handleHistogramStatChange = (event: SelectChangeEvent) => {
+        dispatch(setDisplayHistogramStat(event.target.value));
+    };
 
     const handleUpdateQuery = (
         queryKeyword: string,
         searchTerm: string | string[],
+        negate?: boolean,
+        noQuote?: boolean,
     ) => {
         const newQuery = updateFieldOfQuery(
             searchQuery?.query ?? "",
             queryKeyword,
             searchTerm,
+            noQuote ?? false,
+            negate,
         );
-        dispatch(
-            updateQuery({
-                query: newQuery,
-            }),
-        );
+        dispatch(updateQuery({ query: newQuery }));
     };
 
-    const handleStatChange = (event: SelectChangeEvent) => {
-        dispatch(setDisplayStat(event.target.value as Stat));
+    const handleUpdateRangeQuery = (
+        fieldName: string,
+        startVal: string,
+        endVal: string,
+    ) => {
+        const range =
+            endVal === "*"
+                ? `[${startVal} TO *]`
+                : `[${startVal} TO ${endVal}]`;
+        const newQuery = updateFieldOfQuery(
+            searchQuery?.query ?? "",
+            fieldName,
+            range,
+            true,
+        );
+        dispatch(updateQuery({ query: newQuery }));
     };
 
-    if (isLoading) {
-        return (
-            <div className={styles.skeletonLoadingContainer}>
-                <Skeleton variant="text" />
-                <Skeleton variant="text" />
-                <Skeleton variant="text" />
-                <Skeleton variant="text" />
-            </div>
-        );
-    }
-
-    if (!isLoading && (!stats?.summary?.count || stats?.summary?.count === 0)) {
-        return null;
-    }
+    const formatHistogramValue = (val: number | undefined): string => {
+        if (val === undefined) return "—";
+        if (displayHistogramStat === "size") return formatFileSize(val);
+        if (isNumberHistogram) return val.toLocaleString();
+        return new Date(val).toLocaleDateString(undefined, {
+            day: "numeric",
+            month: "short",
+            year: "numeric",
+        });
+    };
 
     return (
         <div className={styles.statisticsContainer}>
@@ -149,27 +265,95 @@ export const StatisticsView = () => {
                         label="Stat"
                         onChange={handleStatChange}
                     >
-                        {STAT_VALUES.map((value) => (
+                        {sortedTermsStats.map((stat) => (
                             <MenuItem
-                                key={`key-${value}`}
-                                value={value}
-                                disabled={value === "tags"}
-                                selected={value === displayStat}
+                                key={`key-${stat.id}`}
+                                value={stat.id}
+                                selected={stat.id === displayStat}
                             >
-                                {t(`statisticsView.${value}Title`)}
+                                {cleanStatLabel(
+                                    t(
+                                        `statisticsView.${translationKey(stat.id)}Title`,
+                                        {
+                                            defaultValue: stat.label,
+                                        },
+                                    ),
+                                )}
                             </MenuItem>
                         ))}
                     </Select>
                 </FormControl>
-                {!!stats?.generic && (
-                    <Chart
-                        entries={stats?.generic?.data}
-                        handleUpdateQuery={handleUpdateQuery}
-                        queryKeyword={stats.generic?.key}
-                        compact={PIE_AMOUNT}
-                        height={CHART_HEIGHT}
-                    />
-                )}
+                <Chart
+                    entries={stats.termsData?.data ?? []}
+                    fileCount={stats.termsData?.fileCount ?? 0}
+                    handleUpdateQuery={handleUpdateQuery}
+                    queryKeyword={stats.termsData?.key ?? ""}
+                    height={CHART_HEIGHT}
+                    onGroupHighlight={setHighlightedGroup}
+                    highlightedGroup={highlightedGroup}
+                />
+            </section>
+
+            <Divider />
+
+            <section className={styles.chartSection}>
+                <FormControl
+                    size="small"
+                    fullWidth
+                    className={styles.statSelector}
+                >
+                    <InputLabel id="histogram-stat-select-label">
+                        Histogram stat
+                    </InputLabel>
+                    <Select
+                        labelId="histogram-stat-select-label"
+                        id="histogram-stat-select"
+                        value={displayHistogramStat}
+                        label="Histogram stat"
+                        onChange={handleHistogramStatChange}
+                    >
+                        {sortedHistogramStats.map((stat) => (
+                            <MenuItem
+                                key={`key-${stat.id}`}
+                                value={stat.id}
+                                selected={stat.id === displayHistogramStat}
+                            >
+                                {cleanStatLabel(
+                                    t(
+                                        `statisticsView.${translationKey(stat.id)}Title`,
+                                        {
+                                            defaultValue: stat.label,
+                                        },
+                                    ),
+                                )}
+                            </MenuItem>
+                        ))}
+                    </Select>
+                </FormControl>
+                <HistogramChart
+                    groupedEntries={histogramData?.data ?? null}
+                    height={CHART_HEIGHT}
+                    groupColorOrder={groupColorOrder}
+                    colorOffset={groupColorOffset}
+                    highlightedGroup={highlightedGroup}
+                    onGroupHighlight={setHighlightedGroup}
+                    chartType={isNumberHistogram ? "number" : "date"}
+                    onRangeSelect={(start, end) =>
+                        handleUpdateRangeQuery(
+                            histogramData?.key ?? "",
+                            start,
+                            end,
+                        )
+                    }
+                    onGroupFilter={(group, negate, noQuote) =>
+                        handleUpdateQuery(
+                            stats.termsData?.key ?? "",
+                            group,
+                            negate,
+                            noQuote,
+                        )
+                    }
+                />
             </section>
 
             <Divider />
@@ -180,7 +364,7 @@ export const StatisticsView = () => {
                 </Typography>
                 <div className={styles.summaryGrid}>
                     <div className={styles.summaryItem}>
-                        <Numbers
+                        <Description
                             fontSize="small"
                             className={styles.summaryIcon}
                         />
@@ -189,18 +373,18 @@ export const StatisticsView = () => {
                                 variant="caption"
                                 color="text.secondary"
                             >
-                                {t("statisticsView.numberOfFiles")}
+                                {t("statisticsView.totalDocuments")}
                             </Typography>
                             <Typography
                                 variant="body2"
                                 sx={{ fontWeight: "medium" }}
                             >
-                                {stats?.summary?.count}
+                                {stats.termsData?.fileCount ?? "—"}
                             </Typography>
                         </div>
                     </div>
                     <div className={styles.summaryItem}>
-                        <Equalizer
+                        <BarChart
                             fontSize="small"
                             className={styles.summaryIcon}
                         />
@@ -209,18 +393,18 @@ export const StatisticsView = () => {
                                 variant="caption"
                                 color="text.secondary"
                             >
-                                {t("statisticsView.minFileSize")}
+                                {t("statisticsView.histogramDocuments")}
                             </Typography>
                             <Typography
                                 variant="body2"
                                 sx={{ fontWeight: "medium" }}
                             >
-                                {formatFileSize(stats?.summary?.min ?? 0)}
+                                {histogramData?.fileCount ?? "—"}
                             </Typography>
                         </div>
                     </div>
                     <div className={styles.summaryItem}>
-                        <StackedLineChart
+                        <VerticalAlignBottom
                             fontSize="small"
                             className={styles.summaryIcon}
                         />
@@ -229,18 +413,18 @@ export const StatisticsView = () => {
                                 variant="caption"
                                 color="text.secondary"
                             >
-                                {t("statisticsView.avgFileSize")}
+                                {t("statisticsView.histogramMin")}
                             </Typography>
                             <Typography
                                 variant="body2"
                                 sx={{ fontWeight: "medium" }}
                             >
-                                {formatFileSize(stats?.summary?.avg ?? 0)}
+                                {formatHistogramValue(histogramData?.minValue)}
                             </Typography>
                         </div>
                     </div>
                     <div className={styles.summaryItem}>
-                        <Equalizer
+                        <VerticalAlignTop
                             fontSize="small"
                             className={styles.summaryIcon}
                         />
@@ -249,25 +433,17 @@ export const StatisticsView = () => {
                                 variant="caption"
                                 color="text.secondary"
                             >
-                                {t("statisticsView.maxFileSize")}
+                                {t("statisticsView.histogramMax")}
                             </Typography>
                             <Typography
                                 variant="body2"
                                 sx={{ fontWeight: "medium" }}
                             >
-                                {formatFileSize(stats?.summary?.max ?? 0)}
+                                {formatHistogramValue(histogramData?.maxValue)}
                             </Typography>
                         </div>
                     </div>
                 </div>
-                {!!stats?.tags?.data && (
-                    <div className={styles.tagsContainer}>
-                        <TagsList
-                            tags={stats.tags.data.map((e) => e.name)}
-                            tagStats={stats.tags}
-                        />
-                    </div>
-                )}
             </section>
         </div>
     );

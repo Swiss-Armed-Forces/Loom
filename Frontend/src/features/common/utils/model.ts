@@ -1,4 +1,7 @@
-import { GenericStatisticsModel, SummaryStatisticsModel } from "@app/api";
+import {
+    GroupedHistogramStatisticsModel,
+    TermsStatisticsModel,
+} from "@app/api";
 
 import { DialogType } from "./enums";
 
@@ -55,9 +58,8 @@ export const SearchQuerySchema = {
 } as const;
 
 export interface CombinedStats {
-    summary: SummaryStatisticsModel | null;
-    generic: GenericStatisticsModel | null;
-    tags: GenericStatisticsModel | null;
+    termsData: TermsStatisticsModel | null;
+    histogramData: GroupedHistogramStatisticsModel | null;
 }
 
 export interface DialogComponent {

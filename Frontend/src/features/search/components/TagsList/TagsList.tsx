@@ -4,11 +4,7 @@ import { t } from "i18next";
 import { FC, useMemo, useState } from "react";
 import { toast } from "react-toastify";
 
-import {
-    deleteTagFromFile,
-    GenericStatisticsModel,
-    GetFilePreviewResponse,
-} from "@app/api";
+import { deleteTagFromFile, GetFilePreviewResponse } from "@app/api";
 import { useAppDispatch, useAppSelector } from "@app/hooks.ts";
 import {
     openDialog,
@@ -32,7 +28,6 @@ import styles from "./TagsList.module.css";
 interface TagsListProps {
     tags: string[];
     filePreview?: GetFilePreviewResponse;
-    tagStats?: GenericStatisticsModel;
     iconOnly?: boolean;
     maxVisible?: number;
 }
@@ -40,7 +35,6 @@ interface TagsListProps {
 export const TagsList = ({
     tags,
     filePreview,
-    tagStats,
     iconOnly = false,
     maxVisible,
 }: TagsListProps) => {
@@ -56,14 +50,6 @@ export const TagsList = ({
         [tags],
     );
 
-    const tagHitRateMap = useMemo(() => {
-        const tagData = tagStats?.data ?? [];
-        const total = tagStats?.fileCount ?? 1;
-        return new Map(
-            tagData.map((t) => [t.name, (t.hitsCount / total) * 100]),
-        );
-    }, [tagStats]);
-
     const searchForTag = (tagName: string, negate = false) => {
         dispatch(
             updateQuery({
@@ -77,9 +63,6 @@ export const TagsList = ({
             }),
         );
     };
-
-    const getTagHitRate = (tagName: string): number =>
-        tagHitRateMap.get(tagName) ?? 0;
 
     const handleDeleteTagFromFile = async (tag: string) => {
         if (!fileId) return;
@@ -116,11 +99,7 @@ export const TagsList = ({
         }
     };
 
-    const getTagLabel = (tag: string): string => {
-        if (!tagStats) return tag;
-        const hitRate = getTagHitRate(tag);
-        return `${tag} (${hitRate.toFixed(1)}%)`;
-    };
+    const getTagLabel = (tag: string): string => tag;
 
     const visibleTags =
         maxVisible !== undefined ? sortedTags.slice(0, maxVisible) : sortedTags;
