@@ -1,3 +1,8 @@
+[default.extend-words]
+# "ags" is flagged as a typo for "ages/tags" but appears legitimately when
+# bolding just the "t" in "<strong>t</strong>ags" in JSX.
+ags = "ags"
+
 [default]
 extend-ignore-re = [
     # Custom ignore regex patterns: https://github.com/crate-ci/typos/blob/master/docs/reference.md#example-configurations

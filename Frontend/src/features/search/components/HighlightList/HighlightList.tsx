@@ -1,7 +1,4 @@
-import { Search, Sort } from "@mui/icons-material";
-import { ListItemIcon, ListItemText, Menu, MenuItem } from "@mui/material";
-import { useState, useMemo, useCallback } from "react";
-import { useTranslation } from "react-i18next";
+import { useMemo, useCallback } from "react";
 
 import { useAppDispatch, useAppSelector } from "@app/hooks";
 import { updateQuery, selectQuery } from "@app/slices/searchSlice";
@@ -9,7 +6,7 @@ import { updateFieldOfQuery } from "@features/common/utils/helpers";
 
 import { HighlightItem } from "./HighlightItem";
 
-type HighlightItem = [string, string[]];
+type HighlightEntry = [string, string[]];
 const STRIP_TAGS = /<\/?highlight>/g;
 
 const PRIORITIES = [
@@ -33,8 +30,8 @@ const getHighlightPriority = (key: string): number => {
 };
 
 const sortHighlightsByPriority = (
-    a: HighlightItem,
-    b: HighlightItem,
+    a: HighlightEntry,
+    b: HighlightEntry,
 ): number => {
     const aPrio = getHighlightPriority(a[0]);
     const bPrio = getHighlightPriority(b[0]);
@@ -50,12 +47,8 @@ export const HighlightList = ({
     highlights,
     fullDetails,
 }: HighlightListProps) => {
-    const { t } = useTranslation();
     const dispatch = useAppDispatch();
     const query = useAppSelector(selectQuery);
-
-    const [menuAnchor, setMenuAnchor] = useState<HTMLElement | null>(null);
-    const [activeField, setActiveField] = useState<string | null>(null);
 
     // Sort highlights only when data changes
     const sortedEntries = useMemo(
@@ -72,35 +65,29 @@ export const HighlightList = ({
         return mapping;
     }, [highlights]);
 
-    const handleMenuOpen = useCallback((target: HTMLElement, field: string) => {
-        setMenuAnchor(target);
-        setActiveField(field);
-    }, []);
+    const handleQuery = useCallback(
+        (field: string, negate: boolean) => {
+            dispatch(
+                updateQuery({
+                    query: updateFieldOfQuery(
+                        query?.query ?? "",
+                        field,
+                        cleanValues[field],
+                        false,
+                        negate,
+                    ),
+                }),
+            );
+        },
+        [dispatch, query, cleanValues],
+    );
 
-    const handleMenuClose = () => {
-        setMenuAnchor(null);
-        setActiveField(null);
-    };
-
-    const handleSearch = () => {
-        if (!activeField) return;
-        dispatch(
-            updateQuery({
-                query: updateFieldOfQuery(
-                    query?.query ?? "",
-                    activeField,
-                    cleanValues[activeField],
-                ),
-            }),
-        );
-        handleMenuClose();
-    };
-
-    const handleSort = () => {
-        if (!activeField) return;
-        dispatch(updateQuery({ sortField: activeField }));
-        handleMenuClose();
-    };
+    const handleSort = useCallback(
+        (field: string) => {
+            dispatch(updateQuery({ sortField: field }));
+        },
+        [dispatch],
+    );
 
     if (!highlights) return null;
 
@@ -111,33 +98,11 @@ export const HighlightList = ({
                     key={field}
                     field={field}
                     value={value}
-                    onContextMenu={handleMenuOpen}
+                    onQuery={(negate) => handleQuery(field, negate)}
+                    onSort={() => handleSort(field)}
                     fullDetails={fullDetails}
                 />
             ))}
-
-            <Menu
-                anchorEl={menuAnchor}
-                open={Boolean(menuAnchor)}
-                onClose={handleMenuClose}
-            >
-                <MenuItem onClick={handleSearch}>
-                    <ListItemIcon>
-                        <Search fontSize="small" />
-                    </ListItemIcon>
-                    <ListItemText>
-                        {t("generalSearchView.queryThisField")}
-                    </ListItemText>
-                </MenuItem>
-                <MenuItem onClick={handleSort}>
-                    <ListItemIcon>
-                        <Sort fontSize="small" />
-                    </ListItemIcon>
-                    <ListItemText>
-                        {t("generalSearchView.sortThisField")}
-                    </ListItemText>
-                </MenuItem>
-            </Menu>
         </>
     );
 };

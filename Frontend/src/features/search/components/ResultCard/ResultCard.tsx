@@ -2,7 +2,6 @@ import {
     Badge,
     Box,
     Card,
-    CardActions,
     CardContent,
     Skeleton,
     Typography,
@@ -208,7 +207,7 @@ export const ResultCard = React.memo(
                     clearTimeout(timeoutId);
                 };
             }
-        }, [isHighlighted, filePreview, autoActionsPreferences]); // eslint-disable-line react-hooks/exhaustive-deps
+        }, [isHighlighted, filePreview, autoActionsPreferences, dispatch, t]);
 
         // Combine refs
         const setRefs = (element: HTMLDivElement | null) => {
@@ -231,7 +230,7 @@ export const ResultCard = React.memo(
             return () => {
                 unsubscribeChannel(fileId, dispatch);
             };
-        }, [inView, fileId, searchQuery?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+        }, [inView, fileId, searchQuery, dispatch]);
 
         const handleCardClick = (
             e:
@@ -242,7 +241,14 @@ export const ResultCard = React.memo(
 
             // Ignore clicks from IconButtons
             if (!target.closest(".MuiIconButton-root")) {
-                dispatch(setHighlightedIndex(index));
+                if (
+                    e.type === "click" &&
+                    (e as React.MouseEvent<HTMLDivElement>).ctrlKey
+                ) {
+                    handleOpenDetailsOnTabClick(FileDetailTab.Rendered, true);
+                } else {
+                    dispatch(setHighlightedIndex(index));
+                }
             }
         };
 
@@ -251,6 +257,7 @@ export const ResultCard = React.memo(
             background = false,
         ) => {
             if (!filePreview) return;
+            dispatch(setHighlightedIndex(index));
             dispatch(
                 openFileTabThunk({
                     fileId: filePreview.fileId,
@@ -260,6 +267,13 @@ export const ResultCard = React.memo(
             );
         };
 
+        const handleCardDoubleClick = (e: React.MouseEvent<HTMLDivElement>) => {
+            const target = e.target as HTMLElement;
+            if (!target.closest(".MuiIconButton-root")) {
+                handleOpenDetailsOnTabClick(FileDetailTab.Rendered, e.ctrlKey);
+            }
+        };
+
         return (
             <Box
                 className="resultCardParent"
@@ -267,26 +281,12 @@ export const ResultCard = React.memo(
                 data-highlighted={isHighlighted ? "true" : undefined}
                 ref={setRefs}
                 onClick={handleCardClick}
+                onDoubleClick={handleCardDoubleClick}
                 onFocus={handleCardClick}
                 sx={{
                     cursor: "pointer",
-                    position: "relative",
+                    outline: "none",
                     ...(stale && { opacity: 0.7 }),
-                    ...(isHighlighted && {
-                        "&::before": {
-                            content: '""',
-                            position: "absolute",
-                            inset: -2,
-                            borderRadius: 1.5,
-                            border: 2,
-                            borderStyle: "solid",
-                            borderColor: "secondary.main",
-                            boxShadow: (theme) =>
-                                `0 0 8px ${theme.palette.secondary.main}80, 0 0 16px ${theme.palette.secondary.main}4D`,
-                            pointerEvents: "none",
-                            zIndex: 1,
-                        },
-                    }),
                 }}
             >
                 {!filePreview ? (
@@ -304,77 +304,115 @@ export const ResultCard = React.memo(
                         <Skeleton variant="text" />
                     </div>
                 ) : (
-                    <Card>
+                    <Card
+                        sx={{
+                            borderLeft: "3px solid",
+                            borderColor: isHighlighted
+                                ? "primary.main"
+                                : "transparent",
+                            bgcolor: isHighlighted
+                                ? "action.selected"
+                                : undefined,
+                        }}
+                    >
                         <FileCardHeader filePreview={filePreview} />
-                        <CardContent className={styles.cardContent}>
-                            <div className={styles.contentColumn}>
-                                <Summary
-                                    filePreview={filePreview}
-                                    onOpenDetailsTab={
-                                        handleOpenDetailsOnTabClick
-                                    }
-                                />
-                                <HighlightList
-                                    highlights={
-                                        filePreview.highlight as Record<
-                                            string,
-                                            string[]
-                                        >
-                                    }
-                                />
-                                {isMobile && (
-                                    <TagsList
-                                        tags={filePreview.tags || []}
-                                        filePreview={filePreview}
-                                    />
-                                )}
-                            </div>
-
-                            {filePreview.thumbnailFileId && (
-                                <Badge
-                                    color="primary"
-                                    badgeContent={
-                                        filePreview.thumbnailTotalFrames
-                                    }
-                                    anchorOrigin={{
-                                        vertical: "bottom",
-                                        horizontal: "right",
-                                    }}
-                                    className={styles.thumbnailBadge}
-                                >
-                                    <img
-                                        onClick={(e) =>
-                                            handleOpenDetailsOnTabClick(
-                                                FileDetailTab.Rendered,
-                                                e.ctrlKey,
-                                            )
-                                        }
-                                        className={styles.resultImage}
-                                        src={webApiGetFileThumbnail(
-                                            filePreview.fileId,
-                                            filePreview.thumbnailFileId,
-                                        )}
-                                        alt="Thumbnail"
-                                    />
-                                </Badge>
-                            )}
-                        </CardContent>
-                        <CardActions className={styles.cardActions}>
-                            <Typography
-                                variant="caption"
-                                className={styles.sortFieldCaption}
+                        <CardContent
+                            sx={{
+                                py: 1,
+                                px: 2,
+                                wordBreak: "break-word",
+                                "&:last-child": { pb: 1 },
+                            }}
+                        >
+                            <Box
                                 sx={{
-                                    color: "text.secondary",
+                                    display: "flex",
+                                    gap: 2,
+                                    flexDirection: {
+                                        xs: "column",
+                                        md: "row",
+                                    },
                                 }}
-                            >{`${searchQuery?.sortField ?? "score"}: ${sortFieldValue}`}</Typography>
-                            <FileTasksList
-                                tasksSucceeded={
-                                    filePreview.tasksSucceeded || []
-                                }
-                                tasksFailed={filePreview.tasksFailed || []}
-                                taskRetried={filePreview.tasksRetried || []}
-                            ></FileTasksList>
-                        </CardActions>
+                            >
+                                <Box
+                                    sx={{
+                                        flex: 1,
+                                        display: "flex",
+                                        flexDirection: "column",
+                                    }}
+                                >
+                                    <Summary
+                                        filePreview={filePreview}
+                                        onOpenDetailsTab={
+                                            handleOpenDetailsOnTabClick
+                                        }
+                                    />
+                                    <HighlightList
+                                        highlights={
+                                            filePreview.highlight as Record<
+                                                string,
+                                                string[]
+                                            >
+                                        }
+                                    />
+                                    {isMobile && (
+                                        <TagsList
+                                            tags={filePreview.tags || []}
+                                            filePreview={filePreview}
+                                        />
+                                    )}
+                                </Box>
+
+                                {filePreview.thumbnailFileId && (
+                                    <Badge
+                                        color="primary"
+                                        badgeContent={
+                                            filePreview.thumbnailTotalFrames
+                                        }
+                                        anchorOrigin={{
+                                            vertical: "bottom",
+                                            horizontal: "right",
+                                        }}
+                                        className={styles.thumbnailBadge}
+                                    >
+                                        <img
+                                            onClick={(e) =>
+                                                handleOpenDetailsOnTabClick(
+                                                    FileDetailTab.Rendered,
+                                                    e.ctrlKey,
+                                                )
+                                            }
+                                            className={styles.resultImage}
+                                            src={webApiGetFileThumbnail(
+                                                filePreview.fileId,
+                                                filePreview.thumbnailFileId,
+                                            )}
+                                            alt="Thumbnail"
+                                        />
+                                    </Badge>
+                                )}
+                            </Box>
+                            <Box
+                                sx={{
+                                    display: "flex",
+                                    justifyContent: "space-between",
+                                    alignItems: "center",
+                                    mt: 1,
+                                }}
+                            >
+                                <Typography
+                                    variant="caption"
+                                    sx={{ color: "text.disabled", pl: 0.5 }}
+                                >{`${searchQuery?.sortField ?? "score"}: ${sortFieldValue}`}</Typography>
+                                <FileTasksList
+                                    tasksSucceeded={
+                                        filePreview.tasksSucceeded || []
+                                    }
+                                    tasksFailed={filePreview.tasksFailed || []}
+                                    taskRetried={filePreview.tasksRetried || []}
+                                />
+                            </Box>
+                        </CardContent>
                     </Card>
                 )}
             </Box>

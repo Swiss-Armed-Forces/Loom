@@ -45,7 +45,7 @@ export const FileActions = ({
     const handleMenuClose = () => {
         setAnchorEl(null);
     };
-    const actions: ReactNode[] = [
+    const primaryActions: ReactNode[] = [
         <UpdateFlaggedButton
             key="flag"
             iconOnly
@@ -60,6 +60,23 @@ export const FileActions = ({
         />,
         <AddTagsButton key="tags-input" iconOnly filePreview={filePreview} />,
         <ShareButton key="share" fileId={filePreview.fileId} />,
+    ];
+
+    if (!hideDetail) {
+        primaryActions.push(
+            <ViewDetailButton
+                key="preview"
+                fileId={filePreview.fileId}
+                searchQuery={searchQuery}
+            />,
+        );
+    }
+
+    // additionalActions are caller-supplied (e.g. the close button in FileDetailPanel)
+    // and must always be visible — keep them in primaryActions.
+    primaryActions.push(...additionalActions);
+
+    const overflowActions: ReactNode[] = [
         <TranslationButton
             key="translate"
             filePreview={filePreview}
@@ -81,36 +98,16 @@ export const FileActions = ({
         />,
     ];
 
-    if (!hideDetail) {
-        actions.splice(
-            4,
-            0,
-            <ViewDetailButton
-                key="preview"
-                fileId={filePreview.fileId}
-                searchQuery={searchQuery}
-            />,
-        );
-    }
-
-    const actionButtons = actions.concat(additionalActions);
-
     if (isMobile) {
+        const allActions = [...primaryActions, ...overflowActions];
         return (
             <>
                 <IconButton onClick={handleMenuClick}>
                     <MoreVert />
                 </IconButton>
                 <Menu anchorEl={anchorEl} open={open} onClose={handleMenuClose}>
-                    {actionButtons.map((button, index) => (
-                        <MenuItem
-                            key={index}
-                            onClick={
-                                index === actionButtons.length - 1
-                                    ? handleMenuClose
-                                    : undefined
-                            }
-                        >
+                    {allActions.map((button) => (
+                        <MenuItem key={(button as React.ReactElement).key}>
                             {button}
                         </MenuItem>
                     ))}
@@ -126,7 +123,26 @@ export const FileActions = ({
                 filePreview={filePreview}
                 maxVisible={3}
             />
-            <div className={styles.fileActionButtons}>{actionButtons}</div>
+            <div className={styles.fileActionButtons}>
+                {primaryActions}
+                <IconButton
+                    size="small"
+                    onClick={handleMenuClick}
+                    aria-label="more actions"
+                >
+                    <MoreVert fontSize="small" />
+                </IconButton>
+                <Menu anchorEl={anchorEl} open={open} onClose={handleMenuClose}>
+                    {overflowActions.map((button) => (
+                        <MenuItem
+                            key={(button as React.ReactElement).key}
+                            sx={{ p: 0.5 }}
+                        >
+                            {button}
+                        </MenuItem>
+                    ))}
+                </Menu>
+            </div>
         </div>
     );
 };

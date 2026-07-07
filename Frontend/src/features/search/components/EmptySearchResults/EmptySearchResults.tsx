@@ -1,12 +1,29 @@
 import {
+    Download,
+    Flag,
+    LabelOutlined,
+    ManageSearch,
+    MarkEmailReadOutlined,
+    Share,
+    SummarizeOutlined,
+    Translate,
+    YoutubeSearchedForOutlined,
+} from "@mui/icons-material";
+import {
     Alert,
     AlertTitle,
     Box,
     Card,
     CardContent,
     CardHeader,
+    Divider,
+    Table,
+    TableBody,
+    TableCell,
+    TableRow,
     Typography,
 } from "@mui/material";
+import { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 
 import { useAppDispatch, useAppSelector } from "@app/hooks";
@@ -18,10 +35,217 @@ import {
 
 import styles from "./EmptySearchResults.module.css";
 
+const searchChipSx = {
+    display: "inline-block",
+    fontFamily: "monospace",
+    fontSize: "0.82em",
+    bgcolor: "#f0f4ff",
+    border: "1px solid #c5cae9",
+    borderRadius: 0.5,
+    px: 0.6,
+    color: "#3949ab",
+    cursor: "pointer",
+    verticalAlign: "baseline",
+    "&:hover": { bgcolor: "#e8eaf6", borderColor: "#5c6bc0" },
+    "&:active": { bgcolor: "#c5cae9" },
+} as const;
+
+const sortChipSx = {
+    display: "inline-block",
+    fontFamily: "monospace",
+    fontSize: "0.82em",
+    bgcolor: "#fffde7",
+    border: "1px solid #ffe082",
+    borderRadius: 0.5,
+    px: 0.6,
+    color: "#e65100",
+    cursor: "pointer",
+    verticalAlign: "baseline",
+    "&:hover": { bgcolor: "#fff9c4", borderColor: "#ffd54f" },
+    "&:active": { bgcolor: "#fff176" },
+} as const;
+
+type HotkeyRow =
+    | { type: "row"; keys: string[]; label: ReactNode; icon?: ReactNode }
+    | { type: "divider" };
+
 export const EmptySearchResults = () => {
     const searchQuery = useAppSelector(selectQuery);
     const { t } = useTranslation();
     const dispatch = useAppDispatch();
+
+    const HOTKEY_ROWS: HotkeyRow[] = [
+        {
+            type: "row",
+            keys: ["↓", "j"],
+            label: t("emptySearch.hotkeys.moveDown"),
+        },
+        {
+            type: "row",
+            keys: ["↑", "k"],
+            label: t("emptySearch.hotkeys.moveUp"),
+        },
+        {
+            type: "row",
+            keys: ["←", "h"],
+            label: t("emptySearch.hotkeys.prevCenterTab"),
+        },
+        {
+            type: "row",
+            keys: ["→", "l"],
+            label: t("emptySearch.hotkeys.nextCenterTab"),
+        },
+        {
+            type: "row",
+            keys: ["Shift + ←", "Shift + h"],
+            label: t("emptySearch.hotkeys.prevTab"),
+        },
+        {
+            type: "row",
+            keys: ["Shift + →", "Shift + l"],
+            label: t("emptySearch.hotkeys.nextTab"),
+        },
+        {
+            type: "row",
+            keys: ["Enter", "Space", "i"],
+            label: t("emptySearch.hotkeys.openOrClose"),
+        },
+        {
+            type: "row",
+            keys: ["Shift + Enter", "Shift + Space", "Shift + i"],
+            label: t("emptySearch.hotkeys.openBackground"),
+        },
+        {
+            type: "row",
+            keys: ["Double-click"],
+            label: t("emptySearch.hotkeys.openOrClose"),
+        },
+        {
+            type: "row",
+            keys: ["Ctrl + Double-click"],
+            label: t("emptySearch.hotkeys.openBackground"),
+        },
+        {
+            type: "row",
+            keys: ["Ctrl + click"],
+            label: t("emptySearch.hotkeys.openBackground"),
+        },
+        {
+            type: "row",
+            keys: ["Shift + click"],
+            label: (
+                <>
+                    {t("emptySearch.hotkeys.shiftClickNegate")}{" "}
+                    <Box
+                        component="span"
+                        sx={{
+                            opacity: 0.5,
+                            fontSize: "0.9em",
+                            whiteSpace: "nowrap",
+                        }}
+                    >
+                        (
+                        <ManageSearch
+                            fontSize="inherit"
+                            sx={{ verticalAlign: "middle" }}
+                        />{" "}
+                        icon)
+                    </Box>
+                </>
+            ),
+        },
+        {
+            type: "row",
+            keys: ["Escape"],
+            label: t("emptySearch.hotkeys.escapeAction"),
+        },
+        {
+            type: "row",
+            keys: ["/"],
+            label: t("emptySearch.hotkeys.focusSearch"),
+        },
+        { type: "divider" },
+        {
+            type: "row",
+            keys: ["f"],
+            icon: <Flag fontSize="inherit" />,
+            label: (
+                <>
+                    <strong>F</strong>lag / unflag
+                </>
+            ),
+        },
+        {
+            type: "row",
+            keys: ["s"],
+            icon: <MarkEmailReadOutlined fontSize="inherit" />,
+            label: (
+                <>
+                    <strong>S</strong>een / unseen
+                </>
+            ),
+        },
+        {
+            type: "row",
+            keys: ["t"],
+            icon: <LabelOutlined fontSize="inherit" />,
+            label: (
+                <>
+                    <strong>t</strong>ag
+                </>
+            ),
+        },
+        {
+            type: "row",
+            keys: ["c"],
+            icon: <Share fontSize="inherit" />,
+            label: (
+                <>
+                    <strong>C</strong>opy share link
+                </>
+            ),
+        },
+        {
+            type: "row",
+            keys: ["Shift + t"],
+            icon: <Translate fontSize="inherit" />,
+            label: (
+                <>
+                    <strong>T</strong>ranslate
+                </>
+            ),
+        },
+        {
+            type: "row",
+            keys: ["Shift + s"],
+            icon: <SummarizeOutlined fontSize="inherit" />,
+            label: (
+                <>
+                    <strong>S</strong>ummarize
+                </>
+            ),
+        },
+        {
+            type: "row",
+            keys: ["r"],
+            icon: <YoutubeSearchedForOutlined fontSize="inherit" />,
+            label: (
+                <>
+                    <strong>R</strong>e-index
+                </>
+            ),
+        },
+        {
+            type: "row",
+            keys: ["d"],
+            icon: <Download fontSize="inherit" />,
+            label: (
+                <>
+                    <strong>D</strong>ownload
+                </>
+            ),
+        },
+    ];
     const queryError = useAppSelector(selectQueryError);
 
     const performSearch = (
@@ -50,27 +274,14 @@ export const EmptySearchResults = () => {
 
     const createSearchTip = (query: string, searchKey: string) => (
         <li>
-            <span
-                className={styles.clickableSpan}
-                onClick={() => {
-                    performSearch(query);
-                }}
+            <Box
+                component="span"
+                sx={searchChipSx}
+                onClick={() => performSearch(query)}
             >
                 {query}
-            </span>{" "}
+            </Box>{" "}
             - {t("emptySearch.tips." + searchKey)}
-        </li>
-    );
-
-    const createHotkey = (keys: string[], searchKey: string) => (
-        <li>
-            {keys.map((key, i) => (
-                <span key={key}>
-                    <kbd>{key}</kbd>
-                    {i < keys.length - 1 && " / "}
-                </span>
-            ))}
-            - {t("emptySearch.hotkeys." + searchKey)}
         </li>
     );
 
@@ -184,67 +395,92 @@ export const EmptySearchResults = () => {
                                         "nameFields",
                                     )}
                                 </Box>
-                                <Typography
-                                    variant="overline"
-                                    color="text.secondary"
-                                    sx={{ display: "block", mt: 2, mb: 0.5 }}
+                                <Box
+                                    sx={{
+                                        display: "flex",
+                                        alignItems: "baseline",
+                                        gap: 1,
+                                        mt: 2,
+                                        mb: 0.5,
+                                    }}
                                 >
-                                    {t("emptySearch.sort.title")}
-                                </Typography>
+                                    <Typography
+                                        variant="overline"
+                                        color="text.secondary"
+                                    >
+                                        {t("emptySearch.sort.title")}
+                                    </Typography>
+                                    <Typography
+                                        variant="caption"
+                                        color="text.disabled"
+                                        sx={{ fontStyle: "italic" }}
+                                    >
+                                        {t("emptySearch.sort.hint")}
+                                    </Typography>
+                                </Box>
                                 <Box
                                     component="ul"
                                     sx={{ m: 0, pl: 2.5, fontSize: "0.85rem" }}
                                 >
                                     <li>
-                                        <span
-                                            className={styles.clickableSpan}
-                                            onClick={() => {
+                                        <Box
+                                            component="span"
+                                            sx={sortChipSx}
+                                            onClick={() =>
                                                 performSearch(
                                                     "*",
                                                     "short_name",
                                                     "asc",
-                                                );
-                                            }}
+                                                )
+                                            }
                                         >
-                                            sort:short_name
-                                        </span>{" "}
+                                            short_name
+                                        </Box>{" "}
                                         - {t("emptySearch.sort.name")}
                                     </li>
                                     <li>
-                                        <span
-                                            className={styles.clickableSpan}
-                                            onClick={() => {
+                                        <Box
+                                            component="span"
+                                            sx={sortChipSx}
+                                            onClick={() =>
                                                 performSearch(
                                                     "*",
                                                     "uploaded_datetime",
                                                     "desc",
-                                                );
-                                            }}
+                                                )
+                                            }
                                         >
-                                            sort:uploaded_datetime
-                                        </span>{" "}
+                                            uploaded_datetime
+                                        </Box>{" "}
                                         - {t("emptySearch.sort.uploaded")}
                                     </li>
                                     <li>
-                                        <span
-                                            className={styles.clickableSpan}
-                                            onClick={() => {
+                                        <Box
+                                            component="span"
+                                            sx={sortChipSx}
+                                            onClick={() =>
                                                 performSearch(
                                                     "*",
                                                     "tika_meta.dcterms_created",
                                                     "desc",
-                                                );
-                                            }}
+                                                )
+                                            }
                                         >
-                                            sort:dcterms:created
-                                        </span>{" "}
+                                            tika_meta.dcterms_created
+                                        </Box>{" "}
                                         - {t("emptySearch.sort.created")}
                                     </li>
                                 </Box>
                                 <Typography
                                     variant="body2"
-                                    className={styles.clickableSpan}
-                                    sx={{ display: "inline-block", mt: 1 }}
+                                    sx={{
+                                        display: "inline-block",
+                                        mt: 1,
+                                        cursor: "pointer",
+                                        color: "primary.main",
+                                        textDecoration: "underline",
+                                        "&:hover": { color: "primary.dark" },
+                                    }}
                                     onClick={() => {
                                         window.location.assign(
                                             "https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-query-string-query.html#query-string-syntax",
@@ -262,54 +498,94 @@ export const EmptySearchResults = () => {
                                 >
                                     {t("emptySearch.hotkeys.title")}
                                 </Typography>
-                                <Box
-                                    component="ul"
-                                    sx={{ m: 0, pl: 2.5, fontSize: "0.85rem" }}
+                                <Table
+                                    size="small"
+                                    sx={{
+                                        "& td": {
+                                            fontSize: "0.82rem",
+                                            border: 0,
+                                            px: 0,
+                                            py: 0.25,
+                                        },
+                                    }}
                                 >
-                                    {createHotkey(["j", "↓"], "moveDown")}
-                                    {createHotkey(["k", "↑"], "moveUp")}
-                                    {createHotkey(
-                                        ["Enter", "Space", "i"],
-                                        "openDetails",
-                                    )}
-                                    {createHotkey(
-                                        ["Ctrl + click"],
-                                        "openDetailsBackground",
-                                    )}
-                                    {createHotkey(
-                                        ["Shift + click"],
-                                        "shiftClickNegate",
-                                    )}
-                                    {createHotkey(["Escape"], "clear")}
-                                    {createHotkey(["/"], "search")}
-                                    {createHotkey(["g"], "flag")}
-                                    {createHotkey(["b"], "see")}
-                                    {createHotkey(["c"], "share")}
-                                    {createHotkey(["d"], "download")}
-                                    {createHotkey(["r"], "reindex")}
-                                    {createHotkey(["s"], "summarize")}
-                                    {createHotkey(["t"], "addTags")}
-                                    {createHotkey(["Shift + t"], "translate")}
-                                </Box>
-                                <Typography
-                                    variant="overline"
-                                    color="text.secondary"
-                                    sx={{ display: "block", mt: 2, mb: 0.5 }}
-                                >
-                                    {t("emptySearch.hotkeys.detailsTitle")}
-                                </Typography>
-                                <Box
-                                    component="ul"
-                                    sx={{ m: 0, pl: 2.5, fontSize: "0.85rem" }}
-                                >
-                                    {createHotkey(["h", "←"], "previousTab")}
-                                    {createHotkey(["l", "→"], "nextTab")}
-                                    {createHotkey(["f"], "fullscreen")}
-                                    {createHotkey(
-                                        ["Escape", "Enter", "Space", "i"],
-                                        "close",
-                                    )}
-                                </Box>
+                                    <TableBody>
+                                        {HOTKEY_ROWS.map((row, i) => {
+                                            if (row.type === "divider") {
+                                                return (
+                                                    <TableRow
+                                                        key={`divider-${i}`}
+                                                    >
+                                                        <TableCell
+                                                            colSpan={2}
+                                                            sx={{
+                                                                py: "0.3rem !important",
+                                                            }}
+                                                        >
+                                                            <Divider />
+                                                        </TableCell>
+                                                    </TableRow>
+                                                );
+                                            }
+                                            return (
+                                                <TableRow
+                                                    key={row.keys.join("|")}
+                                                >
+                                                    <TableCell
+                                                        sx={{
+                                                            whiteSpace:
+                                                                "nowrap",
+                                                            pr: 1.5,
+                                                        }}
+                                                    >
+                                                        {row.keys.map(
+                                                            (key, ki) => (
+                                                                <span key={key}>
+                                                                    <kbd>
+                                                                        {key}
+                                                                    </kbd>
+                                                                    {ki <
+                                                                        row.keys
+                                                                            .length -
+                                                                            1 &&
+                                                                        " / "}
+                                                                </span>
+                                                            ),
+                                                        )}
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        <Box
+                                                            sx={{
+                                                                display: "flex",
+                                                                alignItems:
+                                                                    "center",
+                                                                gap: 0.5,
+                                                            }}
+                                                        >
+                                                            {row.icon && (
+                                                                <Box
+                                                                    component="span"
+                                                                    sx={{
+                                                                        display:
+                                                                            "flex",
+                                                                        color: "text.secondary",
+                                                                        fontSize:
+                                                                            "1rem",
+                                                                    }}
+                                                                >
+                                                                    {row.icon}
+                                                                </Box>
+                                                            )}
+                                                            <span>
+                                                                {row.label}
+                                                            </span>
+                                                        </Box>
+                                                    </TableCell>
+                                                </TableRow>
+                                            );
+                                        })}
+                                    </TableBody>
+                                </Table>
                             </Box>
                         </Box>
                     </Box>
