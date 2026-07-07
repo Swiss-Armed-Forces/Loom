@@ -1,3 +1,4 @@
+import argparse
 import logging
 import sys
 
@@ -11,10 +12,29 @@ from .claude import (
     parse_commit_message,
 )
 from .git_helpers import get_branch_diff, load_mr_template
-from .gitlab_api import find_open_mr_for_branch, get_gitlab_client, update_mr
+from .gitlab_api import (
+    fetch_mr_by_ref,
+    find_open_mr_for_branch,
+    get_gitlab_client,
+    parse_mr_url_or_id,
+    update_mr,
+)
 from .models import MRContext
 
 logger = logging.getLogger(__name__)
+
+
+def checkout_mr_branch(mr: ProjectMergeRequest, repo: Repo) -> str:
+    """Check out the MR's source branch locally and return the branch name."""
+    branch_name = mr.source_branch
+    repo.git.fetch("origin")
+    local_branches = [b.name for b in repo.branches]
+    if branch_name in local_branches:
+        repo.git.checkout(branch_name)
+        repo.git.reset("--hard", f"origin/{branch_name}")
+    else:
+        repo.git.checkout("-b", branch_name, f"origin/{branch_name}")
+    return branch_name
 
 
 def _ask(prompt: str) -> str:
@@ -23,6 +43,37 @@ def _ask(prompt: str) -> str:
         print(f"{prompt}y (auto)")
         return "y"
     return input(prompt).strip().lower()
+
+
+def resolve_mr_from_args_or_branch(
+    gl: gitlab.Gitlab, args: argparse.Namespace, repo: Repo
+) -> ProjectMergeRequest:
+    """Resolve the target MR: explicit URL/IID from args, or the MR for the current
+    branch.
+
+    Handles detached HEAD state with a clear error message directing the user to pass
+    the MR reference explicitly.
+    """
+    if args.mr:
+        try:
+            ref = parse_mr_url_or_id(args.mr)
+        except ValueError as e:
+            logger.error("%s", e)
+            sys.exit(1)
+        return fetch_mr_by_ref(gl, repo, ref)
+    if repo.head.is_detached:
+        logger.error(
+            "Detached HEAD: cannot determine current branch. Pass --mr explicitly."
+        )
+        sys.exit(1)
+    branch = repo.active_branch.name
+    logger.info("Current branch: %s", branch)
+    mr = find_open_mr_for_branch(gl, branch, repo)
+    if not mr:
+        logger.error("No open MR found for branch: %s", branch)
+        sys.exit(1)
+    logger.info("Found MR !%s: %s", mr.iid, mr.title)
+    return mr
 
 
 def _get_gitlab_client_or_exit() -> gitlab.Gitlab:

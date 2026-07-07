@@ -2,7 +2,6 @@ import {
     Badge,
     Box,
     Card,
-    CardActions,
     CardContent,
     Skeleton,
     Typography,
@@ -21,8 +20,8 @@ import {
     scheduleSingleImageDescription,
     updateFile,
 } from "@app/api";
+import { unsubscribeChannel } from "@app/channelSubscriptions";
 import { useAppDispatch, useAppSelector } from "@app/hooks";
-import { openDialog } from "@app/slices/commonSlice";
 import {
     selectQuery,
     selectFileById,
@@ -30,9 +29,9 @@ import {
     setFileInViewState,
     setFilePreview,
     setHighlightedIndex,
+    openFileTabThunk,
 } from "@app/slices/searchSlice";
 import { webApiGetFileThumbnail } from "@features/common/urls";
-import { DialogType } from "@features/common/utils/enums";
 import { FileDetailTab } from "@features/common/utils/enums";
 import {
     FileCardHeader,
@@ -46,12 +45,18 @@ import { Summary } from "./Summary";
 
 interface ResultCardProps {
     fileId: string;
-    index: number;
+    index?: number;
     isHighlighted?: boolean;
+    stale?: boolean;
 }
 
 export const ResultCard = React.memo(
-    ({ fileId, index, isHighlighted = false }: ResultCardProps) => {
+    ({
+        fileId,
+        index = 0,
+        isHighlighted = false,
+        stale = false,
+    }: ResultCardProps) => {
         const dispatch = useAppDispatch();
         const { t } = useTranslation();
         const isMobile = useMediaQuery("(max-width:900px)");
@@ -75,7 +80,7 @@ export const ResultCard = React.memo(
 
             // Find the scrollable parent container (searchResultWrapper)
             const scrollContainer = cardRef.current.closest(
-                "[class*='searchResultWrapper']",
+                "[class*='searchPanel']",
             );
 
             if (!scrollContainer) {
@@ -91,14 +96,17 @@ export const ResultCard = React.memo(
             const cardRect = card.getBoundingClientRect();
             const containerRect = scrollContainer.getBoundingClientRect();
 
-            // Calculate the target scroll position to center the card
-            // with some offset to show context (not perfectly centered, slightly above)
-            const cardCenterOffset = cardRect.top - containerRect.top;
+            const cardTop = cardRect.top - containerRect.top;
+            const cardBottom = cardTop + cardRect.height;
+
+            // Only scroll if card is outside the visible area
+            if (cardTop >= 0 && cardBottom <= containerRect.height) return;
+
             const containerVisibleHeight = containerRect.height;
             const targetScrollTop =
                 scrollContainer.scrollTop +
-                cardCenterOffset -
-                containerVisibleHeight / 3; // Position card at 1/3 from top
+                cardTop -
+                containerVisibleHeight / 3;
 
             scrollContainer.scrollTo({
                 top: Math.max(0, targetScrollTop),
@@ -194,12 +202,12 @@ export const ResultCard = React.memo(
                 const timeoutId = setTimeout(() => {
                     scrollCardIntoView();
                 }, 100);
-                cardRef.current.focus();
+                cardRef.current.focus({ preventScroll: true });
                 return () => {
                     clearTimeout(timeoutId);
                 };
             }
-        }, [isHighlighted, filePreview]); // eslint-disable-line react-hooks/exhaustive-deps
+        }, [isHighlighted, filePreview, autoActionsPreferences, dispatch, t]);
 
         // Combine refs
         const setRefs = (element: HTMLDivElement | null) => {
@@ -207,6 +215,10 @@ export const ResultCard = React.memo(
             inViewRef(element);
         };
 
+        // Manage the WS channel subscription. setFileInViewState is the single
+        // owner of subscribe/unsubscribe when inView changes; the cleanup only
+        // handles unmount. unsubscribeChannel is a no-op when not subscribed,
+        // so the cleanup is always safe to call.
         useEffect(() => {
             dispatch(
                 setFileInViewState({
@@ -215,7 +227,10 @@ export const ResultCard = React.memo(
                     query: searchQuery,
                 }),
             );
-        }, [inView, fileId, searchQuery?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+            return () => {
+                unsubscribeChannel(fileId, dispatch);
+            };
+        }, [inView, fileId, searchQuery, dispatch]);
 
         const handleCardClick = (
             e:
@@ -226,23 +241,37 @@ export const ResultCard = React.memo(
 
             // Ignore clicks from IconButtons
             if (!target.closest(".MuiIconButton-root")) {
-                dispatch(setHighlightedIndex(index));
+                if (
+                    e.type === "click" &&
+                    (e as React.MouseEvent<HTMLDivElement>).ctrlKey
+                ) {
+                    handleOpenDetailsOnTabClick(FileDetailTab.Rendered, true);
+                } else {
+                    dispatch(setHighlightedIndex(index));
+                }
             }
         };
 
-        const handleOpenDetailsOnTabClick = (tab: FileDetailTab) => {
+        const handleOpenDetailsOnTabClick = (
+            tab: FileDetailTab,
+            background = false,
+        ) => {
             if (!filePreview) return;
+            dispatch(setHighlightedIndex(index));
             dispatch(
-                openDialog({
-                    id: "",
-                    type: DialogType.FileDetail,
-                    props: {
-                        fileId: filePreview.fileId,
-                        searchQuery: searchQuery,
-                        tab,
-                    },
+                openFileTabThunk({
+                    fileId: filePreview.fileId,
+                    detailTab: tab,
+                    background,
                 }),
             );
+        };
+
+        const handleCardDoubleClick = (e: React.MouseEvent<HTMLDivElement>) => {
+            const target = e.target as HTMLElement;
+            if (!target.closest(".MuiIconButton-root")) {
+                handleOpenDetailsOnTabClick(FileDetailTab.Rendered, e.ctrlKey);
+            }
         };
 
         return (
@@ -252,25 +281,12 @@ export const ResultCard = React.memo(
                 data-highlighted={isHighlighted ? "true" : undefined}
                 ref={setRefs}
                 onClick={handleCardClick}
+                onDoubleClick={handleCardDoubleClick}
                 onFocus={handleCardClick}
                 sx={{
                     cursor: "pointer",
-                    position: "relative",
-                    ...(isHighlighted && {
-                        "&::before": {
-                            content: '""',
-                            position: "absolute",
-                            inset: -2,
-                            borderRadius: 1.5,
-                            border: 2,
-                            borderStyle: "solid",
-                            borderColor: "secondary.main",
-                            boxShadow: (theme) =>
-                                `0 0 8px ${theme.palette.secondary.main}80, 0 0 16px ${theme.palette.secondary.main}4D`,
-                            pointerEvents: "none",
-                            zIndex: 1,
-                        },
-                    }),
+                    outline: "none",
+                    ...(stale && { opacity: 0.7 }),
                 }}
             >
                 {!filePreview ? (
@@ -288,76 +304,115 @@ export const ResultCard = React.memo(
                         <Skeleton variant="text" />
                     </div>
                 ) : (
-                    <Card>
+                    <Card
+                        sx={{
+                            borderLeft: "3px solid",
+                            borderColor: isHighlighted
+                                ? "primary.main"
+                                : "transparent",
+                            bgcolor: isHighlighted
+                                ? "action.selected"
+                                : undefined,
+                        }}
+                    >
                         <FileCardHeader filePreview={filePreview} />
-                        <CardContent className={styles.cardContent}>
-                            <div className={styles.contentColumn}>
-                                <Summary
-                                    filePreview={filePreview}
-                                    onOpenDetailsTab={
-                                        handleOpenDetailsOnTabClick
-                                    }
-                                />
-                                <HighlightList
-                                    highlights={
-                                        filePreview.highlight as Record<
-                                            string,
-                                            string[]
-                                        >
-                                    }
-                                />
-                                {isMobile && (
-                                    <TagsList
-                                        tags={filePreview.tags || []}
-                                        filePreview={filePreview}
-                                    />
-                                )}
-                            </div>
-
-                            {filePreview.thumbnailFileId && (
-                                <Badge
-                                    color="primary"
-                                    badgeContent={
-                                        filePreview.thumbnailTotalFrames
-                                    }
-                                    anchorOrigin={{
-                                        vertical: "bottom",
-                                        horizontal: "right",
-                                    }}
-                                    className={styles.thumbnailBadge}
-                                >
-                                    <img
-                                        onClick={() =>
-                                            handleOpenDetailsOnTabClick(
-                                                FileDetailTab.Rendered,
-                                            )
-                                        }
-                                        className={styles.resultImage}
-                                        src={webApiGetFileThumbnail(
-                                            filePreview.fileId,
-                                            filePreview.thumbnailFileId,
-                                        )}
-                                        alt="Thumbnail"
-                                    />
-                                </Badge>
-                            )}
-                        </CardContent>
-                        <CardActions className={styles.cardActions}>
-                            <Typography
-                                variant="caption"
-                                className={styles.sortFieldCaption}
+                        <CardContent
+                            sx={{
+                                py: 1,
+                                px: 2,
+                                wordBreak: "break-word",
+                                "&:last-child": { pb: 1 },
+                            }}
+                        >
+                            <Box
                                 sx={{
-                                    color: "text.secondary",
+                                    display: "flex",
+                                    gap: 2,
+                                    flexDirection: {
+                                        xs: "column",
+                                        md: "row",
+                                    },
                                 }}
-                            >{`${searchQuery?.sortField ?? "score"}: ${sortFieldValue}`}</Typography>
-                            <FileTasksList
-                                tasksSucceeded={
-                                    filePreview.tasksSucceeded || []
-                                }
-                                tasksFailed={filePreview.tasksFailed || []}
-                                taskRetried={filePreview.tasksRetried || []}
-                            ></FileTasksList>
-                        </CardActions>
+                            >
+                                <Box
+                                    sx={{
+                                        flex: 1,
+                                        display: "flex",
+                                        flexDirection: "column",
+                                    }}
+                                >
+                                    <Summary
+                                        filePreview={filePreview}
+                                        onOpenDetailsTab={
+                                            handleOpenDetailsOnTabClick
+                                        }
+                                    />
+                                    <HighlightList
+                                        highlights={
+                                            filePreview.highlight as Record<
+                                                string,
+                                                string[]
+                                            >
+                                        }
+                                    />
+                                    {isMobile && (
+                                        <TagsList
+                                            tags={filePreview.tags || []}
+                                            filePreview={filePreview}
+                                        />
+                                    )}
+                                </Box>
+
+                                {filePreview.thumbnailFileId && (
+                                    <Badge
+                                        color="primary"
+                                        badgeContent={
+                                            filePreview.thumbnailTotalFrames
+                                        }
+                                        anchorOrigin={{
+                                            vertical: "bottom",
+                                            horizontal: "right",
+                                        }}
+                                        className={styles.thumbnailBadge}
+                                    >
+                                        <img
+                                            onClick={(e) =>
+                                                handleOpenDetailsOnTabClick(
+                                                    FileDetailTab.Rendered,
+                                                    e.ctrlKey,
+                                                )
+                                            }
+                                            className={styles.resultImage}
+                                            src={webApiGetFileThumbnail(
+                                                filePreview.fileId,
+                                                filePreview.thumbnailFileId,
+                                            )}
+                                            alt="Thumbnail"
+                                        />
+                                    </Badge>
+                                )}
+                            </Box>
+                            <Box
+                                sx={{
+                                    display: "flex",
+                                    justifyContent: "space-between",
+                                    alignItems: "center",
+                                    mt: 1,
+                                }}
+                            >
+                                <Typography
+                                    variant="caption"
+                                    sx={{ color: "text.disabled", pl: 0.5 }}
+                                >{`${searchQuery?.sortField ?? "score"}: ${sortFieldValue}`}</Typography>
+                                <FileTasksList
+                                    tasksSucceeded={
+                                        filePreview.tasksSucceeded || []
+                                    }
+                                    tasksFailed={filePreview.tasksFailed || []}
+                                    taskRetried={filePreview.tasksRetried || []}
+                                />
+                            </Box>
+                        </CardContent>
                     </Card>
                 )}
             </Box>

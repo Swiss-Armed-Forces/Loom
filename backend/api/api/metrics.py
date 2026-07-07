@@ -9,7 +9,6 @@ from common.dependencies import (
     get_imap_service,
     get_redis_cache_client,
 )
-from common.file.file_repository import Stat
 from common.services.query_builder import QueryParameters
 from common.utils.cache import cache_get, cache_set, get_cache_statistics
 from fastapi import FastAPI
@@ -164,12 +163,12 @@ def count_files(_: CallbackOptions) -> Iterable[Observation]:
 def count_files_by_state(_: CallbackOptions) -> Iterable[Observation]:
     file_repository = get_file_repository()
     query_id = file_repository.open_point_in_time()
-    state_stat = file_repository.get_stat_generic(
+    state_stat = file_repository.get_stat_terms(
         query=QueryParameters(
             query_id=query_id,
             search_string="hidden:*",
         ),
-        stat=Stat.STATES,
+        stat="state",
     )
     for state_data in state_stat.data:
         yield Observation(
@@ -181,12 +180,12 @@ def count_files_by_state(_: CallbackOptions) -> Iterable[Observation]:
 def count_files_by_source(_: CallbackOptions) -> Iterable[Observation]:
     file_repository = get_file_repository()
     query_id = file_repository.open_point_in_time()
-    source_stat = file_repository.get_stat_generic(
+    source_stat = file_repository.get_stat_terms(
         query=QueryParameters(
             query_id=query_id,
             search_string="hidden:*",
         ),
-        stat=Stat.SOURCES,
+        stat="source",
     )
     for source_data in source_stat.data:
         yield Observation(

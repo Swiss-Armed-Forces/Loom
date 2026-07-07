@@ -10,34 +10,15 @@
     font-weight: 600;
 }
 
-.emptyCardTitle {
-    padding-bottom: 0 !important;
-}
-
-.link,
-.link:hover,
-.link:visited {
-    color: #00acc1;
-    text-decoration: underline;
-    cursor: pointer;
-    cursor: hand;
-}
-
-span.clickableSpan {
-    color: #444477;
+kbd {
     display: inline-block;
-}
-
-span.clickableSpan:hover {
-    border-radius: 4px;
-    background-color: #b2ebf2;
-    cursor: pointer;
-    cursor: hand;
-}
-
-span.clickableSpan:active {
-    border-radius: 4px;
-    background-color: #80deea;
-    cursor: pointer;
-    cursor: hand;
+    padding: 0.1em 0.35em;
+    font-size: 0.78rem;
+    font-family: monospace;
+    line-height: 1.4;
+    background: #f3f3f3;
+    border: 1px solid #ccc;
+    border-bottom-width: 2px;
+    border-radius: 3px;
+    color: #333;
 }

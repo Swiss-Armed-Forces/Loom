@@ -1,13 +1,15 @@
-import { ExpandMore, MoreVert } from "@mui/icons-material";
+import { ExpandMore, ManageSearch, Sort } from "@mui/icons-material";
 import {
     Accordion,
     AccordionDetails,
     AccordionSummary,
+    Chip,
     IconButton,
-    styled,
+    Tooltip,
     Typography,
 } from "@mui/material";
 import { Fragment, ReactNode, useState } from "react";
+import { useTranslation } from "react-i18next";
 
 import { HighlightContent } from "./HighlightContent";
 import styles from "./HighlightItem.module.css";
@@ -17,23 +19,22 @@ const STRIP_TAGS = /<\/?highlight>/g;
 
 const DEFAULT_EXPANDED_REGEX = [/^content/, /^translations/];
 
-const FieldTypography = styled(Typography)`
-    line-height: 2.5;
-`;
-
 interface HighlightItemProps {
     field: string;
     value: string[];
-    onContextMenu: (target: HTMLElement, field: string) => void;
+    onQuery: (negate: boolean) => void;
+    onSort: () => void;
     fullDetails?: boolean;
 }
 
 export const HighlightItem = ({
     field,
     value,
-    onContextMenu,
+    onQuery,
+    onSort,
     fullDetails,
 }: HighlightItemProps) => {
+    const { t } = useTranslation();
     const isDefaultExpanded = DEFAULT_EXPANDED_REGEX.some((re) =>
         re.test(field),
     );
@@ -51,35 +52,81 @@ export const HighlightItem = ({
 
     return (
         <Accordion
+            disableGutters
+            elevation={0}
+            square
             slotProps={{ transition: { timeout: 0 } }}
             expanded={expanded}
             onChange={() => setExpanded(!expanded)}
-            className={styles.accordion}
+            sx={{
+                bgcolor: "transparent",
+                "&:before": { display: "none" },
+                borderTop: "1px solid",
+                borderColor: "divider",
+                "&:first-of-type": { borderTop: 0 },
+            }}
         >
-            <div className={styles.accordionHeader}>
-                <IconButton
-                    onClick={(e) => {
-                        e.stopPropagation();
-                        onContextMenu(e.currentTarget, field);
+            <AccordionSummary
+                expandIcon={<ExpandMore fontSize="small" />}
+                sx={{
+                    pl: 0,
+                    pr: 0.5,
+                    minHeight: 0,
+                    "& .MuiAccordionSummary-content": {
+                        my: 0.5,
+                        alignItems: "center",
+                        gap: 1,
+                        overflow: "hidden",
+                    },
+                }}
+            >
+                <Chip
+                    label={field}
+                    size="small"
+                    sx={{
+                        fontFamily: "monospace",
+                        fontSize: "0.7rem",
+                        height: "auto",
+                        py: 0.25,
+                        flexShrink: 0,
                     }}
-                >
-                    <MoreVert />
-                </IconButton>
-                <AccordionSummary expandIcon={<ExpandMore />}>
-                    <FieldTypography className={styles.hitField}>
-                        {field}
-                    </FieldTypography>
-                    {!expanded && !fullDetails && (
-                        <FieldTypography
-                            color="text.secondary"
-                            className={styles.resultHighlightText}
-                        >
-                            {renderHighlight(value[0])}
-                        </FieldTypography>
-                    )}
-                </AccordionSummary>
-            </div>
-            <AccordionDetails>
+                />
+                {!expanded && !fullDetails && (
+                    <Typography
+                        variant="body2"
+                        color="text.secondary"
+                        className={styles.resultHighlightText}
+                        noWrap
+                    >
+                        {renderHighlight(value[0])}
+                    </Typography>
+                )}
+                <Tooltip title={t("generalSearchView.queryThisField")}>
+                    <IconButton
+                        size="small"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            onQuery(e.shiftKey);
+                        }}
+                        sx={{ ml: "auto", flexShrink: 0 }}
+                    >
+                        <ManageSearch fontSize="small" />
+                    </IconButton>
+                </Tooltip>
+                <Tooltip title={t("generalSearchView.sortThisField")}>
+                    <IconButton
+                        size="small"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            onSort();
+                        }}
+                        sx={{ flexShrink: 0 }}
+                    >
+                        <Sort fontSize="small" />
+                    </IconButton>
+                </Tooltip>
+            </AccordionSummary>
+            <AccordionDetails sx={{ px: 1, pt: 0, pb: 1 }}>
                 {value.map((val, idx) => (
                     <HighlightContent
                         key={idx}

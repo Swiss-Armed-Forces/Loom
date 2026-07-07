@@ -1,16 +1,20 @@
 import argparse
 import logging
 import os
-import sys
 import tempfile
 import time
 
-import gitlab
 from git import Repo
 from git.exc import GitCommandError
+from gitlab.exceptions import GitlabError
 from gitlab.v4.objects import Project, ProjectMergeRequest, ProjectPipeline
 
-from ._common import _get_gitlab_client_or_exit, _maybe_update_mr_description
+from ._common import (
+    _get_gitlab_client_or_exit,
+    _maybe_update_mr_description,
+    checkout_mr_branch,
+    resolve_mr_from_args_or_branch,
+)
 from .claude import run_claude_agentic
 from .gitlab_api import (
     PIPELINE_WAITING_STATUSES,
@@ -18,50 +22,14 @@ from .gitlab_api import (
     fetch_first_failing_job,
     fetch_job_log,
     fetch_latest_pipeline_for_mr,
-    fetch_mr_by_ref,
     fetch_watched_mrs,
-    find_open_mr_for_branch,
     get_project,
-    parse_mr_url_or_id,
 )
 from .prompts import build_watch_fix_prompt
 
 logger = logging.getLogger(__name__)
 
 POLL_INTERVAL = 180  # seconds
-
-
-def _resolve_watch_target(
-    args: argparse.Namespace, gl: gitlab.Gitlab, repo: Repo
-) -> ProjectMergeRequest:
-    """Resolve which MR to watch: explicit ref, or MR for the current branch."""
-    if args.mr:
-        try:
-            ref = parse_mr_url_or_id(args.mr)
-        except ValueError as e:
-            logger.error("%s", e)
-            sys.exit(1)
-        return fetch_mr_by_ref(gl, repo, ref)
-    branch = repo.active_branch.name
-    logger.info("Current branch: %s", branch)
-    mr = find_open_mr_for_branch(gl, branch, repo)
-    if not mr:
-        logger.error("No open MR found for branch: %s", branch)
-        sys.exit(1)
-    return mr
-
-
-def _checkout_mr_branch(mr: ProjectMergeRequest, repo: Repo) -> str:
-    """Check out the MR's source branch locally and return the branch name."""
-    branch_name = mr.source_branch
-    repo.git.fetch("origin")
-    local_branches = [b.name for b in repo.branches]
-    if branch_name in local_branches:
-        repo.git.checkout(branch_name)
-        repo.git.reset("--hard", f"origin/{branch_name}")
-    else:
-        repo.git.checkout("-b", branch_name, f"origin/{branch_name}")
-    return branch_name
 
 
 def _fix_failing_job_and_push(
@@ -116,7 +84,14 @@ def _watch_approved_mrs(project: Project, repo: Repo) -> None:
             mrs: list[ProjectMergeRequest] = []
             stale: set[int] = set()
             for iid in watched_iids:
-                mr = project.mergerequests.get(iid)
+                try:
+                    mr = project.mergerequests.get(iid)
+                except GitlabError as e:
+                    logger.warning(
+                        "Failed to fetch MR !%s, dropping from watch: %s", iid, e
+                    )
+                    stale.add(iid)
+                    continue
                 if mr.state != "opened":
                     stale.add(iid)
                 else:
@@ -143,7 +118,7 @@ def _watch_approved_mrs(project: Project, repo: Repo) -> None:
                     continue
 
                 print(f"  -> Fixing MR !{mr.iid}: {mr.title}")
-                branch_name = _checkout_mr_branch(mr, repo)
+                branch_name = checkout_mr_branch(mr, repo)
                 _fix_failing_job_and_push(project, pipeline, branch_name, repo)
 
             time.sleep(POLL_INTERVAL)
@@ -163,8 +138,8 @@ def cmd_mr_watch(args: argparse.Namespace) -> None:
         _watch_approved_mrs(project, repo)
         return
 
-    mr = _resolve_watch_target(args, gl, repo)
-    branch_name = _checkout_mr_branch(mr, repo)
+    mr = resolve_mr_from_args_or_branch(gl, args, repo)
+    branch_name = checkout_mr_branch(mr, repo)
 
     print(f"\nWatching MR !{mr.iid}: {mr.title}")
     print(f"Branch: {branch_name}")

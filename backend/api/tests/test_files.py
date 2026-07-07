@@ -15,12 +15,13 @@ from common.file.file_repository import (
     TAG_LEN_MIN,
     File,
     FilePurePath,
-    Stat,
 )
 from common.file.file_statistics import (
+    AvailableStat,
+    GroupedHistogramStatistics,
+    GroupedStatisticsEntry,
     StatisticsEntry,
-    StatisticsGeneric,
-    StatisticsSummary,
+    TermsStatistics,
 )
 from common.models.es_repository import EsIdObject, _EsMeta
 from common.services.lazybytes_service import LazyBytes
@@ -29,9 +30,10 @@ from common.services.task_scheduling_service import UpdateFileRequest
 from fastapi.testclient import TestClient
 
 from api.models.statistics_model import (
-    GenericStatisticsModel,
+    GroupedHistogramStatisticsModel,
+    GroupedHitsPerGroupEntryModel,
     HitsPerGroupEntryModel,
-    SummaryStatisticsModel,
+    TermsStatisticsModel,
 )
 from api.routers.files import (
     CONTENT_PREVIEW_LENGTH,
@@ -40,6 +42,7 @@ from api.routers.files import (
     GetFilePreviewResponse,
     GetFilesCountResponse,
     GetFilesQuery,
+    GetStatsQuery,
     UpdateFilesRequest,
 )
 
@@ -358,28 +361,8 @@ def test_get_preview_file_is_none(client: TestClient):
     )
 
 
-def test_stat_summary(client: TestClient):
-    get_file_repository().get_stat_summary.return_value = StatisticsSummary(
-        avg_file_size=16384,
-        min_file_size=1024,
-        max_file_size=32768,
-        total_no_of_files=40,
-    )
-    query = QueryParameters(query_id="0123456789")
-
-    response = client.get("/v1/files/stats/summary", params=query.model_dump())
-    assert response.status_code == 200
-    stats = SummaryStatisticsModel.model_validate(response.json())
-    assert stats.avg == 16384
-    assert stats.min == 1024
-    assert stats.max == 32768
-    assert stats.count == 40
-
-    get_file_repository().get_stat_summary.assert_called_once_with(query=query)
-
-
-def test_stat_generic_exists(client: TestClient):
-    get_file_repository().get_stat_generic.return_value = StatisticsGeneric(
+def test_stat_terms_exists(client: TestClient):
+    get_file_repository().get_stat_terms.return_value = TermsStatistics(
         data=[
             StatisticsEntry(
                 name=".pdf",
@@ -391,18 +374,19 @@ def test_stat_generic_exists(client: TestClient):
             ),
         ],
         total_no_of_files=40,
-        stat=Stat.EXTENSIONS.value,
+        stat="extension",
         key="extension",
     )
-    query = QueryParameters(query_id="0123456789")
+    base_query = QueryParameters(query_id="0123456789")
+    expected_query = GetStatsQuery(query_id="0123456789")
 
     response = client.get(
-        "/v1/files/stats/generic/extensions", params=query.model_dump()
+        "/v1/files/stats/terms/extension", params=base_query.model_dump()
     )
     assert response.status_code == 200
-    stats = GenericStatisticsModel.model_validate(response.json())
+    stats = TermsStatisticsModel.model_validate(response.json())
     assert stats.file_count == 40
-    assert stats.stat == Stat.EXTENSIONS.value
+    assert stats.stat == "extension"
     assert stats.data == [
         HitsPerGroupEntryModel(
             name=".pdf",
@@ -414,11 +398,128 @@ def test_stat_generic_exists(client: TestClient):
         ),
     ]
 
-    get_file_repository().get_stat_generic.assert_called_once_with(
-        query=query, stat=Stat.EXTENSIONS
+    get_file_repository().get_stat_terms.assert_called_once_with(
+        query=expected_query, stat="extension", size=5
     )
 
 
-def test_stat_generic_not_exists(client: TestClient):
-    response = client.get("/v1/files/stats/generic/DOESNT_EXIST?search_string=*")
+def test_stat_terms_not_exists(client: TestClient):
+    response = client.get("/v1/files/stats/terms/DOESNT_EXIST?search_string=*")
     assert response.status_code == 422
+
+
+def test_stat_terms_rejects_date_stat(client: TestClient):
+    # date stats are not valid for the terms endpoint — must return 422
+    response = client.get("/v1/files/stats/terms/uploaded_datetime?search_string=*")
+    assert response.status_code == 422
+
+
+def test_stat_terms_rejects_number_stat(client: TestClient):
+    # number stats are not valid for the terms endpoint — must return 422
+    response = client.get("/v1/files/stats/terms/size?search_string=*")
+    assert response.status_code == 422
+
+
+def test_stat_histogram_valid(client: TestClient):
+    get_file_repository().get_stat_histogram.return_value = TermsStatistics(
+        data=[
+            StatisticsEntry(name="2024-01-01T00:00:00.000Z", hits_count=5),
+        ],
+        total_no_of_files=5,
+        stat="uploaded_datetime",
+        key="uploaded_datetime",
+    )
+    query = QueryParameters(query_id="0123456789")
+
+    response = client.get(
+        "/v1/files/stats/histogram/uploaded_datetime",
+        params=query.model_dump(),
+    )
+    assert response.status_code == 200
+    stats = TermsStatisticsModel.model_validate(response.json())
+    assert stats.stat == "uploaded_datetime"
+    assert stats.file_count == 5
+    get_file_repository().get_stat_histogram.assert_called_once_with(
+        query=query, stat="uploaded_datetime"
+    )
+
+
+def test_stat_histogram_not_exists(client: TestClient):
+    response = client.get("/v1/files/stats/histogram/DOESNT_EXIST?search_string=*")
+    assert response.status_code == 422
+
+
+def test_stat_histogram_rejects_terms_stat(client: TestClient):
+    # 'extension' is a terms stat, not a histogram stat — must return 422
+    response = client.get("/v1/files/stats/histogram/extension?search_string=*")
+    assert response.status_code == 422
+
+
+def test_stat_histogram_grouped_valid(client: TestClient):
+    get_file_repository().get_stat_histogram_grouped.return_value = (
+        GroupedHistogramStatistics(
+            stat="uploaded_datetime",
+            group_by="extension",
+            key="uploaded_datetime",
+            histogram_type="date",
+            data=[
+                GroupedStatisticsEntry(
+                    name="2024-01-01T00:00:00.000Z",
+                    groups={".pdf": 5, ".txt": 2},
+                    hits_count=7,
+                )
+            ],
+            total_no_of_files=7,
+        )
+    )
+    query = QueryParameters(query_id="0123456789")
+
+    response = client.get(
+        "/v1/files/stats/histogram/uploaded_datetime/grouped/extension",
+        params=query.model_dump(),
+    )
+    assert response.status_code == 200
+    stats = GroupedHistogramStatisticsModel.model_validate(response.json())
+    assert stats.stat == "uploaded_datetime"
+    assert stats.group_by == "extension"
+    assert stats.file_count == 7
+    assert stats.data == [
+        GroupedHitsPerGroupEntryModel(
+            name="2024-01-01T00:00:00.000Z",
+            groups={".pdf": 5, ".txt": 2},
+            hits_count=7,
+        )
+    ]
+    get_file_repository().get_stat_histogram_grouped.assert_called_once_with(
+        query=query, stat="uploaded_datetime", group_by="extension"
+    )
+
+
+def test_stat_histogram_grouped_non_date_stat(client: TestClient):
+    # 'extension' is a terms stat, not date_histogram — must return 422
+    response = client.get(
+        "/v1/files/stats/histogram/extension/grouped/extension?search_string=*"
+    )
+    assert response.status_code == 422
+
+
+def test_get_available_stats_by_type(client: TestClient):
+    terms_response = client.get("/v1/files/stats/terms")
+    assert terms_response.status_code == 200
+    terms_stats = [AvailableStat.model_validate(s) for s in terms_response.json()]
+    terms_ids = {s.id for s in terms_stats}
+    assert "extension" in terms_ids
+    assert "uploaded_datetime" not in terms_ids
+    assert "size" not in terms_ids
+
+    histogram_response = client.get("/v1/files/stats/histogram")
+    assert histogram_response.status_code == 200
+    histogram_stats = [
+        AvailableStat.model_validate(s) for s in histogram_response.json()
+    ]
+    histogram_ids = {s.id for s in histogram_stats}
+    assert "uploaded_datetime" in histogram_ids
+    assert "size" in histogram_ids
+    assert "extension" not in histogram_ids
+
+    assert client.get("/v1/files/stats/unknown").status_code == 422

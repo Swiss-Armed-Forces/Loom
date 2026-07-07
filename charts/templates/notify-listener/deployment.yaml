@@ -1,0 +1,66 @@
+{{- if .Values.notifyListener.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "app.fullname" . }}-notify-listener
+  labels:
+    {{- include "app.labels.custom" (dict "context" . "component" "notify-listener") | nindent 4 }}
+    app.kubernetes.io/component: notify-listener
+  {{- with include "app.annotations.custom" (dict "context" . "component" "notify-listener") }}
+  annotations:
+    {{- . | nindent 4 }}
+  {{- end }}
+spec:
+  replicas: {{ .Values.notifyListener.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ include "app.name" . }}-notify-listener
+  template:
+    metadata:
+      labels:
+        app: {{ include "app.name" . }}-notify-listener
+        {{- include "app.labels.custom" (dict "context" . "component" "notify-listener") | nindent 8 }}
+      {{- with include "app.annotations.custom" (dict "context" . "component" "notify-listener") }}
+      annotations:
+        {{- . | nindent 8 }}
+      {{- end }}
+    spec:
+      {{- with .Values.notifyListener.priorityClass }}
+      priorityClassName: {{ include "app.fullname" $ }}-{{ . }}
+      {{- end }}
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
+      {{- with include "app.trustedCerts.initContainer" . }}
+      initContainers:
+        {{- . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: notify-listener
+          image: {{ .Values.image.registry }}/{{ .Values.notifyListener.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) .Values.notifyListener.image.tag }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          env:
+            - name: CRAWLER_TYPE
+              value: "NOTIFY_LISTENER"
+            {{- with include "app.trustedCerts.env" . }}{{ . | nindent 12 }}{{- end }}
+          envFrom:
+            - configMapRef:
+                name: {{ include "app.fullname" . }}-settings
+            {{- with include "app.externalSecrets.envFrom" . }}{{ . | nindent 12 }}{{- end }}
+          {{- if .Values.notifyListener.command }}
+          command: {{- toYaml .Values.notifyListener.command | nindent 10 }}
+          {{- else }}
+          command: ["python", "main.py"]
+          {{- end }}
+          {{- if .Values.notifyListener.resources }}
+          resources: {{- toYaml .Values.notifyListener.resources | nindent 12 }}
+          {{- end }}
+          {{- with include "app.trustedCerts.volumeMount" . }}
+          volumeMounts:
+            {{- . | nindent 12 }}
+          {{- end }}
+      {{- with include "app.trustedCerts.volumes" . }}
+      volumes:
+        {{- . | nindent 8 }}
+      {{- end }}
+{{- end }}

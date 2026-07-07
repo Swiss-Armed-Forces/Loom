@@ -16,9 +16,9 @@ import {
     GetFilePreviewResponse,
     GetFilesFileEntry,
     searchFiles,
-    SummaryStatisticsModel,
-    GenericStatisticsModel,
-    Stat,
+    GroupedHistogramStatisticsModel,
+    TermsStatisticsModel,
+    AvailableStat,
     PubSubMessage,
     getLongRunningQuery,
     getFilesCount,
@@ -26,25 +26,50 @@ import {
     ResponseError,
 } from "@app/api/index";
 import {
+    subscribeChannel,
+    unsubscribeChannel,
+} from "@app/channelSubscriptions";
+import {
     startLoadingIndicator,
     stopLoadingIndicator,
 } from "@app/slices/commonSlice";
+import { FileDetailTab } from "@features/common/utils/enums";
 import {
     CombinedStats,
     SearchQuery,
     SearchQuerySchema,
 } from "@features/common/utils/model";
+import {
+    DEFAULT_HISTOGRAM_STAT,
+    DEFAULT_TERMS_STAT,
+} from "@features/search/views/Statistics/statOrder";
 import { webSocketSendMessage } from "@middleware/SocketMiddleware";
 
 import { RootState } from "../store";
 
-export const SearchView = {
+export const LeftSidebarPanel = {
     FOLDER: "folder",
-    DETAILED: "detailed",
-    STATISTICS: "statistics",
+    TAGS: "tags",
+    QUERIES: "queries",
+    BULK_ACTIONS: "bulk_actions",
+    AUTO_ACTIONS: "auto_actions",
 } as const;
 
-export type SearchView = (typeof SearchView)[keyof typeof SearchView];
+export type LeftSidebarPanel =
+    (typeof LeftSidebarPanel)[keyof typeof LeftSidebarPanel];
+
+export const RightSidebarTab = {
+    STATISTICS: "statistics",
+    CHAT: "chat",
+} as const;
+
+export type RightSidebarTab =
+    (typeof RightSidebarTab)[keyof typeof RightSidebarTab];
+
+export interface FileTabState {
+    fileId: string;
+    detailTab: FileDetailTab;
+}
 
 export interface CustomQuery {
     id: string;
@@ -89,14 +114,6 @@ export interface KeyboardNavigationState {
     highlightedIndex: number | null;
 }
 
-export interface SideMenuState {
-    isExpanded: boolean;
-    isBulkActionsExpanded: boolean;
-    isTagsExpanded: boolean;
-    isQueriesExpanded: boolean;
-    isAutoActionsExpanded: boolean;
-}
-
 export interface AutoActionsPreferences {
     markAsSeen: boolean;
     flag: boolean;
@@ -109,79 +126,118 @@ export interface AutoActionsPreferences {
 export interface SearchState {
     query: SearchQuery | null;
     queryError?: string;
-    view: SearchView;
+    leftSidebarPanel: LeftSidebarPanel | null;
+    rightSidebarOpen: boolean;
+    rightSidebarTab: RightSidebarTab;
     stats: CombinedStats;
     files: {
         [fileId: string]: {
             meta: GetFilesFileEntry | null;
             preview: GetFilePreviewResponse | null;
             query: SearchQuery | null;
+            stale?: boolean;
+            temporary?: boolean;
         };
     };
+    temporaryFileId: string | null;
     totalFiles: number;
     lastFileSortId: any[] | null;
     filesInView: string[];
     tags: string[];
     customQueries: CustomQuery[];
-    sideMenu: SideMenuState;
+    highlightedQueryId: string | null;
+    openFileTabs: FileTabState[];
+    activeTabFileId: string | null;
+    expandFilePaths: boolean;
     autoActionsPreferences: AutoActionsPreferences;
     contentTruncatedFilesCount: number;
     attachmentsSkippedFilesCount: number;
     failedFilesCount: number;
-    displayStat: Stat;
+    displayStat: string;
+    displayHistogramStat: string;
+    termsStats: AvailableStat[];
+    histogramStats: AvailableStat[];
     webSocketPubSubMessage: PubSubMessage | null;
-    chatbotOpen: boolean;
     summarizationSystemPrompt: string | null;
     visionSystemPrompt: string | null;
     keyboardNavigation: KeyboardNavigationState;
 }
 
 export const CUSTOM_QUERIES_LOCAL_STORAGE_KEY = "CUSTOM_QUERIES";
-export const SIDE_MENU_LOCAL_STORAGE_KEY = "SIDE_MENU";
 export const AUTO_ACTIONS_PREFERENCES_LOCAL_STORAGE_KEY =
     "AUTO_ACTIONS_PREFERENCES";
+export const UI_STATE_LOCAL_STORAGE_KEY = "UI_STATE";
 export const QUERY_FAILED_FILES = "state:failed";
 export const QUERY_CONTENT_TRUNCATED_FILES = "content_truncated:true";
 export const QUERY_ATTACHMENTS_SKIPPED_FILES = "attachments_skipped:true";
 const AJV = new Ajv();
 
-const SideMenuStateSchema: JSONSchemaType<SideMenuState> = {
-    type: "object",
-    properties: {
-        isExpanded: { type: "boolean" },
-        isBulkActionsExpanded: { type: "boolean" },
-        isTagsExpanded: { type: "boolean" },
-        isQueriesExpanded: { type: "boolean" },
-        isAutoActionsExpanded: { type: "boolean" },
-    },
-    required: [
-        "isExpanded",
-        "isBulkActionsExpanded",
-        "isTagsExpanded",
-        "isQueriesExpanded",
-        "isAutoActionsExpanded",
-    ],
-    additionalProperties: false,
+interface UiState {
+    leftSidebarPanel: LeftSidebarPanel | null;
+    rightSidebarOpen: boolean;
+    rightSidebarTab: RightSidebarTab;
+    openFileTabs: FileTabState[];
+    expandFilePaths: boolean;
+}
+
+const DEFAULT_UI_STATE: UiState = {
+    leftSidebarPanel: null,
+    rightSidebarOpen: false,
+    rightSidebarTab: RightSidebarTab.STATISTICS,
+    openFileTabs: [],
+    expandFilePaths: false,
 };
 
-const loadSideMenuState = (): SideMenuState => {
-    const defaults: SideMenuState = {
-        isExpanded: false,
-        isBulkActionsExpanded: false,
-        isTagsExpanded: true,
-        isQueriesExpanded: true,
-        isAutoActionsExpanded: false,
-    };
-    const data = window.localStorage.getItem(SIDE_MENU_LOCAL_STORAGE_KEY);
-    if (!data) return defaults;
+const UiStateSchema = {
+    type: "object",
+    properties: {
+        leftSidebarPanel: {
+            type: ["string", "null"],
+            enum: [...Object.values(LeftSidebarPanel), null],
+        },
+        rightSidebarOpen: { type: "boolean" },
+        rightSidebarTab: {
+            type: "string",
+            enum: Object.values(RightSidebarTab),
+        },
+        openFileTabs: {
+            type: "array",
+            items: {
+                type: "object",
+                properties: {
+                    fileId: { type: "string", minLength: 1 },
+                    detailTab: {
+                        type: "integer",
+                        enum: Object.values(FileDetailTab),
+                    },
+                },
+                required: ["fileId", "detailTab"],
+                additionalProperties: false,
+            },
+        },
+        expandFilePaths: { type: "boolean" },
+    },
+    required: [
+        "leftSidebarPanel",
+        "rightSidebarOpen",
+        "rightSidebarTab",
+        "openFileTabs",
+        "expandFilePaths",
+    ],
+    additionalProperties: false,
+} as const;
+
+const loadUiState = (): UiState => {
+    const data = window.localStorage.getItem(UI_STATE_LOCAL_STORAGE_KEY);
+    if (!data) return DEFAULT_UI_STATE;
     try {
         const parsed = JSON.parse(data);
-        const validate = AJV.compile(SideMenuStateSchema);
-        if (validate(parsed)) return parsed;
-        console.warn("Invalid side menu state in localStorage, using defaults");
-        return defaults;
+        const validate = AJV.compile(UiStateSchema);
+        if (validate(parsed)) return parsed as UiState;
+        console.warn("Invalid UI state in localStorage, using defaults");
+        return DEFAULT_UI_STATE;
     } catch {
-        return defaults;
+        return DEFAULT_UI_STATE;
     }
 };
 
@@ -258,13 +314,21 @@ const loadCustomQueries = (): CustomQuery[] => {
     }
 };
 
+const uiState = loadUiState();
+// Seed activeTabFileId from the URL hash so the Redux→URL effect sees a match
+// on initial mount and doesn't clear the hash before the URL→Redux effect can
+// open the tab. The URL→Redux effect (syncedHashRef = "") still fires and calls
+// openFileTabThunk to ensure the tab is added to openFileTabs if it isn't yet.
+const initialHashFileId = window.location.hash.substring(1) || null;
+
 const initialState: SearchState = {
     query: null,
-    view: SearchView.DETAILED,
+    leftSidebarPanel: uiState.leftSidebarPanel,
+    rightSidebarOpen: uiState.rightSidebarOpen,
+    rightSidebarTab: uiState.rightSidebarTab,
     stats: {
-        summary: null,
-        generic: null,
-        tags: null,
+        termsData: null,
+        histogramData: null,
     },
     files: {},
     lastFileSortId: null,
@@ -272,19 +336,25 @@ const initialState: SearchState = {
     filesInView: [],
     tags: [],
     customQueries: loadCustomQueries(),
-    sideMenu: loadSideMenuState(),
+    highlightedQueryId: null,
+    openFileTabs: uiState.openFileTabs,
+    activeTabFileId: initialHashFileId,
+    expandFilePaths: uiState.expandFilePaths,
     autoActionsPreferences: loadAutoActionsPreferences(),
     contentTruncatedFilesCount: 0,
     attachmentsSkippedFilesCount: 0,
     failedFilesCount: 0,
-    displayStat: Stat.Extensions,
+    displayStat: DEFAULT_TERMS_STAT,
+    displayHistogramStat: DEFAULT_HISTOGRAM_STAT,
+    termsStats: [],
+    histogramStats: [],
     webSocketPubSubMessage: null,
-    chatbotOpen: false,
     summarizationSystemPrompt: null,
     visionSystemPrompt: null,
     keyboardNavigation: {
         highlightedIndex: null,
     },
+    temporaryFileId: null,
 };
 
 export const updateQuery = createAsyncThunk(
@@ -383,12 +453,17 @@ export const fetchPreview = createAsyncThunk(
         thunkAPI: GetThunkAPI<AsyncThunkConfig>,
     ) => {
         const { search } = thunkAPI.getState() as RootState;
-        // Use explicit query if provided; otherwise fall back to the active search query
-        // only if the file is in the current search results (to get highlights). Files
-        // outside the current results (e.g. parent navigation) use "hidden:*" so they
-        // load regardless of the active search context.
-        const fileIsInResults = search.files[fileId]?.meta != null;
-        const activeQuery = query ?? (fileIsInResults ? search.query : null);
+        // Stale files are fetched without any query context so they load via
+        // "hidden:*" unconditionally — their stored query no longer matches.
+        // For non-stale files: use the explicit query if provided, otherwise
+        // fall back to the active search query only when the file is in results
+        // (to get highlights). Files outside results use "hidden:*".
+        const fileEntry = search.files[fileId];
+        const fileIsStale = fileEntry?.stale ?? false;
+        const fileIsInResults = fileEntry?.meta != null && !fileIsStale;
+        const activeQuery = fileIsStale
+            ? null
+            : (query ?? (fileIsInResults ? search.query : null));
 
         const queryId = (await getShortRunningQuery()).queryId;
         const searchQuery: SearchQuery = activeQuery
@@ -490,28 +565,12 @@ export const setFileInViewState = createAsyncThunk(
     ) => {
         const dispatch = thunkAPI.dispatch;
         if (inView) {
-            await Promise.all([
-                dispatch(
-                    fetchPreview({ fileId: fileId, query: query ?? undefined }),
-                ),
-                dispatch(
-                    webSocketSendMessage({
-                        message: {
-                            type: "subscribe",
-                            channels: [fileId],
-                        },
-                    }),
-                ),
-            ]);
-        } else {
-            dispatch(
-                webSocketSendMessage({
-                    message: {
-                        type: "unsubscribe",
-                        channels: [fileId],
-                    },
-                }),
+            subscribeChannel(fileId, dispatch);
+            await dispatch(
+                fetchPreview({ fileId: fileId, query: query ?? undefined }),
             );
+        } else {
+            unsubscribeChannel(fileId, dispatch);
         }
         return {
             fileId: fileId,
@@ -524,8 +583,78 @@ export const searchSlice = createSlice({
     name: "search",
     initialState,
     reducers: {
-        setSearchView: (state, action: PayloadAction<SearchView>) => {
-            state.view = action.payload;
+        setLeftSidebarPanel: (
+            state,
+            action: PayloadAction<LeftSidebarPanel | null>,
+        ) => {
+            state.leftSidebarPanel = action.payload;
+            if (action.payload !== LeftSidebarPanel.QUERIES) {
+                state.highlightedQueryId = null;
+            }
+        },
+        setHighlightedQueryId: (
+            state,
+            action: PayloadAction<string | null>,
+        ) => {
+            state.highlightedQueryId = action.payload;
+        },
+        openFileTab: (
+            state,
+            action: PayloadAction<{
+                fileId: string;
+                detailTab?: FileDetailTab;
+                background?: boolean;
+            }>,
+        ) => {
+            const {
+                fileId,
+                detailTab = FileDetailTab.Rendered,
+                background = false,
+            } = action.payload;
+            const existing = state.openFileTabs.find(
+                (t) => t.fileId === fileId,
+            );
+            if (!existing) {
+                state.openFileTabs.push({ fileId, detailTab });
+            }
+            if (!background) {
+                state.activeTabFileId = fileId;
+            }
+        },
+        closeFileTab: (state, action: PayloadAction<string>) => {
+            const fileId = action.payload;
+            const idx = state.openFileTabs.findIndex(
+                (t) => t.fileId === fileId,
+            );
+            if (idx === -1) return;
+            state.openFileTabs.splice(idx, 1);
+            if (state.activeTabFileId === fileId) {
+                if (state.openFileTabs.length === 0) {
+                    state.activeTabFileId = null;
+                } else {
+                    state.activeTabFileId =
+                        state.openFileTabs[Math.max(0, idx - 1)].fileId;
+                }
+            }
+        },
+        setActiveTabFileId: (state, action: PayloadAction<string | null>) => {
+            state.activeTabFileId = action.payload;
+        },
+        setFileTabDetailTab: (
+            state,
+            action: PayloadAction<{ fileId: string; detailTab: FileDetailTab }>,
+        ) => {
+            const tab = state.openFileTabs.find(
+                (t) => t.fileId === action.payload.fileId,
+            );
+            if (tab) tab.detailTab = action.payload.detailTab;
+        },
+        setRightSidebarTab: (state, action: PayloadAction<RightSidebarTab>) => {
+            state.rightSidebarTab = action.payload;
+            state.rightSidebarOpen = true;
+        },
+        toggleRightSidebar: (state) => {
+            state.rightSidebarOpen = !state.rightSidebarOpen;
         },
         addCustomQuery: (state, action: PayloadAction<CustomQuery>) => {
             state.customQueries.push(action.payload);
@@ -541,23 +670,21 @@ export const searchSlice = createSlice({
             );
             if (query) query.hasNewFiles = false;
         },
-        fillStatsSummary: (
-            state,
-            action: PayloadAction<SummaryStatisticsModel | null>,
-        ) => {
-            state.stats.summary = action.payload;
+        clearStats: (state) => {
+            state.stats.termsData = null;
+            state.stats.histogramData = null;
         },
-        fillStatsTags: (
+        fillTermsData: (
             state,
-            action: PayloadAction<GenericStatisticsModel | null>,
+            action: PayloadAction<TermsStatisticsModel | null>,
         ) => {
-            state.stats.tags = action.payload;
+            state.stats.termsData = action.payload;
         },
-        fillStatsGeneric: (
+        fillHistogramData: (
             state,
-            action: PayloadAction<GenericStatisticsModel | null>,
+            action: PayloadAction<GroupedHistogramStatisticsModel | null>,
         ) => {
-            state.stats.generic = action.payload;
+            state.stats.histogramData = action.payload;
         },
         setTags: (state, action: PayloadAction<string[]>) => {
             state.tags = action.payload;
@@ -568,11 +695,17 @@ export const searchSlice = createSlice({
         ) => {
             state.webSocketPubSubMessage = action.payload;
         },
-        setDisplayStat: (state, action: PayloadAction<Stat>) => {
+        fillTermsStats: (state, action: PayloadAction<AvailableStat[]>) => {
+            state.termsStats = action.payload;
+        },
+        fillHistogramStats: (state, action: PayloadAction<AvailableStat[]>) => {
+            state.histogramStats = action.payload;
+        },
+        setDisplayStat: (state, action: PayloadAction<string>) => {
             state.displayStat = action.payload;
         },
-        setChatbotOpen: (state, action: PayloadAction<boolean>) => {
-            state.chatbotOpen = action.payload;
+        setDisplayHistogramStat: (state, action: PayloadAction<string>) => {
+            state.displayHistogramStat = action.payload;
         },
         setSummarizationSystemPrompt: (
             state,
@@ -582,24 +715,6 @@ export const searchSlice = createSlice({
         },
         setVisionSystemPrompt: (state, action: PayloadAction<string>) => {
             state.visionSystemPrompt = action.payload;
-        },
-        toggleSideMenu: (state) => {
-            state.sideMenu.isExpanded = !state.sideMenu.isExpanded;
-        },
-        toggleSideMenuBulkActions: (state) => {
-            state.sideMenu.isBulkActionsExpanded =
-                !state.sideMenu.isBulkActionsExpanded;
-        },
-        toggleSideMenuTags: (state) => {
-            state.sideMenu.isTagsExpanded = !state.sideMenu.isTagsExpanded;
-        },
-        toggleSideMenuQueries: (state) => {
-            state.sideMenu.isQueriesExpanded =
-                !state.sideMenu.isQueriesExpanded;
-        },
-        toggleSideMenuAutoActions: (state) => {
-            state.sideMenu.isAutoActionsExpanded =
-                !state.sideMenu.isAutoActionsExpanded;
         },
         setAutoActionPreference: (
             state,
@@ -612,7 +727,38 @@ export const searchSlice = createSlice({
                 action.payload.value;
         },
         setHighlightedIndex: (state, action: PayloadAction<number | null>) => {
+            if (state.temporaryFileId) {
+                // Temp file is always at the index after all files that have meta
+                // (matching DetailedView's allFileIds order, which includes stale).
+                const metaCount = Object.keys(state.files).filter(
+                    (id) => state.files[id].meta !== null,
+                ).length;
+                if (action.payload !== metaCount) {
+                    delete state.files[state.temporaryFileId];
+                    state.temporaryFileId = null;
+                }
+            }
             state.keyboardNavigation.highlightedIndex = action.payload;
+        },
+        setTemporaryFileId: (state, action: PayloadAction<string | null>) => {
+            if (
+                state.temporaryFileId &&
+                state.temporaryFileId !== action.payload
+            ) {
+                delete state.files[state.temporaryFileId];
+            }
+            state.temporaryFileId = action.payload;
+            if (action.payload && !state.files[action.payload]) {
+                state.files[action.payload] = {
+                    meta: null,
+                    preview: null,
+                    query: null,
+                    temporary: true,
+                };
+            }
+        },
+        setExpandFilePaths: (state, action: PayloadAction<boolean>) => {
+            state.expandFilePaths = action.payload;
         },
         setFilePreview: (
             state,
@@ -665,10 +811,26 @@ export const searchSlice = createSlice({
                 }
                 const isNewQuery = state.query?.id !== action.payload.query.id;
                 if (isNewQuery) {
-                    state.files = {};
+                    // Preserve files that have open tabs so their panels stay intact,
+                    // but null out meta so they don't appear in the search results card view.
+                    // Stale cards are intentionally cleared here so they don't accumulate.
+                    const openTabIds = new Set(
+                        state.openFileTabs.map((t) => t.fileId),
+                    );
+                    const preserved: typeof state.files = {};
+                    openTabIds.forEach((id) => {
+                        if (state.files[id]) {
+                            preserved[id] = {
+                                ...state.files[id],
+                                meta: null,
+                            };
+                        }
+                    });
+                    state.files = preserved;
                     state.keyboardNavigation = {
                         highlightedIndex: null,
                     };
+                    state.temporaryFileId = null;
                 }
 
                 state.query = action.payload.query;
@@ -680,8 +842,10 @@ export const searchSlice = createSlice({
                             query: null,
                         };
                     } else {
-                        // same query, new page: preserve preview
+                        // same query, new page: preserve preview; file is back in
+                        // results so clear any stale flag
                         state.files[file.fileId].meta = file;
+                        state.files[file.fileId].stale = false;
                     }
                 });
                 state.totalFiles = action.payload.totalFiles;
@@ -717,8 +881,13 @@ export const searchSlice = createSlice({
                     fileId: string;
                 };
 
+                // Mark as stale instead of deleting so the card stays visible
+                // when a file no longer matches the current query. Clear the
+                // query so fetchFileContent doesn't fire with the stale query
+                // before fetchPreview returns a fresh hidden:* one.
                 if (fileId && state.files[fileId]) {
-                    delete state.files[fileId];
+                    state.files[fileId].stale = true;
+                    state.files[fileId].query = null;
                 }
             })
             .addCase(setFileInViewState.fulfilled, (state, action) => {
@@ -738,28 +907,58 @@ export const searchSlice = createSlice({
 });
 
 export const {
-    setSearchView,
+    setLeftSidebarPanel,
+    setHighlightedQueryId,
+    openFileTab,
+    closeFileTab,
+    setActiveTabFileId,
+    setFileTabDetailTab,
+    setRightSidebarTab,
+    toggleRightSidebar,
     addCustomQuery,
     deleteCustomQuery,
     markCustomQueryAsRead,
-    fillStatsSummary,
-    fillStatsTags,
-    fillStatsGeneric,
+    clearStats,
+    fillTermsData,
+    fillHistogramData,
+    fillTermsStats,
+    fillHistogramStats,
     setTags,
     setWebSocketPubSubMessage,
     setDisplayStat,
-    setChatbotOpen,
+    setDisplayHistogramStat,
     setSummarizationSystemPrompt,
     setVisionSystemPrompt,
     setFilePreview,
     setHighlightedIndex,
-    toggleSideMenu,
-    toggleSideMenuBulkActions,
-    toggleSideMenuTags,
-    toggleSideMenuQueries,
-    toggleSideMenuAutoActions,
+    setTemporaryFileId,
     setAutoActionPreference,
+    setExpandFilePaths,
 } = searchSlice.actions;
+
+export const openFileTabThunk = createAsyncThunk(
+    "openFileTabThunk",
+    (
+        payload: {
+            fileId: string;
+            detailTab?: FileDetailTab;
+            background?: boolean;
+        },
+        thunkAPI,
+    ) => {
+        const { fileId } = payload;
+        thunkAPI.dispatch(openFileTab(payload));
+        subscribeChannel(fileId, thunkAPI.dispatch);
+    },
+);
+
+export const closeFileTabThunk = createAsyncThunk(
+    "closeFileTabThunk",
+    (fileId: string, thunkAPI) => {
+        thunkAPI.dispatch(closeFileTab(fileId));
+        unsubscribeChannel(fileId, thunkAPI.dispatch);
+    },
+);
 
 export const selectSearch = (state: RootState) => state.search;
 
@@ -768,9 +967,34 @@ export const selectCustomQueries = createSelector(
     (search) => search.customQueries,
 );
 
-export const selectSideMenu = createSelector(
+export const selectLeftSidebarPanel = createSelector(
     selectSearch,
-    (search) => search.sideMenu,
+    (search) => search.leftSidebarPanel,
+);
+
+export const selectHighlightedQueryId = createSelector(
+    selectSearch,
+    (search) => search.highlightedQueryId,
+);
+
+export const selectOpenFileTabs = createSelector(
+    selectSearch,
+    (search) => search.openFileTabs,
+);
+
+export const selectActiveTabFileId = createSelector(
+    selectSearch,
+    (search) => search.activeTabFileId,
+);
+
+export const selectRightSidebarOpen = createSelector(
+    selectSearch,
+    (search) => search.rightSidebarOpen,
+);
+
+export const selectRightSidebarTab = createSelector(
+    selectSearch,
+    (search) => search.rightSidebarTab,
 );
 
 export const selectAutoActionsPreferences = createSelector(
@@ -821,17 +1045,16 @@ export const selectFailedFilesCount = createSelector(
     selectSearch,
     (search) => search.failedFilesCount,
 );
-export const selectActiveSearchView = createSelector(
-    selectSearch,
-    (search) => search.view,
-);
+
 export const selectTotalFiles = createSelector(
     selectSearch,
     (search) => search.totalFiles,
 );
 export const selectLoadedFiles = createSelector(
     selectSearch,
-    (search) => Object.keys(search.files).length,
+    (search) =>
+        Object.values(search.files).filter((f) => !f.stale && !f.temporary)
+            .length,
 );
 
 export const selectFilesInView = createSelector(
@@ -842,6 +1065,26 @@ export const selectFilesInView = createSelector(
 export const selectDisplayStat = createSelector(
     selectSearch,
     (search) => search.displayStat,
+);
+
+export const selectDisplayHistogramStat = createSelector(
+    selectSearch,
+    (search) => search.displayHistogramStat,
+);
+
+export const selectHistogramData = createSelector(
+    selectSearch,
+    (search) => search.stats.histogramData,
+);
+
+export const selectTermsStats = createSelector(
+    selectSearch,
+    (search) => search.termsStats,
+);
+
+export const selectHistogramStats = createSelector(
+    selectSearch,
+    (search) => search.histogramStats,
 );
 
 export const selectWebSocketPubSubMessage = createSelector(
@@ -862,6 +1105,33 @@ export const selectVisionSystemPrompt = createSelector(
 export const selectHighlightedIndex = createSelector(
     selectSearch,
     (search) => search.keyboardNavigation.highlightedIndex,
+);
+
+export const selectTemporaryFileId = createSelector(
+    selectSearch,
+    (search) => search.temporaryFileId,
+);
+
+export const selectExpandFilePaths = createSelector(
+    selectSearch,
+    (search) => search.expandFilePaths,
+);
+
+// Memoised list of ordered file IDs matching the order used in DetailedView.
+// Extracted as a standalone selector so it is not recomputed on every keypress
+// when only the highlighted index changes.
+export const selectOrderedFileIds = createSelector(selectFiles, (files) => [
+    ...Object.keys(files).filter((id) => files[id].meta !== null),
+    ...Object.keys(files).filter((id) => files[id].temporary),
+]);
+
+export const selectHighlightedFileId = createSelector(
+    selectOrderedFileIds,
+    selectHighlightedIndex,
+    (fileIds, index) => {
+        if (index === null || index === undefined) return null;
+        return fileIds[index] ?? null;
+    },
 );
 
 export default searchSlice.reducer;

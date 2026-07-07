@@ -376,6 +376,122 @@ Context directory: {context_dir}
 """
 
 
+def build_mr_review_prompt(
+    mr: ProjectMergeRequest, context_dir: str, comments_dir: str, branch_ref: str
+) -> str:
+    """Build the prompt for the multi-agent MR review.
+
+    Claude is instructed to spawn five parallel review sub-agents covering the full
+    changeset, then write one JSON comment file per finding to comments_dir. It must not
+    modify source files, commit, or push.
+    """
+    return f"""You are performing a multi-agent code review of a GitLab merge request.
+
+## Merge Request
+
+Title: {mr.title}
+URL: {mr.web_url}
+
+## Context
+
+All context files are in: {context_dir}
+- branch.diff — full diff of the branch against main (for reference only)
+
+Start by running `git diff origin/main...{branch_ref} --name-only` to discover the
+complete changeset. Read the changed files directly from the repository to understand
+what was added or removed.
+
+## Review criteria
+
+  1. Bug-free — correct behaviour at runtime, no protocol violations
+  2. Complete — nothing missing, no dangling references, no half-wired config
+  3. Minimal — no dead code, no unnecessary abstractions, nothing that does not need to exist
+  4. Simple — straightforward design, no duplication, easy to follow
+
+## How to review
+
+Spawn 6 parallel review sub-agents using the Agent tool (subagent_type=Explore).
+Each agent examines the full changeset from a different angle:
+
+**Agent 1 — Protocol / runtime correctness (bug-free)**
+Examine all new or modified production code. Are library APIs called in the correct
+order? Race conditions or thread-safety issues? Silent error swallows? Connections
+left in a bad state on failure? Reconnect loops sound? Blocking shutdown latency?
+
+**Agent 2 — Integration wiring (bug-free + complete)**
+Examine task/worker/framework integration points. Queues routed correctly? Decorator
+order correct? Bootsteps registered only for the right worker type? Background threads
+joined on stop with no leaks? Duplicate event dispatch — is that acceptable? Dead
+imports, variables, or helpers defined but never used?
+
+**Agent 3 — Configuration, deployment wiring, and documentation (complete + minimal)**
+Examine settings classes, Helm values, ConfigMaps, and deployment manifests. Do env
+var names round-trip correctly (camelCase → snake_case)? Are nil guards correct for
+booleans and integers? Do Helm defaults match the settings class defaults? Are there
+other deployment files that also need updating? Any dead config (added but never read,
+or read but never wired)?
+Also check the Documentation/ directory, README.md, and CLAUDE.md for correctness
+against the changeset: are new Helm values, settings, CLI flags, or behavioural
+changes reflected? Is any existing documentation now stale or misleading?
+
+**Agent 4 — Test quality (bug-free + minimal)**
+Examine all new and modified test files. Do fixtures and fake data match real shapes
+produced by the libraries under test? Are mocks injected via DI rather than patched?
+Duplicated setup? Low-value tests that only verify what the type system enforces?
+Missing high-value tests (failure paths, edge cases, rapid duplicate events)? Dead
+test helpers or unused imports?
+
+**Agent 5 — Deleted code, duplication & pattern consistency (complete + minimal)**
+For every file deleted on this branch, search the entire repo for remaining references
+to the deleted symbols. Check imports, beat schedules, router registrations, and
+OpenAPI-generated frontend types. Look for logic in new files that already exists
+elsewhere and should be reused. Also examine new and changed code for pattern consistency:
+does it follow the conventions already established in the surrounding codebase (naming
+conventions, error handling style, repository/service patterns, how similar constructs are
+structured in existing files)? Flag deviations where the new code introduces an inconsistent
+approach that should instead mirror the existing pattern. Run `backend-test` and
+`frontend-test` and report any failures, including regressions in code outside the changeset.
+
+**Agent 6 — Performance and scalability with large datasets**
+Examine all new or modified code for behaviour under high data volumes. Will any logic
+become unreasonably slow as the number of documents, search results, or indexed files
+grows? Are there unbounded in-memory accumulations (loading all results into a list,
+building a large dict, etc.) that could exhaust memory? Could streaming or pagination
+replace a bulk fetch? Are there N+1 query patterns or repeated full-collection scans?
+On the frontend: will any UI element (lists, tables, dropdowns, search results) break
+visually or become unresponsive when rendered with many items — missing virtualisation,
+truncation, or pagination? Are there opportunities to run independent operations in
+parallel that would meaningfully reduce latency, without adding disproportionate complexity?
+Flag only genuine risks; do not suggest parallelisation or streaming where the current
+approach is already fast enough for realistic data sizes.
+
+## Output
+
+After all agents complete, for **each finding** write one JSON file to: {comments_dir}/
+
+Name files sequentially: 001.json, 002.json, etc.
+
+Each file must contain exactly this JSON structure:
+{{
+    "file": "path/to/file.py",
+    "line": 42,
+    "severity": "Critical",
+    "body": "The comment text — specific, references exact code, suggests the fix.",
+    "context": "def foo():\n    return bar  # the problematic line"
+}}
+
+- "file": repo-relative path to the file, or null for a general MR comment
+- "line": line number in the new version of the file, or null if not applicable
+- "severity": one of "Critical", "High", or "Low"
+- "body": the review comment body (plain text, no markdown wrapping)
+- "context": the relevant code snippet(s) that illustrate the finding — include enough
+  surrounding lines for the reader to understand the issue without opening the file;
+  use null if there is no specific code to show
+
+Do NOT modify any source files. Do NOT commit or push. Only write the JSON files.
+"""
+
+
 def build_diagnose_prompt(job: ProjectJob, context_dir: str, pipeline_id: int) -> str:
     """Build the prompt for diagnosing a CI/CD job failure."""
     return f"""You are diagnosing a failed GitLab CI/CD job in the Loom project.

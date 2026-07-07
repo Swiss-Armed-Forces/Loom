@@ -9,10 +9,10 @@ import {
     SummarizationApi,
     TagsApi,
     TranslationApi,
+    AvailableStat,
     GetFilesResponse,
-    SummaryStatisticsModel,
-    Stat,
-    GenericStatisticsModel,
+    GroupedHistogramStatisticsModel,
+    TermsStatisticsModel,
     GetFileResponse,
     GetFilePreviewResponse,
     ArchiveCreatedResponse,
@@ -80,6 +80,7 @@ export const getFilesCount = async (
 export const searchTree = async (
     query: SearchQuery,
     childrenOfNode?: string,
+    flat?: boolean,
 ): Promise<TreeNodeModel[]> => {
     return filesApi.getFilesTreeV1FilesTreeGet({
         queryId: query.id,
@@ -87,6 +88,7 @@ export const searchTree = async (
         searchString: query.query,
 
         nodePath: childrenOfNode,
+        flat,
     });
 };
 
@@ -94,26 +96,44 @@ export const getTreeLevelNodeLimit = async () => {
     return filesApi.getTreeMaxElementCountV1FilesTreeMaxElementCountGet({});
 };
 
-export const getStatSummary = async (
-    query: SearchQuery,
-): Promise<SummaryStatisticsModel> => {
-    return filesApi.getSummaryStatsV1FilesStatsSummaryGet({
-        queryId: query.id,
-        keepAlive: query.keepAlive ?? undefined,
-        searchString: query.query,
+export const getTermsStats = async (): Promise<AvailableStat[]> =>
+    filesApi.getAvailableStatsByTypeV1FilesStatsRegistryTypeGet({
+        registryType: "terms",
     });
-};
 
-export const getStatGeneric = async (
+export const getHistogramStats = async (): Promise<AvailableStat[]> =>
+    filesApi.getAvailableStatsByTypeV1FilesStatsRegistryTypeGet({
+        registryType: "histogram",
+    });
+
+export const getTermsStat = async (
     query: SearchQuery,
-    stat: Stat,
-): Promise<GenericStatisticsModel> => {
-    return filesApi.getGenericStatsV1FilesStatsGenericStatGet({
+    stat: string,
+    size?: number,
+): Promise<TermsStatisticsModel> => {
+    return filesApi.getTermsStatsV1FilesStatsTermsStatGet({
         stat,
         queryId: query.id,
         keepAlive: query.keepAlive ?? undefined,
         searchString: query.query,
+        size,
     });
+};
+
+export const getHistogramStat = async (
+    query: SearchQuery,
+    stat: string,
+    groupBy: string,
+): Promise<GroupedHistogramStatisticsModel> => {
+    return filesApi.getHistogramStatsGroupedV1FilesStatsHistogramStatGroupedGroupByGet(
+        {
+            stat,
+            groupBy,
+            queryId: query.id,
+            keepAlive: query.keepAlive ?? undefined,
+            searchString: query.query,
+        },
+    );
 };
 
 export const uploadFile = async (file: File): Promise<void> => {

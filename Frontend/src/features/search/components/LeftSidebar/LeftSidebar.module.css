@@ -1,0 +1,88 @@
+.leftSidebar {
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    overflow: hidden;
+    position: relative;
+    border-right: 1px solid rgba(0, 0, 0, 0.12);
+    transition: width 0.2s ease-in-out;
+}
+
+.leftSidebar.dragging {
+    transition: none;
+}
+
+.header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.35rem 0.75rem 0.35rem 1rem;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.12);
+    flex-shrink: 0;
+    min-height: 2.5rem;
+}
+
+.headerTitle {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    opacity: 0.7;
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+.content {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding-right: 0.5rem;
+}
+
+.dragHandle {
+    position: absolute;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    cursor: col-resize;
+    z-index: 10;
+}
+
+.dragHandle:hover,
+.dragHandle.dragging {
+    background: rgba(25, 118, 210, 0.4);
+}
+
+.bulkActionButtons {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    padding: 0.75rem;
+}
+
+.filterBar {
+    display: flex;
+    align-items: center;
+    padding: 0.35rem 0.75rem;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.12);
+    flex-shrink: 0;
+}
+
+.filterInput {
+    width: 100%;
+    font-size: 0.8rem;
+}
+
+.filterIcon {
+    opacity: 0.5;
+    font-size: 1rem !important;
+}
+
+.tagListContainer {
+    display: flex;
+    flex-wrap: wrap;
+    flex-direction: row;
+    gap: 0.3rem;
+    padding: 0.75rem;
+}

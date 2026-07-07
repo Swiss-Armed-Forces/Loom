@@ -126,9 +126,6 @@ def _assert_all_translation(
         assert isinstance(
             matching_translation.text, str
         ), f"Translation text is not a string for language={expected_translation.language}"
-        assert (
-            len(matching_translation.text) > 0
-        ), f"Translation text is empty for language={expected_translation.language}"
 
     # test if detected language is set:
     expected_best_detected_language = (

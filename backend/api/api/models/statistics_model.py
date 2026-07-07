@@ -1,6 +1,9 @@
-from typing import List
+from typing import Literal
 
-from common.file.file_statistics import StatisticsGeneric, StatisticsSummary
+from common.file.file_statistics import (
+    GroupedHistogramStatistics,
+    TermsStatistics,
+)
 from pydantic import BaseModel
 
 
@@ -18,33 +21,17 @@ class HitsPerGroupEntryModel(BaseModel):
     hits_count: int
 
 
-class SummaryStatisticsModel(BaseModel):
-    """Summary stats about all files."""
-
-    count: int
-    min: int
-    max: int
-    avg: int
-
-    @staticmethod
-    def from_statistics_summary(stats: StatisticsSummary):
-        return SummaryStatisticsModel(
-            count=stats.total_no_of_files,
-            min=stats.min_file_size,
-            max=stats.max_file_size,
-            avg=stats.avg_file_size,
-        )
-
-
-class GenericStatisticsModel(BaseModel):
+class TermsStatisticsModel(BaseModel):
     stat: str
     key: str
-    data: List[HitsPerGroupEntryModel]
+    data: list[HitsPerGroupEntryModel]
     file_count: int
+    min_value: float | None = None
+    max_value: float | None = None
 
     @staticmethod
-    def from_statistics_generic(stats: StatisticsGeneric):
-        return GenericStatisticsModel(
+    def from_terms_statistics(stats: TermsStatistics) -> "TermsStatisticsModel":
+        return TermsStatisticsModel(
             stat=stats.stat,
             key=stats.key,
             data=list(
@@ -56,4 +43,45 @@ class GenericStatisticsModel(BaseModel):
                 )
             ),
             file_count=stats.total_no_of_files,
+            min_value=stats.min_value,
+            max_value=stats.max_value,
+        )
+
+
+class GroupedHitsPerGroupEntryModel(BaseModel):
+    name: str
+    groups: dict[str, int]
+    hits_count: int
+
+
+class GroupedHistogramStatisticsModel(BaseModel):
+    stat: str
+    group_by: str
+    key: str
+    histogram_type: Literal["date", "number"]
+    data: list[GroupedHitsPerGroupEntryModel]
+    file_count: int
+    min_value: float | None = None
+    max_value: float | None = None
+
+    @staticmethod
+    def from_grouped_histogram_statistics(
+        stats: GroupedHistogramStatistics,
+    ) -> "GroupedHistogramStatisticsModel":
+        return GroupedHistogramStatisticsModel(
+            stat=stats.stat,
+            group_by=stats.group_by,
+            key=stats.key,
+            histogram_type=stats.histogram_type,
+            data=[
+                GroupedHitsPerGroupEntryModel(
+                    name=e.name,
+                    groups=e.groups,
+                    hits_count=e.hits_count,
+                )
+                for e in stats.data
+            ],
+            file_count=stats.total_no_of_files,
+            min_value=stats.min_value,
+            max_value=stats.max_value,
         )

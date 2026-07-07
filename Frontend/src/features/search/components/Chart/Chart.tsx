@@ -1,128 +1,217 @@
-import { Typography } from "@mui/material";
 import {
     DefaultizedPieValueType,
     PieItemIdentifier,
     PieValueType,
 } from "@mui/x-charts/models";
 import { PieChart } from "@mui/x-charts/PieChart";
-import { Fragment } from "react";
+import React, { Fragment, useEffect, useState } from "react";
 
 import { HitsPerGroupEntryModel } from "@app/api";
 
+import {
+    CHART_COLORS,
+    NONE_LABEL,
+    OTHERS_LABEL,
+    computeOthersCount,
+} from "../chartColors";
+
+import styles from "./Chart.module.css";
+
 interface ChartProps {
     entries: HitsPerGroupEntryModel[];
-    title: string;
-    handleUpdateQuery: (key: string, value: string | string[]) => void;
+    fileCount: number;
+    handleUpdateQuery: (
+        key: string,
+        value: string | string[],
+        negate?: boolean,
+        noQuote?: boolean,
+    ) => void;
     queryKeyword: string;
-    compact: number;
+    height?: number;
+    onGroupHighlight?: (group: string | null) => void;
+    highlightedGroup?: string | null;
 }
+
+// onHighlightChange provides dataIndex as optional — use a wider type for state
+type PieHighlightItem = {
+    type: "pie";
+    seriesId: string;
+    dataIndex?: number;
+} | null;
+
+const PIE_SERIES_ID = "pie";
 
 const MISC_ID = "misc_id";
 
-const COLORS = [
-    "#0088FE",
-    "#00C49F",
-    "#FFBB28",
-    "#FF8042",
-    "#d32f2f",
-    "#7b1fa2",
-    "#5d4037",
-    "#455a64",
-];
+const COLORS = CHART_COLORS;
 
 const arcLabel = (
-    item: Omit<DefaultizedPieValueType, "label"> & {
-        label?: string;
-    },
+    item: Omit<DefaultizedPieValueType, "label"> & { label?: string },
 ): string => {
-    return `${item.label} (${item.value})`;
+    return `${item.value}`;
 };
 
-const processEntries = (entries: HitsPerGroupEntryModel[]) => {
-    const result: PieValueType[] = [];
-    entries.map((e) => {
-        result.push({
+const buildPieData = (
+    entries: HitsPerGroupEntryModel[],
+    fileCount: number,
+): PieValueType[] => {
+    const named: PieValueType[] = entries
+        .map((e) => ({
             id: `${e.name}_id`,
             value: e.hitsCount,
             label: e.name,
-        });
-    });
-    // return it sorted small to large
-    return result.sort(function (a, b) {
-        if (a.value < b.value) return -1;
-        return a.value == b.value ? 0 : 1;
-    });
-};
+        }))
+        .sort((a, b) => a.value - b.value);
 
-const summarizeEntries = (entries: PieValueType[], max: number) => {
-    if (entries.length <= max) return { data: entries, others: [] };
-    const result: PieValueType[] = [];
-    const others: PieValueType[] = [];
-    entries.toReversed().forEach((e) => {
-        if (result.length < max - 1) result.push(e);
-        else others.push(e);
-    });
-    result.unshift({
-        id: MISC_ID,
-        value: others.length,
-        label: "others",
-    } satisfies PieValueType);
-    return { data: result.reverse(), others }; // small to large
+    const othersCount = computeOthersCount(entries, fileCount);
+
+    if (othersCount > 0) {
+        return [
+            {
+                id: MISC_ID,
+                value: othersCount,
+                label: OTHERS_LABEL,
+            } satisfies PieValueType,
+            ...named,
+        ];
+    }
+    return named;
 };
 
 export const Chart = ({
     entries,
-    title,
+    fileCount,
     handleUpdateQuery,
     queryKeyword,
-    compact,
+    height = 500,
+    onGroupHighlight,
+    highlightedGroup,
 }: ChartProps) => {
-    const dataAll = processEntries(entries);
-    const { data, others } = summarizeEntries(dataAll, compact);
+    const data = buildPieData(entries, fileCount);
+
+    const [highlightedItem, setHighlightedItem] =
+        useState<PieHighlightItem>(null);
+
+    // Sync external highlight (from histogram hover) into the pie chart.
+    useEffect(() => {
+        if (highlightedGroup === null || highlightedGroup === undefined) {
+            setHighlightedItem(null);
+            return;
+        }
+        const idx = data.findIndex((d) => d.label === highlightedGroup);
+        setHighlightedItem(
+            idx >= 0
+                ? { type: "pie", seriesId: PIE_SERIES_ID, dataIndex: idx }
+                : null,
+        );
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [highlightedGroup]);
+
+    const handleHighlightChange = (item: PieHighlightItem) => {
+        setHighlightedItem(item);
+        if (item === null || item.dataIndex === undefined) {
+            onGroupHighlight?.(null);
+        } else {
+            onGroupHighlight?.((data[item.dataIndex]?.label as string) ?? null);
+        }
+    };
 
     const handleClick = (
-        _: any,
+        event: React.MouseEvent<SVGPathElement, MouseEvent>,
         __: PieItemIdentifier,
         item: DefaultizedPieValueType,
     ) => {
-        let term: string | string[];
+        const negate = event.shiftKey;
         if (item.id === MISC_ID) {
-            term = others.map((other) => `${other.label}`);
+            // Negate: exclude all shown named items so only "others" remain
+            const shownLabels = data
+                .filter((d) => d.id !== MISC_ID)
+                .map((d) => `${d.label}`);
+            handleUpdateQuery(queryKeyword, shownLabels, !negate);
+        } else if (item.label === NONE_LABEL) {
+            // "(none)" = field absent. Normal click → NOT field:* (no field set),
+            // shift-click → field:* (field exists), i.e. the inverse.
+            handleUpdateQuery(queryKeyword, "*", !negate, true);
         } else {
-            term = item.label ? `${item.label}` : "";
+            handleUpdateQuery(
+                queryKeyword,
+                item.label ? `${item.label}` : "",
+                negate,
+            );
         }
-        handleUpdateQuery(queryKeyword, term);
     };
+
+    const anyHighlighted = highlightedItem !== null;
 
     return (
         <Fragment>
-            <center>
-                <Typography variant="h4">
-                    {title} ({entries.length})
-                </Typography>
-            </center>
             {entries && (
-                <PieChart
-                    height={500}
-                    onItemClick={handleClick}
-                    colors={COLORS}
-                    series={[
-                        {
-                            data,
-                            arcLabel,
-                            arcLabelMinAngle: 45,
-                            highlightScope: {
-                                fade: "global",
-                                highlight: "item",
+                <>
+                    <PieChart
+                        height={height}
+                        hideLegend
+                        onItemClick={handleClick}
+                        colors={COLORS}
+                        highlightedItem={highlightedItem}
+                        onHighlightChange={handleHighlightChange}
+                        series={[
+                            {
+                                id: PIE_SERIES_ID,
+                                data,
+                                arcLabel,
+                                arcLabelMinAngle: 45,
+                                highlightScope: {
+                                    fade: "global",
+                                    highlight: "item",
+                                },
+                                faded: {
+                                    innerRadius: 30,
+                                    additionalRadius: -30,
+                                    color: "gray",
+                                },
                             },
-                            faded: {
-                                innerRadius: 30,
-                                additionalRadius: -30,
-                                color: "gray",
-                            },
-                        },
-                    ]}
-                />
+                        ]}
+                    />
+                    <ul className={styles.legend}>
+                        {data.map((item, i) => {
+                            const isHighlighted =
+                                anyHighlighted &&
+                                highlightedItem?.dataIndex === i;
+                            const isFaded = anyHighlighted && !isHighlighted;
+                            return (
+                                <li
+                                    key={item.id as string}
+                                    className={`${styles.legendItem} ${isFaded ? styles.faded : ""} ${isHighlighted ? styles.highlighted : ""}`}
+                                    onMouseEnter={() => {
+                                        setHighlightedItem({
+                                            type: "pie",
+                                            seriesId: PIE_SERIES_ID,
+                                            dataIndex: i,
+                                        });
+                                        onGroupHighlight?.(
+                                            item.label as string,
+                                        );
+                                    }}
+                                    onMouseLeave={() => {
+                                        setHighlightedItem(null);
+                                        onGroupHighlight?.(null);
+                                    }}
+                                >
+                                    <span
+                                        className={styles.legendSwatch}
+                                        style={{
+                                            background:
+                                                COLORS[i % COLORS.length],
+                                        }}
+                                    />
+                                    <span className={styles.legendLabel}>
+                                        {item.label as string}
+                                    </span>
+                                </li>
+                            );
+                        })}
+                    </ul>
+                </>
             )}
         </Fragment>
     );

@@ -10,7 +10,7 @@ import styles from "./FileAvatar.module.css";
 
 interface FileAvatarProps {
     fileExtension: string;
-    performSearch: (query: string) => void;
+    performSearch: (negate: boolean) => void;
     hasBadge: boolean;
 }
 
@@ -30,7 +30,7 @@ export const FileAvatar = ({
         >
             <Avatar
                 className={styles.fileAvatar}
-                onClick={() => performSearch(`${fileExtension}`)}
+                onClick={(e) => performSearch(e.shiftKey)}
                 sx={{ backgroundColor, color }}
             >
                 {fileExtension || <Description />}

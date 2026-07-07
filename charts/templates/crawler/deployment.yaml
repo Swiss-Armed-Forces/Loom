@@ -53,10 +53,10 @@ spec:
         - name: crawler
           image: {{ .Values.image.registry }}/{{ .Values.crawler.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) .Values.crawler.image.tag }}
           imagePullPolicy: {{ .Values.image.pullPolicy }}
-          {{- with include "app.trustedCerts.env" . }}
           env:
-            {{- . | nindent 12 }}
-          {{- end }}
+            - name: CRAWLER_TYPE
+              value: "S3_CRAWLER"
+            {{- with include "app.trustedCerts.env" . }}{{ . | nindent 12 }}{{- end }}
           envFrom:
             - configMapRef:
                 name: {{ include "app.fullname" . }}-settings

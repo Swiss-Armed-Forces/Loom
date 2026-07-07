@@ -31,13 +31,19 @@ export const FileCardHeader = ({
     const { t } = useTranslation();
     const searchQuery = useAppSelector(selectQuery);
 
-    const handleFilterByField = (field: SearchQueryField, value: string) => {
+    const handleFilterByField = (
+        field: SearchQueryField,
+        value: string,
+        negate = false,
+    ) => {
         dispatch(
             updateQuery({
                 query: updateFieldOfQuery(
                     searchQuery?.query ?? "",
                     field,
                     value,
+                    false,
+                    negate,
                 ),
             }),
         );
@@ -57,10 +63,11 @@ export const FileCardHeader = ({
             avatar={
                 <FileAvatar
                     fileExtension={filePreview.fileExtension}
-                    performSearch={() =>
+                    performSearch={(negate) =>
                         handleFilterByField(
                             SearchQueryField.Extension,
                             filePreview.fileExtension,
+                            negate,
                         )
                     }
                     hasBadge={!filePreview.seen}
@@ -89,6 +96,7 @@ export const FileCardHeader = ({
                                     handleFilterByField(
                                         SearchQueryField.ContentTruncated,
                                         "true",
+                                        e.shiftKey,
                                     );
                                 }}
                                 sx={filterIconSx}
@@ -108,6 +116,7 @@ export const FileCardHeader = ({
                                     handleFilterByField(
                                         SearchQueryField.AttachmentsSkipped,
                                         "true",
+                                        e.shiftKey,
                                     );
                                 }}
                                 sx={filterIconSx}
@@ -123,6 +132,7 @@ export const FileCardHeader = ({
                                     handleFilterByField(
                                         SearchQueryField.IsSpam,
                                         "true",
+                                        e.shiftKey,
                                     );
                                 }}
                                 sx={filterIconSx}
@@ -143,6 +153,7 @@ export const FileCardHeader = ({
                                     handleFilterByField(
                                         SearchQueryField.DetectedLanguage,
                                         filePreview.detectedLanguage!,
+                                        e.shiftKey,
                                     );
                                 }}
                                 sx={filterIconSx}

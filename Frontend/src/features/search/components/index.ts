@@ -4,16 +4,16 @@ import { EmptySearchResults } from "./EmptySearchResults/EmptySearchResults";
 import { FileActions } from "./FileActions/FileActions";
 import { FileCardHeader } from "./FileCardHeader/FileCardHeader";
 import { HighlightList } from "./HighlightList/HighlightList";
+import { HistogramChart } from "./HistogramChart/HistogramChart";
 import { LoadMoreButton } from "./LoadMoreButton/LoadMoreButton";
 import { ResultCard } from "./ResultCard/ResultCard";
 import { ScrollToTop } from "./ScrollToTop/ScrollToTop";
 import { SearchResultCountText } from "./SearchResultCountText/SearchResultCountText";
-import { SideMenu } from "./SideMenu/SideMenu";
 import { TagsList } from "./TagsList/TagsList";
-import { Toolbar } from "./Toolbar/Toolbar";
-
+export { computeOthersCount } from "./chartColors";
 export {
     Chart,
+    HistogramChart,
     ChatMenu,
     EmptySearchResults,
     FileActions,
@@ -23,7 +23,5 @@ export {
     ResultCard,
     ScrollToTop,
     SearchResultCountText,
-    SideMenu,
     TagsList,
-    Toolbar,
 };

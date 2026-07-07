@@ -3,17 +3,19 @@ import { createListenerMiddleware, isAnyOf } from "@reduxjs/toolkit";
 import {
     addCustomQuery,
     AUTO_ACTIONS_PREFERENCES_LOCAL_STORAGE_KEY,
+    closeFileTab,
     CUSTOM_QUERIES_LOCAL_STORAGE_KEY,
     deleteCustomQuery,
     fetchFilesCountForCustomQuery,
     markCustomQueryAsRead,
+    openFileTab,
     setAutoActionPreference,
-    SIDE_MENU_LOCAL_STORAGE_KEY,
-    toggleSideMenu,
-    toggleSideMenuAutoActions,
-    toggleSideMenuBulkActions,
-    toggleSideMenuTags,
-    toggleSideMenuQueries,
+    setExpandFilePaths,
+    setFileTabDetailTab,
+    setLeftSidebarPanel,
+    setRightSidebarTab,
+    toggleRightSidebar,
+    UI_STATE_LOCAL_STORAGE_KEY,
 } from "@app/slices/searchSlice";
 
 import { RootState } from "./store";
@@ -29,7 +31,6 @@ localStorageCustomQueriesMiddleware.startListening({
     ),
     effect: (_, listenerApi) => {
         const state = listenerApi.getState() as RootState;
-
         localStorage.setItem(
             CUSTOM_QUERIES_LOCAL_STORAGE_KEY,
             JSON.stringify(state.search.customQueries),
@@ -43,7 +44,6 @@ localStorageAutoActionsMiddleware.startListening({
     matcher: isAnyOf(setAutoActionPreference),
     effect: (_, listenerApi) => {
         const state = listenerApi.getState() as RootState;
-
         localStorage.setItem(
             AUTO_ACTIONS_PREFERENCES_LOCAL_STORAGE_KEY,
             JSON.stringify(state.search.autoActionsPreferences),
@@ -51,22 +51,29 @@ localStorageAutoActionsMiddleware.startListening({
     },
 });
 
-export const localStorageSideMenuMiddleware = createListenerMiddleware();
+export const localStorageUiStateMiddleware = createListenerMiddleware();
 
-localStorageSideMenuMiddleware.startListening({
+localStorageUiStateMiddleware.startListening({
     matcher: isAnyOf(
-        toggleSideMenu,
-        toggleSideMenuBulkActions,
-        toggleSideMenuTags,
-        toggleSideMenuQueries,
-        toggleSideMenuAutoActions,
+        setLeftSidebarPanel,
+        setRightSidebarTab,
+        toggleRightSidebar,
+        openFileTab,
+        closeFileTab,
+        setFileTabDetailTab,
+        setExpandFilePaths,
     ),
     effect: (_, listenerApi) => {
         const state = listenerApi.getState() as RootState;
-
         localStorage.setItem(
-            SIDE_MENU_LOCAL_STORAGE_KEY,
-            JSON.stringify(state.search.sideMenu),
+            UI_STATE_LOCAL_STORAGE_KEY,
+            JSON.stringify({
+                leftSidebarPanel: state.search.leftSidebarPanel,
+                rightSidebarOpen: state.search.rightSidebarOpen,
+                rightSidebarTab: state.search.rightSidebarTab,
+                openFileTabs: state.search.openFileTabs,
+                expandFilePaths: state.search.expandFilePaths,
+            }),
         );
     },
 });

@@ -8,6 +8,7 @@ from .cmd_job_diagnose import cmd_job_diagnose
 from .cmd_mr_create import cmd_mr_create
 from .cmd_mr_describe import cmd_mr_describe
 from .cmd_mr_fix import cmd_mr_fix
+from .cmd_mr_review import cmd_mr_review
 from .cmd_mr_update import cmd_mr_update
 from .cmd_mr_watch import cmd_mr_watch
 from .cmd_pipeline_retry import cmd_pipeline_retry
@@ -89,10 +90,38 @@ def build_parser() -> tuple[argparse.ArgumentParser, list[str]]:
     )
     implement_parser.set_defaults(func=cmd_implement)
 
+    # mr-review subcommand
+    mr_review_parser = subparsers.add_parser(
+        "mr-review",
+        help="Run a multi-agent AI review of the current MR and post findings as comments",
+    )
+    mr_review_parser.add_argument(
+        "mr",
+        nargs="?",
+        help=(
+            "GitLab MR URL (https://.../merge_requests/123) or bare MR IID. "
+            "Omit to review the MR for the current branch."
+        ),
+    )
+    mr_review_parser.add_argument(
+        "--fix",
+        action="store_true",
+        help=("Automatically fix all findings instead of posting them as MR comments"),
+    )
+    mr_review_parser.set_defaults(func=cmd_mr_review)
+
     # mr-fix subcommand
     mr_fix_parser = subparsers.add_parser(
         "mr-fix",
         help="Address unresolved MR review comments using Claude in agentic mode",
+    )
+    mr_fix_parser.add_argument(
+        "mr",
+        nargs="?",
+        help=(
+            "GitLab MR URL (https://.../merge_requests/123) or bare MR IID. "
+            "Omit to fix the MR for the current branch."
+        ),
     )
     mr_fix_parser.set_defaults(func=cmd_mr_fix)
 

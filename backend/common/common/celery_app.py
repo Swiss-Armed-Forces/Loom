@@ -30,6 +30,18 @@ from common.utils.sharding import get_all_persister_shards
 
 logger = logging.getLogger(__name__)
 
+
+def _never_nowfun() -> datetime:
+    """Return a fixed past datetime so the crontab never fires automatically.
+
+    This allows the task to exist in the beat schedule (and be triggerable via the API)
+    without ever running on its own schedule.
+    """
+    return datetime(year=1970, month=1, day=1, hour=0)
+
+
+SCHEDULE_NEVER = crontab(minute="0", hour="1", nowfun=_never_nowfun)
+
 # The alternate exchange (ae-loom) must be fanout, not topic.
 #
 # When the loom exchange cannot route a message it forwards the message to
@@ -101,11 +113,13 @@ def get_beat_schedule() -> dict:
             ),
             "schedule": crontab(minute="30", hour="0"),
         },
+        # Uses SCHEDULE_NEVER so it never fires automatically, but can still be
+        # triggered manually via the API when a full IMAP flag re-sync is needed.
         "sync-imap-flags": {
             "task": (
                 "worker.periodic.sync_imap_flags_periodically_task.sync_imap_flags_periodically_task"  # noqa: E501 pylint: disable=line-too-long
             ),
-            "schedule": crontab(minute="0", hour="2"),
+            "schedule": SCHEDULE_NEVER,
         },
         # SeaweedFS Maintenance Tasks - frequent "on-idle" variants (check_idle=True)
         "seaweedfs-fix-replication-on-idle": {

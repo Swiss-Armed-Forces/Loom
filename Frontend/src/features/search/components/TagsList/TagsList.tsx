@@ -4,11 +4,7 @@ import { t } from "i18next";
 import { FC, useMemo, useState } from "react";
 import { toast } from "react-toastify";
 
-import {
-    deleteTagFromFile,
-    GenericStatisticsModel,
-    GetFilePreviewResponse,
-} from "@app/api";
+import { deleteTagFromFile, GetFilePreviewResponse } from "@app/api";
 import { useAppDispatch, useAppSelector } from "@app/hooks.ts";
 import {
     openDialog,
@@ -32,7 +28,6 @@ import styles from "./TagsList.module.css";
 interface TagsListProps {
     tags: string[];
     filePreview?: GetFilePreviewResponse;
-    tagStats?: GenericStatisticsModel;
     iconOnly?: boolean;
     maxVisible?: number;
 }
@@ -40,7 +35,6 @@ interface TagsListProps {
 export const TagsList = ({
     tags,
     filePreview,
-    tagStats,
     iconOnly = false,
     maxVisible,
 }: TagsListProps) => {
@@ -56,23 +50,18 @@ export const TagsList = ({
         [tags],
     );
 
-    const searchForTag = (tagName: string) => {
+    const searchForTag = (tagName: string, negate = false) => {
         dispatch(
             updateQuery({
                 query: updateFieldOfQuery(
                     searchQuery?.query ?? "",
                     SearchQueryField.Tags,
                     tagName,
+                    false,
+                    negate,
                 ),
             }),
         );
-    };
-
-    const getTagHitRate = (tagName: string): number => {
-        const tagData = tagStats?.data ?? [];
-        const total = tagStats?.fileCount ?? 1;
-        const tag = tagData.find((t) => t.name === tagName);
-        return tag ? (tag.hitsCount / total) * 100 : 0;
     };
 
     const handleDeleteTagFromFile = async (tag: string) => {
@@ -110,11 +99,7 @@ export const TagsList = ({
         }
     };
 
-    const getTagLabel = (tag: string): string => {
-        if (!tagStats) return tag;
-        const hitRate = getTagHitRate(tag);
-        return `${tag} (${hitRate.toFixed(1)}%)`;
-    };
+    const getTagLabel = (tag: string): string => tag;
 
     const visibleTags =
         maxVisible !== undefined ? sortedTags.slice(0, maxVisible) : sortedTags;
@@ -178,9 +163,9 @@ export const TagsList = ({
                                     tag={tag}
                                     iconOnly={false}
                                     label={getTagLabel(tag)}
-                                    onSearch={(t) => {
+                                    onSearch={(t, negate) => {
                                         setOverflowAnchor(null);
-                                        searchForTag(t);
+                                        searchForTag(t, negate);
                                     }}
                                     onDelete={
                                         iconOnly
@@ -201,7 +186,7 @@ interface TagChipProps {
     tag: string;
     iconOnly: boolean;
     label: string;
-    onSearch: (tag: string) => void;
+    onSearch: (tag: string, negate: boolean) => void;
     onDelete?: () => void;
 }
 
@@ -227,8 +212,8 @@ const TagChip: FC<TagChipProps> = ({
                         : tag
                     : label
             }
-            onClick={() => {
-                onSearch(tag);
+            onClick={(e) => {
+                onSearch(tag, e.shiftKey);
             }}
             onDelete={onDelete}
         />

@@ -15,7 +15,18 @@
 
 import { mapValues } from "../runtime";
 /**
- * Counts of children per path in the tree.
+ * A node in the file tree returned by the /tree endpoint.
+ *
+ * Attributes:
+ *     full_path: Absolute path of the node (directory or file).
+ *     file_count: Total number of descendant files under this path.
+ *     file_id: Set only when the node is a leaf file (not a directory).
+ *     unseen_count: Number of unseen descendant files, excluding the node
+ *         itself when is_unseen is True.
+ *     is_unseen: Whether the file at this node is unseen (leaf nodes only).
+ *     flagged_count: Number of flagged descendant files, excluding the node
+ *         itself when is_flagged is True.
+ *     is_flagged: Whether the file at this node is flagged (leaf nodes only).
  * @export
  * @interface TreeNodeModel
  */
@@ -32,6 +43,36 @@ export interface TreeNodeModel {
      * @memberof TreeNodeModel
      */
     fileCount: number;
+    /**
+     *
+     * @type {string}
+     * @memberof TreeNodeModel
+     */
+    fileId?: string;
+    /**
+     *
+     * @type {number}
+     * @memberof TreeNodeModel
+     */
+    unseenCount?: number;
+    /**
+     *
+     * @type {boolean}
+     * @memberof TreeNodeModel
+     */
+    isUnseen?: boolean;
+    /**
+     *
+     * @type {number}
+     * @memberof TreeNodeModel
+     */
+    flaggedCount?: number;
+    /**
+     *
+     * @type {boolean}
+     * @memberof TreeNodeModel
+     */
+    isFlagged?: boolean;
 }
 
 /**
@@ -57,6 +98,13 @@ export function TreeNodeModelFromJSONTyped(
     return {
         fullPath: json["full_path"],
         fileCount: json["file_count"],
+        fileId: json["file_id"] == null ? undefined : json["file_id"],
+        unseenCount:
+            json["unseen_count"] == null ? undefined : json["unseen_count"],
+        isUnseen: json["is_unseen"] == null ? undefined : json["is_unseen"],
+        flaggedCount:
+            json["flagged_count"] == null ? undefined : json["flagged_count"],
+        isFlagged: json["is_flagged"] == null ? undefined : json["is_flagged"],
     };
 }
 
@@ -67,5 +115,10 @@ export function TreeNodeModelToJSON(value?: TreeNodeModel | null): any {
     return {
         full_path: value["fullPath"],
         file_count: value["fileCount"],
+        file_id: value["fileId"],
+        unseen_count: value["unseenCount"],
+        is_unseen: value["isUnseen"],
+        flagged_count: value["flaggedCount"],
+        is_flagged: value["isFlagged"],
     };
 }

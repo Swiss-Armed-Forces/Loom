@@ -1,11 +1,29 @@
 import {
+    Download,
+    Flag,
+    LabelOutlined,
+    ManageSearch,
+    MarkEmailReadOutlined,
+    Share,
+    SummarizeOutlined,
+    Translate,
+    YoutubeSearchedForOutlined,
+} from "@mui/icons-material";
+import {
     Alert,
     AlertTitle,
     Box,
     Card,
     CardContent,
     CardHeader,
+    Divider,
+    Table,
+    TableBody,
+    TableCell,
+    TableRow,
+    Typography,
 } from "@mui/material";
+import { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 
 import { useAppDispatch, useAppSelector } from "@app/hooks";
@@ -17,10 +35,217 @@ import {
 
 import styles from "./EmptySearchResults.module.css";
 
+const searchChipSx = {
+    display: "inline-block",
+    fontFamily: "monospace",
+    fontSize: "0.82em",
+    bgcolor: "#f0f4ff",
+    border: "1px solid #c5cae9",
+    borderRadius: 0.5,
+    px: 0.6,
+    color: "#3949ab",
+    cursor: "pointer",
+    verticalAlign: "baseline",
+    "&:hover": { bgcolor: "#e8eaf6", borderColor: "#5c6bc0" },
+    "&:active": { bgcolor: "#c5cae9" },
+} as const;
+
+const sortChipSx = {
+    display: "inline-block",
+    fontFamily: "monospace",
+    fontSize: "0.82em",
+    bgcolor: "#fffde7",
+    border: "1px solid #ffe082",
+    borderRadius: 0.5,
+    px: 0.6,
+    color: "#e65100",
+    cursor: "pointer",
+    verticalAlign: "baseline",
+    "&:hover": { bgcolor: "#fff9c4", borderColor: "#ffd54f" },
+    "&:active": { bgcolor: "#fff176" },
+} as const;
+
+type HotkeyRow =
+    | { type: "row"; keys: string[]; label: ReactNode; icon?: ReactNode }
+    | { type: "divider" };
+
 export const EmptySearchResults = () => {
     const searchQuery = useAppSelector(selectQuery);
     const { t } = useTranslation();
     const dispatch = useAppDispatch();
+
+    const HOTKEY_ROWS: HotkeyRow[] = [
+        {
+            type: "row",
+            keys: ["↓", "j"],
+            label: t("emptySearch.hotkeys.moveDown"),
+        },
+        {
+            type: "row",
+            keys: ["↑", "k"],
+            label: t("emptySearch.hotkeys.moveUp"),
+        },
+        {
+            type: "row",
+            keys: ["←", "h"],
+            label: t("emptySearch.hotkeys.prevCenterTab"),
+        },
+        {
+            type: "row",
+            keys: ["→", "l"],
+            label: t("emptySearch.hotkeys.nextCenterTab"),
+        },
+        {
+            type: "row",
+            keys: ["Shift + ←", "Shift + h"],
+            label: t("emptySearch.hotkeys.prevTab"),
+        },
+        {
+            type: "row",
+            keys: ["Shift + →", "Shift + l"],
+            label: t("emptySearch.hotkeys.nextTab"),
+        },
+        {
+            type: "row",
+            keys: ["Enter", "Space", "i"],
+            label: t("emptySearch.hotkeys.openOrClose"),
+        },
+        {
+            type: "row",
+            keys: ["Shift + Enter", "Shift + Space", "Shift + i"],
+            label: t("emptySearch.hotkeys.openBackground"),
+        },
+        {
+            type: "row",
+            keys: ["Double-click"],
+            label: t("emptySearch.hotkeys.openOrClose"),
+        },
+        {
+            type: "row",
+            keys: ["Ctrl + Double-click"],
+            label: t("emptySearch.hotkeys.openBackground"),
+        },
+        {
+            type: "row",
+            keys: ["Ctrl + click"],
+            label: t("emptySearch.hotkeys.openBackground"),
+        },
+        {
+            type: "row",
+            keys: ["Shift + click"],
+            label: (
+                <>
+                    {t("emptySearch.hotkeys.shiftClickNegate")}{" "}
+                    <Box
+                        component="span"
+                        sx={{
+                            opacity: 0.5,
+                            fontSize: "0.9em",
+                            whiteSpace: "nowrap",
+                        }}
+                    >
+                        (
+                        <ManageSearch
+                            fontSize="inherit"
+                            sx={{ verticalAlign: "middle" }}
+                        />{" "}
+                        icon)
+                    </Box>
+                </>
+            ),
+        },
+        {
+            type: "row",
+            keys: ["Escape"],
+            label: t("emptySearch.hotkeys.escapeAction"),
+        },
+        {
+            type: "row",
+            keys: ["/"],
+            label: t("emptySearch.hotkeys.focusSearch"),
+        },
+        { type: "divider" },
+        {
+            type: "row",
+            keys: ["f"],
+            icon: <Flag fontSize="inherit" />,
+            label: (
+                <>
+                    <strong>F</strong>lag / unflag
+                </>
+            ),
+        },
+        {
+            type: "row",
+            keys: ["s"],
+            icon: <MarkEmailReadOutlined fontSize="inherit" />,
+            label: (
+                <>
+                    <strong>S</strong>een / unseen
+                </>
+            ),
+        },
+        {
+            type: "row",
+            keys: ["t"],
+            icon: <LabelOutlined fontSize="inherit" />,
+            label: (
+                <>
+                    <strong>t</strong>ag
+                </>
+            ),
+        },
+        {
+            type: "row",
+            keys: ["c"],
+            icon: <Share fontSize="inherit" />,
+            label: (
+                <>
+                    <strong>C</strong>opy share link
+                </>
+            ),
+        },
+        {
+            type: "row",
+            keys: ["Shift + t"],
+            icon: <Translate fontSize="inherit" />,
+            label: (
+                <>
+                    <strong>T</strong>ranslate
+                </>
+            ),
+        },
+        {
+            type: "row",
+            keys: ["Shift + s"],
+            icon: <SummarizeOutlined fontSize="inherit" />,
+            label: (
+                <>
+                    <strong>S</strong>ummarize
+                </>
+            ),
+        },
+        {
+            type: "row",
+            keys: ["r"],
+            icon: <YoutubeSearchedForOutlined fontSize="inherit" />,
+            label: (
+                <>
+                    <strong>R</strong>e-index
+                </>
+            ),
+        },
+        {
+            type: "row",
+            keys: ["d"],
+            icon: <Download fontSize="inherit" />,
+            label: (
+                <>
+                    <strong>D</strong>ownload
+                </>
+            ),
+        },
+    ];
     const queryError = useAppSelector(selectQueryError);
 
     const performSearch = (
@@ -49,27 +274,14 @@ export const EmptySearchResults = () => {
 
     const createSearchTip = (query: string, searchKey: string) => (
         <li>
-            <span
-                className={styles.clickableSpan}
-                onClick={() => {
-                    performSearch(query);
-                }}
+            <Box
+                component="span"
+                sx={searchChipSx}
+                onClick={() => performSearch(query)}
             >
                 {query}
-            </span>{" "}
+            </Box>{" "}
             - {t("emptySearch.tips." + searchKey)}
-        </li>
-    );
-
-    const createHotkey = (keys: string[], searchKey: string) => (
-        <li>
-            {keys.map((key, i) => (
-                <span key={key}>
-                    <kbd>{key}</kbd>
-                    {i < keys.length - 1 && " / "}
-                </span>
-            ))}
-            - {t("emptySearch.hotkeys." + searchKey)}
         </li>
     );
 
@@ -83,7 +295,7 @@ export const EmptySearchResults = () => {
             )}
             <Card>
                 <CardHeader
-                    className={styles.emptyCardTitle}
+                    sx={{ pb: 0 }}
                     title={
                         <span className={styles.emptyCardHeaderTitle}>
                             {searchQuery?.query
@@ -93,163 +305,290 @@ export const EmptySearchResults = () => {
                     }
                 />
                 <CardContent>
-                    <div>
-                        <p style={{ marginTop: 0 }}>
-                            {t("emptySearch.description")}
-                        </p>
-                        <div>
-                            <p>{t("emptySearch.tips.title")}</p>
-                            <ul>
-                                {createSearchTip("*", "showAll")}
-                                {createSearchTip("John Smith", "keyword")}
-                                {createSearchTip("Jo*", "prefix")}
-                                {createSearchTip("/.*Jo?n.*/", "regex")}
-                                {createSearchTip('"John Smith"', "exact")}
-                                {createSearchTip(
-                                    '"John Smith"~10',
-                                    "exactDistance",
-                                )}
-                                {createSearchTip("John~2", "fuzzy")}
-                                {createSearchTip("filename:*.txt", "filename")}
-                                {createSearchTip("size:>1M", "size")}
-                                {createSearchTip("modified:today", "when")}
-                                {createSearchTip("author:/.*/", "author")}
-                                {createSearchTip("tags:interesting", "tags")}
-                                {createSearchTip(
-                                    "NOT tags:interesting",
-                                    "tagsNegate",
-                                )}
-                                {createSearchTip(
-                                    "tags:interesting AND modified:today",
-                                    "and",
-                                )}
-                                {createSearchTip(
-                                    "tags:interesting OR modified:today",
-                                    "or",
-                                )}
-                                {createSearchTip("seen:true", "seen")}
-                                {createSearchTip("flagged:true", "flagged")}
-                                {createSearchTip("hidden:true", "hidden")}
-                                {createSearchTip("hidden:*", "allHidden")}
-                                {createSearchTip(
-                                    'file_type:"image/png"',
-                                    "fileType",
-                                )}
-                                {createSearchTip(
-                                    "uploaded:[* TO 2020-06-15]",
-                                    "uploadTime",
-                                )}
-                                {createSearchTip(
-                                    "created:{2020-12-31 TO 2025-01-01}",
-                                    "creationTime",
-                                )}
-                                {createSearchTip(
-                                    "modified:[2021-01-01 TO 2025-01-01}",
-                                    "modificationTime",
-                                )}
-                                {createSearchTip("secrets:*", "secrets")}
-                                {createSearchTip("*:John", "allFields")}
-                                {createSearchTip(
-                                    "\\*name\\*:*txt*",
-                                    "nameFields",
-                                )}
-                            </ul>
-                        </div>
-                        <div>
-                            <p>{t("emptySearch.sort.title")}</p>
-                            <ul>
-                                <li>
-                                    <span
-                                        className={styles.clickableSpan}
-                                        onClick={() => {
-                                            performSearch(
-                                                "*",
-                                                "short_name",
-                                                "asc",
-                                            );
-                                        }}
+                    <Box>
+                        <Box
+                            sx={{
+                                display: "grid",
+                                gridTemplateColumns: "1fr 1fr",
+                                gap: 4,
+                                alignItems: "start",
+                            }}
+                        >
+                            <Box>
+                                <Typography
+                                    variant="overline"
+                                    color="text.secondary"
+                                    sx={{ display: "block", mb: 0.5 }}
+                                >
+                                    {t("emptySearch.tips.title")}
+                                </Typography>
+                                <Box
+                                    component="ul"
+                                    sx={{ m: 0, pl: 2.5, fontSize: "0.85rem" }}
+                                >
+                                    {createSearchTip("*", "showAll")}
+                                    {createSearchTip("John Smith", "keyword")}
+                                    {createSearchTip("Jo*", "prefix")}
+                                    {createSearchTip("/.*Jo?n.*/", "regex")}
+                                    {createSearchTip('"John Smith"', "exact")}
+                                    {createSearchTip(
+                                        '"John Smith"~10',
+                                        "exactDistance",
+                                    )}
+                                    {createSearchTip("John~2", "fuzzy")}
+                                    {createSearchTip(
+                                        "filename:*.txt",
+                                        "filename",
+                                    )}
+                                    {createSearchTip("size:>1M", "size")}
+                                    {createSearchTip("modified:today", "when")}
+                                    {createSearchTip("author:/.*/", "author")}
+                                    {createSearchTip(
+                                        "tags:interesting",
+                                        "tags",
+                                    )}
+                                    {createSearchTip(
+                                        "NOT tags:interesting",
+                                        "tagsNegate",
+                                    )}
+                                    {createSearchTip(
+                                        "tags:interesting AND modified:today",
+                                        "and",
+                                    )}
+                                    {createSearchTip(
+                                        "tags:interesting OR modified:today",
+                                        "or",
+                                    )}
+                                    {createSearchTip("seen:true", "seen")}
+                                    {createSearchTip("flagged:true", "flagged")}
+                                    {createSearchTip("hidden:true", "hidden")}
+                                    {createSearchTip("hidden:*", "allHidden")}
+                                    {createSearchTip(
+                                        'file_type:"image/png"',
+                                        "fileType",
+                                    )}
+                                    {createSearchTip(
+                                        "uploaded:[* TO 2020-06-15]",
+                                        "uploadTime",
+                                    )}
+                                    {createSearchTip(
+                                        "created:{2020-12-31 TO 2025-01-01}",
+                                        "creationTime",
+                                    )}
+                                    {createSearchTip(
+                                        "modified:[2021-01-01 TO 2025-01-01}",
+                                        "modificationTime",
+                                    )}
+                                    {createSearchTip("secrets:*", "secrets")}
+                                    {createSearchTip(
+                                        "source:crawlerX",
+                                        "source",
+                                    )}
+                                    {createSearchTip(
+                                        "state:failed",
+                                        "stateFailed",
+                                    )}
+                                    {createSearchTip("summary:*", "summary")}
+                                    {createSearchTip("*:John", "allFields")}
+                                    {createSearchTip(
+                                        "\\*name\\*:*txt*",
+                                        "nameFields",
+                                    )}
+                                </Box>
+                                <Box
+                                    sx={{
+                                        display: "flex",
+                                        alignItems: "baseline",
+                                        gap: 1,
+                                        mt: 2,
+                                        mb: 0.5,
+                                    }}
+                                >
+                                    <Typography
+                                        variant="overline"
+                                        color="text.secondary"
                                     >
-                                        sort:short_name
-                                    </span>{" "}
-                                    - {t("emptySearch.sort.name")}
-                                </li>
-                                <li>
-                                    <span
-                                        className={styles.clickableSpan}
-                                        onClick={() => {
-                                            performSearch(
-                                                "*",
-                                                "uploaded_datetime",
-                                                "desc",
-                                            );
-                                        }}
+                                        {t("emptySearch.sort.title")}
+                                    </Typography>
+                                    <Typography
+                                        variant="caption"
+                                        color="text.disabled"
+                                        sx={{ fontStyle: "italic" }}
                                     >
-                                        sort:uploaded_datetime
-                                    </span>{" "}
-                                    - {t("emptySearch.sort.uploaded")}
-                                </li>
-                                <li>
-                                    <span
-                                        className={styles.clickableSpan}
-                                        onClick={() => {
-                                            performSearch(
-                                                "*",
-                                                "tika_meta.dcterms_created",
-                                                "desc",
+                                        {t("emptySearch.sort.hint")}
+                                    </Typography>
+                                </Box>
+                                <Box
+                                    component="ul"
+                                    sx={{ m: 0, pl: 2.5, fontSize: "0.85rem" }}
+                                >
+                                    <li>
+                                        <Box
+                                            component="span"
+                                            sx={sortChipSx}
+                                            onClick={() =>
+                                                performSearch(
+                                                    "*",
+                                                    "short_name",
+                                                    "asc",
+                                                )
+                                            }
+                                        >
+                                            short_name
+                                        </Box>{" "}
+                                        - {t("emptySearch.sort.name")}
+                                    </li>
+                                    <li>
+                                        <Box
+                                            component="span"
+                                            sx={sortChipSx}
+                                            onClick={() =>
+                                                performSearch(
+                                                    "*",
+                                                    "uploaded_datetime",
+                                                    "desc",
+                                                )
+                                            }
+                                        >
+                                            uploaded_datetime
+                                        </Box>{" "}
+                                        - {t("emptySearch.sort.uploaded")}
+                                    </li>
+                                    <li>
+                                        <Box
+                                            component="span"
+                                            sx={sortChipSx}
+                                            onClick={() =>
+                                                performSearch(
+                                                    "*",
+                                                    "tika_meta.dcterms_created",
+                                                    "desc",
+                                                )
+                                            }
+                                        >
+                                            tika_meta.dcterms_created
+                                        </Box>{" "}
+                                        - {t("emptySearch.sort.created")}
+                                    </li>
+                                </Box>
+                                <Typography
+                                    variant="body2"
+                                    sx={{
+                                        display: "inline-block",
+                                        mt: 1,
+                                        cursor: "pointer",
+                                        color: "primary.main",
+                                        textDecoration: "underline",
+                                        "&:hover": { color: "primary.dark" },
+                                    }}
+                                    onClick={() => {
+                                        window.location.assign(
+                                            "https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-query-string-query.html#query-string-syntax",
+                                        );
+                                    }}
+                                >
+                                    {t("emptySearch.advancedGuide")}
+                                </Typography>
+                            </Box>
+                            <Box>
+                                <Typography
+                                    variant="overline"
+                                    color="text.secondary"
+                                    sx={{ display: "block", mb: 0.5 }}
+                                >
+                                    {t("emptySearch.hotkeys.title")}
+                                </Typography>
+                                <Table
+                                    size="small"
+                                    sx={{
+                                        "& td": {
+                                            fontSize: "0.82rem",
+                                            border: 0,
+                                            px: 0,
+                                            py: 0.25,
+                                        },
+                                    }}
+                                >
+                                    <TableBody>
+                                        {HOTKEY_ROWS.map((row, i) => {
+                                            if (row.type === "divider") {
+                                                return (
+                                                    <TableRow
+                                                        key={`divider-${i}`}
+                                                    >
+                                                        <TableCell
+                                                            colSpan={2}
+                                                            sx={{
+                                                                py: "0.3rem !important",
+                                                            }}
+                                                        >
+                                                            <Divider />
+                                                        </TableCell>
+                                                    </TableRow>
+                                                );
+                                            }
+                                            return (
+                                                <TableRow
+                                                    key={row.keys.join("|")}
+                                                >
+                                                    <TableCell
+                                                        sx={{
+                                                            whiteSpace:
+                                                                "nowrap",
+                                                            pr: 1.5,
+                                                        }}
+                                                    >
+                                                        {row.keys.map(
+                                                            (key, ki) => (
+                                                                <span key={key}>
+                                                                    <kbd>
+                                                                        {key}
+                                                                    </kbd>
+                                                                    {ki <
+                                                                        row.keys
+                                                                            .length -
+                                                                            1 &&
+                                                                        " / "}
+                                                                </span>
+                                                            ),
+                                                        )}
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        <Box
+                                                            sx={{
+                                                                display: "flex",
+                                                                alignItems:
+                                                                    "center",
+                                                                gap: 0.5,
+                                                            }}
+                                                        >
+                                                            {row.icon && (
+                                                                <Box
+                                                                    component="span"
+                                                                    sx={{
+                                                                        display:
+                                                                            "flex",
+                                                                        color: "text.secondary",
+                                                                        fontSize:
+                                                                            "1rem",
+                                                                    }}
+                                                                >
+                                                                    {row.icon}
+                                                                </Box>
+                                                            )}
+                                                            <span>
+                                                                {row.label}
+                                                            </span>
+                                                        </Box>
+                                                    </TableCell>
+                                                </TableRow>
                                             );
-                                        }}
-                                    >
-                                        sort:dcterms:created
-                                    </span>{" "}
-                                    - {t("emptySearch.sort.created")}
-                                </li>
-                            </ul>
-                        </div>
-                        <div>
-                            <span
-                                className={styles.clickableSpan}
-                                onClick={() => {
-                                    window.location.assign(
-                                        "https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-query-string-query.html#query-string-syntax",
-                                    );
-                                }}
-                            >
-                                {t("emptySearch.advancedGuide")}
-                            </span>
-                        </div>
-                        <div>
-                            <p>{t("emptySearch.hotkeys.title")}</p>
-
-                            <ul>
-                                {createHotkey(["j", "↓"], "moveDown")}
-                                {createHotkey(["k", "↑"], "moveUp")}
-                                {createHotkey(
-                                    ["Enter", "Space", "i"],
-                                    "openDetails",
-                                )}
-                                {createHotkey(["Escape"], "clear")}
-                                {createHotkey(["/"], "search")}
-                                {createHotkey(["g"], "flag")}
-                                {createHotkey(["b"], "see")}
-                                {createHotkey(["c"], "share")}
-                                {createHotkey(["d"], "download")}
-                                {createHotkey(["r"], "reindex")}
-                                {createHotkey(["s"], "summarize")}
-                                {createHotkey(["t"], "addTags")}
-                                {createHotkey(["Shift + t"], "translate")}
-                            </ul>
-                            <p>{t("emptySearch.hotkeys.detailsTitle")}</p>
-                            <ul>
-                                {createHotkey(["h", "←"], "previousTab")}
-                                {createHotkey(["l", "→"], "nextTab")}
-                                {createHotkey(["f"], "fullscreen")}
-                                {createHotkey(
-                                    ["Escape", "Enter", "Space", "i"],
-                                    "close",
-                                )}
-                            </ul>
-                        </div>
-                    </div>
+                                        })}
+                                    </TableBody>
+                                </Table>
+                            </Box>
+                        </Box>
+                    </Box>
                 </CardContent>
             </Card>
         </Box>

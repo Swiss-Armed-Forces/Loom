@@ -15,6 +15,7 @@ from common.services.complete_estimate_service import (
     _KEY_EMA_THROUGHPUT,
     _KEY_ESTIMATE_TS,
     _KEY_FILES_PENDING,
+    _MIN_EMA_THROUGHPUT,
     CompleteEstimateService,
 )
 from common.services.query_builder import QueryParameters
@@ -178,6 +179,40 @@ def test_compute_and_store_negative_ema_clamped_to_zero(
     assert len(ema_set_calls) == 1
     stored_ema = ema_set_calls[0].args[1]
     assert stored_ema >= 0.0
+
+
+def test_compute_and_store_near_zero_ema_suppresses_estimate(
+    service: CompleteEstimateService,
+):
+    """EMA decayed to near-zero (e.g. after many stalled ticks) must not produce an
+    estimate — dividing by a tiny EMA yields astronomically large timestamps."""
+    redis: Any = get_redis_client()
+    queues_service: Any = get_queues_service()
+    celery_inspect: Any = get_celery_inspect_service()
+    file_repository: Any = get_file_repository()
+
+    celery_inspect.get_task_names_in_group.return_value = []
+    queues_service.get_all_queue_message_counts.return_value = {}
+    file_repository.open_point_in_time.return_value = "pit-id"
+    file_repository.count_by_query.return_value = 50  # still work remaining
+
+    now = time.time()
+
+    # Simulate an EMA that has decayed to just below the minimum threshold
+    tiny_ema = _MIN_EMA_THROUGHPUT * 0.5
+    redis.pipeline.return_value.execute.return_value = [
+        b"50",  # last_pending == current → rate = 0 → EMA decays further
+        str(now - 60).encode(),
+        str(tiny_ema).encode(),
+    ]
+
+    service.compute_and_store()
+
+    # estimate_ts must be deleted, not set
+    deleted_keys = {call.args[0] for call in redis.delete.call_args_list}
+    assert _KEY_ESTIMATE_TS in deleted_keys
+    set_keys = {call.args[0] for call in redis.set.call_args_list}
+    assert _KEY_ESTIMATE_TS not in set_keys
 
 
 def test_get_cached_result_returns_values(service: CompleteEstimateService):

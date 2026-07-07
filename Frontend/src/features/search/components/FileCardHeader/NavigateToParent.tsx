@@ -1,9 +1,9 @@
 import { SubdirectoryArrowLeft } from "@mui/icons-material";
 import { IconButton, Tooltip } from "@mui/material";
+import React from "react";
 
-import { useAppDispatch, useAppSelector } from "@app/hooks";
-import { openDialog, selectLastFileDetailTab } from "@app/slices/commonSlice";
-import { DialogType } from "@features/common/utils/enums";
+import { useAppDispatch } from "@app/hooks";
+import { openFileTabThunk } from "@app/slices/searchSlice";
 
 interface NavigateToParentProps {
     parentId: string;
@@ -11,16 +11,9 @@ interface NavigateToParentProps {
 
 export const NavigateToParent = ({ parentId }: NavigateToParentProps) => {
     const dispatch = useAppDispatch();
-    const lastTab = useAppSelector(selectLastFileDetailTab);
 
-    const handleClick = () => {
-        dispatch(
-            openDialog({
-                id: "",
-                type: DialogType.FileDetail,
-                props: { fileId: parentId, tab: lastTab },
-            }),
-        );
+    const handleClick = (e: React.MouseEvent) => {
+        dispatch(openFileTabThunk({ fileId: parentId, background: e.ctrlKey }));
     };
 
     return (

@@ -9,14 +9,16 @@ from common.dependencies import (
     get_task_scheduling_service,
 )
 from common.file.file_repository import (
+    HISTOGRAM_STAT_REGISTRY,
+    TERMS_STAT_REGISTRY,
     TREE_PATH_MAX_ELEMENT_COUNT,
     Attachment,
     File,
     FileRepository,
     ImapInfo,
-    Stat,
     Tag,
 )
+from common.file.file_statistics import AvailableStat
 from common.models.es_repository import (
     InvalidSortFieldExceptions,
     PaginationParameters,
@@ -40,7 +42,10 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Response, UploadFi
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, RootModel
 
-from api.models.statistics_model import GenericStatisticsModel, SummaryStatisticsModel
+from api.models.statistics_model import (
+    GroupedHistogramStatisticsModel,
+    TermsStatisticsModel,
+)
 from api.models.tree_model import TreeNodeModel
 from api.utils import get_content_disposition_header
 
@@ -182,6 +187,7 @@ class GetFilesTreeResponse(RootModel):
 
 class GetFilesTreeQuery(QueryParameters):
     node_path: str = "/"
+    flat: bool = False
 
 
 @router.get("/tree")
@@ -189,11 +195,16 @@ def get_files_tree(
     query: Annotated[GetFilesTreeQuery, Query()],
     file_repository: FileRepository = default_file_repository,
 ) -> GetFilesTreeResponse:
-    """Get a node out of the tree of files non-recursively."""
+    """Get nodes from the file tree.
+
+    When flat=False (default), returns the direct children of node_path. When flat=True,
+    returns all matching files at any depth below node_path, without pagination —
+    callers should apply their own result limit.
+    """
     logger.info("Get file tree node with query: '%s'", query)
 
     tree_paths = file_repository.get_full_paths_by_query(
-        query=query, tree_node_directory_path=query.node_path
+        query=query, tree_node_directory_path=query.node_path, flat=query.flat
     )
     return GetFilesTreeResponse(
         [TreeNodeModel.model_validate(node.model_dump()) for node in tree_paths]
@@ -206,26 +217,69 @@ def get_tree_max_element_count() -> int:
     return TREE_PATH_MAX_ELEMENT_COUNT
 
 
-@router.get("/stats/summary")
-def get_summary_stats(
-    query: Annotated[QueryParameters, Query()],
-    file_repository: FileRepository = default_file_repository,
-) -> SummaryStatisticsModel:
-    """Get statistics about the files found by the provided query."""
-    logger.info("Get summary stats with query: '%s'", query)
-    stats = file_repository.get_stat_summary(query=query)
-    return SummaryStatisticsModel.from_statistics_summary(stats)
+@router.get("/stats/{registry_type}")
+def get_available_stats_by_type(
+    registry_type: Literal["terms", "histogram"],
+) -> list[AvailableStat]:
+    """List stat fields of a specific registry type (terms, histogram)."""
+    if registry_type == "terms":
+        return [
+            AvailableStat(id=k, label=v.label) for k, v in TERMS_STAT_REGISTRY.items()
+        ]
+    return [
+        AvailableStat(id=k, label=v.label) for k, v in HISTOGRAM_STAT_REGISTRY.items()
+    ]
 
 
-@router.get("/stats/generic/{stat}")
-def get_generic_stats(
-    stat: Stat,
-    query: Annotated[QueryParameters, Query()],
+class GetStatsQuery(QueryParameters):
+    size: int = 5
+
+
+@router.get("/stats/terms/{stat}")
+def get_terms_stats(
+    stat: str,
+    query: Annotated[GetStatsQuery, Query()],
     file_repository: FileRepository = default_file_repository,
-) -> GenericStatisticsModel:
+) -> TermsStatisticsModel:
     logger.info("Get %s stats with query: '%s'", stat, query)
-    stats = file_repository.get_stat_generic(query=query, stat=stat)
-    return GenericStatisticsModel.from_statistics_generic(stats)
+    if stat not in TERMS_STAT_REGISTRY:
+        raise HTTPException(status_code=422, detail=f"Invalid stat: {stat!r}")
+    stats = file_repository.get_stat_terms(query=query, stat=stat, size=query.size)
+    return TermsStatisticsModel.from_terms_statistics(stats)
+
+
+@router.get("/stats/histogram/{stat}")
+def get_histogram_stats(
+    stat: str,
+    query: Annotated[QueryParameters, Query()],
+    file_repository: FileRepository = default_file_repository,
+) -> TermsStatisticsModel:
+    logger.info("Get %s histogram stats with query: '%s'", stat, query)
+    if stat not in HISTOGRAM_STAT_REGISTRY:
+        raise HTTPException(status_code=422, detail=f"Invalid stat: {stat!r}")
+    stats = file_repository.get_stat_histogram(query=query, stat=stat)
+    return TermsStatisticsModel.from_terms_statistics(stats)
+
+
+@router.get("/stats/histogram/{stat}/grouped/{group_by}")
+def get_histogram_stats_grouped(
+    stat: str,
+    group_by: str,
+    query: Annotated[QueryParameters, Query()],
+    file_repository: FileRepository = default_file_repository,
+) -> GroupedHistogramStatisticsModel:
+    if group_by not in TERMS_STAT_REGISTRY:
+        raise HTTPException(status_code=422, detail=f"Invalid group_by: {group_by!r}")
+    if stat not in HISTOGRAM_STAT_REGISTRY:
+        raise HTTPException(
+            status_code=422,
+            detail=f"Stat {stat!r} must be a date or number type",
+        )
+    logger.info("Get %s grouped by %s stats with query: '%s'", stat, group_by, query)
+    stats = file_repository.get_stat_histogram_grouped(
+        query=query, stat=stat, group_by=group_by
+    )
+    return GroupedHistogramStatisticsModel.from_grouped_histogram_statistics(stats)
 
 
 @router.put("/{file_id}", status_code=202)

@@ -96,9 +96,10 @@ All commands below are provided by devenv scripts (run `devenv-help` to see full
 
 **Backend testing:**
 
-- `backend-test` - Run all backend tests with pytest and coverage (from `backend/` directory)
-- `backend-test backend/api/tests/test_foo.py` - Run specific test file
-- `backend-test backend/worker/tests/test_bar.py::test_function` - Run specific test
+- `backend-test` - Run all backend tests with pytest and coverage (always runs from `backend/` directory)
+- `backend-test api/tests/test_foo.py` - Run specific test file (paths are relative to `backend/`)
+- `backend-test worker/tests/test_bar.py::test_function` - Run specific test function
+- Scope tests to relevant packages/files when possible — e.g. `backend-test api/` to run only API tests
 
 **Frontend:**
 
@@ -126,6 +127,17 @@ All commands below are provided by devenv scripts (run `devenv-help` to see full
 
 - `poetry-lock` - Regenerate all Poetry lockfiles (run after adding dependencies to `common`)
 - `generate-openapi-schema` - Print OpenAPI schema JSON
+
+**AI developer tools (`aitools` subcommands):**
+
+- `aitools mr-review [<MR URL or IID>] [--fix]` - Run a multi-agent AI review of an MR and
+  post findings as inline GitLab comments; omit the MR argument to auto-detect the MR for
+  the current branch; pass `--fix` to auto-apply findings instead of posting them as comments
+- `aitools mr-watch [<MR URL or IID>]` - Watch an MR's pipeline and auto-fix CI failures
+- `aitools mr-fix [<MR URL or IID>]` - Address unresolved MR review comments using Claude
+  in agentic mode; omit the argument to fix the MR for the current branch
+- `aitools mr-create` / `mr-describe` / `mr-update` - MR lifecycle helpers
+- `aitools job-diagnose <job-id>` - Diagnose a specific CI job failure
 
 ## Development Workflow
 

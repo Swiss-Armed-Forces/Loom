@@ -1,8 +1,16 @@
-from typing import Optional
+import dataclasses
+from typing import Annotated, Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, computed_field
 
-from common.utils.pydantic_field_paths import iter_field_paths_by_type
+from common.utils.pydantic_field_paths import (
+    iter_field_paths_by_metadata,
+    iter_field_paths_by_type,
+)
+
+# ---------------------------------------------------------------------------
+# Shared fixtures
+# ---------------------------------------------------------------------------
 
 
 class Leaf(BaseModel):
@@ -52,6 +60,11 @@ class NoMatchModel(BaseModel):
 
 def _paths(model: type[BaseModel], suffix: str = "") -> list[str]:
     return list(iter_field_paths_by_type(model, Target, suffix=suffix))
+
+
+# ---------------------------------------------------------------------------
+# iter_field_paths_by_type tests
+# ---------------------------------------------------------------------------
 
 
 def test_direct_field_match() -> None:
@@ -118,3 +131,103 @@ def test_empty_model() -> None:
 def test_no_suffix_by_default() -> None:
     paths = list(iter_field_paths_by_type(FlatModel, Target))
     assert paths == ["a"]
+
+
+# ---------------------------------------------------------------------------
+# iter_field_paths_by_metadata tests
+# ---------------------------------------------------------------------------
+
+
+@dataclasses.dataclass
+class Mark:
+    """Dummy metadata marker for testing."""
+
+    value: str = ""
+
+
+class FlatMarked(BaseModel):
+    a: Annotated[str, Mark("x")]
+    b: str
+    c: int
+
+
+class OptionalMarked(BaseModel):
+    a: Annotated[str | None, Mark()]
+    b: str | None
+
+
+class NestedMarked(BaseModel):
+    class Inner(BaseModel):
+        x: Annotated[str, Mark()]
+        y: str
+
+    inner: Inner
+    top: Annotated[str, Mark()]
+
+
+class ListOfMarked(BaseModel):
+    class Item(BaseModel):
+        name: Annotated[str, Mark()]
+        skip: str
+
+    items: list[Item]
+
+
+class ComputedMarked(BaseModel):
+    plain: str
+
+    @computed_field  # type: ignore[misc]
+    @property
+    def derived(self) -> Annotated[str, Mark()]:
+        return self.plain.upper()
+
+
+class NoMarks(BaseModel):
+    a: str
+    b: int
+
+
+def _meta_paths(model: type[BaseModel]) -> list[str]:
+    return [result.path for result in iter_field_paths_by_metadata(model, Mark)]
+
+
+def test_meta_direct_match() -> None:
+    assert _meta_paths(FlatMarked) == ["a"]
+
+
+def test_meta_unmarked_fields_excluded() -> None:
+    paths = _meta_paths(FlatMarked)
+    assert "b" not in paths
+    assert "c" not in paths
+
+
+def test_meta_optional_unwrapped() -> None:
+    assert "a" in _meta_paths(OptionalMarked)
+    assert "b" not in _meta_paths(OptionalMarked)
+
+
+def test_meta_nested_model_recurse() -> None:
+    paths = _meta_paths(NestedMarked)
+    assert "inner.x" in paths
+    assert "top" in paths
+    assert "inner.y" not in paths
+
+
+def test_meta_list_of_model_recurse() -> None:
+    paths = _meta_paths(ListOfMarked)
+    assert "items.name" in paths
+    assert "items.skip" not in paths
+
+
+def test_meta_computed_field() -> None:
+    assert "derived" in _meta_paths(ComputedMarked)
+    assert "plain" not in _meta_paths(ComputedMarked)
+
+
+def test_meta_no_marks_returns_empty() -> None:
+    assert not _meta_paths(NoMarks)
+
+
+def test_meta_marker_value_preserved() -> None:
+    results = {r.path: r.marker for r in iter_field_paths_by_metadata(FlatMarked, Mark)}
+    assert results["a"].value == "x"

@@ -1,12 +1,18 @@
 import argparse
 import logging
 import os
+import sys
 import tempfile
 
 from git import Repo
 from gitlab.v4.objects import ProjectMergeRequest, ProjectMergeRequestDiscussion
 
-from ._common import _ask, _get_mr_for_current_branch
+from ._common import (
+    _ask,
+    _get_gitlab_client_or_exit,
+    checkout_mr_branch,
+    resolve_mr_from_args_or_branch,
+)
 from .claude import generate_discussion_reply, run_claude_agentic
 from .git_helpers import get_branch_diff
 from .gitlab_api import (
@@ -77,10 +83,27 @@ def _generate_and_post_replies(
     print(f"Posted {len(replies)} reply/replies.")
 
 
-def cmd_mr_fix(_args: argparse.Namespace) -> None:
+def cmd_mr_fix(args: argparse.Namespace) -> None:
     """Address unresolved MR review comments using Claude in agentic mode."""
     repo = Repo(os.getcwd())
-    mr = _get_mr_for_current_branch(repo)
+    gl = _get_gitlab_client_or_exit()
+    mr = resolve_mr_from_args_or_branch(gl, args, repo)
+
+    source_branch = mr.source_branch
+    try:
+        on_mr_branch = repo.active_branch.name == source_branch
+    except TypeError:
+        on_mr_branch = False  # detached HEAD
+
+    if not on_mr_branch:
+        if repo.is_dirty(untracked_files=True):
+            logger.error(
+                "You have uncommitted changes. Please commit or stash them"
+                " before switching to branch %r.",
+                source_branch,
+            )
+            sys.exit(1)
+        checkout_mr_branch(mr, repo)
 
     discussions = fetch_unresolved_discussions(mr)
     if not discussions:

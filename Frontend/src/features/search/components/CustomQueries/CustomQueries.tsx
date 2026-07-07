@@ -9,7 +9,7 @@ import {
     ListSubheader,
     Tooltip,
 } from "@mui/material";
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 
 import { useAppDispatch, useAppSelector } from "@app/hooks.ts";
@@ -35,12 +35,24 @@ const CUSTOM_QUERY_FILES_COUNT_POLL_INTERVAL_MS = 30_000;
 interface SavedQueryItemProps {
     customQuery: CustomQuery;
     iconOnly?: boolean;
+    highlighted?: boolean;
 }
 
 const CustomQueryItem = ({
     customQuery,
     iconOnly = false,
+    highlighted = false,
 }: SavedQueryItemProps) => {
+    const itemRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        if (highlighted && itemRef.current) {
+            itemRef.current.scrollIntoView({
+                block: "nearest",
+                behavior: "smooth",
+            });
+        }
+    }, [highlighted]);
     const dispatch = useAppDispatch();
 
     const handleClick = useCallback(() => {
@@ -124,6 +136,8 @@ const CustomQueryItem = ({
 
     return (
         <ListItemButton
+            ref={itemRef}
+            selected={highlighted}
             onClick={handleClick}
             sx={{
                 transition: "opacity 0.2s ease",
@@ -171,15 +185,25 @@ const CustomQueryItem = ({
 interface CustomQueriesListProps {
     iconOnly?: boolean;
     hideHeader?: boolean;
+    filter?: string;
+    highlightedQueryId?: string | null;
 }
 
 export const CustomQueriesList = ({
     iconOnly = false,
     hideHeader = false,
+    filter,
+    highlightedQueryId,
 }: CustomQueriesListProps) => {
     const { t } = useTranslation();
     const customQueries = useAppSelector(selectCustomQueries);
     const searchQuery = useAppSelector(selectQuery);
+
+    const visibleQueries = filter
+        ? customQueries.filter((q) =>
+              q.name.toLowerCase().includes(filter.toLowerCase()),
+          )
+        : customQueries;
 
     return (
         <List className={styles.savedQueries}>
@@ -193,11 +217,14 @@ export const CustomQueriesList = ({
                         {t("sideMenu.savedQueries.title")}
                     </ListSubheader>
                 ))}
-            {customQueries.map((q, i) => (
+            {visibleQueries.map((q, i) => (
                 <CustomQueryItem
                     key={i}
                     customQuery={q}
                     iconOnly={iconOnly}
+                    highlighted={
+                        !!highlightedQueryId && q.id === highlightedQueryId
+                    }
                 ></CustomQueryItem>
             ))}
             <ListItem sx={iconOnly ? { justifyContent: "center" } : {}}>
