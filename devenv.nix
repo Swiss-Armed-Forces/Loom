@@ -517,6 +517,12 @@ in
 
     hadolint.enable = true;
 
+    "check-celery-group-import" = {
+      enable = true;
+      entry = "${config.devenv.root}/cicd/check_celery_group_import.sh";
+      types = [ "python" ];
+    };
+
     "check-dockerfile-run-flags" = {
       enable = true;
       entry = "${config.devenv.root}/cicd/check_dockerfile_run_flags.sh";
