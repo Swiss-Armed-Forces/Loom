@@ -16,9 +16,9 @@ import {
     GetFilePreviewResponse,
     GetFilesFileEntry,
     searchFiles,
-    SummaryStatisticsModel,
-    GenericStatisticsModel,
-    Stat,
+    GroupedHistogramStatisticsModel,
+    TermsStatisticsModel,
+    AvailableStat,
     PubSubMessage,
     getLongRunningQuery,
     getFilesCount,
@@ -39,6 +39,10 @@ import {
     SearchQuery,
     SearchQuerySchema,
 } from "@features/common/utils/model";
+import {
+    DEFAULT_HISTOGRAM_STAT,
+    DEFAULT_TERMS_STAT,
+} from "@features/search/views/Statistics/statOrder";
 import { webSocketSendMessage } from "@middleware/SocketMiddleware";
 
 import { RootState } from "../store";
@@ -125,7 +129,6 @@ export interface SearchState {
     leftSidebarPanel: LeftSidebarPanel | null;
     rightSidebarOpen: boolean;
     rightSidebarTab: RightSidebarTab;
-    pushHistory: boolean;
     stats: CombinedStats;
     files: {
         [fileId: string]: {
@@ -150,7 +153,10 @@ export interface SearchState {
     contentTruncatedFilesCount: number;
     attachmentsSkippedFilesCount: number;
     failedFilesCount: number;
-    displayStat: Stat;
+    displayStat: string;
+    displayHistogramStat: string;
+    termsStats: AvailableStat[];
+    histogramStats: AvailableStat[];
     webSocketPubSubMessage: PubSubMessage | null;
     summarizationSystemPrompt: string | null;
     visionSystemPrompt: string | null;
@@ -321,9 +327,8 @@ const initialState: SearchState = {
     rightSidebarOpen: uiState.rightSidebarOpen,
     rightSidebarTab: uiState.rightSidebarTab,
     stats: {
-        summary: null,
-        generic: null,
-        tags: null,
+        termsData: null,
+        histogramData: null,
     },
     files: {},
     lastFileSortId: null,
@@ -339,14 +344,16 @@ const initialState: SearchState = {
     contentTruncatedFilesCount: 0,
     attachmentsSkippedFilesCount: 0,
     failedFilesCount: 0,
-    displayStat: Stat.Extensions,
+    displayStat: DEFAULT_TERMS_STAT,
+    displayHistogramStat: DEFAULT_HISTOGRAM_STAT,
+    termsStats: [],
+    histogramStats: [],
     webSocketPubSubMessage: null,
     summarizationSystemPrompt: null,
     visionSystemPrompt: null,
     keyboardNavigation: {
         highlightedIndex: null,
     },
-    pushHistory: false,
     temporaryFileId: null,
 };
 
@@ -663,23 +670,21 @@ export const searchSlice = createSlice({
             );
             if (query) query.hasNewFiles = false;
         },
-        fillStatsSummary: (
-            state,
-            action: PayloadAction<SummaryStatisticsModel | null>,
-        ) => {
-            state.stats.summary = action.payload;
+        clearStats: (state) => {
+            state.stats.termsData = null;
+            state.stats.histogramData = null;
         },
-        fillStatsTags: (
+        fillTermsData: (
             state,
-            action: PayloadAction<GenericStatisticsModel | null>,
+            action: PayloadAction<TermsStatisticsModel | null>,
         ) => {
-            state.stats.tags = action.payload;
+            state.stats.termsData = action.payload;
         },
-        fillStatsGeneric: (
+        fillHistogramData: (
             state,
-            action: PayloadAction<GenericStatisticsModel | null>,
+            action: PayloadAction<GroupedHistogramStatisticsModel | null>,
         ) => {
-            state.stats.generic = action.payload;
+            state.stats.histogramData = action.payload;
         },
         setTags: (state, action: PayloadAction<string[]>) => {
             state.tags = action.payload;
@@ -690,8 +695,17 @@ export const searchSlice = createSlice({
         ) => {
             state.webSocketPubSubMessage = action.payload;
         },
-        setDisplayStat: (state, action: PayloadAction<Stat>) => {
+        fillTermsStats: (state, action: PayloadAction<AvailableStat[]>) => {
+            state.termsStats = action.payload;
+        },
+        fillHistogramStats: (state, action: PayloadAction<AvailableStat[]>) => {
+            state.histogramStats = action.payload;
+        },
+        setDisplayStat: (state, action: PayloadAction<string>) => {
             state.displayStat = action.payload;
+        },
+        setDisplayHistogramStat: (state, action: PayloadAction<string>) => {
+            state.displayHistogramStat = action.payload;
         },
         setSummarizationSystemPrompt: (
             state,
@@ -745,9 +759,6 @@ export const searchSlice = createSlice({
         },
         setExpandFilePaths: (state, action: PayloadAction<boolean>) => {
             state.expandFilePaths = action.payload;
-        },
-        setPushHistory: (state, action: PayloadAction<boolean>) => {
-            state.pushHistory = action.payload;
         },
         setFilePreview: (
             state,
@@ -907,12 +918,15 @@ export const {
     addCustomQuery,
     deleteCustomQuery,
     markCustomQueryAsRead,
-    fillStatsSummary,
-    fillStatsTags,
-    fillStatsGeneric,
+    clearStats,
+    fillTermsData,
+    fillHistogramData,
+    fillTermsStats,
+    fillHistogramStats,
     setTags,
     setWebSocketPubSubMessage,
     setDisplayStat,
+    setDisplayHistogramStat,
     setSummarizationSystemPrompt,
     setVisionSystemPrompt,
     setFilePreview,
@@ -920,7 +934,6 @@ export const {
     setTemporaryFileId,
     setAutoActionPreference,
     setExpandFilePaths,
-    setPushHistory,
 } = searchSlice.actions;
 
 export const openFileTabThunk = createAsyncThunk(
@@ -1054,6 +1067,26 @@ export const selectDisplayStat = createSelector(
     (search) => search.displayStat,
 );
 
+export const selectDisplayHistogramStat = createSelector(
+    selectSearch,
+    (search) => search.displayHistogramStat,
+);
+
+export const selectHistogramData = createSelector(
+    selectSearch,
+    (search) => search.stats.histogramData,
+);
+
+export const selectTermsStats = createSelector(
+    selectSearch,
+    (search) => search.termsStats,
+);
+
+export const selectHistogramStats = createSelector(
+    selectSearch,
+    (search) => search.histogramStats,
+);
+
 export const selectWebSocketPubSubMessage = createSelector(
     selectSearch,
     (search) => search.webSocketPubSubMessage,
@@ -1072,11 +1105,6 @@ export const selectVisionSystemPrompt = createSelector(
 export const selectHighlightedIndex = createSelector(
     selectSearch,
     (search) => search.keyboardNavigation.highlightedIndex,
-);
-
-export const selectPushHistory = createSelector(
-    selectSearch,
-    (search) => search.pushHistory,
 );
 
 export const selectTemporaryFileId = createSelector(

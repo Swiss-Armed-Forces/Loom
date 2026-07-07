@@ -21,10 +21,8 @@ import {
     openFileTabThunk,
     selectActiveTabFileId,
     selectFiles,
-    selectPushHistory,
     selectWebSocketPubSubMessage,
     setActiveTabFileId,
-    setPushHistory,
     updateQuery,
     setSummarizationSystemPrompt,
     setVisionSystemPrompt,
@@ -56,9 +54,6 @@ export const Search = () => {
     const webSocketPubSubMessage = useAppSelector(selectWebSocketPubSubMessage);
     const files = useAppSelector(selectFiles);
     const activeTabFileId = useAppSelector(selectActiveTabFileId);
-    const pushHistory = useAppSelector(selectPushHistory);
-    // Avoid adding pushHistory to the URL-sync effect's dep array
-    const pushHistoryRef = useRef(false);
     // Prevent feedback loops between hash→Redux and Redux→hash effects.
     // Initialized to "" (not location.hash) so the URL→Redux effect processes
     // the initial hash on mount rather than skipping it. The initial
@@ -149,12 +144,6 @@ export const Search = () => {
         );
     }, [searchParams]); // eslint-disable-line react-hooks/exhaustive-deps
 
-    // Keep pushHistoryRef in sync so the URL-sync effect can read it without
-    // adding it to the dependency array (which would cause extra re-runs).
-    useEffect(() => {
-        pushHistoryRef.current = pushHistory;
-    }, [pushHistory]);
-
     // Redux → URL hash: navigate when the active tab changes.
     // Push a new history entry when opening the first tab (null → fileId) so
     // Back returns to the results view; replace for all other transitions.
@@ -189,7 +178,13 @@ export const Search = () => {
         dispatch(openFileTabThunk({ fileId }));
     }, [location.hash]); // eslint-disable-line react-hooks/exhaustive-deps
 
-    // persist search state in URL query params
+    // Redux → URL: persist search state in URL query params.
+    // Skips navigate when the URL already reflects the current state (avoids
+    // the Redux→URL→Redux feedback loop on Back/Forward and initial load).
+    // Always pushes a new history entry when the URL actually changes so that
+    // every query/sort interaction is navigable via Back/Forward.
+    // Use navigate (not setSearchParams) to preserve the hash — React
+    // Router's setSearchParams navigates to "?..." which clears the hash.
     useEffect(() => {
         if (!searchQuery) return;
 
@@ -205,19 +200,16 @@ export const Search = () => {
             if (value) params.set(field as string, String(value));
         });
 
-        // Push a new history entry for committed user actions (Enter, sort
-        // toggle, custom query click), replace for all programmatic updates.
-        // Use navigate (not setSearchParams) to preserve the hash — React
-        // Router's setSearchParams navigates to "?..." which clears the hash.
-        const shouldReplace = !pushHistoryRef.current;
-        if (pushHistoryRef.current) dispatch(setPushHistory(false));
+        const newSearch = params.toString() ? `?${params.toString()}` : "";
+        if (newSearch === location.search) return;
+
         navigate(
             {
                 pathname: location.pathname,
                 search: params.toString(),
                 hash: location.hash,
             },
-            { replace: shouldReplace },
+            { replace: false },
         );
     }, [searchQuery]); // eslint-disable-line react-hooks/exhaustive-deps
 

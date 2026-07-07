@@ -29,13 +29,13 @@ models/ArchiveMeta.ts
 models/ArchiveRequest.ts
 models/ArchivesModel.ts
 models/Attachment.ts
+models/AvailableStat.ts
 models/CacheStatisticsEntryModel.ts
 models/CompleteEstimateResult.ts
 models/Components.ts
 models/ContextCreateResponse.ts
 models/EncryptionKeyResponse.ts
 models/Folder.ts
-models/GenericStatisticsModel.ts
 models/GetFileLanguageTranslations.ts
 models/GetFilePreviewResponse.ts
 models/GetFileResponse.ts
@@ -45,6 +45,8 @@ models/GetFilesResponse.ts
 models/GetQueryResponse.ts
 models/GetSearchResponse.ts
 models/GetSearchResponseFile.ts
+models/GroupedHistogramStatisticsModel.ts
+models/GroupedHitsPerGroupEntryModel.ts
 models/HTTPValidationError.ts
 models/HitsPerGroupEntryModel.ts
 models/ImageDescriptionFileRequest.ts
@@ -72,11 +74,10 @@ models/QueuesStats.ts
 models/ReinitAllResult.ts
 models/ReinitResult.ts
 models/RenderedFile.ts
-models/Stat.ts
 models/SummarizationRequest.ts
 models/SummarizeFileRequest.ts
-models/SummaryStatisticsModel.ts
 models/TaskGroupName.ts
+models/TermsStatisticsModel.ts
 models/TranslateAllRequest.ts
 models/TranslateFileRequest.ts
 models/TreeNodeModel.ts

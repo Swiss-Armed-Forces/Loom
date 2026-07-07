@@ -21,7 +21,6 @@ import {
     selectQuery,
     fetchFilesCountForCustomQuery,
     markCustomQueryAsRead,
-    setPushHistory,
 } from "@app/slices/searchSlice";
 import { DialogType } from "@features/common/utils/enums";
 
@@ -58,7 +57,6 @@ const CustomQueryItem = ({
 
     const handleClick = useCallback(() => {
         dispatch(markCustomQueryAsRead(customQuery));
-        dispatch(setPushHistory(true));
         dispatch(
             updateQuery({
                 ...customQuery.query,

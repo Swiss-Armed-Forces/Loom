@@ -96,9 +96,10 @@ All commands below are provided by devenv scripts (run `devenv-help` to see full
 
 **Backend testing:**
 
-- `backend-test` - Run all backend tests with pytest and coverage (from `backend/` directory)
-- `backend-test backend/api/tests/test_foo.py` - Run specific test file
-- `backend-test backend/worker/tests/test_bar.py::test_function` - Run specific test
+- `backend-test` - Run all backend tests with pytest and coverage (always runs from `backend/` directory)
+- `backend-test api/tests/test_foo.py` - Run specific test file (paths are relative to `backend/`)
+- `backend-test worker/tests/test_bar.py::test_function` - Run specific test function
+- Scope tests to relevant packages/files when possible — e.g. `backend-test api/` to run only API tests
 
 **Frontend:**
 

@@ -10,11 +10,7 @@ import { ChangeEvent, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { useAppDispatch, useAppSelector } from "@app/hooks";
-import {
-    selectQuery,
-    setPushHistory,
-    updateQuery,
-} from "@app/slices/searchSlice";
+import { selectQuery, updateQuery } from "@app/slices/searchSlice";
 
 import styles from "./GlobalSearchBox.module.css";
 
@@ -47,7 +43,6 @@ export const GlobalSearchBox = () => {
     }, [searchQuery]);
 
     const doUpdateQuery = () => {
-        dispatch(setPushHistory(true));
         dispatch(
             updateQuery({
                 query: searchInputFieldContent,
@@ -71,7 +66,6 @@ export const GlobalSearchBox = () => {
 
     const handleClearSearch = () => {
         setSearchInputFieldContent("");
-        dispatch(setPushHistory(true));
         dispatch(
             updateQuery({
                 query: "",
@@ -83,7 +77,6 @@ export const GlobalSearchBox = () => {
 
     const handleClearSort = () => {
         setSortInputFieldContent("");
-        dispatch(setPushHistory(true));
         dispatch(
             updateQuery({
                 query: searchInputFieldContent,
@@ -94,7 +87,6 @@ export const GlobalSearchBox = () => {
     };
 
     const handleToggleSortDirection = () => {
-        dispatch(setPushHistory(true));
         dispatch(
             updateQuery({
                 ...(sortDirection && {

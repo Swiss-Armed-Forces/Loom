@@ -24,39 +24,51 @@ import {
 /**
  *
  * @export
- * @interface GenericStatisticsModel
+ * @interface TermsStatisticsModel
  */
-export interface GenericStatisticsModel {
+export interface TermsStatisticsModel {
     /**
      *
      * @type {string}
-     * @memberof GenericStatisticsModel
+     * @memberof TermsStatisticsModel
      */
     stat: string;
     /**
      *
      * @type {string}
-     * @memberof GenericStatisticsModel
+     * @memberof TermsStatisticsModel
      */
     key: string;
     /**
      *
      * @type {Array<HitsPerGroupEntryModel>}
-     * @memberof GenericStatisticsModel
+     * @memberof TermsStatisticsModel
      */
     data: Array<HitsPerGroupEntryModel>;
     /**
      *
      * @type {number}
-     * @memberof GenericStatisticsModel
+     * @memberof TermsStatisticsModel
      */
     fileCount: number;
+    /**
+     *
+     * @type {number}
+     * @memberof TermsStatisticsModel
+     */
+    minValue?: number;
+    /**
+     *
+     * @type {number}
+     * @memberof TermsStatisticsModel
+     */
+    maxValue?: number;
 }
 
 /**
- * Check if a given object implements the GenericStatisticsModel interface.
+ * Check if a given object implements the TermsStatisticsModel interface.
  */
-export function instanceOfGenericStatisticsModel(value: object): boolean {
+export function instanceOfTermsStatisticsModel(value: object): boolean {
     if (!("stat" in value)) return false;
     if (!("key" in value)) return false;
     if (!("data" in value)) return false;
@@ -64,16 +76,14 @@ export function instanceOfGenericStatisticsModel(value: object): boolean {
     return true;
 }
 
-export function GenericStatisticsModelFromJSON(
-    json: any,
-): GenericStatisticsModel {
-    return GenericStatisticsModelFromJSONTyped(json, false);
+export function TermsStatisticsModelFromJSON(json: any): TermsStatisticsModel {
+    return TermsStatisticsModelFromJSONTyped(json, false);
 }
 
-export function GenericStatisticsModelFromJSONTyped(
+export function TermsStatisticsModelFromJSONTyped(
     json: any,
     ignoreDiscriminator: boolean,
-): GenericStatisticsModel {
+): TermsStatisticsModel {
     if (json == null) {
         return json;
     }
@@ -82,11 +92,13 @@ export function GenericStatisticsModelFromJSONTyped(
         key: json["key"],
         data: (json["data"] as Array<any>).map(HitsPerGroupEntryModelFromJSON),
         fileCount: json["file_count"],
+        minValue: json["min_value"] == null ? undefined : json["min_value"],
+        maxValue: json["max_value"] == null ? undefined : json["max_value"],
     };
 }
 
-export function GenericStatisticsModelToJSON(
-    value?: GenericStatisticsModel | null,
+export function TermsStatisticsModelToJSON(
+    value?: TermsStatisticsModel | null,
 ): any {
     if (value == null) {
         return value;
@@ -96,5 +108,7 @@ export function GenericStatisticsModelToJSON(
         key: value["key"],
         data: (value["data"] as Array<any>).map(HitsPerGroupEntryModelToJSON),
         file_count: value["fileCount"],
+        min_value: value["minValue"],
+        max_value: value["maxValue"],
     };
 }
