@@ -927,6 +927,8 @@ def _shell_step(
     except SystemExit:
         # command errors (e.g. resolve_name calling sys.exit) should not kill the shell
         pass
+    except KeyboardInterrupt:
+        print()
     return cwd, False
 
 
