@@ -1,5 +1,6 @@
 import logging
-from typing import Any
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from typing import Any, NamedTuple
 
 from common.file.file_repository import (
     FileNotFoundException,
@@ -19,6 +20,11 @@ IMAP_FLAG_FLAGGED = r"\Flagged"
 # imapclient returns idle_check() responses as plain tuples of variable length
 # and heterogeneous element types depending on the server message type.
 ImapIdleResponse = tuple[Any, ...]
+
+
+class FolderModseqResult(NamedTuple):
+    folder: str
+    modseq: int | None
 
 
 class ExtendedIMAPClient(IMAPClient):
@@ -82,6 +88,8 @@ class IMAPNotifyListenerService:  # pylint: disable=too-many-instance-attributes
             client.xatom("NOTIFY", "SET", "(PERSONAL (FlagChange))")
             logger.info("NOTIFY subscription registered, entering idle loop")
 
+            self._initialize_folder_modseqs(client)
+
             # Dovecot sends STATUS responses (not FETCH) for non-selected mailboxes.
             # On each STATUS we exit IDLE, SELECT the folder, CONDSTORE-fetch changed
             # message flags, then re-enter IDLE. _in_idle tracks whether the IDLE
@@ -121,6 +129,52 @@ class IMAPNotifyListenerService:  # pylint: disable=too-many-instance-attributes
             return None
         mailbox = response[1]
         return mailbox.decode() if isinstance(mailbox, bytes) else str(mailbox)
+
+    def _fetch_folder_modseq(self, folder_name: str) -> FolderModseqResult:
+        """Open a dedicated IMAP connection and return the folder's HIGHESTMODSEQ."""
+        with ExtendedIMAPClient(host=self._host, port=self._port, ssl=False) as c:
+            c.login(self._user, self._password)
+            status = c.folder_status(folder_name, [b"HIGHESTMODSEQ"])
+            modseq = status.get(b"HIGHESTMODSEQ")
+            return FolderModseqResult(
+                folder=folder_name,
+                modseq=modseq if isinstance(modseq, int) else None,
+            )
+
+    def _initialize_folder_modseqs(self, client: IMAPClient) -> None:
+        """Pre-populate HIGHESTMODSEQ for all folders before entering the idle loop.
+
+        Prevents a bulk fetch of all messages on the first STATUS notification for any
+        existing folder, while still capturing flag changes that arrive after startup.
+        Uses a thread pool so each folder opens its own connection and the STATUS calls
+        run in parallel.
+        """
+        folder_names = [name for _, _, name in client.list_folders()]
+        logger.info(
+            "Initializing MODSEQ watermarks for %d folder(s)", len(folder_names)
+        )
+        with ThreadPoolExecutor() as executor:
+            futures = {
+                executor.submit(self._fetch_folder_modseq, name): name
+                for name in folder_names
+            }
+            for future in as_completed(futures):
+                folder_name = futures[future]
+                try:
+                    result = future.result()
+                    if result.modseq is not None:
+                        self._folder_modseq[folder_name] = result.modseq
+                        logger.debug(
+                            "Initialized MODSEQ %d for folder %s",
+                            result.modseq,
+                            folder_name,
+                        )
+                except Exception:  # pylint: disable=broad-except
+                    logger.warning(
+                        "Could not initialize MODSEQ for folder %s",
+                        folder_name,
+                        exc_info=True,
+                    )
 
     def _sync_folder_flags(self, client: IMAPClient, folder: str) -> None:
         """SELECT folder and fetch flags for all messages changed since last sync."""
