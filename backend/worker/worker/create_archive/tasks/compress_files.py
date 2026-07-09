@@ -146,6 +146,13 @@ def _file_archive_entries(
         if file_ is None:
             continue
         for storage in _file_storage_fields(file_):
+            if not file_storage_service.exists(storage):
+                logger.warning(
+                    "Skipping storage object '%s' for file '%s': not found in file storage",
+                    storage.service_id,
+                    file_.full_path,
+                )
+                continue
             yield (
                 f"{archive_name}/{FILES_DIR}/{storage.service_id}",
                 modified_at,
