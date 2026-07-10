@@ -9,7 +9,13 @@ from common.services.lazybytes_service import (
     LazyBytes,
 )
 
-import worker.create_archive.tasks.archive_format as archive_fmt
+from worker.create_archive.tasks.archive_cli._cmd_extract import cmd_extract
+from worker.create_archive.tasks.archive_cli._cmd_grep import cmd_grep
+from worker.create_archive.tasks.archive_cli._cmd_id import cmd_id
+from worker.create_archive.tasks.archive_cli._cmd_info import cmd_info
+from worker.create_archive.tasks.archive_cli._cmd_ls import cmd_ls
+from worker.create_archive.tasks.archive_cli._cmd_tree import cmd_tree
+from worker.create_archive.tasks.archive_cli._db import open_shell_db
 from worker.utils.archive import ArchiveEntry, build_archive
 
 _N_ENTRIES = 50
@@ -41,27 +47,30 @@ class TestMemory:
 
     @pytest.mark.limit_memory("30 MB")
     def test_ls_does_not_load_all_entries(self, large_archive_dir: Path) -> None:
-        # Exact match: resolve_name holds at most 1 IndexEntry at a time.
-        # If load_entries returned a list, all 100 MB would be live → fails limit.
-        archive_fmt.cmd_ls(
+        # cmd_ls queries the DB for path stubs (no JSON reads), so only path strings
+        # are live — well under the limit even for 100 MB of content in the index.
+        db = open_shell_db(large_archive_dir)
+        cmd_ls(
             argparse.Namespace(path="docs/file_0001.txt"),
-            index_dir=large_archive_dir / "files_index",
+            db=db,
         )
 
     @pytest.mark.limit_memory("20 MB")
     def test_tree_does_not_load_all_entries(self, large_archive_dir: Path) -> None:
-        # cmd_tree only stores path-component strings; meta is discarded each iteration.
-        archive_fmt.cmd_tree(
+        # cmd_tree only reads path-component strings from the children table; no JSON reads.
+        db = open_shell_db(large_archive_dir)
+        cmd_tree(
             argparse.Namespace(),
-            index_dir=large_archive_dir / "files_index",
+            db=db,
         )
 
     @pytest.mark.limit_memory("30 MB")
     def test_info_does_not_load_all_entries(self, large_archive_dir: Path) -> None:
-        # First pass: 1 matched entry live. Second pass builds id→name strings only.
-        # If entries_by_id stored full IndexEntry objects, all 100 MB would be live.
-        archive_fmt.cmd_info(
-            argparse.Namespace(name="docs/file_0001.txt", json=False),
+        # cmd_info loads exactly one JSON file; all other entries are never read.
+        db = open_shell_db(large_archive_dir)
+        cmd_info(
+            argparse.Namespace(name="docs/file_0001.txt", json=False, field=None),
+            db=db,
             index_dir=large_archive_dir / "files_index",
             files_dir=large_archive_dir / "files",
         )
@@ -69,34 +78,35 @@ class TestMemory:
     @pytest.mark.limit_memory("20 MB")
     def test_grep_does_not_load_all_entries(self, large_archive_dir: Path) -> None:
         # cmd_grep reads one JSON file at a time and discards it; no accumulation.
-        archive_fmt.cmd_grep(
+        db = open_shell_db(large_archive_dir)
+        cmd_grep(
             argparse.Namespace(
                 pattern="file_0001",
                 ignore_case=False,
                 files_with_matches=False,
             ),
+            db=db,
             index_dir=large_archive_dir / "files_index",
         )
 
     @pytest.mark.limit_memory("20 MB")
     def test_id_does_not_load_all_entries(self, large_archive_dir: Path) -> None:
-        # _find_by_service_id reads one JSON file at a time; no accumulation.
-        # A non-existent id still causes a full scan of all 50 entries → sys.exit(1).
+        # cmd_id queries storage table by storage_id; no JSON reads at all.
+        db = open_shell_db(large_archive_dir)
         with pytest.raises(SystemExit):
-            archive_fmt.cmd_id(
+            cmd_id(
                 argparse.Namespace(file_ref="nonexistent-id"),
-                index_dir=large_archive_dir / "files_index",
+                db=db,
             )
 
-    @pytest.mark.limit_memory("130 MB")
+    @pytest.mark.limit_memory("30 MB")
     def test_extract_does_not_load_entries_twice(
         self, large_archive_dir: Path, tmp_path: Path
     ) -> None:
-        # cmd_extract eagerly loads all entries to support recursive/wildcard matching.
-        # Peak memory is bounded by the full index size (~100 MB) — not doubled across
-        # the internal initial_matches / final_matches / deduped lists, which all hold
-        # references to the same IndexEntry objects.
-        archive_fmt.cmd_extract(
+        # cmd_extract queries DB stubs for path resolution (no JSON accumulation)
+        # and only loads JSON for the matched file, so peak memory stays low.
+        db = open_shell_db(large_archive_dir)
+        cmd_extract(
             argparse.Namespace(
                 members=["docs/file_0001.txt"],
                 directory=str(tmp_path / "out"),
@@ -107,6 +117,7 @@ class TestMemory:
                 no_index=False,
                 no_meta=False,
             ),
+            db=db,
             index_dir=large_archive_dir / "files_index",
             files_dir=large_archive_dir / "files",
         )

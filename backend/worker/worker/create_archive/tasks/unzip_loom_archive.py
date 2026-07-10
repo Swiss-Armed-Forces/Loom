@@ -14,7 +14,7 @@ from common.file.file_repository import File
 from common.services.lazybytes_service import FileStorageLazyBytes
 
 from worker.create_archive.tasks import calculate_checksum, calculate_size
-from worker.create_archive.tasks.archive_format import (
+from worker.create_archive.tasks.archive_cli import (
     FILES_DIR,
     FILES_INDEX_DIR,
     JSON_SUFFIX,

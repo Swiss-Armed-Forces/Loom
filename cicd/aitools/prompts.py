@@ -422,7 +422,8 @@ left in a bad state on failure? Reconnect loops sound? Blocking shutdown latency
 Examine task/worker/framework integration points. Queues routed correctly? Decorator
 order correct? Bootsteps registered only for the right worker type? Background threads
 joined on stop with no leaks? Duplicate event dispatch — is that acceptable? Dead
-imports, variables, or helpers defined but never used?
+imports, variables, or helpers defined but never used? Production code that is never
+called from any production code path — only invoked by tests — also counts as dead.
 
 **Agent 3 — Configuration, deployment wiring, and documentation (complete + minimal)**
 Examine settings classes, Helm values, ConfigMaps, and deployment manifests. Do env

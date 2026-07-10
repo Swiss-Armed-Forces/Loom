@@ -6,7 +6,7 @@ from common.dependencies import get_celery_app, get_file_storage_service
 from common.services.lazybytes_service import FileStorageLazyBytes
 from pydantic import ValidationError
 
-from worker.create_archive.tasks.archive_format import MANIFEST_FILENAME
+from worker.create_archive.tasks.archive_cli import MANIFEST_FILENAME
 from worker.index_file.infra.file_indexing_task import FileIndexingTask
 
 logger = logging.getLogger(__name__)

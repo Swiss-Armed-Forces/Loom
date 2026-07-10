@@ -5,25 +5,26 @@ from pathlib import Path
 
 from common.services.lazybytes_service import InMemoryFileStorageLazyBytesService
 
-from worker.create_archive.tasks.archive_format import (
+from worker.create_archive.tasks.archive_cli import (
     CLI_DESCRIPTION,
-    CLI_FILENAME,
+    CLI_ENTRYPOINT_FILENAME,
     ERR_NO_FILE_FOUND,
     FILES_INDEX_DIR,
     SHELL_PROMPT,
-    IndexEntry,
-    _list_children,
-    _resolve_cwd,
-    _shell_escape,
-    _shell_unescape,
-    _ShellCompleter,
 )
+from worker.create_archive.tasks.archive_cli._db import open_shell_db
+from worker.create_archive.tasks.archive_cli._shell import (
+    ShellCompleter,
+    shell_escape,
+    shell_unescape,
+)
+from worker.create_archive.tasks.archive_cli._utils import resolve_cwd
 from worker.utils.archive import build_archive, simple_entries
 
 
 def _run_shell(archive_dir: Path, commands: str) -> subprocess.CompletedProcess:
     return subprocess.run(
-        [sys.executable, str(archive_dir / CLI_FILENAME)],
+        [sys.executable, str(archive_dir / CLI_ENTRYPOINT_FILENAME)],
         input=commands,
         capture_output=True,
         text=True,
@@ -59,7 +60,7 @@ class TestCliShell:
             file_storage_service_inmemory,
         )
         result = subprocess.run(
-            [sys.executable, str(archive_dir / CLI_FILENAME), "shell"],
+            [sys.executable, str(archive_dir / CLI_ENTRYPOINT_FILENAME), "shell"],
             input="exit\n",
             capture_output=True,
             text=True,
@@ -80,7 +81,8 @@ class TestCliShell:
             simple_entries({"report.pdf": b"data"}),
             file_storage_service_inmemory,
         )
-        result = _run_shell(archive_dir, "ls\nexit\n")
+        # simple_entries uses source="test", so vpaths are under test/
+        result = _run_shell(archive_dir, "cd test\nls\nexit\n")
 
         assert result.returncode == 0
         assert "report.pdf" in result.stdout
@@ -249,10 +251,11 @@ class TestCliShellNavigation:
             simple_entries({"docs/report.pdf": b"data", "images/photo.jpg": b"img"}),
             file_storage_service_inmemory,
         )
-        result = _run_shell(archive_dir, "cd docs\npwd\nexit\n")
+        # simple_entries uses source="test", so navigate through test/ first
+        result = _run_shell(archive_dir, "cd test/docs\npwd\nexit\n")
 
         assert result.returncode == 0
-        assert "/docs\n" in result.stdout
+        assert "/test/docs\n" in result.stdout
 
     def test_cd_dotdot(
         self,
@@ -264,11 +267,10 @@ class TestCliShellNavigation:
             simple_entries({"docs/report.pdf": b"data", "images/photo.jpg": b"img"}),
             file_storage_service_inmemory,
         )
-        result = _run_shell(archive_dir, "cd docs\ncd ..\npwd\nexit\n")
+        result = _run_shell(archive_dir, "cd test/docs\ncd ..\npwd\nexit\n")
 
         assert result.returncode == 0
-        # pwd prints "/" followed by a newline; this substring is unique to that output
-        assert "/\n" in result.stdout
+        assert "/test\n" in result.stdout
 
     def test_cd_invalid_directory(
         self,
@@ -295,7 +297,7 @@ class TestCliShellNavigation:
             simple_entries({"docs/report.pdf": b"data", "images/photo.jpg": b"img"}),
             file_storage_service_inmemory,
         )
-        result = _run_shell(archive_dir, "cd docs\ncd /\npwd\nexit\n")
+        result = _run_shell(archive_dir, "cd test/docs\ncd /\npwd\nexit\n")
 
         assert result.returncode == 0
         assert "/\n" in result.stdout
@@ -310,7 +312,7 @@ class TestCliShellNavigation:
             simple_entries({"docs/a.pdf": b"data", "images/b.jpg": b"img"}),
             file_storage_service_inmemory,
         )
-        result = _run_shell(archive_dir, "cd docs\nls\nexit\n")
+        result = _run_shell(archive_dir, "cd test/docs\nls\nexit\n")
 
         assert result.returncode == 0
         assert "a.pdf" in result.stdout
@@ -326,7 +328,8 @@ class TestCliShellNavigation:
             simple_entries({"docs/a.pdf": b"data", "images/b.jpg": b"img"}),
             file_storage_service_inmemory,
         )
-        result = _run_shell(archive_dir, "ls\nexit\n")
+        # Navigate into the source directory first; virtual dirs show there
+        result = _run_shell(archive_dir, "cd test\nls\nexit\n")
 
         assert result.returncode == 0
         assert "docs/" in result.stdout
@@ -341,7 +344,7 @@ class TestCliShellNavigation:
             simple_entries({"docs/alpha.pdf": b"data", "images/beta.jpg": b"img"}),
             file_storage_service_inmemory,
         )
-        result = _run_shell(archive_dir, "cd docs\ngrep alpha\nexit\n")
+        result = _run_shell(archive_dir, "cd test/docs\ngrep alpha\nexit\n")
 
         assert result.returncode == 0
         assert "docs/alpha.pdf" in result.stdout
@@ -357,7 +360,7 @@ class TestCliShellNavigation:
             simple_entries({"docs/a.pdf": b"data", "images/b.jpg": b"img"}),
             file_storage_service_inmemory,
         )
-        result = _run_shell(archive_dir, "cd docs\nfind\nexit\n")
+        result = _run_shell(archive_dir, "cd test/docs\nfind\nexit\n")
 
         assert result.returncode == 0
         assert "a.pdf" in result.stdout
@@ -424,13 +427,14 @@ class TestShellCompleter:
         files: dict[str, bytes],
         tmp_path: Path,
         file_storage_service_inmemory: InMemoryFileStorageLazyBytesService,
-    ) -> _ShellCompleter:
+    ) -> ShellCompleter:
         archive_dir = build_archive(
             tmp_path,
             simple_entries(files),
             file_storage_service_inmemory,
         )
-        return _ShellCompleter(index_dir=archive_dir / FILES_INDEX_DIR)
+        db = open_shell_db(archive_dir)
+        return ShellCompleter(db=db, index_dir=archive_dir / FILES_INDEX_DIR)
 
     def test_completes_command_names(
         self,
@@ -467,6 +471,8 @@ class TestShellCompleter:
             tmp_path,
             file_storage_service_inmemory,
         )
+        # simple_entries uses source="test", so dirs appear under test/
+        c.cwd = "test"
         matches = c.get_completions("", "cd ", 3)
         assert "docs/" in matches
         assert "images/" in matches
@@ -492,6 +498,8 @@ class TestShellCompleter:
             tmp_path,
             file_storage_service_inmemory,
         )
+        # Navigate into test/ first since simple_entries uses source="test"
+        c.cwd = "test"
         matches = c.get_completions("do", "cd do", 3)
         assert "docs/" in matches
         assert "images/" not in matches
@@ -506,7 +514,7 @@ class TestShellCompleter:
             tmp_path,
             file_storage_service_inmemory,
         )
-        c.cwd = "docs"
+        c.cwd = "test/docs"
         matches = c.get_completions("", "cd ", 3)
         assert "reports/" in matches
         assert "images/" in matches
@@ -521,6 +529,8 @@ class TestShellCompleter:
             tmp_path,
             file_storage_service_inmemory,
         )
+        # Navigate into test/ to see the actual files and dirs
+        c.cwd = "test"
         matches = c.get_completions("", "ls ", 3)
         assert "docs/" in matches
         assert "notes.txt" in matches
@@ -546,6 +556,8 @@ class TestShellCompleter:
             tmp_path,
             file_storage_service_inmemory,
         )
+        # Navigate into test/ where the space-containing dir lives
+        c.cwd = "test"
         matches = c.get_completions("", "cd ", 3)
         assert "my\\ reports/" in matches
 
@@ -559,7 +571,7 @@ class TestShellCompleter:
             tmp_path,
             file_storage_service_inmemory,
         )
-        c.cwd = "docs"
+        c.cwd = "test/docs"
         matches = c.get_completions("", "ls ", 3)
         assert "report\\ \\(draft\\).pdf" in matches
 
@@ -574,6 +586,8 @@ class TestShellCompleter:
             tmp_path,
             file_storage_service_inmemory,
         )
+        # Set cwd to "test" so that "my reports/" resolves to "test/my reports/"
+        c.cwd = "test"
         # Simulate: user typed "ls my\ reports/" and readline split at space,
         # giving text="reports/", line="ls my\ reports/", begidx=7
         matches = c.get_completions("reports/", "ls my\\ reports/", 7)
@@ -593,7 +607,8 @@ class TestShellWithSpecialFilenames:
             simple_entries({"my reports/q1.pdf": b"data"}),
             file_storage_service_inmemory,
         )
-        result = _run_shell(archive_dir, 'cd "my reports"\nls\nexit\n')
+        # Navigate through test/ first since simple_entries uses source="test"
+        result = _run_shell(archive_dir, 'cd test\ncd "my reports"\nls\nexit\n')
 
         assert result.returncode == 0
         assert "q1.pdf" in result.stdout
@@ -608,7 +623,7 @@ class TestShellWithSpecialFilenames:
             simple_entries({"my reports/q1.pdf": b"data"}),
             file_storage_service_inmemory,
         )
-        result = _run_shell(archive_dir, "cd my\\ reports\nls\nexit\n")
+        result = _run_shell(archive_dir, "cd test\ncd my\\ reports\nls\nexit\n")
 
         assert result.returncode == 0
         assert "q1.pdf" in result.stdout
@@ -633,94 +648,58 @@ class TestShellWithSpecialFilenames:
 
 
 class TestResolveCwd:
-    """Unit tests for _resolve_cwd — a pure function, no filesystem needed."""
+    """Unit tests for resolve_cwd — a pure function, no filesystem needed."""
 
     def test_root_is_empty_string(self) -> None:
-        assert _resolve_cwd("", "") == ""
+        assert resolve_cwd("", "") == ""
 
     def test_descend_one_level(self) -> None:
-        assert _resolve_cwd("", "docs") == "docs"
+        assert resolve_cwd("", "docs") == "docs"
 
     def test_descend_two_levels(self) -> None:
-        assert _resolve_cwd("docs", "reports") == "docs/reports"
+        assert resolve_cwd("docs", "reports") == "docs/reports"
 
     def test_dotdot_goes_up(self) -> None:
-        assert _resolve_cwd("docs", "..") == ""
+        assert resolve_cwd("docs", "..") == ""
 
     def test_dotdot_from_root_stays_at_root(self) -> None:
-        assert _resolve_cwd("", "..") == ""
+        assert resolve_cwd("", "..") == ""
 
     def test_dotdot_beyond_root_clamps(self) -> None:
-        assert _resolve_cwd("docs", "../..") == ""
+        assert resolve_cwd("docs", "../..") == ""
 
     def test_dot_stays(self) -> None:
-        assert _resolve_cwd("docs", ".") == "docs"
+        assert resolve_cwd("docs", ".") == "docs"
 
     def test_absolute_target(self) -> None:
-        assert _resolve_cwd("docs", "/images") == "images"
+        assert resolve_cwd("docs", "/images") == "images"
 
     def test_cd_root_slash(self) -> None:
-        assert _resolve_cwd("docs/reports", "/") == ""
+        assert resolve_cwd("docs/reports", "/") == ""
 
     def test_mixed_dotdot_and_segment(self) -> None:
-        assert _resolve_cwd("a/b/c", "../../x") == "a/x"
-
-
-class TestListChildren:
-    """Unit tests for _list_children — no filesystem needed."""
-
-    def _entry(self, name: str) -> IndexEntry:
-        return IndexEntry(name=name, storage_id="x", meta={})
-
-    def test_files_at_root(self) -> None:
-        entries = [self._entry("a.pdf"), self._entry("b.txt")]
-        assert sorted(_list_children("", entries)) == ["a.pdf", "b.txt"]
-
-    def test_virtual_dirs_at_root(self) -> None:
-        entries = [self._entry("docs/a.pdf"), self._entry("images/b.jpg")]
-        children = _list_children("", entries)
-        assert "docs/" in children
-        assert "images/" in children
-
-    def test_files_under_cwd(self) -> None:
-        entries = [self._entry("docs/a.pdf"), self._entry("docs/b.pdf")]
-        children = _list_children("docs", entries)
-        assert "a.pdf" in children
-        assert "b.pdf" in children
-
-    def test_no_blank_entry_for_exact_prefix_match(self) -> None:
-        """An entry whose vpath equals the prefix exactly must not produce a blank
-        line."""
-        entries = [self._entry("docs/")]
-        children = _list_children("docs", entries)
-        assert "" not in children
-
-    def test_double_slash_prefix_normalised(self) -> None:
-        entries = [self._entry("//host/dir/file.pdf")]
-        children = _list_children("", entries)
-        assert "host/" in children
-        assert "" not in children
+        assert resolve_cwd("a/b/c", "../../x") == "a/x"
 
 
 class TestEscapeHelpers:
-    """Unit tests for _shell_escape / _shell_unescape."""
+    """Unit tests for shell_escape / shell_unescape."""
 
     def test_escape_space(self) -> None:
-        assert _shell_escape("my file.pdf") == "my\\ file.pdf"
+        assert shell_escape("my file.pdf") == "my\\ file.pdf"
 
     def test_escape_parens(self) -> None:
-        assert _shell_escape("report (draft).pdf") == "report\\ \\(draft\\).pdf"
+        assert shell_escape("report (draft).pdf") == "report\\ \\(draft\\).pdf"
 
     def test_escape_at(self) -> None:
-        assert _shell_escape("user@host") == "user\\@host"
+        assert shell_escape("user@host") == "user\\@host"
 
     def test_unescape_space(self) -> None:
-        assert _shell_unescape("my\\ file.pdf") == "my file.pdf"
+        assert shell_unescape("my\\ file.pdf") == "my file.pdf"
 
     def test_roundtrip_all_special_chars(self) -> None:
         for char in " \t\"'`$!#@&;|<>*()?[]{}~":
             name = f"file{char}name.pdf"
-            escaped = _shell_escape(name)
+            escaped = shell_escape(name)
             assert (
                 shlex.split(f"ls {escaped}")[1] == name
             ), f"round-trip failed for char {char!r}"
@@ -754,11 +733,11 @@ class TestCliShellNavigationExtra:
             simple_entries({"docs/report.pdf": b"data"}),
             file_storage_service_inmemory,
         )
-        result = _run_shell(archive_dir, "cd docs\ncd nonexistent\npwd\nexit\n")
+        result = _run_shell(archive_dir, "cd test/docs\ncd nonexistent\npwd\nexit\n")
 
         assert result.returncode == 0
         assert "nonexistent" in result.stderr
-        assert "/docs\n" in result.stdout
+        assert "/test/docs\n" in result.stdout
 
     def test_clear_does_not_crash_shell(
         self,
@@ -770,7 +749,7 @@ class TestCliShellNavigationExtra:
             simple_entries({"report.pdf": b"data"}),
             file_storage_service_inmemory,
         )
-        result = _run_shell(archive_dir, "clear\nls\nexit\n")
+        result = _run_shell(archive_dir, "clear\ncd test\nls\nexit\n")
 
         assert result.returncode == 0
         assert "report.pdf" in result.stdout
@@ -785,7 +764,7 @@ class TestCliShellNavigationExtra:
             simple_entries({"docs/report.pdf": b"data", "images/photo.jpg": b"img"}),
             file_storage_service_inmemory,
         )
-        result = _run_shell(archive_dir, "cd docs\ntree\nexit\n")
+        result = _run_shell(archive_dir, "cd test/docs\ntree\nexit\n")
 
         assert result.returncode == 0
         assert "report.pdf" in result.stdout
@@ -806,7 +785,7 @@ class TestCliStandalone:
             file_storage_service_inmemory,
         )
         result = subprocess.run(
-            [sys.executable, str(archive_dir / CLI_FILENAME), "ls"],
+            [sys.executable, str(archive_dir / CLI_ENTRYPOINT_FILENAME), "ls"],
             capture_output=True,
             text=True,
             check=False,

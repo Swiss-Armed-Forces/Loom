@@ -106,11 +106,6 @@ grafana:
     requests: null
     limits: null
 
-translate:
-  resources:
-    requests: null
-    limits: null
-
 seaweedfs:
   master:
     resources:
