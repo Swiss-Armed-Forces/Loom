@@ -1,9 +1,10 @@
 import logging
+import tempfile
 from collections.abc import Iterable, Iterator
 from datetime import datetime
 from pathlib import Path
 from textwrap import dedent
-from typing import cast
+from typing import NamedTuple, cast
 from uuid import UUID
 
 from common.archive.archive_repository import Archive
@@ -13,18 +14,20 @@ from common.dependencies import (
     get_file_storage_service,
     get_lazybytes_service,
 )
-from common.file.file_repository import File
+from common.file.file_repository import File, RenderedFile
 from common.services.lazybytes_service import (
     FileStorageLazyBytes,
     LazyBytes,
     TempTypedLazyBytes,
 )
+from common.utils.pydantic_field_paths import iter_field_paths_by_type
 from pydantic import BaseModel
 from stream_zip import ZIP_64, MemberFile, stream_zip
 
 from worker.create_archive.infra.archive_processing_task import ArchiveProcessingTask
-from worker.create_archive.tasks.archive_format import (
+from worker.create_archive.tasks.archive_cli import (
     CLI_DOC,
+    CLI_ENTRYPOINT_FILENAME,
     CLI_FILENAME,
     FILES_DIR,
     FILES_INDEX_DIR,
@@ -32,9 +35,12 @@ from worker.create_archive.tasks.archive_format import (
     JSON_SUFFIX,
     MANIFEST_FILENAME,
     README_FILENAME,
+    SHELL_INDEX_FILENAME,
     ZIP_EXTENSION,
     build_parser,
 )
+from worker.create_archive.tasks.archive_cli._db import ShellIndexCollector
+from worker.create_archive.tasks.archive_cli._types import StorageEntry
 from worker.create_archive.tasks.query_file_list import FileIdList
 
 logger = logging.getLogger(__name__)
@@ -48,11 +54,20 @@ _PROGRESS_LOG_INTERVAL_PCT = 5
 
 
 def _readme_content(archive_name: str) -> bytes:
+    lbl_entrypoint = f"- `{CLI_ENTRYPOINT_FILENAME}`"
     lbl_manifest = f"- `{MANIFEST_FILENAME}`"
-    lbl_cli = f"- `{CLI_FILENAME}`"
+    lbl_cli = f"- `{CLI_FILENAME}/`"
     lbl_files = f"- `{FILES_DIR}/`"
     lbl_index = f"- `{FILES_INDEX_DIR}/`"
-    col = max(len(lbl_manifest), len(lbl_cli), len(lbl_files), len(lbl_index))
+    lbl_shell_index = f"- `{SHELL_INDEX_FILENAME}`"
+    col = max(
+        len(lbl_entrypoint),
+        len(lbl_manifest),
+        len(lbl_cli),
+        len(lbl_files),
+        len(lbl_index),
+        len(lbl_shell_index),
+    )
     cli_help = build_parser().format_help()
     header = dedent(f"""\
         # Loom Archive — {archive_name}
@@ -61,10 +76,12 @@ def _readme_content(archive_name: str) -> bytes:
 
         ## Structure
 
+        {lbl_entrypoint:<{col}} — entry point: run directly (`./cli.py`) or via `python cli.py`
         {lbl_manifest:<{col}} — archive metadata and query parameters (JSON)
-        {lbl_cli:<{col}} — interactive CLI for browsing and extracting files
+        {lbl_cli:<{col}} — CLI package (required by `{CLI_ENTRYPOINT_FILENAME}`)
         {lbl_files:<{col}} — raw file bytes, keyed by storage UUID
         {lbl_index:<{col}} — fully-indexed file metadata (JSON, one file per entry)
+        {lbl_shell_index:<{col}} — navigation index for the interactive shell (SQLite)
 
         Each `{FILES_INDEX_DIR}/{{id}}{JSON_SUFFIX}` holds the indexed metadata for one file.
         Raw bytes (if available) are stored at `{FILES_DIR}/{{uuid}}`.
@@ -96,8 +113,27 @@ def _file_storage_fields(file: File) -> list[FileStorageLazyBytes]:
     return [s for s in _collect_lazybytes(file) if s.service_id is not None]
 
 
-def _cli_content() -> bytes:
-    return (Path(__file__).parent / "archive_format.py").read_bytes()
+def _cli_entrypoint() -> bytes:
+    """Return the bytes of cli.py, the top-level archive entry point."""
+    return (Path(__file__).parent / CLI_FILENAME / CLI_ENTRYPOINT_FILENAME).read_bytes()
+
+
+class _CliEntry(NamedTuple):
+    filename: str
+    content: bytes
+
+
+def _cli_entries() -> list[_CliEntry]:
+    """Return (filename, bytes) pairs for every package .py file in archive_cli.
+
+    Excludes cli.py, which is embedded separately at the archive root.
+    """
+    pkg_dir = Path(__file__).parent / CLI_FILENAME
+    return [
+        _CliEntry(f.name, f.read_bytes())
+        for f in sorted(pkg_dir.glob("*.py"))
+        if f.name != CLI_ENTRYPOINT_FILENAME
+    ]
 
 
 def _manifest_content(archive: Archive) -> bytes:
@@ -124,11 +160,26 @@ def _fetch_file(file_id: UUID, archive_id: UUID) -> File | None:
     return file_
 
 
+def _collect_storage_ids(file_: File) -> list[StorageEntry]:
+    """Return StorageEntry list for all storage objects on the given file."""
+    result: list[StorageEntry] = []
+    if file_.storage_data is not None and file_.storage_data.service_id is not None:
+        result.append(StorageEntry(str(file_.storage_data.service_id), "file"))
+    if file_.thumbnail_data is not None and file_.thumbnail_data.service_id is not None:
+        result.append(StorageEntry(str(file_.thumbnail_data.service_id), "thumbnail"))
+    for field_path in iter_field_paths_by_type(RenderedFile, FileStorageLazyBytes):
+        val = getattr(file_.rendered_file, field_path)
+        if val is not None and val.service_id is not None:
+            result.append(StorageEntry(str(val.service_id), f"rendered:{field_path}"))
+    return result
+
+
 def _file_archive_entries(
     file_ids: list[UUID],
     archive_id: UUID,
     archive_name: str,
     modified_at: datetime,
+    collector: ShellIndexCollector,
 ) -> Iterator[MemberFile]:
     """Yield ZIP entries for all files."""
     file_storage_service = get_file_storage_service()
@@ -145,6 +196,13 @@ def _file_archive_entries(
         file_ = _fetch_file(file_id, archive_id)
         if file_ is None:
             continue
+        json_filename = f"{file_.id_}{JSON_SUFFIX}"
+        collector.add_file(
+            str(file_.full_path).lstrip("/"),
+            str(file_.id_),
+            json_filename,
+            _collect_storage_ids(file_),
+        )
         for storage in _file_storage_fields(file_):
             if not file_storage_service.exists(storage):
                 logger.warning(
@@ -162,7 +220,7 @@ def _file_archive_entries(
             )
         file_json = file_.model_dump_json(indent=JSON_INDENT).encode()
         yield (
-            f"{archive_name}/{FILES_INDEX_DIR}/{file_.id_}{JSON_SUFFIX}",
+            f"{archive_name}/{FILES_INDEX_DIR}/{json_filename}",
             modified_at,
             _PERMS_FILE,
             ZIP_64,
@@ -193,16 +251,37 @@ def _archive_data(file_ids: list[UUID], archive: Archive) -> Iterator[MemberFile
         iter([readme]),
     )
 
-    cli = _cli_content()
     yield (
-        f"{archive_name}/{CLI_FILENAME}",
+        f"{archive_name}/{CLI_ENTRYPOINT_FILENAME}",
         modified_at,
         _PERMS_EXEC,
         ZIP_64,
-        iter([cli]),
+        iter([_cli_entrypoint()]),
     )
 
-    yield from _file_archive_entries(file_ids, archive.id_, archive_name, modified_at)
+    for entry in _cli_entries():
+        yield (
+            f"{archive_name}/{CLI_FILENAME}/{entry.filename}",
+            modified_at,
+            _PERMS_META,
+            ZIP_64,
+            iter([entry.content]),
+        )
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        collector = ShellIndexCollector(Path(tmpdir) / SHELL_INDEX_FILENAME)
+        yield from _file_archive_entries(
+            file_ids, archive.id_, archive_name, modified_at, collector
+        )
+
+        # collector is now fully populated — yield the navigation index streamed from disk
+        yield (
+            f"{archive_name}/{SHELL_INDEX_FILENAME}",
+            modified_at,
+            _PERMS_META,
+            ZIP_64,
+            collector.stream_db(),
+        )
 
 
 def stream_archive(file_ids: list[UUID], archive: Archive) -> Iterable[bytes]:

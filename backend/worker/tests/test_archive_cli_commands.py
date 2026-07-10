@@ -1,11 +1,7 @@
-import argparse
-import io
 import json
 import subprocess
 import sys
-from contextlib import redirect_stdout
 from pathlib import Path
-from unittest.mock import patch
 from uuid import uuid4
 
 from common.file.file_repository import File, FilePurePath, RenderedFile
@@ -14,7 +10,7 @@ from common.services.lazybytes_service import (
     LazyBytes,
 )
 
-from worker.create_archive.tasks.archive_format import CLI_FILENAME, cmd_shell
+from worker.create_archive.tasks.archive_cli import CLI_ENTRYPOINT_FILENAME
 from worker.utils.archive import ArchiveEntry, build_archive, simple_entries
 
 
@@ -29,7 +25,7 @@ def _get_storage_id(archive_dir: Path, file_name: str) -> str:
 
 def _run(archive_dir: Path, args: list[str]) -> subprocess.CompletedProcess:
     return subprocess.run(
-        [sys.executable, str(archive_dir / CLI_FILENAME)] + args,
+        [sys.executable, str(archive_dir / CLI_ENTRYPOINT_FILENAME)] + args,
         capture_output=True,
         text=True,
         check=False,
@@ -82,7 +78,7 @@ class TestCliLs:
             ),
             file_storage_service_inmemory,
         )
-        result = _run(archive_dir, ["ls", "docs/*.txt"])
+        result = _run(archive_dir, ["ls", "test/docs/*.txt"])
 
         assert result.returncode == 0
         assert "docs/notes.txt" in result.stdout
@@ -127,7 +123,7 @@ class TestCliLs:
             ),
             file_storage_service_inmemory,
         )
-        result = _run(archive_dir, ["ls", "docs/"])
+        result = _run(archive_dir, ["ls", "test/docs/"])
 
         assert result.returncode == 0
         assert "docs/report.pdf" in result.stdout
@@ -176,8 +172,8 @@ class TestCliExtract:
         result = _run(archive_dir, ["x", "-C", str(dest)])
 
         assert result.returncode == 0
-        assert (dest / "docs" / "a.txt" / "a.txt").read_bytes() == b"a"
-        assert (dest / "docs" / "b.txt" / "b.txt").read_bytes() == b"b"
+        assert (dest / "test" / "docs" / "a.txt" / "a.txt").read_bytes() == b"a"
+        assert (dest / "test" / "docs" / "b.txt" / "b.txt").read_bytes() == b"b"
 
     def test_extracts_single_member(
         self,
@@ -194,7 +190,9 @@ class TestCliExtract:
         result = _run(archive_dir, ["x", "-C", str(dest), "report.pdf"])
 
         assert result.returncode == 0
-        assert (dest / "report.pdf" / "report.pdf").read_bytes() == b"pdf content"
+        assert (
+            dest / "test" / "report.pdf" / "report.pdf"
+        ).read_bytes() == b"pdf content"
 
     def test_extracts_to_cwd_by_default(
         self,
@@ -227,7 +225,7 @@ class TestCliExtract:
 
         assert result.returncode == 0
         assert (
-            dest / "deep" / "path" / "notes.txt" / "notes.txt"
+            dest / "test" / "deep" / "path" / "notes.txt" / "notes.txt"
         ).read_bytes() == b"hello"
 
     def test_glob_pattern_extracts_matching_files(
@@ -245,8 +243,8 @@ class TestCliExtract:
         result = _run(archive_dir, ["x", "-C", str(dest), "*.txt"])
 
         assert result.returncode == 0
-        assert (dest / "docs" / "a.txt" / "a.txt").read_bytes() == b"a"
-        assert not (dest / "docs" / "b.md").exists()
+        assert (dest / "test" / "docs" / "a.txt" / "a.txt").read_bytes() == b"a"
+        assert not (dest / "test" / "docs" / "b.md").exists()
 
     def test_multiple_explicit_members(
         self,
@@ -263,9 +261,9 @@ class TestCliExtract:
         result = _run(archive_dir, ["x", "-C", str(dest), "a.txt", "b.txt"])
 
         assert result.returncode == 0
-        assert (dest / "a.txt" / "a.txt").read_bytes() == b"a"
-        assert (dest / "b.txt" / "b.txt").read_bytes() == b"b"
-        assert not (dest / "c.md").exists()
+        assert (dest / "test" / "a.txt" / "a.txt").read_bytes() == b"a"
+        assert (dest / "test" / "b.txt" / "b.txt").read_bytes() == b"b"
+        assert not (dest / "test" / "c.md").exists()
 
     def test_dir_like_recursive_by_default(
         self,
@@ -282,8 +280,10 @@ class TestCliExtract:
         result = _run(archive_dir, ["x", "-C", str(dest), "doc.pdf"])
 
         assert result.returncode == 0
-        assert (dest / "doc.pdf" / "doc.pdf").read_bytes() == b"pdf"
-        assert (dest / "doc.pdf" / "image.png" / "image.png").read_bytes() == b"img"
+        assert (dest / "test" / "doc.pdf" / "doc.pdf").read_bytes() == b"pdf"
+        assert (
+            dest / "test" / "doc.pdf" / "image.png" / "image.png"
+        ).read_bytes() == b"img"
 
     def test_no_recursion_extracts_only_matched_entry(
         self,
@@ -300,8 +300,8 @@ class TestCliExtract:
         result = _run(archive_dir, ["x", "-C", str(dest), "--no-recursion", "doc.pdf"])
 
         assert result.returncode == 0
-        assert (dest / "doc.pdf" / "doc.pdf").read_bytes() == b"pdf"
-        assert not (dest / "doc.pdf" / "image.png").exists()
+        assert (dest / "test" / "doc.pdf" / "doc.pdf").read_bytes() == b"pdf"
+        assert not (dest / "test" / "doc.pdf" / "image.png").exists()
 
     def test_exclude_filters_output(
         self,
@@ -318,9 +318,9 @@ class TestCliExtract:
         result = _run(archive_dir, ["x", "-C", str(dest), "--exclude=*.txt"])
 
         assert result.returncode == 0
-        assert not (dest / "a.txt").exists()
-        assert not (dest / "b.txt").exists()
-        assert (dest / "c.md" / "c.md").read_bytes() == b"c"
+        assert not (dest / "test" / "a.txt").exists()
+        assert not (dest / "test" / "b.txt").exists()
+        assert (dest / "test" / "c.md" / "c.md").read_bytes() == b"c"
 
     def test_no_matches_errors(
         self,
@@ -349,7 +349,7 @@ class TestCliExtract:
         result = _run(archive_dir, ["x", "-C", str(dest), "report.pdf"])
 
         assert result.returncode == 0
-        assert (dest / "report.pdf" / "thumbnail.png").exists()
+        assert (dest / "test" / "report.pdf" / "thumbnail.png").exists()
 
     def test_extracts_rendered_by_default(
         self,
@@ -362,7 +362,7 @@ class TestCliExtract:
         result = _run(archive_dir, ["x", "-C", str(dest), "report.pdf"])
 
         assert result.returncode == 0
-        assert (dest / "report.pdf" / "rendered-image_data.png").exists()
+        assert (dest / "test" / "report.pdf" / "rendered-image_data.png").exists()
 
     def test_extracts_index_json_by_default(
         self,
@@ -375,7 +375,7 @@ class TestCliExtract:
         result = _run(archive_dir, ["x", "-C", str(dest), "report.pdf"])
 
         assert result.returncode == 0
-        index_path = dest / "report.pdf" / "index.json"
+        index_path = dest / "test" / "report.pdf" / "index.json"
         assert index_path.exists()
         data = json.loads(index_path.read_text())
         assert data.get("full_name") == "report.pdf"
@@ -393,8 +393,8 @@ class TestCliExtract:
         )
 
         assert result.returncode == 0
-        assert not (dest / "report.pdf" / "thumbnail.png").exists()
-        assert (dest / "report.pdf" / "report.pdf").exists()
+        assert not (dest / "test" / "report.pdf" / "thumbnail.png").exists()
+        assert (dest / "test" / "report.pdf" / "report.pdf").exists()
 
     def test_no_rendered_suppresses_rendered(
         self,
@@ -409,8 +409,8 @@ class TestCliExtract:
         )
 
         assert result.returncode == 0
-        assert not (dest / "report.pdf" / "rendered-image_data.png").exists()
-        assert (dest / "report.pdf" / "report.pdf").exists()
+        assert not (dest / "test" / "report.pdf" / "rendered-image_data.png").exists()
+        assert (dest / "test" / "report.pdf" / "report.pdf").exists()
 
     def test_no_index_suppresses_index_json(
         self,
@@ -423,8 +423,8 @@ class TestCliExtract:
         result = _run(archive_dir, ["x", "-C", str(dest), "--no-index", "report.pdf"])
 
         assert result.returncode == 0
-        assert not (dest / "report.pdf" / "index.json").exists()
-        assert (dest / "report.pdf" / "report.pdf").exists()
+        assert not (dest / "test" / "report.pdf" / "index.json").exists()
+        assert (dest / "test" / "report.pdf" / "report.pdf").exists()
 
     def test_no_meta_suppresses_all(
         self,
@@ -437,7 +437,7 @@ class TestCliExtract:
         result = _run(archive_dir, ["x", "-C", str(dest), "--no-meta", "report.pdf"])
 
         assert result.returncode == 0
-        entry_dir = dest / "report.pdf"
+        entry_dir = dest / "test" / "report.pdf"
         assert not (entry_dir / "thumbnail.png").exists()
         assert not (entry_dir / "rendered-image_data.png").exists()
         assert not (entry_dir / "index.json").exists()
@@ -533,7 +533,7 @@ class TestCliGrep:
         result = _run(archive_dir, ["grep", "-l", "report"])
 
         assert result.returncode == 0
-        assert result.stdout.strip() == "report.pdf"
+        assert result.stdout.strip() == "test/report.pdf"
         assert "[" not in result.stdout
 
     def test_regex_pattern(
@@ -791,19 +791,64 @@ class TestCliId:
         assert "no file found with id" in result.stderr
 
 
-class TestCliShell:
-    def test_ctrl_c_does_not_exit_shell(self) -> None:
-        call_count = 0
+class TestCliInfoField:
+    def test_info_prints_fields_section(
+        self,
+        tmp_path: Path,
+        file_storage_service_inmemory: InMemoryFileStorageLazyBytesService,
+    ) -> None:
+        archive_dir = build_archive(
+            tmp_path,
+            simple_entries({"report.pdf": b"data"}),
+            file_storage_service_inmemory,
+        )
+        result = _run(archive_dir, ["info", "report.pdf"])
 
-        def mock_input(_prompt: str = "") -> str:
-            nonlocal call_count
-            call_count += 1
-            if call_count == 1:
-                raise KeyboardInterrupt
-            return "exit"
+        assert result.returncode == 0
+        assert "fields:" in result.stdout
+        assert "  storage_data.service_id" in result.stdout
 
-        out = io.StringIO()
-        with patch("builtins.input", side_effect=mock_input), redirect_stdout(out):
-            cmd_shell(argparse.Namespace())
+    def test_info_field_prints_leaf_value(
+        self,
+        tmp_path: Path,
+        file_storage_service_inmemory: InMemoryFileStorageLazyBytesService,
+    ) -> None:
+        archive_dir = build_archive(
+            tmp_path,
+            simple_entries({"report.pdf": b"data"}),
+            file_storage_service_inmemory,
+        )
+        result = _run(archive_dir, ["info", "report.pdf", "full_name"])
 
-        assert "^C" in out.getvalue()
+        assert result.returncode == 0
+        assert result.stdout.strip() == "report.pdf"
+
+    def test_info_field_prints_subtree(
+        self,
+        tmp_path: Path,
+        file_storage_service_inmemory: InMemoryFileStorageLazyBytesService,
+    ) -> None:
+        archive_dir = build_archive(
+            tmp_path,
+            simple_entries({"report.pdf": b"data"}),
+            file_storage_service_inmemory,
+        )
+        result = _run(archive_dir, ["info", "report.pdf", "storage_data"])
+
+        assert result.returncode == 0
+        assert "storage_data.service_id:" in result.stdout
+
+    def test_info_field_not_found_exits_1(
+        self,
+        tmp_path: Path,
+        file_storage_service_inmemory: InMemoryFileStorageLazyBytesService,
+    ) -> None:
+        archive_dir = build_archive(
+            tmp_path,
+            simple_entries({"report.pdf": b"data"}),
+            file_storage_service_inmemory,
+        )
+        result = _run(archive_dir, ["info", "report.pdf", "nonexistent"])
+
+        assert result.returncode == 1
+        assert "nonexistent" in result.stderr

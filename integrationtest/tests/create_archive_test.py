@@ -7,7 +7,7 @@ from api.routers.archives import ArchiveCreatedResponse, ArchiveRequest
 from common.dependencies import get_archive_encryption_service
 from common.services.query_builder import QueryParameters
 from common.services.task_scheduling_service import UpdateArchiveRequest
-from worker.create_archive.tasks.archive_format import FILES_DIR, FILES_INDEX_DIR
+from worker.create_archive.tasks.archive_cli import FILES_DIR, FILES_INDEX_DIR
 
 from utils.consts import ARCHIVE_ENDPOINT, REQUEST_TIMEOUT
 from utils.fetch_from_api import (

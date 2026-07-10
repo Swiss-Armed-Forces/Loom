@@ -1,6 +1,7 @@
 import io
 import json
 import zipfile
+from pathlib import Path
 from uuid import UUID, uuid4
 
 from common.archive.archive_repository import LOOM_ARCHIVE_VERSION, Archive
@@ -15,15 +16,18 @@ from common.services.lazybytes_service import (
 )
 from stream_zip import stream_zip
 
-from worker.create_archive.tasks.archive_format import (
+from worker.create_archive.tasks.archive_cli import (
+    CLI_ENTRYPOINT_FILENAME,
     CLI_FILENAME,
     FILES_DIR,
     FILES_INDEX_DIR,
     JSON_SUFFIX,
     MANIFEST_FILENAME,
     README_FILENAME,
+    SHELL_INDEX_FILENAME,
     ZIP_EXTENSION,
 )
+from worker.create_archive.tasks.archive_cli._db import open_shell_db
 from worker.create_archive.tasks.compress_files import (
     _archive_data,
     _file_storage_fields,
@@ -34,7 +38,13 @@ from worker.create_archive.tasks.unzip_loom_archive import (
     store_raw_files_task,
     upsert_file_objects_task,
 )
-from worker.utils.archive import ArchiveEntry, build_archive_bytes, make_archive
+from worker.utils.archive import (
+    ArchiveEntry,
+    build_archive,
+    build_archive_bytes,
+    make_archive,
+    simple_entries,
+)
 
 LAZYBYTES_THRESHOLD_BYTES = 64
 
@@ -173,13 +183,15 @@ class TestArchiveData:
         assert collected_ids == set(ids)
 
     def test_cli_is_included_in_archive(self):
-        """cli.py is bundled into the archive as an executable entry."""
+        """cli.py entry point and archive_cli/ package are bundled into the archive."""
         zip_bytes = b"".join(stream_zip(_archive_data([], _ARCHIVE)))
 
         with zipfile.ZipFile(io.BytesIO(zip_bytes)) as zf:
-            cli_name = f"{ARCHIVE_NAME}/{CLI_FILENAME}"
-            assert cli_name in zf.namelist()
-            assert zf.read(cli_name).startswith(b"#!/usr/bin/env python3")
+            namelist = zf.namelist()
+            assert f"{ARCHIVE_NAME}/{CLI_ENTRYPOINT_FILENAME}" in namelist
+            assert f"{ARCHIVE_NAME}/{CLI_FILENAME}/__init__.py" in namelist
+            assert f"{ARCHIVE_NAME}/{CLI_FILENAME}/_commands.py" in namelist
+            assert f"{ARCHIVE_NAME}/{CLI_FILENAME}/_parser.py" in namelist
 
     def test_thumbnail_data_is_exported(
         self, file_storage_service_inmemory: InMemoryFileStorageLazyBytesService
@@ -338,3 +350,100 @@ class TestDetectLoomArchive:
         archive_lb = file_storage_service_inmemory.from_bytes(b"not a zip file at all")
 
         assert detect_loom_archive(archive_lb) is None
+
+
+# ---------------------------------------------------------------------------
+# SHELL_INDEX.json
+# ---------------------------------------------------------------------------
+
+
+class TestShellIndexInArchive:
+    def test_shell_index_file_is_present(
+        self,
+        tmp_path: Path,
+        file_storage_service_inmemory: InMemoryFileStorageLazyBytesService,
+    ) -> None:
+        archive_dir = build_archive(
+            tmp_path,
+            simple_entries({"docs/report.pdf": b"data"}),
+            file_storage_service_inmemory,
+        )
+        assert (archive_dir / SHELL_INDEX_FILENAME).exists()
+
+    def test_shell_index_contains_all_files(
+        self,
+        tmp_path: Path,
+        file_storage_service_inmemory: InMemoryFileStorageLazyBytesService,
+    ) -> None:
+        # simple_entries uses source="test", so vpaths are prefixed with "test/"
+        archive_dir = build_archive(
+            tmp_path,
+            simple_entries({"docs/report.pdf": b"a", "images/photo.jpg": b"b"}),
+            file_storage_service_inmemory,
+        )
+        db = open_shell_db(archive_dir)
+        vpaths = {row[0] for row in db.execute("SELECT vpath FROM files").fetchall()}
+        assert "test/docs/report.pdf" in vpaths
+        assert "test/images/photo.jpg" in vpaths
+
+    def test_shell_index_children_root(
+        self,
+        tmp_path: Path,
+        file_storage_service_inmemory: InMemoryFileStorageLazyBytesService,
+    ) -> None:
+        archive_dir = build_archive(
+            tmp_path,
+            simple_entries({"docs/a.pdf": b"a", "note.txt": b"n"}),
+            file_storage_service_inmemory,
+        )
+        db = open_shell_db(archive_dir)
+        root_children = {
+            row[0]
+            for row in db.execute(
+                "SELECT child_name FROM children WHERE parent_path = 'test'"
+            ).fetchall()
+        }
+        assert "docs/" in root_children
+        assert "note.txt" in root_children
+
+    def test_shell_index_by_file_id_populated(
+        self,
+        tmp_path: Path,
+        file_storage_service_inmemory: InMemoryFileStorageLazyBytesService,
+    ) -> None:
+        entries = simple_entries({"report.pdf": b"data"})
+        archive_dir = build_archive(tmp_path, entries, file_storage_service_inmemory)
+        file_id = str(entries[0].file.id_)
+        db = open_shell_db(archive_dir)
+        row = db.execute(
+            "SELECT vpath FROM files WHERE file_id = ?", (file_id,)
+        ).fetchone()
+        assert row is not None
+        assert row[0] == "test/report.pdf"
+
+    def test_shell_index_by_storage_id_file_role(
+        self,
+        tmp_path: Path,
+        file_storage_service_inmemory: InMemoryFileStorageLazyBytesService,
+    ) -> None:
+        sid = uuid4()
+        entries = [
+            ArchiveEntry(
+                file=File(
+                    full_name=FilePurePath("report.pdf"),
+                    source="test",
+                    sha256="abc",
+                    size=4,
+                    storage_data=LazyBytes(service_id=sid),
+                ),
+                content=b"data",
+            )
+        ]
+        archive_dir = build_archive(tmp_path, entries, file_storage_service_inmemory)
+        db = open_shell_db(archive_dir)
+        rows = db.execute(
+            "SELECT vpath, role FROM storage WHERE storage_id = ?", (str(sid),)
+        ).fetchall()
+        assert len(rows) == 1
+        assert rows[0][0] == "test/report.pdf"
+        assert rows[0][1] == "file"
