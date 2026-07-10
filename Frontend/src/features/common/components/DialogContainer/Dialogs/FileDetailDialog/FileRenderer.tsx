@@ -1,7 +1,14 @@
-import { Description, Email, OpenInBrowser } from "@mui/icons-material";
+import {
+    Description,
+    Download,
+    Email,
+    Fullscreen,
+    FullscreenExit,
+    OpenInBrowser,
+} from "@mui/icons-material";
 import ImageIcon from "@mui/icons-material/Image";
-import { ToggleButtonGroup, ToggleButton, Box } from "@mui/material";
-import { useState } from "react";
+import { Box, IconButton, Tooltip } from "@mui/material";
+import { useEffect, useRef, useState } from "react";
 
 import { ImapInfo, RenderedFile } from "@app/api";
 import { roundcubeHost, webApiGetFileRendered } from "@features/common/urls";
@@ -15,13 +22,45 @@ interface FileRendererProps {
     imap?: ImapInfo;
 }
 
+const MODES = [
+    {
+        value: FileRendererType.Image,
+        icon: <ImageIcon fontSize="small" />,
+        label: "Image",
+    },
+    {
+        value: FileRendererType.Browser,
+        icon: <OpenInBrowser fontSize="small" />,
+        label: "Browser",
+    },
+    {
+        value: FileRendererType.Office,
+        icon: <Description fontSize="small" />,
+        label: "Office",
+    },
+    {
+        value: FileRendererType.Email,
+        icon: <Email fontSize="small" />,
+        label: "Email",
+    },
+];
+
+const toolbarButtonSx = (active: boolean) => ({
+    borderRadius: 1,
+    p: 0.75,
+    color: active ? "primary.main" : "text.secondary",
+    bgcolor: active ? "action.selected" : "transparent",
+    transition: "transform 0.2s ease, opacity 0.2s ease",
+    "&:hover": { transform: "scale(1.1)", opacity: 0.8 },
+});
+
 export const FileRenderer = ({
     fileId,
     renderedFile,
     imap,
 }: FileRendererProps) => {
-    const isAvailable = (type: FileRendererType): boolean => {
-        switch (type) {
+    const isAvailable = (value: FileRendererType): boolean => {
+        switch (value) {
             case FileRendererType.Image:
                 return !!renderedFile.imageFileId;
             case FileRendererType.Browser:
@@ -35,12 +74,29 @@ export const FileRenderer = ({
         }
     };
 
-    // Set to first available renderer type on initialization
     const [type, setType] = useState<FileRendererType>(
-        (Object.values(FileRendererType).find(
-            isAvailable,
-        ) as FileRendererType) ?? FileRendererType.Image,
+        (MODES.map((m) => m.value).find(isAvailable) as FileRendererType) ??
+            FileRendererType.Image,
     );
+
+    const containerRef = useRef<HTMLDivElement>(null);
+    const [isFullscreen, setIsFullscreen] = useState(false);
+
+    useEffect(() => {
+        const handleChange = () =>
+            setIsFullscreen(!!document.fullscreenElement);
+        document.addEventListener("fullscreenchange", handleChange);
+        return () =>
+            document.removeEventListener("fullscreenchange", handleChange);
+    }, []);
+
+    const toggleFullscreen = () => {
+        if (!document.fullscreenElement) {
+            containerRef.current?.requestFullscreen();
+        } else {
+            document.exitFullscreen();
+        }
+    };
 
     const renderContent = () => {
         switch (type) {
@@ -88,7 +144,7 @@ export const FileRenderer = ({
                             height: "100%",
                             border: "none",
                         }}
-                    ></iframe>
+                    />
                 ) : (
                     <div>Email renderer not available</div>
                 );
@@ -97,60 +153,100 @@ export const FileRenderer = ({
         }
     };
 
-    const handleChange = (_: unknown, newType: FileRendererType) => {
-        if (newType != type) setType(newType);
-    };
+    const downloadUrl = (() => {
+        switch (type) {
+            case FileRendererType.Image:
+                return renderedFile.imageFileId
+                    ? webApiGetFileRendered(fileId, renderedFile.imageFileId)
+                    : null;
+            case FileRendererType.Browser:
+                return renderedFile.browserPdfFileId
+                    ? webApiGetFileRendered(
+                          fileId,
+                          renderedFile.browserPdfFileId,
+                      )
+                    : null;
+            case FileRendererType.Office:
+                return renderedFile.officePdfFileId
+                    ? webApiGetFileRendered(
+                          fileId,
+                          renderedFile.officePdfFileId,
+                      )
+                    : null;
+            default:
+                return null;
+        }
+    })();
 
     return (
         <Box
+            ref={containerRef}
             sx={{
                 width: "100%",
                 height: "100%",
                 display: "flex",
                 flexDirection: "column",
+                bgcolor: "background.paper",
             }}
         >
-            <Box sx={{ p: 2, borderBottom: 1, borderColor: "divider" }}>
-                <ToggleButtonGroup
-                    value={type}
-                    exclusive
-                    onChange={handleChange}
-                    aria-label="file renderer"
-                    size="small"
+            <Box
+                sx={{
+                    px: 1,
+                    py: 0.5,
+                    borderBottom: 1,
+                    borderColor: "divider",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 0.5,
+                }}
+            >
+                {MODES.map(({ value, icon, label }) => {
+                    const disabled = !isAvailable(value);
+                    return (
+                        <Tooltip key={value} title={label}>
+                            <span>
+                                <IconButton
+                                    size="small"
+                                    disabled={disabled}
+                                    onClick={() => setType(value)}
+                                    sx={toolbarButtonSx(type === value)}
+                                >
+                                    {icon}
+                                </IconButton>
+                            </span>
+                        </Tooltip>
+                    );
+                })}
+                <Box sx={{ flexGrow: 1 }} />
+                <Tooltip title="Download rendered file">
+                    <span>
+                        <IconButton
+                            size="small"
+                            component="a"
+                            href={downloadUrl ?? undefined}
+                            download
+                            disabled={!downloadUrl}
+                            sx={toolbarButtonSx(false)}
+                        >
+                            <Download fontSize="small" />
+                        </IconButton>
+                    </span>
+                </Tooltip>
+                <Tooltip
+                    title={isFullscreen ? "Exit fullscreen" : "Fullscreen"}
                 >
-                    <ToggleButton
-                        value={FileRendererType.Image}
-                        disabled={!renderedFile.imageFileId}
-                        aria-label="image"
+                    <IconButton
+                        size="small"
+                        onClick={toggleFullscreen}
+                        sx={toolbarButtonSx(isFullscreen)}
                     >
-                        <ImageIcon sx={{ mr: 1 }} fontSize="small" />
-                        Image
-                    </ToggleButton>
-                    <ToggleButton
-                        value={FileRendererType.Browser}
-                        disabled={!renderedFile.browserPdfFileId}
-                        aria-label="browser"
-                    >
-                        <OpenInBrowser sx={{ mr: 1 }} fontSize="small" />
-                        Browser
-                    </ToggleButton>
-                    <ToggleButton
-                        value={FileRendererType.Office}
-                        disabled={!renderedFile.officePdfFileId}
-                        aria-label="office"
-                    >
-                        <Description sx={{ mr: 1 }} fontSize="small" />
-                        Office
-                    </ToggleButton>
-                    <ToggleButton
-                        value={FileRendererType.Email}
-                        disabled={!imap}
-                        aria-label="email"
-                    >
-                        <Email sx={{ mr: 1 }} fontSize="small" />
-                        Email
-                    </ToggleButton>
-                </ToggleButtonGroup>
+                        {isFullscreen ? (
+                            <FullscreenExit fontSize="small" />
+                        ) : (
+                            <Fullscreen fontSize="small" />
+                        )}
+                    </IconButton>
+                </Tooltip>
             </Box>
             <Box sx={{ flex: 1, overflow: "auto" }}>{renderContent()}</Box>
         </Box>

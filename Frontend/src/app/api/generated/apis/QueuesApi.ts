@@ -14,22 +14,16 @@
  */
 
 import * as runtime from "../runtime";
-import type {
-    HTTPValidationError,
-    QueueName,
-    QueuesStats,
-} from "../models/index";
+import type { HTTPValidationError, QueuesStats } from "../models/index";
 import {
     HTTPValidationErrorFromJSON,
     HTTPValidationErrorToJSON,
-    QueueNameFromJSON,
-    QueueNameToJSON,
     QueuesStatsFromJSON,
     QueuesStatsToJSON,
 } from "../models/index";
 
 export interface GetMessageCountV1QueuesQueueNameMessageCountGetRequest {
-    queueName: QueueName;
+    queueName: string;
 }
 
 export interface IsQueuePausedV1QueuesQueueNamePausedGetRequest {

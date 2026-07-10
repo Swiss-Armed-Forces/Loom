@@ -32,16 +32,15 @@ models/Attachment.ts
 models/AvailableStat.ts
 models/CacheStatisticsEntryModel.ts
 models/CompleteEstimateResult.ts
-models/Components.ts
 models/ContextCreateResponse.ts
 models/EncryptionKeyResponse.ts
-models/Folder.ts
 models/GetFileLanguageTranslations.ts
 models/GetFilePreviewResponse.ts
 models/GetFileResponse.ts
 models/GetFilesCountResponse.ts
 models/GetFilesFileEntry.ts
 models/GetFilesResponse.ts
+models/GetFilesTreeResponse.ts
 models/GetQueryResponse.ts
 models/GetSearchResponse.ts
 models/GetSearchResponseFile.ts
@@ -69,7 +68,6 @@ models/MessageUnsubscribeConfirmation.ts
 models/ProcessQuestionQuery.ts
 models/PubSubMessage.ts
 models/QueryParameters.ts
-models/QueueName.ts
 models/QueuesStats.ts
 models/ReinitAllResult.ts
 models/ReinitResult.ts

@@ -114,9 +114,12 @@ export const ResultCard = React.memo(
             });
         };
 
-        // Scroll into view when highlighted
+        // Scroll into view only when highlight transitions false → true
+        const prevHighlightedRef = useRef(false);
         useEffect(() => {
-            if (isHighlighted && cardRef.current) {
+            const wasHighlighted = prevHighlightedRef.current;
+            prevHighlightedRef.current = isHighlighted;
+            if (isHighlighted && !wasHighlighted && cardRef.current) {
                 scrollCardIntoView();
             }
         }, [isHighlighted]);
@@ -197,15 +200,18 @@ export const ResultCard = React.memo(
                 if (!hasHighlightActionsRun.current) {
                     hasHighlightActionsRun.current = true;
                     runHighlightAutoActions(filePreview);
+                    // Scroll only on the initial highlight (false → true).
+                    // Subsequent re-renders (e.g. filePreview data updates) must
+                    // not re-center the card — the user may have scrolled away.
+                    const timeoutId = setTimeout(() => {
+                        scrollCardIntoView();
+                    }, 100);
+                    cardRef.current.focus({ preventScroll: true });
+                    return () => {
+                        clearTimeout(timeoutId);
+                    };
                 }
-                // Small delay to allow DOM to update after content renders
-                const timeoutId = setTimeout(() => {
-                    scrollCardIntoView();
-                }, 100);
                 cardRef.current.focus({ preventScroll: true });
-                return () => {
-                    clearTimeout(timeoutId);
-                };
             }
         }, [isHighlighted, filePreview, autoActionsPreferences, dispatch, t]);
 
@@ -270,7 +276,7 @@ export const ResultCard = React.memo(
         const handleCardDoubleClick = (e: React.MouseEvent<HTMLDivElement>) => {
             const target = e.target as HTMLElement;
             if (!target.closest(".MuiIconButton-root")) {
-                handleOpenDetailsOnTabClick(FileDetailTab.Rendered, e.ctrlKey);
+                handleOpenDetailsOnTabClick(FileDetailTab.Rendered, false);
             }
         };
 

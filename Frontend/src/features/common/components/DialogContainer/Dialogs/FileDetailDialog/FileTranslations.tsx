@@ -1,5 +1,5 @@
 import TranslateIcon from "@mui/icons-material/Translate";
-import { Box, ToggleButton, ToggleButtonGroup, Tooltip } from "@mui/material";
+import { Box, ButtonBase, Tooltip } from "@mui/material";
 import { useState } from "react";
 import AceEditorImport from "react-ace";
 
@@ -15,15 +15,6 @@ export const FileTranslations = ({ translations }: FileTranslationsProps) => {
         translations[0],
     );
 
-    const handleChange = (_: unknown, language: string | null) => {
-        if (language === null) return;
-        const newTranslation = translations.find(
-            (t) => t.language === language,
-        );
-
-        if (newTranslation) setTranslation(newTranslation);
-    };
-
     if (translations.length === 0) {
         return <div>No translations available</div>;
     }
@@ -37,35 +28,57 @@ export const FileTranslations = ({ translations }: FileTranslationsProps) => {
                 flexDirection: "column",
             }}
         >
-            <Box sx={{ p: 2, borderBottom: 1, borderColor: "divider" }}>
-                <ToggleButtonGroup
-                    value={translation.language}
-                    exclusive
-                    onChange={handleChange}
-                    aria-label="translations"
-                    size="small"
-                >
-                    {translations.map((tr, idx) => (
+            <Box
+                sx={{
+                    px: 1,
+                    py: 0.5,
+                    borderBottom: 1,
+                    borderColor: "divider",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 0.5,
+                }}
+            >
+                {translations.map((tr, idx) => {
+                    const active = tr.language === translation.language;
+                    return (
                         <Tooltip
                             key={`${tr.language}-${idx}`}
                             title={`Confidence: ${tr.confidence}`}
                             placement="top"
                             enterDelay={500}
                         >
-                            <ToggleButton
-                                value={tr.language}
-                                aria-label={tr.language}
+                            <ButtonBase
+                                onClick={() => setTranslation(tr)}
+                                sx={{
+                                    px: 1,
+                                    py: 0.5,
+                                    borderRadius: 1,
+                                    fontSize: "0.75rem",
+                                    fontWeight: active ? 600 : 400,
+                                    color: active
+                                        ? "primary.main"
+                                        : "text.secondary",
+                                    bgcolor: active
+                                        ? "action.selected"
+                                        : "transparent",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: 0.5,
+                                    transition:
+                                        "transform 0.2s ease, opacity 0.2s ease",
+                                    "&:hover": {
+                                        transform: "scale(1.05)",
+                                        opacity: 0.8,
+                                    },
+                                }}
                             >
-                                <TranslateIcon
-                                    sx={{ mr: 1 }}
-                                    fontSize="small"
-                                />
-
-                                <span>{tr.language}</span>
-                            </ToggleButton>
+                                <TranslateIcon sx={{ fontSize: "0.9rem" }} />
+                                {tr.language}
+                            </ButtonBase>
                         </Tooltip>
-                    ))}
-                </ToggleButtonGroup>
+                    );
+                })}
             </Box>
             <Box sx={{ flex: 1, overflow: "hidden" }}>
                 <AceEditor

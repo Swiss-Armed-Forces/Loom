@@ -9,12 +9,18 @@ import {
     FolderViewState,
     PATH_SEPARATOR,
     ROOT_NODE,
+    SpineNodesMergedAction,
 } from "./folderViewState";
 import { cloneSpineToPath, cloneTree, findTreeNode } from "./util";
 const DEFAULT_EXPANDED_NODES_DEPTH = 2;
 
 const handleQueryChangedAction = (state: FolderViewState): FolderViewState => {
-    return { ...state, tree: cloneTree(ROOT_NODE), expandedNodes: [] };
+    return {
+        ...state,
+        tree: cloneTree(ROOT_NODE),
+        expandedNodes: [],
+        fileIds: new Set(),
+    };
 };
 
 const handleChildrenAddedAction = (
@@ -26,6 +32,7 @@ const handleChildrenAddedAction = (
     if (!currentDirectory) return state;
 
     currentDirectory.children ??= {};
+    const newFileIds = new Set(state.fileIds);
     for (const child of action.children) {
         const path = child.fullPath;
         const fileName = path.split(PATH_SEPARATOR).at(-1);
@@ -42,9 +49,17 @@ const handleChildrenAddedAction = (
             isFlagged: child.isFlagged ?? false,
             fileId: child.fileId ?? undefined,
         };
+        if (child.fileId) newFileIds.add(child.fileId);
+    }
+    // Only update nextPageCursor when the action explicitly carries one (not
+    // undefined). undefined means "this dispatch is not a pagination request"
+    // (e.g. a count-refresh from reloadAncestors), so the existing cursor is
+    // preserved. null means the last page has been fetched.
+    if (action.nextPageCursor !== undefined) {
+        currentDirectory.nextPageCursor = action.nextPageCursor;
     }
 
-    return { ...state, tree: clonedTree };
+    return { ...state, tree: clonedTree, fileIds: newFileIds };
 };
 
 const handleExpandedNodesChangedAction = (
@@ -66,6 +81,10 @@ const handleInitialDataLoadedAction = (
         if (!nodes) return;
         for (const node of Object.values(nodes)) {
             if (depth >= DEFAULT_EXPANDED_NODES_DEPTH) return;
+            // Only auto-expand nodes whose children have already been loaded.
+            // Expanding a node with unloaded children would show a down arrow
+            // with no visible content until the user manually triggers a fetch.
+            if (!node.children) continue;
 
             expandedSet.add(node.id);
             handleChildren(depth + 1, node.children);
@@ -99,6 +118,43 @@ const handleChildrenLoadFinishedAction = (
     return { ...state, tree: clonedTree };
 };
 
+const handleSpineNodesMergedAction = (
+    state: FolderViewState,
+    action: SpineNodesMergedAction,
+): FolderViewState => {
+    if (action.nodes.length === 0) return state;
+
+    let clonedTree = state.tree;
+    const newFileIds = new Set(state.fileIds);
+    for (let i = 0; i < action.nodes.length; i++) {
+        const node = action.nodes[i];
+        const parentPath =
+            i === 0 ? ROOT_NODE.id : String(action.nodes[i - 1].fullPath);
+
+        clonedTree = cloneSpineToPath(clonedTree, parentPath);
+        const parent = findTreeNode(clonedTree, parentPath);
+        if (!parent) continue;
+
+        const path = String(node.fullPath);
+        const label = path.split(PATH_SEPARATOR).at(-1);
+
+        parent.children ??= {};
+        parent.children[path] = {
+            ...parent.children[path],
+            id: path,
+            label,
+            fileCount: node.fileCount,
+            unseenCount: node.unseenCount ?? 0,
+            isUnseen: node.isUnseen ?? false,
+            flaggedCount: node.flaggedCount ?? 0,
+            isFlagged: node.isFlagged ?? false,
+            fileId: node.fileId ?? undefined,
+        };
+        if (node.fileId) newFileIds.add(node.fileId);
+    }
+    return { ...state, tree: clonedTree, fileIds: newFileIds };
+};
+
 export const folderViewReducer = (
     state: FolderViewState,
     action: FolderViewAction,
@@ -116,6 +172,8 @@ export const folderViewReducer = (
             return handleChildrenLoadStartedAction(state, action);
         case FolderViewActionType.CHILDREN_LOAD_FINISHED:
             return handleChildrenLoadFinishedAction(state, action);
+        case FolderViewActionType.SPINE_NODES_MERGED:
+            return handleSpineNodesMergedAction(state, action);
         default:
             return state;
     }

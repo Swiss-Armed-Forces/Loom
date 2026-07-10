@@ -14,26 +14,24 @@
  */
 
 import * as runtime from "../runtime";
-import type { Folder, HTTPValidationError } from "../models/index";
+import type { HTTPValidationError } from "../models/index";
 import {
-    FolderFromJSON,
-    FolderToJSON,
     HTTPValidationErrorFromJSON,
     HTTPValidationErrorToJSON,
 } from "../models/index";
 
 export interface CountMessagesV1ImapFolderMessagesCountGetRequest {
-    folder?: Folder;
+    folder?: string;
     recurse?: boolean;
 }
 
 export interface SubscribeFolderV1ImapFolderSubscribePutRequest {
-    folder?: Folder;
+    folder?: string;
     recurse?: boolean;
 }
 
 export interface UnsubscribeFolderV1ImapFolderUnsubscribePutRequest {
-    folder?: Folder;
+    folder?: string;
     recurse?: boolean;
 }
 
