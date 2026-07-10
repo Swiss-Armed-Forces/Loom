@@ -156,6 +156,12 @@ FALLBACK_CONTENT_TYPES: set[str] = {
     "application/x-sharedlib",  # elf, so
     "application/x-iso9660-image",  # iso
     "application/octet-stream",  # general binaries / data
+    # Tika's /unpack/all silently drops 0-byte archive members, so empty files
+    # inside tar archives would never be indexed. The TarExtractor fallback
+    # handles all members regardless of size.
+    "application/x-tar",
+    "application/x-gtar",
+    "application/x-ustar",
 }
 
 

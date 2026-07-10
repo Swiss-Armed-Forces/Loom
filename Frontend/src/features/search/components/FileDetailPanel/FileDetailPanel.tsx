@@ -1,5 +1,4 @@
-import { Close } from "@mui/icons-material";
-import { Box, IconButton, Skeleton, Tab, Tabs } from "@mui/material";
+import { Box, Skeleton, Tab, Tabs } from "@mui/material";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import AceEditorImport from "react-ace";
 import { useTranslation } from "react-i18next";
@@ -19,7 +18,6 @@ import {
 import { useAppDispatch, useAppSelector } from "@app/hooks";
 import { setLastFileDetailTab } from "@app/slices/commonSlice";
 import {
-    closeFileTabThunk,
     fetchPreview,
     selectAutoActionsPreferences,
     selectFileById,
@@ -161,10 +159,6 @@ export const FileDetailPanel = ({
         dispatch(setLastFileDetailTab(value));
     };
 
-    const handleClose = useCallback(() => {
-        dispatch(closeFileTabThunk(fileId));
-    }, [fileId, dispatch]);
-
     const properties = useMemo(
         () => ({
             hasContent: !!file?.content?.trim(),
@@ -211,17 +205,7 @@ export const FileDetailPanel = ({
                     <FileCardHeader
                         hideDetail
                         filePreview={preview}
-                        additionalActions={[
-                            <IconButton
-                                key="close"
-                                aria-label="close"
-                                size="small"
-                                onClick={handleClose}
-                                title={t("common.close")}
-                            >
-                                <Close fontSize="small" />
-                            </IconButton>,
-                        ]}
+                        renderedFile={file?.renderedFile}
                     />
                 ) : (
                     <Skeleton
@@ -248,6 +232,12 @@ export const FileDetailPanel = ({
                         disabled={!properties.hasContent}
                     />
                     <Tab
+                        label="Translations"
+                        value={FileDetailTab.Translations}
+                        data-tab-value={FileDetailTab.Translations}
+                        disabled={!properties.hasTranslations}
+                    />
+                    <Tab
                         label="Highlights"
                         value={FileDetailTab.Highlights}
                         data-tab-value={FileDetailTab.Highlights}
@@ -264,12 +254,6 @@ export const FileDetailPanel = ({
                         value={FileDetailTab.ImageDescription}
                         data-tab-value={FileDetailTab.ImageDescription}
                         disabled={!properties.hasImageDescription}
-                    />
-                    <Tab
-                        label="Translations"
-                        value={FileDetailTab.Translations}
-                        data-tab-value={FileDetailTab.Translations}
-                        disabled={!properties.hasTranslations}
                     />
                     <Tab
                         label="Raw"

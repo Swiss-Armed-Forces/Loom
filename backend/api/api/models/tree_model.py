@@ -4,6 +4,11 @@ from common.file.file_repository import FilePurePath
 from pydantic import BaseModel
 
 
+class GetFilesTreeResponse(BaseModel):
+    nodes: list["TreeNodeModel"]
+    next_page_cursor: str | None = None
+
+
 class TreeNodeModel(BaseModel):
     """A node in the file tree returned by the /tree endpoint.
 

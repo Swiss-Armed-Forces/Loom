@@ -15,6 +15,8 @@ from common.file.file_repository import (
     TAG_LEN_MIN,
     File,
     FilePurePath,
+    TreePathsNode,
+    TreePathsResult,
 )
 from common.file.file_statistics import (
     AvailableStat,
@@ -35,6 +37,7 @@ from api.models.statistics_model import (
     HitsPerGroupEntryModel,
     TermsStatisticsModel,
 )
+from api.models.tree_model import GetFilesTreeResponse
 from api.routers.files import (
     CONTENT_PREVIEW_LENGTH,
     SOURCE_ID,
@@ -523,3 +526,110 @@ def test_get_available_stats_by_type(client: TestClient):
     assert "extension" not in histogram_ids
 
     assert client.get("/v1/files/stats/unknown").status_code == 422
+
+
+def test_get_files_tree_returns_nodes_and_cursor(client: TestClient):
+    node = TreePathsNode(
+        full_path=FilePurePath("//source/folder"),
+        file_count=5,
+        file_id=None,
+    )
+    get_file_repository().get_full_paths_by_query.return_value = TreePathsResult(
+        nodes=[node],
+        next_page_cursor="//source/folder",
+    )
+
+    response = client.get(
+        "/v1/files/tree",
+        params={"query_id": "abc123", "node_path": "/"},
+    )
+
+    assert response.status_code == 200
+    body = GetFilesTreeResponse.model_validate(response.json())
+    assert len(body.nodes) == 1
+    assert body.nodes[0].full_path == FilePurePath("//source/folder")
+    assert body.nodes[0].file_count == 5
+    assert body.nodes[0].file_id is None
+    assert body.next_page_cursor == "//source/folder"
+    get_file_repository().get_full_paths_by_query.assert_called_once_with(
+        query=ANY,
+        tree_node_directory_path="/",
+        flat=False,
+        after=None,
+    )
+
+
+def test_get_files_tree_passes_after_cursor(client: TestClient):
+    get_file_repository().get_full_paths_by_query.return_value = TreePathsResult(
+        nodes=[],
+        next_page_cursor=None,
+    )
+
+    response = client.get(
+        "/v1/files/tree",
+        params={
+            "query_id": "abc123",
+            "node_path": "//source",
+            "after": "//source/z.pdf",
+        },
+    )
+
+    assert response.status_code == 200
+    body = GetFilesTreeResponse.model_validate(response.json())
+    assert body.next_page_cursor is None
+    get_file_repository().get_full_paths_by_query.assert_called_once_with(
+        query=ANY,
+        tree_node_directory_path="//source",
+        flat=False,
+        after="//source/z.pdf",
+    )
+
+
+def test_get_files_tree_spine_returns_nodes(client: TestClient):
+    node_a = TreePathsNode(
+        full_path=FilePurePath("//source/folder"),
+        file_count=3,
+        file_id=None,
+    )
+    node_b = TreePathsNode(
+        full_path=FilePurePath("//source/folder/file.txt"),
+        file_count=0,
+        file_id="abc-123",
+    )
+    get_file_repository().get_spine_by_path.return_value = [node_a, node_b]
+
+    response = client.get(
+        "/v1/files/tree/spine",
+        params={
+            "query_id": "abc123",
+            "full_path": "//source/folder/file.txt",
+        },
+    )
+
+    assert response.status_code == 200
+    body = GetFilesTreeResponse.model_validate(response.json())
+    assert len(body.nodes) == 2
+    assert body.nodes[0].full_path == FilePurePath("//source/folder")
+    assert body.nodes[1].full_path == FilePurePath("//source/folder/file.txt")
+    assert body.next_page_cursor is None
+    get_file_repository().get_spine_by_path.assert_called_once_with(
+        query=ANY,
+        full_path="//source/folder/file.txt",
+    )
+
+
+def test_get_files_tree_spine_empty_for_no_results(client: TestClient):
+    get_file_repository().get_spine_by_path.return_value = []
+
+    response = client.get(
+        "/v1/files/tree/spine",
+        params={
+            "query_id": "abc123",
+            "full_path": "//source/nonexistent/path.txt",
+        },
+    )
+
+    assert response.status_code == 200
+    body = GetFilesTreeResponse.model_validate(response.json())
+    assert body.nodes == []
+    assert body.next_page_cursor is None

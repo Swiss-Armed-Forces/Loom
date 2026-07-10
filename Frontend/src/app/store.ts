@@ -10,6 +10,10 @@ import SocketApi from "./api/socketApi";
 import {
     localStorageAutoActionsMiddleware,
     localStorageCustomQueriesMiddleware,
+    localStorageFolderViewExpandedNodesMiddleware,
+    localStorageHighlightedFileIdMiddleware,
+    localStorageStatsStateMiddleware,
+    localStorageSuppressDownloadWarningMiddleware,
     localStorageUiStateMiddleware,
 } from "./middlewares";
 
@@ -24,6 +28,10 @@ export const store = configureStore({
             .prepend(localStorageCustomQueriesMiddleware.middleware)
             .prepend(localStorageAutoActionsMiddleware.middleware)
             .prepend(localStorageUiStateMiddleware.middleware)
+            .prepend(localStorageSuppressDownloadWarningMiddleware.middleware)
+            .prepend(localStorageFolderViewExpandedNodesMiddleware.middleware)
+            .prepend(localStorageHighlightedFileIdMiddleware.middleware)
+            .prepend(localStorageStatsStateMiddleware.middleware)
             .concat(socketMiddleware(new SocketApi())),
 });
 

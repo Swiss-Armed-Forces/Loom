@@ -21,6 +21,7 @@ import type {
     GetFileResponse,
     GetFilesCountResponse,
     GetFilesResponse,
+    GetFilesTreeResponse,
     GetQueryResponse,
     GroupedHistogramStatisticsModel,
     HTTPValidationError,
@@ -28,7 +29,6 @@ import type {
     SummarizeFileRequest,
     TermsStatisticsModel,
     TranslateFileRequest,
-    TreeNodeModel,
     UpdateFileRequest,
     UpdateFilesRequest,
 } from "../models/index";
@@ -45,6 +45,8 @@ import {
     GetFilesCountResponseToJSON,
     GetFilesResponseFromJSON,
     GetFilesResponseToJSON,
+    GetFilesTreeResponseFromJSON,
+    GetFilesTreeResponseToJSON,
     GetQueryResponseFromJSON,
     GetQueryResponseToJSON,
     GroupedHistogramStatisticsModelFromJSON,
@@ -59,8 +61,6 @@ import {
     TermsStatisticsModelToJSON,
     TranslateFileRequestFromJSON,
     TranslateFileRequestToJSON,
-    TreeNodeModelFromJSON,
-    TreeNodeModelToJSON,
     UpdateFileRequestFromJSON,
     UpdateFileRequestToJSON,
     UpdateFilesRequestFromJSON,
@@ -106,12 +106,20 @@ export interface GetFilesCountV1FilesCountGetRequest {
     searchString?: string;
 }
 
+export interface GetFilesTreeSpineV1FilesTreeSpineGetRequest {
+    queryId: string;
+    fullPath: string;
+    keepAlive?: GetFilesTreeSpineV1FilesTreeSpineGetKeepAliveEnum;
+    searchString?: string;
+}
+
 export interface GetFilesTreeV1FilesTreeGetRequest {
     queryId: string;
     keepAlive?: GetFilesTreeV1FilesTreeGetKeepAliveEnum;
     searchString?: string;
     nodePath?: string;
     flat?: boolean;
+    after?: string;
 }
 
 export interface GetFilesV1FilesGetRequest {
@@ -645,13 +653,86 @@ export class FilesApi extends runtime.BaseAPI {
     }
 
     /**
-     * Get nodes from the file tree.  When flat=False (default), returns the direct children of node_path. When flat=True, returns all matching files at any depth below node_path, without pagination — callers should apply their own result limit.
+     * Return one tree node per path segment from the root down to full_path.  Useful for revealing a specific file in the folder tree without requiring the client to paginate through its parent folder\'s children.
+     * Get Files Tree Spine
+     */
+    async getFilesTreeSpineV1FilesTreeSpineGetRaw(
+        requestParameters: GetFilesTreeSpineV1FilesTreeSpineGetRequest,
+        initOverrides?: RequestInit | runtime.InitOverrideFunction,
+    ): Promise<runtime.ApiResponse<GetFilesTreeResponse>> {
+        if (requestParameters["queryId"] == null) {
+            throw new runtime.RequiredError(
+                "queryId",
+                'Required parameter "queryId" was null or undefined when calling getFilesTreeSpineV1FilesTreeSpineGet().',
+            );
+        }
+
+        if (requestParameters["fullPath"] == null) {
+            throw new runtime.RequiredError(
+                "fullPath",
+                'Required parameter "fullPath" was null or undefined when calling getFilesTreeSpineV1FilesTreeSpineGet().',
+            );
+        }
+
+        const queryParameters: any = {};
+
+        if (requestParameters["queryId"] != null) {
+            queryParameters["query_id"] = requestParameters["queryId"];
+        }
+
+        if (requestParameters["keepAlive"] != null) {
+            queryParameters["keep_alive"] = requestParameters["keepAlive"];
+        }
+
+        if (requestParameters["searchString"] != null) {
+            queryParameters["search_string"] =
+                requestParameters["searchString"];
+        }
+
+        if (requestParameters["fullPath"] != null) {
+            queryParameters["full_path"] = requestParameters["fullPath"];
+        }
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        const response = await this.request(
+            {
+                path: `/v1/files/tree/spine`,
+                method: "GET",
+                headers: headerParameters,
+                query: queryParameters,
+            },
+            initOverrides,
+        );
+
+        return new runtime.JSONApiResponse(response, (jsonValue) =>
+            GetFilesTreeResponseFromJSON(jsonValue),
+        );
+    }
+
+    /**
+     * Return one tree node per path segment from the root down to full_path.  Useful for revealing a specific file in the folder tree without requiring the client to paginate through its parent folder\'s children.
+     * Get Files Tree Spine
+     */
+    async getFilesTreeSpineV1FilesTreeSpineGet(
+        requestParameters: GetFilesTreeSpineV1FilesTreeSpineGetRequest,
+        initOverrides?: RequestInit | runtime.InitOverrideFunction,
+    ): Promise<GetFilesTreeResponse> {
+        const response = await this.getFilesTreeSpineV1FilesTreeSpineGetRaw(
+            requestParameters,
+            initOverrides,
+        );
+        return await response.value();
+    }
+
+    /**
+     * Get nodes from the file tree.  When flat=False (default), returns the direct children of node_path. When flat=True, returns all matching files at any depth below node_path, without pagination — callers should apply their own result limit.  The `after` parameter is an opaque cursor from a previous response\'s `next_page_cursor` field and enables cursor-based pagination.
      * Get Files Tree
      */
     async getFilesTreeV1FilesTreeGetRaw(
         requestParameters: GetFilesTreeV1FilesTreeGetRequest,
         initOverrides?: RequestInit | runtime.InitOverrideFunction,
-    ): Promise<runtime.ApiResponse<Array<TreeNodeModel>>> {
+    ): Promise<runtime.ApiResponse<GetFilesTreeResponse>> {
         if (requestParameters["queryId"] == null) {
             throw new runtime.RequiredError(
                 "queryId",
@@ -682,6 +763,10 @@ export class FilesApi extends runtime.BaseAPI {
             queryParameters["flat"] = requestParameters["flat"];
         }
 
+        if (requestParameters["after"] != null) {
+            queryParameters["after"] = requestParameters["after"];
+        }
+
         const headerParameters: runtime.HTTPHeaders = {};
 
         const response = await this.request(
@@ -695,18 +780,18 @@ export class FilesApi extends runtime.BaseAPI {
         );
 
         return new runtime.JSONApiResponse(response, (jsonValue) =>
-            jsonValue.map(TreeNodeModelFromJSON),
+            GetFilesTreeResponseFromJSON(jsonValue),
         );
     }
 
     /**
-     * Get nodes from the file tree.  When flat=False (default), returns the direct children of node_path. When flat=True, returns all matching files at any depth below node_path, without pagination — callers should apply their own result limit.
+     * Get nodes from the file tree.  When flat=False (default), returns the direct children of node_path. When flat=True, returns all matching files at any depth below node_path, without pagination — callers should apply their own result limit.  The `after` parameter is an opaque cursor from a previous response\'s `next_page_cursor` field and enables cursor-based pagination.
      * Get Files Tree
      */
     async getFilesTreeV1FilesTreeGet(
         requestParameters: GetFilesTreeV1FilesTreeGetRequest,
         initOverrides?: RequestInit | runtime.InitOverrideFunction,
-    ): Promise<Array<TreeNodeModel>> {
+    ): Promise<GetFilesTreeResponse> {
         const response = await this.getFilesTreeV1FilesTreeGetRaw(
             requestParameters,
             initOverrides,
@@ -1731,6 +1816,15 @@ export const GetFilesCountV1FilesCountGetKeepAliveEnum = {
 } as const;
 export type GetFilesCountV1FilesCountGetKeepAliveEnum =
     (typeof GetFilesCountV1FilesCountGetKeepAliveEnum)[keyof typeof GetFilesCountV1FilesCountGetKeepAliveEnum];
+/**
+ * @export
+ */
+export const GetFilesTreeSpineV1FilesTreeSpineGetKeepAliveEnum = {
+    _10s: "10s",
+    _30m: "30m",
+} as const;
+export type GetFilesTreeSpineV1FilesTreeSpineGetKeepAliveEnum =
+    (typeof GetFilesTreeSpineV1FilesTreeSpineGetKeepAliveEnum)[keyof typeof GetFilesTreeSpineV1FilesTreeSpineGetKeepAliveEnum];
 /**
  * @export
  */

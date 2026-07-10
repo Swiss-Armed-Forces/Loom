@@ -4,6 +4,8 @@ import { useMediaQuery } from "@mui/material";
 import { useTranslation } from "react-i18next";
 import { Link, useLocation } from "react-router-dom";
 
+import { useAppDispatch } from "@app/hooks";
+import { updateQuery } from "@app/slices/searchSlice";
 import { getColorFromString } from "@features/common/utils/helpers";
 
 import { LoomResponsiveLogo } from "../../branding/LoomResponsiveLogo";
@@ -18,6 +20,7 @@ import { ImportArchiveButton } from "./ImportArchiveButton";
 export const Header = () => {
     const location = useLocation();
     const { t } = useTranslation();
+    const dispatch = useAppDispatch();
     const isMobile = useMediaQuery("(max-width:600px)");
     const useAccentColor = window.location.hostname !== "frontend.loom";
     const accentColor = getColorFromString(window.location.hostname);
@@ -52,7 +55,15 @@ export const Header = () => {
         >
             <Toolbar className={styles.toolbar}>
                 {
-                    <Link className={styles.headerBranding} to={"/"}>
+                    <Link
+                        className={styles.headerBranding}
+                        to={"/"}
+                        onClick={() =>
+                            dispatch(
+                                updateQuery({ query: "", sortField: null }),
+                            )
+                        }
+                    >
                         <LoomResponsiveLogo />
                     </Link>
                 }

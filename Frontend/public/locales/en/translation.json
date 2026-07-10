@@ -19,6 +19,17 @@
         "cancel": "Cancel",
         "copy": "Copy"
     },
+    "downloadWarning": {
+        "title": "Downloading the original file",
+        "body": "You are about to download the original file as it was stored — no safety checks have been applied. If this file contains macros, scripts, or executable code, your device could run them automatically when you open it. This can lead to data loss, malware infection, or unauthorized access to your system.",
+        "safeAlternative": "For a safe alternative, open the Rendered tab at the top of the detail panel and download a PDF or image version from there. Rendered files cannot execute code.",
+        "safeAlternativeWithOptions": "Safer versions of this file are available below. You can also find them in the Rendered tab at the top of the detail panel. They cannot execute code:",
+        "renderedPdfOffice": "PDF (Office)",
+        "renderedPdfBrowser": "PDF (Browser)",
+        "renderedImage": "Image",
+        "dontShowAgain": "I understand the risks — don't warn me again",
+        "confirm": "Download original"
+    },
     "error": {
         "searchResultLoadingError": "Cannot load search results. {{- error}}",
         "webSocketClosed": "The WebSocket lost connection. Please reload the page."
@@ -229,7 +240,9 @@
         "addPathToQueryTooltip": "Add this path to your query",
         "unseenCountTooltip": "Unseen files in this folder",
         "flaggedCountTooltip": "Flagged files in this folder",
-        "filterResultsLimitNote": "Showing first {{limit}} results — refine your filter to narrow down"
+        "fileCountTooltip": "Total files in this folder",
+        "filterResultsLimitNote": "Showing first {{limit}} results — refine your filter to narrow down",
+        "loadMore": "Load more"
     },
     "tags": {
         "addTag": "Add tag",
@@ -307,10 +320,10 @@
             "moveUp": "Navigate / scroll up",
             "prevCenterTab": "Previous center tab",
             "nextCenterTab": "Next center tab",
-            "prevTab": "Previous tab",
-            "nextTab": "Next tab",
-            "openOrClose": "Open details",
-            "openBackground": "Open in background tab",
+            "prevTab": "Previous sub tab",
+            "nextTab": "Next sub tab",
+            "openOrClose": "Open file details",
+            "openBackground": "Open file details in background",
             "shiftClickNegate": "Negate clicked filter",
             "escapeAction": "Clear selection, search & sort, or close",
             "focusSearch": "Focus search",

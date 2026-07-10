@@ -1,4 +1,6 @@
 import {
+    AttachFile,
+    SubdirectoryArrowLeft,
     Download,
     Flag,
     LabelOutlined,
@@ -107,27 +109,12 @@ export const EmptySearchResults = () => {
         },
         {
             type: "row",
-            keys: ["Enter", "Space", "i"],
+            keys: ["Enter", "i", "Double-click"],
             label: t("emptySearch.hotkeys.openOrClose"),
         },
         {
             type: "row",
-            keys: ["Shift + Enter", "Shift + Space", "Shift + i"],
-            label: t("emptySearch.hotkeys.openBackground"),
-        },
-        {
-            type: "row",
-            keys: ["Double-click"],
-            label: t("emptySearch.hotkeys.openOrClose"),
-        },
-        {
-            type: "row",
-            keys: ["Ctrl + Double-click"],
-            label: t("emptySearch.hotkeys.openBackground"),
-        },
-        {
-            type: "row",
-            keys: ["Ctrl + click"],
+            keys: ["Shift + Enter", "Shift + i", "Ctrl + click"],
             label: t("emptySearch.hotkeys.openBackground"),
         },
         {
@@ -191,13 +178,38 @@ export const EmptySearchResults = () => {
             icon: <LabelOutlined fontSize="inherit" />,
             label: (
                 <>
-                    <strong>t</strong>ag
+                    <strong>T</strong>ag
                 </>
             ),
         },
         {
             type: "row",
-            keys: ["c"],
+            keys: ["n"],
+            icon: (
+                <SubdirectoryArrowLeft
+                    fontSize="inherit"
+                    sx={{ transform: "rotate(90deg)" }}
+                />
+            ),
+            label: (
+                <>
+                    <strong>N</strong>avigate to parent file
+                </>
+            ),
+        },
+        {
+            type: "row",
+            keys: ["Shift + n"],
+            icon: <AttachFile fontSize="inherit" />,
+            label: (
+                <>
+                    <strong>N</strong>avigate to child file
+                </>
+            ),
+        },
+        {
+            type: "row",
+            keys: ["Shift + c"],
             icon: <Share fontSize="inherit" />,
             label: (
                 <>
@@ -533,9 +545,9 @@ export const EmptySearchResults = () => {
                                                 >
                                                     <TableCell
                                                         sx={{
-                                                            whiteSpace:
-                                                                "nowrap",
                                                             pr: 1.5,
+                                                            verticalAlign:
+                                                                "top",
                                                         }}
                                                     >
                                                         {row.keys.map(
@@ -553,7 +565,13 @@ export const EmptySearchResults = () => {
                                                             ),
                                                         )}
                                                     </TableCell>
-                                                    <TableCell>
+                                                    <TableCell
+                                                        sx={{
+                                                            verticalAlign:
+                                                                "top",
+                                                            pt: "6px",
+                                                        }}
+                                                    >
                                                         <Box
                                                             sx={{
                                                                 display: "flex",

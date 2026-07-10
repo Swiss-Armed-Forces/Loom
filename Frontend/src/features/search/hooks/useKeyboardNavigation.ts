@@ -9,6 +9,7 @@ import {
     selectLoadedFiles,
     selectLastFileSortId,
     selectQuery,
+    selectFiles,
     setHighlightedIndex,
     updateQuery,
     selectActiveTabFileId,
@@ -16,8 +17,11 @@ import {
     setFileTabDetailTab,
     setActiveTabFileId,
     openFileTabThunk,
+    closeFileTabThunk,
 } from "@app/slices/searchSlice";
 import { FileDetailTab } from "@features/common/utils/enums";
+
+const SCROLL_STEP_PX = 300;
 
 export const useKeyboardNavigation = () => {
     const dispatch = useAppDispatch();
@@ -31,6 +35,49 @@ export const useKeyboardNavigation = () => {
     const lastFileSortId = useAppSelector(selectLastFileSortId);
     const query = useAppSelector(selectQuery);
     const isLoading = useAppSelector(selectIsLoading);
+    const files = useAppSelector(selectFiles);
+    // Keep a ref so hotkey callbacks don't need files in their dependency arrays.
+    const filesRef = useRef(files);
+    useEffect(() => {
+        filesRef.current = files;
+    }, [files]);
+
+    // Retry pagination once loading clears (handles the case where the user
+    // pressed down while a previous request was still in-flight).
+    useEffect(() => {
+        if (!wantPaginationRef.current || isLoading) return;
+        if (totalFiles <= loadedFiles) {
+            wantPaginationRef.current = false;
+            return;
+        }
+        wantPaginationRef.current = false;
+        pendingAdvanceFromRef.current = loadedFiles;
+        dispatch(updateQuery({ id: query?.id, sortId: lastFileSortId }));
+    }, [
+        isLoading,
+        loadedFiles,
+        totalFiles,
+        query?.id,
+        lastFileSortId,
+        dispatch,
+    ]);
+
+    // Advance the highlight to the first new card once pagination delivers results.
+    useEffect(() => {
+        if (pendingAdvanceFromRef.current === null) return;
+        if (loadedFiles <= pendingAdvanceFromRef.current) return;
+        const firstNewIndex = pendingAdvanceFromRef.current;
+        pendingAdvanceFromRef.current = null;
+        dispatch(setHighlightedIndex(firstNewIndex));
+    }, [loadedFiles, dispatch]);
+
+    // Pagination tracking:
+    // - wantPaginationRef: user pressed down at the last item while isLoading
+    //   was true; retry pagination once loading clears.
+    // - pendingAdvanceFromRef: pagination was dispatched from this loadedFiles
+    //   count; advance the highlight to the first new item when it arrives.
+    const wantPaginationRef = useRef<boolean>(false);
+    const pendingAdvanceFromRef = useRef<number | null>(null);
 
     // Cache the scrollable element per active panel to avoid a full DOM scan
     // on every scroll keypress.
@@ -79,7 +126,7 @@ export const useKeyboardNavigation = () => {
 
                 // Ignore select events if focus is on an interactive element
                 const interactiveTags = ["button", "select", "a"];
-                const selectKeys = [" ", "Enter"];
+                const selectKeys = ["Enter"];
                 if (
                     interactiveTags.includes(tagName) &&
                     selectKeys.includes(event.key)
@@ -107,13 +154,20 @@ export const useKeyboardNavigation = () => {
             } else if (direction === "down") {
                 if (highlightedIndex >= loadedFiles - 1) {
                     // At the last item, try to load more
-                    if (totalFiles > loadedFiles && !isLoading) {
-                        dispatch(
-                            updateQuery({
-                                id: query?.id,
-                                sortId: lastFileSortId,
-                            }),
-                        );
+                    if (totalFiles > loadedFiles) {
+                        if (!isLoading) {
+                            pendingAdvanceFromRef.current = loadedFiles;
+                            wantPaginationRef.current = false;
+                            dispatch(
+                                updateQuery({
+                                    id: query?.id,
+                                    sortId: lastFileSortId,
+                                }),
+                            );
+                        } else {
+                            // Loading is in progress; retry once it clears.
+                            wantPaginationRef.current = true;
+                        }
                     }
                     return;
                 }
@@ -123,6 +177,7 @@ export const useKeyboardNavigation = () => {
             }
 
             dispatch(setHighlightedIndex(newIndex));
+            document.dispatchEvent(new CustomEvent("loom:close-menus"));
         },
         [
             highlightedIndex,
@@ -273,7 +328,7 @@ export const useKeyboardNavigation = () => {
     );
 
     const handleDialogScroll = useCallback(
-        (direction: "up" | "down") => {
+        (direction: "up" | "down", amount?: number) => {
             // Find the scrollable element within the active file panel
             const panel = activeTabFileId
                 ? document.querySelector(
@@ -333,7 +388,10 @@ export const useKeyboardNavigation = () => {
             const scrollableElement = scrollableElementRef.current;
             if (!scrollableElement) return;
 
-            const scrollAmount = 150; // pixels to scroll per key press
+            const scrollAmount =
+                amount !== undefined
+                    ? amount
+                    : Math.max(scrollableElement.clientHeight, SCROLL_STEP_PX);
             const currentScroll = scrollableElement.scrollTop;
             const newScroll =
                 direction === "down"
@@ -388,13 +446,19 @@ export const useKeyboardNavigation = () => {
                 switch (event.key) {
                     case "j":
                     case "ArrowDown":
-                        // Scroll dialog content down
-                        handleDialogScroll("down");
+                        handleDialogScroll("down", SCROLL_STEP_PX);
                         event.preventDefault();
                         return;
                     case "k":
                     case "ArrowUp":
-                        // Scroll dialog content up
+                        handleDialogScroll("up", SCROLL_STEP_PX);
+                        event.preventDefault();
+                        return;
+                    case "PageDown":
+                        handleDialogScroll("down");
+                        event.preventDefault();
+                        return;
+                    case "PageUp":
                         handleDialogScroll("up");
                         event.preventDefault();
                         return;
@@ -418,18 +482,12 @@ export const useKeyboardNavigation = () => {
                         }
                         event.preventDefault();
                         return;
-                    case "Enter":
-                    case " ":
-                    case "i":
-                        // Close the dialog by clicking the close button
-                        clickActionButton("close");
-                        event.preventDefault();
-                        return;
                     case "Escape":
-                        // Close dialog explicitly. MUI only handles ESC when focus is
-                        // inside the dialog container; a highlighted ResultCard can steal
-                        // focus outside the dialog, in which case MUI never sees the event.
-                        clickActionButton("close");
+                        // Close any open popovers/menus first.
+                        document.dispatchEvent(
+                            new CustomEvent("loom:close-menus"),
+                        );
+                        dispatch(closeFileTabThunk(activeTabFileId));
                         event.preventDefault();
                         return;
                 }
@@ -437,6 +495,10 @@ export const useKeyboardNavigation = () => {
                 // Handle result list navigation
                 switch (event.key) {
                     case "Escape":
+                        // Close any open popovers/menus first.
+                        document.dispatchEvent(
+                            new CustomEvent("loom:close-menus"),
+                        );
                         if (highlightedIndex !== null) {
                             // Unselect the highlighted card
                             dispatch(setHighlightedIndex(null));
@@ -492,7 +554,6 @@ export const useKeyboardNavigation = () => {
                         event.preventDefault();
                         return;
                     case "Enter":
-                    case " ":
                     case "i":
                     case "I":
                         if (event.shiftKey && highlightedFileId !== null) {
@@ -526,10 +587,44 @@ export const useKeyboardNavigation = () => {
 
             // Shared action shortcuts (work in both dialog and result list contexts)
             switch (event.key) {
-                case "c":
+                case "C":
+                    // Shift+C: copy share link
                     clickActionButton("share");
                     event.preventDefault();
                     return;
+                case "n": {
+                    // Navigate to parent file
+                    const currentFileId = activeTabFileId ?? highlightedFileId;
+                    if (!currentFileId) return;
+                    const parentId =
+                        filesRef.current[currentFileId]?.preview?.parentId;
+                    if (!parentId) return;
+                    dispatch(openFileTabThunk({ fileId: parentId }));
+                    event.preventDefault();
+                    return;
+                }
+                case "N": {
+                    const currentFileId = activeTabFileId ?? highlightedFileId;
+                    if (!currentFileId) return;
+                    const currentPreview =
+                        filesRef.current[currentFileId]?.preview;
+                    const attachments = currentPreview?.attachments;
+                    if (!attachments?.length) return;
+
+                    if (attachments.length === 1) {
+                        // Single child: navigate directly.
+                        dispatch(
+                            openFileTabThunk({ fileId: attachments[0].id }),
+                        );
+                    } else {
+                        // Multiple children: open the attachment popover so the
+                        // user can choose. The popover is triggered via the hidden
+                        // aria-label="show-attachments" button rendered by FileAttachments.
+                        clickActionButton("show-attachments");
+                    }
+                    event.preventDefault();
+                    return;
+                }
                 case "d":
                     clickActionButton("download");
                     event.preventDefault();

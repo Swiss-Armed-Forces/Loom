@@ -18,11 +18,17 @@ export interface FolderTree {
     fileId?: string;
     children?: Record<string, FolderTree>;
     loading?: boolean;
+    /**
+     * Cursor for fetching the next backend page of children.
+     * undefined = not yet fetched; string = cursor available; null = all pages loaded.
+     */
+    nextPageCursor?: string | null;
 }
 
 export interface FolderViewState {
     tree: FolderTree;
     expandedNodes: string[];
+    fileIds: Set<string>;
 }
 
 export const FolderViewActionType = {
@@ -32,6 +38,7 @@ export const FolderViewActionType = {
     INITIAL_DATA_LOADED: "initialDataLoaded",
     CHILDREN_LOAD_STARTED: "childrenLoadStarted",
     CHILDREN_LOAD_FINISHED: "childrenLoadFinished",
+    SPINE_NODES_MERGED: "spineNodesMerged",
 } as const;
 export type FolderViewActionType =
     (typeof FolderViewActionType)[keyof typeof FolderViewActionType];
@@ -45,6 +52,7 @@ export interface ChildrenAddedAction extends BaseFolderViewAction<
 > {
     children: TreeNodeModel[];
     parentPath: string;
+    nextPageCursor?: string | null;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type
@@ -74,10 +82,18 @@ export interface ChildrenLoadFinishedAction extends BaseFolderViewAction<
 > {
     parentPath: string;
 }
+
+export interface SpineNodesMergedAction extends BaseFolderViewAction<
+    typeof FolderViewActionType.SPINE_NODES_MERGED
+> {
+    nodes: TreeNodeModel[]; // ordered root → leaf
+}
+
 export type FolderViewAction =
     | ChildrenAddedAction
     | QueryChangedAction
     | ExpandedNodesChangedAction
     | InitialDataLoadedAction
     | ChildrenLoadStartedAction
-    | ChildrenLoadFinishedAction;
+    | ChildrenLoadFinishedAction
+    | SpineNodesMergedAction;

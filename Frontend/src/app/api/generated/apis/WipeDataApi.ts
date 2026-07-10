@@ -14,17 +14,17 @@
  */
 
 import * as runtime from "../runtime";
-import type { Components, HTTPValidationError } from "../models/index";
+import type { HTTPValidationError, WipeComponent } from "../models/index";
 import {
-    ComponentsFromJSON,
-    ComponentsToJSON,
     HTTPValidationErrorFromJSON,
     HTTPValidationErrorToJSON,
+    WipeComponentFromJSON,
+    WipeComponentToJSON,
 } from "../models/index";
 
 export interface WipeDataEndpointV1WipeDataPostRequest {
     confirmation: string;
-    components?: Components;
+    components?: Array<WipeComponent>;
 }
 
 /**

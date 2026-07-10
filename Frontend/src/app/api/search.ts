@@ -11,13 +11,13 @@ import {
     TranslationApi,
     AvailableStat,
     GetFilesResponse,
+    GetFilesTreeResponse,
     GroupedHistogramStatisticsModel,
     TermsStatisticsModel,
     GetFileResponse,
     GetFilePreviewResponse,
     ArchiveCreatedResponse,
     ContextCreateResponse,
-    TreeNodeModel,
     GetQueryResponse,
     GetFilesCountResponse,
     UpdateFileRequest,
@@ -81,7 +81,8 @@ export const searchTree = async (
     query: SearchQuery,
     childrenOfNode?: string,
     flat?: boolean,
-): Promise<TreeNodeModel[]> => {
+    after?: string,
+): Promise<GetFilesTreeResponse> => {
     return filesApi.getFilesTreeV1FilesTreeGet({
         queryId: query.id,
         keepAlive: query.keepAlive ?? undefined,
@@ -89,11 +90,24 @@ export const searchTree = async (
 
         nodePath: childrenOfNode,
         flat,
+        after,
     });
 };
 
 export const getTreeLevelNodeLimit = async () => {
     return filesApi.getTreeMaxElementCountV1FilesTreeMaxElementCountGet({});
+};
+
+export const getTreeSpine = async (
+    query: SearchQuery,
+    fullPath: string,
+): Promise<GetFilesTreeResponse> => {
+    return filesApi.getFilesTreeSpineV1FilesTreeSpineGet({
+        queryId: query.id,
+        keepAlive: query.keepAlive ?? undefined,
+        searchString: query.query,
+        fullPath,
+    });
 };
 
 export const getTermsStats = async (): Promise<AvailableStat[]> =>
