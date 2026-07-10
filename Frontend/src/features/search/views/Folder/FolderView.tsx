@@ -1,23 +1,15 @@
 import {
-    FiberManualRecord,
-    Flag,
-    ManageSearch,
-    Preview,
-} from "@mui/icons-material";
-import {
     Box,
     BoxProps,
-    IconButton,
     List,
     ListItemButton,
     ListItemText,
     Skeleton,
     Stack,
-    Tooltip,
     Typography,
     styled,
 } from "@mui/material";
-import { SimpleTreeView } from "@mui/x-tree-view";
+import { SimpleTreeView, useSimpleTreeViewApiRef } from "@mui/x-tree-view";
 import {
     Dispatch,
     useCallback,
@@ -32,7 +24,11 @@ import { useDispatch } from "react-redux";
 import { toast } from "react-toastify";
 
 import type { TreeNodeModel } from "@app/api/index";
-import { getTreeLevelNodeLimit, searchTree } from "@app/api/index";
+import {
+    getTreeLevelNodeLimit,
+    getTreeSpine,
+    searchTree,
+} from "@app/api/index";
 import {
     subscribeChannel,
     unsubscribeChannel,
@@ -44,24 +40,28 @@ import {
     stopLoadingIndicator,
 } from "@app/slices/commonSlice";
 import {
+    clearPendingHighlightedFileId,
     fetchPreview,
-    openFileTabThunk,
     selectActiveTabFileId,
     selectFiles,
     selectHighlightedFileId,
+    selectPendingHighlightedFileId,
     selectQuery,
     selectWebSocketPubSubMessage,
     setActiveTabFileId,
+    setFolderViewExpandedNodes,
     setHighlightedIndex,
     setTemporaryFileId,
-    updateQuery,
 } from "@app/slices/searchSlice";
-import { AppDispatch } from "@app/store";
-import { SearchQueryField } from "@features/common/utils/enums";
-import { updateFieldOfQuery } from "@features/common/utils/helpers";
+import { AppDispatch, store } from "@app/store";
 import { SearchQuery } from "@features/common/utils/model";
 
-import { FolderViewNode } from "./FolderTreeItem";
+import {
+    FolderViewNode,
+    NodeAddToQueryButton,
+    NodeCountBadges,
+    NodeViewDetailsButton,
+} from "./FolderTreeItem";
 import styles from "./FolderView.module.css";
 import { folderViewReducer } from "./folderViewReducer";
 import {
@@ -72,18 +72,6 @@ import {
     PATH_SEPARATOR,
 } from "./folderViewState";
 import { cloneTree, findAncestorNodeIds, findTreeNode } from "./util";
-
-// Collect all fileIds present in the loaded tree nodes.
-const collectTreeFileIds = (
-    node: FolderTree,
-    result: Set<string> = new Set(),
-): Set<string> => {
-    if (node.fileId) result.add(node.fileId);
-    Object.values(node.children ?? {}).forEach((child) =>
-        collectTreeFileIds(child, result),
-    );
-    return result;
-};
 
 const FALLBACK_MAX_CHILDREN_COUNT = 100;
 
@@ -108,19 +96,24 @@ const loadChildren = async (
     folderDispatch: Dispatch<FolderViewAction>,
     depth = 2,
 ) => {
-    let children: TreeNodeModel[] | FolderTree[];
+    let childNodes: FolderTree[];
     if (!parent?.children) {
         folderDispatch({
             type: FolderViewActionType.CHILDREN_LOAD_STARTED,
             parentPath,
         });
         try {
-            children = await searchTree(searchQuery, parentPath);
+            const result = await searchTree(searchQuery, parentPath);
             folderDispatch({
                 type: FolderViewActionType.CHILDREN_ADDED,
-                children,
+                children: result.nodes,
                 parentPath,
+                nextPageCursor: result.nextPageCursor ?? null,
             });
+            childNodes = result.nodes.map((node) => ({
+                id: node.fullPath,
+                label: node.fullPath.split(PATH_SEPARATOR).at(-1),
+            }));
         } finally {
             folderDispatch({
                 type: FolderViewActionType.CHILDREN_LOAD_FINISHED,
@@ -128,20 +121,16 @@ const loadChildren = async (
             });
         }
     } else {
-        children = Object.values(parent.children);
+        childNodes = Object.values(parent.children);
     }
 
     if (depth > 1) {
         await Promise.all(
-            children.map(async (child: TreeNodeModel | FolderTree) => {
-                const path = "id" in child ? child.id : child.fullPath;
-                if (!path) {
-                    return;
-                }
+            childNodes.map(async (child) => {
                 await loadChildren(
-                    "id" in child ? child : null,
+                    child,
                     searchQuery,
-                    path,
+                    child.id,
                     folderDispatch,
                     depth - 1,
                 );
@@ -169,10 +158,12 @@ export const FolderView = ({ filter }: FolderViewProps) => {
     const webSocketPubSubMessage = useAppSelector(selectWebSocketPubSubMessage);
 
     const dispatch = useDispatch<AppDispatch>();
+    const treeApiRef = useSimpleTreeViewApiRef();
     const [maxChildren, setMaxChildren] = useState(FALLBACK_MAX_CHILDREN_COUNT);
     const [folderState, folderDispatch] = useReducer(folderViewReducer, {
         tree: cloneTree(ROOT_NODE),
         expandedNodes: [],
+        fileIds: new Set<string>(),
     });
     const folderStateRef = useRef(folderState);
     folderStateRef.current = folderState;
@@ -181,31 +172,81 @@ export const FolderView = ({ filter }: FolderViewProps) => {
     // Tracks only nodes the user explicitly expanded/collapsed. Auto-expanded
     // ancestors (from card/tab navigation) are not stored here so they are
     // discarded when the focused file changes.
-    const [userExpandedNodes, setUserExpandedNodes] = useState<string[]>([]);
+    // Initialised from the Redux-persisted value so expansion survives
+    // sidebar panel switches and page reloads.
+    const [userExpandedNodes, setUserExpandedNodes] = useState<string[]>(
+        () => store.getState().search.folderViewExpandedNodes,
+    );
+    const userExpandedNodesRef = useRef(userExpandedNodes);
+    userExpandedNodesRef.current = userExpandedNodes;
+    // Query seen on the previous render. Tracks both id and query string so we
+    // can distinguish a genuine new search from a pure ID-only change (keep-alive
+    // renewal, React strict-mode double-mount) that carries the same results.
+    const prevQueryRef = useRef<string | undefined>(searchQuery?.id);
     // Whether the initial auto-expand has been synced into userExpandedNodes.
     // After the first tree load, initial auto-expanded nodes are promoted into
     // the user snapshot so that WebSocket refreshes (which re-trigger the
     // auto-expand effect) never collapse them.
     const initialExpandSynced = useRef(false);
+    // Tracks the last focusedFileId that was successfully scrolled into view.
+    // Prevents re-scrolling on every expand/collapse when the highlight hasn't changed.
+    const lastScrolledFileId = useRef<string | null>(null);
     // Tracks which fileIds the FolderView has subscribed to for WS updates so
     // that we can diff on tree changes and unsubscribe cleanly on reset.
     const subscribedTreeFileIds = useRef(new Set<string>());
+    const filesRef = useRef(files);
+    filesRef.current = files;
 
     useEffect(() => {
-        if (
-            !initialExpandSynced.current &&
-            folderState.expandedNodes.length > 0
-        ) {
-            setUserExpandedNodes([...folderState.expandedNodes]);
-            initialExpandSynced.current = true;
-        }
-    }, [folderState.expandedNodes]);
+        if (initialExpandSynced.current) return;
+        if (folderState.expandedNodes.length === 0) return;
+
+        initialExpandSynced.current = true;
+
+        // Merge auto-expanded nodes with any nodes restored from localStorage so
+        // that the persisted expansion is not overwritten by the initial auto-expand.
+        const merged = Array.from(
+            new Set([...userExpandedNodes, ...folderState.expandedNodes]),
+        );
+        setUserExpandedNodes(merged);
+        folderDispatch({
+            type: FolderViewActionType.EXPANDED_NODES_CHANGED,
+            expandedNodes: merged,
+        });
+    }, [folderState.expandedNodes, userExpandedNodes, folderDispatch]);
+
+    // After the initial-expand sync, cascade-load children for any expanded
+    // node that is in the tree but hasn't had its children fetched yet.
+    // Re-runs each time the tree or expandedNodes changes so deeper levels are
+    // loaded progressively as each parent's CHILDREN_ADDED action arrives,
+    // restoring the full multi-level expansion state after F5.
+    useEffect(() => {
+        if (!initialExpandSynced.current || !searchQueryRef.current) return;
+        folderState.expandedNodes.forEach((nodeId) => {
+            const node = findTreeNode(folderState.tree, nodeId);
+            if (node && !node.children && !node.loading) {
+                loadChildren(
+                    node,
+                    searchQueryRef.current!,
+                    nodeId,
+                    folderDispatch,
+                    1,
+                ).catch(() => {});
+            }
+        });
+    }, [folderState.tree, folderState.expandedNodes, folderDispatch]);
+
+    // Persist user-driven expansion to Redux (→ localStorage via middleware)
+    // so the state survives sidebar panel switches and page reloads.
+    useEffect(() => {
+        dispatch(setFolderViewExpandedNodes(userExpandedNodes));
+    }, [userExpandedNodes, dispatch]);
 
     // Maintain WS subscriptions for all file nodes currently loaded in the
     // tree. This ensures fileUpdate messages arrive even when those files are
     // not visible as result cards and no detail tab is open for them.
     useEffect(() => {
-        const currentFileIds = collectTreeFileIds(folderState.tree);
+        const currentFileIds = folderState.fileIds;
         const subscribedIds = subscribedTreeFileIds.current;
 
         currentFileIds.forEach((fileId) => {
@@ -221,9 +262,11 @@ export const FolderView = ({ filter }: FolderViewProps) => {
                 subscribedIds.delete(fileId);
             }
         });
-    }, [folderState.tree, dispatch]);
+    }, [folderState.fileIds, dispatch]);
 
-    // Unsubscribe all channels on unmount only
+    // Unsubscribe all channels on unmount only and reset the initial-expand flag
+    // so that when the component remounts (e.g. user switches panel and back)
+    // the localStorage-restoration sync runs again.
     useEffect(() => {
         const subscribedIds = subscribedTreeFileIds.current;
         return () => {
@@ -231,6 +274,7 @@ export const FolderView = ({ filter }: FolderViewProps) => {
                 unsubscribeChannel(fileId, dispatch),
             );
             subscribedIds.clear();
+            initialExpandSynced.current = false;
         };
     }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -240,22 +284,50 @@ export const FolderView = ({ filter }: FolderViewProps) => {
     ) => {
         // Compute what the user toggled by diffing against the current display
         // state, then apply only that delta to the user snapshot.
+        const collapsed = folderState.expandedNodes.filter(
+            (id) => !nodeIds.includes(id),
+        );
+        const added = nodeIds.filter(
+            (id) => !folderState.expandedNodes.includes(id),
+        );
         setUserExpandedNodes((prev) => {
-            const added = nodeIds.filter(
-                (id) => !folderState.expandedNodes.includes(id),
-            );
-            const removed = folderState.expandedNodes.filter(
-                (id) => !nodeIds.includes(id),
-            );
             if (added.length > 0) return [...prev, ...added];
-            if (removed.length > 0)
-                return prev.filter((id) => !removed.includes(id));
+            if (collapsed.length > 0)
+                return prev.filter((id) => !collapsed.includes(id));
             return prev;
         });
         folderDispatch({
             type: FolderViewActionType.EXPANDED_NODES_CHANGED,
             expandedNodes: nodeIds,
         });
+
+        // Load children for newly expanded nodes that have not been fetched yet.
+        // This handles the case where the user clicks the expand arrow directly
+        // (which fires this handler but not onItemClick).
+        if (searchQueryRef.current) {
+            added.forEach((id) => {
+                const node = findTreeNode(folderStateRef.current.tree, id);
+                if (node && !node.children && !node.loading) {
+                    loadChildren(
+                        node,
+                        searchQueryRef.current!,
+                        id,
+                        folderDispatch,
+                        1,
+                    ).catch((err) => {
+                        toast.error(
+                            "Cannot load tree search results. Error: " +
+                                (err &&
+                                typeof err === "object" &&
+                                "detail" in err &&
+                                err.detail
+                                    ? err.detail
+                                    : err),
+                        );
+                    });
+                }
+            });
+        }
     };
 
     // Pre-compute file ID array used in handleItemClick — includes stale files
@@ -265,26 +337,47 @@ export const FolderView = ({ filter }: FolderViewProps) => {
         [files],
     );
 
+    const pendingHighlightedFileId = useAppSelector(
+        selectPendingHighlightedFileId,
+    );
+
+    useEffect(() => {
+        if (!pendingHighlightedFileId || !searchQuery) return;
+        const index = allMetaFileIds.indexOf(pendingHighlightedFileId);
+        if (index >= 0) {
+            dispatch(setHighlightedIndex(index));
+        } else {
+            dispatch(setTemporaryFileId(pendingHighlightedFileId));
+            dispatch(setHighlightedIndex(allMetaFileIds.length));
+            dispatch(fetchPreview({ fileId: pendingHighlightedFileId }));
+        }
+        dispatch(clearPendingHighlightedFileId());
+    }, [pendingHighlightedFileId, searchQuery, allMetaFileIds, dispatch]);
+
+    const handleFileClick = useCallback(
+        (fileId: string) => {
+            const index = allMetaFileIds.indexOf(fileId);
+            if (index !== -1) {
+                dispatch(setActiveTabFileId(null));
+                dispatch(setHighlightedIndex(index));
+            } else {
+                // File not in current results — show as temporary card.
+                dispatch(setTemporaryFileId(fileId));
+                dispatch(setActiveTabFileId(null));
+                dispatch(setHighlightedIndex(allMetaFileIds.length));
+                dispatch(fetchPreview({ fileId }));
+            }
+        },
+        [allMetaFileIds, dispatch],
+    );
+
     const handleItemClick = (path: string) => {
         const node = findTreeNode(folderState.tree, path);
         if (!node) return;
 
         // If this node has a fileId, navigate to it in the results panel
         if (node.fileId) {
-            // Use allMetaFileIds (includes stale) so the index matches
-            // selectHighlightedFileId which also includes stale files.
-            const index = allMetaFileIds.indexOf(node.fileId);
-            if (index !== -1) {
-                dispatch(setActiveTabFileId(null));
-                dispatch(setHighlightedIndex(index));
-            } else {
-                // File not in current results — show as temporary card.
-                const tempIndex = allMetaFileIds.length;
-                dispatch(setTemporaryFileId(node.fileId));
-                dispatch(setActiveTabFileId(null));
-                dispatch(setHighlightedIndex(tempIndex));
-                dispatch(fetchPreview({ fileId: node.fileId }));
-            }
+            handleFileClick(node.fileId);
         }
 
         // Also load children (for folder nodes and container files like emails)
@@ -314,7 +407,28 @@ export const FolderView = ({ filter }: FolderViewProps) => {
             // findAncestorNodeIds returns the path IDs of all ancestors of the
             // file node — these are exactly the directory paths whose counts are
             // affected by a state change on this file.
-            const ancestors = findAncestorNodeIds(tree, fileId);
+            let ancestors = findAncestorNodeIds(tree, fileId);
+
+            // Fallback: file is not yet a leaf in the tree (e.g. subscribed via
+            // a result card, not via the folder tree). Derive ancestor paths from
+            // the file's known path so that already-loaded ancestor folders still
+            // get their counts refreshed.
+            if (!ancestors) {
+                const filePath = filesRef.current[fileId]?.preview?.path;
+                if (filePath) {
+                    const parts: string[] = [];
+                    let current = filePath;
+                    while (true) {
+                        const lastSlash = current.lastIndexOf(PATH_SEPARATOR);
+                        if (lastSlash < 0) break;
+                        current = current.slice(0, lastSlash);
+                        if (!current || current === ROOT_NODE.id) break;
+                        parts.unshift(current);
+                    }
+                    ancestors = [ROOT_NODE.id, ...parts];
+                }
+            }
+
             if (!ancestors) return undefined;
 
             let cancelled = false;
@@ -326,12 +440,14 @@ export const FolderView = ({ filter }: FolderViewProps) => {
                     .filter((path) => findTreeNode(tree, path)?.children)
                     .map((path) =>
                         searchTree(searchQuery, path)
-                            .then((children) => {
+                            .then((result) => {
                                 if (cancelled) return;
                                 folderDispatch({
                                     type: FolderViewActionType.CHILDREN_ADDED,
-                                    children,
+                                    children: result.nodes,
                                     parentPath: path,
+                                    // No nextPageCursor: count refresh always fetches
+                                    // page 1; preserve whatever cursor was already stored.
                                 });
                             })
                             .catch((err) => {
@@ -371,22 +487,29 @@ export const FolderView = ({ filter }: FolderViewProps) => {
     // Debounced to avoid a burst of API requests during rapid arrow-key navigation.
     useEffect(() => {
         if (!focusedFileId) return;
+        let innerCleanup: (() => void) | undefined;
         const id = setTimeout(() => {
-            reloadAncestors(focusedFileId);
+            innerCleanup = reloadAncestors(focusedFileId);
         }, 200);
-        return () => clearTimeout(id);
+        return () => {
+            clearTimeout(id);
+            innerCleanup?.();
+        };
     }, [focusedFileId, reloadAncestors]);
 
     useEffect(() => {
         if (!focusedFileId || !searchQuery) return;
 
         // If the node is already in the tree, expand all its ancestors.
-        // Start from userExpandedNodes (the snapshot of manual expansions) so
-        // that auto-expansions from a previous navigation are not carried over.
-        const ancestors = findAncestorNodeIds(folderState.tree, focusedFileId);
+        // Use ref to avoid re-running on every tree update — the effect only
+        // needs to re-run when focusedFileId, focusedFilePath, or searchQuery change.
+        const ancestors = findAncestorNodeIds(
+            folderStateRef.current.tree,
+            focusedFileId,
+        );
         if (ancestors !== null) {
             const newExpanded = Array.from(
-                new Set([...userExpandedNodes, ...ancestors]),
+                new Set([...userExpandedNodesRef.current, ...ancestors]),
             );
             folderDispatch({
                 type: FolderViewActionType.EXPANDED_NODES_CHANGED,
@@ -395,66 +518,135 @@ export const FolderView = ({ filter }: FolderViewProps) => {
             return;
         }
 
-        // Node not yet in tree — load each ancestor level that is missing.
+        // Node not yet in tree — need focusedFilePath to call spine endpoint.
         // focusedFilePath comes from preview which may load slightly after
         // focusedFileId changes; the effect re-runs once it arrives.
         if (!focusedFilePath) return;
 
-        // Walk up from the file path to build ancestor node IDs.
-        // Paths use a //source/name format so we must not strip the prefix —
-        // use lastIndexOf instead of split/filter to preserve it.
-        const ancestorPaths: string[] = [];
-        let current = focusedFilePath;
-        while (true) {
-            const lastSlash = current.lastIndexOf(PATH_SEPARATOR);
-            if (lastSlash < 0) break;
-            current = current.slice(0, lastSlash);
-            if (!current || current === ROOT_NODE.id) break;
-            ancestorPaths.unshift(current);
-        }
-        ancestorPaths.unshift(ROOT_NODE.id);
-
-        // Load the first ancestor level that is missing children. Each
-        // CHILDREN_ADDED dispatch updates folderState.tree, re-triggering
-        // this effect so we walk down one level at a time until the target
-        // node exists and findAncestorNodeIds succeeds.
-        const firstMissing = ancestorPaths.find((path) => {
-            const node = findTreeNode(folderState.tree, path);
-            return node !== undefined && !node.children && !node.loading;
-        });
-        if (firstMissing) {
-            loadChildren(
-                findTreeNode(folderState.tree, firstMissing) ?? null,
-                searchQuery,
-                firstMissing,
-                folderDispatch,
-                1,
-            ).catch(() => {});
-        }
-    }, [
-        focusedFileId,
-        focusedFilePath,
-        folderState.tree,
-        searchQuery,
-        userExpandedNodes,
-    ]);
+        getTreeSpine(searchQuery, focusedFilePath)
+            .then((result) => {
+                if (result.nodes.length === 0) return;
+                folderDispatch({
+                    type: FolderViewActionType.SPINE_NODES_MERGED,
+                    nodes: result.nodes,
+                });
+                // Expand all ancestors (all spine nodes except the leaf file).
+                const ancestorPaths = result.nodes
+                    .slice(0, -1)
+                    .map((n) => String(n.fullPath));
+                folderDispatch({
+                    type: FolderViewActionType.EXPANDED_NODES_CHANGED,
+                    expandedNodes: Array.from(
+                        new Set([
+                            ...userExpandedNodesRef.current,
+                            ...ancestorPaths,
+                        ]),
+                    ),
+                });
+                // Eagerly load full siblings for each spine ancestor so the
+                // user sees complete folder contents, not a sparse skeleton.
+                ancestorPaths.forEach((path) => {
+                    searchTree(searchQuery, path)
+                        .then((children) => {
+                            folderDispatch({
+                                type: FolderViewActionType.CHILDREN_ADDED,
+                                children: children.nodes,
+                                parentPath: path,
+                                nextPageCursor: children.nextPageCursor ?? null,
+                            });
+                        })
+                        .catch(() => {
+                            // Non-fatal: spine path is already visible.
+                        });
+                });
+            })
+            .catch(() => toast.error("Cannot locate file in folder tree."));
+    }, [focusedFileId, focusedFilePath, searchQuery]);
 
     useEffect(() => {
         getTreeLevelNodeLimit().then(setMaxChildren);
     }, []);
 
     useEffect(() => {
+        const prevId = prevQueryRef.current;
+        prevQueryRef.current = searchQuery?.id;
+
+        // Skip on the initial render and when the first query loads from the
+        // URL so the restored expansion from localStorage is not cleared.
+        // Only reset when the search query changes from one known ID to another.
+        if (searchQuery?.id === prevId || prevId === undefined) return;
+
         folderDispatch({ type: FolderViewActionType.QUERY_CHANGED });
-        setUserExpandedNodes([]);
         initialExpandSynced.current = false;
         subscribedTreeFileIds.current.forEach((fileId) =>
             unsubscribeChannel(fileId, dispatch),
         );
         subscribedTreeFileIds.current.clear();
-    }, [searchQuery, folderDispatch, dispatch]);
+    }, [searchQuery?.id, folderDispatch, dispatch]);
+
+    const handleLoadMore = useCallback(
+        async (nodeId: string) => {
+            const node = findTreeNode(folderStateRef.current.tree, nodeId);
+            if (!node?.nextPageCursor || !searchQueryRef.current) return;
+            try {
+                const result = await searchTree(
+                    searchQueryRef.current,
+                    nodeId,
+                    false,
+                    node.nextPageCursor,
+                );
+                folderDispatch({
+                    type: FolderViewActionType.CHILDREN_ADDED,
+                    children: result.nodes,
+                    parentPath: nodeId,
+                    nextPageCursor: result.nextPageCursor ?? null,
+                });
+            } catch (err) {
+                toast.error(
+                    "Cannot load more folder items. Error: " +
+                        (err &&
+                        typeof err === "object" &&
+                        "detail" in err &&
+                        (err as { detail: unknown }).detail
+                            ? (err as { detail: unknown }).detail
+                            : err),
+                );
+            }
+        },
+        [folderDispatch],
+    );
+
+    // Scroll the highlighted file's tree node into view when the highlight changes.
+    // Keeps `folderState.expandedNodes` in deps so it retries after auto-expansion
+    // makes the DOM element available, but the ref guard prevents re-scrolling on
+    // manual expand/collapse when the highlighted file has not changed.
+    // The 300 ms delay matches MUI's tree expansion animation so we scroll to
+    // the element's final position rather than its mid-animation position.
+    useEffect(() => {
+        if (!focusedFilePath || !treeApiRef.current) return;
+        if (focusedFileId === lastScrolledFileId.current) return;
+        const id = setTimeout(() => {
+            const element =
+                treeApiRef.current?.getItemDOMElement(focusedFilePath);
+            if (element) {
+                element.scrollIntoView({
+                    behavior: "smooth",
+                    block: "nearest",
+                });
+                lastScrolledFileId.current = focusedFileId ?? null;
+            }
+        }, 300);
+        return () => clearTimeout(id);
+    }, [focusedFileId, focusedFilePath, folderState.expandedNodes, treeApiRef]);
 
     useEffect(() => {
-        if (!searchQuery?.query) {
+        if (!searchQuery?.query?.trim()) {
+            // Mirror the stats view guard: clear the tree when the query is
+            // empty. Only dispatch if the tree still has data to avoid a loop
+            // (after QUERY_CHANGED, children is undefined so we skip).
+            if (folderState.tree.children !== undefined) {
+                folderDispatch({ type: FolderViewActionType.QUERY_CHANGED });
+            }
             return;
         }
 
@@ -469,7 +661,7 @@ export const FolderView = ({ filter }: FolderViewProps) => {
             searchQuery,
             ROOT_NODE.id,
             folderDispatch,
-            3,
+            1,
         )
             .catch((err) => {
                 toast.error(
@@ -514,12 +706,10 @@ export const FolderView = ({ filter }: FolderViewProps) => {
                 ROOT_NODE.id,
                 true,
             )
-                .then((results) => {
-                    // The backend bucket size is maxChildren + 1; if the raw
-                    // result count reaches that, the list was silently capped.
-                    setFilterTruncated(results.length > maxChildren);
+                .then((result) => {
+                    setFilterTruncated(result.nextPageCursor != null);
                     setFilterResults(
-                        results.filter((n) => n.fileId !== undefined),
+                        result.nodes.filter((n) => n.fileId !== undefined),
                     );
                 })
                 .catch(() => toast.error("Cannot load filter results."))
@@ -547,21 +737,7 @@ export const FolderView = ({ filter }: FolderViewProps) => {
                                 key={node.fullPath}
                                 onClick={() => {
                                     if (!fileId) return;
-                                    const index =
-                                        allMetaFileIds.indexOf(fileId);
-                                    if (index !== -1) {
-                                        dispatch(setActiveTabFileId(null));
-                                        dispatch(setHighlightedIndex(index));
-                                    } else {
-                                        dispatch(setTemporaryFileId(fileId));
-                                        dispatch(setActiveTabFileId(null));
-                                        dispatch(
-                                            setHighlightedIndex(
-                                                allMetaFileIds.length,
-                                            ),
-                                        );
-                                        dispatch(fetchPreview({ fileId }));
-                                    }
+                                    handleFileClick(fileId);
                                 }}
                                 title={node.fullPath}
                                 selected={fileId === focusedFileId}
@@ -601,74 +777,11 @@ export const FolderView = ({ filter }: FolderViewProps) => {
                                             >
                                                 {label}
                                             </Typography>
-                                            {(node.unseenCount ?? 0) > 0 && (
-                                                <Tooltip
-                                                    title={t(
-                                                        "folderView.unseenCountTooltip",
-                                                    )}
-                                                >
-                                                    <Box
-                                                        sx={{
-                                                            display: "flex",
-                                                            alignItems:
-                                                                "center",
-                                                            gap: 0.25,
-                                                            flexShrink: 0,
-                                                            color: "primary.main",
-                                                        }}
-                                                    >
-                                                        <FiberManualRecord
-                                                            sx={{
-                                                                fontSize:
-                                                                    "0.45rem",
-                                                            }}
-                                                        />
-                                                        <Typography
-                                                            variant="caption"
-                                                            sx={{
-                                                                lineHeight: 1,
-                                                                color: "inherit",
-                                                            }}
-                                                        >
-                                                            {node.unseenCount}
-                                                        </Typography>
-                                                    </Box>
-                                                </Tooltip>
-                                            )}
-                                            {(node.flaggedCount ?? 0) > 0 && (
-                                                <Tooltip
-                                                    title={t(
-                                                        "folderView.flaggedCountTooltip",
-                                                    )}
-                                                >
-                                                    <Box
-                                                        sx={{
-                                                            display: "flex",
-                                                            alignItems:
-                                                                "center",
-                                                            gap: 0.25,
-                                                            flexShrink: 0,
-                                                            color: "error.main",
-                                                        }}
-                                                    >
-                                                        <Flag
-                                                            sx={{
-                                                                fontSize:
-                                                                    "0.75rem",
-                                                            }}
-                                                        />
-                                                        <Typography
-                                                            variant="caption"
-                                                            sx={{
-                                                                lineHeight: 1,
-                                                                color: "inherit",
-                                                            }}
-                                                        >
-                                                            {node.flaggedCount}
-                                                        </Typography>
-                                                    </Box>
-                                                </Tooltip>
-                                            )}
+                                            <NodeCountBadges
+                                                flaggedCount={node.flaggedCount}
+                                                unseenCount={node.unseenCount}
+                                                fileCount={node.fileCount}
+                                            />
                                         </Stack>
                                     }
                                     secondary={node.fullPath}
@@ -680,50 +793,8 @@ export const FolderView = ({ filter }: FolderViewProps) => {
                                         },
                                     }}
                                 />
-                                <Tooltip
-                                    title={t("generalSearchView.viewDetails")}
-                                >
-                                    <IconButton
-                                        size="small"
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            dispatch(
-                                                openFileTabThunk({
-                                                    fileId: fileId!,
-                                                    background: e.ctrlKey,
-                                                }),
-                                            );
-                                        }}
-                                    >
-                                        <Preview fontSize="small" />
-                                    </IconButton>
-                                </Tooltip>
-                                <Tooltip
-                                    title={t(
-                                        "folderView.addPathToQueryTooltip",
-                                    )}
-                                >
-                                    <IconButton
-                                        size="small"
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            dispatch(
-                                                updateQuery({
-                                                    query: updateFieldOfQuery(
-                                                        searchQuery?.query ??
-                                                            "",
-                                                        SearchQueryField.Filename,
-                                                        node.fullPath,
-                                                        false,
-                                                        e.shiftKey,
-                                                    ),
-                                                }),
-                                            );
-                                        }}
-                                    >
-                                        <ManageSearch fontSize="small" />
-                                    </IconButton>
-                                </Tooltip>
+                                <NodeViewDetailsButton fileId={fileId!} />
+                                <NodeAddToQueryButton path={node.fullPath} />
                             </ListItemButton>
                         );
                     })}
@@ -746,6 +817,7 @@ export const FolderView = ({ filter }: FolderViewProps) => {
         <View>
             <div className={styles.treeView}>
                 <SimpleTreeView
+                    apiRef={treeApiRef}
                     expandedItems={folderState.expandedNodes}
                     onExpandedItemsChange={handleExpandedItemsChange}
                     onItemClick={(_, itemId) => handleItemClick(itemId)}
@@ -754,6 +826,7 @@ export const FolderView = ({ filter }: FolderViewProps) => {
                         tree={folderState.tree}
                         maxChildren={maxChildren}
                         activeTabFileId={focusedFileId}
+                        onLoadMore={handleLoadMore}
                     />
                 </SimpleTreeView>
             </div>

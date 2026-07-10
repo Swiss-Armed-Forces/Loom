@@ -415,3 +415,6 @@ changed-files/
 # Loom archives (downloaded zips and extracted directories)
 loom_archive_*/
 loom_archive_*.zip
+
+# Loom archive shell history (written next to cli.py when opened from the source tree)
+.loom_history

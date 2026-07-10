@@ -103,24 +103,43 @@ export const HighlightItem = ({
                 )}
                 <Tooltip title={t("generalSearchView.queryThisField")}>
                     <IconButton
+                        component="span"
                         size="small"
                         onClick={(e) => {
                             e.stopPropagation();
                             onQuery(e.shiftKey);
                         }}
-                        sx={{ ml: "auto", flexShrink: 0 }}
+                        sx={{
+                            ml: "auto",
+                            flexShrink: 0,
+                            transition:
+                                "transform 0.2s ease, opacity 0.2s ease",
+                            "&:hover": {
+                                transform: "scale(1.1)",
+                                opacity: 0.8,
+                            },
+                        }}
                     >
                         <ManageSearch fontSize="small" />
                     </IconButton>
                 </Tooltip>
                 <Tooltip title={t("generalSearchView.sortThisField")}>
                     <IconButton
+                        component="span"
                         size="small"
                         onClick={(e) => {
                             e.stopPropagation();
                             onSort();
                         }}
-                        sx={{ flexShrink: 0 }}
+                        sx={{
+                            flexShrink: 0,
+                            transition:
+                                "transform 0.2s ease, opacity 0.2s ease",
+                            "&:hover": {
+                                transform: "scale(1.1)",
+                                opacity: 0.8,
+                            },
+                        }}
                     >
                         <Sort fontSize="small" />
                     </IconButton>

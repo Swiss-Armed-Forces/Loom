@@ -16,6 +16,7 @@ from tempfile import (
 from typing import IO, Any, Generator, Generic, TypeVar, cast
 
 from minio import Minio
+from minio.error import S3Error
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from common.settings import settings
@@ -206,6 +207,17 @@ class LazyBytesService(ABC, Generic[_Tag]):
     def get_total_size_bytes(self) -> int:
         """Get total size of all stored lazybytes in bytes."""
 
+    def exists(self, lazy_bytes: "LazyBytes[_Tag]") -> bool:
+        """Returns True if the data is available (embedded or present in the
+        service)."""
+        if lazy_bytes.embedded_data is not None:
+            return True
+        return self._exists(lazy_bytes.service_id)
+
+    @abstractmethod
+    def _exists(self, service_id: Any) -> bool:
+        """Returns True if the given service_id exists in the service."""
+
     @abstractmethod
     def _load_to(self, service_id: Any, dst: IO):
         """Loads the data at the given service id to dst."""
@@ -373,6 +385,15 @@ class S3LazyBytesService(LazyBytesService[_Tag]):
             part_size=S3_PART_SIZE,
         )
 
+    def _exists(self, service_id: Any) -> bool:
+        try:
+            self._client.stat_object(self._bucket, str(service_id))
+            return True
+        except S3Error as exc:
+            if exc.code == "NoSuchKey":
+                return False
+            raise
+
     def _load_to(self, service_id: Any, dst: IO):
         response = self._client.get_object(self._bucket, str(service_id))
         for chunk in response.stream():
@@ -462,6 +483,9 @@ class InMemoryLazyBytesService(LazyBytesService[_Tag]):
         service_id = self._counter
         self._counter += 1
         return service_id
+
+    def _exists(self, service_id: Any) -> bool:
+        return service_id in self._storage
 
     def _load_to(self, service_id: Any, dst: IO):
         dst.write(self._storage[service_id])

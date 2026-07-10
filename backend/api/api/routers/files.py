@@ -40,13 +40,13 @@ from common.services.task_scheduling_service import (
 )
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, UploadFile
 from fastapi.responses import StreamingResponse
-from pydantic import BaseModel, RootModel
+from pydantic import BaseModel
 
 from api.models.statistics_model import (
     GroupedHistogramStatisticsModel,
     TermsStatisticsModel,
 )
-from api.models.tree_model import TreeNodeModel
+from api.models.tree_model import GetFilesTreeResponse, TreeNodeModel
 from api.utils import get_content_disposition_header
 
 logger = logging.getLogger(__name__)
@@ -181,13 +181,10 @@ def get_files_count(
     return GetFilesCountResponse(total_files=total_files)
 
 
-class GetFilesTreeResponse(RootModel):
-    root: list[TreeNodeModel]
-
-
 class GetFilesTreeQuery(QueryParameters):
     node_path: str = "/"
     flat: bool = False
+    after: str | None = None
 
 
 @router.get("/tree")
@@ -200,14 +197,47 @@ def get_files_tree(
     When flat=False (default), returns the direct children of node_path. When flat=True,
     returns all matching files at any depth below node_path, without pagination —
     callers should apply their own result limit.
+
+    The `after` parameter is an opaque cursor from a previous response's
+    `next_page_cursor` field and enables cursor-based pagination.
     """
     logger.info("Get file tree node with query: '%s'", query)
 
-    tree_paths = file_repository.get_full_paths_by_query(
-        query=query, tree_node_directory_path=query.node_path, flat=query.flat
+    result = file_repository.get_full_paths_by_query(
+        query=query,
+        tree_node_directory_path=query.node_path,
+        flat=query.flat,
+        after=query.after,
     )
     return GetFilesTreeResponse(
-        [TreeNodeModel.model_validate(node.model_dump()) for node in tree_paths]
+        nodes=[
+            TreeNodeModel.model_validate(node.model_dump()) for node in result.nodes
+        ],
+        next_page_cursor=result.next_page_cursor,
+    )
+
+
+class GetFilesTreeSpineQuery(QueryParameters):
+    full_path: str
+
+
+@router.get("/tree/spine")
+def get_files_tree_spine(
+    query: Annotated[GetFilesTreeSpineQuery, Query()],
+    file_repository: FileRepository = default_file_repository,
+) -> GetFilesTreeResponse:
+    """Return one tree node per path segment from the root down to full_path.
+
+    Useful for revealing a specific file in the folder tree without requiring the client
+    to paginate through its parent folder's children.
+    """
+    nodes = file_repository.get_spine_by_path(
+        query=query,
+        full_path=query.full_path,
+    )
+    return GetFilesTreeResponse(
+        nodes=[TreeNodeModel.model_validate(n.model_dump()) for n in nodes],
+        next_page_cursor=None,
     )
 
 

@@ -3,7 +3,7 @@ import { CardHeader, Box, Tooltip } from "@mui/material";
 import { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 
-import { GetFilePreviewResponse } from "@app/api";
+import { GetFilePreviewResponse, RenderedFile } from "@app/api";
 import { useAppDispatch, useAppSelector } from "@app/hooks";
 import { selectQuery, updateQuery } from "@app/slices/searchSlice";
 import { SearchQueryField } from "@features/common/utils/enums";
@@ -20,12 +20,14 @@ interface FileCardHeaderProps {
     filePreview: GetFilePreviewResponse;
     additionalActions?: ReactNode[];
     hideDetail?: boolean;
+    renderedFile?: RenderedFile;
 }
 
 export const FileCardHeader = ({
     filePreview,
     additionalActions,
     hideDetail,
+    renderedFile,
 }: FileCardHeaderProps) => {
     const dispatch = useAppDispatch();
     const { t } = useTranslation();
@@ -175,6 +177,7 @@ export const FileCardHeader = ({
                     filePreview={filePreview}
                     additionalActions={additionalActions}
                     hideDetail={hideDetail}
+                    renderedFile={renderedFile}
                 />
             }
         />

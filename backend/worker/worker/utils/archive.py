@@ -14,7 +14,7 @@ from common.services.lazybytes_service import (
 )
 from common.services.query_builder import QueryParameters
 
-from worker.create_archive.tasks.archive_format import ZIP_EXTENSION
+from worker.create_archive.tasks.archive_cli import ZIP_EXTENSION
 from worker.create_archive.tasks.compress_files import stream_archive
 
 _FIXED_DATETIME = datetime(2026, 6, 7, 9, 14, 40, 812597)

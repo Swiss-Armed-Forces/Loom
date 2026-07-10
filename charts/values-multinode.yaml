@@ -26,10 +26,6 @@ elasticsearch:
           disk:
             threshold_enabled: true
 
-translate:
-  hpa:
-    enabled: true
-
 seaweedfs:
   master:
     defaultReplication: "010"

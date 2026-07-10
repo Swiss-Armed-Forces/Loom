@@ -29,8 +29,15 @@ from utils.upload_asset import upload_asset
                 "hidden_file.tar.gz/0/.hidden_file_tar_gz",
             ],
         ),
-        ("empty_file.tar", ["empty_file.tar"]),
-        ("empty_file.tar.gz", ["empty_file.tar.gz", "empty_file.tar.gz/0"]),
+        ("empty_file.tar", ["empty_file.tar", "empty_file.tar/empty_file_tar"]),
+        (
+            "empty_file.tar.gz",
+            [
+                "empty_file.tar.gz",
+                "empty_file.tar.gz/0",
+                "empty_file.tar.gz/0/empty_file_tar_gz",
+            ],
+        ),
         (
             "multi_file.tar",
             [
