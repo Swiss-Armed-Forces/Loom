@@ -91,7 +91,7 @@ MISSING_LINES=0
 PATTERNS=(
     "**RAM:** ${LOOM_MIN_MEMORY}"
     "**CPU:** ${LOOM_MIN_CPU} Cores"
-    "**GPU (Optional):** For enhanced performance with certain features, we recommend using at least ${LOOM_MIN_GPU} GPUs."
+    "**GPU (Optional):** For enhanced performance with certain features, we recommend using at least ${LOOM_MIN_GPU} GPU(s)."
     "**RAM:** ${LOOM_MAX_MEMORY}"
     "**CPU:** ${LOOM_MAX_CPU} Cores"
     "**GPU (Optional):** ${LOOM_MIN_GPU}"
