@@ -30,7 +30,7 @@ The minimum resources required to deploy and run Loom:
 - **RAM:** 25Gi
 - **CPU:** 8 Cores
 - **Disk Space:** 200 GiB
-- **GPU (Optional):** For enhanced performance with certain features, we recommend using at least 3 GPUs.
+- **GPU (Optional):** For enhanced performance with certain features, we recommend using at least 1 GPU(s).
   Please see the list of supported GPUs here: [https://docs.ollama.com/gpu](https://docs.ollama.com/gpu)
 
 > ℹ️ The figures above are the resources Loom itself needs. `up.sh` additionally configures
@@ -50,7 +50,7 @@ enforced, your namespace quota must be at least:
 - **RAM:** 90Gi
 - **CPU:** 66 Cores
 - **Disk Space:** 200 GiB
-- **GPU (Optional):** 3
+- **GPU (Optional):** 1
 
 For further scaling beyond a single node, see [Multi Node Deployment](#multi-node-deployment),
 which supports enabling HPAs to scale services horizontally under load.
