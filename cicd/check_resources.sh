@@ -24,7 +24,7 @@ CHARTS_DIR="${1?Missing Charts Dir}"
 # Max allowed requests (resource requests)
 MAX_CPU="8"
 MAX_MEMORY="25Gi"
-MAX_GPU="3"
+MAX_GPU="1"
 
 # Max allowed limits (resource limits)
 MAX_CPU_LIMITS="66"
@@ -88,7 +88,7 @@ MISSING_LINES=0
 PATTERNS=(
     "**RAM:** ${MAX_MEMORY}"
     "**CPU:** ${MAX_CPU} Cores"
-    "**GPU (Optional):** For enhanced performance with certain features, we recommend using at least ${MAX_GPU} GPUs."
+    "**GPU (Optional):** For enhanced performance with certain features, we recommend using at least ${MAX_GPU} GPU(s)."
     "**RAM:** ${MAX_MEMORY_LIMITS}"
     "**CPU:** ${MAX_CPU_LIMITS} Cores"
     "**GPU (Optional):** ${MAX_GPU}"
