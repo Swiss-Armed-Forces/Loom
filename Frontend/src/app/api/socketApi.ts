@@ -17,7 +17,16 @@ export default class SocketApi {
     }
 
     send(data: any): void {
-        if (!this.socket || this.socket.readyState !== WebSocket.OPEN) return;
+        if (!this.socket) return;
+        if (this.socket.readyState !== WebSocket.OPEN) {
+            // Queue the message to be sent once the connection is established.
+            this.socket.addEventListener(
+                "open",
+                () => this.socket?.send(JSON.stringify(data)),
+                { once: true },
+            );
+            return;
+        }
         this.socket.send(JSON.stringify(data));
     }
 

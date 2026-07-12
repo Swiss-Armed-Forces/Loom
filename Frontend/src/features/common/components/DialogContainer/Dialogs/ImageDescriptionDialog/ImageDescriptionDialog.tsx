@@ -66,7 +66,7 @@ export const ImageDescriptionDialog = ({
                 );
             } else if (searchQuery) {
                 await scheduleImageDescriptionByQuery(
-                    searchQuery,
+                    { ...searchQuery, id: null },
                     systemPrompt ?? undefined,
                 );
             }

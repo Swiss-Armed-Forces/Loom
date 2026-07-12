@@ -6,6 +6,7 @@ import {
     BoxProps,
     CircularProgress,
     CircularProgressProps,
+    IconButton,
     Tooltip,
     styled,
 } from "@mui/material";
@@ -58,9 +59,7 @@ const RunningTasksProgress = styled(CircularProgress)<CircularProgressProps>`
     cursor: pointer;
 `;
 
-const ErrorCountBadge = styled(Badge)<BadgeProps>`
-    cursor: pointer;
-`;
+const ErrorCountBadge = styled(Badge)<BadgeProps>``;
 
 export const BackgroundStatusIndicator: FC = () => {
     const contentTruncatedFilesCount = useAppSelector(
@@ -280,13 +279,17 @@ export const BackgroundStatusIndicator: FC = () => {
                         contentTruncatedCount: contentTruncatedFilesCount,
                     })}
                 >
-                    <ErrorCountBadge
-                        badgeContent={contentTruncatedFilesCount}
-                        color="primary"
+                    <IconButton
+                        size="small"
                         onClick={queryContentTruncatedFiles}
                     >
-                        <ContentCut />
-                    </ErrorCountBadge>
+                        <ErrorCountBadge
+                            badgeContent={contentTruncatedFilesCount}
+                            color="primary"
+                        >
+                            <ContentCut fontSize="small" />
+                        </ErrorCountBadge>
+                    </IconButton>
                 </Tooltip>
             )}
             {attachmentsSkippedFilesCount > 0 && (
@@ -295,13 +298,17 @@ export const BackgroundStatusIndicator: FC = () => {
                         attachmentsSkippedCount: attachmentsSkippedFilesCount,
                     })}
                 >
-                    <ErrorCountBadge
-                        badgeContent={attachmentsSkippedFilesCount}
-                        color="primary"
+                    <IconButton
+                        size="small"
                         onClick={queryAttachmentsSkippedFiles}
                     >
-                        <LinkOff />
-                    </ErrorCountBadge>
+                        <ErrorCountBadge
+                            badgeContent={attachmentsSkippedFilesCount}
+                            color="primary"
+                        >
+                            <LinkOff fontSize="small" />
+                        </ErrorCountBadge>
+                    </IconButton>
                 </Tooltip>
             )}
             {failedBackgroundTaskCount > 0 && (
@@ -310,13 +317,14 @@ export const BackgroundStatusIndicator: FC = () => {
                         failedTaskCount: failedBackgroundTaskCount,
                     })}
                 >
-                    <ErrorCountBadge
-                        badgeContent={failedBackgroundTaskCount}
-                        color="primary"
-                        onClick={queryFailedFiles}
-                    >
-                        <TaskStatusIcon status={TaskStatus.Error} />
-                    </ErrorCountBadge>
+                    <IconButton size="small" onClick={queryFailedFiles}>
+                        <ErrorCountBadge
+                            badgeContent={failedBackgroundTaskCount}
+                            color="primary"
+                        >
+                            <TaskStatusIcon status={TaskStatus.Error} />
+                        </ErrorCountBadge>
+                    </IconButton>
                 </Tooltip>
             )}
         </Indicator>

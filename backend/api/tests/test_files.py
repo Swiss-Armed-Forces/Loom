@@ -554,7 +554,7 @@ def test_get_files_tree_returns_nodes_and_cursor(client: TestClient):
     get_file_repository().get_full_paths_by_query.assert_called_once_with(
         query=ANY,
         tree_node_directory_path="/",
-        flat=False,
+        files_only=False,
         after=None,
     )
 
@@ -580,7 +580,7 @@ def test_get_files_tree_passes_after_cursor(client: TestClient):
     get_file_repository().get_full_paths_by_query.assert_called_once_with(
         query=ANY,
         tree_node_directory_path="//source",
-        flat=False,
+        files_only=False,
         after="//source/z.pdf",
     )
 

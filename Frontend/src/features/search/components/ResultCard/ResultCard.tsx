@@ -1,8 +1,10 @@
+import { SearchOff } from "@mui/icons-material";
 import {
     Badge,
     Box,
     Card,
     CardContent,
+    Chip,
     Skeleton,
     Typography,
 } from "@mui/material";
@@ -28,7 +30,7 @@ import {
     selectAutoActionsPreferences,
     setFileInViewState,
     setFilePreview,
-    setHighlightedIndex,
+    setHighlightedFileId,
     openFileTabThunk,
 } from "@app/slices/searchSlice";
 import { webApiGetFileThumbnail } from "@features/common/urls";
@@ -45,17 +47,17 @@ import { Summary } from "./Summary";
 
 interface ResultCardProps {
     fileId: string;
-    index?: number;
     isHighlighted?: boolean;
     stale?: boolean;
+    isTemporary?: boolean;
 }
 
 export const ResultCard = React.memo(
     ({
         fileId,
-        index = 0,
         isHighlighted = false,
         stale = false,
+        isTemporary = false,
     }: ResultCardProps) => {
         const dispatch = useAppDispatch();
         const { t } = useTranslation();
@@ -253,7 +255,7 @@ export const ResultCard = React.memo(
                 ) {
                     handleOpenDetailsOnTabClick(FileDetailTab.Rendered, true);
                 } else {
-                    dispatch(setHighlightedIndex(index));
+                    dispatch(setHighlightedFileId(fileId));
                 }
             }
         };
@@ -263,7 +265,7 @@ export const ResultCard = React.memo(
             background = false,
         ) => {
             if (!filePreview) return;
-            dispatch(setHighlightedIndex(index));
+            dispatch(setHighlightedFileId(fileId));
             dispatch(
                 openFileTabThunk({
                     fileId: filePreview.fileId,
@@ -406,10 +408,23 @@ export const ResultCard = React.memo(
                                     mt: 1,
                                 }}
                             >
-                                <Typography
-                                    variant="caption"
-                                    sx={{ color: "text.disabled", pl: 0.5 }}
-                                >{`${searchQuery?.sortField ?? "score"}: ${sortFieldValue}`}</Typography>
+                                {isTemporary ? (
+                                    <Chip
+                                        icon={<SearchOff />}
+                                        label={t(
+                                            "detailedView.outsideLoadedResults",
+                                        )}
+                                        size="small"
+                                        color="warning"
+                                        variant="outlined"
+                                        sx={{ fontSize: "0.7rem" }}
+                                    />
+                                ) : (
+                                    <Typography
+                                        variant="caption"
+                                        sx={{ color: "text.disabled", pl: 0.5 }}
+                                    >{`${searchQuery?.sortField ?? "score"}: ${sortFieldValue}`}</Typography>
+                                )}
                                 <FileTasksList
                                     tasksSucceeded={
                                         filePreview.tasksSucceeded || []

@@ -1023,6 +1023,41 @@ def test_es_repository_count_by_query():
     assert count == 123
 
 
+def test_es_repository_count_by_query_no_pit():
+    """When query_id is None, count_by_query executes directly without a PIT."""
+    es_repository = _TestEsRepository(
+        query_builder=get_query_builder(),
+        pubsub_service=get_pubsub_service(),
+        mock_types=True,
+    )
+    search_mock = MagicMock(spec=Search)
+    es_repository.document_type.search.return_value = search_mock
+    # pylint: disable=unnecessary-dunder-call
+    search_pre_count_mock = (
+        search_mock
+        # happens in: _get_search_by_query
+        .highlight_options()
+        .highlight()
+        .query()
+        # happens in: count_by_query
+        .__getitem__(slice(0, 0, None))
+        .extra()
+        # happens in: _execute_search_with_query (no-PIT path: direct execute)
+        .execute
+    )
+    hits_mock = MagicMock()
+    hits_mock.hits.total.value = 42  # pylint: disable=no-member
+    search_pre_count_mock.return_value = hits_mock
+    count = es_repository.count_by_query(
+        QueryParameters(query_id=None, search_string="just a random query")
+    )
+    assert count == 42
+    # .index() and the PIT .extra() must NOT be called in the no-PIT path
+    search_mock.highlight_options().highlight().query().__getitem__(
+        slice(0, 0, None)
+    ).extra().index.assert_not_called()
+
+
 @pytest.mark.parametrize(
     "obj",
     get_test_repository_object_instances(),
@@ -1057,6 +1092,42 @@ def test_es_repository_get_by_id_with_query(obj: _TestEsRepositoryObject):
     )
 
     search_pre_execute_mock.execute.assert_called_once()
+
+
+@pytest.mark.parametrize(
+    "obj",
+    get_test_repository_object_instances(),
+)
+def test_es_repository_get_by_id_with_query_no_pit(obj: _TestEsRepositoryObject):
+    """When query_id is None, get_by_id_with_query executes directly without a PIT."""
+    es_repository = _TestEsRepository(
+        query_builder=get_query_builder(),
+        pubsub_service=get_pubsub_service(),
+        mock_types=True,
+    )
+    search_mock = MagicMock(spec=Search)
+    es_repository.document_type.search.return_value = search_mock
+    search_pre_execute_mock = (
+        search_mock
+        # happens in: _get_search_by_query
+        .highlight_options()
+        .highlight()
+        .query()
+        # happens in: get_by_id_with_query
+        .filter()
+        # happens in: _execute_search_with_query (no-PIT path: direct execute)
+        .execute
+    )
+
+    es_repository.get_by_id_with_query(
+        obj.id_,
+        QueryParameters(query_id=None, search_string="just a random query"),
+        full_highlight_context=False,
+    )
+
+    search_pre_execute_mock.assert_called_once()
+    # .index() must NOT be called in the no-PIT path
+    search_mock.highlight_options().highlight().query().filter().index.assert_not_called()
 
 
 @pytest.mark.parametrize(

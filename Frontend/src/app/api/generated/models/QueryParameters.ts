@@ -25,7 +25,7 @@ export interface QueryParameters {
      * @type {string}
      * @memberof QueryParameters
      */
-    queryId: string;
+    queryId?: string;
     /**
      *
      * @type {string}
@@ -54,7 +54,6 @@ export type QueryParametersKeepAliveEnum =
  * Check if a given object implements the QueryParameters interface.
  */
 export function instanceOfQueryParameters(value: object): boolean {
-    if (!("queryId" in value)) return false;
     return true;
 }
 
@@ -70,7 +69,7 @@ export function QueryParametersFromJSONTyped(
         return json;
     }
     return {
-        queryId: json["query_id"],
+        queryId: json["query_id"] == null ? undefined : json["query_id"],
         keepAlive: json["keep_alive"] == null ? undefined : json["keep_alive"],
         searchString:
             json["search_string"] == null ? undefined : json["search_string"],

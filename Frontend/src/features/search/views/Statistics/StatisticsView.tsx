@@ -23,7 +23,6 @@ import {
     getHistogramStat,
     getTermsStats,
     getHistogramStats,
-    getShortRunningQuery,
 } from "@app/api";
 import { useAppSelector } from "@app/hooks";
 import {
@@ -132,7 +131,9 @@ export const StatisticsView = () => {
     const isNumberHistogram = histogramData?.histogramType === "number";
 
     // Fetch available stats once on mount — they don't change with the query.
+    // Skip when already populated from the localStorage cache.
     useEffect(() => {
+        if (termsStats.length > 0 && histogramStats.length > 0) return;
         Promise.all([getTermsStats(), getHistogramStats()])
             .then(([terms, histograms]) => {
                 dispatch(fillTermsStats(terms));
@@ -157,37 +158,43 @@ export const StatisticsView = () => {
         const controller = new AbortController();
         abortControllerRef.current = controller;
 
-        getShortRunningQuery().then(({ queryId }) => {
-            if (controller.signal.aborted) return;
-            const statsQuery = { ...searchQuery, id: queryId };
-            getTermsStat(statsQuery, displayStat, PIE_AMOUNT)
-                .then((result) => {
-                    if (!controller.signal.aborted)
-                        dispatch(fillTermsData(result));
-                })
-                .catch((err) => {
-                    if (!controller.signal.aborted)
-                        toast.error(
-                            "Cannot load statistic results. Error: " +
-                                (err["detail"] ? err["detail"] : err),
-                        );
-                });
-            getHistogramStat(statsQuery, displayHistogramStat, displayStat)
-                .then((result) => {
-                    if (!controller.signal.aborted)
-                        dispatch(fillHistogramData(result));
-                })
-                .catch((err) => {
-                    if (!controller.signal.aborted)
-                        toast.error(
-                            "Cannot load grouped statistic results. Error: " +
-                                (err["detail"] ? err["detail"] : err),
-                        );
-                });
-        });
+        if (controller.signal.aborted) return;
+        const statsQuery = { ...searchQuery, id: null };
+        getTermsStat(statsQuery, displayStat, PIE_AMOUNT)
+            .then((result) => {
+                if (!controller.signal.aborted) dispatch(fillTermsData(result));
+            })
+            .catch((err) => {
+                if (!controller.signal.aborted)
+                    toast.error(
+                        "Cannot load statistic results. Error: " +
+                            (err["detail"] ? err["detail"] : err),
+                    );
+            });
+        getHistogramStat(statsQuery, displayHistogramStat, displayStat)
+            .then((result) => {
+                if (!controller.signal.aborted)
+                    dispatch(fillHistogramData(result));
+            })
+            .catch((err) => {
+                if (!controller.signal.aborted)
+                    toast.error(
+                        "Cannot load grouped statistic results. Error: " +
+                            (err["detail"] ? err["detail"] : err),
+                    );
+            });
     }, [searchQuery, displayStat, displayHistogramStat, dispatch]);
 
+    // Skip the stats fetch on the initial mount so that an F5 with an
+    // unchanged query (state restored from localStorage) does not trigger any
+    // backend calls. The effect re-runs whenever fetchStats changes — i.e.
+    // when the query, displayStat, or displayHistogramStat actually changes.
+    const statsMountedRef = useRef(false);
     useEffect(() => {
+        if (!statsMountedRef.current) {
+            statsMountedRef.current = true;
+            return;
+        }
         fetchStats();
     }, [fetchStats]);
 
@@ -228,7 +235,7 @@ export const StatisticsView = () => {
         const range =
             endVal === "*"
                 ? `[${startVal} TO *]`
-                : `[${startVal} TO ${endVal}]`;
+                : `[${startVal} TO ${endVal}}`;
         const newQuery = updateFieldOfQuery(
             searchQuery?.query ?? "",
             fieldName,

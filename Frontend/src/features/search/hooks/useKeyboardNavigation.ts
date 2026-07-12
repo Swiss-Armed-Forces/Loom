@@ -3,14 +3,14 @@ import { useCallback, useEffect, useRef } from "react";
 import { useAppDispatch, useAppSelector } from "@app/hooks";
 import { selectIsLoading, selectTopDialog } from "@app/slices/commonSlice";
 import {
-    selectHighlightedIndex,
     selectHighlightedFileId,
+    selectOrderedFileIds,
     selectTotalFiles,
     selectLoadedFiles,
     selectLastFileSortId,
     selectQuery,
     selectFiles,
-    setHighlightedIndex,
+    setHighlightedFileId,
     updateQuery,
     selectActiveTabFileId,
     selectOpenFileTabs,
@@ -28,19 +28,28 @@ export const useKeyboardNavigation = () => {
     const topDialog = useAppSelector(selectTopDialog);
     const activeTabFileId = useAppSelector(selectActiveTabFileId);
     const openFileTabs = useAppSelector(selectOpenFileTabs);
-    const highlightedIndex = useAppSelector(selectHighlightedIndex);
     const highlightedFileId = useAppSelector(selectHighlightedFileId);
+    const orderedFileIds = useAppSelector(selectOrderedFileIds);
     const totalFiles = useAppSelector(selectTotalFiles);
     const loadedFiles = useAppSelector(selectLoadedFiles);
     const lastFileSortId = useAppSelector(selectLastFileSortId);
     const query = useAppSelector(selectQuery);
     const isLoading = useAppSelector(selectIsLoading);
     const files = useAppSelector(selectFiles);
-    // Keep a ref so hotkey callbacks don't need files in their dependency arrays.
+    // Keep refs so hotkey callbacks don't need these in their dependency arrays.
     const filesRef = useRef(files);
     useEffect(() => {
         filesRef.current = files;
     }, [files]);
+    const orderedFileIdsRef = useRef(orderedFileIds);
+    useEffect(() => {
+        orderedFileIdsRef.current = orderedFileIds;
+    }, [orderedFileIds]);
+    // Derive index from file ID for arithmetic operations.
+    const highlightedIndex =
+        highlightedFileId !== null
+            ? orderedFileIds.indexOf(highlightedFileId)
+            : null;
 
     // Retry pagination once loading clears (handles the case where the user
     // pressed down while a previous request was still in-flight).
@@ -68,7 +77,11 @@ export const useKeyboardNavigation = () => {
         if (loadedFiles <= pendingAdvanceFromRef.current) return;
         const firstNewIndex = pendingAdvanceFromRef.current;
         pendingAdvanceFromRef.current = null;
-        dispatch(setHighlightedIndex(firstNewIndex));
+        dispatch(
+            setHighlightedFileId(
+                orderedFileIdsRef.current[firstNewIndex] ?? null,
+            ),
+        );
     }, [loadedFiles, dispatch]);
 
     // Pagination tracking:
@@ -176,7 +189,11 @@ export const useKeyboardNavigation = () => {
                 newIndex = Math.max(0, highlightedIndex - 1);
             }
 
-            dispatch(setHighlightedIndex(newIndex));
+            dispatch(
+                setHighlightedFileId(
+                    orderedFileIdsRef.current[newIndex] ?? null,
+                ),
+            );
             document.dispatchEvent(new CustomEvent("loom:close-menus"));
         },
         [
@@ -499,9 +516,9 @@ export const useKeyboardNavigation = () => {
                         document.dispatchEvent(
                             new CustomEvent("loom:close-menus"),
                         );
-                        if (highlightedIndex !== null) {
+                        if (highlightedFileId !== null) {
                             // Unselect the highlighted card
-                            dispatch(setHighlightedIndex(null));
+                            dispatch(setHighlightedFileId(null));
                         } else {
                             // No card selected — clear the search query and sort
                             for (const label of [
@@ -536,7 +553,7 @@ export const useKeyboardNavigation = () => {
                     case "h":
                     case "H":
                     case "ArrowLeft":
-                        if (event.shiftKey && highlightedIndex !== null) {
+                        if (event.shiftKey && highlightedFileId !== null) {
                             handleSummaryTabNavigation("left");
                         } else if (!event.shiftKey) {
                             handleCenterTabNavigation("left");
@@ -546,7 +563,7 @@ export const useKeyboardNavigation = () => {
                     case "l":
                     case "L":
                     case "ArrowRight":
-                        if (event.shiftKey && highlightedIndex !== null) {
+                        if (event.shiftKey && highlightedFileId !== null) {
                             handleSummaryTabNavigation("right");
                         } else if (!event.shiftKey) {
                             handleCenterTabNavigation("right");
@@ -658,7 +675,6 @@ export const useKeyboardNavigation = () => {
         [
             shouldIgnoreKeyEvent,
             activeTabFileId,
-            highlightedIndex,
             highlightedFileId,
             dispatch,
             handleTabNavigationDirection,

@@ -19,9 +19,18 @@ import {
     ListItemText,
     Typography,
 } from "@mui/material";
-import { ReactNode, useEffect, useMemo, useRef, useState } from "react";
+import {
+    ReactNode,
+    useCallback,
+    useEffect,
+    useMemo,
+    useRef,
+    useState,
+} from "react";
 import { useTranslation } from "react-i18next";
+import { toast } from "react-toastify";
 
+import { loadTags } from "@app/api";
 import { useAppDispatch, useAppSelector } from "@app/hooks";
 import {
     LeftSidebarPanel,
@@ -33,6 +42,7 @@ import {
     selectTotalFiles,
     setAutoActionPreference,
     setLeftSidebarPanel,
+    setTags,
 } from "@app/slices/searchSlice";
 import {
     ReIndexButton,
@@ -51,6 +61,8 @@ import { FolderView } from "@features/search/views/Folder/FolderView";
 import { CustomQueriesList } from "../CustomQueries/CustomQueries";
 
 import styles from "./LeftSidebar.module.css";
+
+const TAGS_REFRESH_MS = 5_000;
 
 const MIN_WIDTH = 14 * 16;
 const DEFAULT_WIDTH = 20 * 16;
@@ -111,6 +123,21 @@ export const LeftSidebar = () => {
     useEffect(() => {
         setFilterText("");
     }, [activePanel]);
+
+    const fetchTags = useCallback(async () => {
+        try {
+            dispatch(setTags(await loadTags()));
+        } catch (error) {
+            toast.error(`Error loading tags: ${error}`);
+        }
+    }, [dispatch]);
+
+    useEffect(() => {
+        if (activePanel !== LeftSidebarPanel.TAGS) return;
+        fetchTags();
+        const interval = setInterval(fetchTags, TAGS_REFRESH_MS);
+        return () => clearInterval(interval);
+    }, [activePanel, fetchTags]);
 
     // Remove any in-flight drag listeners when the component unmounts
     useEffect(() => {
