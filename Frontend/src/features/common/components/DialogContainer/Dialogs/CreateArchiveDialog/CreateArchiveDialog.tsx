@@ -35,7 +35,7 @@ export const CreateArchiveDialog = ({
         setIsLoading(true);
         dispatch(startLoadingIndicator());
         try {
-            await scheduleArchiveCreation(searchQuery);
+            await scheduleArchiveCreation({ ...searchQuery, id: null });
             dispatch(setBackgroundTaskSpinnerActive());
             toast.success(
                 "Creation of archive successfully scheduled. Please go to archives.",

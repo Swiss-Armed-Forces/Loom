@@ -6,7 +6,7 @@ set -eou pipefail
 # See README.md "Minimum Deployment Resources".
 LOOM_MIN_CPU="8"
 LOOM_MIN_MEMORY="25Gi"
-LOOM_MIN_GPU="3"
+LOOM_MIN_GPU="1"
 
 TRAEFIK_HELM_VERSION="39.0.9"
 TRAEFIK_IMAGE_VERSION="v3.6.15"

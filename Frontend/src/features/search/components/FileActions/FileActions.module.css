@@ -11,15 +11,3 @@
         flex-wrap: wrap;
     }
 }
-
-.fileActionButtons > * {
-    cursor: pointer;
-    transition:
-        transform 0.2s ease,
-        opacity 0.2s ease;
-}
-
-.fileActionButtons > *:hover {
-    transform: scale(1.1);
-    opacity: 0.8;
-}

@@ -14,7 +14,6 @@ import {
     Dispatch,
     useCallback,
     useEffect,
-    useMemo,
     useReducer,
     useRef,
     useState,
@@ -24,11 +23,7 @@ import { useDispatch } from "react-redux";
 import { toast } from "react-toastify";
 
 import type { TreeNodeModel } from "@app/api/index";
-import {
-    getTreeLevelNodeLimit,
-    getTreeSpine,
-    searchTree,
-} from "@app/api/index";
+import { searchTree } from "@app/api/index";
 import {
     subscribeChannel,
     unsubscribeChannel,
@@ -40,17 +35,15 @@ import {
     stopLoadingIndicator,
 } from "@app/slices/commonSlice";
 import {
-    clearPendingHighlightedFileId,
     fetchPreview,
     selectActiveTabFileId,
     selectFiles,
     selectHighlightedFileId,
-    selectPendingHighlightedFileId,
     selectQuery,
     selectWebSocketPubSubMessage,
     setActiveTabFileId,
     setFolderViewExpandedNodes,
-    setHighlightedIndex,
+    setHighlightedFileId,
     setTemporaryFileId,
 } from "@app/slices/searchSlice";
 import { AppDispatch, store } from "@app/store";
@@ -73,7 +66,7 @@ import {
 } from "./folderViewState";
 import { cloneTree, findAncestorNodeIds, findTreeNode } from "./util";
 
-const FALLBACK_MAX_CHILDREN_COUNT = 100;
+const TREE_NODE_LIMIT = 10;
 
 const View = styled(Box)<BoxProps>(() => ({
     width: "100%",
@@ -103,7 +96,10 @@ const loadChildren = async (
             parentPath,
         });
         try {
-            const result = await searchTree(searchQuery, parentPath);
+            const result = await searchTree(
+                { ...searchQuery, id: null },
+                parentPath,
+            );
             folderDispatch({
                 type: FolderViewActionType.CHILDREN_ADDED,
                 children: result.nodes,
@@ -159,7 +155,6 @@ export const FolderView = ({ filter }: FolderViewProps) => {
 
     const dispatch = useDispatch<AppDispatch>();
     const treeApiRef = useSimpleTreeViewApiRef();
-    const [maxChildren, setMaxChildren] = useState(FALLBACK_MAX_CHILDREN_COUNT);
     const [folderState, folderDispatch] = useReducer(folderViewReducer, {
         tree: cloneTree(ROOT_NODE),
         expandedNodes: [],
@@ -330,45 +325,17 @@ export const FolderView = ({ filter }: FolderViewProps) => {
         }
     };
 
-    // Pre-compute file ID array used in handleItemClick — includes stale files
-    // to match the ordering used by selectHighlightedFileId.
-    const allMetaFileIds = useMemo(
-        () => Object.keys(files).filter((id) => files[id].meta !== null),
-        [files],
-    );
-
-    const pendingHighlightedFileId = useAppSelector(
-        selectPendingHighlightedFileId,
-    );
-
-    useEffect(() => {
-        if (!pendingHighlightedFileId || !searchQuery) return;
-        const index = allMetaFileIds.indexOf(pendingHighlightedFileId);
-        if (index >= 0) {
-            dispatch(setHighlightedIndex(index));
-        } else {
-            dispatch(setTemporaryFileId(pendingHighlightedFileId));
-            dispatch(setHighlightedIndex(allMetaFileIds.length));
-            dispatch(fetchPreview({ fileId: pendingHighlightedFileId }));
-        }
-        dispatch(clearPendingHighlightedFileId());
-    }, [pendingHighlightedFileId, searchQuery, allMetaFileIds, dispatch]);
-
     const handleFileClick = useCallback(
         (fileId: string) => {
-            const index = allMetaFileIds.indexOf(fileId);
-            if (index !== -1) {
-                dispatch(setActiveTabFileId(null));
-                dispatch(setHighlightedIndex(index));
-            } else {
+            dispatch(setActiveTabFileId(null));
+            if (!files[fileId]?.meta) {
                 // File not in current results — show as temporary card.
                 dispatch(setTemporaryFileId(fileId));
-                dispatch(setActiveTabFileId(null));
-                dispatch(setHighlightedIndex(allMetaFileIds.length));
                 dispatch(fetchPreview({ fileId }));
             }
+            dispatch(setHighlightedFileId(fileId));
         },
-        [allMetaFileIds, dispatch],
+        [files, dispatch],
     );
 
     const handleItemClick = (path: string) => {
@@ -378,18 +345,6 @@ export const FolderView = ({ filter }: FolderViewProps) => {
         // If this node has a fileId, navigate to it in the results panel
         if (node.fileId) {
             handleFileClick(node.fileId);
-        }
-
-        // Also load children (for folder nodes and container files like emails)
-        if (searchQuery?.query) {
-            loadChildren(node, searchQuery, path, folderDispatch).catch(
-                (err) => {
-                    toast.error(
-                        "Cannot load tree search results. Error: " +
-                            (err["detail"] ? err["detail"] : err),
-                    );
-                },
-            );
         }
     };
 
@@ -439,7 +394,7 @@ export const FolderView = ({ filter }: FolderViewProps) => {
                 ancestors
                     .filter((path) => findTreeNode(tree, path)?.children)
                     .map((path) =>
-                        searchTree(searchQuery, path)
+                        searchTree({ ...searchQuery, id: null }, path)
                             .then((result) => {
                                 if (cancelled) return;
                                 folderDispatch({
@@ -482,21 +437,6 @@ export const FolderView = ({ filter }: FolderViewProps) => {
         return reloadAncestors(fileId);
     }, [webSocketPubSubMessage, reloadAncestors]);
 
-    // When the focused file changes (highlighted index or active tab), reload
-    // its ancestor paths so counts stay fresh for the newly focused file.
-    // Debounced to avoid a burst of API requests during rapid arrow-key navigation.
-    useEffect(() => {
-        if (!focusedFileId) return;
-        let innerCleanup: (() => void) | undefined;
-        const id = setTimeout(() => {
-            innerCleanup = reloadAncestors(focusedFileId);
-        }, 200);
-        return () => {
-            clearTimeout(id);
-            innerCleanup?.();
-        };
-    }, [focusedFileId, reloadAncestors]);
-
     useEffect(() => {
         if (!focusedFileId || !searchQuery) return;
 
@@ -518,54 +458,32 @@ export const FolderView = ({ filter }: FolderViewProps) => {
             return;
         }
 
-        // Node not yet in tree — need focusedFilePath to call spine endpoint.
-        // focusedFilePath comes from preview which may load slightly after
-        // focusedFileId changes; the effect re-runs once it arrives.
+        // Node not yet in tree. Derive ancestor paths from focusedFilePath and
+        // expand them so cascade-load fetches each level's full children.
+        // Calling getTreeSpine here would pre-populate intermediate nodes with
+        // only the spine child, preventing siblings from ever loading.
         if (!focusedFilePath) return;
 
-        getTreeSpine(searchQuery, focusedFilePath)
-            .then((result) => {
-                if (result.nodes.length === 0) return;
-                folderDispatch({
-                    type: FolderViewActionType.SPINE_NODES_MERGED,
-                    nodes: result.nodes,
-                });
-                // Expand all ancestors (all spine nodes except the leaf file).
-                const ancestorPaths = result.nodes
-                    .slice(0, -1)
-                    .map((n) => String(n.fullPath));
-                folderDispatch({
-                    type: FolderViewActionType.EXPANDED_NODES_CHANGED,
-                    expandedNodes: Array.from(
-                        new Set([
-                            ...userExpandedNodesRef.current,
-                            ...ancestorPaths,
-                        ]),
-                    ),
-                });
-                // Eagerly load full siblings for each spine ancestor so the
-                // user sees complete folder contents, not a sparse skeleton.
-                ancestorPaths.forEach((path) => {
-                    searchTree(searchQuery, path)
-                        .then((children) => {
-                            folderDispatch({
-                                type: FolderViewActionType.CHILDREN_ADDED,
-                                children: children.nodes,
-                                parentPath: path,
-                                nextPageCursor: children.nextPageCursor ?? null,
-                            });
-                        })
-                        .catch(() => {
-                            // Non-fatal: spine path is already visible.
-                        });
-                });
-            })
-            .catch(() => toast.error("Cannot locate file in folder tree."));
+        const parts: string[] = [];
+        let current = focusedFilePath;
+        while (true) {
+            const lastSlash = current.lastIndexOf(PATH_SEPARATOR);
+            if (lastSlash < 0) break;
+            current = current.slice(0, lastSlash);
+            if (!current || current === ROOT_NODE.id) break;
+            parts.unshift(current);
+        }
+        folderDispatch({
+            type: FolderViewActionType.EXPANDED_NODES_CHANGED,
+            expandedNodes: Array.from(
+                new Set([
+                    ...userExpandedNodesRef.current,
+                    ROOT_NODE.id,
+                    ...parts,
+                ]),
+            ),
+        });
     }, [focusedFileId, focusedFilePath, searchQuery]);
-
-    useEffect(() => {
-        getTreeLevelNodeLimit().then(setMaxChildren);
-    }, []);
 
     useEffect(() => {
         const prevId = prevQueryRef.current;
@@ -590,7 +508,7 @@ export const FolderView = ({ filter }: FolderViewProps) => {
             if (!node?.nextPageCursor || !searchQueryRef.current) return;
             try {
                 const result = await searchTree(
-                    searchQueryRef.current,
+                    { ...searchQueryRef.current, id: null },
                     nodeId,
                     false,
                     node.nextPageCursor,
@@ -702,7 +620,7 @@ export const FolderView = ({ filter }: FolderViewProps) => {
         const timer = setTimeout(() => {
             setFilterLoading(true);
             searchTree(
-                { ...searchQuery, query: derivedQuery },
+                { ...searchQuery, id: null, query: derivedQuery },
                 ROOT_NODE.id,
                 true,
             )
@@ -716,7 +634,7 @@ export const FolderView = ({ filter }: FolderViewProps) => {
                 .finally(() => setFilterLoading(false));
         }, 300);
         return () => clearTimeout(timer);
-    }, [filter, searchQuery, maxChildren]);
+    }, [filter, searchQuery]);
 
     if (isLoading && !folderState.tree.children) return <LoadingIndicator />;
     if (!Object.keys(folderState.tree.children ?? {}).length) return null;
@@ -805,7 +723,7 @@ export const FolderView = ({ filter }: FolderViewProps) => {
                         sx={{ display: "block", px: 1, py: 0.5, opacity: 0.6 }}
                     >
                         {t("folderView.filterResultsLimitNote", {
-                            limit: maxChildren,
+                            limit: TREE_NODE_LIMIT,
                         })}
                     </Typography>
                 )}
@@ -820,11 +738,42 @@ export const FolderView = ({ filter }: FolderViewProps) => {
                     apiRef={treeApiRef}
                     expandedItems={folderState.expandedNodes}
                     onExpandedItemsChange={handleExpandedItemsChange}
-                    onItemClick={(_, itemId) => handleItemClick(itemId)}
+                    expansionTrigger="iconContainer"
+                    onItemClick={(event, itemId) => {
+                        const target = event.target as HTMLElement;
+                        if (target.closest(".MuiTreeItem-iconContainer"))
+                            return;
+                        handleItemClick(itemId);
+                    }}
+                    sx={{
+                        "& .MuiTreeItem-iconContainer": {
+                            borderRadius: "50%",
+                            transition:
+                                "transform 0.2s ease, opacity 0.2s ease",
+                            "&:hover": {
+                                bgcolor: "action.hover",
+                                transform: "scale(1.1)",
+                                opacity: 0.8,
+                            },
+                        },
+                        "& .MuiTreeItem-groupTransition": {
+                            position: "relative",
+                            "&::before": {
+                                content: '""',
+                                position: "absolute",
+                                left: "calc(8px + var(--TreeView-itemChildrenIndentation, 12px) * var(--TreeView-itemDepth, 0))",
+                                top: 0,
+                                bottom: 0,
+                                borderLeft: "1px solid",
+                                borderColor: "divider",
+                                pointerEvents: "none",
+                                zIndex: 1,
+                            },
+                        },
+                    }}
                 >
                     <FolderViewNode
                         tree={folderState.tree}
-                        maxChildren={maxChildren}
                         activeTabFileId={focusedFileId}
                         onLoadMore={handleLoadMore}
                     />

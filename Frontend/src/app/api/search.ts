@@ -44,10 +44,6 @@ export const loadVisionSystemPrompt = async (): Promise<string> => {
     return imageDescriptionApi.getSystemPromptV1FilesImageDescriptionSystemPromptGet();
 };
 
-export const getShortRunningQuery = async (): Promise<GetQueryResponse> => {
-    return filesApi.getQueryV1FilesQueryPost({ keepAlive: "10s" });
-};
-
 export const getLongRunningQuery = async (): Promise<GetQueryResponse> => {
     return filesApi.getQueryV1FilesQueryPost({ keepAlive: "30m" });
 };
@@ -56,7 +52,7 @@ export const searchFiles = async (
     query: SearchQuery,
 ): Promise<GetFilesResponse> => {
     return filesApi.getFilesV1FilesGet({
-        queryId: query.id,
+        queryId: query.id ?? undefined,
         keepAlive: query.keepAlive ?? undefined,
         searchString: query.query,
 
@@ -71,7 +67,7 @@ export const getFilesCount = async (
     query: Pick<SearchQuery, "id" | "keepAlive" | "query">,
 ): Promise<GetFilesCountResponse> => {
     return filesApi.getFilesCountV1FilesCountGet({
-        queryId: query.id,
+        queryId: query.id ?? undefined,
         keepAlive: query.keepAlive ?? undefined,
         searchString: query.query,
     });
@@ -80,22 +76,18 @@ export const getFilesCount = async (
 export const searchTree = async (
     query: SearchQuery,
     childrenOfNode?: string,
-    flat?: boolean,
+    filesOnly?: boolean,
     after?: string,
 ): Promise<GetFilesTreeResponse> => {
     return filesApi.getFilesTreeV1FilesTreeGet({
-        queryId: query.id,
+        queryId: query.id ?? undefined,
         keepAlive: query.keepAlive ?? undefined,
         searchString: query.query,
 
         nodePath: childrenOfNode,
-        flat,
+        filesOnly,
         after,
     });
-};
-
-export const getTreeLevelNodeLimit = async () => {
-    return filesApi.getTreeMaxElementCountV1FilesTreeMaxElementCountGet({});
 };
 
 export const getTreeSpine = async (
@@ -103,7 +95,7 @@ export const getTreeSpine = async (
     fullPath: string,
 ): Promise<GetFilesTreeResponse> => {
     return filesApi.getFilesTreeSpineV1FilesTreeSpineGet({
-        queryId: query.id,
+        queryId: query.id ?? undefined,
         keepAlive: query.keepAlive ?? undefined,
         searchString: query.query,
         fullPath,
@@ -127,7 +119,7 @@ export const getTermsStat = async (
 ): Promise<TermsStatisticsModel> => {
     return filesApi.getTermsStatsV1FilesStatsTermsStatGet({
         stat,
-        queryId: query.id,
+        queryId: query.id ?? undefined,
         keepAlive: query.keepAlive ?? undefined,
         searchString: query.query,
         size,
@@ -143,7 +135,7 @@ export const getHistogramStat = async (
         {
             stat,
             groupBy,
-            queryId: query.id,
+            queryId: query.id ?? undefined,
             keepAlive: query.keepAlive ?? undefined,
             searchString: query.query,
         },
@@ -173,7 +165,7 @@ export const updateFiles = async (
     return filesApi.updateFilesByQueryV1FilesPut({
         updateFilesRequest: {
             query: {
-                queryId: query.id,
+                queryId: query.id ?? undefined,
                 keepAlive: query.keepAlive ?? undefined,
                 searchString: query.query,
             },
@@ -212,7 +204,7 @@ export const addTagsToFiles = async (
         addTagsByQueryRequest: {
             tags: tags,
             query: {
-                queryId: query.id,
+                queryId: query.id ?? undefined,
                 keepAlive: query.keepAlive ?? undefined,
                 searchString: query.query,
             },
@@ -231,7 +223,7 @@ export const getFile = async (
     query: SearchQuery,
 ): Promise<GetFileResponse> => {
     return filesApi.getFileV1FilesFileIdGet({
-        queryId: query.id,
+        queryId: query.id ?? undefined,
         keepAlive: query.keepAlive ?? undefined,
         fileId: fileId,
         searchString: query.query,
@@ -243,7 +235,7 @@ export const getFilePreview = async (
     query: SearchQuery,
 ): Promise<GetFilePreviewResponse> => {
     return filesApi.getFilePreviewV1FilesFileIdPreviewGet({
-        queryId: query.id,
+        queryId: query.id ?? undefined,
         keepAlive: query.keepAlive ?? undefined,
         fileId: fileId,
         searchString: query.query,
@@ -256,7 +248,7 @@ export const scheduleArchiveCreation = async (
     return archivesApi.createNewArchiveV1ArchivePost({
         archiveRequest: {
             query: {
-                queryId: query.id,
+                queryId: query.id ?? undefined,
                 keepAlive: query.keepAlive ?? undefined,
                 searchString: query.query,
             },
@@ -281,7 +273,7 @@ export const scheduleFileTranslation = async (
         translateAllRequest: {
             lang: lang,
             query: {
-                queryId: query.id,
+                queryId: query.id ?? undefined,
                 keepAlive: query.keepAlive ?? undefined,
                 searchString: query.query,
             },
@@ -333,7 +325,7 @@ export const scheduleImageDescriptionByQuery = async (
         {
             imageDescriptionRequest: {
                 query: {
-                    queryId: query.id,
+                    queryId: query.id ?? undefined,
                     keepAlive: query.keepAlive ?? undefined,
                     searchString: query.query,
                 },
@@ -350,7 +342,7 @@ export const scheduleFileSummarization = async (
     return summarizationApi.summarizeFilesOnDemandV1FilesSummarizationPost({
         summarizationRequest: {
             query: {
-                queryId: query.id,
+                queryId: query.id ?? undefined,
                 keepAlive: query.keepAlive ?? undefined,
                 searchString: query.query,
             },
@@ -365,7 +357,7 @@ export const scheduleFileIndexing = async (
     return indexApi.indexFilesOnDemandV1FilesIndexPost({
         indexAllRequest: {
             query: {
-                queryId: query.id,
+                queryId: query.id ?? undefined,
                 keepAlive: query.keepAlive ?? undefined,
                 searchString: query.query,
             },
@@ -386,7 +378,7 @@ export const createAiContext = async (
 ): Promise<ContextCreateResponse> => {
     return aiApi.createContextV1AiPost({
         _queryParameters: {
-            queryId: query.id,
+            queryId: query.id ?? undefined,
             keepAlive: query.keepAlive ?? undefined,
             searchString: query.query,
         },

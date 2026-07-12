@@ -88,46 +88,46 @@ export interface GetAvailableStatsByTypeV1FilesStatsRegistryTypeGetRequest {
 
 export interface GetFilePreviewV1FilesFileIdPreviewGetRequest {
     fileId: string;
-    queryId: string;
+    queryId?: string;
     keepAlive?: GetFilePreviewV1FilesFileIdPreviewGetKeepAliveEnum;
     searchString?: string;
 }
 
 export interface GetFileV1FilesFileIdGetRequest {
     fileId: string;
-    queryId: string;
+    queryId?: string;
     keepAlive?: GetFileV1FilesFileIdGetKeepAliveEnum;
     searchString?: string;
 }
 
 export interface GetFilesCountV1FilesCountGetRequest {
-    queryId: string;
+    queryId?: string;
     keepAlive?: GetFilesCountV1FilesCountGetKeepAliveEnum;
     searchString?: string;
 }
 
 export interface GetFilesTreeSpineV1FilesTreeSpineGetRequest {
-    queryId: string;
     fullPath: string;
+    queryId?: string;
     keepAlive?: GetFilesTreeSpineV1FilesTreeSpineGetKeepAliveEnum;
     searchString?: string;
 }
 
 export interface GetFilesTreeV1FilesTreeGetRequest {
-    queryId: string;
+    queryId?: string;
     keepAlive?: GetFilesTreeV1FilesTreeGetKeepAliveEnum;
     searchString?: string;
     nodePath?: string;
-    flat?: boolean;
+    filesOnly?: boolean;
     after?: string;
 }
 
 export interface GetFilesV1FilesGetRequest {
-    queryId: string;
     sortId?: Array<any>;
     pageSize?: number;
     sortByField?: string;
     sortDirection?: GetFilesV1FilesGetSortDirectionEnum;
+    queryId?: string;
     keepAlive?: GetFilesV1FilesGetKeepAliveEnum;
     searchString?: string;
 }
@@ -135,14 +135,14 @@ export interface GetFilesV1FilesGetRequest {
 export interface GetHistogramStatsGroupedV1FilesStatsHistogramStatGroupedGroupByGetRequest {
     stat: string;
     groupBy: string;
-    queryId: string;
+    queryId?: string;
     keepAlive?: GetHistogramStatsGroupedV1FilesStatsHistogramStatGroupedGroupByGetKeepAliveEnum;
     searchString?: string;
 }
 
 export interface GetHistogramStatsV1FilesStatsHistogramStatGetRequest {
     stat: string;
-    queryId: string;
+    queryId?: string;
     keepAlive?: GetHistogramStatsV1FilesStatsHistogramStatGetKeepAliveEnum;
     searchString?: string;
 }
@@ -158,7 +158,7 @@ export interface GetRenderedV1FilesFileIdRenderedRenderedIdGetRequest {
 
 export interface GetTermsStatsV1FilesStatsTermsStatGetRequest {
     stat: string;
-    queryId: string;
+    queryId?: string;
     keepAlive?: GetTermsStatsV1FilesStatsTermsStatGetKeepAliveEnum;
     searchString?: string;
     size?: number;
@@ -461,13 +461,6 @@ export class FilesApi extends runtime.BaseAPI {
             );
         }
 
-        if (requestParameters["queryId"] == null) {
-            throw new runtime.RequiredError(
-                "queryId",
-                'Required parameter "queryId" was null or undefined when calling getFilePreviewV1FilesFileIdPreviewGet().',
-            );
-        }
-
         const queryParameters: any = {};
 
         if (requestParameters["queryId"] != null) {
@@ -533,13 +526,6 @@ export class FilesApi extends runtime.BaseAPI {
             );
         }
 
-        if (requestParameters["queryId"] == null) {
-            throw new runtime.RequiredError(
-                "queryId",
-                'Required parameter "queryId" was null or undefined when calling getFileV1FilesFileIdGet().',
-            );
-        }
-
         const queryParameters: any = {};
 
         if (requestParameters["queryId"] != null) {
@@ -598,13 +584,6 @@ export class FilesApi extends runtime.BaseAPI {
         requestParameters: GetFilesCountV1FilesCountGetRequest,
         initOverrides?: RequestInit | runtime.InitOverrideFunction,
     ): Promise<runtime.ApiResponse<GetFilesCountResponse>> {
-        if (requestParameters["queryId"] == null) {
-            throw new runtime.RequiredError(
-                "queryId",
-                'Required parameter "queryId" was null or undefined when calling getFilesCountV1FilesCountGet().',
-            );
-        }
-
         const queryParameters: any = {};
 
         if (requestParameters["queryId"] != null) {
@@ -642,7 +621,7 @@ export class FilesApi extends runtime.BaseAPI {
      * Get Files Count
      */
     async getFilesCountV1FilesCountGet(
-        requestParameters: GetFilesCountV1FilesCountGetRequest,
+        requestParameters: GetFilesCountV1FilesCountGetRequest = {},
         initOverrides?: RequestInit | runtime.InitOverrideFunction,
     ): Promise<GetFilesCountResponse> {
         const response = await this.getFilesCountV1FilesCountGetRaw(
@@ -660,13 +639,6 @@ export class FilesApi extends runtime.BaseAPI {
         requestParameters: GetFilesTreeSpineV1FilesTreeSpineGetRequest,
         initOverrides?: RequestInit | runtime.InitOverrideFunction,
     ): Promise<runtime.ApiResponse<GetFilesTreeResponse>> {
-        if (requestParameters["queryId"] == null) {
-            throw new runtime.RequiredError(
-                "queryId",
-                'Required parameter "queryId" was null or undefined when calling getFilesTreeSpineV1FilesTreeSpineGet().',
-            );
-        }
-
         if (requestParameters["fullPath"] == null) {
             throw new runtime.RequiredError(
                 "fullPath",
@@ -726,20 +698,13 @@ export class FilesApi extends runtime.BaseAPI {
     }
 
     /**
-     * Get nodes from the file tree.  When flat=False (default), returns the direct children of node_path. When flat=True, returns all matching files at any depth below node_path, without pagination — callers should apply their own result limit.  The `after` parameter is an opaque cursor from a previous response\'s `next_page_cursor` field and enables cursor-based pagination.
+     * Get nodes from the file tree.  When files_only=False (default), returns the direct children of node_path. When files_only=True, returns only leaf file nodes at any depth below node_path, without intermediate directory nodes.  The `after` parameter is an opaque cursor from a previous response\'s `next_page_cursor` field and enables cursor-based pagination.
      * Get Files Tree
      */
     async getFilesTreeV1FilesTreeGetRaw(
         requestParameters: GetFilesTreeV1FilesTreeGetRequest,
         initOverrides?: RequestInit | runtime.InitOverrideFunction,
     ): Promise<runtime.ApiResponse<GetFilesTreeResponse>> {
-        if (requestParameters["queryId"] == null) {
-            throw new runtime.RequiredError(
-                "queryId",
-                'Required parameter "queryId" was null or undefined when calling getFilesTreeV1FilesTreeGet().',
-            );
-        }
-
         const queryParameters: any = {};
 
         if (requestParameters["queryId"] != null) {
@@ -759,8 +724,8 @@ export class FilesApi extends runtime.BaseAPI {
             queryParameters["node_path"] = requestParameters["nodePath"];
         }
 
-        if (requestParameters["flat"] != null) {
-            queryParameters["flat"] = requestParameters["flat"];
+        if (requestParameters["filesOnly"] != null) {
+            queryParameters["files_only"] = requestParameters["filesOnly"];
         }
 
         if (requestParameters["after"] != null) {
@@ -785,11 +750,11 @@ export class FilesApi extends runtime.BaseAPI {
     }
 
     /**
-     * Get nodes from the file tree.  When flat=False (default), returns the direct children of node_path. When flat=True, returns all matching files at any depth below node_path, without pagination — callers should apply their own result limit.  The `after` parameter is an opaque cursor from a previous response\'s `next_page_cursor` field and enables cursor-based pagination.
+     * Get nodes from the file tree.  When files_only=False (default), returns the direct children of node_path. When files_only=True, returns only leaf file nodes at any depth below node_path, without intermediate directory nodes.  The `after` parameter is an opaque cursor from a previous response\'s `next_page_cursor` field and enables cursor-based pagination.
      * Get Files Tree
      */
     async getFilesTreeV1FilesTreeGet(
-        requestParameters: GetFilesTreeV1FilesTreeGetRequest,
+        requestParameters: GetFilesTreeV1FilesTreeGetRequest = {},
         initOverrides?: RequestInit | runtime.InitOverrideFunction,
     ): Promise<GetFilesTreeResponse> {
         const response = await this.getFilesTreeV1FilesTreeGetRaw(
@@ -807,13 +772,6 @@ export class FilesApi extends runtime.BaseAPI {
         requestParameters: GetFilesV1FilesGetRequest,
         initOverrides?: RequestInit | runtime.InitOverrideFunction,
     ): Promise<runtime.ApiResponse<GetFilesResponse>> {
-        if (requestParameters["queryId"] == null) {
-            throw new runtime.RequiredError(
-                "queryId",
-                'Required parameter "queryId" was null or undefined when calling getFilesV1FilesGet().',
-            );
-        }
-
         const queryParameters: any = {};
 
         if (requestParameters["sortId"] != null) {
@@ -868,7 +826,7 @@ export class FilesApi extends runtime.BaseAPI {
      * Get Files
      */
     async getFilesV1FilesGet(
-        requestParameters: GetFilesV1FilesGetRequest,
+        requestParameters: GetFilesV1FilesGetRequest = {},
         initOverrides?: RequestInit | runtime.InitOverrideFunction,
     ): Promise<GetFilesResponse> {
         const response = await this.getFilesV1FilesGetRaw(
@@ -896,13 +854,6 @@ export class FilesApi extends runtime.BaseAPI {
             throw new runtime.RequiredError(
                 "groupBy",
                 'Required parameter "groupBy" was null or undefined when calling getHistogramStatsGroupedV1FilesStatsHistogramStatGroupedGroupByGet().',
-            );
-        }
-
-        if (requestParameters["queryId"] == null) {
-            throw new runtime.RequiredError(
-                "queryId",
-                'Required parameter "queryId" was null or undefined when calling getHistogramStatsGroupedV1FilesStatsHistogramStatGroupedGroupByGet().',
             );
         }
 
@@ -974,13 +925,6 @@ export class FilesApi extends runtime.BaseAPI {
             throw new runtime.RequiredError(
                 "stat",
                 'Required parameter "stat" was null or undefined when calling getHistogramStatsV1FilesStatsHistogramStatGet().',
-            );
-        }
-
-        if (requestParameters["queryId"] == null) {
-            throw new runtime.RequiredError(
-                "queryId",
-                'Required parameter "queryId" was null or undefined when calling getHistogramStatsV1FilesStatsHistogramStatGet().',
             );
         }
 
@@ -1161,13 +1105,6 @@ export class FilesApi extends runtime.BaseAPI {
             );
         }
 
-        if (requestParameters["queryId"] == null) {
-            throw new runtime.RequiredError(
-                "queryId",
-                'Required parameter "queryId" was null or undefined when calling getTermsStatsV1FilesStatsTermsStatGet().',
-            );
-        }
-
         const queryParameters: any = {};
 
         if (requestParameters["queryId"] != null) {
@@ -1285,48 +1222,6 @@ export class FilesApi extends runtime.BaseAPI {
         const response =
             await this.getThumbnailV1FilesFileIdThumbnailThumbnailFileIdGetRaw(
                 requestParameters,
-                initOverrides,
-            );
-        return await response.value();
-    }
-
-    /**
-     * Expose this constant for the frontend in case we need to change it.
-     * Get Tree Max Element Count
-     */
-    async getTreeMaxElementCountV1FilesTreeMaxElementCountGetRaw(
-        initOverrides?: RequestInit | runtime.InitOverrideFunction,
-    ): Promise<runtime.ApiResponse<number>> {
-        const queryParameters: any = {};
-
-        const headerParameters: runtime.HTTPHeaders = {};
-
-        const response = await this.request(
-            {
-                path: `/v1/files/tree/max_element_count`,
-                method: "GET",
-                headers: headerParameters,
-                query: queryParameters,
-            },
-            initOverrides,
-        );
-
-        if (this.isJsonMime(response.headers.get("content-type"))) {
-            return new runtime.JSONApiResponse<number>(response);
-        } else {
-            return new runtime.TextApiResponse(response) as any;
-        }
-    }
-
-    /**
-     * Expose this constant for the frontend in case we need to change it.
-     * Get Tree Max Element Count
-     */
-    async getTreeMaxElementCountV1FilesTreeMaxElementCountGet(
-        initOverrides?: RequestInit | runtime.InitOverrideFunction,
-    ): Promise<number> {
-        const response =
-            await this.getTreeMaxElementCountV1FilesTreeMaxElementCountGetRaw(
                 initOverrides,
             );
         return await response.value();

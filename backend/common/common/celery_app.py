@@ -3,7 +3,7 @@ import random
 import re
 from abc import ABC
 from collections.abc import Callable
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from enum import Enum
 from pprint import pformat
 from typing import (
@@ -16,7 +16,7 @@ from celery import Celery, Task, bootsteps
 from celery import group as original_group
 from celery import signals
 from celery.canvas import chord
-from celery.schedules import crontab
+from celery.schedules import BaseSchedule, crontab, schedstate
 from kombu import Exchange, Queue, serialization
 from pydantic import BaseModel, Field, RootModel
 
@@ -31,16 +31,34 @@ from common.utils.sharding import get_all_persister_shards
 logger = logging.getLogger(__name__)
 
 
-def _never_nowfun() -> datetime:
-    """Return a fixed past datetime so the crontab never fires automatically.
+class _NeverSchedule(BaseSchedule):
+    """A schedule that never fires automatically.
 
-    This allows the task to exist in the beat schedule (and be triggerable via the API)
-    without ever running on its own schedule.
+    Allows a task to exist in the beat schedule (and be triggerable via the API) without
+    ever running on its own schedule.
+
+    ``is_due()`` unconditionally returns ``(False, 86400)`` — no date arithmetic that
+    could accidentally yield a zero remainder and trigger the task.
+
+    ``now()`` returns real UTC time, which matters because Celery's ``_when()`` computes
+    each entry's heap position as ``timegm(schedule.now()) + next_run``. A schedule
+    whose ``now()`` returns a fake past date (e.g. 1970) ends up with a heap key of
+    ~3600, placing it permanently at H[0] — the top of the min-heap — so beat keeps re-
+    examining it every tick. With a real timestamp, the heap key is ``now_unix +
+    86400``, safely at the bottom of the heap.
     """
-    return datetime(year=1970, month=1, day=1, hour=0)
+
+    def is_due(self, last_run_at: datetime) -> schedstate:
+        return schedstate(False, 24 * 3600)
+
+    def remaining_estimate(self, last_run_at: datetime) -> timedelta:
+        return timedelta(hours=24)
+
+    def now(self) -> datetime:
+        return datetime.now(timezone.utc)
 
 
-SCHEDULE_NEVER = crontab(minute="0", hour="1", nowfun=_never_nowfun)
+SCHEDULE_NEVER = _NeverSchedule()
 
 # The alternate exchange (ae-loom) must be fanout, not topic.
 #

@@ -542,6 +542,8 @@ class BaseEsRepository(  # pylint: disable=too-many-public-methods
     def _execute_search_with_query(
         self, search: Search[EsRepositoryDocumentT], query: QueryParameters
     ) -> Response[EsRepositoryDocumentT]:
+        if query.query_id is None:
+            return search.execute()
         try:
             return (
                 search.index()  # Remove index: pit requests run against no index

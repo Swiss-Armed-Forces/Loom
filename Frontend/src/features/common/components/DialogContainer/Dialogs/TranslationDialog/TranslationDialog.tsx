@@ -48,7 +48,10 @@ export const TranslationDialog = ({
                     fileId,
                 );
             } else {
-                await scheduleFileTranslation(languageCode.trim(), searchQuery);
+                await scheduleFileTranslation(languageCode.trim(), {
+                    ...searchQuery,
+                    id: null,
+                });
             }
             toast.success(t("translateFilesDialog.scheduledToast"));
             onClose();

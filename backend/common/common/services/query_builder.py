@@ -344,7 +344,7 @@ class CustomLuceneCheck(LuceneCheck):
 
 
 class QueryParameters(BaseModel):
-    query_id: str = Field(min_length=1)
+    query_id: str | None = None
     keep_alive: KeepAlive = Field(default=DEFAULT_PIT_KEEPALIVE)
     search_string: str = Field(default="*", min_length=1)
 

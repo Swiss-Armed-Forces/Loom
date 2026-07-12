@@ -18,7 +18,6 @@ import {
     GetFileResponse,
     MessageFileUpdate,
     getFile,
-    getShortRunningQuery,
     scheduleSingleFileIndexing,
     scheduleSingleFileSummarization,
     scheduleSingleFileTranslation,
@@ -84,7 +83,7 @@ export const FileDetailDialog = ({
         try {
             const response = await getFile(preview.fileId, {
                 ...query,
-                id: (await getShortRunningQuery()).queryId,
+                id: null,
             });
             setFile(response);
         } catch (error) {

@@ -46,7 +46,9 @@ export const Chatbot = () => {
         if (!searchQuery) return;
         if (aiContextRef.current)
             unsubscribeChannel(aiContextRef.current.contextId, dispatch);
-        createAiContext(searchQuery).then(setAiContext).catch(toast.error);
+        createAiContext({ ...searchQuery, id: null })
+            .then(setAiContext)
+            .catch(toast.error);
     }, [searchQuery, dispatch]);
 
     useEffect(() => {

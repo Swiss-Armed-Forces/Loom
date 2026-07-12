@@ -1,6 +1,6 @@
 import { Close, LabelOutlined } from "@mui/icons-material";
 import { Autocomplete, Button, TextField } from "@mui/material";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "react-toastify";
 
@@ -9,6 +9,7 @@ import {
     ResponseError,
     addTagsToFile,
     addTagsToFiles,
+    loadTags,
 } from "@app/api";
 import { useAppDispatch, useAppSelector } from "@app/hooks";
 import {
@@ -19,6 +20,7 @@ import {
     selectQuery,
     selectTags,
     setFilePreview,
+    setTags,
 } from "@app/slices/searchSlice";
 
 import { DialogBase } from "../DialogBase";
@@ -40,6 +42,12 @@ export const AddTagsDialog = ({
     const existingTags = useAppSelector(selectTags);
     const [selectedTagsToAdd, setSelectedTagsToAdd] = useState<string[]>([]);
     const [isLoading, setIsLoading] = useState(false);
+
+    useEffect(() => {
+        loadTags()
+            .then((tags) => dispatch(setTags(tags)))
+            .catch((error) => toast.error(`Error loading tags: ${error}`));
+    }, [dispatch]);
 
     const getErrorMessage = async (error: unknown): Promise<string> => {
         if (error instanceof ResponseError) {
@@ -79,7 +87,10 @@ export const AddTagsDialog = ({
                     }),
                 );
             } else {
-                await addTagsToFiles(searchQuery, selectedTagsToAdd);
+                await addTagsToFiles(
+                    { ...searchQuery, id: null },
+                    selectedTagsToAdd,
+                );
                 toast.success(t("tags.scheduledToast"));
             }
             onClose();

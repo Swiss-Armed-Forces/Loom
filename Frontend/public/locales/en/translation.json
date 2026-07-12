@@ -232,7 +232,7 @@
         }
     },
     "detailedView": {
-        "outsideCurrentResults": "Outside current results"
+        "outsideLoadedResults": "Outside loaded results"
     },
     "folderView": {
         "moreElementsHidden": "[more elements hidden]",
@@ -382,7 +382,7 @@
         "translations_languageTitle": "Translation Language",
         "sizeTitle": "File Size",
         "thumbnail_total_framesTitle": "Frame Count",
-        "recursion_depthTitle": "Archive Depth",
+        "recursion_depthTitle": "Recursion Depth",
         "reindex_countTitle": "Reindex Count"
     },
     "archives": {

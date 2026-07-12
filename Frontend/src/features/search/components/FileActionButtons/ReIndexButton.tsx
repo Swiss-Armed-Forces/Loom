@@ -41,7 +41,7 @@ export const ReIndexButton = ({
         if (fileId) {
             result = scheduleSingleFileIndexing(fileId);
         } else if (searchQuery) {
-            result = scheduleFileIndexing(searchQuery);
+            result = scheduleFileIndexing({ ...searchQuery, id: null });
         } else {
             toast.error("Error while opening Dialog: No File or Query found");
             return;

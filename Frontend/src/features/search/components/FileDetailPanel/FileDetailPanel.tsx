@@ -8,7 +8,6 @@ import {
     GetFileResponse,
     MessageFileUpdate,
     getFile,
-    getShortRunningQuery,
     scheduleSingleFileIndexing,
     scheduleSingleFileSummarization,
     scheduleSingleFileTranslation,
@@ -67,7 +66,7 @@ export const FileDetailPanel = ({
         try {
             const response = await getFile(preview.fileId, {
                 ...query,
-                id: (await getShortRunningQuery()).queryId,
+                id: null,
             });
             if (!fetchCancelledRef.current) setFile(response);
         } catch (error) {
