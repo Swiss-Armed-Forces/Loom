@@ -97,7 +97,7 @@ export const UpdateFileButton = ({
                 setShowDialog(false);
                 // searchQuery will always be != from undefined
                 // because if both file_id and searchQuery are false it would exit early
-                await updateFiles(searchQuery!, request);
+                await updateFiles({ ...searchQuery!, id: null }, request);
                 toast.success(successMessage);
             }
         } catch (err) {

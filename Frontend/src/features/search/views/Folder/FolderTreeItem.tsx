@@ -183,7 +183,6 @@ const NullIcon = () => null;
 
 export interface FolderViewNodeProps {
     tree: FolderTree;
-    maxChildren: number;
     activeTabFileId?: string | null;
     onLoadMore: (nodeId: string) => void;
 }
@@ -191,7 +190,6 @@ export interface FolderViewNodeProps {
 export const FolderViewNode = React.memo(
     function FolderViewNode({
         tree,
-        maxChildren,
         activeTabFileId,
         onLoadMore,
     }: FolderViewNodeProps) {
@@ -259,7 +257,6 @@ export const FolderViewNode = React.memo(
                 <FolderViewNode
                     key={c.id}
                     tree={c}
-                    maxChildren={maxChildren}
                     activeTabFileId={activeTabFileId}
                     onLoadMore={onLoadMore}
                 />
@@ -363,7 +360,6 @@ export const FolderViewNode = React.memo(
     },
     (prev, next) =>
         prev.tree === next.tree &&
-        prev.maxChildren === next.maxChildren &&
         prev.activeTabFileId === next.activeTabFileId &&
         prev.onLoadMore === next.onLoadMore,
 );

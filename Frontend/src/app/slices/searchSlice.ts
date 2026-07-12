@@ -6,7 +6,6 @@ import {
     GetThunkAPI,
     PayloadAction,
 } from "@reduxjs/toolkit";
-import Ajv, { JSONSchemaType } from "ajv";
 import { t } from "i18next";
 import { toast } from "react-toastify";
 import { v4 as uuidv4 } from "uuid";
@@ -22,7 +21,6 @@ import {
     PubSubMessage,
     getLongRunningQuery,
     getFilesCount,
-    getShortRunningQuery,
     ResponseError,
 } from "@app/api/index";
 import {
@@ -34,11 +32,7 @@ import {
     stopLoadingIndicator,
 } from "@app/slices/commonSlice";
 import { FileDetailTab } from "@features/common/utils/enums";
-import {
-    CombinedStats,
-    SearchQuery,
-    SearchQuerySchema,
-} from "@features/common/utils/model";
+import { CombinedStats, SearchQuery } from "@features/common/utils/model";
 import {
     DEFAULT_HISTOGRAM_STAT,
     DEFAULT_TERMS_STAT,
@@ -80,20 +74,6 @@ export interface CustomQuery {
     icon: string;
 }
 
-const CustomQuerySchema: JSONSchemaType<CustomQuery> = {
-    type: "object",
-    properties: {
-        id: { type: "string" },
-        query: SearchQuerySchema as any,
-        fileCount: { type: "number" },
-        hasNewFiles: { type: "boolean" },
-        name: { type: "string" },
-        icon: { type: "string" },
-    },
-    required: ["id", "query", "fileCount", "hasNewFiles", "name", "icon"],
-    additionalProperties: false,
-};
-
 export const initCustomQuery = (
     query: SearchQuery,
     fileCount: number,
@@ -109,10 +89,6 @@ export const initCustomQuery = (
         icon,
     };
 };
-
-export interface KeyboardNavigationState {
-    highlightedIndex: number | null;
-}
 
 export interface AutoActionsPreferences {
     markAsSeen: boolean;
@@ -160,260 +136,28 @@ export interface SearchState {
     webSocketPubSubMessage: PubSubMessage | null;
     summarizationSystemPrompt: string | null;
     visionSystemPrompt: string | null;
-    keyboardNavigation: KeyboardNavigationState;
+    highlightedFileId: string | null;
     suppressDownloadWarning: boolean;
     folderViewExpandedNodes: string[];
-    // File ID to restore as the highlighted card on the next query load.
-    // Set from localStorage at startup; cleared once the restore is applied.
-    pendingHighlightedFileId: string | null;
 }
 
-export const CUSTOM_QUERIES_LOCAL_STORAGE_KEY = "CUSTOM_QUERIES";
-export const AUTO_ACTIONS_PREFERENCES_LOCAL_STORAGE_KEY =
-    "AUTO_ACTIONS_PREFERENCES";
-export const UI_STATE_LOCAL_STORAGE_KEY = "UI_STATE";
-export const SUPPRESS_DOWNLOAD_WARNING_LOCAL_STORAGE_KEY =
-    "SUPPRESS_DOWNLOAD_WARNING";
-export const FOLDER_VIEW_EXPANDED_NODES_LOCAL_STORAGE_KEY =
-    "FOLDER_VIEW_EXPANDED_NODES";
 export const QUERY_FAILED_FILES = "state:failed";
 export const QUERY_CONTENT_TRUNCATED_FILES = "content_truncated:true";
 export const QUERY_ATTACHMENTS_SKIPPED_FILES = "attachments_skipped:true";
-const AJV = new Ajv();
 
-interface UiState {
-    leftSidebarPanel: LeftSidebarPanel | null;
-    rightSidebarOpen: boolean;
-    rightSidebarTab: RightSidebarTab;
-    openFileTabs: FileTabState[];
-    expandFilePaths: boolean;
-}
+export const SEARCH_STATE_LOCAL_STORAGE_KEY = "SEARCH_STATE";
 
-const DEFAULT_UI_STATE: UiState = {
-    leftSidebarPanel: null,
-    rightSidebarOpen: false,
-    rightSidebarTab: RightSidebarTab.STATISTICS,
-    openFileTabs: [],
-    expandFilePaths: false,
-};
-
-const UiStateSchema = {
-    type: "object",
-    properties: {
-        leftSidebarPanel: {
-            type: ["string", "null"],
-            enum: [...Object.values(LeftSidebarPanel), null],
-        },
-        rightSidebarOpen: { type: "boolean" },
-        rightSidebarTab: {
-            type: "string",
-            enum: Object.values(RightSidebarTab),
-        },
-        openFileTabs: {
-            type: "array",
-            items: {
-                type: "object",
-                properties: {
-                    fileId: { type: "string", minLength: 1 },
-                    detailTab: {
-                        type: "integer",
-                        enum: Object.values(FileDetailTab),
-                    },
-                },
-                required: ["fileId", "detailTab"],
-                additionalProperties: false,
-            },
-        },
-        expandFilePaths: { type: "boolean" },
-    },
-    required: [
-        "leftSidebarPanel",
-        "rightSidebarOpen",
-        "rightSidebarTab",
-        "openFileTabs",
-        "expandFilePaths",
-    ],
-    additionalProperties: false,
-} as const;
-
-const loadUiState = (): UiState => {
-    const data = window.localStorage.getItem(UI_STATE_LOCAL_STORAGE_KEY);
-    if (!data) return DEFAULT_UI_STATE;
+export const loadPersistedSearchState = (): Partial<SearchState> => {
+    const data = window.localStorage.getItem(SEARCH_STATE_LOCAL_STORAGE_KEY);
+    if (!data) return {};
     try {
-        const parsed = JSON.parse(data);
-        const validate = AJV.compile(UiStateSchema);
-        if (validate(parsed)) return parsed as UiState;
-        console.warn("Invalid UI state in localStorage, using defaults");
-        return DEFAULT_UI_STATE;
+        return JSON.parse(data) as Partial<SearchState>;
     } catch {
-        return DEFAULT_UI_STATE;
+        return {};
     }
 };
 
-const DEFAULT_AUTO_ACTIONS_PREFERENCES: AutoActionsPreferences = {
-    markAsSeen: true,
-    flag: false,
-    reindex: false,
-    translate: false,
-    summarize: false,
-    describeImage: false,
-};
-
-const AutoActionsPreferencesSchema: JSONSchemaType<AutoActionsPreferences> = {
-    type: "object",
-    properties: {
-        markAsSeen: { type: "boolean" },
-        flag: { type: "boolean" },
-        reindex: { type: "boolean" },
-        translate: { type: "boolean" },
-        summarize: { type: "boolean" },
-        describeImage: { type: "boolean" },
-    },
-    required: [
-        "markAsSeen",
-        "flag",
-        "reindex",
-        "translate",
-        "summarize",
-        "describeImage",
-    ],
-    additionalProperties: false,
-};
-
-const loadAutoActionsPreferences = (): AutoActionsPreferences => {
-    const data = window.localStorage.getItem(
-        AUTO_ACTIONS_PREFERENCES_LOCAL_STORAGE_KEY,
-    );
-    if (!data) return DEFAULT_AUTO_ACTIONS_PREFERENCES;
-    try {
-        const parsed = JSON.parse(data);
-        const validate = AJV.compile(AutoActionsPreferencesSchema);
-        if (validate(parsed)) return parsed;
-        console.warn(
-            "Invalid auto-actions preferences in localStorage, using defaults",
-        );
-        return DEFAULT_AUTO_ACTIONS_PREFERENCES;
-    } catch {
-        return DEFAULT_AUTO_ACTIONS_PREFERENCES;
-    }
-};
-
-const loadSuppressDownloadWarning = (): boolean => {
-    try {
-        const data = window.localStorage.getItem(
-            SUPPRESS_DOWNLOAD_WARNING_LOCAL_STORAGE_KEY,
-        );
-        return JSON.parse(data ?? "false") === true;
-    } catch {
-        return false;
-    }
-};
-
-export const HIGHLIGHTED_FILE_ID_LOCAL_STORAGE_KEY = "HIGHLIGHTED_FILE_ID";
-
-const loadHighlightedFileId = (): string | null => {
-    try {
-        const data = window.localStorage.getItem(
-            HIGHLIGHTED_FILE_ID_LOCAL_STORAGE_KEY,
-        );
-        if (!data) return null;
-        const parsed = JSON.parse(data);
-        return typeof parsed === "string" ? parsed : null;
-    } catch {
-        return null;
-    }
-};
-
-// Read once at module load so the reducer can reference it without performing
-// a localStorage read inside a (technically) pure reducer function.
-const INITIALLY_PERSISTED_HIGHLIGHTED_FILE_ID = loadHighlightedFileId();
-
-const FolderViewExpandedNodesSchema = {
-    type: "array",
-    items: { type: "string" },
-} as const;
-
-const loadFolderViewExpandedNodes = (): string[] => {
-    const data = window.localStorage.getItem(
-        FOLDER_VIEW_EXPANDED_NODES_LOCAL_STORAGE_KEY,
-    );
-    if (!data) return [];
-    try {
-        const parsed = JSON.parse(data);
-        const validate = AJV.compile(FolderViewExpandedNodesSchema);
-        if (validate(parsed)) return parsed as string[];
-        console.warn(
-            "Invalid folder view expanded nodes in localStorage, using defaults",
-        );
-        return [];
-    } catch {
-        return [];
-    }
-};
-
-export const STATS_STATE_LOCAL_STORAGE_KEY = "STATS_STATE";
-
-interface StatsState {
-    displayStat: string;
-    displayHistogramStat: string;
-}
-
-const DEFAULT_STATS_STATE: StatsState = {
-    displayStat: DEFAULT_TERMS_STAT,
-    displayHistogramStat: DEFAULT_HISTOGRAM_STAT,
-};
-
-const StatsStateSchema = {
-    type: "object",
-    properties: {
-        displayStat: { type: "string", minLength: 1 },
-        displayHistogramStat: { type: "string", minLength: 1 },
-    },
-    required: ["displayStat", "displayHistogramStat"],
-    additionalProperties: false,
-} as const;
-
-const loadStatsState = (): StatsState => {
-    const data = window.localStorage.getItem(STATS_STATE_LOCAL_STORAGE_KEY);
-    if (!data) return DEFAULT_STATS_STATE;
-    try {
-        const parsed = JSON.parse(data);
-        const validate = AJV.compile(StatsStateSchema);
-        if (validate(parsed)) return parsed as StatsState;
-        console.warn("Invalid stats state in localStorage, using defaults");
-        return DEFAULT_STATS_STATE;
-    } catch {
-        return DEFAULT_STATS_STATE;
-    }
-};
-
-const loadCustomQueries = (): CustomQuery[] => {
-    const data = window.localStorage.getItem(CUSTOM_QUERIES_LOCAL_STORAGE_KEY);
-    if (!data) return [];
-
-    try {
-        const parsed = JSON.parse(data);
-        if (!Array.isArray(parsed)) {
-            console.warn("Invalid custom queries data format");
-            return [];
-        }
-
-        const validate = AJV.compile(CustomQuerySchema);
-        return parsed.filter((q) => {
-            if (validate(q)) return true;
-            console.warn(
-                `Invalid custom query "${q?.name || "Unknown"}" removed`,
-            );
-            return false;
-        });
-    } catch {
-        console.warn("Failed to load custom queries");
-        return [];
-    }
-};
-
-const uiState = loadUiState();
-const statsState = loadStatsState();
+const persistedState = loadPersistedSearchState();
 // Seed activeTabFileId from the URL hash so the Redux→URL effect sees a match
 // on initial mount and doesn't clear the hash before the URL→Redux effect can
 // open the tab. The URL→Redux effect (syncedHashRef = "") still fires and calls
@@ -421,43 +165,50 @@ const statsState = loadStatsState();
 const initialHashFileId = window.location.hash.substring(1) || null;
 
 const initialState: SearchState = {
-    query: null,
-    leftSidebarPanel: uiState.leftSidebarPanel,
-    rightSidebarOpen: uiState.rightSidebarOpen,
-    rightSidebarTab: uiState.rightSidebarTab,
-    stats: {
-        termsData: null,
-        histogramData: null,
-    },
+    leftSidebarPanel: null,
+    rightSidebarOpen: false,
+    rightSidebarTab: RightSidebarTab.STATISTICS,
+    stats: { termsData: null, histogramData: null },
     files: {},
     lastFileSortId: null,
     totalFiles: 0,
     filesInView: [],
     tags: [],
-    customQueries: loadCustomQueries(),
+    customQueries: [],
     highlightedQueryId: null,
-    openFileTabs: uiState.openFileTabs,
-    activeTabFileId: initialHashFileId,
-    expandFilePaths: uiState.expandFilePaths,
-    autoActionsPreferences: loadAutoActionsPreferences(),
+    openFileTabs: [],
+    expandFilePaths: false,
+    autoActionsPreferences: {
+        markAsSeen: true,
+        flag: false,
+        reindex: false,
+        translate: false,
+        summarize: false,
+        describeImage: false,
+    },
     contentTruncatedFilesCount: 0,
     attachmentsSkippedFilesCount: 0,
     failedFilesCount: 0,
-    displayStat: statsState.displayStat,
-    displayHistogramStat: statsState.displayHistogramStat,
+    displayStat: DEFAULT_TERMS_STAT,
+    displayHistogramStat: DEFAULT_HISTOGRAM_STAT,
     termsStats: [],
     histogramStats: [],
     webSocketPubSubMessage: null,
     summarizationSystemPrompt: null,
     visionSystemPrompt: null,
-    keyboardNavigation: {
-        highlightedIndex: null,
-    },
+    highlightedFileId: null,
     temporaryFileId: null,
-    suppressDownloadWarning: loadSuppressDownloadWarning(),
-    folderViewExpandedNodes: loadFolderViewExpandedNodes(),
-    pendingHighlightedFileId: INITIALLY_PERSISTED_HIGHLIGHTED_FILE_ID,
-};
+    suppressDownloadWarning: false,
+    folderViewExpandedNodes: [],
+    ...persistedState,
+    // Restore the last query (text + sort) so stale data renders immediately.
+    // Strip sortId (pagination cursor) so the first real fetch starts from page 1.
+    // activeTabFileId always comes from the URL hash.
+    query: persistedState.query
+        ? { ...(persistedState.query as SearchQuery), sortId: null }
+        : null,
+    activeTabFileId: initialHashFileId,
+} as SearchState;
 
 export const updateQuery = createAsyncThunk(
     "updateQueryThunk",
@@ -567,11 +318,10 @@ export const fetchPreview = createAsyncThunk(
             ? null
             : (query ?? (fileIsInResults ? search.query : null));
 
-        const queryId = (await getShortRunningQuery()).queryId;
         const searchQuery: SearchQuery = activeQuery
-            ? { ...activeQuery, query: activeQuery.query ?? "", id: queryId }
+            ? { ...activeQuery, query: activeQuery.query ?? "", id: null }
             : {
-                  id: queryId,
+                  id: null,
                   query: "hidden:*",
                   keepAlive: null,
                   sortField: null,
@@ -604,10 +354,9 @@ export const fetchFilesCountForCustomQuery = createAsyncThunk(
         thunkAPI,
     ) => {
         try {
-            const queryId = (await getShortRunningQuery()).queryId;
             const response = await getFilesCount({
                 ...customQuery.query,
-                id: queryId,
+                id: null,
             });
             return { response, customQueryId: customQuery.id };
         } catch (err: any) {
@@ -622,7 +371,7 @@ export const fetchContentTruncatedFiles = createAsyncThunk(
     "fetchContentTruncatedFilesThunk",
     async () => {
         return getFilesCount({
-            id: (await getShortRunningQuery()).queryId,
+            id: null,
             query: QUERY_CONTENT_TRUNCATED_FILES,
             keepAlive: null,
         });
@@ -633,7 +382,7 @@ export const fetchAttachmentsSkippedFiles = createAsyncThunk(
     "fetchAttachmentsSkippedFilesThunk",
     async () => {
         return getFilesCount({
-            id: (await getShortRunningQuery()).queryId,
+            id: null,
             query: QUERY_ATTACHMENTS_SKIPPED_FILES,
             keepAlive: null,
         });
@@ -644,7 +393,7 @@ export const fetchFailedFiles = createAsyncThunk(
     "fetchFailedFilesThunk",
     async () => {
         return getFilesCount({
-            id: (await getShortRunningQuery()).queryId,
+            id: null,
             query: QUERY_FAILED_FILES,
             keepAlive: null,
         });
@@ -668,9 +417,19 @@ export const setFileInViewState = createAsyncThunk(
         const dispatch = thunkAPI.dispatch;
         if (inView) {
             subscribeChannel(fileId, dispatch);
-            await dispatch(
-                fetchPreview({ fileId: fileId, query: query ?? undefined }),
-            );
+            const { search } = thunkAPI.getState() as RootState;
+            const fileEntry = search.files[fileId];
+            const activeQueryStr = search.query?.query ?? null;
+            const cachedQueryStr = fileEntry?.query?.query ?? null;
+            const hasValidCache =
+                fileEntry?.preview != null &&
+                !fileEntry?.stale &&
+                cachedQueryStr === activeQueryStr;
+            if (!hasValidCache) {
+                await dispatch(
+                    fetchPreview({ fileId: fileId, query: query ?? undefined }),
+                );
+            }
         } else {
             unsubscribeChannel(fileId, dispatch);
         }
@@ -831,19 +590,8 @@ export const searchSlice = createSlice({
         setSuppressDownloadWarning: (state, action: PayloadAction<boolean>) => {
             state.suppressDownloadWarning = action.payload;
         },
-        setHighlightedIndex: (state, action: PayloadAction<number | null>) => {
-            if (state.temporaryFileId) {
-                // Temp file is always at the index after all files that have meta
-                // (matching DetailedView's allFileIds order, which includes stale).
-                const metaCount = Object.keys(state.files).filter(
-                    (id) => state.files[id].meta !== null,
-                ).length;
-                if (action.payload !== metaCount) {
-                    delete state.files[state.temporaryFileId];
-                    state.temporaryFileId = null;
-                }
-            }
-            state.keyboardNavigation.highlightedIndex = action.payload;
+        setHighlightedFileId: (state, action: PayloadAction<string | null>) => {
+            state.highlightedFileId = action.payload;
         },
         setTemporaryFileId: (state, action: PayloadAction<string | null>) => {
             if (
@@ -870,9 +618,6 @@ export const searchSlice = createSlice({
             action: PayloadAction<string[]>,
         ) => {
             state.folderViewExpandedNodes = action.payload;
-        },
-        clearPendingHighlightedFileId: (state) => {
-            state.pendingHighlightedFileId = null;
         },
         setFilePreview: (
             state,
@@ -961,18 +706,7 @@ export const searchSlice = createSlice({
                     // For a genuine new search query capture the highlighted file ID
                     // so it can be restored once the new results arrive below.
                     if (!isSameQueryString && !isInitialLoad) {
-                        const idx = state.keyboardNavigation.highlightedIndex;
-                        if (idx !== null) {
-                            const metaIds = Object.keys(state.files).filter(
-                                (id) => state.files[id].meta !== null,
-                            );
-                            const tempIds = Object.keys(state.files).filter(
-                                (id) => state.files[id].temporary,
-                            );
-                            state.pendingHighlightedFileId =
-                                [...metaIds, ...tempIds][idx] ?? null;
-                        }
-                        state.keyboardNavigation = { highlightedIndex: null };
+                        state.highlightedFileId = null;
                     }
                     if (!isSameQueryString) {
                         state.temporaryFileId = null;
@@ -998,26 +732,6 @@ export const searchSlice = createSlice({
                 state.lastFileSortId =
                     action.payload.files?.at(-1)?.sortId ?? null;
                 state.queryError = undefined;
-                // Restore the highlighted card after the new results arrive.
-                // Covers both page-load restore (pendingHighlightedFileId set
-                // from localStorage) and query-string changes (captured above).
-                // Done after files are added so the index reflects insertion order.
-                if (state.pendingHighlightedFileId) {
-                    const orderedIds = Object.keys(state.files).filter(
-                        (id) => state.files[id].meta !== null,
-                    );
-                    const idx = orderedIds.indexOf(
-                        state.pendingHighlightedFileId,
-                    );
-                    if (idx >= 0) {
-                        // File is in the new results: restore index directly.
-                        state.keyboardNavigation = { highlightedIndex: idx };
-                        state.pendingHighlightedFileId = null;
-                    }
-                    // If not found in results pendingHighlightedFileId stays
-                    // set; FolderView picks it up and shows the file as a
-                    // temporary card (out-of-results display).
-                }
             })
             .addCase(updateQuery.rejected, (state, action: any) => {
                 state.queryError = action.payload;
@@ -1096,13 +810,12 @@ export const {
     setSummarizationSystemPrompt,
     setVisionSystemPrompt,
     setFilePreview,
-    setHighlightedIndex,
+    setHighlightedFileId,
     setTemporaryFileId,
     setAutoActionPreference,
     setExpandFilePaths,
     setSuppressDownloadWarning,
     setFolderViewExpandedNodes,
-    clearPendingHighlightedFileId,
 } = searchSlice.actions;
 
 export const openFileTabThunk = createAsyncThunk(
@@ -1276,11 +989,6 @@ export const selectVisionSystemPrompt = createSelector(
     (search) => search.visionSystemPrompt,
 );
 
-export const selectHighlightedIndex = createSelector(
-    selectSearch,
-    (search) => search.keyboardNavigation.highlightedIndex,
-);
-
 export const selectTemporaryFileId = createSelector(
     selectSearch,
     (search) => search.temporaryFileId,
@@ -1300,17 +1008,8 @@ export const selectOrderedFileIds = createSelector(selectFiles, (files) => [
 ]);
 
 export const selectHighlightedFileId = createSelector(
-    selectOrderedFileIds,
-    selectHighlightedIndex,
-    (fileIds, index) => {
-        if (index === null || index === undefined) return null;
-        return fileIds[index] ?? null;
-    },
-);
-
-export const selectPendingHighlightedFileId = createSelector(
     selectSearch,
-    (search) => search.pendingHighlightedFileId,
+    (search) => search.highlightedFileId,
 );
 
 export default searchSlice.reducer;

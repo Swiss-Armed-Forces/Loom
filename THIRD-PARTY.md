@@ -1371,7 +1371,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | cpp | 4:12.2.0-3 | GPL-2.0-only | dpkg-db-cataloger |
 | cpp-12 | 12.2.0-14+deb12u1 | GFDL-1.2-only, GPL-2.0-only, GPL-3.0-only | dpkg-db-cataloger |
 | cryptography | 48.0.0 | Apache-2.0 OR BSD-3-Clause | python-installed-package-cataloger |
-| curl | 7.88.1-10+deb12u14 | BSD-3-Clause, BSD-3-Clause, BSD-4-Clause-UC, FSFULLR, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-or-later, ISC, OLDAP-2.8, X11, curl | dpkg-db-cataloger |
+| curl | 7.88.1-10+deb12u15 | BSD-3-Clause, BSD-3-Clause, BSD-4-Clause-UC, FSFULLR, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-or-later, ISC, OLDAP-2.8, X11, curl | dpkg-db-cataloger |
 | dash | 0.5.12-2 | BSD-3-Clause, BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
 | debconf | 1.5.82 | BSD-2-Clause | dpkg-db-cataloger |
 | debian-archive-keyring | 2023.3+deb12u2 |  | dpkg-db-cataloger |
@@ -1756,9 +1756,9 @@ The complete source code for Traefik is publicly available at [https://github.co
 | libctf-nobfd0 | 2.40-2 |  | dpkg-db-cataloger |
 | libctf0 | 2.40-2 |  | dpkg-db-cataloger |
 | libcups2 | 2.4.2-3+deb12u9 | Apache-2.0, BSD-2-Clause, FSFUL, Zlib | dpkg-db-cataloger |
-| libcurl3-gnutls | 7.88.1-10+deb12u14 | BSD-3-Clause, BSD-3-Clause, BSD-4-Clause-UC, FSFULLR, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-or-later, ISC, OLDAP-2.8, X11, curl | dpkg-db-cataloger |
-| libcurl4 | 7.88.1-10+deb12u14 | BSD-3-Clause, BSD-3-Clause, BSD-4-Clause-UC, FSFULLR, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-or-later, ISC, OLDAP-2.8, X11, curl | dpkg-db-cataloger |
-| libcurl4-openssl-dev | 7.88.1-10+deb12u14 | BSD-3-Clause, BSD-3-Clause, BSD-4-Clause-UC, FSFULLR, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-or-later, ISC, OLDAP-2.8, X11, curl | dpkg-db-cataloger |
+| libcurl3-gnutls | 7.88.1-10+deb12u15 | BSD-3-Clause, BSD-3-Clause, BSD-4-Clause-UC, FSFULLR, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-or-later, ISC, OLDAP-2.8, X11, curl | dpkg-db-cataloger |
+| libcurl4 | 7.88.1-10+deb12u15 | BSD-3-Clause, BSD-3-Clause, BSD-4-Clause-UC, FSFULLR, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-or-later, ISC, OLDAP-2.8, X11, curl | dpkg-db-cataloger |
+| libcurl4-openssl-dev | 7.88.1-10+deb12u15 | BSD-3-Clause, BSD-3-Clause, BSD-4-Clause-UC, FSFULLR, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-or-later, ISC, OLDAP-2.8, X11, curl | dpkg-db-cataloger |
 | libdatrie1 | 0.2.13-2+b1 | GPL-2.0-only, GPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
 | libdav1d6 | 1.0.0-2+deb12u1 | BSD-2-Clause, ISC | dpkg-db-cataloger |
 | libdb-dev | 5.3.2 | GPL-3.0-only, GPL-3.0-or-later | dpkg-db-cataloger |
@@ -1810,7 +1810,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | libgdk-pixbuf-2.0-dev | 2.42.10+dfsg-1+deb12u4 | CC0-1.0, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
 | libgdk-pixbuf2.0-bin | 2.42.10+dfsg-1+deb12u4 | CC0-1.0, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
 | libgdk-pixbuf2.0-common | 2.42.10+dfsg-1+deb12u4 | CC0-1.0, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
-| libgif7 | 5.2.1-2.5 | ISC, MIT | dpkg-db-cataloger |
+| libgif7 | 5.2.1-2.5+deb12u1 | ISC, MIT | dpkg-db-cataloger |
 | libgirepository-1.0-1 | 1.74.0-3 | AFL-2.0, Apache-2.0, BSD-2-Clause, CC-BY-SA-3.0, CC0-1.0, FSFAP, FSFULLR, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, MPL-1.1, Unicode-DFS-2016, bzip2-1.0.6 | dpkg-db-cataloger |
 | libglib2.0-0 | 2.74.6-2+deb12u9 | AFL-2.0, Apache-2.0, CC-BY-SA-3.0, CC0-1.0, FSFULLR, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, Unicode-DFS-2016, bzip2-1.0.6 | dpkg-db-cataloger |
 | libglib2.0-bin | 2.74.6-2+deb12u9 | AFL-2.0, Apache-2.0, CC-BY-SA-3.0, CC0-1.0, FSFULLR, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, Unicode-DFS-2016, bzip2-1.0.6 | dpkg-db-cataloger |

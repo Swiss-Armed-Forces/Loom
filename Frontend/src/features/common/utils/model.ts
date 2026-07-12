@@ -17,7 +17,7 @@ export const isSortDirection = (x: string): x is SortDirection => {
 };
 
 export interface SearchQuery {
-    id: string;
+    id: string | null;
     query: string;
     keepAlive: "10s" | "30m" | null;
     sortField: string | null;
@@ -30,7 +30,7 @@ export const SearchQuerySchema = {
     type: "object",
     additionalProperties: false,
     properties: {
-        id: { type: "string" },
+        id: { type: ["string", "null"] },
         query: { type: "string" },
 
         keepAlive: { type: ["string", "null"], enum: ["10s", "30m", null] },

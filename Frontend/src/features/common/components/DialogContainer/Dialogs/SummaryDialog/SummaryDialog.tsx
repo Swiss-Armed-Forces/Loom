@@ -65,7 +65,10 @@ export const SummaryDialog = ({
             if (fileId) {
                 await scheduleSingleFileSummarization(fileId, systemPrompt);
             } else if (searchQuery) {
-                await scheduleFileSummarization(searchQuery, systemPrompt);
+                await scheduleFileSummarization(
+                    { ...searchQuery, id: null },
+                    systemPrompt,
+                );
             }
 
             toast.success(t("summarizationDialog.scheduledToast"));

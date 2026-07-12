@@ -405,7 +405,7 @@ class File(RepositoryTaskObject):
     tika_meta: TikaMeta = Field(default_factory=TikaMeta)
     tika_handled_by: Annotated[str | None, TermsStat()] = None
     attachments: list[Attachment] = []
-    recursion_depth: Annotated[int, NumberHistogramStat(label="Archive Depth")] = 0
+    recursion_depth: Annotated[int, NumberHistogramStat(label="Recursion Depth")] = 0
     summary: str | None = None
     image_description: str | None = None
     embeddings: list[Embedding] = []
@@ -1069,7 +1069,7 @@ class FileRepository(BaseEsRepository[_EsFile, File]):
         self,
         query: QueryParameters,
         tree_node_directory_path: str,
-        flat: bool = False,
+        files_only: bool = False,
         after: str | None = None,
     ) -> TreePathsResult:
         """Generate the tree path structure for all matching files.
@@ -1078,6 +1078,9 @@ class FileRepository(BaseEsRepository[_EsFile, File]):
         is the opaque cursor returned by a previous call. Bucket keys are filtered in
         Python because the composite aggregation's terms source does not support
         include/exclude regex patterns.
+
+        When `files_only=True`, only leaf file nodes (those with a file_id) are
+        returned, regardless of depth. Intermediate directory nodes are excluded.
         """
         include_pattern = re.compile(
             re.sub(ES_RESERVED_PATTERN, r"\\\1", tree_node_directory_path) + r"/.+"
@@ -1087,7 +1090,7 @@ class FileRepository(BaseEsRepository[_EsFile, File]):
                 re.sub(ES_RESERVED_PATTERN, r"\\\1", tree_node_directory_path)
                 + r"/[^/]+/.+"
             )
-            if not flat
+            if not files_only
             else None
         )
 
@@ -1137,13 +1140,15 @@ class FileRepository(BaseEsRepository[_EsFile, File]):
 
             raw_buckets = list(result.aggregations.directory.buckets)
             nodes += [
-                self._parse_tree_bucket(bucket)
+                parsed
                 for bucket in raw_buckets
                 if include_pattern.fullmatch(str(bucket.key.path))
                 and (
                     exclude_pattern is None
                     or not exclude_pattern.fullmatch(str(bucket.key.path))
                 )
+                for parsed in (self._parse_tree_bucket(bucket),)
+                if not files_only or parsed.file_id is not None
             ]
             if len(nodes) > TREE_PATH_MAX_ELEMENT_COUNT:
                 # This page had more matches than needed; truncate and return

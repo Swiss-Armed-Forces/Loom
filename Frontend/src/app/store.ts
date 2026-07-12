@@ -7,15 +7,7 @@ import searchReducer from "@app/slices/searchSlice";
 import socketMiddleware from "../middleware/SocketMiddleware";
 
 import SocketApi from "./api/socketApi";
-import {
-    localStorageAutoActionsMiddleware,
-    localStorageCustomQueriesMiddleware,
-    localStorageFolderViewExpandedNodesMiddleware,
-    localStorageHighlightedFileIdMiddleware,
-    localStorageStatsStateMiddleware,
-    localStorageSuppressDownloadWarningMiddleware,
-    localStorageUiStateMiddleware,
-} from "./middlewares";
+import { localStorageSearchStateMiddleware } from "./middlewares";
 
 export const store = configureStore({
     reducer: {
@@ -25,13 +17,7 @@ export const store = configureStore({
     },
     middleware: (getDefaultMiddleware) =>
         getDefaultMiddleware()
-            .prepend(localStorageCustomQueriesMiddleware.middleware)
-            .prepend(localStorageAutoActionsMiddleware.middleware)
-            .prepend(localStorageUiStateMiddleware.middleware)
-            .prepend(localStorageSuppressDownloadWarningMiddleware.middleware)
-            .prepend(localStorageFolderViewExpandedNodesMiddleware.middleware)
-            .prepend(localStorageHighlightedFileIdMiddleware.middleware)
-            .prepend(localStorageStatsStateMiddleware.middleware)
+            .prepend(localStorageSearchStateMiddleware.middleware)
             .concat(socketMiddleware(new SocketApi())),
 });
 

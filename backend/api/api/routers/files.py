@@ -11,7 +11,6 @@ from common.dependencies import (
 from common.file.file_repository import (
     HISTOGRAM_STAT_REGISTRY,
     TERMS_STAT_REGISTRY,
-    TREE_PATH_MAX_ELEMENT_COUNT,
     Attachment,
     File,
     FileRepository,
@@ -183,7 +182,7 @@ def get_files_count(
 
 class GetFilesTreeQuery(QueryParameters):
     node_path: str = "/"
-    flat: bool = False
+    files_only: bool = False
     after: str | None = None
 
 
@@ -194,9 +193,9 @@ def get_files_tree(
 ) -> GetFilesTreeResponse:
     """Get nodes from the file tree.
 
-    When flat=False (default), returns the direct children of node_path. When flat=True,
-    returns all matching files at any depth below node_path, without pagination —
-    callers should apply their own result limit.
+    When files_only=False (default), returns the direct children of node_path. When
+    files_only=True, returns only leaf file nodes at any depth below node_path, without
+    intermediate directory nodes.
 
     The `after` parameter is an opaque cursor from a previous response's
     `next_page_cursor` field and enables cursor-based pagination.
@@ -206,7 +205,7 @@ def get_files_tree(
     result = file_repository.get_full_paths_by_query(
         query=query,
         tree_node_directory_path=query.node_path,
-        flat=query.flat,
+        files_only=query.files_only,
         after=query.after,
     )
     return GetFilesTreeResponse(
@@ -239,12 +238,6 @@ def get_files_tree_spine(
         nodes=[TreeNodeModel.model_validate(n.model_dump()) for n in nodes],
         next_page_cursor=None,
     )
-
-
-@router.get("/tree/max_element_count")
-def get_tree_max_element_count() -> int:
-    """Expose this constant for the frontend in case we need to change it."""
-    return TREE_PATH_MAX_ELEMENT_COUNT
 
 
 @router.get("/stats/{registry_type}")

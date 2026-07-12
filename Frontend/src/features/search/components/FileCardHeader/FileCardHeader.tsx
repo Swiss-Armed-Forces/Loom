@@ -1,5 +1,5 @@
 import { ContentCut, LinkOff, Translate, Whatshot } from "@mui/icons-material";
-import { CardHeader, Box, Tooltip } from "@mui/material";
+import { CardHeader, Box, IconButton, Tooltip } from "@mui/material";
 import { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -51,13 +51,6 @@ export const FileCardHeader = ({
         );
     };
 
-    const filterIconSx = {
-        cursor: "pointer",
-        transition: "transform 0.2s ease",
-        "&:hover": { transform: "scale(1.2)" },
-        "&:active": { transform: "scale(0.95)" },
-    };
-
     return (
         <CardHeader
             className={styles.resultCardHeader}
@@ -91,8 +84,8 @@ export const FileCardHeader = ({
                         <Tooltip
                             title={t("generalSearchView.contentTruncatedIcon")}
                         >
-                            <ContentCut
-                                fontSize="small"
+                            <IconButton
+                                size="small"
                                 onClick={(e) => {
                                     e.stopPropagation();
                                     handleFilterByField(
@@ -101,8 +94,9 @@ export const FileCardHeader = ({
                                         e.shiftKey,
                                     );
                                 }}
-                                sx={filterIconSx}
-                            />
+                            >
+                                <ContentCut fontSize="small" />
+                            </IconButton>
                         </Tooltip>
                     )}
                     {filePreview.attachmentsSkipped && (
@@ -111,8 +105,8 @@ export const FileCardHeader = ({
                                 "generalSearchView.attachmentsSkippedIcon",
                             )}
                         >
-                            <LinkOff
-                                fontSize="small"
+                            <IconButton
+                                size="small"
                                 onClick={(e) => {
                                     e.stopPropagation();
                                     handleFilterByField(
@@ -121,14 +115,15 @@ export const FileCardHeader = ({
                                         e.shiftKey,
                                     );
                                 }}
-                                sx={filterIconSx}
-                            />
+                            >
+                                <LinkOff fontSize="small" />
+                            </IconButton>
                         </Tooltip>
                     )}
                     {filePreview.isSpam && (
                         <Tooltip title={t("generalSearchView.spamIcon")}>
-                            <Whatshot
-                                fontSize="small"
+                            <IconButton
+                                size="small"
                                 onClick={(e) => {
                                     e.stopPropagation();
                                     handleFilterByField(
@@ -137,8 +132,9 @@ export const FileCardHeader = ({
                                         e.shiftKey,
                                     );
                                 }}
-                                sx={filterIconSx}
-                            />
+                            >
+                                <Whatshot fontSize="small" />
+                            </IconButton>
                         </Tooltip>
                     )}
                     {filePreview.detectedLanguage && (
@@ -148,8 +144,8 @@ export const FileCardHeader = ({
                                 { language: filePreview.detectedLanguage },
                             )}
                         >
-                            <Translate
-                                fontSize="small"
+                            <IconButton
+                                size="small"
                                 onClick={(e) => {
                                     e.stopPropagation();
                                     handleFilterByField(
@@ -158,8 +154,9 @@ export const FileCardHeader = ({
                                         e.shiftKey,
                                     );
                                 }}
-                                sx={filterIconSx}
-                            />
+                            >
+                                <Translate fontSize="small" />
+                            </IconButton>
                         </Tooltip>
                     )}
                 </Box>

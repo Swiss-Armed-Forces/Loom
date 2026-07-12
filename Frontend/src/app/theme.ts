@@ -13,6 +13,21 @@ export const globalTheme = createTheme({
                 },
             },
         },
+        // Canonical hover style for all clickable icons.
+        // All clickable icons must use IconButton and must not add custom
+        // hover transforms or opacity changes in their own sx props.
+        MuiIconButton: {
+            styleOverrides: {
+                root: {
+                    transition: "transform 0.2s ease, opacity 0.2s ease",
+                    "&:hover": {
+                        backgroundColor: "var(--mui-palette-action-hover)",
+                        transform: "scale(1.1)",
+                        opacity: 0.8,
+                    },
+                },
+            },
+        },
     },
     palette: {
         primary: {

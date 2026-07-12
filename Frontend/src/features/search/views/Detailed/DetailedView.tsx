@@ -1,12 +1,11 @@
-import { Divider, Skeleton, Typography } from "@mui/material";
+import { Skeleton } from "@mui/material";
 import React, { useMemo } from "react";
-import { useTranslation } from "react-i18next";
 
 import { useAppSelector } from "@app/hooks";
 import { selectIsLoading } from "@app/slices/commonSlice";
 import {
     selectFiles,
-    selectHighlightedIndex,
+    selectHighlightedFileId,
     selectTemporaryFileId,
 } from "@app/slices/searchSlice";
 import {
@@ -18,10 +17,9 @@ import {
 import styles from "./DetailedView.module.css";
 
 export const DetailedView: React.FC = React.memo(() => {
-    const { t } = useTranslation();
     const files = useAppSelector(selectFiles);
     const isLoading = useAppSelector(selectIsLoading);
-    const highlightedIndex = useAppSelector(selectHighlightedIndex);
+    const highlightedFileId = useAppSelector(selectHighlightedFileId);
     const temporaryFileId = useAppSelector(selectTemporaryFileId);
 
     const allFileIds = useMemo(
@@ -45,35 +43,21 @@ export const DetailedView: React.FC = React.memo(() => {
         );
     }
 
-    const tempIndex = allFileIds.length;
-
     return (
         <div className={styles.cardContainer}>
             {temporaryFileId && (
-                <>
-                    <Divider sx={{ my: 1 }}>
-                        <Typography
-                            variant="caption"
-                            sx={{ color: "text.disabled" }}
-                        >
-                            {t("detailedView.outsideCurrentResults")}
-                        </Typography>
-                    </Divider>
-                    <ResultCard
-                        key={temporaryFileId}
-                        fileId={temporaryFileId}
-                        index={tempIndex}
-                        isHighlighted={highlightedIndex === tempIndex}
-                    />
-                    <Divider sx={{ mt: 1 }} />
-                </>
+                <ResultCard
+                    key={temporaryFileId}
+                    fileId={temporaryFileId}
+                    isHighlighted={temporaryFileId === highlightedFileId}
+                    isTemporary
+                />
             )}
-            {allFileIds.map((fileId, index) => (
+            {allFileIds.map((fileId) => (
                 <ResultCard
                     key={fileId}
                     fileId={fileId}
-                    index={index}
-                    isHighlighted={highlightedIndex === index}
+                    isHighlighted={fileId === highlightedFileId}
                     stale={files[fileId].stale ?? false}
                 />
             ))}

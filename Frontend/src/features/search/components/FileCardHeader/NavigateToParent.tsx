@@ -21,18 +21,12 @@ export const NavigateToParent = ({ parentId }: NavigateToParentProps) => {
             <IconButton
                 size="small"
                 onClick={handleClick}
-                sx={{
-                    transform: "rotate(90deg)",
-                    cursor: "pointer",
-                    "&:hover": {
-                        backgroundColor: "action.hover",
-                        transform: "rotate(90deg) scale(1.1)",
-                    },
-                    transition: "all 0.2s ease-in-out",
-                }}
                 aria-label="Navigate to parent"
             >
-                <SubdirectoryArrowLeft fontSize="small" />
+                <SubdirectoryArrowLeft
+                    fontSize="small"
+                    sx={{ transform: "rotate(90deg)" }}
+                />
             </IconButton>
         </Tooltip>
     );

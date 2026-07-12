@@ -38,12 +38,12 @@ import { useKeyboardNavigation } from "@features/search/hooks/useKeyboardNavigat
 import {
     websocketConnect,
     websocketDisconnect,
+    webSocketSendMessage,
 } from "../../middleware/SocketMiddleware";
 import { isSortDirection, SearchQuery } from "../common/utils/model";
 
 import styles from "./Search.module.css";
 
-const RELOAD_TIMEOUT_MS = 5_000;
 const UPDATE_QUERY_DEBOUNCE_MS = 2_000;
 
 export const Search = () => {
@@ -91,6 +91,20 @@ export const Search = () => {
                 dispatch(setVisionSystemPrompt(visionPrompt));
                 await fetchSearchState();
                 dispatch(websocketConnect);
+                // If the Redux state already holds a cached query (restored from
+                // localStorage), subscribe its WS channel immediately so we receive
+                // fileUpdate and queryIdExpired messages without a full re-fetch.
+                // SocketApi queues this until the connection is open.
+                if (searchQuery?.id) {
+                    dispatch(
+                        webSocketSendMessage({
+                            message: {
+                                type: "subscribe",
+                                channels: [searchQuery.id],
+                            },
+                        }),
+                    );
+                }
             } catch (error) {
                 toast.error(`Error in fetchInitialSearchState: ${error}`);
             } finally {
@@ -100,14 +114,7 @@ export const Search = () => {
 
         fetchInitialSearchState();
 
-        // refresh search state after timeout
-        const fetchSearchStateInterval = setInterval(
-            fetchSearchState,
-            RELOAD_TIMEOUT_MS,
-        );
-
         return () => {
-            clearInterval(fetchSearchStateInterval);
             dispatch(websocketDisconnect);
         };
     }, []); // eslint-disable-line react-hooks/exhaustive-deps
@@ -115,9 +122,15 @@ export const Search = () => {
     // URL → Redux: sync search params into Redux state.
     // Runs on every searchParams change (not just initial load) so that
     // Back/Forward navigation updates the search results accordingly.
-    // The equality guard prevents the Redux→URL→Redux feedback loop.
+    // When the URL carries no ?query= param we leave Redux (and its cached
+    // stale data) untouched — the absence of a param is not the same as an
+    // explicit instruction to re-fetch or clear.
     useEffect(() => {
-        const query = searchParams.get("query") ?? "";
+        const urlQuery = searchParams.get("query");
+
+        // No explicit query in the URL → keep whatever is cached in Redux.
+        if (urlQuery === null) return;
+
         const sortField = searchParams.get("sortField") ?? undefined;
         const sortDirection = searchParams.get("sortDirection");
         const urlSortDirection =
@@ -129,7 +142,7 @@ export const Search = () => {
         // the Redux→URL effect writes the same params back)
         if (
             searchQuery &&
-            (searchQuery.query ?? "") === query &&
+            searchQuery.query === urlQuery &&
             (searchQuery.sortField ?? undefined) === sortField &&
             (searchQuery.sortDirection ?? undefined) === urlSortDirection
         )
@@ -137,7 +150,7 @@ export const Search = () => {
 
         dispatch(
             updateQuery({
-                query: query || undefined,
+                query: urlQuery || undefined,
                 sortField: sortField,
                 sortDirection: urlSortDirection,
             }),
