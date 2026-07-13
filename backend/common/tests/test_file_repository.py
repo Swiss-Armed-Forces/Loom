@@ -8,6 +8,7 @@ from pydantic import RootModel
 from common.file.file_repository import (
     TAG_LEN_MAX,
     TAG_LEN_MIN,
+    TREE_PATH_COMPOSITE_PAGE_SIZE,
     TREE_PATH_MAX_ELEMENT_COUNT,
     FilePurePath,
     FileRepository,
@@ -135,6 +136,8 @@ def _make_tree_response(
     search_obj = MagicMock()
     search_obj.__getitem__ = MagicMock(return_value=search_obj)
     search_obj.aggs = MagicMock()
+    # .filter() is called for non-root node paths; return self so the chain works.
+    search_obj.filter.return_value = search_obj
     search_obj.using.return_value.execute.return_value = response
     mock_search.return_value = search_obj
 
@@ -144,7 +147,8 @@ def _make_leaf_bucket(path: str) -> MagicMock:
 
 
 def test_get_full_paths_by_query_no_cursor_when_fewer_than_max_buckets():
-    """next_page_cursor is None when raw_buckets < TREE_PATH_MAX_ELEMENT_COUNT."""
+    """next_page_cursor is None when raw_buckets < TREE_PATH_COMPOSITE_PAGE_SIZE (data
+    exhausted)."""
     mock_search = MagicMock()
     buckets = [_make_leaf_bucket(f"//s/f{i}.txt") for i in range(5)]
     _make_tree_response(mock_search, buckets, after_key_path="//s/f4.txt")
@@ -161,7 +165,8 @@ def test_get_full_paths_by_query_no_cursor_when_fewer_than_max_buckets():
 
 
 def test_get_full_paths_by_query_cursor_when_exactly_max_buckets():
-    """next_page_cursor is set when raw_buckets == TREE_PATH_MAX_ELEMENT_COUNT."""
+    """next_page_cursor is set when we collect exactly TREE_PATH_MAX_ELEMENT_COUNT
+    nodes."""
     mock_search = MagicMock()
     buckets = [
         _make_leaf_bucket(f"//s/f{i}.txt") for i in range(TREE_PATH_MAX_ELEMENT_COUNT)
@@ -178,6 +183,57 @@ def test_get_full_paths_by_query_cursor_when_exactly_max_buckets():
         )
 
     assert result.next_page_cursor == after_key
+
+
+def test_get_full_paths_by_query_loops_past_all_filtered_page():
+    """The loop advances past a full page where every bucket is filtered out.
+
+    When the first ES page is full (TREE_PATH_COMPOSITE_PAGE_SIZE buckets) but all are
+    excluded by the depth filter, the loop must issue a second request.  When that
+    second page is empty (data exhausted) the result has no nodes and no cursor.
+    """
+    # All buckets are deeper than //s (depth 2), so the Python-side depth filter
+    # for tree_node_directory_path="//s" will exclude all of them.
+    filtered_buckets = [
+        _make_leaf_bucket(f"//s/sub/f{i}.txt")
+        for i in range(TREE_PATH_COMPOSITE_PAGE_SIZE)
+    ]
+    after_key_path = f"//s/sub/f{TREE_PATH_COMPOSITE_PAGE_SIZE - 1}.txt"
+
+    search_obj = MagicMock()
+    search_obj.__getitem__ = MagicMock(return_value=search_obj)
+    search_obj.aggs = MagicMock()
+    search_obj.filter.return_value = search_obj
+
+    # First response: full page of filtered buckets with an after_key.
+    resp1_dir = MagicMock()
+    resp1_dir.buckets = filtered_buckets
+    resp1_dir.after_key = {"path": after_key_path}
+    resp1 = MagicMock()
+    resp1.aggregations.directory = resp1_dir
+
+    # Second response: empty page — signals data exhausted.
+    resp2_dir = MagicMock()
+    resp2_dir.buckets = []
+    resp2_dir.after_key = None
+    resp2 = MagicMock()
+    resp2.aggregations.directory = resp2_dir
+
+    search_obj.using.return_value.execute.side_effect = [resp1, resp2]
+
+    mock_search = MagicMock()
+    mock_search.return_value = search_obj
+
+    repo = FileRepository(MagicMock(), MagicMock(), search_factory=mock_search)
+    query = QueryParameters(query_id="q3", search_string="*")
+    with patch("common.models.es_repository.get_connection", return_value=MagicMock()):
+        result = repo.get_full_paths_by_query(
+            query=query, tree_node_directory_path="//s"
+        )
+
+    assert result.nodes == []
+    assert result.next_page_cursor is None
+    assert search_obj.using.return_value.execute.call_count == 2
 
 
 def test_get_stat_terms():
