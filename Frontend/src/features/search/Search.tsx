@@ -60,6 +60,10 @@ export const Search = () => {
     // activeTabFileId is seeded from the URL hash in Redux initialState, so
     // the Redux→URL effect returns early on mount without clearing the hash.
     const syncedHashRef = useRef<string>("");
+    const filesRef = useRef(files);
+    useEffect(() => {
+        filesRef.current = files;
+    }, [files]);
 
     // Initialize keyboard navigation
     useKeyboardNavigation();
@@ -240,13 +244,13 @@ export const Search = () => {
                 // result set. fileUpdate messages may also arrive for files
                 // subscribed by the folder tree view.
                 const { fileId } = message as MessageFileUpdate;
-                if (fileId in files) {
+                if (fileId in filesRef.current) {
                     dispatch(fetchPreview({ fileId }));
                 }
                 break;
             }
         }
-    }, [webSocketPubSubMessage, files]); // eslint-disable-line react-hooks/exhaustive-deps
+    }, [webSocketPubSubMessage]); // eslint-disable-line react-hooks/exhaustive-deps
 
     // update query id and show toast
     useEffect(() => {
