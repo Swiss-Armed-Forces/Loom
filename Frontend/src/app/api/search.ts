@@ -76,16 +76,27 @@ export const getFilesCount = async (
 export const searchTree = async (
     query: SearchQuery,
     childrenOfNode?: string,
-    filesOnly?: boolean,
     after?: string,
 ): Promise<GetFilesTreeResponse> => {
     return filesApi.getFilesTreeV1FilesTreeGet({
         queryId: query.id ?? undefined,
         keepAlive: query.keepAlive ?? undefined,
         searchString: query.query,
-
         nodePath: childrenOfNode,
-        filesOnly,
+        after,
+    });
+};
+
+export const searchByFilename = async (
+    query: SearchQuery,
+    filename: string,
+    after?: string,
+): Promise<GetFilesTreeResponse> => {
+    return filesApi.searchByFilenameV1FilesSearchByFilenameGet({
+        queryId: query.id ?? undefined,
+        keepAlive: query.keepAlive ?? undefined,
+        searchString: query.query,
+        filename,
         after,
     });
 };

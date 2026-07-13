@@ -118,7 +118,6 @@ export interface GetFilesTreeV1FilesTreeGetRequest {
     keepAlive?: GetFilesTreeV1FilesTreeGetKeepAliveEnum;
     searchString?: string;
     nodePath?: string;
-    filesOnly?: boolean;
     after?: string;
 }
 
@@ -176,6 +175,14 @@ export interface ImageDescriptionV1FilesFileIdImageDescriptionPostRequest {
 
 export interface IndexFileV1FilesFileIdIndexPostRequest {
     fileId: string;
+}
+
+export interface SearchByFilenameV1FilesSearchByFilenameGetRequest {
+    filename: string;
+    queryId?: string;
+    keepAlive?: SearchByFilenameV1FilesSearchByFilenameGetKeepAliveEnum;
+    searchString?: string;
+    after?: string;
 }
 
 export interface SummarizeFileV1FilesFileIdSummarizePostRequest {
@@ -698,7 +705,7 @@ export class FilesApi extends runtime.BaseAPI {
     }
 
     /**
-     * Get nodes from the file tree.  When files_only=False (default), returns the direct children of node_path. When files_only=True, returns only leaf file nodes at any depth below node_path, without intermediate directory nodes.  The `after` parameter is an opaque cursor from a previous response\'s `next_page_cursor` field and enables cursor-based pagination.
+     * Get the direct children of node_path from the file tree.  The `after` parameter is an opaque cursor from a previous response\'s `next_page_cursor` field and enables cursor-based pagination.
      * Get Files Tree
      */
     async getFilesTreeV1FilesTreeGetRaw(
@@ -724,10 +731,6 @@ export class FilesApi extends runtime.BaseAPI {
             queryParameters["node_path"] = requestParameters["nodePath"];
         }
 
-        if (requestParameters["filesOnly"] != null) {
-            queryParameters["files_only"] = requestParameters["filesOnly"];
-        }
-
         if (requestParameters["after"] != null) {
             queryParameters["after"] = requestParameters["after"];
         }
@@ -750,7 +753,7 @@ export class FilesApi extends runtime.BaseAPI {
     }
 
     /**
-     * Get nodes from the file tree.  When files_only=False (default), returns the direct children of node_path. When files_only=True, returns only leaf file nodes at any depth below node_path, without intermediate directory nodes.  The `after` parameter is an opaque cursor from a previous response\'s `next_page_cursor` field and enables cursor-based pagination.
+     * Get the direct children of node_path from the file tree.  The `after` parameter is an opaque cursor from a previous response\'s `next_page_cursor` field and enables cursor-based pagination.
      * Get Files Tree
      */
     async getFilesTreeV1FilesTreeGet(
@@ -1347,6 +1350,77 @@ export class FilesApi extends runtime.BaseAPI {
     }
 
     /**
+     * Search for files whose path contains the given filename string.  Returns a flat paginated list of matching leaf files across the whole index. The `after` parameter is an opaque cursor from a previous response\'s `next_page_cursor` field and enables cursor-based pagination.
+     * Search By Filename
+     */
+    async searchByFilenameV1FilesSearchByFilenameGetRaw(
+        requestParameters: SearchByFilenameV1FilesSearchByFilenameGetRequest,
+        initOverrides?: RequestInit | runtime.InitOverrideFunction,
+    ): Promise<runtime.ApiResponse<GetFilesTreeResponse>> {
+        if (requestParameters["filename"] == null) {
+            throw new runtime.RequiredError(
+                "filename",
+                'Required parameter "filename" was null or undefined when calling searchByFilenameV1FilesSearchByFilenameGet().',
+            );
+        }
+
+        const queryParameters: any = {};
+
+        if (requestParameters["queryId"] != null) {
+            queryParameters["query_id"] = requestParameters["queryId"];
+        }
+
+        if (requestParameters["keepAlive"] != null) {
+            queryParameters["keep_alive"] = requestParameters["keepAlive"];
+        }
+
+        if (requestParameters["searchString"] != null) {
+            queryParameters["search_string"] =
+                requestParameters["searchString"];
+        }
+
+        if (requestParameters["filename"] != null) {
+            queryParameters["filename"] = requestParameters["filename"];
+        }
+
+        if (requestParameters["after"] != null) {
+            queryParameters["after"] = requestParameters["after"];
+        }
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        const response = await this.request(
+            {
+                path: `/v1/files/search_by_filename`,
+                method: "GET",
+                headers: headerParameters,
+                query: queryParameters,
+            },
+            initOverrides,
+        );
+
+        return new runtime.JSONApiResponse(response, (jsonValue) =>
+            GetFilesTreeResponseFromJSON(jsonValue),
+        );
+    }
+
+    /**
+     * Search for files whose path contains the given filename string.  Returns a flat paginated list of matching leaf files across the whole index. The `after` parameter is an opaque cursor from a previous response\'s `next_page_cursor` field and enables cursor-based pagination.
+     * Search By Filename
+     */
+    async searchByFilenameV1FilesSearchByFilenameGet(
+        requestParameters: SearchByFilenameV1FilesSearchByFilenameGetRequest,
+        initOverrides?: RequestInit | runtime.InitOverrideFunction,
+    ): Promise<GetFilesTreeResponse> {
+        const response =
+            await this.searchByFilenameV1FilesSearchByFilenameGetRaw(
+                requestParameters,
+                initOverrides,
+            );
+        return await response.value();
+    }
+
+    /**
      * Summarize File
      */
     async summarizeFileV1FilesFileIdSummarizePostRaw(
@@ -1784,3 +1858,12 @@ export const GetTermsStatsV1FilesStatsTermsStatGetKeepAliveEnum = {
 } as const;
 export type GetTermsStatsV1FilesStatsTermsStatGetKeepAliveEnum =
     (typeof GetTermsStatsV1FilesStatsTermsStatGetKeepAliveEnum)[keyof typeof GetTermsStatsV1FilesStatsTermsStatGetKeepAliveEnum];
+/**
+ * @export
+ */
+export const SearchByFilenameV1FilesSearchByFilenameGetKeepAliveEnum = {
+    _10s: "10s",
+    _30m: "30m",
+} as const;
+export type SearchByFilenameV1FilesSearchByFilenameGetKeepAliveEnum =
+    (typeof SearchByFilenameV1FilesSearchByFilenameGetKeepAliveEnum)[keyof typeof SearchByFilenameV1FilesSearchByFilenameGetKeepAliveEnum];
