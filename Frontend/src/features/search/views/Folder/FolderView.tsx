@@ -66,7 +66,12 @@ import {
     ROOT_NODE,
     PATH_SEPARATOR,
 } from "./folderViewState";
-import { cloneTree, findAncestorNodeIds, findTreeNode } from "./util";
+import {
+    cloneTree,
+    findAncestorNodeIds,
+    findNodeByFileId,
+    findTreeNode,
+} from "./util";
 
 const View = styled(Box)<BoxProps>(() => ({
     width: "100%",
@@ -348,77 +353,47 @@ export const FolderView = ({ filter }: FolderViewProps) => {
         }
     };
 
-    // Reload the already-loaded ancestor paths of the given file so that counts
-    // (unseen, flagged) and node styling stay fresh. Returns a cleanup function
-    // that cancels any in-flight dispatches (for use as a useEffect cleanup).
-    // Reads tree and searchQuery via refs so the callback identity is stable
-    // and does not trigger re-runs of effects that depend on it when the tree
-    // changes after a CHILDREN_ADDED dispatch.
+    // Refresh the given file and all its ancestors in the tree using the spine
+    // endpoint, which returns the file node plus every ancestor directory with
+    // up-to-date counts in a single round-trip. This works regardless of which
+    // pagination page the file or any ancestor directory is on.
+    // Returns a cleanup function that cancels any in-flight dispatch.
+    // Reads tree and searchQuery via refs so the callback identity is stable.
     const reloadAncestors = useCallback(
         (fileId: string) => {
             const searchQuery = searchQueryRef.current;
             if (!searchQuery) return undefined;
-            const tree = folderStateRef.current.tree;
-            // findAncestorNodeIds returns the path IDs of all ancestors of the
-            // file node — these are exactly the directory paths whose counts are
-            // affected by a state change on this file.
-            let ancestors = findAncestorNodeIds(tree, fileId);
 
-            // Fallback: file is not yet a leaf in the tree (e.g. subscribed via
-            // a result card, not via the folder tree). Derive ancestor paths from
-            // the file's known path so that already-loaded ancestor folders still
-            // get their counts refreshed.
-            if (!ancestors) {
-                const filePath = filesRef.current[fileId]?.preview?.path;
-                if (filePath) {
-                    const parts: string[] = [];
-                    let current = filePath;
-                    while (true) {
-                        const lastSlash = current.lastIndexOf(PATH_SEPARATOR);
-                        if (lastSlash < 0) break;
-                        current = current.slice(0, lastSlash);
-                        if (!current || current === ROOT_NODE.id) break;
-                        parts.unshift(current);
-                    }
-                    ancestors = [ROOT_NODE.id, ...parts];
-                }
-            }
+            // Resolve the file's full path — from the in-memory tree first,
+            // then fall back to the Redux preview store (set when a detail tab
+            // has been opened for the file).
+            const filePath =
+                findNodeByFileId(folderStateRef.current.tree, fileId)?.id ??
+                filesRef.current[fileId]?.preview?.path;
 
-            if (!ancestors) return undefined;
+            if (!filePath) return undefined;
 
             let cancelled = false;
-            // Note: in-flight searchTree requests cannot be aborted because the
-            // generated API client does not expose an AbortSignal parameter.
-            // The cancelled flag prevents stale dispatches from completing.
-            void Promise.all(
-                ancestors
-                    .filter((path) => findTreeNode(tree, path)?.children)
-                    .map((path) =>
-                        searchTree({ ...searchQuery, id: null }, path)
-                            .then((result) => {
-                                if (cancelled) return;
-                                folderDispatch({
-                                    type: FolderViewActionType.CHILDREN_ADDED,
-                                    children: result.nodes,
-                                    parentPath: path,
-                                    // No nextPageCursor: count refresh always fetches
-                                    // page 1; preserve whatever cursor was already stored.
-                                });
-                            })
-                            .catch((err) => {
-                                if (cancelled) return;
-                                toast.error(
-                                    "Cannot refresh folder tree after file update. Error: " +
-                                        (err &&
-                                        typeof err === "object" &&
-                                        "detail" in err &&
-                                        err.detail
-                                            ? err.detail
-                                            : err),
-                                );
-                            }),
-                    ),
-            );
+            void getTreeSpine({ ...searchQuery, id: null }, filePath)
+                .then((result) => {
+                    if (cancelled || result.nodes.length === 0) return;
+                    folderDispatch({
+                        type: FolderViewActionType.SPINE_NODES_MERGED,
+                        nodes: result.nodes,
+                    });
+                })
+                .catch((err) => {
+                    if (cancelled) return;
+                    toast.error(
+                        "Cannot refresh folder tree after file update. Error: " +
+                            (err &&
+                            typeof err === "object" &&
+                            "detail" in err &&
+                            err.detail
+                                ? err.detail
+                                : err),
+                    );
+                });
             return () => {
                 cancelled = true;
             };

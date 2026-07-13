@@ -25,6 +25,26 @@ export const findAncestorNodeIds = (
 };
 
 /**
+ * Returns the tree node whose fileId matches the given value, or null if not found.
+ *
+ * Uses an iterative DFS to avoid call-stack overflow on deeply nested trees.
+ */
+export const findNodeByFileId = (
+    tree: FolderTree,
+    fileId: string,
+): FolderTree | null => {
+    const stack: FolderTree[] = [tree];
+    while (stack.length > 0) {
+        const node = stack.pop()!;
+        if (node.fileId === fileId) return node;
+        for (const child of Object.values(node.children ?? {})) {
+            stack.push(child);
+        }
+    }
+    return null;
+};
+
+/**
  * Returns the tree node with the given path ID, or undefined if not found.
  *
  * Uses an iterative DFS to avoid call-stack overflow on deeply nested trees.
