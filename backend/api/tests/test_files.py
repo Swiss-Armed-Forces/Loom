@@ -554,7 +554,6 @@ def test_get_files_tree_returns_nodes_and_cursor(client: TestClient):
     get_file_repository().get_full_paths_by_query.assert_called_once_with(
         query=ANY,
         tree_node_directory_path="/",
-        files_only=False,
         after=None,
     )
 
@@ -580,7 +579,6 @@ def test_get_files_tree_passes_after_cursor(client: TestClient):
     get_file_repository().get_full_paths_by_query.assert_called_once_with(
         query=ANY,
         tree_node_directory_path="//source",
-        files_only=False,
         after="//source/z.pdf",
     )
 
@@ -633,3 +631,55 @@ def test_get_files_tree_spine_empty_for_no_results(client: TestClient):
     body = GetFilesTreeResponse.model_validate(response.json())
     assert body.nodes == []
     assert body.next_page_cursor is None
+
+
+def test_search_by_filename_calls_flat_files(client: TestClient):
+    node = TreePathsNode(
+        full_path=FilePurePath("//source/report.pdf"),
+        file_count=0,
+        file_id="abc-123",
+    )
+    get_file_repository().get_flat_files_by_query.return_value = TreePathsResult(
+        nodes=[node],
+        next_page_cursor=None,
+    )
+
+    response = client.get(
+        "/v1/files/search_by_filename",
+        params={"query_id": "abc123", "filename": "report"},
+    )
+
+    assert response.status_code == 200
+    body = GetFilesTreeResponse.model_validate(response.json())
+    assert len(body.nodes) == 1
+    assert body.nodes[0].full_path == FilePurePath("//source/report.pdf")
+    assert body.nodes[0].file_id == "abc-123"
+    assert body.next_page_cursor is None
+    get_file_repository().get_flat_files_by_query.assert_called_once_with(
+        query=ANY,
+        after=None,
+        filename="report",
+    )
+
+
+def test_search_by_filename_passes_after_cursor(client: TestClient):
+    get_file_repository().get_flat_files_by_query.return_value = TreePathsResult(
+        nodes=[],
+        next_page_cursor=None,
+    )
+
+    response = client.get(
+        "/v1/files/search_by_filename",
+        params={
+            "query_id": "abc123",
+            "filename": "report",
+            "after": "//source/last.pdf",
+        },
+    )
+
+    assert response.status_code == 200
+    get_file_repository().get_flat_files_by_query.assert_called_once_with(
+        query=ANY,
+        after="//source/last.pdf",
+        filename="report",
+    )

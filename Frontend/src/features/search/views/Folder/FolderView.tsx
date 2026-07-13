@@ -1,6 +1,8 @@
+import { MoreHoriz } from "@mui/icons-material";
 import {
     Box,
     BoxProps,
+    CircularProgress,
     List,
     ListItemButton,
     ListItemText,
@@ -23,7 +25,7 @@ import { useDispatch } from "react-redux";
 import { toast } from "react-toastify";
 
 import type { TreeNodeModel } from "@app/api/index";
-import { searchTree } from "@app/api/index";
+import { getTreeSpine, searchByFilename, searchTree } from "@app/api/index";
 import {
     subscribeChannel,
     unsubscribeChannel,
@@ -65,8 +67,6 @@ import {
     PATH_SEPARATOR,
 } from "./folderViewState";
 import { cloneTree, findAncestorNodeIds, findTreeNode } from "./util";
-
-const TREE_NODE_LIMIT = 10;
 
 const View = styled(Box)<BoxProps>(() => ({
     width: "100%",
@@ -458,31 +458,49 @@ export const FolderView = ({ filter }: FolderViewProps) => {
             return;
         }
 
-        // Node not yet in tree. Derive ancestor paths from focusedFilePath and
-        // expand them so cascade-load fetches each level's full children.
-        // Calling getTreeSpine here would pre-populate intermediate nodes with
-        // only the spine child, preventing siblings from ever loading.
+        // Node not yet in tree — call the spine endpoint to get all ancestor
+        // nodes in one round-trip, then eagerly load full siblings for each
+        // ancestor in parallel so the user sees complete folder contents.
         if (!focusedFilePath) return;
 
-        const parts: string[] = [];
-        let current = focusedFilePath;
-        while (true) {
-            const lastSlash = current.lastIndexOf(PATH_SEPARATOR);
-            if (lastSlash < 0) break;
-            current = current.slice(0, lastSlash);
-            if (!current || current === ROOT_NODE.id) break;
-            parts.unshift(current);
-        }
-        folderDispatch({
-            type: FolderViewActionType.EXPANDED_NODES_CHANGED,
-            expandedNodes: Array.from(
-                new Set([
-                    ...userExpandedNodesRef.current,
-                    ROOT_NODE.id,
-                    ...parts,
-                ]),
-            ),
-        });
+        getTreeSpine(searchQuery, focusedFilePath)
+            .then((result) => {
+                if (result.nodes.length === 0) return;
+                folderDispatch({
+                    type: FolderViewActionType.SPINE_NODES_MERGED,
+                    nodes: result.nodes,
+                });
+                // Expand all ancestors (spine nodes excluding the leaf file).
+                const ancestorPaths = result.nodes
+                    .slice(0, -1)
+                    .map((n) => String(n.fullPath));
+                folderDispatch({
+                    type: FolderViewActionType.EXPANDED_NODES_CHANGED,
+                    expandedNodes: Array.from(
+                        new Set([
+                            ...userExpandedNodesRef.current,
+                            ...ancestorPaths,
+                        ]),
+                    ),
+                });
+                // Eagerly load full siblings for each spine ancestor so the
+                // user sees complete folder contents, not a sparse skeleton.
+                ancestorPaths.forEach((path) => {
+                    searchTree({ ...searchQuery, id: null }, path)
+                        .then((children) => {
+                            folderDispatch({
+                                type: FolderViewActionType.CHILDREN_ADDED,
+                                children: children.nodes,
+                                parentPath: path,
+                                nextPageCursor: children.nextPageCursor ?? null,
+                            });
+                        })
+                        .catch(() => {
+                            // Non-fatal: spine path is already visible.
+                        });
+                });
+            })
+            .catch(() => toast.error("Cannot locate file in folder tree."));
     }, [focusedFileId, focusedFilePath, searchQuery]);
 
     useEffect(() => {
@@ -510,7 +528,6 @@ export const FolderView = ({ filter }: FolderViewProps) => {
                 const result = await searchTree(
                     { ...searchQueryRef.current, id: null },
                     nodeId,
-                    false,
                     node.nextPageCursor,
                 );
                 folderDispatch({
@@ -609,23 +626,22 @@ export const FolderView = ({ filter }: FolderViewProps) => {
 
     const [filterResults, setFilterResults] = useState<TreeNodeModel[]>([]);
     const [filterLoading, setFilterLoading] = useState(false);
-    const [filterTruncated, setFilterTruncated] = useState(false);
+    const [filterLoadingMore, setFilterLoadingMore] = useState(false);
+    const [filterNextPageCursor, setFilterNextPageCursor] = useState<
+        string | null
+    >(null);
 
     useEffect(() => {
         if (!filter || !searchQuery) {
             setFilterResults([]);
+            setFilterNextPageCursor(null);
             return;
         }
-        const derivedQuery = `(${searchQuery.query}) filename:*${filter}*`;
         const timer = setTimeout(() => {
             setFilterLoading(true);
-            searchTree(
-                { ...searchQuery, id: null, query: derivedQuery },
-                ROOT_NODE.id,
-                true,
-            )
+            searchByFilename(searchQuery, filter)
                 .then((result) => {
-                    setFilterTruncated(result.nextPageCursor != null);
+                    setFilterNextPageCursor(result.nextPageCursor ?? null);
                     setFilterResults(
                         result.nodes.filter((n) => n.fileId !== undefined),
                     );
@@ -635,6 +651,21 @@ export const FolderView = ({ filter }: FolderViewProps) => {
         }, 300);
         return () => clearTimeout(timer);
     }, [filter, searchQuery]);
+
+    const handleFilterLoadMore = useCallback(() => {
+        if (!filterNextPageCursor || !searchQuery || !filter) return;
+        setFilterLoadingMore(true);
+        searchByFilename(searchQuery, filter, filterNextPageCursor)
+            .then((result) => {
+                setFilterNextPageCursor(result.nextPageCursor ?? null);
+                setFilterResults((prev) => [
+                    ...prev,
+                    ...result.nodes.filter((n) => n.fileId !== undefined),
+                ]);
+            })
+            .catch(() => toast.error("Cannot load more filter results."))
+            .finally(() => setFilterLoadingMore(false));
+    }, [filterNextPageCursor, searchQuery, filter]);
 
     if (isLoading && !folderState.tree.children) return <LoadingIndicator />;
     if (!Object.keys(folderState.tree.children ?? {}).length) return null;
@@ -717,15 +748,30 @@ export const FolderView = ({ filter }: FolderViewProps) => {
                         );
                     })}
                 </List>
-                {filterTruncated && (
-                    <Typography
-                        variant="caption"
-                        sx={{ display: "block", px: 1, py: 0.5, opacity: 0.6 }}
+                {filterNextPageCursor && (
+                    <ListItemButton
+                        onClick={handleFilterLoadMore}
+                        disabled={filterLoadingMore}
+                        dense
                     >
-                        {t("folderView.filterResultsLimitNote", {
-                            limit: TREE_NODE_LIMIT,
-                        })}
-                    </Typography>
+                        <Stack
+                            direction="row"
+                            spacing={0.5}
+                            sx={{ alignItems: "center", opacity: 0.7 }}
+                        >
+                            {filterLoadingMore ? (
+                                <CircularProgress size="0.9rem" />
+                            ) : (
+                                <MoreHoriz sx={{ fontSize: "0.9rem" }} />
+                            )}
+                            <Typography
+                                variant="caption"
+                                sx={{ fontStyle: "italic" }}
+                            >
+                                {t("folderView.loadMore")}
+                            </Typography>
+                        </Stack>
+                    </ListItemButton>
                 )}
             </>
         );

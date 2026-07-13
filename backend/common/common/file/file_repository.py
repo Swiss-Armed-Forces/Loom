@@ -72,6 +72,10 @@ logger = logging.getLogger(__name__)
 PATH_SEPARATOR = "/"
 PATH_ROOT = "//"
 TREE_PATH_MAX_ELEMENT_COUNT = 10
+# Internal ES composite page size used by get_full_paths_by_query.  A multiple
+# of TREE_PATH_MAX_ELEMENT_COUNT so most requests resolve in a single ES
+# round-trip; exported so tests can mock the correct page-full threshold.
+TREE_PATH_COMPOSITE_PAGE_SIZE = TREE_PATH_MAX_ELEMENT_COUNT * 10
 ES_RESERVED_PATTERN = re.compile(r"([\".?+*|{}\][\\()])")
 KNN_CANDIDATES_FACTOR = 5  # how many more candidates to select for KNN per shared
 
@@ -1069,47 +1073,35 @@ class FileRepository(BaseEsRepository[_EsFile, File]):
         self,
         query: QueryParameters,
         tree_node_directory_path: str,
-        files_only: bool = False,
         after: str | None = None,
     ) -> TreePathsResult:
-        """Generate the tree path structure for all matching files.
+        """Return the direct children of ``tree_node_directory_path`` for tree browsing.
 
-        Uses a composite aggregation for cursor-based pagination. The `after` parameter
-        is the opaque cursor returned by a previous call. Bucket keys are filtered in
-        Python because the composite aggregation's terms source does not support
-        include/exclude regex patterns.
-
-        When `files_only=True`, only leaf file nodes (those with a file_id) are
-        returned, regardless of depth. Intermediate directory nodes are excluded.
+        Loops over composite aggregation pages on ``full_path.tree`` until
+        TREE_PATH_MAX_ELEMENT_COUNT nodes have been collected or ES data is exhausted. A
+        document-level term filter scopes each page to the requested subtree so the
+        cursor only traverses paths under ``tree_node_directory_path``.  Bucket keys are
+        still filtered in Python because the composite aggregation's terms source does
+        not support include/exclude regex patterns.
         """
         include_pattern = re.compile(
             re.sub(ES_RESERVED_PATTERN, r"\\\1", tree_node_directory_path) + r"/.+"
         )
-        exclude_pattern = (
-            re.compile(
-                re.sub(ES_RESERVED_PATTERN, r"\\\1", tree_node_directory_path)
-                + r"/[^/]+/.+"
-            )
-            if not files_only
-            else None
+        exclude_pattern = re.compile(
+            re.sub(ES_RESERVED_PATTERN, r"\\\1", tree_node_directory_path)
+            + r"/[^/]+/.+"
         )
 
         nodes: list[TreePathsNode] = []
-        next_page_cursor: str | None = None
+        current_after = after
 
-        # Loop through ES composite aggregation pages until we have
-        # TREE_PATH_MAX_ELEMENT_COUNT matching nodes or exhaust all pages.
-        # Python-side filtering is required because the composite terms source
-        # does not support include/exclude regex patterns, so a single ES page
-        # of size=TREE_PATH_MAX_ELEMENT_COUNT may yield fewer matching nodes
-        # than needed (e.g. when other directories sort before the queried one).
-        while len(nodes) < TREE_PATH_MAX_ELEMENT_COUNT:
+        while True:
             composite_kwargs: dict[str, Any] = {
-                "size": TREE_PATH_MAX_ELEMENT_COUNT,
+                "size": TREE_PATH_COMPOSITE_PAGE_SIZE,
                 "sources": [{"path": {"terms": {"field": "full_path.tree"}}}],
             }
-            if after is not None:
-                composite_kwargs["after"] = {"path": after}
+            if current_after is not None:
+                composite_kwargs["after"] = {"path": current_after}
             dir_aggregation: Agg[_EsFile] = A("composite", **composite_kwargs)
             dir_aggregation.bucket(
                 "first_hit",
@@ -1130,6 +1122,18 @@ class FileRepository(BaseEsRepository[_EsFile, File]):
             )
 
             search = self._get_search_by_query(query=query)
+            # Scope the aggregation to documents at or below the requested path.
+            # The path_hierarchy tokenizer emits one token per path prefix, so a
+            # term filter on full_path.tree restricts the composite aggregation to
+            # documents whose path starts with tree_node_directory_path.  This
+            # avoids a full global scan when browsing a deep subtree (e.g. a zip
+            # archive with 100k attachments).  Root ("/") is skipped because the
+            # "/" token is present on every document and the filter would be a
+            # no-op, while adding a redundant clause.
+            if tree_node_directory_path != "/":
+                search = search.filter(
+                    "term", **{"full_path.tree": tree_node_directory_path}
+                )
             search.aggs.bucket("directory", dir_aggregation)
             search = search[0:0]  # do not fetch hits
             # Tree counts must always reflect the live index state, not the
@@ -1139,38 +1143,100 @@ class FileRepository(BaseEsRepository[_EsFile, File]):
             result = search.using(self._elasticsearch).execute()
 
             raw_buckets = list(result.aggregations.directory.buckets)
-            nodes += [
+            nodes.extend(
                 parsed
                 for bucket in raw_buckets
                 if include_pattern.fullmatch(str(bucket.key.path))
-                and (
-                    exclude_pattern is None
-                    or not exclude_pattern.fullmatch(str(bucket.key.path))
-                )
+                and not exclude_pattern.fullmatch(str(bucket.key.path))
                 for parsed in (self._parse_tree_bucket(bucket),)
-                if not files_only or parsed.file_id is not None
-            ]
-            if len(nodes) > TREE_PATH_MAX_ELEMENT_COUNT:
-                # This page had more matches than needed; truncate and return
-                # a cursor so the next call continues from the last returned node.
-                del nodes[TREE_PATH_MAX_ELEMENT_COUNT:]
-                next_page_cursor = str(nodes[-1].full_path)
-                break
+            )
+
+            if len(nodes) >= TREE_PATH_MAX_ELEMENT_COUNT:
+                # Enough results; cursor resumes after the last returned node.
+                return TreePathsResult(
+                    nodes=nodes[:TREE_PATH_MAX_ELEMENT_COUNT],
+                    next_page_cursor=str(
+                        nodes[TREE_PATH_MAX_ELEMENT_COUNT - 1].full_path
+                    ),
+                )
 
             after_key = getattr(result.aggregations.directory, "after_key", None)
-            # A full page (len == size) means more ES pages may exist; fewer
-            # than size means this was the last page.
-            if after_key is None or len(raw_buckets) < TREE_PATH_MAX_ELEMENT_COUNT:
-                next_page_cursor = None
-                break
+            if after_key is None or len(raw_buckets) < TREE_PATH_COMPOSITE_PAGE_SIZE:
+                # ES data exhausted; return however many nodes we found.
+                return TreePathsResult(nodes=nodes, next_page_cursor=None)
 
-            after = str(after_key["path"])
-        else:
-            # The while condition became False (len(nodes) == TREE_PATH_MAX_ELEMENT_COUNT)
-            # without hitting a break, meaning there may be more pages.
-            next_page_cursor = str(nodes[-1].full_path) if nodes else None
+            current_after = str(after_key["path"])
 
-        return TreePathsResult(nodes=nodes, next_page_cursor=next_page_cursor)
+    def get_flat_files_by_query(
+        self,
+        query: QueryParameters,
+        after: str | None = None,
+        filename: str | None = None,
+    ) -> TreePathsResult:
+        """Return a paginated flat list of all leaf files matching the query.
+
+        Uses the ``full_path.keyword`` composite source so each bucket is exactly one
+        file — no Python depth filtering is needed.  Used by the folder-view filter box
+        to search files by name across the whole index.
+
+        If ``filename`` is provided, an additional wildcard filter is applied on
+        ``full_path.keyword`` to restrict results to files whose path contains the given
+        string.
+        """
+        nodes: list[TreePathsNode] = []
+        current_after = after
+
+        while True:
+            composite_kwargs: dict[str, Any] = {
+                "size": TREE_PATH_COMPOSITE_PAGE_SIZE,
+                "sources": [{"path": {"terms": {"field": "full_path.keyword"}}}],
+            }
+            if current_after is not None:
+                composite_kwargs["after"] = {"path": current_after}
+            dir_aggregation: Agg[_EsFile] = A("composite", **composite_kwargs)
+            dir_aggregation.bucket(
+                "first_hit",
+                A(
+                    "top_hits",
+                    size=1,
+                    sort=[{"full_path.keyword": "asc"}],
+                    _source=["full_path", "seen", "flagged"],
+                ),
+            )
+            dir_aggregation.bucket(
+                "unseen",
+                A("filter", filter=Q("term", seen=False)),
+            )
+            dir_aggregation.bucket(
+                "flagged",
+                A("filter", filter=Q("term", flagged=True)),
+            )
+
+            search = self._get_search_by_query(query=query)
+            if filename:
+                search = search.filter(
+                    "wildcard", **{"full_path.keyword": f"*{filename}*"}
+                )
+            search.aggs.bucket("directory", dir_aggregation)
+            search = search[0:0]  # do not fetch hits
+            result = search.using(self._elasticsearch).execute()
+
+            raw_buckets = list(result.aggregations.directory.buckets)
+            nodes.extend(self._parse_tree_bucket(bucket) for bucket in raw_buckets)
+
+            if len(nodes) >= TREE_PATH_MAX_ELEMENT_COUNT:
+                return TreePathsResult(
+                    nodes=nodes[:TREE_PATH_MAX_ELEMENT_COUNT],
+                    next_page_cursor=str(
+                        nodes[TREE_PATH_MAX_ELEMENT_COUNT - 1].full_path
+                    ),
+                )
+
+            after_key = getattr(result.aggregations.directory, "after_key", None)
+            if after_key is None or len(raw_buckets) < TREE_PATH_COMPOSITE_PAGE_SIZE:
+                return TreePathsResult(nodes=nodes, next_page_cursor=None)
+
+            current_after = str(after_key["path"])
 
     def get_spine_by_path(
         self,

@@ -182,7 +182,6 @@ def get_files_count(
 
 class GetFilesTreeQuery(QueryParameters):
     node_path: str = "/"
-    files_only: bool = False
     after: str | None = None
 
 
@@ -191,22 +190,46 @@ def get_files_tree(
     query: Annotated[GetFilesTreeQuery, Query()],
     file_repository: FileRepository = default_file_repository,
 ) -> GetFilesTreeResponse:
-    """Get nodes from the file tree.
-
-    When files_only=False (default), returns the direct children of node_path. When
-    files_only=True, returns only leaf file nodes at any depth below node_path, without
-    intermediate directory nodes.
+    """Get the direct children of node_path from the file tree.
 
     The `after` parameter is an opaque cursor from a previous response's
     `next_page_cursor` field and enables cursor-based pagination.
     """
     logger.info("Get file tree node with query: '%s'", query)
-
     result = file_repository.get_full_paths_by_query(
         query=query,
         tree_node_directory_path=query.node_path,
-        files_only=query.files_only,
         after=query.after,
+    )
+    return GetFilesTreeResponse(
+        nodes=[
+            TreeNodeModel.model_validate(node.model_dump()) for node in result.nodes
+        ],
+        next_page_cursor=result.next_page_cursor,
+    )
+
+
+class SearchByFilenameQuery(QueryParameters):
+    filename: str
+    after: str | None = None
+
+
+@router.get("/search_by_filename")
+def search_by_filename(
+    query: Annotated[SearchByFilenameQuery, Query()],
+    file_repository: FileRepository = default_file_repository,
+) -> GetFilesTreeResponse:
+    """Search for files whose path contains the given filename string.
+
+    Returns a flat paginated list of matching leaf files across the whole index. The
+    `after` parameter is an opaque cursor from a previous response's `next_page_cursor`
+    field and enables cursor-based pagination.
+    """
+    logger.info("Search by filename with query: '%s'", query)
+    result = file_repository.get_flat_files_by_query(
+        query=query,
+        after=query.after,
+        filename=query.filename,
     )
     return GetFilesTreeResponse(
         nodes=[
