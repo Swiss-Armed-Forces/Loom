@@ -555,6 +555,13 @@ in
 
     check-toml.enable = true;
 
+    "check-values-local-overrides" = {
+      enable = true;
+      entry = "${config.devenv.root}/cicd/check_values_local_overrides.sh";
+      files = "charts/values-(overwrites|up-flags)\\.yaml$";
+      types = [ "file" ];
+    };
+
     # trufflehog disable for now;
     # we do get "files were modified by this hook"
     # when there are changes and we run: git commit -a
