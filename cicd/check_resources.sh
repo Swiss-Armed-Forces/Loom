@@ -24,7 +24,7 @@ CHARTS_DIR="${1?Missing Charts Dir}"
 # Max allowed requests (resource requests)
 MAX_CPU="8"
 MAX_MEMORY="25Gi"
-MAX_GPU="1"
+MAX_GPU="3"
 
 # Max allowed limits (resource limits)
 MAX_CPU_LIMITS="66"
