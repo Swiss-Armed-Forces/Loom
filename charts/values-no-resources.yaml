@@ -72,6 +72,10 @@ notifyListener:
   resources:
     requests: null
     limits: null
+  initContainer:
+    resources:
+      requests: null
+      limits: null
 
 flower:
   resources:
