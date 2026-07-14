@@ -3,6 +3,8 @@ from common.celery_app import TaskGroupName
 from common.dependencies import get_celery_inspect_service, get_redis_client
 from common.services.celery_inspect_service import _TASK_GROUP_KEY_PREFIX
 
+pytestmark = pytest.mark.usefixtures("disable_periodic_tasks")
+
 _TEST_TASK_NAME = "integration.test.task"
 _TEST_TASK_NAMES_IN_GROUP = ("task.a", "task.b")
 _TEST_GROUP = TaskGroupName.ALL
