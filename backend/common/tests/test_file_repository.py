@@ -8,7 +8,6 @@ from pydantic import RootModel
 from common.file.file_repository import (
     TAG_LEN_MAX,
     TAG_LEN_MIN,
-    TREE_PATH_COMPOSITE_PAGE_SIZE,
     TREE_PATH_MAX_ELEMENT_COUNT,
     FilePurePath,
     FileRepository,
@@ -117,123 +116,136 @@ def test_parse_tree_bucket_missing_flagged_field():
     assert node.file_id == "nf1"
 
 
-def _make_tree_response(
-    mock_search: MagicMock,
-    buckets: list,
-    after_key_path: str | None = None,
-) -> None:
-    """Wire mock_search so that get_full_paths_by_query receives the given buckets."""
+def _make_terms_bucket(
+    path: str,
+    doc_count: int = 1,
+    unseen_doc_count: int = 0,
+    flagged_doc_count: int = 0,
+) -> MagicMock:
+    """Build a MagicMock for a terms aggregation bucket.
+
+    In a terms agg the bucket key is accessed as ``bucket.key`` directly, unlike the
+    composite agg where it is ``bucket.key.path``.
+    """
+    bucket = MagicMock()
+    bucket.key = path
+    bucket.doc_count = doc_count
+    bucket.unseen.doc_count = unseen_doc_count
+    bucket.flagged.doc_count = flagged_doc_count
+    bucket.first_hit.hits.hits = []
+    return bucket
+
+
+def _make_terms_leaf_bucket(path: str) -> MagicMock:
+    """Terms bucket that represents a leaf file (top-hit path == bucket key)."""
+    bucket = _make_terms_bucket(path)
+    bucket.first_hit.hits.hits = [
+        {
+            "_id": path.replace("/", "_"),
+            "_source": {"full_path": path, "seen": True, "flagged": False},
+        }
+    ]
+    return bucket
+
+
+def _make_terms_tree_response(mock_search: MagicMock, buckets: list) -> MagicMock:
+    """Wire mock_search so that get_full_paths_by_query receives the given terms
+    buckets.
+
+    Returns the search_obj so tests can inspect call counts.
+    """
     directory_agg = MagicMock()
     directory_agg.buckets = buckets
-    if after_key_path is not None:
-        directory_agg.after_key = {"path": after_key_path}
 
     response = MagicMock()
     response.aggregations.directory = directory_agg
 
-    # search_factory receives (query, full_highlight_context) and must return a
-    # Search-like object whose full chain ends in .using(...).execute()
     search_obj = MagicMock()
     search_obj.__getitem__ = MagicMock(return_value=search_obj)
     search_obj.aggs = MagicMock()
-    # .filter() is called for non-root node paths; return self so the chain works.
     search_obj.filter.return_value = search_obj
     search_obj.using.return_value.execute.return_value = response
     mock_search.return_value = search_obj
-
-
-def _make_leaf_bucket(path: str) -> MagicMock:
-    return _set_bucket_hit(_make_bucket(path), path, path.replace("/", "_"))
+    return search_obj
 
 
 def test_get_full_paths_by_query_no_cursor_when_fewer_than_max_buckets():
-    """next_page_cursor is None when raw_buckets < TREE_PATH_COMPOSITE_PAGE_SIZE (data
-    exhausted)."""
+    """next_page_cursor is None when ES returns fewer than TREE_PATH_MAX_ELEMENT_COUNT +
+    1 buckets (data exhausted after first page)."""
     mock_search = MagicMock()
-    buckets = [_make_leaf_bucket(f"//s/f{i}.txt") for i in range(5)]
-    _make_tree_response(mock_search, buckets, after_key_path="//s/f4.txt")
+    buckets = [_make_terms_leaf_bucket(f"//s/f{i}.txt") for i in range(5)]
+    _make_terms_tree_response(mock_search, buckets)
 
     repo = FileRepository(MagicMock(), MagicMock(), search_factory=mock_search)
     query = QueryParameters(query_id="q1", search_string="*")
-    # get_connection is a global DSL registry call with no injection point.
     with patch("common.models.es_repository.get_connection", return_value=MagicMock()):
         result = repo.get_full_paths_by_query(
             query=query, tree_node_directory_path="//s"
         )
 
     assert result.next_page_cursor is None
+    assert len(result.nodes) == 5
 
 
-def test_get_full_paths_by_query_cursor_when_exactly_max_buckets():
-    """next_page_cursor is set when we collect exactly TREE_PATH_MAX_ELEMENT_COUNT
-    nodes."""
+def test_get_full_paths_by_query_cursor_when_more_than_max_buckets():
+    """next_page_cursor is the last returned node's path when ES returns
+    TREE_PATH_MAX_ELEMENT_COUNT + 1 buckets (more pages exist)."""
     mock_search = MagicMock()
     buckets = [
-        _make_leaf_bucket(f"//s/f{i}.txt") for i in range(TREE_PATH_MAX_ELEMENT_COUNT)
+        _make_terms_leaf_bucket(f"//s/f{i}.txt")
+        for i in range(TREE_PATH_MAX_ELEMENT_COUNT + 1)
     ]
-    after_key = f"//s/f{TREE_PATH_MAX_ELEMENT_COUNT - 1}.txt"
-    _make_tree_response(mock_search, buckets, after_key_path=after_key)
+    expected_cursor = f"//s/f{TREE_PATH_MAX_ELEMENT_COUNT - 1}.txt"
+    _make_terms_tree_response(mock_search, buckets)
 
     repo = FileRepository(MagicMock(), MagicMock(), search_factory=mock_search)
     query = QueryParameters(query_id="q2", search_string="*")
-    # get_connection is a global DSL registry call with no injection point.
     with patch("common.models.es_repository.get_connection", return_value=MagicMock()):
         result = repo.get_full_paths_by_query(
             query=query, tree_node_directory_path="//s"
         )
 
-    assert result.next_page_cursor == after_key
+    assert result.next_page_cursor == expected_cursor
+    assert len(result.nodes) == TREE_PATH_MAX_ELEMENT_COUNT
 
 
-def test_get_full_paths_by_query_loops_past_all_filtered_page():
-    """The loop advances past a full page where every bucket is filtered out.
-
-    When the first ES page is full (TREE_PATH_COMPOSITE_PAGE_SIZE buckets) but all are
-    excluded by the depth filter, the loop must issue a second request.  When that
-    second page is empty (data exhausted) the result has no nodes and no cursor.
-    """
-    # All buckets are deeper than //s (depth 2), so the Python-side depth filter
-    # for tree_node_directory_path="//s" will exclude all of them.
-    filtered_buckets = [
-        _make_leaf_bucket(f"//s/sub/f{i}.txt")
-        for i in range(TREE_PATH_COMPOSITE_PAGE_SIZE)
-    ]
-    after_key_path = f"//s/sub/f{TREE_PATH_COMPOSITE_PAGE_SIZE - 1}.txt"
-
-    search_obj = MagicMock()
-    search_obj.__getitem__ = MagicMock(return_value=search_obj)
-    search_obj.aggs = MagicMock()
-    search_obj.filter.return_value = search_obj
-
-    # First response: full page of filtered buckets with an after_key.
-    resp1_dir = MagicMock()
-    resp1_dir.buckets = filtered_buckets
-    resp1_dir.after_key = {"path": after_key_path}
-    resp1 = MagicMock()
-    resp1.aggregations.directory = resp1_dir
-
-    # Second response: empty page — signals data exhausted.
-    resp2_dir = MagicMock()
-    resp2_dir.buckets = []
-    resp2_dir.after_key = None
-    resp2 = MagicMock()
-    resp2.aggregations.directory = resp2_dir
-
-    search_obj.using.return_value.execute.side_effect = [resp1, resp2]
-
+def test_get_full_paths_by_query_single_es_request():
+    """get_full_paths_by_query issues exactly one ES request regardless of bucket
+    count."""
     mock_search = MagicMock()
-    mock_search.return_value = search_obj
+    buckets = [_make_terms_leaf_bucket(f"//s/f{i}.txt") for i in range(3)]
+    search_obj = _make_terms_tree_response(mock_search, buckets)
 
     repo = FileRepository(MagicMock(), MagicMock(), search_factory=mock_search)
     query = QueryParameters(query_id="q3", search_string="*")
     with patch("common.models.es_repository.get_connection", return_value=MagicMock()):
+        repo.get_full_paths_by_query(query=query, tree_node_directory_path="//s")
+
+    assert search_obj.using.return_value.execute.call_count == 1
+
+
+def test_get_full_paths_by_query_cursor_bucket_excluded_on_next_page():
+    """When after=cursor is supplied, the cursor bucket is excluded even if ES returns
+    it again (its deeper-path tokens satisfy the range filter)."""
+    mock_search = MagicMock()
+    cursor = "//s/f0.txt"
+    buckets = [
+        _make_terms_leaf_bucket(cursor),  # reappearing cursor — must be dropped
+        _make_terms_leaf_bucket("//s/f1.txt"),
+        _make_terms_leaf_bucket("//s/f2.txt"),
+    ]
+    _make_terms_tree_response(mock_search, buckets)
+
+    repo = FileRepository(MagicMock(), MagicMock(), search_factory=mock_search)
+    query = QueryParameters(query_id="q4", search_string="*")
+    with patch("common.models.es_repository.get_connection", return_value=MagicMock()):
         result = repo.get_full_paths_by_query(
-            query=query, tree_node_directory_path="//s"
+            query=query, tree_node_directory_path="//s", after=cursor
         )
 
-    assert result.nodes == []
-    assert result.next_page_cursor is None
-    assert search_obj.using.return_value.execute.call_count == 2
+    paths = [str(n.full_path) for n in result.nodes]
+    assert cursor not in paths
+    assert len(result.nodes) == 2
 
 
 def test_get_stat_terms():

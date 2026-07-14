@@ -666,6 +666,10 @@ export const searchSlice = createSlice({
                     Object.keys(state.files).forEach((fileId) => {
                         state.files[fileId].meta = null;
                     });
+                    if (state.temporaryFileId) {
+                        delete state.files[state.temporaryFileId];
+                        state.temporaryFileId = null;
+                    }
                     return;
                 }
                 const isNewQuery = state.query?.id !== action.payload.query.id;

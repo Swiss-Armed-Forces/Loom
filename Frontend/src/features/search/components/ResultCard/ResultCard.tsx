@@ -12,24 +12,13 @@ import { useMediaQuery } from "@mui/material";
 import React, { useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { useInView } from "react-intersection-observer";
-import { toast } from "react-toastify";
 
-import {
-    GetFilePreviewResponse,
-    scheduleSingleFileIndexing,
-    scheduleSingleFileSummarization,
-    scheduleSingleFileTranslation,
-    scheduleSingleImageDescription,
-    updateFile,
-} from "@app/api";
 import { unsubscribeChannel } from "@app/channelSubscriptions";
 import { useAppDispatch, useAppSelector } from "@app/hooks";
 import {
     selectQuery,
     selectFileById,
-    selectAutoActionsPreferences,
     setFileInViewState,
-    setFilePreview,
     setHighlightedFileId,
     openFileTabThunk,
 } from "@app/slices/searchSlice";
@@ -70,11 +59,6 @@ export const ResultCard = React.memo(
         const { ref: inViewRef, inView } = useInView({
             threshold: [0.2],
         });
-        const autoActionsPreferences = useAppSelector(
-            selectAutoActionsPreferences,
-        );
-        const hasUpdatedSeen = useRef<boolean>(true);
-        const hasHighlightActionsRun = useRef<boolean>(false);
 
         // Custom scroll function that scrolls within the results container only
         const scrollCardIntoView = () => {
@@ -116,106 +100,12 @@ export const ResultCard = React.memo(
             });
         };
 
-        // Scroll into view only when highlight transitions false → true
-        const prevHighlightedRef = useRef(false);
         useEffect(() => {
-            const wasHighlighted = prevHighlightedRef.current;
-            prevHighlightedRef.current = isHighlighted;
-            if (isHighlighted && !wasHighlighted && cardRef.current) {
-                scrollCardIntoView();
-            }
+            if (!isHighlighted || !cardRef.current) return;
+            cardRef.current.focus({ preventScroll: true });
+            const id = setTimeout(() => scrollCardIntoView(), 100);
+            return () => clearTimeout(id);
         }, [isHighlighted]);
-
-        // Reset hasUpdatedSeen when file changes
-        // Do not reset it if the file is still highlighted
-        useEffect(() => {
-            if (
-                isHighlighted ||
-                !hasUpdatedSeen ||
-                filePreview?.seen == undefined ||
-                filePreview?.seen
-            ) {
-                return;
-            }
-            hasUpdatedSeen.current = false;
-            hasHighlightActionsRun.current = false;
-        }, [filePreview?.seen, isHighlighted]);
-
-        // Re-scroll when content loads (skeleton replaced with actual content)
-        // This handles the case where card height changes after preview loads
-        useEffect(() => {
-            const runHighlightAutoActions = (file: GetFilePreviewResponse) => {
-                const prefs = autoActionsPreferences;
-                const optimisticUpdates: Partial<GetFilePreviewResponse> = {};
-
-                if (prefs.markAsSeen && !file.seen) {
-                    updateFile(file.fileId, { seen: true }).catch((err) =>
-                        toast.error(
-                            t("updateFileState.seen.scheduledErrorToast", {
-                                err,
-                            }),
-                        ),
-                    );
-                    hasUpdatedSeen.current = true;
-                    optimisticUpdates.seen = true;
-                }
-
-                if (prefs.flag && !file.flagged) {
-                    updateFile(file.fileId, { flagged: true }).catch((err) =>
-                        toast.error(
-                            t("updateFileState.flagged.scheduledErrorToast", {
-                                err,
-                            }),
-                        ),
-                    );
-                    optimisticUpdates.flagged = true;
-                }
-
-                if (prefs.reindex) {
-                    scheduleSingleFileIndexing(file.fileId).catch(() => {});
-                }
-
-                if (prefs.summarize) {
-                    scheduleSingleFileSummarization(file.fileId, null).catch(
-                        () => {},
-                    );
-                }
-
-                if (prefs.describeImage) {
-                    scheduleSingleImageDescription(file.fileId, null).catch(
-                        () => {},
-                    );
-                }
-
-                if (prefs.translate) {
-                    scheduleSingleFileTranslation("", file.fileId).catch(
-                        () => {},
-                    );
-                }
-
-                if (Object.keys(optimisticUpdates).length > 0) {
-                    dispatch(setFilePreview({ ...file, ...optimisticUpdates }));
-                }
-            };
-
-            if (isHighlighted && filePreview && cardRef.current) {
-                if (!hasHighlightActionsRun.current) {
-                    hasHighlightActionsRun.current = true;
-                    runHighlightAutoActions(filePreview);
-                    // Scroll only on the initial highlight (false → true).
-                    // Subsequent re-renders (e.g. filePreview data updates) must
-                    // not re-center the card — the user may have scrolled away.
-                    const timeoutId = setTimeout(() => {
-                        scrollCardIntoView();
-                    }, 100);
-                    cardRef.current.focus({ preventScroll: true });
-                    return () => {
-                        clearTimeout(timeoutId);
-                    };
-                }
-                cardRef.current.focus({ preventScroll: true });
-            }
-        }, [isHighlighted, filePreview, autoActionsPreferences, dispatch, t]);
 
         // Combine refs
         const setRefs = (element: HTMLDivElement | null) => {
