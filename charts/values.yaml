@@ -548,6 +548,19 @@ notifyListener:
   priorityClass: null
   image:
     repository: swiss-armed-forces/cyber-command/cea/loom/crawler
+  initContainer:
+    enabled: true
+    image:
+      repository: swiss-armed-forces/cyber-command/cea/loom/alpine
+      tag: null
+      pullPolicy: null
+    resources:
+      requests:
+        cpu: "0.05"
+        memory: "50Mi"
+      limits:
+        cpu: "0.1"
+        memory: "100Mi"
   resources:
     requests:
       cpu: "0.1"
