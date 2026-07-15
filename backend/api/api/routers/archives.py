@@ -125,6 +125,11 @@ def download_archive(
         media_type="application/zip",
         headers={
             **get_content_disposition_header("attachment", archive_name),
+            **(
+                {"Content-Length": str(archive_file.size)}
+                if archive_file.size is not None
+                else {}
+            ),
         },
     )
 
