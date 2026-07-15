@@ -351,6 +351,8 @@ class BaseEsRepository(  # pylint: disable=too-many-public-methods
                 size=pagination_params.page_size,
             )
         else:
+            if query.query_id is None:
+                query.query_id = self.open_point_in_time()
             search = search.extra(size=scan_page_size)
 
         while True:
