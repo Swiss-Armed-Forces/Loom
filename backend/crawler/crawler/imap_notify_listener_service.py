@@ -3,7 +3,6 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Any, NamedTuple
 
 from common.file.file_repository import (
-    FileNotFoundException,
     FileRepository,
     ImapInfo,
     ImapPurePath,
@@ -11,6 +10,7 @@ from common.file.file_repository import (
 from common.file.file_scheduling_service import FileSchedulingService
 from common.services.task_scheduling_service import UpdateFileRequest
 from imapclient import IMAPClient
+from imapclient.exceptions import IMAPClientError
 
 logger = logging.getLogger(__name__)
 
@@ -169,7 +169,7 @@ class IMAPNotifyListenerService:  # pylint: disable=too-many-instance-attributes
                             result.modseq,
                             folder_name,
                         )
-                except Exception:  # pylint: disable=broad-except
+                except (IMAPClientError, OSError):
                     logger.warning(
                         "Could not initialize MODSEQ for folder %s",
                         folder_name,
@@ -252,25 +252,18 @@ class IMAPNotifyListenerService:  # pylint: disable=too-many-instance-attributes
 
     def _handle_flag_change(self, folder: str, uid: int, flags: list[str]) -> None:
         imap_info = ImapInfo(uid=uid, folder=ImapPurePath(folder))
-        try:
-            file = self._file_repository.get_email_from_imap_info(imap_info)
-        except FileNotFoundException:
-            logger.warning(
-                "No Loom file for IMAP folder=%s uid=%s, skipping flag change",
-                folder,
-                uid,
-            )
-            return
+        file_ids = self._file_repository.get_emails_from_imap_info(imap_info)
         update = UpdateFileRequest(
             flagged=IMAP_FLAG_FLAGGED in flags,
             seen=IMAP_FLAG_SEEN in flags,
         )
-        logger.info(
-            "Updating flags for file %s (folder=%s uid=%s): flagged=%s seen=%s",
-            file.id_,
-            folder,
-            uid,
-            update.flagged,
-            update.seen,
-        )
-        self._file_scheduling_service.update_file(file.id_, update)
+        for file_id in file_ids:
+            logger.info(
+                "Updating flags for file %s (folder=%s uid=%s): flagged=%s seen=%s",
+                file_id,
+                folder,
+                uid,
+                update.flagged,
+                update.seen,
+            )
+            self._file_scheduling_service.update_file(file_id, update)

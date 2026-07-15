@@ -25,7 +25,7 @@ class TestSetFlagsForFile:
         file_id = file.id_
         scheduling_service = cast(MagicMock, get_file_scheduling_service())
 
-        set_flags_for_file_task(file_id, flagged=True, seen=True)
+        set_flags_for_file_task([file_id], flagged=True, seen=True)
 
         scheduling_service.update_file.assert_called_once_with(
             file_id, UpdateFileRequest(flagged=True, seen=True)
@@ -36,7 +36,7 @@ class TestSetFlagsForFile:
         file_id = file.id_
         scheduling_service = cast(MagicMock, get_file_scheduling_service())
 
-        set_flags_for_file_task(file_id, flagged=True, seen=False)
+        set_flags_for_file_task([file_id], flagged=True, seen=False)
 
         scheduling_service.update_file.assert_called_once_with(
             file_id, UpdateFileRequest(flagged=True, seen=False)
