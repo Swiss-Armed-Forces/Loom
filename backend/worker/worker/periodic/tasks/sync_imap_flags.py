@@ -10,7 +10,7 @@ from common.dependencies import (
     get_imap_service,
     get_lazybytes_service,
 )
-from common.file.file_repository import FileNotFoundException, ImapInfo
+from common.file.file_repository import ImapInfo
 from common.services.lazybytes_service import TempTypedLazyBytes
 from common.services.task_scheduling_service import UpdateFileRequest
 
@@ -61,29 +61,15 @@ def sync_imap_flags_task(
 @app.task(base=PeriodicTask)
 def get_id_from_imap_info_task(
     imap_info_lb: TempTypedLazyBytes[ImapInfo],
-) -> UUID | None:
+) -> list[UUID]:
     imap_info = get_lazybytes_service().load_object(imap_info_lb)
-
-    file_repository = get_file_repository()
-    try:
-        file = file_repository.get_email_from_imap_info(imap_info)
-    except FileNotFoundException:
-        logger.warning(
-            "No Loom file found for IMAP email folder=%s uid=%s, skipping flag sync",
-            imap_info.folder,
-            imap_info.uid,
-        )
-        return None
-
-    return file.id_
+    return get_file_repository().get_emails_from_imap_info(imap_info)
 
 
 @app.task(base=PeriodicTask)
-def set_flags_for_file_task(file_id: UUID | None, flagged: bool, seen: bool):
-    if file_id is None:
-        return
-
-    get_file_scheduling_service().update_file(
-        file_id,
-        UpdateFileRequest(flagged=flagged, seen=seen),
-    )
+def set_flags_for_file_task(file_ids: list[UUID], flagged: bool, seen: bool) -> None:
+    for file_id in file_ids:
+        get_file_scheduling_service().update_file(
+            file_id,
+            UpdateFileRequest(flagged=flagged, seen=seen),
+        )

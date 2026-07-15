@@ -59,7 +59,6 @@ from common.models.es_repository import (
 )
 from common.services.lazybytes_service import FileStorageLazyBytes
 from common.services.query_builder import (
-    DEFAULT_PIT_KEEPALIVE,
     QueryBuilder,
     QueryParameters,
 )
@@ -1400,14 +1399,9 @@ class FileRepository(BaseEsRepository[_EsFile, File]):
             per_page_callback=page_handler,
         )
 
-    def get_email_from_imap_info(self, imap_info: ImapInfo) -> File:
-
-        keep_alive = DEFAULT_PIT_KEEPALIVE
-        query_id = self.open_point_in_time(keep_alive=keep_alive)
+    def get_emails_from_imap_info(self, imap_info: ImapInfo) -> list[UUID]:
 
         search: Search[_EsFile] = self._document_type.search(using=self._elasticsearch)
-
-        search = search.extra(pit={"id": query_id, "keep_alive": keep_alive}).index()
 
         email_filter = self._build_email_filter()
 
@@ -1424,20 +1418,7 @@ class FileRepository(BaseEsRepository[_EsFile, File]):
             must=[email_filter, imap_filter],
         )
 
-        search = search.query(final_query)
-
-        # Fetch 2 hits to check for duplicates
-        search = search[0:2]
+        search = search.query(final_query).source(False)
         result = search.execute()
 
-        if not result.hits:
-            raise FileNotFoundException(
-                f"No email found for folder={imap_info.folder}, uid={imap_info.uid}"
-            )
-
-        if len(result.hits) > 1:
-            raise ValueError(
-                f"Multiple emails found for folder={imap_info.folder}, uid={imap_info.uid}"
-            )
-
-        return self._document_to_object(result.hits[0])
+        return [UUID(hit.meta.id) for hit in result.hits]

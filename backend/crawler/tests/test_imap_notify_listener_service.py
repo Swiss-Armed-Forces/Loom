@@ -1,8 +1,8 @@
 # pylint: disable=redefined-outer-name
 from unittest.mock import MagicMock
+from uuid import UUID
 
 import pytest
-from common.file.file_repository import FileNotFoundException
 from common.services.task_scheduling_service import UpdateFileRequest
 
 from crawler.imap_notify_listener_service import IMAPNotifyListenerService
@@ -60,9 +60,8 @@ class TestHandleFetchResponse:
     def test_well_formed_fetch_schedules_update(
         self, make_service, file_repository, file_scheduling_service
     ):
-        file = MagicMock()
-        file.id_ = "abc-123"
-        file_repository.get_email_from_imap_info.return_value = file
+        file_id = UUID("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")
+        file_repository.get_emails_from_imap_info.return_value = [file_id]
 
         service = make_service()
         # imapclient returns a flat tuple: (seq, b'FETCH', (key, val, key, val, ...))
@@ -74,16 +73,15 @@ class TestHandleFetchResponse:
         service.handle_fetch_response(response)
 
         file_scheduling_service.update_file.assert_called_once_with(
-            "abc-123",
+            file_id,
             UpdateFileRequest(flagged=False, seen=True),
         )
 
     def test_flagged_and_seen_flags(
         self, make_service, file_repository, file_scheduling_service
     ):
-        file = MagicMock()
-        file.id_ = "xyz"
-        file_repository.get_email_from_imap_info.return_value = file
+        file_id = UUID("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb")
+        file_repository.get_emails_from_imap_info.return_value = [file_id]
 
         service = make_service()
         response = (
@@ -101,7 +99,7 @@ class TestHandleFetchResponse:
         service.handle_fetch_response(response)
 
         file_scheduling_service.update_file.assert_called_once_with(
-            "xyz",
+            file_id,
             UpdateFileRequest(flagged=True, seen=True),
         )
 
@@ -151,9 +149,8 @@ class TestHandleFetchResponse:
     def test_mailbox_string_value_decoded(
         self, make_service, file_repository, file_scheduling_service
     ):
-        file = MagicMock()
-        file.id_ = "sent-1"
-        file_repository.get_email_from_imap_info.return_value = file
+        file_id = UUID("cccccccc-cccc-cccc-cccc-cccccccccccc")
+        file_repository.get_emails_from_imap_info.return_value = [file_id]
 
         service = make_service()
         response = (
@@ -171,16 +168,15 @@ class TestHandleFetchResponse:
         service.handle_fetch_response(response)
 
         file_scheduling_service.update_file.assert_called_once_with(
-            "sent-1",
+            file_id,
             UpdateFileRequest(flagged=False, seen=True),
         )
 
     def test_empty_flags_schedules_update_with_both_false(
         self, make_service, file_repository, file_scheduling_service
     ):
-        file = MagicMock()
-        file.id_ = "f1"
-        file_repository.get_email_from_imap_info.return_value = file
+        file_id = UUID("dddddddd-dddd-dddd-dddd-dddddddddddd")
+        file_repository.get_emails_from_imap_info.return_value = [file_id]
 
         service = make_service()
         response = (
@@ -191,16 +187,14 @@ class TestHandleFetchResponse:
         service.handle_fetch_response(response)
 
         file_scheduling_service.update_file.assert_called_once_with(
-            "f1",
+            file_id,
             UpdateFileRequest(flagged=False, seen=False),
         )
 
     def test_file_not_found_skips_update(
         self, make_service, file_repository, file_scheduling_service
     ):
-        file_repository.get_email_from_imap_info.side_effect = FileNotFoundException(
-            "not found"
-        )
+        file_repository.get_emails_from_imap_info.return_value = []
 
         service = make_service()
         response = (
@@ -211,3 +205,26 @@ class TestHandleFetchResponse:
         service.handle_fetch_response(response)
 
         file_scheduling_service.update_file.assert_not_called()
+
+    def test_multiple_emails_found_updates_all(
+        self, make_service, file_repository, file_scheduling_service
+    ):
+        file_id_1 = UUID("11111111-1111-1111-1111-111111111111")
+        file_id_2 = UUID("22222222-2222-2222-2222-222222222222")
+        file_repository.get_emails_from_imap_info.return_value = [file_id_1, file_id_2]
+
+        service = make_service()
+        response = (
+            5,
+            b"FETCH",
+            (b"UID", 11, b"MAILBOX", b"INBOX", b"FLAGS", (b"\\Seen",)),
+        )
+        service.handle_fetch_response(response)
+
+        assert file_scheduling_service.update_file.call_count == 2
+        file_scheduling_service.update_file.assert_any_call(
+            file_id_1, UpdateFileRequest(flagged=False, seen=True)
+        )
+        file_scheduling_service.update_file.assert_any_call(
+            file_id_2, UpdateFileRequest(flagged=False, seen=True)
+        )
