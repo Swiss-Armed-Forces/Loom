@@ -641,6 +641,7 @@ def download_file(
         content=file_stream,
         headers={
             **get_content_disposition_header(content_disposition, file.short_name),
+            "Content-Length": str(file.size),
         },
     )
 
