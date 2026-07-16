@@ -10,6 +10,8 @@ from utils.upload_asset import upload_asset
 
 # pylint: disable=redefined-outer-name
 
+pytestmark = pytest.mark.usefixtures("disable_periodic_tasks")
+
 ASSET_NAME = "basic_email.eml"
 
 
@@ -66,6 +68,15 @@ def test_unflagging_email_in_loom_clears_flag_in_imap(imap_service: IMAPService)
     )
     assert len(list(imap_service.get_emails(["FLAGGED"], recurse=True))) == 1
 
+    # Wait for the NOTIFY listener to propagate \Flagged to ES before calling the
+    # Loom API. Without this, the NOTIFY-triggered update_task(flagged=True) can
+    # race with our update_task(flagged=False) and overwrite it.
+    fetch_files_from_api(
+        search_string=f'short_name:"{ASSET_NAME}" AND flagged:true',
+        expected_no_of_files=1,
+        wait_for_celery_idle=True,
+    )
+
     # Unflag via Loom API
     _update_file(indexed_email.file_id, UpdateFileRequest(flagged=False))
 
@@ -117,6 +128,15 @@ def test_marking_email_unseen_in_loom_clears_seen_in_imap(imap_service: IMAPServ
         flags=[b"\\Seen"],
     )
     assert len(list(imap_service.get_emails(["SEEN"], recurse=True))) == 1
+
+    # Wait for the NOTIFY listener to propagate \Seen to ES before calling the
+    # Loom API. Without this, the NOTIFY-triggered update_task(seen=True) can
+    # race with our update_task(seen=False) and overwrite it.
+    fetch_files_from_api(
+        search_string=f'short_name:"{ASSET_NAME}" AND seen:true',
+        expected_no_of_files=1,
+        wait_for_celery_idle=True,
+    )
 
     # Mark as unseen via Loom API
     _update_file(indexed_email.file_id, UpdateFileRequest(seen=False))
