@@ -645,7 +645,6 @@ The complete source code for Traefik is publicly available at [https://github.co
 | redis                                 | 5.2.1           | MIT License                                                                      |
 | rich                                  | 15.0.0          | MIT License                                                                      |
 | six                                   | 1.17.0          | MIT License                                                                      |
-| stream-zip                            | 0.0.84          | MIT License                                                                      |
 | textual                               | 8.2.6           | MIT License                                                                      |
 | tomlkit                               | 0.15.0          | MIT License                                                                      |
 | uc-micro-py                           | 2.0.0           | MIT License                                                                      |
@@ -2127,7 +2126,6 @@ The complete source code for Traefik is publicly available at [https://github.co
 | sq | 0.27.0-2+b1 | GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
 | starlette | 0.52.1 | BSD-3-Clause | python-installed-package-cataloger |
 | stdlib | go1.26.1 | BSD-3-Clause | go-module-binary-cataloger |
-| stream-zip | 0.0.84 |  | python-installed-package-cataloger |
 | subversion | 1.14.2-4+deb12u1 | AFL-3.0, Apache-2.0, BSD-2-Clause, BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later | dpkg-db-cataloger |
 | sysvinit-utils | 3.06-4 | GPL-2.0-only, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-only | dpkg-db-cataloger |
 | tar | 1.34+dfsg-1.2+deb12u1 | GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |

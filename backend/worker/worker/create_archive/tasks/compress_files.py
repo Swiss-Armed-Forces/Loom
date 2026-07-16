@@ -1,5 +1,7 @@
+import io
 import logging
 import tempfile
+import zipfile
 from collections.abc import Iterable, Iterator
 from datetime import datetime
 from pathlib import Path
@@ -22,7 +24,6 @@ from common.services.lazybytes_service import (
 )
 from common.utils.pydantic_field_paths import iter_field_paths_by_type
 from pydantic import BaseModel
-from stream_zip import ZIP_64, MemberFile, stream_zip
 
 from worker.create_archive.infra.archive_processing_task import ArchiveProcessingTask
 from worker.create_archive.tasks.archive_cli import (
@@ -51,6 +52,57 @@ _PERMS_FILE = 0o600
 _PERMS_META = 0o644
 _PERMS_EXEC = 0o755
 _PROGRESS_LOG_INTERVAL_PCT = 5
+
+
+class ZipEntry(NamedTuple):
+    filename: str
+    modified_at: datetime
+    permissions: int
+    data: Iterable[bytes]
+
+
+class _StreamingBuffer(io.RawIOBase):
+    def __init__(self) -> None:
+        self._chunks: list[bytes] = []
+        self._pos: int = 0
+
+    def write(self, b: bytes | bytearray) -> int:  # type: ignore[override]
+        data = bytes(b)
+        if data:
+            self._chunks.append(data)
+        self._pos += len(b)
+        return len(b)
+
+    def tell(self) -> int:
+        return self._pos
+
+    def drain(self) -> Iterator[bytes]:
+        chunks, self._chunks = self._chunks, []
+        yield from chunks
+
+    def seekable(self) -> bool:
+        return False
+
+    def writable(self) -> bool:
+        return True
+
+    def readable(self) -> bool:
+        return False
+
+
+def _stream_zip_stdlib(entries: Iterator[ZipEntry]) -> Iterator[bytes]:
+    buf = _StreamingBuffer()
+    with zipfile.ZipFile(buf, mode="w", allowZip64=True) as zf:
+        for entry in entries:
+            info = zipfile.ZipInfo(entry.filename, entry.modified_at.timetuple()[:6])
+            info.compress_type = zipfile.ZIP_DEFLATED
+            info.external_attr = entry.permissions << 16
+            with zf.open(info, "w", force_zip64=True) as dest:
+                for chunk in entry.data:
+                    dest.write(chunk)
+                    yield from buf.drain()
+            yield from buf.drain()
+    yield from buf.drain()
 
 
 def _readme_content(archive_name: str) -> bytes:
@@ -180,7 +232,7 @@ def _file_archive_entries(
     archive_name: str,
     modified_at: datetime,
     collector: ShellIndexCollector,
-) -> Iterator[MemberFile]:
+) -> Iterator[ZipEntry]:
     """Yield ZIP entries for all files."""
     file_storage_service = get_file_storage_service()
     total = len(file_ids)
@@ -211,61 +263,55 @@ def _file_archive_entries(
                     file_.full_path,
                 )
                 continue
-            yield (
-                f"{archive_name}/{FILES_DIR}/{storage.service_id}",
-                modified_at,
-                _PERMS_FILE,
-                ZIP_64,
-                file_storage_service.load_generator(storage),
+            yield ZipEntry(
+                filename=f"{archive_name}/{FILES_DIR}/{storage.service_id}",
+                modified_at=modified_at,
+                permissions=_PERMS_FILE,
+                data=file_storage_service.load_generator(storage),
             )
         file_json = file_.model_dump_json(indent=JSON_INDENT).encode()
-        yield (
-            f"{archive_name}/{FILES_INDEX_DIR}/{json_filename}",
-            modified_at,
-            _PERMS_FILE,
-            ZIP_64,
-            iter([file_json]),
+        yield ZipEntry(
+            filename=f"{archive_name}/{FILES_INDEX_DIR}/{json_filename}",
+            modified_at=modified_at,
+            permissions=_PERMS_FILE,
+            data=iter([file_json]),
         )
     logger.info("Compressing archive: %d/%d files (100%%)", total, total)
 
 
-def _archive_data(file_ids: list[UUID], archive: Archive) -> Iterator[MemberFile]:
+def _archive_data(file_ids: list[UUID], archive: Archive) -> Iterator[ZipEntry]:
     archive_name = archive.name.removesuffix(ZIP_EXTENSION)
     modified_at = datetime.now()
 
     manifest = _manifest_content(archive)
-    yield (
-        f"{archive_name}/{MANIFEST_FILENAME}",
-        modified_at,
-        _PERMS_META,
-        ZIP_64,
-        iter([manifest]),
+    yield ZipEntry(
+        filename=f"{archive_name}/{MANIFEST_FILENAME}",
+        modified_at=modified_at,
+        permissions=_PERMS_META,
+        data=iter([manifest]),
     )
 
     readme = _readme_content(archive_name)
-    yield (
-        f"{archive_name}/{README_FILENAME}",
-        modified_at,
-        _PERMS_META,
-        ZIP_64,
-        iter([readme]),
+    yield ZipEntry(
+        filename=f"{archive_name}/{README_FILENAME}",
+        modified_at=modified_at,
+        permissions=_PERMS_META,
+        data=iter([readme]),
     )
 
-    yield (
-        f"{archive_name}/{CLI_ENTRYPOINT_FILENAME}",
-        modified_at,
-        _PERMS_EXEC,
-        ZIP_64,
-        iter([_cli_entrypoint()]),
+    yield ZipEntry(
+        filename=f"{archive_name}/{CLI_ENTRYPOINT_FILENAME}",
+        modified_at=modified_at,
+        permissions=_PERMS_EXEC,
+        data=iter([_cli_entrypoint()]),
     )
 
     for entry in _cli_entries():
-        yield (
-            f"{archive_name}/{CLI_FILENAME}/{entry.filename}",
-            modified_at,
-            _PERMS_META,
-            ZIP_64,
-            iter([entry.content]),
+        yield ZipEntry(
+            filename=f"{archive_name}/{CLI_FILENAME}/{entry.filename}",
+            modified_at=modified_at,
+            permissions=_PERMS_META,
+            data=iter([entry.content]),
         )
 
     with tempfile.TemporaryDirectory() as tmpdir:
@@ -275,18 +321,17 @@ def _archive_data(file_ids: list[UUID], archive: Archive) -> Iterator[MemberFile
         )
 
         # collector is now fully populated — yield the navigation index streamed from disk
-        yield (
-            f"{archive_name}/{SHELL_INDEX_FILENAME}",
-            modified_at,
-            _PERMS_META,
-            ZIP_64,
-            collector.stream_db(),
+        yield ZipEntry(
+            filename=f"{archive_name}/{SHELL_INDEX_FILENAME}",
+            modified_at=modified_at,
+            permissions=_PERMS_META,
+            data=collector.stream_db(),
         )
 
 
 def stream_archive(file_ids: list[UUID], archive: Archive) -> Iterable[bytes]:
-    """Return a stream_zip generator for the given archive."""
-    return stream_zip(_archive_data(file_ids, archive))
+    """Return an iterator of bytes for the given archive."""
+    return _stream_zip_stdlib(_archive_data(file_ids, archive))
 
 
 @app.task(
