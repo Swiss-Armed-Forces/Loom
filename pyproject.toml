@@ -79,3 +79,6 @@ exclude = ["tests/test_secret_scan.py"]
 
 [tool.black]
 quiet = true
+
+[tool.pyright]
+extraPaths = ["backend/worker/tests"]

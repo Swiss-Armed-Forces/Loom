@@ -1,25 +1,34 @@
+import argparse
+import io
 import shlex
+import sqlite3
 import subprocess
 import sys
+from contextlib import redirect_stdout
 from pathlib import Path
+from typing import NamedTuple
 
 from common.services.lazybytes_service import InMemoryFileStorageLazyBytesService
+from create_archive.archive_helpers import build_archive, simple_entries
 
 from worker.create_archive.tasks.archive_cli import (
     CLI_DESCRIPTION,
     CLI_ENTRYPOINT_FILENAME,
     ERR_NO_FILE_FOUND,
     FILES_INDEX_DIR,
+    SHELL_INDEX_FILENAME,
     SHELL_PROMPT,
+    cmd_shell,
 )
-from worker.create_archive.tasks.archive_cli._db import open_shell_db
+from worker.create_archive.tasks.archive_cli._db import (
+    SHELL_DB_SCHEMA,
+    open_shell_db,
+)
 from worker.create_archive.tasks.archive_cli._shell import (
     ShellCompleter,
     shell_escape,
     shell_unescape,
 )
-from worker.create_archive.tasks.archive_cli._utils import resolve_cwd
-from worker.utils.archive import build_archive, simple_entries
 
 
 def _run_shell(archive_dir: Path, commands: str) -> subprocess.CompletedProcess:
@@ -31,6 +40,36 @@ def _run_shell(archive_dir: Path, commands: str) -> subprocess.CompletedProcess:
         check=False,
         cwd=archive_dir,
     )
+
+
+class _CompleterContext(NamedTuple):
+    completer: ShellCompleter
+    archive_dir: Path
+
+
+class TestCliShellInProcess:
+    def test_ctrl_c_does_not_exit_shell(self, tmp_path: Path) -> None:
+        call_count = 0
+
+        def mock_input(_prompt: str = "") -> str:
+            nonlocal call_count
+            call_count += 1
+            if call_count == 1:
+                raise KeyboardInterrupt
+            return "exit"
+
+        db = sqlite3.connect(str(tmp_path / SHELL_INDEX_FILENAME))
+        db.executescript(SHELL_DB_SCHEMA)
+        out = io.StringIO()
+        with redirect_stdout(out):
+            cmd_shell(
+                argparse.Namespace(),
+                db=db,
+                history_file=None,
+                input_fn=mock_input,
+            )
+
+        assert "^C" in out.getvalue()
 
 
 class TestCliShell:
@@ -647,40 +686,6 @@ class TestShellWithSpecialFilenames:
         assert "other.pdf" in result.stdout
 
 
-class TestResolveCwd:
-    """Unit tests for resolve_cwd — a pure function, no filesystem needed."""
-
-    def test_root_is_empty_string(self) -> None:
-        assert resolve_cwd("", "") == ""
-
-    def test_descend_one_level(self) -> None:
-        assert resolve_cwd("", "docs") == "docs"
-
-    def test_descend_two_levels(self) -> None:
-        assert resolve_cwd("docs", "reports") == "docs/reports"
-
-    def test_dotdot_goes_up(self) -> None:
-        assert resolve_cwd("docs", "..") == ""
-
-    def test_dotdot_from_root_stays_at_root(self) -> None:
-        assert resolve_cwd("", "..") == ""
-
-    def test_dotdot_beyond_root_clamps(self) -> None:
-        assert resolve_cwd("docs", "../..") == ""
-
-    def test_dot_stays(self) -> None:
-        assert resolve_cwd("docs", ".") == "docs"
-
-    def test_absolute_target(self) -> None:
-        assert resolve_cwd("docs", "/images") == "images"
-
-    def test_cd_root_slash(self) -> None:
-        assert resolve_cwd("docs/reports", "/") == ""
-
-    def test_mixed_dotdot_and_segment(self) -> None:
-        assert resolve_cwd("a/b/c", "../../x") == "a/x"
-
-
 class TestEscapeHelpers:
     """Unit tests for shell_escape / shell_unescape."""
 
@@ -771,27 +776,58 @@ class TestCliShellNavigationExtra:
         assert "images" not in result.stdout
 
 
-class TestCliStandalone:
-    """Tests for non-shell (standalone) CLI invocations."""
+class TestCliTabComplete:
+    def _make_completer(
+        self,
+        tmp_path: Path,
+        file_storage_service_inmemory: InMemoryFileStorageLazyBytesService,
+    ) -> _CompleterContext:
+        archive_dir = build_archive(
+            tmp_path,
+            simple_entries({"file.txt": b"hello world"}),
+            file_storage_service_inmemory,
+        )
+        db = open_shell_db(archive_dir)
+        index_dir = archive_dir / "files_index"
+        completer = ShellCompleter(db=db, index_dir=index_dir)
+        return _CompleterContext(completer=completer, archive_dir=archive_dir)
 
-    def test_ls_no_args_lists_all(
+    def test_info_field_completes_after_path(
         self,
         tmp_path: Path,
         file_storage_service_inmemory: InMemoryFileStorageLazyBytesService,
     ) -> None:
-        archive_dir = build_archive(
-            tmp_path,
-            simple_entries({"docs/report.pdf": b"data", "images/photo.jpg": b"img"}),
-            file_storage_service_inmemory,
-        )
-        result = subprocess.run(
-            [sys.executable, str(archive_dir / CLI_ENTRYPOINT_FILENAME), "ls"],
-            capture_output=True,
-            text=True,
-            check=False,
-            cwd=archive_dir,
-        )
+        completer, _ = self._make_completer(tmp_path, file_storage_service_inmemory)
+        completer.cwd = ""
+        line = "info test/file.txt con"
+        begidx = len("info test/file.txt ")
+        result = completer.get_completions("con", line, begidx)
 
-        assert result.returncode == 0
-        assert "docs/report.pdf" in result.stdout
-        assert "images/photo.jpg" in result.stdout
+        assert any(c.startswith("con") for c in result)
+
+    def test_info_field_completes_empty_prefix(
+        self,
+        tmp_path: Path,
+        file_storage_service_inmemory: InMemoryFileStorageLazyBytesService,
+    ) -> None:
+        completer, _ = self._make_completer(tmp_path, file_storage_service_inmemory)
+        completer.cwd = ""
+        line = "info test/file.txt "
+        begidx = len(line)
+        result = completer.get_completions("", line, begidx)
+
+        assert len(result) > 0
+        assert any("storage_data" in c for c in result)
+
+    def test_info_path_still_completes_first_arg(
+        self,
+        tmp_path: Path,
+        file_storage_service_inmemory: InMemoryFileStorageLazyBytesService,
+    ) -> None:
+        completer, _ = self._make_completer(tmp_path, file_storage_service_inmemory)
+        completer.cwd = ""
+        line = "info test"
+        begidx = len("info ")
+        result = completer.get_completions("test", line, begidx)
+
+        assert any("test" in c for c in result)

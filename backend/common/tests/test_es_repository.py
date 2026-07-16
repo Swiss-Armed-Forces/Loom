@@ -962,6 +962,47 @@ def test_es_repository_get_id_generator_by_query():
     search_pre_execute_mock.execute.assert_called_once()
 
 
+def test_es_repository_full_scan_opens_pit_when_query_id_is_none():
+    """When query_id is None and no pagination_params, _paginate_search must open a PIT
+    automatically so that all pages see a consistent snapshot of the index."""
+    es_repository = _TestEsRepository(
+        query_builder=get_query_builder(),
+        pubsub_service=get_pubsub_service(),
+        mock_types=True,
+    )
+    auto_pit_id = "auto-opened-pit-id"
+    es_repository.elasticsearch_mock.open_point_in_time = MagicMock(
+        return_value={"id": auto_pit_id}
+    )
+
+    search_mock = MagicMock(spec=Search)
+    es_repository.document_type.search.return_value = search_mock
+    search_pre_execute_mock = (
+        search_mock
+        # happens in: _get_search_by_query
+        .highlight_options()
+        .highlight()
+        .query()
+        # happens in: _paginate_search
+        .sort()
+        .extra()  # scan_page_size
+        # happens in: _execute_search_with_query (PIT path)
+        .index()
+        .extra()
+    )
+
+    list(
+        es_repository.get_generator_by_query(
+            QueryParameters(query_id=None, search_string="just a random query")
+        )
+    )
+
+    # A PIT must have been opened automatically
+    es_repository.elasticsearch_mock.open_point_in_time.assert_called_once()
+    # And the query must have been executed via the PIT path, not the no-PIT shortcut
+    search_pre_execute_mock.execute.assert_called_once()
+
+
 def test_es_repository_get_id_generator_by_query_uses_large_scan_page_size():
     """get_id_generator_by_query must use _ID_SCAN_PAGE_SIZE, not DEFAULT_PAGE_SIZE, so
     that full-scan archive tasks make far fewer round trips to Elasticsearch."""

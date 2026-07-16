@@ -14,7 +14,13 @@ from common.services.lazybytes_service import (
     InMemoryFileStorageLazyBytesService,
     LazyBytes,
 )
-from stream_zip import stream_zip
+from create_archive.archive_helpers import (
+    ArchiveEntry,
+    build_archive,
+    build_archive_bytes,
+    make_archive,
+    simple_entries,
+)
 
 from worker.create_archive.tasks.archive_cli import (
     CLI_ENTRYPOINT_FILENAME,
@@ -31,19 +37,13 @@ from worker.create_archive.tasks.archive_cli._db import open_shell_db
 from worker.create_archive.tasks.compress_files import (
     _archive_data,
     _file_storage_fields,
+    stream_archive,
 )
 from worker.create_archive.tasks.detect_loom_archive import detect_loom_archive
 from worker.create_archive.tasks.unzip_loom_archive import (
     restore_archive_metadata_task,
     store_raw_files_task,
     upsert_file_objects_task,
-)
-from worker.utils.archive import (
-    ArchiveEntry,
-    build_archive,
-    build_archive_bytes,
-    make_archive,
-    simple_entries,
 )
 
 LAZYBYTES_THRESHOLD_BYTES = 64
@@ -129,7 +129,7 @@ class TestArchiveData:
         entries = list(_archive_data([file.id_], _ARCHIVE))
         repo_entry = next(e for e in entries if f"/{FILES_INDEX_DIR}/" in e[0])
 
-        json_bytes = b"".join(repo_entry[4])
+        json_bytes = b"".join(repo_entry.data)
         parsed = json.loads(json_bytes)
         assert parsed["source"] == "api-upload"
         assert parsed["sha256"] == "abc123"
@@ -137,7 +137,7 @@ class TestArchiveData:
     def test_produces_valid_zip(
         self, file_storage_service_inmemory: InMemoryFileStorageLazyBytesService
     ):
-        """_archive_data output can be consumed by stream_zip into a valid ZIP."""
+        """stream_archive produces a valid ZIP from _archive_data."""
         service_id = uuid4()
         file = _make_file(service_id=service_id)
         file_storage_service_inmemory.from_file_with_id(
@@ -145,7 +145,7 @@ class TestArchiveData:
         )
         get_file_repository().get_by_id.return_value = file
 
-        zip_bytes = b"".join(stream_zip(_archive_data([file.id_], _ARCHIVE)))
+        zip_bytes = b"".join(stream_archive([file.id_], _ARCHIVE))
 
         with zipfile.ZipFile(io.BytesIO(zip_bytes)) as zf:
             namelist = zf.namelist()
@@ -184,7 +184,7 @@ class TestArchiveData:
 
     def test_cli_is_included_in_archive(self):
         """cli.py entry point and archive_cli/ package are bundled into the archive."""
-        zip_bytes = b"".join(stream_zip(_archive_data([], _ARCHIVE)))
+        zip_bytes = b"".join(stream_archive([], _ARCHIVE))
 
         with zipfile.ZipFile(io.BytesIO(zip_bytes)) as zf:
             namelist = zf.namelist()
@@ -215,13 +215,71 @@ class TestArchiveData:
         )
         get_file_repository().get_by_id.return_value = file
 
-        zip_bytes = b"".join(stream_zip(_archive_data([file.id_], _ARCHIVE)))
+        zip_bytes = b"".join(stream_archive([file.id_], _ARCHIVE))
 
         with zipfile.ZipFile(io.BytesIO(zip_bytes)) as zf:
             namelist = zf.namelist()
             assert f"{ARCHIVE_NAME}/{FILES_DIR}/{service_id}" in namelist
             assert f"{ARCHIVE_NAME}/{FILES_DIR}/{thumbnail_id}" in namelist
             assert zf.read(f"{ARCHIVE_NAME}/{FILES_DIR}/{thumbnail_id}") == b"thumb"
+
+    def test_many_files_valid_archive(
+        self,
+        file_storage_service_inmemory: InMemoryFileStorageLazyBytesService,
+    ):
+        """Archives with many files contain all entries with correct content."""
+        n = 12
+        service_ids = [uuid4() for _ in range(n)]
+        files = []
+        for sid in service_ids:
+            f = _make_file(service_id=sid)
+            file_storage_service_inmemory.from_file_with_id(
+                io.BytesIO(f"content-{sid}".encode()), sid
+            )
+            files.append(f)
+
+        def _side_effect(fid: UUID) -> File | None:
+            return next((f for f in files if f.id_ == fid), None)
+
+        get_file_repository().get_by_id.side_effect = _side_effect  # type: ignore[union-attr]
+
+        zip_bytes = b"".join(stream_archive([f.id_ for f in files], _ARCHIVE))
+
+        with zipfile.ZipFile(io.BytesIO(zip_bytes)) as zf:
+            namelist = zf.namelist()
+            for f, sid in zip(files, service_ids):
+                assert f"{ARCHIVE_NAME}/{FILES_DIR}/{sid}" in namelist
+                assert (
+                    zf.read(f"{ARCHIVE_NAME}/{FILES_DIR}/{sid}")
+                    == f"content-{sid}".encode()
+                )
+                assert (
+                    f"{ARCHIVE_NAME}/{FILES_INDEX_DIR}/{f.id_}{JSON_SUFFIX}" in namelist
+                )
+
+        get_file_repository().get_by_id.side_effect = None  # type: ignore[union-attr]
+
+    def test_large_file_streaming(
+        self,
+        file_storage_service_inmemory: InMemoryFileStorageLazyBytesService,
+    ):
+        """A file fed as many small chunks round-trips correctly without error."""
+        service_id = uuid4()
+        chunk_size = 256
+        num_chunks = 100
+        original = bytes(range(256)) * num_chunks
+        file = _make_file(service_id=service_id)
+        file_storage_service_inmemory.from_file_with_id(
+            io.BytesIO(original), service_id
+        )
+        get_file_repository().get_by_id.return_value = file
+
+        zip_bytes = b"".join(stream_archive([file.id_], _ARCHIVE))
+
+        with zipfile.ZipFile(io.BytesIO(zip_bytes)) as zf:
+            recovered = zf.read(f"{ARCHIVE_NAME}/{FILES_DIR}/{service_id}")
+        assert recovered == original
+        assert len(recovered) == chunk_size * num_chunks
 
 
 # ---------------------------------------------------------------------------

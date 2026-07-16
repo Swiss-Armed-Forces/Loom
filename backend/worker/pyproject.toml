@@ -12,7 +12,6 @@ python = "~3.14"
 wand = "^0.6.13"
 common = {path = "../common", develop=true}
 python-magic = "^0.4.27"
-stream-zip = "^0.0.84"
 requests = "^2.31.0"
 scipy = "^1.17.1"
 scikit-learn = "^1.7.0"
@@ -51,10 +50,6 @@ ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
 module = "sklearn.*"
-ignore_missing_imports = true
-
-[[tool.mypy.overrides]]
-module = "stream_zip.*"
 ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
