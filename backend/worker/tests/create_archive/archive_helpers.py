@@ -1,13 +1,13 @@
 import io
 import zipfile
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 from common.archive.archive_repository import Archive
 from common.dependencies import get_file_repository
-from common.file.file_repository import File, FilePurePath
+from common.file.file_repository import File, FilePurePath, RenderedFile
 from common.services.lazybytes_service import (
     InMemoryFileStorageLazyBytesService,
     LazyBytes,
@@ -80,6 +80,53 @@ def build_archive_bytes(
                 )
 
     return b"".join(stream_archive([e.file.id_ for e in entries], archive))
+
+
+@dataclass
+class ArchiveWithMeta:
+    archive_dir: Path
+    storage_id: UUID
+    thumbnail_id: UUID | None = field(default=None)
+    image_data_id: UUID | None = field(default=None)
+
+
+def build_archive_with_meta(
+    tmp_path: Path,
+    file_storage_service: InMemoryFileStorageLazyBytesService,
+    name: str = "report.pdf",
+    with_thumbnail: bool = False,
+    with_image: bool = False,
+) -> ArchiveWithMeta:
+    """Build a single-file archive with optional thumbnail and rendered image.
+
+    Returns both the archive directory and the UUIDs generated for each storage field,
+    so callers can assert on them in tests.
+    """
+    storage_id = uuid4()
+    thumbnail_id = uuid4() if with_thumbnail else None
+    image_data_id = uuid4() if with_image else None
+    file = File(
+        full_name=FilePurePath(name),
+        source="test",
+        sha256="abc",
+        size=3,
+        storage_data=LazyBytes(service_id=storage_id),
+        thumbnail_data=LazyBytes(service_id=thumbnail_id) if thumbnail_id else None,
+        rendered_file=RenderedFile(
+            image_data=LazyBytes(service_id=image_data_id) if image_data_id else None
+        ),
+    )
+    archive_dir = build_archive(
+        tmp_path,
+        [ArchiveEntry(file=file, content=b"main")],
+        file_storage_service,
+    )
+    return ArchiveWithMeta(
+        archive_dir=archive_dir,
+        storage_id=storage_id,
+        thumbnail_id=thumbnail_id,
+        image_data_id=image_data_id,
+    )
 
 
 def build_archive(

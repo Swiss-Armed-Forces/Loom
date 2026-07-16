@@ -8,6 +8,7 @@ from common.services.lazybytes_service import (
     InMemoryFileStorageLazyBytesService,
     LazyBytes,
 )
+from create_archive.archive_helpers import ArchiveEntry, build_archive
 
 from worker.create_archive.tasks.archive_cli._cmd_extract import cmd_extract
 from worker.create_archive.tasks.archive_cli._cmd_grep import cmd_grep
@@ -16,7 +17,6 @@ from worker.create_archive.tasks.archive_cli._cmd_info import cmd_info
 from worker.create_archive.tasks.archive_cli._cmd_ls import cmd_ls
 from worker.create_archive.tasks.archive_cli._cmd_tree import cmd_tree
 from worker.create_archive.tasks.archive_cli._db import open_shell_db
-from worker.utils.archive import ArchiveEntry, build_archive
 
 _N_ENTRIES = 50
 _CONTENT_SIZE = 2 * 1024 * 1024  # 2 MiB per entry → 100 MiB total on disk
