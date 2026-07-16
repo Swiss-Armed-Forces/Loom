@@ -1,67 +1,16 @@
-"""Unit tests for shell infrastructure: ShellIndexCollector, open_shell_db, TestCliShell
-(in-process), TestCliTabComplete."""
-
-import argparse
-import io
 import sqlite3
-import subprocess
-import sys
-from contextlib import redirect_stdout
 from pathlib import Path
-from typing import NamedTuple
 from uuid import uuid4
 
 import pytest
-from common.services.lazybytes_service import InMemoryFileStorageLazyBytesService
 
-from worker.create_archive.tasks.archive_cli import (
-    CLI_ENTRYPOINT_FILENAME,
-    SHELL_INDEX_FILENAME,
-    cmd_shell,
-)
+from worker.create_archive.tasks.archive_cli import SHELL_INDEX_FILENAME
 from worker.create_archive.tasks.archive_cli._db import (
     SHELL_DB_SCHEMA,
     ShellIndexCollector,
     open_shell_db,
 )
-from worker.create_archive.tasks.archive_cli._shell import ShellCompleter
 from worker.create_archive.tasks.archive_cli._types import StorageEntry
-from worker.utils.archive import build_archive, simple_entries
-
-
-def _run(archive_dir: Path, args: list[str]) -> subprocess.CompletedProcess:
-    return subprocess.run(
-        [sys.executable, str(archive_dir / CLI_ENTRYPOINT_FILENAME)] + args,
-        capture_output=True,
-        text=True,
-        check=False,
-        cwd=archive_dir,
-    )
-
-
-class TestCliShell:
-    def test_ctrl_c_does_not_exit_shell(self, tmp_path: Path) -> None:
-        call_count = 0
-
-        def mock_input(_prompt: str = "") -> str:
-            nonlocal call_count
-            call_count += 1
-            if call_count == 1:
-                raise KeyboardInterrupt
-            return "exit"
-
-        db = sqlite3.connect(str(tmp_path / SHELL_INDEX_FILENAME))
-        db.executescript(SHELL_DB_SCHEMA)
-        out = io.StringIO()
-        with redirect_stdout(out):
-            cmd_shell(
-                argparse.Namespace(),
-                db=db,
-                history_file=None,
-                input_fn=mock_input,
-            )
-
-        assert "^C" in out.getvalue()
 
 
 class TestShellIndexCollector:
@@ -229,65 +178,3 @@ class TestOpenShellDb:
         with pytest.raises(SystemExit) as exc_info:
             open_shell_db(tmp_path)
         assert exc_info.value.code == 2
-
-
-class _CompleterContext(NamedTuple):
-    completer: ShellCompleter
-    archive_dir: Path
-
-
-class TestCliTabComplete:
-    def _make_completer(
-        self,
-        tmp_path: Path,
-        file_storage_service_inmemory: InMemoryFileStorageLazyBytesService,
-    ) -> _CompleterContext:
-        archive_dir = build_archive(
-            tmp_path,
-            simple_entries({"file.txt": b"hello world"}),
-            file_storage_service_inmemory,
-        )
-        db = open_shell_db(archive_dir)
-        index_dir = archive_dir / "files_index"
-        completer = ShellCompleter(db=db, index_dir=index_dir)
-        return _CompleterContext(completer=completer, archive_dir=archive_dir)
-
-    def test_info_field_completes_after_path(
-        self,
-        tmp_path: Path,
-        file_storage_service_inmemory: InMemoryFileStorageLazyBytesService,
-    ) -> None:
-        completer, _ = self._make_completer(tmp_path, file_storage_service_inmemory)
-        completer.cwd = ""
-        line = "info test/file.txt con"
-        begidx = len("info test/file.txt ")
-        result = completer.get_completions("con", line, begidx)
-
-        assert any(c.startswith("con") for c in result)
-
-    def test_info_field_completes_empty_prefix(
-        self,
-        tmp_path: Path,
-        file_storage_service_inmemory: InMemoryFileStorageLazyBytesService,
-    ) -> None:
-        completer, _ = self._make_completer(tmp_path, file_storage_service_inmemory)
-        completer.cwd = ""
-        line = "info test/file.txt "
-        begidx = len(line)
-        result = completer.get_completions("", line, begidx)
-
-        assert len(result) > 0
-        assert any("storage_data" in c for c in result)
-
-    def test_info_path_still_completes_first_arg(
-        self,
-        tmp_path: Path,
-        file_storage_service_inmemory: InMemoryFileStorageLazyBytesService,
-    ) -> None:
-        completer, _ = self._make_completer(tmp_path, file_storage_service_inmemory)
-        completer.cwd = ""
-        line = "info test"
-        begidx = len("info ")
-        result = completer.get_completions("test", line, begidx)
-
-        assert any("test" in c for c in result)

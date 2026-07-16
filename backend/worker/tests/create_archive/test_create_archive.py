@@ -14,6 +14,13 @@ from common.services.lazybytes_service import (
     InMemoryFileStorageLazyBytesService,
     LazyBytes,
 )
+from create_archive.archive_helpers import (
+    ArchiveEntry,
+    build_archive,
+    build_archive_bytes,
+    make_archive,
+    simple_entries,
+)
 from stream_zip import stream_zip
 
 from worker.create_archive.tasks.archive_cli import (
@@ -37,13 +44,6 @@ from worker.create_archive.tasks.unzip_loom_archive import (
     restore_archive_metadata_task,
     store_raw_files_task,
     upsert_file_objects_task,
-)
-from worker.utils.archive import (
-    ArchiveEntry,
-    build_archive,
-    build_archive_bytes,
-    make_archive,
-    simple_entries,
 )
 
 LAZYBYTES_THRESHOLD_BYTES = 64
