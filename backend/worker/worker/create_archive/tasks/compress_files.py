@@ -226,6 +226,17 @@ def _collect_storage_ids(file_: File) -> list[StorageEntry]:
     return result
 
 
+def _new_storage_fields(
+    file_: File, seen_ids: set[str]
+) -> Iterator[FileStorageLazyBytes]:
+    """Yield storage fields not yet in seen_ids, updating seen_ids in place."""
+    for storage in _file_storage_fields(file_):
+        sid = str(storage.service_id)
+        if sid not in seen_ids:
+            seen_ids.add(sid)
+            yield storage
+
+
 def _file_archive_entries(
     file_ids: list[UUID],
     archive_id: UUID,
@@ -237,6 +248,7 @@ def _file_archive_entries(
     file_storage_service = get_file_storage_service()
     total = len(file_ids)
     last_logged_pct = -1
+    seen_storage_ids: set[str] = set()
     for index, file_id in enumerate(file_ids):
         pct = (index * 100) // total if total else 100
         if (
@@ -255,7 +267,7 @@ def _file_archive_entries(
             json_filename,
             _collect_storage_ids(file_),
         )
-        for storage in _file_storage_fields(file_):
+        for storage in _new_storage_fields(file_, seen_storage_ids):
             if not file_storage_service.exists(storage):
                 logger.warning(
                     "Skipping storage object '%s' for file '%s': not found in file storage",
@@ -269,12 +281,11 @@ def _file_archive_entries(
                 permissions=_PERMS_FILE,
                 data=file_storage_service.load_generator(storage),
             )
-        file_json = file_.model_dump_json(indent=JSON_INDENT).encode()
         yield ZipEntry(
             filename=f"{archive_name}/{FILES_INDEX_DIR}/{json_filename}",
             modified_at=modified_at,
             permissions=_PERMS_FILE,
-            data=iter([file_json]),
+            data=iter([file_.model_dump_json(indent=JSON_INDENT).encode()]),
         )
     logger.info("Compressing archive: %d/%d files (100%%)", total, total)
 
