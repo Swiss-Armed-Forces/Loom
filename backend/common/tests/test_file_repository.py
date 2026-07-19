@@ -9,11 +9,13 @@ from common.file.file_repository import (
     TAG_LEN_MAX,
     TAG_LEN_MIN,
     TREE_PATH_MAX_ELEMENT_COUNT,
+    File,
     FilePurePath,
     FileRepository,
     Tag,
 )
 from common.file.file_statistics import GroupedStatisticsEntry, StatisticsEntry
+from common.services.lazybytes_service import LazyBytes
 from common.services.query_builder import QueryParameters
 
 
@@ -395,3 +397,33 @@ def test_invalid_tag_names(tag_name: str):
     # Test with empty tag name
     with pytest.raises(ValueError):
         TestTagType(tag_name)
+
+
+def _make_file(full_name: str) -> File:
+    return File(
+        storage_data=LazyBytes(service_id="000000000000000000000000"),
+        full_name=FilePurePath(full_name),
+        source="api-upload",
+        parent_id=None,
+        sha256="abc123",
+        size=0,
+    )
+
+
+@pytest.mark.parametrize(
+    "full_name, expected_full_path",
+    [
+        # Relative path: source prefix prepended
+        ("dir/file.txt", "//api-upload/dir/file.txt"),
+        # Leading single slash: must not drop the source prefix
+        ("/file.txt", "//api-upload/file.txt"),
+        ("/subdir/file.txt", "//api-upload/subdir/file.txt"),
+        # Already a full path (double-slash prefix): used as-is
+        ("//api-upload/dir/file.txt", "//api-upload/dir/file.txt"),
+    ],
+)
+def test_file_full_path(full_name: str, expected_full_path: str):
+    """Regression: full_path must always start with //source/, even when full_name is an
+    absolute path with a leading slash."""
+    file = _make_file(full_name)
+    assert str(file.full_path) == expected_full_path

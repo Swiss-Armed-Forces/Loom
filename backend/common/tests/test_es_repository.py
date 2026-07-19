@@ -326,7 +326,10 @@ ES_REPOSITORY_TEST_INSTANCES: dict[type[BaseEsRepository], list[_TestInstances]]
                 content_truncated=TestValueDefaults.test_bool,
                 attachments_skipped=TestValueDefaults.test_bool,
                 full_name=str(TestValueDefaults.test_file_pure_path),
-                full_path=str(TestValueDefaults.test_file_pure_path),
+                full_path=(
+                    f"//{TestValueDefaults.test_str}/"
+                    f"{str(TestValueDefaults.test_file_pure_path).lstrip('/')}"
+                ),
                 short_name=TestValueDefaults.test_file_pure_path.name,
                 extension=TestValueDefaults.test_file_pure_path.suffix,
                 source=TestValueDefaults.test_str,
