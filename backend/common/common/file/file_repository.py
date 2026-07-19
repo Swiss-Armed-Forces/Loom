@@ -368,7 +368,16 @@ class File(RepositoryTaskObject):
     def full_path(self) -> FilePurePath:
         if isinstance(self.full_name, str):
             return FilePurePath(f"//{self.source}/{self.full_name}")
-        return FilePurePath(f"//{self.source}") / self.full_name
+        full_name_str = str(self.full_name)
+        # Filenames that already start with "//" are stored as the literal
+        # full_path (e.g. "//api-upload/dir/file.txt" set by the tree tests).
+        # Return them as-is so the source prefix is not doubled.
+        if full_name_str.startswith("//"):
+            return self.full_name
+        # Strip any leading slash(es) to prevent pathlib's / operator from
+        # treating full_name as an absolute path and silently dropping the
+        # source prefix. "lstrip" covers both "/" and "//" that slipped through.
+        return FilePurePath(f"//{self.source}/{full_name_str.lstrip('/')}")
 
     @computed_field  # type: ignore[misc]
     @property
