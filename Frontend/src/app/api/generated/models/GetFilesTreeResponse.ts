@@ -39,6 +39,12 @@ export interface GetFilesTreeResponse {
      * @memberof GetFilesTreeResponse
      */
     nextPageCursor?: string;
+    /**
+     *
+     * @type {TreeNodeModel}
+     * @memberof GetFilesTreeResponse
+     */
+    rootStats?: TreeNodeModel;
 }
 
 /**
@@ -66,6 +72,10 @@ export function GetFilesTreeResponseFromJSONTyped(
             json["next_page_cursor"] == null
                 ? undefined
                 : json["next_page_cursor"],
+        rootStats:
+            json["root_stats"] == null
+                ? undefined
+                : TreeNodeModelFromJSON(json["root_stats"]),
     };
 }
 
@@ -78,5 +88,6 @@ export function GetFilesTreeResponseToJSON(
     return {
         nodes: (value["nodes"] as Array<any>).map(TreeNodeModelToJSON),
         next_page_cursor: value["nextPageCursor"],
+        root_stats: TreeNodeModelToJSON(value["rootStats"]),
     };
 }
