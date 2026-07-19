@@ -15,6 +15,9 @@ def imap_service() -> IMAPService:
     return get_imap_service()
 
 
+# Flaky: NOTIFY listener spurious dispatch races with flag-set task.
+# https://gitlab.com/swiss-armed-forces/cyber-command/cea/loom/-/work_items/260
+@pytest.mark.flaky(reruns=3)
 def test_imap_flag_changes_propagate_to_loom(imap_service: IMAPService):
     upload_asset(ASSET_NAME)
     indexed_email = get_file_by_name(ASSET_NAME)

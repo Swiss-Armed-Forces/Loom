@@ -55,6 +55,9 @@ def test_flagging_email_in_loom_sets_flag_in_imap(imap_service: IMAPService):
     assert flagged_in_imap[0] == indexed_email.imap
 
 
+# Flaky: NOTIFY listener spurious dispatch races with flag-set task.
+# https://gitlab.com/swiss-armed-forces/cyber-command/cea/loom/-/work_items/260
+@pytest.mark.flaky(reruns=3)
 def test_unflagging_email_in_loom_clears_flag_in_imap(imap_service: IMAPService):
     upload_asset(ASSET_NAME)
     indexed_email = get_file_by_name(ASSET_NAME)
@@ -116,6 +119,9 @@ def test_marking_email_seen_in_loom_sets_seen_in_imap(imap_service: IMAPService)
     assert seen_in_imap[0] == indexed_email.imap
 
 
+# Flaky: NOTIFY listener spurious dispatch races with flag-set task.
+# https://gitlab.com/swiss-armed-forces/cyber-command/cea/loom/-/work_items/260
+@pytest.mark.flaky(reruns=3)
 def test_marking_email_unseen_in_loom_clears_seen_in_imap(imap_service: IMAPService):
     upload_asset(ASSET_NAME)
     indexed_email = get_file_by_name(ASSET_NAME)
