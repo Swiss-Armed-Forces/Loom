@@ -1092,8 +1092,12 @@ class FileRepository(BaseEsRepository[_EsFile, File]):
             "terms",
             field="full_path.tree",
             include=include_regex,
-            size=TREE_PATH_MAX_ELEMENT_COUNT
-            + 1,  # +1 to detect whether more pages exist
+            # +1 to detect whether more pages exist. When `after` is set the
+            # range filter on the multi-value full_path.tree field re-admits
+            # the cursor bucket (its leaf token cursor/doc exceeds the cursor),
+            # which is then excluded post-aggregation. An extra +1 covers that
+            # slot so the "is there a next page?" check still sees N+1 results.
+            size=TREE_PATH_MAX_ELEMENT_COUNT + 1 + (1 if after is not None else 0),
             order={"_key": "asc"},  # alphabetical ensures stable cursor pagination
         )
         dir_aggregation.bucket(

@@ -248,6 +248,35 @@ def test_get_full_paths_by_query_cursor_bucket_excluded_on_next_page():
     assert len(result.nodes) == 2
 
 
+def test_get_full_paths_by_query_cursor_still_detected_after_cursor_exclusion():
+    """Regression: when ES re-admits the cursor bucket (multi-value range filter),
+    excluding it must not consume the extra slot used to detect a next page.
+
+    With `after` set, `size` must be TREE_PATH_MAX_ELEMENT_COUNT + 2 so that after the
+    cursor bucket is dropped, N+1 real buckets remain and next_page_cursor is set.
+    """
+    mock_search = MagicMock()
+    cursor = "//s/f0.txt"
+    # ES returns: cursor bucket + TREE_PATH_MAX_ELEMENT_COUNT real buckets + 1 extra.
+    # The extra bucket signals there is a further page.
+    buckets = [_make_terms_leaf_bucket(cursor)] + [
+        _make_terms_leaf_bucket(f"//s/f{i}.txt")
+        for i in range(1, TREE_PATH_MAX_ELEMENT_COUNT + 2)
+    ]
+    _make_terms_tree_response(mock_search, buckets)
+
+    repo = FileRepository(MagicMock(), MagicMock(), search_factory=mock_search)
+    query = QueryParameters(query_id="q5", search_string="*")
+    with patch("common.models.es_repository.get_connection", return_value=MagicMock()):
+        result = repo.get_full_paths_by_query(
+            query=query, tree_node_directory_path="//s", after=cursor
+        )
+
+    assert len(result.nodes) == TREE_PATH_MAX_ELEMENT_COUNT
+    assert result.next_page_cursor is not None
+    assert cursor not in [str(n.full_path) for n in result.nodes]
+
+
 def test_get_stat_terms():
     mock_search = MagicMock(spec=Search)
 
