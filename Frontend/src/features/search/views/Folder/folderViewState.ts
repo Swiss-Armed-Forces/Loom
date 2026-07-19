@@ -53,6 +53,8 @@ export interface ChildrenAddedAction extends BaseFolderViewAction<
     children: TreeNodeModel[];
     parentPath: string;
     nextPageCursor?: string | null;
+    /** Root node aggregate stats from the backend; only set when parentPath is the root. */
+    rootStats?: TreeNodeModel;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type
@@ -87,6 +89,8 @@ export interface SpineNodesMergedAction extends BaseFolderViewAction<
     typeof FolderViewActionType.SPINE_NODES_MERGED
 > {
     nodes: TreeNodeModel[]; // ordered root → leaf
+    /** Root node aggregate stats from the backend. */
+    rootStats?: TreeNodeModel;
 }
 
 export type FolderViewAction =
