@@ -17,7 +17,7 @@ from common.task_object.root_task_information_repository import (
 ES_REPOSITORY_MINIMAL_OBJECTS: dict[type[BaseEsRepository], RepositoryObject] = {
     FileRepository: File(
         storage_data=LazyBytes(service_id="000000000000000000000000"),
-        full_name=FilePurePath("/test/test.txt"),
+        full_name=FilePurePath("test/test.txt"),
         source="test-source",
         parent_id=None,
         sha256="abc123",
@@ -202,3 +202,41 @@ def test_update_partial_fields(repository_type: type[BaseEsRepository]):
 
     # Cleanup
     repository.delete_by_id(_object.id_)
+
+
+# Must exceed _ID_SCAN_PAGE_SIZE (defined in es_repository.py) to span
+# multiple scan pages.
+_PAGINATION_BUG_DOC_COUNT = 11001
+
+
+@pytest.mark.parametrize(
+    "repository_type",
+    ES_REPOSITORY_TYPES,
+)
+def test_get_id_generator_by_query_returns_all_ids_across_multiple_scan_pages(
+    repository_type: type[BaseEsRepository],
+):
+    """Regression test: get_id_generator_by_query must return every indexed document
+    when the result spans more than one scan page."""
+    repository = repository_type(
+        query_builder=get_query_builder(), pubsub_service=get_pubsub_service()
+    )
+    template = ES_REPOSITORY_MINIMAL_OBJECTS[repository_type]
+
+    objects = []
+    for _ in range(_PAGINATION_BUG_DOC_COUNT):
+        obj = template.model_copy(deep=True)
+        obj.id_ = uuid4()
+        obj.sort_unique = uuid4()
+        objects.append(obj)
+    saved_ids = {obj.id_ for obj in objects}
+
+    bulk_results = list(repository.bulk_save(objects))
+    failed = [r for r in bulk_results if not r.success]
+    assert not failed, f"{len(failed)} bulk save(s) failed: {failed[:3]}"
+
+    returned_ids = {
+        obj.id_ for obj in repository.get_id_generator_by_query(query=QueryParameters())
+    }
+
+    assert returned_ids == saved_ids
