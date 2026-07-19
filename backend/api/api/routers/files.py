@@ -206,6 +206,11 @@ def get_files_tree(
             TreeNodeModel.model_validate(node.model_dump()) for node in result.nodes
         ],
         next_page_cursor=result.next_page_cursor,
+        root_stats=(
+            TreeNodeModel.model_validate(result.root_stats.model_dump())
+            if result.root_stats is not None
+            else None
+        ),
     )
 
 
@@ -253,13 +258,18 @@ def get_files_tree_spine(
     Useful for revealing a specific file in the folder tree without requiring the client
     to paginate through its parent folder's children.
     """
-    nodes = file_repository.get_spine_by_path(
+    result = file_repository.get_spine_by_path(
         query=query,
         full_path=query.full_path,
     )
     return GetFilesTreeResponse(
-        nodes=[TreeNodeModel.model_validate(n.model_dump()) for n in nodes],
+        nodes=[TreeNodeModel.model_validate(n.model_dump()) for n in result.nodes],
         next_page_cursor=None,
+        root_stats=(
+            TreeNodeModel.model_validate(result.root_stats.model_dump())
+            if result.root_stats is not None
+            else None
+        ),
     )
 
 

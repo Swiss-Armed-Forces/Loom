@@ -572,10 +572,14 @@ class TreePathsResult(BaseModel):
         nodes: The tree path nodes for this page.
         next_page_cursor: Opaque cursor for fetching the next page, or None
             when all pages have been returned.
+        root_stats: Aggregate counts for the virtual root node (total files,
+            unseen and flagged across the whole query).  Only populated when
+            the request targets the root path (``tree_node_directory_path="/"``).
     """
 
     nodes: list[TreePathsNode]
     next_page_cursor: str | None = None
+    root_stats: TreePathsNode | None = None
 
 
 TERMS_STAT_REGISTRY = discover_stats(File, TermsStat)
@@ -1130,6 +1134,20 @@ class FileRepository(BaseEsRepository[_EsFile, File]):
         if after is not None:
             search = search.filter("range", **{"full_path.tree": {"gt": after}})
         search.aggs.bucket("directory", dir_aggregation)
+        # When querying the root, add global aggregations to compute the
+        # virtual root node's totals directly in ES.  These run over all
+        # documents that match the user's search query (no path filter is
+        # applied at root level), giving exact counts without summing the
+        # individual child buckets on the client.
+        is_root = tree_node_directory_path == "/"
+        if is_root:
+            search.aggs.bucket("total_files", A("filter", filter=Q("match_all")))
+            search.aggs.bucket(
+                "total_unseen", A("filter", filter=Q("term", seen=False))
+            )
+            search.aggs.bucket(
+                "total_flagged", A("filter", filter=Q("term", flagged=True))
+            )
         search = search[0:0]  # do not fetch hits
         # Tree counts must always reflect the live index state, not the
         # query's point-in-time snapshot. Counts change when files are
@@ -1156,7 +1174,17 @@ class FileRepository(BaseEsRepository[_EsFile, File]):
             if len(raw_buckets) > TREE_PATH_MAX_ELEMENT_COUNT
             else None
         )
-        return TreePathsResult(nodes=nodes, next_page_cursor=next_cursor)
+        root_stats: TreePathsNode | None = None
+        if is_root:
+            root_stats = TreePathsNode(
+                full_path=FilePurePath("/"),
+                file_count=cast(int, result.aggregations.total_files.doc_count),
+                unseen_count=cast(int, result.aggregations.total_unseen.doc_count),
+                flagged_count=cast(int, result.aggregations.total_flagged.doc_count),
+            )
+        return TreePathsResult(
+            nodes=nodes, next_page_cursor=next_cursor, root_stats=root_stats
+        )
 
     def get_flat_files_by_query(
         self,
@@ -1235,12 +1263,14 @@ class FileRepository(BaseEsRepository[_EsFile, File]):
         self,
         query: QueryParameters,
         full_path: str,
-    ) -> list[TreePathsNode]:
+    ) -> TreePathsResult:
         """Return one TreePathsNode per path segment from the first non-root ancestor
-        down to full_path (inclusive), in root-to-leaf order.
+        down to full_path (inclusive), in root-to-leaf order, plus root aggregations.
 
         Uses a single terms aggregation with an include filter so only the exact
-        ancestor paths are returned — no pagination needed.
+        ancestor paths are returned — no pagination needed.  Global filter aggregations
+        are added to compute the virtual root node's totals in the same ES request, so
+        the caller never has to sum children client-side.
         """
         target = PurePosixPath(full_path)
         spine_paths = [
@@ -1248,7 +1278,7 @@ class FileRepository(BaseEsRepository[_EsFile, File]):
         ] + [full_path]
 
         if not spine_paths:
-            return []
+            return TreePathsResult(nodes=[], root_stats=None)
 
         terms_agg: Agg[_EsFile] = A(
             "terms",
@@ -1270,6 +1300,9 @@ class FileRepository(BaseEsRepository[_EsFile, File]):
 
         search = self._get_search_by_query(query=query)
         search.aggs.bucket("spine", terms_agg)
+        search.aggs.bucket("total_files", A("filter", filter=Q("match_all")))
+        search.aggs.bucket("total_unseen", A("filter", filter=Q("term", seen=False)))
+        search.aggs.bucket("total_flagged", A("filter", filter=Q("term", flagged=True)))
         search = search[0:0]
         result = search.using(self._elasticsearch).execute()
 
@@ -1285,8 +1318,14 @@ class FileRepository(BaseEsRepository[_EsFile, File]):
         ]
         nodes.sort(key=lambda n: str(n.full_path).count("/"))
         if not any(str(n.full_path) == full_path for n in nodes):
-            return []
-        return nodes
+            return TreePathsResult(nodes=[], root_stats=None)
+        root_stats = TreePathsNode(
+            full_path=FilePurePath("/"),
+            file_count=cast(int, result.aggregations.total_files.doc_count),
+            unseen_count=cast(int, result.aggregations.total_unseen.doc_count),
+            flagged_count=cast(int, result.aggregations.total_flagged.doc_count),
+        )
+        return TreePathsResult(nodes=nodes, root_stats=root_stats)
 
     @staticmethod
     def _build_tree_paths_node(

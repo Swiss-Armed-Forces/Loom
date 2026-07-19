@@ -1,3 +1,5 @@
+import type { TreeNodeModel } from "@app/api";
+
 import {
     ChildrenAddedAction,
     ChildrenLoadFinishedAction,
@@ -13,6 +15,19 @@ import {
 } from "./folderViewState";
 import { cloneSpineToPath, cloneTree, findTreeNode } from "./util";
 const DEFAULT_EXPANDED_NODES_DEPTH = 2;
+
+/**
+ * Apply backend-provided root node stats onto the (mutable) root node.
+ * The root is a virtual directory — it is never itself unseen or flagged,
+ * so isUnseen / isFlagged are always false regardless of the counts.
+ */
+const applyRootStats = (root: FolderTree, stats: TreeNodeModel): void => {
+    root.fileCount = stats.fileCount;
+    root.unseenCount = stats.unseenCount ?? 0;
+    root.flaggedCount = stats.flaggedCount ?? 0;
+    root.isUnseen = false;
+    root.isFlagged = false;
+};
 
 const handleQueryChangedAction = (state: FolderViewState): FolderViewState => {
     return {
@@ -57,6 +72,13 @@ const handleChildrenAddedAction = (
     // preserved. null means the last page has been fetched.
     if (action.nextPageCursor !== undefined) {
         currentDirectory.nextPageCursor = action.nextPageCursor;
+    }
+
+    // Apply backend-provided root stats so the root node's aggregate counts
+    // stay accurate.  The backend always supplies rootStats when the root path
+    // is queried, so no client-side summing fallback is needed.
+    if (action.parentPath === ROOT_NODE.id && action.rootStats) {
+        applyRootStats(clonedTree, action.rootStats);
     }
 
     return { ...state, tree: clonedTree, fileIds: newFileIds };
@@ -151,6 +173,10 @@ const handleSpineNodesMergedAction = (
             fileId: node.fileId ?? undefined,
         };
         if (node.fileId) newFileIds.add(node.fileId);
+    }
+    // Apply backend root stats so the root node's aggregate counts stay accurate.
+    if (action.rootStats) {
+        applyRootStats(clonedTree, action.rootStats);
     }
     return { ...state, tree: clonedTree, fileIds: newFileIds };
 };

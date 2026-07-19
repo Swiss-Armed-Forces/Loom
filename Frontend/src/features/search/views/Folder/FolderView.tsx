@@ -110,6 +110,7 @@ const loadChildren = async (
                 children: result.nodes,
                 parentPath,
                 nextPageCursor: result.nextPageCursor ?? null,
+                rootStats: result.rootStats ?? undefined,
             });
             childNodes = result.nodes.map((node) => ({
                 id: node.fullPath,
@@ -380,6 +381,7 @@ export const FolderView = ({ filter }: FolderViewProps) => {
                     folderDispatch({
                         type: FolderViewActionType.SPINE_NODES_MERGED,
                         nodes: result.nodes,
+                        rootStats: result.rootStats ?? undefined,
                     });
                 })
                 .catch((err) => {
@@ -444,6 +446,7 @@ export const FolderView = ({ filter }: FolderViewProps) => {
                 folderDispatch({
                     type: FolderViewActionType.SPINE_NODES_MERGED,
                     nodes: result.nodes,
+                    rootStats: result.rootStats ?? undefined,
                 });
                 // Expand all ancestors (spine nodes excluding the leaf file).
                 const ancestorPaths = result.nodes
@@ -468,6 +471,7 @@ export const FolderView = ({ filter }: FolderViewProps) => {
                                 children: children.nodes,
                                 parentPath: path,
                                 nextPageCursor: children.nextPageCursor ?? null,
+                                rootStats: children.rootStats ?? undefined,
                             });
                         })
                         .catch(() => {
@@ -510,6 +514,7 @@ export const FolderView = ({ filter }: FolderViewProps) => {
                     children: result.nodes,
                     parentPath: nodeId,
                     nextPageCursor: result.nextPageCursor ?? null,
+                    rootStats: result.rootStats ?? undefined,
                 });
             } catch (err) {
                 toast.error(

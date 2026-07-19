@@ -594,7 +594,9 @@ def test_get_files_tree_spine_returns_nodes(client: TestClient):
         file_count=0,
         file_id="abc-123",
     )
-    get_file_repository().get_spine_by_path.return_value = [node_a, node_b]
+    get_file_repository().get_spine_by_path.return_value = TreePathsResult(
+        nodes=[node_a, node_b]
+    )
 
     response = client.get(
         "/v1/files/tree/spine",
@@ -617,7 +619,7 @@ def test_get_files_tree_spine_returns_nodes(client: TestClient):
 
 
 def test_get_files_tree_spine_empty_for_no_results(client: TestClient):
-    get_file_repository().get_spine_by_path.return_value = []
+    get_file_repository().get_spine_by_path.return_value = TreePathsResult(nodes=[])
 
     response = client.get(
         "/v1/files/tree/spine",

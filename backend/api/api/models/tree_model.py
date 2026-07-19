@@ -7,6 +7,7 @@ from pydantic import BaseModel
 class GetFilesTreeResponse(BaseModel):
     nodes: list["TreeNodeModel"]
     next_page_cursor: str | None = None
+    root_stats: "TreeNodeModel | None" = None
 
 
 class TreeNodeModel(BaseModel):
