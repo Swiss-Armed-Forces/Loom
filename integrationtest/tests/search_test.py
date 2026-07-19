@@ -1,7 +1,11 @@
 import pytest
+import requests
+from api.routers.files import GetFilesTreeQuery, GetFilesTreeResponse
 
+from utils.consts import FILES_ENDPOINT, REQUEST_TIMEOUT
 from utils.fetch_from_api import (
     fetch_files_from_api,
+    fetch_query_id,
     get_file_preview_by_name,
 )
 from utils.upload_asset import upload_asset, upload_bytes_asset, upload_many_assets
@@ -226,6 +230,34 @@ class TestSearchMultilanguage:
 
         assert file.highlight is not None
         assert file.highlight["content"][0].count("highlight") == 2
+
+
+def test_file_with_leading_slash_in_name_is_searchable():
+    """Regression: files uploaded with a leading '/' in their name must be indexed,
+    searchable, and visible in the folder tree.
+
+    Without the fix, pathlib's / operator treats the name as absolute and silently drops
+    the source prefix from full_path, making the file invisible in the tree.
+    """
+    upload_bytes_asset(b"", "/leading_slash_test.txt")
+    fetch_files_from_api(search_string='short_name:"leading_slash_test.txt"')
+
+    # The file must also appear under the tree root so the folder view works.
+    tree_response = requests.get(
+        f"{FILES_ENDPOINT}/tree",
+        params=GetFilesTreeQuery(
+            search_string="*",
+            node_path="/",
+            query_id=fetch_query_id(),
+        ).model_dump(),
+        timeout=REQUEST_TIMEOUT,
+    )
+    tree_response.raise_for_status()
+    tree = GetFilesTreeResponse.model_validate(tree_response.json())
+    top_level_paths = {str(node.full_path) for node in tree.nodes}
+    assert (
+        "//api-upload" in top_level_paths
+    ), f"Expected '//api-upload' in tree root, got: {top_level_paths}"
 
 
 class TestEmailQueries:
