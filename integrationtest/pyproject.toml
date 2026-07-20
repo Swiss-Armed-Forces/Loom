@@ -15,6 +15,7 @@ loom-overarching-dev = {path = "../", develop = true}
 requests = "^2.31.0"
 requests-toolbelt = "^1.0.0"
 websockets = "^13.0"
+kubernetes = "^36.0.0"
 
 [tool.poetry.group.dev.dependencies]
 debugpy = "^1.8.1"

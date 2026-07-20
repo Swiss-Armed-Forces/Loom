@@ -4,7 +4,56 @@ kind: NetworkPolicy
 metadata:
   name: {{ include "app.fullname" . }}-deny-all-egress
 spec:
-  podSelector: {}
+  podSelector:
+    matchExpressions:
+      - key: net
+        operator: In
+        values:
+          - fenced
+  policyTypes:
+    - Egress
+  egress: []
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "app.fullname" . }}-allow-partial-local-egress
+spec:
+  podSelector:
+    matchExpressions:
+      - key: net
+        operator: In
+        values:
+          - partially_fenced
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+      # Allow access to specific pods
+      - podSelector:
+          matchExpressions:
+            - key: net
+              operator: In
+              values:
+                - fenced_allow
+
+      # Allow access to kube-services (DNS resolution)
+      - namespaceSelector:
+          matchLabels:
+            kubernetes.io/metadata.name: kube-system
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "app.fullname" . }}-allow-local-egress
+spec:
+  podSelector:
+    matchExpressions:
+      - key: net
+        operator: NotIn
+        values:
+          - fenced
+          - partially_fenced
   policyTypes:
     - Egress
   egress:
@@ -22,7 +71,13 @@ kind: NetworkPolicy
 metadata:
   name: {{ include "app.fullname" . }}-allow-k8s-api
 spec:
-  podSelector: {}
+  podSelector:
+    matchExpressions:
+      - key: net
+        operator: NotIn
+        values:
+          - fenced
+          - partially_fenced
   policyTypes:
     - Egress
   egress:

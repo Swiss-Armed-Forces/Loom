@@ -17,6 +17,7 @@ ARG TESSERACT_OCR_ALL_VERSION="5.5.*"
 ARG IMAGEMAGICK_VERSION="8:7.*"
 ARG PYTHON3_SKIMAGE_VERSION="0.26.*"
 ARG TINI_VERSION="0.19.*"
+ARG CURL_VERSION="8.*"
 
 # install language package for OCR, zstd-jni for compression support, and dependencies for custom-entry-point
 # ImageMagick and python3-skimage are required for Tika's image preprocessing (rotation detection, normalization)
@@ -27,6 +28,7 @@ RUN set -exu \
   imagemagick="${IMAGEMAGICK_VERSION}" \
   python3-skimage="${PYTHON3_SKIMAGE_VERSION}" \
   tini="${TINI_VERSION}" \
+  curl="${CURL_VERSION}" \
   && apt-get clean \
   && rm -rf /var/lib/apt/lists/*
 
