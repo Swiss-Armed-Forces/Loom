@@ -17,6 +17,7 @@ spec:
   template:
     metadata:
       labels:
+        net: fenced_allow
         app: {{ include "app.name" . }}-roundcube
         {{- include "app.labels.custom" (dict "context" . "component" "roundcube") | nindent 8 }}
       {{- with include "app.annotations.custom" (dict "context" . "component" "roundcube") }}

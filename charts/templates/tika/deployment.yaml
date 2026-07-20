@@ -24,6 +24,7 @@ spec:
   template:
     metadata:
       labels:
+        net: fenced
         app: {{ include "app.name" . }}-tika
         {{- include "app.labels.custom" (dict "context" . "component" "tika") | nindent 8 }}
       {{- with include "app.annotations.custom" (dict "context" . "component" "tika") }}
