@@ -333,14 +333,21 @@ class BaseEsRepository(  # pylint: disable=too-many-public-methods
 
         sort_by_field = self._get_sort_by_field(sort_params.sort_by_field)
 
-        sort: dict[str, dict[str, str]] = {
-            sort_by_field: {"order": sort_params.sort_direction}
-        }
-        search = search.sort(
-            sort,
-            # We append "sort_unique" here on purpose, see comment in EsRepositoryObject
-            "sort_unique",
-        )
+        # When scanning all results (no pagination_params), _score sorting is
+        # non-deterministic: identical scores cause search_after to skip or
+        # duplicate documents across pages. Fall back to sort_unique which is
+        # guaranteed unique and stable.
+        if pagination_params is None and sort_by_field == "_score":
+            search = search.sort(
+                {"sort_unique": {"order": sort_params.sort_direction}},
+            )
+        else:
+            search = search.sort(
+                {sort_by_field: {"order": sort_params.sort_direction}},
+                # We append "sort_unique" here on purpose, see comment in
+                # EsRepositoryObject
+                "sort_unique",
+            )
 
         if pagination_params is not None:
             if pagination_params.sort_id:
