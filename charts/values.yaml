@@ -809,15 +809,6 @@ seaweedfs:
     # Graceful shutdown configuration for S3 multipart uploads
     terminationGracePeriodSeconds: 180
     preStopSleepSeconds: 5
-    hpa:
-      enabled: false
-      maxReplicas: 5
-      minReplicas: 1
-      targetCPUUtilizationPercentage: 70
-      targetMemoryUtilizationPercentage: 80
-      scaleDown:
-        stabilizationWindowSeconds: 300
-        maxPodsPerMinute: 1
     image:
       repository: swiss-armed-forces/cyber-command/cea/loom/seaweedfs
     port: 8888

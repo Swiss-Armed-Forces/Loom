@@ -10,9 +10,7 @@ metadata:
     {{- . | nindent 4 }}
   {{- end }}
 spec:
-  {{- if not .Values.seaweedfs.filer.hpa.enabled }}
   replicas: {{ .Values.seaweedfs.filer.replicaCount }}
-  {{- end }}
   strategy:
     type: RollingUpdate
     rollingUpdate:
