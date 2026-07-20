@@ -32,8 +32,7 @@ seaweedfs:
   volume:
     replicaCount: 3
   filer:
-    hpa:
-      enabled: true
+    replicaCount: 2
 
 ollama:
   hpa:
