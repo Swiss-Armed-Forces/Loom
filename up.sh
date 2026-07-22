@@ -341,15 +341,17 @@ write_trusted_ca_values() {
 }
 
 write_up_flags_values() {
-    # Combine active flag-driven values files into UP_FLAGS_VALUES_FILE.
+    # Deep-merge active flag-driven values files into UP_FLAGS_VALUES_FILE.
     # Skaffold always includes this file (listed in skaffold.yaml before values-overwrites.yaml).
-    # Uses plain cat — no yq needed. For duplicate top-level YAML keys Helm/Go yaml keeps
-    # the last occurrence, so files appended last win on overlap.
+    # Uses yq to deep-merge so that overlapping top-level keys are combined rather than
+    # one file silently overwriting another (e.g. --disable-ai + --no-resources both touch ollama).
     # UP_FLAG_VALUES is populated during argument parsing — add new flags there.
     if [[ ${#UP_FLAG_VALUES[@]} -eq 0 ]]; then
         true > "${UP_FLAGS_VALUES_FILE}"
     else
-        cat "${UP_FLAG_VALUES[@]}" > "${UP_FLAGS_VALUES_FILE}"
+        # Single quotes are intentional: this is a jq expression, not shell.
+        # shellcheck disable=SC2016
+        yq -y -s 'reduce .[] as $item ({}; . * $item)' "${UP_FLAG_VALUES[@]}" > "${UP_FLAGS_VALUES_FILE}"
     fi
 }
 
@@ -401,6 +403,7 @@ validate_environment() {
     check_command helm
     check_command minikube
     check_command skaffold
+    check_command yq
 
     # GPU tools (only required when --gpus is passed)
     if [[ -n "${GPUS}" ]]; then

@@ -17,6 +17,7 @@ This will help make the setup process smooth and easy!
 - `helm` (>= [v3.14.0](https://helm.sh/docs/intro/install/))
 - `kubectl` (>= [v1.30.0](https://kubernetes.io/de/docs/tasks/tools/install-kubectl/))
 - `skaffold` (>= [v2.12.0](https://skaffold.dev/docs/install/))
+- `yq` (>= [v3.0.0](https://github.com/kislyuk/yq#installation))
 
 ## System Requirements
 
