@@ -40,7 +40,7 @@ COPY \
 #
 # Install bindfs
 #
-ARG BINDFS_VERSION="1.17.7-r1"
+ARG BINDFS_VERSION="1.18.4-r0"
 RUN set -exu \
     && apk add --no-cache \
     --repository=https://dl-cdn.alpinelinux.org/alpine/edge/main \
@@ -88,7 +88,7 @@ RUN set -exu \
 #
 # Install nix (from upstream)
 #
-ARG CURL_VERSION="8.14.1-r2"
+ARG CURL_VERSION="8.14.1-r3"
 ARG XZ_VERSION="5.8.1-r0"
 RUN set -exu \
     && apk add --no-cache \

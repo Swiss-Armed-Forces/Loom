@@ -158,9 +158,8 @@ export const StatisticsView = () => {
         const controller = new AbortController();
         abortControllerRef.current = controller;
 
-        if (controller.signal.aborted) return;
         const statsQuery = { ...searchQuery, id: null };
-        getTermsStat(statsQuery, displayStat, PIE_AMOUNT)
+        getTermsStat(statsQuery, displayStat, PIE_AMOUNT, controller.signal)
             .then((result) => {
                 if (!controller.signal.aborted) dispatch(fillTermsData(result));
             })
@@ -171,7 +170,12 @@ export const StatisticsView = () => {
                             (err["detail"] ? err["detail"] : err),
                     );
             });
-        getHistogramStat(statsQuery, displayHistogramStat, displayStat)
+        getHistogramStat(
+            statsQuery,
+            displayHistogramStat,
+            displayStat,
+            controller.signal,
+        )
             .then((result) => {
                 if (!controller.signal.aborted)
                     dispatch(fillHistogramData(result));
@@ -185,17 +189,10 @@ export const StatisticsView = () => {
             });
     }, [searchQuery, displayStat, displayHistogramStat, dispatch]);
 
-    // Skip the stats fetch on the initial mount so that an F5 with an
-    // unchanged query (state restored from localStorage) does not trigger any
-    // backend calls. The effect re-runs whenever fetchStats changes — i.e.
-    // when the query, displayStat, or displayHistogramStat actually changes.
-    const statsMountedRef = useRef(false);
     useEffect(() => {
-        if (!statsMountedRef.current) {
-            statsMountedRef.current = true;
-            return;
-        }
         fetchStats();
+
+        return () => abortControllerRef.current?.abort();
     }, [fetchStats]);
 
     useEffect(() => {

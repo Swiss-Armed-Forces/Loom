@@ -16,7 +16,7 @@ import prettierRecommended from "eslint-plugin-prettier/recommended";
 
 export default defineConfig([
     // Ignore generated artifacts and non-source files we don't want to lint.
-    globalIgnores(["dist/", "**/THIRD-PARTY.md"]),
+    globalIgnores(["dist/", "dist-demo/", "**/THIRD-PARTY.md"]),
 
     // Baseline ESLint rules for common correctness issues in JS.
     js.configs.recommended,

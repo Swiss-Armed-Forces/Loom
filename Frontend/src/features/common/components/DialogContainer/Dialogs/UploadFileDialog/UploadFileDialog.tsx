@@ -15,6 +15,8 @@ import {
     startLoadingIndicator,
     stopLoadingIndicator,
 } from "@app/slices/commonSlice";
+import { notifyIfUnavailableInDemoMode } from "@features/common/demoModeUnavailableAction";
+import { DemoUnavailableFeature } from "@features/common/utils/demoMode";
 
 import { DialogBase } from "..";
 
@@ -37,6 +39,9 @@ export const UploadFileDialog = ({ id, onClose, isTop }: DialogProps) => {
     };
 
     const handleUpload = async () => {
+        if (notifyIfUnavailableInDemoMode(DemoUnavailableFeature.FileUpload))
+            return;
+
         setIsLoading(true);
         dispatch(startLoadingIndicator());
         try {

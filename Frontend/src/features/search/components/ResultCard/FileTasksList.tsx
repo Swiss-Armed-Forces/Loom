@@ -3,8 +3,10 @@ import React from "react";
 import { useTranslation } from "react-i18next";
 
 import { TaskStatusIcon } from "@features/common/components";
+import { notifyIfUnavailableInDemoMode } from "@features/common/demoModeUnavailableAction";
+import { flowerHost } from "@features/common/urls";
+import { DemoUnavailableFeature } from "@features/common/utils/demoMode";
 
-import { flowerHost } from "../../../common/urls";
 import { TaskStatus } from "../../../common/utils/enums";
 
 import styles from "./FileTasksList.module.css";
@@ -89,7 +91,15 @@ export const FileTaskIcon = ({ tasks, status, title }: FileTaskIconProps) => {
                             target="_blank"
                             rel="noopener noreferrer"
                             key={task}
-                            onClick={closeDownloadMenu}
+                            onClick={(event) => {
+                                if (
+                                    notifyIfUnavailableInDemoMode(
+                                        DemoUnavailableFeature.TaskDetails,
+                                    )
+                                )
+                                    event.preventDefault();
+                                closeDownloadMenu();
+                            }}
                         >
                             {task}
                         </MenuItem>

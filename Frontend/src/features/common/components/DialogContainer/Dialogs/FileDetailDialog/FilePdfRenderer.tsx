@@ -10,9 +10,9 @@ pdfjs.GlobalWorkerOptions.workerSrc = new URL(
 ).toString();
 
 const options = {
-    cMapUrl: "/cmaps/",
-    standardFontDataUrl: "/standard_fonts/",
-    wasmUrl: "/wasm/",
+    cMapUrl: `${import.meta.env.BASE_URL}cmaps/`,
+    standardFontDataUrl: `${import.meta.env.BASE_URL}standard_fonts/`,
+    wasmUrl: `${import.meta.env.BASE_URL}wasm/`,
 };
 
 interface FilePdfRendererProps {

@@ -6,6 +6,7 @@ import { Link, useLocation } from "react-router-dom";
 
 import { useAppDispatch } from "@app/hooks";
 import { updateQuery } from "@app/slices/searchSlice";
+import { DemoModeIndicator } from "@features/common/components/DemoModeIndicator";
 import { getColorFromString } from "@features/common/utils/helpers";
 
 import { LoomResponsiveLogo } from "../../branding/LoomResponsiveLogo";
@@ -54,6 +55,7 @@ export const Header = () => {
             }
         >
             <Toolbar className={styles.toolbar}>
+                <DemoModeIndicator />
                 {
                     <Link
                         className={styles.headerBranding}

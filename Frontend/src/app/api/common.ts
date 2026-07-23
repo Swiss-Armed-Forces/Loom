@@ -1,7 +1,9 @@
+import { apiConfiguration } from "./apiConfiguration";
 import { CompleteEstimateApi, QueuesApi } from "./generated/apis";
 import { CompleteEstimateResult, QueuesStats } from "./generated/models";
 
-const queuesApi = new QueuesApi();
+const queuesApi = new QueuesApi(apiConfiguration);
+const completeEstimateApi = new CompleteEstimateApi(apiConfiguration);
 
 export const fetchCount = (amount = 1) => {
     return new Promise<{ data: number }>((resolve) =>
@@ -17,5 +19,5 @@ export const fetchQueueStats = async (): Promise<QueuesStats> => {
 
 export const fetchCompleteEstimate =
     async (): Promise<CompleteEstimateResult> => {
-        return new CompleteEstimateApi().getCompleteEstimateV1CompleteEstimateGet();
+        return completeEstimateApi.getCompleteEstimateV1CompleteEstimateGet();
     };

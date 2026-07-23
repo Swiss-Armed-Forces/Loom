@@ -1,6 +1,8 @@
+import { apiConfiguration } from "./apiConfiguration";
+
 import { ArchivesApi, ArchivesModel } from ".";
 
-const archivesApi = new ArchivesApi();
+const archivesApi = new ArchivesApi(apiConfiguration);
 
 export const getAll = async (): Promise<ArchivesModel> => {
     return archivesApi.getAllArchivesV1ArchiveGet();

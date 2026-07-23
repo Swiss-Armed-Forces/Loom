@@ -719,6 +719,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | globals                             | MIT          | 17.6.0            |
 | jsdom                               | MIT          | 29.1.1            |
 | license-report                      | MIT          | 6.8.2             |
+| msw                                 | MIT          | 2.15.0            |
 | prettier                            | MIT          | 3.8.3             |
 | typescript                          | Apache-2.0   | 6.0.3             |
 | typescript-eslint                   | MIT          | 8.59.0            |
