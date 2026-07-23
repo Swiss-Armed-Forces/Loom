@@ -2,6 +2,7 @@
 
 [![License: MIT](badge-mit-blue.svg)](LICENSE.txt)
 [![Release Status](https://gitlab.com/swiss-armed-forces/cyber-command/cea/loom/-/badges/release.svg)](https://gitlab.com/swiss-armed-forces/cyber-command/cea/loom/-/releases)
+[![Offline Demo](https://img.shields.io/badge/Offline_Demo-Try_it-FC6D26)](https://swiss-armed-forces.gitlab.io/cyber-command/cea/loom/)
 [![GitLab Pipeline Status](https://gitlab.com/swiss-armed-forces/cyber-command/cea/loom/badges/main/pipeline.svg)](https://gitlab.com/swiss-armed-forces/cyber-command/cea/loom/-/pipelines?page=1&scope=all&ref=main)
 [![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-v2.1%20adopted-ff69b4.svg)](https://www.contributor-covenant.org/version/2/1/code_of_conduct/)
 
@@ -123,6 +124,7 @@ Multiple services that are useful for production and development purposes are st
 
 - [Installation Guide](Documentation/installation.md)
 - [Getting Started Guide](Documentation/getting-started.md)
+- [Offline frontend demo](Documentation/demo-mode.md)
 - [Development environment setup](Documentation/devenv-setup.md)
 - [Contributing Guidelines](CONTRIBUTING.md)
 - [Code of Conduct](CODE_OF_CONDUCT.md)

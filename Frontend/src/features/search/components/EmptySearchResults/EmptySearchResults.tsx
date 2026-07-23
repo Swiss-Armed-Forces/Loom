@@ -36,6 +36,7 @@ import {
 } from "@app/slices/searchSlice";
 
 import styles from "./EmptySearchResults.module.css";
+import { SEARCH_TIPS } from "./searchTips";
 
 const searchChipSx = {
     display: "inline-block",
@@ -285,7 +286,7 @@ export const EmptySearchResults = () => {
     };
 
     const createSearchTip = (query: string, searchKey: string) => (
-        <li>
+        <li key={query}>
             <Box
                 component="span"
                 sx={searchChipSx}
@@ -338,73 +339,11 @@ export const EmptySearchResults = () => {
                                     component="ul"
                                     sx={{ m: 0, pl: 2.5, fontSize: "0.85rem" }}
                                 >
-                                    {createSearchTip("*", "showAll")}
-                                    {createSearchTip("John Smith", "keyword")}
-                                    {createSearchTip("Jo*", "prefix")}
-                                    {createSearchTip("/.*Jo?n.*/", "regex")}
-                                    {createSearchTip('"John Smith"', "exact")}
-                                    {createSearchTip(
-                                        '"John Smith"~10',
-                                        "exactDistance",
-                                    )}
-                                    {createSearchTip("John~2", "fuzzy")}
-                                    {createSearchTip(
-                                        "filename:*.txt",
-                                        "filename",
-                                    )}
-                                    {createSearchTip("size:>1M", "size")}
-                                    {createSearchTip("modified:today", "when")}
-                                    {createSearchTip("author:/.*/", "author")}
-                                    {createSearchTip(
-                                        "tags:interesting",
-                                        "tags",
-                                    )}
-                                    {createSearchTip(
-                                        "NOT tags:interesting",
-                                        "tagsNegate",
-                                    )}
-                                    {createSearchTip(
-                                        "tags:interesting AND modified:today",
-                                        "and",
-                                    )}
-                                    {createSearchTip(
-                                        "tags:interesting OR modified:today",
-                                        "or",
-                                    )}
-                                    {createSearchTip("seen:true", "seen")}
-                                    {createSearchTip("flagged:true", "flagged")}
-                                    {createSearchTip("hidden:true", "hidden")}
-                                    {createSearchTip("hidden:*", "allHidden")}
-                                    {createSearchTip(
-                                        'file_type:"image/png"',
-                                        "fileType",
-                                    )}
-                                    {createSearchTip(
-                                        "uploaded:[* TO 2020-06-15]",
-                                        "uploadTime",
-                                    )}
-                                    {createSearchTip(
-                                        "created:{2020-12-31 TO 2025-01-01}",
-                                        "creationTime",
-                                    )}
-                                    {createSearchTip(
-                                        "modified:[2021-01-01 TO 2025-01-01}",
-                                        "modificationTime",
-                                    )}
-                                    {createSearchTip("secrets:*", "secrets")}
-                                    {createSearchTip(
-                                        "source:crawlerX",
-                                        "source",
-                                    )}
-                                    {createSearchTip(
-                                        "state:failed",
-                                        "stateFailed",
-                                    )}
-                                    {createSearchTip("summary:*", "summary")}
-                                    {createSearchTip("*:John", "allFields")}
-                                    {createSearchTip(
-                                        "\\*name\\*:*txt*",
-                                        "nameFields",
+                                    {SEARCH_TIPS.map((tip) =>
+                                        createSearchTip(
+                                            tip.query,
+                                            tip.translationKey,
+                                        ),
                                     )}
                                 </Box>
                                 <Box

@@ -1,0 +1,50 @@
+.spacer {
+    flex: 0 0 3rem;
+}
+
+.corner {
+    position: fixed;
+    z-index: 1200;
+    top: 0;
+    left: 0;
+    width: 5rem;
+    height: 5rem;
+    overflow: hidden;
+    pointer-events: none;
+}
+
+.ribbon {
+    position: absolute;
+    top: 0.8rem;
+    left: -2.1rem;
+    width: 7.5rem;
+    min-height: 2rem;
+    transform: rotate(-45deg);
+    border: 1px solid #31312e;
+    background: var(--mui-palette-error-main, #ff4444);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.35);
+    color: white;
+    cursor: pointer;
+    font: inherit;
+    font-size: 0.75rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    line-height: 2rem;
+    pointer-events: auto;
+    text-align: center;
+}
+
+.ribbon:hover {
+    background: var(--mui-palette-error-dark, #cc0000);
+}
+
+.ribbon:focus-visible {
+    outline: 3px solid white;
+    outline-offset: -4px;
+}
+
+@media (max-width: 600px) {
+    .spacer {
+        flex-basis: 2.25rem;
+    }
+}

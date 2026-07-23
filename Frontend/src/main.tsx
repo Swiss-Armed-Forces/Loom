@@ -20,7 +20,7 @@ root.render(
     <React.StrictMode>
         <ThemeProvider theme={globalTheme}>
             <Provider store={store}>
-                <BrowserRouter>
+                <BrowserRouter basename={import.meta.env.BASE_URL}>
                     <Routes>
                         <Route path="/" element={<App />}>
                             <Route path="" element={<Home />} />

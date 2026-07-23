@@ -7,6 +7,8 @@
     "scripts": {
         "dev": "vite",
         "build": "tsc && vite build",
+        "build:demo": "tsc && vite build --mode demo",
+        "preview:demo": "pnpm run build:demo && vite preview --mode demo --outDir dist-demo",
         "preview": "vite preview",
         "test": "vitest",
         "lint": "tsc && tsc -p tsconfig.node.json && prettier --check . && eslint --max-warnings 0 .",
@@ -60,6 +62,7 @@
         "globals": "^17.5.0",
         "jsdom": "^29.0.2",
         "license-report": "^6.8.2",
+        "msw": "^2.15.0",
         "prettier": "^3.8.3",
         "typescript": "^6.0.3",
         "typescript-eslint": "^8.58.2",

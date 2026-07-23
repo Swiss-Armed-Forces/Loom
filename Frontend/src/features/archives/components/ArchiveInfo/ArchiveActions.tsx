@@ -9,11 +9,10 @@ import { ArchiveHit, hideArchive } from "@app/api";
 import { useAppDispatch } from "@app/hooks";
 import { removeArchive } from "@app/slices/archiveSlice";
 import { updateQuery } from "@app/slices/searchSlice";
-
 import {
     webApiGetArchive,
     webApiGetArchiveEncrypted,
-} from "../../../common/urls";
+} from "@features/common/urls";
 
 interface ArchiveActions {
     archive: ArchiveHit;

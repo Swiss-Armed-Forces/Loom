@@ -24,8 +24,7 @@ import { useTranslation } from "react-i18next";
 
 import { useAppDispatch } from "@app/hooks";
 import { openDialog } from "@app/slices/commonSlice";
-import { DialogType } from "@features/common/utils/enums";
-
+import { notifyIfUnavailableInDemoMode } from "@features/common/demoModeUnavailableAction";
 import {
     apiHost,
     elasticVueHost,
@@ -44,7 +43,9 @@ import {
     elasticSearchHost,
     gotenbergHost,
     seaweedfsHost,
-} from "../../urls";
+} from "@features/common/urls";
+import { DemoUnavailableFeature } from "@features/common/utils/demoMode";
+import { DialogType } from "@features/common/utils/enums";
 
 export interface Page {
     route: string;
@@ -66,6 +67,16 @@ export const BurgerMenu = () => {
 
     const handleMenuClose = () => {
         setAnchorEl(null);
+    };
+
+    const handleServiceClick = (event: React.MouseEvent<HTMLAnchorElement>) => {
+        if (
+            notifyIfUnavailableInDemoMode(
+                DemoUnavailableFeature.BackendServices,
+            )
+        )
+            event.preventDefault();
+        handleMenuClose();
     };
 
     const menuItems = [
@@ -195,7 +206,7 @@ export const BurgerMenu = () => {
                         target="_blank"
                         rel="noopener noreferrer"
                         key={index}
-                        onClick={handleMenuClose}
+                        onClick={handleServiceClick}
                     >
                         {item.icon}
                         {item.text}

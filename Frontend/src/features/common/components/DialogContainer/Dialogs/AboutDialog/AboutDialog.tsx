@@ -18,6 +18,7 @@ import { useTranslation } from "react-i18next";
 import { DialogProps } from "@app/slices/commonSlice";
 
 const AJV = new Ajv();
+const basePath = import.meta.env.BASE_URL;
 
 export interface HelmChartMetadata {
     apiVersion: string;
@@ -61,11 +62,11 @@ export const AboutDialog = ({ onClose, isTop }: DialogProps) => {
 
     useEffect(() => {
         const fetchLicense = async () => {
-            const license = await fetch("/" + t("about.license"));
+            const license = await fetch(`${basePath}${t("about.license")}`);
             setLicenseText(await license.text());
         };
         const fetchChartData = async () => {
-            const chartData = await fetch("/" + t("about.chartData"));
+            const chartData = await fetch(`${basePath}${t("about.chartData")}`);
             setHelmChartMetadata(loadHelmChartMetadata(await chartData.text()));
         };
 
@@ -197,7 +198,7 @@ export const AboutDialog = ({ onClose, isTop }: DialogProps) => {
                             <Button
                                 variant="outlined"
                                 size="small"
-                                href={"/" + t("about.license")}
+                                href={`${basePath}${t("about.license")}`}
                                 download
                                 startIcon={<Download />}
                             >
@@ -206,7 +207,7 @@ export const AboutDialog = ({ onClose, isTop }: DialogProps) => {
                             <Button
                                 variant="outlined"
                                 size="small"
-                                href={"/" + t("about.thirdParty")}
+                                href={`${basePath}${t("about.thirdParty")}`}
                                 download
                                 startIcon={<Download />}
                             >
