@@ -23,6 +23,7 @@ from common.services.lazybytes_service import (
     TempTypedLazyBytes,
 )
 from common.utils.pydantic_field_paths import iter_field_paths_by_type
+from minio.error import MinioException
 from pydantic import BaseModel
 
 from worker.create_archive.infra.archive_processing_task import ArchiveProcessingTask
@@ -52,6 +53,12 @@ _PERMS_FILE = 0o600
 _PERMS_META = 0o644
 _PERMS_EXEC = 0o755
 _PROGRESS_LOG_INTERVAL_PCT = 5
+
+COMPRESS_MAX_RETRIES = 3
+
+
+class ArchiveCompressionError(Exception):
+    pass
 
 
 class ZipEntry(NamedTuple):
@@ -347,6 +354,9 @@ def stream_archive(file_ids: list[UUID], archive: Archive) -> Iterable[bytes]:
 
 @app.task(
     base=ArchiveProcessingTask,
+    autoretry_for=(ArchiveCompressionError,),
+    max_retries=COMPRESS_MAX_RETRIES,
+    retry_backoff=True,
 )
 def compress_files_task(
     lazy_file_ids: TempTypedLazyBytes[FileIdList], archive: Archive
@@ -361,7 +371,10 @@ def compress_files_task(
 
     zipped_chunks = stream_archive(file_ids, archive)
 
-    compressed_file_storage_data = file_storage_service.from_generator(
-        iter(zipped_chunks)
-    )
+    try:
+        compressed_file_storage_data = file_storage_service.from_generator(
+            iter(zipped_chunks)
+        )
+    except MinioException as ex:
+        raise ArchiveCompressionError() from ex
     return compressed_file_storage_data
