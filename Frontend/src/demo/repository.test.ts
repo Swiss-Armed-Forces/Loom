@@ -4,6 +4,7 @@ import { SearchQueryField } from "@features/common/utils/enums";
 import { updateFieldOfQuery } from "@features/common/utils/helpers";
 import { SEARCH_TIPS } from "@features/search/components/EmptySearchResults/searchTips";
 
+import { ATTACHMENT_EMAIL_ID, PDF_ATTACHMENT_ID } from "./fixtures";
 import {
     addArchive,
     addTags,
@@ -31,10 +32,23 @@ describe("demo repository", () => {
         vi.useRealTimers();
     });
 
-    it("returns the nine visible integration fixtures by default", () => {
-        expect(searchDocuments("")).toHaveLength(9);
-        expect(searchDocuments("*")).toHaveLength(9);
-        expect(getDocuments()).toHaveLength(10);
+    it("returns the eleven visible integration fixtures by default", () => {
+        expect(searchDocuments("")).toHaveLength(11);
+        expect(searchDocuments("*")).toHaveLength(11);
+        expect(getDocuments()).toHaveLength(12);
+    });
+
+    it("links the multipart email to its extracted attachment", () => {
+        expect(getDocument(ATTACHMENT_EMAIL_ID)?.attachments).toEqual([
+            { id: PDF_ATTACHMENT_ID, name: "home.pdf" },
+        ]);
+        expect(getDocument(PDF_ATTACHMENT_ID)).toMatchObject({
+            name: "home.pdf",
+            parentId: ATTACHMENT_EMAIL_ID,
+            mimeType: "application/pdf",
+            downloadUrl: expect.any(String),
+            rendered: { officePdfUrl: expect.any(String) },
+        });
     });
 
     it("bundles safe fixtures while redacting sensitive and executable payloads", () => {
@@ -104,8 +118,16 @@ describe("demo repository", () => {
         expect(searchDocuments("NOT state:processed")).toHaveLength(2);
     });
 
+    it("matches a full document path through the filename alias", () => {
+        expect(
+            searchDocuments(
+                'filename:"/Research/Security/John Smith - Network Security.txt"',
+            ).map((item) => item.name),
+        ).toEqual(["John Smith - Network Security.txt"]);
+    });
+
     it("evaluates boolean groups, wildcards, comparisons, and ranges", () => {
-        expect(searchDocuments("email OR security")).toHaveLength(3);
+        expect(searchDocuments("email OR security")).toHaveLength(5);
         expect(
             searchDocuments('tags:("networking" OR "accessibility")').map(
                 (item) => item.extension,
@@ -143,7 +165,7 @@ describe("demo repository", () => {
         expect(searchDocuments('"John security"~1')).toHaveLength(0);
         expect(searchDocuments("*:John")).toHaveLength(1);
         expect(searchDocuments("\\*name\\*:*txt*")).toHaveLength(3);
-        expect(searchDocuments("summary:*")).toHaveLength(9);
+        expect(searchDocuments("summary:*")).toHaveLength(11);
     });
 
     it("resolves relative dates against the current browser date", () => {
@@ -160,7 +182,7 @@ describe("demo repository", () => {
             searchDocuments('tags:("interesting" OR "accessibility")'),
         ).toHaveLength(4);
         expect(searchDocuments('NOT extension:("zip" OR "docx")')).toHaveLength(
-            7,
+            9,
         );
     });
 

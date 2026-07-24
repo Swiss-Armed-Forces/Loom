@@ -34,6 +34,7 @@ import { SearchQueryField } from "@features/common/utils/enums";
 import { updateFieldOfQuery } from "@features/common/utils/helpers";
 
 import { FolderTree, ROOT_NODE, PATH_SEPARATOR } from "./folderViewState";
+import { hasUnloadedChildren } from "./util";
 
 interface NodeCountBadgesProps {
     flaggedCount?: number;
@@ -263,15 +264,11 @@ export const FolderViewNode = React.memo(
             ),
         );
 
-        // Render a hidden placeholder child when we know the node has children
-        // (fileCount > 0) but they haven't been fetched yet. Without this,
-        // MUI won't show the expand arrow even though the node is expandable.
-        // display:none keeps it invisible while still counting as a React child.
-        if (
-            tree.children === undefined &&
-            !tree.loading &&
-            (tree.fileCount ?? 0) > 0
-        ) {
+        // Render a hidden placeholder for unloaded, non-empty directories.
+        // File nodes also have a positive fileCount, so fileId must distinguish
+        // them from expandable directories. MUI uses the placeholder to decide
+        // whether to show the expand arrow.
+        if (hasUnloadedChildren(tree)) {
             children.push(
                 <TreeItem
                     key="placeholder"

@@ -12,6 +12,7 @@ import {
 
 import { ArchivesApi, Configuration, FilesApi } from "@app/api/generated";
 
+import { ATTACHMENT_EMAIL_ID, PDF_ATTACHMENT_ID } from "./fixtures";
 import { handlers, resetDemoHandlerState } from "./handlers";
 import { clearDemoTimers, resetDemoRepository } from "./repository";
 
@@ -129,8 +130,39 @@ describe("demo API handlers", () => {
             thumbnail_file_id: "thumbnail.png",
             thumbnail_total_frames: 1,
         });
-        expect(stats.file_count).toBe(9);
+        expect(stats.file_count).toBe(11);
         expect(stats.data).toContainEqual({ name: "txt", hits_count: 3 });
+    });
+
+    it("serves navigable email attachment previews", async () => {
+        const filesApi = new FilesApi(
+            new Configuration({ basePath: "http://loom.test/api" }),
+        );
+
+        const email = await filesApi.getFilePreviewV1FilesFileIdPreviewGet({
+            fileId: ATTACHMENT_EMAIL_ID,
+            searchString: "*",
+        });
+        const attachment = await filesApi.getFilePreviewV1FilesFileIdPreviewGet(
+            {
+                fileId: PDF_ATTACHMENT_ID,
+                searchString: "*",
+            },
+        );
+        const attachmentDetail = await filesApi.getFileV1FilesFileIdGet({
+            fileId: PDF_ATTACHMENT_ID,
+            searchString: "*",
+        });
+
+        expect(email.attachments).toEqual([
+            { id: PDF_ATTACHMENT_ID, name: "home.pdf" },
+        ]);
+        expect(email.attachmentsTotalCount).toBe(1);
+        expect(attachment.parentId).toBe(ATTACHMENT_EMAIL_ID);
+        expect(attachment.fileExtension).toBe("pdf");
+        expect(attachmentDetail.renderedFile.officePdfFileId).toBe(
+            "rendered-office.pdf",
+        );
     });
 
     it("returns only query-relevant highlight fields", async () => {
@@ -219,12 +251,15 @@ describe("demo API handlers", () => {
         const emailLeaf = await fetch(
             "http://loom.test/api/v1/files/tree?search_string=*&node_path=%2FMail%2FInbox%2Fbasic_email.eml",
         ).then((response) => responseJson<TreeNodeResponse>(response));
+        const attachmentEmail = await fetch(
+            "http://loom.test/api/v1/files/tree?search_string=*&node_path=%2FMail%2FInbox%2Femail_with_pdf_attachment.eml",
+        ).then((response) => responseJson<TreeNodeResponse>(response));
 
         expect(root.nodes.map((node) => node.full_path)).toContain("/Crawler");
         expect(mail.nodes).toEqual([
             expect.objectContaining({
                 full_path: "/Mail/Inbox",
-                file_count: 1,
+                file_count: 3,
             }),
         ]);
         expect(inbox.nodes).toEqual([
@@ -232,8 +267,19 @@ describe("demo API handlers", () => {
                 full_path: "/Mail/Inbox/basic_email.eml",
                 file_id: "22222222-2222-4222-8222-222222222222",
             }),
+            expect.objectContaining({
+                full_path: "/Mail/Inbox/email_with_pdf_attachment.eml",
+                file_count: 1,
+                file_id: ATTACHMENT_EMAIL_ID,
+            }),
         ]);
         expect(emailLeaf.nodes).toEqual([]);
+        expect(attachmentEmail.nodes).toEqual([
+            expect.objectContaining({
+                full_path: "/Mail/Inbox/email_with_pdf_attachment.eml/home.pdf",
+                file_id: PDF_ATTACHMENT_ID,
+            }),
+        ]);
     });
 
     it("paginates folder nodes with a stable path cursor", async () => {
@@ -299,6 +345,17 @@ describe("demo API handlers", () => {
         expect(archive.sha256).toMatch(/^[a-f0-9]{64}$/);
         expect(archive.sha256Encrypted).toBeUndefined();
         expect(files.files).toHaveLength(3);
+    });
+
+    it("serves the fixed archive encryption key", async () => {
+        const archivesApi = new ArchivesApi(
+            new Configuration({ basePath: "http://loom.test/api" }),
+        );
+
+        const response =
+            await archivesApi.getEncryptionKeyV1ArchiveEncryptionKeyGet();
+
+        expect(response.encryptionKey).toBe("0".repeat(32));
     });
 
     it("creates archives with the backend status and searchable membership", async () => {
@@ -400,7 +457,7 @@ describe("demo API handlers", () => {
 
         expect(upload.status).toBe(501);
         expect(archiveImport.status).toBe(501);
-        expect(files.total_files).toBe(9);
+        expect(files.total_files).toBe(11);
         expect(archives.total).toBe(1);
     });
 
