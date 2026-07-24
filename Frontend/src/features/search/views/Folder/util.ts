@@ -1,5 +1,11 @@
 import { FolderTree, PATH_SEPARATOR } from "./folderViewState";
 
+export const hasUnloadedChildren = (tree: FolderTree): boolean =>
+    tree.fileId === undefined &&
+    tree.children === undefined &&
+    !tree.loading &&
+    (tree.fileCount ?? 0) > 0;
+
 /**
  * Returns the IDs of all ancestor nodes (including the root, excluding the
  * matched node itself) for the tree node whose fileId matches the given value,

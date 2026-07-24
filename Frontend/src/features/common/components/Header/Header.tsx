@@ -7,7 +7,6 @@ import { Link, useLocation } from "react-router-dom";
 import { useAppDispatch } from "@app/hooks";
 import { updateQuery } from "@app/slices/searchSlice";
 import { DemoModeIndicator } from "@features/common/components/DemoModeIndicator";
-import { getColorFromString } from "@features/common/utils/helpers";
 
 import { LoomResponsiveLogo } from "../../branding/LoomResponsiveLogo";
 
@@ -16,6 +15,7 @@ import { BackgroundStatusIndicator } from "./BackgroundStatusIndicator";
 import { BurgerMenu } from "./BurgerMenu";
 import { GlobalSearchBox } from "./GlobalSearchBox";
 import styles from "./Header.module.css";
+import { getHeaderStripeConfig } from "./headerStripe";
 import { ImportArchiveButton } from "./ImportArchiveButton";
 
 export const Header = () => {
@@ -23,8 +23,10 @@ export const Header = () => {
     const { t } = useTranslation();
     const dispatch = useAppDispatch();
     const isMobile = useMediaQuery("(max-width:600px)");
-    const useAccentColor = window.location.hostname !== "frontend.loom";
-    const accentColor = getColorFromString(window.location.hostname);
+    const headerStripe = getHeaderStripeConfig(
+        window.location.hostname,
+        import.meta.env.MODE === "demo",
+    );
 
     const pages = [
         {
@@ -42,12 +44,12 @@ export const Header = () => {
             className={styles.stripedAppHeader}
             color="secondary"
             sx={
-                useAccentColor
+                headerStripe.enabled
                     ? {
                           backgroundImage: `repeating-linear-gradient(
                               -45deg,
                               var(--mui-palette-secondary-main) 0 30px,
-                              ${accentColor} 30px 60px
+                              ${headerStripe.accentColor} 30px 60px
                           )`,
                           backgroundAttachment: "fixed",
                       }

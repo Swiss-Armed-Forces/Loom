@@ -78,14 +78,26 @@ export const treeChildren = (
         );
     });
 
-    return [
-        ...[...childDirectories]
+    const children = new Map<string, TreeNodeWire>(
+        [...childDirectories]
             .sort()
-            .map((path) => directoryTreeNode(documents, path)),
-        ...[...childFiles.values()]
-            .sort((left, right) => left.path.localeCompare(right.path))
-            .map(documentTreeNode),
-    ];
+            .map((path) => [path, directoryTreeNode(documents, path)]),
+    );
+    [...childFiles.values()]
+        .sort((left, right) => left.path.localeCompare(right.path))
+        .forEach((document) => {
+            const fileNode = documentTreeNode(document);
+            children.set(document.path, {
+                ...fileNode,
+                ...children.get(document.path),
+                file_id: fileNode.file_id,
+                is_unseen: fileNode.is_unseen,
+                is_flagged: fileNode.is_flagged,
+            });
+        });
+    return [...children.values()].sort((left, right) =>
+        left.full_path.localeCompare(right.full_path),
+    );
 };
 
 export const treeSpine = (
@@ -109,6 +121,7 @@ export const documentPreview = (
     query: string,
 ): GetFilePreviewResponse => ({
     fileId: document.id,
+    parentId: document.parentId,
     tags: document.tags,
     flagged: document.flagged,
     hidden: document.hidden,
@@ -136,6 +149,7 @@ const documentRaw = (document: DemoDocument): string =>
     JSON.stringify({
         id_: document.id,
         state: document.state,
+        parent_id: document.parentId,
         full_name: document.path,
         full_path: document.path,
         short_name: document.name,

@@ -12,6 +12,8 @@ import {
 
 import { empty, error, json, objectValue, parseBody } from "./shared";
 
+const DEMO_ARCHIVE_ENCRYPTION_KEY = "0".repeat(32);
+
 const archiveId = (request: Request): string => {
     const match = new URL(request.url).pathname.match(/\/archive\/([^/]+)$/);
     return decodeURIComponent(match?.[1] ?? "");
@@ -71,7 +73,7 @@ const importHandler = http.post(/\/api\/v1\/archive\/import$/, () =>
 
 const encryptionKeyHandler = http.get(
     /\/api\/v1\/archive\/encryption-key$/,
-    () => json({ encryption_key: null }),
+    () => json({ encryption_key: DEMO_ARCHIVE_ENCRYPTION_KEY }),
 );
 
 const hideHandler = http.put(/\/api\/v1\/archive\/([^/]+)$/, ({ request }) =>

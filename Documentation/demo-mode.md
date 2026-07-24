@@ -27,8 +27,12 @@ application fallback.
 
 Successful default-branch pipelines build the demo in the `deploy_demo_pages` job and
 publish `Frontend/dist-demo/` to GitLab Pages. The job appears as the `pages/demo`
-environment, whose URL points to the deployed site. Merge request and tag pipelines do
-not update the Pages deployment.
+environment, whose URL points to the deployed site. Merge request pipelines publish a
+parallel preview from `deploy_demo_pages_preview` under `mr-<merge-request-IID>` without
+replacing the default-branch deployment. The preview appears as a
+`pages/demo/mr-<merge-request-IID>` environment, expires after one week, and is removed
+automatically when its merge request is closed or merged. Tag pipelines do not update
+the Pages deployment.
 
 On GitLab.com, Pages sites are public by default. Enable Pages Access Control under the
 project's **Deploy > Pages** settings if the demo should only be available to authorized
@@ -41,6 +45,9 @@ failed test or deployment job leaves the previously published Pages site in plac
 
 ## Demo behavior and limitations
 
+- The demo introduction opens automatically on the first visit. Dismissing it stores an
+  acknowledgement in the browser, and the **DEMO** ribbon can reopen it at any time.
+  Clearing the site's browser data makes the introduction appear automatically again.
 - Search, statistics, folder navigation, archives, downloads, tagging, visibility,
   flags, task scheduling, and document chat operate on bundled sample data.
 - Safe text, email, image, Office, and archive fixtures come from `integrationtest/assets`.
