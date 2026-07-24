@@ -13,7 +13,7 @@
 
 .loadingIndicatorPlaceholder {
     min-height: 4px;
-    background-color: #31312e;
+    background-color: var(--mui-palette-secondary-main);
 }
 
 .globalSearchBoxWrapperPlaceholder {
@@ -34,6 +34,12 @@
     background-color: rgba(201, 190, 190, 0.4);
 }
 
+@media (prefers-color-scheme: dark) {
+    ::-webkit-scrollbar-track {
+        background-color: rgba(60, 60, 58, 0.6);
+    }
+}
+
 ::-webkit-scrollbar-thumb {
     background-color: #31312e;
     border-radius: 1rem;
@@ -41,6 +47,18 @@
     background-clip: content-box;
 }
 
+@media (prefers-color-scheme: dark) {
+    ::-webkit-scrollbar-thumb {
+        background-color: #5a5a57;
+    }
+}
+
 ::-webkit-scrollbar-thumb:hover {
-    background-color: #31312e;
+    background-color: #555552;
+}
+
+@media (prefers-color-scheme: dark) {
+    ::-webkit-scrollbar-thumb:hover {
+        background-color: #7a7a77;
+    }
 }

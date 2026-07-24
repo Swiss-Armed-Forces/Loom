@@ -8,6 +8,12 @@
     overflow-wrap: break-word;
 }
 
+@media (prefers-color-scheme: dark) {
+    .resultHighlightText em {
+        background: #a07800;
+    }
+}
+
 .highlightWrapper {
     white-space: pre-wrap;
 }
@@ -15,5 +21,5 @@
 .highlightWrapper + .highlightWrapper {
     margin-top: 10px;
     padding-top: 10px;
-    border-top: 1px dashed black;
+    border-top: 1px dashed var(--mui-palette-divider);
 }

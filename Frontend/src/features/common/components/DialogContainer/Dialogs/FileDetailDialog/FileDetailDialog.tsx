@@ -39,6 +39,7 @@ import {
     selectWebSocketPubSubMessage,
     setFilePreview,
 } from "@app/slices/searchSlice";
+import { useDarkMode } from "@features/common/hooks/useDarkMode";
 import { FileDetailTab } from "@features/common/utils/enums";
 import { inferAceModeFromMimeType } from "@features/common/utils/helpers";
 import { FileCardHeader, HighlightList } from "@features/search/components";
@@ -67,6 +68,7 @@ export const FileDetailDialog = ({
     const { t } = useTranslation();
     const editorRef = useRef<InstanceType<typeof AceEditorImport>>(null);
     const hasAutoActionsRun = useRef<boolean>(false);
+    const isDarkMode = useDarkMode();
 
     const [file, setFile] = useState<GetFileResponse>();
     const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
@@ -338,7 +340,13 @@ export const FileDetailDialog = ({
                     {!preview || !file ? (
                         <FileSkeleton />
                     ) : (
-                        renderTabContent(tab, file, editorRef, formattedRaw)
+                        renderTabContent(
+                            tab,
+                            file,
+                            editorRef,
+                            formattedRaw,
+                            isDarkMode,
+                        )
                     )}
                 </Box>
             </DialogContent>
@@ -359,13 +367,14 @@ const renderTabContent = (
     file: GetFileResponse,
     ref: React.RefObject<InstanceType<typeof AceEditorImport> | null>,
     formattedRaw: string | undefined,
+    isDarkMode: boolean,
 ) => {
     const aceProps = {
         ref,
         width: "100%",
         height: "100%",
         readOnly: true,
-        theme: "github",
+        theme: isDarkMode ? "tomorrow_night" : "github",
         setOptions: { useWorker: false },
         editorProps: { $blockScrolling: true },
     };

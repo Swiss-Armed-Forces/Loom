@@ -16,7 +16,7 @@
 .uploadFileDropzoneIcon {
     display: flex;
     flex-grow: 2;
-    color: black;
+    color: inherit;
     width: 10vw;
     opacity: 0.25;
     margin: 30px;
