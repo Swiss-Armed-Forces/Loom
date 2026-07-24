@@ -17,3 +17,18 @@ span.highlighted {
     background-color: #fff176;
     color: rgb(158, 158, 158);
 }
+
+@media (prefers-color-scheme: dark) {
+    span.clickable:hover {
+        background-color: #00838f;
+    }
+
+    span.clickable:active {
+        background-color: #00acc1;
+    }
+
+    span.highlighted {
+        background-color: #f9a825;
+        color: #e0e0e0;
+    }
+}

@@ -4,6 +4,7 @@ import { useState } from "react";
 import AceEditorImport from "react-ace";
 
 import { GetFileLanguageTranslations } from "@app/api";
+import { useDarkMode } from "@features/common/hooks/useDarkMode";
 const AceEditor = (AceEditorImport as any).default ?? AceEditorImport;
 
 interface FileTranslationsProps {
@@ -14,6 +15,7 @@ export const FileTranslations = ({ translations }: FileTranslationsProps) => {
     const [translation, setTranslation] = useState<GetFileLanguageTranslations>(
         translations[0],
     );
+    const isDarkMode = useDarkMode();
 
     if (translations.length === 0) {
         return <div>No translations available</div>;
@@ -88,6 +90,7 @@ export const FileTranslations = ({ translations }: FileTranslationsProps) => {
                     height="100%"
                     showGutter={true}
                     readOnly={true}
+                    theme={isDarkMode ? "tomorrow_night" : "github"}
                     editorProps={{
                         $blockScrolling: true,
                     }}

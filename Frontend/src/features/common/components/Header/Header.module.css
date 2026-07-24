@@ -26,7 +26,7 @@ header.stripedAppHeader {
 
 header.appHeader {
     position: unset;
-    background-color: #31312e;
+    background-color: var(--mui-palette-secondary-main);
 }
 
 @media (max-width: 900px) {

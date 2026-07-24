@@ -46,7 +46,7 @@ export const Header = () => {
                     ? {
                           backgroundImage: `repeating-linear-gradient(
                               -45deg,
-                              #31312e 0 30px,
+                              var(--mui-palette-secondary-main) 0 30px,
                               ${accentColor} 30px 60px
                           )`,
                           backgroundAttachment: "fixed",

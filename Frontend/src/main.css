@@ -1,3 +1,15 @@
+:root {
+    --color-layer: #f5f5f2;
+    --color-layer-foreground: #31312e;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --color-layer: #3a3a37;
+        --color-layer-foreground: #e8e8e5;
+    }
+}
+
 html,
 body {
     overflow: hidden;

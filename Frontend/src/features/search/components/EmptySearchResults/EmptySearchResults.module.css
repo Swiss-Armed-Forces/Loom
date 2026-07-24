@@ -16,9 +16,10 @@ kbd {
     font-size: 0.78rem;
     font-family: monospace;
     line-height: 1.4;
-    background: #f3f3f3;
-    border: 1px solid #ccc;
+    background: var(--color-layer);
+    border: 1px solid var(--mui-palette-grey-200);
     border-bottom-width: 2px;
     border-radius: 3px;
-    color: #333;
+    color: var(--color-layer-foreground);
+    box-shadow: 0 2px 0 1px var(--mui-palette-grey-300);
 }

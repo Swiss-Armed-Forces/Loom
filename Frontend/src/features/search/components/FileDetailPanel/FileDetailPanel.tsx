@@ -27,6 +27,7 @@ import {
 import { FileRenderer } from "@features/common/components/DialogContainer/Dialogs/FileDetailDialog/FileRenderer";
 import { FileTasks } from "@features/common/components/DialogContainer/Dialogs/FileDetailDialog/FileTasks";
 import { FileTranslations } from "@features/common/components/DialogContainer/Dialogs/FileDetailDialog/FileTranslations";
+import { useDarkMode } from "@features/common/hooks/useDarkMode";
 import { FileDetailTab } from "@features/common/utils/enums";
 import { inferAceModeFromMimeType } from "@features/common/utils/helpers";
 import { FileCardHeader, HighlightList } from "@features/search/components";
@@ -51,6 +52,7 @@ export const FileDetailPanel = ({
     const editorRef = useRef<InstanceType<typeof AceEditorImport>>(null);
     const hasAutoActionsRun = useRef<boolean>(false);
     const lastFetchedFileId = useRef<string>("");
+    const isDarkMode = useDarkMode();
 
     const [file, setFile] = useState<GetFileResponse>();
     const fetchCancelledRef = useRef(false);
@@ -283,7 +285,13 @@ export const FileDetailPanel = ({
                 {!preview || !file ? (
                     <FileSkeleton />
                 ) : (
-                    renderTabContent(detailTab, file, editorRef, formattedRaw)
+                    renderTabContent(
+                        detailTab,
+                        file,
+                        editorRef,
+                        formattedRaw,
+                        isDarkMode,
+                    )
                 )}
             </Box>
         </Box>
@@ -303,13 +311,14 @@ const renderTabContent = (
     file: GetFileResponse,
     ref: React.RefObject<InstanceType<typeof AceEditorImport> | null>,
     formattedRaw: string | undefined,
+    isDarkMode: boolean,
 ) => {
     const aceProps = {
         ref,
         width: "100%",
         height: "100%",
         readOnly: true,
-        theme: "github",
+        theme: isDarkMode ? "tomorrow_night" : "github",
         setOptions: { useWorker: false },
         editorProps: { $blockScrolling: true },
     };
