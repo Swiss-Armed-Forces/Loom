@@ -22,7 +22,23 @@
     "demoMode": {
         "indicator": "DEMO",
         "title": "Demo mode",
-        "description": "No Loom backend services are connected. Actions use sample data and are simulated locally in your browser. Changes are temporary and reset when you reload the page.",
+        "introduction": "This is a browser-only preview of Loom. It uses a curated set of sample documents and simulates Loom's APIs, background tasks, and live updates, so you can explore the interface without deploying the full stack.",
+        "capabilities": {
+            "title": "What you can explore",
+            "search": "Search with Loom's query syntax, then explore folders, statistics, metadata, previews, and downloads.",
+            "organize": "Tag, flag, hide, and mark documents as seen, or create and download demo archives.",
+            "automation": "Try simulated summarization, translation, image descriptions, reindexing, and document chat."
+        },
+        "limitations": {
+            "title": "Demo boundaries",
+            "backend": "No Loom backend services are connected. File uploads, archive imports, service dashboards, and task-execution details are unavailable.",
+            "reset": "Changes to demo data and generated results are temporary and reset when you reload the page."
+        },
+        "startExploring": "Start exploring",
+        "repository": {
+            "prompt": "Want to run Loom with your own documents? Visit the project repository for installation instructions and more information.",
+            "action": "View Loom on GitLab"
+        },
         "unavailable": {
             "archiveImport": "Archive imports aren't available in demo mode. Use a full Loom deployment to import Loom archives.",
             "backendServices": "Backend services aren't available in demo mode. Use a full Loom deployment to access them.",

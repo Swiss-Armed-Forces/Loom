@@ -96,6 +96,18 @@ describe("demo query evaluator", () => {
         expect(highlights).not.toHaveProperty("size");
     });
 
+    it("matches full paths through the filename alias", () => {
+        const fixture = document(1);
+        fixture.name = "John Smith - Network Security.txt";
+        fixture.path = "/Research/Security/John Smith - Network Security.txt";
+
+        expect(
+            parseDemoQuery(
+                'filename:"/Research/Security/John Smith - Network Security.txt"',
+            ).matches(fixture),
+        ).toBe(true);
+    });
+
     it("omits match-all, negated, existence, range, and comparison filters", () => {
         const fixture = document(2_000_000);
         fixture.tags = ["interesting"];

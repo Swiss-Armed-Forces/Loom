@@ -576,6 +576,8 @@ const candidatesForField = (
 ): string[] => {
     if (!field) return unfieldedValues(document);
     const fields = valuesByField(document);
+    const aliases = TEXT_FIELDS_BY_ALIAS[field];
+    if (aliases) return aliases.flatMap((name) => fields[name] ?? []);
     if (field === "*") return Object.values(fields).flat();
     if (!field.includes("*") && !field.includes("?"))
         return fields[field] ?? [];

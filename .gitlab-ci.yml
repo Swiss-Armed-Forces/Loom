@@ -410,6 +410,20 @@ deploy_demo_pages:
     name: pages/demo
     url: $CI_PAGES_URL
 
+deploy_demo_pages_preview:
+  stage: publish
+  script:
+    - devenv shell -- build-demo-pages
+  pages:
+    publish: Frontend/dist-demo
+    path_prefix: "mr-$CI_MERGE_REQUEST_IID"
+    expire_in: 1 week
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+  environment:
+    name: "pages/demo/mr-$CI_MERGE_REQUEST_IID"
+    url: $CI_PAGES_URL
+
 publish_images:
   extends: .default-docker
   stage: publish

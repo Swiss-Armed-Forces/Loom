@@ -1,7 +1,9 @@
 import applausLogoUrl from "../../../integrationtest/assets/1.png?url";
 import noTagArticle from "../../../integrationtest/assets/auto_tag_files/no_tag.txt?raw";
 import basicEmail from "../../../integrationtest/assets/basic_email.eml?raw";
+import attachmentEmail from "../../../integrationtest/assets/email_with_pdf_attachment.eml?raw";
 import emptyFile from "../../../integrationtest/assets/empty_file.txt?raw";
+import homePdfUrl from "../../../integrationtest/assets/home.pdf?url";
 import networkSecurity from "../../../integrationtest/assets/knn1.txt?raw";
 import accessibleDocumentUrl from "../../../integrationtest/assets/sample3.docx?url";
 import testArchiveUrl from "../../../integrationtest/assets/testarchive_larger.zip?url";
@@ -17,6 +19,8 @@ import sample3PdfUrl from "./previews/sample3.pdf?url";
 import type { DemoDocument } from "./repository";
 
 export const INITIAL_ARCHIVE_ID = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
+export const ATTACHMENT_EMAIL_ID = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaab";
+export const PDF_ATTACHMENT_ID = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
 
 export const createDemoDocuments = (): DemoDocument[] => {
     const now = new Date().toISOString();
@@ -78,6 +82,60 @@ export const createDemoDocuments = (): DemoDocument[] => {
                 imageUrl: basicEmailImageUrl,
                 officePdfUrl: basicEmailPdfUrl,
             },
+        },
+        {
+            id: ATTACHMENT_EMAIL_ID,
+            name: "email_with_pdf_attachment.eml",
+            path: "/Mail/Inbox/email_with_pdf_attachment.eml",
+            extension: "eml",
+            mimeType: "message/rfc822",
+            size: 2_973,
+            uploadedAt: "2025-02-10T13:00:00Z",
+            createdAt: "2016-06-01T16:35:07Z",
+            modifiedAt: "2016-06-01T16:35:07Z",
+            state: "processed",
+            tags: ["attachment", "email"],
+            content:
+                "This email contains a PDF attachment that can be rendered in Loom.",
+            summary:
+                "A multipart sample email containing a renderable PDF attachment.",
+            flagged: false,
+            hidden: false,
+            seen: true,
+            language: "en",
+            authors: ["Demo Sender", "sender@example.com"],
+            secrets: [],
+            source: "api-upload",
+            attachments: [{ id: PDF_ATTACHMENT_ID, name: "home.pdf" }],
+            archiveIds: [],
+            data: attachmentEmail,
+        },
+        {
+            id: PDF_ATTACHMENT_ID,
+            name: "home.pdf",
+            path: "/Mail/Inbox/email_with_pdf_attachment.eml/home.pdf",
+            extension: "pdf",
+            mimeType: "application/pdf",
+            size: 1_737,
+            uploadedAt: "2025-02-10T13:00:00Z",
+            createdAt: "2016-06-01T16:35:07Z",
+            modifiedAt: "2016-06-01T16:35:07Z",
+            state: "processed",
+            tags: ["attachment", "pdf"],
+            content: "A one-page PDF generated with Matplotlib.",
+            summary: "A small renderable PDF attached to the sample email.",
+            flagged: false,
+            hidden: false,
+            seen: true,
+            language: "en",
+            authors: [],
+            secrets: [],
+            source: "api-upload",
+            parentId: ATTACHMENT_EMAIL_ID,
+            archiveIds: [],
+            data: "Binary PDF fixture bundled with the demo.",
+            downloadUrl: homePdfUrl,
+            rendered: { officePdfUrl: homePdfUrl },
         },
         {
             id: "33333333-3333-4333-8333-333333333333",

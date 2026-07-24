@@ -23,6 +23,7 @@ export interface DemoDocument {
     secrets: string[];
     source: string;
     imageDescription?: string;
+    parentId?: string;
     attachments?: { id: string; name: string }[];
     archiveIds: string[];
     data: string;

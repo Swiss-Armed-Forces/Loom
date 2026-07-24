@@ -1,7 +1,3 @@
-.spacer {
-    flex: 0 0 3rem;
-}
-
 .corner {
     position: fixed;
     z-index: 1200;
@@ -41,10 +37,4 @@
 .ribbon:focus-visible {
     outline: 3px solid white;
     outline-offset: -4px;
-}
-
-@media (max-width: 600px) {
-    .spacer {
-        flex-basis: 2.25rem;
-    }
 }
