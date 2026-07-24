@@ -61,6 +61,15 @@ data:
     {{- if ne .Values.pipeline.skip_auto_tag_file_while_indexing nil }}
     skip_auto_tag_file_while_indexing: {{ .Values.pipeline.skip_auto_tag_file_while_indexing | quote }}
     {{- end }}
+    {{- if ne .Values.pipeline.persist_success_tasks nil }}
+    persist_success_tasks: {{ .Values.pipeline.persist_success_tasks | quote }}
+    {{- end }}
+    {{- if ne .Values.pipeline.persist_retry_tasks nil }}
+    persist_retry_tasks: {{ .Values.pipeline.persist_retry_tasks | quote }}
+    {{- end }}
+    {{- if ne .Values.pipeline.min_language_detection_confidence nil }}
+    min_language_detection_confidence: {{ .Values.pipeline.min_language_detection_confidence | quote }}
+    {{- end }}
     {{- if ne .Values.pipeline.auto_tag_file_similarity_threshold nil }}
     auto_tag_file_similarity_threshold: {{ .Values.pipeline.auto_tag_file_similarity_threshold | quote }}
     {{- end }}

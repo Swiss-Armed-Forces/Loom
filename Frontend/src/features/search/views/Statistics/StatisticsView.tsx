@@ -113,14 +113,12 @@ export const StatisticsView = () => {
     // When the pie has an "others" slice at index 0, named slices start at
     // CHART_COLORS[1]. The histogram must apply the same offset.
     const groupColorOffset = useMemo((): number => {
-        if (!stats?.termsData?.data) return 0;
-        return computeOthersCount(
-            stats.termsData.data,
-            stats.termsData.fileCount,
-        ) > 0
-            ? 1
-            : 0;
-    }, [stats?.termsData?.data, stats?.termsData?.fileCount]);
+        if (!stats?.termsData) return 0;
+        const othersCount =
+            stats.termsData.othersCount ??
+            computeOthersCount(stats.termsData.data, stats.termsData.fileCount);
+        return othersCount > 0 ? 1 : 0;
+    }, [stats?.termsData]);
 
     const sortedTermsStats = sortStats(termsStats, TERMS_STAT_ORDER);
     const sortedHistogramStats = sortStats(
@@ -290,6 +288,7 @@ export const StatisticsView = () => {
                 <Chart
                     entries={stats.termsData?.data ?? []}
                     fileCount={stats.termsData?.fileCount ?? 0}
+                    othersCount={stats.termsData?.othersCount}
                     handleUpdateQuery={handleUpdateQuery}
                     queryKeyword={stats.termsData?.key ?? ""}
                     height={CHART_HEIGHT}

@@ -30,7 +30,6 @@ import {
     TagsList,
 } from "@features/search/components";
 
-import { FileTasksList } from "./FileTasksList";
 import styles from "./ResultCard.module.css";
 import { Summary } from "./Summary";
 
@@ -213,7 +212,12 @@ export const ResultCard = React.memo(
                                 : undefined,
                         }}
                     >
-                        <FileCardHeader filePreview={filePreview} />
+                        <FileCardHeader
+                            filePreview={filePreview}
+                            onStateChipClick={() =>
+                                handleOpenDetailsOnTabClick(FileDetailTab.Tasks)
+                            }
+                        />
                         <CardContent
                             sx={{
                                 py: 1,
@@ -315,13 +319,6 @@ export const ResultCard = React.memo(
                                         sx={{ color: "text.disabled", pl: 0.5 }}
                                     >{`${searchQuery?.sortField ?? "score"}: ${sortFieldValue}`}</Typography>
                                 )}
-                                <FileTasksList
-                                    tasksSucceeded={
-                                        filePreview.tasksSucceeded || []
-                                    }
-                                    tasksFailed={filePreview.tasksFailed || []}
-                                    taskRetried={filePreview.tasksRetried || []}
-                                />
                             </Box>
                         </CardContent>
                     </Card>

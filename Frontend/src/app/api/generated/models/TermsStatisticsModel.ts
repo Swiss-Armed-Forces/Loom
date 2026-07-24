@@ -56,6 +56,12 @@ export interface TermsStatisticsModel {
      * @type {number}
      * @memberof TermsStatisticsModel
      */
+    othersCount?: number;
+    /**
+     *
+     * @type {number}
+     * @memberof TermsStatisticsModel
+     */
     minValue?: number;
     /**
      *
@@ -92,6 +98,8 @@ export function TermsStatisticsModelFromJSONTyped(
         key: json["key"],
         data: (json["data"] as Array<any>).map(HitsPerGroupEntryModelFromJSON),
         fileCount: json["file_count"],
+        othersCount:
+            json["others_count"] == null ? undefined : json["others_count"],
         minValue: json["min_value"] == null ? undefined : json["min_value"],
         maxValue: json["max_value"] == null ? undefined : json["max_value"],
     };
@@ -108,6 +116,7 @@ export function TermsStatisticsModelToJSON(
         key: value["key"],
         data: (value["data"] as Array<any>).map(HitsPerGroupEntryModelToJSON),
         file_count: value["fileCount"],
+        others_count: value["othersCount"],
         min_value: value["minValue"],
         max_value: value["maxValue"],
     };

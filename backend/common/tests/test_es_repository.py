@@ -62,6 +62,12 @@ from common.task_object.root_task_information_repository import (
     RootTaskInformationRepository,
     _EsRootTaskInformation,
 )
+from common.task_object.task_object import (
+    TaskRecord,
+    TaskRun,
+    _EsTaskRecord,
+    _EsTaskRun,
+)
 from mocks.test_value_defaults import TestValueDefaults
 
 logger = logging.getLogger(__name__)
@@ -181,9 +187,39 @@ ES_REPOSITORY_TEST_INSTANCES: dict[type[BaseEsRepository], list[_TestInstances]]
                 hidden=TestValueDefaults.test_bool,
                 # RepositoryTaskObject
                 state=TestValueDefaults.test_str,
-                tasks_succeeded=TestValueDefaults.test_uuid_list,
-                tasks_retried=TestValueDefaults.test_uuid_list,
-                tasks_failed=TestValueDefaults.test_uuid_list,
+                tasks=[
+                    TaskRecord(
+                        task_id=TestValueDefaults.test_uuid,
+                        task_name=TestValueDefaults.test_str,
+                        succeeded=[
+                            TaskRun(
+                                started_at=TestValueDefaults.test_datetime,
+                                finished_at=TestValueDefaults.test_datetime,
+                                duration=TestValueDefaults.test_float,
+                                exception=TestValueDefaults.test_str,
+                                arguments=TestValueDefaults.test_str,
+                            )
+                        ],
+                        retried=[
+                            TaskRun(
+                                started_at=TestValueDefaults.test_datetime,
+                                finished_at=TestValueDefaults.test_datetime,
+                                duration=TestValueDefaults.test_float,
+                                exception=TestValueDefaults.test_str,
+                                arguments=TestValueDefaults.test_str,
+                            )
+                        ],
+                        failed=[
+                            TaskRun(
+                                started_at=TestValueDefaults.test_datetime,
+                                finished_at=TestValueDefaults.test_datetime,
+                                duration=TestValueDefaults.test_float,
+                                exception=TestValueDefaults.test_str,
+                                arguments=TestValueDefaults.test_str,
+                            )
+                        ],
+                    )
+                ],
                 # File
                 storage_data=LazyBytes(service_id=str(TestValueDefaults.test_uuid)),
                 content=TestValueDefaults.test_str,
@@ -315,9 +351,42 @@ ES_REPOSITORY_TEST_INSTANCES: dict[type[BaseEsRepository], list[_TestInstances]]
                 hidden=TestValueDefaults.test_bool,
                 # _EsTaskDocument
                 state=TestValueDefaults.test_str,
-                tasks_succeeded=list(map(str, TestValueDefaults.test_uuid_list)),
-                tasks_retried=list(map(str, TestValueDefaults.test_uuid_list)),
-                tasks_failed=list(map(str, TestValueDefaults.test_uuid_list)),
+                failed_task_names=[TestValueDefaults.test_str],
+                retried_task_names=[TestValueDefaults.test_str],
+                successful_task_names=[TestValueDefaults.test_str],
+                tasks=[
+                    _EsTaskRecord(
+                        task_id=str(TestValueDefaults.test_uuid),
+                        task_name=TestValueDefaults.test_str,
+                        succeeded=[
+                            _EsTaskRun(
+                                started_at=TestValueDefaults.test_datetime.isoformat(),
+                                finished_at=TestValueDefaults.test_datetime.isoformat(),
+                                duration=TestValueDefaults.test_float,
+                                exception=TestValueDefaults.test_str,
+                                arguments=TestValueDefaults.test_str,
+                            )
+                        ],
+                        retried=[
+                            _EsTaskRun(
+                                started_at=TestValueDefaults.test_datetime.isoformat(),
+                                finished_at=TestValueDefaults.test_datetime.isoformat(),
+                                duration=TestValueDefaults.test_float,
+                                exception=TestValueDefaults.test_str,
+                                arguments=TestValueDefaults.test_str,
+                            )
+                        ],
+                        failed=[
+                            _EsTaskRun(
+                                started_at=TestValueDefaults.test_datetime.isoformat(),
+                                finished_at=TestValueDefaults.test_datetime.isoformat(),
+                                duration=TestValueDefaults.test_float,
+                                exception=TestValueDefaults.test_str,
+                                arguments=TestValueDefaults.test_str,
+                            )
+                        ],
+                    )
+                ],
                 # _EsFile
                 storage_data=_EsLazyBytes(
                     service_id=str(TestValueDefaults.test_uuid), embedded_data=None
@@ -467,9 +536,39 @@ ES_REPOSITORY_TEST_INSTANCES: dict[type[BaseEsRepository], list[_TestInstances]]
                 hidden=TestValueDefaults.test_bool,
                 # RepositoryTaskObject
                 state=TestValueDefaults.test_str,
-                tasks_succeeded=TestValueDefaults.test_uuid_list,
-                tasks_retried=TestValueDefaults.test_uuid_list,
-                tasks_failed=TestValueDefaults.test_uuid_list,
+                tasks=[
+                    TaskRecord(
+                        task_id=TestValueDefaults.test_uuid,
+                        task_name=TestValueDefaults.test_str,
+                        succeeded=[
+                            TaskRun(
+                                started_at=TestValueDefaults.test_datetime,
+                                finished_at=TestValueDefaults.test_datetime,
+                                duration=TestValueDefaults.test_float,
+                                exception=TestValueDefaults.test_str,
+                                arguments=TestValueDefaults.test_str,
+                            )
+                        ],
+                        retried=[
+                            TaskRun(
+                                started_at=TestValueDefaults.test_datetime,
+                                finished_at=TestValueDefaults.test_datetime,
+                                duration=TestValueDefaults.test_float,
+                                exception=TestValueDefaults.test_str,
+                                arguments=TestValueDefaults.test_str,
+                            )
+                        ],
+                        failed=[
+                            TaskRun(
+                                started_at=TestValueDefaults.test_datetime,
+                                finished_at=TestValueDefaults.test_datetime,
+                                duration=TestValueDefaults.test_float,
+                                exception=TestValueDefaults.test_str,
+                                arguments=TestValueDefaults.test_str,
+                            )
+                        ],
+                    )
+                ],
                 # Archive
                 query=QueryParameters(
                     query_id=str(TestValueDefaults.test_uuid),
@@ -506,9 +605,42 @@ ES_REPOSITORY_TEST_INSTANCES: dict[type[BaseEsRepository], list[_TestInstances]]
                 hidden=TestValueDefaults.test_bool,
                 # _EsTaskDocument
                 state=TestValueDefaults.test_str,
-                tasks_succeeded=list(map(str, TestValueDefaults.test_uuid_list)),
-                tasks_retried=list(map(str, TestValueDefaults.test_uuid_list)),
-                tasks_failed=list(map(str, TestValueDefaults.test_uuid_list)),
+                failed_task_names=[TestValueDefaults.test_str],
+                retried_task_names=[TestValueDefaults.test_str],
+                successful_task_names=[TestValueDefaults.test_str],
+                tasks=[
+                    _EsTaskRecord(
+                        task_id=str(TestValueDefaults.test_uuid),
+                        task_name=TestValueDefaults.test_str,
+                        succeeded=[
+                            _EsTaskRun(
+                                started_at=TestValueDefaults.test_datetime.isoformat(),
+                                finished_at=TestValueDefaults.test_datetime.isoformat(),
+                                duration=TestValueDefaults.test_float,
+                                exception=TestValueDefaults.test_str,
+                                arguments=TestValueDefaults.test_str,
+                            )
+                        ],
+                        retried=[
+                            _EsTaskRun(
+                                started_at=TestValueDefaults.test_datetime.isoformat(),
+                                finished_at=TestValueDefaults.test_datetime.isoformat(),
+                                duration=TestValueDefaults.test_float,
+                                exception=TestValueDefaults.test_str,
+                                arguments=TestValueDefaults.test_str,
+                            )
+                        ],
+                        failed=[
+                            _EsTaskRun(
+                                started_at=TestValueDefaults.test_datetime.isoformat(),
+                                finished_at=TestValueDefaults.test_datetime.isoformat(),
+                                duration=TestValueDefaults.test_float,
+                                exception=TestValueDefaults.test_str,
+                                arguments=TestValueDefaults.test_str,
+                            )
+                        ],
+                    )
+                ],
                 # _EsArchive
                 version=LOOM_ARCHIVE_VERSION,
                 query=_EsQueryParameters(
@@ -564,9 +696,39 @@ ES_REPOSITORY_TEST_INSTANCES: dict[type[BaseEsRepository], list[_TestInstances]]
                 hidden=TestValueDefaults.test_bool,
                 # RepositoryTaskObject
                 state=TestValueDefaults.test_str,
-                tasks_succeeded=TestValueDefaults.test_uuid_list,
-                tasks_retried=TestValueDefaults.test_uuid_list,
-                tasks_failed=TestValueDefaults.test_uuid_list,
+                tasks=[
+                    TaskRecord(
+                        task_id=TestValueDefaults.test_uuid,
+                        task_name=TestValueDefaults.test_str,
+                        succeeded=[
+                            TaskRun(
+                                started_at=TestValueDefaults.test_datetime,
+                                finished_at=TestValueDefaults.test_datetime,
+                                duration=TestValueDefaults.test_float,
+                                exception=TestValueDefaults.test_str,
+                                arguments=TestValueDefaults.test_str,
+                            )
+                        ],
+                        retried=[
+                            TaskRun(
+                                started_at=TestValueDefaults.test_datetime,
+                                finished_at=TestValueDefaults.test_datetime,
+                                duration=TestValueDefaults.test_float,
+                                exception=TestValueDefaults.test_str,
+                                arguments=TestValueDefaults.test_str,
+                            )
+                        ],
+                        failed=[
+                            TaskRun(
+                                started_at=TestValueDefaults.test_datetime,
+                                finished_at=TestValueDefaults.test_datetime,
+                                duration=TestValueDefaults.test_float,
+                                exception=TestValueDefaults.test_str,
+                                arguments=TestValueDefaults.test_str,
+                            )
+                        ],
+                    )
+                ],
                 # AiContext
                 query=QueryParameters(
                     query_id=str(TestValueDefaults.test_uuid),
@@ -594,9 +756,42 @@ ES_REPOSITORY_TEST_INSTANCES: dict[type[BaseEsRepository], list[_TestInstances]]
                 hidden=TestValueDefaults.test_bool,
                 # _EsTaskDocument
                 state=TestValueDefaults.test_str,
-                tasks_succeeded=list(map(str, TestValueDefaults.test_uuid_list)),
-                tasks_retried=list(map(str, TestValueDefaults.test_uuid_list)),
-                tasks_failed=list(map(str, TestValueDefaults.test_uuid_list)),
+                failed_task_names=[TestValueDefaults.test_str],
+                retried_task_names=[TestValueDefaults.test_str],
+                successful_task_names=[TestValueDefaults.test_str],
+                tasks=[
+                    _EsTaskRecord(
+                        task_id=str(TestValueDefaults.test_uuid),
+                        task_name=TestValueDefaults.test_str,
+                        succeeded=[
+                            _EsTaskRun(
+                                started_at=TestValueDefaults.test_datetime.isoformat(),
+                                finished_at=TestValueDefaults.test_datetime.isoformat(),
+                                duration=TestValueDefaults.test_float,
+                                exception=TestValueDefaults.test_str,
+                                arguments=TestValueDefaults.test_str,
+                            )
+                        ],
+                        retried=[
+                            _EsTaskRun(
+                                started_at=TestValueDefaults.test_datetime.isoformat(),
+                                finished_at=TestValueDefaults.test_datetime.isoformat(),
+                                duration=TestValueDefaults.test_float,
+                                exception=TestValueDefaults.test_str,
+                                arguments=TestValueDefaults.test_str,
+                            )
+                        ],
+                        failed=[
+                            _EsTaskRun(
+                                started_at=TestValueDefaults.test_datetime.isoformat(),
+                                finished_at=TestValueDefaults.test_datetime.isoformat(),
+                                duration=TestValueDefaults.test_float,
+                                exception=TestValueDefaults.test_str,
+                                arguments=TestValueDefaults.test_str,
+                            )
+                        ],
+                    )
+                ],
                 # _EsAiContext
                 query=_EsQueryParameters(
                     query_id=str(TestValueDefaults.test_uuid),
@@ -688,7 +883,9 @@ def test_es_repository_object_to_document(
     )
     # do compare value dicts first: this is only here because
     # pytest can generate nice diffs on dicts.
-    assert test_instance.document.to_dict(skip_empty=False) == document.to_dict()
+    a = test_instance.document.to_dict(skip_empty=False)
+    b = document.to_dict()
+    assert a == b
 
     assert test_instance.document == document
 

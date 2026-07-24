@@ -686,10 +686,12 @@ class FileRepository(BaseEsRepository[_EsFile, File]):
 
         result = self._execute_search_with_query(search=search, query=query)
 
+        others_count = int(self.get_aggr(result, [agg_name, "sum_other_doc_count"], 0))
         stats = TermsStatistics(
             stat=stat,
             data=[],
             total_no_of_files=result.hits.total.value,  # type: ignore[attr-defined]
+            others_count=others_count,
             key=stat,
         )
         for bucket in self.get_aggr(result, [agg_name, "buckets"], []):

@@ -30,6 +30,7 @@ export const FileDetailTab = {
     Summary: 4,
     Translations: 5,
     ImageDescription: 6,
+    Tasks: 7,
 } as const;
 export type FileDetailTab = (typeof FileDetailTab)[keyof typeof FileDetailTab];
 

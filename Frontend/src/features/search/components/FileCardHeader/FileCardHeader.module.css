@@ -20,3 +20,16 @@
     align-items: flex-end;
     flex: 1;
 }
+
+.clickableChip {
+    cursor: pointer;
+    transition: transform 0.2s ease;
+}
+
+.clickableChip:hover {
+    transform: scale(1.1);
+}
+
+.clickableChip:active {
+    transform: scale(0.95);
+}

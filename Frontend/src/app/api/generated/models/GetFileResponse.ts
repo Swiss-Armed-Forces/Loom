@@ -32,6 +32,12 @@ import {
     RenderedFileFromJSONTyped,
     RenderedFileToJSON,
 } from "./RenderedFile";
+import type { TaskRecord } from "./TaskRecord";
+import {
+    TaskRecordFromJSON,
+    TaskRecordFromJSONTyped,
+    TaskRecordToJSON,
+} from "./TaskRecord";
 
 /**
  *
@@ -117,6 +123,12 @@ export interface GetFileResponse {
      * @memberof GetFileResponse
      */
     renderedFile: RenderedFile;
+    /**
+     *
+     * @type {Array<TaskRecord>}
+     * @memberof GetFileResponse
+     */
+    tasks: Array<TaskRecord>;
 }
 
 /**
@@ -130,6 +142,7 @@ export function instanceOfGetFileResponse(value: object): boolean {
     if (!("languageTranslations" in value)) return false;
     if (!("raw" in value)) return false;
     if (!("renderedFile" in value)) return false;
+    if (!("tasks" in value)) return false;
     return true;
 }
 
@@ -166,6 +179,7 @@ export function GetFileResponseFromJSONTyped(
         type: json["type"] == null ? undefined : json["type"],
         imap: json["imap"] == null ? undefined : ImapInfoFromJSON(json["imap"]),
         renderedFile: RenderedFileFromJSON(json["rendered_file"]),
+        tasks: (json["tasks"] as Array<any>).map(TaskRecordFromJSON),
     };
 }
 
@@ -189,5 +203,6 @@ export function GetFileResponseToJSON(value?: GetFileResponse | null): any {
         type: value["type"],
         imap: ImapInfoToJSON(value["imap"]),
         rendered_file: RenderedFileToJSON(value["renderedFile"]),
+        tasks: (value["tasks"] as Array<any>).map(TaskRecordToJSON),
     };
 }

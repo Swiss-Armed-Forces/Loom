@@ -93,7 +93,12 @@ def discover_stats(
         if not isinstance(field.marker, stat_type):
             continue
         es_field = f"{field.path}.keyword" if field.marker.keyword else field.path
-        label = field.marker.label or snake_to_title(field.path.split(".")[-1])
+        if field.marker.label:
+            label = field.marker.label
+        else:
+            parts = field.path.split(".")
+            label_parts = parts[-2:] if len(parts) >= 3 else parts[-1:]
+            label = snake_to_title("_".join(label_parts))
         result[es_field] = dataclasses.replace(field.marker, label=label, keyword=False)
     return result
 
@@ -112,6 +117,7 @@ class TermsStatistics(BaseModel):
     key: str
     data: list[StatisticsEntry]
     total_no_of_files: int
+    others_count: int = 0
     min_value: float | None = None
     max_value: float | None = None
 

@@ -44,6 +44,7 @@ import { inferAceModeFromMimeType } from "@features/common/utils/helpers";
 import { FileCardHeader, HighlightList } from "@features/search/components";
 
 import { FileRenderer } from "./FileRenderer";
+import { FileTasks } from "./FileTasks";
 import { FileTranslations } from "./FileTranslations";
 
 import "ace-builds/esm-resolver";
@@ -195,6 +196,15 @@ export const FileDetailDialog = ({
         [file],
     );
 
+    const formattedRaw = useMemo(() => {
+        if (!file?.raw) return undefined;
+        try {
+            return JSON.stringify(JSON.parse(file.raw), null, 2);
+        } catch {
+            return file.raw;
+        }
+    }, [file?.raw]);
+
     const handleClose = useCallback(() => {
         const fileIdInPath = window.location.hash.substring(1);
         if (fileIdInPath === fileId) {
@@ -308,6 +318,11 @@ export const FileDetailDialog = ({
                             data-tab-value={FileDetailTab.Translations}
                             disabled={!properties.hasTranslations}
                         />
+                        <Tab
+                            label="Tasks"
+                            value={FileDetailTab.Tasks}
+                            data-tab-value={FileDetailTab.Tasks}
+                        />
                     </Tabs>
                 </Box>
 
@@ -323,7 +338,7 @@ export const FileDetailDialog = ({
                     {!preview || !file ? (
                         <FileSkeleton />
                     ) : (
-                        renderTabContent(tab, file, editorRef)
+                        renderTabContent(tab, file, editorRef, formattedRaw)
                     )}
                 </Box>
             </DialogContent>
@@ -343,6 +358,7 @@ const renderTabContent = (
     tab: FileDetailTab,
     file: GetFileResponse,
     ref: React.RefObject<InstanceType<typeof AceEditorImport> | null>,
+    formattedRaw: string | undefined,
 ) => {
     const aceProps = {
         ref,
@@ -379,7 +395,7 @@ const renderTabContent = (
             return (
                 <AceEditor
                     mode="json"
-                    value={JSON.stringify(JSON.parse(file.raw), null, 2)}
+                    value={formattedRaw ?? ""}
                     {...aceProps}
                 />
             );
@@ -406,6 +422,12 @@ const renderTabContent = (
                 <FileTranslations
                     translations={file.languageTranslations ?? []}
                 />
+            );
+        case FileDetailTab.Tasks:
+            return (
+                <Box sx={{ overflow: "auto", flex: 1 }}>
+                    <FileTasks tasks={file.tasks} />
+                </Box>
             );
         case FileDetailTab.Rendered:
         default:

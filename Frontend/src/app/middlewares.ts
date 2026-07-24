@@ -92,9 +92,12 @@ localStorageSearchStateMiddleware.startListening({
         if (persistDebounceTimer) clearTimeout(persistDebounceTimer);
         persistDebounceTimer = setTimeout(() => {
             const state = (listenerApi.getState() as RootState).search;
+            const transientKeys = new Set(["termsStats", "histogramStats"]);
             localStorage.setItem(
                 SEARCH_STATE_LOCAL_STORAGE_KEY,
-                JSON.stringify(state),
+                JSON.stringify(state, (key, value) =>
+                    transientKeys.has(key) ? undefined : value,
+                ),
             );
         }, 500);
     },
