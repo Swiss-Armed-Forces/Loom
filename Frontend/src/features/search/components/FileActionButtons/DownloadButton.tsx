@@ -29,8 +29,7 @@ import {
     selectSuppressDownloadWarning,
     setSuppressDownloadWarning,
 } from "@app/slices/searchSlice";
-
-import { webApiGetFile, webApiGetFileRendered } from "../../../common/urls";
+import { webApiGetFile, webApiGetFileRendered } from "@features/common/urls";
 
 interface DownloadButtonProps {
     fileId: string;

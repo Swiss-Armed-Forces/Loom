@@ -113,14 +113,12 @@ export const StatisticsView = () => {
     // When the pie has an "others" slice at index 0, named slices start at
     // CHART_COLORS[1]. The histogram must apply the same offset.
     const groupColorOffset = useMemo((): number => {
-        if (!stats?.termsData?.data) return 0;
-        return computeOthersCount(
-            stats.termsData.data,
-            stats.termsData.fileCount,
-        ) > 0
-            ? 1
-            : 0;
-    }, [stats?.termsData?.data, stats?.termsData?.fileCount]);
+        if (!stats?.termsData) return 0;
+        const othersCount =
+            stats.termsData.othersCount ??
+            computeOthersCount(stats.termsData.data, stats.termsData.fileCount);
+        return othersCount > 0 ? 1 : 0;
+    }, [stats?.termsData]);
 
     const sortedTermsStats = sortStats(termsStats, TERMS_STAT_ORDER);
     const sortedHistogramStats = sortStats(
@@ -158,9 +156,8 @@ export const StatisticsView = () => {
         const controller = new AbortController();
         abortControllerRef.current = controller;
 
-        if (controller.signal.aborted) return;
         const statsQuery = { ...searchQuery, id: null };
-        getTermsStat(statsQuery, displayStat, PIE_AMOUNT)
+        getTermsStat(statsQuery, displayStat, PIE_AMOUNT, controller.signal)
             .then((result) => {
                 if (!controller.signal.aborted) dispatch(fillTermsData(result));
             })
@@ -171,7 +168,12 @@ export const StatisticsView = () => {
                             (err["detail"] ? err["detail"] : err),
                     );
             });
-        getHistogramStat(statsQuery, displayHistogramStat, displayStat)
+        getHistogramStat(
+            statsQuery,
+            displayHistogramStat,
+            displayStat,
+            controller.signal,
+        )
             .then((result) => {
                 if (!controller.signal.aborted)
                     dispatch(fillHistogramData(result));
@@ -185,17 +187,10 @@ export const StatisticsView = () => {
             });
     }, [searchQuery, displayStat, displayHistogramStat, dispatch]);
 
-    // Skip the stats fetch on the initial mount so that an F5 with an
-    // unchanged query (state restored from localStorage) does not trigger any
-    // backend calls. The effect re-runs whenever fetchStats changes — i.e.
-    // when the query, displayStat, or displayHistogramStat actually changes.
-    const statsMountedRef = useRef(false);
     useEffect(() => {
-        if (!statsMountedRef.current) {
-            statsMountedRef.current = true;
-            return;
-        }
         fetchStats();
+
+        return () => abortControllerRef.current?.abort();
     }, [fetchStats]);
 
     useEffect(() => {
@@ -293,6 +288,7 @@ export const StatisticsView = () => {
                 <Chart
                     entries={stats.termsData?.data ?? []}
                     fileCount={stats.termsData?.fileCount ?? 0}
+                    othersCount={stats.termsData?.othersCount}
                     handleUpdateQuery={handleUpdateQuery}
                     queryKeyword={stats.termsData?.key ?? ""}
                     height={CHART_HEIGHT}

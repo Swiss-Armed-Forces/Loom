@@ -1,5 +1,6 @@
 import re
 from abc import ABC
+from datetime import datetime, timezone
 
 from celery import Celery, Task
 
@@ -27,6 +28,10 @@ class BaseTask(ABC, Task):
         register_task(TaskGroupName.ALL, cls.name)
         if cls._task_group_name is not None:
             register_task(cls._task_group_name, cls.name)
+
+    def __init__(self):
+        super().__init__()
+        self._start_time: datetime
 
     def __call__(self, *args, **kwargs) -> None:
         headers = getattr(self.request, "headers", {}) or {}
@@ -56,5 +61,7 @@ class BaseTask(ABC, Task):
         )
         if any(d.queue == graveyard_queue for d in x_death.root):
             raise DeadTask(f"Task died: {x_death}")
+
+        self._start_time = datetime.now(timezone.utc)
 
         return self.run(*args, **kwargs)

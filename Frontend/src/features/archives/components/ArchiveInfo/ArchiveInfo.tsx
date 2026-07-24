@@ -6,7 +6,6 @@ import {
     formatFileSize,
     getFormattedDateTime,
 } from "@features/common/utils/helpers";
-import { FileTasksList } from "@features/search/components/ResultCard/FileTasksList";
 
 import { ArchiveActions } from "./ArchiveActions";
 
@@ -19,17 +18,6 @@ export const ArchiveInfo = ({ archive }: ArchiveInfo) => {
         <>
             <TableCell>
                 <div>{archive.content.state}</div>
-                <FileTasksList
-                    tasksSucceeded={(archive.content.tasksSucceeded ?? []).map(
-                        String,
-                    )}
-                    taskRetried={(archive.content.tasksRetried ?? []).map(
-                        String,
-                    )}
-                    tasksFailed={(archive.content.tasksFailed ?? []).map(
-                        String,
-                    )}
-                />
             </TableCell>
             <TableCell title={formatFileSize(archive.content.size)}>
                 <FileSizeLabel content={archive.content} searchQuery={""} />

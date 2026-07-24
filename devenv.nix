@@ -762,6 +762,32 @@ in
     '';
   };
 
+  scripts.build-demo-pages = {
+    description = "Build the frontend demo for GitLab Pages";
+    exec = ''
+      (
+        set -euo pipefail
+        cd '${config.devenv.root}'
+
+        ./cicd/build_demo_pages.sh \
+          "''${@}"
+      )
+    '';
+  };
+
+  scripts.generate-demo-previews = {
+    description = "Capture demo preview assets from a running Loom stack";
+    exec = ''
+      (
+        set -euo pipefail
+        cd '${config.devenv.root}'
+
+        python ./cicd/generate_demo_previews.py \
+          "''${@}"
+      )
+    '';
+  };
+
   scripts.frontend-audit = {
     description = "Audit the frontend";
     exec = ''

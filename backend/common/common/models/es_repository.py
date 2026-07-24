@@ -18,6 +18,7 @@ from elastic_transport import ObjectApiResponse
 from elasticsearch import Elasticsearch, NotFoundError
 from elasticsearch.dsl import Boolean, Document, Index, Keyword, Q, Search
 from elasticsearch.dsl.connections import get_connection
+from elasticsearch.dsl.document_base import DocumentBase
 from elasticsearch.dsl.response import Response
 from elasticsearch.helpers import streaming_bulk
 from pydantic import BaseModel, Field, computed_field, model_validator
@@ -195,6 +196,9 @@ class _EsRepositoryDocument(Document):
 
         mapping_dict = cls._doc_type.mapping.to_dict()
         field_names = extract_fields(mapping_dict.get("properties", {}))
+        for field_name in list(field_names):
+            if is_excluded_from_default_fields(field_name, cls):
+                field_names.remove(field_name)
         return field_names
 
 
@@ -873,6 +877,44 @@ class BaseEsRepository(  # pylint: disable=too-many-public-methods
 
     def get_index_health(self) -> ObjectApiResponse[Any]:
         return self._elasticsearch.cluster.health(index=self._index_name)
+
+
+class ExcludeFromDefaultFields:
+    """Wraps an elasticsearch-dsl field and marks it as excluded from the index's
+    default search fields (``index.query.default_field``).
+
+    Usage::
+
+        class MyDocument(_EsRepositoryDocument):
+            raw_bytes = ExcludeFromDefaultFields(Binary())
+    """
+
+    def __new__(cls, field):  # type: ignore[misc]
+        field._exclude_from_default_fields = True
+        return field
+
+
+def is_excluded_from_default_fields(field: str, cls: type[DocumentBase]) -> bool:
+    """Check if a field is marked as excluded from default fields.
+
+    Args:
+        field: The field name to check.
+        cls: The class to inspect.
+    Returns:
+        True if the field or any of its parent fields are marked as excluded
+        from default fields, False otherwise.
+    """
+    # pylint: disable=protected-access
+    parts = field.split(".")
+    if hasattr(cls._doc_type.mapping[parts[0]], "_exclude_from_default_fields"):
+        if cls._doc_type.mapping[parts[0]]._exclude_from_default_fields:
+            return True
+    if len(parts) > 1:
+        if hasattr(cls._doc_type.mapping[parts[0]], "_doc_class"):
+            return is_excluded_from_default_fields(
+                ".".join(parts[1:]), cls._doc_type.mapping[parts[0]]._doc_class
+            )
+    return False
 
 
 # A list of all known elasticsearch repositories

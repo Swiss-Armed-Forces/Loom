@@ -2,6 +2,7 @@
 /.pnpm-store
 /coverage
 /dist
+/dist-demo
 pnpm-lock.yaml
 openapitools.json
 /public/THIRD-PARTY.md

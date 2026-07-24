@@ -75,6 +75,8 @@ models/RenderedFile.ts
 models/SummarizationRequest.ts
 models/SummarizeFileRequest.ts
 models/TaskGroupName.ts
+models/TaskRecord.ts
+models/TaskRun.ts
 models/TermsStatisticsModel.ts
 models/TranslateAllRequest.ts
 models/TranslateFileRequest.ts

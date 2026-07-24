@@ -56,6 +56,8 @@ export * from "./RenderedFile";
 export * from "./SummarizationRequest";
 export * from "./SummarizeFileRequest";
 export * from "./TaskGroupName";
+export * from "./TaskRecord";
+export * from "./TaskRun";
 export * from "./TermsStatisticsModel";
 export * from "./TranslateAllRequest";
 export * from "./TranslateFileRequest";

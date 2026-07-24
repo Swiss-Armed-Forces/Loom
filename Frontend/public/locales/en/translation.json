@@ -19,6 +19,17 @@
         "cancel": "Cancel",
         "copy": "Copy"
     },
+    "demoMode": {
+        "indicator": "DEMO",
+        "title": "Demo mode",
+        "description": "No Loom backend services are connected. Actions use sample data and are simulated locally in your browser. Changes are temporary and reset when you reload the page.",
+        "unavailable": {
+            "archiveImport": "Archive imports aren't available in demo mode. Use a full Loom deployment to import Loom archives.",
+            "backendServices": "Backend services aren't available in demo mode. Use a full Loom deployment to access them.",
+            "fileUpload": "File uploads aren't available in demo mode. Use a full Loom deployment to process your own files.",
+            "taskDetails": "Task execution details aren't available because demo mode has no Flower service."
+        }
+    },
     "downloadWarning": {
         "title": "Downloading the original file",
         "body": "You are about to download the original file as it was stored — no safety checks have been applied. If this file contains macros, scripts, or executable code, your device could run them automatically when you open it. This can lead to data loss, malware infection, or unauthorized access to your system.",
@@ -344,6 +355,9 @@
         "histogramMin": "Min",
         "histogramMax": "Max",
         "stateTitle": "Processing State",
+        "failed_task_namesTitle": "Failed Task Names",
+        "retried_task_namesTitle": "Retried Task Names",
+        "successful_task_namesTitle": "Successful Task Names",
         "extensionTitle": "File Extension",
         "sourceTitle": "Source",
         "tagsTitle": "Tags",

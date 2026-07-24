@@ -6,6 +6,8 @@ import { toast } from "react-toastify";
 import { importArchive } from "@app/api";
 import { useAppDispatch } from "@app/hooks";
 import { setBackgroundTaskSpinnerActive } from "@app/slices/commonSlice";
+import { notifyIfUnavailableInDemoMode } from "@features/common/demoModeUnavailableAction";
+import { DemoUnavailableFeature } from "@features/common/utils/demoMode";
 
 export const ImportArchiveButton = () => {
     const { t } = useTranslation();
@@ -14,6 +16,12 @@ export const ImportArchiveButton = () => {
     const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
+        if (
+            notifyIfUnavailableInDemoMode(DemoUnavailableFeature.ArchiveImport)
+        ) {
+            e.target.value = "";
+            return;
+        }
         try {
             await importArchive(file);
             toast.success(t("archives.importSuccess"));

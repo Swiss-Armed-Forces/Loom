@@ -26,6 +26,7 @@ class TermsStatisticsModel(BaseModel):
     key: str
     data: list[HitsPerGroupEntryModel]
     file_count: int
+    others_count: int = 0
     min_value: float | None = None
     max_value: float | None = None
 
@@ -43,6 +44,7 @@ class TermsStatisticsModel(BaseModel):
                 )
             ),
             file_count=stats.total_no_of_files,
+            others_count=stats.others_count,
             min_value=stats.min_value,
             max_value=stats.max_value,
         )

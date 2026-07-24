@@ -37,6 +37,7 @@ from common.services.task_scheduling_service import (
     TaskSchedulingService,
     UpdateFileRequest,
 )
+from common.task_object.task_object import TaskRecord
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, UploadFile
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
@@ -376,6 +377,7 @@ class GetFileResponse(BaseModel):
     type: str | None
     imap: ImapInfo | None
     rendered_file: RenderedFile
+    tasks: list[TaskRecord]
 
     @staticmethod
     def from_file(file: File):
@@ -397,6 +399,7 @@ class GetFileResponse(BaseModel):
             ),
             raw=file.model_dump_json(
                 exclude={
+                    "tasks",
                     "embeddings",
                     "content",
                     "translations",
@@ -415,6 +418,7 @@ class GetFileResponse(BaseModel):
                 browser_pdf_file_id=service_id(file.rendered_file.browser_pdf_data),
                 office_pdf_file_id=service_id(file.rendered_file.office_pdf_data),
             ),
+            tasks=file.tasks,
         )
 
 
@@ -458,9 +462,6 @@ class GetFilePreviewResponse(BaseModel):
     attachments_total_count: int = 0
     file_extension: str
     highlight: dict[str, list[str]] | None = {}
-    tasks_succeeded: list[UUID] = []
-    tasks_retried: list[UUID] = []
-    tasks_failed: list[UUID] = []
     summary: str | None
     image_description: str | None
     is_spam: bool | None = False
@@ -469,6 +470,7 @@ class GetFilePreviewResponse(BaseModel):
     translation_preview: str | None = None
     translation_preview_language: str | None = None
     translation_preview_is_truncated: bool = False
+    state: str
 
 
 @router.get("/{file_id}/preview")
@@ -507,9 +509,6 @@ def get_file_preview(
         attachments_total_count=len(file.attachments),
         file_extension=str(file.extension),
         highlight=file.es_meta.highlight,
-        tasks_succeeded=file.tasks_succeeded,
-        tasks_failed=file.tasks_failed,
-        tasks_retried=file.tasks_retried,
         summary=file.summary,
         image_description=file.image_description,
         is_spam=file.is_spam,
@@ -528,6 +527,7 @@ def get_file_preview(
             if file.translations
             else False
         ),
+        state=file.state,
     )
 
 

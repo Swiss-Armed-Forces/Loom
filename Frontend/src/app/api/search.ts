@@ -1,5 +1,6 @@
 import { SearchQuery } from "@features/common/utils/model";
 
+import { apiConfiguration } from "./apiConfiguration";
 import {
     AiApi,
     ArchivesApi,
@@ -23,14 +24,14 @@ import {
     UpdateFileRequest,
 } from "./generated";
 
-const filesApi = new FilesApi();
-const translationApi = new TranslationApi();
-const archivesApi = new ArchivesApi();
-const indexApi = new IndexApi();
-const summarizationApi = new SummarizationApi();
-const tagsApi = new TagsApi();
-const aiApi = new AiApi();
-const imageDescriptionApi = new ImageDescriptionApi();
+const filesApi = new FilesApi(apiConfiguration);
+const translationApi = new TranslationApi(apiConfiguration);
+const archivesApi = new ArchivesApi(apiConfiguration);
+const indexApi = new IndexApi(apiConfiguration);
+const summarizationApi = new SummarizationApi(apiConfiguration);
+const tagsApi = new TagsApi(apiConfiguration);
+const aiApi = new AiApi(apiConfiguration);
+const imageDescriptionApi = new ImageDescriptionApi(apiConfiguration);
 
 export const loadTags = async (): Promise<string[]> => {
     return tagsApi.getTagsV1FilesTagsGet();
@@ -127,20 +128,25 @@ export const getTermsStat = async (
     query: SearchQuery,
     stat: string,
     size?: number,
+    signal?: AbortSignal,
 ): Promise<TermsStatisticsModel> => {
-    return filesApi.getTermsStatsV1FilesStatsTermsStatGet({
-        stat,
-        queryId: query.id ?? undefined,
-        keepAlive: query.keepAlive ?? undefined,
-        searchString: query.query,
-        size,
-    });
+    return filesApi.getTermsStatsV1FilesStatsTermsStatGet(
+        {
+            stat,
+            queryId: query.id ?? undefined,
+            keepAlive: query.keepAlive ?? undefined,
+            searchString: query.query,
+            size,
+        },
+        { signal },
+    );
 };
 
 export const getHistogramStat = async (
     query: SearchQuery,
     stat: string,
     groupBy: string,
+    signal?: AbortSignal,
 ): Promise<GroupedHistogramStatisticsModel> => {
     return filesApi.getHistogramStatsGroupedV1FilesStatsHistogramStatGroupedGroupByGet(
         {
@@ -150,6 +156,7 @@ export const getHistogramStat = async (
             keepAlive: query.keepAlive ?? undefined,
             searchString: query.query,
         },
+        { signal },
     );
 };
 

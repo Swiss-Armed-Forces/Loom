@@ -342,6 +342,7 @@ frontend_test:
   script:
     - devenv shell -- frontend-test
     - devenv shell -- frontend-build
+    - devenv shell -- build-demo-pages
 
 backend_test:
   stage: test
@@ -396,6 +397,18 @@ bats_integrationtest:
 #
 #
 # ----------------------------------------------#
+
+deploy_demo_pages:
+  stage: publish
+  script:
+    - devenv shell -- build-demo-pages
+  pages:
+    publish: Frontend/dist-demo
+  rules:
+    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
+  environment:
+    name: pages/demo
+    url: $CI_PAGES_URL
 
 publish_images:
   extends: .default-docker

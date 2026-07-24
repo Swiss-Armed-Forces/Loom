@@ -158,7 +158,7 @@ class Settings(CommonSettings):
     skip_embedding_while_indexing: bool = False
     skip_auto_tag_file_while_indexing: bool = False
     min_language_detection_confidence: float = 95.0
-    persist_success_tasks: bool = False
+    persist_success_tasks: bool = True
     persist_retry_tasks: bool = True
     tika_ocr_languages: Annotated[list[TikaAllowedOcrLanguage], NoDecode] = [
         "eng",

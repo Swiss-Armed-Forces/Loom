@@ -719,6 +719,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | globals                             | MIT          | 17.6.0            |
 | jsdom                               | MIT          | 29.1.1            |
 | license-report                      | MIT          | 6.8.2             |
+| msw                                 | MIT          | 2.15.0            |
 | prettier                            | MIT          | 3.8.3             |
 | typescript                          | Apache-2.0   | 6.0.3             |
 | typescript-eslint                   | MIT          | 8.59.0            |
@@ -1704,9 +1705,9 @@ The complete source code for Traefik is publicly available at [https://github.co
 | hyperframe | 6.1.0 | MIT | python-installed-package-cataloger |
 | icu-devtools | 72.1-3+deb12u1 | GPL-3.0-only, MIT | dpkg-db-cataloger |
 | idna | 3.15 | BSD-3-Clause | python-installed-package-cataloger |
-| imagemagick | 8:6.9.11.60+dfsg-1.6+deb12u12 | GPL-1.0-only, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, ImageMagick, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
-| imagemagick-6-common | 8:6.9.11.60+dfsg-1.6+deb12u12 | GPL-1.0-only, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, ImageMagick, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
-| imagemagick-6.q16 | 8:6.9.11.60+dfsg-1.6+deb12u12 | GPL-1.0-only, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, ImageMagick, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
+| imagemagick | 8:6.9.11.60+dfsg-1.6+deb12u13 | GPL-1.0-only, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, ImageMagick, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
+| imagemagick-6-common | 8:6.9.11.60+dfsg-1.6+deb12u13 | GPL-1.0-only, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, ImageMagick, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
+| imagemagick-6.q16 | 8:6.9.11.60+dfsg-1.6+deb12u13 | GPL-1.0-only, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, ImageMagick, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
 | imapclient | 3.1.0 |  | python-installed-package-cataloger |
 | imapclient | 3.1.0 |  | python-installed-package-cataloger |
 | init-system-helpers | 1.65.2+deb12u1 | BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
@@ -1892,16 +1893,16 @@ The complete source code for Traefik is publicly available at [https://github.co
 | liblzo2-2 | 2.10-2 | GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
 | libmagic-mgc | 1:5.44-3 | BSD-2-Clause | dpkg-db-cataloger |
 | libmagic1 | 1:5.44-3 | BSD-2-Clause | dpkg-db-cataloger |
-| libmagickcore-6-arch-config | 8:6.9.11.60+dfsg-1.6+deb12u12 | GPL-1.0-only, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, ImageMagick, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
-| libmagickcore-6-headers | 8:6.9.11.60+dfsg-1.6+deb12u12 | GPL-1.0-only, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, ImageMagick, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
-| libmagickcore-6.q16-6 | 8:6.9.11.60+dfsg-1.6+deb12u12 | GPL-1.0-only, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, ImageMagick, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
-| libmagickcore-6.q16-6-extra | 8:6.9.11.60+dfsg-1.6+deb12u12 | GPL-1.0-only, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, ImageMagick, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
-| libmagickcore-6.q16-dev | 8:6.9.11.60+dfsg-1.6+deb12u12 | GPL-1.0-only, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, ImageMagick, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
-| libmagickcore-dev | 8:6.9.11.60+dfsg-1.6+deb12u12 | GPL-1.0-only, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, ImageMagick, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
-| libmagickwand-6-headers | 8:6.9.11.60+dfsg-1.6+deb12u12 | GPL-1.0-only, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, ImageMagick, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
-| libmagickwand-6.q16-6 | 8:6.9.11.60+dfsg-1.6+deb12u12 | GPL-1.0-only, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, ImageMagick, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
-| libmagickwand-6.q16-dev | 8:6.9.11.60+dfsg-1.6+deb12u12 | GPL-1.0-only, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, ImageMagick, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
-| libmagickwand-dev | 8:6.9.11.60+dfsg-1.6+deb12u12 | GPL-1.0-only, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, ImageMagick, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
+| libmagickcore-6-arch-config | 8:6.9.11.60+dfsg-1.6+deb12u13 | GPL-1.0-only, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, ImageMagick, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
+| libmagickcore-6-headers | 8:6.9.11.60+dfsg-1.6+deb12u13 | GPL-1.0-only, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, ImageMagick, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
+| libmagickcore-6.q16-6 | 8:6.9.11.60+dfsg-1.6+deb12u13 | GPL-1.0-only, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, ImageMagick, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
+| libmagickcore-6.q16-6-extra | 8:6.9.11.60+dfsg-1.6+deb12u13 | GPL-1.0-only, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, ImageMagick, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
+| libmagickcore-6.q16-dev | 8:6.9.11.60+dfsg-1.6+deb12u13 | GPL-1.0-only, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, ImageMagick, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
+| libmagickcore-dev | 8:6.9.11.60+dfsg-1.6+deb12u13 | GPL-1.0-only, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, ImageMagick, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
+| libmagickwand-6-headers | 8:6.9.11.60+dfsg-1.6+deb12u13 | GPL-1.0-only, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, ImageMagick, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
+| libmagickwand-6.q16-6 | 8:6.9.11.60+dfsg-1.6+deb12u13 | GPL-1.0-only, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, ImageMagick, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
+| libmagickwand-6.q16-dev | 8:6.9.11.60+dfsg-1.6+deb12u13 | GPL-1.0-only, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, ImageMagick, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
+| libmagickwand-dev | 8:6.9.11.60+dfsg-1.6+deb12u13 | GPL-1.0-only, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, ImageMagick, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
 | libmariadb-dev | 1:10.11.18-0+deb12u1 | BSD-2-Clause, BSD-2-Clause, BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
 | libmariadb-dev-compat | 1:10.11.18-0+deb12u1 | BSD-2-Clause, BSD-2-Clause, BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
 | libmariadb3 | 1:10.11.18-0+deb12u1 | BSD-2-Clause, BSD-2-Clause, BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
@@ -6653,6 +6654,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | github.com/antlr4-go/antlr/v4 | v4.13.1 |  | go-module-binary-cataloger |
 | github.com/apache/arrow-go/v18 | v18.5.1 |  | go-module-binary-cataloger |
 | github.com/apache/arrow-go/v18 | v18.5.2 |  | go-module-binary-cataloger |
+| github.com/apache/arrow-go/v18 | v18.5.2 |  | go-module-binary-cataloger |
 | github.com/apache/arrow-go/v18 | v18.6.0 |  | go-module-binary-cataloger |
 | github.com/apache/thrift | v0.23.1-0.20260429145742-d2acd3c49e58 |  | go-module-binary-cataloger |
 | github.com/apapsch/go-jsonmerge/v2 | v2.0.0 |  | go-module-binary-cataloger |
@@ -6662,19 +6664,26 @@ The complete source code for Traefik is publicly available at [https://github.co
 | github.com/at-wat/mqtt-go | v0.19.6 |  | go-module-binary-cataloger |
 | github.com/aws/aws-sdk-go | v1.55.8 |  | go-module-binary-cataloger |
 | github.com/aws/aws-sdk-go-v2 | v1.41.1 |  | go-module-binary-cataloger |
+| github.com/aws/aws-sdk-go-v2 | v1.41.1 |  | go-module-binary-cataloger |
 | github.com/aws/aws-sdk-go-v2 | v1.41.9 |  | go-module-binary-cataloger |
 | github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream | v1.7.10 |  | go-module-binary-cataloger |
 | github.com/aws/aws-sdk-go-v2/config | v1.32.18 |  | go-module-binary-cataloger |
 | github.com/aws/aws-sdk-go-v2/config | v1.32.7 |  | go-module-binary-cataloger |
+| github.com/aws/aws-sdk-go-v2/config | v1.32.7 |  | go-module-binary-cataloger |
 | github.com/aws/aws-sdk-go-v2/credentials | v1.19.17 |  | go-module-binary-cataloger |
 | github.com/aws/aws-sdk-go-v2/credentials | v1.19.7 |  | go-module-binary-cataloger |
+| github.com/aws/aws-sdk-go-v2/credentials | v1.19.7 |  | go-module-binary-cataloger |
+| github.com/aws/aws-sdk-go-v2/feature/ec2/imds | v1.18.17 |  | go-module-binary-cataloger |
 | github.com/aws/aws-sdk-go-v2/feature/ec2/imds | v1.18.17 |  | go-module-binary-cataloger |
 | github.com/aws/aws-sdk-go-v2/feature/ec2/imds | v1.18.23 |  | go-module-binary-cataloger |
 | github.com/aws/aws-sdk-go-v2/feature/s3/manager | v1.20.12 |  | go-module-binary-cataloger |
 | github.com/aws/aws-sdk-go-v2/internal/configsources | v1.4.17 |  | go-module-binary-cataloger |
+| github.com/aws/aws-sdk-go-v2/internal/configsources | v1.4.17 |  | go-module-binary-cataloger |
 | github.com/aws/aws-sdk-go-v2/internal/configsources | v1.4.25 |  | go-module-binary-cataloger |
 | github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 | v2.7.17 |  | go-module-binary-cataloger |
+| github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 | v2.7.17 |  | go-module-binary-cataloger |
 | github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 | v2.7.25 |  | go-module-binary-cataloger |
+| github.com/aws/aws-sdk-go-v2/internal/ini | v1.8.4 |  | go-module-binary-cataloger |
 | github.com/aws/aws-sdk-go-v2/internal/ini | v1.8.4 |  | go-module-binary-cataloger |
 | github.com/aws/aws-sdk-go-v2/internal/v4a | v1.4.24 |  | go-module-binary-cataloger |
 | github.com/aws/aws-sdk-go-v2/service/bedrockruntime | v1.50.5 |  | go-module-binary-cataloger |
@@ -6682,8 +6691,10 @@ The complete source code for Traefik is publicly available at [https://github.co
 | github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs | v1.73.0 |  | go-module-binary-cataloger |
 | github.com/aws/aws-sdk-go-v2/service/ec2 | v1.304.0 |  | go-module-binary-cataloger |
 | github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding | v1.13.4 |  | go-module-binary-cataloger |
+| github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding | v1.13.4 |  | go-module-binary-cataloger |
 | github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding | v1.13.9 |  | go-module-binary-cataloger |
 | github.com/aws/aws-sdk-go-v2/service/internal/checksum | v1.9.15 |  | go-module-binary-cataloger |
+| github.com/aws/aws-sdk-go-v2/service/internal/presigned-url | v1.13.17 |  | go-module-binary-cataloger |
 | github.com/aws/aws-sdk-go-v2/service/internal/presigned-url | v1.13.17 |  | go-module-binary-cataloger |
 | github.com/aws/aws-sdk-go-v2/service/internal/presigned-url | v1.13.23 |  | go-module-binary-cataloger |
 | github.com/aws/aws-sdk-go-v2/service/internal/s3shared | v1.19.23 |  | go-module-binary-cataloger |
@@ -6692,17 +6703,23 @@ The complete source code for Traefik is publicly available at [https://github.co
 | github.com/aws/aws-sdk-go-v2/service/s3 | v1.101.0 |  | go-module-binary-cataloger |
 | github.com/aws/aws-sdk-go-v2/service/signin | v1.0.11 |  | go-module-binary-cataloger |
 | github.com/aws/aws-sdk-go-v2/service/signin | v1.0.5 |  | go-module-binary-cataloger |
+| github.com/aws/aws-sdk-go-v2/service/signin | v1.0.5 |  | go-module-binary-cataloger |
 | github.com/aws/aws-sdk-go-v2/service/sso | v1.30.17 |  | go-module-binary-cataloger |
 | github.com/aws/aws-sdk-go-v2/service/sso | v1.30.9 |  | go-module-binary-cataloger |
+| github.com/aws/aws-sdk-go-v2/service/sso | v1.30.9 |  | go-module-binary-cataloger |
+| github.com/aws/aws-sdk-go-v2/service/ssooidc | v1.35.13 |  | go-module-binary-cataloger |
 | github.com/aws/aws-sdk-go-v2/service/ssooidc | v1.35.13 |  | go-module-binary-cataloger |
 | github.com/aws/aws-sdk-go-v2/service/ssooidc | v1.36.0 |  | go-module-binary-cataloger |
 | github.com/aws/aws-sdk-go-v2/service/sts | v1.41.6 |  | go-module-binary-cataloger |
+| github.com/aws/aws-sdk-go-v2/service/sts | v1.41.6 |  | go-module-binary-cataloger |
 | github.com/aws/aws-sdk-go-v2/service/sts | v1.42.1 |  | go-module-binary-cataloger |
+| github.com/aws/smithy-go | v1.24.0 |  | go-module-binary-cataloger |
 | github.com/aws/smithy-go | v1.24.0 |  | go-module-binary-cataloger |
 | github.com/aws/smithy-go | v1.26.0 |  | go-module-binary-cataloger |
 | github.com/bahlo/generic-list-go | v0.2.0 |  | go-module-binary-cataloger |
 | github.com/barkimedes/go-deepcopy | v0.0.0-20220514131651-17c30cfc62df |  | go-module-binary-cataloger |
 | github.com/benbjohnson/clock | v1.3.5 |  | go-module-binary-cataloger |
+| github.com/beorn7/perks | v1.0.1 |  | go-module-binary-cataloger |
 | github.com/beorn7/perks | v1.0.1 |  | go-module-binary-cataloger |
 | github.com/beorn7/perks | v1.0.1 |  | go-module-binary-cataloger |
 | github.com/beorn7/perks | v1.0.1 |  | go-module-binary-cataloger |
@@ -6735,20 +6752,25 @@ The complete source code for Traefik is publicly available at [https://github.co
 | github.com/cenkalti/backoff/v5 | v5.0.3 |  | go-module-binary-cataloger |
 | github.com/cenkalti/backoff/v5 | v5.0.3 |  | go-module-binary-cataloger |
 | github.com/cenkalti/backoff/v5 | v5.0.3 |  | go-module-binary-cataloger |
+| github.com/cenkalti/backoff/v5 | v5.0.3 |  | go-module-binary-cataloger |
 | github.com/centrifugal/centrifuge | v0.38.0 |  | go-module-binary-cataloger |
 | github.com/centrifugal/protocol | v0.17.0 |  | go-module-binary-cataloger |
 | github.com/cespare/xxhash/v2 | v2.3.0 |  | go-module-binary-cataloger |
 | github.com/cespare/xxhash/v2 | v2.3.0 |  | go-module-binary-cataloger |
 | github.com/cespare/xxhash/v2 | v2.3.0 |  | go-module-binary-cataloger |
+| github.com/cespare/xxhash/v2 | v2.3.0 |  | go-module-binary-cataloger |
+| github.com/cheekybits/genny | v1.0.0 |  | go-module-binary-cataloger |
 | github.com/cheekybits/genny | v1.0.0 |  | go-module-binary-cataloger |
 | github.com/cheekybits/genny | v1.0.0 |  | go-module-binary-cataloger |
 | github.com/cheekybits/genny | v1.0.0 |  | go-module-binary-cataloger |
 | github.com/chromedp/cdproto | v0.0.0-20250803210736-d308e07a266d |  | go-module-binary-cataloger |
 | github.com/clipperhouse/displaywidth | v0.10.0 |  | go-module-binary-cataloger |
+| github.com/clipperhouse/displaywidth | v0.10.0 |  | go-module-binary-cataloger |
 | github.com/clipperhouse/displaywidth | v0.11.0 |  | go-module-binary-cataloger |
 | github.com/clipperhouse/displaywidth | v0.6.2 |  | go-module-binary-cataloger |
 | github.com/clipperhouse/stringish | v0.1.1 |  | go-module-binary-cataloger |
 | github.com/clipperhouse/uax29/v2 | v2.3.0 |  | go-module-binary-cataloger |
+| github.com/clipperhouse/uax29/v2 | v2.6.0 |  | go-module-binary-cataloger |
 | github.com/clipperhouse/uax29/v2 | v2.6.0 |  | go-module-binary-cataloger |
 | github.com/clipperhouse/uax29/v2 | v2.7.0 |  | go-module-binary-cataloger |
 | github.com/cloudflare/circl | v1.6.3 |  | go-module-binary-cataloger |
@@ -6759,6 +6781,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | github.com/coreos/go-semver | v0.3.1 |  | go-module-binary-cataloger |
 | github.com/coreos/go-systemd/v22 | v22.7.0 |  | go-module-binary-cataloger |
 | github.com/cpuguy83/go-md2man/v2 | v2.0.7 |  | go-module-binary-cataloger |
+| github.com/davecgh/go-spew | v1.1.2-0.20180830191138-d8f796af33cc |  | go-module-binary-cataloger |
 | github.com/davecgh/go-spew | v1.1.2-0.20180830191138-d8f796af33cc |  | go-module-binary-cataloger |
 | github.com/davecgh/go-spew | v1.1.2-0.20180830191138-d8f796af33cc |  | go-module-binary-cataloger |
 | github.com/dennwc/varint | v1.0.0 |  | go-module-binary-cataloger |
@@ -6776,11 +6799,13 @@ The complete source code for Traefik is publicly available at [https://github.co
 | github.com/edsrzf/mmap-go | v1.2.1-0.20241212181136-fad1cd13edbd |  | go-module-binary-cataloger |
 | github.com/elazarl/goproxy | v1.8.3 |  | go-module-binary-cataloger |
 | github.com/emicklei/go-restful/v3 | v3.11.0 |  | go-module-binary-cataloger |
+| github.com/emicklei/go-restful/v3 | v3.11.0 |  | go-module-binary-cataloger |
 | github.com/emicklei/go-restful/v3 | v3.13.0 |  | go-module-binary-cataloger |
 | github.com/emirpasic/gods | v1.18.1 |  | go-module-binary-cataloger |
 | github.com/envoyproxy/go-control-plane/envoy | v1.37.0 |  | go-module-binary-cataloger |
 | github.com/envoyproxy/protoc-gen-validate | v1.3.3 |  | go-module-binary-cataloger |
 | github.com/facette/natsort | v0.0.0-20181210072756-2cd4dd1e2dcb |  | go-module-binary-cataloger |
+| github.com/fatih/color | v1.18.0 |  | go-module-binary-cataloger |
 | github.com/fatih/color | v1.18.0 |  | go-module-binary-cataloger |
 | github.com/fatih/color | v1.18.0 |  | go-module-binary-cataloger |
 | github.com/fatih/color | v1.19.0 |  | go-module-binary-cataloger |
@@ -6800,13 +6825,17 @@ The complete source code for Traefik is publicly available at [https://github.co
 | github.com/go-logr/logr | v1.4.3 |  | go-module-binary-cataloger |
 | github.com/go-logr/logr | v1.4.3 |  | go-module-binary-cataloger |
 | github.com/go-logr/logr | v1.4.3 |  | go-module-binary-cataloger |
+| github.com/go-logr/logr | v1.4.3 |  | go-module-binary-cataloger |
+| github.com/go-logr/stdr | v1.2.2 |  | go-module-binary-cataloger |
 | github.com/go-logr/stdr | v1.2.2 |  | go-module-binary-cataloger |
 | github.com/go-logr/stdr | v1.2.2 |  | go-module-binary-cataloger |
 | github.com/go-logr/stdr | v1.2.2 |  | go-module-binary-cataloger |
 | github.com/go-openapi/analysis | v0.25.2 |  | go-module-binary-cataloger |
 | github.com/go-openapi/errors | v0.22.8 |  | go-module-binary-cataloger |
 | github.com/go-openapi/jsonpointer | v0.22.5 |  | go-module-binary-cataloger |
+| github.com/go-openapi/jsonpointer | v0.22.5 |  | go-module-binary-cataloger |
 | github.com/go-openapi/jsonpointer | v0.23.1 |  | go-module-binary-cataloger |
+| github.com/go-openapi/jsonreference | v0.21.5 |  | go-module-binary-cataloger |
 | github.com/go-openapi/jsonreference | v0.21.5 |  | go-module-binary-cataloger |
 | github.com/go-openapi/jsonreference | v0.21.6 |  | go-module-binary-cataloger |
 | github.com/go-openapi/loads | v0.24.0 |  | go-module-binary-cataloger |
@@ -6814,10 +6843,12 @@ The complete source code for Traefik is publicly available at [https://github.co
 | github.com/go-openapi/spec | v0.22.5 |  | go-module-binary-cataloger |
 | github.com/go-openapi/strfmt | v0.26.3 |  | go-module-binary-cataloger |
 | github.com/go-openapi/swag | v0.23.0 |  | go-module-binary-cataloger |
+| github.com/go-openapi/swag | v0.23.0 |  | go-module-binary-cataloger |
 | github.com/go-openapi/swag | v0.26.0 |  | go-module-binary-cataloger |
 | github.com/go-openapi/swag/cmdutils | v0.26.0 |  | go-module-binary-cataloger |
 | github.com/go-openapi/swag/conv | v0.26.1 |  | go-module-binary-cataloger |
 | github.com/go-openapi/swag/fileutils | v0.26.0 |  | go-module-binary-cataloger |
+| github.com/go-openapi/swag/jsonname | v0.25.5 |  | go-module-binary-cataloger |
 | github.com/go-openapi/swag/jsonname | v0.25.5 |  | go-module-binary-cataloger |
 | github.com/go-openapi/swag/jsonname | v0.26.1 |  | go-module-binary-cataloger |
 | github.com/go-openapi/swag/jsonutils | v0.26.1 |  | go-module-binary-cataloger |
@@ -6838,6 +6869,8 @@ The complete source code for Traefik is publicly available at [https://github.co
 | github.com/gogo/googleapis | v1.4.1 |  | go-module-binary-cataloger |
 | github.com/gogo/googleapis | v1.4.1 |  | go-module-binary-cataloger |
 | github.com/gogo/googleapis | v1.4.1 |  | go-module-binary-cataloger |
+| github.com/gogo/googleapis | v1.4.1 |  | go-module-binary-cataloger |
+| github.com/gogo/protobuf | v1.3.2 |  | go-module-binary-cataloger |
 | github.com/gogo/protobuf | v1.3.2 |  | go-module-binary-cataloger |
 | github.com/gogo/protobuf | v1.3.2 |  | go-module-binary-cataloger |
 | github.com/gogo/protobuf | v1.3.2 |  | go-module-binary-cataloger |
@@ -6850,21 +6883,26 @@ The complete source code for Traefik is publicly available at [https://github.co
 | github.com/golang/protobuf | v1.5.4 |  | go-module-binary-cataloger |
 | github.com/golang/protobuf | v1.5.4 |  | go-module-binary-cataloger |
 | github.com/golang/protobuf | v1.5.4 |  | go-module-binary-cataloger |
+| github.com/golang/protobuf | v1.5.4 |  | go-module-binary-cataloger |
 | github.com/golang/snappy | v1.0.0 |  | go-module-binary-cataloger |
 | github.com/google/btree | v1.1.3 |  | go-module-binary-cataloger |
 | github.com/google/cel-go | v0.28.0 |  | go-module-binary-cataloger |
 | github.com/google/flatbuffers | v25.12.19+incompatible |  | go-module-binary-cataloger |
 | github.com/google/flatbuffers | v25.12.19+incompatible |  | go-module-binary-cataloger |
 | github.com/google/flatbuffers | v25.12.19+incompatible |  | go-module-binary-cataloger |
+| github.com/google/flatbuffers | v25.12.19+incompatible |  | go-module-binary-cataloger |
 | github.com/google/gnostic | v0.7.1 |  | go-module-binary-cataloger |
 | github.com/google/gnostic-models | v0.7.0 |  | go-module-binary-cataloger |
+| github.com/google/gnostic-models | v0.7.0 |  | go-module-binary-cataloger |
 | github.com/google/gnostic-models | v0.7.1 |  | go-module-binary-cataloger |
+| github.com/google/go-cmp | v0.7.0 |  | go-module-binary-cataloger |
 | github.com/google/go-cmp | v0.7.0 |  | go-module-binary-cataloger |
 | github.com/google/go-cmp | v0.7.0 |  | go-module-binary-cataloger |
 | github.com/google/go-cmp | v0.7.0 |  | go-module-binary-cataloger |
 | github.com/google/go-github/v82 | v82.0.0 |  | go-module-binary-cataloger |
 | github.com/google/go-querystring | v1.2.0 |  | go-module-binary-cataloger |
 | github.com/google/s2a-go | v0.1.9 |  | go-module-binary-cataloger |
+| github.com/google/uuid | v1.6.0 |  | go-module-binary-cataloger |
 | github.com/google/uuid | v1.6.0 |  | go-module-binary-cataloger |
 | github.com/google/uuid | v1.6.0 |  | go-module-binary-cataloger |
 | github.com/google/uuid | v1.6.0 |  | go-module-binary-cataloger |
@@ -6879,6 +6917,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | github.com/grafana/cue | v0.0.0-20230926092038-971951014e3f |  | go-module-binary-cataloger |
 | github.com/grafana/dataplane/sdata | v0.0.9 |  | go-module-binary-cataloger |
 | github.com/grafana/dataplane/sdata | v0.0.9 |  | go-module-binary-cataloger |
+| github.com/grafana/dataplane/sdata | v0.0.9 |  | go-module-binary-cataloger |
 | github.com/grafana/dskit | v0.0.0-20260427162712-0457a92dacc3 |  | go-module-binary-cataloger |
 | github.com/grafana/go-mysql-server | v0.20.2-grafana-4 |  | go-module-binary-cataloger |
 | github.com/grafana/gomemcache | v0.0.0-20251127154401-74f93547077b |  | go-module-binary-cataloger |
@@ -6886,12 +6925,15 @@ The complete source code for Traefik is publicly available at [https://github.co
 | github.com/grafana/grafana-app-sdk | v0.56.2 |  | go-module-binary-cataloger |
 | github.com/grafana/grafana-app-sdk/logging | v0.56.2 |  | go-module-binary-cataloger |
 | github.com/grafana/grafana-aws-sdk | v1.4.3 |  | go-module-binary-cataloger |
+| github.com/grafana/grafana-aws-sdk | v1.4.3 |  | go-module-binary-cataloger |
 | github.com/grafana/grafana-aws-sdk | v1.4.4 |  | go-module-binary-cataloger |
 | github.com/grafana/grafana-azure-sdk-go/v2 | v2.4.1 |  | go-module-binary-cataloger |
 | github.com/grafana/grafana-cloud-migration-snapshot | v1.11.0 |  | go-module-binary-cataloger |
 | github.com/grafana/grafana-elasticsearch-datasource | v0.0.0-20260612100722-e6ffa8b41781 |  | go-module-binary-cataloger |
+| github.com/grafana/grafana-elasticsearch-datasource | v0.0.0-20260612100722-e6ffa8b41781 |  | go-module-binary-cataloger |
 | github.com/grafana/grafana-google-sdk-go | v0.4.2 |  | go-module-binary-cataloger |
 | github.com/grafana/grafana-plugin-sdk-go | v0.290.0 |  | go-module-binary-cataloger |
+| github.com/grafana/grafana-plugin-sdk-go | v0.291.1 |  | go-module-binary-cataloger |
 | github.com/grafana/grafana-plugin-sdk-go | v0.291.1 |  | go-module-binary-cataloger |
 | github.com/grafana/grafana-plugin-sdk-go | v0.292.1 |  | go-module-binary-cataloger |
 | github.com/grafana/grafana-prometheus-datasource/pkg/promlib | v0.0.11 |  | go-module-binary-cataloger |
@@ -6934,14 +6976,18 @@ The complete source code for Traefik is publicly available at [https://github.co
 | github.com/grafana/otel-profiling-go | v0.5.1 |  | go-module-binary-cataloger |
 | github.com/grafana/otel-profiling-go | v0.5.1 |  | go-module-binary-cataloger |
 | github.com/grafana/otel-profiling-go | v0.5.1 |  | go-module-binary-cataloger |
+| github.com/grafana/otel-profiling-go | v0.5.1 |  | go-module-binary-cataloger |
 | github.com/grafana/prometheus-alertmanager | v0.25.1-0.20260225120258-18275ca76b0c |  | go-module-binary-cataloger |
+| github.com/grafana/pyroscope-go/godeltaprof | v0.1.9 |  | go-module-binary-cataloger |
 | github.com/grafana/pyroscope-go/godeltaprof | v0.1.9 |  | go-module-binary-cataloger |
 | github.com/grafana/pyroscope-go/godeltaprof | v0.1.9 |  | go-module-binary-cataloger |
 | github.com/grafana/pyroscope-go/godeltaprof | v0.1.9 |  | go-module-binary-cataloger |
 | github.com/grafana/pyroscope/api | v1.3.0 |  | go-module-binary-cataloger |
 | github.com/grafana/regexp | v0.0.0-20250905093917-f7b3be9d1853 |  | go-module-binary-cataloger |
 | github.com/grafana/schemads | v0.0.8 |  | go-module-binary-cataloger |
+| github.com/grafana/schemads | v0.0.8 |  | go-module-binary-cataloger |
 | github.com/grafana/schemads | v0.2.2 |  | go-module-binary-cataloger |
+| github.com/grafana/sqlds/v5 | v5.0.4 |  | go-module-binary-cataloger |
 | github.com/grafana/sqlds/v5 | v5.0.4 |  | go-module-binary-cataloger |
 | github.com/grafana/sqlds/v5 | v5.1.1 |  | go-module-binary-cataloger |
 | github.com/grafana/tempo | v1.5.1-0.20260427112133-525d1bab07e0 |  | go-module-binary-cataloger |
@@ -6950,10 +6996,13 @@ The complete source code for Traefik is publicly available at [https://github.co
 | github.com/grpc-ecosystem/go-grpc-middleware/providers/prometheus | v1.1.0 |  | go-module-binary-cataloger |
 | github.com/grpc-ecosystem/go-grpc-middleware/providers/prometheus | v1.1.0 |  | go-module-binary-cataloger |
 | github.com/grpc-ecosystem/go-grpc-middleware/providers/prometheus | v1.1.0 |  | go-module-binary-cataloger |
+| github.com/grpc-ecosystem/go-grpc-middleware/providers/prometheus | v1.1.0 |  | go-module-binary-cataloger |
+| github.com/grpc-ecosystem/go-grpc-middleware/v2 | v2.3.3 |  | go-module-binary-cataloger |
 | github.com/grpc-ecosystem/go-grpc-middleware/v2 | v2.3.3 |  | go-module-binary-cataloger |
 | github.com/grpc-ecosystem/go-grpc-middleware/v2 | v2.3.3 |  | go-module-binary-cataloger |
 | github.com/grpc-ecosystem/go-grpc-middleware/v2 | v2.3.3 |  | go-module-binary-cataloger |
 | github.com/grpc-ecosystem/grpc-gateway/v2 | v2.27.7 |  | go-module-binary-cataloger |
+| github.com/grpc-ecosystem/grpc-gateway/v2 | v2.28.0 |  | go-module-binary-cataloger |
 | github.com/grpc-ecosystem/grpc-gateway/v2 | v2.28.0 |  | go-module-binary-cataloger |
 | github.com/grpc-ecosystem/grpc-gateway/v2 | v2.29.0 |  | go-module-binary-cataloger |
 | github.com/hashicorp/consul/api | v1.33.7 |  | go-module-binary-cataloger |
@@ -6962,10 +7011,12 @@ The complete source code for Traefik is publicly available at [https://github.co
 | github.com/hashicorp/go-hclog | v1.6.3 |  | go-module-binary-cataloger |
 | github.com/hashicorp/go-hclog | v1.6.3 |  | go-module-binary-cataloger |
 | github.com/hashicorp/go-hclog | v1.6.3 |  | go-module-binary-cataloger |
+| github.com/hashicorp/go-hclog | v1.6.3 |  | go-module-binary-cataloger |
 | github.com/hashicorp/go-immutable-radix | v1.3.1 |  | go-module-binary-cataloger |
 | github.com/hashicorp/go-metrics | v0.5.4 |  | go-module-binary-cataloger |
 | github.com/hashicorp/go-msgpack/v2 | v2.1.5 |  | go-module-binary-cataloger |
 | github.com/hashicorp/go-multierror | v1.1.1 |  | go-module-binary-cataloger |
+| github.com/hashicorp/go-plugin | v1.7.0 |  | go-module-binary-cataloger |
 | github.com/hashicorp/go-plugin | v1.7.0 |  | go-module-binary-cataloger |
 | github.com/hashicorp/go-plugin | v1.7.0 |  | go-module-binary-cataloger |
 | github.com/hashicorp/go-plugin | v1.7.0 |  | go-module-binary-cataloger |
@@ -6981,10 +7032,14 @@ The complete source code for Traefik is publicly available at [https://github.co
 | github.com/hashicorp/yamux | v0.1.2 |  | go-module-binary-cataloger |
 | github.com/hashicorp/yamux | v0.1.2 |  | go-module-binary-cataloger |
 | github.com/hashicorp/yamux | v0.1.2 |  | go-module-binary-cataloger |
+| github.com/hashicorp/yamux | v0.1.2 |  | go-module-binary-cataloger |
+| github.com/huandu/go-clone | v1.7.3 |  | go-module-binary-cataloger |
 | github.com/huandu/go-clone | v1.7.3 |  | go-module-binary-cataloger |
 | github.com/huandu/go-clone | v1.7.3 |  | go-module-binary-cataloger |
 | github.com/huandu/go-sqlbuilder | v1.39.1 |  | go-module-binary-cataloger |
+| github.com/huandu/go-sqlbuilder | v1.39.1 |  | go-module-binary-cataloger |
 | github.com/huandu/go-sqlbuilder | v1.40.2 |  | go-module-binary-cataloger |
+| github.com/huandu/xstrings | v1.4.0 |  | go-module-binary-cataloger |
 | github.com/huandu/xstrings | v1.4.0 |  | go-module-binary-cataloger |
 | github.com/huandu/xstrings | v1.5.0 |  | go-module-binary-cataloger |
 | github.com/influxdata/influxdb-client-go/v2 | v2.14.0 |  | go-module-binary-cataloger |
@@ -6995,6 +7050,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | github.com/jackc/pgservicefile | v0.0.0-20240606120523-5a60cdf6a761 |  | go-module-binary-cataloger |
 | github.com/jackc/pgx/v5 | v5.9.2 |  | go-module-binary-cataloger |
 | github.com/jackc/puddle/v2 | v2.2.2 |  | go-module-binary-cataloger |
+| github.com/jaegertracing/jaeger-idl | v0.6.0 |  | go-module-binary-cataloger |
 | github.com/jaegertracing/jaeger-idl | v0.6.0 |  | go-module-binary-cataloger |
 | github.com/jaegertracing/jaeger-idl | v0.6.0 |  | go-module-binary-cataloger |
 | github.com/jaegertracing/jaeger-idl | v0.6.0 |  | go-module-binary-cataloger |
@@ -7011,16 +7067,21 @@ The complete source code for Traefik is publicly available at [https://github.co
 | github.com/jmoiron/sqlx | v1.4.0 |  | go-module-binary-cataloger |
 | github.com/josharian/intern | v1.0.0 |  | go-module-binary-cataloger |
 | github.com/josharian/intern | v1.0.0 |  | go-module-binary-cataloger |
+| github.com/josharian/intern | v1.0.0 |  | go-module-binary-cataloger |
 | github.com/joshlf/go-acl | v0.0.0-20200411065538-eae00ae38531 |  | go-module-binary-cataloger |
 | github.com/jpillora/backoff | v1.0.0 |  | go-module-binary-cataloger |
 | github.com/json-iterator/go | v1.1.12 |  | go-module-binary-cataloger |
 | github.com/json-iterator/go | v1.1.12 |  | go-module-binary-cataloger |
 | github.com/json-iterator/go | v1.1.12 |  | go-module-binary-cataloger |
+| github.com/json-iterator/go | v1.1.12 |  | go-module-binary-cataloger |
+| github.com/jszwedko/go-datemath | v0.1.1-0.20230526204004-640a500621d6 |  | go-module-binary-cataloger |
 | github.com/jszwedko/go-datemath | v0.1.1-0.20230526204004-640a500621d6 |  | go-module-binary-cataloger |
 | github.com/jszwedko/go-datemath | v0.1.1-0.20230526204004-640a500621d6 |  | go-module-binary-cataloger |
 | github.com/klauspost/compress | v1.18.2 |  | go-module-binary-cataloger |
 | github.com/klauspost/compress | v1.18.4 |  | go-module-binary-cataloger |
+| github.com/klauspost/compress | v1.18.4 |  | go-module-binary-cataloger |
 | github.com/klauspost/compress | v1.18.6 |  | go-module-binary-cataloger |
+| github.com/klauspost/cpuid/v2 | v2.3.0 |  | go-module-binary-cataloger |
 | github.com/klauspost/cpuid/v2 | v2.3.0 |  | go-module-binary-cataloger |
 | github.com/klauspost/cpuid/v2 | v2.3.0 |  | go-module-binary-cataloger |
 | github.com/klauspost/cpuid/v2 | v2.3.0 |  | go-module-binary-cataloger |
@@ -7032,17 +7093,22 @@ The complete source code for Traefik is publicly available at [https://github.co
 | github.com/lib/pq | v1.12.3 |  | go-module-binary-cataloger |
 | github.com/m3db/prometheus_remote_client_golang | v0.4.4 |  | go-module-binary-cataloger |
 | github.com/mailru/easyjson | v0.7.7 |  | go-module-binary-cataloger |
+| github.com/mailru/easyjson | v0.7.7 |  | go-module-binary-cataloger |
 | github.com/mailru/easyjson | v0.9.1 |  | go-module-binary-cataloger |
 | github.com/mattbaird/jsonpatch | v0.0.0-20240118010651-0ba75a80ca38 |  | go-module-binary-cataloger |
 | github.com/mattetti/filebuffer | v1.0.1 |  | go-module-binary-cataloger |
 | github.com/mattetti/filebuffer | v1.0.1 |  | go-module-binary-cataloger |
 | github.com/mattetti/filebuffer | v1.0.1 |  | go-module-binary-cataloger |
+| github.com/mattetti/filebuffer | v1.0.1 |  | go-module-binary-cataloger |
 | github.com/mattn/go-colorable | v0.1.14 |  | go-module-binary-cataloger |
 | github.com/mattn/go-colorable | v0.1.14 |  | go-module-binary-cataloger |
 | github.com/mattn/go-colorable | v0.1.14 |  | go-module-binary-cataloger |
+| github.com/mattn/go-colorable | v0.1.14 |  | go-module-binary-cataloger |
+| github.com/mattn/go-isatty | v0.0.20 |  | go-module-binary-cataloger |
 | github.com/mattn/go-isatty | v0.0.20 |  | go-module-binary-cataloger |
 | github.com/mattn/go-isatty | v0.0.20 |  | go-module-binary-cataloger |
 | github.com/mattn/go-isatty | v0.0.22 |  | go-module-binary-cataloger |
+| github.com/mattn/go-runewidth | v0.0.19 |  | go-module-binary-cataloger |
 | github.com/mattn/go-runewidth | v0.0.19 |  | go-module-binary-cataloger |
 | github.com/mattn/go-runewidth | v0.0.19 |  | go-module-binary-cataloger |
 | github.com/mattn/go-runewidth | v0.0.20 |  | go-module-binary-cataloger |
@@ -7056,17 +7122,23 @@ The complete source code for Traefik is publicly available at [https://github.co
 | github.com/mitchellh/copystructure | v1.2.0 |  | go-module-binary-cataloger |
 | github.com/mitchellh/go-homedir | v1.1.0 |  | go-module-binary-cataloger |
 | github.com/mitchellh/go-homedir | v1.1.0 |  | go-module-binary-cataloger |
+| github.com/mitchellh/go-homedir | v1.1.0 |  | go-module-binary-cataloger |
 | github.com/mitchellh/go-wordwrap | v1.0.1 |  | go-module-binary-cataloger |
 | github.com/mitchellh/mapstructure | v1.5.1-0.20231216201459-8508981c8b6c |  | go-module-binary-cataloger |
 | github.com/mitchellh/reflectwalk | v1.0.2 |  | go-module-binary-cataloger |
 | github.com/mithrandie/csvq | v1.18.1 |  | go-module-binary-cataloger |
 | github.com/mithrandie/csvq | v1.18.1 |  | go-module-binary-cataloger |
+| github.com/mithrandie/csvq | v1.18.1 |  | go-module-binary-cataloger |
+| github.com/mithrandie/csvq-driver | v1.7.0 |  | go-module-binary-cataloger |
 | github.com/mithrandie/csvq-driver | v1.7.0 |  | go-module-binary-cataloger |
 | github.com/mithrandie/csvq-driver | v1.7.0 |  | go-module-binary-cataloger |
 | github.com/mithrandie/go-file/v2 | v2.1.0 |  | go-module-binary-cataloger |
 | github.com/mithrandie/go-file/v2 | v2.1.0 |  | go-module-binary-cataloger |
+| github.com/mithrandie/go-file/v2 | v2.1.0 |  | go-module-binary-cataloger |
 | github.com/mithrandie/go-text | v1.6.0 |  | go-module-binary-cataloger |
 | github.com/mithrandie/go-text | v1.6.0 |  | go-module-binary-cataloger |
+| github.com/mithrandie/go-text | v1.6.0 |  | go-module-binary-cataloger |
+| github.com/mithrandie/ternary | v1.1.1 |  | go-module-binary-cataloger |
 | github.com/mithrandie/ternary | v1.1.1 |  | go-module-binary-cataloger |
 | github.com/mithrandie/ternary | v1.1.1 |  | go-module-binary-cataloger |
 | github.com/moby/docker-image-spec | v1.3.1 |  | go-module-binary-cataloger |
@@ -7075,11 +7147,14 @@ The complete source code for Traefik is publicly available at [https://github.co
 | github.com/modern-go/concurrent | v0.0.0-20180306012644-bacd9c7ef1dd |  | go-module-binary-cataloger |
 | github.com/modern-go/concurrent | v0.0.0-20180306012644-bacd9c7ef1dd |  | go-module-binary-cataloger |
 | github.com/modern-go/concurrent | v0.0.0-20180306012644-bacd9c7ef1dd |  | go-module-binary-cataloger |
+| github.com/modern-go/concurrent | v0.0.0-20180306012644-bacd9c7ef1dd |  | go-module-binary-cataloger |
+| github.com/modern-go/reflect2 | v1.0.2 |  | go-module-binary-cataloger |
 | github.com/modern-go/reflect2 | v1.0.2 |  | go-module-binary-cataloger |
 | github.com/modern-go/reflect2 | v1.0.2 |  | go-module-binary-cataloger |
 | github.com/modern-go/reflect2 | v1.0.3-0.20250322232337-35a7c28c31ee |  | go-module-binary-cataloger |
 | github.com/mpvl/unique | v0.0.0-20150818121801-cbe035fff7de |  | go-module-binary-cataloger |
 | github.com/mschoch/smat | v0.2.0 |  | go-module-binary-cataloger |
+| github.com/munnerz/goautoneg | v0.0.0-20191010083416-a7dc8b61c822 |  | go-module-binary-cataloger |
 | github.com/munnerz/goautoneg | v0.0.0-20191010083416-a7dc8b61c822 |  | go-module-binary-cataloger |
 | github.com/munnerz/goautoneg | v0.0.0-20191010083416-a7dc8b61c822 |  | go-module-binary-cataloger |
 | github.com/munnerz/goautoneg | v0.0.0-20191010083416-a7dc8b61c822 |  | go-module-binary-cataloger |
@@ -7091,19 +7166,24 @@ The complete source code for Traefik is publicly available at [https://github.co
 | github.com/oasdiff/yaml3 | v0.0.13 |  | go-module-binary-cataloger |
 | github.com/oklog/run | v1.1.0 |  | go-module-binary-cataloger |
 | github.com/oklog/run | v1.1.0 |  | go-module-binary-cataloger |
+| github.com/oklog/run | v1.1.0 |  | go-module-binary-cataloger |
 | github.com/oklog/run | v1.2.0 |  | go-module-binary-cataloger |
 | github.com/oklog/ulid | v1.3.1 |  | go-module-binary-cataloger |
 | github.com/oklog/ulid/v2 | v2.1.1 |  | go-module-binary-cataloger |
 | github.com/olekukonko/cat | v0.0.0-20250911104152-50322a0618f6 |  | go-module-binary-cataloger |
 | github.com/olekukonko/cat | v0.0.0-20250911104152-50322a0618f6 |  | go-module-binary-cataloger |
 | github.com/olekukonko/cat | v0.0.0-20250911104152-50322a0618f6 |  | go-module-binary-cataloger |
+| github.com/olekukonko/cat | v0.0.0-20250911104152-50322a0618f6 |  | go-module-binary-cataloger |
 | github.com/olekukonko/errors | v1.1.0 |  | go-module-binary-cataloger |
+| github.com/olekukonko/errors | v1.2.0 |  | go-module-binary-cataloger |
 | github.com/olekukonko/errors | v1.2.0 |  | go-module-binary-cataloger |
 | github.com/olekukonko/errors | v1.2.0 |  | go-module-binary-cataloger |
 | github.com/olekukonko/ll | v0.1.4-0.20260115111900-9e59c2286df0 |  | go-module-binary-cataloger |
 | github.com/olekukonko/ll | v0.1.6 |  | go-module-binary-cataloger |
 | github.com/olekukonko/ll | v0.1.6 |  | go-module-binary-cataloger |
+| github.com/olekukonko/ll | v0.1.6 |  | go-module-binary-cataloger |
 | github.com/olekukonko/tablewriter | v1.1.3 |  | go-module-binary-cataloger |
+| github.com/olekukonko/tablewriter | v1.1.4 |  | go-module-binary-cataloger |
 | github.com/olekukonko/tablewriter | v1.1.4 |  | go-module-binary-cataloger |
 | github.com/olekukonko/tablewriter | v1.1.4 |  | go-module-binary-cataloger |
 | github.com/open-feature/go-sdk | v1.17.2 |  | go-module-binary-cataloger |
@@ -7121,10 +7201,12 @@ The complete source code for Traefik is publicly available at [https://github.co
 | github.com/patrickmn/go-cache | v2.1.0+incompatible |  | go-module-binary-cataloger |
 | github.com/patrickmn/go-cache | v2.1.0+incompatible |  | go-module-binary-cataloger |
 | github.com/patrickmn/go-cache | v2.1.0+incompatible |  | go-module-binary-cataloger |
+| github.com/patrickmn/go-cache | v2.1.0+incompatible |  | go-module-binary-cataloger |
 | github.com/pb33f/ordered-map/v2 | v2.3.1 |  | go-module-binary-cataloger |
 | github.com/pelletier/go-toml/v2 | v2.2.4 |  | go-module-binary-cataloger |
 | github.com/pgvector/pgvector-go | v0.3.0 |  | go-module-binary-cataloger |
 | github.com/pierrec/lz4/v4 | v4.1.23 |  | go-module-binary-cataloger |
+| github.com/pierrec/lz4/v4 | v4.1.25 |  | go-module-binary-cataloger |
 | github.com/pierrec/lz4/v4 | v4.1.25 |  | go-module-binary-cataloger |
 | github.com/pierrec/lz4/v4 | v4.1.26 |  | go-module-binary-cataloger |
 | github.com/pires/go-proxyproto | v0.11.0 |  | go-module-binary-cataloger |
@@ -7133,7 +7215,9 @@ The complete source code for Traefik is publicly available at [https://github.co
 | github.com/planetscale/vtprotobuf | v0.6.1-0.20250313105119-ba97887b0a25 |  | go-module-binary-cataloger |
 | github.com/pmezard/go-difflib | v1.0.1-0.20181226105442-5d4384ee4fb2 |  | go-module-binary-cataloger |
 | github.com/pmezard/go-difflib | v1.0.1-0.20181226105442-5d4384ee4fb2 |  | go-module-binary-cataloger |
+| github.com/pmezard/go-difflib | v1.0.1-0.20181226105442-5d4384ee4fb2 |  | go-module-binary-cataloger |
 | github.com/pressly/goose/v3 | v3.27.1 |  | go-module-binary-cataloger |
+| github.com/prometheus/client_golang | v1.23.2 |  | go-module-binary-cataloger |
 | github.com/prometheus/client_golang | v1.23.2 |  | go-module-binary-cataloger |
 | github.com/prometheus/client_golang | v1.23.2 |  | go-module-binary-cataloger |
 | github.com/prometheus/client_golang | v1.23.2 |  | go-module-binary-cataloger |
@@ -7141,12 +7225,15 @@ The complete source code for Traefik is publicly available at [https://github.co
 | github.com/prometheus/client_model | v0.6.2 |  | go-module-binary-cataloger |
 | github.com/prometheus/client_model | v0.6.2 |  | go-module-binary-cataloger |
 | github.com/prometheus/client_model | v0.6.2 |  | go-module-binary-cataloger |
+| github.com/prometheus/client_model | v0.6.2 |  | go-module-binary-cataloger |
+| github.com/prometheus/common | v0.67.5 |  | go-module-binary-cataloger |
 | github.com/prometheus/common | v0.67.5 |  | go-module-binary-cataloger |
 | github.com/prometheus/common | v0.67.5 |  | go-module-binary-cataloger |
 | github.com/prometheus/common | v0.68.1 |  | go-module-binary-cataloger |
 | github.com/prometheus/common/sigv4 | v0.1.0 |  | go-module-binary-cataloger |
 | github.com/prometheus/exporter-toolkit | v0.16.0 |  | go-module-binary-cataloger |
 | github.com/prometheus/otlptranslator | v1.0.0 |  | go-module-binary-cataloger |
+| github.com/prometheus/procfs | v0.16.1 |  | go-module-binary-cataloger |
 | github.com/prometheus/procfs | v0.16.1 |  | go-module-binary-cataloger |
 | github.com/prometheus/procfs | v0.16.1 |  | go-module-binary-cataloger |
 | github.com/prometheus/procfs | v0.20.1 |  | go-module-binary-cataloger |
@@ -7182,7 +7269,9 @@ The complete source code for Traefik is publicly available at [https://github.co
 | github.com/spf13/viper | v1.21.0 |  | go-module-binary-cataloger |
 | github.com/spiffe/go-spiffe/v2 | v2.6.0 |  | go-module-binary-cataloger |
 | github.com/stretchr/objx | v0.5.2 |  | go-module-binary-cataloger |
+| github.com/stretchr/objx | v0.5.2 |  | go-module-binary-cataloger |
 | github.com/stretchr/objx | v0.5.3 |  | go-module-binary-cataloger |
+| github.com/stretchr/testify | v1.11.1 |  | go-module-binary-cataloger |
 | github.com/stretchr/testify | v1.11.1 |  | go-module-binary-cataloger |
 | github.com/stretchr/testify | v1.11.1 |  | go-module-binary-cataloger |
 | github.com/subosito/gotenv | v1.6.0 |  | go-module-binary-cataloger |
@@ -7206,10 +7295,12 @@ The complete source code for Traefik is publicly available at [https://github.co
 | github.com/zeebo/xxh3 | v1.0.2 |  | go-module-binary-cataloger |
 | github.com/zeebo/xxh3 | v1.1.0 |  | go-module-binary-cataloger |
 | github.com/zeebo/xxh3 | v1.1.0 |  | go-module-binary-cataloger |
+| github.com/zeebo/xxh3 | v1.1.0 |  | go-module-binary-cataloger |
 | go.etcd.io/bbolt | v1.4.3 |  | go-module-binary-cataloger |
 | go.etcd.io/etcd/api/v3 | v3.6.9 |  | go-module-binary-cataloger |
 | go.etcd.io/etcd/client/pkg/v3 | v3.6.9 |  | go-module-binary-cataloger |
 | go.etcd.io/etcd/client/v3 | v3.6.9 |  | go-module-binary-cataloger |
+| go.opentelemetry.io/auto/sdk | v1.2.1 |  | go-module-binary-cataloger |
 | go.opentelemetry.io/auto/sdk | v1.2.1 |  | go-module-binary-cataloger |
 | go.opentelemetry.io/auto/sdk | v1.2.1 |  | go-module-binary-cataloger |
 | go.opentelemetry.io/auto/sdk | v1.2.1 |  | go-module-binary-cataloger |
@@ -7220,18 +7311,23 @@ The complete source code for Traefik is publicly available at [https://github.co
 | go.opentelemetry.io/contrib/exporters/autoexport | v0.68.0 |  | go-module-binary-cataloger |
 | go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc | v0.65.0 |  | go-module-binary-cataloger |
 | go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc | v0.67.0 |  | go-module-binary-cataloger |
+| go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc | v0.67.0 |  | go-module-binary-cataloger |
 | go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc | v0.68.0 |  | go-module-binary-cataloger |
 | go.opentelemetry.io/contrib/instrumentation/net/http/httptrace/otelhttptrace | v0.65.0 |  | go-module-binary-cataloger |
+| go.opentelemetry.io/contrib/instrumentation/net/http/httptrace/otelhttptrace | v0.67.0 |  | go-module-binary-cataloger |
 | go.opentelemetry.io/contrib/instrumentation/net/http/httptrace/otelhttptrace | v0.67.0 |  | go-module-binary-cataloger |
 | go.opentelemetry.io/contrib/instrumentation/net/http/httptrace/otelhttptrace | v0.69.0 |  | go-module-binary-cataloger |
 | go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp | v0.69.0 |  | go-module-binary-cataloger |
 | go.opentelemetry.io/contrib/propagators/jaeger | v1.40.0 |  | go-module-binary-cataloger |
 | go.opentelemetry.io/contrib/propagators/jaeger | v1.42.0 |  | go-module-binary-cataloger |
+| go.opentelemetry.io/contrib/propagators/jaeger | v1.42.0 |  | go-module-binary-cataloger |
 | go.opentelemetry.io/contrib/propagators/jaeger | v1.43.0 |  | go-module-binary-cataloger |
 | go.opentelemetry.io/contrib/samplers/jaegerremote | v0.34.0 |  | go-module-binary-cataloger |
 | go.opentelemetry.io/contrib/samplers/jaegerremote | v0.36.0 |  | go-module-binary-cataloger |
+| go.opentelemetry.io/contrib/samplers/jaegerremote | v0.36.0 |  | go-module-binary-cataloger |
 | go.opentelemetry.io/contrib/samplers/jaegerremote | v0.37.0 |  | go-module-binary-cataloger |
 | go.opentelemetry.io/otel | v1.40.0 |  | go-module-binary-cataloger |
+| go.opentelemetry.io/otel | v1.43.0 |  | go-module-binary-cataloger |
 | go.opentelemetry.io/otel | v1.43.0 |  | go-module-binary-cataloger |
 | go.opentelemetry.io/otel | v1.44.0 |  | go-module-binary-cataloger |
 | go.opentelemetry.io/otel/exporters/jaeger | v1.17.0 |  | go-module-binary-cataloger |
@@ -7241,8 +7337,10 @@ The complete source code for Traefik is publicly available at [https://github.co
 | go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetrichttp | v1.43.0 |  | go-module-binary-cataloger |
 | go.opentelemetry.io/otel/exporters/otlp/otlptrace | v1.40.0 |  | go-module-binary-cataloger |
 | go.opentelemetry.io/otel/exporters/otlp/otlptrace | v1.42.0 |  | go-module-binary-cataloger |
+| go.opentelemetry.io/otel/exporters/otlp/otlptrace | v1.42.0 |  | go-module-binary-cataloger |
 | go.opentelemetry.io/otel/exporters/otlp/otlptrace | v1.44.0 |  | go-module-binary-cataloger |
 | go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc | v1.40.0 |  | go-module-binary-cataloger |
+| go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc | v1.42.0 |  | go-module-binary-cataloger |
 | go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc | v1.42.0 |  | go-module-binary-cataloger |
 | go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc | v1.44.0 |  | go-module-binary-cataloger |
 | go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp | v1.44.0 |  | go-module-binary-cataloger |
@@ -7253,16 +7351,20 @@ The complete source code for Traefik is publicly available at [https://github.co
 | go.opentelemetry.io/otel/log | v0.19.0 |  | go-module-binary-cataloger |
 | go.opentelemetry.io/otel/metric | v1.40.0 |  | go-module-binary-cataloger |
 | go.opentelemetry.io/otel/metric | v1.43.0 |  | go-module-binary-cataloger |
+| go.opentelemetry.io/otel/metric | v1.43.0 |  | go-module-binary-cataloger |
 | go.opentelemetry.io/otel/metric | v1.44.0 |  | go-module-binary-cataloger |
 | go.opentelemetry.io/otel/sdk | v1.40.0 |  | go-module-binary-cataloger |
+| go.opentelemetry.io/otel/sdk | v1.43.0 |  | go-module-binary-cataloger |
 | go.opentelemetry.io/otel/sdk | v1.43.0 |  | go-module-binary-cataloger |
 | go.opentelemetry.io/otel/sdk | v1.44.0 |  | go-module-binary-cataloger |
 | go.opentelemetry.io/otel/sdk/log | v0.19.0 |  | go-module-binary-cataloger |
 | go.opentelemetry.io/otel/sdk/metric | v1.44.0 |  | go-module-binary-cataloger |
 | go.opentelemetry.io/otel/trace | v1.40.0 |  | go-module-binary-cataloger |
 | go.opentelemetry.io/otel/trace | v1.43.0 |  | go-module-binary-cataloger |
+| go.opentelemetry.io/otel/trace | v1.43.0 |  | go-module-binary-cataloger |
 | go.opentelemetry.io/otel/trace | v1.44.0 |  | go-module-binary-cataloger |
 | go.opentelemetry.io/proto/otlp | v1.10.0 |  | go-module-binary-cataloger |
+| go.opentelemetry.io/proto/otlp | v1.9.0 |  | go-module-binary-cataloger |
 | go.opentelemetry.io/proto/otlp | v1.9.0 |  | go-module-binary-cataloger |
 | go.opentelemetry.io/proto/otlp | v1.9.0 |  | go-module-binary-cataloger |
 | go.uber.org/atomic | v1.11.0 |  | go-module-binary-cataloger |
@@ -7271,7 +7373,9 @@ The complete source code for Traefik is publicly available at [https://github.co
 | go.uber.org/zap | v1.28.0 |  | go-module-binary-cataloger |
 | go.yaml.in/yaml/v2 | v2.4.3 |  | go-module-binary-cataloger |
 | go.yaml.in/yaml/v2 | v2.4.3 |  | go-module-binary-cataloger |
+| go.yaml.in/yaml/v2 | v2.4.3 |  | go-module-binary-cataloger |
 | go.yaml.in/yaml/v2 | v2.4.4 |  | go-module-binary-cataloger |
+| go.yaml.in/yaml/v3 | v3.0.4 |  | go-module-binary-cataloger |
 | go.yaml.in/yaml/v3 | v3.0.4 |  | go-module-binary-cataloger |
 | go.yaml.in/yaml/v3 | v3.0.4 |  | go-module-binary-cataloger |
 | go.yaml.in/yaml/v4 | v4.0.0-rc.4 |  | go-module-binary-cataloger |
@@ -7279,25 +7383,33 @@ The complete source code for Traefik is publicly available at [https://github.co
 | gocloud.dev | v0.45.0 |  | go-module-binary-cataloger |
 | golang.org/x/crypto | v0.52.0 |  | go-module-binary-cataloger |
 | golang.org/x/crypto | v0.52.0 |  | go-module-binary-cataloger |
+| golang.org/x/crypto | v0.52.0 |  | go-module-binary-cataloger |
 | golang.org/x/exp | v0.0.0-20251002181428-27f1f14c8bb9 |  | go-module-binary-cataloger |
+| golang.org/x/exp | v0.0.0-20260112195511-716be5621a96 |  | go-module-binary-cataloger |
 | golang.org/x/exp | v0.0.0-20260112195511-716be5621a96 |  | go-module-binary-cataloger |
 | golang.org/x/exp | v0.0.0-20260410095643-746e56fc9e2f |  | go-module-binary-cataloger |
 | golang.org/x/net | v0.49.0 |  | go-module-binary-cataloger |
 | golang.org/x/net | v0.55.0 |  | go-module-binary-cataloger |
 | golang.org/x/net | v0.55.0 |  | go-module-binary-cataloger |
+| golang.org/x/net | v0.55.0 |  | go-module-binary-cataloger |
 | golang.org/x/oauth2 | v0.36.0 |  | go-module-binary-cataloger |
+| golang.org/x/sync | v0.20.0 |  | go-module-binary-cataloger |
 | golang.org/x/sync | v0.20.0 |  | go-module-binary-cataloger |
 | golang.org/x/sync | v0.21.0 |  | go-module-binary-cataloger |
 | golang.org/x/sys | v0.40.0 |  | go-module-binary-cataloger |
 | golang.org/x/sys | v0.45.0 |  | go-module-binary-cataloger |
 | golang.org/x/sys | v0.45.0 |  | go-module-binary-cataloger |
+| golang.org/x/sys | v0.45.0 |  | go-module-binary-cataloger |
+| golang.org/x/term | v0.43.0 |  | go-module-binary-cataloger |
 | golang.org/x/term | v0.43.0 |  | go-module-binary-cataloger |
 | golang.org/x/term | v0.43.0 |  | go-module-binary-cataloger |
 | golang.org/x/text | v0.33.0 |  | go-module-binary-cataloger |
 | golang.org/x/text | v0.37.0 |  | go-module-binary-cataloger |
 | golang.org/x/text | v0.37.0 |  | go-module-binary-cataloger |
+| golang.org/x/text | v0.37.0 |  | go-module-binary-cataloger |
 | golang.org/x/time | v0.15.0 |  | go-module-binary-cataloger |
 | golang.org/x/tools | v0.45.0 |  | go-module-binary-cataloger |
+| golang.org/x/xerrors | v0.0.0-20240903120638-7835f813f4da |  | go-module-binary-cataloger |
 | golang.org/x/xerrors | v0.0.0-20240903120638-7835f813f4da |  | go-module-binary-cataloger |
 | golang.org/x/xerrors | v0.0.0-20240903120638-7835f813f4da |  | go-module-binary-cataloger |
 | golang.org/x/xerrors | v0.0.0-20240903120638-7835f813f4da |  | go-module-binary-cataloger |
@@ -7306,12 +7418,15 @@ The complete source code for Traefik is publicly available at [https://github.co
 | google.golang.org/api | v0.283.0 |  | go-module-binary-cataloger |
 | google.golang.org/genproto | v0.0.0-20210630183607-d20f26d13c79 |  | go-module-binary-cataloger |
 | google.golang.org/genproto | v0.0.0-20210630183607-d20f26d13c79 |  | go-module-binary-cataloger |
+| google.golang.org/genproto | v0.0.0-20210630183607-d20f26d13c79 |  | go-module-binary-cataloger |
 | google.golang.org/genproto | v0.0.0-20260319201613-d00831a3d3e7 |  | go-module-binary-cataloger |
 | google.golang.org/genproto/googleapis/api | v0.0.0-20260526163538-3dc84a4a5aaa |  | go-module-binary-cataloger |
 | google.golang.org/genproto/googleapis/rpc | v0.0.0-20260526163538-3dc84a4a5aaa |  | go-module-binary-cataloger |
 | google.golang.org/grpc | v1.79.3 |  | go-module-binary-cataloger |
 | google.golang.org/grpc | v1.79.3 |  | go-module-binary-cataloger |
+| google.golang.org/grpc | v1.79.3 |  | go-module-binary-cataloger |
 | google.golang.org/grpc | v1.81.1 |  | go-module-binary-cataloger |
+| google.golang.org/protobuf | v1.36.11 |  | go-module-binary-cataloger |
 | google.golang.org/protobuf | v1.36.11 |  | go-module-binary-cataloger |
 | google.golang.org/protobuf | v1.36.11 |  | go-module-binary-cataloger |
 | google.golang.org/protobuf | v1.36.12-0.20260120151049-f2248ac996af |  | go-module-binary-cataloger |
@@ -7325,6 +7440,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | gopkg.in/yaml.v2 | v2.4.0 |  | go-module-binary-cataloger |
 | gopkg.in/yaml.v3 | v3.0.1 |  | go-module-binary-cataloger |
 | gopkg.in/yaml.v3 | v3.0.1 |  | go-module-binary-cataloger |
+| gopkg.in/yaml.v3 | v3.0.1 |  | go-module-binary-cataloger |
 | grafana | 13.1.0 |  | binary-classifier-cataloger |
 | k8s.io/api | v0.36.1 |  | go-module-binary-cataloger |
 | k8s.io/apiextensions-apiserver | v0.36.0 |  | go-module-binary-cataloger |
@@ -7335,6 +7451,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | k8s.io/klog/v2 | v2.140.0 |  | go-module-binary-cataloger |
 | k8s.io/kms | v0.36.0 |  | go-module-binary-cataloger |
 | k8s.io/kube-aggregator | v0.36.0 |  | go-module-binary-cataloger |
+| k8s.io/kube-openapi | v0.0.0-20260127142750-a19766b6e2d4 |  | go-module-binary-cataloger |
 | k8s.io/kube-openapi | v0.0.0-20260127142750-a19766b6e2d4 |  | go-module-binary-cataloger |
 | k8s.io/kube-openapi | v0.0.0-20260317180543-43fb72c5454a |  | go-module-binary-cataloger |
 | k8s.io/streaming | v0.36.1 |  | go-module-binary-cataloger |
@@ -7362,11 +7479,13 @@ The complete source code for Traefik is publicly available at [https://github.co
 | sigs.k8s.io/json | v0.0.0-20250730193827-2d320260d730 |  | go-module-binary-cataloger |
 | sigs.k8s.io/randfill | v1.0.0 |  | go-module-binary-cataloger |
 | sigs.k8s.io/randfill | v1.0.0 |  | go-module-binary-cataloger |
+| sigs.k8s.io/randfill | v1.0.0 |  | go-module-binary-cataloger |
 | sigs.k8s.io/structured-merge-diff/v6 | v6.4.0 |  | go-module-binary-cataloger |
 | sigs.k8s.io/yaml | v1.6.0 |  | go-module-binary-cataloger |
 | software.sslmate.com/src/go-pkcs12 | v0.7.0 |  | go-module-binary-cataloger |
 | ssl_client | 1.37.0-r31 | GPL-2.0-only | apk-db-cataloger |
 | stdlib | go1.25.7 | BSD-3-Clause | go-module-binary-cataloger |
+| stdlib | go1.26.3 | BSD-3-Clause | go-module-binary-cataloger |
 | stdlib | go1.26.3 | BSD-3-Clause | go-module-binary-cataloger |
 | stdlib | go1.26.4 | BSD-3-Clause | go-module-binary-cataloger |
 | tzdata | 2026b-r0 |  | apk-db-cataloger |

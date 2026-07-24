@@ -6,7 +6,7 @@ import logging
 import re
 from datetime import datetime
 from pathlib import PurePosixPath
-from typing import Annotated, Any, Callable, Generator, Sequence, cast
+from typing import Annotated, Any, Callable, Generator, Protocol, Sequence, cast
 from uuid import UUID
 
 import imapclient.imap_utf7
@@ -591,6 +591,17 @@ class TreePathsResult(BaseModel):
     root_stats: TreePathsNode | None = None
 
 
+# `elasticsearch-dsl` only exports AttrDict-based dynamic wrappers, so we define
+# our own types to facilitate code completion.
+class TypedNestedHitMeta(Protocol):  # pylint: disable=too-few-public-methods
+    score: float | None
+
+
+class TypedNestedHit(Protocol):  # pylint: disable=too-few-public-methods
+    text: str
+    meta: TypedNestedHitMeta
+
+
 TERMS_STAT_REGISTRY = discover_stats(File, TermsStat)
 HISTOGRAM_STAT_REGISTRY = discover_stats(File, HistogramStat)
 
@@ -675,10 +686,12 @@ class FileRepository(BaseEsRepository[_EsFile, File]):
 
         result = self._execute_search_with_query(search=search, query=query)
 
+        others_count = int(self.get_aggr(result, [agg_name, "sum_other_doc_count"], 0))
         stats = TermsStatistics(
             stat=stat,
             data=[],
             total_no_of_files=result.hits.total.value,  # type: ignore[attr-defined]
+            others_count=others_count,
             key=stat,
         )
         for bucket in self.get_aggr(result, [agg_name, "buckets"], []):
@@ -1040,34 +1053,43 @@ class FileRepository(BaseEsRepository[_EsFile, File]):
             lenient=True,
         )
 
-        for q in embedding_vectors:
+        for i, q in enumerate(embedding_vectors):
             search = search.knn(  # pylint: disable=no-member
                 field="embeddings.vector",
                 k=k,
                 num_candidates=k * KNN_CANDIDATES_FACTOR,
                 query_vector=list(q),
                 filter=filter_query,
-                inner_hits={"_source": True, "fields": ["embeddings.text"], "size": k},
+                inner_hits={
+                    "_source": True,
+                    "fields": ["embeddings.text"],
+                    "size": k,
+                    "name": f"query_{i}",
+                },
             )
 
-        def page_handler(result: Response[_EsFile]):
-            for es_file in result.hits:
-                es_embedding: _EsEmbedding
-                for es_embedding in es_file.meta.inner_hits["embeddings"]:
-                    yield KnnSearchEmbedding(
-                        file_id=UUID(es_file.meta.id),
-                        file_score=(
-                            es_file.meta.score
-                            if es_file.meta.score is not None
-                            else 0.0
-                        ),
-                        text_score=(
-                            es_embedding.meta.score
-                            if es_embedding.meta.score is not None
-                            else 0.0
-                        ),
-                        text=str(es_embedding.text),
+        def page_handler(response: Response[_EsFile]):
+            for hit in response.hits:
+                inner_hits_dict = hit.meta.inner_hits
+
+                # Each result contains hits for every embedding we passed into the kNN search.
+                for _query_name, inner_hit_response in inner_hits_dict.items():
+                    inner_hit_response = cast(
+                        Response[TypedNestedHit], inner_hit_response
                     )
+                    for nested_hit in inner_hit_response.hits:
+                        yield KnnSearchEmbedding(
+                            file_id=UUID(hit.meta.id),
+                            file_score=(
+                                hit.meta.score if hit.meta.score is not None else 0.0
+                            ),
+                            text_score=(
+                                nested_hit.meta.score
+                                if nested_hit.meta.score is not None
+                                else 0.0
+                            ),
+                            text=nested_hit.text,
+                        )
 
         yield from self._paginate_search(
             search=search,

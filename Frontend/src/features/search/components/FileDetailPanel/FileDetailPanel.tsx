@@ -25,6 +25,7 @@ import {
     setFileTabDetailTab,
 } from "@app/slices/searchSlice";
 import { FileRenderer } from "@features/common/components/DialogContainer/Dialogs/FileDetailDialog/FileRenderer";
+import { FileTasks } from "@features/common/components/DialogContainer/Dialogs/FileDetailDialog/FileTasks";
 import { FileTranslations } from "@features/common/components/DialogContainer/Dialogs/FileDetailDialog/FileTranslations";
 import { FileDetailTab } from "@features/common/utils/enums";
 import { inferAceModeFromMimeType } from "@features/common/utils/helpers";
@@ -170,13 +171,14 @@ export const FileDetailPanel = ({
         [file],
     );
 
-    const formattedRaw = useMemo(
-        () =>
-            file?.raw
-                ? JSON.stringify(JSON.parse(file.raw), null, 2)
-                : undefined,
-        [file?.raw],
-    );
+    const formattedRaw = useMemo(() => {
+        if (!file?.raw) return undefined;
+        try {
+            return JSON.stringify(JSON.parse(file.raw), null, 2);
+        } catch {
+            return file.raw;
+        }
+    }, [file?.raw]);
 
     if (!fileId) return null;
 
@@ -258,6 +260,11 @@ export const FileDetailPanel = ({
                         label="Raw"
                         value={FileDetailTab.RAW}
                         data-tab-value={FileDetailTab.RAW}
+                    />
+                    <Tab
+                        label="Tasks"
+                        value={FileDetailTab.Tasks}
+                        data-tab-value={FileDetailTab.Tasks}
                     />
                 </Tabs>
             </Box>
@@ -359,6 +366,12 @@ const renderTabContent = (
                 <FileTranslations
                     translations={file.languageTranslations ?? []}
                 />
+            );
+        case FileDetailTab.Tasks:
+            return (
+                <Box sx={{ overflow: "auto", flex: 1 }}>
+                    <FileTasks tasks={file.tasks} />
+                </Box>
             );
         case FileDetailTab.Rendered:
         default:

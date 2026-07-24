@@ -29,6 +29,9 @@ export const TERMS_STAT_ORDER = [
     "content_truncated",
     "attachments_skipped",
     "state",
+    "failed_task_names",
+    "retried_task_names",
+    "successful_task_names",
 ];
 
 export const DATE_STAT_ORDER = [

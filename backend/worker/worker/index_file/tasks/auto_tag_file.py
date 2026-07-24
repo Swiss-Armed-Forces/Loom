@@ -1,5 +1,7 @@
+import itertools
 import logging
 from collections import defaultdict
+from concurrent.futures import ThreadPoolExecutor
 
 from celery import chain
 from celery.canvas import Signature
@@ -24,7 +26,8 @@ logger = logging.getLogger(__name__)
 app = get_celery_app()
 
 MAX_FILES_KNN_SEARCH = 10
-
+AUTO_TAG_KNN_BATCH_SIZE = 32
+NUM_KNN_QUERY_WORKERS = 4
 AUTO_TAG_PREFIX = "🤖 "
 
 
@@ -68,46 +71,110 @@ def noop(*_, **__):
 
 @app.task(base=FileIndexingTask)
 def fetch_files_embeddings(
-    embeddings_bytes_lazy: list[TempTypedLazyBytes[Embedding]], file: File
+    embeddings_bytes_lazy: list[TempTypedLazyBytes[Embedding]],
+    file: File,
 ) -> list[FileTagInfo]:
-    similar_files: list[FileTagInfo] = []
+    """Batch all embeddings and perform parallel kNN requests to find similar files
+    exceeding the configured threshold."""
+    if not embeddings_bytes_lazy:
+        return []
 
-    query = QueryParameters(
-        query_id=get_file_repository().open_point_in_time(),
-        search_string=f'tags:* !id:"{file.id_}"',
+    batches = [
+        embeddings_bytes_lazy[i : i + AUTO_TAG_KNN_BATCH_SIZE]
+        for i in range(0, len(embeddings_bytes_lazy), AUTO_TAG_KNN_BATCH_SIZE)
+    ]
+
+    logger.info(
+        "Split %d embeddings into %d batches for %d workers for auto-tag KNN search (file: %s)",
+        len(embeddings_bytes_lazy),
+        len(batches),
+        NUM_KNN_QUERY_WORKERS,
+        file.short_name,
     )
 
-    for embedding_bytes_lazy in embeddings_bytes_lazy:
+    # NOTE: We don't use `self.replace()` here as that would create a nested replace within
+    # `create_embedding_task`, which in turn causes issues with other celery tasks.
+    with ThreadPoolExecutor(max_workers=NUM_KNN_QUERY_WORKERS) as pool:
+        batched_results = list(
+            pool.map(
+                lambda batch: fetch_embeddings_batch(batch, file), batches, timeout=None
+            )
+        )
+
+    results = list(itertools.chain.from_iterable(batched_results))
+    logger.debug(
+        "Got %d kNN results from %d batches",
+        len(results),
+        len(batches),
+    )
+    return results
+
+
+def fetch_embeddings_batch(
+    batch: list[TempTypedLazyBytes[Embedding]],
+    file: File,
+) -> list[FileTagInfo]:
+    """Search for a batch of embeddings via a single KNN query."""
+    embeddings_batch: list[list[float]] = []
+    for embedding_bytes_lazy in batch:
         embedding = get_lazybytes_service().load_object(embedding_bytes_lazy)
 
-        # We receive the embeddings from creation, therefore the dense vector is present.
         if embedding.vector is None:
             logger.warning(
-                "Embedding is missing dense vector - this should not happen. File: %s",
+                "Embedding is missing dense embedding vector - this should not happen."
+                " File: %s",
                 file.short_name,
             )
             continue
 
-        for knn_embedding in get_file_repository().get_embedding_generator_by_knn(
-            query=query,
-            embedding_vectors=[embedding.vector],
-            k=MAX_FILES_KNN_SEARCH,
-        ):
-            found_file = get_file_repository().get_by_id(knn_embedding.file_id)
-            similarity = knn_embedding.text_score
+        embeddings_batch.append(embedding.vector)
 
-            if found_file:
+    if not embeddings_batch:
+        return []
+
+    query = QueryParameters(
+        search_string=f'tags:* !id:"{file.id_}"',
+    )
+
+    logger.debug(
+        "Searching for similar files by KNN for batch of %d embeddings (file: %s)",
+        len(embeddings_batch),
+        file.short_name,
+    )
+
+    similar_files: list[FileTagInfo] = []
+    for knn_embedding in get_file_repository().get_embedding_generator_by_knn(
+        query=query,
+        embedding_vectors=embeddings_batch,
+        k=MAX_FILES_KNN_SEARCH,
+    ):
+        logger.debug("Processing candidate similarity match for %s", file.short_name)
+
+        similarity = knn_embedding.text_score
+        if similarity > settings.auto_tag_file_similarity_threshold:
+            similar_file = get_file_repository().get_by_id(knn_embedding.file_id)
+            if similar_file:
                 logger.debug(
-                    "File %s has similarity score %.4f (compared to file %s)",
-                    found_file.short_name,
-                    similarity,
+                    "Found similar file %s to file %s (similarity score: %.4f)",
+                    similar_file.short_name,
                     file.short_name,
+                    similarity,
                 )
-
-            if found_file and similarity > settings.auto_tag_file_similarity_threshold:
                 similar_files.append(
-                    FileTagInfo(score=similarity, tags=found_file.tags)
+                    FileTagInfo(score=similarity, tags=similar_file.tags)
                 )
+            else:
+                logger.warning(
+                    "Failed to fetch similar file with id '%s'",
+                    knn_embedding.file_id,
+                )
+        else:
+            logger.debug(
+                "File with id %s not similar enough to file named %s (similarity score: %.4f)",
+                knn_embedding.file_id,
+                file.short_name,
+                similarity,
+            )
 
     return similar_files
 

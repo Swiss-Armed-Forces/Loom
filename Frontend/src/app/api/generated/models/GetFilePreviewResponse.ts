@@ -131,24 +131,6 @@ export interface GetFilePreviewResponse {
     highlight?: { [key: string]: any };
     /**
      *
-     * @type {Array<string>}
-     * @memberof GetFilePreviewResponse
-     */
-    tasksSucceeded?: Array<string>;
-    /**
-     *
-     * @type {Array<string>}
-     * @memberof GetFilePreviewResponse
-     */
-    tasksRetried?: Array<string>;
-    /**
-     *
-     * @type {Array<string>}
-     * @memberof GetFilePreviewResponse
-     */
-    tasksFailed?: Array<string>;
-    /**
-     *
      * @type {string}
      * @memberof GetFilePreviewResponse
      */
@@ -195,6 +177,12 @@ export interface GetFilePreviewResponse {
      * @memberof GetFilePreviewResponse
      */
     translationPreviewIsTruncated?: boolean;
+    /**
+     *
+     * @type {string}
+     * @memberof GetFilePreviewResponse
+     */
+    state: string;
 }
 
 /**
@@ -211,6 +199,7 @@ export function instanceOfGetFilePreviewResponse(value: object): boolean {
     if (!("name" in value)) return false;
     if (!("path" in value)) return false;
     if (!("fileExtension" in value)) return false;
+    if (!("state" in value)) return false;
     return true;
 }
 
@@ -257,14 +246,6 @@ export function GetFilePreviewResponseFromJSONTyped(
                 : json["attachments_total_count"],
         fileExtension: json["file_extension"],
         highlight: json["highlight"] == null ? undefined : json["highlight"],
-        tasksSucceeded:
-            json["tasks_succeeded"] == null
-                ? undefined
-                : json["tasks_succeeded"],
-        tasksRetried:
-            json["tasks_retried"] == null ? undefined : json["tasks_retried"],
-        tasksFailed:
-            json["tasks_failed"] == null ? undefined : json["tasks_failed"],
         summary: json["summary"] == null ? undefined : json["summary"],
         imageDescription:
             json["image_description"] == null
@@ -291,6 +272,7 @@ export function GetFilePreviewResponseFromJSONTyped(
             json["translation_preview_is_truncated"] == null
                 ? undefined
                 : json["translation_preview_is_truncated"],
+        state: json["state"],
     };
 }
 
@@ -321,9 +303,6 @@ export function GetFilePreviewResponseToJSON(
         attachments_total_count: value["attachmentsTotalCount"],
         file_extension: value["fileExtension"],
         highlight: value["highlight"],
-        tasks_succeeded: value["tasksSucceeded"],
-        tasks_retried: value["tasksRetried"],
-        tasks_failed: value["tasksFailed"],
         summary: value["summary"],
         image_description: value["imageDescription"],
         is_spam: value["isSpam"],
@@ -333,5 +312,6 @@ export function GetFilePreviewResponseToJSON(
         translation_preview_language: value["translationPreviewLanguage"],
         translation_preview_is_truncated:
             value["translationPreviewIsTruncated"],
+        state: value["state"],
     };
 }

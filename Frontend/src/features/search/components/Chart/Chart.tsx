@@ -20,6 +20,7 @@ import styles from "./Chart.module.css";
 interface ChartProps {
     entries: HitsPerGroupEntryModel[];
     fileCount: number;
+    othersCount?: number;
     handleUpdateQuery: (
         key: string,
         value: string | string[],
@@ -54,6 +55,7 @@ const arcLabel = (
 const buildPieData = (
     entries: HitsPerGroupEntryModel[],
     fileCount: number,
+    othersCount?: number,
 ): PieValueType[] => {
     const named: PieValueType[] = entries
         .map((e) => ({
@@ -63,13 +65,14 @@ const buildPieData = (
         }))
         .sort((a, b) => a.value - b.value);
 
-    const othersCount = computeOthersCount(entries, fileCount);
+    const resolvedOthersCount =
+        othersCount ?? computeOthersCount(entries, fileCount);
 
-    if (othersCount > 0) {
+    if (resolvedOthersCount > 0) {
         return [
             {
                 id: MISC_ID,
-                value: othersCount,
+                value: resolvedOthersCount,
                 label: OTHERS_LABEL,
             } satisfies PieValueType,
             ...named,
@@ -81,13 +84,14 @@ const buildPieData = (
 export const Chart = ({
     entries,
     fileCount,
+    othersCount,
     handleUpdateQuery,
     queryKeyword,
     height = 500,
     onGroupHighlight,
     highlightedGroup,
 }: ChartProps) => {
-    const data = buildPieData(entries, fileCount);
+    const data = buildPieData(entries, fileCount, othersCount);
 
     const [highlightedItem, setHighlightedItem] =
         useState<PieHighlightItem>(null);
