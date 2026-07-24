@@ -1,4 +1,6 @@
+import traceback
 from abc import ABC, abstractmethod
+from datetime import datetime, timezone
 from typing import Callable, Generic
 from uuid import UUID
 
@@ -13,6 +15,7 @@ from common.models.base_repository import BaseRepository
 from common.task_object.task_object import (
     RepositoryTaskObjectT,
     SecondaryRepositoryTaskObjectT,
+    TaskRun,
 )
 from common.utils.sharding import compute_shard, get_persister_shard_name
 
@@ -22,6 +25,10 @@ from worker.utils.task_info_persister import TaskInfoPersister
 
 logger = get_task_logger(__name__)
 app = get_celery_app()
+
+
+EXCEPTION_MAX_LENGTH = 10 * 1024  # 10 KB
+ARGUMENTS_MAX_LENGTH = 100 * 1024  # 100 KB
 
 
 class ProcessingTask(
@@ -49,17 +56,32 @@ class ProcessingTask(
         pass
 
     @staticmethod
-    def _persist_fail(task_id: UUID, task_info_persister: TaskInfoPersister):
+    def _persist_fail(
+        task_run: TaskRun,
+        task_id: UUID,
+        task_name: str,
+        task_info_persister: TaskInfoPersister,
+    ):
         task_info_persister.update_state("failed")
-        task_info_persister.add_failed_task(task_id)
+        task_info_persister.add_failed_task(task_run, task_id, task_name)
 
     @staticmethod
-    def _persist_retry(task_id: UUID, task_info_persister: TaskInfoPersister):
-        task_info_persister.add_retried_task(task_id)
+    def _persist_retry(
+        task_run: TaskRun,
+        task_id: UUID,
+        task_name: str,
+        task_info_persister: TaskInfoPersister,
+    ):
+        task_info_persister.add_retried_task(task_run, task_id, task_name)
 
     @staticmethod
-    def _persist_success(task_id: UUID, task_info_persister: TaskInfoPersister):
-        task_info_persister.add_success_task(task_id)
+    def _persist_success(
+        task_run: TaskRun,
+        task_id: UUID,
+        task_name: str,
+        task_info_persister: TaskInfoPersister,
+    ):
+        task_info_persister.add_success_task(task_run, task_id, task_name)
 
     def _get_object_id_for_request(self) -> UUID | None:
         """Look up object_id from RootTaskInformation for the current request."""
@@ -75,7 +97,9 @@ class ProcessingTask(
     def _dispatch_persist_task(
         self,
         task_id: str,
-        persist_callback: Callable[[UUID, TaskInfoPersister], None],
+        persist_callback: Callable[[TaskRun, UUID, str, TaskInfoPersister], None],
+        args=None,
+        exception: Exception | None = None,
     ) -> None:
         """Dispatch a persist task to the appropriate shard queue."""
         object_id = self._get_object_id_for_request()
@@ -83,9 +107,41 @@ class ProcessingTask(
             return
         shard = compute_shard(object_id, settings.num_persister_shards)
         shard_name = get_persister_shard_name(shard)
+        started_at = self._start_time
+        finished_at = datetime.now(timezone.utc)
+        exception_str = (
+            "".join(
+                traceback.format_exception(None, exception, exception.__traceback__)
+            )
+            if exception
+            else None
+        )
+        # truncate exception from end
+        if exception_str:
+            exception_str = exception_str[-EXCEPTION_MAX_LENGTH:]
+        arguments_str = None
+        if args:
+            try:
+                arguments_str = str(args)[-ARGUMENTS_MAX_LENGTH:]
+            except Exception:  # pylint: disable=broad-except
+                arguments_str = "Unable to serialize arguments"
 
+        task_run = TaskRun(
+            started_at=started_at,
+            finished_at=finished_at,
+            duration=(finished_at - started_at).total_seconds(),
+            arguments=arguments_str,
+            exception=exception_str,
+        )
         _persist_task_status_task.apply_async(
-            args=(object_id, type(self._repository), UUID(task_id), persist_callback),
+            args=(
+                object_id,
+                type(self._repository),
+                task_run,
+                task_id,
+                self.name,
+                persist_callback,
+            ),
             routing_key=shard_name,
         ).forget()
 
@@ -121,30 +177,38 @@ class ProcessingTask(
     def on_failure(
         self, exc, task_id, args, kwargs, einfo
     ):  # pylint: disable=too-many-arguments, too-many-positional-arguments
-        self._dispatch_persist_task(task_id, ProcessingTask._persist_fail)
+        self._dispatch_persist_task(
+            task_id, ProcessingTask._persist_fail, args=args, exception=exc
+        )
         return super().on_failure(exc, task_id, args, kwargs, einfo)
 
     def on_retry(
         self, exc, task_id, args, kwargs, einfo
     ):  # pylint: disable=too-many-arguments, too-many-positional-arguments
         if settings.persist_retry_tasks:
-            self._dispatch_persist_task(task_id, ProcessingTask._persist_retry)
+            self._dispatch_persist_task(
+                task_id, ProcessingTask._persist_retry, args=args, exception=exc
+            )
         return super().on_retry(exc, task_id, args, kwargs, einfo)
 
     def on_success(self, retval, task_id, args, kwargs):
         if settings.persist_success_tasks:
+            # do not persist args on success
             self._dispatch_persist_task(task_id, ProcessingTask._persist_success)
         return super().on_success(retval, task_id, args, kwargs)
 
 
 @app.task()
+# pylint: disable-next=too-many-arguments, disable-next=too-many-positional-arguments
 def _persist_task_status_task(
     object_id: UUID,
     repository_type: type[BaseRepository],
-    task_id: UUID,
-    persist_callback: Callable[[UUID, TaskInfoPersister], None],
+    task_run: TaskRun,
+    task_id: str,
+    task_name: str,
+    persist_callback: Callable[[TaskRun, UUID, str, TaskInfoPersister], None],
 ):
     # Get pre-registered persister class (worker already initialized)
     persister_class = get_task_info_persister(repository_type)
     persister = persister_class(object_id)
-    persist_callback(task_id, persister)
+    persist_callback(task_run, UUID(task_id), task_name, persister)

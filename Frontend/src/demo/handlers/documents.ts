@@ -1,6 +1,7 @@
 import type {
     GetFilePreviewResponse,
     GetFileResponse,
+    TaskRecord,
 } from "@app/api/generated";
 
 import { parseDemoQuery } from "../query";
@@ -103,12 +104,6 @@ export const treeSpine = (
     ];
 };
 
-const DEMO_TASK_IDS = [
-    "10000000-0000-4000-8000-000000000001",
-    "10000000-0000-4000-8000-000000000002",
-    "10000000-0000-4000-8000-000000000003",
-];
-
 export const documentPreview = (
     document: DemoDocument,
     query: string,
@@ -129,15 +124,12 @@ export const documentPreview = (
     attachmentsTotalCount: document.attachments?.length ?? 0,
     fileExtension: document.extension,
     highlight: parseDemoQuery(query).highlights(document),
-    tasksSucceeded:
-        document.state === "processed" ? DEMO_TASK_IDS : [DEMO_TASK_IDS[0]],
-    tasksRetried: [],
-    tasksFailed: [],
     summary: document.summary,
     imageDescription: document.imageDescription,
     detectedLanguage: document.language,
     attachmentsSkipped: false,
     isSpam: false,
+    state: document.state,
 });
 
 const documentRaw = (document: DemoDocument): string =>
@@ -166,6 +158,39 @@ const documentRaw = (document: DemoDocument): string =>
         source: document.source,
     });
 
+const demoTasks = (document: DemoDocument): TaskRecord[] => {
+    const base = new Date(document.uploadedAt).getTime();
+    const run = (offsetSeconds: number, durationMs: number) => ({
+        startedAt: new Date(base + offsetSeconds * 1000),
+        finishedAt: new Date(base + offsetSeconds * 1000 + durationMs),
+        duration: durationMs,
+    });
+    const tasks: TaskRecord[] = [
+        {
+            taskId: "10000000-0000-4000-8000-000000000001",
+            taskName: "worker.index_file.index_file_task.index_file_task",
+            succeeded: [run(5, 3200)],
+        },
+    ];
+    if (document.summary) {
+        tasks.push({
+            taskId: "10000000-0000-4000-8000-000000000002",
+            taskName:
+                "worker.index_file.summarize_file_task.summarize_file_task",
+            succeeded: [run(12, 8400)],
+        });
+    }
+    if (document.imageDescription) {
+        tasks.push({
+            taskId: "10000000-0000-4000-8000-000000000003",
+            taskName:
+                "worker.index_file.image_description_task.image_description_task",
+            succeeded: [run(9, 5100)],
+        });
+    }
+    return tasks;
+};
+
 export const documentDetail = (
     document: DemoDocument,
     query: string,
@@ -192,4 +217,5 @@ export const documentDetail = (
             ? DEMO_BROWSER_PDF_FILE_ID
             : undefined,
     },
+    tasks: demoTasks(document),
 });

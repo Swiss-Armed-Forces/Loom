@@ -26,7 +26,6 @@ ON_DEMAND_TRANSLATION_CONFIDENCE = 100.0
 @app.task(base=FileIndexingTask)
 def translate_file_task(lang: str, file_id: UUID):
     logger.info("Translating file with id '%s'", file_id)
-
     file = get_file_repository().get_by_id(file_id)
     if file is None:
         raise FileNotFoundException("No file found")

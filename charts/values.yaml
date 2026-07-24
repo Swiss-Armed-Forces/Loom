@@ -227,6 +227,9 @@ pipeline:
   skip_image_description_while_indexing: null
   skip_embedding_while_indexing: null
   skip_auto_tag_file_while_indexing: null
+  persist_success_tasks: null
+  persist_retry_tasks: null
+  min_language_detection_confidence: null
   auto_tag_file_similarity_threshold: null
   throttle_max_lazybytes__bytes: null
   max_recursion_depth: null

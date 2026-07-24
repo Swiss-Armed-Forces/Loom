@@ -1,5 +1,5 @@
 import { ContentCut, LinkOff, Translate, Whatshot } from "@mui/icons-material";
-import { CardHeader, Box, IconButton, Tooltip } from "@mui/material";
+import { CardHeader, Box, Chip, IconButton, Tooltip } from "@mui/material";
 import { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -16,11 +16,18 @@ import { FileAvatar } from "./FileAvatar";
 import styles from "./FileCardHeader.module.css";
 import { NavigateToParent } from "./NavigateToParent";
 
+const stateChipColor: Record<string, "warning" | "error"> = {
+    started: "warning",
+    reindexing: "warning",
+    failed: "error",
+};
+
 interface FileCardHeaderProps {
     filePreview: GetFilePreviewResponse;
     additionalActions?: ReactNode[];
     hideDetail?: boolean;
     renderedFile?: RenderedFile;
+    onStateChipClick?: () => void;
 }
 
 export const FileCardHeader = ({
@@ -28,6 +35,7 @@ export const FileCardHeader = ({
     additionalActions,
     hideDetail,
     renderedFile,
+    onStateChipClick,
 }: FileCardHeaderProps) => {
     const dispatch = useAppDispatch();
     const { t } = useTranslation();
@@ -158,6 +166,29 @@ export const FileCardHeader = ({
                                 <Translate fontSize="small" />
                             </IconButton>
                         </Tooltip>
+                    )}
+                    {filePreview.state !== "processed" && (
+                        <Chip
+                            size="small"
+                            label={filePreview.state}
+                            color={
+                                stateChipColor[filePreview.state] ?? "default"
+                            }
+                            variant="outlined"
+                            onClick={
+                                onStateChipClick
+                                    ? (e) => {
+                                          e.stopPropagation();
+                                          onStateChipClick();
+                                      }
+                                    : undefined
+                            }
+                            className={
+                                onStateChipClick
+                                    ? styles.clickableChip
+                                    : undefined
+                            }
+                        />
                     )}
                 </Box>
             }
