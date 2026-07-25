@@ -164,7 +164,10 @@ export const FileActions = ({
                 </IconButton>
                 <Menu anchorEl={anchorEl} open={open} onClose={handleMenuClose}>
                     {allActions.map((button) => (
-                        <MenuItem key={(button as React.ReactElement).key}>
+                        <MenuItem
+                            key={(button as React.ReactElement).key}
+                            onClick={handleMenuClose}
+                        >
                             {button}
                         </MenuItem>
                     ))}

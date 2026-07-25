@@ -1,4 +1,4 @@
-# Offline Frontend Demo
+# Interactive Frontend Demo
 
 Loom includes a static, backend-free demo build for exploring the frontend with sample
 documents. API and WebSocket requests are simulated in the browser; the demo does not

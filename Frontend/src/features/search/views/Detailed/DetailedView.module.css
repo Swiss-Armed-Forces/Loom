@@ -11,6 +11,18 @@
     padding: 1rem;
 }
 
+@media (max-width: 600px) {
+    .cardContainer {
+        padding: 0.5rem;
+        gap: 0.5rem;
+    }
+
+    .skeletonLoadingContainer {
+        width: calc(100% - 1rem);
+        padding: 0.5rem;
+    }
+}
+
 .skeletonLoadingAvatar {
     display: flex;
     flex-direction: row;

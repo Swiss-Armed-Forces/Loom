@@ -1,34 +1,16 @@
 import { createRequire } from "node:module";
-import { copyFileSync, readFileSync } from "node:fs";
+import { copyFileSync, cpSync, readFileSync } from "node:fs";
 import path from "node:path";
 
 import react from "@vitejs/plugin-react";
 import { type ConfigEnv, loadEnv, type Plugin } from "vite";
-import { normalizePath } from "vite";
-import { viteStaticCopy } from "vite-plugin-static-copy";
 import svgr from "vite-plugin-svgr";
 import { defineConfig } from "vitest/config";
 
-/**
- * react-pdf related paths
- * see: https://github.com/wojtekmaj/react-pdf/blob/main/test/vite.config.ts
- */
 const require = createRequire(import.meta.url);
-const cMapsDir = normalizePath(
-    path.join(
-        path.dirname(require.resolve("pdfjs-dist/package.json")),
-        "cmaps",
-    ),
-);
-const standardFontsDir = normalizePath(
-    path.join(
-        path.dirname(require.resolve("pdfjs-dist/package.json")),
-        "standard_fonts",
-    ),
-);
-const wasmDir = normalizePath(
-    path.join(path.dirname(require.resolve("pdfjs-dist/package.json")), "wasm"),
-);
+
+const pdfjsDir = path.dirname(require.resolve("pdfjs-dist/package.json"));
+const pdfjsAssetDirs = ["cmaps", "standard_fonts"] as const;
 
 // https://vitejs.dev/config/
 
@@ -44,17 +26,30 @@ export default ({ mode }: ConfigEnv) => {
         plugins: [
             react(),
             svgr(),
-            viteStaticCopy({
-                targets: [
-                    { src: cMapsDir, dest: "" },
-                    { src: standardFontsDir, dest: "" },
-                    { src: wasmDir, dest: "" },
-                ],
-            }),
             ...(demo
                 ? [
                       {
                           name: "loom-demo-worker",
+                          configureServer(server) {
+                              const workerSrc = readFileSync(
+                                  path.join(
+                                      path.dirname(
+                                          require.resolve("msw/package.json"),
+                                      ),
+                                      "lib/mockServiceWorker.js",
+                                  ),
+                              );
+                              server.middlewares.use(
+                                  "/mockServiceWorker.js",
+                                  (_req, res) => {
+                                      res.setHeader(
+                                          "Content-Type",
+                                          "application/javascript",
+                                      );
+                                      res.end(workerSrc);
+                                  },
+                              );
+                          },
                           generateBundle() {
                               this.emitFile({
                                   type: "asset",
@@ -79,6 +74,37 @@ export default ({ mode }: ConfigEnv) => {
                       } satisfies Plugin,
                   ]
                 : []),
+            {
+                name: "loom-pdfjs-assets",
+                configureServer(server) {
+                    server.middlewares.use((req, res, next) => {
+                        const url = req.url ?? "";
+                        for (const dir of pdfjsAssetDirs) {
+                            if (url.startsWith(`/${dir}/`)) {
+                                try {
+                                    res.end(
+                                        readFileSync(path.join(pdfjsDir, url)),
+                                    );
+                                    return;
+                                } catch {
+                                    break;
+                                }
+                            }
+                        }
+                        next();
+                    });
+                },
+                writeBundle(options) {
+                    if (!options.dir) return;
+                    for (const dir of pdfjsAssetDirs) {
+                        cpSync(
+                            path.join(pdfjsDir, dir),
+                            path.join(options.dir, dir),
+                            { recursive: true },
+                        );
+                    }
+                },
+            },
             {
                 name: "loom-demo-entry",
                 transformIndexHtml: {

@@ -33,7 +33,7 @@ const streamAnswer = (contextId: string, question: string): void => {
     const source = relevant[0] ?? fallback[0] ?? getDocuments()[0];
     const answer = source
         ? `Based on ${source.name}, ${source.summary}`
-        : "The offline demo has no matching document for that question.";
+        : "The interactive demo has no matching document for that question.";
     const tokens = answer.match(/\S+\s*/g) ?? [answer];
     tokens.forEach((token, index) => {
         const tokenId = crypto.randomUUID();

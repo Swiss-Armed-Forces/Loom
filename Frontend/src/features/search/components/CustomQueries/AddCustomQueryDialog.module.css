@@ -12,3 +12,14 @@ div.customQueryIconSelect {
 div.customQueryNameInput {
     width: 100%;
 }
+
+@media (max-width: 600px) {
+    div.nameWithIcon {
+        flex-direction: column;
+    }
+
+    div.customQueryIconSelect {
+        margin-right: 0;
+        margin-bottom: 1rem;
+    }
+}

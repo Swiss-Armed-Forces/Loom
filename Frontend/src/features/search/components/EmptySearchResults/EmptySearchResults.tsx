@@ -322,8 +322,11 @@ export const EmptySearchResults = () => {
                         <Box
                             sx={{
                                 display: "grid",
-                                gridTemplateColumns: "1fr 1fr",
-                                gap: 4,
+                                gridTemplateColumns: {
+                                    xs: "1fr",
+                                    sm: "1fr 1fr",
+                                },
+                                gap: { xs: 2, sm: 4 },
                                 alignItems: "start",
                             }}
                         >

@@ -3,14 +3,16 @@ div.toolbar {
 
     display: flex;
     flex-direction: row;
-    gap: 1rem;
+    gap: 0.25rem;
+    padding-left: 0.25rem;
+    padding-right: 0.25rem;
 }
 
 .headerBranding {
     display: flex;
     flex-direction: row;
     align-items: center;
-    margin: 0.25rem;
+    margin: 0;
     gap: 0.25rem;
 }
 
@@ -29,13 +31,11 @@ header.appHeader {
     background-color: var(--mui-palette-secondary-main);
 }
 
-@media (max-width: 900px) {
-    .headerButtonLabel {
-        display: none;
-    }
+.headerButtonLabel {
+    display: none;
+}
 
-    .headerButtons :global(.MuiButton-startIcon) {
-        margin-right: 0;
-        margin-left: 0;
-    }
+.headerButtons :global(.MuiButton-startIcon) {
+    margin-right: 0;
+    margin-left: 0;
 }

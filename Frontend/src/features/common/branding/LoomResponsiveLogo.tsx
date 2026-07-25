@@ -16,7 +16,7 @@ export const LoomResponsiveLogo = () => {
                 />
             ) : (
                 <LoomLogoFull
-                    style={{ maxWidth: "200px", maxHeight: "80px" }}
+                    style={{ maxWidth: "100px", maxHeight: "40px" }}
                 />
             )}
         </div>

@@ -10,6 +10,7 @@ import {
     YoutubeSearchedForOutlined,
 } from "@mui/icons-material";
 import {
+    Drawer,
     IconButton,
     InputAdornment,
     InputBase,
@@ -18,6 +19,7 @@ import {
     ListItemIcon,
     ListItemText,
     Typography,
+    useMediaQuery,
 } from "@mui/material";
 import {
     ReactNode,
@@ -110,6 +112,7 @@ export const LeftSidebar = () => {
     const preferences = useAppSelector(selectAutoActionsPreferences);
     const highlightedQueryId = useAppSelector(selectHighlightedQueryId);
 
+    const isMobile = useMediaQuery("(max-width:600px)");
     const [width, setWidth] = useState(loadWidth);
     const [isDragging, setIsDragging] = useState(false);
     const [filterText, setFilterText] = useState("");
@@ -312,69 +315,93 @@ export const LeftSidebar = () => {
     const showFilter =
         activePanel !== null && FILTERABLE_PANELS.has(activePanel);
 
+    const panelContent =
+        activePanel !== null ? (
+            <>
+                <div className={styles.header}>
+                    <Typography className={styles.headerTitle}>
+                        {t(PANEL_TITLES[activePanel])}
+                    </Typography>
+                    <IconButton
+                        size="small"
+                        onClick={() => dispatch(setLeftSidebarPanel(null))}
+                    >
+                        <Close fontSize="small" />
+                    </IconButton>
+                </div>
+                {showFilter && (
+                    <div className={styles.filterBar}>
+                        <InputBase
+                            className={styles.filterInput}
+                            value={filterText}
+                            onChange={(e) => setFilterText(e.target.value)}
+                            placeholder="Filter..."
+                            inputProps={{ "aria-label": "filter" }}
+                            startAdornment={
+                                <InputAdornment position="start">
+                                    <Search
+                                        fontSize="small"
+                                        className={styles.filterIcon}
+                                    />
+                                </InputAdornment>
+                            }
+                            endAdornment={
+                                filterText ? (
+                                    <InputAdornment position="end">
+                                        <IconButton
+                                            size="small"
+                                            onClick={() => setFilterText("")}
+                                            edge="end"
+                                        >
+                                            <Close
+                                                fontSize="small"
+                                                className={styles.filterIcon}
+                                            />
+                                        </IconButton>
+                                    </InputAdornment>
+                                ) : null
+                            }
+                        />
+                    </div>
+                )}
+                <div className={styles.content}>{renderPanelContent()}</div>
+            </>
+        ) : null;
+
+    if (isMobile) {
+        return (
+            <Drawer
+                open={activePanel !== null}
+                onClose={() => dispatch(setLeftSidebarPanel(null))}
+                variant="temporary"
+                anchor="left"
+                slotProps={{
+                    paper: {
+                        sx: {
+                            width: "85vw",
+                            maxWidth: "360px",
+                            display: "flex",
+                            flexDirection: "column",
+                        },
+                    },
+                }}
+            >
+                {panelContent}
+            </Drawer>
+        );
+    }
+
     return (
         <div
             className={`${styles.leftSidebar} ${isDragging ? styles.dragging : ""}`}
             style={{ width: sidebarWidth }}
         >
+            {panelContent}
             {activePanel !== null && (
-                <>
-                    <div className={styles.header}>
-                        <Typography className={styles.headerTitle}>
-                            {t(PANEL_TITLES[activePanel])}
-                        </Typography>
-                        <IconButton
-                            size="small"
-                            onClick={() => dispatch(setLeftSidebarPanel(null))}
-                        >
-                            <Close fontSize="small" />
-                        </IconButton>
-                    </div>
-                    {showFilter && (
-                        <div className={styles.filterBar}>
-                            <InputBase
-                                className={styles.filterInput}
-                                value={filterText}
-                                onChange={(e) => setFilterText(e.target.value)}
-                                placeholder="Filter..."
-                                inputProps={{ "aria-label": "filter" }}
-                                startAdornment={
-                                    <InputAdornment position="start">
-                                        <Search
-                                            fontSize="small"
-                                            className={styles.filterIcon}
-                                        />
-                                    </InputAdornment>
-                                }
-                                endAdornment={
-                                    filterText ? (
-                                        <InputAdornment position="end">
-                                            <IconButton
-                                                size="small"
-                                                onClick={() =>
-                                                    setFilterText("")
-                                                }
-                                                edge="end"
-                                            >
-                                                <Close
-                                                    fontSize="small"
-                                                    className={
-                                                        styles.filterIcon
-                                                    }
-                                                />
-                                            </IconButton>
-                                        </InputAdornment>
-                                    ) : null
-                                }
-                            />
-                        </div>
-                    )}
-                    <div className={styles.content}>{renderPanelContent()}</div>
-                    <div
-                        className={`${styles.dragHandle} ${isDragging ? styles.dragging : ""}`}
-                        onMouseDown={handleMouseDown}
-                    />
-                </>
+                <div
+                    className={`${styles.dragHandle} ${isDragging ? styles.dragging : ""}`}
+                    onMouseDown={handleMouseDown}
+                />
             )}
         </div>
     );

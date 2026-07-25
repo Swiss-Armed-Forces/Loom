@@ -10,6 +10,7 @@ import {
     Paper,
     Stack,
     Typography,
+    useMediaQuery,
 } from "@mui/material";
 import Ajv, { JSONSchemaType } from "ajv";
 import { useEffect, useState } from "react";
@@ -59,6 +60,7 @@ export const AboutDialog = ({ onClose, isTop }: DialogProps) => {
     const [helmChartMetadata, setHelmChartMetadata] =
         useState<HelmChartMetadata | null>(null);
     const { t } = useTranslation();
+    const isMobile = useMediaQuery("(max-width:600px)");
 
     useEffect(() => {
         const fetchLicense = async () => {
@@ -77,7 +79,9 @@ export const AboutDialog = ({ onClose, isTop }: DialogProps) => {
     return (
         <Dialog
             maxWidth="md"
+            fullWidth
             open
+            fullScreen={isMobile}
             disableEnforceFocus={!isTop}
             onClose={onClose}
         >
@@ -166,7 +170,7 @@ export const AboutDialog = ({ onClose, isTop }: DialogProps) => {
                                 p: 2,
                                 maxHeight: 200,
                                 overflow: "auto",
-                                bgcolor: "grey.50",
+                                bgcolor: "action.hover",
                             }}
                         >
                             <Typography
@@ -194,7 +198,7 @@ export const AboutDialog = ({ onClose, isTop }: DialogProps) => {
                         >
                             Downloads
                         </Typography>
-                        <Stack direction="row" spacing={2}>
+                        <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
                             <Button
                                 variant="outlined"
                                 size="small"
@@ -202,7 +206,7 @@ export const AboutDialog = ({ onClose, isTop }: DialogProps) => {
                                 download
                                 startIcon={<Download />}
                             >
-                                {t("about.license")}
+                                License
                             </Button>
                             <Button
                                 variant="outlined"
@@ -211,9 +215,45 @@ export const AboutDialog = ({ onClose, isTop }: DialogProps) => {
                                 download
                                 startIcon={<Download />}
                             >
-                                {t("about.thirdParty")}
+                                Third-party
                             </Button>
-                        </Stack>
+                            <Button
+                                variant="outlined"
+                                size="small"
+                                href={`${basePath}${t("about.contributing")}`}
+                                download
+                                startIcon={<Download />}
+                            >
+                                Contributing
+                            </Button>
+                            <Button
+                                variant="outlined"
+                                size="small"
+                                href={`${basePath}${t("about.codeOfConduct")}`}
+                                download
+                                startIcon={<Download />}
+                            >
+                                Code of Conduct
+                            </Button>
+                            <Button
+                                variant="outlined"
+                                size="small"
+                                href={`${basePath}demo-link-qr.gif`}
+                                download
+                                startIcon={<Download />}
+                            >
+                                QR Code (GIF)
+                            </Button>
+                            <Button
+                                variant="outlined"
+                                size="small"
+                                href={`${basePath}demo-link-qr.svg`}
+                                download
+                                startIcon={<Download />}
+                            >
+                                QR Code (SVG)
+                            </Button>
+                        </Box>
                     </Box>
                 </Stack>
             </DialogContent>

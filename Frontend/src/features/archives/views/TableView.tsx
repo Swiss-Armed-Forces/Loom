@@ -1,4 +1,4 @@
-import { Skeleton, useMediaQuery } from "@mui/material";
+import { Box, Skeleton, Typography, useMediaQuery } from "@mui/material";
 import {
     Table,
     TableBody,
@@ -13,6 +13,11 @@ import { useAppSelector } from "@app/hooks";
 import { selectArchives } from "@app/slices/archiveSlice";
 import { selectIsLoading } from "@app/slices/commonSlice";
 import { ArchiveInfo } from "@features/archives/components";
+import { ArchiveActions } from "@features/archives/components/ArchiveInfo/ArchiveActions";
+import {
+    formatFileSize,
+    getFormattedDateTime,
+} from "@features/common/utils/helpers";
 
 import styles from "./TableView.module.css";
 
@@ -21,6 +26,7 @@ export const TableView = () => {
     const isLoading = useAppSelector(selectIsLoading);
     const { t } = useTranslation();
     const matchMedia = useMediaQuery("(max-width: 800px)");
+    const isSmallScreen = useMediaQuery("(max-width: 600px)");
 
     if (isLoading) {
         return (
@@ -47,6 +53,100 @@ export const TableView = () => {
                     />
                 </div>
             </div>
+        );
+    }
+
+    if (isSmallScreen) {
+        return (
+            <Box
+                sx={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 1.5,
+                    p: 1,
+                }}
+            >
+                {archives.map((archive) => (
+                    <Box
+                        key={archive.fileId}
+                        sx={{
+                            border: 1,
+                            borderColor: "divider",
+                            borderRadius: 1,
+                            p: 1.5,
+                        }}
+                    >
+                        <Typography
+                            variant="subtitle2"
+                            sx={{ fontWeight: "bold" }}
+                        >
+                            {archive.meta.shortName}
+                        </Typography>
+                        {archive.sha256 != null && (
+                            <Typography
+                                variant="caption"
+                                component="div"
+                                sx={{
+                                    fontFamily: "monospace",
+                                    wordBreak: "break-all",
+                                }}
+                            >
+                                <b>{t("tableView.header.checksumZip")}:</b>{" "}
+                                {archive.sha256}
+                            </Typography>
+                        )}
+                        {archive.sha256Encrypted != null && (
+                            <Typography
+                                variant="caption"
+                                component="div"
+                                sx={{
+                                    fontFamily: "monospace",
+                                    wordBreak: "break-all",
+                                }}
+                            >
+                                <b>
+                                    {t("tableView.header.checksumEncrypted")}:
+                                </b>{" "}
+                                {archive.sha256Encrypted}
+                            </Typography>
+                        )}
+                        <Box
+                            sx={{
+                                display: "flex",
+                                gap: 2,
+                                mt: 1,
+                                flexWrap: "wrap",
+                            }}
+                        >
+                            <Typography variant="body2">
+                                <b>{t("tableView.header.state")}:</b>{" "}
+                                {archive.content.state}
+                            </Typography>
+                            <Typography variant="body2">
+                                <b>{t("tableView.header.size")}:</b>{" "}
+                                {formatFileSize(archive.content.size)}
+                            </Typography>
+                        </Box>
+                        <Typography variant="body2" sx={{ mt: 0.5 }}>
+                            <b>{t("tableView.header.uploaded_datetime")}:</b>{" "}
+                            {getFormattedDateTime(archive.meta.updatedDatetime)}
+                        </Typography>
+                        <Typography variant="body2" sx={{ mt: 0.5 }}>
+                            <b>{t("tableView.header.query")}:</b>{" "}
+                            {archive.meta.query.searchString}
+                        </Typography>
+                        <Box
+                            sx={{
+                                mt: 1,
+                                display: "flex",
+                                justifyContent: "flex-end",
+                            }}
+                        >
+                            <ArchiveActions archive={archive} />
+                        </Box>
+                    </Box>
+                ))}
+            </Box>
         );
     }
 

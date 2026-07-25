@@ -1,12 +1,31 @@
 .globalSearchBox {
     display: grid;
-    grid-template-columns: 4fr 1fr;
+    grid-template-columns: 1fr;
     gap: 1rem;
     width: 100%;
+    align-items: center;
+}
+
+.globalSearchBox.sortVisible {
+    grid-template-columns: 4fr 1fr;
 }
 
 @media (max-width: 800px) {
-    .globalSearchBox {
+    .globalSearchBox.sortVisible {
         grid-template-columns: 4fr 2fr;
     }
+}
+
+@media (max-width: 600px) {
+    .globalSearchBox.sortVisible {
+        grid-template-columns: 1fr;
+    }
+}
+
+.sortInputWrapper {
+    display: none;
+}
+
+.sortInputWrapper.visible {
+    display: block;
 }

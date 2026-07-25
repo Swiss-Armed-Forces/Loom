@@ -13,6 +13,13 @@
     white-space: pre-line;
 }
 
+@media (max-width: 600px) {
+    .uploadFileDropzoneText {
+        margin-left: 1rem;
+        margin-right: 1rem;
+    }
+}
+
 .uploadFileDropzoneIcon {
     display: flex;
     flex-grow: 2;

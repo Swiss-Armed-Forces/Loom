@@ -3,12 +3,7 @@ import {
     buildWebSocketApiBasePath,
 } from "@app/api/apiConfiguration";
 
-import {
-    DEMO_THUMBNAIL_FILE_ID,
-    getArchives,
-    getDocument,
-    getRenderedAssetUrl,
-} from "./repository";
+import { DEMO_THUMBNAIL_FILE_ID, getArchives, getDocument } from "./repository";
 
 const appUrl = new URL(import.meta.env.BASE_URL, window.location.origin);
 const objectUrls = new Map<string, string>();
@@ -78,18 +73,13 @@ export const webApiGetFileThumbnail = (
 export const webApiGetFileRendered = (
     fileId: string,
     renderedId: string,
-): string => {
-    const document = getDocument(fileId);
-    return document
-        ? (getRenderedAssetUrl(document, renderedId) ?? "about:blank")
-        : "about:blank";
-};
+): string => `${apiUrl}/v1/files/${fileId}/rendered/${renderedId}`;
 export const webApiGetArchive = (fileId: string): string => {
     const archive = getArchives().find((item) => item.id === fileId);
     return archive
         ? objectUrl(
               `archive-${fileId}`,
-              `Offline Loom archive: ${archive.name}\nQuery: ${archive.query}\n`,
+              `Interactive Loom archive: ${archive.name}\nQuery: ${archive.query}\n`,
               "application/zip",
           )
         : "about:blank";

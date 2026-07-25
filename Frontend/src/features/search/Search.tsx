@@ -1,3 +1,4 @@
+import { useMediaQuery } from "@mui/material";
 import { t } from "i18next";
 import { useEffect, useRef } from "react";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
@@ -51,6 +52,7 @@ export const Search = () => {
     const navigate = useNavigate();
     const location = useLocation();
     const searchQuery = useAppSelector(selectQuery);
+    const isMobile = useMediaQuery("(max-width:600px)");
     const webSocketPubSubMessage = useAppSelector(selectWebSocketPubSubMessage);
     const files = useAppSelector(selectFiles);
     const activeTabFileId = useAppSelector(selectActiveTabFileId);
@@ -278,12 +280,13 @@ export const Search = () => {
 
     return (
         <div className={styles.searchWrapper}>
-            <ActivityBar />
+            {!isMobile && <ActivityBar />}
             <LeftSidebar />
             <div className={styles.mainContent}>
                 <CenterTabs />
             </div>
             <RightSidebar />
+            {isMobile && <ActivityBar />}
         </div>
     );
 };

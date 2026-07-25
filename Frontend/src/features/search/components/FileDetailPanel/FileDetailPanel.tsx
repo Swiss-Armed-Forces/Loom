@@ -1,4 +1,21 @@
-import { Box, Skeleton, Tab, Tabs } from "@mui/material";
+import {
+    ArticleOutlined,
+    AssignmentOutlined,
+    CodeOutlined,
+    FormatColorTextOutlined,
+    ImageOutlined,
+    ShortTextOutlined,
+    TranslateOutlined,
+    VisibilityOutlined,
+} from "@mui/icons-material";
+import {
+    Box,
+    Skeleton,
+    Tab,
+    Tabs,
+    useMediaQuery,
+    useTheme,
+} from "@mui/material";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import AceEditorImport from "react-ace";
 import { useTranslation } from "react-i18next";
@@ -14,12 +31,17 @@ import {
     scheduleSingleImageDescription,
     updateFile,
 } from "@app/api";
+import {
+    subscribeChannel,
+    unsubscribeChannel,
+} from "@app/channelSubscriptions";
 import { useAppDispatch, useAppSelector } from "@app/hooks";
 import { setLastFileDetailTab } from "@app/slices/commonSlice";
 import {
     fetchPreview,
     selectAutoActionsPreferences,
     selectFileById,
+    selectQuery,
     selectWebSocketPubSubMessage,
     setFilePreview,
     setFileTabDetailTab,
@@ -49,6 +71,8 @@ export const FileDetailPanel = ({
 }: FileDetailPanelProps) => {
     const dispatch = useAppDispatch();
     const { t } = useTranslation();
+    const theme = useTheme();
+    const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
     const editorRef = useRef<InstanceType<typeof AceEditorImport>>(null);
     const hasAutoActionsRun = useRef<boolean>(false);
     const lastFetchedFileId = useRef<string>("");
@@ -79,6 +103,17 @@ export const FileDetailPanel = ({
                 );
         }
     }, [preview, query]);
+
+    // Subscribe to WS updates for this file while the panel is mounted.
+    // All panels are always mounted (just hidden when inactive), so this covers
+    // background tabs that are restored from localStorage on page reload but
+    // were not re-subscribed by openFileTabThunk (which only runs for the
+    // active tab via the URL→Redux hash effect). The ref-counted channel
+    // subscription system handles the overlap with openFileTabThunk safely.
+    useEffect(() => {
+        subscribeChannel(fileId, dispatch);
+        return () => unsubscribeChannel(fileId, dispatch);
+    }, [fileId, dispatch]);
 
     // Initial load
     useEffect(() => {
@@ -145,16 +180,46 @@ export const FileDetailPanel = ({
         };
     }, [query, preview, fetchFileContent]);
 
+    // Stable refs so the WS effect can always read the latest values without
+    // listing them as deps. Putting fetchFileContent or query in deps would
+    // cause an infinite loop: fetchPreview stores a new query object reference
+    // into the Redux store, which changes `query`, which re-triggers the WS
+    // effect with the same stale message — repeating indefinitely.
+    const fetchFileContentRef = useRef(fetchFileContent);
+    const queryRef = useRef(query);
+    useEffect(() => {
+        fetchFileContentRef.current = fetchFileContent;
+        queryRef.current = query;
+    });
+
     // WebSocket file updates
     useEffect(() => {
         if (webSocketPubSubMessage?.message.type === "fileUpdate") {
             const message = webSocketPubSubMessage.message as MessageFileUpdate;
             if (message.fileId === fileId) {
-                dispatch(fetchPreview({ fileId, query: query ?? undefined }));
-                fetchFileContent();
+                dispatch(
+                    fetchPreview({
+                        fileId,
+                        query: queryRef.current ?? undefined,
+                    }),
+                );
+                fetchFileContentRef.current();
             }
         }
-    }, [webSocketPubSubMessage, fileId, query, fetchFileContent]); // eslint-disable-line react-hooks/exhaustive-deps
+    }, [webSocketPubSubMessage, fileId, dispatch]);
+
+    // Re-fetch when the global search query string changes so highlights stay
+    // in sync. Uses the query string (not the full query object) to ignore
+    // keep-alive ID renewals that don't change the actual search.
+    const searchQueryString = useAppSelector(
+        (state) => selectQuery(state)?.query ?? null,
+    );
+    const prevSearchQueryStringRef = useRef(searchQueryString);
+    useEffect(() => {
+        if (searchQueryString === prevSearchQueryStringRef.current) return;
+        prevSearchQueryStringRef.current = searchQueryString;
+        dispatch(fetchPreview({ fileId }));
+    }, [searchQueryString, fileId, dispatch]);
 
     const setTab = (value: FileDetailTab) => {
         dispatch(setFileTabDetailTab({ fileId, detailTab: value }));
@@ -222,52 +287,75 @@ export const FileDetailPanel = ({
             <Box
                 sx={{ borderBottom: 1, borderColor: "divider", flexShrink: 0 }}
             >
-                <Tabs value={detailTab} onChange={(_, v) => setTab(v)}>
-                    <Tab
-                        label="Rendered"
-                        value={FileDetailTab.Rendered}
-                        data-tab-value={FileDetailTab.Rendered}
-                    />
-                    <Tab
-                        label="Content"
-                        value={FileDetailTab.Content}
-                        data-tab-value={FileDetailTab.Content}
-                        disabled={!properties.hasContent}
-                    />
-                    <Tab
-                        label="Translations"
-                        value={FileDetailTab.Translations}
-                        data-tab-value={FileDetailTab.Translations}
-                        disabled={!properties.hasTranslations}
-                    />
-                    <Tab
-                        label="Highlights"
-                        value={FileDetailTab.Highlights}
-                        data-tab-value={FileDetailTab.Highlights}
-                        disabled={!properties.hasHighlights}
-                    />
-                    <Tab
-                        label="Summary"
-                        value={FileDetailTab.Summary}
-                        data-tab-value={FileDetailTab.Summary}
-                        disabled={!properties.hasSummary}
-                    />
-                    <Tab
-                        label="Image Description"
-                        value={FileDetailTab.ImageDescription}
-                        data-tab-value={FileDetailTab.ImageDescription}
-                        disabled={!properties.hasImageDescription}
-                    />
-                    <Tab
-                        label="Raw"
-                        value={FileDetailTab.RAW}
-                        data-tab-value={FileDetailTab.RAW}
-                    />
-                    <Tab
-                        label="Tasks"
-                        value={FileDetailTab.Tasks}
-                        data-tab-value={FileDetailTab.Tasks}
-                    />
+                <Tabs
+                    value={detailTab}
+                    onChange={(_, v) => setTab(v)}
+                    variant="scrollable"
+                    scrollButtons="auto"
+                >
+                    {[
+                        {
+                            label: "Rendered",
+                            value: FileDetailTab.Rendered,
+                            icon: <VisibilityOutlined fontSize="small" />,
+                        },
+                        {
+                            label: "Content",
+                            value: FileDetailTab.Content,
+                            icon: <ArticleOutlined fontSize="small" />,
+                            disabled: !properties.hasContent,
+                        },
+                        {
+                            label: "Translations",
+                            value: FileDetailTab.Translations,
+                            icon: <TranslateOutlined fontSize="small" />,
+                            disabled: !properties.hasTranslations,
+                        },
+                        {
+                            label: "Highlights",
+                            value: FileDetailTab.Highlights,
+                            icon: <FormatColorTextOutlined fontSize="small" />,
+                            disabled: !properties.hasHighlights,
+                        },
+                        {
+                            label: "Summary",
+                            value: FileDetailTab.Summary,
+                            icon: <ShortTextOutlined fontSize="small" />,
+                            disabled: !properties.hasSummary,
+                        },
+                        {
+                            label: "Image",
+                            value: FileDetailTab.ImageDescription,
+                            icon: <ImageOutlined fontSize="small" />,
+                            disabled: !properties.hasImageDescription,
+                        },
+                        {
+                            label: "Raw",
+                            value: FileDetailTab.RAW,
+                            icon: <CodeOutlined fontSize="small" />,
+                        },
+                        {
+                            label: "Tasks",
+                            value: FileDetailTab.Tasks,
+                            icon: <AssignmentOutlined fontSize="small" />,
+                        },
+                    ].map(({ label, value, icon, disabled }) => (
+                        <Tab
+                            key={value}
+                            icon={icon}
+                            iconPosition="start"
+                            label={isMobile ? undefined : label}
+                            title={isMobile ? label : undefined}
+                            value={value}
+                            data-tab-value={value}
+                            disabled={disabled}
+                            sx={
+                                isMobile
+                                    ? { minWidth: "auto", px: 1.5 }
+                                    : undefined
+                            }
+                        />
+                    ))}
                 </Tabs>
             </Box>
 

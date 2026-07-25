@@ -1,5 +1,12 @@
 import { Close, Search } from "@mui/icons-material";
-import { Box, Divider, IconButton, Tab, Tabs } from "@mui/material";
+import {
+    Box,
+    Divider,
+    IconButton,
+    Tab,
+    Tabs,
+    useMediaQuery,
+} from "@mui/material";
 import { useRef, useState } from "react";
 
 import { useAppDispatch, useAppSelector } from "@app/hooks";
@@ -30,6 +37,7 @@ export const CenterTabs = () => {
     const totalFiles = useAppSelector(selectTotalFiles);
     const loadedFiles = useAppSelector(selectLoadedFiles);
 
+    const isMobile = useMediaQuery("(max-width:600px)");
     const scrollRef = useRef<HTMLDivElement>(null);
     const [hasScrollOffset, setHasScrollOffset] = useState(false);
 
@@ -110,7 +118,11 @@ export const CenterTabs = () => {
                                                 </span>
                                                 <IconButton
                                                     component="span"
-                                                    size="small"
+                                                    size={
+                                                        isMobile
+                                                            ? "medium"
+                                                            : "small"
+                                                    }
                                                     onClick={(e) => {
                                                         e.stopPropagation();
                                                         dispatch(
@@ -129,7 +141,11 @@ export const CenterTabs = () => {
                                                     }}
                                                 >
                                                     <Close
-                                                        sx={{ fontSize: 12 }}
+                                                        sx={{
+                                                            fontSize: isMobile
+                                                                ? 16
+                                                                : 12,
+                                                        }}
                                                     />
                                                 </IconButton>
                                             </span>

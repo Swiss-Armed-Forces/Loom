@@ -86,6 +86,7 @@ const paginateTree = <Node extends { full_path: string }>(
 
 const sortValue = (document: DemoDocument, field: string): string | number => {
     if (field === "size") return document.size;
+    if (field === "score") return 1.0;
     return valuesForField(document, field)[0] ?? document.uploadedAt;
 };
 
@@ -265,8 +266,7 @@ const filesListHandler = http.get(/\/api\/v1\/files$/, ({ request }) => {
     const result = safeSearch(queryFromUrl(url));
     if (!result.ok) return result.response;
     const sortDirection = url.searchParams.get("sort_direction") ?? "desc";
-    const sortByField =
-        url.searchParams.get("sort_by_field") ?? "uploaded_datetime";
+    const sortByField = url.searchParams.get("sort_by_field") ?? "score";
     const requestedSize = Number(url.searchParams.get("page_size") ?? 25);
     if (!Number.isInteger(requestedSize) || requestedSize < 1)
         return error("page_size must be a positive integer", 422);

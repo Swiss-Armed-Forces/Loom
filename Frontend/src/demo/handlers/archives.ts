@@ -87,9 +87,12 @@ const downloadHandler = http.get(
     ({ request }) => {
         const archive = getArchive(archiveId(request));
         return archive
-            ? new HttpResponse(`Offline Loom demo archive: ${archive.name}`, {
-                  headers: { "Content-Type": "application/zip" },
-              })
+            ? new HttpResponse(
+                  `Interactive Loom demo archive: ${archive.name}`,
+                  {
+                      headers: { "Content-Type": "application/zip" },
+                  },
+              )
             : error("Archive not found", 404);
     },
 );

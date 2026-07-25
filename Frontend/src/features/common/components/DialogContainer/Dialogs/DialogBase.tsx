@@ -6,6 +6,7 @@ import {
     DialogTitle,
     IconButton,
     LinearProgress,
+    useMediaQuery,
 } from "@mui/material";
 import { useTranslation } from "react-i18next";
 
@@ -28,12 +29,14 @@ export const DialogBase = ({
     loading = false,
 }: DialogBaseProps) => {
     const { t } = useTranslation();
+    const isMobile = useMediaQuery("(max-width:600px)");
 
     return (
         <Dialog
             open
             disableEnforceFocus={!isTop}
             fullWidth
+            fullScreen={isMobile}
             onClose={onClose}
             aria-labelledby={`dialog-${id}`}
             id={id}

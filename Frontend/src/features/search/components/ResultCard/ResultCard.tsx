@@ -125,7 +125,11 @@ export const ResultCard = React.memo(
                 }),
             );
             return () => {
-                unsubscribeChannel(fileId, dispatch);
+                // Only unsubscribe when inView was true — setFileInViewState does
+                // not unsubscribe, so this cleanup is the single owner of that
+                // transition. Calling it unconditionally would double-decrement
+                // the ref count and cancel the tab subscription prematurely.
+                if (inView) unsubscribeChannel(fileId, dispatch);
             };
         }, [inView, fileId, searchQuery, dispatch]);
 
@@ -221,7 +225,7 @@ export const ResultCard = React.memo(
                         <CardContent
                             sx={{
                                 py: 1,
-                                px: 2,
+                                px: { xs: 1, sm: 2 },
                                 wordBreak: "break-word",
                                 "&:last-child": { pb: 1 },
                             }}
