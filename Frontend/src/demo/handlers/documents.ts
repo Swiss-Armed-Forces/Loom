@@ -128,7 +128,7 @@ export const documentPreview = (
     seen: document.seen,
     content: document.content,
     contentPreviewIsTruncated: document.content.length > 220,
-    contentIsTruncated: false,
+    contentIsTruncated: document.contentTruncated ?? false,
     name: document.name,
     path: document.path,
     thumbnailFileId: document.thumbnail ? DEMO_THUMBNAIL_FILE_ID : undefined,
@@ -140,8 +140,8 @@ export const documentPreview = (
     summary: document.summary,
     imageDescription: document.imageDescription,
     detectedLanguage: document.language,
-    attachmentsSkipped: false,
-    isSpam: false,
+    attachmentsSkipped: document.attachmentsSkipped ?? false,
+    isSpam: document.isSpam ?? false,
     state: document.state,
 });
 
@@ -179,6 +179,67 @@ const demoTasks = (document: DemoDocument): TaskRecord[] => {
         finishedAt: new Date(base + offsetSeconds * 1000 + durationMs),
         duration: durationMs,
     });
+    if (document.state === "failed") {
+        const args = JSON.stringify(
+            {
+                file_id: document.id,
+                full_name: document.path,
+                mime_type: document.mimeType,
+                size: document.size,
+            },
+            null,
+            2,
+        );
+        return [
+            {
+                taskId: "99000000-0000-4000-8000-000000000001",
+                taskName: "worker.index_file.index_file_task.index_file_task",
+                retried: [
+                    {
+                        ...run(5, 1800),
+                        arguments: args,
+                        exception:
+                            "Traceback (most recent call last):\n" +
+                            '  File "/app/worker/index_file/tasks/index_file.py", line 42, in index_file_task\n' +
+                            "    extracted = extraction_service.extract(file)\n" +
+                            '  File "/app/worker/index_file/domain/extraction_service.py", line 87, in extract\n' +
+                            "    response = self._tika_client.parse(file.stream, mime_type=file.mime_type)\n" +
+                            '  File "/app/worker/index_file/infra/tika_client.py", line 31, in parse\n' +
+                            '    raise ExtractionError(f"Tika returned status {resp.status_code}")\n' +
+                            "worker.index_file.domain.errors.ExtractionError: Tika returned status 422",
+                    },
+                    {
+                        ...run(75, 2100),
+                        arguments: args,
+                        exception:
+                            "Traceback (most recent call last):\n" +
+                            '  File "/app/worker/index_file/tasks/index_file.py", line 42, in index_file_task\n' +
+                            "    extracted = extraction_service.extract(file)\n" +
+                            '  File "/app/worker/index_file/domain/extraction_service.py", line 87, in extract\n' +
+                            "    response = self._tika_client.parse(file.stream, mime_type=file.mime_type)\n" +
+                            '  File "/app/worker/index_file/infra/tika_client.py", line 31, in parse\n' +
+                            '    raise ExtractionError(f"Tika returned status {resp.status_code}")\n' +
+                            "worker.index_file.domain.errors.ExtractionError: Tika returned status 422",
+                    },
+                ],
+                failed: [
+                    {
+                        ...run(155, 950),
+                        arguments: args,
+                        exception:
+                            "Traceback (most recent call last):\n" +
+                            '  File "/app/worker/index_file/tasks/index_file.py", line 42, in index_file_task\n' +
+                            "    extracted = extraction_service.extract(file)\n" +
+                            '  File "/app/worker/index_file/domain/extraction_service.py", line 87, in extract\n' +
+                            "    response = self._tika_client.parse(file.stream, mime_type=file.mime_type)\n" +
+                            '  File "/app/worker/index_file/infra/tika_client.py", line 31, in parse\n' +
+                            '    raise ExtractionError(f"Tika returned status {resp.status_code}")\n' +
+                            "worker.index_file.domain.errors.ExtractionError: Tika returned status 422",
+                    },
+                ],
+            },
+        ];
+    }
     const tasks: TaskRecord[] = [
         {
             taskId: "10000000-0000-4000-8000-000000000001",

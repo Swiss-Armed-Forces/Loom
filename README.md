@@ -3,7 +3,8 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE.txt)
 [![Release Status](https://gitlab.com/swiss-armed-forces/cyber-command/cea/loom/-/badges/release.svg)](https://gitlab.com/swiss-armed-forces/cyber-command/cea/loom/-/releases)
 [![Interactive Demo](https://img.shields.io/badge/Interactive_Demo-Try_it-FC6D26)](https://swiss-armed-forces.gitlab.io/cyber-command/cea/loom/)
-[![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-v2.1%20adopted-ff69b4.svg)](CONTRIBUTING.md)
+[![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-v2.1%20adopted-ff69b4.svg)](CODE_OF_CONDUCT.md)
+[![Contributing](https://img.shields.io/badge/Contributing-Guidelines-blue)](CONTRIBUTING.md)
 [![GitLab Pipeline Status](https://gitlab.com/swiss-armed-forces/cyber-command/cea/loom/badges/main/pipeline.svg)](https://gitlab.com/swiss-armed-forces/cyber-command/cea/loom/-/pipelines?page=1&scope=all&ref=main)
 
 **Loom** is a powerful, easily deployable open-source document search engine designed for
@@ -12,6 +13,12 @@ extracts content and metadata, and enables powerful full-text search enriched by
 such as RAG chat, auto-tagging, summarization, and translation.
 
 [[_TOC_]]
+
+## 🎬 Try the Demo
+
+Scan the QR code or open the [interactive frontend demo](https://swiss-armed-forces.gitlab.io/cyber-command/cea/loom/).
+
+[![Loom live demo QR code](Frontend/public/demo-link-qr.gif){width=220}](https://swiss-armed-forces.gitlab.io/cyber-command/cea/loom/)
 
 ## ✨ Key Features
 

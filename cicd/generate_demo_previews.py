@@ -15,14 +15,27 @@ OUTPUT_DIRECTORY = REPOSITORY_ROOT / "Frontend" / "src" / "demo" / "previews"
 
 
 @dataclass(frozen=True)
+class ChildPreviewCapture:
+    key: str
+    attachment_name: str
+    renderer_outputs: tuple[tuple["RendererField", str], ...]
+
+
+@dataclass(frozen=True)
 class PreviewCapture:
     key: str
     source: Path
     renderer_outputs: tuple[tuple["RendererField", str], ...]
+    child_captures: tuple[ChildPreviewCapture, ...] = ()
 
 
 class FileEntry(TypedDict):
     file_id: str
+
+
+class AttachmentEntry(TypedDict):
+    id: str
+    name: str
 
 
 class RendererOutputs(TypedDict, total=False):
@@ -43,6 +56,8 @@ class ApiResponse(TypedDict, total=False):
     rendered_file: RendererOutputs
     thumbnail_file_id: str
     thumbnail_total_frames: int
+    attachments: list[AttachmentEntry]
+    name: str
 
 
 @dataclass(frozen=True)
@@ -70,6 +85,18 @@ CAPTURES = (
         key="sample3",
         source=ASSETS_DIRECTORY / "sample3.docx",
         renderer_outputs=(("office_pdf_file_id", "sample3.pdf"),),
+        child_captures=(
+            ChildPreviewCapture(
+                key="sample3-image1",
+                attachment_name="image1.gif",
+                renderer_outputs=(("image_file_id", "sample3-image1.gif"),),
+            ),
+            ChildPreviewCapture(
+                key="sample3-image2",
+                attachment_name="image2.png",
+                renderer_outputs=(("image_file_id", "sample3-image2.png"),),
+            ),
+        ),
     ),
 )
 
@@ -114,8 +141,22 @@ def find_file_id(
     files = payload.get("files")
     if not isinstance(files, list) or not files:
         return None
-    file_id = files[0].get("file_id")
-    return file_id if isinstance(file_id, str) else None
+    # The filename search also matches child files whose path contains upload_name
+    # (e.g. embedded images in a docx). Fetch each candidate's detail and return
+    # the one whose short name is an exact match.
+    for entry in files:
+        file_id = entry.get("file_id")
+        if not isinstance(file_id, str):
+            continue
+        detail = request_json(
+            session,
+            "GET",
+            f"{files_endpoint}/{file_id}",
+            params={"search_string": "*"},
+        )
+        if detail.get("name") == upload_name:
+            return file_id
+    return None
 
 
 def wait_for_outputs(
@@ -182,6 +223,56 @@ def get_renderer_id(outputs: RendererOutputs, field: RendererField) -> str:
     return outputs[field]
 
 
+def capture_child(
+    session: requests.Session,
+    files_endpoint: str,
+    child_id: str,
+    child: ChildPreviewCapture,
+    timeout_seconds: int,
+) -> None:
+    deadline = time.monotonic() + timeout_seconds
+    while time.monotonic() < deadline:
+        detail = request_json(
+            session,
+            "GET",
+            f"{files_endpoint}/{child_id}",
+            params={"search_string": "*"},
+        )
+        preview = request_json(
+            session,
+            "GET",
+            f"{files_endpoint}/{child_id}/preview",
+            params={"search_string": "*"},
+        )
+        rendered = detail.get("rendered_file")
+        if not isinstance(rendered, dict):
+            rendered = {}
+        renderer_ids_ready = all(
+            isinstance(rendered.get(field), str)
+            for field, _ in child.renderer_outputs
+        )
+        if isinstance(preview.get("thumbnail_file_id"), str) and renderer_ids_ready:
+            thumbnail_id = preview["thumbnail_file_id"]
+            download_asset(
+                session,
+                f"{files_endpoint}/{child_id}/thumbnail/{thumbnail_id}",
+                OUTPUT_DIRECTORY / f"{child.key}-thumbnail.png",
+            )
+            for renderer_field, output_name in child.renderer_outputs:
+                rendered_id = get_renderer_id(rendered, renderer_field)
+                download_asset(
+                    session,
+                    f"{files_endpoint}/{child_id}/rendered/{rendered_id}",
+                    OUTPUT_DIRECTORY / output_name,
+                )
+            print(f"Captured child {child.attachment_name}")
+            return
+        time.sleep(2)
+    raise TimeoutError(
+        f"Child {child.attachment_name} did not finish within {timeout_seconds}s"
+    )
+
+
 def capture_previews(api_url: str, timeout_seconds: int) -> None:
     files_endpoint = f"{api_url.rstrip('/')}/v1/files"
     OUTPUT_DIRECTORY.mkdir(parents=True, exist_ok=True)
@@ -212,6 +303,26 @@ def capture_previews(api_url: str, timeout_seconds: int) -> None:
                     OUTPUT_DIRECTORY / output_name,
                 )
             print(f"Captured renderer outputs for {capture.source.name}")
+
+            if capture.child_captures:
+                attachments = captured.preview.get("attachments") or []
+                for child in capture.child_captures:
+                    child_id = next(
+                        (
+                            att["id"]
+                            for att in attachments
+                            if att.get("name") == child.attachment_name
+                        ),
+                        None,
+                    )
+                    if child_id is None:
+                        raise ValueError(
+                            f"Attachment {child.attachment_name!r} not found"
+                            f" in {capture.source.name}"
+                        )
+                    capture_child(
+                        session, files_endpoint, child_id, child, timeout_seconds
+                    )
 
 
 def main() -> None:

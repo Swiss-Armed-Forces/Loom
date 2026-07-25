@@ -57,6 +57,20 @@ export const globalTheme = createTheme({
         // Canonical hover style for all clickable icons.
         // All clickable icons must use IconButton and must not add custom
         // hover transforms or opacity changes in their own sx props.
+        MuiTabs: {
+            styleOverrides: {
+                root: { minHeight: 36 },
+            },
+        },
+        MuiTab: {
+            styleOverrides: {
+                root: {
+                    minHeight: 36,
+                    paddingTop: 6,
+                    paddingBottom: 6,
+                },
+            },
+        },
         MuiIconButton: {
             styleOverrides: {
                 root: {

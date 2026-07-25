@@ -34,12 +34,16 @@ export const GlobalSearchBox = () => {
     const dispatch = useAppDispatch();
     const { t } = useTranslation();
     const searchInputRef = useRef<HTMLInputElement>(null);
+    const [sortVisible, setSortVisible] = useState(false);
 
     useEffect(() => {
         if (!searchQuery) return;
         setSearchInputFieldContent(searchQuery.query ?? "");
         setSortInputFieldContent(searchQuery.sortField ?? "");
         setSortDirection(searchQuery.sortDirection ?? "desc");
+        if (searchQuery.sortField || searchQuery.sortDirection === "asc") {
+            setSortVisible(true);
+        }
     }, [searchQuery]);
 
     const doUpdateQuery = () => {
@@ -97,21 +101,33 @@ export const GlobalSearchBox = () => {
     };
 
     return (
-        <div className={styles.globalSearchBox}>
+        <div
+            className={`${styles.globalSearchBox}${sortVisible ? ` ${styles.sortVisible}` : ""}`}
+        >
             <StyledInputBase
                 inputRef={searchInputRef}
                 startAdornment={<Search sx={{ p: 1 }} />}
                 endAdornment={
-                    searchInputFieldContent ? (
+                    <>
+                        {searchInputFieldContent ? (
+                            <IconButton
+                                color="inherit"
+                                size="small"
+                                onClick={handleClearSearch}
+                                aria-label="clear search"
+                            >
+                                <Clear fontSize="small" />
+                            </IconButton>
+                        ) : null}
                         <IconButton
                             color="inherit"
                             size="small"
-                            onClick={handleClearSearch}
-                            aria-label="clear search"
+                            onClick={() => setSortVisible((v) => !v)}
+                            aria-label="toggle sort"
                         >
-                            <Clear fontSize="small" />
+                            <Sort fontSize="small" />
                         </IconButton>
-                    ) : null
+                    </>
                 }
                 placeholder={t("globalSearchBox.searchPlaceholder")}
                 inputProps={{
@@ -131,7 +147,9 @@ export const GlobalSearchBox = () => {
                     }
                 }}
             />
-            <div className={styles.sortInputWrapper}>
+            <div
+                className={`${styles.sortInputWrapper}${sortVisible ? ` ${styles.visible}` : ""}`}
+            >
                 <StyledInputBase
                     startAdornment={<Sort sx={{ p: 1 }} />}
                     endAdornment={
@@ -148,6 +166,7 @@ export const GlobalSearchBox = () => {
                             ) : null}
                             <IconButton
                                 color="inherit"
+                                size="small"
                                 onClick={(ev) => {
                                     ev.preventDefault();
                                     handleToggleSortDirection();

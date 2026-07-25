@@ -6,7 +6,6 @@ import { DeleteCustomQueryDialog } from "./DeleteCustomQueryDialog/DeleteCustomQ
 import { DeleteTagGloballyDialog } from "./DeleteTagGloballyDialog/DeleteTagGloballyDialog";
 import { DialogBase } from "./DialogBase";
 import { EncryptionKeyInfoDialog } from "./EncryptionKeyInfoDialog/EncryptionKeyInfoDialog";
-import { FileDetailDialog } from "./FileDetailDialog/FileDetailDialog";
 import { ImageDescriptionDialog } from "./ImageDescriptionDialog/ImageDescriptionDialog";
 import { SummaryDialog } from "./SummaryDialog/SummaryDialog";
 import { TranslationDialog } from "./TranslationDialog/TranslationDialog";
@@ -21,7 +20,6 @@ export {
     DeleteCustomQueryDialog,
     DeleteTagGloballyDialog,
     DialogBase,
-    FileDetailDialog,
     ImageDescriptionDialog,
     SummaryDialog,
     TranslationDialog,

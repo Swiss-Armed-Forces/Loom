@@ -1,6 +1,6 @@
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import KeyIcon from "@mui/icons-material/Key";
-import { Box, IconButton, InputBase, styled, Typography } from "@mui/material";
+import { Box, IconButton, InputBase, styled } from "@mui/material";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -54,9 +54,6 @@ export const ArchiveEncryptionKeyDisplay = () => {
                     }}
                 >
                     <KeyIcon fontSize="small" />
-                    <Typography variant="caption" sx={{ opacity: 0.75 }}>
-                        {t("archives.encryptionKeyTitle")}
-                    </Typography>
                 </Box>
             }
             endAdornment={
