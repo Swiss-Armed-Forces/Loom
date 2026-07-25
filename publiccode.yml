@@ -10,7 +10,7 @@ categories:
   - data-analytics
 usedBy:
   - Kommando Cyber
-developmentStatus: beta
+developmentStatus: stable
 softwareType: standalone/other
 organisation:
   uri: https://ld.admin.ch/office/IV.1.4
@@ -30,6 +30,8 @@ description:
       creation from search results 📦, custom tagging 📌, and a comprehensive
       REST API for integration into existing workflows 🔗.
     documentation: https://gitlab.com/swiss-armed-forces/cyber-command/cea/loom/-/blob/main/README.md
+    screenshots:
+      - https://gitlab.com/swiss-armed-forces/cyber-command/cea/loom/-/raw/main/Frontend/public/demo-link-qr.png
     features:
       - Simple Deployment
       - Powerful Search
