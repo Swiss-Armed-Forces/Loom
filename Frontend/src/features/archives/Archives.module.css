@@ -1,7 +1,7 @@
 .archivesContainer {
     margin-top: 2rem;
     overflow-y: auto;
-    width: 100vw;
+    width: 100%;
 }
 
 .archivesContent {

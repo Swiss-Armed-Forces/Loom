@@ -8,6 +8,7 @@ import {
     Tab,
     Box,
     IconButton,
+    useMediaQuery,
 } from "@mui/material";
 import { useEffect, useState, useRef, useCallback, useMemo } from "react";
 import AceEditorImport from "react-ace";
@@ -70,6 +71,7 @@ export const FileDetailDialog = ({
     const hasAutoActionsRun = useRef<boolean>(false);
     const isDarkMode = useDarkMode();
 
+    const isMobile = useMediaQuery("(max-width:600px)");
     const [file, setFile] = useState<GetFileResponse>();
     const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
     const lastFetchedFileId = useRef<string>("");
@@ -229,9 +231,13 @@ export const FileDetailDialog = ({
             onClose={handleClose}
             maxWidth="xl"
             fullWidth
-            fullScreen={isFullscreen}
+            fullScreen={isFullscreen || isMobile}
             slotProps={{
-                paper: { sx: { ...(!isFullscreen && { height: "80vh" }) } },
+                paper: {
+                    sx: {
+                        ...(!isFullscreen && !isMobile && { height: "80vh" }),
+                    },
+                },
             }}
         >
             <DialogTitle
@@ -280,7 +286,12 @@ export const FileDetailDialog = ({
 
             <DialogContent sx={{ display: "flex", flexDirection: "column" }}>
                 <Box sx={{ borderBottom: 1, borderColor: "divider" }}>
-                    <Tabs value={tab} onChange={(_, v) => setTab(v)}>
+                    <Tabs
+                        value={tab}
+                        onChange={(_, v) => setTab(v)}
+                        variant="scrollable"
+                        scrollButtons="auto"
+                    >
                         <Tab
                             label="Rendered"
                             value={FileDetailTab.Rendered}

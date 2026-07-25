@@ -6,6 +6,12 @@
     gap: 1rem;
 }
 
+@media (max-width: 600px) {
+    .loadMoreButtonWrapper {
+        margin: 0 0.75rem 1.5rem;
+    }
+}
+
 .loadMoreSpinner {
     display: flex;
     flex-direction: row;

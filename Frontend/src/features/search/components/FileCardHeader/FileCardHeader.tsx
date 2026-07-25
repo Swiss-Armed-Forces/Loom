@@ -1,5 +1,12 @@
 import { ContentCut, LinkOff, Translate, Whatshot } from "@mui/icons-material";
-import { CardHeader, Box, Chip, IconButton, Tooltip } from "@mui/material";
+import {
+    CardHeader,
+    Box,
+    Chip,
+    IconButton,
+    Tooltip,
+    useMediaQuery,
+} from "@mui/material";
 import { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -40,6 +47,7 @@ export const FileCardHeader = ({
     const dispatch = useAppDispatch();
     const { t } = useTranslation();
     const searchQuery = useAppSelector(selectQuery);
+    const isMobile = useMediaQuery("(max-width:600px)");
 
     const handleFilterByField = (
         field: SearchQueryField,
@@ -88,7 +96,7 @@ export const FileCardHeader = ({
                             fontWeight: filePreview.seen ? undefined : "bold",
                         }}
                     />
-                    {filePreview.contentIsTruncated && (
+                    {!isMobile && filePreview.contentIsTruncated && (
                         <Tooltip
                             title={t("generalSearchView.contentTruncatedIcon")}
                         >
@@ -107,7 +115,7 @@ export const FileCardHeader = ({
                             </IconButton>
                         </Tooltip>
                     )}
-                    {filePreview.attachmentsSkipped && (
+                    {!isMobile && filePreview.attachmentsSkipped && (
                         <Tooltip
                             title={t(
                                 "generalSearchView.attachmentsSkippedIcon",
@@ -128,7 +136,7 @@ export const FileCardHeader = ({
                             </IconButton>
                         </Tooltip>
                     )}
-                    {filePreview.isSpam && (
+                    {!isMobile && filePreview.isSpam && (
                         <Tooltip title={t("generalSearchView.spamIcon")}>
                             <IconButton
                                 size="small"
@@ -145,7 +153,7 @@ export const FileCardHeader = ({
                             </IconButton>
                         </Tooltip>
                     )}
-                    {filePreview.detectedLanguage && (
+                    {!isMobile && filePreview.detectedLanguage && (
                         <Tooltip
                             title={t(
                                 "generalSearchView.detectedLanguageTooltip",

@@ -9,7 +9,13 @@ import {
     Policy,
     Tune,
 } from "@mui/icons-material";
-import { Badge, Divider, IconButton, Tooltip } from "@mui/material";
+import {
+    Badge,
+    Divider,
+    IconButton,
+    Tooltip,
+    useMediaQuery,
+} from "@mui/material";
 import { useTranslation } from "react-i18next";
 
 import { useAppDispatch, useAppSelector } from "@app/hooks";
@@ -40,6 +46,7 @@ export const ActivityBar = () => {
     const rightSidebarOpen = useAppSelector(selectRightSidebarOpen);
     const rightSidebarTab = useAppSelector(selectRightSidebarTab);
     const customQueries = useAppSelector(selectCustomQueries);
+    const isMobile = useMediaQuery("(max-width:600px)");
 
     const MAX_NEW_MATCH_QUERIES = 5;
     const newMatchQueries = customQueries.filter((q) => q.hasNewFiles);
@@ -110,6 +117,61 @@ export const ActivityBar = () => {
             label: "Chatbot",
         },
     ];
+
+    if (isMobile) {
+        return (
+            <div className={styles.activityBarBottom}>
+                <Tooltip
+                    title={t("uploadFileDialog.uploadButton")}
+                    placement="top"
+                >
+                    <span>
+                        <UploadFileButton iconOnly />
+                    </span>
+                </Tooltip>
+                {leftPanelButtons.map(({ panel, icon, label }) => (
+                    <Tooltip key={panel} title={label} placement="top">
+                        <IconButton
+                            className={`${styles.iconButtonBottom} ${activePanel === panel ? styles.active : ""}`}
+                            onClick={() => handleLeftClick(panel)}
+                            size="medium"
+                            color={
+                                activePanel === panel ? "primary" : "default"
+                            }
+                        >
+                            {panel === LeftSidebarPanel.QUERIES &&
+                            newMatchQueries.length > 0 ? (
+                                <Badge
+                                    color="primary"
+                                    badgeContent={newMatchQueries.length}
+                                >
+                                    {icon}
+                                </Badge>
+                            ) : (
+                                icon
+                            )}
+                        </IconButton>
+                    </Tooltip>
+                ))}
+                {rightPanelButtons.map(({ tab, icon, label }) => (
+                    <Tooltip key={tab} title={label} placement="top">
+                        <IconButton
+                            className={`${styles.iconButtonBottom} ${rightSidebarOpen && rightSidebarTab === tab ? styles.active : ""}`}
+                            onClick={() => handleRightClick(tab)}
+                            size="medium"
+                            color={
+                                rightSidebarOpen && rightSidebarTab === tab
+                                    ? "primary"
+                                    : "default"
+                            }
+                        >
+                            {icon}
+                        </IconButton>
+                    </Tooltip>
+                ))}
+            </div>
+        );
+    }
 
     return (
         <div className={styles.activityBar}>

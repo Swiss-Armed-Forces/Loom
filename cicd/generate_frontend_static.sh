@@ -9,12 +9,16 @@ THIRD_PARTY_LICENCES="THIRD-PARTY.md"
 THIRD_PARTY_LICENCES_OUTPUT="${TOPLEVEL_DIR}/${THIRD_PARTY_LICENCES}"
 FRONTEND_STATIC_DIR="${FRONTEND_DIR}/public"
 LICENSE_TXT="${TOPLEVEL_DIR}/LICENSE.txt"
+CONTRIBUTING_MD="${TOPLEVEL_DIR}/CONTRIBUTING.md"
+CODE_OF_CONDUCT_MD="${TOPLEVEL_DIR}/CODE_OF_CONDUCT.md"
 CHARTS_DIR="${TOPLEVEL_DIR}/charts"
 
 VERBOSE=false
 STEPS=(
     copy_third_party_license
     copy_license
+    copy_contributing
+    copy_code_of_conduct
     write_chart_data
     fix_frontend
 )
@@ -28,6 +32,16 @@ copy_third_party_license(){
 copy_license(){
     cp \
         "${LICENSE_TXT}" "${FRONTEND_STATIC_DIR}"
+}
+
+copy_contributing(){
+    cp \
+        "${CONTRIBUTING_MD}" "${FRONTEND_STATIC_DIR}"
+}
+
+copy_code_of_conduct(){
+    cp \
+        "${CODE_OF_CONDUCT_MD}" "${FRONTEND_STATIC_DIR}"
 }
 
 write_chart_data(){

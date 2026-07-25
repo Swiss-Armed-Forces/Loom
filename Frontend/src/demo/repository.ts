@@ -204,7 +204,7 @@ export const scheduleTask = (id: string, task: DemoTask): boolean => {
             document.summary = `Demo-generated summary: ${document.summary}`;
         if (task.kind === "translate") {
             document.language = task.language;
-            document.content = `${document.content} (Translated for the offline demo.)`;
+            document.content = `${document.content} (Translated for the interactive demo.)`;
         }
         if (task.kind === "image_description")
             document.imageDescription ??=

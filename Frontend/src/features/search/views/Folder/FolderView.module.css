@@ -4,6 +4,12 @@
 }
 
 .skeletonLoadingContainer {
-    width: 80%;
+    width: 100%;
     padding: 3rem;
+}
+
+@media (max-width: 600px) {
+    .skeletonLoadingContainer {
+        padding: 1rem;
+    }
 }

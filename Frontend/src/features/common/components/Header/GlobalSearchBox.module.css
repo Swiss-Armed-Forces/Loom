@@ -10,3 +10,13 @@
         grid-template-columns: 4fr 2fr;
     }
 }
+
+@media (max-width: 600px) {
+    .globalSearchBox {
+        grid-template-columns: 1fr;
+    }
+
+    .sortInputWrapper {
+        display: none;
+    }
+}

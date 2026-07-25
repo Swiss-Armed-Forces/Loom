@@ -89,7 +89,7 @@ export const webApiGetArchive = (fileId: string): string => {
     return archive
         ? objectUrl(
               `archive-${fileId}`,
-              `Offline Loom archive: ${archive.name}\nQuery: ${archive.query}\n`,
+              `Interactive Loom archive: ${archive.name}\nQuery: ${archive.query}\n`,
               "application/zip",
           )
         : "about:blank";

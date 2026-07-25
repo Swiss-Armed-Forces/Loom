@@ -197,7 +197,6 @@
         "actions": "Actions",
         "results": "Results",
         "bulkActions": "Bulk Actions",
-
         "timeRange": {
             "title": "Time ranges",
             "today": "Today",
@@ -432,6 +431,8 @@
         "link": "https://gitlab.com/swiss-armed-forces/cyber-command/cea/loom",
         "chartData": "chartData.json",
         "license": "LICENSE.txt",
-        "thirdParty": "THIRD-PARTY.md"
+        "thirdParty": "THIRD-PARTY.md",
+        "contributing": "CONTRIBUTING.md",
+        "codeOfConduct": "CODE_OF_CONDUCT.md"
     }
 }
