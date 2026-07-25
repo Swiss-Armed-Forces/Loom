@@ -129,7 +129,14 @@ def init():
         settings.file_storage.secret_key,
         secure=settings.file_storage.secure_connection,
         http_client=urllib3.PoolManager(
-            maxsize=settings.file_storage.connection_pool_size
+            timeout=urllib3.Timeout(connect=10, read=300),
+            maxsize=settings.file_storage.connection_pool_size,
+            retries=urllib3.Retry(
+                total=5,
+                backoff_factor=0.2,
+                status_forcelist=[500, 502, 503, 504],
+                allowed_methods={"DELETE", "GET", "HEAD", "OPTIONS", "PUT", "TRACE"},
+            ),
         ),
     )
 
@@ -154,7 +161,14 @@ def init():
         settings.lazybytes_storage.secret_key,
         secure=settings.lazybytes_storage.secure_connection,
         http_client=urllib3.PoolManager(
-            maxsize=settings.lazybytes_storage.connection_pool_size
+            timeout=urllib3.Timeout(connect=10, read=300),
+            maxsize=settings.lazybytes_storage.connection_pool_size,
+            retries=urllib3.Retry(
+                total=5,
+                backoff_factor=0.2,
+                status_forcelist=[500, 502, 503, 504],
+                allowed_methods={"DELETE", "GET", "HEAD", "OPTIONS", "PUT", "TRACE"},
+            ),
         ),
     )
 
@@ -177,7 +191,14 @@ def init():
         secret_key=settings.intake_storage.secret_key,
         secure=settings.intake_storage.secure_connection,
         http_client=urllib3.PoolManager(
-            maxsize=settings.intake_storage.connection_pool_size
+            timeout=urllib3.Timeout(connect=10, read=300),
+            maxsize=settings.intake_storage.connection_pool_size,
+            retries=urllib3.Retry(
+                total=5,
+                backoff_factor=0.2,
+                status_forcelist=[500, 502, 503, 504],
+                allowed_methods={"DELETE", "GET", "HEAD", "OPTIONS", "PUT", "TRACE"},
+            ),
         ),
     )
 
