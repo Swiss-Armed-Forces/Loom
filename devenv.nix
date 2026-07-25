@@ -762,6 +762,19 @@ in
     '';
   };
 
+  scripts.frontend-dev-demo = {
+    description = "Start the frontend dev server in demo mode with live reloading (no stack required)";
+    exec = ''
+      (
+        set -euo pipefail
+        cd '${config.devenv.root}/Frontend'
+
+        pnpm run dev:demo --port 5173 \
+          "''${@}"
+      )
+    '';
+  };
+
   scripts.build-demo-pages = {
     description = "Build the frontend demo for GitLab Pages";
     exec = ''

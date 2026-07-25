@@ -130,7 +130,7 @@ describe("demo API handlers", () => {
             thumbnail_file_id: "thumbnail.png",
             thumbnail_total_frames: 1,
         });
-        expect(stats.file_count).toBe(11);
+        expect(stats.file_count).toBe(12);
         expect(stats.data).toContainEqual({ name: "txt", hits_count: 3 });
     });
 
@@ -457,7 +457,7 @@ describe("demo API handlers", () => {
 
         expect(upload.status).toBe(501);
         expect(archiveImport.status).toBe(501);
-        expect(files.total_files).toBe(11);
+        expect(files.total_files).toBe(12);
         expect(archives.total).toBe(1);
     });
 

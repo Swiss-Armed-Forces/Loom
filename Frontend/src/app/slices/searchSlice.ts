@@ -430,8 +430,6 @@ export const setFileInViewState = createAsyncThunk(
                     fetchPreview({ fileId: fileId, query: query ?? undefined }),
                 );
             }
-        } else {
-            unsubscribeChannel(fileId, dispatch);
         }
         return {
             fileId: fileId,

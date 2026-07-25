@@ -22,6 +22,9 @@ export interface DemoDocument {
     authors: string[];
     secrets: string[];
     source: string;
+    isSpam?: boolean;
+    contentTruncated?: boolean;
+    attachmentsSkipped?: boolean;
     imageDescription?: string;
     parentId?: string;
     attachments?: { id: string; name: string }[];

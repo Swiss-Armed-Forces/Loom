@@ -1,4 +1,3 @@
-import applausLogoUrl from "../../../integrationtest/assets/1.png?url";
 import noTagArticle from "../../../integrationtest/assets/auto_tag_files/no_tag.txt?raw";
 import basicEmail from "../../../integrationtest/assets/basic_email.eml?raw";
 import attachmentEmail from "../../../integrationtest/assets/email_with_pdf_attachment.eml?raw";
@@ -14,6 +13,10 @@ import basicEmailPdfUrl from "./previews/basic-email.pdf?url";
 import basicEmailImageUrl from "./previews/basic-email.png?url";
 import networkSecurityThumbnailUrl from "./previews/network-security-thumbnail.png?url";
 import networkSecurityPdfUrl from "./previews/network-security.pdf?url";
+import sample3Image1ThumbnailUrl from "./previews/sample3-image1-thumbnail.png?url";
+import sample3Image1Url from "./previews/sample3-image1.gif?url";
+import sample3Image2ThumbnailUrl from "./previews/sample3-image2-thumbnail.png?url";
+import sample3Image2Url from "./previews/sample3-image2.png?url";
 import sample3ThumbnailUrl from "./previews/sample3-thumbnail.png?url";
 import sample3PdfUrl from "./previews/sample3.pdf?url";
 import type { DemoDocument } from "./repository";
@@ -21,6 +24,8 @@ import type { DemoDocument } from "./repository";
 export const INITIAL_ARCHIVE_ID = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
 export const ATTACHMENT_EMAIL_ID = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaab";
 export const PDF_ATTACHMENT_ID = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
+export const SAMPLE3_IMAGE1_ID = "cccccccc-cccc-4ccc-8ccc-cccccccccccc";
+export const SAMPLE3_IMAGE2_ID = "dddddddd-dddd-4ddd-8ddd-dddddddddddd";
 
 export const createDemoDocuments = (): DemoDocument[] => {
     const now = new Date().toISOString();
@@ -36,7 +41,7 @@ export const createDemoDocuments = (): DemoDocument[] => {
             createdAt: "2025-03-14T09:30:00Z",
             modifiedAt: now,
             state: "processed",
-            tags: ["interesting", "networking", "security"],
+            tags: ["networking", "security"],
             content: networkSecurity,
             summary:
                 "An overview of network-security controls that protect the confidentiality, integrity, and availability of data.",
@@ -61,7 +66,7 @@ export const createDemoDocuments = (): DemoDocument[] => {
             size: 1_519,
             uploadedAt: "2020-05-05T09:06:05Z",
             createdAt: "2008-11-22T04:04:59Z",
-            modifiedAt: "2008-11-22T04:05:05Z",
+            modifiedAt: now,
             state: "processed",
             tags: ["email", "interesting"],
             content:
@@ -75,6 +80,8 @@ export const createDemoDocuments = (): DemoDocument[] => {
             authors: ["Mikel Lindsaar", "test@lindsaar.net"],
             secrets: [],
             source: "imap",
+            isSpam: true,
+            attachmentsSkipped: true,
             archiveIds: [INITIAL_ARCHIVE_ID],
             data: basicEmail,
             thumbnail: { url: basicEmailThumbnailUrl, totalFrames: 1 },
@@ -94,7 +101,7 @@ export const createDemoDocuments = (): DemoDocument[] => {
             createdAt: "2016-06-01T16:35:07Z",
             modifiedAt: "2016-06-01T16:35:07Z",
             state: "processed",
-            tags: ["attachment", "email"],
+            tags: ["attachment", "email", "🤖 interesting"],
             content:
                 "This email contains a PDF attachment that can be rendered in Loom.",
             summary:
@@ -121,7 +128,7 @@ export const createDemoDocuments = (): DemoDocument[] => {
             createdAt: "2016-06-01T16:35:07Z",
             modifiedAt: "2016-06-01T16:35:07Z",
             state: "processed",
-            tags: ["attachment", "pdf"],
+            tags: ["pdf"],
             content: "A one-page PDF generated with Matplotlib.",
             summary: "A small renderable PDF attached to the sample email.",
             flagged: false,
@@ -138,36 +145,6 @@ export const createDemoDocuments = (): DemoDocument[] => {
             rendered: { officePdfUrl: homePdfUrl },
         },
         {
-            id: "33333333-3333-4333-8333-333333333333",
-            name: "1.png",
-            path: "/Images/Logos/1.png",
-            extension: "png",
-            mimeType: "image/png",
-            size: 10_552,
-            uploadedAt: "2025-04-18T08:45:00Z",
-            createdAt: "2025-04-18T08:42:00Z",
-            modifiedAt: "2025-04-18T08:42:00Z",
-            state: "processed",
-            tags: ["image", "interesting", "logo"],
-            content: "muziektheater APPLAUS",
-            summary:
-                "A compact yellow-and-black logo for Muziektheater Applaus.",
-            flagged: true,
-            hidden: false,
-            seen: false,
-            language: "nl",
-            imageDescription:
-                "A yellow rectangular logo with a stylized smiling figure above the words muziektheater APPLAUS.",
-            authors: [],
-            secrets: [],
-            source: "api-upload",
-            archiveIds: [INITIAL_ARCHIVE_ID],
-            data: "Binary PNG fixture bundled with the demo.",
-            downloadUrl: applausLogoUrl,
-            thumbnail: { url: applausLogoUrl, totalFrames: 1 },
-            rendered: { imageUrl: applausLogoUrl },
-        },
-        {
             id: "44444444-4444-4444-8444-444444444444",
             name: "sample3.docx",
             path: "/Documents/Accessibility/sample3.docx",
@@ -179,7 +156,7 @@ export const createDemoDocuments = (): DemoDocument[] => {
             createdAt: "2016-12-06T21:20:00Z",
             modifiedAt: "2016-12-06T22:10:00Z",
             state: "processed",
-            tags: ["accessibility", "office"],
+            tags: ["accessibility", "office", "🤖 sample"],
             content:
                 "Sample Document. This document demonstrates accessible headings, lists, links, images, tables, and columns for assistive technologies such as screen readers.",
             summary:
@@ -196,6 +173,72 @@ export const createDemoDocuments = (): DemoDocument[] => {
             downloadUrl: accessibleDocumentUrl,
             thumbnail: { url: sample3ThumbnailUrl, totalFrames: 1 },
             rendered: { officePdfUrl: sample3PdfUrl },
+            attachments: [
+                { id: SAMPLE3_IMAGE1_ID, name: "image1.gif" },
+                { id: SAMPLE3_IMAGE2_ID, name: "image2.png" },
+            ],
+        },
+        {
+            id: SAMPLE3_IMAGE1_ID,
+            name: "image1.gif",
+            path: "/Documents/Accessibility/sample3.docx/image1.gif",
+            extension: "gif",
+            mimeType: "image/gif",
+            size: 23_722,
+            uploadedAt: "2025-02-12T16:03:00Z",
+            createdAt: "2016-12-06T21:20:00Z",
+            modifiedAt: "2016-12-06T21:20:00Z",
+            state: "processed",
+            tags: ["accessibility", "office"],
+            content: "",
+            summary:
+                "An image embedded in the sample3.docx accessibility document.",
+            imageDescription:
+                "A decorative graphic embedded in the accessible Word document sample.",
+            flagged: false,
+            hidden: false,
+            seen: true,
+            language: "unknown",
+            authors: [],
+            secrets: [],
+            source: "api-upload",
+            parentId: "44444444-4444-4444-8444-444444444444",
+            archiveIds: [],
+            data: "Binary GIF fixture bundled with the demo.",
+            downloadUrl: sample3Image1Url,
+            thumbnail: { url: sample3Image1ThumbnailUrl, totalFrames: 1 },
+            rendered: { imageUrl: sample3Image1Url },
+        },
+        {
+            id: SAMPLE3_IMAGE2_ID,
+            name: "image2.png",
+            path: "/Documents/Accessibility/sample3.docx/image2.png",
+            extension: "png",
+            mimeType: "image/png",
+            size: 14_317,
+            uploadedAt: "2025-02-12T16:03:00Z",
+            createdAt: "2016-12-06T21:20:00Z",
+            modifiedAt: "2016-12-06T21:20:00Z",
+            state: "processed",
+            tags: ["accessibility", "office"],
+            content: "",
+            summary:
+                "An image embedded in the sample3.docx accessibility document.",
+            imageDescription:
+                "A screenshot or diagram embedded in the accessible Word document sample.",
+            flagged: false,
+            hidden: false,
+            seen: true,
+            language: "unknown",
+            authors: [],
+            secrets: [],
+            source: "api-upload",
+            parentId: "44444444-4444-4444-8444-444444444444",
+            archiveIds: [],
+            data: "Binary PNG fixture bundled with the demo.",
+            downloadUrl: sample3Image2Url,
+            thumbnail: { url: sample3Image2ThumbnailUrl, totalFrames: 1 },
+            rendered: { imageUrl: sample3Image2Url },
         },
         {
             id: "55555555-5555-4555-8555-555555555555",
@@ -208,7 +251,7 @@ export const createDemoDocuments = (): DemoDocument[] => {
             createdAt: "2022-09-27T14:22:00Z",
             modifiedAt: "2023-07-11T10:49:00Z",
             state: "processing",
-            tags: ["archive", "crawler", "sample"],
+            tags: ["archive", "crawler"],
             content:
                 "Archive containing a PDF, a TeX source file, an image, two text files, and an empty ignore file in nested folders.",
             summary:
@@ -260,7 +303,7 @@ export const createDemoDocuments = (): DemoDocument[] => {
             createdAt: "2025-04-24T06:30:00Z",
             modifiedAt: "2025-04-24T06:30:00Z",
             state: "processed",
-            tags: ["news", "sample"],
+            tags: ["news", "sample", "🤖 interesting"],
             content: noTagArticle,
             summary:
                 "A satirical news story about classifying pizza as a vegetable through belief.",
@@ -271,7 +314,8 @@ export const createDemoDocuments = (): DemoDocument[] => {
             authors: ["Institute for Culinary Anomalies"],
             secrets: [],
             source: "crawler-news",
-            archiveIds: [],
+            contentTruncated: true,
+            archiveIds: [INITIAL_ARCHIVE_ID],
             data: noTagArticle,
         },
         {
@@ -311,7 +355,7 @@ export const createDemoDocuments = (): DemoDocument[] => {
             createdAt: "2025-05-04T17:04:00Z",
             modifiedAt: "2025-05-04T17:04:00Z",
             state: "failed",
-            tags: ["binary", "installer", "quarantine"],
+            tags: ["installer", "quarantine"],
             content:
                 "The executable integration fixture is represented by metadata only and was intentionally omitted from the public demo bundle.",
             summary:

@@ -1,6 +1,7 @@
 import { Inventory, Search } from "@mui/icons-material";
-import { AppBar, Box, Tab, Tabs, Toolbar } from "@mui/material";
+import { AppBar, Box, Tab, Tabs, Toolbar, Tooltip } from "@mui/material";
 import { useMediaQuery } from "@mui/material";
+import { ComponentProps, ElementType, forwardRef } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useLocation } from "react-router-dom";
 
@@ -18,11 +19,27 @@ import styles from "./Header.module.css";
 import { getHeaderStripeConfig } from "./headerStripe";
 import { ImportArchiveButton } from "./ImportArchiveButton";
 
+const TooltipTab = forwardRef<
+    HTMLDivElement,
+    ComponentProps<typeof Tab> & {
+        tooltip: string;
+        component?: ElementType;
+        to?: string;
+    }
+>(({ tooltip, ...tabProps }, ref) => (
+    <Tooltip title={tooltip}>
+        <Tab ref={ref} {...(tabProps as ComponentProps<typeof Tab>)} />
+    </Tooltip>
+));
+TooltipTab.displayName = "TooltipTab";
+
 export const Header = () => {
     const location = useLocation();
     const { t } = useTranslation();
     const dispatch = useAppDispatch();
     const isMobile = useMediaQuery("(max-width:600px)");
+    const isSearchPage =
+        location.pathname === "/search" || location.pathname === "/";
     const headerStripe = getHeaderStripeConfig(
         window.location.hostname,
         import.meta.env.MODE === "demo",
@@ -48,15 +65,16 @@ export const Header = () => {
                     ? {
                           backgroundImage: `repeating-linear-gradient(
                               -45deg,
-                              var(--mui-palette-secondary-main) 0 30px,
-                              ${headerStripe.accentColor} 30px 60px
+                              ${headerStripe.accentColor} 0 30px,
+                              var(--mui-palette-secondary-main) 30px 60px
                           )`,
-                          backgroundAttachment: "fixed",
+                          backgroundSize: "84.853px 84.853px",
+                          backgroundPosition: "-0.4rem 0",
                       }
                     : {}
             }
         >
-            <Toolbar className={styles.toolbar}>
+            <Toolbar variant="dense" className={styles.toolbar}>
                 <DemoModeIndicator />
                 {
                     <Link
@@ -71,9 +89,7 @@ export const Header = () => {
                         <LoomResponsiveLogo />
                     </Link>
                 }
-                {!isMobile &&
-                (location.pathname === "/search" ||
-                    location.pathname === "/") ? (
+                {!isMobile && isSearchPage ? (
                     <GlobalSearchBox />
                 ) : !isMobile && location.pathname === "/archives" ? (
                     <div style={{ flex: 1 }}>
@@ -87,6 +103,7 @@ export const Header = () => {
                 )}
                 {location.pathname === "/archives" && <ImportArchiveButton />}
                 <BackgroundStatusIndicator />
+
                 <Box className={styles.headerButtons}>
                     <Tabs
                         value={
@@ -102,23 +119,19 @@ export const Header = () => {
                         }}
                     >
                         {pages.map((page) => (
-                            <Tab
+                            <TooltipTab
+                                key={page.route}
+                                tooltip={t(`header.${page.route}`)}
                                 sx={{
                                     minHeight: "unset",
-                                    minWidth: { xs: 44, sm: 90 },
-                                    px: { xs: 1, sm: 2 },
+                                    minWidth: 44,
+                                    px: 1,
                                     ":not(&.Mui-selected)": {
                                         color: "white",
                                     },
                                 }}
                                 icon={page.icon}
-                                iconPosition="start"
-                                label={
-                                    <span className={styles.headerButtonLabel}>
-                                        {t(`header.${page.route}`)}
-                                    </span>
-                                }
-                                key={page.route}
+                                aria-label={t(`header.${page.route}`)}
                                 value={`/${page.route}`}
                                 component={Link}
                                 to={`/${page.route}`}
@@ -128,16 +141,16 @@ export const Header = () => {
                     <BurgerMenu></BurgerMenu>
                 </Box>
             </Toolbar>
-            {isMobile &&
-            (location.pathname === "/search" || location.pathname === "/") ? (
-                <Toolbar className={styles.toolbar}>
+            {isMobile && isSearchPage && (
+                <Box sx={{ px: 1, pb: 0.5 }}>
                     <GlobalSearchBox />
-                </Toolbar>
-            ) : isMobile && location.pathname === "/archives" ? (
-                <Toolbar className={styles.toolbar}>
+                </Box>
+            )}
+            {isMobile && location.pathname === "/archives" && (
+                <Box sx={{ px: 1, pb: 0.5 }}>
                     <ArchiveEncryptionKeyDisplay />
-                </Toolbar>
-            ) : null}
+                </Box>
+            )}
         </AppBar>
     );
 };

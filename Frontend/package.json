@@ -6,6 +6,7 @@
     "type": "module",
     "scripts": {
         "dev": "vite",
+        "dev:demo": "vite --mode demo",
         "build": "tsc && vite build",
         "build:demo": "tsc && vite build --mode demo",
         "preview:demo": "pnpm run build:demo && vite preview --mode demo --outDir dist-demo",
@@ -27,13 +28,13 @@
         "eslint-plugin-import": "^2.32.0",
         "i18next": "^26.0.6",
         "i18next-http-backend": "^3.0.5",
+        "pdfjs-dist": "^6.1.200",
         "react": "^19.2.5",
         "react-ace": "^14.0.1",
         "react-dom": "^19.2.5",
         "react-dropzone": "^15.0.0",
         "react-i18next": "^17.0.4",
         "react-intersection-observer": "^10.0.3",
-        "react-pdf": "^10.4.1",
         "react-redux": "^9.2.0",
         "react-router-dom": "^7.14.1",
         "react-toastify": "^11.1.0",
@@ -67,7 +68,6 @@
         "typescript": "^6.0.3",
         "typescript-eslint": "^8.58.2",
         "vite": "^8.0.9",
-        "vite-plugin-static-copy": "^4.1.0",
         "vite-plugin-svgr": "^5.2.0",
         "vitest": "^4.1.4"
     }

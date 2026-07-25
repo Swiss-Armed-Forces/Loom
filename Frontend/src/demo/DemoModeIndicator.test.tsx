@@ -1,6 +1,6 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { type ReactNode } from "react";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { DemoModeIndicator } from "./DemoModeIndicator";
 
@@ -13,28 +13,25 @@ const translations = vi.hoisted<Record<string, string>>(() => ({
     "demoMode.capabilities.organize":
         "Tag, flag, hide, and mark documents as seen, or create and download demo archives.",
     "demoMode.capabilities.search":
-        "Search with Loom's query syntax, then explore folders, statistics, metadata, previews, and downloads.",
-    "demoMode.capabilities.title": "What you can explore",
+        "Search with Loom's query syntax and explore folders, statistics, metadata, previews, and downloads.",
+    "demoMode.capabilities.title": "What's available",
     "demoMode.indicator": "DEMO",
     "demoMode.introduction":
-        "This is a browser-only preview of Loom. It uses a curated set of sample documents and simulates Loom's APIs, background tasks, and live updates, so you can explore the interface without deploying the full stack.",
+        "This is a browser-only preview of Loom using a curated set of sample documents. No backend is required — everything runs in your browser.",
     "demoMode.limitations.backend":
-        "No Loom backend services are connected. File uploads, archive imports, service dashboards, and task-execution details are unavailable.",
-    "demoMode.limitations.reset":
-        "Changes to demo data and generated results are temporary and reset when you reload the page.",
-    "demoMode.limitations.title": "Demo boundaries",
-    "demoMode.repository.prompt":
-        "Want to run Loom with your own documents? Visit the project repository for installation instructions and more information.",
+        "File uploads, archive imports, service dashboards, and task details are unavailable.",
+    "demoMode.limitations.reset": "Changes reset on page reload.",
+    "demoMode.limitations.title": "Limitations",
+    "demoMode.repository.prompt": "Want to run Loom with your own documents?",
     "demoMode.startExploring": "Start exploring",
-    "demoMode.title": "Demo mode",
+    "demoMode.title": "Interactive Demo",
 }));
-
-const DEMO_INTRODUCTION_SEEN_KEY = "loom:demo-introduction-seen:v1";
 
 vi.mock("@mui/icons-material", () => ({
     CheckCircleOutlined: () => <span aria-hidden="true">✓</span>,
     Close: () => <span aria-hidden="true">×</span>,
     InfoOutlined: () => <span aria-hidden="true">i</span>,
+    RocketLaunch: () => <span aria-hidden="true">🚀</span>,
     ScienceOutlined: () => <span aria-hidden="true">S</span>,
 }));
 
@@ -139,28 +136,26 @@ vi.mock("react-i18next", () => ({
 }));
 
 describe("DemoModeIndicator", () => {
-    beforeEach(() => {
-        window.localStorage.clear();
-    });
-
     afterEach(() => {
         vi.restoreAllMocks();
     });
 
-    it("opens automatically on the first visit and persists dismissal", () => {
-        const { unmount } = render(<DemoModeIndicator />);
+    it("opens automatically and shows all content", () => {
+        render(<DemoModeIndicator />);
         const ribbon = screen.getByRole("button", { name: "DEMO" });
 
-        expect(screen.getByRole("dialog", { name: "Demo mode" })).toBeVisible();
+        expect(
+            screen.getByRole("dialog", { name: "Interactive Demo" }),
+        ).toBeVisible();
         expect(ribbon).toHaveAttribute("aria-expanded", "true");
         expect(
             screen.getByText(/This is a browser-only preview of Loom/),
         ).toBeInTheDocument();
         expect(
-            screen.getByRole("heading", { name: "What you can explore" }),
+            screen.getByRole("heading", { name: "What's available" }),
         ).toBeInTheDocument();
         expect(
-            screen.getByRole("heading", { name: "Demo boundaries" }),
+            screen.getByRole("heading", { name: "Limitations" }),
         ).toBeInTheDocument();
         expect(
             screen.getByText(/File uploads, archive imports/),
@@ -175,6 +170,11 @@ describe("DemoModeIndicator", () => {
         );
         expect(repositoryLink).toHaveAttribute("target", "_blank");
         expect(repositoryLink).toHaveAttribute("rel", "noopener noreferrer");
+    });
+
+    it("closes when 'Start exploring' is clicked and the ribbon can reopen it", () => {
+        render(<DemoModeIndicator />);
+        const ribbon = screen.getByRole("button", { name: "DEMO" });
 
         fireEvent.click(
             screen.getByRole("button", { name: "Start exploring" }),
@@ -182,59 +182,28 @@ describe("DemoModeIndicator", () => {
 
         expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
         expect(ribbon).toHaveAttribute("aria-expanded", "false");
-        expect(window.localStorage.getItem(DEMO_INTRODUCTION_SEEN_KEY)).toBe(
-            "true",
-        );
-
-        unmount();
-        render(<DemoModeIndicator />);
-
-        expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
-    });
-
-    it("keeps the dialog closed for returning visitors and allows manual replay", () => {
-        window.localStorage.setItem(DEMO_INTRODUCTION_SEEN_KEY, "true");
-        render(<DemoModeIndicator />);
-
-        const ribbon = screen.getByRole("button", { name: "DEMO" });
-        expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
-        expect(ribbon).toHaveAttribute("aria-expanded", "false");
 
         fireEvent.click(ribbon);
 
-        expect(screen.getByRole("dialog", { name: "Demo mode" })).toBeVisible();
+        expect(
+            screen.getByRole("dialog", { name: "Interactive Demo" }),
+        ).toBeVisible();
         expect(ribbon).toHaveAttribute("aria-expanded", "true");
     });
 
-    it("persists dismissal from the dialog onClose handler", () => {
+    it("closes when the dialog onClose handler fires", () => {
         render(<DemoModeIndicator />);
 
         fireEvent.click(screen.getByRole("button", { name: "Dismiss dialog" }));
 
         expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
-        expect(window.localStorage.getItem(DEMO_INTRODUCTION_SEEN_KEY)).toBe(
-            "true",
-        );
     });
 
-    it("remains usable when localStorage is unavailable", () => {
-        vi.spyOn(Storage.prototype, "getItem").mockImplementationOnce(() => {
-            throw new DOMException("Storage is blocked");
-        });
-        vi.spyOn(Storage.prototype, "setItem").mockImplementationOnce(() => {
-            throw new DOMException("Storage is blocked");
-        });
-        vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    it("closes when the X button is clicked", () => {
         render(<DemoModeIndicator />);
-
-        expect(screen.getByRole("dialog", { name: "Demo mode" })).toBeVisible();
 
         fireEvent.click(screen.getByRole("button", { name: "Close" }));
 
         expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
-        expect(console.warn).toHaveBeenCalledWith(
-            "Unable to persist the demo introduction state.",
-            expect.any(DOMException),
-        );
     });
 });

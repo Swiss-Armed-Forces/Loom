@@ -6,7 +6,6 @@ export const DialogType = {
     CreateArchive: "createArchive",
     DeleteCustomQuery: "deleteCustomQuery",
     DeleteTagGlobally: "deleteTagGlobally",
-    FileDetail: "fileDetail",
     ImageDescription: "imageDescriptionDialog",
     Summary: "summary",
     Translation: "translation",

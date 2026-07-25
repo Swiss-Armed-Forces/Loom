@@ -1,4 +1,10 @@
-import { Box, Tab, Tabs } from "@mui/material";
+import {
+    ArticleOutlined,
+    ImageOutlined,
+    ShortTextOutlined,
+    TranslateOutlined,
+} from "@mui/icons-material";
+import { Box, Tab, Tabs, useMediaQuery, useTheme } from "@mui/material";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -14,6 +20,8 @@ interface SummaryProps {
 
 export const Summary = ({ filePreview, onOpenDetailsTab }: SummaryProps) => {
     const { t } = useTranslation();
+    const theme = useTheme();
+    const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
 
     const hasContent = !!filePreview.content?.length;
     const hasSummary = !!filePreview.summary?.length;
@@ -25,6 +33,33 @@ export const Summary = ({ filePreview, onOpenDetailsTab }: SummaryProps) => {
     if (!hasContent && !hasSummary && !hasImageDescription && !hasTranslation)
         return null;
 
+    const tabs = [
+        {
+            label: t("generalSearchView.content"),
+            value: SummaryTab.Content,
+            icon: <ArticleOutlined fontSize="small" />,
+            disabled: !hasContent,
+        },
+        {
+            label: t("generalSearchView.summary"),
+            value: SummaryTab.Summary,
+            icon: <ShortTextOutlined fontSize="small" />,
+            disabled: !hasSummary,
+        },
+        {
+            label: t("generalSearchView.imageDescription"),
+            value: SummaryTab.ImageDescription,
+            icon: <ImageOutlined fontSize="small" />,
+            disabled: !hasImageDescription,
+        },
+        {
+            label: t("generalSearchView.translation"),
+            value: SummaryTab.Translation,
+            icon: <TranslateOutlined fontSize="small" />,
+            disabled: !hasTranslation,
+        },
+    ];
+
     return (
         <Box sx={{ bgcolor: "action.hover", borderRadius: 1, p: 1 }}>
             <Box sx={{ borderBottom: 1, borderColor: "divider" }}>
@@ -33,30 +68,23 @@ export const Summary = ({ filePreview, onOpenDetailsTab }: SummaryProps) => {
                     onChange={(_, v) => setTab(v)}
                     sx={{ minHeight: 0 }}
                 >
-                    <Tab
-                        label={t("generalSearchView.content")}
-                        value={SummaryTab.Content}
-                        disabled={!hasContent}
-                        sx={{ minHeight: 0, py: 0.5, fontSize: "0.75rem" }}
-                    />
-                    <Tab
-                        label={t("generalSearchView.summary")}
-                        value={SummaryTab.Summary}
-                        disabled={!hasSummary}
-                        sx={{ minHeight: 0, py: 0.5, fontSize: "0.75rem" }}
-                    />
-                    <Tab
-                        label={t("generalSearchView.imageDescription")}
-                        value={SummaryTab.ImageDescription}
-                        disabled={!hasImageDescription}
-                        sx={{ minHeight: 0, py: 0.5, fontSize: "0.75rem" }}
-                    />
-                    <Tab
-                        label={t("generalSearchView.translation")}
-                        value={SummaryTab.Translation}
-                        disabled={!hasTranslation}
-                        sx={{ minHeight: 0, py: 0.5, fontSize: "0.75rem" }}
-                    />
+                    {tabs.map(({ label, value, icon, disabled }) => (
+                        <Tab
+                            key={value}
+                            icon={icon}
+                            iconPosition="start"
+                            label={isMobile ? undefined : label}
+                            title={isMobile ? label : undefined}
+                            value={value}
+                            disabled={disabled}
+                            sx={{
+                                minHeight: 0,
+                                py: 0.5,
+                                fontSize: "0.75rem",
+                                ...(isMobile && { minWidth: "auto", px: 1 }),
+                            }}
+                        />
+                    ))}
                 </Tabs>
             </Box>
             <Box sx={{ pt: 1 }}>

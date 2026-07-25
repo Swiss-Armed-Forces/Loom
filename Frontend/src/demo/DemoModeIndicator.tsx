@@ -2,6 +2,7 @@ import {
     CheckCircleOutlined,
     Close,
     InfoOutlined,
+    RocketLaunch,
     ScienceOutlined,
 } from "@mui/icons-material";
 import {
@@ -28,28 +29,8 @@ import { useTranslation } from "react-i18next";
 
 import styles from "./DemoModeIndicator.module.css";
 
-const DEMO_INTRODUCTION_SEEN_KEY = "loom:demo-introduction-seen:v1";
-
-const hasSeenDemoIntroduction = (): boolean => {
-    try {
-        return (
-            window.localStorage.getItem(DEMO_INTRODUCTION_SEEN_KEY) === "true"
-        );
-    } catch {
-        return false;
-    }
-};
-
-const markDemoIntroductionAsSeen = (): void => {
-    try {
-        window.localStorage.setItem(DEMO_INTRODUCTION_SEEN_KEY, "true");
-    } catch (error) {
-        console.warn("Unable to persist the demo introduction state.", error);
-    }
-};
-
 export const DemoModeIndicator = () => {
-    const [open, setOpen] = useState(() => !hasSeenDemoIntroduction());
+    const [open, setOpen] = useState(true);
     const { t } = useTranslation();
     const capabilities = [
         t("demoMode.capabilities.search"),
@@ -59,7 +40,6 @@ export const DemoModeIndicator = () => {
 
     const handleClose = () => {
         setOpen(false);
-        markDemoIntroductionAsSeen();
     };
 
     return (
@@ -213,6 +193,7 @@ export const DemoModeIndicator = () => {
                         variant="contained"
                         onClick={handleClose}
                         sx={{ flex: "0 0 auto" }}
+                        startIcon={<RocketLaunch />}
                     >
                         {t("demoMode.startExploring")}
                     </Button>
