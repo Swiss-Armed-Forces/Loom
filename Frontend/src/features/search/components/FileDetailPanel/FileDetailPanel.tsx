@@ -222,7 +222,12 @@ export const FileDetailPanel = ({
             <Box
                 sx={{ borderBottom: 1, borderColor: "divider", flexShrink: 0 }}
             >
-                <Tabs value={detailTab} onChange={(_, v) => setTab(v)}>
+                <Tabs
+                    value={detailTab}
+                    onChange={(_, v) => setTab(v)}
+                    variant="scrollable"
+                    scrollButtons="auto"
+                >
                     <Tab
                         label="Rendered"
                         value={FileDetailTab.Rendered}

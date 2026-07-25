@@ -1,5 +1,5 @@
 import { Close } from "@mui/icons-material";
-import { IconButton, Tab, Tabs } from "@mui/material";
+import { Drawer, IconButton, Tab, Tabs, useMediaQuery } from "@mui/material";
 import { useTranslation } from "react-i18next";
 
 import { useAppDispatch, useAppSelector } from "@app/hooks";
@@ -20,45 +20,71 @@ export const RightSidebar = () => {
     const { t } = useTranslation();
     const isOpen = useAppSelector(selectRightSidebarOpen);
     const activeTab = useAppSelector(selectRightSidebarTab);
+    const isMobile = useMediaQuery("(max-width:600px)");
+
+    const sidebarContent = (
+        <>
+            <div className={styles.header}>
+                <Tabs
+                    className={styles.tabs}
+                    value={activeTab}
+                    onChange={(_, tab: RightSidebarTab) =>
+                        dispatch(setRightSidebarTab(tab))
+                    }
+                    textColor="inherit"
+                >
+                    <Tab
+                        value={RightSidebarTab.STATISTICS}
+                        label={t("toolbar.views.statistics")}
+                    />
+                    <Tab value={RightSidebarTab.CHAT} label="Chatbot" />
+                </Tabs>
+                <IconButton
+                    size="small"
+                    onClick={() => dispatch(toggleRightSidebar())}
+                    sx={{ mr: 0.5 }}
+                >
+                    <Close fontSize="small" />
+                </IconButton>
+            </div>
+            <div className={styles.content}>
+                {activeTab === RightSidebarTab.STATISTICS ? (
+                    <StatisticsView />
+                ) : (
+                    <Chatbot />
+                )}
+            </div>
+        </>
+    );
+
+    if (isMobile) {
+        return (
+            <Drawer
+                open={isOpen}
+                onClose={() => dispatch(toggleRightSidebar())}
+                variant="temporary"
+                anchor="right"
+                slotProps={{
+                    paper: {
+                        sx: {
+                            width: "90vw",
+                            maxWidth: "400px",
+                            display: "flex",
+                            flexDirection: "column",
+                        },
+                    },
+                }}
+            >
+                {sidebarContent}
+            </Drawer>
+        );
+    }
 
     return (
         <div
             className={`${styles.rightSidebar} ${!isOpen ? styles.closed : ""}`}
         >
-            {isOpen && (
-                <>
-                    <div className={styles.header}>
-                        <Tabs
-                            className={styles.tabs}
-                            value={activeTab}
-                            onChange={(_, tab: RightSidebarTab) =>
-                                dispatch(setRightSidebarTab(tab))
-                            }
-                            textColor="inherit"
-                        >
-                            <Tab
-                                value={RightSidebarTab.STATISTICS}
-                                label={t("toolbar.views.statistics")}
-                            />
-                            <Tab value={RightSidebarTab.CHAT} label="Chatbot" />
-                        </Tabs>
-                        <IconButton
-                            size="small"
-                            onClick={() => dispatch(toggleRightSidebar())}
-                            sx={{ mr: 0.5 }}
-                        >
-                            <Close fontSize="small" />
-                        </IconButton>
-                    </div>
-                    <div className={styles.content}>
-                        {activeTab === RightSidebarTab.STATISTICS ? (
-                            <StatisticsView />
-                        ) : (
-                            <Chatbot />
-                        )}
-                    </div>
-                </>
-            )}
+            {isOpen && sidebarContent}
         </div>
     );
 };

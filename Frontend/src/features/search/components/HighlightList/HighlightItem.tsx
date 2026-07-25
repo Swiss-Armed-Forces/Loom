@@ -7,6 +7,7 @@ import {
     IconButton,
     Tooltip,
     Typography,
+    useMediaQuery,
 } from "@mui/material";
 import { Fragment, ReactNode, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -35,6 +36,7 @@ export const HighlightItem = ({
     fullDetails,
 }: HighlightItemProps) => {
     const { t } = useTranslation();
+    const isMobile = useMediaQuery("(max-width:600px)");
     const isDefaultExpanded = DEFAULT_EXPANDED_REGEX.some((re) =>
         re.test(field),
     );
@@ -104,7 +106,7 @@ export const HighlightItem = ({
                 <Tooltip title={t("generalSearchView.queryThisField")}>
                     <IconButton
                         component="span"
-                        size="small"
+                        size={isMobile ? "medium" : "small"}
                         onClick={(e) => {
                             e.stopPropagation();
                             onQuery(e.shiftKey);
@@ -117,7 +119,7 @@ export const HighlightItem = ({
                 <Tooltip title={t("generalSearchView.sortThisField")}>
                     <IconButton
                         component="span"
-                        size="small"
+                        size={isMobile ? "medium" : "small"}
                         onClick={(e) => {
                             e.stopPropagation();
                             onSort();

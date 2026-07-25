@@ -131,46 +131,48 @@ export const GlobalSearchBox = () => {
                     }
                 }}
             />
-            <StyledInputBase
-                startAdornment={<Sort sx={{ p: 1 }} />}
-                endAdornment={
-                    <>
-                        {sortInputFieldContent ? (
+            <div className={styles.sortInputWrapper}>
+                <StyledInputBase
+                    startAdornment={<Sort sx={{ p: 1 }} />}
+                    endAdornment={
+                        <>
+                            {sortInputFieldContent ? (
+                                <IconButton
+                                    color="inherit"
+                                    size="small"
+                                    onClick={handleClearSort}
+                                    aria-label="clear sort"
+                                >
+                                    <Clear fontSize="small" />
+                                </IconButton>
+                            ) : null}
                             <IconButton
                                 color="inherit"
-                                size="small"
-                                onClick={handleClearSort}
-                                aria-label="clear sort"
+                                onClick={(ev) => {
+                                    ev.preventDefault();
+                                    handleToggleSortDirection();
+                                }}
                             >
-                                <Clear fontSize="small" />
+                                {sortDirection === "asc" ? (
+                                    <ArrowUpward />
+                                ) : (
+                                    <ArrowDownward />
+                                )}
                             </IconButton>
-                        ) : null}
-                        <IconButton
-                            color="inherit"
-                            onClick={(ev) => {
-                                ev.preventDefault();
-                                handleToggleSortDirection();
-                            }}
-                        >
-                            {sortDirection === "asc" ? (
-                                <ArrowUpward />
-                            ) : (
-                                <ArrowDownward />
-                            )}
-                        </IconButton>
-                    </>
-                }
-                placeholder={t("globalSearchBox.sortPlaceholder")}
-                inputProps={{ "aria-label": "sort" }}
-                value={sortInputFieldContent ?? ""}
-                onChange={handleSortValueChange}
-                onKeyDown={(ev: React.KeyboardEvent<HTMLInputElement>) => {
-                    if (ev.key === "Enter") {
-                        ev.preventDefault();
-                        doUpdateQuery();
+                        </>
                     }
-                }}
-            />
+                    placeholder={t("globalSearchBox.sortPlaceholder")}
+                    inputProps={{ "aria-label": "sort" }}
+                    value={sortInputFieldContent ?? ""}
+                    onChange={handleSortValueChange}
+                    onKeyDown={(ev: React.KeyboardEvent<HTMLInputElement>) => {
+                        if (ev.key === "Enter") {
+                            ev.preventDefault();
+                            doUpdateQuery();
+                        }
+                    }}
+                />
+            </div>
         </div>
     );
 };

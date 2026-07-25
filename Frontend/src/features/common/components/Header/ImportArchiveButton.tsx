@@ -1,5 +1,5 @@
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
-import { Button } from "@mui/material";
+import { Button, IconButton, Tooltip, useMediaQuery } from "@mui/material";
 import { useTranslation } from "react-i18next";
 import { toast } from "react-toastify";
 
@@ -12,6 +12,7 @@ import { DemoUnavailableFeature } from "@features/common/utils/demoMode";
 export const ImportArchiveButton = () => {
     const { t } = useTranslation();
     const dispatch = useAppDispatch();
+    const isMobile = useMediaQuery("(max-width:600px)");
 
     const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -41,14 +42,22 @@ export const ImportArchiveButton = () => {
                 hidden
                 onChange={handleImport}
             />
-            <Button
-                component="span"
-                variant="outlined"
-                startIcon={<CloudUploadIcon />}
-                sx={{ color: "white", borderColor: "white" }}
-            >
-                {t("archives.importButton")}
-            </Button>
+            {isMobile ? (
+                <Tooltip title={t("archives.importButton")}>
+                    <IconButton component="span" sx={{ color: "white" }}>
+                        <CloudUploadIcon />
+                    </IconButton>
+                </Tooltip>
+            ) : (
+                <Button
+                    component="span"
+                    variant="outlined"
+                    startIcon={<CloudUploadIcon />}
+                    sx={{ color: "white", borderColor: "white" }}
+                >
+                    {t("archives.importButton")}
+                </Button>
+            )}
         </label>
     );
 };

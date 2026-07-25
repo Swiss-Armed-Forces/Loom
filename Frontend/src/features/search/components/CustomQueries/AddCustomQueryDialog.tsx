@@ -29,6 +29,7 @@ import {
     MenuItem,
     Select,
     TextField,
+    useMediaQuery,
 } from "@mui/material";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -76,6 +77,7 @@ export const AddCustomQueryDialog = ({
     iconOnly = false,
 }: TranslationProps) => {
     const { t } = useTranslation();
+    const isMobile = useMediaQuery("(max-width:600px)");
     const dispatch = useAppDispatch();
     const searchQuery = useAppSelector(selectQuery);
     const totalFilesCount = useAppSelector(selectTotalFiles);
@@ -144,6 +146,7 @@ export const AddCustomQueryDialog = ({
             <Dialog
                 open={showAddCustomQueryDialog}
                 fullWidth={true}
+                fullScreen={isMobile}
                 onClose={handleClose}
             >
                 <DialogTitle>

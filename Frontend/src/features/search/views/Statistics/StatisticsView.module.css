@@ -26,6 +26,17 @@
     gap: 0.5rem 1rem;
 }
 
+@media (max-width: 480px) {
+    .sectionLabel {
+        font-size: 0.75rem !important;
+    }
+
+    .summaryGrid {
+        grid-template-columns: 1fr;
+        gap: 0.5rem;
+    }
+}
+
 .summaryItem {
     display: flex;
     align-items: flex-start;

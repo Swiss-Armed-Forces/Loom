@@ -221,7 +221,7 @@ export const ResultCard = React.memo(
                         <CardContent
                             sx={{
                                 py: 1,
-                                px: 2,
+                                px: { xs: 1, sm: 2 },
                                 wordBreak: "break-word",
                                 "&:last-child": { pb: 1 },
                             }}

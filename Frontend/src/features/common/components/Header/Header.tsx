@@ -75,12 +75,15 @@ export const Header = () => {
                 (location.pathname === "/search" ||
                     location.pathname === "/") ? (
                     <GlobalSearchBox />
-                ) : location.pathname === "/archives" ? (
+                ) : !isMobile && location.pathname === "/archives" ? (
                     <div style={{ flex: 1 }}>
                         <ArchiveEncryptionKeyDisplay />
                     </div>
                 ) : (
-                    <div className="globalSearchBoxWrapperPlaceholder" />
+                    <div
+                        className="globalSearchBoxWrapperPlaceholder"
+                        style={{ flex: 1 }}
+                    />
                 )}
                 {location.pathname === "/archives" && <ImportArchiveButton />}
                 <BackgroundStatusIndicator />
@@ -102,6 +105,8 @@ export const Header = () => {
                             <Tab
                                 sx={{
                                     minHeight: "unset",
+                                    minWidth: { xs: 44, sm: 90 },
+                                    px: { xs: 1, sm: 2 },
                                     ":not(&.Mui-selected)": {
                                         color: "white",
                                     },
@@ -127,6 +132,10 @@ export const Header = () => {
             (location.pathname === "/search" || location.pathname === "/") ? (
                 <Toolbar className={styles.toolbar}>
                     <GlobalSearchBox />
+                </Toolbar>
+            ) : isMobile && location.pathname === "/archives" ? (
+                <Toolbar className={styles.toolbar}>
+                    <ArchiveEncryptionKeyDisplay />
                 </Toolbar>
             ) : null}
         </AppBar>

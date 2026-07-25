@@ -6,6 +6,12 @@
     max-height: 100%;
 }
 
+@media (max-width: 600px) {
+    .searchWrapper {
+        flex-direction: column;
+    }
+}
+
 .mainContent {
     display: flex;
     flex-direction: column;

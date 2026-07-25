@@ -39,6 +39,8 @@ export const FileTranslations = ({ translations }: FileTranslationsProps) => {
                     display: "flex",
                     alignItems: "center",
                     gap: 0.5,
+                    overflowX: "auto",
+                    flexShrink: 0,
                 }}
             >
                 {translations.map((tr, idx) => {
