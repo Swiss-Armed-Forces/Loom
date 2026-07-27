@@ -93,6 +93,16 @@ export const CenterTabs = () => {
                                     <Tab
                                         key={tab.fileId}
                                         value={tab.fileId}
+                                        onMouseDown={(e) => {
+                                            if (e.button === 1) {
+                                                e.preventDefault();
+                                                dispatch(
+                                                    closeFileTabThunk(
+                                                        tab.fileId,
+                                                    ),
+                                                );
+                                            }
+                                        }}
                                         label={
                                             <span
                                                 className={styles.fileTabLabel}

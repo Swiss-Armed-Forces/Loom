@@ -71,6 +71,21 @@ export const globalTheme = createTheme({
                 },
             },
         },
+        // Canonical hover style for all clickable chips.
+        // All clickable chips must use MUI Chip with onClick and must not add
+        // custom hover transforms in their own CSS or sx props.
+        MuiChip: {
+            styleOverrides: {
+                root: ({ ownerState }) =>
+                    ownerState.clickable
+                        ? {
+                              transition: "transform 0.2s ease",
+                              "&:hover": { transform: "scale(1.1)" },
+                              "&:active": { transform: "scale(0.95)" },
+                          }
+                        : {},
+            },
+        },
         MuiIconButton: {
             styleOverrides: {
                 root: {

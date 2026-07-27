@@ -1,12 +1,3 @@
 .attachmentChip {
     cursor: pointer;
-    transition: transform 0.2s ease;
-}
-
-.attachmentChip:hover {
-    transform: scale(1.1);
-}
-
-.attachmentChip:active {
-    transform: scale(0.95);
 }
