@@ -97,8 +97,8 @@ def test_add_failed_task(repository_task_object):
     record = repository_task_object.tasks[0]
     assert len(record.failed) == 1
     assert record.failed[0] == task_run
-    assert len(record.retried) == 0
-    assert len(record.succeeded) == 0
+    assert record.retried is None
+    assert record.succeeded is None
 
 
 def test_add_retried_task(repository_task_object):
@@ -115,8 +115,8 @@ def test_add_retried_task(repository_task_object):
     record = repository_task_object.tasks[0]
     assert len(record.retried) == 1
     assert record.retried[0] == task_run
-    assert len(record.failed) == 0
-    assert len(record.succeeded) == 0
+    assert record.failed is None
+    assert record.succeeded is None
 
 
 def test_add_success_task(repository_task_object):
@@ -133,8 +133,8 @@ def test_add_success_task(repository_task_object):
     record = repository_task_object.tasks[0]
     assert len(record.succeeded) == 1
     assert record.succeeded[0] == task_run
-    assert len(record.failed) == 0
-    assert len(record.retried) == 0
+    assert record.failed is None
+    assert record.retried is None
 
 
 def test_multiple_runs_accumulate(repository_task_object):

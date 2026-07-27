@@ -47,16 +47,16 @@ export interface TaskRecord {
     succeeded?: Array<TaskRun>;
     /**
      *
-     * @type {Array<TaskRun>}
+     * @type {any}
      * @memberof TaskRecord
      */
-    retried?: Array<TaskRun>;
+    retried?: any;
     /**
      *
-     * @type {Array<TaskRun>}
+     * @type {any}
      * @memberof TaskRecord
      */
-    failed?: Array<TaskRun>;
+    failed?: any;
 }
 
 /**
@@ -86,14 +86,8 @@ export function TaskRecordFromJSONTyped(
             json["succeeded"] == null
                 ? undefined
                 : (json["succeeded"] as Array<any>).map(TaskRunFromJSON),
-        retried:
-            json["retried"] == null
-                ? undefined
-                : (json["retried"] as Array<any>).map(TaskRunFromJSON),
-        failed:
-            json["failed"] == null
-                ? undefined
-                : (json["failed"] as Array<any>).map(TaskRunFromJSON),
+        retried: json["retried"] == null ? undefined : json["retried"],
+        failed: json["failed"] == null ? undefined : json["failed"],
     };
 }
 
@@ -108,13 +102,7 @@ export function TaskRecordToJSON(value?: TaskRecord | null): any {
             value["succeeded"] == null
                 ? undefined
                 : (value["succeeded"] as Array<any>).map(TaskRunToJSON),
-        retried:
-            value["retried"] == null
-                ? undefined
-                : (value["retried"] as Array<any>).map(TaskRunToJSON),
-        failed:
-            value["failed"] == null
-                ? undefined
-                : (value["failed"] as Array<any>).map(TaskRunToJSON),
+        retried: value["retried"],
+        failed: value["failed"],
     };
 }
