@@ -2,12 +2,15 @@
     display: grid;
     grid-template-columns: 1fr;
     gap: 1rem;
+    flex: 1;
+    min-width: 0;
     width: 100%;
+    align-self: center;
     align-items: center;
 }
 
 .globalSearchBox.sortVisible {
-    grid-template-columns: 4fr 1fr;
+    grid-template-columns: minmax(0, 1fr) 12rem;
 }
 
 @media (max-width: 800px) {
@@ -24,8 +27,11 @@
 
 .sortInputWrapper {
     display: none;
+    min-width: 0;
+    width: 100%;
 }
 
 .sortInputWrapper.visible {
-    display: block;
+    display: flex;
+    align-items: center;
 }
