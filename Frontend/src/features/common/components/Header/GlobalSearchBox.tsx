@@ -18,7 +18,6 @@ const StyledInputBase = styled(InputBase)(() => ({
     color: "inherit",
     borderRadius: "0.3rem",
     backgroundColor: "rgba(0, 0, 0, 0.75)",
-    transition: "background-color 0.5s ease",
     ":hover": {
         backgroundColor: "rgba(0, 0, 0, 0.85)",
     },
