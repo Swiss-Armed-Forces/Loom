@@ -24,9 +24,9 @@ class TaskRun(BaseModel):
 class TaskRecord(BaseModel):
     task_id: UUID
     task_name: str
-    succeeded: list[TaskRun] = []
-    retried: list[TaskRun] = []
-    failed: list[TaskRun] = []
+    succeeded: list[TaskRun] | None = None
+    retried: list[TaskRun] | None = None
+    failed: list[TaskRun] | None = None
 
 
 class RepositoryTaskObject(EsRepositoryObject):
@@ -39,22 +39,25 @@ class RepositoryTaskObject(EsRepositoryObject):
     @property
     def failed_task_names(
         self,
-    ) -> Annotated[list[str], TermsStat(label="Failed Task Names")]:
-        return list({t.task_name for t in self.tasks if t.failed})
+    ) -> Annotated[list[str] | None, TermsStat(label="Failed Task Names")]:
+        names = list({t.task_name for t in self.tasks if t.failed})
+        return names if len(names) > 0 else None
 
     @computed_field  # type: ignore[misc]
     @property
     def retried_task_names(
         self,
-    ) -> Annotated[list[str], TermsStat(label="Retried Task Names")]:
-        return list({t.task_name for t in self.tasks if t.retried})
+    ) -> Annotated[list[str] | None, TermsStat(label="Retried Task Names")]:
+        names = list({t.task_name for t in self.tasks if t.retried})
+        return names if len(names) > 0 else None
 
     @computed_field  # type: ignore[misc]
     @property
     def successful_task_names(
         self,
-    ) -> Annotated[list[str], TermsStat(label="Successful Task Names")]:
-        return list({t.task_name for t in self.tasks if t.succeeded})
+    ) -> Annotated[list[str] | None, TermsStat(label="Successful Task Names")]:
+        names = list({t.task_name for t in self.tasks if t.succeeded})
+        return names if len(names) > 0 else None
 
 
 class _EsTaskRun(InnerDoc):

@@ -20,6 +20,8 @@ def _add_failed_task(
     obj: RepositoryTaskObject, task_run: TaskRun, task_id: UUID, task_name: str
 ) -> None:
     record = _get_or_create_task_record(obj, task_id, task_name)
+    if not record.failed:
+        record.failed = []
     record.failed.append(task_run)
 
 
@@ -27,6 +29,8 @@ def _add_retried_task(
     obj: RepositoryTaskObject, task_run: TaskRun, task_id: UUID, task_name: str
 ) -> None:
     record = _get_or_create_task_record(obj, task_id, task_name)
+    if not record.retried:
+        record.retried = []
     record.retried.append(task_run)
 
 
@@ -34,6 +38,8 @@ def _add_success_task(
     obj: RepositoryTaskObject, task_run: TaskRun, task_id: UUID, task_name: str
 ) -> None:
     record = _get_or_create_task_record(obj, task_id, task_name)
+    if not record.succeeded:
+        record.succeeded = []
     record.succeeded.append(task_run)
 
 
@@ -48,13 +54,7 @@ def _get_or_create_task_record(
         None,
     )
     if not task_record:
-        task_record = TaskRecord(
-            task_id=task_id,
-            task_name=task_name,
-            succeeded=[],
-            retried=[],
-            failed=[],
-        )
+        task_record = TaskRecord(task_id=task_id, task_name=task_name)
         obj.tasks.append(task_record)
     return task_record
 
