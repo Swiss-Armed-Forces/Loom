@@ -1,6 +1,12 @@
 import { createDemoDocuments, INITIAL_ARCHIVE_ID } from "./fixtures";
 import { parseDemoQuery } from "./query";
 
+export interface DemoTranslation {
+    confidence: number;
+    language: string;
+    text: string;
+}
+
 export interface DemoDocument {
     id: string;
     name: string;
@@ -26,6 +32,7 @@ export interface DemoDocument {
     contentTruncated?: boolean;
     attachmentsSkipped?: boolean;
     imageDescription?: string;
+    translations: DemoTranslation[];
     parentId?: string;
     attachments?: { id: string; name: string }[];
     archiveIds: string[];
@@ -207,7 +214,16 @@ export const scheduleTask = (id: string, task: DemoTask): boolean => {
             document.summary = `Demo-generated summary: ${document.summary}`;
         if (task.kind === "translate") {
             document.language = task.language;
-            document.content = `${document.content} (Translated for the interactive demo.)`;
+            document.translations = [
+                ...document.translations.filter(
+                    (t) => t.language !== task.language,
+                ),
+                {
+                    confidence: 100,
+                    language: task.language,
+                    text: "(Demo-generated translation of the document content.)",
+                },
+            ];
         }
         if (task.kind === "image_description")
             document.imageDescription ??=
