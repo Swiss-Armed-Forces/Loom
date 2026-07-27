@@ -79,6 +79,7 @@ export const Header = () => {
                 {
                     <Link
                         className={styles.headerBranding}
+                        data-tour="branding"
                         to={"/"}
                         onClick={() =>
                             dispatch(
@@ -106,6 +107,7 @@ export const Header = () => {
 
                 <Box className={styles.headerButtons}>
                     <Tabs
+                        data-tour="navigation"
                         value={
                             location.pathname === "/"
                                 ? "/search"

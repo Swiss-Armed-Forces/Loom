@@ -120,7 +120,7 @@ export const ActivityBar = () => {
 
     if (isMobile) {
         return (
-            <div className={styles.activityBarBottom}>
+            <div className={styles.activityBarBottom} data-tour="search-tools">
                 <Tooltip
                     title={t("uploadFileDialog.uploadButton")}
                     placement="top"
@@ -174,7 +174,7 @@ export const ActivityBar = () => {
     }
 
     return (
-        <div className={styles.activityBar}>
+        <div className={styles.activityBar} data-tour="search-tools">
             <div className={styles.topSection}>
                 <Tooltip
                     title={t("uploadFileDialog.uploadButton")}
