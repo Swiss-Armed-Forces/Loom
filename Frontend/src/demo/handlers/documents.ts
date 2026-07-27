@@ -143,6 +143,20 @@ export const documentPreview = (
     attachmentsSkipped: document.attachmentsSkipped ?? false,
     isSpam: document.isSpam ?? false,
     state: document.state,
+    translationPreview:
+        document.translations.length > 0
+            ? document.translations[
+                  document.translations.length - 1
+              ].text.slice(0, 1000)
+            : undefined,
+    translationPreviewLanguage:
+        document.translations.length > 0
+            ? document.translations[document.translations.length - 1].language
+            : undefined,
+    translationPreviewIsTruncated:
+        document.translations.length > 0 &&
+        document.translations[document.translations.length - 1].text.length >
+            1000,
 });
 
 const documentRaw = (document: DemoDocument): string =>
@@ -275,7 +289,7 @@ export const documentDetail = (
     content: document.content,
     name: document.name,
     fullPath: document.path,
-    languageTranslations: [],
+    languageTranslations: document.translations,
     detectedLanguage: document.language,
     raw: documentRaw(document),
     summary: document.summary,
