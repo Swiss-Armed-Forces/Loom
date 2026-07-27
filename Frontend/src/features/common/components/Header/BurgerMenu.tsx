@@ -169,7 +169,7 @@ export const BurgerMenu = () => {
     ];
 
     return (
-        <div>
+        <div data-tour="menu">
             <IconButton
                 sx={{
                     backgroundColor: "rgba(0, 0, 0, 0.75)",

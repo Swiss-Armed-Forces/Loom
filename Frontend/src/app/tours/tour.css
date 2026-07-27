@@ -1,0 +1,42 @@
+.driver-popover.loom-tour-popover {
+    --driver-popover-font-family: var(--mui-font-family, sans-serif);
+    background-color: var(--mui-palette-background-paper);
+    color: var(--mui-palette-text-primary);
+    max-width: min(22rem, calc(100vw - 2rem));
+}
+
+.driver-popover.loom-tour-popover .driver-popover-title {
+    color: var(--mui-palette-text-primary);
+}
+
+.driver-popover.loom-tour-popover .driver-popover-description,
+.driver-popover.loom-tour-popover .driver-popover-progress-text,
+.driver-popover.loom-tour-popover .driver-popover-close-btn {
+    color: var(--mui-palette-text-secondary);
+}
+
+.driver-popover.loom-tour-popover .driver-popover-footer-btn {
+    background-color: var(--mui-palette-primary-main);
+    border-color: var(--mui-palette-primary-main);
+    color: var(--mui-palette-primary-contrastText);
+    text-shadow: none;
+}
+
+.driver-popover.loom-tour-popover .driver-popover-prev-btn {
+    background-color: transparent;
+    color: var(--mui-palette-text-primary);
+}
+
+@media (max-width: 600px) {
+    .driver-popover.loom-tour-popover {
+        max-width: calc(100vw - 1rem);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .driver-popover.loom-tour-popover,
+    .driver-overlay,
+    .driver-active-element {
+        transition: none !important;
+    }
+}

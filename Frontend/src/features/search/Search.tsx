@@ -279,7 +279,7 @@ export const Search = () => {
     }, [webSocketPubSubMessage, searchQuery?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
     return (
-        <div className={styles.searchWrapper}>
+        <div className={styles.searchWrapper} data-tour="search-workspace">
             {!isMobile && <ActivityBar />}
             <LeftSidebar />
             <div className={styles.mainContent}>

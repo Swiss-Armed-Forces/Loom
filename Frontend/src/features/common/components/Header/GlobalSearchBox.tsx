@@ -103,6 +103,7 @@ export const GlobalSearchBox = () => {
     return (
         <div
             className={`${styles.globalSearchBox}${sortVisible ? ` ${styles.sortVisible}` : ""}`}
+            data-tour="global-search"
         >
             <StyledInputBase
                 inputRef={searchInputRef}

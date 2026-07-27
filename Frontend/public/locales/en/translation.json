@@ -19,6 +19,41 @@
         "cancel": "Cancel",
         "copy": "Copy"
     },
+    "tour": {
+        "controls": {
+            "close": "Close tour",
+            "done": "Done",
+            "next": "Next",
+            "previous": "Previous",
+            "progress": "{{current}} of {{total}}"
+        },
+        "steps": {
+            "welcome": {
+                "title": "Welcome to Loom",
+                "description": "Loom helps you search, explore, and organize your documents."
+            },
+            "search": {
+                "title": "Search your documents",
+                "description": "Type words or a Loom query here, then press Enter to find matching documents."
+            },
+            "workspace": {
+                "title": "Explore your results",
+                "description": "Search results and opened documents appear in this workspace."
+            },
+            "tools": {
+                "title": "Refine and analyze",
+                "description": "Use these tools to browse folders, filter documents, view statistics, and open chat."
+            },
+            "navigation": {
+                "title": "Move between sections",
+                "description": "Switch between document search and your saved archives here."
+            },
+            "menu": {
+                "title": "More tools",
+                "description": "Open this menu for Loom information and links to supporting services."
+            }
+        }
+    },
     "demoMode": {
         "indicator": "DEMO",
         "title": "Interactive Demo",
