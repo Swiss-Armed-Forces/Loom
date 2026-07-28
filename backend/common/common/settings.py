@@ -57,7 +57,7 @@ class LazybytesStorageSettings(S3StorageSettings):
 
 
 class IntakeS3StorageSettings(S3StorageSettings):
-    bucket_name: str = "default"
+    bucket_name: str = "loom-intake"
 
 
 LLMExtraHeaders = dict[str, str]

@@ -22,6 +22,26 @@ interface FileTasksProps {
 
 type RunCategory = "failed" | "retried" | "succeeded";
 
+// TaskRecord.retried and TaskRecord.failed are typed as `any` due to an
+// openapi-generator bug with OAS 3.1, so their TaskRun entries skip
+// deserialization. Dates may arrive as ISO strings under camelCase keys
+// (demo/MSW JSON) or snake_case keys (real API JSON). TaskRunView accepts
+// both so getRunDate can pick whichever is present.
+type TaskRunView = TaskRun & {
+    started_at?: string;
+    finished_at?: string;
+};
+
+const getRunDate = (
+    run: TaskRunView,
+    camelKey: "startedAt" | "finishedAt",
+    snakeKey: "started_at" | "finished_at",
+): Date => {
+    const camel = run[camelKey];
+    if (camel instanceof Date) return camel;
+    return new Date((run[snakeKey] ?? camel) as string);
+};
+
 const toolbarButtonSx = (active: boolean) => ({
     borderRadius: 1,
     p: 0.75,
@@ -50,12 +70,13 @@ const TaskRunEntry = ({
     run,
     showException,
 }: {
-    run: TaskRun;
+    run: TaskRunView;
     showException: boolean;
 }) => (
     <Box sx={{ mb: 1 }}>
         <Typography variant="caption" color="text.secondary">
-            {formatDateTime(run.startedAt)} — {formatDateTime(run.finishedAt)} (
+            {formatDateTime(getRunDate(run, "startedAt", "started_at"))} —{" "}
+            {formatDateTime(getRunDate(run, "finishedAt", "finished_at"))} (
             {run.duration < 1
                 ? `${(run.duration * 1000).toFixed(0)}ms`
                 : `${run.duration.toFixed(1)}s`}
@@ -101,15 +122,27 @@ const TaskCard = ({
         <CardContent sx={{ pt: 1, "&:last-child": { pb: 1 } }}>
             {activeCategories.includes("failed") &&
                 (task.failed ?? []).map((run: TaskRun, i: number) => (
-                    <TaskRunEntry key={i} run={run} showException />
+                    <TaskRunEntry
+                        key={i}
+                        run={run as TaskRunView}
+                        showException
+                    />
                 ))}
             {activeCategories.includes("retried") &&
                 (task.retried ?? []).map((run: TaskRun, i: number) => (
-                    <TaskRunEntry key={i} run={run} showException />
+                    <TaskRunEntry
+                        key={i}
+                        run={run as TaskRunView}
+                        showException
+                    />
                 ))}
             {activeCategories.includes("succeeded") &&
                 (task.succeeded ?? []).map((run: TaskRun, i: number) => (
-                    <TaskRunEntry key={i} run={run} showException={false} />
+                    <TaskRunEntry
+                        key={i}
+                        run={run as TaskRunView}
+                        showException={false}
+                    />
                 ))}
         </CardContent>
     </Card>
