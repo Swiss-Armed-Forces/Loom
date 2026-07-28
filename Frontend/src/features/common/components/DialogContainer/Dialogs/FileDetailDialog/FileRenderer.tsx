@@ -17,6 +17,11 @@ import { Box, IconButton, Tooltip, Typography } from "@mui/material";
 import { useEffect, useRef, useState } from "react";
 
 import { ImapInfo, RenderedFile } from "@app/api";
+import { useAppDispatch, useAppSelector } from "@app/hooks";
+import {
+    selectPendingFullscreenFileId,
+    setPendingFullscreenFileId,
+} from "@app/slices/searchSlice";
 import { roundcubeHost, webApiGetFileRendered } from "@features/common/urls";
 import { FileRendererType } from "@features/common/utils/enums";
 
@@ -68,6 +73,10 @@ export const FileRenderer = ({
     renderedFile,
     imap,
 }: FileRendererProps) => {
+    const dispatch = useAppDispatch();
+    const isThisFilePending = useAppSelector(
+        (state) => selectPendingFullscreenFileId(state) === fileId,
+    );
     const isAvailable = (value: FileRendererType): boolean => {
         switch (value) {
             case FileRendererType.Image:
@@ -124,6 +133,18 @@ export const FileRenderer = ({
         return () =>
             document.removeEventListener("fullscreenchange", handleChange);
     }, []);
+
+    // When the keyboard shortcut opens this tab from the card view, a pending
+    // fullscreen request is stored in Redux. Consume it on mount while
+    // transient user activation (~5s from the keypress) is still valid.
+    useEffect(() => {
+        if (isThisFilePending) {
+            dispatch(setPendingFullscreenFileId(null));
+            containerRef.current?.requestFullscreen().catch((err) => {
+                console.error("requestFullscreen failed:", err);
+            });
+        }
+    }, [isThisFilePending, dispatch]);
 
     const toggleFullscreen = () => {
         if (!document.fullscreenElement) {
@@ -382,6 +403,7 @@ export const FileRenderer = ({
                         title={isFullscreen ? "Exit fullscreen" : "Fullscreen"}
                     >
                         <IconButton
+                            aria-label="fullscreen"
                             size="small"
                             onClick={toggleFullscreen}
                             sx={toolbarButtonSx(isFullscreen)}

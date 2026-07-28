@@ -139,6 +139,7 @@ export interface SearchState {
     highlightedFileId: string | null;
     suppressDownloadWarning: boolean;
     folderViewExpandedNodes: string[];
+    pendingFullscreenFileId: string | null;
 }
 
 export const QUERY_FAILED_FILES = "state:failed";
@@ -200,6 +201,7 @@ const initialState: SearchState = {
     temporaryFileId: null,
     suppressDownloadWarning: false,
     folderViewExpandedNodes: [],
+    pendingFullscreenFileId: null,
     ...persistedState,
     // Restore the last query (text + sort) so stale data renders immediately.
     // Strip sortId (pagination cursor) so the first real fetch starts from page 1.
@@ -487,6 +489,9 @@ export const searchSlice = createSlice({
             );
             if (idx === -1) return;
             state.openFileTabs.splice(idx, 1);
+            if (state.pendingFullscreenFileId === fileId) {
+                state.pendingFullscreenFileId = null;
+            }
             if (state.activeTabFileId === fileId) {
                 if (state.openFileTabs.length === 0) {
                     state.activeTabFileId = null;
@@ -616,6 +621,12 @@ export const searchSlice = createSlice({
             action: PayloadAction<string[]>,
         ) => {
             state.folderViewExpandedNodes = action.payload;
+        },
+        setPendingFullscreenFileId: (
+            state,
+            action: PayloadAction<string | null>,
+        ) => {
+            state.pendingFullscreenFileId = action.payload;
         },
         setFilePreview: (
             state,
@@ -818,6 +829,7 @@ export const {
     setExpandFilePaths,
     setSuppressDownloadWarning,
     setFolderViewExpandedNodes,
+    setPendingFullscreenFileId,
 } = searchSlice.actions;
 
 export const openFileTabThunk = createAsyncThunk(
@@ -1012,6 +1024,11 @@ export const selectOrderedFileIds = createSelector(selectFiles, (files) => [
 export const selectHighlightedFileId = createSelector(
     selectSearch,
     (search) => search.highlightedFileId,
+);
+
+export const selectPendingFullscreenFileId = createSelector(
+    selectSearch,
+    (search) => search.pendingFullscreenFileId,
 );
 
 export default searchSlice.reducer;
