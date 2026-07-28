@@ -37,6 +37,7 @@ import {
     stopLoadingIndicator,
 } from "@app/slices/commonSlice";
 import {
+    bumpHighlightScroll,
     fetchPreview,
     selectActiveTabFileId,
     selectFiles,
@@ -350,6 +351,9 @@ export const FolderView = ({ filter }: FolderViewProps) => {
 
         // If this node has a fileId, navigate to it in the results panel
         if (node.fileId) {
+            if (node.fileId === focusedFileId) {
+                dispatch(bumpHighlightScroll());
+            }
             handleFileClick(node.fileId);
         }
     };
