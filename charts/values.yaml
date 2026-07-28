@@ -139,6 +139,15 @@ externalSecrets:
       remoteRef:
         key: ""
         property: ""
+  # Vault-backed loading for the archive encryption master key.
+  # When enabled, ESO creates the 'archive-enc-master-key' K8s Secret with
+  # data key 'secretkey' from the configured Vault path, and the pre-install
+  # Job that auto-generates this secret is skipped.
+  archiveEncMasterKey:
+    enabled: false
+    remoteRef:
+      key: ""
+      property: ""
 
 ingress: &default-ingress-config
   enabled: true

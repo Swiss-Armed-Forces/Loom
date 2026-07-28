@@ -180,3 +180,26 @@ All values files are located in the [`./charts`](../charts) directory. They can 
 - **[`values-development.yaml`](../charts/values-development.yaml)** — Use this when actively
   developing Loom locally. It trades model quality for fast iteration: lightweight models, hot
   reload, and all internal services exposed via ingress. Not suitable for production.
+
+### Vault-backed Archive Encryption Key
+
+By default, the archive encryption master key is auto-generated on first install and
+stored in the `archive-enc-master-key` Kubernetes Secret. To source this key from Vault
+instead, set `externalSecrets.archiveEncMasterKey.enabled: true` in your values override
+and configure `remoteRef.key` and `remoteRef.property` to point to the Vault path and
+sub-key holding the 32-character hex key. When enabled, the pre-install Job that
+auto-generates the secret is automatically skipped.
+
+Example `values-overwrites.yaml`:
+
+```yaml
+externalSecrets:
+  secretStoreRef:
+    name: my-vault-store
+    kind: SecretStore
+  archiveEncMasterKey:
+    enabled: true
+    remoteRef:
+      key: secret/loom/archive
+      property: enc_master_key
+```
