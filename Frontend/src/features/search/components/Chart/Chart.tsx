@@ -120,12 +120,10 @@ export const Chart = ({
         }
     };
 
-    const handleClick = (
-        event: React.MouseEvent<SVGPathElement, MouseEvent>,
-        __: PieItemIdentifier,
-        item: DefaultizedPieValueType,
+    const filterByItem = (
+        item: Pick<DefaultizedPieValueType, "id" | "label">,
+        negate: boolean,
     ) => {
-        const negate = event.shiftKey;
         if (item.id === MISC_ID) {
             // Negate: exclude all shown named items so only "others" remain
             const shownLabels = data
@@ -143,6 +141,14 @@ export const Chart = ({
                 negate,
             );
         }
+    };
+
+    const handleClick = (
+        event: React.MouseEvent<SVGPathElement, MouseEvent>,
+        __: PieItemIdentifier,
+        item: DefaultizedPieValueType,
+    ) => {
+        filterByItem(item, event.shiftKey);
     };
 
     const anyHighlighted = highlightedItem !== null;
@@ -200,6 +206,9 @@ export const Chart = ({
                                         setHighlightedItem(null);
                                         onGroupHighlight?.(null);
                                     }}
+                                    onClick={(e) =>
+                                        filterByItem(item, e.shiftKey)
+                                    }
                                 >
                                     <span
                                         className={styles.legendSwatch}

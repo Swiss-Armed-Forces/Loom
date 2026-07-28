@@ -3,6 +3,7 @@ import {
     SubdirectoryArrowLeft,
     Download,
     Flag,
+    Fullscreen,
     LabelOutlined,
     ManageSearch,
     MarkEmailReadOutlined,
@@ -72,7 +73,13 @@ type HotkeyRow =
     | { type: "row"; keys: string[]; label: ReactNode; icon?: ReactNode }
     | { type: "divider" };
 
-export const EmptySearchResults = () => {
+interface EmptySearchResultsProps {
+    forceQueryOverview?: boolean;
+}
+
+export const EmptySearchResults = ({
+    forceQueryOverview = false,
+}: EmptySearchResultsProps) => {
     const searchQuery = useAppSelector(selectQuery);
     const { t } = useTranslation();
     const dispatch = useAppDispatch();
@@ -156,6 +163,16 @@ export const EmptySearchResults = () => {
         {
             type: "row",
             keys: ["f"],
+            icon: <Fullscreen fontSize="inherit" />,
+            label: (
+                <>
+                    <strong>F</strong>ullscreen
+                </>
+            ),
+        },
+        {
+            type: "row",
+            keys: ["Shift + f"],
             icon: <Flag fontSize="inherit" />,
             label: (
                 <>
@@ -286,7 +303,10 @@ export const EmptySearchResults = () => {
     };
 
     const createSearchTip = (query: string, searchKey: string) => (
-        <li key={query}>
+        <li
+            key={query}
+            data-tour={query === "*" ? "search-all-query" : undefined}
+        >
             <Box
                 component="span"
                 sx={searchChipSx}
@@ -300,7 +320,7 @@ export const EmptySearchResults = () => {
 
     return (
         <Box className={styles.emptyCard}>
-            {queryError && (
+            {!forceQueryOverview && queryError && (
                 <Alert severity="error">
                     <AlertTitle>{t("emptySearch.title.queryError")}</AlertTitle>
                     {String(queryError)}
@@ -311,7 +331,7 @@ export const EmptySearchResults = () => {
                     sx={{ pb: 0 }}
                     title={
                         <span className={styles.emptyCardHeaderTitle}>
-                            {searchQuery?.query
+                            {searchQuery?.query && !forceQueryOverview
                                 ? t("emptySearch.title.nothingFound")
                                 : t("emptySearch.title.default")}
                         </span>
@@ -330,7 +350,7 @@ export const EmptySearchResults = () => {
                                 alignItems: "start",
                             }}
                         >
-                            <Box>
+                            <Box data-tour="query-overview">
                                 <Typography
                                     variant="overline"
                                     color="text.secondary"
@@ -444,7 +464,7 @@ export const EmptySearchResults = () => {
                                     {t("emptySearch.advancedGuide")}
                                 </Typography>
                             </Box>
-                            <Box>
+                            <Box data-tour="keyboard-shortcuts">
                                 <Typography
                                     variant="overline"
                                     color="text.secondary"

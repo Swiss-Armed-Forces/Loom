@@ -46,6 +46,7 @@ export const ArchiveActions = ({ archive }: ArchiveActions) => {
         await hideArchive(archiveId);
         dispatch(removeArchive(archiveId));
     };
+
     const hasPlainFile = archive.sha256 != null;
     const hasEncryptedFile = archive.sha256Encrypted != null;
 
@@ -182,9 +183,7 @@ export const ArchiveActions = ({ archive }: ArchiveActions) => {
                             sx={{
                                 "&:hover": {
                                     backgroundColor: "action.hover",
-                                    transform: "scale(1.1)",
                                 },
-                                transition: "all 0.2s ease-in-out",
                             }}
                         >
                             <Delete />

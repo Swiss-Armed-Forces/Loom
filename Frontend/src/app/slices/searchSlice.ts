@@ -137,8 +137,10 @@ export interface SearchState {
     summarizationSystemPrompt: string | null;
     visionSystemPrompt: string | null;
     highlightedFileId: string | null;
+    highlightScrollRequest: number;
     suppressDownloadWarning: boolean;
     folderViewExpandedNodes: string[];
+    pendingFullscreenFileId: string | null;
 }
 
 export const QUERY_FAILED_FILES = "state:failed";
@@ -197,9 +199,11 @@ const initialState: SearchState = {
     summarizationSystemPrompt: null,
     visionSystemPrompt: null,
     highlightedFileId: null,
+    highlightScrollRequest: 0,
     temporaryFileId: null,
     suppressDownloadWarning: false,
     folderViewExpandedNodes: [],
+    pendingFullscreenFileId: null,
     ...persistedState,
     // Restore the last query (text + sort) so stale data renders immediately.
     // Strip sortId (pagination cursor) so the first real fetch starts from page 1.
@@ -487,6 +491,9 @@ export const searchSlice = createSlice({
             );
             if (idx === -1) return;
             state.openFileTabs.splice(idx, 1);
+            if (state.pendingFullscreenFileId === fileId) {
+                state.pendingFullscreenFileId = null;
+            }
             if (state.activeTabFileId === fileId) {
                 if (state.openFileTabs.length === 0) {
                     state.activeTabFileId = null;
@@ -591,6 +598,9 @@ export const searchSlice = createSlice({
         setHighlightedFileId: (state, action: PayloadAction<string | null>) => {
             state.highlightedFileId = action.payload;
         },
+        bumpHighlightScroll: (state) => {
+            state.highlightScrollRequest += 1;
+        },
         setTemporaryFileId: (state, action: PayloadAction<string | null>) => {
             if (
                 state.temporaryFileId &&
@@ -616,6 +626,12 @@ export const searchSlice = createSlice({
             action: PayloadAction<string[]>,
         ) => {
             state.folderViewExpandedNodes = action.payload;
+        },
+        setPendingFullscreenFileId: (
+            state,
+            action: PayloadAction<string | null>,
+        ) => {
+            state.pendingFullscreenFileId = action.payload;
         },
         setFilePreview: (
             state,
@@ -813,11 +829,13 @@ export const {
     setVisionSystemPrompt,
     setFilePreview,
     setHighlightedFileId,
+    bumpHighlightScroll,
     setTemporaryFileId,
     setAutoActionPreference,
     setExpandFilePaths,
     setSuppressDownloadWarning,
     setFolderViewExpandedNodes,
+    setPendingFullscreenFileId,
 } = searchSlice.actions;
 
 export const openFileTabThunk = createAsyncThunk(
@@ -1012,6 +1030,16 @@ export const selectOrderedFileIds = createSelector(selectFiles, (files) => [
 export const selectHighlightedFileId = createSelector(
     selectSearch,
     (search) => search.highlightedFileId,
+);
+
+export const selectHighlightScrollRequest = createSelector(
+    selectSearch,
+    (search) => search.highlightScrollRequest,
+);
+
+export const selectPendingFullscreenFileId = createSelector(
+    selectSearch,
+    (search) => search.pendingFullscreenFileId,
 );
 
 export default searchSlice.reducer;

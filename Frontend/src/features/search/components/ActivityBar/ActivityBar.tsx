@@ -33,6 +33,8 @@ import {
     toggleRightSidebar,
     updateQuery,
 } from "@app/slices/searchSlice";
+import { getTourLeftPanel, getTourRightTab } from "@app/tours/tourScene";
+import { useTour } from "@app/tours/useTour";
 import { UploadFileButton } from "@features/search/components/FileActionButtons";
 
 import { availableCustomQueryIcons } from "../CustomQueries/AddCustomQueryDialog";
@@ -47,6 +49,14 @@ export const ActivityBar = () => {
     const rightSidebarTab = useAppSelector(selectRightSidebarTab);
     const customQueries = useAppSelector(selectCustomQueries);
     const isMobile = useMediaQuery("(max-width:600px)");
+    const { activeTourStepId, isTourActive } = useTour();
+    const tourLeftPanel = getTourLeftPanel(isTourActive, activeTourStepId);
+    const tourRightTab = getTourRightTab(isTourActive, activeTourStepId);
+    const effectiveLeftPanel =
+        tourLeftPanel !== undefined ? tourLeftPanel : activePanel;
+    const effectiveRightOpen =
+        tourRightTab !== undefined ? tourRightTab !== null : rightSidebarOpen;
+    const effectiveRightTab = tourRightTab ?? rightSidebarTab;
 
     const MAX_NEW_MATCH_QUERIES = 5;
     const newMatchQueries = customQueries.filter((q) => q.hasNewFiles);
@@ -120,7 +130,7 @@ export const ActivityBar = () => {
 
     if (isMobile) {
         return (
-            <div className={styles.activityBarBottom}>
+            <div className={styles.activityBarBottom} data-tour="activity-bar">
                 <Tooltip
                     title={t("uploadFileDialog.uploadButton")}
                     placement="top"
@@ -132,11 +142,13 @@ export const ActivityBar = () => {
                 {leftPanelButtons.map(({ panel, icon, label }) => (
                     <Tooltip key={panel} title={label} placement="top">
                         <IconButton
-                            className={`${styles.iconButtonBottom} ${activePanel === panel ? styles.active : ""}`}
+                            className={`${styles.iconButtonBottom} ${effectiveLeftPanel === panel ? styles.active : ""}`}
                             onClick={() => handleLeftClick(panel)}
                             size="medium"
                             color={
-                                activePanel === panel ? "primary" : "default"
+                                effectiveLeftPanel === panel
+                                    ? "primary"
+                                    : "default"
                             }
                         >
                             {panel === LeftSidebarPanel.QUERIES &&
@@ -156,11 +168,11 @@ export const ActivityBar = () => {
                 {rightPanelButtons.map(({ tab, icon, label }) => (
                     <Tooltip key={tab} title={label} placement="top">
                         <IconButton
-                            className={`${styles.iconButtonBottom} ${rightSidebarOpen && rightSidebarTab === tab ? styles.active : ""}`}
+                            className={`${styles.iconButtonBottom} ${effectiveRightOpen && effectiveRightTab === tab ? styles.active : ""}`}
                             onClick={() => handleRightClick(tab)}
                             size="medium"
                             color={
-                                rightSidebarOpen && rightSidebarTab === tab
+                                effectiveRightOpen && effectiveRightTab === tab
                                     ? "primary"
                                     : "default"
                             }
@@ -174,7 +186,7 @@ export const ActivityBar = () => {
     }
 
     return (
-        <div className={styles.activityBar}>
+        <div className={styles.activityBar} data-tour="activity-bar">
             <div className={styles.topSection}>
                 <Tooltip
                     title={t("uploadFileDialog.uploadButton")}
@@ -187,11 +199,13 @@ export const ActivityBar = () => {
                 {leftPanelButtons.map(({ panel, icon, label }) => (
                     <Tooltip key={panel} title={label} placement="right">
                         <IconButton
-                            className={`${styles.iconButton} ${activePanel === panel ? styles.active : ""}`}
+                            className={`${styles.iconButton} ${effectiveLeftPanel === panel ? styles.active : ""}`}
                             onClick={() => handleLeftClick(panel)}
                             size="medium"
                             color={
-                                activePanel === panel ? "primary" : "default"
+                                effectiveLeftPanel === panel
+                                    ? "primary"
+                                    : "default"
                             }
                         >
                             {icon}
@@ -255,11 +269,11 @@ export const ActivityBar = () => {
                 {rightPanelButtons.map(({ tab, icon, label }) => (
                     <Tooltip key={tab} title={label} placement="right">
                         <IconButton
-                            className={`${styles.iconButton} ${rightSidebarOpen && rightSidebarTab === tab ? styles.active : ""}`}
+                            className={`${styles.iconButton} ${effectiveRightOpen && effectiveRightTab === tab ? styles.active : ""}`}
                             onClick={() => handleRightClick(tab)}
                             size="medium"
                             color={
-                                rightSidebarOpen && rightSidebarTab === tab
+                                effectiveRightOpen && effectiveRightTab === tab
                                     ? "primary"
                                     : "default"
                             }

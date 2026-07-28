@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef } from "react";
+import { flushSync } from "react-dom";
 
 import { useAppDispatch, useAppSelector } from "@app/hooks";
 import { selectIsLoading, selectTopDialog } from "@app/slices/commonSlice";
@@ -17,6 +18,7 @@ import {
     setFileTabDetailTab,
     setActiveTabFileId,
     openFileTabThunk,
+    setPendingFullscreenFileId,
     closeFileTabThunk,
 } from "@app/slices/searchSlice";
 import { FileDetailTab } from "@features/common/utils/enums";
@@ -667,6 +669,40 @@ export const useKeyboardNavigation = () => {
                     event.preventDefault();
                     return;
                 case "f":
+                    if (activeTabFileId !== null) {
+                        // Ensure the Rendered tab is active so FileRenderer is
+                        // in the DOM, then click the fullscreen button directly.
+                        flushSync(() => {
+                            dispatch(
+                                setFileTabDetailTab({
+                                    fileId: activeTabFileId,
+                                    detailTab: FileDetailTab.Rendered,
+                                }),
+                            );
+                        });
+                        const panel = document.querySelector(
+                            `[data-file-panel="${activeTabFileId}"]`,
+                        );
+                        const btn = panel?.querySelector(
+                            'button[aria-label="fullscreen"]',
+                        ) as HTMLElement | null;
+                        btn?.click();
+                    } else if (highlightedFileId !== null) {
+                        // FileRenderer mounts only after getFile() resolves.
+                        // Set the flag first so FileRenderer can consume it on
+                        // mount; transient user activation (~5s) is still valid
+                        // by the time the API call completes.
+                        dispatch(setPendingFullscreenFileId(highlightedFileId));
+                        dispatch(
+                            openFileTabThunk({
+                                fileId: highlightedFileId,
+                                detailTab: FileDetailTab.Rendered,
+                            }),
+                        );
+                    }
+                    event.preventDefault();
+                    return;
+                case "F":
                     clickActionButton("flagged");
                     event.preventDefault();
                     return;

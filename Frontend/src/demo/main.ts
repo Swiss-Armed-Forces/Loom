@@ -1,6 +1,7 @@
 import { startDemoWorker } from "./browser";
 import { resetDemoHandlerState } from "./handlers";
 import { clearDemoTimers, resetDemoRepository } from "./repository";
+import { seedDemoSavedQuery } from "./savedQuery";
 import { disposeDemoUrls } from "./urls";
 
 resetDemoRepository();
@@ -25,4 +26,5 @@ if (
     window.history.replaceState({}, "", `${basePath}/search?query=*`);
 }
 
+seedDemoSavedQuery(window.localStorage);
 await import("../main");

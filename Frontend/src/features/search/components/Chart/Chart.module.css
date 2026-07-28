@@ -13,7 +13,6 @@
     gap: 0.35rem;
     cursor: pointer;
     opacity: 1;
-    transition: opacity 0.15s ease;
     font-size: 0.75rem;
     user-select: none;
 }

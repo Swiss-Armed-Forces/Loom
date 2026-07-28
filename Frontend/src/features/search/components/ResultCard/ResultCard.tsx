@@ -18,6 +18,7 @@ import { useAppDispatch, useAppSelector } from "@app/hooks";
 import {
     selectQuery,
     selectFileById,
+    selectHighlightScrollRequest,
     setFileInViewState,
     setHighlightedFileId,
     openFileTabThunk,
@@ -54,6 +55,9 @@ export const ResultCard = React.memo(
         const file = useAppSelector(selectFileById(fileId));
         const filePreview = file?.preview;
         const sortFieldValue = file?.meta?.sortFieldValue ?? "";
+        const highlightScrollRequest = useAppSelector(
+            selectHighlightScrollRequest,
+        );
         const cardRef = useRef<HTMLDivElement>(null);
         const { ref: inViewRef, inView } = useInView({
             threshold: [0.2],
@@ -104,7 +108,7 @@ export const ResultCard = React.memo(
             cardRef.current.focus({ preventScroll: true });
             const id = setTimeout(() => scrollCardIntoView(), 100);
             return () => clearTimeout(id);
-        }, [isHighlighted]);
+        }, [isHighlighted, highlightScrollRequest]);
 
         // Combine refs
         const setRefs = (element: HTMLDivElement | null) => {
@@ -180,6 +184,7 @@ export const ResultCard = React.memo(
                 className="resultCardParent"
                 tabIndex={0}
                 data-highlighted={isHighlighted ? "true" : undefined}
+                data-tour="result-card"
                 ref={setRefs}
                 onClick={handleCardClick}
                 onDoubleClick={handleCardDoubleClick}
@@ -247,30 +252,35 @@ export const ResultCard = React.memo(
                                         flexDirection: "column",
                                     }}
                                 >
-                                    <Summary
-                                        filePreview={filePreview}
-                                        onOpenDetailsTab={
-                                            handleOpenDetailsOnTabClick
-                                        }
-                                    />
-                                    <HighlightList
-                                        highlights={
-                                            filePreview.highlight as Record<
-                                                string,
-                                                string[]
-                                            >
-                                        }
-                                    />
-                                    {isMobile && (
-                                        <TagsList
-                                            tags={filePreview.tags || []}
+                                    <Box data-tour="result-card-content">
+                                        <Summary
                                             filePreview={filePreview}
+                                            onOpenDetailsTab={
+                                                handleOpenDetailsOnTabClick
+                                            }
                                         />
+                                        <HighlightList
+                                            highlights={
+                                                filePreview.highlight as Record<
+                                                    string,
+                                                    string[]
+                                                >
+                                            }
+                                        />
+                                    </Box>
+                                    {isMobile && (
+                                        <Box data-tour="result-card-tags">
+                                            <TagsList
+                                                tags={filePreview.tags || []}
+                                                filePreview={filePreview}
+                                            />
+                                        </Box>
                                     )}
                                 </Box>
 
                                 {filePreview.thumbnailFileId && (
                                     <Badge
+                                        data-tour="result-card-preview"
                                         color="primary"
                                         badgeContent={
                                             filePreview.thumbnailTotalFrames

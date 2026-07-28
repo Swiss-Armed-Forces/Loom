@@ -19,6 +19,160 @@
         "cancel": "Cancel",
         "copy": "Copy"
     },
+    "tour": {
+        "takeTour": "Take a Tour",
+        "controls": {
+            "close": "Close tour",
+            "done": "Done",
+            "next": "Next",
+            "previous": "Previous",
+            "progress": "{{current}} of {{total}}",
+            "searchAll": "Search all documents",
+            "skip": "Skip Tour"
+        },
+        "steps": {
+            "welcome": {
+                "title": "Welcome to Loom",
+                "description": "Loom is a document search and review workspace. It can index, OCR, tag, flag, translate, and summarize your files — all in one place. This short tour will walk you through the main tools."
+            },
+            "globalSearch": {
+                "title": "Search and sort",
+                "description": "Type keywords or a query expression and press Enter to search. Use the sort button to choose a metadata field and flip between ascending and descending order."
+            },
+            "queryOverview": {
+                "title": "Explore query examples",
+                "description": "Queries can combine text, metadata fields, Boolean operators, phrases, wildcards, ranges, and dates. The examples here are clickable starting points for exploring your own collection."
+            },
+            "keyboardShortcuts": {
+                "title": "Work faster with keyboard shortcuts",
+                "description": "Use arrow keys to move between results and Enter to open them. Further shortcuts let you flag, tag, translate, and summarize documents without reaching for the mouse."
+            },
+            "searchAll": {
+                "title": "Try digging into your data now",
+                "description": "Click the button below to run a search for all documents. The tour will continue once the first results load, so you can see the tools in action on real data."
+            },
+            "resultsTabs": {
+                "title": "Results and document tabs",
+                "description": "The Results tab stays pinned and shows how many documents are loaded out of the total matches. Documents open in additional tabs beside it. Scroll down or use the load-more button to bring in more results."
+            },
+            "resultCard": {
+                "title": "Work with a result",
+                "description": "Click a card to select it. Double-click opens its full detail view; Ctrl-click opens it in a background tab without leaving your current results. The footer shows the active sort field and its value for that document."
+            },
+            "resultCardPath": {
+                "title": "Identity, path, and status",
+                "description": "The file-type icon marks unseen files with a visual indicator. The document path is shown below it — bold text means the file is unseen, and red means it has been flagged. Other icons reveal details and let you apply quick filters; hold Shift to exclude rather than include."
+            },
+            "resultCardProcessingStatus": {
+                "title": "Document processing status",
+                "description": "A scissors icon means the file's content was too long and was cut short. A broken-link icon means Loom stopped extracting nested attachments after going too many levels deep. Click either icon to filter for documents with that status, or hold Shift to exclude them. A red Failed badge opens the task history with error details and a retry option."
+            },
+            "resultCardSubitems": {
+                "title": "Attachments and related items",
+                "description": "Attachments and documents extracted from this file appear below the path. Click to open them in their own tabs, or Ctrl-click to open them in the background. Sub-documents also show a link back to the file they came from."
+            },
+            "resultCardContent": {
+                "title": "Preview content and matches",
+                "description": "Switch between extracted text, summary, translation, and AI image-description previews when available. Match highlights show which parts of the document matched your query — click one to filter by that phrase or to sort by that specific field."
+            },
+            "resultCardTags": {
+                "title": "Organize and filter with tags",
+                "description": "Tags organize documents and also act as query filters. Click a tag to include it, hold Shift to exclude it, use the overflow for additional tags, and use the tag action to add or remove labels."
+            },
+            "resultCardActions": {
+                "title": "Document actions",
+                "description": "Primary actions let you flag, mark as seen, tag, share, download, or open the full detail view. More actions include translation, summarization, AI image description, reindexing, and options to control whether the document appears in results."
+            },
+            "resultCardPreview": {
+                "title": "Thumbnail preview",
+                "description": "The thumbnail shows a visual snapshot of the document. Its badge displays the total number of pages or frames. Click it to open the full rendered view."
+            },
+            "documentDetail": {
+                "title": "Full document workspace",
+                "description": "The document view organizes everything about a file into tabs — rendered previews, extracted text, translations, search highlights, summaries, and more. Tabs are disabled when no data is available for that document."
+            },
+            "detailRendered": {
+                "title": "Rendered view and controls",
+                "description": "Choose a rendering mode — Office PDF, Browser PDF, Image, or Email — to control how the document is displayed; if one mode looks wrong, try another. For PDF modes, toggle a page outline or thumbnail strip to navigate long documents. You can also zoom, rotate, or go full-screen."
+            },
+            "detailTranslations": {
+                "title": "Machine translations",
+                "description": "The Translations tab shows automatically translated versions of the document text. Select a language to read the translation in the editor below."
+            },
+            "detailHighlights": {
+                "title": "Query match highlights",
+                "description": "Highlights show the exact passages and document fields where your search terms were found. Click a field name to add it as a filter and limit results to documents that matched in that same field."
+            },
+            "detailRaw": {
+                "title": "Raw indexed data",
+                "description": "The Raw tab shows everything Loom extracted and stored for this document — metadata, detected language, processing history, and more — in structured JSON format. Useful for troubleshooting or for technical users who want to inspect the underlying data."
+            },
+            "activityBar": {
+                "title": "Workspace tools",
+                "description": "The toolbar opens upload, folders, tags, saved queries, bulk actions, automatic actions, statistics, and document chat. Items with new activity show badge counts — for example, saved queries with newly matching documents."
+            },
+            "folders": {
+                "title": "Browse by folder",
+                "description": "Browse the folder structure of your indexed files. Filter visible folders by name, and see counts for total, unseen, and flagged documents. Clicking a folder makes it the active search filter."
+            },
+            "folderTreeNode": {
+                "title": "Folder node counts",
+                "description": "Each node shows up to three counts: a red flag for flagged documents, a yellow dot for unseen documents, and a document icon for the total. Counts roll up through parent folders. Bold names contain unseen files; red names contain flagged files."
+            },
+            "folderFilter": {
+                "title": "Filter by name",
+                "description": "Type to narrow the folder list by name. The filter is case-insensitive and clears automatically when you switch to a different tool."
+            },
+            "tags": {
+                "title": "Browse by tag",
+                "description": "Browse and filter the tag list, then click a tag to narrow the current search to documents with that tag. Hold Shift while clicking to exclude that tag from results instead."
+            },
+            "savedQueries": {
+                "title": "Reuse saved queries",
+                "description": "Save the current query so you can rerun it later and track its match count. Queries with newly matching documents since your last visit show a badge. You can filter the list or delete queries you no longer need."
+            },
+            "bulkActions": {
+                "title": "Act on every match",
+                "description": "Bulk actions apply to the complete query result set—not only cards currently loaded on screen. Available operations include flagging, seen state, tags, translation, summaries, image descriptions, reindexing, visibility, and archive creation."
+            },
+            "autoActions": {
+                "title": "Automate result review",
+                "description": "Automatic actions run when you open or interact with a result. Configure whether Loom marks it seen, flags it, translates it, summarizes it, describes its images, or triggers reindexing — so routine tasks happen without manual steps."
+            },
+            "statistics": {
+                "title": "Analyze the result set",
+                "description": "Choose metadata dimensions to view distributions and grouped histograms for the active query. Selecting chart segments or ranges adds those values as search filters."
+            },
+            "statisticsPieChart": {
+                "title": "Distribution pie chart",
+                "description": "The pie chart shows the top values for the selected metadata dimension. Click a slice to filter results to that value, or hold Shift to exclude it. Hover over a slice to see its exact count."
+            },
+            "statisticsHistogram": {
+                "title": "Grouped histogram",
+                "description": "The histogram groups documents over time or numeric ranges. Bar colors correspond to the values shown in the pie chart. Click a bar segment to filter by that group, or drag to select a date or value range."
+            },
+            "chat": {
+                "title": "Ask across your documents",
+                "description": "Document chat answers questions using the current query result set. Source references in an answer link back to the supporting documents so you can inspect them directly."
+            },
+            "processingStatus": {
+                "title": "Monitor processing health",
+                "description": "Header indicators show the health of background processing. Icons flag files with truncated content, skipped attachments, or failed tasks — click any indicator to search for the affected files. This area also shows active processing progress and whether queues are paused."
+            },
+            "navigation": {
+                "title": "Move between sections",
+                "description": "Switch between document Search and Archives. Any documents you had open are waiting for you when you return to Search."
+            },
+            "menu": {
+                "title": "More tools",
+                "description": "Open this menu to access the built-in AI chat interface and other supporting tools. Click About to view version information or to restart this tour."
+            },
+            "conclusion": {
+                "title": "Happy exploring!",
+                "description": "That's the tour. Dive into your collection, refine queries, and organize your findings at your own pace. Restart this tour any time from the About dialog."
+            }
+        }
+    },
     "demoMode": {
         "indicator": "DEMO",
         "title": "Interactive Demo",
@@ -254,7 +408,8 @@
         "actions": {
             "download": "Download",
             "download_encrypted": "Download Encrypted",
-            "search": "Search query"
+            "search": "Search query",
+            "tasks": "Tasks"
         }
     },
     "detailedView": {
@@ -353,6 +508,7 @@
             "shiftClickNegate": "Negate clicked filter",
             "escapeAction": "Clear selection, search & sort, or close",
             "focusSearch": "Focus search",
+            "fullscreen": "Fullscreen",
             "flag": "Flag/unflag",
             "see": "Seen/unseen",
             "share": "Share",
@@ -423,7 +579,8 @@
         "encryptionKeyCopied": "Archive encryption key copied",
         "encryptionKeyInfoTitle": "Archive Encryption Key",
         "encryptionKeyInfoDescription": "This is the master key used to encrypt all .loom archive files created by this Loom instance.",
-        "encryptionKeyInfoSyncNote": "To seamlessly import archives between two Loom instances, both must share the same master key. Set the ARCHIVE_ENC_MASTER_KEY environment variable to this value on the other instance."
+        "encryptionKeyInfoSyncNote": "To seamlessly import archives between two Loom instances, both must share the same master key. Set the ARCHIVE_ENC_MASTER_KEY environment variable to this value on the other instance.",
+        "tasksDialogTitle": "Tasks — {{name}}"
     },
     "about": {
         "title": "About",

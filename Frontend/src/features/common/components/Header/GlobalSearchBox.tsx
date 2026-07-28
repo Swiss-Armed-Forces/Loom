@@ -15,10 +15,11 @@ import { selectQuery, updateQuery } from "@app/slices/searchSlice";
 import styles from "./GlobalSearchBox.module.css";
 
 const StyledInputBase = styled(InputBase)(() => ({
+    width: "100%",
+    minWidth: 0,
     color: "inherit",
     borderRadius: "0.3rem",
     backgroundColor: "rgba(0, 0, 0, 0.75)",
-    transition: "background-color 0.5s ease",
     ":hover": {
         backgroundColor: "rgba(0, 0, 0, 0.85)",
     },
@@ -103,6 +104,7 @@ export const GlobalSearchBox = () => {
     return (
         <div
             className={`${styles.globalSearchBox}${sortVisible ? ` ${styles.sortVisible}` : ""}`}
+            data-tour="global-search"
         >
             <StyledInputBase
                 inputRef={searchInputRef}

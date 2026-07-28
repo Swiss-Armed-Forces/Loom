@@ -46,6 +46,8 @@ import {
     setLeftSidebarPanel,
     setTags,
 } from "@app/slices/searchSlice";
+import { getTourLeftPanel } from "@app/tours/tourScene";
+import { useTour } from "@app/tours/useTour";
 import {
     ReIndexButton,
     SummaryButton,
@@ -106,6 +108,10 @@ export const LeftSidebar = () => {
     const dispatch = useAppDispatch();
     const { t } = useTranslation();
     const activePanel = useAppSelector(selectLeftSidebarPanel);
+    const { activeTourStepId, isTourActive } = useTour();
+    const tourPanel = getTourLeftPanel(isTourActive, activeTourStepId);
+    const effectiveActivePanel =
+        tourPanel !== undefined ? tourPanel : activePanel;
     const numberOfResults = useAppSelector(selectTotalFiles);
     const searchQuery = useAppSelector(selectQuery);
     const tags = useAppSelector(selectTags);
@@ -125,7 +131,7 @@ export const LeftSidebar = () => {
     // Reset filter whenever the active panel changes
     useEffect(() => {
         setFilterText("");
-    }, [activePanel]);
+    }, [effectiveActivePanel]);
 
     const fetchTags = useCallback(async () => {
         try {
@@ -136,11 +142,11 @@ export const LeftSidebar = () => {
     }, [dispatch]);
 
     useEffect(() => {
-        if (activePanel !== LeftSidebarPanel.TAGS) return;
+        if (effectiveActivePanel !== LeftSidebarPanel.TAGS) return;
         fetchTags();
         const interval = setInterval(fetchTags, TAGS_REFRESH_MS);
         return () => clearInterval(interval);
-    }, [activePanel, fetchTags]);
+    }, [effectiveActivePanel, fetchTags]);
 
     // Remove any in-flight drag listeners when the component unmounts
     useEffect(() => {
@@ -226,7 +232,7 @@ export const LeftSidebar = () => {
     );
 
     const renderPanelContent = () => {
-        switch (activePanel) {
+        switch (effectiveActivePanel) {
             case LeftSidebarPanel.FOLDER:
                 return <FolderView filter={filterText} />;
             case LeftSidebarPanel.TAGS:
@@ -311,26 +317,33 @@ export const LeftSidebar = () => {
         }
     };
 
-    const sidebarWidth = activePanel === null ? 0 : width;
+    const sidebarWidth = effectiveActivePanel === null ? 0 : width;
     const showFilter =
-        activePanel !== null && FILTERABLE_PANELS.has(activePanel);
+        effectiveActivePanel !== null &&
+        FILTERABLE_PANELS.has(effectiveActivePanel);
 
     const panelContent =
-        activePanel !== null ? (
+        effectiveActivePanel !== null ? (
             <>
                 <div className={styles.header}>
                     <Typography className={styles.headerTitle}>
-                        {t(PANEL_TITLES[activePanel])}
+                        {t(PANEL_TITLES[effectiveActivePanel])}
                     </Typography>
                     <IconButton
                         size="small"
-                        onClick={() => dispatch(setLeftSidebarPanel(null))}
+                        onClick={() => {
+                            if (!isTourActive)
+                                dispatch(setLeftSidebarPanel(null));
+                        }}
                     >
                         <Close fontSize="small" />
                     </IconButton>
                 </div>
                 {showFilter && (
-                    <div className={styles.filterBar}>
+                    <div
+                        className={styles.filterBar}
+                        data-tour="sidebar-folder-filter"
+                    >
                         <InputBase
                             className={styles.filterInput}
                             value={filterText}
@@ -364,15 +377,26 @@ export const LeftSidebar = () => {
                         />
                     </div>
                 )}
-                <div className={styles.content}>{renderPanelContent()}</div>
+                <div
+                    className={styles.content}
+                    data-tour={
+                        activeTourStepId
+                            ? `sidebar-${activeTourStepId}`
+                            : undefined
+                    }
+                >
+                    {renderPanelContent()}
+                </div>
             </>
         ) : null;
 
     if (isMobile) {
         return (
             <Drawer
-                open={activePanel !== null}
-                onClose={() => dispatch(setLeftSidebarPanel(null))}
+                open={effectiveActivePanel !== null}
+                onClose={() => {
+                    if (!isTourActive) dispatch(setLeftSidebarPanel(null));
+                }}
                 variant="temporary"
                 anchor="left"
                 slotProps={{
@@ -397,7 +421,7 @@ export const LeftSidebar = () => {
             style={{ width: sidebarWidth }}
         >
             {panelContent}
-            {activePanel !== null && (
+            {effectiveActivePanel !== null && (
                 <div
                     className={`${styles.dragHandle} ${isDragging ? styles.dragging : ""}`}
                     onMouseDown={handleMouseDown}

@@ -100,15 +100,15 @@ const TaskCard = ({
         />
         <CardContent sx={{ pt: 1, "&:last-child": { pb: 1 } }}>
             {activeCategories.includes("failed") &&
-                (task.failed ?? []).map((run, i) => (
+                (task.failed ?? []).map((run: TaskRun, i: number) => (
                     <TaskRunEntry key={i} run={run} showException />
                 ))}
             {activeCategories.includes("retried") &&
-                (task.retried ?? []).map((run, i) => (
+                (task.retried ?? []).map((run: TaskRun, i: number) => (
                     <TaskRunEntry key={i} run={run} showException />
                 ))}
             {activeCategories.includes("succeeded") &&
-                (task.succeeded ?? []).map((run, i) => (
+                (task.succeeded ?? []).map((run: TaskRun, i: number) => (
                     <TaskRunEntry key={i} run={run} showException={false} />
                 ))}
         </CardContent>
@@ -192,7 +192,7 @@ export const FileTasks = ({ tasks }: FileTasksProps) => {
             <Box sx={{ flex: 1, overflow: "auto", p: 2 }}>
                 {visibleTasks.map((task, i) => (
                     <TaskCard
-                        key={`${task.taskId}-${i}`}
+                        key={`${task.taskName}-${i}`}
                         task={task}
                         activeCategories={activeCategories}
                     />

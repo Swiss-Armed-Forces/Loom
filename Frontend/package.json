@@ -25,6 +25,7 @@
         "ace-builds": "^1.43.6",
         "ajv": "^8.18.0",
         "date-fns": "^4.1.0",
+        "driver.js": "^1.8.0",
         "eslint-plugin-import": "^2.32.0",
         "i18next": "^26.0.6",
         "i18next-http-backend": "^3.0.5",

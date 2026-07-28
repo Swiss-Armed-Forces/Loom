@@ -1,4 +1,5 @@
 import { fireEvent, render, screen } from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { DemoUnavailableFeature } from "@features/common/utils/demoMode";
@@ -14,6 +15,13 @@ vi.mock("@app/hooks", () => ({
 
 vi.mock("@features/common/demoModeUnavailableAction", () => ({
     notifyIfUnavailableInDemoMode,
+}));
+
+vi.mock("@app/tours/useTour", () => ({
+    useTour: () => ({
+        isTourActive: false,
+        activeTourStepId: null,
+    }),
 }));
 
 vi.mock("@mui/icons-material", () => {
@@ -36,6 +44,7 @@ vi.mock("@mui/icons-material", () => {
         SmartToyOutlined: Icon,
         StorageOutlined: Icon,
         TaskOutlined: Icon,
+        TourOutlined: Icon,
         WhatshotOutlined: Icon,
     };
 });
@@ -56,7 +65,7 @@ vi.mock("@mui/material", () => ({
         children,
         component,
         ...props
-    }: React.ComponentProps<"a"> & { component: "a" }) => {
+    }: React.ComponentProps<"a"> & { component?: "a" }) => {
         void component;
         return (
             <a role="menuitem" {...props}>
@@ -68,9 +77,20 @@ vi.mock("@mui/material", () => ({
 
 vi.mock("react-i18next", () => ({
     useTranslation: () => ({
-        t: (key: string) => (key === "about.title" ? "About" : key),
+        t: (key: string) =>
+            ({
+                "about.title": "About",
+                "tour.takeTour": "Take a Tour",
+            })[key] ?? key,
     }),
 }));
+
+const renderMenu = (initialEntry = "/search") =>
+    render(
+        <MemoryRouter initialEntries={[initialEntry]}>
+            <BurgerMenu />
+        </MemoryRouter>,
+    );
 
 const openMenu = () => {
     fireEvent.click(screen.getByRole("button", { name: "menu" }));
@@ -83,7 +103,7 @@ describe("BurgerMenu", () => {
     });
 
     it("shows backend services and About", () => {
-        render(<BurgerMenu />);
+        renderMenu();
 
         openMenu();
 
@@ -92,12 +112,14 @@ describe("BurgerMenu", () => {
         ).toBeVisible();
         expect(screen.getByRole("menuitem", { name: "Traefik" })).toBeVisible();
         expect(screen.getByRole("menuitem", { name: "About" })).toBeVisible();
-        expect(screen.getAllByRole("menuitem")).toHaveLength(18);
+        expect(
+            screen.queryByRole("menuitem", { name: "Take a Tour" }),
+        ).toBeNull();
     });
 
     it("blocks unavailable demo service links and closes the menu", () => {
         notifyIfUnavailableInDemoMode.mockReturnValue(true);
-        render(<BurgerMenu />);
+        renderMenu();
         openMenu();
         const serviceLink = screen.getByRole("menuitem", {
             name: "Open WebUI",
@@ -120,7 +142,7 @@ describe("BurgerMenu", () => {
 
     it("preserves production service link navigation", () => {
         notifyIfUnavailableInDemoMode.mockReturnValue(false);
-        render(<BurgerMenu />);
+        renderMenu();
         openMenu();
         const serviceLink = screen.getByRole("menuitem", { name: "Flower" });
         const click = new MouseEvent("click", {

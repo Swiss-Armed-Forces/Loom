@@ -28,6 +28,7 @@ const document = (
     state: "processed",
     summary: "A summary",
     tags: [],
+    translations: [],
     uploadedAt,
 });
 

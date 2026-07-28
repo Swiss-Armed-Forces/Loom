@@ -683,6 +683,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | ace-builds                          | BSD-3-Clause | 1.44.0            |
 | ajv                                 | MIT          | 8.20.0            |
 | date-fns                            | MIT          | 4.1.0             |
+| driver.js                           | MIT          | 1.8.0             |
 | eslint-plugin-import                | MIT          | 2.32.0            |
 | i18next                             | MIT          | 26.1.0            |
 | i18next-http-backend                | MIT          | 3.0.5             |

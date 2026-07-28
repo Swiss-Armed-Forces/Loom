@@ -232,7 +232,7 @@ export const BackgroundStatusIndicator: FC = () => {
     };
 
     return (
-        <Indicator>
+        <Indicator data-tour="processing-status">
             {queueStatistics.messagesInQueues > 0 && (
                 <Tooltip title={getActiveSpinnerTooltip()}>
                     <Badge

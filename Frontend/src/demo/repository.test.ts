@@ -272,12 +272,19 @@ describe("demo repository", () => {
         expect(getMetrics().messagesInQueues).toBe(0);
     });
 
-    it("uses the requested language for translation tasks", () => {
+    it("adds a translation entry and updates language for translation tasks", () => {
         const document = searchDocuments("tags:security")[0];
 
         scheduleTask(document.id, { kind: "translate", language: "de" });
         vi.advanceTimersByTime(2_100);
 
-        expect(getDocument(document.id)?.language).toBe("de");
+        const updated = getDocument(document.id);
+        expect(updated?.language).toBe("de");
+        expect(updated?.translations).toHaveLength(1);
+        expect(updated?.translations[0]).toMatchObject({
+            confidence: 100,
+            language: "de",
+        });
+        expect(updated?.content).not.toContain("Translated");
     });
 });

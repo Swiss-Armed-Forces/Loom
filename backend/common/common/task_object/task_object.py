@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import Annotated, TypeVar
 from uuid import UUID
 
-from elasticsearch.dsl import Date, Float, InnerDoc, Keyword, Nested, Object
+from elasticsearch.dsl import Date, Float, InnerDoc, Integer, Keyword, Nested, Object
 from pydantic import BaseModel, computed_field
 
 from common.file.file_statistics import TermsStat
@@ -14,6 +14,7 @@ from common.models.es_repository import (
 
 
 class TaskRun(BaseModel):
+    task_id: UUID
     started_at: datetime
     finished_at: datetime
     duration: float
@@ -22,11 +23,12 @@ class TaskRun(BaseModel):
 
 
 class TaskRecord(BaseModel):
-    task_id: UUID
     task_name: str
-    succeeded: list[TaskRun] = []
-    retried: list[TaskRun] = []
-    failed: list[TaskRun] = []
+    avg_duration: float = 0
+    run_count: int = 0
+    succeeded: list[TaskRun] | None = None
+    retried: list[TaskRun] | None = None
+    failed: list[TaskRun] | None = None
 
 
 class RepositoryTaskObject(EsRepositoryObject):
@@ -39,25 +41,29 @@ class RepositoryTaskObject(EsRepositoryObject):
     @property
     def failed_task_names(
         self,
-    ) -> Annotated[list[str], TermsStat(label="Failed Task Names")]:
-        return list({t.task_name for t in self.tasks if t.failed})
+    ) -> Annotated[list[str] | None, TermsStat(label="Failed Task Names")]:
+        names = list({t.task_name for t in self.tasks if t.failed})
+        return names if len(names) > 0 else None
 
     @computed_field  # type: ignore[misc]
     @property
     def retried_task_names(
         self,
-    ) -> Annotated[list[str], TermsStat(label="Retried Task Names")]:
-        return list({t.task_name for t in self.tasks if t.retried})
+    ) -> Annotated[list[str] | None, TermsStat(label="Retried Task Names")]:
+        names = list({t.task_name for t in self.tasks if t.retried})
+        return names if len(names) > 0 else None
 
     @computed_field  # type: ignore[misc]
     @property
     def successful_task_names(
         self,
-    ) -> Annotated[list[str], TermsStat(label="Successful Task Names")]:
-        return list({t.task_name for t in self.tasks if t.succeeded})
+    ) -> Annotated[list[str] | None, TermsStat(label="Successful Task Names")]:
+        names = list({t.task_name for t in self.tasks if t.succeeded})
+        return names if len(names) > 0 else None
 
 
 class _EsTaskRun(InnerDoc):
+    task_id = Keyword()
     started_at = Date()
     finished_at = Date()
     duration = Float()
@@ -66,10 +72,11 @@ class _EsTaskRun(InnerDoc):
 
 
 class _EsTaskRecord(InnerDoc):
-    task_id = Keyword()
     task_name = Keyword()
     succeeded = Object(_EsTaskRun, multi=True)
     retried = Object(_EsTaskRun, multi=True)
+    avg_duration = Float()
+    run_count = Integer()
     failed = Object(_EsTaskRun, multi=True)
 
 

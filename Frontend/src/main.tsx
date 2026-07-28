@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 
 import { store } from "@app/store";
 import { globalTheme } from "@app/theme";
+import { TourProvider } from "@app/tours/TourProvider";
 import { Archives } from "@features/archives/Archives";
 import { Search } from "@features/search/Search";
 
@@ -21,13 +22,15 @@ root.render(
         <ThemeProvider theme={globalTheme}>
             <Provider store={store}>
                 <BrowserRouter basename={import.meta.env.BASE_URL}>
-                    <Routes>
-                        <Route path="/" element={<App />}>
-                            <Route path="" element={<Home />} />
-                            <Route path="search" element={<Search />} />
-                            <Route path="archives" element={<Archives />} />
-                        </Route>
-                    </Routes>
+                    <TourProvider>
+                        <Routes>
+                            <Route path="/" element={<App />}>
+                                <Route path="" element={<Home />} />
+                                <Route path="search" element={<Search />} />
+                                <Route path="archives" element={<Archives />} />
+                            </Route>
+                        </Routes>
+                    </TourProvider>
                 </BrowserRouter>
             </Provider>
         </ThemeProvider>

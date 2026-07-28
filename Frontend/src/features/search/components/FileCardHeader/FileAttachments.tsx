@@ -70,7 +70,11 @@ export const FileAttachments = ({
     const hasMultiple = attachments.length > 1;
 
     return (
-        <Box ref={parentRef} sx={{ width: "100%", position: "relative" }}>
+        <Box
+            ref={parentRef}
+            data-tour="result-card-subitems"
+            sx={{ width: "100%", position: "relative" }}
+        >
             {/* Hidden measurement box to calculate total width of all chips */}
             {hasMultiple && (
                 <Box
