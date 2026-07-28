@@ -18,6 +18,7 @@ import { useAppDispatch, useAppSelector } from "@app/hooks";
 import {
     selectQuery,
     selectFileById,
+    selectHighlightScrollRequest,
     setFileInViewState,
     setHighlightedFileId,
     openFileTabThunk,
@@ -54,6 +55,9 @@ export const ResultCard = React.memo(
         const file = useAppSelector(selectFileById(fileId));
         const filePreview = file?.preview;
         const sortFieldValue = file?.meta?.sortFieldValue ?? "";
+        const highlightScrollRequest = useAppSelector(
+            selectHighlightScrollRequest,
+        );
         const cardRef = useRef<HTMLDivElement>(null);
         const { ref: inViewRef, inView } = useInView({
             threshold: [0.2],
@@ -104,7 +108,7 @@ export const ResultCard = React.memo(
             cardRef.current.focus({ preventScroll: true });
             const id = setTimeout(() => scrollCardIntoView(), 100);
             return () => clearTimeout(id);
-        }, [isHighlighted]);
+        }, [isHighlighted, highlightScrollRequest]);
 
         // Combine refs
         const setRefs = (element: HTMLDivElement | null) => {
