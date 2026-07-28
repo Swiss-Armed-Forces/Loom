@@ -22,6 +22,7 @@ import { FileAttachments } from "./FileAttachments";
 import { FileAvatar } from "./FileAvatar";
 import styles from "./FileCardHeader.module.css";
 import { NavigateToParent } from "./NavigateToParent";
+import { hasVisibleProcessingStatus } from "./processingStatusTour";
 
 const stateChipColor: Record<string, "warning" | "error"> = {
     started: "warning",
@@ -85,7 +86,10 @@ export const FileCardHeader = ({
                 />
             }
             title={
-                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                <Box
+                    sx={{ display: "flex", alignItems: "center", gap: 1 }}
+                    data-tour="result-card-path"
+                >
                     {filePreview.parentId && (
                         <NavigateToParent parentId={filePreview.parentId} />
                     )}
@@ -96,45 +100,82 @@ export const FileCardHeader = ({
                             fontWeight: filePreview.seen ? undefined : "bold",
                         }}
                     />
-                    {!isMobile && filePreview.contentIsTruncated && (
-                        <Tooltip
-                            title={t("generalSearchView.contentTruncatedIcon")}
+                    {hasVisibleProcessingStatus(filePreview, isMobile) && (
+                        <Box
+                            data-tour="result-card-processing-status"
+                            sx={{
+                                display: "inline-flex",
+                                alignItems: "center",
+                                gap: 1,
+                            }}
                         >
-                            <IconButton
-                                size="small"
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleFilterByField(
-                                        SearchQueryField.ContentTruncated,
-                                        "true",
-                                        e.shiftKey,
-                                    );
-                                }}
-                            >
-                                <ContentCut fontSize="small" />
-                            </IconButton>
-                        </Tooltip>
-                    )}
-                    {!isMobile && filePreview.attachmentsSkipped && (
-                        <Tooltip
-                            title={t(
-                                "generalSearchView.attachmentsSkippedIcon",
+                            {!isMobile && filePreview.contentIsTruncated && (
+                                <Tooltip
+                                    title={t(
+                                        "generalSearchView.contentTruncatedIcon",
+                                    )}
+                                >
+                                    <IconButton
+                                        size="small"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleFilterByField(
+                                                SearchQueryField.ContentTruncated,
+                                                "true",
+                                                e.shiftKey,
+                                            );
+                                        }}
+                                    >
+                                        <ContentCut fontSize="small" />
+                                    </IconButton>
+                                </Tooltip>
                             )}
-                        >
-                            <IconButton
-                                size="small"
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleFilterByField(
-                                        SearchQueryField.AttachmentsSkipped,
-                                        "true",
-                                        e.shiftKey,
-                                    );
-                                }}
-                            >
-                                <LinkOff fontSize="small" />
-                            </IconButton>
-                        </Tooltip>
+                            {!isMobile && filePreview.attachmentsSkipped && (
+                                <Tooltip
+                                    title={t(
+                                        "generalSearchView.attachmentsSkippedIcon",
+                                    )}
+                                >
+                                    <IconButton
+                                        size="small"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleFilterByField(
+                                                SearchQueryField.AttachmentsSkipped,
+                                                "true",
+                                                e.shiftKey,
+                                            );
+                                        }}
+                                    >
+                                        <LinkOff fontSize="small" />
+                                    </IconButton>
+                                </Tooltip>
+                            )}
+                            {filePreview.state !== "processed" && (
+                                <Chip
+                                    size="small"
+                                    label={filePreview.state}
+                                    color={
+                                        stateChipColor[filePreview.state] ??
+                                        "default"
+                                    }
+                                    variant="outlined"
+                                    onClick={
+                                        onStateChipClick
+                                            ? (e) => {
+                                                  e.stopPropagation();
+                                                  onStateChipClick();
+                                              }
+                                            : undefined
+                                    }
+                                    className={
+                                        onStateChipClick
+                                            ? styles.clickableChip
+                                            : undefined
+                                    }
+                                />
+                            )}
+                        </Box>
                     )}
                     {!isMobile && filePreview.isSpam && (
                         <Tooltip title={t("generalSearchView.spamIcon")}>
@@ -174,29 +215,6 @@ export const FileCardHeader = ({
                                 <Translate fontSize="small" />
                             </IconButton>
                         </Tooltip>
-                    )}
-                    {filePreview.state !== "processed" && (
-                        <Chip
-                            size="small"
-                            label={filePreview.state}
-                            color={
-                                stateChipColor[filePreview.state] ?? "default"
-                            }
-                            variant="outlined"
-                            onClick={
-                                onStateChipClick
-                                    ? (e) => {
-                                          e.stopPropagation();
-                                          onStateChipClick();
-                                      }
-                                    : undefined
-                            }
-                            className={
-                                onStateChipClick
-                                    ? styles.clickableChip
-                                    : undefined
-                            }
-                        />
                     )}
                 </Box>
             }

@@ -11,6 +11,8 @@ import {
     setRightSidebarTab,
     toggleRightSidebar,
 } from "@app/slices/searchSlice";
+import { getTourRightTab } from "@app/tours/tourScene";
+import { useTour } from "@app/tours/useTour";
 import { Chatbot } from "@features/search/components/ChatMenu/Chatbot";
 import { StatisticsView } from "@features/search/views/Statistics/StatisticsView";
 
@@ -35,6 +37,10 @@ export const RightSidebar = () => {
     const { t } = useTranslation();
     const isOpen = useAppSelector(selectRightSidebarOpen);
     const activeTab = useAppSelector(selectRightSidebarTab);
+    const { activeTourStepId, isTourActive } = useTour();
+    const tourTab = getTourRightTab(isTourActive, activeTourStepId);
+    const effectiveIsOpen = tourTab !== undefined ? tourTab !== null : isOpen;
+    const effectiveActiveTab = tourTab ?? activeTab;
     const isMobile = useMediaQuery("(max-width:600px)");
 
     const [width, setWidth] = useState(loadWidth);
@@ -90,17 +96,17 @@ export const RightSidebar = () => {
         document.addEventListener("mouseup", onMouseUp);
     };
 
-    const sidebarWidth = isOpen ? width : 0;
+    const sidebarWidth = effectiveIsOpen ? width : 0;
 
     const sidebarContent = (
         <>
             <div className={styles.header}>
                 <Tabs
                     className={styles.tabs}
-                    value={activeTab}
-                    onChange={(_, tab: RightSidebarTab) =>
-                        dispatch(setRightSidebarTab(tab))
-                    }
+                    value={effectiveActiveTab}
+                    onChange={(_, tab: RightSidebarTab) => {
+                        if (!isTourActive) dispatch(setRightSidebarTab(tab));
+                    }}
                     textColor="inherit"
                 >
                     <Tab
@@ -111,14 +117,21 @@ export const RightSidebar = () => {
                 </Tabs>
                 <IconButton
                     size="small"
-                    onClick={() => dispatch(toggleRightSidebar())}
+                    onClick={() => {
+                        if (!isTourActive) dispatch(toggleRightSidebar());
+                    }}
                     sx={{ mr: 0.5 }}
                 >
                     <Close fontSize="small" />
                 </IconButton>
             </div>
-            <div className={styles.content}>
-                {activeTab === RightSidebarTab.STATISTICS ? (
+            <div
+                className={styles.content}
+                data-tour={
+                    activeTourStepId ? `sidebar-${activeTourStepId}` : undefined
+                }
+            >
+                {effectiveActiveTab === RightSidebarTab.STATISTICS ? (
                     <StatisticsView />
                 ) : (
                     <Chatbot />
@@ -130,8 +143,10 @@ export const RightSidebar = () => {
     if (isMobile) {
         return (
             <Drawer
-                open={isOpen}
-                onClose={() => dispatch(toggleRightSidebar())}
+                open={effectiveIsOpen}
+                onClose={() => {
+                    if (!isTourActive) dispatch(toggleRightSidebar());
+                }}
                 variant="temporary"
                 anchor="right"
                 slotProps={{
@@ -155,13 +170,13 @@ export const RightSidebar = () => {
             className={`${styles.rightSidebar} ${isDragging ? styles.dragging : ""}`}
             style={{ width: sidebarWidth }}
         >
-            {isOpen && (
+            {effectiveIsOpen && (
                 <div
                     className={`${styles.dragHandle} ${isDragging ? styles.dragging : ""}`}
                     onMouseDown={handleMouseDown}
                 />
             )}
-            {isOpen && sidebarContent}
+            {effectiveIsOpen && sidebarContent}
         </div>
     );
 };

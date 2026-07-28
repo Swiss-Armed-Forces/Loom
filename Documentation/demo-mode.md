@@ -50,6 +50,8 @@ failed test or deployment job leaves the previously published Pages site in plac
   Clearing the site's browser data makes the introduction appear automatically again.
 - Search, statistics, folder navigation, archives, downloads, tagging, visibility,
   flags, task scheduling, and document chat operate on bundled sample data.
+- The saved-query list includes an **Interesting documents** fixture using
+  `tags:interesting`; deleting it lasts until the demo page is reloaded.
 - Safe text, email, image, Office, and archive fixtures come from `integrationtest/assets`.
   Credential values are redacted, and the executable test fixture is represented by
   metadata only instead of being published in the static bundle.

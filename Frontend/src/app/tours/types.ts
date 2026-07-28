@@ -12,6 +12,9 @@ export interface TourStep {
     target: TourTarget;
     titleKey: string;
     descriptionKey: string;
+    doneButtonKey?: string;
+    nextButtonKey?: string;
+    showSkipButton?: boolean;
     side?: Side;
     align?: Alignment;
     waitForElementMs?: number;
@@ -27,6 +30,9 @@ export interface TourState {
 
 export interface TourContextValue {
     isTourActive: boolean;
+    showQueryOverview: boolean;
+    activeTourStepId: string | null;
+    tourDetailFileId: string | null;
     dismissActiveTour: () => void;
     startTour: () => boolean;
 }

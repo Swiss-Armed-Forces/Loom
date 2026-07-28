@@ -27,6 +27,19 @@
     color: var(--mui-palette-text-primary);
 }
 
+.driver-popover.loom-tour-popover .loom-tour-skip-btn {
+    background-color: transparent;
+    border-color: transparent;
+    color: var(--mui-palette-text-secondary);
+    margin-right: 0.25rem;
+}
+
+.driver-popover.loom-tour-popover .loom-tour-skip-btn:hover,
+.driver-popover.loom-tour-popover .loom-tour-skip-btn:focus-visible {
+    background-color: var(--mui-palette-action-hover);
+    color: var(--mui-palette-text-primary);
+}
+
 @media (max-width: 600px) {
     .driver-popover.loom-tour-popover {
         max-width: calc(100vw - 1rem);

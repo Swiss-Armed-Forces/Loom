@@ -19,12 +19,29 @@ import {
     selectTotalFiles,
     setActiveTabFileId,
 } from "@app/slices/searchSlice";
+import { useTour } from "@app/tours/useTour";
+import { FileDetailTab } from "@features/common/utils/enums";
 import { ScrollToTop } from "@features/search/components";
 import { SearchResults } from "@features/search/views/SearchResults";
 
 import { FileDetailPanel } from "../FileDetailPanel/FileDetailPanel";
 
 import styles from "./CenterTabs.module.css";
+import { shouldShowFilePanel, shouldShowSearchPanel } from "./panelVisibility";
+
+const TOUR_DETAIL_STEP_IDS = new Set([
+    "document-detail",
+    "detail-rendered",
+    "detail-translations",
+    "detail-highlights",
+    "detail-raw",
+]);
+
+const TOUR_DETAIL_TAB: Partial<Record<string, FileDetailTab>> = {
+    "detail-translations": FileDetailTab.Translations,
+    "detail-highlights": FileDetailTab.Highlights,
+    "detail-raw": FileDetailTab.RAW,
+};
 
 const SEARCH_TAB = "__search__";
 
@@ -33,6 +50,7 @@ export const CenterTabs = () => {
     const openFileTabs = useAppSelector(selectOpenFileTabs);
     const activeTabFileId = useAppSelector(selectActiveTabFileId);
     const files = useAppSelector(selectFiles);
+    const { activeTourStepId, isTourActive, tourDetailFileId } = useTour();
 
     const totalFiles = useAppSelector(selectTotalFiles);
     const loadedFiles = useAppSelector(selectLoadedFiles);
@@ -40,6 +58,16 @@ export const CenterTabs = () => {
     const isMobile = useMediaQuery("(max-width:600px)");
     const scrollRef = useRef<HTMLDivElement>(null);
     const [hasScrollOffset, setHasScrollOffset] = useState(false);
+    const showTourDocumentDetail =
+        isTourActive &&
+        TOUR_DETAIL_STEP_IDS.has(activeTourStepId ?? "") &&
+        tourDetailFileId !== null;
+    const tourDetailTab =
+        (activeTourStepId ? TOUR_DETAIL_TAB[activeTourStepId] : undefined) ??
+        FileDetailTab.Rendered;
+    const showSearchPanel = showTourDocumentDetail
+        ? false
+        : shouldShowSearchPanel(activeTabFileId, isTourActive);
 
     const handleFileTabChange = (_: React.SyntheticEvent, newValue: string) => {
         dispatch(setActiveTabFileId(newValue));
@@ -47,9 +75,12 @@ export const CenterTabs = () => {
 
     return (
         <div className={styles.centerTabs}>
-            <div className={styles.tabBar}>
+            <div className={styles.tabBar} data-tour="results-tabs">
                 {/* Pinned Results tab — always visible, never scrolls */}
-                <Tabs value={activeTabFileId === null ? SEARCH_TAB : false}>
+                <Tabs
+                    value={showSearchPanel ? SEARCH_TAB : false}
+                    data-tour="search-workspace"
+                >
                     <Tab
                         value={SEARCH_TAB}
                         label={
@@ -67,8 +98,28 @@ export const CenterTabs = () => {
                     />
                 </Tabs>
 
+                {showTourDocumentDetail && (
+                    <>
+                        <Divider
+                            orientation="vertical"
+                            flexItem
+                            sx={{ my: 1 }}
+                        />
+                        <Tabs value={tourDetailFileId} sx={{ flex: 1 }}>
+                            <Tab
+                                value={tourDetailFileId}
+                                label={
+                                    files[tourDetailFileId]?.preview?.path
+                                        .split("/")
+                                        .at(-1) ?? tourDetailFileId
+                                }
+                            />
+                        </Tabs>
+                    </>
+                )}
+
                 {/* Scrollable file tabs */}
-                {openFileTabs.length > 0 && (
+                {!showTourDocumentDetail && openFileTabs.length > 0 && (
                     <>
                         <Divider
                             orientation="vertical"
@@ -172,7 +223,7 @@ export const CenterTabs = () => {
             <div
                 className={styles.searchPanel}
                 style={{
-                    display: activeTabFileId === null ? "flex" : "none",
+                    display: showSearchPanel ? "flex" : "none",
                 }}
                 onScroll={(e) =>
                     setHasScrollOffset(
@@ -188,14 +239,33 @@ export const CenterTabs = () => {
                 />
             </div>
 
+            {showTourDocumentDetail && (
+                <Box
+                    className={styles.filePanel}
+                    data-tour="document-detail"
+                    sx={{ display: "flex" }}
+                >
+                    <FileDetailPanel
+                        fileId={tourDetailFileId}
+                        detailTab={tourDetailTab}
+                        isActive={false}
+                    />
+                </Box>
+            )}
+
             {/* File detail panels — each mounted once, hidden when inactive */}
             {openFileTabs.map((tab) => (
                 <Box
                     key={tab.fileId}
                     className={styles.filePanel}
                     sx={{
-                        display:
-                            activeTabFileId === tab.fileId ? "flex" : "none",
+                        display: shouldShowFilePanel(
+                            tab.fileId,
+                            activeTabFileId,
+                            isTourActive,
+                        )
+                            ? "flex"
+                            : "none",
                     }}
                 >
                     <FileDetailPanel

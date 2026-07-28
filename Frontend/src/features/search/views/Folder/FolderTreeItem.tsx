@@ -214,6 +214,9 @@ export const FolderViewNode = React.memo(
                 direction="row"
                 spacing={0.5}
                 sx={{ alignItems: "center", width: "100%" }}
+                {...(tree.id === ROOT_NODE.id && {
+                    "data-tour": "folder-tree-node",
+                })}
             >
                 {NodeIcon && (
                     <NodeIcon

@@ -19,11 +19,12 @@ import {
     QueueOutlined,
 } from "@mui/icons-material";
 import { IconButton, Menu, MenuItem } from "@mui/material";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { useAppDispatch } from "@app/hooks";
 import { openDialog } from "@app/slices/commonSlice";
+import { useTour } from "@app/tours/useTour";
 import { notifyIfUnavailableInDemoMode } from "@features/common/demoModeUnavailableAction";
 import {
     apiHost,
@@ -56,6 +57,17 @@ export const BurgerMenu = () => {
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
     const { t } = useTranslation();
     const dispatch = useAppDispatch();
+    const { activeTourStepId, isTourActive } = useTour();
+    const buttonRef = useRef<HTMLButtonElement>(null);
+
+    useEffect(() => {
+        if (!isTourActive) return;
+        if (activeTourStepId === "menu" && buttonRef.current) {
+            setAnchorEl(buttonRef.current);
+        } else {
+            setAnchorEl(null);
+        }
+    }, [isTourActive, activeTourStepId]);
 
     const handleAboutClick = () => {
         dispatch(openDialog({ id: "", type: DialogType.About }));
@@ -171,6 +183,7 @@ export const BurgerMenu = () => {
     return (
         <div data-tour="menu">
             <IconButton
+                ref={buttonRef}
                 sx={{
                     backgroundColor: "rgba(0, 0, 0, 0.75)",
                     "&:hover": {
@@ -190,6 +203,7 @@ export const BurgerMenu = () => {
                 keepMounted
                 open={Boolean(anchorEl)}
                 onClose={handleMenuClose}
+                disablePortal={isTourActive && activeTourStepId === "menu"}
             >
                 {menuItems.map((item, index) => (
                     <MenuItem
@@ -212,7 +226,11 @@ export const BurgerMenu = () => {
                         {item.text}
                     </MenuItem>
                 ))}
-                <MenuItem component="a" onClick={handleAboutClick}>
+                <MenuItem
+                    component="a"
+                    data-tour="menu-about"
+                    onClick={handleAboutClick}
+                >
                     <InfoOutlined />
                     {t("about.title")}
                 </MenuItem>

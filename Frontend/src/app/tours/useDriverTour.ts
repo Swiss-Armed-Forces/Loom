@@ -14,6 +14,8 @@ interface DriverTourController {
     start: () => boolean;
 }
 
+type TourStepNextHandler = (stepId: string) => Promise<boolean> | boolean;
+
 const targetExists = (step: TourStep): boolean => {
     try {
         return document.querySelector(step.target.selector) !== null;
@@ -25,6 +27,8 @@ const targetExists = (step: TourStep): boolean => {
 export const useDriverTour = (
     configuredSteps: readonly TourStep[],
     onFinish: (outcome: TourOutcome) => void,
+    onStepChange?: (stepId: string) => void,
+    onStepNext?: TourStepNextHandler,
 ): DriverTourController => {
     const { t } = useTranslation();
     const isMobile = useMediaQuery("(max-width:600px)");
@@ -42,6 +46,7 @@ export const useDriverTour = (
         }
 
         let finalized = false;
+        let stepActionPending = false;
         const finalize = (outcome: TourOutcome) => {
             if (finalized) return;
             finalized = true;
@@ -50,13 +55,59 @@ export const useDriverTour = (
             setIsActive(false);
         };
 
-        const driveSteps: DriveStep[] = steps.map((step) => ({
+        const driveSteps: DriveStep[] = steps.map((step, index) => ({
             element: step.target.selector,
             popover: {
                 title: t(step.titleKey),
                 description: t(step.descriptionKey),
                 side: step.side,
                 align: step.align,
+                doneBtnText: step.doneButtonKey
+                    ? t(step.doneButtonKey)
+                    : undefined,
+                nextBtnText: step.nextButtonKey
+                    ? t(step.nextButtonKey)
+                    : undefined,
+                ...(index < steps.length - 1
+                    ? {
+                          onNextClick: async (
+                              _element,
+                              _driveStep,
+                              { driver: instance },
+                          ) => {
+                              if (stepActionPending) return;
+                              stepActionPending = true;
+                              const nextButton =
+                                  document.querySelector<HTMLButtonElement>(
+                                      ".driver-popover-next-btn",
+                                  );
+                              if (nextButton) nextButton.disabled = true;
+                              try {
+                                  if ((await onStepNext?.(step.id)) === false)
+                                      return;
+                                  const nextStep = steps[index + 1];
+                                  if (nextStep) onStepChange?.(nextStep.id);
+                                  instance.moveNext();
+                              } finally {
+                                  stepActionPending = false;
+                                  if (nextButton) nextButton.disabled = false;
+                              }
+                          },
+                      }
+                    : {}),
+                ...(index > 0
+                    ? {
+                          onPrevClick: (
+                              _element,
+                              _driveStep,
+                              { driver: instance },
+                          ) => {
+                              const previousStep = steps[index - 1];
+                              if (previousStep) onStepChange?.(previousStep.id);
+                              instance.movePrevious();
+                          },
+                      }
+                    : {}),
             },
             disableActiveInteraction: true,
             skipMissingElement: step.skipIfMissing ?? true,
@@ -85,12 +136,30 @@ export const useDriverTour = (
             smoothScroll: true,
             steps: driveSteps,
             waitForElement: 1_000,
-            onPopoverRender: ({ closeButton }) => {
+            onPopoverRender: (
+                { closeButton, footerButtons },
+                { driver: instance, index },
+            ) => {
                 closeButton.setAttribute(
                     "aria-label",
                     t("tour.controls.close"),
                 );
                 closeButton.title = t("tour.controls.close");
+
+                if (!steps[index ?? -1]?.showSkipButton) return;
+
+                const skipButton = document.createElement("button");
+                skipButton.type = "button";
+                skipButton.classList.add(
+                    "driver-popover-footer-btn",
+                    "loom-tour-skip-btn",
+                );
+                skipButton.textContent = t("tour.controls.skip");
+                skipButton.addEventListener("click", () => {
+                    finalize("dismissed");
+                    instance.destroy();
+                });
+                footerButtons.prepend(skipButton);
             },
             onCloseClick: (_element, _step, { driver: instance }) => {
                 finalize("dismissed");
@@ -105,9 +174,10 @@ export const useDriverTour = (
 
         driverRef.current = driverInstance;
         setIsActive(true);
+        onStepChange?.(steps[0].id);
         driverInstance.drive();
         return true;
-    }, [configuredSteps, isMobile, onFinish, t]);
+    }, [configuredSteps, isMobile, onFinish, onStepChange, onStepNext, t]);
 
     const dismiss = useCallback(() => driverRef.current?.destroy(), []);
 

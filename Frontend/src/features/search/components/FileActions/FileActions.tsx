@@ -48,7 +48,7 @@ export const FileActions = ({
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
     const searchQuery = useAppSelector(selectQuery);
     const open = Boolean(anchorEl);
-    const isMobile = useMediaQuery("(max-width:1200px)");
+    const isMobile = useMediaQuery("(max-width:900px)");
 
     const handleMenuClick = (event: React.MouseEvent<HTMLButtonElement>) => {
         setAnchorEl(event.currentTarget);
@@ -158,7 +158,7 @@ export const FileActions = ({
             ...overflowActions.map(({ button }) => button),
         ];
         return (
-            <>
+            <div data-tour="result-card-actions">
                 <IconButton onClick={handleMenuClick}>
                     <MoreVert />
                 </IconButton>
@@ -172,18 +172,23 @@ export const FileActions = ({
                         </MenuItem>
                     ))}
                 </Menu>
-            </>
+            </div>
         );
     }
 
     return (
         <div className={styles.fileActions}>
-            <TagsList
-                tags={filePreview.tags || []}
-                filePreview={filePreview}
-                maxVisible={3}
-            />
-            <div className={styles.fileActionButtons}>
+            <div data-tour="result-card-tags">
+                <TagsList
+                    tags={filePreview.tags || []}
+                    filePreview={filePreview}
+                    maxVisible={3}
+                />
+            </div>
+            <div
+                className={styles.fileActionButtons}
+                data-tour="result-card-actions"
+            >
                 {primaryActions}
                 <IconButton
                     size="small"

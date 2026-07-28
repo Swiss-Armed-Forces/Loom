@@ -36,8 +36,14 @@ lint_fix_frontend
 
 ## Product tours
 
-The tour provider starts the global tour on a visitor's first visit and stores completion or
-dismissal under `loom.tours.v1`. Tour steps are configured in `src/app/tours/catalog.ts`.
+Outside Vite development mode, the tour provider starts the global tour on a visitor's first visit
+and stores completion or dismissal under `loom.tours.v1`. The header menu's **Take a Tour** action
+can launch or replay it in every mode. Tour steps are configured in `src/app/tours/catalog.ts`.
+The welcome step offers **Skip Tour**. The tour introduces query syntax, runs the `*` search-all
+query, and then walks through processing-health indicators, result-card anatomy, document details,
+folders, tags, saved queries, bulk and automatic actions, statistics, and chat. Tour scenes
+temporarily open the relevant panels or a document preview through context overrides; they do not
+change the visitor's persisted sidebar layout, open document tabs, or URL.
 
 To add or change a tour step:
 

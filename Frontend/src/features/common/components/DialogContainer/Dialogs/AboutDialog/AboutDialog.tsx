@@ -1,4 +1,4 @@
-import { Close, Download } from "@mui/icons-material";
+import { Close, Download, TourOutlined } from "@mui/icons-material";
 import {
     Box,
     Button,
@@ -15,8 +15,11 @@ import {
 import Ajv, { JSONSchemaType } from "ajv";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useLocation, useNavigate } from "react-router-dom";
 
 import { DialogProps } from "@app/slices/commonSlice";
+import { startWhenDialogsClose } from "@app/tours/startWhenDialogsClose";
+import { useTour } from "@app/tours/useTour";
 
 const AJV = new Ajv();
 const basePath = import.meta.env.BASE_URL;
@@ -61,6 +64,15 @@ export const AboutDialog = ({ onClose, isTop }: DialogProps) => {
         useState<HelmChartMetadata | null>(null);
     const { t } = useTranslation();
     const isMobile = useMediaQuery("(max-width:600px)");
+    const location = useLocation();
+    const navigate = useNavigate();
+    const { startTour } = useTour();
+
+    const handleTourClick = () => {
+        if (location.pathname !== "/search") navigate("/search");
+        startWhenDialogsClose(startTour);
+        onClose();
+    };
 
     useEffect(() => {
         const fetchLicense = async () => {
@@ -130,6 +142,17 @@ export const AboutDialog = ({ onClose, isTop }: DialogProps) => {
                         <Typography variant="body1" component="p">
                             {helmChartMetadata?.description}
                         </Typography>
+                    </Box>
+
+                    {/* Tour Section */}
+                    <Box>
+                        <Button
+                            variant="outlined"
+                            startIcon={<TourOutlined />}
+                            onClick={handleTourClick}
+                        >
+                            {t("tour.takeTour")}
+                        </Button>
                     </Box>
 
                     {/* Links Section */}
