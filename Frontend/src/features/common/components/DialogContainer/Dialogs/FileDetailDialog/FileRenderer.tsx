@@ -251,6 +251,7 @@ export const FileRenderer = ({
             }}
         >
             <Box
+                data-tour="detail-rendered"
                 sx={{
                     px: 1,
                     py: 0.5,

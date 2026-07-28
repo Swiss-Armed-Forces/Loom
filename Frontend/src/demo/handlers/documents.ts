@@ -53,6 +53,13 @@ const documentTreeNode = (document: DemoDocument): TreeNodeWire => ({
     is_flagged: document.flagged,
 });
 
+export const treeRootStats = (documents: DemoDocument[]): TreeNodeWire => ({
+    full_path: "/",
+    file_count: documents.length,
+    unseen_count: documents.filter((d) => !d.seen).length,
+    flagged_count: documents.filter((d) => d.flagged).length,
+});
+
 export const treeChildren = (
     documents: DemoDocument[],
     parentPath: string | null,

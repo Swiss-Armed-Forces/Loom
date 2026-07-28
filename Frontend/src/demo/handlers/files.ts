@@ -31,6 +31,7 @@ import {
     documentDetail,
     documentPreview,
     treeChildren,
+    treeRootStats,
     treeSpine,
 } from "./documents";
 import {
@@ -86,7 +87,7 @@ const paginateTree = <Node extends { full_path: string }>(
 
 const sortValue = (document: DemoDocument, field: string): string | number => {
     if (field === "size") return document.size;
-    if (field === "score") return 1.0;
+    if (field === "score") return document.featured ? 2.0 : 1.0;
     return valuesForField(document, field)[0] ?? document.uploadedAt;
 };
 
@@ -216,12 +217,16 @@ const treeHandler = http.get(/\/api\/v1\/files\/tree$/, ({ request }) => {
     const url = new URL(request.url);
     const result = safeSearch(queryFromUrl(url));
     if (!result.ok) return result.response;
-    return json(
-        paginateTree(
-            treeChildren(result.documents, url.searchParams.get("node_path")),
-            url.searchParams.get("after"),
-        ),
+    const nodePath = url.searchParams.get("node_path");
+    const paginated = paginateTree(
+        treeChildren(result.documents, nodePath),
+        url.searchParams.get("after"),
     );
+    const rootStats =
+        nodePath === null || nodePath === "/"
+            ? { root_stats: treeRootStats(result.documents) }
+            : {};
+    return json({ ...paginated, ...rootStats });
 });
 
 const treeSpineHandler = http.get(

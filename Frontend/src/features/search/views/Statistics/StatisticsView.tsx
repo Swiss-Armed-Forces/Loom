@@ -253,7 +253,10 @@ export const StatisticsView = () => {
 
     return (
         <div className={styles.statisticsContainer}>
-            <section className={styles.chartSection}>
+            <section
+                className={styles.chartSection}
+                data-tour="statistics-pie-chart"
+            >
                 <FormControl
                     size="small"
                     fullWidth
@@ -299,7 +302,10 @@ export const StatisticsView = () => {
 
             <Divider />
 
-            <section className={styles.chartSection}>
+            <section
+                className={styles.chartSection}
+                data-tour="statistics-histogram"
+            >
                 <FormControl
                     size="small"
                     fullWidth

@@ -184,6 +184,7 @@ export const ResultCard = React.memo(
                 className="resultCardParent"
                 tabIndex={0}
                 data-highlighted={isHighlighted ? "true" : undefined}
+                data-tour="result-card"
                 ref={setRefs}
                 onClick={handleCardClick}
                 onDoubleClick={handleCardDoubleClick}
@@ -251,30 +252,35 @@ export const ResultCard = React.memo(
                                         flexDirection: "column",
                                     }}
                                 >
-                                    <Summary
-                                        filePreview={filePreview}
-                                        onOpenDetailsTab={
-                                            handleOpenDetailsOnTabClick
-                                        }
-                                    />
-                                    <HighlightList
-                                        highlights={
-                                            filePreview.highlight as Record<
-                                                string,
-                                                string[]
-                                            >
-                                        }
-                                    />
-                                    {isMobile && (
-                                        <TagsList
-                                            tags={filePreview.tags || []}
+                                    <Box data-tour="result-card-content">
+                                        <Summary
                                             filePreview={filePreview}
+                                            onOpenDetailsTab={
+                                                handleOpenDetailsOnTabClick
+                                            }
                                         />
+                                        <HighlightList
+                                            highlights={
+                                                filePreview.highlight as Record<
+                                                    string,
+                                                    string[]
+                                                >
+                                            }
+                                        />
+                                    </Box>
+                                    {isMobile && (
+                                        <Box data-tour="result-card-tags">
+                                            <TagsList
+                                                tags={filePreview.tags || []}
+                                                filePreview={filePreview}
+                                            />
+                                        </Box>
                                     )}
                                 </Box>
 
                                 {filePreview.thumbnailFileId && (
                                     <Badge
+                                        data-tour="result-card-preview"
                                         color="primary"
                                         badgeContent={
                                             filePreview.thumbnailTotalFrames

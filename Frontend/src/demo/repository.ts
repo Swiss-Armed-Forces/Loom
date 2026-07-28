@@ -30,6 +30,7 @@ export interface DemoDocument {
     authors: string[];
     secrets: string[];
     source: string;
+    featured?: boolean;
     isSpam?: boolean;
     contentTruncated?: boolean;
     attachmentsSkipped?: boolean;

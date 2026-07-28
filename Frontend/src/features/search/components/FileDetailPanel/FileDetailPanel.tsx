@@ -310,12 +310,14 @@ export const FileDetailPanel = ({
                             value: FileDetailTab.Translations,
                             icon: <TranslateOutlined fontSize="small" />,
                             disabled: !properties.hasTranslations,
+                            dataTour: "detail-translations",
                         },
                         {
                             label: "Highlights",
                             value: FileDetailTab.Highlights,
                             icon: <FormatColorTextOutlined fontSize="small" />,
                             disabled: !properties.hasHighlights,
+                            dataTour: "detail-highlights",
                         },
                         {
                             label: "Summary",
@@ -333,13 +335,14 @@ export const FileDetailPanel = ({
                             label: "Raw",
                             value: FileDetailTab.RAW,
                             icon: <CodeOutlined fontSize="small" />,
+                            dataTour: "detail-raw",
                         },
                         {
                             label: "Tasks",
                             value: FileDetailTab.Tasks,
                             icon: <AssignmentOutlined fontSize="small" />,
                         },
-                    ].map(({ label, value, icon, disabled }) => (
+                    ].map(({ label, value, icon, disabled, dataTour }) => (
                         <Tab
                             key={value}
                             icon={icon}
@@ -348,6 +351,7 @@ export const FileDetailPanel = ({
                             title={isMobile ? label : undefined}
                             value={value}
                             data-tab-value={value}
+                            data-tour={dataTour}
                             disabled={disabled}
                             sx={
                                 isMobile

@@ -172,6 +172,7 @@ export const createDemoDocuments = (): DemoDocument[] => {
             authors: ["Mike Scott"],
             secrets: [],
             source: "api-upload",
+            featured: true,
             translations: [],
             archiveIds: [],
             data: "Binary DOCX fixture bundled with the demo.",
