@@ -31,7 +31,6 @@ const baseDialogProps = {
 };
 
 const makeTask = (overrides: Partial<TaskRecord> = {}): TaskRecord => ({
-    taskId: "t1",
     taskName: "worker.create_archive.collect_files",
     failed: [
         {

@@ -92,10 +92,10 @@ const ARCHIVE_CREATED_AT = new Date("2026-07-27T09:58:00Z");
 
 const createInitialArchiveTasks = (): TaskRecord[] => [
     {
-        taskId: "demo-task-collect",
         taskName: "worker.create_archive.collect_files",
         succeeded: [
             {
+                taskId: "demo-run-collect-1",
                 startedAt: new Date(ARCHIVE_CREATED_AT.getTime()),
                 finishedAt: new Date(ARCHIVE_CREATED_AT.getTime() + 3_100),
                 duration: 3.1,
@@ -104,10 +104,10 @@ const createInitialArchiveTasks = (): TaskRecord[] => [
         ],
     },
     {
-        taskId: "demo-task-compress",
         taskName: "worker.create_archive.compress_files",
         retried: [
             {
+                taskId: "demo-run-compress-1",
                 startedAt: new Date(ARCHIVE_CREATED_AT.getTime() + 3_200),
                 finishedAt: new Date(ARCHIVE_CREATED_AT.getTime() + 4_100),
                 duration: 0.9,
@@ -119,6 +119,7 @@ const createInitialArchiveTasks = (): TaskRecord[] => [
         ],
         succeeded: [
             {
+                taskId: "demo-run-compress-2",
                 startedAt: new Date(ARCHIVE_CREATED_AT.getTime() + 5_000),
                 finishedAt: new Date(ARCHIVE_CREATED_AT.getTime() + 9_200),
                 duration: 4.2,
@@ -127,10 +128,10 @@ const createInitialArchiveTasks = (): TaskRecord[] => [
         ],
     },
     {
-        taskId: "demo-task-encrypt",
         taskName: "worker.create_archive.encrypt_archive",
         succeeded: [
             {
+                taskId: "demo-run-encrypt-1",
                 startedAt: new Date(ARCHIVE_CREATED_AT.getTime() + 9_300),
                 finishedAt: new Date(ARCHIVE_CREATED_AT.getTime() + 10_100),
                 duration: 0.8,
@@ -138,10 +139,10 @@ const createInitialArchiveTasks = (): TaskRecord[] => [
         ],
     },
     {
-        taskId: "demo-task-upload",
         taskName: "worker.create_archive.upload_to_storage",
         succeeded: [
             {
+                taskId: "demo-run-upload-1",
                 startedAt: new Date(ARCHIVE_CREATED_AT.getTime() + 10_200),
                 finishedAt: new Date(ARCHIVE_CREATED_AT.getTime() + 11_650),
                 duration: 1.45,

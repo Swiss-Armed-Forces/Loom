@@ -9,7 +9,7 @@ import {
     Typography,
 } from "@mui/material";
 import { useMediaQuery } from "@mui/material";
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useLayoutEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { useInView } from "react-intersection-observer";
 
@@ -18,7 +18,6 @@ import { useAppDispatch, useAppSelector } from "@app/hooks";
 import {
     selectQuery,
     selectFileById,
-    selectHighlightScrollRequest,
     setFileInViewState,
     setHighlightedFileId,
     openFileTabThunk,
@@ -55,60 +54,15 @@ export const ResultCard = React.memo(
         const file = useAppSelector(selectFileById(fileId));
         const filePreview = file?.preview;
         const sortFieldValue = file?.meta?.sortFieldValue ?? "";
-        const highlightScrollRequest = useAppSelector(
-            selectHighlightScrollRequest,
-        );
         const cardRef = useRef<HTMLDivElement>(null);
         const { ref: inViewRef, inView } = useInView({
             threshold: [0.2],
         });
 
-        // Custom scroll function that scrolls within the results container only
-        const scrollCardIntoView = () => {
-            if (!cardRef.current) return;
-
-            // Find the scrollable parent container (searchResultWrapper)
-            const scrollContainer = cardRef.current.closest(
-                "[class*='searchPanel']",
-            );
-
-            if (!scrollContainer) {
-                // Fallback to basic scrollIntoView if container not found
-                cardRef.current.scrollIntoView({
-                    behavior: "smooth",
-                    block: "nearest",
-                });
-                return;
-            }
-
-            const card = cardRef.current;
-            const cardRect = card.getBoundingClientRect();
-            const containerRect = scrollContainer.getBoundingClientRect();
-
-            const cardTop = cardRect.top - containerRect.top;
-            const cardBottom = cardTop + cardRect.height;
-
-            // Only scroll if card is outside the visible area
-            if (cardTop >= 0 && cardBottom <= containerRect.height) return;
-
-            const containerVisibleHeight = containerRect.height;
-            const targetScrollTop =
-                scrollContainer.scrollTop +
-                cardTop -
-                containerVisibleHeight / 3;
-
-            scrollContainer.scrollTo({
-                top: Math.max(0, targetScrollTop),
-                behavior: "smooth",
-            });
-        };
-
-        useEffect(() => {
+        useLayoutEffect(() => {
             if (!isHighlighted || !cardRef.current) return;
             cardRef.current.focus({ preventScroll: true });
-            const id = setTimeout(() => scrollCardIntoView(), 100);
-            return () => clearTimeout(id);
-        }, [isHighlighted, highlightScrollRequest]);
+        }, [isHighlighted]);
 
         // Combine refs
         const setRefs = (element: HTMLDivElement | null) => {

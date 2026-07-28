@@ -81,10 +81,8 @@ requirements, single-node and multi-node deployment, offline usage, and Helm val
 
 ## 🚀 Getting Started
 
-Once Loom is running, navigate to [https://frontend.loom](https://frontend.loom) to upload files,
-search across your documents, tag results, and interact with the RAG chatbot.
-
-For detailed usage instructions see the [Getting Started Guide](Documentation/getting-started.md).
+Open [https://frontend.loom](https://frontend.loom) — an interactive guided tour will walk you
+through all features on your first visit.
 
 ## 📜 License
 
@@ -130,7 +128,6 @@ Multiple services that are useful for production and development purposes are st
 ## 🔗 More Documentation and Links
 
 - [Installation Guide](Documentation/installation.md)
-- [Getting Started Guide](Documentation/getting-started.md)
 - [Interactive frontend demo](Documentation/demo-mode.md)
 - [Development environment setup](Documentation/devenv-setup.md)
 - [Contributing Guidelines](CONTRIBUTING.md)

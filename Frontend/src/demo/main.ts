@@ -18,13 +18,5 @@ window.addEventListener(
     { once: true },
 );
 
-const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
-if (
-    window.location.pathname === `${basePath}/` ||
-    window.location.pathname === basePath
-) {
-    window.history.replaceState({}, "", `${basePath}/search?query=*`);
-}
-
 seedDemoSavedQuery(window.localStorage);
 await import("../main");

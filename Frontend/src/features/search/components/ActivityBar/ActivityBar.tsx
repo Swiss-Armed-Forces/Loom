@@ -131,68 +131,79 @@ export const ActivityBar = () => {
     if (isMobile) {
         return (
             <div className={styles.activityBarBottom} data-tour="activity-bar">
-                <Tooltip
-                    title={t("uploadFileDialog.uploadButton")}
-                    placement="top"
+                <div
+                    className={styles.mobileLeftGroup}
+                    data-tour="activity-bar-left"
                 >
-                    <span>
-                        <UploadFileButton iconOnly />
-                    </span>
-                </Tooltip>
-                {leftPanelButtons.map(({ panel, icon, label }) => (
-                    <Tooltip key={panel} title={label} placement="top">
-                        <IconButton
-                            className={`${styles.iconButtonBottom} ${effectiveLeftPanel === panel ? styles.active : ""}`}
-                            onClick={() => handleLeftClick(panel)}
-                            size="medium"
-                            color={
-                                effectiveLeftPanel === panel
-                                    ? "primary"
-                                    : "default"
-                            }
-                        >
-                            {panel === LeftSidebarPanel.QUERIES &&
-                            newMatchQueries.length > 0 ? (
-                                <Badge
-                                    color="primary"
-                                    badgeContent={newMatchQueries.length}
-                                >
-                                    {icon}
-                                </Badge>
-                            ) : (
-                                icon
-                            )}
-                        </IconButton>
+                    <Tooltip
+                        title={t("uploadFileDialog.uploadButton")}
+                        placement="top"
+                    >
+                        <span data-tour="upload">
+                            <UploadFileButton iconOnly />
+                        </span>
                     </Tooltip>
-                ))}
-                {rightPanelButtons.map(({ tab, icon, label }) => (
-                    <Tooltip key={tab} title={label} placement="top">
-                        <IconButton
-                            className={`${styles.iconButtonBottom} ${effectiveRightOpen && effectiveRightTab === tab ? styles.active : ""}`}
-                            onClick={() => handleRightClick(tab)}
-                            size="medium"
-                            color={
-                                effectiveRightOpen && effectiveRightTab === tab
-                                    ? "primary"
-                                    : "default"
-                            }
-                        >
-                            {icon}
-                        </IconButton>
-                    </Tooltip>
-                ))}
+                    {leftPanelButtons.map(({ panel, icon, label }) => (
+                        <Tooltip key={panel} title={label} placement="top">
+                            <IconButton
+                                className={`${styles.iconButtonBottom} ${effectiveLeftPanel === panel ? styles.active : ""}`}
+                                onClick={() => handleLeftClick(panel)}
+                                size="medium"
+                                color={
+                                    effectiveLeftPanel === panel
+                                        ? "primary"
+                                        : "default"
+                                }
+                            >
+                                {panel === LeftSidebarPanel.QUERIES &&
+                                newMatchQueries.length > 0 ? (
+                                    <Badge
+                                        color="primary"
+                                        badgeContent={newMatchQueries.length}
+                                    >
+                                        {icon}
+                                    </Badge>
+                                ) : (
+                                    icon
+                                )}
+                            </IconButton>
+                        </Tooltip>
+                    ))}
+                </div>
+                <div
+                    className={styles.mobileRightGroup}
+                    data-tour="activity-bar-right"
+                >
+                    {rightPanelButtons.map(({ tab, icon, label }) => (
+                        <Tooltip key={tab} title={label} placement="top">
+                            <IconButton
+                                className={`${styles.iconButtonBottom} ${effectiveRightOpen && effectiveRightTab === tab ? styles.active : ""}`}
+                                onClick={() => handleRightClick(tab)}
+                                size="medium"
+                                color={
+                                    effectiveRightOpen &&
+                                    effectiveRightTab === tab
+                                        ? "primary"
+                                        : "default"
+                                }
+                            >
+                                {icon}
+                            </IconButton>
+                        </Tooltip>
+                    ))}
+                </div>
             </div>
         );
     }
 
     return (
         <div className={styles.activityBar} data-tour="activity-bar">
-            <div className={styles.topSection}>
+            <div className={styles.topSection} data-tour="activity-bar-left">
                 <Tooltip
                     title={t("uploadFileDialog.uploadButton")}
                     placement="right"
                 >
-                    <span>
+                    <span data-tour="upload">
                         <UploadFileButton iconOnly />
                     </span>
                 </Tooltip>
@@ -213,7 +224,10 @@ export const ActivityBar = () => {
                     </Tooltip>
                 ))}
             </div>
-            <div className={styles.bottomSection}>
+            <div
+                className={styles.bottomSection}
+                data-tour="activity-bar-right"
+            >
                 {visibleNewMatchQueries.map((q) => {
                     const icon = availableCustomQueryIcons.find(
                         (ac) => ac.key === q.icon,

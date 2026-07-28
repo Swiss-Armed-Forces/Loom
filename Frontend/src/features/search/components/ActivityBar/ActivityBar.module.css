@@ -54,6 +54,17 @@
     overflow-x: auto;
 }
 
+.mobileLeftGroup {
+    display: flex;
+    flex-direction: row;
+    flex: 1;
+}
+
+.mobileRightGroup {
+    display: flex;
+    flex-direction: row;
+}
+
 .iconButtonBottom {
     position: relative;
     flex: 1;

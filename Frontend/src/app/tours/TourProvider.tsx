@@ -46,6 +46,7 @@ export const TourProvider = ({ children }: TourProviderProps) => {
     const handleStepChange = useCallback((stepId: string) => {
         setActiveTourStepId(stepId);
         setShowQueryOverview(QUERY_OVERVIEW_STEPS.has(stepId));
+        if (stepId === "results-tabs") window.scrollTo({ top: 0 });
     }, []);
     const handleStepNext = useCallback(
         async (stepId: string): Promise<boolean> => {
@@ -59,6 +60,9 @@ export const TourProvider = ({ children }: TourProviderProps) => {
                     }),
                 ).unwrap();
                 setTourDetailFileId(result?.files[0]?.fileId ?? null);
+                document
+                    .querySelector<HTMLElement>('[data-tour="search-panel"]')
+                    ?.scrollTo({ top: 0 });
                 return true;
             } catch {
                 return false;
@@ -75,7 +79,6 @@ export const TourProvider = ({ children }: TourProviderProps) => {
 
     useEffect(() => {
         if (
-            import.meta.env.DEV ||
             location.pathname !== "/search" ||
             hasSeenTourRef.current ||
             automaticStartAttemptedRef.current
