@@ -8,6 +8,7 @@ import {
 } from "@features/common/utils/helpers";
 
 import { ArchiveActions } from "./ArchiveActions";
+import { ArchiveStateChip } from "./ArchiveStateChip";
 
 interface ArchiveInfo {
     archive: ArchiveHit;
@@ -17,7 +18,7 @@ export const ArchiveInfo = ({ archive }: ArchiveInfo) => {
     return (
         <>
             <TableCell>
-                <div>{archive.content.state}</div>
+                <ArchiveStateChip archive={archive} />
             </TableCell>
             <TableCell title={formatFileSize(archive.content.size)}>
                 <FileSizeLabel content={archive.content} searchQuery={""} />
