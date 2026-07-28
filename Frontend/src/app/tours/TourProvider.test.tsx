@@ -155,15 +155,17 @@ describe("TourProvider", () => {
         });
     });
 
-    it("suppresses automatic starts in development but allows manual starts", async () => {
-        vi.stubEnv("DEV", true);
+    it("allows manual starts even after the tour was previously dismissed", async () => {
+        window.localStorage.setItem(
+            TOUR_STORAGE_KEY,
+            JSON.stringify({ schemaVersion: 1, outcome: "dismissed" }),
+        );
         const view = renderProvider(<ManualTourHarness />);
 
         await act(
             () => new Promise((resolve) => window.setTimeout(resolve, 20)),
         );
         expect(mockedDriver).not.toHaveBeenCalled();
-        expect(window.localStorage.getItem(TOUR_STORAGE_KEY)).toBeNull();
 
         fireEvent.click(view.getByRole("button", { name: "Take a Tour" }));
 
