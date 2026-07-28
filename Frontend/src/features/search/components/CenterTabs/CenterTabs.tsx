@@ -222,6 +222,7 @@ export const CenterTabs = () => {
             {/* Search results panel — always mounted, hidden when inactive */}
             <div
                 className={styles.searchPanel}
+                data-tour="search-panel"
                 style={{
                     display: showSearchPanel ? "flex" : "none",
                 }}

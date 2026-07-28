@@ -109,7 +109,19 @@
             },
             "activityBar": {
                 "title": "Workspace tools",
-                "description": "The toolbar opens upload, folders, tags, saved queries, bulk actions, automatic actions, statistics, and document chat. Items with new activity show badge counts — for example, saved queries with newly matching documents."
+                "description": "The toolbar gives you access to upload, folders, tags, saved queries, bulk actions, automatic actions, statistics, and document chat."
+            },
+            "activityBarLeft": {
+                "title": "Workspace tools",
+                "description": "These buttons open the left sidebar panels: upload files, browse by folder, manage tags, access saved queries, run bulk actions, and configure automatic actions."
+            },
+            "activityBarRight": {
+                "title": "Analysis & chat",
+                "description": "These buttons open the right panel. Use <strong>Statistics</strong> to explore distributions and charts for the active query, and <strong>Chat</strong> to ask questions about your documents using the AI assistant."
+            },
+            "upload": {
+                "title": "Upload your files",
+                "description": "Click here to upload files directly from your computer. Loom also supports the S3 protocol — any file placed in the <strong>loom-intake</strong> bucket is automatically discovered, indexed, and made searchable. No manual steps needed."
             },
             "folders": {
                 "title": "Browse by folder",

@@ -1,5 +1,5 @@
 import { Close } from "@mui/icons-material";
-import { Drawer, IconButton, Tab, Tabs, useMediaQuery } from "@mui/material";
+import { Drawer, IconButton, Typography, useMediaQuery } from "@mui/material";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -8,7 +8,6 @@ import {
     RightSidebarTab,
     selectRightSidebarOpen,
     selectRightSidebarTab,
-    setRightSidebarTab,
     toggleRightSidebar,
 } from "@app/slices/searchSlice";
 import { getTourRightTab } from "@app/tours/tourScene";
@@ -98,29 +97,22 @@ export const RightSidebar = () => {
 
     const sidebarWidth = effectiveIsOpen ? width : 0;
 
+    const tabTitle =
+        effectiveActiveTab === RightSidebarTab.STATISTICS
+            ? t("toolbar.views.statistics")
+            : "Chatbot";
+
     const sidebarContent = (
         <>
             <div className={styles.header}>
-                <Tabs
-                    className={styles.tabs}
-                    value={effectiveActiveTab}
-                    onChange={(_, tab: RightSidebarTab) => {
-                        if (!isTourActive) dispatch(setRightSidebarTab(tab));
-                    }}
-                    textColor="inherit"
-                >
-                    <Tab
-                        value={RightSidebarTab.STATISTICS}
-                        label={t("toolbar.views.statistics")}
-                    />
-                    <Tab value={RightSidebarTab.CHAT} label="Chatbot" />
-                </Tabs>
+                <Typography className={styles.headerTitle}>
+                    {tabTitle}
+                </Typography>
                 <IconButton
                     size="small"
                     onClick={() => {
                         if (!isTourActive) dispatch(toggleRightSidebar());
                     }}
-                    sx={{ mr: 0.5 }}
                 >
                     <Close fontSize="small" />
                 </IconButton>
