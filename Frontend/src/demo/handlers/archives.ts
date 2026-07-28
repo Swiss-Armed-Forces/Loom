@@ -30,11 +30,9 @@ const listHandler = http.get(/\/api\/v1\/archive$/, () => {
                 updatedDatetime: archive.updatedAt,
             },
             content: {
-                state: "processed",
+                state: "created",
                 size: archive.size,
-                tasksSucceeded: [],
-                tasksRetried: [],
-                tasksFailed: [],
+                tasks: archive.tasks,
             },
             sha256: archive.sha256,
             hidden: archive.hidden,

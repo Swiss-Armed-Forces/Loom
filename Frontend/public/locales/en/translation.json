@@ -289,7 +289,8 @@
         "actions": {
             "download": "Download",
             "download_encrypted": "Download Encrypted",
-            "search": "Search query"
+            "search": "Search query",
+            "tasks": "Tasks"
         }
     },
     "detailedView": {
@@ -459,7 +460,8 @@
         "encryptionKeyCopied": "Archive encryption key copied",
         "encryptionKeyInfoTitle": "Archive Encryption Key",
         "encryptionKeyInfoDescription": "This is the master key used to encrypt all .loom archive files created by this Loom instance.",
-        "encryptionKeyInfoSyncNote": "To seamlessly import archives between two Loom instances, both must share the same master key. Set the ARCHIVE_ENC_MASTER_KEY environment variable to this value on the other instance."
+        "encryptionKeyInfoSyncNote": "To seamlessly import archives between two Loom instances, both must share the same master key. Set the ARCHIVE_ENC_MASTER_KEY environment variable to this value on the other instance.",
+        "tasksDialogTitle": "Tasks — {{name}}"
     },
     "about": {
         "title": "About",

@@ -1,5 +1,6 @@
 import { AboutDialog } from "./AboutDialog/AboutDialog";
 import { AddTagsDialog } from "./AddTagsDialog/AddTagsDialog";
+import { ArchiveTasksDialog } from "./ArchiveTasksDialog/ArchiveTasksDialog";
 import { ConfirmDialog } from "./ConfirmDialog/ConfirmDialog";
 import { CreateArchiveDialog } from "./CreateArchiveDialog/CreateArchiveDialog";
 import { DeleteCustomQueryDialog } from "./DeleteCustomQueryDialog/DeleteCustomQueryDialog";
@@ -14,6 +15,7 @@ import { UploadFileDialog } from "./UploadFileDialog/UploadFileDialog";
 export {
     AboutDialog,
     AddTagsDialog,
+    ArchiveTasksDialog,
     EncryptionKeyInfoDialog,
     ConfirmDialog,
     CreateArchiveDialog,

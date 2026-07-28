@@ -14,6 +14,7 @@ import { selectArchives } from "@app/slices/archiveSlice";
 import { selectIsLoading } from "@app/slices/commonSlice";
 import { ArchiveInfo } from "@features/archives/components";
 import { ArchiveActions } from "@features/archives/components/ArchiveInfo/ArchiveActions";
+import { ArchiveStateChip } from "@features/archives/components/ArchiveInfo/ArchiveStateChip";
 import {
     formatFileSize,
     getFormattedDateTime,
@@ -118,10 +119,18 @@ export const TableView = () => {
                                 flexWrap: "wrap",
                             }}
                         >
-                            <Typography variant="body2">
-                                <b>{t("tableView.header.state")}:</b>{" "}
-                                {archive.content.state}
-                            </Typography>
+                            <Box
+                                sx={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: 0.5,
+                                }}
+                            >
+                                <Typography variant="body2">
+                                    <b>{t("tableView.header.state")}:</b>
+                                </Typography>
+                                <ArchiveStateChip archive={archive} />
+                            </Box>
                             <Typography variant="body2">
                                 <b>{t("tableView.header.size")}:</b>{" "}
                                 {formatFileSize(archive.content.size)}

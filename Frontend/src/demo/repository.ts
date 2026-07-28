@@ -1,3 +1,5 @@
+import type { TaskRecord } from "@app/api/generated";
+
 import { createDemoDocuments, INITIAL_ARCHIVE_ID } from "./fixtures";
 import { parseDemoQuery } from "./query";
 
@@ -74,6 +76,7 @@ export interface DemoArchive {
     updatedAt: string;
     hidden: boolean;
     sha256: string;
+    tasks?: TaskRecord[];
 }
 
 export type DemoTask =
@@ -84,6 +87,68 @@ export type DemoTask =
 
 const DEMO_ARCHIVE_SHA256 = "0".repeat(64);
 
+const ARCHIVE_CREATED_AT = new Date("2026-07-27T09:58:00Z");
+
+const createInitialArchiveTasks = (): TaskRecord[] => [
+    {
+        taskId: "demo-task-collect",
+        taskName: "worker.create_archive.collect_files",
+        succeeded: [
+            {
+                startedAt: new Date(ARCHIVE_CREATED_AT.getTime()),
+                finishedAt: new Date(ARCHIVE_CREATED_AT.getTime() + 3_100),
+                duration: 3.1,
+                arguments: '{"query": "tags:interesting", "file_count": 3}',
+            },
+        ],
+    },
+    {
+        taskId: "demo-task-compress",
+        taskName: "worker.create_archive.compress_files",
+        retried: [
+            {
+                startedAt: new Date(ARCHIVE_CREATED_AT.getTime() + 3_200),
+                finishedAt: new Date(ARCHIVE_CREATED_AT.getTime() + 4_100),
+                duration: 0.9,
+                exception:
+                    "MemoryError: unable to allocate compression buffer (requested 256 MiB)\n" +
+                    '  File "worker/create_archive/compress.py", line 42, in compress_files\n' +
+                    "    buf = bytearray(block_size)",
+            },
+        ],
+        succeeded: [
+            {
+                startedAt: new Date(ARCHIVE_CREATED_AT.getTime() + 5_000),
+                finishedAt: new Date(ARCHIVE_CREATED_AT.getTime() + 9_200),
+                duration: 4.2,
+                arguments: '{"compression_level": 6, "file_count": 3}',
+            },
+        ],
+    },
+    {
+        taskId: "demo-task-encrypt",
+        taskName: "worker.create_archive.encrypt_archive",
+        succeeded: [
+            {
+                startedAt: new Date(ARCHIVE_CREATED_AT.getTime() + 9_300),
+                finishedAt: new Date(ARCHIVE_CREATED_AT.getTime() + 10_100),
+                duration: 0.8,
+            },
+        ],
+    },
+    {
+        taskId: "demo-task-upload",
+        taskName: "worker.create_archive.upload_to_storage",
+        succeeded: [
+            {
+                startedAt: new Date(ARCHIVE_CREATED_AT.getTime() + 10_200),
+                finishedAt: new Date(ARCHIVE_CREATED_AT.getTime() + 11_650),
+                duration: 1.45,
+            },
+        ],
+    },
+];
+
 const createInitialArchives = (): DemoArchive[] => [
     {
         id: INITIAL_ARCHIVE_ID,
@@ -93,6 +158,7 @@ const createInitialArchives = (): DemoArchive[] => [
         updatedAt: new Date().toISOString(),
         hidden: false,
         sha256: DEMO_ARCHIVE_SHA256,
+        tasks: createInitialArchiveTasks(),
     },
 ];
 

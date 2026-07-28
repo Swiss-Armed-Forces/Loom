@@ -11,6 +11,7 @@ import { DialogType } from "@features/common/utils/enums";
 import {
     AboutDialog,
     AddTagsDialog,
+    ArchiveTasksDialog,
     CreateArchiveDialog,
     DeleteCustomQueryDialog,
     DeleteTagGloballyDialog,
@@ -30,6 +31,7 @@ const registerDialog = <P extends DialogProps>(
 
 const dialogRegistry: Record<DialogType, React.ComponentType<any>> = {
     [DialogType.About]: registerDialog(AboutDialog),
+    [DialogType.ArchiveTasks]: registerDialog(ArchiveTasksDialog),
     [DialogType.EncryptionKeyInfo]: registerDialog(EncryptionKeyInfoDialog),
     [DialogType.AddTagsDialog]: registerDialog(AddTagsDialog),
     [DialogType.CreateArchive]: registerDialog(CreateArchiveDialog),
