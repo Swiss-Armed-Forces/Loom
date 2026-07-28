@@ -188,6 +188,13 @@ let
         files = "^${subdir}/.*$";
         pass_filenames = false;
       };
+
+      "vitest_${subdirName}" = {
+        enable = true;
+        entry = createToolWrapper "pnpm" subdir subdirName "test run";
+        files = "^${subdir}/.*$";
+        pass_filenames = false;
+      };
     };
 
   createHelmHooksForSubdir =
