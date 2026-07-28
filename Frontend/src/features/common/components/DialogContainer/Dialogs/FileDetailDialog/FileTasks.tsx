@@ -192,7 +192,7 @@ export const FileTasks = ({ tasks }: FileTasksProps) => {
             <Box sx={{ flex: 1, overflow: "auto", p: 2 }}>
                 {visibleTasks.map((task, i) => (
                     <TaskCard
-                        key={`${task.taskId}-${i}`}
+                        key={`${task.taskName}-${i}`}
                         task={task}
                         activeCategories={activeCategories}
                     />

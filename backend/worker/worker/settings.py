@@ -160,6 +160,9 @@ class Settings(CommonSettings):
     min_language_detection_confidence: float = 95.0
     persist_success_tasks: bool = True
     persist_retry_tasks: bool = True
+    max_no_of_persisted_succeeded_tasks: int = 2
+    max_no_of_persisted_retried_tasks: int = 2
+    max_no_of_persisted_failed_tasks: int = 2
     tika_ocr_languages: Annotated[list[TikaAllowedOcrLanguage], NoDecode] = [
         "eng",
         "deu",

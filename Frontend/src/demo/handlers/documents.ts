@@ -188,10 +188,15 @@ const documentRaw = (document: DemoDocument): string =>
 
 const demoTasks = (document: DemoDocument): TaskRecord[] => {
     const base = new Date(document.uploadedAt).getTime();
-    const run = (offsetSeconds: number, durationMs: number) => ({
+    const run = (
+        offsetSeconds: number,
+        durationMs: number,
+        taskId: string,
+    ) => ({
         startedAt: new Date(base + offsetSeconds * 1000),
         finishedAt: new Date(base + offsetSeconds * 1000 + durationMs),
         duration: durationMs,
+        taskId: taskId,
     });
     if (document.state === "failed") {
         const args = JSON.stringify(
@@ -206,11 +211,10 @@ const demoTasks = (document: DemoDocument): TaskRecord[] => {
         );
         return [
             {
-                taskId: "99000000-0000-4000-8000-000000000001",
                 taskName: "worker.index_file.index_file_task.index_file_task",
                 retried: [
                     {
-                        ...run(5, 1800),
+                        ...run(5, 1800, "99000000-0000-4000-8000-000000000001"),
                         arguments: args,
                         exception:
                             "Traceback (most recent call last):\n" +
@@ -223,7 +227,11 @@ const demoTasks = (document: DemoDocument): TaskRecord[] => {
                             "worker.index_file.domain.errors.ExtractionError: Tika returned status 422",
                     },
                     {
-                        ...run(75, 2100),
+                        ...run(
+                            75,
+                            2100,
+                            "99000000-0000-4000-8000-000000000002",
+                        ),
                         arguments: args,
                         exception:
                             "Traceback (most recent call last):\n" +
@@ -238,7 +246,11 @@ const demoTasks = (document: DemoDocument): TaskRecord[] => {
                 ],
                 failed: [
                     {
-                        ...run(155, 950),
+                        ...run(
+                            155,
+                            950,
+                            "99000000-0000-4000-8000-000000000003",
+                        ),
                         arguments: args,
                         exception:
                             "Traceback (most recent call last):\n" +
@@ -256,25 +268,22 @@ const demoTasks = (document: DemoDocument): TaskRecord[] => {
     }
     const tasks: TaskRecord[] = [
         {
-            taskId: "10000000-0000-4000-8000-000000000001",
             taskName: "worker.index_file.index_file_task.index_file_task",
-            succeeded: [run(5, 3200)],
+            succeeded: [run(5, 3200, "10000000-0000-4000-8000-000000000001")],
         },
     ];
     if (document.summary) {
         tasks.push({
-            taskId: "10000000-0000-4000-8000-000000000002",
             taskName:
                 "worker.index_file.summarize_file_task.summarize_file_task",
-            succeeded: [run(12, 8400)],
+            succeeded: [run(12, 8400, "10000000-0000-4000-8000-000000000002")],
         });
     }
     if (document.imageDescription) {
         tasks.push({
-            taskId: "10000000-0000-4000-8000-000000000003",
             taskName:
                 "worker.index_file.image_description_task.image_description_task",
-            succeeded: [run(9, 5100)],
+            succeeded: [run(9, 5100, "10000000-0000-4000-8000-000000000003")],
         });
     }
     return tasks;

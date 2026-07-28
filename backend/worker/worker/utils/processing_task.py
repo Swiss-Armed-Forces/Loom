@@ -58,30 +58,27 @@ class ProcessingTask(
     @staticmethod
     def _persist_fail(
         task_run: TaskRun,
-        task_id: UUID,
         task_name: str,
         task_info_persister: TaskInfoPersister,
     ):
         task_info_persister.update_state("failed")
-        task_info_persister.add_failed_task(task_run, task_id, task_name)
+        task_info_persister.add_failed_task(task_run, task_name)
 
     @staticmethod
     def _persist_retry(
         task_run: TaskRun,
-        task_id: UUID,
         task_name: str,
         task_info_persister: TaskInfoPersister,
     ):
-        task_info_persister.add_retried_task(task_run, task_id, task_name)
+        task_info_persister.add_retried_task(task_run, task_name)
 
     @staticmethod
     def _persist_success(
         task_run: TaskRun,
-        task_id: UUID,
         task_name: str,
         task_info_persister: TaskInfoPersister,
     ):
-        task_info_persister.add_success_task(task_run, task_id, task_name)
+        task_info_persister.add_success_task(task_run, task_name)
 
     def _get_object_id_for_request(self) -> UUID | None:
         """Look up object_id from RootTaskInformation for the current request."""
@@ -97,7 +94,7 @@ class ProcessingTask(
     def _dispatch_persist_task(
         self,
         task_id: str,
-        persist_callback: Callable[[TaskRun, UUID, str, TaskInfoPersister], None],
+        persist_callback: Callable[[TaskRun, str, TaskInfoPersister], None],
         args=None,
         exception: Exception | None = None,
     ) -> None:
@@ -127,6 +124,7 @@ class ProcessingTask(
                 arguments_str = "Unable to serialize arguments"
 
         task_run = TaskRun(
+            task_id=UUID(task_id),
             started_at=started_at,
             finished_at=finished_at,
             duration=(finished_at - started_at).total_seconds(),
@@ -138,7 +136,6 @@ class ProcessingTask(
                 object_id,
                 type(self._repository),
                 task_run,
-                task_id,
                 self.name,
                 persist_callback,
             ),
@@ -204,11 +201,10 @@ def _persist_task_status_task(
     object_id: UUID,
     repository_type: type[BaseRepository],
     task_run: TaskRun,
-    task_id: str,
     task_name: str,
-    persist_callback: Callable[[TaskRun, UUID, str, TaskInfoPersister], None],
+    persist_callback: Callable[[TaskRun, str, TaskInfoPersister], None],
 ):
     # Get pre-registered persister class (worker already initialized)
     persister_class = get_task_info_persister(repository_type)
     persister = persister_class(object_id)
-    persist_callback(task_run, UUID(task_id), task_name, persister)
+    persist_callback(task_run, task_name, persister)

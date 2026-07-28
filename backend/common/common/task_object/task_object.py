@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import Annotated, TypeVar
 from uuid import UUID
 
-from elasticsearch.dsl import Date, Float, InnerDoc, Keyword, Nested, Object
+from elasticsearch.dsl import Date, Float, InnerDoc, Integer, Keyword, Nested, Object
 from pydantic import BaseModel, computed_field
 
 from common.file.file_statistics import TermsStat
@@ -14,6 +14,7 @@ from common.models.es_repository import (
 
 
 class TaskRun(BaseModel):
+    task_id: UUID
     started_at: datetime
     finished_at: datetime
     duration: float
@@ -22,8 +23,9 @@ class TaskRun(BaseModel):
 
 
 class TaskRecord(BaseModel):
-    task_id: UUID
     task_name: str
+    avg_duration: float = 0
+    run_count: int = 0
     succeeded: list[TaskRun] | None = None
     retried: list[TaskRun] | None = None
     failed: list[TaskRun] | None = None
@@ -61,6 +63,7 @@ class RepositoryTaskObject(EsRepositoryObject):
 
 
 class _EsTaskRun(InnerDoc):
+    task_id = Keyword()
     started_at = Date()
     finished_at = Date()
     duration = Float()
@@ -69,10 +72,11 @@ class _EsTaskRun(InnerDoc):
 
 
 class _EsTaskRecord(InnerDoc):
-    task_id = Keyword()
     task_name = Keyword()
     succeeded = Object(_EsTaskRun, multi=True)
     retried = Object(_EsTaskRun, multi=True)
+    avg_duration = Float()
+    run_count = Integer()
     failed = Object(_EsTaskRun, multi=True)
 
 
