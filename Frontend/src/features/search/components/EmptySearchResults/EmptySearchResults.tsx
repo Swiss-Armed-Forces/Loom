@@ -3,6 +3,7 @@ import {
     SubdirectoryArrowLeft,
     Download,
     Flag,
+    Fullscreen,
     LabelOutlined,
     ManageSearch,
     MarkEmailReadOutlined,
@@ -156,6 +157,16 @@ export const EmptySearchResults = () => {
         {
             type: "row",
             keys: ["f"],
+            icon: <Fullscreen fontSize="inherit" />,
+            label: (
+                <>
+                    <strong>F</strong>ullscreen
+                </>
+            ),
+        },
+        {
+            type: "row",
+            keys: ["Shift + f"],
             icon: <Flag fontSize="inherit" />,
             label: (
                 <>

@@ -388,6 +388,7 @@
             "shiftClickNegate": "Negate clicked filter",
             "escapeAction": "Clear selection, search & sort, or close",
             "focusSearch": "Focus search",
+            "fullscreen": "Fullscreen",
             "flag": "Flag/unflag",
             "see": "Seen/unseen",
             "share": "Share",
