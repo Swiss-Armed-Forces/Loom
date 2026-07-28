@@ -32,13 +32,19 @@ export interface TaskRecord {
      * @type {string}
      * @memberof TaskRecord
      */
-    taskId: string;
+    taskName: string;
     /**
      *
-     * @type {string}
+     * @type {number}
      * @memberof TaskRecord
      */
-    taskName: string;
+    avgDuration?: number;
+    /**
+     *
+     * @type {number}
+     * @memberof TaskRecord
+     */
+    runCount?: number;
     /**
      *
      * @type {Array<TaskRun>}
@@ -63,7 +69,6 @@ export interface TaskRecord {
  * Check if a given object implements the TaskRecord interface.
  */
 export function instanceOfTaskRecord(value: object): boolean {
-    if (!("taskId" in value)) return false;
     if (!("taskName" in value)) return false;
     return true;
 }
@@ -80,8 +85,10 @@ export function TaskRecordFromJSONTyped(
         return json;
     }
     return {
-        taskId: json["task_id"],
         taskName: json["task_name"],
+        avgDuration:
+            json["avg_duration"] == null ? undefined : json["avg_duration"],
+        runCount: json["run_count"] == null ? undefined : json["run_count"],
         succeeded:
             json["succeeded"] == null
                 ? undefined
@@ -96,8 +103,9 @@ export function TaskRecordToJSON(value?: TaskRecord | null): any {
         return value;
     }
     return {
-        task_id: value["taskId"],
         task_name: value["taskName"],
+        avg_duration: value["avgDuration"],
+        run_count: value["runCount"],
         succeeded:
             value["succeeded"] == null
                 ? undefined

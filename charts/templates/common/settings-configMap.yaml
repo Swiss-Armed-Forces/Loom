@@ -70,6 +70,15 @@ data:
     {{- if ne .Values.pipeline.min_language_detection_confidence nil }}
     min_language_detection_confidence: {{ .Values.pipeline.min_language_detection_confidence | quote }}
     {{- end }}
+    {{- if ne .Values.pipeline.max_no_of_persisted_succeeded_tasks nil }}
+    max_no_of_persisted_succeeded_tasks: {{ .Values.pipeline.max_no_of_persisted_succeeded_tasks | quote }}
+    {{- end }}
+    {{- if ne .Values.pipeline.max_no_of_persisted_retried_tasks nil }}
+    max_no_of_persisted_retried_tasks: {{ .Values.pipeline.max_no_of_persisted_retried_tasks | quote }}
+    {{- end }}
+    {{- if ne .Values.pipeline.max_no_of_persisted_failed_tasks nil }}
+    max_no_of_persisted_failed_tasks: {{ .Values.pipeline.max_no_of_persisted_failed_tasks | quote }}
+    {{- end }}
     {{- if ne .Values.pipeline.auto_tag_file_similarity_threshold nil }}
     auto_tag_file_similarity_threshold: {{ .Values.pipeline.auto_tag_file_similarity_threshold | quote }}
     {{- end }}

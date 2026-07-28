@@ -22,6 +22,12 @@ import { mapValues } from "../runtime";
 export interface TaskRun {
     /**
      *
+     * @type {string}
+     * @memberof TaskRun
+     */
+    taskId: string;
+    /**
+     *
      * @type {Date}
      * @memberof TaskRun
      */
@@ -56,6 +62,7 @@ export interface TaskRun {
  * Check if a given object implements the TaskRun interface.
  */
 export function instanceOfTaskRun(value: object): boolean {
+    if (!("taskId" in value)) return false;
     if (!("startedAt" in value)) return false;
     if (!("finishedAt" in value)) return false;
     if (!("duration" in value)) return false;
@@ -74,6 +81,7 @@ export function TaskRunFromJSONTyped(
         return json;
     }
     return {
+        taskId: json["task_id"],
         startedAt: new Date(json["started_at"]),
         finishedAt: new Date(json["finished_at"]),
         duration: json["duration"],
@@ -87,6 +95,7 @@ export function TaskRunToJSON(value?: TaskRun | null): any {
         return value;
     }
     return {
+        task_id: value["taskId"],
         started_at: value["startedAt"].toISOString(),
         finished_at: value["finishedAt"].toISOString(),
         duration: value["duration"],
