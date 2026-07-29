@@ -267,10 +267,9 @@ export const FolderViewNode = React.memo(
             ),
         );
 
-        // Render a hidden placeholder for unloaded, non-empty directories.
-        // File nodes also have a positive fileCount, so fileId must distinguish
-        // them from expandable directories. MUI uses the placeholder to decide
-        // whether to show the expand arrow.
+        // Render a hidden placeholder for unloaded, non-empty nodes (directories
+        // or files such as archives that have extracted children). MUI uses the
+        // placeholder to decide whether to show the expand arrow.
         if (hasUnloadedChildren(tree)) {
             children.push(
                 <TreeItem
