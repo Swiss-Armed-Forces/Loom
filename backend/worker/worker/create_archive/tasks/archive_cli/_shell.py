@@ -40,9 +40,11 @@ _SHELL_COMMANDS = [  # keep in sync with build_parser(); exit/quit have no subco
     "cd",
     "pwd",
     "clear",
+    "history",
     "find",
     "grep",
     "info",
+    "cat",
     "tree",
     "x",
     "extract",
@@ -84,14 +86,20 @@ class ShellCompleter:
             leading = len(line) - len(line.lstrip())
             cmd_end = leading + len(cmd)
             after_cmd = line[cmd_end:begidx]
-            if after_cmd.strip():  # path already provided → complete field name
-                return self._complete_field(line, cmd_end, begidx, text)
-        if cmd in ("cd", "ls", "list", "info", "x", "extract"):
+            try:
+                if shlex.split(after_cmd):  # complete parseable token → field mode
+                    return self._complete_field(line, cmd_end, begidx, text)
+            except ValueError:
+                pass  # unclosed quote → still typing the path
+        if cmd == "grep":
+            file_arg = self._grep_file_arg(line, begidx, text)
+            if file_arg is not None:
+                return self._complete_path_arg(file_arg, text, dirs_only=False)
+            return []
+        if cmd in ("cd", "ls", "list", "info", "cat", "x", "extract"):
             full_arg = self._full_path_arg(cmd, line, begidx, text)
             dirs_only = cmd == "cd"
-            completions = self._complete_path(full_arg, dirs_only=dirs_only)
-            strip = len(full_arg) - len(text)
-            return [c[strip:] for c in completions if len(c) >= strip]
+            return self._complete_path_arg(full_arg, text, dirs_only=dirs_only)
         return []
 
     @staticmethod
@@ -101,10 +109,44 @@ class ShellCompleter:
         cmd_end = leading + len(cmd)
         return line[cmd_end : begidx + len(text)].lstrip()
 
+    @staticmethod
+    def _grep_file_arg(line: str, begidx: int, text: str) -> str | None:
+        """Return the current FILE arg being typed for grep, or None if before the
+        pattern.
+
+        Returns None when the cursor is still on the pattern position (no non-option
+        token has been typed after 'grep' yet), suppressing file completion there.
+        Returns the reconstructed path fragment (possibly empty) once the pattern has
+        been provided, enabling file path completion for subsequent FILE arguments.
+        """
+        leading = len(line) - len(line.lstrip())
+        before_words = line[leading:begidx].split()
+        if len(before_words) < 2:
+            return None
+        # First non-option token after the command is the pattern
+        pattern_word = next(
+            (w for w in before_words[1:] if not w.startswith("-")),
+            None,
+        )
+        if pattern_word is None:
+            return None
+        # Locate the pattern token in line (after the command) to find where FILE args start
+        cmd_end = leading + len(before_words[0])
+        pat_start = line.find(pattern_word, cmd_end)
+        if pat_start == -1:
+            return None
+        pat_end = pat_start + len(pattern_word)
+        return line[pat_end : begidx + len(text)].lstrip()
+
     def _complete_field(
         self, line: str, cmd_end: int, begidx: int, text: str
     ) -> list[str]:
-        path_text = shell_unescape(line[cmd_end:begidx].strip())
+        raw = line[cmd_end:begidx].strip()
+        try:
+            tokens = shlex.split(raw)
+            path_text = tokens[0] if tokens else ""
+        except ValueError:
+            path_text = shell_unescape(raw)
         vpath = resolve_cwd(self.cwd, path_text).lstrip("/")
         json_filename = get_json_filename(self._db, vpath)
         if json_filename is None:
@@ -127,6 +169,116 @@ class ShellCompleter:
         return [
             prefix + shell_escape(c) for c in candidates if c.startswith(partial_raw)
         ]
+
+    def _complete_path_unescaped(self, text: str, *, dirs_only: bool) -> list[str]:
+        """Complete a path without shell-escaping, for use inside quoted arguments."""
+        if "/" in text:
+            dir_part, partial = text.rsplit("/", 1)
+            search_cwd = resolve_cwd(self.cwd, dir_part)
+            prefix = text[: len(text) - len(partial)]
+        else:
+            search_cwd = self.cwd
+            partial = text
+            prefix = ""
+        children = get_children(self._db, search_cwd)
+        candidates = [c for c in children if c.endswith("/")] if dirs_only else children
+        return [prefix + c for c in candidates if c.startswith(partial)]
+
+    def _complete_path_arg(
+        self, path_arg: str, text: str, *, dirs_only: bool
+    ) -> list[str]:
+        """Resolve completions for path_arg, handling both normal and quoted modes.
+
+        When path_arg starts with a quote character, completions are returned in quoted
+        form with unescaped filenames. This correctly handles the case where readline
+        has space-split a quoted path (text no longer starts with the quote), because
+        quoted mode is detected solely from path_arg rather than text.
+        """
+        if path_arg and path_arg[0] in ('"', "'"):
+            quote = path_arg[0]
+            unquoted_arg = path_arg[1:]
+            # effective_text is the portion of unquoted_arg that readline sees as the
+            # current token. If readline has not yet space-split the quoted arg, text
+            # still starts with the quote char; otherwise text is the raw suffix.
+            effective_text = text[1:] if text.startswith(quote) else text
+            completions = self._complete_path_unescaped(
+                unquoted_arg, dirs_only=dirs_only
+            )
+            strip = len(unquoted_arg) - len(effective_text)
+            if strip < 0:
+                return []
+            # Only prepend the quote when readline's current token still includes it.
+            prefix = quote if text.startswith(quote) else ""
+            result = []
+            for c in completions:
+                if len(c) < strip:
+                    continue
+                completion = prefix + c[strip:]
+                # Mirror bash: add closing quote for files; directories end with /
+                # and stay open so the user can continue typing the subpath.
+                if not c.endswith("/"):
+                    completion += quote
+                result.append(completion)
+            return result
+        completions = self._complete_path(path_arg, dirs_only=dirs_only)
+        strip = len(path_arg) - len(text)
+        return [c[strip:] for c in completions if len(c) >= strip]
+
+
+def _cmd_history() -> None:
+    if _readline is None:
+        return
+    count = _readline.get_current_history_length()
+    width = len(str(count))
+    for i in range(1, count + 1):
+        item = _readline.get_history_item(i)
+        if item:
+            print(f"{i:{width}}  {item}")
+
+
+def _resolve_history_ref(line: str, *, _depth: int = 0) -> str | None:
+    """Expand !N or !! to the referenced history entry, following chains.
+
+    Mirrors bash behaviour: !! re-runs the previous entry; !N re-runs entry N.
+    Chains are followed (e.g. !! -> !2 -> ls) up to a depth limit.
+    Returns the final command string, or None on error (message already printed).
+    """
+    if _depth > 20:
+        print("!: expansion loop detected", file=sys.stderr)
+        return None
+    if _readline is None:
+        print("!: readline not available", file=sys.stderr)
+        return None
+    num = _readline.get_current_history_length() - 1 if line == "!!" else int(line[1:])
+    item = _readline.get_history_item(num)
+    if item is None:
+        label = "!!" if line == "!!" else f"!{num}"
+        print(f"{label}: event not found", file=sys.stderr)
+        return None
+    if item == "!!" or (item.startswith("!") and item[1:].isdigit()):
+        return _resolve_history_ref(item, _depth=_depth + 1)
+    print(item)
+    return item
+
+
+def _handle_shell_only_cmd(
+    cmd_args: argparse.Namespace,
+    parser: argparse.ArgumentParser,
+    cwd: str,
+    *,
+    db: sqlite3.Connection,
+) -> str:
+    if cmd_args.command == "pwd":
+        print(f"/{cwd}" if cwd else "/")
+    elif cmd_args.command == "cd":
+        cwd = _do_cd(cwd, cmd_args.path, db=db)
+    elif cmd_args.command == "clear":
+        print("\033[2J\033[H", end="", flush=True)
+    elif cmd_args.command == "history":
+        _cmd_history()
+    else:
+        parser.print_help()
+    return cwd
 
 
 def _do_cd(cwd: str, target: str, *, db: sqlite3.Connection) -> str:
@@ -155,6 +307,11 @@ def _shell_step(
     db: sqlite3.Connection,
 ) -> _StepResult:
     """Process one shell input line; return (new_cwd, should_break)."""
+    if line == "!!" or (line.startswith("!") and line[1:].isdigit()):
+        resolved = _resolve_history_ref(line)
+        if resolved is None:
+            return _StepResult(cwd, False)
+        line = resolved
     if line in ("exit", "quit"):
         return _StepResult(cwd, True)
     try:
@@ -167,15 +324,8 @@ def _shell_step(
     if cmd_args.command == "shell":
         print("Already in shell.", file=sys.stderr)
         return _StepResult(cwd, False)
-    if cmd_args.command in ("help", "pwd", "cd", "clear"):
-        if cmd_args.command == "pwd":
-            print(f"/{cwd}" if cwd else "/")
-        elif cmd_args.command == "cd":
-            cwd = _do_cd(cwd, cmd_args.path, db=db)
-        elif cmd_args.command == "clear":
-            print("\033[2J\033[H", end="", flush=True)
-        else:
-            parser.print_help()
+    if cmd_args.command in ("help", "pwd", "cd", "clear", "history"):
+        cwd = _handle_shell_only_cmd(cmd_args, parser, cwd, db=db)
         return _StepResult(cwd, False)
     try:
         _dispatch(cmd_args, db=db, cwd=cwd)

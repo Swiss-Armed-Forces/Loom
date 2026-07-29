@@ -239,12 +239,15 @@ class TestCliShell:
             simple_entries({"report.pdf": b"data"}),
             file_storage_service_inmemory,
         )
-        result = _run_shell(archive_dir, "ls\nexit\n")
+        result = _run_shell(archive_dir, "cd test\nls\nhistory\n!2\n!!\n!999\nexit\n")
 
         assert result.returncode == 0
         history_file = archive_dir / ".loom_history"
         assert history_file.exists()
         assert "ls" in history_file.read_text()
+        assert "2  ls" in result.stdout  # history shows numbered entries
+        assert result.stdout.count("report.pdf") == 3  # !2 and !! each re-ran ls
+        assert "event not found" in result.stderr  # !999 is out of range
 
     def test_shell_loads_existing_history_file(
         self,
@@ -574,7 +577,48 @@ class TestShellCompleter:
         assert "docs/" in matches
         assert "notes.txt" in matches
 
-    def test_no_completions_for_grep(
+    def test_cat_completes_filenames(
+        self,
+        tmp_path: Path,
+        file_storage_service_inmemory: InMemoryFileStorageLazyBytesService,
+    ) -> None:
+        c = self._make_completer(
+            {"report.pdf": b"data", "notes.txt": b"text"},
+            tmp_path,
+            file_storage_service_inmemory,
+        )
+        c.cwd = "test"
+        matches = c.get_completions("", "cat ", 4)
+        assert "report.pdf" in matches
+        assert "notes.txt" in matches
+
+    def test_cat_completes_partial_filename(
+        self,
+        tmp_path: Path,
+        file_storage_service_inmemory: InMemoryFileStorageLazyBytesService,
+    ) -> None:
+        c = self._make_completer(
+            {"report.pdf": b"data", "notes.txt": b"text"},
+            tmp_path,
+            file_storage_service_inmemory,
+        )
+        c.cwd = "test"
+        matches = c.get_completions("rep", "cat rep", 4)
+        assert "report.pdf" in matches
+        assert "notes.txt" not in matches
+
+    def test_cat_is_in_command_completions(
+        self,
+        tmp_path: Path,
+        file_storage_service_inmemory: InMemoryFileStorageLazyBytesService,
+    ) -> None:
+        c = self._make_completer(
+            {"report.pdf": b"data"}, tmp_path, file_storage_service_inmemory
+        )
+        matches = c.get_completions("ca", "", 0)
+        assert "cat" in matches
+
+    def test_no_completions_for_grep_pattern_position(
         self,
         tmp_path: Path,
         file_storage_service_inmemory: InMemoryFileStorageLazyBytesService,
@@ -584,6 +628,61 @@ class TestShellCompleter:
         )
         matches = c.get_completions("", "grep ", 5)
         assert matches == []
+
+    def test_grep_completes_filenames_after_pattern(
+        self,
+        tmp_path: Path,
+        file_storage_service_inmemory: InMemoryFileStorageLazyBytesService,
+    ) -> None:
+        c = self._make_completer(
+            {"report.pdf": b"data", "notes.txt": b"text"},
+            tmp_path,
+            file_storage_service_inmemory,
+        )
+        c.cwd = "test"
+        # cursor is after the pattern "foo"
+        matches = c.get_completions("", "grep foo ", 9)
+        assert "report.pdf" in matches
+        assert "notes.txt" in matches
+
+    def test_grep_completes_partial_filename_after_pattern(
+        self,
+        tmp_path: Path,
+        file_storage_service_inmemory: InMemoryFileStorageLazyBytesService,
+    ) -> None:
+        c = self._make_completer(
+            {"report.pdf": b"data", "notes.txt": b"text"},
+            tmp_path,
+            file_storage_service_inmemory,
+        )
+        c.cwd = "test"
+        matches = c.get_completions("rep", "grep foo rep", 9)
+        assert "report.pdf" in matches
+        assert "notes.txt" not in matches
+
+    def test_grep_no_completions_before_pattern(
+        self,
+        tmp_path: Path,
+        file_storage_service_inmemory: InMemoryFileStorageLazyBytesService,
+    ) -> None:
+        c = self._make_completer(
+            {"report.pdf": b"data"}, tmp_path, file_storage_service_inmemory
+        )
+        # After -i flag but still no pattern → no file completions
+        matches = c.get_completions("", "grep -i ", 8)
+        assert matches == []
+
+    def test_grep_completes_file_after_flag_and_pattern(
+        self,
+        tmp_path: Path,
+        file_storage_service_inmemory: InMemoryFileStorageLazyBytesService,
+    ) -> None:
+        c = self._make_completer(
+            {"report.pdf": b"data"}, tmp_path, file_storage_service_inmemory
+        )
+        c.cwd = "test"
+        matches = c.get_completions("", "grep -i foo ", 12)
+        assert "report.pdf" in matches
 
     def test_completer_escapes_spaces_in_dirname(
         self,
@@ -633,6 +732,74 @@ class TestShellCompleter:
         # Should complete to "reports/q1.pdf" and "reports/q2.pdf"
         assert any("q1.pdf" in m for m in matches)
         assert any("q2.pdf" in m for m in matches)
+
+
+class TestShellCompleterQuotedMode:
+    """Tests for quoted-mode (") path completion in the archive shell."""
+
+    def _make_completer(
+        self,
+        files: dict[str, bytes],
+        tmp_path: Path,
+        file_storage_service_inmemory: InMemoryFileStorageLazyBytesService,
+    ) -> ShellCompleter:
+        archive_dir = build_archive(
+            tmp_path,
+            simple_entries(files),
+            file_storage_service_inmemory,
+        )
+        db = open_shell_db(archive_dir)
+        return ShellCompleter(db=db, index_dir=archive_dir / FILES_INDEX_DIR)
+
+    def test_file_completion_in_quoted_mode(
+        self,
+        tmp_path: Path,
+        file_storage_service_inmemory: InMemoryFileStorageLazyBytesService,
+    ) -> None:
+        c = self._make_completer(
+            {"report.pdf": b"data", "notes.txt": b"text"},
+            tmp_path,
+            file_storage_service_inmemory,
+        )
+        c.cwd = "test"
+        # empty prefix → all files; closing quote added for files
+        matches = c.get_completions('"', 'info "', 5)
+        assert '"report.pdf"' in matches
+        assert '"notes.txt"' in matches
+        # partial prefix → filtered; closing quote added
+        matches = c.get_completions('"rep', 'info "rep', 5)
+        assert '"report.pdf"' in matches
+        assert '"notes.txt"' not in matches
+
+    def test_quoted_mode_dirs_subdir_and_space_split(
+        self,
+        tmp_path: Path,
+        file_storage_service_inmemory: InMemoryFileStorageLazyBytesService,
+    ) -> None:
+        c = self._make_completer(
+            {
+                "docs/report.pdf": b"data",
+                "docs/notes.txt": b"text",
+                "images/photo.jpg": b"img",
+                "dir with space/subfile.txt": b"data",
+            },
+            tmp_path,
+            file_storage_service_inmemory,
+        )
+        c.cwd = "test"
+        # cd must only suggest dirs, each prefixed with "
+        matches = c.get_completions('"', 'cd "', 3)
+        assert '"docs/' in matches
+        assert '"images/' in matches
+        assert '"report.pdf' not in matches
+        # ls must suggest files inside a quoted subdir path; closing quote for files
+        matches = c.get_completions('"docs/', 'ls "docs/', 3)
+        assert '"docs/report.pdf"' in matches
+        assert '"docs/notes.txt"' in matches
+        # readline splits "dir with space/" at space; info must also do path completion
+        for cmd_word in ("ls", "info"):
+            matches = c.get_completions("space/", f'{cmd_word} "dir with space/', 17)
+            assert any("subfile.txt" in m for m in matches)
 
 
 class TestShellWithSpecialFilenames:

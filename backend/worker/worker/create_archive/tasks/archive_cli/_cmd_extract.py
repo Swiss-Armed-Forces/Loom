@@ -103,11 +103,16 @@ def cmd_extract(
             {e.name: None for pat in args.members for e in resolve_name(stubs, pat)}
         )
 
-    seen: dict[str, None] = {}
-    for vpath in initial_vpaths:
-        seen[vpath] = None
-        if not args.no_recursion:
-            seen.update(dict.fromkeys(get_child_vpaths_under(db, vpath)))
+    if args.members:
+        # Expand any directory members into their constituent files.
+        seen: dict[str, None] = {}
+        for vpath in initial_vpaths:
+            seen[vpath] = None
+            if not args.no_recursion:
+                seen.update(dict.fromkeys(get_child_vpaths_under(db, vpath)))
+    else:
+        # initial_vpaths already contains every file under cwd; no expansion needed.
+        seen = dict.fromkeys(initial_vpaths)
     dest = Path(args.directory) if args.directory else Path.cwd()
     skip = _build_skip_set(args)
     json_filename_map = get_json_filenames_batch(db, list(seen))

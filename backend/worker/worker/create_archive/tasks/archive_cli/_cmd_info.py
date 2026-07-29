@@ -5,7 +5,7 @@ import sys
 from pathlib import Path
 
 from ._constants import FILES, FILES_INDEX
-from ._db import _entries_under_db, get_all_file_ids, get_json_filename
+from ._db import _entries_under_db, get_json_filename, get_vpaths_by_file_ids
 from ._resolve import resolve_name
 from ._types import IndexEntry
 from ._utils import _iter_values, format_path
@@ -120,5 +120,7 @@ def cmd_info(
         print(json.dumps(meta, indent=2))
         return
 
-    entries_by_id = get_all_file_ids(db)
+    entries_by_id = get_vpaths_by_file_ids(
+        db, [a.get("id") for a in meta.get("attachments") or [] if a.get("id")]
+    )
     _print_info(entry, entries_by_id, files_dir=files_dir)

@@ -155,3 +155,66 @@ class TestCliGrep:
 
         assert result.returncode == 0
         assert "field.path" in result.stdout
+
+    def test_file_arg_restricts_search(
+        self,
+        tmp_path: Path,
+        file_storage_service_inmemory: InMemoryFileStorageLazyBytesService,
+    ) -> None:
+        archive_dir = build_archive(
+            tmp_path,
+            simple_entries({"alpha.txt": b"data", "beta.txt": b"data"}),
+            file_storage_service_inmemory,
+        )
+        result = _run(archive_dir, ["grep", "test", "alpha.txt"])
+
+        assert result.returncode == 0
+        assert "alpha.txt" in result.stdout
+        assert "beta.txt" not in result.stdout
+
+    def test_file_arg_no_match_in_file_exits_nonzero(
+        self,
+        tmp_path: Path,
+        file_storage_service_inmemory: InMemoryFileStorageLazyBytesService,
+    ) -> None:
+        archive_dir = build_archive(
+            tmp_path,
+            simple_entries({"alpha.txt": b"data"}),
+            file_storage_service_inmemory,
+        )
+        result = _run(archive_dir, ["grep", "xyzzy_no_match", "alpha.txt"])
+
+        assert result.returncode != 0
+
+    def test_file_arg_nonexistent_file_exits_nonzero(
+        self,
+        tmp_path: Path,
+        file_storage_service_inmemory: InMemoryFileStorageLazyBytesService,
+    ) -> None:
+        archive_dir = build_archive(
+            tmp_path,
+            simple_entries({"alpha.txt": b"data"}),
+            file_storage_service_inmemory,
+        )
+        result = _run(archive_dir, ["grep", "test", "nonexistent.txt"])
+
+        assert result.returncode != 0
+
+    def test_multiple_file_args(
+        self,
+        tmp_path: Path,
+        file_storage_service_inmemory: InMemoryFileStorageLazyBytesService,
+    ) -> None:
+        archive_dir = build_archive(
+            tmp_path,
+            simple_entries(
+                {"alpha.txt": b"data", "beta.txt": b"data", "gamma.txt": b"data"}
+            ),
+            file_storage_service_inmemory,
+        )
+        result = _run(archive_dir, ["grep", "test", "alpha.txt", "beta.txt"])
+
+        assert result.returncode == 0
+        assert "alpha.txt" in result.stdout
+        assert "beta.txt" in result.stdout
+        assert "gamma.txt" not in result.stdout
