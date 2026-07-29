@@ -6,6 +6,7 @@ import { selectIsLoading } from "@app/slices/commonSlice";
 import {
     selectFiles,
     selectHighlightedFileId,
+    selectHighlightScrollMode,
     selectHighlightScrollRequest,
     selectTemporaryFileId,
 } from "@app/slices/searchSlice";
@@ -19,7 +20,10 @@ import styles from "./DetailedView.module.css";
 
 const SCROLL_PADDING_PX = 48;
 
-const scrollHighlightedCardIntoView = (container: HTMLDivElement) => {
+const scrollHighlightedCardIntoView = (
+    container: HTMLDivElement,
+    mode: "smart" | "top",
+) => {
     const card = container.querySelector(
         '[data-highlighted="true"]',
     ) as HTMLElement | null;
@@ -37,6 +41,18 @@ const scrollHighlightedCardIntoView = (container: HTMLDivElement) => {
     const cardBottom = cardTop + card.offsetHeight;
     const visibleHeight = scrollContainer.clientHeight;
 
+    if (mode === "top") {
+        // Always align card top to container top + padding (clamped to ≥ 0)
+        scrollContainer.scrollTo({
+            top: Math.max(
+                0,
+                scrollContainer.scrollTop + cardTop - SCROLL_PADDING_PX,
+            ),
+            behavior: "instant",
+        });
+        return;
+    }
+
     if (
         cardTop >= SCROLL_PADDING_PX &&
         cardBottom <= visibleHeight - SCROLL_PADDING_PX
@@ -44,8 +60,10 @@ const scrollHighlightedCardIntoView = (container: HTMLDivElement) => {
         return;
 
     let targetScrollTop: number;
-    if (cardTop < SCROLL_PADDING_PX) {
-        // Card is above (or too close to top) — align card top to container top + padding
+    const cardFitsInView =
+        card.offsetHeight <= visibleHeight - 2 * SCROLL_PADDING_PX;
+    if (cardTop < SCROLL_PADDING_PX || !cardFitsInView) {
+        // Card is above, or too tall to fully show — align card top to container top + padding
         targetScrollTop =
             scrollContainer.scrollTop + cardTop - SCROLL_PADDING_PX;
     } else {
@@ -68,13 +86,17 @@ export const DetailedView: React.FC = React.memo(() => {
     const isLoading = useAppSelector(selectIsLoading);
     const highlightedFileId = useAppSelector(selectHighlightedFileId);
     const highlightScrollRequest = useAppSelector(selectHighlightScrollRequest);
+    const highlightScrollMode = useAppSelector(selectHighlightScrollMode);
     const temporaryFileId = useAppSelector(selectTemporaryFileId);
     const containerRef = useRef<HTMLDivElement>(null);
 
     useLayoutEffect(() => {
-        if (!highlightedFileId || !containerRef.current) return;
-        scrollHighlightedCardIntoView(containerRef.current);
-    }, [highlightedFileId, highlightScrollRequest]);
+        if (!containerRef.current) return;
+        scrollHighlightedCardIntoView(
+            containerRef.current,
+            highlightScrollMode,
+        );
+    }, [highlightScrollRequest, highlightScrollMode]);
 
     const allFileIds = useMemo(
         () =>
