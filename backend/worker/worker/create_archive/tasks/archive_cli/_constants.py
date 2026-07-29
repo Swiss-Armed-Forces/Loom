@@ -15,13 +15,14 @@ SHELL_INDEX_FILENAME = "SHELL_INDEX.db"
 CLI_ENTRYPOINT_FILENAME = "cli.py"
 
 CLI_DOC = """\
-Archive format constants and standalone CLI for Loom archives.
+## Interactive shell
 
-``archive_cli`` is bundled into every archive; requires only the Python stdlib. Run without
-arguments for an interactive shell (prompt ``loom:/>``, TAB autocomplete, history
-navigation), or pass a subcommand directly for scripting. Shell-only commands: ``cd``,
-``pwd``, ``clear``. Type ``help`` inside the shell for a full command list. Exit codes:
-0 success, 1 no results, 2 usage error.
+`archive_cli` is bundled into every archive and requires only the Python stdlib. Run
+without arguments (or `shell`) for an interactive shell with prompt `loom:/>`, or pass a
+subcommand directly for one-shot scripting. On Unix/macOS the shell uses GNU readline:
+persistent history (`.loom_history`), `Tab` completion for commands and paths (including
+quoted paths), `Ctrl+R` reverse-search, and `!N` / `!!` history expansion. On Windows,
+install `pyreadline3` to enable these features. Type `help` for the full reference.
 """
 
 # ---------------------------------------------------------------------------

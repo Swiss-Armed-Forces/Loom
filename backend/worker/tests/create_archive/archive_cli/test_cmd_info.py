@@ -2,9 +2,14 @@ import json
 import subprocess
 import sys
 from pathlib import Path
+from uuid import uuid4
 
-from common.services.lazybytes_service import InMemoryFileStorageLazyBytesService
-from create_archive.archive_helpers import build_archive, simple_entries
+from common.file.file_repository import File, FilePurePath
+from common.services.lazybytes_service import (
+    InMemoryFileStorageLazyBytesService,
+    LazyBytes,
+)
+from create_archive.archive_helpers import ArchiveEntry, build_archive, simple_entries
 
 from worker.create_archive.tasks.archive_cli import CLI_ENTRYPOINT_FILENAME
 
@@ -154,3 +159,51 @@ class TestCliInfoField:
 
         assert result.returncode == 1
         assert "nonexistent" in result.stderr
+
+
+class TestCliCat:
+    def test_cat_prints_content(
+        self,
+        tmp_path: Path,
+        file_storage_service_inmemory: InMemoryFileStorageLazyBytesService,
+    ) -> None:
+        entry = ArchiveEntry(
+            file=File(
+                full_name=FilePurePath("report.pdf"),
+                source="test",
+                sha256="abc",
+                size=3,
+                storage_data=LazyBytes(service_id=uuid4()),
+                content="hello world",
+            ),
+            content=b"data",
+        )
+        archive_dir = build_archive(tmp_path, [entry], file_storage_service_inmemory)
+        result = _run(archive_dir, ["cat", "report.pdf"])
+
+        assert result.returncode == 0
+        assert result.stdout.strip() == "hello world"
+
+    def test_cat_matches_info_content(
+        self,
+        tmp_path: Path,
+        file_storage_service_inmemory: InMemoryFileStorageLazyBytesService,
+    ) -> None:
+        entry = ArchiveEntry(
+            file=File(
+                full_name=FilePurePath("report.pdf"),
+                source="test",
+                sha256="abc",
+                size=3,
+                storage_data=LazyBytes(service_id=uuid4()),
+                content="hello world",
+            ),
+            content=b"data",
+        )
+        archive_dir = build_archive(tmp_path, [entry], file_storage_service_inmemory)
+
+        cat_result = _run(archive_dir, ["cat", "report.pdf"])
+        info_result = _run(archive_dir, ["info", "report.pdf", "content"])
+
+        assert cat_result.returncode == info_result.returncode
+        assert cat_result.stdout == info_result.stdout

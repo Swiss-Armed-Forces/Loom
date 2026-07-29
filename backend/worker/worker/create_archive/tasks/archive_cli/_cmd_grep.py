@@ -3,10 +3,13 @@ import json
 import re
 import sqlite3
 import sys
+from collections.abc import Iterator
 from pathlib import Path
 
 from ._constants import FILES_INDEX
-from ._db import _entries_under_db
+from ._db import _entries_under_db, _FileEntry, get_json_filename
+from ._resolve import resolve_name
+from ._types import IndexEntry
 from ._utils import _iter_values, _sanitize
 
 _MAX_GREP_PATTERN_LEN = 512
@@ -26,6 +29,24 @@ def _compile_grep_pattern(raw: str, flags: int) -> re.Pattern[str]:
         sys.exit(2)
 
 
+def _iter_target_entries(
+    db: sqlite3.Connection, cwd_prefix: str, file_pats: list[str]
+) -> Iterator[_FileEntry]:
+    """Yield entries matching any of the given file patterns, without duplicates."""
+    seen: set[str] = set()
+    for pat in file_pats:
+        stubs = (
+            IndexEntry(name=e.vpath, storage_id="", meta={})
+            for e in _entries_under_db(db, cwd_prefix)
+        )
+        for match in resolve_name(stubs, pat):
+            if match.name not in seen:
+                seen.add(match.name)
+                json_fn = get_json_filename(db, match.name)
+                if json_fn is not None:
+                    yield _FileEntry(vpath=match.name, json_filename=json_fn)
+
+
 def cmd_grep(
     args: argparse.Namespace,
     *,
@@ -40,7 +61,11 @@ def cmd_grep(
     found = False
     cwd_prefix = (cwd + "/") if cwd else ""
 
-    for vpath, json_filename in _entries_under_db(db, cwd_prefix):
+    for vpath, json_filename in (
+        _iter_target_entries(db, cwd_prefix, args.files)
+        if args.files
+        else _entries_under_db(db, cwd_prefix)
+    ):
         with open(index_dir / json_filename, encoding="utf-8") as f:
             data = json.load(f)
 
