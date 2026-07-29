@@ -26,6 +26,8 @@ logger = logging.getLogger(__name__)
 
 app = get_celery_app()
 
+_UPSERT_BATCH_MAX_BYTES = 200 * 1024 * 1024  # 200 MiB of raw JSON
+
 
 def signature(encrypted_archive_zip: FileStorageLazyBytes | None = None):
     """Return a canvas that unpacks a loom archive (receives FileStorageLazyBytes|None
@@ -114,7 +116,26 @@ def upsert_file_objects_task(archive_zip: FileStorageLazyBytes | None) -> None:
     if archive_zip is None:
         return
     file_repository = get_file_repository()
-    count = 0
+    success_count = 0
+    total_count = 0
+    batch: list[File] = []
+    batch_bytes = 0
+
+    def _flush_batch() -> None:
+        nonlocal success_count, total_count, batch, batch_bytes
+        for result in file_repository.bulk_save(batch):
+            total_count += 1
+            if result.success:
+                success_count += 1
+            else:
+                logger.warning(
+                    "Failed to upsert file object %s: %s",
+                    result.object_id,
+                    result.error,
+                )
+        batch = []
+        batch_bytes = 0
+
     with get_file_storage_service().load_file(archive_zip) as fd:
         with ZipFile(fd) as zf:
             for fname in zf.namelist():
@@ -126,8 +147,17 @@ def upsert_file_objects_task(archive_zip: FileStorageLazyBytes | None) -> None:
                         relative[len(FILES_INDEX_DIR) + 1 : -len(JSON_SUFFIX)]
                     )
                     with zf.open(fname, mode="r") as zipfd:
-                        file = File.model_validate_json(zipfd.read())
+                        data = zipfd.read()
+                        file = File.model_validate_json(data)
                         file.id_ = file_id
-                        file_repository.save(file)
-                    count += 1
-    logger.info("Upserted %d file object(s) into repository", count)
+                        batch.append(file)
+                        batch_bytes += len(data)
+                    if batch_bytes >= _UPSERT_BATCH_MAX_BYTES:
+                        _flush_batch()
+
+    if batch:
+        _flush_batch()
+
+    logger.info(
+        "Upserted %d/%d file object(s) into repository", success_count, total_count
+    )
