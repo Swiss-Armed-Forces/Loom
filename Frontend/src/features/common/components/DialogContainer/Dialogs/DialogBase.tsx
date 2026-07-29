@@ -17,6 +17,7 @@ interface DialogBaseProps extends DialogProps {
     actions?: React.ReactNode;
     children: React.ReactNode;
     loading?: boolean;
+    uploadProgress?: number;
 }
 
 export const DialogBase = ({
@@ -27,6 +28,7 @@ export const DialogBase = ({
     actions,
     children,
     loading = false,
+    uploadProgress,
 }: DialogBaseProps) => {
     const { t } = useTranslation();
     const isMobile = useMediaQuery("(max-width:600px)");
@@ -62,8 +64,14 @@ export const DialogBase = ({
 
             {actions && <DialogActions>{actions}</DialogActions>}
 
-            {loading ? (
+            {loading || uploadProgress !== undefined ? (
                 <LinearProgress
+                    variant={
+                        uploadProgress !== undefined
+                            ? "determinate"
+                            : "indeterminate"
+                    }
+                    value={uploadProgress}
                     color="primary"
                     sx={{ position: "absolute", bottom: 0, left: 0, right: 0 }}
                 />

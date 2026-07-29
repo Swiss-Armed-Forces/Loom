@@ -1,11 +1,11 @@
-.uploadFileDropzone {
+.dropzone {
     display: flex;
     flex-direction: column;
     align-items: center;
     height: 100%;
 }
 
-.uploadFileDropzoneText {
+.dropzoneText {
     margin-top: 2rem;
     margin-left: 6rem;
     margin-right: 6rem;
@@ -14,13 +14,13 @@
 }
 
 @media (max-width: 600px) {
-    .uploadFileDropzoneText {
+    .dropzoneText {
         margin-left: 1rem;
         margin-right: 1rem;
     }
 }
 
-.uploadFileDropzoneIcon {
+.dropzoneIcon {
     display: flex;
     flex-grow: 2;
     color: inherit;

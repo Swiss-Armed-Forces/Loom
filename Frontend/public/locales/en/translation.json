@@ -585,6 +585,7 @@
     "archives": {
         "title": "Archives",
         "importButton": "Import Archive",
+        "importDropzoneText": "Drop a .loom or .zip archive here",
         "importSuccess": "Archive import started",
         "importError": "Archive import failed: ",
         "encryptionKeyTitle": "Archive encryption key",
