@@ -11,6 +11,7 @@ import {
     selectLastFileSortId,
     selectQuery,
     selectFiles,
+    bumpHighlightScroll,
     setHighlightedFileId,
     updateQuery,
     selectActiveTabFileId,
@@ -84,6 +85,7 @@ export const useKeyboardNavigation = () => {
                 orderedFileIdsRef.current[firstNewIndex] ?? null,
             ),
         );
+        dispatch(bumpHighlightScroll("smart"));
     }, [loadedFiles, dispatch]);
 
     // Pagination tracking:
@@ -196,6 +198,7 @@ export const useKeyboardNavigation = () => {
                     orderedFileIdsRef.current[newIndex] ?? null,
                 ),
             );
+            dispatch(bumpHighlightScroll("smart"));
             document.dispatchEvent(new CustomEvent("loom:close-menus"));
         },
         [
