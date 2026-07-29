@@ -1,11 +1,13 @@
+import json
 import sqlite3
 import sys
 from collections.abc import Iterator
 from pathlib import Path
-from typing import NamedTuple
+from typing import Any, NamedTuple
 
 from ._constants import ARCHIVE_ROOT, SHELL_INDEX_FILENAME
-from ._types import ServiceIdResult, StorageEntry
+from ._resolve import resolve_name
+from ._types import IndexEntry, ServiceIdResult, StorageEntry
 
 
 class _FileEntry(NamedTuple):
@@ -220,6 +222,46 @@ def get_vpaths_by_file_ids(
         ).fetchall()
         result.update(rows)
     return result
+
+
+class _ResolvedFile(NamedTuple):
+    vpath: str
+    meta: dict[str, Any]
+
+
+def _resolve_and_load(
+    name: str,
+    *,
+    db: sqlite3.Connection,
+    index_dir: Path,
+    cwd: str | None,
+) -> _ResolvedFile:
+    """Resolve a file name to a unique vpath and load its JSON metadata.
+
+    Exits with code 1 if no match is found or the name is ambiguous.
+    """
+    stubs = (
+        IndexEntry(name=vpath, storage_id="", meta={})
+        for vpath, _ in _entries_under_db(db, (cwd + "/") if cwd else "")
+    )
+    matches = resolve_name(stubs, name)
+
+    if len(matches) > 1:
+        print(f"Error: ambiguous name '{name}', matches:", file=sys.stderr)
+        for match in matches:
+            print(f"  {match.name}", file=sys.stderr)
+        sys.exit(1)
+
+    vpath = matches[0].name
+    json_filename = get_json_filename(db, vpath)
+    if json_filename is None:
+        print(f"Error: '{vpath}' not found in shell index", file=sys.stderr)
+        sys.exit(1)
+
+    with open(index_dir / json_filename, encoding="utf-8") as f:
+        meta: dict[str, Any] = json.load(f)
+
+    return _ResolvedFile(vpath=vpath, meta=meta)
 
 
 class ShellIndexCollector:
