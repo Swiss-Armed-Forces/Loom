@@ -400,6 +400,9 @@ class GetFileResponse(BaseModel):
             raw=file.model_dump_json(
                 exclude={
                     "tasks",
+                    "successful_task_names",
+                    "retried_task_names",
+                    "failed_task_names",
                     "embeddings",
                     "content",
                     "translations",

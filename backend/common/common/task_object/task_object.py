@@ -83,9 +83,9 @@ class _EsTaskRecord(InnerDoc):
 class _EsTaskDocument(_EsRepositoryDocument):
     state = Keyword()
     tasks = ExcludeFromDefaultFields(Nested(_EsTaskRecord, include_in_root=True))
-    failed_task_names = Keyword(multi=True)
-    retried_task_names = Keyword(multi=True)
-    successful_task_names = Keyword(multi=True)
+    failed_task_names = ExcludeFromDefaultFields(Keyword(multi=True))
+    retried_task_names = ExcludeFromDefaultFields(Keyword(multi=True))
+    successful_task_names = ExcludeFromDefaultFields(Keyword(multi=True))
 
 
 RepositoryTaskObjectT = TypeVar("RepositoryTaskObjectT", bound=RepositoryTaskObject)
