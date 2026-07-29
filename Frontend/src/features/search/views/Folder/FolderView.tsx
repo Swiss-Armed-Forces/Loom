@@ -537,23 +537,17 @@ export const FolderView = ({ filter }: FolderViewProps) => {
     // Keeps `folderState.expandedNodes` in deps so it retries after auto-expansion
     // makes the DOM element available, but the ref guard prevents re-scrolling on
     // manual expand/collapse when the highlighted file has not changed.
-    // The 300 ms delay matches MUI's tree expansion animation so we scroll to
-    // the element's final position rather than its mid-animation position.
     useEffect(() => {
         if (!focusedFilePath || !treeApiRef.current) return;
         if (focusedFileId === lastScrolledFileId.current) return;
-        const id = setTimeout(() => {
-            const element =
-                treeApiRef.current?.getItemDOMElement(focusedFilePath);
-            if (element) {
-                element.scrollIntoView({
-                    behavior: "smooth",
-                    block: "nearest",
-                });
-                lastScrolledFileId.current = focusedFileId ?? null;
-            }
-        }, 300);
-        return () => clearTimeout(id);
+        const element = treeApiRef.current?.getItemDOMElement(focusedFilePath);
+        if (element) {
+            element.scrollIntoView({
+                behavior: "instant",
+                block: "nearest",
+            });
+            lastScrolledFileId.current = focusedFileId ?? null;
+        }
     }, [focusedFileId, focusedFilePath, folderState.expandedNodes, treeApiRef]);
 
     useEffect(() => {
@@ -766,11 +760,8 @@ export const FolderView = ({ filter }: FolderViewProps) => {
                     apiRef={treeApiRef}
                     expandedItems={folderState.expandedNodes}
                     onExpandedItemsChange={handleExpandedItemsChange}
-                    expansionTrigger="iconContainer"
-                    onItemClick={(event, itemId) => {
-                        const target = event.target as HTMLElement;
-                        if (target.closest(".MuiTreeItem-iconContainer"))
-                            return;
+                    expansionTrigger="content"
+                    onItemClick={(_event, itemId) => {
                         handleItemClick(itemId);
                     }}
                     sx={{
