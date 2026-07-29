@@ -7,8 +7,9 @@ from ._cmd_grep import cmd_grep
 from ._cmd_id import cmd_id
 from ._cmd_info import cmd_info
 from ._cmd_ls import cmd_ls
+from ._cmd_translate import cmd_translate
 from ._cmd_tree import cmd_tree
-from ._constants import CLI_DESCRIPTION
+from ._constants import CLI_DESCRIPTION, CLI_ENTRYPOINT_FILENAME
 
 
 def _dispatch(
@@ -31,6 +32,8 @@ def _dispatch(
         args.field = "content"
         args.json = False
         cmd_info(args, db=db, cwd=cwd)
+    elif args.command == "translate":
+        cmd_translate(args, db=db, cwd=cwd)
     elif args.command == "tree":
         cmd_tree(args, db=db, cwd=cwd)
     elif args.command == "id":
@@ -58,7 +61,7 @@ _SHELL_HELP_EPILOG = (
     "  !!          Re-run the last command\n"
     "\n"
     "Note: requires GNU readline (standard on Unix/macOS);"
-    " on Windows install pyreadline3.\n"
+    " on Windows, pyreadline3 is bundled automatically when installed on the archive server.\n"
     "\n"
     "Exit codes\n"
     "  0  success\n"
@@ -69,6 +72,7 @@ _SHELL_HELP_EPILOG = (
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
+        prog=CLI_ENTRYPOINT_FILENAME,
         description=CLI_DESCRIPTION,
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=_SHELL_HELP_EPILOG,
@@ -200,6 +204,26 @@ def build_parser() -> argparse.ArgumentParser:
     cat_parser.add_argument(
         "name",
         help="Human-readable file name (full path, suffix, or glob pattern)",
+    )
+
+    translate_parser = subparsers.add_parser(
+        "translate",
+        help="Print a translation of a file",
+        description=(
+            "Print a stored translation of a file. "
+            "Without LANGUAGE, lists the available language codes and their confidence scores. "
+            "With LANGUAGE, prints the translated text for that language."
+        ),
+    )
+    translate_parser.add_argument(
+        "name",
+        help="Human-readable file name (full path, suffix, or glob pattern)",
+    )
+    translate_parser.add_argument(
+        "language",
+        nargs="?",
+        default=None,
+        help="Language code to print (e.g. en, de, fr); omit to list available languages",
     )
 
     subparsers.add_parser(

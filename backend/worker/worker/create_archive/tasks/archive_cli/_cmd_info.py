@@ -5,10 +5,9 @@ import sys
 from pathlib import Path
 
 from ._constants import FILES, FILES_INDEX
-from ._db import _entries_under_db, get_json_filename, get_vpaths_by_file_ids
-from ._resolve import resolve_name
+from ._db import _resolve_and_load, get_vpaths_by_file_ids
 from ._types import IndexEntry
-from ._utils import _iter_values, format_path
+from ._utils import _collapse_field_ranges, _iter_values, format_path
 
 
 def _print_info(
@@ -54,7 +53,7 @@ def _print_info(
     fields = [key_path for key_path, _ in _iter_values(meta)]
     if fields:
         print("fields:")
-        for field in fields:
+        for field in _collapse_field_ranges(fields):
             print(f"  {field}")
 
 
@@ -83,30 +82,11 @@ def cmd_info(
     files_dir: Path = FILES,
     cwd: str | None = None,
 ) -> None:
-    stubs = (
-        IndexEntry(name=vpath, storage_id="", meta={})
-        for vpath, _ in _entries_under_db(db, (cwd + "/") if cwd else "")
-    )
-    matches = resolve_name(stubs, args.name)
-
-    if len(matches) > 1:
-        print(f"Error: ambiguous name '{args.name}', matches:", file=sys.stderr)
-        for match in matches:
-            print(f"  {match.name}", file=sys.stderr)
-        sys.exit(1)
-
-    vpath = matches[0].name
-
-    json_filename = get_json_filename(db, vpath)
-    if json_filename is None:
-        print(f"Error: '{vpath}' not found in shell index", file=sys.stderr)
-        sys.exit(1)
-
-    with open(index_dir / json_filename, encoding="utf-8") as f:
-        meta = json.load(f)
+    resolved = _resolve_and_load(args.name, db=db, index_dir=index_dir, cwd=cwd)
+    meta = resolved.meta
 
     entry = IndexEntry(
-        name=vpath,
+        name=resolved.vpath,
         storage_id=(meta.get("storage_data") or {}).get("service_id", ""),
         meta=meta,
     )

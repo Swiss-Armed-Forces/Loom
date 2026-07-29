@@ -24,6 +24,7 @@ gotenberg-client = "^0.13.1"
 # https://gitlab.com/swiss-armed-forces/cyber-command/cea/loom/-/work_items/174
 zstandard = "^0.25.0"
 minio = "^7.2.20"
+pyreadline3 = "^3.5"
 
 [tool.poetry.group.dev.dependencies]
 debugpy = "^1.8.1"
@@ -54,4 +55,8 @@ ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
 module = "wand.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "pyreadline3.*"
 ignore_missing_imports = true

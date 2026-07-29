@@ -1,5 +1,6 @@
 import argparse
 import json
+import os
 import re
 import shlex
 import sqlite3
@@ -7,12 +8,30 @@ import sys
 from collections.abc import Callable
 from pathlib import Path
 from types import ModuleType
-from typing import NamedTuple
+from typing import NamedTuple, cast
 
 from ._commands import _dispatch, build_parser
 from ._constants import FILES_INDEX, SHELL_HISTORY_FILE, SHELL_PROMPT
 from ._db import directory_exists, get_children, get_json_filename
 from ._utils import _iter_values, resolve_cwd
+
+# On Windows, add the vendored pyreadline3 to sys.path so that `import readline`
+# below finds the bundled compatibility shim.
+if os.name == "nt":
+    _vendor_path = str(Path(__file__).parent / "vendor")
+    if _vendor_path not in sys.path:
+        sys.path.insert(0, _vendor_path)
+    # pyreadline3's __init__.py sets __version__ via importlib.metadata, but
+    # silently skips it when dist-info is absent (as in the archive vendor/).
+    # rlmain.py then crashes accessing pyreadline3.__version__, so pre-import
+    # the package and supply the attribute as a fallback before readline.py runs.
+    try:
+        import pyreadline3 as _pyreadline3_pkg
+
+        if not hasattr(_pyreadline3_pkg, "__version__"):
+            _pyreadline3_pkg.__version__ = "unknown"
+    except ImportError:
+        pass
 
 _readline: ModuleType | None = None
 try:
@@ -20,7 +39,12 @@ try:
 
     _readline = readline
 except ImportError:
-    pass
+    if os.name == "nt":
+        print(
+            "Tip: install pyreadline3 for tab completion and history"
+            " (pip install pyreadline3)",
+            file=sys.stderr,
+        )
 
 _SHELL_SPECIAL_RE = re.compile(r"([ \t\n\\\"'`$!#@&;|<>*()?[\]{}~])")
 
@@ -45,6 +69,7 @@ _SHELL_COMMANDS = [  # keep in sync with build_parser(); exit/quit have no subco
     "grep",
     "info",
     "cat",
+    "translate",
     "tree",
     "x",
     "extract",
@@ -74,6 +99,12 @@ class ShellCompleter:
         if state == 0:
             line = _readline.get_line_buffer() if _readline is not None else ""
             begidx = _readline.get_begidx() if _readline is not None else 0
+            # pyreadline3 on Windows can return 0 for get_begidx() when
+            # completing an empty token (cursor after a trailing space).
+            # Fall back to computing begidx from the line length, which is
+            # always correct when the cursor is at the end of the line.
+            if begidx == 0 and line:
+                begidx = len(line) - len(text)
             self._matches = self.get_completions(text, line, begidx)
         return self._matches[state] if state < len(self._matches) else None
 
@@ -91,12 +122,23 @@ class ShellCompleter:
                     return self._complete_field(line, cmd_end, begidx, text)
             except ValueError:
                 pass  # unclosed quote → still typing the path
+        if cmd == "translate":
+            leading = len(line) - len(line.lstrip())
+            cmd_end = leading + len(cmd)
+            after_cmd = line[cmd_end:begidx]
+            try:
+                if shlex.split(after_cmd):  # file already typed → language mode
+                    return self._complete_language(line, cmd_end, begidx, text)
+            except ValueError:
+                pass  # unclosed quote → still typing the path
         if cmd == "grep":
             file_arg = self._grep_file_arg(line, begidx, text)
-            if file_arg is not None:
-                return self._complete_path_arg(file_arg, text, dirs_only=False)
-            return []
-        if cmd in ("cd", "ls", "list", "info", "cat", "x", "extract"):
+            return (
+                self._complete_path_arg(file_arg, text, dirs_only=False)
+                if file_arg is not None
+                else []
+            )
+        if cmd in ("cd", "ls", "list", "info", "cat", "translate", "x", "extract"):
             full_arg = self._full_path_arg(cmd, line, begidx, text)
             dirs_only = cmd == "cd"
             return self._complete_path_arg(full_arg, text, dirs_only=dirs_only)
@@ -138,9 +180,9 @@ class ShellCompleter:
         pat_end = pat_start + len(pattern_word)
         return line[pat_end : begidx + len(text)].lstrip()
 
-    def _complete_field(
-        self, line: str, cmd_end: int, begidx: int, text: str
-    ) -> list[str]:
+    def _load_meta_for_path(
+        self, line: str, cmd_end: int, begidx: int
+    ) -> dict[str, object] | None:
         raw = line[cmd_end:begidx].strip()
         try:
             tokens = shlex.split(raw)
@@ -150,9 +192,30 @@ class ShellCompleter:
         vpath = resolve_cwd(self.cwd, path_text).lstrip("/")
         json_filename = get_json_filename(self._db, vpath)
         if json_filename is None:
+            return None
+        return json.loads((self._index_dir / json_filename).read_text(encoding="utf-8"))
+
+    def _complete_field(
+        self, line: str, cmd_end: int, begidx: int, text: str
+    ) -> list[str]:
+        meta = self._load_meta_for_path(line, cmd_end, begidx)
+        if meta is None:
             return []
-        meta = json.loads((self._index_dir / json_filename).read_text(encoding="utf-8"))
         return [kp for kp, _ in _iter_values(meta) if kp.startswith(text)]
+
+    def _complete_language(
+        self, line: str, cmd_end: int, begidx: int, text: str
+    ) -> list[str]:
+        meta = self._load_meta_for_path(line, cmd_end, begidx)
+        if meta is None:
+            return []
+        translations = cast(list[dict[str, object]], meta.get("translations") or [])
+        return [
+            str(t["language"])
+            for t in translations
+            if isinstance(t.get("language"), str)
+            and str(t["language"]).startswith(text)
+        ]
 
     def _complete_path(self, text: str, *, dirs_only: bool) -> list[str]:
         if "/" in text:
