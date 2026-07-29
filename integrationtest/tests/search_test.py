@@ -269,7 +269,7 @@ class TestEmailQueries:
     def setup_testfiles(self):
         upload_many_assets(asset_names=self.asset_list)
 
-        # wait for assets to be processes
+        # wait for assets to be processed
         search_string = "*"
         file_count = len(self.asset_list)
         fetch_files_from_api(

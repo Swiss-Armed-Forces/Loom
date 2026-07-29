@@ -138,6 +138,7 @@ export interface SearchState {
     visionSystemPrompt: string | null;
     highlightedFileId: string | null;
     highlightScrollRequest: number;
+    highlightScrollMode: "smart" | "top";
     suppressDownloadWarning: boolean;
     folderViewExpandedNodes: string[];
     pendingFullscreenFileId: string | null;
@@ -200,6 +201,7 @@ const initialState: SearchState = {
     visionSystemPrompt: null,
     highlightedFileId: null,
     highlightScrollRequest: 0,
+    highlightScrollMode: "smart" as const,
     temporaryFileId: null,
     suppressDownloadWarning: false,
     folderViewExpandedNodes: [],
@@ -598,8 +600,14 @@ export const searchSlice = createSlice({
         setHighlightedFileId: (state, action: PayloadAction<string | null>) => {
             state.highlightedFileId = action.payload;
         },
-        bumpHighlightScroll: (state) => {
-            state.highlightScrollRequest += 1;
+        bumpHighlightScroll: {
+            reducer: (state, action: PayloadAction<"smart" | "top">) => {
+                state.highlightScrollRequest += 1;
+                state.highlightScrollMode = action.payload;
+            },
+            prepare: (mode: "smart" | "top" = "smart") => ({
+                payload: mode,
+            }),
         },
         setTemporaryFileId: (state, action: PayloadAction<string | null>) => {
             if (
@@ -1035,6 +1043,11 @@ export const selectHighlightedFileId = createSelector(
 export const selectHighlightScrollRequest = createSelector(
     selectSearch,
     (search) => search.highlightScrollRequest,
+);
+
+export const selectHighlightScrollMode = createSelector(
+    selectSearch,
+    (search) => search.highlightScrollMode,
 );
 
 export const selectPendingFullscreenFileId = createSelector(

@@ -10,6 +10,7 @@ from common.dependencies import (
     get_file_repository,
 )
 from common.file.file_repository import File, FilePurePath, RenderedFile
+from common.models.base_repository import BulkOperationResult
 from common.services.lazybytes_service import (
     InMemoryFileStorageLazyBytesService,
     LazyBytes,
@@ -327,13 +328,19 @@ class TestUpsertFileObjectsTask:
         )
         archive_lb = file_storage_service_inmemory.from_bytes(zip_bytes)
 
+        file_repository = get_file_repository()
+        file_repository.bulk_save.return_value = [  # type: ignore[union-attr]
+            BulkOperationResult(object_id=original_id, success=True)
+        ]
+
         upsert_file_objects_task(archive_lb)
 
-        file_repository = get_file_repository()
-        assert file_repository.save.call_count == 1  # type: ignore[union-attr]
-        saved_file: File = file_repository.save.call_args[0][0]  # type: ignore[union-attr]
-        assert saved_file.id_ == original_id
-        assert saved_file.sha256 == "abc123"
+        assert file_repository.bulk_save.call_count == 1  # type: ignore[union-attr]
+        call_args = file_repository.bulk_save.call_args[0][0]  # type: ignore[union-attr]
+        saved_files: list[File] = call_args
+        assert len(saved_files) == 1
+        assert saved_files[0].id_ == original_id
+        assert saved_files[0].sha256 == "abc123"
 
 
 class TestRestoreArchiveMetadataTask:

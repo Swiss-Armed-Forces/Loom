@@ -1,4 +1,5 @@
-import { Close, UploadFile } from "@mui/icons-material";
+import { Close } from "@mui/icons-material";
+import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import { Button } from "@mui/material";
 import { useTranslation } from "react-i18next";
 import { toast } from "react-toastify";
@@ -8,8 +9,6 @@ import { useAppDispatch } from "@app/hooks";
 import {
     DialogProps,
     setBackgroundTaskSpinnerActive,
-    startLoadingIndicator,
-    stopLoadingIndicator,
 } from "@app/slices/commonSlice";
 import { notifyIfUnavailableInDemoMode } from "@features/common/demoModeUnavailableAction";
 import { useFileUpload } from "@features/common/hooks/useFileUpload";
@@ -17,7 +16,7 @@ import { DemoUnavailableFeature } from "@features/common/utils/demoMode";
 
 import { DialogBase, FileDropzone } from "..";
 
-export const UploadFileDialog = ({ id, onClose, isTop }: DialogProps) => {
+export const ImportArchiveDialog = ({ id, onClose, isTop }: DialogProps) => {
     const {
         files,
         setFiles,
@@ -35,25 +34,23 @@ export const UploadFileDialog = ({ id, onClose, isTop }: DialogProps) => {
     };
 
     const handleSubmit = async () => {
-        if (notifyIfUnavailableInDemoMode(DemoUnavailableFeature.FileUpload))
+        if (notifyIfUnavailableInDemoMode(DemoUnavailableFeature.ArchiveImport))
             return;
 
-        dispatch(startLoadingIndicator());
         try {
             await handleUpload((file, onProgress, signal) =>
-                xhrUpload("/v1/files", file, onProgress, signal),
+                xhrUpload("/v1/archive/import", file, onProgress, signal),
             );
-            toast.success("Files successfully uploaded");
+            toast.success(t("archives.importSuccess"));
             dispatch(setBackgroundTaskSpinnerActive());
             onClose();
         } catch (error) {
             if (
                 !(error instanceof DOMException && error.name === "AbortError")
             ) {
-                toast.error("Cannot upload files. Reason: " + error);
+                toast.error(t("archives.importError") + error);
             }
         }
-        dispatch(stopLoadingIndicator());
     };
 
     return (
@@ -61,7 +58,7 @@ export const UploadFileDialog = ({ id, onClose, isTop }: DialogProps) => {
             id={id}
             onClose={handleClose}
             isTop={isTop}
-            title={t("uploadFileDialog.title")}
+            title={t("archives.importButton")}
             loading={isLoading}
             uploadProgress={overallProgress}
             actions={
@@ -75,19 +72,20 @@ export const UploadFileDialog = ({ id, onClose, isTop }: DialogProps) => {
                         {t("common.cancel")}
                     </Button>
                     <Button
-                        startIcon={<UploadFile />}
+                        startIcon={<CloudUploadIcon />}
                         variant="contained"
                         disabled={files.length === 0 || isLoading}
                         onClick={handleSubmit}
                     >
-                        {t("uploadFileDialog.uploadButton")}
+                        {t("archives.importButton")}
                     </Button>
                 </>
             }
         >
             <FileDropzone
-                multiple={true}
-                dropzoneText={t("uploadFileDialog.dropzoneText")}
+                multiple={false}
+                accept={{ "application/zip": [".zip", ".loom"] }}
+                dropzoneText={t("archives.importDropzoneText")}
                 files={files}
                 onFilesChange={setFiles}
                 disabled={isLoading}

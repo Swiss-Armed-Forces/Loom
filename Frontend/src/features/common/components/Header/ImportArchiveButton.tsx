@@ -1,63 +1,34 @@
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import { Button, IconButton, Tooltip, useMediaQuery } from "@mui/material";
 import { useTranslation } from "react-i18next";
-import { toast } from "react-toastify";
 
-import { importArchive } from "@app/api";
 import { useAppDispatch } from "@app/hooks";
-import { setBackgroundTaskSpinnerActive } from "@app/slices/commonSlice";
-import { notifyIfUnavailableInDemoMode } from "@features/common/demoModeUnavailableAction";
-import { DemoUnavailableFeature } from "@features/common/utils/demoMode";
+import { openDialog } from "@app/slices/commonSlice";
+import { DialogType } from "@features/common/utils/enums";
 
 export const ImportArchiveButton = () => {
     const { t } = useTranslation();
     const dispatch = useAppDispatch();
     const isMobile = useMediaQuery("(max-width:600px)");
 
-    const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (!file) return;
-        if (
-            notifyIfUnavailableInDemoMode(DemoUnavailableFeature.ArchiveImport)
-        ) {
-            e.target.value = "";
-            return;
-        }
-        try {
-            await importArchive(file);
-            toast.success(t("archives.importSuccess"));
-            dispatch(setBackgroundTaskSpinnerActive());
-        } catch (err) {
-            toast.error(t("archives.importError") + err);
-        }
-        e.target.value = "";
+    const handleClick = () => {
+        dispatch(openDialog({ id: "", type: DialogType.ImportArchive }));
     };
 
-    return (
-        <label htmlFor="archive-import-input">
-            <input
-                id="archive-import-input"
-                type="file"
-                accept=".zip,.loom"
-                hidden
-                onChange={handleImport}
-            />
-            {isMobile ? (
-                <Tooltip title={t("archives.importButton")}>
-                    <IconButton component="span" sx={{ color: "white" }}>
-                        <CloudUploadIcon />
-                    </IconButton>
-                </Tooltip>
-            ) : (
-                <Button
-                    component="span"
-                    variant="outlined"
-                    startIcon={<CloudUploadIcon />}
-                    sx={{ color: "white", borderColor: "white" }}
-                >
-                    {t("archives.importButton")}
-                </Button>
-            )}
-        </label>
+    return isMobile ? (
+        <Tooltip title={t("archives.importButton")}>
+            <IconButton onClick={handleClick} sx={{ color: "white" }}>
+                <CloudUploadIcon />
+            </IconButton>
+        </Tooltip>
+    ) : (
+        <Button
+            variant="outlined"
+            startIcon={<CloudUploadIcon />}
+            onClick={handleClick}
+            sx={{ color: "white", borderColor: "white" }}
+        >
+            {t("archives.importButton")}
+        </Button>
     );
 };

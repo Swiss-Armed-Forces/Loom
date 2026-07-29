@@ -11,6 +11,7 @@ export const DialogType = {
     Summary: "summary",
     Translation: "translation",
     EncryptionKeyInfo: "encryptionKeyInfo",
+    ImportArchive: "importArchive",
     UploadFile: "uploadFile",
 } as const;
 export type DialogType = (typeof DialogType)[keyof typeof DialogType];

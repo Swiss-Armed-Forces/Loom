@@ -341,6 +341,7 @@ export const FolderView = ({ filter }: FolderViewProps) => {
                 dispatch(fetchPreview({ fileId }));
             }
             dispatch(setHighlightedFileId(fileId));
+            dispatch(bumpHighlightScroll("top"));
         },
         [files, dispatch],
     );
@@ -351,9 +352,6 @@ export const FolderView = ({ filter }: FolderViewProps) => {
 
         // If this node has a fileId, navigate to it in the results panel
         if (node.fileId) {
-            if (node.fileId === focusedFileId) {
-                dispatch(bumpHighlightScroll());
-            }
             handleFileClick(node.fileId);
         }
     };
