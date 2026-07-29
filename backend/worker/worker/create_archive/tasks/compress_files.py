@@ -4,6 +4,9 @@ import tempfile
 import zipfile
 from collections.abc import Iterable, Iterator
 from datetime import datetime
+from importlib.metadata import PackageNotFoundError
+from importlib.metadata import files as dist_files
+from importlib.metadata import version as dist_version
 from pathlib import Path
 from textwrap import dedent
 from typing import NamedTuple, cast
@@ -119,31 +122,45 @@ def _readme_content(archive_name: str) -> bytes:
     lbl_files = f"- `{FILES_DIR}/`"
     lbl_index = f"- `{FILES_INDEX_DIR}/`"
     lbl_shell_index = f"- `{SHELL_INDEX_FILENAME}`"
+    vendored = _vendored_packages()
+    lbl_vendor = f"- `{CLI_FILENAME}/vendor/`" if vendored else None
     col = max(
         len(lbl_entrypoint),
         len(lbl_manifest),
         len(lbl_cli),
+        *(len(lbl_vendor),) if lbl_vendor else (),
         len(lbl_files),
         len(lbl_index),
         len(lbl_shell_index),
     )
     cli_help = build_parser().format_help()
+    vendor_lines = "\n".join(f"- `{pkg.name}` {pkg.version}" for pkg in vendored)
+    vendor_section = (
+        f"\n\n## Vendored dependencies\n\n"
+        f"The following third-party packages are bundled in `{CLI_FILENAME}/vendor/`"
+        f" and loaded automatically — no manual installation required:\n\n"
+        f"{vendor_lines}"
+        if vendor_lines
+        else ""
+    )
+    vendor_row = (
+        f"\n        {lbl_vendor:<{col}} — bundled libraries for `{CLI_ENTRYPOINT_FILENAME}`"
+        if lbl_vendor
+        else ""
+    )
     header = dedent(f"""\
         # Loom Archive — {archive_name}
 
         This archive was created by Loom.
 
-        ## Structure
+        ## Archive contents
 
-        {lbl_entrypoint:<{col}} — entry point: run directly (`./cli.py`) or via `python cli.py`
-        {lbl_manifest:<{col}} — archive metadata and query parameters (JSON)
-        {lbl_cli:<{col}} — CLI package (required by `{CLI_ENTRYPOINT_FILENAME}`)
-        {lbl_files:<{col}} — raw file bytes, keyed by storage UUID
-        {lbl_index:<{col}} — fully-indexed file metadata (JSON, one file per entry)
-        {lbl_shell_index:<{col}} — navigation index for the interactive shell (SQLite)
-
-        Each `{FILES_INDEX_DIR}/{{id}}{JSON_SUFFIX}` holds the indexed metadata for one file.
-        Raw bytes (if available) are stored at `{FILES_DIR}/{{uuid}}`.
+        {lbl_entrypoint:<{col}} — run this to browse and extract files (`python cli.py`)
+        {lbl_manifest:<{col}} — archive metadata and search parameters (JSON)
+        {lbl_files:<{col}} — original file contents, one file per entry
+        {lbl_index:<{col}} — extracted metadata for each file (JSON), used for search
+        {lbl_cli:<{col}} — support files for `{CLI_ENTRYPOINT_FILENAME}`{vendor_row}
+        {lbl_shell_index:<{col}} — navigation index for the interactive shell
 
         """)
     return (
@@ -152,6 +169,7 @@ def _readme_content(archive_name: str) -> bytes:
         + "\n\n### Command reference\n\n```\n"
         + cli_help
         + "```\n"
+        + vendor_section
     ).encode()
 
 
@@ -182,6 +200,11 @@ class _CliEntry(NamedTuple):
     content: bytes
 
 
+class _VendoredPackage(NamedTuple):
+    name: str
+    version: str
+
+
 def _cli_entries() -> list[_CliEntry]:
     """Return (filename, bytes) pairs for every package .py file in archive_cli.
 
@@ -193,6 +216,44 @@ def _cli_entries() -> list[_CliEntry]:
         for f in sorted(pkg_dir.glob("*.py"))
         if f.name != CLI_ENTRYPOINT_FILENAME
     ]
+
+
+_VENDORED_PACKAGE_NAMES = ("pyreadline3",)
+
+
+def _vendored_packages() -> list[_VendoredPackage]:
+    """Return name/version for each package bundled in vendor/."""
+    result = []
+    for name in _VENDORED_PACKAGE_NAMES:
+        try:
+            result.append(_VendoredPackage(name, dist_version(name)))
+        except PackageNotFoundError:
+            pass
+    return result
+
+
+def _vendor_cli_entries() -> list[_CliEntry]:
+    """Return vendor entries for pyreadline3 (bundled for Windows readline support).
+
+    Reads pyreadline3's installed files via importlib.metadata so the bundled version
+    always matches the Poetry-pinned dependency — no manual vendoring needed.
+    """
+    try:
+        pkg_files = list(dist_files("pyreadline3") or [])
+    except PackageNotFoundError:
+        logger.warning("pyreadline3 not installed; skipping Windows readline bundling")
+        return []
+
+    entries = []
+    for pkg_file in pkg_files:
+        path_str = pkg_file.as_posix()
+        if path_str.endswith(".py") and (
+            path_str.startswith("pyreadline3/") or path_str == "readline.py"
+        ):
+            entries.append(
+                _CliEntry(f"vendor/{path_str}", Path(pkg_file.locate()).read_bytes())
+            )
+    return entries
 
 
 def _manifest_content(archive: Archive) -> bytes:
@@ -325,6 +386,14 @@ def _archive_data(file_ids: list[UUID], archive: Archive) -> Iterator[ZipEntry]:
     )
 
     for entry in _cli_entries():
+        yield ZipEntry(
+            filename=f"{archive_name}/{CLI_FILENAME}/{entry.filename}",
+            modified_at=modified_at,
+            permissions=_PERMS_META,
+            data=iter([entry.content]),
+        )
+
+    for entry in _vendor_cli_entries():
         yield ZipEntry(
             filename=f"{archive_name}/{CLI_FILENAME}/{entry.filename}",
             modified_at=modified_at,

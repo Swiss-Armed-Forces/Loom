@@ -1,11 +1,13 @@
+import json
 import sqlite3
 import sys
 from collections.abc import Iterator
 from pathlib import Path
-from typing import NamedTuple
+from typing import Any, NamedTuple
 
 from ._constants import ARCHIVE_ROOT, SHELL_INDEX_FILENAME
-from ._types import ServiceIdResult, StorageEntry
+from ._resolve import resolve_name
+from ._types import IndexEntry, ServiceIdResult, StorageEntry
 
 
 class _FileEntry(NamedTuple):
@@ -80,19 +82,51 @@ def _entries_under_db(db: sqlite3.Connection, prefix: str) -> Iterator[_FileEntr
 
 
 def _print_tree_from_db(root: str, db: sqlite3.Connection, prefix: str = "") -> None:
-    """Print a directory tree using the children table."""
+    """Print a directory tree using the children table (iterative DFS)."""
     rows = db.execute(
         "SELECT child_name FROM children WHERE parent_path = ? ORDER BY child_name",
         (root,),
     ).fetchall()
     items = [row[0] for row in rows]
-    for i, child in enumerate(items):
-        connector = "└── " if i == len(items) - 1 else "├── "
-        print(prefix + connector + child.rstrip("/"))
+    # Stack items: (child_name, parent_path, display_prefix, is_last)
+    # Reversed so that the first child is on top of the stack.
+    stack: list[tuple[str, str, str, bool]] = list(
+        reversed(
+            [
+                (child, root, prefix, i == len(items) - 1)
+                for i, child in enumerate(items)
+            ]
+        )
+    )
+    while stack:
+        child, parent_root, current_prefix, is_last = stack.pop()
+        connector = "└── " if is_last else "├── "
+        print(current_prefix + connector + child.rstrip("/"))
         if child.endswith("/"):
-            ext = "    " if i == len(items) - 1 else "│   "
-            child_dir = (root + "/" + child.rstrip("/")) if root else child.rstrip("/")
-            _print_tree_from_db(child_dir, db, prefix + ext)
+            ext = "    " if is_last else "│   "
+            child_dir = (
+                (parent_root + "/" + child.rstrip("/"))
+                if parent_root
+                else child.rstrip("/")
+            )
+            sub_rows = db.execute(
+                "SELECT child_name FROM children WHERE parent_path = ? ORDER BY child_name",
+                (child_dir,),
+            ).fetchall()
+            sub_items = [row[0] for row in sub_rows]
+            stack.extend(
+                reversed(
+                    [
+                        (
+                            sub_child,
+                            child_dir,
+                            current_prefix + ext,
+                            j == len(sub_items) - 1,
+                        )
+                        for j, sub_child in enumerate(sub_items)
+                    ]
+                )
+            )
 
 
 def get_json_filename(db: sqlite3.Connection, vpath: str) -> str | None:
@@ -148,23 +182,86 @@ def get_storage_results(
     return [ServiceIdResult(name=vpath, role=role) for vpath, role in rows]
 
 
+_SQLITE_VARIABLE_LIMIT = 999
+
+
 def get_json_filenames_batch(
     db: sqlite3.Connection, vpaths: list[str]
 ) -> dict[str, str]:
-    """Return a mapping of vpath -> json_filename for the given vpaths."""
+    """Return a mapping of vpath -> json_filename for the given vpaths.
+
+    Chunks the input to stay within SQLite's variable-number limit.
+    """
     if not vpaths:
         return {}
-    placeholders = ",".join("?" * len(vpaths))
-    rows = db.execute(
-        f"SELECT vpath, json_filename FROM files WHERE vpath IN ({placeholders})",
-        vpaths,
-    ).fetchall()
-    return dict(rows)
+    result: dict[str, str] = {}
+    for i in range(0, len(vpaths), _SQLITE_VARIABLE_LIMIT):
+        chunk = vpaths[i : i + _SQLITE_VARIABLE_LIMIT]
+        placeholders = ",".join("?" * len(chunk))
+        rows = db.execute(
+            f"SELECT vpath, json_filename FROM files WHERE vpath IN ({placeholders})",
+            chunk,
+        ).fetchall()
+        result.update(rows)
+    return result
 
 
-def get_all_file_ids(db: sqlite3.Connection) -> dict[str, str]:
-    """Return a mapping of file_id -> vpath for all files in the index."""
-    return dict(db.execute("SELECT file_id, vpath FROM files").fetchall())
+def get_vpaths_by_file_ids(
+    db: sqlite3.Connection, file_ids: list[str]
+) -> dict[str, str]:
+    """Return a mapping of file_id -> vpath for the given file_ids only."""
+    if not file_ids:
+        return {}
+    result: dict[str, str] = {}
+    for i in range(0, len(file_ids), _SQLITE_VARIABLE_LIMIT):
+        chunk = file_ids[i : i + _SQLITE_VARIABLE_LIMIT]
+        placeholders = ",".join("?" * len(chunk))
+        rows = db.execute(
+            f"SELECT file_id, vpath FROM files WHERE file_id IN ({placeholders})",
+            chunk,
+        ).fetchall()
+        result.update(rows)
+    return result
+
+
+class _ResolvedFile(NamedTuple):
+    vpath: str
+    meta: dict[str, Any]
+
+
+def _resolve_and_load(
+    name: str,
+    *,
+    db: sqlite3.Connection,
+    index_dir: Path,
+    cwd: str | None,
+) -> _ResolvedFile:
+    """Resolve a file name to a unique vpath and load its JSON metadata.
+
+    Exits with code 1 if no match is found or the name is ambiguous.
+    """
+    stubs = (
+        IndexEntry(name=vpath, storage_id="", meta={})
+        for vpath, _ in _entries_under_db(db, (cwd + "/") if cwd else "")
+    )
+    matches = resolve_name(stubs, name)
+
+    if len(matches) > 1:
+        print(f"Error: ambiguous name '{name}', matches:", file=sys.stderr)
+        for match in matches:
+            print(f"  {match.name}", file=sys.stderr)
+        sys.exit(1)
+
+    vpath = matches[0].name
+    json_filename = get_json_filename(db, vpath)
+    if json_filename is None:
+        print(f"Error: '{vpath}' not found in shell index", file=sys.stderr)
+        sys.exit(1)
+
+    with open(index_dir / json_filename, encoding="utf-8") as f:
+        meta: dict[str, Any] = json.load(f)
+
+    return _ResolvedFile(vpath=vpath, meta=meta)
 
 
 class ShellIndexCollector:

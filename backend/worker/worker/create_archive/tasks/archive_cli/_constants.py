@@ -15,13 +15,29 @@ SHELL_INDEX_FILENAME = "SHELL_INDEX.db"
 CLI_ENTRYPOINT_FILENAME = "cli.py"
 
 CLI_DOC = """\
-Archive format constants and standalone CLI for Loom archives.
+## Getting started
 
-``archive_cli`` is bundled into every archive; requires only the Python stdlib. Run without
-arguments for an interactive shell (prompt ``loom:/>``, TAB autocomplete, history
-navigation), or pass a subcommand directly for scripting. Shell-only commands: ``cd``,
-``pwd``, ``clear``. Type ``help`` inside the shell for a full command list. Exit codes:
-0 success, 1 no results, 2 usage error.
+Run `python cli.py` (or `./cli.py` on Unix/macOS) from inside the extracted folder.
+Only a standard Python installation is required — no extra packages needed.
+
+```
+python cli.py                          # open the interactive shell
+python cli.py ls                       # list all files
+python cli.py tree                     # show the archive directory structure
+python cli.py find -name "*.pdf"       # find files by name pattern
+python cli.py cat report.pdf           # print the text content of a file
+python cli.py info report.pdf          # show all metadata for a file
+python cli.py info report.pdf content  # print a specific metadata field
+python cli.py translate report.pdf     # list available translations
+python cli.py translate report.pdf en  # print the English translation
+python cli.py grep "search term"       # search across all file metadata
+python cli.py extract report.pdf       # extract a file to the current directory
+python cli.py --help                   # show all available commands
+```
+
+The interactive shell supports tab completion for commands and file paths, persistent
+command history saved between sessions, `Ctrl+R` to search history, and `!N` / `!!`
+to repeat a previous command. Type `help` inside the shell for the full reference.
 """
 
 # ---------------------------------------------------------------------------

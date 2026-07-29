@@ -43,15 +43,22 @@ const directoryTreeNode = (
     };
 };
 
-const documentTreeNode = (document: DemoDocument): TreeNodeWire => ({
-    full_path: document.path,
-    file_count: 1,
-    file_id: document.id,
-    unseen_count: 0,
-    is_unseen: !document.seen,
-    flagged_count: 0,
-    is_flagged: document.flagged,
-});
+const documentTreeNode = (
+    document: DemoDocument,
+    allDocuments: DemoDocument[],
+): TreeNodeWire => {
+    const prefix = `${document.path}/`;
+    const children = allDocuments.filter((d) => d.path.startsWith(prefix));
+    return {
+        full_path: document.path,
+        file_count: children.length,
+        file_id: document.id,
+        unseen_count: children.filter((d) => !d.seen).length,
+        is_unseen: !document.seen,
+        flagged_count: children.filter((d) => d.flagged).length,
+        is_flagged: document.flagged,
+    };
+};
 
 export const treeRootStats = (documents: DemoDocument[]): TreeNodeWire => ({
     full_path: "/",
@@ -93,7 +100,7 @@ export const treeChildren = (
     [...childFiles.values()]
         .sort((left, right) => left.path.localeCompare(right.path))
         .forEach((document) => {
-            const fileNode = documentTreeNode(document);
+            const fileNode = documentTreeNode(document, documents);
             children.set(document.path, {
                 ...fileNode,
                 ...children.get(document.path),
@@ -119,7 +126,7 @@ export const treeSpine = (
         .map((_, index) => `/${segments.slice(0, index + 1).join("/")}`);
     return [
         ...directories.map((path) => directoryTreeNode(documents, path)),
-        documentTreeNode(document),
+        documentTreeNode(document, documents),
     ];
 };
 

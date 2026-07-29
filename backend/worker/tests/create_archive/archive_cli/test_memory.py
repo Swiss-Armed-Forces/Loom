@@ -84,6 +84,7 @@ class TestMemory:
                 pattern="file_0001",
                 ignore_case=False,
                 files_with_matches=False,
+                files=None,
             ),
             db=db,
             index_dir=large_archive_dir / "files_index",

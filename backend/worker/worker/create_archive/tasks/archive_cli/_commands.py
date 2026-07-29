@@ -7,8 +7,9 @@ from ._cmd_grep import cmd_grep
 from ._cmd_id import cmd_id
 from ._cmd_info import cmd_info
 from ._cmd_ls import cmd_ls
+from ._cmd_translate import cmd_translate
 from ._cmd_tree import cmd_tree
-from ._constants import CLI_DESCRIPTION
+from ._constants import CLI_DESCRIPTION, CLI_ENTRYPOINT_FILENAME
 
 
 def _dispatch(
@@ -27,14 +28,55 @@ def _dispatch(
         cmd_find(args, db=db, cwd=cwd)
     elif args.command == "info":
         cmd_info(args, db=db, cwd=cwd)
+    elif args.command == "cat":
+        args.field = "content"
+        args.json = False
+        cmd_info(args, db=db, cwd=cwd)
+    elif args.command == "translate":
+        cmd_translate(args, db=db, cwd=cwd)
     elif args.command == "tree":
         cmd_tree(args, db=db, cwd=cwd)
     elif args.command == "id":
         cmd_id(args, db=db, cwd=cwd)
 
 
+_SHELL_HELP_EPILOG = (
+    "Shell builtins (interactive shell only)\n"
+    "  cd [DIR]    Navigate the virtual directory tree\n"
+    "  pwd         Print current virtual directory\n"
+    "  clear       Clear the terminal screen\n"
+    "  history     Show numbered command history\n"
+    "  exit/quit   Leave the shell (Ctrl+D also works)\n"
+    "\n"
+    "History & line editing\n"
+    "  Up/Down     Walk through command history\n"
+    "  Ctrl+R      Reverse incremental search through history\n"
+    "  Tab         Autocomplete commands, paths, and field names\n"
+    "  Ctrl+A/E    Jump to start / end of line\n"
+    "  Alt+B/F     Move backward / forward one word\n"
+    "  Ctrl+W      Delete previous word\n"
+    "  Ctrl+K      Delete to end of line\n"
+    "  Ctrl+L      Clear the screen\n"
+    "  !N          Re-run history entry N  (see: history)\n"
+    "  !!          Re-run the last command\n"
+    "\n"
+    "Note: requires GNU readline (standard on Unix/macOS);"
+    " on Windows, pyreadline3 is bundled automatically when installed on the archive server.\n"
+    "\n"
+    "Exit codes\n"
+    "  0  success\n"
+    "  1  no results found\n"
+    "  2  usage / argument error"
+)
+
+
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description=CLI_DESCRIPTION)
+    parser = argparse.ArgumentParser(
+        prog=CLI_ENTRYPOINT_FILENAME,
+        description=CLI_DESCRIPTION,
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog=_SHELL_HELP_EPILOG,
+    )
     subparsers = parser.add_subparsers(dest="command", required=False)
 
     ls_parser = subparsers.add_parser(
@@ -107,12 +149,19 @@ def build_parser() -> argparse.ArgumentParser:
             "Search archive metadata using a regex pattern. "
             "Prints 'name [field.path]: line' for every matching line in a metadata value. "
             "Use -l to list only filenames. Use -i for case-insensitive matching. "
+            "Provide FILE arguments to restrict the search to specific files. "
             "Exits with code 1 when no matches are found."
         ),
     )
     grep_parser.add_argument(
         "pattern",
         help="Regex pattern to search for in metadata values",
+    )
+    grep_parser.add_argument(
+        "files",
+        nargs="*",
+        metavar="FILE",
+        help="Files to search (path, suffix, or glob); searches all files if omitted",
     )
     grep_parser.add_argument(
         "-i",
@@ -146,6 +195,35 @@ def build_parser() -> argparse.ArgumentParser:
         "--json",
         action="store_true",
         help="Print full metadata as JSON",
+    )
+
+    cat_parser = subparsers.add_parser(
+        "cat",
+        help="Print the text content of a file (alias for: info NAME content)",
+    )
+    cat_parser.add_argument(
+        "name",
+        help="Human-readable file name (full path, suffix, or glob pattern)",
+    )
+
+    translate_parser = subparsers.add_parser(
+        "translate",
+        help="Print a translation of a file",
+        description=(
+            "Print a stored translation of a file. "
+            "Without LANGUAGE, lists the available language codes and their confidence scores. "
+            "With LANGUAGE, prints the translated text for that language."
+        ),
+    )
+    translate_parser.add_argument(
+        "name",
+        help="Human-readable file name (full path, suffix, or glob pattern)",
+    )
+    translate_parser.add_argument(
+        "language",
+        nargs="?",
+        default=None,
+        help="Language code to print (e.g. en, de, fr); omit to list available languages",
     )
 
     subparsers.add_parser(
@@ -196,6 +274,8 @@ def build_parser() -> argparse.ArgumentParser:
     subparsers.add_parser("pwd", help="Print current virtual directory")
 
     subparsers.add_parser("clear", help="Clear the terminal screen")
+
+    subparsers.add_parser("history", help="Show command history")
 
     subparsers.add_parser(
         "help",

@@ -552,6 +552,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | jsonpointer                           | 3.1.1           | BSD License                                                                      |
 | pika                                  | 1.4.1           | BSD License                                                                      |
 | prompt_toolkit                        | 3.0.52          | BSD License                                                                      |
+| pyreadline3                           | 3.5.6           | BSD License                                                                      |
 | pytest-celery                         | 1.3.0           | BSD License                                                                      |
 | requests-oauthlib                     | 2.0.0           | BSD License                                                                      |
 | scipy                                 | 1.17.1          | BSD License                                                                      |
@@ -2112,6 +2113,7 @@ The complete source code for Traefik is publicly available at [https://github.co
 | pydantic | 2.13.4 | MIT | python-installed-package-cataloger |
 | pydantic-core | 2.46.4 | MIT | python-installed-package-cataloger |
 | pydantic-settings | 2.14.2 | MIT | python-installed-package-cataloger |
+| pyreadline3 | 3.5.6 |  | python-installed-package-cataloger |
 | python | 3.14.6 |  | binary-classifier-cataloger |
 | python-dateutil | 2.9.0.post0 |  | python-installed-package-cataloger |
 | python-dotenv | 1.2.2 | BSD-3-Clause | python-installed-package-cataloger |
