@@ -4,6 +4,7 @@ from concurrent.futures import ThreadPoolExecutor
 from typing import TYPE_CHECKING, Iterator, Union
 
 from celery import Celery
+from kombu.exceptions import DecodeError
 from redis import StrictRedis
 
 from common.celery_app import TaskGroupName, _task_groups, get_terminal_queues
@@ -43,11 +44,23 @@ class CeleryInspectService:
         with ThreadPoolExecutor() as executor:
             futures = [executor.submit(method, safe=True) for method in inspect_methods]
             for future in futures:
-                worker_tasks: (
-                    dict[str, list["_TaskScheduledInfo"]]
-                    | dict[str, list["_TaskInfo"]]
-                    | None
-                ) = future.result()
+                try:
+                    worker_tasks: (
+                        dict[str, list["_TaskScheduledInfo"]]
+                        | dict[str, list["_TaskInfo"]]
+                        | None
+                    ) = future.result()
+                except DecodeError:
+                    # Worker reply could not be deserialized — most likely a pickle
+                    # message referencing the 'worker' package which is not installed
+                    # in this process. The root cause is fixed via
+                    # app.control.mailbox.serializer = "json" in _initialization.py,
+                    # but we keep this fallback in case kombu internals ever change.
+                    logger.warning(
+                        "Could not decode control reply from worker (serialization "
+                        "mismatch); skipping task inspection for this worker."
+                    )
+                    continue
                 if worker_tasks is None:
                     continue
                 for _, tasks in worker_tasks.items():
