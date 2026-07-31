@@ -2,6 +2,8 @@ import type { Alignment, Side } from "driver.js";
 
 export type TourViewport = "all" | "desktop" | "mobile";
 
+export type TourPreparation = "search-results";
+
 export interface TourTarget {
     selector: `[data-tour="${string}"]`;
     viewport?: TourViewport;
@@ -19,13 +21,35 @@ export interface TourStep {
     align?: Alignment;
     waitForElementMs?: number;
     skipIfMissing?: boolean;
+    preparation?: TourPreparation;
 }
 
 export type TourOutcome = "completed" | "dismissed";
 
+export type TourMode = "full" | "incremental";
+
+export type TourEndReason =
+    | "completed"
+    | "user-dismissed"
+    | "no-available-targets"
+    | "required-target-missing";
+
+export interface TourStartRequest {
+    mode: TourMode;
+    steps: readonly TourStep[];
+}
+
+export interface TourFinishResult {
+    acknowledgedSteps: readonly TourStep[];
+    mode: TourMode;
+    outcome: TourOutcome;
+    reason: TourEndReason;
+}
+
 export interface TourState {
     schemaVersion: 1;
-    outcome?: TourOutcome;
+    introductionOutcome?: TourOutcome;
+    acknowledgedStepHashes: Record<string, string[]>;
 }
 
 export interface TourContextValue {
@@ -34,5 +58,5 @@ export interface TourContextValue {
     activeTourStepId: string | null;
     tourDetailFileId: string | null;
     dismissActiveTour: () => void;
-    startTour: () => boolean;
+    startTour: () => void;
 }

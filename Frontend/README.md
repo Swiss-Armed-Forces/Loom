@@ -36,9 +36,16 @@ lint_fix_frontend
 
 ## Product tours
 
-Outside Vite development mode, the tour provider starts the global tour on a visitor's first visit
-and stores completion or dismissal under `loom.tours.v1`. The header menu's **Take a Tour** action
-can launch or replay it in every mode. Tour steps are configured in `src/app/tours/catalog.ts`.
+The tour provider starts the global tour on a visitor's first visit and stores completion or
+dismissal together with the acknowledged copy hashes for every step under `loom.tours.v1`. On later
+visits, it automatically shows only added steps or steps whose English title, description, or
+step-specific button copy has a hash that visitor has not acknowledged. Presentation-only changes
+such as selectors, placement, viewport rules, and wait times do not change the hash. Completion and
+dismissal both acknowledge the selected hashes that are eligible for the current viewport so the
+same update is not offered repeatedly. Viewport-filtered updates remain available on a compatible
+device. Partial tours begin with a welcome-back step introducing the changes. The header menu's
+**Take a Tour** action always launches the complete tour. Tour steps are configured in
+`src/app/tours/catalog.ts`.
 The welcome step offers **Skip Tour**. The tour introduces query syntax, runs the `*` search-all
 query, and then walks through processing-health indicators, result-card anatomy, document details,
 folders, tags, saved queries, bulk and automatic actions, statistics, and chat. Tour scenes
@@ -47,10 +54,17 @@ change the visitor's persisted sidebar layout, open document tabs, or URL.
 
 To add or change a tour step:
 
-1. Add stable `data-tour` attributes to rendered elements; do not target generated MUI class names.
-2. Add the step to `GLOBAL_TOUR_STEPS`.
-3. Add its title and description to `public/locales/en/translation.json`.
-4. Test desktop and mobile layouts. Missing targets are skipped automatically.
+- Add stable `data-tour` attributes to rendered elements; do not target generated MUI class names.
+- Add the step to `GLOBAL_TOUR_STEPS` with a unique, stable `id`. Duplicate IDs prevent automatic
+  tour versioning. Changing an existing step's English copy automatically offers that step again
+  without changing its ID.
+- Add its title and description to `public/locales/en/translation.json`.
+- Set `preparation: "search-results"` when the target needs loaded result data. Incremental tours
+  silently reuse existing results or run the search-all query before showing those steps. Pending
+  automatic preparation is cancelled if the visitor leaves search or manually starts a full tour.
+- Test desktop and mobile layouts. Missing optional targets are skipped and acknowledged
+  automatically. Set `skipIfMissing: false` when a missing target should abort the tour and remain
+  unacknowledged for retry after the configuration is repaired.
 
 Components inside `TourProvider` can offer a replay action through the same completion and dismissal
 lifecycle:
