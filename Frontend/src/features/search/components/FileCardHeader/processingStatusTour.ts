@@ -7,9 +7,9 @@ type ProcessingStatusPreview = Pick<
 
 export const hasVisibleProcessingStatus = (
     filePreview: ProcessingStatusPreview,
-    isMobile: boolean,
+    isNarrow: boolean,
 ): boolean =>
     filePreview.state !== "processed" ||
-    (!isMobile &&
+    (!isNarrow &&
         (filePreview.contentIsTruncated ||
             (filePreview.attachmentsSkipped ?? false)));

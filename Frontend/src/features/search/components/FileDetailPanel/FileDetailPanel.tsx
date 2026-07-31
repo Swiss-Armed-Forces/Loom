@@ -8,14 +8,7 @@ import {
     TranslateOutlined,
     VisibilityOutlined,
 } from "@mui/icons-material";
-import {
-    Box,
-    Skeleton,
-    Tab,
-    Tabs,
-    useMediaQuery,
-    useTheme,
-} from "@mui/material";
+import { Box, Skeleton, Tab, Tabs } from "@mui/material";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import AceEditorImport from "react-ace";
 import { useTranslation } from "react-i18next";
@@ -62,21 +55,35 @@ interface FileDetailPanelProps {
     fileId: string;
     detailTab: FileDetailTab;
     isActive: boolean;
+    compact?: boolean;
 }
 
 export const FileDetailPanel = ({
     fileId,
     detailTab,
     isActive,
+    compact,
 }: FileDetailPanelProps) => {
     const dispatch = useAppDispatch();
     const { t } = useTranslation();
-    const theme = useTheme();
-    const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
     const editorRef = useRef<InstanceType<typeof AceEditorImport>>(null);
     const hasAutoActionsRun = useRef<boolean>(false);
     const lastFetchedFileId = useRef<string>("");
+    const panelRef = useRef<HTMLDivElement>(null);
+    const [panelWidth, setPanelWidth] = useState(Infinity);
     const isDarkMode = useDarkMode();
+
+    useEffect(() => {
+        const el = panelRef.current;
+        if (!el) return;
+        const ro = new ResizeObserver(([entry]) =>
+            setPanelWidth(entry.contentRect.width),
+        );
+        ro.observe(el);
+        return () => ro.disconnect();
+    }, []);
+
+    const isNarrow = panelWidth < 500;
 
     const [file, setFile] = useState<GetFileResponse>();
     const fetchCancelledRef = useRef(false);
@@ -251,6 +258,7 @@ export const FileDetailPanel = ({
 
     return (
         <Box
+            ref={panelRef}
             data-file-panel={fileId}
             sx={{
                 display: "flex",
@@ -272,6 +280,7 @@ export const FileDetailPanel = ({
                 {preview ? (
                     <FileCardHeader
                         hideDetail
+                        compact={compact}
                         filePreview={preview}
                         renderedFile={file?.renderedFile}
                     />
@@ -347,14 +356,14 @@ export const FileDetailPanel = ({
                             key={value}
                             icon={icon}
                             iconPosition="start"
-                            label={isMobile ? undefined : label}
-                            title={isMobile ? label : undefined}
+                            label={isNarrow ? undefined : label}
+                            title={isNarrow ? label : undefined}
                             value={value}
                             data-tab-value={value}
                             data-tour={dataTour}
                             disabled={disabled}
                             sx={
-                                isMobile
+                                isNarrow
                                     ? { minWidth: "auto", px: 1.5 }
                                     : undefined
                             }

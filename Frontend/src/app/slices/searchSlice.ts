@@ -45,7 +45,6 @@ export const LeftSidebarPanel = {
     FOLDER: "folder",
     TAGS: "tags",
     QUERIES: "queries",
-    BULK_ACTIONS: "bulk_actions",
     AUTO_ACTIONS: "auto_actions",
 } as const;
 
@@ -53,8 +52,11 @@ export type LeftSidebarPanel =
     (typeof LeftSidebarPanel)[keyof typeof LeftSidebarPanel];
 
 export const RightSidebarTab = {
+    BULK_ACTIONS: "bulk_actions",
+    FOLDER: "folder_scoped",
     STATISTICS: "statistics",
     CHAT: "chat",
+    FILE_DETAIL: "file_detail",
 } as const;
 
 export type RightSidebarTab =
@@ -141,6 +143,7 @@ export interface SearchState {
     highlightScrollMode: "smart" | "top";
     suppressDownloadWarning: boolean;
     folderViewExpandedNodes: string[];
+    filteredFolderViewExpandedNodes: string[];
     pendingFullscreenFileId: string | null;
 }
 
@@ -205,6 +208,7 @@ const initialState: SearchState = {
     temporaryFileId: null,
     suppressDownloadWarning: false,
     folderViewExpandedNodes: [],
+    filteredFolderViewExpandedNodes: [],
     pendingFullscreenFileId: null,
     ...persistedState,
     // Restore the last query (text + sort) so stale data renders immediately.
@@ -648,6 +652,12 @@ export const searchSlice = createSlice({
         ) => {
             state.folderViewExpandedNodes = action.payload;
         },
+        setFilteredFolderViewExpandedNodes: (
+            state,
+            action: PayloadAction<string[]>,
+        ) => {
+            state.filteredFolderViewExpandedNodes = action.payload;
+        },
         setPendingFullscreenFileId: (
             state,
             action: PayloadAction<string | null>,
@@ -857,6 +867,7 @@ export const {
     setExpandFilePaths,
     setSuppressDownloadWarning,
     setFolderViewExpandedNodes,
+    setFilteredFolderViewExpandedNodes,
     setPendingFullscreenFileId,
 } = searchSlice.actions;
 
@@ -1067,6 +1078,16 @@ export const selectHighlightScrollMode = createSelector(
 export const selectPendingFullscreenFileId = createSelector(
     selectSearch,
     (search) => search.pendingFullscreenFileId,
+);
+
+export const selectFolderViewExpandedNodes = createSelector(
+    selectSearch,
+    (search) => search.folderViewExpandedNodes,
+);
+
+export const selectFilteredFolderViewExpandedNodes = createSelector(
+    selectSearch,
+    (search) => search.filteredFolderViewExpandedNodes,
 );
 
 export default searchSlice.reducer;

@@ -1,4 +1,4 @@
-.fileCardHeader {
+.resultCardHeader {
     display: flex;
     flex-direction: row;
     gap: 1rem;
@@ -6,19 +6,26 @@
     word-break: break-all;
 }
 
-.fileCardHeader :global .MuiCardHeader-avatar {
+.resultCardHeader :global .MuiCardHeader-avatar {
     margin-right: 0;
 }
 
-.fileCardHeader :global .MuiCardHeader-content {
-    flex: unset;
+.resultCardHeader :global .MuiCardHeader-content {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
 }
 
-.fileCardHeader :global .MuiCardHeader-action {
+.resultCardHeader :global .MuiCardHeader-action {
     display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    flex: 1;
+    align-items: center;
+    flex: 1 999 auto;
+    min-width: 0;
+    margin-top: 0;
+    margin-bottom: 0;
+    margin-right: 0;
+    position: relative;
+    z-index: 1;
 }
 
 .clickableChip {

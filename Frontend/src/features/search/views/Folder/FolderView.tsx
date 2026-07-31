@@ -45,6 +45,7 @@ import {
     selectQuery,
     selectWebSocketPubSubMessage,
     setActiveTabFileId,
+    setFilteredFolderViewExpandedNodes,
     setFolderViewExpandedNodes,
     setHighlightedFileId,
     setTemporaryFileId,
@@ -144,11 +145,20 @@ const loadChildren = async (
 
 interface FolderViewProps {
     filter?: string;
+    searchQuery?: SearchQuery;
+    persistExpansion?: boolean;
+    expansionKey?: "global" | "filtered";
 }
 
-export const FolderView = ({ filter }: FolderViewProps) => {
+export const FolderView = ({
+    filter,
+    searchQuery: queryOverride,
+    persistExpansion,
+    expansionKey = "global",
+}: FolderViewProps) => {
     const { t } = useTranslation();
-    const searchQuery = useAppSelector(selectQuery);
+    const reduxSearchQuery = useAppSelector(selectQuery);
+    const searchQuery = queryOverride ?? reduxSearchQuery;
     const isLoading = useAppSelector(selectIsLoading);
     const activeTabFileId = useAppSelector(selectActiveTabFileId);
     const highlightedFileId = useAppSelector(selectHighlightedFileId);
@@ -176,9 +186,12 @@ export const FolderView = ({ filter }: FolderViewProps) => {
     // discarded when the focused file changes.
     // Initialised from the Redux-persisted value so expansion survives
     // sidebar panel switches and page reloads.
-    const [userExpandedNodes, setUserExpandedNodes] = useState<string[]>(
-        () => store.getState().search.folderViewExpandedNodes,
-    );
+    const [userExpandedNodes, setUserExpandedNodes] = useState<string[]>(() => {
+        if (persistExpansion === false) return [];
+        return expansionKey === "filtered"
+            ? store.getState().search.filteredFolderViewExpandedNodes
+            : store.getState().search.folderViewExpandedNodes;
+    });
     const userExpandedNodesRef = useRef(userExpandedNodes);
     userExpandedNodesRef.current = userExpandedNodes;
     // Query seen on the previous render. Tracks both id and query string so we
@@ -240,9 +253,15 @@ export const FolderView = ({ filter }: FolderViewProps) => {
 
     // Persist user-driven expansion to Redux (→ localStorage via middleware)
     // so the state survives sidebar panel switches and page reloads.
+    // Skipped when persistExpansion is false (e.g. right-panel scoped view).
     useEffect(() => {
-        dispatch(setFolderViewExpandedNodes(userExpandedNodes));
-    }, [userExpandedNodes, dispatch]);
+        if (persistExpansion === false) return;
+        dispatch(
+            expansionKey === "filtered"
+                ? setFilteredFolderViewExpandedNodes(userExpandedNodes)
+                : setFolderViewExpandedNodes(userExpandedNodes),
+        );
+    }, [userExpandedNodes, dispatch, persistExpansion, expansionKey]);
 
     // Maintain WS subscriptions for all file nodes currently loaded in the
     // tree. This ensures fileUpdate messages arrive even when those files are

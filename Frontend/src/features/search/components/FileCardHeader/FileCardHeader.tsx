@@ -1,13 +1,6 @@
 import { ContentCut, LinkOff, Translate, Whatshot } from "@mui/icons-material";
-import {
-    CardHeader,
-    Box,
-    Chip,
-    IconButton,
-    Tooltip,
-    useMediaQuery,
-} from "@mui/material";
-import { ReactNode } from "react";
+import { CardHeader, Box, Chip, IconButton, Tooltip } from "@mui/material";
+import { ReactNode, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { GetFilePreviewResponse, RenderedFile } from "@app/api";
@@ -36,6 +29,7 @@ interface FileCardHeaderProps {
     hideDetail?: boolean;
     renderedFile?: RenderedFile;
     onStateChipClick?: () => void;
+    compact?: boolean;
 }
 
 export const FileCardHeader = ({
@@ -44,11 +38,26 @@ export const FileCardHeader = ({
     hideDetail,
     renderedFile,
     onStateChipClick,
+    compact,
 }: FileCardHeaderProps) => {
     const dispatch = useAppDispatch();
     const { t } = useTranslation();
     const searchQuery = useAppSelector(selectQuery);
-    const isMobile = useMediaQuery("(max-width:600px)");
+    const headerRef = useRef<HTMLDivElement>(null);
+    const [headerWidth, setHeaderWidth] = useState(Infinity);
+
+    useEffect(() => {
+        const el = headerRef.current;
+        if (!el) return;
+        const ro = new ResizeObserver(([entry]) =>
+            setHeaderWidth(entry.contentRect.width),
+        );
+        ro.observe(el);
+        return () => ro.disconnect();
+    }, []);
+
+    const isNarrow = headerWidth < 500;
+    const isCompact = compact ?? headerWidth < 650;
 
     const handleFilterByField = (
         field: SearchQueryField,
@@ -70,6 +79,7 @@ export const FileCardHeader = ({
 
     return (
         <CardHeader
+            ref={headerRef}
             className={styles.resultCardHeader}
             sx={{ flex: 1 }}
             avatar={
@@ -100,7 +110,7 @@ export const FileCardHeader = ({
                             fontWeight: filePreview.seen ? undefined : "bold",
                         }}
                     />
-                    {hasVisibleProcessingStatus(filePreview, isMobile) && (
+                    {hasVisibleProcessingStatus(filePreview, isNarrow) && (
                         <Box
                             data-tour="result-card-processing-status"
                             sx={{
@@ -109,7 +119,7 @@ export const FileCardHeader = ({
                                 gap: 1,
                             }}
                         >
-                            {!isMobile && filePreview.contentIsTruncated && (
+                            {!isNarrow && filePreview.contentIsTruncated && (
                                 <Tooltip
                                     title={t(
                                         "generalSearchView.contentTruncatedIcon",
@@ -130,7 +140,7 @@ export const FileCardHeader = ({
                                     </IconButton>
                                 </Tooltip>
                             )}
-                            {!isMobile && filePreview.attachmentsSkipped && (
+                            {!isNarrow && filePreview.attachmentsSkipped && (
                                 <Tooltip
                                     title={t(
                                         "generalSearchView.attachmentsSkippedIcon",
@@ -177,7 +187,7 @@ export const FileCardHeader = ({
                             )}
                         </Box>
                     )}
-                    {!isMobile && filePreview.isSpam && (
+                    {!isNarrow && filePreview.isSpam && (
                         <Tooltip title={t("generalSearchView.spamIcon")}>
                             <IconButton
                                 size="small"
@@ -194,7 +204,7 @@ export const FileCardHeader = ({
                             </IconButton>
                         </Tooltip>
                     )}
-                    {!isMobile && filePreview.detectedLanguage && (
+                    {!isNarrow && filePreview.detectedLanguage && (
                         <Tooltip
                             title={t(
                                 "generalSearchView.detectedLanguageTooltip",
@@ -232,6 +242,7 @@ export const FileCardHeader = ({
                     additionalActions={additionalActions}
                     hideDetail={hideDetail}
                     renderedFile={renderedFile}
+                    isCompact={isCompact}
                 />
             }
         />

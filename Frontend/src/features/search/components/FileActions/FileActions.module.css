@@ -1,13 +1,22 @@
 .fileActions {
     display: flex;
     flex-direction: row;
+    align-items: center;
+    min-width: 0;
+    width: 100%;
+}
+
+.tagsWrapper {
+    flex: 1 1 0;
+    min-width: 0;
+    overflow: hidden;
+    display: flex;
+    justify-content: flex-end;
 }
 
 .fileActionButtons {
     display: flex;
     flex-direction: row;
-
-    @media only screen and (max-width: 768px) {
-        flex-wrap: wrap;
-    }
+    align-items: center;
+    flex-shrink: 0;
 }

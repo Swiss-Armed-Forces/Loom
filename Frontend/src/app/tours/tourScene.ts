@@ -6,15 +6,12 @@ const LEFT_PANEL_BY_STEP: Partial<Record<string, LeftSidebarPanel>> = {
     "folder-filter": LeftSidebarPanel.FOLDER,
     tags: LeftSidebarPanel.TAGS,
     "saved-queries": LeftSidebarPanel.QUERIES,
-    "bulk-actions": LeftSidebarPanel.BULK_ACTIONS,
     "auto-actions": LeftSidebarPanel.AUTO_ACTIONS,
 };
 
 const RIGHT_TAB_BY_STEP: Partial<Record<string, RightSidebarTab>> = {
-    statistics: RightSidebarTab.STATISTICS,
     "statistics-pie-chart": RightSidebarTab.STATISTICS,
     "statistics-histogram": RightSidebarTab.STATISTICS,
-    chat: RightSidebarTab.CHAT,
 };
 
 export const getTourLeftPanel = (

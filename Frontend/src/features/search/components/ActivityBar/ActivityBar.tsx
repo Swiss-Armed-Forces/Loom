@@ -1,11 +1,13 @@
 import {
-    BarChart,
+    ArticleOutlined,
+    BarChartOutlined,
     Bookmark,
-    Forum,
+    ForumOutlined,
     Folder,
+    FolderOpenOutlined,
     Label,
     MoreHoriz,
-    PlaylistAddCheck,
+    PlaylistAddCheckOutlined,
     Policy,
     Tune,
 } from "@mui/icons-material";
@@ -100,11 +102,6 @@ export const ActivityBar = () => {
             label: t("sideMenu.savedQueries.title"),
         },
         {
-            panel: LeftSidebarPanel.BULK_ACTIONS,
-            icon: <PlaylistAddCheck />,
-            label: t("sideMenu.bulkActions"),
-        },
-        {
             panel: LeftSidebarPanel.AUTO_ACTIONS,
             icon: <Tune />,
             label: t("sideMenu.autoActions.title"),
@@ -115,16 +112,37 @@ export const ActivityBar = () => {
         tab: RightSidebarTab;
         icon: React.ReactNode;
         label: string;
+        dataTour?: string;
     }> = [
         {
+            tab: RightSidebarTab.FILE_DETAIL,
+            icon: <ArticleOutlined />,
+            label: t("toolbar.views.fileDetail"),
+            dataTour: "sidebar-file-detail",
+        },
+        {
+            tab: RightSidebarTab.FOLDER,
+            icon: <FolderOpenOutlined />,
+            label: t("toolbar.views.filteredFolder"),
+            dataTour: "sidebar-filtered-folder",
+        },
+        {
             tab: RightSidebarTab.STATISTICS,
-            icon: <BarChart />,
+            icon: <BarChartOutlined />,
             label: t("toolbar.views.statistics"),
+            dataTour: "sidebar-statistics",
         },
         {
             tab: RightSidebarTab.CHAT,
-            icon: <Forum />,
+            icon: <ForumOutlined />,
             label: "Chatbot",
+            dataTour: "sidebar-chat",
+        },
+        {
+            tab: RightSidebarTab.BULK_ACTIONS,
+            icon: <PlaylistAddCheckOutlined />,
+            label: t("sideMenu.bulkActions"),
+            dataTour: "sidebar-bulk-actions",
         },
     ];
 
@@ -174,7 +192,7 @@ export const ActivityBar = () => {
                     className={styles.mobileRightGroup}
                     data-tour="activity-bar-right"
                 >
-                    {rightPanelButtons.map(({ tab, icon, label }) => (
+                    {rightPanelButtons.map(({ tab, icon, label, dataTour }) => (
                         <Tooltip key={tab} title={label} placement="top">
                             <IconButton
                                 className={`${styles.iconButtonBottom} ${effectiveRightOpen && effectiveRightTab === tab ? styles.active : ""}`}
@@ -186,6 +204,7 @@ export const ActivityBar = () => {
                                         ? "primary"
                                         : "default"
                                 }
+                                {...(dataTour ? { "data-tour": dataTour } : {})}
                             >
                                 {icon}
                             </IconButton>
@@ -280,7 +299,7 @@ export const ActivityBar = () => {
                         sx={{ width: "60%", alignSelf: "center", my: 0.5 }}
                     />
                 )}
-                {rightPanelButtons.map(({ tab, icon, label }) => (
+                {rightPanelButtons.map(({ tab, icon, label, dataTour }) => (
                     <Tooltip key={tab} title={label} placement="right">
                         <IconButton
                             className={`${styles.iconButton} ${effectiveRightOpen && effectiveRightTab === tab ? styles.active : ""}`}
@@ -291,6 +310,7 @@ export const ActivityBar = () => {
                                     ? "primary"
                                     : "default"
                             }
+                            {...(dataTour ? { "data-tour": dataTour } : {})}
                         >
                             {icon}
                         </IconButton>
