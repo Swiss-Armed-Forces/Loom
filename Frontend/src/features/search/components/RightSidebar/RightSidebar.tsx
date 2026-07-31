@@ -1,32 +1,60 @@
-import { Close } from "@mui/icons-material";
-import { Drawer, IconButton, Typography, useMediaQuery } from "@mui/material";
+import { Clear, Search, Close } from "@mui/icons-material";
+import {
+    Drawer,
+    IconButton,
+    InputAdornment,
+    InputBase,
+    Typography,
+    useMediaQuery,
+} from "@mui/material";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { useAppDispatch, useAppSelector } from "@app/hooks";
+import { selectLastFileDetailTab } from "@app/slices/commonSlice";
 import {
     RightSidebarTab,
+    selectHighlightedFileId,
+    selectQuery,
     selectRightSidebarOpen,
     selectRightSidebarTab,
+    selectTotalFiles,
     toggleRightSidebar,
 } from "@app/slices/searchSlice";
 import { getTourRightTab } from "@app/tours/tourScene";
 import { useTour } from "@app/tours/useTour";
 import { Chatbot } from "@features/search/components/ChatMenu/Chatbot";
+import {
+    AddTagsButton,
+    CreateArchiveButton,
+    ImageDescriptionButton,
+    ReIndexButton,
+    SummaryButton,
+    TranslationButton,
+    UpdateFlaggedButton,
+    UpdateHiddenButton,
+    UpdateSeenButton,
+} from "@features/search/components/FileActionButtons";
+import { FileDetailPanel } from "@features/search/components/FileDetailPanel/FileDetailPanel";
+import { FolderView } from "@features/search/views/Folder/FolderView";
 import { StatisticsView } from "@features/search/views/Statistics/StatisticsView";
 
 import styles from "./RightSidebar.module.css";
 
 const MIN_WIDTH = 14 * 16;
 const DEFAULT_WIDTH = 28 * 16;
-const MAX_WIDTH = 40 * 16;
+const CENTER_MIN_WIDTH = 20 * 16;
 const WIDTH_STORAGE_KEY = "RIGHT_SIDEBAR_WIDTH";
 
 const loadWidth = (): number => {
     const stored = localStorage.getItem(WIDTH_STORAGE_KEY);
     if (stored) {
         const n = parseInt(stored, 10);
-        if (!isNaN(n) && n >= MIN_WIDTH && n <= MAX_WIDTH) return n;
+        const effectiveMax = Math.max(
+            MIN_WIDTH,
+            window.innerWidth - CENTER_MIN_WIDTH,
+        );
+        if (!isNaN(n) && n >= MIN_WIDTH) return Math.min(n, effectiveMax);
     }
     return DEFAULT_WIDTH;
 };
@@ -36,6 +64,10 @@ export const RightSidebar = () => {
     const { t } = useTranslation();
     const isOpen = useAppSelector(selectRightSidebarOpen);
     const activeTab = useAppSelector(selectRightSidebarTab);
+    const numberOfResults = useAppSelector(selectTotalFiles);
+    const searchQuery = useAppSelector(selectQuery);
+    const highlightedFileId = useAppSelector(selectHighlightedFileId);
+    const lastFileDetailTab = useAppSelector(selectLastFileDetailTab);
     const { activeTourStepId, isTourActive } = useTour();
     const tourTab = getTourRightTab(isTourActive, activeTourStepId);
     const effectiveIsOpen = tourTab !== undefined ? tourTab !== null : isOpen;
@@ -44,11 +76,16 @@ export const RightSidebar = () => {
 
     const [width, setWidth] = useState(loadWidth);
     const [isDragging, setIsDragging] = useState(false);
+    const [folderFilterText, setFolderFilterText] = useState("");
     const widthRef = useRef(width);
     const dragHandlersRef = useRef<{
         onMouseMove: (ev: MouseEvent) => void;
         onMouseUp: () => void;
     } | null>(null);
+
+    useEffect(() => {
+        if (activeTab !== RightSidebarTab.FOLDER) setFolderFilterText("");
+    }, [activeTab]);
 
     // Remove any in-flight drag listeners when the component unmounts
     useEffect(() => {
@@ -71,11 +108,15 @@ export const RightSidebar = () => {
         e.preventDefault();
         const startX = e.clientX;
         const startWidth = widthRef.current;
+        const effectiveMax = Math.max(
+            MIN_WIDTH,
+            window.innerWidth - CENTER_MIN_WIDTH,
+        );
         setIsDragging(true);
 
         const onMouseMove = (ev: MouseEvent) => {
             const newWidth = Math.min(
-                MAX_WIDTH,
+                effectiveMax,
                 Math.max(MIN_WIDTH, startWidth + startX - ev.clientX),
             );
             widthRef.current = newWidth;
@@ -100,7 +141,13 @@ export const RightSidebar = () => {
     const tabTitle =
         effectiveActiveTab === RightSidebarTab.STATISTICS
             ? t("toolbar.views.statistics")
-            : "Chatbot";
+            : effectiveActiveTab === RightSidebarTab.FOLDER
+              ? t("toolbar.views.filteredFolder")
+              : effectiveActiveTab === RightSidebarTab.BULK_ACTIONS
+                ? t("sideMenu.bulkActions")
+                : effectiveActiveTab === RightSidebarTab.FILE_DETAIL
+                  ? t("toolbar.views.fileDetail")
+                  : "Chatbot";
 
     const sidebarContent = (
         <>
@@ -117,6 +164,41 @@ export const RightSidebar = () => {
                     <Close fontSize="small" />
                 </IconButton>
             </div>
+            {effectiveActiveTab === RightSidebarTab.FOLDER && (
+                <div className={styles.filterBar}>
+                    <InputBase
+                        className={styles.filterInput}
+                        value={folderFilterText}
+                        onChange={(e) => setFolderFilterText(e.target.value)}
+                        placeholder={t("folderView.filterPlaceholder")}
+                        inputProps={{ "aria-label": "filter" }}
+                        startAdornment={
+                            <InputAdornment position="start">
+                                <Search
+                                    fontSize="small"
+                                    className={styles.filterIcon}
+                                />
+                            </InputAdornment>
+                        }
+                        endAdornment={
+                            folderFilterText ? (
+                                <InputAdornment position="end">
+                                    <IconButton
+                                        size="small"
+                                        onClick={() => setFolderFilterText("")}
+                                        edge="end"
+                                    >
+                                        <Clear
+                                            fontSize="small"
+                                            className={styles.filterIcon}
+                                        />
+                                    </IconButton>
+                                </InputAdornment>
+                            ) : null
+                        }
+                    />
+                </div>
+            )}
             <div
                 className={styles.content}
                 data-tour={
@@ -125,6 +207,50 @@ export const RightSidebar = () => {
             >
                 {effectiveActiveTab === RightSidebarTab.STATISTICS ? (
                     <StatisticsView />
+                ) : effectiveActiveTab === RightSidebarTab.FOLDER ? (
+                    <FolderView
+                        expansionKey="filtered"
+                        filter={folderFilterText}
+                    />
+                ) : effectiveActiveTab === RightSidebarTab.BULK_ACTIONS ? (
+                    <div className={styles.bulkActionButtons}>
+                        <UpdateFlaggedButton
+                            buttonFullWidth
+                            disabled={numberOfResults === 0}
+                        />
+                        <UpdateSeenButton
+                            buttonFullWidth
+                            disabled={numberOfResults === 0}
+                        />
+                        <AddTagsButton disabled={numberOfResults === 0} />
+                        <TranslationButton disabled={numberOfResults === 0} />
+                        <SummaryButton disabled={numberOfResults === 0} />
+                        <ImageDescriptionButton
+                            disabled={numberOfResults === 0}
+                        />
+                        <ReIndexButton disabled={numberOfResults === 0} />
+                        <UpdateHiddenButton
+                            buttonFullWidth
+                            disabled={numberOfResults === 0}
+                        />
+                        <CreateArchiveButton
+                            searchQuery={searchQuery}
+                            disabled={numberOfResults === 0}
+                        />
+                    </div>
+                ) : effectiveActiveTab === RightSidebarTab.FILE_DETAIL ? (
+                    highlightedFileId ? (
+                        <FileDetailPanel
+                            fileId={highlightedFileId}
+                            detailTab={lastFileDetailTab}
+                            isActive={effectiveIsOpen}
+                            compact
+                        />
+                    ) : (
+                        <Typography sx={{ p: 2, color: "text.secondary" }}>
+                            {t("toolbar.views.fileDetailEmpty")}
+                        </Typography>
+                    )
                 ) : (
                     <Chatbot />
                 )}

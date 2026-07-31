@@ -116,20 +116,20 @@
                 "description": "The toolbar gives you access to upload, folders, tags, saved queries, bulk actions, automatic actions, statistics, and document chat."
             },
             "activityBarLeft": {
-                "title": "Workspace tools",
-                "description": "These buttons open the left sidebar panels: upload files, browse by folder, manage tags, access saved queries, run bulk actions, and configure automatic actions."
+                "title": "Global tools",
+                "description": "These buttons open the <strong>left sidebar</strong>, which contains <strong>global</strong> views — tools that are independent of your current search query. Here you can upload files, browse the complete folder hierarchy, manage tags, access saved queries, and configure automatic actions."
             },
             "activityBarRight": {
-                "title": "Analysis & chat",
-                "description": "These buttons open the right panel. Use <strong>Statistics</strong> to explore distributions and charts for the active query, and <strong>Chat</strong> to ask questions about your documents using the AI assistant."
+                "title": "Query-scoped tools",
+                "description": "These buttons open the <strong>right sidebar</strong>, which contains <strong>query-scoped</strong> views — everything here reflects only the files that match your current search. Use <strong>Folder (filtered)</strong> to navigate matching files by path, <strong>Statistics</strong> to explore distributions and charts, <strong>Chat</strong> to ask the AI assistant questions about your results, and <strong>Bulk Actions</strong> to act on the entire result set."
             },
             "upload": {
                 "title": "Upload your files",
                 "description": "Click here to upload files directly from your computer. Loom also supports the S3 protocol — any file placed in the <strong>loom-intake</strong> bucket is automatically discovered, indexed, and made searchable. No manual steps needed."
             },
             "folders": {
-                "title": "Browse by folder",
-                "description": "Browse the folder structure of your indexed files. Filter visible folders by name, and see counts for total, unseen, and flagged documents. Clicking a folder makes it the active search filter."
+                "title": "Global folder view",
+                "description": "This is the <strong>global folder view</strong> — it always shows the complete folder hierarchy of all indexed files, regardless of the current search query. Use it to navigate your full archive at any time."
             },
             "folderTreeNode": {
                 "title": "Folder node counts",
@@ -155,9 +155,13 @@
                 "title": "Automate result review",
                 "description": "Automatic actions run when you open or interact with a result. Configure whether Loom marks it seen, flags it, translates it, summarizes it, describes its images, or triggers reindexing — so routine tasks happen without manual steps."
             },
+            "filteredFolder": {
+                "title": "Filtered folder view",
+                "description": "The filtered folder view shows only folders and files matching your current query — a query-scoped companion to the global folder view on the left. The tree resets with each new search."
+            },
             "statistics": {
                 "title": "Analyze the result set",
-                "description": "Choose metadata dimensions to view distributions and grouped histograms for the active query. Selecting chart segments or ranges adds those values as search filters."
+                "description": "Open statistics to explore metadata distributions and grouped histograms for the active query. Selecting chart segments or dragging ranges adds them as search filters."
             },
             "statisticsPieChart": {
                 "title": "Distribution pie chart",
@@ -169,7 +173,11 @@
             },
             "chat": {
                 "title": "Ask across your documents",
-                "description": "Document chat answers questions using the current query result set. Source references in an answer link back to the supporting documents so you can inspect them directly."
+                "description": "Document chat answers questions across the current result set. Source references link back to the supporting documents so you can inspect them directly."
+            },
+            "fileDetail": {
+                "title": "File Detail",
+                "description": "The File Detail panel shows metadata and content for whichever file is currently highlighted. Its content is also query-scoped: highlights, translations, and summaries reflect the active search query."
             },
             "processingStatus": {
                 "title": "Monitor processing health",
@@ -192,22 +200,16 @@
     "demoMode": {
         "indicator": "DEMO",
         "title": "Interactive Demo",
-        "introduction": "This is a browser-only preview of Loom using a curated set of sample documents. No backend is required — everything runs in your browser.",
-        "capabilities": {
-            "title": "What's available",
-            "search": "Search with Loom's query syntax and explore folders, statistics, metadata, previews, and downloads.",
-            "organize": "Tag, flag, hide, and mark documents as seen, or create and download demo archives.",
-            "automation": "Try simulated summarization, translation, image descriptions, reindexing, and document chat."
-        },
-        "limitations": {
-            "title": "Limitations",
-            "backend": "File uploads, archive imports, service dashboards, and task details are unavailable.",
-            "reset": "Changes reset on page reload."
+        "introduction": "A browser-only preview of Loom using a curated set of sample documents. No backend needed.",
+        "limitations": "File uploads, imports, and backend services are unavailable. Changes reset on reload.",
+        "tour": {
+            "title": "New here?",
+            "description": "The guided tour covers search, results, sidebar tools, and more. It takes just a few minutes."
         },
         "startExploring": "Start exploring",
         "repository": {
             "prompt": "Want to run Loom with your own documents?",
-            "action": "View Loom on GitLab"
+            "action": "View on GitLab"
         },
         "unavailable": {
             "archiveImport": "Archive imports aren't available in demo mode. Use a full Loom deployment to import Loom archives.",
@@ -439,7 +441,8 @@
         "flaggedCountTooltip": "Flagged files in this folder",
         "fileCountTooltip": "Total files in this folder",
         "filterResultsLimitNote": "Showing first {{limit}} results — refine your filter to narrow down",
-        "loadMore": "Load more"
+        "loadMore": "Load more",
+        "filterPlaceholder": "Filter by filename"
     },
     "tags": {
         "addTag": "Add tag",
@@ -460,8 +463,11 @@
             "detailed": "Detailed",
             "table": "Table",
             "folder": "Folder",
+            "filteredFolder": "Folder (filtered)",
             "statistics": "Statistics",
-            "chatbot": "Chatbot"
+            "chatbot": "Chatbot",
+            "fileDetail": "File Detail",
+            "fileDetailEmpty": "Select a file to view its details."
         }
     },
     "emptySearch": {
@@ -519,7 +525,8 @@
             "nextCenterTab": "Next center tab",
             "prevTab": "Previous sub tab",
             "nextTab": "Next sub tab",
-            "openOrClose": "Open file details",
+            "openOrClose": "Open / close file details",
+            "open": "Open file details",
             "openBackground": "Open file details in background",
             "shiftClickNegate": "Negate clicked filter",
             "escapeAction": "Clear selection, search & sort, or close",

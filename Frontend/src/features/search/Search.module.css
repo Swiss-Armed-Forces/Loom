@@ -17,7 +17,7 @@
     flex-direction: column;
     flex: 1;
     overflow: hidden;
-    min-width: 0;
+    min-width: 320px;
 }
 
 .scrollArea {

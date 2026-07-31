@@ -488,9 +488,9 @@ export const useKeyboardNavigation = () => {
                     case "H":
                     case "ArrowLeft":
                         if (event.shiftKey) {
-                            handleTabNavigationDirection("left");
-                        } else {
                             handleCenterTabNavigation("left");
+                        } else {
+                            handleTabNavigationDirection("left");
                         }
                         event.preventDefault();
                         return;
@@ -498,10 +498,15 @@ export const useKeyboardNavigation = () => {
                     case "L":
                     case "ArrowRight":
                         if (event.shiftKey) {
-                            handleTabNavigationDirection("right");
-                        } else {
                             handleCenterTabNavigation("right");
+                        } else {
+                            handleTabNavigationDirection("right");
                         }
+                        event.preventDefault();
+                        return;
+                    case "i":
+                    case "I":
+                        dispatch(closeFileTabThunk(activeTabFileId));
                         event.preventDefault();
                         return;
                     case "Escape":
@@ -558,9 +563,9 @@ export const useKeyboardNavigation = () => {
                     case "h":
                     case "H":
                     case "ArrowLeft":
-                        if (event.shiftKey && highlightedFileId !== null) {
+                        if (!event.shiftKey && highlightedFileId !== null) {
                             handleSummaryTabNavigation("left");
-                        } else if (!event.shiftKey) {
+                        } else if (event.shiftKey) {
                             handleCenterTabNavigation("left");
                         }
                         event.preventDefault();
@@ -568,9 +573,9 @@ export const useKeyboardNavigation = () => {
                     case "l":
                     case "L":
                     case "ArrowRight":
-                        if (event.shiftKey && highlightedFileId !== null) {
+                        if (!event.shiftKey && highlightedFileId !== null) {
                             handleSummaryTabNavigation("right");
-                        } else if (!event.shiftKey) {
+                        } else if (event.shiftKey) {
                             handleCenterTabNavigation("right");
                         }
                         event.preventDefault();

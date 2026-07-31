@@ -34,16 +34,20 @@ export const FileAttachments = ({
     }, []);
 
     useEffect(() => {
-        if (
-            containerRef.current &&
-            parentRef.current &&
-            (attachments?.length ?? 0) > 1
-        ) {
-            const chipsWidth = containerRef.current.scrollWidth;
-            const parentWidth = parentRef.current.offsetWidth;
-            const maxAllowedWidth = parentWidth * maxWidthRatio;
-            setShouldCollapse(chipsWidth > maxAllowedWidth);
-        }
+        const parent = parentRef.current;
+        const container = containerRef.current;
+        if (!parent || !container || (attachments?.length ?? 0) <= 1) return;
+
+        const measure = () => {
+            const chipsWidth = container.scrollWidth;
+            const maxAllowed = parent.offsetWidth * maxWidthRatio;
+            setShouldCollapse(chipsWidth > maxAllowed);
+        };
+
+        measure();
+        const ro = new ResizeObserver(measure);
+        ro.observe(parent);
+        return () => ro.disconnect();
     }, [attachments, maxWidthRatio]);
 
     const handleOpenDirect = useCallback(
