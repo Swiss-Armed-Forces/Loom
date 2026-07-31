@@ -31,6 +31,10 @@
             "skip": "Skip Tour"
         },
         "steps": {
+            "incrementalWelcome": {
+                "title": "Welcome back",
+                "description": "Here are the new features added since your last visit. This short tour will show you what's changed."
+            },
             "welcome": {
                 "title": "Welcome to Loom",
                 "description": "Loom is a document search and review workspace. It can index, OCR, tag, flag, translate, and summarize your files — all in one place. This short tour will walk you through the main tools."
