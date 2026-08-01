@@ -8,7 +8,7 @@ import {
     useState,
 } from "react";
 import { useTranslation } from "react-i18next";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 
 import { useAppDispatch, useAppSelector } from "@app/hooks";
 import { selectFiles, updateQuery } from "@app/slices/searchSlice";
@@ -33,6 +33,9 @@ import {
 } from "./types";
 import { useDriverTour } from "./useDriverTour";
 
+const isLoomPage = (pathname: string): boolean =>
+    pathname === "/search" || pathname === "/archives";
+
 interface TourProviderProps {
     children: ReactNode;
 }
@@ -50,6 +53,7 @@ export const TourProvider = ({ children }: TourProviderProps) => {
     const files = useAppSelector(selectFiles);
     const isMobile = useMediaQuery("(max-width:600px)");
     const location = useLocation();
+    const navigate = useNavigate();
     const {
         i18n,
         ready: englishCopyReady,
@@ -151,6 +155,15 @@ export const TourProvider = ({ children }: TourProviderProps) => {
     }, []);
     const handleStepNext = useCallback(
         async (stepId: string): Promise<boolean> => {
+            if (stepId === "header-archives-tab") {
+                navigate("/archives");
+                return true;
+            }
+            if (stepId === "conclusion") {
+                dispatch(updateQuery({ query: "", sortField: null }));
+                navigate("/search");
+                return true;
+            }
             if (stepId !== "search-all") return true;
             try {
                 const result = await dispatch(
@@ -169,7 +182,7 @@ export const TourProvider = ({ children }: TourProviderProps) => {
                 return false;
             }
         },
-        [dispatch],
+        [dispatch, navigate],
     );
     const { dismiss, isActive, start } = useDriverTour(
         persistOutcome,
@@ -229,17 +242,34 @@ export const TourProvider = ({ children }: TourProviderProps) => {
             mode: TourMode,
             requestId: number,
             automatic: boolean,
-        ): Promise<void> => {
+        ): Promise<boolean> => {
             const eligibleSteps = filterTourSteps(steps, isMobile);
-            if (eligibleSteps.length === 0) return;
+            if (eligibleSteps.length === 0) return true;
+            // For automatic incremental tours, defer if every eligible step
+            // requires a pathname that doesn't match the current one.
+            if (automatic && mode === "incremental") {
+                const currentPathname = pathnameRef.current;
+                const hasReachableStep = eligibleSteps.some((step) => {
+                    const requiredPathname =
+                        step.requiresPathname ??
+                        (step.preparation === "search-results"
+                            ? "/search"
+                            : undefined);
+                    return (
+                        !requiredPathname ||
+                        requiredPathname === currentPathname
+                    );
+                });
+                if (!hasReachableStep) return false;
+            }
             if (
                 mode === "incremental" &&
                 !(await prepareIncrementalTour(eligibleSteps))
             ) {
-                return;
+                return false;
             }
-            if (requestId !== startRequestRef.current) return;
-            if (automatic && pathnameRef.current !== "/search") return;
+            if (requestId !== startRequestRef.current) return true;
+            if (automatic && !isLoomPage(pathnameRef.current)) return false;
             start({
                 mode,
                 steps:
@@ -247,6 +277,7 @@ export const TourProvider = ({ children }: TourProviderProps) => {
                         ? [INCREMENTAL_TOUR_INTRO_STEP, ...eligibleSteps]
                         : eligibleSteps,
             });
+            return true;
         },
         [isMobile, prepareIncrementalTour, start],
     );
@@ -278,8 +309,8 @@ export const TourProvider = ({ children }: TourProviderProps) => {
     }, [cancelPendingPreparation, dismiss]);
 
     useEffect(() => {
-        if (location.pathname !== "/search") {
-            cancelPendingPreparation();
+        cancelPendingPreparation();
+        if (!isLoomPage(location.pathname)) {
             startRequestRef.current += 1;
         }
     }, [cancelPendingPreparation, location.pathname]);
@@ -294,7 +325,7 @@ export const TourProvider = ({ children }: TourProviderProps) => {
 
     useEffect(() => {
         if (
-            location.pathname !== "/search" ||
+            !isLoomPage(location.pathname) ||
             automaticStartAttemptedRef.current ||
             !stepHashes
         ) {
@@ -320,9 +351,12 @@ export const TourProvider = ({ children }: TourProviderProps) => {
 
         return startWhenDialogsClose(() => {
             if (automaticStartAttemptedRef.current) return;
-            automaticStartAttemptedRef.current = true;
             const requestId = ++startRequestRef.current;
-            void startConfiguredTour(steps, mode, requestId, true);
+            void startConfiguredTour(steps, mode, requestId, true).then(
+                (attempted) => {
+                    if (attempted) automaticStartAttemptedRef.current = true;
+                },
+            );
         });
     }, [location.pathname, startConfiguredTour, stepHashes]);
 

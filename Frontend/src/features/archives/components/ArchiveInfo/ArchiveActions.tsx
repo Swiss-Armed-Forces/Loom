@@ -59,6 +59,7 @@ export const ArchiveActions = ({ archive }: ArchiveActions) => {
                         color="inherit"
                         aria-label="menu"
                         onClick={handleMenuOpen}
+                        data-tour="archive-download-button"
                     >
                         <MenuIcon />
                     </IconButton>
@@ -130,6 +131,7 @@ export const ArchiveActions = ({ archive }: ArchiveActions) => {
                         rel="noopener noreferrer"
                         title={t("tableView.actions.download")}
                         disabled={!hasPlainFile}
+                        data-tour="archive-download-button"
                         sx={{
                             "&:hover": {
                                 backgroundColor: "action.hover",

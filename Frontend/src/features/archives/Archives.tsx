@@ -6,6 +6,7 @@ import { useAppDispatch } from "@app/hooks";
 import { fillArchives } from "@app/slices/archiveSlice";
 
 import styles from "./Archives.module.css";
+import { ArchivesActivityBar } from "./components/ArchivesActivityBar/ArchivesActivityBar";
 import { TableView } from "./views/TableView";
 
 export const Archives = () => {
@@ -22,19 +23,22 @@ export const Archives = () => {
         });
 
     return (
-        <Container className={styles.archivesContainer} maxWidth={false}>
-            <div
-                className={styles.archivesContent}
-                style={{
-                    width: smallMatchMedia
-                        ? "100%"
-                        : matchMedia
-                          ? "95%"
-                          : "80%",
-                }}
-            >
-                <TableView />
-            </div>
-        </Container>
+        <div className={styles.archivesWrapper}>
+            <ArchivesActivityBar />
+            <Container className={styles.archivesContainer} maxWidth={false}>
+                <div
+                    className={styles.archivesContent}
+                    style={{
+                        width: smallMatchMedia
+                            ? "100%"
+                            : matchMedia
+                              ? "95%"
+                              : "80%",
+                    }}
+                >
+                    <TableView />
+                </div>
+            </Container>
+        </div>
     );
 };

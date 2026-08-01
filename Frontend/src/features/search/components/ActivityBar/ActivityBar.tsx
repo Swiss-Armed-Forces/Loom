@@ -37,6 +37,8 @@ import {
 } from "@app/slices/searchSlice";
 import { getTourLeftPanel, getTourRightTab } from "@app/tours/tourScene";
 import { useTour } from "@app/tours/useTour";
+import { ActivityBarLayout } from "@features/common/components/ActivityBar/ActivityBarLayout";
+import activityBarStyles from "@features/common/components/ActivityBar/ActivityBarLayout.module.css";
 import { UploadFileButton } from "@features/search/components/FileActionButtons";
 
 import { availableCustomQueryIcons } from "../CustomQueries/AddCustomQueryDialog";
@@ -215,108 +217,112 @@ export const ActivityBar = () => {
         );
     }
 
-    return (
-        <div className={styles.activityBar} data-tour="activity-bar">
-            <div className={styles.topSection} data-tour="activity-bar-left">
+    const topContent = (
+        <>
+            <Tooltip
+                title={t("uploadFileDialog.uploadButton")}
+                placement="right"
+            >
+                <span data-tour="upload">
+                    <UploadFileButton iconOnly />
+                </span>
+            </Tooltip>
+            {leftPanelButtons.map(({ panel, icon, label }) => (
+                <Tooltip key={panel} title={label} placement="right">
+                    <IconButton
+                        className={`${activityBarStyles.iconButton} ${effectiveLeftPanel === panel ? activityBarStyles.active : ""}`}
+                        onClick={() => handleLeftClick(panel)}
+                        size="medium"
+                        color={
+                            effectiveLeftPanel === panel ? "primary" : "default"
+                        }
+                    >
+                        {icon}
+                    </IconButton>
+                </Tooltip>
+            ))}
+        </>
+    );
+
+    const bottomContent = (
+        <>
+            {visibleNewMatchQueries.map((q) => {
+                const icon = availableCustomQueryIcons.find(
+                    (ac) => ac.key === q.icon,
+                )?.icon ?? <Policy />;
+                return (
+                    <Tooltip key={q.name} title={q.name} placement="right">
+                        <IconButton
+                            className={activityBarStyles.iconButton}
+                            size="medium"
+                            onClick={() => {
+                                dispatch(markCustomQueryAsRead(q));
+                                dispatch(
+                                    updateQuery({
+                                        ...q.query,
+                                        id: undefined,
+                                    }),
+                                );
+                                dispatch(
+                                    setLeftSidebarPanel(
+                                        LeftSidebarPanel.QUERIES,
+                                    ),
+                                );
+                                dispatch(setHighlightedQueryId(q.id));
+                            }}
+                        >
+                            <Badge color="primary" variant="dot">
+                                {icon}
+                            </Badge>
+                        </IconButton>
+                    </Tooltip>
+                );
+            })}
+            {hiddenNewMatchCount > 0 && (
                 <Tooltip
-                    title={t("uploadFileDialog.uploadButton")}
+                    title={`${hiddenNewMatchCount} more new matches`}
                     placement="right"
                 >
-                    <span data-tour="upload">
-                        <UploadFileButton iconOnly />
-                    </span>
-                </Tooltip>
-                {leftPanelButtons.map(({ panel, icon, label }) => (
-                    <Tooltip key={panel} title={label} placement="right">
-                        <IconButton
-                            className={`${styles.iconButton} ${effectiveLeftPanel === panel ? styles.active : ""}`}
-                            onClick={() => handleLeftClick(panel)}
-                            size="medium"
-                            color={
-                                effectiveLeftPanel === panel
-                                    ? "primary"
-                                    : "default"
-                            }
-                        >
-                            {icon}
-                        </IconButton>
-                    </Tooltip>
-                ))}
-            </div>
-            <div
-                className={styles.bottomSection}
-                data-tour="activity-bar-right"
-            >
-                {visibleNewMatchQueries.map((q) => {
-                    const icon = availableCustomQueryIcons.find(
-                        (ac) => ac.key === q.icon,
-                    )?.icon ?? <Policy />;
-                    return (
-                        <Tooltip key={q.name} title={q.name} placement="right">
-                            <IconButton
-                                className={styles.iconButton}
-                                size="medium"
-                                onClick={() => {
-                                    dispatch(markCustomQueryAsRead(q));
-                                    dispatch(
-                                        updateQuery({
-                                            ...q.query,
-                                            id: undefined,
-                                        }),
-                                    );
-                                    dispatch(
-                                        setLeftSidebarPanel(
-                                            LeftSidebarPanel.QUERIES,
-                                        ),
-                                    );
-                                    dispatch(setHighlightedQueryId(q.id));
-                                }}
-                            >
-                                <Badge color="primary" variant="dot">
-                                    {icon}
-                                </Badge>
-                            </IconButton>
-                        </Tooltip>
-                    );
-                })}
-                {hiddenNewMatchCount > 0 && (
-                    <Tooltip
-                        title={`${hiddenNewMatchCount} more new matches`}
-                        placement="right"
+                    <IconButton
+                        className={activityBarStyles.iconButton}
+                        size="medium"
+                        disabled
                     >
-                        <IconButton
-                            className={styles.iconButton}
-                            size="medium"
-                            disabled
-                        >
-                            <MoreHoriz />
-                        </IconButton>
-                    </Tooltip>
-                )}
-                {newMatchQueries.length > 0 && (
-                    <Divider
-                        flexItem
-                        sx={{ width: "60%", alignSelf: "center", my: 0.5 }}
-                    />
-                )}
-                {rightPanelButtons.map(({ tab, icon, label, dataTour }) => (
-                    <Tooltip key={tab} title={label} placement="right">
-                        <IconButton
-                            className={`${styles.iconButton} ${effectiveRightOpen && effectiveRightTab === tab ? styles.active : ""}`}
-                            onClick={() => handleRightClick(tab)}
-                            size="medium"
-                            color={
-                                effectiveRightOpen && effectiveRightTab === tab
-                                    ? "primary"
-                                    : "default"
-                            }
-                            {...(dataTour ? { "data-tour": dataTour } : {})}
-                        >
-                            {icon}
-                        </IconButton>
-                    </Tooltip>
-                ))}
-            </div>
-        </div>
+                        <MoreHoriz />
+                    </IconButton>
+                </Tooltip>
+            )}
+            {newMatchQueries.length > 0 && (
+                <Divider
+                    flexItem
+                    sx={{ width: "60%", alignSelf: "center", my: 0.5 }}
+                />
+            )}
+            {rightPanelButtons.map(({ tab, icon, label, dataTour }) => (
+                <Tooltip key={tab} title={label} placement="right">
+                    <IconButton
+                        className={`${activityBarStyles.iconButton} ${effectiveRightOpen && effectiveRightTab === tab ? activityBarStyles.active : ""}`}
+                        onClick={() => handleRightClick(tab)}
+                        size="medium"
+                        color={
+                            effectiveRightOpen && effectiveRightTab === tab
+                                ? "primary"
+                                : "default"
+                        }
+                        {...(dataTour ? { "data-tour": dataTour } : {})}
+                    >
+                        {icon}
+                    </IconButton>
+                </Tooltip>
+            ))}
+        </>
+    );
+
+    return (
+        <ActivityBarLayout
+            top={topContent}
+            bottom={bottomContent}
+            dataTour="activity-bar"
+        />
     );
 };

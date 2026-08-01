@@ -10,6 +10,8 @@ import { SearchQueryField } from "@features/common/utils/enums";
 import { updateFieldOfQuery } from "@features/common/utils/helpers";
 import { FileActions } from "@features/search/components";
 
+import { TagsList } from "../TagsList/TagsList";
+
 import { ClickableFilePath } from "./ClickableFilePath";
 import { FileAttachments } from "./FileAttachments";
 import { FileAvatar } from "./FileAvatar";
@@ -44,7 +46,7 @@ export const FileCardHeader = ({
     const { t } = useTranslation();
     const searchQuery = useAppSelector(selectQuery);
     const headerRef = useRef<HTMLDivElement>(null);
-    const [headerWidth, setHeaderWidth] = useState(Infinity);
+    const [headerWidth, setHeaderWidth] = useState(0);
 
     useEffect(() => {
         const el = headerRef.current;
@@ -229,11 +231,23 @@ export const FileCardHeader = ({
                 </Box>
             }
             subheader={
-                <Box sx={{ display: "flex", alignItems: "center" }}>
-                    <FileAttachments
-                        attachments={filePreview.attachments}
-                        totalCount={filePreview.attachmentsTotalCount}
-                    />
+                <Box
+                    sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}
+                >
+                    <Box sx={{ display: "flex", alignItems: "center" }}>
+                        <FileAttachments
+                            attachments={filePreview.attachments}
+                            totalCount={filePreview.attachmentsTotalCount}
+                        />
+                    </Box>
+                    {isCompact && (
+                        <Box data-tour="result-card-tags">
+                            <TagsList
+                                tags={filePreview.tags || []}
+                                filePreview={filePreview}
+                            />
+                        </Box>
+                    )}
                 </Box>
             }
             action={

@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import { useTranslation } from "react-i18next";
 
+import { startCliDemoAnimation } from "./cliDemoAnimation";
 import { filterTourSteps } from "./responsive";
 import { resolveAvailableTourStep, targetExists } from "./targets";
 import {
@@ -54,6 +55,7 @@ export const useDriverTour = (
             let driverInstance: Driver | null = null;
             let finalized = false;
             let stepActionPending = false;
+            let stopCliAnimation: (() => void) | null = null;
             const finalize = (
                 outcome: TourOutcome,
                 reason: TourEndReason,
@@ -236,7 +238,7 @@ export const useDriverTour = (
                     steps: driveSteps,
                     waitForElement: 1_000,
                     onPopoverRender: (
-                        { closeButton, footerButtons },
+                        { closeButton, description, footerButtons },
                         { index },
                     ) => {
                         closeButton.setAttribute(
@@ -244,6 +246,24 @@ export const useDriverTour = (
                             t("tour.controls.close"),
                         );
                         closeButton.title = t("tour.controls.close");
+
+                        stopCliAnimation?.();
+                        stopCliAnimation = null;
+                        if (steps[index ?? -1]?.id === "archive-cli-demo") {
+                            const container =
+                                description.querySelector<HTMLElement>(
+                                    "[data-loom-cli-demo]",
+                                );
+                            if (
+                                container !== null &&
+                                !window.matchMedia(
+                                    "(prefers-reduced-motion: reduce)",
+                                ).matches
+                            ) {
+                                stopCliAnimation =
+                                    startCliDemoAnimation(container);
+                            }
+                        }
 
                         if (!steps[index ?? -1]?.showSkipButton) return;
 
@@ -261,7 +281,11 @@ export const useDriverTour = (
                         footerButtons.prepend(skipButton);
                     },
                     onCloseClick: dismissCurrentTour,
-                    onDestroyed: () => finalize("dismissed", "user-dismissed"),
+                    onDestroyed: () => {
+                        stopCliAnimation?.();
+                        stopCliAnimation = null;
+                        finalize("dismissed", "user-dismissed");
+                    },
                 });
 
                 driverRef.current = driverInstance;

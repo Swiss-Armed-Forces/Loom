@@ -60,9 +60,7 @@ def get_encryption_key() -> EncryptionKeyResponse:
     master_key = settings.archive_enc_master_key
     if master_key is None:
         return EncryptionKeyResponse(encryption_key=None)
-    return EncryptionKeyResponse(
-        encryption_key=master_key.key.get_secret_value().decode()
-    )
+    return EncryptionKeyResponse(encryption_key=master_key.key.get_secret_value().hex())
 
 
 @router.get("")

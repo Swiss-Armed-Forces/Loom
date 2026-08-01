@@ -12,6 +12,7 @@ const LEFT_PANEL_BY_STEP: Partial<Record<string, LeftSidebarPanel>> = {
 const RIGHT_TAB_BY_STEP: Partial<Record<string, RightSidebarTab>> = {
     "statistics-pie-chart": RightSidebarTab.STATISTICS,
     "statistics-histogram": RightSidebarTab.STATISTICS,
+    "bulk-action-create-archive": RightSidebarTab.BULK_ACTIONS,
 };
 
 export const getTourLeftPanel = (
