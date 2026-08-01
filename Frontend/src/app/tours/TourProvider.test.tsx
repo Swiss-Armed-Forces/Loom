@@ -197,7 +197,7 @@ const TourViewHarness = () => {
                 File processing status
             </div>
             <div data-tour="result-card">Result card</div>
-            <div data-tour="navigation">Navigation</div>
+            <div data-tour="archives-tab">Archives tab</div>
             <div data-tour="menu">Menu</div>
         </>
     );
@@ -279,7 +279,7 @@ describe("TourProvider", () => {
     it("introduces only the steps whose copy hash changed", async () => {
         window.localStorage.setItem(
             TOUR_STORAGE_KEY,
-            JSON.stringify(tourStateWithChangedSteps("navigation")),
+            JSON.stringify(tourStateWithChangedSteps("header-archives-tab")),
         );
 
         renderProvider(<TourViewHarness />);
@@ -293,7 +293,7 @@ describe("TourProvider", () => {
             "tour.steps.incrementalWelcome.title",
         );
         expect(capturedConfig.steps?.[1].element).toBe(
-            '[data-tour="navigation"]',
+            '[data-tour="archives-tab"]',
         );
 
         await act(async () => {
@@ -327,9 +327,9 @@ describe("TourProvider", () => {
             window.localStorage.getItem(TOUR_STORAGE_KEY)!,
         );
         expect(stored.introductionOutcome).toBe("completed");
-        expect(stored.acknowledgedStepHashes.navigation).toEqual([
-            "old-hash-navigation",
-            "hash-navigation",
+        expect(stored.acknowledgedStepHashes["header-archives-tab"]).toEqual([
+            "old-hash-header-archives-tab",
+            "hash-header-archives-tab",
         ]);
     });
 
@@ -716,29 +716,6 @@ describe("TourProvider", () => {
         expect(capturedConfig.steps).toHaveLength(GLOBAL_TOUR_STEPS.length);
     });
 
-    it("keeps desktop-only changed copy unacknowledged on mobile", async () => {
-        mockIsMobile.current = true;
-        const storedState = tourStateWithChangedSteps("result-card-path");
-        window.localStorage.setItem(
-            TOUR_STORAGE_KEY,
-            JSON.stringify(storedState),
-        );
-
-        renderProvider(<TourViewHarness />);
-
-        await waitFor(() =>
-            expect(mockCreateTourStepHashes).toHaveBeenCalled(),
-        );
-        await act(
-            () => new Promise((resolve) => window.setTimeout(resolve, 20)),
-        );
-        expect(mockDispatch).not.toHaveBeenCalled();
-        expect(
-            JSON.parse(window.localStorage.getItem(TOUR_STORAGE_KEY)!),
-        ).toEqual(storedState);
-        expect(mockedDriver).not.toHaveBeenCalled();
-    });
-
     it("starts a manual tour when copy hashing is unavailable", async () => {
         vi.mocked(createTourStepHashes).mockRejectedValue(
             new Error("hashing unavailable"),
@@ -984,31 +961,31 @@ describe("TourProvider", () => {
 
     it("does not acknowledge a required target that is missing", async () => {
         const navigationStep = GLOBAL_TOUR_STEPS.find(
-            ({ id }) => id === "navigation",
+            ({ id }) => id === "header-archives-tab",
         )!;
         const originalSkipIfMissing = navigationStep.skipIfMissing;
         navigationStep.skipIfMissing = false;
         const warn = vi
             .spyOn(console, "warn")
             .mockImplementation(() => undefined);
-        const storedState = tourStateWithChangedSteps("navigation");
+        const storedState = tourStateWithChangedSteps("header-archives-tab");
         window.localStorage.setItem(
             TOUR_STORAGE_KEY,
             JSON.stringify(storedState),
         );
 
         try {
-            renderProvider(<div>No navigation target</div>);
+            renderProvider(<div>No archives-tab target</div>);
 
             await waitFor(() =>
                 expect(warn).toHaveBeenCalledWith(
-                    expect.stringContaining("navigation"),
+                    expect.stringContaining("header-archives-tab"),
                 ),
             );
             expect(
                 JSON.parse(window.localStorage.getItem(TOUR_STORAGE_KEY)!)
-                    .acknowledgedStepHashes.navigation,
-            ).toEqual(["old-hash-navigation"]);
+                    .acknowledgedStepHashes["header-archives-tab"],
+            ).toEqual(["old-hash-header-archives-tab"]);
             expect(mockedDriver).not.toHaveBeenCalled();
         } finally {
             navigationStep.skipIfMissing = originalSkipIfMissing;

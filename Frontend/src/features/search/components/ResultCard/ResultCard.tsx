@@ -8,7 +8,6 @@ import {
     Skeleton,
     Typography,
 } from "@mui/material";
-import { useMediaQuery } from "@mui/material";
 import React, { useEffect, useLayoutEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { useInView } from "react-intersection-observer";
@@ -24,11 +23,7 @@ import {
 } from "@app/slices/searchSlice";
 import { webApiGetFileThumbnail } from "@features/common/urls";
 import { FileDetailTab } from "@features/common/utils/enums";
-import {
-    FileCardHeader,
-    HighlightList,
-    TagsList,
-} from "@features/search/components";
+import { FileCardHeader, HighlightList } from "@features/search/components";
 
 import styles from "./ResultCard.module.css";
 import { Summary } from "./Summary";
@@ -49,7 +44,6 @@ export const ResultCard = React.memo(
     }: ResultCardProps) => {
         const dispatch = useAppDispatch();
         const { t } = useTranslation();
-        const isMobile = useMediaQuery("(max-width:900px)");
         const searchQuery = useAppSelector(selectQuery);
         const file = useAppSelector(selectFileById(fileId));
         const filePreview = file?.preview;
@@ -222,14 +216,6 @@ export const ResultCard = React.memo(
                                             }
                                         />
                                     </Box>
-                                    {isMobile && (
-                                        <Box data-tour="result-card-tags">
-                                            <TagsList
-                                                tags={filePreview.tags || []}
-                                                filePreview={filePreview}
-                                            />
-                                        </Box>
-                                    )}
                                 </Box>
 
                                 {filePreview.thumbnailFileId && (

@@ -13,7 +13,7 @@ AES_SALT_LEN_BYTES = 32
 AES_NONCE_LEN_BYTES = 12
 AES_MAC_LEN = 16
 DEFAULT_ENCRYPTED_MAGIC_BYTES = b"LOOMENC"
-FIXED_AES_KEY = ("0" * 32).encode()
+FIXED_AES_KEY = b"\x00" * AES_KEY_LEN_BYTES
 
 
 class RandomSourceExhausted(Exception):
@@ -63,8 +63,8 @@ class AESMasterKey(BaseModel):
         return v
 
     @classmethod
-    def from_string(cls, key: str):
-        return cls(key=SecretBytes(key.encode()))
+    def from_string(cls, key: str) -> "AESMasterKey":
+        return cls(key=SecretBytes(bytes.fromhex(key)))
 
     @classmethod
     def from_random_source(cls, random_source: bytes | None = None):

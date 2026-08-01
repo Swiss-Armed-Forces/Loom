@@ -77,6 +77,7 @@ export interface DemoArchive {
     updatedAt: string;
     hidden: boolean;
     sha256: string;
+    sha256Encrypted: string;
     tasks?: TaskRecord[];
 }
 
@@ -86,7 +87,13 @@ export type DemoTask =
     | { kind: "image_description" }
     | { kind: "index" };
 
-const DEMO_ARCHIVE_SHA256 = "0".repeat(64);
+const randomHex = (bytes: number) =>
+    Array.from(crypto.getRandomValues(new Uint8Array(bytes)), (b) =>
+        b.toString(16).padStart(2, "0"),
+    ).join("");
+
+const DEMO_ARCHIVE_SHA256 = randomHex(32);
+const DEMO_ARCHIVE_SHA256_ENCRYPTED = randomHex(32);
 
 const ARCHIVE_CREATED_AT = new Date("2026-07-27T09:58:00Z");
 
@@ -160,6 +167,7 @@ const createInitialArchives = (): DemoArchive[] => [
         updatedAt: new Date().toISOString(),
         hidden: false,
         sha256: DEMO_ARCHIVE_SHA256,
+        sha256Encrypted: DEMO_ARCHIVE_SHA256_ENCRYPTED,
         tasks: createInitialArchiveTasks(),
     },
 ];
@@ -248,6 +256,7 @@ export const addArchive = (query: string): DemoArchive => {
         updatedAt: new Date().toISOString(),
         hidden: false,
         sha256: DEMO_ARCHIVE_SHA256,
+        sha256Encrypted: DEMO_ARCHIVE_SHA256_ENCRYPTED,
     };
     matchingDocuments.forEach((document) =>
         document.archiveIds.push(archive.id),

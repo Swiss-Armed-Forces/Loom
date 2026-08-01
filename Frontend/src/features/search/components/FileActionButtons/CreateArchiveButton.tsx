@@ -41,6 +41,7 @@ export const CreateArchiveButton = ({
                 onClick={handleClick}
                 disabled={disabled}
                 title={t("sideMenu.createArchive")}
+                data-tour="create-archive-button"
             >
                 <ArchiveOutlined />
             </IconButton>
@@ -54,6 +55,7 @@ export const CreateArchiveButton = ({
             variant="contained"
             startIcon={<ArchiveOutlined />}
             fullWidth={true}
+            data-tour="create-archive-button"
         >
             <span className="btn-label">{t("sideMenu.createArchive")}</span>
         </Button>

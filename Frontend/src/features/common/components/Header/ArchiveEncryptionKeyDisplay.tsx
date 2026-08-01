@@ -41,6 +41,7 @@ export const ArchiveEncryptionKeyDisplay = () => {
 
     return (
         <StyledInputBase
+            data-tour="encryption-key-display"
             startAdornment={
                 <Box
                     sx={{

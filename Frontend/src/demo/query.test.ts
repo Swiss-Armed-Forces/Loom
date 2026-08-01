@@ -12,7 +12,7 @@ const document = (
     content: "A small document",
     createdAt: uploadedAt,
     data: "A small document",
-    extension: "txt",
+    extension: ".txt",
     flagged: false,
     hidden: false,
     id: "11111111-1111-4111-8111-111111111111",

@@ -335,9 +335,9 @@ preInstall:
       memory: "200Mi"
   generateSecret:
     - name: archive-enc-master-key
-      size: 32
+      size: 64
       chars: "a-f0-9"
-      fixed: "00000000000000000000000000000000"
+      fixed: "0000000000000000000000000000000000000000000000000000000000000000"
 
 globalHttpRedirect:
   enabled: true

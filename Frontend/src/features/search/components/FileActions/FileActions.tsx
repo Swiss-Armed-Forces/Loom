@@ -168,37 +168,20 @@ export const FileActions = ({
             ...overflowActions.map(({ button }) => button),
         ];
         return (
-            <div className={styles.fileActions}>
-                <div
-                    ref={tagsRef}
-                    className={styles.tagsWrapper}
-                    data-tour="result-card-tags"
-                >
-                    <TagsList
-                        tags={filePreview.tags || []}
-                        filePreview={filePreview}
-                        maxVisible={maxVisibleTags}
-                    />
-                </div>
-                <div data-tour="result-card-actions">
-                    <IconButton onClick={handleMenuClick}>
-                        <MoreVert />
-                    </IconButton>
-                    <Menu
-                        anchorEl={anchorEl}
-                        open={open}
-                        onClose={handleMenuClose}
-                    >
-                        {allActions.map((button) => (
-                            <MenuItem
-                                key={(button as React.ReactElement).key}
-                                onClick={handleMenuClose}
-                            >
-                                {button}
-                            </MenuItem>
-                        ))}
-                    </Menu>
-                </div>
+            <div data-tour="result-card-actions">
+                <IconButton onClick={handleMenuClick}>
+                    <MoreVert />
+                </IconButton>
+                <Menu anchorEl={anchorEl} open={open} onClose={handleMenuClose}>
+                    {allActions.map((button) => (
+                        <MenuItem
+                            key={(button as React.ReactElement).key}
+                            onClick={handleMenuClose}
+                        >
+                            {button}
+                        </MenuItem>
+                    ))}
+                </Menu>
             </div>
         );
     }

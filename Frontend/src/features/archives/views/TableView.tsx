@@ -60,6 +60,7 @@ export const TableView = () => {
     if (isSmallScreen) {
         return (
             <Box
+                data-tour="archives-list"
                 sx={{
                     display: "flex",
                     flexDirection: "column",
@@ -160,7 +161,7 @@ export const TableView = () => {
     }
 
     return (
-        <Table className={styles.resultTable}>
+        <Table className={styles.resultTable} data-tour="archives-list">
             <TableHead>
                 <TableRow>
                     {!matchMedia ? (

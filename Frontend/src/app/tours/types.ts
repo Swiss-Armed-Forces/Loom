@@ -22,6 +22,7 @@ export interface TourStep {
     waitForElementMs?: number;
     skipIfMissing?: boolean;
     preparation?: TourPreparation;
+    requiresPathname?: string;
 }
 
 export type TourOutcome = "completed" | "dismissed";
