@@ -53,3 +53,28 @@
     display: flex;
     flex-direction: column;
 }
+
+.bulkActionButtons {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    padding: 0.75rem;
+}
+
+.filterBar {
+    display: flex;
+    align-items: center;
+    padding: 0.35rem 0.75rem;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.12);
+    flex-shrink: 0;
+}
+
+.filterInput {
+    width: 100%;
+    font-size: 0.8rem;
+}
+
+.filterIcon {
+    opacity: 0.5;
+    font-size: 1rem !important;
+}

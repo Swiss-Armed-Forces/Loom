@@ -31,6 +31,23 @@ def test_aes_master_key_from_random_source_optional():
     assert len(key.key.get_secret_value()) == AES_KEY_LEN_BYTES
 
 
+def test_aes_master_key_from_string():
+    hex_key = "ab" * AES_KEY_LEN_BYTES
+    key = AESMasterKey.from_string(hex_key)
+    assert key.key.get_secret_value() == bytes.fromhex(hex_key)
+    assert len(key.key.get_secret_value()) == AES_KEY_LEN_BYTES
+
+
+def test_aes_master_key_from_string_invalid_hex():
+    with pytest.raises(ValueError):
+        AESMasterKey.from_string("not-valid-hex" + "0" * 51)
+
+
+def test_aes_master_key_from_string_wrong_length():
+    with pytest.raises(ValueError):
+        AESMasterKey.from_string("ab" * (AES_KEY_LEN_BYTES - 1))
+
+
 def test_aes_master_key_from_fixed_key():
     key = AESMasterKey.from_fixed_key()
     assert key.key.get_secret_value() == FIXED_AES_KEY

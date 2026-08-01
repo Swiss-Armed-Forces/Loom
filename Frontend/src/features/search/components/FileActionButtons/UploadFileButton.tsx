@@ -30,6 +30,11 @@ export const UploadFileButton = ({
             <IconButton
                 onClick={handleClick}
                 title={t("uploadFileDialog.uploadButton")}
+                sx={{
+                    bgcolor: "primary.main",
+                    color: "primary.contrastText",
+                    "&:hover": { bgcolor: "primary.dark" },
+                }}
             >
                 <UploadFile />
             </IconButton>

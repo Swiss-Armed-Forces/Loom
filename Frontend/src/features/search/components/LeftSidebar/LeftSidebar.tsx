@@ -39,26 +39,14 @@ import {
     selectAutoActionsPreferences,
     selectHighlightedQueryId,
     selectLeftSidebarPanel,
-    selectQuery,
     selectTags,
-    selectTotalFiles,
     setAutoActionPreference,
     setLeftSidebarPanel,
     setTags,
 } from "@app/slices/searchSlice";
 import { getTourLeftPanel } from "@app/tours/tourScene";
 import { useTour } from "@app/tours/useTour";
-import {
-    ReIndexButton,
-    SummaryButton,
-    TranslationButton,
-    AddTagsButton,
-    UpdateFlaggedButton,
-    UpdateHiddenButton,
-    UpdateSeenButton,
-    CreateArchiveButton,
-    ImageDescriptionButton,
-} from "@features/search/components/FileActionButtons";
+import type { SearchQuery } from "@features/common/utils/model";
 import { TagsList } from "@features/search/components/TagsList/TagsList";
 import { FolderView } from "@features/search/views/Folder/FolderView";
 
@@ -66,11 +54,21 @@ import { CustomQueriesList } from "../CustomQueries/CustomQueries";
 
 import styles from "./LeftSidebar.module.css";
 
+const GLOBAL_FOLDER_QUERY: SearchQuery = {
+    id: null,
+    query: "*",
+    keepAlive: null,
+    sortField: null,
+    sortDirection: null,
+    sortId: null,
+    pageSize: null,
+};
+
 const TAGS_REFRESH_MS = 5_000;
 
 const MIN_WIDTH = 14 * 16;
 const DEFAULT_WIDTH = 20 * 16;
-const MAX_WIDTH = 40 * 16;
+const CENTER_MIN_WIDTH = 20 * 16;
 const WIDTH_STORAGE_KEY = "LEFT_SIDEBAR_WIDTH";
 
 const FILTERABLE_PANELS = new Set<LeftSidebarPanel>([
@@ -83,7 +81,11 @@ const loadWidth = (): number => {
     const stored = localStorage.getItem(WIDTH_STORAGE_KEY);
     if (stored) {
         const n = parseInt(stored, 10);
-        if (!isNaN(n) && n >= MIN_WIDTH && n <= MAX_WIDTH) return n;
+        const effectiveMax = Math.max(
+            MIN_WIDTH,
+            window.innerWidth - CENTER_MIN_WIDTH,
+        );
+        if (!isNaN(n) && n >= MIN_WIDTH) return Math.min(n, effectiveMax);
     }
     return DEFAULT_WIDTH;
 };
@@ -92,7 +94,6 @@ const PANEL_TITLES: Record<LeftSidebarPanel, string> = {
     [LeftSidebarPanel.FOLDER]: "toolbar.views.folder",
     [LeftSidebarPanel.TAGS]: "sideMenu.tags",
     [LeftSidebarPanel.QUERIES]: "sideMenu.savedQueries.title",
-    [LeftSidebarPanel.BULK_ACTIONS]: "sideMenu.bulkActions",
     [LeftSidebarPanel.AUTO_ACTIONS]: "sideMenu.autoActions.title",
 };
 
@@ -112,8 +113,6 @@ export const LeftSidebar = () => {
     const tourPanel = getTourLeftPanel(isTourActive, activeTourStepId);
     const effectiveActivePanel =
         tourPanel !== undefined ? tourPanel : activePanel;
-    const numberOfResults = useAppSelector(selectTotalFiles);
-    const searchQuery = useAppSelector(selectQuery);
     const tags = useAppSelector(selectTags);
     const preferences = useAppSelector(selectAutoActionsPreferences);
     const highlightedQueryId = useAppSelector(selectHighlightedQueryId);
@@ -169,11 +168,15 @@ export const LeftSidebar = () => {
         e.preventDefault();
         const startX = e.clientX;
         const startWidth = widthRef.current;
+        const effectiveMax = Math.max(
+            MIN_WIDTH,
+            window.innerWidth - CENTER_MIN_WIDTH,
+        );
         setIsDragging(true);
 
         const onMouseMove = (ev: MouseEvent) => {
             const newWidth = Math.min(
-                MAX_WIDTH,
+                effectiveMax,
                 Math.max(MIN_WIDTH, startWidth + ev.clientX - startX),
             );
             widthRef.current = newWidth;
@@ -234,7 +237,13 @@ export const LeftSidebar = () => {
     const renderPanelContent = () => {
         switch (effectiveActivePanel) {
             case LeftSidebarPanel.FOLDER:
-                return <FolderView filter={filterText} />;
+                return (
+                    <FolderView
+                        filter={filterText}
+                        searchQuery={GLOBAL_FOLDER_QUERY}
+                        persistExpansion={true}
+                    />
+                );
             case LeftSidebarPanel.TAGS:
                 return (
                     <div className={styles.tagListContainer}>
@@ -248,34 +257,6 @@ export const LeftSidebar = () => {
                         filter={filterText}
                         highlightedQueryId={highlightedQueryId}
                     />
-                );
-            case LeftSidebarPanel.BULK_ACTIONS:
-                return (
-                    <div className={styles.bulkActionButtons}>
-                        <UpdateFlaggedButton
-                            buttonFullWidth
-                            disabled={numberOfResults === 0}
-                        />
-                        <UpdateSeenButton
-                            buttonFullWidth
-                            disabled={numberOfResults === 0}
-                        />
-                        <AddTagsButton disabled={numberOfResults === 0} />
-                        <TranslationButton disabled={numberOfResults === 0} />
-                        <SummaryButton disabled={numberOfResults === 0} />
-                        <ImageDescriptionButton
-                            disabled={numberOfResults === 0}
-                        />
-                        <ReIndexButton disabled={numberOfResults === 0} />
-                        <UpdateHiddenButton
-                            buttonFullWidth
-                            disabled={numberOfResults === 0}
-                        />
-                        <CreateArchiveButton
-                            searchQuery={searchQuery}
-                            disabled={numberOfResults === 0}
-                        />
-                    </div>
                 );
             case LeftSidebarPanel.AUTO_ACTIONS:
                 return (

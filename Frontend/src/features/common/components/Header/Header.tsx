@@ -17,7 +17,6 @@ import { BurgerMenu } from "./BurgerMenu";
 import { GlobalSearchBox } from "./GlobalSearchBox";
 import styles from "./Header.module.css";
 import { getHeaderStripeConfig } from "./headerStripe";
-import { ImportArchiveButton } from "./ImportArchiveButton";
 
 const TooltipTab = forwardRef<
     HTMLDivElement,
@@ -102,7 +101,6 @@ export const Header = () => {
                         style={{ flex: 1 }}
                     />
                 )}
-                {location.pathname === "/archives" && <ImportArchiveButton />}
                 <BackgroundStatusIndicator />
 
                 <Box className={styles.headerButtons}>
@@ -137,6 +135,9 @@ export const Header = () => {
                                 value={`/${page.route}`}
                                 component={Link}
                                 to={`/${page.route}`}
+                                {...(page.route === "archives"
+                                    ? { "data-tour": "archives-tab" }
+                                    : {})}
                             />
                         ))}
                     </Tabs>

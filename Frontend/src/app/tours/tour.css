@@ -9,6 +9,14 @@
     color: var(--mui-palette-text-primary);
 }
 
+.driver-popover.loom-tour-popover .driver-popover-description code {
+    background-color: var(--mui-palette-action-selected);
+    border-radius: 3px;
+    font-family: monospace;
+    font-size: 0.85em;
+    padding: 0.1em 0.35em;
+}
+
 .driver-popover.loom-tour-popover .driver-popover-description,
 .driver-popover.loom-tour-popover .driver-popover-progress-text,
 .driver-popover.loom-tour-popover .driver-popover-close-btn {
@@ -44,6 +52,23 @@
     .driver-popover.loom-tour-popover {
         max-width: calc(100vw - 1rem);
     }
+}
+
+.driver-popover.loom-tour-popover
+    .driver-popover-description
+    .loom-tour-terminal {
+    background-color: #1e1e1e;
+    border-radius: 4px;
+    color: #d4d4d4;
+    font-family: monospace;
+    font-size: 0.76em;
+    line-height: 1.55;
+    margin: 0.6em 0 0;
+    max-height: 9rem;
+    overflow-x: auto;
+    overflow-y: auto;
+    padding: 0.6em 0.8em;
+    white-space: pre;
 }
 
 @media (prefers-reduced-motion: reduce) {

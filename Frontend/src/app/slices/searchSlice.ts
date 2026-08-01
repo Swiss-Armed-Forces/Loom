@@ -45,7 +45,6 @@ export const LeftSidebarPanel = {
     FOLDER: "folder",
     TAGS: "tags",
     QUERIES: "queries",
-    BULK_ACTIONS: "bulk_actions",
     AUTO_ACTIONS: "auto_actions",
 } as const;
 
@@ -53,8 +52,11 @@ export type LeftSidebarPanel =
     (typeof LeftSidebarPanel)[keyof typeof LeftSidebarPanel];
 
 export const RightSidebarTab = {
+    BULK_ACTIONS: "bulk_actions",
+    FOLDER: "folder_scoped",
     STATISTICS: "statistics",
     CHAT: "chat",
+    FILE_DETAIL: "file_detail",
 } as const;
 
 export type RightSidebarTab =
@@ -141,6 +143,7 @@ export interface SearchState {
     highlightScrollMode: "smart" | "top";
     suppressDownloadWarning: boolean;
     folderViewExpandedNodes: string[];
+    filteredFolderViewExpandedNodes: string[];
     pendingFullscreenFileId: string | null;
 }
 
@@ -205,6 +208,7 @@ const initialState: SearchState = {
     temporaryFileId: null,
     suppressDownloadWarning: false,
     folderViewExpandedNodes: [],
+    filteredFolderViewExpandedNodes: [],
     pendingFullscreenFileId: null,
     ...persistedState,
     // Restore the last query (text + sort) so stale data renders immediately.
@@ -224,6 +228,7 @@ export const updateQuery = createAsyncThunk(
         const lastQuery = search.query;
 
         const queryId = query.id ?? (await getLongRunningQuery()).queryId;
+        if (thunkAPI.signal.aborted) return;
         const queryQuery = query.query ?? lastQuery?.query ?? "";
 
         if (!queryQuery.trim()) {
@@ -244,6 +249,23 @@ export const updateQuery = createAsyncThunk(
             pageSize: query.pageSize ?? null,
         };
         const queryIdChanged = lastQuery?.id !== queryId;
+        let querySubscriptionActive = queryIdChanged;
+        const cleanupQuerySubscription = () => {
+            if (!querySubscriptionActive) return;
+            querySubscriptionActive = false;
+            dispatch(
+                webSocketSendMessage({
+                    message: {
+                        type: "unsubscribe",
+                        channels: [queryId],
+                    },
+                }),
+            );
+        };
+        const handleAbort = () => {
+            cleanupQuerySubscription();
+            dispatch(stopLoadingIndicator());
+        };
 
         dispatch(startLoadingIndicator());
 
@@ -257,11 +279,13 @@ export const updateQuery = createAsyncThunk(
                 }),
             );
         }
+        thunkAPI.signal.addEventListener("abort", handleAbort, { once: true });
         try {
             const [searchRes, countRes] = await Promise.all([
                 searchFiles(newQuery),
                 getFilesCount(newQuery),
             ]);
+            if (thunkAPI.signal.aborted) return;
 
             if (queryIdChanged && lastQuery?.id) {
                 dispatch(
@@ -276,16 +300,8 @@ export const updateQuery = createAsyncThunk(
 
             return { ...searchRes, ...countRes, query: newQuery };
         } catch (error: any) {
-            if (queryIdChanged) {
-                dispatch(
-                    webSocketSendMessage({
-                        message: {
-                            type: "unsubscribe",
-                            channels: [queryId],
-                        },
-                    }),
-                );
-            }
+            if (thunkAPI.signal.aborted) return;
+            cleanupQuerySubscription();
             // Get error detail
             let errorDetail = error.toString();
             if (error instanceof ResponseError) {
@@ -294,7 +310,8 @@ export const updateQuery = createAsyncThunk(
             }
             return thunkAPI.rejectWithValue(errorDetail);
         } finally {
-            dispatch(stopLoadingIndicator());
+            thunkAPI.signal.removeEventListener("abort", handleAbort);
+            if (!thunkAPI.signal.aborted) dispatch(stopLoadingIndicator());
         }
     },
 );
@@ -635,6 +652,12 @@ export const searchSlice = createSlice({
         ) => {
             state.folderViewExpandedNodes = action.payload;
         },
+        setFilteredFolderViewExpandedNodes: (
+            state,
+            action: PayloadAction<string[]>,
+        ) => {
+            state.filteredFolderViewExpandedNodes = action.payload;
+        },
         setPendingFullscreenFileId: (
             state,
             action: PayloadAction<string | null>,
@@ -760,6 +783,7 @@ export const searchSlice = createSlice({
                 state.queryError = undefined;
             })
             .addCase(updateQuery.rejected, (state, action: any) => {
+                if (action.meta.aborted) return;
                 state.queryError = action.payload;
                 toast.error(
                     t("error.searchResultLoadingError", {
@@ -843,6 +867,7 @@ export const {
     setExpandFilePaths,
     setSuppressDownloadWarning,
     setFolderViewExpandedNodes,
+    setFilteredFolderViewExpandedNodes,
     setPendingFullscreenFileId,
 } = searchSlice.actions;
 
@@ -1053,6 +1078,16 @@ export const selectHighlightScrollMode = createSelector(
 export const selectPendingFullscreenFileId = createSelector(
     selectSearch,
     (search) => search.pendingFullscreenFileId,
+);
+
+export const selectFolderViewExpandedNodes = createSelector(
+    selectSearch,
+    (search) => search.folderViewExpandedNodes,
+);
+
+export const selectFilteredFolderViewExpandedNodes = createSelector(
+    selectSearch,
+    (search) => search.filteredFolderViewExpandedNodes,
 );
 
 export default searchSlice.reducer;

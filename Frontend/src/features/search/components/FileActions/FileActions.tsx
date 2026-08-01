@@ -1,12 +1,6 @@
 import { MoreVert } from "@mui/icons-material";
-import {
-    IconButton,
-    Menu,
-    MenuItem,
-    Typography,
-    useMediaQuery,
-} from "@mui/material";
-import { useState, useEffect, ReactNode } from "react";
+import { IconButton, Menu, MenuItem, Typography } from "@mui/material";
+import { useState, useEffect, useRef, ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 
 import { GetFilePreviewResponse, RenderedFile } from "@app/api";
@@ -36,6 +30,7 @@ interface FileActionsProps {
     additionalActions?: ReactNode[];
     hideDetail?: boolean;
     renderedFile?: RenderedFile;
+    isCompact: boolean;
 }
 
 export const FileActions = ({
@@ -43,12 +38,27 @@ export const FileActions = ({
     additionalActions = [],
     hideDetail,
     renderedFile,
+    isCompact,
 }: FileActionsProps) => {
     const { t } = useTranslation();
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
     const searchQuery = useAppSelector(selectQuery);
     const open = Boolean(anchorEl);
-    const isMobile = useMediaQuery("(max-width:900px)");
+    const tagsRef = useRef<HTMLDivElement>(null);
+    const [tagsWidth, setTagsWidth] = useState(Infinity);
+
+    useEffect(() => {
+        const el = tagsRef.current;
+        if (!el) return;
+        const ro = new ResizeObserver(([entry]) =>
+            setTagsWidth(entry.contentRect.width),
+        );
+        ro.observe(el);
+        return () => ro.disconnect();
+    }, []);
+
+    // Estimate how many tag chips fit: MUI small chip ≈ 80 px average
+    const maxVisibleTags = Math.max(1, Math.floor(tagsWidth / 80));
 
     const handleMenuClick = (event: React.MouseEvent<HTMLButtonElement>) => {
         setAnchorEl(event.currentTarget);
@@ -152,7 +162,7 @@ export const FileActions = ({
         },
     ];
 
-    if (isMobile) {
+    if (isCompact) {
         const allActions = [
             ...primaryActions,
             ...overflowActions.map(({ button }) => button),
@@ -178,11 +188,15 @@ export const FileActions = ({
 
     return (
         <div className={styles.fileActions}>
-            <div data-tour="result-card-tags">
+            <div
+                ref={tagsRef}
+                className={styles.tagsWrapper}
+                data-tour="result-card-tags"
+            >
                 <TagsList
                     tags={filePreview.tags || []}
                     filePreview={filePreview}
-                    maxVisible={3}
+                    maxVisible={maxVisibleTags}
                 />
             </div>
             <div

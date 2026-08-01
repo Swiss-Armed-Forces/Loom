@@ -125,13 +125,13 @@ describe("demo API handlers", () => {
         ).then((response) => response.json());
 
         expect(preview).toMatchObject({
-            file_extension: "eml",
+            file_extension: ".eml",
             tags: ["email", "interesting"],
             thumbnail_file_id: "thumbnail.png",
             thumbnail_total_frames: 1,
         });
         expect(stats.file_count).toBe(12);
-        expect(stats.data).toContainEqual({ name: "txt", hits_count: 3 });
+        expect(stats.data).toContainEqual({ name: ".txt", hits_count: 3 });
     });
 
     it("serves navigable email attachment previews", async () => {
@@ -159,7 +159,7 @@ describe("demo API handlers", () => {
         ]);
         expect(email.attachmentsTotalCount).toBe(1);
         expect(attachment.parentId).toBe(ATTACHMENT_EMAIL_ID);
-        expect(attachment.fileExtension).toBe("pdf");
+        expect(attachment.fileExtension).toBe(".pdf");
         expect(attachmentDetail.renderedFile.officePdfFileId).toBe(
             "rendered-office.pdf",
         );
@@ -343,11 +343,11 @@ describe("demo API handlers", () => {
         });
 
         expect(archive.sha256).toMatch(/^[a-f0-9]{64}$/);
-        expect(archive.sha256Encrypted).toBeUndefined();
+        expect(archive.sha256Encrypted).toMatch(/^[a-f0-9]{64}$/);
         expect(files.files).toHaveLength(3);
     });
 
-    it("serves the fixed archive encryption key", async () => {
+    it("serves a random AES-256 encryption key as a 64-character hex string", async () => {
         const archivesApi = new ArchivesApi(
             new Configuration({ basePath: "http://loom.test/api" }),
         );
@@ -355,7 +355,7 @@ describe("demo API handlers", () => {
         const response =
             await archivesApi.getEncryptionKeyV1ArchiveEncryptionKeyGet();
 
-        expect(response.encryptionKey).toBe("0".repeat(32));
+        expect(response.encryptionKey).toMatch(/^[0-9a-f]{64}$/);
     });
 
     it("creates archives with the backend status and searchable membership", async () => {

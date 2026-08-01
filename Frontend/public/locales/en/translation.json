@@ -27,13 +27,18 @@
             "next": "Next",
             "previous": "Previous",
             "progress": "{{current}} of {{total}}",
+            "openArchives": "Open Archives",
             "searchAll": "Search all documents",
             "skip": "Skip Tour"
         },
         "steps": {
+            "incrementalWelcome": {
+                "title": "Welcome back",
+                "description": "Here are the new features added since your last visit. This short tour will show you what's changed."
+            },
             "welcome": {
                 "title": "Welcome to Loom",
-                "description": "Loom is a document search and review workspace. It can index, OCR, tag, flag, translate, and summarize your files — all in one place. This short tour will walk you through the main tools."
+                "description": "Loom is a document search and review workspace. It can index, OCR, tag, flag, translate, and summarize your files, all in one place. This short tour will walk you through the main tools."
             },
             "globalSearch": {
                 "title": "Search and sort",
@@ -61,7 +66,7 @@
             },
             "resultCardPath": {
                 "title": "Identity, path, and status",
-                "description": "The file-type icon marks unseen files with a visual indicator. The document path is shown below it — bold text means the file is unseen, and red means it has been flagged. Other icons reveal details and let you apply quick filters; hold Shift to exclude rather than include."
+                "description": "The file-type icon marks unseen files with a visual indicator. The document path is shown below it. Bold text means the file is unseen, red means it has been flagged. Other icons reveal details and let you apply quick filters; hold Shift to exclude rather than include."
             },
             "resultCardProcessingStatus": {
                 "title": "Document processing status",
@@ -73,7 +78,7 @@
             },
             "resultCardContent": {
                 "title": "Preview content and matches",
-                "description": "Switch between extracted text, summary, translation, and AI image-description previews when available. Match highlights show which parts of the document matched your query — click one to filter by that phrase or to sort by that specific field."
+                "description": "Switch between extracted text, summary, translation, and AI image-description previews when available. Match highlights show which parts of the document matched your query. Click one to filter by that phrase or to sort by that specific field."
             },
             "resultCardTags": {
                 "title": "Organize and filter with tags",
@@ -89,11 +94,11 @@
             },
             "documentDetail": {
                 "title": "Full document workspace",
-                "description": "The document view organizes everything about a file into tabs — rendered previews, extracted text, translations, search highlights, summaries, and more. Tabs are disabled when no data is available for that document."
+                "description": "The document view organizes everything about a file into tabs: rendered previews, extracted text, translations, search highlights, summaries, and more. Tabs are disabled when no data is available for that document."
             },
             "detailRendered": {
                 "title": "Rendered view and controls",
-                "description": "Choose a rendering mode — Office PDF, Browser PDF, Image, or Email — to control how the document is displayed; if one mode looks wrong, try another. For PDF modes, toggle a page outline or thumbnail strip to navigate long documents. You can also zoom, rotate, or go full-screen."
+                "description": "Choose a rendering mode (Office PDF, Browser PDF, Image, or Email) to control how the document is displayed; if one mode looks wrong, try another. For PDF modes, toggle a page outline or thumbnail strip to navigate long documents. You can also zoom, rotate, or go full-screen."
             },
             "detailTranslations": {
                 "title": "Machine translations",
@@ -105,27 +110,27 @@
             },
             "detailRaw": {
                 "title": "Raw indexed data",
-                "description": "The Raw tab shows everything Loom extracted and stored for this document — metadata, detected language, processing history, and more — in structured JSON format. Useful for troubleshooting or for technical users who want to inspect the underlying data."
+                "description": "The Raw tab shows everything Loom extracted and stored for this document: metadata, detected language, processing history, and more, in structured JSON format. Useful for troubleshooting or for technical users who want to inspect the underlying data."
             },
             "activityBar": {
                 "title": "Workspace tools",
                 "description": "The toolbar gives you access to upload, folders, tags, saved queries, bulk actions, automatic actions, statistics, and document chat."
             },
             "activityBarLeft": {
-                "title": "Workspace tools",
-                "description": "These buttons open the left sidebar panels: upload files, browse by folder, manage tags, access saved queries, run bulk actions, and configure automatic actions."
+                "title": "Global tools",
+                "description": "These buttons open the <strong>left sidebar</strong>, which contains <strong>global</strong> views: tools that are independent of your current search query. Here you can upload files, browse the complete folder hierarchy, manage tags, access saved queries, and configure automatic actions."
             },
             "activityBarRight": {
-                "title": "Analysis & chat",
-                "description": "These buttons open the right panel. Use <strong>Statistics</strong> to explore distributions and charts for the active query, and <strong>Chat</strong> to ask questions about your documents using the AI assistant."
+                "title": "Query-scoped tools",
+                "description": "These buttons open the <strong>right sidebar</strong>, which contains <strong>query-scoped</strong> views. Everything here reflects only the files that match your current search. Use <strong>Folder (filtered)</strong> to navigate matching files by path, <strong>Statistics</strong> to explore distributions and charts, <strong>Chat</strong> to ask the AI assistant questions about your results, and <strong>Bulk Actions</strong> to act on the entire result set."
             },
             "upload": {
                 "title": "Upload your files",
-                "description": "Click here to upload files directly from your computer. Loom also supports the S3 protocol — any file placed in the <strong>loom-intake</strong> bucket is automatically discovered, indexed, and made searchable. No manual steps needed."
+                "description": "Click here to upload files directly from your computer. Loom also supports the S3 protocol. Any file placed in the <code>loom-intake</code> bucket is automatically discovered, indexed, and made searchable. No manual steps needed."
             },
             "folders": {
-                "title": "Browse by folder",
-                "description": "Browse the folder structure of your indexed files. Filter visible folders by name, and see counts for total, unseen, and flagged documents. Clicking a folder makes it the active search filter."
+                "title": "Global folder view",
+                "description": "This is the <strong>global folder view</strong>. It always shows the complete folder hierarchy of all indexed files, regardless of the current search query. Use it to navigate your full archive at any time."
             },
             "folderTreeNode": {
                 "title": "Folder node counts",
@@ -145,15 +150,19 @@
             },
             "bulkActions": {
                 "title": "Act on every match",
-                "description": "Bulk actions apply to the complete query result set—not only cards currently loaded on screen. Available operations include flagging, seen state, tags, translation, summaries, image descriptions, reindexing, visibility, and archive creation."
+                "description": "Bulk actions apply to the complete query result set, not only cards currently loaded on screen. Available operations include flagging, seen state, tags, translation, summaries, image descriptions, reindexing, visibility, and archive creation."
             },
             "autoActions": {
                 "title": "Automate result review",
-                "description": "Automatic actions run when you open or interact with a result. Configure whether Loom marks it seen, flags it, translates it, summarizes it, describes its images, or triggers reindexing — so routine tasks happen without manual steps."
+                "description": "Automatic actions run when you open or interact with a result. Configure whether Loom marks it seen, flags it, translates it, summarizes it, describes its images, or triggers reindexing, so routine tasks happen without manual steps."
+            },
+            "filteredFolder": {
+                "title": "Filtered folder view",
+                "description": "The filtered folder view shows only folders and files matching your current query, a query-scoped companion to the global folder view on the left. The tree resets with each new search."
             },
             "statistics": {
                 "title": "Analyze the result set",
-                "description": "Choose metadata dimensions to view distributions and grouped histograms for the active query. Selecting chart segments or ranges adds those values as search filters."
+                "description": "Open statistics to explore metadata distributions and grouped histograms for the active query. Selecting chart segments or dragging ranges adds them as search filters."
             },
             "statisticsPieChart": {
                 "title": "Distribution pie chart",
@@ -165,15 +174,47 @@
             },
             "chat": {
                 "title": "Ask across your documents",
-                "description": "Document chat answers questions using the current query result set. Source references in an answer link back to the supporting documents so you can inspect them directly."
+                "description": "Document chat answers questions across the current result set. Source references link back to the supporting documents so you can inspect them directly."
+            },
+            "fileDetail": {
+                "title": "File Detail",
+                "description": "The File Detail panel shows metadata and content for whichever file is currently highlighted. Its content is also query-scoped: highlights, translations, and summaries reflect the active search query."
+            },
+            "encryptionKeyDisplay": {
+                "title": "Shared encryption key",
+                "description": "This is your Loom instance's encryption key. Any two Loom instances that share the same key can exchange <code>.loom</code> archives fully end-to-end encrypted. The key never leaves your infrastructure."
             },
             "processingStatus": {
                 "title": "Monitor processing health",
-                "description": "Header indicators show the health of background processing. Icons flag files with truncated content, skipped attachments, or failed tasks — click any indicator to search for the affected files. This area also shows active processing progress and whether queues are paused."
+                "description": "Header indicators show the health of background processing. Icons flag files with truncated content, skipped attachments, or failed tasks. Click any indicator to search for the affected files. This area also shows active processing progress and whether queues are paused."
             },
             "navigation": {
                 "title": "Move between sections",
-                "description": "Switch between document Search and Archives. Any documents you had open are waiting for you when you return to Search."
+                "description": "Use the header tabs to switch between Search and Archives. Any documents you had open are waiting for you when you return to Search."
+            },
+            "headerArchivesTab": {
+                "title": "Switch to Archives",
+                "description": "This button takes you to the Archives section, where all your exported packages live. Open it now to take a look."
+            },
+            "bulkActionCreateArchive": {
+                "title": "Export the result set",
+                "description": "Create Archive packages the entire query result set, every indexed file, not just what's on screen, into a downloadable archive scoped to your current search. Each archive contains everything Loom produced during indexing: the original files, all extracted and generated metadata, rendered previews, thumbnails, translations, summaries, and more. This makes archives a complete transfer unit: import one into another Loom instance and it will have the full state, no reprocessing needed."
+            },
+            "archivesList": {
+                "title": "Download your archives",
+                "description": "Archives appear here as they finish building. Each archive is available in two forms: a plain <code>.zip</code> for general use, and an encrypted <code>.loom</code> file. The <code>.loom</code> format can be safely transferred between two Loom instances that share the same master key, making it ideal for moving data between trusted deployments."
+            },
+            "archivesUpload": {
+                "title": "Import an archive",
+                "description": "Use this button to import an archive from another Loom instance. Both formats are supported: the encrypted <code>.loom</code> file and the plain <code>.zip</code>. All metadata is preserved in the archive, so the import is fast and no reprocessing happens."
+            },
+            "archiveCliIntro": {
+                "title": "Your archive includes a CLI",
+                "description": "Every <code>.zip</code> contains a self-contained <code>cli.py</code>. No installation required, just a standard Python interpreter. It works out of the box on Windows, Linux, and macOS. Extract the archive and run <code>python cli.py</code> to open an interactive shell with tab completion, persistent history, and <code>Ctrl+R</code> search."
+            },
+            "archiveCliDemo": {
+                "title": "Browse, search, and extract offline",
+                "description": "The CLI surfaces everything Loom produced: extracted text, metadata, translations, and rendered previews. Navigate the archive as a virtual filesystem with <code>cd</code> — commands like <code>cat</code> and <code>grep</code> work relative to your current directory, and the prompt updates to reflect where you are.<pre class=\"loom-tour-terminal\" data-loom-cli-demo>loom> ls\n  reports/annual.pdf\n  photos/field-ops.jpg\nloom> cd reports/\nloom/reports> cat annual.pdf\n  Jahresbericht 2024 — Dieser Bericht\n  enthält vertrauliche Finanzdaten...\nloom/reports> translate annual.pdf en\n  Annual Report 2024 — This report\n  contains confidential financial data...\nloom/reports> cd ..\nloom> tree\n  .\n  ├── photos/\n  │   └── field-ops.jpg\n  └── reports/\n      └── annual.pdf</pre>"
             },
             "menu": {
                 "title": "More tools",
@@ -188,22 +229,16 @@
     "demoMode": {
         "indicator": "DEMO",
         "title": "Interactive Demo",
-        "introduction": "This is a browser-only preview of Loom using a curated set of sample documents. No backend is required — everything runs in your browser.",
-        "capabilities": {
-            "title": "What's available",
-            "search": "Search with Loom's query syntax and explore folders, statistics, metadata, previews, and downloads.",
-            "organize": "Tag, flag, hide, and mark documents as seen, or create and download demo archives.",
-            "automation": "Try simulated summarization, translation, image descriptions, reindexing, and document chat."
-        },
-        "limitations": {
-            "title": "Limitations",
-            "backend": "File uploads, archive imports, service dashboards, and task details are unavailable.",
-            "reset": "Changes reset on page reload."
+        "introduction": "A browser-only preview of Loom using a curated set of sample documents. No backend needed.",
+        "limitations": "File uploads, imports, and backend services are unavailable. Changes reset on reload.",
+        "tour": {
+            "title": "New here?",
+            "description": "The guided tour covers search, results, sidebar tools, and more. It takes just a few minutes."
         },
         "startExploring": "Start exploring",
         "repository": {
             "prompt": "Want to run Loom with your own documents?",
-            "action": "View Loom on GitLab"
+            "action": "View on GitLab"
         },
         "unavailable": {
             "archiveImport": "Archive imports aren't available in demo mode. Use a full Loom deployment to import Loom archives.",
@@ -435,7 +470,8 @@
         "flaggedCountTooltip": "Flagged files in this folder",
         "fileCountTooltip": "Total files in this folder",
         "filterResultsLimitNote": "Showing first {{limit}} results — refine your filter to narrow down",
-        "loadMore": "Load more"
+        "loadMore": "Load more",
+        "filterPlaceholder": "Filter by filename"
     },
     "tags": {
         "addTag": "Add tag",
@@ -456,8 +492,11 @@
             "detailed": "Detailed",
             "table": "Table",
             "folder": "Folder",
+            "filteredFolder": "Folder (filtered)",
             "statistics": "Statistics",
-            "chatbot": "Chatbot"
+            "chatbot": "Chatbot",
+            "fileDetail": "File Detail",
+            "fileDetailEmpty": "Select a file to view its details."
         }
     },
     "emptySearch": {
@@ -515,7 +554,8 @@
             "nextCenterTab": "Next center tab",
             "prevTab": "Previous sub tab",
             "nextTab": "Next sub tab",
-            "openOrClose": "Open file details",
+            "openOrClose": "Open / close file details",
+            "open": "Open file details",
             "openBackground": "Open file details in background",
             "shiftClickNegate": "Negate clicked filter",
             "escapeAction": "Clear selection, search & sort, or close",

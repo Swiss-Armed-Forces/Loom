@@ -8,38 +8,32 @@ const translations = vi.hoisted<Record<string, string>>(() => ({
     "about.link":
         "https://gitlab.com/swiss-armed-forces/cyber-command/cea/loom",
     "common.close": "Close",
-    "demoMode.capabilities.automation":
-        "Try simulated summarization, translation, image descriptions, reindexing, and document chat.",
-    "demoMode.capabilities.organize":
-        "Tag, flag, hide, and mark documents as seen, or create and download demo archives.",
-    "demoMode.capabilities.search":
-        "Search with Loom's query syntax and explore folders, statistics, metadata, previews, and downloads.",
-    "demoMode.capabilities.title": "What's available",
     "demoMode.indicator": "DEMO",
     "demoMode.introduction":
-        "This is a browser-only preview of Loom using a curated set of sample documents. No backend is required — everything runs in your browser.",
-    "demoMode.limitations.backend":
-        "File uploads, archive imports, service dashboards, and task details are unavailable.",
-    "demoMode.limitations.reset": "Changes reset on page reload.",
-    "demoMode.limitations.title": "Limitations",
-    "demoMode.repository.prompt": "Want to run Loom with your own documents?",
+        "A browser-only preview of Loom using a curated set of sample documents. No backend needed.",
+    "demoMode.limitations":
+        "File uploads, imports, and backend services are unavailable. Changes reset on reload.",
+    "demoMode.repository.action": "View on GitLab",
     "demoMode.startExploring": "Start exploring",
     "demoMode.title": "Interactive Demo",
+    "demoMode.tour.description":
+        "The guided tour covers search, results, sidebar tools, and more. It takes just a few minutes.",
+    "demoMode.tour.title": "New here?",
+    "tour.takeTour": "Take a Tour",
 }));
 
 vi.mock("@mui/icons-material", () => ({
-    CheckCircleOutlined: () => <span aria-hidden="true">✓</span>,
     Close: () => <span aria-hidden="true">×</span>,
     InfoOutlined: () => <span aria-hidden="true">i</span>,
     RocketLaunch: () => <span aria-hidden="true">🚀</span>,
     ScienceOutlined: () => <span aria-hidden="true">S</span>,
+    TourOutlined: () => <span aria-hidden="true">T</span>,
 }));
 
 vi.mock("@mui/material", () => ({
     Alert: ({ children }: { children: ReactNode }) => (
         <section>{children}</section>
     ),
-    AlertTitle: ({ children }: { children: ReactNode }) => <h3>{children}</h3>,
     Box: ({ children }: { children: ReactNode }) => <div>{children}</div>,
     Button: ({
         children,
@@ -48,21 +42,6 @@ vi.mock("@mui/material", () => ({
         children: ReactNode;
         onClick?: () => void;
     }) => <button onClick={onClick}>{children}</button>,
-    Link: ({
-        children,
-        href,
-        rel,
-        target,
-    }: {
-        children: ReactNode;
-        href: string;
-        rel: string;
-        target: string;
-    }) => (
-        <a href={href} rel={rel} target={target}>
-            {children}
-        </a>
-    ),
     Dialog: ({
         children,
         id,
@@ -82,15 +61,16 @@ vi.mock("@mui/material", () => ({
                 <button onClick={onClose}>Dismiss dialog</button>
             </div>
         ) : null,
-    DialogContent: ({ children }: { children: ReactNode }) => (
+    DialogActions: ({ children }: { children: ReactNode }) => (
         <div>{children}</div>
     ),
-    DialogActions: ({ children }: { children: ReactNode }) => (
+    DialogContent: ({ children }: { children: ReactNode }) => (
         <div>{children}</div>
     ),
     DialogTitle: ({ children }: { children: ReactNode }) => (
         <div>{children}</div>
     ),
+    Divider: () => <hr />,
     IconButton: ({
         "aria-label": ariaLabel,
         children,
@@ -106,16 +86,20 @@ vi.mock("@mui/material", () => ({
             {children}
         </button>
     ),
-    List: ({ children }: { children: ReactNode }) => <ul>{children}</ul>,
-    ListItem: ({ children }: { children: ReactNode }) => <li>{children}</li>,
-    ListItemIcon: ({ children }: { children: ReactNode }) => (
-        <span>{children}</span>
-    ),
-    ListItemText: ({ primary }: { primary: ReactNode }) => (
-        <span>{primary}</span>
-    ),
-    Paper: ({ children }: { children: ReactNode }) => (
-        <section>{children}</section>
+    Link: ({
+        children,
+        href,
+        rel,
+        target,
+    }: {
+        children: ReactNode;
+        href: string;
+        rel: string;
+        target: string;
+    }) => (
+        <a href={href} rel={rel} target={target}>
+            {children}
+        </a>
     ),
     Stack: ({ children }: { children: ReactNode }) => <div>{children}</div>,
     Typography: ({
@@ -135,6 +119,19 @@ vi.mock("react-i18next", () => ({
     }),
 }));
 
+vi.mock("react-router-dom", () => ({
+    useLocation: () => ({ pathname: "/search" }),
+    useNavigate: () => vi.fn(),
+}));
+
+vi.mock("@app/tours/useTour", () => ({
+    useTour: () => ({ startTour: vi.fn() }),
+}));
+
+vi.mock("@app/tours/startWhenDialogsClose", () => ({
+    startWhenDialogsClose: vi.fn(),
+}));
+
 describe("DemoModeIndicator", () => {
     afterEach(() => {
         vi.restoreAllMocks();
@@ -149,20 +146,15 @@ describe("DemoModeIndicator", () => {
         ).toBeVisible();
         expect(ribbon).toHaveAttribute("aria-expanded", "true");
         expect(
-            screen.getByText(/This is a browser-only preview of Loom/),
+            screen.getByText(/A browser-only preview of Loom/),
         ).toBeInTheDocument();
+        expect(screen.getByText(/File uploads, imports/)).toBeInTheDocument();
         expect(
-            screen.getByRole("heading", { name: "What's available" }),
-        ).toBeInTheDocument();
-        expect(
-            screen.getByRole("heading", { name: "Limitations" }),
-        ).toBeInTheDocument();
-        expect(
-            screen.getByText(/File uploads, archive imports/),
+            screen.getByRole("heading", { name: "New here?" }),
         ).toBeInTheDocument();
 
         const repositoryLink = screen.getByRole("link", {
-            name: "https://gitlab.com/swiss-armed-forces/cyber-command/cea/loom",
+            name: "View on GitLab",
         });
         expect(repositoryLink).toHaveAttribute(
             "href",

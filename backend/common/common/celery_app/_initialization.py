@@ -73,6 +73,25 @@ def init_celery_app() -> "Celery[BaseTask]":  # pylint: disable=too-many-stateme
     serialization.register_pickle()
     serialization.enable_insecure_serializers()
 
+    # Use JSON for the control/inspect reply channel.
+    # The Celery control protocol (inspect.active, inspect.scheduled, etc.) waits
+    # for replies from workers. Workers serialize those replies using the mailbox
+    # serializer, which defaults to task_serializer ("pickle"). Pickle replies embed
+    # references to classes from the 'worker' Python package (e.g. task classes like
+    # worker.tasks.index_file.*). The API pod does not have the 'worker' package
+    # installed, so unpickling fails with "No module named 'worker'".
+    #
+    # Setting mailbox.serializer = "json" fixes both sides: the API sends
+    # JSON-encoded broadcast commands, and workers' pidbox Node.reply() reads
+    # mailbox.serializer and also replies with JSON. Control protocol payloads
+    # only contain basic Python types so this is safe.
+    #
+    # Note: this relies on kombu's pidbox internals (Node.reply uses
+    # self.mailbox.serializer). If a future kombu version changes that behaviour,
+    # the fallback DecodeError handling in CeleryInspectService.iterate_tasks()
+    # will keep the wipe operation from crashing.
+    app.control.mailbox.serializer = "json"  # type: ignore[attr-defined]
+
     # Enable compression for tasks & result backend
     # We do this to reduce bandwidth usage, memory
     # and disk pressure on the broker and backend.

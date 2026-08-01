@@ -12,7 +12,10 @@ import {
 
 import { empty, error, json, objectValue, parseBody } from "./shared";
 
-const DEMO_ARCHIVE_ENCRYPTION_KEY = "0".repeat(32);
+const DEMO_ARCHIVE_ENCRYPTION_KEY = Array.from(
+    crypto.getRandomValues(new Uint8Array(32)),
+    (b) => b.toString(16).padStart(2, "0"),
+).join("");
 
 const archiveId = (request: Request): string => {
     const match = new URL(request.url).pathname.match(/\/archive\/([^/]+)$/);
@@ -35,6 +38,7 @@ const listHandler = http.get(/\/api\/v1\/archive$/, () => {
                 tasks: archive.tasks,
             },
             sha256: archive.sha256,
+            sha256Encrypted: archive.sha256Encrypted,
             hidden: archive.hidden,
             fileId: archive.id,
         })),
@@ -81,17 +85,24 @@ const hideHandler = http.put(/\/api\/v1\/archive\/([^/]+)$/, ({ request }) =>
 );
 
 const downloadHandler = http.get(
-    /\/api\/v1\/archive\/([^/]+)$/,
+    /\/api\/v1\/archive\/[^/]+$/,
     ({ request }) => {
         const archive = getArchive(archiveId(request));
-        return archive
-            ? new HttpResponse(
-                  `Interactive Loom demo archive: ${archive.name}`,
-                  {
-                      headers: { "Content-Type": "application/zip" },
-                  },
-              )
-            : error("Archive not found", 404);
+        if (!archive) return error("Archive not found", 404);
+        const encrypted =
+            new URL(request.url).searchParams.get("encrypted") === "true";
+        const filename = encrypted
+            ? archive.name.replace(/\.zip$/, ".loom")
+            : archive.name;
+        const body = encrypted
+            ? `LOOMARCHIVEV2 demo encrypted archive: ${archive.name}`
+            : `Interactive Loom demo archive: ${archive.name}`;
+        return new HttpResponse(body, {
+            headers: {
+                "Content-Type": "application/zip",
+                "Content-Disposition": `attachment; filename="${filename}"`,
+            },
+        });
     },
 );
 

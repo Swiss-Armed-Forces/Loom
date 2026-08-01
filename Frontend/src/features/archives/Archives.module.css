@@ -1,7 +1,15 @@
+.archivesWrapper {
+    display: flex;
+    flex-direction: row;
+    flex: 1;
+    overflow: hidden;
+    max-height: 100%;
+}
+
 .archivesContainer {
     margin-top: 2rem;
     overflow-y: auto;
-    width: 100%;
+    flex: 1;
 }
 
 .archivesContent {

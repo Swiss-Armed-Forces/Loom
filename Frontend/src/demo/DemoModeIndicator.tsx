@@ -1,45 +1,48 @@
 import {
-    CheckCircleOutlined,
     Close,
     InfoOutlined,
     RocketLaunch,
     ScienceOutlined,
+    TourOutlined,
 } from "@mui/icons-material";
 import {
     Alert,
-    AlertTitle,
     Box,
     Button,
     Dialog,
     DialogActions,
     DialogContent,
     DialogTitle,
+    Divider,
     IconButton,
     Link,
-    List,
-    ListItem,
-    ListItemIcon,
-    ListItemText,
-    Paper,
     Stack,
     Typography,
 } from "@mui/material";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useLocation, useNavigate } from "react-router-dom";
+
+import { startWhenDialogsClose } from "@app/tours/startWhenDialogsClose";
+import { useTour } from "@app/tours/useTour";
 
 import styles from "./DemoModeIndicator.module.css";
 
 export const DemoModeIndicator = () => {
     const [open, setOpen] = useState(true);
     const { t } = useTranslation();
-    const capabilities = [
-        t("demoMode.capabilities.search"),
-        t("demoMode.capabilities.organize"),
-        t("demoMode.capabilities.automation"),
-    ];
+    const location = useLocation();
+    const navigate = useNavigate();
+    const { startTour } = useTour();
 
     const handleClose = () => {
         setOpen(false);
+    };
+
+    const handleTourClick = () => {
+        if (location.pathname !== "/search") navigate("/search");
+        startWhenDialogsClose(startTour);
+        handleClose();
     };
 
     return (
@@ -60,7 +63,7 @@ export const DemoModeIndicator = () => {
                 id="demo-mode-dialog"
                 open={open}
                 fullWidth
-                maxWidth="sm"
+                maxWidth="xs"
                 onClose={handleClose}
                 aria-labelledby="demo-mode-dialog-title"
                 aria-describedby="demo-mode-dialog-introduction"
@@ -79,12 +82,15 @@ export const DemoModeIndicator = () => {
                                 color: "secondary.main",
                                 display: "flex",
                                 flex: "0 0 auto",
-                                height: 40,
+                                height: 36,
                                 justifyContent: "center",
-                                width: 40,
+                                width: 36,
                             }}
                         >
-                            <ScienceOutlined aria-hidden="true" />
+                            <ScienceOutlined
+                                aria-hidden="true"
+                                fontSize="small"
+                            />
                         </Box>
                         <Typography
                             id="demo-mode-dialog-title"
@@ -108,91 +114,64 @@ export const DemoModeIndicator = () => {
                         <Close />
                     </IconButton>
                 </DialogTitle>
-                <DialogContent dividers>
-                    <Stack spacing={2.5}>
-                        <Typography id="demo-mode-dialog-introduction">
-                            {t("demoMode.introduction")}
-                        </Typography>
-
-                        <Paper variant="outlined" sx={{ p: 2 }}>
+                <DialogContent sx={{ pt: 2 }}>
+                    <Stack spacing={2} divider={<Divider />}>
+                        <Stack spacing={1.5}>
+                            <Typography
+                                variant="body2"
+                                id="demo-mode-dialog-introduction"
+                            >
+                                {t("demoMode.introduction")}
+                            </Typography>
+                            <Alert
+                                severity="info"
+                                variant="outlined"
+                                icon={<InfoOutlined aria-hidden="true" />}
+                            >
+                                <Typography variant="body2">
+                                    {t("demoMode.limitations")}
+                                </Typography>
+                            </Alert>
+                        </Stack>
+                        <Box>
                             <Typography
                                 component="h3"
-                                variant="subtitle1"
+                                variant="subtitle2"
                                 sx={{ fontWeight: "bold", mb: 0.5 }}
                             >
-                                {t("demoMode.capabilities.title")}
+                                {t("demoMode.tour.title")}
                             </Typography>
-                            <List dense disablePadding>
-                                {capabilities.map((capability) => (
-                                    <ListItem
-                                        key={capability}
-                                        disableGutters
-                                        alignItems="flex-start"
-                                    >
-                                        <ListItemIcon
-                                            sx={{
-                                                color: "success.main",
-                                                minWidth: 32,
-                                                mt: 0.5,
-                                            }}
-                                        >
-                                            <CheckCircleOutlined
-                                                fontSize="small"
-                                                aria-hidden="true"
-                                            />
-                                        </ListItemIcon>
-                                        <ListItemText primary={capability} />
-                                    </ListItem>
-                                ))}
-                            </List>
-                        </Paper>
-
-                        <Alert
-                            severity="info"
-                            variant="outlined"
-                            icon={<InfoOutlined aria-hidden="true" />}
-                        >
-                            <AlertTitle>
-                                {t("demoMode.limitations.title")}
-                            </AlertTitle>
-                            <Stack spacing={1}>
-                                <Typography variant="body2">
-                                    {t("demoMode.limitations.backend")}
-                                </Typography>
-                                <Typography variant="body2">
-                                    {t("demoMode.limitations.reset")}
-                                </Typography>
-                            </Stack>
-                        </Alert>
+                            <Typography variant="body2" sx={{ mb: 1.5 }}>
+                                {t("demoMode.tour.description")}
+                            </Typography>
+                            <Button
+                                variant="contained"
+                                startIcon={<TourOutlined />}
+                                onClick={handleTourClick}
+                            >
+                                {t("tour.takeTour")}
+                            </Button>
+                        </Box>
                     </Stack>
                 </DialogContent>
                 <DialogActions
                     sx={{
-                        alignItems: { xs: "stretch", sm: "center" },
-                        flexDirection: { xs: "column", sm: "row" },
-                        gap: 1.5,
                         justifyContent: "space-between",
                         px: 3,
                         py: 2,
                     }}
                 >
-                    <Stack spacing={0.5}>
-                        <Typography variant="body2" color="text.secondary">
-                            {t("demoMode.repository.prompt")}
-                        </Typography>
-                        <Link
-                            href={t("about.link")}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            variant="body2"
-                        >
-                            {t("about.link")}
-                        </Link>
-                    </Stack>
+                    <Link
+                        href={t("about.link")}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        variant="body2"
+                    >
+                        {t("demoMode.repository.action")}
+                    </Link>
                     <Button
                         variant="contained"
                         onClick={handleClose}
-                        sx={{ flex: "0 0 auto" }}
                         startIcon={<RocketLaunch />}
                     >
                         {t("demoMode.startExploring")}

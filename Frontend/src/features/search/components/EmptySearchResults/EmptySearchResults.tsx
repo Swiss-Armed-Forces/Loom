@@ -98,27 +98,32 @@ export const EmptySearchResults = ({
         {
             type: "row",
             keys: ["←", "h"],
-            label: t("emptySearch.hotkeys.prevCenterTab"),
-        },
-        {
-            type: "row",
-            keys: ["→", "l"],
-            label: t("emptySearch.hotkeys.nextCenterTab"),
-        },
-        {
-            type: "row",
-            keys: ["Shift + ←", "Shift + h"],
             label: t("emptySearch.hotkeys.prevTab"),
         },
         {
             type: "row",
-            keys: ["Shift + →", "Shift + l"],
+            keys: ["→", "l"],
             label: t("emptySearch.hotkeys.nextTab"),
         },
         {
             type: "row",
-            keys: ["Enter", "i", "Double-click"],
+            keys: ["Shift + ←", "Shift + h"],
+            label: t("emptySearch.hotkeys.prevCenterTab"),
+        },
+        {
+            type: "row",
+            keys: ["Shift + →", "Shift + l"],
+            label: t("emptySearch.hotkeys.nextCenterTab"),
+        },
+        {
+            type: "row",
+            keys: ["i"],
             label: t("emptySearch.hotkeys.openOrClose"),
+        },
+        {
+            type: "row",
+            keys: ["Enter", "Double-click"],
+            label: t("emptySearch.hotkeys.open"),
         },
         {
             type: "row",
