@@ -35,7 +35,6 @@ export const apiUrl = buildApiBasePath(
 export const webSocket = `${socketUrl}/v1/websocket`;
 
 export const frontendHost = serviceUrl();
-export const flowerHost = serviceUrl();
 export const roundcubeHost = serviceUrl();
 export const seaweedfsHost = serviceUrl();
 export const s3Host = serviceUrl();

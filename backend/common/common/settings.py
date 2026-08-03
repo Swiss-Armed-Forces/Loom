@@ -171,7 +171,6 @@ class WorkerType(StrEnum):
     WORKER = "WORKER"
     REAPER = "REAPER"
     PERSISTER = "PERSISTER"
-    FLOWER = "FLOWER"
     BEAT = "BEAT"
     INSPECT = "INSPECT"
 

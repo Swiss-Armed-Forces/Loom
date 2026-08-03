@@ -273,7 +273,6 @@ Per `CONTRIBUTING.md`:
 
 - Check pod logs: `kubectl logs <pod-name> -n loom`
 - Or dump all logs: `kubernetes-fetch-all-pod-logs`
-- Flower UI shows Celery task execution and failures
 - RabbitMQ UI shows queue depths and message routing
 
 ## Important Technical Details

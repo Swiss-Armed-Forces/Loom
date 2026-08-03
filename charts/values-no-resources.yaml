@@ -77,11 +77,6 @@ notifyListener:
       requests: null
       limits: null
 
-flower:
-  resources:
-    requests: null
-    limits: null
-
 crawler:
   resources:
     requests: null

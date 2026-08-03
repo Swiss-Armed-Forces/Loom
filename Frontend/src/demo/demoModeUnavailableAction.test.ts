@@ -14,7 +14,7 @@ const translations = vi.hoisted<Record<string, string>>(() => ({
     "demoMode.unavailable.backendServices":
         "Backend services aren't available in demo mode. Use a full Loom deployment to access them.",
     "demoMode.unavailable.taskDetails":
-        "Task execution details aren't available because demo mode has no Flower service.",
+        "Task execution details aren't available because demo mode has no Celery service.",
 }));
 
 vi.mock("i18next", () => ({
@@ -43,7 +43,7 @@ describe("demo unavailable action notifications", () => {
         ],
         [
             DemoUnavailableFeature.TaskDetails,
-            "Task execution details aren't available because demo mode has no Flower service.",
+            "Task execution details aren't available because demo mode has no Celery service.",
         ],
     ])("shows a deduplicated message for %s", (feature, message) => {
         expect(notifyIfUnavailableInDemoMode(feature)).toBe(true);

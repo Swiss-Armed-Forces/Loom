@@ -121,12 +121,6 @@ match settings.worker_type:
         ]
         _persister_set = frozenset(this_persister_queues)
         app.steps["consumer"].add(make_queue_guard(lambda q: q in _persister_set))
-    case WorkerType.FLOWER:
-        argv = argv + [
-            f"--broker-api={settings.rabbit_mq_management_host}api/",
-            "--purge_offline_workers=600",
-            "--max_tasks=50000",
-        ]
     case WorkerType.BEAT:
         argv = argv + [
             "--scheduler",

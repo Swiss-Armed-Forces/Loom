@@ -21,7 +21,6 @@ LOOM_HOSTS=(
     "redisinsight"
     "redis"
     "redis-cache"
-    "flower"
     "rspamd"
     "rspamd-worker"
     "rabbit-amqp"

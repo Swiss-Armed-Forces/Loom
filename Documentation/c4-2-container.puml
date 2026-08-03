@@ -69,8 +69,6 @@ System_Boundary(loom, "") {
 
         Container(prometheus, "Prometheus", "prometheus", "Collect System Statistics", $sprite="prometheus", $tags="exposed")
 
-        Container(flower, "Flower", "Celery Flower", "Visualizes Tasks", $sprite="&task,scale=5", $tags="exposed")
-
         Container(elasticvue, "Elasticvue", "Elasticvue", "Elasticsearch GUI", $sprite="elasticsearch", $tags="exposed")
         Container(rediswebui, "Redis Admin UI", "Redis Insight", "GUI for Redis", $sprite="redis", $tags="exposed")
 
@@ -105,7 +103,6 @@ Rel(rabbit, worker, "")
 
 Rel(beat, rabbit, "")
 
-Rel(worker, flower, "")
 Rel(worker, redis, "")
 Rel(worker, es, "")
 Rel(worker, tika, "")
@@ -129,7 +126,6 @@ Rel(gotenberg, prometheus, "")
 Rel(seaweedfs_master, prometheus, "")
 Rel(kubeStateMetrics, prometheus, "")
 Rel(api, prometheus, "")
-Rel(flower, prometheus, "")
 
 Rel(gotenberg, email_client, "")
 
