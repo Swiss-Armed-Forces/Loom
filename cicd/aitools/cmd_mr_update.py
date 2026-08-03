@@ -7,6 +7,7 @@ import tempfile
 from git import Repo
 from git.exc import GitCommandError
 
+from ._common import _get_mr_for_current_branch
 from .claude import is_claude_cli_installed, run_claude_agentic
 from .prompts import build_merge_conflict_prompt
 
@@ -14,7 +15,8 @@ logger = logging.getLogger(__name__)
 
 
 def cmd_mr_update(_args: argparse.Namespace) -> None:
-    """Merge origin/main into the current branch, resolve any conflicts, and push."""
+    """Merge the MR's target branch into the current branch, resolve any conflicts, and
+    push."""
     repo = Repo(os.getcwd())
     branch_name = repo.active_branch.name
 
@@ -26,21 +28,24 @@ def cmd_mr_update(_args: argparse.Namespace) -> None:
         logger.error("Claude CLI not installed.")
         sys.exit(1)
 
+    mr = _get_mr_for_current_branch(repo)
+    target_branch = mr.target_branch
+
     print("Fetching origin...")
     repo.remotes.origin.fetch()
 
-    ahead_commits = list(repo.iter_commits("HEAD..origin/main"))
+    ahead_commits = list(repo.iter_commits(f"HEAD..origin/{target_branch}"))
     if not ahead_commits:
-        print("Branch is already up to date with origin/main.")
+        print(f"Branch is already up to date with origin/{target_branch}.")
         return
 
-    print(f"origin/main has {len(ahead_commits)} new commit(s) — merging...")
+    print(f"origin/{target_branch} has {len(ahead_commits)} new commit(s) — merging...")
 
     head_before = repo.head.commit.hexsha
     conflicting: list[str] = []
     try:
-        repo.git.merge("origin/main", "--no-edit")
-        print("Merged origin/main cleanly.")
+        repo.git.merge(f"origin/{target_branch}", "--no-edit")
+        print(f"Merged origin/{target_branch} cleanly.")
     except GitCommandError as e:
         logger.warning(
             "git merge failed (status %s):\nstdout: %s\nstderr: %s",
@@ -72,7 +77,9 @@ def cmd_mr_update(_args: argparse.Namespace) -> None:
             )
         repo.git.add("-A")
         repo.git.commit(
-            "--no-verify", "-m", f"chore: merge origin/main into {branch_name}"
+            "--no-verify",
+            "-m",
+            f"chore: merge origin/{target_branch} into {branch_name}",
         )
         print("Resolved merge conflicts and committed.")
 

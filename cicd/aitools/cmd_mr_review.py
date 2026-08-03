@@ -103,7 +103,11 @@ def _format_comments_for_fix(comments: list[ReviewComment]) -> str:
 
 
 def _fix_from_comments(
-    mr: ProjectMergeRequest, comments: list[ReviewComment], repo: Repo, branch_ref: str
+    mr: ProjectMergeRequest,
+    comments: list[ReviewComment],
+    repo: Repo,
+    branch_ref: str,
+    target_branch: str,
 ) -> None:
     """Run a Claude agent to fix all review findings without posting them as
     comments."""
@@ -116,7 +120,7 @@ def _fix_from_comments(
         ) as f:
             f.write(_format_comments_for_fix(comments))
         with open(os.path.join(context_dir, "branch.diff"), "w", encoding="utf-8") as f:
-            f.write(get_branch_diff(repo, branch_ref))
+            f.write(get_branch_diff(repo, branch_ref, target_branch))
         prompt = build_mr_fix_prompt(mr, context_dir)
         run_claude_agentic(prompt, repo)
 
@@ -153,7 +157,7 @@ def cmd_mr_review(args: argparse.Namespace) -> None:
         os.makedirs(comments_dir)
 
         with open(os.path.join(context_dir, "branch.diff"), "w", encoding="utf-8") as f:
-            f.write(get_branch_diff(repo, branch_ref))
+            f.write(get_branch_diff(repo, branch_ref, mr.target_branch))
 
         prompt = build_mr_review_prompt(mr, context_dir, comments_dir, branch_ref)
         run_claude_agentic(prompt, repo)
@@ -171,6 +175,6 @@ def cmd_mr_review(args: argparse.Namespace) -> None:
 
     print(f"\nFound {len(comments)} review comment(s) for MR !{mr.iid}.")
     if args.fix:
-        _fix_from_comments(mr, comments, repo, branch_ref)
+        _fix_from_comments(mr, comments, repo, branch_ref, mr.target_branch)
     else:
         _review_comments_interactively(mr, comments)

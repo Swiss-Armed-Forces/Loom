@@ -132,6 +132,7 @@ def generate_commit_message_via_claude(
     mr_template: str,
     repo: Repo,
     mr_context: MRContext = _DEFAULT_MR_CONTEXT,
+    target_branch: str = "main",
 ) -> str | None:
     """Generate a commit message using the Claude Code CLI."""
     if not repo.working_dir:
@@ -140,7 +141,7 @@ def generate_commit_message_via_claude(
 
     if _DIFF_TRUNCATED_MARKER in diff:
         logger.info("Diff was truncated — switching to chunked summarization mode")
-        diff = _build_chunked_summary(get_per_file_diffs(repo), repo)
+        diff = _build_chunked_summary(get_per_file_diffs(repo, target_branch), repo)
 
     prompt = build_mr_update_prompt(
         mr_template,
