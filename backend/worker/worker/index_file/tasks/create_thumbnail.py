@@ -17,6 +17,8 @@ from wand.image import Image
 from worker.index_file.infra.file_indexing_task import FileIndexingTask
 from worker.index_file.infra.indexing_persister import IndexingPersister
 from worker.index_file.tasks.render import (
+    GOTENBERG_MAX_RETRIES,
+    GotenbergError,
     RenderFile,
     render_browser_to_pdf_task,
     render_office_to_pdf_task,
@@ -162,7 +164,12 @@ def persist_thumbnail_total_frames(
     persister.set_thumbnail_total_frames(thumbnail.total_frames)
 
 
-@app.task(base=FileIndexingTask)
+@app.task(
+    base=FileIndexingTask,
+    autoretry_for=(GotenbergError,),
+    max_retries=GOTENBERG_MAX_RETRIES,
+    retry_backoff=True,
+)
 def thumbnail_fallback_render_office_to_pdf_task(
     thumbnail_storage_data: FileStorageLazyBytes | None,
     file_content: TempLazyBytes | None,
@@ -170,10 +177,19 @@ def thumbnail_fallback_render_office_to_pdf_task(
 ) -> TempLazyBytes | None:
     if thumbnail_storage_data is not None:
         return None
+    # render_office_to_pdf_task is called directly rather than dispatched
+    # (.s()/.delay()), so its own autoretry_for cannot retry — Celery only
+    # retries tasks invoked through the broker. Retry here instead, since
+    # this task is the one actually dispatched via signature().
     return render_office_to_pdf_task(file_content, thumbnail_file.render_file)
 
 
-@app.task(base=FileIndexingTask)
+@app.task(
+    base=FileIndexingTask,
+    autoretry_for=(GotenbergError,),
+    max_retries=GOTENBERG_MAX_RETRIES,
+    retry_backoff=True,
+)
 def thumbnail_fallback_render_browser_to_pdf_task(
     thumbnail_storage_data: FileStorageLazyBytes | None,
     file_content: TempLazyBytes | None,
@@ -181,6 +197,7 @@ def thumbnail_fallback_render_browser_to_pdf_task(
 ) -> TempLazyBytes | None:
     if thumbnail_storage_data is not None:
         return None
+    # See comment in thumbnail_fallback_render_office_to_pdf_task above.
     return render_browser_to_pdf_task(file_content, thumbnail_file.render_file)
 
 
