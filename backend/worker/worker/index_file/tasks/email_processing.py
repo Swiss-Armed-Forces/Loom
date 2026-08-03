@@ -13,7 +13,7 @@ from common.file.file_repository import (
     ImapInfo,
 )
 from common.services.lazybytes_service import TempLazyBytes
-from httpx import HTTPStatusError, TimeoutException
+from httpx import HTTPStatusError, TransportError
 from pydantic import BaseModel
 from requests.exceptions import ConnectionError as RequestsConnectionError
 
@@ -22,7 +22,7 @@ from worker.index_file.infra.file_indexing_task import FileIndexingTask
 from worker.index_file.infra.indexing_persister import IndexingPersister
 from worker.index_file.tasks import create_thumbnail, render
 from worker.index_file.tasks.create_thumbnail import ThumbnailFile
-from worker.index_file.tasks.render import RenderFile
+from worker.index_file.tasks.render import GotenbergError, RenderFile
 from worker.settings import settings
 from worker.utils.persisting_task import persisting_task
 
@@ -45,7 +45,6 @@ RSPAMD_MAX_RETRIES = 15
 RSPAMD_RETRY_EXCEPTIONS = (RequestsConnectionError,)
 
 GOTENBERG_MAX_RETRIES = 15
-GOTENBERG_RETRY_EXCEPTIONS = (TimeoutException,)
 
 
 def signature(file_content: TempLazyBytes, file: File) -> Signature:
@@ -204,7 +203,7 @@ class RenderEmailReturn(BaseModel):
 
 @app.task(
     base=FileIndexingTask,
-    autoretry_for=GOTENBERG_RETRY_EXCEPTIONS,
+    autoretry_for=(GotenbergError,),
     max_retries=GOTENBERG_MAX_RETRIES,
     retry_backoff=True,
 )
@@ -225,6 +224,8 @@ def render_email_to_image(
         except HTTPStatusError:
             logger.warning("Unable to render email as image in browser", exc_info=True)
             return None
+        except TransportError as ex:
+            raise GotenbergError() from ex
         with NamedTemporaryFile("rb", dir=settings.tempfile_dir) as fd:
             response.to_file(Path(fd.name))
             lazy_bytes = get_lazybytes_service().from_file(fd)
@@ -233,7 +234,7 @@ def render_email_to_image(
 
 @app.task(
     base=FileIndexingTask,
-    autoretry_for=GOTENBERG_RETRY_EXCEPTIONS,
+    autoretry_for=(GotenbergError,),
     max_retries=GOTENBERG_MAX_RETRIES,
     retry_backoff=True,
 )
@@ -254,6 +255,8 @@ def render_email_to_pdf(
         except HTTPStatusError:
             logger.warning("Unable to render email to pdf in browser", exc_info=True)
             return None
+        except TransportError as ex:
+            raise GotenbergError() from ex
         lazy_bytes = get_lazybytes_service().from_bytes(response.content)
     return RenderEmailReturn(rendered_content=lazy_bytes, imap_info=imap_info)
 

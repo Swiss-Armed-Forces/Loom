@@ -12,7 +12,7 @@ from common.dependencies import (
 from common.file.file_repository import File
 from common.services.lazybytes_service import FileStorageLazyBytes, TempLazyBytes
 from common.utils.cache import cache
-from httpx import HTTPStatusError, TimeoutException
+from httpx import HTTPStatusError, TransportError
 from pydantic import BaseModel
 from wand.exceptions import MissingDelegateError, WandException
 from wand.image import Image
@@ -24,11 +24,14 @@ from worker.settings import settings
 from worker.utils.persisting_task import persisting_task
 
 GOTENBERG_MAX_RETRIES = 15
-GOTENBERG_RETRY_EXCEPTIONS = (TimeoutException,)
 
 logger = logging.getLogger(__name__)
 
 app = get_celery_app()
+
+
+class GotenbergError(Exception):
+    """Raised to trigger a Celery retry on transient Gotenberg connectivity issues."""
 
 
 class RenderFile(BaseModel):
@@ -275,7 +278,7 @@ def render_image_png_task(
 
 @app.task(
     base=FileIndexingTask,
-    autoretry_for=GOTENBERG_RETRY_EXCEPTIONS,
+    autoretry_for=(GotenbergError,),
     max_retries=GOTENBERG_MAX_RETRIES,
     retry_backoff=True,
 )
@@ -302,13 +305,15 @@ def render_browser_to_pdf_task(
         except HTTPStatusError:
             logger.warning("Unable to render pdf in browser", exc_info=True)
             return None
+        except TransportError as ex:
+            raise GotenbergError() from ex
         pdf_lazy = get_lazybytes_service().from_bytes(response.content)
         return pdf_lazy
 
 
 @app.task(
     base=FileIndexingTask,
-    autoretry_for=GOTENBERG_RETRY_EXCEPTIONS,
+    autoretry_for=(GotenbergError,),
     max_retries=GOTENBERG_MAX_RETRIES,
     retry_backoff=True,
 )
@@ -333,6 +338,8 @@ def render_office_to_pdf_task(
         except HTTPStatusError:
             logger.warning("Unable to render pdf in libreoffice", exc_info=True)
             return None
+        except TransportError as ex:
+            raise GotenbergError() from ex
         pdf_lazy = get_lazybytes_service().from_bytes(response.content)
         return pdf_lazy
 
