@@ -148,6 +148,7 @@ interface FolderViewProps {
     searchQuery?: SearchQuery;
     persistExpansion?: boolean;
     expansionKey?: "global" | "filtered";
+    refreshKey?: string | null;
 }
 
 export const FolderView = ({
@@ -155,6 +156,7 @@ export const FolderView = ({
     searchQuery: queryOverride,
     persistExpansion,
     expansionKey = "global",
+    refreshKey,
 }: FolderViewProps) => {
     const { t } = useTranslation();
     const reduxSearchQuery = useAppSelector(selectQuery);
@@ -519,6 +521,24 @@ export const FolderView = ({
         );
         subscribedTreeFileIds.current.clear();
     }, [searchQuery?.id, folderDispatch, dispatch]);
+
+    // When a caller-supplied refreshKey changes (e.g. global folder view
+    // reacting to a new user search), reset the tree so it re-fetches fresh data.
+    const prevRefreshKeyRef = useRef<string | null | undefined>(refreshKey);
+    useEffect(() => {
+        const prev = prevRefreshKeyRef.current;
+        prevRefreshKeyRef.current = refreshKey;
+        if (prev === refreshKey) return;
+        // Skip the initial mount — the tree will be loaded by the main effect.
+        if (prev === undefined) return;
+
+        folderDispatch({ type: FolderViewActionType.QUERY_CHANGED });
+        initialExpandSynced.current = false;
+        subscribedTreeFileIds.current.forEach((fileId) =>
+            unsubscribeChannel(fileId, dispatch),
+        );
+        subscribedTreeFileIds.current.clear();
+    }, [refreshKey, folderDispatch, dispatch]);
 
     const handleLoadMore = useCallback(
         async (nodeId: string) => {
