@@ -10,21 +10,22 @@ from .models import FileDiffMap
 logger = logging.getLogger(__name__)
 
 
-def get_branch_diff(repo: Repo, ref: str = "HEAD") -> str:
-    """Return the diff of commits on the given ref relative to origin/main.
+def get_branch_diff(repo: Repo, ref: str = "HEAD", target_branch: str = "main") -> str:
+    """Return the diff of commits on the given ref relative to the target branch.
 
     Args:
         repo: The git repository.
-        ref: The git ref to diff against origin/main. Pass "HEAD" for the currently
-            checked-out branch (default), or "origin/<branch>" to review a branch that
-            is not checked out locally.
+        ref: The git ref to diff. Pass "HEAD" for the currently checked-out branch
+            (default), or "origin/<branch>" to review a branch not checked out locally.
+        target_branch: The branch to diff against (default: "main"). Pass the MR's
+            target branch so that the diff reflects only the MR's own increment.
 
-    Uses the merge base so that commits in main that are not yet in this branch are
-    excluded. Excludes lockfiles and generated files. Prepends a --stat summary.
+    Uses the merge base so that commits in the target that are not yet in this branch
+    are excluded. Excludes lockfiles and generated files. Prepends a --stat summary.
     Truncates the diff body if it exceeds MAX_DIFF_CHARS.
     """
-    repo.git.fetch("origin", "main")
-    merge_base = repo.git.merge_base("origin/main", ref).strip()
+    repo.git.fetch("origin", target_branch)
+    merge_base = repo.git.merge_base(f"origin/{target_branch}", ref).strip()
     logger.debug("Merge base: %s", merge_base)
 
     stat = repo.git.diff(merge_base, ref, "--stat", "--", *EXCLUDED_PATHSPECS)
@@ -42,14 +43,14 @@ def get_branch_diff(repo: Repo, ref: str = "HEAD") -> str:
     return result
 
 
-def get_per_file_diffs(repo: Repo) -> FileDiffMap:
-    """Return per-file diffs for the current branch relative to origin/main.
+def get_per_file_diffs(repo: Repo, target_branch: str = "main") -> FileDiffMap:
+    """Return per-file diffs for the current branch relative to the target branch.
 
     Uses the same merge-base logic and exclusions as get_branch_diff. Returns a
     FileDiffMap with the stat summary and a dict of file_path -> diff text.
     """
-    repo.git.fetch("origin", "main")
-    merge_base = repo.git.merge_base("origin/main", "HEAD").strip()
+    repo.git.fetch("origin", target_branch)
+    merge_base = repo.git.merge_base(f"origin/{target_branch}", "HEAD").strip()
     logger.debug("Merge base for per-file diffs: %s", merge_base)
 
     stat = repo.git.diff(merge_base, "HEAD", "--stat", "--", *EXCLUDED_PATHSPECS)

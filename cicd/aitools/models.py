@@ -80,7 +80,7 @@ class IssueNoteReply(NamedTuple):
 
 
 class FileDiffMap(NamedTuple):
-    """Per-file diff data for a branch relative to origin/main."""
+    """Per-file diff data for a branch relative to its target branch."""
 
     stat: str
     files: dict[str, str]  # file_path -> raw diff text

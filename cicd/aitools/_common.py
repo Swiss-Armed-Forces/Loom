@@ -100,13 +100,14 @@ def _get_mr_for_current_branch(repo: Repo) -> ProjectMergeRequest:
 
 def _maybe_update_mr_description(mr: ProjectMergeRequest, repo: Repo) -> None:
     """Generate a new MR title/description via Claude and optionally apply it."""
-    diff = get_branch_diff(repo)
+    diff = get_branch_diff(repo, target_branch=mr.target_branch)
     mr_template = load_mr_template(repo)
     message = generate_commit_message_via_claude(
         diff,
         mr_template,
         repo,
         MRContext(title=mr.title, description=mr.description or ""),
+        target_branch=mr.target_branch,
     )
     if not message:
         logger.warning("Could not generate MR description for !%s — skipping", mr.iid)

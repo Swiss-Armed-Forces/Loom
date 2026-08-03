@@ -2,6 +2,10 @@
 # "ags" is flagged as a typo for "ages/tags" but appears legitimately when
 # bolding just the "t" in "<strong>t</strong>ags" in JSX.
 ags = "ags"
+# "PN" appears as a sub-token in "PNGs" (plural of PNG) and is flagged as "ON".
+PN = "PN"
+# "ba" is used as a direction suffix (B→A) in the qr-gif render script.
+ba = "ba"
 
 [default]
 extend-ignore-re = [

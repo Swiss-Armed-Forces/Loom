@@ -122,9 +122,9 @@ def cmd_mr_fix(args: argparse.Namespace) -> None:
         ) as f:
             f.write(format_discussions_for_prompt(discussions))
         with open(os.path.join(context_dir, "branch.diff"), "w", encoding="utf-8") as f:
-            f.write(get_branch_diff(repo))
+            f.write(get_branch_diff(repo, target_branch=mr.target_branch))
         prompt = build_mr_fix_prompt(mr, context_dir)
         run_claude_agentic(prompt, repo)
 
-    updated_diff = get_branch_diff(repo)
+    updated_diff = get_branch_diff(repo, target_branch=mr.target_branch)
     _generate_and_post_replies(mr, discussions, updated_diff, repo)

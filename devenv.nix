@@ -485,6 +485,14 @@ in
     # Recommended by git-hooks.nix
     git-hooks.package = pkgs.prek;
 
+    "git-lfs-pre-push" = {
+      enable = true;
+      entry = "${pkgs.git-lfs}/bin/git-lfs pre-push";
+      stages = [ "pre-push" ];
+      pass_filenames = false;
+      always_run = true;
+    };
+
     dos2unix = {
       enable = true;
       entry = "dos2unix";

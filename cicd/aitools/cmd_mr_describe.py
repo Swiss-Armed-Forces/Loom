@@ -28,7 +28,7 @@ def cmd_mr_describe(args: argparse.Namespace) -> None:
     repo = Repo(os.getcwd())
     mr = _get_mr_for_current_branch(repo)
 
-    diff = get_branch_diff(repo)
+    diff = get_branch_diff(repo, target_branch=mr.target_branch)
     if not diff:
         logger.info("No changes on this branch compared to its merge base.")
         return
@@ -48,6 +48,7 @@ def cmd_mr_describe(args: argparse.Namespace) -> None:
             description=mr.description or "",
             user_instructions=user_instructions,
         ),
+        target_branch=mr.target_branch,
     )
     if not message:
         logger.error("Failed to generate commit message via Claude.")
