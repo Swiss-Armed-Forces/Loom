@@ -1238,17 +1238,22 @@ class FileRepository(BaseEsRepository[_EsFile, File]):
         never readmitted (unlike the multi-value ``full_path.tree`` field used by the
         tree variant).
 
-        If ``filename`` is provided, an additional wildcard filter is applied on
-        ``full_path.keyword`` to restrict results to files whose path contains the given
-        string.
+        If ``filename`` is provided, a case-insensitive wildcard query is applied on
+        ``full_path.keyword`` (must match) with an additional boost on
+        ``short_name.keyword`` (should match) so that hits where the filename itself
+        matches rank above hits where only a parent folder matches.  Results are sorted
+        by descending score; without a filename query they are sorted alphabetically.
         """
+        order: dict[str, str] = {"max_score": "desc"} if filename else {"_key": "asc"}
         dir_aggregation: Agg[_EsFile] = A(
             "terms",
             field="full_path.keyword",
             size=TREE_PATH_MAX_ELEMENT_COUNT
             + 1,  # +1 to detect whether more pages exist
-            order={"_key": "asc"},
+            order=order,
         )
+        if filename:
+            dir_aggregation.metric("max_score", A("max", script={"source": "_score"}))
         dir_aggregation.bucket(
             "first_hit",
             A(
@@ -1271,7 +1276,32 @@ class FileRepository(BaseEsRepository[_EsFile, File]):
         if after is not None:
             search = search.filter("range", **{"full_path.keyword": {"gt": after}})
         if filename:
-            search = search.filter("wildcard", **{"full_path.keyword": f"*{filename}*"})
+            search = search.query(
+                "bool",
+                must=[
+                    Q(
+                        "wildcard",
+                        **{
+                            "full_path.keyword": {
+                                "value": f"*{filename}*",
+                                "case_insensitive": True,
+                            }
+                        },
+                    )
+                ],
+                should=[
+                    Q(
+                        "wildcard",
+                        **{
+                            "short_name.keyword": {
+                                "value": f"*{filename}*",
+                                "case_insensitive": True,
+                                "boost": 3.0,
+                            }
+                        },
+                    )
+                ],
+            )
         search.aggs.bucket("directory", dir_aggregation)
         search = search[0:0]  # do not fetch hits
         result = search.using(self._elasticsearch).execute()
