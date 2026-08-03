@@ -3,7 +3,6 @@ import {
     CloudCircleOutlined,
     MailOutlineOutlined,
     SmartToyOutlined,
-    TaskOutlined,
     InfoOutlined,
     ExpandOutlined,
     PrecisionManufacturingOutlined,
@@ -29,7 +28,6 @@ import { notifyIfUnavailableInDemoMode } from "@features/common/demoModeUnavaila
 import {
     apiHost,
     elasticVueHost,
-    flowerHost,
     grafanaHost,
     s3Host,
     openWebuifrontendHost,
@@ -117,11 +115,6 @@ export const BurgerMenu = () => {
             link: s3Host,
             text: "S3",
             icon: <CloudUploadOutlined />,
-        },
-        {
-            link: flowerHost,
-            text: "Flower",
-            icon: <TaskOutlined />,
         },
         {
             link: rabbitHost,

@@ -60,7 +60,7 @@ failed test or deployment job leaves the previously published Pages site in plac
   no preview in the demo.
 - Changes remain in memory and reset when the page reloads.
 - File uploads and archive imports are unavailable because they require ingestion
-  services. Task execution links are unavailable because there is no Flower service.
+  services. Task execution links are unavailable because there is no Celery service.
 - Backend service links remain visible in the burger menu, but selecting one shows an
   unavailable notification instead of navigating away from the demo.
 - The search emulator supports every query shown in the frontend search tips,

@@ -16,7 +16,6 @@ requests = "^2.31.0"
 scipy = "^1.17.1"
 scikit-learn = "^1.7.0"
 langchain-text-splitters = "^1.1.2"
-flower = "^2.0.1"
 gotenberg-client = "^0.13.1"
 
 # zstandard can be removed once refactored

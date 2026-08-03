@@ -144,7 +144,7 @@ describe("BurgerMenu", () => {
         notifyIfUnavailableInDemoMode.mockReturnValue(false);
         renderMenu();
         openMenu();
-        const serviceLink = screen.getByRole("menuitem", { name: "Flower" });
+        const serviceLink = screen.getByRole("menuitem", { name: "Traefik" });
         const click = new MouseEvent("click", {
             bubbles: true,
             cancelable: true,

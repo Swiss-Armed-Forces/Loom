@@ -106,7 +106,6 @@ Multiple services that are useful for production and development purposes are st
 | SeaweedFS     | [https://seaweedfs.loom](https://seaweedfs.loom)         | Admin UI for cluster management               |                                                |
 | S3            | [https://s3.loom](https://s3.loom)                       | S3-compatible storage API                     |                                                |
 | Api           | [https://api.loom](https://api.loom)                     | The loom api                                  | Swagger documentation: <https://api.loom/docs> |
-| Flower        | [https://flower.loom](https://flower.loom)               | Monitor celery tasks                          |                                                |
 | RabbitMQ      | [https://rabbit.loom](https://rabbit.loom)               | Monitor rabbit messages                       | user: `guest` password: `guest`                |
 | Elasticvue    | [https://elasticvue.loom](https://elasticvue.loom)       | ElasticSearch management                      | use "predefined clusters"                      |
 | ElasticSearch | [https://elasticsearch.loom](https://elasticsearch.loom) | Elasticsearch Database                        |                                                |
@@ -137,4 +136,3 @@ Multiple services that are useful for production and development purposes are st
 - [Backend Documentation](backend/README.md)
 - [Integration Testing Documentation](integrationtest/README.md)
 - [CI/CD Pipeline Documentation](cicd/README.md)
-- [Celery Flower canvas](https://docs.celeryq.dev/en/stable/userguide/canvas.html)
