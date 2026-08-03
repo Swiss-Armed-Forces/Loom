@@ -39,6 +39,7 @@ import {
     selectAutoActionsPreferences,
     selectHighlightedQueryId,
     selectLeftSidebarPanel,
+    selectQuery,
     selectTags,
     setAutoActionPreference,
     setLeftSidebarPanel,
@@ -116,6 +117,7 @@ export const LeftSidebar = () => {
     const tags = useAppSelector(selectTags);
     const preferences = useAppSelector(selectAutoActionsPreferences);
     const highlightedQueryId = useAppSelector(selectHighlightedQueryId);
+    const reduxQuery = useAppSelector(selectQuery);
 
     const isMobile = useMediaQuery("(max-width:600px)");
     const [width, setWidth] = useState(loadWidth);
@@ -242,6 +244,7 @@ export const LeftSidebar = () => {
                         filter={filterText}
                         searchQuery={GLOBAL_FOLDER_QUERY}
                         persistExpansion={true}
+                        refreshKey={reduxQuery?.id ?? null}
                     />
                 );
             case LeftSidebarPanel.TAGS:
