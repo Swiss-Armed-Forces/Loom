@@ -1,15 +1,18 @@
 import { Inventory, Search } from "@mui/icons-material";
 import { AppBar, Box, Tab, Tabs, Toolbar, Tooltip } from "@mui/material";
 import { useMediaQuery } from "@mui/material";
-import { ComponentProps, ElementType, forwardRef } from "react";
+import { ComponentProps, ElementType, forwardRef, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 
 import { useAppDispatch } from "@app/hooks";
 import { updateQuery } from "@app/slices/searchSlice";
 import { DemoModeIndicator } from "@features/common/components/DemoModeIndicator";
 
-import { LoomResponsiveLogo } from "../../branding/LoomResponsiveLogo";
+import {
+    LoomResponsiveLogo,
+    LoomResponsiveLogoHandle,
+} from "../../branding/LoomResponsiveLogo";
 
 import { ArchiveEncryptionKeyDisplay } from "./ArchiveEncryptionKeyDisplay";
 import { BackgroundStatusIndicator } from "./BackgroundStatusIndicator";
@@ -32,11 +35,16 @@ const TooltipTab = forwardRef<
 ));
 TooltipTab.displayName = "TooltipTab";
 
+const DOUBLE_CLICK_DELAY_MS = 250;
+
 export const Header = () => {
     const location = useLocation();
     const { t } = useTranslation();
     const dispatch = useAppDispatch();
+    const navigate = useNavigate();
     const isMobile = useMediaQuery("(max-width:600px)");
+    const logoRef = useRef<LoomResponsiveLogoHandle>(null);
+    const clickTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const isSearchPage =
         location.pathname === "/search" || location.pathname === "/";
     const headerStripe = getHeaderStripeConfig(
@@ -80,13 +88,27 @@ export const Header = () => {
                         className={styles.headerBranding}
                         data-tour="branding"
                         to={"/"}
-                        onClick={() =>
-                            dispatch(
-                                updateQuery({ query: "", sortField: null }),
-                            )
-                        }
+                        onClick={(e) => {
+                            e.preventDefault();
+                            if (clickTimerRef.current !== null) {
+                                clearTimeout(clickTimerRef.current);
+                                clickTimerRef.current = null;
+                                logoRef.current?.triggerAnimation();
+                            } else {
+                                clickTimerRef.current = setTimeout(() => {
+                                    clickTimerRef.current = null;
+                                    dispatch(
+                                        updateQuery({
+                                            query: "",
+                                            sortField: null,
+                                        }),
+                                    );
+                                    navigate("/");
+                                }, DOUBLE_CLICK_DELAY_MS);
+                            }
+                        }}
                     >
-                        <LoomResponsiveLogo />
+                        <LoomResponsiveLogo ref={logoRef} />
                     </Link>
                 }
                 {!isMobile && isSearchPage ? (

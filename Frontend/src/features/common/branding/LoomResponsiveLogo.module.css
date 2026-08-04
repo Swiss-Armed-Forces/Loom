@@ -1,0 +1,16 @@
+@keyframes eyeBlink {
+    0%,
+    100% {
+        transform: scaleY(1);
+    }
+    40%,
+    60% {
+        transform: scaleY(0.05);
+    }
+}
+
+.animBlink :global(#g7) {
+    animation: eyeBlink 0.5s ease-in-out;
+    transform-box: fill-box;
+    transform-origin: center center;
+}
