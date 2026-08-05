@@ -165,6 +165,24 @@ data:
             source_labels: [namespace]
             regex: {{ .Release.Namespace }}
 {{- end }}
+      - job_name: 'keda'
+        scrape_interval: 15s
+        metrics_path: /metrics
+        kubernetes_sd_configs:
+          - role: endpoints
+            namespaces:
+              names:
+                - {{ .Release.Namespace }}
+        relabel_configs:
+          - source_labels: [__meta_kubernetes_service_label_app_kubernetes_io_component]
+            action: keep
+            regex: operator
+          - source_labels: [__meta_kubernetes_endpoint_port_name]
+            action: keep
+            regex: metrics
+          - source_labels: [__meta_kubernetes_pod_name]
+            action: replace
+            target_label: pod
 {{- if .Values.prometheus.collectClusterMetrics }}
       - job_name: 'kubelet'
         scrape_interval: 30s

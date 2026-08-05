@@ -1,0 +1,98 @@
+#!/usr/bin/env bash
+#
+# Unified skaffold wrapper for third-party components (traefik, keda, ...).
+#
+# Usage: cicd/skaffold <component> [skaffold args...]
+#
+# Extracts the component's bundled helm chart .tgz into a temp directory,
+# then invokes skaffold with CHART_PATH and IMAGE_VERSION set in the
+# environment for use by the component's skaffold.yaml.
+#
+set -euo pipefail
+
+SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd)
+SKAFFOLD_CMD="$(command -v skaffold)"
+
+COMPONENT=""
+
+# variables defined in vars.sh; accessed via indirect reference ${!VAR},
+# which shellcheck cannot trace — disable the unused-variable warning:
+# shellcheck disable=SC2034
+TRAEFIK_HELM_VERSION=""
+# shellcheck disable=SC2034
+TRAEFIK_IMAGE_VERSION=""
+# shellcheck disable=SC2034
+KEDA_HELM_VERSION=""
+# shellcheck disable=SC2034
+KEDA_IMAGE_VERSION=""
+
+VARS_FILE="${SCRIPT_DIR}/../vars.sh"
+# shellcheck disable=SC1091
+# shellcheck source=../vars.sh
+source "${VARS_FILE}"
+
+CHART_PATH="$(mktemp -d)"
+
+atexit(){
+    # Shellcheck does not understand
+    # this very well...
+    # shellcheck disable=SC2317
+    rm \
+        --force \
+        --recursive \
+        "${CHART_PATH}"
+}
+trap atexit EXIT
+
+#
+# Argument parsing
+#
+
+ARGS=()
+while [[ $# -gt 0 ]]; do
+    case "${1}" in
+    -t | --tag)
+        # ignore tag
+        shift
+        ;;
+    -t=* | --tag=*)
+        # ignore tag
+        ;;
+    *)
+        if [[ -z "${COMPONENT}" ]]; then
+            COMPONENT="${1}"
+        else
+            ARGS+=("${1}")
+        fi
+        ;;
+    esac
+    shift
+done
+
+#
+# Main
+#
+
+# Resolve component-specific variables via indirect reference
+COMPONENT_UPPER="${COMPONENT^^}"
+COMPONENT_DIR="${SCRIPT_DIR}/../${COMPONENT}"
+HELM_VERSION_VAR="${COMPONENT_UPPER}_HELM_VERSION"
+IMAGE_VERSION_VAR="${COMPONENT_UPPER}_IMAGE_VERSION"
+HELM_VERSION="${!HELM_VERSION_VAR}"
+IMAGE_VERSION="${!IMAGE_VERSION_VAR}"
+
+tar \
+    --extract \
+    --gunzip \
+    --directory "${CHART_PATH}" \
+    --file "${COMPONENT_DIR}/${COMPONENT}-${HELM_VERSION}.tgz"
+
+# cd so that all relative paths in skaffold.yaml (context, valuesFiles,
+# dockerfile, hooks) resolve relative to the component directory, exactly
+# as they did when each component had its own wrapper script.
+cd "${COMPONENT_DIR}"
+
+CHART_PATH="${CHART_PATH}" \
+IMAGE_VERSION="${IMAGE_VERSION}" \
+    "${SKAFFOLD_CMD}" \
+        "${ARGS[@]}"

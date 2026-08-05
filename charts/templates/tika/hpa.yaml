@@ -1,4 +1,5 @@
 {{- if .Values.tika.hpa.enabled -}}
+{{- if not .Values.tika.keda.enabled -}}
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
@@ -24,4 +25,5 @@ spec:
         target:
           type: Utilization
           averageUtilization: {{ .Values.tika.hpa.targetCPUUtilizationPercentage }}
+{{- end }}
 {{- end }}

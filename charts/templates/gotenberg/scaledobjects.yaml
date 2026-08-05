@@ -1,0 +1,34 @@
+{{- if .Values.gotenberg.keda.enabled -}}
+{{- if not .Values.gotenberg.hpa.enabled -}}
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: {{ include "app.fullname" . }}-gotenberg
+  labels:
+    {{- include "app.labels.custom" (dict "context" . "component" "gotenberg") | nindent 4 }}
+    app.kubernetes.io/component: "gotenberg"
+  {{- with include "app.annotations.custom" (dict "context" . "component" "gotenberg") }}
+  annotations:
+    {{- . | nindent 4 }}
+  {{- end }}
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ include "app.fullname" . }}-gotenberg
+  maxReplicaCount: {{ .Values.gotenberg.keda.maxReplicas }}
+  minReplicaCount: {{ .Values.gotenberg.keda.minReplicas }}
+  triggers:
+    - type: rabbitmq
+      metadata:
+        protocol: http
+        host: http://guest:guest@{{ include "app.fullname" . }}-rabbit:{{ .Values.rabbit.service.port.http }}
+        mode: QueueLength
+        value: {{ .Values.gotenberg.keda.targetQueueLength | quote }}
+        queueName: {{ .Values.gotenberg.keda.queueToWatch }}
+        useRegex: "true"
+        operation: "sum"
+        pageSize: "500"
+        timeout: "30s"
+{{- end }}
+{{- end }}

@@ -1,0 +1,52 @@
+# Scaling
+#
+# Enable autoscaling for compute-intensive services.
+# Apply this when you want services to scale out under load.
+#
+# worker and reaper use KEDA (queue-depth driven scaling).
+# tika, gotenberg and ollama use HPA (CPU/memory driven scaling).
+#
+# NOTE: hpa and keda are exclusive per service (enable only one;
+#       both true -> both false).
+#
+worker:
+  hpa:
+    enabled: false
+  keda:
+    enabled: true
+
+reaper:
+  hpa:
+    enabled: false
+  keda:
+    enabled: true
+
+tika:
+  hpa:
+    enabled: true
+  keda:
+    enabled: false
+
+gotenberg:
+  hpa:
+    enabled: true
+  keda:
+    enabled: false
+
+ollama:
+  hpa:
+    enabled: true
+  keda:
+    enabled: false
+
+resourceQuotas:
+  scalable:
+    enabled: true
+    # Tune hard limits to match your cluster's total allocatable resources
+    # minus the headroom needed for infrastructure pods.
+    # Default assumes ~3 nodes with ~90 GiB / 24 cores total allocatable,
+    # reserving ~20 GiB / 4 cores for infrastructure.
+    hard:
+      requests.cpu: "20"
+      requests.memory: "70Gi"
+      pods: "200"

@@ -9,6 +9,8 @@ The “Elasticvue” component is distributed under the terms of the MIT License
 The official website for “Elasticvue” is: [https://elasticvue.com/](https://elasticvue.com/). This website provides comprehensive information about the project’s features, documentation, and deployment methods.
 
 **Trademark Information:**
+The name “Elasticvue” identifies an independent open-source project (github.com/cars10/elasticvue); no registered trademark for the “Elasticvue” name has been confirmed at the time of this writing. Note that the “Elasticvue” name embeds the term “Elastic,” which is a registered trademark of Elasticsearch B.V.; use of the Elasticvue product does not grant any rights to that mark.
+
 “Elasticsearch” is a registered trademark of Elasticsearch BV in the United States and other countries. Although “Elasticvue” was developed to interface with Elasticsearch, it remains an independent project and is not affiliated with Elasticsearch BV. Any reference to “Elastic” within the “Elasticvue” name does not imply an endorsement or sponsorship by Elasticsearch BV. This license declaration does not grant any rights or licenses to use the “Elasticsearch” trademark.
 
 **Source Code:**

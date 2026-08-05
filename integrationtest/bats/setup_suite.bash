@@ -17,7 +17,8 @@ setup_suite() {
     reinitialize_minikube_home
 
     # Use a fresh temp directory for mount data. PVC files are written as root
-    # inside minikube, so teardown_suite handles cleanup with sudo.
+    # inside minikube; teardown() in helpers.bash cleans them via docker exec
+    # (root) so teardown_suite can remove MOUNT_DIR without sudo.
     export MOUNT_DIR="${BATS_SUITE_TMPDIR}/data"
     mkdir -p "${MOUNT_DIR}"
 }
@@ -26,7 +27,5 @@ teardown_suite() {
     # Fully purge the isolated home; --all --purge removes all profiles and the
     # minikube directory itself.
     minikube delete --all=true --purge=true || true
-    # PVC data inside MOUNT_DIR is written as root by processes inside minikube,
-    # so BATS cannot remove it on its own; clean it up explicitly.
-    sudo rm -rf "${MOUNT_DIR:?}"
+    rm -rf "${MOUNT_DIR:?}"
 }

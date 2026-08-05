@@ -138,13 +138,16 @@ For a more scalable setup, you can deploy Loom using its Helm chart on your Kube
     [`./charts`](../charts) directory of this repository. These files document all the available
     deployment variables, allowing you to tailor the installation to your specific needs.
 
-3. For a true multi-node setup, apply `charts/values-multinode.yaml` as an additional values file:
+3. For a true multi-node setup, apply the scaling and distribution values files:
 
     ```bash
-    helm install loom loom-prod/loom --values charts/values-multinode.yaml
+    helm install loom loom-prod/loom \
+      --values charts/values-scaling.yaml \
+      --values charts/values-distribution.yaml
     ```
 
-    This enables horizontal scaling, high availability, and resource quotas suited for multi-node clusters.
+    `values-scaling.yaml` enables autoscaling (KEDA/HPA) and resource quotas.
+    `values-distribution.yaml` enables data replication and service redundancy across nodes.
 
 ### Multi Node Offline usage
 
@@ -163,9 +166,12 @@ All values files are located in the [`./charts`](../charts) directory. They can 
   than editing the defaults.
 - **[`values-gpu.yaml`](../charts/values-gpu.yaml)** — Use this when your nodes have NVIDIA GPUs
   and you want faster AI inference and translation. Without it, all AI workloads run on CPU only.
-- **[`values-multinode.yaml`](../charts/values-multinode.yaml)** — Use this when deploying across
-  multiple nodes and you need services to scale out under load, storage and search to remain
-  available if a node goes down, and resource usage to stay within defined cluster boundaries.
+- **[`values-scaling.yaml`](../charts/values-scaling.yaml)** — Enable autoscaling (KEDA for
+  queue-driven services, HPA for CPU/memory-driven services) and cluster-wide resource quotas.
+  Use with `up --scaling` or pass via `--values` to Helm.
+- **[`values-distribution.yaml`](../charts/values-distribution.yaml)** — Enable data replication
+  and service redundancy across nodes: Elasticsearch shard replicas, SeaweedFS volume replication,
+  and Prometheus cluster-metrics handoff to central monitoring infrastructure.
 - **[`values-disable-ai-services.yaml`](../charts/values-disable-ai-services.yaml)** — Use this when
   you want to provide external AI endpoints or skip AI features entirely. Note: AI-powered indexing
   steps must also be disabled, otherwise they will fail at runtime.
@@ -181,25 +187,87 @@ All values files are located in the [`./charts`](../charts) directory. They can 
   developing Loom locally. It trades model quality for fast iteration: lightweight models, hot
   reload, and all internal services exposed via ingress. Not suitable for production.
 
-### Vault-backed Archive Encryption Key
+### External Secrets Operator (ESO)
 
-By default, the archive encryption master key is auto-generated on first install and
-stored in the `archive-enc-master-key` Kubernetes Secret. To source this key from Vault
-instead, set `externalSecrets.archiveEncMasterKey.enabled: true` in your values override
-and configure `remoteRef.key` and `remoteRef.property` to point to the Vault path and
-sub-key holding the 32-character hex key. When enabled, the pre-install Job that
-auto-generates the secret is automatically skipped.
+Loom supports [External Secrets Operator](https://external-secrets.io/) to pull sensitive
+configuration from an external secret store (Vault, AWS Secrets Manager, Azure Key Vault, etc.)
+instead of inlining secrets in Helm values or Kubernetes manifests.
 
-Example `values-overwrites.yaml`:
+> ℹ️ ESO itself must be installed in your cluster separately. Loom only ships the `ExternalSecret`
+> resources; it does not deploy the ESO operator.
+
+#### Shared store reference
+
+All `ExternalSecret` resources created by the chart share one `SecretStore` (or
+`ClusterSecretStore`) reference. Configure it once in your values override:
 
 ```yaml
 externalSecrets:
   secretStoreRef:
-    name: my-vault-store
-    kind: SecretStore
-  archiveEncMasterKey:
-    enabled: true
-    remoteRef:
-      key: secret/loom/archive
-      property: enc_master_key
+    name: my-vault-store   # name of the SecretStore / ClusterSecretStore in your cluster
+    kind: SecretStore      # or ClusterSecretStore
+  refreshInterval: "1h"   # how often ESO re-reads from the store
+```
+
+#### Application credentials
+
+Individual application settings (S3 credentials, LLM API keys, etc.) can each be sourced from
+the external store instead of the settings ConfigMap. Every entry in `externalSecrets.secrets`
+maps an environment-variable name to a path in the secret store:
+
+```yaml
+externalSecrets:
+  secrets:
+    # SeaweedFS / S3 credentials
+    file_storage__access_key:
+      enabled: true
+      name: loom-file-storage-access-key
+      remoteRef:
+        key: secret/loom/s3
+        property: access_key
+    file_storage__secret_key:
+      enabled: true
+      name: loom-file-storage-secret-key
+      remoteRef:
+        key: secret/loom/s3
+        property: secret_key
+
+    # External LLM API key
+    llm__chat__api_key:
+      enabled: true
+      name: loom-llm-chat-api-key
+      remoteRef:
+        key: secret/loom/llm
+        property: chat_api_key
+```
+
+When a secret is enabled, ESO creates a Kubernetes Secret named by `name` with the
+environment-variable name as the data key. Loom pods automatically prefer such secrets over
+the corresponding entry in the settings ConfigMap.
+
+The full list of supported keys is documented in `charts/values.yaml` under
+`externalSecrets.secrets`.
+
+## Troubleshooting
+
+This section covers known issues and their solutions. If you encounter a problem not listed here,
+check the pod logs with `kubectl logs -n loom <pod-name>` or open an issue on the
+[issue tracker](https://gitlab.com/swiss-armed-forces/cyber-command/cea/loom/-/issues).
+
+### KEDA DNS resolution
+
+The KEDA autoscaler metrics-server requires DNS resolution to the keda-operator in the cluster.local domain.
+In some unfortunate setups this may not work properly as the request may be forwarded and resolved upstream
+before the keda-operator is registered in local DNS. If this occurs in your setup, one possible solution
+would be to switch off fallthrough for cluster.local domains by changing the corresponding CoreDNS
+configuration via
+
+```bash
+kubectl edit configmap coredns -n kube-system
+```
+
+followed by restarting CoreDNS
+
+```bash
+kubectl rollout restart deployment coredns -n kube-system
 ```

@@ -1,0 +1,5 @@
+# Image version
+ARG KEDA_IMAGE_VERSION="2.20.1"
+ARG DOCKER_REGISTRY="ghcr.io"
+
+FROM ${DOCKER_REGISTRY}/kedacore/keda:${KEDA_IMAGE_VERSION}

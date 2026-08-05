@@ -10,7 +10,7 @@ THIRD_PARTY_LICENCES="THIRD-PARTY.md"
 THIRD_PARTY_LICENCES_PROGRESS="THIRD-PARTY.md.progress"
 THIRD_PARTY_CACHE_DIR="${THIRD_PARTY_CACHE_DIR:-third-party-cache}"
 
-TRAEFIK_SKAFFOLD_CMD="${TOPLEVEL_DIR}/traefik/skaffold"
+CICD_SKAFFOLD="${SCRIPT_DIR}/skaffold"
 # We need this because some images ore too big for /tmp (RAM)
 SYFT_TMPDIR="$(mktemp --directory --tmpdir="${PWD}" ".syft-tmp.XXXXXXX" )"
 SYFT_VERSION="$(syft --version | sed 's/syft //' | tr -cd '[:alnum:]._-')"
@@ -52,13 +52,16 @@ get_image_tags(){
 
 build_all_images(){
     # Traefik
-    (
-        cd "${TOPLEVEL_DIR}/traefik"
-        "${TRAEFIK_SKAFFOLD_CMD}" \
-            build \
-            --profile "${PROFILE}" \
-            --push=false
-    )
+    "${CICD_SKAFFOLD}" traefik \
+        build \
+        --profile "${PROFILE}" \
+        --push=false
+
+    # Keda
+    "${CICD_SKAFFOLD}" keda \
+        build \
+        --profile "${PROFILE}" \
+        --push=false
 
     # Application
     (
@@ -72,15 +75,20 @@ build_all_images(){
 
 list_all_images(){
     # Traefik
-    (
-        cd "${TOPLEVEL_DIR}/traefik"
-        "${TRAEFIK_SKAFFOLD_CMD}" \
-            build \
-            --dry-run \
-            --quiet \
-            --profile "${PROFILE}" \
-        | get_image_tags
-    )
+    "${CICD_SKAFFOLD}" traefik \
+        build \
+        --dry-run \
+        --quiet \
+        --profile "${PROFILE}" \
+    | get_image_tags
+
+    # Keda
+    "${CICD_SKAFFOLD}" keda \
+        build \
+        --dry-run \
+        --quiet \
+        --profile "${PROFILE}" \
+    | get_image_tags
 
     # Application
     (

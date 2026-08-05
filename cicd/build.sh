@@ -6,6 +6,7 @@ set -euo pipefail
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 STEPS=(
     build_traefik
+    build_keda
     build_application
 )
 
@@ -19,12 +20,11 @@ VERBOSE=false
 #
 
 build_traefik(){
-    (
-        cd "${SCRIPT_DIR}/../traefik"
-        # Note: use the wrapper here
-        ./skaffold build \
-            "${@}"
-    )
+    "${SCRIPT_DIR}/skaffold" traefik build "${@}"
+}
+
+build_keda(){
+    "${SCRIPT_DIR}/skaffold" keda build "${@}"
 }
 
 build_application(){

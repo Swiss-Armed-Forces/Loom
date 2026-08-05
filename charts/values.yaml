@@ -473,11 +473,18 @@ worker: &worker
       maxUnavailable: "34%"
   image:
     repository: swiss-armed-forces/cyber-command/cea/loom/worker
+  # NOTE: hpa and keda are exclusive (enable only one; both true -> both false)
   hpa:
     enabled: false
     maxReplicas: 100
     minReplicas: 1
     targetCPUUtilizationPercentage: 100
+  keda: &workerkeda
+    enabled: false
+    maxReplicas: 100
+    minReplicas: 1
+    targetQueueLength: 10
+    queueToWatch: '(loom:default|loom:worker.+)'
   service:
     port: 80
   readinessProbe:
@@ -500,7 +507,11 @@ worker: &worker
   # app-tier: worker
   # workload-type: async
 
-reaper: *worker
+reaper:
+  <<: *worker
+  keda:
+    <<: *workerkeda
+    queueToWatch: '(loom:graveyard|loom:dead)'
 
 persister:
   # Number of persister replicas - each gets a unique shard assignment.
@@ -922,11 +933,18 @@ ollama:
     rollingUpdate:
       maxSurge: 0
       maxUnavailable: 1
+  # NOTE: hpa and keda are exclusive (enable only one; both true -> both false)
   hpa:
     enabled: false
     maxReplicas: 2
     minReplicas: 1
     targetCPUUtilizationPercentage: 80
+  keda:
+    enabled: false
+    maxReplicas: 2
+    minReplicas: 1
+    targetQueueLength: 10
+    queueToWatch: '(loom:default|loom:worker.+)'
   image:
     repository: swiss-armed-forces/cyber-command/cea/loom/ollama
   service:
@@ -1231,11 +1249,18 @@ tika:
     rollingUpdate:
       maxSurge: 1
       maxUnavailable: 0
+  # NOTE: hpa and keda are exclusive (enable only one; both true -> both false)
   hpa:
     enabled: false
     maxReplicas: 10
     minReplicas: 1
     targetCPUUtilizationPercentage: 100
+  keda:
+    enabled: false
+    maxReplicas: 10
+    minReplicas: 1
+    targetQueueLength: 10
+    queueToWatch: '(loom:default|loom:worker.+)'
   image:
     repository: swiss-armed-forces/cyber-command/cea/loom/tika
   service:
@@ -1272,11 +1297,18 @@ gotenberg:
     rollingUpdate:
       maxSurge: 0
       maxUnavailable: 1
+  # NOTE: hpa and keda are exclusive (enable only one; both true -> both false)
   hpa:
     enabled: false
     maxReplicas: 10
     minReplicas: 1
     targetCPUUtilizationPercentage: 80
+  keda:
+    enabled: false
+    maxReplicas: 10
+    minReplicas: 1
+    targetQueueLength: 10
+    queueToWatch: '(loom:default|loom:worker.+)'
   image:
     repository: swiss-armed-forces/cyber-command/cea/loom/gotenberg
   service:

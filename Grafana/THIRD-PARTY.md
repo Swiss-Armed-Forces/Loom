@@ -21,11 +21,10 @@ The name “Grafana” and associated logos are trademarks of Grafana Labs, gove
 - Obtain a separate trademark license for uses outside open-source discussions, development, or support; and
 - Provide proper attribution when referencing Grafana’s trademarks.
 
-For any inquiries or clarifications regarding permitted trademark uses, please contact Grafana Labs at hello@grafana.com.
 
 **Source Code:**
 
 The source code for Grafana is publicly available on GitHub:
 [https://github.com/grafana/grafana](https://github.com/grafana/grafana)
 
-This repository contains complete version histories, issue tracking, and guidance for contributions, reflecting Grafana’s open and transparent development practices.
+This repository contains complete version histories, issue tracking, and guidance for contributions.

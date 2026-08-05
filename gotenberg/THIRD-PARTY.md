@@ -24,8 +24,7 @@ https://gotenberg.dev/
 
 **Trademark Information:**
 
-“Gotenberg” is the name of an open-source software project maintained by Julien Neuhart. No registered trademark is claimed by the Loom project.
-The name “Gotenberg” is used solely for nominative and descriptive purposes to identify the third-party software component.
+“Gotenberg” is the name of an open-source software project created and maintained by Julien Neuhart. No registered trademark for the “Gotenberg” name has been confirmed at the time of this writing. Use of the name in Loom's materials is solely for nominative and descriptive purposes to identify the third-party software component and does not imply endorsement or affiliation with the project maintainer.
 
 All other trademarks referenced or included in the Gotenberg Docker image—including but not limited to Docker, Chromium, LibreOffice, Debian, and Microsoft Office—are the property of their respective owners. Their use does not imply endorsement, sponsorship, or affiliation with the Loom project.
 

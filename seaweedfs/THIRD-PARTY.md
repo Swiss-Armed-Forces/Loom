@@ -23,8 +23,8 @@ SeaweedFS is subject to a dual-licensing model:
 - https://seaweedfs.com
 
 **Trademark Information:**
-- “SeaweedFS” is a trademark of its respective owners.
-- All references to the name are for descriptive purposes only and do not imply endorsement, affiliation, or sponsorship.
+- “SeaweedFS” is a trademark of Seaweed Data. All references to the name are for descriptive
+  purposes only and do not imply endorsement, affiliation, or sponsorship by Seaweed Data.
 - Loom does not claim any rights to the SeaweedFS trademarks and uses them in accordance with the Apache License 2.0 trademark limitations.
 - When applicable, Docker images or distributions (e.g., Bitnami builds) may include additional trademarks and copyrights owned by their respective providers (e.g., Broadcom Inc.).
 

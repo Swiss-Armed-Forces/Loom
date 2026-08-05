@@ -15,8 +15,6 @@ Loom utilizes the Dovecot Community Edition as a standalone Docker image.
 
 **Trademark Information:**
 
-* The Dovecot project asserts copyright over the name "Dovecot" as indicated on their website.
-* An unrelated entity, Dovecot Studios, also identifies "Dovecot" as a proprietary mark in the art gallery sector.
-* The trademark status of the "Dovecot" software project in specific jurisdictions like the US and EU requires further investigation through official trademark databases.
+The Dovecot IMAP server software is developed and maintained by Open-Xchange (formerly Dovecot Oy, acquired in 2015). The name "Dovecot" in the context of the email server software is associated with Open-Xchange. No registered trademark for "Dovecot" as a software product has been confirmed at the time of this writing. Use of the name in Loom's materials is solely for nominative and descriptive purposes to identify the third-party software component and does not imply endorsement or affiliation with Open-Xchange.
 
 **Source Code:** <https://github.com/dovecot/core>

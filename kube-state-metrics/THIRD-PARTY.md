@@ -15,6 +15,8 @@ The software is provided “AS IS”, without warranties or conditions of any ki
 https://github.com/kubernetes/kube-state-metrics
 
 **Trademark Information:**
+The name “kube-state-metrics” identifies a component of the Kubernetes project; as such, it is associated with The Linux Foundation and the Cloud Native Computing Foundation (CNCF).
+
 “Kubernetes®” is a registered trademark of The Linux Foundation in the United States and other countries.
 “CNCF®” is a registered trademark of the Cloud Native Computing Foundation.
 “Linux®” is a registered trademark of Linus Torvalds.

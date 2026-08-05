@@ -1,0 +1,38 @@
+{{- define "app.ollama.keda" -}}
+{{- $component := .component -}}
+{{- $values := index .Values $component -}}
+{{- if and $values.enabled $values.keda.enabled -}}
+{{- if not $values.hpa.enabled -}}
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: {{ include "app.fullname" . }}-{{ $component }}
+  labels:
+    {{- include "app.labels.custom" (dict "context" . "component" "${component}") | nindent 4 }}
+    app.kubernetes.io/component: "{{ $component }}"
+  {{- with include "app.annotations.custom" (dict "context" . "component" $component) }}
+  annotations:
+    {{- . | nindent 4 }}
+  {{- end }}
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ include "app.fullname" . }}-{{ $component }}
+  maxReplicaCount: {{ $values.keda.maxReplicas }}
+  minReplicaCount: {{ $values.keda.minReplicas }}
+  triggers:
+    - type: rabbitmq
+      metadata:
+        protocol: http
+        host: http://guest:guest@{{ include "app.fullname" . }}-rabbit:{{ .Values.rabbit.service.port.http }}
+        mode: QueueLength
+        value: {{ $values.keda.targetQueueLength | quote }}
+        queueName: {{ $values.keda.queueToWatch }}
+        useRegex: "true"
+        operation: "sum"
+        pageSize: "500"
+        timeout: "30s"
+{{- end -}}
+{{- end -}}
+{{- end -}}

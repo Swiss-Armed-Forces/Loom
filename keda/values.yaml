@@ -1,0 +1,21 @@
+global:
+  imageRegistry: registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom
+
+# Admission webhooks validate/mutate ScaledObject specs at apply time.
+# All ScaledObjects are managed by this project and deployed by the same
+# pipeline, so admission-time validation adds no value.
+webhooks:
+  enabled: false
+
+# Expose the KEDA operator's Prometheus metrics endpoint on port 8080.
+# Prometheus scrapes this via the 'keda' job in charts/templates/prometheus/configMap.yaml.
+operator:
+  name: production-keda-operator
+
+serviceAccount:
+  operator:
+    name: production-keda-operator
+
+prometheus:
+  operator:
+    enabled: true
