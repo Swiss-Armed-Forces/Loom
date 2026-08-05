@@ -692,16 +692,7 @@ in
         set -euo pipefail
         cd '${config.devenv.root}'
 
-        echo "[*] Stopping loom"
-        skaffold delete \
-          "''${@}"
-
-        (
-          echo "[*] Stopping traefik"
-          cd traefik
-          ./skaffold delete \
-            "''${@}"
-        )
+        ./up.sh --down "''${@}"
       )
     '';
   };
@@ -1213,6 +1204,19 @@ in
         cd '${config.devenv.root}'
 
         ./cicd/chrome_wrapped.sh \
+          "''${@}"
+      )
+    '';
+  };
+
+  scripts.update-keda = {
+    description = "Update the keda helm charts in this repo";
+    exec = ''
+      (
+        set -euo pipefail
+        cd '${config.devenv.root}'
+
+        ./keda/update.sh \
           "''${@}"
       )
     '';

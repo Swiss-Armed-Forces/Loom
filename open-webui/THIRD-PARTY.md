@@ -12,7 +12,7 @@ Both the MIT License and the BSD-3-Clause License grant broad permissions to cop
 The official website for Open WebUI is located at [https://openwebui.com/](https://openwebui.com/). This site provides additional information about the project’s features, documentation, and community resources.
 
 **Trademark Information:**
-Based on the available information, there are no confirmed or registered trademarks explicitly associated with "Open WebUI." In open-source contexts, trademark rights are separate from copyrights and patents. If you plan to use Open WebUI’s name or branding in a manner that might suggest endorsement or affiliation, conducting an independent trademark search is advisable to avoid potential infringement concerns.
+No registered trademark for the "Open WebUI" name has been confirmed at the time of this writing. Use of the name in Loom’s materials is solely for nominative and descriptive purposes to identify the third-party software component and does not imply endorsement or affiliation with the Open WebUI project.
 
 **Source Code:**
 Open WebUI’s primary development occurs on GitHub at [https://github.com/open-webui/open-webui](https://github.com/open-webui/open-webui). The GitHub repository includes the project’s core source code, licensing files, issue tracker, and additional technical documentation.

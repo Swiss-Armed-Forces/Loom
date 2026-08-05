@@ -8,7 +8,7 @@ Ollama is distributed under the [MIT License](https://github.com/ollama/ollama/b
 Ollama’s official website is [https://ollama.com/](https://ollama.com/). It hosts detailed documentation, installation resources, and additional information regarding the Ollama project.
 
 **Trademark Information:**
-“Ollama” is likely a trademark of Ollama Inc. based on the notice “© 2025 Ollama Inc.” presented in various sources. Loom respects these trademark rights and does not imply endorsement or sponsorship by Ollama Inc. unless explicitly stated.
+“Ollama” is a trademark of Infra Technologies, Inc. (operating as Ollama). Loom uses the name solely for nominative and descriptive purposes to identify the third-party software component and does not imply endorsement or sponsorship by Infra Technologies, Inc.
 
 **Source Code:**
 The Ollama source code is publicly available at the following GitHub repository: [https://github.com/ollama/ollama](https://github.com/ollama/ollama). Interested users may review the repository for updates, contributions, and further technical details.

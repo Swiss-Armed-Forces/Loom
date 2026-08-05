@@ -38,7 +38,7 @@ Elasticsearch is distributed under a **tri-licensing model**, which currently in
 
 Starting with version 7.11, Elastic introduced this tri-licensing model to govern Elasticsearch. The **default distribution** is offered under the Elastic License v2.0, which places notable restrictions on providing Elasticsearch as a **hosted or managed service**. The SSPL may also apply if Elasticsearch’s core functionalities are made accessible as a service to external users, potentially affecting the licensing requirements for the entire Loom project. Additionally, if Elasticsearch (or a modified version thereof) is provided over a network, the AGPLv3’s **network copyleft** provision could require making source code available under the AGPLv3.
 
-These licensing terms may have **significant implications** for the Loom project’s integration, redistribution, and any potential managed-service offerings. Users are strongly advised to review the official license texts and consult legal counsel to ensure compliance with all relevant terms.
+These licensing terms have significant implications for integration, redistribution, and managed-service offerings.
 
 **Component Website:**
 The official websites for Elasticsearch are:
@@ -49,15 +49,13 @@ These sites provide comprehensive documentation, licensing details, and addition
 
 **Trademark Information:**
 
-**"Elasticsearch"** is a registered trademark owned by Elastic N.V. and its subsidiaries. Use of the term “Elasticsearch” within the Loom project (including documentation or public-facing materials) must comply with all applicable trademark laws and any specific guidelines issued by Elastic N.V. Improper or unauthorized use of registered trademarks can result in legal consequences. Loom hereby acknowledges the ownership and validity of the “Elasticsearch” trademark and disclaims any affiliation or endorsement by Elastic N.V. unless expressly stated.
+“Elasticsearch” is a registered trademark of Elastic N.V. and its subsidiaries. Loom's references to the name are solely for nominative and descriptive purposes to identify the third-party software component and do not imply endorsement, sponsorship, or affiliation with Elastic N.V.
 
 **Source Code:**
-The Elasticsearch source code, subject to the tri-licensing model described above, can be obtained from official Elastic repositories and platforms linked on the Elastic website. Individuals or organizations seeking to modify or redistribute Elasticsearch must ensure they adhere to the corresponding license terms:
+The Elasticsearch source code, subject to the tri-licensing model described above, is available from the official Elastic repositories linked on the Elastic website, under the following licenses:
 - **Server Side Public License (SSPL) v1.0**
 - **Elastic License v2.0**
 - **Affero General Public License (AGPL) v3**
-
-Any party incorporating Elasticsearch into their workflow is responsible for **reviewing, understanding, and complying** with all licensing requirements. This includes potential obligations to disclose source code when offering network-accessible modifications under the AGPLv3 and observing the prohibitions on providing Elasticsearch as a managed service under the Elastic License v2.0.
 
 
 ### Grafana
@@ -85,14 +83,13 @@ The name “Grafana” and associated logos are trademarks of Grafana Labs, gove
 - Obtain a separate trademark license for uses outside open-source discussions, development, or support; and
 - Provide proper attribution when referencing Grafana’s trademarks.
 
-For any inquiries or clarifications regarding permitted trademark uses, please contact Grafana Labs at hello@grafana.com.
 
 **Source Code:**
 
 The source code for Grafana is publicly available on GitHub:
 [https://github.com/grafana/grafana](https://github.com/grafana/grafana)
 
-This repository contains complete version histories, issue tracking, and guidance for contributions, reflecting Grafana’s open and transparent development practices.
+This repository contains complete version histories, issue tracking, and guidance for contributions.
 
 
 ### Prometheus
@@ -128,7 +125,7 @@ The official RabbitMQ website, serving as the primary resource for documentation
 - [https://www.rabbitmq.com/](https://www.rabbitmq.com/)
 
 **Trademark Information:**
-RabbitMQ’s name and logo are protected by trademark guidelines. These guidelines, including permissible uses of the RabbitMQ marks, can be found via the official website. The copyright for the RabbitMQ website and documentation is held by Broadcom.
+"RabbitMQ" and the RabbitMQ logo are trademarks of Broadcom Inc. Use of the name "RabbitMQ" in Loom’s materials is solely for nominative and descriptive purposes to identify the third-party software component and does not imply endorsement, sponsorship, or affiliation with Broadcom Inc. Trademark usage guidelines are published at https://www.rabbitmq.com/trademark-guidelines.
 
 **Source Code:**
 RabbitMQ’s source code is available on its [GitHub repository](https://github.com/rabbitmq). The repository includes license files, contributing guidelines, and instructions for building and deploying the software.
@@ -154,14 +151,7 @@ The official Redis website is located at [https://redis.io/](https://redis.io/).
 
 **Trademark Information:**
 
-The “Redis” name and associated logo are legally protected trademarks owned by Redis Ltd. Comprehensive guidelines governing the appropriate use of Redis trademarks can be found at [https://redis.com/legal/trademark-guidelines/](https://redis.com/legal/trademark-guidelines/).
-In accordance with these guidelines, all references to “Redis” in Loom’s materials must:
-
-- Use the trademark symbol (™) upon first mention.
-- Include a clear legend, for example:
-  > *Redis is a trademark of Redis Ltd. Any rights therein are reserved to Redis Ltd. Any use by Loom is for referential purposes only and does not indicate any sponsorship, endorsement or affiliation between Redis and Loom.*
-
-Ensuring adherence to these guidelines is vital to avoid infringement and maintain a clear distinction between Loom and the official Redis project.
+The “Redis” name and associated logo are trademarks of Redis Ltd. Trademark usage guidelines are published at https://redis.com/legal/trademark-guidelines/. Loom’s references to the name are solely for nominative and descriptive purposes to identify the third-party software component and do not imply endorsement, sponsorship, or affiliation with Redis Ltd.
 
 **Source Code:**
 
@@ -169,8 +159,6 @@ The Redis source code, including the full text of its licenses, is available on 
 [https://github.com/redis/redis](https://github.com/redis/redis)
 The license file can be found within that repository, specifically at:
 [https://github.com/redis/redis/blob/unstable/LICENSE.txt](https://github.com/redis/redis/blob/unstable/LICENSE.txt)
-
-Please review this file to confirm and fulfill all relevant licensing requirements when incorporating Redis within Loom.
 
 
 ### alpine
@@ -222,9 +210,7 @@ Loom utilizes the Dovecot Community Edition as a standalone Docker image.
 
 **Trademark Information:**
 
-* The Dovecot project asserts copyright over the name "Dovecot" as indicated on their website.
-* An unrelated entity, Dovecot Studios, also identifies "Dovecot" as a proprietary mark in the art gallery sector.
-* The trademark status of the "Dovecot" software project in specific jurisdictions like the US and EU requires further investigation through official trademark databases.
+The Dovecot IMAP server software is developed and maintained by Open-Xchange (formerly Dovecot Oy, acquired in 2015). The name "Dovecot" in the context of the email server software is associated with Open-Xchange. No registered trademark for "Dovecot" as a software product has been confirmed at the time of this writing. Use of the name in Loom's materials is solely for nominative and descriptive purposes to identify the third-party software component and does not imply endorsement or affiliation with Open-Xchange.
 
 **Source Code:** <https://github.com/dovecot/core>
 
@@ -242,6 +228,8 @@ The “Elasticvue” component is distributed under the terms of the MIT License
 The official website for “Elasticvue” is: [https://elasticvue.com/](https://elasticvue.com/). This website provides comprehensive information about the project’s features, documentation, and deployment methods.
 
 **Trademark Information:**
+The name “Elasticvue” identifies an independent open-source project (github.com/cars10/elasticvue); no registered trademark for the “Elasticvue” name has been confirmed at the time of this writing. Note that the “Elasticvue” name embeds the term “Elastic,” which is a registered trademark of Elasticsearch B.V.; use of the Elasticvue product does not grant any rights to that mark.
+
 “Elasticsearch” is a registered trademark of Elasticsearch BV in the United States and other countries. Although “Elasticvue” was developed to interface with Elasticsearch, it remains an independent project and is not affiliated with Elasticsearch BV. Any reference to “Elastic” within the “Elasticvue” name does not imply an endorsement or sponsorship by Elasticsearch BV. This license declaration does not grant any rights or licenses to use the “Elasticsearch” trademark.
 
 **Source Code:**
@@ -276,8 +264,7 @@ https://gotenberg.dev/
 
 **Trademark Information:**
 
-“Gotenberg” is the name of an open-source software project maintained by Julien Neuhart. No registered trademark is claimed by the Loom project.
-The name “Gotenberg” is used solely for nominative and descriptive purposes to identify the third-party software component.
+“Gotenberg” is the name of an open-source software project created and maintained by Julien Neuhart. No registered trademark for the “Gotenberg” name has been confirmed at the time of this writing. Use of the name in Loom's materials is solely for nominative and descriptive purposes to identify the third-party software component and does not imply endorsement or affiliation with the project maintainer.
 
 All other trademarks referenced or included in the Gotenberg Docker image—including but not limited to Docker, Chromium, LibreOffice, Debian, and Microsoft Office—are the property of their respective owners. Their use does not imply endorsement, sponsorship, or affiliation with the Loom project.
 
@@ -287,6 +274,51 @@ Primary Gotenberg source repository:
 https://github.com/gotenberg/gotenberg
 
 Source code for bundled third-party components is available from their respective upstream projects and, where required by applicable licenses (including GPL-2.0-or-later), may be obtained from the corresponding public repositories or upon request, consistent with the terms of those licenses.
+
+
+### keda
+
+<!-- markdownlint-disable -->
+Loom utilizes **KEDA (Kubernetes Event-driven Autoscaling)** as a standalone Docker image. The component is distributed and executed as an unmodified third-party software component and remains independent from the Loom software.
+
+**Software Licenses:**
+
+- **Software:** KEDA (Kubernetes Event-driven Autoscaling)
+- **Copyright:**
+  - © KEDA Authors (2014–2026)
+  - © 2026 The Linux Foundation
+- **Software License:** Apache License 2.0 (Apache-2.0)
+- **Documentation License:** Creative Commons Attribution 4.0 International (CC BY 4.0)
+
+Loom retains all original copyright and license notices included with the upstream KEDA distribution.
+
+Where documentation originating from the KEDA project is reproduced or incorporated into Loom documentation, such documentation is attributed to the KEDA Authors and remains subject to the Creative Commons Attribution 4.0 International (CC BY 4.0) license.
+
+KEDA is developed as a vendor-neutral project under the governance of the Cloud Native Computing Foundation (CNCF), part of The Linux Foundation. Loom distributes KEDA solely as an independent third-party component and does not claim authorship, sponsorship, endorsement, certification, or affiliation with the KEDA project, the CNCF, or The Linux Foundation.
+
+**Component Website:**
+
+- https://keda.sh/
+
+**Trademark Information:**
+
+"KEDA", the KEDA logo, and related names and logos are trademarks or registered trademarks of The Linux Foundation and/or their respective owners.
+
+No rights to any trademarks, service marks, logos, or trade names are granted through the applicable open source licenses. Any use of such marks by Loom is solely for nominative fair use purposes to identify interoperability, compatibility, or integration with the KEDA project and must not imply sponsorship, endorsement, partnership, certification, or any other commercial relationship with the KEDA project, the Cloud Native Computing Foundation (CNCF), or The Linux Foundation.
+
+Accordingly, Loom uses references such as:
+
+- "Loom integration for KEDA"
+- "Loom compatible with KEDA"
+- "Loom for use with KEDA"
+
+Loom does not use constructions that could imply ownership, branding, endorsement, or an official product relationship, such as combining the KEDA trademark with Loom product names or presenting KEDA as a Loom-branded offering.
+
+The official KEDA and Linux Foundation logos are not redistributed or used for marketing purposes unless separate written authorization has been obtained from the respective trademark owner.
+
+**Source Code:**
+
+The KEDA source code is available at https://github.com/kedacore/keda.
 
 
 ### kube-state-metrics
@@ -308,6 +340,8 @@ The software is provided “AS IS”, without warranties or conditions of any ki
 https://github.com/kubernetes/kube-state-metrics
 
 **Trademark Information:**
+The name “kube-state-metrics” identifies a component of the Kubernetes project; as such, it is associated with The Linux Foundation and the Cloud Native Computing Foundation (CNCF).
+
 “Kubernetes®” is a registered trademark of The Linux Foundation in the United States and other countries.
 “CNCF®” is a registered trademark of the Cloud Native Computing Foundation.
 “Linux®” is a registered trademark of Linus Torvalds.
@@ -330,7 +364,7 @@ Ollama is distributed under the [MIT License](https://github.com/ollama/ollama/b
 Ollama’s official website is [https://ollama.com/](https://ollama.com/). It hosts detailed documentation, installation resources, and additional information regarding the Ollama project.
 
 **Trademark Information:**
-“Ollama” is likely a trademark of Ollama Inc. based on the notice “© 2025 Ollama Inc.” presented in various sources. Loom respects these trademark rights and does not imply endorsement or sponsorship by Ollama Inc. unless explicitly stated.
+“Ollama” is a trademark of Infra Technologies, Inc. (operating as Ollama). Loom uses the name solely for nominative and descriptive purposes to identify the third-party software component and does not imply endorsement or sponsorship by Infra Technologies, Inc.
 
 **Source Code:**
 The Ollama source code is publicly available at the following GitHub repository: [https://github.com/ollama/ollama](https://github.com/ollama/ollama). Interested users may review the repository for updates, contributions, and further technical details.
@@ -352,7 +386,7 @@ Both the MIT License and the BSD-3-Clause License grant broad permissions to cop
 The official website for Open WebUI is located at [https://openwebui.com/](https://openwebui.com/). This site provides additional information about the project’s features, documentation, and community resources.
 
 **Trademark Information:**
-Based on the available information, there are no confirmed or registered trademarks explicitly associated with "Open WebUI." In open-source contexts, trademark rights are separate from copyrights and patents. If you plan to use Open WebUI’s name or branding in a manner that might suggest endorsement or affiliation, conducting an independent trademark search is advisable to avoid potential infringement concerns.
+No registered trademark for the "Open WebUI" name has been confirmed at the time of this writing. Use of the name in Loom’s materials is solely for nominative and descriptive purposes to identify the third-party software component and does not imply endorsement or affiliation with the Open WebUI project.
 
 **Source Code:**
 Open WebUI’s primary development occurs on GitHub at [https://github.com/open-webui/open-webui](https://github.com/open-webui/open-webui). The GitHub repository includes the project’s core source code, licensing files, issue tracker, and additional technical documentation.
@@ -370,7 +404,7 @@ Roundcube is distributed under the GNU General Public License Version 3 or later
 The primary source of official information for Roundcube, including features, documentation, and news, is located at [https://roundcube.net/](https://roundcube.net/).
 
 **Trademark Information:**
-Available information does not confirm a registered trademark for the name “Roundcube.” Although discussions reference a “Roundcube Logo,” no definitive registration has been verified. If you plan to use the Roundcube name or associated logo, you should consider a diligent review of relevant trademark databases or consult legal counsel to ensure compliance with any applicable trademark rights.
+No registered trademark for the “Roundcube” name has been confirmed at the time of this writing. Use of the name in Loom's materials is solely for nominative and descriptive purposes to identify the third-party software component and does not imply endorsement or affiliation with the Roundcube project.
 
 **Source Code:**
 The Roundcube source code is publicly available on GitHub at [https://github.com/roundcube/roundcubemail](https://github.com/roundcube/roundcubemail). This repository enables transparency, collaboration, and the opportunity to adapt Roundcube to specific needs within the Loom project.
@@ -389,7 +423,7 @@ Loom utilizes **Rspamd** as a standalone Docker image.
 - **Docker Image (Language Model):**
   The official Docker image for Rspamd includes a language identification model powered by fasttext, which is licensed under the [Creative Commons Attribution-Share-Alike 3.0 Unported License](https://creativecommons.org/licenses/by-sa/3.0/legalcode). Users must comply with the attribution and share-alike requirements specified therein.
 
-Please be advised that Loom adheres to both licenses where applicable. The Apache License 2.0 includes a disclaimer of warranties and a limitation of liability, while the Creative Commons Attribution-Share-Alike 3.0 License imposes distinct obligations concerning attribution and licensing of derivative works.
+Loom adheres to both licenses where applicable. The Apache License 2.0 includes a disclaimer of warranties and a limitation of liability, while the Creative Commons Attribution-Share-Alike 3.0 License imposes requirements for attribution and share-alike licensing of derivative works.
 
 **Component Website:**
 
@@ -397,13 +431,11 @@ The official website for Rspamd is [https://rspamd.com/](https://rspamd.com/). I
 
 **Trademark Information:**
 
-Based on publicly available information at the time of review, no explicit registration or trademark notice for “Rspamd” was found on the official website. If you require definitive confirmation of trademark status, please consult the relevant trademark registries.
+No registered trademark for the “Rspamd” name has been confirmed at the time of this writing. Use of the name in Loom's materials is solely for nominative and descriptive purposes to identify the third-party software component and does not imply endorsement or affiliation with the Rspamd project.
 
 **Source Code:**
 
-The Rspamd source code is available through its [GitHub repository](https://github.com/rspamd/rspamd). Interested parties are encouraged to review the repository for additional licensing details and updates.
-
-This declaration reflects the information accessible at the time of writing. Users of the “Loom” project are responsible for verifying any updates to Rspamd’s licensing terms or trademark status to ensure continuous compliance with applicable legal requirements.
+The Rspamd source code is available at https://github.com/rspamd/rspamd.
 
 
 ### seaweedfs
@@ -433,8 +465,8 @@ SeaweedFS is subject to a dual-licensing model:
 - https://seaweedfs.com
 
 **Trademark Information:**
-- “SeaweedFS” is a trademark of its respective owners.
-- All references to the name are for descriptive purposes only and do not imply endorsement, affiliation, or sponsorship.
+- “SeaweedFS” is a trademark of Seaweed Data. All references to the name are for descriptive
+  purposes only and do not imply endorsement, affiliation, or sponsorship by Seaweed Data.
 - Loom does not claim any rights to the SeaweedFS trademarks and uses them in accordance with the Apache License 2.0 trademark limitations.
 - When applicable, Docker images or distributions (e.g., Bitnami builds) may include additional trademarks and copyrights owned by their respective providers (e.g., Broadcom Inc.).
 
@@ -449,7 +481,7 @@ Loom utilizes Apache Tika as a standalone Docker image.
 
 **Software Licenses:**
 
-Apache Tika is licensed under the [Apache License, Version 2.0](https://www.apache.org/licenses/LICENSE-2.0). This permissive license allows extensive rights to use, modify, and distribute the software, including for both commercial and non-commercial purposes, subject to compliance with its requirements (such as attribution). Apache Tika may also include subcomponents governed by separate licenses, typically detailed in its `LICENSE.txt` file. Users of Loom should review all applicable licenses to ensure full compliance.
+Apache Tika is licensed under the [Apache License, Version 2.0](https://www.apache.org/licenses/LICENSE-2.0). This permissive license allows extensive rights to use, modify, and distribute the software, including for both commercial and non-commercial purposes, subject to compliance with its requirements (such as attribution). Apache Tika may also include subcomponents governed by separate licenses, typically detailed in its `LICENSE.txt` file.
 
 **Component Website:**
 
@@ -457,11 +489,11 @@ The official website for Apache Tika is [https://tika.apache.org/](https://tika.
 
 **Trademark Information:**
 
-Apache Tika, Tika, Apache, the Apache feather logo, and the Apache Tika project logo are trademarks of The Apache Software Foundation. They are protected by the ASF’s trademark policy, available at [https://www.apache.org/foundation/marks/](https://www.apache.org/foundation/marks/). Loom acknowledges these trademarks and complies with the ASF’s guidelines. Any use of these marks by Loom or its documentation should avoid implying endorsement or sponsorship by the ASF, unless explicitly permitted.
+Apache Tika, Tika, Apache, the Apache feather logo, and the Apache Tika project logo are trademarks of The Apache Software Foundation. They are protected by the ASF’s trademark policy, available at [https://www.apache.org/foundation/marks/](https://www.apache.org/foundation/marks/). Loom’s references to these marks are solely for nominative and descriptive purposes and do not imply endorsement or sponsorship by the ASF.
 
 **Source Code:**
 
-The Apache Tika source code can be found on its official website and associated repositories. It is strongly recommended that Loom contributors and users periodically review the applicable license texts and trademark policies, as changes or updates may occur. This third-party license declaration is provided for informational purposes only and does not constitute legal advice.
+The Apache Tika source code is available at https://github.com/apache/tika.
 
 
 ### traefik
@@ -470,16 +502,16 @@ The Apache Tika source code can be found on its official website and associated 
 Loom utilizes the Traefik component as a standalone Docker image.
 
 **Software Licenses:**
-Traefik is distributed under the MIT License, a permissive open-source license originating from the Massachusetts Institute of Technology. This license grants extensive permissions for use, modification, distribution, and sublicensing. The primary condition is the requirement to include the original copyright notice and permission notice in all copies or substantial portions of Traefik. Failure to do so may violate the terms of the license.
+Traefik is distributed under the MIT License, a permissive open-source license originating from the Massachusetts Institute of Technology. This license grants extensive permissions for use, modification, distribution, and sublicensing. The primary condition is the requirement to include the original copyright notice and permission notice in all copies or substantial portions of Traefik.
 
 **Component Website:**
 The official website for Traefik is [https://traefik.io/](https://traefik.io/). This site hosts comprehensive documentation, community support, legal notices, and commercial information. Additional documentation can also be found at [https://doc.traefik.io/traefik/](https://doc.traefik.io/traefik/).
 
 **Trademark Information:**
-The name “Traefik” is claimed as a trademark by Traefik Labs pursuant to their End User License Agreement, which reserves all rights to the software, including any related trademarks or patents. For definitive information about the trademark status, refer to the legal sections of [https://traefik.io/](https://traefik.io/) and consult relevant trademark databases.
+“Traefik” is a trademark of Traefik Labs. Loom's references to the name are solely for nominative and descriptive purposes to identify the third-party software component and do not imply endorsement, sponsorship, or affiliation with Traefik Labs.
 
 **Source Code:**
-The complete source code for Traefik is publicly available at [https://github.com/traefik/traefik](https://github.com/traefik/traefik), which also includes the full text of the MIT License. If distributing Traefik within your own software, ensure that you adhere to the license requirements by including all required notices and disclaimers.
+The complete source code for Traefik is publicly available at https://github.com/traefik/traefik, which also includes the full text of the MIT License.
 
 
 ## Python
@@ -1112,6 +1144,624 @@ The complete source code for Traefik is publicly available at [https://github.co
 | traefik | 3.6.15 |  | binary-classifier-cataloger |
 | tzdata | 2026b-r0 |  | apk-db-cataloger |
 | zlib | 1.3.2-r0 | Zlib | apk-db-cataloger |
+
+### registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/kedacore/keda
+
+| Package | Version | License | Found by |
+| ------- | --------| ------- | -------- |
+| base-files | 13.8+deb13u5 | GPL-2.0-or-later | dpkg-db-cataloger |
+| cel.dev/expr | v0.25.1 |  | go-module-binary-cataloger |
+| cloud.google.com/go | v0.123.0 |  | go-module-binary-cataloger |
+| cloud.google.com/go/auth | v0.20.0 |  | go-module-binary-cataloger |
+| cloud.google.com/go/auth/oauth2adapt | v0.2.8 |  | go-module-binary-cataloger |
+| cloud.google.com/go/compute/metadata | v0.9.0 |  | go-module-binary-cataloger |
+| cloud.google.com/go/iam | v1.7.0 |  | go-module-binary-cataloger |
+| cloud.google.com/go/monitoring | v1.29.0 |  | go-module-binary-cataloger |
+| cloud.google.com/go/secretmanager | v1.20.0 |  | go-module-binary-cataloger |
+| cloud.google.com/go/storage | v1.62.2 |  | go-module-binary-cataloger |
+| dario.cat/mergo | v1.0.2 |  | go-module-binary-cataloger |
+| filippo.io/edwards25519 | v1.2.0 |  | go-module-binary-cataloger |
+| github.com/Azure/azure-amqp-common-go/v4 | v4.2.0 |  | go-module-binary-cataloger |
+| github.com/Azure/azure-kusto-go/azkustodata | v1.2.2 |  | go-module-binary-cataloger |
+| github.com/Azure/azure-sdk-for-go/sdk/azcore | v1.21.1 |  | go-module-binary-cataloger |
+| github.com/Azure/azure-sdk-for-go/sdk/azidentity | v1.13.1 |  | go-module-binary-cataloger |
+| github.com/Azure/azure-sdk-for-go/sdk/internal | v1.12.0 |  | go-module-binary-cataloger |
+| github.com/Azure/azure-sdk-for-go/sdk/messaging/azeventhubs/v2 | v2.0.2 |  | go-module-binary-cataloger |
+| github.com/Azure/azure-sdk-for-go/sdk/messaging/azservicebus | v1.10.0 |  | go-module-binary-cataloger |
+| github.com/Azure/azure-sdk-for-go/sdk/messaging/eventgrid/azeventgrid | v1.0.0 |  | go-module-binary-cataloger |
+| github.com/Azure/azure-sdk-for-go/sdk/monitor/azquery | v1.2.0 |  | go-module-binary-cataloger |
+| github.com/Azure/azure-sdk-for-go/sdk/security/keyvault/azsecrets | v1.4.0 |  | go-module-binary-cataloger |
+| github.com/Azure/azure-sdk-for-go/sdk/security/keyvault/internal | v1.2.0 |  | go-module-binary-cataloger |
+| github.com/Azure/azure-sdk-for-go/sdk/storage/azblob | v1.7.0 |  | go-module-binary-cataloger |
+| github.com/Azure/azure-sdk-for-go/sdk/storage/azqueue | v1.0.1 |  | go-module-binary-cataloger |
+| github.com/Azure/go-amqp | v1.5.1 |  | go-module-binary-cataloger |
+| github.com/AzureAD/microsoft-authentication-library-for-go | v1.7.2 |  | go-module-binary-cataloger |
+| github.com/DataDog/datadog-api-client-go | v1.16.0 |  | go-module-binary-cataloger |
+| github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp | v1.31.0 |  | go-module-binary-cataloger |
+| github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/metric | v0.55.0 |  | go-module-binary-cataloger |
+| github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/resourcemapping | v0.55.0 |  | go-module-binary-cataloger |
+| github.com/Huawei/gophercloud | v1.0.21 |  | go-module-binary-cataloger |
+| github.com/IBM/sarama | v1.49.0 |  | go-module-binary-cataloger |
+| github.com/InfluxCommunity/influxdb3-go/v2 | v2.15.0 |  | go-module-binary-cataloger |
+| github.com/Masterminds/semver/v3 | v3.4.0 |  | go-module-binary-cataloger |
+| github.com/andybalholm/brotli | v1.2.1 |  | go-module-binary-cataloger |
+| github.com/apache/arrow-go/v18 | v18.6.0 |  | go-module-binary-cataloger |
+| github.com/apapsch/go-jsonmerge/v2 | v2.0.0 |  | go-module-binary-cataloger |
+| github.com/arangodb/go-driver | v1.6.9 |  | go-module-binary-cataloger |
+| github.com/arangodb/go-velocypack | v0.0.0-20200318135517-5af53c29c67e |  | go-module-binary-cataloger |
+| github.com/aws/aws-msk-iam-sasl-signer-go | v1.0.4 |  | go-module-binary-cataloger |
+| github.com/aws/aws-sdk-go-v2 | v1.41.7 |  | go-module-binary-cataloger |
+| github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream | v1.7.10 |  | go-module-binary-cataloger |
+| github.com/aws/aws-sdk-go-v2/config | v1.32.18 |  | go-module-binary-cataloger |
+| github.com/aws/aws-sdk-go-v2/credentials | v1.19.17 |  | go-module-binary-cataloger |
+| github.com/aws/aws-sdk-go-v2/feature/ec2/imds | v1.18.23 |  | go-module-binary-cataloger |
+| github.com/aws/aws-sdk-go-v2/internal/configsources | v1.4.23 |  | go-module-binary-cataloger |
+| github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 | v2.7.23 |  | go-module-binary-cataloger |
+| github.com/aws/aws-sdk-go-v2/internal/v4a | v1.4.24 |  | go-module-binary-cataloger |
+| github.com/aws/aws-sdk-go-v2/service/amp | v1.42.11 |  | go-module-binary-cataloger |
+| github.com/aws/aws-sdk-go-v2/service/cloudwatch | v1.57.0 |  | go-module-binary-cataloger |
+| github.com/aws/aws-sdk-go-v2/service/dynamodb | v1.57.4 |  | go-module-binary-cataloger |
+| github.com/aws/aws-sdk-go-v2/service/dynamodbstreams | v1.32.16 |  | go-module-binary-cataloger |
+| github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding | v1.13.9 |  | go-module-binary-cataloger |
+| github.com/aws/aws-sdk-go-v2/service/internal/endpoint-discovery | v1.12.0 |  | go-module-binary-cataloger |
+| github.com/aws/aws-sdk-go-v2/service/internal/presigned-url | v1.13.23 |  | go-module-binary-cataloger |
+| github.com/aws/aws-sdk-go-v2/service/kinesis | v1.43.7 |  | go-module-binary-cataloger |
+| github.com/aws/aws-sdk-go-v2/service/secretsmanager | v1.41.7 |  | go-module-binary-cataloger |
+| github.com/aws/aws-sdk-go-v2/service/signin | v1.0.11 |  | go-module-binary-cataloger |
+| github.com/aws/aws-sdk-go-v2/service/sqs | v1.42.27 |  | go-module-binary-cataloger |
+| github.com/aws/aws-sdk-go-v2/service/sso | v1.30.17 |  | go-module-binary-cataloger |
+| github.com/aws/aws-sdk-go-v2/service/ssooidc | v1.36.0 |  | go-module-binary-cataloger |
+| github.com/aws/aws-sdk-go-v2/service/sts | v1.42.1 |  | go-module-binary-cataloger |
+| github.com/aws/smithy-go | v1.25.1 |  | go-module-binary-cataloger |
+| github.com/beanstalkd/go-beanstalk | v0.2.0 |  | go-module-binary-cataloger |
+| github.com/beorn7/perks | v1.0.1 |  | go-module-binary-cataloger |
+| github.com/bradleyfalzon/ghinstallation/v2 | v2.18.0 |  | go-module-binary-cataloger |
+| github.com/cenkalti/backoff/v4 | v4.3.0 |  | go-module-binary-cataloger |
+| github.com/cenkalti/backoff/v5 | v5.0.3 |  | go-module-binary-cataloger |
+| github.com/cespare/xxhash/v2 | v2.3.0 |  | go-module-binary-cataloger |
+| github.com/clipperhouse/uax29/v2 | v2.7.0 |  | go-module-binary-cataloger |
+| github.com/cloudevents/sdk-go/v2 | v2.16.2 |  | go-module-binary-cataloger |
+| github.com/cncf/xds/go | v0.0.0-20260202195803-dba9d589def2 |  | go-module-binary-cataloger |
+| github.com/coreos/go-semver | v0.3.1 |  | go-module-binary-cataloger |
+| github.com/coreos/go-systemd/v22 | v22.7.0 |  | go-module-binary-cataloger |
+| github.com/davecgh/go-spew | v1.1.2-0.20180830191138-d8f796af33cc |  | go-module-binary-cataloger |
+| github.com/dennwc/varint | v1.0.0 |  | go-module-binary-cataloger |
+| github.com/dysnix/predictkube-libs | v0.1.0 |  | go-module-binary-cataloger |
+| github.com/dysnix/predictkube-proto | v0.0.0-20250415003810-aa0af0a0019b |  | go-module-binary-cataloger |
+| github.com/eapache/go-resiliency | v1.7.0 |  | go-module-binary-cataloger |
+| github.com/eapache/queue | v1.1.0 |  | go-module-binary-cataloger |
+| github.com/elastic/go-elasticsearch/v7 | v7.17.10 |  | go-module-binary-cataloger |
+| github.com/emicklei/go-restful/v3 | v3.13.0 |  | go-module-binary-cataloger |
+| github.com/envoyproxy/go-control-plane/envoy | v1.37.0 |  | go-module-binary-cataloger |
+| github.com/envoyproxy/protoc-gen-validate | v1.3.3 |  | go-module-binary-cataloger |
+| github.com/evanphx/json-patch/v5 | v5.9.11 |  | go-module-binary-cataloger |
+| github.com/expr-lang/expr | v1.17.8 |  | go-module-binary-cataloger |
+| github.com/facebookgo/clock | v0.0.0-20150410010913-600d898af40a |  | go-module-binary-cataloger |
+| github.com/felixge/httpsnoop | v1.0.4 |  | go-module-binary-cataloger |
+| github.com/fsnotify/fsnotify | v1.10.0 |  | go-module-binary-cataloger |
+| github.com/fxamacker/cbor/v2 | v2.9.1 |  | go-module-binary-cataloger |
+| github.com/gabriel-vasile/mimetype | v1.4.13 |  | go-module-binary-cataloger |
+| github.com/go-jose/go-jose/v4 | v4.1.4 |  | go-module-binary-cataloger |
+| github.com/go-kivik/couchdb/v3 | v3.4.1 |  | go-module-binary-cataloger |
+| github.com/go-kivik/kivik/v3 | v3.2.4 |  | go-module-binary-cataloger |
+| github.com/go-logr/logr | v1.4.3 |  | go-module-binary-cataloger |
+| github.com/go-logr/stdr | v1.2.2 |  | go-module-binary-cataloger |
+| github.com/go-logr/zapr | v1.3.0 |  | go-module-binary-cataloger |
+| github.com/go-openapi/jsonpointer | v0.23.1 |  | go-module-binary-cataloger |
+| github.com/go-openapi/jsonreference | v0.21.5 |  | go-module-binary-cataloger |
+| github.com/go-openapi/swag | v0.26.0 |  | go-module-binary-cataloger |
+| github.com/go-openapi/swag/cmdutils | v0.26.0 |  | go-module-binary-cataloger |
+| github.com/go-openapi/swag/conv | v0.26.0 |  | go-module-binary-cataloger |
+| github.com/go-openapi/swag/fileutils | v0.26.0 |  | go-module-binary-cataloger |
+| github.com/go-openapi/swag/jsonname | v0.26.0 |  | go-module-binary-cataloger |
+| github.com/go-openapi/swag/jsonutils | v0.26.0 |  | go-module-binary-cataloger |
+| github.com/go-openapi/swag/loading | v0.26.0 |  | go-module-binary-cataloger |
+| github.com/go-openapi/swag/mangling | v0.26.0 |  | go-module-binary-cataloger |
+| github.com/go-openapi/swag/netutils | v0.26.0 |  | go-module-binary-cataloger |
+| github.com/go-openapi/swag/stringutils | v0.26.0 |  | go-module-binary-cataloger |
+| github.com/go-openapi/swag/typeutils | v0.26.0 |  | go-module-binary-cataloger |
+| github.com/go-openapi/swag/yamlutils | v0.26.0 |  | go-module-binary-cataloger |
+| github.com/go-playground/locales | v0.14.1 |  | go-module-binary-cataloger |
+| github.com/go-playground/universal-translator | v0.18.1 |  | go-module-binary-cataloger |
+| github.com/go-playground/validator/v10 | v10.30.2 |  | go-module-binary-cataloger |
+| github.com/go-sql-driver/mysql | v1.10.0 |  | go-module-binary-cataloger |
+| github.com/gobwas/glob | v0.2.3 |  | go-module-binary-cataloger |
+| github.com/goccy/go-json | v0.10.6 |  | go-module-binary-cataloger |
+| github.com/gocql/gocql | v1.7.0 |  | go-module-binary-cataloger |
+| github.com/gogo/protobuf | v1.3.2 |  | go-module-binary-cataloger |
+| github.com/golang-jwt/jwt/v4 | v4.5.2 |  | go-module-binary-cataloger |
+| github.com/golang-jwt/jwt/v5 | v5.3.1 |  | go-module-binary-cataloger |
+| github.com/golang-sql/civil | v0.0.0-20220223132316-b832511892a9 |  | go-module-binary-cataloger |
+| github.com/golang-sql/sqlexp | v0.1.0 |  | go-module-binary-cataloger |
+| github.com/golang/mock | v1.6.0 |  | go-module-binary-cataloger |
+| github.com/golang/protobuf | v1.5.4 |  | go-module-binary-cataloger |
+| github.com/golang/snappy | v1.0.0 |  | go-module-binary-cataloger |
+| github.com/google/btree | v1.1.3 |  | go-module-binary-cataloger |
+| github.com/google/flatbuffers | v25.12.19+incompatible |  | go-module-binary-cataloger |
+| github.com/google/gnostic-models | v0.7.1 |  | go-module-binary-cataloger |
+| github.com/google/go-github/v84 | v84.0.0 |  | go-module-binary-cataloger |
+| github.com/google/go-querystring | v1.2.0 |  | go-module-binary-cataloger |
+| github.com/google/s2a-go | v0.1.9 |  | go-module-binary-cataloger |
+| github.com/google/uuid | v1.6.0 |  | go-module-binary-cataloger |
+| github.com/googleapis/enterprise-certificate-proxy | v0.3.16 |  | go-module-binary-cataloger |
+| github.com/googleapis/gax-go/v2 | v2.22.0 |  | go-module-binary-cataloger |
+| github.com/gophercloud/gophercloud | v1.14.1 |  | go-module-binary-cataloger |
+| github.com/gorilla/websocket | v1.5.4-0.20250319132907-e064f32e3674 |  | go-module-binary-cataloger |
+| github.com/grafana/regexp | v0.0.0-20250905093917-f7b3be9d1853 |  | go-module-binary-cataloger |
+| github.com/grpc-ecosystem/go-grpc-middleware/providers/prometheus | v1.1.0 |  | go-module-binary-cataloger |
+| github.com/grpc-ecosystem/go-grpc-middleware/v2 | v2.3.3 |  | go-module-binary-cataloger |
+| github.com/grpc-ecosystem/grpc-gateway/v2 | v2.28.0 |  | go-module-binary-cataloger |
+| github.com/hailocab/go-hostpool | v0.0.0-20160125115350-e80d13ce29ed |  | go-module-binary-cataloger |
+| github.com/hashicorp/errwrap | v1.1.0 |  | go-module-binary-cataloger |
+| github.com/hashicorp/go-cleanhttp | v0.5.2 |  | go-module-binary-cataloger |
+| github.com/hashicorp/go-multierror | v1.1.1 |  | go-module-binary-cataloger |
+| github.com/hashicorp/go-retryablehttp | v0.7.8 |  | go-module-binary-cataloger |
+| github.com/hashicorp/go-rootcerts | v1.0.2 |  | go-module-binary-cataloger |
+| github.com/hashicorp/go-secure-stdlib/parseutil | v0.2.0 |  | go-module-binary-cataloger |
+| github.com/hashicorp/go-secure-stdlib/strutil | v0.1.2 |  | go-module-binary-cataloger |
+| github.com/hashicorp/go-sockaddr | v1.0.7 |  | go-module-binary-cataloger |
+| github.com/hashicorp/go-uuid | v1.0.3 |  | go-module-binary-cataloger |
+| github.com/hashicorp/hcl | v1.0.1-vault-7 |  | go-module-binary-cataloger |
+| github.com/hashicorp/vault/api | v1.23.0 |  | go-module-binary-cataloger |
+| github.com/imdario/mergo | v0.3.16 |  | go-module-binary-cataloger |
+| github.com/influxdata/influxdb-client-go/v2 | v2.14.0 |  | go-module-binary-cataloger |
+| github.com/influxdata/line-protocol | v0.0.0-20210922203350-b1ad95c89adf |  | go-module-binary-cataloger |
+| github.com/influxdata/line-protocol/v2 | v2.2.1 |  | go-module-binary-cataloger |
+| github.com/jackc/pgpassfile | v1.0.0 |  | go-module-binary-cataloger |
+| github.com/jackc/pgservicefile | v0.0.0-20240606120523-5a60cdf6a761 |  | go-module-binary-cataloger |
+| github.com/jackc/pgx/v5 | v5.9.2 |  | go-module-binary-cataloger |
+| github.com/jackc/puddle/v2 | v2.2.2 |  | go-module-binary-cataloger |
+| github.com/jcmturner/aescts/v2 | v2.0.0 |  | go-module-binary-cataloger |
+| github.com/jcmturner/dnsutils/v2 | v2.0.0 |  | go-module-binary-cataloger |
+| github.com/jcmturner/gofork | v1.7.6 |  | go-module-binary-cataloger |
+| github.com/jcmturner/gokrb5/v8 | v8.4.4 |  | go-module-binary-cataloger |
+| github.com/jcmturner/rpc/v2 | v2.0.3 |  | go-module-binary-cataloger |
+| github.com/jpillora/backoff | v1.0.0 |  | go-module-binary-cataloger |
+| github.com/json-iterator/go | v1.1.12 |  | go-module-binary-cataloger |
+| github.com/kedacore/keda/v2 | v2.20.1 |  | go-module-binary-cataloger |
+| github.com/klauspost/compress | v1.18.6 |  | go-module-binary-cataloger |
+| github.com/klauspost/cpuid/v2 | v2.3.0 |  | go-module-binary-cataloger |
+| github.com/kylelemons/godebug | v1.1.0 |  | go-module-binary-cataloger |
+| github.com/leodido/go-urn | v1.4.0 |  | go-module-binary-cataloger |
+| github.com/mattn/go-runewidth | v0.0.20 |  | go-module-binary-cataloger |
+| github.com/microsoft/go-mssqldb | v1.9.6 |  | go-module-binary-cataloger |
+| github.com/mitchellh/hashstructure | v1.1.0 |  | go-module-binary-cataloger |
+| github.com/mitchellh/mapstructure | v1.5.0 |  | go-module-binary-cataloger |
+| github.com/modern-go/concurrent | v0.0.0-20180306012644-bacd9c7ef1dd |  | go-module-binary-cataloger |
+| github.com/modern-go/reflect2 | v1.0.3-0.20250322232337-35a7c28c31ee |  | go-module-binary-cataloger |
+| github.com/montanaflynn/stats | v0.7.1 |  | go-module-binary-cataloger |
+| github.com/munnerz/goautoneg | v0.0.0-20191010083416-a7dc8b61c822 |  | go-module-binary-cataloger |
+| github.com/mwitkow/go-conntrack | v0.0.0-20190716064945-2f068394615f |  | go-module-binary-cataloger |
+| github.com/newrelic/newrelic-client-go/v2 | v2.86.1 |  | go-module-binary-cataloger |
+| github.com/nexus-rpc/sdk-go | v0.6.0 |  | go-module-binary-cataloger |
+| github.com/oapi-codegen/runtime | v1.1.2 |  | go-module-binary-cataloger |
+| github.com/olekukonko/tablewriter | v0.0.5 |  | go-module-binary-cataloger |
+| github.com/onsi/ginkgo/v2 | v2.29.0 |  | go-module-binary-cataloger |
+| github.com/open-policy-agent/cert-controller | v0.16.0 |  | go-module-binary-cataloger |
+| github.com/opensearch-project/opensearch-go/v4 | v4.6.0 |  | go-module-binary-cataloger |
+| github.com/pierrec/lz4/v4 | v4.1.26 |  | go-module-binary-cataloger |
+| github.com/pkg/browser | v0.0.0-20240102092130-5ac0b6a4141c |  | go-module-binary-cataloger |
+| github.com/pkg/errors | v0.9.1 |  | go-module-binary-cataloger |
+| github.com/pmezard/go-difflib | v1.0.1-0.20181226105442-5d4384ee4fb2 |  | go-module-binary-cataloger |
+| github.com/prometheus/client_golang | v1.23.2 |  | go-module-binary-cataloger |
+| github.com/prometheus/client_model | v0.6.2 |  | go-module-binary-cataloger |
+| github.com/prometheus/common | v0.66.1 |  | go-module-binary-cataloger |
+| github.com/prometheus/procfs | v0.20.1 |  | go-module-binary-cataloger |
+| github.com/prometheus/prometheus | v0.304.2 |  | go-module-binary-cataloger |
+| github.com/rabbitmq/amqp091-go | v1.11.0 |  | go-module-binary-cataloger |
+| github.com/rcrowley/go-metrics | v0.0.0-20250401214520-65e299d6c5c9 |  | go-module-binary-cataloger |
+| github.com/redis/go-redis/v9 | v9.19.0 |  | go-module-binary-cataloger |
+| github.com/robertkrimen/otto | v0.5.1 |  | go-module-binary-cataloger |
+| github.com/robfig/cron | v1.2.0 |  | go-module-binary-cataloger |
+| github.com/robfig/cron/v3 | v3.0.1 |  | go-module-binary-cataloger |
+| github.com/ryanuber/go-glob | v1.0.0 |  | go-module-binary-cataloger |
+| github.com/samber/lo | v1.52.0 |  | go-module-binary-cataloger |
+| github.com/segmentio/kafka-go | v0.4.51 |  | go-module-binary-cataloger |
+| github.com/segmentio/kafka-go/sasl/aws_msk_iam_v2 | v0.1.0 |  | go-module-binary-cataloger |
+| github.com/shopspring/decimal | v1.4.0 |  | go-module-binary-cataloger |
+| github.com/signalfx/signalflow-client-go/v2 | v2.3.0 |  | go-module-binary-cataloger |
+| github.com/signalfx/signalfx-go | v1.54.0 |  | go-module-binary-cataloger |
+| github.com/sirupsen/logrus | v1.9.4 |  | go-module-binary-cataloger |
+| github.com/solarwinds/swo-sdk-go/swov1 | v0.15.1 |  | go-module-binary-cataloger |
+| github.com/spf13/pflag | v1.0.10 |  | go-module-binary-cataloger |
+| github.com/spiffe/go-spiffe/v2 | v2.6.0 |  | go-module-binary-cataloger |
+| github.com/spyzhov/ajson | v0.9.6 |  | go-module-binary-cataloger |
+| github.com/stretchr/objx | v0.5.3 |  | go-module-binary-cataloger |
+| github.com/stretchr/testify | v1.11.1 |  | go-module-binary-cataloger |
+| github.com/tidwall/gjson | v1.19.0 |  | go-module-binary-cataloger |
+| github.com/tidwall/match | v1.2.0 |  | go-module-binary-cataloger |
+| github.com/tidwall/pretty | v1.2.1 |  | go-module-binary-cataloger |
+| github.com/tomnomnom/linkheader | v0.0.0-20250811210735-e5fe3b51442e |  | go-module-binary-cataloger |
+| github.com/ulikunitz/unixtime | v0.1.2 |  | go-module-binary-cataloger |
+| github.com/valyala/bytebufferpool | v1.0.0 |  | go-module-binary-cataloger |
+| github.com/valyala/fasthttp | v1.69.0 |  | go-module-binary-cataloger |
+| github.com/valyala/fastjson | v1.6.7 |  | go-module-binary-cataloger |
+| github.com/wagslane/go-password-validator | v0.3.0 |  | go-module-binary-cataloger |
+| github.com/x448/float16 | v0.8.4 |  | go-module-binary-cataloger |
+| github.com/xdg-go/scram | v1.2.0 |  | go-module-binary-cataloger |
+| github.com/xdg-go/stringprep | v1.0.4 |  | go-module-binary-cataloger |
+| github.com/xhit/go-str2duration/v2 | v2.1.0 |  | go-module-binary-cataloger |
+| github.com/youmark/pkcs8 | v0.0.0-20240726163527-a2c0da244d78 |  | go-module-binary-cataloger |
+| github.com/zeebo/xxh3 | v1.1.0 |  | go-module-binary-cataloger |
+| go.etcd.io/etcd/api/v3 | v3.6.11 |  | go-module-binary-cataloger |
+| go.etcd.io/etcd/client/pkg/v3 | v3.6.11 |  | go-module-binary-cataloger |
+| go.etcd.io/etcd/client/v3 | v3.6.11 |  | go-module-binary-cataloger |
+| go.mongodb.org/mongo-driver | v1.17.9 |  | go-module-binary-cataloger |
+| go.opentelemetry.io/auto/sdk | v1.2.1 |  | go-module-binary-cataloger |
+| go.opentelemetry.io/contrib/detectors/gcp | v1.42.0 |  | go-module-binary-cataloger |
+| go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc | v0.67.0 |  | go-module-binary-cataloger |
+| go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp | v0.67.0 |  | go-module-binary-cataloger |
+| go.opentelemetry.io/otel | v1.43.0 |  | go-module-binary-cataloger |
+| go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc | v1.43.0 |  | go-module-binary-cataloger |
+| go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetrichttp | v1.43.0 |  | go-module-binary-cataloger |
+| go.opentelemetry.io/otel/metric | v1.43.0 |  | go-module-binary-cataloger |
+| go.opentelemetry.io/otel/sdk | v1.43.0 |  | go-module-binary-cataloger |
+| go.opentelemetry.io/otel/sdk/metric | v1.43.0 |  | go-module-binary-cataloger |
+| go.opentelemetry.io/otel/trace | v1.43.0 |  | go-module-binary-cataloger |
+| go.opentelemetry.io/proto/otlp | v1.10.0 |  | go-module-binary-cataloger |
+| go.temporal.io/api | v1.62.12 |  | go-module-binary-cataloger |
+| go.temporal.io/sdk | v1.44.0 |  | go-module-binary-cataloger |
+| go.uber.org/atomic | v1.11.0 |  | go-module-binary-cataloger |
+| go.uber.org/multierr | v1.11.0 |  | go-module-binary-cataloger |
+| go.uber.org/zap | v1.28.0 |  | go-module-binary-cataloger |
+| go.yaml.in/yaml/v2 | v2.4.4 |  | go-module-binary-cataloger |
+| go.yaml.in/yaml/v3 | v3.0.4 |  | go-module-binary-cataloger |
+| golang.org/x/crypto | v0.52.0 |  | go-module-binary-cataloger |
+| golang.org/x/exp | v0.0.0-20260508232706-74f9aab9d74a |  | go-module-binary-cataloger |
+| golang.org/x/mod | v0.36.0 |  | go-module-binary-cataloger |
+| golang.org/x/net | v0.55.0 |  | go-module-binary-cataloger |
+| golang.org/x/oauth2 | v0.36.0 |  | go-module-binary-cataloger |
+| golang.org/x/sync | v0.20.0 |  | go-module-binary-cataloger |
+| golang.org/x/sys | v0.45.0 |  | go-module-binary-cataloger |
+| golang.org/x/term | v0.43.0 |  | go-module-binary-cataloger |
+| golang.org/x/text | v0.37.0 |  | go-module-binary-cataloger |
+| golang.org/x/time | v0.15.0 |  | go-module-binary-cataloger |
+| golang.org/x/tools | v0.45.0 |  | go-module-binary-cataloger |
+| golang.org/x/xerrors | v0.0.0-20240903120638-7835f813f4da |  | go-module-binary-cataloger |
+| gomodules.xyz/jsonpatch/v2 | v2.5.0 |  | go-module-binary-cataloger |
+| google.golang.org/api | v0.281.0 |  | go-module-binary-cataloger |
+| google.golang.org/genproto | v0.0.0-20260319201613-d00831a3d3e7 |  | go-module-binary-cataloger |
+| google.golang.org/genproto/googleapis/api | v0.0.0-20260401024825-9d38bb4040a9 |  | go-module-binary-cataloger |
+| google.golang.org/genproto/googleapis/rpc | v0.0.0-20260523011958-0a33c5d7ca68 |  | go-module-binary-cataloger |
+| google.golang.org/grpc | v1.81.1 |  | go-module-binary-cataloger |
+| google.golang.org/protobuf | v1.36.12-0.20260120151049-f2248ac996af |  | go-module-binary-cataloger |
+| gopkg.in/evanphx/json-patch.v4 | v4.13.0 |  | go-module-binary-cataloger |
+| gopkg.in/inf.v0 | v0.9.1 |  | go-module-binary-cataloger |
+| gopkg.in/sourcemap.v1 | v1.0.5 |  | go-module-binary-cataloger |
+| gopkg.in/yaml.v3 | v3.0.1 |  | go-module-binary-cataloger |
+| k8s.io/api | v0.35.5 |  | go-module-binary-cataloger |
+| k8s.io/apiextensions-apiserver | v0.35.5 |  | go-module-binary-cataloger |
+| k8s.io/apimachinery | v0.35.5 |  | go-module-binary-cataloger |
+| k8s.io/client-go | v0.35.5 |  | go-module-binary-cataloger |
+| k8s.io/klog/v2 | v2.140.0 |  | go-module-binary-cataloger |
+| k8s.io/kube-openapi | v0.0.0-20250910181357-589584f1c912 |  | go-module-binary-cataloger |
+| k8s.io/metrics | v0.35.5 |  | go-module-binary-cataloger |
+| k8s.io/utils | v0.0.0-20260319190234-28399d86e0b5 |  | go-module-binary-cataloger |
+| media-types | 13.0.0 |  | dpkg-db-cataloger |
+| netbase | 6.5 | GPL-2.0-only | dpkg-db-cataloger |
+| sigs.k8s.io/controller-runtime | v0.23.3 |  | go-module-binary-cataloger |
+| sigs.k8s.io/json | v0.0.0-20250730193827-2d320260d730 |  | go-module-binary-cataloger |
+| sigs.k8s.io/randfill | v1.0.0 |  | go-module-binary-cataloger |
+| sigs.k8s.io/structured-merge-diff/v6 | v6.4.0 |  | go-module-binary-cataloger |
+| sigs.k8s.io/yaml | v1.6.0 |  | go-module-binary-cataloger |
+| stdlib | go1.26.2 | BSD-3-Clause | go-module-binary-cataloger |
+| tzdata | 2026b-0+deb13u1 |  | dpkg-db-cataloger |
+| tzdata-legacy | 2026b-0+deb13u1 |  | dpkg-db-cataloger |
+
+### registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/kedacore/keda-metrics-apiserver
+
+| Package | Version | License | Found by |
+| ------- | --------| ------- | -------- |
+| base-files | 13.8+deb13u5 | GPL-2.0-or-later | dpkg-db-cataloger |
+| cel.dev/expr | v0.25.1 |  | go-module-binary-cataloger |
+| cloud.google.com/go | v0.123.0 |  | go-module-binary-cataloger |
+| cloud.google.com/go/auth | v0.20.0 |  | go-module-binary-cataloger |
+| cloud.google.com/go/auth/oauth2adapt | v0.2.8 |  | go-module-binary-cataloger |
+| cloud.google.com/go/compute/metadata | v0.9.0 |  | go-module-binary-cataloger |
+| cloud.google.com/go/iam | v1.7.0 |  | go-module-binary-cataloger |
+| cloud.google.com/go/monitoring | v1.29.0 |  | go-module-binary-cataloger |
+| cloud.google.com/go/secretmanager | v1.20.0 |  | go-module-binary-cataloger |
+| cloud.google.com/go/storage | v1.62.2 |  | go-module-binary-cataloger |
+| dario.cat/mergo | v1.0.2 |  | go-module-binary-cataloger |
+| filippo.io/edwards25519 | v1.2.0 |  | go-module-binary-cataloger |
+| github.com/Azure/azure-amqp-common-go/v4 | v4.2.0 |  | go-module-binary-cataloger |
+| github.com/Azure/azure-kusto-go/azkustodata | v1.2.2 |  | go-module-binary-cataloger |
+| github.com/Azure/azure-sdk-for-go/sdk/azcore | v1.21.1 |  | go-module-binary-cataloger |
+| github.com/Azure/azure-sdk-for-go/sdk/azidentity | v1.13.1 |  | go-module-binary-cataloger |
+| github.com/Azure/azure-sdk-for-go/sdk/internal | v1.12.0 |  | go-module-binary-cataloger |
+| github.com/Azure/azure-sdk-for-go/sdk/messaging/azeventhubs/v2 | v2.0.2 |  | go-module-binary-cataloger |
+| github.com/Azure/azure-sdk-for-go/sdk/messaging/azservicebus | v1.10.0 |  | go-module-binary-cataloger |
+| github.com/Azure/azure-sdk-for-go/sdk/monitor/azquery | v1.2.0 |  | go-module-binary-cataloger |
+| github.com/Azure/azure-sdk-for-go/sdk/security/keyvault/azsecrets | v1.4.0 |  | go-module-binary-cataloger |
+| github.com/Azure/azure-sdk-for-go/sdk/security/keyvault/internal | v1.2.0 |  | go-module-binary-cataloger |
+| github.com/Azure/azure-sdk-for-go/sdk/storage/azblob | v1.7.0 |  | go-module-binary-cataloger |
+| github.com/Azure/azure-sdk-for-go/sdk/storage/azqueue | v1.0.1 |  | go-module-binary-cataloger |
+| github.com/Azure/go-amqp | v1.5.1 |  | go-module-binary-cataloger |
+| github.com/AzureAD/microsoft-authentication-library-for-go | v1.7.2 |  | go-module-binary-cataloger |
+| github.com/DataDog/datadog-api-client-go | v1.16.0 |  | go-module-binary-cataloger |
+| github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp | v1.31.0 |  | go-module-binary-cataloger |
+| github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/metric | v0.55.0 |  | go-module-binary-cataloger |
+| github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/resourcemapping | v0.55.0 |  | go-module-binary-cataloger |
+| github.com/Huawei/gophercloud | v1.0.21 |  | go-module-binary-cataloger |
+| github.com/IBM/sarama | v1.49.0 |  | go-module-binary-cataloger |
+| github.com/InfluxCommunity/influxdb3-go/v2 | v2.15.0 |  | go-module-binary-cataloger |
+| github.com/Masterminds/semver/v3 | v3.4.0 |  | go-module-binary-cataloger |
+| github.com/NYTimes/gziphandler | v1.1.1 |  | go-module-binary-cataloger |
+| github.com/andybalholm/brotli | v1.2.1 |  | go-module-binary-cataloger |
+| github.com/antlr4-go/antlr/v4 | v4.13.1 |  | go-module-binary-cataloger |
+| github.com/apache/arrow-go/v18 | v18.6.0 |  | go-module-binary-cataloger |
+| github.com/apapsch/go-jsonmerge/v2 | v2.0.0 |  | go-module-binary-cataloger |
+| github.com/arangodb/go-driver | v1.6.9 |  | go-module-binary-cataloger |
+| github.com/arangodb/go-velocypack | v0.0.0-20200318135517-5af53c29c67e |  | go-module-binary-cataloger |
+| github.com/aws/aws-msk-iam-sasl-signer-go | v1.0.4 |  | go-module-binary-cataloger |
+| github.com/aws/aws-sdk-go-v2 | v1.41.7 |  | go-module-binary-cataloger |
+| github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream | v1.7.10 |  | go-module-binary-cataloger |
+| github.com/aws/aws-sdk-go-v2/config | v1.32.18 |  | go-module-binary-cataloger |
+| github.com/aws/aws-sdk-go-v2/credentials | v1.19.17 |  | go-module-binary-cataloger |
+| github.com/aws/aws-sdk-go-v2/feature/ec2/imds | v1.18.23 |  | go-module-binary-cataloger |
+| github.com/aws/aws-sdk-go-v2/internal/configsources | v1.4.23 |  | go-module-binary-cataloger |
+| github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 | v2.7.23 |  | go-module-binary-cataloger |
+| github.com/aws/aws-sdk-go-v2/internal/v4a | v1.4.24 |  | go-module-binary-cataloger |
+| github.com/aws/aws-sdk-go-v2/service/amp | v1.42.11 |  | go-module-binary-cataloger |
+| github.com/aws/aws-sdk-go-v2/service/cloudwatch | v1.57.0 |  | go-module-binary-cataloger |
+| github.com/aws/aws-sdk-go-v2/service/dynamodb | v1.57.4 |  | go-module-binary-cataloger |
+| github.com/aws/aws-sdk-go-v2/service/dynamodbstreams | v1.32.16 |  | go-module-binary-cataloger |
+| github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding | v1.13.9 |  | go-module-binary-cataloger |
+| github.com/aws/aws-sdk-go-v2/service/internal/endpoint-discovery | v1.12.0 |  | go-module-binary-cataloger |
+| github.com/aws/aws-sdk-go-v2/service/internal/presigned-url | v1.13.23 |  | go-module-binary-cataloger |
+| github.com/aws/aws-sdk-go-v2/service/kinesis | v1.43.7 |  | go-module-binary-cataloger |
+| github.com/aws/aws-sdk-go-v2/service/secretsmanager | v1.41.7 |  | go-module-binary-cataloger |
+| github.com/aws/aws-sdk-go-v2/service/signin | v1.0.11 |  | go-module-binary-cataloger |
+| github.com/aws/aws-sdk-go-v2/service/sqs | v1.42.27 |  | go-module-binary-cataloger |
+| github.com/aws/aws-sdk-go-v2/service/sso | v1.30.17 |  | go-module-binary-cataloger |
+| github.com/aws/aws-sdk-go-v2/service/ssooidc | v1.36.0 |  | go-module-binary-cataloger |
+| github.com/aws/aws-sdk-go-v2/service/sts | v1.42.1 |  | go-module-binary-cataloger |
+| github.com/aws/smithy-go | v1.25.1 |  | go-module-binary-cataloger |
+| github.com/beanstalkd/go-beanstalk | v0.2.0 |  | go-module-binary-cataloger |
+| github.com/beorn7/perks | v1.0.1 |  | go-module-binary-cataloger |
+| github.com/blang/semver/v4 | v4.0.0 |  | go-module-binary-cataloger |
+| github.com/bradleyfalzon/ghinstallation/v2 | v2.18.0 |  | go-module-binary-cataloger |
+| github.com/cenkalti/backoff/v4 | v4.3.0 |  | go-module-binary-cataloger |
+| github.com/cenkalti/backoff/v5 | v5.0.3 |  | go-module-binary-cataloger |
+| github.com/cespare/xxhash/v2 | v2.3.0 |  | go-module-binary-cataloger |
+| github.com/clipperhouse/uax29/v2 | v2.7.0 |  | go-module-binary-cataloger |
+| github.com/cncf/xds/go | v0.0.0-20260202195803-dba9d589def2 |  | go-module-binary-cataloger |
+| github.com/coreos/go-semver | v0.3.1 |  | go-module-binary-cataloger |
+| github.com/coreos/go-systemd/v22 | v22.7.0 |  | go-module-binary-cataloger |
+| github.com/davecgh/go-spew | v1.1.2-0.20180830191138-d8f796af33cc |  | go-module-binary-cataloger |
+| github.com/dennwc/varint | v1.0.0 |  | go-module-binary-cataloger |
+| github.com/dysnix/predictkube-libs | v0.1.0 |  | go-module-binary-cataloger |
+| github.com/dysnix/predictkube-proto | v0.0.0-20250415003810-aa0af0a0019b |  | go-module-binary-cataloger |
+| github.com/eapache/go-resiliency | v1.7.0 |  | go-module-binary-cataloger |
+| github.com/eapache/queue | v1.1.0 |  | go-module-binary-cataloger |
+| github.com/elastic/go-elasticsearch/v7 | v7.17.10 |  | go-module-binary-cataloger |
+| github.com/emicklei/go-restful/v3 | v3.13.0 |  | go-module-binary-cataloger |
+| github.com/envoyproxy/go-control-plane/envoy | v1.37.0 |  | go-module-binary-cataloger |
+| github.com/envoyproxy/protoc-gen-validate | v1.3.3 |  | go-module-binary-cataloger |
+| github.com/evanphx/json-patch/v5 | v5.9.11 |  | go-module-binary-cataloger |
+| github.com/expr-lang/expr | v1.17.8 |  | go-module-binary-cataloger |
+| github.com/facebookgo/clock | v0.0.0-20150410010913-600d898af40a |  | go-module-binary-cataloger |
+| github.com/felixge/httpsnoop | v1.0.4 |  | go-module-binary-cataloger |
+| github.com/fsnotify/fsnotify | v1.10.0 |  | go-module-binary-cataloger |
+| github.com/fxamacker/cbor/v2 | v2.9.1 |  | go-module-binary-cataloger |
+| github.com/gabriel-vasile/mimetype | v1.4.13 |  | go-module-binary-cataloger |
+| github.com/go-jose/go-jose/v4 | v4.1.4 |  | go-module-binary-cataloger |
+| github.com/go-kivik/couchdb/v3 | v3.4.1 |  | go-module-binary-cataloger |
+| github.com/go-kivik/kivik/v3 | v3.2.4 |  | go-module-binary-cataloger |
+| github.com/go-logr/logr | v1.4.3 |  | go-module-binary-cataloger |
+| github.com/go-logr/stdr | v1.2.2 |  | go-module-binary-cataloger |
+| github.com/go-logr/zapr | v1.3.0 |  | go-module-binary-cataloger |
+| github.com/go-openapi/jsonpointer | v0.23.1 |  | go-module-binary-cataloger |
+| github.com/go-openapi/jsonreference | v0.21.5 |  | go-module-binary-cataloger |
+| github.com/go-openapi/swag | v0.26.0 |  | go-module-binary-cataloger |
+| github.com/go-openapi/swag/cmdutils | v0.26.0 |  | go-module-binary-cataloger |
+| github.com/go-openapi/swag/conv | v0.26.0 |  | go-module-binary-cataloger |
+| github.com/go-openapi/swag/fileutils | v0.26.0 |  | go-module-binary-cataloger |
+| github.com/go-openapi/swag/jsonname | v0.26.0 |  | go-module-binary-cataloger |
+| github.com/go-openapi/swag/jsonutils | v0.26.0 |  | go-module-binary-cataloger |
+| github.com/go-openapi/swag/loading | v0.26.0 |  | go-module-binary-cataloger |
+| github.com/go-openapi/swag/mangling | v0.26.0 |  | go-module-binary-cataloger |
+| github.com/go-openapi/swag/netutils | v0.26.0 |  | go-module-binary-cataloger |
+| github.com/go-openapi/swag/stringutils | v0.26.0 |  | go-module-binary-cataloger |
+| github.com/go-openapi/swag/typeutils | v0.26.0 |  | go-module-binary-cataloger |
+| github.com/go-openapi/swag/yamlutils | v0.26.0 |  | go-module-binary-cataloger |
+| github.com/go-playground/locales | v0.14.1 |  | go-module-binary-cataloger |
+| github.com/go-playground/universal-translator | v0.18.1 |  | go-module-binary-cataloger |
+| github.com/go-playground/validator/v10 | v10.30.2 |  | go-module-binary-cataloger |
+| github.com/go-sql-driver/mysql | v1.10.0 |  | go-module-binary-cataloger |
+| github.com/gobwas/glob | v0.2.3 |  | go-module-binary-cataloger |
+| github.com/goccy/go-json | v0.10.6 |  | go-module-binary-cataloger |
+| github.com/gocql/gocql | v1.7.0 |  | go-module-binary-cataloger |
+| github.com/gogo/protobuf | v1.3.2 |  | go-module-binary-cataloger |
+| github.com/golang-jwt/jwt/v4 | v4.5.2 |  | go-module-binary-cataloger |
+| github.com/golang-jwt/jwt/v5 | v5.3.1 |  | go-module-binary-cataloger |
+| github.com/golang-sql/civil | v0.0.0-20220223132316-b832511892a9 |  | go-module-binary-cataloger |
+| github.com/golang-sql/sqlexp | v0.1.0 |  | go-module-binary-cataloger |
+| github.com/golang/mock | v1.6.0 |  | go-module-binary-cataloger |
+| github.com/golang/protobuf | v1.5.4 |  | go-module-binary-cataloger |
+| github.com/golang/snappy | v1.0.0 |  | go-module-binary-cataloger |
+| github.com/google/btree | v1.1.3 |  | go-module-binary-cataloger |
+| github.com/google/cel-go | v0.26.0 |  | go-module-binary-cataloger |
+| github.com/google/flatbuffers | v25.12.19+incompatible |  | go-module-binary-cataloger |
+| github.com/google/gnostic-models | v0.7.1 |  | go-module-binary-cataloger |
+| github.com/google/go-github/v84 | v84.0.0 |  | go-module-binary-cataloger |
+| github.com/google/go-querystring | v1.2.0 |  | go-module-binary-cataloger |
+| github.com/google/s2a-go | v0.1.9 |  | go-module-binary-cataloger |
+| github.com/google/uuid | v1.6.0 |  | go-module-binary-cataloger |
+| github.com/googleapis/enterprise-certificate-proxy | v0.3.16 |  | go-module-binary-cataloger |
+| github.com/googleapis/gax-go/v2 | v2.22.0 |  | go-module-binary-cataloger |
+| github.com/gophercloud/gophercloud | v1.14.1 |  | go-module-binary-cataloger |
+| github.com/gorilla/websocket | v1.5.4-0.20250319132907-e064f32e3674 |  | go-module-binary-cataloger |
+| github.com/grafana/regexp | v0.0.0-20250905093917-f7b3be9d1853 |  | go-module-binary-cataloger |
+| github.com/grpc-ecosystem/go-grpc-middleware/providers/prometheus | v1.1.0 |  | go-module-binary-cataloger |
+| github.com/grpc-ecosystem/go-grpc-middleware/v2 | v2.3.3 |  | go-module-binary-cataloger |
+| github.com/grpc-ecosystem/go-grpc-prometheus | v1.2.0 |  | go-module-binary-cataloger |
+| github.com/grpc-ecosystem/grpc-gateway/v2 | v2.28.0 |  | go-module-binary-cataloger |
+| github.com/hailocab/go-hostpool | v0.0.0-20160125115350-e80d13ce29ed |  | go-module-binary-cataloger |
+| github.com/hashicorp/errwrap | v1.1.0 |  | go-module-binary-cataloger |
+| github.com/hashicorp/go-cleanhttp | v0.5.2 |  | go-module-binary-cataloger |
+| github.com/hashicorp/go-multierror | v1.1.1 |  | go-module-binary-cataloger |
+| github.com/hashicorp/go-retryablehttp | v0.7.8 |  | go-module-binary-cataloger |
+| github.com/hashicorp/go-rootcerts | v1.0.2 |  | go-module-binary-cataloger |
+| github.com/hashicorp/go-secure-stdlib/parseutil | v0.2.0 |  | go-module-binary-cataloger |
+| github.com/hashicorp/go-secure-stdlib/strutil | v0.1.2 |  | go-module-binary-cataloger |
+| github.com/hashicorp/go-sockaddr | v1.0.7 |  | go-module-binary-cataloger |
+| github.com/hashicorp/go-uuid | v1.0.3 |  | go-module-binary-cataloger |
+| github.com/hashicorp/hcl | v1.0.1-vault-7 |  | go-module-binary-cataloger |
+| github.com/hashicorp/vault/api | v1.23.0 |  | go-module-binary-cataloger |
+| github.com/imdario/mergo | v0.3.16 |  | go-module-binary-cataloger |
+| github.com/influxdata/influxdb-client-go/v2 | v2.14.0 |  | go-module-binary-cataloger |
+| github.com/influxdata/line-protocol | v0.0.0-20210922203350-b1ad95c89adf |  | go-module-binary-cataloger |
+| github.com/influxdata/line-protocol/v2 | v2.2.1 |  | go-module-binary-cataloger |
+| github.com/jackc/pgpassfile | v1.0.0 |  | go-module-binary-cataloger |
+| github.com/jackc/pgservicefile | v0.0.0-20240606120523-5a60cdf6a761 |  | go-module-binary-cataloger |
+| github.com/jackc/pgx/v5 | v5.9.2 |  | go-module-binary-cataloger |
+| github.com/jackc/puddle/v2 | v2.2.2 |  | go-module-binary-cataloger |
+| github.com/jcmturner/aescts/v2 | v2.0.0 |  | go-module-binary-cataloger |
+| github.com/jcmturner/dnsutils/v2 | v2.0.0 |  | go-module-binary-cataloger |
+| github.com/jcmturner/gofork | v1.7.6 |  | go-module-binary-cataloger |
+| github.com/jcmturner/gokrb5/v8 | v8.4.4 |  | go-module-binary-cataloger |
+| github.com/jcmturner/rpc/v2 | v2.0.3 |  | go-module-binary-cataloger |
+| github.com/jpillora/backoff | v1.0.0 |  | go-module-binary-cataloger |
+| github.com/json-iterator/go | v1.1.12 |  | go-module-binary-cataloger |
+| github.com/kedacore/keda/v2 | v2.20.1 |  | go-module-binary-cataloger |
+| github.com/klauspost/compress | v1.18.6 |  | go-module-binary-cataloger |
+| github.com/klauspost/cpuid/v2 | v2.3.0 |  | go-module-binary-cataloger |
+| github.com/kylelemons/godebug | v1.1.0 |  | go-module-binary-cataloger |
+| github.com/leodido/go-urn | v1.4.0 |  | go-module-binary-cataloger |
+| github.com/mattn/go-runewidth | v0.0.20 |  | go-module-binary-cataloger |
+| github.com/microsoft/go-mssqldb | v1.9.6 |  | go-module-binary-cataloger |
+| github.com/mitchellh/hashstructure | v1.1.0 |  | go-module-binary-cataloger |
+| github.com/mitchellh/mapstructure | v1.5.0 |  | go-module-binary-cataloger |
+| github.com/modern-go/concurrent | v0.0.0-20180306012644-bacd9c7ef1dd |  | go-module-binary-cataloger |
+| github.com/modern-go/reflect2 | v1.0.3-0.20250322232337-35a7c28c31ee |  | go-module-binary-cataloger |
+| github.com/montanaflynn/stats | v0.7.1 |  | go-module-binary-cataloger |
+| github.com/munnerz/goautoneg | v0.0.0-20191010083416-a7dc8b61c822 |  | go-module-binary-cataloger |
+| github.com/mwitkow/go-conntrack | v0.0.0-20190716064945-2f068394615f |  | go-module-binary-cataloger |
+| github.com/newrelic/newrelic-client-go/v2 | v2.86.1 |  | go-module-binary-cataloger |
+| github.com/nexus-rpc/sdk-go | v0.6.0 |  | go-module-binary-cataloger |
+| github.com/oapi-codegen/runtime | v1.1.2 |  | go-module-binary-cataloger |
+| github.com/olekukonko/tablewriter | v0.0.5 |  | go-module-binary-cataloger |
+| github.com/onsi/ginkgo/v2 | v2.29.0 |  | go-module-binary-cataloger |
+| github.com/opensearch-project/opensearch-go/v4 | v4.6.0 |  | go-module-binary-cataloger |
+| github.com/pierrec/lz4/v4 | v4.1.26 |  | go-module-binary-cataloger |
+| github.com/pkg/browser | v0.0.0-20240102092130-5ac0b6a4141c |  | go-module-binary-cataloger |
+| github.com/pkg/errors | v0.9.1 |  | go-module-binary-cataloger |
+| github.com/pmezard/go-difflib | v1.0.1-0.20181226105442-5d4384ee4fb2 |  | go-module-binary-cataloger |
+| github.com/prometheus/client_golang | v1.23.2 |  | go-module-binary-cataloger |
+| github.com/prometheus/client_model | v0.6.2 |  | go-module-binary-cataloger |
+| github.com/prometheus/common | v0.66.1 |  | go-module-binary-cataloger |
+| github.com/prometheus/procfs | v0.20.1 |  | go-module-binary-cataloger |
+| github.com/prometheus/prometheus | v0.304.2 |  | go-module-binary-cataloger |
+| github.com/rabbitmq/amqp091-go | v1.11.0 |  | go-module-binary-cataloger |
+| github.com/rcrowley/go-metrics | v0.0.0-20250401214520-65e299d6c5c9 |  | go-module-binary-cataloger |
+| github.com/redis/go-redis/v9 | v9.19.0 |  | go-module-binary-cataloger |
+| github.com/robertkrimen/otto | v0.5.1 |  | go-module-binary-cataloger |
+| github.com/robfig/cron | v1.2.0 |  | go-module-binary-cataloger |
+| github.com/robfig/cron/v3 | v3.0.1 |  | go-module-binary-cataloger |
+| github.com/ryanuber/go-glob | v1.0.0 |  | go-module-binary-cataloger |
+| github.com/samber/lo | v1.52.0 |  | go-module-binary-cataloger |
+| github.com/segmentio/kafka-go | v0.4.51 |  | go-module-binary-cataloger |
+| github.com/segmentio/kafka-go/sasl/aws_msk_iam_v2 | v0.1.0 |  | go-module-binary-cataloger |
+| github.com/shopspring/decimal | v1.4.0 |  | go-module-binary-cataloger |
+| github.com/signalfx/signalflow-client-go/v2 | v2.3.0 |  | go-module-binary-cataloger |
+| github.com/signalfx/signalfx-go | v1.54.0 |  | go-module-binary-cataloger |
+| github.com/sirupsen/logrus | v1.9.4 |  | go-module-binary-cataloger |
+| github.com/solarwinds/swo-sdk-go/swov1 | v0.15.1 |  | go-module-binary-cataloger |
+| github.com/spf13/cobra | v1.10.2 |  | go-module-binary-cataloger |
+| github.com/spf13/pflag | v1.0.10 |  | go-module-binary-cataloger |
+| github.com/spiffe/go-spiffe/v2 | v2.6.0 |  | go-module-binary-cataloger |
+| github.com/spyzhov/ajson | v0.9.6 |  | go-module-binary-cataloger |
+| github.com/stoewer/go-strcase | v1.3.1 |  | go-module-binary-cataloger |
+| github.com/stretchr/objx | v0.5.3 |  | go-module-binary-cataloger |
+| github.com/stretchr/testify | v1.11.1 |  | go-module-binary-cataloger |
+| github.com/tidwall/gjson | v1.19.0 |  | go-module-binary-cataloger |
+| github.com/tidwall/match | v1.2.0 |  | go-module-binary-cataloger |
+| github.com/tidwall/pretty | v1.2.1 |  | go-module-binary-cataloger |
+| github.com/tomnomnom/linkheader | v0.0.0-20250811210735-e5fe3b51442e |  | go-module-binary-cataloger |
+| github.com/ulikunitz/unixtime | v0.1.2 |  | go-module-binary-cataloger |
+| github.com/valyala/bytebufferpool | v1.0.0 |  | go-module-binary-cataloger |
+| github.com/valyala/fasthttp | v1.69.0 |  | go-module-binary-cataloger |
+| github.com/valyala/fastjson | v1.6.7 |  | go-module-binary-cataloger |
+| github.com/wagslane/go-password-validator | v0.3.0 |  | go-module-binary-cataloger |
+| github.com/x448/float16 | v0.8.4 |  | go-module-binary-cataloger |
+| github.com/xdg-go/scram | v1.2.0 |  | go-module-binary-cataloger |
+| github.com/xdg-go/stringprep | v1.0.4 |  | go-module-binary-cataloger |
+| github.com/xhit/go-str2duration/v2 | v2.1.0 |  | go-module-binary-cataloger |
+| github.com/youmark/pkcs8 | v0.0.0-20240726163527-a2c0da244d78 |  | go-module-binary-cataloger |
+| github.com/zeebo/xxh3 | v1.1.0 |  | go-module-binary-cataloger |
+| go.etcd.io/etcd/api/v3 | v3.6.11 |  | go-module-binary-cataloger |
+| go.etcd.io/etcd/client/pkg/v3 | v3.6.11 |  | go-module-binary-cataloger |
+| go.etcd.io/etcd/client/v3 | v3.6.11 |  | go-module-binary-cataloger |
+| go.mongodb.org/mongo-driver | v1.17.9 |  | go-module-binary-cataloger |
+| go.opentelemetry.io/auto/sdk | v1.2.1 |  | go-module-binary-cataloger |
+| go.opentelemetry.io/contrib/detectors/gcp | v1.42.0 |  | go-module-binary-cataloger |
+| go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc | v0.67.0 |  | go-module-binary-cataloger |
+| go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp | v0.67.0 |  | go-module-binary-cataloger |
+| go.opentelemetry.io/otel | v1.43.0 |  | go-module-binary-cataloger |
+| go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc | v1.43.0 |  | go-module-binary-cataloger |
+| go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetrichttp | v1.43.0 |  | go-module-binary-cataloger |
+| go.opentelemetry.io/otel/exporters/otlp/otlptrace | v1.43.0 |  | go-module-binary-cataloger |
+| go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc | v1.43.0 |  | go-module-binary-cataloger |
+| go.opentelemetry.io/otel/metric | v1.43.0 |  | go-module-binary-cataloger |
+| go.opentelemetry.io/otel/sdk | v1.43.0 |  | go-module-binary-cataloger |
+| go.opentelemetry.io/otel/sdk/metric | v1.43.0 |  | go-module-binary-cataloger |
+| go.opentelemetry.io/otel/trace | v1.43.0 |  | go-module-binary-cataloger |
+| go.opentelemetry.io/proto/otlp | v1.10.0 |  | go-module-binary-cataloger |
+| go.temporal.io/api | v1.62.12 |  | go-module-binary-cataloger |
+| go.temporal.io/sdk | v1.44.0 |  | go-module-binary-cataloger |
+| go.uber.org/atomic | v1.11.0 |  | go-module-binary-cataloger |
+| go.uber.org/multierr | v1.11.0 |  | go-module-binary-cataloger |
+| go.uber.org/zap | v1.28.0 |  | go-module-binary-cataloger |
+| go.yaml.in/yaml/v2 | v2.4.4 |  | go-module-binary-cataloger |
+| go.yaml.in/yaml/v3 | v3.0.4 |  | go-module-binary-cataloger |
+| golang.org/x/crypto | v0.52.0 |  | go-module-binary-cataloger |
+| golang.org/x/exp | v0.0.0-20260508232706-74f9aab9d74a |  | go-module-binary-cataloger |
+| golang.org/x/mod | v0.36.0 |  | go-module-binary-cataloger |
+| golang.org/x/net | v0.55.0 |  | go-module-binary-cataloger |
+| golang.org/x/oauth2 | v0.36.0 |  | go-module-binary-cataloger |
+| golang.org/x/sync | v0.20.0 |  | go-module-binary-cataloger |
+| golang.org/x/sys | v0.45.0 |  | go-module-binary-cataloger |
+| golang.org/x/term | v0.43.0 |  | go-module-binary-cataloger |
+| golang.org/x/text | v0.37.0 |  | go-module-binary-cataloger |
+| golang.org/x/time | v0.15.0 |  | go-module-binary-cataloger |
+| golang.org/x/tools | v0.45.0 |  | go-module-binary-cataloger |
+| golang.org/x/xerrors | v0.0.0-20240903120638-7835f813f4da |  | go-module-binary-cataloger |
+| gomodules.xyz/jsonpatch/v2 | v2.5.0 |  | go-module-binary-cataloger |
+| google.golang.org/api | v0.281.0 |  | go-module-binary-cataloger |
+| google.golang.org/genproto | v0.0.0-20260319201613-d00831a3d3e7 |  | go-module-binary-cataloger |
+| google.golang.org/genproto/googleapis/api | v0.0.0-20260401024825-9d38bb4040a9 |  | go-module-binary-cataloger |
+| google.golang.org/genproto/googleapis/rpc | v0.0.0-20260523011958-0a33c5d7ca68 |  | go-module-binary-cataloger |
+| google.golang.org/grpc | v1.81.1 |  | go-module-binary-cataloger |
+| google.golang.org/protobuf | v1.36.12-0.20260120151049-f2248ac996af |  | go-module-binary-cataloger |
+| gopkg.in/evanphx/json-patch.v4 | v4.13.0 |  | go-module-binary-cataloger |
+| gopkg.in/inf.v0 | v0.9.1 |  | go-module-binary-cataloger |
+| gopkg.in/natefinch/lumberjack.v2 | v2.2.1 |  | go-module-binary-cataloger |
+| gopkg.in/sourcemap.v1 | v1.0.5 |  | go-module-binary-cataloger |
+| gopkg.in/yaml.v3 | v3.0.1 |  | go-module-binary-cataloger |
+| k8s.io/api | v0.35.5 |  | go-module-binary-cataloger |
+| k8s.io/apiextensions-apiserver | v0.35.5 |  | go-module-binary-cataloger |
+| k8s.io/apimachinery | v0.35.5 |  | go-module-binary-cataloger |
+| k8s.io/apiserver | v0.35.5 |  | go-module-binary-cataloger |
+| k8s.io/client-go | v0.35.5 |  | go-module-binary-cataloger |
+| k8s.io/component-base | v0.35.5 |  | go-module-binary-cataloger |
+| k8s.io/klog/v2 | v2.140.0 |  | go-module-binary-cataloger |
+| k8s.io/kms | v0.35.5 |  | go-module-binary-cataloger |
+| k8s.io/kube-openapi | v0.0.0-20250910181357-589584f1c912 |  | go-module-binary-cataloger |
+| k8s.io/metrics | v0.35.5 |  | go-module-binary-cataloger |
+| k8s.io/utils | v0.0.0-20260319190234-28399d86e0b5 |  | go-module-binary-cataloger |
+| media-types | 13.0.0 |  | dpkg-db-cataloger |
+| netbase | 6.5 | GPL-2.0-only | dpkg-db-cataloger |
+| sigs.k8s.io/apiserver-network-proxy/konnectivity-client | v0.34.0 |  | go-module-binary-cataloger |
+| sigs.k8s.io/controller-runtime | v0.23.3 |  | go-module-binary-cataloger |
+| sigs.k8s.io/custom-metrics-apiserver | v1.35.0 |  | go-module-binary-cataloger |
+| sigs.k8s.io/json | v0.0.0-20250730193827-2d320260d730 |  | go-module-binary-cataloger |
+| sigs.k8s.io/randfill | v1.0.0 |  | go-module-binary-cataloger |
+| sigs.k8s.io/structured-merge-diff/v6 | v6.4.0 |  | go-module-binary-cataloger |
+| sigs.k8s.io/yaml | v1.6.0 |  | go-module-binary-cataloger |
+| stdlib | go1.26.2 | BSD-3-Clause | go-module-binary-cataloger |
+| tzdata | 2026b-0+deb13u1 |  | dpkg-db-cataloger |
+| tzdata-legacy | 2026b-0+deb13u1 |  | dpkg-db-cataloger |
 
 ### registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/api
 

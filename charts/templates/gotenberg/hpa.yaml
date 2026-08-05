@@ -1,4 +1,5 @@
 {{- if .Values.gotenberg.hpa.enabled -}}
+{{- if not .Values.gotenberg.keda.enabled -}}
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
@@ -24,4 +25,5 @@ spec:
         target:
           type: Utilization
           averageUtilization: {{ .Values.gotenberg.hpa.targetCPUUtilizationPercentage }}
+{{- end }}
 {{- end }}

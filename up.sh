@@ -19,18 +19,19 @@ SKAFFOLD_HOME="${SKAFFOLD_HOME:-${HOME}/.skaffold}"
 #
 # Defines
 #
-NAMESPACE="loom"
 DOCKER_SECRET_NAME="docker-registry-secret"
 DOCKER_CONFIG_FILE="${HOME}/.docker/config.json"
 HOSTS_FILE="/etc/hosts"
 TUNNEL_PIDFILE_DIR="/run/user/${UID}/"
 TUNNEL_PIDFILE="${TUNNEL_PIDFILE_DIR}/${SCRIPT_NAME}.minikube.tunnel.pid"
 TRAEFIK_DIR="${SCRIPT_DIR}/traefik"
-TRAEFIK_SKAFFOLD_CMD="${TRAEFIK_DIR}/skaffold"
+KEDA_DIR="${SCRIPT_DIR}/keda"
+CICD_SKAFFOLD="${SCRIPT_DIR}/cicd/skaffold"
 UP_FLAGS_VALUES_FILE="${SCRIPT_DIR}/charts/values-up-flags.yaml"
 NO_RESOURCES_VALUES_FILE="${SCRIPT_DIR}/charts/values-no-resources.yaml"
 GPU_VALUES_FILE="${SCRIPT_DIR}/charts/values-gpu.yaml"
 DISABLE_AI_VALUES_FILE="${SCRIPT_DIR}/charts/values-disable-ai-services.yaml"
+SCALING_VALUES_FILE="${SCRIPT_DIR}/charts/values-scaling.yaml"
 ONLINE_TEST_URL="https://gitlab.com"
 OFFLINE_IMAGE_TAG="latest"
 CERTIFICATE_SECRET_NAME="self-signed-cert"
@@ -70,9 +71,11 @@ KUBELET_EVICTION_SOFT_MEMORY=""
 #
 
 # variables defined in vars.sh, here for shellcheck:
+NAMESPACE=""
 LOOM_DOMAIN=""
 LOOM_HOSTS_FQDN=()
 TRAEFIK_HELM_VERSION=""
+KEDA_HELM_VERSION=""
 LOOM_MIN_CPU=""
 LOOM_MIN_MEMORY=""
 LOOM_MIN_GPU=""
@@ -112,7 +115,7 @@ STEPS_SETUP_CLUSTER=(
     use_namespace
     inject_archive_enc_key
     create_docker_secret_from_config
-    install_traefik
+    install_third_party
     install_certificate
     stop_expose_minikube
     warn_dev_or_integration
@@ -133,10 +136,12 @@ EXPOSE_IP=""
 GPUS=""
 OFFLINE_MODE=false
 NO_RESOURCES=false
+SCALING=false
 DELETE=false
+DOWN=false
 SKAFFOLD_PROFILE="prod"
 SKAFFOLD_ARGS=()
-TRAEFIK_SKAFFOLD_ARGS=()
+THIRD_PARTY_SKAFFOLD_ARGS=()
 UP_FLAG_VALUES=()
 SKAFFOLD_COMMAND="run"
 SKAFFOLD_CACHE_FILE="${SKAFFOLD_HOME}/cache"
@@ -288,7 +293,7 @@ set_skaffold_args(){
         SKAFFOLD_ARGS+=(
             "${offline_skaffold_args[@]}"
         )
-        TRAEFIK_SKAFFOLD_ARGS+=( "${offline_skaffold_args[@]}" )
+        THIRD_PARTY_SKAFFOLD_ARGS+=( "${offline_skaffold_args[@]}" )
     fi
     local skaffold_cache_args
     skaffold_cache_args=(
@@ -300,7 +305,7 @@ set_skaffold_args(){
         "--tail=${TAIL}"
         "${skaffold_cache_args[@]}"
     )
-    TRAEFIK_SKAFFOLD_ARGS+=(
+    THIRD_PARTY_SKAFFOLD_ARGS+=(
         "${skaffold_cache_args[@]}"
     )
 }
@@ -356,6 +361,15 @@ write_up_flags_values() {
 }
 
 validate_environment() {
+    # --scaling enables a resource quota that requires requests on every pod.
+    # --no-resources nullifies all requests, so the quota blocks pod creation.
+    if [[ "${SCALING}" = true ]] && [[ "${NO_RESOURCES}" = true ]]; then
+        echo >&2 "[!] Error: --scaling and --no-resources are incompatible."
+        echo >&2 "[!] The scaling resource quota requires CPU/memory requests on every pod,"
+        echo >&2 "[!] but --no-resources removes them. Use one or the other."
+        exit 1
+    fi
+
     # Check if not run as root
     if [[ "${EUID}" -eq 0 ]]; then
         echo >&2 "[!] Error: Script must not be run as root!"
@@ -793,15 +807,54 @@ install_traefik(){
         # stale release that blocks port binding.
         # Run both deletes in parallel to save time.
         # Related: https://github.com/GoogleContainerTools/skaffold/issues/9222
-        "${TRAEFIK_SKAFFOLD_CMD}" delete --profile prod || true &
-        "${TRAEFIK_SKAFFOLD_CMD}" delete --profile dev  || true &
+        "${CICD_SKAFFOLD}" traefik delete --profile prod || true &
+        "${CICD_SKAFFOLD}" traefik delete --profile dev  || true &
         wait
 
-        "${TRAEFIK_SKAFFOLD_CMD}" run \
+        "${CICD_SKAFFOLD}" traefik run \
             --profile "${SKAFFOLD_PROFILE}" \
-            "${TRAEFIK_SKAFFOLD_ARGS[@]}" \
+            "${THIRD_PARTY_SKAFFOLD_ARGS[@]}" \
             "${@}"
     )
+}
+
+install_keda(){
+    (
+        cd "${KEDA_DIR}"
+
+        # Delete both profiles before redeploying so that switching between
+        # `up -d` and `up` does not leave a stale release behind.
+        "${CICD_SKAFFOLD}" keda delete --profile prod || true &
+        "${CICD_SKAFFOLD}" keda delete --profile dev  || true &
+        wait
+
+        "${CICD_SKAFFOLD}" keda run \
+            --profile "${SKAFFOLD_PROFILE}" \
+            "${THIRD_PARTY_SKAFFOLD_ARGS[@]}" \
+            "${@}"
+
+        # Wait for all CRDs to be established.
+        # KEDA deploys its CRDs via helm templates (not the chart-level crds/ dir),
+        # so they are installed as part of the helm release above, not before it.
+        kubectl wait \
+            --for condition=established \
+                crd \
+                    --all
+    )
+}
+
+install_third_party(){
+    local pids=()
+
+    install_traefik "$@" &
+    pids+=($!)
+
+    if [[ "${SCALING}" = true ]]; then
+        install_keda "$@" &
+        pids+=($!)
+    fi
+
+    wait "${pids[@]}"
 }
 
 install_certificate(){
@@ -946,6 +999,34 @@ run_skaffold(){
 }
 
 #
+# Teardown
+#
+
+teardown(){
+    local pids=()
+
+    "${CICD_SKAFFOLD}" traefik delete \
+        --profile "${SKAFFOLD_PROFILE}" &
+    pids+=($!)
+
+    "${CICD_SKAFFOLD}" keda delete \
+        --profile "${SKAFFOLD_PROFILE}" &
+    pids+=($!)
+
+    skaffold delete \
+        --profile "${SKAFFOLD_PROFILE}" &
+    pids+=($!)
+
+    wait "${pids[@]}"
+
+    minikube ssh \
+        -- \
+        docker \
+            system prune \
+                --force
+}
+
+#
 # Atexit Handler
 #
 
@@ -956,22 +1037,8 @@ atexit(){
         return
     fi
 
-    if [[ "${DELETE}" = true ]]; then
-        (
-            cd "${TRAEFIK_DIR}"
-
-            "${TRAEFIK_SKAFFOLD_CMD}" delete \
-                --profile "${SKAFFOLD_PROFILE}"
-        )
-
-        skaffold delete \
-            --profile "${SKAFFOLD_PROFILE}"
-
-        minikube ssh \
-            -- \
-            docker \
-                system prune \
-                    --force
+    if [[ "${DELETE}" = true || "${DEVELOPMENT}" = true ]]; then
+        teardown
     fi
 }
 trap atexit EXIT
@@ -999,7 +1066,9 @@ usage(){
     echo "  --archive-enc-key KEY                 use KEY (exactly 32 chars) as the archive encryption master key"
     echo "  --no-resources                        deploy without resource requests or limits (see charts/values-no-resources.yaml)"
     echo "  --disable-ai                          disable AI services: ollama, open-webui, translate (see charts/values-disable-ai-services.yaml)"
-    echo "  --delete                              delete the deployment after startup"
+    echo "  --scaling                             enable autoscaling (KEDA/HPA) for compute-intensive services (see charts/values-scaling.yaml)"
+    echo "  --down                                tear down the deployment and exit
+  --delete                              delete the deployment after startup"
     echo "  --skip-STEP                           skip step STEP"
 }
 
@@ -1095,6 +1164,15 @@ while [[ $# -gt 0 ]]; do
             UP_FLAG_VALUES+=("${DISABLE_AI_VALUES_FILE}")
             shift
         ;;
+        --scaling)
+            SCALING=true
+            UP_FLAG_VALUES+=("${SCALING_VALUES_FILE}")
+            shift
+        ;;
+        --down)
+            DOWN=true
+            shift
+        ;;
         --delete)
             DELETE=true
             shift
@@ -1116,6 +1194,13 @@ done
 
 if [[ "${VERBOSE}" = true ]]; then
     set -x
+fi
+
+if [[ "${DOWN}" = true ]]; then
+    set_skaffold_profile
+    trap - EXIT
+    teardown
+    exit 0
 fi
 
 # assemble STEPS

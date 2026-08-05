@@ -8,7 +8,7 @@ Roundcube is distributed under the GNU General Public License Version 3 or later
 The primary source of official information for Roundcube, including features, documentation, and news, is located at [https://roundcube.net/](https://roundcube.net/).
 
 **Trademark Information:**
-Available information does not confirm a registered trademark for the name “Roundcube.” Although discussions reference a “Roundcube Logo,” no definitive registration has been verified. If you plan to use the Roundcube name or associated logo, you should consider a diligent review of relevant trademark databases or consult legal counsel to ensure compliance with any applicable trademark rights.
+No registered trademark for the “Roundcube” name has been confirmed at the time of this writing. Use of the name in Loom's materials is solely for nominative and descriptive purposes to identify the third-party software component and does not imply endorsement or affiliation with the Roundcube project.
 
 **Source Code:**
 The Roundcube source code is publicly available on GitHub at [https://github.com/roundcube/roundcubemail](https://github.com/roundcube/roundcubemail). This repository enables transparency, collaboration, and the opportunity to adapt Roundcube to specific needs within the Loom project.

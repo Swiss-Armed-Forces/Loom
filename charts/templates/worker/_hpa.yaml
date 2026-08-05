@@ -2,6 +2,7 @@
 {{- $component := .component -}}
 {{- $values := index .Values $component -}}
 {{- if $values.hpa.enabled -}}
+{{- if not $values.keda.enabled -}}
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
@@ -27,5 +28,6 @@ spec:
         target:
           type: Utilization
           averageUtilization: {{ $values.hpa.targetCPUUtilizationPercentage }}
+{{- end -}}
 {{- end -}}
 {{- end -}}

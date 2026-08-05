@@ -7,7 +7,7 @@ metadata:
 build:
   tagPolicy:
     envTemplate:
-      template: "{{.TRAEFIK_IMAGE_VERSION}}"
+      template: "{{.IMAGE_VERSION}}"
   local:
     concurrency: 0
     useBuildkit: true
@@ -18,7 +18,7 @@ build:
       docker:
         dockerfile: Dockerfile
         buildArgs:
-          TRAEFIK_IMAGE_VERSION: "{{.TRAEFIK_IMAGE_VERSION}}"
+          IMAGE_VERSION: "{{.IMAGE_VERSION}}"
           DOCKER_REGISTRY: "{{or .CI_DEPENDENCY_PROXY_DIRECT_GROUP_IMAGE_PREFIX \"docker.io\"}}"
         cacheFrom:
           - "registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/traefik"
@@ -31,11 +31,11 @@ manifests:
     releases:
       - name: production
         namespace: loom
-        chartPath: "{{.TRAEFIK_CHART_PATH}}/traefik"
+        chartPath: "{{.CHART_PATH}}/traefik"
         valuesFiles:
           - values.yaml
         setValueTemplates:
-          image.tag: "{{.TRAEFIK_IMAGE_VERSION}}"
+          image.tag: "{{.IMAGE_VERSION}}"
 
 # Minimal profiles - only overrides
 profiles:

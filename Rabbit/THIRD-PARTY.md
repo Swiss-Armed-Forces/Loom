@@ -11,7 +11,7 @@ The official RabbitMQ website, serving as the primary resource for documentation
 - [https://www.rabbitmq.com/](https://www.rabbitmq.com/)
 
 **Trademark Information:**
-RabbitMQ’s name and logo are protected by trademark guidelines. These guidelines, including permissible uses of the RabbitMQ marks, can be found via the official website. The copyright for the RabbitMQ website and documentation is held by Broadcom.
+"RabbitMQ" and the RabbitMQ logo are trademarks of Broadcom Inc. Use of the name "RabbitMQ" in Loom’s materials is solely for nominative and descriptive purposes to identify the third-party software component and does not imply endorsement, sponsorship, or affiliation with Broadcom Inc. Trademark usage guidelines are published at https://www.rabbitmq.com/trademark-guidelines.
 
 **Source Code:**
 RabbitMQ’s source code is available on its [GitHub repository](https://github.com/rabbitmq). The repository includes license files, contributing guidelines, and instructions for building and deploying the software.

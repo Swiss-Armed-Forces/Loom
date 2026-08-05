@@ -16,14 +16,7 @@ The official Redis website is located at [https://redis.io/](https://redis.io/).
 
 **Trademark Information:**
 
-The “Redis” name and associated logo are legally protected trademarks owned by Redis Ltd. Comprehensive guidelines governing the appropriate use of Redis trademarks can be found at [https://redis.com/legal/trademark-guidelines/](https://redis.com/legal/trademark-guidelines/).
-In accordance with these guidelines, all references to “Redis” in Loom’s materials must:
-
-- Use the trademark symbol (™) upon first mention.
-- Include a clear legend, for example:
-  > *Redis is a trademark of Redis Ltd. Any rights therein are reserved to Redis Ltd. Any use by Loom is for referential purposes only and does not indicate any sponsorship, endorsement or affiliation between Redis and Loom.*
-
-Ensuring adherence to these guidelines is vital to avoid infringement and maintain a clear distinction between Loom and the official Redis project.
+The “Redis” name and associated logo are trademarks of Redis Ltd. Trademark usage guidelines are published at https://redis.com/legal/trademark-guidelines/. Loom’s references to the name are solely for nominative and descriptive purposes to identify the third-party software component and do not imply endorsement, sponsorship, or affiliation with Redis Ltd.
 
 **Source Code:**
 
@@ -31,5 +24,3 @@ The Redis source code, including the full text of its licenses, is available on 
 [https://github.com/redis/redis](https://github.com/redis/redis)
 The license file can be found within that repository, specifically at:
 [https://github.com/redis/redis/blob/unstable/LICENSE.txt](https://github.com/redis/redis/blob/unstable/LICENSE.txt)
-
-Please review this file to confirm and fulfill all relevant licensing requirements when incorporating Redis within Loom.

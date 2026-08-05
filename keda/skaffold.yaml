@@ -1,0 +1,100 @@
+apiVersion: skaffold/v4beta11
+kind: Config
+metadata:
+  name: loom
+
+# Production configuration as default at top level
+build:
+  tagPolicy:
+    envTemplate:
+      template: "{{.IMAGE_VERSION}}"
+  local:
+    concurrency: 0
+    useBuildkit: true
+    tryImportMissing: true
+  artifacts:
+    - image: registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/kedacore/keda
+      context: .
+      docker:
+        dockerfile: Dockerfile
+        buildArgs:
+          IMAGE_VERSION: "{{.IMAGE_VERSION}}"
+          # We can not pull this through CI_DEPENDENCY_PROXY_DIRECT_GROUP_IMAGE_PREFIX
+          DOCKER_REGISTRY: "ghcr.io"
+        cacheFrom:
+          - "registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/kedacore/keda"
+      hooks:
+        after:
+          - command: ["../cicd/tag_latest.sh"]
+    - image: registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/kedacore/keda-metrics-apiserver
+      context: .
+      docker:
+        dockerfile: Dockerfile.metrics-apiserver
+        buildArgs:
+          IMAGE_VERSION: "{{.IMAGE_VERSION}}"
+          # We can not pull this through CI_DEPENDENCY_PROXY_DIRECT_GROUP_IMAGE_PREFIX
+          DOCKER_REGISTRY: "ghcr.io"
+        cacheFrom:
+          - "registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/kedacore/keda-metrics-apiserver"
+      hooks:
+        after:
+          - command: ["../cicd/tag_latest.sh"]
+
+# deploy.helm runs `helm upgrade --install` directly, which routes each resource to
+# its declared namespace. This correctly handles the metrics-apiserver auth RoleBinding
+# that targets kube-system, which the previous manifests.helm + deploy.kubectl approach
+# could not deploy (skaffold passed --namespace=loom globally to kubectl apply).
+# It also sidesteps the 262144-byte kubectl annotation limit that the ScaledJobs CRD
+# hit with client-side kubectl apply.
+deploy:
+  helm:
+    flags:
+      install:
+        - --take-ownership
+      upgrade:
+        - --take-ownership
+    releases:
+      - name: production
+        namespace: loom
+        chartPath: "{{.CHART_PATH}}/keda"
+        valuesFiles:
+          - values.yaml
+        setValueTemplates:
+          image.keda.tag: "{{.IMAGE_VERSION}}"
+          image.metricsApiServer.tag: "{{.IMAGE_VERSION}}"
+
+# Minimal profiles - only overrides
+profiles:
+  - name: dev
+    activation:
+      - command: dev
+    patches:
+      - op: replace
+        path: /deploy/helm/releases/0/name
+        value: development
+      - op: add
+        path: /deploy/helm/releases/0/setValues
+        value:
+          operator.name: development-keda-operator
+          serviceAccount.operator.name: development-keda-operator
+
+  - name: offline
+    activation:
+      - command: offline
+    patches:
+      # Extended timeouts for image downloads when running offline, we need to download
+      # many container images which can take considerable time depending on network
+      # speed and image sizes. This profile extends the status check deadline and tolerates
+      # failures during that period to allow sufficient time for all images to be pulled
+      # and the stack to become ready.
+      - op: add
+        path: /deploy/statusCheckDeadlineSeconds
+        value: 21600
+      - op: add
+        path: /deploy/tolerateFailuresUntilDeadline
+        value: true
+
+  - name: prod
+    activation:
+      - command: prod
+      # No patches needed - production is already the default

@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: keda-test
+  namespace: loom
+spec:
+  replicas: 0
+  selector:
+    matchLabels:
+      app: keda-test
+  template:
+    metadata:
+      labels:
+        app: keda-test
+    spec:
+      containers:
+        - name: pause
+          image: registry.k8s.io/pause:3.9
+          resources:
+            requests:
+              cpu: 100m
+              memory: 64Mi
+---
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: keda-test
+  namespace: loom
+spec:
+  scaleTargetRef:
+    name: keda-test
+  minReplicaCount: 1
+  maxReplicaCount: 2
+  triggers:
+    - type: cpu
+      metricType: Utilization
+      metadata:
+        value: "80"

@@ -1,0 +1,4 @@
+ARG IMAGE_VERSION="2.20.1"
+ARG DOCKER_REGISTRY="ghcr.io"
+
+FROM ${DOCKER_REGISTRY}/kedacore/keda-metrics-apiserver:${IMAGE_VERSION}

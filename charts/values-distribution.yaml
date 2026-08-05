@@ -1,0 +1,31 @@
+# Distribution
+#
+# Enable data replication and service redundancy across multiple nodes.
+# Apply this when you need storage and search to remain available if a
+# node goes down.
+#
+elasticsearch:
+  replicaCount: 3
+  shardsCount: 3
+  shardsReplicasCount: 1
+  config:
+    cluster:
+      routing:
+        allocation:
+          disk:
+            threshold_enabled: true
+
+seaweedfs:
+  master:
+    defaultReplication: "010"
+  volume:
+    replicaCount: 3
+  filer:
+    replicaCount: 2
+
+prometheus:
+  # Cluster-wide metrics are assumed to be collected by central monitoring
+  # infrastructure in a multi-node setup.
+  collectClusterMetrics: false
+  customLabels:
+    pulse/enabled: true
