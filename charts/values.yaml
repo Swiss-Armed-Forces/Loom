@@ -476,12 +476,12 @@ worker: &worker
   # NOTE: hpa and keda are exclusive (enable only one; both true -> both false)
   hpa:
     enabled: false
-    maxReplicas: 100
+    maxReplicas: 10
     minReplicas: 1
-    targetCPUUtilizationPercentage: 100
+    targetCPUUtilizationPercentage: 60
   keda: &workerkeda
     enabled: false
-    maxReplicas: 100
+    maxReplicas: 10
     minReplicas: 1
     targetQueueLength: 10
     queueToWatch: '(loom:default|loom:worker.+)'
@@ -1252,12 +1252,12 @@ tika:
   # NOTE: hpa and keda are exclusive (enable only one; both true -> both false)
   hpa:
     enabled: false
-    maxReplicas: 10
+    maxReplicas: 2
     minReplicas: 1
-    targetCPUUtilizationPercentage: 100
+    targetCPUUtilizationPercentage: 70
   keda:
     enabled: false
-    maxReplicas: 10
+    maxReplicas: 2
     minReplicas: 1
     targetQueueLength: 10
     queueToWatch: '(loom:default|loom:worker.+)'
@@ -1300,12 +1300,12 @@ gotenberg:
   # NOTE: hpa and keda are exclusive (enable only one; both true -> both false)
   hpa:
     enabled: false
-    maxReplicas: 10
+    maxReplicas: 3
     minReplicas: 1
     targetCPUUtilizationPercentage: 80
   keda:
     enabled: false
-    maxReplicas: 10
+    maxReplicas: 3
     minReplicas: 1
     targetQueueLength: 10
     queueToWatch: '(loom:default|loom:worker.+)'
