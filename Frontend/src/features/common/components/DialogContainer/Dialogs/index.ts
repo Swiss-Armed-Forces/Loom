@@ -6,6 +6,7 @@ import { CreateArchiveDialog } from "./CreateArchiveDialog/CreateArchiveDialog";
 import { DeleteCustomQueryDialog } from "./DeleteCustomQueryDialog/DeleteCustomQueryDialog";
 import { DeleteTagGloballyDialog } from "./DeleteTagGloballyDialog/DeleteTagGloballyDialog";
 import { DialogBase } from "./DialogBase";
+import { DownloadWarningDialog } from "./DownloadWarningDialog/DownloadWarningDialog";
 import { EncryptionKeyInfoDialog } from "./EncryptionKeyInfoDialog/EncryptionKeyInfoDialog";
 import { FileDropzone } from "./FileDropzone/FileDropzone";
 import { ImageDescriptionDialog } from "./ImageDescriptionDialog/ImageDescriptionDialog";
@@ -16,6 +17,7 @@ import { UploadFileDialog } from "./UploadFileDialog/UploadFileDialog";
 
 export {
     AboutDialog,
+    DownloadWarningDialog,
     AddTagsDialog,
     ArchiveTasksDialog,
     ConfirmDialog,
