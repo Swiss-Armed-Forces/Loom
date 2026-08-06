@@ -70,7 +70,7 @@ logger = logging.getLogger(__name__)
 
 PATH_SEPARATOR = "/"
 PATH_ROOT = "//"
-TREE_PATH_MAX_ELEMENT_COUNT = 10
+TREE_PATH_MAX_ELEMENT_COUNT = 50
 ES_RESERVED_PATTERN = re.compile(r"([\".?+*|{}\][\\()])")
 KNN_CANDIDATES_FACTOR = 5  # how many more candidates to select for KNN per shared
 
