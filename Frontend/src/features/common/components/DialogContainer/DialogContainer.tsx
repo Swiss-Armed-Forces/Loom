@@ -15,6 +15,7 @@ import {
     CreateArchiveDialog,
     DeleteCustomQueryDialog,
     DeleteTagGloballyDialog,
+    DownloadWarningDialog,
     EncryptionKeyInfoDialog,
     ImageDescriptionDialog,
     ImportArchiveDialog,
@@ -43,6 +44,7 @@ const dialogRegistry: Record<DialogType, React.ComponentType<any>> = {
     [DialogType.Summary]: registerDialog(SummaryDialog),
     [DialogType.Translation]: registerDialog(TranslationDialog),
     [DialogType.UploadFile]: registerDialog(UploadFileDialog),
+    [DialogType.DownloadWarning]: registerDialog(DownloadWarningDialog),
 };
 
 export const DialogContainer = () => {
