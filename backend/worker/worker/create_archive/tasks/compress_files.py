@@ -26,6 +26,7 @@ from common.services.lazybytes_service import (
     TempTypedLazyBytes,
 )
 from common.utils.pydantic_field_paths import iter_field_paths_by_type
+from elasticsearch import ApiError, TransportError
 from minio.error import MinioException
 from pydantic import BaseModel
 
@@ -262,7 +263,15 @@ def _manifest_content(archive: Archive) -> bytes:
 
 def _fetch_file(file_id: UUID, archive_id: UUID) -> File | None:
     """Fetch a single File from ES."""
-    file_ = get_file_repository().get_by_id(file_id)
+    try:
+        file_ = get_file_repository().get_by_id(file_id)
+    except (ApiError, TransportError):
+        logger.warning(
+            "Skipping file '%s' from archive: ES error fetching file",
+            file_id,
+            exc_info=True,
+        )
+        return None
     if file_ is None:
         logger.warning(
             "Skipping file '%s' from archive: not found in repository", file_id
