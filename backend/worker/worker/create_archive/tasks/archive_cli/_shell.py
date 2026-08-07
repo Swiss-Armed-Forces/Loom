@@ -19,7 +19,7 @@ from ._constants import (
     SHELL_HISTORY_FILE,
     SHELL_PROMPT,
 )
-from ._db import directory_exists, get_children, get_json_filename
+from ._db import _entries_under_db, directory_exists, get_children, get_json_filename
 from ._utils import _iter_values, resolve_cwd
 
 # On Windows, add the vendored pyreadline3 to sys.path so that `import readline`
@@ -54,6 +54,56 @@ except ImportError:
         )
 
 _SHELL_SPECIAL_RE = re.compile(r"([ \t\n\\\"'`$!#@&;|<>*()?[\]{}~])")
+
+_FIELD_SAMPLE_LIMIT = 20
+
+_HELP_FLAGS: list[str] = ["-h", "--help"]
+
+_EXTRACT_FLAGS: list[str] = [
+    "-C",
+    "--directory",
+    "--no-recursion",
+    "--exclude",
+    "--no-thumbnails",
+    "--no-rendered",
+    "--no-index",
+    "--no-meta",
+    "--strip-components",
+    "-h",
+    "--help",
+]
+
+# Every argparse subparser automatically gains -h/--help. Commands handled
+# before parse_args (exit, quit) are intentionally absent from this mapping.
+# MAINTENANCE: this mapping mirrors the flags defined in _commands.py. When a
+# flag is added or removed in any subparser there, update this dict to match.
+_COMMAND_FLAGS: dict[str, list[str]] = {
+    "ls": _HELP_FLAGS,
+    "list": _HELP_FLAGS,
+    "x": _EXTRACT_FLAGS,
+    "extract": _EXTRACT_FLAGS,
+    "grep": [
+        "-i",
+        "--ignore-case",
+        "-l",
+        "--files-with-matches",
+        "-f",
+        "--field",
+        "-h",
+        "--help",
+    ],
+    "info": ["-j", "--json", "-h", "--help"],
+    "cat": _HELP_FLAGS,
+    "translate": _HELP_FLAGS,
+    "tree": _HELP_FLAGS,
+    "id": _HELP_FLAGS,
+    "find": ["-name", "-iname", "-attr", "-h", "--help"],
+    "cd": _HELP_FLAGS,
+    "pwd": _HELP_FLAGS,
+    "clear": _HELP_FLAGS,
+    "history": _HELP_FLAGS,
+    "help": _HELP_FLAGS,
+}
 
 
 def shell_escape(s: str) -> str:
@@ -101,6 +151,7 @@ class ShellCompleter:
         self._db = db
         self._index_dir = index_dir
         self._matches: list[str] = []
+        self._field_cache: dict[str, set[str]] = {}
 
     def __call__(self, text: str, state: int) -> str | None:
         if state == 0:
@@ -120,31 +171,11 @@ class ShellCompleter:
         if not before:
             return [c for c in _SHELL_COMMANDS if c.startswith(text)]
         cmd = before.split()[0]
-        if cmd == "info":
-            leading = len(line) - len(line.lstrip())
-            cmd_end = leading + len(cmd)
-            after_cmd = line[cmd_end:begidx]
-            try:
-                if shlex.split(after_cmd):  # complete parseable token → field mode
-                    return self._complete_field(line, cmd_end, begidx, text)
-            except ValueError:
-                pass  # unclosed quote → still typing the path
-        if cmd == "translate":
-            leading = len(line) - len(line.lstrip())
-            cmd_end = leading + len(cmd)
-            after_cmd = line[cmd_end:begidx]
-            try:
-                if shlex.split(after_cmd):  # file already typed → language mode
-                    return self._complete_language(line, cmd_end, begidx, text)
-            except ValueError:
-                pass  # unclosed quote → still typing the path
-        if cmd == "grep":
-            file_arg = self._grep_file_arg(line, begidx, text)
-            return (
-                self._complete_path_arg(file_arg, text, dirs_only=False)
-                if file_arg is not None
-                else []
-            )
+        if text.startswith("-") and cmd in _COMMAND_FLAGS:
+            return [f for f in _COMMAND_FLAGS[cmd] if f.startswith(text)]
+        value_result = self._get_value_completion(cmd, text, line, begidx)
+        if value_result is not None:
+            return value_result
         if cmd in ("cd", "ls", "list", "info", "cat", "translate", "x", "extract"):
             full_arg = self._full_path_arg(cmd, line, begidx, text)
             dirs_only = cmd == "cd"
@@ -187,6 +218,47 @@ class ShellCompleter:
         pat_end = pat_start + len(pattern_word)
         return line[pat_end : begidx + len(text)].lstrip()
 
+    def _get_value_completion(
+        self, cmd: str, text: str, line: str, begidx: int
+    ) -> list[str] | None:
+        """Return completions for flag-value arguments, or None to fall through."""
+        leading = len(line) - len(line.lstrip())
+        if cmd in ("info", "translate"):
+            cmd_end = leading + len(cmd)
+            after_cmd = line[cmd_end:begidx]
+            try:
+                if shlex.split(after_cmd):
+                    if cmd == "info":
+                        return self._complete_field(line, cmd_end, begidx, text)
+                    return self._complete_language(line, cmd_end, begidx, text)
+            except ValueError:
+                pass  # unclosed quote → still typing the path
+            return None
+        if cmd == "grep":
+            return self._complete_grep_args(text, line, begidx)
+        if cmd == "find":
+            return self._complete_find_args(text, line, begidx)
+        return None
+
+    def _complete_grep_args(self, text: str, line: str, begidx: int) -> list[str]:
+        leading = len(line) - len(line.lstrip())
+        before_words = line[leading:begidx].split()
+        if before_words and before_words[-1] in ("-f", "--field"):
+            return self._complete_global_field(text)
+        file_arg = self._grep_file_arg(line, begidx, text)
+        return (
+            self._complete_path_arg(file_arg, text, dirs_only=False)
+            if file_arg is not None
+            else []
+        )
+
+    def _complete_find_args(self, text: str, line: str, begidx: int) -> list[str]:
+        leading = len(line) - len(line.lstrip())
+        before_words = line[leading:begidx].split()
+        if before_words and before_words[-1] == "-attr":
+            return self._complete_global_field(text)
+        return []
+
     def _load_meta_for_path(
         self, line: str, cmd_end: int, begidx: int
     ) -> dict[str, object] | None:
@@ -223,6 +295,27 @@ class ShellCompleter:
             if isinstance(t.get("language"), str)
             and str(t["language"]).startswith(text)
         ]
+
+    def _complete_global_field(self, text: str) -> list[str]:
+        """Return field key-paths from a sample of files under cwd matching text."""
+        if self.cwd not in self._field_cache:
+            cwd_prefix = (self.cwd + "/") if self.cwd else ""
+            seen: set[str] = set()
+            for count, entry in enumerate(_entries_under_db(self._db, cwd_prefix)):
+                if count >= _FIELD_SAMPLE_LIMIT:
+                    break
+                try:
+                    data = json.loads(
+                        (self._index_dir / entry.json_filename).read_text(
+                            encoding="utf-8"
+                        )
+                    )
+                except (OSError, json.JSONDecodeError):
+                    continue
+                for kp, _ in _iter_values(data):
+                    seen.add(kp)
+            self._field_cache[self.cwd] = seen
+        return sorted(kp for kp in self._field_cache[self.cwd] if kp.startswith(text))
 
     def _complete_path(self, text: str, *, dirs_only: bool) -> list[str]:
         if "/" in text:

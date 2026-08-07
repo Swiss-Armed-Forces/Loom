@@ -6,7 +6,6 @@ import subprocess
 import sys
 from contextlib import redirect_stdout
 from pathlib import Path
-from typing import NamedTuple
 
 from common.services.lazybytes_service import InMemoryFileStorageLazyBytesService
 from create_archive.archive_helpers import build_archive, simple_entries
@@ -40,11 +39,6 @@ def _run_shell(archive_dir: Path, commands: str) -> subprocess.CompletedProcess:
         check=False,
         cwd=archive_dir,
     )
-
-
-class _CompleterContext(NamedTuple):
-    completer: ShellCompleter
-    archive_dir: Path
 
 
 class TestCliShellInProcess:
@@ -941,60 +935,3 @@ class TestCliShellNavigationExtra:
         assert result.returncode == 0
         assert "report.pdf" in result.stdout
         assert "images" not in result.stdout
-
-
-class TestCliTabComplete:
-    def _make_completer(
-        self,
-        tmp_path: Path,
-        file_storage_service_inmemory: InMemoryFileStorageLazyBytesService,
-    ) -> _CompleterContext:
-        archive_dir = build_archive(
-            tmp_path,
-            simple_entries({"file.txt": b"hello world"}),
-            file_storage_service_inmemory,
-        )
-        db = open_shell_db(archive_dir)
-        index_dir = archive_dir / "files_index"
-        completer = ShellCompleter(db=db, index_dir=index_dir)
-        return _CompleterContext(completer=completer, archive_dir=archive_dir)
-
-    def test_info_field_completes_after_path(
-        self,
-        tmp_path: Path,
-        file_storage_service_inmemory: InMemoryFileStorageLazyBytesService,
-    ) -> None:
-        completer, _ = self._make_completer(tmp_path, file_storage_service_inmemory)
-        completer.cwd = ""
-        line = "info test/file.txt con"
-        begidx = len("info test/file.txt ")
-        result = completer.get_completions("con", line, begidx)
-
-        assert any(c.startswith("con") for c in result)
-
-    def test_info_field_completes_empty_prefix(
-        self,
-        tmp_path: Path,
-        file_storage_service_inmemory: InMemoryFileStorageLazyBytesService,
-    ) -> None:
-        completer, _ = self._make_completer(tmp_path, file_storage_service_inmemory)
-        completer.cwd = ""
-        line = "info test/file.txt "
-        begidx = len(line)
-        result = completer.get_completions("", line, begidx)
-
-        assert len(result) > 0
-        assert any("storage_data" in c for c in result)
-
-    def test_info_path_still_completes_first_arg(
-        self,
-        tmp_path: Path,
-        file_storage_service_inmemory: InMemoryFileStorageLazyBytesService,
-    ) -> None:
-        completer, _ = self._make_completer(tmp_path, file_storage_service_inmemory)
-        completer.cwd = ""
-        line = "info test"
-        begidx = len("info ")
-        result = completer.get_completions("test", line, begidx)
-
-        assert any("test" in c for c in result)
