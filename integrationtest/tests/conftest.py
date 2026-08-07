@@ -34,7 +34,12 @@ def wipe_data():
     _wipe_data()
     # wipe_redis() flushes all Redis data including the task group registry;
     # re-register so task group lookups work correctly after a wipe.
-    get_celery_inspect_service().register_task_groups()
+    inspect = get_celery_inspect_service()
+    inspect.register_task_groups()
+    # wipe_redis() removes the throttle and paused-queue state from Redis, but does
+    # not restore Celery consumer registrations that were cancelled by set_throttled().
+    # Broadcast add_consumer for all DISPATCH queues so workers are ready to process.
+    inspect.set_throttled(False)
 
 
 @pytest.fixture(scope="class")
