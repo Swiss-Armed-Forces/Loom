@@ -323,6 +323,8 @@ export const ActivityBar = () => {
             top={topContent}
             bottom={bottomContent}
             dataTour="activity-bar"
+            dataTourTop="activity-bar-left"
+            dataTourBottom="activity-bar-right"
         />
     );
 };
