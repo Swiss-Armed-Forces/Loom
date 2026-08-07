@@ -1,3 +1,4 @@
+import argparse
 import io
 import zipfile
 from dataclasses import dataclass, field
@@ -149,3 +150,24 @@ def build_archive(
         zf.extractall(tmp_path)
 
     return tmp_path / archive_name
+
+
+def make_extract_namespace(**overrides: object) -> argparse.Namespace:
+    """Build a default argparse.Namespace for cmd_extract tests.
+
+    Provides sensible defaults for all cmd_extract arguments; keyword arguments override
+    individual fields.
+    """
+    defaults: dict[str, object] = {
+        "members": [],
+        "directory": None,
+        "no_recursion": False,
+        "exclude": [],
+        "no_thumbnails": False,
+        "no_rendered": False,
+        "no_index": False,
+        "no_meta": False,
+        "strip_components": 0,
+    }
+    defaults.update(overrides)
+    return argparse.Namespace(**defaults)

@@ -48,6 +48,29 @@ def format_path(path: Path) -> str:
         return str(path)
 
 
+_WIN_FORBIDDEN_RE = re.compile(r'[<>:"/\\|?*]')
+_WIN_RESERVED_STEM_RE = re.compile(r"^(CON|PRN|AUX|NUL|COM\d|LPT\d)$", re.IGNORECASE)
+
+
+def sanitize_win_path_component(name: str) -> str:
+    """Mangle a path component to be safe for Windows filesystems.
+
+    - Replaces forbidden characters (<>:"/\\|?*) with '_'
+    - Strips trailing dots and spaces (Windows silently drops these)
+    - Prefixes Windows reserved device names (NUL, CON, COM1, …) with '_'
+
+    Only called when sys.platform == 'win32'.
+    """
+    name = _WIN_FORBIDDEN_RE.sub("_", name)
+    name = name.rstrip(". ")
+    if not name:
+        name = "_"
+    stem = name.split(".")[0]
+    if _WIN_RESERVED_STEM_RE.match(stem):
+        name = "_" + name
+    return name
+
+
 _INDEX_RE = re.compile(r"\[(\d+)\]")
 
 
