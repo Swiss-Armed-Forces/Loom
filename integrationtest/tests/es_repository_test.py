@@ -85,6 +85,30 @@ def test_reindex_repositories(repository_type: type[BaseEsRepository]):
     "repository_type",
     ES_REPOSITORY_TYPES,
 )
+def test_reindex_repositories_after_delete(repository_type: type[BaseEsRepository]):
+    elasticsearch = get_elasticsearch()
+    repository = repository_type(
+        query_builder=get_query_builder(), pubsub_service=get_pubsub_service()
+    )
+
+    assert elasticsearch.indices.exists(index=repository.index_name)
+
+    # Delete index
+    elasticsearch.indices.delete(index=repository.index_name)
+
+    assert not elasticsearch.indices.exists(index=repository.index_name)
+
+    # Reinit
+    index_name = repository.reinit()
+
+    assert index_name == repository.index_name
+    assert repository.get_index_health()["status"] == "green"
+
+
+@pytest.mark.parametrize(
+    "repository_type",
+    ES_REPOSITORY_TYPES,
+)
 def test_delete_by_id_existing_document(repository_type: type[BaseEsRepository]):
     """Test that delete_by_id removes an existing document."""
     repository = repository_type(
