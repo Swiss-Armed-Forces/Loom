@@ -809,11 +809,18 @@ class BaseEsRepository(  # pylint: disable=too-many-public-methods
         )
 
     def reinit(self) -> str:
+        if not self._index.exists(using=self._elasticsearch):
+            # Index does not yet exist: create fresh
+            self.init()
+
+            return self._index_name
+
         clone_index_name = f"{self._index_name}-reindex-{time.time()}"
 
         backup_index_name = self.backup_index(clone_index_name)
         # Delete original index
         self._index.delete(using=self._elasticsearch)
+
         # Re-create new index
         self.init()
         # Re-index all data
@@ -823,6 +830,7 @@ class BaseEsRepository(  # pylint: disable=too-many-public-methods
             wait_for_completion=False,
             timeout=INDEX_OPERATION_TIMEOUT,
         )
+
         return backup_index_name
 
     def get_mapping(self) -> dict[str, Any]:
