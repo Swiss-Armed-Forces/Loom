@@ -9,11 +9,11 @@ from pathlib import Path, PurePosixPath
 from ._constants import FILES, FILES_INDEX, JSON_INDENT
 from ._db import _entries_under_db, get_child_vpaths_under, get_json_filenames_batch
 from ._resolve import resolve_name
-from ._types import IndexEntry
+from ._types import IndexEntry, RelPathParts
 from ._utils import _sanitize, sanitize_win_path_component
 
 
-def _make_rel_parts(vpath: str, *, sanitize_windows: bool | None) -> tuple[str, ...]:
+def _make_rel_parts(vpath: str, *, sanitize_windows: bool | None) -> RelPathParts:
     parts = PurePosixPath(vpath.lstrip("/")).parts
     effective = (
         sys.platform == "win32" if sanitize_windows is None else sanitize_windows
@@ -55,7 +55,7 @@ def _extract_entry(  # pylint: disable=too-many-arguments,too-many-positional-ar
     rel_parts = _make_rel_parts(entry.name, sanitize_windows=sanitize_windows)
     if rel_parts != raw_parts:
         print(
-            f"Warning: path sanitized for Windows: '{entry.name}' → '{'/'.join(rel_parts)}'",
+            f"Warning: path sanitized for Windows: '{entry.name}' -> '{'/'.join(rel_parts)}'",
             file=sys.stderr,
         )
     rel_parts = rel_parts[strip_components:]

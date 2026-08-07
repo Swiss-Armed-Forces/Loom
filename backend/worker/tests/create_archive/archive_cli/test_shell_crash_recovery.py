@@ -49,7 +49,7 @@ class TestShellCrashRecovery:
         crash_log = tmp_path / ".loom_crash.log"
 
         err = io.StringIO()
-        with redirect_stderr(err):
+        with redirect_stdout(io.StringIO()), redirect_stderr(err):
             cmd_shell(
                 argparse.Namespace(),
                 db=self._closed_db(tmp_path),
@@ -67,7 +67,7 @@ class TestShellCrashRecovery:
         commands = iter(["ls", "exit"])
         crash_log = tmp_path / ".loom_crash.log"
 
-        with redirect_stderr(io.StringIO()):
+        with redirect_stdout(io.StringIO()), redirect_stderr(io.StringIO()):
             cmd_shell(
                 argparse.Namespace(),
                 db=self._closed_db(tmp_path),
@@ -108,7 +108,7 @@ class TestShellCrashRecovery:
         commands = iter(["ls", "ls", "exit"])
         crash_log = tmp_path / ".loom_crash.log"
 
-        with redirect_stderr(io.StringIO()):
+        with redirect_stdout(io.StringIO()), redirect_stderr(io.StringIO()):
             cmd_shell(
                 argparse.Namespace(),
                 db=self._closed_db(tmp_path),
@@ -126,7 +126,7 @@ class TestShellCrashRecovery:
         commands = iter(["ls", "exit"])
         crash_log = tmp_path / ".loom_crash.log"
 
-        with redirect_stderr(io.StringIO()):
+        with redirect_stdout(io.StringIO()), redirect_stderr(io.StringIO()):
             cmd_shell(
                 argparse.Namespace(),
                 db=self._closed_db(tmp_path),
@@ -143,7 +143,7 @@ class TestShellCrashRecovery:
         crash_log = tmp_path / ".loom_crash.log"
 
         err = io.StringIO()
-        with redirect_stderr(err):
+        with redirect_stdout(io.StringIO()), redirect_stderr(err):
             cmd_shell(
                 argparse.Namespace(),
                 db=self._closed_db(tmp_path),

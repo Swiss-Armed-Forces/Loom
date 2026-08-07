@@ -10,7 +10,7 @@ from ._constants import FILES_INDEX
 from ._db import _entries_under_db, _FileEntry, get_json_filename
 from ._resolve import resolve_name
 from ._types import IndexEntry
-from ._utils import _iter_values, _sanitize
+from ._utils import _iter_values, _matches_field_prefix, _sanitize
 
 _MAX_GREP_PATTERN_LEN = 512
 
@@ -60,6 +60,7 @@ def cmd_grep(
 
     found = False
     cwd_prefix = (cwd + "/") if cwd else ""
+    fields: list[str] = args.field or []
 
     for vpath, json_filename in (
         _iter_target_entries(db, cwd_prefix, args.files)
@@ -70,13 +71,21 @@ def cmd_grep(
             data = json.load(f)
 
         if args.files_with_matches:
-            for _key_path, value in _iter_values(data):
+            for key_path, value in _iter_values(data):
+                if fields and not any(
+                    _matches_field_prefix(key_path, f) for f in fields
+                ):
+                    continue
                 if pattern.search(value):
                     print(_sanitize(vpath))
                     found = True
                     break
         else:
             for key_path, value in _iter_values(data):
+                if fields and not any(
+                    _matches_field_prefix(key_path, f) for f in fields
+                ):
+                    continue
                 for line in value.splitlines() or [value]:
                     if pattern.search(line):
                         print(f"{_sanitize(vpath)} [{key_path}]: {line}")

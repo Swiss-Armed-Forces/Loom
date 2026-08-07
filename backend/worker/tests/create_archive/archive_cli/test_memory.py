@@ -89,6 +89,7 @@ class TestMemory:
                 ignore_case=False,
                 files_with_matches=False,
                 files=None,
+                field=None,
             ),
             db=db,
             index_dir=large_archive_dir / "files_index",

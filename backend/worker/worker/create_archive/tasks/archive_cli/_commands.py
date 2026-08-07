@@ -71,7 +71,12 @@ _SHELL_HELP_EPILOG = (
 
 
 def _non_negative_int(value: str) -> int:
-    n = int(value)
+    try:
+        n = int(value)
+    except ValueError as exc:
+        raise argparse.ArgumentTypeError(
+            f"must be a non-negative integer, got {value!r}"
+        ) from exc
     if n < 0:
         raise argparse.ArgumentTypeError(
             f"must be a non-negative integer, got {value!r}"
@@ -195,6 +200,17 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Only print filenames of entries with at least one match",
     )
+    grep_parser.add_argument(
+        "-f",
+        "--field",
+        action="append",
+        metavar="FIELD",
+        default=None,
+        help=(
+            "Restrict search to a specific metadata field (dot-path, e.g. content,"
+            " tika_meta.dc_creator); repeatable, matches any of the given fields"
+        ),
+    )
 
     info_parser = subparsers.add_parser(
         "info",
@@ -281,6 +297,17 @@ def build_parser() -> argparse.ArgumentParser:
         metavar="PATTERN",
         default=None,
         help="Filter by filename glob pattern (case-insensitive)",
+    )
+    find_parser.add_argument(
+        "-attr",
+        metavar="FIELD",
+        action="append",
+        dest="attr",
+        default=None,
+        help=(
+            "Filter by attribute presence (dot-path, e.g. summary,"
+            " tika_meta.dc_creator); repeatable, all must be present (AND)"
+        ),
     )
 
     cd_parser = subparsers.add_parser("cd", help="Change virtual directory")
