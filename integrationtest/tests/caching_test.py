@@ -25,8 +25,12 @@ def test_caching():
     asset_name = "text.txt"
 
     upload_asset(asset_name=asset_name)
-    # wait for files to be indexed
-    fetch_files_from_api(search_string=search_string, expected_no_of_files=1)
+    # wait for files to be indexed and all pipeline tasks to complete
+    fetch_files_from_api(
+        search_string=search_string,
+        expected_no_of_files=1,
+        wait_for_celery_idle=True,
+    )
 
     caching_results_1 = _get_stats()
     assert caching_results_1.mem_size_total > 0
@@ -35,8 +39,12 @@ def test_caching():
     assert caching_results_1.miss_count_total > 0
 
     upload_asset(asset_name=asset_name, upload_file_name="text2.txt")
-    # wait for files to be indexed
-    fetch_files_from_api(search_string=search_string, expected_no_of_files=2)
+    # wait for files to be indexed and all pipeline tasks to complete
+    fetch_files_from_api(
+        search_string=search_string,
+        expected_no_of_files=2,
+        wait_for_celery_idle=True,
+    )
 
     caching_results_2 = _get_stats()
     # same content: no new cache entries, no new misses, no memory growth
