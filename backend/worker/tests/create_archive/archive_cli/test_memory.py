@@ -8,7 +8,11 @@ from common.services.lazybytes_service import (
     InMemoryFileStorageLazyBytesService,
     LazyBytes,
 )
-from create_archive.archive_helpers import ArchiveEntry, build_archive
+from create_archive.archive_helpers import (
+    ArchiveEntry,
+    build_archive,
+    make_extract_namespace,
+)
 
 from worker.create_archive.tasks.archive_cli._cmd_extract import cmd_extract
 from worker.create_archive.tasks.archive_cli._cmd_grep import cmd_grep
@@ -108,15 +112,9 @@ class TestMemory:
         # and only loads JSON for the matched file, so peak memory stays low.
         db = open_shell_db(large_archive_dir)
         cmd_extract(
-            argparse.Namespace(
+            make_extract_namespace(
                 members=["docs/file_0001.txt"],
                 directory=str(tmp_path / "out"),
-                no_recursion=False,
-                exclude=[],
-                no_thumbnails=False,
-                no_rendered=False,
-                no_index=False,
-                no_meta=False,
             ),
             db=db,
             index_dir=large_archive_dir / "files_index",

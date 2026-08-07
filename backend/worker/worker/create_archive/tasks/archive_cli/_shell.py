@@ -1,17 +1,24 @@
 import argparse
+import datetime
 import json
 import os
 import re
 import shlex
 import sqlite3
 import sys
+import traceback
 from collections.abc import Callable
 from pathlib import Path
 from types import ModuleType
 from typing import NamedTuple, cast
 
 from ._commands import _dispatch, build_parser
-from ._constants import FILES_INDEX, SHELL_HISTORY_FILE, SHELL_PROMPT
+from ._constants import (
+    FILES_INDEX,
+    SHELL_CRASH_LOG_FILE,
+    SHELL_HISTORY_FILE,
+    SHELL_PROMPT,
+)
 from ._db import directory_exists, get_children, get_json_filename
 from ._utils import _iter_values, resolve_cwd
 
@@ -362,12 +369,36 @@ class _StepResult(NamedTuple):
     should_break: bool
 
 
+def _write_crash_log(
+    crash_log_file: Path,
+    command_line: str,
+    exc: BaseException,
+) -> None:
+    """Append a crash report entry to crash_log_file."""
+    timestamp = datetime.datetime.now().isoformat(sep=" ", timespec="seconds")
+    tb = traceback.format_exc()
+    separator = "=" * 72
+    entry = (
+        f"\n{separator}\n"
+        f"[{timestamp}] Command: {command_line}\n"
+        f"Exception: {type(exc).__name__}: {exc}\n"
+        f"{tb}"
+        f"{separator}\n"
+    )
+    try:
+        with crash_log_file.open("a", encoding="utf-8") as fh:
+            fh.write(entry)
+    except OSError:
+        pass  # Don't let a log-write failure hide the original error
+
+
 def _shell_step(
     line: str,
     parser: argparse.ArgumentParser,
     cwd: str,
     *,
     db: sqlite3.Connection,
+    crash_log_file: Path | None,
 ) -> _StepResult:
     """Process one shell input line; return (new_cwd, should_break)."""
     if line == "!!" or (line.startswith("!") and line[1:].isdigit()):
@@ -396,6 +427,17 @@ def _shell_step(
         pass
     except KeyboardInterrupt:
         print()
+    except Exception as exc:  # pylint: disable=broad-exception-caught
+        print(
+            f"Error: an unexpected error occurred.\n" f"{type(exc).__name__}: {exc}",
+            file=sys.stderr,
+        )
+        if crash_log_file is not None:
+            _write_crash_log(crash_log_file, line, exc)
+            print(
+                f"Details written to: {crash_log_file}",
+                file=sys.stderr,
+            )
     return _StepResult(cwd, False)
 
 
@@ -405,6 +447,7 @@ def cmd_shell(
     db: sqlite3.Connection,
     index_dir: Path = FILES_INDEX,
     history_file: Path | None = SHELL_HISTORY_FILE,
+    crash_log_file: Path | None = SHELL_CRASH_LOG_FILE,
     input_fn: Callable[[str], str] = input,
 ) -> None:
     parser = build_parser()
@@ -437,7 +480,9 @@ def cmd_shell(
             # pipe mode (tests) to avoid duplicates causing double up-arrow presses.
             if _readline is not None and not sys.stdin.isatty():
                 _readline.add_history(line)
-            cwd, should_break = _shell_step(line, parser, cwd, db=db)
+            cwd, should_break = _shell_step(
+                line, parser, cwd, db=db, crash_log_file=crash_log_file
+            )
             completer.cwd = cwd
             if should_break:
                 break

@@ -70,6 +70,15 @@ _SHELL_HELP_EPILOG = (
 )
 
 
+def _non_negative_int(value: str) -> int:
+    n = int(value)
+    if n < 0:
+        raise argparse.ArgumentTypeError(
+            f"must be a non-negative integer, got {value!r}"
+        )
+    return n
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog=CLI_ENTRYPOINT_FILENAME,
@@ -140,6 +149,17 @@ def build_parser() -> argparse.ArgumentParser:
         "--no-meta",
         action="store_true",
         help="Do not extract any metadata (thumbnails, rendered, index.json)",
+    )
+    x_parser.add_argument(
+        "--strip-components",
+        type=_non_negative_int,
+        default=0,
+        metavar="N",
+        help=(
+            "Strip N leading path components from each entry before writing to disk. "
+            "Entries with fewer than N components are skipped. "
+            "Useful for shortening deep paths on Windows."
+        ),
     )
 
     grep_parser = subparsers.add_parser(
