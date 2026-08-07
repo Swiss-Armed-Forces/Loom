@@ -7,7 +7,12 @@ from pathlib import Path
 from ._constants import FILES, FILES_INDEX
 from ._db import _resolve_and_load, get_vpaths_by_file_ids
 from ._types import IndexEntry
-from ._utils import _collapse_field_ranges, _iter_values, format_path
+from ._utils import (
+    _collapse_field_ranges,
+    _iter_values,
+    _matches_field_prefix,
+    format_path,
+)
 
 
 def _print_info(
@@ -60,9 +65,7 @@ def _print_info(
 def _handle_info_field(field: str, meta: object) -> None:
     """Print the value(s) for a specific metadata field path and exit."""
     matched = [
-        (kp, v)
-        for kp, v in _iter_values(meta)
-        if kp == field or kp.startswith(field + ".") or kp.startswith(field + "[")
+        (kp, v) for kp, v in _iter_values(meta) if _matches_field_prefix(kp, field)
     ]
     if not matched:
         print(f"Error: field '{field}' not found", file=sys.stderr)

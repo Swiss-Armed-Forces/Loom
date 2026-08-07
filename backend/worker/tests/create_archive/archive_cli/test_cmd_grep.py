@@ -1,21 +1,8 @@
-import subprocess
-import sys
 from pathlib import Path
 
 from common.services.lazybytes_service import InMemoryFileStorageLazyBytesService
+from create_archive.archive_cli.helpers import _make_entry, _run
 from create_archive.archive_helpers import build_archive, simple_entries
-
-from worker.create_archive.tasks.archive_cli import CLI_ENTRYPOINT_FILENAME
-
-
-def _run(archive_dir: Path, args: list[str]) -> subprocess.CompletedProcess:
-    return subprocess.run(
-        [sys.executable, str(archive_dir / CLI_ENTRYPOINT_FILENAME)] + args,
-        capture_output=True,
-        text=True,
-        check=False,
-        cwd=archive_dir,
-    )
 
 
 class TestCliGrep:
@@ -218,3 +205,50 @@ class TestCliGrep:
         assert "alpha.txt" in result.stdout
         assert "beta.txt" in result.stdout
         assert "gamma.txt" not in result.stdout
+
+    def test_field_filter_restricts_search(
+        self,
+        tmp_path: Path,
+        file_storage_service_inmemory: InMemoryFileStorageLazyBytesService,
+    ) -> None:
+        # "hello" appears only in content, not in full_name
+        entries = [_make_entry("doc.txt", content="hello world")]
+        archive_dir = build_archive(tmp_path, entries, file_storage_service_inmemory)
+
+        # Searching content field finds the match
+        result_content = _run(archive_dir, ["grep", "hello", "-f", "content"])
+        assert result_content.returncode == 0
+        assert "doc.txt" in result_content.stdout
+
+        # Searching a different field does not find it
+        result_other = _run(archive_dir, ["grep", "hello", "-f", "summary"])
+        assert result_other.returncode != 0
+
+    def test_field_filter_multiple_fields_or_semantics(
+        self,
+        tmp_path: Path,
+        file_storage_service_inmemory: InMemoryFileStorageLazyBytesService,
+    ) -> None:
+        entries = [
+            _make_entry("doc.txt", content="hello world", summary="hello summary")
+        ]
+        archive_dir = build_archive(tmp_path, entries, file_storage_service_inmemory)
+
+        # Either field matching is sufficient
+        result = _run(archive_dir, ["grep", "hello", "-f", "content", "-f", "summary"])
+        assert result.returncode == 0
+        assert "content" in result.stdout
+        assert "summary" in result.stdout
+
+    def test_field_filter_with_files_with_matches(
+        self,
+        tmp_path: Path,
+        file_storage_service_inmemory: InMemoryFileStorageLazyBytesService,
+    ) -> None:
+        entries = [_make_entry("doc.txt", content="hello world")]
+        archive_dir = build_archive(tmp_path, entries, file_storage_service_inmemory)
+
+        result = _run(archive_dir, ["grep", "hello", "-f", "content", "-l"])
+        assert result.returncode == 0
+        assert result.stdout.strip() == "test/doc.txt"
+        assert "[" not in result.stdout

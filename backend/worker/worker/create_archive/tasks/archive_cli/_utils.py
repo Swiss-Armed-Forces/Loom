@@ -48,16 +48,19 @@ def format_path(path: Path) -> str:
         return str(path)
 
 
-_WIN_FORBIDDEN_RE = re.compile(r'[<>:"/\\|?*]')
-_WIN_RESERVED_STEM_RE = re.compile(r"^(CON|PRN|AUX|NUL|COM\d|LPT\d)$", re.IGNORECASE)
+_WIN_FORBIDDEN_RE = re.compile(r'[<>:"/\\|?*\x00-\x1f]')
+_WIN_RESERVED_STEM_RE = re.compile(
+    r"^(CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])$", re.IGNORECASE
+)
 
 
 def sanitize_win_path_component(name: str) -> str:
     """Mangle a path component to be safe for Windows filesystems.
 
-    - Replaces forbidden characters (<>:"/\\|?*) with '_'
+    - Replaces forbidden characters (<>:"/\\|?* and ASCII control chars) with '_'
     - Strips trailing dots and spaces (Windows silently drops these)
-    - Prefixes Windows reserved device names (NUL, CON, COM1, …) with '_'
+    - Prefixes Windows reserved device names (CON, PRN, AUX, NUL, COM1-COM9,
+      LPT1-LPT9) with '_'
 
     Only called when sys.platform == 'win32'.
     """
@@ -102,6 +105,15 @@ def _collapse_field_ranges(fields: list[str]) -> list[str]:
             out = out.replace("[*]", replacement, 1)
         result.append(out)
     return result
+
+
+def _matches_field_prefix(key_path: str, field: str) -> bool:
+    """Return True if key_path is exactly field or is nested under it."""
+    return (
+        key_path == field
+        or key_path.startswith(field + ".")
+        or key_path.startswith(field + "[")
+    )
 
 
 class _FieldValue(NamedTuple):

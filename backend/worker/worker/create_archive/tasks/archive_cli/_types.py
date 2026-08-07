@@ -1,6 +1,9 @@
 from dataclasses import dataclass
 from typing import Any, NamedTuple
 
+# Ordered sequence of sanitized path components derived from a virtual path.
+RelPathParts = tuple[str, ...]
+
 
 @dataclass
 class IndexEntry:
