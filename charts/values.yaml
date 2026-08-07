@@ -632,6 +632,41 @@ crawler:
   # app-tier: crawler
   # service-type: ingestion
 
+# Additional external S3 sources to crawl. Each entry spawns a dedicated crawler Deployment
+# that watches the specified bucket and feeds discovered files into Loom's intake pipeline.
+# All extra-source Deployments are generated from the same template as the built-in crawler.
+#
+# NOTE: External S3 endpoints are outside the cluster. You must set egress.enabled=true
+# to allow the crawler pods to reach them.
+#
+# Example (plain credentials):
+# extraS3Sources:
+#   - name: archive-server          # unique identifier; used in the Deployment name
+#     s3Storage:
+#       host: minio.example.com:9000  # host[:port] of the external S3 endpoint
+#       bucketName: my-bucket
+#       accessKey: my-access-key      # use accessKeySecretRef for ESO-managed credentials
+#       secretKey: my-secret-key      # use secretKeySecretRef for ESO-managed credentials
+#       secureConnection: false       # set to true for HTTPS
+#     bucketAlias: "Archive Bucket"  # optional display name shown in file paths
+#     sourceId: archive-server       # optional source identifier, defaults to name
+#     replicaCount: 1                # optional; defaults to 1
+#     resources: {}                  # optional; falls back to crawler.resources when omitted
+#
+# Example (ESO-managed credentials via K8s Secret):
+# extraS3Sources:
+#   - name: vault-managed-source
+#     s3Storage:
+#       host: minio.example.com:9000
+#       bucketName: my-bucket
+#       accessKeySecretRef:           # references a K8s Secret (e.g. created by ESO)
+#         name: my-s3-credentials
+#         key: access_key
+#       secretKeySecretRef:
+#         name: my-s3-credentials
+#         key: secret_key
+extraS3Sources: []
+
 elasticsearch:
   replicaCount: 1
   priorityClass: infrastructure
