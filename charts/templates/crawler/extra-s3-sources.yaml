@@ -1,0 +1,13 @@
+{{- range .Values.extraS3Sources }}
+{{- include "app.crawler.deployment" (dict
+  "Values"       $.Values
+  "Chart"        $.Chart
+  "Release"      $.Release
+  "nameSuffix"   .name
+  "s3Storage"    .s3Storage
+  "bucketAlias"  .bucketAlias
+  "sourceId"     .sourceId
+  "replicaCount" (.replicaCount | default 1)
+  "resources"    .resources
+) }}
+{{- end }}

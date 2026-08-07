@@ -1,0 +1,147 @@
+{{/*
+Render a crawler Deployment that watches an S3 bucket and feeds files into the Loom pipeline.
+
+Parameters (all passed as a dict):
+  Values       – .Values from the calling template
+  Chart        – .Chart from the calling template
+  Release      – .Release from the calling template
+  nameSuffix   – suffix appended to "<release>-crawler"; empty string = default deployment name
+  s3Storage    – optional dict; when nil the pod inherits intake_storage__* from the shared ConfigMap
+  bucketAlias  – optional string; overrides s3_bucket_alias from the shared ConfigMap
+  sourceId     – optional string; overrides crawler_source_id from the shared ConfigMap
+  replicaCount – optional int; defaults to .Values.crawler.replicaCount
+  resources    – optional dict; falls back to .Values.crawler.resources
+
+s3Storage fields (all optional):
+  host               – plain string: host[:port] of the S3 endpoint
+  bucketName         – plain string
+  accessKey          – plain string (use accessKeySecretRef for ESO-managed credentials)
+  secretKey          – plain string (use secretKeySecretRef for ESO-managed credentials)
+  accessKeySecretRef – dict {name, key}: valueFrom.secretKeyRef for the access key
+  secretKeySecretRef – dict {name, key}: valueFrom.secretKeyRef for the secret key
+  secureConnection   – bool: whether to use HTTPS
+*/}}
+{{- define "app.crawler.deployment" -}}
+{{- $suffix      := .nameSuffix -}}
+{{- $s3          := .s3Storage -}}
+{{- $alias       := .bucketAlias -}}
+{{- $sourceId    := .sourceId -}}
+{{- $replicas    := .replicaCount | default .Values.crawler.replicaCount -}}
+{{- $resources   := .resources | default .Values.crawler.resources -}}
+{{- $deployName  := ternary (printf "%s-crawler-%s" (include "app.fullname" .) $suffix) (printf "%s-crawler" (include "app.fullname" .)) (ne $suffix "") -}}
+{{- $selectorApp := ternary (printf "%s-crawler-%s" (include "app.name" .) $suffix) (printf "%s-crawler" (include "app.name" .)) (ne $suffix "") -}}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $deployName }}
+  labels:
+    {{- include "app.labels.custom" (dict "context" . "component" "crawler") | nindent 4 }}
+    app.kubernetes.io/component: crawler
+  {{- with include "app.annotations.custom" (dict "context" . "component" "crawler") }}
+  annotations:
+    {{- . | nindent 4 }}
+  {{- end }}
+spec:
+  replicas: {{ $replicas }}
+  selector:
+    matchLabels:
+      app: {{ $selectorApp }}
+  template:
+    metadata:
+      labels:
+        app: {{ $selectorApp }}
+        {{- include "app.labels.custom" (dict "context" . "component" "crawler") | nindent 8 }}
+      {{- with include "app.annotations.custom" (dict "context" . "component" "crawler") }}
+      annotations:
+        {{- . | nindent 8 }}
+      {{- end }}
+    spec:
+      {{- with .Values.crawler.priorityClass }}
+      priorityClassName: {{ include "app.fullname" $ }}-{{ . }}
+      {{- end }}
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
+      initContainers:
+        - name: check-seaweedfs-ready
+          image: {{ .Values.image.registry }}/{{ .Values.crawler.initContainer.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) .Values.crawler.initContainer.image.tag }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command:
+            - 'sh'
+            - '-c'
+            - |
+              set -eu
+
+              until nc -vz {{ include "app.fullname" . }}-seaweedfs-filer {{ .Values.seaweedfs.s3.port }}; do
+                echo "Waiting for SeaweedFS S3 service";
+                sleep 1;
+              done;
+          {{- if .Values.crawler.initContainer.resources }}
+          resources: {{- toYaml .Values.crawler.initContainer.resources | nindent 12 }}
+          {{- end }}
+        {{- with include "app.trustedCerts.initContainer" . }}{{ . | nindent 8 }}{{- end }}
+      containers:
+        - name: crawler
+          image: {{ .Values.image.registry }}/{{ .Values.crawler.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) .Values.crawler.image.tag }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          env:
+            - name: CRAWLER_TYPE
+              value: "S3_CRAWLER"
+            {{- if and $s3 $s3.host }}
+            - name: intake_storage__host
+              value: {{ $s3.host | quote }}
+            {{- end }}
+            {{- if and $s3 $s3.bucketName }}
+            - name: intake_storage__bucket_name
+              value: {{ $s3.bucketName | quote }}
+            {{- end }}
+            {{- if and $s3 $s3.accessKey }}
+            - name: intake_storage__access_key
+              value: {{ $s3.accessKey | quote }}
+            {{- else if and $s3 $s3.accessKeySecretRef }}
+            - name: intake_storage__access_key
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $s3.accessKeySecretRef.name }}
+                  key: {{ $s3.accessKeySecretRef.key }}
+            {{- end }}
+            {{- if and $s3 $s3.secretKey }}
+            - name: intake_storage__secret_key
+              value: {{ $s3.secretKey | quote }}
+            {{- else if and $s3 $s3.secretKeySecretRef }}
+            - name: intake_storage__secret_key
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $s3.secretKeySecretRef.name }}
+                  key: {{ $s3.secretKeySecretRef.key }}
+            {{- end }}
+            {{- if and $s3 (ne $s3.secureConnection nil) }}
+            - name: intake_storage__secure_connection
+              value: {{ $s3.secureConnection | quote }}
+            {{- end }}
+            {{- if $sourceId }}
+            - name: crawler_source_id
+              value: {{ $sourceId | quote }}
+            {{- end }}
+            {{- if $alias }}
+            - name: s3_bucket_alias
+              value: {{ $alias | quote }}
+            {{- end }}
+            {{- with include "app.trustedCerts.env" . }}{{ . | nindent 12 }}{{- end }}
+          envFrom:
+            - configMapRef:
+                name: {{ include "app.fullname" . }}-settings
+            {{- with include "app.externalSecrets.envFrom" . }}{{ . | nindent 12 }}{{- end }}
+          {{- if $resources }}
+          resources: {{- toYaml $resources | nindent 12 }}
+          {{- end }}
+          {{- with include "app.trustedCerts.volumeMount" . }}
+          volumeMounts:
+            {{- . | nindent 12 }}
+          {{- end }}
+      {{- with include "app.trustedCerts.volumes" . }}
+      volumes:
+        {{- . | nindent 8 }}
+      {{- end }}
+{{- end -}}

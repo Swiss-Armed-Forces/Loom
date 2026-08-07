@@ -187,6 +187,56 @@ All values files are located in the [`./charts`](../charts) directory. They can 
   developing Loom locally. It trades model quality for fast iteration: lightweight models, hot
   reload, and all internal services exposed via ingress. Not suitable for production.
 
+### Crawling external S3 sources
+
+By default Loom deploys a single S3 crawler that watches the internal SeaweedFS intake bucket.
+You can add any number of additional crawlers that watch external S3-compatible endpoints by
+listing them in `extraS3Sources`. Each entry spawns a dedicated crawler `Deployment` rendered
+from the same Helm template as the built-in crawler.
+
+> ⚠️ External S3 endpoints are outside the cluster. Set `egress.enabled=true` in your values
+> override to allow the crawler pods to open outbound connections to them. Without it, the
+> network policy blocks all external egress.
+
+**With plain credentials:**
+
+```yaml
+egress:
+  enabled: true
+
+extraS3Sources:
+  - name: archive-server          # unique identifier; used in the Deployment name
+    s3Storage:
+      host: minio.example.com:9000  # host[:port] of the external S3 endpoint
+      bucketName: my-bucket
+      accessKey: my-access-key
+      secretKey: my-secret-key
+      secureConnection: false       # set to true for HTTPS
+    bucketAlias: "Archive Bucket"  # optional display name shown in file paths
+    sourceId: archive-server       # optional source identifier, defaults to name
+```
+
+**With ESO-managed credentials** (credentials stored in a K8s Secret, e.g. via External Secrets
+Operator — see [External Secrets Operator](#external-secrets-operator-eso)):
+
+```yaml
+extraS3Sources:
+  - name: vault-managed-source
+    s3Storage:
+      host: minio.example.com:9000
+      bucketName: my-bucket
+      accessKeySecretRef:         # references a K8s Secret by name + key
+        name: my-s3-credentials
+        key: access_key
+      secretKeySecretRef:
+        name: my-s3-credentials
+        key: secret_key
+```
+
+Multiple sources can be listed under `extraS3Sources`. Each produces an independent crawler
+pod with its own intake storage credentials, so buckets on different servers or with different
+credentials are all supported simultaneously.
+
 ### External Secrets Operator (ESO)
 
 Loom supports [External Secrets Operator](https://external-secrets.io/) to pull sensitive
