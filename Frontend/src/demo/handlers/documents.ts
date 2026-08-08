@@ -140,8 +140,6 @@ export const documentPreview = (
     flagged: document.flagged,
     hidden: document.hidden,
     seen: document.seen,
-    content: document.content,
-    contentPreviewIsTruncated: document.content.length > 220,
     contentIsTruncated: document.contentTruncated ?? false,
     name: document.name,
     path: document.path,
@@ -151,26 +149,82 @@ export const documentPreview = (
     attachmentsTotalCount: document.attachments?.length ?? 0,
     fileExtension: document.extension,
     highlight: parseDemoQuery(query).highlights(document),
-    summary: document.summary,
-    imageDescription: document.imageDescription,
     detectedLanguage: document.language,
     attachmentsSkipped: document.attachmentsSkipped ?? false,
     isSpam: document.isSpam ?? false,
     state: document.state,
-    translationPreview:
-        document.translations.length > 0
-            ? document.translations[
-                  document.translations.length - 1
-              ].text.slice(0, 1000)
-            : undefined,
-    translationPreviewLanguage:
-        document.translations.length > 0
-            ? document.translations[document.translations.length - 1].language
-            : undefined,
-    translationPreviewIsTruncated:
-        document.translations.length > 0 &&
-        document.translations[document.translations.length - 1].text.length >
-            1000,
+    fields: {
+        content: {
+            value: document.content.slice(0, 220),
+            isTruncated: document.content.length > 220,
+        },
+        short_name: { value: document.name },
+        extension: { value: document.extension },
+        ...(document.summary ? { summary: { value: document.summary } } : {}),
+        ...(document.imageDescription
+            ? {
+                  image_description: {
+                      value: document.imageDescription,
+                  },
+              }
+            : {}),
+        ...(document.translations.length > 0
+            ? {
+                  translation_preview: {
+                      value: document.translations[
+                          document.translations.length - 1
+                      ].text.slice(0, 1000),
+                      isTruncated:
+                          document.translations[
+                              document.translations.length - 1
+                          ].text.length > 1000,
+                  },
+              }
+            : {}),
+        ...(document.dcTitle ? { dc_title: { value: document.dcTitle } } : {}),
+        ...(document.dcDescription
+            ? { dc_description: { value: document.dcDescription } }
+            : {}),
+        ...(document.dcSubject
+            ? {
+                  dc_subject: {
+                      value: Array.isArray(document.dcSubject)
+                          ? document.dcSubject.join(", ")
+                          : document.dcSubject,
+                  },
+              }
+            : {}),
+        ...(document.authors.length > 0
+            ? { dc_creator: { value: document.authors.join(", ") } }
+            : {}),
+        ...(document.messageFrom
+            ? {
+                  message_from: {
+                      value: Array.isArray(document.messageFrom)
+                          ? document.messageFrom.join(", ")
+                          : document.messageFrom,
+                  },
+              }
+            : {}),
+        ...(document.messageTo
+            ? {
+                  message_to: {
+                      value: Array.isArray(document.messageTo)
+                          ? document.messageTo.join(", ")
+                          : document.messageTo,
+                  },
+              }
+            : {}),
+        ...(document.messageCc
+            ? {
+                  message_cc: {
+                      value: Array.isArray(document.messageCc)
+                          ? document.messageCc.join(", ")
+                          : document.messageCc,
+                  },
+              }
+            : {}),
+    },
 });
 
 const documentRaw = (document: DemoDocument): string =>

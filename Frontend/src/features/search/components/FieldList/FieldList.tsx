@@ -4,7 +4,7 @@ import { useAppDispatch, useAppSelector } from "@app/hooks";
 import { updateQuery, selectQuery } from "@app/slices/searchSlice";
 import { updateFieldOfQuery } from "@features/common/utils/helpers";
 
-import { HighlightItem } from "./HighlightItem";
+import { FieldItem } from "./FieldItem";
 
 type HighlightEntry = [string, string[]];
 const STRIP_TAGS = /<\/?highlight>/g;
@@ -38,15 +38,17 @@ const sortHighlightsByPriority = (
     return aPrio !== bPrio ? aPrio - bPrio : a[0].localeCompare(b[0]);
 };
 
-export interface HighlightListProps {
+export interface FieldListProps {
     highlights: Record<string, string[]>;
     fullDetails?: boolean;
+    showActions?: boolean;
 }
 
-export const HighlightList = ({
+export const FieldList = ({
     highlights,
     fullDetails,
-}: HighlightListProps) => {
+    showActions = true,
+}: FieldListProps) => {
     const dispatch = useAppDispatch();
     const query = useAppSelector(selectQuery);
 
@@ -94,12 +96,16 @@ export const HighlightList = ({
     return (
         <>
             {sortedEntries.map(([field, value]) => (
-                <HighlightItem
+                <FieldItem
                     key={field}
                     field={field}
                     value={value}
-                    onQuery={(negate) => handleQuery(field, negate)}
-                    onSort={() => handleSort(field)}
+                    onQuery={
+                        showActions
+                            ? (negate) => handleQuery(field, negate)
+                            : undefined
+                    }
+                    onSort={showActions ? () => handleSort(field) : undefined}
                     fullDetails={fullDetails}
                 />
             ))}

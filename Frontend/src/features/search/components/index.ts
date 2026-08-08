@@ -1,9 +1,9 @@
 import { Chart } from "./Chart/Chart";
 import { ChatMenu } from "./ChatMenu/ChatMenu";
 import { EmptySearchResults } from "./EmptySearchResults/EmptySearchResults";
+import { FieldList } from "./FieldList/FieldList";
 import { FileActions } from "./FileActions/FileActions";
 import { FileCardHeader } from "./FileCardHeader/FileCardHeader";
-import { HighlightList } from "./HighlightList/HighlightList";
 import { HistogramChart } from "./HistogramChart/HistogramChart";
 import { LoadMoreButton } from "./LoadMoreButton/LoadMoreButton";
 import { ResultCard } from "./ResultCard/ResultCard";
@@ -18,7 +18,7 @@ export {
     EmptySearchResults,
     FileActions,
     FileCardHeader,
-    HighlightList,
+    FieldList,
     LoadMoreButton,
     ResultCard,
     ScrollToTop,

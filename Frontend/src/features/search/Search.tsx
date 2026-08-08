@@ -29,6 +29,8 @@ import {
     setVisionSystemPrompt,
     setTags,
     selectQuery,
+    closeLeftSidebar,
+    closeRightSidebar,
 } from "@app/slices/searchSlice";
 import { ActivityBar } from "@features/search/components/ActivityBar/ActivityBar";
 import { CenterTabs } from "@features/search/components/CenterTabs/CenterTabs";
@@ -75,6 +77,17 @@ export const Search = () => {
     const updateQueryDebounceTimeoutRef = useRef<ReturnType<
         typeof setTimeout
     > | null>(null);
+
+    const isFirstQueryRenderRef = useRef(true);
+    useEffect(() => {
+        if (isFirstQueryRenderRef.current) {
+            isFirstQueryRenderRef.current = false;
+            return;
+        }
+        if (!isMobile) return;
+        dispatch(closeLeftSidebar());
+        dispatch(closeRightSidebar());
+    }, [searchQuery?.query]); // eslint-disable-line react-hooks/exhaustive-deps
 
     useEffect(() => {
         const fetchSearchState = async () => {

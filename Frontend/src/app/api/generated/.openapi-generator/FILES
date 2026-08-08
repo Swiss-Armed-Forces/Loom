@@ -65,6 +65,8 @@ models/MessageSubscribe.ts
 models/MessageSubscribeConfirmation.ts
 models/MessageUnsubscribe.ts
 models/MessageUnsubscribeConfirmation.ts
+models/PreviewField.ts
+models/PreviewFieldData.ts
 models/ProcessQuestionQuery.ts
 models/PubSubMessage.ts
 models/QueryParameters.ts

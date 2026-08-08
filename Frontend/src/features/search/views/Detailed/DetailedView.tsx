@@ -1,14 +1,17 @@
 import { Skeleton } from "@mui/material";
-import React, { useLayoutEffect, useMemo, useRef } from "react";
+import React, { useEffect, useLayoutEffect, useMemo, useRef } from "react";
 
-import { useAppSelector } from "@app/hooks";
+import { useAppDispatch, useAppSelector } from "@app/hooks";
 import { selectIsLoading } from "@app/slices/commonSlice";
 import {
+    NamedDensity,
+    selectCardDensity,
     selectFiles,
     selectHighlightedFileId,
     selectHighlightScrollMode,
     selectHighlightScrollRequest,
     selectTemporaryFileId,
+    setAutoDetectedDensity,
 } from "@app/slices/searchSlice";
 import {
     EmptySearchResults,
@@ -81,14 +84,49 @@ const scrollHighlightedCardIntoView = (
     });
 };
 
+const AUTO_DENSITY_BREAKPOINTS: { maxWidth: number; density: NamedDensity }[] =
+    [
+        { maxWidth: 500, density: "compact" },
+        { maxWidth: 850, density: "standard" },
+        { maxWidth: Infinity, density: "full" },
+    ];
+
+const getDensityForWidth = (width: number): NamedDensity =>
+    AUTO_DENSITY_BREAKPOINTS.find((b) => width <= b.maxWidth)!.density;
+
 export const DetailedView: React.FC = React.memo(() => {
+    const dispatch = useAppDispatch();
     const files = useAppSelector(selectFiles);
     const isLoading = useAppSelector(selectIsLoading);
     const highlightedFileId = useAppSelector(selectHighlightedFileId);
     const highlightScrollRequest = useAppSelector(selectHighlightScrollRequest);
     const highlightScrollMode = useAppSelector(selectHighlightScrollMode);
     const temporaryFileId = useAppSelector(selectTemporaryFileId);
+    const cardDensity = useAppSelector(selectCardDensity);
     const containerRef = useRef<HTMLDivElement>(null);
+
+    // Auto-detect density from container width when not overridden by user.
+    useEffect(() => {
+        if (cardDensity !== "auto") return;
+        const el = containerRef.current;
+        if (!el) return;
+        let debounce: ReturnType<typeof setTimeout> | null = null;
+        const ro = new ResizeObserver(([entry]) => {
+            if (debounce) clearTimeout(debounce);
+            debounce = setTimeout(() => {
+                dispatch(
+                    setAutoDetectedDensity(
+                        getDensityForWidth(entry.contentRect.width),
+                    ),
+                );
+            }, 100);
+        });
+        ro.observe(el);
+        return () => {
+            ro.disconnect();
+            if (debounce) clearTimeout(debounce);
+        };
+    }, [cardDensity, dispatch]);
 
     useLayoutEffect(() => {
         if (!containerRef.current) return;

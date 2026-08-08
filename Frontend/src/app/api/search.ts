@@ -22,6 +22,7 @@ import {
     GetQueryResponse,
     GetFilesCountResponse,
     UpdateFileRequest,
+    PreviewField,
 } from "./generated";
 
 const filesApi = new FilesApi(apiConfiguration);
@@ -248,15 +249,20 @@ export const getFile = async (
     });
 };
 
+export const getPreviewFields = async (): Promise<PreviewField[]> =>
+    filesApi.getPreviewFieldsV1FilesPreviewFieldsGet();
+
 export const getFilePreview = async (
     fileId: string,
     query: SearchQuery,
+    fields?: string[],
 ): Promise<GetFilePreviewResponse> => {
     return filesApi.getFilePreviewV1FilesFileIdPreviewGet({
         queryId: query.id ?? undefined,
         keepAlive: query.keepAlive ?? undefined,
         fileId: fileId,
         searchString: query.query,
+        fields: fields,
     });
 };
 

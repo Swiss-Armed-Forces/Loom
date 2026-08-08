@@ -73,6 +73,59 @@ class NumberHistogramStat(HistogramStat):
     """Stat annotation for numeric fields aggregated as ES histogram."""
 
 
+@dataclasses.dataclass(frozen=True)
+class PreviewableField:
+    """Annotation marker for File fields that can be included in preview responses.
+
+    Annotate a field with this to expose it via ``GET /files/preview-fields`` and
+    allow clients to request it via the ``fields`` query param.
+
+    Attributes:
+        label: Human-readable label; auto-derived from the field name if empty.
+        id: Preview field ID sent to the client; defaults to the field name.
+            Set explicitly when the Python field name differs from the desired
+            preview key (e.g. ``translations`` → ``"translation_preview"``).
+    """
+
+    label: str = ""
+    id: str = ""
+
+
+@dataclasses.dataclass(frozen=True)
+class DiscoveredPreviewField:
+    """A preview field as resolved by discover_preview_fields().
+
+    Attributes:
+        id: Preview field ID used in API requests/responses.
+        label: Human-readable label shown in the UI.
+        path: Dotted model path (e.g. ``"tika_meta.dc_title"``).
+            Use this to traverse the ``File`` object at extraction time.
+    """
+
+    id: str
+    label: str
+    path: str
+
+
+def discover_preview_fields(
+    model_class: type[BaseModel],
+) -> dict[str, DiscoveredPreviewField]:
+    """Discover fields annotated with PreviewableField on a Pydantic model.
+
+    Returns a dict mapping preview field ID → DiscoveredPreviewField with resolved id,
+    label, and the dotted model path for generic extraction.
+    """
+    result: dict[str, DiscoveredPreviewField] = {}
+    for field in iter_field_paths_by_metadata(model_class, PreviewableField):
+        parts = field.path.split(".")
+        field_id = field.marker.id or field.path
+        label = field.marker.label or snake_to_title(parts[-1])
+        result[field_id] = DiscoveredPreviewField(
+            id=field_id, label=label, path=field.path
+        )
+    return result
+
+
 _T = TypeVar("_T", bound=Stat)
 
 

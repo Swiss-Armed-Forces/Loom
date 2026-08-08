@@ -132,3 +132,15 @@ def iter_field_paths_by_metadata(
         )
         if marker is not None:
             yield FieldWithMetadata(path=f"{_prefix}{field_name}", marker=marker)
+
+
+def traverse_attr_path(obj: Any, path: str) -> Any:
+    """Traverse a dotted attribute path on an object.
+
+    Returns ``None`` as soon as any segment is missing or is itself ``None``.
+    """
+    for part in path.split("."):
+        obj = getattr(obj, part, None)
+        if obj is None:
+            return None
+    return obj

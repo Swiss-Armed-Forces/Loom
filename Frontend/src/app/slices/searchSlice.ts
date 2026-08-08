@@ -22,6 +22,7 @@ import {
     getLongRunningQuery,
     getFilesCount,
     ResponseError,
+    PreviewField,
 } from "@app/api/index";
 import {
     subscribeChannel,
@@ -45,7 +46,7 @@ export const LeftSidebarPanel = {
     FOLDER: "folder",
     TAGS: "tags",
     QUERIES: "queries",
-    AUTO_ACTIONS: "auto_actions",
+    CARD_CUSTOMIZATION: "card_customization",
 } as const;
 
 export type LeftSidebarPanel =
@@ -61,6 +62,70 @@ export const RightSidebarTab = {
 
 export type RightSidebarTab =
     (typeof RightSidebarTab)[keyof typeof RightSidebarTab];
+
+export type CardDensity = "auto" | "compact" | "standard" | "full" | "custom";
+export type NamedDensity = "compact" | "standard" | "full";
+
+// All card-element visibility settings in one shape, shared by presets and state.
+export interface CardVisibilitySettings {
+    showThumbnails: boolean;
+    showHighlights: boolean;
+    showFieldSections: boolean;
+    showExtensionIcon: boolean;
+    showFilePath: boolean;
+    showParentNavigation: boolean;
+    showStatusIndicators: boolean;
+    showAttachments: boolean;
+    showTags: boolean;
+    showActions: boolean;
+    showSortIndicator: boolean;
+    showFieldActions: boolean;
+}
+
+export const DENSITY_PRESETS: Record<NamedDensity, CardVisibilitySettings> = {
+    compact: {
+        showThumbnails: false,
+        showHighlights: false,
+        showFieldSections: true,
+        showExtensionIcon: true,
+        showFilePath: true,
+        showParentNavigation: false,
+        showStatusIndicators: false,
+        showAttachments: false,
+        showTags: false,
+        showActions: false,
+        showSortIndicator: false,
+        showFieldActions: false,
+    },
+    standard: {
+        showThumbnails: false,
+        showHighlights: true,
+        showFieldSections: true,
+        showExtensionIcon: true,
+        showFilePath: true,
+        showParentNavigation: true,
+        showStatusIndicators: true,
+        showAttachments: true,
+        showTags: true,
+        showActions: false,
+        showSortIndicator: false,
+        showFieldActions: true,
+    },
+    full: {
+        showThumbnails: true,
+        showHighlights: true,
+        showFieldSections: true,
+        showExtensionIcon: true,
+        showFilePath: true,
+        showParentNavigation: true,
+        showStatusIndicators: true,
+        showAttachments: true,
+        showTags: true,
+        showActions: true,
+        showSortIndicator: true,
+        showFieldActions: true,
+    },
+};
 
 export interface FileTabState {
     fileId: string;
@@ -105,8 +170,7 @@ export interface SearchState {
     query: SearchQuery | null;
     queryError?: string;
     leftSidebarPanel: LeftSidebarPanel | null;
-    rightSidebarOpen: boolean;
-    rightSidebarTab: RightSidebarTab;
+    rightSidebarTab: RightSidebarTab | null;
     stats: CombinedStats;
     files: {
         [fileId: string]: {
@@ -127,6 +191,23 @@ export interface SearchState {
     openFileTabs: FileTabState[];
     activeTabFileId: string | null;
     expandFilePaths: boolean;
+    cardDensity: CardDensity;
+    autoDetectedDensity: NamedDensity;
+    previewFields: string[];
+    availablePreviewFields: PreviewField[];
+    fieldExpansion: Record<string, boolean>;
+    showThumbnails: boolean;
+    showHighlights: boolean;
+    showFieldSections: boolean;
+    showExtensionIcon: boolean;
+    showFilePath: boolean;
+    showParentNavigation: boolean;
+    showStatusIndicators: boolean;
+    showAttachments: boolean;
+    showTags: boolean;
+    showActions: boolean;
+    showSortIndicator: boolean;
+    showFieldActions: boolean;
     autoActionsPreferences: AutoActionsPreferences;
     contentTruncatedFilesCount: number;
     attachmentsSkippedFilesCount: number;
@@ -172,8 +253,7 @@ const initialHashFileId = window.location.hash.substring(1) || null;
 
 const initialState: SearchState = {
     leftSidebarPanel: null,
-    rightSidebarOpen: false,
-    rightSidebarTab: RightSidebarTab.STATISTICS,
+    rightSidebarTab: null,
     stats: { termsData: null, histogramData: null },
     files: {},
     lastFileSortId: null,
@@ -184,6 +264,13 @@ const initialState: SearchState = {
     highlightedQueryId: null,
     openFileTabs: [],
     expandFilePaths: false,
+    cardDensity: "auto",
+    autoDetectedDensity: "standard",
+    previewFields: ["content"],
+    availablePreviewFields: [],
+    // Individual vis flags — used only in "custom" mode; start from standard.
+    ...DENSITY_PRESETS.standard,
+    fieldExpansion: {},
     autoActionsPreferences: {
         markAsSeen: true,
         flag: false,
@@ -352,10 +439,11 @@ export const fetchPreview = createAsyncThunk(
                   sortId: null,
                   pageSize: null,
               };
+        const fields = (thunkAPI.getState() as RootState).search.previewFields;
         try {
             return {
                 query: searchQuery,
-                preview: await getFilePreview(fileId, searchQuery),
+                preview: await getFilePreview(fileId, searchQuery, fields),
             };
         } catch (err: any) {
             return thunkAPI.rejectWithValue({
@@ -536,10 +624,18 @@ export const searchSlice = createSlice({
         },
         setRightSidebarTab: (state, action: PayloadAction<RightSidebarTab>) => {
             state.rightSidebarTab = action.payload;
-            state.rightSidebarOpen = true;
         },
         toggleRightSidebar: (state) => {
-            state.rightSidebarOpen = !state.rightSidebarOpen;
+            state.rightSidebarTab =
+                state.rightSidebarTab !== null
+                    ? null
+                    : RightSidebarTab.STATISTICS;
+        },
+        closeLeftSidebar: (state) => {
+            state.leftSidebarPanel = null;
+        },
+        closeRightSidebar: (state) => {
+            state.rightSidebarTab = null;
         },
         addCustomQuery: (state, action: PayloadAction<CustomQuery>) => {
             state.customQueries.push(action.payload);
@@ -645,6 +741,95 @@ export const searchSlice = createSlice({
         },
         setExpandFilePaths: (state, action: PayloadAction<boolean>) => {
             state.expandFilePaths = action.payload;
+        },
+        setCardDensity: (state, action: PayloadAction<CardDensity>) => {
+            const next = action.payload;
+            if (next === "custom") {
+                // Seed individual flags from the currently-effective preset so
+                // the user starts customising from what they were already seeing.
+                const effective =
+                    state.cardDensity === "auto"
+                        ? state.autoDetectedDensity
+                        : state.cardDensity !== "custom"
+                          ? state.cardDensity
+                          : null;
+                if (effective) Object.assign(state, DENSITY_PRESETS[effective]);
+            } else if (next !== "auto") {
+                // Named preset: copy values so they're ready if user later
+                // switches to custom.
+                Object.assign(state, DENSITY_PRESETS[next]);
+            }
+            state.cardDensity = next;
+        },
+        setAutoDetectedDensity: (
+            state,
+            action: PayloadAction<NamedDensity>,
+        ) => {
+            state.autoDetectedDensity = action.payload;
+        },
+        setPreviewFields: (state, action: PayloadAction<string[]>) => {
+            state.previewFields = action.payload;
+        },
+        setFieldExpansion: (
+            state,
+            action: PayloadAction<{ field: string; expanded: boolean }>,
+        ) => {
+            state.fieldExpansion[action.payload.field] =
+                action.payload.expanded;
+        },
+        setAvailablePreviewFields: (
+            state,
+            action: PayloadAction<PreviewField[]>,
+        ) => {
+            state.availablePreviewFields = action.payload;
+        },
+        setShowThumbnails: (state, action: PayloadAction<boolean>) => {
+            state.showThumbnails = action.payload;
+            state.cardDensity = "custom";
+        },
+        setShowHighlights: (state, action: PayloadAction<boolean>) => {
+            state.showHighlights = action.payload;
+            state.cardDensity = "custom";
+        },
+        setShowFieldSections: (state, action: PayloadAction<boolean>) => {
+            state.showFieldSections = action.payload;
+            state.cardDensity = "custom";
+        },
+        setShowExtensionIcon: (state, action: PayloadAction<boolean>) => {
+            state.showExtensionIcon = action.payload;
+            state.cardDensity = "custom";
+        },
+        setShowFilePath: (state, action: PayloadAction<boolean>) => {
+            state.showFilePath = action.payload;
+            state.cardDensity = "custom";
+        },
+        setShowParentNavigation: (state, action: PayloadAction<boolean>) => {
+            state.showParentNavigation = action.payload;
+            state.cardDensity = "custom";
+        },
+        setShowStatusIndicators: (state, action: PayloadAction<boolean>) => {
+            state.showStatusIndicators = action.payload;
+            state.cardDensity = "custom";
+        },
+        setShowAttachments: (state, action: PayloadAction<boolean>) => {
+            state.showAttachments = action.payload;
+            state.cardDensity = "custom";
+        },
+        setShowTags: (state, action: PayloadAction<boolean>) => {
+            state.showTags = action.payload;
+            state.cardDensity = "custom";
+        },
+        setShowActions: (state, action: PayloadAction<boolean>) => {
+            state.showActions = action.payload;
+            state.cardDensity = "custom";
+        },
+        setShowSortIndicator: (state, action: PayloadAction<boolean>) => {
+            state.showSortIndicator = action.payload;
+            state.cardDensity = "custom";
+        },
+        setShowFieldActions: (state, action: PayloadAction<boolean>) => {
+            state.showFieldActions = action.payload;
+            state.cardDensity = "custom";
         },
         setFolderViewExpandedNodes: (
             state,
@@ -838,6 +1023,8 @@ export const searchSlice = createSlice({
 
 export const {
     setLeftSidebarPanel,
+    closeLeftSidebar,
+    closeRightSidebar,
     setHighlightedQueryId,
     openFileTab,
     closeFileTab,
@@ -869,6 +1056,24 @@ export const {
     setFolderViewExpandedNodes,
     setFilteredFolderViewExpandedNodes,
     setPendingFullscreenFileId,
+    setCardDensity,
+    setAutoDetectedDensity,
+
+    setPreviewFields,
+    setAvailablePreviewFields,
+    setFieldExpansion,
+    setShowThumbnails,
+    setShowHighlights,
+    setShowFieldSections,
+    setShowExtensionIcon,
+    setShowFilePath,
+    setShowParentNavigation,
+    setShowStatusIndicators,
+    setShowAttachments,
+    setShowTags,
+    setShowActions,
+    setShowSortIndicator,
+    setShowFieldActions,
 } = searchSlice.actions;
 
 export const openFileTabThunk = createAsyncThunk(
@@ -924,7 +1129,7 @@ export const selectActiveTabFileId = createSelector(
 
 export const selectRightSidebarOpen = createSelector(
     selectSearch,
-    (search) => search.rightSidebarOpen,
+    (search) => search.rightSidebarTab !== null,
 );
 
 export const selectRightSidebarTab = createSelector(
@@ -1088,6 +1293,73 @@ export const selectFolderViewExpandedNodes = createSelector(
 export const selectFilteredFolderViewExpandedNodes = createSelector(
     selectSearch,
     (search) => search.filteredFolderViewExpandedNodes,
+);
+
+export const selectCardDensity = createSelector(
+    selectSearch,
+    (search) => search.cardDensity,
+);
+
+export const selectResolvedCardDensity = createSelector(
+    selectSearch,
+    (search): NamedDensity | "custom" =>
+        search.cardDensity === "auto"
+            ? search.autoDetectedDensity
+            : search.cardDensity,
+);
+
+export const selectFieldExpansion = createSelector(
+    selectSearch,
+    (search) => search.fieldExpansion,
+);
+
+export const selectPreviewFields = createSelector(
+    selectSearch,
+    (search) => search.previewFields,
+);
+
+export const selectAvailablePreviewFields = createSelector(
+    selectSearch,
+    (search) => search.availablePreviewFields,
+);
+
+export const selectShowThumbnails = createSelector(
+    selectSearch,
+    (search) => search.showThumbnails,
+);
+
+export const selectShowHighlights = createSelector(
+    selectSearch,
+    (search) => search.showHighlights,
+);
+
+export const selectCardElementVisibility = createSelector(
+    selectSearch,
+    (search): CardVisibilitySettings => {
+        if (search.cardDensity === "custom") {
+            // Custom: use individual boolean flags directly.
+            return {
+                showThumbnails: search.showThumbnails,
+                showHighlights: search.showHighlights,
+                showFieldSections: search.showFieldSections,
+                showExtensionIcon: search.showExtensionIcon,
+                showFilePath: search.showFilePath,
+                showParentNavigation: search.showParentNavigation,
+                showStatusIndicators: search.showStatusIndicators,
+                showAttachments: search.showAttachments,
+                showTags: search.showTags,
+                showActions: search.showActions,
+                showSortIndicator: search.showSortIndicator,
+                showFieldActions: search.showFieldActions,
+            };
+        }
+        // auto → resolve via autoDetectedDensity; named preset → use directly.
+        const effective =
+            search.cardDensity === "auto"
+                ? search.autoDetectedDensity
+                : search.cardDensity;
+        return DENSITY_PRESETS[effective];
+    },
 );
 
 export default searchSlice.reducer;

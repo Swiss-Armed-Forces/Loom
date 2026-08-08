@@ -6,7 +6,10 @@ const LEFT_PANEL_BY_STEP: Partial<Record<string, LeftSidebarPanel>> = {
     "folder-filter": LeftSidebarPanel.FOLDER,
     tags: LeftSidebarPanel.TAGS,
     "saved-queries": LeftSidebarPanel.QUERIES,
-    "auto-actions": LeftSidebarPanel.AUTO_ACTIONS,
+    "card-customization": LeftSidebarPanel.CARD_CUSTOMIZATION,
+    "card-customization-display": LeftSidebarPanel.CARD_CUSTOMIZATION,
+    "card-customization-fields": LeftSidebarPanel.CARD_CUSTOMIZATION,
+    "card-customization-auto-actions": LeftSidebarPanel.CARD_CUSTOMIZATION,
 };
 
 const RIGHT_TAB_BY_STEP: Partial<Record<string, RightSidebarTab>> = {

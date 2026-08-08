@@ -27,18 +27,19 @@ import {
     markCustomQueryAsRead,
     selectCustomQueries,
     selectLeftSidebarPanel,
+    closeRightSidebar,
     selectRightSidebarOpen,
     selectRightSidebarTab,
     setHighlightedQueryId,
     setLeftSidebarPanel,
     setRightSidebarTab,
-    toggleRightSidebar,
     updateQuery,
 } from "@app/slices/searchSlice";
 import { getTourLeftPanel, getTourRightTab } from "@app/tours/tourScene";
 import { useTour } from "@app/tours/useTour";
 import { ActivityBarLayout } from "@features/common/components/ActivityBar/ActivityBarLayout";
 import activityBarStyles from "@features/common/components/ActivityBar/ActivityBarLayout.module.css";
+import { formatCompactNumber } from "@features/common/utils/helpers";
 import { UploadFileButton } from "@features/search/components/FileActionButtons";
 
 import { availableCustomQueryIcons } from "../CustomQueries/AddCustomQueryDialog";
@@ -76,8 +77,8 @@ export const ActivityBar = () => {
     };
 
     const handleRightClick = (tab: RightSidebarTab) => {
-        if (rightSidebarOpen && rightSidebarTab === tab) {
-            dispatch(toggleRightSidebar());
+        if (rightSidebarTab === tab) {
+            dispatch(closeRightSidebar());
         } else {
             dispatch(setRightSidebarTab(tab));
         }
@@ -87,6 +88,7 @@ export const ActivityBar = () => {
         panel: LeftSidebarPanel;
         icon: React.ReactNode;
         label: string;
+        dataTour?: string;
     }> = [
         {
             panel: LeftSidebarPanel.FOLDER,
@@ -104,9 +106,10 @@ export const ActivityBar = () => {
             label: t("sideMenu.savedQueries.title"),
         },
         {
-            panel: LeftSidebarPanel.AUTO_ACTIONS,
+            panel: LeftSidebarPanel.CARD_CUSTOMIZATION,
             icon: <Tune />,
-            label: t("sideMenu.autoActions.title"),
+            label: t("sideMenu.cardCustomization.title"),
+            dataTour: "sidebar-card-customization",
         },
     ];
 
@@ -150,70 +153,85 @@ export const ActivityBar = () => {
 
     if (isMobile) {
         return (
-            <div className={styles.activityBarBottom} data-tour="activity-bar">
+            <>
                 <div
-                    className={styles.mobileLeftGroup}
-                    data-tour="activity-bar-left"
+                    className={styles.activityBarBottom}
+                    data-tour="activity-bar"
                 >
-                    <Tooltip
-                        title={t("uploadFileDialog.uploadButton")}
-                        placement="top"
+                    <div
+                        className={styles.mobileLeftGroup}
+                        data-tour="activity-bar-left"
                     >
-                        <span data-tour="upload">
-                            <UploadFileButton iconOnly />
-                        </span>
-                    </Tooltip>
-                    {leftPanelButtons.map(({ panel, icon, label }) => (
-                        <Tooltip key={panel} title={label} placement="top">
-                            <IconButton
-                                className={`${styles.iconButtonBottom} ${effectiveLeftPanel === panel ? styles.active : ""}`}
-                                onClick={() => handleLeftClick(panel)}
-                                size="medium"
-                                color={
-                                    effectiveLeftPanel === panel
-                                        ? "primary"
-                                        : "default"
-                                }
-                            >
-                                {panel === LeftSidebarPanel.QUERIES &&
-                                newMatchQueries.length > 0 ? (
-                                    <Badge
-                                        color="primary"
-                                        badgeContent={newMatchQueries.length}
+                        <Tooltip
+                            title={t("uploadFileDialog.uploadButton")}
+                            placement="top"
+                        >
+                            <span data-tour="upload">
+                                <UploadFileButton iconOnly />
+                            </span>
+                        </Tooltip>
+                        {leftPanelButtons.map(({ panel, icon, label }) => (
+                            <Tooltip key={panel} title={label} placement="top">
+                                <IconButton
+                                    className={`${styles.iconButtonBottom} ${effectiveLeftPanel === panel ? styles.active : ""}`}
+                                    onClick={() => handleLeftClick(panel)}
+                                    size="medium"
+                                    color={
+                                        effectiveLeftPanel === panel
+                                            ? "primary"
+                                            : "default"
+                                    }
+                                >
+                                    {panel === LeftSidebarPanel.QUERIES &&
+                                    newMatchQueries.length > 0 ? (
+                                        <Badge
+                                            color="primary"
+                                            badgeContent={formatCompactNumber(
+                                                newMatchQueries.length,
+                                            )}
+                                        >
+                                            {icon}
+                                        </Badge>
+                                    ) : (
+                                        icon
+                                    )}
+                                </IconButton>
+                            </Tooltip>
+                        ))}
+                    </div>
+                    <div
+                        className={styles.mobileRightGroup}
+                        data-tour="activity-bar-right"
+                    >
+                        {rightPanelButtons.map(
+                            ({ tab, icon, label, dataTour }) => (
+                                <Tooltip
+                                    key={tab}
+                                    title={label}
+                                    placement="top"
+                                >
+                                    <IconButton
+                                        className={`${styles.iconButtonBottom} ${effectiveRightOpen && effectiveRightTab === tab ? styles.active : ""}`}
+                                        onClick={() => handleRightClick(tab)}
+                                        size="medium"
+                                        color={
+                                            effectiveRightOpen &&
+                                            effectiveRightTab === tab
+                                                ? "primary"
+                                                : "default"
+                                        }
+                                        {...(dataTour
+                                            ? { "data-tour": dataTour }
+                                            : {})}
                                     >
                                         {icon}
-                                    </Badge>
-                                ) : (
-                                    icon
-                                )}
-                            </IconButton>
-                        </Tooltip>
-                    ))}
+                                    </IconButton>
+                                </Tooltip>
+                            ),
+                        )}
+                    </div>
                 </div>
-                <div
-                    className={styles.mobileRightGroup}
-                    data-tour="activity-bar-right"
-                >
-                    {rightPanelButtons.map(({ tab, icon, label, dataTour }) => (
-                        <Tooltip key={tab} title={label} placement="top">
-                            <IconButton
-                                className={`${styles.iconButtonBottom} ${effectiveRightOpen && effectiveRightTab === tab ? styles.active : ""}`}
-                                onClick={() => handleRightClick(tab)}
-                                size="medium"
-                                color={
-                                    effectiveRightOpen &&
-                                    effectiveRightTab === tab
-                                        ? "primary"
-                                        : "default"
-                                }
-                                {...(dataTour ? { "data-tour": dataTour } : {})}
-                            >
-                                {icon}
-                            </IconButton>
-                        </Tooltip>
-                    ))}
-                </div>
-            </div>
+            </>
         );
     }
 
@@ -227,7 +245,7 @@ export const ActivityBar = () => {
                     <UploadFileButton iconOnly />
                 </span>
             </Tooltip>
-            {leftPanelButtons.map(({ panel, icon, label }) => (
+            {leftPanelButtons.map(({ panel, icon, label, dataTour }) => (
                 <Tooltip key={panel} title={label} placement="right">
                     <IconButton
                         className={`${activityBarStyles.iconButton} ${effectiveLeftPanel === panel ? activityBarStyles.active : ""}`}
@@ -236,6 +254,7 @@ export const ActivityBar = () => {
                         color={
                             effectiveLeftPanel === panel ? "primary" : "default"
                         }
+                        {...(dataTour ? { "data-tour": dataTour } : {})}
                     >
                         {icon}
                     </IconButton>

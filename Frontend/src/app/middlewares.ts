@@ -16,11 +16,15 @@ import {
     selectAutoActionsPreferences,
     setFilePreview,
     setHighlightedFileId,
+    setPreviewFields,
 } from "@app/slices/searchSlice";
 
 import { RootState } from "./store";
 
+const PREVIEW_FIELDS_DEBOUNCE_MS = 300;
+
 let persistDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+let previewFieldsDebounceTimer: ReturnType<typeof setTimeout> | null = null;
 let lastAutoActionsFileId: string | null = null;
 
 const runAutoActionsForFile = async (
@@ -96,6 +100,9 @@ localStorageSearchStateMiddleware.startListening({
                 "termsStats",
                 "histogramStats",
                 "pendingFullscreenFileId",
+                "availablePreviewFields",
+                "fieldExpansion",
+                "autoDetectedDensity",
             ]);
             localStorage.setItem(
                 SEARCH_STATE_LOCAL_STORAGE_KEY,
@@ -137,5 +144,30 @@ localStorageSearchStateMiddleware.startListening({
                 listenerApi.dispatch,
             );
         }
+    },
+});
+
+// Re-fetch all in-view previews when the selected preview fields change so
+// cards immediately reflect the new field set.
+// Pass the active query explicitly so the thunk never falls back to "hidden:*"
+// for files that happen to have a null meta (e.g. temporary card, stale entry).
+// Also skip file IDs that are no longer present in search.files.
+localStorageSearchStateMiddleware.startListening({
+    actionCreator: setPreviewFields,
+    effect: (_, listenerApi) => {
+        if (previewFieldsDebounceTimer)
+            clearTimeout(previewFieldsDebounceTimer);
+        previewFieldsDebounceTimer = setTimeout(() => {
+            const { filesInView, files, query } = (
+                listenerApi.getState() as RootState
+            ).search;
+            for (const fileId of filesInView) {
+                if (fileId in files) {
+                    listenerApi.dispatch(
+                        fetchPreview({ fileId, query: query ?? undefined }),
+                    );
+                }
+            }
+        }, PREVIEW_FIELDS_DEBOUNCE_MS);
     },
 });

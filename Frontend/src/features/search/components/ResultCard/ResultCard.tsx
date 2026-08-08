@@ -17,16 +17,19 @@ import { useAppDispatch, useAppSelector } from "@app/hooks";
 import {
     selectQuery,
     selectFileById,
+    selectCardElementVisibility,
+    selectResolvedCardDensity,
     setFileInViewState,
     setHighlightedFileId,
     openFileTabThunk,
 } from "@app/slices/searchSlice";
 import { webApiGetFileThumbnail } from "@features/common/urls";
 import { FileDetailTab } from "@features/common/utils/enums";
-import { FileCardHeader, HighlightList } from "@features/search/components";
+import { formatCompactNumber } from "@features/common/utils/helpers";
+import { FileCardHeader } from "@features/search/components";
 
+import { FieldSections } from "./FieldSections";
 import styles from "./ResultCard.module.css";
-import { Summary } from "./Summary";
 
 interface ResultCardProps {
     fileId: string;
@@ -48,6 +51,25 @@ export const ResultCard = React.memo(
         const file = useAppSelector(selectFileById(fileId));
         const filePreview = file?.preview;
         const sortFieldValue = file?.meta?.sortFieldValue ?? "";
+        const visFromStore = useAppSelector(selectCardElementVisibility);
+        const resolvedDensity = useAppSelector(selectResolvedCardDensity);
+        // Highlighted card always shows every element regardless of toggles.
+        const vis = isHighlighted
+            ? {
+                  showThumbnails: true,
+                  showHighlights: true,
+                  showFieldSections: true,
+                  showExtensionIcon: true,
+                  showFilePath: true,
+                  showParentNavigation: true,
+                  showStatusIndicators: true,
+                  showAttachments: true,
+                  showTags: true,
+                  showActions: true,
+                  showSortIndicator: true,
+                  showFieldActions: true,
+              }
+            : visFromStore;
         const cardRef = useRef<HTMLDivElement>(null);
         const { ref: inViewRef, inView } = useInView({
             threshold: [0.2],
@@ -174,107 +196,121 @@ export const ResultCard = React.memo(
                             onStateChipClick={() =>
                                 handleOpenDetailsOnTabClick(FileDetailTab.Tasks)
                             }
+                            compact={
+                                !vis.showFieldSections ||
+                                resolvedDensity === "compact" ||
+                                undefined
+                            }
+                            showExtensionIcon={vis.showExtensionIcon}
+                            showFilePath={vis.showFilePath}
+                            showParentNavigation={vis.showParentNavigation}
+                            showStatusIndicators={vis.showStatusIndicators}
+                            showAttachments={vis.showAttachments}
+                            showTags={vis.showTags}
+                            showActions={vis.showActions}
                         />
-                        <CardContent
-                            sx={{
-                                py: 1,
-                                px: { xs: 1, sm: 2 },
-                                wordBreak: "break-word",
-                                "&:last-child": { pb: 1 },
-                            }}
-                        >
-                            <Box
+                        {(vis.showFieldSections ||
+                            (filePreview.thumbnailFileId &&
+                                vis.showThumbnails)) && (
+                            <CardContent
                                 sx={{
-                                    display: "flex",
-                                    gap: 2,
-                                    flexDirection: {
-                                        xs: "column",
-                                        md: "row",
-                                    },
+                                    py: 1,
+                                    px: { xs: 1, sm: 2 },
+                                    wordBreak: "break-word",
+                                    "&:last-child": { pb: 1 },
                                 }}
                             >
                                 <Box
                                     sx={{
-                                        flex: 1,
                                         display: "flex",
-                                        flexDirection: "column",
+                                        gap: 2,
+                                        flexDirection: {
+                                            xs: "column",
+                                            md: "row",
+                                        },
                                     }}
+                                    data-tour="result-card-content"
                                 >
-                                    <Box data-tour="result-card-content">
-                                        <Summary
-                                            filePreview={filePreview}
-                                            onOpenDetailsTab={
-                                                handleOpenDetailsOnTabClick
-                                            }
-                                        />
-                                        <HighlightList
-                                            highlights={
-                                                filePreview.highlight as Record<
-                                                    string,
-                                                    string[]
-                                                >
-                                            }
-                                        />
-                                    </Box>
-                                </Box>
-
-                                {filePreview.thumbnailFileId && (
-                                    <Badge
-                                        data-tour="result-card-preview"
-                                        color="primary"
-                                        badgeContent={
-                                            filePreview.thumbnailTotalFrames
-                                        }
-                                        anchorOrigin={{
-                                            vertical: "bottom",
-                                            horizontal: "right",
-                                        }}
-                                        className={styles.thumbnailBadge}
-                                    >
-                                        <img
-                                            onClick={(e) =>
-                                                handleOpenDetailsOnTabClick(
-                                                    FileDetailTab.Rendered,
-                                                    e.ctrlKey,
-                                                )
-                                            }
-                                            className={styles.resultImage}
-                                            src={webApiGetFileThumbnail(
-                                                filePreview.fileId,
-                                                filePreview.thumbnailFileId,
-                                            )}
-                                            alt="Thumbnail"
-                                        />
-                                    </Badge>
-                                )}
-                            </Box>
-                            <Box
-                                sx={{
-                                    display: "flex",
-                                    justifyContent: "space-between",
-                                    alignItems: "center",
-                                    mt: 1,
-                                }}
-                            >
-                                {isTemporary ? (
-                                    <Chip
-                                        icon={<SearchOff />}
-                                        label={t(
-                                            "detailedView.outsideLoadedResults",
+                                    {vis.showFieldSections && (
+                                        <Box sx={{ flex: 1, minWidth: 0 }}>
+                                            <FieldSections
+                                                filePreview={filePreview}
+                                            />
+                                        </Box>
+                                    )}
+                                    {filePreview.thumbnailFileId &&
+                                        vis.showThumbnails && (
+                                            <Badge
+                                                data-tour="result-card-preview"
+                                                color="primary"
+                                                badgeContent={
+                                                    filePreview.thumbnailTotalFrames !=
+                                                    null
+                                                        ? formatCompactNumber(
+                                                              filePreview.thumbnailTotalFrames,
+                                                          )
+                                                        : undefined
+                                                }
+                                                anchorOrigin={{
+                                                    vertical: "bottom",
+                                                    horizontal: "right",
+                                                }}
+                                                className={
+                                                    styles.thumbnailBadge
+                                                }
+                                            >
+                                                <img
+                                                    onClick={(e) =>
+                                                        handleOpenDetailsOnTabClick(
+                                                            FileDetailTab.Rendered,
+                                                            e.ctrlKey,
+                                                        )
+                                                    }
+                                                    className={
+                                                        styles.resultImage
+                                                    }
+                                                    src={webApiGetFileThumbnail(
+                                                        filePreview.fileId,
+                                                        filePreview.thumbnailFileId,
+                                                    )}
+                                                    alt="Thumbnail"
+                                                />
+                                            </Badge>
                                         )}
-                                        size="small"
-                                        color="warning"
-                                        variant="outlined"
-                                        sx={{ fontSize: "0.7rem" }}
-                                    />
-                                ) : (
-                                    <Typography
-                                        variant="caption"
-                                        sx={{ color: "text.disabled", pl: 0.5 }}
-                                    >{`${searchQuery?.sortField ?? "score"}: ${sortFieldValue}`}</Typography>
+                                </Box>
+                                {(isTemporary || vis.showSortIndicator) && (
+                                    <Box
+                                        sx={{
+                                            display: "flex",
+                                            justifyContent: "space-between",
+                                            alignItems: "center",
+                                            mt: 1,
+                                        }}
+                                    >
+                                        {isTemporary ? (
+                                            <Chip
+                                                icon={<SearchOff />}
+                                                label={t(
+                                                    "detailedView.outsideLoadedResults",
+                                                )}
+                                                size="small"
+                                                color="warning"
+                                                variant="outlined"
+                                                sx={{ fontSize: "0.7rem" }}
+                                            />
+                                        ) : (
+                                            <Typography
+                                                variant="caption"
+                                                sx={{
+                                                    color: "text.disabled",
+                                                    pl: 0.5,
+                                                }}
+                                            >{`${searchQuery?.sortField ?? "score"}: ${sortFieldValue}`}</Typography>
+                                        )}
+                                    </Box>
                                 )}
-                            </Box>
-                        </CardContent>
+                            </CardContent>
+                        )}
                     </Card>
                 )}
             </Box>

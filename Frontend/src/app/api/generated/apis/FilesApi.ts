@@ -26,6 +26,7 @@ import type {
     GroupedHistogramStatisticsModel,
     HTTPValidationError,
     ImageDescriptionFileRequest,
+    PreviewField,
     SummarizeFileRequest,
     TermsStatisticsModel,
     TranslateFileRequest,
@@ -55,6 +56,8 @@ import {
     HTTPValidationErrorToJSON,
     ImageDescriptionFileRequestFromJSON,
     ImageDescriptionFileRequestToJSON,
+    PreviewFieldFromJSON,
+    PreviewFieldToJSON,
     SummarizeFileRequestFromJSON,
     SummarizeFileRequestToJSON,
     TermsStatisticsModelFromJSON,
@@ -91,6 +94,7 @@ export interface GetFilePreviewV1FilesFileIdPreviewGetRequest {
     queryId?: string;
     keepAlive?: GetFilePreviewV1FilesFileIdPreviewGetKeepAliveEnum;
     searchString?: string;
+    fields?: Array<string>;
 }
 
 export interface GetFileV1FilesFileIdGetRequest {
@@ -454,7 +458,7 @@ export class FilesApi extends runtime.BaseAPI {
     }
 
     /**
-     * Get preview data of file.
+     * Get preview data of file.  Pass ``fields`` to limit which fields are included in the response. Omit to return all available fields (backwards-compatible default). The ``highlight`` field is always returned regardless of ``fields``.
      * Get File Preview
      */
     async getFilePreviewV1FilesFileIdPreviewGetRaw(
@@ -483,6 +487,10 @@ export class FilesApi extends runtime.BaseAPI {
                 requestParameters["searchString"];
         }
 
+        if (requestParameters["fields"] != null) {
+            queryParameters["fields"] = requestParameters["fields"];
+        }
+
         const headerParameters: runtime.HTTPHeaders = {};
 
         const response = await this.request(
@@ -504,7 +512,7 @@ export class FilesApi extends runtime.BaseAPI {
     }
 
     /**
-     * Get preview data of file.
+     * Get preview data of file.  Pass ``fields`` to limit which fields are included in the response. Omit to return all available fields (backwards-compatible default). The ``highlight`` field is always returned regardless of ``fields``.
      * Get File Preview
      */
     async getFilePreviewV1FilesFileIdPreviewGet(
@@ -976,6 +984,46 @@ export class FilesApi extends runtime.BaseAPI {
         const response =
             await this.getHistogramStatsV1FilesStatsHistogramStatGetRaw(
                 requestParameters,
+                initOverrides,
+            );
+        return await response.value();
+    }
+
+    /**
+     * List available fields that can be requested in the file preview.
+     * Get Preview Fields
+     */
+    async getPreviewFieldsV1FilesPreviewFieldsGetRaw(
+        initOverrides?: RequestInit | runtime.InitOverrideFunction,
+    ): Promise<runtime.ApiResponse<Array<PreviewField>>> {
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        const response = await this.request(
+            {
+                path: `/v1/files/preview-fields`,
+                method: "GET",
+                headers: headerParameters,
+                query: queryParameters,
+            },
+            initOverrides,
+        );
+
+        return new runtime.JSONApiResponse(response, (jsonValue) =>
+            jsonValue.map(PreviewFieldFromJSON),
+        );
+    }
+
+    /**
+     * List available fields that can be requested in the file preview.
+     * Get Preview Fields
+     */
+    async getPreviewFieldsV1FilesPreviewFieldsGet(
+        initOverrides?: RequestInit | runtime.InitOverrideFunction,
+    ): Promise<Array<PreviewField>> {
+        const response =
+            await this.getPreviewFieldsV1FilesPreviewFieldsGetRaw(
                 initOverrides,
             );
         return await response.value();

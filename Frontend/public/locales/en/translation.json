@@ -118,7 +118,7 @@
             },
             "activityBarLeft": {
                 "title": "Global tools",
-                "description": "These buttons open the <strong>left sidebar</strong>, which contains <strong>global</strong> views: tools that are independent of your current search query. Here you can upload files, browse the complete folder hierarchy, manage tags, access saved queries, and configure automatic actions."
+                "description": "These buttons open the <strong>left sidebar</strong>, which contains <strong>global</strong> views: tools that are independent of your current search query. Here you can upload files, browse the complete folder hierarchy, manage tags, access saved queries, and customise how result cards look and behave."
             },
             "activityBarRight": {
                 "title": "Query-scoped tools",
@@ -152,9 +152,21 @@
                 "title": "Act on every match",
                 "description": "Bulk actions apply to the complete query result set, not only cards currently loaded on screen. Available operations include flagging, seen state, tags, translation, summaries, image descriptions, reindexing, visibility, and archive creation."
             },
-            "autoActions": {
-                "title": "Automate result review",
-                "description": "Automatic actions run when you open or interact with a result. Configure whether Loom marks it seen, flags it, translates it, summarizes it, describes its images, or triggers reindexing, so routine tasks happen without manual steps."
+            "cardCustomization": {
+                "title": "Customise how results look",
+                "description": "The Card Customisation panel lets you control what each result card shows and how it behaves. It is divided into three sections: Card Display, Card Fields, and Auto Actions."
+            },
+            "cardCustomizationDisplay": {
+                "title": "Card Display",
+                "description": "Choose a density preset to control how much information each card shows. Compact fits more results on screen; Comfortable shows more detail. Switch to Custom to fine-tune individual elements such as thumbnails, highlights, tags, and action buttons."
+            },
+            "cardCustomizationFields": {
+                "title": "Card Fields",
+                "description": "Toggle individual metadata fields on or off to control which values appear on each card. Only fields that exist in your indexed data are listed here."
+            },
+            "cardCustomizationAutoActions": {
+                "title": "Auto Actions",
+                "description": "Automatic actions run when you open or interact with a result. Enable any combination of mark-as-seen, flag, translate, summarise, describe images, or reindex — so routine tasks happen without manual steps."
             },
             "filteredFolder": {
                 "title": "Filtered folder view",
@@ -412,6 +424,30 @@
         "summarizeQueriedFiles": "Summarize",
         "chatbotQueriedFiles": "Chatbot",
         "tags": "Tags",
+        "cardCustomization": {
+            "title": "Card Customization",
+            "cardDisplay": "Card Display",
+            "cardFields": "Card Fields",
+            "autoActions": "Auto Actions",
+            "addField": "Add field"
+        },
+        "fields": {
+            "title": "Preview Fields",
+            "loading": "Loading available fields…",
+            "error": "Failed to load available fields",
+            "thumbnails": "Thumbnails",
+            "highlights": "Highlights",
+            "extensionIcon": "Extension icon",
+            "filePath": "File path",
+            "parentNavigation": "Parent navigation",
+            "statusIndicators": "Status indicators",
+            "attachments": "Attachments",
+            "tags": "Tags",
+            "actions": "Actions",
+            "fieldSections": "Selected fields",
+            "sortIndicator": "Sort indicator",
+            "fieldActions": "Query / sort buttons"
+        },
         "special": "Special",
         "hiddenFiles": "Hidden files",
         "tasks": {
@@ -497,7 +533,42 @@
             "chatbot": "Chatbot",
             "fileDetail": "File Detail",
             "fileDetailEmpty": "Select a file to view its details."
+        },
+        "cardSettings": "Card Display Settings",
+        "cardDensity": {
+            "label": "Density",
+            "auto": "Auto (width-based)",
+            "compact": "Compact",
+            "standard": "Standard",
+            "full": "Full",
+            "custom": "Custom"
+        },
+        "cardFields": {
+            "label": "Always-shown fields",
+            "detectedLanguage": "Detected language",
+            "state": "State",
+            "seen": "Seen",
+            "flagged": "Flagged",
+            "isSpam": "Spam",
+            "contentIsTruncated": "Content truncated",
+            "attachmentsSkipped": "Attachments skipped",
+            "attachmentsTotalCount": "Attachment count"
+        },
+        "previewFields": {
+            "label": "Content sections",
+            "content": "Content",
+            "summary": "Summary",
+            "image_description": "Image description",
+            "translation_preview": "Translation"
         }
+    },
+    "fieldSections": {
+        "removeField": "Remove field",
+        "truncated": "… truncated"
+    },
+    "resultCard": {
+        "expandContent": "Expand content",
+        "collapseContent": "Collapse content"
     },
     "emptySearch": {
         "title": {

@@ -46,9 +46,11 @@ from common.file.file_statistics import (
     GroupedStatisticsEntry,
     HistogramStat,
     NumberHistogramStat,
+    PreviewableField,
     StatisticsEntry,
     TermsStat,
     TermsStatistics,
+    discover_preview_fields,
     discover_stats,
 )
 from common.messages.pubsub_service import PubSubService
@@ -210,14 +212,22 @@ Tag = Annotated[str, StringConstraints(min_length=TAG_LEN_MIN, max_length=TAG_LE
 class TikaMeta(BaseModel):
     model_config = ConfigDict(extra="allow", populate_by_name=True)
 
-    dc_title: str | list[str] | None = Field(default=None, alias="dc:title")
-    dc_description: str | list[str] | None = Field(default=None, alias="dc:description")
-    dc_subject: Annotated[str | list[str] | None, TermsStat(keyword=True)] = Field(
-        default=None, alias="dc:subject"
+    dc_title: Annotated[str | list[str] | None, PreviewableField(label="Title")] = (
+        Field(default=None, alias="dc:title")
     )
-    dc_creator: Annotated[str | list[str] | None, TermsStat(keyword=True)] = Field(
-        default=None, alias="dc:creator"
-    )
+    dc_description: Annotated[
+        str | list[str] | None, PreviewableField(label="Description")
+    ] = Field(default=None, alias="dc:description")
+    dc_subject: Annotated[
+        str | list[str] | None,
+        TermsStat(keyword=True),
+        PreviewableField(label="Subject"),
+    ] = Field(default=None, alias="dc:subject")
+    dc_creator: Annotated[
+        str | list[str] | None,
+        TermsStat(keyword=True),
+        PreviewableField(label="Creator"),
+    ] = Field(default=None, alias="dc:creator")
     dcterms_created: Annotated[
         datetime | list[datetime] | None, DateHistogramStat()
     ] = Field(default=None, alias="dcterms:created")
@@ -250,27 +260,27 @@ class TikaMeta(BaseModel):
         default=None, alias="pdf:docinfo:title"
     )
 
-    message_from: Annotated[str | list[str] | None, TermsStat(keyword=True)] = Field(
-        default=None, alias="Message-From"
-    )
+    message_from: Annotated[
+        str | list[str] | None, TermsStat(keyword=True), PreviewableField(label="From")
+    ] = Field(default=None, alias="Message-From")
     message_from_name: Annotated[str | list[str] | None, TermsStat(keyword=True)] = (
         Field(default=None, alias="Message:From-Name")
     )
     message_from_email: Annotated[str | list[str] | None, TermsStat(keyword=True)] = (
         Field(default=None, alias="Message:From-Email")
     )
-    message_to: Annotated[str | list[str] | None, TermsStat(keyword=True)] = Field(
-        default=None, alias="Message-To"
-    )
+    message_to: Annotated[
+        str | list[str] | None, TermsStat(keyword=True), PreviewableField(label="To")
+    ] = Field(default=None, alias="Message-To")
     message_to_name: Annotated[str | list[str] | None, TermsStat(keyword=True)] = Field(
         default=None, alias="Message:To-Name"
     )
     message_to_email: Annotated[str | list[str] | None, TermsStat(keyword=True)] = (
         Field(default=None, alias="Message:To-Email")
     )
-    message_cc: Annotated[str | list[str] | None, TermsStat(keyword=True)] = Field(
-        default=None, alias="Message-Cc"
-    )
+    message_cc: Annotated[
+        str | list[str] | None, TermsStat(keyword=True), PreviewableField(label="Cc")
+    ] = Field(default=None, alias="Message-Cc")
     message_bcc: Annotated[str | list[str] | None, TermsStat(keyword=True)] = Field(
         default=None, alias="Message-Bcc"
     )
@@ -350,7 +360,7 @@ class File(RepositoryTaskObject):
 
     storage_data: FileStorageLazyBytes | None = None
 
-    content: str | None = None
+    content: Annotated[str | None, PreviewableField(label="Content")] = None
     content_truncated: Annotated[bool, BooleanTermsStat()] = False
     attachments_skipped: Annotated[bool, BooleanTermsStat()] = False
     full_name: FilePurePath
@@ -381,12 +391,14 @@ class File(RepositoryTaskObject):
 
     @computed_field  # type: ignore[misc]
     @property
-    def short_name(self) -> str:
+    def short_name(self) -> Annotated[str, PreviewableField(label="File Name")]:
         return self.full_name.name
 
     @computed_field  # type: ignore[misc]
     @property
-    def extension(self) -> Annotated[str, TermsStat()]:
+    def extension(
+        self,
+    ) -> Annotated[str, TermsStat(), PreviewableField(label="Extension")]:
         return self.full_name.suffix
 
     source: Annotated[str, TermsStat()]
@@ -406,7 +418,10 @@ class File(RepositoryTaskObject):
     magic_file_type: Annotated[str | None, TermsStat()] = None
     tika_language: Annotated[str | None, TermsStat()] = None
     detected_language: Annotated[str | None, TermsStat()] = None
-    translations: list[TranslatedLanguage] = Field(default_factory=list)
+    translations: Annotated[
+        list[TranslatedLanguage],
+        PreviewableField(id="translation_preview", label="Translation"),
+    ] = Field(default_factory=list)
     is_spam: Annotated[bool | None, BooleanTermsStat()] = None
     tika_file_type: Annotated[str | None, TermsStat()] = None
     archives: Annotated[list[str], TermsStat()] = []
@@ -414,8 +429,10 @@ class File(RepositoryTaskObject):
     tika_handled_by: Annotated[str | None, TermsStat()] = None
     attachments: list[Attachment] = []
     recursion_depth: Annotated[int, NumberHistogramStat(label="Recursion Depth")] = 0
-    summary: str | None = None
-    image_description: str | None = None
+    summary: Annotated[str | None, PreviewableField(label="Summary")] = None
+    image_description: Annotated[
+        str | None, PreviewableField(label="Image Description")
+    ] = None
     embeddings: list[Embedding] = []
     trufflehog_secrets: list[Secret] | None = None
     ripsecrets_secrets: list[Secret] | None = None
@@ -604,6 +621,7 @@ class TypedNestedHit(Protocol):  # pylint: disable=too-few-public-methods
 
 TERMS_STAT_REGISTRY = discover_stats(File, TermsStat)
 HISTOGRAM_STAT_REGISTRY = discover_stats(File, HistogramStat)
+PREVIEW_FIELDS_REGISTRY = discover_preview_fields(File)
 
 # Maximum number of distinct group values returned by the terms sub-aggregation
 # inside grouped histogram queries (date and number variants).  Capped here so

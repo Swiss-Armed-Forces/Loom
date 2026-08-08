@@ -71,7 +71,7 @@ def test_upload_email_with_attachment():
     attachment = get_file_preview_by_name("api.rb")
 
     assert attachment.path == "//api-upload/attachment_content_disposition.eml/api.rb"
-    assert "Hello, world!" in attachment.content
+    assert "Hello, world!" in attachment.fields["content"].value
 
 
 @pytest.mark.flaky(reruns=3)
@@ -84,7 +84,7 @@ def test_upload_mbox_email_with_attachment():
 
     assert mail.file_extension == ".eml"
     assert attachment.file_extension == ".pdf"
-    assert "Just attaching" in mail_content.content
+    assert "Just attaching" in mail_content.fields["content"].value
 
 
 def test_upload_png():
@@ -116,7 +116,7 @@ def test_upload_zip_archive():
 
     assert not file.hidden
     assert file.path == "//api-upload/archive.zip/file.txt"
-    assert "content of a file" in file.content
+    assert "content of a file" in file.fields["content"].value
 
 
 def test_upload_tar_gz_archive():
@@ -128,7 +128,7 @@ def test_upload_tar_gz_archive():
 
     assert not file.hidden
     assert file.path == "//api-upload/archive.tar.gz/0/emptyfile"
-    assert "You found me!" in file.content
+    assert "You found me!" in file.fields["content"].value
 
 
 def test_quotation_marks_in_file_name():

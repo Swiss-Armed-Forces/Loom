@@ -39,13 +39,14 @@ from api.models.statistics_model import (
 )
 from api.models.tree_model import GetFilesTreeResponse
 from api.routers.files import (
-    CONTENT_PREVIEW_LENGTH,
+    FIELD_PREVIEW_LENGTH,
     SOURCE_ID,
     AddTagsRequest,
     GetFilePreviewResponse,
     GetFilesCountResponse,
     GetFilesQuery,
     GetStatsQuery,
+    PreviewQueryParameters,
     UpdateFilesRequest,
 )
 
@@ -325,7 +326,9 @@ def test_get_preview(client: TestClient):
 
     assert response.status_code == 200
     get_file_repository().get_by_id_with_query.assert_called_once_with(
-        id_=file.id_, query=query, full_highlight_context=False
+        id_=file.id_,
+        query=PreviewQueryParameters(query_id="0123456789"),
+        full_highlight_context=False,
     )
 
 
@@ -335,7 +338,7 @@ def test_get_preview_content_truncated(client: TestClient):
         storage_data=LazyBytes(service_id=str(uuid4())),
         source="test",
         content="".join(
-            random.choices(string.ascii_letters, k=CONTENT_PREVIEW_LENGTH + 1)
+            random.choices(string.ascii_letters, k=FIELD_PREVIEW_LENGTH + 1)
         ),
         sha256="",
         size=0,
@@ -348,8 +351,95 @@ def test_get_preview_content_truncated(client: TestClient):
     preview_model = GetFilePreviewResponse.model_validate(response.json())
 
     assert response.status_code == 200
-    assert preview_model.content_preview_is_truncated is True
-    assert len(preview_model.content) <= CONTENT_PREVIEW_LENGTH
+    content_field = preview_model.fields.get("content")
+    assert content_field is not None
+    assert content_field.is_truncated is True
+    assert len(content_field.value) <= FIELD_PREVIEW_LENGTH
+
+
+def test_get_preview_content_fields_subset(client: TestClient):
+    file = File(
+        full_name=FilePurePath("/path/to/file.txt"),
+        storage_data=LazyBytes(service_id=str(uuid4())),
+        source="test",
+        content="Hello world",
+        summary="A short summary",
+        sha256="",
+        size=0,
+        thumbnail_data=LazyBytes(service_id=str(uuid4())),
+    )
+    get_file_repository().get_by_id_with_query.return_value = file
+
+    response = client.get(
+        f"/v1/files/{file.id_}/preview",
+        params={"query_id": "0123456789", "fields": ["content"]},
+    )
+
+    assert response.status_code == 200
+    preview_model = GetFilePreviewResponse.model_validate(response.json())
+    assert "content" in preview_model.fields
+    assert "summary" not in preview_model.fields
+
+
+def test_get_preview_content_fields_unknown(client: TestClient):
+    file = File(
+        full_name=FilePurePath("/path/to/file.txt"),
+        storage_data=LazyBytes(service_id=str(uuid4())),
+        source="test",
+        content="Hello world",
+        sha256="",
+        size=0,
+        thumbnail_data=LazyBytes(service_id=str(uuid4())),
+    )
+    get_file_repository().get_by_id_with_query.return_value = file
+
+    response = client.get(
+        f"/v1/files/{file.id_}/preview",
+        params={"query_id": "0123456789", "fields": ["unknown_field", "also_unknown"]},
+    )
+
+    assert response.status_code == 200
+    preview_model = GetFilePreviewResponse.model_validate(response.json())
+    assert preview_model.fields == {}
+
+
+def test_get_preview_content_fields_mixed(client: TestClient):
+    file = File(
+        full_name=FilePurePath("/path/to/file.txt"),
+        storage_data=LazyBytes(service_id=str(uuid4())),
+        source="test",
+        content="Hello world",
+        summary="A short summary",
+        sha256="",
+        size=0,
+        thumbnail_data=LazyBytes(service_id=str(uuid4())),
+    )
+    get_file_repository().get_by_id_with_query.return_value = file
+
+    response = client.get(
+        f"/v1/files/{file.id_}/preview",
+        params={"query_id": "0123456789", "fields": ["content", "unknown_field"]},
+    )
+
+    assert response.status_code == 200
+    preview_model = GetFilePreviewResponse.model_validate(response.json())
+    assert "content" in preview_model.fields
+    assert "unknown_field" not in preview_model.fields
+
+
+def test_get_preview_fields(client: TestClient):
+    response = client.get("/v1/files/preview-fields")
+    assert response.status_code == 200
+    fields = response.json()
+    assert isinstance(fields, list)
+    assert len(fields) > 0
+    ids = [f["id"] for f in fields]
+    assert "content" in ids
+    assert "summary" in ids
+    assert len(ids) == len(set(ids)), "field IDs must be unique"
+    assert all(
+        "id" in f and "label" in f and f["label"] for f in fields
+    ), "every field must have a non-empty id and label"
 
 
 def test_get_preview_file_is_none(client: TestClient):
@@ -360,7 +450,9 @@ def test_get_preview_file_is_none(client: TestClient):
 
     assert response.status_code == 404
     get_file_repository().get_by_id_with_query.assert_called_once_with(
-        id_=file_id, query=query, full_highlight_context=False
+        id_=file_id,
+        query=PreviewQueryParameters(query_id="0123456789"),
+        full_highlight_context=False,
     )
 
 

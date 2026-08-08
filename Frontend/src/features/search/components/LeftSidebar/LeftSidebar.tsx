@@ -1,34 +1,13 @@
-import {
-    Check,
-    Close,
-    FlagOutlined,
-    ImageSearch,
-    MarkEmailUnreadOutlined,
-    Search,
-    SummarizeOutlined,
-    Translate,
-    YoutubeSearchedForOutlined,
-} from "@mui/icons-material";
+import { Close, Search } from "@mui/icons-material";
 import {
     Drawer,
     IconButton,
     InputAdornment,
     InputBase,
-    List,
-    ListItemButton,
-    ListItemIcon,
-    ListItemText,
     Typography,
     useMediaQuery,
 } from "@mui/material";
-import {
-    ReactNode,
-    useCallback,
-    useEffect,
-    useMemo,
-    useRef,
-    useState,
-} from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "react-toastify";
 
@@ -36,12 +15,10 @@ import { loadTags } from "@app/api";
 import { useAppDispatch, useAppSelector } from "@app/hooks";
 import {
     LeftSidebarPanel,
-    selectAutoActionsPreferences,
     selectHighlightedQueryId,
     selectLeftSidebarPanel,
     selectQuery,
     selectTags,
-    setAutoActionPreference,
     setLeftSidebarPanel,
     setTags,
 } from "@app/slices/searchSlice";
@@ -53,6 +30,7 @@ import { FolderView } from "@features/search/views/Folder/FolderView";
 
 import { CustomQueriesList } from "../CustomQueries/CustomQueries";
 
+import { CardCustomizationPanel } from "./CardCustomizationPanel";
 import styles from "./LeftSidebar.module.css";
 
 const GLOBAL_FOLDER_QUERY: SearchQuery = {
@@ -95,16 +73,8 @@ const PANEL_TITLES: Record<LeftSidebarPanel, string> = {
     [LeftSidebarPanel.FOLDER]: "toolbar.views.folder",
     [LeftSidebarPanel.TAGS]: "sideMenu.tags",
     [LeftSidebarPanel.QUERIES]: "sideMenu.savedQueries.title",
-    [LeftSidebarPanel.AUTO_ACTIONS]: "sideMenu.autoActions.title",
+    [LeftSidebarPanel.CARD_CUSTOMIZATION]: "sideMenu.cardCustomization.title",
 };
-
-type BooleanAutoActionKey =
-    | "markAsSeen"
-    | "flag"
-    | "reindex"
-    | "translate"
-    | "summarize"
-    | "describeImage";
 
 export const LeftSidebar = () => {
     const dispatch = useAppDispatch();
@@ -115,7 +85,6 @@ export const LeftSidebar = () => {
     const effectiveActivePanel =
         tourPanel !== undefined ? tourPanel : activePanel;
     const tags = useAppSelector(selectTags);
-    const preferences = useAppSelector(selectAutoActionsPreferences);
     const highlightedQueryId = useAppSelector(selectHighlightedQueryId);
     const reduxQuery = useAppSelector(selectQuery);
 
@@ -198,34 +167,6 @@ export const LeftSidebar = () => {
         document.addEventListener("mouseup", onMouseUp);
     };
 
-    const setPreference = (key: BooleanAutoActionKey, value: boolean) =>
-        dispatch(setAutoActionPreference({ key, value }));
-
-    const autoActionRow = (
-        actionKey: BooleanAutoActionKey,
-        icon: ReactNode,
-        label: string,
-    ) => {
-        const enabled = preferences[actionKey];
-        return (
-            <ListItemButton
-                key={actionKey}
-                onClick={() => setPreference(actionKey, !enabled)}
-                dense
-            >
-                <ListItemIcon sx={{ minWidth: 36 }}>{icon}</ListItemIcon>
-                <ListItemText primary={label} />
-                {enabled ? (
-                    <Check sx={{ fontSize: 16, color: "success.main" }} />
-                ) : (
-                    <Close
-                        sx={{ fontSize: 16, color: "error.main", opacity: 0.5 }}
-                    />
-                )}
-            </ListItemButton>
-        );
-    };
-
     const filteredTags = useMemo(
         () =>
             filterText
@@ -261,41 +202,8 @@ export const LeftSidebar = () => {
                         highlightedQueryId={highlightedQueryId}
                     />
                 );
-            case LeftSidebarPanel.AUTO_ACTIONS:
-                return (
-                    <List dense disablePadding>
-                        {autoActionRow(
-                            "flag",
-                            <FlagOutlined />,
-                            t("sideMenu.autoActions.flag"),
-                        )}
-                        {autoActionRow(
-                            "markAsSeen",
-                            <MarkEmailUnreadOutlined />,
-                            t("sideMenu.autoActions.markAsSeen"),
-                        )}
-                        {autoActionRow(
-                            "translate",
-                            <Translate />,
-                            t("sideMenu.autoActions.translate"),
-                        )}
-                        {autoActionRow(
-                            "summarize",
-                            <SummarizeOutlined />,
-                            t("sideMenu.autoActions.summarize"),
-                        )}
-                        {autoActionRow(
-                            "describeImage",
-                            <ImageSearch />,
-                            t("sideMenu.autoActions.describeImage"),
-                        )}
-                        {autoActionRow(
-                            "reindex",
-                            <YoutubeSearchedForOutlined />,
-                            t("sideMenu.autoActions.reindex"),
-                        )}
-                    </List>
-                );
+            case LeftSidebarPanel.CARD_CUSTOMIZATION:
+                return <CardCustomizationPanel />;
             default:
                 return null;
         }
