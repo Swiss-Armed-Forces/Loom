@@ -37,6 +37,7 @@ import {
 import { AppDispatch } from "@app/store";
 import { TaskStatusIcon } from "@features/common/components";
 import { TaskStatus } from "@features/common/utils/enums";
+import { formatCompactNumber } from "@features/common/utils/helpers";
 
 const CONTENT_TRUNCATED_FILES_POLL_INTERVAL_MS = 180_000;
 const ATTACHMENTS_SKIPPED_FILES_POLL_INTERVAL_MS = 180_000;
@@ -284,7 +285,9 @@ export const BackgroundStatusIndicator: FC = () => {
                         onClick={queryContentTruncatedFiles}
                     >
                         <ErrorCountBadge
-                            badgeContent={contentTruncatedFilesCount}
+                            badgeContent={formatCompactNumber(
+                                contentTruncatedFilesCount,
+                            )}
                             color="primary"
                         >
                             <ContentCut fontSize="small" />
@@ -303,7 +306,9 @@ export const BackgroundStatusIndicator: FC = () => {
                         onClick={queryAttachmentsSkippedFiles}
                     >
                         <ErrorCountBadge
-                            badgeContent={attachmentsSkippedFilesCount}
+                            badgeContent={formatCompactNumber(
+                                attachmentsSkippedFilesCount,
+                            )}
                             color="primary"
                         >
                             <LinkOff fontSize="small" />
@@ -319,7 +324,9 @@ export const BackgroundStatusIndicator: FC = () => {
                 >
                     <IconButton size="small" onClick={queryFailedFiles}>
                         <ErrorCountBadge
-                            badgeContent={failedBackgroundTaskCount}
+                            badgeContent={formatCompactNumber(
+                                failedBackgroundTaskCount,
+                            )}
                             color="primary"
                         >
                             <TaskStatusIcon status={TaskStatus.Error} />

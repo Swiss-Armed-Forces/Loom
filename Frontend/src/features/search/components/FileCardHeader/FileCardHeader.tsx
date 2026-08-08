@@ -32,6 +32,13 @@ interface FileCardHeaderProps {
     renderedFile?: RenderedFile;
     onStateChipClick?: () => void;
     compact?: boolean;
+    showExtensionIcon?: boolean;
+    showFilePath?: boolean;
+    showParentNavigation?: boolean;
+    showStatusIndicators?: boolean;
+    showAttachments?: boolean;
+    showTags?: boolean;
+    showActions?: boolean;
 }
 
 export const FileCardHeader = ({
@@ -41,6 +48,13 @@ export const FileCardHeader = ({
     renderedFile,
     onStateChipClick,
     compact,
+    showExtensionIcon = true,
+    showFilePath = true,
+    showParentNavigation = true,
+    showStatusIndicators = true,
+    showAttachments = true,
+    showTags = true,
+    showActions = true,
 }: FileCardHeaderProps) => {
     const dispatch = useAppDispatch();
     const { t } = useTranslation();
@@ -59,7 +73,7 @@ export const FileCardHeader = ({
     }, []);
 
     const isNarrow = headerWidth < 500;
-    const isCompact = compact ?? headerWidth < 650;
+    const isCompact = compact ?? headerWidth < 700;
 
     const handleFilterByField = (
         field: SearchQueryField,
@@ -85,162 +99,177 @@ export const FileCardHeader = ({
             className={styles.resultCardHeader}
             sx={{ flex: 1 }}
             avatar={
-                <FileAvatar
-                    fileExtension={filePreview.fileExtension}
-                    performSearch={(negate) =>
-                        handleFilterByField(
-                            SearchQueryField.Extension,
-                            filePreview.fileExtension,
-                            negate,
-                        )
-                    }
-                    hasBadge={!filePreview.seen}
-                />
+                showExtensionIcon ? (
+                    <FileAvatar
+                        fileExtension={filePreview.fileExtension}
+                        performSearch={(negate) =>
+                            handleFilterByField(
+                                SearchQueryField.Extension,
+                                filePreview.fileExtension,
+                                negate,
+                            )
+                        }
+                        hasBadge={!filePreview.seen}
+                    />
+                ) : undefined
             }
             title={
                 <Box
                     sx={{ display: "flex", alignItems: "center", gap: 1 }}
                     data-tour="result-card-path"
                 >
-                    {filePreview.parentId && (
+                    {showParentNavigation && filePreview.parentId && (
                         <NavigateToParent parentId={filePreview.parentId} />
                     )}
-                    <ClickableFilePath
-                        fullPath={filePreview.path}
-                        style={{
-                            color: filePreview.flagged ? "red" : undefined,
-                            fontWeight: filePreview.seen ? undefined : "bold",
-                        }}
-                    />
-                    {hasVisibleProcessingStatus(filePreview, isNarrow) && (
-                        <Box
-                            data-tour="result-card-processing-status"
-                            sx={{
-                                display: "inline-flex",
-                                alignItems: "center",
-                                gap: 1,
+                    {showFilePath && (
+                        <ClickableFilePath
+                            fullPath={filePreview.path}
+                            style={{
+                                color: filePreview.flagged ? "red" : undefined,
+                                fontWeight: filePreview.seen
+                                    ? undefined
+                                    : "bold",
                             }}
-                        >
-                            {!isNarrow && filePreview.contentIsTruncated && (
-                                <Tooltip
-                                    title={t(
-                                        "generalSearchView.contentTruncatedIcon",
+                        />
+                    )}
+                    {showStatusIndicators &&
+                        hasVisibleProcessingStatus(filePreview, isNarrow) && (
+                            <Box
+                                data-tour="result-card-processing-status"
+                                sx={{
+                                    display: "inline-flex",
+                                    alignItems: "center",
+                                    gap: 1,
+                                }}
+                            >
+                                {!isNarrow &&
+                                    filePreview.contentIsTruncated && (
+                                        <Tooltip
+                                            title={t(
+                                                "generalSearchView.contentTruncatedIcon",
+                                            )}
+                                        >
+                                            <IconButton
+                                                size="small"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleFilterByField(
+                                                        SearchQueryField.ContentTruncated,
+                                                        "true",
+                                                        e.shiftKey,
+                                                    );
+                                                }}
+                                            >
+                                                <ContentCut fontSize="small" />
+                                            </IconButton>
+                                        </Tooltip>
                                     )}
-                                >
-                                    <IconButton
-                                        size="small"
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            handleFilterByField(
-                                                SearchQueryField.ContentTruncated,
-                                                "true",
-                                                e.shiftKey,
-                                            );
-                                        }}
-                                    >
-                                        <ContentCut fontSize="small" />
-                                    </IconButton>
-                                </Tooltip>
-                            )}
-                            {!isNarrow && filePreview.attachmentsSkipped && (
-                                <Tooltip
-                                    title={t(
-                                        "generalSearchView.attachmentsSkippedIcon",
+                                {!isNarrow &&
+                                    filePreview.attachmentsSkipped && (
+                                        <Tooltip
+                                            title={t(
+                                                "generalSearchView.attachmentsSkippedIcon",
+                                            )}
+                                        >
+                                            <IconButton
+                                                size="small"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleFilterByField(
+                                                        SearchQueryField.AttachmentsSkipped,
+                                                        "true",
+                                                        e.shiftKey,
+                                                    );
+                                                }}
+                                            >
+                                                <LinkOff fontSize="small" />
+                                            </IconButton>
+                                        </Tooltip>
                                     )}
-                                >
-                                    <IconButton
+                                {filePreview.state !== "processed" && (
+                                    <Chip
                                         size="small"
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            handleFilterByField(
-                                                SearchQueryField.AttachmentsSkipped,
-                                                "true",
-                                                e.shiftKey,
-                                            );
-                                        }}
-                                    >
-                                        <LinkOff fontSize="small" />
-                                    </IconButton>
-                                </Tooltip>
-                            )}
-                            {filePreview.state !== "processed" && (
-                                <Chip
+                                        label={filePreview.state}
+                                        color={
+                                            stateChipColor[filePreview.state] ??
+                                            "default"
+                                        }
+                                        variant="outlined"
+                                        onClick={
+                                            onStateChipClick
+                                                ? (e) => {
+                                                      e.stopPropagation();
+                                                      onStateChipClick();
+                                                  }
+                                                : undefined
+                                        }
+                                        className={
+                                            onStateChipClick
+                                                ? styles.clickableChip
+                                                : undefined
+                                        }
+                                    />
+                                )}
+                            </Box>
+                        )}
+                    {showStatusIndicators &&
+                        !isNarrow &&
+                        filePreview.isSpam && (
+                            <Tooltip title={t("generalSearchView.spamIcon")}>
+                                <IconButton
                                     size="small"
-                                    label={filePreview.state}
-                                    color={
-                                        stateChipColor[filePreview.state] ??
-                                        "default"
-                                    }
-                                    variant="outlined"
-                                    onClick={
-                                        onStateChipClick
-                                            ? (e) => {
-                                                  e.stopPropagation();
-                                                  onStateChipClick();
-                                              }
-                                            : undefined
-                                    }
-                                    className={
-                                        onStateChipClick
-                                            ? styles.clickableChip
-                                            : undefined
-                                    }
-                                />
-                            )}
-                        </Box>
-                    )}
-                    {!isNarrow && filePreview.isSpam && (
-                        <Tooltip title={t("generalSearchView.spamIcon")}>
-                            <IconButton
-                                size="small"
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleFilterByField(
-                                        SearchQueryField.IsSpam,
-                                        "true",
-                                        e.shiftKey,
-                                    );
-                                }}
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleFilterByField(
+                                            SearchQueryField.IsSpam,
+                                            "true",
+                                            e.shiftKey,
+                                        );
+                                    }}
+                                >
+                                    <Whatshot fontSize="small" />
+                                </IconButton>
+                            </Tooltip>
+                        )}
+                    {showStatusIndicators &&
+                        !isNarrow &&
+                        filePreview.detectedLanguage && (
+                            <Tooltip
+                                title={t(
+                                    "generalSearchView.detectedLanguageTooltip",
+                                    { language: filePreview.detectedLanguage },
+                                )}
                             >
-                                <Whatshot fontSize="small" />
-                            </IconButton>
-                        </Tooltip>
-                    )}
-                    {!isNarrow && filePreview.detectedLanguage && (
-                        <Tooltip
-                            title={t(
-                                "generalSearchView.detectedLanguageTooltip",
-                                { language: filePreview.detectedLanguage },
-                            )}
-                        >
-                            <IconButton
-                                size="small"
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleFilterByField(
-                                        SearchQueryField.DetectedLanguage,
-                                        filePreview.detectedLanguage!,
-                                        e.shiftKey,
-                                    );
-                                }}
-                            >
-                                <Translate fontSize="small" />
-                            </IconButton>
-                        </Tooltip>
-                    )}
+                                <IconButton
+                                    size="small"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleFilterByField(
+                                            SearchQueryField.DetectedLanguage,
+                                            filePreview.detectedLanguage!,
+                                            e.shiftKey,
+                                        );
+                                    }}
+                                >
+                                    <Translate fontSize="small" />
+                                </IconButton>
+                            </Tooltip>
+                        )}
                 </Box>
             }
             subheader={
                 <Box
                     sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}
                 >
-                    <Box sx={{ display: "flex", alignItems: "center" }}>
-                        <FileAttachments
-                            attachments={filePreview.attachments}
-                            totalCount={filePreview.attachmentsTotalCount}
-                        />
-                    </Box>
-                    {isCompact && (
+                    {showAttachments && (
+                        <Box sx={{ display: "flex", alignItems: "center" }}>
+                            <FileAttachments
+                                attachments={filePreview.attachments}
+                                totalCount={filePreview.attachmentsTotalCount}
+                            />
+                        </Box>
+                    )}
+                    {showTags && (
                         <Box data-tour="result-card-tags">
                             <TagsList
                                 tags={filePreview.tags || []}
@@ -251,13 +280,15 @@ export const FileCardHeader = ({
                 </Box>
             }
             action={
-                <FileActions
-                    filePreview={filePreview}
-                    additionalActions={additionalActions}
-                    hideDetail={hideDetail}
-                    renderedFile={renderedFile}
-                    isCompact={isCompact}
-                />
+                showActions ? (
+                    <FileActions
+                        filePreview={filePreview}
+                        additionalActions={additionalActions}
+                        hideDetail={hideDetail}
+                        renderedFile={renderedFile}
+                        isCompact={isCompact}
+                    />
+                ) : undefined
             }
         />
     );

@@ -9,7 +9,13 @@ describe("tour scenes", () => {
         ["folders", LeftSidebarPanel.FOLDER],
         ["tags", LeftSidebarPanel.TAGS],
         ["saved-queries", LeftSidebarPanel.QUERIES],
-        ["auto-actions", LeftSidebarPanel.AUTO_ACTIONS],
+        ["card-customization", LeftSidebarPanel.CARD_CUSTOMIZATION],
+        ["card-customization-display", LeftSidebarPanel.CARD_CUSTOMIZATION],
+        ["card-customization-fields", LeftSidebarPanel.CARD_CUSTOMIZATION],
+        [
+            "card-customization-auto-actions",
+            LeftSidebarPanel.CARD_CUSTOMIZATION,
+        ],
     ])("opens the %s left panel", (stepId, panel) => {
         expect(getTourLeftPanel(true, stepId)).toBe(panel);
         expect(getTourRightTab(true, stepId)).toBeNull();

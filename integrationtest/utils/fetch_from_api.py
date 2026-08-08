@@ -368,13 +368,17 @@ def get_file_preview_by_name(
 def get_file_preview_by_file_id_without_waiting(
     file_id: UUID,
     search_string: str = "*",
+    fields: list[str] | None = None,
 ) -> GetFilePreviewResponse:
+    params: dict = QueryParameters(
+        query_id=fetch_query_id(),
+        search_string=search_string,
+    ).model_dump()
+    if fields is not None:
+        params["fields"] = fields
     response = requests.get(
         f"{FILES_ENDPOINT}/{file_id}/preview",
-        params=QueryParameters(
-            query_id=fetch_query_id(),
-            search_string=search_string,
-        ).model_dump(),
+        params=params,
         timeout=REQUEST_TIMEOUT,
     )
     response.raise_for_status()

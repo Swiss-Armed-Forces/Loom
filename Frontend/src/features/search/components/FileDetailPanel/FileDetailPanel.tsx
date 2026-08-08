@@ -45,7 +45,7 @@ import { FileTranslations } from "@features/common/components/DialogContainer/Di
 import { useDarkMode } from "@features/common/hooks/useDarkMode";
 import { FileDetailTab } from "@features/common/utils/enums";
 import { inferAceModeFromMimeType } from "@features/common/utils/helpers";
-import { FileCardHeader, HighlightList } from "@features/search/components";
+import { FileCardHeader, FieldList } from "@features/search/components";
 
 import "ace-builds/esm-resolver";
 
@@ -437,7 +437,7 @@ const renderTabContent = (
         case FileDetailTab.Highlights:
             return (
                 <Box sx={{ overflow: "auto", flex: 1 }}>
-                    <HighlightList
+                    <FieldList
                         highlights={
                             (file.highlight as Record<string, string[]>) ?? {}
                         }

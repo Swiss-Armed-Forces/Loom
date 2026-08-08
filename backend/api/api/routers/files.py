@@ -10,6 +10,7 @@ from common.dependencies import (
 )
 from common.file.file_repository import (
     HISTOGRAM_STAT_REGISTRY,
+    PREVIEW_FIELDS_REGISTRY,
     TERMS_STAT_REGISTRY,
     Attachment,
     File,
@@ -38,6 +39,7 @@ from common.services.task_scheduling_service import (
     UpdateFileRequest,
 )
 from common.task_object.task_object import TaskRecord
+from common.utils.pydantic_field_paths import traverse_attr_path
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, UploadFile
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
@@ -50,7 +52,7 @@ from api.models.tree_model import GetFilesTreeResponse, TreeNodeModel
 from api.utils import get_content_disposition_header
 
 logger = logging.getLogger(__name__)
-CONTENT_PREVIEW_LENGTH = 1000
+FIELD_PREVIEW_LENGTH = 1000
 MAX_ATTACHMENTS_PREVIEW = 20
 
 
@@ -431,6 +433,20 @@ def service_id(lb: FileStorageLazyBytes | None) -> str | None:
     return lb.service_id
 
 
+class PreviewField(BaseModel):
+    id: str
+    label: str
+
+
+@router.get("/preview-fields")
+def get_preview_fields() -> list[PreviewField]:
+    """List available fields that can be requested in the file preview."""
+    return [
+        PreviewField(id=field_id, label=field.label)
+        for field_id, field in PREVIEW_FIELDS_REGISTRY.items()
+    ]
+
+
 @router.get("/{file_id}")
 def get_file(
     file_id: UUID,
@@ -447,6 +463,13 @@ def get_file(
     return GetFileResponse.from_file(file)
 
 
+class PreviewFieldData(BaseModel):
+    """Data for a single content field included in a file preview."""
+
+    value: str
+    is_truncated: bool = False
+
+
 class GetFilePreviewResponse(BaseModel):
     file_id: UUID
     parent_id: UUID | None
@@ -454,8 +477,6 @@ class GetFilePreviewResponse(BaseModel):
     flagged: bool
     hidden: bool
     seen: bool
-    content: str
-    content_preview_is_truncated: bool
     content_is_truncated: bool
     name: str  # short_name
     path: str  # full_path
@@ -465,32 +486,73 @@ class GetFilePreviewResponse(BaseModel):
     attachments_total_count: int = 0
     file_extension: str
     highlight: dict[str, list[str]] | None = {}
-    summary: str | None
-    image_description: str | None
     is_spam: bool | None = False
     attachments_skipped: bool = False
     detected_language: str | None = None
-    translation_preview: str | None = None
-    translation_preview_language: str | None = None
-    translation_preview_is_truncated: bool = False
     state: str
+    # Generic fields: field_id -> PreviewFieldData.
+    # Only the fields requested via the fields query param are included.
+    # Omitting the param returns all available fields (backwards-compatible).
+    fields: dict[str, PreviewFieldData] = {}
+
+
+class PreviewQueryParameters(QueryParameters):
+    """Extends QueryParameters with an optional field-selection list for previews."""
+
+    fields: list[str] | None = None
 
 
 @router.get("/{file_id}/preview")
 def get_file_preview(
     file_id: UUID,
-    query: Annotated[QueryParameters, Query()],
+    query: Annotated[PreviewQueryParameters, Query()],
     file_repository: FileRepository = default_file_repository,
 ) -> GetFilePreviewResponse:
-    """Get preview data of file."""
+    """Get preview data of file.
+
+    Pass ``fields`` to limit which fields are included in the response. Omit to return
+    all available fields (backwards-compatible default). The ``highlight`` field is
+    always returned regardless of ``fields``.
+    """
     logger.info("get file preview data of file with id %s", file_id)
     file = file_repository.get_by_id_with_query(
         id_=file_id, query=query, full_highlight_context=False
     )
     if file is None:
         raise HTTPException(status_code=404, detail="file not found")
-    if file.content is None:
-        file.content = ""
+
+    def _want(field_id: str) -> bool:
+        return query.fields is None or field_id in query.fields
+
+    built_fields: dict[str, PreviewFieldData] = {}
+
+    for field_id, field_spec in PREVIEW_FIELDS_REGISTRY.items():
+        if not _want(field_id):
+            continue
+
+        if field_spec.path == "translations":
+            # translations is a list of objects; preview the last entry's text
+            if not file.translations:
+                continue
+            text = str(file.translations[-1].text)
+        else:
+            obj = traverse_attr_path(file, field_spec.path)
+            if obj is None:
+                continue
+            if isinstance(obj, list):
+                parts_text = [str(v) for v in obj if v is not None]
+                text = ", ".join(parts_text) if parts_text else ""
+            else:
+                text = str(obj)
+
+        if not text:
+            continue
+
+        built_fields[field_id] = PreviewFieldData(
+            value=text[:FIELD_PREVIEW_LENGTH],
+            is_truncated=len(text) > FIELD_PREVIEW_LENGTH,
+        )
+
     return GetFilePreviewResponse(
         file_id=file.id_,
         parent_id=file.parent_id,
@@ -498,12 +560,7 @@ def get_file_preview(
         flagged=file.flagged,
         hidden=file.hidden,
         seen=file.seen,
-        content=str(file.content[:CONTENT_PREVIEW_LENGTH]),
-        # Determine if the content preview of the file is truncated based on the file content
-        # length and the content preview length
-        content_preview_is_truncated=len(file.content) > CONTENT_PREVIEW_LENGTH,
         content_is_truncated=file.content_truncated,
-        # Convert the file's short name to a string, or set it to an empty string if it is None
         name=str(file.short_name),
         path=str(file.full_path),
         thumbnail_file_id=service_id(file.thumbnail_data),
@@ -512,25 +569,11 @@ def get_file_preview(
         attachments_total_count=len(file.attachments),
         file_extension=str(file.extension),
         highlight=file.es_meta.highlight,
-        summary=file.summary,
-        image_description=file.image_description,
         is_spam=file.is_spam,
         attachments_skipped=file.attachments_skipped,
         detected_language=file.detected_language,
-        translation_preview=(
-            str(file.translations[-1].text[:CONTENT_PREVIEW_LENGTH])
-            if file.translations
-            else None
-        ),
-        translation_preview_language=(
-            file.translations[-1].language if file.translations else None
-        ),
-        translation_preview_is_truncated=(
-            len(file.translations[-1].text) > CONTENT_PREVIEW_LENGTH
-            if file.translations
-            else False
-        ),
         state=file.state,
+        fields=built_fields,
     )
 
 

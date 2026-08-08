@@ -23,6 +23,7 @@ import {
     markCustomQueryAsRead,
 } from "@app/slices/searchSlice";
 import { DialogType } from "@features/common/utils/enums";
+import { formatCompactNumber } from "@features/common/utils/helpers";
 
 import {
     AddCustomQueryDialog,
@@ -105,7 +106,11 @@ const CustomQueryItem = ({
                     }}
                 >
                     <Badge
-                        badgeContent={customQuery.fileCount}
+                        badgeContent={
+                            customQuery.fileCount != null
+                                ? formatCompactNumber(customQuery.fileCount)
+                                : undefined
+                        }
                         color="primary"
                         showZero
                         anchorOrigin={{

@@ -46,6 +46,8 @@ export * from "./MessageSubscribe";
 export * from "./MessageSubscribeConfirmation";
 export * from "./MessageUnsubscribe";
 export * from "./MessageUnsubscribeConfirmation";
+export * from "./PreviewField";
+export * from "./PreviewFieldData";
 export * from "./ProcessQuestionQuery";
 export * from "./PubSubMessage";
 export * from "./QueryParameters";

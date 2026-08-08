@@ -6,6 +6,7 @@ import {
     type GetFilesResponse,
     GetFilesResponseToJSON,
     GroupedHistogramStatisticsModelToJSON,
+    PreviewFieldToJSON,
     TermsStatisticsModelToJSON,
 } from "@app/api/generated";
 
@@ -325,22 +326,44 @@ const filesBulkUpdateHandler = http.put(
     },
 );
 
+const previewFieldsHandler = http.get(/\/api\/v1\/files\/preview-fields$/, () =>
+    json(
+        [
+            { id: "content", label: "Content" },
+            { id: "short_name", label: "File Name" },
+            { id: "extension", label: "Extension" },
+            { id: "summary", label: "Summary" },
+            { id: "image_description", label: "Image Description" },
+            { id: "translation_preview", label: "Translation" },
+            { id: "dc_title", label: "Title" },
+            { id: "dc_description", label: "Description" },
+            { id: "dc_subject", label: "Subject" },
+            { id: "dc_creator", label: "Creator" },
+            { id: "message_from", label: "From" },
+            { id: "message_to", label: "To" },
+            { id: "message_cc", label: "Cc" },
+        ].map(PreviewFieldToJSON),
+    ),
+);
+
 const previewHandler = http.get(
     /\/api\/v1\/files\/([^/]+)\/preview$/,
     ({ request }) => {
+        const url = new URL(request.url);
         const document = getDocument(
             fileIdFromRequest(request, /\/files\/([^/]+)\/preview$/),
         );
-        return document
-            ? json(
-                  GetFilePreviewResponseToJSON(
-                      documentPreview(
-                          document,
-                          queryFromUrl(new URL(request.url)),
-                      ),
-                  ),
-              )
-            : error("Document not found", 404);
+        if (!document) return error("Document not found", 404);
+        const preview = documentPreview(document, queryFromUrl(url));
+        const requestedFields = url.searchParams.getAll("fields");
+        if (requestedFields.length > 0 && preview.fields) {
+            preview.fields = Object.fromEntries(
+                Object.entries(preview.fields).filter(([key]) =>
+                    requestedFields.includes(key),
+                ),
+            );
+        }
+        return json(GetFilePreviewResponseToJSON(preview));
     },
 );
 
@@ -507,6 +530,7 @@ export const filesHandlers = [
     filesListHandler,
     uploadHandler,
     filesBulkUpdateHandler,
+    previewFieldsHandler,
     previewHandler,
     binaryHandler,
     fileTagsAddHandler,

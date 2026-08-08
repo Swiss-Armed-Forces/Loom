@@ -1,3 +1,4 @@
+import { formatCompactNumber } from "./formatCompactNumber";
 import { formatFileSize } from "./formatFileSize";
 import {
     getColorFromString,
@@ -8,6 +9,7 @@ import { inferAceModeFromMimeType } from "./inferAceModeFromMimeType";
 import { updateFieldOfQuery } from "./updateFieldOfQuery";
 
 export {
+    formatCompactNumber,
     formatFileSize,
     getColorFromString,
     getFontColorFromBackGroundColor,

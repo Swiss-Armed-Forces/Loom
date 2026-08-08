@@ -1,12 +1,11 @@
 import { MoreVert } from "@mui/icons-material";
 import { IconButton, Menu, MenuItem, Typography } from "@mui/material";
-import { useState, useEffect, useRef, ReactNode } from "react";
+import { useState, useEffect, ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 
 import { GetFilePreviewResponse, RenderedFile } from "@app/api";
 import { useAppSelector } from "@app/hooks";
 import { selectQuery } from "@app/slices/searchSlice";
-import { TagsList } from "@features/search/components";
 import {
     AddTagsButton,
     DownloadButton,
@@ -44,21 +43,6 @@ export const FileActions = ({
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
     const searchQuery = useAppSelector(selectQuery);
     const open = Boolean(anchorEl);
-    const tagsRef = useRef<HTMLDivElement>(null);
-    const [tagsWidth, setTagsWidth] = useState(Infinity);
-
-    useEffect(() => {
-        const el = tagsRef.current;
-        if (!el) return;
-        const ro = new ResizeObserver(([entry]) =>
-            setTagsWidth(entry.contentRect.width),
-        );
-        ro.observe(el);
-        return () => ro.disconnect();
-    }, []);
-
-    // Estimate how many tag chips fit: MUI small chip ≈ 80 px average
-    const maxVisibleTags = Math.max(1, Math.floor(tagsWidth / 80));
 
     const handleMenuClick = (event: React.MouseEvent<HTMLButtonElement>) => {
         setAnchorEl(event.currentTarget);
@@ -187,69 +171,52 @@ export const FileActions = ({
     }
 
     return (
-        <div className={styles.fileActions}>
-            <div
-                ref={tagsRef}
-                className={styles.tagsWrapper}
-                data-tour="result-card-tags"
+        <div
+            className={styles.fileActionButtons}
+            data-tour="result-card-actions"
+        >
+            {primaryActions}
+            <IconButton
+                size="small"
+                onClick={handleMenuClick}
+                aria-label="more actions"
             >
-                <TagsList
-                    tags={filePreview.tags || []}
-                    filePreview={filePreview}
-                    maxVisible={maxVisibleTags}
-                />
-            </div>
-            <div
-                className={styles.fileActionButtons}
-                data-tour="result-card-actions"
+                <MoreVert fontSize="small" />
+            </IconButton>
+            <Menu
+                anchorEl={anchorEl}
+                open={open}
+                onClose={handleMenuClose}
+                onKeyDown={menuJKNavigation}
             >
-                {primaryActions}
-                <IconButton
-                    size="small"
-                    onClick={handleMenuClick}
-                    aria-label="more actions"
-                >
-                    <MoreVert fontSize="small" />
-                </IconButton>
-                <Menu
-                    anchorEl={anchorEl}
-                    open={open}
-                    onClose={handleMenuClose}
-                    onKeyDown={menuJKNavigation}
-                >
-                    {overflowActions.map(({ button, label }) => (
-                        <MenuItem
-                            key={(button as React.ReactElement).key}
-                            sx={{ p: 0.5, gap: 1 }}
-                            onClick={(e) => {
-                                // Delegate clicks on the label to the button.
-                                if (
-                                    !(e.target as HTMLElement).closest("button")
-                                ) {
-                                    e.currentTarget
-                                        .querySelector<HTMLButtonElement>(
-                                            "button",
-                                        )
-                                        ?.click();
-                                }
-                                handleMenuClose();
-                            }}
-                        >
-                            {button}
-                            <Typography variant="body2" sx={{ flexShrink: 0 }}>
-                                {label}
-                            </Typography>
-                        </MenuItem>
-                    ))}
-                </Menu>
-                {/* Hidden buttons keep hotkey-mapped actions (r, S, T) in the
-                    container DOM so clickActionButton() can find them even when
-                    the overflow menu is closed. */}
-                <div style={{ display: "none" }}>
-                    <ReIndexButton fileId={filePreview.fileId} />
-                    <SummaryButton filePreview={filePreview} iconOnly />
-                    <TranslationButton filePreview={filePreview} iconOnly />
-                </div>
+                {overflowActions.map(({ button, label }) => (
+                    <MenuItem
+                        key={(button as React.ReactElement).key}
+                        sx={{ p: 0.5, gap: 1 }}
+                        onClick={(e) => {
+                            // Delegate clicks on the label to the button.
+                            if (!(e.target as HTMLElement).closest("button")) {
+                                e.currentTarget
+                                    .querySelector<HTMLButtonElement>("button")
+                                    ?.click();
+                            }
+                            handleMenuClose();
+                        }}
+                    >
+                        {button}
+                        <Typography variant="body2" sx={{ flexShrink: 0 }}>
+                            {label}
+                        </Typography>
+                    </MenuItem>
+                ))}
+            </Menu>
+            {/* Hidden buttons keep hotkey-mapped actions (r, S, T) in the
+                container DOM so clickActionButton() can find them even when
+                the overflow menu is closed. */}
+            <div style={{ display: "none" }}>
+                <ReIndexButton fileId={filePreview.fileId} />
+                <SummaryButton filePreview={filePreview} iconOnly />
+                <TranslationButton filePreview={filePreview} iconOnly />
             </div>
         </div>
     );

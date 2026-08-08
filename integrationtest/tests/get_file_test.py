@@ -1,23 +1,22 @@
-import logging
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 from uuid import UUID
 
 import pytest
-from api.routers.files import CONTENT_PREVIEW_LENGTH
+import requests
+from api.routers.files import FIELD_PREVIEW_LENGTH, PreviewField
 from pydantic import BaseModel
 from worker.services.tika_service import TIKA_MAX_TEXT_SIZE
 
-from utils.consts import ASSETS_DIR, REQUEST_TIMEOUT
+from utils.consts import ASSETS_DIR, FILES_ENDPOINT, REQUEST_TIMEOUT
 from utils.fetch_from_api import (
     DEFAULT_MAX_WAIT_TIME_PER_FILE,
     fetch_files_from_api,
     get_file_by_name,
+    get_file_preview_by_file_id_without_waiting,
     get_file_preview_by_name,
 )
 from utils.upload_asset import upload_asset
-
-logger = logging.getLogger(__name__)
 
 
 class FileInfo(BaseModel):
@@ -64,9 +63,25 @@ class TestGetShortFile:
         actual = get_file_preview_by_name(file_info.name)
 
         assert actual.file_id == file_info.id
-        assert actual.content == "Dummy Text\n"
+        assert actual.fields["content"].value == "Dummy Text\n"
         assert actual.content_is_truncated is False
         assert actual.name == "text.txt"
+
+    def test_get_file_preview_field_filtering_single(self, file_info: FileInfo):
+        actual = get_file_preview_by_file_id_without_waiting(
+            file_id=file_info.id, fields=["content"]
+        )
+
+        assert "content" in actual.fields
+        assert "summary" not in actual.fields
+        assert "image_description" not in actual.fields
+
+    def test_get_file_preview_field_filtering_unknown(self, file_info: FileInfo):
+        actual = get_file_preview_by_file_id_without_waiting(
+            file_id=file_info.id, fields=["unknown_field"]
+        )
+
+        assert actual.fields == {}
 
     def test_get_file_preview_highlight_text(self, file_info: FileInfo):
         search_string = "Dummy"
@@ -102,8 +117,8 @@ class TestGetLongFile:
         actual = get_file_preview_by_name(file_info.name)
 
         assert actual.file_id == file_info.id
-        assert actual.content_preview_is_truncated
-        assert len(actual.content) <= CONTENT_PREVIEW_LENGTH
+        assert actual.content_is_truncated
+        assert len(actual.fields["content"].value) <= FIELD_PREVIEW_LENGTH
 
     def test_get_file_truncate_text(self, file_info: FileInfo):
         actual = get_file_by_name(
@@ -112,3 +127,16 @@ class TestGetLongFile:
 
         assert actual.file_id == file_info.id
         assert len(actual.content) <= TIKA_MAX_TEXT_SIZE
+
+
+def test_get_preview_fields():
+    response = requests.get(f"{FILES_ENDPOINT}/preview-fields", timeout=REQUEST_TIMEOUT)
+
+    assert response.status_code == 200
+    fields = [PreviewField.model_validate(f) for f in response.json()]
+    assert len(fields) > 0
+    ids = [f.id for f in fields]
+    assert "content" in ids
+    assert "summary" in ids
+    assert len(ids) == len(set(ids)), "field IDs must be unique"
+    assert all(f.label for f in fields), "every field must have a non-empty label"

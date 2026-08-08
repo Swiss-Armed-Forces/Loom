@@ -36,6 +36,12 @@ export interface DemoDocument {
     attachmentsSkipped?: boolean;
     imageDescription?: string;
     translations: DemoTranslation[];
+    dcTitle?: string;
+    dcDescription?: string;
+    dcSubject?: string | string[];
+    messageFrom?: string | string[];
+    messageTo?: string | string[];
+    messageCc?: string | string[];
     parentId?: string;
     attachments?: { id: string; name: string }[];
     archiveIds: string[];

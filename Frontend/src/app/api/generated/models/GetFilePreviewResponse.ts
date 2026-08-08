@@ -20,6 +20,12 @@ import {
     AttachmentFromJSONTyped,
     AttachmentToJSON,
 } from "./Attachment";
+import type { PreviewFieldData } from "./PreviewFieldData";
+import {
+    PreviewFieldDataFromJSON,
+    PreviewFieldDataFromJSONTyped,
+    PreviewFieldDataToJSON,
+} from "./PreviewFieldData";
 
 /**
  *
@@ -63,18 +69,6 @@ export interface GetFilePreviewResponse {
      * @memberof GetFilePreviewResponse
      */
     seen: boolean;
-    /**
-     *
-     * @type {string}
-     * @memberof GetFilePreviewResponse
-     */
-    content: string;
-    /**
-     *
-     * @type {boolean}
-     * @memberof GetFilePreviewResponse
-     */
-    contentPreviewIsTruncated: boolean;
     /**
      *
      * @type {boolean}
@@ -131,18 +125,6 @@ export interface GetFilePreviewResponse {
     highlight?: { [key: string]: any };
     /**
      *
-     * @type {string}
-     * @memberof GetFilePreviewResponse
-     */
-    summary?: string;
-    /**
-     *
-     * @type {string}
-     * @memberof GetFilePreviewResponse
-     */
-    imageDescription?: string;
-    /**
-     *
      * @type {boolean}
      * @memberof GetFilePreviewResponse
      */
@@ -164,25 +146,13 @@ export interface GetFilePreviewResponse {
      * @type {string}
      * @memberof GetFilePreviewResponse
      */
-    translationPreview?: string;
-    /**
-     *
-     * @type {string}
-     * @memberof GetFilePreviewResponse
-     */
-    translationPreviewLanguage?: string;
-    /**
-     *
-     * @type {boolean}
-     * @memberof GetFilePreviewResponse
-     */
-    translationPreviewIsTruncated?: boolean;
-    /**
-     *
-     * @type {string}
-     * @memberof GetFilePreviewResponse
-     */
     state: string;
+    /**
+     *
+     * @type {{ [key: string]: PreviewFieldData; }}
+     * @memberof GetFilePreviewResponse
+     */
+    fields?: { [key: string]: PreviewFieldData };
 }
 
 /**
@@ -193,8 +163,6 @@ export function instanceOfGetFilePreviewResponse(value: object): boolean {
     if (!("flagged" in value)) return false;
     if (!("hidden" in value)) return false;
     if (!("seen" in value)) return false;
-    if (!("content" in value)) return false;
-    if (!("contentPreviewIsTruncated" in value)) return false;
     if (!("contentIsTruncated" in value)) return false;
     if (!("name" in value)) return false;
     if (!("path" in value)) return false;
@@ -223,8 +191,6 @@ export function GetFilePreviewResponseFromJSONTyped(
         flagged: json["flagged"],
         hidden: json["hidden"],
         seen: json["seen"],
-        content: json["content"],
-        contentPreviewIsTruncated: json["content_preview_is_truncated"],
         contentIsTruncated: json["content_is_truncated"],
         name: json["name"],
         path: json["path"],
@@ -246,11 +212,6 @@ export function GetFilePreviewResponseFromJSONTyped(
                 : json["attachments_total_count"],
         fileExtension: json["file_extension"],
         highlight: json["highlight"] == null ? undefined : json["highlight"],
-        summary: json["summary"] == null ? undefined : json["summary"],
-        imageDescription:
-            json["image_description"] == null
-                ? undefined
-                : json["image_description"],
         isSpam: json["is_spam"] == null ? undefined : json["is_spam"],
         attachmentsSkipped:
             json["attachments_skipped"] == null
@@ -260,19 +221,8 @@ export function GetFilePreviewResponseFromJSONTyped(
             json["detected_language"] == null
                 ? undefined
                 : json["detected_language"],
-        translationPreview:
-            json["translation_preview"] == null
-                ? undefined
-                : json["translation_preview"],
-        translationPreviewLanguage:
-            json["translation_preview_language"] == null
-                ? undefined
-                : json["translation_preview_language"],
-        translationPreviewIsTruncated:
-            json["translation_preview_is_truncated"] == null
-                ? undefined
-                : json["translation_preview_is_truncated"],
         state: json["state"],
+        fields: json["fields"] == null ? undefined : json["fields"],
     };
 }
 
@@ -289,8 +239,6 @@ export function GetFilePreviewResponseToJSON(
         flagged: value["flagged"],
         hidden: value["hidden"],
         seen: value["seen"],
-        content: value["content"],
-        content_preview_is_truncated: value["contentPreviewIsTruncated"],
         content_is_truncated: value["contentIsTruncated"],
         name: value["name"],
         path: value["path"],
@@ -303,15 +251,10 @@ export function GetFilePreviewResponseToJSON(
         attachments_total_count: value["attachmentsTotalCount"],
         file_extension: value["fileExtension"],
         highlight: value["highlight"],
-        summary: value["summary"],
-        image_description: value["imageDescription"],
         is_spam: value["isSpam"],
         attachments_skipped: value["attachmentsSkipped"],
         detected_language: value["detectedLanguage"],
-        translation_preview: value["translationPreview"],
-        translation_preview_language: value["translationPreviewLanguage"],
-        translation_preview_is_truncated:
-            value["translationPreviewIsTruncated"],
         state: value["state"],
+        fields: value["fields"],
     };
 }
