@@ -501,7 +501,7 @@
     "folderView": {
         "moreElementsHidden": "[more elements hidden]",
         "moreElementsHiddenTooltip": "Refine your query to view hidden elements",
-        "addPathToQueryTooltip": "Add this path to your query",
+        "addFolderToQueryTooltip": "Filter to direct children",
         "unseenCountTooltip": "Unseen files in this folder",
         "flaggedCountTooltip": "Flagged files in this folder",
         "fileCountTooltip": "Total files in this folder",
@@ -653,6 +653,7 @@
         "retried_task_namesTitle": "Retried Task Names",
         "successful_task_namesTitle": "Successful Task Names",
         "extensionTitle": "File Extension",
+        "parent_pathTitle": "Folder",
         "sourceTitle": "Source",
         "tagsTitle": "Tags",
         "magic_file_typeTitle": "Filetype (Magic)",

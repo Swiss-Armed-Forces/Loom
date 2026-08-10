@@ -43,7 +43,7 @@ export const ClickableFilePath = ({
     ) => {
         const newQuery = updateFieldOfQuery(
             searchQuery?.query ?? "",
-            SearchQueryField.Filename,
+            SearchQueryField.ParentPath,
             newFilepath,
             false,
             negate,

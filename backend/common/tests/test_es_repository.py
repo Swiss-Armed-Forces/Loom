@@ -407,6 +407,10 @@ ES_REPOSITORY_TEST_INSTANCES: dict[type[BaseEsRepository], list[_TestInstances]]
                     f"//{TestValueDefaults.test_str}/"
                     f"{str(TestValueDefaults.test_file_pure_path).lstrip('/')}"
                 ),
+                parent_path=(
+                    f"//{TestValueDefaults.test_str}/"
+                    f"{str(TestValueDefaults.test_file_pure_path.parent).lstrip('/')}"
+                ),
                 short_name=TestValueDefaults.test_file_pure_path.name,
                 extension=TestValueDefaults.test_file_pure_path.suffix,
                 source=TestValueDefaults.test_str,
