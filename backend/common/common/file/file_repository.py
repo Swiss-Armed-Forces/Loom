@@ -391,6 +391,11 @@ class File(RepositoryTaskObject):
 
     @computed_field  # type: ignore[misc]
     @property
+    def parent_path(self) -> Annotated[str, TermsStat()]:
+        return str(self.full_path.parent)
+
+    @computed_field  # type: ignore[misc]
+    @property
     def short_name(self) -> Annotated[str, PreviewableField(label="File Name")]:
         return self.full_name.name
 
@@ -474,6 +479,7 @@ class _EsFile(_EsTaskDocument):
             "keyword": Keyword(),
         },
     )
+    parent_path = Keyword()
     short_name = Text(fields={"keyword": Keyword()})
     extension = Keyword()
     source = Keyword()

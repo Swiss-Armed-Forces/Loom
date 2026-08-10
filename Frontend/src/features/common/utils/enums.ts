@@ -56,6 +56,7 @@ export type FileRendererType =
 export const SearchQueryField = {
     Tags: "tags",
     Filename: "filename",
+    ParentPath: "parent_path",
     Extension: "extension",
     DetectedLanguage: "detected_language",
     ContentTruncated: "content_truncated",

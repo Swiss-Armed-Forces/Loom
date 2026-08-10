@@ -19,6 +19,7 @@ export const TERMS_STAT_ORDER = [
     "tika_meta.message_to_name.keyword",
     "tika_meta.message_cc.keyword",
     "tika_meta.message_bcc.keyword",
+    "parent_path",
     "source",
     "tags",
     "flagged",

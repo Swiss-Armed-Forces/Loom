@@ -148,7 +148,7 @@ export const NodeAddToQueryButton = ({
     const dispatch = useDispatch<AppDispatch>();
     const searchQuery = useAppSelector(selectQuery);
     return (
-        <Tooltip title={t("folderView.addPathToQueryTooltip")}>
+        <Tooltip title={t("folderView.addFolderToQueryTooltip")}>
             <IconButton
                 size="small"
                 onClick={(e) => {
@@ -157,7 +157,7 @@ export const NodeAddToQueryButton = ({
                         updateQuery({
                             query: updateFieldOfQuery(
                                 searchQuery?.query ?? "",
-                                SearchQueryField.Filename,
+                                SearchQueryField.ParentPath,
                                 isRoot ? "*" : path,
                                 isRoot,
                                 e.shiftKey,
