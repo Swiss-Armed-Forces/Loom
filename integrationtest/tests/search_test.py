@@ -180,6 +180,28 @@ class TestCommonQueries:
             search_string=search_string, expected_no_of_files=file_count
         )
 
+    def test_search_for_exclude_from_default_fields(self):
+        # Setup the test params
+        search_string = "worker.index_file.index_file_task.index_file_task"
+        file_count = 0
+
+        # Do the search test
+        fetch_files_from_api(
+            search_string=search_string, expected_no_of_files=file_count
+        )
+
+    def test_search_for_exclude_from_default_fields_with_correct_syntax(self):
+        # Setup the test params
+        search_string = (
+            "successful_task_names:worker.index_file.index_file_task.index_file_task"
+        )
+        file_count = len(self.asset_list)
+
+        # Do the search test
+        fetch_files_from_api(
+            search_string=search_string, expected_no_of_files=file_count
+        )
+
 
 def test_search_for_file_name_with_quotation_mark():
     search_string = 'short_name:\\"\\"\\"text\\"\\".txt'
