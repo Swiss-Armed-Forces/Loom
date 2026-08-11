@@ -30,6 +30,7 @@ export const SEARCH_TIPS: SearchTip[] = [
     { query: "hidden:true", translationKey: "hidden" },
     { query: "hidden:*", translationKey: "allHidden" },
     { query: 'file_type:"image/png"', translationKey: "fileType" },
+    { query: "media_type:image", translationKey: "mediaType" },
     {
         query: "uploaded:[* TO 2020-06-15]",
         translationKey: "uploadTime",

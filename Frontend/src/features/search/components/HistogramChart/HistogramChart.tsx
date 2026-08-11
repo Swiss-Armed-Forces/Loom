@@ -20,6 +20,7 @@ interface HistogramChartProps {
         group: string | string[],
         negate: boolean,
         noQuote?: boolean,
+        accumulate?: boolean,
     ) => void;
     height?: number;
     /**
@@ -402,7 +403,7 @@ export const HistogramChart = ({
             // shift-click → field:* (field exists), i.e. the inverse.
             onGroupFilter("*", !event.shiftKey, true);
         } else {
-            onGroupFilter(group, event.shiftKey);
+            onGroupFilter(group, event.shiftKey, undefined, event.ctrlKey);
         }
     };
 

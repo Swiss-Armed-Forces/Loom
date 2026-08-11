@@ -1,7 +1,7 @@
 from datetime import datetime
 from uuid import uuid4
 
-from common.file.file_repository import FilePurePath, ImapPurePath
+from common.file.file_repository import FilePurePath, ImapPurePath, MimeTypeGroup
 from common.services.query_builder import KeepAlive, QueryParameters
 
 
@@ -36,3 +36,4 @@ class TestValueDefaults:  # pylint: disable=too-few-public-methods
         keep_alive=test_keep_alive,
     )
     test_vector = [0.1, 0.3, 3.1415, 123.0]
+    test_mime_type_group: MimeTypeGroup = "application"

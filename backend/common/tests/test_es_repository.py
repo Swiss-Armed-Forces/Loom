@@ -249,6 +249,7 @@ ES_REPOSITORY_TEST_INSTANCES: dict[type[BaseEsRepository], list[_TestInstances]]
                 ),
                 tags=TestValueDefaults.test_str_list_no_duplicates,
                 magic_file_type=TestValueDefaults.test_str,
+                magic_mime_type_group=TestValueDefaults.test_mime_type_group,
                 tika_language=TestValueDefaults.test_str,
                 detected_language=TestValueDefaults.test_str,
                 translations=[
@@ -260,6 +261,7 @@ ES_REPOSITORY_TEST_INSTANCES: dict[type[BaseEsRepository], list[_TestInstances]]
                 ],
                 is_spam=TestValueDefaults.test_bool,
                 tika_file_type=TestValueDefaults.test_str,
+                tika_mime_type_group=TestValueDefaults.test_mime_type_group,
                 archives=TestValueDefaults.test_str_list_no_duplicates,
                 tika_meta=TikaMeta(
                     dc_title=TestValueDefaults.test_str,
@@ -440,6 +442,7 @@ ES_REPOSITORY_TEST_INSTANCES: dict[type[BaseEsRepository], list[_TestInstances]]
                 ),
                 tags=TestValueDefaults.test_str_list_no_duplicates,
                 magic_file_type=TestValueDefaults.test_str,
+                magic_mime_type_group=TestValueDefaults.test_mime_type_group,
                 tika_language=TestValueDefaults.test_str,
                 detected_language=TestValueDefaults.test_str,
                 translations=[
@@ -451,6 +454,7 @@ ES_REPOSITORY_TEST_INSTANCES: dict[type[BaseEsRepository], list[_TestInstances]]
                 ],
                 is_spam=TestValueDefaults.test_bool,
                 tika_file_type=TestValueDefaults.test_str,
+                tika_mime_type_group=TestValueDefaults.test_mime_type_group,
                 archives=TestValueDefaults.test_str_list_no_duplicates,
                 tika_meta=_EsTikaMeta(
                     dc_title=TestValueDefaults.test_str,

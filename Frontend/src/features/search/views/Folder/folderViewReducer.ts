@@ -25,6 +25,7 @@ const applyRootStats = (root: FolderTree, stats: TreeNodeModel): void => {
     root.fileCount = stats.fileCount;
     root.unseenCount = stats.unseenCount ?? 0;
     root.flaggedCount = stats.flaggedCount ?? 0;
+    root.directChildrenCount = stats.directChildrenCount ?? 0;
     root.isUnseen = false;
     root.isFlagged = false;
 };
@@ -62,6 +63,7 @@ const handleChildrenAddedAction = (
             isUnseen: child.isUnseen ?? false,
             flaggedCount: child.flaggedCount ?? 0,
             isFlagged: child.isFlagged ?? false,
+            directChildrenCount: child.directChildrenCount ?? 0,
             fileId: child.fileId ?? undefined,
         };
         if (child.fileId) newFileIds.add(child.fileId);
@@ -170,6 +172,7 @@ const handleSpineNodesMergedAction = (
             isUnseen: node.isUnseen ?? false,
             flaggedCount: node.flaggedCount ?? 0,
             isFlagged: node.isFlagged ?? false,
+            directChildrenCount: node.directChildrenCount ?? 0,
             fileId: node.fileId ?? undefined,
         };
         if (node.fileId) newFileIds.add(node.fileId);

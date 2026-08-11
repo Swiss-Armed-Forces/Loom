@@ -9,9 +9,12 @@ import type { DemoDocument } from "../repository";
 
 export const AVAILABLE_TERMS_STATS: AvailableStat[] = [
     { id: "extension", label: "Extension" },
+    { id: "tika_mime_type_group", label: "Media type (Tika)" },
+    { id: "magic_mime_type_group", label: "Media type (Magic)" },
     { id: "tags", label: "Tags" },
     { id: "state", label: "State" },
     { id: "detected_language", label: "Detected language" },
+    { id: "parent_path", label: "Parent Path" },
 ];
 
 export const AVAILABLE_HISTOGRAM_STATS: AvailableStat[] = [

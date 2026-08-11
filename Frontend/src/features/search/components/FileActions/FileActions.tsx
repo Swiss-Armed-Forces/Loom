@@ -166,6 +166,35 @@ export const FileActions = ({
                         </MenuItem>
                     ))}
                 </Menu>
+                {/* Hidden buttons keep hotkey-mapped actions in the DOM so
+                clickActionButton() can find them even when the menu is closed. */}
+                <div style={{ display: "none" }}>
+                    {!hideDetail && (
+                        <ViewDetailButton
+                            fileId={filePreview.fileId}
+                            searchQuery={searchQuery}
+                        />
+                    )}
+                    <UpdateFlaggedButton
+                        iconOnly
+                        filePreview={filePreview}
+                        fileFlagged={filePreview.flagged}
+                    />
+                    <UpdateSeenButton
+                        iconOnly
+                        filePreview={filePreview}
+                        fileSeen={filePreview.seen}
+                    />
+                    <AddTagsButton iconOnly filePreview={filePreview} />
+                    <ShareButton fileId={filePreview.fileId} />
+                    <DownloadButton
+                        fileId={filePreview.fileId}
+                        renderedFile={renderedFile}
+                    />
+                    <TranslationButton filePreview={filePreview} iconOnly />
+                    <SummaryButton filePreview={filePreview} iconOnly />
+                    <ReIndexButton fileId={filePreview.fileId} />
+                </div>
             </div>
         );
     }

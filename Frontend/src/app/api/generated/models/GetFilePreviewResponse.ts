@@ -149,11 +149,41 @@ export interface GetFilePreviewResponse {
     state: string;
     /**
      *
+     * @type {string}
+     * @memberof GetFilePreviewResponse
+     */
+    mimeType?: string;
+    /**
+     *
+     * @type {string}
+     * @memberof GetFilePreviewResponse
+     */
+    mimeTypeGroup?: GetFilePreviewResponseMimeTypeGroupEnum;
+    /**
+     *
      * @type {{ [key: string]: PreviewFieldData; }}
      * @memberof GetFilePreviewResponse
      */
     fields?: { [key: string]: PreviewFieldData };
 }
+
+/**
+ * @export
+ */
+export const GetFilePreviewResponseMimeTypeGroupEnum = {
+    Application: "application",
+    Audio: "audio",
+    Font: "font",
+    Haptics: "haptics",
+    Image: "image",
+    Message: "message",
+    Model: "model",
+    Multipart: "multipart",
+    Text: "text",
+    Video: "video",
+} as const;
+export type GetFilePreviewResponseMimeTypeGroupEnum =
+    (typeof GetFilePreviewResponseMimeTypeGroupEnum)[keyof typeof GetFilePreviewResponseMimeTypeGroupEnum];
 
 /**
  * Check if a given object implements the GetFilePreviewResponse interface.
@@ -222,6 +252,11 @@ export function GetFilePreviewResponseFromJSONTyped(
                 ? undefined
                 : json["detected_language"],
         state: json["state"],
+        mimeType: json["mime_type"] == null ? undefined : json["mime_type"],
+        mimeTypeGroup:
+            json["mime_type_group"] == null
+                ? undefined
+                : json["mime_type_group"],
         fields: json["fields"] == null ? undefined : json["fields"],
     };
 }
@@ -255,6 +290,8 @@ export function GetFilePreviewResponseToJSON(
         attachments_skipped: value["attachmentsSkipped"],
         detected_language: value["detectedLanguage"],
         state: value["state"],
+        mime_type: value["mimeType"],
+        mime_type_group: value["mimeTypeGroup"],
         fields: value["fields"],
     };
 }

@@ -30,7 +30,7 @@ interface FieldItemProps {
      *  Pass this when `field` is a translated label that may change. */
     fieldKey?: string;
     value: string[];
-    onQuery?: (negate: boolean) => void;
+    onQuery?: (negate: boolean, accumulate: boolean) => void;
     onSort?: () => void;
     onRemove?: () => void;
     /** When true the accordion is always expanded and does not write to
@@ -137,7 +137,7 @@ export const FieldItem = ({
                             size={isMobile ? "medium" : "small"}
                             onClick={(e) => {
                                 e.stopPropagation();
-                                onQuery(e.shiftKey);
+                                onQuery(e.shiftKey, e.ctrlKey);
                             }}
                             sx={{ ml: "auto", flexShrink: 0 }}
                         >

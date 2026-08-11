@@ -1,5 +1,7 @@
 export const TERMS_STAT_ORDER = [
     "extension",
+    "tika_mime_type_group",
+    "magic_mime_type_group",
     "tika_file_type",
     "magic_file_type",
     "tika_meta.content_type.keyword",

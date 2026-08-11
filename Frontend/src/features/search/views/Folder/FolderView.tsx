@@ -55,7 +55,6 @@ import { SearchQuery } from "@features/common/utils/model";
 
 import {
     FolderViewNode,
-    NodeAddToQueryButton,
     NodeCountBadges,
     NodeViewDetailsButton,
 } from "./FolderTreeItem";
@@ -745,6 +744,10 @@ export const FolderView = ({
                                                 flaggedCount={node.flaggedCount}
                                                 unseenCount={node.unseenCount}
                                                 fileCount={node.fileCount}
+                                                onFlaggedClick={() => {}}
+                                                onUnseenClick={() => {}}
+                                                onDirectChildrenClick={() => {}}
+                                                onFileCountClick={() => {}}
                                             />
                                         </Stack>
                                     }
@@ -758,7 +761,6 @@ export const FolderView = ({
                                     }}
                                 />
                                 <NodeViewDetailsButton fileId={fileId!} />
-                                <NodeAddToQueryButton path={node.fullPath} />
                             </ListItemButton>
                         );
                     })}

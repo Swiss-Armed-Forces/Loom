@@ -1,6 +1,32 @@
 import { SearchQueryField } from "@features/common/utils/enums";
 
 /**
+ * Extract the unescaped values from an existing `field:(...)` or
+ * `field:"value"` positive expression in the query, or [] if none is found.
+ * Does not match `NOT field:...` expressions.
+ */
+const extractPositiveValues = (
+    query: string,
+    fieldNameSanitized: string,
+): string[] => {
+    const re = new RegExp(
+        `(?<!NOT )${fieldNameSanitized}:(?:"((?:[^"\\\\]|\\\\.)*)"|\\(([^)]*)\\))`,
+    );
+    const m = query.match(re);
+    if (!m) return [];
+    if (m[1] !== undefined) {
+        return [m[1].replace(/\\(["\\])/g, "$1")];
+    }
+    const values: string[] = [];
+    const valueRe = /"((?:[^"\\]|\\.)*)"/g;
+    let vm: RegExpExecArray | null;
+    while ((vm = valueRe.exec(m[2])) !== null) {
+        values.push(vm[1].replace(/\\(["\\])/g, "$1"));
+    }
+    return values;
+};
+
+/**
  * Extract the unescaped values from an existing `NOT field:(...)` or
  * `NOT field:"value"` expression in the query, or [] if none is found.
  */
@@ -31,10 +57,25 @@ export const updateFieldOfQuery = (
     fieldValue: string | string[],
     noQuote = false,
     negate = false,
+    accumulate = false,
 ): string => {
     const newFieldNameSanitized = fieldName.replace(/([-\s\\:])/g, "\\$1");
     // Always convert fieldValue to string array
     let fieldValueArray = Array.isArray(fieldValue) ? fieldValue : [fieldValue];
+
+    // When accumulating, extend an existing positive filter for this field
+    // rather than replacing it, so repeated ctrl+clicks add more values.
+    if (accumulate && !negate && !noQuote) {
+        const existing = extractPositiveValues(
+            previousQuery,
+            newFieldNameSanitized,
+        );
+        if (existing.length > 0) {
+            fieldValueArray = Array.from(
+                new Set([...existing, ...fieldValueArray]),
+            );
+        }
+    }
 
     // When negating, extend an existing NOT filter for this field rather than
     // replacing it, so repeated "others" clicks accumulate exclusions.

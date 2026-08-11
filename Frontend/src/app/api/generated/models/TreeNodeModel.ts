@@ -27,6 +27,9 @@ import { mapValues } from "../runtime";
  *     flagged_count: Number of flagged descendant files, excluding the node
  *         itself when is_flagged is True.
  *     is_flagged: Whether the file at this node is flagged (leaf nodes only).
+ *     direct_children_count: Number of direct-child nodes (files and
+ *         immediate sub-directories) under this node, not counting deeper
+ *         descendants.
  * @export
  * @interface TreeNodeModel
  */
@@ -73,6 +76,12 @@ export interface TreeNodeModel {
      * @memberof TreeNodeModel
      */
     isFlagged?: boolean;
+    /**
+     *
+     * @type {number}
+     * @memberof TreeNodeModel
+     */
+    directChildrenCount?: number;
 }
 
 /**
@@ -105,6 +114,10 @@ export function TreeNodeModelFromJSONTyped(
         flaggedCount:
             json["flagged_count"] == null ? undefined : json["flagged_count"],
         isFlagged: json["is_flagged"] == null ? undefined : json["is_flagged"],
+        directChildrenCount:
+            json["direct_children_count"] == null
+                ? undefined
+                : json["direct_children_count"],
     };
 }
 
@@ -120,5 +133,6 @@ export function TreeNodeModelToJSON(value?: TreeNodeModel | null): any {
         is_unseen: value["isUnseen"],
         flagged_count: value["flaggedCount"],
         is_flagged: value["isFlagged"],
+        direct_children_count: value["directChildrenCount"],
     };
 }

@@ -50,7 +50,11 @@ export const TagsList = ({
         [tags],
     );
 
-    const searchForTag = (tagName: string, negate = false) => {
+    const searchForTag = (
+        tagName: string,
+        negate = false,
+        accumulate = false,
+    ) => {
         dispatch(
             updateQuery({
                 query: updateFieldOfQuery(
@@ -59,6 +63,7 @@ export const TagsList = ({
                     tagName,
                     false,
                     negate,
+                    accumulate,
                 ),
             }),
         );
@@ -120,7 +125,9 @@ export const TagsList = ({
                     tag={tag}
                     iconOnly={iconOnly}
                     label={getTagLabel(tag)}
-                    onSearch={searchForTag}
+                    onSearch={(t, negate, accumulate) =>
+                        searchForTag(t, negate, accumulate)
+                    }
                     onDelete={
                         iconOnly ? undefined : () => handleDeleteClick(tag)
                     }
@@ -163,9 +170,9 @@ export const TagsList = ({
                                     tag={tag}
                                     iconOnly={false}
                                     label={getTagLabel(tag)}
-                                    onSearch={(t, negate) => {
+                                    onSearch={(t, negate, accumulate) => {
                                         setOverflowAnchor(null);
-                                        searchForTag(t, negate);
+                                        searchForTag(t, negate, accumulate);
                                     }}
                                     onDelete={
                                         iconOnly
@@ -186,7 +193,7 @@ interface TagChipProps {
     tag: string;
     iconOnly: boolean;
     label: string;
-    onSearch: (tag: string, negate: boolean) => void;
+    onSearch: (tag: string, negate: boolean, accumulate: boolean) => void;
     onDelete?: () => void;
 }
 
@@ -213,7 +220,7 @@ const TagChip: FC<TagChipProps> = ({
                     : label
             }
             onClick={(e) => {
-                onSearch(tag, e.shiftKey);
+                onSearch(tag, e.shiftKey, e.ctrlKey);
             }}
             onDelete={onDelete}
         />

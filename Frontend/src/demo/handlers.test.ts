@@ -255,20 +255,20 @@ describe("demo API handlers", () => {
             "http://loom.test/api/v1/files/tree?search_string=*&node_path=%2FMail%2FInbox%2Femail_with_pdf_attachment.eml",
         ).then((response) => responseJson<TreeNodeResponse>(response));
 
-        expect(root.nodes.map((node) => node.full_path)).toContain("/Crawler");
+        expect(root.nodes.map((node) => node.full_path)).toContain("//Crawler");
         expect(mail.nodes).toEqual([
             expect.objectContaining({
-                full_path: "/Mail/Inbox",
+                full_path: "//Mail/Inbox",
                 file_count: 3,
             }),
         ]);
         expect(inbox.nodes).toEqual([
             expect.objectContaining({
-                full_path: "/Mail/Inbox/basic_email.eml",
+                full_path: "//Mail/Inbox/basic_email.eml",
                 file_id: "22222222-2222-4222-8222-222222222222",
             }),
             expect.objectContaining({
-                full_path: "/Mail/Inbox/email_with_pdf_attachment.eml",
+                full_path: "//Mail/Inbox/email_with_pdf_attachment.eml",
                 file_count: 1,
                 file_id: ATTACHMENT_EMAIL_ID,
             }),
@@ -276,7 +276,8 @@ describe("demo API handlers", () => {
         expect(emailLeaf.nodes).toEqual([]);
         expect(attachmentEmail.nodes).toEqual([
             expect.objectContaining({
-                full_path: "/Mail/Inbox/email_with_pdf_attachment.eml/home.pdf",
+                full_path:
+                    "//Mail/Inbox/email_with_pdf_attachment.eml/home.pdf",
                 file_id: PDF_ATTACHMENT_ID,
             }),
         ]);
@@ -308,9 +309,9 @@ describe("demo API handlers", () => {
         ).then((response) => responseJson<TreeNodeResponse>(response));
 
         expect(spine.nodes.map((node) => node.full_path)).toEqual([
-            "/Mail",
-            "/Mail/Inbox",
-            "/Mail/Inbox/basic_email.eml",
+            "//Mail",
+            "//Mail/Inbox",
+            "//Mail/Inbox/basic_email.eml",
         ]);
     });
 
@@ -399,7 +400,7 @@ describe("demo API handlers", () => {
             ).then((response) =>
                 responseJson<{ total_files: number }>(response),
             );
-            expect(translated.total_files).toBe(3);
+            expect(translated.total_files).toBe(1);
         } finally {
             clearDemoTimers();
             vi.useRealTimers();

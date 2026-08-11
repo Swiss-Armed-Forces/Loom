@@ -23,6 +23,9 @@ class TreeNodeModel(BaseModel):
         flagged_count: Number of flagged descendant files, excluding the node
             itself when is_flagged is True.
         is_flagged: Whether the file at this node is flagged (leaf nodes only).
+        direct_children_count: Number of direct-child nodes (files and
+            immediate sub-directories) under this node, not counting deeper
+            descendants.
     """
 
     full_path: FilePurePath
@@ -32,3 +35,4 @@ class TreeNodeModel(BaseModel):
     is_unseen: bool = False
     flagged_count: int = 0
     is_flagged: bool = False
+    direct_children_count: int = 0

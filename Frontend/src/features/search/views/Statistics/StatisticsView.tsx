@@ -211,6 +211,7 @@ export const StatisticsView = () => {
         searchTerm: string | string[],
         negate?: boolean,
         noQuote?: boolean,
+        accumulate?: boolean,
     ) => {
         const newQuery = updateFieldOfQuery(
             searchQuery?.query ?? "",
@@ -218,6 +219,7 @@ export const StatisticsView = () => {
             searchTerm,
             noQuote ?? false,
             negate,
+            accumulate,
         );
         dispatch(updateQuery({ query: newQuery }));
     };
@@ -354,12 +356,13 @@ export const StatisticsView = () => {
                             end,
                         )
                     }
-                    onGroupFilter={(group, negate, noQuote) =>
+                    onGroupFilter={(group, negate, noQuote, accumulate) =>
                         handleUpdateQuery(
                             stats.termsData?.key ?? "",
                             group,
                             negate,
                             noQuote,
+                            accumulate,
                         )
                     }
                 />

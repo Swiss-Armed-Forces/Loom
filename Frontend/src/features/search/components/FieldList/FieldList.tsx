@@ -68,7 +68,7 @@ export const FieldList = ({
     }, [highlights]);
 
     const handleQuery = useCallback(
-        (field: string, negate: boolean) => {
+        (field: string, negate: boolean, accumulate: boolean) => {
             dispatch(
                 updateQuery({
                     query: updateFieldOfQuery(
@@ -77,6 +77,7 @@ export const FieldList = ({
                         cleanValues[field],
                         false,
                         negate,
+                        accumulate,
                     ),
                 }),
             );
@@ -102,7 +103,8 @@ export const FieldList = ({
                     value={value}
                     onQuery={
                         showActions
-                            ? (negate) => handleQuery(field, negate)
+                            ? (negate, accumulate) =>
+                                  handleQuery(field, negate, accumulate)
                             : undefined
                     }
                     onSort={showActions ? () => handleSort(field) : undefined}

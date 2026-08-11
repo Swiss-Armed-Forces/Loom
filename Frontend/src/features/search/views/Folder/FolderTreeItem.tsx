@@ -5,13 +5,13 @@ import {
     FiberManualRecord,
     Flag,
     Folder,
+    FolderOpen,
     FolderSpecial,
-    ManageSearch,
     MoreHoriz,
     Preview,
 } from "@mui/icons-material";
 import {
-    Box,
+    Chip,
     IconButton,
     Skeleton,
     Stack,
@@ -39,78 +39,69 @@ import { hasUnloadedChildren } from "./util";
 interface NodeCountBadgesProps {
     flaggedCount?: number;
     unseenCount?: number;
+    directChildrenCount?: number;
     fileCount?: number;
+    onFlaggedClick: (e: React.MouseEvent) => void;
+    onUnseenClick: (e: React.MouseEvent) => void;
+    onDirectChildrenClick: (e: React.MouseEvent) => void;
+    onFileCountClick: (e: React.MouseEvent) => void;
 }
 
 export const NodeCountBadges = ({
     flaggedCount,
     unseenCount,
+    directChildrenCount,
     fileCount,
+    onFlaggedClick,
+    onUnseenClick,
+    onDirectChildrenClick,
+    onFileCountClick,
 }: NodeCountBadgesProps) => {
     const { t } = useTranslation();
     return (
         <>
             {(flaggedCount ?? 0) > 0 && (
                 <Tooltip title={t("folderView.flaggedCountTooltip")}>
-                    <Box
-                        sx={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: 0.25,
-                            flexShrink: 0,
-                            color: "error.main",
-                        }}
-                    >
-                        <Flag sx={{ fontSize: "0.75rem" }} />
-                        <Typography
-                            variant="caption"
-                            sx={{ lineHeight: 1, color: "inherit" }}
-                        >
-                            {flaggedCount}
-                        </Typography>
-                    </Box>
+                    <Chip
+                        size="small"
+                        color="error"
+                        variant="outlined"
+                        icon={<Flag />}
+                        label={flaggedCount}
+                        onClick={onFlaggedClick}
+                    />
                 </Tooltip>
             )}
             {(unseenCount ?? 0) > 0 && (
                 <Tooltip title={t("folderView.unseenCountTooltip")}>
-                    <Box
-                        sx={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: 0.25,
-                            flexShrink: 0,
-                            color: "primary.main",
-                        }}
-                    >
-                        <FiberManualRecord sx={{ fontSize: "0.45rem" }} />
-                        <Typography
-                            variant="caption"
-                            sx={{ lineHeight: 1, color: "inherit" }}
-                        >
-                            {unseenCount}
-                        </Typography>
-                    </Box>
+                    <Chip
+                        size="small"
+                        color="primary"
+                        variant="outlined"
+                        icon={<FiberManualRecord />}
+                        label={unseenCount}
+                        onClick={onUnseenClick}
+                    />
+                </Tooltip>
+            )}
+            {(directChildrenCount ?? 0) > 0 && (
+                <Tooltip title={t("folderView.directChildrenCountTooltip")}>
+                    <Chip
+                        size="small"
+                        icon={<FolderOpen />}
+                        label={directChildrenCount}
+                        onClick={onDirectChildrenClick}
+                    />
                 </Tooltip>
             )}
             {(fileCount ?? 0) > 0 && (
                 <Tooltip title={t("folderView.fileCountTooltip")}>
-                    <Box
-                        sx={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: 0.25,
-                            flexShrink: 0,
-                            color: "text.secondary",
-                        }}
-                    >
-                        <Article sx={{ fontSize: "0.75rem" }} />
-                        <Typography
-                            variant="caption"
-                            sx={{ lineHeight: 1, color: "inherit" }}
-                        >
-                            {fileCount}
-                        </Typography>
-                    </Box>
+                    <Chip
+                        size="small"
+                        icon={<Article />}
+                        label={fileCount}
+                        onClick={onFileCountClick}
+                    />
                 </Tooltip>
             )}
         </>
@@ -132,41 +123,6 @@ export const NodeViewDetailsButton = ({ fileId }: { fileId: string }) => {
                 }}
             >
                 <Preview fontSize="small" />
-            </IconButton>
-        </Tooltip>
-    );
-};
-
-export const NodeAddToQueryButton = ({
-    path,
-    isRoot = false,
-}: {
-    path: string;
-    isRoot?: boolean;
-}) => {
-    const { t } = useTranslation();
-    const dispatch = useDispatch<AppDispatch>();
-    const searchQuery = useAppSelector(selectQuery);
-    return (
-        <Tooltip title={t("folderView.addFolderToQueryTooltip")}>
-            <IconButton
-                size="small"
-                onClick={(e) => {
-                    e.stopPropagation();
-                    dispatch(
-                        updateQuery({
-                            query: updateFieldOfQuery(
-                                searchQuery?.query ?? "",
-                                SearchQueryField.ParentPath,
-                                isRoot ? "*" : path,
-                                isRoot,
-                                e.shiftKey,
-                            ),
-                        }),
-                    );
-                }}
-            >
-                <ManageSearch fontSize="small" />
             </IconButton>
         </Tooltip>
     );
@@ -195,6 +151,8 @@ export const FolderViewNode = React.memo(
         onLoadMore,
     }: FolderViewNodeProps) {
         const { t } = useTranslation();
+        const dispatch = useDispatch<AppDispatch>();
+        const searchQuery = useAppSelector(selectQuery);
 
         if (!tree?.id) {
             return null;
@@ -202,11 +160,99 @@ export const FolderViewNode = React.memo(
 
         const fileId = tree.fileId;
         const isActiveTab = fileId !== undefined && fileId === activeTabFileId;
+        const isRoot = tree.id === ROOT_NODE.id;
 
         const NodeIcon = getIconOfNode(tree);
 
         // Show "Load more" when there are more backend pages to fetch.
         const hasMore = !!tree.nextPageCursor;
+
+        const handleDirectChildrenClick = (e: React.MouseEvent) => {
+            e.stopPropagation();
+            dispatch(
+                updateQuery({
+                    query: updateFieldOfQuery(
+                        searchQuery?.query ?? "",
+                        SearchQueryField.ParentPath,
+                        isRoot ? "*" : tree.id,
+                        isRoot,
+                        e.shiftKey,
+                        e.ctrlKey,
+                    ),
+                }),
+            );
+        };
+
+        const handleFileCountClick = (e: React.MouseEvent) => {
+            e.stopPropagation();
+            if (isRoot) {
+                dispatch(
+                    updateQuery({
+                        query: updateFieldOfQuery(
+                            searchQuery?.query ?? "",
+                            SearchQueryField.ParentPath,
+                            "*",
+                            true,
+                            e.shiftKey,
+                            e.ctrlKey,
+                        ),
+                    }),
+                );
+            } else {
+                dispatch(
+                    updateQuery({
+                        query: updateFieldOfQuery(
+                            searchQuery?.query ?? "",
+                            SearchQueryField.FullPathTree,
+                            tree.id,
+                            false,
+                            e.shiftKey,
+                            e.ctrlKey,
+                        ),
+                    }),
+                );
+            }
+        };
+
+        const handleFlaggedClick = (e: React.MouseEvent) => {
+            e.stopPropagation();
+            const base = isRoot
+                ? (searchQuery?.query ?? "")
+                : updateFieldOfQuery(
+                      searchQuery?.query ?? "",
+                      SearchQueryField.FullPathTree,
+                      tree.id,
+                  );
+            dispatch(
+                updateQuery({
+                    query: updateFieldOfQuery(
+                        base,
+                        SearchQueryField.Flagged,
+                        "true",
+                    ),
+                }),
+            );
+        };
+
+        const handleUnseenClick = (e: React.MouseEvent) => {
+            e.stopPropagation();
+            const base = isRoot
+                ? (searchQuery?.query ?? "")
+                : updateFieldOfQuery(
+                      searchQuery?.query ?? "",
+                      SearchQueryField.FullPathTree,
+                      tree.id,
+                  );
+            dispatch(
+                updateQuery({
+                    query: updateFieldOfQuery(
+                        base,
+                        SearchQueryField.Seen,
+                        "false",
+                    ),
+                }),
+            );
+        };
 
         const label = (
             <Stack
@@ -214,7 +260,7 @@ export const FolderViewNode = React.memo(
                 direction="row"
                 spacing={0.5}
                 sx={{ alignItems: "center", width: "100%" }}
-                {...(tree.id === ROOT_NODE.id && {
+                {...(isRoot && {
                     "data-tour": "folder-tree-node",
                 })}
             >
@@ -236,23 +282,24 @@ export const FolderViewNode = React.memo(
                             ...(tree.isFlagged && { color: "error.main" }),
                         }}
                     >
-                        {tree.id === ROOT_NODE.id
+                        {isRoot
                             ? tree.label
                             : tree.id.split(PATH_SEPARATOR).at(-1)}
                     </Typography>
                     <NodeCountBadges
                         flaggedCount={tree.flaggedCount}
                         unseenCount={tree.unseenCount}
+                        directChildrenCount={tree.directChildrenCount}
                         fileCount={tree.fileCount}
+                        onFlaggedClick={handleFlaggedClick}
+                        onUnseenClick={handleUnseenClick}
+                        onDirectChildrenClick={handleDirectChildrenClick}
+                        onFileCountClick={handleFileCountClick}
                     />
                 </Stack>
                 {fileId !== undefined && (
                     <NodeViewDetailsButton fileId={fileId} />
                 )}
-                <NodeAddToQueryButton
-                    path={tree.id}
-                    isRoot={tree.id === ROOT_NODE.id}
-                />
             </Stack>
         );
 

@@ -1,25 +1,27 @@
-import { Description } from "@mui/icons-material";
 import { Avatar, Badge } from "@mui/material";
 
 import {
     getColorFromString,
     getFontColorFromBackGroundColor,
+    getMimeTypeGroupIcon,
 } from "@features/common/utils/helpers";
 
 import styles from "./FileAvatar.module.css";
 
 interface FileAvatarProps {
-    fileExtension: string;
-    performSearch: (negate: boolean) => void;
+    mimeType: string | null | undefined;
+    mimeTypeGroup: string | null | undefined;
+    performSearch: (negate: boolean, accumulate: boolean) => void;
     hasBadge: boolean;
 }
 
 export const FileAvatar = ({
-    fileExtension,
+    mimeType,
+    mimeTypeGroup,
     performSearch,
     hasBadge,
 }: FileAvatarProps) => {
-    const backgroundColor = getColorFromString(fileExtension);
+    const backgroundColor = getColorFromString(mimeType ?? "");
     const color = getFontColorFromBackGroundColor(backgroundColor);
     return (
         <Badge
@@ -30,10 +32,10 @@ export const FileAvatar = ({
         >
             <Avatar
                 className={styles.fileAvatar}
-                onClick={(e) => performSearch(e.shiftKey)}
-                sx={{ backgroundColor, color }}
+                onClick={(e) => performSearch(e.shiftKey, e.ctrlKey)}
+                sx={{ backgroundColor, color, width: 36, height: 36 }}
             >
-                {fileExtension || <Description />}
+                {getMimeTypeGroupIcon(mimeTypeGroup)}
             </Avatar>
         </Badge>
     );

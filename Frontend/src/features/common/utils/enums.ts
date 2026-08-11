@@ -58,10 +58,15 @@ export const SearchQueryField = {
     Filename: "filename",
     ParentPath: "parent_path",
     Extension: "extension",
+    FileType: "file_type",
+    MediaType: "media_type",
     DetectedLanguage: "detected_language",
     ContentTruncated: "content_truncated",
     AttachmentsSkipped: "attachments_skipped",
     IsSpam: "is_spam",
+    Flagged: "flagged",
+    Seen: "seen",
+    FullPathTree: "full_path.tree",
 };
 export type SearchQueryField =
     (typeof SearchQueryField)[keyof typeof SearchQueryField];
