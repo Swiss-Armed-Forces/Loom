@@ -323,4 +323,86 @@ describe("SearchQueryUtils", () => {
 
         expect(result).toBe('extension:"txt"');
     });
+
+    it("should accumulate into an empty query (behaves like a normal click)", () => {
+        const result = updateFieldOfQuery(
+            "",
+            SearchQueryField.Tags,
+            "new-tag",
+            false,
+            false,
+            true,
+        );
+
+        expect(result).toBe('tags:"new-tag"');
+    });
+
+    it("should accumulate a new value into an existing single positive filter", () => {
+        const result = updateFieldOfQuery(
+            'tags:"existing"',
+            SearchQueryField.Tags,
+            "new-tag",
+            false,
+            false,
+            true,
+        );
+
+        expect(result).toBe('tags:("existing" OR "new-tag")');
+    });
+
+    it("should accumulate a new value into an existing multi-value positive filter", () => {
+        const result = updateFieldOfQuery(
+            'tags:("a" OR "b")',
+            SearchQueryField.Tags,
+            "c",
+            false,
+            false,
+            true,
+        );
+
+        expect(result).toBe('tags:("a" OR "b" OR "c")');
+    });
+
+    it("should deduplicate when accumulating the same value again", () => {
+        const result = updateFieldOfQuery(
+            'tags:("a" OR "b")',
+            SearchQueryField.Tags,
+            "a",
+            false,
+            false,
+            true,
+        );
+
+        expect(result).toBe('tags:("a" OR "b")');
+    });
+
+    it("should ignore accumulate when noQuote is true", () => {
+        // accumulate=true is ignored when noQuote=true; quoted value is
+        // replaced by the new unquoted wildcard (no OR merge).
+        const result = updateFieldOfQuery(
+            'filename:"//crawler0/some/path"',
+            SearchQueryField.Filename,
+            "*",
+            true,
+            false,
+            true,
+        );
+
+        expect(result).toBe("filename:*");
+    });
+
+    it("should ignore accumulate when negate is true", () => {
+        // accumulate=true is ignored when negate=true; the existing positive
+        // filter is replaced by a negated one (no OR merge).
+        const result = updateFieldOfQuery(
+            'tags:"existing"',
+            SearchQueryField.Tags,
+            "new-tag",
+            false,
+            true,
+            true,
+        );
+
+        expect(result).toBe('NOT tags:"new-tag"');
+    });
 });

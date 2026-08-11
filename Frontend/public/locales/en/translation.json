@@ -134,7 +134,7 @@
             },
             "folderTreeNode": {
                 "title": "Folder node counts",
-                "description": "Each node shows up to three counts: a red flag for flagged documents, a yellow dot for unseen documents, and a document icon for the total. Counts roll up through parent folders. Bold names contain unseen files; red names contain flagged files."
+                "description": "Each node shows up to four counts: a red flag for flagged documents, a yellow dot for unseen documents, a folder icon for files directly in this folder, and a document icon for all files in this folder and its subfolders. Counts roll up through parent folders. Bold names contain unseen files; red names contain flagged files."
             },
             "folderFilter": {
                 "title": "Filter by name",
@@ -501,10 +501,10 @@
     "folderView": {
         "moreElementsHidden": "[more elements hidden]",
         "moreElementsHiddenTooltip": "Refine your query to view hidden elements",
-        "addFolderToQueryTooltip": "Filter to direct children",
-        "unseenCountTooltip": "Unseen files in this folder",
-        "flaggedCountTooltip": "Flagged files in this folder",
-        "fileCountTooltip": "Total files in this folder",
+        "unseenCountTooltip": "Unseen files in this folder and subfolders",
+        "flaggedCountTooltip": "Flagged files in this folder and subfolders",
+        "fileCountTooltip": "All files in this folder and subfolders",
+        "directChildrenCountTooltip": "Files directly in this folder",
         "filterResultsLimitNote": "Showing first {{limit}} results — refine your filter to narrow down",
         "loadMore": "Load more",
         "filterPlaceholder": "Filter by filename"
@@ -568,7 +568,9 @@
     },
     "resultCard": {
         "expandContent": "Expand content",
-        "collapseContent": "Collapse content"
+        "collapseContent": "Collapse content",
+        "filterByParentPath": "Filter by parent path",
+        "filterByExtension": "Filter by extension"
     },
     "emptySearch": {
         "title": {
@@ -600,6 +602,7 @@
             "hidden": "search hidden files",
             "allHidden": "search for both hidden and not hidden files",
             "fileType": "search by detected MIME type",
+            "mediaType": "filter by broad media category (image, video, audio, text, application, …)",
             "uploadTime": "search for all files uploaded on or before 2020-06-15",
             "creationTime": "search for all files created after 2020 but before 2025",
             "modificationTime": "search for all files modified after 2020 but before 2025",
@@ -629,6 +632,7 @@
             "open": "Open file details",
             "openBackground": "Open file details in background",
             "shiftClickNegate": "Negate clicked filter",
+            "ctrlClickAccumulate": "Accumulate positive filter",
             "escapeAction": "Clear selection, search & sort, or close",
             "focusSearch": "Focus search",
             "fullscreen": "Fullscreen",
@@ -639,7 +643,8 @@
             "reindex": "Re-index",
             "summarize": "Summarize",
             "addTags": "Add tags",
-            "translate": "Translate"
+            "translate": "Translate",
+            "icon": "icon"
         }
     },
     "statisticsView": {

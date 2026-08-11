@@ -16,6 +16,7 @@ from common.file.file_repository import (
     File,
     FileRepository,
     ImapInfo,
+    MimeTypeGroup,
     Tag,
 )
 from common.file.file_statistics import AvailableStat
@@ -490,6 +491,8 @@ class GetFilePreviewResponse(BaseModel):
     attachments_skipped: bool = False
     detected_language: str | None = None
     state: str
+    mime_type: str | None = None
+    mime_type_group: MimeTypeGroup | None = None
     # Generic fields: field_id -> PreviewFieldData.
     # Only the fields requested via the fields query param are included.
     # Omitting the param returns all available fields (backwards-compatible).
@@ -573,6 +576,8 @@ def get_file_preview(
         attachments_skipped=file.attachments_skipped,
         detected_language=file.detected_language,
         state=file.state,
+        mime_type=file.mime_type,
+        mime_type_group=file.mime_type_group,
         fields=built_fields,
     )
 

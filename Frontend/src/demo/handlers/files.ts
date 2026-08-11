@@ -31,6 +31,7 @@ import { sendToChannel } from "./channels";
 import {
     documentDetail,
     documentPreview,
+    documentTreeNode,
     treeChildren,
     treeRootStats,
     treeSpine,
@@ -258,11 +259,7 @@ const filenameHandler = http.get(
             .filter((document) =>
                 document.name.toLowerCase().includes(filename),
             )
-            .map((document) => ({
-                full_path: document.path,
-                file_count: 1,
-                file_id: document.id,
-            }));
+            .map((document) => documentTreeNode(document, result.documents));
         return json(paginateTree(nodes, url.searchParams.get("after")));
     },
 );

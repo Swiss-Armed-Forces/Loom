@@ -5,6 +5,7 @@ import {
     getFontColorFromBackGroundColor,
 } from "./getColorFromString";
 import { getFormattedDateTime } from "./getFormattedDateTime";
+import { getMimeTypeGroupIcon } from "./getMimeTypeGroupIcon";
 import { inferAceModeFromMimeType } from "./inferAceModeFromMimeType";
 import { updateFieldOfQuery } from "./updateFieldOfQuery";
 
@@ -14,6 +15,7 @@ export {
     getColorFromString,
     getFontColorFromBackGroundColor,
     getFormattedDateTime,
+    getMimeTypeGroupIcon,
     inferAceModeFromMimeType,
     updateFieldOfQuery,
 };

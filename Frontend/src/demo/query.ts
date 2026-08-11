@@ -337,6 +337,23 @@ const valuesByField = (document: DemoDocument): Record<string, string[]> => {
         file_type: [document.mimeType],
         magic_file_type: [document.mimeType],
         tika_file_type: [document.mimeType],
+        magic_mime_type_group: [document.mimeType.split("/")[0]],
+        tika_mime_type_group: [document.mimeType.split("/")[0]],
+        parent_path: [
+            `//${document.path
+                .split("/")
+                .filter((p) => p !== "")
+                .slice(0, -1)
+                .join("/")}`,
+        ],
+        "full_path.tree": (() => {
+            const parts = document.path.split("/").filter((p) => p !== "");
+            const prefixes: string[] = [];
+            for (let i = 0; i < parts.length; i++) {
+                prefixes.push("//" + parts.slice(0, i + 1).join("/"));
+            }
+            return prefixes;
+        })(),
         archives: document.archiveIds,
         source: [document.source],
         size: [String(document.size)],
@@ -371,6 +388,7 @@ const TEXT_FIELDS_BY_ALIAS: Record<string, string[]> = {
         "full_path.keyword",
     ],
     file_type: ["magic_file_type", "tika_file_type"],
+    media_type: ["tika_mime_type_group", "magic_mime_type_group"],
     author: [
         "tika_meta.dc_creator",
         "tika_meta.pdf_docinfo_creator",
@@ -398,6 +416,25 @@ const NON_TEXT_FIELDS = new Set([
     "tika_meta.pdf_docinfo_created",
     "tika_meta.dcterms_modified",
     "tika_meta.pdf_docinfo_modified",
+]);
+
+// Fields mapped to Keyword() in Elasticsearch — plain string queries against
+// these are term queries (exact match), not full-text substring searches.
+const KEYWORD_FIELDS = new Set([
+    "parent_path",
+    "extension",
+    "source",
+    "tags",
+    "archives",
+    "detected_language",
+    "magic_file_type",
+    "tika_file_type",
+    "magic_mime_type_group",
+    "tika_mime_type_group",
+    "full_name.keyword",
+    "full_path.keyword",
+    "short_name.keyword",
+    "full_path.tree",
 ]);
 
 const textValuesByField = (
@@ -894,6 +931,10 @@ const matchesPredicate = (
         );
     }
     const normalized = value.toLocaleLowerCase();
+    if (field && KEYWORD_FIELDS.has(field))
+        return candidates.some(
+            (candidate) => candidate.toLocaleLowerCase() === normalized,
+        );
     return candidates.some((candidate) =>
         candidate.toLocaleLowerCase().includes(normalized),
     );

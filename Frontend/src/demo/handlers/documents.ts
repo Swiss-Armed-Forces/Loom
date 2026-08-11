@@ -21,10 +21,22 @@ export interface TreeNodeWire {
     is_unseen?: boolean;
     flagged_count?: number;
     is_flagged?: boolean;
+    direct_children_count?: number;
 }
 
 const pathSegments = (path: string): string[] =>
     path.split("/").filter((segment) => segment.length > 0);
+
+// Demo document paths use /path format; the real backend uses //source/path.
+// The tree emits //path to match what ClickableFilePath generates when
+// deriving parent_path filter values.
+const toApiPath = (internalPath: string): string =>
+    internalPath === "/" ? "/" : `/${internalPath}`;
+
+const toInternalPath = (apiPath: string | null): string => {
+    if (!apiPath || apiPath === "/" || apiPath === "//") return "/";
+    return apiPath.startsWith("//") ? apiPath.slice(1) : apiPath;
+};
 
 const directoryTreeNode = (
     documents: DemoDocument[],
@@ -34,29 +46,34 @@ const directoryTreeNode = (
     const descendants = documents.filter((document) =>
         document.path.startsWith(prefix),
     );
+    const directChildrenCount = descendants.filter(
+        (document) => !document.path.slice(prefix.length).includes("/"),
+    ).length;
     return {
-        full_path: directoryPath,
+        full_path: toApiPath(directoryPath),
         file_count: descendants.length,
         unseen_count: descendants.filter((document) => !document.seen).length,
         flagged_count: descendants.filter((document) => document.flagged)
             .length,
+        direct_children_count: directChildrenCount,
     };
 };
 
-const documentTreeNode = (
+export const documentTreeNode = (
     document: DemoDocument,
     allDocuments: DemoDocument[],
 ): TreeNodeWire => {
     const prefix = `${document.path}/`;
     const children = allDocuments.filter((d) => d.path.startsWith(prefix));
     return {
-        full_path: document.path,
+        full_path: toApiPath(document.path),
         file_count: children.length,
         file_id: document.id,
         unseen_count: children.filter((d) => !d.seen).length,
         is_unseen: !document.seen,
         flagged_count: children.filter((d) => d.flagged).length,
         is_flagged: document.flagged,
+        direct_children_count: 0,
     };
 };
 
@@ -65,15 +82,18 @@ export const treeRootStats = (documents: DemoDocument[]): TreeNodeWire => ({
     file_count: documents.length,
     unseen_count: documents.filter((d) => !d.seen).length,
     flagged_count: documents.filter((d) => d.flagged).length,
+    direct_children_count: documents.filter(
+        (d) => pathSegments(d.path).length === 1,
+    ).length,
 });
 
 export const treeChildren = (
     documents: DemoDocument[],
     parentPath: string | null,
 ): TreeNodeWire[] => {
-    const normalizedParent = parentPath || "/";
+    const internalParent = toInternalPath(parentPath);
     const parentSegments =
-        normalizedParent === "/" ? [] : pathSegments(normalizedParent);
+        internalParent === "/" ? [] : pathSegments(internalParent);
     const childDirectories = new Set<string>();
     const childFiles = new Map<string, DemoDocument>();
 
@@ -95,15 +115,19 @@ export const treeChildren = (
     const children = new Map<string, TreeNodeWire>(
         [...childDirectories]
             .sort()
-            .map((path) => [path, directoryTreeNode(documents, path)]),
+            .map((path) => [
+                toApiPath(path),
+                directoryTreeNode(documents, path),
+            ]),
     );
     [...childFiles.values()]
         .sort((left, right) => left.path.localeCompare(right.path))
         .forEach((document) => {
+            const apiPath = toApiPath(document.path);
             const fileNode = documentTreeNode(document, documents);
-            children.set(document.path, {
+            children.set(apiPath, {
                 ...fileNode,
-                ...children.get(document.path),
+                ...children.get(apiPath),
                 file_id: fileNode.file_id,
                 is_unseen: fileNode.is_unseen,
                 is_flagged: fileNode.is_flagged,
@@ -118,7 +142,8 @@ export const treeSpine = (
     documents: DemoDocument[],
     fullPath: string | null,
 ): TreeNodeWire[] => {
-    const document = documents.find((item) => item.path === fullPath);
+    const internalPath = toInternalPath(fullPath);
+    const document = documents.find((item) => item.path === internalPath);
     if (!document) return [];
     const segments = pathSegments(document.path);
     const directories = segments
@@ -153,6 +178,10 @@ export const documentPreview = (
     attachmentsSkipped: document.attachmentsSkipped ?? false,
     isSpam: document.isSpam ?? false,
     state: document.state,
+    mimeType: document.mimeType,
+    mimeTypeGroup: document.mimeType.split(
+        "/",
+    )[0] as GetFilePreviewResponse["mimeTypeGroup"],
     fields: {
         content: {
             value: document.content.slice(0, 220),

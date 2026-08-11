@@ -149,7 +149,31 @@ export const EmptySearchResults = ({
                             fontSize="inherit"
                             sx={{ verticalAlign: "middle" }}
                         />{" "}
-                        icon)
+                        {t("emptySearch.hotkeys.icon")})
+                    </Box>
+                </>
+            ),
+        },
+        {
+            type: "row",
+            keys: ["Ctrl + click"],
+            label: (
+                <>
+                    {t("emptySearch.hotkeys.ctrlClickAccumulate")}{" "}
+                    <Box
+                        component="span"
+                        sx={{
+                            opacity: 0.5,
+                            fontSize: "0.9em",
+                            whiteSpace: "nowrap",
+                        }}
+                    >
+                        (
+                        <ManageSearch
+                            fontSize="inherit"
+                            sx={{ verticalAlign: "middle" }}
+                        />{" "}
+                        {t("emptySearch.hotkeys.icon")})
                     </Box>
                 </>
             ),

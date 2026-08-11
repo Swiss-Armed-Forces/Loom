@@ -6,6 +6,7 @@ from common.file.file_repository import (
     Embedding,
     File,
     ImapInfo,
+    MimeTypeGroup,
     Secret,
     Tag,
     TikaMeta,
@@ -60,12 +61,37 @@ def _set_attachments_skipped(obj: File, attachments_skipped: bool) -> None:
     obj.attachments_skipped = attachments_skipped
 
 
+_KNOWN_MIME_GROUPS: frozenset[MimeTypeGroup] = frozenset(
+    {
+        "application",
+        "audio",
+        "font",
+        "haptics",
+        "image",
+        "message",
+        "model",
+        "multipart",
+        "text",
+        "video",
+    }
+)
+
+
+def _extract_mime_type_group(mime_type: str | None) -> MimeTypeGroup | None:
+    if not mime_type:
+        return None
+    group = mime_type.split("/")[0].lower()
+    return group if group in _KNOWN_MIME_GROUPS else None  # type: ignore[return-value]
+
+
 def _set_magic_file_type(obj: File, file_type: str) -> None:
     obj.magic_file_type = file_type
+    obj.magic_mime_type_group = _extract_mime_type_group(file_type)
 
 
 def _set_tika_file_type(obj: File, file_type: str) -> None:
     obj.tika_file_type = file_type
+    obj.tika_mime_type_group = _extract_mime_type_group(file_type)
 
 
 def _set_tika_language(obj: File, language: str) -> None:

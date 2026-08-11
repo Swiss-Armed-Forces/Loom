@@ -79,6 +79,7 @@ export const FileCardHeader = ({
         field: SearchQueryField,
         value: string,
         negate = false,
+        accumulate = false,
     ) => {
         dispatch(
             updateQuery({
@@ -88,6 +89,7 @@ export const FileCardHeader = ({
                     value,
                     false,
                     negate,
+                    accumulate,
                 ),
             }),
         );
@@ -101,13 +103,22 @@ export const FileCardHeader = ({
             avatar={
                 showExtensionIcon ? (
                     <FileAvatar
-                        fileExtension={filePreview.fileExtension}
-                        performSearch={(negate) =>
-                            handleFilterByField(
-                                SearchQueryField.Extension,
-                                filePreview.fileExtension,
-                                negate,
-                            )
+                        mimeType={filePreview.mimeType}
+                        mimeTypeGroup={filePreview.mimeTypeGroup}
+                        performSearch={(negate, accumulate) =>
+                            filePreview.mimeType
+                                ? handleFilterByField(
+                                      SearchQueryField.FileType,
+                                      filePreview.mimeType,
+                                      negate,
+                                      accumulate,
+                                  )
+                                : handleFilterByField(
+                                      SearchQueryField.Extension,
+                                      filePreview.fileExtension,
+                                      negate,
+                                      accumulate,
+                                  )
                         }
                         hasBadge={!filePreview.seen}
                     />
@@ -157,6 +168,7 @@ export const FileCardHeader = ({
                                                         SearchQueryField.ContentTruncated,
                                                         "true",
                                                         e.shiftKey,
+                                                        e.ctrlKey,
                                                     );
                                                 }}
                                             >
@@ -179,6 +191,7 @@ export const FileCardHeader = ({
                                                         SearchQueryField.AttachmentsSkipped,
                                                         "true",
                                                         e.shiftKey,
+                                                        e.ctrlKey,
                                                     );
                                                 }}
                                             >
@@ -224,6 +237,7 @@ export const FileCardHeader = ({
                                             SearchQueryField.IsSpam,
                                             "true",
                                             e.shiftKey,
+                                            e.ctrlKey,
                                         );
                                     }}
                                 >
@@ -248,6 +262,7 @@ export const FileCardHeader = ({
                                             SearchQueryField.DetectedLanguage,
                                             filePreview.detectedLanguage!,
                                             e.shiftKey,
+                                            e.ctrlKey,
                                         );
                                     }}
                                 >

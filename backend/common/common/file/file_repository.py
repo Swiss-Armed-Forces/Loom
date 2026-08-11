@@ -6,7 +6,16 @@ import logging
 import re
 from datetime import datetime
 from pathlib import PurePosixPath
-from typing import Annotated, Any, Callable, Generator, Protocol, Sequence, cast
+from typing import (
+    Annotated,
+    Any,
+    Callable,
+    Generator,
+    Literal,
+    Protocol,
+    Sequence,
+    cast,
+)
 from uuid import UUID
 
 import imapclient.imap_utf7
@@ -355,6 +364,20 @@ class FilePurePath(PurePosixPath):
         )
 
 
+MimeTypeGroup = Literal[
+    "application",
+    "audio",
+    "font",
+    "haptics",
+    "image",
+    "message",
+    "model",
+    "multipart",
+    "text",
+    "video",
+]
+
+
 class File(RepositoryTaskObject):
     state: Annotated[str, TermsStat()] = "started"
 
@@ -421,6 +444,9 @@ class File(RepositoryTaskObject):
     rendered_file: RenderedFile = RenderedFile()
     tags: Annotated[list[Tag], TermsStat()] = []
     magic_file_type: Annotated[str | None, TermsStat()] = None
+    magic_mime_type_group: Annotated[
+        MimeTypeGroup | None, TermsStat(label="Media type (Magic)")
+    ] = None
     tika_language: Annotated[str | None, TermsStat()] = None
     detected_language: Annotated[str | None, TermsStat()] = None
     translations: Annotated[
@@ -429,6 +455,9 @@ class File(RepositoryTaskObject):
     ] = Field(default_factory=list)
     is_spam: Annotated[bool | None, BooleanTermsStat()] = None
     tika_file_type: Annotated[str | None, TermsStat()] = None
+    tika_mime_type_group: Annotated[
+        MimeTypeGroup | None, TermsStat(label="Media type (Tika)")
+    ] = None
     archives: Annotated[list[str], TermsStat()] = []
     tika_meta: TikaMeta = Field(default_factory=TikaMeta)
     tika_handled_by: Annotated[str | None, TermsStat()] = None
@@ -444,6 +473,16 @@ class File(RepositoryTaskObject):
     imap: ImapInfo | None = None
     flagged: Annotated[bool, BooleanTermsStat()] = False
     seen: Annotated[bool, BooleanTermsStat()] = False
+
+    @property
+    def mime_type(self) -> str | None:
+        """Combined MIME type: tika preferred, magic as fallback."""
+        return self.tika_file_type or self.magic_file_type
+
+    @property
+    def mime_type_group(self) -> MimeTypeGroup | None:
+        """Combined group: tika preferred, magic as fallback."""
+        return self.tika_mime_type_group or self.magic_mime_type_group
 
     @field_validator("tags")
     @classmethod
@@ -493,11 +532,13 @@ class _EsFile(_EsTaskDocument):
     rendered_file = Object(_EsRenderedFile)
     tags = Keyword(multi=True)
     magic_file_type = Keyword()
+    magic_mime_type_group = Keyword()
     tika_language = Keyword()
     detected_language = Keyword()
     translations = Object(_EsTranslatedLanguage, multi=True)
     is_spam = Boolean()
     tika_file_type = Keyword()
+    tika_mime_type_group = Keyword()
     archives = Keyword(multi=True)
     tika_meta = Object(_EsTikaMeta)
     tika_handled_by = Keyword()
@@ -595,6 +636,7 @@ class TreePathsNode(BaseModel):
     is_unseen: bool = False
     flagged_count: int = 0
     is_flagged: bool = False
+    direct_children_count: int = 0
 
 
 class TreePathsResult(BaseModel):
@@ -1193,6 +1235,14 @@ class FileRepository(BaseEsRepository[_EsFile, File]):
         if after is not None:
             search = search.filter("range", **{"full_path.tree": {"gt": after}})
         search.aggs.bucket("directory", dir_aggregation)
+        parent_path_agg: Agg[_EsFile] = A(
+            "terms",
+            field="parent_path",
+            include=include_regex,
+            size=TREE_PATH_MAX_ELEMENT_COUNT + 1 + (1 if after is not None else 0),
+            order={"_key": "asc"},
+        )
+        search.aggs.bucket("direct_children_by_parent", parent_path_agg)
         # When querying the root, add global aggregations to compute the
         # virtual root node's totals directly in ES.  These run over all
         # documents that match the user's search query (no path filter is
@@ -1214,6 +1264,11 @@ class FileRepository(BaseEsRepository[_EsFile, File]):
         # against the index.
         result = search.using(self._elasticsearch).execute()
 
+        direct_children_counts: dict[str, int] = {
+            str(b.key): b.doc_count
+            for b in result.aggregations.direct_children_by_parent.buckets
+        }
+
         # Exclude the cursor bucket in case it was re-admitted by the range filter.
         raw_buckets = [
             b for b in result.aggregations.directory.buckets if str(b.key) != after
@@ -1225,6 +1280,7 @@ class FileRepository(BaseEsRepository[_EsFile, File]):
                 first_hit_bucket=b.first_hit,
                 unseen_bucket=b.unseen,
                 flagged_bucket=b.flagged,
+                direct_children_count=direct_children_counts.get(str(b.key), 0),
             )
             for b in raw_buckets[:TREE_PATH_MAX_ELEMENT_COUNT]
         ]
@@ -1240,6 +1296,9 @@ class FileRepository(BaseEsRepository[_EsFile, File]):
                 file_count=cast(int, result.aggregations.total_files.doc_count),
                 unseen_count=cast(int, result.aggregations.total_unseen.doc_count),
                 flagged_count=cast(int, result.aggregations.total_flagged.doc_count),
+                direct_children_count=direct_children_counts.get(
+                    tree_node_directory_path, 0
+                ),
             )
         return TreePathsResult(
             nodes=nodes, next_page_cursor=next_cursor, root_stats=root_stats
@@ -1338,6 +1397,7 @@ class FileRepository(BaseEsRepository[_EsFile, File]):
                 first_hit_bucket=b.first_hit,
                 unseen_bucket=b.unseen,
                 flagged_bucket=b.flagged,
+                direct_children_count=0,
             )
             for b in raw_buckets[:TREE_PATH_MAX_ELEMENT_COUNT]
         ]
@@ -1387,13 +1447,26 @@ class FileRepository(BaseEsRepository[_EsFile, File]):
         terms_agg.bucket("unseen", A("filter", filter=Q("term", seen=False)))
         terms_agg.bucket("flagged", A("filter", filter=Q("term", flagged=True)))
 
+        parent_path_spine_agg: Agg[_EsFile] = A(
+            "terms",
+            field="parent_path",
+            include=spine_paths,
+            size=len(spine_paths),
+        )
+
         search = self._get_search_by_query(query=query)
         search.aggs.bucket("spine", terms_agg)
+        search.aggs.bucket("direct_children_by_parent", parent_path_spine_agg)
         search.aggs.bucket("total_files", A("filter", filter=Q("match_all")))
         search.aggs.bucket("total_unseen", A("filter", filter=Q("term", seen=False)))
         search.aggs.bucket("total_flagged", A("filter", filter=Q("term", flagged=True)))
         search = search[0:0]
         result = search.using(self._elasticsearch).execute()
+
+        direct_children_counts: dict[str, int] = {
+            str(b.key): b.doc_count
+            for b in result.aggregations.direct_children_by_parent.buckets
+        }
 
         nodes = [
             self._build_tree_paths_node(
@@ -1402,6 +1475,7 @@ class FileRepository(BaseEsRepository[_EsFile, File]):
                 first_hit_bucket=bucket.first_hit,
                 unseen_bucket=bucket.unseen,
                 flagged_bucket=bucket.flagged,
+                direct_children_count=direct_children_counts.get(str(bucket.key), 0),
             )
             for bucket in result.aggregations.spine.buckets
         ]
@@ -1423,6 +1497,7 @@ class FileRepository(BaseEsRepository[_EsFile, File]):
         first_hit_bucket: Any,
         unseen_bucket: Any,
         flagged_bucket: Any,
+        direct_children_count: int = 0,
     ) -> TreePathsNode:
         """Build a TreePathsNode from pre-extracted aggregation bucket fields."""
         dirpath = FilePurePath(key)
@@ -1449,6 +1524,7 @@ class FileRepository(BaseEsRepository[_EsFile, File]):
             flagged_count=cast(int, flagged_bucket.doc_count)
             - (1 if is_flagged else 0),
             is_flagged=is_flagged,
+            direct_children_count=direct_children_count,
         )
 
     @staticmethod
@@ -1460,6 +1536,7 @@ class FileRepository(BaseEsRepository[_EsFile, File]):
             first_hit_bucket=path.first_hit,
             unseen_bucket=path.unseen,
             flagged_bucket=path.flagged,
+            direct_children_count=0,
         )
 
     def _build_email_filter(self) -> Query:

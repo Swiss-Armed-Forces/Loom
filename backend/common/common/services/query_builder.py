@@ -422,6 +422,13 @@ class QueryBuilder:
                     r"ripsecrets_secrets.secret",
                 ],
             ).visit(tree, {})
+            tree = RFTransformer(
+                "media_type",
+                [
+                    r"tika_mime_type_group",
+                    r"magic_mime_type_group",
+                ],
+            ).visit(tree, {})
             tree = HiddenTransformer().visit(tree, {})
 
         except ParseError as ex:

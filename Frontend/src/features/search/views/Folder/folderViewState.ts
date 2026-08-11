@@ -15,6 +15,7 @@ export interface FolderTree {
     isUnseen?: boolean;
     flaggedCount?: number;
     isFlagged?: boolean;
+    directChildrenCount?: number;
     fileId?: string;
     children?: Record<string, FolderTree>;
     loading?: boolean;

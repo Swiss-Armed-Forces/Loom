@@ -1,6 +1,7 @@
 import { UnfoldLess } from "@mui/icons-material";
-import { Box, Breadcrumbs, IconButton, Link } from "@mui/material";
+import { Box, Breadcrumbs, IconButton, Link, Tooltip } from "@mui/material";
 import { CSSProperties } from "react";
+import { useTranslation } from "react-i18next";
 
 import { useAppDispatch, useAppSelector } from "@app/hooks";
 import {
@@ -23,6 +24,7 @@ export const ClickableFilePath = ({
     fullPath,
     style,
 }: ClickableFilePathProps) => {
+    const { t } = useTranslation();
     const searchQuery = useAppSelector(selectQuery);
     const expandFilePaths = useAppSelector(selectExpandFilePaths);
     const dispatch = useAppDispatch();
@@ -37,9 +39,15 @@ export const ClickableFilePath = ({
         };
     });
 
+    const lastName = fullPathParts[fullPathParts.length - 1] ?? "";
+    const dotIdx = lastName.lastIndexOf(".");
+    const fileExtension = dotIdx > 0 ? lastName.slice(dotIdx) : null;
+    const fileBaseName = dotIdx > 0 ? lastName.slice(0, dotIdx) : lastName;
+
     const handleQueryReplaceFilename = (
         newFilepath: string,
         negate: boolean,
+        accumulate: boolean,
     ) => {
         const newQuery = updateFieldOfQuery(
             searchQuery?.query ?? "",
@@ -47,12 +55,29 @@ export const ClickableFilePath = ({
             newFilepath,
             false,
             negate,
+            accumulate,
         );
         dispatch(
             updateQuery({
                 query: newQuery,
             }),
         );
+    };
+
+    const handleQueryFilterExtension = (
+        ext: string,
+        negate: boolean,
+        accumulate: boolean,
+    ) => {
+        const newQuery = updateFieldOfQuery(
+            searchQuery?.query ?? "",
+            SearchQueryField.Extension,
+            ext,
+            false,
+            negate,
+            accumulate,
+        );
+        dispatch(updateQuery({ query: newQuery }));
     };
 
     return (
@@ -97,28 +122,75 @@ export const ClickableFilePath = ({
                 itemsAfterCollapse={3}
                 style={style}
             >
-                {fullPathPartsExtended.map((part, idx) => (
-                    <Link
-                        key={idx}
-                        color="inherit"
-                        onClick={(e) => {
-                            handleQueryReplaceFilename(
-                                part.pathToPart,
-                                e.shiftKey,
-                            );
-                        }}
-                        sx={{
-                            cursor: "pointer",
-                            textDecoration: "none",
-                            "&:hover": {
-                                textDecoration: "underline",
-                                color: "secondary.main",
-                            },
-                        }}
-                    >
-                        {part.part}
-                    </Link>
-                ))}
+                {fullPathPartsExtended.map((part, idx) => {
+                    const isLast = idx === fullPathPartsExtended.length - 1;
+                    const displayName =
+                        isLast && fileExtension ? fileBaseName : part.part;
+
+                    return (
+                        <Box
+                            key={idx}
+                            component="span"
+                            sx={{ display: "inline" }}
+                        >
+                            <Tooltip
+                                title={t("resultCard.filterByParentPath")}
+                                placement="top"
+                                arrow
+                            >
+                                <Link
+                                    color="inherit"
+                                    onClick={(e) => {
+                                        handleQueryReplaceFilename(
+                                            part.pathToPart,
+                                            e.shiftKey,
+                                            e.ctrlKey,
+                                        );
+                                    }}
+                                    sx={{
+                                        cursor: "pointer",
+                                        textDecoration: "none",
+                                        "&:hover": {
+                                            textDecoration: "underline",
+                                            color: "secondary.main",
+                                        },
+                                    }}
+                                >
+                                    {displayName}
+                                </Link>
+                            </Tooltip>
+                            {isLast && fileExtension && (
+                                <Tooltip
+                                    title={t("resultCard.filterByExtension")}
+                                    placement="top"
+                                    arrow
+                                >
+                                    <Box
+                                        component="span"
+                                        onClick={(e: React.MouseEvent) => {
+                                            e.stopPropagation();
+                                            handleQueryFilterExtension(
+                                                fileExtension,
+                                                e.shiftKey,
+                                                e.ctrlKey,
+                                            );
+                                        }}
+                                        sx={{
+                                            cursor: "pointer",
+                                            textDecoration: "underline dotted",
+                                            "&:hover": {
+                                                textDecoration: "underline",
+                                                color: "secondary.main",
+                                            },
+                                        }}
+                                    >
+                                        {fileExtension}
+                                    </Box>
+                                </Tooltip>
+                            )}
+                        </Box>
+                    );
+                })}
             </Breadcrumbs>
         </Box>
     );

@@ -56,7 +56,12 @@ export const FieldSections = ({
     );
 
     const handleQuery = useCallback(
-        (fieldId: string, value: string, negate: boolean) => {
+        (
+            fieldId: string,
+            value: string,
+            negate: boolean,
+            accumulate: boolean,
+        ) => {
             dispatch(
                 updateQuery({
                     query: updateFieldOfQuery(
@@ -65,6 +70,7 @@ export const FieldSections = ({
                         value,
                         false,
                         negate,
+                        accumulate,
                     ),
                 }),
             );
@@ -94,8 +100,13 @@ export const FieldSections = ({
                         value={value}
                         onQuery={
                             showFieldActions || fullDetails
-                                ? (negate) =>
-                                      handleQuery(id, fieldData.value, negate)
+                                ? (negate, accumulate) =>
+                                      handleQuery(
+                                          id,
+                                          fieldData.value,
+                                          negate,
+                                          accumulate,
+                                      )
                                 : undefined
                         }
                         onSort={

@@ -26,6 +26,7 @@ interface ChartProps {
         value: string | string[],
         negate?: boolean,
         noQuote?: boolean,
+        accumulate?: boolean,
     ) => void;
     queryKeyword: string;
     height?: number;
@@ -123,6 +124,7 @@ export const Chart = ({
     const filterByItem = (
         item: Pick<DefaultizedPieValueType, "id" | "label">,
         negate: boolean,
+        accumulate: boolean,
     ) => {
         if (item.id === MISC_ID) {
             // Negate: exclude all shown named items so only "others" remain
@@ -139,6 +141,8 @@ export const Chart = ({
                 queryKeyword,
                 item.label ? `${item.label}` : "",
                 negate,
+                undefined,
+                accumulate,
             );
         }
     };
@@ -148,7 +152,7 @@ export const Chart = ({
         __: PieItemIdentifier,
         item: DefaultizedPieValueType,
     ) => {
-        filterByItem(item, event.shiftKey);
+        filterByItem(item, event.shiftKey, event.ctrlKey);
     };
 
     const anyHighlighted = highlightedItem !== null;
@@ -207,7 +211,11 @@ export const Chart = ({
                                         onGroupHighlight?.(null);
                                     }}
                                     onClick={(e) =>
-                                        filterByItem(item, e.shiftKey)
+                                        filterByItem(
+                                            item,
+                                            e.shiftKey,
+                                            e.ctrlKey,
+                                        )
                                     }
                                 >
                                     <span
