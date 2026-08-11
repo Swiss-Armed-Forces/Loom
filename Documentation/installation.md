@@ -111,6 +111,26 @@ and re-start Loom in full offline mode: `./up.sh --offline`.
 > ⚠️ Offline mode only works when you have checked out a specific Git tag (not on a branch like `main`).
 > If you followed the installation steps above, you are already on a release tag.
 
+### Single Node Remote usage
+
+If you want to access the loom UIs remotely, you need to start loom using `./up.sh --expose 0.0.0.0`.
+Note that with IP 0.0.0.0 loom will listen on all available network interfaces. Replace 0.0.0.0 with an IP of a specific network interfaces to make loom listen only on that interface.
+
+On the remote machine you want to access loom from, you must make the `.loom` domain resolvable.
+For example, via setting in `/etc/hosts`:
+
+```bash
+# Hosts for 'loom' domain
+<serverip> frontend.loom
+<serverip> api.loom
+```
+
+with `<serverip>` replaced with the IP of the machine running loom, and doing so for all loom services you require.
+
+Note that the browser used to access loom running on the remote machine must support local domain resolution, under using `/etc/hosts` to define the `.loom` domain.
+
+Some browsers allow to set directly host resolution rules via command line arguments, see for example `cicd/chrome_wrapped.py` for chromium.
+
 ### Overriding Helm Values
 
 To customize the deployment configuration, add your value
