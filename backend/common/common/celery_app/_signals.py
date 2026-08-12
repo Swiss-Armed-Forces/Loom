@@ -1,6 +1,7 @@
 import logging
 from typing import Any, Protocol
 
+from amqp.exceptions import PreconditionFailed  # type: ignore[attr-defined]
 from celery import Celery, Task, signals
 
 from common.celery_app._queues import get_terminal_queues
@@ -35,10 +36,31 @@ def declare_terminal_queues(sender: _WorkerReadySender, **__: Any) -> None:
     unroutable queues are terminal destinations with no consumers, so they must be
     declared explicitly to ensure dead-letter and alternate-exchange routing works
     correctly on fresh deployments.
+
+    If a queue's exchange already exists with the wrong type (e.g. ae-loom was
+    previously declared as topic but now must be fanout), RabbitMQ closes the AMQP
+    channel with PRECONDITION_FAILED. In that case the stale exchange is deleted and the
+    queue is redeclared on a fresh channel so the correct type takes effect without
+    requiring a RabbitMQ restart or cache invalidation.
     """
     with sender.app.pool.acquire(block=True) as conn:  # type: ignore[attr-defined]
         for queue in get_terminal_queues():
-            queue(conn.default_channel).declare()  # type: ignore[operator]
+            try:
+                queue(conn.default_channel).declare()  # type: ignore[operator]
+            except PreconditionFailed:
+                # RabbitMQ closed the channel because the exchange exists with a
+                # different type. Open fresh channels (the original is now closed)
+                # to delete the stale exchange and redeclare the queue.
+                logger.warning(
+                    "Exchange type mismatch for queue %r — deleting stale exchange "
+                    "and redeclaring on a fresh channel.",
+                    queue.name,
+                )
+                if queue.exchange:
+                    with conn.channel() as ch:  # type: ignore[attr-defined]
+                        queue.exchange(ch).delete(if_unused=False)  # type: ignore[operator]
+                with conn.channel() as ch:  # type: ignore[attr-defined]
+                    queue(ch).declare()  # type: ignore[operator]
 
 
 @signals.task_prerun.connect
