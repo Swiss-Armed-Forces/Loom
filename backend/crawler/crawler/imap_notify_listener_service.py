@@ -184,6 +184,19 @@ class IMAPNotifyListenerService:  # pylint: disable=too-many-instance-attributes
             # CONDSTORE: only fetch messages with MODSEQ > last known value.
             # Starting from 1 on first sync covers all messages.
             search_modseq = self._folder_modseq.get(folder, 0) + 1
+            new_modseq = select_data.get(b"HIGHESTMODSEQ")
+
+            # Check for consistency of modseq
+            # If folder got deleted and re-created, _folder_modseq can be inconsistent
+            if search_modseq > new_modseq:
+                logger.debug(
+                    "Inconsistent MODSEQ: %d > %d. -> Set flags for all messages in folder",
+                    search_modseq,
+                    new_modseq,
+                )
+                # Set flags for all messages in folder
+                search_modseq = 1
+
             changed_uids = client.search(  # type: ignore[arg-type]
                 ["MODSEQ", str(search_modseq)]
             )
@@ -202,7 +215,7 @@ class IMAPNotifyListenerService:  # pylint: disable=too-many-instance-attributes
                         for f in raw_flags
                     ]
                     self._handle_flag_change(folder, uid, flags)
-            new_modseq = select_data.get(b"HIGHESTMODSEQ")
+
             if isinstance(new_modseq, int):
                 self._folder_modseq[folder] = new_modseq
         finally:
