@@ -68,7 +68,6 @@ export const GLOBAL_TOUR_STEPS: readonly TourStep[] = [
         target: { selector: TOUR_TARGETS.branding },
         titleKey: "tour.steps.welcome.title",
         descriptionKey: "tour.steps.welcome.description",
-        showSkipButton: true,
         side: "bottom",
         align: "start",
     },
