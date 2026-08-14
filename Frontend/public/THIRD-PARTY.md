@@ -2459,7 +2459,7 @@ The complete source code for Traefik is publicly available at https://github.com
 | libgcc-12-dev | 12.2.0-14+deb12u1 | GFDL-1.2-only, GPL-2.0-only, GPL-3.0-only | dpkg-db-cataloger |
 | libgcc-s1 | 12.2.0-14+deb12u1 | GFDL-1.2-only, GPL-2.0-only, GPL-3.0-only | dpkg-db-cataloger |
 | libgcrypt20 | 1.10.1-3+deb12u1 | GPL-2.0-only | dpkg-db-cataloger |
-| libgd3 | 2.3.3-9 | BSD-3-Clause, GD, GPL-2.0-only, GPL-2.0-or-later, HPND, MIT, Xfig | dpkg-db-cataloger |
+| libgd3 | 2.3.3-9+deb12u1 | BSD-3-Clause, GD, GPL-2.0-only, GPL-2.0-or-later, HPND, MIT, Xfig | dpkg-db-cataloger |
 | libgdbm-compat4 | 1.23-3 | GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later | dpkg-db-cataloger |
 | libgdbm-dev | 1.23-3 | GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later | dpkg-db-cataloger |
 | libgdbm6 | 1.23-3 | GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later | dpkg-db-cataloger |

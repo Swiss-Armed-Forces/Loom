@@ -517,6 +517,11 @@ data:
     llm__translation__timeout: {{ .Values.llm.translation.timeout | quote }}
     {{- end }}
 
+    # beat
+    {{- if ne .Values.beat.heartbeatFileName nil }}
+    heartbeat_file_name: {{ .Values.beat.heartbeatFileName | quote }}
+    {{- end }}
+
     # crawler
     {{- if ne .Values.crawler.bucketAlias nil }}
     s3_bucket_alias: {{ .Values.crawler.bucketAlias | quote }}
