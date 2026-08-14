@@ -218,13 +218,13 @@ export const useDriverTour = (
                     animate: !window.matchMedia(
                         "(prefers-reduced-motion: reduce)",
                     ).matches,
-                    allowClose: true,
+                    allowClose: false,
                     allowKeyboardControl: true,
                     allowScroll: true,
                     disableActiveInteraction: true,
-                    overlayClickBehavior: "close",
+                    overlayClickBehavior: () => {},
                     popoverClass: "loom-tour-popover",
-                    showButtons: ["previous", "next", "close"],
+                    showButtons: ["previous", "next"],
                     showProgress: true,
                     progressText: t("tour.controls.progress", {
                         current: "{{current}}",
@@ -265,7 +265,7 @@ export const useDriverTour = (
                             }
                         }
 
-                        if (!steps[index ?? -1]?.showSkipButton) return;
+                        if (index === steps.length - 1) return;
 
                         const skipButton = document.createElement("button");
                         skipButton.type = "button";
@@ -274,10 +274,10 @@ export const useDriverTour = (
                             "loom-tour-skip-btn",
                         );
                         skipButton.textContent = t("tour.controls.skip");
-                        skipButton.addEventListener(
-                            "click",
-                            dismissCurrentTour,
-                        );
+                        skipButton.addEventListener("click", () => {
+                            driverInstance?.moveTo(steps.length - 1);
+                            activateStep(steps[steps.length - 1]);
+                        });
                         footerButtons.prepend(skipButton);
                     },
                     onCloseClick: dismissCurrentTour,

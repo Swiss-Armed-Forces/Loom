@@ -16,7 +16,6 @@ export interface TourStep {
     descriptionKey: string;
     doneButtonKey?: string;
     nextButtonKey?: string;
-    showSkipButton?: boolean;
     side?: Side;
     align?: Alignment;
     waitForElementMs?: number;

@@ -881,9 +881,11 @@ describe("TourProvider", () => {
         expect(view.getByTestId("tour-view")).toHaveTextContent("overview");
     });
 
-    it("offers a skip action only on the welcome step", async () => {
+    it("offers a skip button on non-last steps that jumps to the conclusion", async () => {
         renderProvider(<div data-tour="branding">Loom</div>);
         await waitFor(() => expect(driverInstance.drive).toHaveBeenCalled());
+
+        const totalSteps = capturedConfig.steps!.length;
 
         const welcomePopover = createPopover();
         act(() => {
@@ -902,23 +904,20 @@ describe("TourProvider", () => {
 
         fireEvent.click(skipButton!);
 
-        expect(
-            JSON.parse(window.localStorage.getItem(TOUR_STORAGE_KEY)!),
-        ).toMatchObject({ introductionOutcome: "dismissed" });
-        expect(driverInstance.destroy).toHaveBeenCalledTimes(1);
-        expect(mockDispatch).not.toHaveBeenCalled();
+        expect(driverInstance.moveTo).toHaveBeenCalledWith(totalSteps - 1);
+        expect(driverInstance.destroy).not.toHaveBeenCalled();
 
-        const overviewPopover = createPopover();
+        const lastPopover = createPopover();
         act(() => {
-            capturedConfig.onPopoverRender?.(overviewPopover, {
+            capturedConfig.onPopoverRender?.(lastPopover, {
                 config: capturedConfig,
                 state: {},
                 driver: driverInstance,
-                index: 1,
+                index: totalSteps - 1,
             });
         });
         expect(
-            overviewPopover.footerButtons.querySelector(".loom-tour-skip-btn"),
+            lastPopover.footerButtons.querySelector(".loom-tour-skip-btn"),
         ).toBeNull();
     });
 
