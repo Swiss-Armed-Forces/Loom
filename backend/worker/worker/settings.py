@@ -214,6 +214,8 @@ class Settings(CommonSettings):
         60.0  # seconds before terminating under memory pressure
     )
 
+    heartbeat_file_name: str = "/tmp/beat_heartbeat"
+
     @property
     def rendered_pdf_page_size(self) -> PageSize:
         return PageSize(

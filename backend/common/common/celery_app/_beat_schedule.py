@@ -1,33 +1,15 @@
-from datetime import datetime, timedelta, timezone
-
-from celery.schedules import BaseSchedule, crontab, schedstate
+from celery.schedules import crontab, schedule
 
 
-class _NeverSchedule(BaseSchedule):
+class _NeverSchedule(schedule):
     """A schedule that never fires automatically.
 
     Allows a task to exist in the beat schedule (and be triggerable via the API) without
-    ever running on its own schedule.
-
-    ``is_due()`` unconditionally returns ``(False, 86400)`` — no date arithmetic that
-    could accidentally yield a zero remainder and trigger the task.
-
-    ``now()`` returns real UTC time, which matters because Celery's ``_when()`` computes
-    each entry's heap position as ``timegm(schedule.now()) + next_run``. A schedule
-    whose ``now()`` returns a fake past date (e.g. 1970) ends up with a heap key of
-    ~3600, placing it permanently at H[0] — the top of the min-heap — so beat keeps re-
-    examining it every tick. With a real timestamp, the heap key is ``now_unix +
-    86400``, safely at the bottom of the heap.
+    ever running on its own schedule. To not block the execution by eventually landing
+    in the heap top spot, all tasks with this type are filtered out on initialization of
+    the celery instance. With this they never reach the beat heap and are never
+    scheduled.
     """
-
-    def is_due(self, last_run_at: datetime) -> schedstate:
-        return schedstate(False, 24 * 3600)
-
-    def remaining_estimate(self, last_run_at: datetime) -> timedelta:
-        return timedelta(hours=24)
-
-    def now(self) -> datetime:
-        return datetime.now(timezone.utc)
 
 
 SCHEDULE_NEVER = _NeverSchedule()
@@ -46,6 +28,10 @@ def get_beat_schedule() -> dict:
             "task": (
                 "worker.periodic.compute_complete_estimate_task.compute_complete_estimate_task"
             ),
+            "schedule": crontab(minute="*/1"),
+        },
+        "beat-healthcheck": {
+            "task": "worker.periodic.tasks.beat_healthcheck_task.beat_healthcheck_task",
             "schedule": crontab(minute="*/1"),
         },
         "throttle-and-flush-lazybytes": {

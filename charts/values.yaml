@@ -561,6 +561,7 @@ beat:
     limits:
       cpu: "0.2"
       memory: "500Mi"
+  heartbeatFileName: "/tmp/beat_heartbeat"
   # Custom labels specific to beat resources
   customLabels: {}
   customAnnotations: {}
