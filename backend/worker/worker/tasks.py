@@ -41,6 +41,9 @@ from worker.periodic import (
     throttle_and_flush_lazybytes_task,
     unsubscribe_old_imap_folders_periodically_task,
 )
+from worker.periodic.tasks import (
+    beat_healthcheck_task,
+)
 from worker.test import autoretry_test_task, canvas_test_task, sigkill_pgroup_task
 
 # DO NOT REMOVE THIS ARRAY!!!
@@ -75,4 +78,5 @@ tasks = [
     unsubscribe_old_imap_folders_periodically_task,
     seaweedfs_maintenance_task,
     flush_file_storage_service_task,
+    beat_healthcheck_task,
 ]

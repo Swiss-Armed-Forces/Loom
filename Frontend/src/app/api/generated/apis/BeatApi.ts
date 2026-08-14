@@ -85,6 +85,7 @@ export class BeatApi extends runtime.BaseAPI {
  */
 export const TriggerScheduledTaskV1BeatScheduleNamePostScheduleNameEnum = {
     ComputeCompleteEstimate: "compute-complete-estimate",
+    BeatHealthcheck: "beat-healthcheck",
     ThrottleAndFlushLazybytes: "throttle-and-flush-lazybytes",
     ShrinkCache: "shrink-cache",
     FlushFileStorageService: "flush-file-storage-service",

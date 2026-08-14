@@ -1,11 +1,14 @@
-"""Custom Celery beat scheduler that writes a heartbeat file on each tick."""
+"""Custom Celery beat scheduler that writes a heartbeat file on each dispatched task."""
 
 import datetime
+import logging
 
 from celery.beat import PersistentScheduler
 from common.dependencies import get_celery_inspect_service
 
-HEARTBEAT_FILE = "/tmp/beat_heartbeat"
+from worker.settings import settings
+
+logger = logging.getLogger(__name__)
 
 
 class HeartbeatScheduler(PersistentScheduler):
@@ -19,8 +22,17 @@ class HeartbeatScheduler(PersistentScheduler):
             return
         super().apply_entry(entry, producer=producer)  # type: ignore[misc]
 
-    def tick(self, *args, **kwargs):  # type: ignore[override]
-        result = super().tick(*args, **kwargs)
-        with open(HEARTBEAT_FILE, "w", encoding="utf-8") as f:
-            f.write(datetime.datetime.now(tz=datetime.timezone.utc).isoformat())
+    def apply_async(self, entry, producer=None, advance=True, **kwargs):
+        result = super().apply_async(
+            entry,
+            producer=producer,
+            advance=advance,
+            **kwargs,
+        )
+        # failing to write heartbeat file is not considered a failed dispatched task
+        try:
+            with open(settings.heartbeat_file_name, "w", encoding="utf-8") as f:
+                f.write(datetime.datetime.now(tz=datetime.timezone.utc).isoformat())
+        except OSError:
+            logger.exception("failed to write heartbeat file")
         return result

@@ -10,7 +10,7 @@ from celery.canvas import chord
 from kombu import serialization
 
 from common.celery_app._base_task import BaseTask
-from common.celery_app._beat_schedule import get_beat_schedule
+from common.celery_app._beat_schedule import SCHEDULE_NEVER, get_beat_schedule
 from common.celery_app._queues import (
     _get_abyss_queue,
     _get_dead_queue,
@@ -176,8 +176,12 @@ def init_celery_app() -> "Celery[BaseTask]":  # pylint: disable=too-many-stateme
     # runs out of memory.
     app.conf.result_expires = timedelta(days=99999)
 
-    # Register periodic tasks
-    app.conf.beat_schedule = get_beat_schedule()
+    # Register periodic tasks, skip NeverSchedule type tasks
+    app.conf.beat_schedule = {
+        name: config
+        for name, config in get_beat_schedule().items()
+        if config.get("schedule") is not SCHEDULE_NEVER
+    }
 
     # Task queues & routes setup
     app.conf.task_queues = []
