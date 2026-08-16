@@ -87,9 +87,21 @@ export interface TreeNodeModel {
 /**
  * Check if a given object implements the TreeNodeModel interface.
  */
-export function instanceOfTreeNodeModel(value: object): boolean {
-    if (!("fullPath" in value)) return false;
-    if (!("fileCount" in value)) return false;
+export function instanceOfTreeNodeModel(value: object): value is TreeNodeModel {
+    if (
+        (!("fullPath" in (value as Record<string, any>)) &&
+            !("full_path" in (value as Record<string, any>))) ||
+        ((value as Record<string, any>)["fullPath"] === undefined &&
+            (value as Record<string, any>)["full_path"] === undefined)
+    )
+        return false;
+    if (
+        (!("fileCount" in (value as Record<string, any>)) &&
+            !("file_count" in (value as Record<string, any>))) ||
+        ((value as Record<string, any>)["fileCount"] === undefined &&
+            (value as Record<string, any>)["file_count"] === undefined)
+    )
+        return false;
     return true;
 }
 
@@ -121,10 +133,18 @@ export function TreeNodeModelFromJSONTyped(
     };
 }
 
-export function TreeNodeModelToJSON(value?: TreeNodeModel | null): any {
+export function TreeNodeModelToJSON(json: any): TreeNodeModel {
+    return TreeNodeModelToJSONTyped(json, false);
+}
+
+export function TreeNodeModelToJSONTyped(
+    value?: TreeNodeModel | null,
+    ignoreDiscriminator: boolean = false,
+): any {
     if (value == null) {
         return value;
     }
+
     return {
         full_path: value["fullPath"],
         file_count: value["fileCount"],

@@ -22,16 +22,27 @@ import { mapValues } from "../runtime";
 export interface MessageChatBotAnswerComplete {
     /**
      *
-     * @type {string}
+     * @type {MessageChatBotAnswerCompleteTypeEnum}
      * @memberof MessageChatBotAnswerComplete
      */
-    type?: string;
+    type?: MessageChatBotAnswerCompleteTypeEnum;
 }
+
+/**
+ * @export
+ */
+export const MessageChatBotAnswerCompleteTypeEnum = {
+    ChatBotAnswerComplete: "chatBotAnswerComplete",
+} as const;
+export type MessageChatBotAnswerCompleteTypeEnum =
+    (typeof MessageChatBotAnswerCompleteTypeEnum)[keyof typeof MessageChatBotAnswerCompleteTypeEnum];
 
 /**
  * Check if a given object implements the MessageChatBotAnswerComplete interface.
  */
-export function instanceOfMessageChatBotAnswerComplete(value: object): boolean {
+export function instanceOfMessageChatBotAnswerComplete(
+    value: object,
+): value is MessageChatBotAnswerComplete {
     return true;
 }
 
@@ -54,11 +65,19 @@ export function MessageChatBotAnswerCompleteFromJSONTyped(
 }
 
 export function MessageChatBotAnswerCompleteToJSON(
+    json: any,
+): MessageChatBotAnswerComplete {
+    return MessageChatBotAnswerCompleteToJSONTyped(json, false);
+}
+
+export function MessageChatBotAnswerCompleteToJSONTyped(
     value?: MessageChatBotAnswerComplete | null,
+    ignoreDiscriminator: boolean = false,
 ): any {
     if (value == null) {
         return value;
     }
+
     return {
         type: value["type"],
     };

@@ -19,6 +19,7 @@ import {
     TaskRunFromJSON,
     TaskRunFromJSONTyped,
     TaskRunToJSON,
+    TaskRunToJSONTyped,
 } from "./TaskRun";
 
 /**
@@ -53,23 +54,29 @@ export interface TaskRecord {
     succeeded?: Array<TaskRun>;
     /**
      *
-     * @type {any}
+     * @type {Array<TaskRun>}
      * @memberof TaskRecord
      */
-    retried?: any;
+    retried?: Array<TaskRun>;
     /**
      *
-     * @type {any}
+     * @type {Array<TaskRun>}
      * @memberof TaskRecord
      */
-    failed?: any;
+    failed?: Array<TaskRun>;
 }
 
 /**
  * Check if a given object implements the TaskRecord interface.
  */
-export function instanceOfTaskRecord(value: object): boolean {
-    if (!("taskName" in value)) return false;
+export function instanceOfTaskRecord(value: object): value is TaskRecord {
+    if (
+        (!("taskName" in (value as Record<string, any>)) &&
+            !("task_name" in (value as Record<string, any>))) ||
+        ((value as Record<string, any>)["taskName"] === undefined &&
+            (value as Record<string, any>)["task_name"] === undefined)
+    )
+        return false;
     return true;
 }
 
@@ -93,15 +100,29 @@ export function TaskRecordFromJSONTyped(
             json["succeeded"] == null
                 ? undefined
                 : (json["succeeded"] as Array<any>).map(TaskRunFromJSON),
-        retried: json["retried"] == null ? undefined : json["retried"],
-        failed: json["failed"] == null ? undefined : json["failed"],
+        retried:
+            json["retried"] == null
+                ? undefined
+                : (json["retried"] as Array<any>).map(TaskRunFromJSON),
+        failed:
+            json["failed"] == null
+                ? undefined
+                : (json["failed"] as Array<any>).map(TaskRunFromJSON),
     };
 }
 
-export function TaskRecordToJSON(value?: TaskRecord | null): any {
+export function TaskRecordToJSON(json: any): TaskRecord {
+    return TaskRecordToJSONTyped(json, false);
+}
+
+export function TaskRecordToJSONTyped(
+    value?: TaskRecord | null,
+    ignoreDiscriminator: boolean = false,
+): any {
     if (value == null) {
         return value;
     }
+
     return {
         task_name: value["taskName"],
         avg_duration: value["avgDuration"],
@@ -110,7 +131,13 @@ export function TaskRecordToJSON(value?: TaskRecord | null): any {
             value["succeeded"] == null
                 ? undefined
                 : (value["succeeded"] as Array<any>).map(TaskRunToJSON),
-        retried: value["retried"],
-        failed: value["failed"],
+        retried:
+            value["retried"] == null
+                ? undefined
+                : (value["retried"] as Array<any>).map(TaskRunToJSON),
+        failed:
+            value["failed"] == null
+                ? undefined
+                : (value["failed"] as Array<any>).map(TaskRunToJSON),
     };
 }

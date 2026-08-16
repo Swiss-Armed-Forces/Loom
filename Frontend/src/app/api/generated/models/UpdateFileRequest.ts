@@ -43,7 +43,9 @@ export interface UpdateFileRequest {
 /**
  * Check if a given object implements the UpdateFileRequest interface.
  */
-export function instanceOfUpdateFileRequest(value: object): boolean {
+export function instanceOfUpdateFileRequest(
+    value: object,
+): value is UpdateFileRequest {
     return true;
 }
 
@@ -65,10 +67,18 @@ export function UpdateFileRequestFromJSONTyped(
     };
 }
 
-export function UpdateFileRequestToJSON(value?: UpdateFileRequest | null): any {
+export function UpdateFileRequestToJSON(json: any): UpdateFileRequest {
+    return UpdateFileRequestToJSONTyped(json, false);
+}
+
+export function UpdateFileRequestToJSONTyped(
+    value?: UpdateFileRequest | null,
+    ignoreDiscriminator: boolean = false,
+): any {
     if (value == null) {
         return value;
     }
+
     return {
         hidden: value["hidden"],
         flagged: value["flagged"],

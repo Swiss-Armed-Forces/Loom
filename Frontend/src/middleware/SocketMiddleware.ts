@@ -1,7 +1,11 @@
 import { t } from "i18next";
 import { toast } from "react-toastify";
 
-import { PubSubMessage, PubSubMessageFromJSON } from "@app/api";
+import {
+    PubSubMessage,
+    PubSubMessageFromJSON,
+    PubSubMessageToJSON,
+} from "@app/api";
 import SocketApi from "@app/api/socketApi";
 import { setWebSocketPubSubMessage } from "@app/slices/searchSlice";
 import { webSocket } from "@features/common/urls";
@@ -57,8 +61,8 @@ const socketMiddleware =
 
             case "webSocket/send_message": {
                 const message = action.message as PubSubMessage;
-                socket.send(message);
-                break;
+                socket.send(PubSubMessageToJSON(message));
+                return;
             }
 
             case "webSocket/disconnect":

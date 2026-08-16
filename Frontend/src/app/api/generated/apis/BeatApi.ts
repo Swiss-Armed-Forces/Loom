@@ -14,11 +14,11 @@
  */
 
 import * as runtime from "../runtime";
-import type { HTTPValidationError } from "../models/index";
 import {
+    type HTTPValidationError,
     HTTPValidationErrorFromJSON,
     HTTPValidationErrorToJSON,
-} from "../models/index";
+} from "../models/HTTPValidationError";
 
 export interface TriggerScheduledTaskV1BeatScheduleNamePostRequest {
     scheduleName: TriggerScheduledTaskV1BeatScheduleNamePostScheduleNameEnum;
@@ -29,13 +29,11 @@ export interface TriggerScheduledTaskV1BeatScheduleNamePostRequest {
  */
 export class BeatApi extends runtime.BaseAPI {
     /**
-     * Manually trigger a scheduled task by name.  Args:     schedule_name: The name of the scheduled task from beat_schedule.
-     * Trigger Scheduled Task
+     * Creates request options for triggerScheduledTaskV1BeatScheduleNamePost without sending the request
      */
-    async triggerScheduledTaskV1BeatScheduleNamePostRaw(
+    async triggerScheduledTaskV1BeatScheduleNamePostRequestOpts(
         requestParameters: TriggerScheduledTaskV1BeatScheduleNamePostRequest,
-        initOverrides?: RequestInit | runtime.InitOverrideFunction,
-    ): Promise<runtime.ApiResponse<void>> {
+    ): Promise<runtime.RequestOpts> {
         if (requestParameters["scheduleName"] == null) {
             throw new runtime.RequiredError(
                 "scheduleName",
@@ -47,20 +45,33 @@ export class BeatApi extends runtime.BaseAPI {
 
         const headerParameters: runtime.HTTPHeaders = {};
 
-        const response = await this.request(
-            {
-                path: `/v1/beat/{schedule_name}`.replace(
-                    `{${"schedule_name"}}`,
-                    encodeURIComponent(
-                        String(requestParameters["scheduleName"]),
-                    ),
-                ),
-                method: "POST",
-                headers: headerParameters,
-                query: queryParameters,
-            },
-            initOverrides,
+        let urlPath = `/v1/beat/{schedule_name}`;
+        urlPath = urlPath.replace(
+            "{schedule_name}",
+            encodeURIComponent(String(requestParameters["scheduleName"])),
         );
+
+        return {
+            path: urlPath,
+            method: "POST",
+            headers: headerParameters,
+            query: queryParameters,
+        };
+    }
+
+    /**
+     * Manually trigger a scheduled task by name.  Args:     schedule_name: The name of the scheduled task from beat_schedule.
+     * Trigger Scheduled Task
+     */
+    async triggerScheduledTaskV1BeatScheduleNamePostRaw(
+        requestParameters: TriggerScheduledTaskV1BeatScheduleNamePostRequest,
+        initOverrides?: RequestInit | runtime.InitOverrideFunction,
+    ): Promise<runtime.ApiResponse<void>> {
+        const requestOptions =
+            await this.triggerScheduledTaskV1BeatScheduleNamePostRequestOpts(
+                requestParameters,
+            );
+        const response = await this.request(requestOptions, initOverrides);
 
         return new runtime.VoidApiResponse(response);
     }

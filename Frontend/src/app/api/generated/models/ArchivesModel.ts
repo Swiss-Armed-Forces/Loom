@@ -19,6 +19,7 @@ import {
     ArchiveHitFromJSON,
     ArchiveHitFromJSONTyped,
     ArchiveHitToJSON,
+    ArchiveHitToJSONTyped,
 } from "./ArchiveHit";
 
 /**
@@ -68,13 +69,14 @@ export interface ArchivesModel {
 /**
  * Check if a given object implements the ArchivesModel interface.
  */
-export function instanceOfArchivesModel(value: object): boolean {
-    if (!("clean" in value)) return false;
-    if (!("hits" in value)) return false;
-    if (!("total" in value)) return false;
-    if (!("found" in value)) return false;
-    if (!("hasMore" in value)) return false;
-    if (!("currentPage" in value)) return false;
+export function instanceOfArchivesModel(value: object): value is ArchivesModel {
+    if (!("clean" in value) || value["clean"] === undefined) return false;
+    if (!("hits" in value) || value["hits"] === undefined) return false;
+    if (!("total" in value) || value["total"] === undefined) return false;
+    if (!("found" in value) || value["found"] === undefined) return false;
+    if (!("hasMore" in value) || value["hasMore"] === undefined) return false;
+    if (!("currentPage" in value) || value["currentPage"] === undefined)
+        return false;
     return true;
 }
 
@@ -99,10 +101,18 @@ export function ArchivesModelFromJSONTyped(
     };
 }
 
-export function ArchivesModelToJSON(value?: ArchivesModel | null): any {
+export function ArchivesModelToJSON(json: any): ArchivesModel {
+    return ArchivesModelToJSONTyped(json, false);
+}
+
+export function ArchivesModelToJSONTyped(
+    value?: ArchivesModel | null,
+    ignoreDiscriminator: boolean = false,
+): any {
     if (value == null) {
         return value;
     }
+
     return {
         clean: value["clean"],
         hits: (value["hits"] as Array<any>).map(ArchiveHitToJSON),

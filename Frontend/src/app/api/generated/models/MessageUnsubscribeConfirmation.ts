@@ -22,24 +22,33 @@ import { mapValues } from "../runtime";
 export interface MessageUnsubscribeConfirmation {
     /**
      *
-     * @type {string}
+     * @type {MessageUnsubscribeConfirmationTypeEnum}
      * @memberof MessageUnsubscribeConfirmation
      */
-    type?: string;
+    type?: MessageUnsubscribeConfirmationTypeEnum;
     /**
      *
-     * @type {Array<string>}
+     * @type {Set<string>}
      * @memberof MessageUnsubscribeConfirmation
      */
-    channels?: Array<string>;
+    channels?: Set<string>;
 }
+
+/**
+ * @export
+ */
+export const MessageUnsubscribeConfirmationTypeEnum = {
+    UnsubscribeConfirmation: "unsubscribeConfirmation",
+} as const;
+export type MessageUnsubscribeConfirmationTypeEnum =
+    (typeof MessageUnsubscribeConfirmationTypeEnum)[keyof typeof MessageUnsubscribeConfirmationTypeEnum];
 
 /**
  * Check if a given object implements the MessageUnsubscribeConfirmation interface.
  */
 export function instanceOfMessageUnsubscribeConfirmation(
     value: object,
-): boolean {
+): value is MessageUnsubscribeConfirmation {
     return true;
 }
 
@@ -58,18 +67,30 @@ export function MessageUnsubscribeConfirmationFromJSONTyped(
     }
     return {
         type: json["type"] == null ? undefined : json["type"],
-        channels: json["channels"] == null ? undefined : json["channels"],
+        channels:
+            json["channels"] == null ? undefined : new Set(json["channels"]),
     };
 }
 
 export function MessageUnsubscribeConfirmationToJSON(
+    json: any,
+): MessageUnsubscribeConfirmation {
+    return MessageUnsubscribeConfirmationToJSONTyped(json, false);
+}
+
+export function MessageUnsubscribeConfirmationToJSONTyped(
     value?: MessageUnsubscribeConfirmation | null,
+    ignoreDiscriminator: boolean = false,
 ): any {
     if (value == null) {
         return value;
     }
+
     return {
         type: value["type"],
-        channels: value["channels"],
+        channels:
+            value["channels"] == null
+                ? undefined
+                : Array.from(value["channels"] as Set<any>),
     };
 }

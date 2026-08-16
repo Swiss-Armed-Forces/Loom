@@ -102,12 +102,14 @@
           "poetry lock --no-update --directory backend/api",
           "poetry lock --no-update --directory backend/worker",
           "poetry lock --no-update --directory backend/crawler",
+          "poetry lock --no-update --directory integrationtest",
           "poetry lock --no-update"
         ],
         "fileFilters": [
           "backend/api/poetry.lock",
           "backend/worker/poetry.lock",
           "backend/crawler/poetry.lock",
+          "integrationtest/poetry.lock",
           "poetry.lock"
         ],
         "executionMode": "update"

@@ -19,6 +19,7 @@ import {
     TaskRecordFromJSON,
     TaskRecordFromJSONTyped,
     TaskRecordToJSON,
+    TaskRecordToJSONTyped,
 } from "./TaskRecord";
 
 /**
@@ -50,9 +51,11 @@ export interface ArchiveContent {
 /**
  * Check if a given object implements the ArchiveContent interface.
  */
-export function instanceOfArchiveContent(value: object): boolean {
-    if (!("state" in value)) return false;
-    if (!("size" in value)) return false;
+export function instanceOfArchiveContent(
+    value: object,
+): value is ArchiveContent {
+    if (!("state" in value) || value["state"] === undefined) return false;
+    if (!("size" in value) || value["size"] === undefined) return false;
     return true;
 }
 
@@ -77,10 +80,18 @@ export function ArchiveContentFromJSONTyped(
     };
 }
 
-export function ArchiveContentToJSON(value?: ArchiveContent | null): any {
+export function ArchiveContentToJSON(json: any): ArchiveContent {
+    return ArchiveContentToJSONTyped(json, false);
+}
+
+export function ArchiveContentToJSONTyped(
+    value?: ArchiveContent | null,
+    ignoreDiscriminator: boolean = false,
+): any {
     if (value == null) {
         return value;
     }
+
     return {
         state: value["state"],
         size: value["size"],

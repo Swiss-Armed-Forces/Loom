@@ -19,6 +19,7 @@ import {
     HitsPerGroupEntryModelFromJSON,
     HitsPerGroupEntryModelFromJSONTyped,
     HitsPerGroupEntryModelToJSON,
+    HitsPerGroupEntryModelToJSONTyped,
 } from "./HitsPerGroupEntryModel";
 
 /**
@@ -74,11 +75,19 @@ export interface TermsStatisticsModel {
 /**
  * Check if a given object implements the TermsStatisticsModel interface.
  */
-export function instanceOfTermsStatisticsModel(value: object): boolean {
-    if (!("stat" in value)) return false;
-    if (!("key" in value)) return false;
-    if (!("data" in value)) return false;
-    if (!("fileCount" in value)) return false;
+export function instanceOfTermsStatisticsModel(
+    value: object,
+): value is TermsStatisticsModel {
+    if (!("stat" in value) || value["stat"] === undefined) return false;
+    if (!("key" in value) || value["key"] === undefined) return false;
+    if (!("data" in value) || value["data"] === undefined) return false;
+    if (
+        (!("fileCount" in (value as Record<string, any>)) &&
+            !("file_count" in (value as Record<string, any>))) ||
+        ((value as Record<string, any>)["fileCount"] === undefined &&
+            (value as Record<string, any>)["file_count"] === undefined)
+    )
+        return false;
     return true;
 }
 
@@ -105,12 +114,18 @@ export function TermsStatisticsModelFromJSONTyped(
     };
 }
 
-export function TermsStatisticsModelToJSON(
+export function TermsStatisticsModelToJSON(json: any): TermsStatisticsModel {
+    return TermsStatisticsModelToJSONTyped(json, false);
+}
+
+export function TermsStatisticsModelToJSONTyped(
     value?: TermsStatisticsModel | null,
+    ignoreDiscriminator: boolean = false,
 ): any {
     if (value == null) {
         return value;
     }
+
     return {
         stat: value["stat"],
         key: value["key"],

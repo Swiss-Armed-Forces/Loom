@@ -31,8 +31,10 @@ export interface AddTagsRequest {
 /**
  * Check if a given object implements the AddTagsRequest interface.
  */
-export function instanceOfAddTagsRequest(value: object): boolean {
-    if (!("tags" in value)) return false;
+export function instanceOfAddTagsRequest(
+    value: object,
+): value is AddTagsRequest {
+    if (!("tags" in value) || value["tags"] === undefined) return false;
     return true;
 }
 
@@ -52,10 +54,18 @@ export function AddTagsRequestFromJSONTyped(
     };
 }
 
-export function AddTagsRequestToJSON(value?: AddTagsRequest | null): any {
+export function AddTagsRequestToJSON(json: any): AddTagsRequest {
+    return AddTagsRequestToJSONTyped(json, false);
+}
+
+export function AddTagsRequestToJSONTyped(
+    value?: AddTagsRequest | null,
+    ignoreDiscriminator: boolean = false,
+): any {
     if (value == null) {
         return value;
     }
+
     return {
         tags: value["tags"],
     };

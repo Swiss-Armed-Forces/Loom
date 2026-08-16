@@ -31,7 +31,9 @@ export interface UpdateArchiveRequest {
 /**
  * Check if a given object implements the UpdateArchiveRequest interface.
  */
-export function instanceOfUpdateArchiveRequest(value: object): boolean {
+export function instanceOfUpdateArchiveRequest(
+    value: object,
+): value is UpdateArchiveRequest {
     return true;
 }
 
@@ -51,12 +53,18 @@ export function UpdateArchiveRequestFromJSONTyped(
     };
 }
 
-export function UpdateArchiveRequestToJSON(
+export function UpdateArchiveRequestToJSON(json: any): UpdateArchiveRequest {
+    return UpdateArchiveRequestToJSONTyped(json, false);
+}
+
+export function UpdateArchiveRequestToJSONTyped(
     value?: UpdateArchiveRequest | null,
+    ignoreDiscriminator: boolean = false,
 ): any {
     if (value == null) {
         return value;
     }
+
     return {
         hidden: value["hidden"],
     };

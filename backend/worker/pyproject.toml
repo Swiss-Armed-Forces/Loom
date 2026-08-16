@@ -9,14 +9,14 @@ packages = [{ include = "worker" }]
 
 [tool.poetry.dependencies]
 python = "~3.14"
-wand = "^0.6.13"
+wand = "^0.7.0"
 common = {path = "../common", develop=true}
 python-magic = "^0.4.27"
 requests = "^2.31.0"
 scipy = "^1.17.1"
 scikit-learn = "^1.7.0"
 langchain-text-splitters = "^1.1.2"
-gotenberg-client = "^0.13.1"
+gotenberg-client = "^0.14.0"
 
 # zstandard can be removed once refactored
 # see:

@@ -14,19 +14,21 @@
  */
 
 import * as runtime from "../runtime";
-import type {
-    HTTPValidationError,
-    ReinitAllResult,
-    ReinitResult,
-} from "../models/index";
 import {
+    type HTTPValidationError,
     HTTPValidationErrorFromJSON,
     HTTPValidationErrorToJSON,
+} from "../models/HTTPValidationError";
+import {
+    type ReinitAllResult,
     ReinitAllResultFromJSON,
     ReinitAllResultToJSON,
+} from "../models/ReinitAllResult";
+import {
+    type ReinitResult,
     ReinitResultFromJSON,
     ReinitResultToJSON,
-} from "../models/index";
+} from "../models/ReinitResult";
 
 export interface ReinitElasticsearchIndexV1InitElasticsearchIndexPostRequest {
     index: string;
@@ -37,24 +39,32 @@ export interface ReinitElasticsearchIndexV1InitElasticsearchIndexPostRequest {
  */
 export class InitApi extends runtime.BaseAPI {
     /**
+     * Creates request options for reinitAllElasticsearchV1InitElasticsearchPost without sending the request
+     */
+    async reinitAllElasticsearchV1InitElasticsearchPostRequestOpts(): Promise<runtime.RequestOpts> {
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        let urlPath = `/v1/init/elasticsearch`;
+
+        return {
+            path: urlPath,
+            method: "POST",
+            headers: headerParameters,
+            query: queryParameters,
+        };
+    }
+
+    /**
      * Reinit All Elasticsearch
      */
     async reinitAllElasticsearchV1InitElasticsearchPostRaw(
         initOverrides?: RequestInit | runtime.InitOverrideFunction,
     ): Promise<runtime.ApiResponse<ReinitAllResult>> {
-        const queryParameters: any = {};
-
-        const headerParameters: runtime.HTTPHeaders = {};
-
-        const response = await this.request(
-            {
-                path: `/v1/init/elasticsearch`,
-                method: "POST",
-                headers: headerParameters,
-                query: queryParameters,
-            },
-            initOverrides,
-        );
+        const requestOptions =
+            await this.reinitAllElasticsearchV1InitElasticsearchPostRequestOpts();
+        const response = await this.request(requestOptions, initOverrides);
 
         return new runtime.JSONApiResponse(response, (jsonValue) =>
             ReinitAllResultFromJSON(jsonValue),
@@ -75,12 +85,11 @@ export class InitApi extends runtime.BaseAPI {
     }
 
     /**
-     * Reinit Elasticsearch Index
+     * Creates request options for reinitElasticsearchIndexV1InitElasticsearchIndexPost without sending the request
      */
-    async reinitElasticsearchIndexV1InitElasticsearchIndexPostRaw(
+    async reinitElasticsearchIndexV1InitElasticsearchIndexPostRequestOpts(
         requestParameters: ReinitElasticsearchIndexV1InitElasticsearchIndexPostRequest,
-        initOverrides?: RequestInit | runtime.InitOverrideFunction,
-    ): Promise<runtime.ApiResponse<ReinitResult>> {
+    ): Promise<runtime.RequestOpts> {
         if (requestParameters["index"] == null) {
             throw new runtime.RequiredError(
                 "index",
@@ -92,18 +101,32 @@ export class InitApi extends runtime.BaseAPI {
 
         const headerParameters: runtime.HTTPHeaders = {};
 
-        const response = await this.request(
-            {
-                path: `/v1/init/elasticsearch/{index}`.replace(
-                    `{${"index"}}`,
-                    encodeURIComponent(String(requestParameters["index"])),
-                ),
-                method: "POST",
-                headers: headerParameters,
-                query: queryParameters,
-            },
-            initOverrides,
+        let urlPath = `/v1/init/elasticsearch/{index}`;
+        urlPath = urlPath.replace(
+            "{index}",
+            encodeURIComponent(String(requestParameters["index"])),
         );
+
+        return {
+            path: urlPath,
+            method: "POST",
+            headers: headerParameters,
+            query: queryParameters,
+        };
+    }
+
+    /**
+     * Reinit Elasticsearch Index
+     */
+    async reinitElasticsearchIndexV1InitElasticsearchIndexPostRaw(
+        requestParameters: ReinitElasticsearchIndexV1InitElasticsearchIndexPostRequest,
+        initOverrides?: RequestInit | runtime.InitOverrideFunction,
+    ): Promise<runtime.ApiResponse<ReinitResult>> {
+        const requestOptions =
+            await this.reinitElasticsearchIndexV1InitElasticsearchIndexPostRequestOpts(
+                requestParameters,
+            );
+        const response = await this.request(requestOptions, initOverrides);
 
         return new runtime.JSONApiResponse(response, (jsonValue) =>
             ReinitResultFromJSON(jsonValue),

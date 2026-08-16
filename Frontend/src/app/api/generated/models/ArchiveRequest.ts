@@ -19,6 +19,7 @@ import {
     QueryParametersFromJSON,
     QueryParametersFromJSONTyped,
     QueryParametersToJSON,
+    QueryParametersToJSONTyped,
 } from "./QueryParameters";
 
 /**
@@ -38,8 +39,10 @@ export interface ArchiveRequest {
 /**
  * Check if a given object implements the ArchiveRequest interface.
  */
-export function instanceOfArchiveRequest(value: object): boolean {
-    if (!("query" in value)) return false;
+export function instanceOfArchiveRequest(
+    value: object,
+): value is ArchiveRequest {
+    if (!("query" in value) || value["query"] === undefined) return false;
     return true;
 }
 
@@ -59,10 +62,18 @@ export function ArchiveRequestFromJSONTyped(
     };
 }
 
-export function ArchiveRequestToJSON(value?: ArchiveRequest | null): any {
+export function ArchiveRequestToJSON(json: any): ArchiveRequest {
+    return ArchiveRequestToJSONTyped(json, false);
+}
+
+export function ArchiveRequestToJSONTyped(
+    value?: ArchiveRequest | null,
+    ignoreDiscriminator: boolean = false,
+): any {
     if (value == null) {
         return value;
     }
+
     return {
         query: QueryParametersToJSON(value["query"]),
     };

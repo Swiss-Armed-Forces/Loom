@@ -31,8 +31,16 @@ export interface ContextCreateResponse {
 /**
  * Check if a given object implements the ContextCreateResponse interface.
  */
-export function instanceOfContextCreateResponse(value: object): boolean {
-    if (!("contextId" in value)) return false;
+export function instanceOfContextCreateResponse(
+    value: object,
+): value is ContextCreateResponse {
+    if (
+        (!("contextId" in (value as Record<string, any>)) &&
+            !("context_id" in (value as Record<string, any>))) ||
+        ((value as Record<string, any>)["contextId"] === undefined &&
+            (value as Record<string, any>)["context_id"] === undefined)
+    )
+        return false;
     return true;
 }
 
@@ -54,12 +62,18 @@ export function ContextCreateResponseFromJSONTyped(
     };
 }
 
-export function ContextCreateResponseToJSON(
+export function ContextCreateResponseToJSON(json: any): ContextCreateResponse {
+    return ContextCreateResponseToJSONTyped(json, false);
+}
+
+export function ContextCreateResponseToJSONTyped(
     value?: ContextCreateResponse | null,
+    ignoreDiscriminator: boolean = false,
 ): any {
     if (value == null) {
         return value;
     }
+
     return {
         context_id: value["contextId"],
     };

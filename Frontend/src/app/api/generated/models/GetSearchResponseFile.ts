@@ -28,10 +28,10 @@ export interface GetSearchResponseFile {
     fileId: string;
     /**
      *
-     * @type {{ [key: string]: any; }}
+     * @type {{ [key: string]: Array<string>; }}
      * @memberof GetSearchResponseFile
      */
-    highlight?: { [key: string]: any };
+    highlight?: { [key: string]: Array<string> };
     /**
      *
      * @type {number}
@@ -43,8 +43,16 @@ export interface GetSearchResponseFile {
 /**
  * Check if a given object implements the GetSearchResponseFile interface.
  */
-export function instanceOfGetSearchResponseFile(value: object): boolean {
-    if (!("fileId" in value)) return false;
+export function instanceOfGetSearchResponseFile(
+    value: object,
+): value is GetSearchResponseFile {
+    if (
+        (!("fileId" in (value as Record<string, any>)) &&
+            !("file_id" in (value as Record<string, any>))) ||
+        ((value as Record<string, any>)["fileId"] === undefined &&
+            (value as Record<string, any>)["file_id"] === undefined)
+    )
+        return false;
     return true;
 }
 
@@ -68,12 +76,18 @@ export function GetSearchResponseFileFromJSONTyped(
     };
 }
 
-export function GetSearchResponseFileToJSON(
+export function GetSearchResponseFileToJSON(json: any): GetSearchResponseFile {
+    return GetSearchResponseFileToJSONTyped(json, false);
+}
+
+export function GetSearchResponseFileToJSONTyped(
     value?: GetSearchResponseFile | null,
+    ignoreDiscriminator: boolean = false,
 ): any {
     if (value == null) {
         return value;
     }
+
     return {
         file_id: value["fileId"],
         highlight: value["highlight"],

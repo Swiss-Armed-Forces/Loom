@@ -22,16 +22,25 @@ import { mapValues } from "../runtime";
 export interface MessageNoop {
     /**
      *
-     * @type {string}
+     * @type {MessageNoopTypeEnum}
      * @memberof MessageNoop
      */
-    type?: string;
+    type?: MessageNoopTypeEnum;
 }
+
+/**
+ * @export
+ */
+export const MessageNoopTypeEnum = {
+    Noop: "noop",
+} as const;
+export type MessageNoopTypeEnum =
+    (typeof MessageNoopTypeEnum)[keyof typeof MessageNoopTypeEnum];
 
 /**
  * Check if a given object implements the MessageNoop interface.
  */
-export function instanceOfMessageNoop(value: object): boolean {
+export function instanceOfMessageNoop(value: object): value is MessageNoop {
     return true;
 }
 
@@ -51,10 +60,18 @@ export function MessageNoopFromJSONTyped(
     };
 }
 
-export function MessageNoopToJSON(value?: MessageNoop | null): any {
+export function MessageNoopToJSON(json: any): MessageNoop {
+    return MessageNoopToJSONTyped(json, false);
+}
+
+export function MessageNoopToJSONTyped(
+    value?: MessageNoop | null,
+    ignoreDiscriminator: boolean = false,
+): any {
     if (value == null) {
         return value;
     }
+
     return {
         type: value["type"],
     };

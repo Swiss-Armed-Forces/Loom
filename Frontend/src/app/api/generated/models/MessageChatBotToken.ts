@@ -22,10 +22,10 @@ import { mapValues } from "../runtime";
 export interface MessageChatBotToken {
     /**
      *
-     * @type {string}
+     * @type {MessageChatBotTokenTypeEnum}
      * @memberof MessageChatBotToken
      */
-    type?: string;
+    type?: MessageChatBotTokenTypeEnum;
     /**
      *
      * @type {string}
@@ -41,11 +41,28 @@ export interface MessageChatBotToken {
 }
 
 /**
+ * @export
+ */
+export const MessageChatBotTokenTypeEnum = {
+    ChatBotToken: "chatBotToken",
+} as const;
+export type MessageChatBotTokenTypeEnum =
+    (typeof MessageChatBotTokenTypeEnum)[keyof typeof MessageChatBotTokenTypeEnum];
+
+/**
  * Check if a given object implements the MessageChatBotToken interface.
  */
-export function instanceOfMessageChatBotToken(value: object): boolean {
-    if (!("tokenId" in value)) return false;
-    if (!("token" in value)) return false;
+export function instanceOfMessageChatBotToken(
+    value: object,
+): value is MessageChatBotToken {
+    if (
+        (!("tokenId" in (value as Record<string, any>)) &&
+            !("token_id" in (value as Record<string, any>))) ||
+        ((value as Record<string, any>)["tokenId"] === undefined &&
+            (value as Record<string, any>)["token_id"] === undefined)
+    )
+        return false;
+    if (!("token" in value) || value["token"] === undefined) return false;
     return true;
 }
 
@@ -67,12 +84,18 @@ export function MessageChatBotTokenFromJSONTyped(
     };
 }
 
-export function MessageChatBotTokenToJSON(
+export function MessageChatBotTokenToJSON(json: any): MessageChatBotToken {
+    return MessageChatBotTokenToJSONTyped(json, false);
+}
+
+export function MessageChatBotTokenToJSONTyped(
     value?: MessageChatBotToken | null,
+    ignoreDiscriminator: boolean = false,
 ): any {
     if (value == null) {
         return value;
     }
+
     return {
         type: value["type"],
         token_id: value["tokenId"],

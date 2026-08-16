@@ -14,30 +14,34 @@
  */
 
 import { mapValues } from "../runtime";
-import type { GetFileLanguageTranslations } from "./GetFileLanguageTranslations";
-import {
-    GetFileLanguageTranslationsFromJSON,
-    GetFileLanguageTranslationsFromJSONTyped,
-    GetFileLanguageTranslationsToJSON,
-} from "./GetFileLanguageTranslations";
 import type { ImapInfo } from "./ImapInfo";
 import {
     ImapInfoFromJSON,
     ImapInfoFromJSONTyped,
     ImapInfoToJSON,
+    ImapInfoToJSONTyped,
 } from "./ImapInfo";
-import type { RenderedFile } from "./RenderedFile";
-import {
-    RenderedFileFromJSON,
-    RenderedFileFromJSONTyped,
-    RenderedFileToJSON,
-} from "./RenderedFile";
 import type { TaskRecord } from "./TaskRecord";
 import {
     TaskRecordFromJSON,
     TaskRecordFromJSONTyped,
     TaskRecordToJSON,
+    TaskRecordToJSONTyped,
 } from "./TaskRecord";
+import type { RenderedFile } from "./RenderedFile";
+import {
+    RenderedFileFromJSON,
+    RenderedFileFromJSONTyped,
+    RenderedFileToJSON,
+    RenderedFileToJSONTyped,
+} from "./RenderedFile";
+import type { GetFileLanguageTranslations } from "./GetFileLanguageTranslations";
+import {
+    GetFileLanguageTranslationsFromJSON,
+    GetFileLanguageTranslationsFromJSONTyped,
+    GetFileLanguageTranslationsToJSON,
+    GetFileLanguageTranslationsToJSONTyped,
+} from "./GetFileLanguageTranslations";
 
 /**
  *
@@ -53,10 +57,10 @@ export interface GetFileResponse {
     fileId: string;
     /**
      *
-     * @type {{ [key: string]: any; }}
+     * @type {{ [key: string]: Array<string>; }}
      * @memberof GetFileResponse
      */
-    highlight?: { [key: string]: any };
+    highlight?: { [key: string]: Array<string> };
     /**
      *
      * @type {string}
@@ -134,15 +138,42 @@ export interface GetFileResponse {
 /**
  * Check if a given object implements the GetFileResponse interface.
  */
-export function instanceOfGetFileResponse(value: object): boolean {
-    if (!("fileId" in value)) return false;
-    if (!("content" in value)) return false;
-    if (!("name" in value)) return false;
-    if (!("fullPath" in value)) return false;
-    if (!("languageTranslations" in value)) return false;
-    if (!("raw" in value)) return false;
-    if (!("renderedFile" in value)) return false;
-    if (!("tasks" in value)) return false;
+export function instanceOfGetFileResponse(
+    value: object,
+): value is GetFileResponse {
+    if (
+        (!("fileId" in (value as Record<string, any>)) &&
+            !("file_id" in (value as Record<string, any>))) ||
+        ((value as Record<string, any>)["fileId"] === undefined &&
+            (value as Record<string, any>)["file_id"] === undefined)
+    )
+        return false;
+    if (!("content" in value) || value["content"] === undefined) return false;
+    if (!("name" in value) || value["name"] === undefined) return false;
+    if (
+        (!("fullPath" in (value as Record<string, any>)) &&
+            !("full_path" in (value as Record<string, any>))) ||
+        ((value as Record<string, any>)["fullPath"] === undefined &&
+            (value as Record<string, any>)["full_path"] === undefined)
+    )
+        return false;
+    if (
+        (!("languageTranslations" in (value as Record<string, any>)) &&
+            !("language_translations" in (value as Record<string, any>))) ||
+        ((value as Record<string, any>)["languageTranslations"] === undefined &&
+            (value as Record<string, any>)["language_translations"] ===
+                undefined)
+    )
+        return false;
+    if (!("raw" in value) || value["raw"] === undefined) return false;
+    if (
+        (!("renderedFile" in (value as Record<string, any>)) &&
+            !("rendered_file" in (value as Record<string, any>))) ||
+        ((value as Record<string, any>)["renderedFile"] === undefined &&
+            (value as Record<string, any>)["rendered_file"] === undefined)
+    )
+        return false;
+    if (!("tasks" in value) || value["tasks"] === undefined) return false;
     return true;
 }
 
@@ -183,10 +214,18 @@ export function GetFileResponseFromJSONTyped(
     };
 }
 
-export function GetFileResponseToJSON(value?: GetFileResponse | null): any {
+export function GetFileResponseToJSON(json: any): GetFileResponse {
+    return GetFileResponseToJSONTyped(json, false);
+}
+
+export function GetFileResponseToJSONTyped(
+    value?: GetFileResponse | null,
+    ignoreDiscriminator: boolean = false,
+): any {
     if (value == null) {
         return value;
     }
+
     return {
         file_id: value["fileId"],
         highlight: value["highlight"],

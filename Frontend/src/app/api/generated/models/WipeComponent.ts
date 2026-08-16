@@ -29,6 +29,17 @@ export const WipeComponent = {
 } as const;
 export type WipeComponent = (typeof WipeComponent)[keyof typeof WipeComponent];
 
+export function instanceOfWipeComponent(value: any): boolean {
+    for (const key in WipeComponent) {
+        if (Object.prototype.hasOwnProperty.call(WipeComponent, key)) {
+            if (WipeComponent[key as keyof typeof WipeComponent] === value) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
 export function WipeComponentFromJSON(json: any): WipeComponent {
     return WipeComponentFromJSONTyped(json, false);
 }
@@ -42,4 +53,11 @@ export function WipeComponentFromJSONTyped(
 
 export function WipeComponentToJSON(value?: WipeComponent | null): any {
     return value as any;
+}
+
+export function WipeComponentToJSONTyped(
+    value: any,
+    ignoreDiscriminator: boolean,
+): WipeComponent {
+    return value as WipeComponent;
 }

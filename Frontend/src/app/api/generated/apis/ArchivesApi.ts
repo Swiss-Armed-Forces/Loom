@@ -14,28 +14,36 @@
  */
 
 import * as runtime from "../runtime";
-import type {
-    ArchiveCreatedResponse,
-    ArchiveRequest,
-    ArchivesModel,
-    EncryptionKeyResponse,
-    HTTPValidationError,
-    UpdateArchiveRequest,
-} from "../models/index";
 import {
+    type ArchiveCreatedResponse,
     ArchiveCreatedResponseFromJSON,
     ArchiveCreatedResponseToJSON,
+} from "../models/ArchiveCreatedResponse";
+import {
+    type ArchiveRequest,
     ArchiveRequestFromJSON,
     ArchiveRequestToJSON,
+} from "../models/ArchiveRequest";
+import {
+    type ArchivesModel,
     ArchivesModelFromJSON,
     ArchivesModelToJSON,
+} from "../models/ArchivesModel";
+import {
+    type EncryptionKeyResponse,
     EncryptionKeyResponseFromJSON,
     EncryptionKeyResponseToJSON,
+} from "../models/EncryptionKeyResponse";
+import {
+    type HTTPValidationError,
     HTTPValidationErrorFromJSON,
     HTTPValidationErrorToJSON,
+} from "../models/HTTPValidationError";
+import {
+    type UpdateArchiveRequest,
     UpdateArchiveRequestFromJSON,
     UpdateArchiveRequestToJSON,
-} from "../models/index";
+} from "../models/UpdateArchiveRequest";
 
 export interface CreateNewArchiveV1ArchivePostRequest {
     archiveRequest: ArchiveRequest;
@@ -60,13 +68,11 @@ export interface UpdateArchiveV1ArchiveArchiveIdPutRequest {
  */
 export class ArchivesApi extends runtime.BaseAPI {
     /**
-     * Create a new archive containing all files that match the query.
-     * Create New Archive
+     * Creates request options for createNewArchiveV1ArchivePost without sending the request
      */
-    async createNewArchiveV1ArchivePostRaw(
+    async createNewArchiveV1ArchivePostRequestOpts(
         requestParameters: CreateNewArchiveV1ArchivePostRequest,
-        initOverrides?: RequestInit | runtime.InitOverrideFunction,
-    ): Promise<runtime.ApiResponse<ArchiveCreatedResponse>> {
+    ): Promise<runtime.RequestOpts> {
         if (requestParameters["archiveRequest"] == null) {
             throw new runtime.RequiredError(
                 "archiveRequest",
@@ -80,16 +86,30 @@ export class ArchivesApi extends runtime.BaseAPI {
 
         headerParameters["Content-Type"] = "application/json";
 
-        const response = await this.request(
-            {
-                path: `/v1/archive`,
-                method: "POST",
-                headers: headerParameters,
-                query: queryParameters,
-                body: ArchiveRequestToJSON(requestParameters["archiveRequest"]),
-            },
-            initOverrides,
-        );
+        let urlPath = `/v1/archive`;
+
+        return {
+            path: urlPath,
+            method: "POST",
+            headers: headerParameters,
+            query: queryParameters,
+            body: ArchiveRequestToJSON(requestParameters["archiveRequest"]),
+        };
+    }
+
+    /**
+     * Create a new archive containing all files that match the query.
+     * Create New Archive
+     */
+    async createNewArchiveV1ArchivePostRaw(
+        requestParameters: CreateNewArchiveV1ArchivePostRequest,
+        initOverrides?: RequestInit | runtime.InitOverrideFunction,
+    ): Promise<runtime.ApiResponse<ArchiveCreatedResponse>> {
+        const requestOptions =
+            await this.createNewArchiveV1ArchivePostRequestOpts(
+                requestParameters,
+            );
+        const response = await this.request(requestOptions, initOverrides);
 
         return new runtime.JSONApiResponse(response, (jsonValue) =>
             ArchiveCreatedResponseFromJSON(jsonValue),
@@ -112,13 +132,11 @@ export class ArchivesApi extends runtime.BaseAPI {
     }
 
     /**
-     * Download an archive by id.
-     * Download Archive
+     * Creates request options for downloadArchiveV1ArchiveArchiveIdGet without sending the request
      */
-    async downloadArchiveV1ArchiveArchiveIdGetRaw(
+    async downloadArchiveV1ArchiveArchiveIdGetRequestOpts(
         requestParameters: DownloadArchiveV1ArchiveArchiveIdGetRequest,
-        initOverrides?: RequestInit | runtime.InitOverrideFunction,
-    ): Promise<runtime.ApiResponse<any>> {
+    ): Promise<runtime.RequestOpts> {
         if (requestParameters["archiveId"] == null) {
             throw new runtime.RequiredError(
                 "archiveId",
@@ -134,18 +152,33 @@ export class ArchivesApi extends runtime.BaseAPI {
 
         const headerParameters: runtime.HTTPHeaders = {};
 
-        const response = await this.request(
-            {
-                path: `/v1/archive/{archive_id}`.replace(
-                    `{${"archive_id"}}`,
-                    encodeURIComponent(String(requestParameters["archiveId"])),
-                ),
-                method: "GET",
-                headers: headerParameters,
-                query: queryParameters,
-            },
-            initOverrides,
+        let urlPath = `/v1/archive/{archive_id}`;
+        urlPath = urlPath.replace(
+            "{archive_id}",
+            encodeURIComponent(String(requestParameters["archiveId"])),
         );
+
+        return {
+            path: urlPath,
+            method: "GET",
+            headers: headerParameters,
+            query: queryParameters,
+        };
+    }
+
+    /**
+     * Download an archive by id.
+     * Download Archive
+     */
+    async downloadArchiveV1ArchiveArchiveIdGetRaw(
+        requestParameters: DownloadArchiveV1ArchiveArchiveIdGetRequest,
+        initOverrides?: RequestInit | runtime.InitOverrideFunction,
+    ): Promise<runtime.ApiResponse<any>> {
+        const requestOptions =
+            await this.downloadArchiveV1ArchiveArchiveIdGetRequestOpts(
+                requestParameters,
+            );
+        const response = await this.request(requestOptions, initOverrides);
 
         if (this.isJsonMime(response.headers.get("content-type"))) {
             return new runtime.JSONApiResponse<any>(response);
@@ -170,25 +203,33 @@ export class ArchivesApi extends runtime.BaseAPI {
     }
 
     /**
+     * Creates request options for getAllArchivesV1ArchiveGet without sending the request
+     */
+    async getAllArchivesV1ArchiveGetRequestOpts(): Promise<runtime.RequestOpts> {
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        let urlPath = `/v1/archive`;
+
+        return {
+            path: urlPath,
+            method: "GET",
+            headers: headerParameters,
+            query: queryParameters,
+        };
+    }
+
+    /**
      * Get all archives.
      * Get All Archives
      */
     async getAllArchivesV1ArchiveGetRaw(
         initOverrides?: RequestInit | runtime.InitOverrideFunction,
     ): Promise<runtime.ApiResponse<ArchivesModel>> {
-        const queryParameters: any = {};
-
-        const headerParameters: runtime.HTTPHeaders = {};
-
-        const response = await this.request(
-            {
-                path: `/v1/archive`,
-                method: "GET",
-                headers: headerParameters,
-                query: queryParameters,
-            },
-            initOverrides,
-        );
+        const requestOptions =
+            await this.getAllArchivesV1ArchiveGetRequestOpts();
+        const response = await this.request(requestOptions, initOverrides);
 
         return new runtime.JSONApiResponse(response, (jsonValue) =>
             ArchivesModelFromJSON(jsonValue),
@@ -208,25 +249,33 @@ export class ArchivesApi extends runtime.BaseAPI {
     }
 
     /**
+     * Creates request options for getEncryptionKeyV1ArchiveEncryptionKeyGet without sending the request
+     */
+    async getEncryptionKeyV1ArchiveEncryptionKeyGetRequestOpts(): Promise<runtime.RequestOpts> {
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        let urlPath = `/v1/archive/encryption-key`;
+
+        return {
+            path: urlPath,
+            method: "GET",
+            headers: headerParameters,
+            query: queryParameters,
+        };
+    }
+
+    /**
      * Return the archive encryption master key, or null if not configured.
      * Get Encryption Key
      */
     async getEncryptionKeyV1ArchiveEncryptionKeyGetRaw(
         initOverrides?: RequestInit | runtime.InitOverrideFunction,
     ): Promise<runtime.ApiResponse<EncryptionKeyResponse>> {
-        const queryParameters: any = {};
-
-        const headerParameters: runtime.HTTPHeaders = {};
-
-        const response = await this.request(
-            {
-                path: `/v1/archive/encryption-key`,
-                method: "GET",
-                headers: headerParameters,
-                query: queryParameters,
-            },
-            initOverrides,
-        );
+        const requestOptions =
+            await this.getEncryptionKeyV1ArchiveEncryptionKeyGetRequestOpts();
+        const response = await this.request(requestOptions, initOverrides);
 
         return new runtime.JSONApiResponse(response, (jsonValue) =>
             EncryptionKeyResponseFromJSON(jsonValue),
@@ -248,13 +297,11 @@ export class ArchivesApi extends runtime.BaseAPI {
     }
 
     /**
-     * Import files from a loom archive (.zip or .loom).
-     * Import Archive
+     * Creates request options for importArchiveV1ArchiveImportPost without sending the request
      */
-    async importArchiveV1ArchiveImportPostRaw(
+    async importArchiveV1ArchiveImportPostRequestOpts(
         requestParameters: ImportArchiveV1ArchiveImportPostRequest,
-        initOverrides?: RequestInit | runtime.InitOverrideFunction,
-    ): Promise<runtime.ApiResponse<any>> {
+    ): Promise<runtime.RequestOpts> {
         if (requestParameters["file"] == null) {
             throw new runtime.RequiredError(
                 "file",
@@ -286,16 +333,30 @@ export class ArchivesApi extends runtime.BaseAPI {
             formParams.append("file", requestParameters["file"] as any);
         }
 
-        const response = await this.request(
-            {
-                path: `/v1/archive/import`,
-                method: "POST",
-                headers: headerParameters,
-                query: queryParameters,
-                body: formParams,
-            },
-            initOverrides,
-        );
+        let urlPath = `/v1/archive/import`;
+
+        return {
+            path: urlPath,
+            method: "POST",
+            headers: headerParameters,
+            query: queryParameters,
+            body: formParams,
+        };
+    }
+
+    /**
+     * Import files from a loom archive (.zip or .loom).
+     * Import Archive
+     */
+    async importArchiveV1ArchiveImportPostRaw(
+        requestParameters: ImportArchiveV1ArchiveImportPostRequest,
+        initOverrides?: RequestInit | runtime.InitOverrideFunction,
+    ): Promise<runtime.ApiResponse<any>> {
+        const requestOptions =
+            await this.importArchiveV1ArchiveImportPostRequestOpts(
+                requestParameters,
+            );
+        const response = await this.request(requestOptions, initOverrides);
 
         if (this.isJsonMime(response.headers.get("content-type"))) {
             return new runtime.JSONApiResponse<any>(response);
@@ -320,12 +381,11 @@ export class ArchivesApi extends runtime.BaseAPI {
     }
 
     /**
-     * Update Archive
+     * Creates request options for updateArchiveV1ArchiveArchiveIdPut without sending the request
      */
-    async updateArchiveV1ArchiveArchiveIdPutRaw(
+    async updateArchiveV1ArchiveArchiveIdPutRequestOpts(
         requestParameters: UpdateArchiveV1ArchiveArchiveIdPutRequest,
-        initOverrides?: RequestInit | runtime.InitOverrideFunction,
-    ): Promise<runtime.ApiResponse<any>> {
+    ): Promise<runtime.RequestOpts> {
         if (requestParameters["archiveId"] == null) {
             throw new runtime.RequiredError(
                 "archiveId",
@@ -346,21 +406,35 @@ export class ArchivesApi extends runtime.BaseAPI {
 
         headerParameters["Content-Type"] = "application/json";
 
-        const response = await this.request(
-            {
-                path: `/v1/archive/{archive_id}`.replace(
-                    `{${"archive_id"}}`,
-                    encodeURIComponent(String(requestParameters["archiveId"])),
-                ),
-                method: "PUT",
-                headers: headerParameters,
-                query: queryParameters,
-                body: UpdateArchiveRequestToJSON(
-                    requestParameters["updateArchiveRequest"],
-                ),
-            },
-            initOverrides,
+        let urlPath = `/v1/archive/{archive_id}`;
+        urlPath = urlPath.replace(
+            "{archive_id}",
+            encodeURIComponent(String(requestParameters["archiveId"])),
         );
+
+        return {
+            path: urlPath,
+            method: "PUT",
+            headers: headerParameters,
+            query: queryParameters,
+            body: UpdateArchiveRequestToJSON(
+                requestParameters["updateArchiveRequest"],
+            ),
+        };
+    }
+
+    /**
+     * Update Archive
+     */
+    async updateArchiveV1ArchiveArchiveIdPutRaw(
+        requestParameters: UpdateArchiveV1ArchiveArchiveIdPutRequest,
+        initOverrides?: RequestInit | runtime.InitOverrideFunction,
+    ): Promise<runtime.ApiResponse<any>> {
+        const requestOptions =
+            await this.updateArchiveV1ArchiveArchiveIdPutRequestOpts(
+                requestParameters,
+            );
+        const response = await this.request(requestOptions, initOverrides);
 
         if (this.isJsonMime(response.headers.get("content-type"))) {
             return new runtime.JSONApiResponse<any>(response);

@@ -12,13 +12,13 @@ packages = [
 [tool.poetry.dependencies]
 python = "~3.14"
 common = {path = "../common", develop = true}
-fastapi = "^0.128.0"
-uvicorn = "^0.40.0"
+fastapi = "^0.141.0"
+uvicorn = "^0.52.0"
 python-multipart="^0.0.32"
 numpy = "^2.4.4"
 scikit-learn = "^1.4.2"
 websockets = "^13.0"
-prometheus-client = "^0.24.1"
+prometheus-client = "^0.26.0"
 opentelemetry-instrumentation-fastapi = "^0.60b1"
 opentelemetry-exporter-prometheus = "^0.60b1"
 minio = "^7.2.20"

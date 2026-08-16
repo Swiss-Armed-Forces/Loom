@@ -37,7 +37,9 @@ export interface CompleteEstimateResult {
 /**
  * Check if a given object implements the CompleteEstimateResult interface.
  */
-export function instanceOfCompleteEstimateResult(value: object): boolean {
+export function instanceOfCompleteEstimateResult(
+    value: object,
+): value is CompleteEstimateResult {
     return true;
 }
 
@@ -65,11 +67,19 @@ export function CompleteEstimateResultFromJSONTyped(
 }
 
 export function CompleteEstimateResultToJSON(
+    json: any,
+): CompleteEstimateResult {
+    return CompleteEstimateResultToJSONTyped(json, false);
+}
+
+export function CompleteEstimateResultToJSONTyped(
     value?: CompleteEstimateResult | null,
+    ignoreDiscriminator: boolean = false,
 ): any {
     if (value == null) {
         return value;
     }
+
     return {
         estimate_timestamp: value["estimateTimestamp"],
         files_pending: value["filesPending"],

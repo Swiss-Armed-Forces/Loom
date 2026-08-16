@@ -46,7 +46,7 @@ def declare_terminal_queues(sender: _WorkerReadySender, **__: Any) -> None:
     with sender.app.pool.acquire(block=True) as conn:  # type: ignore[attr-defined]
         for queue in get_terminal_queues():
             try:
-                queue(conn.default_channel).declare()  # type: ignore[operator]
+                queue(conn.default_channel).declare()  # type: ignore[operator, attr-defined]
             except PreconditionFailed:
                 # RabbitMQ closed the channel because the exchange exists with a
                 # different type. Open fresh channels (the original is now closed)
@@ -57,10 +57,10 @@ def declare_terminal_queues(sender: _WorkerReadySender, **__: Any) -> None:
                     queue.name,
                 )
                 if queue.exchange:
-                    with conn.channel() as ch:  # type: ignore[attr-defined]
-                        queue.exchange(ch).delete(if_unused=False)  # type: ignore[operator]
-                with conn.channel() as ch:  # type: ignore[attr-defined]
-                    queue(ch).declare()  # type: ignore[operator]
+                    with conn.channel() as ch:  # type: ignore[attr-defined, operator, misc]
+                        queue.exchange(ch).delete(if_unused=False)  # type: ignore[operator, misc]
+                with conn.channel() as ch:  # type: ignore[attr-defined, operator, misc]
+                    queue(ch).declare()  # type: ignore[operator, misc]
 
 
 @signals.task_prerun.connect

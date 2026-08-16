@@ -73,6 +73,9 @@ def persisting_task(
             name = celery_app.gen_task_name(
                 persist_fcn.__name__, persist_fcn.__module__
             )
+            autoretry_for = (WorkerShuttingDownError,)
+            max_retries = PERSIST_MAX_RETRIES
+            retry_backoff = True
 
             # pylint does not consider metaclass:
             # https://stackoverflow.com/questions/22186843/pylint-w0223-method-is-abstract-in-class-but-is-not-overridden
@@ -117,12 +120,7 @@ def persisting_task(
                 return passed_args[0]
 
         task_instance = PersistingTask()
-        celery_app.register_task(
-            task_instance,
-            autoretry_for=[WorkerShuttingDownError],
-            max_retries=PERSIST_MAX_RETRIES,
-            retry_backoff=True,
-        )
+        celery_app.register_task(task_instance)
         return task_instance
 
     return inner_decorator

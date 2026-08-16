@@ -22,10 +22,10 @@ import { mapValues } from "../runtime";
 export interface MessageFileSave {
     /**
      *
-     * @type {string}
+     * @type {MessageFileSaveTypeEnum}
      * @memberof MessageFileSave
      */
-    type?: string;
+    type?: MessageFileSaveTypeEnum;
     /**
      *
      * @type {string}
@@ -35,10 +35,21 @@ export interface MessageFileSave {
 }
 
 /**
+ * @export
+ */
+export const MessageFileSaveTypeEnum = {
+    FileSave: "fileSave",
+} as const;
+export type MessageFileSaveTypeEnum =
+    (typeof MessageFileSaveTypeEnum)[keyof typeof MessageFileSaveTypeEnum];
+
+/**
  * Check if a given object implements the MessageFileSave interface.
  */
-export function instanceOfMessageFileSave(value: object): boolean {
-    if (!("fileId" in value)) return false;
+export function instanceOfMessageFileSave(
+    value: object,
+): value is MessageFileSave {
+    if (!("fileId" in value) || value["fileId"] === undefined) return false;
     return true;
 }
 
@@ -59,10 +70,18 @@ export function MessageFileSaveFromJSONTyped(
     };
 }
 
-export function MessageFileSaveToJSON(value?: MessageFileSave | null): any {
+export function MessageFileSaveToJSON(json: any): MessageFileSave {
+    return MessageFileSaveToJSONTyped(json, false);
+}
+
+export function MessageFileSaveToJSONTyped(
+    value?: MessageFileSave | null,
+    ignoreDiscriminator: boolean = false,
+): any {
     if (value == null) {
         return value;
     }
+
     return {
         type: value["type"],
         fileId: value["fileId"],

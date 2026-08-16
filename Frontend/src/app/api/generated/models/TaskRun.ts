@@ -61,11 +61,29 @@ export interface TaskRun {
 /**
  * Check if a given object implements the TaskRun interface.
  */
-export function instanceOfTaskRun(value: object): boolean {
-    if (!("taskId" in value)) return false;
-    if (!("startedAt" in value)) return false;
-    if (!("finishedAt" in value)) return false;
-    if (!("duration" in value)) return false;
+export function instanceOfTaskRun(value: object): value is TaskRun {
+    if (
+        (!("taskId" in (value as Record<string, any>)) &&
+            !("task_id" in (value as Record<string, any>))) ||
+        ((value as Record<string, any>)["taskId"] === undefined &&
+            (value as Record<string, any>)["task_id"] === undefined)
+    )
+        return false;
+    if (
+        (!("startedAt" in (value as Record<string, any>)) &&
+            !("started_at" in (value as Record<string, any>))) ||
+        ((value as Record<string, any>)["startedAt"] === undefined &&
+            (value as Record<string, any>)["started_at"] === undefined)
+    )
+        return false;
+    if (
+        (!("finishedAt" in (value as Record<string, any>)) &&
+            !("finished_at" in (value as Record<string, any>))) ||
+        ((value as Record<string, any>)["finishedAt"] === undefined &&
+            (value as Record<string, any>)["finished_at"] === undefined)
+    )
+        return false;
+    if (!("duration" in value) || value["duration"] === undefined) return false;
     return true;
 }
 
@@ -90,10 +108,18 @@ export function TaskRunFromJSONTyped(
     };
 }
 
-export function TaskRunToJSON(value?: TaskRun | null): any {
+export function TaskRunToJSON(json: any): TaskRun {
+    return TaskRunToJSONTyped(json, false);
+}
+
+export function TaskRunToJSONTyped(
+    value?: TaskRun | null,
+    ignoreDiscriminator: boolean = false,
+): any {
     if (value == null) {
         return value;
     }
+
     return {
         task_id: value["taskId"],
         started_at: value["startedAt"].toISOString(),

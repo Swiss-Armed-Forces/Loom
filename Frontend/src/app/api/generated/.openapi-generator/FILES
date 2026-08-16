@@ -52,6 +52,7 @@ models/ImageDescriptionFileRequest.ts
 models/ImageDescriptionRequest.ts
 models/ImapInfo.ts
 models/IndexAllRequest.ts
+models/LocationInner.ts
 models/Message.ts
 models/MessageChatBotAnswerComplete.ts
 models/MessageChatBotCitation.ts
@@ -87,7 +88,6 @@ models/UpdateArchiveRequest.ts
 models/UpdateFileRequest.ts
 models/UpdateFilesRequest.ts
 models/ValidationError.ts
-models/ValidationErrorLocInner.ts
 models/WipeComponent.ts
 models/index.ts
 runtime.ts

@@ -19,6 +19,7 @@ import {
     TreeNodeModelFromJSON,
     TreeNodeModelFromJSONTyped,
     TreeNodeModelToJSON,
+    TreeNodeModelToJSONTyped,
 } from "./TreeNodeModel";
 
 /**
@@ -50,8 +51,10 @@ export interface GetFilesTreeResponse {
 /**
  * Check if a given object implements the GetFilesTreeResponse interface.
  */
-export function instanceOfGetFilesTreeResponse(value: object): boolean {
-    if (!("nodes" in value)) return false;
+export function instanceOfGetFilesTreeResponse(
+    value: object,
+): value is GetFilesTreeResponse {
+    if (!("nodes" in value) || value["nodes"] === undefined) return false;
     return true;
 }
 
@@ -79,12 +82,18 @@ export function GetFilesTreeResponseFromJSONTyped(
     };
 }
 
-export function GetFilesTreeResponseToJSON(
+export function GetFilesTreeResponseToJSON(json: any): GetFilesTreeResponse {
+    return GetFilesTreeResponseToJSONTyped(json, false);
+}
+
+export function GetFilesTreeResponseToJSONTyped(
     value?: GetFilesTreeResponse | null,
+    ignoreDiscriminator: boolean = false,
 ): any {
     if (value == null) {
         return value;
     }
+
     return {
         nodes: (value["nodes"] as Array<any>).map(TreeNodeModelToJSON),
         next_page_cursor: value["nextPageCursor"],

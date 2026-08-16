@@ -37,9 +37,15 @@ export interface ReinitResult {
 /**
  * Check if a given object implements the ReinitResult interface.
  */
-export function instanceOfReinitResult(value: object): boolean {
-    if (!("index" in value)) return false;
-    if (!("backupIndex" in value)) return false;
+export function instanceOfReinitResult(value: object): value is ReinitResult {
+    if (!("index" in value) || value["index"] === undefined) return false;
+    if (
+        (!("backupIndex" in (value as Record<string, any>)) &&
+            !("backup_index" in (value as Record<string, any>))) ||
+        ((value as Record<string, any>)["backupIndex"] === undefined &&
+            (value as Record<string, any>)["backup_index"] === undefined)
+    )
+        return false;
     return true;
 }
 
@@ -60,10 +66,18 @@ export function ReinitResultFromJSONTyped(
     };
 }
 
-export function ReinitResultToJSON(value?: ReinitResult | null): any {
+export function ReinitResultToJSON(json: any): ReinitResult {
+    return ReinitResultToJSONTyped(json, false);
+}
+
+export function ReinitResultToJSONTyped(
+    value?: ReinitResult | null,
+    ignoreDiscriminator: boolean = false,
+): any {
     if (value == null) {
         return value;
     }
+
     return {
         index: value["index"],
         backup_index: value["backupIndex"],

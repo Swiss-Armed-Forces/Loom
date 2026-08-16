@@ -19,6 +19,7 @@ import {
     QueryParametersFromJSON,
     QueryParametersFromJSONTyped,
     QueryParametersToJSON,
+    QueryParametersToJSONTyped,
 } from "./QueryParameters";
 
 /**
@@ -44,8 +45,10 @@ export interface SummarizationRequest {
 /**
  * Check if a given object implements the SummarizationRequest interface.
  */
-export function instanceOfSummarizationRequest(value: object): boolean {
-    if (!("query" in value)) return false;
+export function instanceOfSummarizationRequest(
+    value: object,
+): value is SummarizationRequest {
+    if (!("query" in value) || value["query"] === undefined) return false;
     return true;
 }
 
@@ -67,12 +70,18 @@ export function SummarizationRequestFromJSONTyped(
     };
 }
 
-export function SummarizationRequestToJSON(
+export function SummarizationRequestToJSON(json: any): SummarizationRequest {
+    return SummarizationRequestToJSONTyped(json, false);
+}
+
+export function SummarizationRequestToJSONTyped(
     value?: SummarizationRequest | null,
+    ignoreDiscriminator: boolean = false,
 ): any {
     if (value == null) {
         return value;
     }
+
     return {
         query: QueryParametersToJSON(value["query"]),
         system_prompt: value["systemPrompt"],

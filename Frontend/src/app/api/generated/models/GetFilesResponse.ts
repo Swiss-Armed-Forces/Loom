@@ -19,6 +19,7 @@ import {
     GetFilesFileEntryFromJSON,
     GetFilesFileEntryFromJSONTyped,
     GetFilesFileEntryToJSON,
+    GetFilesFileEntryToJSONTyped,
 } from "./GetFilesFileEntry";
 
 /**
@@ -44,9 +45,17 @@ export interface GetFilesResponse {
 /**
  * Check if a given object implements the GetFilesResponse interface.
  */
-export function instanceOfGetFilesResponse(value: object): boolean {
-    if (!("files" in value)) return false;
-    if (!("sortByField" in value)) return false;
+export function instanceOfGetFilesResponse(
+    value: object,
+): value is GetFilesResponse {
+    if (!("files" in value) || value["files"] === undefined) return false;
+    if (
+        (!("sortByField" in (value as Record<string, any>)) &&
+            !("sort_by_field" in (value as Record<string, any>))) ||
+        ((value as Record<string, any>)["sortByField"] === undefined &&
+            (value as Record<string, any>)["sort_by_field"] === undefined)
+    )
+        return false;
     return true;
 }
 
@@ -67,10 +76,18 @@ export function GetFilesResponseFromJSONTyped(
     };
 }
 
-export function GetFilesResponseToJSON(value?: GetFilesResponse | null): any {
+export function GetFilesResponseToJSON(json: any): GetFilesResponse {
+    return GetFilesResponseToJSONTyped(json, false);
+}
+
+export function GetFilesResponseToJSONTyped(
+    value?: GetFilesResponse | null,
+    ignoreDiscriminator: boolean = false,
+): any {
     if (value == null) {
         return value;
     }
+
     return {
         files: (value["files"] as Array<any>).map(GetFilesFileEntryToJSON),
         sort_by_field: value["sortByField"],

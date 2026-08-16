@@ -26,7 +26,7 @@ export const subscribeChannel = (
     if (count === 0) {
         dispatch(
             webSocketSendMessage({
-                message: { type: "subscribe", channels: [fileId] },
+                message: { type: "subscribe", channels: new Set([fileId]) },
             }),
         );
     }
@@ -42,7 +42,7 @@ export const unsubscribeChannel = (
         refCounts.delete(fileId);
         dispatch(
             webSocketSendMessage({
-                message: { type: "unsubscribe", channels: [fileId] },
+                message: { type: "unsubscribe", channels: new Set([fileId]) },
             }),
         );
     } else {

@@ -35,6 +35,7 @@ generate_frontend_api() {
             --generator-name "typescript-fetch" \
             --input-spec "${OPENAPI_SCHEMA_TMP}" \
             --enable-post-process-file \
+            --global-property apiDocs=false,modelDocs=false \
             --output "${FRONTEND_API_DIR}"
 
     echo "[*] Running lint on generated files to fix formatting"

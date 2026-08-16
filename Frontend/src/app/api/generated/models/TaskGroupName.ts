@@ -26,6 +26,17 @@ export const TaskGroupName = {
 } as const;
 export type TaskGroupName = (typeof TaskGroupName)[keyof typeof TaskGroupName];
 
+export function instanceOfTaskGroupName(value: any): boolean {
+    for (const key in TaskGroupName) {
+        if (Object.prototype.hasOwnProperty.call(TaskGroupName, key)) {
+            if (TaskGroupName[key as keyof typeof TaskGroupName] === value) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
 export function TaskGroupNameFromJSON(json: any): TaskGroupName {
     return TaskGroupNameFromJSONTyped(json, false);
 }
@@ -39,4 +50,11 @@ export function TaskGroupNameFromJSONTyped(
 
 export function TaskGroupNameToJSON(value?: TaskGroupName | null): any {
     return value as any;
+}
+
+export function TaskGroupNameToJSONTyped(
+    value: any,
+    ignoreDiscriminator: boolean,
+): TaskGroupName {
+    return value as TaskGroupName;
 }

@@ -37,9 +37,21 @@ export interface QueuesStats {
 /**
  * Check if a given object implements the QueuesStats interface.
  */
-export function instanceOfQueuesStats(value: object): boolean {
-    if (!("messagesInQueues" in value)) return false;
-    if (!("pausedQueues" in value)) return false;
+export function instanceOfQueuesStats(value: object): value is QueuesStats {
+    if (
+        (!("messagesInQueues" in (value as Record<string, any>)) &&
+            !("messages_in_queues" in (value as Record<string, any>))) ||
+        ((value as Record<string, any>)["messagesInQueues"] === undefined &&
+            (value as Record<string, any>)["messages_in_queues"] === undefined)
+    )
+        return false;
+    if (
+        (!("pausedQueues" in (value as Record<string, any>)) &&
+            !("paused_queues" in (value as Record<string, any>))) ||
+        ((value as Record<string, any>)["pausedQueues"] === undefined &&
+            (value as Record<string, any>)["paused_queues"] === undefined)
+    )
+        return false;
     return true;
 }
 
@@ -60,10 +72,18 @@ export function QueuesStatsFromJSONTyped(
     };
 }
 
-export function QueuesStatsToJSON(value?: QueuesStats | null): any {
+export function QueuesStatsToJSON(json: any): QueuesStats {
+    return QueuesStatsToJSONTyped(json, false);
+}
+
+export function QueuesStatsToJSONTyped(
+    value?: QueuesStats | null,
+    ignoreDiscriminator: boolean = false,
+): any {
     if (value == null) {
         return value;
     }
+
     return {
         messages_in_queues: value["messagesInQueues"],
         paused_queues: value["pausedQueues"],

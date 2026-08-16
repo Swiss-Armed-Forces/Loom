@@ -14,19 +14,21 @@
  */
 
 import * as runtime from "../runtime";
-import type {
-    GetFileResponse,
-    GetSearchResponse,
-    HTTPValidationError,
-} from "../models/index";
 import {
+    type GetFileResponse,
     GetFileResponseFromJSON,
     GetFileResponseToJSON,
+} from "../models/GetFileResponse";
+import {
+    type GetSearchResponse,
     GetSearchResponseFromJSON,
     GetSearchResponseToJSON,
+} from "../models/GetSearchResponse";
+import {
+    type HTTPValidationError,
     HTTPValidationErrorFromJSON,
     HTTPValidationErrorToJSON,
-} from "../models/index";
+} from "../models/HTTPValidationError";
 
 export interface GetFileByIdV1AitoolsFilesFileIdGetRequest {
     fileId: string;
@@ -41,13 +43,11 @@ export interface SearchV1AitoolsFilesSearchGetRequest {
  */
 export class AitoolsApi extends runtime.BaseAPI {
     /**
-     * Retrieve detailed information about a file by its unique identifier.  This endpoint fetches a file\'s metadata, extracted content, highlights, translations, and an optional summary using its UUID. If the file is not found, a 404 error is returned.  Parameters: ----------- file_id : UUID     The unique identifier of the file. Must be a valid UUID.  file_repository : FileRepository, optional     Repository used to access file data. Defaults to default_file_repository.  Returns: -------- GetFileResponse     A model containing the file\'s processed and raw content, highlights, and     translations. Fields include:      - file_id (UUID): Unique ID of the file.     - highlight (dict[str, list[str]] | None): Highlighted text per category.     - content (str): Extracted or processed text content.     - name (str): Short or display name for the file.     - language_translations (list[GetFileLanguageTranslations]):       List of language translations.     - raw (str): Original unprocessed content.     - summary (str | None): Optional summary text.  Raises: ------- HTTPException (status_code=404)     Raised if no file with the given ID exists in the repository.
-     * Get File By Id
+     * Creates request options for getFileByIdV1AitoolsFilesFileIdGet without sending the request
      */
-    async getFileByIdV1AitoolsFilesFileIdGetRaw(
+    async getFileByIdV1AitoolsFilesFileIdGetRequestOpts(
         requestParameters: GetFileByIdV1AitoolsFilesFileIdGetRequest,
-        initOverrides?: RequestInit | runtime.InitOverrideFunction,
-    ): Promise<runtime.ApiResponse<GetFileResponse>> {
+    ): Promise<runtime.RequestOpts> {
         if (requestParameters["fileId"] == null) {
             throw new runtime.RequiredError(
                 "fileId",
@@ -59,18 +59,33 @@ export class AitoolsApi extends runtime.BaseAPI {
 
         const headerParameters: runtime.HTTPHeaders = {};
 
-        const response = await this.request(
-            {
-                path: `/v1/aitools/files/{file_id}`.replace(
-                    `{${"file_id"}}`,
-                    encodeURIComponent(String(requestParameters["fileId"])),
-                ),
-                method: "GET",
-                headers: headerParameters,
-                query: queryParameters,
-            },
-            initOverrides,
+        let urlPath = `/v1/aitools/files/{file_id}`;
+        urlPath = urlPath.replace(
+            "{file_id}",
+            encodeURIComponent(String(requestParameters["fileId"])),
         );
+
+        return {
+            path: urlPath,
+            method: "GET",
+            headers: headerParameters,
+            query: queryParameters,
+        };
+    }
+
+    /**
+     * Retrieve detailed information about a file by its unique identifier.  This endpoint fetches a file\'s metadata, extracted content, highlights, translations, and an optional summary using its UUID. If the file is not found, a 404 error is returned.  Parameters: ----------- file_id : UUID     The unique identifier of the file. Must be a valid UUID.  file_repository : FileRepository, optional     Repository used to access file data. Defaults to default_file_repository.  Returns: -------- GetFileResponse     A model containing the file\'s processed and raw content, highlights, and     translations. Fields include:      - file_id (UUID): Unique ID of the file.     - highlight (dict[str, list[str]] | None): Highlighted text per category.     - content (str): Extracted or processed text content.     - name (str): Short or display name for the file.     - language_translations (list[GetFileLanguageTranslations]):       List of language translations.     - raw (str): Original unprocessed content.     - summary (str | None): Optional summary text.  Raises: ------- HTTPException (status_code=404)     Raised if no file with the given ID exists in the repository.
+     * Get File By Id
+     */
+    async getFileByIdV1AitoolsFilesFileIdGetRaw(
+        requestParameters: GetFileByIdV1AitoolsFilesFileIdGetRequest,
+        initOverrides?: RequestInit | runtime.InitOverrideFunction,
+    ): Promise<runtime.ApiResponse<GetFileResponse>> {
+        const requestOptions =
+            await this.getFileByIdV1AitoolsFilesFileIdGetRequestOpts(
+                requestParameters,
+            );
+        const response = await this.request(requestOptions, initOverrides);
 
         return new runtime.JSONApiResponse(response, (jsonValue) =>
             GetFileResponseFromJSON(jsonValue),
@@ -93,13 +108,11 @@ export class AitoolsApi extends runtime.BaseAPI {
     }
 
     /**
-     * Perform a smart full-text search over files using natural language input.  This endpoint enables users to describe their search intent using plain English. A language model translates the input into a Lucene query string, which is executed against an Elasticsearch index to return relevant files.  The translation is flexible and expressive, supporting rich query features such as boolean logic, wildcards, fuzzy matching, ranges, and proximity.  Parameters: ----------- query_description : str     A natural language phrase describing what to search for.     Example: \"Meeting notes with roadmap updates from 2024\"  llm_tool_client : OpenAI     A client that interacts with an OpenAI compatible endpoint to generate a Lucene query.     Defaults to `default_llm_tool_client`.  file_repository : FileRepository, optional     An interface for searching and retrieving file metadata.     Defaults to `default_file_repository`.  Returns: -------- GetSearchResponse     A structured response with:     - search_string (str): The Lucene query generated from the input.     - files (list[GetSearchResponseFile]):         - file_id (UUID): Unique ID of the matching file.         - highlight (dict[str, list[str]] | None):           Highlighted content snippets.         - score (float | None): Relevance score from Elasticsearch.  How It Works: ------------- 1. The LLM receives a prompt that asks it to convert the user query into a     Lucene-compatible search string.  2. The generated string is used to search for matching files via the     Elasticsearch backend.  3. Matching files are returned with score and optional highlights.  4. The raw search string is included in the response for debugging or reuse.  Example Request: ----------------     GET /files/search?query_description=contracts expiring before 2025  Example Response: ----------------- {     \"search_string\": \"contract AND (expire OR expiration) AND date:[* TO 2025]\",     \"files\": [         {             \"file_id\": \"123e4567-e89b-12d3-a456-426614174000\",             \"highlight\": {                 \"content\": [                     \"The contract is set to <em>expire</em> on January 15, 2024.\"                 ]             },             \"score\": 4.75         }     ] }  Notes: ------ - The LLM prompt encourages free-text and fuzzy matching strategies. - Field-level filters are discouraged unless semantically necessary. - Results are limited to `FILES_SEARCH_MAX_RESULTS` items. - This endpoint is ideal for flexible search experiences and file discovery.  Raises: ------- HTTPException     May be raised if the LLM or search backend fails to respond.
-     * Search
+     * Creates request options for searchV1AitoolsFilesSearchGet without sending the request
      */
-    async searchV1AitoolsFilesSearchGetRaw(
+    async searchV1AitoolsFilesSearchGetRequestOpts(
         requestParameters: SearchV1AitoolsFilesSearchGetRequest,
-        initOverrides?: RequestInit | runtime.InitOverrideFunction,
-    ): Promise<runtime.ApiResponse<GetSearchResponse>> {
+    ): Promise<runtime.RequestOpts> {
         if (requestParameters["queryDescription"] == null) {
             throw new runtime.RequiredError(
                 "queryDescription",
@@ -116,15 +129,29 @@ export class AitoolsApi extends runtime.BaseAPI {
 
         const headerParameters: runtime.HTTPHeaders = {};
 
-        const response = await this.request(
-            {
-                path: `/v1/aitools/files/search`,
-                method: "GET",
-                headers: headerParameters,
-                query: queryParameters,
-            },
-            initOverrides,
-        );
+        let urlPath = `/v1/aitools/files/search`;
+
+        return {
+            path: urlPath,
+            method: "GET",
+            headers: headerParameters,
+            query: queryParameters,
+        };
+    }
+
+    /**
+     * Perform a smart full-text search over files using natural language input.  This endpoint enables users to describe their search intent using plain English. A language model translates the input into a Lucene query string, which is executed against an Elasticsearch index to return relevant files.  The translation is flexible and expressive, supporting rich query features such as boolean logic, wildcards, fuzzy matching, ranges, and proximity.  Parameters: ----------- query_description : str     A natural language phrase describing what to search for.     Example: \"Meeting notes with roadmap updates from 2024\"  llm_tool_client : OpenAI     A client that interacts with an OpenAI compatible endpoint to generate a Lucene query.     Defaults to `default_llm_tool_client`.  file_repository : FileRepository, optional     An interface for searching and retrieving file metadata.     Defaults to `default_file_repository`.  Returns: -------- GetSearchResponse     A structured response with:     - search_string (str): The Lucene query generated from the input.     - files (list[GetSearchResponseFile]):         - file_id (UUID): Unique ID of the matching file.         - highlight (dict[str, list[str]] | None):           Highlighted content snippets.         - score (float | None): Relevance score from Elasticsearch.  How It Works: ------------- 1. The LLM receives a prompt that asks it to convert the user query into a     Lucene-compatible search string.  2. The generated string is used to search for matching files via the     Elasticsearch backend.  3. Matching files are returned with score and optional highlights.  4. The raw search string is included in the response for debugging or reuse.  Example Request: ----------------     GET /files/search?query_description=contracts expiring before 2025  Example Response: ----------------- {     \"search_string\": \"contract AND (expire OR expiration) AND date:[* TO 2025]\",     \"files\": [         {             \"file_id\": \"123e4567-e89b-12d3-a456-426614174000\",             \"highlight\": {                 \"content\": [                     \"The contract is set to <em>expire</em> on January 15, 2024.\"                 ]             },             \"score\": 4.75         }     ] }  Notes: ------ - The LLM prompt encourages free-text and fuzzy matching strategies. - Field-level filters are discouraged unless semantically necessary. - Results are limited to `FILES_SEARCH_MAX_RESULTS` items. - This endpoint is ideal for flexible search experiences and file discovery.  Raises: ------- HTTPException     May be raised if the LLM or search backend fails to respond.
+     * Search
+     */
+    async searchV1AitoolsFilesSearchGetRaw(
+        requestParameters: SearchV1AitoolsFilesSearchGetRequest,
+        initOverrides?: RequestInit | runtime.InitOverrideFunction,
+    ): Promise<runtime.ApiResponse<GetSearchResponse>> {
+        const requestOptions =
+            await this.searchV1AitoolsFilesSearchGetRequestOpts(
+                requestParameters,
+            );
+        const response = await this.request(requestOptions, initOverrides);
 
         return new runtime.JSONApiResponse(response, (jsonValue) =>
             GetSearchResponseFromJSON(jsonValue),

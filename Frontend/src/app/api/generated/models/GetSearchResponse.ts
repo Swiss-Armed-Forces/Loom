@@ -19,6 +19,7 @@ import {
     GetSearchResponseFileFromJSON,
     GetSearchResponseFileFromJSONTyped,
     GetSearchResponseFileToJSON,
+    GetSearchResponseFileToJSONTyped,
 } from "./GetSearchResponseFile";
 
 /**
@@ -44,9 +45,17 @@ export interface GetSearchResponse {
 /**
  * Check if a given object implements the GetSearchResponse interface.
  */
-export function instanceOfGetSearchResponse(value: object): boolean {
-    if (!("searchString" in value)) return false;
-    if (!("files" in value)) return false;
+export function instanceOfGetSearchResponse(
+    value: object,
+): value is GetSearchResponse {
+    if (
+        (!("searchString" in (value as Record<string, any>)) &&
+            !("search_string" in (value as Record<string, any>))) ||
+        ((value as Record<string, any>)["searchString"] === undefined &&
+            (value as Record<string, any>)["search_string"] === undefined)
+    )
+        return false;
+    if (!("files" in value) || value["files"] === undefined) return false;
     return true;
 }
 
@@ -67,10 +76,18 @@ export function GetSearchResponseFromJSONTyped(
     };
 }
 
-export function GetSearchResponseToJSON(value?: GetSearchResponse | null): any {
+export function GetSearchResponseToJSON(json: any): GetSearchResponse {
+    return GetSearchResponseToJSONTyped(json, false);
+}
+
+export function GetSearchResponseToJSONTyped(
+    value?: GetSearchResponse | null,
+    ignoreDiscriminator: boolean = false,
+): any {
     if (value == null) {
         return value;
     }
+
     return {
         search_string: value["searchString"],
         files: (value["files"] as Array<any>).map(GetSearchResponseFileToJSON),

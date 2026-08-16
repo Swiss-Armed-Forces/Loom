@@ -37,9 +37,9 @@ export interface Attachment {
 /**
  * Check if a given object implements the Attachment interface.
  */
-export function instanceOfAttachment(value: object): boolean {
-    if (!("id" in value)) return false;
-    if (!("name" in value)) return false;
+export function instanceOfAttachment(value: object): value is Attachment {
+    if (!("id" in value) || value["id"] === undefined) return false;
+    if (!("name" in value) || value["name"] === undefined) return false;
     return true;
 }
 
@@ -60,10 +60,18 @@ export function AttachmentFromJSONTyped(
     };
 }
 
-export function AttachmentToJSON(value?: Attachment | null): any {
+export function AttachmentToJSON(json: any): Attachment {
+    return AttachmentToJSONTyped(json, false);
+}
+
+export function AttachmentToJSONTyped(
+    value?: Attachment | null,
+    ignoreDiscriminator: boolean = false,
+): any {
     if (value == null) {
         return value;
     }
+
     return {
         id: value["id"],
         name: value["name"],

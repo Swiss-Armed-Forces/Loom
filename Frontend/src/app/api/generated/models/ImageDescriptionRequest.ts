@@ -19,6 +19,7 @@ import {
     QueryParametersFromJSON,
     QueryParametersFromJSONTyped,
     QueryParametersToJSON,
+    QueryParametersToJSONTyped,
 } from "./QueryParameters";
 
 /**
@@ -44,8 +45,10 @@ export interface ImageDescriptionRequest {
 /**
  * Check if a given object implements the ImageDescriptionRequest interface.
  */
-export function instanceOfImageDescriptionRequest(value: object): boolean {
-    if (!("query" in value)) return false;
+export function instanceOfImageDescriptionRequest(
+    value: object,
+): value is ImageDescriptionRequest {
+    if (!("query" in value) || value["query"] === undefined) return false;
     return true;
 }
 
@@ -70,11 +73,19 @@ export function ImageDescriptionRequestFromJSONTyped(
 }
 
 export function ImageDescriptionRequestToJSON(
+    json: any,
+): ImageDescriptionRequest {
+    return ImageDescriptionRequestToJSONTyped(json, false);
+}
+
+export function ImageDescriptionRequestToJSONTyped(
     value?: ImageDescriptionRequest | null,
+    ignoreDiscriminator: boolean = false,
 ): any {
     if (value == null) {
         return value;
     }
+
     return {
         query: QueryParametersToJSON(value["query"]),
         system_prompt: value["systemPrompt"],

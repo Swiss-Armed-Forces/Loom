@@ -19,12 +19,14 @@ import {
     QueryParametersFromJSON,
     QueryParametersFromJSONTyped,
     QueryParametersToJSON,
+    QueryParametersToJSONTyped,
 } from "./QueryParameters";
 import type { UpdateFileRequest } from "./UpdateFileRequest";
 import {
     UpdateFileRequestFromJSON,
     UpdateFileRequestFromJSONTyped,
     UpdateFileRequestToJSON,
+    UpdateFileRequestToJSONTyped,
 } from "./UpdateFileRequest";
 
 /**
@@ -50,9 +52,11 @@ export interface UpdateFilesRequest {
 /**
  * Check if a given object implements the UpdateFilesRequest interface.
  */
-export function instanceOfUpdateFilesRequest(value: object): boolean {
-    if (!("query" in value)) return false;
-    if (!("request" in value)) return false;
+export function instanceOfUpdateFilesRequest(
+    value: object,
+): value is UpdateFilesRequest {
+    if (!("query" in value) || value["query"] === undefined) return false;
+    if (!("request" in value) || value["request"] === undefined) return false;
     return true;
 }
 
@@ -73,12 +77,18 @@ export function UpdateFilesRequestFromJSONTyped(
     };
 }
 
-export function UpdateFilesRequestToJSON(
+export function UpdateFilesRequestToJSON(json: any): UpdateFilesRequest {
+    return UpdateFilesRequestToJSONTyped(json, false);
+}
+
+export function UpdateFilesRequestToJSONTyped(
     value?: UpdateFilesRequest | null,
+    ignoreDiscriminator: boolean = false,
 ): any {
     if (value == null) {
         return value;
     }
+
     return {
         query: QueryParametersToJSON(value["query"]),
         request: UpdateFileRequestToJSON(value["request"]),

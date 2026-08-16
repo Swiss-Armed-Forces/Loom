@@ -19,6 +19,7 @@ import {
     QueryParametersFromJSON,
     QueryParametersFromJSONTyped,
     QueryParametersToJSON,
+    QueryParametersToJSONTyped,
 } from "./QueryParameters";
 
 /**
@@ -44,9 +45,11 @@ export interface TranslateAllRequest {
 /**
  * Check if a given object implements the TranslateAllRequest interface.
  */
-export function instanceOfTranslateAllRequest(value: object): boolean {
-    if (!("lang" in value)) return false;
-    if (!("query" in value)) return false;
+export function instanceOfTranslateAllRequest(
+    value: object,
+): value is TranslateAllRequest {
+    if (!("lang" in value) || value["lang"] === undefined) return false;
+    if (!("query" in value) || value["query"] === undefined) return false;
     return true;
 }
 
@@ -67,12 +70,18 @@ export function TranslateAllRequestFromJSONTyped(
     };
 }
 
-export function TranslateAllRequestToJSON(
+export function TranslateAllRequestToJSON(json: any): TranslateAllRequest {
+    return TranslateAllRequestToJSONTyped(json, false);
+}
+
+export function TranslateAllRequestToJSONTyped(
     value?: TranslateAllRequest | null,
+    ignoreDiscriminator: boolean = false,
 ): any {
     if (value == null) {
         return value;
     }
+
     return {
         lang: value["lang"],
         query: QueryParametersToJSON(value["query"]),

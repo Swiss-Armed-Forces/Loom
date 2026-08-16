@@ -22,10 +22,10 @@ import { mapValues } from "../runtime";
 export interface MessageQueryIdExpired {
     /**
      *
-     * @type {string}
+     * @type {MessageQueryIdExpiredTypeEnum}
      * @memberof MessageQueryIdExpired
      */
-    type?: string;
+    type?: MessageQueryIdExpiredTypeEnum;
     /**
      *
      * @type {string}
@@ -41,11 +41,34 @@ export interface MessageQueryIdExpired {
 }
 
 /**
+ * @export
+ */
+export const MessageQueryIdExpiredTypeEnum = {
+    QueryIdExpired: "queryIdExpired",
+} as const;
+export type MessageQueryIdExpiredTypeEnum =
+    (typeof MessageQueryIdExpiredTypeEnum)[keyof typeof MessageQueryIdExpiredTypeEnum];
+
+/**
  * Check if a given object implements the MessageQueryIdExpired interface.
  */
-export function instanceOfMessageQueryIdExpired(value: object): boolean {
-    if (!("oldId" in value)) return false;
-    if (!("newId" in value)) return false;
+export function instanceOfMessageQueryIdExpired(
+    value: object,
+): value is MessageQueryIdExpired {
+    if (
+        (!("oldId" in (value as Record<string, any>)) &&
+            !("old_id" in (value as Record<string, any>))) ||
+        ((value as Record<string, any>)["oldId"] === undefined &&
+            (value as Record<string, any>)["old_id"] === undefined)
+    )
+        return false;
+    if (
+        (!("newId" in (value as Record<string, any>)) &&
+            !("new_id" in (value as Record<string, any>))) ||
+        ((value as Record<string, any>)["newId"] === undefined &&
+            (value as Record<string, any>)["new_id"] === undefined)
+    )
+        return false;
     return true;
 }
 
@@ -69,12 +92,18 @@ export function MessageQueryIdExpiredFromJSONTyped(
     };
 }
 
-export function MessageQueryIdExpiredToJSON(
+export function MessageQueryIdExpiredToJSON(json: any): MessageQueryIdExpired {
+    return MessageQueryIdExpiredToJSONTyped(json, false);
+}
+
+export function MessageQueryIdExpiredToJSONTyped(
     value?: MessageQueryIdExpired | null,
+    ignoreDiscriminator: boolean = false,
 ): any {
     if (value == null) {
         return value;
     }
+
     return {
         type: value["type"],
         old_id: value["oldId"],

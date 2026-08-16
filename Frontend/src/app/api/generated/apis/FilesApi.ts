@@ -14,61 +14,91 @@
  */
 
 import * as runtime from "../runtime";
-import type {
-    AddTagsRequest,
-    AvailableStat,
-    GetFilePreviewResponse,
-    GetFileResponse,
-    GetFilesCountResponse,
-    GetFilesResponse,
-    GetFilesTreeResponse,
-    GetQueryResponse,
-    GroupedHistogramStatisticsModel,
-    HTTPValidationError,
-    ImageDescriptionFileRequest,
-    PreviewField,
-    SummarizeFileRequest,
-    TermsStatisticsModel,
-    TranslateFileRequest,
-    UpdateFileRequest,
-    UpdateFilesRequest,
-} from "../models/index";
 import {
+    type AddTagsRequest,
     AddTagsRequestFromJSON,
     AddTagsRequestToJSON,
+} from "../models/AddTagsRequest";
+import {
+    type AvailableStat,
     AvailableStatFromJSON,
     AvailableStatToJSON,
+} from "../models/AvailableStat";
+import {
+    type GetFilePreviewResponse,
     GetFilePreviewResponseFromJSON,
     GetFilePreviewResponseToJSON,
+} from "../models/GetFilePreviewResponse";
+import {
+    type GetFileResponse,
     GetFileResponseFromJSON,
     GetFileResponseToJSON,
+} from "../models/GetFileResponse";
+import {
+    type GetFilesCountResponse,
     GetFilesCountResponseFromJSON,
     GetFilesCountResponseToJSON,
+} from "../models/GetFilesCountResponse";
+import {
+    type GetFilesResponse,
     GetFilesResponseFromJSON,
     GetFilesResponseToJSON,
+} from "../models/GetFilesResponse";
+import {
+    type GetFilesTreeResponse,
     GetFilesTreeResponseFromJSON,
     GetFilesTreeResponseToJSON,
+} from "../models/GetFilesTreeResponse";
+import {
+    type GetQueryResponse,
     GetQueryResponseFromJSON,
     GetQueryResponseToJSON,
+} from "../models/GetQueryResponse";
+import {
+    type GroupedHistogramStatisticsModel,
     GroupedHistogramStatisticsModelFromJSON,
     GroupedHistogramStatisticsModelToJSON,
+} from "../models/GroupedHistogramStatisticsModel";
+import {
+    type HTTPValidationError,
     HTTPValidationErrorFromJSON,
     HTTPValidationErrorToJSON,
+} from "../models/HTTPValidationError";
+import {
+    type ImageDescriptionFileRequest,
     ImageDescriptionFileRequestFromJSON,
     ImageDescriptionFileRequestToJSON,
+} from "../models/ImageDescriptionFileRequest";
+import {
+    type PreviewField,
     PreviewFieldFromJSON,
     PreviewFieldToJSON,
+} from "../models/PreviewField";
+import {
+    type SummarizeFileRequest,
     SummarizeFileRequestFromJSON,
     SummarizeFileRequestToJSON,
+} from "../models/SummarizeFileRequest";
+import {
+    type TermsStatisticsModel,
     TermsStatisticsModelFromJSON,
     TermsStatisticsModelToJSON,
+} from "../models/TermsStatisticsModel";
+import {
+    type TranslateFileRequest,
     TranslateFileRequestFromJSON,
     TranslateFileRequestToJSON,
+} from "../models/TranslateFileRequest";
+import {
+    type UpdateFileRequest,
     UpdateFileRequestFromJSON,
     UpdateFileRequestToJSON,
+} from "../models/UpdateFileRequest";
+import {
+    type UpdateFilesRequest,
     UpdateFilesRequestFromJSON,
     UpdateFilesRequestToJSON,
-} from "../models/index";
+} from "../models/UpdateFilesRequest";
 
 export interface AddTagsV1FilesFileIdTagsPostRequest {
     fileId: string;
@@ -217,12 +247,11 @@ export interface UploadFileV1FilesPostRequest {
  */
 export class FilesApi extends runtime.BaseAPI {
     /**
-     * Add Tags
+     * Creates request options for addTagsV1FilesFileIdTagsPost without sending the request
      */
-    async addTagsV1FilesFileIdTagsPostRaw(
+    async addTagsV1FilesFileIdTagsPostRequestOpts(
         requestParameters: AddTagsV1FilesFileIdTagsPostRequest,
-        initOverrides?: RequestInit | runtime.InitOverrideFunction,
-    ): Promise<runtime.ApiResponse<any>> {
+    ): Promise<runtime.RequestOpts> {
         if (requestParameters["fileId"] == null) {
             throw new runtime.RequiredError(
                 "fileId",
@@ -243,19 +272,33 @@ export class FilesApi extends runtime.BaseAPI {
 
         headerParameters["Content-Type"] = "application/json";
 
-        const response = await this.request(
-            {
-                path: `/v1/files/{file_id}/tags`.replace(
-                    `{${"file_id"}}`,
-                    encodeURIComponent(String(requestParameters["fileId"])),
-                ),
-                method: "POST",
-                headers: headerParameters,
-                query: queryParameters,
-                body: AddTagsRequestToJSON(requestParameters["addTagsRequest"]),
-            },
-            initOverrides,
+        let urlPath = `/v1/files/{file_id}/tags`;
+        urlPath = urlPath.replace(
+            "{file_id}",
+            encodeURIComponent(String(requestParameters["fileId"])),
         );
+
+        return {
+            path: urlPath,
+            method: "POST",
+            headers: headerParameters,
+            query: queryParameters,
+            body: AddTagsRequestToJSON(requestParameters["addTagsRequest"]),
+        };
+    }
+
+    /**
+     * Add Tags
+     */
+    async addTagsV1FilesFileIdTagsPostRaw(
+        requestParameters: AddTagsV1FilesFileIdTagsPostRequest,
+        initOverrides?: RequestInit | runtime.InitOverrideFunction,
+    ): Promise<runtime.ApiResponse<any>> {
+        const requestOptions =
+            await this.addTagsV1FilesFileIdTagsPostRequestOpts(
+                requestParameters,
+            );
+        const response = await this.request(requestOptions, initOverrides);
 
         if (this.isJsonMime(response.headers.get("content-type"))) {
             return new runtime.JSONApiResponse<any>(response);
@@ -279,12 +322,11 @@ export class FilesApi extends runtime.BaseAPI {
     }
 
     /**
-     * Delete Tag
+     * Creates request options for deleteTagV1FilesFileIdTagsTagToRemoveDelete without sending the request
      */
-    async deleteTagV1FilesFileIdTagsTagToRemoveDeleteRaw(
+    async deleteTagV1FilesFileIdTagsTagToRemoveDeleteRequestOpts(
         requestParameters: DeleteTagV1FilesFileIdTagsTagToRemoveDeleteRequest,
-        initOverrides?: RequestInit | runtime.InitOverrideFunction,
-    ): Promise<runtime.ApiResponse<any>> {
+    ): Promise<runtime.RequestOpts> {
         if (requestParameters["fileId"] == null) {
             throw new runtime.RequiredError(
                 "fileId",
@@ -303,25 +345,36 @@ export class FilesApi extends runtime.BaseAPI {
 
         const headerParameters: runtime.HTTPHeaders = {};
 
-        const response = await this.request(
-            {
-                path: `/v1/files/{file_id}/tags/{tag_to_remove}`
-                    .replace(
-                        `{${"file_id"}}`,
-                        encodeURIComponent(String(requestParameters["fileId"])),
-                    )
-                    .replace(
-                        `{${"tag_to_remove"}}`,
-                        encodeURIComponent(
-                            String(requestParameters["tagToRemove"]),
-                        ),
-                    ),
-                method: "DELETE",
-                headers: headerParameters,
-                query: queryParameters,
-            },
-            initOverrides,
+        let urlPath = `/v1/files/{file_id}/tags/{tag_to_remove}`;
+        urlPath = urlPath.replace(
+            "{file_id}",
+            encodeURIComponent(String(requestParameters["fileId"])),
         );
+        urlPath = urlPath.replace(
+            "{tag_to_remove}",
+            encodeURIComponent(String(requestParameters["tagToRemove"])),
+        );
+
+        return {
+            path: urlPath,
+            method: "DELETE",
+            headers: headerParameters,
+            query: queryParameters,
+        };
+    }
+
+    /**
+     * Delete Tag
+     */
+    async deleteTagV1FilesFileIdTagsTagToRemoveDeleteRaw(
+        requestParameters: DeleteTagV1FilesFileIdTagsTagToRemoveDeleteRequest,
+        initOverrides?: RequestInit | runtime.InitOverrideFunction,
+    ): Promise<runtime.ApiResponse<any>> {
+        const requestOptions =
+            await this.deleteTagV1FilesFileIdTagsTagToRemoveDeleteRequestOpts(
+                requestParameters,
+            );
+        const response = await this.request(requestOptions, initOverrides);
 
         if (this.isJsonMime(response.headers.get("content-type"))) {
             return new runtime.JSONApiResponse<any>(response);
@@ -346,12 +399,11 @@ export class FilesApi extends runtime.BaseAPI {
     }
 
     /**
-     * Download File
+     * Creates request options for downloadFileV1FilesFileIdDownloadGet without sending the request
      */
-    async downloadFileV1FilesFileIdDownloadGetRaw(
+    async downloadFileV1FilesFileIdDownloadGetRequestOpts(
         requestParameters: DownloadFileV1FilesFileIdDownloadGetRequest,
-        initOverrides?: RequestInit | runtime.InitOverrideFunction,
-    ): Promise<runtime.ApiResponse<any>> {
+    ): Promise<runtime.RequestOpts> {
         if (requestParameters["fileId"] == null) {
             throw new runtime.RequiredError(
                 "fileId",
@@ -368,18 +420,32 @@ export class FilesApi extends runtime.BaseAPI {
 
         const headerParameters: runtime.HTTPHeaders = {};
 
-        const response = await this.request(
-            {
-                path: `/v1/files/{file_id}/download`.replace(
-                    `{${"file_id"}}`,
-                    encodeURIComponent(String(requestParameters["fileId"])),
-                ),
-                method: "GET",
-                headers: headerParameters,
-                query: queryParameters,
-            },
-            initOverrides,
+        let urlPath = `/v1/files/{file_id}/download`;
+        urlPath = urlPath.replace(
+            "{file_id}",
+            encodeURIComponent(String(requestParameters["fileId"])),
         );
+
+        return {
+            path: urlPath,
+            method: "GET",
+            headers: headerParameters,
+            query: queryParameters,
+        };
+    }
+
+    /**
+     * Download File
+     */
+    async downloadFileV1FilesFileIdDownloadGetRaw(
+        requestParameters: DownloadFileV1FilesFileIdDownloadGetRequest,
+        initOverrides?: RequestInit | runtime.InitOverrideFunction,
+    ): Promise<runtime.ApiResponse<any>> {
+        const requestOptions =
+            await this.downloadFileV1FilesFileIdDownloadGetRequestOpts(
+                requestParameters,
+            );
+        const response = await this.request(requestOptions, initOverrides);
 
         if (this.isJsonMime(response.headers.get("content-type"))) {
             return new runtime.JSONApiResponse<any>(response);
@@ -403,13 +469,11 @@ export class FilesApi extends runtime.BaseAPI {
     }
 
     /**
-     * List stat fields of a specific registry type (terms, histogram).
-     * Get Available Stats By Type
+     * Creates request options for getAvailableStatsByTypeV1FilesStatsRegistryTypeGet without sending the request
      */
-    async getAvailableStatsByTypeV1FilesStatsRegistryTypeGetRaw(
+    async getAvailableStatsByTypeV1FilesStatsRegistryTypeGetRequestOpts(
         requestParameters: GetAvailableStatsByTypeV1FilesStatsRegistryTypeGetRequest,
-        initOverrides?: RequestInit | runtime.InitOverrideFunction,
-    ): Promise<runtime.ApiResponse<Array<AvailableStat>>> {
+    ): Promise<runtime.RequestOpts> {
         if (requestParameters["registryType"] == null) {
             throw new runtime.RequiredError(
                 "registryType",
@@ -421,20 +485,33 @@ export class FilesApi extends runtime.BaseAPI {
 
         const headerParameters: runtime.HTTPHeaders = {};
 
-        const response = await this.request(
-            {
-                path: `/v1/files/stats/{registry_type}`.replace(
-                    `{${"registry_type"}}`,
-                    encodeURIComponent(
-                        String(requestParameters["registryType"]),
-                    ),
-                ),
-                method: "GET",
-                headers: headerParameters,
-                query: queryParameters,
-            },
-            initOverrides,
+        let urlPath = `/v1/files/stats/{registry_type}`;
+        urlPath = urlPath.replace(
+            "{registry_type}",
+            encodeURIComponent(String(requestParameters["registryType"])),
         );
+
+        return {
+            path: urlPath,
+            method: "GET",
+            headers: headerParameters,
+            query: queryParameters,
+        };
+    }
+
+    /**
+     * List stat fields of a specific registry type (terms, histogram).
+     * Get Available Stats By Type
+     */
+    async getAvailableStatsByTypeV1FilesStatsRegistryTypeGetRaw(
+        requestParameters: GetAvailableStatsByTypeV1FilesStatsRegistryTypeGetRequest,
+        initOverrides?: RequestInit | runtime.InitOverrideFunction,
+    ): Promise<runtime.ApiResponse<Array<AvailableStat>>> {
+        const requestOptions =
+            await this.getAvailableStatsByTypeV1FilesStatsRegistryTypeGetRequestOpts(
+                requestParameters,
+            );
+        const response = await this.request(requestOptions, initOverrides);
 
         return new runtime.JSONApiResponse(response, (jsonValue) =>
             jsonValue.map(AvailableStatFromJSON),
@@ -458,13 +535,11 @@ export class FilesApi extends runtime.BaseAPI {
     }
 
     /**
-     * Get preview data of file.  Pass ``fields`` to limit which fields are included in the response. Omit to return all available fields (backwards-compatible default). The ``highlight`` field is always returned regardless of ``fields``.
-     * Get File Preview
+     * Creates request options for getFilePreviewV1FilesFileIdPreviewGet without sending the request
      */
-    async getFilePreviewV1FilesFileIdPreviewGetRaw(
+    async getFilePreviewV1FilesFileIdPreviewGetRequestOpts(
         requestParameters: GetFilePreviewV1FilesFileIdPreviewGetRequest,
-        initOverrides?: RequestInit | runtime.InitOverrideFunction,
-    ): Promise<runtime.ApiResponse<GetFilePreviewResponse>> {
+    ): Promise<runtime.RequestOpts> {
         if (requestParameters["fileId"] == null) {
             throw new runtime.RequiredError(
                 "fileId",
@@ -493,18 +568,33 @@ export class FilesApi extends runtime.BaseAPI {
 
         const headerParameters: runtime.HTTPHeaders = {};
 
-        const response = await this.request(
-            {
-                path: `/v1/files/{file_id}/preview`.replace(
-                    `{${"file_id"}}`,
-                    encodeURIComponent(String(requestParameters["fileId"])),
-                ),
-                method: "GET",
-                headers: headerParameters,
-                query: queryParameters,
-            },
-            initOverrides,
+        let urlPath = `/v1/files/{file_id}/preview`;
+        urlPath = urlPath.replace(
+            "{file_id}",
+            encodeURIComponent(String(requestParameters["fileId"])),
         );
+
+        return {
+            path: urlPath,
+            method: "GET",
+            headers: headerParameters,
+            query: queryParameters,
+        };
+    }
+
+    /**
+     * Get preview data of file.  Pass ``fields`` to limit which fields are included in the response. Omit to return all available fields (backwards-compatible default). The ``highlight`` field is always returned regardless of ``fields``.
+     * Get File Preview
+     */
+    async getFilePreviewV1FilesFileIdPreviewGetRaw(
+        requestParameters: GetFilePreviewV1FilesFileIdPreviewGetRequest,
+        initOverrides?: RequestInit | runtime.InitOverrideFunction,
+    ): Promise<runtime.ApiResponse<GetFilePreviewResponse>> {
+        const requestOptions =
+            await this.getFilePreviewV1FilesFileIdPreviewGetRequestOpts(
+                requestParameters,
+            );
+        const response = await this.request(requestOptions, initOverrides);
 
         return new runtime.JSONApiResponse(response, (jsonValue) =>
             GetFilePreviewResponseFromJSON(jsonValue),
@@ -527,13 +617,11 @@ export class FilesApi extends runtime.BaseAPI {
     }
 
     /**
-     * Get file data of file file_id.
-     * Get File
+     * Creates request options for getFileV1FilesFileIdGet without sending the request
      */
-    async getFileV1FilesFileIdGetRaw(
+    async getFileV1FilesFileIdGetRequestOpts(
         requestParameters: GetFileV1FilesFileIdGetRequest,
-        initOverrides?: RequestInit | runtime.InitOverrideFunction,
-    ): Promise<runtime.ApiResponse<GetFileResponse>> {
+    ): Promise<runtime.RequestOpts> {
         if (requestParameters["fileId"] == null) {
             throw new runtime.RequiredError(
                 "fileId",
@@ -558,18 +646,31 @@ export class FilesApi extends runtime.BaseAPI {
 
         const headerParameters: runtime.HTTPHeaders = {};
 
-        const response = await this.request(
-            {
-                path: `/v1/files/{file_id}`.replace(
-                    `{${"file_id"}}`,
-                    encodeURIComponent(String(requestParameters["fileId"])),
-                ),
-                method: "GET",
-                headers: headerParameters,
-                query: queryParameters,
-            },
-            initOverrides,
+        let urlPath = `/v1/files/{file_id}`;
+        urlPath = urlPath.replace(
+            "{file_id}",
+            encodeURIComponent(String(requestParameters["fileId"])),
         );
+
+        return {
+            path: urlPath,
+            method: "GET",
+            headers: headerParameters,
+            query: queryParameters,
+        };
+    }
+
+    /**
+     * Get file data of file file_id.
+     * Get File
+     */
+    async getFileV1FilesFileIdGetRaw(
+        requestParameters: GetFileV1FilesFileIdGetRequest,
+        initOverrides?: RequestInit | runtime.InitOverrideFunction,
+    ): Promise<runtime.ApiResponse<GetFileResponse>> {
+        const requestOptions =
+            await this.getFileV1FilesFileIdGetRequestOpts(requestParameters);
+        const response = await this.request(requestOptions, initOverrides);
 
         return new runtime.JSONApiResponse(response, (jsonValue) =>
             GetFileResponseFromJSON(jsonValue),
@@ -592,13 +693,11 @@ export class FilesApi extends runtime.BaseAPI {
     }
 
     /**
-     * Get files for a given query.
-     * Get Files Count
+     * Creates request options for getFilesCountV1FilesCountGet without sending the request
      */
-    async getFilesCountV1FilesCountGetRaw(
+    async getFilesCountV1FilesCountGetRequestOpts(
         requestParameters: GetFilesCountV1FilesCountGetRequest,
-        initOverrides?: RequestInit | runtime.InitOverrideFunction,
-    ): Promise<runtime.ApiResponse<GetFilesCountResponse>> {
+    ): Promise<runtime.RequestOpts> {
         const queryParameters: any = {};
 
         if (requestParameters["queryId"] != null) {
@@ -616,15 +715,29 @@ export class FilesApi extends runtime.BaseAPI {
 
         const headerParameters: runtime.HTTPHeaders = {};
 
-        const response = await this.request(
-            {
-                path: `/v1/files/count`,
-                method: "GET",
-                headers: headerParameters,
-                query: queryParameters,
-            },
-            initOverrides,
-        );
+        let urlPath = `/v1/files/count`;
+
+        return {
+            path: urlPath,
+            method: "GET",
+            headers: headerParameters,
+            query: queryParameters,
+        };
+    }
+
+    /**
+     * Get files for a given query.
+     * Get Files Count
+     */
+    async getFilesCountV1FilesCountGetRaw(
+        requestParameters: GetFilesCountV1FilesCountGetRequest,
+        initOverrides?: RequestInit | runtime.InitOverrideFunction,
+    ): Promise<runtime.ApiResponse<GetFilesCountResponse>> {
+        const requestOptions =
+            await this.getFilesCountV1FilesCountGetRequestOpts(
+                requestParameters,
+            );
+        const response = await this.request(requestOptions, initOverrides);
 
         return new runtime.JSONApiResponse(response, (jsonValue) =>
             GetFilesCountResponseFromJSON(jsonValue),
@@ -647,13 +760,11 @@ export class FilesApi extends runtime.BaseAPI {
     }
 
     /**
-     * Return one tree node per path segment from the root down to full_path.  Useful for revealing a specific file in the folder tree without requiring the client to paginate through its parent folder\'s children.
-     * Get Files Tree Spine
+     * Creates request options for getFilesTreeSpineV1FilesTreeSpineGet without sending the request
      */
-    async getFilesTreeSpineV1FilesTreeSpineGetRaw(
+    async getFilesTreeSpineV1FilesTreeSpineGetRequestOpts(
         requestParameters: GetFilesTreeSpineV1FilesTreeSpineGetRequest,
-        initOverrides?: RequestInit | runtime.InitOverrideFunction,
-    ): Promise<runtime.ApiResponse<GetFilesTreeResponse>> {
+    ): Promise<runtime.RequestOpts> {
         if (requestParameters["fullPath"] == null) {
             throw new runtime.RequiredError(
                 "fullPath",
@@ -682,15 +793,29 @@ export class FilesApi extends runtime.BaseAPI {
 
         const headerParameters: runtime.HTTPHeaders = {};
 
-        const response = await this.request(
-            {
-                path: `/v1/files/tree/spine`,
-                method: "GET",
-                headers: headerParameters,
-                query: queryParameters,
-            },
-            initOverrides,
-        );
+        let urlPath = `/v1/files/tree/spine`;
+
+        return {
+            path: urlPath,
+            method: "GET",
+            headers: headerParameters,
+            query: queryParameters,
+        };
+    }
+
+    /**
+     * Return one tree node per path segment from the root down to full_path.  Useful for revealing a specific file in the folder tree without requiring the client to paginate through its parent folder\'s children.
+     * Get Files Tree Spine
+     */
+    async getFilesTreeSpineV1FilesTreeSpineGetRaw(
+        requestParameters: GetFilesTreeSpineV1FilesTreeSpineGetRequest,
+        initOverrides?: RequestInit | runtime.InitOverrideFunction,
+    ): Promise<runtime.ApiResponse<GetFilesTreeResponse>> {
+        const requestOptions =
+            await this.getFilesTreeSpineV1FilesTreeSpineGetRequestOpts(
+                requestParameters,
+            );
+        const response = await this.request(requestOptions, initOverrides);
 
         return new runtime.JSONApiResponse(response, (jsonValue) =>
             GetFilesTreeResponseFromJSON(jsonValue),
@@ -713,13 +838,11 @@ export class FilesApi extends runtime.BaseAPI {
     }
 
     /**
-     * Get the direct children of node_path from the file tree.  The `after` parameter is an opaque cursor from a previous response\'s `next_page_cursor` field and enables cursor-based pagination.
-     * Get Files Tree
+     * Creates request options for getFilesTreeV1FilesTreeGet without sending the request
      */
-    async getFilesTreeV1FilesTreeGetRaw(
+    async getFilesTreeV1FilesTreeGetRequestOpts(
         requestParameters: GetFilesTreeV1FilesTreeGetRequest,
-        initOverrides?: RequestInit | runtime.InitOverrideFunction,
-    ): Promise<runtime.ApiResponse<GetFilesTreeResponse>> {
+    ): Promise<runtime.RequestOpts> {
         const queryParameters: any = {};
 
         if (requestParameters["queryId"] != null) {
@@ -745,15 +868,27 @@ export class FilesApi extends runtime.BaseAPI {
 
         const headerParameters: runtime.HTTPHeaders = {};
 
-        const response = await this.request(
-            {
-                path: `/v1/files/tree`,
-                method: "GET",
-                headers: headerParameters,
-                query: queryParameters,
-            },
-            initOverrides,
-        );
+        let urlPath = `/v1/files/tree`;
+
+        return {
+            path: urlPath,
+            method: "GET",
+            headers: headerParameters,
+            query: queryParameters,
+        };
+    }
+
+    /**
+     * Get the direct children of node_path from the file tree.  The `after` parameter is an opaque cursor from a previous response\'s `next_page_cursor` field and enables cursor-based pagination.
+     * Get Files Tree
+     */
+    async getFilesTreeV1FilesTreeGetRaw(
+        requestParameters: GetFilesTreeV1FilesTreeGetRequest,
+        initOverrides?: RequestInit | runtime.InitOverrideFunction,
+    ): Promise<runtime.ApiResponse<GetFilesTreeResponse>> {
+        const requestOptions =
+            await this.getFilesTreeV1FilesTreeGetRequestOpts(requestParameters);
+        const response = await this.request(requestOptions, initOverrides);
 
         return new runtime.JSONApiResponse(response, (jsonValue) =>
             GetFilesTreeResponseFromJSON(jsonValue),
@@ -776,13 +911,11 @@ export class FilesApi extends runtime.BaseAPI {
     }
 
     /**
-     * Get files for a given query.
-     * Get Files
+     * Creates request options for getFilesV1FilesGet without sending the request
      */
-    async getFilesV1FilesGetRaw(
+    async getFilesV1FilesGetRequestOpts(
         requestParameters: GetFilesV1FilesGetRequest,
-        initOverrides?: RequestInit | runtime.InitOverrideFunction,
-    ): Promise<runtime.ApiResponse<GetFilesResponse>> {
+    ): Promise<runtime.RequestOpts> {
         const queryParameters: any = {};
 
         if (requestParameters["sortId"] != null) {
@@ -817,15 +950,27 @@ export class FilesApi extends runtime.BaseAPI {
 
         const headerParameters: runtime.HTTPHeaders = {};
 
-        const response = await this.request(
-            {
-                path: `/v1/files`,
-                method: "GET",
-                headers: headerParameters,
-                query: queryParameters,
-            },
-            initOverrides,
-        );
+        let urlPath = `/v1/files`;
+
+        return {
+            path: urlPath,
+            method: "GET",
+            headers: headerParameters,
+            query: queryParameters,
+        };
+    }
+
+    /**
+     * Get files for a given query.
+     * Get Files
+     */
+    async getFilesV1FilesGetRaw(
+        requestParameters: GetFilesV1FilesGetRequest,
+        initOverrides?: RequestInit | runtime.InitOverrideFunction,
+    ): Promise<runtime.ApiResponse<GetFilesResponse>> {
+        const requestOptions =
+            await this.getFilesV1FilesGetRequestOpts(requestParameters);
+        const response = await this.request(requestOptions, initOverrides);
 
         return new runtime.JSONApiResponse(response, (jsonValue) =>
             GetFilesResponseFromJSON(jsonValue),
@@ -848,12 +993,11 @@ export class FilesApi extends runtime.BaseAPI {
     }
 
     /**
-     * Get Histogram Stats Grouped
+     * Creates request options for getHistogramStatsGroupedV1FilesStatsHistogramStatGroupedGroupByGet without sending the request
      */
-    async getHistogramStatsGroupedV1FilesStatsHistogramStatGroupedGroupByGetRaw(
+    async getHistogramStatsGroupedV1FilesStatsHistogramStatGroupedGroupByGetRequestOpts(
         requestParameters: GetHistogramStatsGroupedV1FilesStatsHistogramStatGroupedGroupByGetRequest,
-        initOverrides?: RequestInit | runtime.InitOverrideFunction,
-    ): Promise<runtime.ApiResponse<GroupedHistogramStatisticsModel>> {
+    ): Promise<runtime.RequestOpts> {
         if (requestParameters["stat"] == null) {
             throw new runtime.RequiredError(
                 "stat",
@@ -885,25 +1029,36 @@ export class FilesApi extends runtime.BaseAPI {
 
         const headerParameters: runtime.HTTPHeaders = {};
 
-        const response = await this.request(
-            {
-                path: `/v1/files/stats/histogram/{stat}/grouped/{group_by}`
-                    .replace(
-                        `{${"stat"}}`,
-                        encodeURIComponent(String(requestParameters["stat"])),
-                    )
-                    .replace(
-                        `{${"group_by"}}`,
-                        encodeURIComponent(
-                            String(requestParameters["groupBy"]),
-                        ),
-                    ),
-                method: "GET",
-                headers: headerParameters,
-                query: queryParameters,
-            },
-            initOverrides,
+        let urlPath = `/v1/files/stats/histogram/{stat}/grouped/{group_by}`;
+        urlPath = urlPath.replace(
+            "{stat}",
+            encodeURIComponent(String(requestParameters["stat"])),
         );
+        urlPath = urlPath.replace(
+            "{group_by}",
+            encodeURIComponent(String(requestParameters["groupBy"])),
+        );
+
+        return {
+            path: urlPath,
+            method: "GET",
+            headers: headerParameters,
+            query: queryParameters,
+        };
+    }
+
+    /**
+     * Get Histogram Stats Grouped
+     */
+    async getHistogramStatsGroupedV1FilesStatsHistogramStatGroupedGroupByGetRaw(
+        requestParameters: GetHistogramStatsGroupedV1FilesStatsHistogramStatGroupedGroupByGetRequest,
+        initOverrides?: RequestInit | runtime.InitOverrideFunction,
+    ): Promise<runtime.ApiResponse<GroupedHistogramStatisticsModel>> {
+        const requestOptions =
+            await this.getHistogramStatsGroupedV1FilesStatsHistogramStatGroupedGroupByGetRequestOpts(
+                requestParameters,
+            );
+        const response = await this.request(requestOptions, initOverrides);
 
         return new runtime.JSONApiResponse(response, (jsonValue) =>
             GroupedHistogramStatisticsModelFromJSON(jsonValue),
@@ -926,12 +1081,11 @@ export class FilesApi extends runtime.BaseAPI {
     }
 
     /**
-     * Get Histogram Stats
+     * Creates request options for getHistogramStatsV1FilesStatsHistogramStatGet without sending the request
      */
-    async getHistogramStatsV1FilesStatsHistogramStatGetRaw(
+    async getHistogramStatsV1FilesStatsHistogramStatGetRequestOpts(
         requestParameters: GetHistogramStatsV1FilesStatsHistogramStatGetRequest,
-        initOverrides?: RequestInit | runtime.InitOverrideFunction,
-    ): Promise<runtime.ApiResponse<TermsStatisticsModel>> {
+    ): Promise<runtime.RequestOpts> {
         if (requestParameters["stat"] == null) {
             throw new runtime.RequiredError(
                 "stat",
@@ -956,18 +1110,32 @@ export class FilesApi extends runtime.BaseAPI {
 
         const headerParameters: runtime.HTTPHeaders = {};
 
-        const response = await this.request(
-            {
-                path: `/v1/files/stats/histogram/{stat}`.replace(
-                    `{${"stat"}}`,
-                    encodeURIComponent(String(requestParameters["stat"])),
-                ),
-                method: "GET",
-                headers: headerParameters,
-                query: queryParameters,
-            },
-            initOverrides,
+        let urlPath = `/v1/files/stats/histogram/{stat}`;
+        urlPath = urlPath.replace(
+            "{stat}",
+            encodeURIComponent(String(requestParameters["stat"])),
         );
+
+        return {
+            path: urlPath,
+            method: "GET",
+            headers: headerParameters,
+            query: queryParameters,
+        };
+    }
+
+    /**
+     * Get Histogram Stats
+     */
+    async getHistogramStatsV1FilesStatsHistogramStatGetRaw(
+        requestParameters: GetHistogramStatsV1FilesStatsHistogramStatGetRequest,
+        initOverrides?: RequestInit | runtime.InitOverrideFunction,
+    ): Promise<runtime.ApiResponse<TermsStatisticsModel>> {
+        const requestOptions =
+            await this.getHistogramStatsV1FilesStatsHistogramStatGetRequestOpts(
+                requestParameters,
+            );
+        const response = await this.request(requestOptions, initOverrides);
 
         return new runtime.JSONApiResponse(response, (jsonValue) =>
             TermsStatisticsModelFromJSON(jsonValue),
@@ -990,25 +1158,33 @@ export class FilesApi extends runtime.BaseAPI {
     }
 
     /**
+     * Creates request options for getPreviewFieldsV1FilesPreviewFieldsGet without sending the request
+     */
+    async getPreviewFieldsV1FilesPreviewFieldsGetRequestOpts(): Promise<runtime.RequestOpts> {
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        let urlPath = `/v1/files/preview-fields`;
+
+        return {
+            path: urlPath,
+            method: "GET",
+            headers: headerParameters,
+            query: queryParameters,
+        };
+    }
+
+    /**
      * List available fields that can be requested in the file preview.
      * Get Preview Fields
      */
     async getPreviewFieldsV1FilesPreviewFieldsGetRaw(
         initOverrides?: RequestInit | runtime.InitOverrideFunction,
     ): Promise<runtime.ApiResponse<Array<PreviewField>>> {
-        const queryParameters: any = {};
-
-        const headerParameters: runtime.HTTPHeaders = {};
-
-        const response = await this.request(
-            {
-                path: `/v1/files/preview-fields`,
-                method: "GET",
-                headers: headerParameters,
-                query: queryParameters,
-            },
-            initOverrides,
-        );
+        const requestOptions =
+            await this.getPreviewFieldsV1FilesPreviewFieldsGetRequestOpts();
+        const response = await this.request(requestOptions, initOverrides);
 
         return new runtime.JSONApiResponse(response, (jsonValue) =>
             jsonValue.map(PreviewFieldFromJSON),
@@ -1030,12 +1206,11 @@ export class FilesApi extends runtime.BaseAPI {
     }
 
     /**
-     * Get Query
+     * Creates request options for getQueryV1FilesQueryPost without sending the request
      */
-    async getQueryV1FilesQueryPostRaw(
+    async getQueryV1FilesQueryPostRequestOpts(
         requestParameters: GetQueryV1FilesQueryPostRequest,
-        initOverrides?: RequestInit | runtime.InitOverrideFunction,
-    ): Promise<runtime.ApiResponse<GetQueryResponse>> {
+    ): Promise<runtime.RequestOpts> {
         const queryParameters: any = {};
 
         if (requestParameters["keepAlive"] != null) {
@@ -1044,15 +1219,26 @@ export class FilesApi extends runtime.BaseAPI {
 
         const headerParameters: runtime.HTTPHeaders = {};
 
-        const response = await this.request(
-            {
-                path: `/v1/files/query`,
-                method: "POST",
-                headers: headerParameters,
-                query: queryParameters,
-            },
-            initOverrides,
-        );
+        let urlPath = `/v1/files/query`;
+
+        return {
+            path: urlPath,
+            method: "POST",
+            headers: headerParameters,
+            query: queryParameters,
+        };
+    }
+
+    /**
+     * Get Query
+     */
+    async getQueryV1FilesQueryPostRaw(
+        requestParameters: GetQueryV1FilesQueryPostRequest,
+        initOverrides?: RequestInit | runtime.InitOverrideFunction,
+    ): Promise<runtime.ApiResponse<GetQueryResponse>> {
+        const requestOptions =
+            await this.getQueryV1FilesQueryPostRequestOpts(requestParameters);
+        const response = await this.request(requestOptions, initOverrides);
 
         return new runtime.JSONApiResponse(response, (jsonValue) =>
             GetQueryResponseFromJSON(jsonValue),
@@ -1074,13 +1260,11 @@ export class FilesApi extends runtime.BaseAPI {
     }
 
     /**
-     * Get rendered version of a file.
-     * Get Rendered
+     * Creates request options for getRenderedV1FilesFileIdRenderedRenderedIdGet without sending the request
      */
-    async getRenderedV1FilesFileIdRenderedRenderedIdGetRaw(
+    async getRenderedV1FilesFileIdRenderedRenderedIdGetRequestOpts(
         requestParameters: GetRenderedV1FilesFileIdRenderedRenderedIdGetRequest,
-        initOverrides?: RequestInit | runtime.InitOverrideFunction,
-    ): Promise<runtime.ApiResponse<any>> {
+    ): Promise<runtime.RequestOpts> {
         if (requestParameters["fileId"] == null) {
             throw new runtime.RequiredError(
                 "fileId",
@@ -1099,25 +1283,37 @@ export class FilesApi extends runtime.BaseAPI {
 
         const headerParameters: runtime.HTTPHeaders = {};
 
-        const response = await this.request(
-            {
-                path: `/v1/files/{file_id}/rendered/{rendered_id}`
-                    .replace(
-                        `{${"file_id"}}`,
-                        encodeURIComponent(String(requestParameters["fileId"])),
-                    )
-                    .replace(
-                        `{${"rendered_id"}}`,
-                        encodeURIComponent(
-                            String(requestParameters["renderedId"]),
-                        ),
-                    ),
-                method: "GET",
-                headers: headerParameters,
-                query: queryParameters,
-            },
-            initOverrides,
+        let urlPath = `/v1/files/{file_id}/rendered/{rendered_id}`;
+        urlPath = urlPath.replace(
+            "{file_id}",
+            encodeURIComponent(String(requestParameters["fileId"])),
         );
+        urlPath = urlPath.replace(
+            "{rendered_id}",
+            encodeURIComponent(String(requestParameters["renderedId"])),
+        );
+
+        return {
+            path: urlPath,
+            method: "GET",
+            headers: headerParameters,
+            query: queryParameters,
+        };
+    }
+
+    /**
+     * Get rendered version of a file.
+     * Get Rendered
+     */
+    async getRenderedV1FilesFileIdRenderedRenderedIdGetRaw(
+        requestParameters: GetRenderedV1FilesFileIdRenderedRenderedIdGetRequest,
+        initOverrides?: RequestInit | runtime.InitOverrideFunction,
+    ): Promise<runtime.ApiResponse<any>> {
+        const requestOptions =
+            await this.getRenderedV1FilesFileIdRenderedRenderedIdGetRequestOpts(
+                requestParameters,
+            );
+        const response = await this.request(requestOptions, initOverrides);
 
         if (this.isJsonMime(response.headers.get("content-type"))) {
             return new runtime.JSONApiResponse<any>(response);
@@ -1143,12 +1339,11 @@ export class FilesApi extends runtime.BaseAPI {
     }
 
     /**
-     * Get Terms Stats
+     * Creates request options for getTermsStatsV1FilesStatsTermsStatGet without sending the request
      */
-    async getTermsStatsV1FilesStatsTermsStatGetRaw(
+    async getTermsStatsV1FilesStatsTermsStatGetRequestOpts(
         requestParameters: GetTermsStatsV1FilesStatsTermsStatGetRequest,
-        initOverrides?: RequestInit | runtime.InitOverrideFunction,
-    ): Promise<runtime.ApiResponse<TermsStatisticsModel>> {
+    ): Promise<runtime.RequestOpts> {
         if (requestParameters["stat"] == null) {
             throw new runtime.RequiredError(
                 "stat",
@@ -1177,18 +1372,32 @@ export class FilesApi extends runtime.BaseAPI {
 
         const headerParameters: runtime.HTTPHeaders = {};
 
-        const response = await this.request(
-            {
-                path: `/v1/files/stats/terms/{stat}`.replace(
-                    `{${"stat"}}`,
-                    encodeURIComponent(String(requestParameters["stat"])),
-                ),
-                method: "GET",
-                headers: headerParameters,
-                query: queryParameters,
-            },
-            initOverrides,
+        let urlPath = `/v1/files/stats/terms/{stat}`;
+        urlPath = urlPath.replace(
+            "{stat}",
+            encodeURIComponent(String(requestParameters["stat"])),
         );
+
+        return {
+            path: urlPath,
+            method: "GET",
+            headers: headerParameters,
+            query: queryParameters,
+        };
+    }
+
+    /**
+     * Get Terms Stats
+     */
+    async getTermsStatsV1FilesStatsTermsStatGetRaw(
+        requestParameters: GetTermsStatsV1FilesStatsTermsStatGetRequest,
+        initOverrides?: RequestInit | runtime.InitOverrideFunction,
+    ): Promise<runtime.ApiResponse<TermsStatisticsModel>> {
+        const requestOptions =
+            await this.getTermsStatsV1FilesStatsTermsStatGetRequestOpts(
+                requestParameters,
+            );
+        const response = await this.request(requestOptions, initOverrides);
 
         return new runtime.JSONApiResponse(response, (jsonValue) =>
             TermsStatisticsModelFromJSON(jsonValue),
@@ -1210,13 +1419,11 @@ export class FilesApi extends runtime.BaseAPI {
     }
 
     /**
-     * Get thumbnail of a file.
-     * Get Thumbnail
+     * Creates request options for getThumbnailV1FilesFileIdThumbnailThumbnailFileIdGet without sending the request
      */
-    async getThumbnailV1FilesFileIdThumbnailThumbnailFileIdGetRaw(
+    async getThumbnailV1FilesFileIdThumbnailThumbnailFileIdGetRequestOpts(
         requestParameters: GetThumbnailV1FilesFileIdThumbnailThumbnailFileIdGetRequest,
-        initOverrides?: RequestInit | runtime.InitOverrideFunction,
-    ): Promise<runtime.ApiResponse<any>> {
+    ): Promise<runtime.RequestOpts> {
         if (requestParameters["fileId"] == null) {
             throw new runtime.RequiredError(
                 "fileId",
@@ -1235,25 +1442,37 @@ export class FilesApi extends runtime.BaseAPI {
 
         const headerParameters: runtime.HTTPHeaders = {};
 
-        const response = await this.request(
-            {
-                path: `/v1/files/{file_id}/thumbnail/{thumbnail_file_id}`
-                    .replace(
-                        `{${"file_id"}}`,
-                        encodeURIComponent(String(requestParameters["fileId"])),
-                    )
-                    .replace(
-                        `{${"thumbnail_file_id"}}`,
-                        encodeURIComponent(
-                            String(requestParameters["thumbnailFileId"]),
-                        ),
-                    ),
-                method: "GET",
-                headers: headerParameters,
-                query: queryParameters,
-            },
-            initOverrides,
+        let urlPath = `/v1/files/{file_id}/thumbnail/{thumbnail_file_id}`;
+        urlPath = urlPath.replace(
+            "{file_id}",
+            encodeURIComponent(String(requestParameters["fileId"])),
         );
+        urlPath = urlPath.replace(
+            "{thumbnail_file_id}",
+            encodeURIComponent(String(requestParameters["thumbnailFileId"])),
+        );
+
+        return {
+            path: urlPath,
+            method: "GET",
+            headers: headerParameters,
+            query: queryParameters,
+        };
+    }
+
+    /**
+     * Get thumbnail of a file.
+     * Get Thumbnail
+     */
+    async getThumbnailV1FilesFileIdThumbnailThumbnailFileIdGetRaw(
+        requestParameters: GetThumbnailV1FilesFileIdThumbnailThumbnailFileIdGetRequest,
+        initOverrides?: RequestInit | runtime.InitOverrideFunction,
+    ): Promise<runtime.ApiResponse<any>> {
+        const requestOptions =
+            await this.getThumbnailV1FilesFileIdThumbnailThumbnailFileIdGetRequestOpts(
+                requestParameters,
+            );
+        const response = await this.request(requestOptions, initOverrides);
 
         if (this.isJsonMime(response.headers.get("content-type"))) {
             return new runtime.JSONApiResponse<any>(response);
@@ -1279,13 +1498,11 @@ export class FilesApi extends runtime.BaseAPI {
     }
 
     /**
-     * Describe image.
-     * Image Description
+     * Creates request options for imageDescriptionV1FilesFileIdImageDescriptionPost without sending the request
      */
-    async imageDescriptionV1FilesFileIdImageDescriptionPostRaw(
+    async imageDescriptionV1FilesFileIdImageDescriptionPostRequestOpts(
         requestParameters: ImageDescriptionV1FilesFileIdImageDescriptionPostRequest,
-        initOverrides?: RequestInit | runtime.InitOverrideFunction,
-    ): Promise<runtime.ApiResponse<any>> {
+    ): Promise<runtime.RequestOpts> {
         if (requestParameters["fileId"] == null) {
             throw new runtime.RequiredError(
                 "fileId",
@@ -1306,21 +1523,36 @@ export class FilesApi extends runtime.BaseAPI {
 
         headerParameters["Content-Type"] = "application/json";
 
-        const response = await this.request(
-            {
-                path: `/v1/files/{file_id}/image_description`.replace(
-                    `{${"file_id"}}`,
-                    encodeURIComponent(String(requestParameters["fileId"])),
-                ),
-                method: "POST",
-                headers: headerParameters,
-                query: queryParameters,
-                body: ImageDescriptionFileRequestToJSON(
-                    requestParameters["imageDescriptionFileRequest"],
-                ),
-            },
-            initOverrides,
+        let urlPath = `/v1/files/{file_id}/image_description`;
+        urlPath = urlPath.replace(
+            "{file_id}",
+            encodeURIComponent(String(requestParameters["fileId"])),
         );
+
+        return {
+            path: urlPath,
+            method: "POST",
+            headers: headerParameters,
+            query: queryParameters,
+            body: ImageDescriptionFileRequestToJSON(
+                requestParameters["imageDescriptionFileRequest"],
+            ),
+        };
+    }
+
+    /**
+     * Describe image.
+     * Image Description
+     */
+    async imageDescriptionV1FilesFileIdImageDescriptionPostRaw(
+        requestParameters: ImageDescriptionV1FilesFileIdImageDescriptionPostRequest,
+        initOverrides?: RequestInit | runtime.InitOverrideFunction,
+    ): Promise<runtime.ApiResponse<any>> {
+        const requestOptions =
+            await this.imageDescriptionV1FilesFileIdImageDescriptionPostRequestOpts(
+                requestParameters,
+            );
+        const response = await this.request(requestOptions, initOverrides);
 
         if (this.isJsonMime(response.headers.get("content-type"))) {
             return new runtime.JSONApiResponse<any>(response);
@@ -1346,12 +1578,11 @@ export class FilesApi extends runtime.BaseAPI {
     }
 
     /**
-     * Index File
+     * Creates request options for indexFileV1FilesFileIdIndexPost without sending the request
      */
-    async indexFileV1FilesFileIdIndexPostRaw(
+    async indexFileV1FilesFileIdIndexPostRequestOpts(
         requestParameters: IndexFileV1FilesFileIdIndexPostRequest,
-        initOverrides?: RequestInit | runtime.InitOverrideFunction,
-    ): Promise<runtime.ApiResponse<any>> {
+    ): Promise<runtime.RequestOpts> {
         if (requestParameters["fileId"] == null) {
             throw new runtime.RequiredError(
                 "fileId",
@@ -1363,18 +1594,32 @@ export class FilesApi extends runtime.BaseAPI {
 
         const headerParameters: runtime.HTTPHeaders = {};
 
-        const response = await this.request(
-            {
-                path: `/v1/files/{file_id}/index`.replace(
-                    `{${"file_id"}}`,
-                    encodeURIComponent(String(requestParameters["fileId"])),
-                ),
-                method: "POST",
-                headers: headerParameters,
-                query: queryParameters,
-            },
-            initOverrides,
+        let urlPath = `/v1/files/{file_id}/index`;
+        urlPath = urlPath.replace(
+            "{file_id}",
+            encodeURIComponent(String(requestParameters["fileId"])),
         );
+
+        return {
+            path: urlPath,
+            method: "POST",
+            headers: headerParameters,
+            query: queryParameters,
+        };
+    }
+
+    /**
+     * Index File
+     */
+    async indexFileV1FilesFileIdIndexPostRaw(
+        requestParameters: IndexFileV1FilesFileIdIndexPostRequest,
+        initOverrides?: RequestInit | runtime.InitOverrideFunction,
+    ): Promise<runtime.ApiResponse<any>> {
+        const requestOptions =
+            await this.indexFileV1FilesFileIdIndexPostRequestOpts(
+                requestParameters,
+            );
+        const response = await this.request(requestOptions, initOverrides);
 
         if (this.isJsonMime(response.headers.get("content-type"))) {
             return new runtime.JSONApiResponse<any>(response);
@@ -1398,13 +1643,11 @@ export class FilesApi extends runtime.BaseAPI {
     }
 
     /**
-     * Search for files whose path contains the given filename string.  Returns a flat paginated list of matching leaf files across the whole index. The `after` parameter is an opaque cursor from a previous response\'s `next_page_cursor` field and enables cursor-based pagination.
-     * Search By Filename
+     * Creates request options for searchByFilenameV1FilesSearchByFilenameGet without sending the request
      */
-    async searchByFilenameV1FilesSearchByFilenameGetRaw(
+    async searchByFilenameV1FilesSearchByFilenameGetRequestOpts(
         requestParameters: SearchByFilenameV1FilesSearchByFilenameGetRequest,
-        initOverrides?: RequestInit | runtime.InitOverrideFunction,
-    ): Promise<runtime.ApiResponse<GetFilesTreeResponse>> {
+    ): Promise<runtime.RequestOpts> {
         if (requestParameters["filename"] == null) {
             throw new runtime.RequiredError(
                 "filename",
@@ -1437,15 +1680,29 @@ export class FilesApi extends runtime.BaseAPI {
 
         const headerParameters: runtime.HTTPHeaders = {};
 
-        const response = await this.request(
-            {
-                path: `/v1/files/search_by_filename`,
-                method: "GET",
-                headers: headerParameters,
-                query: queryParameters,
-            },
-            initOverrides,
-        );
+        let urlPath = `/v1/files/search_by_filename`;
+
+        return {
+            path: urlPath,
+            method: "GET",
+            headers: headerParameters,
+            query: queryParameters,
+        };
+    }
+
+    /**
+     * Search for files whose path contains the given filename string.  Returns a flat paginated list of matching leaf files across the whole index. The `after` parameter is an opaque cursor from a previous response\'s `next_page_cursor` field and enables cursor-based pagination.
+     * Search By Filename
+     */
+    async searchByFilenameV1FilesSearchByFilenameGetRaw(
+        requestParameters: SearchByFilenameV1FilesSearchByFilenameGetRequest,
+        initOverrides?: RequestInit | runtime.InitOverrideFunction,
+    ): Promise<runtime.ApiResponse<GetFilesTreeResponse>> {
+        const requestOptions =
+            await this.searchByFilenameV1FilesSearchByFilenameGetRequestOpts(
+                requestParameters,
+            );
+        const response = await this.request(requestOptions, initOverrides);
 
         return new runtime.JSONApiResponse(response, (jsonValue) =>
             GetFilesTreeResponseFromJSON(jsonValue),
@@ -1469,12 +1726,11 @@ export class FilesApi extends runtime.BaseAPI {
     }
 
     /**
-     * Summarize File
+     * Creates request options for summarizeFileV1FilesFileIdSummarizePost without sending the request
      */
-    async summarizeFileV1FilesFileIdSummarizePostRaw(
+    async summarizeFileV1FilesFileIdSummarizePostRequestOpts(
         requestParameters: SummarizeFileV1FilesFileIdSummarizePostRequest,
-        initOverrides?: RequestInit | runtime.InitOverrideFunction,
-    ): Promise<runtime.ApiResponse<any>> {
+    ): Promise<runtime.RequestOpts> {
         if (requestParameters["fileId"] == null) {
             throw new runtime.RequiredError(
                 "fileId",
@@ -1495,21 +1751,35 @@ export class FilesApi extends runtime.BaseAPI {
 
         headerParameters["Content-Type"] = "application/json";
 
-        const response = await this.request(
-            {
-                path: `/v1/files/{file_id}/summarize`.replace(
-                    `{${"file_id"}}`,
-                    encodeURIComponent(String(requestParameters["fileId"])),
-                ),
-                method: "POST",
-                headers: headerParameters,
-                query: queryParameters,
-                body: SummarizeFileRequestToJSON(
-                    requestParameters["summarizeFileRequest"],
-                ),
-            },
-            initOverrides,
+        let urlPath = `/v1/files/{file_id}/summarize`;
+        urlPath = urlPath.replace(
+            "{file_id}",
+            encodeURIComponent(String(requestParameters["fileId"])),
         );
+
+        return {
+            path: urlPath,
+            method: "POST",
+            headers: headerParameters,
+            query: queryParameters,
+            body: SummarizeFileRequestToJSON(
+                requestParameters["summarizeFileRequest"],
+            ),
+        };
+    }
+
+    /**
+     * Summarize File
+     */
+    async summarizeFileV1FilesFileIdSummarizePostRaw(
+        requestParameters: SummarizeFileV1FilesFileIdSummarizePostRequest,
+        initOverrides?: RequestInit | runtime.InitOverrideFunction,
+    ): Promise<runtime.ApiResponse<any>> {
+        const requestOptions =
+            await this.summarizeFileV1FilesFileIdSummarizePostRequestOpts(
+                requestParameters,
+            );
+        const response = await this.request(requestOptions, initOverrides);
 
         if (this.isJsonMime(response.headers.get("content-type"))) {
             return new runtime.JSONApiResponse<any>(response);
@@ -1533,12 +1803,11 @@ export class FilesApi extends runtime.BaseAPI {
     }
 
     /**
-     * Translate File
+     * Creates request options for translateFileV1FilesFileIdTranslatePost without sending the request
      */
-    async translateFileV1FilesFileIdTranslatePostRaw(
+    async translateFileV1FilesFileIdTranslatePostRequestOpts(
         requestParameters: TranslateFileV1FilesFileIdTranslatePostRequest,
-        initOverrides?: RequestInit | runtime.InitOverrideFunction,
-    ): Promise<runtime.ApiResponse<any>> {
+    ): Promise<runtime.RequestOpts> {
         if (requestParameters["fileId"] == null) {
             throw new runtime.RequiredError(
                 "fileId",
@@ -1559,21 +1828,35 @@ export class FilesApi extends runtime.BaseAPI {
 
         headerParameters["Content-Type"] = "application/json";
 
-        const response = await this.request(
-            {
-                path: `/v1/files/{file_id}/translate`.replace(
-                    `{${"file_id"}}`,
-                    encodeURIComponent(String(requestParameters["fileId"])),
-                ),
-                method: "POST",
-                headers: headerParameters,
-                query: queryParameters,
-                body: TranslateFileRequestToJSON(
-                    requestParameters["translateFileRequest"],
-                ),
-            },
-            initOverrides,
+        let urlPath = `/v1/files/{file_id}/translate`;
+        urlPath = urlPath.replace(
+            "{file_id}",
+            encodeURIComponent(String(requestParameters["fileId"])),
         );
+
+        return {
+            path: urlPath,
+            method: "POST",
+            headers: headerParameters,
+            query: queryParameters,
+            body: TranslateFileRequestToJSON(
+                requestParameters["translateFileRequest"],
+            ),
+        };
+    }
+
+    /**
+     * Translate File
+     */
+    async translateFileV1FilesFileIdTranslatePostRaw(
+        requestParameters: TranslateFileV1FilesFileIdTranslatePostRequest,
+        initOverrides?: RequestInit | runtime.InitOverrideFunction,
+    ): Promise<runtime.ApiResponse<any>> {
+        const requestOptions =
+            await this.translateFileV1FilesFileIdTranslatePostRequestOpts(
+                requestParameters,
+            );
+        const response = await this.request(requestOptions, initOverrides);
 
         if (this.isJsonMime(response.headers.get("content-type"))) {
             return new runtime.JSONApiResponse<any>(response);
@@ -1597,12 +1880,11 @@ export class FilesApi extends runtime.BaseAPI {
     }
 
     /**
-     * Update File
+     * Creates request options for updateFileV1FilesFileIdPut without sending the request
      */
-    async updateFileV1FilesFileIdPutRaw(
+    async updateFileV1FilesFileIdPutRequestOpts(
         requestParameters: UpdateFileV1FilesFileIdPutRequest,
-        initOverrides?: RequestInit | runtime.InitOverrideFunction,
-    ): Promise<runtime.ApiResponse<any>> {
+    ): Promise<runtime.RequestOpts> {
         if (requestParameters["fileId"] == null) {
             throw new runtime.RequiredError(
                 "fileId",
@@ -1623,21 +1905,33 @@ export class FilesApi extends runtime.BaseAPI {
 
         headerParameters["Content-Type"] = "application/json";
 
-        const response = await this.request(
-            {
-                path: `/v1/files/{file_id}`.replace(
-                    `{${"file_id"}}`,
-                    encodeURIComponent(String(requestParameters["fileId"])),
-                ),
-                method: "PUT",
-                headers: headerParameters,
-                query: queryParameters,
-                body: UpdateFileRequestToJSON(
-                    requestParameters["updateFileRequest"],
-                ),
-            },
-            initOverrides,
+        let urlPath = `/v1/files/{file_id}`;
+        urlPath = urlPath.replace(
+            "{file_id}",
+            encodeURIComponent(String(requestParameters["fileId"])),
         );
+
+        return {
+            path: urlPath,
+            method: "PUT",
+            headers: headerParameters,
+            query: queryParameters,
+            body: UpdateFileRequestToJSON(
+                requestParameters["updateFileRequest"],
+            ),
+        };
+    }
+
+    /**
+     * Update File
+     */
+    async updateFileV1FilesFileIdPutRaw(
+        requestParameters: UpdateFileV1FilesFileIdPutRequest,
+        initOverrides?: RequestInit | runtime.InitOverrideFunction,
+    ): Promise<runtime.ApiResponse<any>> {
+        const requestOptions =
+            await this.updateFileV1FilesFileIdPutRequestOpts(requestParameters);
+        const response = await this.request(requestOptions, initOverrides);
 
         if (this.isJsonMime(response.headers.get("content-type"))) {
             return new runtime.JSONApiResponse<any>(response);
@@ -1661,12 +1955,11 @@ export class FilesApi extends runtime.BaseAPI {
     }
 
     /**
-     * Update Files By Query
+     * Creates request options for updateFilesByQueryV1FilesPut without sending the request
      */
-    async updateFilesByQueryV1FilesPutRaw(
+    async updateFilesByQueryV1FilesPutRequestOpts(
         requestParameters: UpdateFilesByQueryV1FilesPutRequest,
-        initOverrides?: RequestInit | runtime.InitOverrideFunction,
-    ): Promise<runtime.ApiResponse<any>> {
+    ): Promise<runtime.RequestOpts> {
         if (requestParameters["updateFilesRequest"] == null) {
             throw new runtime.RequiredError(
                 "updateFilesRequest",
@@ -1680,18 +1973,31 @@ export class FilesApi extends runtime.BaseAPI {
 
         headerParameters["Content-Type"] = "application/json";
 
-        const response = await this.request(
-            {
-                path: `/v1/files`,
-                method: "PUT",
-                headers: headerParameters,
-                query: queryParameters,
-                body: UpdateFilesRequestToJSON(
-                    requestParameters["updateFilesRequest"],
-                ),
-            },
-            initOverrides,
-        );
+        let urlPath = `/v1/files`;
+
+        return {
+            path: urlPath,
+            method: "PUT",
+            headers: headerParameters,
+            query: queryParameters,
+            body: UpdateFilesRequestToJSON(
+                requestParameters["updateFilesRequest"],
+            ),
+        };
+    }
+
+    /**
+     * Update Files By Query
+     */
+    async updateFilesByQueryV1FilesPutRaw(
+        requestParameters: UpdateFilesByQueryV1FilesPutRequest,
+        initOverrides?: RequestInit | runtime.InitOverrideFunction,
+    ): Promise<runtime.ApiResponse<any>> {
+        const requestOptions =
+            await this.updateFilesByQueryV1FilesPutRequestOpts(
+                requestParameters,
+            );
+        const response = await this.request(requestOptions, initOverrides);
 
         if (this.isJsonMime(response.headers.get("content-type"))) {
             return new runtime.JSONApiResponse<any>(response);
@@ -1715,13 +2021,11 @@ export class FilesApi extends runtime.BaseAPI {
     }
 
     /**
-     * Upload new file that will be processed by Loom.  Returns immediately after storing the file and dispatching the indexing task. The file will be indexed asynchronously.
-     * Upload File
+     * Creates request options for uploadFileV1FilesPost without sending the request
      */
-    async uploadFileV1FilesPostRaw(
+    async uploadFileV1FilesPostRequestOpts(
         requestParameters: UploadFileV1FilesPostRequest,
-        initOverrides?: RequestInit | runtime.InitOverrideFunction,
-    ): Promise<runtime.ApiResponse<any>> {
+    ): Promise<runtime.RequestOpts> {
         if (requestParameters["file"] == null) {
             throw new runtime.RequiredError(
                 "file",
@@ -1753,16 +2057,28 @@ export class FilesApi extends runtime.BaseAPI {
             formParams.append("file", requestParameters["file"] as any);
         }
 
-        const response = await this.request(
-            {
-                path: `/v1/files`,
-                method: "POST",
-                headers: headerParameters,
-                query: queryParameters,
-                body: formParams,
-            },
-            initOverrides,
-        );
+        let urlPath = `/v1/files`;
+
+        return {
+            path: urlPath,
+            method: "POST",
+            headers: headerParameters,
+            query: queryParameters,
+            body: formParams,
+        };
+    }
+
+    /**
+     * Upload new file that will be processed by Loom.  Returns immediately after storing the file and dispatching the indexing task. The file will be indexed asynchronously.
+     * Upload File
+     */
+    async uploadFileV1FilesPostRaw(
+        requestParameters: UploadFileV1FilesPostRequest,
+        initOverrides?: RequestInit | runtime.InitOverrideFunction,
+    ): Promise<runtime.ApiResponse<any>> {
+        const requestOptions =
+            await this.uploadFileV1FilesPostRequestOpts(requestParameters);
+        const response = await this.request(requestOptions, initOverrides);
 
         if (this.isJsonMime(response.headers.get("content-type"))) {
             return new runtime.JSONApiResponse<any>(response);

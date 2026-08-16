@@ -22,10 +22,10 @@ import { mapValues } from "../runtime";
 export interface MessageError {
     /**
      *
-     * @type {string}
+     * @type {MessageErrorTypeEnum}
      * @memberof MessageError
      */
-    type?: string;
+    type?: MessageErrorTypeEnum;
     /**
      *
      * @type {string}
@@ -35,10 +35,19 @@ export interface MessageError {
 }
 
 /**
+ * @export
+ */
+export const MessageErrorTypeEnum = {
+    Error: "error",
+} as const;
+export type MessageErrorTypeEnum =
+    (typeof MessageErrorTypeEnum)[keyof typeof MessageErrorTypeEnum];
+
+/**
  * Check if a given object implements the MessageError interface.
  */
-export function instanceOfMessageError(value: object): boolean {
-    if (!("message" in value)) return false;
+export function instanceOfMessageError(value: object): value is MessageError {
+    if (!("message" in value) || value["message"] === undefined) return false;
     return true;
 }
 
@@ -59,10 +68,18 @@ export function MessageErrorFromJSONTyped(
     };
 }
 
-export function MessageErrorToJSON(value?: MessageError | null): any {
+export function MessageErrorToJSON(json: any): MessageError {
+    return MessageErrorToJSONTyped(json, false);
+}
+
+export function MessageErrorToJSONTyped(
+    value?: MessageError | null,
+    ignoreDiscriminator: boolean = false,
+): any {
     if (value == null) {
         return value;
     }
+
     return {
         type: value["type"],
         message: value["message"],

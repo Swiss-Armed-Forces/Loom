@@ -43,10 +43,13 @@ export interface GetFileLanguageTranslations {
 /**
  * Check if a given object implements the GetFileLanguageTranslations interface.
  */
-export function instanceOfGetFileLanguageTranslations(value: object): boolean {
-    if (!("confidence" in value)) return false;
-    if (!("language" in value)) return false;
-    if (!("text" in value)) return false;
+export function instanceOfGetFileLanguageTranslations(
+    value: object,
+): value is GetFileLanguageTranslations {
+    if (!("confidence" in value) || value["confidence"] === undefined)
+        return false;
+    if (!("language" in value) || value["language"] === undefined) return false;
+    if (!("text" in value) || value["text"] === undefined) return false;
     return true;
 }
 
@@ -71,11 +74,19 @@ export function GetFileLanguageTranslationsFromJSONTyped(
 }
 
 export function GetFileLanguageTranslationsToJSON(
+    json: any,
+): GetFileLanguageTranslations {
+    return GetFileLanguageTranslationsToJSONTyped(json, false);
+}
+
+export function GetFileLanguageTranslationsToJSONTyped(
     value?: GetFileLanguageTranslations | null,
+    ignoreDiscriminator: boolean = false,
 ): any {
     if (value == null) {
         return value;
     }
+
     return {
         confidence: value["confidence"],
         language: value["language"],

@@ -14,13 +14,16 @@
  */
 
 import * as runtime from "../runtime";
-import type { HTTPValidationError, IndexAllRequest } from "../models/index";
 import {
+    type HTTPValidationError,
     HTTPValidationErrorFromJSON,
     HTTPValidationErrorToJSON,
+} from "../models/HTTPValidationError";
+import {
+    type IndexAllRequest,
     IndexAllRequestFromJSON,
     IndexAllRequestToJSON,
-} from "../models/index";
+} from "../models/IndexAllRequest";
 
 export interface IndexFilesOnDemandV1FilesIndexPostRequest {
     indexAllRequest: IndexAllRequest;
@@ -31,12 +34,11 @@ export interface IndexFilesOnDemandV1FilesIndexPostRequest {
  */
 export class IndexApi extends runtime.BaseAPI {
     /**
-     * Index Files On Demand
+     * Creates request options for indexFilesOnDemandV1FilesIndexPost without sending the request
      */
-    async indexFilesOnDemandV1FilesIndexPostRaw(
+    async indexFilesOnDemandV1FilesIndexPostRequestOpts(
         requestParameters: IndexFilesOnDemandV1FilesIndexPostRequest,
-        initOverrides?: RequestInit | runtime.InitOverrideFunction,
-    ): Promise<runtime.ApiResponse<any>> {
+    ): Promise<runtime.RequestOpts> {
         if (requestParameters["indexAllRequest"] == null) {
             throw new runtime.RequiredError(
                 "indexAllRequest",
@@ -50,18 +52,29 @@ export class IndexApi extends runtime.BaseAPI {
 
         headerParameters["Content-Type"] = "application/json";
 
-        const response = await this.request(
-            {
-                path: `/v1/files/index`,
-                method: "POST",
-                headers: headerParameters,
-                query: queryParameters,
-                body: IndexAllRequestToJSON(
-                    requestParameters["indexAllRequest"],
-                ),
-            },
-            initOverrides,
-        );
+        let urlPath = `/v1/files/index`;
+
+        return {
+            path: urlPath,
+            method: "POST",
+            headers: headerParameters,
+            query: queryParameters,
+            body: IndexAllRequestToJSON(requestParameters["indexAllRequest"]),
+        };
+    }
+
+    /**
+     * Index Files On Demand
+     */
+    async indexFilesOnDemandV1FilesIndexPostRaw(
+        requestParameters: IndexFilesOnDemandV1FilesIndexPostRequest,
+        initOverrides?: RequestInit | runtime.InitOverrideFunction,
+    ): Promise<runtime.ApiResponse<any>> {
+        const requestOptions =
+            await this.indexFilesOnDemandV1FilesIndexPostRequestOpts(
+                requestParameters,
+            );
+        const response = await this.request(requestOptions, initOverrides);
 
         if (this.isJsonMime(response.headers.get("content-type"))) {
             return new runtime.JSONApiResponse<any>(response);

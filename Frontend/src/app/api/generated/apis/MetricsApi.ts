@@ -20,24 +20,31 @@ import * as runtime from "../runtime";
  */
 export class MetricsApi extends runtime.BaseAPI {
     /**
+     * Creates request options for metricsV1MetricsGet without sending the request
+     */
+    async metricsV1MetricsGetRequestOpts(): Promise<runtime.RequestOpts> {
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        let urlPath = `/v1/metrics`;
+
+        return {
+            path: urlPath,
+            method: "GET",
+            headers: headerParameters,
+            query: queryParameters,
+        };
+    }
+
+    /**
      * Metrics
      */
     async metricsV1MetricsGetRaw(
         initOverrides?: RequestInit | runtime.InitOverrideFunction,
     ): Promise<runtime.ApiResponse<any>> {
-        const queryParameters: any = {};
-
-        const headerParameters: runtime.HTTPHeaders = {};
-
-        const response = await this.request(
-            {
-                path: `/v1/metrics`,
-                method: "GET",
-                headers: headerParameters,
-                query: queryParameters,
-            },
-            initOverrides,
-        );
+        const requestOptions = await this.metricsV1MetricsGetRequestOpts();
+        const response = await this.request(requestOptions, initOverrides);
 
         if (this.isJsonMime(response.headers.get("content-type"))) {
             return new runtime.JSONApiResponse<any>(response);

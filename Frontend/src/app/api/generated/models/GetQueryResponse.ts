@@ -28,7 +28,7 @@ export interface GetQueryResponse {
     queryId: string;
     /**
      *
-     * @type {string}
+     * @type {GetQueryResponseKeepAliveEnum}
      * @memberof GetQueryResponse
      */
     keepAlive: GetQueryResponseKeepAliveEnum;
@@ -47,9 +47,23 @@ export type GetQueryResponseKeepAliveEnum =
 /**
  * Check if a given object implements the GetQueryResponse interface.
  */
-export function instanceOfGetQueryResponse(value: object): boolean {
-    if (!("queryId" in value)) return false;
-    if (!("keepAlive" in value)) return false;
+export function instanceOfGetQueryResponse(
+    value: object,
+): value is GetQueryResponse {
+    if (
+        (!("queryId" in (value as Record<string, any>)) &&
+            !("query_id" in (value as Record<string, any>))) ||
+        ((value as Record<string, any>)["queryId"] === undefined &&
+            (value as Record<string, any>)["query_id"] === undefined)
+    )
+        return false;
+    if (
+        (!("keepAlive" in (value as Record<string, any>)) &&
+            !("keep_alive" in (value as Record<string, any>))) ||
+        ((value as Record<string, any>)["keepAlive"] === undefined &&
+            (value as Record<string, any>)["keep_alive"] === undefined)
+    )
+        return false;
     return true;
 }
 
@@ -70,10 +84,18 @@ export function GetQueryResponseFromJSONTyped(
     };
 }
 
-export function GetQueryResponseToJSON(value?: GetQueryResponse | null): any {
+export function GetQueryResponseToJSON(json: any): GetQueryResponse {
+    return GetQueryResponseToJSONTyped(json, false);
+}
+
+export function GetQueryResponseToJSONTyped(
+    value?: GetQueryResponse | null,
+    ignoreDiscriminator: boolean = false,
+): any {
     if (value == null) {
         return value;
     }
+
     return {
         query_id: value["queryId"],
         keep_alive: value["keepAlive"],

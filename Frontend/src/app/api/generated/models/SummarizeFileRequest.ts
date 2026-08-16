@@ -31,7 +31,9 @@ export interface SummarizeFileRequest {
 /**
  * Check if a given object implements the SummarizeFileRequest interface.
  */
-export function instanceOfSummarizeFileRequest(value: object): boolean {
+export function instanceOfSummarizeFileRequest(
+    value: object,
+): value is SummarizeFileRequest {
     return true;
 }
 
@@ -52,12 +54,18 @@ export function SummarizeFileRequestFromJSONTyped(
     };
 }
 
-export function SummarizeFileRequestToJSON(
+export function SummarizeFileRequestToJSON(json: any): SummarizeFileRequest {
+    return SummarizeFileRequestToJSONTyped(json, false);
+}
+
+export function SummarizeFileRequestToJSONTyped(
     value?: SummarizeFileRequest | null,
+    ignoreDiscriminator: boolean = false,
 ): any {
     if (value == null) {
         return value;
     }
+
     return {
         system_prompt: value["systemPrompt"],
     };

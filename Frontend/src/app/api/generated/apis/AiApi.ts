@@ -14,22 +14,26 @@
  */
 
 import * as runtime from "../runtime";
-import type {
-    ContextCreateResponse,
-    HTTPValidationError,
-    ProcessQuestionQuery,
-    QueryParameters,
-} from "../models/index";
 import {
+    type ContextCreateResponse,
     ContextCreateResponseFromJSON,
     ContextCreateResponseToJSON,
+} from "../models/ContextCreateResponse";
+import {
+    type HTTPValidationError,
     HTTPValidationErrorFromJSON,
     HTTPValidationErrorToJSON,
+} from "../models/HTTPValidationError";
+import {
+    type ProcessQuestionQuery,
     ProcessQuestionQueryFromJSON,
     ProcessQuestionQueryToJSON,
+} from "../models/ProcessQuestionQuery";
+import {
+    type QueryParameters,
     QueryParametersFromJSON,
     QueryParametersToJSON,
-} from "../models/index";
+} from "../models/QueryParameters";
 
 export interface CreateContextV1AiPostRequest {
     _queryParameters: QueryParameters;
@@ -45,12 +49,11 @@ export interface ProcessQuestionV1AiContextIdProcessQuestionPostRequest {
  */
 export class AiApi extends runtime.BaseAPI {
     /**
-     * Create Context
+     * Creates request options for createContextV1AiPost without sending the request
      */
-    async createContextV1AiPostRaw(
+    async createContextV1AiPostRequestOpts(
         requestParameters: CreateContextV1AiPostRequest,
-        initOverrides?: RequestInit | runtime.InitOverrideFunction,
-    ): Promise<runtime.ApiResponse<ContextCreateResponse>> {
+    ): Promise<runtime.RequestOpts> {
         if (requestParameters["_queryParameters"] == null) {
             throw new runtime.RequiredError(
                 "_queryParameters",
@@ -64,18 +67,27 @@ export class AiApi extends runtime.BaseAPI {
 
         headerParameters["Content-Type"] = "application/json";
 
-        const response = await this.request(
-            {
-                path: `/v1/ai`,
-                method: "POST",
-                headers: headerParameters,
-                query: queryParameters,
-                body: QueryParametersToJSON(
-                    requestParameters["_queryParameters"],
-                ),
-            },
-            initOverrides,
-        );
+        let urlPath = `/v1/ai`;
+
+        return {
+            path: urlPath,
+            method: "POST",
+            headers: headerParameters,
+            query: queryParameters,
+            body: QueryParametersToJSON(requestParameters["_queryParameters"]),
+        };
+    }
+
+    /**
+     * Create Context
+     */
+    async createContextV1AiPostRaw(
+        requestParameters: CreateContextV1AiPostRequest,
+        initOverrides?: RequestInit | runtime.InitOverrideFunction,
+    ): Promise<runtime.ApiResponse<ContextCreateResponse>> {
+        const requestOptions =
+            await this.createContextV1AiPostRequestOpts(requestParameters);
+        const response = await this.request(requestOptions, initOverrides);
 
         return new runtime.JSONApiResponse(response, (jsonValue) =>
             ContextCreateResponseFromJSON(jsonValue),
@@ -97,12 +109,11 @@ export class AiApi extends runtime.BaseAPI {
     }
 
     /**
-     * Process Question
+     * Creates request options for processQuestionV1AiContextIdProcessQuestionPost without sending the request
      */
-    async processQuestionV1AiContextIdProcessQuestionPostRaw(
+    async processQuestionV1AiContextIdProcessQuestionPostRequestOpts(
         requestParameters: ProcessQuestionV1AiContextIdProcessQuestionPostRequest,
-        initOverrides?: RequestInit | runtime.InitOverrideFunction,
-    ): Promise<runtime.ApiResponse<any>> {
+    ): Promise<runtime.RequestOpts> {
         if (requestParameters["contextId"] == null) {
             throw new runtime.RequiredError(
                 "contextId",
@@ -123,21 +134,35 @@ export class AiApi extends runtime.BaseAPI {
 
         headerParameters["Content-Type"] = "application/json";
 
-        const response = await this.request(
-            {
-                path: `/v1/ai/{context_id}/process_question`.replace(
-                    `{${"context_id"}}`,
-                    encodeURIComponent(String(requestParameters["contextId"])),
-                ),
-                method: "POST",
-                headers: headerParameters,
-                query: queryParameters,
-                body: ProcessQuestionQueryToJSON(
-                    requestParameters["processQuestionQuery"],
-                ),
-            },
-            initOverrides,
+        let urlPath = `/v1/ai/{context_id}/process_question`;
+        urlPath = urlPath.replace(
+            "{context_id}",
+            encodeURIComponent(String(requestParameters["contextId"])),
         );
+
+        return {
+            path: urlPath,
+            method: "POST",
+            headers: headerParameters,
+            query: queryParameters,
+            body: ProcessQuestionQueryToJSON(
+                requestParameters["processQuestionQuery"],
+            ),
+        };
+    }
+
+    /**
+     * Process Question
+     */
+    async processQuestionV1AiContextIdProcessQuestionPostRaw(
+        requestParameters: ProcessQuestionV1AiContextIdProcessQuestionPostRequest,
+        initOverrides?: RequestInit | runtime.InitOverrideFunction,
+    ): Promise<runtime.ApiResponse<any>> {
+        const requestOptions =
+            await this.processQuestionV1AiContextIdProcessQuestionPostRequestOpts(
+                requestParameters,
+            );
+        const response = await this.request(requestOptions, initOverrides);
 
         if (this.isJsonMime(response.headers.get("content-type"))) {
             return new runtime.JSONApiResponse<any>(response);

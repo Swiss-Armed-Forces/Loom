@@ -19,6 +19,7 @@ import {
     ReinitResultFromJSON,
     ReinitResultFromJSONTyped,
     ReinitResultToJSON,
+    ReinitResultToJSONTyped,
 } from "./ReinitResult";
 
 /**
@@ -38,8 +39,10 @@ export interface ReinitAllResult {
 /**
  * Check if a given object implements the ReinitAllResult interface.
  */
-export function instanceOfReinitAllResult(value: object): boolean {
-    if (!("results" in value)) return false;
+export function instanceOfReinitAllResult(
+    value: object,
+): value is ReinitAllResult {
+    if (!("results" in value) || value["results"] === undefined) return false;
     return true;
 }
 
@@ -59,10 +62,18 @@ export function ReinitAllResultFromJSONTyped(
     };
 }
 
-export function ReinitAllResultToJSON(value?: ReinitAllResult | null): any {
+export function ReinitAllResultToJSON(json: any): ReinitAllResult {
+    return ReinitAllResultToJSONTyped(json, false);
+}
+
+export function ReinitAllResultToJSONTyped(
+    value?: ReinitAllResult | null,
+    ignoreDiscriminator: boolean = false,
+): any {
     if (value == null) {
         return value;
     }
+
     return {
         results: (value["results"] as Array<any>).map(ReinitResultToJSON),
     };

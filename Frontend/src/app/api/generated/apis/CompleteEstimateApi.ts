@@ -14,35 +14,43 @@
  */
 
 import * as runtime from "../runtime";
-import type { CompleteEstimateResult } from "../models/index";
 import {
+    type CompleteEstimateResult,
     CompleteEstimateResultFromJSON,
     CompleteEstimateResultToJSON,
-} from "../models/index";
+} from "../models/CompleteEstimateResult";
 
 /**
  *
  */
 export class CompleteEstimateApi extends runtime.BaseAPI {
     /**
+     * Creates request options for getCompleteEstimateV1CompleteEstimateGet without sending the request
+     */
+    async getCompleteEstimateV1CompleteEstimateGetRequestOpts(): Promise<runtime.RequestOpts> {
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        let urlPath = `/v1/complete-estimate`;
+
+        return {
+            path: urlPath,
+            method: "GET",
+            headers: headerParameters,
+            query: queryParameters,
+        };
+    }
+
+    /**
      * Get Complete Estimate
      */
     async getCompleteEstimateV1CompleteEstimateGetRaw(
         initOverrides?: RequestInit | runtime.InitOverrideFunction,
     ): Promise<runtime.ApiResponse<CompleteEstimateResult>> {
-        const queryParameters: any = {};
-
-        const headerParameters: runtime.HTTPHeaders = {};
-
-        const response = await this.request(
-            {
-                path: `/v1/complete-estimate`,
-                method: "GET",
-                headers: headerParameters,
-                query: queryParameters,
-            },
-            initOverrides,
-        );
+        const requestOptions =
+            await this.getCompleteEstimateV1CompleteEstimateGetRequestOpts();
+        const response = await this.request(requestOptions, initOverrides);
 
         return new runtime.JSONApiResponse(response, (jsonValue) =>
             CompleteEstimateResultFromJSON(jsonValue),

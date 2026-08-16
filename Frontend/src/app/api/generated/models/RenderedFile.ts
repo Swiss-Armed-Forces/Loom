@@ -43,7 +43,7 @@ export interface RenderedFile {
 /**
  * Check if a given object implements the RenderedFile interface.
  */
-export function instanceOfRenderedFile(value: object): boolean {
+export function instanceOfRenderedFile(value: object): value is RenderedFile {
     return true;
 }
 
@@ -72,10 +72,18 @@ export function RenderedFileFromJSONTyped(
     };
 }
 
-export function RenderedFileToJSON(value?: RenderedFile | null): any {
+export function RenderedFileToJSON(json: any): RenderedFile {
+    return RenderedFileToJSONTyped(json, false);
+}
+
+export function RenderedFileToJSONTyped(
+    value?: RenderedFile | null,
+    ignoreDiscriminator: boolean = false,
+): any {
     if (value == null) {
         return value;
     }
+
     return {
         image_file_id: value["imageFileId"],
         office_pdf_file_id: value["officePdfFileId"],

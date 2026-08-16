@@ -119,7 +119,7 @@ export const Search = () => {
                         webSocketSendMessage({
                             message: {
                                 type: "subscribe",
-                                channels: [searchQuery.id],
+                                channels: new Set([searchQuery.id]),
                             },
                         }),
                     );

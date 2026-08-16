@@ -19,6 +19,7 @@ import {
     MessageFromJSON,
     MessageFromJSONTyped,
     MessageToJSON,
+    MessageToJSONTyped,
 } from "./Message";
 
 /**
@@ -44,8 +45,8 @@ export interface PubSubMessage {
 /**
  * Check if a given object implements the PubSubMessage interface.
  */
-export function instanceOfPubSubMessage(value: object): boolean {
-    if (!("message" in value)) return false;
+export function instanceOfPubSubMessage(value: object): value is PubSubMessage {
+    if (!("message" in value) || value["message"] === undefined) return false;
     return true;
 }
 
@@ -66,10 +67,18 @@ export function PubSubMessageFromJSONTyped(
     };
 }
 
-export function PubSubMessageToJSON(value?: PubSubMessage | null): any {
+export function PubSubMessageToJSON(json: any): PubSubMessage {
+    return PubSubMessageToJSONTyped(json, false);
+}
+
+export function PubSubMessageToJSONTyped(
+    value?: PubSubMessage | null,
+    ignoreDiscriminator: boolean = false,
+): any {
     if (value == null) {
         return value;
     }
+
     return {
         channel: value["channel"],
         message: MessageToJSON(value["message"]),

@@ -14,13 +14,16 @@
  */
 
 import * as runtime from "../runtime";
-import type { HTTPValidationError, PubSubMessage } from "../models/index";
 import {
+    type HTTPValidationError,
     HTTPValidationErrorFromJSON,
     HTTPValidationErrorToJSON,
+} from "../models/HTTPValidationError";
+import {
+    type PubSubMessage,
     PubSubMessageFromJSON,
     PubSubMessageToJSON,
-} from "../models/index";
+} from "../models/PubSubMessage";
 
 export interface WebsocketMessagesV1WebsocketPostRequest {
     pubSubMessage: PubSubMessage;
@@ -31,12 +34,11 @@ export interface WebsocketMessagesV1WebsocketPostRequest {
  */
 export class WebsocketApi extends runtime.BaseAPI {
     /**
-     * Websocket Messages
+     * Creates request options for websocketMessagesV1WebsocketPost without sending the request
      */
-    async websocketMessagesV1WebsocketPostRaw(
+    async websocketMessagesV1WebsocketPostRequestOpts(
         requestParameters: WebsocketMessagesV1WebsocketPostRequest,
-        initOverrides?: RequestInit | runtime.InitOverrideFunction,
-    ): Promise<runtime.ApiResponse<PubSubMessage>> {
+    ): Promise<runtime.RequestOpts> {
         if (requestParameters["pubSubMessage"] == null) {
             throw new runtime.RequiredError(
                 "pubSubMessage",
@@ -50,16 +52,29 @@ export class WebsocketApi extends runtime.BaseAPI {
 
         headerParameters["Content-Type"] = "application/json";
 
-        const response = await this.request(
-            {
-                path: `/v1/websocket`,
-                method: "POST",
-                headers: headerParameters,
-                query: queryParameters,
-                body: PubSubMessageToJSON(requestParameters["pubSubMessage"]),
-            },
-            initOverrides,
-        );
+        let urlPath = `/v1/websocket`;
+
+        return {
+            path: urlPath,
+            method: "POST",
+            headers: headerParameters,
+            query: queryParameters,
+            body: PubSubMessageToJSON(requestParameters["pubSubMessage"]),
+        };
+    }
+
+    /**
+     * Websocket Messages
+     */
+    async websocketMessagesV1WebsocketPostRaw(
+        requestParameters: WebsocketMessagesV1WebsocketPostRequest,
+        initOverrides?: RequestInit | runtime.InitOverrideFunction,
+    ): Promise<runtime.ApiResponse<PubSubMessage>> {
+        const requestOptions =
+            await this.websocketMessagesV1WebsocketPostRequestOpts(
+                requestParameters,
+            );
+        const response = await this.request(requestOptions, initOverrides);
 
         return new runtime.JSONApiResponse(response, (jsonValue) =>
             PubSubMessageFromJSON(jsonValue),
