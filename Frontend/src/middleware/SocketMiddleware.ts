@@ -39,6 +39,14 @@ const socketMiddleware =
                     const webSocketPubSubMessage = PubSubMessageFromJSON(
                         JSON.parse(event.data),
                     );
+                    // Convert any Set fields to arrays before dispatching
+                    // into the Redux store (the OpenAPI generator produces
+                    // Set<string> for uniqueItems arrays, which is not
+                    // serializable).
+                    const msg = webSocketPubSubMessage.message;
+                    if ("channels" in msg && msg.channels instanceof Set) {
+                        msg.channels = [...msg.channels] as any;
+                    }
                     store.dispatch(
                         setWebSocketPubSubMessage(webSocketPubSubMessage),
                     );

@@ -96,19 +96,46 @@ localStorageSearchStateMiddleware.startListening({
         if (persistDebounceTimer) clearTimeout(persistDebounceTimer);
         persistDebounceTimer = setTimeout(() => {
             const state = (listenerApi.getState() as RootState).search;
-            const transientKeys = new Set([
-                "termsStats",
-                "histogramStats",
-                "pendingFullscreenFileId",
-                "availablePreviewFields",
-                "fieldExpansion",
-                "autoDetectedDensity",
+            const persistedKeys = new Set([
+                "query",
+                "leftSidebarPanel",
+                "rightSidebarTab",
+                "openFileTabs",
+                "activeTabFileId",
+                "customQueries",
+                "expandFilePaths",
+                "cardDensity",
+                "previewFields",
+                "showThumbnails",
+                "showHighlights",
+                "showFieldSections",
+                "showExtensionIcon",
+                "showFilePath",
+                "showParentNavigation",
+                "showStatusIndicators",
+                "showAttachments",
+                "showTags",
+                "showActions",
+                "showSortIndicator",
+                "showFieldActions",
+                "autoActionsPreferences",
+                "suppressDownloadWarning",
+                "summarizationSystemPrompt",
+                "visionSystemPrompt",
+                "displayStat",
+                "displayHistogramStat",
+                "folderViewExpandedNodes",
+                "filteredFolderViewExpandedNodes",
             ]);
+            const persisted: Record<string, unknown> = {};
+            for (const key of persistedKeys) {
+                if (key in state) {
+                    persisted[key] = state[key as keyof typeof state];
+                }
+            }
             localStorage.setItem(
                 SEARCH_STATE_LOCAL_STORAGE_KEY,
-                JSON.stringify(state, (key, value) =>
-                    transientKeys.has(key) ? undefined : value,
-                ),
+                JSON.stringify(persisted),
             );
         }, 500);
     },

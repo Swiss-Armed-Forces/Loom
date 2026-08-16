@@ -187,6 +187,7 @@ let
         entry = createToolWrapper "vite" subdir subdirName "build";
         files = "^${subdir}/.*$";
         pass_filenames = false;
+        stages = [ "manual" ];
       };
 
       "vitest_${subdirName}" = {
@@ -194,6 +195,7 @@ let
         entry = createToolWrapper "pnpm" subdir subdirName "test run";
         files = "^${subdir}/.*$";
         pass_filenames = false;
+        stages = [ "manual" ];
       };
     };
 

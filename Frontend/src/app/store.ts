@@ -16,7 +16,14 @@ export const store = configureStore({
         archive: archiveReducer,
     },
     middleware: (getDefaultMiddleware) =>
-        getDefaultMiddleware()
+        getDefaultMiddleware({
+            serializableCheck: {
+                ignoredPaths: [
+                    "search.webSocketPubSubMessage.message.channels",
+                ],
+                ignoredActions: ["search/setWebSocketPubSubMessage"],
+            },
+        })
             .prepend(localStorageSearchStateMiddleware.middleware)
             .concat(socketMiddleware(new SocketApi())),
 });
