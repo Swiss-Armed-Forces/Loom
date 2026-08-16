@@ -82,7 +82,7 @@ class TikaService:
     @contextmanager
     def _unpack(self, data_iterable: Iterable[bytes]) -> Generator[ZipFile, None, None]:
         """Returns the tika unpack result."""
-        uri = f"{settings.tika_server_host}/unpack/all"
+        uri = f"{str(settings.tika_server_host).rstrip('/')}/unpack/all"
         headers: Mapping[str, str] = {
             # See comment below why this is commented here
             # 'Accept': 'application/x-tar',
@@ -181,7 +181,7 @@ class TikaService:
         if data_iterable is None:
             return ""
 
-        uri = f"{settings.tika_server_host}/language/string"
+        uri = f"{str(settings.tika_server_host).rstrip('/')}/language/string"
         headers: Mapping[str, str] = {
             "Accept": "text/plain",
             "X-Tika-Timeout-Millis": str(self.timeout * 1000**1),
@@ -203,7 +203,7 @@ class TikaService:
         if data_iterable is None:
             return ""
 
-        uri = f"{settings.tika_server_host}/detect/stream"
+        uri = f"{str(settings.tika_server_host).rstrip('/')}/detect/stream"
         headers: Mapping[str, str] = {
             "Accept": "text/plain",
             "X-Tika-Timeout-Millis": str(self.timeout * 1000**1),

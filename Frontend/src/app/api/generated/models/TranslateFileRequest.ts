@@ -31,8 +31,10 @@ export interface TranslateFileRequest {
 /**
  * Check if a given object implements the TranslateFileRequest interface.
  */
-export function instanceOfTranslateFileRequest(value: object): boolean {
-    if (!("lang" in value)) return false;
+export function instanceOfTranslateFileRequest(
+    value: object,
+): value is TranslateFileRequest {
+    if (!("lang" in value) || value["lang"] === undefined) return false;
     return true;
 }
 
@@ -52,12 +54,18 @@ export function TranslateFileRequestFromJSONTyped(
     };
 }
 
-export function TranslateFileRequestToJSON(
+export function TranslateFileRequestToJSON(json: any): TranslateFileRequest {
+    return TranslateFileRequestToJSONTyped(json, false);
+}
+
+export function TranslateFileRequestToJSONTyped(
     value?: TranslateFileRequest | null,
+    ignoreDiscriminator: boolean = false,
 ): any {
     if (value == null) {
         return value;
     }
+
     return {
         lang: value["lang"],
     };

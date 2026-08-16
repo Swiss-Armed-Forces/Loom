@@ -344,7 +344,7 @@ export const updateQuery = createAsyncThunk(
                 webSocketSendMessage({
                     message: {
                         type: "unsubscribe",
-                        channels: [queryId],
+                        channels: new Set([queryId]),
                     },
                 }),
             );
@@ -361,7 +361,7 @@ export const updateQuery = createAsyncThunk(
                 webSocketSendMessage({
                     message: {
                         type: "subscribe",
-                        channels: [queryId],
+                        channels: new Set([queryId]),
                     },
                 }),
             );
@@ -379,7 +379,7 @@ export const updateQuery = createAsyncThunk(
                     webSocketSendMessage({
                         message: {
                             type: "unsubscribe",
-                            channels: [lastQuery.id],
+                            channels: new Set([lastQuery.id]),
                         },
                     }),
                 );

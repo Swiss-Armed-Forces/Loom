@@ -14,13 +14,16 @@
  */
 
 import * as runtime from "../runtime";
-import type { HTTPValidationError, TranslateAllRequest } from "../models/index";
 import {
+    type HTTPValidationError,
     HTTPValidationErrorFromJSON,
     HTTPValidationErrorToJSON,
+} from "../models/HTTPValidationError";
+import {
+    type TranslateAllRequest,
     TranslateAllRequestFromJSON,
     TranslateAllRequestToJSON,
-} from "../models/index";
+} from "../models/TranslateAllRequest";
 
 export interface TranslateFilesOnDemandV1FilesTranslationPostRequest {
     translateAllRequest: TranslateAllRequest;
@@ -31,12 +34,11 @@ export interface TranslateFilesOnDemandV1FilesTranslationPostRequest {
  */
 export class TranslationApi extends runtime.BaseAPI {
     /**
-     * Translate Files On Demand
+     * Creates request options for translateFilesOnDemandV1FilesTranslationPost without sending the request
      */
-    async translateFilesOnDemandV1FilesTranslationPostRaw(
+    async translateFilesOnDemandV1FilesTranslationPostRequestOpts(
         requestParameters: TranslateFilesOnDemandV1FilesTranslationPostRequest,
-        initOverrides?: RequestInit | runtime.InitOverrideFunction,
-    ): Promise<runtime.ApiResponse<any>> {
+    ): Promise<runtime.RequestOpts> {
         if (requestParameters["translateAllRequest"] == null) {
             throw new runtime.RequiredError(
                 "translateAllRequest",
@@ -50,18 +52,31 @@ export class TranslationApi extends runtime.BaseAPI {
 
         headerParameters["Content-Type"] = "application/json";
 
-        const response = await this.request(
-            {
-                path: `/v1/files/translation`,
-                method: "POST",
-                headers: headerParameters,
-                query: queryParameters,
-                body: TranslateAllRequestToJSON(
-                    requestParameters["translateAllRequest"],
-                ),
-            },
-            initOverrides,
-        );
+        let urlPath = `/v1/files/translation`;
+
+        return {
+            path: urlPath,
+            method: "POST",
+            headers: headerParameters,
+            query: queryParameters,
+            body: TranslateAllRequestToJSON(
+                requestParameters["translateAllRequest"],
+            ),
+        };
+    }
+
+    /**
+     * Translate Files On Demand
+     */
+    async translateFilesOnDemandV1FilesTranslationPostRaw(
+        requestParameters: TranslateFilesOnDemandV1FilesTranslationPostRequest,
+        initOverrides?: RequestInit | runtime.InitOverrideFunction,
+    ): Promise<runtime.ApiResponse<any>> {
+        const requestOptions =
+            await this.translateFilesOnDemandV1FilesTranslationPostRequestOpts(
+                requestParameters,
+            );
+        const response = await this.request(requestOptions, initOverrides);
 
         if (this.isJsonMime(response.headers.get("content-type"))) {
             return new runtime.JSONApiResponse<any>(response);

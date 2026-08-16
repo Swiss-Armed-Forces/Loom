@@ -14,18 +14,20 @@
  */
 
 import { mapValues } from "../runtime";
-import type { Attachment } from "./Attachment";
-import {
-    AttachmentFromJSON,
-    AttachmentFromJSONTyped,
-    AttachmentToJSON,
-} from "./Attachment";
 import type { PreviewFieldData } from "./PreviewFieldData";
 import {
     PreviewFieldDataFromJSON,
     PreviewFieldDataFromJSONTyped,
     PreviewFieldDataToJSON,
+    PreviewFieldDataToJSONTyped,
 } from "./PreviewFieldData";
+import type { Attachment } from "./Attachment";
+import {
+    AttachmentFromJSON,
+    AttachmentFromJSONTyped,
+    AttachmentToJSON,
+    AttachmentToJSONTyped,
+} from "./Attachment";
 
 /**
  *
@@ -119,10 +121,10 @@ export interface GetFilePreviewResponse {
     fileExtension: string;
     /**
      *
-     * @type {{ [key: string]: any; }}
+     * @type {{ [key: string]: Array<string>; }}
      * @memberof GetFilePreviewResponse
      */
-    highlight?: { [key: string]: any };
+    highlight?: { [key: string]: Array<string> };
     /**
      *
      * @type {boolean}
@@ -155,7 +157,7 @@ export interface GetFilePreviewResponse {
     mimeType?: string;
     /**
      *
-     * @type {string}
+     * @type {GetFilePreviewResponseMimeTypeGroupEnum}
      * @memberof GetFilePreviewResponse
      */
     mimeTypeGroup?: GetFilePreviewResponseMimeTypeGroupEnum;
@@ -188,16 +190,37 @@ export type GetFilePreviewResponseMimeTypeGroupEnum =
 /**
  * Check if a given object implements the GetFilePreviewResponse interface.
  */
-export function instanceOfGetFilePreviewResponse(value: object): boolean {
-    if (!("fileId" in value)) return false;
-    if (!("flagged" in value)) return false;
-    if (!("hidden" in value)) return false;
-    if (!("seen" in value)) return false;
-    if (!("contentIsTruncated" in value)) return false;
-    if (!("name" in value)) return false;
-    if (!("path" in value)) return false;
-    if (!("fileExtension" in value)) return false;
-    if (!("state" in value)) return false;
+export function instanceOfGetFilePreviewResponse(
+    value: object,
+): value is GetFilePreviewResponse {
+    if (
+        (!("fileId" in (value as Record<string, any>)) &&
+            !("file_id" in (value as Record<string, any>))) ||
+        ((value as Record<string, any>)["fileId"] === undefined &&
+            (value as Record<string, any>)["file_id"] === undefined)
+    )
+        return false;
+    if (!("flagged" in value) || value["flagged"] === undefined) return false;
+    if (!("hidden" in value) || value["hidden"] === undefined) return false;
+    if (!("seen" in value) || value["seen"] === undefined) return false;
+    if (
+        (!("contentIsTruncated" in (value as Record<string, any>)) &&
+            !("content_is_truncated" in (value as Record<string, any>))) ||
+        ((value as Record<string, any>)["contentIsTruncated"] === undefined &&
+            (value as Record<string, any>)["content_is_truncated"] ===
+                undefined)
+    )
+        return false;
+    if (!("name" in value) || value["name"] === undefined) return false;
+    if (!("path" in value) || value["path"] === undefined) return false;
+    if (
+        (!("fileExtension" in (value as Record<string, any>)) &&
+            !("file_extension" in (value as Record<string, any>))) ||
+        ((value as Record<string, any>)["fileExtension"] === undefined &&
+            (value as Record<string, any>)["file_extension"] === undefined)
+    )
+        return false;
+    if (!("state" in value) || value["state"] === undefined) return false;
     return true;
 }
 
@@ -257,16 +280,27 @@ export function GetFilePreviewResponseFromJSONTyped(
             json["mime_type_group"] == null
                 ? undefined
                 : json["mime_type_group"],
-        fields: json["fields"] == null ? undefined : json["fields"],
+        fields:
+            json["fields"] == null
+                ? undefined
+                : mapValues(json["fields"], PreviewFieldDataFromJSON),
     };
 }
 
 export function GetFilePreviewResponseToJSON(
+    json: any,
+): GetFilePreviewResponse {
+    return GetFilePreviewResponseToJSONTyped(json, false);
+}
+
+export function GetFilePreviewResponseToJSONTyped(
     value?: GetFilePreviewResponse | null,
+    ignoreDiscriminator: boolean = false,
 ): any {
     if (value == null) {
         return value;
     }
+
     return {
         file_id: value["fileId"],
         parent_id: value["parentId"],
@@ -292,6 +326,9 @@ export function GetFilePreviewResponseToJSON(
         state: value["state"],
         mime_type: value["mimeType"],
         mime_type_group: value["mimeTypeGroup"],
-        fields: value["fields"],
+        fields:
+            value["fields"] == null
+                ? undefined
+                : mapValues(value["fields"], PreviewFieldDataToJSON),
     };
 }

@@ -31,8 +31,16 @@ export interface GetFilesCountResponse {
 /**
  * Check if a given object implements the GetFilesCountResponse interface.
  */
-export function instanceOfGetFilesCountResponse(value: object): boolean {
-    if (!("totalFiles" in value)) return false;
+export function instanceOfGetFilesCountResponse(
+    value: object,
+): value is GetFilesCountResponse {
+    if (
+        (!("totalFiles" in (value as Record<string, any>)) &&
+            !("total_files" in (value as Record<string, any>))) ||
+        ((value as Record<string, any>)["totalFiles"] === undefined &&
+            (value as Record<string, any>)["total_files"] === undefined)
+    )
+        return false;
     return true;
 }
 
@@ -54,12 +62,18 @@ export function GetFilesCountResponseFromJSONTyped(
     };
 }
 
-export function GetFilesCountResponseToJSON(
+export function GetFilesCountResponseToJSON(json: any): GetFilesCountResponse {
+    return GetFilesCountResponseToJSONTyped(json, false);
+}
+
+export function GetFilesCountResponseToJSONTyped(
     value?: GetFilesCountResponse | null,
+    ignoreDiscriminator: boolean = false,
 ): any {
     if (value == null) {
         return value;
     }
+
     return {
         total_files: value["totalFiles"],
     };

@@ -43,10 +43,16 @@ export interface ImapInfo {
 /**
  * Check if a given object implements the ImapInfo interface.
  */
-export function instanceOfImapInfo(value: object): boolean {
-    if (!("uid" in value)) return false;
-    if (!("folder" in value)) return false;
-    if (!("folderUtf7" in value)) return false;
+export function instanceOfImapInfo(value: object): value is ImapInfo {
+    if (!("uid" in value) || value["uid"] === undefined) return false;
+    if (!("folder" in value) || value["folder"] === undefined) return false;
+    if (
+        (!("folderUtf7" in (value as Record<string, any>)) &&
+            !("folder_utf7" in (value as Record<string, any>))) ||
+        ((value as Record<string, any>)["folderUtf7"] === undefined &&
+            (value as Record<string, any>)["folder_utf7"] === undefined)
+    )
+        return false;
     return true;
 }
 
@@ -68,10 +74,18 @@ export function ImapInfoFromJSONTyped(
     };
 }
 
-export function ImapInfoToJSON(value?: ImapInfo | null): any {
+export function ImapInfoToJSON(json: any): ImapInfo {
+    return ImapInfoToJSONTyped(json, false);
+}
+
+export function ImapInfoToJSONTyped(
+    value?: Omit<ImapInfo, "folderUtf7"> | null,
+    ignoreDiscriminator: boolean = false,
+): any {
     if (value == null) {
         return value;
     }
+
     return {
         uid: value["uid"],
         folder: value["folder"],

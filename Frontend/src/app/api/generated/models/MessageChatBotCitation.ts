@@ -22,10 +22,10 @@ import { mapValues } from "../runtime";
 export interface MessageChatBotCitation {
     /**
      *
-     * @type {string}
+     * @type {MessageChatBotCitationTypeEnum}
      * @memberof MessageChatBotCitation
      */
-    type?: string;
+    type?: MessageChatBotCitationTypeEnum;
     /**
      *
      * @type {string}
@@ -53,13 +53,30 @@ export interface MessageChatBotCitation {
 }
 
 /**
+ * @export
+ */
+export const MessageChatBotCitationTypeEnum = {
+    ChatBotCitation: "chatBotCitation",
+} as const;
+export type MessageChatBotCitationTypeEnum =
+    (typeof MessageChatBotCitationTypeEnum)[keyof typeof MessageChatBotCitationTypeEnum];
+
+/**
  * Check if a given object implements the MessageChatBotCitation interface.
  */
-export function instanceOfMessageChatBotCitation(value: object): boolean {
-    if (!("id" in value)) return false;
-    if (!("fileId" in value)) return false;
-    if (!("text" in value)) return false;
-    if (!("rank" in value)) return false;
+export function instanceOfMessageChatBotCitation(
+    value: object,
+): value is MessageChatBotCitation {
+    if (!("id" in value) || value["id"] === undefined) return false;
+    if (
+        (!("fileId" in (value as Record<string, any>)) &&
+            !("file_id" in (value as Record<string, any>))) ||
+        ((value as Record<string, any>)["fileId"] === undefined &&
+            (value as Record<string, any>)["file_id"] === undefined)
+    )
+        return false;
+    if (!("text" in value) || value["text"] === undefined) return false;
+    if (!("rank" in value) || value["rank"] === undefined) return false;
     return true;
 }
 
@@ -86,11 +103,19 @@ export function MessageChatBotCitationFromJSONTyped(
 }
 
 export function MessageChatBotCitationToJSON(
+    json: any,
+): MessageChatBotCitation {
+    return MessageChatBotCitationToJSONTyped(json, false);
+}
+
+export function MessageChatBotCitationToJSONTyped(
     value?: MessageChatBotCitation | null,
+    ignoreDiscriminator: boolean = false,
 ): any {
     if (value == null) {
         return value;
     }
+
     return {
         type: value["type"],
         id: value["id"],

@@ -19,6 +19,7 @@ import {
     ValidationErrorFromJSON,
     ValidationErrorFromJSONTyped,
     ValidationErrorToJSON,
+    ValidationErrorToJSONTyped,
 } from "./ValidationError";
 
 /**
@@ -38,7 +39,9 @@ export interface HTTPValidationError {
 /**
  * Check if a given object implements the HTTPValidationError interface.
  */
-export function instanceOfHTTPValidationError(value: object): boolean {
+export function instanceOfHTTPValidationError(
+    value: object,
+): value is HTTPValidationError {
     return true;
 }
 
@@ -61,12 +64,18 @@ export function HTTPValidationErrorFromJSONTyped(
     };
 }
 
-export function HTTPValidationErrorToJSON(
+export function HTTPValidationErrorToJSON(json: any): HTTPValidationError {
+    return HTTPValidationErrorToJSONTyped(json, false);
+}
+
+export function HTTPValidationErrorToJSONTyped(
     value?: HTTPValidationError | null,
+    ignoreDiscriminator: boolean = false,
 ): any {
     if (value == null) {
         return value;
     }
+
     return {
         detail:
             value["detail"] == null

@@ -31,8 +31,10 @@ export interface ProcessQuestionQuery {
 /**
  * Check if a given object implements the ProcessQuestionQuery interface.
  */
-export function instanceOfProcessQuestionQuery(value: object): boolean {
-    if (!("question" in value)) return false;
+export function instanceOfProcessQuestionQuery(
+    value: object,
+): value is ProcessQuestionQuery {
+    if (!("question" in value) || value["question"] === undefined) return false;
     return true;
 }
 
@@ -52,12 +54,18 @@ export function ProcessQuestionQueryFromJSONTyped(
     };
 }
 
-export function ProcessQuestionQueryToJSON(
+export function ProcessQuestionQueryToJSON(json: any): ProcessQuestionQuery {
+    return ProcessQuestionQueryToJSONTyped(json, false);
+}
+
+export function ProcessQuestionQueryToJSONTyped(
     value?: ProcessQuestionQuery | null,
+    ignoreDiscriminator: boolean = false,
 ): any {
     if (value == null) {
         return value;
     }
+
     return {
         question: value["question"],
     };

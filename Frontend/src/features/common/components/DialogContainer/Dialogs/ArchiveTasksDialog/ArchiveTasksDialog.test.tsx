@@ -34,6 +34,7 @@ const makeTask = (overrides: Partial<TaskRecord> = {}): TaskRecord => ({
     taskName: "worker.create_archive.collect_files",
     failed: [
         {
+            taskId: "task-1",
             startedAt: new Date("2026-07-27T10:00:00Z"),
             finishedAt: new Date("2026-07-27T10:00:01Z"),
             duration: 1.0,

@@ -14,13 +14,16 @@
  */
 
 import * as runtime from "../runtime";
-import type { HTTPValidationError, WipeComponent } from "../models/index";
 import {
+    type HTTPValidationError,
     HTTPValidationErrorFromJSON,
     HTTPValidationErrorToJSON,
+} from "../models/HTTPValidationError";
+import {
+    type WipeComponent,
     WipeComponentFromJSON,
     WipeComponentToJSON,
-} from "../models/index";
+} from "../models/WipeComponent";
 
 export interface WipeDataEndpointV1WipeDataPostRequest {
     confirmation: string;
@@ -32,12 +35,11 @@ export interface WipeDataEndpointV1WipeDataPostRequest {
  */
 export class WipeDataApi extends runtime.BaseAPI {
     /**
-     * Wipe Data Endpoint
+     * Creates request options for wipeDataEndpointV1WipeDataPost without sending the request
      */
-    async wipeDataEndpointV1WipeDataPostRaw(
+    async wipeDataEndpointV1WipeDataPostRequestOpts(
         requestParameters: WipeDataEndpointV1WipeDataPostRequest,
-        initOverrides?: RequestInit | runtime.InitOverrideFunction,
-    ): Promise<runtime.ApiResponse<any>> {
+    ): Promise<runtime.RequestOpts> {
         if (requestParameters["confirmation"] == null) {
             throw new runtime.RequiredError(
                 "confirmation",
@@ -57,15 +59,28 @@ export class WipeDataApi extends runtime.BaseAPI {
 
         const headerParameters: runtime.HTTPHeaders = {};
 
-        const response = await this.request(
-            {
-                path: `/v1/wipe-data`,
-                method: "POST",
-                headers: headerParameters,
-                query: queryParameters,
-            },
-            initOverrides,
-        );
+        let urlPath = `/v1/wipe-data`;
+
+        return {
+            path: urlPath,
+            method: "POST",
+            headers: headerParameters,
+            query: queryParameters,
+        };
+    }
+
+    /**
+     * Wipe Data Endpoint
+     */
+    async wipeDataEndpointV1WipeDataPostRaw(
+        requestParameters: WipeDataEndpointV1WipeDataPostRequest,
+        initOverrides?: RequestInit | runtime.InitOverrideFunction,
+    ): Promise<runtime.ApiResponse<any>> {
+        const requestOptions =
+            await this.wipeDataEndpointV1WipeDataPostRequestOpts(
+                requestParameters,
+            );
+        const response = await this.request(requestOptions, initOverrides);
 
         if (this.isJsonMime(response.headers.get("content-type"))) {
             return new runtime.JSONApiResponse<any>(response);

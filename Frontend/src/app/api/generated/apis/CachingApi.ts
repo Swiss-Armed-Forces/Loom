@@ -14,16 +14,34 @@
  */
 
 import * as runtime from "../runtime";
-import type { CacheStatisticsEntryModel } from "../models/index";
 import {
+    type CacheStatisticsEntryModel,
     CacheStatisticsEntryModelFromJSON,
     CacheStatisticsEntryModelToJSON,
-} from "../models/index";
+} from "../models/CacheStatisticsEntryModel";
 
 /**
  *
  */
 export class CachingApi extends runtime.BaseAPI {
+    /**
+     * Creates request options for getCachingStatsV1CachingGet without sending the request
+     */
+    async getCachingStatsV1CachingGetRequestOpts(): Promise<runtime.RequestOpts> {
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        let urlPath = `/v1/caching`;
+
+        return {
+            path: urlPath,
+            method: "GET",
+            headers: headerParameters,
+            query: queryParameters,
+        };
+    }
+
     /**
      * Get Caching Stats
      */
@@ -32,19 +50,9 @@ export class CachingApi extends runtime.BaseAPI {
     ): Promise<
         runtime.ApiResponse<{ [key: string]: CacheStatisticsEntryModel }>
     > {
-        const queryParameters: any = {};
-
-        const headerParameters: runtime.HTTPHeaders = {};
-
-        const response = await this.request(
-            {
-                path: `/v1/caching`,
-                method: "GET",
-                headers: headerParameters,
-                query: queryParameters,
-            },
-            initOverrides,
-        );
+        const requestOptions =
+            await this.getCachingStatsV1CachingGetRequestOpts();
+        const response = await this.request(requestOptions, initOverrides);
 
         return new runtime.JSONApiResponse(response, (jsonValue) =>
             runtime.mapValues(jsonValue, CacheStatisticsEntryModelFromJSON),

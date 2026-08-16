@@ -31,7 +31,9 @@ export interface ImageDescriptionFileRequest {
 /**
  * Check if a given object implements the ImageDescriptionFileRequest interface.
  */
-export function instanceOfImageDescriptionFileRequest(value: object): boolean {
+export function instanceOfImageDescriptionFileRequest(
+    value: object,
+): value is ImageDescriptionFileRequest {
     return true;
 }
 
@@ -55,11 +57,19 @@ export function ImageDescriptionFileRequestFromJSONTyped(
 }
 
 export function ImageDescriptionFileRequestToJSON(
+    json: any,
+): ImageDescriptionFileRequest {
+    return ImageDescriptionFileRequestToJSONTyped(json, false);
+}
+
+export function ImageDescriptionFileRequestToJSONTyped(
     value?: ImageDescriptionFileRequest | null,
+    ignoreDiscriminator: boolean = false,
 ): any {
     if (value == null) {
         return value;
     }
+
     return {
         system_prompt: value["systemPrompt"],
     };

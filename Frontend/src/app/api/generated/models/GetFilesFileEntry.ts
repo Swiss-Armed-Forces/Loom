@@ -43,8 +43,16 @@ export interface GetFilesFileEntry {
 /**
  * Check if a given object implements the GetFilesFileEntry interface.
  */
-export function instanceOfGetFilesFileEntry(value: object): boolean {
-    if (!("fileId" in value)) return false;
+export function instanceOfGetFilesFileEntry(
+    value: object,
+): value is GetFilesFileEntry {
+    if (
+        (!("fileId" in (value as Record<string, any>)) &&
+            !("file_id" in (value as Record<string, any>))) ||
+        ((value as Record<string, any>)["fileId"] === undefined &&
+            (value as Record<string, any>)["file_id"] === undefined)
+    )
+        return false;
     return true;
 }
 
@@ -69,10 +77,18 @@ export function GetFilesFileEntryFromJSONTyped(
     };
 }
 
-export function GetFilesFileEntryToJSON(value?: GetFilesFileEntry | null): any {
+export function GetFilesFileEntryToJSON(json: any): GetFilesFileEntry {
+    return GetFilesFileEntryToJSONTyped(json, false);
+}
+
+export function GetFilesFileEntryToJSONTyped(
+    value?: GetFilesFileEntry | null,
+    ignoreDiscriminator: boolean = false,
+): any {
     if (value == null) {
         return value;
     }
+
     return {
         file_id: value["fileId"],
         sort_field_value: value["sortFieldValue"],

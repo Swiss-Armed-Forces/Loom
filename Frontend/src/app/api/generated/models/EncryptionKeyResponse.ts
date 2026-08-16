@@ -31,7 +31,9 @@ export interface EncryptionKeyResponse {
 /**
  * Check if a given object implements the EncryptionKeyResponse interface.
  */
-export function instanceOfEncryptionKeyResponse(value: object): boolean {
+export function instanceOfEncryptionKeyResponse(
+    value: object,
+): value is EncryptionKeyResponse {
     return true;
 }
 
@@ -54,12 +56,18 @@ export function EncryptionKeyResponseFromJSONTyped(
     };
 }
 
-export function EncryptionKeyResponseToJSON(
+export function EncryptionKeyResponseToJSON(json: any): EncryptionKeyResponse {
+    return EncryptionKeyResponseToJSONTyped(json, false);
+}
+
+export function EncryptionKeyResponseToJSONTyped(
     value?: EncryptionKeyResponse | null,
+    ignoreDiscriminator: boolean = false,
 ): any {
     if (value == null) {
         return value;
     }
+
     return {
         encryption_key: value["encryptionKey"],
     };

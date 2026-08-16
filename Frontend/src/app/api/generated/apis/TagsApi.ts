@@ -14,16 +14,16 @@
  */
 
 import * as runtime from "../runtime";
-import type {
-    AddTagsByQueryRequest,
-    HTTPValidationError,
-} from "../models/index";
 import {
+    type AddTagsByQueryRequest,
     AddTagsByQueryRequestFromJSON,
     AddTagsByQueryRequestToJSON,
+} from "../models/AddTagsByQueryRequest";
+import {
+    type HTTPValidationError,
     HTTPValidationErrorFromJSON,
     HTTPValidationErrorToJSON,
-} from "../models/index";
+} from "../models/HTTPValidationError";
 
 export interface AddTagsV1FilesTagsPostRequest {
     addTagsByQueryRequest: AddTagsByQueryRequest;
@@ -38,12 +38,11 @@ export interface DeleteTagV1FilesTagsTagToDeleteDeleteRequest {
  */
 export class TagsApi extends runtime.BaseAPI {
     /**
-     * Add Tags
+     * Creates request options for addTagsV1FilesTagsPost without sending the request
      */
-    async addTagsV1FilesTagsPostRaw(
+    async addTagsV1FilesTagsPostRequestOpts(
         requestParameters: AddTagsV1FilesTagsPostRequest,
-        initOverrides?: RequestInit | runtime.InitOverrideFunction,
-    ): Promise<runtime.ApiResponse<any>> {
+    ): Promise<runtime.RequestOpts> {
         if (requestParameters["addTagsByQueryRequest"] == null) {
             throw new runtime.RequiredError(
                 "addTagsByQueryRequest",
@@ -57,18 +56,29 @@ export class TagsApi extends runtime.BaseAPI {
 
         headerParameters["Content-Type"] = "application/json";
 
-        const response = await this.request(
-            {
-                path: `/v1/files/tags`,
-                method: "POST",
-                headers: headerParameters,
-                query: queryParameters,
-                body: AddTagsByQueryRequestToJSON(
-                    requestParameters["addTagsByQueryRequest"],
-                ),
-            },
-            initOverrides,
-        );
+        let urlPath = `/v1/files/tags`;
+
+        return {
+            path: urlPath,
+            method: "POST",
+            headers: headerParameters,
+            query: queryParameters,
+            body: AddTagsByQueryRequestToJSON(
+                requestParameters["addTagsByQueryRequest"],
+            ),
+        };
+    }
+
+    /**
+     * Add Tags
+     */
+    async addTagsV1FilesTagsPostRaw(
+        requestParameters: AddTagsV1FilesTagsPostRequest,
+        initOverrides?: RequestInit | runtime.InitOverrideFunction,
+    ): Promise<runtime.ApiResponse<any>> {
+        const requestOptions =
+            await this.addTagsV1FilesTagsPostRequestOpts(requestParameters);
+        const response = await this.request(requestOptions, initOverrides);
 
         if (this.isJsonMime(response.headers.get("content-type"))) {
             return new runtime.JSONApiResponse<any>(response);
@@ -92,12 +102,11 @@ export class TagsApi extends runtime.BaseAPI {
     }
 
     /**
-     * Delete Tag
+     * Creates request options for deleteTagV1FilesTagsTagToDeleteDelete without sending the request
      */
-    async deleteTagV1FilesTagsTagToDeleteDeleteRaw(
+    async deleteTagV1FilesTagsTagToDeleteDeleteRequestOpts(
         requestParameters: DeleteTagV1FilesTagsTagToDeleteDeleteRequest,
-        initOverrides?: RequestInit | runtime.InitOverrideFunction,
-    ): Promise<runtime.ApiResponse<any>> {
+    ): Promise<runtime.RequestOpts> {
         if (requestParameters["tagToDelete"] == null) {
             throw new runtime.RequiredError(
                 "tagToDelete",
@@ -109,20 +118,32 @@ export class TagsApi extends runtime.BaseAPI {
 
         const headerParameters: runtime.HTTPHeaders = {};
 
-        const response = await this.request(
-            {
-                path: `/v1/files/tags/{tag_to_delete}`.replace(
-                    `{${"tag_to_delete"}}`,
-                    encodeURIComponent(
-                        String(requestParameters["tagToDelete"]),
-                    ),
-                ),
-                method: "DELETE",
-                headers: headerParameters,
-                query: queryParameters,
-            },
-            initOverrides,
+        let urlPath = `/v1/files/tags/{tag_to_delete}`;
+        urlPath = urlPath.replace(
+            "{tag_to_delete}",
+            encodeURIComponent(String(requestParameters["tagToDelete"])),
         );
+
+        return {
+            path: urlPath,
+            method: "DELETE",
+            headers: headerParameters,
+            query: queryParameters,
+        };
+    }
+
+    /**
+     * Delete Tag
+     */
+    async deleteTagV1FilesTagsTagToDeleteDeleteRaw(
+        requestParameters: DeleteTagV1FilesTagsTagToDeleteDeleteRequest,
+        initOverrides?: RequestInit | runtime.InitOverrideFunction,
+    ): Promise<runtime.ApiResponse<any>> {
+        const requestOptions =
+            await this.deleteTagV1FilesTagsTagToDeleteDeleteRequestOpts(
+                requestParameters,
+            );
+        const response = await this.request(requestOptions, initOverrides);
 
         if (this.isJsonMime(response.headers.get("content-type"))) {
             return new runtime.JSONApiResponse<any>(response);
@@ -146,24 +167,31 @@ export class TagsApi extends runtime.BaseAPI {
     }
 
     /**
+     * Creates request options for getTagsV1FilesTagsGet without sending the request
+     */
+    async getTagsV1FilesTagsGetRequestOpts(): Promise<runtime.RequestOpts> {
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        let urlPath = `/v1/files/tags`;
+
+        return {
+            path: urlPath,
+            method: "GET",
+            headers: headerParameters,
+            query: queryParameters,
+        };
+    }
+
+    /**
      * Get Tags
      */
     async getTagsV1FilesTagsGetRaw(
         initOverrides?: RequestInit | runtime.InitOverrideFunction,
     ): Promise<runtime.ApiResponse<Array<string>>> {
-        const queryParameters: any = {};
-
-        const headerParameters: runtime.HTTPHeaders = {};
-
-        const response = await this.request(
-            {
-                path: `/v1/files/tags`,
-                method: "GET",
-                headers: headerParameters,
-                query: queryParameters,
-            },
-            initOverrides,
-        );
+        const requestOptions = await this.getTagsV1FilesTagsGetRequestOpts();
+        const response = await this.request(requestOptions, initOverrides);
 
         return new runtime.JSONApiResponse<any>(response);
     }

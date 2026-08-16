@@ -19,6 +19,7 @@ import {
     QueryParametersFromJSON,
     QueryParametersFromJSONTyped,
     QueryParametersToJSON,
+    QueryParametersToJSONTyped,
 } from "./QueryParameters";
 
 /**
@@ -50,10 +51,22 @@ export interface ArchiveMeta {
 /**
  * Check if a given object implements the ArchiveMeta interface.
  */
-export function instanceOfArchiveMeta(value: object): boolean {
-    if (!("shortName" in value)) return false;
-    if (!("query" in value)) return false;
-    if (!("updatedDatetime" in value)) return false;
+export function instanceOfArchiveMeta(value: object): value is ArchiveMeta {
+    if (
+        (!("shortName" in (value as Record<string, any>)) &&
+            !("short_name" in (value as Record<string, any>))) ||
+        ((value as Record<string, any>)["shortName"] === undefined &&
+            (value as Record<string, any>)["short_name"] === undefined)
+    )
+        return false;
+    if (!("query" in value) || value["query"] === undefined) return false;
+    if (
+        (!("updatedDatetime" in (value as Record<string, any>)) &&
+            !("updated_datetime" in (value as Record<string, any>))) ||
+        ((value as Record<string, any>)["updatedDatetime"] === undefined &&
+            (value as Record<string, any>)["updated_datetime"] === undefined)
+    )
+        return false;
     return true;
 }
 
@@ -75,10 +88,18 @@ export function ArchiveMetaFromJSONTyped(
     };
 }
 
-export function ArchiveMetaToJSON(value?: ArchiveMeta | null): any {
+export function ArchiveMetaToJSON(json: any): ArchiveMeta {
+    return ArchiveMetaToJSONTyped(json, false);
+}
+
+export function ArchiveMetaToJSONTyped(
+    value?: ArchiveMeta | null,
+    ignoreDiscriminator: boolean = false,
+): any {
     if (value == null) {
         return value;
     }
+
     return {
         short_name: value["shortName"],
         query: QueryParametersToJSON(value["query"]),

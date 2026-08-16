@@ -124,7 +124,10 @@ def test_translate(
     )
 
     assert translation == expected_text
-    assert client.beta.chat.completions.parse.call_count == expected_translate_calls
+    parse_mock: MagicMock = client.beta.chat.completions.parse
+    assert (
+        parse_mock.call_count == expected_translate_calls  # pylint: disable=no-member
+    )
 
 
 def test_translate_llm_error():

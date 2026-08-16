@@ -14,16 +14,16 @@
  */
 
 import * as runtime from "../runtime";
-import type {
-    HTTPValidationError,
-    SummarizationRequest,
-} from "../models/index";
 import {
+    type HTTPValidationError,
     HTTPValidationErrorFromJSON,
     HTTPValidationErrorToJSON,
+} from "../models/HTTPValidationError";
+import {
+    type SummarizationRequest,
     SummarizationRequestFromJSON,
     SummarizationRequestToJSON,
-} from "../models/index";
+} from "../models/SummarizationRequest";
 
 export interface SummarizeFilesOnDemandV1FilesSummarizationPostRequest {
     summarizationRequest: SummarizationRequest;
@@ -34,24 +34,32 @@ export interface SummarizeFilesOnDemandV1FilesSummarizationPostRequest {
  */
 export class SummarizationApi extends runtime.BaseAPI {
     /**
+     * Creates request options for getSystemPromptV1FilesSummarizationSystemPromptGet without sending the request
+     */
+    async getSystemPromptV1FilesSummarizationSystemPromptGetRequestOpts(): Promise<runtime.RequestOpts> {
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        let urlPath = `/v1/files/summarization/system_prompt`;
+
+        return {
+            path: urlPath,
+            method: "GET",
+            headers: headerParameters,
+            query: queryParameters,
+        };
+    }
+
+    /**
      * Get System Prompt
      */
     async getSystemPromptV1FilesSummarizationSystemPromptGetRaw(
         initOverrides?: RequestInit | runtime.InitOverrideFunction,
     ): Promise<runtime.ApiResponse<string>> {
-        const queryParameters: any = {};
-
-        const headerParameters: runtime.HTTPHeaders = {};
-
-        const response = await this.request(
-            {
-                path: `/v1/files/summarization/system_prompt`,
-                method: "GET",
-                headers: headerParameters,
-                query: queryParameters,
-            },
-            initOverrides,
-        );
+        const requestOptions =
+            await this.getSystemPromptV1FilesSummarizationSystemPromptGetRequestOpts();
+        const response = await this.request(requestOptions, initOverrides);
 
         if (this.isJsonMime(response.headers.get("content-type"))) {
             return new runtime.JSONApiResponse<string>(response);
@@ -74,12 +82,11 @@ export class SummarizationApi extends runtime.BaseAPI {
     }
 
     /**
-     * Summarize Files On Demand
+     * Creates request options for summarizeFilesOnDemandV1FilesSummarizationPost without sending the request
      */
-    async summarizeFilesOnDemandV1FilesSummarizationPostRaw(
+    async summarizeFilesOnDemandV1FilesSummarizationPostRequestOpts(
         requestParameters: SummarizeFilesOnDemandV1FilesSummarizationPostRequest,
-        initOverrides?: RequestInit | runtime.InitOverrideFunction,
-    ): Promise<runtime.ApiResponse<any>> {
+    ): Promise<runtime.RequestOpts> {
         if (requestParameters["summarizationRequest"] == null) {
             throw new runtime.RequiredError(
                 "summarizationRequest",
@@ -93,18 +100,31 @@ export class SummarizationApi extends runtime.BaseAPI {
 
         headerParameters["Content-Type"] = "application/json";
 
-        const response = await this.request(
-            {
-                path: `/v1/files/summarization`,
-                method: "POST",
-                headers: headerParameters,
-                query: queryParameters,
-                body: SummarizationRequestToJSON(
-                    requestParameters["summarizationRequest"],
-                ),
-            },
-            initOverrides,
-        );
+        let urlPath = `/v1/files/summarization`;
+
+        return {
+            path: urlPath,
+            method: "POST",
+            headers: headerParameters,
+            query: queryParameters,
+            body: SummarizationRequestToJSON(
+                requestParameters["summarizationRequest"],
+            ),
+        };
+    }
+
+    /**
+     * Summarize Files On Demand
+     */
+    async summarizeFilesOnDemandV1FilesSummarizationPostRaw(
+        requestParameters: SummarizeFilesOnDemandV1FilesSummarizationPostRequest,
+        initOverrides?: RequestInit | runtime.InitOverrideFunction,
+    ): Promise<runtime.ApiResponse<any>> {
+        const requestOptions =
+            await this.summarizeFilesOnDemandV1FilesSummarizationPostRequestOpts(
+                requestParameters,
+            );
+        const response = await this.request(requestOptions, initOverrides);
 
         if (this.isJsonMime(response.headers.get("content-type"))) {
             return new runtime.JSONApiResponse<any>(response);

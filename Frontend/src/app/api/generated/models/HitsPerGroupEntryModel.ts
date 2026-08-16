@@ -37,9 +37,17 @@ export interface HitsPerGroupEntryModel {
 /**
  * Check if a given object implements the HitsPerGroupEntryModel interface.
  */
-export function instanceOfHitsPerGroupEntryModel(value: object): boolean {
-    if (!("name" in value)) return false;
-    if (!("hitsCount" in value)) return false;
+export function instanceOfHitsPerGroupEntryModel(
+    value: object,
+): value is HitsPerGroupEntryModel {
+    if (!("name" in value) || value["name"] === undefined) return false;
+    if (
+        (!("hitsCount" in (value as Record<string, any>)) &&
+            !("hits_count" in (value as Record<string, any>))) ||
+        ((value as Record<string, any>)["hitsCount"] === undefined &&
+            (value as Record<string, any>)["hits_count"] === undefined)
+    )
+        return false;
     return true;
 }
 
@@ -63,11 +71,19 @@ export function HitsPerGroupEntryModelFromJSONTyped(
 }
 
 export function HitsPerGroupEntryModelToJSON(
+    json: any,
+): HitsPerGroupEntryModel {
+    return HitsPerGroupEntryModelToJSONTyped(json, false);
+}
+
+export function HitsPerGroupEntryModelToJSONTyped(
     value?: HitsPerGroupEntryModel | null,
+    ignoreDiscriminator: boolean = false,
 ): any {
     if (value == null) {
         return value;
     }
+
     return {
         name: value["name"],
         hits_count: value["hitsCount"],

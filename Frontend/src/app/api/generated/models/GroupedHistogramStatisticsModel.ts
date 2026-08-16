@@ -19,6 +19,7 @@ import {
     GroupedHitsPerGroupEntryModelFromJSON,
     GroupedHitsPerGroupEntryModelFromJSONTyped,
     GroupedHitsPerGroupEntryModelToJSON,
+    GroupedHitsPerGroupEntryModelToJSONTyped,
 } from "./GroupedHitsPerGroupEntryModel";
 
 /**
@@ -47,7 +48,7 @@ export interface GroupedHistogramStatisticsModel {
     key: string;
     /**
      *
-     * @type {string}
+     * @type {GroupedHistogramStatisticsModelHistogramTypeEnum}
      * @memberof GroupedHistogramStatisticsModel
      */
     histogramType: GroupedHistogramStatisticsModelHistogramTypeEnum;
@@ -92,13 +93,31 @@ export type GroupedHistogramStatisticsModelHistogramTypeEnum =
  */
 export function instanceOfGroupedHistogramStatisticsModel(
     value: object,
-): boolean {
-    if (!("stat" in value)) return false;
-    if (!("groupBy" in value)) return false;
-    if (!("key" in value)) return false;
-    if (!("histogramType" in value)) return false;
-    if (!("data" in value)) return false;
-    if (!("fileCount" in value)) return false;
+): value is GroupedHistogramStatisticsModel {
+    if (!("stat" in value) || value["stat"] === undefined) return false;
+    if (
+        (!("groupBy" in (value as Record<string, any>)) &&
+            !("group_by" in (value as Record<string, any>))) ||
+        ((value as Record<string, any>)["groupBy"] === undefined &&
+            (value as Record<string, any>)["group_by"] === undefined)
+    )
+        return false;
+    if (!("key" in value) || value["key"] === undefined) return false;
+    if (
+        (!("histogramType" in (value as Record<string, any>)) &&
+            !("histogram_type" in (value as Record<string, any>))) ||
+        ((value as Record<string, any>)["histogramType"] === undefined &&
+            (value as Record<string, any>)["histogram_type"] === undefined)
+    )
+        return false;
+    if (!("data" in value) || value["data"] === undefined) return false;
+    if (
+        (!("fileCount" in (value as Record<string, any>)) &&
+            !("file_count" in (value as Record<string, any>))) ||
+        ((value as Record<string, any>)["fileCount"] === undefined &&
+            (value as Record<string, any>)["file_count"] === undefined)
+    )
+        return false;
     return true;
 }
 
@@ -130,11 +149,19 @@ export function GroupedHistogramStatisticsModelFromJSONTyped(
 }
 
 export function GroupedHistogramStatisticsModelToJSON(
+    json: any,
+): GroupedHistogramStatisticsModel {
+    return GroupedHistogramStatisticsModelToJSONTyped(json, false);
+}
+
+export function GroupedHistogramStatisticsModelToJSONTyped(
     value?: GroupedHistogramStatisticsModel | null,
+    ignoreDiscriminator: boolean = false,
 ): any {
     if (value == null) {
         return value;
     }
+
     return {
         stat: value["stat"],
         group_by: value["groupBy"],

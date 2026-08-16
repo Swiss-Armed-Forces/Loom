@@ -14,16 +14,16 @@
  */
 
 import * as runtime from "../runtime";
-import type {
-    HTTPValidationError,
-    ImageDescriptionRequest,
-} from "../models/index";
 import {
+    type HTTPValidationError,
     HTTPValidationErrorFromJSON,
     HTTPValidationErrorToJSON,
+} from "../models/HTTPValidationError";
+import {
+    type ImageDescriptionRequest,
     ImageDescriptionRequestFromJSON,
     ImageDescriptionRequestToJSON,
-} from "../models/index";
+} from "../models/ImageDescriptionRequest";
 
 export interface DescribeImagesOnDemandV1FilesImageDescriptionPostRequest {
     imageDescriptionRequest: ImageDescriptionRequest;
@@ -34,12 +34,11 @@ export interface DescribeImagesOnDemandV1FilesImageDescriptionPostRequest {
  */
 export class ImageDescriptionApi extends runtime.BaseAPI {
     /**
-     * Describe Images On Demand
+     * Creates request options for describeImagesOnDemandV1FilesImageDescriptionPost without sending the request
      */
-    async describeImagesOnDemandV1FilesImageDescriptionPostRaw(
+    async describeImagesOnDemandV1FilesImageDescriptionPostRequestOpts(
         requestParameters: DescribeImagesOnDemandV1FilesImageDescriptionPostRequest,
-        initOverrides?: RequestInit | runtime.InitOverrideFunction,
-    ): Promise<runtime.ApiResponse<any>> {
+    ): Promise<runtime.RequestOpts> {
         if (requestParameters["imageDescriptionRequest"] == null) {
             throw new runtime.RequiredError(
                 "imageDescriptionRequest",
@@ -53,18 +52,31 @@ export class ImageDescriptionApi extends runtime.BaseAPI {
 
         headerParameters["Content-Type"] = "application/json";
 
-        const response = await this.request(
-            {
-                path: `/v1/files/image_description`,
-                method: "POST",
-                headers: headerParameters,
-                query: queryParameters,
-                body: ImageDescriptionRequestToJSON(
-                    requestParameters["imageDescriptionRequest"],
-                ),
-            },
-            initOverrides,
-        );
+        let urlPath = `/v1/files/image_description`;
+
+        return {
+            path: urlPath,
+            method: "POST",
+            headers: headerParameters,
+            query: queryParameters,
+            body: ImageDescriptionRequestToJSON(
+                requestParameters["imageDescriptionRequest"],
+            ),
+        };
+    }
+
+    /**
+     * Describe Images On Demand
+     */
+    async describeImagesOnDemandV1FilesImageDescriptionPostRaw(
+        requestParameters: DescribeImagesOnDemandV1FilesImageDescriptionPostRequest,
+        initOverrides?: RequestInit | runtime.InitOverrideFunction,
+    ): Promise<runtime.ApiResponse<any>> {
+        const requestOptions =
+            await this.describeImagesOnDemandV1FilesImageDescriptionPostRequestOpts(
+                requestParameters,
+            );
+        const response = await this.request(requestOptions, initOverrides);
 
         if (this.isJsonMime(response.headers.get("content-type"))) {
             return new runtime.JSONApiResponse<any>(response);
@@ -89,24 +101,32 @@ export class ImageDescriptionApi extends runtime.BaseAPI {
     }
 
     /**
+     * Creates request options for getSystemPromptV1FilesImageDescriptionSystemPromptGet without sending the request
+     */
+    async getSystemPromptV1FilesImageDescriptionSystemPromptGetRequestOpts(): Promise<runtime.RequestOpts> {
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        let urlPath = `/v1/files/image_description/system_prompt`;
+
+        return {
+            path: urlPath,
+            method: "GET",
+            headers: headerParameters,
+            query: queryParameters,
+        };
+    }
+
+    /**
      * Get System Prompt
      */
     async getSystemPromptV1FilesImageDescriptionSystemPromptGetRaw(
         initOverrides?: RequestInit | runtime.InitOverrideFunction,
     ): Promise<runtime.ApiResponse<string>> {
-        const queryParameters: any = {};
-
-        const headerParameters: runtime.HTTPHeaders = {};
-
-        const response = await this.request(
-            {
-                path: `/v1/files/image_description/system_prompt`,
-                method: "GET",
-                headers: headerParameters,
-                query: queryParameters,
-            },
-            initOverrides,
-        );
+        const requestOptions =
+            await this.getSystemPromptV1FilesImageDescriptionSystemPromptGetRequestOpts();
+        const response = await this.request(requestOptions, initOverrides);
 
         if (this.isJsonMime(response.headers.get("content-type"))) {
             return new runtime.JSONApiResponse<string>(response);

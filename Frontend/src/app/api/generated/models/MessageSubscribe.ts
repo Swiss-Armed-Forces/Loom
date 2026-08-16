@@ -22,22 +22,33 @@ import { mapValues } from "../runtime";
 export interface MessageSubscribe {
     /**
      *
-     * @type {string}
+     * @type {MessageSubscribeTypeEnum}
      * @memberof MessageSubscribe
      */
-    type?: string;
+    type?: MessageSubscribeTypeEnum;
     /**
      *
-     * @type {Array<string>}
+     * @type {Set<string>}
      * @memberof MessageSubscribe
      */
-    channels?: Array<string>;
+    channels?: Set<string>;
 }
+
+/**
+ * @export
+ */
+export const MessageSubscribeTypeEnum = {
+    Subscribe: "subscribe",
+} as const;
+export type MessageSubscribeTypeEnum =
+    (typeof MessageSubscribeTypeEnum)[keyof typeof MessageSubscribeTypeEnum];
 
 /**
  * Check if a given object implements the MessageSubscribe interface.
  */
-export function instanceOfMessageSubscribe(value: object): boolean {
+export function instanceOfMessageSubscribe(
+    value: object,
+): value is MessageSubscribe {
     return true;
 }
 
@@ -54,16 +65,28 @@ export function MessageSubscribeFromJSONTyped(
     }
     return {
         type: json["type"] == null ? undefined : json["type"],
-        channels: json["channels"] == null ? undefined : json["channels"],
+        channels:
+            json["channels"] == null ? undefined : new Set(json["channels"]),
     };
 }
 
-export function MessageSubscribeToJSON(value?: MessageSubscribe | null): any {
+export function MessageSubscribeToJSON(json: any): MessageSubscribe {
+    return MessageSubscribeToJSONTyped(json, false);
+}
+
+export function MessageSubscribeToJSONTyped(
+    value?: MessageSubscribe | null,
+    ignoreDiscriminator: boolean = false,
+): any {
     if (value == null) {
         return value;
     }
+
     return {
         type: value["type"],
-        channels: value["channels"],
+        channels:
+            value["channels"] == null
+                ? undefined
+                : Array.from(value["channels"] as Set<any>),
     };
 }

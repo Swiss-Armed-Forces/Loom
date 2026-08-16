@@ -49,11 +49,37 @@ export interface CacheStatisticsEntryModel {
 /**
  * Check if a given object implements the CacheStatisticsEntryModel interface.
  */
-export function instanceOfCacheStatisticsEntryModel(value: object): boolean {
-    if (!("memSize" in value)) return false;
-    if (!("entriesCount" in value)) return false;
-    if (!("hitsCount" in value)) return false;
-    if (!("missCount" in value)) return false;
+export function instanceOfCacheStatisticsEntryModel(
+    value: object,
+): value is CacheStatisticsEntryModel {
+    if (
+        (!("memSize" in (value as Record<string, any>)) &&
+            !("mem_size" in (value as Record<string, any>))) ||
+        ((value as Record<string, any>)["memSize"] === undefined &&
+            (value as Record<string, any>)["mem_size"] === undefined)
+    )
+        return false;
+    if (
+        (!("entriesCount" in (value as Record<string, any>)) &&
+            !("entries_count" in (value as Record<string, any>))) ||
+        ((value as Record<string, any>)["entriesCount"] === undefined &&
+            (value as Record<string, any>)["entries_count"] === undefined)
+    )
+        return false;
+    if (
+        (!("hitsCount" in (value as Record<string, any>)) &&
+            !("hits_count" in (value as Record<string, any>))) ||
+        ((value as Record<string, any>)["hitsCount"] === undefined &&
+            (value as Record<string, any>)["hits_count"] === undefined)
+    )
+        return false;
+    if (
+        (!("missCount" in (value as Record<string, any>)) &&
+            !("miss_count" in (value as Record<string, any>))) ||
+        ((value as Record<string, any>)["missCount"] === undefined &&
+            (value as Record<string, any>)["miss_count"] === undefined)
+    )
+        return false;
     return true;
 }
 
@@ -79,11 +105,19 @@ export function CacheStatisticsEntryModelFromJSONTyped(
 }
 
 export function CacheStatisticsEntryModelToJSON(
+    json: any,
+): CacheStatisticsEntryModel {
+    return CacheStatisticsEntryModelToJSONTyped(json, false);
+}
+
+export function CacheStatisticsEntryModelToJSONTyped(
     value?: CacheStatisticsEntryModel | null,
+    ignoreDiscriminator: boolean = false,
 ): any {
     if (value == null) {
         return value;
     }
+
     return {
         mem_size: value["memSize"],
         entries_count: value["entriesCount"],

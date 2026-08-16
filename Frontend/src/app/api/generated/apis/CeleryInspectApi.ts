@@ -14,13 +14,16 @@
  */
 
 import * as runtime from "../runtime";
-import type { HTTPValidationError, TaskGroupName } from "../models/index";
 import {
+    type HTTPValidationError,
     HTTPValidationErrorFromJSON,
     HTTPValidationErrorToJSON,
+} from "../models/HTTPValidationError";
+import {
+    type TaskGroupName,
     TaskGroupNameFromJSON,
     TaskGroupNameToJSON,
-} from "../models/index";
+} from "../models/TaskGroupName";
 
 export interface GetTaskPausedV1CeleryInspectTasksTaskNamePausedGetRequest {
     taskName: string;
@@ -49,24 +52,32 @@ export interface SetThrottledV1CeleryInspectThrottledPutRequest {
  */
 export class CeleryInspectApi extends runtime.BaseAPI {
     /**
-     * Get Task Groups
+     * Creates request options for getTaskGroupsV1CeleryInspectTaskGroupsGet without sending the request
      */
-    async getTaskGroupsV1CeleryInspectTaskGroupsGetRaw(
-        initOverrides?: RequestInit | runtime.InitOverrideFunction,
-    ): Promise<runtime.ApiResponse<{ [key: string]: any }>> {
+    async getTaskGroupsV1CeleryInspectTaskGroupsGetRequestOpts(): Promise<runtime.RequestOpts> {
         const queryParameters: any = {};
 
         const headerParameters: runtime.HTTPHeaders = {};
 
-        const response = await this.request(
-            {
-                path: `/v1/celery-inspect/task-groups`,
-                method: "GET",
-                headers: headerParameters,
-                query: queryParameters,
-            },
-            initOverrides,
-        );
+        let urlPath = `/v1/celery-inspect/task-groups`;
+
+        return {
+            path: urlPath,
+            method: "GET",
+            headers: headerParameters,
+            query: queryParameters,
+        };
+    }
+
+    /**
+     * Get Task Groups
+     */
+    async getTaskGroupsV1CeleryInspectTaskGroupsGetRaw(
+        initOverrides?: RequestInit | runtime.InitOverrideFunction,
+    ): Promise<runtime.ApiResponse<{ [key: string]: Array<string> }>> {
+        const requestOptions =
+            await this.getTaskGroupsV1CeleryInspectTaskGroupsGetRequestOpts();
+        const response = await this.request(requestOptions, initOverrides);
 
         return new runtime.JSONApiResponse<any>(response);
     }
@@ -76,7 +87,7 @@ export class CeleryInspectApi extends runtime.BaseAPI {
      */
     async getTaskGroupsV1CeleryInspectTaskGroupsGet(
         initOverrides?: RequestInit | runtime.InitOverrideFunction,
-    ): Promise<{ [key: string]: any }> {
+    ): Promise<{ [key: string]: Array<string> }> {
         const response =
             await this.getTaskGroupsV1CeleryInspectTaskGroupsGetRaw(
                 initOverrides,
@@ -85,12 +96,11 @@ export class CeleryInspectApi extends runtime.BaseAPI {
     }
 
     /**
-     * Get Task Paused
+     * Creates request options for getTaskPausedV1CeleryInspectTasksTaskNamePausedGet without sending the request
      */
-    async getTaskPausedV1CeleryInspectTasksTaskNamePausedGetRaw(
+    async getTaskPausedV1CeleryInspectTasksTaskNamePausedGetRequestOpts(
         requestParameters: GetTaskPausedV1CeleryInspectTasksTaskNamePausedGetRequest,
-        initOverrides?: RequestInit | runtime.InitOverrideFunction,
-    ): Promise<runtime.ApiResponse<boolean>> {
+    ): Promise<runtime.RequestOpts> {
         if (requestParameters["taskName"] == null) {
             throw new runtime.RequiredError(
                 "taskName",
@@ -102,18 +112,32 @@ export class CeleryInspectApi extends runtime.BaseAPI {
 
         const headerParameters: runtime.HTTPHeaders = {};
 
-        const response = await this.request(
-            {
-                path: `/v1/celery-inspect/tasks/{task_name}/paused`.replace(
-                    `{${"task_name"}}`,
-                    encodeURIComponent(String(requestParameters["taskName"])),
-                ),
-                method: "GET",
-                headers: headerParameters,
-                query: queryParameters,
-            },
-            initOverrides,
+        let urlPath = `/v1/celery-inspect/tasks/{task_name}/paused`;
+        urlPath = urlPath.replace(
+            "{task_name}",
+            encodeURIComponent(String(requestParameters["taskName"])),
         );
+
+        return {
+            path: urlPath,
+            method: "GET",
+            headers: headerParameters,
+            query: queryParameters,
+        };
+    }
+
+    /**
+     * Get Task Paused
+     */
+    async getTaskPausedV1CeleryInspectTasksTaskNamePausedGetRaw(
+        requestParameters: GetTaskPausedV1CeleryInspectTasksTaskNamePausedGetRequest,
+        initOverrides?: RequestInit | runtime.InitOverrideFunction,
+    ): Promise<runtime.ApiResponse<boolean>> {
+        const requestOptions =
+            await this.getTaskPausedV1CeleryInspectTasksTaskNamePausedGetRequestOpts(
+                requestParameters,
+            );
+        const response = await this.request(requestOptions, initOverrides);
 
         if (this.isJsonMime(response.headers.get("content-type"))) {
             return new runtime.JSONApiResponse<boolean>(response);
@@ -138,12 +162,11 @@ export class CeleryInspectApi extends runtime.BaseAPI {
     }
 
     /**
-     * Get Taskgroup Paused
+     * Creates request options for getTaskgroupPausedV1CeleryInspectTaskGroupsGroupNamePausedGet without sending the request
      */
-    async getTaskgroupPausedV1CeleryInspectTaskGroupsGroupNamePausedGetRaw(
+    async getTaskgroupPausedV1CeleryInspectTaskGroupsGroupNamePausedGetRequestOpts(
         requestParameters: GetTaskgroupPausedV1CeleryInspectTaskGroupsGroupNamePausedGetRequest,
-        initOverrides?: RequestInit | runtime.InitOverrideFunction,
-    ): Promise<runtime.ApiResponse<boolean>> {
+    ): Promise<runtime.RequestOpts> {
         if (requestParameters["groupName"] == null) {
             throw new runtime.RequiredError(
                 "groupName",
@@ -155,18 +178,32 @@ export class CeleryInspectApi extends runtime.BaseAPI {
 
         const headerParameters: runtime.HTTPHeaders = {};
 
-        const response = await this.request(
-            {
-                path: `/v1/celery-inspect/task-groups/{group_name}/paused`.replace(
-                    `{${"group_name"}}`,
-                    encodeURIComponent(String(requestParameters["groupName"])),
-                ),
-                method: "GET",
-                headers: headerParameters,
-                query: queryParameters,
-            },
-            initOverrides,
+        let urlPath = `/v1/celery-inspect/task-groups/{group_name}/paused`;
+        urlPath = urlPath.replace(
+            "{group_name}",
+            encodeURIComponent(String(requestParameters["groupName"])),
         );
+
+        return {
+            path: urlPath,
+            method: "GET",
+            headers: headerParameters,
+            query: queryParameters,
+        };
+    }
+
+    /**
+     * Get Taskgroup Paused
+     */
+    async getTaskgroupPausedV1CeleryInspectTaskGroupsGroupNamePausedGetRaw(
+        requestParameters: GetTaskgroupPausedV1CeleryInspectTaskGroupsGroupNamePausedGetRequest,
+        initOverrides?: RequestInit | runtime.InitOverrideFunction,
+    ): Promise<runtime.ApiResponse<boolean>> {
+        const requestOptions =
+            await this.getTaskgroupPausedV1CeleryInspectTaskGroupsGroupNamePausedGetRequestOpts(
+                requestParameters,
+            );
+        const response = await this.request(requestOptions, initOverrides);
 
         if (this.isJsonMime(response.headers.get("content-type"))) {
             return new runtime.JSONApiResponse<boolean>(response);
@@ -191,24 +228,32 @@ export class CeleryInspectApi extends runtime.BaseAPI {
     }
 
     /**
+     * Creates request options for getThrottledV1CeleryInspectThrottledGet without sending the request
+     */
+    async getThrottledV1CeleryInspectThrottledGetRequestOpts(): Promise<runtime.RequestOpts> {
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        let urlPath = `/v1/celery-inspect/throttled`;
+
+        return {
+            path: urlPath,
+            method: "GET",
+            headers: headerParameters,
+            query: queryParameters,
+        };
+    }
+
+    /**
      * Get Throttled
      */
     async getThrottledV1CeleryInspectThrottledGetRaw(
         initOverrides?: RequestInit | runtime.InitOverrideFunction,
     ): Promise<runtime.ApiResponse<boolean>> {
-        const queryParameters: any = {};
-
-        const headerParameters: runtime.HTTPHeaders = {};
-
-        const response = await this.request(
-            {
-                path: `/v1/celery-inspect/throttled`,
-                method: "GET",
-                headers: headerParameters,
-                query: queryParameters,
-            },
-            initOverrides,
-        );
+        const requestOptions =
+            await this.getThrottledV1CeleryInspectThrottledGetRequestOpts();
+        const response = await this.request(requestOptions, initOverrides);
 
         if (this.isJsonMime(response.headers.get("content-type"))) {
             return new runtime.JSONApiResponse<boolean>(response);
@@ -231,12 +276,11 @@ export class CeleryInspectApi extends runtime.BaseAPI {
     }
 
     /**
-     * Set Task Paused
+     * Creates request options for setTaskPausedV1CeleryInspectTasksTaskNamePausedPut without sending the request
      */
-    async setTaskPausedV1CeleryInspectTasksTaskNamePausedPutRaw(
+    async setTaskPausedV1CeleryInspectTasksTaskNamePausedPutRequestOpts(
         requestParameters: SetTaskPausedV1CeleryInspectTasksTaskNamePausedPutRequest,
-        initOverrides?: RequestInit | runtime.InitOverrideFunction,
-    ): Promise<runtime.ApiResponse<void>> {
+    ): Promise<runtime.RequestOpts> {
         if (requestParameters["taskName"] == null) {
             throw new runtime.RequiredError(
                 "taskName",
@@ -259,18 +303,32 @@ export class CeleryInspectApi extends runtime.BaseAPI {
 
         const headerParameters: runtime.HTTPHeaders = {};
 
-        const response = await this.request(
-            {
-                path: `/v1/celery-inspect/tasks/{task_name}/paused`.replace(
-                    `{${"task_name"}}`,
-                    encodeURIComponent(String(requestParameters["taskName"])),
-                ),
-                method: "PUT",
-                headers: headerParameters,
-                query: queryParameters,
-            },
-            initOverrides,
+        let urlPath = `/v1/celery-inspect/tasks/{task_name}/paused`;
+        urlPath = urlPath.replace(
+            "{task_name}",
+            encodeURIComponent(String(requestParameters["taskName"])),
         );
+
+        return {
+            path: urlPath,
+            method: "PUT",
+            headers: headerParameters,
+            query: queryParameters,
+        };
+    }
+
+    /**
+     * Set Task Paused
+     */
+    async setTaskPausedV1CeleryInspectTasksTaskNamePausedPutRaw(
+        requestParameters: SetTaskPausedV1CeleryInspectTasksTaskNamePausedPutRequest,
+        initOverrides?: RequestInit | runtime.InitOverrideFunction,
+    ): Promise<runtime.ApiResponse<void>> {
+        const requestOptions =
+            await this.setTaskPausedV1CeleryInspectTasksTaskNamePausedPutRequestOpts(
+                requestParameters,
+            );
+        const response = await this.request(requestOptions, initOverrides);
 
         return new runtime.VoidApiResponse(response);
     }
@@ -289,12 +347,11 @@ export class CeleryInspectApi extends runtime.BaseAPI {
     }
 
     /**
-     * Set Taskgroup Paused
+     * Creates request options for setTaskgroupPausedV1CeleryInspectTaskGroupsGroupNamePausedPut without sending the request
      */
-    async setTaskgroupPausedV1CeleryInspectTaskGroupsGroupNamePausedPutRaw(
+    async setTaskgroupPausedV1CeleryInspectTaskGroupsGroupNamePausedPutRequestOpts(
         requestParameters: SetTaskgroupPausedV1CeleryInspectTaskGroupsGroupNamePausedPutRequest,
-        initOverrides?: RequestInit | runtime.InitOverrideFunction,
-    ): Promise<runtime.ApiResponse<void>> {
+    ): Promise<runtime.RequestOpts> {
         if (requestParameters["groupName"] == null) {
             throw new runtime.RequiredError(
                 "groupName",
@@ -317,18 +374,32 @@ export class CeleryInspectApi extends runtime.BaseAPI {
 
         const headerParameters: runtime.HTTPHeaders = {};
 
-        const response = await this.request(
-            {
-                path: `/v1/celery-inspect/task-groups/{group_name}/paused`.replace(
-                    `{${"group_name"}}`,
-                    encodeURIComponent(String(requestParameters["groupName"])),
-                ),
-                method: "PUT",
-                headers: headerParameters,
-                query: queryParameters,
-            },
-            initOverrides,
+        let urlPath = `/v1/celery-inspect/task-groups/{group_name}/paused`;
+        urlPath = urlPath.replace(
+            "{group_name}",
+            encodeURIComponent(String(requestParameters["groupName"])),
         );
+
+        return {
+            path: urlPath,
+            method: "PUT",
+            headers: headerParameters,
+            query: queryParameters,
+        };
+    }
+
+    /**
+     * Set Taskgroup Paused
+     */
+    async setTaskgroupPausedV1CeleryInspectTaskGroupsGroupNamePausedPutRaw(
+        requestParameters: SetTaskgroupPausedV1CeleryInspectTaskGroupsGroupNamePausedPutRequest,
+        initOverrides?: RequestInit | runtime.InitOverrideFunction,
+    ): Promise<runtime.ApiResponse<void>> {
+        const requestOptions =
+            await this.setTaskgroupPausedV1CeleryInspectTaskGroupsGroupNamePausedPutRequestOpts(
+                requestParameters,
+            );
+        const response = await this.request(requestOptions, initOverrides);
 
         return new runtime.VoidApiResponse(response);
     }
@@ -347,12 +418,11 @@ export class CeleryInspectApi extends runtime.BaseAPI {
     }
 
     /**
-     * Set Throttled
+     * Creates request options for setThrottledV1CeleryInspectThrottledPut without sending the request
      */
-    async setThrottledV1CeleryInspectThrottledPutRaw(
+    async setThrottledV1CeleryInspectThrottledPutRequestOpts(
         requestParameters: SetThrottledV1CeleryInspectThrottledPutRequest,
-        initOverrides?: RequestInit | runtime.InitOverrideFunction,
-    ): Promise<runtime.ApiResponse<void>> {
+    ): Promise<runtime.RequestOpts> {
         if (requestParameters["throttled"] == null) {
             throw new runtime.RequiredError(
                 "throttled",
@@ -368,15 +438,28 @@ export class CeleryInspectApi extends runtime.BaseAPI {
 
         const headerParameters: runtime.HTTPHeaders = {};
 
-        const response = await this.request(
-            {
-                path: `/v1/celery-inspect/throttled`,
-                method: "PUT",
-                headers: headerParameters,
-                query: queryParameters,
-            },
-            initOverrides,
-        );
+        let urlPath = `/v1/celery-inspect/throttled`;
+
+        return {
+            path: urlPath,
+            method: "PUT",
+            headers: headerParameters,
+            query: queryParameters,
+        };
+    }
+
+    /**
+     * Set Throttled
+     */
+    async setThrottledV1CeleryInspectThrottledPutRaw(
+        requestParameters: SetThrottledV1CeleryInspectThrottledPutRequest,
+        initOverrides?: RequestInit | runtime.InitOverrideFunction,
+    ): Promise<runtime.ApiResponse<void>> {
+        const requestOptions =
+            await this.setThrottledV1CeleryInspectThrottledPutRequestOpts(
+                requestParameters,
+            );
+        const response = await this.request(requestOptions, initOverrides);
 
         return new runtime.VoidApiResponse(response);
     }

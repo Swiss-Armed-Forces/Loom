@@ -102,10 +102,8 @@ export const DefaultConfig = new Configuration();
  * This is the base class for all generated API classes.
  */
 export class BaseAPI {
-    private static readonly jsonRegex = new RegExp(
-        "^(:?application\/json|[^;/ \t]+\/[^;/ \t]+[+]json)[ \t]*(:?;.*)?$",
-        "i",
-    );
+    private static readonly jsonRegex =
+        /^(:?application\/json|[^;/ \t]+\/[^;/ \t]+[+]json)[ \t]*(:?;.*)?$/i;
     private middleware: Middleware[];
 
     constructor(protected configuration = DefaultConfig) {
@@ -313,6 +311,12 @@ export class ResponseError extends Error {
         msg?: string,
     ) {
         super(msg);
+
+        // restore prototype chain
+        const actualProto = new.target.prototype;
+        if (Object.setPrototypeOf) {
+            Object.setPrototypeOf(this, actualProto);
+        }
     }
 }
 
@@ -323,6 +327,12 @@ export class FetchError extends Error {
         msg?: string,
     ) {
         super(msg);
+
+        // restore prototype chain
+        const actualProto = new.target.prototype;
+        if (Object.setPrototypeOf) {
+            Object.setPrototypeOf(this, actualProto);
+        }
     }
 }
 
@@ -333,6 +343,12 @@ export class RequiredError extends Error {
         msg?: string,
     ) {
         super(msg);
+
+        // restore prototype chain
+        const actualProto = new.target.prototype;
+        if (Object.setPrototypeOf) {
+            Object.setPrototypeOf(this, actualProto);
+        }
     }
 }
 
@@ -436,16 +452,27 @@ function querystringSingleKey(
     return `${encodeURIComponent(fullKey)}=${encodeURIComponent(String(value))}`;
 }
 
+export function exists(json: any, key: string) {
+    const value = json[key];
+    return value !== null && value !== undefined;
+}
+
 export function mapValues(data: any, fn: (item: any) => any) {
-    return Object.keys(data).reduce(
-        (acc, key) => ({ ...acc, [key]: fn(data[key]) }),
-        {},
-    );
+    const result: { [key: string]: any } = {};
+    for (const key of Object.keys(data)) {
+        result[key] = fn(data[key]);
+    }
+    return result;
+}
+
+// Pass-through serializer for `any`-typed properties in form data. See #1877.
+export function anyToJSON(value: any): any {
+    return value;
 }
 
 export function canConsumeForm(consumes: Consume[]): boolean {
     for (const consume of consumes) {
-        if ("multipart/form-data" === consume.contentType) {
+        if (consume.contentType?.startsWith("multipart/form-data") == true) {
             return true;
         }
     }

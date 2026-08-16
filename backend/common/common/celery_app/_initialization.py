@@ -200,8 +200,10 @@ def init_celery_app() -> "Celery[BaseTask]":  # pylint: disable=too-many-stateme
     }
 
     app.conf.task_default_queue = default_queue.name
-    app.conf.task_default_routing_key = settings.celery_default_task_name
-    app.conf.task_default_exchange = settings.celery_default_exchange_name
+    app.conf.update(
+        task_default_routing_key=settings.celery_default_task_name,
+        task_default_exchange=settings.celery_default_exchange_name,
+    )
     app.conf.task_default_exchange_type = settings.celery_default_exchange_type
     app.conf.task_default_delivery_mode = "persistent"
 

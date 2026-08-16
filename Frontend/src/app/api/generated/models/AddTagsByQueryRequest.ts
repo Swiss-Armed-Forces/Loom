@@ -19,6 +19,7 @@ import {
     QueryParametersFromJSON,
     QueryParametersFromJSONTyped,
     QueryParametersToJSON,
+    QueryParametersToJSONTyped,
 } from "./QueryParameters";
 
 /**
@@ -44,9 +45,11 @@ export interface AddTagsByQueryRequest {
 /**
  * Check if a given object implements the AddTagsByQueryRequest interface.
  */
-export function instanceOfAddTagsByQueryRequest(value: object): boolean {
-    if (!("tags" in value)) return false;
-    if (!("query" in value)) return false;
+export function instanceOfAddTagsByQueryRequest(
+    value: object,
+): value is AddTagsByQueryRequest {
+    if (!("tags" in value) || value["tags"] === undefined) return false;
+    if (!("query" in value) || value["query"] === undefined) return false;
     return true;
 }
 
@@ -69,12 +72,18 @@ export function AddTagsByQueryRequestFromJSONTyped(
     };
 }
 
-export function AddTagsByQueryRequestToJSON(
+export function AddTagsByQueryRequestToJSON(json: any): AddTagsByQueryRequest {
+    return AddTagsByQueryRequestToJSONTyped(json, false);
+}
+
+export function AddTagsByQueryRequestToJSONTyped(
     value?: AddTagsByQueryRequest | null,
+    ignoreDiscriminator: boolean = false,
 ): any {
     if (value == null) {
         return value;
     }
+
     return {
         tags: value["tags"],
         query: QueryParametersToJSON(value["query"]),

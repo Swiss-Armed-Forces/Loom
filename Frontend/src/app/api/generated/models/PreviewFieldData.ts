@@ -37,8 +37,10 @@ export interface PreviewFieldData {
 /**
  * Check if a given object implements the PreviewFieldData interface.
  */
-export function instanceOfPreviewFieldData(value: object): boolean {
-    if (!("value" in value)) return false;
+export function instanceOfPreviewFieldData(
+    value: object,
+): value is PreviewFieldData {
+    if (!("value" in value) || value["value"] === undefined) return false;
     return true;
 }
 
@@ -60,10 +62,18 @@ export function PreviewFieldDataFromJSONTyped(
     };
 }
 
-export function PreviewFieldDataToJSON(value?: PreviewFieldData | null): any {
+export function PreviewFieldDataToJSON(json: any): PreviewFieldData {
+    return PreviewFieldDataToJSONTyped(json, false);
+}
+
+export function PreviewFieldDataToJSONTyped(
+    value?: PreviewFieldData | null,
+    ignoreDiscriminator: boolean = false,
+): any {
     if (value == null) {
         return value;
     }
+
     return {
         value: value["value"],
         is_truncated: value["isTruncated"],

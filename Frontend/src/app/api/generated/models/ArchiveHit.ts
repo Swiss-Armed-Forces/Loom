@@ -19,12 +19,14 @@ import {
     ArchiveContentFromJSON,
     ArchiveContentFromJSONTyped,
     ArchiveContentToJSON,
+    ArchiveContentToJSONTyped,
 } from "./ArchiveContent";
 import type { ArchiveMeta } from "./ArchiveMeta";
 import {
     ArchiveMetaFromJSON,
     ArchiveMetaFromJSONTyped,
     ArchiveMetaToJSON,
+    ArchiveMetaToJSONTyped,
 } from "./ArchiveMeta";
 
 /**
@@ -74,11 +76,17 @@ export interface ArchiveHit {
 /**
  * Check if a given object implements the ArchiveHit interface.
  */
-export function instanceOfArchiveHit(value: object): boolean {
-    if (!("meta" in value)) return false;
-    if (!("content" in value)) return false;
-    if (!("hidden" in value)) return false;
-    if (!("fileId" in value)) return false;
+export function instanceOfArchiveHit(value: object): value is ArchiveHit {
+    if (!("meta" in value) || value["meta"] === undefined) return false;
+    if (!("content" in value) || value["content"] === undefined) return false;
+    if (!("hidden" in value) || value["hidden"] === undefined) return false;
+    if (
+        (!("fileId" in (value as Record<string, any>)) &&
+            !("file_id" in (value as Record<string, any>))) ||
+        ((value as Record<string, any>)["fileId"] === undefined &&
+            (value as Record<string, any>)["file_id"] === undefined)
+    )
+        return false;
     return true;
 }
 
@@ -106,10 +114,18 @@ export function ArchiveHitFromJSONTyped(
     };
 }
 
-export function ArchiveHitToJSON(value?: ArchiveHit | null): any {
+export function ArchiveHitToJSON(json: any): ArchiveHit {
+    return ArchiveHitToJSONTyped(json, false);
+}
+
+export function ArchiveHitToJSONTyped(
+    value?: ArchiveHit | null,
+    ignoreDiscriminator: boolean = false,
+): any {
     if (value == null) {
         return value;
     }
+
     return {
         meta: ArchiveMetaToJSON(value["meta"]),
         content: ArchiveContentToJSON(value["content"]),

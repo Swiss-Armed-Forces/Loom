@@ -31,8 +31,16 @@ export interface ArchiveCreatedResponse {
 /**
  * Check if a given object implements the ArchiveCreatedResponse interface.
  */
-export function instanceOfArchiveCreatedResponse(value: object): boolean {
-    if (!("archiveId" in value)) return false;
+export function instanceOfArchiveCreatedResponse(
+    value: object,
+): value is ArchiveCreatedResponse {
+    if (
+        (!("archiveId" in (value as Record<string, any>)) &&
+            !("archive_id" in (value as Record<string, any>))) ||
+        ((value as Record<string, any>)["archiveId"] === undefined &&
+            (value as Record<string, any>)["archive_id"] === undefined)
+    )
+        return false;
     return true;
 }
 
@@ -55,11 +63,19 @@ export function ArchiveCreatedResponseFromJSONTyped(
 }
 
 export function ArchiveCreatedResponseToJSON(
+    json: any,
+): ArchiveCreatedResponse {
+    return ArchiveCreatedResponseToJSONTyped(json, false);
+}
+
+export function ArchiveCreatedResponseToJSONTyped(
     value?: ArchiveCreatedResponse | null,
+    ignoreDiscriminator: boolean = false,
 ): any {
     if (value == null) {
         return value;
     }
+
     return {
         archive_id: value["archiveId"],
     };

@@ -37,9 +37,9 @@ export interface AvailableStat {
 /**
  * Check if a given object implements the AvailableStat interface.
  */
-export function instanceOfAvailableStat(value: object): boolean {
-    if (!("id" in value)) return false;
-    if (!("label" in value)) return false;
+export function instanceOfAvailableStat(value: object): value is AvailableStat {
+    if (!("id" in value) || value["id"] === undefined) return false;
+    if (!("label" in value) || value["label"] === undefined) return false;
     return true;
 }
 
@@ -60,10 +60,18 @@ export function AvailableStatFromJSONTyped(
     };
 }
 
-export function AvailableStatToJSON(value?: AvailableStat | null): any {
+export function AvailableStatToJSON(json: any): AvailableStat {
+    return AvailableStatToJSONTyped(json, false);
+}
+
+export function AvailableStatToJSONTyped(
+    value?: AvailableStat | null,
+    ignoreDiscriminator: boolean = false,
+): any {
     if (value == null) {
         return value;
     }
+
     return {
         id: value["id"],
         label: value["label"],

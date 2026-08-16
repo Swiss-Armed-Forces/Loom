@@ -45,10 +45,16 @@ export interface GroupedHitsPerGroupEntryModel {
  */
 export function instanceOfGroupedHitsPerGroupEntryModel(
     value: object,
-): boolean {
-    if (!("name" in value)) return false;
-    if (!("groups" in value)) return false;
-    if (!("hitsCount" in value)) return false;
+): value is GroupedHitsPerGroupEntryModel {
+    if (!("name" in value) || value["name"] === undefined) return false;
+    if (!("groups" in value) || value["groups"] === undefined) return false;
+    if (
+        (!("hitsCount" in (value as Record<string, any>)) &&
+            !("hits_count" in (value as Record<string, any>))) ||
+        ((value as Record<string, any>)["hitsCount"] === undefined &&
+            (value as Record<string, any>)["hits_count"] === undefined)
+    )
+        return false;
     return true;
 }
 
@@ -73,11 +79,19 @@ export function GroupedHitsPerGroupEntryModelFromJSONTyped(
 }
 
 export function GroupedHitsPerGroupEntryModelToJSON(
+    json: any,
+): GroupedHitsPerGroupEntryModel {
+    return GroupedHitsPerGroupEntryModelToJSONTyped(json, false);
+}
+
+export function GroupedHitsPerGroupEntryModelToJSONTyped(
     value?: GroupedHitsPerGroupEntryModel | null,
+    ignoreDiscriminator: boolean = false,
 ): any {
     if (value == null) {
         return value;
     }
+
     return {
         name: value["name"],
         groups: value["groups"],

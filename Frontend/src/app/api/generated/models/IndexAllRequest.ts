@@ -19,6 +19,7 @@ import {
     QueryParametersFromJSON,
     QueryParametersFromJSONTyped,
     QueryParametersToJSON,
+    QueryParametersToJSONTyped,
 } from "./QueryParameters";
 
 /**
@@ -38,8 +39,10 @@ export interface IndexAllRequest {
 /**
  * Check if a given object implements the IndexAllRequest interface.
  */
-export function instanceOfIndexAllRequest(value: object): boolean {
-    if (!("query" in value)) return false;
+export function instanceOfIndexAllRequest(
+    value: object,
+): value is IndexAllRequest {
+    if (!("query" in value) || value["query"] === undefined) return false;
     return true;
 }
 
@@ -59,10 +62,18 @@ export function IndexAllRequestFromJSONTyped(
     };
 }
 
-export function IndexAllRequestToJSON(value?: IndexAllRequest | null): any {
+export function IndexAllRequestToJSON(json: any): IndexAllRequest {
+    return IndexAllRequestToJSONTyped(json, false);
+}
+
+export function IndexAllRequestToJSONTyped(
+    value?: IndexAllRequest | null,
+    ignoreDiscriminator: boolean = false,
+): any {
     if (value == null) {
         return value;
     }
+
     return {
         query: QueryParametersToJSON(value["query"]),
     };

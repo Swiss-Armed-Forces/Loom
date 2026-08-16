@@ -130,98 +130,143 @@ export function MessageFromJSONTyped(
     }
     switch (json["type"]) {
         case "chatBotAnswerComplete":
-            return {
-                ...MessageChatBotAnswerCompleteFromJSONTyped(json, true),
-                type: "chatBotAnswerComplete",
-            };
-        case "chatBotCitation":
-            return {
-                ...MessageChatBotCitationFromJSONTyped(json, true),
-                type: "chatBotCitation",
-            };
-        case "chatBotToken":
-            return {
-                ...MessageChatBotTokenFromJSONTyped(json, true),
-                type: "chatBotToken",
-            };
-        case "error":
-            return { ...MessageErrorFromJSONTyped(json, true), type: "error" };
-        case "fileSave":
-            return {
-                ...MessageFileSaveFromJSONTyped(json, true),
-                type: "fileSave",
-            };
-        case "fileUpdate":
-            return {
-                ...MessageFileUpdateFromJSONTyped(json, true),
-                type: "fileUpdate",
-            };
-        case "noop":
-            return { ...MessageNoopFromJSONTyped(json, true), type: "noop" };
-        case "queryIdExpired":
-            return {
-                ...MessageQueryIdExpiredFromJSONTyped(json, true),
-                type: "queryIdExpired",
-            };
-        case "subscribe":
-            return {
-                ...MessageSubscribeFromJSONTyped(json, true),
-                type: "subscribe",
-            };
-        case "subscribeConfirmation":
-            return {
-                ...MessageSubscribeConfirmationFromJSONTyped(json, true),
-                type: "subscribeConfirmation",
-            };
-        case "unsubscribe":
-            return {
-                ...MessageUnsubscribeFromJSONTyped(json, true),
-                type: "unsubscribe",
-            };
-        case "unsubscribeConfirmation":
-            return {
-                ...MessageUnsubscribeConfirmationFromJSONTyped(json, true),
-                type: "unsubscribeConfirmation",
-            };
-        default:
-            throw new Error(
-                `No variant of Message exists with 'type=${json["type"]}'`,
+            return Object.assign(
+                {},
+                MessageChatBotAnswerCompleteFromJSONTyped(json, true),
+                { type: "chatBotAnswerComplete" } as const,
             );
+        case "chatBotCitation":
+            return Object.assign(
+                {},
+                MessageChatBotCitationFromJSONTyped(json, true),
+                { type: "chatBotCitation" } as const,
+            );
+        case "chatBotToken":
+            return Object.assign(
+                {},
+                MessageChatBotTokenFromJSONTyped(json, true),
+                { type: "chatBotToken" } as const,
+            );
+        case "error":
+            return Object.assign({}, MessageErrorFromJSONTyped(json, true), {
+                type: "error",
+            } as const);
+        case "fileSave":
+            return Object.assign({}, MessageFileSaveFromJSONTyped(json, true), {
+                type: "fileSave",
+            } as const);
+        case "fileUpdate":
+            return Object.assign(
+                {},
+                MessageFileUpdateFromJSONTyped(json, true),
+                { type: "fileUpdate" } as const,
+            );
+        case "noop":
+            return Object.assign({}, MessageNoopFromJSONTyped(json, true), {
+                type: "noop",
+            } as const);
+        case "queryIdExpired":
+            return Object.assign(
+                {},
+                MessageQueryIdExpiredFromJSONTyped(json, true),
+                { type: "queryIdExpired" } as const,
+            );
+        case "subscribe":
+            return Object.assign(
+                {},
+                MessageSubscribeFromJSONTyped(json, true),
+                { type: "subscribe" } as const,
+            );
+        case "subscribeConfirmation":
+            return Object.assign(
+                {},
+                MessageSubscribeConfirmationFromJSONTyped(json, true),
+                { type: "subscribeConfirmation" } as const,
+            );
+        case "unsubscribe":
+            return Object.assign(
+                {},
+                MessageUnsubscribeFromJSONTyped(json, true),
+                { type: "unsubscribe" } as const,
+            );
+        case "unsubscribeConfirmation":
+            return Object.assign(
+                {},
+                MessageUnsubscribeConfirmationFromJSONTyped(json, true),
+                { type: "unsubscribeConfirmation" } as const,
+            );
+        default:
+            return json;
     }
 }
 
-export function MessageToJSON(value?: Message | null): any {
+export function MessageToJSON(json: any): any {
+    return MessageToJSONTyped(json, false);
+}
+
+export function MessageToJSONTyped(
+    value?: Message | null,
+    ignoreDiscriminator: boolean = false,
+): any {
     if (value == null) {
         return value;
     }
     switch (value["type"]) {
         case "chatBotAnswerComplete":
-            return MessageChatBotAnswerCompleteToJSON(value);
-        case "chatBotCitation":
-            return MessageChatBotCitationToJSON(value);
-        case "chatBotToken":
-            return MessageChatBotTokenToJSON(value);
-        case "error":
-            return MessageErrorToJSON(value);
-        case "fileSave":
-            return MessageFileSaveToJSON(value);
-        case "fileUpdate":
-            return MessageFileUpdateToJSON(value);
-        case "noop":
-            return MessageNoopToJSON(value);
-        case "queryIdExpired":
-            return MessageQueryIdExpiredToJSON(value);
-        case "subscribe":
-            return MessageSubscribeToJSON(value);
-        case "subscribeConfirmation":
-            return MessageSubscribeConfirmationToJSON(value);
-        case "unsubscribe":
-            return MessageUnsubscribeToJSON(value);
-        case "unsubscribeConfirmation":
-            return MessageUnsubscribeConfirmationToJSON(value);
-        default:
-            throw new Error(
-                `No variant of Message exists with 'type=${value["type"]}'`,
+            return Object.assign(
+                {},
+                MessageChatBotAnswerCompleteToJSON(value),
+                { type: "chatBotAnswerComplete" } as const,
             );
+        case "chatBotCitation":
+            return Object.assign({}, MessageChatBotCitationToJSON(value), {
+                type: "chatBotCitation",
+            } as const);
+        case "chatBotToken":
+            return Object.assign({}, MessageChatBotTokenToJSON(value), {
+                type: "chatBotToken",
+            } as const);
+        case "error":
+            return Object.assign({}, MessageErrorToJSON(value), {
+                type: "error",
+            } as const);
+        case "fileSave":
+            return Object.assign({}, MessageFileSaveToJSON(value), {
+                type: "fileSave",
+            } as const);
+        case "fileUpdate":
+            return Object.assign({}, MessageFileUpdateToJSON(value), {
+                type: "fileUpdate",
+            } as const);
+        case "noop":
+            return Object.assign({}, MessageNoopToJSON(value), {
+                type: "noop",
+            } as const);
+        case "queryIdExpired":
+            return Object.assign({}, MessageQueryIdExpiredToJSON(value), {
+                type: "queryIdExpired",
+            } as const);
+        case "subscribe":
+            return Object.assign({}, MessageSubscribeToJSON(value), {
+                type: "subscribe",
+            } as const);
+        case "subscribeConfirmation":
+            return Object.assign(
+                {},
+                MessageSubscribeConfirmationToJSON(value),
+                { type: "subscribeConfirmation" } as const,
+            );
+        case "unsubscribe":
+            return Object.assign({}, MessageUnsubscribeToJSON(value), {
+                type: "unsubscribe",
+            } as const);
+        case "unsubscribeConfirmation":
+            return Object.assign(
+                {},
+                MessageUnsubscribeConfirmationToJSON(value),
+                { type: "unsubscribeConfirmation" } as const,
+            );
+        default:
+            return value;
     }
 }

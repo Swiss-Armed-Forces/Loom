@@ -37,9 +37,9 @@ export interface PreviewField {
 /**
  * Check if a given object implements the PreviewField interface.
  */
-export function instanceOfPreviewField(value: object): boolean {
-    if (!("id" in value)) return false;
-    if (!("label" in value)) return false;
+export function instanceOfPreviewField(value: object): value is PreviewField {
+    if (!("id" in value) || value["id"] === undefined) return false;
+    if (!("label" in value) || value["label"] === undefined) return false;
     return true;
 }
 
@@ -60,10 +60,18 @@ export function PreviewFieldFromJSONTyped(
     };
 }
 
-export function PreviewFieldToJSON(value?: PreviewField | null): any {
+export function PreviewFieldToJSON(json: any): PreviewField {
+    return PreviewFieldToJSONTyped(json, false);
+}
+
+export function PreviewFieldToJSONTyped(
+    value?: PreviewField | null,
+    ignoreDiscriminator: boolean = false,
+): any {
     if (value == null) {
         return value;
     }
+
     return {
         id: value["id"],
         label: value["label"],

@@ -22,10 +22,10 @@ import { mapValues } from "../runtime";
 export interface MessageFileUpdate {
     /**
      *
-     * @type {string}
+     * @type {MessageFileUpdateTypeEnum}
      * @memberof MessageFileUpdate
      */
-    type?: string;
+    type?: MessageFileUpdateTypeEnum;
     /**
      *
      * @type {string}
@@ -35,10 +35,21 @@ export interface MessageFileUpdate {
 }
 
 /**
+ * @export
+ */
+export const MessageFileUpdateTypeEnum = {
+    FileUpdate: "fileUpdate",
+} as const;
+export type MessageFileUpdateTypeEnum =
+    (typeof MessageFileUpdateTypeEnum)[keyof typeof MessageFileUpdateTypeEnum];
+
+/**
  * Check if a given object implements the MessageFileUpdate interface.
  */
-export function instanceOfMessageFileUpdate(value: object): boolean {
-    if (!("fileId" in value)) return false;
+export function instanceOfMessageFileUpdate(
+    value: object,
+): value is MessageFileUpdate {
+    if (!("fileId" in value) || value["fileId"] === undefined) return false;
     return true;
 }
 
@@ -59,10 +70,18 @@ export function MessageFileUpdateFromJSONTyped(
     };
 }
 
-export function MessageFileUpdateToJSON(value?: MessageFileUpdate | null): any {
+export function MessageFileUpdateToJSON(json: any): MessageFileUpdate {
+    return MessageFileUpdateToJSONTyped(json, false);
+}
+
+export function MessageFileUpdateToJSONTyped(
+    value?: MessageFileUpdate | null,
+    ignoreDiscriminator: boolean = false,
+): any {
     if (value == null) {
         return value;
     }
+
     return {
         type: value["type"],
         fileId: value["fileId"],
