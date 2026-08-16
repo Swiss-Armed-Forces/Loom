@@ -711,6 +711,7 @@ The complete source code for Traefik is publicly available at https://github.com
 | @reduxjs/toolkit                    | MIT          | 2.11.2            |
 | ace-builds                          | BSD-3-Clause | 1.44.0            |
 | ajv                                 | MIT          | 8.20.0            |
+| core-js                             | MIT          | 3.50.0            |
 | date-fns                            | MIT          | 4.1.0             |
 | driver.js                           | MIT          | 1.8.0             |
 | eslint-plugin-import                | MIT          | 2.32.0            |
@@ -737,6 +738,7 @@ The complete source code for Traefik is publicly available at https://github.com
 | @types/react-dom                    | MIT          | 19.2.3            |
 | @typescript-eslint/eslint-plugin    | MIT          | 8.59.0            |
 | @typescript-eslint/parser           | MIT          | 8.59.0            |
+| @vitejs/plugin-legacy               | MIT          | 8.2.3             |
 | @vitejs/plugin-react                | MIT          | 6.0.1             |
 | eslint                              | MIT          | 9.39.4            |
 | eslint-config-prettier              | MIT          | 10.1.8            |

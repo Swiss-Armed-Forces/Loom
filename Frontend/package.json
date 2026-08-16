@@ -4,6 +4,11 @@
     "version": "0.0.0",
     "license": "MIT",
     "type": "module",
+    "browserslist": [
+        "Firefox >= 128",
+        "last 2 Chrome versions",
+        "last 2 Safari versions"
+    ],
     "scripts": {
         "dev": "vite",
         "dev:demo": "vite --mode demo",
@@ -24,6 +29,7 @@
         "@reduxjs/toolkit": "^2.11.2",
         "ace-builds": "^1.43.6",
         "ajv": "^8.18.0",
+        "core-js": "^3.50.0",
         "date-fns": "^4.1.0",
         "driver.js": "^1.8.0",
         "eslint-plugin-import": "^2.32.0",
@@ -52,6 +58,7 @@
         "@types/react-dom": "^19.2.3",
         "@typescript-eslint/eslint-plugin": "^8.58.2",
         "@typescript-eslint/parser": "^8.58.2",
+        "@vitejs/plugin-legacy": "^8.2.3",
         "@vitejs/plugin-react": "^6.0.1",
         "eslint": "^9.39.4",
         "eslint-config-prettier": "^10.1.8",
