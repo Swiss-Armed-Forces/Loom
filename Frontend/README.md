@@ -3,6 +3,13 @@
 As long as the development docker setup is up and running,
 changes to any TSX or CSS files are watched and will cause an auto-regeneration of the bundle.
 
+## Browser compatibility
+
+The minimum supported browser is **Firefox 128 ESR**. The build uses
+[`@vitejs/plugin-legacy`](https://github.com/vitejs/vite/tree/main/packages/plugin-legacy) with
+`core-js` to automatically polyfill missing JavaScript APIs (e.g. `Promise.try`,
+`Uint8Array.prototype.toHex`) based on the `browserslist` target in `package.json`.
+
 ## Important commands
 
 ### Adjusting packages
@@ -21,7 +28,7 @@ Can be found at: `src/app/api/generated`, generated from backend python code:
 This also runs Lint & autofix at the end
 
 ```shell
-generate_frontend_api
+generate-frontend-api
 ```
 
 ### Lint & autofix
@@ -31,7 +38,7 @@ deletion of a file for example, you will run into an error where eslint cannot f
 To solve this, stage any renaming / deletions or creations of typescript files -> `git add path/to/file`.
 
 ```shell
-lint_fix_frontend
+pnpm run lint:fix
 ```
 
 ## Product tours
