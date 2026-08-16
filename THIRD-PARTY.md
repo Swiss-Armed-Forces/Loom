@@ -594,7 +594,7 @@ The complete source code for Traefik is publicly available at https://github.com
 | xxhash                                | 3.7.0           | BSD License                                                                      |
 | pycryptodome                          | 3.23.0          | BSD License; Public Domain                                                       |
 | Pygments                              | 2.20.0          | BSD-2-Clause                                                                     |
-| GitPython                             | 3.1.50          | BSD-3-Clause                                                                     |
+| GitPython                             | 3.1.52          | BSD-3-Clause                                                                     |
 | MarkupSafe                            | 3.0.3           | BSD-3-Clause                                                                     |
 | celery                                | 5.6.3           | BSD-3-Clause                                                                     |
 | click                                 | 8.3.3           | BSD-3-Clause                                                                     |
