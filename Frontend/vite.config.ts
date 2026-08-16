@@ -1,7 +1,8 @@
 import { createRequire } from "node:module";
-import { copyFileSync, cpSync, readFileSync } from "node:fs";
+import { copyFileSync, cpSync, existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 
+import legacy from "@vitejs/plugin-legacy";
 import react from "@vitejs/plugin-react";
 import { type ConfigEnv, loadEnv, type Plugin } from "vite";
 import svgr from "vite-plugin-svgr";
@@ -24,6 +25,7 @@ export default ({ mode }: ConfigEnv) => {
     return defineConfig({
         base: demo ? pagesBase : "/",
         plugins: [
+            legacy(),
             react(),
             svgr(),
             ...(demo
@@ -66,8 +68,10 @@ export default ({ mode }: ConfigEnv) => {
                           },
                           writeBundle(options) {
                               if (!options.dir) return;
+                              const src = path.join(options.dir, "index.html");
+                              if (!existsSync(src)) return;
                               copyFileSync(
-                                  path.join(options.dir, "index.html"),
+                                  src,
                                   path.join(options.dir, "404.html"),
                               );
                           },
