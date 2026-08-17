@@ -80,7 +80,10 @@ load via `GET /v1/ai/{context_id}/history`.
 ### Agent and Tools
 
 `AgentService` wraps a single pydantic-ai `Agent` configured with an OpenAI-compatible LLM (served
-by Ollama or a compatible endpoint). The agent uses a **dynamic toolset**: when the request arrives
+by Ollama or a compatible endpoint). The model profile honours `llm.agent.merge_system_messages`
+(Helm, default `true`): when enabled, consecutive system messages are merged into one before the
+request is sent. This is required for backends that reject multiple system messages (vLLM/SGLang
+serving Qwen). The agent uses a **dynamic toolset**: when the request arrives
 it inspects `AgentDeps.active_capabilities` and selects either `base_toolset` or
 `research_mode_toolset` from `ToolService`.
 
