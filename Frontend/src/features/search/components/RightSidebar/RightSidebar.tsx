@@ -23,7 +23,6 @@ import {
 } from "@app/slices/searchSlice";
 import { getTourRightTab } from "@app/tours/tourScene";
 import { useTour } from "@app/tours/useTour";
-import { Chatbot } from "@features/search/components/ChatMenu/Chatbot";
 import {
     AddTagsButton,
     CreateArchiveButton,
@@ -145,9 +144,7 @@ export const RightSidebar = () => {
               ? t("toolbar.views.filteredFolder")
               : effectiveActiveTab === RightSidebarTab.BULK_ACTIONS
                 ? t("sideMenu.bulkActions")
-                : effectiveActiveTab === RightSidebarTab.FILE_DETAIL
-                  ? t("toolbar.views.fileDetail")
-                  : "Chatbot";
+                : t("toolbar.views.fileDetail");
 
     const sidebarContent = (
         <>
@@ -251,9 +248,7 @@ export const RightSidebar = () => {
                             {t("toolbar.views.fileDetailEmpty")}
                         </Typography>
                     )
-                ) : (
-                    <Chatbot />
-                )}
+                ) : null}
             </div>
         </>
     );

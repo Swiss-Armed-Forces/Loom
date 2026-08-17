@@ -13,27 +13,6 @@
  * Do not edit the class manually.
  */
 
-import type { MessageChatBotAnswerComplete } from "./MessageChatBotAnswerComplete";
-import {
-    instanceOfMessageChatBotAnswerComplete,
-    MessageChatBotAnswerCompleteFromJSON,
-    MessageChatBotAnswerCompleteFromJSONTyped,
-    MessageChatBotAnswerCompleteToJSON,
-} from "./MessageChatBotAnswerComplete";
-import type { MessageChatBotCitation } from "./MessageChatBotCitation";
-import {
-    instanceOfMessageChatBotCitation,
-    MessageChatBotCitationFromJSON,
-    MessageChatBotCitationFromJSONTyped,
-    MessageChatBotCitationToJSON,
-} from "./MessageChatBotCitation";
-import type { MessageChatBotToken } from "./MessageChatBotToken";
-import {
-    instanceOfMessageChatBotToken,
-    MessageChatBotTokenFromJSON,
-    MessageChatBotTokenFromJSONTyped,
-    MessageChatBotTokenToJSON,
-} from "./MessageChatBotToken";
 import type { MessageError } from "./MessageError";
 import {
     instanceOfMessageError,
@@ -104,9 +83,6 @@ import {
  * @export
  */
 export type Message =
-    | ({ type: "chatBotAnswerComplete" } & MessageChatBotAnswerComplete)
-    | ({ type: "chatBotCitation" } & MessageChatBotCitation)
-    | ({ type: "chatBotToken" } & MessageChatBotToken)
     | ({ type: "error" } & MessageError)
     | ({ type: "fileSave" } & MessageFileSave)
     | ({ type: "fileUpdate" } & MessageFileUpdate)
@@ -129,24 +105,6 @@ export function MessageFromJSONTyped(
         return json;
     }
     switch (json["type"]) {
-        case "chatBotAnswerComplete":
-            return Object.assign(
-                {},
-                MessageChatBotAnswerCompleteFromJSONTyped(json, true),
-                { type: "chatBotAnswerComplete" } as const,
-            );
-        case "chatBotCitation":
-            return Object.assign(
-                {},
-                MessageChatBotCitationFromJSONTyped(json, true),
-                { type: "chatBotCitation" } as const,
-            );
-        case "chatBotToken":
-            return Object.assign(
-                {},
-                MessageChatBotTokenFromJSONTyped(json, true),
-                { type: "chatBotToken" } as const,
-            );
         case "error":
             return Object.assign({}, MessageErrorFromJSONTyped(json, true), {
                 type: "error",
@@ -212,20 +170,6 @@ export function MessageToJSONTyped(
         return value;
     }
     switch (value["type"]) {
-        case "chatBotAnswerComplete":
-            return Object.assign(
-                {},
-                MessageChatBotAnswerCompleteToJSON(value),
-                { type: "chatBotAnswerComplete" } as const,
-            );
-        case "chatBotCitation":
-            return Object.assign({}, MessageChatBotCitationToJSON(value), {
-                type: "chatBotCitation",
-            } as const);
-        case "chatBotToken":
-            return Object.assign({}, MessageChatBotTokenToJSON(value), {
-                type: "chatBotToken",
-            } as const);
         case "error":
             return Object.assign({}, MessageErrorToJSON(value), {
                 type: "error",

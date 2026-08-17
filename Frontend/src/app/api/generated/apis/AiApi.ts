@@ -15,33 +15,48 @@
 
 import * as runtime from "../runtime";
 import {
+    type CapabilityUpdate,
+    CapabilityUpdateFromJSON,
+    CapabilityUpdateToJSON,
+} from "../models/CapabilityUpdate";
+import {
     type ContextCreateResponse,
     ContextCreateResponseFromJSON,
     ContextCreateResponseToJSON,
 } from "../models/ContextCreateResponse";
+import {
+    type ContextHistoryResponse,
+    ContextHistoryResponseFromJSON,
+    ContextHistoryResponseToJSON,
+} from "../models/ContextHistoryResponse";
 import {
     type HTTPValidationError,
     HTTPValidationErrorFromJSON,
     HTTPValidationErrorToJSON,
 } from "../models/HTTPValidationError";
 import {
-    type ProcessQuestionQuery,
-    ProcessQuestionQueryFromJSON,
-    ProcessQuestionQueryToJSON,
-} from "../models/ProcessQuestionQuery";
-import {
-    type QueryParameters,
-    QueryParametersFromJSON,
-    QueryParametersToJSON,
-} from "../models/QueryParameters";
+    type ListContextsResponse,
+    ListContextsResponseFromJSON,
+    ListContextsResponseToJSON,
+} from "../models/ListContextsResponse";
 
-export interface CreateContextV1AiPostRequest {
-    _queryParameters: QueryParameters;
+export interface DeleteContextV1AiContextIdDeleteRequest {
+    contextId: string;
 }
 
-export interface ProcessQuestionV1AiContextIdProcessQuestionPostRequest {
+export interface GetContextHistoryV1AiContextIdHistoryGetRequest {
     contextId: string;
-    processQuestionQuery: ProcessQuestionQuery;
+    after?: number;
+    pageSize?: number;
+}
+
+export interface RunAgentV1AiContextIdRunPostRequest {
+    contextId: string;
+}
+
+export interface UpdateCapabilitiesV1AiContextIdCapabilitiesPatchRequest {
+    contextId: string;
+    capabilityUpdate: CapabilityUpdate;
 }
 
 /**
@@ -51,21 +66,10 @@ export class AiApi extends runtime.BaseAPI {
     /**
      * Creates request options for createContextV1AiPost without sending the request
      */
-    async createContextV1AiPostRequestOpts(
-        requestParameters: CreateContextV1AiPostRequest,
-    ): Promise<runtime.RequestOpts> {
-        if (requestParameters["_queryParameters"] == null) {
-            throw new runtime.RequiredError(
-                "_queryParameters",
-                'Required parameter "_queryParameters" was null or undefined when calling createContextV1AiPost().',
-            );
-        }
-
+    async createContextV1AiPostRequestOpts(): Promise<runtime.RequestOpts> {
         const queryParameters: any = {};
 
         const headerParameters: runtime.HTTPHeaders = {};
-
-        headerParameters["Content-Type"] = "application/json";
 
         let urlPath = `/v1/ai`;
 
@@ -74,7 +78,6 @@ export class AiApi extends runtime.BaseAPI {
             method: "POST",
             headers: headerParameters,
             query: queryParameters,
-            body: QueryParametersToJSON(requestParameters["_queryParameters"]),
         };
     }
 
@@ -82,11 +85,9 @@ export class AiApi extends runtime.BaseAPI {
      * Create Context
      */
     async createContextV1AiPostRaw(
-        requestParameters: CreateContextV1AiPostRequest,
         initOverrides?: RequestInit | runtime.InitOverrideFunction,
     ): Promise<runtime.ApiResponse<ContextCreateResponse>> {
-        const requestOptions =
-            await this.createContextV1AiPostRequestOpts(requestParameters);
+        const requestOptions = await this.createContextV1AiPostRequestOpts();
         const response = await this.request(requestOptions, initOverrides);
 
         return new runtime.JSONApiResponse(response, (jsonValue) =>
@@ -98,33 +99,22 @@ export class AiApi extends runtime.BaseAPI {
      * Create Context
      */
     async createContextV1AiPost(
-        requestParameters: CreateContextV1AiPostRequest,
         initOverrides?: RequestInit | runtime.InitOverrideFunction,
     ): Promise<ContextCreateResponse> {
-        const response = await this.createContextV1AiPostRaw(
-            requestParameters,
-            initOverrides,
-        );
+        const response = await this.createContextV1AiPostRaw(initOverrides);
         return await response.value();
     }
 
     /**
-     * Creates request options for processQuestionV1AiContextIdProcessQuestionPost without sending the request
+     * Creates request options for deleteContextV1AiContextIdDelete without sending the request
      */
-    async processQuestionV1AiContextIdProcessQuestionPostRequestOpts(
-        requestParameters: ProcessQuestionV1AiContextIdProcessQuestionPostRequest,
+    async deleteContextV1AiContextIdDeleteRequestOpts(
+        requestParameters: DeleteContextV1AiContextIdDeleteRequest,
     ): Promise<runtime.RequestOpts> {
         if (requestParameters["contextId"] == null) {
             throw new runtime.RequiredError(
                 "contextId",
-                'Required parameter "contextId" was null or undefined when calling processQuestionV1AiContextIdProcessQuestionPost().',
-            );
-        }
-
-        if (requestParameters["processQuestionQuery"] == null) {
-            throw new runtime.RequiredError(
-                "processQuestionQuery",
-                'Required parameter "processQuestionQuery" was null or undefined when calling processQuestionV1AiContextIdProcessQuestionPost().',
+                'Required parameter "contextId" was null or undefined when calling deleteContextV1AiContextIdDelete().',
             );
         }
 
@@ -132,9 +122,7 @@ export class AiApi extends runtime.BaseAPI {
 
         const headerParameters: runtime.HTTPHeaders = {};
 
-        headerParameters["Content-Type"] = "application/json";
-
-        let urlPath = `/v1/ai/{context_id}/process_question`;
+        let urlPath = `/v1/ai/{context_id}`;
         urlPath = urlPath.replace(
             "{context_id}",
             encodeURIComponent(String(requestParameters["contextId"])),
@@ -142,24 +130,22 @@ export class AiApi extends runtime.BaseAPI {
 
         return {
             path: urlPath,
-            method: "POST",
+            method: "DELETE",
             headers: headerParameters,
             query: queryParameters,
-            body: ProcessQuestionQueryToJSON(
-                requestParameters["processQuestionQuery"],
-            ),
         };
     }
 
     /**
-     * Process Question
+     * Delete an AI context and its conversation history.
+     * Delete Context
      */
-    async processQuestionV1AiContextIdProcessQuestionPostRaw(
-        requestParameters: ProcessQuestionV1AiContextIdProcessQuestionPostRequest,
+    async deleteContextV1AiContextIdDeleteRaw(
+        requestParameters: DeleteContextV1AiContextIdDeleteRequest,
         initOverrides?: RequestInit | runtime.InitOverrideFunction,
     ): Promise<runtime.ApiResponse<any>> {
         const requestOptions =
-            await this.processQuestionV1AiContextIdProcessQuestionPostRequestOpts(
+            await this.deleteContextV1AiContextIdDeleteRequestOpts(
                 requestParameters,
             );
         const response = await this.request(requestOptions, initOverrides);
@@ -172,14 +158,270 @@ export class AiApi extends runtime.BaseAPI {
     }
 
     /**
-     * Process Question
+     * Delete an AI context and its conversation history.
+     * Delete Context
      */
-    async processQuestionV1AiContextIdProcessQuestionPost(
-        requestParameters: ProcessQuestionV1AiContextIdProcessQuestionPostRequest,
+    async deleteContextV1AiContextIdDelete(
+        requestParameters: DeleteContextV1AiContextIdDeleteRequest,
+        initOverrides?: RequestInit | runtime.InitOverrideFunction,
+    ): Promise<any> {
+        const response = await this.deleteContextV1AiContextIdDeleteRaw(
+            requestParameters,
+            initOverrides,
+        );
+        return await response.value();
+    }
+
+    /**
+     * Creates request options for getContextHistoryV1AiContextIdHistoryGet without sending the request
+     */
+    async getContextHistoryV1AiContextIdHistoryGetRequestOpts(
+        requestParameters: GetContextHistoryV1AiContextIdHistoryGetRequest,
+    ): Promise<runtime.RequestOpts> {
+        if (requestParameters["contextId"] == null) {
+            throw new runtime.RequiredError(
+                "contextId",
+                'Required parameter "contextId" was null or undefined when calling getContextHistoryV1AiContextIdHistoryGet().',
+            );
+        }
+
+        const queryParameters: any = {};
+
+        if (requestParameters["after"] != null) {
+            queryParameters["after"] = requestParameters["after"];
+        }
+
+        if (requestParameters["pageSize"] != null) {
+            queryParameters["page_size"] = requestParameters["pageSize"];
+        }
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        let urlPath = `/v1/ai/{context_id}/history`;
+        urlPath = urlPath.replace(
+            "{context_id}",
+            encodeURIComponent(String(requestParameters["contextId"])),
+        );
+
+        return {
+            path: urlPath,
+            method: "GET",
+            headers: headerParameters,
+            query: queryParameters,
+        };
+    }
+
+    /**
+     * Get Context History
+     */
+    async getContextHistoryV1AiContextIdHistoryGetRaw(
+        requestParameters: GetContextHistoryV1AiContextIdHistoryGetRequest,
+        initOverrides?: RequestInit | runtime.InitOverrideFunction,
+    ): Promise<runtime.ApiResponse<ContextHistoryResponse>> {
+        const requestOptions =
+            await this.getContextHistoryV1AiContextIdHistoryGetRequestOpts(
+                requestParameters,
+            );
+        const response = await this.request(requestOptions, initOverrides);
+
+        return new runtime.JSONApiResponse(response, (jsonValue) =>
+            ContextHistoryResponseFromJSON(jsonValue),
+        );
+    }
+
+    /**
+     * Get Context History
+     */
+    async getContextHistoryV1AiContextIdHistoryGet(
+        requestParameters: GetContextHistoryV1AiContextIdHistoryGetRequest,
+        initOverrides?: RequestInit | runtime.InitOverrideFunction,
+    ): Promise<ContextHistoryResponse> {
+        const response = await this.getContextHistoryV1AiContextIdHistoryGetRaw(
+            requestParameters,
+            initOverrides,
+        );
+        return await response.value();
+    }
+
+    /**
+     * Creates request options for listContextsV1AiGet without sending the request
+     */
+    async listContextsV1AiGetRequestOpts(): Promise<runtime.RequestOpts> {
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        let urlPath = `/v1/ai`;
+
+        return {
+            path: urlPath,
+            method: "GET",
+            headers: headerParameters,
+            query: queryParameters,
+        };
+    }
+
+    /**
+     * List Contexts
+     */
+    async listContextsV1AiGetRaw(
+        initOverrides?: RequestInit | runtime.InitOverrideFunction,
+    ): Promise<runtime.ApiResponse<ListContextsResponse>> {
+        const requestOptions = await this.listContextsV1AiGetRequestOpts();
+        const response = await this.request(requestOptions, initOverrides);
+
+        return new runtime.JSONApiResponse(response, (jsonValue) =>
+            ListContextsResponseFromJSON(jsonValue),
+        );
+    }
+
+    /**
+     * List Contexts
+     */
+    async listContextsV1AiGet(
+        initOverrides?: RequestInit | runtime.InitOverrideFunction,
+    ): Promise<ListContextsResponse> {
+        const response = await this.listContextsV1AiGetRaw(initOverrides);
+        return await response.value();
+    }
+
+    /**
+     * Creates request options for runAgentV1AiContextIdRunPost without sending the request
+     */
+    async runAgentV1AiContextIdRunPostRequestOpts(
+        requestParameters: RunAgentV1AiContextIdRunPostRequest,
+    ): Promise<runtime.RequestOpts> {
+        if (requestParameters["contextId"] == null) {
+            throw new runtime.RequiredError(
+                "contextId",
+                'Required parameter "contextId" was null or undefined when calling runAgentV1AiContextIdRunPost().',
+            );
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        let urlPath = `/v1/ai/{context_id}/run`;
+        urlPath = urlPath.replace(
+            "{context_id}",
+            encodeURIComponent(String(requestParameters["contextId"])),
+        );
+
+        return {
+            path: urlPath,
+            method: "POST",
+            headers: headerParameters,
+            query: queryParameters,
+        };
+    }
+
+    /**
+     * Run Agent
+     */
+    async runAgentV1AiContextIdRunPostRaw(
+        requestParameters: RunAgentV1AiContextIdRunPostRequest,
+        initOverrides?: RequestInit | runtime.InitOverrideFunction,
+    ): Promise<runtime.ApiResponse<any>> {
+        const requestOptions =
+            await this.runAgentV1AiContextIdRunPostRequestOpts(
+                requestParameters,
+            );
+        const response = await this.request(requestOptions, initOverrides);
+
+        if (this.isJsonMime(response.headers.get("content-type"))) {
+            return new runtime.JSONApiResponse<any>(response);
+        } else {
+            return new runtime.TextApiResponse(response) as any;
+        }
+    }
+
+    /**
+     * Run Agent
+     */
+    async runAgentV1AiContextIdRunPost(
+        requestParameters: RunAgentV1AiContextIdRunPostRequest,
+        initOverrides?: RequestInit | runtime.InitOverrideFunction,
+    ): Promise<any> {
+        const response = await this.runAgentV1AiContextIdRunPostRaw(
+            requestParameters,
+            initOverrides,
+        );
+        return await response.value();
+    }
+
+    /**
+     * Creates request options for updateCapabilitiesV1AiContextIdCapabilitiesPatch without sending the request
+     */
+    async updateCapabilitiesV1AiContextIdCapabilitiesPatchRequestOpts(
+        requestParameters: UpdateCapabilitiesV1AiContextIdCapabilitiesPatchRequest,
+    ): Promise<runtime.RequestOpts> {
+        if (requestParameters["contextId"] == null) {
+            throw new runtime.RequiredError(
+                "contextId",
+                'Required parameter "contextId" was null or undefined when calling updateCapabilitiesV1AiContextIdCapabilitiesPatch().',
+            );
+        }
+
+        if (requestParameters["capabilityUpdate"] == null) {
+            throw new runtime.RequiredError(
+                "capabilityUpdate",
+                'Required parameter "capabilityUpdate" was null or undefined when calling updateCapabilitiesV1AiContextIdCapabilitiesPatch().',
+            );
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        headerParameters["Content-Type"] = "application/json";
+
+        let urlPath = `/v1/ai/{context_id}/capabilities`;
+        urlPath = urlPath.replace(
+            "{context_id}",
+            encodeURIComponent(String(requestParameters["contextId"])),
+        );
+
+        return {
+            path: urlPath,
+            method: "PATCH",
+            headers: headerParameters,
+            query: queryParameters,
+            body: CapabilityUpdateToJSON(requestParameters["capabilityUpdate"]),
+        };
+    }
+
+    /**
+     * Enable or disable a capability for an AI context.
+     * Update Capabilities
+     */
+    async updateCapabilitiesV1AiContextIdCapabilitiesPatchRaw(
+        requestParameters: UpdateCapabilitiesV1AiContextIdCapabilitiesPatchRequest,
+        initOverrides?: RequestInit | runtime.InitOverrideFunction,
+    ): Promise<runtime.ApiResponse<any>> {
+        const requestOptions =
+            await this.updateCapabilitiesV1AiContextIdCapabilitiesPatchRequestOpts(
+                requestParameters,
+            );
+        const response = await this.request(requestOptions, initOverrides);
+
+        if (this.isJsonMime(response.headers.get("content-type"))) {
+            return new runtime.JSONApiResponse<any>(response);
+        } else {
+            return new runtime.TextApiResponse(response) as any;
+        }
+    }
+
+    /**
+     * Enable or disable a capability for an AI context.
+     * Update Capabilities
+     */
+    async updateCapabilitiesV1AiContextIdCapabilitiesPatch(
+        requestParameters: UpdateCapabilitiesV1AiContextIdCapabilitiesPatchRequest,
         initOverrides?: RequestInit | runtime.InitOverrideFunction,
     ): Promise<any> {
         const response =
-            await this.processQuestionV1AiContextIdProcessQuestionPostRaw(
+            await this.updateCapabilitiesV1AiContextIdCapabilitiesPatchRaw(
                 requestParameters,
                 initOverrides,
             );

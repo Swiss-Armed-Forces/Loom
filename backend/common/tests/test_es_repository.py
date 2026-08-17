@@ -11,7 +11,14 @@ from pydantic import BaseModel, ConfigDict
 from common.ai_context.ai_context_repository import (
     AiContext,
     AiContextRepository,
+    AiQuestion,
+    AiQuestionCitation,
+    Capability,
+    ToolCallActivityEntry,
+    _EsActivityEntry,
     _EsAiContext,
+    _EsAiQuestion,
+    _EsAiQuestionCitation,
 )
 from common.archive.archive_repository import (
     LOOM_ARCHIVE_VERSION,
@@ -47,10 +54,12 @@ from common.messages.pubsub_service import PubSubService
 from common.models.base_repository import RepositoryObject
 from common.models.es_repository import (
     _ID_SCAN_PAGE_SIZE,
+    _SCORE_SAMPLE_SIZE,
     ES_REPOSITORY_TYPES,
     BaseEsRepository,
     EsRepositoryObject,
     PaginationParameters,
+    QueryScoreStats,
     _EsMeta,
     _EsRepositoryDocument,
 )
@@ -758,13 +767,28 @@ ES_REPOSITORY_TEST_INSTANCES: dict[type[BaseEsRepository], list[_TestInstances]]
                     )
                 ],
                 # AiContext
-                query=QueryParameters(
-                    query_id=str(TestValueDefaults.test_uuid),
-                    search_string=TestValueDefaults.test_str,
-                    keep_alive=TestValueDefaults.test_keep_alive,
-                ),
                 chat_message_history_id=TestValueDefaults.test_uuid,
                 created_at=TestValueDefaults.test_datetime,
+                questions=[
+                    AiQuestion(
+                        question=TestValueDefaults.test_str,
+                        answer=TestValueDefaults.test_str,
+                        citations=[
+                            AiQuestionCitation(
+                                file_id=TestValueDefaults.test_uuid,
+                                text=TestValueDefaults.test_str,
+                            )
+                        ],
+                        activity=[
+                            ToolCallActivityEntry(
+                                tool_name=TestValueDefaults.test_str,
+                                input={"key": TestValueDefaults.test_str},
+                                output=TestValueDefaults.test_str,
+                            )
+                        ],
+                    )
+                ],
+                active_capabilities=[Capability.RESEARCH_MODE],
             ),
             document=_EsAiContext(
                 {
@@ -825,13 +849,29 @@ ES_REPOSITORY_TEST_INSTANCES: dict[type[BaseEsRepository], list[_TestInstances]]
                     )
                 ],
                 # _EsAiContext
-                query=_EsQueryParameters(
-                    query_id=str(TestValueDefaults.test_uuid),
-                    search_string=TestValueDefaults.test_str,
-                    keep_alive=TestValueDefaults.test_keep_alive,
-                ),
                 chat_message_history_id=str(TestValueDefaults.test_uuid),
                 created_at=TestValueDefaults.test_datetime.isoformat(),
+                questions=[
+                    _EsAiQuestion(
+                        question=TestValueDefaults.test_str,
+                        answer=TestValueDefaults.test_str,
+                        citations=[
+                            _EsAiQuestionCitation(
+                                file_id=str(TestValueDefaults.test_uuid),
+                                text=TestValueDefaults.test_str,
+                            )
+                        ],
+                        activity=[
+                            _EsActivityEntry(
+                                type="tool_call",
+                                tool_name=TestValueDefaults.test_str,
+                                input={"key": TestValueDefaults.test_str},
+                                output=TestValueDefaults.test_str,
+                            )
+                        ],
+                    )
+                ],
+                active_capabilities=[Capability.RESEARCH_MODE],
             ),
         )
     ],
@@ -1329,6 +1369,84 @@ def test_es_repository_count_by_query_no_pit():
     search_mock.highlight_options().highlight().query().__getitem__(
         slice(0, 0, None)
     ).extra().index.assert_not_called()
+
+
+def test_es_repository_count_and_score_stats_by_query():
+    es_repository = _TestEsRepository(
+        query_builder=get_query_builder(),
+        pubsub_service=get_pubsub_service(),
+        mock_types=True,
+    )
+    search_mock = MagicMock(spec=Search)
+    es_repository.document_type.search.return_value = search_mock
+    # pylint: disable=unnecessary-dunder-call
+    search_pre_execute_mock = (
+        search_mock
+        # happens in: _get_search_by_query
+        .highlight_options()
+        .highlight()
+        .query()
+        # happens in: count_and_score_stats_by_query
+        .__getitem__(slice(0, _SCORE_SAMPLE_SIZE, None))
+        .extra()
+        # happens in: _execute_search_with_query
+        .index()
+        .extra()
+        .execute
+    )
+
+    hit1 = MagicMock()
+    hit1.meta.score = 4.0
+    hit2 = MagicMock()
+    hit2.meta.score = 2.0
+    result_mock = MagicMock()
+    result_mock.hits.total.value = 50  # pylint: disable=no-member
+    result_mock.hits.max_score = 4.0
+    result_mock.hits.__iter__ = lambda _self: iter([hit1, hit2])
+    search_pre_execute_mock.return_value = result_mock
+
+    stats = es_repository.count_and_score_stats_by_query(
+        QueryParameters(query_id="0123456789", search_string="test query")
+    )
+    assert isinstance(stats, QueryScoreStats)
+    assert stats.total == 50
+    assert stats.max_score == 4.0
+    assert stats.avg_score == 3.0
+
+
+def test_es_repository_count_and_score_stats_by_query_no_hits():
+    """When no hits are returned, max_score and avg_score should be None."""
+    es_repository = _TestEsRepository(
+        query_builder=get_query_builder(),
+        pubsub_service=get_pubsub_service(),
+        mock_types=True,
+    )
+    search_mock = MagicMock(spec=Search)
+    es_repository.document_type.search.return_value = search_mock
+    # pylint: disable=unnecessary-dunder-call
+    search_pre_execute_mock = (
+        search_mock.highlight_options()
+        .highlight()
+        .query()
+        .__getitem__(slice(0, _SCORE_SAMPLE_SIZE, None))
+        .extra()
+        .index()
+        .extra()
+        .execute
+    )
+
+    result_mock = MagicMock()
+    result_mock.hits.total.value = 0  # pylint: disable=no-member
+    result_mock.hits.max_score = None
+    result_mock.hits.__iter__ = lambda _self: iter([])
+    search_pre_execute_mock.return_value = result_mock
+
+    stats = es_repository.count_and_score_stats_by_query(
+        QueryParameters(query_id="0123456789", search_string="nothing")
+    )
+    assert stats.total == 0
+    assert stats.max_score is None
+    assert stats.avg_score is None
 
 
 @pytest.mark.parametrize(

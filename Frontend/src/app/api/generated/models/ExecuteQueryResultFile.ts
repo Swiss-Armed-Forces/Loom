@@ -17,35 +17,35 @@ import { mapValues } from "../runtime";
 /**
  *
  * @export
- * @interface GetSearchResponseFile
+ * @interface ExecuteQueryResultFile
  */
-export interface GetSearchResponseFile {
+export interface ExecuteQueryResultFile {
     /**
      *
      * @type {string}
-     * @memberof GetSearchResponseFile
+     * @memberof ExecuteQueryResultFile
      */
     fileId: string;
     /**
      *
-     * @type {{ [key: string]: Array<string>; }}
-     * @memberof GetSearchResponseFile
+     * @type {string}
+     * @memberof ExecuteQueryResultFile
      */
-    highlight?: { [key: string]: Array<string> };
+    text: string;
     /**
      *
      * @type {number}
-     * @memberof GetSearchResponseFile
+     * @memberof ExecuteQueryResultFile
      */
     score?: number;
 }
 
 /**
- * Check if a given object implements the GetSearchResponseFile interface.
+ * Check if a given object implements the ExecuteQueryResultFile interface.
  */
-export function instanceOfGetSearchResponseFile(
+export function instanceOfExecuteQueryResultFile(
     value: object,
-): value is GetSearchResponseFile {
+): value is ExecuteQueryResultFile {
     if (
         (!("fileId" in (value as Record<string, any>)) &&
             !("file_id" in (value as Record<string, any>))) ||
@@ -53,35 +53,38 @@ export function instanceOfGetSearchResponseFile(
             (value as Record<string, any>)["file_id"] === undefined)
     )
         return false;
+    if (!("text" in value) || value["text"] === undefined) return false;
     return true;
 }
 
-export function GetSearchResponseFileFromJSON(
+export function ExecuteQueryResultFileFromJSON(
     json: any,
-): GetSearchResponseFile {
-    return GetSearchResponseFileFromJSONTyped(json, false);
+): ExecuteQueryResultFile {
+    return ExecuteQueryResultFileFromJSONTyped(json, false);
 }
 
-export function GetSearchResponseFileFromJSONTyped(
+export function ExecuteQueryResultFileFromJSONTyped(
     json: any,
     ignoreDiscriminator: boolean,
-): GetSearchResponseFile {
+): ExecuteQueryResultFile {
     if (json == null) {
         return json;
     }
     return {
         fileId: json["file_id"],
-        highlight: json["highlight"] == null ? undefined : json["highlight"],
+        text: json["text"],
         score: json["score"] == null ? undefined : json["score"],
     };
 }
 
-export function GetSearchResponseFileToJSON(json: any): GetSearchResponseFile {
-    return GetSearchResponseFileToJSONTyped(json, false);
+export function ExecuteQueryResultFileToJSON(
+    json: any,
+): ExecuteQueryResultFile {
+    return ExecuteQueryResultFileToJSONTyped(json, false);
 }
 
-export function GetSearchResponseFileToJSONTyped(
-    value?: GetSearchResponseFile | null,
+export function ExecuteQueryResultFileToJSONTyped(
+    value?: ExecuteQueryResultFile | null,
     ignoreDiscriminator: boolean = false,
 ): any {
     if (value == null) {
@@ -90,7 +93,7 @@ export function GetSearchResponseFileToJSONTyped(
 
     return {
         file_id: value["fileId"],
-        highlight: value["highlight"],
+        text: value["text"],
         score: value["score"],
     };
 }

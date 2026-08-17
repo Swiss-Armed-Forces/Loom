@@ -11,6 +11,14 @@ export interface ArchiveState {
     currentPage: number;
 }
 
+export const ARCHIVE_STATE_DOCS = {
+    query: "string — archive search query",
+    archives: "ArchiveHit[] — archive search results",
+    numberOfResults: "number — total archive count",
+    hasMore: "boolean — whether more pages are available",
+    currentPage: "number — current pagination page (0-indexed)",
+} satisfies Record<keyof ArchiveState, string>;
+
 const initialState: ArchiveState = {
     query: "",
     archives: [],

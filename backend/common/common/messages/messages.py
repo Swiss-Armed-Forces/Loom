@@ -1,5 +1,4 @@
 from typing import Literal, Union
-from uuid import UUID
 
 from pydantic import BaseModel, Field
 
@@ -43,24 +42,6 @@ class MessageFileSave(BaseModel):
     fileId: str
 
 
-class MessageChatBotToken(BaseModel):
-    type: Literal["chatBotToken"] = "chatBotToken"
-    token_id: UUID
-    token: str
-
-
-class MessageChatBotCitation(BaseModel):
-    type: Literal["chatBotCitation"] = "chatBotCitation"
-    id: UUID
-    file_id: UUID
-    text: str
-    rank: float
-
-
-class MessageChatBotAnswerComplete(BaseModel):
-    type: Literal["chatBotAnswerComplete"] = "chatBotAnswerComplete"
-
-
 class MessageQueryIdExpired(BaseModel):
     type: Literal["queryIdExpired"] = "queryIdExpired"
     old_id: str
@@ -80,9 +61,6 @@ class PubSubMessage(BaseModel):
         MessageUnsubscribeConfirmation,
         MessageFileUpdate,
         MessageFileSave,
-        MessageChatBotToken,
-        MessageChatBotCitation,
-        MessageChatBotAnswerComplete,
         MessageQueryIdExpired,
         MessageError,
     ] = Field(discriminator="type")

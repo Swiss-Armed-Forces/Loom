@@ -194,8 +194,7 @@ class GlobalPersisterWorker(Generic[RepositoryObjectT]):
     """Manages a single global worker that batches and persists mutations.
 
     Thread-safe submission via stdlib queue.Queue. Worker loop runs in a dedicated event
-    loop thread. Supports graceful shutdown via the Celery worker_process_shutdown
-    signal or by calling shutdown() directly.
+    loop thread. Supports graceful shutdown by calling shutdown() directly.
     """
 
     # No lock needed: Celery prefork pool uses separate processes, each single-threaded

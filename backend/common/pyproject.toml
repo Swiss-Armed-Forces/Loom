@@ -26,7 +26,7 @@ redis = "5.2.1"
 # we should keep this for now as the redis type hints are really bad
 # see: https://www.reddit.com/r/Python/comments/1ksicim/comment/mtnlayg/
 types-redis = "4.6.0.20241004"
-openai = "1.109.1"
+openai = "2.52.0"
 # Using a patched fork until https://github.com/mjs/imapclient/pull/641 is merged and released,
 # at which point this should be reverted to a plain version pin: imapclient = "<version>"
 imapclient = {git = "https://github.com/736-c41-2c1-e464fc974/imapclient.git", rev = "ee967b861ec7b71854372fe7a20a5adc01b2d6aa"}

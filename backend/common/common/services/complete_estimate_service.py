@@ -80,10 +80,8 @@ class CompleteEstimateService:
         return dispatch_depth + es_pending
 
     def compute_and_store(self) -> None:
-        """Compute pending work, update EMA throughput, and cache the estimate in Redis.
-
-        Called by the periodic beat task every minute.
-        """
+        """Compute pending work, update EMA throughput, and cache the estimate in
+        Redis."""
         now = time.time()
         current_pending = self._get_pending_work()
 

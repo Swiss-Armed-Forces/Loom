@@ -1,10 +1,9 @@
 import logging
-from typing import Generator, Sequence
-from uuid import UUID, uuid4
+from typing import Sequence
+from uuid import UUID
 
 from celery import chain, chord, group
-from celery.canvas import Signature
-from common.ai_context.ai_context_repository import AiContext
+from common.ai_context.tool_models import RagSearchResult, ToolSource
 from common.dependencies import (
     get_celery_app,
     get_file_repository,
@@ -13,13 +12,6 @@ from common.dependencies import (
     get_llm_embedding_client,
     get_llm_hyde_client,
     get_llm_rerank_client,
-    get_pubsub_service,
-)
-from common.messages.messages import (
-    MessageChatBotAnswerComplete,
-    MessageChatBotCitation,
-    MessageChatBotToken,
-    PubSubMessage,
 )
 from common.services.lazybytes_service import TempLazyBytes, TempTypedLazyBytes
 from common.services.query_builder import QueryParameters
@@ -97,30 +89,6 @@ def load_text_from_text_lazy(text_lazy: TempLazyBytes) -> str:
             .decode(errors=settings.decode_error_handler)
         )
         return text
-
-
-def signature(context: AiContext, question: str) -> Signature:
-    return chain(
-        chord(
-            [
-                embed_question.s(question),
-                group(
-                    # HyDE: Hypothetical Document Embeddings
-                    # Generate multiple hypothetical documents that could answer the question
-                    # This helps improve retrieval by creating diverse query representation.
-                    chain(
-                        generate_hypothetical_document.s(question),
-                        embed_document.s(),
-                    )
-                    for _ in range(settings.llm.hyde.num_documents)
-                ),
-            ],
-            aggregate_embeddings.s(),
-        ),
-        fetch_scored_search_embeddings.s(context.query),
-        sort_and_limit_scored_search_embeddings.s(),
-        rerank_scored_search_embeddings.s(context, question),
-    )
 
 
 class LLMError(Exception):
@@ -280,29 +248,6 @@ def sort_and_limit_scored_search_embeddings(
     return limited_scored_search_embeddings
 
 
-@app.task(bind=True, base=AiContextProcessingTask)
-def rerank_scored_search_embeddings(
-    self: AiContextProcessingTask,
-    scored_search_embeddings: list[ScoredSearchEmbedding],
-    context: AiContext,
-    question: str,
-):
-    return self.replace(
-        chord(
-            [
-                rerank.s(scored_search_embedding, question)
-                for scored_search_embedding in scored_search_embeddings
-            ],
-            chain(
-                apply_rerank_threshold.s(),
-                filter_ranked_search_embeddings.s(),
-                limit_and_sort_ranked_search_embeddings.s(),
-                chatbot_query.s(context, question),
-            ),
-        )
-    )
-
-
 def _invoke_rerank_llm(
     prompt: str,
 ) -> float:
@@ -430,9 +375,120 @@ def limit_and_sort_ranked_search_embeddings(
     return limited_ranked_search_embeddings
 
 
-def _stream_chat_llm(
-    messages: Sequence[ChatCompletionMessageParam],
-) -> Generator[str, None, None]:
+@app.task(
+    base=AiContextProcessingTask,
+    autoretry_for=tuple([LLMError]),
+    max_retries=RAG_MAX_RETRIES,
+    retry_backoff=True,
+)
+def synthesize_rag_answer_task(
+    ranked_embeddings: list[RankedSearchEmbedding], question: str
+) -> RagSearchResult:
+    """Synthesize a grounded answer from ranked document chunks."""
+    sources = [
+        ToolSource(
+            file_id=e.file_id,
+            text=sanitize_document_text(load_text_from_text_lazy(e.text_lazy)),
+        )
+        for e in ranked_embeddings
+    ]
+    answer_context = "".join(
+        f"<document>\n{s.text}\n</document>\n" for s in reversed(sources)
+    )
+
+    messages: list[ChatCompletionMessageParam]
+    if ranked_embeddings:
+        task_prompt = (
+            f"TASK: Your task is to answer the human's QUESTION "
+            f"using the CONTEXT below.\n\n"
+            f"Do NOT use any previous knowledge which is not contained in the CONTEXT.\n\n"
+            f"Keep your answer in a paragraph of {LLM_MAX_TOKENS_RAG} tokens or less.\n"
+            f"Keep your answer concise and brief.\n\n"
+            f"CONTEXT:\n{answer_context}"
+        )
+        messages = [
+            ChatCompletionUserMessageParam(role="user", content=task_prompt),
+            ChatCompletionUserMessageParam(
+                role="user", content=f"QUESTION: {question}"
+            ),
+        ]
+    else:
+        task_prompt = (
+            f"TASK: Tell the user that they should refine their QUERY "
+            f"or QUESTION because you could not find enough information in the data "
+            f"to answer their QUESTION.\n\n"
+            f"Keep your answer in a paragraph of {LLM_MAX_TOKENS_RAG} tokens or less.\n"
+            f"Keep your answer concise and brief."
+        )
+        messages = [ChatCompletionUserMessageParam(role="user", content=task_prompt)]
+
+    return RagSearchResult(answer=_call_chat_llm(messages=messages), sources=sources)
+
+
+@app.task(bind=True, base=AiContextProcessingTask)
+def rerank_and_synthesize(
+    self: AiContextProcessingTask,
+    scored_search_embeddings: list[ScoredSearchEmbedding],
+    question: str,
+):
+    """Rerank scored embeddings then synthesize a string answer (no streaming)."""
+    return self.replace(
+        chord(
+            [
+                rerank.s(scored_search_embedding, question)
+                for scored_search_embedding in scored_search_embeddings
+            ],
+            chain(
+                apply_rerank_threshold.s(),
+                filter_ranked_search_embeddings.s(),
+                limit_and_sort_ranked_search_embeddings.s(),
+                synthesize_rag_answer_task.s(question),
+            ),
+        )
+    )
+
+
+@app.task(bind=True, base=AiContextProcessingTask)
+def rag_pipeline_task(self: AiContextProcessingTask, query: str) -> RagSearchResult:
+    """Orchestrate the full RAG pipeline and return the synthesized answer."""
+    logger.info("rag_pipeline_task: orchestrating RAG pipeline for query '%s'", query)
+    file_repo = get_file_repository()
+    query_params = QueryParameters(
+        query_id=file_repo.open_point_in_time(),
+        search_string=query,
+    )
+    return self.replace(
+        chain(
+            chord(
+                [
+                    embed_question.s(query),
+                    group(
+                        chain(
+                            generate_hypothetical_document.s(query),
+                            embed_document.s(),
+                        )
+                        for _ in range(settings.llm.hyde.num_documents)
+                    ),
+                ],
+                aggregate_embeddings.s(),
+            ),
+            fetch_scored_search_embeddings.s(query_params),
+            sort_and_limit_scored_search_embeddings.s(),
+            rerank_and_synthesize.s(query),
+        )
+    )
+
+
+@app.task(bind=True, base=AiContextProcessingTask)
+def rag_search_tool_task(
+    self: AiContextProcessingTask, query: str, _context_id: UUID
+) -> RagSearchResult:
+    return self.replace(rag_pipeline_task.s(query))
+
+
+def _call_chat_llm(
+    messages: list[ChatCompletionMessageParam],
+) -> str:
     client = get_llm_chat_client()
     all_messages: list[ChatCompletionMessageParam] = [
         ChatCompletionSystemMessageParam(
@@ -446,116 +502,13 @@ def _stream_chat_llm(
     ]
 
     try:
-        stream = client.chat.completions.create(
+        response = client.chat.completions.create(
             model=settings.llm.chat.model,
             messages=all_messages,
-            stream=True,
             temperature=settings.llm.chat.temperature,
             extra_headers=settings.llm.chat.extra_headers,
             extra_body=settings.llm.chat.extra_body,
         )
     except APIError as ex:
         raise LLMError() from ex
-    for token in stream:
-        message_content = token.choices[0].delta.content
-        if message_content is None:
-            continue
-        yield message_content
-
-
-# pylint: disable=too-many-locals
-@app.task(
-    base=AiContextProcessingTask,
-    autoretry_for=tuple([LLMError]),
-    max_retries=RAG_MAX_RETRIES,
-    retry_backoff=True,
-)
-def chatbot_query(
-    sorted_ranked_search_embeddings: list[RankedSearchEmbedding],
-    context: AiContext,
-    question: str,
-):
-
-    # build answer_context
-    answer_context = ""
-    for sorted_ranked_search_embedding in reversed(sorted_ranked_search_embeddings):
-        text = load_text_from_text_lazy(sorted_ranked_search_embedding.text_lazy)
-        sanitized_text = sanitize_document_text(text)
-        answer_context += f"<document>\n{sanitized_text}\n</document>\n"
-
-    messages: list[ChatCompletionMessageParam]
-    if len(sorted_ranked_search_embeddings) > 0:
-        task_prompt = f"""TASK: Your task is to answer the human's QUESTION
-using the CONTEXT below.
-
-Do NOT use any previous knowledge which is not contained in the CONTEXT.
-
-Keep your answer in a paragraph of {LLM_MAX_TOKENS_RAG} tokens or less.
-Keep your answer concise and brief.
-
-CONTEXT:
-{answer_context}"""
-        messages = [
-            ChatCompletionUserMessageParam(role="user", content=task_prompt),
-            ChatCompletionUserMessageParam(
-                role="user", content=f"QUESTION: {question}"
-            ),
-        ]
-
-    else:
-        task_prompt = f"""TASK: Tell the user that they should refine their QUERY
-or QUESTION because you could not find enough information in the data to answer their QUESTION.
-
-Keep your answer in a paragraph of {LLM_MAX_TOKENS_RAG} tokens or less.
-Keep your answer concise and brief."""
-        messages = [
-            ChatCompletionUserMessageParam(role="user", content=task_prompt),
-        ]
-
-    # send all the tokens to the pubsub channel
-    answer = ""
-    for message_content in _stream_chat_llm(messages=messages):
-        answer += message_content
-        receivers = get_pubsub_service().publish_message(
-            PubSubMessage(
-                channel=str(context.id_),
-                message=MessageChatBotToken(token_id=uuid4(), token=message_content),
-            )
-        )
-        if receivers < 1:
-            # nobody is actually listening: abort
-            logger.info("No receiver for llm token")
-            return
-
-    for sorted_ranked_search_embedding in sorted_ranked_search_embeddings:
-        text = load_text_from_text_lazy(sorted_ranked_search_embedding.text_lazy)
-        rank = round(sorted_ranked_search_embedding.scored_rank, 2)
-        receivers = get_pubsub_service().publish_message(
-            PubSubMessage(
-                channel=str(context.id_),
-                message=MessageChatBotCitation(
-                    id=uuid4(),
-                    file_id=sorted_ranked_search_embedding.file_id,
-                    text=text,
-                    rank=rank,
-                ),
-            )
-        )
-        if receivers < 1:
-            # nobody is actually listening: abort
-            logger.info("No receiver for citations")
-            return
-
-    receivers = get_pubsub_service().publish_message(
-        PubSubMessage(
-            channel=str(context.id_),
-            message=MessageChatBotAnswerComplete(),
-        )
-    )
-
-    logger.debug(
-        "Question: %s, Answer: %s, Citations: %s",
-        question,
-        answer,
-        set(str(f.file_id) for f in sorted_ranked_search_embeddings),
-    )
+    return (response.choices[0].message.content or "").strip()

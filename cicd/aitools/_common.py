@@ -24,16 +24,32 @@ from .models import MRContext
 logger = logging.getLogger(__name__)
 
 
+def checkout_and_update_branch(branch_name: str, repo: Repo) -> None:
+    """Check out a branch and fast-forward it to its remote tracking ref.
+
+    If the branch already exists locally it is fast-forwarded to origin.  The function
+    refuses to touch the branch when there are uncommitted changes or when local and
+    remote have diverged (i.e. a fast-forward is not possible).
+    """
+    local_branches = [b.name for b in repo.branches]
+    if branch_name in local_branches:
+        repo.git.checkout(branch_name)
+        if repo.is_dirty(untracked_files=True):
+            logger.warning(
+                "Working tree is dirty — skipping update to origin/%s",
+                branch_name,
+            )
+        else:
+            repo.git.merge("--ff-only", f"origin/{branch_name}")
+    else:
+        repo.git.checkout("-b", branch_name, f"origin/{branch_name}")
+
+
 def checkout_mr_branch(mr: ProjectMergeRequest, repo: Repo) -> str:
     """Check out the MR's source branch locally and return the branch name."""
     branch_name = mr.source_branch
     repo.git.fetch("origin")
-    local_branches = [b.name for b in repo.branches]
-    if branch_name in local_branches:
-        repo.git.checkout(branch_name)
-        repo.git.reset("--hard", f"origin/{branch_name}")
-    else:
-        repo.git.checkout("-b", branch_name, f"origin/{branch_name}")
+    checkout_and_update_branch(branch_name, repo)
     return branch_name
 
 

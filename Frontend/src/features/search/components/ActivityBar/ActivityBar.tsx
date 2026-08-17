@@ -94,22 +94,31 @@ export const ActivityBar = () => {
             panel: LeftSidebarPanel.FOLDER,
             icon: <Folder />,
             label: t("toolbar.views.folder"),
+            dataTour: "activity-bar-folders",
         },
         {
             panel: LeftSidebarPanel.TAGS,
             icon: <Label />,
             label: t("sideMenu.tags"),
+            dataTour: "activity-bar-tags",
         },
         {
             panel: LeftSidebarPanel.QUERIES,
             icon: <Bookmark />,
             label: t("sideMenu.savedQueries.title"),
+            dataTour: "activity-bar-saved-queries",
         },
         {
             panel: LeftSidebarPanel.CARD_CUSTOMIZATION,
             icon: <Tune />,
             label: t("sideMenu.cardCustomization.title"),
             dataTour: "sidebar-card-customization",
+        },
+        {
+            panel: LeftSidebarPanel.CHAT,
+            icon: <ForumOutlined />,
+            label: "AI Assistant",
+            dataTour: "sidebar-chat",
         },
     ];
 
@@ -136,12 +145,6 @@ export const ActivityBar = () => {
             icon: <BarChartOutlined />,
             label: t("toolbar.views.statistics"),
             dataTour: "sidebar-statistics",
-        },
-        {
-            tab: RightSidebarTab.CHAT,
-            icon: <ForumOutlined />,
-            label: "Chatbot",
-            dataTour: "sidebar-chat",
         },
         {
             tab: RightSidebarTab.BULK_ACTIONS,

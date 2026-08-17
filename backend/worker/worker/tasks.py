@@ -3,7 +3,21 @@
 We have to include here all modules containing top-level tasks.
 """
 
-from worker.ai import process_question_task
+from worker.ai.tasks.describe_image_tool import describe_image_tool_task
+from worker.ai.tasks.execute_query_tool import execute_query_tool_task
+from worker.ai.tasks.get_file_tool import (
+    get_file_field_tool_task,
+    get_file_field_work_task,
+    get_file_tool_task,
+)
+from worker.ai.tasks.list_folder_contents_tool import list_folder_contents_tool_task
+from worker.ai.tasks.persist_processing_done import persist_processing_done_task
+from worker.ai.tasks.persist_question import persist_question_task
+from worker.ai.tasks.rag_tool import rag_pipeline_task, rag_search_tool_task
+from worker.ai.tasks.search_by_filename_tool import search_by_filename_tool_task
+from worker.ai.tasks.suggest_queries_tool import suggest_queries_task
+from worker.ai.tasks.summarize_file_tool import summarize_file_tool_task
+from worker.ai.tasks.translate_file_tool import translate_file_tool_task
 from worker.create_archive import (
     create_archive_task,
 )
@@ -67,7 +81,20 @@ tasks = [
     flush_root_task_info_on_idle_task,
     throttle_and_flush_lazybytes_task,
     shrink_periodically_task,
-    process_question_task,
+    rag_pipeline_task,
+    execute_query_tool_task,
+    get_file_tool_task,
+    get_file_field_tool_task,
+    get_file_field_work_task,
+    suggest_queries_task,
+    rag_search_tool_task,
+    persist_question_task,
+    persist_processing_done_task,
+    summarize_file_tool_task,
+    translate_file_tool_task,
+    describe_image_tool_task,
+    list_folder_contents_tool_task,
+    search_by_filename_tool_task,
     autoretry_test_task,
     canvas_test_task,
     sigkill_pgroup_task,

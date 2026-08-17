@@ -51,6 +51,13 @@ export const TOUR_TARGETS = {
     archivesList: '[data-tour="archives-list"]',
     archiveUpload: '[data-tour="archive-upload"]',
     archiveDownloadButton: '[data-tour="archive-download-button"]',
+    activityBarFolders: '[data-tour="activity-bar-folders"]',
+    activityBarTags: '[data-tour="activity-bar-tags"]',
+    activityBarSavedQueries: '[data-tour="activity-bar-saved-queries"]',
+    chatInput: '[data-tour="chat-input"]',
+    chatHistoryButton: '[data-tour="chat-history-button"]',
+    chatNewButton: '[data-tour="chat-new-button"]',
+    chatDeepSearch: '[data-tour="chat-deep-search"]',
 } as const;
 
 export const INCREMENTAL_TOUR_INTRO_STEP: TourStep = {
@@ -132,7 +139,6 @@ export const GLOBAL_TOUR_STEPS: readonly TourStep[] = [
         preparation: "search-results",
         side: "bottom",
         align: "start",
-        waitForElementMs: 3_000,
     },
     {
         id: "result-card-processing-status",
@@ -142,7 +148,6 @@ export const GLOBAL_TOUR_STEPS: readonly TourStep[] = [
         preparation: "search-results",
         side: "bottom",
         align: "start",
-        waitForElementMs: 3_000,
     },
     {
         id: "result-card-subitems",
@@ -152,7 +157,6 @@ export const GLOBAL_TOUR_STEPS: readonly TourStep[] = [
         preparation: "search-results",
         side: "bottom",
         align: "start",
-        waitForElementMs: 3_000,
     },
     {
         id: "result-card-content",
@@ -162,7 +166,6 @@ export const GLOBAL_TOUR_STEPS: readonly TourStep[] = [
         preparation: "search-results",
         side: "right",
         align: "start",
-        waitForElementMs: 3_000,
     },
     {
         id: "result-card-tags",
@@ -172,7 +175,6 @@ export const GLOBAL_TOUR_STEPS: readonly TourStep[] = [
         preparation: "search-results",
         side: "top",
         align: "end",
-        waitForElementMs: 3_000,
     },
     {
         id: "result-card-actions",
@@ -182,7 +184,6 @@ export const GLOBAL_TOUR_STEPS: readonly TourStep[] = [
         preparation: "search-results",
         side: "left",
         align: "end",
-        waitForElementMs: 3_000,
     },
     {
         id: "result-card-preview",
@@ -192,7 +193,6 @@ export const GLOBAL_TOUR_STEPS: readonly TourStep[] = [
         preparation: "search-results",
         side: "left",
         align: "center",
-        waitForElementMs: 3_000,
     },
     {
         id: "document-detail",
@@ -261,6 +261,14 @@ export const GLOBAL_TOUR_STEPS: readonly TourStep[] = [
         align: "start",
     },
     {
+        id: "folder-icon",
+        target: { selector: TOUR_TARGETS.activityBarFolders },
+        titleKey: "tour.steps.folderIcon.title",
+        descriptionKey: "tour.steps.folderIcon.description",
+        side: "right",
+        align: "start",
+    },
+    {
         id: "folders",
         target: { selector: TOUR_TARGETS.folders },
         titleKey: "tour.steps.folders.title",
@@ -286,10 +294,26 @@ export const GLOBAL_TOUR_STEPS: readonly TourStep[] = [
         align: "start",
     },
     {
+        id: "tags-icon",
+        target: { selector: TOUR_TARGETS.activityBarTags },
+        titleKey: "tour.steps.tagsIcon.title",
+        descriptionKey: "tour.steps.tagsIcon.description",
+        side: "right",
+        align: "start",
+    },
+    {
         id: "tags",
         target: { selector: TOUR_TARGETS.tags },
         titleKey: "tour.steps.tags.title",
         descriptionKey: "tour.steps.tags.description",
+        side: "right",
+        align: "start",
+    },
+    {
+        id: "saved-queries-icon",
+        target: { selector: TOUR_TARGETS.activityBarSavedQueries },
+        titleKey: "tour.steps.savedQueriesIcon.title",
+        descriptionKey: "tour.steps.savedQueriesIcon.description",
         side: "right",
         align: "start",
     },
@@ -316,6 +340,7 @@ export const GLOBAL_TOUR_STEPS: readonly TourStep[] = [
         descriptionKey: "tour.steps.cardCustomizationDisplay.description",
         side: "right",
         align: "start",
+        waitForElementMs: 3_000,
     },
     {
         id: "card-customization-fields",
@@ -331,6 +356,56 @@ export const GLOBAL_TOUR_STEPS: readonly TourStep[] = [
         titleKey: "tour.steps.cardCustomizationAutoActions.title",
         descriptionKey: "tour.steps.cardCustomizationAutoActions.description",
         side: "right",
+        align: "start",
+    },
+    {
+        id: "chat",
+        target: { selector: TOUR_TARGETS.chat },
+        titleKey: "tour.steps.chat.title",
+        descriptionKey: "tour.steps.chat.description",
+        side: "right",
+        align: "start",
+    },
+    {
+        id: "chat-input",
+        target: { selector: TOUR_TARGETS.chatInput },
+        titleKey: "tour.steps.chatInput.title",
+        descriptionKey: "tour.steps.chatInput.description",
+        side: "top",
+        align: "start",
+        waitForElementMs: 2_000,
+    },
+    {
+        id: "chat-sources-warning",
+        target: { selector: TOUR_TARGETS.chatInput },
+        titleKey: "tour.steps.chatSourcesWarning.title",
+        descriptionKey: "tour.steps.chatSourcesWarning.description",
+        side: "top",
+        align: "start",
+    },
+    {
+        id: "chat-deep-search",
+        target: { selector: TOUR_TARGETS.chatDeepSearch },
+        titleKey: "tour.steps.chatDeepSearch.title",
+        descriptionKey: "tour.steps.chatDeepSearch.description",
+        side: "top",
+        align: "start",
+        waitForElementMs: 2_000,
+    },
+    {
+        id: "chat-history",
+        target: { selector: TOUR_TARGETS.chatHistoryButton },
+        titleKey: "tour.steps.chatHistory.title",
+        descriptionKey: "tour.steps.chatHistory.description",
+        side: "bottom",
+        align: "start",
+    },
+    {
+        id: "chat-new-chat",
+        target: { selector: TOUR_TARGETS.chatNewButton },
+        titleKey: "tour.steps.chatNewChat.title",
+        descriptionKey: "tour.steps.chatNewChat.description",
+        side: "bottom",
         align: "start",
     },
     {
@@ -386,14 +461,6 @@ export const GLOBAL_TOUR_STEPS: readonly TourStep[] = [
         side: "left",
         align: "start",
         waitForElementMs: 2_000,
-    },
-    {
-        id: "chat",
-        target: { selector: TOUR_TARGETS.chat },
-        titleKey: "tour.steps.chat.title",
-        descriptionKey: "tour.steps.chat.description",
-        side: "left",
-        align: "start",
     },
     {
         id: "bulk-actions",

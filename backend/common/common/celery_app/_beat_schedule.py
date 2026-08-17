@@ -16,12 +16,7 @@ SCHEDULE_NEVER = _NeverSchedule()
 
 
 def get_beat_schedule() -> dict:
-    """Return the Celery Beat schedule configuration.
-
-    This function is separate from init_celery_app() so it can be called at module level
-    by other components (e.g., beat router) without requiring a fully initialized Celery
-    app.
-    """
+    """Return the Celery Beat schedule configuration."""
     return {
         # Magic trick: use prime numbers for all */X tasks -> then we will have less conflicts
         "compute-complete-estimate": {

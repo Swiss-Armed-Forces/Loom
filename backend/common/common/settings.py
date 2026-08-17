@@ -139,6 +139,10 @@ class LLMToolSettings(LLMClientSettings):
     extra_headers: LLMExtraHeaders | None = _LLM_THINKING_EXTRA_HEADERS
 
 
+class LLMAgentSettings(LLMClientSettings):
+    extra_headers: LLMExtraHeaders | None = _LLM_THINKING_EXTRA_HEADERS
+
+
 class LLMVisionSettings(LLMClientSettings):
     model: str = "huihui_ai/qwen3.5-abliterated:9b"
     system_prompt: str = "You are an expert at analysing what's in an image"
@@ -150,9 +154,19 @@ class LLMTranslationSettings(LLMClientSettings):
     extra_headers: LLMExtraHeaders | None = _LLM_NO_THINKING_EXTRA_HEADERS
 
 
+class SuggestQueriesToolSettings(BaseModel):
+    num_candidates: int = 10
+    max_results: int = 3
+
+
+class ToolSettings(BaseModel):
+    suggest_queries: SuggestQueriesToolSettings = SuggestQueriesToolSettings()
+
+
 class LLMSettings(BaseModel):
     embedding: LLMEmbeddingSettings = LLMEmbeddingSettings()
     tool: LLMToolSettings = LLMToolSettings()
+    agent: LLMAgentSettings = LLMAgentSettings()
     summarization_key_points: LLMSummarizationKeyPointsSettings = (
         LLMSummarizationKeyPointsSettings()
     )
@@ -316,6 +330,7 @@ class Settings(BaseSettings):
     lazybytes_storage: LazybytesStorageSettings = LazybytesStorageSettings()
     intake_storage: IntakeS3StorageSettings = IntakeS3StorageSettings()
 
+    tool: ToolSettings = ToolSettings()
     llm: LLMSettings = LLMSettings()
 
 

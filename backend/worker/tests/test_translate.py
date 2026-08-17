@@ -31,6 +31,10 @@ def _llm_client() -> MagicMock:
     return cast(MagicMock, get_llm_translation_client())
 
 
+def _assert_call_count(mock: MagicMock, expected: int) -> None:
+    assert mock.call_count == expected
+
+
 @pytest.mark.parametrize(
     "text, expected_language, expected_confidence",
     [
@@ -124,10 +128,7 @@ def test_translate(
     )
 
     assert translation == expected_text
-    parse_mock: MagicMock = client.beta.chat.completions.parse
-    assert (
-        parse_mock.call_count == expected_translate_calls  # pylint: disable=no-member
-    )
+    _assert_call_count(client.beta.chat.completions.parse, expected_translate_calls)
 
 
 def test_translate_llm_error():

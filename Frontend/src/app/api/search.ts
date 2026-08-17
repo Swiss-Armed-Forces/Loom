@@ -19,10 +19,13 @@ import {
     GetFilePreviewResponse,
     ArchiveCreatedResponse,
     ContextCreateResponse,
+    ContextHistoryResponse,
+    ListContextsResponse,
     GetQueryResponse,
     GetFilesCountResponse,
     UpdateFileRequest,
     PreviewField,
+    CapabilityUpdate,
 } from "./generated";
 
 const filesApi = new FilesApi(apiConfiguration);
@@ -397,26 +400,35 @@ export const scheduleSingleFileIndexing = async (
     });
 };
 
-export const createAiContext = async (
-    query: SearchQuery,
-): Promise<ContextCreateResponse> => {
-    return aiApi.createContextV1AiPost({
-        _queryParameters: {
-            queryId: query.id ?? undefined,
-            keepAlive: query.keepAlive ?? undefined,
-            searchString: query.query,
-        },
-    });
+export const createAiContext = async (): Promise<ContextCreateResponse> => {
+    return aiApi.createContextV1AiPost();
 };
 
-export const processQuestion = async (
-    context: ContextCreateResponse,
-    question: string,
-): Promise<ContextCreateResponse> => {
-    return aiApi.processQuestionV1AiContextIdProcessQuestionPost({
-        contextId: context.contextId,
-        processQuestionQuery: {
-            question: question,
+export const listAiContexts = async (): Promise<ListContextsResponse> =>
+    aiApi.listContextsV1AiGet();
+
+export const getContextHistory = async (
+    contextId: string,
+    options?: { after?: number; pageSize?: number },
+): Promise<ContextHistoryResponse> =>
+    aiApi.getContextHistoryV1AiContextIdHistoryGet({
+        contextId,
+        after: options?.after,
+        pageSize: options?.pageSize,
+    });
+
+export const deleteAiContext = async (contextId: string): Promise<void> =>
+    aiApi.deleteContextV1AiContextIdDelete({ contextId });
+
+export const updateAiContextCapabilities = async (
+    contextId: string,
+    capability: string,
+    active: boolean,
+): Promise<void> =>
+    aiApi.updateCapabilitiesV1AiContextIdCapabilitiesPatch({
+        contextId,
+        capabilityUpdate: {
+            capability: capability as CapabilityUpdate["capability"],
+            active,
         },
     });
-};

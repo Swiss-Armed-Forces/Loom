@@ -4,7 +4,10 @@ from uuid import uuid4
 import pytest
 from common.services.lazybytes_service import LazyBytes
 
-from worker.ai.tasks.rag import RankedSearchEmbedding, filter_ranked_search_embeddings
+from worker.ai.tasks.rag_tool import (
+    RankedSearchEmbedding,
+    filter_ranked_search_embeddings,
+)
 
 
 @pytest.mark.parametrize(
