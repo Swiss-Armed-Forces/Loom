@@ -1,16 +1,16 @@
-# ![Loom Logo](Frontend/src/features/common/branding/loom-logo-full-contour.svg) Document Search Engine
+# ![Loom Logo](Frontend/src/features/common/branding/loom-logo-full-contour.svg) Document Analysis Platform
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE.txt)
-[![Release Status](https://gitlab.com/swiss-armed-forces/cyber-command/cea/loom/-/badges/release.svg)](https://gitlab.com/swiss-armed-forces/cyber-command/cea/loom/-/releases)
+[![Release](https://img.shields.io/gitlab/v/release/swiss-armed-forces%2Fcyber-command%2Fcea%2Floom?gitlab_url=https%3A%2F%2Fgitlab.com)](https://gitlab.com/swiss-armed-forces/cyber-command/cea/loom/-/releases)
 [![Interactive Demo](https://img.shields.io/badge/Interactive_Demo-Try_it-FC6D26)](https://swiss-armed-forces.gitlab.io/cyber-command/cea/loom/)
-[![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-v2.1%20adopted-ff69b4.svg)](CODE_OF_CONDUCT.md)
-[![Contributing](https://img.shields.io/badge/Contributing-Guidelines-blue)](CONTRIBUTING.md)
-[![GitLab Pipeline Status](https://gitlab.com/swiss-armed-forces/cyber-command/cea/loom/badges/main/pipeline.svg)](https://gitlab.com/swiss-armed-forces/cyber-command/cea/loom/-/pipelines?page=1&scope=all&ref=main)
+[![Pipeline Status](https://img.shields.io/gitlab/pipeline-status/swiss-armed-forces%2Fcyber-command%2Fcea%2Floom?branch=main&gitlab_url=https%3A%2F%2Fgitlab.com)](https://gitlab.com/swiss-armed-forces/cyber-command/cea/loom/-/pipelines?page=1&scope=all&ref=main)
 
-**Loom** is a powerful, easily deployable open-source document search engine designed for
-secure, task-specific deployments. It automates indexing of data sources, performs OCR,
-extracts content and metadata, and enables powerful full-text search enriched by AI features
-such as RAG chat, auto-tagging, summarization, and translation.
+**Loom** is an open-source document analysis platform that lets you import documents,
+search, analyze, and export them from a single deployment. It extracts text and
+metadata from a wide range of file formats, including OCR for scanned documents,
+and enriches your collection with AI features like an intelligent chatbot, automatic
+tagging, summarization, and translation. Loom runs completely offline, making it
+suitable for organizations handling confidential or classified data.
 
 [[_TOC_]]
 
@@ -18,56 +18,54 @@ such as RAG chat, auto-tagging, summarization, and translation.
 
 Scan the QR code or open the [interactive frontend demo](https://swiss-armed-forces.gitlab.io/cyber-command/cea/loom/).
 
-[![Loom live demo QR code](Frontend/public/demo-link-qr.gif){width=220}](https://swiss-armed-forces.gitlab.io/cyber-command/cea/loom/)
+<!-- markdownlint-disable MD033 -->
+<a href="https://swiss-armed-forces.gitlab.io/cyber-command/cea/loom/">
+  <img src="Frontend/public/demo-link-qr.gif" alt="Loom live demo QR code" width="220">
+</a>
+<!-- markdownlint-enable MD033 -->
 
 ## ✨ Key Features
 
-- **🚀 Simple Deployment:** Get up and running quickly with asingle `up.sh` script.
-- **🔍 Powerful Search:** Experience Google-like search across your documents and
-  image content with a rich set of syntax options.
+- **🚀 Simple Deployment:** Get up and running quickly with a single command.
+- **🔍 Powerful Search:** Full-text search across your documents and image content
+  with a rich set of search filters and options.
 - **⚙️ Automatic Indexing:** Loom automatically monitors configured data sources
   and processes new and updated files.
-- **📤 Flexible Data Ingestion:** Easily index data by uploading files directly through
-  the simple file upload provided in the Loom frontend.
+- **📤 Flexible Data Import:** Easily add data by uploading files directly through
+  the Loom frontend.
 - **📚 Comprehensive Content Extraction:** Handles a vast array of file formats,
   including Office documents, PDFs, emails, archives, images, and more. Features robust
   OCR and efficient processing of large files.
 - **🏷️ Metadata Extraction:** Automatically identifies and extracts relevant metadata
   from all supported file types during the indexing process.
-- **🤖 AI Features:** Loom integrates AI throughout: chat with your documents via a
-  RAG chatbot, automatically tag new documents based on existing tags, and get
-  AI-generated summaries and image descriptions.
-- **📦 Archive Creation:** Easily bundle selected search results or individual documents
-  into archives for convenient data extraction and transfer.
-- **📌 Tagging:** Organize and categorize your document collection with custom, user-defined tags.
+- **🤖 AI Features:** Loom integrates AI throughout: an intelligent chatbot that can
+  search, navigate, and act on documents for you; automatic tagging of new documents
+  based on existing tags; and AI-generated summaries and image descriptions.
+- **📦 Archives:** Bundle search results or individual documents into encrypted archives.
+  Archives can be transferred securely between Loom instances and include a built-in
+  command-line viewer to explore the data without a Loom installation.
+- **📌 Tagging:** Organize and categorize your document collection with custom, user-defined tags
+  in addition to the AI-driven automatic tagging.
 - **🌍 Translation:** Built-in functionality to translate content from various languages
   into English.
-- **🖼️ Secure Document Rendering:** View sanitized, rendered versions of documents and
-  auto-generated thumbnails directly in the UI, without exposing the original file to the browser.
-- **🔗 REST API:** Seamlessly integrate Loom's powerful search and other functionalities
-  into your existing applications and workflows through our comprehensive REST API.
+- **🖼️ Secure Document Previews:** View safe previews of documents and auto-generated
+  thumbnails directly in the UI, without exposing the original file to the browser.
+- **🔗 REST API:** Integrate Loom's search and AI features into your own applications
+  through a well-documented REST API.
 
-## 🚫 Limitations and Out-of-Scope Features
+## 🚫 Limitations
 
-Loom is built as a modular and extensible toolkit for document indexing and search-fast to deploy,
-easy to adapt, and intended for secure, task-specific use. However, it makes a number of deliberate
-trade-offs in scope and design. The following points clarify what Loom is not intended to support:
+Loom is a platform you adapt to your use case, not a turnkey product. It makes deliberate
+trade-offs in scope:
 
-- **🔄🚫 No upgrade path guarantees:** Loom is designed for ephemeral usage. You are expected to deploy
-  a fresh instance, index a dataset, analyze the results, and shut it down. There is no support for
-  migrating data or state across versions or long-running deployments.
-- **🧑‍🚫 No user management:** Loom does not provide authentication, authorization, or role separation.
-  All users accessing an instance are considered fully trusted. If isolation is needed, you must run
-  separate Loom instances.
-- **🌐🚫 Not suitable for public exposure:** Loom is not hardened for internet-facing use. It assumes a
-  trusted environment and lacks defenses against malicious input. Exposing it without strict external
-  protection (e.g., VPN, proxy authentication) carries significant security risks.
-- **🧰🚫 Not a general-purpose SaaS product:** Loom is not a polished, multi-tenant solution. It’s a
-  low-friction framework for building document analysis systems, meant to be shaped to your domain;
-  not a turnkey platform for general use.
-
-These boundaries reflect Loom’s focus on flexibility, transparency, and local control. Ideal for internal
-deployments and exploratory workflows, but not for unmanaged or large-scale public scenarios.
+- **🔄 No upgrade path guarantees:** Each deployment is self-contained. When moving to a new
+  version, deploy a fresh instance and re-index your data. There is no support for migrating
+  state between versions.
+- **👩 No user management:** Loom does not provide authentication, authorization, or role
+  separation. All users have admin-level access. If isolation is needed, run separate instances.
+- **🌐 Not suitable for public exposure:** Loom is not hardened for internet-facing use. Without
+  external protection (e.g., VPN, proxy authentication), exposing it publicly carries significant
+  security risks.
 
 ## 🛠️ Installation
 
@@ -81,12 +79,9 @@ requirements, single-node and multi-node deployment, offline usage, and Helm val
 
 ## 🚀 Getting Started
 
-Open [https://frontend.loom](https://frontend.loom) — an interactive guided tour will walk you
-through all features on your first visit.
-
-## 📜 License
-
-Loom is licensed under the MIT License. See the full text of the license in the [LICENSE.txt](LICENSE.txt) file.
+Open [https://frontend.loom](https://frontend.loom). An interactive guided tour will walk you
+through all features on your first visit. Upload documents, search your corpus, and use the
+AI chatbot to explore and analyze your data.
 
 ## 🛠️ Development Setup
 
@@ -94,41 +89,16 @@ Below you will find the documented setup process for a portable development envi
 
 - [Development environment setup](Documentation/devenv-setup.md)
 
-## ⚙️ Architecture
+## 📜 License
 
-Multiple services that are useful for production and development purposes are started:
-
-| Service       | Url                                                      | Description                                   | Remarks                                        |
-| ------------- | -------------------------------------------------------- | --------------------------------------------- | ---------------------------------------------- |
-| Frontend      | [https://frontend.loom](https://frontend.loom)           | The loom Frontend                             |                                                |
-| Open Webui    | [https://open-webui.loom](https://open-webui.loom)       | AI Webinterface                               |                                                |
-| Roundcube     | [https://roundcube.loom](https://roundcube.loom)         | Email Webinterface                            |                                                |
-| SeaweedFS     | [https://seaweedfs.loom](https://seaweedfs.loom)         | Admin UI for cluster management               |                                                |
-| S3            | [https://s3.loom](https://s3.loom)                       | S3-compatible storage API                     |                                                |
-| Api           | [https://api.loom](https://api.loom)                     | The loom api                                  | Swagger documentation: <https://api.loom/docs> |
-| RabbitMQ      | [https://rabbit.loom](https://rabbit.loom)               | Monitor rabbit messages                       | user: `guest` password: `guest`                |
-| Elasticvue    | [https://elasticvue.loom](https://elasticvue.loom)       | ElasticSearch management                      | use "predefined clusters"                      |
-| ElasticSearch | [https://elasticsearch.loom](https://elasticsearch.loom) | Elasticsearch Database                        |                                                |
-| Rspamd        | [https://rspamd.loom](https://rspamd.loom)               | Rspamd spam detection engine                  |                                                |
-| RedisInsight  | [https://redisinsight.loom](https://redisinsight.loom)   | Manage the redis DB                           |                                                |
-| Prometheus    | [https://prometheus.loom](https://prometheus.loom)       | Manage prometheus                             |                                                |
-| Grafana       | [https://grafana.loom](https://grafana.loom)             | Statistics, Dashboards and alerting           |                                                |
-| Traefik       | [https://traefik.loom](https://traefik.loom)             | Traefik reverse proxy                         |                                                |
-| Apache Tika   | [https://tika.loom](https://tika.loom)                   | Tika content extraction engine                |                                                |
-| Dovecot       | [imaps://dovecot.loom:443](imaps://dovecot.loom:443)     | Imap Server                                   | user: `user` password: `pass`                  |
-| Ollama        | [https://ollama.loom](https://ollama.loom)               | AI Server                                     |                                                |
-| Gotenberg     | [https://gotenberg.loom](https://gotenberg.loom)         | Document rendering                            |                                                |
-
-![Context Diagram](Documentation/ContainerDiagram.svg)
-
-> ℹ️ External access to most services is intentional. Loom is a toolkit: users may interact
-> with the underlying services and their APIs directly.
+Loom is licensed under the MIT License. See the full text of the license in the [LICENSE.txt](LICENSE.txt) file.
 
 ## 🔗 More Documentation and Links
 
 - [Installation Guide](Documentation/installation.md)
 - [Interactive frontend demo](Documentation/demo-mode.md)
 - [Development environment setup](Documentation/devenv-setup.md)
+- [Architecture Overview](ARCHITECTURE.md)
 - [Contributing Guidelines](CONTRIBUTING.md)
 - [Code of Conduct](CODE_OF_CONDUCT.md)
 - [Third Party Licenses](THIRD-PARTY.md)
@@ -136,3 +106,4 @@ Multiple services that are useful for production and development purposes are st
 - [Backend Documentation](backend/README.md)
 - [Integration Testing Documentation](integrationtest/README.md)
 - [CI/CD Pipeline Documentation](cicd/README.md)
+- [Technical AI Integration Concept](Documentation/ai.md)

@@ -1,50 +1,24 @@
-from collections import Counter
-from uuid import UUID
+import json
 
 import pytest
-import requests
-from api.routers.ai import ContextCreateResponse, ProcessQuestionQuery
-from common.dependencies import get_pubsub_service
-from common.messages.messages import MessageChatBotAnswerComplete, MessageChatBotToken
-from common.services.query_builder import QueryParameters
 
-from utils.consts import AI_ENDPOINT, REQUEST_TIMEOUT
+from utils.ai_helpers import create_ai_context, run_agent
 from utils.fetch_from_api import (
     DEFAULT_MAX_WAIT_TIME_PER_FILE,
     fetch_files_from_api,
-    fetch_query_id,
 )
 from utils.upload_asset import upload_many_assets
 
 
-def _create_context(query: QueryParameters) -> ContextCreateResponse:
-    response = requests.post(
-        AI_ENDPOINT, json=query.model_dump(), timeout=REQUEST_TIMEOUT
-    )
-    response.raise_for_status()
-    return ContextCreateResponse.model_validate(response.json())
-
-
-def _process_question(ai_context_id: UUID, query: ProcessQuestionQuery):
-    response = requests.post(
-        f"{AI_ENDPOINT}/{ai_context_id}/process_question",
-        json=query.model_dump(),
-        timeout=REQUEST_TIMEOUT,
-    )
-    response.raise_for_status()
-
-
 def test_create_context():
-    _create_context(query=QueryParameters(query_id=fetch_query_id()))
+    create_ai_context()
 
 
 class TestChatbot:
+    # A single file is sufficient to exercise the chatbot pipeline; extra files
+    # (knn2-knn5) were removed to keep the test fast.
     asset_list = [
         "knn1.txt",
-        # "knn2.txt",
-        # "knn3.txt",
-        # "knn4.txt",
-        # "knn5.txt",
     ]
 
     @pytest.fixture(scope="class", autouse=True)
@@ -61,30 +35,22 @@ class TestChatbot:
             * len(self.asset_list),
         )
 
-    @pytest.mark.asyncio
     @pytest.mark.flaky(reruns=3)
-    async def test_chatbot(self):
+    def test_chatbot(self):
+        ai_context = create_ai_context()
 
-        ai_context = _create_context(query=QueryParameters(query_id=fetch_query_id()))
+        response = run_agent(
+            ai_context_id=ai_context.context_id,
+            question="What is network security?",
+        )
 
-        pubsub = get_pubsub_service()
-        async with pubsub.open_async() as pubsub_async:
-            await pubsub_async.subscribe({str(ai_context.context_id)})
+        event_types: list[str] = []
+        for line in response.iter_lines(decode_unicode=True):
+            if not line or not line.startswith("data:"):
+                continue
+            data = json.loads(line[len("data:") :].strip())
+            if "type" in data:
+                event_types.append(data["type"])
 
-            _process_question(
-                ai_context_id=ai_context.context_id,
-                query=ProcessQuestionQuery(question="What is network security?"),
-            )
-
-            message_type_counter = Counter()
-            while True:
-                message = await pubsub_async.get_message()
-                message_type_counter[type(message.message)] += 1
-                if isinstance(message.message, MessageChatBotAnswerComplete):
-                    break
-
-            assert message_type_counter[MessageChatBotToken] > 0
-            # Currently the RAG pipeline is not stable enough and we cannot assert
-            # that we'll always get a citation.
-            # assert message_type_counter[MessageChatBotCitation] > 0
-            assert message_type_counter[MessageChatBotAnswerComplete] > 0
+        assert "TEXT_MESSAGE_START" in event_types
+        assert "TEXT_MESSAGE_END" in event_types

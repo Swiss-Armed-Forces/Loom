@@ -1,200 +1,161 @@
-import { Box, Tooltip } from "@mui/material";
-import React, { useEffect, useRef, useState } from "react";
-import { toast } from "react-toastify";
-
+import { DeleteOutlined, Forum } from "@mui/icons-material";
 import {
-    ContextCreateResponse,
-    createAiContext,
-    processQuestion,
-} from "@app/api";
-import {
-    subscribeChannel,
-    unsubscribeChannel,
-} from "@app/channelSubscriptions";
-import { useAppDispatch, useAppSelector } from "@app/hooks";
-import {
-    openFileTabThunk,
-    selectQuery,
-    selectWebSocketPubSubMessage,
-} from "@app/slices/searchSlice";
+    Box,
+    CircularProgress,
+    IconButton,
+    InputAdornment,
+    List,
+    ListItem,
+    ListItemButton,
+    ListItemText,
+    TextField,
+    Tooltip,
+    Typography,
+} from "@mui/material";
 
-import { ChatWindow } from "./ChatWindow";
-import { MessageInput } from "./MessageInput";
+import { ChatbotInner } from "./ChatbotInner";
+import type { UseChatbotResult } from "./useChatbot";
 
-interface ChatMessage {
-    text: React.ReactNode[];
-    isUser: boolean;
-    token_ids: string[];
-    citations: string[];
+interface ChatbotProps {
+    onCitationClick: (fileId: string) => void;
+    chatbot: UseChatbotResult;
 }
 
-export const Chatbot = () => {
-    const dispatch = useAppDispatch();
-
-    const searchQuery = useAppSelector(selectQuery);
-    const webSocketPubSubMessage = useAppSelector(selectWebSocketPubSubMessage);
-    const [messages, setMessages] = useState<ChatMessage[]>([]);
-    const [aiContext, setAiContext] = useState<ContextCreateResponse | null>(
-        null,
-    );
-    // Keep a ref so the searchQuery effect always reads the latest aiContext
-    // without adding it as a dependency (which would cause double-unsubscribe).
-    const aiContextRef = useRef<ContextCreateResponse | null>(null);
-    aiContextRef.current = aiContext;
-
-    useEffect(() => {
-        if (!searchQuery) return;
-        if (aiContextRef.current)
-            unsubscribeChannel(aiContextRef.current.contextId, dispatch);
-        createAiContext({ ...searchQuery, id: null })
-            .then(setAiContext)
-            .catch(toast.error);
-    }, [searchQuery, dispatch]);
-
-    useEffect(() => {
-        if (!aiContext) return;
-        setMessages([]);
-        // subscribe to context messages
-        subscribeChannel(aiContext.contextId, dispatch);
-    }, [aiContext, dispatch]);
-
-    // Unsubscribe from the current context channel when the component unmounts.
-    useEffect(() => {
-        return () => {
-            if (aiContextRef.current) {
-                unsubscribeChannel(aiContextRef.current.contextId, dispatch);
-            }
-        };
-    }, [dispatch]);
-
-    useEffect(() => {
-        if (!webSocketPubSubMessage) return;
-        const msg = webSocketPubSubMessage.message;
-
-        if (msg.type !== "chatBotToken" && msg.type !== "chatBotCitation")
-            return;
-
-        const handleViewDetail = (fileId: string) => {
-            dispatch(openFileTabThunk({ fileId }));
-        };
-
-        setMessages((prev) => {
-            const newMessages = [...prev];
-            let lastMessage = newMessages.at(-1);
-
-            // ensure we have an AI message to append to
-            if (!lastMessage || lastMessage.isUser) {
-                lastMessage = {
-                    text: [""],
-                    isUser: false,
-                    token_ids: [],
-                    citations: [],
-                };
-                newMessages.push(lastMessage);
-            }
-
-            if (msg.type === "chatBotToken") {
-                // check if we didn't already append the token
-                if (lastMessage.token_ids.includes(msg.tokenId)) return prev;
-
-                // add token
-                const textIdx = lastMessage.text.length - 1;
-                if (typeof lastMessage.text[textIdx] === "string") {
-                    lastMessage.text[textIdx] += msg.token;
-                } else {
-                    lastMessage.text.push(msg.token);
-                }
-                lastMessage.token_ids.push(msg.tokenId);
-            } else if (msg.type === "chatBotCitation") {
-                // add citation if not already present
-                if (!lastMessage.citations.includes(msg.id)) {
-                    const count =
-                        lastMessage.text.filter(
-                            (elem) => typeof elem !== "string",
-                        ).length + 1;
-
-                    lastMessage.text.push(
-                        <Tooltip
-                            key={msg.id}
-                            title={`${msg.text} | Rank: ${msg.rank}`}
-                        >
-                            <sup>
-                                <a
-                                    href={`#${msg.fileId}`}
-                                    onClick={(e) => {
-                                        e.preventDefault();
-                                        handleViewDetail(msg.fileId);
-                                    }}
-                                >
-                                    {`[${count}]`}
-                                </a>
-                            </sup>
-                        </Tooltip>,
-                    );
-                    lastMessage.citations.push(msg.id);
-                }
-            }
-
-            return newMessages;
-        });
-    }, [webSocketPubSubMessage]); // eslint-disable-line react-hooks/exhaustive-deps
-
-    const handleSendMessage = async (message: string) => {
-        if (!aiContext) return;
-
-        // add user message
-        setMessages((prev) => [
-            ...prev,
-            { text: [message], isUser: true, token_ids: [], citations: [] },
-        ]);
-
-        try {
-            // generate bot response
-            await processQuestion(aiContext, message);
-        } catch (err: any) {
-            console.error(err);
-            toast.error("Cannot get chatbot response");
-        }
-    };
+export const Chatbot = ({ onCitationClick, chatbot }: ChatbotProps) => {
+    const {
+        activeContext,
+        showHistory,
+        historySearch,
+        filteredContexts,
+        setHistorySearch,
+        handleSelectContext,
+        handleDeleteContext,
+        refreshContexts,
+    } = chatbot;
 
     return (
         <Box
             sx={{
                 display: "flex",
                 flexDirection: "column",
-                flex: 1,
-                padding: 2,
+                height: "100%",
                 overflow: "hidden",
             }}
         >
-            <Box
-                sx={{
-                    flexGrow: 1,
-                    overflowY: "auto",
-                    marginY: 1,
-                    padding: 1,
-                    border: "1px solid #ccc",
-                    borderRadius: 1,
-                }}
-            >
-                <ChatWindow messages={messages} />
-            </Box>
-            <Box
-                component="form"
-                onSubmit={(e) => {
-                    e.preventDefault();
-                }}
-                sx={{
-                    display: "flex",
-                    paddingTop: "8px",
-                    alignItems: "center",
-                }}
-            >
-                <MessageInput
-                    disabled={aiContext === null}
-                    onSendMessage={handleSendMessage}
+            {showHistory ? (
+                <Box
+                    sx={{
+                        display: "flex",
+                        flexDirection: "column",
+                        flex: 1,
+                        overflow: "hidden",
+                    }}
+                >
+                    <Box sx={{ px: 1, py: 0.75, flexShrink: 0 }}>
+                        <TextField
+                            size="small"
+                            fullWidth
+                            placeholder="Search conversations…"
+                            value={historySearch}
+                            onChange={(e) => setHistorySearch(e.target.value)}
+                            slotProps={{
+                                input: {
+                                    startAdornment: (
+                                        <InputAdornment position="start">
+                                            <Forum
+                                                fontSize="small"
+                                                color="disabled"
+                                            />
+                                        </InputAdornment>
+                                    ),
+                                },
+                            }}
+                        />
+                    </Box>
+                    <List dense sx={{ flex: 1, overflowY: "auto", py: 0 }}>
+                        {filteredContexts.map((ctx) => (
+                            <ListItem
+                                key={ctx.contextId}
+                                disablePadding
+                                secondaryAction={
+                                    <Tooltip title="Delete">
+                                        <IconButton
+                                            size="small"
+                                            edge="end"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleDeleteContext(
+                                                    ctx.contextId,
+                                                );
+                                            }}
+                                        >
+                                            <DeleteOutlined fontSize="small" />
+                                        </IconButton>
+                                    </Tooltip>
+                                }
+                            >
+                                <ListItemButton
+                                    selected={
+                                        activeContext?.contextId ===
+                                        ctx.contextId
+                                    }
+                                    onClick={() =>
+                                        handleSelectContext(ctx.contextId)
+                                    }
+                                    sx={{ pr: 5 }}
+                                >
+                                    <ListItemText
+                                        primary={
+                                            ctx.firstQuestion ??
+                                            "New conversation"
+                                        }
+                                        secondary={ctx.createdAt.toLocaleDateString()}
+                                        slotProps={{
+                                            primary: {
+                                                noWrap: true,
+                                                variant: "body2",
+                                            },
+                                            secondary: {
+                                                variant: "caption",
+                                            },
+                                        }}
+                                    />
+                                </ListItemButton>
+                            </ListItem>
+                        ))}
+                        {filteredContexts.length === 0 && (
+                            <Box sx={{ p: 2, textAlign: "center" }}>
+                                <Typography
+                                    variant="body2"
+                                    color="text.secondary"
+                                >
+                                    {historySearch
+                                        ? "No matching conversations"
+                                        : "No conversations yet"}
+                                </Typography>
+                            </Box>
+                        )}
+                    </List>
+                </Box>
+            ) : activeContext ? (
+                <ChatbotInner
+                    key={activeContext.contextId}
+                    contextId={activeContext.contextId}
+                    onCitationClick={onCitationClick}
+                    onRunComplete={refreshContexts}
                 />
-            </Box>
+            ) : (
+                <Box
+                    sx={{
+                        flexGrow: 1,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                    }}
+                >
+                    <CircularProgress size={24} />
+                </Box>
+            )}
         </Box>
     );
 };

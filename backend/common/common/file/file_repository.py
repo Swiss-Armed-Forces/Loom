@@ -222,27 +222,43 @@ class TikaMeta(BaseModel):
     model_config = ConfigDict(extra="allow", populate_by_name=True)
 
     dc_title: Annotated[str | list[str] | None, PreviewableField(label="Title")] = (
-        Field(default=None, alias="dc:title")
+        Field(default=None, alias="dc:title", description="Document or email title")
     )
     dc_description: Annotated[
         str | list[str] | None, PreviewableField(label="Description")
-    ] = Field(default=None, alias="dc:description")
+    ] = Field(default=None, alias="dc:description", description="Document description")
     dc_subject: Annotated[
         str | list[str] | None,
         TermsStat(keyword=True),
         PreviewableField(label="Subject"),
-    ] = Field(default=None, alias="dc:subject")
+    ] = Field(
+        default=None,
+        alias="dc:subject",
+        description="Document subject or email subject line",
+    )
     dc_creator: Annotated[
         str | list[str] | None,
         TermsStat(keyword=True),
         PreviewableField(label="Creator"),
-    ] = Field(default=None, alias="dc:creator")
+    ] = Field(
+        default=None, alias="dc:creator", description="Document author or creator"
+    )
     dcterms_created: Annotated[
-        datetime | list[datetime] | None, DateHistogramStat()
-    ] = Field(default=None, alias="dcterms:created")
+        datetime | list[datetime] | None,
+        DateHistogramStat(),
+        PreviewableField(label="Created"),
+    ] = Field(
+        default=None, alias="dcterms:created", description="Document creation date"
+    )
     dcterms_modified: Annotated[
-        datetime | list[datetime] | None, DateHistogramStat()
-    ] = Field(default=None, alias="dcterms:modified")
+        datetime | list[datetime] | None,
+        DateHistogramStat(),
+        PreviewableField(label="Modified"),
+    ] = Field(
+        default=None,
+        alias="dcterms:modified",
+        description="Document last modification date",
+    )
 
     pdf_producer: Annotated[str | list[str] | None, TermsStat(keyword=True)] = Field(
         default=None, alias="pdf:producer"
@@ -271,7 +287,11 @@ class TikaMeta(BaseModel):
 
     message_from: Annotated[
         str | list[str] | None, TermsStat(keyword=True), PreviewableField(label="From")
-    ] = Field(default=None, alias="Message-From")
+    ] = Field(
+        default=None,
+        alias="Message-From",
+        description="Email sender (full From header)",
+    )
     message_from_name: Annotated[str | list[str] | None, TermsStat(keyword=True)] = (
         Field(default=None, alias="Message:From-Name")
     )
@@ -280,7 +300,11 @@ class TikaMeta(BaseModel):
     )
     message_to: Annotated[
         str | list[str] | None, TermsStat(keyword=True), PreviewableField(label="To")
-    ] = Field(default=None, alias="Message-To")
+    ] = Field(
+        default=None,
+        alias="Message-To",
+        description="Email primary recipients (To header)",
+    )
     message_to_name: Annotated[str | list[str] | None, TermsStat(keyword=True)] = Field(
         default=None, alias="Message:To-Name"
     )
@@ -289,7 +313,7 @@ class TikaMeta(BaseModel):
     )
     message_cc: Annotated[
         str | list[str] | None, TermsStat(keyword=True), PreviewableField(label="Cc")
-    ] = Field(default=None, alias="Message-Cc")
+    ] = Field(default=None, alias="Message-Cc", description="Email CC recipients")
     message_bcc: Annotated[str | list[str] | None, TermsStat(keyword=True)] = Field(
         default=None, alias="Message-Bcc"
     )
@@ -383,7 +407,9 @@ class File(RepositoryTaskObject):
 
     storage_data: FileStorageLazyBytes | None = None
 
-    content: Annotated[str | None, PreviewableField(label="Content")] = None
+    content: Annotated[str | None, PreviewableField(label="Content")] = Field(
+        default=None, description="Full extracted text content of the document"
+    )
     content_truncated: Annotated[bool, BooleanTermsStat()] = False
     attachments_skipped: Annotated[bool, BooleanTermsStat()] = False
     full_name: FilePurePath
@@ -443,12 +469,16 @@ class File(RepositoryTaskObject):
     ] = None
     rendered_file: RenderedFile = RenderedFile()
     tags: Annotated[list[Tag], TermsStat()] = []
-    magic_file_type: Annotated[str | None, TermsStat()] = None
+    magic_file_type: Annotated[str | None, TermsStat()] = Field(
+        default=None, description="File MIME type or format detected by libmagic"
+    )
     magic_mime_type_group: Annotated[
         MimeTypeGroup | None, TermsStat(label="Media type (Magic)")
     ] = None
     tika_language: Annotated[str | None, TermsStat()] = None
-    detected_language: Annotated[str | None, TermsStat()] = None
+    detected_language: Annotated[
+        str | None, TermsStat(), PreviewableField(label="Language")
+    ] = Field(default=None, description="Detected language of the document content")
     translations: Annotated[
         list[TranslatedLanguage],
         PreviewableField(id="translation_preview", label="Translation"),
@@ -463,14 +493,19 @@ class File(RepositoryTaskObject):
     tika_handled_by: Annotated[str | None, TermsStat()] = None
     attachments: list[Attachment] = []
     recursion_depth: Annotated[int, NumberHistogramStat(label="Recursion Depth")] = 0
-    summary: Annotated[str | None, PreviewableField(label="Summary")] = None
+    summary: Annotated[str | None, PreviewableField(label="Summary")] = Field(
+        default=None, description="AI-generated summary of the document"
+    )
     image_description: Annotated[
         str | None, PreviewableField(label="Image Description")
-    ] = None
+    ] = Field(default=None, description="AI-generated description of image content")
     embeddings: list[Embedding] = []
     trufflehog_secrets: list[Secret] | None = None
     ripsecrets_secrets: list[Secret] | None = None
-    imap: ImapInfo | None = None
+    imap: ImapInfo | None = Field(
+        default=None,
+        description="IMAP server locator: UID and folder path of the email on the mail server",
+    )
     flagged: Annotated[bool, BooleanTermsStat()] = False
     seen: Annotated[bool, BooleanTermsStat()] = False
 

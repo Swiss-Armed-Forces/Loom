@@ -47,6 +47,7 @@ export const LeftSidebarPanel = {
     TAGS: "tags",
     QUERIES: "queries",
     CARD_CUSTOMIZATION: "card_customization",
+    CHAT: "chat",
 } as const;
 
 export type LeftSidebarPanel =
@@ -226,7 +227,89 @@ export interface SearchState {
     folderViewExpandedNodes: string[];
     filteredFolderViewExpandedNodes: string[];
     pendingFullscreenFileId: string | null;
+    showChatReasoning: boolean;
 }
+
+export const SEARCH_STATE_DOCS = {
+    query: "SearchQuery | null — active search query (text, filters, sort)",
+    queryError: "string | undefined — validation error for the current query",
+    leftSidebarPanel:
+        "LeftSidebarPanel | null — active left sidebar panel (folder/tags/queries/card_customization/chat)",
+    rightSidebarTab: "RightSidebarTab | null — active right sidebar tab",
+    stats: "CombinedStats — search statistics (termsData, histogramData)",
+    files: "Record<fileId, {meta, preview, query, stale?, temporary?}> — loaded file entries",
+    temporaryFileId:
+        "string | null — ID of a transiently opened file not in search results",
+    totalFiles: "number — total result count for the current query",
+    lastFileSortId: "any[] | null — sort cursor for pagination",
+    filesInView: "string[] — ordered file IDs visible in the result list",
+    tags: "string[] — available tags",
+    customQueries:
+        "CustomQuery[] — saved queries ({id, query, fileCount, name, icon})",
+    highlightedQueryId:
+        "string | null — which custom query is highlighted in the sidebar",
+    openFileTabs:
+        "FileTabState[] — open file detail tabs ({fileId, detailTab})",
+    activeTabFileId: "string | null — which file detail tab is active",
+    expandFilePaths:
+        "boolean — whether file paths are expanded in the folder view",
+    cardDensity:
+        "CardDensity — card display density preset (auto|compact|standard|full|custom)",
+    autoDetectedDensity:
+        "NamedDensity — density detected from available screen space",
+    previewFields: "string[] — field names shown as preview on cards",
+    availablePreviewFields:
+        "PreviewField[] — all fields available for card preview",
+    fieldExpansion:
+        "Record<fieldName, boolean> — which card field sections are expanded",
+    showThumbnails: "boolean — card visibility: thumbnail images",
+    showHighlights: "boolean — card visibility: search hit highlights",
+    showFieldSections: "boolean — card visibility: metadata field sections",
+    showExtensionIcon: "boolean — card visibility: file extension icon",
+    showFilePath: "boolean — card visibility: file path",
+    showParentNavigation: "boolean — card visibility: parent folder navigation",
+    showStatusIndicators:
+        "boolean — card visibility: processing status indicators",
+    showAttachments: "boolean — card visibility: attachment list",
+    showTags: "boolean — card visibility: tag chips",
+    showActions: "boolean — card visibility: action buttons",
+    showSortIndicator: "boolean — card visibility: sort field indicator",
+    showFieldActions: "boolean — card visibility: per-field action buttons",
+    autoActionsPreferences:
+        "AutoActionsPreferences — which auto-actions run on file open (markAsSeen, flag, reindex, translate, summarize, describeImage)",
+    contentTruncatedFilesCount:
+        "number — files with truncated content in current results",
+    attachmentsSkippedFilesCount:
+        "number — files with skipped attachments in current results",
+    failedFilesCount:
+        "number — files that failed processing in current results",
+    displayStat: "string — which terms stat is shown in the statistics panel",
+    displayHistogramStat:
+        "string — which histogram stat is shown in the statistics panel",
+    termsStats: "AvailableStat[] — available term aggregation statistics",
+    histogramStats: "AvailableStat[] — available histogram statistics",
+    webSocketPubSubMessage:
+        "PubSubMessage | null — last received WebSocket pub/sub message",
+    summarizationSystemPrompt:
+        "string | null — custom system prompt for summarization",
+    visionSystemPrompt:
+        "string | null — custom system prompt for vision/image description",
+    highlightedFileId:
+        "string | null — file card currently focused/highlighted",
+    highlightScrollRequest:
+        "number — counter incremented to trigger scroll to highlighted file",
+    highlightScrollMode:
+        '"smart" | "top" — scroll behaviour when highlighting a file',
+    suppressDownloadWarning:
+        "boolean — whether the download size warning dialog is suppressed",
+    folderViewExpandedNodes: "string[] — expanded node IDs in the folder tree",
+    filteredFolderViewExpandedNodes:
+        "string[] — expanded node IDs in the filtered folder tree",
+    pendingFullscreenFileId:
+        "string | null — file ID queued to open in fullscreen",
+    showChatReasoning:
+        "boolean — whether AI chat reasoning/thinking output is expanded",
+} satisfies Record<keyof SearchState, string>;
 
 export const QUERY_FAILED_FILES = "state:failed";
 export const QUERY_CONTENT_TRUNCATED_FILES = "content_truncated:true";
@@ -297,6 +380,7 @@ const initialState: SearchState = {
     folderViewExpandedNodes: [],
     filteredFolderViewExpandedNodes: [],
     pendingFullscreenFileId: null,
+    showChatReasoning: false,
     ...persistedState,
     // Restore the last query (text + sort) so stale data renders immediately.
     // Strip sortId (pagination cursor) so the first real fetch starts from page 1.
@@ -849,6 +933,9 @@ export const searchSlice = createSlice({
         ) => {
             state.pendingFullscreenFileId = action.payload;
         },
+        toggleShowChatReasoning: (state) => {
+            state.showChatReasoning = !state.showChatReasoning;
+        },
         setFilePreview: (
             state,
             action: PayloadAction<GetFilePreviewResponse>,
@@ -1074,6 +1161,7 @@ export const {
     setShowActions,
     setShowSortIndicator,
     setShowFieldActions,
+    toggleShowChatReasoning,
 } = searchSlice.actions;
 
 export const openFileTabThunk = createAsyncThunk(
@@ -1360,6 +1448,11 @@ export const selectCardElementVisibility = createSelector(
                 : search.cardDensity;
         return DENSITY_PRESETS[effective];
     },
+);
+
+export const selectShowChatReasoning = createSelector(
+    selectSearch,
+    (search) => search.showChatReasoning,
 );
 
 export default searchSlice.reducer;

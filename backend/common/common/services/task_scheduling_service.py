@@ -3,20 +3,16 @@
 from datetime import datetime
 from uuid import UUID, uuid4
 
-from celery import Celery
-from celery.result import AsyncResult
 from pydantic import BaseModel
 
-from common.ai_context.ai_context_repository import AiContext
+from common.ai_context.ai_context_repository import AiQuestion
 from common.archive.archive_repository import Archive
-from common.celery_app import BaseTask, get_beat_schedule
+from common.celery_app import get_beat_schedule
 from common.file.file_repository import File, Tag
 from common.services.lazybytes_service import FileStorageLazyBytes, TempLazyBytes
 from common.services.query_builder import QueryParameters
-from common.task_object.root_task_information_repository import (
-    RootTaskInformation,
-    RootTaskInformationRepository,
-)
+from common.services.task_service import TaskService
+from common.task_object.root_task_information_repository import RootTaskInformation
 
 
 class UpdateFileRequest(BaseModel):
@@ -29,45 +25,9 @@ class UpdateArchiveRequest(BaseModel):
     hidden: bool | None = None
 
 
-class TaskSchedulingService:
+class TaskSchedulingService(TaskService):
     # pylint: disable=too-many-public-methods
     """Schedules tasks to be executed by the worker."""
-
-    def __init__(
-        self,
-        celery_app: "Celery[BaseTask]",
-        root_task_information_repository: RootTaskInformationRepository,
-    ):
-        self._celery_app = celery_app
-        self._root_task_information_repository = root_task_information_repository
-
-    def _send_task(
-        self,
-        task_name: str,
-        args: list,
-        root_id: str,
-        task_id: str | None = None,
-    ) -> AsyncResult:
-        """Send a task to its dedicated queue via the shared exchange routing key.
-
-        Always sets routing_key=task_name so the shared exchange routes the message to
-        the correct dedicated queue, regardless of whether task_routes has been
-        populated in the sending process (e.g. the API process never calls
-        register_tasks_for_package, so task_routes is empty there).
-
-        Returns the AsyncResult so the caller can decide whether to .forget() it or
-        track it.
-        """
-        kwargs: dict = {}
-        if task_id is not None:
-            kwargs["task_id"] = task_id
-        return self._celery_app.send_task(
-            task_name,
-            args=args,
-            root_id=root_id,
-            routing_key=task_name,
-            **kwargs,
-        )
 
     def create_archive(self, archive: Archive):
         """Schedule the creation of an archive."""
@@ -364,19 +324,31 @@ class TaskSchedulingService:
             task_id=str(root_task_id),
         ).forget()
 
-    def ai_process_question(self, context: AiContext, question: str):
-        root_task_id = uuid4()
-        self._root_task_information_repository.save(
-            RootTaskInformation(
-                root_task_id=root_task_id,
-                object_id=context.id_,
-            )
-        )
-        self._send_task(
-            "worker.ai.process_question_task.process_question_task",
-            args=[context, question],
-            root_id=str(root_task_id),
-            task_id=str(root_task_id),
+    def dispatch_persist_question(
+        self,
+        context_id: UUID,
+        root_task_id: str,
+        question: AiQuestion,
+    ) -> None:
+        """Dispatch a task to persist an AI question to the context."""
+        self._send_persisting_task(
+            "worker.ai.tasks.persist_question.persist_question_task",
+            args=[question, context_id],
+            root_id=root_task_id,
+            entity_id=context_id,
+        ).forget()
+
+    def dispatch_persist_processing_done(
+        self,
+        context_id: UUID,
+        root_task_id: str,
+    ) -> None:
+        """Dispatch a task to mark an AI context as fully processed."""
+        self._send_persisting_task(
+            "worker.ai.tasks.persist_processing_done.persist_processing_done_task",
+            args=[context_id],
+            root_id=root_task_id,
+            entity_id=context_id,
         ).forget()
 
     def trigger_scheduled_task(self, schedule_name: str):

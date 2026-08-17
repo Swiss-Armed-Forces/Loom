@@ -9,6 +9,7 @@ from typing import (
     Generic,
     Iterator,
     Literal,
+    NamedTuple,
     Sequence,
     TypeVar,
 )
@@ -69,6 +70,15 @@ class _EsMeta(BaseModel):
     version: int | None = None
     seq_no: int | None = None
     primary_term: int | None = None
+
+
+_SCORE_SAMPLE_SIZE = 10
+
+
+class QueryScoreStats(NamedTuple):
+    total: int
+    max_score: float | None
+    avg_score: float | None
 
 
 class EsRepositoryObject(RepositoryObject):
@@ -591,6 +601,21 @@ class BaseEsRepository(  # pylint: disable=too-many-public-methods
         result = self._execute_search_with_query(search=search, query=query)
         # Cf. https://github.com/elastic/elasticsearch-dsl-py/issues/1897
         return result.hits.total.value  # type: ignore
+
+    def count_and_score_stats_by_query(self, query: QueryParameters) -> QueryScoreStats:
+        """Counts matching files and returns score statistics from the top hits."""
+        search = self._get_search_by_query(query=query)
+        search = search[0:_SCORE_SAMPLE_SIZE]
+        search = search.extra(track_total_hits=True)
+
+        result = self._execute_search_with_query(search=search, query=query)
+        total: int = result.hits.total.value  # type: ignore
+        max_score: float | None = result.hits.max_score  # type: ignore[attr-defined]
+        scores: list[float] = [  # type: ignore[attr-defined]
+            hit.meta.score for hit in result.hits if hit.meta.score is not None
+        ]
+        avg_score = sum(scores) / len(scores) if scores else None
+        return QueryScoreStats(total=total, max_score=max_score, avg_score=avg_score)
 
     def is_file_storage_service_id_referenced(self, service_id: UUID) -> bool:
         """Return True if service_id is referenced by any FileStorageLazyBytes field in

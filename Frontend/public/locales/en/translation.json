@@ -128,6 +128,10 @@
                 "title": "Upload your files",
                 "description": "Click here to upload files directly from your computer. Loom also supports the S3 protocol. Any file placed in the <code>loom-intake</code> bucket is automatically discovered, indexed, and made searchable. No manual steps needed."
             },
+            "folderIcon": {
+                "title": "Browse your folders",
+                "description": "Click this icon to open the folder browser. It shows the complete hierarchy of all indexed files, regardless of your current search query."
+            },
             "folders": {
                 "title": "Global folder view",
                 "description": "This is the <strong>global folder view</strong>. It always shows the complete folder hierarchy of all indexed files, regardless of the current search query. Use it to navigate your full archive at any time."
@@ -140,9 +144,17 @@
                 "title": "Filter by name",
                 "description": "Type to narrow the folder list by name. The filter is case-insensitive and clears automatically when you switch to a different tool."
             },
+            "tagsIcon": {
+                "title": "Browse by tag",
+                "description": "Click this icon to open the tag browser and filter documents by their assigned tags."
+            },
             "tags": {
                 "title": "Browse by tag",
                 "description": "Browse and filter the tag list, then click a tag to narrow the current search to documents with that tag. Hold Shift while clicking to exclude that tag from results instead."
+            },
+            "savedQueriesIcon": {
+                "title": "Saved queries",
+                "description": "Click this icon to open your saved searches. Save any query and return to it instantly with a single click."
             },
             "savedQueries": {
                 "title": "Reuse saved queries",
@@ -166,7 +178,7 @@
             },
             "cardCustomizationAutoActions": {
                 "title": "Auto Actions",
-                "description": "Automatic actions run when you open or interact with a result. Enable any combination of mark-as-seen, flag, translate, summarise, describe images, or reindex — so routine tasks happen without manual steps."
+                "description": "Automatic actions run when you open or interact with a result. Enable any combination of mark-as-seen, flag, translate, summarise, describe images, or reindex, so routine tasks happen without manual steps."
             },
             "filteredFolder": {
                 "title": "Filtered folder view",
@@ -185,8 +197,28 @@
                 "description": "The histogram groups documents over time or numeric ranges. Bar colors correspond to the values shown in the pie chart. Click a bar segment to filter by that group, or drag to select a date or value range."
             },
             "chat": {
-                "title": "Ask across your documents",
-                "description": "Document chat answers questions across the current result set. Source references link back to the supporting documents so you can inspect them directly."
+                "title": "Ask across all your documents",
+                "description": "The chatbot answers questions across all indexed documents, not just the current search results. Source references link back to the supporting documents so you can inspect them directly."
+            },
+            "chatInput": {
+                "title": "Ask a question",
+                "description": "Type your question here and press Enter. The AI searches across all your indexed documents, synthesises an answer, and links back to the source documents it used."
+            },
+            "chatSourcesWarning": {
+                "title": "Answers may be inaccurate",
+                "description": "The chatbot uses AI to generate answers, which means it can produce plausible-sounding but incorrect information. Each answer includes clickable source citations. Always expand them and check the referenced documents to verify important claims before acting on them."
+            },
+            "chatDeepSearch": {
+                "title": "Research Mode",
+                "description": "Research Mode searches your entire document collection to answer broad, cross-document questions. Unlike normal chat, it cannot interact with the frontend while doing so. Use normal chat to explore your current results interactively."
+            },
+            "chatHistory": {
+                "title": "Conversation history",
+                "description": "Click here to browse all your previous conversations. You can search through them and pick up where you left off."
+            },
+            "chatNewChat": {
+                "title": "Start a new conversation",
+                "description": "Click here to open a fresh conversation. Each conversation has its own context and is saved automatically."
             },
             "fileDetail": {
                 "title": "File Detail",
@@ -226,7 +258,7 @@
             },
             "archiveCliDemo": {
                 "title": "Browse, search, and extract offline",
-                "description": "The CLI surfaces everything Loom produced: extracted text, metadata, translations, and rendered previews. Navigate the archive as a virtual filesystem with <code>cd</code> — commands like <code>cat</code> and <code>grep</code> work relative to your current directory, and the prompt updates to reflect where you are.<pre class=\"loom-tour-terminal\" data-loom-cli-demo>loom> ls\n  reports/annual.pdf\n  photos/field-ops.jpg\nloom> cd reports/\nloom/reports> cat annual.pdf\n  Jahresbericht 2024 — Dieser Bericht\n  enthält vertrauliche Finanzdaten...\nloom/reports> translate annual.pdf en\n  Annual Report 2024 — This report\n  contains confidential financial data...\nloom/reports> cd ..\nloom> tree\n  .\n  ├── photos/\n  │   └── field-ops.jpg\n  └── reports/\n      └── annual.pdf</pre>"
+                "description": "The CLI surfaces everything Loom produced: extracted text, metadata, translations, and rendered previews. Navigate the archive as a virtual filesystem with <code>cd</code>. Commands like <code>cat</code> and <code>grep</code> work relative to your current directory, and the prompt updates to reflect where you are.<pre class=\"loom-tour-terminal\" data-loom-cli-demo>loom> ls\n  reports/annual.pdf\n  photos/field-ops.jpg\nloom> cd reports/\nloom/reports> cat annual.pdf\n  Jahresbericht 2024 — Dieser Bericht\n  enthält vertrauliche Finanzdaten...\nloom/reports> translate annual.pdf en\n  Annual Report 2024 — This report\n  contains confidential financial data...\nloom/reports> cd ..\nloom> tree\n  .\n  ├── photos/\n  │   └── field-ops.jpg\n  └── reports/\n      └── annual.pdf</pre>"
             },
             "menu": {
                 "title": "More tools",
@@ -711,6 +743,35 @@
         "encryptionKeyInfoDescription": "This is the master key used to encrypt all .loom archive files created by this Loom instance.",
         "encryptionKeyInfoSyncNote": "To seamlessly import archives between two Loom instances, both must share the same master key. Set the ARCHIVE_ENC_MASTER_KEY environment variable to this value on the other instance.",
         "tasksDialogTitle": "Tasks — {{name}}"
+    },
+    "chatbot": {
+        "deepSearchTooltip": "Research Mode searches your entire document collection to answer broad, cross-document questions, but cannot interact with the frontend while doing so. Normal chat is interactive: the AI works with what is visible on screen and can navigate the app with you.",
+        "toolLabels": {
+            "suggest_queries": "Suggesting search queries",
+            "execute_query": "Searching files",
+            "get_file": "Inspecting document",
+            "get_file_field": "Reading document",
+            "rag_search": "Synthesizing answer",
+            "discover_state": "Inspecting UI state",
+            "read_state": "Reading UI state",
+            "ask_user": "Asking you a question",
+            "get_this_file": "Getting current file",
+            "get_these_files": "Getting visible files",
+            "set_search_query": "Updating search",
+            "navigate_to_file": "Opening document",
+            "highlight_file": "Highlighting document",
+            "navigate_sidebar": "Navigating sidebar",
+            "save_custom_query": "Saving query",
+            "summarize_file": "Summarizing file",
+            "translate_file": "Translating file",
+            "describe_image": "Describing image",
+            "open_add_tags": "Opening tag editor",
+            "update_file_flags": "Updating file",
+            "add_tags_to_file": "Tagging file",
+            "request_capability": "Requesting capability",
+            "list_folder_contents": "Browsing folder",
+            "search_by_filename": "Searching by filename"
+        }
     },
     "about": {
         "title": "About",

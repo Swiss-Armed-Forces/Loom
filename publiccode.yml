@@ -18,29 +18,30 @@ organisation:
 description:
   en:
     localisedName: Loom
-    shortDescription: Loom is a powerful, easily deployable open-source document
-      search engine for secure, task-specific deployments.
-    longDescription: Loom is a powerful, easily deployable open-source document
-      search engine designed for secure, task-specific deployments 🚀. It automates
-      indexing of data sources, performs OCR, extracts content and metadata, and
-      enables powerful full-text search enriched by AI features such as RAG chat,
-      auto-tagging, summarization, and translation 🤖🌍. Loom handles a vast array
-      of file formats including Office documents, PDFs, emails, archives, and images 📚.
-      It provides secure rendered document previews and thumbnails 🖼️, archive
-      creation from search results 📦, custom tagging 📌, and a comprehensive
-      REST API for integration into existing workflows 🔗.
+    shortDescription: Loom is an open-source document analysis platform that lets
+      you import, search, analyze, and export documents from a single deployment.
+    longDescription: Loom is an open-source document analysis platform that lets you
+      import documents, search, analyze, and export them from a single deployment.
+      It extracts text and metadata from a wide range of file formats, including OCR
+      for scanned documents, and enriches your collection with AI features like an
+      intelligent chatbot, automatic tagging, summarization, and translation. Loom
+      handles Office documents, PDFs, emails, archives, images, and more. It provides
+      safe document previews and thumbnails, archive creation from search results,
+      custom tagging, and a REST API for integration into your own applications.
+      Loom runs completely offline, making it suitable for organizations handling
+      confidential or classified data.
     documentation: https://gitlab.com/swiss-armed-forces/cyber-command/cea/loom/-/blob/main/README.md
     screenshots:
       - https://gitlab.com/swiss-armed-forces/cyber-command/cea/loom/-/raw/main/Frontend/public/demo-link-qr.png
     features:
       - Simple Deployment
-      - Powerful Search
+      - Full-Text Search
       - Automatic Indexing
-      - Flexible Data Ingestion
+      - Flexible Data Import
       - Comprehensive Content Extraction
       - Metadata Extraction
-      - AI Features (RAG chat, auto-tagging, summarization)
-      - Secure Document Rendering and Thumbnails
+      - AI Features (intelligent chatbot, auto-tagging, summarization)
+      - Secure Document Previews and Thumbnails
       - Archive Creation
       - Tagging
       - Translation

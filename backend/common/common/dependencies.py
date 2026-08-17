@@ -12,7 +12,6 @@ from redis import StrictRedis
 from redis.asyncio import StrictRedis as StrictRedisAsync
 
 from common.ai_context.ai_context_repository import AiContextRepository
-from common.ai_context.ai_scheduling_service import AiSchedulingService
 from common.archive.archive_encryption_service import ArchiveEncryptionService
 from common.archive.archive_repository import ArchiveRepository
 from common.archive.archive_scheduling_service import ArchiveSchedulingService
@@ -64,7 +63,6 @@ _ai_context_repository: AiContextRepository | None = None
 _task_scheduling_service: TaskSchedulingService | None = None
 _file_scheduling_service: FileSchedulingService | None = None
 _archive_scheduling_service: ArchiveSchedulingService | None = None
-_ai_scheduling_service: AiSchedulingService | None = None
 _archive_encryption_service: ArchiveEncryptionService | None = None
 _llm_summarization_key_points_client: OpenAI | None = None
 _llm_summarization_client: OpenAI | None = None
@@ -245,12 +243,6 @@ def init():
         _file_storage_service,
     )
 
-    global _ai_scheduling_service
-    _ai_scheduling_service = AiSchedulingService(
-        _ai_context_repository,
-        _task_scheduling_service,
-    )
-
     global _archive_encryption_service
     _archive_encryption_service = ArchiveEncryptionService(
         settings.archive_enc_master_key
@@ -426,9 +418,6 @@ def mock_init():
     global _archive_scheduling_service
     _archive_scheduling_service = MagicMock(spec=ArchiveSchedulingService)
 
-    global _ai_scheduling_service
-    _ai_scheduling_service = MagicMock(spec=AiSchedulingService)
-
     global _archive_encryption_service
     _archive_encryption_service = MagicMock(spec=ArchiveEncryptionService)
 
@@ -602,12 +591,6 @@ def get_archive_scheduling_service() -> ArchiveSchedulingService:
     if _archive_scheduling_service is None:
         raise DependencyException("Archive Scheduling Service missing")
     return _archive_scheduling_service
-
-
-def get_ai_scheduling_service() -> AiSchedulingService:
-    if _ai_scheduling_service is None:
-        raise DependencyException("Ai Scheduling Service missing")
-    return _ai_scheduling_service
 
 
 def get_archive_encryption_service() -> ArchiveEncryptionService:

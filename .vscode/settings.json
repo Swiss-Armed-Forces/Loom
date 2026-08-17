@@ -55,6 +55,7 @@
     "charts/values.yaml",
     "charts/values-development.yaml"
   ],
+  "plantuml.server": "https://www.plantuml.com/plantuml/",
   "plantuml.exportFormat": "svg",
   "plantuml.exportOutDir": "./",
   "plantuml.exportSubFolder": false,

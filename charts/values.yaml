@@ -97,6 +97,12 @@ externalSecrets:
       remoteRef:
         key: ""
         property: ""
+    llm__agent__api_key:
+      enabled: false
+      name: loom-llm-agent-api-key
+      remoteRef:
+        key: ""
+        property: ""
     llm__summarization_key_points__api_key:
       enabled: false
       name: loom-llm-summarization-key-points-api-key
@@ -287,6 +293,9 @@ llm:
     <<: *llm-defaults
     max_tokens: null
 
+  agent:
+    <<: *llm-defaults
+
   summarization_key_points:
     <<: *llm-defaults
     text_chunk_size: null
@@ -322,6 +331,11 @@ llm:
 
   translation:
     <<: *llm-defaults
+
+tool:
+  suggest_queries:
+    num_candidates: 10
+    max_results: null
 
 preInstall:
   image:

@@ -313,6 +313,30 @@ data:
     llm__tool__max_tokens: {{ .Values.llm.tool.max_tokens | quote }}
     {{- end }}
 
+    # llm agent
+    llm__agent__endpoint: {{ .Values.llm.agent.endpoint | default $ollamaEndpoint | quote }}
+    {{- if and (not .Values.externalSecrets.secrets.llm__agent__api_key.enabled) (ne .Values.llm.agent.api_key nil) }}
+    llm__agent__api_key: {{ .Values.llm.agent.api_key | quote }}
+    {{- end }}
+    {{- if ne .Values.llm.agent.model nil }}
+    llm__agent__model: {{ .Values.llm.agent.model | quote }}
+    {{- end }}
+    {{- if ne .Values.llm.agent.temperature nil }}
+    llm__agent__temperature: {{ .Values.llm.agent.temperature | quote }}
+    {{- end }}
+    {{- if .Values.llm.agent.extra_headers }}
+    llm__agent__extra_headers: {{ .Values.llm.agent.extra_headers | toJson | quote }}
+    {{- end }}
+    {{- if .Values.llm.agent.extra_body }}
+    llm__agent__extra_body: {{ .Values.llm.agent.extra_body | toJson | quote }}
+    {{- end }}
+    {{- if ne .Values.llm.agent.timeout nil }}
+    llm__agent__timeout: {{ .Values.llm.agent.timeout | quote }}
+    {{- end }}
+    {{- if ne .Values.llm.agent.max_tokens nil }}
+    llm__agent__max_tokens: {{ .Values.llm.agent.max_tokens | quote }}
+    {{- end }}
+
     # llm summarization key points
     llm__summarization_key_points__endpoint: {{ .Values.llm.summarization_key_points.endpoint | default $ollamaEndpoint | quote }}
     {{- if and (not .Values.externalSecrets.secrets.llm__summarization_key_points__api_key.enabled) (ne .Values.llm.summarization_key_points.api_key nil) }}
@@ -425,6 +449,14 @@ data:
     {{- end }}
     {{- if ne .Values.llm.hyde.max_tokens nil }}
     llm__hyde__max_tokens: {{ .Values.llm.hyde.max_tokens | quote }}
+    {{- end }}
+
+    # tool suggest_queries
+    {{- if ne .Values.tool.suggest_queries.num_candidates nil }}
+    tool__suggest_queries__num_candidates: {{ .Values.tool.suggest_queries.num_candidates | quote }}
+    {{- end }}
+    {{- if ne .Values.tool.suggest_queries.max_results nil }}
+    tool__suggest_queries__max_results: {{ .Values.tool.suggest_queries.max_results | quote }}
     {{- end }}
 
     # llm rerank

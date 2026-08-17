@@ -33,6 +33,16 @@ export interface CommonState {
     dialogs: DialogComponent[];
     lastFileDetailTab: FileDetailTab;
 }
+export const COMMON_STATE_DOCS = {
+    loading: "number — active loading indicator count (>0 means loading)",
+    queueStats:
+        "QueuesStats — background task queue stats ({messagesInQueues, pausedQueues})",
+    completeEstimate: "CompleteEstimateResult — processing completion estimate",
+    dialogs: "DialogComponent[] — open dialog stack (last entry is topmost)",
+    lastFileDetailTab:
+        "FileDetailTab — last active file detail tab, restored on next open",
+} satisfies Record<keyof CommonState, string>;
+
 const initialState: CommonState = {
     loading: 0,
     queueStats: {

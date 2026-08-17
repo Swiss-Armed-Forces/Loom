@@ -8,7 +8,12 @@ from git import Repo
 from git.exc import GitCommandError
 from gitlab.v4.objects import Project, ProjectIssue
 
-from ._common import _ask, _get_gitlab_client_or_exit, _maybe_update_mr_description
+from ._common import (
+    _ask,
+    _get_gitlab_client_or_exit,
+    _maybe_update_mr_description,
+    checkout_and_update_branch,
+)
 from .claude import run_claude_agentic
 from .gitlab_api import (
     create_branch_and_mr_for_issue,
@@ -38,12 +43,7 @@ def _checkout_issue_branch(
         mr, branch_name = create_branch_and_mr_for_issue(project, issue)
         print(f"Created MR !{mr.iid} on branch {branch_name}")
 
-    local_branches = [b.name for b in repo.branches]
-    if branch_name in local_branches:
-        repo.git.checkout(branch_name)
-        repo.git.reset("--hard", f"origin/{branch_name}")
-    else:
-        repo.git.checkout("-b", branch_name, f"origin/{branch_name}")
+    checkout_and_update_branch(branch_name, repo)
 
     return IssueBranchResult(mr=mr, branch_name=branch_name)
 

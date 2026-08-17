@@ -408,33 +408,24 @@ describe("demo API handlers", () => {
     });
 
     it("keeps an AI context available for follow-up questions", async () => {
-        vi.useFakeTimers();
         resetDemoRepository();
-        try {
-            const context = await fetch("http://loom.test/api/v1/ai", {
+        const context = await fetch("http://loom.test/api/v1/ai", {
+            method: "POST",
+        }).then((response) => responseJson<{ context_id: string }>(response));
+        const ask = (question: string) =>
+            fetch(`http://loom.test/api/v1/ai/${context.context_id}/run`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ search_string: "tags:security" }),
-            }).then((response) =>
-                responseJson<{ context_id: string }>(response),
-            );
-            const ask = (question: string) =>
-                fetch(
-                    `http://loom.test/api/v1/ai/${context.context_id}/process_question`,
-                    {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ question }),
-                    },
-                );
+                body: JSON.stringify({
+                    messages: [{ role: "user", content: question }],
+                }),
+            });
 
-            expect((await ask("What is the term?")).status).toBe(202);
-            await vi.runAllTimersAsync();
-            expect((await ask("What is the availability?")).status).toBe(202);
-        } finally {
-            clearDemoTimers();
-            vi.useRealTimers();
-        }
+        const r1 = await ask("What is the term?");
+        expect(r1.status).toBe(200);
+        expect(r1.headers.get("Content-Type")).toBe("text/event-stream");
+        const r2 = await ask("What is the availability?");
+        expect(r2.status).toBe(200);
     });
 
     it("rejects ingestion actions without mutating demo data", async () => {

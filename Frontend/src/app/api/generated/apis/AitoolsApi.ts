@@ -15,33 +15,239 @@
 
 import * as runtime from "../runtime";
 import {
-    type GetFileResponse,
-    GetFileResponseFromJSON,
-    GetFileResponseToJSON,
-} from "../models/GetFileResponse";
+    type DescribeImageResult,
+    DescribeImageResultFromJSON,
+    DescribeImageResultToJSON,
+} from "../models/DescribeImageResult";
 import {
-    type GetSearchResponse,
-    GetSearchResponseFromJSON,
-    GetSearchResponseToJSON,
-} from "../models/GetSearchResponse";
+    type ExecuteQueryResult,
+    ExecuteQueryResultFromJSON,
+    ExecuteQueryResultToJSON,
+} from "../models/ExecuteQueryResult";
+import {
+    type GetFileFieldResult,
+    GetFileFieldResultFromJSON,
+    GetFileFieldResultToJSON,
+} from "../models/GetFileFieldResult";
+import {
+    type GetFileResult,
+    GetFileResultFromJSON,
+    GetFileResultToJSON,
+} from "../models/GetFileResult";
 import {
     type HTTPValidationError,
     HTTPValidationErrorFromJSON,
     HTTPValidationErrorToJSON,
 } from "../models/HTTPValidationError";
+import {
+    type ListFolderContentsResult,
+    ListFolderContentsResultFromJSON,
+    ListFolderContentsResultToJSON,
+} from "../models/ListFolderContentsResult";
+import {
+    type RagSearchResult,
+    RagSearchResultFromJSON,
+    RagSearchResultToJSON,
+} from "../models/RagSearchResult";
+import {
+    type SearchByFilenameResult,
+    SearchByFilenameResultFromJSON,
+    SearchByFilenameResultToJSON,
+} from "../models/SearchByFilenameResult";
+import {
+    type SuggestQueriesResult,
+    SuggestQueriesResultFromJSON,
+    SuggestQueriesResultToJSON,
+} from "../models/SuggestQueriesResult";
+import {
+    type SummarizeFileResult,
+    SummarizeFileResultFromJSON,
+    SummarizeFileResultToJSON,
+} from "../models/SummarizeFileResult";
+import {
+    type TranslateFileResult,
+    TranslateFileResultFromJSON,
+    TranslateFileResultToJSON,
+} from "../models/TranslateFileResult";
+
+export interface DescribeImageV1AitoolsFilesFileIdDescribeImageGetRequest {
+    fileId: string;
+}
+
+export interface ExecuteQueryV1AitoolsFilesExecuteQueryGetRequest {
+    queryString: string;
+}
 
 export interface GetFileByIdV1AitoolsFilesFileIdGetRequest {
     fileId: string;
 }
 
-export interface SearchV1AitoolsFilesSearchGetRequest {
+export interface GetFileFieldV1AitoolsFilesFileIdFieldsFieldGetRequest {
+    fileId: string;
+    field: string;
+}
+
+export interface ListFolderContentsV1AitoolsFoldersGetRequest {
+    folderPath: string;
+}
+
+export interface RagSearchV1AitoolsRagGetRequest {
+    query: string;
+}
+
+export interface SearchByFilenameV1AitoolsFilesSearchByFilenameGetRequest {
+    filename: string;
+}
+
+export interface SuggestQueriesV1AitoolsFilesSuggestQueriesGetRequest {
     queryDescription: string;
+}
+
+export interface SummarizeFileV1AitoolsFilesFileIdSummaryGetRequest {
+    fileId: string;
+}
+
+export interface TranslateFileV1AitoolsFilesFileIdTranslateGetRequest {
+    fileId: string;
+    sourceLanguage: string;
 }
 
 /**
  *
  */
 export class AitoolsApi extends runtime.BaseAPI {
+    /**
+     * Creates request options for describeImageV1AitoolsFilesFileIdDescribeImageGet without sending the request
+     */
+    async describeImageV1AitoolsFilesFileIdDescribeImageGetRequestOpts(
+        requestParameters: DescribeImageV1AitoolsFilesFileIdDescribeImageGetRequest,
+    ): Promise<runtime.RequestOpts> {
+        if (requestParameters["fileId"] == null) {
+            throw new runtime.RequiredError(
+                "fileId",
+                'Required parameter "fileId" was null or undefined when calling describeImageV1AitoolsFilesFileIdDescribeImageGet().',
+            );
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        let urlPath = `/v1/aitools/files/{file_id}/describe-image`;
+        urlPath = urlPath.replace(
+            "{file_id}",
+            encodeURIComponent(String(requestParameters["fileId"])),
+        );
+
+        return {
+            path: urlPath,
+            method: "GET",
+            headers: headerParameters,
+            query: queryParameters,
+        };
+    }
+
+    /**
+     * Generate an AI description of an image file.  Parameters: ----------- file_id : UUID     The unique identifier of the image file to describe.  Returns: -------- DescribeImageResult     - file_id (str): Unique ID of the file.     - description (str): The generated image description.
+     * Describe Image
+     */
+    async describeImageV1AitoolsFilesFileIdDescribeImageGetRaw(
+        requestParameters: DescribeImageV1AitoolsFilesFileIdDescribeImageGetRequest,
+        initOverrides?: RequestInit | runtime.InitOverrideFunction,
+    ): Promise<runtime.ApiResponse<DescribeImageResult>> {
+        const requestOptions =
+            await this.describeImageV1AitoolsFilesFileIdDescribeImageGetRequestOpts(
+                requestParameters,
+            );
+        const response = await this.request(requestOptions, initOverrides);
+
+        return new runtime.JSONApiResponse(response, (jsonValue) =>
+            DescribeImageResultFromJSON(jsonValue),
+        );
+    }
+
+    /**
+     * Generate an AI description of an image file.  Parameters: ----------- file_id : UUID     The unique identifier of the image file to describe.  Returns: -------- DescribeImageResult     - file_id (str): Unique ID of the file.     - description (str): The generated image description.
+     * Describe Image
+     */
+    async describeImageV1AitoolsFilesFileIdDescribeImageGet(
+        requestParameters: DescribeImageV1AitoolsFilesFileIdDescribeImageGetRequest,
+        initOverrides?: RequestInit | runtime.InitOverrideFunction,
+    ): Promise<DescribeImageResult> {
+        const response =
+            await this.describeImageV1AitoolsFilesFileIdDescribeImageGetRaw(
+                requestParameters,
+                initOverrides,
+            );
+        return await response.value();
+    }
+
+    /**
+     * Creates request options for executeQueryV1AitoolsFilesExecuteQueryGet without sending the request
+     */
+    async executeQueryV1AitoolsFilesExecuteQueryGetRequestOpts(
+        requestParameters: ExecuteQueryV1AitoolsFilesExecuteQueryGetRequest,
+    ): Promise<runtime.RequestOpts> {
+        if (requestParameters["queryString"] == null) {
+            throw new runtime.RequiredError(
+                "queryString",
+                'Required parameter "queryString" was null or undefined when calling executeQueryV1AitoolsFilesExecuteQueryGet().',
+            );
+        }
+
+        const queryParameters: any = {};
+
+        if (requestParameters["queryString"] != null) {
+            queryParameters["query_string"] = requestParameters["queryString"];
+        }
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        let urlPath = `/v1/aitools/files/execute-query`;
+
+        return {
+            path: urlPath,
+            method: "GET",
+            headers: headerParameters,
+            query: queryParameters,
+        };
+    }
+
+    /**
+     * Execute a Lucene query string and return matching files with content snippets.  Parameters: ----------- query_string : str     A valid Elasticsearch Lucene query string.  Returns: -------- ExecuteQueryResult     - files (list[ExecuteQueryResultFile]):         - file_id (str): Unique ID of the matching file.         - text (str): Relevant content snippet from the file.         - score (float | None): Relevance score from Elasticsearch.
+     * Execute Query
+     */
+    async executeQueryV1AitoolsFilesExecuteQueryGetRaw(
+        requestParameters: ExecuteQueryV1AitoolsFilesExecuteQueryGetRequest,
+        initOverrides?: RequestInit | runtime.InitOverrideFunction,
+    ): Promise<runtime.ApiResponse<ExecuteQueryResult>> {
+        const requestOptions =
+            await this.executeQueryV1AitoolsFilesExecuteQueryGetRequestOpts(
+                requestParameters,
+            );
+        const response = await this.request(requestOptions, initOverrides);
+
+        return new runtime.JSONApiResponse(response, (jsonValue) =>
+            ExecuteQueryResultFromJSON(jsonValue),
+        );
+    }
+
+    /**
+     * Execute a Lucene query string and return matching files with content snippets.  Parameters: ----------- query_string : str     A valid Elasticsearch Lucene query string.  Returns: -------- ExecuteQueryResult     - files (list[ExecuteQueryResultFile]):         - file_id (str): Unique ID of the matching file.         - text (str): Relevant content snippet from the file.         - score (float | None): Relevance score from Elasticsearch.
+     * Execute Query
+     */
+    async executeQueryV1AitoolsFilesExecuteQueryGet(
+        requestParameters: ExecuteQueryV1AitoolsFilesExecuteQueryGetRequest,
+        initOverrides?: RequestInit | runtime.InitOverrideFunction,
+    ): Promise<ExecuteQueryResult> {
+        const response =
+            await this.executeQueryV1AitoolsFilesExecuteQueryGetRaw(
+                requestParameters,
+                initOverrides,
+            );
+        return await response.value();
+    }
+
     /**
      * Creates request options for getFileByIdV1AitoolsFilesFileIdGet without sending the request
      */
@@ -74,13 +280,13 @@ export class AitoolsApi extends runtime.BaseAPI {
     }
 
     /**
-     * Retrieve detailed information about a file by its unique identifier.  This endpoint fetches a file\'s metadata, extracted content, highlights, translations, and an optional summary using its UUID. If the file is not found, a 404 error is returned.  Parameters: ----------- file_id : UUID     The unique identifier of the file. Must be a valid UUID.  file_repository : FileRepository, optional     Repository used to access file data. Defaults to default_file_repository.  Returns: -------- GetFileResponse     A model containing the file\'s processed and raw content, highlights, and     translations. Fields include:      - file_id (UUID): Unique ID of the file.     - highlight (dict[str, list[str]] | None): Highlighted text per category.     - content (str): Extracted or processed text content.     - name (str): Short or display name for the file.     - language_translations (list[GetFileLanguageTranslations]):       List of language translations.     - raw (str): Original unprocessed content.     - summary (str | None): Optional summary text.  Raises: ------- HTTPException (status_code=404)     Raised if no file with the given ID exists in the repository.
+     * Retrieve content and metadata of a file by its unique identifier.  This endpoint fetches a file\'s name, extracted content, and optional summary using its UUID. If the file is not found, a 404 error is returned.  Parameters: ----------- file_id : UUID     The unique identifier of the file. Must be a valid UUID.  Returns: -------- GetFileResult     A model containing the file\'s content and metadata. Fields include:      - file_id (str): Unique ID of the file.     - name (str): Short or display name for the file.     - content (str): Extracted text content (truncated for LLM consumption).     - summary (str | None): Optional summary text.  Raises: ------- HTTPException (status_code=404)     Raised if no file with the given ID exists in the repository.
      * Get File By Id
      */
     async getFileByIdV1AitoolsFilesFileIdGetRaw(
         requestParameters: GetFileByIdV1AitoolsFilesFileIdGetRequest,
         initOverrides?: RequestInit | runtime.InitOverrideFunction,
-    ): Promise<runtime.ApiResponse<GetFileResponse>> {
+    ): Promise<runtime.ApiResponse<GetFileResult>> {
         const requestOptions =
             await this.getFileByIdV1AitoolsFilesFileIdGetRequestOpts(
                 requestParameters,
@@ -88,18 +294,18 @@ export class AitoolsApi extends runtime.BaseAPI {
         const response = await this.request(requestOptions, initOverrides);
 
         return new runtime.JSONApiResponse(response, (jsonValue) =>
-            GetFileResponseFromJSON(jsonValue),
+            GetFileResultFromJSON(jsonValue),
         );
     }
 
     /**
-     * Retrieve detailed information about a file by its unique identifier.  This endpoint fetches a file\'s metadata, extracted content, highlights, translations, and an optional summary using its UUID. If the file is not found, a 404 error is returned.  Parameters: ----------- file_id : UUID     The unique identifier of the file. Must be a valid UUID.  file_repository : FileRepository, optional     Repository used to access file data. Defaults to default_file_repository.  Returns: -------- GetFileResponse     A model containing the file\'s processed and raw content, highlights, and     translations. Fields include:      - file_id (UUID): Unique ID of the file.     - highlight (dict[str, list[str]] | None): Highlighted text per category.     - content (str): Extracted or processed text content.     - name (str): Short or display name for the file.     - language_translations (list[GetFileLanguageTranslations]):       List of language translations.     - raw (str): Original unprocessed content.     - summary (str | None): Optional summary text.  Raises: ------- HTTPException (status_code=404)     Raised if no file with the given ID exists in the repository.
+     * Retrieve content and metadata of a file by its unique identifier.  This endpoint fetches a file\'s name, extracted content, and optional summary using its UUID. If the file is not found, a 404 error is returned.  Parameters: ----------- file_id : UUID     The unique identifier of the file. Must be a valid UUID.  Returns: -------- GetFileResult     A model containing the file\'s content and metadata. Fields include:      - file_id (str): Unique ID of the file.     - name (str): Short or display name for the file.     - content (str): Extracted text content (truncated for LLM consumption).     - summary (str | None): Optional summary text.  Raises: ------- HTTPException (status_code=404)     Raised if no file with the given ID exists in the repository.
      * Get File By Id
      */
     async getFileByIdV1AitoolsFilesFileIdGet(
         requestParameters: GetFileByIdV1AitoolsFilesFileIdGetRequest,
         initOverrides?: RequestInit | runtime.InitOverrideFunction,
-    ): Promise<GetFileResponse> {
+    ): Promise<GetFileResult> {
         const response = await this.getFileByIdV1AitoolsFilesFileIdGetRaw(
             requestParameters,
             initOverrides,
@@ -108,15 +314,286 @@ export class AitoolsApi extends runtime.BaseAPI {
     }
 
     /**
-     * Creates request options for searchV1AitoolsFilesSearchGet without sending the request
+     * Creates request options for getFileFieldV1AitoolsFilesFileIdFieldsFieldGet without sending the request
      */
-    async searchV1AitoolsFilesSearchGetRequestOpts(
-        requestParameters: SearchV1AitoolsFilesSearchGetRequest,
+    async getFileFieldV1AitoolsFilesFileIdFieldsFieldGetRequestOpts(
+        requestParameters: GetFileFieldV1AitoolsFilesFileIdFieldsFieldGetRequest,
+    ): Promise<runtime.RequestOpts> {
+        if (requestParameters["fileId"] == null) {
+            throw new runtime.RequiredError(
+                "fileId",
+                'Required parameter "fileId" was null or undefined when calling getFileFieldV1AitoolsFilesFileIdFieldsFieldGet().',
+            );
+        }
+
+        if (requestParameters["field"] == null) {
+            throw new runtime.RequiredError(
+                "field",
+                'Required parameter "field" was null or undefined when calling getFileFieldV1AitoolsFilesFileIdFieldsFieldGet().',
+            );
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        let urlPath = `/v1/aitools/files/{file_id}/fields/{field}`;
+        urlPath = urlPath.replace(
+            "{file_id}",
+            encodeURIComponent(String(requestParameters["fileId"])),
+        );
+        urlPath = urlPath.replace(
+            "{field}",
+            encodeURIComponent(String(requestParameters["field"])),
+        );
+
+        return {
+            path: urlPath,
+            method: "GET",
+            headers: headerParameters,
+            query: queryParameters,
+        };
+    }
+
+    /**
+     * Retrieve the value of a specific field for a file.  Parameters: ----------- file_id : UUID     The unique identifier of the file. field : str     Name of the field to retrieve (e.g. \"content\", \"summary\").  Returns: -------- GetFileFieldResult     - file_id (str): Unique ID of the file.     - field (str): Name of the retrieved field.     - value (str): The field\'s value.
+     * Get File Field
+     */
+    async getFileFieldV1AitoolsFilesFileIdFieldsFieldGetRaw(
+        requestParameters: GetFileFieldV1AitoolsFilesFileIdFieldsFieldGetRequest,
+        initOverrides?: RequestInit | runtime.InitOverrideFunction,
+    ): Promise<runtime.ApiResponse<GetFileFieldResult>> {
+        const requestOptions =
+            await this.getFileFieldV1AitoolsFilesFileIdFieldsFieldGetRequestOpts(
+                requestParameters,
+            );
+        const response = await this.request(requestOptions, initOverrides);
+
+        return new runtime.JSONApiResponse(response, (jsonValue) =>
+            GetFileFieldResultFromJSON(jsonValue),
+        );
+    }
+
+    /**
+     * Retrieve the value of a specific field for a file.  Parameters: ----------- file_id : UUID     The unique identifier of the file. field : str     Name of the field to retrieve (e.g. \"content\", \"summary\").  Returns: -------- GetFileFieldResult     - file_id (str): Unique ID of the file.     - field (str): Name of the retrieved field.     - value (str): The field\'s value.
+     * Get File Field
+     */
+    async getFileFieldV1AitoolsFilesFileIdFieldsFieldGet(
+        requestParameters: GetFileFieldV1AitoolsFilesFileIdFieldsFieldGetRequest,
+        initOverrides?: RequestInit | runtime.InitOverrideFunction,
+    ): Promise<GetFileFieldResult> {
+        const response =
+            await this.getFileFieldV1AitoolsFilesFileIdFieldsFieldGetRaw(
+                requestParameters,
+                initOverrides,
+            );
+        return await response.value();
+    }
+
+    /**
+     * Creates request options for listFolderContentsV1AitoolsFoldersGet without sending the request
+     */
+    async listFolderContentsV1AitoolsFoldersGetRequestOpts(
+        requestParameters: ListFolderContentsV1AitoolsFoldersGetRequest,
+    ): Promise<runtime.RequestOpts> {
+        if (requestParameters["folderPath"] == null) {
+            throw new runtime.RequiredError(
+                "folderPath",
+                'Required parameter "folderPath" was null or undefined when calling listFolderContentsV1AitoolsFoldersGet().',
+            );
+        }
+
+        const queryParameters: any = {};
+
+        if (requestParameters["folderPath"] != null) {
+            queryParameters["folder_path"] = requestParameters["folderPath"];
+        }
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        let urlPath = `/v1/aitools/folders`;
+
+        return {
+            path: urlPath,
+            method: "GET",
+            headers: headerParameters,
+            query: queryParameters,
+        };
+    }
+
+    /**
+     * List the direct children (subfolders and files) of a folder path.  Parameters: ----------- folder_path : str     Absolute folder path to list, e.g. \"/\" or \"//source/subfolder\".  Returns: -------- ListFolderContentsResult     - folder_path (str): The listed folder path.     - entries (list[FolderEntry]):         - full_path (str): Full path of the entry.         - is_file (bool): Whether the entry is a file.         - file_count (int): Number of files in the folder (0 for files).         - file_id (str | None): File UUID if the entry is a file.
+     * List Folder Contents
+     */
+    async listFolderContentsV1AitoolsFoldersGetRaw(
+        requestParameters: ListFolderContentsV1AitoolsFoldersGetRequest,
+        initOverrides?: RequestInit | runtime.InitOverrideFunction,
+    ): Promise<runtime.ApiResponse<ListFolderContentsResult>> {
+        const requestOptions =
+            await this.listFolderContentsV1AitoolsFoldersGetRequestOpts(
+                requestParameters,
+            );
+        const response = await this.request(requestOptions, initOverrides);
+
+        return new runtime.JSONApiResponse(response, (jsonValue) =>
+            ListFolderContentsResultFromJSON(jsonValue),
+        );
+    }
+
+    /**
+     * List the direct children (subfolders and files) of a folder path.  Parameters: ----------- folder_path : str     Absolute folder path to list, e.g. \"/\" or \"//source/subfolder\".  Returns: -------- ListFolderContentsResult     - folder_path (str): The listed folder path.     - entries (list[FolderEntry]):         - full_path (str): Full path of the entry.         - is_file (bool): Whether the entry is a file.         - file_count (int): Number of files in the folder (0 for files).         - file_id (str | None): File UUID if the entry is a file.
+     * List Folder Contents
+     */
+    async listFolderContentsV1AitoolsFoldersGet(
+        requestParameters: ListFolderContentsV1AitoolsFoldersGetRequest,
+        initOverrides?: RequestInit | runtime.InitOverrideFunction,
+    ): Promise<ListFolderContentsResult> {
+        const response = await this.listFolderContentsV1AitoolsFoldersGetRaw(
+            requestParameters,
+            initOverrides,
+        );
+        return await response.value();
+    }
+
+    /**
+     * Creates request options for ragSearchV1AitoolsRagGet without sending the request
+     */
+    async ragSearchV1AitoolsRagGetRequestOpts(
+        requestParameters: RagSearchV1AitoolsRagGetRequest,
+    ): Promise<runtime.RequestOpts> {
+        if (requestParameters["query"] == null) {
+            throw new runtime.RequiredError(
+                "query",
+                'Required parameter "query" was null or undefined when calling ragSearchV1AitoolsRagGet().',
+            );
+        }
+
+        const queryParameters: any = {};
+
+        if (requestParameters["query"] != null) {
+            queryParameters["query"] = requestParameters["query"];
+        }
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        let urlPath = `/v1/aitools/rag`;
+
+        return {
+            path: urlPath,
+            method: "GET",
+            headers: headerParameters,
+            query: queryParameters,
+        };
+    }
+
+    /**
+     * Answer a natural language question using the full RAG pipeline.  Retrieves relevant document chunks via vector similarity search (with HyDE and reranking) and synthesizes a grounded answer from the indexed corpus.  Parameters: ----------- query : str     A natural language question to answer.     Example: \"What are the key findings from the Q3 report?\"  Returns: -------- RagSearchResult     - answer (str): The synthesized answer grounded in retrieved documents.  Example Request: ----------------     GET /rag?query=What are the contract renewal terms?  Example Response: ----------------- {     \"answer\": \"The contract renewal terms specify a 30-day notice period...\" }  Raises: ------- HTTPException     May be raised if the LLM or RAG backend fails to respond.
+     * Rag Search
+     */
+    async ragSearchV1AitoolsRagGetRaw(
+        requestParameters: RagSearchV1AitoolsRagGetRequest,
+        initOverrides?: RequestInit | runtime.InitOverrideFunction,
+    ): Promise<runtime.ApiResponse<RagSearchResult>> {
+        const requestOptions =
+            await this.ragSearchV1AitoolsRagGetRequestOpts(requestParameters);
+        const response = await this.request(requestOptions, initOverrides);
+
+        return new runtime.JSONApiResponse(response, (jsonValue) =>
+            RagSearchResultFromJSON(jsonValue),
+        );
+    }
+
+    /**
+     * Answer a natural language question using the full RAG pipeline.  Retrieves relevant document chunks via vector similarity search (with HyDE and reranking) and synthesizes a grounded answer from the indexed corpus.  Parameters: ----------- query : str     A natural language question to answer.     Example: \"What are the key findings from the Q3 report?\"  Returns: -------- RagSearchResult     - answer (str): The synthesized answer grounded in retrieved documents.  Example Request: ----------------     GET /rag?query=What are the contract renewal terms?  Example Response: ----------------- {     \"answer\": \"The contract renewal terms specify a 30-day notice period...\" }  Raises: ------- HTTPException     May be raised if the LLM or RAG backend fails to respond.
+     * Rag Search
+     */
+    async ragSearchV1AitoolsRagGet(
+        requestParameters: RagSearchV1AitoolsRagGetRequest,
+        initOverrides?: RequestInit | runtime.InitOverrideFunction,
+    ): Promise<RagSearchResult> {
+        const response = await this.ragSearchV1AitoolsRagGetRaw(
+            requestParameters,
+            initOverrides,
+        );
+        return await response.value();
+    }
+
+    /**
+     * Creates request options for searchByFilenameV1AitoolsFilesSearchByFilenameGet without sending the request
+     */
+    async searchByFilenameV1AitoolsFilesSearchByFilenameGetRequestOpts(
+        requestParameters: SearchByFilenameV1AitoolsFilesSearchByFilenameGetRequest,
+    ): Promise<runtime.RequestOpts> {
+        if (requestParameters["filename"] == null) {
+            throw new runtime.RequiredError(
+                "filename",
+                'Required parameter "filename" was null or undefined when calling searchByFilenameV1AitoolsFilesSearchByFilenameGet().',
+            );
+        }
+
+        const queryParameters: any = {};
+
+        if (requestParameters["filename"] != null) {
+            queryParameters["filename"] = requestParameters["filename"];
+        }
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        let urlPath = `/v1/aitools/files/search-by-filename`;
+
+        return {
+            path: urlPath,
+            method: "GET",
+            headers: headerParameters,
+            query: queryParameters,
+        };
+    }
+
+    /**
+     * Search for files whose name contains the given substring.  Parameters: ----------- filename : str     Substring to match against filenames (case-insensitive).  Returns: -------- SearchByFilenameResult     - query (str): The search substring used.     - files (list[FilenameSearchEntry]):         - full_path (str): Full path of the matching file.         - file_id (str): Unique ID of the matching file.
+     * Search By Filename
+     */
+    async searchByFilenameV1AitoolsFilesSearchByFilenameGetRaw(
+        requestParameters: SearchByFilenameV1AitoolsFilesSearchByFilenameGetRequest,
+        initOverrides?: RequestInit | runtime.InitOverrideFunction,
+    ): Promise<runtime.ApiResponse<SearchByFilenameResult>> {
+        const requestOptions =
+            await this.searchByFilenameV1AitoolsFilesSearchByFilenameGetRequestOpts(
+                requestParameters,
+            );
+        const response = await this.request(requestOptions, initOverrides);
+
+        return new runtime.JSONApiResponse(response, (jsonValue) =>
+            SearchByFilenameResultFromJSON(jsonValue),
+        );
+    }
+
+    /**
+     * Search for files whose name contains the given substring.  Parameters: ----------- filename : str     Substring to match against filenames (case-insensitive).  Returns: -------- SearchByFilenameResult     - query (str): The search substring used.     - files (list[FilenameSearchEntry]):         - full_path (str): Full path of the matching file.         - file_id (str): Unique ID of the matching file.
+     * Search By Filename
+     */
+    async searchByFilenameV1AitoolsFilesSearchByFilenameGet(
+        requestParameters: SearchByFilenameV1AitoolsFilesSearchByFilenameGetRequest,
+        initOverrides?: RequestInit | runtime.InitOverrideFunction,
+    ): Promise<SearchByFilenameResult> {
+        const response =
+            await this.searchByFilenameV1AitoolsFilesSearchByFilenameGetRaw(
+                requestParameters,
+                initOverrides,
+            );
+        return await response.value();
+    }
+
+    /**
+     * Creates request options for suggestQueriesV1AitoolsFilesSuggestQueriesGet without sending the request
+     */
+    async suggestQueriesV1AitoolsFilesSuggestQueriesGetRequestOpts(
+        requestParameters: SuggestQueriesV1AitoolsFilesSuggestQueriesGetRequest,
     ): Promise<runtime.RequestOpts> {
         if (requestParameters["queryDescription"] == null) {
             throw new runtime.RequiredError(
                 "queryDescription",
-                'Required parameter "queryDescription" was null or undefined when calling searchV1AitoolsFilesSearchGet().',
+                'Required parameter "queryDescription" was null or undefined when calling suggestQueriesV1AitoolsFilesSuggestQueriesGet().',
             );
         }
 
@@ -129,7 +606,7 @@ export class AitoolsApi extends runtime.BaseAPI {
 
         const headerParameters: runtime.HTTPHeaders = {};
 
-        let urlPath = `/v1/aitools/files/search`;
+        let urlPath = `/v1/aitools/files/suggest-queries`;
 
         return {
             path: urlPath,
@@ -140,36 +617,181 @@ export class AitoolsApi extends runtime.BaseAPI {
     }
 
     /**
-     * Perform a smart full-text search over files using natural language input.  This endpoint enables users to describe their search intent using plain English. A language model translates the input into a Lucene query string, which is executed against an Elasticsearch index to return relevant files.  The translation is flexible and expressive, supporting rich query features such as boolean logic, wildcards, fuzzy matching, ranges, and proximity.  Parameters: ----------- query_description : str     A natural language phrase describing what to search for.     Example: \"Meeting notes with roadmap updates from 2024\"  llm_tool_client : OpenAI     A client that interacts with an OpenAI compatible endpoint to generate a Lucene query.     Defaults to `default_llm_tool_client`.  file_repository : FileRepository, optional     An interface for searching and retrieving file metadata.     Defaults to `default_file_repository`.  Returns: -------- GetSearchResponse     A structured response with:     - search_string (str): The Lucene query generated from the input.     - files (list[GetSearchResponseFile]):         - file_id (UUID): Unique ID of the matching file.         - highlight (dict[str, list[str]] | None):           Highlighted content snippets.         - score (float | None): Relevance score from Elasticsearch.  How It Works: ------------- 1. The LLM receives a prompt that asks it to convert the user query into a     Lucene-compatible search string.  2. The generated string is used to search for matching files via the     Elasticsearch backend.  3. Matching files are returned with score and optional highlights.  4. The raw search string is included in the response for debugging or reuse.  Example Request: ----------------     GET /files/search?query_description=contracts expiring before 2025  Example Response: ----------------- {     \"search_string\": \"contract AND (expire OR expiration) AND date:[* TO 2025]\",     \"files\": [         {             \"file_id\": \"123e4567-e89b-12d3-a456-426614174000\",             \"highlight\": {                 \"content\": [                     \"The contract is set to <em>expire</em> on January 15, 2024.\"                 ]             },             \"score\": 4.75         }     ] }  Notes: ------ - The LLM prompt encourages free-text and fuzzy matching strategies. - Field-level filters are discouraged unless semantically necessary. - Results are limited to `FILES_SEARCH_MAX_RESULTS` items. - This endpoint is ideal for flexible search experiences and file discovery.  Raises: ------- HTTPException     May be raised if the LLM or search backend fails to respond.
-     * Search
+     * Generate ranked Lucene query candidates from a natural language description.  Translates the description into multiple Lucene query strings in parallel, counts Elasticsearch matches for each, deduplicates, and returns them sorted by match count descending.  Parameters: ----------- query_description : str     A natural language phrase describing what to search for.  Returns: -------- SuggestQueriesResult     - candidates (list[QuerySuggestion]):         - query (str): Lucene query string.         - matching_docs (int): Number of matching documents.
+     * Suggest Queries
      */
-    async searchV1AitoolsFilesSearchGetRaw(
-        requestParameters: SearchV1AitoolsFilesSearchGetRequest,
+    async suggestQueriesV1AitoolsFilesSuggestQueriesGetRaw(
+        requestParameters: SuggestQueriesV1AitoolsFilesSuggestQueriesGetRequest,
         initOverrides?: RequestInit | runtime.InitOverrideFunction,
-    ): Promise<runtime.ApiResponse<GetSearchResponse>> {
+    ): Promise<runtime.ApiResponse<SuggestQueriesResult>> {
         const requestOptions =
-            await this.searchV1AitoolsFilesSearchGetRequestOpts(
+            await this.suggestQueriesV1AitoolsFilesSuggestQueriesGetRequestOpts(
                 requestParameters,
             );
         const response = await this.request(requestOptions, initOverrides);
 
         return new runtime.JSONApiResponse(response, (jsonValue) =>
-            GetSearchResponseFromJSON(jsonValue),
+            SuggestQueriesResultFromJSON(jsonValue),
         );
     }
 
     /**
-     * Perform a smart full-text search over files using natural language input.  This endpoint enables users to describe their search intent using plain English. A language model translates the input into a Lucene query string, which is executed against an Elasticsearch index to return relevant files.  The translation is flexible and expressive, supporting rich query features such as boolean logic, wildcards, fuzzy matching, ranges, and proximity.  Parameters: ----------- query_description : str     A natural language phrase describing what to search for.     Example: \"Meeting notes with roadmap updates from 2024\"  llm_tool_client : OpenAI     A client that interacts with an OpenAI compatible endpoint to generate a Lucene query.     Defaults to `default_llm_tool_client`.  file_repository : FileRepository, optional     An interface for searching and retrieving file metadata.     Defaults to `default_file_repository`.  Returns: -------- GetSearchResponse     A structured response with:     - search_string (str): The Lucene query generated from the input.     - files (list[GetSearchResponseFile]):         - file_id (UUID): Unique ID of the matching file.         - highlight (dict[str, list[str]] | None):           Highlighted content snippets.         - score (float | None): Relevance score from Elasticsearch.  How It Works: ------------- 1. The LLM receives a prompt that asks it to convert the user query into a     Lucene-compatible search string.  2. The generated string is used to search for matching files via the     Elasticsearch backend.  3. Matching files are returned with score and optional highlights.  4. The raw search string is included in the response for debugging or reuse.  Example Request: ----------------     GET /files/search?query_description=contracts expiring before 2025  Example Response: ----------------- {     \"search_string\": \"contract AND (expire OR expiration) AND date:[* TO 2025]\",     \"files\": [         {             \"file_id\": \"123e4567-e89b-12d3-a456-426614174000\",             \"highlight\": {                 \"content\": [                     \"The contract is set to <em>expire</em> on January 15, 2024.\"                 ]             },             \"score\": 4.75         }     ] }  Notes: ------ - The LLM prompt encourages free-text and fuzzy matching strategies. - Field-level filters are discouraged unless semantically necessary. - Results are limited to `FILES_SEARCH_MAX_RESULTS` items. - This endpoint is ideal for flexible search experiences and file discovery.  Raises: ------- HTTPException     May be raised if the LLM or search backend fails to respond.
-     * Search
+     * Generate ranked Lucene query candidates from a natural language description.  Translates the description into multiple Lucene query strings in parallel, counts Elasticsearch matches for each, deduplicates, and returns them sorted by match count descending.  Parameters: ----------- query_description : str     A natural language phrase describing what to search for.  Returns: -------- SuggestQueriesResult     - candidates (list[QuerySuggestion]):         - query (str): Lucene query string.         - matching_docs (int): Number of matching documents.
+     * Suggest Queries
      */
-    async searchV1AitoolsFilesSearchGet(
-        requestParameters: SearchV1AitoolsFilesSearchGetRequest,
+    async suggestQueriesV1AitoolsFilesSuggestQueriesGet(
+        requestParameters: SuggestQueriesV1AitoolsFilesSuggestQueriesGetRequest,
         initOverrides?: RequestInit | runtime.InitOverrideFunction,
-    ): Promise<GetSearchResponse> {
-        const response = await this.searchV1AitoolsFilesSearchGetRaw(
-            requestParameters,
-            initOverrides,
+    ): Promise<SuggestQueriesResult> {
+        const response =
+            await this.suggestQueriesV1AitoolsFilesSuggestQueriesGetRaw(
+                requestParameters,
+                initOverrides,
+            );
+        return await response.value();
+    }
+
+    /**
+     * Creates request options for summarizeFileV1AitoolsFilesFileIdSummaryGet without sending the request
+     */
+    async summarizeFileV1AitoolsFilesFileIdSummaryGetRequestOpts(
+        requestParameters: SummarizeFileV1AitoolsFilesFileIdSummaryGetRequest,
+    ): Promise<runtime.RequestOpts> {
+        if (requestParameters["fileId"] == null) {
+            throw new runtime.RequiredError(
+                "fileId",
+                'Required parameter "fileId" was null or undefined when calling summarizeFileV1AitoolsFilesFileIdSummaryGet().',
+            );
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        let urlPath = `/v1/aitools/files/{file_id}/summary`;
+        urlPath = urlPath.replace(
+            "{file_id}",
+            encodeURIComponent(String(requestParameters["fileId"])),
         );
+
+        return {
+            path: urlPath,
+            method: "GET",
+            headers: headerParameters,
+            query: queryParameters,
+        };
+    }
+
+    /**
+     * Generate an AI summary for a file.  Parameters: ----------- file_id : UUID     The unique identifier of the file to summarize.  Returns: -------- SummarizeFileResult     - file_id (str): Unique ID of the file.     - summary (str): The generated summary text.
+     * Summarize File
+     */
+    async summarizeFileV1AitoolsFilesFileIdSummaryGetRaw(
+        requestParameters: SummarizeFileV1AitoolsFilesFileIdSummaryGetRequest,
+        initOverrides?: RequestInit | runtime.InitOverrideFunction,
+    ): Promise<runtime.ApiResponse<SummarizeFileResult>> {
+        const requestOptions =
+            await this.summarizeFileV1AitoolsFilesFileIdSummaryGetRequestOpts(
+                requestParameters,
+            );
+        const response = await this.request(requestOptions, initOverrides);
+
+        return new runtime.JSONApiResponse(response, (jsonValue) =>
+            SummarizeFileResultFromJSON(jsonValue),
+        );
+    }
+
+    /**
+     * Generate an AI summary for a file.  Parameters: ----------- file_id : UUID     The unique identifier of the file to summarize.  Returns: -------- SummarizeFileResult     - file_id (str): Unique ID of the file.     - summary (str): The generated summary text.
+     * Summarize File
+     */
+    async summarizeFileV1AitoolsFilesFileIdSummaryGet(
+        requestParameters: SummarizeFileV1AitoolsFilesFileIdSummaryGetRequest,
+        initOverrides?: RequestInit | runtime.InitOverrideFunction,
+    ): Promise<SummarizeFileResult> {
+        const response =
+            await this.summarizeFileV1AitoolsFilesFileIdSummaryGetRaw(
+                requestParameters,
+                initOverrides,
+            );
+        return await response.value();
+    }
+
+    /**
+     * Creates request options for translateFileV1AitoolsFilesFileIdTranslateGet without sending the request
+     */
+    async translateFileV1AitoolsFilesFileIdTranslateGetRequestOpts(
+        requestParameters: TranslateFileV1AitoolsFilesFileIdTranslateGetRequest,
+    ): Promise<runtime.RequestOpts> {
+        if (requestParameters["fileId"] == null) {
+            throw new runtime.RequiredError(
+                "fileId",
+                'Required parameter "fileId" was null or undefined when calling translateFileV1AitoolsFilesFileIdTranslateGet().',
+            );
+        }
+
+        if (requestParameters["sourceLanguage"] == null) {
+            throw new runtime.RequiredError(
+                "sourceLanguage",
+                'Required parameter "sourceLanguage" was null or undefined when calling translateFileV1AitoolsFilesFileIdTranslateGet().',
+            );
+        }
+
+        const queryParameters: any = {};
+
+        if (requestParameters["sourceLanguage"] != null) {
+            queryParameters["source_language"] =
+                requestParameters["sourceLanguage"];
+        }
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        let urlPath = `/v1/aitools/files/{file_id}/translate`;
+        urlPath = urlPath.replace(
+            "{file_id}",
+            encodeURIComponent(String(requestParameters["fileId"])),
+        );
+
+        return {
+            path: urlPath,
+            method: "GET",
+            headers: headerParameters,
+            query: queryParameters,
+        };
+    }
+
+    /**
+     * Translate a file\'s content from the given source language.  Parameters: ----------- file_id : UUID     The unique identifier of the file to translate. source_language : str     BCP 47 / ISO 639-1 language code of the document\'s current language     (e.g. \"de\", \"fr\", \"en\").  Returns: -------- TranslateFileResult     - file_id (str): Unique ID of the file.     - source_language (str): The source language code.     - translation (str): The translated text.
+     * Translate File
+     */
+    async translateFileV1AitoolsFilesFileIdTranslateGetRaw(
+        requestParameters: TranslateFileV1AitoolsFilesFileIdTranslateGetRequest,
+        initOverrides?: RequestInit | runtime.InitOverrideFunction,
+    ): Promise<runtime.ApiResponse<TranslateFileResult>> {
+        const requestOptions =
+            await this.translateFileV1AitoolsFilesFileIdTranslateGetRequestOpts(
+                requestParameters,
+            );
+        const response = await this.request(requestOptions, initOverrides);
+
+        return new runtime.JSONApiResponse(response, (jsonValue) =>
+            TranslateFileResultFromJSON(jsonValue),
+        );
+    }
+
+    /**
+     * Translate a file\'s content from the given source language.  Parameters: ----------- file_id : UUID     The unique identifier of the file to translate. source_language : str     BCP 47 / ISO 639-1 language code of the document\'s current language     (e.g. \"de\", \"fr\", \"en\").  Returns: -------- TranslateFileResult     - file_id (str): Unique ID of the file.     - source_language (str): The source language code.     - translation (str): The translated text.
+     * Translate File
+     */
+    async translateFileV1AitoolsFilesFileIdTranslateGet(
+        requestParameters: TranslateFileV1AitoolsFilesFileIdTranslateGetRequest,
+        initOverrides?: RequestInit | runtime.InitOverrideFunction,
+    ): Promise<TranslateFileResult> {
+        const response =
+            await this.translateFileV1AitoolsFilesFileIdTranslateGetRaw(
+                requestParameters,
+                initOverrides,
+            );
         return await response.value();
     }
 }

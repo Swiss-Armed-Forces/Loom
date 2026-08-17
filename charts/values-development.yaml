@@ -15,33 +15,35 @@ llm:
     text_chunk_overlap: 25
 
   tool:
-    # Warning! This model is not intelligent enough to understand how tools work
-    model: smollm2:135m
+    model: qwen2.5:0.5b
+
+  agent:
+    model: qwen2.5:0.5b
 
   summarization_key_points:
-    model: smollm2:135m
+    model: qwen2.5:0.5b
     text_chunk_size: 1000
     text_chunk_overlap: 33
 
   summarization:
-    model: smollm2:135m
+    model: qwen2.5:0.5b
 
   summarization_refine:
-    model: smollm2:135m
+    model: qwen2.5:0.5b
 
   hyde:
-    model: smollm2:135m
+    model: qwen2.5:0.5b
     num_documents: 1
 
   rerank:
-    model: smollm2:135m
+    model: qwen2.5:0.5b
     temperature: 0
 
   chat:
-    model: smollm2:135m
+    model: qwen2.5:0.5b
 
   translation:
-    model: smollm2:135m
+    model: qwen2.5:0.5b
 
   vision:
     model: moondream:1.8b

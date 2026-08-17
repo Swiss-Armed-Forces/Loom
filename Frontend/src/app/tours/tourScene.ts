@@ -6,10 +6,14 @@ const LEFT_PANEL_BY_STEP: Partial<Record<string, LeftSidebarPanel>> = {
     "folder-filter": LeftSidebarPanel.FOLDER,
     tags: LeftSidebarPanel.TAGS,
     "saved-queries": LeftSidebarPanel.QUERIES,
-    "card-customization": LeftSidebarPanel.CARD_CUSTOMIZATION,
     "card-customization-display": LeftSidebarPanel.CARD_CUSTOMIZATION,
     "card-customization-fields": LeftSidebarPanel.CARD_CUSTOMIZATION,
     "card-customization-auto-actions": LeftSidebarPanel.CARD_CUSTOMIZATION,
+    "chat-input": LeftSidebarPanel.CHAT,
+    "chat-sources-warning": LeftSidebarPanel.CHAT,
+    "chat-deep-search": LeftSidebarPanel.CHAT,
+    "chat-history": LeftSidebarPanel.CHAT,
+    "chat-new-chat": LeftSidebarPanel.CHAT,
 };
 
 const RIGHT_TAB_BY_STEP: Partial<Record<string, RightSidebarTab>> = {

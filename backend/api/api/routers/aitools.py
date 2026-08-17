@@ -1,30 +1,27 @@
-import logging
-from uuid import UUID
+from uuid import UUID, uuid4
 
-from common.dependencies import (
-    get_file_repository,
-    get_llm_tool_client,
+from common.ai_context.tool_models import (
+    DescribeImageResult,
+    ExecuteQueryResult,
+    GetFileFieldResult,
+    GetFileResult,
+    ListFolderContentsResult,
+    RagSearchResult,
+    SearchByFilenameResult,
+    SuggestQueriesResult,
+    SummarizeFileResult,
+    TranslateFileResult,
 )
-from common.file.file_repository import FileRepository
-from common.models.es_repository import PaginationParameters
-from common.services.query_builder import QueryParameters
-from common.settings import settings
 from fastapi import APIRouter, Depends, FastAPI, HTTPException
 from fastapi.responses import JSONResponse
-from openai import OpenAI
-from pydantic import BaseModel
 
+from api.dependencies import get_task_call_service
 from api.patch_openapi_schema import patch_openapi_schema_for_app
-from api.routers.files import GetFileResponse
+from api.services.task_call_service import TaskCallService
 
 router = APIRouter()
 
-logger = logging.getLogger(__name__)
-
-default_file_repository = Depends(get_file_repository)
-default_llm_tool_client = Depends(get_llm_tool_client)
-
-FILES_SEARCH_MAX_RESULTS = 10
+default_task_call_service = Depends(get_task_call_service)
 
 
 @router.get("/openapi.json", include_in_schema=False)
@@ -37,187 +34,101 @@ def openapi_json() -> JSONResponse:
     return JSONResponse(content=api.openapi())
 
 
-class GetSearchResponseFile(BaseModel):
-    file_id: UUID
-    highlight: dict[str, list[str]] | None
-    score: float | None
-
-
-class GetSearchResponse(BaseModel):
-    search_string: str
-    files: list[GetSearchResponseFile]
-
-
-@router.get("/files/search")
-def search(
+@router.get("/files/suggest-queries")
+def suggest_queries(
     query_description: str,
-    llm_tool_client: OpenAI = default_llm_tool_client,
-    file_repository: FileRepository = default_file_repository,
-) -> GetSearchResponse:
-    """Perform a smart full-text search over files using natural language input.
+    task_call_service: TaskCallService = default_task_call_service,
+) -> SuggestQueriesResult:
+    """Generate ranked Lucene query candidates from a natural language description.
 
-    This endpoint enables users to describe their search intent using plain
-    English. A language model translates the input into a Lucene query string,
-    which is executed against an Elasticsearch index to return relevant files.
-
-    The translation is flexible and expressive, supporting rich query features
-    such as boolean logic, wildcards, fuzzy matching, ranges, and proximity.
+    Translates the description into multiple Lucene query strings in parallel,
+    counts Elasticsearch matches for each, deduplicates, and returns them sorted
+    by match count descending.
 
     Parameters:
     -----------
     query_description : str
         A natural language phrase describing what to search for.
-        Example: "Meeting notes with roadmap updates from 2024"
-
-    llm_tool_client : OpenAI
-        A client that interacts with an OpenAI compatible endpoint to generate a Lucene query.
-        Defaults to `default_llm_tool_client`.
-
-    file_repository : FileRepository, optional
-        An interface for searching and retrieving file metadata.
-        Defaults to `default_file_repository`.
 
     Returns:
     --------
-    GetSearchResponse
-        A structured response with:
-        - search_string (str): The Lucene query generated from the input.
-        - files (list[GetSearchResponseFile]):
-            - file_id (UUID): Unique ID of the matching file.
-            - highlight (dict[str, list[str]] | None):
-              Highlighted content snippets.
-            - score (float | None): Relevance score from Elasticsearch.
-
-    How It Works:
-    -------------
-    1. The LLM receives a prompt that asks it to convert the user query into a
-        Lucene-compatible search string.
-
-    2. The generated string is used to search for matching files via the
-        Elasticsearch backend.
-
-    3. Matching files are returned with score and optional highlights.
-
-    4. The raw search string is included in the response for debugging or reuse.
-
-    Example Request:
-    ----------------
-        GET /files/search?query_description=contracts expiring before 2025
-
-    Example Response:
-    -----------------
-    {
-        "search_string": "contract AND (expire OR expiration) AND date:[* TO 2025]",
-        "files": [
-            {
-                "file_id": "123e4567-e89b-12d3-a456-426614174000",
-                "highlight": {
-                    "content": [
-                        "The contract is set to <em>expire</em> on January 15, 2024."
-                    ]
-                },
-                "score": 4.75
-            }
-        ]
-    }
-
-    Notes:
-    ------
-    - The LLM prompt encourages free-text and fuzzy matching strategies.
-    - Field-level filters are discouraged unless semantically necessary.
-    - Results are limited to `FILES_SEARCH_MAX_RESULTS` items.
-    - This endpoint is ideal for flexible search experiences and file discovery.
-
-    Raises:
-    -------
-    HTTPException
-        May be raised if the LLM or search backend fails to respond.
+    SuggestQueriesResult
+        - candidates (list[QuerySuggestion]):
+            - query (str): Lucene query string.
+            - matching_docs (int): Number of matching documents.
     """
-    prompt = f"""
-TASK: Translate the QUERY_DESCRIPTION to an Elasticsearch QUERY_STRING.
---------------------
-HINT: Try to be smart and use Lucene Query features
-(AND, OR, wildcards, fuzzy, proximity, Regular expression, ranges, etc.)
-to make the query flexible and a generic fit for the QUERY_DESCRIPTION.
-HINT: Favour free text search ("value", "value*", "*value*", etc. ) over
-searches in fields ("field:value").
---------------------
-IMPORTANT: Use Lucene Query syntax for the QUERY_STRING.
-IMPORTANT: Do not quote the QUERY_STRING.
-IMPORTANT: Only answer with the QUERY_STRING and nothing else!
---------------------
-QUERY_DESCRIPTION: {query_description}
---------------------
-QUERY_STRING:"""
+    return task_call_service.call_suggest_queries_tool(uuid4(), query_description)
 
-    response = llm_tool_client.chat.completions.create(
-        model=settings.llm.tool.model,
-        messages=[{"role": "user", "content": prompt}],
-        temperature=settings.llm.tool.temperature,
-        extra_headers=settings.llm.tool.extra_headers,
-        extra_body=settings.llm.tool.extra_body,
-    )
-    if not response.choices:
-        raise HTTPException(status_code=502, detail="LLM returned no choices")
-    search_string = settings.llm.tool.truncate_response(
-        (response.choices[0].message.content or "").strip()
-    )
 
-    logger.info("Getting files with search string: '%s'", search_string)
-    query = QueryParameters(
-        query_id=file_repository.open_point_in_time(),
-        search_string=search_string,
-    )
-    result = file_repository.get_by_query(
-        query=query,
-        pagination_params=PaginationParameters(page_size=FILES_SEARCH_MAX_RESULTS),
-    )
+@router.get("/files/execute-query")
+def execute_query(
+    query_string: str,
+    task_call_service: TaskCallService = default_task_call_service,
+) -> ExecuteQueryResult:
+    """Execute a Lucene query string and return matching files with content snippets.
 
-    return GetSearchResponse(
-        search_string=search_string,
-        files=[
-            GetSearchResponseFile(
-                file_id=file.id_,
-                highlight=file.es_meta.highlight,
-                score=file.es_meta.score,
-            )
-            for file in result.objs
-        ],
-    )
+    Parameters:
+    -----------
+    query_string : str
+        A valid Elasticsearch Lucene query string.
+
+    Returns:
+    --------
+    ExecuteQueryResult
+        - files (list[ExecuteQueryResultFile]):
+            - file_id (str): Unique ID of the matching file.
+            - text (str): Relevant content snippet from the file.
+            - score (float | None): Relevance score from Elasticsearch.
+    """
+    return task_call_service.call_execute_query_tool(uuid4(), query_string)
+
+
+@router.get("/files/search-by-filename")
+def search_by_filename(
+    filename: str,
+    task_call_service: TaskCallService = default_task_call_service,
+) -> SearchByFilenameResult:
+    """Search for files whose name contains the given substring.
+
+    Parameters:
+    -----------
+    filename : str
+        Substring to match against filenames (case-insensitive).
+
+    Returns:
+    --------
+    SearchByFilenameResult
+        - query (str): The search substring used.
+        - files (list[FilenameSearchEntry]):
+            - full_path (str): Full path of the matching file.
+            - file_id (str): Unique ID of the matching file.
+    """
+    return task_call_service.call_search_by_filename_tool(uuid4(), filename)
 
 
 @router.get("/files/{file_id}")
 def get_file_by_id(
     file_id: UUID,
-    file_repository: FileRepository = default_file_repository,
-) -> GetFileResponse:
-    """Retrieve detailed information about a file by its unique identifier.
+    task_call_service: TaskCallService = default_task_call_service,
+) -> GetFileResult:
+    """Retrieve content and metadata of a file by its unique identifier.
 
-    This endpoint fetches a file's metadata, extracted content, highlights,
-    translations, and an optional summary using its UUID. If the file is not
-    found, a 404 error is returned.
+    This endpoint fetches a file's name, extracted content, and optional summary
+    using its UUID. If the file is not found, a 404 error is returned.
 
     Parameters:
     -----------
     file_id : UUID
         The unique identifier of the file. Must be a valid UUID.
 
-    file_repository : FileRepository, optional
-        Repository used to access file data. Defaults to default_file_repository.
-
     Returns:
     --------
-    GetFileResponse
-        A model containing the file's processed and raw content, highlights, and
-        translations. Fields include:
+    GetFileResult
+        A model containing the file's content and metadata. Fields include:
 
-        - file_id (UUID): Unique ID of the file.
-        - highlight (dict[str, list[str]] | None): Highlighted text per category.
-        - content (str): Extracted or processed text content.
+        - file_id (str): Unique ID of the file.
         - name (str): Short or display name for the file.
-        - language_translations (list[GetFileLanguageTranslations]):
-          List of language translations.
-        - raw (str): Original unprocessed content.
+        - content (str): Extracted text content (truncated for LLM consumption).
         - summary (str | None): Optional summary text.
 
     Raises:
@@ -225,7 +136,178 @@ def get_file_by_id(
     HTTPException (status_code=404)
         Raised if no file with the given ID exists in the repository.
     """
-    file = file_repository.get_by_id(file_id)
-    if file is None:
-        raise HTTPException(status_code=404, detail="file not found")
-    return GetFileResponse.from_file(file)
+    try:
+        return task_call_service.call_get_file_tool(uuid4(), str(file_id))
+    except LookupError as exc:
+        raise HTTPException(status_code=404, detail="file not found") from exc
+
+
+@router.get("/rag")
+def rag_search(
+    query: str,
+    task_call_service: TaskCallService = default_task_call_service,
+) -> RagSearchResult:
+    """Answer a natural language question using the full RAG pipeline.
+
+    Retrieves relevant document chunks via vector similarity search (with HyDE
+    and reranking) and synthesizes a grounded answer from the indexed corpus.
+
+    Parameters:
+    -----------
+    query : str
+        A natural language question to answer.
+        Example: "What are the key findings from the Q3 report?"
+
+    Returns:
+    --------
+    RagSearchResult
+        - answer (str): The synthesized answer grounded in retrieved documents.
+
+    Example Request:
+    ----------------
+        GET /rag?query=What are the contract renewal terms?
+
+    Example Response:
+    -----------------
+    {
+        "answer": "The contract renewal terms specify a 30-day notice period..."
+    }
+
+    Raises:
+    -------
+    HTTPException
+        May be raised if the LLM or RAG backend fails to respond.
+    """
+    return task_call_service.call_rag_search_tool(uuid4(), query)
+
+
+@router.get("/files/{file_id}/fields/{field}")
+def get_file_field(
+    file_id: UUID,
+    field: str,
+    task_call_service: TaskCallService = default_task_call_service,
+) -> GetFileFieldResult:
+    """Retrieve the value of a specific field for a file.
+
+    Parameters:
+    -----------
+    file_id : UUID
+        The unique identifier of the file.
+    field : str
+        Name of the field to retrieve (e.g. "content", "summary").
+
+    Returns:
+    --------
+    GetFileFieldResult
+        - file_id (str): Unique ID of the file.
+        - field (str): Name of the retrieved field.
+        - value (str): The field's value.
+    """
+    try:
+        return task_call_service.call_get_file_field_tool(uuid4(), str(file_id), field)
+    except LookupError as exc:
+        raise HTTPException(status_code=404, detail="file not found") from exc
+
+
+@router.get("/files/{file_id}/summary")
+def summarize_file(
+    file_id: UUID,
+    task_call_service: TaskCallService = default_task_call_service,
+) -> SummarizeFileResult:
+    """Generate an AI summary for a file.
+
+    Parameters:
+    -----------
+    file_id : UUID
+        The unique identifier of the file to summarize.
+
+    Returns:
+    --------
+    SummarizeFileResult
+        - file_id (str): Unique ID of the file.
+        - summary (str): The generated summary text.
+    """
+    try:
+        return task_call_service.call_summarize_file_tool(uuid4(), str(file_id))
+    except LookupError as exc:
+        raise HTTPException(status_code=404, detail="file not found") from exc
+
+
+@router.get("/files/{file_id}/translate")
+def translate_file(
+    file_id: UUID,
+    source_language: str,
+    task_call_service: TaskCallService = default_task_call_service,
+) -> TranslateFileResult:
+    """Translate a file's content from the given source language.
+
+    Parameters:
+    -----------
+    file_id : UUID
+        The unique identifier of the file to translate.
+    source_language : str
+        BCP 47 / ISO 639-1 language code of the document's current language
+        (e.g. "de", "fr", "en").
+
+    Returns:
+    --------
+    TranslateFileResult
+        - file_id (str): Unique ID of the file.
+        - source_language (str): The source language code.
+        - translation (str): The translated text.
+    """
+    try:
+        return task_call_service.call_translate_file_tool(
+            uuid4(), str(file_id), source_language
+        )
+    except LookupError as exc:
+        raise HTTPException(status_code=404, detail="file not found") from exc
+
+
+@router.get("/files/{file_id}/describe-image")
+def describe_image(
+    file_id: UUID,
+    task_call_service: TaskCallService = default_task_call_service,
+) -> DescribeImageResult:
+    """Generate an AI description of an image file.
+
+    Parameters:
+    -----------
+    file_id : UUID
+        The unique identifier of the image file to describe.
+
+    Returns:
+    --------
+    DescribeImageResult
+        - file_id (str): Unique ID of the file.
+        - description (str): The generated image description.
+    """
+    try:
+        return task_call_service.call_describe_image_tool(uuid4(), str(file_id))
+    except LookupError as exc:
+        raise HTTPException(status_code=404, detail="file not found") from exc
+
+
+@router.get("/folders")
+def list_folder_contents(
+    folder_path: str,
+    task_call_service: TaskCallService = default_task_call_service,
+) -> ListFolderContentsResult:
+    """List the direct children (subfolders and files) of a folder path.
+
+    Parameters:
+    -----------
+    folder_path : str
+        Absolute folder path to list, e.g. "/" or "//source/subfolder".
+
+    Returns:
+    --------
+    ListFolderContentsResult
+        - folder_path (str): The listed folder path.
+        - entries (list[FolderEntry]):
+            - full_path (str): Full path of the entry.
+            - is_file (bool): Whether the entry is a file.
+            - file_count (int): Number of files in the folder (0 for files).
+            - file_id (str | None): File UUID if the entry is a file.
+    """
+    return task_call_service.call_list_folder_contents_tool(uuid4(), folder_path)

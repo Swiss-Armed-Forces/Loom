@@ -2,9 +2,8 @@
 
 Run as: python -m common.scripts.init_elasticsearch
 
-Intended to be run as a Kubernetes Job (Helm post-install/post-upgrade hook) before the
-API starts. Runs init() on each repository (creates indexes if missing, updates
-compatible mappings).
+Runs init() on each repository (creates indexes if missing, updates compatible
+mappings).
 """
 
 import logging

@@ -20,7 +20,7 @@ T = TypeVar("T")
 
 
 class ModelField(NamedTuple):
-    """A single field entry yielded by _iter_model_fields."""
+    """A single field entry yielded by iter_model_fields."""
 
     path: str
     field_info: FieldInfo
@@ -35,7 +35,7 @@ class FieldWithMetadata(Generic[T]):
     marker: T
 
 
-def _iter_model_fields(
+def iter_model_fields(
     model_class: type[BaseModel],
     prefix: str,
 ) -> Iterator[ModelField]:
@@ -74,7 +74,7 @@ def iter_field_paths_by_type(
         suffix: Appended to each yielded path when a match is found (e.g. ".service_id").
         _prefix: Internal use — accumulated dotted path prefix for nested fields.
     """
-    for field in _iter_model_fields(model_class, _prefix):
+    for field in iter_model_fields(model_class, _prefix):
         if field.annotation is target_type:
             yield f"{field.path}{suffix}"
         elif isinstance(field.annotation, type) and issubclass(
@@ -102,7 +102,7 @@ def iter_field_paths_by_metadata(
         metadata_type: The metadata annotation type to search for.
         _prefix: Internal use — accumulated dotted path prefix for nested fields.
     """
-    for field in _iter_model_fields(model_class, _prefix):
+    for field in iter_model_fields(model_class, _prefix):
         marker = next(
             (m for m in field.field_info.metadata if isinstance(m, metadata_type)), None
         )

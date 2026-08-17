@@ -22,6 +22,7 @@ prometheus-client = "^0.26.0"
 opentelemetry-instrumentation-fastapi = "^0.60b1"
 opentelemetry-exporter-prometheus = "^0.60b1"
 minio = "^7.2.20"
+pydantic-ai = { version = "^2.22.0", extras = ["ag-ui"] }
 
 [tool.poetry.group.dev.dependencies]
 debugpy = "^1.8.1"

@@ -1,9 +1,10 @@
-import { Close, Search } from "@mui/icons-material";
+import { AddComment, Close, Forum, Search } from "@mui/icons-material";
 import {
     Drawer,
     IconButton,
     InputAdornment,
     InputBase,
+    Tooltip,
     Typography,
     useMediaQuery,
 } from "@mui/material";
@@ -15,6 +16,7 @@ import { loadTags } from "@app/api";
 import { useAppDispatch, useAppSelector } from "@app/hooks";
 import {
     LeftSidebarPanel,
+    openFileTabThunk,
     selectHighlightedQueryId,
     selectLeftSidebarPanel,
     selectQuery,
@@ -28,6 +30,8 @@ import type { SearchQuery } from "@features/common/utils/model";
 import { TagsList } from "@features/search/components/TagsList/TagsList";
 import { FolderView } from "@features/search/views/Folder/FolderView";
 
+import { Chatbot } from "../ChatMenu/Chatbot";
+import { useChatbot } from "../ChatMenu/useChatbot";
 import { CustomQueriesList } from "../CustomQueries/CustomQueries";
 
 import { CardCustomizationPanel } from "./CardCustomizationPanel";
@@ -74,6 +78,7 @@ const PANEL_TITLES: Record<LeftSidebarPanel, string> = {
     [LeftSidebarPanel.TAGS]: "sideMenu.tags",
     [LeftSidebarPanel.QUERIES]: "sideMenu.savedQueries.title",
     [LeftSidebarPanel.CARD_CUSTOMIZATION]: "sideMenu.cardCustomization.title",
+    [LeftSidebarPanel.CHAT]: "AI Assistant",
 };
 
 export const LeftSidebar = () => {
@@ -87,6 +92,9 @@ export const LeftSidebar = () => {
     const tags = useAppSelector(selectTags);
     const highlightedQueryId = useAppSelector(selectHighlightedQueryId);
     const reduxQuery = useAppSelector(selectQuery);
+
+    const isChatPanel = effectiveActivePanel === LeftSidebarPanel.CHAT;
+    const chatbot = useChatbot(isChatPanel);
 
     const isMobile = useMediaQuery("(max-width:600px)");
     const [width, setWidth] = useState(loadWidth);
@@ -204,6 +212,15 @@ export const LeftSidebar = () => {
                 );
             case LeftSidebarPanel.CARD_CUSTOMIZATION:
                 return <CardCustomizationPanel />;
+            case LeftSidebarPanel.CHAT:
+                return (
+                    <Chatbot
+                        onCitationClick={(fileId) =>
+                            dispatch(openFileTabThunk({ fileId }))
+                        }
+                        chatbot={chatbot}
+                    />
+                );
             default:
                 return null;
         }
@@ -218,9 +235,55 @@ export const LeftSidebar = () => {
         effectiveActivePanel !== null ? (
             <>
                 <div className={styles.header}>
-                    <Typography className={styles.headerTitle}>
-                        {t(PANEL_TITLES[effectiveActivePanel])}
-                    </Typography>
+                    {isChatPanel ? (
+                        <Typography
+                            noWrap
+                            sx={{
+                                flex: 1,
+                                minWidth: 0,
+                                fontSize: "0.75rem",
+                                fontWeight: 600,
+                                opacity: 0.7,
+                            }}
+                        >
+                            {chatbot.showHistory
+                                ? "All Conversations"
+                                : chatbot.contextLabel}
+                        </Typography>
+                    ) : (
+                        <Typography className={styles.headerTitle}>
+                            {t(PANEL_TITLES[effectiveActivePanel])}
+                        </Typography>
+                    )}
+                    {isChatPanel && (
+                        <>
+                            <Tooltip title="All conversations">
+                                <IconButton
+                                    size="small"
+                                    onClick={() =>
+                                        chatbot.setShowHistory((s) => !s)
+                                    }
+                                    color={
+                                        chatbot.showHistory
+                                            ? "primary"
+                                            : "default"
+                                    }
+                                    data-tour="chat-history-button"
+                                >
+                                    <Forum fontSize="small" />
+                                </IconButton>
+                            </Tooltip>
+                            <Tooltip title="New chat">
+                                <IconButton
+                                    size="small"
+                                    onClick={chatbot.handleNewChat}
+                                    data-tour="chat-new-button"
+                                >
+                                    <AddComment fontSize="small" />
+                                </IconButton>
+                            </Tooltip>
+                        </>
+                    )}
                     <IconButton
                         size="small"
                         onClick={() => {
@@ -271,6 +334,11 @@ export const LeftSidebar = () => {
                 )}
                 <div
                     className={styles.content}
+                    style={
+                        isChatPanel
+                            ? { overflow: "hidden", padding: 0 }
+                            : undefined
+                    }
                     data-tour={
                         activeTourStepId
                             ? `sidebar-${activeTourStepId}`
