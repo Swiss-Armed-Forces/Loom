@@ -45,9 +45,9 @@ export const ImportArchiveDialog = ({ id, onClose, isTop }: DialogProps) => {
             dispatch(setBackgroundTaskSpinnerActive());
             onClose();
         } catch (error) {
-            if (
-                !(error instanceof DOMException && error.name === "AbortError")
-            ) {
+            if (!(
+                error instanceof DOMException && error.name === "AbortError"
+            )) {
                 toast.error(t("archives.importError") + error);
             }
         }

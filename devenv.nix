@@ -473,12 +473,12 @@ in
   languages.javascript = {
     enable = true;
     directory = "${config.devenv.root}/Frontend";
-    pnpm = {
-      enable = true;
-      # Run this to update the node_modules always:
-      # This is to avoid version and library conflicts.
-      install.enable = true;
-    };
+    package = pkgs.nodejs;
+    # Use corepack so that the pnpm version is controlled by the
+    # "packageManager" field in Frontend/package.json.  This keeps
+    # local dev, CI, and Renovate on the same pnpm version.
+    corepack.enable = true;
+    pnpm.install.enable = true;
   };
   languages.typescript.enable = true;
 
