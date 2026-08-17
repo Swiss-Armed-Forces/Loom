@@ -51,6 +51,15 @@ const extractNegatedValues = (
     return values;
 };
 
+const escapeForRegex = (field: string): string =>
+    field.replace(/([-.\s\\:])/g, "\\$1");
+
+const fieldStripRegex = (field: string): RegExp =>
+    new RegExp(
+        `\\s*(?:NOT\\s+)?${escapeForRegex(field)}:(?:"(?:[^"\\\\]|\\\\.)*"|\\([^)]*\\)|[\\[{][^\\]}\n]*[\\]}]|\\S+)\\s*`,
+        "g",
+    );
+
 export const updateFieldOfQuery = (
     previousQuery: string,
     fieldName: SearchQueryField,
@@ -58,8 +67,10 @@ export const updateFieldOfQuery = (
     noQuote = false,
     negate = false,
     accumulate = false,
+    clearFields: string[] = [],
 ): string => {
     const newFieldNameSanitized = fieldName.replace(/([-\s\\:])/g, "\\$1");
+    const newFieldNameRegex = escapeForRegex(fieldName);
     // Always convert fieldValue to string array
     let fieldValueArray = Array.isArray(fieldValue) ? fieldValue : [fieldValue];
 
@@ -68,7 +79,7 @@ export const updateFieldOfQuery = (
     if (accumulate && !negate && !noQuote) {
         const existing = extractPositiveValues(
             previousQuery,
-            newFieldNameSanitized,
+            newFieldNameRegex,
         );
         if (existing.length > 0) {
             fieldValueArray = Array.from(
@@ -80,10 +91,7 @@ export const updateFieldOfQuery = (
     // When negating, extend an existing NOT filter for this field rather than
     // replacing it, so repeated "others" clicks accumulate exclusions.
     if (negate && !noQuote) {
-        const existing = extractNegatedValues(
-            previousQuery,
-            newFieldNameSanitized,
-        );
+        const existing = extractNegatedValues(previousQuery, newFieldNameRegex);
         if (existing.length > 0) {
             const merged = Array.from(
                 new Set([...existing, ...fieldValueArray]),
@@ -95,14 +103,22 @@ export const updateFieldOfQuery = (
     // Regex to match both formats (with optional NOT prefix):
     // fieldName:"value" OR fieldName:("value1" OR "value2" ...) OR fieldName:[start TO end] OR fieldName:*
     // Also handles Lucene range variants: [a TO b], [a TO b}, {a TO b], {a TO b}
-    const fieldRegex = new RegExp(
-        `\\s*(?:NOT\\s+)?${newFieldNameSanitized}:(?:"(?:[^"\\\\]|\\\\.)*"|\\([^)]*\\)|[\\[{][^\\]}\n]*[\\]}]|\\S+)\\s*`,
-        "g",
-    );
+    const fieldRegex = fieldStripRegex(fieldName);
     const replaced = previousQuery.replace(fieldRegex, " ").trim();
+
+    // Strip caller-specified fields from the query.
+    let withConflictsRemoved = replaced;
+    for (const field of clearFields) {
+        const conflictRegex = fieldStripRegex(field);
+        withConflictsRemoved = withConflictsRemoved
+            .replace(conflictRegex, " ")
+            .trim();
+    }
+
     // A bare `*` with nothing else is a match-all placeholder; drop it so it
     // doesn't accumulate as cruft alongside real field filters.
-    const previousQueryReplaced = replaced === "*" ? "" : replaced;
+    const previousQueryReplaced =
+        withConflictsRemoved === "*" ? "" : withConflictsRemoved;
 
     // Empty array: remove the field from the query entirely.
     if (fieldValueArray.length === 0) return previousQueryReplaced;

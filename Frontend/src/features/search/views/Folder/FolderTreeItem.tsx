@@ -36,6 +36,14 @@ import { updateFieldOfQuery } from "@features/common/utils/helpers";
 import { FolderTree, ROOT_NODE, PATH_SEPARATOR } from "./folderViewState";
 import { hasUnloadedChildren } from "./util";
 
+const FOLDER_CHIP_FIELDS = [
+    SearchQueryField.ParentPath,
+    SearchQueryField.FullPathTree,
+    SearchQueryField.FullPathKeyword,
+    SearchQueryField.Seen,
+    SearchQueryField.Flagged,
+];
+
 interface NodeCountBadgesProps {
     flaggedCount?: number;
     unseenCount?: number;
@@ -178,9 +186,44 @@ export const FolderViewNode = React.memo(
                         isRoot,
                         e.shiftKey,
                         e.ctrlKey,
+                        FOLDER_CHIP_FIELDS.filter(
+                            (f) => f !== SearchQueryField.ParentPath,
+                        ),
                     ),
                 }),
             );
+        };
+
+        // Build a subtree base query for non-root nodes.  When the node
+        // itself is a file, exclude it via NOT full_path.keyword so that the
+        // result set matches the chip counts (which don't count the node).
+        const subtreeBaseQuery = (query: string): string => {
+            let base = updateFieldOfQuery(
+                query,
+                SearchQueryField.FullPathTree,
+                tree.id,
+                false,
+                false,
+                false,
+                [
+                    SearchQueryField.ParentPath,
+                    SearchQueryField.FullPathKeyword,
+                    SearchQueryField.Seen,
+                    SearchQueryField.Flagged,
+                ],
+            );
+            if (fileId !== undefined) {
+                base = updateFieldOfQuery(
+                    base,
+                    SearchQueryField.FullPathKeyword,
+                    tree.id,
+                    false,
+                    true,
+                    false,
+                    [SearchQueryField.ParentPath],
+                );
+            }
+            return base;
         };
 
         const handleFileCountClick = (e: React.MouseEvent) => {
@@ -195,20 +238,16 @@ export const FolderViewNode = React.memo(
                             true,
                             e.shiftKey,
                             e.ctrlKey,
+                            FOLDER_CHIP_FIELDS.filter(
+                                (f) => f !== SearchQueryField.ParentPath,
+                            ),
                         ),
                     }),
                 );
             } else {
                 dispatch(
                     updateQuery({
-                        query: updateFieldOfQuery(
-                            searchQuery?.query ?? "",
-                            SearchQueryField.FullPathTree,
-                            tree.id,
-                            false,
-                            e.shiftKey,
-                            e.ctrlKey,
-                        ),
+                        query: subtreeBaseQuery(searchQuery?.query ?? ""),
                     }),
                 );
             }
@@ -218,17 +257,17 @@ export const FolderViewNode = React.memo(
             e.stopPropagation();
             const base = isRoot
                 ? (searchQuery?.query ?? "")
-                : updateFieldOfQuery(
-                      searchQuery?.query ?? "",
-                      SearchQueryField.FullPathTree,
-                      tree.id,
-                  );
+                : subtreeBaseQuery(searchQuery?.query ?? "");
             dispatch(
                 updateQuery({
                     query: updateFieldOfQuery(
                         base,
                         SearchQueryField.Flagged,
                         "true",
+                        false,
+                        false,
+                        false,
+                        [SearchQueryField.Seen],
                     ),
                 }),
             );
@@ -238,17 +277,17 @@ export const FolderViewNode = React.memo(
             e.stopPropagation();
             const base = isRoot
                 ? (searchQuery?.query ?? "")
-                : updateFieldOfQuery(
-                      searchQuery?.query ?? "",
-                      SearchQueryField.FullPathTree,
-                      tree.id,
-                  );
+                : subtreeBaseQuery(searchQuery?.query ?? "");
             dispatch(
                 updateQuery({
                     query: updateFieldOfQuery(
                         base,
                         SearchQueryField.Seen,
                         "false",
+                        false,
+                        false,
+                        false,
+                        [SearchQueryField.Flagged],
                     ),
                 }),
             );
