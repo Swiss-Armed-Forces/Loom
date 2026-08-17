@@ -645,7 +645,7 @@ The complete source code for Traefik is publicly available at https://github.com
 | pydantic                              | 2.13.4          | MIT                                                                              |
 | pydantic-settings                     | 2.14.2          | MIT                                                                              |
 | pydantic_core                         | 2.46.4          | MIT                                                                              |
-| pytest                                | 9.0.3           | MIT                                                                              |
+| pytest                                | 9.1.0           | MIT                                                                              |
 | pytest-cov                            | 7.1.0           | MIT                                                                              |
 | tomli                                 | 2.4.1           | MIT                                                                              |
 | typing-inspection                     | 0.4.2           | MIT                                                                              |

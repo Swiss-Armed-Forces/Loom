@@ -8,12 +8,12 @@ from worker.ai.tasks.rag import RankedSearchEmbedding, filter_ranked_search_embe
 
 
 @pytest.mark.parametrize(
-    "clusters,",
+    "clusters",
     [
-        ([1.0, 1.0, 1.0], [3.0, 3.0], [5.0, 5.0, 5.0]),
-        ([1.0, 1.0, 1.0, 1.0, 1.0], [5.0]),
-        ([1.0, 1.0, 1.0, 1.0, 1.0],),
-        ([1.0],),
+        [[1.0, 1.0, 1.0], [3.0, 3.0], [5.0, 5.0, 5.0]],
+        [[1.0, 1.0, 1.0, 1.0, 1.0], [5.0]],
+        [[1.0, 1.0, 1.0, 1.0, 1.0]],
+        [[1.0]],
     ],
 )
 def test_filter_ranked_file_text(clusters: list[list[float]]):
