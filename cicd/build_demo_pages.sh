@@ -6,10 +6,7 @@ TOPLEVEL_DIR="${SCRIPT_DIR}/.."
 FRONTEND_DIR="${TOPLEVEL_DIR}/Frontend"
 DEMO_OUTPUT_DIR="${FRONTEND_DIR}/dist-demo"
 
-pnpm \
-    --dir "${FRONTEND_DIR}" \
-    run build:demo \
-    "${@}"
+( cd "${FRONTEND_DIR}" && pnpm run build:demo "${@}" )
 
 for artifact in index.html 404.html mockServiceWorker.js; do
     test -s "${DEMO_OUTPUT_DIR}/${artifact}"

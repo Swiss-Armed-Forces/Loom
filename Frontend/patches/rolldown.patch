@@ -1,13 +1,11 @@
-diff --git a/dist/shared/binding-DI_PGVIh.mjs b/dist/shared/binding-DI_PGVIh.mjs
-index fca85434e92caa0e30626102c378c3cbd95aa17d..009ad0cee038a7e2ddd8d179d1e97285420db71f 100644
---- a/dist/shared/binding-DI_PGVIh.mjs
-+++ b/dist/shared/binding-DI_PGVIh.mjs
-@@ -48,18 +48,103 @@ var require_webcontainer_fallback = /* @__PURE__ */ __commonJSMin(((exports, mod
+diff --git a/dist/shared/binding-Zhafd14U.mjs b/dist/shared/binding-Zhafd14U.mjs
+index 0000000..1111111 100644
+@@ -48,18 +48,102 @@
  //#endregion
  //#region src/binding.cjs
  var require_binding = /* @__PURE__ */ __commonJSMin(((exports, module) => {
--	const { readFileSync } = __require("node:fs");
-+	const { readFileSync, openSync, readSync, close } = __require("node:fs");
+-	const { readFileSync } = __require("fs");
++	const { readFileSync, openSync, readSync, close } = __require("fs");
  	let nativeBinding = null;
  	const loadErrors = [];
 +	// Patch related to the following issues
@@ -63,7 +61,7 @@ index fca85434e92caa0e30626102c378c3cbd95aa17d..009ad0cee038a7e2ddd8d179d1e97285
 +			return isMuslFromInterpreterPath(path);
 +		} catch (e) {}
 +		return null;
-+	}
++	};
 +	const interpreterPath = (elf) => {
 +		if (elf.length < 64) {
 +			return null;
@@ -87,20 +85,19 @@ index fca85434e92caa0e30626102c378c3cbd95aa17d..009ad0cee038a7e2ddd8d179d1e97285
 +			const headerOffset = offset + (i * size);
 +			const type = elf.readUInt32LE(headerOffset);
 +			if (type === 3) {
-+			const fileOffset = elf.readUInt32LE(headerOffset + 8);
-+			const fileSize = elf.readUInt32LE(headerOffset + 32);
-+			return elf.subarray(fileOffset, fileOffset + fileSize).toString().replace(/\0.*$/g, '');
++				const fileOffset = elf.readUInt32LE(headerOffset + 8);
++				const fileSize = elf.readUInt32LE(headerOffset + 32);
++				return elf.subarray(fileOffset, fileOffset + fileSize).toString().replace(/\0.*$/g, '');
 +			}
 +		}
 +		return null;
-+		};
-+
-+		const isMuslFromInterpreterPath = (path) => {
++	};
++	const isMuslFromInterpreterPath = (path) => {
 +		if (path) {
 +			if (path.includes('/ld-musl-')) {
-+			return true;
++				return true;
 +			} else if (path.includes('/ld-linux-')) {
-+			return false;
++				return false;
 +			}
 +		}
 +		return null;

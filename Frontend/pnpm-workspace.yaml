@@ -1,3 +1,8 @@
+allowBuilds:
+    "@openapitools/openapi-generator-cli": false
+    core-js: false
+    msw: true
+    unrs-resolver: true
 patchedDependencies:
     rolldown: patches/rolldown.patch
     unrs-resolver@1.11.1: patches/unrs-resolver@1.11.1.patch

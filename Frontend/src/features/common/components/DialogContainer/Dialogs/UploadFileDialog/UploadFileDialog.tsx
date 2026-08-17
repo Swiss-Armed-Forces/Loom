@@ -47,9 +47,9 @@ export const UploadFileDialog = ({ id, onClose, isTop }: DialogProps) => {
             dispatch(setBackgroundTaskSpinnerActive());
             onClose();
         } catch (error) {
-            if (
-                !(error instanceof DOMException && error.name === "AbortError")
-            ) {
+            if (!(
+                error instanceof DOMException && error.name === "AbortError"
+            )) {
                 toast.error("Cannot upload files. Reason: " + error);
             }
         }

@@ -3,8 +3,7 @@ import { HttpResponse, type JsonBodyType } from "msw";
 export type JsonObject = Record<string, unknown>;
 
 export type ParsedBody =
-    | { ok: true; value: JsonObject }
-    | { ok: false; response: Response };
+    { ok: true; value: JsonObject } | { ok: false; response: Response };
 
 export const json = (body: unknown, status = 200): Response =>
     HttpResponse.json(body as JsonBodyType, { status });
