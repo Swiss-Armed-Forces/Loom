@@ -14,13 +14,13 @@
  */
 
 import { mapValues } from "../runtime";
-import type { ToolSource } from "./ToolSource";
+import type { RagChunk } from "./RagChunk";
 import {
-    ToolSourceFromJSON,
-    ToolSourceFromJSONTyped,
-    ToolSourceToJSON,
-    ToolSourceToJSONTyped,
-} from "./ToolSource";
+    RagChunkFromJSON,
+    RagChunkFromJSONTyped,
+    RagChunkToJSON,
+    RagChunkToJSONTyped,
+} from "./RagChunk";
 
 /**
  *
@@ -30,16 +30,16 @@ import {
 export interface RagSearchResult {
     /**
      *
-     * @type {Array<ToolSource>}
-     * @memberof RagSearchResult
-     */
-    sources?: Array<ToolSource>;
-    /**
-     *
      * @type {string}
      * @memberof RagSearchResult
      */
     answer: string;
+    /**
+     *
+     * @type {Array<RagChunk>}
+     * @memberof RagSearchResult
+     */
+    chunks?: Array<RagChunk>;
 }
 
 /**
@@ -64,11 +64,11 @@ export function RagSearchResultFromJSONTyped(
         return json;
     }
     return {
-        sources:
-            json["sources"] == null
-                ? undefined
-                : (json["sources"] as Array<any>).map(ToolSourceFromJSON),
         answer: json["answer"],
+        chunks:
+            json["chunks"] == null
+                ? undefined
+                : (json["chunks"] as Array<any>).map(RagChunkFromJSON),
     };
 }
 
@@ -85,10 +85,10 @@ export function RagSearchResultToJSONTyped(
     }
 
     return {
-        sources:
-            value["sources"] == null
-                ? undefined
-                : (value["sources"] as Array<any>).map(ToolSourceToJSON),
         answer: value["answer"],
+        chunks:
+            value["chunks"] == null
+                ? undefined
+                : (value["chunks"] as Array<any>).map(RagChunkToJSON),
     };
 }

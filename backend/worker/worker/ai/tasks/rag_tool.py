@@ -3,7 +3,7 @@ from typing import Sequence
 from uuid import UUID
 
 from celery import chain, chord, group
-from common.ai_context.tool_models import RagSearchResult, ToolSource
+from common.ai_context.tool_models import RagChunk, RagSearchResult
 from common.dependencies import (
     get_celery_app,
     get_file_repository,
@@ -385,15 +385,15 @@ def synthesize_rag_answer_task(
     ranked_embeddings: list[RankedSearchEmbedding], question: str
 ) -> RagSearchResult:
     """Synthesize a grounded answer from ranked document chunks."""
-    sources = [
-        ToolSource(
+    chunks = [
+        RagChunk(
             file_id=e.file_id,
             text=sanitize_document_text(load_text_from_text_lazy(e.text_lazy)),
         )
         for e in ranked_embeddings
     ]
     answer_context = "".join(
-        f"<document>\n{s.text}\n</document>\n" for s in reversed(sources)
+        f"<document>\n{c.text}\n</document>\n" for c in reversed(chunks)
     )
 
     messages: list[ChatCompletionMessageParam]
@@ -422,7 +422,7 @@ def synthesize_rag_answer_task(
         )
         messages = [ChatCompletionUserMessageParam(role="user", content=task_prompt)]
 
-    return RagSearchResult(answer=_call_chat_llm(messages=messages), sources=sources)
+    return RagSearchResult(answer=_call_chat_llm(messages=messages), chunks=chunks)
 
 
 @app.task(bind=True, base=AiContextProcessingTask)

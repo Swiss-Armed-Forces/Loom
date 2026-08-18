@@ -21,13 +21,6 @@ import {
     QuerySuggestionToJSON,
     QuerySuggestionToJSONTyped,
 } from "./QuerySuggestion";
-import type { ToolSource } from "./ToolSource";
-import {
-    ToolSourceFromJSON,
-    ToolSourceFromJSONTyped,
-    ToolSourceToJSON,
-    ToolSourceToJSONTyped,
-} from "./ToolSource";
 
 /**
  *
@@ -35,12 +28,6 @@ import {
  * @interface SuggestQueriesResult
  */
 export interface SuggestQueriesResult {
-    /**
-     *
-     * @type {Array<ToolSource>}
-     * @memberof SuggestQueriesResult
-     */
-    sources?: Array<ToolSource>;
     /**
      *
      * @type {Array<QuerySuggestion>}
@@ -72,10 +59,6 @@ export function SuggestQueriesResultFromJSONTyped(
         return json;
     }
     return {
-        sources:
-            json["sources"] == null
-                ? undefined
-                : (json["sources"] as Array<any>).map(ToolSourceFromJSON),
         candidates: (json["candidates"] as Array<any>).map(
             QuerySuggestionFromJSON,
         ),
@@ -95,10 +78,6 @@ export function SuggestQueriesResultToJSONTyped(
     }
 
     return {
-        sources:
-            value["sources"] == null
-                ? undefined
-                : (value["sources"] as Array<any>).map(ToolSourceToJSON),
         candidates: (value["candidates"] as Array<any>).map(
             QuerySuggestionToJSON,
         ),

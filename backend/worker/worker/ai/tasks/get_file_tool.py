@@ -3,7 +3,6 @@ from uuid import UUID
 from common.ai_context.tool_models import (
     GetFileFieldResult,
     GetFileResult,
-    ToolSource,
 )
 from common.dependencies import get_celery_app, get_file_repository
 from common.file.file_repository import File
@@ -17,8 +16,6 @@ from worker.ai.file_fields import (
 from worker.ai.infra.ai_context_processing_task import AiContextProcessingTask
 
 app = get_celery_app()
-
-_MAX_CITATION_CHARS = 300
 
 
 @app.task(base=AiContextProcessingTask)
@@ -66,17 +63,10 @@ def get_file_field_work_task(file_id: str, field: str) -> GetFileFieldResult:
 
     value = serialize_field_value(field, raw_value)
 
-    sources: list[ToolSource] = []
-    if field == "content":
-        sources = [ToolSource(file_id=file_uuid, text=value[:_MAX_CITATION_CHARS])]
-    elif field == "summary":
-        sources = [ToolSource(file_id=file_uuid, text=value)]
-
     return GetFileFieldResult(
         file_id=str(file.id_),
         field=field,
         value=value,
-        sources=sources,
     )
 
 

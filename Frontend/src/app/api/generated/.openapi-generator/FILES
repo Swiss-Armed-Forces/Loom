@@ -84,6 +84,7 @@ models/PubSubMessage.ts
 models/QueryParameters.ts
 models/QuerySuggestion.ts
 models/QueuesStats.ts
+models/RagChunk.ts
 models/RagSearchResult.ts
 models/ReasoningActivityEntry.ts
 models/ReinitAllResult.ts
@@ -99,7 +100,6 @@ models/TaskRecord.ts
 models/TaskRun.ts
 models/TermsStatisticsModel.ts
 models/ToolCallActivityEntry.ts
-models/ToolSource.ts
 models/TranslateAllRequest.ts
 models/TranslateFileRequest.ts
 models/TranslateFileResult.ts

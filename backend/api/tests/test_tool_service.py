@@ -8,6 +8,7 @@ import pytest
 from common.ai_context.ai_context_repository import AiContext
 from common.ai_context.tool_models import (
     ExecuteQueryResult,
+    ExecuteQueryResultFile,
     FolderEntry,
     GetFileFieldResult,
     GetFileResult,
@@ -55,15 +56,16 @@ def test_execute_query_success(
     deps: AgentDeps,
 ):
     file_id = uuid4()
-    source = ToolSource(file_id=file_id, text="snippet")
-    expected = ExecuteQueryResult(files=[], sources=[source])
+    expected = ExecuteQueryResult(
+        files=[ExecuteQueryResultFile(file_id=str(file_id), text="snippet", score=1.0)],
+    )
     task_call_service_mock.call_execute_query_tool.return_value = expected
 
     ctx = _make_ctx(deps)
     result = tool_service.execute_query(ctx, "content:hello")
 
     assert result is expected
-    assert deps.source_collector == [source]
+    assert deps.source_collector == [ToolSource(file_id=file_id, text="snippet")]
 
 
 def test_execute_query_value_error_raises_model_retry(
@@ -91,12 +93,10 @@ def test_get_file_success(
     deps: AgentDeps,
 ):
     file_id = uuid4()
-    source = ToolSource(file_id=file_id)
     expected = GetFileResult(
         file_id=str(file_id),
         full_path="/docs/file.txt",
         available_fields=[],
-        sources=[source],
     )
     task_call_service_mock.call_get_file_tool.return_value = expected
 
@@ -104,7 +104,7 @@ def test_get_file_success(
     result = tool_service.get_file(ctx, str(file_id))
 
     assert result is expected
-    assert deps.source_collector == [source]
+    assert deps.source_collector == [ToolSource(file_id=file_id)]
 
 
 def test_get_file_value_error_raises_model_retry(
@@ -146,9 +146,8 @@ def test_get_file_field_success(
     deps: AgentDeps,
 ):
     file_id = uuid4()
-    source = ToolSource(file_id=file_id, text="content snippet")
     expected = GetFileFieldResult(
-        file_id=str(file_id), field="content", value="full content", sources=[source]
+        file_id=str(file_id), field="content", value="full content"
     )
     task_call_service_mock.call_get_file_field_tool.return_value = expected
 
@@ -156,7 +155,7 @@ def test_get_file_field_success(
     result = tool_service.get_file_field(ctx, str(file_id), "content")
 
     assert result is expected
-    assert deps.source_collector == [source]
+    assert deps.source_collector == [ToolSource(file_id=file_id, text="full content")]
 
 
 def test_get_file_field_value_error_raises_model_retry(
@@ -274,7 +273,7 @@ def test_execute_query_passes_folder_path(
     task_call_service_mock: MagicMock,
     deps: AgentDeps,
 ):
-    expected = ExecuteQueryResult(files=[], sources=[])
+    expected = ExecuteQueryResult(files=[])
     task_call_service_mock.call_execute_query_tool.return_value = expected
 
     ctx = _make_ctx(deps)

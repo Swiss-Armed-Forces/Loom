@@ -4,7 +4,6 @@ from uuid import UUID
 from common.ai_context.tool_models import (
     ExecuteQueryResult,
     ExecuteQueryResultFile,
-    ToolSource,
 )
 from common.dependencies import get_celery_app, get_file_repository
 from common.models.es_repository import PaginationParameters
@@ -49,7 +48,6 @@ def execute_query_work_task(
         ) from exc
 
     files = []
-    sources = []
     for file in result.objs:
         highlight_text = ""
         if file.es_meta.highlight:
@@ -70,9 +68,8 @@ def execute_query_work_task(
                 score=file.es_meta.score,
             )
         )
-        sources.append(ToolSource(file_id=file.id_, text=content_text))
 
-    return ExecuteQueryResult(files=files, sources=sources)
+    return ExecuteQueryResult(files=files)
 
 
 @app.task(bind=True, base=AiContextProcessingTask)

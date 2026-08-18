@@ -14,26 +14,12 @@
  */
 
 import { mapValues } from "../runtime";
-import type { ToolSource } from "./ToolSource";
-import {
-    ToolSourceFromJSON,
-    ToolSourceFromJSONTyped,
-    ToolSourceToJSON,
-    ToolSourceToJSONTyped,
-} from "./ToolSource";
-
 /**
  *
  * @export
  * @interface TranslateFileResult
  */
 export interface TranslateFileResult {
-    /**
-     *
-     * @type {Array<ToolSource>}
-     * @memberof TranslateFileResult
-     */
-    sources?: Array<ToolSource>;
     /**
      *
      * @type {string}
@@ -91,10 +77,6 @@ export function TranslateFileResultFromJSONTyped(
         return json;
     }
     return {
-        sources:
-            json["sources"] == null
-                ? undefined
-                : (json["sources"] as Array<any>).map(ToolSourceFromJSON),
         fileId: json["file_id"],
         sourceLanguage: json["source_language"],
         translation: json["translation"],
@@ -114,10 +96,6 @@ export function TranslateFileResultToJSONTyped(
     }
 
     return {
-        sources:
-            value["sources"] == null
-                ? undefined
-                : (value["sources"] as Array<any>).map(ToolSourceToJSON),
         file_id: value["fileId"],
         source_language: value["sourceLanguage"],
         translation: value["translation"],
