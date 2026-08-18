@@ -141,6 +141,7 @@ class LLMToolSettings(LLMClientSettings):
 
 class LLMAgentSettings(LLMClientSettings):
     extra_headers: LLMExtraHeaders | None = _LLM_THINKING_EXTRA_HEADERS
+    merge_system_messages: bool = True
 
 
 class LLMVisionSettings(LLMClientSettings):

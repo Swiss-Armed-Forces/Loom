@@ -13,12 +13,7 @@ class ToolSource(BaseModel):
 
 
 class ToolResult(BaseModel):
-    """Base for all tool results.
-
-    Tools populate sources with files they used.
-    """
-
-    sources: list[ToolSource] = Field(default_factory=list)
+    """Base for all tool results."""
 
 
 class QuerySuggestion(BaseModel):
@@ -59,8 +54,16 @@ class GetFileFieldResult(ToolResult):
     value: str
 
 
+class RagChunk(BaseModel):
+    """A document chunk retrieved and used by the RAG pipeline."""
+
+    file_id: UUID
+    text: str
+
+
 class RagSearchResult(ToolResult):
     answer: str
+    chunks: list[RagChunk] = Field(default_factory=list)
 
 
 class SummarizeFileResult(ToolResult):

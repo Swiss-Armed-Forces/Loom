@@ -7,6 +7,7 @@ from common.settings import settings
 from openai import AsyncOpenAI
 from pydantic_ai import Agent, RunContext
 from pydantic_ai.models.openai import OpenAIChatModel
+from pydantic_ai.profiles.openai import OpenAIModelProfile
 from pydantic_ai.providers.openai import OpenAIProvider
 from pydantic_ai.settings import ModelSettings
 from pydantic_ai.tools import DeferredToolRequests
@@ -29,7 +30,11 @@ class AgentService:
                 api_key=settings.llm.agent.api_key,
             )
         )
-        self._model = OpenAIChatModel(settings.llm.agent.model, provider=provider)
+        self._model = OpenAIChatModel(
+            settings.llm.agent.model,
+            provider=provider,
+            profile=self._build_model_profile(),
+        )
         self._model_settings = self._build_model_settings()
         self._agent: Agent[AgentDeps, str | DeferredToolRequests] = Agent(
             model=self._model,
@@ -72,6 +77,13 @@ class AgentService:
             return tool_service.base_toolset
 
         self._agent.toolset(_dynamic_toolset)
+
+    @staticmethod
+    def _build_model_profile() -> OpenAIModelProfile:
+        profile = OpenAIModelProfile()
+        if settings.llm.agent.merge_system_messages:
+            profile["openai_chat_supports_multiple_system_messages"] = False
+        return profile
 
     @staticmethod
     def _build_model_settings() -> ModelSettings:

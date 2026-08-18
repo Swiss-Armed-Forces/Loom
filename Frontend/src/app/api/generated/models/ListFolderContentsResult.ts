@@ -21,13 +21,6 @@ import {
     FolderEntryToJSON,
     FolderEntryToJSONTyped,
 } from "./FolderEntry";
-import type { ToolSource } from "./ToolSource";
-import {
-    ToolSourceFromJSON,
-    ToolSourceFromJSONTyped,
-    ToolSourceToJSON,
-    ToolSourceToJSONTyped,
-} from "./ToolSource";
 
 /**
  *
@@ -35,12 +28,6 @@ import {
  * @interface ListFolderContentsResult
  */
 export interface ListFolderContentsResult {
-    /**
-     *
-     * @type {Array<ToolSource>}
-     * @memberof ListFolderContentsResult
-     */
-    sources?: Array<ToolSource>;
     /**
      *
      * @type {string}
@@ -86,10 +73,6 @@ export function ListFolderContentsResultFromJSONTyped(
         return json;
     }
     return {
-        sources:
-            json["sources"] == null
-                ? undefined
-                : (json["sources"] as Array<any>).map(ToolSourceFromJSON),
         folderPath: json["folder_path"],
         entries: (json["entries"] as Array<any>).map(FolderEntryFromJSON),
     };
@@ -110,10 +93,6 @@ export function ListFolderContentsResultToJSONTyped(
     }
 
     return {
-        sources:
-            value["sources"] == null
-                ? undefined
-                : (value["sources"] as Array<any>).map(ToolSourceToJSON),
         folder_path: value["folderPath"],
         entries: (value["entries"] as Array<any>).map(FolderEntryToJSON),
     };

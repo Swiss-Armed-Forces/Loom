@@ -14,26 +14,12 @@
  */
 
 import { mapValues } from "../runtime";
-import type { ToolSource } from "./ToolSource";
-import {
-    ToolSourceFromJSON,
-    ToolSourceFromJSONTyped,
-    ToolSourceToJSON,
-    ToolSourceToJSONTyped,
-} from "./ToolSource";
-
 /**
  *
  * @export
  * @interface DescribeImageResult
  */
 export interface DescribeImageResult {
-    /**
-     *
-     * @type {Array<ToolSource>}
-     * @memberof DescribeImageResult
-     */
-    sources?: Array<ToolSource>;
     /**
      *
      * @type {string}
@@ -78,10 +64,6 @@ export function DescribeImageResultFromJSONTyped(
         return json;
     }
     return {
-        sources:
-            json["sources"] == null
-                ? undefined
-                : (json["sources"] as Array<any>).map(ToolSourceFromJSON),
         fileId: json["file_id"],
         description: json["description"],
     };
@@ -100,10 +82,6 @@ export function DescribeImageResultToJSONTyped(
     }
 
     return {
-        sources:
-            value["sources"] == null
-                ? undefined
-                : (value["sources"] as Array<any>).map(ToolSourceToJSON),
         file_id: value["fileId"],
         description: value["description"],
     };

@@ -295,6 +295,7 @@ llm:
 
   agent:
     <<: *llm-defaults
+    merge_system_messages: true
 
   summarization_key_points:
     <<: *llm-defaults

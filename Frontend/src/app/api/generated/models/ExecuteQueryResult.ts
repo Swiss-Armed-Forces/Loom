@@ -14,13 +14,6 @@
  */
 
 import { mapValues } from "../runtime";
-import type { ToolSource } from "./ToolSource";
-import {
-    ToolSourceFromJSON,
-    ToolSourceFromJSONTyped,
-    ToolSourceToJSON,
-    ToolSourceToJSONTyped,
-} from "./ToolSource";
 import type { ExecuteQueryResultFile } from "./ExecuteQueryResultFile";
 import {
     ExecuteQueryResultFileFromJSON,
@@ -35,12 +28,6 @@ import {
  * @interface ExecuteQueryResult
  */
 export interface ExecuteQueryResult {
-    /**
-     *
-     * @type {Array<ToolSource>}
-     * @memberof ExecuteQueryResult
-     */
-    sources?: Array<ToolSource>;
     /**
      *
      * @type {Array<ExecuteQueryResultFile>}
@@ -71,10 +58,6 @@ export function ExecuteQueryResultFromJSONTyped(
         return json;
     }
     return {
-        sources:
-            json["sources"] == null
-                ? undefined
-                : (json["sources"] as Array<any>).map(ToolSourceFromJSON),
         files: (json["files"] as Array<any>).map(
             ExecuteQueryResultFileFromJSON,
         ),
@@ -94,10 +77,6 @@ export function ExecuteQueryResultToJSONTyped(
     }
 
     return {
-        sources:
-            value["sources"] == null
-                ? undefined
-                : (value["sources"] as Array<any>).map(ToolSourceToJSON),
         files: (value["files"] as Array<any>).map(ExecuteQueryResultFileToJSON),
     };
 }

@@ -23,6 +23,8 @@ from pydantic_ai.exceptions import ToolFailed
 
 from api.services.task_call_service import TaskCallService
 
+_MAX_CITATION_CHARS = 300
+
 
 @dataclass
 class AgentDeps:
@@ -84,10 +86,12 @@ class ToolService:
             folder_path: Optional absolute folder path to restrict results to
                 a subtree, e.g. "/" or "//source/subfolder".
         """
-        result = self._task_call_service.call_suggest_queries_tool(
-            ctx.deps.context.id_, query_description, folder_path
-        )
-        return result
+        try:
+            return self._task_call_service.call_suggest_queries_tool(
+                ctx.deps.context.id_, query_description, folder_path
+            )
+        except ValueError as exc:
+            raise ModelRetry(str(exc)) from exc
 
     def execute_query(
         self,
@@ -111,10 +115,16 @@ class ToolService:
             result = self._task_call_service.call_execute_query_tool(
                 ctx.deps.context.id_, query_string, folder_path
             )
-            ctx.deps.source_collector.extend(result.sources)
-            return result
         except ValueError as exc:
             raise ModelRetry(str(exc)) from exc
+        ctx.deps.source_collector.extend(
+            ToolSource(
+                file_id=UUID(f.file_id),
+                text=f.text[:_MAX_CITATION_CHARS],
+            )
+            for f in result.files
+        )
+        return result
 
     def get_file(self, ctx: RunContext[AgentDeps], file_id: str) -> GetFileResult:
         """Get the full path and available fields for a file by its UUID.
@@ -129,12 +139,12 @@ class ToolService:
             result = self._task_call_service.call_get_file_tool(
                 ctx.deps.context.id_, file_id
             )
-            ctx.deps.source_collector.extend(result.sources)
-            return result
         except ValueError as exc:
             raise ModelRetry(str(exc)) from exc
         except LookupError as exc:
             raise ToolFailed(str(exc)) from exc
+        ctx.deps.source_collector.append(ToolSource(file_id=UUID(result.file_id)))
+        return result
 
     def get_file_field(
         self, ctx: RunContext[AgentDeps], file_id: str, field: str
@@ -150,12 +160,17 @@ class ToolService:
             result = self._task_call_service.call_get_file_field_tool(
                 ctx.deps.context.id_, file_id, field
             )
-            ctx.deps.source_collector.extend(result.sources)
-            return result
         except ValueError as exc:
             raise ModelRetry(str(exc)) from exc
         except LookupError as exc:
             raise ToolFailed(str(exc)) from exc
+        ctx.deps.source_collector.append(
+            ToolSource(
+                file_id=UUID(result.file_id),
+                text=result.value[:_MAX_CITATION_CHARS],
+            )
+        )
+        return result
 
     def summarize_file(
         self, ctx: RunContext[AgentDeps], file_id: str
@@ -169,16 +184,19 @@ class ToolService:
             file_id: UUID string of the file to summarize.
         """
         try:
-            uuid = UUID(file_id)
-        except ValueError as exc:
-            raise ToolFailed(f"Invalid file_id UUID: {file_id}") from exc
-        try:
             result = self._task_call_service.call_summarize_file_tool(
                 ctx.deps.context.id_, file_id
             )
+        except ValueError as exc:
+            raise ModelRetry(str(exc)) from exc
         except LookupError as exc:
             raise ToolFailed(str(exc)) from exc
-        ctx.deps.source_collector.append(ToolSource(file_id=uuid))
+        ctx.deps.source_collector.append(
+            ToolSource(
+                file_id=UUID(result.file_id),
+                text=result.summary[:_MAX_CITATION_CHARS],
+            )
+        )
         return result
 
     def translate_file(
@@ -196,16 +214,19 @@ class ToolService:
                 current language.
         """
         try:
-            uuid = UUID(file_id)
-        except ValueError as exc:
-            raise ToolFailed(f"Invalid file_id UUID: {file_id}") from exc
-        try:
             result = self._task_call_service.call_translate_file_tool(
                 ctx.deps.context.id_, file_id, source_language
             )
+        except ValueError as exc:
+            raise ModelRetry(str(exc)) from exc
         except LookupError as exc:
             raise ToolFailed(str(exc)) from exc
-        ctx.deps.source_collector.append(ToolSource(file_id=uuid))
+        ctx.deps.source_collector.append(
+            ToolSource(
+                file_id=UUID(result.file_id),
+                text=result.translation[:_MAX_CITATION_CHARS],
+            )
+        )
         return result
 
     def describe_image(
@@ -219,16 +240,19 @@ class ToolService:
             file_id: UUID string of the image file to describe.
         """
         try:
-            uuid = UUID(file_id)
-        except ValueError as exc:
-            raise ToolFailed(f"Invalid file_id UUID: {file_id}") from exc
-        try:
             result = self._task_call_service.call_describe_image_tool(
                 ctx.deps.context.id_, file_id
             )
+        except ValueError as exc:
+            raise ModelRetry(str(exc)) from exc
         except LookupError as exc:
             raise ToolFailed(str(exc)) from exc
-        ctx.deps.source_collector.append(ToolSource(file_id=uuid))
+        ctx.deps.source_collector.append(
+            ToolSource(
+                file_id=UUID(result.file_id),
+                text=result.description[:_MAX_CITATION_CHARS],
+            )
+        )
         return result
 
     def list_folder_contents(
@@ -243,9 +267,14 @@ class ToolService:
         Args:
             folder_path: Absolute folder path to list, e.g. "/" or "//source/subfolder".
         """
-        return self._task_call_service.call_list_folder_contents_tool(
-            ctx.deps.context.id_, folder_path
-        )
+        try:
+            return self._task_call_service.call_list_folder_contents_tool(
+                ctx.deps.context.id_, folder_path
+            )
+        except ValueError as exc:
+            raise ModelRetry(str(exc)) from exc
+        except LookupError as exc:
+            raise ToolFailed(str(exc)) from exc
 
     def search_by_filename(
         self, ctx: RunContext[AgentDeps], filename: str
@@ -258,9 +287,12 @@ class ToolService:
         Args:
             filename: Substring to match against filenames (case-insensitive).
         """
-        return self._task_call_service.call_search_by_filename_tool(
-            ctx.deps.context.id_, filename
-        )
+        try:
+            return self._task_call_service.call_search_by_filename_tool(
+                ctx.deps.context.id_, filename
+            )
+        except ValueError as exc:
+            raise ModelRetry(str(exc)) from exc
 
     def rag_search(self, ctx: RunContext[AgentDeps], query: str) -> RagSearchResult:
         """Run the full RAG pipeline: retrieve and synthesize an answer from documents.
@@ -268,8 +300,17 @@ class ToolService:
         Args:
             query: Natural language question to answer using the document corpus.
         """
-        result = self._task_call_service.call_rag_search_tool(
-            ctx.deps.context.id_, query
+        try:
+            result = self._task_call_service.call_rag_search_tool(
+                ctx.deps.context.id_, query
+            )
+        except ValueError as exc:
+            raise ModelRetry(str(exc)) from exc
+        ctx.deps.source_collector.extend(
+            ToolSource(
+                file_id=chunk.file_id,
+                text=chunk.text[:_MAX_CITATION_CHARS],
+            )
+            for chunk in result.chunks
         )
-        ctx.deps.source_collector.extend(result.sources)
         return result

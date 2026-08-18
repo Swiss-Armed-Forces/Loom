@@ -14,26 +14,12 @@
  */
 
 import { mapValues } from "../runtime";
-import type { ToolSource } from "./ToolSource";
-import {
-    ToolSourceFromJSON,
-    ToolSourceFromJSONTyped,
-    ToolSourceToJSON,
-    ToolSourceToJSONTyped,
-} from "./ToolSource";
-
 /**
  *
  * @export
  * @interface SummarizeFileResult
  */
 export interface SummarizeFileResult {
-    /**
-     *
-     * @type {Array<ToolSource>}
-     * @memberof SummarizeFileResult
-     */
-    sources?: Array<ToolSource>;
     /**
      *
      * @type {string}
@@ -77,10 +63,6 @@ export function SummarizeFileResultFromJSONTyped(
         return json;
     }
     return {
-        sources:
-            json["sources"] == null
-                ? undefined
-                : (json["sources"] as Array<any>).map(ToolSourceFromJSON),
         fileId: json["file_id"],
         summary: json["summary"],
     };
@@ -99,10 +81,6 @@ export function SummarizeFileResultToJSONTyped(
     }
 
     return {
-        sources:
-            value["sources"] == null
-                ? undefined
-                : (value["sources"] as Array<any>).map(ToolSourceToJSON),
         file_id: value["fileId"],
         summary: value["summary"],
     };

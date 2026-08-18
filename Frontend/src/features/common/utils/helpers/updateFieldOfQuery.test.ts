@@ -405,4 +405,171 @@ describe("SearchQueryUtils", () => {
 
         expect(result).toBe('NOT tags:"new-tag"');
     });
+
+    describe("clearFields", () => {
+        it("should strip specified fields when clearFields is provided", () => {
+            const result = updateFieldOfQuery(
+                'parent_path:"a/b"',
+                SearchQueryField.FullPathTree,
+                "a/b",
+                false,
+                false,
+                false,
+                [SearchQueryField.ParentPath],
+            );
+
+            expect(result).toBe('full_path.tree:"a/b"');
+        });
+
+        it("should strip existing FullPathTree when clearFields includes it", () => {
+            const result = updateFieldOfQuery(
+                'full_path.tree:"a/b"',
+                SearchQueryField.ParentPath,
+                "a/b",
+                false,
+                false,
+                false,
+                [SearchQueryField.FullPathTree],
+            );
+
+            expect(result).toBe('parent_path:"a/b"');
+        });
+
+        it("should strip clearFields while preserving unrelated fields", () => {
+            const result = updateFieldOfQuery(
+                'parent_path:"a" tags:"foo"',
+                SearchQueryField.FullPathTree,
+                "a",
+                false,
+                false,
+                false,
+                [SearchQueryField.ParentPath],
+            );
+
+            expect(result).toBe('full_path.tree:"a" tags:"foo"');
+        });
+
+        it("should strip negated clearFields", () => {
+            const result = updateFieldOfQuery(
+                'NOT parent_path:"x"',
+                SearchQueryField.FullPathTree,
+                "y",
+                false,
+                false,
+                false,
+                [SearchQueryField.ParentPath],
+            );
+
+            expect(result).toBe('full_path.tree:"y"');
+        });
+
+        it("should leave other fields untouched when no clearFields is provided", () => {
+            const result = updateFieldOfQuery(
+                'parent_path:"a" tags:"foo"',
+                SearchQueryField.Tags,
+                "bar",
+            );
+
+            expect(result).toBe('tags:"bar" parent_path:"a"');
+        });
+
+        it("should strip Seen and Flagged when listed in clearFields", () => {
+            const result = updateFieldOfQuery(
+                'full_path.tree:"/old" seen:"false" tags:"foo"',
+                SearchQueryField.FullPathTree,
+                "/new",
+                false,
+                false,
+                false,
+                [SearchQueryField.Seen, SearchQueryField.Flagged],
+            );
+
+            expect(result).toBe('full_path.tree:"/new" tags:"foo"');
+        });
+
+        it("should strip multiple clearFields at once", () => {
+            const result = updateFieldOfQuery(
+                'full_path.tree:"/a" flagged:"true"',
+                SearchQueryField.ParentPath,
+                "/a",
+                false,
+                false,
+                false,
+                [SearchQueryField.FullPathTree, SearchQueryField.Flagged],
+            );
+
+            expect(result).toBe('parent_path:"/a"');
+        });
+
+        it("should strip Flagged when Seen is set with clearFields", () => {
+            const result = updateFieldOfQuery(
+                'flagged:"true"',
+                SearchQueryField.Seen,
+                "false",
+                false,
+                false,
+                false,
+                [SearchQueryField.Flagged],
+            );
+
+            expect(result).toBe('seen:"false"');
+        });
+
+        it("should not strip fields not listed in clearFields", () => {
+            const result = updateFieldOfQuery(
+                'full_path.tree:"/a"',
+                SearchQueryField.FullPathKeyword,
+                "/a",
+                false,
+                true,
+            );
+
+            expect(result).toBe(
+                'NOT full_path.keyword:"/a" full_path.tree:"/a"',
+            );
+        });
+
+        it("should build a complete subtree exclusion query step by step", () => {
+            // Simulates what subtreeBaseQuery + handleFlaggedClick does:
+            // 1. Set FullPathTree, clearing Seen, Flagged, ParentPath, FullPathKeyword
+            let query = updateFieldOfQuery(
+                'parent_path:"/old" seen:"false"',
+                SearchQueryField.FullPathTree,
+                "/a",
+                false,
+                false,
+                false,
+                [
+                    SearchQueryField.ParentPath,
+                    SearchQueryField.FullPathKeyword,
+                    SearchQueryField.Seen,
+                    SearchQueryField.Flagged,
+                ],
+            );
+            // 2. Set NOT FullPathKeyword, clearing only ParentPath
+            query = updateFieldOfQuery(
+                query,
+                SearchQueryField.FullPathKeyword,
+                "/a",
+                false,
+                true,
+                false,
+                [SearchQueryField.ParentPath],
+            );
+            // 3. Set Flagged, clearing only Seen
+            query = updateFieldOfQuery(
+                query,
+                SearchQueryField.Flagged,
+                "true",
+                false,
+                false,
+                false,
+                [SearchQueryField.Seen],
+            );
+
+            expect(query).toBe(
+                'flagged:"true" NOT full_path.keyword:"/a" full_path.tree:"/a"',
+            );
+        });
+    });
 });

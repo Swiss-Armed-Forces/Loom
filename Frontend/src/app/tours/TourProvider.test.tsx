@@ -285,7 +285,7 @@ describe("TourProvider", () => {
         renderProvider(<TourViewHarness />);
 
         await waitFor(() => expect(driverInstance.drive).toHaveBeenCalled());
-        expect(capturedConfig.steps).toHaveLength(2);
+        expect(capturedConfig.steps).toHaveLength(3);
         expect(capturedConfig.steps?.[0].element).toBe(
             '[data-tour="branding"]',
         );
@@ -311,7 +311,7 @@ describe("TourProvider", () => {
         expect(driverInstance.moveTo).toHaveBeenCalledWith(1);
 
         await act(async () => {
-            await capturedConfig.steps?.[1].popover?.onDoneClick?.(
+            await capturedConfig.steps?.[1].popover?.onNextClick?.(
                 undefined,
                 capturedConfig.steps?.[1] as DriveStep,
                 {
@@ -319,6 +319,19 @@ describe("TourProvider", () => {
                     state: {},
                     driver: driverInstance,
                     index: 1,
+                },
+            );
+        });
+
+        await act(async () => {
+            await capturedConfig.steps?.[2].popover?.onDoneClick?.(
+                undefined,
+                capturedConfig.steps?.[2] as DriveStep,
+                {
+                    config: capturedConfig,
+                    state: {},
+                    driver: driverInstance,
+                    index: 2,
                 },
             );
         });
@@ -342,13 +355,13 @@ describe("TourProvider", () => {
         renderProvider(<TourViewHarness />);
 
         await waitFor(() => expect(driverInstance.drive).toHaveBeenCalled());
-        expect(capturedConfig.steps).toHaveLength(2);
+        expect(capturedConfig.steps).toHaveLength(3);
         expect(capturedConfig.steps?.[1].popover?.nextBtnText).toBe(
             "tour.controls.searchAll",
         );
 
         await act(async () => {
-            await capturedConfig.steps?.[1].popover?.onDoneClick?.(
+            await capturedConfig.steps?.[1].popover?.onNextClick?.(
                 undefined,
                 capturedConfig.steps[1] as DriveStep,
                 {
@@ -365,6 +378,20 @@ describe("TourProvider", () => {
             sortField: null,
             sortDirection: "desc",
         });
+
+        await act(async () => {
+            await capturedConfig.steps?.[2].popover?.onDoneClick?.(
+                undefined,
+                capturedConfig.steps[2] as DriveStep,
+                {
+                    config: capturedConfig,
+                    state: {},
+                    driver: driverInstance,
+                    index: 2,
+                },
+            );
+        });
+
         expect(driverInstance.destroy).toHaveBeenCalledOnce();
         expect(
             JSON.parse(window.localStorage.getItem(TOUR_STORAGE_KEY)!)
@@ -386,7 +413,7 @@ describe("TourProvider", () => {
 
         await waitFor(() => expect(driverInstance.drive).toHaveBeenCalled());
         await act(async () => {
-            await capturedConfig.steps?.[1].popover?.onDoneClick?.(
+            await capturedConfig.steps?.[1].popover?.onNextClick?.(
                 undefined,
                 capturedConfig.steps[1] as DriveStep,
                 {
@@ -413,7 +440,7 @@ describe("TourProvider", () => {
         const view = renderProvider(<DynamicTourViewHarness />);
 
         await waitFor(() => expect(driverInstance.drive).toHaveBeenCalled());
-        expect(capturedConfig.steps).toHaveLength(2);
+        expect(capturedConfig.steps).toHaveLength(3);
         expect(capturedConfig.steps?.[1].element).toBe(
             '[data-tour="sidebar-folders"]',
         );
@@ -466,18 +493,19 @@ describe("TourProvider", () => {
             sortField: null,
             sortDirection: "desc",
         });
-        expect(capturedConfig.steps).toHaveLength(3);
+        expect(capturedConfig.steps).toHaveLength(4);
         expect(capturedConfig.steps?.map(({ element }) => element)).toEqual([
             '[data-tour="branding"]',
             '[data-tour="detail-highlights"]',
             '[data-tour="sidebar-folders"]',
+            '[data-tour="branding"]',
         ]);
         expect(capturedConfig.skipMissingElement).toBe(false);
         expect(
             capturedConfig.steps?.map(({ skipMissingElement }) =>
                 Boolean(skipMissingElement),
             ),
-        ).toEqual([false, false, false]);
+        ).toEqual([false, false, false, false]);
         expect(view.getByTestId("dynamic-tour-view")).toHaveTextContent(
             "active:detail-highlights",
         );
@@ -571,7 +599,7 @@ describe("TourProvider", () => {
         await waitFor(() =>
             expect(driverInstance.drive).toHaveBeenCalledWith(2),
         );
-        expect(capturedConfig.steps).toHaveLength(3);
+        expect(capturedConfig.steps).toHaveLength(4);
         expect(capturedConfig.steps?.[1].element).toBe('[data-tour="upload"]');
         expect(view.getByText("Folder sidebar")).toBeInTheDocument();
         expect(view.getByTestId("dynamic-tour-view")).toHaveTextContent(
@@ -593,7 +621,7 @@ describe("TourProvider", () => {
             sortField: null,
             sortDirection: "desc",
         });
-        expect(capturedConfig.steps).toHaveLength(2);
+        expect(capturedConfig.steps).toHaveLength(3);
         expect(capturedConfig.steps?.[1].element).toBe(
             '[data-tour="result-card"]',
         );
