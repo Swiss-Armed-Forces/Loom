@@ -15,29 +15,29 @@
 
 import { mapValues } from "../runtime";
 /**
- * A file referenced by a tool call, with an optional citation text snippet.
+ * A document chunk retrieved and used by the RAG pipeline.
  * @export
- * @interface ToolSource
+ * @interface RagChunk
  */
-export interface ToolSource {
+export interface RagChunk {
     /**
      *
      * @type {string}
-     * @memberof ToolSource
+     * @memberof RagChunk
      */
     fileId: string;
     /**
      *
      * @type {string}
-     * @memberof ToolSource
+     * @memberof RagChunk
      */
-    text?: string;
+    text: string;
 }
 
 /**
- * Check if a given object implements the ToolSource interface.
+ * Check if a given object implements the RagChunk interface.
  */
-export function instanceOfToolSource(value: object): value is ToolSource {
+export function instanceOfRagChunk(value: object): value is RagChunk {
     if (
         (!("fileId" in (value as Record<string, any>)) &&
             !("file_id" in (value as Record<string, any>))) ||
@@ -45,32 +45,33 @@ export function instanceOfToolSource(value: object): value is ToolSource {
             (value as Record<string, any>)["file_id"] === undefined)
     )
         return false;
+    if (!("text" in value) || value["text"] === undefined) return false;
     return true;
 }
 
-export function ToolSourceFromJSON(json: any): ToolSource {
-    return ToolSourceFromJSONTyped(json, false);
+export function RagChunkFromJSON(json: any): RagChunk {
+    return RagChunkFromJSONTyped(json, false);
 }
 
-export function ToolSourceFromJSONTyped(
+export function RagChunkFromJSONTyped(
     json: any,
     ignoreDiscriminator: boolean,
-): ToolSource {
+): RagChunk {
     if (json == null) {
         return json;
     }
     return {
         fileId: json["file_id"],
-        text: json["text"] == null ? undefined : json["text"],
+        text: json["text"],
     };
 }
 
-export function ToolSourceToJSON(json: any): ToolSource {
-    return ToolSourceToJSONTyped(json, false);
+export function RagChunkToJSON(json: any): RagChunk {
+    return RagChunkToJSONTyped(json, false);
 }
 
-export function ToolSourceToJSONTyped(
-    value?: ToolSource | null,
+export function RagChunkToJSONTyped(
+    value?: RagChunk | null,
     ignoreDiscriminator: boolean = false,
 ): any {
     if (value == null) {

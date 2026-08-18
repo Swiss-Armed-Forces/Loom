@@ -21,13 +21,6 @@ import {
     FilenameSearchEntryToJSON,
     FilenameSearchEntryToJSONTyped,
 } from "./FilenameSearchEntry";
-import type { ToolSource } from "./ToolSource";
-import {
-    ToolSourceFromJSON,
-    ToolSourceFromJSONTyped,
-    ToolSourceToJSON,
-    ToolSourceToJSONTyped,
-} from "./ToolSource";
 
 /**
  *
@@ -35,12 +28,6 @@ import {
  * @interface SearchByFilenameResult
  */
 export interface SearchByFilenameResult {
-    /**
-     *
-     * @type {Array<ToolSource>}
-     * @memberof SearchByFilenameResult
-     */
-    sources?: Array<ToolSource>;
     /**
      *
      * @type {string}
@@ -80,10 +67,6 @@ export function SearchByFilenameResultFromJSONTyped(
         return json;
     }
     return {
-        sources:
-            json["sources"] == null
-                ? undefined
-                : (json["sources"] as Array<any>).map(ToolSourceFromJSON),
         query: json["query"],
         files: (json["files"] as Array<any>).map(FilenameSearchEntryFromJSON),
     };
@@ -104,10 +87,6 @@ export function SearchByFilenameResultToJSONTyped(
     }
 
     return {
-        sources:
-            value["sources"] == null
-                ? undefined
-                : (value["sources"] as Array<any>).map(ToolSourceToJSON),
         query: value["query"],
         files: (value["files"] as Array<any>).map(FilenameSearchEntryToJSON),
     };

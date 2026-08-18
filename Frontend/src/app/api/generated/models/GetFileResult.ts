@@ -21,13 +21,6 @@ import {
     FileFieldInfoToJSON,
     FileFieldInfoToJSONTyped,
 } from "./FileFieldInfo";
-import type { ToolSource } from "./ToolSource";
-import {
-    ToolSourceFromJSON,
-    ToolSourceFromJSONTyped,
-    ToolSourceToJSON,
-    ToolSourceToJSONTyped,
-} from "./ToolSource";
 
 /**
  *
@@ -35,12 +28,6 @@ import {
  * @interface GetFileResult
  */
 export interface GetFileResult {
-    /**
-     *
-     * @type {Array<ToolSource>}
-     * @memberof GetFileResult
-     */
-    sources?: Array<ToolSource>;
     /**
      *
      * @type {string}
@@ -101,10 +88,6 @@ export function GetFileResultFromJSONTyped(
         return json;
     }
     return {
-        sources:
-            json["sources"] == null
-                ? undefined
-                : (json["sources"] as Array<any>).map(ToolSourceFromJSON),
         fileId: json["file_id"],
         fullPath: json["full_path"],
         availableFields: (json["available_fields"] as Array<any>).map(
@@ -126,10 +109,6 @@ export function GetFileResultToJSONTyped(
     }
 
     return {
-        sources:
-            value["sources"] == null
-                ? undefined
-                : (value["sources"] as Array<any>).map(ToolSourceToJSON),
         file_id: value["fileId"],
         full_path: value["fullPath"],
         available_fields: (value["availableFields"] as Array<any>).map(
