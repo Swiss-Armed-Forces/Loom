@@ -69,6 +69,15 @@ export const INCREMENTAL_TOUR_INTRO_STEP: TourStep = {
     align: "start",
 };
 
+export const TOUR_CONCLUSION_STEP: TourStep = {
+    id: "conclusion",
+    target: { selector: TOUR_TARGETS.branding },
+    titleKey: "tour.steps.conclusion.title",
+    descriptionKey: "tour.steps.conclusion.description",
+    side: "bottom",
+    align: "start",
+};
+
 export const GLOBAL_TOUR_STEPS: readonly TourStep[] = [
     {
         id: "welcome",
@@ -560,12 +569,5 @@ export const GLOBAL_TOUR_STEPS: readonly TourStep[] = [
         align: "end",
         waitForElementMs: 2_000,
     },
-    {
-        id: "conclusion",
-        target: { selector: TOUR_TARGETS.branding },
-        titleKey: "tour.steps.conclusion.title",
-        descriptionKey: "tour.steps.conclusion.description",
-        side: "bottom",
-        align: "start",
-    },
+    TOUR_CONCLUSION_STEP,
 ];
