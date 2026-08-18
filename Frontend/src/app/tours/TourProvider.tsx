@@ -13,7 +13,11 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { useAppDispatch, useAppSelector } from "@app/hooks";
 import { selectFiles, updateQuery } from "@app/slices/searchSlice";
 
-import { GLOBAL_TOUR_STEPS, INCREMENTAL_TOUR_INTRO_STEP } from "./catalog";
+import {
+    GLOBAL_TOUR_STEPS,
+    INCREMENTAL_TOUR_INTRO_STEP,
+    TOUR_CONCLUSION_STEP,
+} from "./catalog";
 import {
     acknowledgeTourSteps,
     createTourStepHashes,
@@ -274,7 +278,13 @@ export const TourProvider = ({ children }: TourProviderProps) => {
                 mode,
                 steps:
                     mode === "incremental"
-                        ? [INCREMENTAL_TOUR_INTRO_STEP, ...eligibleSteps]
+                        ? [
+                              INCREMENTAL_TOUR_INTRO_STEP,
+                              ...eligibleSteps.filter(
+                                  (s) => s.id !== "conclusion",
+                              ),
+                              TOUR_CONCLUSION_STEP,
+                          ]
                         : eligibleSteps,
             });
             return true;
