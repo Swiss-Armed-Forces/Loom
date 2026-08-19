@@ -15,7 +15,7 @@ export * from "./ArchivesModel";
 export * from "./Attachment";
 export * from "./AvailableStat";
 export * from "./CacheStatisticsEntryModel";
-export * from "./Capability";
+export * from "./CapabilityId";
 export * from "./CapabilityUpdate";
 export * from "./CompleteEstimateResult";
 export * from "./ContextCreateResponse";

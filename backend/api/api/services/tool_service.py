@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from dataclasses import field as dataclass_field
 from uuid import UUID
 
-from common.ai_context.ai_context_repository import AiContext, Capability
+from common.ai_context.ai_context_repository import AiContext, CapabilityId
 from common.ai_context.tool_models import (
     DescribeImageResult,
     ExecuteQueryResult,
@@ -18,7 +18,8 @@ from common.ai_context.tool_models import (
     ToolSource,
     TranslateFileResult,
 )
-from pydantic_ai import FunctionToolset, ModelRetry, RunContext
+from pydantic_ai import ModelRetry, RunContext
+from pydantic_ai.capabilities import AgentCapability, Capability
 from pydantic_ai.exceptions import ToolFailed
 
 from api.services.task_call_service import TaskCallService
@@ -30,7 +31,7 @@ _MAX_CITATION_CHARS = 300
 class AgentDeps:
     context: AiContext
     source_collector: list[ToolSource] = dataclass_field(default_factory=list)
-    active_capabilities: set[Capability] = dataclass_field(default_factory=set)
+    active_capabilities: set[CapabilityId] = dataclass_field(default_factory=set)
 
 
 class ToolService:
@@ -39,17 +40,42 @@ class ToolService:
     def __init__(self, task_call_service: TaskCallService) -> None:
         self._task_call_service = task_call_service
 
-        self.base_toolset: FunctionToolset[AgentDeps] = FunctionToolset()
-        self.base_toolset.tool(self.suggest_queries)
-        self.base_toolset.tool(self.get_file)
-        self.base_toolset.tool(self.get_file_field)
-        self.base_toolset.tool(self.summarize_file)
-        self.base_toolset.tool(self.translate_file)
-        self.base_toolset.tool(self.describe_image)
-        self.base_toolset.tool(self.list_folder_contents)
-        self.base_toolset.tool(self.search_by_filename)
+        self._search_and_browse = Capability[AgentDeps](
+            id="search_and_browse",
+            description=(
+                "Tools for searching documents by content or filename "
+                "and browsing the folder structure."
+            ),
+            tools=[
+                self.suggest_queries,
+                self.list_folder_contents,
+                self.search_by_filename,
+            ],
+            defer_loading=True,
+        )
 
-        self.research_mode_toolset: FunctionToolset[AgentDeps] = FunctionToolset(
+        self._file_access = Capability[AgentDeps](
+            id="file_access",
+            description=(
+                "Tools for retrieving file metadata and reading "
+                "individual file fields."
+            ),
+            tools=[self.get_file, self.get_file_field],
+            defer_loading=True,
+        )
+
+        self._ai_processing = Capability[AgentDeps](
+            id="ai_processing",
+            description=(
+                "Tools for AI-powered file processing: summarization, "
+                "translation, and image description."
+            ),
+            tools=[self.summarize_file, self.translate_file, self.describe_image],
+            defer_loading=True,
+        )
+
+        self._research_mode = Capability[AgentDeps](
+            id="research_mode",
             instructions=(
                 "You are in RESEARCH MODE. Take your time and perform thorough, "
                 "multi-faceted research before answering. "
@@ -59,14 +85,26 @@ class ToolService:
                 "in depth, and cross-reference findings across the corpus. "
                 "Do not attempt to manipulate the UI in this mode — focus entirely on research."
             ),
+            tools=[self.execute_query, self.rag_search],
         )
-        self.research_mode_toolset.tool(self.suggest_queries)
-        self.research_mode_toolset.tool(self.execute_query)
-        self.research_mode_toolset.tool(self.rag_search)
-        self.research_mode_toolset.tool(self.get_file)
-        self.research_mode_toolset.tool(self.get_file_field)
-        self.research_mode_toolset.tool(self.list_folder_contents)
-        self.research_mode_toolset.tool(self.search_by_filename)
+
+    @property
+    def capabilities(self) -> list[AgentCapability[AgentDeps]]:
+        """All capabilities for the agent, including the dynamic research mode."""
+
+        def _research_mode_fn(
+            ctx: RunContext[AgentDeps],
+        ) -> Capability[AgentDeps] | None:
+            if CapabilityId.RESEARCH_MODE in ctx.deps.active_capabilities:
+                return self._research_mode
+            return None
+
+        return [
+            self._search_and_browse,
+            self._file_access,
+            self._ai_processing,
+            _research_mode_fn,
+        ]
 
     def suggest_queries(
         self,

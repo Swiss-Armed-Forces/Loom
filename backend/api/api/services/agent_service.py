@@ -5,15 +5,14 @@ from typing import Any, NamedTuple
 from common.ai_context.ai_context_repository import AiContext
 from common.settings import settings
 from openai import AsyncOpenAI
-from pydantic_ai import Agent, RunContext
+from pydantic_ai import Agent
 from pydantic_ai.models.openai import OpenAIChatModel
 from pydantic_ai.profiles.openai import OpenAIModelProfile
 from pydantic_ai.providers.openai import OpenAIProvider
 from pydantic_ai.settings import ModelSettings
 from pydantic_ai.tools import DeferredToolRequests
-from pydantic_ai.toolsets import AbstractToolset
 
-from api.services.tool_service import AgentDeps, Capability, ToolService
+from api.services.tool_service import AgentDeps, ToolService
 
 
 class PreparedAgent(NamedTuple):
@@ -67,16 +66,8 @@ class AgentService:
                 "Prefer plain prose for short answers."
             ),
             model_settings=self._model_settings,
+            capabilities=tool_service.capabilities,
         )
-
-        def _dynamic_toolset(
-            ctx: RunContext[AgentDeps],
-        ) -> AbstractToolset[AgentDeps]:
-            if Capability.RESEARCH_MODE in ctx.deps.active_capabilities:
-                return tool_service.research_mode_toolset
-            return tool_service.base_toolset
-
-        self._agent.toolset(_dynamic_toolset)
 
     @staticmethod
     def _build_model_profile() -> OpenAIModelProfile:

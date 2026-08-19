@@ -9431,7 +9431,7 @@ The complete source code for Traefik is publicly available at https://github.com
 | readline | 8.3.1-r0 | GPL-3.0-or-later | apk-db-cataloger |
 | scanelf | 1.3.8-r2 | GPL-2.0-only | apk-db-cataloger |
 | sigs.k8s.io/yaml | v1.6.0 |  | go-module-binary-cataloger |
-| sqlite | 3.51.2-r0 | blessing | apk-db-cataloger |
+| sqlite | 3.53.4-r0 | blessing | apk-db-cataloger |
 | ssl_client | 1.37.0-r30 | GPL-2.0-only | apk-db-cataloger |
 | stdlib | go1.25.9 | BSD-3-Clause | go-module-binary-cataloger |
 | storj.io/common | v0.0.0-20251107171817-6221ae45072c |  | go-module-binary-cataloger |

@@ -4,13 +4,11 @@ Loom's AI chatbot lets users explore their indexed document corpus through natur
 writing Lucene query strings by hand, users ask questions and the agent translates intent into search
 actions, reads documents, manipulates the search UI, and synthesizes answers grounded in the corpus.
 
-Two operating modes are available:
-
-- **Base mode** — the default. The agent can inspect UI state, update the search view, and read
-  individual document fields, but it does not perform large-scale retrieval.
-- **Research Mode** — opt-in capability (`research_mode`). The agent runs full Elasticsearch queries
-  and the RAG pipeline to synthesise answers from many documents at once. UI manipulation tools are
-  disabled in this mode so the agent can focus on research.
+Tools are organised into **capabilities** — groups of related tools that the agent loads together.
+Three capabilities are always active (`search_and_browse`, `file_access`, `ai_processing`), while
+**Research Mode** (`research_mode`) is a dynamic capability that is activated on user opt-in. When
+active, it adds full Elasticsearch queries and the RAG pipeline, and its system-prompt instructions
+steer the agent toward thorough, multi-faceted research.
 
 ---
 
@@ -48,7 +46,7 @@ cloud LLM {
 [Router] --> [AgentService] : build_agent()
 [Router] --> [AiService] : run_agent_stream()
 [AgentService] --> LLM : pydantic-ai Agent\n(OpenAI-compatible API)
-[AgentService] --> [ToolService] : dynamic toolset
+[AgentService] --> [ToolService] : capabilities
 [ToolService] --> [TaskCallService] : call_*_tool()
 [TaskCallService] --> [Celery Tool Tasks] : dispatch + .get()
 [Celery Tool Tasks] --> [document index] : KNN / query search
@@ -83,9 +81,9 @@ load via `GET /v1/ai/{context_id}/history`.
 by Ollama or a compatible endpoint). The model profile honours `llm.agent.merge_system_messages`
 (Helm, default `true`): when enabled, consecutive system messages are merged into one before the
 request is sent. This is required for backends that reject multiple system messages (vLLM/SGLang
-serving Qwen). The agent uses a **dynamic toolset**: when the request arrives
-it inspects `AgentDeps.active_capabilities` and selects either `base_toolset` or
-`research_mode_toolset` from `ToolService`.
+serving Qwen). The agent is initialised with `capabilities=tool_service.capabilities`, which
+provides four `Capability` groups. Three are always active; `research_mode` is a dynamic capability
+whose activation callback checks `AgentDeps.active_capabilities` at runtime.
 
 Tools are split into two tiers:
 
@@ -253,18 +251,18 @@ toolset) so the agent focuses on research rather than UI control.
 
 ### Backend tools
 
-| Tool | Toolset | Description |
+| Tool | Capability | Description |
 | --- | --- | --- |
-| `suggest_queries` | base + research mode | Generates ranked Lucene query candidates from a natural language description. Optional `folder_path` parameter restricts results to a subtree. |
-| `get_file` | base + research mode | Returns the full path and available field list for a file by UUID |
-| `get_file_field` | base + research mode | Reads the value of a specific field for a file (e.g. `content`, `summary`) |
-| `list_folder_contents` | base + research mode | Lists direct children (subfolders and files) of a folder path |
-| `search_by_filename` | base + research mode | Finds files whose name contains a given substring |
-| `summarize_file` | base | Triggers AI summarization for a file and returns the summary |
-| `translate_file` | base | Triggers AI translation for a file and returns the translated text |
-| `describe_image` | base | Triggers AI image description for an image file |
-| `execute_query` | research mode | Executes a Lucene query and returns matching files with snippets. Optional `folder_path` parameter restricts results to a subtree. |
-| `rag_search` | research mode | Runs the full RAG pipeline and returns a synthesized answer |
+| `suggest_queries` | `search_and_browse` | Generates ranked Lucene query candidates from a natural language description. Optional `folder_path` parameter restricts results to a subtree. |
+| `list_folder_contents` | `search_and_browse` | Lists direct children (subfolders and files) of a folder path |
+| `search_by_filename` | `search_and_browse` | Finds files whose name contains a given substring |
+| `get_file` | `file_access` | Returns the full path and available field list for a file by UUID |
+| `get_file_field` | `file_access` | Reads the value of a specific field for a file (e.g. `content`, `summary`) |
+| `summarize_file` | `ai_processing` | Triggers AI summarization for a file and returns the summary |
+| `translate_file` | `ai_processing` | Triggers AI translation for a file and returns the translated text |
+| `describe_image` | `ai_processing` | Triggers AI image description for an image file |
+| `execute_query` | `research_mode` | Executes a Lucene query and returns matching files with snippets. Optional `folder_path` parameter restricts results to a subtree. |
+| `rag_search` | `research_mode` | Runs the full RAG pipeline and returns a synthesized answer |
 
 ### Frontend tools
 
