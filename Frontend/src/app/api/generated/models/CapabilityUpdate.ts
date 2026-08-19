@@ -14,13 +14,13 @@
  */
 
 import { mapValues } from "../runtime";
-import type { Capability } from "./Capability";
+import type { CapabilityId } from "./CapabilityId";
 import {
-    CapabilityFromJSON,
-    CapabilityFromJSONTyped,
-    CapabilityToJSON,
-    CapabilityToJSONTyped,
-} from "./Capability";
+    CapabilityIdFromJSON,
+    CapabilityIdFromJSONTyped,
+    CapabilityIdToJSON,
+    CapabilityIdToJSONTyped,
+} from "./CapabilityId";
 
 /**
  *
@@ -30,10 +30,10 @@ import {
 export interface CapabilityUpdate {
     /**
      *
-     * @type {Capability}
+     * @type {CapabilityId}
      * @memberof CapabilityUpdate
      */
-    capability: Capability;
+    capability: CapabilityId;
     /**
      *
      * @type {boolean}
@@ -66,7 +66,7 @@ export function CapabilityUpdateFromJSONTyped(
         return json;
     }
     return {
-        capability: CapabilityFromJSON(json["capability"]),
+        capability: CapabilityIdFromJSON(json["capability"]),
         active: json["active"],
     };
 }
@@ -84,7 +84,7 @@ export function CapabilityUpdateToJSONTyped(
     }
 
     return {
-        capability: CapabilityToJSON(value["capability"]),
+        capability: CapabilityIdToJSON(value["capability"]),
         active: value["active"],
     };
 }

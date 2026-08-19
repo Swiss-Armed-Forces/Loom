@@ -13,7 +13,7 @@ from common.task_object.task_object import RepositoryTaskObject, _EsTaskDocument
 _MAX_CONTEXTS = 100
 
 
-class Capability(StrEnum):
+class CapabilityId(StrEnum):
     RESEARCH_MODE = "research_mode"
 
 
@@ -54,7 +54,7 @@ class AiContext(RepositoryTaskObject):
     chat_message_history_id: UUID = Field(default_factory=uuid4)
     created_at: datetime = Field(default_factory=datetime.now)
     questions: list[AiQuestion] = Field(default_factory=list)
-    active_capabilities: list[Capability] = Field(default_factory=list)
+    active_capabilities: list[CapabilityId] = Field(default_factory=list)
 
 
 class _EsAiQuestionCitation(InnerDoc):

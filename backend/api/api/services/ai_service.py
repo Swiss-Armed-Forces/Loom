@@ -30,7 +30,7 @@ from common.ai_context.ai_context_repository import (
     AiContextRepository,
     AiQuestion,
     AiQuestionCitation,
-    Capability,
+    CapabilityId,
     ReasoningActivityEntry,
     ToolCallActivityEntry,
 )
@@ -224,7 +224,7 @@ class AiService:
         return context
 
     def update_capabilities(
-        self, context_id: UUID, capability: Capability, active: bool
+        self, context_id: UUID, capability: CapabilityId, active: bool
     ) -> None:
         context = self.get_context(context_id)
         capabilities = set(context.active_capabilities)
