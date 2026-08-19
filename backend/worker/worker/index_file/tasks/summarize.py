@@ -126,6 +126,7 @@ def _invoke_llm(
             extra_headers=llm_settings.extra_headers,
             extra_body=llm_settings.extra_body,
             response_format=_SummarizationResult,
+            max_tokens=llm_settings.max_tokens,
         )
     except APIError as ex:
         raise LLMError() from ex
@@ -147,19 +148,17 @@ def extract_key_points(text: str) -> str:
 </document>
 
 Extract the KEY POINTS of the document above.
-Return your response in a paragraph of
-{settings.llm.summarization_key_points.max_tokens} tokens or less.
+Return your response in a paragraph of {settings.llm.summarization_key_points.max_sentences}
+sentences or less.
 If there's nothing or not enough content to extract key points just provide an empty answer.
 Do NOT use any previous knowledge.
 
 KEY POINTS:"""
 
-    return settings.llm.summarization_key_points.truncate_response(
-        _invoke_llm(
-            extract_prompt,
-            settings.llm.summarization_key_points,
-            get_llm_summarization_key_points_client(),
-        )
+    return _invoke_llm(
+        extract_prompt,
+        settings.llm.summarization_key_points,
+        get_llm_summarization_key_points_client(),
     )
 
 
@@ -183,19 +182,18 @@ def summarize(key_points: list[str]) -> str | None:
 </document>
 
 Write a concise SUMMARY of the document above.
-Return your response in a paragraph of {settings.llm.summarization.max_tokens} tokens or less.
+Return your response in a paragraph of {settings.llm.summarization.max_sentences}
+sentences or less.
 Do NOT explain that you are giving a summary, just output the summary.
 If there's nothing or not enough content to summarize just provide an empty answer.
 Do NOT use any previous knowledge.
 
 SUMMARY:"""
 
-    return settings.llm.summarization.truncate_response(
-        _invoke_llm(
-            summarize_prompt,
-            settings.llm.summarization,
-            get_llm_summarization_client(),
-        )
+    return _invoke_llm(
+        summarize_prompt,
+        settings.llm.summarization,
+        get_llm_summarization_client(),
     )
 
 
@@ -216,20 +214,18 @@ def refine_summary(summary: str | None, system_prompt: str | None) -> str | None
 
 Write a concise SUMMARY of the document above.
 Return your response in a paragraph of
-{settings.llm.summarization_refine.max_tokens} tokens or less.
+{settings.llm.summarization_refine.max_sentences} sentences or less.
 Do NOT explain that you are giving a summary, just output the summary.
 If there's nothing or not enough content to summarize just provide an empty answer.
 Do NOT use any previous knowledge.
 
 SUMMARY:"""
 
-    return settings.llm.summarization_refine.truncate_response(
-        _invoke_llm(
-            refine_prompt,
-            settings.llm.summarization_refine,
-            get_llm_summarization_refine_client(),
-            system_prompt=system_prompt,
-        )
+    return _invoke_llm(
+        refine_prompt,
+        settings.llm.summarization_refine,
+        get_llm_summarization_refine_client(),
+        system_prompt=system_prompt,
     )
 
 
