@@ -52,12 +52,13 @@ QUERY_DESCRIPTION: {query_description}"""
         extra_headers=settings.llm.tool.extra_headers,
         extra_body=settings.llm.tool.extra_body,
         response_format=_ElasticsearchQuery,
+        max_tokens=settings.llm.tool.max_tokens,
     )
     parsed = response.choices[0].message.parsed
     if parsed is None:
         return QuerySuggestion(query="", matching_docs=0)
 
-    query_string = settings.llm.tool.truncate_response(parsed.query_string)
+    query_string = parsed.query_string
 
     try:
         file_repository = get_file_repository()

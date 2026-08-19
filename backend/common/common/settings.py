@@ -63,8 +63,6 @@ class IntakeS3StorageSettings(S3StorageSettings):
 LLMExtraHeaders = dict[str, str]
 LLMExtraBody = dict[str, object]
 
-_AVG_CHARS_PER_TOKEN = 6
-
 _LLM_THINKING_EXTRA_HEADERS: LLMExtraHeaders = {"X-Think": "true"}
 _LLM_NO_THINKING_EXTRA_HEADERS: LLMExtraHeaders = {"X-Think": "false"}
 
@@ -77,12 +75,9 @@ class LLMClientSettings(BaseModel):
     extra_headers: LLMExtraHeaders | None = None
     extra_body: LLMExtraBody | None = None
     timeout: int = 5 * 60
-    max_tokens: int | None = None
-
-    def truncate_response(self, text: str) -> str:
-        if self.max_tokens is None:
-            return text
-        return text[: self.max_tokens * _AVG_CHARS_PER_TOKEN]
+    # NOTE: max_tokens can not exceed context window length of model
+    max_tokens: int | None = 128000
+    max_sentences: int | None = None
 
 
 class LLMEmbeddingSettings(LLMClientSettings):
@@ -100,29 +95,28 @@ class LLMEmbeddingSettings(LLMClientSettings):
 
 class LLMSummarizationBaseSettings(LLMClientSettings):
     system_prompt: str = "You are an expert summarization machine called Loom."
+    max_sentences: int | None = 30
 
 
 class LLMSummarizationKeyPointsSettings(LLMSummarizationBaseSettings):
     text_chunk_size: int = 3000
     text_chunk_overlap: int = 100
-    max_tokens: int | None = 500
+    max_sentences: int | None = 10
     extra_headers: LLMExtraHeaders | None = _LLM_NO_THINKING_EXTRA_HEADERS
 
 
 class LLMSummarizationSettings(LLMSummarizationBaseSettings):
-    max_tokens: int | None = 2000
     extra_headers: LLMExtraHeaders | None = _LLM_THINKING_EXTRA_HEADERS
 
 
 class LLMSummarizationRefineSettings(LLMSummarizationBaseSettings):
-    max_tokens: int | None = 500
     extra_headers: LLMExtraHeaders | None = _LLM_THINKING_EXTRA_HEADERS
+    max_sentences: int | None = 30
 
 
 class LLMHydeSettings(LLMClientSettings):
     num_documents: int = 5
     temperature: float | None = 0.7
-    max_tokens: int | None = 400  # should match embedding.text_chunk_size
     extra_headers: LLMExtraHeaders | None = _LLM_NO_THINKING_EXTRA_HEADERS
 
 
@@ -135,7 +129,6 @@ class LLMChatSettings(LLMClientSettings):
 
 
 class LLMToolSettings(LLMClientSettings):
-    max_tokens: int | None = 500
     extra_headers: LLMExtraHeaders | None = _LLM_THINKING_EXTRA_HEADERS
 
 
@@ -147,7 +140,7 @@ class LLMAgentSettings(LLMClientSettings):
 class LLMVisionSettings(LLMClientSettings):
     model: str = "huihui_ai/qwen3.5-abliterated:9b"
     system_prompt: str = "You are an expert at analysing what's in an image"
-    max_tokens: int | None = 500
+    max_sentences: int | None = 20
     extra_headers: LLMExtraHeaders | None = _LLM_NO_THINKING_EXTRA_HEADERS
 
 

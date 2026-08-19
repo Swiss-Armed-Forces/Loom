@@ -74,7 +74,7 @@ def describe_image(data: memoryview, system_prompt: str | None = None) -> str:
     prompt = f"""PROMPT: Describe the contents of the image in detail.
 Include any visible text, objects, people, scenes, colors, and layout.
 Do NOT use any prior knowledge — only describe what is visible in the image.
-Respond with a description of at most {settings.llm.vision.max_tokens} tokens.
+Respond with a description of at most {settings.llm.vision.max_sentences} sentences.
 
 DESCRIPTION:"""
     resolved_system_prompt = (
@@ -111,14 +111,14 @@ DESCRIPTION:"""
             extra_headers=settings.llm.vision.extra_headers,
             extra_body=settings.llm.vision.extra_body,
             response_format=_ImageDescriptionResult,
+            max_tokens=settings.llm.vision.max_tokens,
         )
     except APIError as ex:
         raise ImageDescriptionError() from ex
 
     result = response.choices[0].message.parsed
-    return settings.llm.vision.truncate_response(
-        result.description if result is not None else ""
-    )
+
+    return result.description if result is not None else ""
 
 
 @app.task(base=FileIndexingTask)

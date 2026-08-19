@@ -303,16 +303,19 @@ llm:
     text_chunk_overlap: null
     system_prompt: null
     max_tokens: null
+    max_sentences: null
 
   summarization:
     <<: *llm-defaults
     system_prompt: null
     max_tokens: null
+    max_sentences: null
 
   summarization_refine:
     <<: *llm-defaults
     system_prompt: null
     max_tokens: null
+    max_sentences: null
 
   hyde:
     <<: *llm-defaults
@@ -329,6 +332,7 @@ llm:
     <<: *llm-defaults
     system_prompt: null
     max_tokens: null
+    max_sentences: null
 
   translation:
     <<: *llm-defaults
