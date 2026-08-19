@@ -459,6 +459,31 @@ class TestCliExtractWindowsSanitize:
             dest / "test" / "colon:name.txt" / "colon:name.txt"
         ).read_bytes() == b"data"
 
+    def test_missing_raw_file_skips_entry_and_continues(
+        self,
+        tmp_path: Path,
+        file_storage_service_inmemory: InMemoryFileStorageLazyBytesService,
+        capsys: pytest.CaptureFixture[str],
+    ) -> None:
+        archive_dir = build_archive(
+            tmp_path,
+            simple_entries({"a.txt": b"a", "b.txt": b"b"}),
+            file_storage_service_inmemory,
+        )
+        dest = tmp_path / "out"
+        # Delete the raw blob for a.txt so extraction encounters a missing file.
+        files_dir = archive_dir / "files"
+        raw_files = list(files_dir.iterdir())
+        raw_files[0].unlink()
+
+        _extract_with_sanitize(archive_dir, dest)
+
+        captured = capsys.readouterr()
+        assert "Warning: raw file not found in archive, skipping" in captured.err
+        # The other file should still be extracted.
+        extracted = list((dest / "test").rglob("b.txt"))
+        assert len(extracted) > 0
+
     def test_oserror_caught_and_reported(
         self,
         tmp_path: Path,

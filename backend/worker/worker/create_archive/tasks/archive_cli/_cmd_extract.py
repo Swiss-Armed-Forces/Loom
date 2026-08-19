@@ -73,8 +73,12 @@ def _extract_entry(  # pylint: disable=too-many-arguments,too-many-positional-ar
         return
     src = files_dir / entry.storage_id
     if not src.exists():
-        print(f"Error: raw file not found in archive: {src}", file=sys.stderr)
-        sys.exit(1)
+        print(
+            f"Warning: raw file not found in archive, skipping '{entry.name}'"
+            f" (expected blob: {src})",
+            file=sys.stderr,
+        )
+        return
 
     try:
         entry_dir.mkdir(parents=True, exist_ok=True)
