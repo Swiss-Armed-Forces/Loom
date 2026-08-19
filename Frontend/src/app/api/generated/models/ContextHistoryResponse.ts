@@ -14,13 +14,13 @@
  */
 
 import { mapValues } from "../runtime";
-import type { Capability } from "./Capability";
+import type { CapabilityId } from "./CapabilityId";
 import {
-    CapabilityFromJSON,
-    CapabilityFromJSONTyped,
-    CapabilityToJSON,
-    CapabilityToJSONTyped,
-} from "./Capability";
+    CapabilityIdFromJSON,
+    CapabilityIdFromJSONTyped,
+    CapabilityIdToJSON,
+    CapabilityIdToJSONTyped,
+} from "./CapabilityId";
 import type { AiQuestion } from "./AiQuestion";
 import {
     AiQuestionFromJSON,
@@ -49,10 +49,10 @@ export interface ContextHistoryResponse {
     questions: Array<AiQuestion>;
     /**
      *
-     * @type {Array<Capability>}
+     * @type {Array<CapabilityId>}
      * @memberof ContextHistoryResponse
      */
-    activeCapabilities: Array<Capability>;
+    activeCapabilities: Array<CapabilityId>;
 }
 
 /**
@@ -97,7 +97,7 @@ export function ContextHistoryResponseFromJSONTyped(
         createdAt: new Date(json["created_at"]),
         questions: (json["questions"] as Array<any>).map(AiQuestionFromJSON),
         activeCapabilities: (json["active_capabilities"] as Array<any>).map(
-            CapabilityFromJSON,
+            CapabilityIdFromJSON,
         ),
     };
 }
@@ -120,7 +120,7 @@ export function ContextHistoryResponseToJSONTyped(
         created_at: value["createdAt"].toISOString(),
         questions: (value["questions"] as Array<any>).map(AiQuestionToJSON),
         active_capabilities: (value["activeCapabilities"] as Array<any>).map(
-            CapabilityToJSON,
+            CapabilityIdToJSON,
         ),
     };
 }

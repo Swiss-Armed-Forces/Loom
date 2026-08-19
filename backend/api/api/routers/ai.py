@@ -1,7 +1,7 @@
 from datetime import datetime
 from uuid import UUID, uuid4
 
-from common.ai_context.ai_context_repository import AiQuestion, Capability
+from common.ai_context.ai_context_repository import AiQuestion, CapabilityId
 from common.dependencies import get_root_task_information_repository
 from common.task_object.root_task_information_repository import RootTaskInformation
 from fastapi import APIRouter, Depends, Request
@@ -40,11 +40,11 @@ class ListContextsResponse(BaseModel):
 class ContextHistoryResponse(BaseModel):
     created_at: datetime
     questions: list[AiQuestion]
-    active_capabilities: list[Capability]
+    active_capabilities: list[CapabilityId]
 
 
 class CapabilityUpdate(BaseModel):
-    capability: Capability
+    capability: CapabilityId
     active: bool
 
 

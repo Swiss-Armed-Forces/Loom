@@ -9,7 +9,7 @@ FROM ${DOCKER_REGISTRY}/chrislusf/seaweedfs:${SEAWEEDFS_IMAGE_VERSION}
 ENV TZ=UTC
 
 # Dependencies for restore.sh
-ARG SQLITE_VERSION="3.51"
+ARG SQLITE_VERSION="3.53"
 RUN set -exu \
     && apk add --no-cache \
     sqlite~=${SQLITE_VERSION}

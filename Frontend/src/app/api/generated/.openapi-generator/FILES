@@ -34,7 +34,7 @@ models/ArchivesModel.ts
 models/Attachment.ts
 models/AvailableStat.ts
 models/CacheStatisticsEntryModel.ts
-models/Capability.ts
+models/CapabilityId.ts
 models/CapabilityUpdate.ts
 models/CompleteEstimateResult.ts
 models/ContextCreateResponse.ts

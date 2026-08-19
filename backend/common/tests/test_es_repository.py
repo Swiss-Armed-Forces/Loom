@@ -13,7 +13,7 @@ from common.ai_context.ai_context_repository import (
     AiContextRepository,
     AiQuestion,
     AiQuestionCitation,
-    Capability,
+    CapabilityId,
     ToolCallActivityEntry,
     _EsActivityEntry,
     _EsAiContext,
@@ -788,7 +788,7 @@ ES_REPOSITORY_TEST_INSTANCES: dict[type[BaseEsRepository], list[_TestInstances]]
                         ],
                     )
                 ],
-                active_capabilities=[Capability.RESEARCH_MODE],
+                active_capabilities=[CapabilityId.RESEARCH_MODE],
             ),
             document=_EsAiContext(
                 {
@@ -871,7 +871,7 @@ ES_REPOSITORY_TEST_INSTANCES: dict[type[BaseEsRepository], list[_TestInstances]]
                         ],
                     )
                 ],
-                active_capabilities=[Capability.RESEARCH_MODE],
+                active_capabilities=[CapabilityId.RESEARCH_MODE],
             ),
         )
     ],
