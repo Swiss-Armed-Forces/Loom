@@ -473,8 +473,12 @@ class TestCliExtractWindowsSanitize:
         dest = tmp_path / "out"
         # Delete the raw blob for a.txt so extraction encounters a missing file.
         files_dir = archive_dir / "files"
-        raw_files = list(files_dir.iterdir())
-        raw_files[0].unlink()
+        db = open_shell_db(archive_dir)
+        row = db.execute(
+            "SELECT storage_id FROM storage WHERE vpath LIKE '%a.txt' AND role = 'file'"
+        ).fetchone()
+        assert row is not None
+        (files_dir / row[0]).unlink()
 
         _extract_with_sanitize(archive_dir, dest)
 
