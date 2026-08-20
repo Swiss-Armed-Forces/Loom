@@ -1,5 +1,5 @@
 import { MoreVert } from "@mui/icons-material";
-import { IconButton, Menu, MenuItem, Typography } from "@mui/material";
+import { IconButton, Menu, MenuItem, Tooltip } from "@mui/material";
 import { useState, useEffect, ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -23,6 +23,12 @@ import {
 import { menuJKNavigation } from "../menuKeyboardNav";
 
 import styles from "./FileActions.module.css";
+
+interface ActionDef {
+    key: string;
+    tooltip: string;
+    render: (disableTooltip: boolean) => ReactNode;
+}
 
 interface FileActionsProps {
     filePreview: GetFilePreviewResponse;
@@ -58,113 +64,215 @@ export const FileActions = ({
         return () => document.removeEventListener("loom:close-menus", close);
     }, []);
 
-    const primaryActions: ReactNode[] = [
-        <UpdateFlaggedButton
-            key="flag"
-            iconOnly
-            filePreview={filePreview}
-            fileFlagged={filePreview.flagged}
-        />,
-        <UpdateSeenButton
-            key="seen"
-            iconOnly
-            filePreview={filePreview}
-            fileSeen={filePreview.seen}
-        />,
-        <AddTagsButton key="tags-input" iconOnly filePreview={filePreview} />,
-        <ShareButton key="share" fileId={filePreview.fileId} />,
-        <DownloadButton
-            key="download"
-            fileId={filePreview.fileId}
-            renderedFile={renderedFile}
-        />,
+    const primaryActionDefs: ActionDef[] = [
+        {
+            key: "flag",
+            tooltip: filePreview.flagged
+                ? t("updateFileState.flagged.disable")
+                : t("updateFileState.flagged.enable"),
+            render: (disableTooltip) => (
+                <UpdateFlaggedButton
+                    key="flag"
+                    iconOnly
+                    filePreview={filePreview}
+                    fileFlagged={filePreview.flagged}
+                    disableTooltip={disableTooltip}
+                />
+            ),
+        },
+        {
+            key: "seen",
+            tooltip: filePreview.seen
+                ? t("updateFileState.seen.disable")
+                : t("updateFileState.seen.enable"),
+            render: (disableTooltip) => (
+                <UpdateSeenButton
+                    key="seen"
+                    iconOnly
+                    filePreview={filePreview}
+                    fileSeen={filePreview.seen}
+                    disableTooltip={disableTooltip}
+                />
+            ),
+        },
+        {
+            key: "tags-input",
+            tooltip: t("tags.addTag"),
+            render: (disableTooltip) => (
+                <AddTagsButton
+                    key="tags-input"
+                    iconOnly
+                    filePreview={filePreview}
+                    disableTooltip={disableTooltip}
+                />
+            ),
+        },
+        {
+            key: "share",
+            tooltip: t("generalSearchView.shareContent.title"),
+            render: (disableTooltip) => (
+                <ShareButton
+                    key="share"
+                    fileId={filePreview.fileId}
+                    disableTooltip={disableTooltip}
+                />
+            ),
+        },
+        {
+            key: "download",
+            tooltip: t("downloadWarning.title"),
+            render: (disableTooltip) => (
+                <DownloadButton
+                    key="download"
+                    fileId={filePreview.fileId}
+                    renderedFile={renderedFile}
+                    disableTooltip={disableTooltip}
+                />
+            ),
+        },
     ];
 
     if (!hideDetail) {
-        primaryActions.push(
-            <ViewDetailButton
-                key="preview"
-                fileId={filePreview.fileId}
-                searchQuery={searchQuery}
-            />,
-        );
+        primaryActionDefs.push({
+            key: "preview",
+            tooltip: t("generalSearchView.viewDetails"),
+            render: (disableTooltip) => (
+                <ViewDetailButton
+                    key="preview"
+                    fileId={filePreview.fileId}
+                    searchQuery={searchQuery}
+                    disableTooltip={disableTooltip}
+                />
+            ),
+        });
     }
 
+    const primaryActions: ReactNode[] = primaryActionDefs.map((d) =>
+        d.render(false),
+    );
     // additionalActions are caller-supplied (e.g. the close button in FileDetailPanel)
     // and must always be visible — keep them in primaryActions.
     primaryActions.push(...additionalActions);
 
-    const overflowActions: { button: ReactNode; label: string }[] = [
+    const overflowActions: ActionDef[] = [
         {
-            button: (
+            key: "translate",
+            tooltip: t("sideMenu.translateQueriedFiles"),
+            render: () => (
                 <TranslationButton
                     key="translate"
                     filePreview={filePreview}
                     iconOnly
+                    disableTooltip
                 />
             ),
-            label: t("sideMenu.translateQueriedFiles"),
         },
         {
-            button: (
+            key: "summarize",
+            tooltip: t("summarizationDialog.executeButton"),
+            render: () => (
                 <SummaryButton
                     key="summarize"
                     filePreview={filePreview}
                     iconOnly
+                    disableTooltip
                 />
             ),
-            label: t("summarizationDialog.executeButton"),
         },
         {
-            button: (
+            key: "describe-image",
+            tooltip: t("imageDescriptionButton.describeImage"),
+            render: () => (
                 <ImageDescriptionButton
                     key="describe-image"
                     filePreview={filePreview}
                     iconOnly
+                    disableTooltip
                 />
             ),
-            label: t("imageDescriptionButton.describeImage"),
         },
         {
-            button: (
-                <ReIndexButton key="re-index" fileId={filePreview.fileId} />
+            key: "re-index",
+            tooltip: t("sideMenu.reIndexQueriedFiles"),
+            render: () => (
+                <ReIndexButton
+                    key="re-index"
+                    fileId={filePreview.fileId}
+                    disableTooltip
+                />
             ),
-            label: t("sideMenu.reIndexQueriedFiles"),
         },
         {
-            button: (
+            key: "visibility",
+            tooltip: filePreview.hidden
+                ? t("updateFileState.hidden.disable")
+                : t("updateFileState.hidden.enable"),
+            render: () => (
                 <UpdateHiddenButton
                     key="visibility"
                     iconOnly
                     filePreview={filePreview}
                     fileHidden={filePreview.hidden}
+                    disableTooltip
                 />
             ),
-            label: filePreview.hidden
-                ? t("updateFileState.hidden.disable")
-                : t("updateFileState.hidden.enable"),
         },
     ];
 
+    const renderMenuItems = (actions: ActionDef[]) =>
+        actions.map(({ key, tooltip, render }) => (
+            <Tooltip key={key} title={tooltip} placement="left">
+                <MenuItem
+                    onClick={(e) => {
+                        if (!(e.target as HTMLElement).closest("button")) {
+                            e.currentTarget
+                                .querySelector<HTMLButtonElement>("button")
+                                ?.click();
+                        }
+                        handleMenuClose();
+                    }}
+                >
+                    {render(true)}
+                </MenuItem>
+            </Tooltip>
+        ));
+
     if (isCompact) {
-        const allActions = [
-            ...primaryActions,
-            ...overflowActions.map(({ button }) => button),
-        ];
         return (
             <div data-tour="result-card-actions">
                 <IconButton onClick={handleMenuClick}>
                     <MoreVert />
                 </IconButton>
-                <Menu anchorEl={anchorEl} open={open} onClose={handleMenuClose}>
-                    {allActions.map((button) => (
+                <Menu
+                    anchorEl={anchorEl}
+                    open={open}
+                    onClose={handleMenuClose}
+                    onKeyDown={menuJKNavigation}
+                >
+                    {renderMenuItems(primaryActionDefs)}
+                    {additionalActions.map((action, i) => (
                         <MenuItem
-                            key={(button as React.ReactElement).key}
-                            onClick={handleMenuClose}
+                            key={
+                                (action as React.ReactElement).key ??
+                                `additional-${i}`
+                            }
+                            onClick={(e) => {
+                                if (
+                                    !(e.target as HTMLElement).closest("button")
+                                ) {
+                                    e.currentTarget
+                                        .querySelector<HTMLButtonElement>(
+                                            "button",
+                                        )
+                                        ?.click();
+                                }
+                                handleMenuClose();
+                            }}
                         >
-                            {button}
+                            {action}
                         </MenuItem>
                     ))}
+                    {renderMenuItems(overflowActions)}
                 </Menu>
                 {/* Hidden buttons keep hotkey-mapped actions in the DOM so
                 clickActionButton() can find them even when the menu is closed. */}
@@ -218,26 +326,7 @@ export const FileActions = ({
                 onClose={handleMenuClose}
                 onKeyDown={menuJKNavigation}
             >
-                {overflowActions.map(({ button, label }) => (
-                    <MenuItem
-                        key={(button as React.ReactElement).key}
-                        sx={{ p: 0.5, gap: 1 }}
-                        onClick={(e) => {
-                            // Delegate clicks on the label to the button.
-                            if (!(e.target as HTMLElement).closest("button")) {
-                                e.currentTarget
-                                    .querySelector<HTMLButtonElement>("button")
-                                    ?.click();
-                            }
-                            handleMenuClose();
-                        }}
-                    >
-                        {button}
-                        <Typography variant="body2" sx={{ flexShrink: 0 }}>
-                            {label}
-                        </Typography>
-                    </MenuItem>
-                ))}
+                {renderMenuItems(overflowActions)}
             </Menu>
             {/* Hidden buttons keep hotkey-mapped actions (r, S, T) in the
                 container DOM so clickActionButton() can find them even when

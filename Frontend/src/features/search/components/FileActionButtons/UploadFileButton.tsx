@@ -1,10 +1,11 @@
 import { UploadFile } from "@mui/icons-material";
-import { Button, IconButton } from "@mui/material";
 import { useTranslation } from "react-i18next";
 
 import { useAppDispatch } from "@app/hooks";
 import { openDialog } from "@app/slices/commonSlice";
 import { DialogType } from "@features/common/utils/enums";
+
+import { FileActionButtonBase } from "./FileActionButtonBase";
 
 import { FileActionButtonProps } from ".";
 
@@ -12,6 +13,7 @@ type UploadFileButtonProps = Omit<FileActionButtonProps, "filePreview">;
 
 export const UploadFileButton = ({
     iconOnly = false,
+    disableTooltip = false,
 }: UploadFileButtonProps) => {
     const dispatch = useAppDispatch();
     const { t } = useTranslation();
@@ -25,31 +27,18 @@ export const UploadFileButton = ({
         );
     };
 
-    if (iconOnly) {
-        return (
-            <IconButton
-                onClick={handleClick}
-                title={t("uploadFileDialog.uploadButton")}
-                sx={{
-                    bgcolor: "primary.main",
-                    color: "primary.contrastText",
-                    "&:hover": { bgcolor: "primary.dark" },
-                }}
-            >
-                <UploadFile />
-            </IconButton>
-        );
-    }
-
     return (
-        <Button
-            variant="contained"
-            startIcon={<UploadFile />}
-            color="secondary"
+        <FileActionButtonBase
+            icon={<UploadFile />}
+            label={t("uploadFileDialog.uploadButton")}
             onClick={handleClick}
-            fullWidth
-        >
-            {t("uploadFileDialog.uploadButton")}
-        </Button>
+            iconOnly={iconOnly}
+            disableTooltip={disableTooltip}
+            iconButtonSx={{
+                bgcolor: "primary.main",
+                color: "primary.contrastText",
+                "&:hover": { bgcolor: "primary.dark" },
+            }}
+        />
     );
 };

@@ -17,11 +17,10 @@ import { ChatbotInner } from "./ChatbotInner";
 import type { UseChatbotResult } from "./useChatbot";
 
 interface ChatbotProps {
-    onCitationClick: (fileId: string) => void;
     chatbot: UseChatbotResult;
 }
 
-export const Chatbot = ({ onCitationClick, chatbot }: ChatbotProps) => {
+export const Chatbot = ({ chatbot }: ChatbotProps) => {
     const {
         activeContext,
         showHistory,
@@ -141,7 +140,6 @@ export const Chatbot = ({ onCitationClick, chatbot }: ChatbotProps) => {
                 <ChatbotInner
                     key={activeContext.contextId}
                     contextId={activeContext.contextId}
-                    onCitationClick={onCitationClick}
                     onRunComplete={refreshContexts}
                 />
             ) : (

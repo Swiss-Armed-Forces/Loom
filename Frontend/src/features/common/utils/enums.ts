@@ -68,6 +68,7 @@ export const SearchQueryField = {
     Seen: "seen",
     FullPathTree: "full_path.tree",
     FullPathKeyword: "full_path.keyword",
+    Id: "id",
 };
 export type SearchQueryField =
     (typeof SearchQueryField)[keyof typeof SearchQueryField];

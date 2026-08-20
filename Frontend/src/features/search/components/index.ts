@@ -1,5 +1,4 @@
 import { Chart } from "./Chart/Chart";
-import { ChatMenu } from "./ChatMenu/ChatMenu";
 import { EmptySearchResults } from "./EmptySearchResults/EmptySearchResults";
 import { FieldList } from "./FieldList/FieldList";
 import { FileActions } from "./FileActions/FileActions";
@@ -14,7 +13,6 @@ export { computeOthersCount } from "./chartColors";
 export {
     Chart,
     HistogramChart,
-    ChatMenu,
     EmptySearchResults,
     FileActions,
     FileCardHeader,

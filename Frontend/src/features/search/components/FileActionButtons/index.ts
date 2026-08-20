@@ -3,6 +3,7 @@ import { GetFilePreviewResponse } from "@app/api";
 import { AddTagsButton } from "./AddTagsButton";
 import { CreateArchiveButton } from "./CreateArchiveButton";
 import { DownloadButton } from "./DownloadButton";
+import { FileActionButtonBase } from "./FileActionButtonBase";
 import { ImageDescriptionButton } from "./ImageDescriptionButton";
 import { ReIndexButton } from "./ReIndexButton";
 import { ShareButton } from "./ShareButton";
@@ -18,12 +19,14 @@ export interface FileActionButtonProps {
     filePreview?: GetFilePreviewResponse;
     disabled?: boolean;
     iconOnly?: boolean;
+    disableTooltip?: boolean;
 }
 
 export {
     AddTagsButton,
     CreateArchiveButton,
     DownloadButton,
+    FileActionButtonBase,
     ImageDescriptionButton,
     ReIndexButton,
     ShareButton,

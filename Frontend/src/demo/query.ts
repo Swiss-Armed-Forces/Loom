@@ -312,6 +312,7 @@ const valuesByField = (document: DemoDocument): Record<string, string[]> => {
     const authorValues = document.authors;
     const secretValues = document.secrets;
     return {
+        id: [document.id],
         extension: [document.extension],
         tags: document.tags,
         state: [document.state],
@@ -421,6 +422,7 @@ const NON_TEXT_FIELDS = new Set([
 // Fields mapped to Keyword() in Elasticsearch — plain string queries against
 // these are term queries (exact match), not full-text substring searches.
 const KEYWORD_FIELDS = new Set([
+    "id",
     "parent_path",
     "extension",
     "source",

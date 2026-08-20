@@ -45,10 +45,44 @@ const findSource = (question: string) => {
 
 const buildAnswer = (
     source: ReturnType<typeof getDocuments>[number] | undefined,
-) =>
-    source
-        ? `Based on ${source.name}, ${source.summary}`
-        : "The interactive demo has no matching document for that question.";
+) => {
+    if (!source) {
+        return "The interactive demo has no matching document for that question.";
+    }
+
+    return [
+        `### Found: ${source.name}`,
+        "",
+        source.summary,
+        "",
+        "| Property | Value |",
+        "| --- | --- |",
+        `| **File** | \`${source.name}\` |`,
+        `| **Type** | ${source.mimeType} |`,
+        `| **Size** | ${source.size.toLocaleString()} bytes |`,
+        "",
+        "#### Search checklist",
+        "",
+        "- [x] Indexed and searchable",
+        "- [x] Content extracted",
+        "- [ ] Translation pending",
+        "",
+        "Example query to find this document:",
+        "",
+        "```json",
+        "GET /files/_search",
+        "{",
+        '  "query": {',
+        '    "term": {',
+        `      "name.keyword": "${source.name}"`,
+        "    }",
+        "  }",
+        "}",
+        "```",
+        "",
+        `> **Tip:** Use \`filename:${source.name}\` to search for this file directly.`,
+    ].join("\n");
+};
 
 const sseEvent = (event: Record<string, unknown>): string =>
     `data: ${JSON.stringify(event)}\n\n`;

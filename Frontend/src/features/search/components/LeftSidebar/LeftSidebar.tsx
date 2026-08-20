@@ -16,7 +16,6 @@ import { loadTags } from "@app/api";
 import { useAppDispatch, useAppSelector } from "@app/hooks";
 import {
     LeftSidebarPanel,
-    openFileTabThunk,
     selectHighlightedQueryId,
     selectLeftSidebarPanel,
     selectQuery,
@@ -213,14 +212,7 @@ export const LeftSidebar = () => {
             case LeftSidebarPanel.CARD_CUSTOMIZATION:
                 return <CardCustomizationPanel />;
             case LeftSidebarPanel.CHAT:
-                return (
-                    <Chatbot
-                        onCitationClick={(fileId) =>
-                            dispatch(openFileTabThunk({ fileId }))
-                        }
-                        chatbot={chatbot}
-                    />
-                );
+                return <Chatbot chatbot={chatbot} />;
             default:
                 return null;
         }

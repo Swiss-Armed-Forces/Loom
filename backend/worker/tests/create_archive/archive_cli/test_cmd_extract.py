@@ -465,16 +465,17 @@ class TestCliExtractWindowsSanitize:
         file_storage_service_inmemory: InMemoryFileStorageLazyBytesService,
         capsys: pytest.CaptureFixture[str],
     ) -> None:
+        entries = simple_entries({"a.txt": b"a", "b.txt": b"b"})
         archive_dir = build_archive(
             tmp_path,
-            simple_entries({"a.txt": b"a", "b.txt": b"b"}),
+            entries,
             file_storage_service_inmemory,
         )
         dest = tmp_path / "out"
         # Delete the raw blob for a.txt so extraction encounters a missing file.
-        files_dir = archive_dir / "files"
-        raw_files = list(files_dir.iterdir())
-        raw_files[0].unlink()
+        assert entries[0].file.storage_data is not None
+        a_storage_id = entries[0].file.storage_data.service_id
+        (archive_dir / "files" / str(a_storage_id)).unlink()
 
         _extract_with_sanitize(archive_dir, dest)
 

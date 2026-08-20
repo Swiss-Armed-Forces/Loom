@@ -793,6 +793,7 @@ The complete source code for Traefik is publicly available at https://github.com
 | date-fns                            | MIT          | 4.4.0             |
 | driver.js                           | MIT          | 1.8.0             |
 | eslint-plugin-import                | MIT          | 2.32.0            |
+| highlight.js                        | BSD-3-Clause | 11.12.0           |
 | i18next                             | MIT          | 26.3.6            |
 | i18next-http-backend                | MIT          | 3.0.5             |
 | pdfjs-dist                          | Apache-2.0   | 6.2.108           |
@@ -806,6 +807,8 @@ The complete source code for Traefik is publicly available at https://github.com
 | react-redux                         | MIT          | 9.3.0             |
 | react-router-dom                    | MIT          | 7.18.2            |
 | react-toastify                      | MIT          | 11.1.0            |
+| rehype-highlight                    | MIT          | 7.0.2             |
+| remark-gfm                          | MIT          | 4.0.1             |
 | uuid                                | MIT          | 14.0.0            |
 | @eslint/js                          | MIT          | 9.39.4            |
 | @mui/types                          | MIT          | 9.3.0             |
