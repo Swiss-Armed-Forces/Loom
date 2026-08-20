@@ -22,7 +22,6 @@
     "helm-values",
     "helmv3",
     "gitlabci",
-    "nix",
     "custom.regex"
   ],
   "poetry": {
@@ -121,33 +120,15 @@
       "schedule": ["before 6am on the first day of the month"]
     },
     {
-      "matchManagers": ["nix"],
-      "groupName": "Nix Development Environment",
-      "matchFileNames": ["devenv.yaml", "devenv.nix", "devenv.lock"],
-      "prPriority": 2,
-      "schedule": ["before 6am on sunday"],
-      "labels": ["nix", "devenv"]
-    },
-    {
-      "matchManagers": ["nix"],
-      "matchDepNames": [
-        "nixpkgs",
-        "nixpkgs-stable",
-        "nixpkgs-unstable",
-        "nixpkgs-24-11"
-      ],
-      "groupName": "Nix Package Channels",
-      "prPriority": 1,
+      "matchDepPrefixes": ["devenv-"],
+      "enabled": true,
+      "groupName": "devenv update reminder",
       "schedule": ["before 6am on the first day of the month"],
-      "labels": ["nix", "nixpkgs"]
-    },
-    {
-      "matchManagers": ["nix"],
-      "matchDepNames": ["devenv", "git-hooks"],
-      "groupName": "Nix Development Tools",
-      "prPriority": 3,
-      "schedule": ["before 6am on sunday"],
-      "labels": ["nix", "dev-tools"]
+      "labels": ["nix", "devenv"],
+      "prPriority": 2,
+      "prBodyNotes": [
+        "One or more devenv inputs have newer commits. Run `devenv update` and commit the updated `devenv.lock`."
+      ]
     }
   ],
   "customManagers": [
@@ -160,6 +141,14 @@
       ],
       "datasourceTemplate": "npm",
       "versioningTemplate": "npm"
+    },
+    {
+      "customType": "regex",
+      "description": "Track devenv input updates to notify when devenv update should be run",
+      "managerFilePatterns": ["/(^|/)devenv\\.yaml$/"],
+      "matchStrings": [
+        "#\\s*renovate:\\s*datasource=(?<datasource>\\S+)\\s+depName=(?<depName>\\S+)\\s+packageName=(?<packageName>\\S+)\\s+currentValue=(?<currentValue>\\S+)\\s+currentDigest=(?<currentDigest>[a-f0-9]+)"
+      ]
     }
   ],
   "hostRules": [
