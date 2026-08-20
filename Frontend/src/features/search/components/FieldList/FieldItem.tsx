@@ -86,7 +86,6 @@ export const FieldItem = ({
             square
             slotProps={{ transition: { timeout: 0 } }}
             expanded={expanded}
-            onChange={handleChange}
             sx={{
                 bgcolor: "transparent",
                 "&:before": { display: "none" },
@@ -96,11 +95,11 @@ export const FieldItem = ({
             }}
         >
             <AccordionSummary
-                expandIcon={<ExpandMore fontSize="small" />}
                 sx={{
                     pl: 0,
                     pr: 0.5,
                     minHeight: 0,
+                    cursor: "default !important",
                     "& .MuiAccordionSummary-content": {
                         my: 0.5,
                         alignItems: "center",
@@ -130,6 +129,35 @@ export const FieldItem = ({
                         {renderHighlight(value[0])}
                     </Typography>
                 )}
+                {!fullDetails && (
+                    <Tooltip
+                        title={t(
+                            expanded
+                                ? "fieldSections.collapse"
+                                : "fieldSections.expand",
+                        )}
+                    >
+                        <IconButton
+                            component="span"
+                            size={isMobile ? "medium" : "small"}
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                handleChange();
+                            }}
+                            sx={{ ml: "auto", flexShrink: 0 }}
+                        >
+                            <ExpandMore
+                                fontSize="small"
+                                sx={{
+                                    transform: expanded
+                                        ? "rotate(180deg)"
+                                        : "none",
+                                    transition: "transform 0.15s",
+                                }}
+                            />
+                        </IconButton>
+                    </Tooltip>
+                )}
                 {onQuery && (
                     <Tooltip title={t("generalSearchView.queryThisField")}>
                         <IconButton
@@ -139,7 +167,10 @@ export const FieldItem = ({
                                 e.stopPropagation();
                                 onQuery(e.shiftKey, e.ctrlKey);
                             }}
-                            sx={{ ml: "auto", flexShrink: 0 }}
+                            sx={{
+                                ml: fullDetails ? "auto" : 0,
+                                flexShrink: 0,
+                            }}
                         >
                             <ManageSearch fontSize="small" />
                         </IconButton>
@@ -155,7 +186,7 @@ export const FieldItem = ({
                                 onSort();
                             }}
                             sx={{
-                                ml: onQuery ? 0 : "auto",
+                                ml: onQuery || !fullDetails ? 0 : "auto",
                                 flexShrink: 0,
                             }}
                         >
@@ -173,7 +204,10 @@ export const FieldItem = ({
                                 onRemove();
                             }}
                             sx={{
-                                ml: onQuery || onSort ? 0 : "auto",
+                                ml:
+                                    onQuery || onSort || !fullDetails
+                                        ? 0
+                                        : "auto",
                                 flexShrink: 0,
                             }}
                         >

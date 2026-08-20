@@ -1,5 +1,4 @@
 import { Download } from "@mui/icons-material";
-import { IconButton } from "@mui/material";
 import { useTranslation } from "react-i18next";
 
 import { RenderedFile } from "@app/api";
@@ -9,14 +8,18 @@ import { selectSuppressDownloadWarning } from "@app/slices/searchSlice";
 import { webApiGetFile } from "@features/common/urls";
 import { DialogType } from "@features/common/utils/enums";
 
+import { FileActionButtonBase } from "./FileActionButtonBase";
+
 interface DownloadButtonProps {
     fileId: string;
     renderedFile?: RenderedFile;
+    disableTooltip?: boolean;
 }
 
 export const DownloadButton = ({
     fileId,
     renderedFile,
+    disableTooltip = false,
 }: DownloadButtonProps) => {
     const { t } = useTranslation();
     const dispatch = useAppDispatch();
@@ -37,12 +40,13 @@ export const DownloadButton = ({
     };
 
     return (
-        <IconButton
-            title={t("downloadWarning.title")}
-            aria-label="download"
+        <FileActionButtonBase
+            icon={<Download />}
+            label={t("downloadWarning.title")}
             onClick={handleClick}
-        >
-            <Download />
-        </IconButton>
+            iconOnly
+            disableTooltip={disableTooltip}
+            ariaLabel="download"
+        />
     );
 };

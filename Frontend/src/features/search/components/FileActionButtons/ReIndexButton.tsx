@@ -17,16 +17,20 @@ import { useAppDispatch, useAppSelector } from "@app/hooks";
 import { setBackgroundTaskSpinnerActive } from "@app/slices/commonSlice";
 import { selectQuery, selectTotalFiles } from "@app/slices/searchSlice";
 
+import { FileActionButtonBase } from "./FileActionButtonBase";
+
 interface ReIndexProps {
     fileId?: string;
     disabled?: boolean;
     iconOnly?: boolean;
+    disableTooltip?: boolean;
 }
 
 export const ReIndexButton = ({
     fileId,
     disabled = false,
     iconOnly = false,
+    disableTooltip = false,
 }: ReIndexProps) => {
     const { t } = useTranslation();
     const dispatch = useAppDispatch();
@@ -67,10 +71,8 @@ export const ReIndexButton = ({
     const startReindexProcess = () => {
         if ((!searchQuery && !fileId) || filesCount === 0) return;
         if (fileId) {
-            // For single files, skip dialog and reindex directly
             handleReindex();
         } else {
-            // For multiple files, show confirmation dialog
             setShowDialog(true);
         }
     };
@@ -82,86 +84,67 @@ export const ReIndexButton = ({
         setShowDialog(false);
     };
 
-    return (
-        <>
-            {fileId || iconOnly ? (
+    const dialog = (
+        <Dialog open={showDialog} fullWidth={true} onClose={handleCloseDialog}>
+            <DialogTitle>
+                {t("reIndex.confirmationTitle")}
                 <IconButton
+                    aria-label="close"
                     onClick={() => {
-                        startReindexProcess();
+                        setShowDialog(false);
                     }}
-                    disabled={disabled}
-                    title={t("sideMenu.reIndexQueriedFiles")}
-                    aria-label="re-index"
+                    title={t("common.close")}
+                    sx={{
+                        position: "absolute",
+                        right: 8,
+                        top: 8,
+                        color: (theme) => theme.palette.grey[500],
+                    }}
                 >
-                    <YoutubeSearchedForOutlined />
+                    <Close />
                 </IconButton>
-            ) : (
+            </DialogTitle>
+            <DialogContent>
+                <p>
+                    {t("reIndex.confirmationMessage", {
+                        count: filesCount,
+                    })}
+                </p>
+            </DialogContent>
+            <DialogActions>
                 <Button
-                    onClick={() => {
-                        startReindexProcess();
-                    }}
-                    disabled={disabled}
+                    startIcon={<Close />}
+                    variant="outlined"
                     color="secondary"
-                    fullWidth={true}
-                    variant={"contained"}
-                    startIcon={<YoutubeSearchedForOutlined />}
+                    onClick={() => {
+                        setShowDialog(false);
+                    }}
                 >
-                    <span className="btn-label">
-                        {t("sideMenu.reIndexQueriedFiles")}
-                    </span>
+                    {t("common.cancel")}
                 </Button>
-            )}
-            <Dialog
-                open={showDialog}
-                fullWidth={true}
-                onClose={handleCloseDialog}
-            >
-                <DialogTitle>
-                    {t("reIndex.confirmationTitle")}
-                    <IconButton
-                        aria-label="close"
-                        onClick={() => {
-                            setShowDialog(false);
-                        }}
-                        title={t("common.close")}
-                        sx={{
-                            position: "absolute",
-                            right: 8,
-                            top: 8,
-                            color: (theme) => theme.palette.grey[500],
-                        }}
-                    >
-                        <Close />
-                    </IconButton>
-                </DialogTitle>
-                <DialogContent>
-                    <p>
-                        {t("reIndex.confirmationMessage", {
-                            count: filesCount,
-                        })}
-                    </p>
-                </DialogContent>
-                <DialogActions>
-                    <Button
-                        startIcon={<Close />}
-                        variant="outlined"
-                        color="secondary"
-                        onClick={() => {
-                            setShowDialog(false);
-                        }}
-                    >
-                        {t("common.cancel")}
-                    </Button>
-                    <Button
-                        startIcon={<YoutubeSearchedForOutlined />}
-                        onClick={handleReindex}
-                        color="primary"
-                        variant="contained"
-                    >
-                        {t("reIndex.executeButton")}
-                    </Button>
-                </DialogActions>
-            </Dialog>
-        </>
+                <Button
+                    startIcon={<YoutubeSearchedForOutlined />}
+                    onClick={handleReindex}
+                    color="primary"
+                    variant="contained"
+                >
+                    {t("reIndex.executeButton")}
+                </Button>
+            </DialogActions>
+        </Dialog>
+    );
+
+    return (
+        <FileActionButtonBase
+            icon={<YoutubeSearchedForOutlined />}
+            label={t("sideMenu.reIndexQueriedFiles")}
+            onClick={() => startReindexProcess()}
+            iconOnly={!!fileId || iconOnly}
+            disabled={disabled}
+            disableTooltip={disableTooltip}
+            ariaLabel="re-index"
+        >
+            {dialog}
+        </FileActionButtonBase>
     );
 };

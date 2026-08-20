@@ -572,4 +572,111 @@ describe("SearchQueryUtils", () => {
             );
         });
     });
+
+    describe("replaceQuery", () => {
+        it("should discard the previous query when replaceQuery is true", () => {
+            const result = updateFieldOfQuery(
+                'tags:"foo" extension:"pdf"',
+                SearchQueryField.Tags,
+                "bar",
+                false,
+                false,
+                false,
+                [],
+                true,
+            );
+
+            expect(result).toBe('tags:"bar"');
+        });
+
+        it("should discard a wildcard query when replaceQuery is true", () => {
+            const result = updateFieldOfQuery(
+                "*",
+                SearchQueryField.Extension,
+                "pdf",
+                false,
+                false,
+                false,
+                [],
+                true,
+            );
+
+            expect(result).toBe('extension:"pdf"');
+        });
+
+        it("should support multiple values with replaceQuery", () => {
+            const result = updateFieldOfQuery(
+                'tags:"foo" extension:"pdf"',
+                SearchQueryField.Id,
+                ["id1", "id2", "id3"],
+                false,
+                false,
+                false,
+                [],
+                true,
+            );
+
+            expect(result).toBe('id:("id1" OR "id2" OR "id3")');
+        });
+
+        it("should still accumulate from previous field when replaceQuery and accumulate are both true", () => {
+            const result = updateFieldOfQuery(
+                'id:("existing-id") tags:"foo"',
+                SearchQueryField.Id,
+                ["new-id"],
+                false,
+                false,
+                true,
+                [],
+                true,
+            );
+
+            expect(result).toBe('id:("existing-id" OR "new-id")');
+        });
+
+        it("should still negate when replaceQuery is true", () => {
+            const result = updateFieldOfQuery(
+                'tags:"foo" extension:"pdf"',
+                SearchQueryField.Tags,
+                "bar",
+                false,
+                true,
+                false,
+                [],
+                true,
+            );
+
+            expect(result).toBe('NOT tags:"bar"');
+        });
+
+        it("should accumulate negated values with replaceQuery", () => {
+            const result = updateFieldOfQuery(
+                'NOT tags:"spam" extension:"pdf"',
+                SearchQueryField.Tags,
+                "more-spam",
+                false,
+                true,
+                false,
+                [],
+                true,
+            );
+
+            expect(result).toBe('NOT tags:("spam" OR "more-spam")');
+        });
+
+        it("should return empty string for empty array with replaceQuery", () => {
+            const result = updateFieldOfQuery(
+                'tags:"foo" extension:"pdf"',
+                SearchQueryField.Tags,
+                [],
+                false,
+                false,
+                false,
+                [],
+                true,
+            );
+
+            expect(result).toBe("");
+        });
+    });
 });

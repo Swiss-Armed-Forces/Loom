@@ -205,7 +205,7 @@
                 "description": "Type your question here and press Enter. The AI searches across all your indexed documents, synthesises an answer, and links back to the source documents it used."
             },
             "chatSourcesWarning": {
-                "title": "Answers may be inaccurate",
+                "title": "⚠️ Answers may be inaccurate",
                 "description": "The chatbot uses AI to generate answers, which means it can produce plausible-sounding but incorrect information. Each answer includes clickable source citations. Always expand them and check the referenced documents to verify important claims before acting on them."
             },
             "chatDeepSearch": {
@@ -323,8 +323,8 @@
         "showThumbnail": "Show thumbnail",
         "resultCounts": "Showing {{actualCount}} of {{totalCount}} results.",
         "queryExpired": "Query expired – refreshing results",
-        "queryThisField": "Query by this field",
-        "sortThisField": "Sort by this field",
+        "queryThisField": "Add to search query",
+        "sortThisField": "Sort by this",
         "contentTruncatedIcon": "Content is truncated",
         "attachmentsSkippedIcon": "Attachments skipped (max recursion depth reached)",
         "spamIcon": "SPAM",
@@ -596,7 +596,9 @@
     },
     "fieldSections": {
         "removeField": "Remove field",
-        "truncated": "… truncated"
+        "truncated": "… truncated",
+        "expand": "Expand",
+        "collapse": "Collapse"
     },
     "resultCard": {
         "expandContent": "Expand content",
@@ -771,7 +773,11 @@
             "request_capability": "Requesting capability",
             "list_folder_contents": "Browsing folder",
             "search_by_filename": "Searching by filename"
-        }
+        },
+        "copyMessage": "Copy message",
+        "messageCopied": "Message copied to clipboard",
+        "copyFailed": "Failed to copy message",
+        "showSourcesInSearch": "Show sources in search"
     },
     "about": {
         "title": "About",

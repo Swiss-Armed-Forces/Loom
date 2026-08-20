@@ -1,5 +1,4 @@
 import { SummarizeOutlined } from "@mui/icons-material";
-import { Button, IconButton } from "@mui/material";
 import { useCallback } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -10,17 +9,21 @@ import { DialogType } from "@features/common/utils/enums";
 
 import { GetFilePreviewResponse } from "../../../../app/api";
 
+import { FileActionButtonBase } from "./FileActionButtonBase";
+
 interface SummarizeProps {
     filePreview?: GetFilePreviewResponse;
     system_prompt?: string;
     disabled?: boolean;
     iconOnly?: boolean;
+    disableTooltip?: boolean;
 }
 
 export const SummaryButton = ({
     filePreview,
     disabled = false,
     iconOnly = false,
+    disableTooltip = false,
 }: SummarizeProps) => {
     const { t } = useTranslation();
     const dispatch = useAppDispatch();
@@ -41,31 +44,15 @@ export const SummaryButton = ({
         );
     }, [dispatch, filesCount, filePreview, searchQuery]);
 
-    if (iconOnly) {
-        return (
-            <IconButton
-                onClick={handleClick}
-                disabled={disabled}
-                title="Summarize"
-                aria-label="summarize"
-            >
-                <SummarizeOutlined />
-            </IconButton>
-        );
-    }
-
     return (
-        <Button
+        <FileActionButtonBase
+            icon={<SummarizeOutlined />}
+            label={t("summarizationDialog.executeButton")}
             onClick={handleClick}
+            iconOnly={iconOnly}
             disabled={disabled}
-            color="secondary"
-            fullWidth={true}
-            variant={"contained"}
-            startIcon={<SummarizeOutlined />}
-        >
-            <span className="btn-label">
-                {t("summarizationDialog.executeButton")}
-            </span>
-        </Button>
+            disableTooltip={disableTooltip}
+            ariaLabel="summarize"
+        />
     );
 };

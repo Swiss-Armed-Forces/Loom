@@ -68,6 +68,7 @@ export const updateFieldOfQuery = (
     negate = false,
     accumulate = false,
     clearFields: string[] = [],
+    replaceQuery = false,
 ): string => {
     const newFieldNameSanitized = fieldName.replace(/([-\s\\:])/g, "\\$1");
     const newFieldNameRegex = escapeForRegex(fieldName);
@@ -117,8 +118,11 @@ export const updateFieldOfQuery = (
 
     // A bare `*` with nothing else is a match-all placeholder; drop it so it
     // doesn't accumulate as cruft alongside real field filters.
-    const previousQueryReplaced =
-        withConflictsRemoved === "*" ? "" : withConflictsRemoved;
+    const previousQueryReplaced = replaceQuery
+        ? ""
+        : withConflictsRemoved === "*"
+          ? ""
+          : withConflictsRemoved;
 
     // Empty array: remove the field from the query entirely.
     if (fieldValueArray.length === 0) return previousQueryReplaced;

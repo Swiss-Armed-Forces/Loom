@@ -21,6 +21,7 @@ export const UpdateSeenButton = ({
     fileSeen = false,
     iconOnly = false,
     colorSecondary = false,
+    disableTooltip = false,
 }: UpdateSeenButtonProps) => {
     return (
         <UpdateFileButton
@@ -30,6 +31,7 @@ export const UpdateSeenButton = ({
             disabled={disabled}
             iconOnly={iconOnly}
             colorSecondary={colorSecondary}
+            disableTooltip={disableTooltip}
             Icon={fileSeen ? MarkEmailUnreadOutlined : MarkEmailReadOutlined}
             iconTitle={
                 fileSeen
