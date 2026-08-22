@@ -605,6 +605,7 @@
         "expandContent": "Expand content",
         "collapseContent": "Collapse content",
         "filterByParentPath": "Filter by parent path",
+        "filterByFilename": "Filter by filename",
         "filterByExtension": "Filter by extension"
     },
     "emptySearch": {
