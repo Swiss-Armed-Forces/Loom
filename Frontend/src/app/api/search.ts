@@ -292,6 +292,12 @@ export const hideArchive = async (archiveId: string): Promise<void> => {
     });
 };
 
+export const deleteArchive = async (archiveId: string): Promise<void> => {
+    return archivesApi.deleteArchiveV1ArchiveArchiveIdDelete({
+        archiveId: archiveId,
+    });
+};
+
 export const scheduleFileTranslation = async (
     lang: string,
     query: SearchQuery,

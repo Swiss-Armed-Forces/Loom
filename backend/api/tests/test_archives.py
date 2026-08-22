@@ -1,6 +1,10 @@
 from uuid import uuid4
 
-from common.archive.archive_repository import Archive, StoredArchive
+from common.archive.archive_repository import (
+    Archive,
+    ArchiveNotFoundException,
+    StoredArchive,
+)
 from common.dependencies import (
     get_archive_repository,
     get_archive_scheduling_service,
@@ -105,3 +109,28 @@ def test_hide_archive(client: TestClient):
     get_archive_scheduling_service().update_archive.assert_called_once_with(
         archive.id_, request
     )
+
+
+def test_delete_archive(client: TestClient):
+    query = QueryParameters(query_id="0123456789", search_string="*")
+    archive = Archive(query=query)
+
+    get_archive_scheduling_service().delete_archive.return_value = None
+
+    response = client.delete(f"/v1/archive/{archive.id_}")
+
+    assert response.status_code == 202
+    get_archive_scheduling_service().delete_archive.assert_called_once_with(archive.id_)
+
+
+def test_delete_archive_not_found(client: TestClient):
+    query = QueryParameters(query_id="0123456789", search_string="*")
+    archive = Archive(query=query)
+
+    get_archive_scheduling_service().delete_archive.side_effect = (
+        ArchiveNotFoundException("No archive found")
+    )
+
+    response = client.delete(f"/v1/archive/{archive.id_}")
+
+    assert response.status_code == 404

@@ -380,6 +380,7 @@
         "title": "Confirm action",
         "confirmCustomQueryRemoval": "Delete this saved query?",
         "confirmRemoval": "Confirm removal",
+        "confirmArchiveDeletion": "This will permanently delete this archive. This action cannot be undone.",
         "confirmArchiveCreationText": "Would you like to create an archive from the search results?",
         "confirmArchiveCreation": "Start archive creation",
         "confirmTagDeletionText": "Would you like to delete the '{{tag}}' tag from all files?",

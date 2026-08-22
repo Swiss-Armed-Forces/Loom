@@ -53,3 +53,10 @@ class ArchiveSchedulingService:
         if archive is None:
             raise ArchiveNotFoundException("No archive found")
         self._task_scheduling_service.update_archive_by_id(archive_id, request)
+
+    def delete_archive(self, archive_id: UUID) -> None:
+        """Dispatch a hard delete for an existing archive."""
+        archive = self._archive_repository.get_by_id(archive_id)
+        if archive is None:
+            raise ArchiveNotFoundException("No archive found")
+        self._task_scheduling_service.delete_archive_by_id(archive_id)

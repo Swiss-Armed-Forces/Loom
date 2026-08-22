@@ -49,6 +49,10 @@ export interface CreateNewArchiveV1ArchivePostRequest {
     archiveRequest: ArchiveRequest;
 }
 
+export interface DeleteArchiveV1ArchiveArchiveIdDeleteRequest {
+    archiveId: string;
+}
+
 export interface DownloadArchiveV1ArchiveArchiveIdGetRequest {
     archiveId: string;
     encrypted?: boolean;
@@ -125,6 +129,71 @@ export class ArchivesApi extends runtime.BaseAPI {
         initOverrides?: RequestInit | runtime.InitOverrideFunction,
     ): Promise<ArchiveCreatedResponse> {
         const response = await this.createNewArchiveV1ArchivePostRaw(
+            requestParameters,
+            initOverrides,
+        );
+        return await response.value();
+    }
+
+    /**
+     * Creates request options for deleteArchiveV1ArchiveArchiveIdDelete without sending the request
+     */
+    async deleteArchiveV1ArchiveArchiveIdDeleteRequestOpts(
+        requestParameters: DeleteArchiveV1ArchiveArchiveIdDeleteRequest,
+    ): Promise<runtime.RequestOpts> {
+        if (requestParameters["archiveId"] == null) {
+            throw new runtime.RequiredError(
+                "archiveId",
+                'Required parameter "archiveId" was null or undefined when calling deleteArchiveV1ArchiveArchiveIdDelete().',
+            );
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        let urlPath = `/v1/archive/{archive_id}`;
+        urlPath = urlPath.replace(
+            "{archive_id}",
+            encodeURIComponent(String(requestParameters["archiveId"])),
+        );
+
+        return {
+            path: urlPath,
+            method: "DELETE",
+            headers: headerParameters,
+            query: queryParameters,
+        };
+    }
+
+    /**
+     * Delete Archive
+     */
+    async deleteArchiveV1ArchiveArchiveIdDeleteRaw(
+        requestParameters: DeleteArchiveV1ArchiveArchiveIdDeleteRequest,
+        initOverrides?: RequestInit | runtime.InitOverrideFunction,
+    ): Promise<runtime.ApiResponse<any>> {
+        const requestOptions =
+            await this.deleteArchiveV1ArchiveArchiveIdDeleteRequestOpts(
+                requestParameters,
+            );
+        const response = await this.request(requestOptions, initOverrides);
+
+        if (this.isJsonMime(response.headers.get("content-type"))) {
+            return new runtime.JSONApiResponse<any>(response);
+        } else {
+            return new runtime.TextApiResponse(response) as any;
+        }
+    }
+
+    /**
+     * Delete Archive
+     */
+    async deleteArchiveV1ArchiveArchiveIdDelete(
+        requestParameters: DeleteArchiveV1ArchiveArchiveIdDeleteRequest,
+        initOverrides?: RequestInit | runtime.InitOverrideFunction,
+    ): Promise<any> {
+        const response = await this.deleteArchiveV1ArchiveArchiveIdDeleteRaw(
             requestParameters,
             initOverrides,
         );

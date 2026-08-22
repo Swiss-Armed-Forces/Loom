@@ -20,6 +20,7 @@ from worker.ai.tasks.summarize_file_tool import summarize_file_tool_task
 from worker.ai.tasks.translate_file_tool import translate_file_tool_task
 from worker.create_archive import (
     create_archive_task,
+    delete_archive_task,
 )
 from worker.create_archive import dispatch_tasks as create_archive_dispatch_tasks
 from worker.create_archive import (
@@ -64,6 +65,7 @@ from worker.test import autoretry_test_task, canvas_test_task, sigkill_pgroup_ta
 # the (then considered unused) imports would be removed by autoflake
 tasks = [
     create_archive_task,
+    delete_archive_task,
     create_archive_dispatch_tasks,
     index_archive,
     update_archive_task,
