@@ -774,11 +774,19 @@ class BaseEsRepository(  # pylint: disable=too-many-public-methods
             # set settings before initializing
             self._index.settings(
                 query={"default_field": self._document_type.get_default_fields()},
-                # When reinit() reindexes into a new index with updated mappings, a document
-                # whose stored value is incompatible with the new field type would otherwise be
-                # dropped entirely. With ignore_malformed=True, ES silently skips the offending
-                # field and still indexes the rest of the document (best-effort preservation).
-                mapping={"ignore_malformed": True},
+                mapping={
+                    # When reinit() reindexes into a new index with updated mappings, a
+                    # document whose stored value is incompatible with the new field type
+                    # would otherwise be dropped entirely. With ignore_malformed=True, ES
+                    # silently skips the offending field and still indexes the rest of the
+                    # document (best-effort preservation).
+                    "ignore_malformed": True,
+                    # ES 9.2+ excludes dense_vector fields from _source by default. The
+                    # persister re-reads documents from ES and expects the full document;
+                    # without the vectors in _source it would write them back empty,
+                    # permanently deleting them (#281).
+                    "exclude_source_vectors": False,
+                },
             )
             # initialize
             self._document_type.init(using=self._elasticsearch)
