@@ -774,7 +774,8 @@
             "add_tags_to_file": "Tagging file",
             "request_capability": "Requesting capability",
             "list_folder_contents": "Browsing folder",
-            "search_by_filename": "Searching by filename"
+            "search_by_filename": "Searching by filename",
+            "load_capability": "Loading capability"
         },
         "copyMessage": "Copy message",
         "messageCopied": "Message copied to clipboard",
