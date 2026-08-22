@@ -16,8 +16,6 @@ from ag_ui.core import (
     ReasoningStartEvent,
     RunFinishedEvent,
     TextMessageContentEvent,
-    TextMessageEndEvent,
-    TextMessageStartEvent,
     ToolCallArgsEvent,
     ToolCallResultEvent,
     ToolCallStartEvent,
@@ -109,35 +107,9 @@ class _ActivityTracker:
 
 @dataclass
 class _TextBuffer:
-    """Accumulates the last text segment so only that segment is emitted.
+    """Accumulates answer text for persistence."""
 
-    Storing two sentinel events plus the text string is cheaper than keeping one event
-    object per streamed token.
-    """
-
-    start: TextMessageStartEvent | None = None
-    end: TextMessageEndEvent | None = None
     text: str = ""
-
-    def new_segment(self, start_event: TextMessageStartEvent) -> None:
-        self.start = start_event
-        self.end = None
-        self.text = ""
-
-    def final_events(self) -> list[BaseEvent]:
-        """Compact [start, content?, end] list for the buffered segment."""
-        if self.start is None:
-            return []
-        result: list[BaseEvent] = [self.start]
-        if self.text:
-            result.append(
-                TextMessageContentEvent(
-                    message_id=self.start.message_id, delta=self.text
-                )
-            )
-        if self.end is not None:
-            result.append(self.end)
-        return result
 
 
 def _collect_citations(source_collector: list[ToolSource]) -> list[AiQuestionCitation]:
@@ -256,23 +228,13 @@ class AiService:
             ):
                 tracker.track(event)
                 match event:
-                    case TextMessageStartEvent():
-                        text_buf.new_segment(event)
                     case TextMessageContentEvent(delta=delta):
                         text_buf.text += delta
-                    case TextMessageEndEvent():
-                        text_buf.end = event
+                        yield event
                     case RunFinishedEvent():
                         run_finished = event
                     case _:
                         yield event
-
-            # Only emit text events for the final run — intermediate runs
-            # (with pending frontend tool calls) stay silent so the frontend
-            # never creates a bubble that would need to be removed.
-            if not tracker.has_pending_tool_calls:
-                for text_event in text_buf.final_events():
-                    yield text_event
 
             activity = (
                 _extract_activity_from_history(adapter.run_input.messages)
