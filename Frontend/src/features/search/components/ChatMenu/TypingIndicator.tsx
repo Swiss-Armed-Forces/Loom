@@ -1,8 +1,15 @@
 import { Box } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 
-export const TypingIndicator = () => {
+export const TypingIndicator = ({
+    color,
+}: {
+    color?: "primary" | "secondary";
+} = {}) => {
     const theme = useTheme();
+    const dotColor = color
+        ? (theme.vars?.palette[color].main ?? theme.palette[color].main)
+        : (theme.vars?.palette.text.secondary ?? theme.palette.text.secondary);
     return (
         <Box sx={{ display: "flex", gap: 0.5, alignItems: "center", p: 0.5 }}>
             {[0, 1, 2].map((i) => (
@@ -12,9 +19,7 @@ export const TypingIndicator = () => {
                         width: 7,
                         height: 7,
                         borderRadius: "50%",
-                        bgcolor:
-                            theme.vars?.palette.text.secondary ??
-                            theme.palette.text.secondary,
+                        bgcolor: dotColor,
                         animation: "chatBounce 1.2s infinite ease-in-out",
                         animationDelay: `${i * 0.2}s`,
                         "@keyframes chatBounce": {

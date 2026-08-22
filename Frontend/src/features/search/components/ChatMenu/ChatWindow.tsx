@@ -1,4 +1,5 @@
-import { Box, Button, List, ListItem, Typography } from "@mui/material";
+import { KeyboardArrowDown } from "@mui/icons-material";
+import { Box, Button, Fab, List, ListItem, Typography } from "@mui/material";
 import { alpha, useTheme } from "@mui/material/styles";
 import { useRef, useEffect, useState, useCallback } from "react";
 
@@ -18,11 +19,14 @@ export const ChatWindow = ({
     isInterrupted,
     pendingQuestion,
     onQuestionAnswer,
+    scrollContainerRef,
 }: ChatWindowProps) => {
     const theme = useTheme();
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const [showAll, setShowAll] = useState(false);
+    const [showScrollButton, setShowScrollButton] = useState(false);
     const handleShowAll = useCallback(() => setShowAll(true), []);
+    const prevLengthRef = useRef(messages.length);
 
     const hiddenCount = messages.length - MAX_VISIBLE_MESSAGES;
     const visibleMessages =
@@ -31,8 +35,35 @@ export const ChatWindow = ({
             : messages;
 
     useEffect(() => {
+        const prevLength = prevLengthRef.current;
+        prevLengthRef.current = messages.length;
+
+        if (messages.length > prevLength) {
+            messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+        }
+    }, [messages.length]);
+
+    const checkAtBottom = useCallback(() => {
+        const el = scrollContainerRef?.current;
+        if (!el) return true;
+        return el.scrollHeight - el.scrollTop - el.clientHeight < 30;
+    }, [scrollContainerRef]);
+
+    useEffect(() => {
+        const el = scrollContainerRef?.current;
+        if (!el) return;
+        const onScroll = () => setShowScrollButton(!checkAtBottom());
+        el.addEventListener("scroll", onScroll, { passive: true });
+        return () => el.removeEventListener("scroll", onScroll);
+    }, [scrollContainerRef, checkAtBottom]);
+
+    useEffect(() => {
+        setShowScrollButton(!checkAtBottom());
+    }, [messages, isLoading, pendingQuestion, isInterrupted, checkAtBottom]);
+
+    const scrollToBottom = useCallback(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-    }, [messages, isLoading, pendingQuestion]);
+    }, []);
 
     if (messages.length === 0 && !isLoading) {
         return (
@@ -129,6 +160,29 @@ export const ChatWindow = ({
                 )}
             </List>
             <div ref={messagesEndRef} />
+            {showScrollButton && (
+                <Fab
+                    size="small"
+                    onClick={scrollToBottom}
+                    sx={{
+                        position: "sticky",
+                        bottom: 8,
+                        left: "50%",
+                        transform: "translateX(-50%)",
+                        zIndex: 1,
+                        opacity: 0.85,
+                        width: 32,
+                        height: 32,
+                        minHeight: 32,
+                    }}
+                >
+                    {isLoading ? (
+                        <TypingIndicator color="primary" />
+                    ) : (
+                        <KeyboardArrowDown fontSize="small" />
+                    )}
+                </Fab>
+            )}
         </>
     );
 };

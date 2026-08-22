@@ -1,5 +1,5 @@
 import { Box, Chip, Divider, Tooltip, Typography } from "@mui/material";
-import { useMemo } from "react";
+import { useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
 
 import { ChatWindow } from "./ChatWindow";
@@ -70,9 +70,12 @@ export const ChatbotInner = ({
         ],
     );
 
+    const scrollContainerRef = useRef<HTMLDivElement>(null);
+
     return (
         <>
             <Box
+                ref={scrollContainerRef}
                 sx={{ flexGrow: 1, overflowY: "auto", p: 1 }}
                 data-tour="chat-messages"
             >
@@ -82,6 +85,7 @@ export const ChatbotInner = ({
                     query={null}
                     onSuggestedQuestion={handleSendMessage}
                     isInterrupted={isInterrupted}
+                    scrollContainerRef={scrollContainerRef}
                     pendingQuestion={
                         pendingQuestion
                             ? {
