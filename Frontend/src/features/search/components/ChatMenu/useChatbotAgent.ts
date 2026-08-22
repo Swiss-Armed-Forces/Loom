@@ -311,16 +311,24 @@ export const useChatbotAgent = (
                     (item) => item.toolName === "request_capability",
                 );
 
+                rerunningRef.current = true;
+
                 (async () => {
                     try {
                         for (const item of passiveItems) {
-                            if (abortController.signal.aborted) return;
+                            if (abortController.signal.aborted) {
+                                rerunningRef.current = false;
+                                return;
+                            }
                             const tool =
                                 frontendToolsRef.current[item.toolName];
                             if (!tool || tool.interactive === true) continue;
                             const result = await tool.handler(item.args);
 
-                            if (abortController.signal.aborted) return;
+                            if (abortController.signal.aborted) {
+                                rerunningRef.current = false;
+                                return;
+                            }
 
                             const record =
                                 runToolCallsRef.current[item.toolCallId];
@@ -349,10 +357,12 @@ export const useChatbotAgent = (
                             });
                         }
 
-                        if (abortController.signal.aborted) return;
+                        if (abortController.signal.aborted) {
+                            rerunningRef.current = false;
+                            return;
+                        }
 
                         if (requestCapabilityItem) {
-                            rerunningRef.current = true;
                             setPendingCapabilityRequest({
                                 toolCallId: requestCapabilityItem.toolCallId,
                                 capability: String(
@@ -364,7 +374,6 @@ export const useChatbotAgent = (
                             });
                             setIsLoading(false);
                         } else if (askUserItem) {
-                            rerunningRef.current = true;
                             setPendingQuestion({
                                 toolCallId: askUserItem.toolCallId,
                                 question: String(
@@ -376,12 +385,12 @@ export const useChatbotAgent = (
                             });
                             setIsLoading(false);
                         } else {
-                            rerunningRef.current = true;
                             agent
                                 .runAgent({ tools: getToolDefs() })
                                 .catch(handleRunError);
                         }
                     } catch {
+                        rerunningRef.current = false;
                         handleRunError();
                     }
                 })();
