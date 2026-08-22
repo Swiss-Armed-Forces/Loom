@@ -278,6 +278,7 @@ _llmDefaults: &llm-defaults
   extra_headers: null
   extra_body: null
   timeout: null
+  max_tokens: null
 
 llm:
   embedding:

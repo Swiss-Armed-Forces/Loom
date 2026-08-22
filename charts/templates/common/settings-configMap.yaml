@@ -491,6 +491,9 @@ data:
     {{- if ne .Values.llm.rerank.timeout nil }}
     llm__rerank__timeout: {{ .Values.llm.rerank.timeout | quote }}
     {{- end }}
+    {{- if ne .Values.llm.rerank.max_tokens nil }}
+    llm__rerank__max_tokens: {{ .Values.llm.rerank.max_tokens | quote }}
+    {{- end }}
 
     # llm chat
     llm__chat__endpoint: {{ .Values.llm.chat.endpoint | default $ollamaEndpoint | quote }}
@@ -511,6 +514,9 @@ data:
     {{- end }}
     {{- if ne .Values.llm.chat.timeout nil }}
     llm__chat__timeout: {{ .Values.llm.chat.timeout | quote }}
+    {{- end }}
+    {{- if ne .Values.llm.chat.max_tokens nil }}
+    llm__chat__max_tokens: {{ .Values.llm.chat.max_tokens | quote }}
     {{- end }}
 
     # llm vision
@@ -562,6 +568,9 @@ data:
     {{- end }}
     {{- if ne .Values.llm.translation.timeout nil }}
     llm__translation__timeout: {{ .Values.llm.translation.timeout | quote }}
+    {{- end }}
+    {{- if ne .Values.llm.translation.max_tokens nil }}
+    llm__translation__max_tokens: {{ .Values.llm.translation.max_tokens | quote }}
     {{- end }}
 
     # beat
