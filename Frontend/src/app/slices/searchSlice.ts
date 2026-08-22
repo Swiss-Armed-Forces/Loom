@@ -1022,6 +1022,7 @@ export const searchSlice = createSlice({
                             state.files[state.temporaryFileId];
                     }
                     state.files = preserved;
+                    state.filesInView = [];
                     // For pure ID changes (keep-alive renewal, React strict-mode
                     // double-mount) preserve the current index and temporary file unchanged.
                     // For a genuine new search query capture the highlighted file ID

@@ -1,5 +1,4 @@
 import { ArchiveOutlined } from "@mui/icons-material";
-import { Button, IconButton } from "@mui/material";
 import { useCallback } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -7,6 +6,8 @@ import { useAppDispatch } from "@app/hooks";
 import { openDialog } from "@app/slices/commonSlice";
 import { DialogType } from "@features/common/utils/enums";
 import { SearchQuery } from "@features/common/utils/model";
+
+import { FileActionButtonBase } from "./FileActionButtonBase";
 
 import { FileActionButtonProps } from ".";
 
@@ -21,6 +22,7 @@ export const CreateArchiveButton = ({
     searchQuery,
     disabled = false,
     iconOnly = false,
+    disableTooltip = false,
 }: CreateArchiveButtonProps) => {
     const { t } = useTranslation();
     const dispatch = useAppDispatch();
@@ -35,29 +37,15 @@ export const CreateArchiveButton = ({
         );
     }, [dispatch, searchQuery]);
 
-    if (iconOnly) {
-        return (
-            <IconButton
-                onClick={handleClick}
-                disabled={disabled}
-                title={t("sideMenu.createArchive")}
-                data-tour="create-archive-button"
-            >
-                <ArchiveOutlined />
-            </IconButton>
-        );
-    }
     return (
-        <Button
+        <FileActionButtonBase
+            icon={<ArchiveOutlined />}
+            label={t("sideMenu.createArchive")}
             onClick={handleClick}
+            iconOnly={iconOnly}
             disabled={disabled}
-            color="secondary"
-            variant="contained"
-            startIcon={<ArchiveOutlined />}
-            fullWidth={true}
-            data-tour="create-archive-button"
-        >
-            <span className="btn-label">{t("sideMenu.createArchive")}</span>
-        </Button>
+            disableTooltip={disableTooltip}
+            dataTour="create-archive-button"
+        />
     );
 };

@@ -33,7 +33,6 @@ export interface ChatWindowProps {
     isLoading: boolean;
     query: string | null;
     onSuggestedQuestion: (q: string) => void;
-    onCitationClick: (fileId: string) => void;
     isInterrupted: boolean;
     pendingQuestion?: { question: string; options: string[] } | null;
     onQuestionAnswer?: (answer: string) => void;

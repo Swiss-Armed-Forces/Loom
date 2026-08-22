@@ -1250,5 +1250,17 @@ in
     '';
   };
 
+  scripts.sync-devenv-renovate = {
+    description = "Sync devenv.yaml renovate tracking comments with current devenv.lock revisions";
+    exec = ''
+      (
+        set -euo pipefail
+        cd '${config.devenv.root}'
+
+        ./cicd/sync_devenv_renovate.sh
+      )
+    '';
+  };
+
   # See full reference at https://devenv.sh/reference/options/
 }

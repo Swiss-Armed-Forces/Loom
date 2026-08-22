@@ -23,6 +23,7 @@ import {
     setFilePreview,
 } from "@app/slices/searchSlice";
 
+import { FileActionButtonBase } from "./FileActionButtonBase";
 import {
     UpdateFileDialogAction,
     UpdateFileButtonProps,
@@ -44,6 +45,7 @@ export const UpdateFileButton = ({
     buttonFullWidth = false,
     disabled = false,
     iconOnly = false,
+    disableTooltip = false,
     Icon,
     iconColor,
     iconTitle,
@@ -111,15 +113,15 @@ export const UpdateFileButton = ({
 
     if (iconOnly) {
         return (
-            <>
-                <IconButton
-                    aria-label={ariaLabel}
-                    onClick={handleIconClick}
-                    disabled={disabled}
-                    title={iconTitle}
-                >
-                    <Icon color={iconColor} />
-                </IconButton>
+            <FileActionButtonBase
+                icon={<Icon color={iconColor} />}
+                label={iconTitle}
+                onClick={handleIconClick}
+                iconOnly
+                disabled={disabled}
+                disableTooltip={disableTooltip}
+                ariaLabel={ariaLabel}
+            >
                 {!fileId && (
                     <UpdateFileDialog
                         open={showDialog}
@@ -132,7 +134,7 @@ export const UpdateFileButton = ({
                         property={property}
                     />
                 )}
-            </>
+            </FileActionButtonBase>
         );
     }
 

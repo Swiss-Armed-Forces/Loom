@@ -19,6 +19,7 @@ export const UpdateFlaggedButton = ({
     fileFlagged = false,
     iconOnly = false,
     colorSecondary = false,
+    disableTooltip = false,
 }: UpdateFlaggedButtonProps) => {
     return (
         <UpdateFileButton
@@ -28,6 +29,7 @@ export const UpdateFlaggedButton = ({
             disabled={disabled}
             iconOnly={iconOnly}
             colorSecondary={colorSecondary}
+            disableTooltip={disableTooltip}
             Icon={fileFlagged ? Flag : FlagOutlined}
             iconColor={fileFlagged ? IconColor.error : undefined}
             iconTitle={

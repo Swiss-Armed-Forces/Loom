@@ -4,19 +4,48 @@ from uuid import UUID
 
 import requests
 from api.routers.archives import ArchiveCreatedResponse, ArchiveRequest
+from api.routers.files import AddTagsRequest
 from common.dependencies import get_archive_encryption_service
 from common.services.query_builder import QueryParameters
 from common.services.task_scheduling_service import UpdateArchiveRequest
 from worker.create_archive.tasks.archive_cli import FILES_DIR, FILES_INDEX_DIR
 
-from utils.consts import ARCHIVE_ENDPOINT, REQUEST_TIMEOUT
+from utils.consts import ARCHIVE_ENDPOINT, FILES_ENDPOINT, REQUEST_TIMEOUT
 from utils.fetch_from_api import (
     DEFAULT_MAX_WAIT_TIME_PER_FILE,
     fetch_archives_from_api,
     fetch_files_from_api,
     fetch_query_id,
+    get_file_preview_by_name,
 )
 from utils.upload_asset import upload_asset, upload_many_assets
+
+
+def _download_archive(archive_id: UUID) -> bytes:
+    response = requests.get(
+        f"{ARCHIVE_ENDPOINT}/{archive_id}",
+        timeout=REQUEST_TIMEOUT,
+    )
+    response.raise_for_status()
+    return response.content
+
+
+def _import_archive(archive_content: bytes):
+    response = requests.post(
+        f"{ARCHIVE_ENDPOINT}/import",
+        files={"file": ("archive.zip", archive_content, "application/zip")},
+        timeout=REQUEST_TIMEOUT,
+    )
+    response.raise_for_status()
+
+
+def _add_tags(file_id: str, tags: list[str]):
+    response = requests.post(
+        f"{FILES_ENDPOINT}/{file_id}/tags",
+        json=AddTagsRequest(tags=tags).model_dump(),
+        timeout=REQUEST_TIMEOUT,
+    )
+    response.raise_for_status()
 
 
 def create_archive(query: QueryParameters) -> ArchiveCreatedResponse:
@@ -192,3 +221,26 @@ def test_create_multiple_archives_with_different_files():
         archive_with_all_files.archive_id, len(assets)
     )
     _download_archive_and_check_if_files_are_there(archive_with_one_file.archive_id, 1)
+
+
+def test_import_archive_overwrites_existing_file():
+    upload_asset("empty_file.txt")
+    file = get_file_preview_by_name("empty_file.txt")
+
+    create_archive(QueryParameters(search_string="*", query_id=fetch_query_id()))
+    archives = fetch_archives_from_api()
+    archive_bytes = _download_archive(archives[0].file_id)
+
+    _add_tags(str(file.file_id), ["canary"])
+    tagged_file = get_file_preview_by_name(
+        "empty_file.txt", checker=lambda f: bool(f.tags)
+    )
+    assert "canary" in tagged_file.tags
+
+    _import_archive(archive_bytes)
+    fetch_archives_from_api(expected_no_of_archives=1, expected_state="imported")
+
+    overwritten_file = get_file_preview_by_name(
+        "empty_file.txt", checker=lambda f: not f.tags
+    )
+    assert not overwritten_file.tags

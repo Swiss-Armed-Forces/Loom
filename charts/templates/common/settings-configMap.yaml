@@ -372,6 +372,9 @@ data:
     {{- if ne .Values.llm.summarization_key_points.max_tokens nil }}
     llm__summarization_key_points__max_tokens: {{ .Values.llm.summarization_key_points.max_tokens | quote }}
     {{- end }}
+    {{- if ne .Values.llm.summarization_key_points.max_sentences nil }}
+    llm__summarization_key_points__max_sentences: {{ .Values.llm.summarization_key_points.max_sentences | quote }}
+    {{- end }}
 
     # llm summarization
     llm__summarization__endpoint: {{ .Values.llm.summarization.endpoint | default $ollamaEndpoint | quote }}
@@ -399,6 +402,9 @@ data:
     {{- if ne .Values.llm.summarization.max_tokens nil }}
     llm__summarization__max_tokens: {{ .Values.llm.summarization.max_tokens | quote }}
     {{- end }}
+    {{- if ne .Values.llm.summarization.max_sentences nil }}
+    llm__summarization__max_sentences: {{ .Values.llm.summarization.max_sentences | quote }}
+    {{- end }}
 
     # llm summarization refine
     llm__summarization_refine__endpoint: {{ .Values.llm.summarization_refine.endpoint | default $ollamaEndpoint | quote }}
@@ -425,6 +431,9 @@ data:
     {{- end }}
     {{- if ne .Values.llm.summarization_refine.max_tokens nil }}
     llm__summarization_refine__max_tokens: {{ .Values.llm.summarization_refine.max_tokens | quote }}
+    {{- end }}
+    {{- if ne .Values.llm.summarization_refine.max_sentences nil }}
+    llm__summarization_refine__max_sentences: {{ .Values.llm.summarization_refine.max_sentences | quote }}
     {{- end }}
 
     # llm hyde
@@ -529,6 +538,9 @@ data:
     {{- end }}
     {{- if ne .Values.llm.vision.max_tokens nil }}
     llm__vision__max_tokens: {{ .Values.llm.vision.max_tokens | quote }}
+    {{- end }}
+    {{- if ne .Values.llm.vision.max_sentences nil }}
+    llm__vision__max_sentences: {{ .Values.llm.vision.max_sentences | quote }}
     {{- end }}
 
     # llm translation

@@ -1,5 +1,4 @@
 import { ImageSearch } from "@mui/icons-material";
-import { Button, IconButton } from "@mui/material";
 import { useCallback } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -9,16 +8,20 @@ import { openDialog } from "@app/slices/commonSlice";
 import { selectQuery, selectTotalFiles } from "@app/slices/searchSlice";
 import { DialogType } from "@features/common/utils/enums";
 
+import { FileActionButtonBase } from "./FileActionButtonBase";
+
 interface ImageDescriptionProps {
     filePreview?: GetFilePreviewResponse;
     disabled?: boolean;
     iconOnly?: boolean;
+    disableTooltip?: boolean;
 }
 
 export const ImageDescriptionButton = ({
     filePreview,
     disabled = false,
     iconOnly = false,
+    disableTooltip = false,
 }: ImageDescriptionProps) => {
     const { t } = useTranslation();
     const dispatch = useAppDispatch();
@@ -39,31 +42,15 @@ export const ImageDescriptionButton = ({
         );
     }, [dispatch, filesCount, filePreview, searchQuery]);
 
-    if (filePreview?.fileId || iconOnly) {
-        return (
-            <IconButton
-                onClick={handleClick}
-                disabled={disabled}
-                title={t("imageDescriptionButton.describeImage")}
-                aria-label="describe-image"
-            >
-                <ImageSearch />
-            </IconButton>
-        );
-    }
-
     return (
-        <Button
+        <FileActionButtonBase
+            icon={<ImageSearch />}
+            label={t("imageDescriptionButton.describeImage")}
             onClick={handleClick}
+            iconOnly={!!filePreview?.fileId || iconOnly}
             disabled={disabled}
-            color="secondary"
-            fullWidth={true}
-            variant={"contained"}
-            startIcon={<ImageSearch />}
-        >
-            <span className="btn-label">
-                {t("imageDescriptionButton.describeImage")}
-            </span>
-        </Button>
+            disableTooltip={disableTooltip}
+            ariaLabel="describe-image"
+        />
     );
 };

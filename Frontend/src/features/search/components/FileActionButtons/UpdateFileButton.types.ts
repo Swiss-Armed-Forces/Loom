@@ -30,6 +30,7 @@ export interface UpdateFileButtonPropsBase {
     iconOnly?: boolean;
     colorSecondary?: boolean;
     ariaLabel?: string;
+    disableTooltip?: boolean;
 }
 
 export interface UpdateFileButtonProps extends UpdateFileButtonPropsBase {

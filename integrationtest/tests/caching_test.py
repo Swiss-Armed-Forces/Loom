@@ -3,6 +3,7 @@ from http.client import REQUEST_TIMEOUT
 import pytest
 import requests
 from common.utils.cache import CacheStatistics
+from pydantic import BaseModel
 
 from utils.consts import CACHING_ENDPOINT
 from utils.fetch_from_api import fetch_files_from_api
@@ -20,6 +21,38 @@ def _get_stats() -> CacheStatistics:
     return CacheStatistics.model_validate(response.json())
 
 
+class CacheStatsTotal(BaseModel):
+    mem_size_total: int
+    entries_count_total: int
+    miss_count_total: int
+    hits_count_total: int
+
+
+def calc_totals(stats: CacheStatistics) -> CacheStatsTotal:
+    size = 0
+    miss = 0
+    hits = 0
+    count = 0
+    for x in stats.root.keys():
+        if x.split(".")[0] != "worker":
+            continue
+
+        size += stats.root[x].mem_size
+        miss += stats.root[x].miss_count
+        hits += stats.root[x].hits_count
+        count += stats.root[x].entries_count
+
+    return CacheStatsTotal(
+        mem_size_total=size,
+        entries_count_total=count,
+        miss_count_total=miss,
+        hits_count_total=hits,
+    )
+
+
+# Flaky: 1/1000 fails due to race/sync issue.
+# https://gitlab.com/swiss-armed-forces/cyber-command/cea/loom/-/work_items/255
+@pytest.mark.flaky(reruns=3)
 def test_caching():
     search_string = "*"
     asset_name = "text.txt"
@@ -33,10 +66,13 @@ def test_caching():
     )
 
     caching_results_1 = _get_stats()
-    assert caching_results_1.mem_size_total > 0
-    assert caching_results_1.entries_count_total > 0
-    assert caching_results_1.hits_count_total > 0
-    assert caching_results_1.miss_count_total > 0
+
+    stats_1 = calc_totals(caching_results_1)
+
+    assert stats_1.mem_size_total > 0
+    assert stats_1.entries_count_total > 0
+    assert stats_1.hits_count_total > 0
+    assert stats_1.miss_count_total > 0
 
     upload_asset(asset_name=asset_name, upload_file_name="text2.txt")
     # wait for files to be indexed and all pipeline tasks to complete
@@ -47,11 +83,10 @@ def test_caching():
     )
 
     caching_results_2 = _get_stats()
-    # same content: no new cache entries, no new misses, no memory growth
-    assert caching_results_2.mem_size_total == caching_results_1.mem_size_total
-    assert (
-        caching_results_2.entries_count_total == caching_results_1.entries_count_total
-    )
-    assert caching_results_2.miss_count_total == caching_results_1.miss_count_total
-    # but hits grew: the second indexing reused cached results
-    assert caching_results_2.hits_count_total > caching_results_1.hits_count_total
+
+    stats_2 = calc_totals(caching_results_2)
+
+    assert stats_2.mem_size_total == stats_1.mem_size_total
+    assert stats_2.entries_count_total == stats_1.entries_count_total
+    assert stats_2.miss_count_total == stats_1.miss_count_total
+    assert stats_2.hits_count_total > stats_1.hits_count_total

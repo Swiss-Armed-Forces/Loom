@@ -1,18 +1,25 @@
+# yamllint disable rule:line-length
+# renovate: datasource=git-refs depName=devenv-devenv packageName=https://github.com/cachix/devenv currentValue=main currentDigest=4b01fa6f94bc6e281a7b6db4c5558561c7cdfb2c
 inputs:
+  # renovate: datasource=git-refs depName=devenv-git-hooks packageName=https://github.com/cachix/git-hooks.nix currentValue=master currentDigest=c06f90f1eb6569bdaf6a4a10cb7e66db4454ac2a
   git-hooks:
     url: github:cachix/git-hooks.nix
     inputs:
       nixpkgs:
         follows: nixpkgs
+  # renovate: datasource=git-refs depName=devenv-nixpkgs packageName=https://github.com/cachix/devenv-nixpkgs currentValue=rolling currentDigest=fa7125ea7f1ae5430010a6e071f68375a39bd24c
   nixpkgs:
     url: github:cachix/devenv-nixpkgs/rolling
+  # renovate: datasource=git-refs depName=devenv-nixpkgs-python packageName=https://github.com/cachix/nixpkgs-python currentValue=main currentDigest=0e0fd8c0fb36b707d0f90c38b13265d366db8798
   nixpkgs-python:
     url: github:cachix/nixpkgs-python
     inputs:
       nixpkgs:
         follows: nixpkgs
+  # renovate: datasource=git-refs depName=devenv-nixpkgs-stable packageName=https://github.com/NixOS/nixpkgs currentValue=nixos-25.11 currentDigest=107cba9eb4a8d8c9f8e9e61266d78d340867913a
   nixpkgs-stable:
     url: github:NixOS/nixpkgs/nixos-25.11
+  # renovate: datasource=git-refs depName=devenv-nixpkgs-unstable packageName=https://github.com/NixOS/nixpkgs currentValue=nixpkgs-unstable currentDigest=15c6719d8c604779cf59e03c245ea61d3d7ab69b
   nixpkgs-unstable:
     url: github:NixOS/nixpkgs/nixpkgs-unstable
   pre-commit-hooks:

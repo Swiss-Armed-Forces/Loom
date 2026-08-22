@@ -10,19 +10,11 @@ import { MessageBubble } from "./MessageBubble";
 import { PendingQuestion } from "./PendingQuestion";
 import { TypingIndicator } from "./TypingIndicator";
 
-export type {
-    ChatCitation,
-    ToolCallRecord,
-    ActivityRecord,
-    ChatMessage,
-} from "./ChatWindow.types";
-
 export const ChatWindow = ({
     messages,
     isLoading,
     query,
     onSuggestedQuestion,
-    onCitationClick,
     isInterrupted,
     pendingQuestion,
     onQuestionAnswer,
@@ -74,10 +66,7 @@ export const ChatWindow = ({
                             py: 0.5,
                         }}
                     >
-                        <MessageBubble
-                            message={message}
-                            onCitationClick={onCitationClick}
-                        />
+                        <MessageBubble message={message} />
                     </ListItem>
                 ))}
                 {pendingQuestion && (

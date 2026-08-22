@@ -1,4 +1,5 @@
 import { Box, Chip, Divider, Tooltip, Typography } from "@mui/material";
+import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 
 import { ChatWindow } from "./ChatWindow";
@@ -8,13 +9,11 @@ import { useChatbotAgent } from "./useChatbotAgent";
 
 interface ChatbotInnerProps {
     contextId: string;
-    onCitationClick: (fileId: string) => void;
     onRunComplete: () => void;
 }
 
 export const ChatbotInner = ({
     contextId,
-    onCitationClick,
     onRunComplete,
 }: ChatbotInnerProps) => {
     const { t } = useTranslation();
@@ -36,41 +35,52 @@ export const ChatbotInner = ({
         abortRun,
     } = useChatbotAgent(contextId, onRunComplete);
 
-    const messagesWithActivity: ChatMessage[] = [
-        ...chatMessages,
-        ...((Object.keys(inFlightToolCalls).length > 0 ||
-        reasoningPhase !== "idle"
-            ? [
-                  {
-                      id: "__inflight__",
-                      text: "",
-                      isUser: false as const,
-                      citations: [],
-                      activity: [
-                          ...turnActivity,
-                          ...(reasoningPhase === "thinking"
-                              ? [
-                                    {
-                                        type: "reasoning" as const,
-                                        text: reasoningText,
-                                    },
-                                ]
-                              : []),
-                      ],
-                  },
-              ]
-            : []) satisfies ChatMessage[]),
-    ];
+    const messagesWithActivity = useMemo<ChatMessage[]>(
+        () => [
+            ...chatMessages,
+            ...((Object.keys(inFlightToolCalls).length > 0 ||
+            reasoningPhase !== "idle"
+                ? [
+                      {
+                          id: "__inflight__",
+                          text: "",
+                          isUser: false as const,
+                          citations: [],
+                          activity: [
+                              ...turnActivity,
+                              ...(reasoningPhase === "thinking"
+                                  ? [
+                                        {
+                                            type: "reasoning" as const,
+                                            text: reasoningText,
+                                        },
+                                    ]
+                                  : []),
+                          ],
+                      },
+                  ]
+                : []) satisfies ChatMessage[]),
+        ],
+        [
+            chatMessages,
+            inFlightToolCalls,
+            reasoningPhase,
+            reasoningText,
+            turnActivity,
+        ],
+    );
 
     return (
         <>
-            <Box sx={{ flexGrow: 1, overflowY: "auto", p: 1 }}>
+            <Box
+                sx={{ flexGrow: 1, overflowY: "auto", p: 1 }}
+                data-tour="chat-messages"
+            >
                 <ChatWindow
                     messages={messagesWithActivity}
                     isLoading={isLoading}
                     query={null}
                     onSuggestedQuestion={handleSendMessage}
-                    onCitationClick={onCitationClick}
                     isInterrupted={isInterrupted}
                     pendingQuestion={
                         pendingQuestion

@@ -1,5 +1,4 @@
 import { Translate } from "@mui/icons-material";
-import { Button, IconButton } from "@mui/material";
 import { useCallback } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -9,16 +8,20 @@ import { openDialog } from "@app/slices/commonSlice";
 import { selectQuery } from "@app/slices/searchSlice";
 import { DialogType } from "@features/common/utils/enums";
 
+import { FileActionButtonBase } from "./FileActionButtonBase";
+
 interface TranslationProps {
     filePreview?: GetFilePreviewResponse;
     disabled?: boolean;
     iconOnly?: boolean;
+    disableTooltip?: boolean;
 }
 
 export const TranslationButton = ({
     filePreview,
     disabled = false,
     iconOnly = false,
+    disableTooltip = false,
 }: TranslationProps) => {
     const { t } = useTranslation();
     const dispatch = useAppDispatch();
@@ -34,31 +37,15 @@ export const TranslationButton = ({
         );
     }, [dispatch, filePreview, searchQuery]);
 
-    if (iconOnly) {
-        return (
-            <IconButton
-                onClick={handleClick}
-                disabled={disabled}
-                title={t("sideMenu.translateQueriedFiles")}
-                aria-label="translate"
-            >
-                <Translate />
-            </IconButton>
-        );
-    }
-
     return (
-        <Button
+        <FileActionButtonBase
+            icon={<Translate />}
+            label={t("sideMenu.translateQueriedFiles")}
             onClick={handleClick}
+            iconOnly={iconOnly}
             disabled={disabled}
-            color="secondary"
-            fullWidth={true}
-            variant={"contained"}
-            startIcon={<Translate />}
-        >
-            <span className="btn-label">
-                {t("sideMenu.translateQueriedFiles")}
-            </span>
-        </Button>
+            disableTooltip={disableTooltip}
+            ariaLabel="translate"
+        />
     );
 };

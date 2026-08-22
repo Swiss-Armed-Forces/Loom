@@ -135,6 +135,8 @@ def translate_detect_language(text: str) -> list[DetectedLanguage]:
             ],
             response_format=_LanguageDetectionResult,
             extra_headers=settings.llm.translation.extra_headers,
+            extra_body=settings.llm.translation.extra_body,
+            max_tokens=settings.llm.translation.max_tokens,
         )
     except APIError as ex:
         raise LLMTranslationException from ex
@@ -242,6 +244,8 @@ def translate(text: str, detected_language: DetectedLanguage) -> str:
             ],
             response_format=_TranslationResult,
             extra_headers=settings.llm.translation.extra_headers,
+            extra_body=settings.llm.translation.extra_body,
+            max_tokens=settings.llm.translation.max_tokens,
         )
     except APIError as ex:
         raise LLMTranslationException from ex

@@ -70,7 +70,8 @@ def get_cache_statistics(redis_client: StrictRedis) -> CacheStatistics:
     )
     keys = [key.decode() for key in keys_bytes]
 
-    namespaces = {key.split(":")[1][:-1] for key in keys}
+    namespaces = {":".join(key.split(":")[1:-1])[:-1] for key in keys}
+
     for namespace in namespaces:
         val_key = CACHE_KEY_FORMAT.format(namespace=namespace, key="vals")
         mem_size = redis_client.execute_command(f"MEMORY USAGE {val_key}")
@@ -102,7 +103,8 @@ def shrink_cache(redis_client: StrictRedis) -> None:
         )
     )
     keys = [key.decode() for key in keys_bytes]
-    namespaces = [key.split(":")[1][:-1] for key in keys]
+
+    namespaces = {":".join(key.split(":")[1:-1])[:-1] for key in keys}
 
     for namespace in namespaces:
         logger.debug("Shrinking cache '%s'", namespace)

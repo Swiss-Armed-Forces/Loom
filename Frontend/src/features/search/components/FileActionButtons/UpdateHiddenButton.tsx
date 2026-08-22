@@ -20,6 +20,7 @@ export const UpdateHiddenButton = ({
     fileHidden = false,
     iconOnly = false,
     colorSecondary = false,
+    disableTooltip = false,
 }: UpdateHiddenButtonProps) => {
     return (
         <UpdateFileButton
@@ -29,6 +30,7 @@ export const UpdateHiddenButton = ({
             disabled={disabled}
             iconOnly={iconOnly}
             colorSecondary={colorSecondary}
+            disableTooltip={disableTooltip}
             Icon={
                 buttonFullWidth
                     ? VisibilityOff

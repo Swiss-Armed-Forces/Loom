@@ -153,13 +153,12 @@ Passage:"""
             temperature=settings.llm.hyde.temperature,
             extra_headers=settings.llm.hyde.extra_headers,
             extra_body=settings.llm.hyde.extra_body,
+            max_tokens=settings.llm.hyde.max_tokens,
         )
     except APIError as ex:
         raise LLMError("Hypothetical document generation failed") from ex
 
-    doc = settings.llm.hyde.truncate_response(
-        (response.choices[0].message.content or "").strip()
-    )
+    doc = (response.choices[0].message.content or "").strip()
 
     logger.debug("Hypothetical generated document: %.100s...", doc)
     return doc
@@ -271,6 +270,7 @@ def _invoke_rerank_llm(
             extra_headers=settings.llm.rerank.extra_headers,
             extra_body=settings.llm.rerank.extra_body,
             response_format=_RerankResult,
+            max_tokens=settings.llm.rerank.max_tokens,
         )
     except APIError as ex:
         raise LLMError() from ex
@@ -508,6 +508,7 @@ def _call_chat_llm(
             temperature=settings.llm.chat.temperature,
             extra_headers=settings.llm.chat.extra_headers,
             extra_body=settings.llm.chat.extra_body,
+            max_tokens=settings.llm.chat.max_tokens,
         )
     except APIError as ex:
         raise LLMError() from ex

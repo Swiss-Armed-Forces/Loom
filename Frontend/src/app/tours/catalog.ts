@@ -54,6 +54,7 @@ export const TOUR_TARGETS = {
     activityBarFolders: '[data-tour="activity-bar-folders"]',
     activityBarTags: '[data-tour="activity-bar-tags"]',
     activityBarSavedQueries: '[data-tour="activity-bar-saved-queries"]',
+    chatMessages: '[data-tour="chat-messages"]',
     chatInput: '[data-tour="chat-input"]',
     chatHistoryButton: '[data-tour="chat-history-button"]',
     chatNewButton: '[data-tour="chat-new-button"]',
@@ -386,7 +387,7 @@ export const GLOBAL_TOUR_STEPS: readonly TourStep[] = [
     },
     {
         id: "chat-sources-warning",
-        target: { selector: TOUR_TARGETS.chatInput },
+        target: { selector: TOUR_TARGETS.chatMessages },
         titleKey: "tour.steps.chatSourcesWarning.title",
         descriptionKey: "tour.steps.chatSourcesWarning.description",
         side: "top",
