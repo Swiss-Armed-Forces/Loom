@@ -73,7 +73,11 @@ class AgentService:
     def _build_model_profile() -> OpenAIModelProfile:
         profile = OpenAIModelProfile()
         if settings.llm.agent.merge_system_messages:
+            # Backends that reject multiple leading system messages (vLLM/SGLang
+            # serving Qwen) also reject system messages mid-conversation — e.g.
+            # the tool-availability announcement injected after load_capability.
             profile["openai_chat_supports_multiple_system_messages"] = False
+            profile["supports_inline_system_prompts"] = False
         return profile
 
     @staticmethod
