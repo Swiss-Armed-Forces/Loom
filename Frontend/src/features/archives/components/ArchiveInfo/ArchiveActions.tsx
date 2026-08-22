@@ -5,14 +5,15 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 
-import { ArchiveHit, hideArchive } from "@app/api";
+import { ArchiveHit } from "@app/api";
 import { useAppDispatch } from "@app/hooks";
-import { removeArchive } from "@app/slices/archiveSlice";
+import { openDialog } from "@app/slices/commonSlice";
 import { updateQuery } from "@app/slices/searchSlice";
 import {
     webApiGetArchive,
     webApiGetArchiveEncrypted,
 } from "@features/common/urls";
+import { DialogType } from "@features/common/utils/enums";
 
 interface ArchiveActions {
     archive: ArchiveHit;
@@ -42,9 +43,14 @@ export const ArchiveActions = ({ archive }: ArchiveActions) => {
         navigate("/search");
     };
 
-    const handleHideArchive = async (archiveId: string) => {
-        await hideArchive(archiveId);
-        dispatch(removeArchive(archiveId));
+    const handleDeleteArchive = (archiveId: string) => {
+        dispatch(
+            openDialog({
+                id: "",
+                type: DialogType.DeleteArchive,
+                props: { archiveId },
+            }),
+        );
     };
 
     const hasPlainFile = archive.sha256 != null;
@@ -109,7 +115,7 @@ export const ArchiveActions = ({ archive }: ArchiveActions) => {
                         {!archive.hidden && (
                             <MenuItem
                                 onClick={() =>
-                                    handleHideArchive(archive.fileId)
+                                    handleDeleteArchive(archive.fileId)
                                 }
                             >
                                 <Delete />
@@ -180,7 +186,7 @@ export const ArchiveActions = ({ archive }: ArchiveActions) => {
                     </IconButton>
                     {!archive.hidden && (
                         <IconButton
-                            onClick={() => handleHideArchive(archive.fileId)}
+                            onClick={() => handleDeleteArchive(archive.fileId)}
                             title={t("generalSearchView.remove")}
                             sx={{
                                 "&:hover": {

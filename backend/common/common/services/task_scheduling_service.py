@@ -239,6 +239,21 @@ class TaskSchedulingService(TaskService):
             task_id=str(root_task_id),
         ).forget()
 
+    def delete_archive_by_id(self, archive_id: UUID):
+        root_task_id = uuid4()
+        self._root_task_information_repository.save(
+            RootTaskInformation(
+                root_task_id=root_task_id,
+                object_id=archive_id,
+            )
+        )
+        self._send_task(
+            "worker.create_archive.delete_archive_task.delete_archive_task",
+            args=[archive_id],
+            root_id=str(root_task_id),
+            task_id=str(root_task_id),
+        ).forget()
+
     def dispatch_update(self, query: QueryParameters, request: UpdateFileRequest):
         root_task_id = uuid4()
         self._send_task(

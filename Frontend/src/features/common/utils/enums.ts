@@ -5,6 +5,7 @@ export const DialogType = {
     AddTagsDialog: "addTagsDialog",
     ArchiveTasks: "archiveTasks",
     CreateArchive: "createArchive",
+    DeleteArchive: "deleteArchive",
     DeleteCustomQuery: "deleteCustomQuery",
     DeleteTagGlobally: "deleteTagGlobally",
     ImageDescription: "imageDescriptionDialog",

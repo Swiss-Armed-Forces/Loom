@@ -278,6 +278,13 @@ export const hideArchive = (id: string): boolean => {
     return true;
 };
 
+export const deleteArchive = (id: string): boolean => {
+    const index = archives.findIndex((item) => item.id === id);
+    if (index === -1) return false;
+    archives.splice(index, 1);
+    return true;
+};
+
 const enqueueDemoTask = (onComplete: () => void): void => {
     queueDepth += 1;
     scheduleDemoTimeout(() => {

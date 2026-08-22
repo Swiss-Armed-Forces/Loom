@@ -5,6 +5,7 @@ import { type ArchivesModel, ArchivesModelToJSON } from "@app/api/generated";
 import { DemoQueryError } from "../query";
 import {
     addArchive,
+    deleteArchive,
     getArchive,
     getArchives,
     hideArchive,
@@ -84,6 +85,14 @@ const hideHandler = http.put(/\/api\/v1\/archive\/([^/]+)$/, ({ request }) =>
         : error("Archive not found", 404),
 );
 
+const deleteHandler = http.delete(
+    /\/api\/v1\/archive\/([^/]+)$/,
+    ({ request }) =>
+        deleteArchive(archiveId(request))
+            ? empty(202)
+            : error("Archive not found", 404),
+);
+
 const downloadHandler = http.get(
     /\/api\/v1\/archive\/[^/]+$/,
     ({ request }) => {
@@ -121,6 +130,7 @@ export const archiveHandlers = [
     importHandler,
     encryptionKeyHandler,
     hideHandler,
+    deleteHandler,
     downloadHandler,
     unhandledArchiveHandler,
 ];

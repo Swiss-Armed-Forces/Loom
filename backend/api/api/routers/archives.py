@@ -153,3 +153,14 @@ def update_archive(
         archive_scheduling_service.update_archive(archive_id, update_archive_request)
     except ArchiveNotFoundException as e:
         raise HTTPException(status_code=404, detail="Invalid archive") from e
+
+
+@router.delete("/{archive_id}", status_code=202)
+def delete_archive(
+    archive_id: UUID,
+    archive_scheduling_service: ArchiveSchedulingService = default_archive_scheduling_service,
+):
+    try:
+        archive_scheduling_service.delete_archive(archive_id)
+    except ArchiveNotFoundException as e:
+        raise HTTPException(status_code=404, detail="Invalid archive") from e

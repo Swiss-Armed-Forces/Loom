@@ -3,6 +3,7 @@ import { AddTagsDialog } from "./AddTagsDialog/AddTagsDialog";
 import { ArchiveTasksDialog } from "./ArchiveTasksDialog/ArchiveTasksDialog";
 import { ConfirmDialog } from "./ConfirmDialog/ConfirmDialog";
 import { CreateArchiveDialog } from "./CreateArchiveDialog/CreateArchiveDialog";
+import { DeleteArchiveDialog } from "./DeleteArchiveDialog/DeleteArchiveDialog";
 import { DeleteCustomQueryDialog } from "./DeleteCustomQueryDialog/DeleteCustomQueryDialog";
 import { DeleteTagGloballyDialog } from "./DeleteTagGloballyDialog/DeleteTagGloballyDialog";
 import { DialogBase } from "./DialogBase";
@@ -22,6 +23,7 @@ export {
     ArchiveTasksDialog,
     ConfirmDialog,
     CreateArchiveDialog,
+    DeleteArchiveDialog,
     DeleteCustomQueryDialog,
     DeleteTagGloballyDialog,
     DialogBase,
