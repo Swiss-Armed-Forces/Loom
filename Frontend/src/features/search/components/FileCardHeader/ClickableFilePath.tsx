@@ -44,7 +44,7 @@ export const ClickableFilePath = ({
     const fileExtension = dotIdx > 0 ? lastName.slice(dotIdx) : null;
     const fileBaseName = dotIdx > 0 ? lastName.slice(0, dotIdx) : lastName;
 
-    const handleQueryReplaceFilename = (
+    const handleQueryFilterParentPath = (
         newFilepath: string,
         negate: boolean,
         accumulate: boolean,
@@ -73,6 +73,22 @@ export const ClickableFilePath = ({
             searchQuery?.query ?? "",
             SearchQueryField.Extension,
             ext,
+            false,
+            negate,
+            accumulate,
+        );
+        dispatch(updateQuery({ query: newQuery }));
+    };
+
+    const handleQueryFilterFilename = (
+        name: string,
+        negate: boolean,
+        accumulate: boolean,
+    ) => {
+        const newQuery = updateFieldOfQuery(
+            searchQuery?.query ?? "",
+            SearchQueryField.Filename,
+            name,
             false,
             negate,
             accumulate,
@@ -134,18 +150,30 @@ export const ClickableFilePath = ({
                             sx={{ display: "inline" }}
                         >
                             <Tooltip
-                                title={t("resultCard.filterByParentPath")}
+                                title={
+                                    isLast
+                                        ? t("resultCard.filterByFilename")
+                                        : t("resultCard.filterByParentPath")
+                                }
                                 placement="top"
                                 arrow
                             >
                                 <Link
                                     color="inherit"
                                     onClick={(e) => {
-                                        handleQueryReplaceFilename(
-                                            part.pathToPart,
-                                            e.shiftKey,
-                                            e.ctrlKey,
-                                        );
+                                        if (isLast) {
+                                            handleQueryFilterFilename(
+                                                fileBaseName,
+                                                e.shiftKey,
+                                                e.ctrlKey,
+                                            );
+                                        } else {
+                                            handleQueryFilterParentPath(
+                                                part.pathToPart,
+                                                e.shiftKey,
+                                                e.ctrlKey,
+                                            );
+                                        }
                                     }}
                                     sx={{
                                         cursor: "pointer",
