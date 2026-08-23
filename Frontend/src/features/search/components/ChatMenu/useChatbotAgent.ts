@@ -541,8 +541,14 @@ export const useChatbotAgent = (
         });
 
         setPendingQuestion(null);
-        setIsLoading(true);
-        agent.runAgent({ tools: getToolDefs() }).catch(handleRunError);
+
+        if (answer === "other") {
+            // Let the user type a free-form answer as their next message.
+            setIsLoading(false);
+        } else {
+            setIsLoading(true);
+            agent.runAgent({ tools: getToolDefs() }).catch(handleRunError);
+        }
     };
 
     const handleModeAnswer = async (allow: boolean) => {

@@ -22,7 +22,8 @@ export const createAskUserTool = (): InteractiveFrontendTool => ({
                     type: "array",
                     items: { type: "string" },
                     description:
-                        "The answer choices to present as clickable chips.",
+                        "The answer choices to present as clickable chips. " +
+                        "Do not include an 'other' option — one is added automatically.",
                 },
             },
             required: ["question", "options"],
