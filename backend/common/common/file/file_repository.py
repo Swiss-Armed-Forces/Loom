@@ -422,7 +422,10 @@ class File(RepositoryTaskObject):
         file_data_hash.update(self.sha256.encode())
         return file_data_hash.hexdigest()
 
-    @computed_field  # type: ignore[misc]
+    @computed_field(  # type: ignore[misc]
+        description="Full file path including data source prefix,"
+        " e.g. '//api-upload/docs/report.pdf'"
+    )
     @property
     def full_path(self) -> FilePurePath:
         if isinstance(self.full_name, str):
@@ -443,32 +446,46 @@ class File(RepositoryTaskObject):
     def parent_path(self) -> Annotated[str, TermsStat()]:
         return str(self.full_path.parent)
 
-    @computed_field  # type: ignore[misc]
+    @computed_field(  # type: ignore[misc]
+        description="File name without the directory path, e.g. 'report.pdf'"
+    )
     @property
     def short_name(self) -> Annotated[str, PreviewableField(label="File Name")]:
         return self.full_name.name
 
-    @computed_field  # type: ignore[misc]
+    @computed_field(  # type: ignore[misc]
+        description="File extension including the leading dot,"
+        " e.g. '.pdf', '.eml', '.docx'"
+    )
     @property
     def extension(
         self,
     ) -> Annotated[str, TermsStat(), PreviewableField(label="Extension")]:
         return self.full_name.suffix
 
-    source: Annotated[str, TermsStat()]
+    source: Annotated[str, TermsStat()] = Field(
+        description="Name of the data source the file was imported from,"
+        " e.g. 'api-upload' or 'crawler/bucket-name'"
+    )
     parent_id: UUID | None = None
     sha256: str
     uploaded_datetime: Annotated[datetime, DateHistogramStat()] = Field(
-        default_factory=datetime.now
+        default_factory=datetime.now,
+        description="Date and time the file was indexed by Loom",
     )
-    size: Annotated[int, NumberHistogramStat(label="File Size (bytes)")]
+    size: Annotated[int, NumberHistogramStat(label="File Size (bytes)")] = Field(
+        description="File size in bytes"
+    )
     reindex_count: Annotated[int, NumberHistogramStat(label="Reindex Count")] = 0
     thumbnail_data: FileStorageLazyBytes | None = None
     thumbnail_total_frames: Annotated[
         int | None, NumberHistogramStat(label="Frame Count")
     ] = None
     rendered_file: RenderedFile = RenderedFile()
-    tags: Annotated[list[Tag], TermsStat()] = []
+    tags: Annotated[list[Tag], TermsStat()] = Field(
+        default_factory=list,
+        description="User-assigned labels for organizing and filtering files",
+    )
     magic_file_type: Annotated[str | None, TermsStat()] = Field(
         default=None, description="File MIME type or format detected by libmagic"
     )
@@ -483,7 +500,9 @@ class File(RepositoryTaskObject):
         list[TranslatedLanguage],
         PreviewableField(id="translation_preview", label="Translation"),
     ] = Field(default_factory=list)
-    is_spam: Annotated[bool | None, BooleanTermsStat()] = None
+    is_spam: Annotated[bool | None, BooleanTermsStat()] = Field(
+        default=None, description="Whether the email was classified as spam"
+    )
     tika_file_type: Annotated[str | None, TermsStat()] = None
     tika_mime_type_group: Annotated[
         MimeTypeGroup | None, TermsStat(label="Media type (Tika)")
@@ -506,8 +525,12 @@ class File(RepositoryTaskObject):
         default=None,
         description="IMAP server locator: UID and folder path of the email on the mail server",
     )
-    flagged: Annotated[bool, BooleanTermsStat()] = False
-    seen: Annotated[bool, BooleanTermsStat()] = False
+    flagged: Annotated[bool, BooleanTermsStat()] = Field(
+        default=False, description="Whether the file has been flagged by a user"
+    )
+    seen: Annotated[bool, BooleanTermsStat()] = Field(
+        default=False, description="Whether the file has been marked as read/seen"
+    )
 
     @property
     def mime_type(self) -> str | None:

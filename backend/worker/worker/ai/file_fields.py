@@ -32,6 +32,12 @@ def iter_described_fields(
         ):
             yield from iter_described_fields(field.annotation, f"{field.path}.")
 
+    for field_name, computed_info in model_class.model_computed_fields.items():
+        if computed_info.description:
+            yield FileFieldInfo(
+                name=f"{prefix}{field_name}", description=computed_info.description
+            )
+
 
 def validate_file_id(file_id: str) -> UUID:
     try:
