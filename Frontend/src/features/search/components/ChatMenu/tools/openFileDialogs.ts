@@ -1,3 +1,4 @@
+import { CapabilityId } from "@app/api/generated";
 import { openDialog } from "@app/slices/commonSlice";
 import type { AppDispatch } from "@app/store";
 import { DialogType } from "@features/common/utils/enums";
@@ -17,6 +18,7 @@ export const createOpenFileDialogTools = (
         interactive: false,
         definition: {
             name: "open_add_tags",
+            capabilities: [CapabilityId.UiInteraction],
             description:
                 "Open the tag editor dialog for a specific file, or for bulk tagging " +
                 "across the current query (omit file_id). Use this when the user wants " +

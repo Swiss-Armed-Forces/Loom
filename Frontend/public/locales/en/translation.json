@@ -751,7 +751,9 @@
         "tasksDialogTitle": "Tasks — {{name}}"
     },
     "chatbot": {
-        "deepSearchTooltip": "Research Mode searches your entire document collection to answer broad, cross-document questions, but cannot interact with the frontend while doing so. Normal chat is interactive: the AI works with what is visible on screen and can navigate the app with you.",
+        "modeTooltip_chat": "Pure conversation — the AI answers from its own knowledge without accessing any documents or tools.",
+        "modeTooltip_work": "The AI can search, browse, and interact with documents and the UI on your behalf.",
+        "modeTooltip_research": "Deep research across your entire document collection for broad, cross-document questions. The AI cannot interact with the UI in this mode.",
         "toolLabels": {
             "suggest_queries": "Suggesting search queries",
             "execute_query": "Searching files",
@@ -761,6 +763,7 @@
             "discover_state": "Inspecting UI state",
             "read_state": "Reading UI state",
             "ask_user": "Asking you a question",
+            "request_mode": "Requesting mode switch",
             "get_this_file": "Getting current file",
             "get_these_files": "Getting visible files",
             "set_search_query": "Updating search",

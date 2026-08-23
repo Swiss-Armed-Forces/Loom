@@ -1,3 +1,4 @@
+import { CapabilityId } from "@app/api/generated";
 import {
     bumpHighlightScroll,
     setHighlightedFileId,
@@ -12,6 +13,7 @@ export const createHighlightFileTool = (
     interactive: false,
     definition: {
         name: "highlight_file",
+        capabilities: [CapabilityId.UiInteraction],
         description:
             "Scroll to and visually highlight a file card in the results list without " +
             "opening it in the detail panel. Use this to point out a specific document " +

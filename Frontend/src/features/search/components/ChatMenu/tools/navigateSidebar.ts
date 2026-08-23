@@ -1,3 +1,4 @@
+import { CapabilityId } from "@app/api/generated";
 import {
     RightSidebarTab,
     closeRightSidebar,
@@ -15,6 +16,7 @@ const makeOpenTabTool = (
     interactive: false,
     definition: {
         name: `open_${tab}_sidebar`,
+        capabilities: [CapabilityId.UiInteraction],
         description,
         parameters: { type: "object", properties: {} },
     },
@@ -51,6 +53,7 @@ export const createRightSidebarTools = (
         interactive: false,
         definition: {
             name: "close_sidebar",
+            capabilities: [CapabilityId.UiInteraction],
             description: "Close the right sidebar.",
             parameters: { type: "object", properties: {} },
         },

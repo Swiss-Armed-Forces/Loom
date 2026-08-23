@@ -1,3 +1,4 @@
+import { CapabilityId } from "@app/api/generated";
 import {
     setDisplayStat,
     setDisplayHistogramStat,
@@ -12,6 +13,7 @@ export const createSetStatisticsViewTool = (
     interactive: false,
     definition: {
         name: "set_statistics_view",
+        capabilities: [CapabilityId.UiInteraction],
         description:
             "Change which stat is displayed in the statistics panel. " +
             "Use this after opening the statistics tab to focus on a relevant field. " +

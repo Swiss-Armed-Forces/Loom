@@ -10,7 +10,7 @@ import { createRightSidebarTools } from "./navigateSidebar";
 import { createNavigateToFileTool } from "./navigateToFile";
 import { createOpenFileDialogTools } from "./openFileDialogs";
 import { createReadStateTool } from "./readState";
-import { createRequestCapabilityTool } from "./requestCapability";
+import { createRequestModeTool } from "./requestMode";
 import { createSaveCustomQueryTool } from "./saveCustomQuery";
 import { createSetSearchQueryTool } from "./setSearchQuery";
 import { createSetStatisticsViewTool } from "./setStatisticsView";
@@ -31,7 +31,7 @@ export const createFrontendTools = (
         createDiscoverStateTool(),
         createReadStateTool(getState),
         createAskUserTool(),
-        createRequestCapabilityTool(),
+        createRequestModeTool(),
         createGetThisFileTool(getState),
         createGetTheseFilesTool(getState),
         createSetSearchQueryTool(getState, dispatch),

@@ -1,3 +1,4 @@
+import { CapabilityId } from "@app/api/generated";
 import { addCustomQuery, initCustomQuery } from "@app/slices/searchSlice";
 import type { AppDispatch } from "@app/store";
 
@@ -15,6 +16,7 @@ export const createSaveCustomQueryTool = (
     interactive: false,
     definition: {
         name: "save_custom_query",
+        capabilities: [CapabilityId.UiInteraction],
         description:
             "Save the current search query as a named shortcut in the left sidebar so " +
             "the user can quickly rerun it later. Requires an active search query. " +

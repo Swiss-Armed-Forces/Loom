@@ -1,3 +1,4 @@
+import { CapabilityId } from "@app/api/generated";
 import {
     bumpHighlightScroll,
     openFileTabThunk,
@@ -14,10 +15,11 @@ export const createNavigateToFileTool = (
     interactive: false,
     definition: {
         name: "navigate_to_file",
+        capabilities: [CapabilityId.UiInteraction],
         description:
-            "Open a file in the detail panel and optionally highlight its card in the " +
-            "results list. Use this when the user asks you to open, inspect, or show " +
-            "a specific document. Requires a file_id obtained from read_state.",
+            "Open a single file in the detail panel. Use this only when the " +
+            "user wants to inspect one specific document, not to display " +
+            "multiple files — use set_search_query for that instead.",
         parameters: {
             type: "object",
             properties: {

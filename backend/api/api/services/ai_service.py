@@ -2,7 +2,7 @@
 
 import json
 import logging
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Sequence
 from dataclasses import dataclass, field
 from uuid import UUID
 
@@ -28,12 +28,13 @@ from common.ai_context.ai_context_repository import (
     AiContextRepository,
     AiQuestion,
     AiQuestionCitation,
-    CapabilityId,
+    ModeId,
     ReasoningActivityEntry,
     ToolCallActivityEntry,
 )
 from common.ai_context.tool_models import ToolSource
 from common.services.task_scheduling_service import TaskSchedulingService
+from pydantic_ai.capabilities import Capability
 from pydantic_ai.ui.ag_ui import AGUIAdapter
 
 from api.services.tool_service import AgentDeps
@@ -195,16 +196,9 @@ class AiService:
             raise AiContextNotFoundException(f"Context not found: {context_id}")
         return context
 
-    def update_capabilities(
-        self, context_id: UUID, capability: CapabilityId, active: bool
-    ) -> None:
+    def set_mode(self, context_id: UUID, mode: ModeId) -> None:
         context = self.get_context(context_id)
-        capabilities = set(context.active_capabilities)
-        if active:
-            capabilities.add(capability)
-        else:
-            capabilities.discard(capability)
-        context.active_capabilities = list(capabilities)
+        context.active_mode = mode
         self._ai_context_repository.save(context)
 
     async def run_agent_stream(
@@ -213,6 +207,7 @@ class AiService:
         root_task_id: UUID,
         adapter: AGUIAdapter[AgentDeps],
         deps: AgentDeps,
+        capabilities: Sequence[Capability[AgentDeps]] | None = None,
     ) -> AsyncIterator[BaseEvent]:
         """Run the agent and yield AG-UI events, then persist the question."""
         question = _extract_question(adapter.run_input.messages)
@@ -225,6 +220,7 @@ class AiService:
 
             async for event in adapter.run_stream(
                 deps=deps,
+                capabilities=capabilities,
             ):
                 tracker.track(event)
                 match event:

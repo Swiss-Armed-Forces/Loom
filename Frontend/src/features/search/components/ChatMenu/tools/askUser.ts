@@ -5,11 +5,12 @@ export const createAskUserTool = (): InteractiveFrontendTool => ({
     definition: {
         name: "ask_user",
         description:
-            "Ask the user a clarifying question with a fixed set of answer options. " +
-            "Use this when you need to know the user's preference before proceeding, " +
-            "e.g. whether to search broadly or narrowly, which date range to focus on, " +
-            "or which type of documents to prioritise. The user will see the question " +
-            "and clickable answer chips; their selection is returned as the tool result.",
+            "Ask the user a clarifying question with a set of answer options. " +
+            "Use this when you need to know the user's preference before proceeding. " +
+            "The user will see clickable answer chips; their selection is returned " +
+            "as the tool result. An 'Other…' option is always shown — if the user " +
+            "picks it, the result will be 'other' and the user will provide their " +
+            "answer in the next message.",
         parameters: {
             type: "object",
             properties: {

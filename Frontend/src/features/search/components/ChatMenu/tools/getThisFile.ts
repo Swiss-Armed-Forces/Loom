@@ -1,3 +1,5 @@
+import { CapabilityId } from "@app/api/generated";
+
 import type { PassiveFrontendTool, StateAccessor } from "./types";
 
 export const createGetThisFileTool = (
@@ -6,6 +8,7 @@ export const createGetThisFileTool = (
     interactive: false,
     definition: {
         name: "get_this_file",
+        capabilities: [CapabilityId.FileAccess],
         description:
             "Return the file ID of the currently highlighted file in the search " +
             'results. Use this as a shorthand when the user refers to "this file", ' +

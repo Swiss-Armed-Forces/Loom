@@ -1,3 +1,5 @@
+import { CapabilityId } from "@app/api/generated";
+
 import type { PassiveFrontendTool, StateAccessor } from "./types";
 
 const MAX_KEYS = 50;
@@ -39,6 +41,7 @@ export const createReadStateTool = (
     interactive: false,
     definition: {
         name: "read_state",
+        capabilities: [CapabilityId.UiInteraction],
         description:
             "Read a specific value from the UI state of the user you are talking to. " +
             "Use this to find out what the user is currently seeing — e.g. their active " +

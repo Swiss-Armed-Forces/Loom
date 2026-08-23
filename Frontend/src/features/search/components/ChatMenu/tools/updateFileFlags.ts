@@ -1,4 +1,5 @@
 import { updateFile } from "@app/api";
+import { CapabilityId } from "@app/api/generated";
 import type { UpdateFileRequest } from "@app/api/generated/models/UpdateFileRequest";
 import { setFilePreview } from "@app/slices/searchSlice";
 import type { AppDispatch } from "@app/store";
@@ -17,6 +18,7 @@ export const createUpdateFileFlagsTool = (
     interactive: false,
     definition: {
         name: "update_file_flags",
+        capabilities: [CapabilityId.UiInteraction],
         description:
             "Update one or more boolean flags on a file: seen, flagged, or hidden. " +
             "At least one flag must be provided. Use this when the user asks you to " +

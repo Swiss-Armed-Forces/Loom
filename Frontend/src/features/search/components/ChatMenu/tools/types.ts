@@ -1,9 +1,12 @@
 import type { Tool } from "@ag-ui/client";
 
+import type { CapabilityId } from "@app/api/generated";
 import type { AppDispatch, RootState } from "@app/store";
 
+export type ToolDefinition = Tool & { capabilities?: CapabilityId[] };
+
 export interface PassiveFrontendTool {
-    definition: Tool;
+    definition: ToolDefinition;
     interactive: false;
     handler: (args: Record<string, unknown>) => Promise<string>;
 }
@@ -11,7 +14,7 @@ export interface PassiveFrontendTool {
 export type DispatchAccessor = AppDispatch;
 
 export interface InteractiveFrontendTool {
-    definition: Tool;
+    definition: ToolDefinition;
     interactive: true;
 }
 

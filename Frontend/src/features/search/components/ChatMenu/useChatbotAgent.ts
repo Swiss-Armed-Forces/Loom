@@ -3,7 +3,7 @@ import type { AgentSubscriber, Tool } from "@ag-ui/client";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import { getContextHistory, updateAiContextCapabilities } from "@app/api";
+import { getContextHistory, setAiContextMode } from "@app/api";
 import { apiConfiguration } from "@app/api/apiConfiguration";
 import { store } from "@app/store";
 
@@ -32,17 +32,17 @@ export interface UseChatbotAgentResult {
         question: string;
         options: string[];
     } | null;
-    pendingCapabilityRequest: {
+    pendingModeRequest: {
         toolCallId: string;
-        capability: string;
+        mode: string;
         reason: string;
     } | null;
-    activeCapabilities: Set<string>;
+    activeMode: string;
     turnActivity: ActivityRecord[];
     handleSendMessage: (text: string) => Promise<void>;
     handleQuestionAnswer: (answer: string) => void;
-    handleCapabilityAnswer: (allow: boolean) => Promise<void>;
-    toggleCapability: (capability: string) => void;
+    handleModeAnswer: (allow: boolean) => Promise<void>;
+    toggleMode: (mode: string) => void;
     abortRun: () => void;
     contextId: string;
 }
@@ -71,13 +71,11 @@ export const useChatbotAgent = (
         question: string;
         options: string[];
     } | null>(null);
-    const [activeCapabilities, setActiveCapabilities] = useState<Set<string>>(
-        new Set(),
-    );
-    const activeCapabilitiesRef = useRef<Set<string>>(new Set());
-    const [pendingCapabilityRequest, setPendingCapabilityRequest] = useState<{
+    const [activeMode, setActiveMode] = useState<string>("work");
+    const activeModeRef = useRef<string>("work");
+    const [pendingModeRequest, setPendingModeRequest] = useState<{
         toolCallId: string;
-        capability: string;
+        mode: string;
         reason: string;
     } | null>(null);
     const agentRef = useRef<HttpAgent | null>(null);
@@ -94,11 +92,6 @@ export const useChatbotAgent = (
     const frontendToolDefsRef = useRef<Tool[]>(
         Object.values(frontendToolsRef.current).map((t) => t.definition),
     );
-    const deepSearchToolDefsRef = useRef<Tool[]>(
-        ["get_this_file", "get_these_files"]
-            .map((name) => frontendToolsRef.current[name]?.definition)
-            .filter((d): d is Tool => d !== undefined),
-    );
 
     const pendingFrontendToolsRef = useRef<
         {
@@ -110,10 +103,7 @@ export const useChatbotAgent = (
     const rerunningRef = useRef(false);
     const errorHandledRef = useRef(false);
 
-    const getToolDefs = () =>
-        activeCapabilitiesRef.current.has("research_mode")
-            ? deepSearchToolDefsRef.current
-            : frontendToolDefsRef.current;
+    const getToolDefs = () => frontendToolDefsRef.current;
 
     const appendError = useCallback((text: string) => {
         setChatMessages((prev) => [...prev, createErrorMessage(text)]);
@@ -134,11 +124,10 @@ export const useChatbotAgent = (
         agentRef.current = agent;
 
         getContextHistory(contextId, { pageSize: 20 }).then(
-            ({ questions, activeCapabilities: caps }) => {
-                if (caps && caps.length > 0) {
-                    const capSet = new Set<string>(caps);
-                    activeCapabilitiesRef.current = capSet;
-                    setActiveCapabilities(capSet);
+            ({ questions, activeMode: mode }) => {
+                if (mode != null) {
+                    activeModeRef.current = mode;
+                    setActiveMode(mode);
                 }
                 if (!questions || questions.length === 0) return;
 
@@ -307,8 +296,8 @@ export const useChatbotAgent = (
                 const askUserItem = pending.find(
                     (item) => item.toolName === "ask_user",
                 );
-                const requestCapabilityItem = pending.find(
-                    (item) => item.toolName === "request_capability",
+                const requestModeItem = pending.find(
+                    (item) => item.toolName === "request_mode",
                 );
 
                 rerunningRef.current = true;
@@ -362,17 +351,30 @@ export const useChatbotAgent = (
                             return;
                         }
 
-                        if (requestCapabilityItem) {
-                            setPendingCapabilityRequest({
-                                toolCallId: requestCapabilityItem.toolCallId,
-                                capability: String(
-                                    requestCapabilityItem.args.capability ?? "",
-                                ),
-                                reason: String(
-                                    requestCapabilityItem.args.reason ?? "",
-                                ),
-                            });
-                            setIsLoading(false);
+                        if (requestModeItem) {
+                            const requestedMode = String(
+                                requestModeItem.args.mode ?? "",
+                            );
+                            if (requestedMode === activeModeRef.current) {
+                                agent.addMessage({
+                                    role: "tool",
+                                    id: crypto.randomUUID(),
+                                    toolCallId: requestModeItem.toolCallId,
+                                    content: "granted",
+                                });
+                                agent
+                                    .runAgent({ tools: getToolDefs() })
+                                    .catch(handleRunError);
+                            } else {
+                                setPendingModeRequest({
+                                    toolCallId: requestModeItem.toolCallId,
+                                    mode: requestedMode,
+                                    reason: String(
+                                        requestModeItem.args.reason ?? "",
+                                    ),
+                                });
+                                setIsLoading(false);
+                            }
                         } else if (askUserItem) {
                             setPendingQuestion({
                                 toolCallId: askUserItem.toolCallId,
@@ -543,28 +545,24 @@ export const useChatbotAgent = (
         agent.runAgent({ tools: getToolDefs() }).catch(handleRunError);
     };
 
-    const handleCapabilityAnswer = async (allow: boolean) => {
+    const handleModeAnswer = async (allow: boolean) => {
         const agent = agentRef.current;
-        if (!agent || !pendingCapabilityRequest) return;
-        const { toolCallId, capability } = pendingCapabilityRequest;
+        if (!agent || !pendingModeRequest) return;
+        const { toolCallId, mode } = pendingModeRequest;
 
         const result = allow ? "granted" : "denied";
 
         if (allow) {
             try {
-                await updateAiContextCapabilities(contextId, capability, true);
+                await setAiContextMode(contextId, mode);
             } catch {
-                appendError("Failed to update capabilities");
-                setPendingCapabilityRequest(null);
+                appendError("Failed to update mode");
+                setPendingModeRequest(null);
                 rerunningRef.current = false;
                 return;
             }
-            const next = new Set([
-                ...activeCapabilitiesRef.current,
-                capability,
-            ]);
-            activeCapabilitiesRef.current = next;
-            setActiveCapabilities(next);
+            activeModeRef.current = mode;
+            setActiveMode(mode);
         }
 
         agent.addMessage({
@@ -574,36 +572,22 @@ export const useChatbotAgent = (
             content: result,
         });
 
-        setPendingCapabilityRequest(null);
+        setPendingModeRequest(null);
         setIsLoading(true);
         agent.runAgent({ tools: getToolDefs() }).catch(handleRunError);
     };
 
-    const toggleCapability = (capability: string) => {
-        const enabled = activeCapabilitiesRef.current.has(capability);
-        const next = new Set(activeCapabilitiesRef.current);
-        if (enabled) {
-            next.delete(capability);
-        } else {
-            next.add(capability);
-        }
-        activeCapabilitiesRef.current = next;
-        setActiveCapabilities(next);
+    const toggleMode = (mode: string) => {
+        const prev = activeModeRef.current;
+        if (prev === mode) return;
+        activeModeRef.current = mode;
+        setActiveMode(mode);
 
-        updateAiContextCapabilities(contextId, capability, !enabled).catch(
-            () => {
-                activeCapabilitiesRef.current = new Set(
-                    activeCapabilitiesRef.current,
-                );
-                if (enabled) {
-                    activeCapabilitiesRef.current.add(capability);
-                } else {
-                    activeCapabilitiesRef.current.delete(capability);
-                }
-                setActiveCapabilities(new Set(activeCapabilitiesRef.current));
-                appendError("Failed to toggle capability");
-            },
-        );
+        setAiContextMode(contextId, mode).catch(() => {
+            activeModeRef.current = prev;
+            setActiveMode(prev);
+            appendError("Failed to switch mode");
+        });
     };
 
     const abortRun = () => agentRef.current?.abortRun();
@@ -616,13 +600,13 @@ export const useChatbotAgent = (
         reasoningPhase,
         reasoningText,
         pendingQuestion,
-        pendingCapabilityRequest,
-        activeCapabilities,
+        pendingModeRequest,
+        activeMode,
         turnActivity: turnActivityRef.current,
         handleSendMessage,
         handleQuestionAnswer,
-        handleCapabilityAnswer,
-        toggleCapability,
+        handleModeAnswer,
+        toggleMode,
         abortRun,
         contextId,
     };

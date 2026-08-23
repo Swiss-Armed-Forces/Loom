@@ -1,4 +1,5 @@
 import { addTagsToFile as addTagsToFileApi } from "@app/api";
+import { CapabilityId } from "@app/api/generated";
 import { setFilePreview } from "@app/slices/searchSlice";
 import type { AppDispatch } from "@app/store";
 
@@ -16,6 +17,7 @@ export const createAddTagsToFileTool = (
     interactive: false,
     definition: {
         name: "add_tags_to_file",
+        capabilities: [CapabilityId.UiInteraction],
         description:
             "Add one or more tags to a specific file. The tags will be immediately " +
             "visible in the UI. Use this when the user asks you to tag or label a " +
