@@ -429,11 +429,19 @@ class ToolService:
             filename: Substring to match against filenames (case-insensitive).
         """
         try:
-            return self._task_call_service.call_search_by_filename_tool(
+            result = self._task_call_service.call_search_by_filename_tool(
                 ctx.deps.context.id_, filename
             )
         except ValueError as exc:
             raise ModelRetry(str(exc)) from exc
+        ctx.deps.source_collector.extend(
+            ToolSource(
+                file_id=UUID(f.file_id),
+                text=f.full_path,
+            )
+            for f in result.files
+        )
+        return result
 
     def rag_search(self, ctx: RunContext[AgentDeps], query: str) -> RagSearchResult:
         """Run the full RAG pipeline: retrieve and synthesize an answer from documents.
