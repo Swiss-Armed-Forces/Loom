@@ -3,7 +3,6 @@
 from collections.abc import Callable
 from dataclasses import dataclass
 from dataclasses import field as dataclass_field
-from typing import TypeVar
 from uuid import UUID
 
 from common.ai_context.ai_context_repository import AiContext, CapabilityId
@@ -31,15 +30,15 @@ from api.services.task_call_service import TaskCallService
 
 ToolCallValidatorFn = Callable[["RunContext[AgentDeps]", ToolCallPart], ToolCallPart]
 
-_F = TypeVar("_F", bound=Callable[..., ToolCallPart])
+_ValidatorMethod = Callable[..., ToolCallPart]  # unbound method including self
 
 _validator_registry: dict[str, str] = {}
 
 
-def _validates(tool_name: str) -> Callable[[_F], _F]:
+def _validates(tool_name: str) -> Callable[[_ValidatorMethod], _ValidatorMethod]:
     """Register a method as a validator for the given deferred tool name."""
 
-    def decorator(fn: _F) -> _F:
+    def decorator(fn: _ValidatorMethod) -> _ValidatorMethod:
         _validator_registry[tool_name] = fn.__name__
         return fn
 
