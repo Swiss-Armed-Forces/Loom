@@ -5,7 +5,7 @@ from unittest.mock import MagicMock
 from uuid import uuid4
 
 import pytest
-from common.ai_context.ai_context_repository import AiContext
+from common.ai_context.ai_context_repository import AiContext, CapabilityId
 from common.ai_context.tool_models import (
     ExecuteQueryResult,
     ExecuteQueryResultFile,
@@ -261,6 +261,44 @@ def test_suggest_queries_passes_folder_path(
     task_call_service_mock.call_suggest_queries_tool.assert_called_once_with(
         deps.context.id_, "invoices", "//emails"
     )
+
+
+# ---------------------------------------------------------------------------
+# execute_query with folder_path
+# ---------------------------------------------------------------------------
+
+
+# ---------------------------------------------------------------------------
+# ui_interaction capability activation
+# ---------------------------------------------------------------------------
+
+
+def test_ui_interaction_capability_active_without_research_mode(
+    tool_service: ToolService,
+    deps: AgentDeps,
+):
+    ctx = _make_ctx(deps)
+    capabilities = tool_service.capabilities
+    ui_fn = capabilities[3]  # _ui_interaction_fn is 4th entry
+    result = ui_fn(ctx)
+
+    assert result is not None
+    assert result.id == "ui_interaction"
+
+
+def test_ui_interaction_capability_inactive_in_research_mode(
+    tool_service: ToolService,
+):
+    deps = AgentDeps(
+        context=AiContext(),
+        active_capabilities={CapabilityId.RESEARCH_MODE},
+    )
+    ctx = _make_ctx(deps)
+    capabilities = tool_service.capabilities
+    ui_fn = capabilities[3]
+    result = ui_fn(ctx)
+
+    assert result is None
 
 
 # ---------------------------------------------------------------------------

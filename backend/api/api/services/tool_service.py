@@ -74,6 +74,16 @@ class ToolService:
             defer_loading=True,
         )
 
+        self._ui_interaction = Capability[AgentDeps](
+            id="ui_interaction",
+            instructions=(
+                "The user is interacting with you through a document search UI. "
+                "When the user wants to find or search for documents, after "
+                "generating query candidates with suggest_queries, use "
+                "set_search_query to apply the query and update the search view."
+            ),
+        )
+
         self._research_mode = Capability[AgentDeps](
             id="research_mode",
             instructions=(
@@ -92,6 +102,13 @@ class ToolService:
     def capabilities(self) -> list[AgentCapability[AgentDeps]]:
         """All capabilities for the agent, including the dynamic research mode."""
 
+        def _ui_interaction_fn(
+            ctx: RunContext[AgentDeps],
+        ) -> Capability[AgentDeps] | None:
+            if CapabilityId.RESEARCH_MODE not in ctx.deps.active_capabilities:
+                return self._ui_interaction
+            return None
+
         def _research_mode_fn(
             ctx: RunContext[AgentDeps],
         ) -> Capability[AgentDeps] | None:
@@ -103,6 +120,7 @@ class ToolService:
             self._search_and_browse,
             self._file_access,
             self._ai_processing,
+            _ui_interaction_fn,
             _research_mode_fn,
         ]
 
