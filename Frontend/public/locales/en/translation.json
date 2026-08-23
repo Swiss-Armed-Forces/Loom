@@ -700,6 +700,8 @@
         "magic_file_typeTitle": "Filetype (Magic)",
         "tika_languageTitle": "Language (Tika)",
         "detected_languageTitle": "Language (detected)",
+        "tika_mime_type_groupTitle": "Media type (Tika)",
+        "magic_mime_type_groupTitle": "Media type (Magic)",
         "tika_file_typeTitle": "Filetype (Tika)",
         "archivesTitle": "Archives",
         "tika_handled_byTitle": "Tika Handler",
