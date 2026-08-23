@@ -17,8 +17,11 @@ from common.ai_context.tool_models import (
     SuggestQueriesResult,
     ToolSource,
 )
+from common.file.file_repository import FileRepository
+from common.services.query_builder import QueryBuilderException
 from pydantic_ai import ModelRetry
 from pydantic_ai.exceptions import ToolFailed
+from pydantic_ai.messages import ToolCallPart
 
 from api.services.task_call_service import TaskCallService
 from api.services.tool_service import AgentDeps, ToolService
@@ -36,8 +39,15 @@ def task_call_service_mock() -> MagicMock:
 
 
 @pytest.fixture
-def tool_service(task_call_service_mock: MagicMock) -> ToolService:
-    return ToolService(task_call_service_mock)
+def file_repository_mock() -> MagicMock:
+    return MagicMock(spec=FileRepository)
+
+
+@pytest.fixture
+def tool_service(
+    task_call_service_mock: MagicMock, file_repository_mock: MagicMock
+) -> ToolService:
+    return ToolService(task_call_service_mock, file_repository_mock)
 
 
 @pytest.fixture
@@ -321,3 +331,70 @@ def test_execute_query_passes_folder_path(
     task_call_service_mock.call_execute_query_tool.assert_called_once_with(
         deps.context.id_, "content:hello", "//docs"
     )
+
+
+# ---------------------------------------------------------------------------
+# tool_call_validators — set_search_query
+# ---------------------------------------------------------------------------
+
+
+def test_set_search_query_validator_passes_valid_query(
+    tool_service: ToolService,
+    file_repository_mock: MagicMock,
+    deps: AgentDeps,
+):
+    file_repository_mock.count_by_query.return_value = 5
+    call = ToolCallPart(tool_name="set_search_query", args={"query": "content:hello"})
+    ctx = _make_ctx(deps)
+    validator = tool_service.tool_call_validators["set_search_query"]
+
+    result = validator(ctx, call)
+
+    assert result is call
+
+
+def test_set_search_query_validator_rejects_syntax_error(
+    tool_service: ToolService,
+    file_repository_mock: MagicMock,
+    deps: AgentDeps,
+):
+    file_repository_mock.count_by_query.side_effect = QueryBuilderException(
+        "invalid syntax"
+    )
+    call = ToolCallPart(tool_name="set_search_query", args={"query": "]bad["})
+    ctx = _make_ctx(deps)
+    validator = tool_service.tool_call_validators["set_search_query"]
+
+    with pytest.raises(ModelRetry, match="invalid syntax"):
+        validator(ctx, call)
+
+
+def test_set_search_query_validator_rejects_zero_results(
+    tool_service: ToolService,
+    file_repository_mock: MagicMock,
+    deps: AgentDeps,
+):
+    file_repository_mock.count_by_query.return_value = 0
+    call = ToolCallPart(
+        tool_name="set_search_query", args={"query": "content:nonexistent"}
+    )
+    ctx = _make_ctx(deps)
+    validator = tool_service.tool_call_validators["set_search_query"]
+
+    with pytest.raises(ModelRetry, match="returned no results"):
+        validator(ctx, call)
+
+
+def test_set_search_query_validator_passes_empty_query(
+    tool_service: ToolService,
+    file_repository_mock: MagicMock,
+    deps: AgentDeps,
+):
+    call = ToolCallPart(tool_name="set_search_query", args={"query": ""})
+    ctx = _make_ctx(deps)
+    validator = tool_service.tool_call_validators["set_search_query"]
+
+    result = validator(ctx, call)
+
+    assert result is call
+    file_repository_mock.count_by_query.assert_not_called()

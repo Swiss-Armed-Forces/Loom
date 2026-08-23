@@ -1,7 +1,9 @@
 """Tool functions that dispatch work to Celery tasks."""
 
+from collections.abc import Callable
 from dataclasses import dataclass
 from dataclasses import field as dataclass_field
+from typing import TypeVar
 from uuid import UUID
 
 from common.ai_context.ai_context_repository import AiContext, CapabilityId
@@ -18,11 +20,31 @@ from common.ai_context.tool_models import (
     ToolSource,
     TranslateFileResult,
 )
+from common.file.file_repository import FileRepository
+from common.services.query_builder import QueryBuilderException, QueryParameters
 from pydantic_ai import ModelRetry, RunContext
 from pydantic_ai.capabilities import AgentCapability, Capability
 from pydantic_ai.exceptions import ToolFailed
+from pydantic_ai.messages import ToolCallPart
 
 from api.services.task_call_service import TaskCallService
+
+ToolCallValidatorFn = Callable[["RunContext[AgentDeps]", ToolCallPart], ToolCallPart]
+
+_F = TypeVar("_F", bound=Callable[..., ToolCallPart])
+
+_validator_registry: dict[str, str] = {}
+
+
+def _validates(tool_name: str) -> Callable[[_F], _F]:
+    """Register a method as a validator for the given deferred tool name."""
+
+    def decorator(fn: _F) -> _F:
+        _validator_registry[tool_name] = fn.__name__
+        return fn
+
+    return decorator
+
 
 _MAX_CITATION_CHARS = 300
 
@@ -37,8 +59,13 @@ class AgentDeps:
 class ToolService:
     """Provides tool functions for the pydantic-ai agent."""
 
-    def __init__(self, task_call_service: TaskCallService) -> None:
+    def __init__(
+        self,
+        task_call_service: TaskCallService,
+        file_repository: FileRepository,
+    ) -> None:
         self._task_call_service = task_call_service
+        self._file_repository = file_repository
 
         self._search_and_browse = Capability[AgentDeps](
             id="search_and_browse",
@@ -370,3 +397,34 @@ class ToolService:
             for chunk in result.chunks
         )
         return result
+
+    @property
+    def tool_call_validators(self) -> dict[str, ToolCallValidatorFn]:
+        return {
+            tool_name: getattr(self, method_name)
+            for tool_name, method_name in _validator_registry.items()
+        }
+
+    @_validates("set_search_query")
+    def _validate_set_search_query(
+        self, _ctx: RunContext[AgentDeps], call: ToolCallPart
+    ) -> ToolCallPart:
+        args = call.args_as_dict()
+        query_string = args.get("query", "")
+        if not query_string:
+            return call
+        try:
+            count = self._file_repository.count_by_query(
+                QueryParameters(search_string=query_string)
+            )
+        except QueryBuilderException as exc:
+            raise ModelRetry(
+                f"The search query {query_string!r} has invalid syntax: {exc}. "
+                "Use suggest_queries to generate a valid query string."
+            ) from exc
+        if count == 0:
+            raise ModelRetry(
+                f"The search query {query_string!r} returned no results. "
+                "Use suggest_queries to generate a query that matches documents."
+            )
+        return call

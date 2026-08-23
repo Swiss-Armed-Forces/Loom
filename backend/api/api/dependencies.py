@@ -35,7 +35,10 @@ def init():
     )
 
     global _tool_service
-    _tool_service = ToolService(_task_call_service)
+    _tool_service = ToolService(
+        _task_call_service,
+        common_dependencies.get_file_repository(),
+    )
 
     global _agent_service
     _agent_service = AgentService(get_tool_service())
