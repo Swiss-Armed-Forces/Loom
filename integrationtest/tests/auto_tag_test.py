@@ -24,8 +24,8 @@ class FileTag(BaseModel):
 
 class TestAutoTag:
     base_asset_list = [
-        FileTag(filename="net1.txt", tag=NET_TAG),
-        FileTag(filename="web1.txt", tag=WEB_TAG),
+        FileTag(filename="Transmission_Control_Protocol.txt", tag=NET_TAG),
+        FileTag(filename="HTML.txt", tag=WEB_TAG),
     ]
 
     @pytest.fixture(scope="class", autouse=True)
@@ -34,7 +34,7 @@ class TestAutoTag:
         upload_many_assets(asset_names=[str(path) for path in file_paths])
 
         # wait for assets to be processed
-        search_string = "*"
+        search_string = "short_name:*.txt"
         file_count = len(self.base_asset_list)
         fetch_files_from_api(
             search_string=search_string, expected_no_of_files=file_count
@@ -60,15 +60,17 @@ class TestAutoTag:
             )
 
     single_auto_tag_data = [
-        FileTag(filename="net2.txt", tag=AUTO_TAG_PREFIX + NET_TAG),
-        FileTag(filename="web2.txt", tag=AUTO_TAG_PREFIX + WEB_TAG),
+        FileTag(filename="User_Datagram_Protocol.txt", tag=AUTO_TAG_PREFIX + NET_TAG),
+        FileTag(filename="HTML5.txt", tag=AUTO_TAG_PREFIX + WEB_TAG),
     ]
 
     @pytest.mark.parametrize("filetag", single_auto_tag_data)
     def test_single_auto_tag(self, filetag: FileTag):
         upload_asset(str(AUTO_TAG_FOLDER / filetag.filename))
 
-        index_file = get_file_preview_by_name(filetag.filename)
+        index_file = get_file_preview_by_name(
+            filetag.filename, wait_for_celery_idle=True
+        )
 
         if settings.skip_auto_tag_file_while_indexing:
             assert True
@@ -80,7 +82,7 @@ class TestAutoTag:
         filename = "web_net.txt"
         upload_asset(str(AUTO_TAG_FOLDER / filename))
 
-        index_file = get_file_preview_by_name(filename)
+        index_file = get_file_preview_by_name(filename, wait_for_celery_idle=True)
 
         if settings.skip_auto_tag_file_while_indexing:
             assert True
@@ -93,7 +95,7 @@ class TestAutoTag:
         filename = "no_tag.txt"
         upload_asset(str(AUTO_TAG_FOLDER / filename))
 
-        index_file = get_file_preview_by_name(filename)
+        index_file = get_file_preview_by_name(filename, wait_for_celery_idle=True)
 
         if settings.skip_auto_tag_file_while_indexing:
             assert True
