@@ -131,12 +131,7 @@ export const useChatbotAgent = (
                 }
                 if (!questions || questions.length === 0) return;
 
-                const deduped = questions.filter(
-                    (q, i, arr) =>
-                        i === arr.length - 1 ||
-                        q.question !== arr[i + 1].question,
-                );
-                for (const q of deduped) {
+                for (const q of questions) {
                     const assistantMsgId = crypto.randomUUID();
                     finalMsgIdsRef.current.add(assistantMsgId);
 
@@ -517,7 +512,7 @@ export const useChatbotAgent = (
     const handleQuestionAnswer = (answer: string) => {
         const agent = agentRef.current;
         if (!agent || !pendingQuestion) return;
-        const { toolCallId } = pendingQuestion;
+        const { toolCallId, question } = pendingQuestion;
 
         setInFlightToolCalls((prev) => {
             const existing = prev[toolCallId];
@@ -533,6 +528,7 @@ export const useChatbotAgent = (
             record.status = "done";
         }
 
+        // Tool result must immediately follow the assistant tool_call message.
         agent.addMessage({
             role: "tool",
             id: crypto.randomUUID(),
@@ -540,11 +536,29 @@ export const useChatbotAgent = (
             content: answer,
         });
 
+        // Persist the question and answer as visible chat messages.
+        const questionMsgId = crypto.randomUUID();
+        finalMsgIdsRef.current.add(questionMsgId);
+        agent.addMessage({
+            role: "assistant",
+            id: questionMsgId,
+            content: question,
+        });
+        if (answer !== "other") {
+            agent.addMessage({
+                role: "user",
+                id: crypto.randomUUID(),
+                content: answer,
+            });
+        }
+
         setPendingQuestion(null);
 
         if (answer === "other") {
             // Let the user type a free-form answer as their next message.
             setIsLoading(false);
+            setReasoningPhase("idle");
+            setInFlightToolCalls({});
         } else {
             setIsLoading(true);
             agent.runAgent({ tools: getToolDefs() }).catch(handleRunError);

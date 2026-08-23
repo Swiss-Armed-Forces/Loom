@@ -62,14 +62,10 @@ class _ActivityTracker:
     _pending_names: dict[str, str] = field(default_factory=dict)
     _pending_args: dict[str, str] = field(default_factory=dict)
     _reasoning_buffer: str = ""
+    answer_text: str = ""
     activity: list[ReasoningActivityEntry | ToolCallActivityEntry] = field(
         default_factory=list
     )
-
-    @property
-    def has_pending_tool_calls(self) -> bool:
-        """True when tool calls started but never received a result (frontend tools)."""
-        return bool(self._pending_names)
 
     def track(self, event: BaseEvent) -> None:
         match event:
@@ -104,13 +100,6 @@ class _ActivityTracker:
                         output=content,
                     )
                 )
-
-
-@dataclass
-class _TextBuffer:
-    """Accumulates answer text for persistence."""
-
-    text: str = ""
 
 
 def _collect_citations(source_collector: list[ToolSource]) -> list[AiQuestionCitation]:
@@ -170,6 +159,24 @@ def _extract_activity_from_history(
     return result
 
 
+def _extract_ask_user_question(tracker: _ActivityTracker) -> str:
+    """Extract the question text from a pending ask_user tool call."""
+    # pylint: disable=protected-access
+    pending_names = tracker._pending_names
+    pending_args = tracker._pending_args
+    # pylint: enable=protected-access
+    for tool_call_id, name in pending_names.items():
+        if name != "ask_user":
+            continue
+        args_str = pending_args.get(tool_call_id, "")
+        try:
+            args = json.loads(args_str) if args_str else {}
+        except json.JSONDecodeError:
+            return ""
+        return str(args.get("question", ""))
+    return ""
+
+
 class AiService:
     def __init__(
         self,
@@ -216,7 +223,6 @@ class AiService:
         try:
             run_finished: RunFinishedEvent | None = None
             tracker = _ActivityTracker()
-            text_buf = _TextBuffer()
 
             async for event in adapter.run_stream(
                 deps=deps,
@@ -225,7 +231,7 @@ class AiService:
                 tracker.track(event)
                 match event:
                     case TextMessageContentEvent(delta=delta):
-                        text_buf.text += delta
+                        tracker.answer_text += delta
                         yield event
                     case RunFinishedEvent():
                         run_finished = event
@@ -247,13 +253,15 @@ class AiService:
             if run_finished is not None:
                 yield run_finished
 
-            if text_buf.text and not tracker.has_pending_tool_calls:
+            if answer_text := (
+                tracker.answer_text or _extract_ask_user_question(tracker)
+            ):
                 self._task_scheduling_service.dispatch_persist_question(
                     context_id=context.id_,
                     root_task_id=str(root_task_id),
                     question=AiQuestion(
                         question=question,
-                        answer=text_buf.text,
+                        answer=answer_text,
                         citations=citations,
                         activity=activity,
                     ),
