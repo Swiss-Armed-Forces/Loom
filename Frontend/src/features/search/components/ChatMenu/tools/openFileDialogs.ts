@@ -2,7 +2,12 @@ import { openDialog } from "@app/slices/commonSlice";
 import type { AppDispatch } from "@app/store";
 import { DialogType } from "@features/common/utils/enums";
 
-import type { PassiveFrontendTool, StateAccessor } from "./types";
+import {
+    toolError,
+    toolSuccess,
+    type PassiveFrontendTool,
+    type StateAccessor,
+} from "./types";
 
 export const createOpenFileDialogTools = (
     getState: StateAccessor,
@@ -34,11 +39,10 @@ export const createOpenFileDialogTools = (
                 ? (getState().search.files[fileId]?.preview ?? undefined)
                 : undefined;
             if (fileId && !filePreview) {
-                return JSON.stringify({
-                    error:
-                        "File preview not loaded. Ask the user to open the file first, " +
+                return toolError(
+                    "File preview not loaded. Ask the user to open the file first, " +
                         "or omit file_id for bulk tagging.",
-                });
+                );
             }
             dispatch(
                 openDialog({
@@ -47,7 +51,7 @@ export const createOpenFileDialogTools = (
                     props: { filePreview },
                 }),
             );
-            return JSON.stringify({ success: true });
+            return toolSuccess();
         },
     },
 ];

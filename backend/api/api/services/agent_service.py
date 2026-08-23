@@ -6,7 +6,7 @@ from typing import Any, NamedTuple
 from common.ai_context.ai_context_repository import AiContext
 from common.settings import settings
 from openai import AsyncOpenAI
-from pydantic_ai import Agent, RunContext
+from pydantic_ai import Agent
 from pydantic_ai.models.openai import OpenAIChatModel
 from pydantic_ai.profiles.openai import OpenAIModelProfile
 from pydantic_ai.providers.openai import OpenAIProvider
@@ -74,21 +74,6 @@ class AgentService:
             model_settings=self._model_settings,
             capabilities=tool_service.capabilities,
         )
-
-        validators = tool_service.tool_call_validators
-
-        @self._agent.output_validator
-        def _validate_deferred_tool_calls(
-            ctx: RunContext[AgentDeps],
-            output: str | DeferredToolRequests,
-        ) -> str | DeferredToolRequests:
-            if not isinstance(output, DeferredToolRequests):
-                return output
-            for i, call in enumerate(output.calls):
-                validator = validators.get(call.tool_name)
-                if validator is not None:
-                    output.calls[i] = validator(ctx, call)
-            return output
 
     @staticmethod
     def _build_model_profile() -> OpenAIModelProfile:

@@ -4,7 +4,7 @@ import {
 } from "@app/slices/searchSlice";
 import type { AppDispatch } from "@app/store";
 
-import type { PassiveFrontendTool } from "./types";
+import { toolError, toolSuccess, type PassiveFrontendTool } from "./types";
 
 export const createHighlightFileTool = (
     dispatch: AppDispatch,
@@ -29,9 +29,9 @@ export const createHighlightFileTool = (
     },
     handler: async (args) => {
         const fileId = String(args.file_id ?? "");
-        if (!fileId) return JSON.stringify({ error: "file_id required" });
+        if (!fileId) return toolError("file_id required");
         dispatch(setHighlightedFileId(fileId));
         dispatch(bumpHighlightScroll());
-        return JSON.stringify({ success: true });
+        return toolSuccess();
     },
 });

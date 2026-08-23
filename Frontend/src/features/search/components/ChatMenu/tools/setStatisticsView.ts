@@ -4,7 +4,7 @@ import {
 } from "@app/slices/searchSlice";
 import type { AppDispatch } from "@app/store";
 
-import type { PassiveFrontendTool } from "./types";
+import { toolSuccess, type PassiveFrontendTool } from "./types";
 
 export const createSetStatisticsViewTool = (
     dispatch: AppDispatch,
@@ -44,6 +44,6 @@ export const createSetStatisticsViewTool = (
         ) {
             dispatch(setDisplayHistogramStat(args.histogram_stat));
         }
-        return JSON.stringify({ success: true });
+        return toolSuccess();
     },
 });

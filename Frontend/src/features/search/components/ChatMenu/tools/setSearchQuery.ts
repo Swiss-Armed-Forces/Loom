@@ -1,9 +1,14 @@
+import { getFilesCount } from "@app/api";
 import { updateQuery } from "@app/slices/searchSlice";
 import type { AppDispatch } from "@app/store";
 import { isSortDirection } from "@features/common/utils/model";
 
-import type { StateAccessor } from "./types";
-import type { PassiveFrontendTool } from "./types";
+import {
+    toolError,
+    toolSuccess,
+    type PassiveFrontendTool,
+    type StateAccessor,
+} from "./types";
 
 export const createSetSearchQueryTool = (
     _getState: StateAccessor,
@@ -39,10 +44,32 @@ export const createSetSearchQueryTool = (
         },
     },
     handler: async (args) => {
+        const query = String(args.query ?? "");
+        if (!query) return toolError("query is required");
+
+        try {
+            const { totalFiles } = await getFilesCount({
+                query,
+                id: null,
+                keepAlive: null,
+            });
+            if (totalFiles === 0) {
+                return toolError(
+                    `The search query '${query}' returned no results. ` +
+                        "Use suggest_queries to generate a query that matches documents.",
+                );
+            }
+        } catch {
+            return toolError(
+                `The search query '${query}' has invalid syntax. ` +
+                    "Use suggest_queries to generate a valid query string.",
+            );
+        }
+
         const sortDirectionRaw = String(args.sort_direction ?? "");
         dispatch(
             updateQuery({
-                query: String(args.query ?? ""),
+                query,
                 sortField: args.sort_field
                     ? String(args.sort_field)
                     : undefined,
@@ -51,9 +78,6 @@ export const createSetSearchQueryTool = (
                     : undefined,
             }),
         );
-        return JSON.stringify({
-            success: true,
-            message: "Search query updated.",
-        });
+        return toolSuccess({ message: "Search query updated." });
     },
 });

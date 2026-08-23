@@ -5,7 +5,7 @@ import {
 } from "@app/slices/searchSlice";
 import type { AppDispatch } from "@app/store";
 
-import type { PassiveFrontendTool } from "./types";
+import { toolSuccess, type PassiveFrontendTool } from "./types";
 
 const makeOpenTabTool = (
     dispatch: AppDispatch,
@@ -20,7 +20,7 @@ const makeOpenTabTool = (
     },
     handler: async () => {
         dispatch(setRightSidebarTab(tab));
-        return JSON.stringify({ success: true });
+        return toolSuccess();
     },
 });
 
@@ -56,7 +56,7 @@ export const createRightSidebarTools = (
         },
         handler: async () => {
             dispatch(closeRightSidebar());
-            return JSON.stringify({ success: true });
+            return toolSuccess();
         },
     },
 ];

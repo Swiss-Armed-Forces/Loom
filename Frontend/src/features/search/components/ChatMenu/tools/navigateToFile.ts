@@ -6,7 +6,7 @@ import {
 import type { AppDispatch } from "@app/store";
 import { FileDetailTab } from "@features/common/utils/enums";
 
-import type { PassiveFrontendTool } from "./types";
+import { toolError, toolSuccess, type PassiveFrontendTool } from "./types";
 
 export const createNavigateToFileTool = (
     dispatch: AppDispatch,
@@ -43,7 +43,7 @@ export const createNavigateToFileTool = (
     },
     handler: async (args) => {
         const fileId = String(args.file_id ?? "");
-        if (!fileId) return JSON.stringify({ error: "file_id required" });
+        if (!fileId) return toolError("file_id required");
         const detailTab =
             typeof args.detail_tab === "number"
                 ? (args.detail_tab as (typeof FileDetailTab)[keyof typeof FileDetailTab])
@@ -53,6 +53,6 @@ export const createNavigateToFileTool = (
             dispatch(setHighlightedFileId(fileId));
             dispatch(bumpHighlightScroll());
         }
-        return JSON.stringify({ success: true });
+        return toolSuccess();
     },
 });
