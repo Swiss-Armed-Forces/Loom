@@ -62,6 +62,7 @@ class ToolService:
             ),
             tools=[
                 self.suggest_queries,
+                self.execute_query,
                 self.list_folder_contents,
                 self.search_by_filename,
             ],
@@ -119,14 +120,12 @@ class ToolService:
                 "and synthesize answers from multiple sources."
             ),
             instructions=(
-                "You are in RESEARCH MODE. Take your time and perform thorough, "
-                "multi-faceted research before answering. "
-                "Issue multiple queries from different angles, explore promising "
-                "documents in depth, and cross-reference findings across the corpus. "
-                "Do not attempt to manipulate the UI in this mode — focus entirely "
-                "on research."
+                "Take your time and perform thorough, multi-faceted research "
+                "before answering. Issue multiple queries from different angles, "
+                "explore promising documents in depth, and cross-reference "
+                "findings across the corpus."
             ),
-            tools=[self.execute_query, self.rag_search],
+            tools=[self.rag_search],
         )
 
     def capabilities_for_mode(self, mode: ModeId) -> list[Capability[AgentDeps]]:
