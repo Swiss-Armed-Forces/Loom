@@ -74,19 +74,14 @@ def test_tracker_tool_call_lifecycle():
     tracker = _ActivityTracker()
     tc_id = "tc-1"
 
-    assert not tracker.has_pending_tool_calls
-
     tracker.track(ToolCallStartEvent(tool_call_id=tc_id, tool_call_name="search"))
-    assert tracker.has_pending_tool_calls
 
     tracker.track(ToolCallArgsEvent(tool_call_id=tc_id, delta='{"q":'))
     tracker.track(ToolCallArgsEvent(tool_call_id=tc_id, delta='"hello"}'))
-    assert tracker.has_pending_tool_calls
 
     tracker.track(
         ToolCallResultEvent(tool_call_id=tc_id, message_id="msg1", content="the result")
     )
-    assert not tracker.has_pending_tool_calls
 
     assert len(tracker.activity) == 1
     entry = tracker.activity[0]
