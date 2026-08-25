@@ -1,6 +1,7 @@
 import { CapabilityId } from "@app/api/generated";
 
 import type { PassiveFrontendTool, StateAccessor } from "./types";
+import { toolError, toolSuccess } from "./types";
 
 export const createGetThisFileTool = (
     getState: StateAccessor,
@@ -22,10 +23,8 @@ export const createGetThisFileTool = (
     handler: async () => {
         const fileId = getState().search.highlightedFileId;
         if (!fileId) {
-            return JSON.stringify({
-                error: "No file is currently highlighted.",
-            });
+            return toolError("No file is currently highlighted.");
         }
-        return JSON.stringify({ file_id: fileId });
+        return toolSuccess({ file_id: fileId });
     },
 });
