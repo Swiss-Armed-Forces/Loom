@@ -346,6 +346,16 @@ export const useChatbotAgent = (
                             return;
                         }
 
+                        // Defer the re-run so the ag-ui client's RxJS
+                        // pipeline fully processes the current run's
+                        // RUN_FINISHED before the next run starts.
+                        const rerun = () =>
+                            queueMicrotask(() =>
+                                agent
+                                    .runAgent({ tools: getToolDefs() })
+                                    .catch(handleRunError),
+                            );
+
                         if (requestModeItem) {
                             const requestedMode = String(
                                 requestModeItem.args.mode ?? "",
@@ -357,9 +367,7 @@ export const useChatbotAgent = (
                                     toolCallId: requestModeItem.toolCallId,
                                     content: "granted",
                                 });
-                                agent
-                                    .runAgent({ tools: getToolDefs() })
-                                    .catch(handleRunError);
+                                rerun();
                             } else {
                                 setPendingModeRequest({
                                     toolCallId: requestModeItem.toolCallId,
@@ -382,9 +390,7 @@ export const useChatbotAgent = (
                             });
                             setIsLoading(false);
                         } else {
-                            agent
-                                .runAgent({ tools: getToolDefs() })
-                                .catch(handleRunError);
+                            rerun();
                         }
                     } catch {
                         rerunningRef.current = false;
