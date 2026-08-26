@@ -1,6 +1,7 @@
 import { CapabilityId } from "@app/api/generated";
 
 import type { PassiveFrontendTool, StateAccessor } from "./types";
+import { toolError, toolSuccess } from "./types";
 
 const MAX_KEYS = 50;
 const MAX_ARRAY_ITEMS = 50;
@@ -65,9 +66,7 @@ export const createReadStateTool = (
     handler: async (args) => {
         const path = String(args.path ?? "");
         if (!path) {
-            return JSON.stringify({
-                error: "Missing required parameter: path",
-            });
+            return toolError("Missing required parameter: path");
         }
 
         const segments = path.split(".");
@@ -75,14 +74,14 @@ export const createReadStateTool = (
 
         for (const segment of segments) {
             if (current === null || current === undefined) {
-                return JSON.stringify({
-                    error: `Path '${path}' not found: reached null/undefined at '${segment}'`,
-                });
+                return toolError(
+                    `Path '${path}' not found: reached null/undefined at '${segment}'`,
+                );
             }
             if (typeof current !== "object") {
-                return JSON.stringify({
-                    error: `Path '${path}' not found: '${segment}' is not an object`,
-                });
+                return toolError(
+                    `Path '${path}' not found: '${segment}' is not an object`,
+                );
             }
 
             const asRecord = current as Record<string, unknown>;
@@ -92,13 +91,15 @@ export const createReadStateTool = (
             } else if (segment in asRecord) {
                 current = asRecord[segment];
             } else {
-                return JSON.stringify({
-                    error: `Path '${path}' not found: key '${segment}' does not exist`,
-                    availableKeys: Object.keys(asRecord).slice(0, 20),
-                });
+                const availableKeys = Object.keys(asRecord)
+                    .slice(0, 20)
+                    .join(", ");
+                return toolError(
+                    `Path '${path}' not found: key '${segment}' does not exist. Available keys: ${availableKeys}`,
+                );
             }
         }
 
-        return JSON.stringify({ path, value: truncateValue(current) });
+        return toolSuccess({ path, value: truncateValue(current) });
     },
 });
