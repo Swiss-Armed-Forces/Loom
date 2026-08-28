@@ -346,14 +346,17 @@ export const useChatbotAgent = (
                             return;
                         }
 
-                        // Defer the re-run so the ag-ui client's RxJS
-                        // pipeline fully processes the current run's
-                        // RUN_FINISHED before the next run starts.
+                        // Defer the re-run to the next macrotask so the
+                        // ag-ui client's full RxJS pipeline (including
+                        // onRunFinalized and its microtask continuations)
+                        // drains completely before the next run starts.
                         const rerun = () =>
-                            queueMicrotask(() =>
-                                agent
-                                    .runAgent({ tools: getToolDefs() })
-                                    .catch(handleRunError),
+                            setTimeout(
+                                () =>
+                                    agent
+                                        .runAgent({ tools: getToolDefs() })
+                                        .catch(handleRunError),
+                                0,
                             );
 
                         if (requestModeItem) {
