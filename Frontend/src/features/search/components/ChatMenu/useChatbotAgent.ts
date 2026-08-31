@@ -100,7 +100,6 @@ export const useChatbotAgent = (
             args: Record<string, unknown>;
         }[]
     >([]);
-    const rerunningRef = useRef(false);
     const errorHandledRef = useRef(false);
 
     const getToolDefs = () => frontendToolDefsRef.current;
@@ -109,12 +108,6 @@ export const useChatbotAgent = (
         setChatMessages((prev) => [...prev, createErrorMessage(text)]);
         setIsLoading(false);
     }, []);
-
-    const handleRunError = useCallback(() => {
-        rerunningRef.current = false;
-        setInFlightToolCalls({});
-        appendError("Agent error");
-    }, [appendError]);
 
     useEffect(() => {
         const abortController = new AbortController();
@@ -277,129 +270,8 @@ export const useChatbotAgent = (
                 }
                 setReasoningPhase("done");
             },
-            onRunFinishedEvent: ({ outcome, agent }) => {
+            onRunFinishedEvent: ({ outcome }) => {
                 if (outcome === "interrupt") setIsInterrupted(true);
-
-                const pending = pendingFrontendToolsRef.current;
-                if (pending.length === 0) return;
-                pendingFrontendToolsRef.current = [];
-
-                const passiveItems = pending.filter((item) => {
-                    const tool = frontendToolsRef.current[item.toolName];
-                    return tool && !tool.interactive;
-                });
-                const askUserItem = pending.find(
-                    (item) => item.toolName === "ask_user",
-                );
-                const requestModeItem = pending.find(
-                    (item) => item.toolName === "request_mode",
-                );
-
-                rerunningRef.current = true;
-
-                (async () => {
-                    try {
-                        for (const item of passiveItems) {
-                            if (abortController.signal.aborted) {
-                                rerunningRef.current = false;
-                                return;
-                            }
-                            const tool =
-                                frontendToolsRef.current[item.toolName];
-                            if (!tool || tool.interactive === true) continue;
-                            const result = await tool.handler(item.args);
-
-                            if (abortController.signal.aborted) {
-                                rerunningRef.current = false;
-                                return;
-                            }
-
-                            const record =
-                                runToolCallsRef.current[item.toolCallId];
-                            if (record) {
-                                record.result = result;
-                                record.status = "done";
-                            }
-                            setInFlightToolCalls((prev) => {
-                                const existing = prev[item.toolCallId];
-                                if (!existing) return prev;
-                                return {
-                                    ...prev,
-                                    [item.toolCallId]: {
-                                        ...existing,
-                                        result,
-                                        status: "done",
-                                    },
-                                };
-                            });
-
-                            agent.addMessage({
-                                role: "tool",
-                                id: crypto.randomUUID(),
-                                toolCallId: item.toolCallId,
-                                content: result,
-                            });
-                        }
-
-                        if (abortController.signal.aborted) {
-                            rerunningRef.current = false;
-                            return;
-                        }
-
-                        // Defer the re-run to the next macrotask so the
-                        // ag-ui client's full RxJS pipeline (including
-                        // onRunFinalized and its microtask continuations)
-                        // drains completely before the next run starts.
-                        const rerun = () =>
-                            setTimeout(
-                                () =>
-                                    agent
-                                        .runAgent({ tools: getToolDefs() })
-                                        .catch(handleRunError),
-                                0,
-                            );
-
-                        if (requestModeItem) {
-                            const requestedMode = String(
-                                requestModeItem.args.mode ?? "",
-                            );
-                            if (requestedMode === activeModeRef.current) {
-                                agent.addMessage({
-                                    role: "tool",
-                                    id: crypto.randomUUID(),
-                                    toolCallId: requestModeItem.toolCallId,
-                                    content: "granted",
-                                });
-                                rerun();
-                            } else {
-                                setPendingModeRequest({
-                                    toolCallId: requestModeItem.toolCallId,
-                                    mode: requestedMode,
-                                    reason: String(
-                                        requestModeItem.args.reason ?? "",
-                                    ),
-                                });
-                                setIsLoading(false);
-                            }
-                        } else if (askUserItem) {
-                            setPendingQuestion({
-                                toolCallId: askUserItem.toolCallId,
-                                question: String(
-                                    askUserItem.args.question ?? "",
-                                ),
-                                options: Array.isArray(askUserItem.args.options)
-                                    ? (askUserItem.args.options as string[])
-                                    : [],
-                            });
-                            setIsLoading(false);
-                        } else {
-                            rerun();
-                        }
-                    } catch {
-                        rerunningRef.current = false;
-                        handleRunError();
-                    }
-                })();
             },
             onRunErrorEvent: ({ event }) => {
                 errorHandledRef.current = true;
@@ -449,13 +321,6 @@ export const useChatbotAgent = (
                 );
             },
             onRunFinalized: ({ messages }) => {
-                if (rerunningRef.current) {
-                    rerunningRef.current = false;
-                } else {
-                    setInFlightToolCalls({});
-                    setIsLoading(false);
-                    onRunCompleteRef.current();
-                }
                 if (!errorHandledRef.current) {
                     setChatMessages(
                         mapToChatMessages(
@@ -482,7 +347,101 @@ export const useChatbotAgent = (
             unsubscribe();
             agent.abortRun();
         };
-    }, [contextId, t, appendError, handleRunError]);
+    }, [contextId, t, appendError]);
+
+    const runAgentLoop = async (agent: HttpAgent) => {
+        try {
+            while (true) {
+                await agent.runAgent({ tools: getToolDefs() });
+
+                const pending = pendingFrontendToolsRef.current;
+                if (pending.length === 0) break;
+                pendingFrontendToolsRef.current = [];
+
+                const passiveItems = pending.filter((item) => {
+                    const tool = frontendToolsRef.current[item.toolName];
+                    return tool && !tool.interactive;
+                });
+                const askUserItem = pending.find(
+                    (item) => item.toolName === "ask_user",
+                );
+                const requestModeItem = pending.find(
+                    (item) => item.toolName === "request_mode",
+                );
+
+                for (const item of passiveItems) {
+                    const tool = frontendToolsRef.current[item.toolName];
+                    if (!tool || tool.interactive === true) continue;
+                    const result = await tool.handler(item.args);
+
+                    const record = runToolCallsRef.current[item.toolCallId];
+                    if (record) {
+                        record.result = result;
+                        record.status = "done";
+                    }
+                    setInFlightToolCalls((prev) => {
+                        const existing = prev[item.toolCallId];
+                        if (!existing) return prev;
+                        return {
+                            ...prev,
+                            [item.toolCallId]: {
+                                ...existing,
+                                result,
+                                status: "done",
+                            },
+                        };
+                    });
+
+                    agent.addMessage({
+                        role: "tool",
+                        id: crypto.randomUUID(),
+                        toolCallId: item.toolCallId,
+                        content: result,
+                    });
+                }
+
+                if (requestModeItem) {
+                    const requestedMode = String(
+                        requestModeItem.args.mode ?? "",
+                    );
+                    if (requestedMode === activeModeRef.current) {
+                        agent.addMessage({
+                            role: "tool",
+                            id: crypto.randomUUID(),
+                            toolCallId: requestModeItem.toolCallId,
+                            content: "granted",
+                        });
+                    } else {
+                        setPendingModeRequest({
+                            toolCallId: requestModeItem.toolCallId,
+                            mode: requestedMode,
+                            reason: String(requestModeItem.args.reason ?? ""),
+                        });
+                        setIsLoading(false);
+                        return;
+                    }
+                } else if (askUserItem) {
+                    setPendingQuestion({
+                        toolCallId: askUserItem.toolCallId,
+                        question: String(askUserItem.args.question ?? ""),
+                        options: Array.isArray(askUserItem.args.options)
+                            ? (askUserItem.args.options as string[])
+                            : [],
+                    });
+                    setIsLoading(false);
+                    return;
+                }
+            }
+        } catch {
+            if (!errorHandledRef.current) {
+                appendError("Agent error");
+            }
+        }
+
+        setIsLoading(false);
+        setInFlightToolCalls({});
+        onRunCompleteRef.current();
+    };
 
     const handleSendMessage = async (text: string) => {
         const agent = agentRef.current;
@@ -511,14 +470,10 @@ export const useChatbotAgent = (
             ),
         );
 
-        try {
-            await agent.runAgent({ tools: getToolDefs() });
-        } catch {
-            appendError("Cannot get a response");
-        }
+        await runAgentLoop(agent);
     };
 
-    const handleQuestionAnswer = (answer: string) => {
+    const handleQuestionAnswer = async (answer: string) => {
         const agent = agentRef.current;
         if (!agent || !pendingQuestion) return;
         const { toolCallId, question } = pendingQuestion;
@@ -570,7 +525,7 @@ export const useChatbotAgent = (
             setInFlightToolCalls({});
         } else {
             setIsLoading(true);
-            agent.runAgent({ tools: getToolDefs() }).catch(handleRunError);
+            await runAgentLoop(agent);
         }
     };
 
@@ -587,7 +542,6 @@ export const useChatbotAgent = (
             } catch {
                 appendError("Failed to update mode");
                 setPendingModeRequest(null);
-                rerunningRef.current = false;
                 return;
             }
             activeModeRef.current = mode;
@@ -603,7 +557,7 @@ export const useChatbotAgent = (
 
         setPendingModeRequest(null);
         setIsLoading(true);
-        agent.runAgent({ tools: getToolDefs() }).catch(handleRunError);
+        await runAgentLoop(agent);
     };
 
     const toggleMode = (mode: string) => {
