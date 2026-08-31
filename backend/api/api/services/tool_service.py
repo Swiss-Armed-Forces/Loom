@@ -101,14 +101,16 @@ class ToolService:
         self._ui_interaction = Capability[AgentDeps](
             id=CapabilityId.UI_INTERACTION,
             description=(
-                "Control what the user sees. Load this whenever the user "
-                "asks you to show, open, navigate, search, filter, tag, "
-                "or change anything in the UI."
+                "See and control the user's UI. Load this whenever the user "
+                "references what they are currently seeing, or asks you to "
+                "show, open, navigate, search, filter, tag, or change "
+                "anything in the UI."
             ),
             instructions=(
                 "The user is interacting with you through a document search UI. "
-                "When they make imperative requests, act on them directly "
-                "through the UI rather than just describing what to do."
+                "When they reference their screen, read the UI state to understand "
+                "their context. When they make imperative requests, act on them "
+                "directly through the UI rather than just describing what to do."
             ),
             defer_loading=True,
         )
