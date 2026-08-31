@@ -16,6 +16,8 @@ from ag_ui.core import (
     ReasoningStartEvent,
     RunFinishedEvent,
     TextMessageContentEvent,
+    TextMessageEndEvent,
+    TextMessageStartEvent,
     ToolCallArgsEvent,
     ToolCallResultEvent,
     ToolCallStartEvent,
@@ -177,6 +179,53 @@ def _extract_ask_user_question(tracker: _ActivityTracker) -> str:
     return ""
 
 
+async def _validate_text_message_events(
+    stream: AsyncIterator[BaseEvent],
+) -> AsyncIterator[BaseEvent]:
+    """Validate that TEXT_MESSAGE_CONTENT/END always follow a TEXT_MESSAGE_START.
+
+    Works around a known pydantic-ai bug where the AG-UI event stream can
+    emit TEXT_MESSAGE_CONTENT after TEXT_MESSAGE_END without a new
+    TEXT_MESSAGE_START.  This happens when a model interleaves text and
+    thinking parts in a single response (text → thinking → text): the
+    ``follows_text`` / ``followed_by_text`` flags on PartStartEvent /
+    PartEndEvent can desynchronise, causing the adapter to skip the
+    opening START event for the second text segment.
+
+    The @ag-ui/client ``verifyEvents`` layer treats this as a hard error
+    ("Cannot send 'TEXT_MESSAGE_CONTENT' event: No active text message
+    found with ID '…'"), killing the entire run.
+
+    This wrapper injects a synthetic TEXT_MESSAGE_START when an orphaned
+    TEXT_MESSAGE_CONTENT is detected, and logs a warning so the trigger
+    can be identified in pod logs.
+
+    Upstream references:
+    - https://github.com/pydantic/pydantic-ai/issues/3108
+      (reported, closed with a warning only — no event-ordering fix merged)
+    - https://github.com/pydantic/pydantic-ai/pull/3206
+      (attempted fix, closed without merging)
+    """
+    active_text_ids: set[str] = set()
+
+    async for event in stream:
+        match event:
+            case TextMessageStartEvent(message_id=mid):
+                active_text_ids.add(mid)
+            case TextMessageContentEvent(message_id=mid) if mid not in active_text_ids:
+                logger.warning(
+                    "Orphaned TEXT_MESSAGE_CONTENT for message '%s' — "
+                    "injecting synthetic TEXT_MESSAGE_START",
+                    mid,
+                )
+                active_text_ids.add(mid)
+                yield TextMessageStartEvent(message_id=mid)
+            case TextMessageEndEvent(message_id=mid):
+                active_text_ids.discard(mid)
+
+        yield event
+
+
 class AiService:
     def __init__(
         self,
@@ -224,9 +273,8 @@ class AiService:
             run_finished: RunFinishedEvent | None = None
             tracker = _ActivityTracker()
 
-            async for event in adapter.run_stream(
-                deps=deps,
-                capabilities=capabilities,
+            async for event in _validate_text_message_events(
+                adapter.run_stream(deps=deps, capabilities=capabilities)
             ):
                 tracker.track(event)
                 match event:
