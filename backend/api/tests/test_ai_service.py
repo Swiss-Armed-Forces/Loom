@@ -1,15 +1,23 @@
 """Unit tests for the pure helper functions in api/services/ai_service.py."""
 
+import asyncio
 import json
 from uuid import uuid4
 
 from ag_ui.core import (
     AssistantMessage,
+    BaseEvent,
     FunctionCall,
     ReasoningEndEvent,
     ReasoningMessage,
     ReasoningMessageContentEvent,
     ReasoningStartEvent,
+    RunErrorEvent,
+    RunFinishedEvent,
+    RunStartedEvent,
+    TextMessageContentEvent,
+    TextMessageEndEvent,
+    TextMessageStartEvent,
     ToolCall,
     ToolCallArgsEvent,
     ToolCallResultEvent,
@@ -29,6 +37,7 @@ from api.services.ai_service import (
     _collect_citations,
     _extract_activity_from_history,
     _extract_question,
+    _sanitise_agui_event_stream,
 )
 
 # ---------------------------------------------------------------------------
@@ -247,3 +256,128 @@ def test_extract_activity_mixed_reasoning_and_tool_calls():
     assert result[0].text == "thinking"
     assert isinstance(result[1], ToolCallActivityEntry)
     assert result[1].tool_name == "lookup"
+
+
+# ---------------------------------------------------------------------------
+# _sanitise_agui_event_stream
+# ---------------------------------------------------------------------------
+
+
+async def _to_list(stream):
+    return [event async for event in stream]
+
+
+async def _from_list(events):
+    for event in events:
+        yield event
+
+
+def _run(events: list[BaseEvent]) -> list[BaseEvent]:
+    """Feed *events* through the sanitiser and return the output list."""
+    return asyncio.run(_to_list(_sanitise_agui_event_stream(_from_list(events))))
+
+
+def _types(events: list[BaseEvent]) -> list[str]:
+    return [e.type.value if hasattr(e.type, "value") else str(e.type) for e in events]
+
+
+def test_sanitiser_passthrough_clean_stream():
+    """A well-formed stream passes through unchanged."""
+    events = [
+        RunStartedEvent(thread_id="t", run_id="r"),
+        TextMessageStartEvent(message_id="m1"),
+        TextMessageContentEvent(message_id="m1", delta="hi"),
+        TextMessageEndEvent(message_id="m1"),
+        RunFinishedEvent(thread_id="t", run_id="r"),
+    ]
+    result = _run(events)
+    assert _types(result) == _types(events)
+
+
+def test_sanitiser_injects_start_for_orphaned_content():
+    """Orphaned TEXT_MESSAGE_CONTENT gets a synthetic START injected."""
+    events = [
+        RunStartedEvent(thread_id="t", run_id="r"),
+        TextMessageContentEvent(message_id="m1", delta="orphan"),
+        TextMessageEndEvent(message_id="m1"),
+        RunFinishedEvent(thread_id="t", run_id="r"),
+    ]
+    result = _run(events)
+    types = _types(result)
+    assert types[1] == "TEXT_MESSAGE_START"
+    assert types[2] == "TEXT_MESSAGE_CONTENT"
+    assert result[1].message_id == "m1"
+
+
+def test_sanitiser_closes_unclosed_text_at_run_finished():
+    """Unclosed text message gets a synthetic END before RUN_FINISHED."""
+    events = [
+        RunStartedEvent(thread_id="t", run_id="r"),
+        TextMessageStartEvent(message_id="m1"),
+        TextMessageContentEvent(message_id="m1", delta="hi"),
+        # Missing TextMessageEndEvent
+        RunFinishedEvent(thread_id="t", run_id="r"),
+    ]
+    result = _run(events)
+    types = _types(result)
+    assert types[-2] == "TEXT_MESSAGE_END"
+    assert types[-1] == "RUN_FINISHED"
+    assert result[-2].message_id == "m1"
+
+
+def test_sanitiser_closes_unclosed_tool_call_at_run_finished():
+    """Unclosed tool call gets a synthetic END before RUN_FINISHED."""
+    events = [
+        RunStartedEvent(thread_id="t", run_id="r"),
+        ToolCallStartEvent(tool_call_id="tc1", tool_call_name="search"),
+        # Missing ToolCallEndEvent
+        RunFinishedEvent(thread_id="t", run_id="r"),
+    ]
+    result = _run(events)
+    types = _types(result)
+    assert types[-2] == "TOOL_CALL_END"
+    assert types[-1] == "RUN_FINISHED"
+    assert result[-2].tool_call_id == "tc1"
+
+
+def test_sanitiser_suppresses_events_after_run_error():
+    """All events after RUN_ERROR are dropped."""
+    events = [
+        RunStartedEvent(thread_id="t", run_id="r"),
+        RunErrorEvent(message="boom"),
+        TextMessageStartEvent(message_id="m1"),
+        TextMessageContentEvent(message_id="m1", delta="should be dropped"),
+        RunFinishedEvent(thread_id="t", run_id="r"),
+    ]
+    result = _run(events)
+    types = _types(result)
+    assert "TEXT_MESSAGE_START" not in types
+    assert "TEXT_MESSAGE_CONTENT" not in types
+    assert "RUN_FINISHED" not in types
+    assert types == ["RUN_STARTED", "RUN_ERROR"]
+
+
+def test_sanitiser_handles_full_orphan_scenario():
+    """Simulate the pydantic-ai #3108 bug: text -> thinking -> orphaned text.
+
+    The adapter emits END for text1, then reasoning, then CONTENT for text2 without a
+    START — followed by RUN_FINISHED without an END.
+    """
+    events = [
+        RunStartedEvent(thread_id="t", run_id="r"),
+        TextMessageStartEvent(message_id="m1"),
+        TextMessageContentEvent(message_id="m1", delta="hello"),
+        TextMessageEndEvent(message_id="m1"),
+        # Orphaned content (no START for m1 after its END)
+        TextMessageContentEvent(message_id="m1", delta="world"),
+        # No END for the re-opened m1
+        RunFinishedEvent(thread_id="t", run_id="r"),
+    ]
+    result = _run(events)
+    types = _types(result)
+
+    # Should have: START, CONTENT, END, START(synthetic), CONTENT,
+    #              END(synthetic), RUN_FINISHED
+    assert types.count("TEXT_MESSAGE_START") == 2
+    assert types.count("TEXT_MESSAGE_END") == 2
+    assert types[-1] == "RUN_FINISHED"
