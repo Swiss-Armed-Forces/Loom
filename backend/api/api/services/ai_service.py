@@ -14,11 +14,13 @@ from ag_ui.core import (
     ReasoningMessage,
     ReasoningMessageContentEvent,
     ReasoningStartEvent,
+    RunErrorEvent,
     RunFinishedEvent,
     TextMessageContentEvent,
     TextMessageEndEvent,
     TextMessageStartEvent,
     ToolCallArgsEvent,
+    ToolCallEndEvent,
     ToolCallResultEvent,
     ToolCallStartEvent,
     ToolMessage,
@@ -179,12 +181,13 @@ def _extract_ask_user_question(tracker: _ActivityTracker) -> str:
     return ""
 
 
-async def _validate_text_message_events(
+async def _sanitise_agui_event_stream(
     stream: AsyncIterator[BaseEvent],
 ) -> AsyncIterator[BaseEvent]:
-    """Validate that TEXT_MESSAGE_CONTENT/END always follow a TEXT_MESSAGE_START.
+    """Ensure the AG-UI event stream satisfies the ``@ag-ui/client`` ``verifyEvents``
+    state machine.
 
-    Works around a known pydantic-ai bug where the AG-UI event stream can
+    Works around a known pydantic-ai bug (#3108) where the adapter can
     emit TEXT_MESSAGE_CONTENT after TEXT_MESSAGE_END without a new
     TEXT_MESSAGE_START.  This happens when a model interleaves text and
     thinking parts in a single response (text → thinking → text): the
@@ -192,20 +195,18 @@ async def _validate_text_message_events(
     PartEndEvent can desynchronise, causing the adapter to skip the
     opening START event for the second text segment.
 
-    The @ag-ui/client ``verifyEvents`` layer treats this as a hard error
-    ("Cannot send 'TEXT_MESSAGE_CONTENT' event: No active text message
-    found with ID '…'"), killing the entire run.
-
-    This wrapper patches the stream in two ways:
+    The ``verifyEvents`` layer enforces strict pairing rules and rejects
+    the entire run on any violation.  This wrapper patches the stream:
 
     - Injects a synthetic TEXT_MESSAGE_START before an orphaned
-      TEXT_MESSAGE_CONTENT so the client's verify layer accepts it.
-    - Before RUN_FINISHED, closes any text messages that are still
-      open (the adapter skips the END for the same reason it skipped
-      the START: the ``followed_by_text`` flag was wrong).
+      TEXT_MESSAGE_CONTENT.
+    - Before RUN_FINISHED, closes any text messages or tool calls
+      that are still open.
+    - Suppresses all events after a RUN_ERROR (the verify layer
+      rejects any event once the error flag is set).
 
-    A warning is logged whenever a synthetic event is injected so the
-    trigger can be identified in pod logs.
+    A warning is logged for every synthetic event so the trigger can
+    be identified in pod logs.
 
     Upstream references:
     - https://github.com/pydantic/pydantic-ai/issues/3108
@@ -214,8 +215,14 @@ async def _validate_text_message_events(
       (attempted fix, closed without merging)
     """
     active_text_ids: set[str] = set()
+    active_tool_call_ids: set[str] = set()
+    errored = False
 
     async for event in stream:
+        if errored:
+            # verifyEvents rejects everything after RUN_ERROR — drop silently.
+            continue
+
         match event:
             case TextMessageStartEvent(message_id=mid):
                 active_text_ids.add(mid)
@@ -229,7 +236,13 @@ async def _validate_text_message_events(
                 yield TextMessageStartEvent(message_id=mid)
             case TextMessageEndEvent(message_id=mid):
                 active_text_ids.discard(mid)
-            case RunFinishedEvent() if active_text_ids:
+            case ToolCallStartEvent(tool_call_id=tcid):
+                active_tool_call_ids.add(tcid)
+            case ToolCallEndEvent(tool_call_id=tcid):
+                active_tool_call_ids.discard(tcid)
+            case RunErrorEvent():
+                errored = True
+            case RunFinishedEvent():
                 for orphan_id in list(active_text_ids):
                     logger.warning(
                         "Unclosed text message '%s' at RUN_FINISHED — "
@@ -238,6 +251,14 @@ async def _validate_text_message_events(
                     )
                     yield TextMessageEndEvent(message_id=orphan_id)
                 active_text_ids.clear()
+                for tcid in list(active_tool_call_ids):
+                    logger.warning(
+                        "Unclosed tool call '%s' at RUN_FINISHED — "
+                        "injecting synthetic TOOL_CALL_END",
+                        tcid,
+                    )
+                    yield ToolCallEndEvent(tool_call_id=tcid)
+                active_tool_call_ids.clear()
 
         yield event
 
@@ -289,7 +310,7 @@ class AiService:
             run_finished: RunFinishedEvent | None = None
             tracker = _ActivityTracker()
 
-            async for event in _validate_text_message_events(
+            async for event in _sanitise_agui_event_stream(
                 adapter.run_stream(deps=deps, capabilities=capabilities)
             ):
                 tracker.track(event)
@@ -307,14 +328,21 @@ class AiService:
                 + tracker.activity
             )
 
-            citations = _collect_citations(deps.source_collector)
-            for citation in citations:
-                yield CustomEvent(
-                    name="citation",
-                    value={"file_id": str(citation.file_id), "text": citation.text},
-                )
-
+            # Skip citations when the run errored — the sanitiser already
+            # yielded RUN_ERROR and suppressed further events, but citations
+            # are appended here outside the sanitised stream.  The client's
+            # verifyEvents would reject them after RUN_ERROR.
+            citations: list[AiQuestionCitation] = []
             if run_finished is not None:
+                citations = _collect_citations(deps.source_collector)
+                for citation in citations:
+                    yield CustomEvent(
+                        name="citation",
+                        value={
+                            "file_id": str(citation.file_id),
+                            "text": citation.text,
+                        },
+                    )
                 yield run_finished
 
             if answer_text := (
