@@ -25,7 +25,7 @@ import {
     GetFilesCountResponse,
     UpdateFileRequest,
     PreviewField,
-    CapabilityUpdate,
+    ModeUpdate,
 } from "./generated";
 
 const filesApi = new FilesApi(apiConfiguration);
@@ -426,15 +426,13 @@ export const getContextHistory = async (
 export const deleteAiContext = async (contextId: string): Promise<void> =>
     aiApi.deleteContextV1AiContextIdDelete({ contextId });
 
-export const updateAiContextCapabilities = async (
+export const setAiContextMode = async (
     contextId: string,
-    capability: string,
-    active: boolean,
+    mode: string,
 ): Promise<void> =>
-    aiApi.updateCapabilitiesV1AiContextIdCapabilitiesPatch({
+    aiApi.updateModesV1AiContextIdModesPatch({
         contextId,
-        capabilityUpdate: {
-            capability: capability as CapabilityUpdate["capability"],
-            active,
+        modeUpdate: {
+            mode: mode as ModeUpdate["mode"],
         },
     });

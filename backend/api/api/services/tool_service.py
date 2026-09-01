@@ -2,9 +2,11 @@
 
 from dataclasses import dataclass
 from dataclasses import field as dataclass_field
+from typing import NamedTuple
 from uuid import UUID
 
-from common.ai_context.ai_context_repository import AiContext, CapabilityId
+from ag_ui.core import Tool as AGUITool
+from common.ai_context.ai_context_repository import AiContext, CapabilityId, ModeId
 from common.ai_context.tool_models import (
     DescribeImageResult,
     ExecuteQueryResult,
@@ -19,8 +21,10 @@ from common.ai_context.tool_models import (
     TranslateFileResult,
 )
 from pydantic_ai import ModelRetry, RunContext
-from pydantic_ai.capabilities import AgentCapability, Capability
+from pydantic_ai.capabilities import Capability
 from pydantic_ai.exceptions import ToolFailed
+from pydantic_ai.tools import ToolDefinition
+from pydantic_ai.toolsets import ExternalToolset
 
 from api.services.task_call_service import TaskCallService
 
@@ -31,7 +35,12 @@ _MAX_CITATION_CHARS = 300
 class AgentDeps:
     context: AiContext
     source_collector: list[ToolSource] = dataclass_field(default_factory=list)
-    active_capabilities: set[CapabilityId] = dataclass_field(default_factory=set)
+    active_mode: ModeId = ModeId.WORK
+
+
+class RoutedTools(NamedTuple):
+    always_on: list[AGUITool]
+    capabilities: list[Capability[AgentDeps]]
 
 
 class ToolService:
@@ -41,13 +50,19 @@ class ToolService:
         self._task_call_service = task_call_service
 
         self._search_and_browse = Capability[AgentDeps](
-            id="search_and_browse",
+            id=CapabilityId.SEARCH_AND_BROWSE,
             description=(
-                "Tools for searching documents by content or filename "
-                "and browsing the folder structure."
+                "Search the document corpus by content or filename "
+                "and browse the folder structure."
+            ),
+            instructions=(
+                "Start broad, then narrow down. Generate query candidates "
+                "before executing searches, and explore the folder tree "
+                "to orient yourself in the corpus."
             ),
             tools=[
                 self.suggest_queries,
+                self.execute_query,
                 self.list_folder_contents,
                 self.search_by_filename,
             ],
@@ -55,56 +70,145 @@ class ToolService:
         )
 
         self._file_access = Capability[AgentDeps](
-            id="file_access",
+            id=CapabilityId.FILE_ACCESS,
             description=(
-                "Tools for retrieving file metadata and reading "
-                "individual file fields."
+                "Access individual files — identify which files the user "
+                "is looking at, retrieve metadata, and read specific fields."
+            ),
+            instructions=(
+                "Always confirm a file exists before reading its fields. "
+                "When the user refers to 'this file' or 'these files', "
+                "resolve the reference through the UI context first."
             ),
             tools=[self.get_file, self.get_file_field],
             defer_loading=True,
         )
 
         self._ai_processing = Capability[AgentDeps](
-            id="ai_processing",
+            id=CapabilityId.AI_PROCESSING,
             description=(
-                "Tools for AI-powered file processing: summarization, "
-                "translation, and image description."
+                "AI-powered file processing — generate summaries, "
+                "translate content, and describe images."
+            ),
+            instructions=(
+                "Use these to enrich documents with AI-generated content "
+                "whenever it would help answer the user's question."
             ),
             tools=[self.summarize_file, self.translate_file, self.describe_image],
             defer_loading=True,
         )
 
-        self._research_mode = Capability[AgentDeps](
-            id="research_mode",
-            instructions=(
-                "You are in RESEARCH MODE. Take your time and perform thorough, "
-                "multi-faceted research before answering. "
-                "Use suggest_queries to generate precise query strings, or compose "
-                "your own Lucene query when you already know the right terms. "
-                "Issue multiple queries from different angles, explore promising documents "
-                "in depth, and cross-reference findings across the corpus. "
-                "Do not attempt to manipulate the UI in this mode — focus entirely on research."
+        self._ui_interaction = Capability[AgentDeps](
+            id=CapabilityId.UI_INTERACTION,
+            description=(
+                "See and control the user's UI. Load this whenever the user "
+                "references what they are currently seeing, or asks you to "
+                "show, open, navigate, search, filter, tag, or change "
+                "anything in the UI."
             ),
-            tools=[self.execute_query, self.rag_search],
+            instructions=(
+                "The user is interacting with you through a document search UI. "
+                "When they reference their screen, read the UI state to understand "
+                "their context. When they make imperative requests, act on them "
+                "directly through the UI rather than just describing what to do."
+            ),
+            defer_loading=True,
         )
 
-    @property
-    def capabilities(self) -> list[AgentCapability[AgentDeps]]:
-        """All capabilities for the agent, including the dynamic research mode."""
+        self._research = Capability[AgentDeps](
+            id=CapabilityId.RESEARCH,
+            description=(
+                "Deep document research — query the corpus directly "
+                "and synthesize answers from multiple sources."
+            ),
+            instructions=(
+                "Take your time and perform thorough, multi-faceted research "
+                "before answering. Issue multiple queries from different angles, "
+                "explore promising documents in depth, and cross-reference "
+                "findings across the corpus."
+            ),
+            tools=[self.rag_search],
+        )
 
-        def _research_mode_fn(
-            ctx: RunContext[AgentDeps],
-        ) -> Capability[AgentDeps] | None:
-            if CapabilityId.RESEARCH_MODE in ctx.deps.active_capabilities:
-                return self._research_mode
-            return None
+    def capabilities_for_mode(self, mode: ModeId) -> list[Capability[AgentDeps]]:
+        """Return the capabilities available for the given mode."""
+        match mode:
+            case ModeId.CHAT:
+                return []
+            case ModeId.RESEARCH:
+                return [
+                    self._search_and_browse,
+                    self._file_access,
+                    self._ai_processing,
+                    self._research,
+                ]
+            case _:
+                return [
+                    self._search_and_browse,
+                    self._file_access,
+                    self._ai_processing,
+                    self._ui_interaction,
+                ]
 
-        return [
-            self._search_and_browse,
-            self._file_access,
-            self._ai_processing,
-            _research_mode_fn,
-        ]
+    def route_frontend_tools(
+        self,
+        tools: list[AGUITool],
+        base_capabilities: list[Capability[AgentDeps]],
+    ) -> RoutedTools:
+        """Partition frontend tools into always-on and capability-gated groups.
+
+        Each frontend tool may declare a ``capability`` field matching a deferred
+        capability ID.  Tools with a matching capability are routed into rebuilt
+        ``Capability`` instances alongside their backend tools. Tools without a
+        capability stay always-on.
+        """
+        always_on: list[AGUITool] = []
+        by_capability: dict[CapabilityId, list[ToolDefinition]] = {}
+
+        for tool in tools:
+            raw_ids = (tool.model_extra or {}).get("capabilities") or []
+            matched = [
+                CapabilityId(c)
+                for c in raw_ids
+                if c in CapabilityId.__members__.values()
+            ]
+            if not matched:
+                always_on.append(tool)
+            else:
+                tool_def = ToolDefinition(
+                    name=tool.name,
+                    description=tool.description or "",
+                    parameters_json_schema=tool.parameters or {},
+                    kind="external",
+                )
+                for cap_id in matched:
+                    by_capability.setdefault(cap_id, []).append(tool_def)
+
+        capabilities: list[Capability[AgentDeps]] = []
+        for cap in base_capabilities:
+            raw_id = cap.id
+            if raw_id is None or raw_id not in CapabilityId.__members__.values():
+                capabilities.append(cap)
+                continue
+            cap_id = CapabilityId(raw_id)
+            frontend_defs = by_capability.get(cap_id)
+            if frontend_defs is None:
+                capabilities.append(cap)
+            else:
+                capabilities.append(
+                    Capability[AgentDeps](
+                        id=cap.id,
+                        description=cap.description,
+                        instructions=(  # pylint: disable=protected-access
+                            cap._instructions[0] if cap._instructions else None
+                        ),
+                        tools=list(cap.tools),
+                        toolsets=[ExternalToolset(tool_defs=frontend_defs)],
+                        defer_loading=cap.defer_loading,
+                    )
+                )
+
+        return RoutedTools(always_on=always_on, capabilities=capabilities)
 
     def suggest_queries(
         self,
@@ -326,11 +430,19 @@ class ToolService:
             filename: Substring to match against filenames (case-insensitive).
         """
         try:
-            return self._task_call_service.call_search_by_filename_tool(
+            result = self._task_call_service.call_search_by_filename_tool(
                 ctx.deps.context.id_, filename
             )
         except ValueError as exc:
             raise ModelRetry(str(exc)) from exc
+        ctx.deps.source_collector.extend(
+            ToolSource(
+                file_id=UUID(f.file_id),
+                text=f.full_path,
+            )
+            for f in result.files
+        )
+        return result
 
     def rag_search(self, ctx: RunContext[AgentDeps], query: str) -> RagSearchResult:
         """Run the full RAG pipeline: retrieve and synthesize an answer from documents.

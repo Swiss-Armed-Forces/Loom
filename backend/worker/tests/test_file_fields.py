@@ -4,7 +4,7 @@ import json
 from datetime import datetime, timezone
 from typing import Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, computed_field
 
 from worker.ai.file_fields import iter_described_fields, serialize_field_value
 from worker.utils.prompt_sanitizer import sanitize_document_text
@@ -59,6 +59,28 @@ def test_iter_described_fields_union_none_unwraps_and_recurses():
     fields = {f.name: f for f in iter_described_fields(_UnionNested)}
     assert "union_child.described" in fields
     assert "union_child.undescribed" not in fields
+
+
+class _WithComputed(BaseModel):
+    regular: str = Field(description="a regular field")
+
+    @computed_field(description="a computed field")
+    @property
+    def derived(self) -> str:
+        return "value"
+
+    @computed_field  # type: ignore[misc]
+    @property
+    def silent(self) -> str:
+        return "hidden"
+
+
+def test_iter_described_fields_yields_described_computed_fields():
+    fields = {f.name: f for f in iter_described_fields(_WithComputed)}
+    assert "regular" in fields
+    assert "derived" in fields
+    assert fields["derived"].description == "a computed field"
+    assert "silent" not in fields
 
 
 # ---------------------------------------------------------------------------

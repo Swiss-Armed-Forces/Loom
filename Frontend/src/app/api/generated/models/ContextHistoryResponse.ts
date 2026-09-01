@@ -14,13 +14,6 @@
  */
 
 import { mapValues } from "../runtime";
-import type { CapabilityId } from "./CapabilityId";
-import {
-    CapabilityIdFromJSON,
-    CapabilityIdFromJSONTyped,
-    CapabilityIdToJSON,
-    CapabilityIdToJSONTyped,
-} from "./CapabilityId";
 import type { AiQuestion } from "./AiQuestion";
 import {
     AiQuestionFromJSON,
@@ -28,6 +21,13 @@ import {
     AiQuestionToJSON,
     AiQuestionToJSONTyped,
 } from "./AiQuestion";
+import type { ModeId } from "./ModeId";
+import {
+    ModeIdFromJSON,
+    ModeIdFromJSONTyped,
+    ModeIdToJSON,
+    ModeIdToJSONTyped,
+} from "./ModeId";
 
 /**
  *
@@ -49,10 +49,10 @@ export interface ContextHistoryResponse {
     questions: Array<AiQuestion>;
     /**
      *
-     * @type {Array<CapabilityId>}
+     * @type {ModeId}
      * @memberof ContextHistoryResponse
      */
-    activeCapabilities: Array<CapabilityId>;
+    activeMode: ModeId;
 }
 
 /**
@@ -71,10 +71,10 @@ export function instanceOfContextHistoryResponse(
     if (!("questions" in value) || value["questions"] === undefined)
         return false;
     if (
-        (!("activeCapabilities" in (value as Record<string, any>)) &&
-            !("active_capabilities" in (value as Record<string, any>))) ||
-        ((value as Record<string, any>)["activeCapabilities"] === undefined &&
-            (value as Record<string, any>)["active_capabilities"] === undefined)
+        (!("activeMode" in (value as Record<string, any>)) &&
+            !("active_mode" in (value as Record<string, any>))) ||
+        ((value as Record<string, any>)["activeMode"] === undefined &&
+            (value as Record<string, any>)["active_mode"] === undefined)
     )
         return false;
     return true;
@@ -96,9 +96,7 @@ export function ContextHistoryResponseFromJSONTyped(
     return {
         createdAt: new Date(json["created_at"]),
         questions: (json["questions"] as Array<any>).map(AiQuestionFromJSON),
-        activeCapabilities: (json["active_capabilities"] as Array<any>).map(
-            CapabilityIdFromJSON,
-        ),
+        activeMode: ModeIdFromJSON(json["active_mode"]),
     };
 }
 
@@ -119,8 +117,6 @@ export function ContextHistoryResponseToJSONTyped(
     return {
         created_at: value["createdAt"].toISOString(),
         questions: (value["questions"] as Array<any>).map(AiQuestionToJSON),
-        active_capabilities: (value["activeCapabilities"] as Array<any>).map(
-            CapabilityIdToJSON,
-        ),
+        active_mode: ModeIdToJSON(value["activeMode"]),
     };
 }

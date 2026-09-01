@@ -49,6 +49,13 @@ export const PendingQuestion = ({
                             clickable
                         />
                     ))}
+                    <Chip
+                        label="Other…"
+                        size="small"
+                        variant="outlined"
+                        onClick={() => onAnswer("other")}
+                        clickable
+                    />
                 </Box>
             </Box>
         </>

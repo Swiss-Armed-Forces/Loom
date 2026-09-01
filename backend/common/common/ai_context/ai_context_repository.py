@@ -14,7 +14,17 @@ _MAX_CONTEXTS = 100
 
 
 class CapabilityId(StrEnum):
-    RESEARCH_MODE = "research_mode"
+    SEARCH_AND_BROWSE = "search_and_browse"
+    FILE_ACCESS = "file_access"
+    AI_PROCESSING = "ai_processing"
+    UI_INTERACTION = "ui_interaction"
+    RESEARCH = "research"
+
+
+class ModeId(StrEnum):
+    CHAT = "chat"
+    WORK = "work"
+    RESEARCH = "research"
 
 
 class AiContextNotFoundException(Exception):
@@ -54,7 +64,7 @@ class AiContext(RepositoryTaskObject):
     chat_message_history_id: UUID = Field(default_factory=uuid4)
     created_at: datetime = Field(default_factory=datetime.now)
     questions: list[AiQuestion] = Field(default_factory=list)
-    active_capabilities: list[CapabilityId] = Field(default_factory=list)
+    active_mode: ModeId = ModeId.WORK
 
 
 class _EsAiQuestionCitation(InnerDoc):
@@ -81,7 +91,7 @@ class _EsAiContext(_EsTaskDocument):
     chat_message_history_id = Keyword()
     created_at = Date()
     questions = Object(_EsAiQuestion, multi=True)
-    active_capabilities = Keyword(multi=True)
+    active_mode = Keyword()
 
     class Index:  # pylint: disable=too-few-public-methods
         """The index."""

@@ -1,11 +1,13 @@
 """Builds pydantic-ai Agent instances configured with LLM settings and tools."""
 
+from datetime import datetime, timezone
 from typing import Any, NamedTuple
 
 from common.ai_context.ai_context_repository import AiContext
 from common.settings import settings
 from openai import AsyncOpenAI
 from pydantic_ai import Agent
+from pydantic_ai.capabilities import Capability
 from pydantic_ai.models.openai import OpenAIChatModel
 from pydantic_ai.profiles.openai import OpenAIModelProfile
 from pydantic_ai.providers.openai import OpenAIProvider
@@ -15,9 +17,24 @@ from pydantic_ai.tools import DeferredToolRequests
 from api.services.tool_service import AgentDeps, ToolService
 
 
+def _build_instructions() -> str:
+    now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
+    return (
+        "You are an AI assistant helping users explore and understand "
+        "their indexed documents. "
+        f"The current date and time is {now}. "
+        "Load capabilities as needed — their descriptions and "
+        "instructions tell you what each provides and how to use them. "
+        "Ask clarifying questions rather than assuming. "
+        "You may use Markdown in your responses. "
+        "Prefer plain prose for short answers."
+    )
+
+
 class PreparedAgent(NamedTuple):
     agent: Agent[AgentDeps, Any]
     deps: AgentDeps
+    capabilities: list[Capability[AgentDeps]]
 
 
 class AgentService:
@@ -39,41 +56,19 @@ class AgentService:
             model=self._model,
             deps_type=AgentDeps,
             output_type=[str, DeferredToolRequests],
-            instructions=(
-                "You are an AI assistant helping users explore and understand "
-                "their indexed documents. "
-                "Before answering, use your tools to retrieve relevant "
-                "information rather than guessing. "
-                "If the user refers to something they are looking at in the "
-                "interface, check the UI state "
-                "to understand their context. If a question is unclear or you "
-                "need to know their preference, ask a clarifying question "
-                "rather than assuming. "
-                "Whenever the user wants to find or search for documents, "
-                "call suggest_queries to generate a precise query string, "
-                "then apply it — either via set_search_query to update the "
-                "search view, or via execute_query in deep search mode. "
-                "When a question requires deep understanding across many "
-                "documents — such as cross-referencing, comparing findings, or "
-                "building a comprehensive picture from multiple sources — "
-                "request the 'research_mode' capability before attempting to "
-                "answer. Tasks like summarising a single document do not "
-                "require research mode. "
-                "You may use Markdown in your responses: wrap code or "
-                "structured text in ```triple backticks```, "
-                "use **bold** for emphasis, bullet lists for enumerations, "
-                "and headers sparingly. "
-                "Prefer plain prose for short answers."
-            ),
+            instructions=_build_instructions,
             model_settings=self._model_settings,
-            capabilities=tool_service.capabilities,
         )
 
     @staticmethod
     def _build_model_profile() -> OpenAIModelProfile:
         profile = OpenAIModelProfile()
         if settings.llm.agent.merge_system_messages:
+            # Backends that reject multiple leading system messages (vLLM/SGLang
+            # serving Qwen) also reject system messages mid-conversation — e.g.
+            # the tool-availability announcement injected after load_capability.
             profile["openai_chat_supports_multiple_system_messages"] = False
+            profile["supports_inline_system_prompts"] = False
         return profile
 
     @staticmethod
@@ -94,6 +89,7 @@ class AgentService:
             agent=self._agent,
             deps=AgentDeps(
                 context=context,
-                active_capabilities=set(context.active_capabilities),
+                active_mode=context.active_mode,
             ),
+            capabilities=self._tool_service.capabilities_for_mode(context.active_mode),
         )

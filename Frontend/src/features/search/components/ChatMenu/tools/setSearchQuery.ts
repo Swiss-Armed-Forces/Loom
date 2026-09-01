@@ -1,9 +1,15 @@
+import { getFilesCount } from "@app/api";
+import { CapabilityId } from "@app/api/generated";
 import { updateQuery } from "@app/slices/searchSlice";
 import type { AppDispatch } from "@app/store";
 import { isSortDirection } from "@features/common/utils/model";
 
-import type { StateAccessor } from "./types";
-import type { PassiveFrontendTool } from "./types";
+import {
+    toolError,
+    toolSuccess,
+    type PassiveFrontendTool,
+    type StateAccessor,
+} from "./types";
 
 export const createSetSearchQueryTool = (
     _getState: StateAccessor,
@@ -12,11 +18,11 @@ export const createSetSearchQueryTool = (
     interactive: false,
     definition: {
         name: "set_search_query",
+        capabilities: [CapabilityId.UiInteraction],
         description:
-            "Update the active search query in the UI. The results panel will " +
-            "immediately refresh to show matching documents. Optionally set sort " +
-            "field and direction. Use this when the user asks you to search for " +
-            "something or filter the document list.",
+            "Change which files are displayed in the results list by setting " +
+            "a search query. This is the primary way to show, filter, or narrow " +
+            "down files for the user. Optionally set sort field and direction.",
         parameters: {
             type: "object",
             properties: {
@@ -39,10 +45,32 @@ export const createSetSearchQueryTool = (
         },
     },
     handler: async (args) => {
+        const query = String(args.query ?? "");
+        if (!query) return toolError("query is required");
+
+        try {
+            const { totalFiles } = await getFilesCount({
+                query,
+                id: null,
+                keepAlive: null,
+            });
+            if (totalFiles === 0) {
+                return toolError(
+                    `The search query '${query}' returned no results. ` +
+                        "Use suggest_queries to generate a query that matches documents.",
+                );
+            }
+        } catch {
+            return toolError(
+                `The search query '${query}' has invalid syntax. ` +
+                    "Use suggest_queries to generate a valid query string.",
+            );
+        }
+
         const sortDirectionRaw = String(args.sort_direction ?? "");
         dispatch(
             updateQuery({
-                query: String(args.query ?? ""),
+                query,
                 sortField: args.sort_field
                     ? String(args.sort_field)
                     : undefined,
@@ -51,9 +79,6 @@ export const createSetSearchQueryTool = (
                     : undefined,
             }),
         );
-        return JSON.stringify({
-            success: true,
-            message: "Search query updated.",
-        });
+        return toolSuccess({ message: "Search query updated." });
     },
 });

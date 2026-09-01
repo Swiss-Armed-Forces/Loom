@@ -1,7 +1,7 @@
 from datetime import datetime
 from uuid import UUID, uuid4
 
-from common.ai_context.ai_context_repository import AiQuestion, CapabilityId
+from common.ai_context.ai_context_repository import AiQuestion, CapabilityId, ModeId
 from common.dependencies import get_root_task_information_repository
 from common.task_object.root_task_information_repository import RootTaskInformation
 from fastapi import APIRouter, Depends, Request
@@ -10,9 +10,10 @@ from pydantic import BaseModel
 from pydantic_ai.ui import SSE_CONTENT_TYPE
 from pydantic_ai.ui.ag_ui import AGUIAdapter
 
-from api.dependencies import get_agent_service, get_ai_service
+from api.dependencies import get_agent_service, get_ai_service, get_tool_service
 from api.services.agent_service import AgentService
 from api.services.ai_service import AiService
+from api.services.tool_service import ToolService
 
 router = APIRouter()
 
@@ -20,6 +21,7 @@ _MAX_PAGE_SIZE = 100
 
 default_ai_service = Depends(get_ai_service)
 default_agent_service = Depends(get_agent_service)
+default_tool_service = Depends(get_tool_service)
 
 
 class ContextCreateResponse(BaseModel):
@@ -40,12 +42,17 @@ class ListContextsResponse(BaseModel):
 class ContextHistoryResponse(BaseModel):
     created_at: datetime
     questions: list[AiQuestion]
-    active_capabilities: list[CapabilityId]
+    active_mode: ModeId
 
 
-class CapabilityUpdate(BaseModel):
-    capability: CapabilityId
-    active: bool
+class ModeUpdate(BaseModel):
+    mode: ModeId
+
+
+@router.get("/capabilities")
+def list_capabilities() -> list[CapabilityId]:
+    """Return all available deferred capability IDs."""
+    return list(CapabilityId)
 
 
 @router.get("")
@@ -78,18 +85,18 @@ def get_context_history(
     return ContextHistoryResponse(
         created_at=context.created_at,
         questions=questions,
-        active_capabilities=context.active_capabilities,
+        active_mode=context.active_mode,
     )
 
 
-@router.patch("/{context_id}/capabilities")
-def update_capabilities(
+@router.patch("/{context_id}/modes")
+def update_modes(
     context_id: UUID,
-    update: CapabilityUpdate,
+    update: ModeUpdate,
     ai_service: AiService = default_ai_service,
 ) -> None:
-    """Enable or disable a capability for an AI context."""
-    ai_service.update_capabilities(context_id, update.capability, update.active)
+    """Set or clear the active mode for an AI context."""
+    ai_service.set_mode(context_id, update.mode)
 
 
 @router.delete("/{context_id}")
@@ -115,17 +122,27 @@ async def run_agent(
     request: Request,
     ai_service: AiService = default_ai_service,
     agent_service: AgentService = default_agent_service,
+    tool_service: ToolService = default_tool_service,
 ) -> StreamingResponse:
     context = ai_service.get_context(context_id)
     accept = request.headers.get("accept", SSE_CONTENT_TYPE)
     run_input = AGUIAdapter.build_run_input(await request.body())
 
     prepared = agent_service.build_agent(context)
+    routed = tool_service.route_frontend_tools(run_input.tools, prepared.capabilities)
+    run_input.tools = routed.always_on
+
     root_task_id = uuid4()
     get_root_task_information_repository().save(
         RootTaskInformation(root_task_id=root_task_id, object_id=context.id_)
     )
 
     adapter = AGUIAdapter(agent=prepared.agent, run_input=run_input, accept=accept)
-    stream = ai_service.run_agent_stream(context, root_task_id, adapter, prepared.deps)
+    stream = ai_service.run_agent_stream(
+        context,
+        root_task_id,
+        adapter,
+        prepared.deps,
+        capabilities=routed.capabilities,
+    )
     return StreamingResponse(adapter.encode_stream(stream), media_type=accept)

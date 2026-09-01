@@ -1,7 +1,13 @@
+import { CapabilityId } from "@app/api/generated";
 import { addCustomQuery, initCustomQuery } from "@app/slices/searchSlice";
 import type { AppDispatch } from "@app/store";
 
-import type { PassiveFrontendTool, StateAccessor } from "./types";
+import {
+    toolError,
+    toolSuccess,
+    type PassiveFrontendTool,
+    type StateAccessor,
+} from "./types";
 
 export const createSaveCustomQueryTool = (
     getState: StateAccessor,
@@ -10,6 +16,7 @@ export const createSaveCustomQueryTool = (
     interactive: false,
     definition: {
         name: "save_custom_query",
+        capabilities: [CapabilityId.UiInteraction],
         description:
             "Save the current search query as a named shortcut in the left sidebar so " +
             "the user can quickly rerun it later. Requires an active search query. " +
@@ -35,16 +42,16 @@ export const createSaveCustomQueryTool = (
         const state = getState();
         const query = state.search.query;
         if (!query) {
-            return JSON.stringify({ error: "No active search query to save." });
+            return toolError("No active search query to save.");
         }
         const name = String(args.name ?? "").trim();
-        if (!name) return JSON.stringify({ error: "name required" });
+        if (!name) return toolError("name required");
         const icon = String(args.icon ?? "Tune");
         dispatch(
             addCustomQuery(
                 initCustomQuery(query, state.search.totalFiles, name, icon),
             ),
         );
-        return JSON.stringify({ success: true, name });
+        return toolSuccess({ name });
     },
 });

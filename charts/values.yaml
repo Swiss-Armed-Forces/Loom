@@ -278,6 +278,8 @@ _llmDefaults: &llm-defaults
   extra_headers: null
   extra_body: null
   timeout: null
+  max_tokens: null
+  max_sentences: null
 
 llm:
   embedding:
@@ -291,7 +293,6 @@ llm:
 
   tool:
     <<: *llm-defaults
-    max_tokens: null
 
   agent:
     <<: *llm-defaults
@@ -302,20 +303,14 @@ llm:
     text_chunk_size: null
     text_chunk_overlap: null
     system_prompt: null
-    max_tokens: null
-    max_sentences: null
 
   summarization:
     <<: *llm-defaults
     system_prompt: null
-    max_tokens: null
-    max_sentences: null
 
   summarization_refine:
     <<: *llm-defaults
     system_prompt: null
-    max_tokens: null
-    max_sentences: null
 
   hyde:
     <<: *llm-defaults
@@ -331,8 +326,6 @@ llm:
   vision:
     <<: *llm-defaults
     system_prompt: null
-    max_tokens: null
-    max_sentences: null
 
   translation:
     <<: *llm-defaults

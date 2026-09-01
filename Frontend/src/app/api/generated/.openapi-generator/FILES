@@ -35,7 +35,6 @@ models/Attachment.ts
 models/AvailableStat.ts
 models/CacheStatisticsEntryModel.ts
 models/CapabilityId.ts
-models/CapabilityUpdate.ts
 models/CompleteEstimateResult.ts
 models/ContextCreateResponse.ts
 models/ContextHistoryResponse.ts
@@ -78,6 +77,8 @@ models/MessageSubscribe.ts
 models/MessageSubscribeConfirmation.ts
 models/MessageUnsubscribe.ts
 models/MessageUnsubscribeConfirmation.ts
+models/ModeId.ts
+models/ModeUpdate.ts
 models/PreviewField.ts
 models/PreviewFieldData.ts
 models/PubSubMessage.ts

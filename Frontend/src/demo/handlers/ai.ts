@@ -2,7 +2,7 @@ import { http, HttpResponse } from "msw";
 
 import { getDocuments, searchDocuments } from "../repository";
 
-import { empty, error, json, parseBody, stringValue } from "./shared";
+import { empty, error, json, parseBody } from "./shared";
 
 interface DemoQuestion {
     question: string;
@@ -21,7 +21,7 @@ interface DemoConversation {
     contextId: string;
     createdAt: string;
     questions: DemoQuestion[];
-    activeCapabilities: Set<string>;
+    activeMode: string;
 }
 
 const conversations = new Map<string, DemoConversation>();
@@ -97,7 +97,7 @@ const createContextHandler = http.post(/\/api\/v1\/ai$/, () => {
         contextId,
         createdAt: new Date().toISOString(),
         questions: [],
-        activeCapabilities: new Set(),
+        activeMode: "work",
     });
     return json({ context_id: contextId });
 });
@@ -126,7 +126,7 @@ const historyHandler = http.get(
                 citations: q.citations,
                 activity: q.activity,
             })),
-            active_capabilities: [...conv.activeCapabilities],
+            active_mode: conv.activeMode,
         });
     },
 );
@@ -140,23 +140,18 @@ const deleteContextHandler = http.delete(
     },
 );
 
-const capabilitiesHandler = http.patch(
-    /\/api\/v1\/ai\/([^/]+)\/capabilities$/,
+const modesHandler = http.patch(
+    /\/api\/v1\/ai\/([^/]+)\/modes$/,
     async ({ request }) => {
         const contextId = extractContextId(request.url);
         const conv = conversations.get(contextId);
         if (!conv) return error("AI context not found", 404);
         const parsed = await parseBody(request);
         if (!parsed.ok) return parsed.response;
-        const capability = stringValue(parsed.value.capability);
-        const active = parsed.value.active;
-        if (!capability || typeof active !== "boolean")
-            return error("capability and active are required", 422);
-        if (active) {
-            conv.activeCapabilities.add(capability);
-        } else {
-            conv.activeCapabilities.delete(capability);
-        }
+        const mode = parsed.value.mode;
+        if (typeof mode !== "string")
+            return error("mode must be a string", 422);
+        conv.activeMode = mode;
         return json({ ok: true });
     },
 );
@@ -186,7 +181,7 @@ const runHandler = http.post(
         const source = findSource(question);
         const answer = buildAnswer(source);
         const tokens = answer.match(/\S+\s*/g) ?? [answer];
-        const deepSearch = conv.activeCapabilities.has("research_mode");
+        const deepSearch = conv.activeMode === "research";
 
         const citation = source
             ? { file_id: source.id, text: source.summary }
@@ -461,6 +456,6 @@ export const aiHandlers = [
     listContextsHandler,
     historyHandler,
     deleteContextHandler,
-    capabilitiesHandler,
+    modesHandler,
     runHandler,
 ];
