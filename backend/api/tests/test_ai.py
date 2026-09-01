@@ -30,7 +30,7 @@ def test_run_agent_streams_sse(client: TestClient):
     ai_context.id_ = context_id
     get_ai_service().get_context.return_value = ai_context
 
-    async def mock_stream(_ctx, _root_id, _adapter, _deps):  # type: ignore[override]
+    async def mock_stream(_ctx, _root_id, _adapter, _deps, **_kwargs):  # type: ignore[override]
         yield TextMessageContentEvent(message_id="m1", delta="Hello world")
         yield RunFinishedEvent(thread_id="t1", run_id="r1")
 

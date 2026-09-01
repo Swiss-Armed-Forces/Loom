@@ -1,9 +1,15 @@
 import { updateFile } from "@app/api";
+import { CapabilityId } from "@app/api/generated";
 import type { UpdateFileRequest } from "@app/api/generated/models/UpdateFileRequest";
 import { setFilePreview } from "@app/slices/searchSlice";
 import type { AppDispatch } from "@app/store";
 
-import type { PassiveFrontendTool, StateAccessor } from "./types";
+import {
+    toolError,
+    toolSuccess,
+    type PassiveFrontendTool,
+    type StateAccessor,
+} from "./types";
 
 export const createUpdateFileFlagsTool = (
     getState: StateAccessor,
@@ -12,6 +18,7 @@ export const createUpdateFileFlagsTool = (
     interactive: false,
     definition: {
         name: "update_file_flags",
+        capabilities: [CapabilityId.UiInteraction],
         description:
             "Update one or more boolean flags on a file: seen, flagged, or hidden. " +
             "At least one flag must be provided. Use this when the user asks you to " +
@@ -42,16 +49,14 @@ export const createUpdateFileFlagsTool = (
     },
     handler: async (args) => {
         const fileId = String(args.file_id ?? "");
-        if (!fileId) return JSON.stringify({ error: "file_id required" });
+        if (!fileId) return toolError("file_id required");
 
         const request: UpdateFileRequest = {};
         if (typeof args.seen === "boolean") request.seen = args.seen;
         if (typeof args.flagged === "boolean") request.flagged = args.flagged;
         if (typeof args.hidden === "boolean") request.hidden = args.hidden;
         if (Object.keys(request).length === 0) {
-            return JSON.stringify({
-                error: "At least one of seen/flagged/hidden required.",
-            });
+            return toolError("At least one of seen/flagged/hidden required.");
         }
 
         try {
@@ -60,9 +65,9 @@ export const createUpdateFileFlagsTool = (
             if (preview) {
                 dispatch(setFilePreview({ ...preview, ...request }));
             }
-            return JSON.stringify({ success: true });
+            return toolSuccess();
         } catch (e: unknown) {
-            return JSON.stringify({ error: String(e) });
+            return toolError(String(e));
         }
     },
 });

@@ -1,8 +1,10 @@
+import { CapabilityId } from "@app/api/generated";
 import { ARCHIVE_STATE_DOCS } from "@app/slices/archiveSlice";
 import { COMMON_STATE_DOCS } from "@app/slices/commonSlice";
 import { SEARCH_STATE_DOCS } from "@app/slices/searchSlice";
 
 import type { PassiveFrontendTool } from "./types";
+import { toolSuccess } from "./types";
 
 const STATE_SCHEMA = {
     search: SEARCH_STATE_DOCS,
@@ -14,6 +16,7 @@ export const createDiscoverStateTool = (): PassiveFrontendTool => ({
     interactive: false,
     definition: {
         name: "discover_state",
+        capabilities: [CapabilityId.UiInteraction],
         description:
             "Get a schema of the UI state of the user you are talking to. " +
             "Returns slice names, field names, and type annotations describing " +
@@ -27,5 +30,5 @@ export const createDiscoverStateTool = (): PassiveFrontendTool => ({
             properties: {},
         },
     },
-    handler: async () => JSON.stringify(STATE_SCHEMA),
+    handler: async () => toolSuccess({ schema: STATE_SCHEMA }),
 });

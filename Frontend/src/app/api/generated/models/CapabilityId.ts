@@ -18,7 +18,11 @@
  * @export
  */
 export const CapabilityId = {
-    ResearchMode: "research_mode",
+    SearchAndBrowse: "search_and_browse",
+    FileAccess: "file_access",
+    AiProcessing: "ai_processing",
+    UiInteraction: "ui_interaction",
+    Research: "research",
 } as const;
 export type CapabilityId = (typeof CapabilityId)[keyof typeof CapabilityId];
 

@@ -36,6 +36,7 @@ export interface ChatWindowProps {
     isInterrupted: boolean;
     pendingQuestion?: { question: string; options: string[] } | null;
     onQuestionAnswer?: (answer: string) => void;
+    scrollContainerRef?: React.RefObject<HTMLDivElement | null>;
 }
 
 export const ALL_SUGGESTED_QUESTIONS = [

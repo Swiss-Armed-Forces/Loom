@@ -1,5 +1,5 @@
 import { Box, Chip, Divider, Tooltip, Typography } from "@mui/material";
-import { useMemo } from "react";
+import { useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
 
 import { ChatWindow } from "./ChatWindow";
@@ -25,13 +25,13 @@ export const ChatbotInner = ({
         reasoningPhase,
         reasoningText,
         pendingQuestion,
-        pendingCapabilityRequest,
-        activeCapabilities,
+        pendingModeRequest,
+        activeMode,
         turnActivity,
         handleSendMessage,
         handleQuestionAnswer,
-        handleCapabilityAnswer,
-        toggleCapability,
+        handleModeAnswer,
+        toggleMode,
         abortRun,
     } = useChatbotAgent(contextId, onRunComplete);
 
@@ -70,9 +70,12 @@ export const ChatbotInner = ({
         ],
     );
 
+    const scrollContainerRef = useRef<HTMLDivElement>(null);
+
     return (
         <>
             <Box
+                ref={scrollContainerRef}
                 sx={{ flexGrow: 1, overflowY: "auto", p: 1 }}
                 data-tour="chat-messages"
             >
@@ -82,6 +85,7 @@ export const ChatbotInner = ({
                     query={null}
                     onSuggestedQuestion={handleSendMessage}
                     isInterrupted={isInterrupted}
+                    scrollContainerRef={scrollContainerRef}
                     pendingQuestion={
                         pendingQuestion
                             ? {
@@ -93,7 +97,7 @@ export const ChatbotInner = ({
                     onQuestionAnswer={handleQuestionAnswer}
                 />
             </Box>
-            {pendingCapabilityRequest && (
+            {pendingModeRequest && (
                 <Box
                     sx={{
                         px: 1.5,
@@ -104,10 +108,10 @@ export const ChatbotInner = ({
                     }}
                 >
                     <Typography variant="caption" color="text.secondary">
-                        Enable Research Mode?
+                        Switch to {pendingModeRequest.mode} mode?
                     </Typography>
                     <Typography variant="body2" sx={{ mb: 1 }}>
-                        {pendingCapabilityRequest.reason}
+                        {pendingModeRequest.reason}
                     </Typography>
                     <Box sx={{ display: "flex", gap: 1 }}>
                         <Chip
@@ -115,13 +119,13 @@ export const ChatbotInner = ({
                             size="small"
                             color="primary"
                             clickable
-                            onClick={() => handleCapabilityAnswer(true)}
+                            onClick={() => handleModeAnswer(true)}
                         />
                         <Chip
                             label="Deny"
                             size="small"
                             clickable
-                            onClick={() => handleCapabilityAnswer(false)}
+                            onClick={() => handleModeAnswer(false)}
                         />
                     </Box>
                 </Box>
@@ -141,21 +145,42 @@ export const ChatbotInner = ({
                     color="text.secondary"
                     sx={{ whiteSpace: "nowrap" }}
                 >
-                    Capabilities
+                    Mode
                 </Typography>
-                <Tooltip title={t("chatbot.deepSearchTooltip")}>
+                <Tooltip title={t("chatbot.modeTooltip_chat")} placement="top">
+                    <Chip
+                        label="Chat"
+                        size="small"
+                        color="primary"
+                        variant={activeMode === "chat" ? "filled" : "outlined"}
+                        clickable
+                        onClick={() => toggleMode("chat")}
+                    />
+                </Tooltip>
+                <Tooltip title={t("chatbot.modeTooltip_work")} placement="top">
+                    <Chip
+                        label="Work"
+                        size="small"
+                        color="primary"
+                        variant={activeMode === "work" ? "filled" : "outlined"}
+                        clickable
+                        onClick={() => toggleMode("work")}
+                    />
+                </Tooltip>
+                <Tooltip
+                    title={t("chatbot.modeTooltip_research")}
+                    placement="top"
+                >
                     <Chip
                         data-tour="chat-deep-search"
-                        label="Research Mode"
+                        label="Research"
                         size="small"
                         color="primary"
                         variant={
-                            activeCapabilities.has("research_mode")
-                                ? "filled"
-                                : "outlined"
+                            activeMode === "research" ? "filled" : "outlined"
                         }
                         clickable
-                        onClick={() => toggleCapability("research_mode")}
+                        onClick={() => toggleMode("research")}
                     />
                 </Tooltip>
             </Box>
@@ -165,7 +190,7 @@ export const ChatbotInner = ({
                     disabled={
                         isLoading ||
                         pendingQuestion !== null ||
-                        pendingCapabilityRequest !== null
+                        pendingModeRequest !== null
                     }
                     onSendMessage={handleSendMessage}
                     onStop={abortRun}

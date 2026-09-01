@@ -2,7 +2,7 @@
 
 import json
 import logging
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Sequence
 from dataclasses import dataclass, field
 from uuid import UUID
 
@@ -14,11 +14,13 @@ from ag_ui.core import (
     ReasoningMessage,
     ReasoningMessageContentEvent,
     ReasoningStartEvent,
+    RunErrorEvent,
     RunFinishedEvent,
     TextMessageContentEvent,
     TextMessageEndEvent,
     TextMessageStartEvent,
     ToolCallArgsEvent,
+    ToolCallEndEvent,
     ToolCallResultEvent,
     ToolCallStartEvent,
     ToolMessage,
@@ -30,12 +32,13 @@ from common.ai_context.ai_context_repository import (
     AiContextRepository,
     AiQuestion,
     AiQuestionCitation,
-    CapabilityId,
+    ModeId,
     ReasoningActivityEntry,
     ToolCallActivityEntry,
 )
 from common.ai_context.tool_models import ToolSource
 from common.services.task_scheduling_service import TaskSchedulingService
+from pydantic_ai.capabilities import Capability
 from pydantic_ai.ui.ag_ui import AGUIAdapter
 
 from api.services.tool_service import AgentDeps
@@ -63,14 +66,10 @@ class _ActivityTracker:
     _pending_names: dict[str, str] = field(default_factory=dict)
     _pending_args: dict[str, str] = field(default_factory=dict)
     _reasoning_buffer: str = ""
+    answer_text: str = ""
     activity: list[ReasoningActivityEntry | ToolCallActivityEntry] = field(
         default_factory=list
     )
-
-    @property
-    def has_pending_tool_calls(self) -> bool:
-        """True when tool calls started but never received a result (frontend tools)."""
-        return bool(self._pending_names)
 
     def track(self, event: BaseEvent) -> None:
         match event:
@@ -105,39 +104,6 @@ class _ActivityTracker:
                         output=content,
                     )
                 )
-
-
-@dataclass
-class _TextBuffer:
-    """Accumulates the last text segment so only that segment is emitted.
-
-    Storing two sentinel events plus the text string is cheaper than keeping one event
-    object per streamed token.
-    """
-
-    start: TextMessageStartEvent | None = None
-    end: TextMessageEndEvent | None = None
-    text: str = ""
-
-    def new_segment(self, start_event: TextMessageStartEvent) -> None:
-        self.start = start_event
-        self.end = None
-        self.text = ""
-
-    def final_events(self) -> list[BaseEvent]:
-        """Compact [start, content?, end] list for the buffered segment."""
-        if self.start is None:
-            return []
-        result: list[BaseEvent] = [self.start]
-        if self.text:
-            result.append(
-                TextMessageContentEvent(
-                    message_id=self.start.message_id, delta=self.text
-                )
-            )
-        if self.end is not None:
-            result.append(self.end)
-        return result
 
 
 def _collect_citations(source_collector: list[ToolSource]) -> list[AiQuestionCitation]:
@@ -197,6 +163,106 @@ def _extract_activity_from_history(
     return result
 
 
+def _extract_ask_user_question(tracker: _ActivityTracker) -> str:
+    """Extract the question text from a pending ask_user tool call."""
+    # pylint: disable=protected-access
+    pending_names = tracker._pending_names
+    pending_args = tracker._pending_args
+    # pylint: enable=protected-access
+    for tool_call_id, name in pending_names.items():
+        if name != "ask_user":
+            continue
+        args_str = pending_args.get(tool_call_id, "")
+        try:
+            args = json.loads(args_str) if args_str else {}
+        except json.JSONDecodeError:
+            return ""
+        return str(args.get("question", ""))
+    return ""
+
+
+async def _sanitise_agui_event_stream(
+    stream: AsyncIterator[BaseEvent],
+) -> AsyncIterator[BaseEvent]:
+    """Ensure the AG-UI event stream satisfies the ``@ag-ui/client`` ``verifyEvents``
+    state machine.
+
+    Works around a known pydantic-ai bug (#3108) where the adapter can
+    emit TEXT_MESSAGE_CONTENT after TEXT_MESSAGE_END without a new
+    TEXT_MESSAGE_START.  This happens when a model interleaves text and
+    thinking parts in a single response (text → thinking → text): the
+    ``follows_text`` / ``followed_by_text`` flags on PartStartEvent /
+    PartEndEvent can desynchronise, causing the adapter to skip the
+    opening START event for the second text segment.
+
+    The ``verifyEvents`` layer enforces strict pairing rules and rejects
+    the entire run on any violation.  This wrapper patches the stream:
+
+    - Injects a synthetic TEXT_MESSAGE_START before an orphaned
+      TEXT_MESSAGE_CONTENT.
+    - Before RUN_FINISHED, closes any text messages or tool calls
+      that are still open.
+    - Suppresses all events after a RUN_ERROR (the verify layer
+      rejects any event once the error flag is set).
+
+    A warning is logged for every synthetic event so the trigger can
+    be identified in pod logs.
+
+    Upstream references:
+    - https://github.com/pydantic/pydantic-ai/issues/3108
+      (reported, closed with a warning only — no event-ordering fix merged)
+    - https://github.com/pydantic/pydantic-ai/pull/3206
+      (attempted fix, closed without merging)
+    """
+    active_text_ids: set[str] = set()
+    active_tool_call_ids: set[str] = set()
+    errored = False
+
+    async for event in stream:
+        if errored:
+            # verifyEvents rejects everything after RUN_ERROR — drop silently.
+            continue
+
+        match event:
+            case TextMessageStartEvent(message_id=mid):
+                active_text_ids.add(mid)
+            case TextMessageContentEvent(message_id=mid) if mid not in active_text_ids:
+                logger.warning(
+                    "Orphaned TEXT_MESSAGE_CONTENT for message '%s' — "
+                    "injecting synthetic TEXT_MESSAGE_START",
+                    mid,
+                )
+                active_text_ids.add(mid)
+                yield TextMessageStartEvent(message_id=mid)
+            case TextMessageEndEvent(message_id=mid):
+                active_text_ids.discard(mid)
+            case ToolCallStartEvent(tool_call_id=tcid):
+                active_tool_call_ids.add(tcid)
+            case ToolCallEndEvent(tool_call_id=tcid):
+                active_tool_call_ids.discard(tcid)
+            case RunErrorEvent():
+                errored = True
+            case RunFinishedEvent():
+                for orphan_id in list(active_text_ids):
+                    logger.warning(
+                        "Unclosed text message '%s' at RUN_FINISHED — "
+                        "injecting synthetic TEXT_MESSAGE_END",
+                        orphan_id,
+                    )
+                    yield TextMessageEndEvent(message_id=orphan_id)
+                active_text_ids.clear()
+                for tcid in list(active_tool_call_ids):
+                    logger.warning(
+                        "Unclosed tool call '%s' at RUN_FINISHED — "
+                        "injecting synthetic TOOL_CALL_END",
+                        tcid,
+                    )
+                    yield ToolCallEndEvent(tool_call_id=tcid)
+                active_tool_call_ids.clear()
+
+        yield event
+
+
 class AiService:
     def __init__(
         self,
@@ -223,16 +289,9 @@ class AiService:
             raise AiContextNotFoundException(f"Context not found: {context_id}")
         return context
 
-    def update_capabilities(
-        self, context_id: UUID, capability: CapabilityId, active: bool
-    ) -> None:
+    def set_mode(self, context_id: UUID, mode: ModeId) -> None:
         context = self.get_context(context_id)
-        capabilities = set(context.active_capabilities)
-        if active:
-            capabilities.add(capability)
-        else:
-            capabilities.discard(capability)
-        context.active_capabilities = list(capabilities)
+        context.active_mode = mode
         self._ai_context_repository.save(context)
 
     async def run_agent_stream(
@@ -241,6 +300,7 @@ class AiService:
         root_task_id: UUID,
         adapter: AGUIAdapter[AgentDeps],
         deps: AgentDeps,
+        capabilities: Sequence[Capability[AgentDeps]] | None = None,
     ) -> AsyncIterator[BaseEvent]:
         """Run the agent and yield AG-UI events, then persist the question."""
         question = _extract_question(adapter.run_input.messages)
@@ -249,53 +309,51 @@ class AiService:
         try:
             run_finished: RunFinishedEvent | None = None
             tracker = _ActivityTracker()
-            text_buf = _TextBuffer()
 
-            async for event in adapter.run_stream(
-                deps=deps,
+            async for event in _sanitise_agui_event_stream(
+                adapter.run_stream(deps=deps, capabilities=capabilities)
             ):
                 tracker.track(event)
                 match event:
-                    case TextMessageStartEvent():
-                        text_buf.new_segment(event)
                     case TextMessageContentEvent(delta=delta):
-                        text_buf.text += delta
-                    case TextMessageEndEvent():
-                        text_buf.end = event
+                        tracker.answer_text += delta
+                        yield event
                     case RunFinishedEvent():
                         run_finished = event
                     case _:
                         yield event
-
-            # Only emit text events for the final run — intermediate runs
-            # (with pending frontend tool calls) stay silent so the frontend
-            # never creates a bubble that would need to be removed.
-            if not tracker.has_pending_tool_calls:
-                for text_event in text_buf.final_events():
-                    yield text_event
 
             activity = (
                 _extract_activity_from_history(adapter.run_input.messages)
                 + tracker.activity
             )
 
-            citations = _collect_citations(deps.source_collector)
-            for citation in citations:
-                yield CustomEvent(
-                    name="citation",
-                    value={"file_id": str(citation.file_id), "text": citation.text},
-                )
-
+            # Skip citations when the run errored — the sanitiser already
+            # yielded RUN_ERROR and suppressed further events, but citations
+            # are appended here outside the sanitised stream.  The client's
+            # verifyEvents would reject them after RUN_ERROR.
+            citations: list[AiQuestionCitation] = []
             if run_finished is not None:
+                citations = _collect_citations(deps.source_collector)
+                for citation in citations:
+                    yield CustomEvent(
+                        name="citation",
+                        value={
+                            "file_id": str(citation.file_id),
+                            "text": citation.text,
+                        },
+                    )
                 yield run_finished
 
-            if text_buf.text and not tracker.has_pending_tool_calls:
+            if answer_text := (
+                tracker.answer_text or _extract_ask_user_question(tracker)
+            ):
                 self._task_scheduling_service.dispatch_persist_question(
                     context_id=context.id_,
                     root_task_id=str(root_task_id),
                     question=AiQuestion(
                         question=question,
-                        answer=text_buf.text,
+                        answer=answer_text,
                         citations=citations,
                         activity=activity,
                     ),

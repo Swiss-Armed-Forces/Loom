@@ -1,10 +1,11 @@
+import { CapabilityId } from "@app/api/generated";
 import {
     bumpHighlightScroll,
     setHighlightedFileId,
 } from "@app/slices/searchSlice";
 import type { AppDispatch } from "@app/store";
 
-import type { PassiveFrontendTool } from "./types";
+import { toolError, toolSuccess, type PassiveFrontendTool } from "./types";
 
 export const createHighlightFileTool = (
     dispatch: AppDispatch,
@@ -12,6 +13,7 @@ export const createHighlightFileTool = (
     interactive: false,
     definition: {
         name: "highlight_file",
+        capabilities: [CapabilityId.UiInteraction],
         description:
             "Scroll to and visually highlight a file card in the results list without " +
             "opening it in the detail panel. Use this to point out a specific document " +
@@ -29,9 +31,9 @@ export const createHighlightFileTool = (
     },
     handler: async (args) => {
         const fileId = String(args.file_id ?? "");
-        if (!fileId) return JSON.stringify({ error: "file_id required" });
+        if (!fileId) return toolError("file_id required");
         dispatch(setHighlightedFileId(fileId));
         dispatch(bumpHighlightScroll());
-        return JSON.stringify({ success: true });
+        return toolSuccess();
     },
 });

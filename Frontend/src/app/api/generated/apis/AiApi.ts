@@ -15,10 +15,10 @@
 
 import * as runtime from "../runtime";
 import {
-    type CapabilityUpdate,
-    CapabilityUpdateFromJSON,
-    CapabilityUpdateToJSON,
-} from "../models/CapabilityUpdate";
+    type CapabilityId,
+    CapabilityIdFromJSON,
+    CapabilityIdToJSON,
+} from "../models/CapabilityId";
 import {
     type ContextCreateResponse,
     ContextCreateResponseFromJSON,
@@ -39,6 +39,11 @@ import {
     ListContextsResponseFromJSON,
     ListContextsResponseToJSON,
 } from "../models/ListContextsResponse";
+import {
+    type ModeUpdate,
+    ModeUpdateFromJSON,
+    ModeUpdateToJSON,
+} from "../models/ModeUpdate";
 
 export interface DeleteContextV1AiContextIdDeleteRequest {
     contextId: string;
@@ -54,9 +59,9 @@ export interface RunAgentV1AiContextIdRunPostRequest {
     contextId: string;
 }
 
-export interface UpdateCapabilitiesV1AiContextIdCapabilitiesPatchRequest {
+export interface UpdateModesV1AiContextIdModesPatchRequest {
     contextId: string;
-    capabilityUpdate: CapabilityUpdate;
+    modeUpdate: ModeUpdate;
 }
 
 /**
@@ -244,6 +249,52 @@ export class AiApi extends runtime.BaseAPI {
     }
 
     /**
+     * Creates request options for listCapabilitiesV1AiCapabilitiesGet without sending the request
+     */
+    async listCapabilitiesV1AiCapabilitiesGetRequestOpts(): Promise<runtime.RequestOpts> {
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        let urlPath = `/v1/ai/capabilities`;
+
+        return {
+            path: urlPath,
+            method: "GET",
+            headers: headerParameters,
+            query: queryParameters,
+        };
+    }
+
+    /**
+     * Return all available deferred capability IDs.
+     * List Capabilities
+     */
+    async listCapabilitiesV1AiCapabilitiesGetRaw(
+        initOverrides?: RequestInit | runtime.InitOverrideFunction,
+    ): Promise<runtime.ApiResponse<Array<CapabilityId>>> {
+        const requestOptions =
+            await this.listCapabilitiesV1AiCapabilitiesGetRequestOpts();
+        const response = await this.request(requestOptions, initOverrides);
+
+        return new runtime.JSONApiResponse(response, (jsonValue) =>
+            jsonValue.map(CapabilityIdFromJSON),
+        );
+    }
+
+    /**
+     * Return all available deferred capability IDs.
+     * List Capabilities
+     */
+    async listCapabilitiesV1AiCapabilitiesGet(
+        initOverrides?: RequestInit | runtime.InitOverrideFunction,
+    ): Promise<Array<CapabilityId>> {
+        const response =
+            await this.listCapabilitiesV1AiCapabilitiesGetRaw(initOverrides);
+        return await response.value();
+    }
+
+    /**
      * Creates request options for listContextsV1AiGet without sending the request
      */
     async listContextsV1AiGetRequestOpts(): Promise<runtime.RequestOpts> {
@@ -351,22 +402,22 @@ export class AiApi extends runtime.BaseAPI {
     }
 
     /**
-     * Creates request options for updateCapabilitiesV1AiContextIdCapabilitiesPatch without sending the request
+     * Creates request options for updateModesV1AiContextIdModesPatch without sending the request
      */
-    async updateCapabilitiesV1AiContextIdCapabilitiesPatchRequestOpts(
-        requestParameters: UpdateCapabilitiesV1AiContextIdCapabilitiesPatchRequest,
+    async updateModesV1AiContextIdModesPatchRequestOpts(
+        requestParameters: UpdateModesV1AiContextIdModesPatchRequest,
     ): Promise<runtime.RequestOpts> {
         if (requestParameters["contextId"] == null) {
             throw new runtime.RequiredError(
                 "contextId",
-                'Required parameter "contextId" was null or undefined when calling updateCapabilitiesV1AiContextIdCapabilitiesPatch().',
+                'Required parameter "contextId" was null or undefined when calling updateModesV1AiContextIdModesPatch().',
             );
         }
 
-        if (requestParameters["capabilityUpdate"] == null) {
+        if (requestParameters["modeUpdate"] == null) {
             throw new runtime.RequiredError(
-                "capabilityUpdate",
-                'Required parameter "capabilityUpdate" was null or undefined when calling updateCapabilitiesV1AiContextIdCapabilitiesPatch().',
+                "modeUpdate",
+                'Required parameter "modeUpdate" was null or undefined when calling updateModesV1AiContextIdModesPatch().',
             );
         }
 
@@ -376,7 +427,7 @@ export class AiApi extends runtime.BaseAPI {
 
         headerParameters["Content-Type"] = "application/json";
 
-        let urlPath = `/v1/ai/{context_id}/capabilities`;
+        let urlPath = `/v1/ai/{context_id}/modes`;
         urlPath = urlPath.replace(
             "{context_id}",
             encodeURIComponent(String(requestParameters["contextId"])),
@@ -387,20 +438,20 @@ export class AiApi extends runtime.BaseAPI {
             method: "PATCH",
             headers: headerParameters,
             query: queryParameters,
-            body: CapabilityUpdateToJSON(requestParameters["capabilityUpdate"]),
+            body: ModeUpdateToJSON(requestParameters["modeUpdate"]),
         };
     }
 
     /**
-     * Enable or disable a capability for an AI context.
-     * Update Capabilities
+     * Set or clear the active mode for an AI context.
+     * Update Modes
      */
-    async updateCapabilitiesV1AiContextIdCapabilitiesPatchRaw(
-        requestParameters: UpdateCapabilitiesV1AiContextIdCapabilitiesPatchRequest,
+    async updateModesV1AiContextIdModesPatchRaw(
+        requestParameters: UpdateModesV1AiContextIdModesPatchRequest,
         initOverrides?: RequestInit | runtime.InitOverrideFunction,
     ): Promise<runtime.ApiResponse<any>> {
         const requestOptions =
-            await this.updateCapabilitiesV1AiContextIdCapabilitiesPatchRequestOpts(
+            await this.updateModesV1AiContextIdModesPatchRequestOpts(
                 requestParameters,
             );
         const response = await this.request(requestOptions, initOverrides);
@@ -413,18 +464,17 @@ export class AiApi extends runtime.BaseAPI {
     }
 
     /**
-     * Enable or disable a capability for an AI context.
-     * Update Capabilities
+     * Set or clear the active mode for an AI context.
+     * Update Modes
      */
-    async updateCapabilitiesV1AiContextIdCapabilitiesPatch(
-        requestParameters: UpdateCapabilitiesV1AiContextIdCapabilitiesPatchRequest,
+    async updateModesV1AiContextIdModesPatch(
+        requestParameters: UpdateModesV1AiContextIdModesPatchRequest,
         initOverrides?: RequestInit | runtime.InitOverrideFunction,
     ): Promise<any> {
-        const response =
-            await this.updateCapabilitiesV1AiContextIdCapabilitiesPatchRaw(
-                requestParameters,
-                initOverrides,
-            );
+        const response = await this.updateModesV1AiContextIdModesPatchRaw(
+            requestParameters,
+            initOverrides,
+        );
         return await response.value();
     }
 }

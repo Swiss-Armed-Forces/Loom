@@ -3,7 +3,7 @@ import type { AgentSubscriber, Tool } from "@ag-ui/client";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import { getContextHistory, updateAiContextCapabilities } from "@app/api";
+import { getContextHistory, setAiContextMode } from "@app/api";
 import { apiConfiguration } from "@app/api/apiConfiguration";
 import { store } from "@app/store";
 
@@ -32,17 +32,17 @@ export interface UseChatbotAgentResult {
         question: string;
         options: string[];
     } | null;
-    pendingCapabilityRequest: {
+    pendingModeRequest: {
         toolCallId: string;
-        capability: string;
+        mode: string;
         reason: string;
     } | null;
-    activeCapabilities: Set<string>;
+    activeMode: string;
     turnActivity: ActivityRecord[];
     handleSendMessage: (text: string) => Promise<void>;
     handleQuestionAnswer: (answer: string) => void;
-    handleCapabilityAnswer: (allow: boolean) => Promise<void>;
-    toggleCapability: (capability: string) => void;
+    handleModeAnswer: (allow: boolean) => Promise<void>;
+    toggleMode: (mode: string) => void;
     abortRun: () => void;
     contextId: string;
 }
@@ -71,13 +71,11 @@ export const useChatbotAgent = (
         question: string;
         options: string[];
     } | null>(null);
-    const [activeCapabilities, setActiveCapabilities] = useState<Set<string>>(
-        new Set(),
-    );
-    const activeCapabilitiesRef = useRef<Set<string>>(new Set());
-    const [pendingCapabilityRequest, setPendingCapabilityRequest] = useState<{
+    const [activeMode, setActiveMode] = useState<string>("work");
+    const activeModeRef = useRef<string>("work");
+    const [pendingModeRequest, setPendingModeRequest] = useState<{
         toolCallId: string;
-        capability: string;
+        mode: string;
         reason: string;
     } | null>(null);
     const agentRef = useRef<HttpAgent | null>(null);
@@ -94,11 +92,6 @@ export const useChatbotAgent = (
     const frontendToolDefsRef = useRef<Tool[]>(
         Object.values(frontendToolsRef.current).map((t) => t.definition),
     );
-    const deepSearchToolDefsRef = useRef<Tool[]>(
-        ["get_this_file", "get_these_files"]
-            .map((name) => frontendToolsRef.current[name]?.definition)
-            .filter((d): d is Tool => d !== undefined),
-    );
 
     const pendingFrontendToolsRef = useRef<
         {
@@ -107,24 +100,14 @@ export const useChatbotAgent = (
             args: Record<string, unknown>;
         }[]
     >([]);
-    const rerunningRef = useRef(false);
     const errorHandledRef = useRef(false);
 
-    const getToolDefs = () =>
-        activeCapabilitiesRef.current.has("research_mode")
-            ? deepSearchToolDefsRef.current
-            : frontendToolDefsRef.current;
+    const getToolDefs = () => frontendToolDefsRef.current;
 
     const appendError = useCallback((text: string) => {
         setChatMessages((prev) => [...prev, createErrorMessage(text)]);
         setIsLoading(false);
     }, []);
-
-    const handleRunError = useCallback(() => {
-        rerunningRef.current = false;
-        setInFlightToolCalls({});
-        appendError("Agent error");
-    }, [appendError]);
 
     useEffect(() => {
         const abortController = new AbortController();
@@ -134,20 +117,14 @@ export const useChatbotAgent = (
         agentRef.current = agent;
 
         getContextHistory(contextId, { pageSize: 20 }).then(
-            ({ questions, activeCapabilities: caps }) => {
-                if (caps && caps.length > 0) {
-                    const capSet = new Set<string>(caps);
-                    activeCapabilitiesRef.current = capSet;
-                    setActiveCapabilities(capSet);
+            ({ questions, activeMode: mode }) => {
+                if (mode != null) {
+                    activeModeRef.current = mode;
+                    setActiveMode(mode);
                 }
                 if (!questions || questions.length === 0) return;
 
-                const deduped = questions.filter(
-                    (q, i, arr) =>
-                        i === arr.length - 1 ||
-                        q.question !== arr[i + 1].question,
-                );
-                for (const q of deduped) {
+                for (const q of questions) {
                     const assistantMsgId = crypto.randomUUID();
                     finalMsgIdsRef.current.add(assistantMsgId);
 
@@ -293,98 +270,8 @@ export const useChatbotAgent = (
                 }
                 setReasoningPhase("done");
             },
-            onRunFinishedEvent: ({ outcome, agent }) => {
+            onRunFinishedEvent: ({ outcome }) => {
                 if (outcome === "interrupt") setIsInterrupted(true);
-
-                const pending = pendingFrontendToolsRef.current;
-                if (pending.length === 0) return;
-                pendingFrontendToolsRef.current = [];
-
-                const passiveItems = pending.filter((item) => {
-                    const tool = frontendToolsRef.current[item.toolName];
-                    return tool && !tool.interactive;
-                });
-                const askUserItem = pending.find(
-                    (item) => item.toolName === "ask_user",
-                );
-                const requestCapabilityItem = pending.find(
-                    (item) => item.toolName === "request_capability",
-                );
-
-                (async () => {
-                    try {
-                        for (const item of passiveItems) {
-                            if (abortController.signal.aborted) return;
-                            const tool =
-                                frontendToolsRef.current[item.toolName];
-                            if (!tool || tool.interactive === true) continue;
-                            const result = await tool.handler(item.args);
-
-                            if (abortController.signal.aborted) return;
-
-                            const record =
-                                runToolCallsRef.current[item.toolCallId];
-                            if (record) {
-                                record.result = result;
-                                record.status = "done";
-                            }
-                            setInFlightToolCalls((prev) => {
-                                const existing = prev[item.toolCallId];
-                                if (!existing) return prev;
-                                return {
-                                    ...prev,
-                                    [item.toolCallId]: {
-                                        ...existing,
-                                        result,
-                                        status: "done",
-                                    },
-                                };
-                            });
-
-                            agent.addMessage({
-                                role: "tool",
-                                id: crypto.randomUUID(),
-                                toolCallId: item.toolCallId,
-                                content: result,
-                            });
-                        }
-
-                        if (abortController.signal.aborted) return;
-
-                        if (requestCapabilityItem) {
-                            rerunningRef.current = true;
-                            setPendingCapabilityRequest({
-                                toolCallId: requestCapabilityItem.toolCallId,
-                                capability: String(
-                                    requestCapabilityItem.args.capability ?? "",
-                                ),
-                                reason: String(
-                                    requestCapabilityItem.args.reason ?? "",
-                                ),
-                            });
-                            setIsLoading(false);
-                        } else if (askUserItem) {
-                            rerunningRef.current = true;
-                            setPendingQuestion({
-                                toolCallId: askUserItem.toolCallId,
-                                question: String(
-                                    askUserItem.args.question ?? "",
-                                ),
-                                options: Array.isArray(askUserItem.args.options)
-                                    ? (askUserItem.args.options as string[])
-                                    : [],
-                            });
-                            setIsLoading(false);
-                        } else {
-                            rerunningRef.current = true;
-                            agent
-                                .runAgent({ tools: getToolDefs() })
-                                .catch(handleRunError);
-                        }
-                    } catch {
-                        handleRunError();
-                    }
-                })();
             },
             onRunErrorEvent: ({ event }) => {
                 errorHandledRef.current = true;
@@ -434,13 +321,6 @@ export const useChatbotAgent = (
                 );
             },
             onRunFinalized: ({ messages }) => {
-                if (rerunningRef.current) {
-                    rerunningRef.current = false;
-                } else {
-                    setInFlightToolCalls({});
-                    setIsLoading(false);
-                    onRunCompleteRef.current();
-                }
                 if (!errorHandledRef.current) {
                     setChatMessages(
                         mapToChatMessages(
@@ -467,7 +347,101 @@ export const useChatbotAgent = (
             unsubscribe();
             agent.abortRun();
         };
-    }, [contextId, t, appendError, handleRunError]);
+    }, [contextId, t, appendError]);
+
+    const runAgentLoop = async (agent: HttpAgent) => {
+        try {
+            while (true) {
+                await agent.runAgent({ tools: getToolDefs() });
+
+                const pending = pendingFrontendToolsRef.current;
+                if (pending.length === 0) break;
+                pendingFrontendToolsRef.current = [];
+
+                const passiveItems = pending.filter((item) => {
+                    const tool = frontendToolsRef.current[item.toolName];
+                    return tool && !tool.interactive;
+                });
+                const askUserItem = pending.find(
+                    (item) => item.toolName === "ask_user",
+                );
+                const requestModeItem = pending.find(
+                    (item) => item.toolName === "request_mode",
+                );
+
+                for (const item of passiveItems) {
+                    const tool = frontendToolsRef.current[item.toolName];
+                    if (!tool || tool.interactive === true) continue;
+                    const result = await tool.handler(item.args);
+
+                    const record = runToolCallsRef.current[item.toolCallId];
+                    if (record) {
+                        record.result = result;
+                        record.status = "done";
+                    }
+                    setInFlightToolCalls((prev) => {
+                        const existing = prev[item.toolCallId];
+                        if (!existing) return prev;
+                        return {
+                            ...prev,
+                            [item.toolCallId]: {
+                                ...existing,
+                                result,
+                                status: "done",
+                            },
+                        };
+                    });
+
+                    agent.addMessage({
+                        role: "tool",
+                        id: crypto.randomUUID(),
+                        toolCallId: item.toolCallId,
+                        content: result,
+                    });
+                }
+
+                if (requestModeItem) {
+                    const requestedMode = String(
+                        requestModeItem.args.mode ?? "",
+                    );
+                    if (requestedMode === activeModeRef.current) {
+                        agent.addMessage({
+                            role: "tool",
+                            id: crypto.randomUUID(),
+                            toolCallId: requestModeItem.toolCallId,
+                            content: "granted",
+                        });
+                    } else {
+                        setPendingModeRequest({
+                            toolCallId: requestModeItem.toolCallId,
+                            mode: requestedMode,
+                            reason: String(requestModeItem.args.reason ?? ""),
+                        });
+                        setIsLoading(false);
+                        return;
+                    }
+                } else if (askUserItem) {
+                    setPendingQuestion({
+                        toolCallId: askUserItem.toolCallId,
+                        question: String(askUserItem.args.question ?? ""),
+                        options: Array.isArray(askUserItem.args.options)
+                            ? (askUserItem.args.options as string[])
+                            : [],
+                    });
+                    setIsLoading(false);
+                    return;
+                }
+            }
+        } catch {
+            if (!errorHandledRef.current) {
+                appendError("Agent error");
+            }
+        }
+
+        setIsLoading(false);
+        setInFlightToolCalls({});
+        onRunCompleteRef.current();
+    };
 
     const handleSendMessage = async (text: string) => {
         const agent = agentRef.current;
@@ -496,17 +470,13 @@ export const useChatbotAgent = (
             ),
         );
 
-        try {
-            await agent.runAgent({ tools: getToolDefs() });
-        } catch {
-            appendError("Cannot get a response");
-        }
+        await runAgentLoop(agent);
     };
 
-    const handleQuestionAnswer = (answer: string) => {
+    const handleQuestionAnswer = async (answer: string) => {
         const agent = agentRef.current;
         if (!agent || !pendingQuestion) return;
-        const { toolCallId } = pendingQuestion;
+        const { toolCallId, question } = pendingQuestion;
 
         setInFlightToolCalls((prev) => {
             const existing = prev[toolCallId];
@@ -522,6 +492,7 @@ export const useChatbotAgent = (
             record.status = "done";
         }
 
+        // Tool result must immediately follow the assistant tool_call message.
         agent.addMessage({
             role: "tool",
             id: crypto.randomUUID(),
@@ -529,33 +500,52 @@ export const useChatbotAgent = (
             content: answer,
         });
 
+        // Persist the question and answer as visible chat messages.
+        const questionMsgId = crypto.randomUUID();
+        finalMsgIdsRef.current.add(questionMsgId);
+        agent.addMessage({
+            role: "assistant",
+            id: questionMsgId,
+            content: question,
+        });
+        if (answer !== "other") {
+            agent.addMessage({
+                role: "user",
+                id: crypto.randomUUID(),
+                content: answer,
+            });
+        }
+
         setPendingQuestion(null);
-        setIsLoading(true);
-        agent.runAgent({ tools: getToolDefs() }).catch(handleRunError);
+
+        if (answer === "other") {
+            // Let the user type a free-form answer as their next message.
+            setIsLoading(false);
+            setReasoningPhase("idle");
+            setInFlightToolCalls({});
+        } else {
+            setIsLoading(true);
+            await runAgentLoop(agent);
+        }
     };
 
-    const handleCapabilityAnswer = async (allow: boolean) => {
+    const handleModeAnswer = async (allow: boolean) => {
         const agent = agentRef.current;
-        if (!agent || !pendingCapabilityRequest) return;
-        const { toolCallId, capability } = pendingCapabilityRequest;
+        if (!agent || !pendingModeRequest) return;
+        const { toolCallId, mode } = pendingModeRequest;
 
         const result = allow ? "granted" : "denied";
 
         if (allow) {
             try {
-                await updateAiContextCapabilities(contextId, capability, true);
+                await setAiContextMode(contextId, mode);
             } catch {
-                appendError("Failed to update capabilities");
-                setPendingCapabilityRequest(null);
-                rerunningRef.current = false;
+                appendError("Failed to update mode");
+                setPendingModeRequest(null);
                 return;
             }
-            const next = new Set([
-                ...activeCapabilitiesRef.current,
-                capability,
-            ]);
-            activeCapabilitiesRef.current = next;
-            setActiveCapabilities(next);
+            activeModeRef.current = mode;
+            setActiveMode(mode);
         }
 
         agent.addMessage({
@@ -565,36 +555,22 @@ export const useChatbotAgent = (
             content: result,
         });
 
-        setPendingCapabilityRequest(null);
+        setPendingModeRequest(null);
         setIsLoading(true);
-        agent.runAgent({ tools: getToolDefs() }).catch(handleRunError);
+        await runAgentLoop(agent);
     };
 
-    const toggleCapability = (capability: string) => {
-        const enabled = activeCapabilitiesRef.current.has(capability);
-        const next = new Set(activeCapabilitiesRef.current);
-        if (enabled) {
-            next.delete(capability);
-        } else {
-            next.add(capability);
-        }
-        activeCapabilitiesRef.current = next;
-        setActiveCapabilities(next);
+    const toggleMode = (mode: string) => {
+        const prev = activeModeRef.current;
+        if (prev === mode) return;
+        activeModeRef.current = mode;
+        setActiveMode(mode);
 
-        updateAiContextCapabilities(contextId, capability, !enabled).catch(
-            () => {
-                activeCapabilitiesRef.current = new Set(
-                    activeCapabilitiesRef.current,
-                );
-                if (enabled) {
-                    activeCapabilitiesRef.current.add(capability);
-                } else {
-                    activeCapabilitiesRef.current.delete(capability);
-                }
-                setActiveCapabilities(new Set(activeCapabilitiesRef.current));
-                appendError("Failed to toggle capability");
-            },
-        );
+        setAiContextMode(contextId, mode).catch(() => {
+            activeModeRef.current = prev;
+            setActiveMode(prev);
+            appendError("Failed to switch mode");
+        });
     };
 
     const abortRun = () => agentRef.current?.abortRun();
@@ -607,13 +583,13 @@ export const useChatbotAgent = (
         reasoningPhase,
         reasoningText,
         pendingQuestion,
-        pendingCapabilityRequest,
-        activeCapabilities,
+        pendingModeRequest,
+        activeMode,
         turnActivity: turnActivityRef.current,
         handleSendMessage,
         handleQuestionAnswer,
-        handleCapabilityAnswer,
-        toggleCapability,
+        handleModeAnswer,
+        toggleMode,
         abortRun,
         contextId,
     };

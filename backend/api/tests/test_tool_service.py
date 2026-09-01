@@ -5,7 +5,8 @@ from unittest.mock import MagicMock
 from uuid import uuid4
 
 import pytest
-from common.ai_context.ai_context_repository import AiContext
+from ag_ui.core import Tool as AGUITool
+from common.ai_context.ai_context_repository import AiContext, CapabilityId, ModeId
 from common.ai_context.tool_models import (
     ExecuteQueryResult,
     ExecuteQueryResultFile,
@@ -28,6 +29,17 @@ def _make_ctx(deps: AgentDeps) -> MagicMock:
     ctx = MagicMock()
     ctx.deps = deps
     return ctx
+
+
+def _make_agui_tool(
+    name: str,
+    description: str = "",
+    capabilities: list[CapabilityId] | None = None,
+) -> AGUITool:
+    extra: dict[str, list[CapabilityId]] = (
+        {"capabilities": capabilities} if capabilities else {}
+    )
+    return AGUITool(name=name, description=description, parameters={}, **extra)
 
 
 @pytest.fixture
@@ -283,3 +295,167 @@ def test_execute_query_passes_folder_path(
     task_call_service_mock.call_execute_query_tool.assert_called_once_with(
         deps.context.id_, "content:hello", "//docs"
     )
+
+
+# ---------------------------------------------------------------------------
+# capabilities property
+# ---------------------------------------------------------------------------
+
+
+def test_work_mode_exposes_deferred_capabilities(
+    tool_service: ToolService,
+):
+    caps = tool_service.capabilities_for_mode(ModeId.WORK)
+    assert len(caps) == 4
+    ui_cap = caps[3]
+    assert ui_cap.id == CapabilityId.UI_INTERACTION
+    assert ui_cap.defer_loading is True
+
+
+def test_chat_mode_returns_no_capabilities(
+    tool_service: ToolService,
+):
+    caps = tool_service.capabilities_for_mode(ModeId.CHAT)
+    assert caps == []
+
+
+def test_research_mode_includes_research_capability(
+    tool_service: ToolService,
+):
+    caps = tool_service.capabilities_for_mode(ModeId.RESEARCH)
+    cap_ids = {c.id for c in caps}
+    assert CapabilityId.RESEARCH in cap_ids
+
+
+def test_research_mode_also_includes_work_capabilities(
+    tool_service: ToolService,
+):
+    caps = tool_service.capabilities_for_mode(ModeId.RESEARCH)
+    assert len(caps) == 4
+    cap_ids = {c.id for c in caps}
+    assert {
+        CapabilityId.SEARCH_AND_BROWSE,
+        CapabilityId.FILE_ACCESS,
+        CapabilityId.AI_PROCESSING,
+        CapabilityId.RESEARCH,
+    } == cap_ids
+
+
+# ---------------------------------------------------------------------------
+# route_frontend_tools
+# ---------------------------------------------------------------------------
+
+
+def test_route_frontend_tools_partitions_tools(
+    tool_service: ToolService,
+):
+    tools = [
+        _make_agui_tool("ask_user", "Ask a question"),
+        _make_agui_tool("request_mode", "Request a mode"),
+        _make_agui_tool(
+            "set_search_query",
+            "Set search query",
+            capabilities=[CapabilityId.SEARCH_AND_BROWSE],
+        ),
+        _make_agui_tool(
+            "discover_state",
+            "Discover state",
+            capabilities=[CapabilityId.UI_INTERACTION],
+        ),
+        _make_agui_tool(
+            "read_state", "Read state", capabilities=[CapabilityId.UI_INTERACTION]
+        ),
+    ]
+
+    routed = tool_service.route_frontend_tools(
+        tools, tool_service.capabilities_for_mode(ModeId.WORK)
+    )
+
+    always_on_names = {t.name for t in routed.always_on}
+    assert always_on_names == {"ask_user", "request_mode"}
+
+
+def test_route_frontend_tools_capability_ids(
+    tool_service: ToolService,
+):
+    tools = [
+        _make_agui_tool(
+            "set_search_query",
+            "Set search query",
+            capabilities=[CapabilityId.SEARCH_AND_BROWSE],
+        ),
+        _make_agui_tool(
+            "discover_state",
+            "Discover state",
+            capabilities=[CapabilityId.UI_INTERACTION],
+        ),
+    ]
+
+    routed = tool_service.route_frontend_tools(
+        tools, tool_service.capabilities_for_mode(ModeId.WORK)
+    )
+
+    cap_ids = {c.id for c in routed.capabilities}
+    assert cap_ids == {
+        CapabilityId.SEARCH_AND_BROWSE,
+        CapabilityId.FILE_ACCESS,
+        CapabilityId.AI_PROCESSING,
+        CapabilityId.UI_INTERACTION,
+    }
+
+
+def test_route_frontend_tools_rebuilds_capabilities_with_frontend_tools(
+    tool_service: ToolService,
+):
+    tools = [
+        _make_agui_tool(
+            "set_search_query",
+            "Set search query",
+            capabilities=[CapabilityId.SEARCH_AND_BROWSE],
+        ),
+    ]
+
+    routed = tool_service.route_frontend_tools(
+        tools, tool_service.capabilities_for_mode(ModeId.WORK)
+    )
+
+    search_cap = next(
+        c for c in routed.capabilities if c.id == CapabilityId.SEARCH_AND_BROWSE
+    )
+    # The rebuilt capability should have toolsets (ExternalToolset with the frontend tool)
+    assert len(search_cap.toolsets) > 0
+
+
+def test_route_frontend_tools_preserves_unaffected_capabilities(
+    tool_service: ToolService,
+):
+    tools = [
+        _make_agui_tool("ask_user", "Ask a question"),
+    ]
+
+    routed = tool_service.route_frontend_tools(
+        tools, tool_service.capabilities_for_mode(ModeId.WORK)
+    )
+
+    # No frontend tools mapped to any capability, so all should be original templates
+    search_cap = next(
+        c for c in routed.capabilities if c.id == CapabilityId.SEARCH_AND_BROWSE
+    )
+    # Without frontend tools to merge, the capability should have no external toolsets
+    assert len(search_cap.toolsets) == 0
+
+
+def test_route_frontend_tools_unknown_tools_are_always_on(
+    tool_service: ToolService,
+):
+    tools = [
+        _make_agui_tool("unknown_tool", "Some tool"),
+        _make_agui_tool("another_unknown", "Another"),
+    ]
+
+    routed = tool_service.route_frontend_tools(
+        tools, tool_service.capabilities_for_mode(ModeId.WORK)
+    )
+
+    always_on_names = {t.name for t in routed.always_on}
+    assert always_on_names == {"unknown_tool", "another_unknown"}

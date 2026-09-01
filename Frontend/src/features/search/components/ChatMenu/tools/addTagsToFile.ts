@@ -1,8 +1,14 @@
 import { addTagsToFile as addTagsToFileApi } from "@app/api";
+import { CapabilityId } from "@app/api/generated";
 import { setFilePreview } from "@app/slices/searchSlice";
 import type { AppDispatch } from "@app/store";
 
-import type { PassiveFrontendTool, StateAccessor } from "./types";
+import {
+    toolError,
+    toolSuccess,
+    type PassiveFrontendTool,
+    type StateAccessor,
+} from "./types";
 
 export const createAddTagsToFileTool = (
     getState: StateAccessor,
@@ -11,6 +17,7 @@ export const createAddTagsToFileTool = (
     interactive: false,
     definition: {
         name: "add_tags_to_file",
+        capabilities: [CapabilityId.UiInteraction],
         description:
             "Add one or more tags to a specific file. The tags will be immediately " +
             "visible in the UI. Use this when the user asks you to tag or label a " +
@@ -34,9 +41,9 @@ export const createAddTagsToFileTool = (
     handler: async (args) => {
         const fileId = String(args.file_id ?? "");
         const tags = Array.isArray(args.tags) ? (args.tags as string[]) : [];
-        if (!fileId) return JSON.stringify({ error: "file_id required" });
+        if (!fileId) return toolError("file_id required");
         if (tags.length === 0) {
-            return JSON.stringify({ error: "tags array required" });
+            return toolError("tags array required");
         }
 
         try {
@@ -50,9 +57,9 @@ export const createAddTagsToFileTool = (
                     }),
                 );
             }
-            return JSON.stringify({ success: true, tagsAdded: tags });
+            return toolSuccess({ tagsAdded: tags });
         } catch (e: unknown) {
-            return JSON.stringify({ error: String(e) });
+            return toolError(String(e));
         }
     },
 });

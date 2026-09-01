@@ -288,6 +288,12 @@ data:
     {{- if ne .Values.llm.embedding.query_prefix nil }}
     llm__embedding__query_prefix: {{ .Values.llm.embedding.query_prefix | quote }}
     {{- end }}
+    {{- if ne .Values.llm.embedding.max_tokens nil }}
+    llm__embedding__max_tokens: {{ .Values.llm.embedding.max_tokens | quote }}
+    {{- end }}
+    {{- if ne .Values.llm.embedding.max_sentences nil }}
+    llm__embedding__max_sentences: {{ .Values.llm.embedding.max_sentences | quote }}
+    {{- end }}
 
     # llm tool
     llm__tool__endpoint: {{ .Values.llm.tool.endpoint | default $ollamaEndpoint | quote }}
@@ -312,6 +318,9 @@ data:
     {{- if ne .Values.llm.tool.max_tokens nil }}
     llm__tool__max_tokens: {{ .Values.llm.tool.max_tokens | quote }}
     {{- end }}
+    {{- if ne .Values.llm.tool.max_sentences nil }}
+    llm__tool__max_sentences: {{ .Values.llm.tool.max_sentences | quote }}
+    {{- end }}
 
     # llm agent
     llm__agent__endpoint: {{ .Values.llm.agent.endpoint | default $ollamaEndpoint | quote }}
@@ -335,6 +344,9 @@ data:
     {{- end }}
     {{- if ne .Values.llm.agent.max_tokens nil }}
     llm__agent__max_tokens: {{ .Values.llm.agent.max_tokens | quote }}
+    {{- end }}
+    {{- if ne .Values.llm.agent.max_sentences nil }}
+    llm__agent__max_sentences: {{ .Values.llm.agent.max_sentences | quote }}
     {{- end }}
     {{- if ne .Values.llm.agent.merge_system_messages nil }}
     llm__agent__merge_system_messages: {{ .Values.llm.agent.merge_system_messages | quote }}
@@ -462,6 +474,9 @@ data:
     {{- if ne .Values.llm.hyde.max_tokens nil }}
     llm__hyde__max_tokens: {{ .Values.llm.hyde.max_tokens | quote }}
     {{- end }}
+    {{- if ne .Values.llm.hyde.max_sentences nil }}
+    llm__hyde__max_sentences: {{ .Values.llm.hyde.max_sentences | quote }}
+    {{- end }}
 
     # tool suggest_queries
     {{- if ne .Values.tool.suggest_queries.num_candidates nil }}
@@ -491,6 +506,12 @@ data:
     {{- if ne .Values.llm.rerank.timeout nil }}
     llm__rerank__timeout: {{ .Values.llm.rerank.timeout | quote }}
     {{- end }}
+    {{- if ne .Values.llm.rerank.max_tokens nil }}
+    llm__rerank__max_tokens: {{ .Values.llm.rerank.max_tokens | quote }}
+    {{- end }}
+    {{- if ne .Values.llm.rerank.max_sentences nil }}
+    llm__rerank__max_sentences: {{ .Values.llm.rerank.max_sentences | quote }}
+    {{- end }}
 
     # llm chat
     llm__chat__endpoint: {{ .Values.llm.chat.endpoint | default $ollamaEndpoint | quote }}
@@ -511,6 +532,12 @@ data:
     {{- end }}
     {{- if ne .Values.llm.chat.timeout nil }}
     llm__chat__timeout: {{ .Values.llm.chat.timeout | quote }}
+    {{- end }}
+    {{- if ne .Values.llm.chat.max_tokens nil }}
+    llm__chat__max_tokens: {{ .Values.llm.chat.max_tokens | quote }}
+    {{- end }}
+    {{- if ne .Values.llm.chat.max_sentences nil }}
+    llm__chat__max_sentences: {{ .Values.llm.chat.max_sentences | quote }}
     {{- end }}
 
     # llm vision
@@ -562,6 +589,12 @@ data:
     {{- end }}
     {{- if ne .Values.llm.translation.timeout nil }}
     llm__translation__timeout: {{ .Values.llm.translation.timeout | quote }}
+    {{- end }}
+    {{- if ne .Values.llm.translation.max_tokens nil }}
+    llm__translation__max_tokens: {{ .Values.llm.translation.max_tokens | quote }}
+    {{- end }}
+    {{- if ne .Values.llm.translation.max_sentences nil }}
+    llm__translation__max_sentences: {{ .Values.llm.translation.max_sentences | quote }}
     {{- end }}
 
     # beat

@@ -79,9 +79,10 @@ load via `GET /v1/ai/{context_id}/history`.
 
 `AgentService` wraps a single pydantic-ai `Agent` configured with an OpenAI-compatible LLM (served
 by Ollama or a compatible endpoint). The model profile honours `llm.agent.merge_system_messages`
-(Helm, default `true`): when enabled, consecutive system messages are merged into one before the
-request is sent. This is required for backends that reject multiple system messages (vLLM/SGLang
-serving Qwen). The agent is initialised with `capabilities=tool_service.capabilities`, which
+(Helm, default `true`): when enabled, consecutive leading system messages are merged into one
+and mid-conversation system messages (e.g. tool-availability announcements after
+`load_capability`) are demoted to user-role text. This is required for backends that enforce a
+single system message at the start of the conversation (vLLM/SGLang serving Qwen). The agent is initialised with `capabilities=tool_service.capabilities`, which
 provides four `Capability` groups. Three are always active; `research_mode` is a dynamic capability
 whose activation callback checks `AgentDeps.active_capabilities` at runtime.
 
