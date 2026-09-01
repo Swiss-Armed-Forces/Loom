@@ -196,9 +196,16 @@ async def _validate_text_message_events(
     ("Cannot send 'TEXT_MESSAGE_CONTENT' event: No active text message
     found with ID '…'"), killing the entire run.
 
-    This wrapper injects a synthetic TEXT_MESSAGE_START when an orphaned
-    TEXT_MESSAGE_CONTENT is detected, and logs a warning so the trigger
-    can be identified in pod logs.
+    This wrapper patches the stream in two ways:
+
+    - Injects a synthetic TEXT_MESSAGE_START before an orphaned
+      TEXT_MESSAGE_CONTENT so the client's verify layer accepts it.
+    - Before RUN_FINISHED, closes any text messages that are still
+      open (the adapter skips the END for the same reason it skipped
+      the START: the ``followed_by_text`` flag was wrong).
+
+    A warning is logged whenever a synthetic event is injected so the
+    trigger can be identified in pod logs.
 
     Upstream references:
     - https://github.com/pydantic/pydantic-ai/issues/3108
@@ -222,6 +229,15 @@ async def _validate_text_message_events(
                 yield TextMessageStartEvent(message_id=mid)
             case TextMessageEndEvent(message_id=mid):
                 active_text_ids.discard(mid)
+            case RunFinishedEvent() if active_text_ids:
+                for orphan_id in list(active_text_ids):
+                    logger.warning(
+                        "Unclosed text message '%s' at RUN_FINISHED — "
+                        "injecting synthetic TEXT_MESSAGE_END",
+                        orphan_id,
+                    )
+                    yield TextMessageEndEvent(message_id=orphan_id)
+                active_text_ids.clear()
 
         yield event
 
