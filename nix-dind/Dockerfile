@@ -1,8 +1,9 @@
 # Image version
 ARG DIND_IMAGE_VERSION="28.5.2-dind-alpine3.22"
+ARG DIND_IMAGE_DIGEST="sha256:2a232a42256f70d78e3cc5d2b5d6b3276710a0de0596c145f627ecfae90282ac"
 
 ARG DOCKER_REGISTRY="docker.io"
-FROM ${DOCKER_REGISTRY}/docker:${DIND_IMAGE_VERSION}
+FROM ${DOCKER_REGISTRY}/docker:${DIND_IMAGE_VERSION}@${DIND_IMAGE_DIGEST}
 
 # We will use this image as a gitlab-ci runner image.
 # This is why we have to add here the label below, otherwise

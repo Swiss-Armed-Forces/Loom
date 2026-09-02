@@ -1,8 +1,9 @@
 # Image version
 ARG REDIS_IMAGE_VERSION="7.4.9-alpine3.21"
+ARG REDIS_IMAGE_DIGEST="sha256:6ab0b6e7381779332f97b8ca76193e45b0756f38d4c0dcda72dbb3c32061ab99"
 
 ARG DOCKER_REGISTRY="docker.io"
-FROM ${DOCKER_REGISTRY}/redis:${REDIS_IMAGE_VERSION}
+FROM ${DOCKER_REGISTRY}/redis:${REDIS_IMAGE_VERSION}@${REDIS_IMAGE_DIGEST}
 
 CMD [ "redis-server", "/usr/local/etc/redis/redis.conf" ]
 

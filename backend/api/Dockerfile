@@ -1,9 +1,11 @@
 # Image version
 ARG PYTHON_BUILDER_IMAGE_VERSION="3.14.6-bookworm"
+ARG PYTHON_BUILDER_IMAGE_DIGEST="sha256:ec1b01f92099324b965a51c8547d9a3b71fedc99f6991a89662e7358f9b167c9"
 ARG PYTHON_IMAGE_VERSION="3.14.6-slim-bookworm"
+ARG PYTHON_IMAGE_DIGEST="sha256:4c92ffcde4dd6f1ff72a24518f49fd4990b27134987dfa31a733badde66df9f8"
 
 ARG DOCKER_REGISTRY="docker.io"
-FROM ${DOCKER_REGISTRY}/python:${PYTHON_BUILDER_IMAGE_VERSION} AS builder-base
+FROM ${DOCKER_REGISTRY}/python:${PYTHON_BUILDER_IMAGE_VERSION}@${PYTHON_BUILDER_IMAGE_DIGEST} AS builder-base
 
 ARG POETRY_VERSION="2.3.1"
 RUN set -exu \
@@ -44,7 +46,7 @@ RUN set -exu \
     && poetry install --no-cache --without dev,test
 
 # The runtime image, used to just run the code provided its virtual environment
-FROM ${DOCKER_REGISTRY}/python:${PYTHON_IMAGE_VERSION} AS runtime-base
+FROM ${DOCKER_REGISTRY}/python:${PYTHON_IMAGE_VERSION}@${PYTHON_IMAGE_DIGEST} AS runtime-base
 
 # Set timezone
 ENV TZ=UTC

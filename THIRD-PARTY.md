@@ -5965,7 +5965,7 @@ The complete source code for Traefik is publicly available at https://github.com
 
 | Package | Version | License | Found by |
 | ------- | --------| ------- | -------- |
-| .otp-run-deps | 20260804.212034 |  | apk-db-cataloger |
+| .otp-run-deps | 20260827.182530 |  | apk-db-cataloger |
 | alpine-baselayout | 3.7.2-r0 | GPL-2.0-only | apk-db-cataloger |
 | alpine-baselayout-data | 3.7.2-r0 | GPL-2.0-only | apk-db-cataloger |
 | alpine-keys | 2.6-r0 | MIT | apk-db-cataloger |
@@ -5987,7 +5987,7 @@ The complete source code for Traefik is publicly available at https://github.com
 | musl | 1.2.5-r23 | MIT | apk-db-cataloger |
 | musl-utils | 1.2.5-r23 | MIT AND BSD-2-Clause AND GPL-2.0-or-later | apk-db-cataloger |
 | ncurses-terminfo-base | 6.5_p20251123-r0 | X11 | apk-db-cataloger |
-| openssl | 3.5.7 |  | binary-classifier-cataloger |
+| openssl | 3.5.8 |  | binary-classifier-cataloger |
 | procps-ng | 4.0.5-r0 | GPL-2.0-or-later AND LGPL-2.1-or-later | apk-db-cataloger |
 | readline | 8.3.1-r0 | GPL-3.0-or-later | apk-db-cataloger |
 | scanelf | 1.3.8-r2 | GPL-2.0-only | apk-db-cataloger |
@@ -6083,7 +6083,7 @@ The complete source code for Traefik is publicly available at https://github.com
 | coreutils | 9.5-1ubuntu2+0.0.0~ubuntu25 | GPL-3.0-only | dpkg-db-cataloger |
 | coreutils-from-uutils | 0.0.0~ubuntu25 | GPL-3.0-only | dpkg-db-cataloger |
 | cryptography | 46.0.5 | Apache-2.0 OR BSD-3-Clause | python-installed-package-cataloger |
-| curl | 8.18.0-1ubuntu2.3 | BSD-4-Clause-UC, FSFUL, FSFULLR, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-or-later, ISC, OLDAP-2.8, X11, curl | dpkg-db-cataloger |
+| curl | 8.18.0-1ubuntu2.4 | BSD-4-Clause-UC, FSFUL, FSFULLR, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-or-later, ISC, OLDAP-2.8, X11, curl | dpkg-db-cataloger |
 | curvesapi | 1.08 |  | java-archive-cataloger |
 | cxf-core | 4.0.11 |  | java-archive-cataloger |
 | cxf-rt-frontend-jaxrs | 4.0.11 |  | java-archive-cataloger |
@@ -6254,8 +6254,8 @@ The complete source code for Traefik is publicly available at https://github.com
 | libcfitsio10t64 | 4.6.3-1 | FSFAP, FSFUL, FSFULLR, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, X11 | dpkg-db-cataloger |
 | libcom-err2 | 1.47.2-3ubuntu4 | 0BSD, Apache-2.0, Apache-2.0, BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later, ISC, Kazlib, LGPL-2.0-only, Latex2e | dpkg-db-cataloger |
 | libcrypt1 | 1:4.5.1-1 |  | dpkg-db-cataloger |
-| libcurl3t64-gnutls | 8.18.0-1ubuntu2.3 | BSD-4-Clause-UC, FSFUL, FSFULLR, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-or-later, ISC, OLDAP-2.8, X11, curl | dpkg-db-cataloger |
-| libcurl4t64 | 8.18.0-1ubuntu2.3 | BSD-4-Clause-UC, FSFUL, FSFULLR, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-or-later, ISC, OLDAP-2.8, X11, curl | dpkg-db-cataloger |
+| libcurl3t64-gnutls | 8.18.0-1ubuntu2.4 | BSD-4-Clause-UC, FSFUL, FSFULLR, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-or-later, ISC, OLDAP-2.8, X11, curl | dpkg-db-cataloger |
+| libcurl4t64 | 8.18.0-1ubuntu2.4 | BSD-4-Clause-UC, FSFUL, FSFULLR, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-or-later, ISC, OLDAP-2.8, X11, curl | dpkg-db-cataloger |
 | libdatrie1 | 0.2.14-1 | GPL-2.0-only, GPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
 | libdav1d7 | 1.5.3-1 | BSD-2-Clause, ISC | dpkg-db-cataloger |
 | libdb5.3t64 | 5.3.28+dfsg2-10ubuntu1 | BSD-3-Clause, GPL-3.0-only, MS-PL, Sleepycat, X11, Zlib | dpkg-db-cataloger |
@@ -6534,8 +6534,8 @@ The complete source code for Traefik is publicly available at https://github.com
 | python3-numpy-dev | 1:2.3.5+ds-3ubuntu1 | Apache-2.0, Apache-2.0, BSD-3-Clause, BSD-3-Clause, CC0-1.0, FSFAP, Zlib, Zlib | dpkg-db-cataloger |
 | python3-oauthlib | 3.3.1-1build1 | BSD-3-Clause | dpkg-db-cataloger |
 | python3-packaging | 26.0-1 | Apache-2.0, BSD-2-Clause, BSD-3-Clause | dpkg-db-cataloger |
-| python3-pil | 12.1.1-2ubuntu1.2 | Apache-2.0, GPL-3.0-only, HPND | dpkg-db-cataloger |
-| python3-pil.imagetk | 12.1.1-2ubuntu1.2 | Apache-2.0, GPL-3.0-only, HPND | dpkg-db-cataloger |
+| python3-pil | 12.1.1-2ubuntu1.3 | Apache-2.0, GPL-3.0-only, HPND | dpkg-db-cataloger |
+| python3-pil.imagetk | 12.1.1-2ubuntu1.3 | Apache-2.0, GPL-3.0-only, HPND | dpkg-db-cataloger |
 | python3-pkg-resources | 78.1.1-0.1build1 | Apache-2.0, BSD-3-Clause | dpkg-db-cataloger |
 | python3-pyparsing | 3.3.2-2 | BSD-2-Clause, BSD-3-Clause | dpkg-db-cataloger |
 | python3-scipy | 1.16.3-4build1 | Apache-2.0, BSD-2-Clause, BSD-3-Clause, BSD-3-Clause, MIT, PSF-2.0 | dpkg-db-cataloger |
@@ -8428,8 +8428,8 @@ The complete source code for Traefik is publicly available at https://github.com
 | libpcre2-8-0 | 10.42-4ubuntu2.1 | BSD-2-Clause, BSD-3-Clause, X11 | dpkg-db-cataloger |
 | libproc2-0 | 2:4.0.4-4ubuntu3.2 | GPL-2.0-only, GPL-2.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
 | libpython3-stdlib | 3.12.3-0ubuntu2.1 |  | dpkg-db-cataloger |
-| libpython3.12-minimal | 3.12.3-1ubuntu0.15 | GPL-2.0-only | dpkg-db-cataloger |
-| libpython3.12-stdlib | 3.12.3-1ubuntu0.15 | GPL-2.0-only | dpkg-db-cataloger |
+| libpython3.12-minimal | 3.12.3-1ubuntu0.16 | GPL-2.0-only | dpkg-db-cataloger |
+| libpython3.12-stdlib | 3.12.3-1ubuntu0.16 | GPL-2.0-only | dpkg-db-cataloger |
 | libreadline8t64 | 8.2-4build1 | GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later | dpkg-db-cataloger |
 | libseccomp2 | 2.5.5-1ubuntu3.1 | LGPL-2.1-only | dpkg-db-cataloger |
 | libselinux1 | 3.5-2ubuntu2.1 | GPL-2.0-only | dpkg-db-cataloger |
@@ -8480,8 +8480,8 @@ The complete source code for Traefik is publicly available at https://github.com
 | procps | 2:4.0.4-4ubuntu3.2 | GPL-2.0-only, GPL-2.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
 | python3 | 3.12.3-0ubuntu2.1 |  | dpkg-db-cataloger |
 | python3-minimal | 3.12.3-0ubuntu2.1 |  | dpkg-db-cataloger |
-| python3.12 | 3.12.3-1ubuntu0.15 | GPL-2.0-only | dpkg-db-cataloger |
-| python3.12-minimal | 3.12.3-1ubuntu0.15 | GPL-2.0-only | dpkg-db-cataloger |
+| python3.12 | 3.12.3-1ubuntu0.16 | GPL-2.0-only | dpkg-db-cataloger |
+| python3.12-minimal | 3.12.3-1ubuntu0.16 | GPL-2.0-only | dpkg-db-cataloger |
 | readline-common | 8.2-4build1 | GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later | dpkg-db-cataloger |
 | sed | 4.9-2build1 | BSD-4-Clause-UC, BSL-1.0, GFDL-1.3-only, GPL-3.0-only, GPL-3.0-or-later, ISC, X11 | dpkg-db-cataloger |
 | sensible-utils | 0.0.22 | BSD-2-Clause, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
@@ -9539,13 +9539,13 @@ The complete source code for Traefik is publicly available at https://github.com
 | k8s.io/utils | v0.0.0-20250604170112-4c0f3b243397 |  | go-module-binary-cataloger |
 | kubectl | 1.34.2-r6 | Apache-2.0 | apk-db-cataloger |
 | libapk | 3.0.6-r0 | GPL-2.0-only | apk-db-cataloger |
-| libcrypto3 | 3.5.7-r0 | Apache-2.0 | apk-db-cataloger |
+| libcrypto3 | 3.5.8-r0 | Apache-2.0 | apk-db-cataloger |
 | libncursesw | 6.5_p20251123-r0 | X11 | apk-db-cataloger |
-| libssl3 | 3.5.7-r0 | Apache-2.0 | apk-db-cataloger |
+| libssl3 | 3.5.8-r0 | Apache-2.0 | apk-db-cataloger |
 | musl | 1.2.5-r23 | MIT | apk-db-cataloger |
 | musl-utils | 1.2.5-r23 | MIT AND BSD-2-Clause AND GPL-2.0-or-later | apk-db-cataloger |
 | ncurses-terminfo-base | 6.5_p20251123-r0 | X11 | apk-db-cataloger |
-| openssl | 3.5.7-r0 | Apache-2.0 | apk-db-cataloger |
+| openssl | 3.5.8-r0 | Apache-2.0 | apk-db-cataloger |
 | readline | 8.3.1-r0 | GPL-3.0-or-later | apk-db-cataloger |
 | scanelf | 1.3.8-r2 | GPL-2.0-only | apk-db-cataloger |
 | sigs.k8s.io/json | v0.0.0-20241014173422-cfa47c3a1cc8 |  | go-module-binary-cataloger |
