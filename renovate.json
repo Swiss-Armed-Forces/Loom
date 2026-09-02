@@ -87,7 +87,11 @@
     },
     {
       "matchUpdateTypes": ["digest"],
-      "enabled": false
+      "matchManagers": ["dockerfile"],
+      "enabled": true,
+      "groupName": "Docker image digests",
+      "schedule": ["before 6am on sunday"],
+      "prPriority": 1
     },
     {
       "matchManagers": ["dockerfile"],

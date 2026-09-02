@@ -1,8 +1,9 @@
 # Image version
 ARG TIKA_IMAGE_VERSION="3.3.1.0-full"
+ARG TIKA_IMAGE_DIGEST="sha256:d8e6ed96260ad89307a93195a1b856102987a818ac648502f8efbaf313d32470"
 
 ARG DOCKER_REGISTRY="docker.io"
-FROM ${DOCKER_REGISTRY}/apache/tika:${TIKA_IMAGE_VERSION}
+FROM ${DOCKER_REGISTRY}/apache/tika:${TIKA_IMAGE_VERSION}@${TIKA_IMAGE_DIGEST}
 
 # from: https://github.com/apache/tika-docker/blob/master/full/Dockerfile#L16
 # "random" uid/gid hopefully not used anywhere else
