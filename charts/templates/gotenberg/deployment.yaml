@@ -24,7 +24,7 @@ spec:
   template:
     metadata:
       labels:
-        net: partially_fenced
+        net: fenced
         app: {{ include "app.name" . }}-gotenberg
         {{- include "app.labels.custom" (dict "context" . "component" "gotenberg") | nindent 8 }}
       {{- with include "app.annotations.custom" (dict "context" . "component" "gotenberg") }}
@@ -54,9 +54,8 @@ spec:
             # Gotenberg hardening variables
             - name: CHROMIUM_DENY_PUBLIC_IPS
               value: "true"
-            # Currently we still need to access roundcube
             - name: CHROMIUM_DENY_PRIVATE_IPS
-              value: "false"
+              value: "true"
             - name: WEBHOOK_DENY_PUBLIC_IPS
               value: "true"
             - name: WEBHOOK_DENY_PRIVATE_IPS
@@ -69,9 +68,8 @@ spec:
               value: "true"
             - name: API_DOWNLOAD_FROM_DENY_PRIVATE_IPS
               value: "true"
-            # Currently Javascript is still needed for email rendering
             - name: CHROMIUM_DISABLE_JAVASCRIPT
-              value: "false"
+              value: "true"
             # Switch to enable debug route (curl --request GET http://localhost:3000/debug)
             - name: API_ENABLE_DEBUG_ROUTE
               value: "false"

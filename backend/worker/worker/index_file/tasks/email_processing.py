@@ -1,7 +1,5 @@
 import logging
-from pathlib import Path
-from tempfile import NamedTemporaryFile
-from urllib.parse import urlencode
+from io import BytesIO
 
 from celery import chain, group
 from celery.canvas import Signature
@@ -14,12 +12,15 @@ from common.file.file_repository import (
 )
 from common.services.lazybytes_service import TempLazyBytes
 from httpx import HTTPStatusError, TransportError
-from pydantic import BaseModel
 from requests.exceptions import ConnectionError as RequestsConnectionError
 
 from worker.dependencies import get_gotenberg_client, get_rspamd_service
 from worker.index_file.infra.file_indexing_task import FileIndexingTask
 from worker.index_file.infra.indexing_persister import IndexingPersister
+from worker.index_file.parse_and_render_email_task import (
+    RenderedEmail,
+    parse_and_render_email_task,
+)
 from worker.index_file.tasks import create_thumbnail, render
 from worker.index_file.tasks.create_thumbnail import ThumbnailFile
 from worker.index_file.tasks.render import GotenbergError, RenderFile
@@ -29,17 +30,6 @@ from worker.utils.persisting_task import persisting_task
 logger = logging.getLogger(__name__)
 
 app = get_celery_app()
-
-EMAIL_RENDER_EXPRESSION_JAVASCRIPT = """
-(
-    document.readyState === 'complete'
-    && !!document.querySelector('#messagebody')
-    && Array.from(
-        document.querySelectorAll('#messagebody img, #attachment-list img')
-    ).every(i => i.complete)
-    && (!document.fonts || document.fonts.status === 'loaded')
-)
-"""
 
 RSPAMD_MAX_RETRIES = 15
 RSPAMD_RETRY_EXCEPTIONS = (RequestsConnectionError,)
@@ -61,38 +51,29 @@ def signature(file_content: TempLazyBytes, file: File) -> Signature:
     thumbnail_file = ThumbnailFile(
         cache_key=f"{file.sha256}+1", render_file=rendered_file
     )
+
     return chain(
         detect_email_task.s(file.extension),
         group(
             chain(detect_spam_task.s(file_content), persist_spam_task.s(file.id_)),
             chain(
                 upload_email_to_imap_task.s(file_content, file),
+                group(persist_imap_info.s(file.id_), subscribe_to_imap_folder.s()),
+            ),
+            chain(
+                parse_and_render_email_task.s(file_content),
                 group(
-                    persist_imap_info.s(file.id_),
-                    subscribe_to_imap_folder.s(),
                     chain(
                         render_email_to_image.s(),
-                        group(
-                            remove_seen_flag_from_email.s(),
-                            chain(
-                                get_rendered_content_from_render_email_return.s(),
-                                create_thumbnail.signature_pass_file_content(
-                                    file=file,
-                                    thumbnail_file=thumbnail_file,
-                                ),
-                            ),
+                        create_thumbnail.signature_pass_file_content(
+                            file=file,
+                            thumbnail_file=thumbnail_file,
                         ),
                     ),
                     chain(
                         render_email_to_pdf.s(),
-                        group(
-                            remove_seen_flag_from_email.s(),
-                            chain(
-                                get_rendered_content_from_render_email_return.s(),
-                                render.signature_pass_file_content(
-                                    file=file, render_file=rendered_file
-                                ),
-                            ),
+                        render.signature_pass_file_content(
+                            file=file, render_file=rendered_file
                         ),
                     ),
                 ),
@@ -183,24 +164,6 @@ def persist_imap_info(persister: IndexingPersister, imap_info: ImapInfo | None):
     persister.set_imap_info(imap_info)
 
 
-def _get_roundcube_email_url(imap_info: ImapInfo) -> str:
-    """Generate Roundcube email viewer URL."""
-    params = {
-        "_task": "mail",
-        "_extwin": "1",
-        "_action": "print",
-        "_uid": str(imap_info.uid),
-        "_mbox": imap_info.folder_utf7,
-    }
-    query_string = urlencode(params)
-    return f"{settings.roundcube_host}?{query_string}"
-
-
-class RenderEmailReturn(BaseModel):
-    rendered_content: TempLazyBytes
-    imap_info: ImapInfo
-
-
 @app.task(
     base=FileIndexingTask,
     autoretry_for=(GotenbergError,),
@@ -208,17 +171,17 @@ class RenderEmailReturn(BaseModel):
     retry_backoff=True,
 )
 def render_email_to_image(
-    imap_info: ImapInfo | None,
-) -> RenderEmailReturn | None:
-    if imap_info is None:
+    email: RenderedEmail | None,
+) -> TempLazyBytes | None:
+
+    if email is None:
         return None
 
-    with get_gotenberg_client().chromium.screenshot_url() as route:
-        email_url = _get_roundcube_email_url(imap_info)
-        route = route.url(email_url)
+    with get_gotenberg_client().chromium.screenshot_html() as route:
+        route = route.string_index(email.rendered_content)
         route = route.width(settings.rendered_image_width)
-        route = route.use_network_idle()
-        route = route.render_expression(EMAIL_RENDER_EXPRESSION_JAVASCRIPT)
+        route = route.clip_to_dimensions()
+
         try:
             response = route.run()
         except HTTPStatusError:
@@ -226,10 +189,8 @@ def render_email_to_image(
             return None
         except TransportError as ex:
             raise GotenbergError() from ex
-        with NamedTemporaryFile("rb", dir=settings.tempfile_dir) as fd:
-            response.to_file(Path(fd.name))
-            lazy_bytes = get_lazybytes_service().from_file(fd)
-        return RenderEmailReturn(rendered_content=lazy_bytes, imap_info=imap_info)
+
+        return get_lazybytes_service().from_file(BytesIO(response.content))
 
 
 @app.task(
@@ -239,46 +200,22 @@ def render_email_to_image(
     retry_backoff=True,
 )
 def render_email_to_pdf(
-    imap_info: ImapInfo | None,
-) -> RenderEmailReturn | None:
-    if imap_info is None:
+    email: RenderedEmail | None,
+) -> TempLazyBytes | None:
+
+    if email is None:
         return None
 
-    with get_gotenberg_client().chromium.url_to_pdf() as route:
-        email_url = _get_roundcube_email_url(imap_info)
-        route = route.url(email_url)
-        route = route.use_network_idle()
-        route = route.size(size=settings.rendered_pdf_page_size)
-        route = route.render_expression(EMAIL_RENDER_EXPRESSION_JAVASCRIPT)
+    with get_gotenberg_client().chromium.html_to_pdf() as route:
         try:
+            route = route.string_index(email.rendered_content)
+            route = route.use_network_idle()
+            route = route.size(size=settings.rendered_pdf_page_size)
             response = route.run()
         except HTTPStatusError:
             logger.warning("Unable to render email to pdf in browser", exc_info=True)
             return None
         except TransportError as ex:
             raise GotenbergError() from ex
-        lazy_bytes = get_lazybytes_service().from_bytes(response.content)
-    return RenderEmailReturn(rendered_content=lazy_bytes, imap_info=imap_info)
 
-
-@app.task(base=FileIndexingTask)
-def get_rendered_content_from_render_email_return(
-    render_email_return: RenderEmailReturn | None,
-) -> TempLazyBytes | None:
-    if render_email_return is None:
-        return None
-    return render_email_return.rendered_content
-
-
-@app.task(base=FileIndexingTask)
-def remove_seen_flag_from_email(
-    render_email_return: RenderEmailReturn | None,
-):
-    if render_email_return is None:
-        return
-
-    imap_info = render_email_return.imap_info
-    imap_service = get_imap_service()
-    imap_service.remove_flags_from_emails(
-        folder=imap_info.folder, uids=[imap_info.uid], flags=[b"\\SEEN"]
-    )
+        return get_lazybytes_service().from_file(BytesIO(response.content))

@@ -193,7 +193,6 @@ data:
     ws_host: ws://{{ include "app.fullname" . }}-api:{{ .Values.api.service.port }}
     imap_host: imap://{{ include "app.fullname" . }}-dovecot:{{ .Values.dovecot.service.port.imap }}
     s3_host: &s3-host {{ include "app.fullname" . }}-seaweedfs-filer:{{ .Values.seaweedfs.s3.port }}
-    roundcube_host: http://{{ include "app.fullname" . }}-roundcube:{{ .Values.roundcube.service.port }}
     gotenberg_host: http://{{ include "app.fullname" . }}-gotenberg:{{ .Values.gotenberg.service.port }}
     seaweedfs_master_host: http://{{ include "app.fullname" . }}-seaweedfs-master:{{ .Values.seaweedfs.master.port }}
 

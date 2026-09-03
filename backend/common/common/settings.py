@@ -242,8 +242,6 @@ class Settings(BaseSettings):
 
     task_time_limit_seconds: int = 60 * 60 * 24
 
-    roundcube_host: AnyHttpUrl = AnyHttpUrl(f"http://roundcube.{DOMAIN}")
-
     # SeaweedFS Configuration
     seaweedfs_master_host: AnyHttpUrl = AnyHttpUrl(
         f"http://seaweedfs-master.{DOMAIN}:9333"
