@@ -3,9 +3,8 @@ from kubernetes import client, config
 from kubernetes.stream import stream
 
 NOT_FENCED_PODS = ("worker",)
-PARTIAL_FENCED_PODS = ("gotenberg",)
-FENCED_PODS = ("tika",)
-ALL_PODS = NOT_FENCED_PODS + PARTIAL_FENCED_PODS + FENCED_PODS
+FENCED_PODS = ("tika", "gotenberg")
+ALL_PODS = NOT_FENCED_PODS + FENCED_PODS
 # Note: Raw IPs should be included in EXTERNAL_HOSTS to test if not only DNS resolve is blocked
 EXTERNAL_HOSTS = (
     "www.google.com",
@@ -83,11 +82,7 @@ def test_external_connection_block(
 
 @pytest.mark.parametrize(
     "pod,host",
-    [
-        (pod, host)
-        for pod in FENCED_PODS + PARTIAL_FENCED_PODS
-        for host in INTERNAL_HOSTS
-    ],
+    [(pod, host) for pod in FENCED_PODS for host in INTERNAL_HOSTS],
 )
 def test_internal_connection_block(
     kub: client.api.core_v1_api.CoreV1Api, pod: str, host: str
@@ -96,14 +91,6 @@ def test_internal_connection_block(
 
     # Curl 28 error code: Timeout
     assert response == 28
-
-
-@pytest.mark.parametrize("pod", list(PARTIAL_FENCED_PODS))
-def test_roundcube_connection_open(kub: client.api.core_v1_api.CoreV1Api, pod: str):
-    response = exec_curl(kub, get_pod_name(kub, pod), get_pod_ip(kub, "roundcube"))
-
-    # Curl 0 error code: OK
-    assert response == 0
 
 
 @pytest.mark.parametrize(

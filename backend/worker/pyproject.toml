@@ -24,6 +24,7 @@ gotenberg-client = "^0.14.0"
 zstandard = "^0.25.0"
 minio = "^7.2.20"
 pyreadline3 = "^3.5"
+nh3 = "^0.3.7"
 
 [tool.poetry.group.dev.dependencies]
 debugpy = "^1.8.1"
