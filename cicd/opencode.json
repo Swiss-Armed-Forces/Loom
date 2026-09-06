@@ -1,0 +1,28 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "provider": {
+    "infomaniak": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "Infomaniak AI",
+      "options": {
+        "baseURL": "https://api.infomaniak.com/2/ai/{env:INFOMANIAK_PRODUCT_ID}/openai/v1",
+        "apiKey": "{env:INFOMANIAK_API_KEY}"
+      },
+      "models": {
+        "llama3": {
+          "name": "Llama 3 (Infomaniak)"
+        },
+        "mistral3": {
+          "name": "Mistral 3 (Infomaniak)"
+        },
+        "qwen3": {
+          "name": "Qwen 3 (Infomaniak)"
+        },
+        "gemma3n": {
+          "name": "Gemma 3n (Infomaniak)"
+        }
+      }
+    }
+  },
+  "model": "infomaniak/qwen3"
+}
