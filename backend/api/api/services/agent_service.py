@@ -58,6 +58,7 @@ class AgentService:
             output_type=[str, DeferredToolRequests],
             instructions=_build_instructions,
             model_settings=self._model_settings,
+            tool_timeout=settings.llm.agent.tool_timeout,
         )
 
     @staticmethod

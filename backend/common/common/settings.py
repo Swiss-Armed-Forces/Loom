@@ -135,6 +135,7 @@ class LLMToolSettings(LLMClientSettings):
 class LLMAgentSettings(LLMClientSettings):
     extra_headers: LLMExtraHeaders | None = _LLM_THINKING_EXTRA_HEADERS
     merge_system_messages: bool = True
+    tool_timeout: int = 10 * 60
 
 
 class LLMVisionSettings(LLMClientSettings):
