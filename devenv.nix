@@ -239,6 +239,12 @@ in
     # - https://consoledonottrack.com/
     DO_NOT_TRACK = 1;
 
+    # Prevent corepack from downloading the "latest" pnpm when invoked
+    # outside Frontend/ (where no packageManager field exists).  Without
+    # this, corepack fetches the newest pnpm (12.x) whose Rust-native
+    # binary fails on Alpine/musl CI runners.
+    COREPACK_DEFAULT_TO_LATEST = 0;
+
     # fix locale
     LOCALE_ARCHIVE = "${custom-locales}/lib/locale/locale-archive";
     LC_ALL = use-locale;
