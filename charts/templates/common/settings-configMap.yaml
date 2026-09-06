@@ -350,6 +350,9 @@ data:
     {{- if ne .Values.llm.agent.merge_system_messages nil }}
     llm__agent__merge_system_messages: {{ .Values.llm.agent.merge_system_messages | quote }}
     {{- end }}
+    {{- if ne .Values.llm.agent.tool_timeout nil }}
+    llm__agent__tool_timeout: {{ .Values.llm.agent.tool_timeout | quote }}
+    {{- end }}
 
     # llm summarization key points
     llm__summarization_key_points__endpoint: {{ .Values.llm.summarization_key_points.endpoint | default $ollamaEndpoint | quote }}
