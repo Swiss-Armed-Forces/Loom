@@ -239,6 +239,9 @@ in
     # - https://consoledonottrack.com/
     DO_NOT_TRACK = 1;
 
+    # Point OpenCode to the project's config file
+    OPENCODE_CONFIG = "${config.devenv.root}/cicd/opencode.json";
+
     # Prevent corepack from downloading the "latest" pnpm when invoked
     # outside Frontend/ (where no packageManager field exists).  Without
     # this, corepack fetches the newest pnpm (12.x) whose Rust-native
@@ -380,6 +383,7 @@ in
       bashInteractive
 
       # A.I
+      opencode
       claude-code
 
       (vscode-with-extensions.override {

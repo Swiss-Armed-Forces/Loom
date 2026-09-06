@@ -148,6 +148,25 @@ See the [devenv documentation](https://devenv.sh/files-and-variables/) for more 
 
 [pat-docs]: https://docs.gitlab.com/ee/user/profile/personal_access_tokens.html#create-a-personal-access-token
 
+## OpenCode (optional)
+
+[OpenCode](https://opencode.ai/) is an AI coding assistant available in the devenv. It is
+pre-configured to use the Infomaniak AI provider. To use it, you need to set two environment
+variables with your Infomaniak credentials.
+
+Add the following exports to your `~/.bashrc` (or equivalent shell configuration file):
+
+```sh
+export INFOMANIAK_PRODUCT_ID="your-product-id"
+export INFOMANIAK_API_KEY="your-api-key"
+```
+
+Then reload your shell or run `source ~/.bashrc`.
+
+The devenv automatically sets `OPENCODE_CONFIG` to point to the project's configuration file
+(`cicd/opencode.json`), so no additional configuration is needed. Once the environment variables
+are in place, run `opencode` from the repository root to start a session.
+
 ## More Documentation and Links
 
 Get further information by reading the [documentations](../README.md#-more-documentation-and-links)
