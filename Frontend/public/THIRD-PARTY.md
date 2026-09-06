@@ -5967,7 +5967,7 @@ The complete source code for Traefik is publicly available at https://github.com
 
 | Package | Version | License | Found by |
 | ------- | --------| ------- | -------- |
-| .otp-run-deps | 20260827.182530 |  | apk-db-cataloger |
+| .otp-run-deps | 20260901.225221 |  | apk-db-cataloger |
 | alpine-baselayout | 3.7.2-r0 | GPL-2.0-only | apk-db-cataloger |
 | alpine-baselayout-data | 3.7.2-r0 | GPL-2.0-only | apk-db-cataloger |
 | alpine-keys | 2.6-r0 | MIT | apk-db-cataloger |
@@ -5977,7 +5977,7 @@ The complete source code for Traefik is publicly available at https://github.com
 | busybox | 1.37.0-r30 | GPL-2.0-only | apk-db-cataloger |
 | busybox-binsh | 1.37.0-r30 | GPL-2.0-only | apk-db-cataloger |
 | ca-certificates-bundle | 20260611-r0 | MPL-2.0 AND MIT | apk-db-cataloger |
-| erlang | 27.3.4.16 |  | binary-classifier-cataloger |
+| erlang | 27.3.4.17 |  | binary-classifier-cataloger |
 | libapk | 3.0.6-r0 | GPL-2.0-only | apk-db-cataloger |
 | libcrypto3 | 3.5.7-r0 | Apache-2.0 | apk-db-cataloger |
 | libgcc | 15.2.0-r2 | GPL-2.0-or-later AND LGPL-2.1-or-later | apk-db-cataloger |
