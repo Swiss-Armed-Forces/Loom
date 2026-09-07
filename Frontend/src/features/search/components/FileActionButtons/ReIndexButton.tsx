@@ -69,7 +69,8 @@ export const ReIndexButton = ({
     };
 
     const startReindexProcess = () => {
-        if ((!searchQuery && !fileId) || filesCount === 0) return;
+        if (!searchQuery && !fileId) return;
+        if (!fileId && filesCount === 0) return;
         if (fileId) {
             handleReindex();
         } else {
