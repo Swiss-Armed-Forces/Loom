@@ -299,7 +299,7 @@ def render_browser_to_pdf_task(
     ):
         route = route.index(Path(fd.name))
         route = route.size(size=settings.rendered_pdf_page_size)
-        route = route.use_network_idle()
+        route = route.skip_network_idle()
         try:
             response = route.run()
         except HTTPStatusError:
