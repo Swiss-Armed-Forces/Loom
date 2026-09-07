@@ -177,7 +177,7 @@ wait_for is_docker_ready
 # start nix
 # shellcheck disable=SC2310
 if ! is_nix_daemon_ready; then
-    fork nix-daemon --debug --verbose
+    fork nix-daemon
 fi
 wait_for is_nix_daemon_ready
 

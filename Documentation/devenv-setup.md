@@ -42,7 +42,7 @@ covering prerequisites, initial configuration, and optional tooling for developm
     - Install [devenv](https://devenv.sh/getting-started/) with `nix-env` from stable channel
 
       ```sh
-      nix-env --install --attr devenv -f https://github.com/NixOS/nixpkgs/tarball/nixos-25.11
+      nix-env --install --attr devenv -f https://github.com/NixOS/nixpkgs/tarball/nixos-26.05
       ```
 
     > ⚠️ **Workaround for Fedora:** After installing Nix, open

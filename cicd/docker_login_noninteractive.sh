@@ -34,4 +34,8 @@ if ! check_if_auth_exists "${REGISTRY_NAME}"; then
     >&2 echo "[!] Docker auth for '${REGISTRY_NAME}' not found"
     exit 1
 fi
-docker login "${REGISTRY_NAME}"
+# Never prompt: this script must stay non-interactive.  Callers redirect
+# stdout/stderr to /dev/null, so an interactive prompt here is invisible and
+# hangs the caller forever (e.g. devenv enterShell) when the stored
+# credential has expired.
+timeout 60 docker login "${REGISTRY_NAME}" </dev/null
