@@ -19,6 +19,93 @@ logger = logging.getLogger(__name__)
 
 app = get_celery_app()
 
+# Tags beyond nh3.ALLOWED_TAGS needed for email HTML rendering
+_EMAIL_EXTRA_TAGS: set[str] = {"style", "font", "big", "tfoot"}
+
+# Tags whose content (not just the tag) must be removed entirely.
+# Without this, nh3 strips the tag but leaves the text content visible —
+# leaking non-visible metadata, form labels, or markup as bare text.
+_EMAIL_CLEAN_CONTENT_TAGS: set[str] = {
+    "script",
+    "noscript",
+    "iframe",
+    "object",
+    "embed",
+    "applet",
+    "head",
+    "title",
+    "textarea",
+    "select",
+    "option",
+    "button",
+    "svg",
+    "math",
+}
+
+# Attributes allowed on all elements — nh3 defaults don't include style or class
+_EMAIL_GLOBAL_ATTRIBUTES: set[str] = {"style", "class", "id", "dir", "lang", "title"}
+
+# Tag-specific attributes for email layout (merge with nh3 defaults)
+_EMAIL_TAG_ATTRIBUTES: dict[str, set[str]] = {
+    "table": {
+        "width",
+        "height",
+        "cellpadding",
+        "cellspacing",
+        "border",
+        "bgcolor",
+        "summary",
+        "align",
+        "char",
+        "charoff",
+    },
+    "td": {
+        "width",
+        "height",
+        "bgcolor",
+        "valign",
+        "colspan",
+        "rowspan",
+        "headers",
+        "align",
+        "char",
+        "charoff",
+    },
+    "th": {
+        "width",
+        "height",
+        "bgcolor",
+        "valign",
+        "colspan",
+        "rowspan",
+        "headers",
+        "align",
+        "scope",
+        "char",
+        "charoff",
+    },
+    "tr": {"bgcolor", "valign", "align", "char", "charoff"},
+    "col": {"width", "span", "align", "char", "charoff"},
+    "colgroup": {"width", "span", "align", "char", "charoff"},
+    "img": {"src", "alt", "width", "height", "align"},
+    "font": {"color", "face", "size"},
+    "a": {"href", "hreflang", "name"},
+    "hr": {"size", "width", "align"},
+    "ol": {"start", "type"},
+    "ul": {"type"},
+    "body": {"bgcolor"},
+    "div": {"align"},
+    "p": {"align"},
+    "blockquote": {"cite", "type"},
+    "del": {"datetime", "cite"},
+    "ins": {"datetime", "cite"},
+    "bdo": {"dir"},
+    "q": {"cite"},
+    "thead": {"align", "char", "charoff"},
+    "tbody": {"align", "char", "charoff"},
+    "tfoot": {"align", "char", "charoff"},
+}
+
 # flake8: noqa: B950
 
 EMAIL_HTML_HEAD = """
@@ -30,6 +117,7 @@ EMAIL_HTML_HEAD = """
 
         .email-body { width: 100%; max-width: 100%; overflow: hidden; }
         .email-body img { max-width: 100%; height: auto; }
+        .email-body img:not([src]) { display: inline-block; background-color: #e0e0e0; }
         .email-body table { max-width: 100%; table-layout: fixed; }
         .email-body pre { white-space: pre-wrap; overflow-wrap: break-word; }
         .email-body * { max-width: 100%; }
@@ -83,11 +171,12 @@ def generate_email(data: EmailTemplateData) -> str:
     # pylint: disable=no-member
     """
     Note:
-    Main defence line is Gotenberg pod isolation + Chromium sandbox
-    Additionally, we clean e-mail body here with nh3 defaults, c.f.:
-    nh3.ALLOWED_TAGS
-    nh3.ALLOWED_ATTRIBUTES
-    nh3.ALLOWED_URL_SCHEMES
+    Main defence line is Gotenberg pod isolation + Chromium sandbox.
+    We use a permissive nh3 configuration that preserves email styling
+    (inline CSS, <style> tags, table layout attributes, <font> tags)
+    while stripping genuinely dangerous elements (<script>, <iframe>,
+    event handlers). This is safe because the HTML is only rendered in
+    Gotenberg's sandboxed Chromium, never embedded in our app's DOM.
     """
     email_html_cc = ""
     if data["Cc"]:
@@ -146,6 +235,14 @@ def generate_email(data: EmailTemplateData) -> str:
             <br>
         """
 
+    sanitized_body = nh3.clean(
+        data["Body"],
+        tags=nh3.ALLOWED_TAGS | _EMAIL_EXTRA_TAGS,
+        clean_content_tags=_EMAIL_CLEAN_CONTENT_TAGS,
+        attributes={"*": _EMAIL_GLOBAL_ATTRIBUTES, **_EMAIL_TAG_ATTRIBUTES},
+        url_schemes={"data", "cid", "mailto"},
+    )
+
     email_html_template = f"""
     <!DOCTYPE html>
     <html lang="en">
@@ -170,7 +267,7 @@ def generate_email(data: EmailTemplateData) -> str:
         </table>
     {email_attachments}
 
-        <div class="email-body">{nh3.clean(data['Body'])}</div>
+        <div class="email-body">{sanitized_body}</div>
 
     </body>
 
