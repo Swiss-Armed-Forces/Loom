@@ -31,7 +31,8 @@ export const SummaryButton = ({
     const filesCount = useAppSelector(selectTotalFiles);
 
     const handleClick = useCallback(() => {
-        if ((!searchQuery && !filePreview?.fileId) || filesCount === 0) return;
+        if (!searchQuery && !filePreview?.fileId) return;
+        if (!filePreview?.fileId && filesCount === 0) return;
         dispatch(
             openDialog({
                 id: "",
