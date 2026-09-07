@@ -442,8 +442,8 @@ in
               # https://marketplace.visualstudio.com/items?itemName=vitest.explorer
               name = "explorer";
               publisher = "vitest";
-              version = "1.50.0";
-              sha256 = "sha256-Fl9HtEavM1Cyxf5IMBN7/12s+JGF3MfLRFeut2pEp+s=";
+              version = "1.50.8";
+              sha256 = "sha256-LkfCnEELkdj1BRlHZpphM+bTSh/U7oE11U/E+Hx/8sU=";
             }
           ];
       })
@@ -488,9 +488,27 @@ in
     # "packageManager" field in Frontend/package.json.  This keeps
     # local dev, CI, and Renovate on the same pnpm version.
     corepack.enable = true;
+    # Install the Frontend dependencies on shell entry, so that the tools
+    # in Frontend/node_modules/.bin (prettier, eslint, tsc, vite) are
+    # available to the git hooks and the frontend scripts.
+    # install.enable requires pnpm.enable, which puts the nixpkgs pnpm on
+    # PATH as well.  That is fine: every pnpm invocation in this repo runs
+    # inside Frontend/, where the "packageManager" field decides the
+    # version.
+    pnpm.enable = true;
     pnpm.install.enable = true;
   };
   languages.typescript.enable = true;
+
+  tasks."devenv:git-hooks:run" = {
+    # Print the output of the git hooks that "devenv test" runs, otherwise a
+    # failing hook only reports that it failed.
+    showOutput = true;
+    # The python hooks call the tools from .venv, which the poetry task puts
+    # on the PATH.  That task only exists when the install is enabled, which
+    # the nix-dind image build turns off.
+    after = lib.optional config.languages.python.poetry.install.enable "devenv:python:poetry";
+  };
 
   # https://devenv.sh/git-hooks/
   git-hooks.hooks = {
@@ -521,7 +539,12 @@ in
 
     check-symlinks.enable = true;
 
-    editorconfig-checker.enable = true;
+    editorconfig-checker = {
+      enable = true;
+      # Vendored swagger-ui and redoc bundles, which the checker reads as
+      # binary because of their very long lines.
+      excludes = [ "^backend/api/static/.*\\.(js|css)$" ];
+    };
 
     nixfmt.enable = true;
 

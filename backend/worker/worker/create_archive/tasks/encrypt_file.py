@@ -14,7 +14,7 @@ app = get_celery_app()
     base=ArchiveProcessingTask,
 )
 def encrypt_file_task(storage_data: FileStorageLazyBytes) -> FileStorageLazyBytes:
-    """Load files from storage and encryptes it.
+    """Load files from storage and encrypts it.
 
     :param storage_data: The file storage id for the file to encrypt
     """
