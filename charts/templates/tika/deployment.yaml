@@ -1,3 +1,16 @@
+{{- /*
+Tika's memory budget. The RAM-backed /tmp and the JVM heap draw on the same
+resources.limits.memory, so derive the heap share from the tmp share rather than
+configuring both independently: heap = limit - tmp - reserve.
+*/ -}}
+{{- $tmpSizeLimit := .Values.tika.tmp.sizeLimit -}}
+{{- $tmpFraction := 0.0 -}}
+{{- if and .Values.tika.tmp.sizeFactor .Values.tika.resources .Values.tika.resources.limits .Values.tika.resources.limits.memory -}}
+{{- $tmpSizeLimit = include "memory-limit-fraction" (dict "memory" .Values.tika.resources.limits.memory "factor" .Values.tika.tmp.sizeFactor) -}}
+{{- $tmpFraction = .Values.tika.tmp.sizeFactor | float64 -}}
+{{- end -}}
+{{- $heapPercent := mulf (subf (subf 1.0 $tmpFraction) (.Values.tika.memoryReserveFactor | float64)) 100 | floor | int -}}
+{{- $javaOpts := printf "-XX:InitialRAMPercentage=%d -XX:MaxRAMPercentage=%d %s" $heapPercent $heapPercent (.Values.tika.javaOpts | default "") | trim -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -82,11 +95,12 @@ spec:
           {{- end }}
           env:
             - name: TIKA_JAVA_OPS
-              value: {{ .Values.tika.javaOpts | quote }}
+              value: {{ $javaOpts | quote }}
           args:
             - "/bin/sh"
             - "-c"
             - >-
+              find /tmp -mindepth 1 -delete 2>/dev/null || true;
               exec java ${TIKA_JAVA_OPS}
               -cp "/tika-server-standard-${TIKA_VERSION}.jar:/tika-extras/*"
               org.apache.tika.server.core.TikaServerCli
@@ -112,5 +126,5 @@ spec:
         - name: tmp
           emptyDir:
             medium: Memory
-            sizeLimit: {{ .Values.tika.tmpSizeLimit }}
+            sizeLimit: {{ $tmpSizeLimit }}
         {{- with include "app.trustedCerts.volumes" . }}{{ . | nindent 8 }}{{- end }}

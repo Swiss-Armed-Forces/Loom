@@ -255,3 +255,13 @@ Returns: byte value for GOMEMLIMIT (e.g., "966367641")
 {{- $factor := .factor | default 0.9 -}}
 {{- mulf $memoryBytes $factor | floor | int64 -}}
 {{- end -}}
+
+{{/*
+Calculate a byte count as a fraction of a Kubernetes memory limit.
+Usage: {{ include "memory-limit-fraction" (dict "memory" "6Gi" "factor" 0.25) }}
+Returns: byte value (e.g., "1610612736")
+*/}}
+{{- define "memory-limit-fraction" -}}
+{{- $memoryBytes := include "SI-to-bytes" .memory | int64 -}}
+{{- mulf $memoryBytes .factor | floor | int64 -}}
+{{- end -}}

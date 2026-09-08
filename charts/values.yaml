@@ -1326,9 +1326,30 @@ tika:
     limits:
       cpu: "4"
       memory: "6Gi"
-  javaOpts: "-XX:InitialRAMPercentage=90 -XX:MaxRAMPercentage=90"
+  # Extra JVM flags, appended after the derived heap flags and therefore taking
+  # precedence — the JVM honours the last occurrence of a repeated -XX flag.
+  javaOpts: ""
   taskTimeoutSeconds: 300
-  tmpSizeLimit: 2Gi
+  # Tika's memory budget, all fractions of resources.limits.memory. The heap is
+  # not configured directly: it is given whatever the RAM-backed /tmp and the
+  # reserve leave over, so raising one share lowers the heap automatically.
+  #   heap % = 100 - tmp.sizeFactor - memoryReserveFactor
+  # With the defaults: 25% tmp + 15% reserve -> 60% heap. Keep the two factors
+  # summing well below 1.0, or nothing is left for the heap.
+  #
+  # Held back for non-heap JVM memory (metaspace, code cache, thread stacks,
+  # direct buffers) and the ImageMagick and Tesseract subprocesses OCR spawns.
+  memoryReserveFactor: 0.15
+  # RAM-backed (tmpfs) scratch volume for Tika's /tmp. It is cleared on every
+  # container start, so an OOM-killed JVM cannot inherit the scratch files that
+  # caused the kill.
+  tmp:
+    # Fraction of resources.limits.memory. Takes precedence over sizeLimit
+    # whenever a memory limit is configured.
+    sizeFactor: 0.25
+    # Absolute fallback, used when sizeFactor is null or no memory limit is
+    # configured (e.g. values-no-resources.yaml).
+    sizeLimit: 2Gi
   # Custom labels specific to tika resources
   customLabels: {}
   customAnnotations: {}
