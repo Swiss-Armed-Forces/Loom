@@ -387,8 +387,12 @@ validate_environment() {
         fi
     done
 
-    # Check git lfs
-    if [[ ! -d ".git/lfs/objects" ]]; then
+    # Check git lfs. Objects live under the common git dir, which is shared by all
+    # worktrees — resolve it instead of assuming '.git' is a directory, since in a
+    # worktree '.git' is a file pointing at the real git dir.
+    local git_common_dir
+    git_common_dir=$(git -C "${SCRIPT_DIR}" rev-parse --path-format=absolute --git-common-dir)
+    if [[ ! -d "${git_common_dir}/lfs/objects" ]]; then
         echo >&2 "[!] Error: Git lfs objects missing!"
         echo >&2 "[!] Install git-lfs and run: 'git lfs pull'"
         exit 1
