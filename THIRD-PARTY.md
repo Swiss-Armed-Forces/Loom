@@ -532,7 +532,6 @@ The complete source code for Traefik is publicly available at https://github.com
 | minio                                    | 7.2.20          | Apache Software License                                                          |
 | openai                                   | 2.52.0          | Apache Software License                                                          |
 | propcache                                | 0.5.2           | Apache Software License                                                          |
-| pytest_docker_tools                      | 3.1.10          | Apache Software License                                                          |
 | requests                                 | 2.34.2          | Apache Software License                                                          |
 | requests-toolbelt                        | 1.0.0           | Apache Software License                                                          |
 | requirements-parser                      | 0.13.1          | Apache Software License                                                          |
@@ -609,7 +608,6 @@ The complete source code for Traefik is publicly available at https://github.com
 | pyasn1_modules                           | 0.4.2           | BSD License                                                                      |
 | pyperclip                                | 1.11.0          | BSD License                                                                      |
 | pyreadline3                              | 3.5.6           | BSD License                                                                      |
-| pytest-celery                            | 1.3.0           | BSD License                                                                      |
 | requests-oauthlib                        | 2.0.0           | BSD License                                                                      |
 | scipy                                    | 1.18.1          | BSD License                                                                      |
 | smmap                                    | 5.0.3           | BSD License                                                                      |
@@ -635,7 +633,6 @@ The complete source code for Traefik is publicly available at https://github.com
 | joblib                                   | 1.6.0           | BSD-3-Clause                                                                     |
 | kombu                                    | 5.6.2           | BSD-3-Clause                                                                     |
 | oauthlib                                 | 3.3.1           | BSD-3-Clause                                                                     |
-| psutil                                   | 7.2.2           | BSD-3-Clause                                                                     |
 | pycparser                                | 3.0             | BSD-3-Clause                                                                     |
 | python-dotenv                            | 1.2.3           | BSD-3-Clause                                                                     |
 | scikit-learn                             | 1.9.0           | BSD-3-Clause                                                                     |
@@ -737,7 +734,6 @@ The complete source code for Traefik is publicly available at https://github.com
 | click-didyoumean                         | 0.3.1           | MIT License                                                                      |
 | common                                   | 0.1.0           | MIT License                                                                      |
 | crawler                                  | 0.1.0           | MIT License                                                                      |
-| debugpy                                  | 1.8.21          | MIT License                                                                      |
 | docstring_parser                         | 0.18.0          | MIT License                                                                      |
 | exceptiongroup                           | 1.3.1           | MIT License                                                                      |
 | executing                                | 2.2.1           | MIT License                                                                      |

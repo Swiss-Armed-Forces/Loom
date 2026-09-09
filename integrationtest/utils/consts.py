@@ -18,4 +18,5 @@ IMAGE_DESCRIPTION_ENDPOINT = f"{settings.api_host}v1/files/image_description"
 TESTS_ENDPOINT = f"{settings.api_host}v1/tests"
 BEAT_ENDPOINT = f"{settings.api_host}v1/beat"
 COMPLETE_ESTIMATE_ENDPOINT = f"{settings.api_host}v1/complete-estimate"
+WIPE_DATA_ENDPOINT = f"{settings.api_host}v1/wipe-data"
 REQUEST_TIMEOUT = 60
