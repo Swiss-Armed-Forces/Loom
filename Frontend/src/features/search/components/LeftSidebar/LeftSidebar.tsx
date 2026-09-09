@@ -31,9 +31,9 @@ import { FolderView } from "@features/search/views/Folder/FolderView";
 
 import { Chatbot } from "../ChatMenu/Chatbot";
 import { useChatbot } from "../ChatMenu/useChatbot";
+import { Customization } from "../Customization/Customization";
 import { CustomQueriesList } from "../CustomQueries/CustomQueries";
 
-import { CardCustomizationPanel } from "./CardCustomizationPanel";
 import styles from "./LeftSidebar.module.css";
 
 const GLOBAL_FOLDER_QUERY: SearchQuery = {
@@ -76,7 +76,7 @@ const PANEL_TITLES: Record<LeftSidebarPanel, string> = {
     [LeftSidebarPanel.FOLDER]: "toolbar.views.folder",
     [LeftSidebarPanel.TAGS]: "sideMenu.tags",
     [LeftSidebarPanel.QUERIES]: "sideMenu.savedQueries.title",
-    [LeftSidebarPanel.CARD_CUSTOMIZATION]: "sideMenu.cardCustomization.title",
+    [LeftSidebarPanel.CUSTOMIZATION]: "sideMenu.customizations.title",
     [LeftSidebarPanel.CHAT]: "AI Assistant",
 };
 
@@ -209,8 +209,8 @@ export const LeftSidebar = () => {
                         highlightedQueryId={highlightedQueryId}
                     />
                 );
-            case LeftSidebarPanel.CARD_CUSTOMIZATION:
-                return <CardCustomizationPanel />;
+            case LeftSidebarPanel.CUSTOMIZATION:
+                return <Customization />;
             case LeftSidebarPanel.CHAT:
                 return <Chatbot chatbot={chatbot} />;
             default:

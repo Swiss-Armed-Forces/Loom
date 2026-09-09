@@ -164,6 +164,14 @@
                 "title": "Act on every match",
                 "description": "Bulk actions apply to the complete query result set, not only cards currently loaded on screen. Available operations include flagging, seen state, tags, translation, summaries, image descriptions, reindexing, visibility, and archive creation."
             },
+            "customizations": {
+                "title": "Display Card Customisation and Key Customisation",
+                "description": "The Customisation panel renders the Card Customisation and Key Customisation sub-taps"
+            },
+            "keyCustomizations": {
+                "title": "Customise the shortcuts",
+                "description": "The Key Customisation panel lets you customize the shortcuts to suit to your needs."
+            },
             "cardCustomization": {
                 "title": "Customise how results look",
                 "description": "The Card Customisation panel lets you control what each result card shows and how it behaves. It is divided into three sections: Card Display, Card Fields, and Auto Actions."
@@ -457,12 +465,23 @@
         "summarizeQueriedFiles": "Summarize",
         "chatbotQueriedFiles": "Chatbot",
         "tags": "Tags",
+        "customizations": {
+            "title": "Customizations",
+            "pressKey": "Press any key...",
+            "notSet": "Not set",
+            "alreadyUsed": "Shortcut is already used",
+            "resetDefault": "Reset to default",
+            "resetAll": "Reset All Customizations"
+        },
         "cardCustomization": {
-            "title": "Card Customization",
+            "title": "Card",
             "cardDisplay": "Card Display",
             "cardFields": "Card Fields",
             "autoActions": "Auto Actions",
             "addField": "Add field"
+        },
+        "keyCustomization": {
+            "title": "Key"
         },
         "fields": {
             "title": "Preview Fields",
@@ -673,12 +692,14 @@
             "focusSearch": "Focus search",
             "fullscreen": "Fullscreen",
             "flag": "Flag/unflag",
-            "see": "Seen/unseen",
-            "share": "Share",
+            "seen": "Seen/unseen",
+            "copyLink": "Copy link",
             "download": "Download",
             "reindex": "Re-index",
             "summarize": "Summarize",
-            "addTags": "Add tags",
+            "tag": "Add tags",
+            "navigateParentFile": "Navigate to parent file",
+            "navigateChildFile": "Navigate to child file",
             "translate": "Translate",
             "icon": "icon"
         }
