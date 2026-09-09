@@ -19,7 +19,10 @@ _UNROUTABLE_QUEUE = (
 )
 
 _POLL_INTERVAL = 0.5
-_POLL_TIMEOUT = 10
+# Must comfortably exceed RabbitMQ's collect_statistics_interval (10s, see
+# charts/templates/rabbit/configMap.yaml): the management API these counts come from
+# only refreshes on that cadence, so a message can take that long to become visible.
+_POLL_TIMEOUT = 60
 
 
 @pytest.fixture(autouse=True)

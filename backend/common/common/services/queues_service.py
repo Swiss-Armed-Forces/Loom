@@ -60,32 +60,36 @@ class QueuesService:
         response.raise_for_status()
         return int(response.json()["messages"])
 
-    def get_all_queue_message_counts(self) -> dict[str, int]:
+    def _get_queue_message_counts(self, prefix: str) -> dict[str, int]:
+        """Return name -> message count for every queue whose name starts with
+        prefix."""
         response: Response = requests.get(
             self.__rabbit_mq_management_host + "api/queues/%2F",
             params={"columns": "name,messages"},
             timeout=RABBITMQ_MANAGEMENT_REQUEST_TIMEOUT,
         )
         response.raise_for_status()
-        prefix = settings.celery_queue_name_prefix
         return {
             q["name"]: int(q.get("messages", 0))
             for q in response.json()
             if q["name"].startswith(prefix)
         }
 
+    def get_all_queue_message_counts(self) -> dict[str, int]:
+        return self._get_queue_message_counts(settings.celery_queue_name_prefix)
+
+    def get_delayed_queue_message_counts(self) -> dict[str, int]:
+        """Return message counts for Celery's native delayed-delivery queues.
+
+        These hold tasks in a ``retry(countdown=N)`` backoff. They do not carry the loom
+        prefix, so ``get_all_queue_message_counts()`` never reports them — but
+        ``CeleryInspectService.is_idle()`` does count them, so a wipe must be able to
+        name and purge them or it can never reach idle.
+        """
+        return self._get_queue_message_counts(CELERY_DELAYED_QUEUE_PREFIX)
+
     def get_delayed_queue_message_count(self) -> int:
-        response: Response = requests.get(
-            self.__rabbit_mq_management_host + "api/queues/%2F",
-            params={"columns": "name,messages"},
-            timeout=RABBITMQ_MANAGEMENT_REQUEST_TIMEOUT,
-        )
-        response.raise_for_status()
-        return sum(
-            int(q.get("messages", 0))
-            for q in response.json()
-            if q["name"].startswith(CELERY_DELAYED_QUEUE_PREFIX)
-        )
+        return sum(self.get_delayed_queue_message_counts().values())
 
     def purge_queue(self, queue_name: str) -> None:
         response: Response = requests.delete(

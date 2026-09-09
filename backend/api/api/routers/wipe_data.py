@@ -4,7 +4,7 @@ from enum import StrEnum
 from typing import Annotated
 
 from common.dependencies import get_wipe_service
-from common.services.wipe_service import WipeService
+from common.services.wipe_service import WipeService, WipeTimeoutError
 from fastapi import APIRouter, Depends, HTTPException, Query
 
 router = APIRouter()
@@ -54,4 +54,11 @@ def wipe_data_endpoint(
     resolved = components or list(WipeComponent)
     for component in resolved:
         logger.info("Wiping component via API: %s", component)
-        _WIPE_DISPATCH[component](wipe_service)
+        try:
+            _WIPE_DISPATCH[component](wipe_service)
+        except WipeTimeoutError as exc:
+            # The wipe could not reach a clean state in time. Report it rather than
+            # returning 200: a caller that believes it has a clean slate when it does
+            # not is worse than a visible failure.
+            logger.error("Wipe of component %s timed out: %s", component, exc)
+            raise HTTPException(status_code=504, detail=str(exc)) from exc
