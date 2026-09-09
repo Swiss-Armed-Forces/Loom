@@ -21,9 +21,60 @@ import {
 
 import { RootState } from "./store";
 
+interface CreateLocalStoragePersistListenerConfig {
+    key: string;
+    sliceName: string;
+    fields: string[];
+    debounceMs?: number;
+}
+
+export const createLocalStoragePersistListener = ({
+    key,
+    sliceName,
+    fields,
+    debounceMs = 500,
+}: CreateLocalStoragePersistListenerConfig) => {
+    const middleware = createListenerMiddleware();
+    let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+
+    middleware.startListening({
+        predicate: () => true,
+        effect: (_, listenerApi) => {
+            if (debounceTimer) clearTimeout(debounceTimer);
+
+            debounceTimer = setTimeout(() => {
+                const state = listenerApi.getState() as Record<string, unknown>;
+                const sliceState = state[sliceName] as Record<string, unknown>;
+
+                if (!sliceState) return;
+
+                let existing: Record<string, unknown> = {};
+                const existingJson = localStorage.getItem(key);
+                if (existingJson) {
+                    try {
+                        existing = JSON.parse(existingJson);
+                    } catch {
+                        // If parsing fails, start fresh
+                    }
+                }
+
+                const persisted: Record<string, unknown> = { ...existing };
+                for (const field of fields) {
+                    if (field in sliceState) {
+                        persisted[field] = sliceState[field];
+                    }
+                }
+
+                localStorage.setItem(key, JSON.stringify(persisted));
+            }, debounceMs);
+        },
+    });
+
+    return middleware;
+};
+
 const PREVIEW_FIELDS_DEBOUNCE_MS = 300;
 
-let persistDebounceTimer: ReturnType<typeof setTimeout> | null = null;
 let previewFieldsDebounceTimer: ReturnType<typeof setTimeout> | null = null;
 let lastAutoActionsFileId: string | null = null;
 
@@ -88,58 +139,46 @@ const runAutoActionsForFile = async (
     }
 };
 
-export const localStorageSearchStateMiddleware = createListenerMiddleware();
+const SEARCH_PERSIST_FIELDS = [
+    "query",
+    "leftSidebarPanel",
+    "rightSidebarTab",
+    "openFileTabs",
+    "activeTabFileId",
+    "customQueries",
+    "expandFilePaths",
+    "cardDensity",
+    "previewFields",
+    "showThumbnails",
+    "showHighlights",
+    "showFieldSections",
+    "showExtensionIcon",
+    "showFilePath",
+    "showParentNavigation",
+    "showStatusIndicators",
+    "showAttachments",
+    "showTags",
+    "showActions",
+    "showSortIndicator",
+    "showFieldActions",
+    "autoActionsPreferences",
+    "suppressDownloadWarning",
+    "summarizationSystemPrompt",
+    "visionSystemPrompt",
+    "displayStat",
+    "displayHistogramStat",
+    "folderViewExpandedNodes",
+    "filteredFolderViewExpandedNodes",
+    "bindings",
+];
 
-localStorageSearchStateMiddleware.startListening({
-    predicate: () => true,
-    effect: (_, listenerApi) => {
-        if (persistDebounceTimer) clearTimeout(persistDebounceTimer);
-        persistDebounceTimer = setTimeout(() => {
-            const state = (listenerApi.getState() as RootState).search;
-            const persistedKeys = new Set([
-                "query",
-                "leftSidebarPanel",
-                "rightSidebarTab",
-                "openFileTabs",
-                "activeTabFileId",
-                "customQueries",
-                "expandFilePaths",
-                "cardDensity",
-                "previewFields",
-                "showThumbnails",
-                "showHighlights",
-                "showFieldSections",
-                "showExtensionIcon",
-                "showFilePath",
-                "showParentNavigation",
-                "showStatusIndicators",
-                "showAttachments",
-                "showTags",
-                "showActions",
-                "showSortIndicator",
-                "showFieldActions",
-                "autoActionsPreferences",
-                "suppressDownloadWarning",
-                "summarizationSystemPrompt",
-                "visionSystemPrompt",
-                "displayStat",
-                "displayHistogramStat",
-                "folderViewExpandedNodes",
-                "filteredFolderViewExpandedNodes",
-            ]);
-            const persisted: Record<string, unknown> = {};
-            for (const key of persistedKeys) {
-                if (key in state) {
-                    persisted[key] = state[key as keyof typeof state];
-                }
-            }
-            localStorage.setItem(
-                SEARCH_STATE_LOCAL_STORAGE_KEY,
-                JSON.stringify(persisted),
-            );
-        }, 500);
-    },
-});
+export const localStorageSearchStateMiddleware =
+    createLocalStoragePersistListener({
+        key: SEARCH_STATE_LOCAL_STORAGE_KEY,
+        sliceName: "search",
+        fields: SEARCH_PERSIST_FIELDS,
+        debounceMs: 500,
+    });
 
 // Auto-actions when a file is highlighted (preview already in state)
 localStorageSearchStateMiddleware.startListening({
