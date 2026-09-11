@@ -901,35 +901,6 @@ seaweedfs:
         cpu: "0.1"
         memory: "100Mi"
 
-  # Filer Metadata Backup to SQLite
-  # Backs up filer metadata to a local SQLite database for disaster recovery
-  filerMetaBackup:
-    enabled: true
-    priorityClass: infrastructure
-    filerDir: "/"
-    pvc:
-      # Direct PVC storage size override (e.g. "3Gi"). When set, storageMultiplier is ignored.
-      # When null, size is computed from redis-filer memory limit * storageMultiplier.
-      storage: null
-      # Multiplier for PVC storage size relative to redis-filer memory limit.
-      # PVC size = redis-filer memory limit * storageMultiplier
-      # This ensures enough space to store all metadata that could fit in Redis + headroom.
-      storageMultiplier: 2
-      storageClass: null
-      customLabels: {}
-      customAnnotations: {}
-    # SQLite filer sidecar for restore operations
-    sqliteFiler:
-      port: 18889
-      grpcPort: 28889
-    resources:
-      requests:
-        cpu: "0.05"
-        memory: "64Mi"
-      limits:
-        cpu: "0.2"
-        memory: "256Mi"
-
   # Custom labels specific to seaweedfs resources
   customLabels: {}
   customAnnotations: {}

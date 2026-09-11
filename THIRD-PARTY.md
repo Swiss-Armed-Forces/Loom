@@ -9453,7 +9453,6 @@ The complete source code for Traefik is publicly available at https://github.com
 | libcurl | 8.17.0-r1 | curl | apk-db-cataloger |
 | libgcc | 15.2.0-r2 | GPL-2.0-or-later AND LGPL-2.1-or-later | apk-db-cataloger |
 | libidn2 | 2.3.8-r0 | GPL-2.0-or-later OR LGPL-3.0-or-later | apk-db-cataloger |
-| libncursesw | 6.5_p20251123-r0 | X11 | apk-db-cataloger |
 | libpsl | 0.21.5-r3 | MIT | apk-db-cataloger |
 | libssl3 | 3.5.6-r0 | Apache-2.0 | apk-db-cataloger |
 | libunistring | 1.4.1-r0 | GPL-2.0-or-later OR LGPL-3.0-or-later | apk-db-cataloger |
@@ -9465,13 +9464,10 @@ The complete source code for Traefik is publicly available at https://github.com
 | moul.io/http2curl/v2 | v2.3.0 |  | go-module-binary-cataloger |
 | musl | 1.2.5-r23 | MIT | apk-db-cataloger |
 | musl-utils | 1.2.5-r23 | MIT AND BSD-2-Clause AND GPL-2.0-or-later | apk-db-cataloger |
-| ncurses-terminfo-base | 6.5_p20251123-r0 | X11 | apk-db-cataloger |
 | nghttp2-libs | 1.69.0-r0 | MIT | apk-db-cataloger |
 | nghttp3 | 1.13.1-r0 | MIT | apk-db-cataloger |
-| readline | 8.3.1-r0 | GPL-3.0-or-later | apk-db-cataloger |
 | scanelf | 1.3.8-r2 | GPL-2.0-only | apk-db-cataloger |
 | sigs.k8s.io/yaml | v1.6.0 |  | go-module-binary-cataloger |
-| sqlite | 3.53.4-r0 | blessing | apk-db-cataloger |
 | ssl_client | 1.37.0-r30 | GPL-2.0-only | apk-db-cataloger |
 | stdlib | go1.25.9 | BSD-3-Clause | go-module-binary-cataloger |
 | storj.io/common | v0.0.0-20251107171817-6221ae45072c |  | go-module-binary-cataloger |
