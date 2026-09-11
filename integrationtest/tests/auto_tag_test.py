@@ -29,18 +29,19 @@ class TestAutoTag:
     ]
 
     @pytest.fixture(scope="class", autouse=True)
-    def setup_files(self):
-        file_paths = [AUTO_TAG_FOLDER / file.filename for file in self.base_asset_list]
+    @classmethod
+    def setup_files(cls):
+        file_paths = [AUTO_TAG_FOLDER / file.filename for file in cls.base_asset_list]
         upload_many_assets(asset_names=[str(path) for path in file_paths])
 
         # wait for assets to be processed
         search_string = "short_name:*.txt"
-        file_count = len(self.base_asset_list)
+        file_count = len(cls.base_asset_list)
         fetch_files_from_api(
             search_string=search_string, expected_no_of_files=file_count
         )
 
-        for filetag in self.base_asset_list:
+        for filetag in cls.base_asset_list:
             file = get_file_preview_by_name(filetag.filename)
             tag = filetag.tag
 
