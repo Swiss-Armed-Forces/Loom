@@ -12,11 +12,12 @@ class TestSecretScan:
     ]
 
     @pytest.fixture(scope="class", autouse=True)
-    def setup_testfiles(self):
-        upload_many_assets(asset_names=self.asset_list)
+    @classmethod
+    def setup_testfiles(cls):
+        upload_many_assets(asset_names=cls.asset_list)
 
         search_string = "*"
-        file_count = len(self.asset_list)
+        file_count = len(cls.asset_list)
         fetch_files_from_api(
             search_string=search_string, expected_no_of_files=file_count
         )
