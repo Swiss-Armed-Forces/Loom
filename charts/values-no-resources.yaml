@@ -131,15 +131,6 @@ seaweedfs:
       requests: null
       limits: null
 
-  filerMetaBackup:
-    pvc:
-      # redis-filer has no memory resource defined, so set PVC size explicitly.
-      # Default: redis-filer memory limit (1500Mi) * storageMultiplier (2) = 3Gi
-      storage: 3Gi
-    resources:
-      requests: null
-      limits: null
-
 rabbit:
   resources:
     requests: null

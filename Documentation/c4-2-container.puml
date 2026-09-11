@@ -46,7 +46,6 @@ System_Boundary(loom, "") {
         Container(seaweedfs_admin, "SeaweedFS Admin", "SeaweedFS", "Admin UI", $sprite="administrator", $tags="exposed")
         Container(seaweedfs_master, "SeaweedFS Master", "SeaweedFS", "Cluster coordination + metrics", $sprite="database")
         Container(seaweedfs_filer, "SeaweedFS Filer", "SeaweedFS", "S3 interface", $sprite="aws-s3", $tags="exposed")
-        Container(seaweedfs_filer_meta_backup, "SeaweedFS Filer Meta Backup", "SeaweedFS", "Filer Metadata Backup", $sprite="sqlite")
         Container(seaweedfs_volume, "SeaweedFS Volume", "SeaweedFS", "Stores actual file chunks", $sprite="application_store")
     }
 
@@ -82,7 +81,6 @@ System_Boundary(loom, "") {
 Rel(frontend, api, "")
 
 Rel(seaweedfs_filer, redis, "")
-Rel(seaweedfs_filer, seaweedfs_filer_meta_backup, "")
 Rel(seaweedfs_filer, seaweedfs_master, "")
 Rel(seaweedfs_filer, seaweedfs_volume, "")
 
