@@ -1,3 +1,4 @@
+import { clamp } from "./clamp";
 import { formatCompactNumber } from "./formatCompactNumber";
 import { formatFileSize } from "./formatFileSize";
 import {
@@ -10,6 +11,7 @@ import { inferAceModeFromMimeType } from "./inferAceModeFromMimeType";
 import { updateFieldOfQuery } from "./updateFieldOfQuery";
 
 export {
+    clamp,
     formatCompactNumber,
     formatFileSize,
     getColorFromString,

@@ -54,6 +54,7 @@ vi.mock("@mui/icons-material", () => ({
     VerticalAlignBottom: () => null,
     VerticalAlignTop: () => null,
     YoutubeSearchedForOutlined: () => null,
+    ZoomIn: () => null,
 }));
 vi.mock("@mui/material", () => ({
     Box: ({ children }: { children: ReactNode }) => children,

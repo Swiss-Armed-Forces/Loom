@@ -312,7 +312,8 @@
     },
     "error": {
         "searchResultLoadingError": "Cannot load search results. {{- error}}",
-        "webSocketClosed": "The WebSocket lost connection. Please reload the page."
+        "webSocketClosed": "The WebSocket lost connection. Please reload the page.",
+        "pdfLoadFailed": "Cannot display this file. It may be corrupt or unavailable."
     },
     "globalSearchBox": {
         "searchPlaceholder": "Search and press enter",
@@ -612,7 +613,8 @@
             "summary": "Summary",
             "image_description": "Image description",
             "translation_preview": "Translation"
-        }
+        },
+        "zoomHint": "Ctrl + mouse wheel"
     },
     "fieldSections": {
         "removeField": "Remove field",
@@ -688,6 +690,8 @@
             "openBackground": "Open file details in background",
             "shiftClickNegate": "Negate clicked filter",
             "ctrlClickAccumulate": "Accumulate positive filter",
+            "previewZoom": "Zoom the file preview",
+            "previewPan": "Move the zoomed file preview",
             "escapeAction": "Clear selection, search & sort, or close",
             "focusSearch": "Focus search",
             "fullscreen": "Fullscreen",
