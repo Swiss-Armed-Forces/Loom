@@ -208,6 +208,11 @@ tika:
   resources:
     requests: null
     limits: null
+  tmp:
+    reaper:
+      resources:
+        requests: null
+        limits: null
 
 gotenberg:
   resources:

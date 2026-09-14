@@ -10,6 +10,7 @@ configuring both independently: heap = limit - tmp - reserve.
 {{- $tmpFraction = .Values.tika.tmp.sizeFactor | float64 -}}
 {{- end -}}
 {{- $heapPercent := mulf (subf (subf 1.0 $tmpFraction) (.Values.tika.memoryReserveFactor | float64)) 100 | floor | int -}}
+{{- $reaperMaxAgeSeconds := mul .Values.tika.taskTimeoutSeconds .Values.tika.tmp.reaper.maxAgeFactor -}}
 {{- $javaOpts := printf "-XX:InitialRAMPercentage=%d -XX:MaxRAMPercentage=%d %s" $heapPercent $heapPercent (.Values.tika.javaOpts | default "") | trim -}}
 apiVersion: apps/v1
 kind: Deployment
@@ -116,6 +117,27 @@ spec:
             - name: tmp
               mountPath: /tmp
             {{- with include "app.trustedCerts.volumeMount" . }}{{ . | nindent 12 }}{{- end }}
+        {{- if .Values.tika.tmp.reaper.enabled }}
+        - name: tmp-reaper
+          image: {{ .Values.image.registry }}/{{ .Values.tika.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) .Values.tika.image.tag }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          {{- /*
+          Runs from the tika image: it ships the reaper and, sharing the server's
+          uid, the sidecar can delete what the server left behind.
+          */}}
+          args:
+            - "/usr/local/bin/tika-tmp-reaper"
+            - "--max-age-seconds"
+            - {{ $reaperMaxAgeSeconds | quote }}
+            - "--interval-seconds"
+            - {{ .Values.tika.tmp.reaper.intervalSeconds | quote }}
+          {{- if .Values.tika.tmp.reaper.resources }}
+          resources: {{- toYaml .Values.tika.tmp.reaper.resources | nindent 12 }}
+          {{- end }}
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+        {{- end }}
       volumes:
         - name: imagemagick-policy
           configMap:
