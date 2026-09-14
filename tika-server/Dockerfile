@@ -44,6 +44,11 @@ RUN set -exu \
     "https://repo1.maven.org/maven2/com/github/luben/zstd-jni/${ZSTD_JNI_VERSION}/zstd-jni-${ZSTD_JNI_VERSION}.jar" \
   && chmod 644 /tika-extras/zstd-jni-${ZSTD_JNI_VERSION}.jar
 
+# Sweeps scratch files left behind by parses that were killed before they could
+# clean up. Shipped with the image because the patterns it matches belong to this
+# image's Tika and ImageMagick versions.
+COPY --chmod=755 tmp-reaper.sh /usr/local/bin/tika-tmp-reaper
+
 USER $UID_GID
 
 EXPOSE 8000

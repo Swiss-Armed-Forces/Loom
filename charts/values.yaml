@@ -1321,6 +1321,29 @@ tika:
     # Absolute fallback, used when sizeFactor is null or no memory limit is
     # configured (e.g. values-no-resources.yaml).
     sizeLimit: 2Gi
+    # A parse that is killed - task timeout, OOM - never runs its cleanup
+    # handlers, so its scratch files stay behind. They accumulate until /tmp is
+    # full, and from then on every parse fails, not just the oversized one that
+    # started it: Tika answers with an error, the worker's Tika call raises and
+    # the indexing pipeline falls back to the strings extractor, which indexes
+    # raw byte sequences instead of document text. Clearing /tmp on container
+    # start only heals this at a restart, so a sidecar sweeps the leftovers of a
+    # long-running pod.
+    reaper:
+      enabled: true
+      # How often to sweep.
+      intervalSeconds: 60
+      # Multiple of taskTimeoutSeconds a scratch entry's age must exceed before
+      # it counts as orphaned. A live parse cannot outlive its own task timeout,
+      # so anything past that multiple is owned by a process that is already
+      # gone. Integer, >= 1.
+      maxAgeFactor: 2
+      resources:
+        requests:
+          cpu: "10m"
+          memory: "16Mi"
+        limits:
+          memory: "64Mi"
   # Custom labels specific to tika resources
   customLabels: {}
   customAnnotations: {}
