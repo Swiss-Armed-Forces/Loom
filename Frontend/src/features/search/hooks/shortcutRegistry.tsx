@@ -11,6 +11,7 @@ import {
     SummarizeOutlined,
     Translate,
     YoutubeSearchedForOutlined,
+    ZoomIn,
 } from "@mui/icons-material";
 import { Box } from "@mui/material";
 import { t } from "i18next";
@@ -145,6 +146,19 @@ export const shortcutRegistry: ShortcutAction[] = [
                 </Box>
             </>
         ),
+        context: "results",
+    },
+    {
+        id: "previewZoom",
+        defaultKeys: ["Ctrl + wheel"],
+        icon: <ZoomIn fontSize="inherit" />,
+        labelKey: "emptySearch.hotkeys.previewZoom",
+        context: "results",
+    },
+    {
+        id: "previewPan",
+        defaultKeys: ["wheel", "Middle-click drag"],
+        labelKey: "emptySearch.hotkeys.previewPan",
         context: "results",
     },
     {

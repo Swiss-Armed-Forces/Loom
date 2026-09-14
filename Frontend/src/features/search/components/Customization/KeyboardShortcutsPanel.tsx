@@ -75,7 +75,10 @@ export const KeyboardShortcutsPanel = () => {
                                 action.id !== "open" &&
                                 action.id !== "openBackground" &&
                                 action.id !== "shiftClickNegate" &&
-                                action.id !== "ctrlClickAccumulate",
+                                action.id !== "ctrlClickAccumulate" &&
+                                // Mouse gestures, so there is no key to rebind.
+                                action.id !== "previewZoom" &&
+                                action.id !== "previewPan",
                         )
                         .map((action) => (
                             <TableRow key={action.id}>

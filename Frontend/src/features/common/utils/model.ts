@@ -10,6 +10,16 @@ export interface TreeExpandedState {
     isExpanded: boolean;
 }
 
+export interface Point {
+    x: number;
+    y: number;
+}
+
+export interface Size {
+    width: number;
+    height: number;
+}
+
 export const sortDirections = ["asc", "desc"] as const;
 export type SortDirection = (typeof sortDirections)[number];
 export const isSortDirection = (x: string): x is SortDirection => {
