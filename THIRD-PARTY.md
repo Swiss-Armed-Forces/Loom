@@ -2689,7 +2689,7 @@ The complete source code for Traefik is publicly available at https://github.com
 | libjansson4 | 2.14-2 |  | dpkg-db-cataloger |
 | libjbig-dev | 2.1-6.1 | GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
 | libjbig0 | 2.1-6.1 | GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
-| libjbig2dec0 | 0.19-3 | AGPL-3.0-or-later, BSD-2-Clause, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
+| libjbig2dec0 | 0.19-3+deb12u1 | AGPL-3.0-or-later, BSD-2-Clause, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
 | libjpeg-dev | 1:2.1.5-2 | BSD-3-Clause, NTP, Zlib | dpkg-db-cataloger |
 | libjpeg62-turbo | 1:2.1.5-2 | BSD-3-Clause, NTP, Zlib | dpkg-db-cataloger |
 | libjpeg62-turbo-dev | 1:2.1.5-2 | BSD-3-Clause, NTP, Zlib | dpkg-db-cataloger |
