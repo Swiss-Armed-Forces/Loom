@@ -23,6 +23,17 @@ logger = logging.getLogger(__name__)
 
 WAIT_FOR_CELERY_IDLE_SLEEP_TIME__S = 0.1
 WIPE_CELERY_TIMEOUT__S = 300.0
+# One idle reading is enough to return on.
+#
+# The depths are live (see LIVE_QUEUE_TOTALS_PARAMS) and cover unacknowledged messages,
+# and task_acks_late=True means a running task holds an unacked message for its whole
+# lifetime — so in-flight work is never invisible to the reading. Terminating a task does
+# not open a gap either: task_reject_on_worker_lost=False makes the parent acknowledge
+# the message, and until it does the message is still unacked and still counted.
+#
+# What this cannot cover is an independent producer — beat, the crawler, an API upload —
+# publishing after the check. No amount of re-reading fixes that; it needs consumption
+# stopped at the source before the purge.
 # Upper bound on concurrent queue purges. wipe_celery() re-purges every 0.1s, so this
 # caps how many requests a single wipe can have in flight against the broker.
 PURGE_MAX_WORKERS = 16
@@ -153,12 +164,10 @@ class WipeService:
         Covers the terminal queues (abyss, unroutable) that no worker consumes, and the
         ``celery_delayed_*`` queues holding tasks in a retry backoff.
 
-        The reported depths name the queues but must not decide which ones to purge: the
-        management API serves them from its stats database, refreshed only every
-        ``collect_statistics_interval`` (10s), and reports no ``messages`` column at all
-        for a queue it has not sampled yet. A queue holding a just-published backlog
-        therefore reads as empty, and skipping it would let a wipe return having purged
-        nothing. Purging an already-empty queue costs one request and is harmless.
+        The depths name the queues but must not decide which ones to purge. They are
+        read live now, but a live depth is still only a point-in-time answer: a queue
+        that reads as empty can be filled by an in-flight task before the purge reaches
+        it. Purging an already-empty queue costs one request and is harmless.
         """
         queue_names = [
             *self._queues_service.get_all_queue_message_counts(),
