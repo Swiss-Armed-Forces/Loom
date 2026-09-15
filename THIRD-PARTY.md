@@ -590,7 +590,6 @@ The complete source code for Traefik is publicly available at https://github.com
 | dulwich                                  | 1.2.10          | Apache-2.0 OR GPL-2.0-or-later                                                   |
 | ply                                      | 3.11            | BSD                                                                              |
 | Authlib                                  | 1.8.0           | BSD License                                                                      |
-| IMAPClient                               | 3.1.0           | BSD License                                                                      |
 | Jinja2                                   | 3.1.6           | BSD License                                                                      |
 | amqp                                     | 5.3.1           | BSD License                                                                      |
 | asgiref                                  | 3.12.1          | BSD License                                                                      |
@@ -809,6 +808,7 @@ The complete source code for Traefik is publicly available at https://github.com
 | aiohappyeyeballs                         | 2.7.1           | Python Software Foundation License                                               |
 | distlib                                  | 0.4.0           | Python Software Foundation License                                               |
 | email-validator                          | 2.3.0           | The Unlicense (Unlicense)                                                        |
+| IMAPClient                               | 4.0.1           | UNKNOWN                                                                          |
 | crashtest                                | 0.4.1           | UNKNOWN                                                                          |
 
 ## JavaScript
@@ -1971,8 +1971,7 @@ The complete source code for Traefik is publicly available at https://github.com
 | httpx-sse | 0.4.3 | MIT | python-installed-package-cataloger |
 | httpx2 | 2.3.0 | BSD-3-Clause | python-installed-package-cataloger |
 | idna | 3.15 | BSD-3-Clause | python-installed-package-cataloger |
-| imapclient | 3.1.0 |  | python-installed-package-cataloger |
-| imapclient | 3.1.0 |  | python-installed-package-cataloger |
+| imapclient | 4.0.1 |  | python-installed-package-cataloger |
 | importlib-metadata | 8.7.1 | Apache-2.0 | python-installed-package-cataloger |
 | init-system-helpers | 1.65.2+deb12u1 | BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
 | jaraco-classes | 3.4.0 | MIT | python-installed-package-cataloger |
@@ -2536,8 +2535,7 @@ The complete source code for Traefik is publicly available at https://github.com
 | imagemagick | 8:6.9.11.60+dfsg-1.6+deb12u13 | GPL-1.0-only, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, ImageMagick, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
 | imagemagick-6-common | 8:6.9.11.60+dfsg-1.6+deb12u13 | GPL-1.0-only, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, ImageMagick, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
 | imagemagick-6.q16 | 8:6.9.11.60+dfsg-1.6+deb12u13 | GPL-1.0-only, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, ImageMagick, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
-| imapclient | 3.1.0 |  | python-installed-package-cataloger |
-| imapclient | 3.1.0 |  | python-installed-package-cataloger |
+| imapclient | 4.0.1 |  | python-installed-package-cataloger |
 | init-system-helpers | 1.65.2+deb12u1 | BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
 | jiter | 0.14.0 | MIT | python-installed-package-cataloger |
 | joblib | 1.5.3 | BSD-3-Clause | python-installed-package-cataloger |
@@ -3083,8 +3081,7 @@ The complete source code for Traefik is publicly available at https://github.com
 | httpcore | 1.0.9 | BSD-3-Clause | python-installed-package-cataloger |
 | httpx | 0.28.1 | BSD-3-Clause | python-installed-package-cataloger |
 | idna | 3.15 | BSD-3-Clause | python-installed-package-cataloger |
-| imapclient | 3.1.0 |  | python-installed-package-cataloger |
-| imapclient | 3.1.0 |  | python-installed-package-cataloger |
+| imapclient | 4.0.1 |  | python-installed-package-cataloger |
 | init-system-helpers | 1.65.2+deb12u1 | BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
 | jiter | 0.14.0 | MIT | python-installed-package-cataloger |
 | kombu | 5.6.2 | BSD-3-Clause | python-installed-package-cataloger |
