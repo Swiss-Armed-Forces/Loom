@@ -815,8 +815,8 @@ The complete source code for Traefik is publicly available at https://github.com
 
 | Name                                | License type | Installed version |
 | :---------------------------------- | :----------- | :---------------- |
-| @ag-ui/client                       | n/a          | 0.0.57            |
-| @ag-ui/core                         | n/a          | 0.0.57            |
+| @ag-ui/client                       | MIT          | 0.0.59            |
+| @ag-ui/core                         | MIT          | 0.0.59            |
 | @emotion/styled                     | MIT          | 11.14.1           |
 | @mui/icons-material                 | MIT          | 9.3.1             |
 | @mui/material                       | MIT          | 9.3.1             |
