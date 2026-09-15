@@ -95,12 +95,10 @@ def test_wipe_rabbit_purges_queues_the_broker_reports_as_empty(
     wipe_service: WipeService,
     queues_service: Any,
 ):
-    """A reported depth of 0 must not be trusted to mean the queue is empty.
+    """A depth of 0 must not be trusted to mean the queue will still be empty.
 
-    The management API serves depths from a stats database refreshed every 10s, and
-    omits the messages column entirely for a queue it has not sampled yet. Skipping
-    those queues let a wipe issued right after a burst of publishes return having purged
-    nothing.
+    The depths are read live, but a live depth is still only a point-in-time answer: an
+    in-flight task can fill a queue between the read and the purge that skipped it.
     """
     wipe_service.wipe_rabbit()
 
@@ -150,6 +148,24 @@ def test_wipe_celery_terminates_remaining_tasks_and_repurges_until_idle(
     # flight publish successors as they complete, so purging only once would leave
     # those behind.
     assert queues_service.purge_queue.call_count == 6
+
+
+def test_wipe_celery_returns_on_the_first_idle_reading(
+    wipe_service: WipeService,
+    celery_inspect_service: Any,
+):
+    """The depths are live and count unacked messages, so one reading settles it.
+
+    task_acks_late=True keeps a running task's message unacked for the task's whole
+    lifetime, and task_reject_on_worker_lost=False leaves a terminated task's message
+    unacked until the parent acknowledges it. In-flight work is therefore never
+    invisible to the reading, and re-reading would only cost every wipe a delay.
+    """
+    celery_inspect_service.is_idle.return_value = True
+
+    wipe_service.wipe_celery()
+
+    assert celery_inspect_service.is_idle.call_count == 1
 
 
 def test_wipe_celery_raises_when_it_cannot_reach_idle(
