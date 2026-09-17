@@ -34,14 +34,26 @@
   enableGpu ? false,
 }:
 let
-  pkgs = import nixpkgs {
-    inherit system;
+  nixpkgsConfig = {
     # devenv.yaml's `allowUnfree` is a devenv option and does not reach a
     # manually imported nixpkgs, so it has to be repeated here.
-    config = {
-      allowUnfree = true;
-      nvidia.acceptLicense = true;
-    };
+    allowUnfree = true;
+    nvidia.acceptLicense = true;
+  };
+
+  pkgs = import nixpkgs {
+    inherit system;
+    config = nixpkgsConfig;
+  };
+
+  # The machine doing the building, as opposed to `system`, which is the machine
+  # the image is *for*. The two differ only when building under emulation; see
+  # `nativeImageAssembly` below for the one place that has to care.
+  hostSystem = builtins.currentSystem;
+
+  hostPkgs = import nixpkgs {
+    system = hostSystem;
+    config = nixpkgsConfig;
   };
 
   # Resolved through an explicit table rather than by interpolating `platform`
@@ -123,10 +135,63 @@ let
     platformModule
     ./branding.nix
     ./box.nix
+    ./console.nix
+    ./key-guard.nix
     ./modes.nix
     ./network.nix
     ./repo.nix
   ];
+
+  # Assemble the disk image with host binaries rather than target ones.
+  #
+  # `nixos/modules/image/repart-image.nix` builds the image with:
+  #
+  #   unshare --map-root-user fakeroot systemd-repart ...
+  #
+  # Taken from `pkgs`, those are aarch64 binaries, and under binfmt emulation
+  # the `unshare` fails with "Invalid argument": the kernel only unshares a user
+  # namespace for a single-threaded process, and qemu-user never is one. Every
+  # other derivation in the closure emulates happily -- this is the single step
+  # that cannot, and it is the last one, so it wastes the whole build.
+  #
+  # Nothing about the assembly is architecture-specific. repart copies opaque
+  # bytes into partitions, and the partition types installer.nix asks for (`esp`
+  # and `linux-generic`) carry no architecture. The one place the target does
+  # appear is repart's `--architecture=` flag, which is a string in the
+  # derivation's own attrs and is left exactly as it was. So the tools may just
+  # as well be the host's: the emulated shell execs a native ELF, the kernel
+  # runs it without qemu, and the unshare succeeds.
+  #
+  # Upstream has the same idea in `image.repart.package`, which defaults to
+  # `buildPackages.systemd` "so that repart images are built with the build
+  # platform's systemd, allowing for cross-compiled systems to work". That only
+  # bites under real cross-compilation, where `buildPackages` is the host's;
+  # with binfmt emulation `buildPackages == pkgs`. `util-linux` and `fakeroot`
+  # are not options at all, so the whole `nativeBuildInputs` list is replaced.
+  #
+  # Building natively changes nothing, so leave the derivation alone there.
+  nativeImageAssembly =
+    image:
+    if system == hostSystem then
+      image
+    else
+      image.overrideAttrs (_: {
+        nativeBuildInputs = with hostPkgs; [
+          systemd # carries systemd-repart
+          util-linux # unshare
+          fakeroot
+          # The filesystem tools repart-image.nix picks per `Format=`. Only vfat
+          # is used today; the rest cost nothing and keep this from breaking the
+          # day a partition changes format.
+          dosfstools
+          mtools
+          e2fsprogs
+          squashfsTools
+          erofs-utils
+          btrfs-progs
+          xfsprogs
+        ];
+      });
 
   boxSystem = evalConfig (applianceModules ++ [ ./box-hardware.nix ]);
 
@@ -150,7 +215,7 @@ in
   box = boxSystem.config.system.build.toplevel;
 
   # The flashable USB stick. This is what `build-appliance-image` builds.
-  installerImage = installerSystem.config.system.build.image;
+  installerImage = nativeImageAssembly installerSystem.config.system.build.image;
 
   # `nix-build ./nixos -A boxVm --argstr system x86_64-linux` then
   # `./result/bin/run-*-vm` -- for poking at the appliance by hand.

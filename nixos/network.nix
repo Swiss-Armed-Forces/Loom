@@ -128,11 +128,22 @@ in
         wantedBy = [ "multi-user.target" ];
         after = [ "systemd-udev-settle.service" ];
         before = [ "loom.service" ];
+        # Same ordering trick as box.nix's loom-issue.service, and for the same
+        # reason: the warning below is written as an issue fragment, so it has
+        # to exist before any getty renders the issue. getty-pre.target is
+        # passive, hence `wants` as well as `before`.
+        wants = [ "getty-pre.target" ];
         serviceConfig = {
           Type = "oneshot";
           RemainAfterExit = true;
-          StandardOutput = "journal+console";
-          StandardError = "journal+console";
+          # Journal only. This used to be "journal+console", which -- with no
+          # `console=` on the command line -- put it on the active VT. See
+          # modes.nix for why that had to stop. The warning still reaches
+          # somebody standing at the box, through the issue fragment below,
+          # which is a better place for it: the login screen holds it until a
+          # key is pressed instead of scrolling it past at boot.
+          StandardOutput = "journal";
+          StandardError = "journal";
         };
         # Never fails: this is a diagnostic, and blocking the boot of an
         # appliance whose only interface is missing helps nobody.
@@ -140,14 +151,27 @@ in
           if [ -e /sys/class/net/${applianceInterface} ]; then
             exit 0
           fi
-          echo "[!] ${applianceInterface} does not exist -- no address, no DHCP, no *.loom."
-          echo "[!] The platform's interface match did not select anything. Present instead:"
-          for candidate in /sys/class/net/*; do
-            name="$(basename "$candidate")"
-            [ "$name" = lo ] && continue
-            echo "[!]   $name"
-          done
-          echo "[!] Rebuild the image with --interface <name> to pin one of the above."
+
+          # Sorts after box.nix's 50-loom.issue, so this lands under the banner
+          # and above agetty's press-ENTER prompt. No backslashes anywhere in
+          # the text: agetty reads them as issue escapes. Written through a
+          # temporary file for the same reason loom-issue.service is -- a getty
+          # respawning mid-write must never read half a warning.
+          mkdir -p /run/issue.d
+          {
+            echo "[!] ${applianceInterface} does not exist -- no address, no DHCP, no *.loom."
+            echo "[!] The platform's interface match did not select anything. Present instead:"
+            for candidate in /sys/class/net/*; do
+              name="$(basename "$candidate")"
+              [ "$name" = lo ] && continue
+              echo "[!]   $name"
+            done
+            echo "[!] Rebuild the image with --interface <name> to pin one of the above."
+          } > /run/issue.d/60-loom-network.issue.tmp
+          mv /run/issue.d/60-loom-network.issue.tmp /run/issue.d/60-loom-network.issue
+
+          # And to the journal, so `journalctl -u loom-network-check` still has it.
+          cat /run/issue.d/60-loom-network.issue
           exit 0
         '';
       };

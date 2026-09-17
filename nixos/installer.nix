@@ -85,6 +85,9 @@ let
                   # dies with "nix-env: command not found" -- after the disk
                   # has already been partitioned and encrypted.
                   config.nix.package
+                  # `loom_banner` in common.sh draws the mark with this, so the
+                  # stick and the box it installs print the same eyes.
+                  config.loom.branding.eyes
                 ]
               )
             } \

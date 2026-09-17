@@ -48,8 +48,13 @@ let
       TimeoutStartSec = "infinity";
       # up.sh backgrounds `sudo minikube tunnel`, which must outlive the unit.
       KillMode = "process";
-      StandardOutput = "journal+console";
-      StandardError = "journal+console";
+      # Journal only. These used to also go to /dev/console, which -- with no
+      # `console=` on the command line -- meant the active VT, so hours of
+      # bring-up log painted over the login screen. The first pane of
+      # console.nix's session follows this journal instead, which is where it is
+      # actually readable.
+      StandardOutput = "journal";
+      StandardError = "journal";
     };
     after = [
       "docker.service"
@@ -138,11 +143,19 @@ in
         system.nixos.tags = [ "first-time-setup" ];
       };
 
+      loom.progressUnit = "loom.service";
+
+      # Normal operation: the box holds indexed data and is expected to be left
+      # alone, so pulling the key is a deliberate act and must act on it.
+      loom.keyGuard.action = "poweroff";
+
       # Run mode has nothing to say on its way up: the disk unlocks from the
-      # stick without a prompt, and everything an operator needs is on the login
-      # screen afterwards (box.nix's `loom-info`). So let branding.nix's splash
-      # own the screen instead of a scroll of kernel messages -- the plymouth
-      # module contributes `splash` itself, `quiet` is what silences the log.
+      # stick without a prompt, everything an operator needs is on the login
+      # screen afterwards (box.nix's `loom-info`), and bring-up itself is
+      # readable in the first pane of console.nix's session. So let
+      # branding.nix's splash own the screen instead of a scroll of kernel
+      # messages -- the plymouth module contributes `splash` itself, `quiet` is
+      # what silences the log.
       #
       # Deliberately here rather than in box-hardware.nix: a specialisation
       # *adds* to its parent's kernel command line and cannot subtract from it,
@@ -169,10 +182,18 @@ in
     # Setup mode
     # -------------------------------------------------------------------------
     (lib.mkIf (cfg.mode == "setup") {
+      loom.progressUnit = "loom-fetch.service";
+
+      # Warn only. This mode runs once, in the lab, with internet and nothing
+      # secret on the box yet, and loom-fetch below takes hours -- a trip on a
+      # glitching USB port would throw all of it away for no security gain.
+      loom.keyGuard.action = "warn";
+
       # No splash in this mode, and no `quiet` either (the run-mode branch above
       # is what sets that). Fetching every container image takes hours, and a
-      # scrolling log is the only thing telling an operator it is working rather
-      # than wedged -- a still logo here would be actively misleading.
+      # still logo over all of it would be actively misleading. What actually
+      # reports progress is the first pane of console.nix's session, which
+      # follows loom-fetch below; this keeps the boot itself honest as well.
       boot.kernelParams = [ "plymouth.enable=0" ];
 
       systemd.services.loom-fetch = lib.mkMerge [
@@ -186,8 +207,8 @@ in
 
           script = ''
             echo "[*] Loom setup mode: populating minikube's image store."
-            echo "[*] This needs internet and takes a long time. Watch with:"
-            echo "[*]   journalctl -fu loom-fetch"
+            echo "[*] This needs internet and takes a long time. Press a key at"
+            echo "[*] the console; the first pane of the session is this log."
 
             # --delete tears the deployment down again afterwards: the goal here
             # is a warm image store, not a running stack. Documentation/

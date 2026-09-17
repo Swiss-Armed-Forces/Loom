@@ -68,7 +68,8 @@ main() {
     echo "    Without the USB stick it is the only way to unlock this disk."
     echo "    It is also shown on every console login."
     echo
-    log "Leave the USB stick plugged in. The box cannot boot without it."
+    log "Leave the USB stick plugged in. The box cannot boot without it, and"
+    log "removing it from a running box powers that box off ten seconds later."
 }
 
 # Which disk to install onto, when the box has more than one.

@@ -12,7 +12,16 @@
 # partition. The stick therefore has to stay plugged in. If it is missing,
 # systemd stage 1 falls back to prompting for the recovery passphrase that the
 # installer enrolled in keyslot 1.
+#
+# Stage 1 is the only place that *needs* the key, but it is no longer the only
+# place that looks at it: key-guard.nix keeps watching the same device for as
+# long as the box runs, and powers it off when the key goes away. The three
+# values below come from there so the initrd and the guard cannot name
+# different devices.
 { config, ... }:
+let
+  guard = config.loom.keyGuard;
+in
 {
   # ---------------------------------------------------------------------------
   # Root encryption
@@ -24,9 +33,9 @@
   # hard-coded 10 seconds, which is a coin flip on USB.
   # ---------------------------------------------------------------------------
   boot.initrd.luks.devices."cryptroot" = {
-    device = "/dev/disk/by-partlabel/loom-root-luks";
-    keyFile = "/dev/disk/by-partlabel/loom-key";
-    keyFileSize = 4096;
+    device = guard.rootDevice;
+    keyFile = guard.keyDevice;
+    keyFileSize = guard.keyBytes;
     keyFileOffset = 0;
     allowDiscards = true;
 

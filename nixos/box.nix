@@ -16,6 +16,11 @@
   ...
 }:
 let
+  # How long the box survives the key being pulled, in the same two numbers
+  # key-guard.nix multiplies. Restating "10 seconds" in the banner would drift
+  # the moment either is tuned.
+  keyGuardGrace = config.loom.keyGuard.intervalSec * config.loom.keyGuard.graceTicks;
+
   # Ship a wrapper rather than only documenting the flags. Running bare `up.sh`
   # here is actively harmful: `setup_system` writes /etc/sysctl.d/99-loom.conf
   # that NixOS ignores, and `install_host_entries` replaces the /etc/hosts store
@@ -55,14 +60,22 @@ let
   # login screen shows: `loom-issue.service` below captures this output into
   # /run/issue.d, and the interactive shell calls it again on login. One
   # generator rather than two copies that drift -- and the operator can re-run
-  # it by hand once the bring-up log has scrolled the boot-time copy away.
+  # it by hand once the console session has covered the boot-time copy.
   #
   # Produces no backslashes on purpose: agetty interprets them as issue-file
-  # escapes. The passphrase charset (install.sh:225-231) cannot contain one.
+  # escapes. The passphrase charset (install.sh:225-231) cannot contain one, and
+  # neither does either pair `loom-eyes` can draw.
   loom-info = pkgs.writeShellApplication {
     name = "loom-info";
     runtimeInputs = [ pkgs.coreutils ];
     text = ''
+      # The mark the boot splash just showed, in the form a console can hold.
+      # Which pair lands here is decided by what this is writing to, which is
+      # the whole reason it is a command and not a here-document: captured into
+      # the issue it comes out as ASCII, because that one file is read by the VT
+      # getty and the serial getty both. See branding.nix.
+      printf '\n'
+      ${lib.getExe config.loom.branding.eyes}
       printf '\n  Loom appliance -- %s\n' ${lib.escapeShellArg tag}
       printf '  %s\n' ${lib.escapeShellArg config.loom.platform.description}
       if [ -r /etc/loom/network.conf ]; then
@@ -72,6 +85,24 @@ let
           "''${LOOM_INTERFACE}"
         printf '  This box serves DHCP on %s and answers for *.loom\n' \
           "''${LOOM_SUBNET}"
+      fi
+      # Read at print time, not baked in: a box booted with the recovery
+      # passphrase has no key at all and its guard never arms, and a banner
+      # that claimed otherwise would be promising protection the box does not
+      # have. key-guard.nix restarts loom-issue.service whenever this changes.
+      if [ -r ${config.loom.keyGuard.stateDir}/state ]; then
+        case "$(cat ${config.loom.keyGuard.stateDir}/state)" in
+          armed)
+            printf '\n  USB key guard: armed. Removing the USB key powers this\n'
+            printf '  box off after %s seconds.\n' ${toString keyGuardGrace}
+            ;;
+          disarmed)
+            printf '\n  USB key guard: disarmed until the next boot.\n'
+            ;;
+          *)
+            printf '\n  USB key guard: idle -- no USB key present.\n'
+            ;;
+        esac
       fi
       if [ -r ${recoveryPassphraseFile} ]; then
         printf '\n  LUKS recovery passphrase: %s\n' \
@@ -183,6 +214,12 @@ in
       usbutils
       htop
       less
+
+      # The operator's console session (console.nix). Plain btop, not devenv's
+      # `btop.override { cudaSupport = true; }` -- the appliance has no GPU
+      # userspace and that override would drag CUDA into the closure.
+      tmux
+      btop
     ])
     ++ [ loom-info ]
     ++ config.loom.entrypoints;
@@ -217,23 +254,29 @@ in
     extraGroups = [
       "wheel"
       "docker"
+      # Reading `journalctl --unit` as a non-root user only reaches that user's
+      # own journal. The messages console.nix's first pane exists to surface --
+      # PID 1's "Condition check resulted in loom-fetch.service being skipped",
+      # above all -- are _UID=0 and would be invisible without this. It grants
+      # nothing new: `wheel` plus `wheelNeedsPassword = false` below already
+      # hands this account root.
+      "systemd-journal"
     ];
   };
   # No direct root login; the appliance is reached through the operator account.
   users.users.root.hashedPassword = "!";
 
-  # The operator account has no password, so the console logs into it directly.
-  # A password would buy nothing: `wheelNeedsPassword = false` below already
-  # hands out root without one, there is no sshd, and the disk is LUKS-encrypted
-  # with the key on the USB stick -- physical possession is the whole trust
-  # boundary. Without this the login prompt is unanswerable, because a user with
-  # no declared password gets a locked shadow entry and `users.mutableUsers` is
-  # true, which switches off the assertion that would otherwise catch it.
-  services.getty.autologinUser = loomUser;
-  # This box is a Loom appliance, not a NixOS installation, and the banner from
-  # loom-issue.service below says so. Drops agetty's stock
-  # `<<< Welcome to NixOS ... >>>` from /etc/issue.
-  services.getty.greetingLine = "";
+  # The operator account has no password, so the console can log into it without
+  # asking for one. A password would buy nothing: `wheelNeedsPassword = false`
+  # below already hands out root without one, there is no sshd, and the disk is
+  # LUKS-encrypted with the key on the USB stick -- physical possession is the
+  # whole trust boundary. A user with no declared password gets a locked shadow
+  # entry, and `users.mutableUsers` is true, which switches off the assertion
+  # that would otherwise catch it.
+  #
+  # console.nix is what turns that into a usable login: it keeps agetty's
+  # `--autologin`, which is what bypasses the locked entry, but pairs it with
+  # `--login-pause` so nothing opens a session until somebody presses a key.
 
   security.sudo = {
     enable = true; # up.sh:406 requires `sudo` to exist
@@ -262,7 +305,9 @@ in
   #
   # These boxes are given away, and have no remote access, so the console is the
   # only place this information can reach anyone. It is therefore shown before
-  # anyone logs in, as the agetty issue, and again in the operator's shell.
+  # anyone logs in, as the agetty issue -- console.nix's `--login-pause` then
+  # holds the screen there until somebody presses a key -- and again in the
+  # operator's shell.
   #
   # The recovery passphrase is part of it, which is safe here for the same
   # reason the file itself is: reading it requires the box to have booted, which
@@ -302,8 +347,10 @@ in
     };
   };
 
-  # Repeated in the shell because the boot-time copy scrolls away behind
-  # loom.service's console output. `loom-info` reprints it on demand.
+  # Repeated in the shell, because on tty1 console.nix's tmux session draws over
+  # the boot-time copy the moment it starts. `loom-info` reprints it on demand.
+  # console.nix exports LOOM_BANNER_SHOWN before starting that session, so the
+  # panes inherit it and none of them reprints.
   environment.interactiveShellInit = ''
     if [ -z "''${LOOM_BANNER_SHOWN:-}" ]; then
       export LOOM_BANNER_SHOWN=1

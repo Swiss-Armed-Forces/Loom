@@ -12,15 +12,17 @@ this file is about the code.
 | `platform.nix` | Declares `loom.platform.*`: the per-box dimension, separate from `system`. |
 | `platforms/spark.nix` | DGX Spark: aarch64, serial console, ConnectX-7. |
 | `platforms/evo-x2.nix` | GMKtec EVO-X2: x86_64, no serial port, Realtek 2.5GbE. |
-| `branding.nix` | Shared by box and stick: the name in the boot menu, the logo, the plymouth theme. |
-| `box.nix` | The appliance: host tuning, toolchain, operator account, console banner, `loom-up`. |
+| `branding.nix` | Shared by box and stick: the name in the boot menu, the logo, the plymouth theme, `loom-eyes`. |
+| `box.nix` | The appliance: host tuning, toolchain, operator account, banner, `loom-up`. |
+| `console.nix` | What the operator meets: the press-a-key login, the three-pane session, `/dev/console`. |
 | `box-hardware.nix` | LUKS root, filesystems, initrd, bootloader. |
+| `key-guard.nix` | Watches the USB key while the box runs and powers it off when the key leaves. |
 | `modes.nix` | `loom.mode`, the run/setup services, and the `first-time-setup` specialisation. |
 | `network.nix` | Static address and dnsmasq in run mode, DHCP client in setup mode, radios off. |
 | `repo.nix` | Seeds the embedded checkout into the operator's home, writable. |
 | `installer.nix` | The USB stick: `image.repart` layout and the installer system. |
 | `installer-scripts/` | `common.sh` (device interlock, console styling), `install.sh`, `wipe.sh`, `menu.sh`. |
-| `tests/appliance.nix` | VM test asserting the values `box.nix` restates from `up.sh`. |
+| `tests/appliance.nix` | VM test asserting the values `box.nix` restates from `up.sh`, and the console session. |
 
 ## Why `default.nix` and not a flake
 
@@ -113,3 +115,22 @@ units in `modes.nix`, because a unit's PATH is built solely from its own `path` 
 two were maintained separately they drifted, and the box shipped with a `loom.service` that died on
 `awk: command not found` while the same command worked fine in the operator's shell. For the same reason
 the test resolves each binary against `loom.service`'s own PATH rather than the login shell's.
+
+## The USB key, in two places
+
+Stage 1 needs the key to unlock the root; `key-guard.nix` needs the same key, on the same device, for as
+long as the box runs. So `loom.keyGuard.keyDevice`, `.rootDevice` and `.keyBytes` are options declared in
+`key-guard.nix` and consumed by `box-hardware.nix`, rather than two copies of `loom-key`, `loom-root-luks`
+and `4096`. A box whose initrd and whose guard disagreed about which device is the key would boot perfectly
+and then power itself off ten seconds later, which is not a failure anybody would enjoy diagnosing in the
+field. The same three options are what let `tests/appliance.nix` point the guard at loop devices.
+
+`loom.keyGuard.action` follows `loom.progressUnit`: declared here, set in `modes.nix` next to the mode it
+belongs to — `poweroff` in run mode, `warn` in first-time setup. `loom.consoleSocket` is the same idea in
+the other direction: `console.nix` owns the operator's tmux session, and the guard writes its countdown
+into it.
+
+The stick side of the same numbers lives in `installer-scripts/common.sh` (`LOOM_KEY_BYTES`, the partition
+labels) and in `cicd/build_appliance_image.sh` (`KEY_BYTES`, `KEY_PARTLABEL`). Those cannot share the Nix
+options — they run from the stick, before any of this exists — so they are the one pair that still has to
+be kept in step by hand.

@@ -2,8 +2,8 @@
 #
 # Shared by the appliance and by the installer stick, because an operator meets
 # both and they should not look like two different products. What lives here is
-# what the two have in common: the name in the boot menu, the logo, and the
-# plymouth theme.
+# what the two have in common: the name in the boot menu, the logo, the
+# plymouth theme, and the console rendering of the logo (`loom-eyes`).
 #
 # What differs stays with the boot path that owns it:
 #
@@ -61,6 +61,76 @@ let
         magick ${logoPng} -background black -alpha remove -alpha off BMP3:$out
       '';
 
+  # The same mark for the consoles that cannot show a PNG: the two eyes it is
+  # actually made of, with the surrounding disc dropped because at console
+  # resolution nothing of it survives anyway.
+  #
+  # Which pair gets drawn is keyed on the console device rather than on TERM or
+  # a locale. Both callers are started by systemd with a fixed TTYPath -- the
+  # installer menu (installer.nix) and `loom-info` via loom-issue.service
+  # (box.nix) -- and neither variable is set there.
+  #
+  #   Linux VT       Half blocks, which draw the rings far rounder than ASCII
+  #                  manages and are in the console's built-in font.
+  #   Serial         An ASCII pair. Whatever terminal is on the far end of a
+  #                  Spark's cable may have neither UTF-8 nor the glyphs, and
+  #                  rings rendered as a screen of question marks are worse
+  #                  than plainer rings that always work.
+  #   Not a terminal The ASCII pair as well, which is the case that matters
+  #                  most: it is what `loom-info` hits when loom-issue.service
+  #                  captures it into /run/issue.d. That is *one* file, read by
+  #                  the VT getty and the serial getty both, so it has to hold
+  #                  the pair that works on either. It also keeps a redirected
+  #                  capture readable.
+  #   Anything else  Blocks. A pts -- the tmux panes of console.nix's session
+  #                  -- is UTF-8 in practice.
+  #
+  # Colour is deliberately NOT applied here. The installer wraps this in the
+  # logo amber, which on a VT it can only reach by redefining a palette entry,
+  # and that sequence hangs an xterm and means nothing on a serial line
+  # (common.sh). The appliance prints the eyes plain rather than settle for the
+  # mustard that a bare ESC[33m lands on. One generator, two colour policies.
+  loomEyes = pkgs.writeShellApplication {
+    name = "loom-eyes";
+    runtimeInputs = [ pkgs.coreutils ];
+    text = ''
+      # Assigned separately rather than tested inline: `tty` exits non-zero when
+      # stdin is not a terminal, and inside a condition that status would be
+      # swallowed rather than handled.
+      console="$(tty 2>/dev/null || true)"
+      # stdout is what is being drawn on, so it decides -- stdin can still be a
+      # terminal while the art is going into a file.
+      [[ -t 1 ]] || console="none"
+
+      case "''${console}" in
+      /dev/ttyS* | none)
+          # Double quotes and no slashes on purpose. An apostrophe cannot appear
+          # inside a single-quoted string; a backslash would read to shellcheck
+          # as a botched escape, and agetty would eat it out of the issue as an
+          # escape of its own.
+          eyes=(
+              " .-----.    .-----."
+              "( ( o ) )  ( ( o ) )"
+              " '-----'    '-----'"
+          )
+          ;;
+      *)
+          eyes=(
+              ' ▄████▄    ▄████▄'
+              '██▀  ▀██  ██▀  ▀██'
+              '██ ▄▄ ██  ██ ▄▄ ██'
+              '██▄  ▄██  ██▄  ▄██'
+              ' ▀████▀    ▀████▀'
+          )
+          ;;
+      esac
+
+      # Two spaces, matching the indent every other line of `loom-info` and of
+      # the installer menu uses.
+      printf '  %s\n' "''${eyes[@]}"
+    '';
+  };
+
   # Derived from upstream `spinner` rather than written from scratch, for one
   # specific reason: the NixOS module greps the theme's `ModuleName` to decide
   # which plugin to copy into the initrd (plymouth.nix, `plymouth-initrd-plugins`).
@@ -114,11 +184,23 @@ in
         Only `installer.nix` consumes it; the appliance has no stub to draw it.
       '';
     };
+
+    eyes = lib.mkOption {
+      type = lib.types.package;
+      internal = true;
+      description = ''
+        `loom-eyes`: the logo reduced to its two eyes, drawn in half blocks or
+        in ASCII depending on the console it is writing to. The appliance's
+        login banner and the installer menu both print it, so the two screens
+        carry the same mark.
+      '';
+    };
   };
 
   config = {
     loom.branding = {
       inherit logoPng splashBmp;
+      eyes = loomEyes;
     };
 
     # Names the systemd-boot entries: NixOS builds each title from this string

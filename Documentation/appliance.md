@@ -16,12 +16,17 @@ Read this before building anything; the design only makes sense if these hold.
 
 - **The USB stick is the key.** The internal disk is LUKS2, and the key is 4096 random bytes on the stick. Pull
   the stick and the box will not boot. Every stick gets its own key.
+- **The stick has to stay plugged in.** A running box is watched: remove the key and it powers itself off
+  ten seconds later. See [The USB key guard](#the-usb-key-guard).
 - **Box and stick together are not protected.** If both are seized at once, the encryption buys you nothing.
   The design assumes the stick is removed, or travels separately, whenever the box is unattended.
 - **Lose the stick and the data is gone**, unless somebody wrote down the recovery passphrase that the
   installer prints and that the console shows on its login screen at every boot. Use `--key-backup` if you
   want a second copy.
-- **There is no remote access.** No sshd, no accounts but the local operator. The console is the only way in.
+- **There is no remote access.** No sshd, no accounts but the local operator. The console is the only way in —
+  and it is not an authentication boundary: it shows the banner, waits for a keypress, and then opens a
+  root-capable session with no password. On the Spark the serial line is a console too, so treat a serial
+  cable as physical access.
 - **WiFi and Bluetooth are disabled** by module blacklist and `rfkill`. That is a software guarantee; disable
   the radios in the box's own firmware as well if the site requires it.
 
@@ -35,7 +40,7 @@ differs between them.
 | Box | NVIDIA DGX Spark | GMKtec EVO-X2 (AMD Ryzen AI Max+ 395) |
 | Architecture | `aarch64-linux` | `x86_64-linux` |
 | Build host | aarch64 — a Spark can build sticks for its siblings | any ordinary x86_64 machine |
-| Console | serial or monitor | monitor and USB keyboard (no serial port) |
+| Console | serial (the system console) or monitor | monitor and USB keyboard (no serial port) |
 | Network | ConnectX-7, one port | 2.5GbE, two ports |
 | GPU | not supported (see below) | not supported (see below) |
 
@@ -103,8 +108,15 @@ boot.binfmt.emulatedSystems = [ "aarch64-linux" ];
 
 It is less painful than it sounds. Almost the whole closure comes prebuilt from `cache.nixos.org` for both
 architectures — an aarch64 build on an x86_64 host fetches roughly 774 MiB and compiles nothing, leaving only
-config generation and the image assembly to run under emulation. Native is still faster, and is what the
-default enforces.
+config generation to run under emulation. Native is still faster, and is what the default enforces.
+
+The final image assembly deliberately does _not_ run under emulation. `nixos/modules/image/repart-image.nix`
+invokes `unshare --map-root-user fakeroot systemd-repart`, and `unshare(CLONE_NEWUSER)` fails with `EINVAL`
+inside qemu-user: the kernel only unshares a user namespace for a single-threaded process, and qemu-user never
+is one. `nativeImageAssembly` in `nixos/default.nix` therefore swaps that derivation's `nativeBuildInputs` for
+host binaries whenever `system` differs from the build host. Nothing about the assembly is
+architecture-specific — repart copies opaque bytes, and the partition types this image uses (`esp`,
+`linux-generic`) carry no architecture — so the resulting stick is byte-for-byte an aarch64 image either way.
 
 ### The appliance network interface
 
@@ -156,24 +168,48 @@ The appliance has two entries in its boot menu, `Loom` and `Loom (first-time-set
 | Loom | Starts offline and exposed on the appliance network | Builds and pulls every container image |
 | When | Normal operation | Once, in the lab, with internet |
 | Screen | Loom splash, no boot log | Full boot log, no splash |
+| Console session | First pane follows `loom` | First pane follows `loom-fetch` |
+| Key removed | Powers the box off | Warns only |
 
 A fresh box has no container images, and building them needs registries. So the first boot after installation is
-into **first-time setup**, on a network with internet:
-
-```bash
-# Choose "Loom (first-time-setup)" in the boot menu, then watch:
-journalctl -fu loom-fetch
-```
+into **first-time setup**, on a network with internet. Choose `Loom (first-time-setup)` in the boot menu, then
+press a key at the console — the first pane of the session is that log.
 
 This takes a long time. It populates minikube's image store on the encrypted root and marks itself complete, so
 a reboot will not repeat it. When it finishes, reboot into the default entry and the box runs offline forever.
+Come back to a console whose first pane says _"First-time setup already completed"_ and the box is ready.
 
 The two modes look different on purpose. `Loom` boots to a splash with no kernel log, because it has nothing to
 report and the login screen carries everything an operator needs. `Loom (first-time-setup)` boots verbose — it
-runs for hours, and the scrolling log is the only sign it is working rather than wedged. A silent screen under
-the default entry is normal; a silent screen under first-time setup is not.
+runs for hours, and a still logo over all of it would be misleading. Either way the real progress report is the
+console session, not the boot screen.
 
 This is also why the stick does not need to carry 60 GB of container images.
+
+## The USB key guard
+
+The stick is read once at boot, to unlock the disk. Without anything further, a running box would keep going
+for weeks after the stick was pulled — unlocked, with no key present — and the removal would only take effect
+at the next boot. So the box keeps watching the key for as long as it runs.
+
+**Remove the key from a running box and it powers itself off ten seconds later.** The countdown is announced
+on the console and in the session's status line, and putting the stick back inside those ten seconds cancels
+it. It is a clean shutdown, not a yanked cord, so indexed data is not at risk — but it is not instant either,
+because tearing minikube and Docker down takes as long as it takes.
+
+What the guard checks is the key itself, not the presence of a stick: it reads the 4096 bytes and tests them
+against the disk's own LUKS header. A different stick carrying a partition named `loom-key` does not keep the
+box alive.
+
+A few consequences worth knowing:
+
+- **It arms itself, once, after a key has been seen.** A box booted with the recovery passphrase has no stick
+  at all, so the guard never arms there and the box stays up for repairs. The login banner says which of the
+  two states the box is in.
+- **First-time setup only warns.** That mode pulls every container image over several hours, on a box that is
+  still in the lab with nothing on it yet; a flaky USB port must not throw all of it away.
+- **To swap sticks deliberately**, run `loom-key-guard disarm` at the console first. It stays disarmed until
+  the next boot; `loom-key-guard arm` re-enables it, and `loom-key-guard status` prints the current state.
 
 ## Using Loom on the appliance
 
@@ -193,24 +229,70 @@ has.
 ### From the box's own console
 
 The console shows the box's banner before anyone logs in — release, platform, which port to plug a laptop
-into, the subnet it serves, and the LUKS recovery passphrase:
+into, the subnet it serves, whether the key guard is armed, and the LUKS recovery passphrase:
+
+<!--
+The eyes are pasted from a real console, and their rows are an odd number of
+columns in. editorconfig-checker wants every indent to be a multiple of two,
+which no uniform shift of this art can satisfy.
+-->
+<!-- editorconfig-checker-disable -->
 
 ```text
+   .-----.    .-----.
+  ( ( o ) )  ( ( o ) )
+   '-----'    '-----'
+
   Loom appliance -- 1.4.0
   GMKtec EVO-X2 (AMD Ryzen AI Max+ 395)
   Plug a laptop into loom0 and browse https://frontend.loom
   This box serves DHCP on 10.13.37.0/24 and answers for *.loom
 
+  USB key guard: armed. Removing the USB key powers this
+  box off after 10 seconds.
+
   LUKS recovery passphrase: ka3mn-7pqrs-t4uvw-x9yzb-cd2ef-gh5jk
   Write it down. Without the USB stick it is the only way
   to unlock this disk, and nobody else holds a copy.
 
-loom login: loom (automatic login)
+[press ENTER to login]
 ```
 
-So somebody who only walks past the monitor still gets everything they need. It then logs in as `loom`
-automatically — there is no password, because `sudo` needs none either and the box has no remote access at
-all. Loom's bring-up log prints over this afterwards; **`loom-info`** reprints the banner at any time.
+<!-- editorconfig-checker-enable -->
+
+The eyes are the same mark the boot splash and the installer stick show. This is the ASCII pair, which is what
+the pre-login banner always uses: it is a single file that both the monitor's getty and a Spark's serial getty
+read, and half blocks over a serial line can arrive as a screen of question marks. On a terminal — `loom-info`
+in the shell pane, or the installer menu — the box draws the rounder half-block pair instead.
+
+So somebody who only walks past the monitor still gets everything they need. Nothing logs in by itself — the
+screen stays here until a key is pressed, which is also why the banner can no longer be scrolled away. Pressing
+a key logs in as `loom` with no username and no password, for the same reason `sudo` needs none: there is no
+remote access, and physical possession of box and stick is the whole trust boundary.
+
+That keypress opens a three-pane session:
+
+```text
+┌────────────────────┬──────────────┐
+│                    │              │
+│                    │    shell     │
+│   the bring-up     │              │
+│   log, live        ├──────────────┤
+│                    │              │
+│                    │    btop      │
+│                    │              │
+└────────────────────┴──────────────┘
+  LOOM    Ctrl-b d detach | Alt-F2 plain console
+```
+
+The left pane follows whichever unit this boot mode runs — `loom` under the default entry, `loom-fetch` under
+first-time setup. The right column is an ordinary shell and `btop`. **`loom-info`** reprints the banner in that
+shell at any time.
+
+`Ctrl-b d` detaches and returns to the press-a-key prompt; the panes keep running, and the next keypress comes
+straight back to them. `Alt-F2` through `Alt-F6` give a plain console with no session at all, which is the way
+back in if anything above misbehaves. On a box with a serial header the serial line is the system console and
+gives an ordinary login — another way back in, and the reason a serial cable counts as physical access.
 
 `loom-up` and `loom-down` wrap `up.sh` with the two flags the appliance needs:
 
@@ -269,12 +351,17 @@ Re-run the install, or set the internal disk first in the firmware boot order.
 partition is empty. Enter the recovery passphrase, then check the stick — the installer menu's status screen
 reports whether a key is present.
 
-**The console says `loom0 does not exist`.** The platform's interface match selected nothing, so the box has no
-address and serves no DHCP or DNS. The same message lists the interfaces that are present; rebuild the stick
-with `--interface <one of them>`. On the EVO-X2, first just try the other ethernet port.
+**The login screen says `loom0 does not exist`.** The platform's interface match selected nothing, so the box
+has no address and serves no DHCP or DNS. The warning is printed under the banner, above the press-a-key
+prompt, and lists the interfaces that are present; rebuild the stick with `--interface <one of them>`. On the
+EVO-X2, first just try the other ethernet port.
 
 **`loom-up` refuses to start, complaining about the minikube address.** The `*.loom` names are pinned to
 `192.168.49.2` in `/etc/hosts` and minikube came up somewhere else. `minikube delete` and retry.
 
-**Loom does not come up after a reboot in run mode.** Check `journalctl -u loom`. If the image store was never
-populated, boot `Loom (first-time-setup)` first.
+**Loom does not come up after a reboot in run mode.** The first pane of the console session already shows
+`loom`'s log. If the image store was never populated, boot `Loom (first-time-setup)` first.
+
+**The console session will not start.** It prints why and hands over a plain shell on the same screen rather
+than looping; `Alt-F2` gives another one regardless. Reattach by hand with `loom-console`, or throw the session
+away with `tmux -S /run/loom/tmux.sock kill-server` and run `loom-console` again.

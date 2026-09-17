@@ -49,6 +49,15 @@ let
   ];
 
   loomHosts = builtins.fromJSON loomHostsJson;
+
+  # Where the key guard looks for its two devices in the VM. There is no USB
+  # stick and no LUKS root here, so the test builds both out of loop devices and
+  # points the guard at them through these symlinks -- which is also what udev
+  # does on the real box, where /dev/disk/by-partlabel/loom-key is a symlink
+  # that can point somewhere else after a re-insert.
+  keyGuardDir = "/run/loom-keyguard-test";
+  keyGuardKeyDevice = "${keyGuardDir}/key";
+  keyGuardRootDevice = "${keyGuardDir}/root";
 in
 pkgs.testers.runNixOSTest {
   name = "loom-appliance";
@@ -71,6 +80,19 @@ pkgs.testers.runNixOSTest {
     # Loom cannot actually come up in a test VM (no images, no cluster); we are
     # checking that the units are wired, not that Loom runs.
     systemd.services.loom.wantedBy = pkgs.lib.mkForce [ ];
+
+    # The key guard, pointed at devices this test can actually create and
+    # destroy. `action` is deliberately NOT overridden: the last subtest lets
+    # the real poweroff happen, which is the only way to know it works.
+    loom.keyGuard = {
+      keyDevice = keyGuardKeyDevice;
+      rootDevice = keyGuardRootDevice;
+      # Only the timing is tuned, and only because the cancellation subtest has
+      # to detach a loop device, observe the countdown and re-attach before the
+      # guard acts. Ten seconds is comfortable at a box; it is not comfortable
+      # across a test driver on a loaded builder.
+      graceTicks = 15;
+    };
   };
 
   testScript = ''
@@ -139,16 +161,9 @@ pkgs.testers.runNixOSTest {
 
     with subtest("appliance access policy"):
         appliance.fail("systemctl is-active sshd.service")
-        # The operator has no password, so a locked shadow entry makes the
-        # console prompt unanswerable -- and with no sshd there is nothing to
-        # fall back on. Assert the shell prompt itself rather than the unit:
-        # 26.05 renders getty@'s ExecStart as a generated script, so the
-        # --autologin flag is not visible in `systemctl cat`.
-        appliance.wait_until_tty_matches("1", "${loomUser}@")
 
-        # The same banner has to reach whoever never logs in at all, so it is
-        # rendered as the agetty issue before the login line. agetty prints the
-        # issue even under --autologin.
+        # The banner has to reach whoever never logs in at all, so it is
+        # rendered as the agetty issue before the login line.
         appliance.wait_for_unit("loom-issue.service")
         issue = appliance.succeed("cat /run/issue.d/50-loom.issue")
         assert "Loom appliance" in issue, issue
@@ -156,9 +171,67 @@ pkgs.testers.runNixOSTest {
         # A backslash would be eaten by agetty as an issue escape.
         assert "\\" not in issue, issue
 
+        # The issue is one file read by the VT getty and the serial getty both,
+        # so the eyes in it have to be the ASCII pair -- loom-eyes picks that by
+        # seeing that loom-issue.service redirected it into a file. Half blocks
+        # here would be a screen of question marks on a Spark's serial cable.
+        assert "( ( o ) )  ( ( o ) )" in issue, issue
+        assert "█" not in issue, issue
+
+        # On a terminal the same generator draws the other pair, which is what
+        # the operator's shell gets. `script` is what makes that a terminal at
+        # all: succeed() pipes stdout, and a pipe is exactly the case that
+        # selects ASCII above.
+        on_a_tty = appliance.succeed("script --quiet --return --command loom-info /dev/null")
+        assert "█" in on_a_tty, on_a_tty
+
+        # Nothing opens a session by itself. --login-pause holds agetty on the
+        # issue until somebody presses a key; --autologin is what performs the
+        # login afterwards, and is still needed because the operator's shadow
+        # entry is locked (no password is declared for a passwordless box).
+        #
+        # Assert the flags on the live process rather than the unit: 26.05
+        # renders getty@'s ExecStart as a generated script, so `systemctl cat`
+        # shows none of these arguments.
+        appliance.wait_until_succeeds("pgrep -f 'agetty.*tty1'")
+        agetty = appliance.succeed("pgrep -a -f 'agetty.*tty1'")
+        assert "--login-pause" in agetty, agetty
+        assert "--autologin ${loomUser}" in agetty, agetty
+        appliance.wait_until_tty_matches("1", "press ENTER to login")
+        appliance.fail("pgrep -u ${loomUser} -f tmux")
+
         groups = appliance.succeed("id -nG ${loomUser}").split()
-        for group in ["wheel", "docker"]:
+        # systemd-journal: without it the operator's console session cannot read
+        # PID 1's messages about the unit its first pane follows.
+        for group in ["wheel", "docker", "systemd-journal"]:
             assert group in groups, f"${loomUser} not in {group}: {groups}"
+
+    with subtest("a keypress opens the operator's console session"):
+        # The monitor has to be showing tty1, which is where the banner, the
+        # prompt and the session all are -- and where a keypress lands. This is
+        # not a given: a `console=ttyN` anywhere on the kernel command line
+        # silently moves the foreground console, and did.
+        fg = appliance.succeed("fgconsole").strip()
+        assert fg == "1", f"foreground console is {fg}, not tty1"
+
+        appliance.send_key("ret")
+        appliance.wait_until_succeeds("pgrep -u ${loomUser} -f tmux")
+        appliance.wait_until_tty_matches("1", "${loomUser}@")
+
+        # pane_start_command, not pane_current_command: on a test VM's small VT
+        # btop may bail out on start, and what is being asserted is how the
+        # session is wired, not what survived.
+        panes = appliance.succeed(
+            "tmux -S /run/loom/tmux.sock list-panes -t loom "
+            "-F '#{pane_index} #{pane_start_command}'"
+        ).splitlines()
+        assert len(panes) == 3, panes
+        assert "loom-progress" in panes[0], panes
+        assert "btop" in panes[2], panes
+
+        # The middle pane is a usable shell, which is the whole point of it.
+        appliance.send_chars("touch /tmp/loom-console-alive\n")
+        appliance.wait_for_file("/tmp/loom-console-alive")
 
     with subtest("the repository is seeded writable and owned by the operator"):
         appliance.wait_for_unit("loom-seed-repo.service")
@@ -248,6 +321,45 @@ pkgs.testers.runNixOSTest {
         setup_cmdline = appliance.succeed(f"cat {setup_sys}/kernel-params")
         assert "plymouth.enable=0" in setup_cmdline.split(), setup_cmdline
 
+        # Neither mode may name a *numbered* VT as a console. `console=ttyN`
+        # does not just redirect output there, it makes that VT the foreground
+        # one -- which once left this box showing the kernel log while the
+        # banner and the press-a-key prompt sat on a tty1 nobody could see or
+        # type into. `console=tty0` is exempt and is what the test framework
+        # itself passes: tty0 means "whichever VT is current", so it moves
+        # nothing. A specialisation only *adds* to its parent's command line,
+        # so checking both is checking every combination.
+        for cmdline in [run_cmdline, setup_cmdline]:
+            vt_consoles = [
+                p for p in cmdline.split()
+                if re.fullmatch(r"console=tty[1-9][0-9]*", p)
+            ]
+            assert not vt_consoles, cmdline
+
+    with subtest("both modes run the same session, following their own unit"):
+        # Same indirection as above: /etc/profile names the session script,
+        # which names the pane-1 script, which names the unit. Reading the
+        # chain is the only way to see the difference between the two modes
+        # without booting the specialisation.
+        def progress_script(profile):
+            console = re.search(
+                r"/nix/store/\S+-loom-console/bin/loom-console",
+                appliance.succeed(f"cat {profile}"),
+            )
+            assert console, profile
+            progress = re.search(
+                r"/nix/store/\S+-loom-progress/bin/loom-progress",
+                appliance.succeed(f"cat {console.group(0)}"),
+            )
+            assert progress, console.group(0)
+            return appliance.succeed(f"cat {progress.group(0)}")
+
+        run_pane = progress_script("/etc/profile")
+        assert "loom.service" in run_pane, run_pane
+        assert "loom-fetch.service" not in run_pane, run_pane
+        setup_pane = progress_script(f"{setup_sys}/etc/profile")
+        assert "loom-fetch.service" in setup_pane, setup_pane
+
     with subtest("the boot splash is Loom's, not stock NixOS's"):
         # `theme = "loom"` alone proves nothing: the NixOS module only checks
         # that the directory exists. What matters is that the watermark is a
@@ -258,5 +370,133 @@ pkgs.testers.runNixOSTest {
             "head --bytes=4 /etc/plymouth/themes/loom/watermark.png | od -An -tx1"
         )
         assert magic.split() == ["89", "50", "4e", "47"], magic
+
+    # ------------------------------------------------------------------------
+    # The USB key guard.
+    #
+    # Everything from here on manipulates the guard's devices, and the last
+    # subtest really does power the machine off -- so this block stays at the
+    # bottom of the file and nothing may be appended after it.
+    # ------------------------------------------------------------------------
+    with subtest("the guard stays idle when there is no key"):
+        # This is the recovery boot: somebody unlocked the disk by typing the
+        # passphrase, so there is no stick at all. Powering such a box off
+        # would make it unrepairable, since the console is the only way in.
+        appliance.wait_for_unit("loom-key-guard.service")
+        appliance.wait_until_succeeds(
+            "loom-key-guard status | grep -q 'loom-key-guard: idle'"
+        )
+        appliance.succeed(
+            "journalctl --unit loom-key-guard.service | grep -q 'the guard stays idle'"
+        )
+        # Said once, not every interval for the life of the box.
+        idle_lines = appliance.succeed(
+            "journalctl --unit loom-key-guard.service | grep -c 'the guard stays idle'"
+        )
+        assert idle_lines.strip() == "1", idle_lines
+
+    with subtest("the guard arms on a key that opens the root"):
+        appliance.succeed("mkdir -p ${keyGuardDir}")
+        appliance.succeed(
+            "dd if=/dev/urandom of=/var/keyguard-key.img bs=4096 count=1 status=none"
+        )
+        # 32M: a LUKS2 header is 16M, and the container needs no payload here.
+        appliance.succeed("truncate --size=32M /var/keyguard-root.img")
+        root_loop = appliance.succeed(
+            "losetup --find --show /var/keyguard-root.img"
+        ).strip()
+        key_loop = appliance.succeed(
+            "losetup --find --show /var/keyguard-key.img"
+        ).strip()
+
+        # The same parameters install.sh formats with, pbkdf2 included -- argon2
+        # would want more memory than this VM has.
+        appliance.succeed(
+            "cryptsetup luksFormat --type luks2 --batch-mode --pbkdf pbkdf2 "
+            f"--pbkdf-force-iterations 1000 --key-file {key_loop} "
+            f"--keyfile-size 4096 {root_loop}"
+        )
+        appliance.succeed(f"ln -sf {root_loop} ${keyGuardRootDevice}")
+        appliance.succeed(f"ln -sf {key_loop} ${keyGuardKeyDevice}")
+
+        appliance.wait_until_succeeds(
+            "loom-key-guard status | grep -q 'loom-key-guard: armed'"
+        )
+        # The banner follows the guard rather than reporting what was true at
+        # boot, because it is the only thing an operator who never logs in sees.
+        appliance.wait_until_succeeds("grep -q 'USB key guard: armed' /run/issue.d/50-loom.issue")
+        assert "\\" not in appliance.succeed("cat /run/issue.d/50-loom.issue")
+
+    with subtest("a key that is put back in time cancels the shutdown"):
+        appliance.succeed(f"losetup --detach {key_loop}")
+        appliance.wait_until_succeeds(
+            "journalctl --unit loom-key-guard.service | grep -q 'USB KEY REMOVED'"
+        )
+
+        # Back well inside the grace window, and deliberately on whatever loop
+        # device is free now rather than the old one: a re-inserted stick can
+        # come back on a different node, and the bytes are the identity.
+        key_loop = appliance.succeed(
+            "losetup --find --show /var/keyguard-key.img"
+        ).strip()
+        appliance.succeed(f"ln -sf {key_loop} ${keyGuardKeyDevice}")
+        appliance.wait_until_succeeds(
+            "journalctl --unit loom-key-guard.service | grep -q 'Shutdown cancelled'"
+        )
+        appliance.succeed("loom-key-guard status | grep -q 'loom-key-guard: armed'")
+
+    with subtest("a foreign key does not keep the box alive"):
+        # A stick carrying a partition named loom-key is not the stick this
+        # disk was encrypted with. Presence alone cannot tell the two apart;
+        # the fingerprint taken at arm time can.
+        appliance.succeed(
+            "dd if=/dev/urandom of=/var/keyguard-other.img bs=4096 count=1 status=none"
+        )
+        other_loop = appliance.succeed(
+            "losetup --find --show /var/keyguard-other.img"
+        ).strip()
+        appliance.succeed(f"losetup --detach {key_loop}")
+        appliance.succeed(f"ln -sf {other_loop} ${keyGuardKeyDevice}")
+        appliance.wait_until_succeeds(
+            "journalctl --unit loom-key-guard.service | grep -q 'USB KEY REMOVED'"
+        )
+
+        # Put the real one back so the next subtest starts from a known state.
+        appliance.succeed(f"losetup --detach {other_loop}")
+        key_loop = appliance.succeed(
+            "losetup --find --show /var/keyguard-key.img"
+        ).strip()
+        appliance.succeed(f"ln -sf {key_loop} ${keyGuardKeyDevice}")
+        appliance.wait_until_succeeds(
+            "loom-key-guard status | grep -q 'loom-key-guard: armed'"
+        )
+
+    with subtest("first-time setup warns where run mode powers off"):
+        # Asserted from the two generated scripts rather than by booting the
+        # specialisation: hours of container pulls must not be thrown away by a
+        # glitching USB port, and run mode must not be merely advisory. Same
+        # ExecStart indirection as loom.service above -- the value is baked into
+        # the script, not visible in the unit.
+        def guard_action(system_path):
+            unit = appliance.succeed(
+                f"cat {system_path}/etc/systemd/system/loom-key-guard.service"
+            )
+            exec_start = re.search(r"ExecStart=(\S+)", unit)
+            assert exec_start, unit
+            script = appliance.succeed(f"cat {exec_start.group(1)}")
+            # Tolerates the quotes lib.escapeShellArg adds only when it has to.
+            action = re.search(r"^readonly ACTION='?(\w+)'?$", script, re.M)
+            assert action, script
+            return action.group(1)
+
+        assert guard_action("/run/current-system") == "poweroff"
+        assert guard_action(setup_sys) == "warn"
+
+    with subtest("pulling the key powers the box off"):
+        # The end of the test, literally: this shuts the machine down. Nothing
+        # may be added below, and nothing short of watching it happen proves
+        # that the box a stick was pulled from actually stops.
+        appliance.succeed(f"losetup --detach {key_loop}")
+        appliance.wait_for_shutdown()
   '';
 }

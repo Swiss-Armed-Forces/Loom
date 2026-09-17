@@ -70,19 +70,10 @@ readonly LOOM_AMBER_RGB="f7b718"
 
 # The mark the boot splash just showed, in the two eyes it is actually made of.
 #
-# Three consoles, three answers, all keyed on the device rather than on TERM or
-# a locale -- the menu is started by systemd with a fixed TTYPath
-# (installer.nix) and neither of those variables is set there.
-#
-#   Linux VT     Half blocks, which draw the rings far rounder than ASCII
-#                manages and are in the console's built-in font. Plus the exact
-#                logo amber, see below.
-#   Serial       An ASCII pair. Whatever terminal is on the far end of a Spark's
-#                cable may have neither UTF-8 nor the glyphs, and rings rendered
-#                as a screen of question marks are worse than plainer rings that
-#                always work.
-#   Anything else  Blocks, but no palette change: a pts is UTF-8 in practice,
-#                while the escape below would hang an xterm.
+# The art itself is `loom-eyes`, from branding.nix, because the installed box
+# prints the same pair in its login banner and two copies would drift. It picks
+# blocks or ASCII off the console device on its own; what stays here is the
+# colour, which is the half the two screens do *not* agree on.
 #
 # `ESC ] P nrrggbb` redefines a palette entry on the Linux VT, which is the only
 # way to reach an exact colour there: console_codes(4) records that even a
@@ -100,14 +91,13 @@ readonly LOOM_AMBER_RGB="f7b718"
 # far end.
 loom_banner() {
     local console
-    local -a eyes
 
     # Assigned separately rather than tested inline: `tty` exits non-zero when
     # stdin is not a terminal, and inside a condition that status would be
     # swallowed rather than handled.
     console="$(tty 2>/dev/null || true)"
-    # Off a terminal the escapes are already empty strings; fall through to the
-    # ASCII pair as well, so a captured log stays readable.
+    # Off a terminal the escapes are already empty strings, and loom-eyes drops
+    # to ASCII on its own, so a captured log stays readable either way.
     [[ -t 1 ]] || console="none"
 
     case "${console}" in
@@ -117,30 +107,8 @@ loom_banner() {
     *) ;;
     esac
 
-    case "${console}" in
-    /dev/ttyS* | none)
-        # Double quotes and no slashes on purpose: an apostrophe cannot appear
-        # inside a single-quoted string, and backslashes and backticks in art
-        # read to shellcheck as a botched escape and a command substitution.
-        eyes=(
-            " .-----.    .-----."
-            "( ( o ) )  ( ( o ) )"
-            " '-----'    '-----'"
-        )
-        ;;
-    *)
-        eyes=(
-            ' ▄████▄    ▄████▄'
-            '██▀  ▀██  ██▀  ▀██'
-            '██ ▄▄ ██  ██ ▄▄ ██'
-            '██▄  ▄██  ██▄  ▄██'
-            ' ▀████▀    ▀████▀'
-        )
-        ;;
-    esac
-
     printf '%s%s' "${LOOM_YELLOW}" "${LOOM_BOLD}"
-    printf '  %s\n' "${eyes[@]}"
+    loom-eyes
     printf '%s' "${LOOM_RESET}"
 }
 
