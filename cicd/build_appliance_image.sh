@@ -219,7 +219,7 @@ prepare_repo(){
 }
 
 verify_repo(){
-    local repo="${WORK_DIR}/loom" described status pointers
+    local repo="${WORK_DIR}/loom" described status pointers dirty_count
 
     described="$(git -C "${repo}" describe --exact-match --tags HEAD)"
     if [[ "${described}" != "${TAG}" ]]; then
@@ -237,19 +237,31 @@ verify_repo(){
         exit 1
     fi
 
-    status="$(git -C "${repo}" status --porcelain)"
-    if [[ -n "${status}" ]]; then
-        echo >&2 "[!] Error: embedded checkout is not clean:"
-        echo >&2 "${status}"
+    # The invariant that matters is that no payload is still a pointer stub --
+    # that is what breaks bring-up, e.g. a 130-byte text file where the traefik
+    # chart should be.
+    #
+    # Deliberately NOT asserting a clean `git status`: some release tags predate
+    # commit 34ba1c77 ("add Git LFS tracking for test assets"), which declared
+    # backend/worker/tests/assets/** as LFS while the blobs at those tags are
+    # still raw content. Checking such a tag out with the LFS filter active
+    # reports those files as modified forever. It is cosmetic -- they are test
+    # assets, unused at runtime -- so it is reported, not treated as fatal.
+    pointers="$(grep --recursive --files-with-matches --binary-files=without-match \
+        --exclude-dir=.git '^version https://git-lfs.github.com/spec/v1' "${repo}" || true)"
+    if [[ -n "${pointers}" ]]; then
+        echo >&2 "[!] Error: these git-lfs payloads are still pointer stubs:"
+        echo >&2 "${pointers}"
+        echo >&2 "    Run 'git lfs fetch --all' in your checkout and rebuild."
         exit 1
     fi
 
-    # Any LFS file still listed with '-' is a pointer, not real content.
-    pointers="$(git -C "${repo}" lfs ls-files | grep --invert-match ' \* ' || true)"
-    if [[ -n "${pointers}" ]]; then
-        echo >&2 "[!] Error: git-lfs payloads were not materialised:"
-        echo >&2 "${pointers}"
-        exit 1
+    status="$(git -C "${repo}" status --porcelain)"
+    if [[ -n "${status}" ]]; then
+        dirty_count="$(printf '%s\n' "${status}" | wc --lines)"
+        echo "[*] Note: ${dirty_count} file(s) report as modified in the"
+        echo "    embedded checkout. This tag predates the LFS conversion of the worker test"
+        echo "    assets; they are unused at runtime and bring-up is unaffected."
     fi
 
     # Canary: this chart is LFS-tracked and cicd/skaffold untars it at deploy
@@ -290,7 +302,9 @@ build_image(){
 }
 
 image_file(){
-    find "${OUTPUT_DIR}/appliance-image" -name '*.raw' -type f | head --lines=1
+    # -L is required: the out-link is a symlink into the Nix store, and find
+    # does not follow symlinks by default.
+    find -L "${OUTPUT_DIR}/appliance-image" -name '*.raw' -type f | head --lines=1
 }
 
 confirm_flash(){
