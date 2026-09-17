@@ -50,6 +50,7 @@ STEPS=(
     prepare_workdir
     prepare_repo
     verify_repo
+    normalize_repo
     generate_loom_hosts
     build_image
     report
@@ -292,6 +293,51 @@ verify_repo(){
         echo >&2 "[!] Error: traefik chart is not a real gzip; git-lfs materialisation is broken."
         exit 1
     fi
+}
+
+# Strip the parts of .git that differ between two runs of the same tag.
+#
+# nixos/default.nix takes `loomSrc` as a `builtins.path` of this directory, so a
+# single changed byte gives it a new store hash -- and with it a new appliance
+# closure, a new squashfs and a new ~1.5 GB image, every run, for a working tree
+# that is bit-for-bit identical. A handful of builds is enough to put ten
+# gigabytes of near-duplicates in the store.
+#
+# Three things move, none of which the appliance ever reads:
+#
+#   * .git/index stores mtime, ctime and inode for all ~4000 files.
+#   * `git lfs install --local` in prepare_repo writes the [filter "lfs"] keys
+#     in a nondeterministic order, so the clean/smudge pair lands above or
+#     below process/required depending on the run.
+#   * .git/lfs/tmp holds empty scratch directories with random numeric names,
+#     copied in wholesale along with the object cache.
+#
+# Deliberately AFTER verify_repo, whose `git status` rewrites .git/index. Also
+# deliberately not in prepare_repo for the same reason.
+#
+# Dropping the index is safe: up.sh only runs `git describe --exact-match --tags
+# HEAD` (up.sh:236), which reads refs and objects, and git rebuilds an index on
+# demand for anything on the box that does want one.
+normalize_repo(){
+    local repo="${WORK_DIR}/loom"
+
+    rm --recursive --force \
+        "${repo}/.git/index" \
+        "${repo}/.git/lfs/tmp" \
+        "${repo}/.git/logs"
+
+    # Rewritten rather than sorted in place: `git config` owns the file's
+    # layout, and re-adding a removed section always appends it in the order
+    # given. The values match what `git lfs install` would have written.
+    git -C "${repo}" config --local --remove-section filter.lfs
+    git -C "${repo}" config --local filter.lfs.clean "git-lfs clean -- %f"
+    git -C "${repo}" config --local filter.lfs.smudge "git-lfs smudge -- %f"
+    git -C "${repo}" config --local filter.lfs.process "git-lfs filter-process"
+    git -C "${repo}" config --local filter.lfs.required true
+
+    # `git config` writes through a lock file, which leaves the index behind
+    # again on some versions.
+    rm --force "${repo}/.git/index"
 }
 
 # Sourced from the embedded checkout rather than this one, so the host list
