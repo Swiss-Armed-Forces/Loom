@@ -317,14 +317,6 @@ in
     "d /var/lib/loom 0750 root wheel -"
   ];
 
-  # Names the systemd-boot entries. NixOS builds each entry's title from this
-  # string plus the specialisation name, so the two modes read `Loom` and
-  # `Loom (setup)` rather than `NixOS` and `NixOS (setup)` -- which is what
-  # Documentation/appliance.md tells the operator to look for on first boot.
-  # It also sets NAME/PRETTY_NAME in /etc/os-release; `system.nixos.distroId`
-  # is untouched, so anything matching on `ID=nixos` still works.
-  system.nixos.distroName = "Loom";
-
   system.stateVersion = "26.05";
 
   documentation.nixos.enable = false;

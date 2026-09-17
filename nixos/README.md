@@ -12,9 +12,10 @@ this file is about the code.
 | `platform.nix` | Declares `loom.platform.*`: the per-box dimension, separate from `system`. |
 | `platforms/spark.nix` | DGX Spark: aarch64, serial console, ConnectX-7. |
 | `platforms/evo-x2.nix` | GMKtec EVO-X2: x86_64, no serial port, Realtek 2.5GbE. |
+| `branding.nix` | Shared by box and stick: the name in the boot menu, the logo, the plymouth theme. |
 | `box.nix` | The appliance: host tuning, toolchain, operator account, console banner, `loom-up`. |
 | `box-hardware.nix` | LUKS root, filesystems, initrd, bootloader. |
-| `modes.nix` | `loom.mode`, the run/setup services, and the `setup` specialisation. |
+| `modes.nix` | `loom.mode`, the run/setup services, and the `first-time-setup` specialisation. |
 | `network.nix` | Static address and dnsmasq in run mode, DHCP client in setup mode, radios off. |
 | `repo.nix` | Seeds the embedded checkout into the operator's home, writable. |
 | `installer.nix` | The USB stick: `image.repart` layout and the installer system. |

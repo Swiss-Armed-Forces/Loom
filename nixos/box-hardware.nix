@@ -79,8 +79,9 @@
   # every rebuild.
   boot.loader.efi.canTouchEfiVariables = false;
   # Generous on purpose: the first boot after installation has to be interrupted
-  # to pick the `setup` entry, and on a box whose display only wakes up part way
-  # through firmware init, five seconds can elapse before the menu is visible.
-  # The appliance reboots rarely and an operator is normally standing there.
+  # to pick the `Loom (first-time-setup)` entry, and on a box whose display only
+  # wakes up part way through firmware init, five seconds can elapse before the
+  # menu is visible. The appliance reboots rarely and an operator is normally
+  # standing there.
   boot.loader.timeout = 30;
 }

@@ -62,6 +62,52 @@ clear_screen() {
     printf '\033[H\033[2J'
 }
 
+# The mark the boot splash just showed, in the two eyes it is actually made of.
+#
+# Half blocks draw them far rounder than ASCII manages, and the Linux console's
+# built-in font carries U+2580/2584/2588, so tty1 gets those. A serial line does
+# not come with that guarantee -- whatever terminal is on the far end of a
+# Spark's cable may have neither UTF-8 nor the glyphs, and rings rendered as a
+# screen of question marks are worse than plainer rings that always work. So the
+# serial console gets an ASCII pair instead.
+#
+# Keyed on the device rather than on TERM or a locale, because the menu is
+# started by systemd with a fixed TTYPath (installer.nix) and neither of those
+# variables is set there. Printed through %s: printf would eat the backslashes
+# that draw the ASCII pair as escapes.
+loom_banner() {
+    local console
+    local -a eyes
+
+    # Assigned separately rather than tested inline: `tty` exits non-zero when
+    # stdin is not a terminal, and inside a condition that status would be
+    # swallowed rather than handled.
+    console="$(tty 2>/dev/null || true)"
+
+    if [[ "${console}" == /dev/ttyS* ]]; then
+        # Double quotes and no slashes on purpose: an apostrophe cannot appear
+        # inside a single-quoted string, and backslashes and backticks in art
+        # read to shellcheck as a botched escape and a command substitution.
+        eyes=(
+            " .-----.    .-----."
+            "( ( o ) )  ( ( o ) )"
+            " '-----'    '-----'"
+        )
+    else
+        eyes=(
+            ' ▄████▄    ▄████▄'
+            '██▀  ▀██  ██▀  ▀██'
+            '██ ▄▄ ██  ██ ▄▄ ██'
+            '██▄  ▄██  ██▄  ▄██'
+            ' ▀████▀    ▀████▀'
+        )
+    fi
+
+    printf '%s%s' "${LOOM_YELLOW}" "${LOOM_BOLD}"
+    printf '  %s\n' "${eyes[@]}"
+    printf '%s' "${LOOM_RESET}"
+}
+
 log() { printf '%s[*]%s %s\n' "${LOOM_DIM}" "${LOOM_RESET}" "${*}"; }
 
 # The palette is keyed on stdout, so err() checks stderr separately -- otherwise

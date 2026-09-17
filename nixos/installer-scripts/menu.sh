@@ -23,9 +23,13 @@ show_status() {
     # until the operator has actually read it.
     clear_screen
 
+    printf '\n'
+    loom_banner
+
     # Names the release and the box this stick was built for. Two sticks on a
     # desk are otherwise indistinguishable, and the only other place that
-    # information exists is the banner on an already-installed box.
+    # information exists is the banner on an already-installed box. The eyes
+    # above are the mark, not the name, so this line still carries it.
     printf '\n  %sLOOM APPLIANCE INSTALLER  %s%s\n' \
         "${LOOM_BOLD}" "${LOOM_TAG:?LOOM_TAG is not set}" "${LOOM_RESET}"
     printf '  %s\n' "${LOOM_PLATFORM:?LOOM_PLATFORM is not set}"
@@ -104,6 +108,16 @@ rescue_shell() {
         bash --norc --noprofile -i || true
 }
 
+# `systemctl reboot` and `systemctl poweroff` only queue the job and return, so
+# without the block afterwards the loop redraws the menu on top of the shutdown
+# messages and offers a prompt that nobody should be answering.
+halt_console() {
+    local subcommand="${1}" message="${2}"
+    log "${message}"
+    systemctl "${subcommand}"
+    sleep infinity
+}
+
 main() {
     local choice
     while true; do
@@ -114,15 +128,26 @@ main() {
 
         case "${choice}" in
         1)
-            "${LOOM_INSTALLER_BIN:?}/loom-install" || err "Installation failed."
-            read -r -p "  Press enter to return to the menu. "
+            if "${LOOM_INSTALLER_BIN:?}/loom-install"; then
+                # A finished install reboots rather than returning to the menu:
+                # the box is done, and every option left here either destroys
+                # the disk that was just written or does nothing for it. The
+                # read still blocks first, so the recovery passphrase stays on
+                # screen until somebody has acknowledged it -- and it is on the
+                # installed box's login banner afterwards either way.
+                read -r -p "  Press enter to reboot into the installed appliance. "
+                halt_console reboot "Rebooting."
+            else
+                err "Installation failed."
+                read -r -p "  Press enter to return to the menu. "
+            fi
             ;;
         2)
             "${LOOM_INSTALLER_BIN:?}/loom-wipe" || err "Wipe failed."
             read -r -p "  Press enter to return to the menu. "
             ;;
-        3) systemctl reboot ;;
-        4) systemctl poweroff ;;
+        3) halt_console reboot "Rebooting." ;;
+        4) halt_console poweroff "Powering off." ;;
         5) rescue_shell ;;
         *) err "Not a choice: ${choice}" ;;
         esac

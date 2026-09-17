@@ -180,6 +180,13 @@ in
   };
 
   boot.uki.name = "loom-installer";
+
+  # The stick's one advantage over the appliance: systemd-stub draws this while
+  # the kernel is still loading, so the Loom logo is up before Linux exists.
+  # branding.nix's plymouth then picks the same logo up with no visible seam.
+  # Interpolated, not passed as a package: `boot.uki.settings` is an INI file
+  # and takes atoms only.
+  boot.uki.settings.UKI.Splash = "${config.loom.branding.splashBmp}";
   boot.loader.grub.enable = false;
   # The loader is placed by hand in the ESP contents above.
   boot.loader.systemd-boot.enable = false;
@@ -232,6 +239,11 @@ in
     description = "Loom appliance installer menu";
     wantedBy = [ "multi-user.target" ];
     conflicts = [ "getty@tty1.service" ];
+    # Both this and plymouth want tty1, and `Type = "idle"` only waits for the
+    # job queue to drain -- it knows nothing about who still holds the console.
+    # Without the ordering the menu can paint underneath a splash that has not
+    # released DRM yet, which looks exactly like a stick that failed to boot.
+    after = [ "plymouth-quit-wait.service" ];
     restartIfChanged = false;
     serviceConfig = {
       # Let the boot messages finish first.
@@ -285,10 +297,19 @@ in
   # The last `console=` wins as /dev/console. On a serial box that should be the
   # serial line; on one without, naming ttyS0 at all would send boot output to a
   # port nobody can read.
+  #
+  # Deliberately no `quiet`, unlike the appliance in modes.nix. This is the
+  # recovery medium: the monitor gets branding.nix's splash, and the kernel log
+  # keeps reaching the serial line and the journal, which is the entire reason
+  # somebody boots the stick at a box that will not come up.
   boot.kernelParams = [
     "console=tty1"
   ]
-  ++ lib.optional hasSerial "console=ttyS0,115200";
+  ++ lib.optional hasSerial "console=ttyS0,115200"
+  # plymouth renders a text fallback onto every console it finds, and on a
+  # serial box /dev/console *is* ttyS0 -- so without this it would type its
+  # splash over the operator's serial installer menu.
+  ++ lib.optional hasSerial "plymouth.ignore-serial-consoles";
 
   networking.hostName = "loom-installer";
   networking.useDHCP = false;

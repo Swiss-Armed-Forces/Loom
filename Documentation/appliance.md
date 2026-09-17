@@ -138,8 +138,9 @@ udevadm info /sys/class/net/<iface> | grep -E 'ID_PATH=|ID_NET_DRIVER='
     about to destroy and asks for the word `INSTALL`, which is not something typed by accident.
 4. It partitions the internal disk, creates the LUKS container from the stick's key, installs the appliance
     closure entirely offline, enrols a recovery passphrase, and makes the internal disk the default boot entry.
-5. **Write down the recovery passphrase it prints.**
-6. Reboot, leaving the stick in.
+5. **Write down the recovery passphrase it prints.** It waits there until you press enter, and the installed
+    box also shows it on every console login, so a scrolled-away console does not lose it.
+6. Press enter. The box reboots into the internal disk; leave the stick in.
 
 The installer moves its own loader off the UEFI removable-media path afterwards. Without that, most firmware
 would boot the installer instead of the appliance on every restart, because the stick never leaves. The
@@ -147,24 +148,30 @@ installer stays reachable from the firmware's own boot menu for reinstalls and w
 
 ## The two boot modes
 
-The appliance has two entries in its boot menu, `Loom` and `Loom (setup)`.
+The appliance has two entries in its boot menu, `Loom` and `Loom (first-time-setup)`.
 
-| | Run (default) | Setup |
+| | Run (default) | First-time setup |
 | --- | --- | --- |
 | Network | Static address, serves DHCP and `*.loom` | DHCP client |
 | Loom | Starts offline and exposed on the appliance network | Builds and pulls every container image |
 | When | Normal operation | Once, in the lab, with internet |
+| Screen | Loom splash, no boot log | Full boot log, no splash |
 
 A fresh box has no container images, and building them needs registries. So the first boot after installation is
-into **Setup**, on a network with internet:
+into **first-time setup**, on a network with internet:
 
 ```bash
-# Choose "Loom (setup)" in the boot menu, then watch:
+# Choose "Loom (first-time-setup)" in the boot menu, then watch:
 journalctl -fu loom-fetch
 ```
 
 This takes a long time. It populates minikube's image store on the encrypted root and marks itself complete, so
 a reboot will not repeat it. When it finishes, reboot into the default entry and the box runs offline forever.
+
+The two modes look different on purpose. `Loom` boots to a splash with no kernel log, because it has nothing to
+report and the login screen carries everything an operator needs. `Loom (first-time-setup)` boots verbose — it
+runs for hours, and the scrolling log is the only sign it is working rather than wedged. A silent screen under
+the default entry is normal; a silent screen under first-time setup is not.
 
 This is also why the stick does not need to carry 60 GB of container images.
 
@@ -270,4 +277,4 @@ with `--interface <one of them>`. On the EVO-X2, first just try the other ethern
 `192.168.49.2` in `/etc/hosts` and minikube came up somewhere else. `minikube delete` and retry.
 
 **Loom does not come up after a reboot in run mode.** Check `journalctl -u loom`. If the image store was never
-populated, boot into Setup mode first.
+populated, boot `Loom (first-time-setup)` first.

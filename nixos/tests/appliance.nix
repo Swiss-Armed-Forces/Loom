@@ -210,12 +210,15 @@ pkgs.testers.runNixOSTest {
             appliance.succeed(f"grep -R 'blacklist {module}' /etc/modprobe.d/")
 
     with subtest("both boot modes exist and differ in the right way"):
-        # The setup specialisation is what lets one box both fetch images
-        # online and then run entirely offline.
-        setup = appliance.succeed(
+        # The first-time-setup specialisation is what lets one box both fetch
+        # images online and then run entirely offline. Its *name* is also the
+        # boot menu entry -- NixOS builds the title from distroName plus this
+        # attribute -- so a rename here silently renames what the operator is
+        # told to pick in Documentation/appliance.md.
+        specialisations = appliance.succeed(
             "ls /run/current-system/specialisation/"
         ).split()
-        assert "setup" in setup, setup
+        assert "first-time-setup" in specialisations, specialisations
 
         # Run mode serves the network and starts Loom offline.
         #
@@ -229,11 +232,31 @@ pkgs.testers.runNixOSTest {
         start_script = appliance.succeed(f"cat {match.group(1)}")
         assert "--offline" in start_script, start_script
         assert "--expose ${loomSubnet}.1" in start_script, start_script
-        # Setup mode fetches instead, and must not serve DHCP.
+        # First-time setup fetches instead, and must not serve DHCP.
         setup_sys = appliance.succeed(
-            "readlink -f /run/current-system/specialisation/setup"
+            "readlink -f /run/current-system/specialisation/first-time-setup"
         ).strip()
         appliance.succeed(f"test -e {setup_sys}/etc/systemd/system/loom-fetch.service")
         appliance.fail(f"test -e {setup_sys}/etc/systemd/system/dnsmasq.service")
+
+        # The two modes also differ in what they put on the screen, and that
+        # difference lives only on the kernel command line. Run mode hides the
+        # log behind the splash; first-time setup, which takes hours, keeps it.
+        run_cmdline = appliance.succeed("cat /run/current-system/kernel-params")
+        for param in ["quiet", "splash"]:
+            assert param in run_cmdline.split(), run_cmdline
+        setup_cmdline = appliance.succeed(f"cat {setup_sys}/kernel-params")
+        assert "plymouth.enable=0" in setup_cmdline.split(), setup_cmdline
+
+    with subtest("the boot splash is Loom's, not stock NixOS's"):
+        # `theme = "loom"` alone proves nothing: the NixOS module only checks
+        # that the directory exists. What matters is that the watermark is a
+        # real PNG rather than an unmaterialised git-lfs pointer, which would
+        # otherwise first show up as a blank screen on a box in the field.
+        appliance.succeed("test -e /etc/plymouth/themes/loom/loom.plymouth")
+        magic = appliance.succeed(
+            "head --bytes=4 /etc/plymouth/themes/loom/watermark.png | od -An -tx1"
+        )
+        assert magic.split() == ["89", "50", "4e", "47"], magic
   '';
 }

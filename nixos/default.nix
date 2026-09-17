@@ -121,6 +121,7 @@ let
   applianceModules = [
     ./platform.nix
     platformModule
+    ./branding.nix
     ./box.nix
     ./modes.nix
     ./network.nix
@@ -129,7 +130,13 @@ let
 
   boxSystem = evalConfig (applianceModules ++ [ ./box-hardware.nix ]);
 
-  installerSystem = evalConfig [ (import ./installer.nix { inherit boxSystem; }) ];
+  # branding.nix is in both lists on purpose: the stick is the first Loom screen
+  # anyone sees, and it would otherwise boot a NixOS-branded splash into a
+  # Loom-branded installer.
+  installerSystem = evalConfig [
+    ./branding.nix
+    (import ./installer.nix { inherit boxSystem; })
+  ];
 in
 {
   inherit

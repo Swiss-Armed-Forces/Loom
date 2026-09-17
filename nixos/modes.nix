@@ -4,15 +4,23 @@
 # entry, sharing almost the whole store closure with the default. So the two
 # modes cost a boot menu entry rather than a second image.
 #
-#   Run mode (default)  offline. Serves DHCP and *.loom, starts Loom with
-#                       --offline --expose so visitors can reach it.
-#   Setup mode          DHCP client. Builds and pulls every container image
-#                       into minikube, once, then the box never needs the
-#                       internet again.
+#   `Loom`                    (default) offline. Serves DHCP and *.loom, starts
+#                             Loom with --offline --expose so visitors can
+#                             reach it.
+#   `Loom (first-time-setup)` DHCP client. Builds and pulls every container
+#                             image into minikube, once, then the box never
+#                             needs the internet again.
 #
-# Setup mode is what removes the ~60 GB of container images from the USB stick:
-# it writes them into minikube's store on the encrypted root, and run mode
-# inherits them.
+# Those are the titles as they appear in the menu: NixOS builds each from
+# branding.nix's `distroName` plus the specialisation's own attribute name, so
+# renaming the specialisation below is what renames the entry.
+#
+# First-time setup is what removes the ~60 GB of container images from the USB
+# stick: it writes them into minikube's store on the encrypted root, and run
+# mode inherits them.
+#
+# The section banners below say "setup mode" because they mark branches keyed on
+# `loom.mode`, which stays `setup` internally -- only the boot entry is renamed.
 {
   config,
   lib,
@@ -109,6 +117,10 @@ in
     description = ''
       Which appliance mode this system closure is. `run` is the default boot
       entry; `setup` is generated as a specialisation of it.
+
+      Internal, and deliberately not renamed alongside the boot entry: this is
+      what network.nix and the branches below switch on, and no operator ever
+      sees it. The menu says `Loom (first-time-setup)`.
     '';
   };
 
@@ -117,11 +129,28 @@ in
     # Run mode
     # -------------------------------------------------------------------------
     (lib.mkIf (cfg.mode == "run") {
-      specialisation.setup.configuration = {
+      specialisation.first-time-setup.configuration = {
         loom.mode = lib.mkForce "setup";
-        # Names the boot entry, so the two are distinguishable in the menu.
-        system.nixos.tags = [ "setup" ];
+        # The specialisation's *name* is the boot entry: NixOS builds the title
+        # as distroName + specialisation, so this attribute is what an operator
+        # reads in the menu. The tag only shows up in the entry's second line
+        # and in `nixos-version`; it matches so the two cannot drift.
+        system.nixos.tags = [ "first-time-setup" ];
       };
+
+      # Run mode has nothing to say on its way up: the disk unlocks from the
+      # stick without a prompt, and everything an operator needs is on the login
+      # screen afterwards (box.nix's `loom-info`). So let branding.nix's splash
+      # own the screen instead of a scroll of kernel messages -- the plymouth
+      # module contributes `splash` itself, `quiet` is what silences the log.
+      #
+      # Deliberately here rather than in box-hardware.nix: a specialisation
+      # *adds* to its parent's kernel command line and cannot subtract from it,
+      # so a `quiet` set for both modes could never be taken back for setup.
+      boot.kernelParams = [
+        "quiet"
+        "udev.log_level=3"
+      ];
 
       systemd.services.loom = lib.mkMerge [
         commonService
@@ -140,6 +169,12 @@ in
     # Setup mode
     # -------------------------------------------------------------------------
     (lib.mkIf (cfg.mode == "setup") {
+      # No splash in this mode, and no `quiet` either (the run-mode branch above
+      # is what sets that). Fetching every container image takes hours, and a
+      # scrolling log is the only thing telling an operator it is working rather
+      # than wedged -- a still logo here would be actively misleading.
+      boot.kernelParams = [ "plymouth.enable=0" ];
+
       systemd.services.loom-fetch = lib.mkMerge [
         commonService
         {
