@@ -53,25 +53,43 @@ let
       "loom-seed-repo.service"
     ];
     wants = [ "network-online.target" ];
-    path = with pkgs; [
-      bash
-      git
-      git-lfs
-      docker
-      kubectl
-      kubernetes-helm
-      minikube
-      skaffold
-      yq
-      jq
-      gnutar
-      gzip
-      procps
-      util-linux
-    ];
+    path =
+      with pkgs;
+      [
+        bash
+        git
+        git-lfs
+        docker
+        kubectl
+        kubernetes-helm
+        minikube
+        skaffold
+        yq
+        jq
+        gnutar
+        gzip
+        procps
+        util-linux
+      ]
+      ++ cfg.entrypoints;
   };
 in
 {
+  options.loom.entrypoints = lib.mkOption {
+    type = lib.types.listOf lib.types.package;
+    internal = true;
+    default = [ ];
+    description = ''
+      The `loom-up` / `loom-down` wrappers, as set by box.nix.
+
+      They have to be on the PATH of the units below explicitly. Being in
+      `environment.systemPackages` puts them in the operator's interactive
+      shell but not in a systemd unit's environment, so without this the
+      appliance boots and `loom.service` dies immediately with
+      "exec: loom-up: not found".
+    '';
+  };
+
   options.loom.mode = lib.mkOption {
     type = lib.types.enum [
       "run"

@@ -323,6 +323,9 @@ in
 
       # appliance image building / flashing
       gptfdisk
+      # `partprobe`, which build_appliance_image.sh's validate_environment
+      # requires and which util-linux does not carry.
+      parted
 
       # k8s
       minikube

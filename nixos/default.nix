@@ -11,11 +11,14 @@
 # nixpkgs is supplied by cicd/build_appliance_image.sh, which passes devenv's
 # `inputs.nixpkgs-stable` store path through as ${LOOM_NIXPKGS}.
 #
-# `system` defaults to the host so the whole thing can be evaluated, built and
-# boot-tested on x86_64 long before any aarch64 hardware is involved.
+# `system` defaults to the host, which is what lets either platform be evaluated
+# and boot-tested without the corresponding hardware to hand.
 {
   nixpkgs ? throw "nixos: pass --arg nixpkgs <path>; normally done by the 'build-appliance-image' script",
   system ? builtins.currentSystem,
+  # Which physical box this image is for. See platforms/<id>.nix; the chosen
+  # platform's `nixSystem` is asserted against `system` below.
+  platform ? "spark",
   repoSrc ? throw "nixos: pass --arg repoSrc <path to the prepared checkout>",
   tag ? "dev",
   loomHostsJson ? throw "nixos: pass --argstr loomHostsJson '[\"api.loom\", ...]'",
@@ -24,7 +27,10 @@
   # randomises the middle two so two boxes on one wire cannot collide, and so a
   # visitor's own 10.0.0.0/24 or 192.168.1.0/24 does not either.
   loomSubnet ? "10.13.37",
-  loomInterface ? "eth0",
+  # Normally empty: the appliance renames whatever the platform's `netMatch`
+  # selects to `loom0` and pins everything to that. Set this only to override the
+  # match with a specific kernel-assigned name.
+  loomInterface ? "",
   enableGpu ? false,
 }:
 let
@@ -37,6 +43,18 @@ let
       nvidia.acceptLicense = true;
     };
   };
+
+  # Resolved through an explicit table rather than by interpolating `platform`
+  # into a path, so an unknown name produces a list of the valid ones instead of
+  # a "file does not exist" from deep inside the evaluation.
+  platformModules = {
+    spark = ./platforms/spark.nix;
+    evo-x2 = ./platforms/evo-x2.nix;
+  };
+
+  platformModule =
+    platformModules.${platform}
+      or (throw "nixos: unknown platform '${platform}'; known platforms: ${builtins.concatStringsSep ", " (builtins.attrNames platformModules)}");
 
   # Copied verbatim, `.git` and materialised git-lfs payloads included.
   # cicd/build_appliance_image.sh is responsible for preparing the directory;
@@ -71,16 +89,38 @@ let
       system = null;
       inherit specialArgs;
       modules = modules ++ [
-        {
-          nixpkgs.pkgs = pkgs;
-          # Setting `pkgs` alone leaves hostPlatform undefined, which anything
-          # reading it (the installer needs `efiArch`) then trips over.
-          nixpkgs.hostPlatform = system;
-        }
+        ./platform.nix
+        platformModule
+        (
+          { config, ... }:
+          {
+            nixpkgs.pkgs = pkgs;
+            # Setting `pkgs` alone leaves hostPlatform undefined, which anything
+            # reading it (the installer needs `efiArch`) then trips over.
+            nixpkgs.hostPlatform = system;
+
+            # Catch a platform/system mismatch here rather than three hours into
+            # a build, or -- worse -- on a box that will not boot.
+            assertions = [
+              {
+                assertion = config.loom.platform.nixSystem == system;
+                message =
+                  "nixos: platform '${config.loom.platform.id}' is ${config.loom.platform.nixSystem}, "
+                  + "but system is '${system}'. Drop --system, or pass a matching --platform.";
+              }
+            ];
+          }
+        )
       ];
     };
 
+  # tests/appliance.nix builds its node from this list directly rather than
+  # through evalConfig, so the platform modules have to be in here too. The
+  # module system keys modules by path, so evalConfig importing them as well is
+  # a no-op rather than a conflict.
   applianceModules = [
+    ./platform.nix
+    platformModule
     ./box.nix
     ./modes.nix
     ./network.nix

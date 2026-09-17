@@ -134,10 +134,14 @@ in
       htop
       less
     ])
-    ++ [
-      loom-up
-      loom-down
-    ];
+    ++ config.loom.entrypoints;
+
+  # Also handed to the units in modes.nix, which need them on their PATH rather
+  # than merely in the operator's shell.
+  loom.entrypoints = [
+    loom-up
+    loom-down
+  ];
 
   virtualisation.docker = {
     enable = true;
@@ -201,6 +205,7 @@ in
     if [ -z "''${LOOM_BANNER_SHOWN:-}" ]; then
       export LOOM_BANNER_SHOWN=1
       printf '\n  Loom appliance -- %s\n' "${tag}"
+      printf '  %s\n' "${config.loom.platform.description}"
       if [ -r /etc/loom/network.conf ]; then
         # shellcheck disable=SC1091
         . /etc/loom/network.conf

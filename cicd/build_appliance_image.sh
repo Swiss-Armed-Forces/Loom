@@ -11,9 +11,17 @@ CONTEXT_DIR=$(git -C "${SCRIPT_DIR}" rev-parse --show-toplevel)
 NIXPKGS="${LOOM_NIXPKGS:-}"
 
 OUTPUT_DIR="${CONTEXT_DIR}/.appliance-build"
-NIX_SYSTEM="aarch64-linux"
+
+# Which box this stick is for. The nix system follows from it unless --system
+# says otherwise; see nixos/platforms/ for what else each one carries.
+PLATFORM="spark"
+KNOWN_PLATFORMS=(spark evo-x2)
+NIX_SYSTEM=""
 MINIKUBE_IP="192.168.49.2"
-LOOM_INTERFACE="eth0"
+
+# Empty means "let the platform's netMatch pick the interface, and rename it to
+# loom0". Only set by --interface, to override that match with a literal name.
+LOOM_INTERFACE=""
 
 # 4096 bytes of /dev/urandom, matching boot.initrd.luks.devices.keyFileSize.
 KEY_BYTES=4096
@@ -68,6 +76,17 @@ check_command(){
     fi
 }
 
+# The architecture each platform is. Must agree with `nixSystem` in the matching
+# nixos/platforms/<id>.nix -- nixos/default.nix asserts that they do, so a drift
+# here fails during evaluation rather than on the box.
+platform_system(){
+    case "${1}" in
+        spark)  printf 'aarch64-linux' ;;
+        evo-x2) printf 'x86_64-linux'  ;;
+        *)      return 1               ;;
+    esac
+}
+
 #
 # Steps
 #
@@ -89,14 +108,17 @@ validate_environment(){
         exit 1
     fi
 
-    # The appliance is aarch64 and cross-building a NixOS closure through
-    # emulation takes hours, so refuse by default rather than appear to hang.
+    # Cross-building a NixOS closure through emulation is slow, and needs a
+    # binfmt handler that most hosts do not have, so refuse by default rather
+    # than appear to hang or die halfway with a confusing message.
     host_arch="$(uname -m)"
     if [[ "${ALLOW_CROSS}" != true && "${NIX_SYSTEM}" == "${host_arch}-linux" ]]; then
         : # building natively
     elif [[ "${ALLOW_CROSS}" != true ]]; then
-        echo >&2 "[!] Error: building ${NIX_SYSTEM} on ${host_arch}."
-        echo >&2 "    Run this on a DGX Spark, or pass --allow-cross if you know what you are doing."
+        echo >&2 "[!] Error: platform '${PLATFORM}' is ${NIX_SYSTEM}, but this host is ${host_arch}."
+        echo >&2 "    Build it on a ${NIX_SYSTEM} host, or pass --allow-cross."
+        echo >&2 "    Cross-building also needs an emulator for ${NIX_SYSTEM} on this host"
+        echo >&2 "    (on NixOS: boot.binfmt.emulatedSystems = [ \"${NIX_SYSTEM}\" ];)."
         exit 1
     fi
 
@@ -286,11 +308,12 @@ build_image(){
     local hosts_json
     hosts_json="$(cat "${WORK_DIR}/loom-hosts.json")"
 
-    echo "[*] Building the ${NIX_SYSTEM} appliance image for ${TAG} on ${SUBNET}.0/24"
+    echo "[*] Building the ${PLATFORM} (${NIX_SYSTEM}) appliance image for ${TAG} on ${SUBNET}.0/24"
     nix-build "${CONTEXT_DIR}/nixos" \
         --attr installerImage \
         --arg nixpkgs "${NIXPKGS}" \
         --argstr system "${NIX_SYSTEM}" \
+        --argstr platform "${PLATFORM}" \
         --arg repoSrc "${WORK_DIR}/loom" \
         --argstr tag "${TAG}" \
         --argstr loomHostsJson "${hosts_json}" \
@@ -438,9 +461,10 @@ report(){
     echo "[*] Appliance image ready"
     echo "      image     : ${image}"
     echo "      loom tag  : ${TAG}"
+    echo "      platform  : ${PLATFORM}"
     echo "      system    : ${NIX_SYSTEM}"
     echo "      subnet    : ${SUBNET}.0/24 (box at ${SUBNET}.1, DHCP ${SUBNET}.100-200)"
-    echo "      interface : ${LOOM_INTERFACE}"
+    echo "      interface : loom0${LOOM_INTERFACE:+ (renamed from ${LOOM_INTERFACE})}"
     echo "      gpu       : ${ENABLE_GPU}"
     if [[ -n "${FLASH_DEVICE}" ]]; then
         echo "      flashed to: ${FLASH_DEVICE}"
@@ -467,8 +491,10 @@ usage(){
     echo "  -f|--flash DEVICE             flash to DEVICE, destroying all data on it"
     echo "  -k|--key-backup FILE          also write the generated LUKS key to FILE"
     echo "  -g|--gpu                      (not implemented yet; the appliance is CPU-only)"
-    echo "  -s|--system SYSTEM            nix system to build (default: ${NIX_SYSTEM})"
-    echo "  -i|--interface INTERFACE      appliance network interface (default: ${LOOM_INTERFACE})"
+    echo "  -p|--platform PLATFORM        box to build for: ${KNOWN_PLATFORMS[*]} (default: ${PLATFORM})"
+    echo "  -s|--system SYSTEM            nix system to build (default: the platform's)"
+    echo "  -i|--interface INTERFACE      pin the appliance NIC by name instead of letting"
+    echo "                                the platform match it (it is renamed to loom0 either way)"
     echo "  --subnet A.B.C                appliance subnet prefix (default: random 10.x.y)"
     echo "  --minikube-ip MINIKUBE_IP     address '*.loom' resolves to on the box (default: ${MINIKUBE_IP})"
     echo "  --nixpkgs NIXPKGS             nixpkgs source (default: \${LOOM_NIXPKGS} from devenv)"
@@ -529,13 +555,34 @@ while [[ $# -gt 0 ]]; do
             shift
         ;;
         -g|--gpu)
-            # The NVIDIA driver module is not written yet: mainline Linux is
-            # reported to lose the GPU and the ConnectX-7 NIC on a DGX Spark,
-            # so this needs validating on real hardware first. Refusing beats
-            # producing a box that asks minikube for a GPU it cannot see.
+            # Blocked on both platforms, for different reasons. On the Spark the
+            # driver module is not written: mainline Linux is reported to lose
+            # the GPU and the ConnectX-7 NIC, which needs validating on real
+            # hardware first. On the EVO-X2 amdgpu is mainline, but up.sh has no
+            # AMD path at all -- it requires nvidia-smi whenever --gpus is set,
+            # and values-gpu.yaml asks for nvidia.com/gpu (issue #284).
+            # Refusing beats producing a box that asks minikube for a GPU it
+            # cannot see.
             echo >&2 "[!] Error: --gpu is not implemented yet; the appliance ships CPU-only."
             echo >&2 "    See the 'GPU support' section of Documentation/appliance.md."
             exit 1
+        ;;
+        -p|--platform)
+            shift
+            PLATFORM="${1?Missing PLATFORM}"
+            # Matched against the list rather than by calling platform_system,
+            # which in a condition would silently disable `set -e` inside it.
+            case " ${KNOWN_PLATFORMS[*]} " in
+                *" ${PLATFORM} "*)
+                    :
+                ;;
+                *)
+                    echo >&2 "[!] Error: unknown platform: ${PLATFORM}"
+                    echo >&2 "    Known platforms: ${KNOWN_PLATFORMS[*]}"
+                    exit 1
+                ;;
+            esac
+            shift
         ;;
         -s|--system)
             shift
@@ -587,6 +634,13 @@ done
 
 if [[ "${VERBOSE}" = true ]]; then
     set -x
+fi
+
+# --system is the raw override; otherwise the platform decides. Resolved here
+# rather than at declaration time so that --platform and --system may be given
+# in either order.
+if [[ -z "${NIX_SYSTEM}" ]]; then
+    NIX_SYSTEM="$(platform_system "${PLATFORM}")"
 fi
 
 if [[ -n "${FLASH_DEVICE}" ]]; then

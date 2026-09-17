@@ -12,7 +12,7 @@
 # partition. The stick therefore has to stay plugged in. If it is missing,
 # systemd stage 1 falls back to prompting for the recovery passphrase that the
 # installer enrolled in keyslot 1.
-{ ... }:
+{ config, ... }:
 {
   # ---------------------------------------------------------------------------
   # Root encryption
@@ -66,11 +66,12 @@
     "uas"
     "xhci_pci"
     "nvme"
-  ];
+  ]
+  ++ config.loom.platform.extraInitrdModules;
 
   boot.loader.systemd-boot = {
     enable = true;
-    # The ESP is modest and aarch64 initrds are large.
+    # The ESP is modest and the initrds are not.
     configurationLimit = 3;
   };
   # Appliance firmware: the loader is placed on the ESP directly and the boot

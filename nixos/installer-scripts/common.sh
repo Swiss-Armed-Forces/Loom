@@ -44,6 +44,14 @@ sysfs_attr() {
     value="unknown"
     if [[ -r "${path}" ]]; then
         value="$(cat "${path}")"
+        # Trim. NVMe pads the Identify Controller fields to a fixed width with
+        # spaces, so a serial arrives as "S6XSNU0T12345       ". Command
+        # substitution strips the newline but not that padding, and every
+        # consumer compares this against something a human typed -- nobody
+        # types trailing padding, so the interlock below could never be
+        # satisfied on such a drive.
+        value="${value#"${value%%[![:space:]]*}"}"
+        value="${value%"${value##*[![:space:]]}"}"
     fi
     printf '%s' "${value}"
 }
@@ -144,14 +152,17 @@ target_disks() {
     fi
 }
 
-# Prints what dies and what survives, then demands the target's serial number.
-# Typing a serial rather than "yes" makes it impossible to confirm by muscle
-# memory on the wrong machine.
+# Prints what dies and what survives, then demands the action word.
+#
+# The action word is the whole interlock: it is never "yes", so it cannot be
+# confirmed by muscle memory, and the disk that is about to be destroyed is
+# named on screen directly above the prompt. Transcribing a 20-character NVMe
+# serial was the earlier design and was simply too tedious to live with.
 confirm_destructive() {
     local action="${1}" boot="${2}"
     shift 2
     local targets=("${@}")
-    local disk description answer serial
+    local disk description answer
 
     echo
     echo "=== ${action}: THE FOLLOWING WILL BE DESTROYED ==="
@@ -160,16 +171,14 @@ confirm_destructive() {
         echo "    ${description}"
     done
     echo
+    if [[ "${#targets[@]}" -gt 1 ]]; then
+        echo "    ^^ ALL ${#targets[@]} DISKS ABOVE, not just the first."
+        echo
+    fi
     echo "=== WILL NOT BE TOUCHED (boot medium) ==="
     description="$(disk_description "${boot}")"
     echo "    ${description}"
     echo
-
-    serial="$(sysfs_attr "${targets[0]}" serial)"
-    read -r -p "Type the serial of the first disk above to confirm: " answer
-    if [[ "${answer}" != "${serial}" ]]; then
-        die "Serial does not match. Aborted."
-    fi
 
     read -r -p "Type ${action} to proceed: " answer
     if [[ "${answer}" != "${action}" ]]; then
@@ -184,16 +193,18 @@ confirm_destructive() {
 # Prints a word rather than returning a status: a `if key_is_present` caller
 # would silently disable set -e for the whole condition.
 key_state() {
-    local key_dev="${1}" raw stripped
+    local key_dev="${1}"
     if [[ ! -b "${key_dev}" ]]; then
         printf 'missing'
         return 0
     fi
-    raw="$(head --bytes="${LOOM_KEY_BYTES}" "${key_dev}")"
-    stripped="${raw//$'\0'/}"
-    if [[ -n "${stripped}" ]]; then
-        printf 'present'
-    else
+    # Compared against /dev/zero rather than read into a variable: a command
+    # substitution on binary makes bash strip the NUL bytes and print a warning
+    # into the middle of the installer menu, and a pipeline would hide the exit
+    # status of the read.
+    if cmp --quiet --bytes="${LOOM_KEY_BYTES}" "${key_dev}" /dev/zero; then
         printf 'empty'
+    else
+        printf 'present'
     fi
 }

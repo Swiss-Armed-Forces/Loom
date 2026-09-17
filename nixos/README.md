@@ -9,6 +9,9 @@ this file is about the code.
 | File | What it is |
 | --- | --- |
 | `default.nix` | Entry point. Takes `nixpkgs` as an argument and returns the build targets. |
+| `platform.nix` | Declares `loom.platform.*`: the per-box dimension, separate from `system`. |
+| `platforms/spark.nix` | DGX Spark: aarch64, serial console, ConnectX-7. |
+| `platforms/evo-x2.nix` | GMKtec EVO-X2: x86_64, no serial port, Realtek 2.5GbE. |
 | `box.nix` | The appliance: host tuning, toolchain, operator account, `loom-up`. |
 | `box-hardware.nix` | LUKS root, filesystems, initrd, bootloader. |
 | `modes.nix` | `loom.mode`, the run/setup services, and the `setup` specialisation. |
@@ -31,22 +34,37 @@ Two reasons, either one sufficient:
 
 `cicd/build_appliance_image.sh` passes devenv's `inputs.nixpkgs-stable` through as `LOOM_NIXPKGS`.
 
+## The two axes: `system` and `platform`
+
+`system` is the architecture; `platform` is the box. They are deliberately separate — two platforms could
+share an architecture, and most of what actually differs between the Spark and the EVO-X2 (which NIC to
+claim, whether there is a serial port, which initrd modules to add) is a property of the machine.
+
+`platform` defaults to `spark`, so every pre-existing invocation behaves as before. Each platform declares
+the `nixSystem` it belongs to, and `default.nix` asserts it against `system`, so a mismatch fails during
+evaluation with a readable message rather than producing a box that will not boot. An unknown platform name
+lists the valid ones.
+
+Adding a third box means one file under `platforms/`, one entry in the `platformModules` table in
+`default.nix`, and one case in `platform_system()` in `cicd/build_appliance_image.sh`.
+
 ## Building by hand
 
-Normally you would use `build-appliance-image`. To drive it directly — note that `system` defaults to the
-host, which is what makes x86_64 testing possible:
+Normally you would use `build-appliance-image`. To drive it directly:
 
 ```bash
 export LOOM_NIXPKGS=...            # a nixpkgs checkout
 HOSTS=$(source ./vars.sh && printf '%s\n' "${LOOM_HOSTS_FQDN[@]}" | jq -R . | jq -sc .)
 
-# Evaluate only -- catches most mistakes in seconds.
+# Evaluate only -- catches most mistakes in seconds, for either platform,
+# without the corresponding hardware.
 nix-instantiate ./nixos -A box \
-  --arg nixpkgs "$LOOM_NIXPKGS" --argstr system x86_64-linux \
+  --arg nixpkgs "$LOOM_NIXPKGS" \
+  --argstr system x86_64-linux --argstr platform evo-x2 \
   --arg repoSrc ./. --argstr tag dev --argstr loomHostsJson "$HOSTS"
 
 # A bootable VM of the appliance, to poke at by hand.
-nix-build ./nixos -A boxVm --argstr system x86_64-linux ...
+nix-build ./nixos -A boxVm --argstr system x86_64-linux --argstr platform evo-x2 ...
 ./result/bin/run-*-vm
 
 # The stick image.
@@ -59,8 +77,13 @@ for poking at evaluated configuration.
 ## Running the test
 
 ```bash
-nix-build ./nixos -A tests.appliance --argstr system x86_64-linux ...
+nix-build ./nixos -A tests.appliance \
+  --argstr system x86_64-linux --argstr platform evo-x2 ...
 ```
+
+There is one evaluation per invocation and no `forAllSystems`, so covering both platforms means running it
+twice — and each run needs a host of the matching architecture, since the test boots a real VM. In practice
+that is `evo-x2` on any x86_64 workstation and `spark` on a Spark.
 
 Needs a host with KVM. On one without nested virtualisation, drop the requirement and let qemu fall back
 to software emulation — much slower, but it runs:

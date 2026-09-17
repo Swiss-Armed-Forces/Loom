@@ -57,12 +57,20 @@ pkgs.testers.runNixOSTest {
     # The test framework drives networking itself; the appliance's DHCP server
     # and static address would fight it.
     services.dnsmasq.enable = pkgs.lib.mkForce false;
+    # loom0 never materialises in here -- the platform match is by driver, and
+    # the test VM's NIC is virtio, which is exactly the point of keeping those
+    # matches narrow. Without this the address unit would sit waiting on a
+    # .device that never appears. The rename is asserted from the generated
+    # configuration below instead.
+    networking.interfaces = pkgs.lib.mkForce { };
     # Loom cannot actually come up in a test VM (no images, no cluster); we are
     # checking that the units are wired, not that Loom runs.
     systemd.services.loom.wantedBy = pkgs.lib.mkForce [ ];
   };
 
   testScript = ''
+    import re
+
     start_all()
     appliance.wait_for_unit("multi-user.target")
 
@@ -88,7 +96,10 @@ pkgs.testers.runNixOSTest {
     with subtest("/etc/hosts is still a store symlink"):
         # up.sh install_host_entries would have replaced it with a mutable copy.
         appliance.succeed("test -L /etc/hosts")
-        appliance.succeed("readlink /etc/hosts | grep -q '^/nix/store/'")
+        # -f, not a bare readlink: NixOS points /etc/hosts at /etc/static/hosts
+        # and only /etc/static at the store, so following one hop lands on
+        # /etc/static/hosts and never matches. Resolve the whole chain.
+        appliance.succeed("readlink -f /etc/hosts | grep -q '^/nix/store/'")
 
     with subtest("every binary up.sh validate_environment checks for is present"):
         for cmd in ${builtins.toJSON upshCommands}:
@@ -122,14 +133,42 @@ pkgs.testers.runNixOSTest {
         out = appliance.succeed("runuser -u ${loomUser} -- loom-up --help")
         assert "--skip-STEP" in out, out
 
+    with subtest("loom.service can actually find loom-up"):
+        # systemPackages puts loom-up in the operator's shell but not in a
+        # unit's PATH, so this passing in the shell above says nothing about
+        # the unit. The appliance boots and dies with "exec: loom-up: not
+        # found" if the two disagree.
+        unit_path = appliance.succeed(
+            "systemctl show -p Environment --value loom.service"
+        )
+        assert "loom-up" in unit_path, unit_path
+
     with subtest("docker is available for the minikube driver"):
         appliance.wait_for_unit("docker.service")
         appliance.succeed("docker info")
 
+    with subtest("the appliance NIC is renamed rather than guessed by name"):
+        # The whole point is that no kernel-assigned name (eth0, enp1s0f0np0)
+        # appears anywhere: a single image cannot know what the box will call
+        # its NIC, and a wrong guess is a box with no network and no sshd.
+        link = appliance.succeed("cat /etc/systemd/network/10-loom0.link")
+        assert "Name=loom0" in link, link
+        assert "[Match]" in link, link
+
+        conf = appliance.succeed("cat /etc/loom/network.conf")
+        assert "LOOM_INTERFACE=loom0" in conf, conf
+
+        # The banner and dnsmasq must agree with the rename, not with a name
+        # that only existed on the machine the image was built for.
+        appliance.succeed("systemctl cat loom-network-check.service")
+
     with subtest("radios are disabled"):
         appliance.wait_for_unit("loom-rfkill-block.service")
         for module in ["bluetooth", "btusb", "cfg80211", "mac80211"]:
-            appliance.succeed(f"grep -r 'blacklist {module}' /etc/modprobe.d/")
+            # -R, not -r: everything in /etc/modprobe.d is a symlink into
+            # /etc/static, and -r skips symlinks it finds while walking a
+            # directory. -r here silently matches nothing at all.
+            appliance.succeed(f"grep -R 'blacklist {module}' /etc/modprobe.d/")
 
     with subtest("both boot modes exist and differ in the right way"):
         # The setup specialisation is what lets one box both fetch images
@@ -140,10 +179,17 @@ pkgs.testers.runNixOSTest {
         assert "setup" in setup, setup
 
         # Run mode serves the network and starts Loom offline.
-        appliance.succeed("systemctl cat loom.service | grep -- '--offline'")
-        appliance.succeed(
-            "systemctl cat loom.service | grep -- '--expose ${loomSubnet}.1'"
-        )
+        #
+        # The flags are not in the unit file: `script = ...` compiles to
+        # ExecStart=<store path of a generated script>, so grepping the output
+        # of `systemctl cat` for them matches nothing at all. Follow the
+        # indirection and read the script the unit actually runs.
+        unit = appliance.succeed("systemctl cat loom.service")
+        match = re.search(r"ExecStart=(\S+)", unit)
+        assert match, unit
+        start_script = appliance.succeed(f"cat {match.group(1)}")
+        assert "--offline" in start_script, start_script
+        assert "--expose ${loomSubnet}.1" in start_script, start_script
         # Setup mode fetches instead, and must not serve DHCP.
         setup_sys = appliance.succeed(
             "readlink -f /run/current-system/specialisation/setup"

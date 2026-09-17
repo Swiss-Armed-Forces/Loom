@@ -52,39 +52,58 @@ show_status() {
 }
 
 show_menu() {
-    echo "    1) Rescue shell                         [default]"
-    echo "    2) Install Loom appliance to the internal disk"
-    echo "    3) ERASE ALL DATA on the internal disks"
-    echo "    4) Reboot"
-    echo "    5) Power off"
+    echo "    1) Install Loom appliance to the internal disk"
+    echo "    2) ERASE ALL DATA on the internal disks"
+    echo "    3) Reboot"
+    echo "    4) Power off"
+    echo "    5) Rescue shell                         [default]"
     echo
 }
 
-# Neither destructive option is reachable by a single keystroke: both run the
-# interlock in common.sh, which demands the target's serial number.
+# The rescue shell stays the default: it is the one option that cannot destroy
+# anything, so an idle keypress lands somewhere harmless. Both destructive
+# options additionally run the interlock in common.sh, which demands the
+# target's serial number.
+rescue_shell() {
+    echo "  Rescue shell. Type 'exit' or press Ctrl-D to return to the menu."
+    echo
+
+    # --norc --noprofile so that nothing downstream resets PS1; the prompt is
+    # then set here and actually survives. PATH has to be spelled out for the
+    # same reason: the inherited one is what wrapProgram built for the
+    # installer (cryptsetup, nvme-cli, gptfdisk, parted, nixos-install-tools),
+    # which is most of what a rescue shell wants but has neither loom-install
+    # itself nor the rest of the system profile.
+    #
+    # TERM matters too: without it bash gives no line editing and nothing can
+    # clear the screen, which is most of what makes a bare shell feel broken.
+    HOME="${HOME:-/root}" \
+        TERM="${TERM:-linux}" \
+        PS1='[loom-installer:\w]\$ ' \
+        PATH="${LOOM_INSTALLER_BIN:?}:${PATH}:/run/current-system/sw/bin" \
+        bash --norc --noprofile -i || true
+}
+
 main() {
     local choice
     while true; do
         show_status
         show_menu
-        read -r -p "  Choice [1]: " choice
-        choice="${choice:-1}"
+        read -r -p "  Choice [5]: " choice
+        choice="${choice:-5}"
 
         case "${choice}" in
         1)
-            echo "  Returning to the menu when this shell exits."
-            bash --login || true
-            ;;
-        2)
             "${LOOM_INSTALLER_BIN:?}/loom-install" || err "Installation failed."
             read -r -p "  Press enter to return to the menu. "
             ;;
-        3)
+        2)
             "${LOOM_INSTALLER_BIN:?}/loom-wipe" || err "Wipe failed."
             read -r -p "  Press enter to return to the menu. "
             ;;
-        4) systemctl reboot ;;
-        5) systemctl poweroff ;;
+        3) systemctl reboot ;;
+        4) systemctl poweroff ;;
+        5) rescue_shell ;;
         *) err "Not a choice: ${choice}" ;;
         esac
     done

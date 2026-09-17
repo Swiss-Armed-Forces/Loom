@@ -16,6 +16,12 @@ readonly MOUNT=/mnt
 readonly TARGET_SYSTEM_FILE=/etc/loom/target-system
 readonly RECOVERY_FILE_REL=var/lib/loom/recovery-passphrase
 
+# "aa64" or "x64", set by installer.nix from config.nixpkgs.hostPlatform.efiArch
+# -- the same value that names the loader it puts on the stick's ESP. Hardcoding
+# either spelling here is how the installer and the image it came from drift
+# apart without anything failing loudly.
+readonly EFI_ARCH="${LOOM_EFI_ARCH:?LOOM_EFI_ARCH is not set}"
+
 main() {
     local boot target key_dev key_status eligible passphrase targets=()
 
@@ -32,7 +38,7 @@ main() {
         die "No eligible internal NVMe found. Nothing to install onto."
     fi
     mapfile -t targets <<<"${eligible}"
-    target="${targets[0]}"
+    target="$(select_target "${targets[@]}")"
 
     check_disk_size "${target}"
 
@@ -63,6 +69,42 @@ main() {
     echo "    It is also shown on every console login."
     echo
     log "Leave the USB stick plugged in. The box cannot boot without it."
+}
+
+# Which disk to install onto, when the box has more than one.
+#
+# Taking targets[0] unasked was fine while every appliance was a Spark with one
+# drive; the EVO-X2 has two M.2 slots, and there "whichever lsblk listed first"
+# is not something an operator can predict or verify. menu.sh already lists every
+# candidate, and wipe.sh already erases all of them -- this makes install agree.
+#
+# Everything here goes to stderr: the chosen device is this function's stdout.
+select_target() {
+    local targets=("${@}") index answer description
+
+    if [[ "${#targets[@]}" -eq 1 ]]; then
+        printf '%s' "${targets[0]}"
+        return 0
+    fi
+
+    echo >&2
+    echo >&2 "=== MORE THAN ONE ELIGIBLE INTERNAL DISK ==="
+    for index in "${!targets[@]}"; do
+        description="$(disk_description "${targets[index]}")"
+        printf '    %d) %s\n' "$((index + 1))" "${description}" >&2
+    done
+    echo >&2
+    # A number, not a serial: this only has to disambiguate between the disks
+    # listed directly above. The interlock that guards against doing this to the
+    # wrong machine is the INSTALL confirmation that follows.
+    read -r -p "Install onto which disk? [1-${#targets[@]}]: " answer
+
+    if [[ ! "${answer}" =~ ^[0-9]+$ ]] || ((answer < 1 || answer > ${#targets[@]})); then
+        # `die` exits the command substitution rather than the script, but the
+        # non-zero status propagates through the assignment under `set -e`.
+        die "Not a choice: '${answer}'. Aborted."
+    fi
+    printf '%s' "${targets[answer - 1]}"
 }
 
 check_disk_size() {
@@ -121,6 +163,9 @@ make_filesystems() {
 }
 
 mount_target() {
+    # The live root is a tmpfs built from nothing, so /mnt does not exist until
+    # we create it -- unlike on an installed system, where it always does.
+    mkdir --parents "${MOUNT}"
     mount /dev/mapper/cryptroot "${MOUNT}"
     mkdir --parents "${MOUNT}/boot"
     mount "/dev/disk/by-partlabel/${LOOM_ESP_LABEL}" "${MOUNT}/boot"
@@ -193,22 +238,32 @@ fix_boot_order() {
     local target="${1}" boot="${2}" esp_part_num=1
     log "Making the internal disk the default boot entry"
 
+    # efibootmgr does not check that the loader exists, so a wrong name here
+    # produces an entry the firmware silently cannot boot.
     if ! efibootmgr --create \
         --disk "${target}" \
         --part "${esp_part_num}" \
-        --loader '\EFI\systemd\systemd-bootaa64.efi' \
+        --loader "\\EFI\\systemd\\systemd-boot${EFI_ARCH}.efi" \
         --label "Loom appliance" >/dev/null 2>&1; then
         err "Could not create an NVRAM boot entry. Select the internal disk manually in firmware."
         return 0
     fi
 
-    local stick_esp
+    local stick_esp fallback
     stick_esp="$(mktemp --directory)"
     if mount "/dev/disk/by-partlabel/${LOOM_LIVE_ESP_LABEL}" "${stick_esp}" 2>/dev/null; then
-        if [[ -f "${stick_esp}/EFI/BOOT/BOOTAA64.EFI" ]]; then
+        fallback="${stick_esp}/EFI/BOOT/BOOT${EFI_ARCH^^}.EFI"
+        if [[ -f "${fallback}" ]]; then
             mkdir --parents "${stick_esp}/EFI/loom"
-            mv "${stick_esp}/EFI/BOOT/BOOTAA64.EFI" "${stick_esp}/EFI/loom/bootaa64.efi"
-            log "Installer moved to \\EFI\\loom\\bootaa64.efi on ${boot}; reach it from the firmware boot menu."
+            mv "${fallback}" "${stick_esp}/EFI/loom/boot${EFI_ARCH}.efi"
+            log "Installer moved to \\EFI\\loom\\boot${EFI_ARCH}.efi on ${boot}; reach it from the firmware boot menu."
+        else
+            # Not cosmetic: the stick stays plugged in forever, so as long as it
+            # owns the removable-media path most firmware boots the installer
+            # instead of the appliance on every restart. Never fail quietly here.
+            err "Expected ${fallback} on the stick, but it is not there."
+            err "The stick still owns the UEFI removable-media path, so this box may boot"
+            err "the installer again. Put the internal disk first in the firmware boot order."
         fi
         umount "${stick_esp}"
     fi
