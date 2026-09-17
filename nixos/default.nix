@@ -77,6 +77,19 @@ in
   box = boxSystem.config.system.build.toplevel;
 
   # `nix-build ./nixos -A boxVm --argstr system x86_64-linux` then
-  # `./result/bin/run-*-vm` -- the tier 2 test harness.
+  # `./result/bin/run-*-vm` -- for poking at the appliance by hand.
   boxVm = boxSystem.config.system.build.vm;
+
+  # `nix-build ./nixos -A tests.appliance --argstr system x86_64-linux`
+  # Asserts the values box.nix restates from up.sh and vars.sh, so the two
+  # cannot drift apart unnoticed.
+  tests.appliance = import ./tests/appliance.nix {
+    inherit
+      pkgs
+      specialArgs
+      loomHostsJson
+      minikubeIp
+      ;
+    inherit (specialArgs) loomUser loomRepoDir;
+  };
 }
