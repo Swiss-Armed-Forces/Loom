@@ -14,6 +14,7 @@ source "${LOOM_INSTALLER_LIB:?LOOM_INSTALLER_LIB is not set}/common.sh"
 
 readonly MOUNT=/mnt
 readonly TARGET_SYSTEM_FILE=/etc/loom/target-system
+readonly STORE_REGISTRATION_FILE=/etc/loom/store-registration
 readonly RECOVERY_FILE_REL=var/lib/loom/recovery-passphrase
 
 main() {
@@ -121,6 +122,9 @@ make_filesystems() {
 }
 
 mount_target() {
+    # The installer root is a fresh tmpfs, so /mnt does not exist the way it
+    # would on an ordinary system.
+    mkdir --parents "${MOUNT}"
     mount /dev/mapper/cryptroot "${MOUNT}"
     mkdir --parents "${MOUNT}/boot"
     mount "/dev/disk/by-partlabel/${LOOM_ESP_LABEL}" "${MOUNT}/boot"
@@ -134,6 +138,15 @@ unmount_target() {
 install_system() {
     local system
     system="$(cat "${TARGET_SYSTEM_FILE}")"
+
+    # image.repart's storePaths copies the closure's files onto the stick but
+    # registers nothing, so every path in it is "invalid" as far as this live
+    # system's Nix database is concerned and nixos-install refuses with "no
+    # substituter can build it". Register them first. (The installer ISO gets
+    # this for free via nix-path-registration; repart has no equivalent.)
+    log "Registering the appliance closure"
+    nix-store --load-db < "${STORE_REGISTRATION_FILE}"
+
     log "Installing ${system}"
 
     # --system installs a pre-built closure, so nothing is evaluated or built.

@@ -45,6 +45,11 @@ sysfs_attr() {
     if [[ -r "${path}" ]]; then
         value="$(cat "${path}")"
     fi
+    # NVMe serials are space-padded to a fixed width in sysfs. Left untrimmed,
+    # the confirmation below can never be satisfied: the operator types what
+    # the screen shows and it silently fails to match the padded value.
+    value="${value#"${value%%[![:space:]]*}"}"
+    value="${value%"${value##*[![:space:]]}"}"
     printf '%s' "${value}"
 }
 
@@ -166,12 +171,19 @@ confirm_destructive() {
     echo
 
     serial="$(sysfs_attr "${targets[0]}" serial)"
-    read -r -p "Type the serial of the first disk above to confirm: " answer
+    # Prompts are printed rather than passed to `read -p`, which writes them to
+    # stderr -- invisible whenever stderr is not the operator's terminal.
+    printf 'Type the serial of the first disk above to confirm: '
+    read -r answer
+    # Be forgiving about stray whitespace the operator may type or paste.
+    answer="${answer#"${answer%%[![:space:]]*}"}"
+    answer="${answer%"${answer##*[![:space:]]}"}"
     if [[ "${answer}" != "${serial}" ]]; then
         die "Serial does not match. Aborted."
     fi
 
-    read -r -p "Type ${action} to proceed: " answer
+    printf 'Type %s to proceed: ' "${action}"
+    read -r answer
     if [[ "${answer}" != "${action}" ]]; then
         die "Aborted."
     fi
@@ -184,14 +196,16 @@ confirm_destructive() {
 # Prints a word rather than returning a status: a `if key_is_present` caller
 # would silently disable set -e for the whole condition.
 key_state() {
-    local key_dev="${1}" raw stripped
+    local key_dev="${1}" nonzero
     if [[ ! -b "${key_dev}" ]]; then
         printf 'missing'
         return 0
     fi
-    raw="$(head --bytes="${LOOM_KEY_BYTES}" "${key_dev}")"
-    stripped="${raw//$'\0'/}"
-    if [[ -n "${stripped}" ]]; then
+    # Counted through a pipeline rather than read into a variable: command
+    # substitution strips NUL bytes and warns about it on stderr, which lands
+    # in the middle of the operator's menu.
+    nonzero="$(head --bytes="${LOOM_KEY_BYTES}" "${key_dev}" | tr --delete '\0' | wc --bytes || true)"
+    if [[ "${nonzero}" -gt 0 ]]; then
         printf 'present'
     else
         printf 'empty'

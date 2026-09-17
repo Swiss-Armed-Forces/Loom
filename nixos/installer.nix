@@ -18,6 +18,15 @@
 let
   efiArch = config.nixpkgs.hostPlatform.efiArch;
 
+  # image.repart's `storePaths` copies the closure's files into the partition
+  # but does not register them in the live system's Nix database, so
+  # nixos-install rejects the appliance as "not valid; no substituter can build
+  # it". The installer ISO has the same problem and solves it with
+  # nix-path-registration; repart has no equivalent, so it is done by hand.
+  applianceRegistration = pkgs.closureInfo {
+    rootPaths = [ boxSystem.config.system.build.toplevel ];
+  };
+
   installerScripts =
     pkgs.runCommand "loom-installer-scripts"
       {
@@ -50,6 +59,9 @@ let
                   systemd
                   util-linux
                   nixos-install-tools
+                  # nixos-install shells out to nix-env, which lives in `nix`
+                  # rather than in nixos-install-tools.
+                  nix
                 ]
               )
             } \
@@ -89,7 +101,14 @@ in
       neededForBoot = true;
     };
     "/nix/store".overlay = {
-      lowerdir = [ "/nix/.ro-store" ];
+      # NOT /nix/.ro-store: image.repart's `storePaths` writes the closure
+      # preserving its full /nix/store/... path, so the partition root holds
+      # `nix/store/`, not the store entries themselves. (The installer ISO
+      # differs -- its squashfs root *is* the store, which is why the iso-image
+      # pattern cannot be copied verbatim here.) Pointing the lowerdir at the
+      # partition root yields /nix/store/nix/store/<hash> and stage 1 fails to
+      # find the closure named on the kernel command line.
+      lowerdir = [ "/nix/.ro-store/nix/store" ];
       upperdir = "/nix/.rw-store/store";
       workdir = "/nix/.rw-store/work";
     };
@@ -126,7 +145,12 @@ in
           Type = "linux-generic";
           Format = "erofs";
           Label = "loom-live-store";
-          Minimize = "guess";
+          # "best", not "guess": guess only approximates the needed size, and
+          # under-allocating truncates files, which surfaces much later as
+          # `hash mismatch importing path` when nixos-install copies the
+          # closure. "best" sizes the filesystem exactly, at the cost of a
+          # second pass.
+          Minimize = "best";
         };
       };
 
@@ -158,6 +182,9 @@ in
 
   # Which closure loom-install should install, with zero evaluation at runtime.
   environment.etc."loom/target-system".text = "${boxSystem.config.system.build.toplevel}";
+  # Consumed by loom-install, which registers the closure explicitly rather
+  # than relying on a boot hook.
+  environment.etc."loom/store-registration".source = "${applianceRegistration}/registration";
 
   environment.systemPackages = [ installerScripts ];
 
@@ -181,7 +208,7 @@ in
       TTYVHangup = true;
       StandardInput = "tty-force";
       StandardOutput = "tty";
-      StandardError = "journal";
+      StandardError = "tty";
       Restart = "always";
       RestartSec = 2;
     };
@@ -200,15 +227,23 @@ in
       TTYReset = true;
       StandardInput = "tty-force";
       StandardOutput = "tty";
-      StandardError = "journal";
+      StandardError = "tty";
       Restart = "always";
       RestartSec = 2;
     };
   };
 
+  # This is rescue media. If stage 1 fails at a site, whoever is standing in
+  # front of the box needs a shell to diagnose it, not a locked sulogin prompt.
+  # (The appliance itself deliberately does NOT get this.)
+  boot.initrd.systemd.emergencyAccess = true;
+
   boot.kernelParams = [
     "console=tty1"
     "console=ttyS0,115200"
+    # Service output on the console, not only in a journal nobody can reach
+    # when the boot failed before there is a root filesystem.
+    "systemd.journald.forward_to_console=1"
   ];
 
   networking.hostName = "loom-installer";

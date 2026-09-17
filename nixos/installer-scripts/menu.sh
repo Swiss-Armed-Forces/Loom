@@ -67,7 +67,8 @@ main() {
     while true; do
         show_status
         show_menu
-        read -r -p "  Choice [1]: " choice
+        printf '  Choice [1]: '
+        read -r choice
         choice="${choice:-1}"
 
         case "${choice}" in
@@ -77,11 +78,13 @@ main() {
             ;;
         2)
             "${LOOM_INSTALLER_BIN:?}/loom-install" || err "Installation failed."
-            read -r -p "  Press enter to return to the menu. "
+            printf '  Press enter to return to the menu. '
+            read -r _
             ;;
         3)
             "${LOOM_INSTALLER_BIN:?}/loom-wipe" || err "Wipe failed."
-            read -r -p "  Press enter to return to the menu. "
+            printf '  Press enter to return to the menu. '
+            read -r _
             ;;
         4) systemctl reboot ;;
         5) systemctl poweroff ;;
