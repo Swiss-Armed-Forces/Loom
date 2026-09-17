@@ -70,7 +70,14 @@ let
       # disagree.
       system = null;
       inherit specialArgs;
-      modules = modules ++ [ { nixpkgs.pkgs = pkgs; } ];
+      modules = modules ++ [
+        {
+          nixpkgs.pkgs = pkgs;
+          # Setting `pkgs` alone leaves hostPlatform undefined, which anything
+          # reading it (the installer needs `efiArch`) then trips over.
+          nixpkgs.hostPlatform = system;
+        }
+      ];
     };
 
   applianceModules = [
@@ -81,12 +88,22 @@ let
   ];
 
   boxSystem = evalConfig (applianceModules ++ [ ./box-hardware.nix ]);
+
+  installerSystem = evalConfig [ (import ./installer.nix { inherit boxSystem; }) ];
 in
 {
-  inherit pkgs loomSrc boxSystem;
+  inherit
+    pkgs
+    loomSrc
+    boxSystem
+    installerSystem
+    ;
 
   # The appliance itself.
   box = boxSystem.config.system.build.toplevel;
+
+  # The flashable USB stick. This is what `build-appliance-image` builds.
+  installerImage = installerSystem.config.system.build.image;
 
   # `nix-build ./nixos -A boxVm --argstr system x86_64-linux` then
   # `./result/bin/run-*-vm` -- for poking at the appliance by hand.

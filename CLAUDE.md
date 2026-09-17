@@ -123,6 +123,11 @@ All commands below are provided by devenv scripts (run `devenv-help` to see full
 - `kubernetes-fetch-all-pod-logs` - Dump all pod logs to `logs/` directory
 - `docker-minikube` - Docker CLI wrapper to communicate with minikube's Docker daemon
 
+**Appliance image:**
+
+- `build-appliance-image` - Build (and optionally flash) a NixOS appliance USB installer for a
+  DGX Spark; must run on an aarch64 host. See `Documentation/appliance.md`
+
 **Utilities:**
 
 - `poetry-lock` - Regenerate all Poetry lockfiles (run after adding dependencies to `common`)
@@ -366,5 +371,7 @@ function, **stop and ask the user first** — there is almost certainly a better
 ## Additional Documentation
 
 - `Documentation/devenv-setup.md` - Development environment setup
+- `Documentation/appliance.md` - NixOS appliance image and air-gapped deployment
+- `nixos/README.md` - The appliance Nix code and how to build/test it
 - `CONTRIBUTING.md` - Full Git workflow and collaboration guidelines
 - `README.md` - Project overview and features

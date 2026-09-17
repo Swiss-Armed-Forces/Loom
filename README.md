@@ -73,6 +73,7 @@ Full installation instructions for deploying Loom as an end user, covering depen
 requirements, single-node and multi-node deployment, offline usage, and Helm values reference:
 
 - [Installation Guide](Documentation/installation.md)
+- [Appliance Deployment](Documentation/appliance.md)
 
 > ℹ️ These instructions are for deploying Loom as an end user. If you want to contribute or develop
 > Loom, see [Development Setup](#️-development-setup) instead.

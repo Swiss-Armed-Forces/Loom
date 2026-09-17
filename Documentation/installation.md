@@ -64,6 +64,9 @@ You have a couple of options for deploying Loom, depending on your needs:
   using the `up.sh` script. It's perfect for evaluation or smaller setups.
 - **Multi Node Deployment:** For more extensive or production environments, you can deploy Loom
   on top of your existing Kubernetes cluster using our Helm chart.
+- **Appliance Deployment:** A standalone, air-gapped box provisioned from a single USB stick. It
+  serves its own network and resolves every `*.loom` name to itself, so a visitor plugs in a laptop
+  and browses Loom with nothing to configure. See [Appliance Deployment](appliance.md).
 
 ## Single Node Deployment
 

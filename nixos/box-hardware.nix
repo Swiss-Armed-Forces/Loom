@@ -8,12 +8,41 @@
 # (`loom-live-*`), because /dev/disk/by-partlabel is not unique -- with both
 # media attached, a shared name would resolve nondeterministically.
 #
-# LUKS is added in a later milestone; this is the plain-root variant so the
-# system can be evaluated and boot-tested in a VM first.
+# The root is LUKS2, unlocked from 4096 raw bytes on the USB stick's `loom-key`
+# partition. The stick therefore has to stay plugged in. If it is missing,
+# systemd stage 1 falls back to prompting for the recovery passphrase that the
+# installer enrolled in keyslot 1.
 { ... }:
 {
+  # ---------------------------------------------------------------------------
+  # Root encryption
+  #
+  # systemd initrd rather than the scripted one, deliberately: it makes
+  # systemd-cryptsetup-generator emit `Requires=` + `After=` on the key device's
+  # .device unit, so boot blocks until slow USB enumeration finishes and fails
+  # closed if the stick is absent. The scripted initrd instead polls for a
+  # hard-coded 10 seconds, which is a coin flip on USB.
+  # ---------------------------------------------------------------------------
+  boot.initrd.luks.devices."cryptroot" = {
+    device = "/dev/disk/by-partlabel/loom-root-luks";
+    keyFile = "/dev/disk/by-partlabel/loom-key";
+    keyFileSize = 4096;
+    keyFileOffset = 0;
+    allowDiscards = true;
+
+    # Two options are deliberately NOT set here:
+    #   keyFileTimeout     - would downgrade the above Requires= to Wants=,
+    #                        turning a missing stick into a silent boot.
+    #   fallbackToPassword - implied by systemd stage 1, and asserted to be
+    #                        false there. The recovery prompt happens anyway.
+  };
+
+  # USB enumeration is slow; this is the budget before boot gives up and asks
+  # for the recovery passphrase instead.
+  boot.initrd.systemd.settings.Manager.DefaultDeviceTimeoutSec = "60s";
+
   fileSystems."/" = {
-    device = "/dev/disk/by-partlabel/loom-root";
+    device = "/dev/mapper/cryptroot";
     fsType = "ext4";
     options = [ "noatime" ];
   };

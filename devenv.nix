@@ -321,6 +321,9 @@ in
       # testing
       bats
 
+      # appliance image building / flashing
+      gptfdisk
+
       # k8s
       minikube
       kubectl
@@ -1082,6 +1085,23 @@ in
         cd '${config.devenv.root}'
 
         ./cicd/docker_prune_stale_tags.py \
+          "''${@}"
+      )
+    '';
+  };
+
+  scripts.build-appliance-image = {
+    description = "Build and optionally flash a Loom appliance USB installer image";
+    exec = ''
+      (
+        set -euo pipefail
+        cd '${config.devenv.root}'
+
+        # Hand the pinned nixpkgs to the build so nixos/ needs no flake and
+        # devenv.lock stays the only nixpkgs pin in this repository.
+        export LOOM_NIXPKGS='${inputs.nixpkgs-stable}'
+
+        ./cicd/build_appliance_image.sh \
           "''${@}"
       )
     '';

@@ -419,3 +419,11 @@ loom_archive_*.zip
 
 # Loom archive shell history (written next to cli.py when opened from the source tree)
 .loom_history
+
+# appliance image build outputs
+# .gitattributes tracks *.iso/*.zst/*.xz/*.gz with git-lfs, and .gitlab-ci.yml
+# asserts a clean tree in every job, so a stray build artefact would both fail
+# CI and get silently committed to LFS.
+.appliance-build/
+result
+result-*
