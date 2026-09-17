@@ -16,26 +16,42 @@ source "${LOOM_INSTALLER_LIB:?LOOM_INSTALLER_LIB is not set}/common.sh"
 
 show_status() {
     local boot key_dev key_status description eligible targets=() disk
-    echo
-    echo "  Loom appliance installer"
-    echo "  ------------------------"
+
+    # Drawn from the top each time round the loop, so the menu is never buried
+    # under the scroll of whatever ran before it. main() puts its "press enter"
+    # after an install or a wipe, which is what keeps their output readable
+    # until the operator has actually read it.
+    clear_screen
+
+    # Names the release and the box this stick was built for. Two sticks on a
+    # desk are otherwise indistinguishable, and the only other place that
+    # information exists is the banner on an already-installed box.
+    printf '\n  %sLOOM APPLIANCE INSTALLER  %s%s\n' \
+        "${LOOM_BOLD}" "${LOOM_TAG:?LOOM_TAG is not set}" "${LOOM_RESET}"
+    printf '  %s\n' "${LOOM_PLATFORM:?LOOM_PLATFORM is not set}"
+    printf '  %s\n' "${LOOM_RULE}"
 
     boot="$(boot_disk)"
     if [[ -n "${boot}" ]]; then
         description="$(disk_description "${boot}")"
-        echo "  Boot medium : ${description}"
-        echo "                (never written to by any option below)"
+        printf '  Boot medium : %s\n' "${description}"
+        printf '                %s(never written to by any option below)%s\n' \
+            "${LOOM_DIM}" "${LOOM_RESET}"
     else
-        echo "  Boot medium : COULD NOT BE IDENTIFIED"
-        echo "                Install and wipe will refuse to run."
+        printf '  Boot medium : %sCOULD NOT BE IDENTIFIED%s\n' \
+            "${LOOM_RED}" "${LOOM_RESET}"
+        printf '                Install and wipe will refuse to run.\n'
     fi
 
     key_dev="/dev/disk/by-partlabel/${LOOM_KEY_LABEL}"
     key_status="$(key_state "${key_dev}")"
     if [[ "${key_status}" == "present" ]]; then
-        echo "  LUKS key    : present"
+        printf '  LUKS key    : %spresent%s\n' "${LOOM_GREEN}" "${LOOM_RESET}"
     else
-        echo "  LUKS key    : ${key_status} -- re-flash with 'build-appliance-image --flash'"
+        # Not cosmetic: installing on a stick with no key produces a box that
+        # partitions, encrypts, and then never boots again.
+        printf '  LUKS key    : %s%s -- re-flash with '\''build-appliance-image --flash'\''%s\n' \
+            "${LOOM_RED}" "${key_status}" "${LOOM_RESET}"
     fi
 
     eligible="$(target_disks)"
@@ -43,20 +59,24 @@ show_status() {
         mapfile -t targets <<<"${eligible}"
         for disk in "${targets[@]}"; do
             description="$(disk_description "${disk}")"
-            echo "  Target      : ${description}"
+            printf '  Target      : %s%s%s\n' \
+                "${LOOM_YELLOW}" "${description}" "${LOOM_RESET}"
         done
     else
-        echo "  Target      : no eligible internal NVMe found"
+        printf '  Target      : no eligible internal NVMe found\n'
     fi
     echo
 }
 
+# Only the destructive option is coloured. Ranking works by contrast: paint
+# every line and none of them stands out.
 show_menu() {
-    echo "    1) Install Loom appliance to the internal disk"
-    echo "    2) ERASE ALL DATA on the internal disks"
-    echo "    3) Reboot"
-    echo "    4) Power off"
-    echo "    5) Rescue shell                         [default]"
+    printf '    1) Install Loom appliance to the internal disk\n'
+    printf '    2) %sERASE ALL DATA on the internal disks%s\n' \
+        "${LOOM_RED}" "${LOOM_RESET}"
+    printf '    3) Reboot\n'
+    printf '    4) Power off\n'
+    printf '    5) Rescue shell                         [default]\n'
     echo
 }
 
@@ -65,8 +85,8 @@ show_menu() {
 # options additionally run the interlock in common.sh, which demands the
 # target's serial number.
 rescue_shell() {
-    echo "  Rescue shell. Type 'exit' or press Ctrl-D to return to the menu."
-    echo
+    printf '  %sRescue shell.%s Type '\''exit'\'' or press Ctrl-D to return to the menu.\n\n' \
+        "${LOOM_BOLD}" "${LOOM_RESET}"
 
     # --norc --noprofile so that nothing downstream resets PS1; the prompt is
     # then set here and actually survives. PATH has to be spelled out for the

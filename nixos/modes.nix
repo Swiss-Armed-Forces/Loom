@@ -53,25 +53,19 @@ let
       "loom-seed-repo.service"
     ];
     wants = [ "network-online.target" ];
-    path =
-      with pkgs;
-      [
-        bash
-        git
-        git-lfs
-        docker
-        kubectl
-        kubernetes-helm
-        minikube
-        skaffold
-        yq
-        jq
-        gnutar
-        gzip
-        procps
-        util-linux
-      ]
-      ++ cfg.entrypoints;
+    path = [
+      # `sudo` is a setuid wrapper in /run/wrappers/bin rather than a package, so
+      # no entry in `loom.toolchain` can supply it. A login shell gets this
+      # directory for free; a unit does not. up.sh checks for it (up.sh:406) and
+      # `stop_expose_minikube` (up.sh:883-894) runs it on every invocation.
+      "/run/wrappers"
+      # Not in `loom.toolchain`: the docker module already puts a client in
+      # systemPackages, and taking the package from the module rather than from
+      # `pkgs` guarantees the unit's client matches the daemon it talks to.
+      config.virtualisation.docker.package
+    ]
+    ++ cfg.toolchain
+    ++ cfg.entrypoints;
   };
 in
 {
@@ -87,6 +81,22 @@ in
       shell but not in a systemd unit's environment, so without this the
       appliance boots and `loom.service` dies immediately with
       "exec: loom-up: not found".
+    '';
+  };
+
+  options.loom.toolchain = lib.mkOption {
+    type = lib.types.listOf lib.types.package;
+    internal = true;
+    default = [ ];
+    description = ''
+      Every package up.sh needs at runtime, as set by box.nix.
+
+      Shared with `environment.systemPackages` rather than restated here. A
+      unit's PATH is built solely from its `path` list plus a minimal default
+      (coreutils, findutils, gnugrep, gnused, systemd); `/run/current-system/sw/bin`
+      is never on it. So a package that is only in systemPackages is absent from
+      the units below, and the failure looks like a broken up.sh rather than a
+      broken PATH.
     '';
   };
 

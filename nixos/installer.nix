@@ -13,6 +13,7 @@
   lib,
   pkgs,
   modulesPath,
+  tag,
   ...
 }:
 let
@@ -89,7 +90,9 @@ let
             } \
             --set LOOM_INSTALLER_LIB "$out/libexec/loom" \
             --set LOOM_INSTALLER_BIN "$out/bin" \
-            --set LOOM_EFI_ARCH "${efiArch}"
+            --set LOOM_EFI_ARCH "${efiArch}" \
+            --set LOOM_TAG "${tag}" \
+            --set LOOM_PLATFORM "${config.loom.platform.description}"
         done
       '';
 in

@@ -19,7 +19,12 @@
 }:
 let
   # The literal list from up.sh `validate_environment` (up.sh:402-428), minus
-  # `sudo` (a setuid wrapper, not on the plain PATH) and `nvidia-smi` (GPU only).
+  # `nvidia-smi` (GPU only, and --gpu is rejected by build_appliance_image.sh).
+  # `sudo` is appended in the test itself, where the reason it is special --
+  # a setuid wrapper rather than a package -- is asserted alongside it.
+  #
+  # `awk` is on this list twice over: up.sh also pipes through it at up.sh:380,
+  # above the check_command block, so it is the first thing to fail.
   upshCommands = [
     "cp"
     "mkdir"
@@ -70,6 +75,7 @@ pkgs.testers.runNixOSTest {
 
   testScript = ''
     import re
+    import shlex
 
     start_all()
     appliance.wait_for_unit("multi-user.target")
@@ -101,10 +107,26 @@ pkgs.testers.runNixOSTest {
         # /etc/static/hosts and never matches. Resolve the whole chain.
         appliance.succeed("readlink -f /etc/hosts | grep -q '^/nix/store/'")
 
-    with subtest("every binary up.sh validate_environment checks for is present"):
-        for cmd in ${builtins.toJSON upshCommands}:
-            appliance.succeed(f"command -v {cmd}")
-        # sudo is a setuid wrapper rather than a systemPackages entry.
+    with subtest("every binary up.sh needs resolves on loom.service's own PATH"):
+        # Deliberately NOT `command -v` in the test driver's shell: that resolves
+        # through /run/current-system/sw/bin, which is never on a unit's PATH. A
+        # shell-based check passes while the unit that actually runs up.sh is
+        # missing half the toolchain -- which is exactly how a box shipped whose
+        # loom.service died on `awk: command not found`.
+        env = appliance.succeed("systemctl show -p Environment --value loom.service")
+        match = re.search(r"(?:^|\s)PATH=(\S+)", env)
+        assert match, env
+        # Parked in a file rather than interpolated into each command: the unit
+        # PATH is ~4 kB of store paths, and inlining it 21 times buries the name
+        # of whichever binary actually went missing in the failure output.
+        appliance.succeed(f"printf '%s' {shlex.quote(match.group(1))} >/tmp/unit-path")
+
+        # `sudo` belongs here too. It is a setuid wrapper rather than a package,
+        # so it can only arrive via /run/wrappers/bin being on the unit's PATH.
+        for cmd in ${builtins.toJSON upshCommands} + ["sudo"]:
+            appliance.succeed(
+                f"env -i PATH=\"$(cat /tmp/unit-path)\" sh -c 'command -v {cmd}'"
+            )
         appliance.succeed("test -u /run/wrappers/bin/sudo")
 
     with subtest("yq is the kislyuk build that up.sh:359 needs"):
@@ -117,6 +139,23 @@ pkgs.testers.runNixOSTest {
 
     with subtest("appliance access policy"):
         appliance.fail("systemctl is-active sshd.service")
+        # The operator has no password, so a locked shadow entry makes the
+        # console prompt unanswerable -- and with no sshd there is nothing to
+        # fall back on. Assert the shell prompt itself rather than the unit:
+        # 26.05 renders getty@'s ExecStart as a generated script, so the
+        # --autologin flag is not visible in `systemctl cat`.
+        appliance.wait_until_tty_matches("1", "${loomUser}@")
+
+        # The same banner has to reach whoever never logs in at all, so it is
+        # rendered as the agetty issue before the login line. agetty prints the
+        # issue even under --autologin.
+        appliance.wait_for_unit("loom-issue.service")
+        issue = appliance.succeed("cat /run/issue.d/50-loom.issue")
+        assert "Loom appliance" in issue, issue
+        assert "frontend.loom" in issue, issue
+        # A backslash would be eaten by agetty as an issue escape.
+        assert "\\" not in issue, issue
+
         groups = appliance.succeed("id -nG ${loomUser}").split()
         for group in ["wheel", "docker"]:
             assert group in groups, f"${loomUser} not in {group}: {groups}"

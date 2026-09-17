@@ -12,13 +12,13 @@ this file is about the code.
 | `platform.nix` | Declares `loom.platform.*`: the per-box dimension, separate from `system`. |
 | `platforms/spark.nix` | DGX Spark: aarch64, serial console, ConnectX-7. |
 | `platforms/evo-x2.nix` | GMKtec EVO-X2: x86_64, no serial port, Realtek 2.5GbE. |
-| `box.nix` | The appliance: host tuning, toolchain, operator account, `loom-up`. |
+| `box.nix` | The appliance: host tuning, toolchain, operator account, console banner, `loom-up`. |
 | `box-hardware.nix` | LUKS root, filesystems, initrd, bootloader. |
 | `modes.nix` | `loom.mode`, the run/setup services, and the `setup` specialisation. |
 | `network.nix` | Static address and dnsmasq in run mode, DHCP client in setup mode, radios off. |
 | `repo.nix` | Seeds the embedded checkout into the operator's home, writable. |
 | `installer.nix` | The USB stick: `image.repart` layout and the installer system. |
-| `installer-scripts/` | `common.sh` (device interlock), `install.sh`, `wipe.sh`, `menu.sh`. |
+| `installer-scripts/` | `common.sh` (device interlock, console styling), `install.sh`, `wipe.sh`, `menu.sh`. |
 | `tests/appliance.nix` | VM test asserting the values `box.nix` restates from `up.sh`. |
 
 ## Why `default.nix` and not a flake
@@ -100,7 +100,15 @@ to software emulation — much slower, but it runs:
 
 - the eight sysctls from `setup_system` (`up.sh:616-684`)
 - the `*.loom` host list, generated from `vars.sh` at build time rather than copied
-- every binary `validate_environment` checks for (`up.sh:402-428`)
+- every binary `up.sh` needs — the `validate_environment` list (`up.sh:402-428`), plus the `awk` it pipes
+  through at `up.sh:380` above those checks, plus the `tar` and `mktemp` that `cicd/skaffold` reaches for
 
 `tests/appliance.nix` asserts all three, so a change on either side is caught rather than shipped. If you
-add a `check_command` to `up.sh`, add the package to `box.nix` and the name to the test.
+add a `check_command` to `up.sh`, add the package to `loom.toolchain` in `box.nix` and the name to the test.
+
+`loom.toolchain` is one list on purpose. It feeds both `environment.systemPackages` and the `path` of the
+units in `modes.nix`, because a unit's PATH is built solely from its own `path` plus a minimal default
+(coreutils, findutils, gnugrep, gnused, systemd) — `/run/current-system/sw/bin` is never on it. When the
+two were maintained separately they drifted, and the box shipped with a `loom.service` that died on
+`awk: command not found` while the same command worked fine in the operator's shell. For the same reason
+the test resolves each binary against `loom.service`'s own PATH rather than the login shell's.

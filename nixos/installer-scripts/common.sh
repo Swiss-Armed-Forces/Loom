@@ -23,8 +23,56 @@ readonly LOOM_ROOT_LABEL="loom-root-luks"
 readonly LOOM_KEY_BYTES=4096
 readonly LOOM_MIN_DISK_BYTES=$((250 * 1000 * 1000 * 1000))
 
-log() { echo "[*] ${*}"; }
-err() { echo >&2 "[!] ${*}"; }
+# Console styling.
+#
+# Raw ANSI rather than `clear`/`tput`: those need a TERM, and the menu runs on a
+# serial line as often as on a VT (installer.nix:255-278) where TERM is whatever
+# the far end happens to set. An escape sequence is understood by the terminal
+# itself, so it needs nothing from the environment.
+#
+# Everything collapses to the empty string off a terminal, which keeps escapes
+# out of `loom-menu | tee`, out of a serial capture, and out of the journal.
+if [[ -t 1 ]]; then
+    readonly LOOM_BOLD=$'\033[1m'
+    readonly LOOM_DIM=$'\033[2m'
+    readonly LOOM_RED=$'\033[1;31m'
+    readonly LOOM_GREEN=$'\033[32m'
+    readonly LOOM_YELLOW=$'\033[33m'
+    readonly LOOM_RESET=$'\033[0m'
+else
+    readonly LOOM_BOLD=""
+    readonly LOOM_DIM=""
+    readonly LOOM_RED=""
+    readonly LOOM_GREEN=""
+    readonly LOOM_YELLOW=""
+    readonly LOOM_RESET=""
+fi
+
+# A fixed width, not ${COLUMNS}: over a serial line the terminal size is
+# routinely unknown or simply wrong, and a rule that wraps looks far worse than
+# one that is a little short. 51 keeps the header and every status line under it
+# inside 80 columns.
+readonly LOOM_RULE="==================================================="
+
+# Home the cursor and clear the screen. Deliberately not \033[3J as well:
+# clearing the scrollback is an xterm extension that the vt220 on the other end
+# of a Spark's serial cable need not implement.
+clear_screen() {
+    [[ -t 1 ]] || return 0
+    printf '\033[H\033[2J'
+}
+
+log() { printf '%s[*]%s %s\n' "${LOOM_DIM}" "${LOOM_RESET}" "${*}"; }
+
+# The palette is keyed on stdout, so err() checks stderr separately -- otherwise
+# `loom-install 2>install.log` from a terminal would write escapes into the log.
+err() {
+    if [[ -t 2 ]]; then
+        printf >&2 '%s[!] %s%s\n' "${LOOM_RED}" "${*}" "${LOOM_RESET}"
+    else
+        printf >&2 '[!] %s\n' "${*}"
+    fi
+}
 die() {
     err "${@}"
     exit 1
@@ -164,22 +212,29 @@ confirm_destructive() {
     local targets=("${@}")
     local disk description answer
 
+    # No clear_screen anywhere below: the list of disks about to die has to stay
+    # on screen directly above the prompt.
     echo
-    echo "=== ${action}: THE FOLLOWING WILL BE DESTROYED ==="
+    printf '%s=== %s: THE FOLLOWING WILL BE DESTROYED ===%s\n' \
+        "${LOOM_RED}" "${action}" "${LOOM_RESET}"
     for disk in "${targets[@]}"; do
         description="$(disk_description "${disk}")"
-        echo "    ${description}"
+        printf '    %s%s%s\n' "${LOOM_RED}" "${description}" "${LOOM_RESET}"
     done
     echo
     if [[ "${#targets[@]}" -gt 1 ]]; then
-        echo "    ^^ ALL ${#targets[@]} DISKS ABOVE, not just the first."
+        printf '    %s^^ ALL %s DISKS ABOVE, not just the first.%s\n' \
+            "${LOOM_RED}" "${#targets[@]}" "${LOOM_RESET}"
         echo
     fi
-    echo "=== WILL NOT BE TOUCHED (boot medium) ==="
+    printf '%s=== WILL NOT BE TOUCHED (boot medium) ===%s\n' \
+        "${LOOM_GREEN}" "${LOOM_RESET}"
     description="$(disk_description "${boot}")"
-    echo "    ${description}"
+    printf '    %s%s%s\n' "${LOOM_DIM}" "${description}" "${LOOM_RESET}"
     echo
 
+    # Prompt left unstyled on purpose: bash writes `read -p` to stderr, which
+    # the palette above does not speak for.
     read -r -p "Type ${action} to proceed: " answer
     if [[ "${answer}" != "${action}" ]]; then
         die "Aborted."

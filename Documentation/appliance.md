@@ -19,7 +19,8 @@ Read this before building anything; the design only makes sense if these hold.
 - **Box and stick together are not protected.** If both are seized at once, the encryption buys you nothing.
   The design assumes the stick is removed, or travels separately, whenever the box is unattended.
 - **Lose the stick and the data is gone**, unless somebody wrote down the recovery passphrase that the
-  installer prints and that every console login repeats. Use `--key-backup` if you want a second copy.
+  installer prints and that the console shows on its login screen at every boot. Use `--key-backup` if you
+  want a second copy.
 - **There is no remote access.** No sshd, no accounts but the local operator. The console is the only way in.
 - **WiFi and Bluetooth are disabled** by module blacklist and `rfkill`. That is a software guarantee; disable
   the radios in the box's own firmware as well if the site requires it.
@@ -88,7 +89,7 @@ that before producing an image.
 
 Each stick gets a **random `10.<a>.<b>.0/24` subnet**. That keeps two boxes on one wire from colliding, and
 keeps the box from clashing with a visitor's own network. The chosen subnet is printed at the end of the build
-and shown on every console login.
+and shown on the console's login screen.
 
 ### Cross-building
 
@@ -127,8 +128,11 @@ udevadm info /sys/class/net/<iface> | grep -E 'ID_PATH=|ID_NET_DRIVER='
 ## Installing
 
 1. Plug the stick into the box and boot from it.
-2. The installer menu appears on the console — and on serial too, on a box that has a serial port. It shows
-    which disk is the boot medium (never touched) and which is the install target.
+2. The installer menu appears on the console — and on serial too, on a box that has a serial port. Its header
+    names the **Loom release and the platform the stick was built for**, so check there that you booted the
+    right stick before going further; two sticks are otherwise indistinguishable. Below that it shows which
+    disk is the boot medium (never touched), whether the stick's LUKS key is present, and which disk is the
+    install target.
 3. Choose **Install**. If the box has **more than one internal disk**, as the EVO-X2's two M.2 slots allow, it
     lists them all and asks which one — rather than silently picking the first. It then names the disk it is
     about to destroy and asks for the word `INSTALL`, which is not something typed by accident.
@@ -143,7 +147,7 @@ installer stays reachable from the firmware's own boot menu for reinstalls and w
 
 ## The two boot modes
 
-The appliance has two entries in its boot menu.
+The appliance has two entries in its boot menu, `Loom` and `Loom (setup)`.
 
 | | Run (default) | Setup |
 | --- | --- | --- |
@@ -181,7 +185,27 @@ has.
 
 ### From the box's own console
 
-Log in as `loom` on the console. `loom-up` and `loom-down` wrap `up.sh` with the two flags the appliance needs:
+The console shows the box's banner before anyone logs in — release, platform, which port to plug a laptop
+into, the subnet it serves, and the LUKS recovery passphrase:
+
+```text
+  Loom appliance -- 1.4.0
+  GMKtec EVO-X2 (AMD Ryzen AI Max+ 395)
+  Plug a laptop into loom0 and browse https://frontend.loom
+  This box serves DHCP on 10.13.37.0/24 and answers for *.loom
+
+  LUKS recovery passphrase: ka3mn-7pqrs-t4uvw-x9yzb-cd2ef-gh5jk
+  Write it down. Without the USB stick it is the only way
+  to unlock this disk, and nobody else holds a copy.
+
+loom login: loom (automatic login)
+```
+
+So somebody who only walks past the monitor still gets everything they need. It then logs in as `loom`
+automatically — there is no password, because `sudo` needs none either and the box has no remote access at
+all. Loom's bring-up log prints over this afterwards; **`loom-info`** reprints the banner at any time.
+
+`loom-up` and `loom-down` wrap `up.sh` with the two flags the appliance needs:
 
 ```bash
 loom-up --offline --expose 10.13.37.1     # whatever subnet the banner shows

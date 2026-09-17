@@ -78,5 +78,9 @@
   # entry is managed by the installer, so there is no need to write EFI vars on
   # every rebuild.
   boot.loader.efi.canTouchEfiVariables = false;
-  boot.loader.timeout = 5;
+  # Generous on purpose: the first boot after installation has to be interrupted
+  # to pick the `setup` entry, and on a box whose display only wakes up part way
+  # through firmware init, five seconds can elapse before the menu is visible.
+  # The appliance reboots rarely and an operator is normally standing there.
+  boot.loader.timeout = 30;
 }
