@@ -99,11 +99,54 @@ let
     '';
   };
 
+  # The third pane. btop refuses to draw anything but "Terminal size too small"
+  # below a minimum that grows with the boxes it shows, and its stock set --
+  # cpu, mem, net and proc -- needs 80x24. The pane it runs in is the lower half
+  # of a column 40% of the screen wide (`main-pane-width 60%` below), so on
+  # anything but a large monitor that minimum is simply not there, and the
+  # operator gets a pane with nothing in it. Hence a box set chosen from the
+  # pane's real size at startup:
+  #
+  #   80x24  cpu mem net proc   the full set
+  #   60x18  cpu mem
+  #   60x8   cpu                the smallest thing btop will draw
+  #
+  # `stty size` rather than `tput`, to keep the pane working on a VT whose TERM
+  # has no terminfo entry on the box.
+  loom-btop = pkgs.writeShellApplication {
+    name = "loom-btop";
+    runtimeInputs = with pkgs; [
+      btop
+      coreutils
+    ];
+    text = ''
+      read -r lines cols < <(stty size 2>/dev/null || echo "24 80")
+
+      if [ "$cols" -ge 80 ] && [ "$lines" -ge 24 ]; then
+        boxes="cpu mem net proc"
+      elif [ "$cols" -ge 60 ] && [ "$lines" -ge 18 ]; then
+        boxes="cpu mem"
+      else
+        boxes="cpu"
+      fi
+
+      # A fixed path in the directory this module already creates, not a
+      # mktemp: btop writes the whole config back when it exits, and one file
+      # rewritten on every start leaves nothing behind to clean up.
+      conf=${lib.escapeShellArg "${builtins.dirOf tmuxSocket}/btop.conf"}
+      printf 'shown_boxes = "%s"\n' "$boxes" > "$conf"
+
+      # --force-utf: a Linux VT with no locale set otherwise drops btop back to
+      # ASCII box drawing. Spelled --utf-force before btop 1.4, where it is now
+      # an unknown argument and btop exits non-zero.
+      exec btop --force-utf --config "$conf"
+    '';
+  };
+
   loom-console = pkgs.writeShellApplication {
     name = "loom-console";
     runtimeInputs = with pkgs; [
       tmux
-      btop
       coreutils
     ];
     text = ''
@@ -115,9 +158,7 @@ let
       create() {
         "''${tm[@]}" new-session -d -s loom -n loom ${lib.getExe loom-progress}
         "''${tm[@]}" split-window -h -t loom:0.0 -c ${lib.escapeShellArg loomRepoDir}
-        # --utf-force: a Linux VT with no locale set otherwise drops btop back
-        # to ASCII box drawing.
-        "''${tm[@]}" split-window -v -t loom:0.1 "btop --utf-force"
+        "''${tm[@]}" split-window -v -t loom:0.1 ${lib.getExe loom-btop}
         "''${tm[@]}" select-layout -t loom:0 main-vertical
         # A dead log or btop pane keeps its error on screen instead of
         # collapsing the layout. The shell pane is left alone, so `exit` there
@@ -249,6 +290,7 @@ in
     environment.systemPackages = [
       loom-console
       loom-progress
+      loom-btop
     ];
 
     # Only tty1. tty2-tty6 and any serial console deliberately get an ordinary

@@ -218,9 +218,10 @@ pkgs.testers.runNixOSTest {
         appliance.wait_until_succeeds("pgrep -u ${loomUser} -f tmux")
         appliance.wait_until_tty_matches("1", "${loomUser}@")
 
-        # pane_start_command, not pane_current_command: on a test VM's small VT
-        # btop may bail out on start, and what is being asserted is how the
-        # session is wired, not what survived.
+        # pane_start_command, not pane_current_command: loom-btop execs btop, so
+        # the current command is whatever that wrapper turned into, and on a
+        # test VM's 80x25 VT the pane is narrower than anything btop will draw
+        # in. What is being asserted is how the session is wired.
         panes = appliance.succeed(
             "tmux -S /run/loom/tmux.sock list-panes -t loom "
             "-F '#{pane_index} #{pane_start_command}'"
