@@ -123,7 +123,8 @@ main() {
     while true; do
         show_status
         show_menu
-        read -r -p "  Choice [5]: " choice
+        printf '  Choice [5]: '
+        read -r choice
         choice="${choice:-5}"
 
         case "${choice}" in
@@ -135,16 +136,19 @@ main() {
                 # read still blocks first, so the recovery passphrase stays on
                 # screen until somebody has acknowledged it -- and it is on the
                 # installed box's login banner afterwards either way.
-                read -r -p "  Press enter to reboot into the installed appliance. "
+                printf '  Press enter to reboot into the installed appliance. '
+                read -r _
                 halt_console reboot "Rebooting."
             else
                 err "Installation failed."
-                read -r -p "  Press enter to return to the menu. "
+                printf '  Press enter to return to the menu. '
+                read -r _
             fi
             ;;
         2)
             "${LOOM_INSTALLER_BIN:?}/loom-wipe" || err "Wipe failed."
-            read -r -p "  Press enter to return to the menu. "
+            printf '  Press enter to return to the menu. '
+            read -r _
             ;;
         3) halt_console reboot "Rebooting." ;;
         4) halt_console poweroff "Powering off." ;;

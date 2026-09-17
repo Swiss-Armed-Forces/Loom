@@ -176,10 +176,10 @@ sysfs_attr() {
         value="$(cat "${path}")"
         # Trim. NVMe pads the Identify Controller fields to a fixed width with
         # spaces, so a serial arrives as "S6XSNU0T12345       ". Command
-        # substitution strips the newline but not that padding, and every
-        # consumer compares this against something a human typed -- nobody
-        # types trailing padding, so the interlock below could never be
-        # satisfied on such a drive.
+        # substitution strips the trailing newline but not that padding, and
+        # every consumer of this is a line on the operator's screen -- the menu
+        # status block and the disk lists in the destructive interlock. Padding
+        # pushes the columns apart and reads as a truncated value.
         value="${value#"${value%%[![:space:]]*}"}"
         value="${value%"${value##*[![:space:]]}"}"
     fi
@@ -315,9 +315,14 @@ confirm_destructive() {
     printf '    %s%s%s\n' "${LOOM_DIM}" "${description}" "${LOOM_RESET}"
     echo
 
-    # Prompt left unstyled on purpose: bash writes `read -p` to stderr, which
-    # the palette above does not speak for.
-    read -r -p "Type ${action} to proceed: " answer
+    # Printed rather than passed to `read -p`, which writes its prompt to
+    # stderr: that is invisible the moment stderr is anywhere but the
+    # operator's terminal, and it leaves the prompt outside the palette above.
+    printf 'Type %s to proceed: ' "${action}"
+    read -r answer
+    # Be forgiving about stray whitespace the operator may type or paste.
+    answer="${answer#"${answer%%[![:space:]]*}"}"
+    answer="${answer%"${answer##*[![:space:]]}"}"
     if [[ "${answer}" != "${action}" ]]; then
         die "Aborted."
     fi

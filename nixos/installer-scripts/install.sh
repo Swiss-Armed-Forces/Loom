@@ -225,8 +225,19 @@ enroll_recovery_passphrase() {
 generate_passphrase() {
     # Six groups of five lowercase-and-digit characters. Plenty of entropy and
     # still transcribable by someone reading it off a monitor.
-    tr --delete --complement 'abcdefghijkmnpqrstuvwxyz23456789' </dev/urandom |
-        head --bytes=30 |
+    #
+    # `head` bounds the read rather than cutting a `tr` that reads /dev/urandom
+    # endlessly: systemd runs us with SIGPIPE ignored (IgnoreSIGPIPE defaults to
+    # yes), so such a tr does not die quietly on the closed pipe -- it gets EPIPE
+    # back, prints "tr: write error: Broken pipe" onto the installer console and
+    # exits 1. 256 bytes yield ~32 usable characters, the loop covers the rest.
+    local raw=''
+    while ((${#raw} < 30)); do
+        raw+="$(head --bytes=256 /dev/urandom |
+            tr --delete --complement 'abcdefghijkmnpqrstuvwxyz23456789')"
+    done
+
+    printf '%s' "${raw:0:30}" |
         sed --regexp-extended 's/(.{5})/\1-/g; s/-$//'
 }
 

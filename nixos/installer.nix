@@ -128,6 +128,13 @@ in
       neededForBoot = true;
     };
     "/nix/store".overlay = {
+      # The partition root *is* the store: make-squashfs hands mksquashfs each
+      # store path as its own source, so they land at the top of the image
+      # rather than under a `nix/store/` prefix. This is the same layout the
+      # installer ISO's squashfs has, and the reason `storeImage` above is built
+      # with mksquashfs rather than assembled by repart -- with repart's
+      # `storePaths` the prefix is preserved and this would have to be
+      # `/nix/.ro-store/nix/store` instead.
       lowerdir = [ "/nix/.ro-store" ];
       upperdir = "/nix/.rw-store/store";
       workdir = "/nix/.rw-store/work";
@@ -161,6 +168,8 @@ in
         repartConfig = {
           Type = "linux-generic";
           Label = "loom-live-store";
+          # No `Minimize`: the partition is sized from the finished image, so
+          # there is nothing for repart to guess at and nothing to under-allocate.
           CopyBlocks = "${storeImage}";
         };
       };
@@ -254,11 +263,11 @@ in
       TTYVHangup = true;
       StandardInput = "tty-force";
       StandardOutput = "tty";
-      # Not "journal". bash writes its prompt to stderr, and so does every
-      # `read -r -p` -- including the interlocks that ask for a disk serial
-      # and for the word INSTALL. Sending stderr to the journal means the
-      # operator sees the disk list and then a blank screen, and has to type
-      # the confirmations blind.
+      # Not "journal". The scripts print their own prompts to stdout, but
+      # everything that goes wrong arrives on stderr -- `err`, and the output of
+      # cryptsetup, sgdisk and nixos-install underneath it. Sent to the journal
+      # that is a failed install with no visible reason, on media whose whole
+      # job is being diagnosable by whoever is standing at the box.
       StandardError = "tty";
       Restart = "always";
       RestartSec = 2;
@@ -283,16 +292,21 @@ in
       TTYReset = true;
       StandardInput = "tty-force";
       StandardOutput = "tty";
-      # Not "journal". bash writes its prompt to stderr, and so does every
-      # `read -r -p` -- including the interlocks that ask for a disk serial
-      # and for the word INSTALL. Sending stderr to the journal means the
-      # operator sees the disk list and then a blank screen, and has to type
-      # the confirmations blind.
+      # Not "journal". The scripts print their own prompts to stdout, but
+      # everything that goes wrong arrives on stderr -- `err`, and the output of
+      # cryptsetup, sgdisk and nixos-install underneath it. Sent to the journal
+      # that is a failed install with no visible reason, on media whose whole
+      # job is being diagnosable by whoever is standing at the box.
       StandardError = "tty";
       Restart = "always";
       RestartSec = 2;
     };
   };
+
+  # This is rescue media. If stage 1 fails at a site, whoever is standing in
+  # front of the box needs a shell to diagnose it, not a locked sulogin prompt.
+  # (The appliance itself deliberately does NOT get this.)
+  boot.initrd.systemd.emergencyAccess = true;
 
   # The last `console=` wins as /dev/console. On a serial box that should be the
   # serial line; on one without, naming ttyS0 at all would send boot output to a
@@ -302,6 +316,13 @@ in
   # recovery medium: the monitor gets branding.nix's splash, and the kernel log
   # keeps reaching the serial line and the journal, which is the entire reason
   # somebody boots the stick at a box that will not come up.
+  #
+  # Equally deliberately no `systemd.journald.forward_to_console=1`. It would
+  # put every service's output on /dev/console, which here is the console the
+  # menu owns -- tty1, or ttyS0 on a serial box. The menu redraws from the top
+  # each pass, so the result is a status block interleaved with journal lines.
+  # What that parameter is for is covered above: the kernel log is already
+  # unsuppressed, and `emergencyAccess` handles the case where it fails early.
   boot.kernelParams = [
     "console=tty1"
   ]
