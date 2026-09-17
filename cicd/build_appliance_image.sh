@@ -111,9 +111,25 @@ validate_environment(){
     fi
 
     install --directory "${OUTPUT_DIR}"
-    free_gb="$(df --output=avail --block-size=1G "${OUTPUT_DIR}" | tail --lines=1 | tr --delete ' ')"
+
+    # Check the Nix store, not the output directory: the build happens in the
+    # store, and the two are routinely on different filesystems -- a big /home
+    # is no help when /nix is on a small root volume.
+    local store_dir="${NIX_STORE_DIR:-/nix/store}"
+    if [[ ! -d "${store_dir}" ]]; then
+        echo >&2 "[!] Error: no Nix store at ${store_dir}."
+        exit 1
+    fi
+    free_gb="$(df --output=avail --block-size=1G "${store_dir}" | tail --lines=1 | tr --delete ' ')"
     if [[ "${free_gb}" -lt 20 ]]; then
-        echo >&2 "[!] Error: only ${free_gb} GB free at ${OUTPUT_DIR}; the image build needs about 20 GB."
+        echo >&2 "[!] Error: only ${free_gb} GB free on the filesystem holding ${store_dir};"
+        echo >&2 "    the image build needs about 20 GB there."
+        exit 1
+    fi
+
+    free_gb="$(df --output=avail --block-size=1G "${OUTPUT_DIR}" | tail --lines=1 | tr --delete ' ')"
+    if [[ "${free_gb}" -lt 5 ]]; then
+        echo >&2 "[!] Error: only ${free_gb} GB free at ${OUTPUT_DIR}; the image needs about 5 GB."
         exit 1
     fi
 }
