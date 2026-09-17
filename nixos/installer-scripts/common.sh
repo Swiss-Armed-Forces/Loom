@@ -62,19 +62,42 @@ clear_screen() {
     printf '\033[H\033[2J'
 }
 
+# The amber the eyes are drawn in, measured off the favicon itself
+# (Frontend/public/web-app-manifest-512x512.png) rather than eyeballed. The same
+# value the plymouth theme paints its progress bar with, so the boot splash and
+# the menu agree.
+readonly LOOM_AMBER_RGB="f7b718"
+
 # The mark the boot splash just showed, in the two eyes it is actually made of.
 #
-# Half blocks draw them far rounder than ASCII manages, and the Linux console's
-# built-in font carries U+2580/2584/2588, so tty1 gets those. A serial line does
-# not come with that guarantee -- whatever terminal is on the far end of a
-# Spark's cable may have neither UTF-8 nor the glyphs, and rings rendered as a
-# screen of question marks are worse than plainer rings that always work. So the
-# serial console gets an ASCII pair instead.
+# Three consoles, three answers, all keyed on the device rather than on TERM or
+# a locale -- the menu is started by systemd with a fixed TTYPath
+# (installer.nix) and neither of those variables is set there.
 #
-# Keyed on the device rather than on TERM or a locale, because the menu is
-# started by systemd with a fixed TTYPath (installer.nix) and neither of those
-# variables is set there. Printed through %s: printf would eat the backslashes
-# that draw the ASCII pair as escapes.
+#   Linux VT     Half blocks, which draw the rings far rounder than ASCII
+#                manages and are in the console's built-in font. Plus the exact
+#                logo amber, see below.
+#   Serial       An ASCII pair. Whatever terminal is on the far end of a Spark's
+#                cable may have neither UTF-8 nor the glyphs, and rings rendered
+#                as a screen of question marks are worse than plainer rings that
+#                always work.
+#   Anything else  Blocks, but no palette change: a pts is UTF-8 in practice,
+#                while the escape below would hang an xterm.
+#
+# `ESC ] P nrrggbb` redefines a palette entry on the Linux VT, which is the only
+# way to reach an exact colour there: console_codes(4) records that even a
+# 24-bit `38;2;r;g;b` is "shoehorned into 16 basic colors", so ESC[33m lands on
+# #ffff55 with bold and #aa5500 without -- both far enough from the logo to read
+# as a mistake rather than a colour. Index 3 and index 11 are both set because
+# bold promotes one to the other.
+#
+# Two consequences, both deliberate. It repaints every LOOM_YELLOW in the menu,
+# so the target-disk line matches the eyes. And it outlives this function --
+# there is no reset, so the rescue shell inherits it too.
+#
+# Never anywhere but a VT: console_codes(4) warns that xterm hangs on this
+# sequence until somebody presses return, and a serial line can have one on the
+# far end.
 loom_banner() {
     local console
     local -a eyes
@@ -83,8 +106,19 @@ loom_banner() {
     # stdin is not a terminal, and inside a condition that status would be
     # swallowed rather than handled.
     console="$(tty 2>/dev/null || true)"
+    # Off a terminal the escapes are already empty strings; fall through to the
+    # ASCII pair as well, so a captured log stays readable.
+    [[ -t 1 ]] || console="none"
 
-    if [[ "${console}" == /dev/ttyS* ]]; then
+    case "${console}" in
+    /dev/tty[0-9]*)
+        printf '\033]P3%s\033]PB%s' "${LOOM_AMBER_RGB}" "${LOOM_AMBER_RGB}"
+        ;;
+    *) ;;
+    esac
+
+    case "${console}" in
+    /dev/ttyS* | none)
         # Double quotes and no slashes on purpose: an apostrophe cannot appear
         # inside a single-quoted string, and backslashes and backticks in art
         # read to shellcheck as a botched escape and a command substitution.
@@ -93,7 +127,8 @@ loom_banner() {
             "( ( o ) )  ( ( o ) )"
             " '-----'    '-----'"
         )
-    else
+        ;;
+    *)
         eyes=(
             ' ▄████▄    ▄████▄'
             '██▀  ▀██  ██▀  ▀██'
@@ -101,7 +136,8 @@ loom_banner() {
             '██▄  ▄██  ██▄  ▄██'
             ' ▀████▀    ▀████▀'
         )
-    fi
+        ;;
+    esac
 
     printf '%s%s' "${LOOM_YELLOW}" "${LOOM_BOLD}"
     printf '  %s\n' "${eyes[@]}"
