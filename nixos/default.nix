@@ -20,6 +20,11 @@
   tag ? "dev",
   loomHostsJson ? throw "nixos: pass --argstr loomHostsJson '[\"api.loom\", ...]'",
   minikubeIp ? "192.168.49.2",
+  # First three octets of the appliance network. build-appliance-image
+  # randomises the middle two so two boxes on one wire cannot collide, and so a
+  # visitor's own 10.0.0.0/24 or 192.168.1.0/24 does not either.
+  loomSubnet ? "10.13.37",
+  loomInterface ? "eth0",
   enableGpu ? false,
 }:
 let
@@ -47,10 +52,14 @@ let
       tag
       loomHostsJson
       minikubeIp
+      loomSubnet
+      loomInterface
       enableGpu
       ;
     loomUser = "loom";
     loomRepoDir = "/home/loom/loom";
+    # Written by the installer onto the encrypted root; displayed on login.
+    recoveryPassphraseFile = "/var/lib/loom/recovery-passphrase";
   };
 
   evalConfig =
@@ -64,11 +73,14 @@ let
       modules = modules ++ [ { nixpkgs.pkgs = pkgs; } ];
     };
 
-  boxSystem = evalConfig [
+  applianceModules = [
     ./box.nix
-    ./box-hardware.nix
+    ./modes.nix
+    ./network.nix
     ./repo.nix
   ];
+
+  boxSystem = evalConfig (applianceModules ++ [ ./box-hardware.nix ]);
 in
 {
   inherit pkgs loomSrc boxSystem;
@@ -87,8 +99,10 @@ in
     inherit
       pkgs
       specialArgs
+      applianceModules
       loomHostsJson
       minikubeIp
+      loomSubnet
       ;
     inherit (specialArgs) loomUser loomRepoDir;
   };

@@ -11,6 +11,8 @@
   minikubeIp,
   loomUser,
   loomRepoDir,
+  recoveryPassphraseFile,
+  tag,
   ...
 }:
 let
@@ -186,6 +188,42 @@ in
     MINIKUBE_HOME = "${loomRepoDir}/.minikube";
     SKAFFOLD_HOME = "${loomRepoDir}/.skaffold";
   };
+
+  # ---------------------------------------------------------------------------
+  # Console banner.
+  #
+  # These boxes are given away, and have no remote access, so the console is the
+  # only place this information can reach anyone. The recovery passphrase is
+  # written by the installer onto the encrypted root, which means reading it
+  # already requires having booted -- which already requires the stick.
+  # ---------------------------------------------------------------------------
+  environment.interactiveShellInit = ''
+    if [ -z "''${LOOM_BANNER_SHOWN:-}" ]; then
+      export LOOM_BANNER_SHOWN=1
+      printf '\n  Loom appliance -- %s\n' "${tag}"
+      if [ -r /etc/loom/network.conf ]; then
+        # shellcheck disable=SC1091
+        . /etc/loom/network.conf
+        printf '  Plug a laptop into %s and browse https://frontend.loom\n' \
+          "''${LOOM_INTERFACE}"
+        printf '  This box serves DHCP on %s and answers for *.loom\n' \
+          "''${LOOM_SUBNET}"
+      fi
+      if [ -r ${recoveryPassphraseFile} ]; then
+        printf '\n  LUKS recovery passphrase: %s\n' \
+          "$(cat ${recoveryPassphraseFile})"
+        printf '  Write it down. Without the USB stick it is the only way\n'
+        printf '  to unlock this disk, and nobody else holds a copy.\n'
+      fi
+      printf '\n'
+    fi
+  '';
+
+  # The installer writes the recovery passphrase here. wheel-readable so the
+  # operator can see it without sudo; the disk it sits on is encrypted anyway.
+  systemd.tmpfiles.rules = [
+    "d /var/lib/loom 0750 root wheel -"
+  ];
 
   system.stateVersion = "26.05";
 

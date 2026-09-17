@@ -10,8 +10,10 @@
 {
   pkgs,
   specialArgs,
+  applianceModules,
   loomHostsJson,
   minikubeIp,
+  loomSubnet,
   loomUser,
   loomRepoDir,
 }:
@@ -49,12 +51,15 @@ pkgs.testers.runNixOSTest {
   node.specialArgs = specialArgs;
 
   nodes.appliance = {
-    imports = [
-      ../box.nix
-      ../repo.nix
-    ];
+    imports = applianceModules;
     virtualisation.memorySize = 2048;
     virtualisation.diskSize = 4096;
+    # The test framework drives networking itself; the appliance's DHCP server
+    # and static address would fight it.
+    services.dnsmasq.enable = pkgs.lib.mkForce false;
+    # Loom cannot actually come up in a test VM (no images, no cluster); we are
+    # checking that the units are wired, not that Loom runs.
+    systemd.services.loom.wantedBy = pkgs.lib.mkForce [ ];
   };
 
   testScript = ''
@@ -120,5 +125,30 @@ pkgs.testers.runNixOSTest {
     with subtest("docker is available for the minikube driver"):
         appliance.wait_for_unit("docker.service")
         appliance.succeed("docker info")
+
+    with subtest("radios are disabled"):
+        appliance.wait_for_unit("loom-rfkill-block.service")
+        for module in ["bluetooth", "btusb", "cfg80211", "mac80211"]:
+            appliance.succeed(f"grep -r 'blacklist {module}' /etc/modprobe.d/")
+
+    with subtest("both boot modes exist and differ in the right way"):
+        # The setup specialisation is what lets one box both fetch images
+        # online and then run entirely offline.
+        setup = appliance.succeed(
+            "ls /run/current-system/specialisation/"
+        ).split()
+        assert "setup" in setup, setup
+
+        # Run mode serves the network and starts Loom offline.
+        appliance.succeed("systemctl cat loom.service | grep -- '--offline'")
+        appliance.succeed(
+            "systemctl cat loom.service | grep -- '--expose ${loomSubnet}.1'"
+        )
+        # Setup mode fetches instead, and must not serve DHCP.
+        setup_sys = appliance.succeed(
+            "readlink -f /run/current-system/specialisation/setup"
+        ).strip()
+        appliance.succeed(f"test -e {setup_sys}/etc/systemd/system/loom-fetch.service")
+        appliance.fail(f"test -e {setup_sys}/etc/systemd/system/dnsmasq.service")
   '';
 }
