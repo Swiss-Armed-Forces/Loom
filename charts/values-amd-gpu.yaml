@@ -1,0 +1,16 @@
+# AMD GPU (ROCm) Deployment
+#
+# Use this when your nodes have AMD GPUs available and you want faster AI
+# inference and translation. Without this, all AI workloads run on CPU only.
+#
+# The ROCm runtime image uses the official ollama/ollama:rocm base image.
+# Model images are GPU-agnostic and work with both NVIDIA and AMD runtimes.
+#
+ollama:
+  runtimeImage:
+    repository: swiss-armed-forces/cyber-command/cea/loom/ollama-runtime-rocm
+  resources:
+    requests:
+      amd.com/gpu: 1
+    limits:
+      amd.com/gpu: 1

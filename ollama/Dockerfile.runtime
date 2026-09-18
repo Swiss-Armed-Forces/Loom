@@ -1,0 +1,29 @@
+# Ollama Runtime Image
+# Contains Ollama server + wrapper, NO models
+# GPU-specific variants built from this file
+#
+# Build with --build-arg GPU_TAG="-rocm" for AMD GPUs
+# Leave GPU_TAG empty (default) for NVIDIA GPUs
+
+ARG OLLAMA_IMAGE_VERSION="0.23.4"
+ARG DOCKER_REGISTRY="docker.io"
+ARG GPU_TAG=""
+
+FROM ${DOCKER_REGISTRY}/ollama/ollama:${OLLAMA_IMAGE_VERSION}${GPU_TAG}
+
+# Python for wrapper script
+ARG PYTHON_VERSION="3.12.*"
+RUN set -exu \
+  && apt-get -y update \
+  && apt-get -y install --no-install-recommends python3=${PYTHON_VERSION} \
+  && rm -rf /var/lib/apt/lists/*
+
+COPY ollama_wrapper.py /bin/ollama_wrapper.py
+
+# Runtime configuration
+ENV OLLAMA_HOST="0.0.0.0"
+ENV OLLAMA_DEBUG=1
+ENV OLLAMA_NO_CLOUD=1
+
+ENTRYPOINT ["/bin/ollama_wrapper.py", "entry"]
+CMD ["serve"]
