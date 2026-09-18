@@ -265,15 +265,7 @@ RANK:"""
     except Exception as ex:
         raise LLMError("Reranking document failed") from ex
 
-    rank = result_agent.output.rank
-
-    if rank is None:
-        return RERANK_MIN_RANK
-
-    if rank < RERANK_MIN_RANK or rank > RERANK_MAX_RANK:
-        raise LLMError("Reranking document failed")
-
-    return rank
+    return result_agent.output.rank
 
 
 @app.task(
