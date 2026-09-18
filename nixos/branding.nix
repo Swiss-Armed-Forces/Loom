@@ -323,9 +323,20 @@ in
       # Ordering before the first painted character is not a nicety. Changing
       # the font resizes the VT, so doing this after agetty has drawn the banner
       # would leave a screen of wrapped fragments.
+      #
+      # getty-pre.target does not cover the stick. There the menu is what paints
+      # tty1 and getty@tty1 is switched off entirely (installer.nix), so the one
+      # hook that means "before anything paints a VT" on the box means nothing
+      # at all on the installer, and the menu's `Type = "idle"` only waits for
+      # the job queue -- close enough to win the race most of the time, which is
+      # the worst way for this to be wired. Naming the unit is the same no-op as
+      # the After= below on a system where it does not exist.
       wantedBy = [ "multi-user.target" ];
       wants = [ "getty-pre.target" ];
-      before = [ "getty-pre.target" ];
+      before = [
+        "getty-pre.target"
+        "loom-menu.service"
+      ];
       # Absent in setup mode, where plymouth is switched off entirely. An After=
       # on a unit that does not exist is a no-op rather than an error, which is
       # what makes one unit serve both modes.
