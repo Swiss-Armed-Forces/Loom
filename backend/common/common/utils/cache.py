@@ -3,7 +3,7 @@ from functools import wraps
 from hashlib import sha256
 from pickle import dumps, loads
 from time import monotonic
-from typing import Any, Callable, Generic, TypeVar
+from typing import Any, Callable, Generic, NamedTuple, TypeIs, TypeVar
 
 from pydantic import BaseModel, Field, RootModel, computed_field
 from redis import StrictRedis
@@ -140,6 +140,84 @@ def _default_key_function(*args, **kwargs) -> tuple:
     return (args, kwargs)
 
 
+def _is_exactly(value: Any, expected: type[T]) -> TypeIs[T]:
+    """Return whether ``value`` is an ``expected`` exactly, and not a subclass."""
+    return value.__class__ is expected
+
+
+class _CanonicalValue(NamedTuple):
+    """A container in a cache key, rewritten so equal containers pickle equal.
+
+    Only ever handed to ``sha256(dumps(...))`` and never unpickled back into the type it
+    names, so describing a container is enough — it never has to be rebuilt. Pickle
+    records this class by name, so nothing a caller passes in can collide with one.
+    """
+
+    module: str
+    qualname: str
+    items: tuple[Any, ...]
+
+
+def _canonical(value: Any, *items: Any) -> _CanonicalValue:
+    return _CanonicalValue(type(value).__module__, type(value).__qualname__, items)
+
+
+def _canonicalize_key(value: Any) -> Any:
+    """Return a stand-in for ``value`` that pickles to the same bytes everywhere.
+
+    ``_get_key()`` hashes ``dumps(key)``, which only identifies a cached value if equal
+    keys pickle to equal bytes. Unordered containers do not: pickle writes a ``set`` in
+    iteration order, which follows the interpreter's string-hash seed (different in
+    every container) and, whenever two members share a bucket, the order they were
+    inserted in; it writes a ``dict`` in insertion order, so ``f(a=1, b=2)`` and
+    ``f(b=2, a=1)`` reach ``dumps()`` as different bytes.
+
+    Nothing passed to a cached task is meant to carry either, but every Pydantic model
+    smuggles a set in: its pickled state includes ``__pydantic_fields_set__``. Two
+    processes therefore derived two different keys for the very same model, and neither
+    could read what the other had cached — one extra entry, one extra miss, once per
+    argument that happened to be a model.
+
+    So every container becomes a ``_CanonicalValue``: sets and dicts ordered by the
+    pickled bytes of their members, models reduced to their field values.
+
+    ``LazyBytes`` and ``TypedLazyBytes`` are untouched: they define ``__reduce__``,
+    which pickles a ``model_dump()`` and never reaches the field set, and rewriting
+    them here would change keys that are already stable.
+
+    Only the exact builtin containers are descended into. A subclass may carry state
+    that its contents do not show — an ``OrderedDict`` means its order, a
+    ``defaultdict`` its factory — and a stand-in built from the contents alone would
+    hand two of them the same key, which returns one's cached value for the other.
+    Leaving them whole risks an unstable key, never a wrong one.
+    """
+    if isinstance(value, BaseModel) and type(value).__reduce__ is object.__reduce__:
+        return _canonical(
+            value,
+            _canonicalize_key(vars(value)),
+            _canonicalize_key(value.__pydantic_extra__),
+            _canonicalize_key(value.__pydantic_private__),
+        )
+    if _is_exactly(value, set) or _is_exactly(value, frozenset):
+        return _canonical(
+            value, *sorted((_canonicalize_key(item) for item in value), key=dumps)
+        )
+    if _is_exactly(value, dict):
+        return _canonical(
+            value,
+            *sorted(
+                (
+                    (_canonicalize_key(item_key), _canonicalize_key(item_value))
+                    for item_key, item_value in value.items()
+                ),
+                key=dumps,
+            ),
+        )
+    if _is_exactly(value, list) or _is_exactly(value, tuple):
+        return _canonical(value, *(_canonicalize_key(item) for item in value))
+    return value
+
+
 def _full_prefix(namespace: str) -> str:
     # Redis cluster requires keys operated in batch to be in the same key space.
     # Redis cluster hashes the keys to determine the key space. The braces
@@ -156,7 +234,7 @@ def _get_key(
         key_function = _default_key_function
     key = key_function(*args, **kwargs)
     logger.debug("Cache key generated: %s", key)
-    hash_object = sha256(dumps(key))
+    hash_object = sha256(dumps(_canonicalize_key(key)))
     identifier = hash_object.hexdigest()
     return CACHE_KEY_FORMAT.format(namespace=namespace, key=identifier)
 

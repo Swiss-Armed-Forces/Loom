@@ -55,7 +55,7 @@ spec:
               value: "openai"
             - name: RAG_EMBEDDING_MODEL_URL
               value: {{ .Values.llm.embedding.endpoint | quote }}
-            {{- if not .Values.llm.chat.endpoint }}
+            {{- if not .Values.llm.synthesize.endpoint }}
             {{- if .Values.externalSecrets.secrets.llm__embedding__api_key.enabled }}
             - name: OPENAI_API_KEY
               valueFrom:
@@ -83,18 +83,18 @@ spec:
             - name: CHUNK_OVERLAP
               value: {{ .Values.llm.embedding.text_chunk_overlap | quote }}
             {{- end }}
-            {{- if .Values.llm.chat.endpoint }}
+            {{- if .Values.llm.synthesize.endpoint }}
             - name: OPENAI_API_BASE_URL
-              value: {{ .Values.llm.chat.endpoint | quote }}
-            {{- if .Values.externalSecrets.secrets.llm__chat__api_key.enabled }}
+              value: {{ .Values.llm.synthesize.endpoint | quote }}
+            {{- if .Values.externalSecrets.secrets.llm__synthesize__api_key.enabled }}
             - name: OPENAI_API_KEY
               valueFrom:
                 secretKeyRef:
-                  name: {{ .Values.externalSecrets.secrets.llm__chat__api_key.name }}
-                  key: llm__chat__api_key
-            {{- else if .Values.llm.chat.api_key }}
+                  name: {{ .Values.externalSecrets.secrets.llm__synthesize__api_key.name }}
+                  key: llm__synthesize__api_key
+            {{- else if .Values.llm.synthesize.api_key }}
             - name: OPENAI_API_KEY
-              value: {{ .Values.llm.chat.api_key | quote }}
+              value: {{ .Values.llm.synthesize.api_key | quote }}
             {{- end }}
             {{- else }}
             - name: ENABLE_OPENAI_API
@@ -111,7 +111,7 @@ spec:
             - name: ENABLE_SIGNUP
               value: {{ .Values.open_webui.env.ENABLE_SIGNUP | quote }}
             - name: DEFAULT_MODELS
-              value: {{ .Values.llm.chat.model | quote }}
+              value: {{ .Values.llm.synthesize.model | quote }}
             - name: USER_PERMISSIONS_CHAT_TEMPORARY_ENFORCED
               value: {{ .Values.open_webui.env.USER_PERMISSIONS_CHAT_TEMPORARY_ENFORCED | quote }}
             - name: TOOL_SERVER_CONNECTIONS

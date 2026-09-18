@@ -15,6 +15,7 @@ import {
 import ImageIcon from "@mui/icons-material/Image";
 import { Box, IconButton, Tooltip, Typography } from "@mui/material";
 import { useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 
 import { ImapInfo, RenderedFile } from "@app/api";
 import { useAppDispatch, useAppSelector } from "@app/hooks";
@@ -73,6 +74,7 @@ export const FileRenderer = ({
     renderedFile,
     imap,
 }: FileRendererProps) => {
+    const { t } = useTranslation();
     const dispatch = useAppDispatch();
     const isThisFilePending = useAppSelector(
         (state) => selectPendingFullscreenFileId(state) === fileId,
@@ -327,7 +329,7 @@ export const FileRenderer = ({
 
                 {/* Center: zoom controls */}
                 <Box sx={{ display: "flex", gap: 0.5 }}>
-                    <Tooltip title="Zoom out">
+                    <Tooltip title={`Zoom out (${t("toolbar.zoomHint")})`}>
                         <span>
                             <IconButton
                                 size="small"
@@ -351,7 +353,7 @@ export const FileRenderer = ({
                             </IconButton>
                         </span>
                     </Tooltip>
-                    <Tooltip title="Zoom in">
+                    <Tooltip title={`Zoom in (${t("toolbar.zoomHint")})`}>
                         <span>
                             <IconButton
                                 size="small"

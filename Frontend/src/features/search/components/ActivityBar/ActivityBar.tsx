@@ -109,9 +109,9 @@ export const ActivityBar = () => {
             dataTour: "activity-bar-saved-queries",
         },
         {
-            panel: LeftSidebarPanel.CARD_CUSTOMIZATION,
+            panel: LeftSidebarPanel.CUSTOMIZATION,
             icon: <Tune />,
-            label: t("sideMenu.cardCustomization.title"),
+            label: t("sideMenu.customizations.title"),
             dataTour: "sidebar-card-customization",
         },
         {

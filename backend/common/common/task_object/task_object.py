@@ -67,8 +67,13 @@ class _EsTaskRun(InnerDoc):
     started_at = Date()
     finished_at = Date()
     duration = Float()
-    arguments = Keyword()
-    exception = Keyword()
+    # Display-only payloads: never searched, sorted or aggregated (`tasks` is excluded
+    # from `index.query.default_field`, see `_EsTaskDocument`). Disabling both `index`
+    # and `doc_values` means no Lucene term is produced, so the 32766 byte term limit -
+    # which would otherwise make Elasticsearch reject the *whole document* - cannot
+    # apply. The full value is still returned in `_source` and rendered by the frontend.
+    arguments = Keyword(index=False, doc_values=False)
+    exception = Keyword(index=False, doc_values=False)
 
 
 class _EsTaskRecord(InnerDoc):

@@ -17,19 +17,18 @@ elasticsearch = "9.4.1"
 luqum = "0.14.0"
 pycryptodome = "3.23.0"
 requests = "2.34.2"
-pydantic = "2.13.4"
+pydantic = "2.13.5"
 pydantic-settings = "2.14.2"
-types-requests = "2.33.0.20260712"
+pydantic-ai = { version = "^2.22.0", extras = ["ag-ui"] }
+types-requests = "2.33.0.20260906"
 fastapi = "0.141.1"
 redis = "5.2.1"
 # despite types-redis being deprecated for redis > 5.0.0,
 # we should keep this for now as the redis type hints are really bad
 # see: https://www.reddit.com/r/Python/comments/1ksicim/comment/mtnlayg/
 types-redis = "4.6.0.20241004"
-openai = "2.52.0"
-# Using a patched fork until https://github.com/mjs/imapclient/pull/641 is merged and released,
-# at which point this should be reverted to a plain version pin: imapclient = "<version>"
-imapclient = {git = "https://github.com/736-c41-2c1-e464fc974/imapclient.git", rev = "ee967b861ec7b71854372fe7a20a5adc01b2d6aa"}
+openai = "2.52.1"
+imapclient = "4.0.1"
 
 [tool.poetry.group.test.dependencies]
 #

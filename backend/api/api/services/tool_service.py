@@ -20,9 +20,11 @@ from common.ai_context.tool_models import (
     ToolSource,
     TranslateFileResult,
 )
+from common.settings import settings
 from pydantic_ai import ModelRetry, RunContext
 from pydantic_ai.capabilities import Capability
 from pydantic_ai.exceptions import ToolFailed
+from pydantic_ai.tools import Tool as PydanticTool
 from pydantic_ai.tools import ToolDefinition
 from pydantic_ai.toolsets import ExternalToolset
 
@@ -48,6 +50,7 @@ class ToolService:
 
     def __init__(self, task_call_service: TaskCallService) -> None:
         self._task_call_service = task_call_service
+        t = settings.llm.agent.tool_timeout
 
         self._search_and_browse = Capability[AgentDeps](
             id=CapabilityId.SEARCH_AND_BROWSE,
@@ -61,10 +64,10 @@ class ToolService:
                 "to orient yourself in the corpus."
             ),
             tools=[
-                self.suggest_queries,
-                self.execute_query,
-                self.list_folder_contents,
-                self.search_by_filename,
+                PydanticTool(self.suggest_queries, timeout=t),
+                PydanticTool(self.execute_query, timeout=t),
+                PydanticTool(self.list_folder_contents, timeout=t),
+                PydanticTool(self.search_by_filename, timeout=t),
             ],
             defer_loading=True,
         )
@@ -80,7 +83,10 @@ class ToolService:
                 "When the user refers to 'this file' or 'these files', "
                 "resolve the reference through the UI context first."
             ),
-            tools=[self.get_file, self.get_file_field],
+            tools=[
+                PydanticTool(self.get_file, timeout=t),
+                PydanticTool(self.get_file_field, timeout=t),
+            ],
             defer_loading=True,
         )
 
@@ -94,7 +100,11 @@ class ToolService:
                 "Use these to enrich documents with AI-generated content "
                 "whenever it would help answer the user's question."
             ),
-            tools=[self.summarize_file, self.translate_file, self.describe_image],
+            tools=[
+                PydanticTool(self.summarize_file, timeout=t),
+                PydanticTool(self.translate_file, timeout=t),
+                PydanticTool(self.describe_image, timeout=t),
+            ],
             defer_loading=True,
         )
 
@@ -127,7 +137,7 @@ class ToolService:
                 "explore promising documents in depth, and cross-reference "
                 "findings across the corpus."
             ),
-            tools=[self.rag_search],
+            tools=[PydanticTool(self.rag_search, timeout=t)],
         )
 
     def capabilities_for_mode(self, mode: ModeId) -> list[Capability[AgentDeps]]:

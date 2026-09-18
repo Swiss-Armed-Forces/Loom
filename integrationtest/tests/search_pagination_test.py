@@ -12,7 +12,8 @@ ASSET_FILE_NAME = "empty_file.txt"
 
 class TestPagination:
     @pytest.fixture(scope="class", autouse=True)
-    def setup_testfiles(self):
+    @classmethod
+    def setup_testfiles(cls):
         for i in range(PAGINATION_TEST_FILE_COUNT):
             upload_asset(
                 ASSET_FILE_NAME,

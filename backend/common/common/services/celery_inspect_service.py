@@ -101,6 +101,12 @@ class CeleryInspectService:
         # message, so zero messages means no real work is pending. Celery's inspect
         # state can be stale (phantom tasks after worker restarts or the known
         # prefork concurrency-scaling bug) and must not block idle detection.
+        #
+        # This only holds because QueuesService reads the counts live from the queue
+        # processes (see LIVE_QUEUE_TOTALS_PARAMS). Served from the management stats
+        # database instead, they lag ~10s, and the error is not conservative: a queue
+        # filled a moment ago still reads as empty, so this returned True while the
+        # workers were saturated.
         return messages_in_queues <= 0
 
     def wait_for_idle(

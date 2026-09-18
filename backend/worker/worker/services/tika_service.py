@@ -88,6 +88,11 @@ class TikaService:
             # 'Accept': 'application/x-tar',
             "X-Tika-Timeout-Millis": str(self.timeout * 1000**1),
             "X-Tika-OCRLanguage": "+".join(settings.tika_ocr_languages),
+            # requests sends chunked bodies without a Content-Type, which makes
+            # tika (CXF) fall back to application/x-www-form-urlencoded and pick
+            # the EmptyParser: no OCR, empty content for scanned documents.
+            # octet-stream tells tika to auto-detect the type instead.
+            "Content-Type": "application/octet-stream",
             "unpackMaxBytes": str(TIKA_UNPACK_MAX_SIZE),
         }
         response = requests.put(

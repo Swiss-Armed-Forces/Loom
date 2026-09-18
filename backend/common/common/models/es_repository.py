@@ -771,22 +771,46 @@ class BaseEsRepository(  # pylint: disable=too-many-public-methods
 
     def init(self):
         with self._temporarily_closed_index():
+            mapping_settings: dict[str, object] = {
+                # When reinit() reindexes into a new index with updated mappings, a
+                # document whose stored value is incompatible with the new field type
+                # would otherwise be dropped entirely. With ignore_malformed=True, ES
+                # silently skips the offending field and still indexes the rest of the
+                # document (best-effort preservation).
+                "ignore_malformed": True,
+            }
+            # ES 9.2+ excludes dense_vector fields from _source by default. The
+            # persister re-reads documents from ES and expects the full document;
+            # without the vectors in _source it would write them back empty,
+            # permanently deleting them (#281).
+            #
+            # exclude_source_vectors is a final (immutable) index setting — ES
+            # rejects it in PUT _settings even if the value is unchanged. Only
+            # include it when the index does not yet exist (creation) or when the
+            # current value is wrong (this will intentionally fail, surfacing that
+            # the index must be recreated).
+            if not self._index.exists(using=self._elasticsearch):
+                mapping_settings["exclude_source_vectors"] = False
+            else:
+                current = self._elasticsearch.indices.get_settings(
+                    index=self._index_name
+                )[self._index_name]["settings"]
+                current_value = (
+                    current.get("index", {})
+                    .get("mapping", {})
+                    .get("exclude_source_vectors")
+                )
+                if current_value != "false":
+                    raise RuntimeError(
+                        f"Index {self._index_name!r} has "
+                        f"exclude_source_vectors={current_value!r} but Loom "
+                        f"requires 'false'. This is a final index setting that "
+                        f"cannot be updated — the index must be recreated."
+                    )
             # set settings before initializing
             self._index.settings(
                 query={"default_field": self._document_type.get_default_fields()},
-                mapping={
-                    # When reinit() reindexes into a new index with updated mappings, a
-                    # document whose stored value is incompatible with the new field type
-                    # would otherwise be dropped entirely. With ignore_malformed=True, ES
-                    # silently skips the offending field and still indexes the rest of the
-                    # document (best-effort preservation).
-                    "ignore_malformed": True,
-                    # ES 9.2+ excludes dense_vector fields from _source by default. The
-                    # persister re-reads documents from ES and expects the full document;
-                    # without the vectors in _source it would write them back empty,
-                    # permanently deleting them (#281).
-                    "exclude_source_vectors": False,
-                },
+                mapping=mapping_settings,
             )
             # initialize
             self._document_type.init(using=self._elasticsearch)

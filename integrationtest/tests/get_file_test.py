@@ -27,7 +27,8 @@ class FileInfo(BaseModel):
 class TestGetShortFile:
 
     @pytest.fixture(scope="class")
-    def file_info(self) -> FileInfo:
+    @classmethod
+    def file_info(cls) -> FileInfo:
         asset = "text.txt"
         upload_asset(asset)
 
@@ -96,7 +97,8 @@ class TestGetShortFile:
 
 class TestGetLongFile:
     @pytest.fixture(scope="class")
-    def file_info(self) -> FileInfo:
+    @classmethod
+    def file_info(cls) -> FileInfo:
         with NamedTemporaryFile(mode="w+", dir=ASSETS_DIR) as tmp:
             tmp.write("a" * (TIKA_MAX_TEXT_SIZE + 1))
             tmp.flush()

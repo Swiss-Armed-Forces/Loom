@@ -22,6 +22,7 @@ import {
     setPendingFullscreenFileId,
     closeFileTabThunk,
 } from "@app/slices/searchSlice";
+import { selectReverseBindings } from "@app/slices/searchSlice";
 import { FileDetailTab } from "@features/common/utils/enums";
 
 const SCROLL_STEP_PX = 300;
@@ -39,6 +40,8 @@ export const useKeyboardNavigation = () => {
     const query = useAppSelector(selectQuery);
     const isLoading = useAppSelector(selectIsLoading);
     const files = useAppSelector(selectFiles);
+    const reverseBindings = useAppSelector(selectReverseBindings);
+
     // Keep refs so hotkey callbacks don't need these in their dependency arrays.
     const filesRef = useRef(files);
     useEffect(() => {
@@ -463,269 +466,217 @@ export const useKeyboardNavigation = () => {
                 return;
             }
 
-            // Handle file tab navigation
-            if (activeTabFileId !== null) {
-                switch (event.key) {
-                    case "j":
-                    case "ArrowDown":
-                        handleDialogScroll("down", SCROLL_STEP_PX);
-                        event.preventDefault();
-                        return;
-                    case "k":
-                    case "ArrowUp":
-                        handleDialogScroll("up", SCROLL_STEP_PX);
-                        event.preventDefault();
-                        return;
-                    case "PageDown":
-                        handleDialogScroll("down");
-                        event.preventDefault();
-                        return;
-                    case "PageUp":
-                        handleDialogScroll("up");
-                        event.preventDefault();
-                        return;
-                    case "h":
-                    case "H":
-                    case "ArrowLeft":
-                        if (event.shiftKey) {
-                            handleCenterTabNavigation("left");
-                        } else {
-                            handleTabNavigationDirection("left");
-                        }
-                        event.preventDefault();
-                        return;
-                    case "l":
-                    case "L":
-                    case "ArrowRight":
-                        if (event.shiftKey) {
-                            handleCenterTabNavigation("right");
-                        } else {
-                            handleTabNavigationDirection("right");
-                        }
-                        event.preventDefault();
-                        return;
-                    case "i":
-                    case "I":
-                        dispatch(closeFileTabThunk(activeTabFileId));
-                        event.preventDefault();
-                        return;
-                    case "Escape":
-                        // Close any open popovers/menus first.
-                        document.dispatchEvent(
-                            new CustomEvent("loom:close-menus"),
-                        );
-                        dispatch(closeFileTabThunk(activeTabFileId));
-                        event.preventDefault();
-                        return;
-                }
-            } else if (activeTabFileId === null) {
-                // Handle result list navigation
-                switch (event.key) {
-                    case "Escape":
-                        // Close any open popovers/menus first.
-                        document.dispatchEvent(
-                            new CustomEvent("loom:close-menus"),
-                        );
-                        if (highlightedFileId !== null) {
-                            // Unselect the highlighted card
-                            dispatch(setHighlightedFileId(null));
-                        } else {
-                            // No card selected — clear the search query and sort
-                            for (const label of [
-                                "clear search",
-                                "clear sort",
-                            ]) {
-                                const btn = document.querySelector(
-                                    `button[aria-label="${label}"]`,
-                                );
-                                if (
-                                    btn &&
-                                    !(btn as HTMLButtonElement).disabled
-                                ) {
-                                    (btn as HTMLElement).click();
-                                }
-                            }
-                        }
-                        event.preventDefault();
-                        return;
-                    case "j":
-                    case "ArrowDown":
-                        // Result navigation: j/ArrowDown = down
+            // Build pressed keys array for reverse lookup
+            const pressedKeys = [
+                ...(event.ctrlKey ? ["ctrl"] : []),
+                ...(event.shiftKey ? ["shift"] : []),
+                ...(event.metaKey ? ["meta"] : []),
+                ...(event.altKey ? ["alt"] : []),
+                event.key,
+            ];
+
+            // Check if pressed keys match a custom binding
+            const keyString = pressedKeys
+                .map((k) => k.toLowerCase())
+                .join(" + ");
+            const actionId = reverseBindings[keyString];
+
+            // Handle action with switch statement to avoid object allocation on every keydown
+            if (actionId) {
+                event.preventDefault();
+                switch (actionId) {
+                    case "moveDown":
                         handleResultNavigation("down");
-                        event.preventDefault();
-                        return;
-                    case "k":
-                    case "ArrowUp":
-                        // Result navigation: k/ArrowUp = up
+                        break;
+                    case "moveUp":
                         handleResultNavigation("up");
-                        event.preventDefault();
+                        break;
+                    case "pageDown":
+                        handleDialogScroll("down");
                         return;
-                    case "h":
-                    case "H":
-                    case "ArrowLeft":
-                        if (!event.shiftKey && highlightedFileId !== null) {
-                            handleSummaryTabNavigation("left");
-                        } else if (event.shiftKey) {
-                            handleCenterTabNavigation("left");
+                    case "pageUp":
+                        handleDialogScroll("up");
+                        return;
+                    case "prevTab":
+                        handleTabNavigationDirection("left");
+                        break;
+                    case "nextTab":
+                        handleTabNavigationDirection("right");
+                        break;
+                    case "prevCenterTab":
+                        handleCenterTabNavigation("left");
+                        break;
+                    case "nextCenterTab":
+                        handleCenterTabNavigation("right");
+                        break;
+                    case "openOrClose":
+                        if (activeTabFileId !== null) {
+                            dispatch(closeFileTabThunk(activeTabFileId));
+                        } else if (highlightedFileId !== null) {
+                            clickActionButton("preview");
                         }
-                        event.preventDefault();
-                        return;
-                    case "l":
-                    case "L":
-                    case "ArrowRight":
-                        if (!event.shiftKey && highlightedFileId !== null) {
-                            handleSummaryTabNavigation("right");
-                        } else if (event.shiftKey) {
-                            handleCenterTabNavigation("right");
+                        break;
+                    case "open":
+                        if (
+                            activeTabFileId === null &&
+                            highlightedFileId !== null
+                        ) {
+                            clickActionButton("preview");
                         }
-                        event.preventDefault();
-                        return;
-                    case "Enter":
-                    case "i":
-                    case "I":
-                        if (event.shiftKey && highlightedFileId !== null) {
-                            // Open tab in background without switching to it
+                        break;
+                    case "openBackground":
+                        if (highlightedFileId !== null) {
                             dispatch(
                                 openFileTabThunk({
                                     fileId: highlightedFileId,
                                     background: true,
                                 }),
                             );
-                        } else {
-                            // Open preview dialog for highlighted result
-                            clickActionButton("preview");
                         }
-                        event.preventDefault();
-                        return;
-                    case "/":
-                        // Focus the search input (vim-style)
-                        {
-                            const searchInput = document.querySelector(
-                                "[data-search-input]",
-                            );
-                            if (searchInput) {
-                                (searchInput as HTMLElement).focus();
-                                event.preventDefault();
-                            }
-                        }
-                        return;
-                }
-            }
-
-            // Shared action shortcuts (work in both dialog and result list contexts)
-            switch (event.key) {
-                case "C":
-                    // Shift+C: copy share link
-                    clickActionButton("share");
-                    event.preventDefault();
-                    return;
-                case "n": {
-                    // Navigate to parent file
-                    const currentFileId = activeTabFileId ?? highlightedFileId;
-                    if (!currentFileId) return;
-                    const parentId =
-                        filesRef.current[currentFileId]?.preview?.parentId;
-                    if (!parentId) return;
-                    dispatch(openFileTabThunk({ fileId: parentId }));
-                    event.preventDefault();
-                    return;
-                }
-                case "N": {
-                    const currentFileId = activeTabFileId ?? highlightedFileId;
-                    if (!currentFileId) return;
-                    const currentPreview =
-                        filesRef.current[currentFileId]?.preview;
-                    const attachments = currentPreview?.attachments;
-                    if (!attachments?.length) return;
-
-                    if (attachments.length === 1) {
-                        // Single child: navigate directly.
-                        dispatch(
-                            openFileTabThunk({ fileId: attachments[0].id }),
+                        break;
+                    case "focusSearch": {
+                        const searchInput = document.querySelector(
+                            "[data-search-input]",
                         );
-                    } else {
-                        // Multiple children: open the attachment popover so the
-                        // user can choose. The popover is triggered via the hidden
-                        // aria-label="show-attachments" button rendered by FileAttachments.
-                        clickActionButton("show-attachments");
+                        if (searchInput) {
+                            (searchInput as HTMLElement).focus();
+                        }
+                        break;
                     }
-                    event.preventDefault();
-                    return;
-                }
-                case "d":
-                    clickActionButton("download");
-                    event.preventDefault();
-                    return;
-                case "r":
-                    clickActionButton("re-index");
-                    event.preventDefault();
-                    return;
-                case "s":
-                    clickActionButton("seen");
-                    event.preventDefault();
-                    return;
-                case "S":
-                    clickActionButton("summarize");
-                    event.preventDefault();
-                    return;
-                case "t":
-                    clickActionButton("tags-input");
-                    event.preventDefault();
-                    return;
-                case "T":
-                    clickActionButton("translate");
-                    event.preventDefault();
-                    return;
-                case "f":
-                    if (activeTabFileId !== null) {
-                        // Ensure the Rendered tab is active so FileRenderer is
-                        // in the DOM, then click the fullscreen button directly.
-                        flushSync(() => {
+                    case "fullscreen":
+                        if (activeTabFileId !== null) {
+                            flushSync(() => {
+                                dispatch(
+                                    setFileTabDetailTab({
+                                        fileId: activeTabFileId,
+                                        detailTab: FileDetailTab.Rendered,
+                                    }),
+                                );
+                            });
+                            const panel = document.querySelector(
+                                `[data-file-panel="${activeTabFileId}"]`,
+                            );
+                            const btn = panel?.querySelector(
+                                'button[aria-label="fullscreen"]',
+                            ) as HTMLElement | null;
+                            btn?.click();
+                        } else if (highlightedFileId !== null) {
                             dispatch(
-                                setFileTabDetailTab({
-                                    fileId: activeTabFileId,
+                                setPendingFullscreenFileId(highlightedFileId),
+                            );
+                            dispatch(
+                                openFileTabThunk({
+                                    fileId: highlightedFileId,
                                     detailTab: FileDetailTab.Rendered,
                                 }),
                             );
-                        });
-                        const panel = document.querySelector(
-                            `[data-file-panel="${activeTabFileId}"]`,
-                        );
-                        const btn = panel?.querySelector(
-                            'button[aria-label="fullscreen"]',
-                        ) as HTMLElement | null;
-                        btn?.click();
-                    } else if (highlightedFileId !== null) {
-                        // FileRenderer mounts only after getFile() resolves.
-                        // Set the flag first so FileRenderer can consume it on
-                        // mount; transient user activation (~5s) is still valid
-                        // by the time the API call completes.
-                        dispatch(setPendingFullscreenFileId(highlightedFileId));
-                        dispatch(
-                            openFileTabThunk({
-                                fileId: highlightedFileId,
-                                detailTab: FileDetailTab.Rendered,
-                            }),
-                        );
+                        }
+                        break;
+                    case "flag":
+                        clickActionButton("flagged");
+                        break;
+                    case "seen":
+                        clickActionButton("seen");
+                        break;
+                    case "tag":
+                        clickActionButton("tags-input");
+                        break;
+                    case "navigateParentFile": {
+                        const currentFileId =
+                            activeTabFileId ?? highlightedFileId;
+                        if (!currentFileId) break;
+                        const parentId =
+                            filesRef.current[currentFileId]?.preview?.parentId;
+                        if (!parentId) break;
+                        dispatch(openFileTabThunk({ fileId: parentId }));
+                        break;
                     }
-                    event.preventDefault();
-                    return;
-                case "F":
-                    clickActionButton("flagged");
-                    event.preventDefault();
-                    return;
+                    case "NavigateChildFile": {
+                        const currentFileId =
+                            activeTabFileId ?? highlightedFileId;
+                        if (!currentFileId) break;
+                        const currentPreview =
+                            filesRef.current[currentFileId]?.preview;
+                        const attachments = currentPreview?.attachments;
+                        if (!attachments?.length) break;
+                        if (attachments.length === 1) {
+                            dispatch(
+                                openFileTabThunk({
+                                    fileId: attachments[0].id,
+                                }),
+                            );
+                        } else {
+                            clickActionButton("show-attachments");
+                        }
+                        break;
+                    }
+                    case "copyLink":
+                        clickActionButton("share");
+                        break;
+                    case "translate":
+                        clickActionButton("translate");
+                        break;
+                    case "summarize":
+                        clickActionButton("summarize");
+                        break;
+                    case "reindex":
+                        clickActionButton("re-index");
+                        break;
+                    case "download":
+                        clickActionButton("download");
+                        break;
+                    case "escapeAction":
+                        document.dispatchEvent(
+                            new CustomEvent("loom:close-menus"),
+                        );
+                        if (activeTabFileId !== null) {
+                            dispatch(closeFileTabThunk(activeTabFileId));
+                        } else if (highlightedFileId !== null) {
+                            dispatch(setHighlightedFileId(null));
+                        }
+                        break;
+                    case "scrollDown":
+                        if (activeTabFileId !== null) {
+                            handleDialogScroll("down", SCROLL_STEP_PX);
+                        }
+                        break;
+                    case "scrollUp":
+                        if (activeTabFileId !== null) {
+                            handleDialogScroll("up", SCROLL_STEP_PX);
+                        }
+                        break;
+                    case "closePanel":
+                        if (activeTabFileId !== null) {
+                            dispatch(closeFileTabThunk(activeTabFileId));
+                        }
+                        break;
+                    case "summaryTabLeft":
+                        if (highlightedFileId !== null) {
+                            handleSummaryTabNavigation("left");
+                        }
+                        break;
+                    case "summaryTabRight":
+                        if (highlightedFileId !== null) {
+                            handleSummaryTabNavigation("right");
+                        }
+                        break;
+                    default:
+                        break;
+                }
+                return;
             }
         },
         [
             shouldIgnoreKeyEvent,
-            activeTabFileId,
-            highlightedFileId,
-            dispatch,
+            reverseBindings,
+            handleResultNavigation,
             handleTabNavigationDirection,
             handleCenterTabNavigation,
             handleSummaryTabNavigation,
             handleDialogScroll,
-            handleResultNavigation,
+            activeTabFileId,
+            highlightedFileId,
+            dispatch,
             clickActionButton,
         ],
     );

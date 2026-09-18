@@ -209,7 +209,7 @@ def render_email_to_pdf(
     with get_gotenberg_client().chromium.html_to_pdf() as route:
         try:
             route = route.string_index(email.rendered_content)
-            route = route.use_network_idle()
+            route = route.skip_network_idle()
             route = route.size(size=settings.rendered_pdf_page_size)
             response = route.run()
         except HTTPStatusError:

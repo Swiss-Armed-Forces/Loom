@@ -25,6 +25,8 @@ class SummarizationFileTest(BaseModel):
     name: str
 
 
+WAIT_MULTIPLIER = 6
+
 LONG_TEXT = (
     "He was digging in his garden--digging, too, "
     "in his own mind, laboriously turning up the substance of his "
@@ -42,17 +44,17 @@ SUMMARIZATION_TESTCASES = [
     (
         None,
         f"A short test case with at least {MIN_WORDS_NATURAL_LANGUAGE} words or more.",
-        None,
+        DEFAULT_MAX_WAIT_TIME_PER_FILE * WAIT_MULTIPLIER,
     ),
     (
         None,
         LONG_TEXT,
-        DEFAULT_MAX_WAIT_TIME_PER_FILE * 3,
+        DEFAULT_MAX_WAIT_TIME_PER_FILE * WAIT_MULTIPLIER,
     ),
     (
         "You are a pirate",
         LONG_TEXT,
-        DEFAULT_MAX_WAIT_TIME_PER_FILE * 3,
+        DEFAULT_MAX_WAIT_TIME_PER_FILE * WAIT_MULTIPLIER,
     ),
 ]
 

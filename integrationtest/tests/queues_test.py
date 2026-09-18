@@ -42,13 +42,14 @@ class TestQueues:
     asset_list = ["empty_file.txt"]
 
     @pytest.fixture(scope="class", autouse=True)
-    def setup_testfiles(self):
-        upload_many_assets(asset_names=self.asset_list)
+    @classmethod
+    def setup_testfiles(cls):
+        upload_many_assets(asset_names=cls.asset_list)
 
         # ensure all files are processed
         fetch_files_from_api(
             search_string="*",
-            expected_no_of_files=len(self.asset_list),
+            expected_no_of_files=len(cls.asset_list),
             wait_for_celery_idle=True,
         )
 

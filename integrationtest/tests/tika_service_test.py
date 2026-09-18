@@ -150,6 +150,15 @@ class TestTikaService:
                 ),
             ),
             ("ocr.jpg", ("Red Cat",)),
+            # Image-only PDF: the page carries no text layer at all, so the text
+            # below can only come from OCR and never from raw string extraction.
+            (
+                "scanned_ocr.pdf",
+                (
+                    "Scanned PDF OCR test",
+                    "Kingfisher Rooftop",
+                ),
+            ),
         ],
     )
     def test_ocr(self, asset: str, expected_identified: tuple[str]):

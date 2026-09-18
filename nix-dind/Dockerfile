@@ -135,14 +135,17 @@ RUN set -exu \
 #
 # Nix-daemon setup
 #
-ARG NIX_DAEMON_ARGS="--debug --verbose"
+# Applies to the image build only, entrypoint.sh starts the runtime daemon.
+# Empty by default: the daemon debug output blows up the CI job log, which
+# GitLab truncates at 4MB.
+ARG NIX_DAEMON_ARGS=""
 ENV NIX_DAEMON_ARGS=${NIX_DAEMON_ARGS}
 # Note: optimizing nix store takes a long time...
 ARG NIX_STORE_OPTIMIZE=true
 ENV NIX_STORE_OPTIMIZE=${NIX_STORE_OPTIMIZE}
 
 # This channel must match the one specified in the devenv setup instructions
-ARG NIX_CHANNEL="nixos-25.11"
+ARG NIX_CHANNEL="nixos-26.05"
 #ARG NIX_CHANNEL="nixpkgs-unstable"
 #ARG NIX_CHANNEL="02b9ebc695596cdcd7d58b1180e1be4b0d6735f8"
 # hadolint ignore=DL3004
@@ -154,8 +157,8 @@ RUN set -exu \
     nix-channel --update \
     && sudo -i -u "${NIX_USER_NAME}" \
     nix-env -iA nixpkgs.devenv \
-    && nix-collect-garbage --delete-old \
-    && if [ "${NIX_STORE_OPTIMIZE}" == "true" ]; then nix-store --optimise; fi \
+    && nix-collect-garbage --quiet --delete-old \
+    && if [ "${NIX_STORE_OPTIMIZE}" == "true" ]; then nix-store --quiet --optimise; fi \
     && nix-store --verify --check-contents
 
 # Copy Lockfiles
@@ -172,28 +175,39 @@ COPY --chown=${NIX_USER_NAME} \
     "${NIX_USER_HOMEDIR}"/nix-dind/
 
 
+# Realise the whole devenv package set, so that a job using this image does
+# not have to download it, and clean up the store afterwards.
+#
+# Entering the shell is what realises the package set.  We disable
+# install.enable for all languages, because we do not want any of the project
+# packages installed into the image.
+#
+# Note: this has to stay a single RUN.  Garbage collection only pays off for
+# paths the same RUN created: deleting anything an earlier layer wrote leaves
+# its bytes in that layer and merely stacks a whiteout on top.  The same holds
+# for `nix-store --optimise`, which has to copy a file up out of the lower
+# layers before it can hardlink it, so across layers it grows the image
+# instead of shrinking it.
+#
+# The collection also drops the sources that evaluating the devenv shell
+# needs, such as the devenv-nixpkgs tree and the patches applied to it.  No GC
+# root points at them while the nix fetcher cache keeps referring to them,
+# which makes a later evaluation fail with "path '/nix/store/...' is not
+# valid".  The `devenv build shell` after the collection restores them, so
+# nothing may collect garbage past that point.  As a build it is a no-op - the
+# shell is already realised and rooted by then - we run it for the evaluation.
 # hadolint ignore=DL3004
 RUN set -exu \
-    && fork() { (setsid "$@" &); } && fork nix-daemon  ${NIX_DAEMON_ARGS} \
+    && fork() { (setsid "$@" &); } && fork nix-daemon ${NIX_DAEMON_ARGS} \
     && sudo -i -u "${NIX_USER_NAME}" \
-    devenv --verbose build \
-    && nix-collect-garbage --delete-old \
-    && if [ "${NIX_STORE_OPTIMIZE}" == "true" ]; then nix-store --optimise; fi \
-    && nix-store --verify --check-contents
-
-# For a FAT devenv base image comment/uncomment this:
-# hadolint ignore=DL3004
-RUN set -exu \
-    && fork() { (setsid "$@" &); } && fork nix-daemon  ${NIX_DAEMON_ARGS} \
-    && sudo -i -u "${NIX_USER_NAME}" \
-    devenv --verbose shell \
-    # Note: we disable install.enable for all languages,
-    # this is because we do not want any packages installed
+    devenv shell \
     --option languages.python.poetry.install.enable:bool false \
     --option languages.javascript.pnpm.install.enable:bool false \
     -- true \
-    && nix-collect-garbage --delete-old \
-    && if [ "${NIX_STORE_OPTIMIZE}" == "true" ]; then nix-store --optimise; fi \
+    && nix-collect-garbage --quiet --delete-old \
+    && sudo -i -u "${NIX_USER_NAME}" \
+    devenv build shell \
+    && if [ "${NIX_STORE_OPTIMIZE}" == "true" ]; then nix-store --quiet --optimise; fi \
     && nix-store --verify --check-contents
 
 # ignore ownership of directory

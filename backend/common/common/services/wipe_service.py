@@ -1,6 +1,7 @@
 import logging
+from concurrent.futures import ThreadPoolExecutor
 from contextlib import contextmanager
-from time import sleep
+from time import monotonic, sleep
 
 from celery import Celery
 from elasticsearch import Elasticsearch
@@ -21,6 +22,25 @@ from common.utils.flush_s3_bucket import flush_s3_bucket
 logger = logging.getLogger(__name__)
 
 WAIT_FOR_CELERY_IDLE_SLEEP_TIME__S = 0.1
+WIPE_CELERY_TIMEOUT__S = 300.0
+# One idle reading is enough to return on.
+#
+# The depths are live (see LIVE_QUEUE_TOTALS_PARAMS) and cover unacknowledged messages,
+# and task_acks_late=True means a running task holds an unacked message for its whole
+# lifetime — so in-flight work is never invisible to the reading. Terminating a task does
+# not open a gap either: task_reject_on_worker_lost=False makes the parent acknowledge
+# the message, and until it does the message is still unacked and still counted.
+#
+# What this cannot cover is an independent producer — beat, the crawler, an API upload —
+# publishing after the check. No amount of re-reading fixes that; it needs consumption
+# stopped at the source before the purge.
+# Upper bound on concurrent queue purges. wipe_celery() re-purges every 0.1s, so this
+# caps how many requests a single wipe can have in flight against the broker.
+PURGE_MAX_WORKERS = 16
+
+
+class WipeTimeoutError(RuntimeError):
+    """Raised when celery did not go idle within the wipe timeout."""
 
 
 class WipeService:
@@ -54,14 +74,15 @@ class WipeService:
         self._celery_inspect_service = celery_inspect_service
         self._queues_service = queues_service
 
-    def wipe_celery(self) -> None:
+    def wipe_celery(self, timeout__s: float = WIPE_CELERY_TIMEOUT__S) -> None:
         logger.info("Wiping: celery")
         celery_control = self._celery_app.control
+        deadline = monotonic() + timeout__s
         while True:
-            # purge all tasks until no celery worker has active tasks
-            logger.info("Purging celery tasks")
-            celery_control.purge()
-            # wait for celery to be idle
+            # Purge on every iteration, not just once up front: tasks that are already
+            # in flight publish their successors as they complete, so a single purge
+            # drains nothing durably.
+            self.wipe_rabbit()
             # send termination signal for all remaining tasks
             # these are most likely tasks which are backing off
             # at the workers.
@@ -71,7 +92,12 @@ class WipeService:
                     logger.info("Terminating task: %s", task_id)
                     celery_control.terminate(task_id)
             if self._celery_inspect_service.is_idle():
-                break
+                return
+            if monotonic() >= deadline:
+                raise WipeTimeoutError(
+                    f"Celery did not go idle within {timeout__s}s; "
+                    f"{self._queues_service.get_message_count()} messages remain"
+                )
             sleep(WAIT_FOR_CELERY_IDLE_SLEEP_TIME__S)
 
     def wipe_elasticsearch(self) -> None:
@@ -125,10 +151,41 @@ class WipeService:
         self._imap_service.wipe()
 
     def wipe_rabbit(self) -> None:
-        """Purge all RabbitMQ queues — both task queues and terminal queues (abyss,
-        unroutable) which have no workers and are therefore not reached by
-        celery_control.purge()."""
-        logger.info("Wiping: RabbitMQ")
-        for queue_name in self._queues_service.get_all_queue_message_counts():
-            logger.info("Purging queue: %s", queue_name)
-            self._queues_service.purge_queue(queue_name)
+        """Purge every queue the broker names, regardless of its reported depth.
+
+        ``celery_control.purge()`` must not be used here. It purges
+        ``app.amqp.queues.consume_from``, built from ``app.conf.task_queues``, which
+        only ``register_tasks_for_package()`` populates — and only worker processes call
+        that. In the API process that list holds nothing but the static queues (default,
+        graveyard, dead, abyss), so the per-task queues would never be purged. Asking
+        the broker instead works from any process, because the broker knows every queue
+        that exists.
+
+        Covers the terminal queues (abyss, unroutable) that no worker consumes, and the
+        ``celery_delayed_*`` queues holding tasks in a retry backoff.
+
+        The depths name the queues but must not decide which ones to purge. They are
+        read live now, but a live depth is still only a point-in-time answer: a queue
+        that reads as empty can be filled by an in-flight task before the purge reaches
+        it. Purging an already-empty queue costs one request and is harmless.
+        """
+        queue_names = [
+            *self._queues_service.get_all_queue_message_counts(),
+            *self._queues_service.get_delayed_queue_message_counts(),
+        ]
+        if not queue_names:
+            return
+        logger.info("Purging %d queues", len(queue_names))
+        # The purges are independent HTTP round-trips against the broker; run them
+        # concurrently so a wipe does not serialize dozens of them.
+        with ThreadPoolExecutor(
+            max_workers=min(len(queue_names), PURGE_MAX_WORKERS)
+        ) as executor:
+            futures = [
+                executor.submit(self._queues_service.purge_queue, queue_name)
+                for queue_name in queue_names
+            ]
+            for future in futures:
+                # Surface the first failure — a purge that silently did not happen
+                # would let wipe_celery() loop until its timeout with no explanation.
+                future.result()

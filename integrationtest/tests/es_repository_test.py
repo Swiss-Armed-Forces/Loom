@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from uuid import uuid4
 
 import pytest
@@ -13,6 +14,7 @@ from common.task_object.root_task_information_repository import (
     RootTaskInformation,
     RootTaskInformationRepository,
 )
+from common.task_object.task_object import TaskRecord, TaskRun
 
 ES_REPOSITORY_MINIMAL_OBJECTS: dict[type[BaseEsRepository], RepositoryObject] = {
     FileRepository: File(
@@ -264,3 +266,54 @@ def test_get_id_generator_by_query_returns_all_ids_across_multiple_scan_pages(
     }
 
     assert returned_ids == saved_ids
+
+
+# Lucene refuses to index a term whose UTF-8 encoding exceeds 32766 bytes. Multi-byte
+# characters on purpose: the limit is counted in bytes, so 20000 emoji are 80000 bytes
+# while being only 20000 characters.
+_OVERSIZED_EXCEPTION = "😀" * 20_000
+_OVERSIZED_ARGUMENTS = "🧨" * 20_000
+
+
+def test_save_task_run_with_oversized_arguments_and_exception():
+    """Regression test: a TaskRun whose arguments/exception exceed the Lucene term limit
+    must still persist, and must come back in full.
+
+    `arguments` and `exception` are mapped with `index=False, doc_values=False`, so no
+    term is produced and the limit cannot apply. Previously Elasticsearch rejected the
+    *whole document*, which permanently prevented the object from being persisted.
+    """
+    repository = ArchiveRepository(
+        query_builder=get_query_builder(), pubsub_service=get_pubsub_service()
+    )
+    now = datetime.now(timezone.utc)
+    archive = Archive(query=QueryParameters(query_id="000000000000000000000000"))
+    archive.tasks = [
+        TaskRecord(
+            task_name="some_failing_task",
+            run_count=1,
+            failed=[
+                TaskRun(
+                    task_id=uuid4(),
+                    started_at=now,
+                    finished_at=now,
+                    duration=0.0,
+                    arguments=_OVERSIZED_ARGUMENTS,
+                    exception=_OVERSIZED_EXCEPTION,
+                )
+            ],
+        )
+    ]
+
+    repository.save(archive)
+
+    saved_archive = repository.get_by_id(archive.id_)
+    assert saved_archive is not None
+    saved_failed_runs = saved_archive.tasks[0].failed
+    assert saved_failed_runs is not None
+    saved_run = saved_failed_runs[0]
+    assert saved_run.arguments == _OVERSIZED_ARGUMENTS
+    assert saved_run.exception == _OVERSIZED_EXCEPTION
+
+    # Cleanup
+    repository.delete_by_id(archive.id_)

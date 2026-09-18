@@ -23,13 +23,13 @@ class TestAiToolService:
     asset_list = ["knn1.txt", "knn2.txt", "knn3.txt", "knn4.txt", "knn5.txt"]
 
     @pytest.fixture(scope="class", autouse=True)
-    def setup_testfiles(self):
-        upload_many_assets(asset_names=self.asset_list)
+    @classmethod
+    def setup_testfiles(cls):
+        upload_many_assets(asset_names=cls.asset_list)
         fetch_files_from_api(
             search_string="*",
-            expected_no_of_files=len(self.asset_list),
-            max_wait_time_per_file=DEFAULT_MAX_WAIT_TIME_PER_FILE
-            * len(self.asset_list),
+            expected_no_of_files=len(cls.asset_list),
+            max_wait_time_per_file=DEFAULT_MAX_WAIT_TIME_PER_FILE * len(cls.asset_list),
         )
 
     def test_execute_query_returns_files(self):

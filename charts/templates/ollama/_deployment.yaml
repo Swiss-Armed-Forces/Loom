@@ -43,7 +43,11 @@ spec:
           type: RuntimeDefault
       containers:
         - name: {{ $component }}
-          image: {{ .Values.image.registry }}/{{ $values.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) $values.image.tag }}
+          {{- if $values.runtimeImage.repository }}
+          image: {{ .Values.image.registry }}/{{ $values.runtimeImage.repository }}:{{ $values.runtimeImage.tag | default .Chart.AppVersion | default .Values.image.tag }}
+          {{- else }}
+          image: {{ .Values.image.registry }}/{{ $values.image.repository }}:{{ $values.image.tag | default .Chart.AppVersion }}
+          {{- end }}
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports:
             - name: {{ $component }}
@@ -51,10 +55,8 @@ spec:
           env:
             - name: OLLAMA_HOST
               value: "0.0.0.0:{{ $values.service.port }}"
-            {{- if $values.pvc.enabled }}
             - name: OLLAMA_MODELS
               value: /ollama-models
-            {{- end }}
           startupProbe:
             httpGet:
               path: /api/ps
@@ -81,27 +83,25 @@ spec:
             periodSeconds: {{ default 20 $values.livenessProbe.periodSeconds }}
             failureThreshold: {{ default 6 $values.livenessProbe.failureThreshold }}
           {{- end }}
-          {{- if or $values.pvc.enabled .Values.trustedCertificates.certs }}
           volumeMounts:
-            {{- if $values.pvc.enabled }}
             - name: ollama-models
               mountPath: /ollama-models
-            {{- end }}
             {{- with include "app.trustedCerts.volumeMount" . }}{{ . | nindent 12 }}{{- end }}
-          {{- end }}
           {{- if $values.resources }}
           resources: {{- toYaml $values.resources | nindent 12 }}
           {{- end }}
-      {{- if or $values.pvc.enabled .Values.trustedCertificates.certs }}
       initContainers:
-        {{- if $values.pvc.enabled }}
         - name: copy-ollama-models
-          image: {{ .Values.image.registry }}/{{ $values.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) $values.image.tag }}
+          {{- if $values.modelsImage.repository }}
+          image: {{ .Values.image.registry }}/{{ $values.modelsImage.repository }}:{{ $values.modelsImage.tag | default .Chart.AppVersion }}
+          {{- else }}
+          image: {{ .Values.image.registry }}/{{ $values.image.repository }}:{{ $values.image.tag | default .Chart.AppVersion }}
+          {{- end }}
           command:
             - /bin/sh
             - -c
             - |
-              echo "Copying preloaded models to PVC..."
+              echo "Copying preloaded models to model storage..."
               cp --recursive --update /root/.ollama/models/* /ollama-models/ || true
           volumeMounts:
             - name: ollama-models
@@ -109,17 +109,15 @@ spec:
           {{- if $values.initContainer.resources }}
           resources: {{- toYaml $values.initContainer.resources | nindent 12 }}
           {{- end }}
-        {{- end }}
         {{- with include "app.trustedCerts.initContainer" . }}{{ . | nindent 8 }}{{- end }}
-      {{- end }}
-      {{- if or $values.pvc.enabled .Values.trustedCertificates.certs }}
       volumes:
-        {{- if $values.pvc.enabled }}
         - name: ollama-models
+          {{- if $values.pvc.enabled }}
           persistentVolumeClaim:
             claimName: {{ include "app.fullname" . }}-{{ $component }}-ollama-models
-        {{- end }}
+          {{- else }}
+          emptyDir: {}
+          {{- end }}
         {{- with include "app.trustedCerts.volumes" . }}{{ . | nindent 8 }}{{- end }}
-      {{- end }}
 {{- end }}
 {{- end -}}

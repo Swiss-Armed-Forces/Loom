@@ -38,12 +38,26 @@ vi.mock("react-i18next", () => ({
     useTranslation: () => ({ t: (key: string) => key }),
 }));
 vi.mock("@mui/icons-material", () => ({
+    AttachFile: () => null,
     BarChart: () => null,
     Description: () => null,
+    Download: () => null,
+    Flag: () => null,
+    Fullscreen: () => null,
+    LabelOutlined: () => null,
+    ManageSearch: () => null,
+    MarkEmailReadOutlined: () => null,
+    Share: () => null,
+    SubdirectoryArrowLeft: () => null,
+    SummarizeOutlined: () => null,
+    Translate: () => null,
     VerticalAlignBottom: () => null,
     VerticalAlignTop: () => null,
+    YoutubeSearchedForOutlined: () => null,
+    ZoomIn: () => null,
 }));
 vi.mock("@mui/material", () => ({
+    Box: ({ children }: { children: ReactNode }) => children,
     Divider: () => null,
     FormControl: ({ children }: { children: ReactNode }) => children,
     InputLabel: ({ children }: { children: ReactNode }) => children,

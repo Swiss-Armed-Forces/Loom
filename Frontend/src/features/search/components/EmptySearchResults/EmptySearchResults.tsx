@@ -1,32 +1,16 @@
 import {
-    AttachFile,
-    SubdirectoryArrowLeft,
-    Download,
-    Flag,
-    Fullscreen,
-    LabelOutlined,
-    ManageSearch,
-    MarkEmailReadOutlined,
-    Share,
-    SummarizeOutlined,
-    Translate,
-    YoutubeSearchedForOutlined,
-} from "@mui/icons-material";
-import {
     Alert,
     AlertTitle,
     Box,
     Card,
     CardContent,
     CardHeader,
-    Divider,
     Table,
     TableBody,
     TableCell,
     TableRow,
     Typography,
 } from "@mui/material";
-import { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 
 import { useAppDispatch, useAppSelector } from "@app/hooks";
@@ -35,6 +19,10 @@ import {
     selectQuery,
     selectQueryError,
 } from "@app/slices/searchSlice";
+import { selectResolvedBindings } from "@app/slices/searchSlice";
+import { shortcutRegistry } from "@features/search/hooks/shortcutRegistry";
+
+import KeyRecorder from "../KeyRecorder/KeyRecorder";
 
 import styles from "./EmptySearchResults.module.css";
 import { SEARCH_TIPS } from "./searchTips";
@@ -69,10 +57,6 @@ const sortChipSx = {
     "&:active": { bgcolor: "#fff176" },
 } as const;
 
-type HotkeyRow =
-    | { type: "row"; keys: string[]; label: ReactNode; icon?: ReactNode }
-    | { type: "divider" };
-
 interface EmptySearchResultsProps {
     forceQueryOverview?: boolean;
 }
@@ -83,228 +67,7 @@ export const EmptySearchResults = ({
     const searchQuery = useAppSelector(selectQuery);
     const { t } = useTranslation();
     const dispatch = useAppDispatch();
-
-    const HOTKEY_ROWS: HotkeyRow[] = [
-        {
-            type: "row",
-            keys: ["↓", "j"],
-            label: t("emptySearch.hotkeys.moveDown"),
-        },
-        {
-            type: "row",
-            keys: ["↑", "k"],
-            label: t("emptySearch.hotkeys.moveUp"),
-        },
-        {
-            type: "row",
-            keys: ["←", "h"],
-            label: t("emptySearch.hotkeys.prevTab"),
-        },
-        {
-            type: "row",
-            keys: ["→", "l"],
-            label: t("emptySearch.hotkeys.nextTab"),
-        },
-        {
-            type: "row",
-            keys: ["Shift + ←", "Shift + h"],
-            label: t("emptySearch.hotkeys.prevCenterTab"),
-        },
-        {
-            type: "row",
-            keys: ["Shift + →", "Shift + l"],
-            label: t("emptySearch.hotkeys.nextCenterTab"),
-        },
-        {
-            type: "row",
-            keys: ["i"],
-            label: t("emptySearch.hotkeys.openOrClose"),
-        },
-        {
-            type: "row",
-            keys: ["Enter", "Double-click"],
-            label: t("emptySearch.hotkeys.open"),
-        },
-        {
-            type: "row",
-            keys: ["Shift + Enter", "Shift + i", "Ctrl + click"],
-            label: t("emptySearch.hotkeys.openBackground"),
-        },
-        {
-            type: "row",
-            keys: ["Shift + click"],
-            label: (
-                <>
-                    {t("emptySearch.hotkeys.shiftClickNegate")}{" "}
-                    <Box
-                        component="span"
-                        sx={{
-                            opacity: 0.5,
-                            fontSize: "0.9em",
-                            whiteSpace: "nowrap",
-                        }}
-                    >
-                        (
-                        <ManageSearch
-                            fontSize="inherit"
-                            sx={{ verticalAlign: "middle" }}
-                        />{" "}
-                        {t("emptySearch.hotkeys.icon")})
-                    </Box>
-                </>
-            ),
-        },
-        {
-            type: "row",
-            keys: ["Ctrl + click"],
-            label: (
-                <>
-                    {t("emptySearch.hotkeys.ctrlClickAccumulate")}{" "}
-                    <Box
-                        component="span"
-                        sx={{
-                            opacity: 0.5,
-                            fontSize: "0.9em",
-                            whiteSpace: "nowrap",
-                        }}
-                    >
-                        (
-                        <ManageSearch
-                            fontSize="inherit"
-                            sx={{ verticalAlign: "middle" }}
-                        />{" "}
-                        {t("emptySearch.hotkeys.icon")})
-                    </Box>
-                </>
-            ),
-        },
-        {
-            type: "row",
-            keys: ["Escape"],
-            label: t("emptySearch.hotkeys.escapeAction"),
-        },
-        {
-            type: "row",
-            keys: ["/"],
-            label: t("emptySearch.hotkeys.focusSearch"),
-        },
-        { type: "divider" },
-        {
-            type: "row",
-            keys: ["f"],
-            icon: <Fullscreen fontSize="inherit" />,
-            label: (
-                <>
-                    <strong>F</strong>ullscreen
-                </>
-            ),
-        },
-        {
-            type: "row",
-            keys: ["Shift + f"],
-            icon: <Flag fontSize="inherit" />,
-            label: (
-                <>
-                    <strong>F</strong>lag / unflag
-                </>
-            ),
-        },
-        {
-            type: "row",
-            keys: ["s"],
-            icon: <MarkEmailReadOutlined fontSize="inherit" />,
-            label: (
-                <>
-                    <strong>S</strong>een / unseen
-                </>
-            ),
-        },
-        {
-            type: "row",
-            keys: ["t"],
-            icon: <LabelOutlined fontSize="inherit" />,
-            label: (
-                <>
-                    <strong>T</strong>ag
-                </>
-            ),
-        },
-        {
-            type: "row",
-            keys: ["n"],
-            icon: (
-                <SubdirectoryArrowLeft
-                    fontSize="inherit"
-                    sx={{ transform: "rotate(90deg)" }}
-                />
-            ),
-            label: (
-                <>
-                    <strong>N</strong>avigate to parent file
-                </>
-            ),
-        },
-        {
-            type: "row",
-            keys: ["Shift + n"],
-            icon: <AttachFile fontSize="inherit" />,
-            label: (
-                <>
-                    <strong>N</strong>avigate to child file
-                </>
-            ),
-        },
-        {
-            type: "row",
-            keys: ["Shift + c"],
-            icon: <Share fontSize="inherit" />,
-            label: (
-                <>
-                    <strong>C</strong>opy share link
-                </>
-            ),
-        },
-        {
-            type: "row",
-            keys: ["Shift + t"],
-            icon: <Translate fontSize="inherit" />,
-            label: (
-                <>
-                    <strong>T</strong>ranslate
-                </>
-            ),
-        },
-        {
-            type: "row",
-            keys: ["Shift + s"],
-            icon: <SummarizeOutlined fontSize="inherit" />,
-            label: (
-                <>
-                    <strong>S</strong>ummarize
-                </>
-            ),
-        },
-        {
-            type: "row",
-            keys: ["r"],
-            icon: <YoutubeSearchedForOutlined fontSize="inherit" />,
-            label: (
-                <>
-                    <strong>R</strong>e-index
-                </>
-            ),
-        },
-        {
-            type: "row",
-            keys: ["d"],
-            icon: <Download fontSize="inherit" />,
-            label: (
-                <>
-                    <strong>D</strong>ownload
-                </>
-            ),
-        },
-    ];
+    const resolvedBindings = useAppSelector(selectResolvedBindings);
     const queryError = useAppSelector(selectQueryError);
 
     const performSearch = (
@@ -513,53 +276,48 @@ export const EmptySearchResults = ({
                                     }}
                                 >
                                     <TableBody>
-                                        {HOTKEY_ROWS.map((row, i) => {
-                                            if (row.type === "divider") {
-                                                return (
-                                                    <TableRow
-                                                        key={`divider-${i}`}
-                                                    >
-                                                        <TableCell
-                                                            colSpan={2}
-                                                            sx={{
-                                                                py: "0.3rem !important",
-                                                            }}
-                                                        >
-                                                            <Divider />
-                                                        </TableCell>
-                                                    </TableRow>
-                                                );
-                                            }
-                                            return (
-                                                <TableRow
-                                                    key={row.keys.join("|")}
-                                                >
+                                        {shortcutRegistry
+                                            .filter(
+                                                (action) =>
+                                                    action.defaultKeys.length >
+                                                        0 &&
+                                                    action.id !== "results" &&
+                                                    action.id !== "open" &&
+                                                    action.id !==
+                                                        "openBackground" &&
+                                                    action.id !==
+                                                        "shiftClickNegate" &&
+                                                    action.id !==
+                                                        "ctrlClickAccumulate",
+                                            )
+                                            .map((action) => (
+                                                <TableRow key={action.id}>
                                                     <TableCell
                                                         sx={{
                                                             pr: 1.5,
                                                             verticalAlign:
                                                                 "top",
+                                                            py: "0.25rem !important",
                                                         }}
                                                     >
-                                                        {row.keys.map(
-                                                            (key, ki) => (
-                                                                <span key={key}>
-                                                                    <kbd>
-                                                                        {key}
-                                                                    </kbd>
-                                                                    {ki <
-                                                                        row.keys
-                                                                            .length -
-                                                                            1 &&
-                                                                        " / "}
-                                                                </span>
-                                                            ),
-                                                        )}
+                                                        <KeyRecorder
+                                                            actionId={action.id}
+                                                            currentKeys={
+                                                                resolvedBindings[
+                                                                    action.id
+                                                                ] ||
+                                                                action.defaultKeys
+                                                            }
+                                                            defaultKeys={
+                                                                action.defaultKeys
+                                                            }
+                                                            readOnly
+                                                        />
                                                     </TableCell>
                                                     <TableCell
                                                         sx={{
                                                             verticalAlign:
-                                                                "top",
+                                                                "middle",
                                                             pt: "6px",
                                                         }}
                                                     >
@@ -571,7 +329,7 @@ export const EmptySearchResults = ({
                                                                 gap: 0.5,
                                                             }}
                                                         >
-                                                            {row.icon && (
+                                                            {action.icon && (
                                                                 <Box
                                                                     component="span"
                                                                     sx={{
@@ -582,17 +340,23 @@ export const EmptySearchResults = ({
                                                                             "1rem",
                                                                     }}
                                                                 >
-                                                                    {row.icon}
+                                                                    {
+                                                                        action.icon
+                                                                    }
                                                                 </Box>
                                                             )}
                                                             <span>
-                                                                {row.label}
+                                                                {typeof action.labelKey ===
+                                                                "string"
+                                                                    ? t(
+                                                                          action.labelKey,
+                                                                      )
+                                                                    : action.labelKey}
                                                             </span>
                                                         </Box>
                                                     </TableCell>
                                                 </TableRow>
-                                            );
-                                        })}
+                                            ))}
                                     </TableBody>
                                 </Table>
                             </Box>

@@ -1,16 +1,14 @@
-import base64
 from types import SimpleNamespace
 from typing import cast
 from unittest.mock import MagicMock
 
 import httpx
 import pytest
-from common.dependencies import get_llm_vision_client
+from common.dependencies import get_llm_vision_agent
 from openai import APIConnectionError, APIError, InternalServerError
 
 from worker.index_file.tasks.image_description import (
-    ImageDescriptionError,
-    _ImageDescriptionResult,
+    LLMError,
     describe_image,
     is_image,
 )
@@ -20,33 +18,21 @@ from worker.index_file.tasks.image_description import (
 IMAGE_BYTES = b"not-a-real-image-but-good-enough-for-base64"
 
 
-def _vision_response(description: str | None) -> SimpleNamespace:
-    """Build a minimal stand-in for an OpenAI structured chat completion response."""
-    parsed = (
-        _ImageDescriptionResult(description=description)
-        if description is not None
-        else None
-    )
-    return SimpleNamespace(
-        choices=[SimpleNamespace(message=SimpleNamespace(parsed=parsed))]
-    )
-
-
 @pytest.fixture
-def vision_client() -> MagicMock:
-    """The vision LLM client, mocked and pre-set with a successful response.
+def vision_agent() -> MagicMock:
+    """The vision LLM agent, mocked and pre-set with a successful response.
 
     ``mock_init`` (run by the autouse ``dependencies_init`` fixture) installs the global
-    vision client as a ``MagicMock``; we fetch it through the public
-    ``get_llm_vision_client`` accessor and configure it.
+    vision agent as a ``MagicMock``; we fetch it through the public
+    ``get_llm_vision_agent`` accessor and configure it.
 
     Tests that care about the response override ``parse.return_value`` /
     ``parse.side_effect``; tests that only assert on the request arguments can use it
     as-is.
     """
-    client = cast(MagicMock, get_llm_vision_client())
-    client.beta.chat.completions.parse.return_value = _vision_response("ok")
-    return client
+    agent = cast(MagicMock, get_llm_vision_agent())
+    agent.run_sync.return_value.output = SimpleNamespace(description="ok")
+    return agent
 
 
 # ---------------------------------------------------------------------------
@@ -80,25 +66,15 @@ def test_is_image(extension: str, mimetype: str, expected: bool):
 # ---------------------------------------------------------------------------
 
 
-def test_describe_image_returns_model_content(vision_client: MagicMock):
-    vision_client.beta.chat.completions.parse.return_value = _vision_response(
-        "A photo of a cat."
+def test_describe_image_returns_model_content(vision_agent: MagicMock):
+    vision_agent.run_sync.return_value.output = SimpleNamespace(
+        description="A photo of a cat."
     )
 
     result = describe_image(memoryview(IMAGE_BYTES))
 
     assert result == "A photo of a cat."
-    vision_client.beta.chat.completions.parse.assert_called_once()
-
-
-def test_describe_image_sends_base64_encoded_image(vision_client: MagicMock):
-    describe_image(memoryview(IMAGE_BYTES))
-
-    messages = vision_client.beta.chat.completions.parse.call_args.kwargs["messages"]
-    image_part = messages[1]["content"][1]
-    expected = base64.b64encode(IMAGE_BYTES).decode("utf-8")
-    assert image_part["type"] == "image_url"
-    assert image_part["image_url"]["url"] == f"data:image/jpeg;base64,{expected}"
+    vision_agent.run_sync.assert_called_once()
 
 
 @pytest.mark.parametrize(
@@ -117,20 +93,17 @@ def test_describe_image_sends_base64_encoded_image(vision_client: MagicMock):
         ),
     ],
 )
-def test_describe_image_wraps_api_error(vision_client: MagicMock, api_error: APIError):
-    # The OpenAI SDK raises openai.APIError subclasses -- never
-    # httpx.HTTPError -- for transport and HTTP failures.
-    vision_client.beta.chat.completions.parse.side_effect = api_error
+def test_describe_image_wraps_api_error(vision_agent: MagicMock, api_error: APIError):
+    vision_agent.run_sync.side_effect = api_error
 
-    with pytest.raises(ImageDescriptionError):
+    with pytest.raises(LLMError):
         describe_image(memoryview(IMAGE_BYTES))
 
 
 def test_describe_image_returns_empty_string_when_model_returns_no_content(
-    vision_client: MagicMock,
+    vision_agent: MagicMock,
 ):
-    vision_client.beta.chat.completions.parse.return_value = _vision_response(None)
-
+    vision_agent.run_sync.return_value.output = SimpleNamespace(description="")
     result = describe_image(memoryview(IMAGE_BYTES))
 
     assert result == ""

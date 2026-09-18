@@ -4,6 +4,7 @@ from contextlib import contextmanager
 from typing import Generator
 
 import pytest
+from common.celery_app._queues import get_terminal_queues
 from common.dependencies import get_celery_app, get_queues_service
 
 from utils.settings import settings
@@ -18,17 +19,29 @@ _UNROUTABLE_QUEUE = (
 )
 
 _POLL_INTERVAL = 0.5
-_POLL_TIMEOUT = 10
+# Must comfortably exceed RabbitMQ's collect_statistics_interval (10s, see
+# charts/templates/rabbit/configMap.yaml): the management API these counts come from
+# only refreshes on that cadence, so a message can take that long to become visible.
+_POLL_TIMEOUT = 60
 
 
 @pytest.fixture(autouse=True)
-def ensure_unroutable_queue_empty() -> Generator[None, None, None]:
-    """Wait for loom:unroutable to be empty before each test.
+def ensure_unroutable_queue_ready() -> Generator[None, None, None]:
+    """Ensure loom:unroutable exists, is bound to ae-loom, and is empty.
 
-    The global wipe_data fixture purges all queues between tests, but the RabbitMQ
-    management API lags slightly. Polling here ensures the count has settled to zero
-    before any assertion is made.
+    The global wipe_data fixture purges all queues and may cause worker restarts.
+    declare_terminal_queues only runs on the worker_ready signal, so there is a window
+    where the ae-loom → loom:unroutable binding does not yet exist when the test sends a
+    message.  Declaring the queue from the test process itself closes that race.
+
+    After declaration, poll until the management API reports zero messages — the stats
+    endpoint lags slightly behind the purge.
     """
+    app = get_celery_app()
+    with app.pool.acquire(block=True) as conn:  # type: ignore[attr-defined]
+        for queue in get_terminal_queues():
+            queue(conn.default_channel).declare()  # type: ignore[operator, attr-defined]
+
     deadline = time.monotonic() + _POLL_TIMEOUT
     while time.monotonic() < deadline:
         if get_queues_service().get_message_count(queue_name=_UNROUTABLE_QUEUE) == 0:

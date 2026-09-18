@@ -33,7 +33,7 @@ RUN set -exu \
 #
 # ca-certificates
 #
-ARG CA_CERTIFICATES_VERSION="20260611"
+ARG CA_CERTIFICATES_VERSION="20260909"
 RUN set -exu \
     && apk add --no-cache \
     ca-certificates~=${CA_CERTIFICATES_VERSION}

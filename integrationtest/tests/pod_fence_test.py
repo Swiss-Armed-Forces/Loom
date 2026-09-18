@@ -44,7 +44,10 @@ def get_pod_ip(kub: client.api.core_v1_api.CoreV1Api, name: str) -> str | None:
 
 
 def exec_curl(
-    kub: client.api.core_v1_api.CoreV1Api, pod: str | None, host: str | None
+    kub: client.api.core_v1_api.CoreV1Api,
+    pod: str | None,
+    container: str,
+    host: str | None,
 ) -> int:
     assert pod is not None
     assert host is not None
@@ -53,6 +56,9 @@ def exec_curl(
         kub.connect_get_namespaced_pod_exec,
         name=pod,
         namespace="loom",
+        # Pods that run sidecars (e.g. tika's tmp-reaper) have more than one
+        # container, and the exec API rejects the request unless one is named.
+        container=container,
         command=["curl", host, "--max-time", "5"],
         stderr=True,
         stdin=False,
@@ -74,7 +80,7 @@ def exec_curl(
 def test_external_connection_block(
     kub: client.api.core_v1_api.CoreV1Api, pod: str, host: str
 ):
-    response = exec_curl(kub, get_pod_name(kub, pod), host)
+    response = exec_curl(kub, get_pod_name(kub, pod), pod, host)
 
     # Curl 28 error code: Timeout
     assert response == 28
@@ -87,7 +93,7 @@ def test_external_connection_block(
 def test_internal_connection_block(
     kub: client.api.core_v1_api.CoreV1Api, pod: str, host: str
 ):
-    response = exec_curl(kub, get_pod_name(kub, pod), get_pod_ip(kub, host))
+    response = exec_curl(kub, get_pod_name(kub, pod), pod, get_pod_ip(kub, host))
 
     # Curl 28 error code: Timeout
     assert response == 28
@@ -99,7 +105,7 @@ def test_internal_connection_block(
 def test_internal_connection_open(
     kub: client.api.core_v1_api.CoreV1Api, pod: str, host: str
 ):
-    response = exec_curl(kub, get_pod_name(kub, pod), get_pod_ip(kub, host))
+    response = exec_curl(kub, get_pod_name(kub, pod), pod, get_pod_ip(kub, host))
 
     # Curl 0 error code: OK
     assert response == 0

@@ -17,8 +17,6 @@ from common.ai_context.tool_models import (
 from common.file.file_repository import TranslatedLanguage
 from common.services.task_service import TaskService
 
-_TASK_TIMEOUT = 300
-
 
 class TaskCallService(TaskService):
     """Dispatches single worker tasks and blocks until their result is available."""
@@ -33,7 +31,7 @@ class TaskCallService(TaskService):
             "worker.ai.tasks.suggest_queries_tool.suggest_queries_task",
             args=[query_description, context_id, folder_path],
             root_id=str(uuid4()),
-        ).get(timeout=_TASK_TIMEOUT)
+        ).get()
         return SuggestQueriesResult.model_validate(result)
 
     def call_execute_query_tool(
@@ -46,7 +44,7 @@ class TaskCallService(TaskService):
             "worker.ai.tasks.execute_query_tool.execute_query_tool_task",
             args=[query_string, context_id, folder_path],
             root_id=str(uuid4()),
-        ).get(timeout=_TASK_TIMEOUT)
+        ).get()
         return ExecuteQueryResult.model_validate(result)
 
     def call_list_folder_contents_tool(
@@ -56,7 +54,7 @@ class TaskCallService(TaskService):
             "worker.ai.tasks.list_folder_contents_tool.list_folder_contents_tool_task",
             args=[folder_path, context_id],
             root_id=str(uuid4()),
-        ).get(timeout=_TASK_TIMEOUT)
+        ).get()
         return ListFolderContentsResult.model_validate(result)
 
     def call_search_by_filename_tool(
@@ -66,7 +64,7 @@ class TaskCallService(TaskService):
             "worker.ai.tasks.search_by_filename_tool.search_by_filename_tool_task",
             args=[filename, context_id],
             root_id=str(uuid4()),
-        ).get(timeout=_TASK_TIMEOUT)
+        ).get()
         return SearchByFilenameResult.model_validate(result)
 
     def call_get_file_tool(self, context_id: UUID, file_id: str) -> GetFileResult:
@@ -74,7 +72,7 @@ class TaskCallService(TaskService):
             "worker.ai.tasks.get_file_tool.get_file_tool_task",
             args=[file_id, context_id],
             root_id=str(uuid4()),
-        ).get(timeout=_TASK_TIMEOUT)
+        ).get()
         return GetFileResult.model_validate(result)
 
     def call_get_file_field_tool(
@@ -84,7 +82,7 @@ class TaskCallService(TaskService):
             "worker.ai.tasks.get_file_tool.get_file_field_tool_task",
             args=[file_id, field, context_id],
             root_id=str(uuid4()),
-        ).get(timeout=_TASK_TIMEOUT)
+        ).get()
         return GetFileFieldResult.model_validate(result)
 
     def call_rag_search_tool(self, context_id: UUID, query: str) -> RagSearchResult:
@@ -92,7 +90,7 @@ class TaskCallService(TaskService):
             "worker.ai.tasks.rag_tool.rag_search_tool_task",
             args=[query, context_id],
             root_id=str(uuid4()),
-        ).get(timeout=_TASK_TIMEOUT)
+        ).get()
         return RagSearchResult.model_validate(result)
 
     def call_summarize_file_tool(
@@ -102,7 +100,7 @@ class TaskCallService(TaskService):
             "worker.ai.tasks.summarize_file_tool.summarize_file_tool_task",
             args=[file_id, context_id],
             root_id=str(uuid4()),
-        ).get(timeout=_TASK_TIMEOUT)
+        ).get()
         return SummarizeFileResult(file_id=file_id, summary=result or "")
 
     def call_translate_file_tool(
@@ -112,7 +110,7 @@ class TaskCallService(TaskService):
             "worker.ai.tasks.translate_file_tool.translate_file_tool_task",
             args=[file_id, source_language, context_id],
             root_id=str(uuid4()),
-        ).get(timeout=_TASK_TIMEOUT)
+        ).get()
         translation = (
             TranslatedLanguage.model_validate(result[0]).text if result else ""
         )
@@ -127,5 +125,5 @@ class TaskCallService(TaskService):
             "worker.ai.tasks.describe_image_tool.describe_image_tool_task",
             args=[file_id, context_id],
             root_id=str(uuid4()),
-        ).get(timeout=_TASK_TIMEOUT)
+        ).get()
         return DescribeImageResult(file_id=file_id, description=result or "")

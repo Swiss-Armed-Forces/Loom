@@ -64,7 +64,8 @@ def _files_tree(
 
 class TestFileTree:
     @pytest.fixture(scope="class", autouse=True)
-    def setup_testfiles(self):
+    @classmethod
+    def setup_testfiles(cls):
         _upload_test_assets(FILE_COUNT_TOP_LEVEL)
         _upload_test_assets(
             FILE_COUNT_BELOW_FRONTEND_LIMIT, Path(TREE_ASSET_FRONTEND_FOLDER_NAME)
@@ -220,13 +221,14 @@ class TestFileTreeSpine:
     SPINE_FOLDER = "a/b/c"
 
     @pytest.fixture(scope="class", autouse=True)
-    def setup_testfiles(self):
+    @classmethod
+    def setup_testfiles(cls):
         upload_bytes_asset(
             b"spine test file",
-            f"//api-upload/{self.SPINE_FOLDER}/{self.SPINE_FILE_NAME}",
+            f"//api-upload/{cls.SPINE_FOLDER}/{cls.SPINE_FILE_NAME}",
         )
         fetch_files_from_api(
-            search_string=f"filename:{self.SPINE_FILE_NAME}",
+            search_string=f"filename:{cls.SPINE_FILE_NAME}",
             expected_no_of_files=1,
             expected_state=None,
         )

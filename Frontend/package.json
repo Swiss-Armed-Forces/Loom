@@ -22,8 +22,8 @@
         "lint:fix": "prettier --write . && eslint --max-warnings 0 --fix ."
     },
     "dependencies": {
-        "@ag-ui/client": "^0.0.57",
-        "@ag-ui/core": "^0.0.57",
+        "@ag-ui/client": "^0.0.59",
+        "@ag-ui/core": "^0.0.59",
         "@emotion/styled": "^11.14.1",
         "@mui/icons-material": "^9.0.0",
         "@mui/material": "^9.0.0",

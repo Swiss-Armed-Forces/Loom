@@ -34,6 +34,7 @@ import {
 } from "@app/slices/commonSlice";
 import { FileDetailTab } from "@features/common/utils/enums";
 import { CombinedStats, SearchQuery } from "@features/common/utils/model";
+import { shortcutRegistry } from "@features/search/hooks/shortcutRegistry";
 import {
     DEFAULT_HISTOGRAM_STAT,
     DEFAULT_TERMS_STAT,
@@ -46,7 +47,7 @@ export const LeftSidebarPanel = {
     FOLDER: "folder",
     TAGS: "tags",
     QUERIES: "queries",
-    CARD_CUSTOMIZATION: "card_customization",
+    CUSTOMIZATION: "customization",
     CHAT: "chat",
 } as const;
 
@@ -173,6 +174,7 @@ export interface SearchState {
     leftSidebarPanel: LeftSidebarPanel | null;
     rightSidebarTab: RightSidebarTab | null;
     stats: CombinedStats;
+    bindings: Record<string, string[]>;
     files: {
         [fileId: string]: {
             meta: GetFilesFileEntry | null;
@@ -309,6 +311,8 @@ export const SEARCH_STATE_DOCS = {
         "string | null — file ID queued to open in fullscreen",
     showChatReasoning:
         "boolean — whether AI chat reasoning/thinking output is expanded",
+    bindings:
+        "Record<string, string[]> — custom keyboard shortcut bindings (actionId → keys)",
 } satisfies Record<keyof SearchState, string>;
 
 export const QUERY_FAILED_FILES = "state:failed";
@@ -381,6 +385,7 @@ const initialState: SearchState = {
     filteredFolderViewExpandedNodes: [],
     pendingFullscreenFileId: null,
     showChatReasoning: false,
+    bindings: {},
     ...persistedState,
     // Restore the last query (text + sort) so stale data renders immediately.
     // Strip sortId (pagination cursor) so the first real fetch starts from page 1.
@@ -945,6 +950,20 @@ export const searchSlice = createSlice({
                 state.files[preview.fileId].preview = preview;
             }
         },
+        setBinding: (
+            state,
+            action: PayloadAction<{ actionId: string; keys: string[] }>,
+        ) => {
+            state.bindings[action.payload.actionId] = [
+                action.payload.keys.join(" + "),
+            ];
+        },
+        resetBinding: (state, action: PayloadAction<string>) => {
+            delete state.bindings[action.payload];
+        },
+        resetAllBindings: (state) => {
+            state.bindings = {};
+        },
     },
     extraReducers: (builder) => {
         builder
@@ -1163,6 +1182,9 @@ export const {
     setShowSortIndicator,
     setShowFieldActions,
     toggleShowChatReasoning,
+    setBinding,
+    resetBinding,
+    resetAllBindings,
 } = searchSlice.actions;
 
 export const openFileTabThunk = createAsyncThunk(
@@ -1454,6 +1476,43 @@ export const selectCardElementVisibility = createSelector(
 export const selectShowChatReasoning = createSelector(
     selectSearch,
     (search) => search.showChatReasoning,
+);
+
+export const selectShortcutsBindings = createSelector(
+    selectSearch,
+    (search) => search.bindings,
+);
+
+export const selectResolvedBindings = createSelector(
+    [selectShortcutsBindings],
+    (bindings) => {
+        const resolved: Record<string, string[]> = {};
+        for (const action of shortcutRegistry) {
+            resolved[action.id] =
+                bindings[action.id] !== undefined
+                    ? bindings[action.id]
+                    : action.defaultKeys;
+        }
+        return resolved;
+    },
+);
+
+export const selectReverseBindings = createSelector(
+    selectResolvedBindings,
+    (resolvedBindings) => {
+        const reverse: Record<string, string> = {};
+        for (const [actionId, keys] of Object.entries(resolvedBindings)) {
+            for (const key of keys) {
+                // Normalize the key for case-insensitive matching
+                const normalizedKey = key
+                    .split(" + ")
+                    .map((part) => part.trim().toLowerCase())
+                    .join(" + ");
+                reverse[normalizedKey] = actionId;
+            }
+        }
+        return reverse;
+    },
 );
 
 export default searchSlice.reducer;

@@ -133,9 +133,9 @@ externalSecrets:
       remoteRef:
         key: ""
         property: ""
-    llm__chat__api_key:
+    llm__synthesize__api_key:
       enabled: false
-      name: loom-llm-chat-api-key
+      name: loom-llm-synthesize-api-key
       remoteRef:
         key: ""
         property: ""
@@ -271,6 +271,7 @@ pipeline:
 
 # Shared LLM defaults — override per sub-key via YAML anchors
 _llmDefaults: &llm-defaults
+  backend: null
   endpoint: null      # set per sub-key in configmap when null
   api_key: null
   model: huihui_ai/qwen3.5-abliterated:9b
@@ -297,6 +298,7 @@ llm:
   agent:
     <<: *llm-defaults
     merge_system_messages: true
+    tool_timeout: null
 
   summarization_key_points:
     <<: *llm-defaults
@@ -320,7 +322,7 @@ llm:
   rerank:
     <<: *llm-defaults
 
-  chat:
+  synthesize:
     <<: *llm-defaults
 
   vision:
@@ -900,35 +902,6 @@ seaweedfs:
         cpu: "0.1"
         memory: "100Mi"
 
-  # Filer Metadata Backup to SQLite
-  # Backs up filer metadata to a local SQLite database for disaster recovery
-  filerMetaBackup:
-    enabled: true
-    priorityClass: infrastructure
-    filerDir: "/"
-    pvc:
-      # Direct PVC storage size override (e.g. "3Gi"). When set, storageMultiplier is ignored.
-      # When null, size is computed from redis-filer memory limit * storageMultiplier.
-      storage: null
-      # Multiplier for PVC storage size relative to redis-filer memory limit.
-      # PVC size = redis-filer memory limit * storageMultiplier
-      # This ensures enough space to store all metadata that could fit in Redis + headroom.
-      storageMultiplier: 2
-      storageClass: null
-      customLabels: {}
-      customAnnotations: {}
-    # SQLite filer sidecar for restore operations
-    sqliteFiler:
-      port: 18889
-      grpcPort: 28889
-    resources:
-      requests:
-        cpu: "0.05"
-        memory: "64Mi"
-      limits:
-        cpu: "0.2"
-        memory: "256Mi"
-
   # Custom labels specific to seaweedfs resources
   customLabels: {}
   customAnnotations: {}
@@ -993,6 +966,14 @@ ollama:
     minReplicas: 1
     targetQueueLength: 10
     queueToWatch: '(loom:default|loom:worker.+)'
+  # Runtime image (GPU-specific variants)
+  runtimeImage:
+    repository: swiss-armed-forces/cyber-command/cea/loom/ollama-runtime-nvidia
+  # Models image (GPU-agnostic, contains pre-pulled models)
+  # Dev/prod differentiation via Dockerfile target (dev vs production)
+  modelsImage:
+    repository: swiss-armed-forces/cyber-command/cea/loom/ollama-models
+  # Legacy image config (backward compatibility)
   image:
     repository: swiss-armed-forces/cyber-command/cea/loom/ollama
   service:
@@ -1325,9 +1306,53 @@ tika:
     limits:
       cpu: "4"
       memory: "6Gi"
-  javaOpts: "-XX:InitialRAMPercentage=90 -XX:MaxRAMPercentage=90"
+  # Extra JVM flags, appended after the derived heap flags and therefore taking
+  # precedence — the JVM honours the last occurrence of a repeated -XX flag.
+  javaOpts: ""
   taskTimeoutSeconds: 300
-  tmpSizeLimit: 2Gi
+  # Tika's memory budget, all fractions of resources.limits.memory. The heap is
+  # not configured directly: it is given whatever the RAM-backed /tmp and the
+  # reserve leave over, so raising one share lowers the heap automatically.
+  #   heap % = 100 - tmp.sizeFactor - memoryReserveFactor
+  # With the defaults: 25% tmp + 15% reserve -> 60% heap. Keep the two factors
+  # summing well below 1.0, or nothing is left for the heap.
+  #
+  # Held back for non-heap JVM memory (metaspace, code cache, thread stacks,
+  # direct buffers) and the ImageMagick and Tesseract subprocesses OCR spawns.
+  memoryReserveFactor: 0.15
+  # RAM-backed (tmpfs) scratch volume for Tika's /tmp. It is cleared on every
+  # container start, so an OOM-killed JVM cannot inherit the scratch files that
+  # caused the kill.
+  tmp:
+    # Fraction of resources.limits.memory. Takes precedence over sizeLimit
+    # whenever a memory limit is configured.
+    sizeFactor: 0.25
+    # Absolute fallback, used when sizeFactor is null or no memory limit is
+    # configured (e.g. values-no-resources.yaml).
+    sizeLimit: 2Gi
+    # A parse that is killed - task timeout, OOM - never runs its cleanup
+    # handlers, so its scratch files stay behind. They accumulate until /tmp is
+    # full, and from then on every parse fails, not just the oversized one that
+    # started it: Tika answers with an error, the worker's Tika call raises and
+    # the indexing pipeline falls back to the strings extractor, which indexes
+    # raw byte sequences instead of document text. Clearing /tmp on container
+    # start only heals this at a restart, so a sidecar sweeps the leftovers of a
+    # long-running pod.
+    reaper:
+      enabled: true
+      # How often to sweep.
+      intervalSeconds: 60
+      # Multiple of taskTimeoutSeconds a scratch entry's age must exceed before
+      # it counts as orphaned. A live parse cannot outlive its own task timeout,
+      # so anything past that multiple is owned by a process that is already
+      # gone. Integer, >= 1.
+      maxAgeFactor: 2
+      resources:
+        requests:
+          cpu: "10m"
+          memory: "16Mi"
+        limits:
+          memory: "64Mi"
   # Custom labels specific to tika resources
   customLabels: {}
   customAnnotations: {}

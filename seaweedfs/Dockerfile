@@ -9,15 +9,6 @@ FROM ${DOCKER_REGISTRY}/chrislusf/seaweedfs:${SEAWEEDFS_IMAGE_VERSION}@${SEAWEED
 # Set timezone to UTC
 ENV TZ=UTC
 
-# Dependencies for restore.sh
-ARG SQLITE_VERSION="3.53"
-RUN set -exu \
-    && apk add --no-cache \
-    sqlite~=${SQLITE_VERSION}
-
-# Copy restore script for filer metadata backup
-COPY --chmod=755 restore.sh /scripts/restore.sh
-
 # SeaweedFS ports:
 # 9333 - Master HTTP
 # 19333 - Master gRPC

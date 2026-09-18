@@ -1,8 +1,20 @@
+from collections import OrderedDict, defaultdict
 from hashlib import sha256
 from pickle import dumps, loads
+from uuid import UUID
+
+from pydantic import BaseModel
 
 from common.dependencies import get_redis_cache_client
-from common.utils.cache import cache, cache_get, cache_invalidate, cache_set
+from common.services.lazybytes_service import TempLazyBytes
+from common.utils.cache import (
+    CACHE_KEY_FORMAT,
+    _get_key,
+    cache,
+    cache_get,
+    cache_invalidate,
+    cache_set,
+)
 
 
 @cache(key_function=lambda: "my-key")
@@ -93,6 +105,102 @@ def test_invalidate_existing_key():
     assert result is True
     assert redis_client.hdel.called
     assert redis_client.zrem.called
+
+
+class _KeyModel(BaseModel):
+    payload: TempLazyBytes
+    frames: int = 0
+
+
+def _fields_set_orders(model: BaseModel) -> list[BaseModel]:
+    """Same model, with ``__pydantic_fields_set__`` inserted in either order.
+
+    A two-member set whose members share a bucket iterates in insertion order, so this
+    is exactly the difference two processes saw between a freshly built model and one
+    restored from a pickle.
+    """
+    names = sorted(model.__pydantic_fields_set__)
+    variants = []
+    for order in (names, list(reversed(names))):
+        variant = model.model_copy()
+        fields_set: set[str] = set()
+        for name in order:
+            fields_set.add(name)
+        object.__setattr__(variant, "__pydantic_fields_set__", fields_set)
+        variants.append(variant)
+    return variants
+
+
+def test_key_is_stable_for_equal_models():
+    """A model argument must produce one cache key, not one per process.
+
+    ``dumps()`` writes ``__pydantic_fields_set__`` in set-iteration order, which follows
+    the interpreter's hash seed and the insertion order. Left in the key, it made a
+    worker miss on a value another worker had just cached.
+    """
+    model = _KeyModel(
+        payload=TempLazyBytes(service_id=UUID(int=1)),
+        frames=1,
+    )
+
+    keys = {
+        _get_key(None, "ns", (variant,), {}) for variant in _fields_set_orders(model)
+    }
+
+    assert len(keys) == 1
+
+
+def test_key_distinguishes_different_models():
+    """Stability must not come from collapsing distinct arguments onto one key."""
+    payload = TempLazyBytes(service_id=UUID(int=1))
+
+    assert _get_key(
+        None, "ns", (_KeyModel(payload=payload, frames=1),), {}
+    ) != _get_key(None, "ns", (_KeyModel(payload=payload, frames=2),), {})
+
+
+def test_key_is_stable_for_equal_kwargs():
+    """Keyword order at the call site must not decide which cache entry is read.
+
+    ``_default_key_function()`` hands ``kwargs`` straight to ``dumps()``, which writes a
+    dict in insertion order — so two call sites passing the same arguments in a
+    different order cached the same value twice.
+    """
+    assert _get_key(None, "ns", (), {"alpha": 1, "beta": 2}) == _get_key(
+        None, "ns", (), {"beta": 2, "alpha": 1}
+    )
+
+
+def test_key_distinguishes_container_types():
+    """Every container canonicalizes to one shape, which must still name its type."""
+    keys = {
+        _get_key(None, "ns", (container,), {})
+        for container in ([1, 2], (1, 2), {1, 2}, frozenset({1, 2}), {1: 2})
+    }
+
+    assert len(keys) == 5
+
+
+def test_key_distinguishes_container_subclasses_by_hidden_state():
+    """A container subclass may mean something its contents do not show.
+
+    ``OrderedDict`` compares by order, ``defaultdict`` by factory. A stand-in built from
+    the items alone hands two unequal values one key, and a key that is wrong serves
+    another call's cached value — where a key that is merely unstable misses.
+    """
+    assert _get_key(None, "ns", (OrderedDict([("a", 1), ("b", 2)]),), {}) != _get_key(
+        None, "ns", (OrderedDict([("b", 2), ("a", 1)]),), {}
+    )
+    assert _get_key(None, "ns", (defaultdict(list),), {}) != _get_key(
+        None, "ns", (defaultdict(set),), {}
+    )
+
+
+def test_key_unchanged_for_arguments_without_models():
+    """Content-hash keys must keep hashing to what they always did."""
+    assert _get_key(lambda: "my-key", "ns", (), {}) == CACHE_KEY_FORMAT.format(
+        namespace="ns", key=sha256(dumps("my-key")).hexdigest()
+    )
 
 
 def test_invalidate_nonexistent_key():

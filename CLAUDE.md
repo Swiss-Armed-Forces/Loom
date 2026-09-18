@@ -138,6 +138,8 @@ All commands below are provided by devenv scripts (run `devenv-help` to see full
   in agentic mode; omit the argument to fix the MR for the current branch
 - `aitools mr-create` / `mr-describe` / `mr-update` - MR lifecycle helpers
 - `aitools job-diagnose <job-id>` - Diagnose a specific CI job failure
+- All `aitools` subcommands operate on the branch of the *current* working tree, checking it out
+  in place - run them from your worktree, never from the user's primary checkout
 
 ## Development Workflow
 
@@ -249,10 +251,48 @@ configuration, or deployment — and if so, update the relevant documentation:
 
 If none of the documentation files need updating, proceed directly to the commit.
 
+### Implementing Plans in a Git Worktree
+
+Implementation work that ends in a commit belongs in a dedicated git worktree.
+**Never implement directly in the primary checkout.** That checkout is where the user runs the
+cluster and keeps their own branch checked out, and every `aitools` subcommand checks out branches
+in the *current* working tree — running one there moves the user's branch under their feet.
+
+- Create the issue and let GitLab's "Create Merge Request" button name the branch (see
+  `### Git Workflow` below), then `git worktree add ../loom-worktrees/<branch> <branch>`
+- Place worktrees **outside** the repo — there is no `.dockerignore`, so a nested worktree leaks
+  into Docker build contexts, pytest collection and Skaffold watches
+- Run `direnv allow` once in the new worktree; devenv files are tracked, but direnv trust is
+  per directory
+- A branch cannot be checked out twice → on "already checked out", ask the user to move the
+  primary checkout off that branch rather than working in place
+
+**State that does not follow into a worktree:**
+
+- `devenv.local.nix` → gitignored, holds `GITLAB_TOKEN`; copy it across or every `aitools` GitLab
+  command fails (see `Documentation/devenv-setup.md`)
+- `charts/values-overwrites.yaml` and `charts/values-up-flags.yaml` → tracked but flagged
+  `--skip-worktree` in the primary index, so a worktree silently gets the near-empty committed
+  versions; copy them if local Helm overrides matter
+- `.claude/settings.local.json` → untracked, so expect extra permission prompts; never edit
+  settings files to silence them
+
+**Keep cluster work in the primary checkout:** `up`, `down`, `build`, `wipe-data`,
+`run-integrationtest` and all `kubernetes-*` commands. Their minikube, Skaffold and Docker caches
+are gitignored per-directory, so a worktree would build a second cluster and contend for the same
+`*.loom` hosts entries. Safe in a worktree: `backend-test`, `frontend-test`, `frontend-build`,
+`generate-frontend-api`, `poetry-lock`, and all `git` and `aitools` commands.
+
+**Finishing up:** commit and push from the worktree — git config, hooks and refs are shared. Leave
+the MR in **Draft** and the worktree in place; report its path, the branch and the MR so the user
+can review the diff there. **Never merge, rebase the primary checkout, or remove the worktree on
+your own.** Remove one only when asked, with `git worktree remove <path>` and never `--force`.
+
 ### Git Workflow
 
 Per `CONTRIBUTING.md`:
 
+- Implement in a dedicated worktree, not the primary checkout (see the section above)
 - Always create an issue first
 - Use GitLab's "Create Merge Request" button from the issue (auto-links and names branch)
 - Open MR early as **Draft**
