@@ -1,6 +1,7 @@
 import logging
 from uuid import UUID
 
+from common.agent_builder import sanitize_document_text
 from common.ai_context.tool_models import (
     ExecuteQueryResult,
     ExecuteQueryResultFile,
@@ -11,7 +12,6 @@ from common.services.query_builder import QueryParameters
 from elasticsearch import BadRequestError
 
 from worker.ai.infra.ai_context_processing_task import AiContextProcessingTask
-from worker.utils.prompt_sanitizer import sanitize_document_text
 
 logger = logging.getLogger(__name__)
 

@@ -1,6 +1,5 @@
 import pytest
-
-from worker.utils.prompt_sanitizer import sanitize_document_text
+from common.agent_builder import sanitize_document_text
 
 
 @pytest.mark.parametrize(

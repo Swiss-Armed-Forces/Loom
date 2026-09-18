@@ -5,9 +5,10 @@ from common.dependencies import (
     get_file_repository,
     get_lazybytes_service,
 )
+from common.file.file_repository import DetectedLanguage
 
 from worker.ai.infra.ai_context_processing_task import AiContextProcessingTask
-from worker.index_file.tasks.translate import DetectedLanguage, translate_task
+from worker.index_file.tasks.translate import translate_task
 from worker.index_file.translate_file_task import ON_DEMAND_TRANSLATION_CONFIDENCE
 
 app = get_celery_app()

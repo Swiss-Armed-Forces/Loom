@@ -18,6 +18,8 @@ This will help make the setup process smooth and easy!
 - `kubectl` (>= [v1.30.0](https://kubernetes.io/de/docs/tasks/tools/install-kubectl/))
 - `skaffold` (>= [v2.12.0](https://skaffold.dev/docs/install/))
 - `yq` (>= [v3.0.0](https://github.com/kislyuk/yq#installation))
+- `nvidia-smi` (for NVIDIA GPU users: part of NVIDIA CUDA toolkit)
+- `rocm-smi-lib` (for AMD GPU users: `sudo apt install rocm-smi-lib`)
 
 ## System Requirements
 
@@ -96,7 +98,9 @@ This method is designed for simplicity and is a great starting point!
     - If you have compatible GPUs and want to enable GPU support:
 
       ```bash
-      ./up.sh --gpus all
+      ./up.sh --gpus nvidia    # For NVIDIA GPUs
+      # or
+      ./up.sh --gpus amd       # For AMD GPUs
       ```
 
 > 💡 `up.sh` supports many more options (custom encryption keys, CA bundles, resource tuning,
@@ -187,8 +191,11 @@ All values files are located in the [`./charts`](../charts) directory. They can 
 - **[`values-overwrites.yaml`](../charts/values-overwrites.yaml)** — Your personal override file.
   Skaffold picks it up automatically on every deploy, so put any local customisations here rather
   than editing the defaults.
-- **[`values-gpu.yaml`](../charts/values-gpu.yaml)** — Use this when your nodes have NVIDIA GPUs
+- **[`values-nvidia-gpu.yaml`](../charts/values-nvidia-gpu.yaml)** — Use this when your nodes have NVIDIA GPUs
   and you want faster AI inference and translation. Without it, all AI workloads run on CPU only.
+- **[`values-amd-gpu.yaml`](../charts/values-amd-gpu.yaml)** — Use this when your nodes have AMD
+  GPUs (ROCm) and you want faster AI inference and translation. Model images are GPU-agnostic and
+  work with both NVIDIA and AMD runtime images.
 - **[`values-scaling.yaml`](../charts/values-scaling.yaml)** — Enable autoscaling (KEDA for
   queue-driven services, HPA for CPU/memory-driven services) and cluster-wide resource quotas.
   Use with `up --scaling` or pass via `--values` to Helm.
@@ -306,9 +313,9 @@ externalSecrets:
         property: secret_key
 
     # External LLM API key
-    llm__chat__api_key:
+    llm__synthesize__api_key:
       enabled: true
-      name: loom-llm-chat-api-key
+      name: loom-llm-synthesize-api-key
       remoteRef:
         key: secret/loom/llm
         property: chat_api_key
@@ -320,6 +327,65 @@ the corresponding entry in the settings ConfigMap.
 
 The full list of supported keys is documented in `charts/values.yaml` under
 `externalSecrets.secrets`.
+
+### Ollama GPU Configuration
+
+Loom separates Ollama into runtime images (GPU-specific) and model images (GPU-agnostic):
+
+- **Runtime images**: `ollama-runtime-nvidia`, `ollama-runtime-rocm` — contain Ollama server + wrapper, no models
+- **Model image**: `ollama-models` — contains pre-pulled models (dev/prod differentiation via Dockerfile target)
+
+This separation means:
+
+- Model images are built once and work with both NVIDIA and AMD GPUs
+- Switching GPU types doesn't re-download models
+- Runtime images are lightweight and fast to deploy
+- Development uses lightweight models (`qwen2.5:0.5b`, `moondream:1.8b`), production uses full models (`huihui_ai/qwen3.5-abliterated:9b`)
+
+**GPU selection:**
+
+```yaml
+# NVIDIA GPUs
+ollama:
+  runtimeImage:
+    repository: swiss-armed-forces/cyber-command/cea/loom/ollama-runtime
+  resources:
+    requests:
+      nvidia.com/gpu: 1
+    limits:
+      nvidia.com/gpu: 1
+
+# AMD GPUs (ROCm)
+ollama:
+  runtimeImage:
+    repository: ollama/ollama
+    tag: rocm
+  resources:
+    requests:
+      amd.com/gpu: 1
+    limits:
+      amd.com/gpu: 1
+```
+
+**Model selection (dev vs production):**
+
+Dev/prod differentiation is handled via Skaffold profiles which select the Dockerfile target:
+
+- `skaffold dev` → builds with `target: dev` (lightweight models)
+- `skaffold build` / production → builds with `target: production` (full models)
+
+```yaml
+ollama:
+  modelsImage:
+    repository: swiss-armed-forces/cyber-command/cea/loom/ollama-models
+    tag: null  # tag injected by Skaffold
+```
+
+The initContainer copies models from the model image into the Ollama model storage at pod
+startup — the runtime image itself ships no models, so this copy always runs. With
+`ollama.pvc.enabled: true` (the default) the target is the PVC, and subsequent pods reuse the
+cached models there, avoiding repeated copies. With `ollama.pvc.enabled: false` (used by the
+development values) the target is an `emptyDir`, so models are re-copied on every pod start.
 
 ## Troubleshooting
 

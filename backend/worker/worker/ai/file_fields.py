@@ -4,11 +4,10 @@ from datetime import datetime
 from typing import Any
 from uuid import UUID
 
+from common.agent_builder import sanitize_document_text
 from common.ai_context.tool_models import FileFieldInfo
 from common.utils.pydantic_field_paths import iter_model_fields
 from pydantic import BaseModel
-
-from worker.utils.prompt_sanitizer import sanitize_document_text
 
 _MAX_CONTENT_CHARS = 8000
 

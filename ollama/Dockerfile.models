@@ -1,0 +1,33 @@
+# Ollama Models Image
+# Contains pre-pulled models only, used as initContainer source
+# GPU-agnostic - works with both NVIDIA and ROCm runtime images
+
+ARG OLLAMA_IMAGE_VERSION="0.23.4"
+ARG DOCKER_REGISTRY="docker.io"
+FROM ${DOCKER_REGISTRY}/ollama/ollama:${OLLAMA_IMAGE_VERSION} AS base
+
+# Dev target - lightweight models for development
+FROM base AS dev
+ARG LLM_MODELS="qwen2.5:0.5b moondream:1.8b nomic-embed-text-v2-moe"
+ENV LLM_MODELS=${LLM_MODELS}
+ENV OLLAMA_HOST="127.0.0.1"
+RUN set -exu; \
+  ollama serve & \
+  sleep 5; \
+  for llm_model in ${LLM_MODELS}; do \
+    ollama pull "${llm_model}"; \
+  done; \
+  pkill ollama || true
+
+# Production target - full models for production use
+FROM base AS production
+ARG LLM_MODELS="huihui_ai/qwen3.5-abliterated:9b nomic-embed-text-v2-moe"
+ENV LLM_MODELS=${LLM_MODELS}
+ENV OLLAMA_HOST="127.0.0.1"
+RUN set -exu; \
+  ollama serve & \
+  sleep 5; \
+  for llm_model in ${LLM_MODELS}; do \
+    ollama pull "${llm_model}"; \
+  done; \
+  pkill ollama || true

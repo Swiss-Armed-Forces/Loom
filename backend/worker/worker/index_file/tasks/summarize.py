@@ -2,20 +2,20 @@ import logging
 
 from celery import chain, chord
 from celery.canvas import Signature
+from common.agent_builder import sanitize_document_text
 from common.dependencies import (
     get_celery_app,
     get_lazybytes_service,
-    get_llm_summarization_client,
-    get_llm_summarization_key_points_client,
-    get_llm_summarization_refine_client,
+    get_llm_summarization_agent,
+    get_llm_summarization_key_points_agent,
+    get_llm_summarization_refine_agent,
 )
 from common.file.file_repository import File
 from common.services.lazybytes_service import TempLazyBytes
-from common.settings import LLMSummarizationBaseSettings
 from common.utils.cache import cache
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from openai import APIError, OpenAI
 from pydantic import BaseModel
+from pydantic_ai import NativeOutput
 
 from worker.index_file.infra.file_indexing_task import FileIndexingTask
 from worker.index_file.infra.indexing_persister import IndexingPersister
@@ -23,10 +23,6 @@ from worker.services.tika_service import TIKA_MAX_TEXT_SIZE
 from worker.settings import settings
 from worker.utils.natural_language_detection import is_natural_language
 from worker.utils.persisting_task import persisting_task
-from worker.utils.prompt_sanitizer import (
-    build_document_security_instructions,
-    sanitize_document_text,
-)
 
 logger = logging.getLogger(__name__)
 
@@ -103,37 +99,6 @@ class _SummarizationResult(BaseModel):
     text: str
 
 
-def _invoke_llm(
-    prompt: str,
-    llm_settings: LLMSummarizationBaseSettings,
-    client: OpenAI,
-    system_prompt: str | None = None,
-) -> str:
-    resolved_system_prompt = (
-        f"{llm_settings.system_prompt}\n\n"
-        f"{build_document_security_instructions(settings.translate_target)}"
-    )
-    if system_prompt is not None:
-        resolved_system_prompt = f"{resolved_system_prompt}\n\n{system_prompt}"
-    try:
-        response = client.beta.chat.completions.parse(
-            model=llm_settings.model,
-            messages=[
-                {"role": "system", "content": resolved_system_prompt},
-                {"role": "user", "content": prompt},
-            ],
-            temperature=llm_settings.temperature,
-            extra_headers=llm_settings.extra_headers,
-            extra_body=llm_settings.extra_body,
-            response_format=_SummarizationResult,
-            max_tokens=llm_settings.max_tokens,
-        )
-    except APIError as ex:
-        raise LLMError() from ex
-    result = response.choices[0].message.parsed
-    return result.text if result is not None else ""
-
-
 @app.task(
     base=FileIndexingTask,
     autoretry_for=tuple([LLMError]),
@@ -155,11 +120,18 @@ Do NOT use any previous knowledge.
 
 KEY POINTS:"""
 
-    return _invoke_llm(
-        extract_prompt,
-        settings.llm.summarization_key_points,
-        get_llm_summarization_key_points_client(),
-    )
+    agent = get_llm_summarization_key_points_agent()
+
+    try:
+
+        result = agent.run_sync(
+            extract_prompt, output_type=NativeOutput(_SummarizationResult)
+        )
+
+    except Exception as ex:
+        raise LLMError() from ex
+
+    return result.output.text
 
 
 @app.task(
@@ -190,11 +162,18 @@ Do NOT use any previous knowledge.
 
 SUMMARY:"""
 
-    return _invoke_llm(
-        summarize_prompt,
-        settings.llm.summarization,
-        get_llm_summarization_client(),
-    )
+    agent = get_llm_summarization_agent()
+
+    try:
+
+        result = agent.run_sync(
+            summarize_prompt, output_type=NativeOutput(_SummarizationResult)
+        )
+
+    except Exception as ex:
+        raise LLMError() from ex
+
+    return result.output.text
 
 
 @app.task(
@@ -221,12 +200,22 @@ Do NOT use any previous knowledge.
 
 SUMMARY:"""
 
-    return _invoke_llm(
-        refine_prompt,
-        settings.llm.summarization_refine,
-        get_llm_summarization_refine_client(),
-        system_prompt=system_prompt,
-    )
+    agent = get_llm_summarization_refine_agent()
+
+    # Augment with user prompt addition, if set
+    if system_prompt is not None:
+        refine_prompt += "\n\n" + system_prompt
+
+    try:
+
+        result = agent.run_sync(
+            refine_prompt, output_type=NativeOutput(_SummarizationResult)
+        )
+
+    except Exception as ex:
+        raise LLMError() from ex
+
+    return result.output.text
 
 
 @persisting_task(app, IndexingPersister)

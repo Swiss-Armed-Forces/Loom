@@ -47,7 +47,7 @@ helm template "${CHARTS_DIR}" \
 
 echo "GPU resources check"
 
-helm template "${CHARTS_DIR}" --values "${CHARTS_DIR}/values-gpu.yaml" \
+helm template "${CHARTS_DIR}" --values "${CHARTS_DIR}/values-nvidia-gpu.yaml" \
 | poetry run python "${SCRIPT_DIR}/check_resources.py" \
     --exclude-ephemeral \
     --threshold-request "cpu=${LOOM_MIN_CPU}" \

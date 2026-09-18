@@ -1,4 +1,3 @@
-import base64
 import logging
 
 from celery import chain
@@ -6,20 +5,20 @@ from celery.canvas import Signature
 from common.dependencies import (
     get_celery_app,
     get_lazybytes_service,
-    get_llm_vision_client,
+    get_llm_vision_agent,
 )
 from common.file.file_repository import File
 from common.services.lazybytes_service import TempLazyBytes
 from common.settings import settings
 from common.utils.cache import cache
-from openai import APIError
 from pydantic import BaseModel
+from pydantic_ai import NativeOutput
+from pydantic_ai.messages import BinaryContent
 
 from worker.index_file.infra.file_indexing_task import FileIndexingTask
 from worker.index_file.infra.indexing_persister import IndexingPersister
 from worker.settings import settings as worker_settings
 from worker.utils.persisting_task import persisting_task
-from worker.utils.prompt_sanitizer import build_document_security_instructions
 
 logger = logging.getLogger(__name__)
 
@@ -37,6 +36,14 @@ IMAGE_MIMETYPES = [
     "image/gif",
     "image/webp",
 ]
+
+
+class LLMError(Exception):
+    pass
+
+
+class _ImageDescriptionResult(BaseModel):
+    description: str
 
 
 def is_image(extension: str, mimetype: str) -> bool:
@@ -62,14 +69,6 @@ def signature(file_content: TempLazyBytes, file: File) -> Signature:
 DESCRIBE_IMAGE_MAX_RETRIES = 15
 
 
-class ImageDescriptionError(Exception):
-    pass
-
-
-class _ImageDescriptionResult(BaseModel):
-    description: str
-
-
 def describe_image(data: memoryview, system_prompt: str | None = None) -> str:
     prompt = f"""PROMPT: Describe the contents of the image in detail.
 Include any visible text, objects, people, scenes, colors, and layout.
@@ -77,48 +76,29 @@ Do NOT use any prior knowledge — only describe what is visible in the image.
 Respond with a description of at most {settings.llm.vision.max_sentences} sentences.
 
 DESCRIPTION:"""
-    resolved_system_prompt = (
-        f"{settings.llm.vision.system_prompt}\n\n"
-        f"{build_document_security_instructions(settings.translate_target)}"
-    )
+
+    agent = get_llm_vision_agent()
+
+    # Augment with user prompt addition, if set
     if system_prompt is not None:
-        resolved_system_prompt = f"{resolved_system_prompt}\n\n{system_prompt}"
-
-    client = get_llm_vision_client()
-
-    image = base64.b64encode(data).decode(errors=settings.decode_error_handler)
+        prompt += "\n\n" + system_prompt
 
     try:
-        response = client.beta.chat.completions.parse(
-            model=settings.llm.vision.model,
-            messages=[
-                {"role": "system", "content": resolved_system_prompt},
-                {
-                    "role": "user",
-                    "content": [
-                        {"type": "text", "text": prompt},
-                        {
-                            "type": "image_url",
-                            # Ollama detects the real image format from the
-                            # decoded bytes, so the data-URL media type is
-                            # nominal.
-                            "image_url": {"url": f"data:image/jpeg;base64,{image}"},
-                        },
-                    ],
-                },
+        result = agent.run_sync(
+            [
+                prompt,
+                BinaryContent(
+                    data=bytes(data),
+                    media_type="image/jpeg",
+                ),
             ],
-            temperature=settings.llm.vision.temperature,
-            extra_headers=settings.llm.vision.extra_headers,
-            extra_body=settings.llm.vision.extra_body,
-            response_format=_ImageDescriptionResult,
-            max_tokens=settings.llm.vision.max_tokens,
+            output_type=NativeOutput(_ImageDescriptionResult),
         )
-    except APIError as ex:
-        raise ImageDescriptionError() from ex
 
-    result = response.choices[0].message.parsed
+    except Exception as ex:
+        raise LLMError("Image description failed") from ex
 
-    return result.description if result is not None else ""
+    return result.output.description
 
 
 @app.task(base=FileIndexingTask)
@@ -128,7 +108,7 @@ def detect_image_task(file_type: str, file_extension: str) -> bool:
 
 @app.task(
     base=FileIndexingTask,
-    autoretry_for=(ImageDescriptionError,),
+    autoretry_for=(LLMError,),
     max_retries=DESCRIBE_IMAGE_MAX_RETRIES,
     retry_backoff=True,
 )

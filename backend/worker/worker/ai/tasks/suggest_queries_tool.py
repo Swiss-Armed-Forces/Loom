@@ -3,10 +3,11 @@ from uuid import UUID
 
 from celery import chord, group
 from common.ai_context.tool_models import QuerySuggestion, SuggestQueriesResult
-from common.dependencies import get_celery_app, get_file_repository, get_llm_tool_client
+from common.dependencies import get_celery_app, get_file_repository, get_llm_tool_agent
 from common.file.file_repository import File
 from common.services.query_builder import QueryParameters
 from pydantic import BaseModel
+from pydantic_ai import NativeOutput
 
 from worker.ai.file_fields import iter_described_fields
 from worker.ai.infra.ai_context_processing_task import AiContextProcessingTask
@@ -15,6 +16,10 @@ from worker.settings import settings
 logger = logging.getLogger(__name__)
 
 app = get_celery_app()
+
+
+class LLMError(Exception):
+    pass
 
 
 class _ElasticsearchQuery(BaseModel):
@@ -34,7 +39,10 @@ AVAILABLE_FIELDS (you may use these in field:value syntax):
 HINT: Use Lucene features (AND, OR, wildcards, fuzzy, proximity, ranges).
 HINT: Favour free text search over field queries unless a specific field clearly fits.
 HINT: Use Lucene Query syntax.
-QUERY_DESCRIPTION: {query_description}"""
+QUERY_DESCRIPTION: {query_description}\n\n
+MUST: Only return the plain Lucerne query.
+MUST: Do not give an explanation.
+"""
 
     if folder_path:
         prompt += (
@@ -43,22 +51,18 @@ QUERY_DESCRIPTION: {query_description}"""
             f"are applied separately."
         )
 
-    client = get_llm_tool_client()
+    agent = get_llm_tool_agent()
 
-    response = client.beta.chat.completions.parse(
-        model=settings.llm.tool.model,
-        messages=[{"role": "user", "content": prompt}],
-        temperature=settings.llm.tool.temperature,
-        extra_headers=settings.llm.tool.extra_headers,
-        extra_body=settings.llm.tool.extra_body,
-        response_format=_ElasticsearchQuery,
-        max_tokens=settings.llm.tool.max_tokens,
-    )
-    parsed = response.choices[0].message.parsed
-    if parsed is None:
+    try:
+        result = agent.run_sync(prompt, output_type=NativeOutput(_ElasticsearchQuery))
+
+    except Exception as ex:
+        raise LLMError() from ex
+
+    if result is None:
         return QuerySuggestion(query="", matching_docs=0)
 
-    query_string = parsed.query_string
+    query_string = result.output.query_string
 
     try:
         file_repository = get_file_repository()
