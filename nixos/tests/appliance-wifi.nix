@@ -62,29 +62,6 @@ pkgs.testers.runNixOSTest {
     appliance.wait_for_unit("multi-user.target")
 
 
-    with subtest("the boot-time banner is measured against the settled console"):
-        # The regression this guards is subtle and was shipped once: loom-issue
-        # and loom-console-font were both only ordered `before
-        # getty-pre.target`, which orders each against the getty and neither
-        # against the other. loom-issue won by about two seconds, so it measured
-        # the console while it was still on the kernel's 16x32 font, decided the
-        # screen was tiny, and shed both the mark and the QR code -- moments
-        # before the font made the console three times taller.
-        #
-        # So: whatever the banner dropped, it must have dropped against the
-        # console that is actually there once everything has settled.
-        rows = int(appliance.succeed("stty size </dev/tty1").split()[0])
-        issue = appliance.succeed("cat /run/issue.d/50-loom.issue")
-        printed = len(issue.splitlines())
-        assert printed <= rows, f"{printed}-row banner on a {rows}-row console"
-
-        # This VM's console is tall enough for everything, so nothing may have
-        # been shed. On a genuinely short one the previous subtest covers the
-        # shedding; here the point is that it did not fire when it should not.
-        if rows >= printed + 4:
-            assert "▄████▄    ▄████▄" in issue, issue
-            assert "Scan to join" in issue, issue
-
     with subtest("the radio is renamed and hostapd owns it"):
         appliance.wait_for_unit("hostapd.service")
         appliance.succeed("test -e /sys/class/net/loomwl0")
@@ -121,6 +98,15 @@ pkgs.testers.runNixOSTest {
         answer = appliance.succeed("host -t A frontend.loom ${boxAddress}")
         assert "has address ${boxAddress}" in answer, answer
 
+        # The console's net box follows the address onto the bridge. Read out of
+        # the script rather than out of a running session, which this test never
+        # opens -- tests/appliance.nix asserts the generated file on a box with
+        # no bridge, so between them both branches of `loom.serviceInterface`
+        # are covered. Pinning `loom0` here would graph the wired port only, and
+        # on a box deployed for its access point that port is usually empty.
+        btop = appliance.succeed("cat $(readlink -f /run/current-system/sw/bin/loom-btop)")
+        assert "loombr0" in btop, btop
+
     with subtest("bridge ports forward immediately"):
         # With STP off the kernel puts ports straight into forwarding, so the
         # default 15-second forward delay should never apply. Pinned and checked
@@ -144,55 +130,26 @@ pkgs.testers.runNixOSTest {
     with subtest("the login screen carries the credentials and a scannable QR"):
         appliance.wait_for_unit("loom-issue.service")
         issue = appliance.succeed("cat /run/issue.d/50-loom.issue")
-        # The credentials are never dropped, whatever the console height.
         assert "${ssid}" in issue, issue
         assert "${psk}" in issue, issue
 
-        # The QR itself is asserted against a stated budget rather than against
-        # this VM's console, which is short enough that loom-issue drops the
-        # code -- correctly, and the next subtest is what covers that. Pinning
-        # the budget keeps this checking the rendering rather than the qemu
-        # window's incidental size.
-        code = appliance.succeed("LOOM_INFO_ROWS=60 loom-info")
-        assert "Scan to join" in code, code
+        # Asserted against the issue file itself, not against a loom-info run
+        # with arguments that flatter it. The banner briefly measured the console
+        # and trimmed itself to fit, and because the console is resized several
+        # times during boot the reading was whatever the resize sequence happened
+        # to be in the middle of -- which shipped a box whose login screen had
+        # neither the mark nor the QR code on a console with room for both. What
+        # goes into the file is the whole banner, always.
+        assert "▄████▄    ▄████▄" in issue, issue
+        assert "Scan to join" in issue, issue
         # Drawn with the half blocks, not with '#'. An ASCII QR has modules
         # twice as tall as they are wide and phones refuse it -- see box.nix.
-        assert "▀" in code or "▄" in code, code
+        assert "▀" in issue or "▄" in issue, issue
 
         # The health check found a working AP, so it must not have left a
         # warning contradicting the credentials printed above it.
         appliance.wait_for_unit("loom-wifi-check.service")
         appliance.fail("test -e /run/issue.d/61-loom-wifi.issue")
-
-    with subtest("the banner sheds content rather than overflowing the screen"):
-        # agetty never pages the issue, and the row count is the panel's height
-        # over the console cell -- anywhere from 33 rows to 123. So loom-info
-        # drops what it can rather than letting the top scroll away. The order
-        # matters more than the sizes: what goes is what carries no information.
-        def banner(rows):
-            return appliance.succeed(f"LOOM_INFO_ROWS={rows} loom-info")
-
-        full = banner(0)
-        assert "▄████▄    ▄████▄" in full, full     # the mark
-        assert "Scan to join" in full, full          # the QR
-
-        # Tall enough for everything.
-        assert len(banner(60).splitlines()) == len(full.splitlines())
-
-        # Too short for the mark, still room for the code.
-        mid = banner(36)
-        assert "▄████▄    ▄████▄" not in mid, mid
-        assert "Scan to join" in mid, mid
-
-        # Too short for the code either. It is a convenience, and the
-        # credentials it encodes are still printed in full underneath.
-        small = banner(24)
-        assert "Scan to join" not in small, small
-        assert "${ssid}" in small and "${psk}" in small, small
-
-        for rows in [24, 36, 60]:
-            got = len(banner(rows).splitlines())
-            assert got <= rows - 3, f"{rows}-row console got a {got}-row banner"
 
     with subtest("the banner is redrawn after the console geometry settles"):
         # tty1 is painted while the font -- and with it the row count -- is

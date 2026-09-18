@@ -86,15 +86,6 @@ let
     set -euo pipefail
     ${pkgs.coreutils}/bin/mkdir -p /run/issue.d
 
-    # The console's row count, measured here because loom-info cannot: the
-    # redirection below hides the terminal from it. tty1 specifically -- it is
-    # the VT the banner is actually read on, and the only one whose geometry is
-    # disturbed by the boot (see loom-banner-repaint.service).
-    #
-    # Unreadable, or not a tty, leaves it empty and loom-info prints in full.
-    rows="$(${pkgs.coreutils}/bin/stty size </dev/tty1 2>/dev/null \
-      | ${pkgs.coreutils}/bin/cut --delimiter=' ' --fields=1 || true)"
-
     # Rendered through a temporary file so agetty can never read a
     # half-written banner from a getty that respawns mid-write.
     #
@@ -102,7 +93,13 @@ let
     # loom-info: without it the one screen the colour exists for -- the
     # login prompt nobody has touched yet -- would be the one that renders
     # the eyes plain.
-    LOOM_INFO_COLOR=vt LOOM_INFO_ROWS="''${rows:-0}" ${loom-info}/bin/loom-info \
+    #
+    # Deliberately no measurement of the console here. This used to read
+    # `stty size </dev/tty1` and hand loom-info a row budget to trim itself to,
+    # and there is no point in the boot at which that reading stays true -- see
+    # the banner's own comment. It produced a box with no mark and no QR code on
+    # a console with room for both.
+    LOOM_INFO_COLOR=vt ${loom-info}/bin/loom-info \
       >/run/issue.d/50-loom.issue.tmp
     ${pkgs.coreutils}/bin/mv /run/issue.d/50-loom.issue.tmp \
       /run/issue.d/50-loom.issue
@@ -142,14 +139,14 @@ let
       # the checks below cannot see the console, but that file is read only by
       # agetty and agetty is only ever on a VT here.
       if [ "''${LOOM_INFO_COLOR:-auto}" = vt ]; then
-        palette=$'\033]P3${config.loom.branding.amberRgb}\033]PB${config.loom.branding.amberRgb}'
+        palette=$'\033]P3${config.loom.branding.amberRgb}\033]PB${config.loom.branding.amberRgb}\033]P7ffffff'
       elif [ -t 1 ]; then
         # A pts -- a tmux pane of console.nix's session -- gets the selector but
         # not the redefinition, and still comes out amber: the VT underneath it
         # had its palette rewritten by the banner at boot.
         case "$(tty 2>/dev/null || true)" in
           /dev/tty[0-9]*)
-            palette=$'\033]P3${config.loom.branding.amberRgb}\033]PB${config.loom.branding.amberRgb}'
+            palette=$'\033]P3${config.loom.branding.amberRgb}\033]PB${config.loom.branding.amberRgb}\033]P7ffffff'
             ;;
           *) ;;
         esac
@@ -160,39 +157,32 @@ let
         reset=$'\033[0m'
       fi
 
-      # -----------------------------------------------------------------------
-      # Everything below is composed rather than printed, because the banner has
-      # to fit the screen and only this program knows how tall it is.
+      # The banner is always printed whole.
       #
-      # agetty writes the issue straight to the VT and never pages it, so a
-      # banner taller than the grid loses its top -- and there is no grid to
-      # design for: the row count is the panel's pixel height divided by the
-      # console cell, which runs from 33 rows on a 1080p panel at the kernel's
-      # 16x32 to 123 on the 2560x1600 one the box was tested against.
+      # It used to measure the console and drop the mark, then the QR code, to
+      # fit. That was wrong, and wrong in a way worth recording: there is no
+      # moment at which the row count can be measured and trusted. The console
+      # is resized several times during boot -- the kernel's built-in font, then
+      # Cozette, then the DRM driver's reset, then Cozette again -- and a reading
+      # taken between any two of them is a reading of a screen that no longer
+      # exists by the time agetty paints. Ordering the measurement after the font
+      # unit was not enough; it only moved the race. What it produced on the box
+      # was a banner with no mark and no QR code on a console with room for both.
       #
-      # So `render` draws the banner with the two expendable parts switchable,
-      # and the tail of this script drops them, worst-branding-first, until what
-      # is left fits. Nothing load-bearing is ever dropped: the WiFi credentials
-      # survive the loss of the QR code that encodes them, and the recovery
-      # passphrase and the key guard state are never candidates at all.
-      # -----------------------------------------------------------------------
-      render() {
-        # show_qr is bound inside the WiFi block below rather than here: without
-        # --wifi that block is not emitted at all, and an unused local fails the
-        # build-time lint. (Take care not to start a comment line with the
-        # linter's own name -- it reads such a line as a directive and stops.)
-        local show_eyes="''${1}"
-
+      # So: print everything, and fix the geometry problem where it actually is
+      # -- loom-banner-repaint.service redraws this once the resizing has
+      # stopped. A banner that is genuinely taller than the final screen loses
+      # its top rows, which is the mild, visible failure this replaced a silent
+      # one with.
+      #
       # The mark the boot splash just showed, in the form a console can hold.
       # A command rather than a here-document so that the banner, the issue and
       # the installer menu all draw the same art from one place. See
       # branding.nix.
-      if [ "$show_eyes" = yes ]; then
-        printf '\n'
-        printf '%s%s' "$palette" "$amber"
-        ${lib.getExe config.loom.branding.eyes}
-        printf '%s' "$reset"
-      fi
+      printf '\n'
+      printf '%s%s' "$palette" "$amber"
+      ${lib.getExe config.loom.branding.eyes}
+      printf '%s' "$reset"
       printf '\n  Loom appliance -- %s\n' ${lib.escapeShellArg tag}
       printf '  %s\n' ${lib.escapeShellArg config.loom.platform.description}
       if [ -r /etc/loom/network.conf ]; then
@@ -237,8 +227,6 @@ let
         # loom-wifi-check (wifi.nix) writes a warning fragment above this one
         # when the radio never came up, so a box printing these credentials for
         # a network that does not exist says so on the same screen.
-        local show_qr="''${2}"
-        if [ "$show_qr" = yes ]; then
         printf '\n  Scan to join -- same network as the cable, same *.loom:\n\n'
         # ANSIUTF8 rather than ASCII, and this is not cosmetic. It draws each
         # row with the half blocks U+2580/U+2584, so a QR module is one cell
@@ -269,61 +257,32 @@ let
         # a proper white card with black modules: the orientation every scanner
         # is tuned for, and the one people recognise as a QR code.
         #
-        # 107 rather than 47: on a Linux VT palette index 7 is light grey, and a
-        # grey card loses most of the contrast the code depends on. 100-107 are
-        # the bright-background codes console_codes(4) documents.
+        # 47, with palette index 7 redefined to ffffff by `palette` above --
+        # rather than the bright-background code 107 this used to use.
+        #
+        # 40-47 are the background codes console_codes(4) lists outright; 100-107
+        # are the aixterm extension, and a console that does not take them leaves
+        # the background where it was. Here that is black, against ink this sets
+        # to black -- an invisible code rather than a wrong-coloured one, which
+        # is the worst way for it to fail. 40-47 only reach palette indices 0-7,
+        # so the card has to be index 7, and index 7 is plain light grey by
+        # default -- too little contrast to scan reliably. Redefining it is the
+        # same ESC]P mechanism the amber already depends on, and it also makes
+        # the console's ordinary text pure white instead of grey.
         qrencode --type=UTF8i --level=L --margin=2 -- ${lib.escapeShellArg wifiUri} |
           while IFS= read -r qrline; do
             # Indented like every other line of the banner, and the background
             # is re-opened per line so the card is a solid rectangle rather than
             # a run that the terminal resets at the first newline.
-            printf '  %s%s%s\n' $'\033[107;30m' "$qrline" $'\033[0m'
+            printf '  %s%s%s\n' $'\033[47;30m' "$qrline" $'\033[0m'
           done
-        else
-          # Dropped for height. The credentials below still carry everything the
-          # code encodes -- it is a convenience, not the only way in.
-          printf '\n  WiFi, same network as the cable, same *.loom:\n'
-        fi
         # Below the code, not above it: someone who cannot scan reads them off
         # the same part of the screen they were already looking at, and they
         # stay visible when the code itself is the thing that scrolled.
         printf '  WiFi network: %s\n' ${lib.escapeShellArg config.loom.wifi.ssid}
         printf '  Passphrase:   %s\n' ${lib.escapeShellArg config.loom.wifi.psk}
       ''}
-      }
-
-      # -----------------------------------------------------------------------
-      # How many rows there are to play with.
-      #
-      # LOOM_INFO_ROWS is what loom-issue.service measures off /dev/tty1, which
-      # it has to do on our behalf: its redirection means we cannot see the
-      # console at all. An interactive reprint measures its own terminal. Zero
-      # -- unknown -- prints everything, which is the right answer for a pipe.
-      #
-      # The reserve is agetty's own `[press ENTER to login]` plus the blank the
-      # banner ends on. Without it the banner fits exactly and the prompt
-      # underneath it is what pushes the mark off.
-      # -----------------------------------------------------------------------
-      rows="''${LOOM_INFO_ROWS:-0}"
-      if [ "$rows" -eq 0 ] && [ -t 1 ]; then
-        rows="$(stty size 2>/dev/null | cut --delimiter=' ' --fields=1 || true)"
-      fi
-      : "''${rows:=0}"
-      budget=$(( rows - 3 ))
-
-      banner="$(render yes yes)"
-      if [ "$rows" -gt 0 ]; then
-        # Shed in order of what is least missed. The eyes go first: they are the
-        # only part that carries no information at all.
-        if [ "$(printf '%s\n' "$banner" | wc --lines)" -gt "$budget" ]; then
-          banner="$(render no yes)"
-        fi
-        if [ "$(printf '%s\n' "$banner" | wc --lines)" -gt "$budget" ]; then
-          banner="$(render no no)"
-        fi
-      fi
-      # The trailing blank is re-added here because command substitution eats it.
-      printf '%s\n\n' "$banner"
+      printf '\n'
     '';
   };
 in
