@@ -211,6 +211,19 @@ pkgs.testers.runNixOSTest {
         assert "\033[33m" in on_a_tty, repr(on_a_tty)
         assert "\033]P" not in on_a_tty, repr(on_a_tty)
 
+        # On demand there, and nowhere automatic. The login shell used to
+        # reprint the banner, and agetty renders the issue on every VT -- so
+        # tty2-tty6 showed the same screen twice with nothing between the copies
+        # but the keypress that logged the operator in.
+        #
+        # Asserted against the shell init rather than against a screen, because
+        # a screen cannot see it: two copies of a twenty-line banner scroll the
+        # first one off an 80x25 VT, which is exactly why this survived every
+        # tty match here. tty1 is the one console where the banner is genuinely
+        # covered -- the tmux session draws over it -- and `loom-info` is on the
+        # PATH for that.
+        appliance.fail("grep -q loom-info /etc/bashrc /etc/profile")
+
         # Nothing opens a session by itself. --login-pause holds agetty on the
         # issue until somebody presses a key; --autologin is what performs the
         # login afterwards, and is still needed because the operator's shadow

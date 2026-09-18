@@ -716,9 +716,6 @@ in
         && [ "$(id -un)" = ${lib.escapeShellArg loomUser} ] \
         && [ "$(tty)" = /dev/tty1 ]; then
         export LOOM_SESSION=1
-        # agetty already printed the banner as the issue. Without this every
-        # pane would print it again from box.nix's interactiveShellInit.
-        export LOOM_BANNER_SHOWN=1
 
         # Deliberately not `exec`: a loom-console that died on startup would
         # take the login shell with it, agetty would respawn, and the operator
@@ -728,7 +725,6 @@ in
           exit 0
         fi
         echo "[!] loom-console failed -- dropping to a plain shell." >&2
-        unset LOOM_BANNER_SHOWN
       fi
     '';
   };

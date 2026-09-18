@@ -77,9 +77,9 @@ let
 
   # The console banner, as a command. Everything it prints is also what the
   # login screen shows: `loom-issue.service` below captures this output into
-  # /run/issue.d, and the interactive shell calls it again on login. One
-  # generator rather than two copies that drift -- and the operator can re-run
-  # it by hand once the console session has covered the boot-time copy.
+  # /run/issue.d. One generator rather than two copies that drift -- and the
+  # operator can re-run it by hand once the console session has covered the
+  # boot-time copy.
   #
   # Produces no backslashes on purpose: agetty interprets them as issue-file
   # escapes. The passphrase charset (install.sh:225-231) cannot contain one, and
@@ -497,8 +497,14 @@ in
   # These boxes are given away, and have no remote access, so the console is the
   # only place this information can reach anyone. It is therefore shown before
   # anyone logs in, as the agetty issue -- console.nix's `--login-pause` then
-  # holds the screen there until somebody presses a key -- and again in the
-  # operator's shell.
+  # holds the screen there until somebody presses a key.
+  #
+  # Shown there and nowhere else. The login shell used to reprint it, which on
+  # tty2-tty6 put the same screen up twice with nothing between the two copies
+  # but the keypress: agetty renders the issue on every VT, not just tty1. The
+  # only console where the banner really is covered is tty1, where the tmux
+  # session draws over it -- and an operator who wants it back there types
+  # `loom-info`, which is on the PATH for exactly that.
   #
   # The recovery passphrase is part of it, which is safe here for the same
   # reason the file itself is: reading it requires the box to have booted, which
@@ -674,17 +680,6 @@ in
       done
     '';
   };
-
-  # Repeated in the shell, because on tty1 console.nix's tmux session draws over
-  # the boot-time copy the moment it starts. `loom-info` reprints it on demand.
-  # console.nix exports LOOM_BANNER_SHOWN before starting that session, so the
-  # panes inherit it and none of them reprints.
-  environment.interactiveShellInit = ''
-    if [ -z "''${LOOM_BANNER_SHOWN:-}" ]; then
-      export LOOM_BANNER_SHOWN=1
-      ${loom-info}/bin/loom-info
-    fi
-  '';
 
   # The installer writes the recovery passphrase here. wheel-readable so the
   # operator can see it without sudo; the disk it sits on is encrypted anyway.
