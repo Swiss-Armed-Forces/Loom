@@ -12,7 +12,7 @@ SCRIPT_NAME=$(basename "$0")
 #
 # Environment
 #
-EDITOR="${EDITOR:-nano}"
+export EDITOR="${EDITOR:-vim}"
 REGISTRY_MIRROR="${REGISTRY_MIRROR:-}"
 SKAFFOLD_HOME="${SKAFFOLD_HOME:-${HOME}/.skaffold}"
 

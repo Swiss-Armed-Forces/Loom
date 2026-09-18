@@ -382,7 +382,18 @@ in
   environment.systemPackages =
     config.loom.toolchain
     ++ (with pkgs; [
-      nano # up.sh:15 defaults EDITOR to nano
+      # `EDITOR` above. Also supplies `vi`, `view` and `xxd`, which is why this
+      # is the plain `vim` and not `neovim`: neovim costs ~200 MiB of closure
+      # that nothing else here shares -- perl, glib, libx11, libxcb, luajit,
+      # tree-sitter -- on a box with no X at all, against ~43 MiB for vim, whose
+      # only other dependencies (gawk, bash-interactive, readline) are already
+      # in this closure.
+      vim
+      # Kept alongside vim deliberately, for 2.6 MiB. These boxes are given
+      # away, the console is the whole user interface, and there is no remote
+      # access to rescue anyone -- so an operator who does not know vim needs a
+      # modeless editor to fall back to.
+      nano
 
       # Field diagnosis on a box with no remote access. Interactive only -- a
       # unit has no use for any of these, so they stay out of `loom.toolchain`.
@@ -489,6 +500,13 @@ in
     # of the embedded checkout stays clean.
     MINIKUBE_HOME = "${loomRepoDir}/.minikube";
     SKAFFOLD_HOME = "${loomRepoDir}/.skaffold";
+
+    # Nothing on this box sets an editor otherwise, and the fallbacks that step
+    # in are worse than a choice: git's is `vi`, which the appliance did not
+    # carry at all, so `git commit` on the console died with "not found". Set
+    # here rather than only in up.sh, because the operator's shell never sources
+    # that script -- up.sh's own `export` only reaches what up.sh starts.
+    EDITOR = "vim";
   };
 
   # ---------------------------------------------------------------------------
