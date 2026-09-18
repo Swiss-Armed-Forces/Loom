@@ -104,7 +104,12 @@ class LLMError(Exception):
     retry_backoff=True,
 )
 def embed_question(question: str) -> TempTypedLazyBytes[Sequence[float]]:
-    """Embed a single question."""
+    """Embed a single question.
+
+    Unlike the HyDE members of the same chord this one must not degrade: without the
+    question embedding there is nothing to search for, so failing the chord is the
+    honest outcome.
+    """
     client = get_llm_embedding_client()
     try:
         response = client.embeddings.create(
@@ -112,7 +117,7 @@ def embed_question(question: str) -> TempTypedLazyBytes[Sequence[float]]:
             input=[f"{settings.llm.embedding.query_prefix}{question}"],
         )
     except APIError as ex:
-        raise LLMError("Document embedding failed") from ex
+        raise LLMError("Question embedding failed") from ex
 
     embedding = response.data[0].embedding
     logger.debug("Embedded question into %d-dim vector", len(embedding))
@@ -120,13 +125,22 @@ def embed_question(question: str) -> TempTypedLazyBytes[Sequence[float]]:
 
 
 @app.task(
+    bind=True,
     base=AiContextProcessingTask,
     autoretry_for=tuple([LLMError]),
     max_retries=RAG_MAX_RETRIES,
     retry_backoff=True,
 )
-def generate_hypothetical_document(question: str) -> str:
-    """Generate a single hypothetical document."""
+def generate_hypothetical_document(
+    self: AiContextProcessingTask, question: str
+) -> str | None:
+    """Generate a single hypothetical document, or ``None`` if it has to be dropped.
+
+    This runs as a member of the HyDE group inside the ``rag_pipeline_task`` chord.
+    Once the retry budget is spent, raising would abort that chord and lose the
+    question embedding and every sibling document along with it, leaving the question
+    unanswered -- so drop this document instead and let recall degrade.
+    """
     prompt = f"""Given the question below, write a short factual passage that would
 directly answer it. Do not explain or preface your answer. Just write the passage
 as if it were from a document. Keep your answer in a paragraph of
@@ -141,23 +155,44 @@ Passage:"""
     try:
         result_agent = agent.run_sync(prompt)
 
-    except Exception as ex:
-        raise LLMError("Hypothetical document generation failed") from ex
+    except Exception as ex:  # pylint: disable=broad-except
+        if not self.is_last_attempt:
+            raise LLMError("Hypothetical document generation failed") from ex
+        logger.warning(
+            "generate_hypothetical_document: dropping document, LLM call failed",
+            exc_info=True,
+        )
+        return None
 
     doc = (result_agent.output or "").strip()
+    if not doc:
+        logger.warning(
+            "generate_hypothetical_document: dropping document, LLM returned no text"
+        )
+        return None
 
     logger.debug("Hypothetical generated document: %.100s...", doc)
     return doc
 
 
 @app.task(
+    bind=True,
     base=AiContextProcessingTask,
     autoretry_for=tuple([LLMError]),
     max_retries=RAG_MAX_RETRIES,
     retry_backoff=True,
 )
-def embed_document(document: str) -> TempTypedLazyBytes[Sequence[float]]:
-    """Embed a single document."""
+def embed_document(
+    self: AiContextProcessingTask, document: str | None
+) -> TempTypedLazyBytes[Sequence[float]] | None:
+    """Embed a single hypothetical document, or ``None`` if it has to be dropped.
+
+    ``None`` also arrives from ``generate_hypothetical_document`` when that step was
+    dropped; embedding nothing would only skew the aggregated mean.
+    """
+    if not document:
+        return None
+
     client = get_llm_embedding_client()
     try:
         response = client.embeddings.create(
@@ -165,7 +200,12 @@ def embed_document(document: str) -> TempTypedLazyBytes[Sequence[float]]:
             input=[f"{settings.llm.embedding.document_prefix}{document}"],
         )
     except APIError as ex:
-        raise LLMError("Document embedding failed") from ex
+        if not self.is_last_attempt:
+            raise LLMError("Document embedding failed") from ex
+        logger.warning(
+            "embed_document: dropping document, embedding failed", exc_info=True
+        )
+        return None
 
     embedding = response.data[0].embedding
     logger.debug("Embedded document into %d-dim vector", len(embedding))
@@ -175,14 +215,29 @@ def embed_document(document: str) -> TempTypedLazyBytes[Sequence[float]]:
 @app.task(base=AiContextProcessingTask)
 def aggregate_embeddings(
     lazy_embeddings_generated: tuple[
-        TempTypedLazyBytes[Sequence[float]], list[TempTypedLazyBytes[Sequence[float]]]
+        TempTypedLazyBytes[Sequence[float]],
+        list[TempTypedLazyBytes[Sequence[float]] | None],
     ],
 ) -> TempTypedLazyBytes[Sequence[float]]:
-    """Aggregate embeddings by computing their mean."""
+    """Aggregate embeddings by computing their mean.
+
+    Dropped HyDE members contribute ``None`` and are skipped. The question embedding is
+    always present, so the mean is never taken over an empty list.
+    """
     lazy_embedding_question, lazy_embeddings_hyde = lazy_embeddings_generated
+    dropped = sum(
+        1 for lazy_embedding in lazy_embeddings_hyde if lazy_embedding is None
+    )
+    if dropped:
+        logger.warning(
+            "aggregate_embeddings: %d of %d hypothetical documents were dropped",
+            dropped,
+            len(lazy_embeddings_hyde),
+        )
     embeddings = [
         get_lazybytes_service().load_object(lazy_embedding)
-        for lazy_embedding in [lazy_embedding_question] + lazy_embeddings_hyde
+        for lazy_embedding in [lazy_embedding_question, *lazy_embeddings_hyde]
+        if lazy_embedding is not None
     ]
     embeddings_array = array(embeddings)
     mean_embedding: list[float] = mean(embeddings_array, axis=0).tolist()
@@ -269,20 +324,39 @@ RANK:"""
 
 
 @app.task(
+    bind=True,
     base=AiContextProcessingTask,
     autoretry_for=tuple([LLMError]),
     max_retries=RAG_MAX_RETRIES,
     retry_backoff=True,
 )
 def rerank(
+    self: AiContextProcessingTask,
     scored_search_embedding: ScoredSearchEmbedding,
     question: str,
 ) -> RankedSearchEmbedding:
+    """Rank one chunk against the question.
+
+    This runs as a member of the ``rerank_and_synthesize`` chord. Once the retry budget
+    is spent, raising would abort that chord and discard every chunk that was ranked
+    successfully, so fall back to the minimum rank instead -- which
+    ``apply_rerank_threshold`` then filters out.
+    """
     text = load_text_from_text_lazy(scored_search_embedding.text_lazy)
-    rank = send_rerank_chatbot_query(
-        text,
-        question,
-    )
+    try:
+        rank = send_rerank_chatbot_query(
+            text,
+            question,
+        )
+    except LLMError:
+        if not self.is_last_attempt:
+            raise
+        logger.warning(
+            "rerank: dropping chunk of file %s, LLM call failed",
+            scored_search_embedding.file_id,
+            exc_info=True,
+        )
+        rank = RERANK_MIN_RANK
 
     return RankedSearchEmbedding(
         file_id=scored_search_embedding.file_id,

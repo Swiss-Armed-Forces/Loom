@@ -344,6 +344,27 @@ Each stage is a discrete Celery task with auto-retry on LLM errors. The pipeline
 `RagSearchResult` containing the synthesized answer and the source `ToolSource` list used to
 populate citations.
 
+### Failure Handling in the Fan-Outs
+
+Both `fork` blocks above are Celery chords, and a chord aborts as soon as one of its members
+fails — discarding the results of every sibling that already succeeded. Members whose
+contribution is optional therefore degrade instead of raising once their retry budget is
+exhausted:
+
+| Task | Behaviour once retries are exhausted |
+| ------ | -------------------------------------- |
+| `generate_hypothetical_document` | Returns no document; recall degrades |
+| `embed_document` | Returns no embedding; `aggregate_embeddings` skips it |
+| `rerank` | Falls back to the minimum rank, so `apply_rerank_threshold` drops the chunk |
+| `embed_question` | Fails the pipeline — without the question embedding there is nothing to search |
+
+Every failure out of an `Agent.run_sync()` call counts as an LLM failure: the agent layer
+surfaces transport errors, `LengthFinishReasonError` when the model burns its token budget before
+emitting valid JSON, and `ValidationError` when the emitted JSON violates the output schema — so
+the tasks catch `Exception` around the call rather than a narrow error set. The embedding client
+is still called directly and retries on `APIError`. The same degradation applies to the
+`suggest_queries` fan-out, whose candidates degrade to an empty suggestion.
+
 ---
 
 ## Persistence Model
