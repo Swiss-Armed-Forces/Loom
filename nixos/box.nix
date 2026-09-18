@@ -548,6 +548,17 @@ in
     wantedBy = [ "multi-user.target" ];
     wants = [ "getty-pre.target" ];
     before = [ "getty-pre.target" ];
+    # After the font, not merely before the getty.
+    #
+    # Both units are only `before getty-pre.target`, which orders each against
+    # the getty and neither against the other -- and this one used to win by
+    # about two seconds. That mattered once the banner started measuring the
+    # console to decide what fits: the font is what sets the row count, so
+    # measuring first meant measuring the kernel's 16x32 grid and then shedding
+    # the mark and the QR code to fit a screen that was about to become three
+    # times taller. Ordering here is the whole fix; the measurement was never
+    # wrong about the console it was handed.
+    after = [ "loom-console-font.service" ];
     serviceConfig = {
       Type = "oneshot";
       RemainAfterExit = true;

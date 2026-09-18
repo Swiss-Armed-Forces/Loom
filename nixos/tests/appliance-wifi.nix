@@ -61,6 +61,30 @@ pkgs.testers.runNixOSTest {
     start_all()
     appliance.wait_for_unit("multi-user.target")
 
+
+    with subtest("the boot-time banner is measured against the settled console"):
+        # The regression this guards is subtle and was shipped once: loom-issue
+        # and loom-console-font were both only ordered `before
+        # getty-pre.target`, which orders each against the getty and neither
+        # against the other. loom-issue won by about two seconds, so it measured
+        # the console while it was still on the kernel's 16x32 font, decided the
+        # screen was tiny, and shed both the mark and the QR code -- moments
+        # before the font made the console three times taller.
+        #
+        # So: whatever the banner dropped, it must have dropped against the
+        # console that is actually there once everything has settled.
+        rows = int(appliance.succeed("stty size </dev/tty1").split()[0])
+        issue = appliance.succeed("cat /run/issue.d/50-loom.issue")
+        printed = len(issue.splitlines())
+        assert printed <= rows, f"{printed}-row banner on a {rows}-row console"
+
+        # This VM's console is tall enough for everything, so nothing may have
+        # been shed. On a genuinely short one the previous subtest covers the
+        # shedding; here the point is that it did not fire when it should not.
+        if rows >= printed + 4:
+            assert "▄████▄    ▄████▄" in issue, issue
+            assert "Scan to join" in issue, issue
+
     with subtest("the radio is renamed and hostapd owns it"):
         appliance.wait_for_unit("hostapd.service")
         appliance.succeed("test -e /sys/class/net/loomwl0")
