@@ -21,6 +21,18 @@ let
   # the moment either is tuned.
   keyGuardGrace = config.loom.keyGuard.intervalSec * config.loom.keyGuard.graceTicks;
 
+  # Only run mode ever has an access point -- see wifi.nix -- so first-time setup
+  # must not advertise one.
+  showWifi = config.loom.wifi.enable && config.loom.mode == "run";
+
+  # What a phone's camera expects, and what Android and iOS both emit from their
+  # own "share this network". No escaping here and none needed: wifi.nix asserts
+  # that the SSID and the passphrase contain nothing outside [A-Za-z0-9_-], which
+  # excludes every character this format reserves. That is not tidiness -- the
+  # escape for a reserved character is a backslash, and agetty eats backslashes
+  # out of an issue file before anyone gets to see them.
+  wifiUri = "WIFI:T:WPA;S:${config.loom.wifi.ssid};P:${config.loom.wifi.psk};;";
+
   # Ship a wrapper rather than only documenting the flags. Running bare `up.sh`
   # here is actively harmful: `setup_system` writes /etc/sysctl.d/99-loom.conf
   # that NixOS ignores, and `install_host_entries` replaces the /etc/hosts store
@@ -69,7 +81,7 @@ let
   # only ever reads a backslash as the start of an escape of its own.
   loom-info = pkgs.writeShellApplication {
     name = "loom-info";
-    runtimeInputs = [ pkgs.coreutils ];
+    runtimeInputs = [ pkgs.coreutils ] ++ lib.optional showWifi pkgs.qrencode;
     text = ''
       # The eyes in the logo's amber, so the login screen agrees with the boot
       # splash and the installer menu instead of being the one place the mark
@@ -132,8 +144,10 @@ let
       if [ -r /etc/loom/network.conf ]; then
         # shellcheck disable=SC1091
         . /etc/loom/network.conf
+        # The wired port, which is not the same thing as the interface holding
+        # the address once the access point bridges the two. See network.nix.
         printf '  Plug a laptop into %s and browse https://frontend.loom\n' \
-          "''${LOOM_INTERFACE}"
+          "''${LOOM_WIRED_INTERFACE}"
         printf '  This box serves DHCP on %s and answers for *.loom\n' \
           "''${LOOM_SUBNET}"
       fi
@@ -161,6 +175,32 @@ let
         printf '  Write it down. Without the USB stick it is the only way\n'
         printf '  to unlock this disk, and nobody else holds a copy.\n'
       fi
+      ${lib.optionalString showWifi ''
+        # Safe to print for the same reason the recovery passphrase above is:
+        # this screen belongs to a VT that opens a root-capable session on the
+        # next keypress, so it discloses nothing the console did not already.
+        #
+        # loom-wifi-check (wifi.nix) writes a warning fragment above this one
+        # when the radio never came up, so a box printing these credentials for
+        # a network that does not exist says so on the same screen.
+        printf '\n  WiFi network: %s\n' ${lib.escapeShellArg config.loom.wifi.ssid}
+        printf '  Passphrase:   %s\n' ${lib.escapeShellArg config.loom.wifi.psk}
+        printf '  Same network as the wired port: same addresses, same *.loom.\n'
+        printf '\n  Scan to join:\n\n'
+        # ANSIUTF8 rather than ASCII, and this is not cosmetic. It draws each
+        # row with the half blocks U+2580/U+2584, so a QR module is one cell
+        # wide by half a cell tall -- close to square on the 12x26 cell
+        # branding.nix selects. Drawn with '#' instead, every module would be
+        # twice as tall as it is wide and most phones refuse to decode it.
+        # branding.nix already asserts the console font carries those two
+        # glyphs plus U+2588, which is why the mark renders at all.
+        #
+        # The reset matters: the banner deliberately never restores the palette
+        # after the eyes (see above), and a QR drawn in amber-on-amber is not a
+        # QR. qrencode emits its own SGR pairs, so one reset here is enough.
+        printf '%s' $'\033[0m'
+        qrencode --type=ANSIUTF8 --level=L -- ${lib.escapeShellArg wifiUri}
+      ''}
       printf '\n'
     '';
   };

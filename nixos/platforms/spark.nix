@@ -15,6 +15,13 @@
       Driver = "mlx5_core";
     };
 
+    # Whatever radio the box carries, matched by type rather than by driver --
+    # see platform.nix for why that is safe here and why it is not pinned.
+    # Only consulted when the image is built with --wifi.
+    wifiMatch = {
+      Type = "wlan";
+    };
+
     # Nothing beyond the shared USB/NVMe list: the LUKS key lives on the stick,
     # so the initrd never needs the network, and this is the module set the
     # appliance has always shipped with.

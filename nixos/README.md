@@ -18,11 +18,13 @@ this file is about the code.
 | `box-hardware.nix` | LUKS root, filesystems, initrd, bootloader. |
 | `key-guard.nix` | Watches the USB key while the box runs and powers it off when the key leaves. |
 | `modes.nix` | `loom.mode`, the run/setup services, and the `first-time-setup` specialisation. |
-| `network.nix` | Static address and dnsmasq in run mode, DHCP client in setup mode, radios off. |
+| `network.nix` | Static address and dnsmasq in run mode, DHCP client in setup mode, the `--wifi` bridge, radios off. |
+| `wifi.nix` | The optional access point: `loom.wifi.*`, hostapd, and the check that says so on the console when the radio never came up. |
 | `repo.nix` | Seeds the embedded checkout into the operator's home, writable. |
 | `installer.nix` | The USB stick: `image.repart` layout and the installer system. |
 | `installer-scripts/` | `common.sh` (device interlock, console styling), `install.sh`, `wipe.sh`, `menu.sh`. |
 | `tests/appliance.nix` | VM test asserting the values `box.nix` restates from `up.sh`, and the console session. |
+| `tests/appliance-wifi.nix` | VM test for the `--wifi` build: hostapd on a `mac80211_hwsim` radio, the bridge, and the credentials on the login screen. |
 
 ## Why `default.nix` and not a flake
 
@@ -81,6 +83,11 @@ for poking at evaluated configuration.
 
 ```bash
 nix-build ./nixos -A tests.appliance \
+  --argstr system x86_64-linux --argstr platform evo-x2 ...
+
+# The --wifi build, which tests.appliance deliberately does not cover: it forces
+# off dnsmasq and the static addresses that this one exists to exercise.
+nix-build ./nixos -A tests.applianceWifi \
   --argstr system x86_64-linux --argstr platform evo-x2 ...
 ```
 

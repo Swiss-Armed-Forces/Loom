@@ -26,6 +26,13 @@
       Driver = "r8169";
     };
 
+    # The MediaTek Wi-Fi/BT combo, matched by type rather than by driver -- see
+    # platform.nix for why that is safe here and why it is not pinned. Only
+    # consulted when the image is built with --wifi.
+    wifiMatch = {
+      Type = "wlan";
+    };
+
     # Nothing extra. The obvious candidates for a box reached with a monitor
     # and a USB keyboard -- ahci, sd_mod, usbhid, hid_generic -- are already
     # pulled in by boot.initrd.includeDefaultModules, which defaults to true.

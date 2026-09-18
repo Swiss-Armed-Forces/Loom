@@ -127,6 +127,10 @@ All commands below are provided by devenv scripts (run `devenv-help` to see full
 
 - `build-appliance-image` - Build (and optionally flash) a NixOS appliance USB installer for a
   DGX Spark; must run on an aarch64 host. See `Documentation/appliance.md`
+- `build-appliance-image --wifi` - Additionally run a bridged WiFi access point on the appliance.
+  Radios are disabled in every other image. Related flags: `--wifi-ssid`, `--wifi-psk`,
+  `--wifi-country`, `--wifi-interface`. Changes the appliance threat model - see
+  `Documentation/appliance.md`
 
 **Utilities:**
 

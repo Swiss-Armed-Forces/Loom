@@ -27,8 +27,11 @@ Read this before building anything; the design only makes sense if these hold.
   and it is not an authentication boundary: it shows the banner, waits for a keypress, and then opens a
   root-capable session with no password. Neither box is driven over a serial cable, and neither image
   configures one, so the monitor and keyboard are the whole attack surface.
-- **WiFi and Bluetooth are disabled** by module blacklist and `rfkill`. That is a software guarantee; disable
-  the radios in the box's own firmware as well if the site requires it.
+- **Bluetooth is disabled** by module blacklist and `rfkill`, in every image. **WiFi is disabled the same way
+  unless the image was built with `--wifi`**, which turns the box into an access point — read
+  [The WiFi access point](#the-wifi-access-point) before using it, because it changes most of the bullets
+  above. Either way this is a software guarantee; disable the radios in the box's own firmware as well if the
+  site requires it.
 
 ## Supported platforms
 
@@ -79,6 +82,11 @@ Without `--flash` it only produces the image, under `.appliance-build/`. The opt
 | `--key-backup FILE` | Also write the LUKS key to `FILE`, mode 0400. Store it away from the box. |
 | `--subnet A.B.C` | Pin the appliance subnet. Defaults to a random `10.x.y`. |
 | `--interface NAME` | Pin the appliance NIC by kernel name instead of letting the platform match it. It is renamed to `loom0` either way — see [The appliance network interface](#the-appliance-network-interface). |
+| `--wifi` | Also run an access point, bridged onto the wired port. Radios are disabled without it. Read [The WiFi access point](#the-wifi-access-point) first. |
+| `--wifi-ssid SSID` | Network name. Defaults to a generated `loom-xxxx`. |
+| `--wifi-psk PSK` | WPA passphrase. Defaults to a generated one. Letters, digits, `-` and `_` only. |
+| `--wifi-country CC` | ISO country code. Moves the AP to 5GHz; without it the AP stays on 2.4GHz. |
+| `--wifi-interface NAME` | Pin the radio by kernel name. It is renamed to `loomwl0` either way. |
 | `--system SYSTEM` | Override the nix system. Normally the platform decides; a mismatch is refused. |
 | `--allow-cross` | Build for an architecture other than the host's. |
 | `--minikube-ip IP` | Address `*.loom` resolves to on the box. Defaults to `192.168.49.2`. |
@@ -136,6 +144,71 @@ other port. To pin a specific one, read its stable path off the box and rebuild 
 ```bash
 udevadm info /sys/class/net/<iface> | grep -E 'ID_PATH=|ID_NET_DRIVER='
 ```
+
+### The WiFi access point
+
+Off by default. `--wifi` builds an image whose installed appliance also runs an access point on the box's own
+radio, **bridged onto the wired port**, so it does not matter how a visitor arrives: the same DHCP pool, the
+same resolver, the same `https://frontend.loom`, whether they joined over the air or plugged a cable in.
+
+```bash
+build-appliance-image --platform evo-x2 --tag 1.4.0 --wifi --flash /dev/sdX
+```
+
+The SSID and passphrase are generated at build time and printed at the end of the build. The box's login
+screen shows them too, along with a QR code — point a phone camera at the monitor and it offers to join,
+the same way Android and iOS "share this network" works.
+
+#### Read this before using it
+
+The rest of this document describes a box that is an island. `--wifi` is the one option that changes that, and
+it changes it a lot:
+
+- **The passphrase is the only thing protecting the data.** Loom has no user management and its frontend is
+  not an authentication boundary. Anyone who joins the network has everything the box has indexed. With a
+  cable that meant "anyone who can physically reach the box"; with a radio it means anyone in range, through
+  the wall, in the car park.
+- **The passphrase is on the screen.** Anyone at the monitor can read it or scan it. That is not a new leak —
+  the console already opens a root-capable session on the next keypress — but it does mean the monitor now
+  hands out network access, not just local access.
+- **The credentials are on the stick.** They are baked into the image, so they are in `/nix/store`
+  world-readable and readable from the stick itself. Two boxes installed from one stick share a network.
+  Build a stick per box if that matters.
+- **Never cable a `--wifi` box into a network you do not own.** The radio and the wired port are one bridge,
+  so doing that makes the box an unauthenticated door onto that LAN. The box already refuses to act as a DHCP
+  server anywhere but its own link; bridging is not something it can refuse for you.
+- **It is slower.** 2.4GHz gives roughly 50–100 Mbit/s against 2.5GbE or ConnectX-7 on the wire. Addressing
+  and DNS are identical either way; throughput is not. Bulk ingest belongs on the cable.
+
+#### Bands and the country code
+
+The AP runs on **2.4GHz channel 6** unless you pass `--wifi-country`. That is not a conservative default that
+5GHz could be talked out of. With no country code, Linux uses regulatory domain `00`, in which every 5GHz
+sub-band is flagged `NO-IR` — _No Initiating Radiation_ — which allows joining a network someone else started
+but forbids beaconing, so hostapd cannot bring an AP up at all. Confirm on any box with `iw reg get`.
+
+Passing `--wifi-country CH` sets the regulatory domain and moves the AP to **channel 36**, the bottom of
+UNII-1, which is non-DFS wherever it is allocated — so the AP never waits out a radar availability check. Set
+it to where the box actually is.
+
+Note that many MediaTek and Intel radios are _self-managed regdomain_: the allocation is enforced in firmware
+and `--wifi-country` will not widen it.
+
+#### If the access point does not come up
+
+AP mode is not something every radio supports, and the failure is quiet: hostapd is bound to the radio's
+device unit, so a missing card or an unsupported mode simply leaves it inactive. The box says so on the login
+screen rather than leaving you to guess — a warning appears above the credentials, and the wired port keeps
+working throughout. On the box:
+
+```bash
+iw list | grep -A15 'Supported interface modes'   # needs a line reading '* AP'
+journalctl -u hostapd
+journalctl -u loom-wifi-check
+```
+
+If the radio is there but the platform's match did not select it, rebuild with
+`--wifi-interface <kernel name>`. It is renamed to `loomwl0` either way, and the bridge is `loombr0`.
 
 ## Installing
 

@@ -38,6 +38,18 @@
   # match with a specific kernel-assigned name.
   loomInterface ? "",
   enableGpu ? false,
+  # The optional access point (nixos/wifi.nix). Off unless
+  # build-appliance-image is given --wifi, which also generates the credentials
+  # below; they are baked into the closure, so they are world-readable in
+  # /nix/store and present on the stick. See Documentation/appliance.md.
+  enableWifi ? false,
+  wifiSsid ? "",
+  wifiPsk ? "",
+  # Empty means "no country code": 2.4GHz under regulatory domain 00. Setting one
+  # moves the AP to 5GHz, which domain 00 forbids an AP from beaconing on at all.
+  wifiCountry ? "",
+  # As `loomInterface`, but for the radio: empty means "use the platform's match".
+  wifiInterface ? "",
 }:
 let
   nixpkgsConfig = {
@@ -92,6 +104,11 @@ let
       loomSubnet
       loomInterface
       enableGpu
+      enableWifi
+      wifiSsid
+      wifiPsk
+      wifiCountry
+      wifiInterface
       ;
     loomUser = "loom";
     loomRepoDir = "/home/loom/loom";
@@ -147,6 +164,7 @@ let
     ./modes.nix
     ./network.nix
     ./repo.nix
+    ./wifi.nix
   ];
 
   # Assemble the disk image with host binaries rather than target ones.
@@ -241,5 +259,17 @@ in
       loomSubnet
       ;
     inherit (specialArgs) loomUser loomRepoDir;
+  };
+
+  # `nix-build ./nixos -A tests.applianceWifi --argstr system x86_64-linux`
+  # The --wifi build, which tests.appliance deliberately does not cover: it
+  # forces off the two things (dnsmasq, static addresses) this one exercises.
+  tests.applianceWifi = import ./tests/appliance-wifi.nix {
+    inherit
+      pkgs
+      specialArgs
+      applianceModules
+      loomSubnet
+      ;
   };
 }

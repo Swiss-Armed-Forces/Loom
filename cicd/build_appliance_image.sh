@@ -23,6 +23,20 @@ MINIKUBE_IP="192.168.49.2"
 # loom0". Only set by --interface, to override that match with a literal name.
 LOOM_INTERFACE=""
 
+# The optional access point (nixos/wifi.nix). Off by default: an appliance is
+# an island reached over a cable, and --wifi is an explicit decision to extend
+# it to everyone in radio range. SSID and passphrase are generated below unless
+# given, and are printed by `report` -- they are baked into the closure, so they
+# are also world-readable in /nix/store and present on the stick.
+ENABLE_WIFI=false
+WIFI_SSID=""
+WIFI_PSK=""
+# Empty keeps the radio on 2.4GHz under regulatory domain 00. Setting a country
+# code moves it to 5GHz, which domain 00 forbids an AP from beaconing on at all.
+WIFI_COUNTRY=""
+# As LOOM_INTERFACE, but for the radio.
+WIFI_INTERFACE=""
+
 # 4096 bytes of /dev/urandom, matching boot.initrd.luks.devices.keyFileSize.
 KEY_BYTES=4096
 KEY_PARTLABEL="loom-key"
@@ -48,6 +62,7 @@ STEPS=(
     validate_environment
     resolve_tag
     resolve_subnet
+    resolve_wifi
     prepare_workdir
     prepare_repo
     verify_repo
@@ -201,6 +216,70 @@ resolve_subnet(){
     a="$(( (RANDOM % 254) + 1 ))"
     b="$(( (RANDOM % 254) + 1 ))"
     SUBNET="10.${a}.${b}"
+}
+
+# The access point's identity, fixed at build time and baked into the closure.
+#
+# Generated here rather than on the box so that `report` can tell the operator
+# the SSID and passphrase before the stick has ever been booted. The cost is
+# stated in the header: two boxes installed from one stick share a network.
+resolve_wifi(){
+    if [[ "${ENABLE_WIFI}" != true ]]; then
+        # Guard against a flag that silently does nothing, which on a feature
+        # this security-relevant is worse than an error.
+        if [[ -n "${WIFI_SSID}${WIFI_PSK}${WIFI_COUNTRY}${WIFI_INTERFACE}" ]]; then
+            echo >&2 "[!] Error: --wifi-* given without --wifi. Nothing would enable the access point."
+            exit 1
+        fi
+        return
+    fi
+
+    if [[ -z "${WIFI_SSID}" ]]; then
+        # A random suffix, not a bare "loom": two appliances within range of each
+        # other must not advertise the same name, and an operator reading a QR
+        # code off a monitor should be able to tell which box answered.
+        WIFI_SSID="loom-$(random_token 4)"
+    fi
+
+    if [[ -z "${WIFI_PSK}" ]]; then
+        # Four groups of five, like the LUKS recovery passphrase -- 23 characters
+        # over a 32-symbol alphabet, comfortably past WPA's 8-character floor and
+        # still transcribable by someone who cannot scan the QR code.
+        WIFI_PSK="$(random_token 20 | sed --regexp-extended 's/(.{5})/\1-/g; s/-$//')"
+    fi
+
+    # nixos/wifi.nix asserts the same alphabet, and for the reason given there:
+    # anything outside it needs a backslash escape inside the `WIFI:` URI on the
+    # login screen, and agetty eats backslashes out of an issue file. Checked
+    # here too so a hand-passed value fails in the second it takes to read the
+    # flag rather than partway into a Nix evaluation.
+    local value
+    for value in "${WIFI_SSID}" "${WIFI_PSK}"; do
+        if [[ ! "${value}" =~ ^[A-Za-z0-9_-]+$ ]]; then
+            echo >&2 "[!] Error: '${value}' contains characters that cannot go on the console QR code."
+            echo >&2 "[!] --wifi-ssid and --wifi-psk accept letters, digits, '-' and '_' only."
+            exit 1
+        fi
+    done
+
+    if (( ${#WIFI_PSK} < 8 )); then
+        echo >&2 "[!] Error: --wifi-psk must be at least 8 characters (WPA minimum)."
+        exit 1
+    fi
+}
+
+# N characters from the same alphabet install.sh uses for the recovery
+# passphrase: unambiguous on a monitor (no l/1/0/O) and free of every character
+# the `WIFI:` URI reserves.
+random_token(){
+    local want="${1}" raw=''
+    # `head` bounds the read rather than cutting a `tr` that reads /dev/urandom
+    # endlessly -- see install.sh `generate_passphrase` for why that matters.
+    while (( ${#raw} < want )); do
+        raw+="$(head --bytes=256 /dev/urandom |
+            tr --delete --complement 'abcdefghijkmnpqrstuvwxyz23456789')"
+    done
+    printf '%s' "${raw:0:want}"
 }
 
 prepare_workdir(){
@@ -389,6 +468,11 @@ build_image(){
         --argstr loomSubnet "${SUBNET}" \
         --argstr loomInterface "${LOOM_INTERFACE}" \
         --arg enableGpu "${ENABLE_GPU}" \
+        --arg enableWifi "${ENABLE_WIFI}" \
+        --argstr wifiSsid "${WIFI_SSID}" \
+        --argstr wifiPsk "${WIFI_PSK}" \
+        --argstr wifiCountry "${WIFI_COUNTRY}" \
+        --argstr wifiInterface "${WIFI_INTERFACE}" \
         --out-link "${OUTPUT_DIR}/appliance-image"
 }
 
@@ -534,6 +618,24 @@ report(){
     echo "      subnet    : ${SUBNET}.0/24 (box at ${SUBNET}.1, DHCP ${SUBNET}.100-200)"
     echo "      interface : loom0${LOOM_INTERFACE:+ (renamed from ${LOOM_INTERFACE})}"
     echo "      gpu       : ${ENABLE_GPU}"
+    echo "      wifi      : ${ENABLE_WIFI}"
+    if [[ "${ENABLE_WIFI}" = true ]]; then
+        echo "      ssid      : ${WIFI_SSID}"
+        echo "      wifi psk  : ${WIFI_PSK}"
+        if [[ -n "${WIFI_COUNTRY}" ]]; then
+            echo "      wifi band : 5GHz ch36, country ${WIFI_COUNTRY}"
+        else
+            echo "      wifi band : 2.4GHz ch6, no country code"
+        fi
+        echo
+        echo "[!] This box will serve Loom over the air to anyone within range who has"
+        echo "[!] that passphrase. Loom has no user management and its frontend is not"
+        echo "[!] an authentication boundary, so the passphrase is the only thing between"
+        echo "[!] the indexed data and a stranger in the car park. It is also printed on"
+        echo "[!] the box's login screen, as a QR code, for anyone standing at the monitor."
+        echo "[!] Do not cable a wifi-enabled box into a network you do not own: the radio"
+        echo "[!] and the wired port are bridged, so it becomes an open door onto that LAN."
+    fi
     if [[ -n "${FLASH_DEVICE}" ]]; then
         echo "      flashed to: ${FLASH_DEVICE}"
         echo "      key sha256: ${checksum}"
@@ -564,6 +666,15 @@ usage(){
     echo "  -i|--interface INTERFACE      pin the appliance NIC by name instead of letting"
     echo "                                the platform match it (it is renamed to loom0 either way)"
     echo "  --subnet A.B.C                appliance subnet prefix (default: random 10.x.y)"
+    echo "  --wifi                        also run an access point, bridged onto the wired"
+    echo "                                port. Radios are disabled without this."
+    echo "  --wifi-ssid SSID              network name (default: generated 'loom-xxxx')"
+    echo "  --wifi-psk PSK                WPA passphrase (default: generated)"
+    echo "  --wifi-country CC             ISO country code; moves the AP to 5GHz. Without it"
+    echo "                                the AP stays on 2.4GHz, the only band an AP may"
+    echo "                                beacon on with no country code set."
+    echo "  --wifi-interface INTERFACE    pin the radio by name instead of letting the"
+    echo "                                platform match it (renamed to loomwl0 either way)"
     echo "  --minikube-ip MINIKUBE_IP     address '*.loom' resolves to on the box (default: ${MINIKUBE_IP})"
     echo "  --nixpkgs NIXPKGS             nixpkgs source (default: \${LOOM_NIXPKGS} from devenv)"
     echo "  -y|--yes                      do not ask for confirmation"
@@ -665,6 +776,30 @@ while [[ $# -gt 0 ]]; do
         --subnet)
             shift
             SUBNET="${1?Missing SUBNET}"
+            shift
+        ;;
+        --wifi)
+            ENABLE_WIFI=true
+            shift
+        ;;
+        --wifi-ssid)
+            shift
+            WIFI_SSID="${1?Missing SSID}"
+            shift
+        ;;
+        --wifi-psk)
+            shift
+            WIFI_PSK="${1?Missing PSK}"
+            shift
+        ;;
+        --wifi-country)
+            shift
+            WIFI_COUNTRY="${1?Missing COUNTRY}"
+            shift
+        ;;
+        --wifi-interface)
+            shift
+            WIFI_INTERFACE="${1?Missing INTERFACE}"
             shift
         ;;
         --minikube-ip)
