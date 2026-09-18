@@ -15,7 +15,7 @@ OUTPUT_DIR="${CONTEXT_DIR}/.appliance-build"
 # Which box this stick is for. The nix system follows from it unless --system
 # says otherwise; see nixos/platforms/ for what else each one carries.
 PLATFORM="spark"
-KNOWN_PLATFORMS=(spark evo-x2)
+KNOWN_PLATFORMS=(spark evo-x2 nuc12)
 NIX_SYSTEM=""
 MINIKUBE_IP="192.168.49.2"
 
@@ -101,6 +101,7 @@ platform_system(){
     case "${1}" in
         spark)  printf 'aarch64-linux' ;;
         evo-x2) printf 'x86_64-linux'  ;;
+        nuc12)  printf 'x86_64-linux'  ;;
         *)      return 1               ;;
     esac
 }
@@ -665,8 +666,10 @@ usage(){
     echo "  -g|--gpu                      (not implemented yet; the appliance is CPU-only)"
     echo "  -p|--platform PLATFORM        box to build for: ${KNOWN_PLATFORMS[*]} (default: ${PLATFORM})"
     echo "  -s|--system SYSTEM            nix system to build (default: the platform's)"
-    echo "  -i|--interface INTERFACE      pin the appliance NIC by name instead of letting"
-    echo "                                the platform match it (it is renamed to loom0 either way)"
+    echo "  -i|--interface INTERFACE      pin the appliance NIC by the name the box reports"
+    echo "                                (enp2s0, not eth0) instead of letting the platform"
+    echo "                                match it. Renamed to loom0 either way. Rarely needed:"
+    echo "                                an unmatched box claims a wired port on its own."
     echo "  --subnet A.B.C                appliance subnet prefix (default: random 10.x.y)"
     echo "  --wifi                        also run an access point, bridged onto the wired"
     echo "                                port. Radios are disabled without this."

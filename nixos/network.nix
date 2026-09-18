@@ -30,6 +30,20 @@ let
   applianceInterface = "loom0";
 
   # `loomInterface` is the escape hatch: empty means "use the platform's match".
+  #
+  # It is kept as an OriginalName match, but that ONLY fires when the operator
+  # passes the kernel's own name -- `eth0`. OriginalName matches the udev
+  # INTERFACE property as it stands when the .link file is evaluated, and at that
+  # moment the predictable name does not exist yet: `enp2s0` is the *output* of
+  # NamePolicy in 99-default.link, which sorts after this file. So
+  # `--interface enp2s0`, which is the name an operator actually reads off the
+  # box and the one Documentation/appliance.md tells them to use, matched nothing
+  # and produced a box with no loom0 -- the exact failure the flag exists to fix.
+  #
+  # Rather than demand a name nobody can discover, the override is applied at
+  # runtime by loom-interface-fallback below, which renames whatever is called
+  # `loomInterface` once udev has settled. This match stays as the fast path for
+  # anyone who does pass a kernel name.
   netMatch =
     if loomInterface != "" then { OriginalName = loomInterface; } else config.loom.platform.netMatch;
 
@@ -51,6 +65,63 @@ let
   # from modules that are not mode-gated. In setup mode the answer is the wired
   # NIC in both builds, `loombr0` being an interface that does not exist yet.
   serviceInterface = if isRun && wifiEnabled then bridgeInterface else applianceInterface;
+
+  # Where the fallback below records what it claimed, for loom-network-check and
+  # for anyone debugging the box afterwards.
+  fallbackRecord = "/run/loom/interface-fallback";
+
+  # Every wired NIC on the box, most-stable-device-path first.
+  #
+  # "Wired NIC" is four exclusions, and each one matters:
+  #
+  #   no `device` symlink   virtual interfaces -- bridges (loombr0), veth,
+  #                         docker0, tun/tap. minikube and docker create these on
+  #                         a running box, and claiming one would be absurd.
+  #   a DEVTYPE in uevent   the kernel's own classification, and the reason this
+  #                         is not a check for `wireless/` instead: an ordinary
+  #                         wired NIC declares no DEVTYPE at all, while `wlan`,
+  #                         `wwan`, `bridge`, `veth` and friends all declare one.
+  #                         `wwan` is the case that motivated it -- a cellular
+  #                         modem presents as ARPHRD_ETHER with a real device and
+  #                         no `wireless/` directory, so the obvious radio checks
+  #                         miss it and the box would have served DHCP down a
+  #                         mobile connection.
+  #   type != 1             not ARPHRD_ETHER: ppp, sit, ib and friends.
+  #   lo                    obviously.
+  #
+  # Sorted by the PCI address behind the device rather than by interface name, so
+  # a box with more than one port picks the same one on every boot instead of
+  # whichever udev happened to finish first.
+  loom-wired-nics = pkgs.writeShellApplication {
+    name = "loom-wired-nics";
+    runtimeInputs = with pkgs; [
+      coreutils
+      gawk
+      gnugrep
+    ];
+    text = ''
+      for path in /sys/class/net/*; do
+          name="$(basename "''${path}")"
+
+          if [ "''${name}" = lo ]; then
+              continue
+          fi
+          if [ ! -e "''${path}/device" ]; then
+              continue
+          fi
+          if grep --quiet '^DEVTYPE=' "''${path}/uevent" 2>/dev/null; then
+              continue
+          fi
+          if [ "$(cat "''${path}/type" 2>/dev/null || echo 0)" != 1 ]; then
+              continue
+          fi
+
+          printf '%s %s\n' \
+              "$(basename "$(readlink --canonicalize "''${path}/device")")" \
+              "''${name}"
+      done | sort | awk '{ print $2 }'
+    '';
+  };
 in
 {
   # Exported rather than kept local because the name is not derivable from
@@ -68,6 +139,31 @@ in
       The interface carrying the appliance address, serving DHCP and answering
       `*.loom`: the bridge when the access point is enabled, the wired NIC
       otherwise. `loom0` always means the physical port, in both builds.
+    '';
+  };
+
+  options.loom.autoSelectInterface = lib.mkOption {
+    type = lib.types.bool;
+    default = true;
+    internal = true;
+    description = ''
+      Claim a wired NIC as `loom0` when the platform's `netMatch` selected
+      nothing.
+
+      Without this, an image installed on a box the match does not cover comes up
+      with no `loom0` at all -- and since the address, the dnsmasq binding, the
+      firewall and the banner all pin to that name, the box cannot serve its
+      network. With no sshd and no `nixos-rebuild`, recovering means building and
+      flashing another stick. A box with exactly one wired port has no ambiguity
+      to protect against and should simply work.
+
+      Only ever runs when the match found nothing, so no supported platform
+      changes behaviour. It also runs when `--interface` was given and did not
+      match, deliberately: a pin that missed is the same failure as a match that
+      missed, and the console says the NIC was claimed automatically either way.
+
+      Off in tests/appliance.nix, which asserts the opposite -- that a VM whose
+      only NIC is virtio comes up without `loom0`.
     '';
   };
 
@@ -243,13 +339,129 @@ in
         linkConfig.Name = applianceInterface;
       };
 
+      environment.systemPackages = [ loom-wired-nics ];
+    }
+
+    # -------------------------------------------------------------------------
+    # And a fallback, for the box the match does not cover.
+    #
+    # The .link file above is a driver match, so an image installed on hardware
+    # nobody wrote a platform for renames nothing and comes up with no loom0 --
+    # no address, no DHCP, no *.loom, and no way to fix it short of a new stick.
+    # This claims a wired port instead.
+    #
+    # With more than one candidate it picks rather than refuses, which looks
+    # reckless and is the opposite: platforms/evo-x2.nix already makes the
+    # argument, because both its Realtek ports match the same driver and udev
+    # decides between them. A box that came up on the wrong port is fixed by
+    # moving the cable; a box with no loom0 at all is not fixable at the console
+    # at all. Picking is strictly the better failure.
+    # -------------------------------------------------------------------------
+    (lib.mkIf (config.loom.autoSelectInterface || loomInterface != "") {
+      systemd.services.loom-interface-fallback = {
+        description = "Claim a wired NIC as ${applianceInterface} if none matched";
+        wantedBy = [ "network-pre.target" ];
+        # network-pre.target is the hook NixOS's own firewall unit uses, and it
+        # is what puts this ahead of every address, bridge and dnsmasq unit
+        # without having to name each of them -- including the ones that only
+        # exist in the --wifi build.
+        before = [ "network-pre.target" ];
+        wants = [ "network-pre.target" ];
+        # udev has to have finished renaming whatever it was going to rename,
+        # otherwise this races the .link file it exists to back up.
+        after = [ "systemd-udev-settle.service" ];
+        serviceConfig = {
+          Type = "oneshot";
+          RemainAfterExit = true;
+          # Journal only, for the reason given on loom-network-check below.
+          StandardOutput = "journal";
+          StandardError = "journal";
+        };
+        path = with pkgs; [
+          coreutils
+          iproute2
+          loom-wired-nics
+        ];
+        script = ''
+          readonly OVERRIDE=${lib.escapeShellArg loomInterface}
+          readonly AUTO_SELECT=${if config.loom.autoSelectInterface then "1" else "0"}
+
+          # Deliberately not brought up here: the scripted network configures and
+          # raises it, and in setup mode dhcpcd does.
+          #
+          # Written through a temporary file, like key-guard.nix's state, so the
+          # console check can never read half a record.
+          claim() {
+            local chosen="''${1}" reason="''${2}" alternatives="''${3:-}"
+
+            # Never fail the boot over this. A device that refuses to be renamed
+            # leaves the box where it would have been anyway, and
+            # loom-network-check still reports it on the console.
+            if ! ip link set dev "''${chosen}" down \
+              || ! ip link set dev "''${chosen}" name ${applianceInterface}; then
+              echo "[!] Could not rename ''${chosen} to ${applianceInterface}."
+              return 1
+            fi
+
+            echo "[*] Claimed ''${chosen} as ${applianceInterface} (''${reason})."
+
+            mkdir --parents /run/loom
+            {
+              printf 'LOOM_FALLBACK_INTERFACE=%s\n' "''${chosen}"
+              printf 'LOOM_FALLBACK_REASON=%s\n' "''${reason}"
+              printf 'LOOM_FALLBACK_ALTERNATIVES=%s\n' "''${alternatives}"
+            } >${fallbackRecord}.tmp
+            mv ${fallbackRecord}.tmp ${fallbackRecord}
+          }
+
+          if [ -e /sys/class/net/${applianceInterface} ]; then
+            echo "[*] ${applianceInterface} already exists; udev claimed it."
+            exit 0
+          fi
+
+          # An explicit --interface first, and regardless of AUTO_SELECT: the
+          # operator named a port, which is an instruction rather than a guess.
+          # This is the path that makes the flag work at all -- see the netMatch
+          # comment above for why the .link file cannot do it by itself.
+          if [ -n "''${OVERRIDE}" ]; then
+            if [ -e "/sys/class/net/''${OVERRIDE}" ]; then
+              claim "''${OVERRIDE}" override || true
+              exit 0
+            fi
+            echo "[!] --interface named ''${OVERRIDE}, which does not exist on this box."
+          fi
+
+          if [ "''${AUTO_SELECT}" != 1 ]; then
+            exit 0
+          fi
+
+          mapfile -t candidates < <(loom-wired-nics)
+
+          if [ "''${#candidates[@]}" -eq 0 ]; then
+            echo "[!] No wired interface to claim as ${applianceInterface}."
+            exit 0
+          fi
+
+          claim "''${candidates[0]}" auto "''${candidates[*]:1}" || true
+        '';
+      };
+    })
+
+    {
+
       # If the match is wrong, everything above silently does nothing and the box
       # comes up unreachable -- with no sshd, the console is the only way to find
       # out why. Say so there, loudly, rather than leaving someone to guess.
+      #
+      # Three outcomes now, not one: no interface at all, an interface the
+      # fallback above had to claim, or nothing to report.
       systemd.services.loom-network-check = {
-        description = "Warn when the appliance interface is missing";
+        description = "Report how the appliance interface was selected";
         wantedBy = [ "multi-user.target" ];
-        after = [ "systemd-udev-settle.service" ];
+        after = [
+          "systemd-udev-settle.service"
+          "loom-interface-fallback.service"
+        ];
         before = [ "loom.service" ];
         # Same ordering trick as box.nix's loom-issue.service, and for the same
         # reason: the warning below is written as an issue fragment, so it has
@@ -270,31 +482,70 @@ in
         };
         # Never fails: this is a diagnostic, and blocking the boot of an
         # appliance whose only interface is missing helps nobody.
+        path = with pkgs; [
+          coreutils
+          loom-wired-nics
+        ];
         script = ''
-          if [ -e /sys/class/net/${applianceInterface} ]; then
-            exit 0
-          fi
+          fragment=/run/issue.d/60-loom-network.issue
 
           # Sorts after box.nix's 50-loom.issue, so this lands under the banner
           # and above agetty's press-ENTER prompt. No backslashes anywhere in
           # the text: agetty reads them as issue escapes. Written through a
           # temporary file for the same reason loom-issue.service is -- a getty
-          # respawning mid-write must never read half a warning.
-          mkdir -p /run/issue.d
-          {
-            echo "[!] ${applianceInterface} does not exist -- no address, no DHCP, no *.loom."
-            echo "[!] The platform's interface match did not select anything. Present instead:"
-            for candidate in /sys/class/net/*; do
-              name="$(basename "$candidate")"
-              [ "$name" = lo ] && continue
-              echo "[!]   $name"
-            done
-            echo "[!] Rebuild the image with --interface <name> to pin one of the above."
-          } > /run/issue.d/60-loom-network.issue.tmp
-          mv /run/issue.d/60-loom-network.issue.tmp /run/issue.d/60-loom-network.issue
+          # respawning mid-write must never read half a message.
+          report() {
+            mkdir --parents /run/issue.d
+            cat >"''${fragment}.tmp"
+            mv "''${fragment}.tmp" "''${fragment}"
+            # And to the journal, so `journalctl -u loom-network-check` has it.
+            cat "''${fragment}"
+          }
 
-          # And to the journal, so `journalctl -u loom-network-check` still has it.
-          cat /run/issue.d/60-loom-network.issue
+          if [ ! -e /sys/class/net/${applianceInterface} ]; then
+            # With the fallback in place this no longer means "the match missed"
+            # -- it means there was no wired port to claim either.
+            {
+              echo "[!] ${applianceInterface} does not exist -- no address, no DHCP, no *.loom."
+              echo "[!] No wired interface was found to claim. Present instead:"
+              for candidate in /sys/class/net/*; do
+                name="$(basename "$candidate")"
+                if [ "$name" = lo ]; then
+                  continue
+                fi
+                echo "[!]   $name"
+              done
+              echo "[!] If one of those is in fact wired, rebuild with --interface <name>."
+            } | report
+            exit 0
+          fi
+
+          if [ -e ${fallbackRecord} ]; then
+            # shellcheck source=/dev/null
+            . ${fallbackRecord}
+
+            # An explicit --interface did what it was told; that is not news for
+            # the login screen, and the journal already has it.
+            if [ "$LOOM_FALLBACK_REASON" = override ]; then
+              rm --force "''${fragment}"
+              exit 0
+            fi
+
+            {
+              echo "[*] ${applianceInterface} is $LOOM_FALLBACK_INTERFACE, claimed automatically:"
+              echo "[*] this image has no platform match for the NIC in this box."
+              if [ -n "$LOOM_FALLBACK_ALTERNATIVES" ]; then
+                echo "[*] Other wired ports: $LOOM_FALLBACK_ALTERNATIVES"
+                echo "[*] If nothing reaches the box, move the cable to one of those."
+              fi
+              echo "[*] To pin it, rebuild with --interface $LOOM_FALLBACK_INTERFACE,"
+              echo "[*] or add a platform for this machine."
+            } | report
+            exit 0
+          fi
+
+          # Matched properly. Clear anything an earlier boot left behind.
+          rm --force "''${fragment}"
           exit 0
         '';
       };

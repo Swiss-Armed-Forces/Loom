@@ -12,13 +12,14 @@ this file is about the code.
 | `platform.nix` | Declares `loom.platform.*`: the per-box dimension, separate from `system`. |
 | `platforms/spark.nix` | DGX Spark: aarch64, ConnectX-7. |
 | `platforms/evo-x2.nix` | GMKtec EVO-X2: x86_64, Realtek 2.5GbE. |
+| `platforms/nuc12.nix` | Intel NUC 12 Pro (Wall Street Canyon): x86_64, Intel 2.5GbE (`igc`). |
 | `branding.nix` | Shared by box and stick: the name in the boot menu, the logo, the plymouth theme, `loom-eyes`, and the VT font — its size (`loom.consoleFont`), its glyph check, and the unit that re-applies it once the display has settled. |
 | `box.nix` | The appliance: host tuning, toolchain, operator account, banner, `loom-up`. |
 | `console.nix` | What the operator meets: the press-a-key login, the three-pane session (the log-to-`k9s` handover, and `loom-chat` on the cluster's Ollama), `/dev/console`. No pane is a shell; `Alt-F2` is. |
 | `box-hardware.nix` | LUKS root, filesystems, initrd, bootloader — including why the menu timeout stays at 30s. |
 | `key-guard.nix` | Watches the USB key while the box runs and powers it off when the key leaves. |
 | `modes.nix` | `loom.mode`, the run/setup services, the `first-time-setup` specialisation, and `loom-promote-boot-entry`. |
-| `network.nix` | Static address and dnsmasq in run mode, DHCP client in setup mode, the `--wifi` bridge, radios off. |
+| `network.nix` | Static address and dnsmasq in run mode, DHCP client in setup mode, the `--wifi` bridge, radios off. Also the `loom0` rename and the fallback that claims a wired NIC when no platform matches. |
 | `wifi.nix` | The optional access point: `loom.wifi.*`, hostapd, and the check that says so on the console when the radio never came up. |
 | `usb-ingest.nix` | Mounts USB media read-only and ingests it: the udev rule, the templated unit, and the filesystem set. |
 | `usb-ingest/` | The program that unit runs — device selection, mount policy, naming, `mc mirror` — with its own pytest suite, run at build time. |
@@ -27,6 +28,7 @@ this file is about the code.
 | `installer-scripts/` | `common.sh` (device interlock, console styling), `install.sh`, `wipe.sh`, `menu.sh`. |
 | `tests/appliance.nix` | VM test asserting the values `box.nix` restates from `up.sh`, and the console session. |
 | `tests/appliance-wifi.nix` | VM test for the `--wifi` build: hostapd on a `mac80211_hwsim` radio, the bridge, and the credentials on the login screen. |
+| `tests/appliance-interface-fallback.nix` | VM test for the box no platform matches: one NIC, two NICs, and the fallback switched off. |
 | `tests/appliance-usb-ingest.nix` | VM test for USB ingest: real filesystems on scratch disks, and above all that the key stick is never touched. |
 
 ## Why `default.nix` and not a flake
@@ -53,8 +55,41 @@ the `nixSystem` it belongs to, and `default.nix` asserts it against `system`, so
 evaluation with a readable message rather than producing a box that will not boot. An unknown platform name
 lists the valid ones.
 
-Adding a third box means one file under `platforms/`, one entry in the `platformModules` table in
+Adding another box means one file under `platforms/`, one entry in the `platformModules` table in
 `default.nix`, and one case in `platform_system()` in `cicd/build_appliance_image.sh`.
+
+## `loom0`, and the two things that can produce it
+
+A platform's `netMatch` is a **driver** match, applied by a `.link` file. That is the fast path and the one
+every supported box takes.
+
+It is not the only path, because a driver match is exactly as narrow as it sounds: an image installed on
+hardware nobody wrote a platform for renames nothing, and a box with no `loom0` has no address, no DHCP and
+no `*.loom`. There is no sshd and no `nixos-rebuild` to fix that with, so the only recovery was building
+another stick. `loom-interface-fallback` closes that: when the match selected nothing, it picks a wired NIC
+itself and renames it before `network-pre.target`, which puts it ahead of every address, bridge and dnsmasq
+unit without naming any of them.
+
+Two things about it are worth knowing before changing it.
+
+**It picks rather than refuses when there are several.** That looks reckless and is the opposite:
+`platforms/evo-x2.nix` already makes the argument, because both its Realtek ports match `r8169` and udev
+decides between them. A box that came up on the wrong port is fixed by moving the cable. A box with no
+`loom0` at all is not fixable at the console. Picking is strictly the better failure, and the pick is by PCI
+path so it is at least the same port on every boot.
+
+**`--interface` is applied by the same unit, not by the `.link` file**, even though the `.link` file still
+carries an `OriginalName` match for it. `OriginalName=` matches the udev `INTERFACE` property *while* the
+link policy is being decided — which is the kernel's `eth0`. The predictable name an operator actually reads
+off the box, `enp2s0`, is the *output* of that decision, produced by `NamePolicy` in `99-default.link`, which
+sorts after ours. So `--interface enp2s0` matched nothing and produced a box with no `loom0` — the exact
+failure the flag exists to prevent. Applying it at runtime, after udev has settled, is what makes the name an
+operator can discover the name that works.
+
+`loom.autoSelectInterface` turns the automatic half off; the explicit `--interface` half runs regardless,
+because naming a port is an instruction rather than a guess. `tests/appliance.nix` sets it false, since it
+asserts a VM comes up *without* `loom0`; `tests/appliance-interface-fallback.nix` is where the behaviour is
+actually tested.
 
 ## Building by hand
 
@@ -95,6 +130,10 @@ nix-build ./nixos -A tests.applianceWifi \
 
 # USB ingest: scratch disks carrying real filesystems, and the exclusion rules.
 nix-build ./nixos -A tests.applianceUsbIngest \
+  --argstr system x86_64-linux --argstr platform evo-x2 ...
+
+# The box no platform matches: one NIC, two NICs, and the fallback switched off.
+nix-build ./nixos -A tests.applianceInterfaceFallback \
   --argstr system x86_64-linux --argstr platform evo-x2 ...
 ```
 

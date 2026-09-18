@@ -85,6 +85,7 @@ let
   platformModules = {
     spark = ./platforms/spark.nix;
     evo-x2 = ./platforms/evo-x2.nix;
+    nuc12 = ./platforms/nuc12.nix;
   };
 
   platformModule =
@@ -277,6 +278,19 @@ in
   # what usb-ingest.nix decides about each -- above all that the LUKS key stick
   # is never touched.
   tests.applianceUsbIngest = import ./tests/appliance-usb-ingest.nix {
+    inherit
+      pkgs
+      specialArgs
+      applianceModules
+      loomSubnet
+      ;
+  };
+
+  # `nix-build ./nixos -A tests.applianceInterfaceFallback --argstr system x86_64-linux`
+  # The box no platform matches: that a wired NIC is claimed as loom0 anyway,
+  # which one is picked when there are several, and that switching it off
+  # restores the old behaviour.
+  tests.applianceInterfaceFallback = import ./tests/appliance-interface-fallback.nix {
     inherit
       pkgs
       specialArgs

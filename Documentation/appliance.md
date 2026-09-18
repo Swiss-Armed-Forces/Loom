@@ -49,19 +49,29 @@ Read this before building anything; the design only makes sense if these hold.
 
 ## Supported platforms
 
-Two boxes are supported. Pick one with `--platform`; it decides the architecture and everything else that
+Three boxes are supported. Pick one with `--platform`; it decides the architecture and everything else that
 differs between them.
 
-| | `spark` (default) | `evo-x2` |
-| --- | --- | --- |
-| Box | NVIDIA DGX Spark | GMKtec EVO-X2 (AMD Ryzen AI Max+ 395) |
-| Architecture | `aarch64-linux` | `x86_64-linux` |
-| Build host | aarch64 — a Spark can build sticks for its siblings | any ordinary x86_64 machine |
-| Console | monitor and USB keyboard | monitor and USB keyboard |
-| Network | ConnectX-7, one port | 2.5GbE, two ports |
-| GPU | not supported (see below) | not supported (see below) |
+| | `spark` (default) | `evo-x2` | `nuc12` |
+| --- | --- | --- | --- |
+| Box | NVIDIA DGX Spark | GMKtec EVO-X2 (AMD Ryzen AI Max+ 395) | Intel NUC 12 Pro (Wall Street Canyon) |
+| Architecture | `aarch64-linux` | `x86_64-linux` | `x86_64-linux` |
+| Build host | aarch64 — a Spark can build sticks for its siblings | any ordinary x86_64 machine | any ordinary x86_64 machine |
+| Console | monitor and USB keyboard | monitor and USB keyboard | monitor and USB keyboard |
+| Network | ConnectX-7, one port | 2.5GbE, two ports | 2.5GbE, one port (`igc`) |
+| WiFi (`--wifi`) | untested | untested | untested — AX211, AP mode unverified |
+| GPU | not supported (see below) | not supported (see below) | not supported (see below) |
+
+`nuc12` covers both Wall Street Canyon chassis, the slim NUC12WSK and the tall NUC12WSH — same board, same
+NIC. A WSH fitted with the second-LAN expansion has two `igc` ports, and then the match cannot single one
+out: whichever udev processes first becomes `loom0`, exactly as on the EVO-X2's pair. If the box comes up
+unreachable, try the other port.
 
 Everything else — the LUKS-key-on-stick scheme, the two boot modes, the installer and the wipe — is identical.
+
+A box that is **not** one of these will still come up: see
+[The appliance network interface](#the-appliance-network-interface) for what happens when no platform
+matches its NIC.
 
 ## What you need
 
@@ -90,17 +100,17 @@ Without `--flash` it only produces the image, under `.appliance-build/`. The opt
 
 | Option | Meaning |
 | --- | --- |
-| `--platform PLATFORM` | Which box: `spark` or `evo-x2`. Defaults to `spark`. |
+| `--platform PLATFORM` | Which box: `spark`, `evo-x2` or `nuc12`. Defaults to `spark`. |
 | `--tag TAG` | Loom release to embed. Defaults to the newest tag, with a confirmation prompt. |
 | `--flash DEVICE` | Write the image to `DEVICE` and provision its key partition. Destroys everything on it. |
 | `--key-backup FILE` | Also write the LUKS key to `FILE`, mode 0400. Store it away from the box. |
 | `--subnet A.B.C` | Pin the appliance subnet. Defaults to a random `10.x.y`. |
-| `--interface NAME` | Pin the appliance NIC by kernel name instead of letting the platform match it. It is renamed to `loom0` either way — see [The appliance network interface](#the-appliance-network-interface). |
+| `--interface NAME` | Pin the appliance NIC by the name the box reports (`enp2s0`), instead of letting the platform match it. Renamed to `loom0` either way. Rarely needed — an unmatched box claims a wired port on its own; see [The appliance network interface](#the-appliance-network-interface). |
 | `--wifi` | Also run an access point, bridged onto the wired port. Radios are disabled without it. Read [The WiFi access point](#the-wifi-access-point) first. |
 | `--wifi-ssid SSID` | Network name. Defaults to a generated `loom-xxxx`. |
 | `--wifi-psk PSK` | WPA passphrase. Defaults to a generated one. Letters, digits, `-` and `_` only. |
 | `--wifi-country CC` | ISO country code. Moves the AP to 5GHz; without it the AP stays on 2.4GHz. |
-| `--wifi-interface NAME` | Pin the radio by kernel name. It is renamed to `loomwl0` either way. |
+| `--wifi-interface NAME` | Pin the radio by its **kernel** name (`wlan0`), not the predictable one — unlike `--interface`, this is still a `.link` match and carries the limitation described under [Pinning a port](#pinning-a-port). Rarely needed: the default claims any radio. Renamed to `loomwl0` either way. |
 | `--system SYSTEM` | Override the nix system. Normally the platform decides; a mismatch is refused. |
 | `--allow-cross` | Build for an architecture other than the host's. |
 | `--minikube-ip IP` | Address `*.loom` resolves to on the box. Defaults to `192.168.49.2`. |
@@ -148,16 +158,47 @@ guess produces a box with a static address on an interface that does not exist, 
 to fix it from.
 
 Instead each platform declares a `[Match]` rule, udev renames whatever matches to **`loom0`**, and the address,
-the dnsmasq binding and the console banner all pin to that name. If nothing matches, a `loom-network-check`
-service says so on the console at every boot and lists the interfaces that do exist.
+the dnsmasq binding and the console banner all pin to that name.
 
 The EVO-X2 has two ethernet ports and both are Realtek, so the match cannot single one out: whichever udev
 processes first becomes `loom0`, and the other keeps its kernel name. If the box comes up unreachable, try the
-other port. To pin a specific one, read its stable path off the box and rebuild with `--interface`:
+other port.
+
+#### When no platform matches
+
+An image installed on hardware none of the platforms covers would otherwise rename nothing, and a box with no
+`loom0` has no address, no DHCP and no `*.loom` — unrecoverable at the console, because there is no sshd and
+no `nixos-rebuild`. So when the match selects nothing, `loom-interface-fallback` claims a wired port itself,
+before any address or bridge unit runs:
+
+| Wired ports found | What happens |
+| --- | --- |
+| 0 | Nothing is renamed. The console names every interface it did find. |
+| 1 | It becomes `loom0`. No ambiguity, nothing to warn about beyond saying so. |
+| 2 or more | The one with the lowest PCI path becomes `loom0`; the console names the others. |
+
+"Wired" excludes anything the kernel gives a `DEVTYPE` — radios, WWAN modems, bridges, veth — as well as
+virtual interfaces with no backing device. A cellular modem is the awkward one: it looks like an ordinary
+ethernet card apart from that `DEVTYPE=wwan`, and serving DHCP down a mobile connection is not a mistake worth
+making.
+
+Picking rather than refusing is deliberate. A box that came up on the wrong port of a multi-port machine is
+fixed by moving the cable; a box with no `loom0` at all needs a new stick.
+
+`loom-wired-nics` prints the candidate list, in order, on the box itself.
+
+#### Pinning a port
+
+`--interface NAME` takes the name as the box reports it — `enp2s0`, not `eth0`. It is applied at runtime by
+the same service, for a reason worth knowing if you are reading the generated `.link` file and wondering: a
+`[Match] OriginalName=` clause matches the name udev sees _while_ it is deciding, which is the kernel's
+`eth0`. The predictable name is the _output_ of that decision, so matching on it there can never work.
 
 ```bash
 udevadm info /sys/class/net/<iface> | grep -E 'ID_PATH=|ID_NET_DRIVER='
 ```
+
+The driver is what a new platform should match on; the name is what `--interface` wants.
 
 ### The WiFi access point
 

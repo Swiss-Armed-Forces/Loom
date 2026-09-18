@@ -15,6 +15,7 @@
       type = lib.types.enum [
         "spark"
         "evo-x2"
+        "nuc12"
       ];
       description = "Identifier of the appliance platform this closure targets.";
     };

@@ -78,6 +78,12 @@ pkgs.testers.runNixOSTest {
     # .device that never appears. The rename is asserted from the generated
     # configuration below instead.
     networking.interfaces = pkgs.lib.mkForce { };
+    # ...and the fallback would undo that, by claiming the VM's single virtio NIC
+    # exactly as it is meant to on a box nobody wrote a platform for. That
+    # behaviour has its own test (tests/appliance-usb-ingest.nix's sibling,
+    # tests/appliance-interface-fallback.nix); here it is switched off so the
+    # assertions above and below keep testing what they were written to test.
+    loom.autoSelectInterface = pkgs.lib.mkForce false;
     # Loom cannot actually come up in a test VM (no images, no cluster); we are
     # checking that the units are wired, not that Loom runs.
     systemd.services.loom.wantedBy = pkgs.lib.mkForce [ ];
@@ -447,6 +453,12 @@ pkgs.testers.runNixOSTest {
 
         conf = appliance.succeed("cat /etc/loom/network.conf")
         assert "LOOM_INTERFACE=loom0" in conf, conf
+
+        # This test asserts loom0 is absent, which is only true with the
+        # fallback off -- so assert it really is off, rather than letting a
+        # changed default quietly turn the subtest above into a no-op.
+        appliance.fail("test -e /sys/class/net/loom0")
+        appliance.fail("systemctl cat loom-interface-fallback.service")
 
         # The banner and dnsmasq must agree with the rename, not with a name
         # that only existed on the machine the image was built for.

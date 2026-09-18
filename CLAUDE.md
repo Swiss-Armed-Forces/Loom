@@ -125,8 +125,13 @@ All commands below are provided by devenv scripts (run `devenv-help` to see full
 
 **Appliance image:**
 
-- `build-appliance-image` - Build (and optionally flash) a NixOS appliance USB installer for a
-  DGX Spark; must run on an aarch64 host. See `Documentation/appliance.md`
+- `build-appliance-image` - Build (and optionally flash) a NixOS appliance USB installer.
+  `--platform` picks the box: `spark` (DGX Spark, aarch64), `evo-x2` (GMKtec EVO-X2, x86_64) or
+  `nuc12` (Intel NUC 12 Pro, x86_64). The build host must match the platform's architecture unless
+  `--allow-cross` is given. See `Documentation/appliance.md`
+- `build-appliance-image --interface NAME` - Pin the appliance NIC by the name the box reports
+  (`enp2s0`, not `eth0`). Only needed when no platform matches the hardware; without it a wired
+  port is claimed automatically
 - `build-appliance-image --wifi` - Additionally run a bridged WiFi access point on the appliance.
   Radios are disabled in every other image. Related flags: `--wifi-ssid`, `--wifi-psk`,
   `--wifi-country`, `--wifi-interface`. Changes the appliance threat model - see
