@@ -6,10 +6,12 @@
 #
 #   * The banner waits, and nothing logs itself in. agetty prints box.nix's
 #     `loom-info` as the issue and then blocks on a keypress.
-#   * A keypress opens a three-pane session: the live bring-up log, a shell and
-#     btop. Both boot modes get the same session; only the unit in the first
-#     pane differs, which is what `loom.progressUnit` carries over from
-#     modes.nix.
+#   * A keypress opens a three-pane session: the bring-up log, a shell and btop.
+#     The first pane does not stay a log -- once Loom is up it hands over to k9s
+#     on the pods, because by then the log is a finished transcript and the pods
+#     are the live thing. Both boot modes get the same session; only the unit in
+#     the first pane differs, which is what `loom.progressUnit` carries over
+#     from modes.nix.
 #   * Nothing else writes to that screen. The units that used to log to
 #     /dev/console -- which, with no `console=` on the command line, meant the
 #     VT the operator is looking at -- log to the journal only now, and the
@@ -24,6 +26,7 @@
   pkgs,
   loomUser,
   loomRepoDir,
+  loomNamespace,
   ...
 }:
 let
@@ -59,19 +62,29 @@ let
     set -g status-right-length 70
   '';
 
-  # The first pane. Prints where the unit stands before following it, because a
-  # bare `journalctl --follow` on a unit that has not started -- or that a
-  # condition skipped -- is an empty screen with no explanation.
+  # The first pane, in two halves of one life: the bring-up log while Loom comes
+  # up, then k9s on the pods once it has. The log is what the operator needs for
+  # the minutes or hours the box takes to start, and is dead weight afterwards --
+  # up.sh's last line stays on screen for the rest of the boot while the thing it
+  # brought up is left unwatched. So the pane hands over instead of splitting,
+  # and the widest screen on the box always shows the thing worth looking at.
+  #
+  # Prints where the unit stands before following it, because a bare
+  # `journalctl --follow` on a unit that has not started -- or that a condition
+  # skipped -- is an empty screen with no explanation.
   loom-progress = pkgs.writeShellApplication {
     name = "loom-progress";
     runtimeInputs = with pkgs; [
       systemd
+      kubectl
       coreutils
     ];
     text = ''
       unit=${lib.escapeShellArg cfg.progressUnit}
+      namespace=${lib.escapeShellArg loomNamespace}
 
-      printf '  Following %s. This pane is the live bring-up log.\n' "$unit"
+      printf '  Following %s. This pane is the live bring-up log,\n' "$unit"
+      printf '  and becomes the pod list once Loom is up.\n'
       state="$(systemctl show --property=ActiveState --value "$unit" || echo unknown)"
       case "$state" in
         inactive)
@@ -95,9 +108,107 @@ let
       # Deliberately not --boot: in setup mode the run worth reading is usually
       # the previous boot's, because this boot skipped the unit.
       #
-      # `exec` so that tmux's #{pane_current_command} reads `journalctl` rather
-      # than `loom-progress` -- tests/appliance.nix asserts on it.
-      exec journalctl --no-hostname --lines=500 --follow --unit "$unit"
+      # In the background, and deliberately not `exec`ed as it used to be: this
+      # script has to outlive the log to notice the moment Loom is up, and exec
+      # would replace the very process that watches for it.
+      journalctl --no-hostname --lines=500 --follow --unit "$unit" &
+      follower=$!
+
+      # Two conditions, and both are needed.
+      #
+      # ActiveState alone is the honest definition of "up.sh returned": the unit
+      # is Type=oneshot with RemainAfterExit (modes.nix), so it reads
+      # `activating` for the hours of a bring-up, `active` only once up.sh has
+      # exited 0, and `failed` if it did not -- which is exactly when the log
+      # must stay on screen rather than being replaced by a pod list.
+      #
+      # The namespace check is what keeps first-time setup on its log. That mode
+      # runs loom-fetch, which also reaches `active`, but it only populates
+      # minikube's image store and deploys nothing -- so the namespace never
+      # appears, the handover never fires, and the box powers itself off still
+      # showing the fetch log. No second option to set, and no way for the two
+      # modes to disagree about which pane they get.
+      up() {
+        [ "$(systemctl show --property=ActiveState --value "$unit")" = active ] \
+          && kubectl --request-timeout=5s \
+            get namespace "$namespace" >/dev/null 2>&1
+      }
+
+      until up; do
+        sleep 5
+      done
+
+      kill "$follower" 2>/dev/null || true
+      wait "$follower" 2>/dev/null || true
+
+      printf '\n  Loom is up. This pane now shows its pods; the log is still\n'
+      printf '  there, in the shell pane:\n\n'
+      printf '    journalctl --unit %s --follow\n\n' "$unit"
+      # Long enough to read the two lines above before k9s takes the screen: it
+      # draws on the alternate buffer, so everything printed here is gone until
+      # k9s exits.
+      sleep 5
+
+      exec ${lib.getExe loom-k9s}
+    '';
+  };
+
+  # What the first pane turns into, and a command in its own right -- an
+  # operator on a plain Alt-F2 console gets the same screen by typing `loom-k9s`.
+  #
+  # Loom is ~25 pods, and "is it up?" is a question the bring-up log answers only
+  # indirectly: up.sh returns long before the last container is ready, and a pod
+  # that crash-loops an hour later says nothing there at all. k9s parked on the
+  # pod list is that answer, continuously.
+  #
+  # The namespace is passed explicitly rather than left to the kubeconfig, even
+  # though up.sh `use_namespace` (up.sh:775-779) sets the current context to the
+  # same value. That context is only set at the END of a bring-up, while this
+  # pane can start before it -- it would launch k9s while the context still says
+  # `default`, and k9s persists the namespace it started in per context, so the
+  # pane would keep showing an empty `default` for the life of the box.
+  # `loomNamespace` comes from vars.sh via cicd/build_appliance_image.sh, the
+  # same way the *.loom host list does, so there is no second copy of the name to
+  # drift.
+  #
+  # --logoless: the ASCII K9S mark costs the header its right-hand third, and
+  # what belongs there is the pod list.
+  loom-k9s = pkgs.writeShellApplication {
+    name = "loom-k9s";
+    runtimeInputs = with pkgs; [
+      k9s
+      kubectl
+      coreutils
+    ];
+    text = ''
+      namespace=${lib.escapeShellArg loomNamespace}
+
+      printf '  Pods in the %s namespace. This pane is the cluster overview.\n' \
+        "$namespace"
+
+      # k9s exits when it cannot reach a cluster. Coming from the pane above
+      # there always is one -- that is what the handover waits for -- but typed
+      # by hand on a box that is still starting there is not, and a command that
+      # quits on the spot is one nobody runs twice. So wait for the namespace to
+      # exist. That one check covers both: kubectl cannot list a namespace on a
+      # cluster it cannot talk to.
+      #
+      # --request-timeout, because the interesting failure is not "no
+      # kubeconfig" -- which returns at once -- but a kubeconfig pointing at a
+      # minikube that is not running, where the default is a two-minute hang per
+      # attempt, and a pane that prints nothing for two minutes reads as frozen.
+      reachable() {
+        kubectl --request-timeout=5s get namespace "$namespace" >/dev/null 2>&1
+      }
+
+      if ! reachable; then
+        printf '  Waiting for it. This pane fills in once the cluster answers.\n'
+        until reachable; do
+          sleep 5
+        done
+      fi
+
+      exec k9s --logoless --namespace "$namespace" --command pods
     '';
   };
 
@@ -114,7 +225,13 @@ let
   #   60x8   cpu                the smallest thing btop will draw
   #
   # `stty size` rather than `tput`, to keep the pane working on a VT whose TERM
-  # has no terminfo entry on the box.
+  # has no terminfo entry on the box. Inside tmux this reports the pane, not the
+  # terminal: every pane gets its own pty, sized to the pane.
+  #
+  # The measurement happens once, at startup, and btop keeps the box set for the
+  # life of the pane -- a later resize redraws the same boxes. So the pane has
+  # to be at its final size before this runs, which is what the ordering in
+  # `create` below is for.
   loom-btop = pkgs.writeShellApplication {
     name = "loom-btop";
     runtimeInputs = with pkgs; [
@@ -157,14 +274,35 @@ let
       # run a shell function at all -- it fails with "tm: not found".
       tm=(tmux -S ${lib.escapeShellArg tmuxSocket} -f ${tmuxConf})
 
+      # The size of the VT this script was started on. The session below is
+      # created detached, and a detached session takes its window size from
+      # tmux's `default-size` -- 80x24 -- however big the console actually is.
+      # Panes split out of that are tiny, and loom-btop, which picks its box set
+      # from the pane it starts in, would measure around 39x11 and draw one box
+      # on a console with room for four. The attach at the bottom resizes the
+      # window afterwards, but by then btop has already written its config.
+      # Nothing else knows the real size: this script runs on the VT, so it asks
+      # the VT and hands the answer to `new-session`.
+      read -r lines cols < <(stty size 2>/dev/null || echo "24 80")
+
       create() {
-        "''${tm[@]}" new-session -d -s loom -n loom ${lib.getExe loom-progress}
+        "''${tm[@]}" new-session -d -x "$cols" -y "$lines" -s loom -n loom ${lib.getExe loom-progress}
         "''${tm[@]}" split-window -h -t loom:0.0 -c ${lib.escapeShellArg loomRepoDir}
-        "''${tm[@]}" split-window -v -t loom:0.1 ${lib.getExe loom-btop}
+        # A plain shell first, btop only after the layout. A split gives the new
+        # pane half of the pane it came from, and `select-layout` reshapes it
+        # again right after -- so a command started by the split itself sees a
+        # size that is about to change. loom-btop measures once and cannot take
+        # that back, hence the respawn into a pane that has stopped moving.
+        "''${tm[@]}" split-window -v -t loom:0.1
         "''${tm[@]}" select-layout -t loom:0 main-vertical
-        # A dead log or btop pane keeps its error on screen instead of
-        # collapsing the layout. The shell pane is left alone, so `exit` there
-        # closes it the way anyone would expect.
+        "''${tm[@]}" respawn-pane -k -t loom:0.2 ${lib.getExe loom-btop}
+        # A first pane that died -- on the log, or on the k9s it hands over to --
+        # keeps its error on screen instead of collapsing the layout, and a k9s
+        # the operator quit with `:q` comes back with Ctrl-b `:respawn-pane`.
+        # Same for btop -- set after the respawn above, which would otherwise
+        # have to kill a pane that `remain-on-exit` is keeping around. The shell
+        # pane is left alone, so `exit` there closes it the way anyone would
+        # expect.
         "''${tm[@]}" set-option -p -t loom:0.0 remain-on-exit on
         "''${tm[@]}" set-option -p -t loom:0.2 remain-on-exit on
         # Land in the shell, not in the log.
@@ -279,6 +417,7 @@ in
     environment.systemPackages = [
       loom-console
       loom-progress
+      loom-k9s
       loom-btop
     ];
 

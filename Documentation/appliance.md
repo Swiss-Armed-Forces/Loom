@@ -273,17 +273,45 @@ which no uniform shift of this art can satisfy.
 
 <!-- editorconfig-checker-enable -->
 
-The eyes are the same mark the boot splash and the installer stick show, drawn in half blocks. One rendering,
-everywhere: the pre-login banner, `loom-info` re-run in the shell pane, and the installer menu all print it
-from the same command.
+The eyes are the same mark the boot splash and the installer stick show, drawn in half blocks and in the
+logo's amber — the screenshot above cannot show the colour, but the monitor does. One rendering, everywhere:
+the pre-login banner, `loom-info` re-run in the shell pane, and the installer menu all print it from the same
+command, in the same colour the splash paints its progress bar.
 
-Both screens run in Cozette rather than the kernel's built-in console font. The cell is 6 pixels wide instead
-of 8, so the same monitor carries about a third more columns — 320 rather than 240 on a 1080p panel — and the
-font covers the box drawing tmux frames its panes with and the graded blocks `btop` draws its meters out of.
-The appliance also asks its firmware for the largest console mode it has, because the column count is only ever
-the framebuffer width divided by that 6. The font is not a free choice: the eyes above are made of `█`, `▄` and
-`▀`, most console fonts are missing the half blocks, and a build that picks one that is fails rather than
-shipping a box whose banner is a screen of holes.
+Reaching that exact amber on a console takes redefining a palette entry, because the Linux VT shoehorns even a
+24-bit colour request into its 16 basic ones. The appliance therefore rewrites the entry once, when it draws
+the login banner, and never restores it — the VT looks a palette up when it paints rather than when the
+character was written, so putting it back would recolour the eyes already on screen. Anything else on that
+console that asks for yellow gets the amber too, which is the intent. The sequence goes only to a real VT:
+it hangs an xterm until somebody presses return, so the panes of the console session get the colour without
+it, and come out amber anyway from the palette the banner already set underneath them.
+
+Both screens run in Cozette rather than a kernel built-in console font. What that displaces is coarser than it
+sounds: the kernel picks its font from the size of the framebuffer it is handed, and on a large panel it lands
+on Terminus 16x32. A 2560x1600 monitor therefore starts out with a 160x50 grid for a three-pane session with
+`btop` in one of them. Cozette also covers the box drawing tmux frames its panes with and the graded blocks
+`btop` draws its meters out of, which the built-in fonts do not carry in full.
+
+The size is a knob, `loom.consoleFont` in `nixos/branding.nix`. Cozette ships two sizes and nothing between
+them, and they are identical in everything but size:
+
+| `loom.consoleFont` | cell | grid on a 2560x1600 panel |
+| --- | --- | --- |
+| kernel default, for comparison | 16x32 | 160 x 50 |
+| `large` | 12x26 | 213 x 61 |
+| `small` (the default) | 6x13 | 426 x 123 |
+
+Six pixels is the floor, and the logo is what sets it. The eyes above are made of `█`, `▄` and `▀`, most
+console fonts are missing the half blocks, and a build that selects one that is fails rather than shipping a
+box whose banner is a screen of holes. The appliance also asks its firmware for the largest console mode it
+has, since the column count is only ever the framebuffer width divided by that cell.
+
+Setting the font once is not enough to make it stick. `systemd-vconsole-setup` runs before most of the machine
+exists, and whatever re-initialises the console afterwards — a real display driver taking over from the
+firmware framebuffer, or plymouth letting go of the screen — throws the font away and the kernel's own comes
+back. A `loom-console-font` service therefore applies it a second time, after plymouth has released the console
+and before any getty paints a character. It has to be before: changing the font resizes the console, so doing
+it afterwards would leave the banner in wrapped fragments.
 
 So somebody who only walks past the monitor still gets everything they need. Nothing logs in by itself — the
 screen stays here until a key is pressed, which is also why the banner can no longer be scrolled away. Pressing
@@ -293,21 +321,34 @@ remote access, and physical possession of box and stick is the whole trust bound
 That keypress opens a three-pane session:
 
 ```text
-┌────────────────────┬──────────────┐
-│                    │              │
-│                    │    shell     │
-│   the bring-up     │              │
-│   log, live        ├──────────────┤
-│                    │              │
-│                    │    btop      │
-│                    │              │
-└────────────────────┴──────────────┘
+┌────────────────────┬──────────────┐        ┌────────────────────┐
+│                    │              │        │                    │
+│                    │    shell     │        │   k9s, on the      │
+│   the bring-up     │              │  once  │   pods of the      │
+│   log, live        ├──────────────┤  it is │   loom namespace   │
+│                    │              │   up   │                    │
+│                    │    btop      │        │                    │
+│                    │              │        │                    │
+└────────────────────┴──────────────┘        └────────────────────┘
   LOOM    Ctrl-b d detach | Alt-F2 plain console
 ```
 
 The left pane follows whichever unit this boot mode runs — `loom` under the default entry, `loom-fetch` under
 first-time setup. The right column is an ordinary shell and `btop`. **`loom-info`** reprints the banner in that
 shell at any time.
+
+That left pane does not stay a log. The moment the unit has **succeeded** — `up.sh` exited 0, and the `loom`
+namespace exists — it hands the screen over to **`k9s`** on the pods, because from then on the log is a
+finished transcript while the pods are the live thing, and _"is it actually up?"_ is a question the log answers
+only indirectly: `up.sh` returns long before the last container is ready, and a pod that crash-loops an hour
+later says nothing there at all. A bring-up that **failed** keeps its log on screen, which is the one case
+where the log is what matters; so does first-time setup, which deploys nothing and powers the box off when it
+is done. The log is never lost either way — `journalctl --unit loom --follow` in the shell pane brings it back,
+and the pane says so as it switches.
+
+`Ctrl-b` then an arrow key moves between panes. Inside `k9s`, `d` describes a pod, `l` shows its logs, `0`
+switches namespace and `:q` quits to a dead pane that `Ctrl-b :respawn-pane` brings back. **`loom-k9s`** is the
+same screen as a command, for an `Alt-F2` console.
 
 `Ctrl-b d` detaches and returns to the press-a-key prompt; the panes keep running, and the next keypress comes
 straight back to them. `Alt-F2` through `Alt-F6` give a plain console with no session at all, which is the way

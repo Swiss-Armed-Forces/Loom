@@ -22,6 +22,12 @@
   repoSrc ? throw "nixos: pass --arg repoSrc <path to the prepared checkout>",
   tag ? "dev",
   loomHostsJson ? throw "nixos: pass --argstr loomHostsJson '[\"api.loom\", ...]'",
+  # The namespace up.sh deploys into -- `NAMESPACE` in vars.sh, passed through by
+  # cicd/build_appliance_image.sh for the same reason the host list is. It is
+  # what the console session's k9s pane watches. Defaulted rather than thrown so
+  # that `nix-build ./nixos -A tests.appliance` needs no arguments beyond the
+  # ones it already takes.
+  loomNamespace ? "loom",
   minikubeIp ? "192.168.49.2",
   # First three octets of the appliance network. build-appliance-image
   # randomises the middle two so two boxes on one wire cannot collide, and so a
@@ -81,6 +87,7 @@ let
       loomSrc
       tag
       loomHostsJson
+      loomNamespace
       minikubeIp
       loomSubnet
       loomInterface

@@ -64,17 +64,69 @@ let
   #
   # Produces no backslashes on purpose: agetty interprets them as issue-file
   # escapes. The passphrase charset (install.sh:225-231) cannot contain one, and
-  # neither can the art `loom-eyes` draws.
+  # neither can the art `loom-eyes` draws. The colour below is not an exception:
+  # `$'\033'` is a literal ESC byte by the time it is written, and agetty(8)
+  # only ever reads a backslash as the start of an escape of its own.
   loom-info = pkgs.writeShellApplication {
     name = "loom-info";
     runtimeInputs = [ pkgs.coreutils ];
     text = ''
+      # The eyes in the logo's amber, so the login screen agrees with the boot
+      # splash and the installer menu instead of being the one place the mark
+      # is monochrome.
+      #
+      # Two sequences, because they answer to different consoles:
+      #
+      #   ESC ] P nrrggbb   Redefines a Linux VT palette entry. The only way to
+      #                     reach the exact colour -- console_codes(4) shoehorns
+      #                     even a 24-bit 38;2;r;g;b into the 16 basic ones, so
+      #                     a bare ESC[33m lands on #aa5500. VT only: the same
+      #                     page warns that xterm hangs on it until somebody
+      #                     presses return.
+      #   ESC [ 33m         Selects that entry. Safe on any terminal.
+      #
+      # Indices 3 and B are both set because bold promotes one to the other,
+      # and because branding.nix loads a 512-glyph font: setfont(8) notes that
+      # past 256 glyphs the console spends its intensity bit on glyph selection
+      # and drops to 8 colours, so which of the two any given VT lands on is
+      # not worth predicting. Setting both makes it moot.
+      #
+      # There is deliberately no reset. The VT looks the palette up when it
+      # paints, not when the character was written, so restoring it would
+      # recolour the eyes already on screen back to mustard.
+      palette=""
+      amber=""
+      reset=""
+      # loom-issue.service sets this: it captures this output into a file, so
+      # the checks below cannot see the console, but that file is read only by
+      # agetty and agetty is only ever on a VT here.
+      if [ "''${LOOM_INFO_COLOR:-auto}" = vt ]; then
+        palette=$'\033]P3${config.loom.branding.amberRgb}\033]PB${config.loom.branding.amberRgb}'
+      elif [ -t 1 ]; then
+        # A pts -- a tmux pane of console.nix's session -- gets the selector but
+        # not the redefinition, and still comes out amber: the VT underneath it
+        # had its palette rewritten by the banner at boot.
+        case "$(tty 2>/dev/null || true)" in
+          /dev/tty[0-9]*)
+            palette=$'\033]P3${config.loom.branding.amberRgb}\033]PB${config.loom.branding.amberRgb}'
+            ;;
+          *) ;;
+        esac
+      fi
+      # Keyed on stdout so that `loom-info > banner.txt` stays readable.
+      if [ "''${LOOM_INFO_COLOR:-auto}" = vt ] || [ -t 1 ]; then
+        amber=$'\033[33m'
+        reset=$'\033[0m'
+      fi
+
       # The mark the boot splash just showed, in the form a console can hold.
       # A command rather than a here-document so that the banner, the issue and
       # the installer menu all draw the same art from one place. See
       # branding.nix.
       printf '\n'
+      printf '%s%s' "$palette" "$amber"
       ${lib.getExe config.loom.branding.eyes}
+      printf '%s' "$reset"
       printf '\n  Loom appliance -- %s\n' ${lib.escapeShellArg tag}
       printf '  %s\n' ${lib.escapeShellArg config.loom.platform.description}
       if [ -r /etc/loom/network.conf ]; then
@@ -219,6 +271,9 @@ in
       # userspace and that override would drag CUDA into the closure.
       tmux
       btop
+      # Also the third pane. Listed here as well so that an operator on a plain
+      # Alt-F2 console, or one who closed the pane, still has it.
+      k9s
     ])
     ++ [ loom-info ]
     ++ config.loom.entrypoints;
@@ -339,7 +394,13 @@ in
         ${pkgs.coreutils}/bin/mkdir -p /run/issue.d
         # Rendered through a temporary file so agetty can never read a
         # half-written banner from a getty that respawns mid-write.
-        ${loom-info}/bin/loom-info >/run/issue.d/50-loom.issue.tmp
+        #
+        # LOOM_INFO_COLOR=vt because the redirection hides the console from
+        # loom-info: without it the one screen the colour exists for -- the
+        # login prompt nobody has touched yet -- would be the one that renders
+        # the eyes plain.
+        LOOM_INFO_COLOR=vt ${loom-info}/bin/loom-info \
+          >/run/issue.d/50-loom.issue.tmp
         ${pkgs.coreutils}/bin/mv /run/issue.d/50-loom.issue.tmp \
           /run/issue.d/50-loom.issue
       '';

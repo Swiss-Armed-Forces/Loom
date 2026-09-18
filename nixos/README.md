@@ -12,9 +12,9 @@ this file is about the code.
 | `platform.nix` | Declares `loom.platform.*`: the per-box dimension, separate from `system`. |
 | `platforms/spark.nix` | DGX Spark: aarch64, ConnectX-7. |
 | `platforms/evo-x2.nix` | GMKtec EVO-X2: x86_64, Realtek 2.5GbE. |
-| `branding.nix` | Shared by box and stick: the name in the boot menu, the logo, the plymouth theme, `loom-eyes`, the VT font. |
+| `branding.nix` | Shared by box and stick: the name in the boot menu, the logo, the plymouth theme, `loom-eyes`, and the VT font — its size (`loom.consoleFont`), its glyph check, and the unit that re-applies it once the display has settled. |
 | `box.nix` | The appliance: host tuning, toolchain, operator account, banner, `loom-up`. |
-| `console.nix` | What the operator meets: the press-a-key login, the three-pane session, `/dev/console`. |
+| `console.nix` | What the operator meets: the press-a-key login, the three-pane session (and its log-to-`k9s` handover), `/dev/console`. |
 | `box-hardware.nix` | LUKS root, filesystems, initrd, bootloader. |
 | `key-guard.nix` | Watches the USB key while the box runs and powers it off when the key leaves. |
 | `modes.nix` | `loom.mode`, the run/setup services, and the `first-time-setup` specialisation. |
@@ -105,8 +105,9 @@ to software emulation — much slower, but it runs:
 - the `*.loom` host list, generated from `vars.sh` at build time rather than copied
 - every binary `up.sh` needs — the `validate_environment` list (`up.sh:402-428`), plus the `awk` it pipes
   through at `up.sh:380` above those checks, plus the `tar` and `mktemp` that `cicd/skaffold` reaches for
+- `NAMESPACE`, passed through the same way the host list is and consumed by `console.nix`'s `k9s` view
 
-`tests/appliance.nix` asserts all three, so a change on either side is caught rather than shipped. If you
+`tests/appliance.nix` asserts all four, so a change on either side is caught rather than shipped. If you
 add a `check_command` to `up.sh`, add the package to `loom.toolchain` in `box.nix` and the name to the test.
 
 `loom.toolchain` is one list on purpose. It feeds both `environment.systemPackages` and the `path` of the

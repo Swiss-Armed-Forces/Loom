@@ -16,15 +16,18 @@
 # surface than plymouth. The stick boots a UKI, whose stub can draw a bitmap
 # before Linux exists at all -- hence `splashBmp` below, which only it uses.
 {
+  config,
   lib,
   pkgs,
   loomSrc,
   ...
 }:
 let
-  # The amber the logo is drawn in (Frontend/public/favicon.svg). Plymouth wants
-  # 0xRRGGBB rather than CSS notation.
-  loomAmber = "0xf7b718";
+  # The amber the logo is drawn in (Frontend/public/favicon.svg), as bare
+  # RRGGBB. Stored without a prefix because the two things that consume it want
+  # different ones: plymouth takes 0xRRGGBB, and the VT palette sequence
+  # box.nix writes takes the six digits on their own.
+  loomAmberRgb = "f7b718";
 
   # Amber rings on a black disc, which is why the theme below can leave the
   # upstream black background alone.
@@ -65,12 +68,17 @@ let
   # The font every VT draws in, and the reason the eyes below still look like
   # eyes.
   #
-  # The kernel's built-in font is 8 pixels wide, which fixes the console at
-  # framebuffer_width / 8 columns -- 240 on a 1080p panel, for a three-pane
-  # session with btop in one of them. Cozette's cell is 6 wide, so the same
-  # panel gives 320, and its 512 glyphs cover the box drawing tmux frames its
-  # panes with and the eighth blocks btop's meters are made of, neither of
-  # which the built-in font has in full.
+  # What this displaces is NOT an 8x16 cell. fbcon picks its built-in font from
+  # the framebuffer it is handed, and on a large panel it lands on Terminus
+  # 16x32 -- measured on the box: a 2560x1600 framebuffer gives a 160x50 grid,
+  # which is 16 by 32 exactly. So the console starts out twice as coarse in each
+  # direction as the 8x16 that every worked example on the subject assumes, and
+  # a three-pane session with btop in one of them has 160 columns to live in.
+  #
+  # Cozette is the replacement because its 512 glyphs cover the box drawing tmux
+  # frames its panes with and the eighth blocks btop's meters are made of,
+  # neither of which the built-in fonts carry in full, and because it ships two
+  # sizes that differ in nothing else -- see `loom.consoleFont`.
   #
   # Six pixels is the floor, and the mark is what sets it: `loomEyes` below is
   # drawn from U+2588, U+2584 and U+2580 and nothing else, and most console
@@ -80,6 +88,16 @@ let
   # thing nobody sees until a box is in front of somebody at a site, so it is
   # asserted here instead, the same way logoPng above refuses an unmaterialised
   # git-lfs pointer.
+  #
+  # The assertion runs against whichever size is selected, so switching the knob
+  # cannot quietly pick a font that drops the mark.
+  consoleFontFile =
+    {
+      small = "cozette6x13";
+      large = "cozette12x26";
+    }
+    .${config.loom.consoleFont};
+
   consoleFont =
     pkgs.runCommand "loom-console-font"
       {
@@ -87,7 +105,7 @@ let
           pkgs.kbd # psfgettable
           pkgs.gzip
         ];
-        src = "${pkgs.cozette}/share/consolefonts/cozette6x13.psfu";
+        src = "${pkgs.cozette}/share/consolefonts/${consoleFontFile}.psfu";
       }
       ''
         # `zcat --force` because psfgettable reads no compressed font and most
@@ -124,11 +142,13 @@ let
   # serial console any more (platforms/, installer.nix), so the probe only ever
   # chose between one real answer and a worse one.
   #
-  # Colour is deliberately NOT applied here. The installer wraps this in the
-  # logo amber, which on a VT it can only reach by redefining a palette entry,
-  # and that sequence hangs an xterm (common.sh). The appliance prints the eyes
-  # plain rather than settle for the mustard that a bare ESC[33m lands on. One
-  # generator, two colour policies.
+  # Colour is deliberately NOT applied here, though both consumers now do apply
+  # it. Reaching the exact amber on a VT means redefining a palette entry, and
+  # that sequence hangs an xterm (console_codes(4)) -- so the decision depends
+  # on which console is being written to, which is something only the caller
+  # knows. The installer menu makes it in common.sh, the appliance banner in
+  # box.nix. One generator, one colour, two places that decide whether the
+  # console in front of them can take it.
   #
   # No backslashes, in either the art or anything printed beside it: agetty
   # reads the issue for escapes of its own and would eat them.
@@ -170,7 +190,7 @@ let
       --replace-fail 'Description=A theme designed by jimmac that features a simple spinner.' \
         'Description=Loom appliance.' \
       --replace-fail 'WatermarkVerticalAlignment=.96' 'WatermarkVerticalAlignment=.38' \
-      --replace-fail 'ProgressBarForegroundColor=0xffffff' 'ProgressBarForegroundColor=${loomAmber}'
+      --replace-fail 'ProgressBarForegroundColor=0xffffff' 'ProgressBarForegroundColor=0x${loomAmberRgb}'
 
     # Not a --replace-fail: the upstream value embeds plymouth's own store path,
     # so matching it literally would break on every plymouth bump. The grep is
@@ -185,6 +205,33 @@ let
   '';
 in
 {
+  options.loom.consoleFont = lib.mkOption {
+    type = lib.types.enum [
+      "small"
+      "large"
+    ];
+    default = "small";
+    description = ''
+      How big the console cell is, for every VT on the box and on the stick.
+
+      `small` is cozette6x13, `large` is cozette12x26. Cozette ships these two
+      and nothing between them, and they are identical in every respect that is
+      not size -- both cover the box drawing, the eighth blocks and the three
+      glyphs `loom-eyes` needs -- so this really is only a size choice.
+
+      What it is measured against is the kernel's own pick, which on a large
+      panel is Terminus 16x32. On the 2560x1600 panel the appliance was tested
+      on:
+
+        kernel default   16x32   160 x  50
+        large            12x26   213 x  61
+        small             6x13   426 x 123
+
+      Not `console.font` directly, because the value has to survive the
+      build-time glyph check in branding.nix rather than be a free string.
+    '';
+  };
+
   options.loom.branding = {
     logoPng = lib.mkOption {
       type = lib.types.package;
@@ -213,25 +260,91 @@ in
         the two screens carry the same mark.
       '';
     };
+
+    amberRgb = lib.mkOption {
+      type = lib.types.str;
+      internal = true;
+      description = ''
+        The logo's amber as bare RRGGBB, measured off the favicon rather than
+        eyeballed.
+
+        An option because three screens paint with it and a second literal is a
+        second thing to get wrong: the plymouth theme above, the VT palette
+        box.nix redefines for the login banner, and the installer menu.
+      '';
+    };
   };
 
   config = {
     loom.branding = {
       inherit logoPng splashBmp;
       eyes = loomEyes;
+      amberRgb = loomAmberRgb;
     };
 
     # Deliberately not `console.earlySetup`. That would carry the font into the
-    # initrd, and the only thing on screen that early is plymouth, which draws
-    # the logo as a PNG and never touches the VT font. Stage 2's
-    # systemd-vconsole-setup applies it long before any getty, which is the
-    # first moment a character is drawn on tty1.
+    # initrd, which is earlier still and therefore even more exposed to the
+    # reset described below; and the only thing on screen that early is
+    # plymouth, which draws the logo as a PNG and never touches the VT font.
     console.font = "${consoleFont}";
     # Not needed for the line above -- a store path in FONT= is handed straight
     # to setfont. This is what additionally puts the font under /etc/kbd, so
     # that an operator on a plain Alt-F2 console can `setfont cozette12x26` and
-    # get a bigger one without a store path to type.
+    # compare sizes by hand without a store path to type.
     console.packages = [ pkgs.cozette ];
+
+    # -------------------------------------------------------------------------
+    # Setting the font once is not enough.
+    #
+    # `systemd-vconsole-setup.service` is DefaultDependencies=no and
+    # Before=sysinit.target, so it applies the font before most of the machine
+    # exists. Anything that re-initialises the console afterwards throws it away
+    # and the kernel's built-in font comes back -- which is exactly what the box
+    # showed: /etc/vconsole.conf named cozette6x13, `setfont cozette6x13` on
+    # tty2 worked by hand, and the login screen was still rendering at 16x32.
+    #
+    # Two things here can do that resetting, and this unit is deliberately
+    # agnostic between them:
+    #
+    #   * a DRM driver taking over from simpledrm. fbcon rebinds without
+    #     emitting the `ACTION=="add", SUBSYSTEM=="vtconsole"` event that
+    #     systemd's own 90-vconsole.rules keys on, so nothing re-applies it.
+    #   * plymouth releasing the console when it quits -- which run mode has and
+    #     first-time setup does not (modes.nix passes `plymouth.enable=0`).
+    #
+    # Re-applying once, late, covers both without having to know which.
+    # -------------------------------------------------------------------------
+    systemd.services.loom-console-font = {
+      description = "Re-apply the console font once the display has settled";
+      # Same triple as box.nix's loom-issue.service, and for the same reason:
+      # getty-pre.target is the hook for "before anything paints a VT", but it
+      # is passive, so a user of it has to pull it into the transaction itself.
+      #
+      # Ordering before the first painted character is not a nicety. Changing
+      # the font resizes the VT, so doing this after agetty has drawn the banner
+      # would leave a screen of wrapped fragments.
+      wantedBy = [ "multi-user.target" ];
+      wants = [ "getty-pre.target" ];
+      before = [ "getty-pre.target" ];
+      # Absent in setup mode, where plymouth is switched off entirely. An After=
+      # on a unit that does not exist is a no-op rather than an error, which is
+      # what makes one unit serve both modes.
+      after = [ "plymouth-quit-wait.service" ];
+      serviceConfig = {
+        Type = "oneshot";
+        RemainAfterExit = true;
+        # The binary rather than `systemctl restart systemd-vconsole-setup`:
+        # restarting another unit from inside a unit means blocking on the job
+        # queue this unit is itself in. Running it directly is synchronous, and
+        # it still walks every VT -- which a bare `setfont -C /dev/tty1` would
+        # not, leaving Alt-F2 through Alt-F6 at the kernel default.
+        #
+        # `-` because a console that will not take the font must still get a
+        # login prompt. On a box with no remote access a wrong-sized font is
+        # cosmetic and a missing getty is unrecoverable.
+        ExecStart = "-${config.systemd.package}/lib/systemd/systemd-vconsole-setup";
+      };
+    };
 
     # Names the systemd-boot entries: NixOS builds each title from this string
     # plus the specialisation name, so the appliance's two modes read `Loom` and

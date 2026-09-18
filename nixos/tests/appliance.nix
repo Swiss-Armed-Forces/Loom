@@ -176,11 +176,32 @@ pkgs.testers.runNixOSTest {
         # agetty hands the bytes to the VT unchanged.
         assert "█" in issue, issue
 
+        # The mark is amber on the login screen, not monochrome. The colour
+        # only exists because loom-issue.service forces it: the redirection
+        # that builds this file hides the console from loom-info, so a lost
+        # LOOM_INFO_COLOR leaves exactly the screen the colour is for -- the
+        # prompt nobody has touched yet -- rendering the eyes plain, which
+        # nothing short of looking at a monitor would catch.
+        #
+        # Both palette indices, because a 512-glyph font costs the console its
+        # intensity bit and with it the choice of which one bold lands on.
+        assert "\033]P3f7b718" in issue, repr(issue)
+        assert "\033]PBf7b718" in issue, repr(issue)
+        assert "\033[33m" in issue, repr(issue)
+
         # The same generator, the same art, on a terminal -- which is what the
         # operator's shell gets. `script` is what makes that a terminal at all:
         # succeed() pipes stdout.
         on_a_tty = appliance.succeed("script --quiet --return --command loom-info /dev/null")
         assert "█" in on_a_tty, on_a_tty
+
+        # A pts gets the colour but never the palette redefinition.
+        # console_codes(4): xterm hangs on that sequence until somebody presses
+        # return, and the panes of the operator's session are pts. They come out
+        # amber anyway, from the palette the banner already rewrote on the VT
+        # underneath them.
+        assert "\033[33m" in on_a_tty, repr(on_a_tty)
+        assert "\033]P" not in on_a_tty, repr(on_a_tty)
 
         # Nothing opens a session by itself. --login-pause holds agetty on the
         # issue until somebody presses a key; --autologin is what performs the
@@ -202,6 +223,31 @@ pkgs.testers.runNixOSTest {
         # PID 1's messages about the unit its first pane follows.
         for group in ["wheel", "docker", "systemd-journal"]:
             assert group in groups, f"${loomUser} not in {group}: {groups}"
+
+    with subtest("the console font is re-applied once the display has settled"):
+        # systemd-vconsole-setup runs Before=sysinit.target, and on the real box
+        # its early pass logged "Configuration of first virtual console was
+        # skipped" and the login screen kept the kernel's 16x32 built-in even
+        # though /etc/vconsole.conf named the right font and `setfont` worked by
+        # hand. branding.nix therefore applies it a second time, late.
+        appliance.succeed("systemctl is-active loom-console-font.service")
+
+        # The `-` on ExecStart. A console that will not take the font must still
+        # reach a login prompt: on a box with no remote access a wrong-sized
+        # font is cosmetic, a missing getty is unrecoverable. This VM exercises
+        # that path for real -- its console cannot load a 6px-wide font at all.
+        appliance.succeed("systemctl is-active getty@tty1.service")
+
+        # The ordering is the dangerous part of that unit: it sits between
+        # plymouth-quit-wait and getty-pre. systemd breaks a cycle by *deleting*
+        # a job rather than failing, so a cycle would not turn any unit red --
+        # it would silently drop one, and the journal is the only place it shows.
+        #
+        # Not named `log`: that is the test driver's own global logger.
+        journal = appliance.succeed("journalctl -b --no-pager")
+        assert "ordering cycle" not in journal.lower(), [
+            line for line in journal.splitlines() if "ordering cycle" in line.lower()
+        ]
 
     with subtest("a keypress opens the operator's console session"):
         # The monitor has to be showing tty1, which is where the banner, the
@@ -227,7 +273,36 @@ pkgs.testers.runNixOSTest {
         assert "loom-progress" in panes[0], panes
         assert "btop" in panes[2], panes
 
-        # The middle pane is a usable shell, which is the whole point of it.
+        # The first pane starts on the log and hands over to k9s once Loom is
+        # up. Both halves live in the script that pane starts, so read it: the
+        # handover is invisible in a test VM, where nothing ever comes up.
+        progress_pane = appliance.succeed(f"cat {panes[0].split(maxsplit=1)[1]}")
+        k9s = re.search(r"/nix/store/\S+-loom-k9s/bin/loom-k9s", progress_pane)
+        assert k9s, progress_pane
+        # It waits for the unit to have *succeeded*, not merely to exist. On
+        # `activating` the bring-up is still running and the log is the screen
+        # that matters; on `failed` it is the only screen that does.
+        assert "ActiveState" in progress_pane, progress_pane
+
+        # And k9s must watch the namespace up.sh actually deploys into. Both
+        # come from vars.sh -- NAMESPACE reaches the pane through
+        # build_appliance_image.sh the same way the *.loom host list does -- and
+        # a pod list parked on an empty `default` namespace is worse than no pod
+        # list, because it says the box is idle when it is not.
+        appliance.wait_for_unit("loom-seed-repo.service")
+        # bash, not sh: vars.sh builds LOOM_HOSTS_FQDN out of an array.
+        want = appliance.succeed(
+            "bash -c '. ${loomRepoDir}/vars.sh; printf %s \"$NAMESPACE\"'"
+        ).strip()
+        # Tolerates the quotes lib.escapeShellArg adds, as the guard action
+        # subtest at the bottom of this file does.
+        for script in [progress_pane, appliance.succeed(f"cat {k9s.group(0)}")]:
+            got = re.search(r"^namespace='?([\w-]+)'?$", script, re.M)
+            assert got, script
+            assert got.group(1) == want, f"watches {got.group(1)}, up.sh deploys to {want}"
+
+        # The pane the session lands in is a usable shell, which is the whole
+        # point of it.
         appliance.send_chars("touch /tmp/loom-console-alive\n")
         appliance.wait_for_file("/tmp/loom-console-alive")
 
@@ -394,11 +469,18 @@ pkgs.testers.runNixOSTest {
         # passphrase, so there is no stick at all. Powering such a box off
         # would make it unrepairable, since the console is the only way in.
         appliance.wait_for_unit("loom-key-guard.service")
+        # `grep`, not `grep -q`, in every pipeline below. The driver wraps each
+        # command in `set -eo pipefail`, and -q makes grep exit on the first
+        # matching line -- so the producer on the left gets EPIPE on whatever it
+        # writes next, and the pipeline fails *because* the match was found.
+        # `loom-key-guard status` prints three more lines after the one being
+        # matched, which makes that a coin toss on every run. Without -q grep
+        # reads its input to the end and nothing is ever killed mid-write.
         appliance.wait_until_succeeds(
-            "loom-key-guard status | grep -q 'loom-key-guard: idle'"
+            "loom-key-guard status | grep 'loom-key-guard: idle' >/dev/null"
         )
         appliance.succeed(
-            "journalctl --unit loom-key-guard.service | grep -q 'the guard stays idle'"
+            "journalctl --unit loom-key-guard.service | grep 'the guard stays idle' >/dev/null"
         )
         # Said once, not every interval for the life of the box.
         idle_lines = appliance.succeed(
@@ -431,7 +513,7 @@ pkgs.testers.runNixOSTest {
         appliance.succeed(f"ln -sf {key_loop} ${keyGuardKeyDevice}")
 
         appliance.wait_until_succeeds(
-            "loom-key-guard status | grep -q 'loom-key-guard: armed'"
+            "loom-key-guard status | grep 'loom-key-guard: armed' >/dev/null"
         )
         # The banner follows the guard rather than reporting what was true at
         # boot, because it is the only thing an operator who never logs in sees.
@@ -441,7 +523,7 @@ pkgs.testers.runNixOSTest {
     with subtest("a key that is put back in time cancels the shutdown"):
         appliance.succeed(f"losetup --detach {key_loop}")
         appliance.wait_until_succeeds(
-            "journalctl --unit loom-key-guard.service | grep -q 'USB KEY REMOVED'"
+            "journalctl --unit loom-key-guard.service | grep 'USB KEY REMOVED' >/dev/null"
         )
 
         # Back well inside the grace window, and deliberately on whatever loop
@@ -452,9 +534,9 @@ pkgs.testers.runNixOSTest {
         ).strip()
         appliance.succeed(f"ln -sf {key_loop} ${keyGuardKeyDevice}")
         appliance.wait_until_succeeds(
-            "journalctl --unit loom-key-guard.service | grep -q 'Shutdown cancelled'"
+            "journalctl --unit loom-key-guard.service | grep 'Shutdown cancelled' >/dev/null"
         )
-        appliance.succeed("loom-key-guard status | grep -q 'loom-key-guard: armed'")
+        appliance.succeed("loom-key-guard status | grep 'loom-key-guard: armed' >/dev/null")
 
     with subtest("a foreign key does not keep the box alive"):
         # A stick carrying a partition named loom-key is not the stick this
@@ -469,7 +551,7 @@ pkgs.testers.runNixOSTest {
         appliance.succeed(f"losetup --detach {key_loop}")
         appliance.succeed(f"ln -sf {other_loop} ${keyGuardKeyDevice}")
         appliance.wait_until_succeeds(
-            "journalctl --unit loom-key-guard.service | grep -q 'USB KEY REMOVED'"
+            "journalctl --unit loom-key-guard.service | grep 'USB KEY REMOVED' >/dev/null"
         )
 
         # Put the real one back so the next subtest starts from a known state.
@@ -479,7 +561,7 @@ pkgs.testers.runNixOSTest {
         ).strip()
         appliance.succeed(f"ln -sf {key_loop} ${keyGuardKeyDevice}")
         appliance.wait_until_succeeds(
-            "loom-key-guard status | grep -q 'loom-key-guard: armed'"
+            "loom-key-guard status | grep 'loom-key-guard: armed' >/dev/null"
         )
 
     with subtest("first-time setup warns where run mode powers off"):
