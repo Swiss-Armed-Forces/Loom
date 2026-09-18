@@ -399,8 +399,9 @@ in
       # userspace and that override would drag CUDA into the closure.
       tmux
       btop
-      # Also the third pane. Listed here as well so that an operator on a plain
-      # Alt-F2 console, or one who closed the pane, still has it.
+      # What the top-left pane becomes once Loom is up. Listed here as well so
+      # that an operator on a plain Alt-F2 console, or one who closed the pane,
+      # still has it.
       k9s
       # The assistant pane, same reasoning. console.nix's loom-chat is what wires it
       # to the cluster's Ollama and pins the model; bare `opencode` here is for

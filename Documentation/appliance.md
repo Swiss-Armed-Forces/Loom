@@ -383,7 +383,7 @@ which no uniform shift of this art can satisfy.
 
 The eyes are the same mark the boot splash and the installer stick show, drawn in half blocks and in the
 logo's amber — the screenshot above cannot show the colour, but the monitor does. One rendering, everywhere:
-the pre-login banner, `loom-info` re-run in the shell pane, and the installer menu all print it from the same
+the pre-login banner, `loom-info` re-run on an `Alt-F2` console, and the installer menu all print it from the same
 command, in the same colour the splash paints its progress bar.
 
 Reaching that exact amber on a console takes redefining a palette entry, because the Linux VT shoehorns even a

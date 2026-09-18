@@ -163,7 +163,7 @@ let
       wait "$follower" 2>/dev/null || true
 
       printf '\n  Loom is up. This pane now shows its pods; the log is still\n'
-      printf '  there, in the shell pane:\n\n'
+      printf '  there, on an Alt-F2 console:\n\n'
       printf '    journalctl --unit %s --follow\n\n' "$unit"
       # Long enough to read the two lines above before k9s takes the screen: it
       # draws on the alternate buffer, so everything printed here is gone until
@@ -453,10 +453,10 @@ let
     '';
   };
 
-  # The third pane. btop refuses to draw anything but "Terminal size too small"
-  # below a minimum that grows with the boxes it shows, and its stock set --
-  # cpu, mem, net and proc -- needs 80x24. The pane it runs in is the lower half
-  # of a column 40% of the screen wide (`main-pane-width 60%` above), so on
+  # The top-right pane. btop refuses to draw anything but "Terminal size too
+  # small" below a minimum that grows with the boxes it shows, and its stock set
+  # -- cpu, mem, net and proc -- needs 80x24. The pane it runs in is half the
+  # width of the screen and the shorter 40% of its height (`create` below), so on
   # anything but a large monitor that minimum is simply not there, and the
   # operator gets a pane with nothing in it. Hence a box set chosen from the
   # pane's real size at startup:
