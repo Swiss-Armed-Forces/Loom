@@ -183,10 +183,7 @@ let
         # loom-wifi-check (wifi.nix) writes a warning fragment above this one
         # when the radio never came up, so a box printing these credentials for
         # a network that does not exist says so on the same screen.
-        printf '\n  WiFi network: %s\n' ${lib.escapeShellArg config.loom.wifi.ssid}
-        printf '  Passphrase:   %s\n' ${lib.escapeShellArg config.loom.wifi.psk}
-        printf '  Same network as the wired port: same addresses, same *.loom.\n'
-        printf '\n  Scan to join:\n\n'
+        printf '\n  Scan to join -- same network as the cable, same *.loom:\n\n'
         # ANSIUTF8 rather than ASCII, and this is not cosmetic. It draws each
         # row with the half blocks U+2580/U+2584, so a QR module is one cell
         # wide by half a cell tall -- close to square on the 12x26 cell
@@ -198,8 +195,20 @@ let
         # The reset matters: the banner deliberately never restores the palette
         # after the eyes (see above), and a QR drawn in amber-on-amber is not a
         # QR. qrencode emits its own SGR pairs, so one reset here is enough.
+        #
+        # --margin=2 rather than the default 4. The whole banner has to fit one
+        # screen -- agetty writes the issue straight to the VT with no paging,
+        # so whatever does not fit scrolls off the top, taking the mark with it.
+        # Two modules of quiet zone is under the 4 the spec asks for, but the
+        # zone here is white against a black console, which is the high-contrast
+        # case scanners cope with; checked against a decoder at this margin.
         printf '%s' $'\033[0m'
-        qrencode --type=ANSIUTF8 --level=L -- ${lib.escapeShellArg wifiUri}
+        qrencode --type=ANSIUTF8 --level=L --margin=2 -- ${lib.escapeShellArg wifiUri}
+        # Below the code, not above it: someone who cannot scan reads them off
+        # the same part of the screen they were already looking at, and they
+        # stay visible when the code itself is the thing that scrolled.
+        printf '  WiFi network: %s\n' ${lib.escapeShellArg config.loom.wifi.ssid}
+        printf '  Passphrase:   %s\n' ${lib.escapeShellArg config.loom.wifi.psk}
       ''}
       printf '\n'
     '';
