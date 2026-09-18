@@ -408,6 +408,16 @@ in
           "${pkgs.coreutils}/bin/sleep 2"
           "-${config.systemd.package}/lib/systemd/systemd-vconsole-setup"
         ];
+        # Each pass above resizes every VT, and tty1 is the one a getty may
+        # already have painted the banner onto -- see loom-banner-repaint in
+        # box.nix, which redraws it against the geometry this unit just settled.
+        # It declines to do anything if the operator has already logged in.
+        #
+        # `-` and --no-block together: this module is shared with the installer
+        # stick, where box.nix is not imported and the unit does not exist, and
+        # waiting here on a job queued from inside our own transaction is a
+        # deadlock.
+        ExecStartPost = "-${config.systemd.package}/bin/systemctl start --no-block loom-banner-repaint.service";
       };
     };
 

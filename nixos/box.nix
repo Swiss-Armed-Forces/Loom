@@ -79,6 +79,35 @@ let
   # neither can the art `loom-eyes` draws. The colour below is not an exception:
   # `$'\033'` is a literal ESC byte by the time it is written, and agetty(8)
   # only ever reads a backslash as the start of an escape of its own.
+  # Writing the banner into the issue directory, as a script rather than inline,
+  # because two units run it: loom-issue.service at boot, and
+  # loom-banner-repaint.service once the console has stopped resizing under it.
+  writeIssue = pkgs.writeShellScript "loom-write-issue" ''
+    set -euo pipefail
+    ${pkgs.coreutils}/bin/mkdir -p /run/issue.d
+
+    # The console's row count, measured here because loom-info cannot: the
+    # redirection below hides the terminal from it. tty1 specifically -- it is
+    # the VT the banner is actually read on, and the only one whose geometry is
+    # disturbed by the boot (see loom-banner-repaint.service).
+    #
+    # Unreadable, or not a tty, leaves it empty and loom-info prints in full.
+    rows="$(${pkgs.coreutils}/bin/stty size </dev/tty1 2>/dev/null \
+      | ${pkgs.coreutils}/bin/cut --delimiter=' ' --fields=1 || true)"
+
+    # Rendered through a temporary file so agetty can never read a
+    # half-written banner from a getty that respawns mid-write.
+    #
+    # LOOM_INFO_COLOR=vt because the redirection hides the console from
+    # loom-info: without it the one screen the colour exists for -- the
+    # login prompt nobody has touched yet -- would be the one that renders
+    # the eyes plain.
+    LOOM_INFO_COLOR=vt LOOM_INFO_ROWS="''${rows:-0}" ${loom-info}/bin/loom-info \
+      >/run/issue.d/50-loom.issue.tmp
+    ${pkgs.coreutils}/bin/mv /run/issue.d/50-loom.issue.tmp \
+      /run/issue.d/50-loom.issue
+  '';
+
   loom-info = pkgs.writeShellApplication {
     name = "loom-info";
     runtimeInputs = [ pkgs.coreutils ] ++ lib.optional showWifi pkgs.qrencode;
@@ -131,14 +160,39 @@ let
         reset=$'\033[0m'
       fi
 
+      # -----------------------------------------------------------------------
+      # Everything below is composed rather than printed, because the banner has
+      # to fit the screen and only this program knows how tall it is.
+      #
+      # agetty writes the issue straight to the VT and never pages it, so a
+      # banner taller than the grid loses its top -- and there is no grid to
+      # design for: the row count is the panel's pixel height divided by the
+      # console cell, which runs from 33 rows on a 1080p panel at the kernel's
+      # 16x32 to 123 on the 2560x1600 one the box was tested against.
+      #
+      # So `render` draws the banner with the two expendable parts switchable,
+      # and the tail of this script drops them, worst-branding-first, until what
+      # is left fits. Nothing load-bearing is ever dropped: the WiFi credentials
+      # survive the loss of the QR code that encodes them, and the recovery
+      # passphrase and the key guard state are never candidates at all.
+      # -----------------------------------------------------------------------
+      render() {
+        # show_qr is bound inside the WiFi block below rather than here: without
+        # --wifi that block is not emitted at all, and an unused local fails the
+        # build-time lint. (Take care not to start a comment line with the
+        # linter's own name -- it reads such a line as a directive and stops.)
+        local show_eyes="''${1}"
+
       # The mark the boot splash just showed, in the form a console can hold.
       # A command rather than a here-document so that the banner, the issue and
       # the installer menu all draw the same art from one place. See
       # branding.nix.
-      printf '\n'
-      printf '%s%s' "$palette" "$amber"
-      ${lib.getExe config.loom.branding.eyes}
-      printf '%s' "$reset"
+      if [ "$show_eyes" = yes ]; then
+        printf '\n'
+        printf '%s%s' "$palette" "$amber"
+        ${lib.getExe config.loom.branding.eyes}
+        printf '%s' "$reset"
+      fi
       printf '\n  Loom appliance -- %s\n' ${lib.escapeShellArg tag}
       printf '  %s\n' ${lib.escapeShellArg config.loom.platform.description}
       if [ -r /etc/loom/network.conf ]; then
@@ -183,6 +237,8 @@ let
         # loom-wifi-check (wifi.nix) writes a warning fragment above this one
         # when the radio never came up, so a box printing these credentials for
         # a network that does not exist says so on the same screen.
+        local show_qr="''${2}"
+        if [ "$show_qr" = yes ]; then
         printf '\n  Scan to join -- same network as the cable, same *.loom:\n\n'
         # ANSIUTF8 rather than ASCII, and this is not cosmetic. It draws each
         # row with the half blocks U+2580/U+2584, so a QR module is one cell
@@ -203,14 +259,71 @@ let
         # zone here is white against a black console, which is the high-contrast
         # case scanners cope with; checked against a decoder at this margin.
         printf '%s' $'\033[0m'
-        qrencode --type=ANSIUTF8 --level=L --margin=2 -- ${lib.escapeShellArg wifiUri}
+        # UTF8i, not ANSIUTF8, and the colours are ours rather than qrencode's.
+        #
+        # qrencode's own ANSI types emit `ESC[40;37;1m` and then draw the *light*
+        # modules as white glyphs, so the code comes out as white marks on
+        # whatever the console's background happens to be -- a white-on-black QR
+        # with no field behind it. The `i` types invert which modules the glyphs
+        # stand for, so with a white background and black ink the block becomes
+        # a proper white card with black modules: the orientation every scanner
+        # is tuned for, and the one people recognise as a QR code.
+        #
+        # 107 rather than 47: on a Linux VT palette index 7 is light grey, and a
+        # grey card loses most of the contrast the code depends on. 100-107 are
+        # the bright-background codes console_codes(4) documents.
+        qrencode --type=UTF8i --level=L --margin=2 -- ${lib.escapeShellArg wifiUri} |
+          while IFS= read -r qrline; do
+            # Indented like every other line of the banner, and the background
+            # is re-opened per line so the card is a solid rectangle rather than
+            # a run that the terminal resets at the first newline.
+            printf '  %s%s%s\n' $'\033[107;30m' "$qrline" $'\033[0m'
+          done
+        else
+          # Dropped for height. The credentials below still carry everything the
+          # code encodes -- it is a convenience, not the only way in.
+          printf '\n  WiFi, same network as the cable, same *.loom:\n'
+        fi
         # Below the code, not above it: someone who cannot scan reads them off
         # the same part of the screen they were already looking at, and they
         # stay visible when the code itself is the thing that scrolled.
         printf '  WiFi network: %s\n' ${lib.escapeShellArg config.loom.wifi.ssid}
         printf '  Passphrase:   %s\n' ${lib.escapeShellArg config.loom.wifi.psk}
       ''}
-      printf '\n'
+      }
+
+      # -----------------------------------------------------------------------
+      # How many rows there are to play with.
+      #
+      # LOOM_INFO_ROWS is what loom-issue.service measures off /dev/tty1, which
+      # it has to do on our behalf: its redirection means we cannot see the
+      # console at all. An interactive reprint measures its own terminal. Zero
+      # -- unknown -- prints everything, which is the right answer for a pipe.
+      #
+      # The reserve is agetty's own `[press ENTER to login]` plus the blank the
+      # banner ends on. Without it the banner fits exactly and the prompt
+      # underneath it is what pushes the mark off.
+      # -----------------------------------------------------------------------
+      rows="''${LOOM_INFO_ROWS:-0}"
+      if [ "$rows" -eq 0 ] && [ -t 1 ]; then
+        rows="$(stty size 2>/dev/null | cut --delimiter=' ' --fields=1 || true)"
+      fi
+      : "''${rows:=0}"
+      budget=$(( rows - 3 ))
+
+      banner="$(render yes yes)"
+      if [ "$rows" -gt 0 ]; then
+        # Shed in order of what is least missed. The eyes go first: they are the
+        # only part that carries no information at all.
+        if [ "$(printf '%s\n' "$banner" | wc --lines)" -gt "$budget" ]; then
+          banner="$(render no yes)"
+        fi
+        if [ "$(printf '%s\n' "$banner" | wc --lines)" -gt "$budget" ]; then
+          banner="$(render no no)"
+        fi
+      fi
+      # The trailing blank is re-added here because command substitution eats it.
+      printf '%s\n\n' "$banner"
     '';
   };
 in
@@ -438,22 +551,70 @@ in
     serviceConfig = {
       Type = "oneshot";
       RemainAfterExit = true;
-      ExecStart = pkgs.writeShellScript "loom-write-issue" ''
-        set -euo pipefail
-        ${pkgs.coreutils}/bin/mkdir -p /run/issue.d
-        # Rendered through a temporary file so agetty can never read a
-        # half-written banner from a getty that respawns mid-write.
-        #
-        # LOOM_INFO_COLOR=vt because the redirection hides the console from
-        # loom-info: without it the one screen the colour exists for -- the
-        # login prompt nobody has touched yet -- would be the one that renders
-        # the eyes plain.
-        LOOM_INFO_COLOR=vt ${loom-info}/bin/loom-info \
-          >/run/issue.d/50-loom.issue.tmp
-        ${pkgs.coreutils}/bin/mv /run/issue.d/50-loom.issue.tmp \
-          /run/issue.d/50-loom.issue
-      '';
+      ExecStart = writeIssue;
     };
+  };
+
+  # ---------------------------------------------------------------------------
+  # Redraw the banner once the console has stopped resizing under it.
+  #
+  # tty1 is painted *during* the boot's console churn, and the other VTs are
+  # not: logind spawns autovt@tty2 and up only when somebody switches to one, by
+  # which time the geometry is final. That is the whole of why tty1 shows a
+  # cropped banner while tty2 shows a correct one.
+  #
+  # What churns is the font, and with it the row count. fbcon starts on the
+  # kernel's built-in 16x32, branding.nix's loom-console-font puts Cozette on
+  # (many more rows), the DRM driver takes the console and resets it back to the
+  # built-in (far fewer), and loom-console-font-reapply puts Cozette on again.
+  # Every one of those is a VT resize, and when a VT shrinks the kernel keeps
+  # the bottom of the screen and discards the top -- so a banner drawn before
+  # the shrink loses exactly its first rows, which is where the mark is.
+  #
+  # Shrinking the banner to fit the smallest grid would be guesswork about a
+  # panel nobody has seen. Drawing it again after the last resize is not: the
+  # issue is re-measured against the geometry that is now final, and agetty
+  # repaints it from a clean VT.
+  # ---------------------------------------------------------------------------
+  systemd.services.loom-banner-repaint = {
+    description = "Redraw the login banner after the console geometry settles";
+    serviceConfig = {
+      Type = "oneshot";
+      # Deliberately no wantedBy: branding.nix's font units start this, once per
+      # resize they cause. Nothing else should.
+      RemainAfterExit = false;
+    };
+    path = [
+      pkgs.coreutils
+      config.systemd.package
+    ];
+    script = ''
+      # Only while the banner is still what is on screen. `--login-pause` holds
+      # agetty at the issue until a keypress, and `--autologin` then has it exec
+      # login and the operator's shell in the same process -- so the main PID
+      # ceasing to be agetty is exactly the signal that somebody is in. Restart
+      # then and we would kill a live session, tmux panes and all.
+      #
+      # tty1's getty is autovt@tty1.service on NixOS (an alias of the getty@
+      # template, see console.nix); both names are tried because which one is
+      # live depends on how the VT was brought up.
+      for unit in autovt@tty1.service getty@tty1.service; do
+        pid="$(systemctl show --property=MainPID --value "$unit" 2>/dev/null || true)"
+        if [ -z "$pid" ] || [ "$pid" = 0 ]; then
+          continue
+        fi
+        if [ "$(cat "/proc/$pid/comm" 2>/dev/null || true)" != agetty ]; then
+          continue
+        fi
+        ${writeIssue}
+        # --no-block: this unit is started from another unit's ExecStartPost,
+        # and waiting on a job from inside the queue that job is queued in is
+        # how that deadlocks. getty@ clears the VT on start (TTYVTDisallocate),
+        # so the repaint lands on a clean screen rather than under the old one.
+        systemctl restart --no-block "$unit"
+        exit 0
+      done
+    '';
   };
 
   # Repeated in the shell, because on tty1 console.nix's tmux session draws over

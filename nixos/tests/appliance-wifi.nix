@@ -120,16 +120,69 @@ pkgs.testers.runNixOSTest {
     with subtest("the login screen carries the credentials and a scannable QR"):
         appliance.wait_for_unit("loom-issue.service")
         issue = appliance.succeed("cat /run/issue.d/50-loom.issue")
+        # The credentials are never dropped, whatever the console height.
         assert "${ssid}" in issue, issue
         assert "${psk}" in issue, issue
+
+        # The QR itself is asserted against a stated budget rather than against
+        # this VM's console, which is short enough that loom-issue drops the
+        # code -- correctly, and the next subtest is what covers that. Pinning
+        # the budget keeps this checking the rendering rather than the qemu
+        # window's incidental size.
+        code = appliance.succeed("LOOM_INFO_ROWS=60 loom-info")
+        assert "Scan to join" in code, code
         # Drawn with the half blocks, not with '#'. An ASCII QR has modules
         # twice as tall as they are wide and phones refuse it -- see box.nix.
-        assert "▀" in issue or "▄" in issue, issue
+        assert "▀" in code or "▄" in code, code
 
         # The health check found a working AP, so it must not have left a
         # warning contradicting the credentials printed above it.
         appliance.wait_for_unit("loom-wifi-check.service")
         appliance.fail("test -e /run/issue.d/61-loom-wifi.issue")
+
+    with subtest("the banner sheds content rather than overflowing the screen"):
+        # agetty never pages the issue, and the row count is the panel's height
+        # over the console cell -- anywhere from 33 rows to 123. So loom-info
+        # drops what it can rather than letting the top scroll away. The order
+        # matters more than the sizes: what goes is what carries no information.
+        def banner(rows):
+            return appliance.succeed(f"LOOM_INFO_ROWS={rows} loom-info")
+
+        full = banner(0)
+        assert "▄████▄    ▄████▄" in full, full     # the mark
+        assert "Scan to join" in full, full          # the QR
+
+        # Tall enough for everything.
+        assert len(banner(60).splitlines()) == len(full.splitlines())
+
+        # Too short for the mark, still room for the code.
+        mid = banner(36)
+        assert "▄████▄    ▄████▄" not in mid, mid
+        assert "Scan to join" in mid, mid
+
+        # Too short for the code either. It is a convenience, and the
+        # credentials it encodes are still printed in full underneath.
+        small = banner(24)
+        assert "Scan to join" not in small, small
+        assert "${ssid}" in small and "${psk}" in small, small
+
+        for rows in [24, 36, 60]:
+            got = len(banner(rows).splitlines())
+            assert got <= rows - 3, f"{rows}-row console got a {got}-row banner"
+
+    with subtest("the banner is redrawn after the console geometry settles"):
+        # tty1 is painted while the font -- and with it the row count -- is
+        # still changing under it; tty2 and up are spawned on demand, after it
+        # has settled, which is why only tty1 came out cropped. This unit is
+        # what closes that gap, started by branding.nix's font units.
+        appliance.succeed("systemctl cat loom-banner-repaint.service")
+        reapply = appliance.succeed("systemctl cat loom-console-font-reapply.service")
+        assert "loom-banner-repaint.service" in reapply, reapply
+
+        # It must refuse to act once somebody is logged in: a restart then
+        # would take the operator's session with it. With no getty at the
+        # banner in this VM, the run is a no-op and must still succeed.
+        appliance.succeed("systemctl start loom-banner-repaint.service")
 
     with subtest("a radio that never appears is reported, not hidden"):
         # The failure this guards against is silent by construction: hostapd

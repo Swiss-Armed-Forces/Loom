@@ -379,6 +379,29 @@ console fonts are missing the half blocks, and a build that selects one that is 
 box whose banner is a screen of holes. The appliance also asks its firmware for the largest console mode it
 has, since the column count is only ever the framebuffer width divided by that cell.
 
+### Why the banner sometimes drops the logo
+
+agetty writes the login banner straight to the VT and never pages it, so a banner taller than the grid loses
+its top rows — and the grid is not something the image can know in advance. It is the panel's pixel height
+over the console cell, anywhere from 33 rows to 123 in the table above.
+
+Two things keep that from cropping the screen:
+
+- **`loom-info` measures and sheds.** `loom-issue.service` reads the row count off `/dev/tty1` and passes it
+  in; if the banner will not fit, the eyes go first, and if it still will not fit, the WiFi QR code goes too.
+  Nothing load-bearing is ever dropped — the WiFi credentials outlive the code that encodes them, and the
+  recovery passphrase and key guard state are never candidates. On a console of 40 rows or more with `--wifi`,
+  nothing is dropped at all.
+- **`loom-banner-repaint.service` draws it again once the geometry settles.** tty1 is painted _while_ the font
+  is still changing under it: fbcon starts on the kernel's built-in font, `loom-console-font` puts Cozette on,
+  the DRM driver takes the console and resets it, and `loom-console-font-reapply` puts Cozette back. Each of
+  those resizes the VT, and a shrinking VT keeps the bottom of the screen and discards the top. tty2 and up
+  never showed this because logind only spawns them when you switch to one, by which point nothing is moving.
+  The repaint re-measures and asks agetty to redraw — unless somebody has already logged in, in which case it
+  does nothing rather than kill the session.
+
+If a banner still looks wrong, `loom-info` on the console reprints it against the terminal it is run in.
+
 Setting the font once is not enough to make it stick. `systemd-vconsole-setup` runs before most of the machine
 exists, and whatever re-initialises the console afterwards — a real display driver taking over from the
 firmware framebuffer, or plymouth letting go of the screen — throws the font away and the kernel's own comes
