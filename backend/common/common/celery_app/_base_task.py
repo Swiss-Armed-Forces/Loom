@@ -33,6 +33,17 @@ class BaseTask(ABC, Task):
         super().__init__()
         self._start_time: datetime
 
+    @property
+    def is_last_attempt(self) -> bool:
+        """Whether the current run has no retries left.
+
+        Retryable failures should still be retried; only once the budget is exhausted
+        may a task degrade to a fallback result instead of failing.
+        """
+        if self.max_retries is None:
+            return False
+        return self.request.retries >= self.max_retries
+
     def __call__(self, *args, **kwargs) -> None:
         headers = getattr(self.request, "headers", {}) or {}
 
