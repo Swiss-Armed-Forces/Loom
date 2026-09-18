@@ -18,7 +18,6 @@
 }:
 let
   efiArch = config.nixpkgs.hostPlatform.efiArch;
-  hasSerial = config.loom.platform.hasSerialConsole;
 
   # The read-only store carried by the stick.
   #
@@ -228,10 +227,7 @@ in
   systemd.services.loom-register-store = {
     description = "Register the appliance closure in the Nix database";
     wantedBy = [ "multi-user.target" ];
-    before = [
-      "loom-menu.service"
-    ]
-    ++ lib.optional hasSerial "loom-menu-serial.service";
+    before = [ "loom-menu.service" ];
     serviceConfig = {
       Type = "oneshot";
       RemainAfterExit = true;
@@ -245,7 +241,6 @@ in
   # The menu owns the console.
   # ---------------------------------------------------------------------------
   systemd.services."getty@tty1".enable = false;
-  systemd.services."serial-getty@ttyS0".enable = lib.mkIf hasSerial false;
 
   systemd.services.loom-menu = {
     description = "Loom appliance installer menu";
@@ -277,63 +272,27 @@ in
     };
   };
 
-  # Only on boxes that have a serial port. The Spark is usually reached over
-  # one; the EVO-X2 has no header at all, and there `Restart=always` on a
-  # TTYPath that cannot be opened is a restart loop every two seconds.
-  # ConditionPathExists is the belt to that braces: a platform can be wrong
-  # about its own hardware, a missing device node cannot.
-  systemd.services.loom-menu-serial = lib.mkIf hasSerial {
-    description = "Loom appliance installer menu (serial)";
-    wantedBy = [ "multi-user.target" ];
-    conflicts = [ "serial-getty@ttyS0.service" ];
-    restartIfChanged = false;
-    unitConfig.ConditionPathExists = "/dev/ttyS0";
-    serviceConfig = {
-      Type = "idle";
-      ExecStart = "${installerScripts}/bin/loom-menu";
-      TTYPath = "/dev/ttyS0";
-      TTYReset = true;
-      StandardInput = "tty-force";
-      StandardOutput = "tty";
-      # Not "journal". The scripts print their own prompts to stdout, but
-      # everything that goes wrong arrives on stderr -- `err`, and the output of
-      # cryptsetup, sgdisk and nixos-install underneath it. Sent to the journal
-      # that is a failed install with no visible reason, on media whose whole
-      # job is being diagnosable by whoever is standing at the box.
-      StandardError = "tty";
-      Restart = "always";
-      RestartSec = 2;
-    };
-  };
-
   # This is rescue media. If stage 1 fails at a site, whoever is standing in
   # front of the box needs a shell to diagnose it, not a locked sulogin prompt.
   # (The appliance itself deliberately does NOT get this.)
   boot.initrd.systemd.emergencyAccess = true;
 
-  # The last `console=` wins as /dev/console. On a serial box that should be the
-  # serial line; on one without, naming ttyS0 at all would send boot output to a
-  # port nobody can read.
+  # tty1 is the console, and the only one: no `console=ttyS0` anywhere, because
+  # no supported box is driven over a cable and naming a port nobody reads is
+  # how boot output goes missing.
   #
   # Deliberately no `quiet`, unlike the appliance in modes.nix. This is the
   # recovery medium: the monitor gets branding.nix's splash, and the kernel log
-  # keeps reaching the serial line and the journal, which is the entire reason
-  # somebody boots the stick at a box that will not come up.
+  # keeps reaching the journal, which is the entire reason somebody boots the
+  # stick at a box that will not come up.
   #
   # Equally deliberately no `systemd.journald.forward_to_console=1`. It would
   # put every service's output on /dev/console, which here is the console the
-  # menu owns -- tty1, or ttyS0 on a serial box. The menu redraws from the top
-  # each pass, so the result is a status block interleaved with journal lines.
-  # What that parameter is for is covered above: the kernel log is already
-  # unsuppressed, and `emergencyAccess` handles the case where it fails early.
-  boot.kernelParams = [
-    "console=tty1"
-  ]
-  ++ lib.optional hasSerial "console=ttyS0,115200"
-  # plymouth renders a text fallback onto every console it finds, and on a
-  # serial box /dev/console *is* ttyS0 -- so without this it would type its
-  # splash over the operator's serial installer menu.
-  ++ lib.optional hasSerial "plymouth.ignore-serial-consoles";
+  # menu owns. The menu redraws from the top each pass, so the result is a
+  # status block interleaved with journal lines. What that parameter is for is
+  # covered above: the kernel log is already unsuppressed, and `emergencyAccess`
+  # handles the case where it fails early.
+  boot.kernelParams = [ "console=tty1" ];
 
   networking.hostName = "loom-installer";
   networking.useDHCP = false;

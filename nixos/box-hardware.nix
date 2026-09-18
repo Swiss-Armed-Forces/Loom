@@ -82,6 +82,21 @@ in
     enable = true;
     # The ESP is modest and the initrds are not.
     configurationLimit = 3;
+    # How wide the console ends up being is decided here, before Linux starts.
+    #
+    # branding.nix picks a 6-pixel font to get more columns out of the panel,
+    # but that only divides whatever framebuffer the firmware hands over: a box
+    # left in a 1024x768 GOP mode caps at 170 columns no matter what font is
+    # loaded. `max` asks the firmware for its largest mode, and Linux inherits
+    # whatever was last set. NixOS defaults this to "keep", which takes the
+    # firmware's own default -- frequently the smallest one it has.
+    #
+    # There is deliberately no `video=` to go with it. On a box with a real KMS
+    # driver the default is already the panel's preferred mode, so naming a
+    # resolution could only pin a 4K panel lower; and where the display is
+    # simpledrm on a firmware framebuffer, `video=` cannot change the mode at
+    # all. It is a way down from native, not a way up.
+    consoleMode = "max";
   };
   # Appliance firmware: the loader is placed on the ESP directly and the boot
   # entry is managed by the installer, so there is no need to write EFI vars on

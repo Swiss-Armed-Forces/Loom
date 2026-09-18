@@ -64,16 +64,15 @@ let
   #
   # Produces no backslashes on purpose: agetty interprets them as issue-file
   # escapes. The passphrase charset (install.sh:225-231) cannot contain one, and
-  # neither does either pair `loom-eyes` can draw.
+  # neither can the art `loom-eyes` draws.
   loom-info = pkgs.writeShellApplication {
     name = "loom-info";
     runtimeInputs = [ pkgs.coreutils ];
     text = ''
       # The mark the boot splash just showed, in the form a console can hold.
-      # Which pair lands here is decided by what this is writing to, which is
-      # the whole reason it is a command and not a here-document: captured into
-      # the issue it comes out as ASCII, because that one file is read by the VT
-      # getty and the serial getty both. See branding.nix.
+      # A command rather than a here-document so that the banner, the issue and
+      # the installer menu all draw the same art from one place. See
+      # branding.nix.
       printf '\n'
       ${lib.getExe config.loom.branding.eyes}
       printf '\n  Loom appliance -- %s\n' ${lib.escapeShellArg tag}
@@ -325,8 +324,8 @@ in
   # transaction themselves. Hence `wants` as well as `before` -- and
   # `wantedBy = multi-user.target`, because being wanted *by* a target that
   # nothing starts would leave this unit unreachable and the banner missing.
-  # getty@tty1 and serial-getty@ are both After=getty-pre.target upstream, so
-  # this lands before any of them render the issue.
+  # getty@ is After=getty-pre.target upstream, so this lands before any getty
+  # renders the issue.
   systemd.services.loom-issue = {
     description = "Loom console banner for the login screen";
     wantedBy = [ "multi-user.target" ];

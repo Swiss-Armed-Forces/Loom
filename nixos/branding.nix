@@ -3,13 +3,14 @@
 # Shared by the appliance and by the installer stick, because an operator meets
 # both and they should not look like two different products. What lives here is
 # what the two have in common: the name in the boot menu, the logo, the
-# plymouth theme, and the console rendering of the logo (`loom-eyes`).
+# plymouth theme, the console rendering of the logo (`loom-eyes`), and the VT
+# font that rendering is made of.
 #
 # What differs stays with the boot path that owns it:
 #
 #   box-hardware.nix  `quiet`, because the appliance boot has nothing to say
 #   modes.nix         `plymouth.enable=0` for first-time setup, which has plenty
-#   installer.nix     the UKI splash and the serial-console guard
+#   installer.nix     the UKI splash
 #
 # The appliance boots kernel+initrd through systemd-boot and so has no earlier
 # surface than plymouth. The stick boots a UKI, whose stub can draw a bitmap
@@ -61,69 +62,87 @@ let
         magick ${logoPng} -background black -alpha remove -alpha off BMP3:$out
       '';
 
+  # The font every VT draws in, and the reason the eyes below still look like
+  # eyes.
+  #
+  # The kernel's built-in font is 8 pixels wide, which fixes the console at
+  # framebuffer_width / 8 columns -- 240 on a 1080p panel, for a three-pane
+  # session with btop in one of them. Cozette's cell is 6 wide, so the same
+  # panel gives 320, and its 512 glyphs cover the box drawing tmux frames its
+  # panes with and the eighth blocks btop's meters are made of, neither of
+  # which the built-in font has in full.
+  #
+  # Six pixels is the floor, and the mark is what sets it: `loomEyes` below is
+  # drawn from U+2588, U+2584 and U+2580 and nothing else, and most console
+  # fonts are missing the half blocks. Terminus `ter-v32n` -- the size everyone
+  # reaches for first -- has U+2588 but neither U+2580 nor U+2584, so it would
+  # have rendered the banner and the installer menu as rows of holes. That is a
+  # thing nobody sees until a box is in front of somebody at a site, so it is
+  # asserted here instead, the same way logoPng above refuses an unmaterialised
+  # git-lfs pointer.
+  consoleFont =
+    pkgs.runCommand "loom-console-font"
+      {
+        nativeBuildInputs = [
+          pkgs.kbd # psfgettable
+          pkgs.gzip
+        ];
+        src = "${pkgs.cozette}/share/consolefonts/cozette6x13.psfu";
+      }
+      ''
+        # `zcat --force` because psfgettable reads no compressed font and most
+        # of the alternatives ship as .psf.gz. Without it a gzipped font
+        # produces an empty table, every codepoint below "goes missing", and
+        # the error blames the font for something gzip did. Cozette itself is
+        # uncompressed, which --force passes through untouched.
+        #
+        # psfgettable prints one `0x0df<TAB>U+2580` line per mapping, in
+        # lowercase hex -- hence --ignore-case.
+        for cp in 2588 2584 2580; do
+          if ! zcat --force "$src" | psfgettable - | grep --quiet --ignore-case "U+$cp\b"; then
+            echo "$src has no U+$cp, one of the three glyphs loom-eyes draws" >&2
+            exit 1
+          fi
+        done
+        cp "$src" $out
+      '';
+
   # The same mark for the consoles that cannot show a PNG: the two eyes it is
   # actually made of, with the surrounding disc dropped because at console
   # resolution nothing of it survives anyway.
   #
-  # Which pair gets drawn is keyed on the console device rather than on TERM or
-  # a locale. Both callers are started by systemd with a fixed TTYPath -- the
-  # installer menu (installer.nix) and `loom-info` via loom-issue.service
-  # (box.nix) -- and neither variable is set there.
+  # Half blocks, everywhere, unconditionally. Every screen that draws these is a
+  # Linux VT or a pts of one -- the installer menu (installer.nix), `loom-info`
+  # via loom-issue.service (box.nix) and the same command re-run in a tmux pane
+  # -- and `consoleFont` above is pinned, and checked at build time, precisely
+  # so that all three carry the glyphs. The VT is in UTF-8 mode by default, so
+  # the capture in /run/issue.d survives agetty untouched.
   #
-  #   Linux VT       Half blocks, which draw the rings far rounder than ASCII
-  #                  manages and are in the console's built-in font.
-  #   Serial         An ASCII pair. Whatever terminal is on the far end of a
-  #                  Spark's cable may have neither UTF-8 nor the glyphs, and
-  #                  rings rendered as a screen of question marks are worse
-  #                  than plainer rings that always work.
-  #   Not a terminal The ASCII pair as well, which is the case that matters
-  #                  most: it is what `loom-info` hits when loom-issue.service
-  #                  captures it into /run/issue.d. That is *one* file, read by
-  #                  the VT getty and the serial getty both, so it has to hold
-  #                  the pair that works on either. It also keeps a redirected
-  #                  capture readable.
-  #   Anything else  Blocks. A pts -- the tmux panes of console.nix's session
-  #                  -- is UTF-8 in practice.
+  # There used to be a second, ASCII pair here, picked by probing the console
+  # device, because the issue file is read by whatever getty is running and a
+  # serial one would have shown a screen of question marks. The appliance has no
+  # serial console any more (platforms/, installer.nix), so the probe only ever
+  # chose between one real answer and a worse one.
   #
   # Colour is deliberately NOT applied here. The installer wraps this in the
   # logo amber, which on a VT it can only reach by redefining a palette entry,
-  # and that sequence hangs an xterm and means nothing on a serial line
-  # (common.sh). The appliance prints the eyes plain rather than settle for the
-  # mustard that a bare ESC[33m lands on. One generator, two colour policies.
+  # and that sequence hangs an xterm (common.sh). The appliance prints the eyes
+  # plain rather than settle for the mustard that a bare ESC[33m lands on. One
+  # generator, two colour policies.
+  #
+  # No backslashes, in either the art or anything printed beside it: agetty
+  # reads the issue for escapes of its own and would eat them.
   loomEyes = pkgs.writeShellApplication {
     name = "loom-eyes";
-    runtimeInputs = [ pkgs.coreutils ];
+    runtimeInputs = [ ];
     text = ''
-      # Assigned separately rather than tested inline: `tty` exits non-zero when
-      # stdin is not a terminal, and inside a condition that status would be
-      # swallowed rather than handled.
-      console="$(tty 2>/dev/null || true)"
-      # stdout is what is being drawn on, so it decides -- stdin can still be a
-      # terminal while the art is going into a file.
-      [[ -t 1 ]] || console="none"
-
-      case "''${console}" in
-      /dev/ttyS* | none)
-          # Double quotes and no slashes on purpose. An apostrophe cannot appear
-          # inside a single-quoted string; a backslash would read to shellcheck
-          # as a botched escape, and agetty would eat it out of the issue as an
-          # escape of its own.
-          eyes=(
-              " .-----.    .-----."
-              "( ( o ) )  ( ( o ) )"
-              " '-----'    '-----'"
-          )
-          ;;
-      *)
-          eyes=(
-              ' ▄████▄    ▄████▄'
-              '██▀  ▀██  ██▀  ▀██'
-              '██ ▄▄ ██  ██ ▄▄ ██'
-              '██▄  ▄██  ██▄  ▄██'
-              ' ▀████▀    ▀████▀'
-          )
-          ;;
-      esac
+      eyes=(
+          ' ▄████▄    ▄████▄'
+          '██▀  ▀██  ██▀  ▀██'
+          '██ ▄▄ ██  ██ ▄▄ ██'
+          '██▄  ▄██  ██▄  ▄██'
+          ' ▀████▀    ▀████▀'
+      )
 
       # Two spaces, matching the indent every other line of `loom-info` and of
       # the installer menu uses.
@@ -189,10 +208,9 @@ in
       type = lib.types.package;
       internal = true;
       description = ''
-        `loom-eyes`: the logo reduced to its two eyes, drawn in half blocks or
-        in ASCII depending on the console it is writing to. The appliance's
-        login banner and the installer menu both print it, so the two screens
-        carry the same mark.
+        `loom-eyes`: the logo reduced to its two eyes, drawn in half blocks.
+        The appliance's login banner and the installer menu both print it, so
+        the two screens carry the same mark.
       '';
     };
   };
@@ -202,6 +220,18 @@ in
       inherit logoPng splashBmp;
       eyes = loomEyes;
     };
+
+    # Deliberately not `console.earlySetup`. That would carry the font into the
+    # initrd, and the only thing on screen that early is plymouth, which draws
+    # the logo as a PNG and never touches the VT font. Stage 2's
+    # systemd-vconsole-setup applies it long before any getty, which is the
+    # first moment a character is drawn on tty1.
+    console.font = "${consoleFont}";
+    # Not needed for the line above -- a store path in FONT= is handed straight
+    # to setfont. This is what additionally puts the font under /etc/kbd, so
+    # that an operator on a plain Alt-F2 console can `setfont cozette12x26` and
+    # get a bigger one without a store path to type.
+    console.packages = [ pkgs.cozette ];
 
     # Names the systemd-boot entries: NixOS builds each title from this string
     # plus the specialisation name, so the appliance's two modes read `Loom` and

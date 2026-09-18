@@ -25,13 +25,13 @@ readonly LOOM_MIN_DISK_BYTES=$((250 * 1000 * 1000 * 1000))
 
 # Console styling.
 #
-# Raw ANSI rather than `clear`/`tput`: those need a TERM, and the menu runs on a
-# serial line as often as on a VT (installer.nix:255-278) where TERM is whatever
-# the far end happens to set. An escape sequence is understood by the terminal
-# itself, so it needs nothing from the environment.
+# Raw ANSI rather than `clear`/`tput`: those need a TERM, and the menu is
+# started by systemd on a TTYPath (installer.nix), where nothing sets one. An
+# escape sequence is understood by the terminal itself, so it needs nothing from
+# the environment.
 #
 # Everything collapses to the empty string off a terminal, which keeps escapes
-# out of `loom-menu | tee`, out of a serial capture, and out of the journal.
+# out of `loom-menu | tee` and out of the journal.
 if [[ -t 1 ]]; then
     readonly LOOM_BOLD=$'\033[1m'
     readonly LOOM_DIM=$'\033[2m'
@@ -48,15 +48,15 @@ else
     readonly LOOM_RESET=""
 fi
 
-# A fixed width, not ${COLUMNS}: over a serial line the terminal size is
-# routinely unknown or simply wrong, and a rule that wraps looks far worse than
-# one that is a little short. 51 keeps the header and every status line under it
-# inside 80 columns.
+# A fixed width, not ${COLUMNS}: systemd starts this on a TTYPath with no shell
+# to set that variable, and a rule that wraps looks far worse than one that is a
+# little short. 51 keeps the header and every status line under it inside 80
+# columns.
 readonly LOOM_RULE="==================================================="
 
 # Home the cursor and clear the screen. Deliberately not \033[3J as well:
-# clearing the scrollback is an xterm extension that the vt220 on the other end
-# of a Spark's serial cable need not implement.
+# clearing the scrollback is an xterm extension, and the Linux VT this runs on
+# does not implement it.
 clear_screen() {
     [[ -t 1 ]] || return 0
     printf '\033[H\033[2J'
@@ -71,9 +71,8 @@ readonly LOOM_AMBER_RGB="f7b718"
 # The mark the boot splash just showed, in the two eyes it is actually made of.
 #
 # The art itself is `loom-eyes`, from branding.nix, because the installed box
-# prints the same pair in its login banner and two copies would drift. It picks
-# blocks or ASCII off the console device on its own; what stays here is the
-# colour, which is the half the two screens do *not* agree on.
+# prints the same pair in its login banner and two copies would drift. What
+# stays here is the colour, which is the half the two screens do *not* agree on.
 #
 # `ESC ] P nrrggbb` redefines a palette entry on the Linux VT, which is the only
 # way to reach an exact colour there: console_codes(4) records that even a
@@ -87,8 +86,8 @@ readonly LOOM_AMBER_RGB="f7b718"
 # there is no reset, so the rescue shell inherits it too.
 #
 # Never anywhere but a VT: console_codes(4) warns that xterm hangs on this
-# sequence until somebody presses return, and a serial line can have one on the
-# far end.
+# sequence until somebody presses return, and this script is also run by hand
+# from a shell that may be one.
 loom_banner() {
     local console
 
@@ -96,8 +95,8 @@ loom_banner() {
     # stdin is not a terminal, and inside a condition that status would be
     # swallowed rather than handled.
     console="$(tty 2>/dev/null || true)"
-    # Off a terminal the escapes are already empty strings, and loom-eyes drops
-    # to ASCII on its own, so a captured log stays readable either way.
+    # Off a terminal the escapes are already empty strings, so a captured log
+    # stays readable; this only has to keep the palette sequence off it too.
     [[ -t 1 ]] || console="none"
 
     case "${console}" in

@@ -1,12 +1,11 @@
 #!/usr/bin/env bash
 #
-# The installer's console menu, on tty1 and on serial.
+# The installer's console menu, on tty1.
 #
 # This is a TUI rather than extra bootloader entries on purpose: a boot menu
 # cannot enumerate disks, so it could never show the operator which drive is
 # about to be destroyed, and firmware differs wildly in how it renders menus and
-# accepts input. A program on a Linux console behaves the same everywhere,
-# including over a serial cable.
+# accepts input. A program on a Linux console behaves the same everywhere.
 set -euo pipefail
 
 # shellcheck source-path=SCRIPTDIR

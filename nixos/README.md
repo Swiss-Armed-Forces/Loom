@@ -10,9 +10,9 @@ this file is about the code.
 | --- | --- |
 | `default.nix` | Entry point. Takes `nixpkgs` as an argument and returns the build targets. |
 | `platform.nix` | Declares `loom.platform.*`: the per-box dimension, separate from `system`. |
-| `platforms/spark.nix` | DGX Spark: aarch64, serial console, ConnectX-7. |
-| `platforms/evo-x2.nix` | GMKtec EVO-X2: x86_64, no serial port, Realtek 2.5GbE. |
-| `branding.nix` | Shared by box and stick: the name in the boot menu, the logo, the plymouth theme, `loom-eyes`. |
+| `platforms/spark.nix` | DGX Spark: aarch64, ConnectX-7. |
+| `platforms/evo-x2.nix` | GMKtec EVO-X2: x86_64, Realtek 2.5GbE. |
+| `branding.nix` | Shared by box and stick: the name in the boot menu, the logo, the plymouth theme, `loom-eyes`, the VT font. |
 | `box.nix` | The appliance: host tuning, toolchain, operator account, banner, `loom-up`. |
 | `console.nix` | What the operator meets: the press-a-key login, the three-pane session, `/dev/console`. |
 | `box-hardware.nix` | LUKS root, filesystems, initrd, bootloader. |
@@ -41,7 +41,7 @@ Two reasons, either one sufficient:
 
 `system` is the architecture; `platform` is the box. They are deliberately separate — two platforms could
 share an architecture, and most of what actually differs between the Spark and the EVO-X2 (which NIC to
-claim, whether there is a serial port, which initrd modules to add) is a property of the machine.
+claim, which initrd modules to add) is a property of the machine.
 
 `platform` defaults to `spark`, so every pre-existing invocation behaves as before. Each platform declares
 the `nixSystem` it belongs to, and `default.nix` asserts it against `system`, so a mismatch fails during

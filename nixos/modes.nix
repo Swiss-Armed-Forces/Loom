@@ -8,8 +8,9 @@
 #                             Loom with --offline --expose so visitors can
 #                             reach it.
 #   `Loom (first-time-setup)` DHCP client. Builds and pulls every container
-#                             image into minikube, once, then the box never
-#                             needs the internet again.
+#                             image into minikube, once, then powers the box
+#                             off -- after which it never needs the internet
+#                             again.
 #
 # Those are the titles as they appear in the menu: NixOS builds each from
 # branding.nix's `distroName` plus the specialisation's own attribute name, so
@@ -35,6 +36,13 @@ let
   cfg = config.loom;
   boxAddress = "${loomSubnet}.1";
   gpuArgs = lib.optionalString enableGpu " --gpus all";
+
+  # How long setup mode leaves its closing message on screen before powering the
+  # box off. Long enough for whoever walks past to read why the box is going
+  # down and to cancel it if they want the box up, short enough that nobody
+  # waits for it. The run is already marked complete by then, so a cancel costs
+  # nothing but the poweroff.
+  setupPoweroffGrace = 60;
 
   # Loom takes a long time to come up; skaffold's own offline profile allows
   # six hours (skaffold.yaml:384). Never let systemd shoot it in the head.
@@ -216,7 +224,28 @@ in
             loom-up --offline --delete${gpuArgs}
 
             touch ${loomRepoDir}/.loom-setup-complete
-            echo "[*] Image store populated. Reboot into the default entry to run Loom offline."
+
+            echo "[*] Image store populated. This box never needs the internet again."
+            echo "[*] Powering off in ${toString setupPoweroffGrace}s. Do not reboot into the default"
+            echo "[*] entry from here: run mode serves DHCP and *.loom on the appliance"
+            echo "[*] NIC, and that must not land on the network this fetch ran over."
+            echo "[*] Move the box to where it will be used, then boot \"Loom\" there."
+            echo "[*] To keep it up instead: sudo systemctl stop loom-fetch"
+            sleep ${toString setupPoweroffGrace}
+
+            # `sudo`, because this unit runs as the loom user and a systemd
+            # service has no logind session -- polkit's allow_active never
+            # applies to one, so a bare `systemctl poweroff` here fails with
+            # "Interactive authentication required". box.nix already sets
+            # `wheelNeedsPassword = false` for up.sh, which needs the same thing.
+            #
+            # --no-block: the shutdown transaction stops this very unit, so a
+            # blocking call would be waiting on itself.
+            #
+            # Only reached on success. NixOS runs `script` under `set -e`, so a
+            # failed fetch exits non-zero long before this and leaves the box up
+            # with its log on screen, which is the whole point of a failure.
+            sudo systemctl --no-block poweroff
           '';
         }
       ];

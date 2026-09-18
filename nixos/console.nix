@@ -40,8 +40,9 @@ let
     set -g default-command "${pkgs.bashInteractive}/bin/bash"
 
     # Do not shrink every pane to the smallest attached client. Without this a
-    # second, smaller client -- a serial line at 80x24, say -- squeezes the
-    # session the operator is actually looking at.
+    # second, smaller client -- someone attaching from tty2 at 80x25, say --
+    # squeezes the session the operator is actually looking at, and takes btop
+    # below the size it will draw at (loom-btop below).
     set -g window-size largest
 
     set -g default-terminal "screen-256color"
@@ -77,8 +78,9 @@ let
           # Setup mode guards loom-fetch with ConditionPathExists, so on every
           # boot after the first the unit never runs at all.
           if [ -e ${lib.escapeShellArg "${loomRepoDir}/.loom-setup-complete"} ]; then
-            printf '  First-time setup already completed. Reboot into the default\n'
-            printf '  "Loom" boot entry to run offline. Below is the log of that run.\n'
+            printf '  First-time setup already completed -- this mode powers the box\n'
+            printf '  off when it finishes. Boot the default "Loom" entry where the\n'
+            printf '  appliance is to be used. Below is the log of that run.\n'
           else
             printf '  %s has not started yet; output appears here when it does.\n' "$unit"
           fi
@@ -102,7 +104,7 @@ let
   # The third pane. btop refuses to draw anything but "Terminal size too small"
   # below a minimum that grows with the boxes it shows, and its stock set --
   # cpu, mem, net and proc -- needs 80x24. The pane it runs in is the lower half
-  # of a column 40% of the screen wide (`main-pane-width 60%` below), so on
+  # of a column 40% of the screen wide (`main-pane-width 60%` above), so on
   # anything but a large monitor that minimum is simply not there, and the
   # operator gets a pane with nothing in it. Hence a box set chosen from the
   # pane's real size at startup:
@@ -234,10 +236,10 @@ in
     # Removing `autologinUser` instead would not produce a passwordless Enter --
     # agetty re-prompts on empty input and would simply demand the username.
     #
-    # Both options apply to every getty, `serial-getty@` included; on NixOS
-    # tty1's getty runs as `autovt@tty1.service`, an alias of the `getty@`
-    # template, so per-instance overrides of `getty@tty1` are not consulted and
-    # scoping these would not work anyway.
+    # Both options apply to every getty, tty2-tty6 included; on NixOS tty1's
+    # getty runs as `autovt@tty1.service`, an alias of the `getty@` template, so
+    # per-instance overrides of `getty@tty1` are not consulted and scoping these
+    # would not work anyway.
     # -------------------------------------------------------------------------
     services.getty.autologinUser = loomUser;
     services.getty.extraArgs = [ "--login-pause" ];
@@ -255,30 +257,17 @@ in
     # the session below. That is fixed where it belongs: those units log to the
     # journal only now, and the first pane follows them instead.
     #
-    # There is deliberately NO `console=ttyN` here to go with it. Naming a VT on
-    # the kernel command line does not merely redirect output to it, it makes
-    # that VT the foreground console -- `console=tty12` leaves the box showing
-    # the kernel log, with the banner and the press-a-key prompt rendered on a
-    # tty1 nobody is looking at and nobody's keystrokes reach. The test asserts
-    # `fgconsole` is 1 so this cannot come back.
-    #
-    # Deliberately in this shared module rather than in either mode: a
-    # specialisation can only add to its parent's kernel command line, so a
-    # `console=` set in one mode could never be taken back in the other.
+    # There is deliberately NO `console=` here at all -- neither a VT nor a
+    # serial port. Naming a VT on the kernel command line does not merely
+    # redirect output to it, it makes that VT the foreground console:
+    # `console=tty12` leaves the box showing the kernel log, with the banner and
+    # the press-a-key prompt rendered on a tty1 nobody is looking at and
+    # nobody's keystrokes reach. The test asserts `fgconsole` is 1 so this
+    # cannot come back. `console=ttyS0` is the same trap pointed at a cable: it
+    # makes the serial port the primary console, so a panic on a box with
+    # nothing plugged in goes nowhere at all instead of onto the monitor
+    # somebody is standing in front of.
     # -------------------------------------------------------------------------
-    boot.kernelParams = lib.optionals cfg.platform.hasSerialConsole [
-      # A serial line is not a VT, so this one is safe: it makes /dev/console
-      # the serial port -- where that box's operator usually is -- without
-      # touching which VT the monitor shows. It also gives the installed
-      # appliance a serial getty it does not otherwise have, because
-      # systemd-getty-generator only spawns serial-getty@ for consoles named on
-      # the kernel command line. That getty is an escape hatch: console.nix
-      # starts the session on tty1 alone.
-      "console=ttyS0,115200"
-      # plymouth renders a text fallback onto every console it finds; same
-      # reason installer.nix passes this.
-      "plymouth.ignore-serial-consoles"
-    ];
 
     # -------------------------------------------------------------------------
     # The session
@@ -293,9 +282,8 @@ in
       loom-btop
     ];
 
-    # Only tty1. tty2-tty6 and any serial console deliberately get an ordinary
-    # shell, so a session that will not start is never the only thing between
-    # the operator and a prompt.
+    # Only tty1. tty2-tty6 deliberately get an ordinary shell, so a session that
+    # will not start is never the only thing between the operator and a prompt.
     environment.loginShellInit = ''
       if [ -z "''${LOOM_SESSION:-}" ] \
         && [ "$(id -un)" = ${lib.escapeShellArg loomUser} ] \

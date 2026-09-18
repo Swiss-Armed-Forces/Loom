@@ -171,17 +171,14 @@ pkgs.testers.runNixOSTest {
         # A backslash would be eaten by agetty as an issue escape.
         assert "\\" not in issue, issue
 
-        # The issue is one file read by the VT getty and the serial getty both,
-        # so the eyes in it have to be the ASCII pair -- loom-eyes picks that by
-        # seeing that loom-issue.service redirected it into a file. Half blocks
-        # here would be a screen of question marks on a Spark's serial cable.
-        assert "( ( o ) )  ( ( o ) )" in issue, issue
-        assert "█" not in issue, issue
+        # loom-eyes draws one pair, and it survives the round trip through the
+        # issue file: loom-issue.service captures it with stdout redirected, and
+        # agetty hands the bytes to the VT unchanged.
+        assert "█" in issue, issue
 
-        # On a terminal the same generator draws the other pair, which is what
-        # the operator's shell gets. `script` is what makes that a terminal at
-        # all: succeed() pipes stdout, and a pipe is exactly the case that
-        # selects ASCII above.
+        # The same generator, the same art, on a terminal -- which is what the
+        # operator's shell gets. `script` is what makes that a terminal at all:
+        # succeed() pipes stdout.
         on_a_tty = appliance.succeed("script --quiet --return --command loom-info /dev/null")
         assert "█" in on_a_tty, on_a_tty
 
@@ -312,6 +309,19 @@ pkgs.testers.runNixOSTest {
         ).strip()
         appliance.succeed(f"test -e {setup_sys}/etc/systemd/system/loom-fetch.service")
         appliance.fail(f"test -e {setup_sys}/etc/systemd/system/dnsmasq.service")
+
+        # And it ends by powering the box off rather than leaving it up for
+        # somebody to reboot: the default entry serves DHCP and *.loom on the
+        # appliance NIC, which must not happen on whatever network the images
+        # were just fetched over. Same ExecStart indirection as above -- the
+        # specialisation's units cannot be read with `systemctl cat`.
+        fetch_unit = appliance.succeed(
+            f"cat {setup_sys}/etc/systemd/system/loom-fetch.service"
+        )
+        fetch_match = re.search(r"ExecStart=(\S+)", fetch_unit)
+        assert fetch_match, fetch_unit
+        fetch_script = appliance.succeed(f"cat {fetch_match.group(1)}")
+        assert "poweroff" in fetch_script, fetch_script
 
         # The two modes also differ in what they put on the screen, and that
         # difference lives only on the kernel command line. Run mode hides the

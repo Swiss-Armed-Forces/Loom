@@ -25,8 +25,8 @@ Read this before building anything; the design only makes sense if these hold.
   want a second copy.
 - **There is no remote access.** No sshd, no accounts but the local operator. The console is the only way in —
   and it is not an authentication boundary: it shows the banner, waits for a keypress, and then opens a
-  root-capable session with no password. On the Spark the serial line is a console too, so treat a serial
-  cable as physical access.
+  root-capable session with no password. Neither box is driven over a serial cable, and neither image
+  configures one, so the monitor and keyboard are the whole attack surface.
 - **WiFi and Bluetooth are disabled** by module blacklist and `rfkill`. That is a software guarantee; disable
   the radios in the box's own firmware as well if the site requires it.
 
@@ -40,7 +40,7 @@ differs between them.
 | Box | NVIDIA DGX Spark | GMKtec EVO-X2 (AMD Ryzen AI Max+ 395) |
 | Architecture | `aarch64-linux` | `x86_64-linux` |
 | Build host | aarch64 — a Spark can build sticks for its siblings | any ordinary x86_64 machine |
-| Console | serial (the system console) or monitor | monitor and USB keyboard (no serial port) |
+| Console | monitor and USB keyboard | monitor and USB keyboard |
 | Network | ConnectX-7, one port | 2.5GbE, two ports |
 | GPU | not supported (see below) | not supported (see below) |
 
@@ -140,7 +140,7 @@ udevadm info /sys/class/net/<iface> | grep -E 'ID_PATH=|ID_NET_DRIVER='
 ## Installing
 
 1. Plug the stick into the box and boot from it.
-2. The installer menu appears on the console — and on serial too, on a box that has a serial port. Its header
+2. The installer menu appears on the console. Its header
     names the **Loom release and the platform the stick was built for**, so check there that you booted the
     right stick before going further; two sticks are otherwise indistinguishable. Below that it shows which
     disk is the boot medium (never touched), whether the stick's LUKS key is present, and which disk is the
@@ -170,14 +170,25 @@ The appliance has two entries in its boot menu, `Loom` and `Loom (first-time-set
 | Screen | Loom splash, no boot log | Full boot log, no splash |
 | Console session | First pane follows `loom` | First pane follows `loom-fetch` |
 | Key removed | Powers the box off | Warns only |
+| When it finishes | Keeps running | Powers the box off |
 
 A fresh box has no container images, and building them needs registries. So the first boot after installation is
 into **first-time setup**, on a network with internet. Choose `Loom (first-time-setup)` in the boot menu, then
 press a key at the console — the first pane of the session is that log.
 
 This takes a long time. It populates minikube's image store on the encrypted root and marks itself complete, so
-a reboot will not repeat it. When it finishes, reboot into the default entry and the box runs offline forever.
-Come back to a console whose first pane says _"First-time setup already completed"_ and the box is ready.
+a reboot will not repeat it.
+
+**When it finishes, the box powers itself off** — a minute after the last log line, so an unattended run ends
+with a box that is simply off. That is deliberate, and not just tidiness: the default `Loom` entry serves DHCP
+and wildcard `*.loom` DNS on the appliance NIC, so booting it while the box is still cabled into the network it
+fetched over would put a DHCP server on that network. Move the box to where it will be used, then boot `Loom`
+there and it runs offline forever.
+
+If you want the box to stay up instead — to look at something before it goes down — `sudo systemctl stop
+loom-fetch` in the shell pane during that minute cancels the poweroff. The run is marked complete either way.
+Boot `Loom (first-time-setup)` again and the console's first pane says _"First-time setup already completed"_
+rather than repeating any of it.
 
 The two modes look different on purpose. `Loom` boots to a splash with no kernel log, because it has nothing to
 report and the login screen carries everything an operator needs. `Loom (first-time-setup)` boots verbose — it
@@ -239,9 +250,11 @@ which no uniform shift of this art can satisfy.
 <!-- editorconfig-checker-disable -->
 
 ```text
-   .-----.    .-----.
-  ( ( o ) )  ( ( o ) )
-   '-----'    '-----'
+   ▄████▄    ▄████▄
+  ██▀  ▀██  ██▀  ▀██
+  ██ ▄▄ ██  ██ ▄▄ ██
+  ██▄  ▄██  ██▄  ▄██
+   ▀████▀    ▀████▀
 
   Loom appliance -- 1.4.0
   GMKtec EVO-X2 (AMD Ryzen AI Max+ 395)
@@ -260,10 +273,17 @@ which no uniform shift of this art can satisfy.
 
 <!-- editorconfig-checker-enable -->
 
-The eyes are the same mark the boot splash and the installer stick show. This is the ASCII pair, which is what
-the pre-login banner always uses: it is a single file that both the monitor's getty and a Spark's serial getty
-read, and half blocks over a serial line can arrive as a screen of question marks. On a terminal — `loom-info`
-in the shell pane, or the installer menu — the box draws the rounder half-block pair instead.
+The eyes are the same mark the boot splash and the installer stick show, drawn in half blocks. One rendering,
+everywhere: the pre-login banner, `loom-info` re-run in the shell pane, and the installer menu all print it
+from the same command.
+
+Both screens run in Cozette rather than the kernel's built-in console font. The cell is 6 pixels wide instead
+of 8, so the same monitor carries about a third more columns — 320 rather than 240 on a 1080p panel — and the
+font covers the box drawing tmux frames its panes with and the graded blocks `btop` draws its meters out of.
+The appliance also asks its firmware for the largest console mode it has, because the column count is only ever
+the framebuffer width divided by that 6. The font is not a free choice: the eyes above are made of `█`, `▄` and
+`▀`, most console fonts are missing the half blocks, and a build that picks one that is fails rather than
+shipping a box whose banner is a screen of holes.
 
 So somebody who only walks past the monitor still gets everything they need. Nothing logs in by itself — the
 screen stays here until a key is pressed, which is also why the banner can no longer be scrolled away. Pressing
@@ -291,8 +311,7 @@ shell at any time.
 
 `Ctrl-b d` detaches and returns to the press-a-key prompt; the panes keep running, and the next keypress comes
 straight back to them. `Alt-F2` through `Alt-F6` give a plain console with no session at all, which is the way
-back in if anything above misbehaves. On a box with a serial header the serial line is the system console and
-gives an ordinary login — another way back in, and the reason a serial cable counts as physical access.
+back in if anything above misbehaves.
 
 `loom-up` and `loom-down` wrap `up.sh` with the two flags the appliance needs:
 

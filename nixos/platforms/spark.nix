@@ -1,17 +1,12 @@
 # NVIDIA DGX Spark.
 #
 # The original appliance target: 20-core Grace CPU, Blackwell GPU, 128 GB
-# unified memory, ConnectX-7 networking, reached over serial as often as over a
-# monitor.
+# unified memory, ConnectX-7 networking.
 {
   loom.platform = {
     id = "spark";
     description = "NVIDIA DGX Spark";
     nixSystem = "aarch64-linux";
-
-    # The Spark is usually driven over a serial cable, so the installer menu and
-    # the primary console both go to ttyS0.
-    hasSerialConsole = true;
 
     # ConnectX-7, claimed by mlx5_core. There is one such port, so the driver
     # alone identifies it. Confirm on the box with:
