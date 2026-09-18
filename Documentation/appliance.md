@@ -313,6 +313,11 @@ back. A `loom-console-font` service therefore applies it a second time, after pl
 and before any getty paints a character. It has to be before: changing the font resizes the console, so doing
 it afterwards would leave the banner in wrapped fragments.
 
+That second pass is late only because plymouth holds it there, which first-time setup — booting without a
+splash — does not, so there it landed before the display driver took over and the mode kept the kernel's font
+for the whole run. The driver taking over emits no event the console layer keys on, but the card does, so a
+udev rule on it starts `loom-console-font-reapply` and the font survives in both modes.
+
 So somebody who only walks past the monitor still gets everything they need. Nothing logs in by itself — the
 screen stays here until a key is pressed, which is also why the banner can no longer be scrolled away. Pressing
 a key logs in as `loom` with no username and no password, for the same reason `sudo` needs none: there is no

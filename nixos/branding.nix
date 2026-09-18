@@ -312,7 +312,8 @@ in
     #   * plymouth releasing the console when it quits -- which run mode has and
     #     first-time setup does not (modes.nix passes `plymouth.enable=0`).
     #
-    # Re-applying once, late, covers both without having to know which.
+    # Re-applying once, late, covers both without having to know which -- but
+    # only run mode is actually late. See `loom-console-font-reapply` below.
     # -------------------------------------------------------------------------
     systemd.services.loom-console-font = {
       description = "Re-apply the console font once the display has settled";
@@ -337,9 +338,15 @@ in
         "getty-pre.target"
         "loom-menu.service"
       ];
-      # Absent in setup mode, where plymouth is switched off entirely. An After=
-      # on a unit that does not exist is a no-op rather than an error, which is
-      # what makes one unit serve both modes.
+      # What makes this unit late in run mode, and the reason it is not enough
+      # on its own. `plymouth --wait` blocks until the splash quits, which is
+      # long after the DRM driver has taken the console -- so the font is
+      # applied on the far side of the reset and stays.
+      #
+      # Setup mode passes `plymouth.enable=0` on the command line, not
+      # `boot.plymouth.enable = false`, so this unit is present there too and
+      # simply returns at once: no daemon, nothing to wait for. The ordering
+      # holds and anchors nothing.
       after = [ "plymouth-quit-wait.service" ];
       serviceConfig = {
         Type = "oneshot";
@@ -354,6 +361,53 @@ in
         # login prompt. On a box with no remote access a wrong-sized font is
         # cosmetic and a missing getty is unrecoverable.
         ExecStart = "-${config.systemd.package}/lib/systemd/systemd-vconsole-setup";
+      };
+    };
+
+    # -------------------------------------------------------------------------
+    # The takeover itself, for the mode that has no splash to hide behind.
+    #
+    # First-time setup is the mode where the unit above lands on the wrong side
+    # of the reset, and it is also the mode nobody is watching for hours, so a
+    # console stuck at 16x32 there is the one an operator actually lives with.
+    #
+    # There is no ordering that fixes it. The DRM driver binds from udev
+    # coldplug, asynchronously, and the event that would say so is precisely the
+    # one fbcon does not emit -- `ACTION=="add", SUBSYSTEM=="vtconsole"`, which
+    # systemd's own 90-vconsole.rules keys on. What does emit is the card
+    # underneath it, so that is what this keys on instead.
+    #
+    # Twice, with a pause. The card's uevent is fired when the DRM device
+    # registers, which is a hair BEFORE fbcon binds to its framebuffer -- true
+    # of the `graphics` subsystem's event as well, since `register_framebuffer`
+    # creates the device before it calls into fbcon. Udev's own latency usually
+    # covers that gap, and the second pass covers it when it does not.
+    # -------------------------------------------------------------------------
+    services.udev.extraRules = ''
+      ACTION=="add", SUBSYSTEM=="drm", KERNEL=="card[0-9]*", TAG+="systemd", ENV{SYSTEMD_WANTS}+="loom-console-font-reapply.service"
+    '';
+
+    systemd.services.loom-console-font-reapply = {
+      description = "Re-apply the console font after a DRM takeover";
+      # Deliberately no `wantedBy` and no `RemainAfterExit`: this exists to be
+      # started by the rule above, once per card that appears, and a box with a
+      # second card -- or a driver that rebinds later -- has to be able to start
+      # it again. The unit above is still what covers the ordinary boot.
+      #
+      # Not ordered against getty-pre.target either. That would be a lie: the
+      # takeover happens when the driver says so, and on a setup-mode boot that
+      # is seconds into coldplug, well before anything paints. If it ever landed
+      # after the banner, a resized VT leaves it wrapped until the operator
+      # presses a key -- which is strictly better than the banner being wrong
+      # for the life of the boot.
+      serviceConfig = {
+        Type = "oneshot";
+        # Same binary, same `-`, and for the same reasons as above.
+        ExecStart = [
+          "-${config.systemd.package}/lib/systemd/systemd-vconsole-setup"
+          "${pkgs.coreutils}/bin/sleep 2"
+          "-${config.systemd.package}/lib/systemd/systemd-vconsole-setup"
+        ];
       };
     };
 

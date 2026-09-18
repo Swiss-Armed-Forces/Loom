@@ -238,6 +238,22 @@ pkgs.testers.runNixOSTest {
         # that path for real -- its console cannot load a 6px-wide font at all.
         appliance.succeed("systemctl is-active getty@tty1.service")
 
+        # And the takeover that unit cannot be ordered against. It is late only
+        # because `plymouth --wait` holds it there, which first-time setup --
+        # booting with plymouth.enable=0 -- does not: the same unit returns at
+        # once and the font is applied before the DRM driver takes the console.
+        # The recovery is a udev rule on the card.
+        #
+        # Asserted rather than exercised. This VM's console is not the reset
+        # that matters, and what breaks in the field is the rule quietly
+        # matching nothing -- which nothing short of a monitor at a site sees.
+        rule = appliance.succeed(
+            "grep -rh loom-console-font-reapply /etc/udev/rules.d/"
+        ).strip()
+        assert 'SUBSYSTEM=="drm"' in rule, rule
+        assert "SYSTEMD_WANTS" in rule, rule
+        appliance.succeed("systemctl cat loom-console-font-reapply.service >/dev/null")
+
         # The ordering is the dangerous part of that unit: it sits between
         # plymouth-quit-wait and getty-pre. systemd breaks a cycle by *deleting*
         # a job rather than failing, so a cycle would not turn any unit red --
