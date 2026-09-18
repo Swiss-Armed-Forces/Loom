@@ -6,6 +6,15 @@
 # information to base placement decisions on. Without limits, a single runaway
 # container can starve other workloads on the same node.
 #
+# The JVM services are the exception, and are handled for you: Elasticsearch and
+# Tika size their heaps from the cgroup limit, so removing it would have them
+# read the whole node instead -- half of it for ES, and for Tika a heap it
+# commits at startup. With no limit to read they fall back to the budget they
+# declare in values.yaml, which mirrors the limit they would have had, so the
+# heaps and Tika's tmpfs come out the same either way. Override
+# elasticsearch.memoryFallback and tika.memoryFallback if that does not suit the
+# machine.
+#
 # For single-node deployments, copy this file's contents into
 # charts/values-overwrites.yaml to apply it via Skaffold.
 #

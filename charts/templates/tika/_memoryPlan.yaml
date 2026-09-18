@@ -1,0 +1,29 @@
+{{/*
+Tika's memory plan, in bytes.
+
+Three consumers share one budget: the RAM-backed /tmp, the tika-server process
+and the forked JVM. The forked one is where every parse actually runs
+(noFork=false in tika-config.xml), and Tika 3.x builds its command line from
+forkedJvmArgs alone - none of the server's own JVM flags are inherited - so it
+takes what the tmpfs, the reserve and the small server heap leave over.
+
+Both the Deployment (tmpfs, server heap) and the tika-config ConfigMap (forked
+heap) need these numbers, so they are derived once here. Values are quoted
+because fromYaml would otherwise hand back floats and render them as 1.6e+09.
+
+Usage: {{- $tikaMemory := include "app.tika.memoryPlan" . | fromYaml }}
+*/}}
+{{- define "app.tika.memoryPlan" -}}
+{{- $budget := include "app.memoryBudgetBytes" (dict "component" "tika" "resources" .Values.tika.resources "fallback" .Values.tika.memoryFallback) | int64 -}}
+{{- $tmp := mulf $budget .Values.tika.tmp.sizeFactor | floor | int64 -}}
+{{- $reserve := mulf $budget .Values.tika.memoryReserveFactor | floor | int64 -}}
+{{- $server := include "SI-to-bytes" .Values.tika.serverHeapSize | int64 -}}
+{{- $forked := sub $budget (add $tmp $reserve $server) -}}
+{{- if lt $forked 1 -}}
+{{- printf "\nNothing is left of tika's %d byte budget for the forked parser JVM.\ntmp.sizeFactor (%v) + memoryReserveFactor (%v) + serverHeapSize (%s) exceed it.\nRaise tika.resources.limits.memory (or tika.memoryFallback), or lower the three." $budget .Values.tika.tmp.sizeFactor .Values.tika.memoryReserveFactor .Values.tika.serverHeapSize | fail -}}
+{{- end -}}
+budgetBytes: "{{ $budget }}"
+tmpBytes: "{{ $tmp }}"
+serverHeapBytes: "{{ $server }}"
+forkedHeapBytes: "{{ $forked }}"
+{{- end -}}

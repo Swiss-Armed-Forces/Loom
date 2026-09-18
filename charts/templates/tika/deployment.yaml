@@ -1,17 +1,14 @@
 {{- /*
-Tika's memory budget. The RAM-backed /tmp and the JVM heap draw on the same
-resources.limits.memory, so derive the heap share from the tmp share rather than
-configuring both independently: heap = limit - tmp - reserve.
+Tika's memory budget, shared by the RAM-backed /tmp, this process and the forked
+parser JVM sized in tika-config-configMap.yaml. See app.tika.memoryPlan.
+
+The flags go on the command line rather than into an environment variable: the
+Tika image expands none of the usual ones (JAVA_OPTS, TIKA_JAVA_OPTS), and this
+template already owns the whole java invocation.
 */ -}}
-{{- $tmpSizeLimit := .Values.tika.tmp.sizeLimit -}}
-{{- $tmpFraction := 0.0 -}}
-{{- if and .Values.tika.tmp.sizeFactor .Values.tika.resources .Values.tika.resources.limits .Values.tika.resources.limits.memory -}}
-{{- $tmpSizeLimit = include "memory-limit-fraction" (dict "memory" .Values.tika.resources.limits.memory "factor" .Values.tika.tmp.sizeFactor) -}}
-{{- $tmpFraction = .Values.tika.tmp.sizeFactor | float64 -}}
-{{- end -}}
-{{- $heapPercent := mulf (subf (subf 1.0 $tmpFraction) (.Values.tika.memoryReserveFactor | float64)) 100 | floor | int -}}
+{{- $tikaMemory := include "app.tika.memoryPlan" . | fromYaml -}}
 {{- $reaperMaxAgeSeconds := mul .Values.tika.taskTimeoutSeconds .Values.tika.tmp.reaper.maxAgeFactor -}}
-{{- $javaOpts := printf "-XX:InitialRAMPercentage=%d -XX:MaxRAMPercentage=%d %s" $heapPercent $heapPercent (.Values.tika.javaOpts | default "") | trim -}}
+{{- $serverJavaOpts := printf "%s %s" (include "app.jvm.heapFlags" $tikaMemory.serverHeapBytes) (.Values.tika.serverJavaOpts | default "") | trim -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -94,15 +91,12 @@ spec:
           {{- if .Values.tika.resources }}
           resources: {{- toYaml .Values.tika.resources | nindent 12 }}
           {{- end }}
-          env:
-            - name: TIKA_JAVA_OPS
-              value: {{ $javaOpts | quote }}
           args:
             - "/bin/sh"
             - "-c"
             - >-
               find /tmp -mindepth 1 -delete 2>/dev/null || true;
-              exec java ${TIKA_JAVA_OPS}
+              exec java {{ $serverJavaOpts }}
               -cp "/tika-server-standard-${TIKA_VERSION}.jar:/tika-extras/*"
               org.apache.tika.server.core.TikaServerCli
               -h 0.0.0.0
@@ -148,5 +142,5 @@ spec:
         - name: tmp
           emptyDir:
             medium: Memory
-            sizeLimit: {{ $tmpSizeLimit }}
+            sizeLimit: {{ $tikaMemory.tmpBytes }}
         {{- with include "app.trustedCerts.volumes" . }}{{ . | nindent 8 }}{{- end }}
