@@ -42,7 +42,16 @@ boot_order_degraded=0
 setup_entry_manual=0
 
 main() {
-    local boot target key_dev key_status eligible passphrase targets=()
+    local auto=0 boot key_dev key_status eligible passphrase targets=()
+
+    # The menu passes this once it has counted down; nothing else does. It skips
+    # the typed interlock and nothing else -- every refusal below still applies,
+    # because an unattended install is exactly when a bad precondition must stop
+    # the run rather than be confirmed away.
+    if [[ "${1:-}" == "--auto" ]]; then
+        auto=1
+        shift
+    fi
 
     if [[ "${EUID}" -ne 0 ]]; then
         die "The installer must run as root."
@@ -56,10 +65,11 @@ main() {
     if [[ -z "${eligible}" ]]; then
         die "No eligible internal NVMe found. Nothing to install onto."
     fi
+    # Every eligible disk, not one of them. There is no disk to choose any more:
+    # they are pooled, which is what lets this run without asking anything.
     mapfile -t targets <<<"${eligible}"
-    target="$(select_target "${targets[@]}")"
 
-    check_disk_size "${target}"
+    check_pool_size "${targets[@]}"
 
     key_dev="/dev/disk/by-partlabel/${LOOM_KEY_LABEL}"
     key_status="$(key_state "${key_dev}")"
@@ -67,16 +77,21 @@ main() {
         die "The ${LOOM_KEY_LABEL} partition is ${key_status}. Re-flash with 'build-appliance-image --flash'."
     fi
 
-    confirm_destructive "INSTALL" "${boot}" "${target}"
+    if ((!auto)); then
+        confirm_destructive "INSTALL" "${boot}" "${targets[@]}"
+    fi
 
-    partition "${target}"
+    partition "${targets[@]}"
+    create_pool "${#targets[@]}"
     encrypt "${key_dev}"
     make_filesystems
     mount_target
     install_system
     select_setup_entry
-    passphrase="$(enroll_recovery_passphrase)"
-    fix_boot_order "${target}" "${boot}"
+    passphrase="$(enroll_recovery_passphrase "${key_dev}")"
+    # targets[0]: the ESP lives on the first pool member, and that is the disk
+    # the firmware has to be pointed at.
+    fix_boot_order "${targets[0]}" "${boot}"
     unmount_target
 
     echo
@@ -110,64 +125,74 @@ main() {
     fi
 }
 
-# Which disk to install onto, when the box has more than one.
-#
-# Taking targets[0] unasked was fine while every appliance was a Spark with one
-# drive; the EVO-X2 has two M.2 slots, and there "whichever lsblk listed first"
-# is not something an operator can predict or verify. menu.sh already lists every
-# candidate, and wipe.sh already erases all of them -- this makes install agree.
-#
-# Everything here goes to stderr: the chosen device is this function's stdout.
-select_target() {
-    local targets=("${@}") index answer description
-
-    if [[ "${#targets[@]}" -eq 1 ]]; then
-        printf '%s' "${targets[0]}"
-        return 0
-    fi
-
-    echo >&2
-    echo >&2 "=== MORE THAN ONE ELIGIBLE INTERNAL DISK ==="
-    for index in "${!targets[@]}"; do
-        description="$(disk_description "${targets[index]}")"
-        printf '    %d) %s\n' "$((index + 1))" "${description}" >&2
-    done
-    echo >&2
-    # A number, not a serial: this only has to disambiguate between the disks
-    # listed directly above. The interlock that guards against doing this to the
-    # wrong machine is the INSTALL confirmation that follows.
-    read -r -p "Install onto which disk? [1-${#targets[@]}]: " answer
-
-    if [[ ! "${answer}" =~ ^[0-9]+$ ]] || ((answer < 1 || answer > ${#targets[@]})); then
-        # `die` exits the command substitution rather than the script, but the
-        # non-zero status propagates through the assignment under `set -e`.
-        die "Not a choice: '${answer}'. Aborted."
-    fi
-    printf '%s' "${targets[answer - 1]}"
-}
-
-check_disk_size() {
-    local disk="${1}" bytes
-    bytes="$(blockdev --getsize64 "${disk}")"
-    if [[ "${bytes}" -lt "${LOOM_MIN_DISK_BYTES}" ]]; then
+check_pool_size() {
+    local disks=("${@}") bytes
+    bytes="$(pool_bytes "${disks[@]}")"
+    if [[ "${bytes}" -lt "${LOOM_MIN_POOL_BYTES}" ]]; then
         # Documentation/installation.md:32 asks for 200 GiB, and the container
-        # images alone are around 60 GB.
-        die "$(basename "${disk}") is $((bytes / 1000 / 1000 / 1000)) GB; Loom needs at least $((LOOM_MIN_DISK_BYTES / 1000 / 1000 / 1000)) GB."
+        # images alone are around 60 GB. Measured across the pool, because that
+        # is what the box actually gets.
+        die "${#disks[@]} disk(s) totalling $((bytes / 1000 / 1000 / 1000)) GB; Loom needs at least $((LOOM_MIN_POOL_BYTES / 1000 / 1000 / 1000)) GB."
     fi
 }
 
+# Lay out every disk that will join the pool.
+#
+# The first one carries the ESP as well, because the firmware has to be pointed
+# at exactly one loader and a second copy would only ever go stale. Losing that
+# disk loses the box either way -- a linear pool has no redundancy -- so nothing
+# is gained by spreading the boot partition around.
 partition() {
-    local disk="${1}"
-    log "Partitioning ${disk}"
+    local disks=("${@}") index disk
 
-    wipefs --all "${disk}"
-    sgdisk --zap-all "${disk}"
-    sgdisk \
-        --new=1:0:+1G --typecode=1:ef00 --change-name="1:${LOOM_ESP_LABEL}" \
-        --new=2:0:0 --typecode=2:8309 --change-name="2:${LOOM_ROOT_LABEL}" \
-        "${disk}"
+    # Anything still holding these disks -- a pool from a previous install, its
+    # LUKS mapping -- has to go first, or sgdisk finds the device busy and the
+    # install dies with the disks in a worse state than it found them.
+    discard_pool
 
-    partprobe "${disk}"
+    for index in "${!disks[@]}"; do
+        disk="${disks[index]}"
+        log "Partitioning ${disk}"
+
+        wipefs --all "${disk}"
+        sgdisk --zap-all "${disk}"
+
+        # 8e00 is "Linux LVM". The pool member is a partition rather than the
+        # whole disk so that the GPT keeps saying what the space is for.
+        if ((index == 0)); then
+            sgdisk \
+                --new=1:0:+1G --typecode=1:ef00 --change-name="1:${LOOM_ESP_LABEL}" \
+                --new=2:0:0 --typecode=2:8e00 --change-name="2:${LOOM_PV_LABEL_PREFIX}${index}" \
+                "${disk}"
+        else
+            sgdisk \
+                --new=1:0:0 --typecode=1:8e00 --change-name="1:${LOOM_PV_LABEL_PREFIX}${index}" \
+                "${disk}"
+        fi
+
+        partprobe "${disk}"
+    done
+
+    udevadm settle
+}
+
+# One volume group across every member, and one logical volume filling it.
+#
+# Linear allocation, deliberately: `--stripes` would cap the pool at N times the
+# smallest disk, and the two M.2 slots on a box are not required to hold
+# matching drives. Concatenation uses every extent of both.
+create_pool() {
+    local count="${1}" index pvs=()
+
+    for ((index = 0; index < count; index++)); do
+        pvs+=("/dev/disk/by-partlabel/${LOOM_PV_LABEL_PREFIX}${index}")
+    done
+
+    log "Pooling ${count} disk(s) into volume group ${LOOM_VG_NAME}"
+    pvcreate --force --yes "${pvs[@]}"
+    vgcreate "${LOOM_VG_NAME}" "${pvs[@]}"
+    lvcreate --yes --extents 100%FREE --name "${LOOM_LV_NAME}" "${LOOM_VG_NAME}"
+
     udevadm settle
 }
 
@@ -186,12 +211,12 @@ encrypt() {
         --cipher aes-xts-plain64 \
         --key-file "${key_dev}" \
         --keyfile-size "${LOOM_KEY_BYTES}" \
-        "/dev/disk/by-partlabel/${LOOM_ROOT_LABEL}"
+        "${LOOM_ROOT_DEVICE}"
 
     cryptsetup open \
         --key-file "${key_dev}" \
         --keyfile-size "${LOOM_KEY_BYTES}" \
-        "/dev/disk/by-partlabel/${LOOM_ROOT_LABEL}" \
+        "${LOOM_ROOT_DEVICE}" \
         cryptroot
 }
 
@@ -213,6 +238,10 @@ mount_target() {
 unmount_target() {
     umount --recursive "${MOUNT}"
     cryptsetup close cryptroot
+    # The group outlives the mapping, and an active one keeps the partition
+    # tables busy -- which matters because the menu is still running and its
+    # next option may be a wipe.
+    vgchange --activate n "${LOOM_VG_NAME}" >/dev/null 2>&1 || true
 }
 
 install_system() {
@@ -314,16 +343,20 @@ select_setup_entry() {
 
 # Generated here rather than at image build time, so it never leaves the box and
 # every box gets its own.
+#
+# Takes the key device rather than naming the partition itself, as `encrypt`
+# above already does: the two have to unlock the same container with the same
+# bytes, and one of them reaching for a path of its own is how they would stop.
 enroll_recovery_passphrase() {
-    local passphrase target_file
+    local key_dev="${1}" passphrase target_file
     passphrase="$(generate_passphrase)"
     target_file="${MOUNT}/${RECOVERY_FILE_REL}"
 
     cryptsetup luksAddKey \
-        --key-file "/dev/disk/by-partlabel/${LOOM_KEY_LABEL}" \
+        --key-file "${key_dev}" \
         --keyfile-size "${LOOM_KEY_BYTES}" \
         --batch-mode \
-        "/dev/disk/by-partlabel/${LOOM_ROOT_LABEL}" \
+        "${LOOM_ROOT_DEVICE}" \
         <(printf '%s' "${passphrase}") >&2
 
     # Safe to store in the clear: reading it requires the disk to be unlocked
@@ -362,13 +395,13 @@ generate_passphrase() {
 # Give the internal disk a named NVRAM entry and take the stick off the
 # fallback path, leaving it reachable from the firmware's own boot menu.
 fix_boot_order() {
-    local target="${1}" boot="${2}" esp_part_num=1
+    local esp_disk="${1}" boot="${2}" esp_part_num=1
     log "Making the internal disk the default boot entry"
 
     # efibootmgr does not check that the loader exists, so a wrong name here
     # produces an entry the firmware silently cannot boot.
     if ! efibootmgr --create \
-        --disk "${target}" \
+        --disk "${esp_disk}" \
         --part "${esp_part_num}" \
         --loader "\\EFI\\systemd\\systemd-boot${EFI_ARCH}.efi" \
         --label "Loom appliance" >/dev/null 2>&1; then
@@ -407,4 +440,11 @@ fix_boot_order() {
     rmdir "${stick_esp}"
 }
 
-main "${@}"
+# Guarded so that nixos/tests/appliance-install.nix can source this file and
+# drive `partition`, `create_pool` and `encrypt` against scratch disks. That
+# test is the only thing standing between a change to the layout below and a box
+# that installs perfectly and then cannot find its own root, so being able to
+# call those three without running an install is worth the two lines.
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+    main "${@}"
+fi

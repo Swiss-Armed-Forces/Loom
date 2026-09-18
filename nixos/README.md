@@ -24,12 +24,14 @@ this file is about the code.
 | `usb-ingest.nix` | Mounts USB media read-only and ingests it: the udev rule, the templated unit, and the filesystem set. |
 | `usb-ingest/` | The program that unit runs — device selection, mount policy, naming, `mc mirror` — with its own pytest suite, run at build time. |
 | `repo.nix` | Seeds the embedded checkout into the operator's home, writable. |
+| `storage.nix` | `loom.storage.*`: the volume group, the logical volume and the device path stage 1 waits for — named once, for both the box and the stick. |
 | `installer.nix` | The USB stick: `image.repart` layout and the installer system. |
-| `installer-scripts/` | `common.sh` (device interlock, console styling), `install.sh`, `wipe.sh`, `menu.sh`. |
+| `installer-scripts/` | `common.sh` (device interlock, the auto-install decision, console styling), `install.sh`, `wipe.sh`, `menu.sh`, and a bats suite run at build time. |
 | `tests/appliance.nix` | VM test asserting the values `box.nix` restates from `up.sh`, and the console session. |
 | `tests/appliance-wifi.nix` | VM test for the `--wifi` build: hostapd on a `mac80211_hwsim` radio, the bridge, and the credentials on the login screen. |
 | `tests/appliance-interface-fallback.nix` | VM test for the box no platform matches: one NIC, two NICs, and the fallback switched off. |
 | `tests/appliance-usb-ingest.nix` | VM test for USB ingest: real filesystems on scratch disks, and above all that the key stick is never touched. |
+| `tests/appliance-install.nix` | VM test for the disk layout: the pool over scratch disks, the container where stage 1 expects it, the reinstall guard, and that the wipe still reaches the key material. |
 
 ## Why `default.nix` and not a flake
 
@@ -135,12 +137,21 @@ nix-build ./nixos -A tests.applianceUsbIngest \
 # The box no platform matches: one NIC, two NICs, and the fallback switched off.
 nix-build ./nixos -A tests.applianceInterfaceFallback \
   --argstr system x86_64-linux --argstr platform evo-x2 ...
+
+# The disk layout: the pool, the container where stage 1 expects it, and the wipe.
+nix-build ./nixos -A tests.applianceInstall \
+  --argstr system x86_64-linux --argstr platform evo-x2 ...
 ```
 
 The pure logic behind `usb-ingest.nix` -- the name sanitiser, the filesystem table and the exclusion
 rules -- is not tested in that VM. It is a pytest suite under `usb-ingest/tests/`, run in the package's
 `checkPhase`, so a mistake there fails the build in seconds rather than at boot. `nix-build ./nixos -A box`
 is enough to run it.
+
+The installer scripts have the same arrangement, for the same reason: `auto_install_decision` in
+`installer-scripts/common.sh` decides whether a disk is destroyed with nobody watching, so its truth table
+is a bats suite under `installer-scripts/tests/`, run in the scripts' own derivation. `nix-build ./nixos -A
+installerImage` runs it -- as does `bats nixos/installer-scripts/tests`, which needs nothing built at all.
 
 There is one evaluation per invocation and no `forAllSystems`, so covering both platforms means running it
 twice — and each run needs a host of the matching architecture, since the test boots a real VM. In practice
@@ -219,6 +230,30 @@ put. A reinstall runs the builder again and correctly restores both.
 `Reboot Into Firmware Interface` is synthesised by systemd-boot rather than stored in `loader/entries`, so the
 deletion cannot reach it. The glob is scoped to `nixos-generation-*-specialisation-*.conf` anyway, which makes
 that true by construction rather than by luck.
+
+## One pool, one container
+
+Every eligible internal NVMe is concatenated into a single volume group, and the LUKS container sits on the
+logical volume that fills it. That is the inverse of the usual NixOS recipe, and the reason is the invariant
+this whole directory is built around: **one system closure serves every box.**
+
+`boot.initrd.luks.devices` is static configuration, but how many M.2 slots a box has populated is not known
+when that closure is built. LVM-inside-LUKS would need one `luks.devices` entry per disk, and a one-disk box
+booting a two-entry closure blocks in stage 1 forever on a `.device` unit that never appears. Pooling first
+leaves exactly one container, one keyslot, one recovery passphrase and one device path — for one disk or for
+three. It also removes the only question the installer used to have to ask, which is what lets it run
+unattended.
+
+Nothing has to be enabled for it to boot. nixpkgs' `luksroot.nix` sets `services.lvm.enable` and
+`boot.initrd.services.lvm.enable` unconditionally whenever any LUKS device is declared, so lvm2's udev rules
+and binaries are already in the appliance's initrd and event-based autoactivation brings the volume up before
+`systemd-cryptsetup` asks for it.
+
+The names live in `storage.nix` and nowhere else. `key-guard.nix` takes `rootDevice` from there (and
+`box-hardware.nix` from `key-guard.nix`, as it already did), and `installer.nix` passes the same three values
+to the stick's scripts through `wrapProgram` — the same trick it uses for the setup specialisation. So the
+installer cannot create a volume the box will not look for. Keep both names free of dashes: LVM escapes `-`
+as `--` in `/dev/mapper`, and `rootDevice` does not.
 
 ## The USB key, in two places
 

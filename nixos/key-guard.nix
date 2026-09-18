@@ -409,12 +409,18 @@ in
 
     rootDevice = lib.mkOption {
       type = lib.types.str;
-      default = "/dev/disk/by-partlabel/loom-root-luks";
+      default = config.loom.storage.rootDevice;
+      defaultText = lib.literalExpression "config.loom.storage.rootDevice";
       internal = true;
       description = ''
         The LUKS container the key belongs to. The guard opens it with
         `--test-passphrase` when arming, which is what proves the stick still
         unlocks this particular disk.
+
+        Taken from storage.nix rather than named here: the container sits on a
+        logical volume whose name the installer also has to know, and one of the
+        two spellings being wrong produces a box that boots and then powers
+        itself off ten seconds later.
       '';
     };
 

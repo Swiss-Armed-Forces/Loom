@@ -19,6 +19,16 @@
 let
   efiArch = config.nixpkgs.hostPlatform.efiArch;
 
+  # How long the menu offers itself before installing on its own.
+  #
+  # Sixty rather than the thirty the post-install reboot uses, and for the reason
+  # box-hardware.nix already gives about the boot menu: on a box whose display
+  # only wakes part way through firmware init, several seconds pass before there
+  # is a picture at all. A countdown that expires before the monitor lights up
+  # never really offered the keypress it claims to -- and unlike the reboot
+  # countdown, what elapses here destroys a disk.
+  autoInstallGrace = 60;
+
   # The read-only store carried by the stick.
   #
   # Built with mksquashfs rather than handed to systemd-repart as `storePaths`,
@@ -49,9 +59,22 @@ let
   installerScripts =
     pkgs.runCommand "loom-installer-scripts"
       {
-        nativeBuildInputs = [ pkgs.makeWrapper ];
+        nativeBuildInputs = [
+          pkgs.makeWrapper
+          pkgs.bats
+        ];
       }
       ''
+        # The rule deciding whether a disk is destroyed with nobody watching is
+        # pure shell, so it is exercised here rather than in a VM: a mistake
+        # fails this build in seconds instead of at a box. Same argument as the
+        # pytest suite in usb-ingest/, which runs in its own checkPhase.
+        #
+        # The whole directory is copied because the suite sources ../common.sh,
+        # which a bare store path for tests/ alone would not reach.
+        cp -r ${./installer-scripts} scripts
+        bats scripts/tests
+
         install -Dm444 ${./installer-scripts/common.sh} $out/libexec/loom/common.sh
         install -Dm555 ${./installer-scripts/install.sh} $out/bin/loom-install
         install -Dm555 ${./installer-scripts/menu.sh}    $out/bin/loom-menu
@@ -73,6 +96,9 @@ let
                   gawk
                   gnugrep
                   gnused
+                  # The pool. `lvm2` carries pvcreate/vgcreate/lvcreate and the
+                  # vgchange the teardown and the already-installed probe need.
+                  lvm2
                   nvme-cli
                   gptfdisk
                   parted
@@ -94,7 +120,11 @@ let
             --set LOOM_INSTALLER_BIN "$out/bin" \
             --set LOOM_EFI_ARCH "${efiArch}" \
             --set LOOM_TAG "${tag}" \
-            --set LOOM_PLATFORM "${config.loom.platform.description}"
+            --set LOOM_PLATFORM "${config.loom.platform.description}" \
+            --set LOOM_AUTO_GRACE "${toString autoInstallGrace}" \
+            --set LOOM_VG_NAME "${boxSystem.config.loom.storage.volumeGroup}" \
+            --set LOOM_LV_NAME "${boxSystem.config.loom.storage.rootVolume}" \
+            --set LOOM_ROOT_DEVICE "${boxSystem.config.loom.storage.rootDevice}"
         done
       '';
 in

@@ -11,17 +11,38 @@
 # somebody cares about.
 
 # Partition labels. The stick uses `loom-live-*` and `loom-key`; the internal
-# disk uses `loom-esp` and `loom-root-luks`. The prefixes must stay disjoint --
+# disks use `loom-esp` and `loom-pv<N>`. The prefixes must stay disjoint --
 # /dev/disk/by-partlabel is not unique, and with both media attached a shared
 # name would resolve to whichever udev linked last.
+#
+# The PV label carries an index for the same reason: every internal disk gets
+# one, and two partitions sharing a name would make `by-partlabel` a coin toss
+# between the members of the very pool being built.
 readonly LOOM_LIVE_ESP_LABEL="loom-live-esp"
 readonly LOOM_LIVE_STORE_LABEL="loom-live-store"
 readonly LOOM_KEY_LABEL="loom-key"
 readonly LOOM_ESP_LABEL="loom-esp"
-readonly LOOM_ROOT_LABEL="loom-root-luks"
+readonly LOOM_PV_LABEL_PREFIX="loom-pv"
 
 readonly LOOM_KEY_BYTES=4096
-readonly LOOM_MIN_DISK_BYTES=$((250 * 1000 * 1000 * 1000))
+# The whole pool, not each disk: a box with two small NVMes has as much room as
+# one with a single large one, and refusing it would be arithmetic nobody can
+# argue with from the console.
+readonly LOOM_MIN_POOL_BYTES=$((250 * 1000 * 1000 * 1000))
+
+# The pool the box boots from. All three come from nixos/storage.nix by way of
+# installer.nix's wrapProgram, so the names the installer creates and the names
+# the box's stage 1 waits for cannot drift apart -- the one failure in here that
+# produces a box which installs perfectly and then never boots again.
+readonly LOOM_VG_NAME="${LOOM_VG_NAME:?LOOM_VG_NAME is not set}"
+readonly LOOM_LV_NAME="${LOOM_LV_NAME:?LOOM_LV_NAME is not set}"
+readonly LOOM_ROOT_DEVICE="${LOOM_ROOT_DEVICE:?LOOM_ROOT_DEVICE is not set}"
+
+# Set by menu.sh before it hands over to an unattended install, so that a menu
+# restarted by systemd cannot count down a second time onto a disk the first
+# attempt already began partitioning. In tmpfs: it must not survive a reboot,
+# because a reboot is how an operator retries.
+readonly LOOM_AUTO_MARKER="/run/loom-auto-install-attempted"
 
 # install.sh exits with this when the install itself succeeded but the box may
 # not boot into it unattended -- see fix_boot_order there. menu.sh holds the
@@ -251,8 +272,12 @@ target_disks() {
         targets+=("${disk}")
     done
 
+    # Sorted, because the order is now load-bearing: every disk here joins the
+    # pool, and the first one is the disk that gets the ESP and the NVRAM boot
+    # entry. lsblk already lists in kernel order, but "already" is not a
+    # guarantee to hang a boot partition on.
     if [[ "${#targets[@]}" -gt 0 ]]; then
-        printf '%s\n' "${targets[@]}"
+        printf '%s\n' "${targets[@]}" | sort
     fi
 }
 
@@ -323,4 +348,135 @@ key_state() {
     else
         printf 'present'
     fi
+}
+
+# Total capacity of the disks that would be pooled.
+pool_bytes() {
+    local disks=("${@}") disk total=0 bytes
+    for disk in "${disks[@]}"; do
+        bytes="$(blockdev --getsize64 "${disk}" 2>/dev/null || echo 0)"
+        total=$((total + bytes))
+    done
+    printf '%s' "${total}"
+}
+
+# Let go of whatever is holding the internal disks, without destroying anything.
+#
+# Both destructive paths need this before they can touch a partition table, and
+# the already-installed probe needs the inverse of it afterwards. Shared rather
+# than written twice because the order is the part that matters: the LUKS
+# mapping sits on the logical volume, so closing dm-crypt has to come first or
+# the group is still in use and `vgchange --activate n` quietly does nothing.
+release_storage() {
+    local mapping
+    swapoff --all 2>/dev/null || true
+    umount --recursive /mnt 2>/dev/null || true
+
+    for mapping in /dev/mapper/*; do
+        [[ -b "${mapping}" ]] || continue
+        [[ "$(basename "${mapping}")" == "control" ]] && continue
+        cryptsetup close "$(basename "${mapping}")" 2>/dev/null || true
+    done
+
+    vgchange --activate n "${LOOM_VG_NAME}" >/dev/null 2>&1 || true
+}
+
+# Destroy the pool itself, so the disks under it can be repartitioned.
+#
+# Deliberately separate from release_storage above: the probe deactivates, the
+# installer destroys, and conflating the two would make looking at a box
+# indistinguishable from reinstalling it.
+discard_pool() {
+    release_storage
+    vgremove --force "${LOOM_VG_NAME}" >/dev/null 2>&1 || true
+    # Drop what lvm cached about devices that are about to stop existing.
+    # Without it `vgcreate` can still see the group it was just told to forget.
+    pvscan --cache >/dev/null 2>&1 || true
+}
+
+# "yes" when the internal disks already hold a Loom pool that *this* stick's key
+# unlocks -- meaning this very stick installed this very box.
+#
+# This is what replaces the typed INSTALL word for an unattended install. The
+# accident it guards against is the one the design otherwise invites: the stick
+# stays plugged in forever, so a cleared NVRAM or a firmware that re-scans
+# removable media boots the installer again, and without this the box would
+# quietly reinstall over its own indexed data with nobody at the keyboard.
+#
+# A re-flashed stick carries a fresh key, so this never blocks re-provisioning.
+# It only blocks a stick meeting the box it already installed.
+#
+# Prints a word rather than returning a status, like key_state above: an
+# `if pool_claimed_by_key` caller would disable set -e for the whole condition.
+pool_claimed_by_key() {
+    local key_dev="${1}" result="no"
+
+    vgchange --activate y "${LOOM_VG_NAME}" >/dev/null 2>&1 || true
+    if [[ -b "${LOOM_ROOT_DEVICE}" ]] &&
+        cryptsetup luksOpen --test-passphrase \
+            --key-file "${key_dev}" \
+            --keyfile-size "${LOOM_KEY_BYTES}" \
+            "${LOOM_ROOT_DEVICE}" >/dev/null 2>&1; then
+        result="yes"
+    fi
+    # Leave the box as it was found. An active group would also make the
+    # partition table busy if the operator picks Install off the menu anyway.
+    vgchange --activate n "${LOOM_VG_NAME}" >/dev/null 2>&1 || true
+
+    printf '%s' "${result}"
+}
+
+# Whether this boot may install without anybody confirming it, and if not, why.
+#
+# Deliberately pure: every input is already-gathered state, passed in. The
+# device work happens in the caller, which makes the rule itself something a
+# test can exercise exhaustively -- and this is the rule that decides whether a
+# disk gets destroyed unattended.
+#
+# Arguments, in order:
+#   attempted     0|1                     the per-boot marker
+#   boot          device path, or empty   the medium we booted from
+#   key_status    present|empty|missing   from key_state
+#   target_count  how many eligible disks there are
+#   bytes         total capacity of those disks
+#   claimed       yes|no                  from pool_claimed_by_key
+#
+# Prints `armed` or the reason it is not.
+auto_install_decision() {
+    local attempted="${1}" boot="${2}" key_status="${3}"
+    local target_count="${4}" bytes="${5}" claimed="${6}"
+
+    # First, and before anything looks at a disk: after one attempt this boot
+    # the disks may be half-written, and probing them says nothing useful.
+    if [[ "${attempted}" != "0" ]]; then
+        printf 'attempted'
+    elif [[ -z "${boot}" ]]; then
+        printf 'no-boot-medium'
+    elif [[ "${key_status}" != "present" ]]; then
+        printf 'no-key'
+    elif [[ "${target_count}" -eq 0 ]]; then
+        printf 'no-target'
+    elif [[ "${bytes}" -lt "${LOOM_MIN_POOL_BYTES}" ]]; then
+        printf 'too-small'
+    elif [[ "${claimed}" == "yes" ]]; then
+        printf 'already-installed'
+    else
+        printf 'armed'
+    fi
+}
+
+# What to tell the operator when the verdict is not `armed`.
+#
+# Every one of these ends at the menu, which is the safe outcome -- so this is
+# not an error report but an explanation of why the box is waiting for them.
+auto_install_reason() {
+    case "${1}" in
+    attempted) printf 'an install was already attempted this boot' ;;
+    no-boot-medium) printf 'the boot medium is ambiguous' ;;
+    no-key) printf 'the stick carries no LUKS key' ;;
+    no-target) printf 'there is no eligible internal disk' ;;
+    too-small) printf 'the disks are too small' ;;
+    already-installed) printf 'this stick already installed this box' ;;
+    *) printf '%s' "${1}" ;;
+    esac
 }

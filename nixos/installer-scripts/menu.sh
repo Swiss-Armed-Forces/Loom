@@ -21,8 +21,19 @@ source "${LOOM_INSTALLER_LIB:?LOOM_INSTALLER_LIB is not set}/common.sh"
 # is enough to copy down a 30-character passphrase, and enter cuts it short.
 readonly LOOM_REBOOT_GRACE=30
 
+# How long the box waits before installing on its own. Set by installer.nix,
+# which is also where the length is argued for.
+readonly LOOM_AUTO_GRACE="${LOOM_AUTO_GRACE:?LOOM_AUTO_GRACE is not set}"
+
+# Whether this boot may install unattended, as decided by show_status below and
+# read by main(). A global because show_status already gathers every input the
+# decision needs -- boot medium, key, targets -- and gathering them twice would
+# mean probing the disks twice on every pass round the menu loop.
+LOOM_AUTO_VERDICT="attempted"
+
 show_status() {
     local boot key_dev key_status description eligible targets=() disk
+    local bytes claimed attempted
 
     # Drawn from the top each time round the loop, so the menu is never buried
     # under the scroll of whatever ran before it. main() puts its "press enter"
@@ -73,8 +84,46 @@ show_status() {
             printf '  Target      : %s%s%s\n' \
                 "${LOOM_YELLOW}" "${description}" "${LOOM_RESET}"
         done
+        # Said out loud, because it is the one thing about the target list that
+        # an operator cannot read off it: these disks do not become alternatives
+        # to choose between, they become a single volume.
+        if [[ "${#targets[@]}" -gt 1 ]]; then
+            bytes="$(pool_bytes "${targets[@]}")"
+            printf '                %sall %d pooled into one %d GB volume%s\n' \
+                "${LOOM_DIM}" "${#targets[@]}" "$((bytes / 1000 / 1000 / 1000))" "${LOOM_RESET}"
+        fi
     else
         printf '  Target      : no eligible internal NVMe found\n'
+    fi
+
+    # ---------------------------------------------------------------------
+    # Whether this boot installs by itself.
+    # ---------------------------------------------------------------------
+    bytes="$(pool_bytes "${targets[@]}")"
+
+    attempted=0
+    if [[ -e "${LOOM_AUTO_MARKER}" ]]; then
+        attempted=1
+    fi
+
+    # Only probed when the answer could change anything. The check activates a
+    # volume group and opens a LUKS header: meaningless without a key and a
+    # disk, and worse than meaningless once an install has been attempted this
+    # boot, because then it would be reading a disk that is part way through
+    # being written.
+    claimed="no"
+    if ((!attempted)) && [[ "${#targets[@]}" -gt 0 && "${key_status}" == "present" ]]; then
+        claimed="$(pool_claimed_by_key "${key_dev}")"
+    fi
+
+    LOOM_AUTO_VERDICT="$(auto_install_decision \
+        "${attempted}" "${boot}" "${key_status}" \
+        "${#targets[@]}" "${bytes}" "${claimed}")"
+
+    if [[ "${LOOM_AUTO_VERDICT}" != "armed" ]]; then
+        description="$(auto_install_reason "${LOOM_AUTO_VERDICT}")"
+        printf '  Automatic   : %sno -- %s%s\n' \
+            "${LOOM_DIM}" "${description}" "${LOOM_RESET}"
     fi
     echo
 }
@@ -82,7 +131,7 @@ show_status() {
 # Only the destructive option is coloured. Ranking works by contrast: paint
 # every line and none of them stands out.
 show_menu() {
-    printf '    1) Install Loom appliance to the internal disk\n'
+    printf '    1) Install Loom appliance to the internal disks\n'
     printf '    2) %sERASE ALL DATA on the internal disks%s\n' \
         "${LOOM_RED}" "${LOOM_RESET}"
     printf '    3) Reboot\n'
@@ -184,32 +233,100 @@ hold_for_boot_order() {
     halt_console reboot "Rebooting."
 }
 
+# The grace period before an unattended install starts.
+#
+# Prints `install` or `menu`; everything it draws goes to stderr, because the
+# caller reads its verdict out of a command substitution. Same split as
+# install.sh's old target picker, and for the same reason -- a function used
+# directly in a condition would disable `set -e` for the whole condition.
+#
+# Any key cancels, not just enter: a stray keypress landing in the menu is
+# harmless, whereas one that failed to register is a destroyed disk.
+auto_countdown() {
+    local remaining status announced=0
+
+    printf >&2 '\n  %sInstalling automatically. Press any key to stop and use the menu.%s\n' \
+        "${LOOM_BOLD}" "${LOOM_RESET}"
+
+    for ((remaining = LOOM_AUTO_GRACE; remaining > 0; remaining--)); do
+        if [[ -t 2 ]]; then
+            # Repainted in place, so the disk list above stays on screen for
+            # the whole countdown -- it is what the operator is deciding about.
+            printf >&2 '\r  Starting in %2ds. ' "${remaining}"
+        elif ((!announced)); then
+            printf >&2 '  Starting in %ds unless a key is pressed.\n' "${remaining}"
+            announced=1
+        fi
+
+        # The read doubles as the one-second sleep.
+        status=0
+        read -r -t 1 -n 1 _ || status=$?
+        # bash returns >128 only when -t expired, so that is the one status that
+        # keeps counting. 0 is a keypress; anything else is EOF or a read error,
+        # and both mean nobody can stop this -- which is the last circumstance
+        # under which to go ahead and partition a disk.
+        if ((status <= 128)); then
+            if [[ -t 2 ]]; then
+                printf >&2 '\n'
+            fi
+            printf 'menu'
+            return 0
+        fi
+    done
+
+    if [[ -t 2 ]]; then
+        printf >&2 '\n'
+    fi
+    printf 'install'
+}
+
+# Run the installer and deal with however it came back.
+#
+# A finished install reboots rather than returning to the menu: the box is done,
+# and every option left here either destroys the disk that was just written or
+# does nothing for it. How long it waits first is the only thing the exit status
+# decides.
+run_install() {
+    local status=0
+    "${LOOM_INSTALLER_BIN:?}/loom-install" "${@}" || status=$?
+    case "${status}" in
+    0) countdown_to_reboot ;;
+    "${LOOM_EXIT_BOOT_ORDER_DEGRADED}") hold_for_boot_order ;;
+    *)
+        err "Installation failed."
+        printf '  Press enter to return to the menu. '
+        read -r _
+        ;;
+    esac
+}
+
 main() {
-    local choice status
+    local choice countdown
     while true; do
         show_status
         show_menu
+
+        if [[ "${LOOM_AUTO_VERDICT}" == "armed" ]]; then
+            countdown="$(auto_countdown)"
+            if [[ "${countdown}" == "install" ]]; then
+                # Marked before the run, not after. This service is
+                # Restart=always (installer.nix), so a menu that dies part way
+                # through an install has to come back to a prompt -- not to a
+                # second countdown onto a disk the first attempt already began
+                # partitioning. A reboot clears it, which is how a retry works.
+                : >"${LOOM_AUTO_MARKER}"
+                run_install --auto
+                continue
+            fi
+        fi
+
         printf '  Choice [5]: '
         read -r choice
         choice="${choice:-5}"
 
         case "${choice}" in
         1)
-            # A finished install reboots rather than returning to the menu: the
-            # box is done, and every option left here either destroys the disk
-            # that was just written or does nothing for it. How long it waits
-            # first is the only thing the exit status decides.
-            status=0
-            "${LOOM_INSTALLER_BIN:?}/loom-install" || status=$?
-            case "${status}" in
-            0) countdown_to_reboot ;;
-            "${LOOM_EXIT_BOOT_ORDER_DEGRADED}") hold_for_boot_order ;;
-            *)
-                err "Installation failed."
-                printf '  Press enter to return to the menu. '
-                read -r _
-                ;;
-            esac
+            run_install
             ;;
         2)
             "${LOOM_INSTALLER_BIN:?}/loom-wipe" || err "Wipe failed."

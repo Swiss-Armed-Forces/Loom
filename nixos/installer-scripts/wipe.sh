@@ -36,7 +36,7 @@ main() {
 
     confirm_destructive "ERASE ALL DATA" "${boot}" "${targets[@]}"
 
-    release_holders
+    erase_pool_keys
     for disk in "${targets[@]}"; do
         wipe_disk "${disk}"
     done
@@ -45,16 +45,29 @@ main() {
     log "Wipe complete. The encryption keys are gone; the data is unrecoverable."
 }
 
-# Anything still holding a target device would make the wipe fail halfway.
-release_holders() {
-    local mapping
-    swapoff --all || true
-    for mapping in /dev/mapper/*; do
-        [[ -b "${mapping}" ]] || continue
-        [[ "$(basename "${mapping}")" == "control" ]] && continue
-        cryptsetup close "$(basename "${mapping}")" 2>/dev/null || true
-    done
-    umount --recursive /mnt 2>/dev/null || true
+# Layer 1, and the only one that matters: destroy the key material.
+#
+# It lives on the logical volume rather than on a partition, so the per-partition
+# sweep in wipe_disk below cannot reach it -- it would find no LUKS header, say
+# nothing, and fall through to layers that are slower and weaker. The group has
+# to be activated to erase what is inside it, and destroyed immediately after so
+# the partition tables underneath are free.
+erase_pool_keys() {
+    release_storage
+
+    vgchange --activate y "${LOOM_VG_NAME}" >/dev/null 2>&1 || true
+    if [[ -b "${LOOM_ROOT_DEVICE}" ]] && cryptsetup isLuks "${LOOM_ROOT_DEVICE}" 2>/dev/null; then
+        log "luksErase ${LOOM_ROOT_DEVICE}"
+        cryptsetup luksErase --batch-mode "${LOOM_ROOT_DEVICE}" ||
+            err "luksErase failed on ${LOOM_ROOT_DEVICE}"
+    else
+        # Not an error. A box installed by an older stick has its container on a
+        # partition, which wipe_disk still sweeps; so does a disk that was never
+        # a Loom box at all.
+        log "No pooled LUKS container found; the per-partition sweep still runs."
+    fi
+
+    discard_pool
 }
 
 wipe_disk() {
@@ -62,8 +75,9 @@ wipe_disk() {
     description="$(disk_description "${disk}")"
     log "Wiping ${description}"
 
-    # Layer 1: cryptographic erase. Sub-second, irreversible, and on its own
-    # enough to make the contents unrecoverable.
+    # Layer 1, continued: any container sitting directly on a partition. On a
+    # pooled box erase_pool_keys above has already dealt with the real one; this
+    # catches a disk laid out by an older stick, or one that was never ours.
     for part in "${disk}"p*; do
         [[ -b "${part}" ]] || continue
         if cryptsetup isLuks "${part}" 2>/dev/null; then
@@ -99,4 +113,9 @@ wipe_disk() {
     partprobe "${disk}" 2>/dev/null || true
 }
 
-main "${@}"
+# Sourceable for the same reason install.sh is: the test drives erase_pool_keys
+# directly, because "the wipe still reaches the key material now that it lives
+# on a logical volume" is the assertion this file exists to earn.
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+    main "${@}"
+fi

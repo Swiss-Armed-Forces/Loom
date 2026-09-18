@@ -41,6 +41,12 @@ Read this before building anything; the design only makes sense if these hold.
   the exposure. Given that the console is already a passwordless root session, this crosses no boundary
   that physical access did not already cross; it does make an unattended box a worse proposition than
   before.
+- **Booting the stick installs the box.** The installer no longer waits to be told to; it counts down for
+  60 seconds and then provisions the internal disks by itself, because provisioning is the only reason
+  the stick exists. Pressing any key during that countdown puts you in the menu instead. Two things keep
+  this from eating a working box: it refuses when the disks already hold a Loom pool that _this_ stick's
+  key unlocks, and it refuses a second attempt in the same boot. Neither covers a stick pointed at
+  somebody else's hardware — treat a Loom stick as a device that erases whatever it is booted on.
 - **Bluetooth is disabled** by module blacklist and `rfkill`, in every image. **WiFi is disabled the same way
   unless the image was built with `--wifi`**, which turns the box into an access point — read
   [The WiFi access point](#the-wifi-access-point) before using it, because it changes most of the bullets
@@ -80,7 +86,9 @@ matches its NIC.
   cross-building needs an emulator the host probably does not have, so the build refuses unless you pass
   `--allow-cross`. See [Cross-building](#cross-building).
 - A **USB stick of 16 GB or more**. The stick stays with the box permanently.
-- An internal disk of **at least 250 GB** — the container images alone are around 60 GB.
+- Internal disks totalling **at least 250 GB** — the container images alone are around 60 GB. Every
+  eligible internal NVMe is pooled into one volume, so a box with two M.2 slots may reach that with two
+  smaller drives. See [How the disks are used](#how-the-disks-are-used).
 - Secure Boot **disabled** in the box's firmware, otherwise it will not boot the stick.
 
 On the EVO-X2 specifically, check two more firmware settings before installing:
@@ -267,24 +275,39 @@ If the radio is there but the platform's match did not select it, rebuild with
 
 ## Installing
 
-1. Plug the stick into the box and boot from it.
-2. The installer menu appears on the console. Its header
-    names the **Loom release and the platform the stick was built for**, so check there that you booted the
-    right stick before going further; two sticks are otherwise indistinguishable. Below that it shows which
-    disk is the boot medium (never touched), whether the stick's LUKS key is present, and which disk is the
-    install target.
-3. Choose **Install**. If the box has **more than one internal disk**, as the EVO-X2's two M.2 slots allow, it
-    lists them all and asks which one — rather than silently picking the first. It then names the disk it is
-    about to destroy and asks for the word `INSTALL`, which is not something typed by accident.
-4. It partitions the internal disk, creates the LUKS container from the stick's key, installs the appliance
-    closure entirely offline, enrols a recovery passphrase, makes the internal disk the default boot entry, and
-    selects **first-time setup** as the entry that disk boots.
-5. **Write down the recovery passphrase it prints.** It holds the screen for 30 seconds and then reboots on
-    its own, so an install nobody comes back to still finishes. Nothing is lost if you miss it: the installed
-    box shows the same passphrase on every console login.
-6. Press enter to reboot immediately, or let the countdown run out. The box boots into the internal disk and
-    straight into first-time setup — no entry to pick — so have it on a network with internet by then. Leave
-    the stick in.
+**Plug the stick in, boot from it, and leave it alone.** Nothing has to be typed. What follows is what
+happens on its own, and where you can still interrupt it.
+
+1. Plug the stick into the box and boot from it. Have the box on **a network with internet** already — the
+    boot after this one fetches every container image.
+2. The installer appears on the console. Its header names the **Loom release and the platform the stick was
+    built for**, so check there that you booted the right stick; two sticks are otherwise indistinguishable.
+    Below that it shows which disk is the boot medium (never touched), whether the stick's LUKS key is
+    present, and every disk that will be pooled and erased.
+3. It counts down for **60 seconds** and then installs. **Press any key to stop it** and get the menu, where
+    Install still asks for the word `INSTALL` and nothing happens unattended. The countdown does not start
+    at all when something is wrong — the console says which, and waits:
+
+    | It says | Meaning |
+    | --- | --- |
+    | `this stick already installed this box` | The disks hold a Loom pool this stick's key opens. Refusing is the point: a firmware that re-scans removable media would otherwise reinstall over the indexed data. Choose Install from the menu to do it anyway. |
+    | `an install was already attempted this boot` | Reboot to try again. |
+    | `the boot medium is ambiguous` | A second Loom stick is plugged in. Remove it. |
+    | `the stick carries no LUKS key` | Re-flash with `build-appliance-image --flash`. |
+    | `there is no eligible internal disk` | Nothing to install onto. |
+    | `the disks are too small` | Under 250 GB across all of them. |
+
+4. It partitions every eligible internal disk, pools them into one volume, creates the LUKS container from
+    the stick's key, installs the appliance closure entirely offline, enrols a recovery passphrase, makes the
+    internal disk the default boot entry, and selects **first-time setup** as the entry that disk boots.
+5. **Write down the recovery passphrase it prints**, if you are there. It holds the screen for 30 seconds and
+    then reboots on its own, so an install nobody comes back to still finishes. Nothing is lost if you miss
+    it: the installed box shows the same passphrase on every console login.
+6. The box boots into the internal disk and straight into first-time setup — no entry to pick. Leave the
+    stick in.
+
+From here the only thing still asked of you is to **move the box** once setup powers it off, which the next
+section explains.
 
 The countdown is skipped in one case. If the installer could not make the internal disk the default boot
 entry — no NVRAM entry, or its own loader still on the UEFI removable-media path — it says so and waits for
@@ -294,6 +317,33 @@ the one thing on that screen the installed box does not repeat. A wipe (menu opt
 The installer moves its own loader off the UEFI removable-media path afterwards. Without that, most firmware
 would boot the installer instead of the appliance on every restart, because the stick never leaves. The
 installer stays reachable from the firmware's own boot menu for reinstalls and wipes.
+
+### How the disks are used
+
+**Every eligible internal NVMe becomes one volume.** There is no disk to choose, which is what lets the
+install run without asking anything:
+
+```text
+nvme0n1  1G ESP  +  the rest  ─┐
+nvme1n1  the whole disk       ─┴─>  one volume  ─>  LUKS2  ─>  ext4
+```
+
+Eligible means an internal NVMe namespace that is not the boot medium, not removable, not on the USB bus and
+not mounted. USB storage enumerates as `sd*` and can never qualify, so the stick you booted from is excluded
+by construction as well as by name.
+
+The disks are **concatenated, not mirrored or striped**. Concatenation uses every byte of drives that are not
+the same size, where striping would cap the pool at twice the smaller one. Two consequences worth knowing:
+
+- **There is no redundancy.** On a two-disk box, one failed drive loses the whole index — the same outcome as
+  losing the stick, and for the same reason: an appliance holds the only copy. If that is not acceptable at
+  your site, populate one slot.
+- **The encryption is unchanged.** One container, one key on the stick, one recovery passphrase, whether the
+  box has one disk or three. The volume is assembled first and encrypted on top, which is what lets a single
+  appliance image serve boxes with different numbers of drives.
+
+A wipe (menu option 2) destroys the pool's key material first and then sweeps each disk, so it reaches the
+encryption regardless of how many drives were pooled.
 
 ## The two boot modes
 
@@ -664,13 +714,16 @@ which this appliance declares through NixOS — it would undo its own configurat
 
 ## Wiping a box
 
-Boot the stick (via the firmware boot menu) and choose **ERASE ALL DATA**. The same interlock applies: it prints
-every disk that will be destroyed, and the one that will not, and asks for the words `ERASE ALL DATA`.
+Boot the stick (via the firmware boot menu) and choose **ERASE ALL DATA**. The interlock still applies here and
+always will — a wipe never runs unattended. It prints every disk that will be destroyed, and the one that will
+not, and asks for the words `ERASE ALL DATA`.
+
+Booting the stick on a box it installed does not start an install, so you land in the menu and can pick this.
 
 The wipe is layered, cheapest first. Because the disk is encrypted, erasing the LUKS keyslots _is_ the wipe and
 takes under a second; everything after it is defence in depth:
 
-1. `cryptsetup luksErase` on each container
+1. `cryptsetup luksErase` on the pooled container, and on any container sitting directly on a partition
 2. random data over the headers, then `wipefs`
 3. `sgdisk --zap-all`
 4. `blkdiscard`

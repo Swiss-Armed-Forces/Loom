@@ -643,7 +643,9 @@ report(){
         echo "      flashed to: ${FLASH_DEVICE}"
         echo "      key sha256: ${checksum}"
         echo
-        echo "[*] Boot the box from this stick and choose 'Install'."
+        echo "[*] Boot the box from this stick and leave it alone. It counts down for"
+        echo "[*] 60 seconds and then installs by itself, pooling every internal NVMe"
+        echo "[*] into one encrypted volume. Press any key during the countdown for a menu."
         echo "[*] The stick must stay plugged in afterwards: it holds the disk key."
     else
         echo

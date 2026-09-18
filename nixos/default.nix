@@ -171,6 +171,7 @@ let
     ./modes.nix
     ./network.nix
     ./repo.nix
+    ./storage.nix
     ./usb-ingest.nix
     ./wifi.nix
   ];
@@ -268,6 +269,17 @@ in
       loomSubnet
       ;
     inherit (specialArgs) loomUser loomRepoDir;
+  };
+
+  # `nix-build ./nixos -A tests.applianceInstall --argstr system x86_64-linux`
+  # What the installer lays down on the internal disks, and whether the box
+  # could find it again. The three names come off the appliance's own evaluated
+  # configuration rather than being restated in the test, which is the whole
+  # point: the installer and stage 1 have to agree, and a test that spelled the
+  # path itself could agree with neither.
+  tests.applianceInstall = import ./tests/appliance-install.nix {
+    inherit pkgs;
+    inherit (boxSystem.config.loom.storage) volumeGroup rootVolume rootDevice;
   };
 
   # `nix-build ./nixos -A tests.applianceWifi --argstr system x86_64-linux`
