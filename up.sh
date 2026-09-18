@@ -29,7 +29,8 @@ KEDA_DIR="${SCRIPT_DIR}/keda"
 CICD_SKAFFOLD="${SCRIPT_DIR}/cicd/skaffold"
 UP_FLAGS_VALUES_FILE="${SCRIPT_DIR}/charts/values-up-flags.yaml"
 NO_RESOURCES_VALUES_FILE="${SCRIPT_DIR}/charts/values-no-resources.yaml"
-GPU_VALUES_FILE="${SCRIPT_DIR}/charts/values-gpu.yaml"
+NVIDIA_GPU_VALUES_FILE="${SCRIPT_DIR}/charts/values-nvidia-gpu.yaml"
+AMD_GPU_VALUES_FILE="${SCRIPT_DIR}/charts/values-amd-gpu.yaml"
 DISABLE_AI_VALUES_FILE="${SCRIPT_DIR}/charts/values-disable-ai-services.yaml"
 SCALING_VALUES_FILE="${SCRIPT_DIR}/charts/values-scaling.yaml"
 ONLINE_TEST_URL="https://gitlab.com"
@@ -425,7 +426,18 @@ validate_environment() {
 
     # GPU tools (only required when --gpus is passed)
     if [[ -n "${GPUS}" ]]; then
-        check_command nvidia-smi
+        case "${GPUS}" in
+            amd)
+                check_command rocm-smi
+            ;;
+            nvidia)
+                check_command nvidia-smi
+            ;;
+            *)
+                echo >&2 "[!] Error: Invalid GPU type '${GPUS}'. Valid options: amd, nvidia"
+                exit 1
+            ;;
+        esac
     fi
 }
 
@@ -558,7 +570,19 @@ check_host_resources() {
     # GPU check: only relevant when --gpus flag is passed
     if [[ -n "${GPUS}" ]]; then
         local host_gpu
-        host_gpu="$(nvidia-smi --list-gpus | wc -l)"
+        case "${GPUS}" in
+            amd)
+                # Count AMD GPUs using rocm-smi
+                host_gpu="$(rocm-smi 2>/dev/null | grep -cE '^[0-9]+\s' || echo 0)"
+            ;;
+            nvidia)
+                host_gpu="$(nvidia-smi --list-gpus | wc -l)"
+            ;;
+            *)
+                echo >&2 "[!] Error: Invalid GPU type '${GPUS}'. Valid options: amd, nvidia"
+                exit 1
+            ;;
+        esac
         if [[ "${host_gpu}" -lt "${LOOM_MIN_GPU}" ]]; then
             echo >&2 "[!] Error: Host has ${host_gpu} GPU(s), minimum required is ${LOOM_MIN_GPU}."
             errors=$((errors + 1))
@@ -733,6 +757,23 @@ create_cluster(){
         )
     fi
 
+    # Enable GPU device plugin if GPUs are requested
+    if [[ -n "${GPUS}" ]]; then
+        case "${GPUS}" in
+            amd)
+                addons="${addons},amd-gpu-device-plugin"
+            ;;
+            nvidia)
+                addons="${addons},nvidia-gpu-device-plugin"
+            ;;
+            *)
+                echo >&2 "[!] Error: Invalid GPU type '${GPUS}'. Valid options: amd, nvidia"
+                exit 1
+            ;;
+        esac
+        gpu_args=(--gpus "${GPUS}")
+    fi
+
     minikube start \
         --driver docker \
         --wait all \
@@ -746,7 +787,7 @@ create_cluster(){
         --extra-config="kubelet.eviction-hard=memory.available<${KUBELET_EVICTION_HARD_MEMORY},nodefs.available<${KUBELET_EVICTION_HARD_NODEFS},imagefs.available<${KUBELET_EVICTION_HARD_IMAGEFS}" \
         --extra-config="kubelet.eviction-soft=memory.available<${KUBELET_EVICTION_SOFT_MEMORY}" \
         --extra-config="kubelet.eviction-soft-grace-period=memory.available=${KUBELET_EVICTION_SOFT_GRACE_PERIOD_MEMORY}" \
-        --gpus "${GPUS}" \
+        "${gpu_args[@]}" \
         "${mount_args[@]}"
 }
 
@@ -1059,7 +1100,7 @@ usage(){
     echo "  -i|--integrationtest                  start in integration test mode"
     echo "  -s|--setup                            only setup system, don't start anything"
     echo "  -e|--expose IP                        expose the application to the outside world by binding to IP"
-    echo "  -g|--gpus GPUS                        allow access to the GPUs. Possible values: all, nvidia, amd"
+    echo "  -g|--gpus GPUS                        allow access to the GPUs. Possible values: amd, nvidia"
     echo "  -t|--tail                             tail logs after startup"
     echo "  -o|--offline                          run in offline mode"
     echo "  -c|--certificate CERT KEY             install certificate (CERT) with key (KEY)"
@@ -1117,7 +1158,18 @@ while [[ $# -gt 0 ]]; do
         -g|--gpus)
             shift
             GPUS="${1}"
-            UP_FLAG_VALUES+=("${GPU_VALUES_FILE}")
+            case "${GPUS}" in
+                amd)
+                    UP_FLAG_VALUES+=("${AMD_GPU_VALUES_FILE}")
+                ;;
+                nvidia)
+                    UP_FLAG_VALUES+=("${NVIDIA_GPU_VALUES_FILE}")
+                ;;
+                *)
+                    echo >&2 "[!] Error: Invalid GPU type '${GPUS}'. Valid options: amd, nvidia"
+                    exit 1
+                ;;
+            esac
             shift
         ;;
         -o|--offline)

@@ -376,7 +376,10 @@ in
       dig
 
       # monitoring
-      (btop.override { cudaSupport = true; })
+      (pkgs.btop.override {
+        cudaSupport = true;
+        rocmSupport = true;
+      })
 
       # for some reason, this is needed to make
       # the terminal in VScode work (or not ..)

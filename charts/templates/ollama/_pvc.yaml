@@ -1,7 +1,7 @@
 {{- define "app.ollama.pvc" -}}
 {{- $component := .component -}}
 {{- $values := index .Values $component -}}
-{{- if and $values.enabled }}
+{{- if and $values.enabled $values.pvc.enabled }}
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
