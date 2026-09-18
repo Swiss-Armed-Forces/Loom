@@ -1,4 +1,5 @@
 import logging
+from datetime import datetime
 from typing import Annotated
 from uuid import UUID
 
@@ -17,6 +18,7 @@ from common.models.es_repository import SortingParameters
 from common.services.lazybytes_service import FileStorageLazyBytesService
 from common.services.query_builder import QueryParameters
 from common.services.task_scheduling_service import (
+    ArchiveImportRequest,
     TaskSchedulingService,
     UpdateArchiveRequest,
 )
@@ -27,6 +29,10 @@ from pydantic import BaseModel
 
 from api.models.archives_model import ArchivesModel
 from api.utils import get_content_disposition_header
+
+# Mirrors files.py's "api-upload": what a blob imported here is attributed to if
+# it turns out not to be an archive and gets indexed as an ordinary file.
+ARCHIVE_IMPORT_SOURCE_ID = "api-archive-import"
 
 router = APIRouter()
 
@@ -138,9 +144,21 @@ def import_archive(
     file_storage_service: FileStorageLazyBytesService = default_file_storage_service,
     task_scheduling_service: TaskSchedulingService = default_task_scheduling_service,
 ):
-    """Import files from a loom archive (.zip or .loom)."""
+    """Import files from a loom archive (.zip or .loom).
+
+    A blob that turns out not to be an importable archive is indexed as an ordinary file
+    rather than discarded, which is why a name and a source travel with it -- see
+    worker.create_archive.index_archive.
+    """
     file_content = file_storage_service.from_file(file.file)
-    task_scheduling_service.dispatch_index_archive(file_content)
+    task_scheduling_service.dispatch_index_archive(
+        ArchiveImportRequest(
+            file_content=file_content,
+            full_name=file.filename if file.filename is not None else "",
+            source_id=ARCHIVE_IMPORT_SOURCE_ID,
+            uploaded_datetime=datetime.now(),
+        )
+    )
 
 
 @router.put("/{archive_id}", status_code=202)

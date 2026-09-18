@@ -20,11 +20,14 @@ this file is about the code.
 | `modes.nix` | `loom.mode`, the run/setup services, the `first-time-setup` specialisation, and `loom-promote-boot-entry`. |
 | `network.nix` | Static address and dnsmasq in run mode, DHCP client in setup mode, the `--wifi` bridge, radios off. |
 | `wifi.nix` | The optional access point: `loom.wifi.*`, hostapd, and the check that says so on the console when the radio never came up. |
+| `usb-ingest.nix` | Mounts USB media read-only and ingests it: the udev rule, the templated unit, and the filesystem set. |
+| `usb-ingest/` | The program that unit runs — device selection, mount policy, naming, `mc mirror` — with its own pytest suite, run at build time. |
 | `repo.nix` | Seeds the embedded checkout into the operator's home, writable. |
 | `installer.nix` | The USB stick: `image.repart` layout and the installer system. |
 | `installer-scripts/` | `common.sh` (device interlock, console styling), `install.sh`, `wipe.sh`, `menu.sh`. |
 | `tests/appliance.nix` | VM test asserting the values `box.nix` restates from `up.sh`, and the console session. |
 | `tests/appliance-wifi.nix` | VM test for the `--wifi` build: hostapd on a `mac80211_hwsim` radio, the bridge, and the credentials on the login screen. |
+| `tests/appliance-usb-ingest.nix` | VM test for USB ingest: real filesystems on scratch disks, and above all that the key stick is never touched. |
 
 ## Why `default.nix` and not a flake
 
@@ -89,7 +92,16 @@ nix-build ./nixos -A tests.appliance \
 # off dnsmasq and the static addresses that this one exists to exercise.
 nix-build ./nixos -A tests.applianceWifi \
   --argstr system x86_64-linux --argstr platform evo-x2 ...
+
+# USB ingest: scratch disks carrying real filesystems, and the exclusion rules.
+nix-build ./nixos -A tests.applianceUsbIngest \
+  --argstr system x86_64-linux --argstr platform evo-x2 ...
 ```
+
+The pure logic behind `usb-ingest.nix` -- the name sanitiser, the filesystem table and the exclusion
+rules -- is not tested in that VM. It is a pytest suite under `usb-ingest/tests/`, run in the package's
+`checkPhase`, so a mistake there fails the build in seconds rather than at boot. `nix-build ./nixos -A box`
+is enough to run it.
 
 There is one evaluation per invocation and no `forAllSystems`, so covering both platforms means running it
 twice — and each run needs a host of the matching architecture, since the test boots a real VM. In practice
@@ -187,3 +199,19 @@ The stick side of the same numbers lives in `installer-scripts/common.sh` (`LOOM
 labels) and in `cicd/build_appliance_image.sh` (`KEY_BYTES`, `KEY_PARTLABEL`). Those cannot share the Nix
 options — they run from the stick, before any of this exists — so they are the one pair that still has to
 be kept in step by hand.
+
+### Why USB ingest asks the guard rather than udev
+
+`usb-ingest.nix` has to know which disk is the key, and the obvious answer —
+`/dev/disk/by-partlabel/loom-key` — is the wrong one, for the reason stated above: that path is not unique,
+and with two Loom sticks attached it resolves to whichever udev linked last. Ingesting the key stick because
+a *second* stick shadowed the symlink would power the box off ten seconds later.
+
+So the exclusion reads `/run/loom/key-guard/device` instead. That file holds the node the guard armed on,
+and it got there by opening the LUKS header with `--test-passphrase` — proof that this stick unlocks *this*
+disk, which no symlink can give. `loom.keyGuard.stateDir` is already an option for the same reason the
+banner reads it: one path, not three copies.
+
+The fallback matters too. A box booted on the recovery passphrase never arms, so there is no proven key
+device, and the ingest service drops back to refusing any disk carrying a Loom partition label. That is
+weaker — it is the very thing the guard exists to improve on — so the console says so when it happens.

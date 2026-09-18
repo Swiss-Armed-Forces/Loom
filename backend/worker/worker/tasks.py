@@ -30,9 +30,6 @@ from worker.create_archive import (
 from worker.create_archive.tasks import (
     detect_loom_archive as detect_loom_archive_module,
 )
-from worker.create_archive.tasks import (
-    load_loom_archive_encrypted as load_loom_archive_encrypted_module,
-)
 from worker.create_archive.tasks import unzip_loom_archive as unzip_loom_archive_module
 from worker.index_file import (
     add_tags_to_file_task,
@@ -70,7 +67,6 @@ tasks = [
     index_archive,
     update_archive_task,
     detect_loom_archive_module,
-    load_loom_archive_encrypted_module,
     unzip_loom_archive_module,
     dispatch_tasks,
     index_file_task,

@@ -6,10 +6,14 @@ from pathlib import Path
 from time import sleep
 
 from common.services.lazybytes_service import FileStorageLazyBytesService
-from common.services.task_scheduling_service import TaskSchedulingService
+from common.services.task_scheduling_service import (
+    ArchiveImportRequest,
+    TaskSchedulingService,
+)
 from common.utils.retry import retry
 from minio import Minio
 
+from crawler.archive_prescreen import IntakeObjectKind, classify_intake_object
 from crawler.settings import settings
 
 logger = logging.getLogger(__name__)
@@ -44,10 +48,16 @@ class S3Crawler:
         self.processed_objects: set[_ProcessedObject] = set()
         self._executor = ThreadPoolExecutor(max_workers=S3_MAX_CONCURRENT_DOWNLOADS)
 
-    def _download_object(self, object_name: str):
+    def _download_object(self, object_name: str, size: int):
         logger.info("Downloading object %s", object_name)
         full_name = Path(f"//{self.display_name}/{object_name}")
         source = f"{settings.crawler_source_id}/{self.bucket_name}"
+
+        # Classified before the body is fetched. The crawler is the only part of
+        # Loom holding an S3 client pointed at the object, which is what makes
+        # an exact answer cost a few range reads here and a full extra
+        # download-to-disk anywhere else -- see archive_prescreen.
+        kind = classify_intake_object(self.client, self.bucket_name, object_name, size)
 
         def stream_generator():
             yield from self.client.get_object(self.bucket_name, object_name).stream(
@@ -58,12 +68,25 @@ class S3Crawler:
         file_content = retry(
             lambda: self.file_storage_service.from_generator(stream_generator())
         )
-        self.task_scheduling_service.dispatch_index_file(
-            full_name=str(full_name),
-            file_content=file_content,
-            source_id=source,
-            parent_id=None,
-            uploaded_datetime=uploaded_at,
+
+        if kind is IntakeObjectKind.PLAIN_FILE:
+            self.task_scheduling_service.dispatch_index_file(
+                full_name=str(full_name),
+                file_content=file_content,
+                source_id=source,
+                parent_id=None,
+                uploaded_datetime=uploaded_at,
+            )
+            return
+
+        logger.info("Object %s is a %s; importing it as an archive", object_name, kind)
+        self.task_scheduling_service.dispatch_index_archive(
+            ArchiveImportRequest(
+                file_content=file_content,
+                full_name=str(full_name),
+                source_id=source,
+                uploaded_datetime=uploaded_at,
+            )
         )
 
     def crawl(self):
@@ -98,7 +121,9 @@ class S3Crawler:
                 logger.info("New object detected via polling: %s", obj.object_name)
                 processed_object = _ProcessedObject(obj.object_name, obj.last_modified)
                 future_to_object[
-                    self._executor.submit(self._download_object, obj.object_name)
+                    self._executor.submit(
+                        self._download_object, obj.object_name, obj.size or 0
+                    )
                 ] = processed_object
 
             for future, processed_object in future_to_object.items():

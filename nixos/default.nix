@@ -170,6 +170,7 @@ let
     ./modes.nix
     ./network.nix
     ./repo.nix
+    ./usb-ingest.nix
     ./wifi.nix
   ];
 
@@ -271,6 +272,19 @@ in
   # `nix-build ./nixos -A tests.applianceWifi --argstr system x86_64-linux`
   # The --wifi build, which tests.appliance deliberately does not cover: it
   # forces off the two things (dnsmasq, static addresses) this one exercises.
+  # `nix-build ./nixos -A tests.applianceUsbIngest --argstr system x86_64-linux`
+  # Boots a box with scratch disks, puts real filesystems on them, and checks
+  # what usb-ingest.nix decides about each -- above all that the LUKS key stick
+  # is never touched.
+  tests.applianceUsbIngest = import ./tests/appliance-usb-ingest.nix {
+    inherit
+      pkgs
+      specialArgs
+      applianceModules
+      loomSubnet
+      ;
+  };
+
   tests.applianceWifi = import ./tests/appliance-wifi.nix {
     inherit
       pkgs

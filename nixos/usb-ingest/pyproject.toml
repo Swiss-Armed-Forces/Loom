@@ -1,0 +1,15 @@
+[project]
+name = "loom-usb-ingest"
+version = "0.1.0"
+description = "Mount USB media read-only on the Loom appliance and ingest it"
+requires-python = ">=3.11"
+
+[project.scripts]
+loom-usb-ingest = "loom_usb_ingest.__main__:main"
+
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["loom_usb_ingest"]

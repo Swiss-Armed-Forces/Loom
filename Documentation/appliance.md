@@ -33,6 +33,14 @@ Read this before building anything; the design only makes sense if these hold.
   anyone already at the keyboard to act through natural language instead of a shell. Given the bullet above,
   that is not a new boundary being crossed — but it is one more reason the box must not be left unattended
   with the stick in it.
+- **Any USB medium plugged in is mounted and indexed.** Every image does this — see
+  [Ingesting data from USB](#ingesting-data-from-usb). A USB port is therefore an unauthenticated
+  data-injection path: anyone who can reach the box can put arbitrary content into the index, and kernel
+  and FUSE filesystem drivers parse structures that whoever plugged it in controls. Media is mounted
+  read-only and never executed, and the LUKS key stick is positively excluded — but the parsing itself is
+  the exposure. Given that the console is already a passwordless root session, this crosses no boundary
+  that physical access did not already cross; it does make an unattended box a worse proposition than
+  before.
 - **Bluetooth is disabled** by module blacklist and `rfkill`, in every image. **WiFi is disabled the same way
   unless the image was built with `--wifi`**, which turns the box into an access point — read
   [The WiFi access point](#the-wifi-access-point) before using it, because it changes most of the bullets
@@ -344,6 +352,66 @@ No hosts file, no configuration on the visitor's side. The other services — `g
 
 The box is not a gateway and does not advertise itself as one, so the laptop keeps whatever other networking it
 has.
+
+### Ingesting data from USB
+
+Plug a USB stick, card reader or external drive into a running box and its contents are indexed. Nothing has
+to be typed: a udev rule starts `loom-usb-ingest@<device>.service`, which mounts every volume it finds,
+copies it into the `loom-intake` bucket and lets the ordinary crawler pick it up from there. Progress appears
+on the console, and `loom-usb-status` prints the last run.
+
+Read the [threat model](#threat-model) bullet about this before deploying a box where strangers can reach a
+port.
+
+**The LUKS key stick is never touched.** It is identified by asking the key guard which device it armed on —
+the one it proved unlocks this disk — rather than by partition label, which is not unique when two Loom
+sticks are attached. The installer stick is excluded the same way, so its ~60 GB of container images never
+land in the index. If the box was booted on the recovery passphrase the guard never arms, and the exclusion
+falls back to partition labels; the console says so when that happens.
+
+**Media is never written to.** Volumes are mounted read-only, with `nodev,nosuid,noexec`, and
+`blockdev --setro` is applied underneath so the kernel refuses writes at the block layer. Journalled
+filesystems get `noload` / `norecovery` / `nologreplay` as appropriate — a dirty ext4 or XFS volume mounted
+with plain `-o ro` still replays its journal, which modifies the evidence.
+
+Filesystems are handled in three tiers:
+
+| | |
+| --- | --- |
+| **Refused** | LUKS, BitLocker, ZFS members, LVM physical volumes, MD RAID members, swap. Each needs a key or an assembly step, and the console says which. |
+| **Known** | FAT12/16/32, exFAT, NTFS, ext2/3/4, XFS, btrfs, F2FS, HFS, HFS+, ISO9660, UDF, APFS. Explicit driver, explicit options. |
+| **Best effort** | Anything else the running kernel supports is attempted with a plain read-only `mount -t auto`. |
+
+NTFS goes through `ntfs-3g` rather than the in-kernel `ntfs3` on purpose: this box parses filesystems it was
+handed by strangers, and FUSE keeps that parsing in a process that can crash without taking the kernel with
+it. It is slower, and that is the trade. APFS is read-only and best effort — there is no in-kernel driver.
+
+GPT, MBR and Apple partition maps all work, as does unpartitioned "superfloppy" media (most cameras and many
+SD cards).
+
+Everything lands under a prefix naming the stick, so it can be searched for as a unit:
+
+```text
+usb-crawled/{label-or-vendor}-{serial}/{path on the stick}
+usb-crawled/{label-or-vendor}-{serial}/_loom-usb.json
+```
+
+`_loom-usb.json` is a provenance record — udev properties, the filesystems found, the mount options actually
+used, file and byte counts, and the original spelling of any name that had to be sanitised. It is indexed
+alongside the data, so it is searchable next to it.
+
+A stick carrying more than one volume gets a `p1`, `p2`, … level beneath that. Re-plugging the same stick is
+cheap: files already uploaded at the same size are skipped.
+
+**Loom archives are imported, not indexed as zips.** The crawler recognises them from their content rather
+than their filename, and sends them to the archive importer. An encrypted `.loom` from a _different_ box will
+not decrypt — `archive_enc_master_key` is unset by default, so every deployment generates its own — and is
+indexed as an opaque encrypted blob rather than being discarded.
+
+**This costs disk twice.** Every ingested byte is stored once in the intake bucket and again in file storage
+after indexing, and nothing empties intake automatically. Ingest is never refused on space grounds; the
+console warns when the encrypted root is running short, and the copy continues. On a box that has filled up,
+purge the intake bucket by hand.
 
 ### From the box's own console
 
