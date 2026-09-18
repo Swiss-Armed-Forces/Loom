@@ -18,10 +18,6 @@ logger = logging.getLogger(__name__)
 app = get_celery_app()
 
 
-class LLMError(Exception):
-    pass
-
-
 class _ElasticsearchQuery(BaseModel):
     query_string: str
 
@@ -53,11 +49,21 @@ MUST: Do not give an explanation.
 
     agent = get_llm_tool_agent()
 
+    # This task is one candidate in a chord, and a chord aborts as soon as any
+    # of its members fails. Degrade to an empty suggestion -- which
+    # suggest_queries_aggregate_task filters out -- so that one bad candidate
+    # cannot discard the results of all the others.
     try:
         result = agent.run_sync(prompt, output_type=NativeOutput(_ElasticsearchQuery))
 
-    except Exception as ex:
-        raise LLMError() from ex
+    except Exception:  # pylint: disable=broad-except
+        logger.warning(
+            "suggest_queries: dropping candidate, LLM call failed for "
+            "description '%s'",
+            query_description,
+            exc_info=True,
+        )
+        return QuerySuggestion(query="", matching_docs=0)
 
     if result is None:
         return QuerySuggestion(query="", matching_docs=0)
