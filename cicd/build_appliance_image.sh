@@ -57,6 +57,7 @@ KEY_DIR=""
 # variables defined in vars.sh, here for shellcheck:
 LOOM_HOSTS_FQDN=()
 NAMESPACE=""
+LOOM_CHAT_MODEL=""
 
 STEPS=(
     validate_environment
@@ -440,8 +441,8 @@ normalize_repo(){
 
 # Sourced from the embedded checkout rather than this one, so the host list
 # always matches the tag being shipped. vars.sh stays the single source of truth.
-# This is also where ${NAMESPACE} comes from -- `source` at function scope still
-# assigns globally, and build_image runs after this step.
+# This is also where ${NAMESPACE} and ${LOOM_CHAT_MODEL} come from -- `source` at
+# function scope still assigns globally, and build_image runs after this step.
 generate_loom_hosts(){
     # shellcheck disable=SC1091
     # shellcheck source=../vars.sh
@@ -464,6 +465,7 @@ build_image(){
         --argstr tag "${TAG}" \
         --argstr loomHostsJson "${hosts_json}" \
         --argstr loomNamespace "${NAMESPACE}" \
+        --argstr loomChatModel "${LOOM_CHAT_MODEL}" \
         --argstr minikubeIp "${MINIKUBE_IP}" \
         --argstr loomSubnet "${SUBNET}" \
         --argstr loomInterface "${LOOM_INTERFACE}" \

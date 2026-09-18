@@ -14,10 +14,10 @@ this file is about the code.
 | `platforms/evo-x2.nix` | GMKtec EVO-X2: x86_64, Realtek 2.5GbE. |
 | `branding.nix` | Shared by box and stick: the name in the boot menu, the logo, the plymouth theme, `loom-eyes`, and the VT font — its size (`loom.consoleFont`), its glyph check, and the unit that re-applies it once the display has settled. |
 | `box.nix` | The appliance: host tuning, toolchain, operator account, banner, `loom-up`. |
-| `console.nix` | What the operator meets: the press-a-key login, the three-pane session (and its log-to-`k9s` handover), `/dev/console`. |
-| `box-hardware.nix` | LUKS root, filesystems, initrd, bootloader. |
+| `console.nix` | What the operator meets: the press-a-key login, the three-pane session (the log-to-`k9s` handover, and `loom-chat` on the cluster's Ollama), `/dev/console`. No pane is a shell; `Alt-F2` is. |
+| `box-hardware.nix` | LUKS root, filesystems, initrd, bootloader — including why the menu timeout stays at 30s. |
 | `key-guard.nix` | Watches the USB key while the box runs and powers it off when the key leaves. |
-| `modes.nix` | `loom.mode`, the run/setup services, and the `first-time-setup` specialisation. |
+| `modes.nix` | `loom.mode`, the run/setup services, the `first-time-setup` specialisation, and `loom-promote-boot-entry`. |
 | `network.nix` | Static address and dnsmasq in run mode, DHCP client in setup mode, the `--wifi` bridge, radios off. |
 | `wifi.nix` | The optional access point: `loom.wifi.*`, hostapd, and the check that says so on the console when the radio never came up. |
 | `repo.nix` | Seeds the embedded checkout into the operator's home, writable. |
@@ -113,8 +113,12 @@ to software emulation — much slower, but it runs:
 - every binary `up.sh` needs — the `validate_environment` list (`up.sh:402-428`), plus the `awk` it pipes
   through at `up.sh:380` above those checks, plus the `tar` and `mktemp` that `cicd/skaffold` reaches for
 - `NAMESPACE`, passed through the same way the host list is and consumed by `console.nix`'s `k9s` view
+- `LOOM_CHAT_MODEL`, the same route again, consumed by `console.nix`'s `loom-chat` pane. It has a harder
+  constraint than the rest: it must name a model `ollama/Dockerfile` bakes into the production image, because
+  an air-gapped box cannot pull one, and it should match `_llmDefaults.model` in `charts/values.yaml` so the
+  pane does not make Ollama evict the model the workers are indexing with.
 
-`tests/appliance.nix` asserts all four, so a change on either side is caught rather than shipped. If you
+`tests/appliance.nix` asserts all five, so a change on either side is caught rather than shipped. If you
 add a `check_command` to `up.sh`, add the package to `loom.toolchain` in `box.nix` and the name to the test.
 
 `loom.toolchain` is one list on purpose. It feeds both `environment.systemPackages` and the `path` of the
@@ -123,6 +127,47 @@ units in `modes.nix`, because a unit's PATH is built solely from its own `path` 
 two were maintained separately they drifted, and the box shipped with a `loom.service` that died on
 `awk: command not found` while the same command worked fine in the operator's shell. For the same reason
 the test resolves each binary against `loom.service`'s own PATH rather than the login shell's.
+
+## Which boot entry a box comes up on
+
+A fresh box has to boot `Loom (first-time-setup)`; a box that has finished setup must never boot it again. Both
+ends are automatic, and they use **different mechanisms** — which looks inconsistent until you read the
+bootloader builder.
+
+`systemd-boot-builder.py` decides the default entry like this:
+
+```python
+is_default = Path(bootspec.init).parent == Path(args.default_config)
+...
+if is_default:
+    write_loader_conf(*gen)          # no specialisation argument
+```
+
+`is_default` is only ever compared against the **main** toplevel, and `write_loader_conf` is called with the
+generation alone. So `default` can only name `nixos-generation-<N>.conf`. Passing a specialisation's toplevel
+as `DEFAULT-CONFIG` does not select it — it matches nothing, and loader.conf is never written at all. (A newer
+builder in nixpkgs does support this. The appliance does not use that one; `LOOM_NIXPKGS` is devenv's
+`inputs.nixpkgs-stable`.)
+
+Hence:
+
+- **Into setup**, `install.sh`'s `select_setup_entry` writes the `default` line itself. The filename it writes
+  is derived, not guessed: the builder's own `generation_conf_filename` composes
+  `nixos-generation-<N>-specialisation-<name>.conf`, so the name is the run entry's with a suffix. The
+  specialisation's name comes from `/etc/loom/setup-specialisation`, which `installer.nix` reads off the
+  evaluated configuration — a rename in `modes.nix` follows through instead of drifting, and an extra
+  specialisation fails the build rather than being picked arbitrarily.
+- **Back to run mode**, `loom-promote-boot-entry` (`modes.nix`) can just use the builder, because the run
+  closure *is* the main toplevel. It then deletes the specialisation entry and checks what it leaves behind:
+  one entry, and `default` naming it.
+
+Both rest on the same property: **nothing re-runs the bootloader builder on an installed box.** There is no
+`nixos-rebuild`, no channel and no evaluation there, so a hand-written `default` and a deleted entry both stay
+put. A reinstall runs the builder again and correctly restores both.
+
+`Reboot Into Firmware Interface` is synthesised by systemd-boot rather than stored in `loader/entries`, so the
+deletion cannot reach it. The glob is scoped to `nixos-generation-*-specialisation-*.conf` anyway, which makes
+that true by construction rather than by luck.
 
 ## The USB key, in two places
 

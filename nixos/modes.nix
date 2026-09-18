@@ -44,6 +44,101 @@ let
   # nothing but the poweroff.
   setupPoweroffGrace = 60;
 
+  # Hand the boot menu back to run mode, and take first-time setup out of it.
+  #
+  # Run once, at the end of a successful fetch. After it the menu has a single
+  # Loom entry, so no boot of this box ever needs the operator to choose again --
+  # which is the point: the default entry serves DHCP and wildcard *.loom on the
+  # appliance NIC, and the wrong pick puts that on somebody else's network.
+  #
+  # Root-only, because it writes the ESP. loom-fetch below runs as the operator
+  # and calls this through sudo, the same way it reaches `systemctl poweroff`.
+  loom-promote-boot-entry = pkgs.writeShellApplication {
+    name = "loom-promote-boot-entry";
+    runtimeInputs = with pkgs; [
+      coreutils
+      findutils
+      gawk
+    ];
+    text = ''
+      entries=/boot/loader/entries
+      conf=/boot/loader/loader.conf
+
+      # -----------------------------------------------------------------------
+      # 1. Point `default` back at run mode.
+      #
+      # This half can go through the bootloader builder, unlike the installer's
+      # own selection (install.sh `select_setup_entry`), and the asymmetry is
+      # worth knowing: the builder decides which entry is default by comparing
+      # DEFAULT-CONFIG against the *main* toplevel only, and calls
+      # write_loader_conf() with no specialisation. The run closure is that main
+      # toplevel, so handing it over works and writes
+      # `default nixos-generation-<N>.conf` itself. Handing it a specialisation
+      # would match nothing and leave loader.conf untouched, which is exactly why
+      # the installer has to write that line by hand.
+      #
+      # It also rewrites every entry, including the specialisation one that step
+      # 2 removes -- hence this order. Reversed, a power cut between the two
+      # would leave `default` naming a file that no longer exists.
+      #
+      # NIXOS_INSTALL_BOOTLOADER=1 keeps it on the `bootctl install` path rather
+      # than the version-comparing `update` path, matching what the installer
+      # already did to this ESP. It cannot disturb the NVRAM order fix_boot_order
+      # set: box-hardware.nix sets canTouchEfiVariables = false, and that is what
+      # puts --no-variables on every bootctl call the builder makes.
+      # -----------------------------------------------------------------------
+      NIXOS_INSTALL_BOOTLOADER=1 \
+        /nix/var/nix/profiles/system/bin/switch-to-configuration boot
+
+      # -----------------------------------------------------------------------
+      # 2. Remove the first-time-setup entry.
+      #
+      # The glob is deliberately narrow -- it carries both `nixos-generation-`
+      # and `-specialisation-`, so nothing else living in this directory can be
+      # caught by it. systemd-boot's own `Reboot Into Firmware Interface` is
+      # synthesised by the loader rather than stored here, so it survives
+      # regardless; the scoping is what makes that true by construction.
+      #
+      # None is not an error: this runs by hand as well as from loom-fetch (see
+      # systemPackages below), and a re-run after a successful promotion should
+      # report that rather than fail. The state check in step 3 is what decides
+      # whether "nothing to remove" means "already done" or "something is wrong",
+      # so it runs either way.
+      #
+      # Several *is* an error -- it means the entry layout changed under us, and
+      # guessing which to delete is not a decision to make on an appliance.
+      # -----------------------------------------------------------------------
+      mapfile -t setup_entries < <(
+        find "$entries" -maxdepth 1 -type f \
+          -name 'nixos-generation-*-specialisation-*.conf' | sort
+      )
+      case "''${#setup_entries[@]}" in
+        0) echo "[-] No first-time-setup entry to remove; checking the menu anyway." ;;
+        1) rm -- "''${setup_entries[0]}" ;;
+        *)
+          echo >&2 "[!] Found ''${#setup_entries[@]} specialisation entries in $entries, expected one."
+          echo >&2 "[!] Leaving the boot menu alone rather than guessing which to remove."
+          exit 1
+          ;;
+      esac
+
+      # -----------------------------------------------------------------------
+      # 3. Check the menu is what it now claims to be: one entry, and `default`
+      #    names it. Nothing else verifies this, and the failure it guards
+      #    against -- a box that boots to a menu with no valid default -- is one
+      #    nobody would enjoy meeting in the field.
+      # -----------------------------------------------------------------------
+      remaining="$(find "$entries" -maxdepth 1 -type f -name 'nixos-*.conf' | wc -l)"
+      default="$(awk '$1 == "default" { print $2 }' "$conf")"
+      if [ "$remaining" -ne 1 ] || [ ! -f "$entries/$default" ]; then
+        echo >&2 "[!] Boot menu is not in the expected state: $remaining entries, default '$default'."
+        exit 1
+      fi
+
+      echo "[*] Boot menu promoted: one entry, $default."
+    '';
+  };
+
   # Loom takes a long time to come up; skaffold's own offline profile allows
   # six hours (skaffold.yaml:384). Never let systemd shoot it in the head.
   commonService = {
@@ -192,6 +287,11 @@ in
     (lib.mkIf (cfg.mode == "setup") {
       loom.progressUnit = "loom-fetch.service";
 
+      # Only meaningful in this mode, and only ever run by hand after the
+      # automatic call below failed -- see the comment there. Run mode has no
+      # setup entry left to promote.
+      environment.systemPackages = [ loom-promote-boot-entry ];
+
       # Warn only. This mode runs once, in the lab, with internet and nothing
       # secret on the box yet, and loom-fetch below takes hours -- a trip on a
       # glitching USB port would throw all of it away for no security gain.
@@ -225,12 +325,27 @@ in
 
             touch ${loomRepoDir}/.loom-setup-complete
 
+            # Marked complete *before* the promotion below, and the order is
+            # deliberate. A failed promotion must not throw away hours of fetch:
+            # the box reboots into setup mode, skips the fetch on the marker, and
+            # an operator can re-run the promotion by hand from an Alt-F2 console
+            # -- which is why it is in systemPackages below as well.
+            #
+            # sudo for the same reason the poweroff below needs it: this unit
+            # runs as the operator, and a service has no logind session for
+            # polkit's allow_active to key on. An absolute path rather than the
+            # bare name, because sudo does not carry this unit's PATH through to
+            # the child it starts.
+            sudo ${lib.getExe loom-promote-boot-entry}
+
             echo "[*] Image store populated. This box never needs the internet again."
-            echo "[*] Powering off in ${toString setupPoweroffGrace}s. Do not reboot into the default"
-            echo "[*] entry from here: run mode serves DHCP and *.loom on the appliance"
-            echo "[*] NIC, and that must not land on the network this fetch ran over."
-            echo "[*] Move the box to where it will be used, then boot \"Loom\" there."
-            echo "[*] To keep it up instead: sudo systemctl stop loom-fetch"
+            echo "[*] The boot menu now holds one entry, and it is run mode."
+            echo "[*] Powering off in ${toString setupPoweroffGrace}s. Move the box to where it will"
+            echo "[*] be used before powering it on again: run mode serves DHCP and *.loom"
+            echo "[*] on the appliance NIC, and that must not land on the network this"
+            echo "[*] fetch ran over."
+            echo "[*] To keep it up instead, from an Alt-F2 console:"
+            echo "[*]   sudo systemctl stop loom-fetch"
             sleep ${toString setupPoweroffGrace}
 
             # `sudo`, because this unit runs as the loom user and a systemd

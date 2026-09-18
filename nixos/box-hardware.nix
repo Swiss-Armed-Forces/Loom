@@ -101,11 +101,27 @@ in
   # Appliance firmware: the loader is placed on the ESP directly and the boot
   # entry is managed by the installer, so there is no need to write EFI vars on
   # every rebuild.
+  #
+  # It does more work than that now. `loom-promote-boot-entry` (modes.nix) runs
+  # the bootloader builder again at the end of first-time setup, and this option
+  # is what puts `--no-variables` on the `bootctl` calls it makes -- so that run
+  # cannot disturb the `Loom appliance` NVRAM entry, or the boot order, that
+  # `fix_boot_order` (installer-scripts/install.sh) set at install time.
   boot.loader.efi.canTouchEfiVariables = false;
-  # Generous on purpose: the first boot after installation has to be interrupted
-  # to pick the `Loom (first-time-setup)` entry, and on a box whose display only
-  # wakes up part way through firmware init, five seconds can elapse before the
-  # menu is visible. The appliance reboots rarely and an operator is normally
-  # standing there.
+  # Generous on purpose, though no longer for the reason it started as.
+  #
+  # Nobody has to interrupt this menu any more: the installer selects the
+  # first-time-setup entry, and setup promotes run mode back when it finishes, so
+  # the default is always the entry that should boot. What survives is the other
+  # half of the original argument -- on a box whose display only wakes up part
+  # way through firmware init, five seconds can elapse before the menu is even
+  # visible -- and it now matters more rather than less. Once setup has removed
+  # its own entry this menu is the only route to `Reboot Into Firmware
+  # Interface`, which is how the radios get disabled in firmware and how the boot
+  # order is repaired. Shortening it would quietly make that unreachable on
+  # exactly the boxes that are slowest to show a picture.
+  #
+  # The appliance reboots rarely and an operator is normally standing there, so
+  # the wait costs little.
   boot.loader.timeout = 30;
 }

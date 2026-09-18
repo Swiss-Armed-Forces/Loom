@@ -27,6 +27,12 @@ Read this before building anything; the design only makes sense if these hold.
   and it is not an authentication boundary: it shows the banner, waits for a keypress, and then opens a
   root-capable session with no password. Neither box is driven over a serial cable, and neither image
   configures one, so the monitor and keyboard are the whole attack surface.
+- **The console runs an AI agent that can act on the box.** The bottom pane is `opencode` wired to the
+  cluster's own Ollama — it reads and writes files and runs commands as `loom`, which is in `wheel` and
+  `docker`. It talks to nothing outside the box, so this adds no network exposure; what it adds is a way for
+  anyone already at the keyboard to act through natural language instead of a shell. Given the bullet above,
+  that is not a new boundary being crossed — but it is one more reason the box must not be left unattended
+  with the stick in it.
 - **Bluetooth is disabled** by module blacklist and `rfkill`, in every image. **WiFi is disabled the same way
   unless the image was built with `--wifi`**, which turns the box into an access point — read
   [The WiFi access point](#the-wifi-access-point) before using it, because it changes most of the bullets
@@ -222,10 +228,19 @@ If the radio is there but the platform's match did not select it, rebuild with
     lists them all and asks which one — rather than silently picking the first. It then names the disk it is
     about to destroy and asks for the word `INSTALL`, which is not something typed by accident.
 4. It partitions the internal disk, creates the LUKS container from the stick's key, installs the appliance
-    closure entirely offline, enrols a recovery passphrase, and makes the internal disk the default boot entry.
-5. **Write down the recovery passphrase it prints.** It waits there until you press enter, and the installed
-    box also shows it on every console login, so a scrolled-away console does not lose it.
-6. Press enter. The box reboots into the internal disk; leave the stick in.
+    closure entirely offline, enrols a recovery passphrase, makes the internal disk the default boot entry, and
+    selects **first-time setup** as the entry that disk boots.
+5. **Write down the recovery passphrase it prints.** It holds the screen for 30 seconds and then reboots on
+    its own, so an install nobody comes back to still finishes. Nothing is lost if you miss it: the installed
+    box shows the same passphrase on every console login.
+6. Press enter to reboot immediately, or let the countdown run out. The box boots into the internal disk and
+    straight into first-time setup — no entry to pick — so have it on a network with internet by then. Leave
+    the stick in.
+
+The countdown is skipped in one case. If the installer could not make the internal disk the default boot
+entry — no NVRAM entry, or its own loader still on the UEFI removable-media path — it says so and waits for
+enter instead of rebooting itself, because that warning asks you to change the firmware boot order and it is
+the one thing on that screen the installed box does not repeat. A wipe (menu option 2) likewise always waits.
 
 The installer moves its own loader off the UEFI removable-media path afterwards. Without that, most firmware
 would boot the installer instead of the appliance on every restart, because the stick never leaves. The
@@ -233,7 +248,15 @@ installer stays reachable from the firmware's own boot menu for reinstalls and w
 
 ## The two boot modes
 
-The appliance has two entries in its boot menu, `Loom` and `Loom (first-time-setup)`.
+The appliance has two boot modes, `Loom` and `Loom (first-time-setup)`. **You never pick between them.** The
+installer leaves the menu on first-time setup, and the setup run hands it back to `Loom` and deletes its own
+entry when it finishes — so a box that has completed setup has exactly one entry, and every box before that
+has the only entry that would work anyway.
+
+That is not tidiness. The `Loom` entry serves DHCP and wildcard `*.loom` DNS on the appliance NIC, and the
+setup run happens on a network with internet — usually somebody's office LAN. Every wrong pick, and every
+accidental reboot part way through a fetch that runs for hours, used to put a DHCP server on that LAN. Now a
+reboot mid-fetch comes back into first-time setup and carries on.
 
 | | Run (default) | First-time setup |
 | --- | --- | --- |
@@ -245,23 +268,24 @@ The appliance has two entries in its boot menu, `Loom` and `Loom (first-time-set
 | Key removed | Powers the box off | Warns only |
 | When it finishes | Keeps running | Powers the box off |
 
-A fresh box has no container images, and building them needs registries. So the first boot after installation is
-into **first-time setup**, on a network with internet. Choose `Loom (first-time-setup)` in the boot menu, then
-press a key at the console — the first pane of the session is that log.
+A fresh box has no container images, and pulling them needs registries. So the first boot after installation
+is into **first-time setup**, which happens by itself — just make sure the box is on a network with internet
+before that boot, and press a key at the console to watch: the first pane of the session is that log.
 
 This takes a long time. It populates minikube's image store on the encrypted root and marks itself complete, so
 a reboot will not repeat it.
 
 **When it finishes, the box powers itself off** — a minute after the last log line, so an unattended run ends
-with a box that is simply off. That is deliberate, and not just tidiness: the default `Loom` entry serves DHCP
-and wildcard `*.loom` DNS on the appliance NIC, so booting it while the box is still cabled into the network it
-fetched over would put a DHCP server on that network. Move the box to where it will be used, then boot `Loom`
-there and it runs offline forever.
+with a box that is simply off. Before it goes down it promotes `Loom` back to being the boot default and
+removes the first-time-setup entry, so what comes back up is a single-entry menu.
+
+**Move the box before powering it on again.** This is the one thing still left to you: run mode serves DHCP and
+wildcard `*.loom` DNS on the appliance NIC, and that must not land on the network the fetch ran over. Move it to
+where it will be used, power it on there, and it runs offline forever.
 
 If you want the box to stay up instead — to look at something before it goes down — `sudo systemctl stop
-loom-fetch` in the shell pane during that minute cancels the poweroff. The run is marked complete either way.
-Boot `Loom (first-time-setup)` again and the console's first pane says _"First-time setup already completed"_
-rather than repeating any of it.
+loom-fetch` on an `Alt-F2` console during that minute cancels the poweroff. The run is marked complete and the
+menu is already promoted either way.
 
 The two modes look different on purpose. `Loom` boots to a splash with no kernel log, because it has nothing to
 report and the login screen carries everything an operator needs. `Loom (first-time-setup)` boots verbose — it
@@ -269,6 +293,17 @@ runs for hours, and a still logo over all of it would be misleading. Either way 
 console session, not the boot screen.
 
 This is also why the stick does not need to carry 60 GB of container images.
+
+### Once setup is done, it is gone
+
+The first-time-setup entry is **deleted**, not merely deselected, and there is no way to bring it back. That is
+a deliberate trade, and it has one consequence worth knowing before you hit it: **anything that destroys the
+image store costs a reinstall, and a reinstall destroys the indexed data.** See the `minikube delete` entry
+under [Troubleshooting](#troubleshooting) — that command is the most likely way to get there.
+
+`Reboot Into Firmware Interface` is untouched by any of this. systemd-boot draws that entry itself rather than
+reading it off the disk, so it survives, and the 30-second menu timeout stays generous partly to keep it
+reachable on boxes whose display wakes up late.
 
 ## The USB key guard
 
@@ -424,21 +459,33 @@ remote access, and physical possession of box and stick is the whole trust bound
 That keypress opens a three-pane session:
 
 ```text
-┌────────────────────┬──────────────┐        ┌────────────────────┐
-│                    │              │        │                    │
-│                    │    shell     │        │   k9s, on the      │
-│   the bring-up     │              │  once  │   pods of the      │
-│   log, live        ├──────────────┤  it is │   loom namespace   │
-│                    │              │   up   │                    │
-│                    │    btop      │        │                    │
-│                    │              │        │                    │
-└────────────────────┴──────────────┘        └────────────────────┘
-  LOOM    Ctrl-b d detach | Alt-F2 plain console
+┌─────────────────────┬─────────────┐        ┌─────────────────────┬─────────────┐
+│  the bring-up       │             │        │  k9s, on the pods   │             │
+│  log, live          │    btop     │  once  │  of the loom        │    btop     │
+│                     │             │  it is │  namespace          │             │
+├─────────────────────┴─────────────┤   up   ├─────────────────────┴─────────────┤
+│                                   │        │                                   │
+│           the assistant           │        │           the assistant           │
+│                                   │        │                                   │
+└───────────────────────────────────┘        └───────────────────────────────────┘
+  LOOM    Ctrl-b d detach | Alt-F2 for a shell
 ```
 
-The left pane follows whichever unit this boot mode runs — `loom` under the default entry, `loom-fetch` under
-first-time setup. The right column is an ordinary shell and `btop`. **`loom-info`** reprints the banner in that
-shell at any time.
+The top-left pane follows whichever unit this boot mode runs — `loom` under the default entry, `loom-fetch`
+under first-time setup — and hands over to `k9s` once the box is up. `btop` sits beside it. The assistant gets
+the full width along the bottom, because it is the only pane anyone types prose into and a chat folded into
+half a console is unreadable; the two above it are glanced at rather than read.
+
+`btop` picks its boxes from the size of that pane — the full `cpu mem net proc` set only where there is room
+for it — and its **net** box is pinned to the interface carrying the appliance address: `loom0` normally,
+`loombr0` on a `--wifi` box, where the wired port and the radio are two ports of the same bridge and only the
+bridge sees both. Left to itself `btop` would graph `lo` and keep graphing it, because it picks whichever
+interface has moved the most bytes so far and minikube's own loopback traffic wins that outright. Pinning it
+also puts the box address in the pane's header. The pin is a starting point, not a lock: `b` and `n` still
+cycle interfaces in that box.
+
+**None of these three panes is a shell.** The middle one used to be. `Alt-F2` is the way to a prompt — see
+below.
 
 That left pane does not stay a log. The moment the unit has **succeeded** — `up.sh` exited 0, and the `loom`
 namespace exists — it hands the screen over to **`k9s`** on the pods, because from then on the log is a
@@ -446,16 +493,54 @@ finished transcript while the pods are the live thing, and _"is it actually up?"
 only indirectly: `up.sh` returns long before the last container is ready, and a pod that crash-loops an hour
 later says nothing there at all. A bring-up that **failed** keeps its log on screen, which is the one case
 where the log is what matters; so does first-time setup, which deploys nothing and powers the box off when it
-is done. The log is never lost either way — `journalctl --unit loom --follow` in the shell pane brings it back,
-and the pane says so as it switches.
+is done. The log is never lost either way — `journalctl --unit loom --follow` on an `Alt-F2` console brings it
+back, and the pane says so as it switches.
+
+### The assistant pane
+
+The bottom pane runs [opencode](https://github.com/anomalyco/opencode) against the Ollama already running in
+the cluster, at `https://ollama.loom/v1/`. The box has carried a model on the stick since the first build and
+nothing on the console could reach it; this is what reaches it. There is no account, no API key worth the name,
+and no traffic off the box.
+
+It goes in through Traefik because that is the only door from outside the cluster — the workers reach the same
+Ollama by its in-cluster Service instead. `https`, not `http`: every ingress is bound to the `websecure`
+entrypoint alone, so nothing answers for `ollama.loom` on port 80.
+
+That certificate is the wildcard `*.loom` one the chart generates for itself at install time, and it is
+self-signed, which an HTTP client will not accept on trust the way a human clicks through a browser warning.
+So `loom-chat` builds a CA bundle from the certificate secrets the cluster holds and passes it in
+`NODE_EXTRA_CA_CERTS`. Certificate verification stays **on**: if the bundle cannot be built the pane says so
+and waits, rather than falling back to an unverified connection.
+
+The model is **pinned at build time** to `LOOM_CHAT_MODEL` in `vars.sh`, which must name a model
+`ollama/Dockerfile` actually bakes in — on an air-gapped box there is no way to fetch another, and pointing the
+pane at a tag the workers do not use would make Ollama load a second model and evict the one it is indexing
+with. **`loom-chat`** is the same screen as a command, for an `Alt-F2` console.
+
+The pane waits until Ollama serves that model and says so while it waits, so on a cold box it stays blank-ish
+for as long as the bring-up takes. Sessions and caches go to `tmpfs` under `/run/loom`, not to the encrypted
+root: what an operator asked about an evidence set is not something to leave on the disk by accident.
+
+Two things worth knowing before leaning on it:
+
+- **It is an agent, not a chat box.** It can read and write files and run commands as `loom`, which is in
+  `wheel` and `docker`. On a box whose trust boundary is physical possession that changes little — but it is a
+  different proposition once `--wifi` is on, and worth re-reading [the threat model](#threat-model) in that
+  case.
+- **The model is small.** It is a 9B, which is capable at short, well-scoped questions and gets unreliable as
+  the number of tools in play grows. Treat it as a knowledgeable colleague who has not seen your cluster,
+  rather than as something to hand a long autonomous task.
 
 `Ctrl-b` then an arrow key moves between panes. Inside `k9s`, `d` describes a pod, `l` shows its logs, `0`
 switches namespace and `:q` quits to a dead pane that `Ctrl-b :respawn-pane` brings back. **`loom-k9s`** is the
 same screen as a command, for an `Alt-F2` console.
 
 `Ctrl-b d` detaches and returns to the press-a-key prompt; the panes keep running, and the next keypress comes
-straight back to them. `Alt-F2` through `Alt-F6` give a plain console with no session at all, which is the way
-back in if anything above misbehaves.
+straight back to them. `Alt-F2` through `Alt-F6` give a plain console with no session at all. Since no pane of
+the session is a shell any more, that is both the way back in if anything above misbehaves **and** the ordinary
+way to get a prompt — `loom-info`, `loom-k9s`, `loom-chat`, `loom-up` and `loom-down` are all on the `PATH`
+there. `Alt-F1` returns to the session.
 
 `loom-up` and `loom-down` wrap `up.sh` with the two flags the appliance needs:
 
@@ -522,8 +607,15 @@ EVO-X2, first just try the other ethernet port.
 **`loom-up` refuses to start, complaining about the minikube address.** The `*.loom` names are pinned to
 `192.168.49.2` in `/etc/hosts` and minikube came up somewhere else. `minikube delete` and retry.
 
+> **`minikube delete` destroys the container images, and on an appliance that is not recoverable.** The images
+> live inside the minikube container's own storage, and nothing on the box keeps a second copy — so deleting
+> the cluster drops all ~60 GB of them. Refetching needs the first-time-setup entry, which no longer exists
+> once setup has run. The only way back is a reinstall from the stick, and that destroys the LUKS container
+> and every indexed document with it. **Copy anything you care about off the box first.**
+
 **Loom does not come up after a reboot in run mode.** The first pane of the console session already shows
-`loom`'s log. If the image store was never populated, boot `Loom (first-time-setup)` first.
+`loom`'s log. If the image store is empty, first-time setup either never ran or its images have since been
+dropped — see the `minikube delete` warning above, which is the usual cause and the usual bad news.
 
 **The console session will not start.** It prints why and hands over a plain shell on the same screen rather
 than looping; `Alt-F2` gives another one regardless. Reattach by hand with `loom-console`, or throw the session

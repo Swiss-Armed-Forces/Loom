@@ -14,6 +14,10 @@ source "${LOOM_INSTALLER_LIB:?LOOM_INSTALLER_LIB is not set}/common.sh"
 
 readonly MOUNT=/mnt
 readonly TARGET_SYSTEM_FILE=/etc/loom/target-system
+# The specialisation whose boot entry a fresh box has to come up on. Written by
+# installer.nix from the evaluated configuration, so this never has to spell
+# `first-time-setup` and a rename in modes.nix cannot drift away from it.
+readonly SETUP_SPECIALISATION_FILE=/etc/loom/setup-specialisation
 readonly RECOVERY_FILE_REL=var/lib/loom/recovery-passphrase
 
 # "aa64" or "x64", set by installer.nix from config.nixpkgs.hostPlatform.efiArch
@@ -21,6 +25,21 @@ readonly RECOVERY_FILE_REL=var/lib/loom/recovery-passphrase
 # either spelling here is how the installer and the image it came from drift
 # apart without anything failing loudly.
 readonly EFI_ARCH="${LOOM_EFI_ARCH:?LOOM_EFI_ARCH is not set}"
+
+# Set by fix_boot_order when the internal disk did not become the default boot
+# entry. Deliberately a global rather than a return value: fix_boot_order is
+# called directly, not in a command substitution, so it can assign here -- and
+# its own non-zero return is already spoken for by the paths that must not abort
+# an install that has otherwise completely succeeded.
+boot_order_degraded=0
+
+# Set by select_setup_entry when the first-time-setup entry could not be made the
+# boot default. Deliberately NOT folded into boot_order_degraded above: that one
+# means the firmware will not reach this disk at all, and menu.sh answers it by
+# telling the operator to fix the firmware boot order. This one means the disk
+# boots fine and merely starts on the wrong entry, where that advice would be
+# wrong. It is reported in the completion block instead.
+setup_entry_manual=0
 
 main() {
     local boot target key_dev key_status eligible passphrase targets=()
@@ -55,6 +74,7 @@ main() {
     make_filesystems
     mount_target
     install_system
+    select_setup_entry
     passphrase="$(enroll_recovery_passphrase)"
     fix_boot_order "${target}" "${boot}"
     unmount_target
@@ -70,6 +90,24 @@ main() {
     echo
     log "Leave the USB stick plugged in. The box cannot boot without it, and"
     log "removing it from a running box powers that box off ten seconds later."
+    echo
+
+    # What happens next, because nothing else says it: this box needs one boot on
+    # a network with internet before it is of any use offline.
+    if ((setup_entry_manual)); then
+        err "Could not preselect the first-time-setup entry -- see the warning above."
+        err "At the boot menu, choose 'Loom (first-time-setup)' by hand."
+    else
+        log "This box boots into first-time setup by itself. Leave it on a network"
+        log "with internet until it powers itself off; that run pulls every container"
+        log "image, and it never needs the internet again afterwards."
+    fi
+
+    # Tested with `if ((...))` rather than as a bare arithmetic command: `((0))`
+    # returns 1, which under `set -e` would abort a successful install here.
+    if ((boot_order_degraded)); then
+        return "${LOOM_EXIT_BOOT_ORDER_DEGRADED}"
+    fi
 }
 
 # Which disk to install onto, when the box has more than one.
@@ -197,6 +235,83 @@ install_system() {
         --option connect-timeout 1
 }
 
+# Leave the boot menu pointing at first-time setup.
+#
+# A fresh box has no container images, so the first boot has to be the
+# `Loom (first-time-setup)` entry -- see nixos/modes.nix. Selecting it here is
+# not merely a convenience: the default `Loom` entry serves DHCP and wildcard
+# *.loom on the appliance NIC, so a box that boots it while still cabled to the
+# network it fetches over puts a DHCP server on that network. Choosing correctly
+# every time is not something to leave to whoever is watching the menu.
+#
+# Written by hand rather than by re-running the bootloader builder, because the
+# builder cannot express it. It decides which entry is default by comparing its
+# DEFAULT-CONFIG argument against the *main* toplevel only, and then calls
+# write_loader_conf() with no specialisation -- so `default` can never name
+# anything but `nixos-generation-<N>.conf`. Handing it the specialisation's
+# toplevel does not select that entry; it matches nothing, and loader.conf is
+# left unwritten entirely.
+#
+# The line stays put because nothing regenerates it: the installed box has no
+# nixos-rebuild, no channel and no evaluation. `loom-promote-boot-entry`
+# (modes.nix) is what rewrites it, once, at the end of the setup run.
+select_setup_entry() {
+    local conf entries specialisation current setup selected
+    conf="${MOUNT}/boot/loader/loader.conf"
+    entries="${MOUNT}/boot/loader/entries"
+    specialisation="$(cat "${SETUP_SPECIALISATION_FILE}")"
+
+    # Every failure below warns and returns 0. The disk is partitioned, encrypted
+    # and written by this point, and the fallback is exactly the behaviour this
+    # step replaces -- an operator picking the entry off the menu themselves. The
+    # completion block in main() repeats the instruction where it will be read.
+    if [[ ! -r "${conf}" ]]; then
+        err "No ${conf} after install; cannot preselect first-time setup."
+        setup_entry_manual=1
+        return 0
+    fi
+
+    # What nixos-install just wrote: `default nixos-generation-<N>.conf`. Read
+    # rather than assumed, so the generation number comes from the file -- it is
+    # 1 on a freshly mkfs'd root, but nothing here needs to depend on that.
+    current="$(awk '$1 == "default" { print $2 }' "${conf}")"
+    if [[ -z "${current}" ]]; then
+        err "No 'default' line in ${conf}; cannot preselect first-time setup."
+        setup_entry_manual=1
+        return 0
+    fi
+
+    # The filename the systemd-boot builder composes for a specialisation, per
+    # its own generation_conf_filename(): the generation's entry, with the
+    # specialisation's attribute name appended.
+    setup="${current%.conf}-specialisation-${specialisation}.conf"
+
+    # Checked before anything is rewritten. This is what catches a renamed or
+    # removed specialisation, and it is why SETUP_SPECIALISATION_FILE is written
+    # from the evaluated configuration rather than spelled out here.
+    if [[ ! -f "${entries}/${setup}" ]]; then
+        err "Expected ${setup} in ${entries}, but it is not there."
+        setup_entry_manual=1
+        return 0
+    fi
+
+    # Only the default line. `timeout`, `editor` and `console-mode` stay exactly
+    # as the builder wrote them.
+    sed --in-place "s|^default .*|default ${setup}|" "${conf}"
+
+    # Read back into a variable rather than tested inline: a command substitution
+    # inside `[[ ]]` masks awk's own exit status, which shellcheck rightly
+    # objects to (SC2312).
+    selected="$(awk '$1 == "default" { print $2 }' "${conf}")"
+    if [[ "${selected}" != "${setup}" ]]; then
+        err "Could not select ${setup} in ${conf}."
+        setup_entry_manual=1
+        return 0
+    fi
+
+    log "First-time setup is the default boot entry"
+}
+
 # Generated here rather than at image build time, so it never leaves the box and
 # every box gets its own.
 enroll_recovery_passphrase() {
@@ -258,6 +373,7 @@ fix_boot_order() {
         --loader "\\EFI\\systemd\\systemd-boot${EFI_ARCH}.efi" \
         --label "Loom appliance" >/dev/null 2>&1; then
         err "Could not create an NVRAM boot entry. Select the internal disk manually in firmware."
+        boot_order_degraded=1
         return 0
     fi
 
@@ -276,8 +392,17 @@ fix_boot_order() {
             err "Expected ${fallback} on the stick, but it is not there."
             err "The stick still owns the UEFI removable-media path, so this box may boot"
             err "the installer again. Put the internal disk first in the firmware boot order."
+            boot_order_degraded=1
         fi
         umount "${stick_esp}"
+    else
+        # Same consequence as the branch above, and until now it was the one way
+        # to reach it in silence: an unmountable stick ESP left the fallback
+        # loader in place with nothing printed about it.
+        err "Could not mount the stick's ${LOOM_LIVE_ESP_LABEL} partition."
+        err "The stick still owns the UEFI removable-media path, so this box may boot"
+        err "the installer again. Put the internal disk first in the firmware boot order."
+        boot_order_degraded=1
     fi
     rmdir "${stick_esp}"
 }

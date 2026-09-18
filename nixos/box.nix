@@ -402,6 +402,14 @@ in
       # Also the third pane. Listed here as well so that an operator on a plain
       # Alt-F2 console, or one who closed the pane, still has it.
       k9s
+      # The assistant pane, same reasoning. console.nix's loom-chat is what wires it
+      # to the cluster's Ollama and pins the model; bare `opencode` here is for
+      # the operator who wants it pointed somewhere else.
+      #
+      # nixpkgs builds only the CLI -- one Bun-compiled binary, not the desktop
+      # app in the same repo -- and bakes models.dev's catalogue into the closure,
+      # which is what makes it usable on a box with no route off the network.
+      opencode
     ])
     ++ [ loom-info ]
     ++ config.loom.entrypoints;

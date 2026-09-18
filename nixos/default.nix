@@ -28,6 +28,11 @@
   # that `nix-build ./nixos -A tests.appliance` needs no arguments beyond the
   # ones it already takes.
   loomNamespace ? "loom",
+  # The model the console's chat pane pins itself to -- `LOOM_CHAT_MODEL` in
+  # vars.sh, passed through the same way the namespace is. Defaulted for the same
+  # reason, and the default is the one model ollama/Dockerfile's production target
+  # bakes in, because an air-gapped box has no way to fetch another.
+  loomChatModel ? "huihui_ai/qwen3.5-abliterated:9b",
   minikubeIp ? "192.168.49.2",
   # First three octets of the appliance network. build-appliance-image
   # randomises the middle two so two boxes on one wire cannot collide, and so a
@@ -100,6 +105,7 @@ let
       tag
       loomHostsJson
       loomNamespace
+      loomChatModel
       minikubeIp
       loomSubnet
       loomInterface
@@ -255,6 +261,7 @@ in
       specialArgs
       applianceModules
       loomHostsJson
+      loomChatModel
       minikubeIp
       loomSubnet
       ;

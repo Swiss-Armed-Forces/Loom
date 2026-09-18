@@ -23,6 +23,13 @@ readonly LOOM_ROOT_LABEL="loom-root-luks"
 readonly LOOM_KEY_BYTES=4096
 readonly LOOM_MIN_DISK_BYTES=$((250 * 1000 * 1000 * 1000))
 
+# install.sh exits with this when the install itself succeeded but the box may
+# not boot into it unattended -- see fix_boot_order there. menu.sh holds the
+# console open on it rather than counting down, because the firmware fix it
+# asks for is printed nowhere else: the installed box's login banner repeats
+# the recovery passphrase, but not this.
+readonly LOOM_EXIT_BOOT_ORDER_DEGRADED=2
+
 # Console styling.
 #
 # Raw ANSI rather than `clear`/`tput`: those need a TERM, and the menu is

@@ -13,6 +13,14 @@ set -euo pipefail
 # shellcheck disable=SC1091
 source "${LOOM_INSTALLER_LIB:?LOOM_INSTALLER_LIB is not set}/common.sh"
 
+# How long a finished install holds the console before rebooting itself.
+#
+# Shorter than modes.nix's 60s poweroff grace on purpose, and not drift: that
+# one has to be read by whoever happens to walk past, while this screen is only
+# ever reached by an operator who just typed INSTALL and is standing there. 30s
+# is enough to copy down a 30-character passphrase, and enter cuts it short.
+readonly LOOM_REBOOT_GRACE=30
+
 show_status() {
     local boot key_dev key_status description eligible targets=() disk
 
@@ -117,8 +125,67 @@ halt_console() {
     sleep infinity
 }
 
+# Reboot into the installed appliance, after a grace period the operator can cut
+# short with enter.
+#
+# The grace exists for the recovery passphrase printed directly above: it is
+# also on the installed box's login banner (box.nix), so this is convenience
+# rather than the last chance to read it -- which is exactly why it is allowed
+# to expire on its own instead of stranding the box at a prompt nobody returns
+# to. The one case where the console does hold indefinitely is handled by the
+# caller, not here.
+countdown_to_reboot() {
+    local remaining status announced=0
+
+    for ((remaining = LOOM_REBOOT_GRACE; remaining > 0; remaining--)); do
+        if [[ -t 1 ]]; then
+            # Repainted in place with \r, so the passphrase above stays on
+            # screen. %2d keeps the line a fixed width; without it 9s would
+            # leave behind the stray digit of the 10s that came before it.
+            printf '\r  Press enter to reboot now (rebooting in %2ds). ' "${remaining}"
+        elif ((!announced)); then
+            # Off a terminal there is nothing to repaint into, and one line per
+            # second in a captured log is worse than no countdown at all.
+            printf '  Rebooting in %ds, or press enter to reboot now.\n' "${remaining}"
+            announced=1
+        fi
+
+        # The read doubles as the one-second sleep.
+        status=0
+        read -r -t 1 _ || status=$?
+        # bash returns >128 when -t expires, so that is the only status that
+        # keeps counting. 0 is enter; anything else is EOF or a read error, and
+        # continuing on those would spin the whole countdown out in
+        # milliseconds the moment stdin is closed.
+        if ((status <= 128)); then
+            break
+        fi
+    done
+
+    if [[ -t 1 ]]; then
+        printf '\n'
+    fi
+
+    halt_console reboot "Rebooting."
+}
+
+# The install succeeded, but the box will not boot into it without help.
+#
+# Restated here rather than left to the warnings loom-install already printed:
+# those are emitted before the completion block and the recovery passphrase, so
+# on a short console they are several screens up by the time anyone reads this.
+hold_for_boot_order() {
+    echo
+    err "The internal disk is NOT the default boot entry -- see the warning above."
+    err "Put it first in the firmware boot order, or this box keeps booting the installer."
+    echo
+    printf '  Press enter to reboot. '
+    read -r _
+    halt_console reboot "Rebooting."
+}
+
 main() {
-    local choice
+    local choice status
     while true; do
         show_status
         show_menu
@@ -128,21 +195,21 @@ main() {
 
         case "${choice}" in
         1)
-            if "${LOOM_INSTALLER_BIN:?}/loom-install"; then
-                # A finished install reboots rather than returning to the menu:
-                # the box is done, and every option left here either destroys
-                # the disk that was just written or does nothing for it. The
-                # read still blocks first, so the recovery passphrase stays on
-                # screen until somebody has acknowledged it -- and it is on the
-                # installed box's login banner afterwards either way.
-                printf '  Press enter to reboot into the installed appliance. '
-                read -r _
-                halt_console reboot "Rebooting."
-            else
+            # A finished install reboots rather than returning to the menu: the
+            # box is done, and every option left here either destroys the disk
+            # that was just written or does nothing for it. How long it waits
+            # first is the only thing the exit status decides.
+            status=0
+            "${LOOM_INSTALLER_BIN:?}/loom-install" || status=$?
+            case "${status}" in
+            0) countdown_to_reboot ;;
+            "${LOOM_EXIT_BOOT_ORDER_DEGRADED}") hold_for_boot_order ;;
+            *)
                 err "Installation failed."
                 printf '  Press enter to return to the menu. '
                 read -r _
-            fi
+                ;;
+            esac
             ;;
         2)
             "${LOOM_INSTALLER_BIN:?}/loom-wipe" || err "Wipe failed."

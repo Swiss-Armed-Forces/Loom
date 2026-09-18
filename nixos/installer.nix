@@ -212,6 +212,39 @@ in
   # Which closure loom-install should install, with zero evaluation at runtime.
   environment.etc."loom/target-system".text = "${boxSystem.config.system.build.toplevel}";
 
+  # And which boot entry it should leave selected once that closure is in place.
+  #
+  # A fresh box has no container images, so the first boot has to be first-time
+  # setup rather than the default `Loom` entry -- see modes.nix. install.sh picks
+  # that entry by *filename*, which the systemd-boot builder composes out of the
+  # specialisation's attribute name (`generation_conf_filename`), so what it needs
+  # from here is that name and not a store path.
+  #
+  # Read off the evaluated configuration rather than written out as
+  # `first-time-setup`, so renaming the specialisation in modes.nix follows
+  # through to the stick instead of leaving the installer selecting an entry that
+  # was never written.
+  environment.etc."loom/setup-specialisation".text = lib.head (
+    lib.attrNames boxSystem.config.specialisation
+  );
+
+  # `head` above is only honest while there is exactly one specialisation to take.
+  # A second boot mode would make it an arbitrary pick between them, so fail the
+  # build rather than ship a stick that selects whichever sorted first.
+  assertions =
+    let
+      names = lib.attrNames boxSystem.config.specialisation;
+    in
+    [
+      {
+        assertion = lib.length names == 1;
+        message =
+          "nixos/installer.nix: the appliance declares ${toString (lib.length names)} "
+          + "specialisations (${lib.concatStringsSep ", " names}); install.sh can only "
+          + "preselect one. Teach `select_setup_entry` which of them to pick.";
+      }
+    ];
+
   environment.systemPackages = [ installerScripts ];
 
   # nixos-install copies the appliance closure out of the stick's read-only

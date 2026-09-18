@@ -43,9 +43,34 @@ let
   # interface holding the address changes.
   wifiEnabled = config.loom.wifi.enable;
   bridgeInterface = config.loom.wifi.bridge;
-  serviceInterface = if wifiEnabled then bridgeInterface else applianceInterface;
+
+  # `isRun` as well as `wifiEnabled`, because the bridge is built by the run-mode
+  # branch below and the radio by wifi.nix's, which is gated the same way. Every
+  # use inside this file already sits under `mkIf isRun`, so that term changes
+  # nothing here -- it is there for the option this is exported as, which is read
+  # from modules that are not mode-gated. In setup mode the answer is the wired
+  # NIC in both builds, `loombr0` being an interface that does not exist yet.
+  serviceInterface = if isRun && wifiEnabled then bridgeInterface else applianceInterface;
 in
 {
+  # Exported rather than kept local because the name is not derivable from
+  # outside: whether the address sits on `loom0` or on `loombr0` depends on
+  # --wifi and on the boot mode, and console.nix -- which pins btop's net box to
+  # this interface -- has no business recomputing that. /etc/loom/network.conf's
+  # LOOM_INTERFACE is the same value written for humans; this is the one modules
+  # read.
+  options.loom.serviceInterface = lib.mkOption {
+    type = lib.types.str;
+    default = serviceInterface;
+    readOnly = true;
+    internal = true;
+    description = ''
+      The interface carrying the appliance address, serving DHCP and answering
+      `*.loom`: the bridge when the access point is enabled, the wired NIC
+      otherwise. `loom0` always means the physical port, in both builds.
+    '';
+  };
+
   config = lib.mkMerge [
     # -------------------------------------------------------------------------
     # Run mode: static address, DHCP server, wildcard DNS.

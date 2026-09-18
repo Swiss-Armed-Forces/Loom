@@ -12,6 +12,7 @@
   specialArgs,
   applianceModules,
   loomHostsJson,
+  loomChatModel,
   minikubeIp,
   loomSubnet,
   loomUser,
@@ -96,6 +97,7 @@ pkgs.testers.runNixOSTest {
   };
 
   testScript = ''
+    import json
     import re
     import shlex
 
@@ -275,7 +277,11 @@ pkgs.testers.runNixOSTest {
 
         appliance.send_key("ret")
         appliance.wait_until_succeeds("pgrep -u ${loomUser} -f tmux")
-        appliance.wait_until_tty_matches("1", "${loomUser}@")
+        # Not the shell prompt any more: no pane of this session is a shell. The
+        # bottom pane is loom-chat, and this is the line it prints before it
+        # starts waiting on Ollama -- which in a test VM never answers, so this
+        # is as far as the pane ever gets, and that is the point.
+        appliance.wait_until_tty_matches("1", "Loom assistant on")
 
         # pane_start_command, not pane_current_command: loom-btop execs btop, so
         # the current command is whatever that wrapper turned into, and on a
@@ -285,9 +291,28 @@ pkgs.testers.runNixOSTest {
             "tmux -S /run/loom/tmux.sock list-panes -t loom "
             "-F '#{pane_index} #{pane_start_command}'"
         ).splitlines()
+        # Index order is layout order -- top-left, top-right, then the full-width
+        # pane underneath them -- so this list doubles as an assertion about
+        # where each thing sits. The assistant is last because it is at the
+        # bottom, which is also why `create` addresses panes by ID: these indices
+        # are rewritten by every split.
         assert len(panes) == 3, panes
         assert "loom-progress" in panes[0], panes
-        assert "btop" in panes[2], panes
+        assert "btop" in panes[1], panes
+        assert "loom-chat" in panes[2], panes
+
+        # loom-btop writes its config before exec'ing btop, so this file exists
+        # even here, where the pane is too narrow for btop to draw anything.
+        #
+        # The interface is the assertion worth making. Unpinned, btop picks the
+        # interface with the most cumulative traffic, which on this box is `lo`
+        # -- and once picked it never reconsiders, so the operator's net box
+        # graphs loopback forever. This has to be the interface carrying the
+        # appliance address, which is what /etc/loom/network.conf reports as
+        # LOOM_INTERFACE further down this file.
+        appliance.wait_for_file("/run/loom/btop.conf")
+        btop_conf = appliance.succeed("cat /run/loom/btop.conf")
+        assert 'net_iface = "loom0"' in btop_conf, btop_conf
 
         # The first pane starts on the log and hands over to k9s once Loom is
         # up. Both halves live in the script that pane starts, so read it: the
@@ -317,10 +342,74 @@ pkgs.testers.runNixOSTest {
             assert got, script
             assert got.group(1) == want, f"watches {got.group(1)}, up.sh deploys to {want}"
 
-        # The pane the session lands in is a usable shell, which is the whole
-        # point of it.
+        # The assistant pane must dial the model the workers use. Same drift
+        # argument as the namespace above, with a sharper failure: an air-gapped
+        # box only has what ollama/Dockerfile baked in, so a pane pinned to
+        # anything else waits forever on a model that will never be served.
+        chat_pane = appliance.succeed(f"cat {panes[2].split(maxsplit=1)[1]}")
+        want_model = appliance.succeed(
+            "bash -c '. ${loomRepoDir}/vars.sh; printf %s \"$LOOM_CHAT_MODEL\"'"
+        ).strip()
+        got_model = re.search(r"^model='?([\w/.:@-]+)'?$", chat_pane, re.M)
+        assert got_model, chat_pane
+        assert got_model.group(1) == want_model, (
+            f"pane pins {got_model.group(1)}, vars.sh says {want_model}"
+        )
+
+        # opencode reaches for the network on its own unless told not to. The
+        # catalogue refresh is the one to pin down: nixpkgs bakes models.dev in at
+        # build time but the flag that stops the lookup is read at *runtime*, so
+        # it is easy to lose in a package bump and hard to notice afterwards --
+        # opencode falls back to the baked-in copy rather than failing loudly.
+        # This box makes no outbound connection it was not asked to make.
+        assert "OPENCODE_DISABLE_MODELS_FETCH=1" in chat_pane, chat_pane
+        assert "OPENCODE_DISABLE_AUTOUPDATE=1" in chat_pane, chat_pane
+
+        # And the config it ships. "@ai-sdk/openai-compatible" is the load-bearing
+        # string: it is in opencode's BUNDLED_PROVIDERS table, so the adapter is
+        # already in the binary. Any other name sends opencode to the npm registry
+        # the first time the operator asks a question.
+        config_path = re.search(r"OPENCODE_CONFIG=(\S+)", chat_pane)
+        assert config_path, chat_pane
+        config = json.loads(appliance.succeed(f"cat {config_path.group(1)}"))
+        assert config["autoupdate"] is False, config
+        assert config["model"] == f"ollama/{want_model}", config
+        ollama = config["provider"]["ollama"]
+        assert ollama["npm"] == "@ai-sdk/openai-compatible", config
+        assert want_model in ollama["models"], config
+        # The endpoint has to be a name box.nix pins in /etc/hosts, or the pane
+        # cannot resolve it with no DNS off the box -- and it has to be https,
+        # because charts/values.yaml annotates every ingress `websecure` and
+        # nothing routes this host on port 80 outside values-development.
+        base = ollama["options"]["baseURL"]
+        assert base in [f"https://{h}/v1" for h in ${builtins.toJSON loomHosts}], base
+
+        # That certificate is self-signed, so the pane has to trust it explicitly.
+        # Asserting the CA is handed over rather than verification switched off.
+        #
+        # Matching an assignment rather than the bare name: loom-chat's own
+        # comments explain why the blunt option was not taken, so a substring
+        # test for "NODE_TLS_REJECT_UNAUTHORIZED" finds the prose and fails on a
+        # script that is doing exactly the right thing.
+        assert re.search(r"^export NODE_EXTRA_CA_CERTS=", chat_pane, re.M), chat_pane
+        assert not re.search(
+            r"^\s*(export\s+)?NODE_TLS_REJECT_UNAUTHORIZED=", chat_pane, re.M
+        ), chat_pane
+
+        # The session no longer holds a shell, so the promise the status line
+        # makes -- "Alt-F2 for a shell" -- is the thing worth asserting. Every
+        # getty carries --login-pause, tty2 included, so this is the same
+        # press-a-key dance as tty1 and then an ordinary prompt.
+        appliance.send_key("alt-f2")
+        appliance.wait_until_tty_matches("2", "press ENTER to login")
+        appliance.send_key("ret")
+        appliance.wait_until_tty_matches("2", "${loomUser}@")
         appliance.send_chars("touch /tmp/loom-console-alive\n")
         appliance.wait_for_file("/tmp/loom-console-alive")
+        # Back to tty1: the key-guard block at the bottom of this file asserts on
+        # what the operator's session shows.
+        appliance.send_key("alt-f1")
+        appliance.wait_until_succeeds("fgconsole | grep -x 1 >/dev/null")
 
     with subtest("the repository is seeded writable and owned by the operator"):
         appliance.wait_for_unit("loom-seed-repo.service")
