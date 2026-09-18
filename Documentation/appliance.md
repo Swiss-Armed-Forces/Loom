@@ -385,20 +385,22 @@ agetty writes the login banner straight to the VT and never pages it, so a banne
 its top rows — and the grid is not something the image can know in advance. It is the panel's pixel height
 over the console cell, anywhere from 33 rows to 123 in the table above.
 
-Two things keep that from cropping the screen:
+**`loom-banner-repaint.service`** is what keeps that from cropping the screen. tty1 is painted _while_ the font
+is still changing under it: fbcon starts on the kernel's built-in font, `loom-console-font` puts Cozette on,
+the DRM driver takes the console and resets it, and `loom-console-font-reapply` puts Cozette back. Each of
+those resizes the VT, and **a shrinking VT keeps the bottom of the screen and discards the top** — so the logo
+goes first and the banner that survives starts partway down. tty2 and up never show it, because logind only
+spawns them when you switch to one, by which point nothing is moving any more.
 
-- **`loom-info` measures and sheds.** `loom-issue.service` reads the row count off `/dev/tty1` and passes it
-  in; if the banner will not fit, the eyes go first, and if it still will not fit, the WiFi QR code goes too.
-  Nothing load-bearing is ever dropped — the WiFi credentials outlive the code that encodes them, and the
-  recovery passphrase and key guard state are never candidates. On a console of 40 rows or more with `--wifi`,
-  nothing is dropped at all.
-- **`loom-banner-repaint.service` draws it again once the geometry settles.** tty1 is painted _while_ the font
-  is still changing under it: fbcon starts on the kernel's built-in font, `loom-console-font` puts Cozette on,
-  the DRM driver takes the console and resets it, and `loom-console-font-reapply` puts Cozette back. Each of
-  those resizes the VT, and a shrinking VT keeps the bottom of the screen and discards the top. tty2 and up
-  never showed this because logind only spawns them when you switch to one, by which point nothing is moving.
-  The repaint re-measures and asks agetty to redraw — unless somebody has already logged in, in which case it
-  does nothing rather than kill the session.
+The repaint watches `/dev/tty1` for the first minute of uptime and redraws the banner whenever the geometry has
+been disturbed since it was last drawn — not whenever the row count currently differs, which is a different and
+insufficient question: the count an operator finally sees is usually the very one the banner was drawn at, with
+its top thrown away in between. It declines to do anything once somebody has logged in, rather than restart a
+getty out from under a live session.
+
+The banner itself is always printed whole. An earlier version measured the console and dropped the logo, then
+the QR code, to fit — there is no moment in the boot at which that measurement stays true, and it shipped a box
+whose login screen had neither on a console with room for both.
 
 If a banner still looks wrong, `loom-info` on the console reprints it against the terminal it is run in.
 

@@ -58,6 +58,8 @@ pkgs.testers.runNixOSTest {
   };
 
   testScript = ''
+    import base64
+
     start_all()
     appliance.wait_for_unit("multi-user.target")
 
@@ -151,19 +153,66 @@ pkgs.testers.runNixOSTest {
         appliance.wait_for_unit("loom-wifi-check.service")
         appliance.fail("test -e /run/issue.d/61-loom-wifi.issue")
 
-    with subtest("the banner is redrawn after the console geometry settles"):
-        # tty1 is painted while the font -- and with it the row count -- is
-        # still changing under it; tty2 and up are spawned on demand, after it
-        # has settled, which is why only tty1 came out cropped. This unit is
-        # what closes that gap, started by branding.nix's font units.
+    with subtest("the banner watcher is running, not hung off the font units"):
+        # It used to be started from loom-console-font-reapply's ExecStartPost.
+        # udev runs that during coldplug, before any getty exists, so the repaint
+        # it asked for found nothing on screen and never ran again -- which is
+        # how tty1 kept a cropped banner while tty2 looked right. It is pulled in
+        # by the boot now and watches the console itself.
         appliance.succeed("systemctl cat loom-banner-repaint.service")
         reapply = appliance.succeed("systemctl cat loom-console-font-reapply.service")
-        assert "loom-banner-repaint.service" in reapply, reapply
+        assert "loom-banner-repaint" not in reapply, reapply
+        assert appliance.succeed(
+            "systemctl show -p ActiveState --value loom-banner-repaint.service"
+        ).strip() == "active"
 
-        # It must refuse to act once somebody is logged in: a restart then
-        # would take the operator's session with it. With no getty at the
-        # banner in this VM, the run is a no-op and must still succeed.
-        appliance.succeed("systemctl start loom-banner-repaint.service")
+    with subtest("a console resize does not leave the banner cropped"):
+        # The bug this reproduces: tty1 is painted while the console is still
+        # being resized -- kernel font, Cozette, the DRM driver's reset, Cozette
+        # again -- and a VT that shrinks keeps the bottom of the screen and
+        # discards the top. The mark goes first. tty2 and up never showed it,
+        # because logind spawns them on demand once nothing is moving any more.
+        #
+        # `setfont -d` doubles the cell, which halves the row count: the same
+        # shrink, on demand. Restoring the font afterwards is what
+        # loom-console-font-reapply does, and leaves the console back at the size
+        # it started -- which is why the watcher has to track that a resize
+        # happened rather than compare the size it now reads.
+        def screen_top(lines=10):
+            raw = base64.b64decode(appliance.succeed("base64 -w0 /dev/vcsa1"))
+            rows, cols = raw[0], raw[1]
+            body = raw[4:]
+            return rows, [
+                "".join(
+                    chr(body[(r * cols + c) * 2]) if 32 <= body[(r * cols + c) * 2] < 127
+                    else ("#" if body[(r * cols + c) * 2] else ".")
+                    for c in range(min(cols, 40))
+                )
+                for r in range(lines)
+            ]
+
+        # The mark's own signature: two block groups with a gap. The QR code is
+        # dense and irregular and never produces it, so this distinguishes "the
+        # mark is on screen" from "some block glyph is on screen".
+        mark = "######    ######"
+
+        _, before = screen_top()
+        assert any(mark in line for line in before), before
+
+        appliance.succeed("setfont -d -C /dev/tty1 2>&1 || true")
+        appliance.sleep(2)
+        _, cropped = screen_top()
+        assert not any(mark in line for line in cropped), cropped
+
+        appliance.succeed(
+            "/run/current-system/systemd/lib/systemd/systemd-vconsole-setup || true")
+        appliance.sleep(14)
+
+        # The whole assertion: the banner was redrawn for the console that is
+        # there now, rather than left as the tail of one drawn for a console
+        # that no longer exists.
+        _, healed = screen_top()
+        assert any(mark in line for line in healed), healed
 
     with subtest("a radio that never appears is reported, not hidden"):
         # The failure this guards against is silent by construction: hostapd

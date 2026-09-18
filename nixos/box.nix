@@ -21,6 +21,13 @@ let
   # the moment either is tuned.
   keyGuardGrace = config.loom.keyGuard.intervalSec * config.loom.keyGuard.graceTicks;
 
+  # How long after boot loom-banner-repaint keeps watching the console, and how
+  # often it looks. The console stops being resized within a few seconds of the
+  # last font change; the window is generous against a slow DRM driver, and the
+  # unit exits the moment somebody logs in.
+  bannerRepaintWindow = 60;
+  bannerRepaintInterval = 2;
+
   # Only run mode ever has an access point -- see wifi.nix -- so first-time setup
   # must not advertise one.
   showWifi = config.loom.wifi.enable && config.loom.mode == "run";
@@ -547,42 +554,114 @@ in
   # repaints it from a clean VT.
   # ---------------------------------------------------------------------------
   systemd.services.loom-banner-repaint = {
-    description = "Redraw the login banner after the console geometry settles";
+    description = "Redraw the login banner while the console is still settling";
+    # Pulled in by the boot rather than by the font units. Those fire from udev
+    # coldplug, which is before any getty exists -- so the repaint they asked for
+    # found nothing on screen to redraw and never ran again, which is exactly how
+    # tty1 kept its cropped banner while tty2 looked right.
+    wantedBy = [ "multi-user.target" ];
+    after = [ "getty.target" ];
     serviceConfig = {
-      Type = "oneshot";
-      # Deliberately no wantedBy: branding.nix's font units start this, once per
-      # resize they cause. Nothing else should.
-      RemainAfterExit = false;
+      Type = "simple";
+      # One pass through the window below, then done. A failure here costs the
+      # banner its redraw and nothing else, so never take the boot down with it.
+      Restart = "no";
     };
     path = [
       pkgs.coreutils
       config.systemd.package
     ];
     script = ''
-      # Only while the banner is still what is on screen. `--login-pause` holds
-      # agetty at the issue until a keypress, and `--autologin` then has it exec
-      # login and the operator's shell in the same process -- so the main PID
-      # ceasing to be agetty is exactly the signal that somebody is in. Restart
-      # then and we would kill a live session, tmux panes and all.
+      # Watch the console instead of guessing when it stops moving.
+      #
+      # The row count changes several times during boot -- the kernel's built-in
+      # font, Cozette, the DRM driver's reset, Cozette again -- and agetty paints
+      # tty1 somewhere in the middle of that. A VT that shrinks keeps the bottom
+      # of the screen and discards the top, which is why the mark goes first and
+      # why the surviving banner starts partway down. tty2 and up never show it:
+      # logind spawns them on demand, long after the last resize.
+      #
+      # So: poll, and redraw whenever the geometry is not the one the banner on
+      # screen was drawn for. Bounded, because this is a boot-time phenomenon and
+      # a poller that outlives it would be a poller nobody ever accounts for.
+      deadline=$(( SECONDS + ${toString bannerRepaintWindow} ))
+
+      # `seen` is the last geometry observed, `dirty` whether the screen has been
+      # disturbed since it was last drawn.
+      #
+      # Tracking the change rather than the current value is the whole point. A
+      # resize discards screen content, and it does that whether or not the size
+      # ends up back where it started -- the DRM takeover drops the console to
+      # the kernel's font and loom-console-font-reapply puts Cozette back, so the
+      # row count an operator finally sees is often exactly the one the banner
+      # was drawn at, with the top of that banner thrown away in between.
+      # Comparing "is it different now" would see nothing wrong and leave the
+      # screen broken, which is precisely what it did.
+      #
+      # `dirty` starts set, so the banner is drawn once for the geometry that is
+      # current when the getty first appears, whatever happened before that.
+      seen=""
+      dirty=yes
+
+      measure() {
+        stty size </dev/tty1 2>/dev/null | cut --delimiter=' ' --fields=1 || true
+      }
+
+      # The banner is only ours to redraw while it is still the thing on screen.
+      # `--login-pause` holds agetty at the issue until a keypress, and
+      # `--autologin` then has it exec login and the operator's shell in the same
+      # process -- so a main PID that is still agetty is the signal that nobody
+      # has pressed a key yet.
+      #
+      # Echoes the unit name in that case and nothing in every other, and
+      # "nothing" is deliberately not interpreted. A logged-in operator, a getty
+      # between lives after we restarted it ourselves, and a getty that has not
+      # exec'd agetty yet are indistinguishable from here and do not need to be
+      # told apart: the caller simply does not redraw this round. An earlier
+      # version tried to read one of those as "logged in, stop watching", and
+      # since it hit that state on its very first pass it stopped before it had
+      # done anything at all.
       #
       # tty1's getty is autovt@tty1.service on NixOS (an alias of the getty@
-      # template, see console.nix); both names are tried because which one is
-      # live depends on how the VT was brought up.
-      for unit in autovt@tty1.service getty@tty1.service; do
-        pid="$(systemctl show --property=MainPID --value "$unit" 2>/dev/null || true)"
-        if [ -z "$pid" ] || [ "$pid" = 0 ]; then
+      # template, see console.nix); both names are tried, and a miss on the first
+      # moves on to the second rather than deciding the question.
+      banner_getty() {
+        local unit pid
+        for unit in autovt@tty1.service getty@tty1.service; do
+          pid="$(systemctl show --property=MainPID --value "$unit" 2>/dev/null || true)"
+          if [ -z "$pid" ] || [ "$pid" = 0 ]; then
+            continue
+          fi
+          if [ "$(cat "/proc/$pid/comm" 2>/dev/null || true)" != agetty ]; then
+            continue
+          fi
+          printf '%s' "$unit"
+          return
+        done
+      }
+
+      while [ "$SECONDS" -lt "$deadline" ]; do
+        rows="$(measure)"
+
+        if [ "$rows" != "$seen" ]; then
+          # Something moved. Note it and wait for it to stop, so a redraw lands
+          # once per resize rather than once per intermediate state.
+          seen="$rows"
+          dirty=yes
+          sleep ${toString bannerRepaintInterval}
           continue
         fi
-        if [ "$(cat "/proc/$pid/comm" 2>/dev/null || true)" != agetty ]; then
-          continue
+
+        unit="$(banner_getty)"
+        if [ "$dirty" = yes ] && [ -n "$unit" ] && [ -n "$rows" ]; then
+          ${writeIssue}
+          # getty@ clears the VT on start (TTYVTDisallocate), so this lands on a
+          # clean screen rather than under the old copy. --no-block: never wait
+          # on a job from inside a queue this unit is itself in.
+          systemctl restart --no-block "$unit"
+          dirty=no
         fi
-        ${writeIssue}
-        # --no-block: this unit is started from another unit's ExecStartPost,
-        # and waiting on a job from inside the queue that job is queued in is
-        # how that deadlocks. getty@ clears the VT on start (TTYVTDisallocate),
-        # so the repaint lands on a clean screen rather than under the old one.
-        systemctl restart --no-block "$unit"
-        exit 0
+        sleep ${toString bannerRepaintInterval}
       done
     '';
   };
