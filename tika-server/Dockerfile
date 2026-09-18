@@ -54,4 +54,8 @@ USER $UID_GID
 EXPOSE 8000
 
 ENTRYPOINT ["/usr/bin/tini", "--"]
-CMD ["/bin/sh", "-c", "exec java ${TIKA_JAVA_OPS} -cp \"/tika-server-standard-${TIKA_VERSION}.jar:/tika-extras/*\" org.apache.tika.server.core.TikaServerCli -h 0.0.0.0"]
+# Default invocation for running the image on its own. The Helm chart replaces
+# it wholesale so that it can pass JVM flags derived from the pod's memory
+# budget - no environment variable carries them, as neither this image nor
+# upstream's expands one.
+CMD ["/bin/sh", "-c", "exec java -cp \"/tika-server-standard-${TIKA_VERSION}.jar:/tika-extras/*\" org.apache.tika.server.core.TikaServerCli -h 0.0.0.0"]

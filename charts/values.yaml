@@ -687,6 +687,14 @@ elasticsearch:
   priorityClass: infrastructure
   shardsCount: null
   shardsReplicasCount: null
+  # Memory budget to assume when no limit is set below (e.g. under
+  # values-no-resources.yaml). It mirrors resources.limits.memory so the heap
+  # comes out the same either way. With a limit set, ES derives its own heap
+  # from the cgroup and both of these are ignored.
+  memoryFallback: 8Gi
+  # Share of that budget given to the heap. ES's own default is 50%; the rest
+  # goes to Lucene's mmapped segments and the page cache.
+  heapFactor: 0.5
   image:
     repository: swiss-armed-forces/cyber-command/cea/loom/elasticsearch
   service:
@@ -1274,6 +1282,10 @@ rspamd:
 tika:
   replicaCount: 1
   priorityClass: null
+  # As elasticsearch.memoryFallback: the budget to assume when no limit is set
+  # below. Mirrors resources.limits.memory so every derived size - tmpfs, server
+  # heap, forked heap - comes out the same either way.
+  memoryFallback: 6Gi
   strategy:
     rollingUpdate:
       maxSurge: 1
@@ -1306,30 +1318,37 @@ tika:
     limits:
       cpu: "4"
       memory: "6Gi"
-  # Extra JVM flags, appended after the derived heap flags and therefore taking
-  # precedence — the JVM honours the last occurrence of a repeated -XX flag.
-  javaOpts: ""
-  taskTimeoutSeconds: 300
-  # Tika's memory budget, all fractions of resources.limits.memory. The heap is
-  # not configured directly: it is given whatever the RAM-backed /tmp and the
-  # reserve leave over, so raising one share lowers the heap automatically.
-  #   heap % = 100 - tmp.sizeFactor - memoryReserveFactor
-  # With the defaults: 25% tmp + 15% reserve -> 60% heap. Keep the two factors
-  # summing well below 1.0, or nothing is left for the heap.
+  # Tika runs two JVMs: the tika-server process answering HTTP, and a forked JVM
+  # per parse (noFork=false in tika-config.xml) that does all extraction and OCR.
+  # Both share the budget with the RAM-backed /tmp, and the forked one is given
+  # whatever the others leave over:
+  #   forked heap = budget - tmp.sizeFactor - memoryReserveFactor - serverHeapSize
+  # On the default 6Gi budget: 1536Mi tmpfs + 921Mi reserve + 512Mi server ->
+  # ~3.1Gi for the forked JVM. Leave the three well under the budget; rendering
+  # fails rather than handing the parser a negative heap.
   #
-  # Held back for non-heap JVM memory (metaspace, code cache, thread stacks,
-  # direct buffers) and the ImageMagick and Tesseract subprocesses OCR spawns.
+  # The server only accepts requests and supervises the fork, so its heap is a
+  # small fixed size instead of a share of the budget.
+  serverHeapSize: 512Mi
+  # Extra flags for the tika-server JVM, appended after its heap flags and
+  # therefore taking precedence — the JVM honours the last occurrence of a
+  # repeated flag.
+  serverJavaOpts: ""
+  # Extra flags for the forked parser JVM. Parse-time tuning belongs here: this
+  # is the JVM that documents are actually processed in.
+  forkedJavaOpts: ""
+  taskTimeoutSeconds: 300
+  # Held back for both JVMs' non-heap memory (metaspace, code cache, thread
+  # stacks, direct buffers) and for the ImageMagick and Tesseract subprocesses
+  # that OCR spawns.
   memoryReserveFactor: 0.15
   # RAM-backed (tmpfs) scratch volume for Tika's /tmp. It is cleared on every
   # container start, so an OOM-killed JVM cannot inherit the scratch files that
   # caused the kill.
   tmp:
-    # Fraction of resources.limits.memory. Takes precedence over sizeLimit
-    # whenever a memory limit is configured.
+    # Fraction of the memory budget. tmpfs pages count against the same budget
+    # as the heaps, which is why the forked heap is what is left after this.
     sizeFactor: 0.25
-    # Absolute fallback, used when sizeFactor is null or no memory limit is
-    # configured (e.g. values-no-resources.yaml).
-    sizeLimit: 2Gi
     # A parse that is killed - task timeout, OOM - never runs its cleanup
     # handlers, so its scratch files stay behind. They accumulate until /tmp is
     # full, and from then on every parse fails, not just the oversized one that

@@ -1,3 +1,11 @@
+{{- /*
+Flags for the forked parser JVM. Tika assembles the forked command line from
+forkedJvmArgs alone, so this - not the server's own command line - is where the
+heap that every parse and OCR run allocates from is set. See app.tika.memoryPlan
+for how the share is derived.
+*/ -}}
+{{- $tikaMemory := include "app.tika.memoryPlan" . | fromYaml -}}
+{{- $forkedJvmArgs := concat (splitList " " (include "app.jvm.heapFlags" $tikaMemory.forkedHeapBytes)) (compact (splitList " " (.Values.tika.forkedJavaOpts | default ""))) -}}
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -11,4 +19,4 @@ metadata:
   {{- end }}
 data:
   tika-config.xml: |
-    {{- tpl (.Files.Get "files/tika/tika-config.xml.tpl") (dict "taskTimeoutMillis" (mul .Values.tika.taskTimeoutSeconds 1000)) | nindent 4 }}
+    {{- tpl (.Files.Get "files/tika/tika-config.xml.tpl") (dict "taskTimeoutMillis" (mul .Values.tika.taskTimeoutSeconds 1000) "forkedJvmArgs" $forkedJvmArgs) | nindent 4 }}
