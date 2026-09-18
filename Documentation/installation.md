@@ -303,9 +303,9 @@ externalSecrets:
         property: secret_key
 
     # External LLM API key
-    llm__chat__api_key:
+    llm__synthesize__api_key:
       enabled: true
-      name: loom-llm-chat-api-key
+      name: loom-llm-synthesize-api-key
       remoteRef:
         key: secret/loom/llm
         property: chat_api_key

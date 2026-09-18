@@ -43,7 +43,7 @@ cloud LLM {
 }
 
 [React / AG-UI HttpAgent] --> [Router] : POST /v1/ai/{id}/run\n(AG-UI SSE stream)
-[Router] --> [AgentService] : build_agent()
+[Router] --> [AgentService] : build_prepared_agent()
 [Router] --> [AiService] : run_agent_stream()
 [AgentService] --> LLM : pydantic-ai Agent\n(OpenAI-compatible API)
 [AgentService] --> [ToolService] : capabilities
@@ -132,7 +132,7 @@ participant "Elasticsearch" as ES
 
 User -> FE : types question
 FE -> Router : POST /run (AG-UI RunInput, SSE)
-Router -> AgentSvc : build_agent(context)
+Router -> AgentSvc : build_prepared_agent(context)
 Router -> AiSvc : run_agent_stream(context, adapter, deps)
 AiSvc -> Adapter : run_stream()
 Adapter -> LLM : chat completion request\n(tools + message history)

@@ -1,4 +1,5 @@
 import logging
+from types import NoneType
 from typing import Optional
 from unittest.mock import AsyncMock, MagicMock
 
@@ -8,15 +9,17 @@ from elasticsearch import Elasticsearch
 from elasticsearch.dsl.connections import create_connection
 from minio import Minio
 from openai import OpenAI
+from pydantic_ai import Agent
 from redis import StrictRedis
 from redis.asyncio import StrictRedis as StrictRedisAsync
 
+from common.agent_builder import AgentBuilder
 from common.ai_context.ai_context_repository import AiContextRepository
 from common.archive.archive_encryption_service import ArchiveEncryptionService
 from common.archive.archive_repository import ArchiveRepository
 from common.archive.archive_scheduling_service import ArchiveSchedulingService
 from common.celery_app import BaseTask, init_celery_app
-from common.file.file_repository import FileRepository
+from common.file.file_repository import DetectedLanguage, FileRepository
 from common.file.file_scheduling_service import FileSchedulingService
 from common.messages.pubsub_service import PubSubService
 from common.services.celery_inspect_service import CeleryInspectService
@@ -64,20 +67,20 @@ _task_scheduling_service: TaskSchedulingService | None = None
 _file_scheduling_service: FileSchedulingService | None = None
 _archive_scheduling_service: ArchiveSchedulingService | None = None
 _archive_encryption_service: ArchiveEncryptionService | None = None
-_llm_summarization_key_points_client: OpenAI | None = None
-_llm_summarization_client: OpenAI | None = None
-_llm_summarization_refine_client: OpenAI | None = None
-_llm_hyde_client: OpenAI | None = None
-_llm_rerank_client: OpenAI | None = None
-_llm_chat_client: OpenAI | None = None
+_llm_summarization_key_points_agent: Agent[None, str] | None = None
+_llm_summarization_agent: Agent[None, str] | None = None
+_llm_summarization_refine_agent: Agent[None, str] | None = None
+_llm_hyde_agent: Agent[None, str] | None = None
+_llm_rag_rerank_agent: Agent[None, float] | None = None
+_llm_rag_synthesize_agent: Agent[None, str] | None = None
 _llm_embedding_client: OpenAI | None = None
-_llm_tool_client: OpenAI | None = None
-_llm_vision_client: OpenAI | None = None
-_llm_translation_client: OpenAI | None = None
+_llm_tool_agent: Agent[None, str] | None = None
+_llm_vision_agent: Agent[None, str] | None = None
+_llm_language_detection_agent: Agent[None, list[DetectedLanguage]] | None = None
+_llm_translation_agent: Agent[None, str] | None = None
 _celery_inspect_service: CeleryInspectService | None = None
 _complete_estimate_service: CompleteEstimateService | None = None
 _wipe_service: WipeService | None = None
-
 
 logger = logging.getLogger(__name__)
 
@@ -248,46 +251,32 @@ def init():
         settings.archive_enc_master_key
     )
 
-    global _llm_summarization_key_points_client
-    _llm_summarization_key_points_client = OpenAI(
-        base_url=str(settings.llm.summarization_key_points.endpoint),
-        api_key=settings.llm.summarization_key_points.api_key,
-        timeout=settings.llm.summarization_key_points.timeout,
+    global _llm_summarization_key_points_agent
+    _llm_summarization_key_points_agent = AgentBuilder(NoneType, str).build_agent(
+        settings.llm.summarization_key_points
     )
 
-    global _llm_summarization_client
-    _llm_summarization_client = OpenAI(
-        base_url=str(settings.llm.summarization.endpoint),
-        api_key=settings.llm.summarization.api_key,
-        timeout=settings.llm.summarization.timeout,
+    global _llm_summarization_agent
+    _llm_summarization_agent = AgentBuilder(NoneType, str).build_agent(
+        settings.llm.summarization
     )
 
-    global _llm_summarization_refine_client
-    _llm_summarization_refine_client = OpenAI(
-        base_url=str(settings.llm.summarization_refine.endpoint),
-        api_key=settings.llm.summarization_refine.api_key,
-        timeout=settings.llm.summarization_refine.timeout,
+    global _llm_summarization_refine_agent
+    _llm_summarization_refine_agent = AgentBuilder(NoneType, str).build_agent(
+        settings.llm.summarization_refine
     )
 
-    global _llm_hyde_client
-    _llm_hyde_client = OpenAI(
-        base_url=str(settings.llm.hyde.endpoint),
-        api_key=settings.llm.hyde.api_key,
-        timeout=settings.llm.hyde.timeout,
+    global _llm_hyde_agent
+    _llm_hyde_agent = AgentBuilder(NoneType, str).build_agent(settings.llm.rag_hyde)
+
+    global _llm_rag_rerank_agent
+    _llm_rag_rerank_agent = AgentBuilder(NoneType, float).build_agent(
+        settings.llm.rag_rerank
     )
 
-    global _llm_rerank_client
-    _llm_rerank_client = OpenAI(
-        base_url=str(settings.llm.rerank.endpoint),
-        api_key=settings.llm.rerank.api_key,
-        timeout=settings.llm.rerank.timeout,
-    )
-
-    global _llm_chat_client
-    _llm_chat_client = OpenAI(
-        base_url=str(settings.llm.chat.endpoint),
-        api_key=settings.llm.chat.api_key,
-        timeout=settings.llm.chat.timeout,
+    global _llm_rag_synthesize_agent
+    _llm_rag_synthesize_agent = AgentBuilder(NoneType, str).build_agent(
+        settings.llm.rag_synthesize
     )
 
     global _llm_embedding_client
@@ -297,25 +286,20 @@ def init():
         timeout=settings.llm.embedding.timeout,
     )
 
-    global _llm_tool_client
-    _llm_tool_client = OpenAI(
-        base_url=str(settings.llm.tool.endpoint),
-        api_key=settings.llm.tool.api_key,
-        timeout=settings.llm.tool.timeout,
-    )
+    global _llm_tool_agent
+    _llm_tool_agent = AgentBuilder(NoneType, str).build_agent(settings.llm.tool)
 
-    global _llm_vision_client
-    _llm_vision_client = OpenAI(
-        base_url=str(settings.llm.vision.endpoint),
-        api_key=settings.llm.vision.api_key,
-        timeout=settings.llm.vision.timeout,
-    )
+    global _llm_vision_agent
+    _llm_vision_agent = AgentBuilder(NoneType, str).build_agent(settings.llm.vision)
 
-    global _llm_translation_client
-    _llm_translation_client = OpenAI(
-        base_url=str(settings.llm.translation.endpoint),
-        api_key=settings.llm.translation.api_key,
-        timeout=settings.llm.translation.timeout,
+    global _llm_language_detection_agent
+    _llm_language_detection_agent = AgentBuilder(
+        NoneType, list[DetectedLanguage]
+    ).build_agent(settings.llm.language_detection)
+
+    global _llm_translation_agent
+    _llm_translation_agent = AgentBuilder(NoneType, str).build_agent(
+        settings.llm.translation
     )
 
     global _celery_inspect_service
@@ -427,35 +411,40 @@ def mock_init():
     # construction, the dummy api_key is just stored.
     openai_spec = OpenAI(api_key="test")
 
-    global _llm_summarization_key_points_client
-    _llm_summarization_key_points_client = MagicMock(spec=openai_spec)
+    global _llm_summarization_key_points_agent
+    _llm_summarization_key_points_agent = MagicMock(spec=Agent[NoneType, str])
 
-    global _llm_summarization_client
-    _llm_summarization_client = MagicMock(spec=openai_spec)
+    global _llm_summarization_agent
+    _llm_summarization_agent = MagicMock(spec=Agent[NoneType, str])
 
-    global _llm_summarization_refine_client
-    _llm_summarization_refine_client = MagicMock(spec=openai_spec)
+    global _llm_summarization_refine_agent
+    _llm_summarization_refine_agent = MagicMock(spec=Agent[NoneType, str])
 
-    global _llm_hyde_client
-    _llm_hyde_client = MagicMock(spec=openai_spec)
+    global _llm_hyde_agent
+    _llm_hyde_agent = MagicMock(spec=Agent[NoneType, str])
 
-    global _llm_rerank_client
-    _llm_rerank_client = MagicMock(spec=openai_spec)
+    global _llm_rag_rerank_agent
+    _llm_rag_rerank_agent = MagicMock(spec=Agent[NoneType, float])
 
-    global _llm_chat_client
-    _llm_chat_client = MagicMock(spec=openai_spec)
+    global _llm_rag_synthesize_agent
+    _llm_rag_synthesize_agent = MagicMock(spec=Agent[NoneType, str])
 
     global _llm_embedding_client
     _llm_embedding_client = MagicMock(spec=openai_spec)
 
-    global _llm_tool_client
-    _llm_tool_client = MagicMock(spec=openai_spec)
+    global _llm_tool_agent
+    _llm_tool_agent = MagicMock(spec=Agent[NoneType, str])
 
-    global _llm_vision_client
-    _llm_vision_client = MagicMock(spec=openai_spec)
+    global _llm_vision_agent
+    _llm_vision_agent = MagicMock(spec=Agent[NoneType, str])
 
-    global _llm_translation_client
-    _llm_translation_client = MagicMock(spec=openai_spec)
+    global _llm_language_detection_agent
+    _llm_language_detection_agent = MagicMock(
+        spec=Agent[NoneType, list[DetectedLanguage]]
+    )
+
+    global _llm_translation_agent
+    _llm_translation_agent = MagicMock(spec=Agent[NoneType, str])
 
     global _celery_inspect_service
     _celery_inspect_service = MagicMock(spec=CeleryInspectService)
@@ -599,40 +588,40 @@ def get_archive_encryption_service() -> ArchiveEncryptionService:
     return _archive_encryption_service
 
 
-def get_llm_summarization_key_points_client() -> OpenAI:
-    if _llm_summarization_key_points_client is None:
-        raise DependencyException("LLM summarization key points client missing")
-    return _llm_summarization_key_points_client
+def get_llm_summarization_key_points_agent() -> Agent[None, str]:
+    if _llm_summarization_key_points_agent is None:
+        raise DependencyException("LLM summarization key points agent missing")
+    return _llm_summarization_key_points_agent
 
 
-def get_llm_summarization_client() -> OpenAI:
-    if _llm_summarization_client is None:
-        raise DependencyException("LLM summarization client missing")
-    return _llm_summarization_client
+def get_llm_summarization_agent() -> Agent[None, str]:
+    if _llm_summarization_agent is None:
+        raise DependencyException("LLM summarization agent missing")
+    return _llm_summarization_agent
 
 
-def get_llm_summarization_refine_client() -> OpenAI:
-    if _llm_summarization_refine_client is None:
-        raise DependencyException("LLM summarization refine client missing")
-    return _llm_summarization_refine_client
+def get_llm_summarization_refine_agent() -> Agent[None, str]:
+    if _llm_summarization_refine_agent is None:
+        raise DependencyException("LLM summarization refine agent missing")
+    return _llm_summarization_refine_agent
 
 
-def get_llm_hyde_client() -> OpenAI:
-    if _llm_hyde_client is None:
-        raise DependencyException("LLM hyde client missing")
-    return _llm_hyde_client
+def get_llm_hyde_agent() -> Agent[None, str]:
+    if _llm_hyde_agent is None:
+        raise DependencyException("LLM hyde agent missing")
+    return _llm_hyde_agent
 
 
-def get_llm_rerank_client() -> OpenAI:
-    if _llm_rerank_client is None:
-        raise DependencyException("LLM rerank client missing")
-    return _llm_rerank_client
+def get_llm_rag_rerank_agent() -> Agent[None, float]:
+    if _llm_rag_rerank_agent is None:
+        raise DependencyException("LLM rerank agent missing")
+    return _llm_rag_rerank_agent
 
 
-def get_llm_chat_client() -> OpenAI:
-    if _llm_chat_client is None:
-        raise DependencyException("LLM chat client missing")
-    return _llm_chat_client
+def get_llm_rag_synthesize_agent() -> Agent[None, str]:
+    if _llm_rag_synthesize_agent is None:
+        raise DependencyException("LLM rag synthesize agent missing")
+    return _llm_rag_synthesize_agent
 
 
 def get_llm_embedding_client() -> OpenAI:
@@ -641,22 +630,28 @@ def get_llm_embedding_client() -> OpenAI:
     return _llm_embedding_client
 
 
-def get_llm_tool_client() -> OpenAI:
-    if _llm_tool_client is None:
-        raise DependencyException("LLM tool client missing")
-    return _llm_tool_client
+def get_llm_tool_agent() -> Agent[None, str]:
+    if _llm_tool_agent is None:
+        raise DependencyException("LLM tool agent missing")
+    return _llm_tool_agent
 
 
-def get_llm_vision_client() -> OpenAI:
-    if _llm_vision_client is None:
-        raise DependencyException("LLM vision client missing")
-    return _llm_vision_client
+def get_llm_vision_agent() -> Agent[None, str]:
+    if _llm_vision_agent is None:
+        raise DependencyException("LLM vision agent missing")
+    return _llm_vision_agent
 
 
-def get_llm_translation_client() -> OpenAI:
-    if _llm_translation_client is None:
-        raise DependencyException("LLM translation client missing")
-    return _llm_translation_client
+def get_llm_language_detection_agent() -> Agent[None, list[DetectedLanguage]]:
+    if _llm_language_detection_agent is None:
+        raise DependencyException("LLM language detection agent missing")
+    return _llm_language_detection_agent
+
+
+def get_llm_translation_agent() -> Agent[None, str]:
+    if _llm_translation_agent is None:
+        raise DependencyException("LLM translation agent missing")
+    return _llm_translation_agent
 
 
 def get_celery_inspect_service() -> CeleryInspectService:

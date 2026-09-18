@@ -30,7 +30,9 @@ class SummarizationRequest(BaseModel):
 
 @router.get("/system_prompt", status_code=200)
 def get_system_prompt() -> str:
-    return settings.llm.summarization.system_prompt
+    if settings.llm.summarization.system_prompt is not None:
+        return settings.llm.summarization.system_prompt
+    return ""
 
 
 @router.post("", status_code=202)

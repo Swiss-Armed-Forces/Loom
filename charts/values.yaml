@@ -133,9 +133,9 @@ externalSecrets:
       remoteRef:
         key: ""
         property: ""
-    llm__chat__api_key:
+    llm__synthesize__api_key:
       enabled: false
-      name: loom-llm-chat-api-key
+      name: loom-llm-synthesize-api-key
       remoteRef:
         key: ""
         property: ""
@@ -271,6 +271,7 @@ pipeline:
 
 # Shared LLM defaults — override per sub-key via YAML anchors
 _llmDefaults: &llm-defaults
+  backend: null
   endpoint: null      # set per sub-key in configmap when null
   api_key: null
   model: huihui_ai/qwen3.5-abliterated:9b
@@ -321,7 +322,7 @@ llm:
   rerank:
     <<: *llm-defaults
 
-  chat:
+  synthesize:
     <<: *llm-defaults
 
   vision:

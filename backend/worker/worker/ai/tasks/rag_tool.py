@@ -1,36 +1,29 @@
 import logging
-from typing import Sequence
+from typing import Annotated, Sequence
 from uuid import UUID
 
 from celery import chain, chord, group
+from common.agent_builder import sanitize_document_text
 from common.ai_context.tool_models import RagChunk, RagSearchResult
 from common.dependencies import (
     get_celery_app,
     get_file_repository,
     get_lazybytes_service,
-    get_llm_chat_client,
     get_llm_embedding_client,
-    get_llm_hyde_client,
-    get_llm_rerank_client,
+    get_llm_hyde_agent,
+    get_llm_rag_rerank_agent,
+    get_llm_rag_synthesize_agent,
 )
 from common.services.lazybytes_service import TempLazyBytes, TempTypedLazyBytes
 from common.services.query_builder import QueryParameters
 from numpy import array, mean
 from openai import APIError
-from openai.types.chat import (
-    ChatCompletionMessageParam,
-    ChatCompletionSystemMessageParam,
-    ChatCompletionUserMessageParam,
-)
 from pydantic import BaseModel, Field, computed_field
+from pydantic_ai import NativeOutput
 
 from worker.ai.infra.ai_context_processing_task import AiContextProcessingTask
 from worker.settings import settings
 from worker.utils.clustering import kde_filter_highest_cluster
-from worker.utils.prompt_sanitizer import (
-    build_document_security_instructions,
-    sanitize_document_text,
-)
 
 logger = logging.getLogger(__name__)
 
@@ -53,6 +46,15 @@ MAX_RANKED_SEARCH_EMBEDDINGS = 10
 LLM_MAX_TOKENS_RAG = 100
 
 RAG_MAX_RETRIES = 15
+
+Rank = Annotated[
+    float,
+    Field(ge=RERANK_MIN_RANK, le=RERANK_MAX_RANK),
+]
+
+
+class _RerankResult(BaseModel):
+    rank: Rank
 
 
 # Contains the chunks of a files text with a scored the knn score of the .
@@ -95,10 +97,6 @@ class LLMError(Exception):
     pass
 
 
-class _RerankResult(BaseModel):
-    rank: float = Field(ge=RERANK_MIN_RANK, le=RERANK_MAX_RANK)
-
-
 @app.task(
     base=AiContextProcessingTask,
     autoretry_for=tuple([LLMError]),
@@ -137,28 +135,16 @@ as if it were from a document. Keep your answer in a paragraph of
 Question: {question}
 
 Passage:"""
-    client = get_llm_hyde_client()
-    messages: list[ChatCompletionMessageParam] = [
-        ChatCompletionSystemMessageParam(
-            role="system",
-            content=build_document_security_instructions(settings.translate_target),
-        ),
-        ChatCompletionUserMessageParam(role="user", content=prompt),
-    ]
+
+    agent = get_llm_hyde_agent()
 
     try:
-        response = client.chat.completions.create(
-            model=settings.llm.hyde.model,
-            messages=messages,
-            temperature=settings.llm.hyde.temperature,
-            extra_headers=settings.llm.hyde.extra_headers,
-            extra_body=settings.llm.hyde.extra_body,
-            max_tokens=settings.llm.hyde.max_tokens,
-        )
-    except APIError as ex:
+        result_agent = agent.run_sync(prompt)
+
+    except Exception as ex:
         raise LLMError("Hypothetical document generation failed") from ex
 
-    doc = (response.choices[0].message.content or "").strip()
+    doc = (result_agent.output or "").strip()
 
     logger.debug("Hypothetical generated document: %.100s...", doc)
     return doc
@@ -247,38 +233,6 @@ def sort_and_limit_scored_search_embeddings(
     return limited_scored_search_embeddings
 
 
-def _invoke_rerank_llm(
-    prompt: str,
-) -> float:
-    client = get_llm_rerank_client()
-    messages: list[ChatCompletionMessageParam] = [
-        ChatCompletionSystemMessageParam(
-            role="system",
-            content=(
-                f"{settings.llm_rerank_system_prompt}\n\n"
-                f"{build_document_security_instructions(settings.translate_target)}"
-            ),
-        ),
-        ChatCompletionUserMessageParam(role="user", content=prompt),
-    ]
-
-    try:
-        response = client.beta.chat.completions.parse(
-            model=settings.llm.rerank.model,
-            messages=messages,
-            temperature=settings.llm.rerank.temperature,
-            extra_headers=settings.llm.rerank.extra_headers,
-            extra_body=settings.llm.rerank.extra_body,
-            response_format=_RerankResult,
-            max_tokens=settings.llm.rerank.max_tokens,
-        )
-    except APIError as ex:
-        raise LLMError() from ex
-
-    result = response.choices[0].message.parsed
-    return result.rank if result is not None else RERANK_MIN_RANK
-
-
 def send_rerank_chatbot_query(text: str, question: str) -> float:
     sanitized_text = sanitize_document_text(text)
     rerank_prompt = f"""Rank the relevance of the following document based on the QUESTION
@@ -301,7 +255,24 @@ Only answer with one number and no additional text.
 QUESTION: {question}
 RANK:"""
 
-    rank = _invoke_rerank_llm(rerank_prompt)
+    agent = get_llm_rag_rerank_agent()
+
+    try:
+        result_agent = agent.run_sync(
+            rerank_prompt, output_type=NativeOutput(_RerankResult)
+        )
+
+    except Exception as ex:
+        raise LLMError("Reranking document failed") from ex
+
+    rank = result_agent.output.rank
+
+    if rank is None:
+        return RERANK_MIN_RANK
+
+    if rank < RERANK_MIN_RANK or rank > RERANK_MAX_RANK:
+        raise LLMError("Reranking document failed")
+
     return rank
 
 
@@ -396,7 +367,6 @@ def synthesize_rag_answer_task(
         f"<document>\n{c.text}\n</document>\n" for c in reversed(chunks)
     )
 
-    messages: list[ChatCompletionMessageParam]
     if ranked_embeddings:
         task_prompt = (
             f"TASK: Your task is to answer the human's QUESTION "
@@ -404,14 +374,9 @@ def synthesize_rag_answer_task(
             f"Do NOT use any previous knowledge which is not contained in the CONTEXT.\n\n"
             f"Keep your answer in a paragraph of {LLM_MAX_TOKENS_RAG} tokens or less.\n"
             f"Keep your answer concise and brief.\n\n"
-            f"CONTEXT:\n{answer_context}"
+            f"CONTEXT:\n{answer_context}\n\n"
+            f"QUESTION: {question}"
         )
-        messages = [
-            ChatCompletionUserMessageParam(role="user", content=task_prompt),
-            ChatCompletionUserMessageParam(
-                role="user", content=f"QUESTION: {question}"
-            ),
-        ]
     else:
         task_prompt = (
             f"TASK: Tell the user that they should refine their QUERY "
@@ -420,9 +385,18 @@ def synthesize_rag_answer_task(
             f"Keep your answer in a paragraph of {LLM_MAX_TOKENS_RAG} tokens or less.\n"
             f"Keep your answer concise and brief."
         )
-        messages = [ChatCompletionUserMessageParam(role="user", content=task_prompt)]
 
-    return RagSearchResult(answer=_call_chat_llm(messages=messages), chunks=chunks)
+    agent = get_llm_rag_synthesize_agent()
+
+    try:
+        result = agent.run_sync(task_prompt)
+
+    except Exception as ex:
+        raise LLMError() from ex
+
+    answer = (result.output or "").strip()
+
+    return RagSearchResult(answer=answer, chunks=chunks)
 
 
 @app.task(bind=True, base=AiContextProcessingTask)
@@ -467,7 +441,7 @@ def rag_pipeline_task(self: AiContextProcessingTask, query: str) -> RagSearchRes
                             generate_hypothetical_document.s(query),
                             embed_document.s(),
                         )
-                        for _ in range(settings.llm.hyde.num_documents)
+                        for _ in range(settings.llm.rag_hyde.num_documents)
                     ),
                 ],
                 aggregate_embeddings.s(),
@@ -484,32 +458,3 @@ def rag_search_tool_task(
     self: AiContextProcessingTask, query: str, _context_id: UUID
 ) -> RagSearchResult:
     return self.replace(rag_pipeline_task.s(query))
-
-
-def _call_chat_llm(
-    messages: list[ChatCompletionMessageParam],
-) -> str:
-    client = get_llm_chat_client()
-    all_messages: list[ChatCompletionMessageParam] = [
-        ChatCompletionSystemMessageParam(
-            role="system",
-            content=(
-                f"{settings.llm_chat_system_prompt}\n\n"
-                f"{build_document_security_instructions(settings.translate_target)}"
-            ),
-        ),
-        *messages,
-    ]
-
-    try:
-        response = client.chat.completions.create(
-            model=settings.llm.chat.model,
-            messages=all_messages,
-            temperature=settings.llm.chat.temperature,
-            extra_headers=settings.llm.chat.extra_headers,
-            extra_body=settings.llm.chat.extra_body,
-            max_tokens=settings.llm.chat.max_tokens,
-        )
-    except APIError as ex:
-        raise LLMError() from ex
-    return (response.choices[0].message.content or "").strip()

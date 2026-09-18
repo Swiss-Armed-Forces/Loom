@@ -251,6 +251,7 @@ data:
     {{- end }}
 
     {{- $ollamaEndpoint := printf "http://%s-ollama:%s/v1/" (include "app.fullname" .) (.Values.ollama.service.port | toString) }}
+    {{- $defaultBackend := "ollama" }}
 
     # llm embedding
     llm__embedding__endpoint: {{ .Values.llm.embedding.endpoint | default $ollamaEndpoint | quote }}
@@ -295,6 +296,7 @@ data:
     {{- end }}
 
     # llm tool
+    llm__tool__backend: {{ .Values.llm.tool.backend | default $defaultBackend | quote }}
     llm__tool__endpoint: {{ .Values.llm.tool.endpoint | default $ollamaEndpoint | quote }}
     {{- if and (not .Values.externalSecrets.secrets.llm__tool__api_key.enabled) (ne .Values.llm.tool.api_key nil) }}
     llm__tool__api_key: {{ .Values.llm.tool.api_key | quote }}
@@ -322,6 +324,7 @@ data:
     {{- end }}
 
     # llm agent
+    llm__agent__backend: {{ .Values.llm.agent.backend | default $defaultBackend | quote }}
     llm__agent__endpoint: {{ .Values.llm.agent.endpoint | default $ollamaEndpoint | quote }}
     {{- if and (not .Values.externalSecrets.secrets.llm__agent__api_key.enabled) (ne .Values.llm.agent.api_key nil) }}
     llm__agent__api_key: {{ .Values.llm.agent.api_key | quote }}
@@ -355,6 +358,7 @@ data:
     {{- end }}
 
     # llm summarization key points
+    llm__summarization_key_points__backend: {{ .Values.llm.summarization_key_points.backend | default $defaultBackend | quote }}
     llm__summarization_key_points__endpoint: {{ .Values.llm.summarization_key_points.endpoint | default $ollamaEndpoint | quote }}
     {{- if and (not .Values.externalSecrets.secrets.llm__summarization_key_points__api_key.enabled) (ne .Values.llm.summarization_key_points.api_key nil) }}
     llm__summarization_key_points__api_key: {{ .Values.llm.summarization_key_points.api_key | quote }}
@@ -391,6 +395,7 @@ data:
     {{- end }}
 
     # llm summarization
+    llm__summarization__backend: {{ .Values.llm.summarization.backend | default $defaultBackend | quote }}
     llm__summarization__endpoint: {{ .Values.llm.summarization.endpoint | default $ollamaEndpoint | quote }}
     {{- if and (not .Values.externalSecrets.secrets.llm__summarization__api_key.enabled) (ne .Values.llm.summarization.api_key nil) }}
     llm__summarization__api_key: {{ .Values.llm.summarization.api_key | quote }}
@@ -421,6 +426,7 @@ data:
     {{- end }}
 
     # llm summarization refine
+    llm__summarization_refine__backend: {{ .Values.llm.summarization_refine.backend | default $defaultBackend | quote }}
     llm__summarization_refine__endpoint: {{ .Values.llm.summarization_refine.endpoint | default $ollamaEndpoint | quote }}
     {{- if and (not .Values.externalSecrets.secrets.llm__summarization_refine__api_key.enabled) (ne .Values.llm.summarization_refine.api_key nil) }}
     llm__summarization_refine__api_key: {{ .Values.llm.summarization_refine.api_key | quote }}
@@ -451,33 +457,34 @@ data:
     {{- end }}
 
     # llm hyde
-    llm__hyde__endpoint: {{ .Values.llm.hyde.endpoint | default $ollamaEndpoint | quote }}
+    llm__rag_hyde__backend: {{ .Values.llm.hyde.backend | default $defaultBackend | quote }}
+    llm__rag_hyde__endpoint: {{ .Values.llm.hyde.endpoint | default $ollamaEndpoint | quote }}
     {{- if and (not .Values.externalSecrets.secrets.llm__hyde__api_key.enabled) (ne .Values.llm.hyde.api_key nil) }}
-    llm__hyde__api_key: {{ .Values.llm.hyde.api_key | quote }}
+    llm__rag_hyde__api_key: {{ .Values.llm.hyde.api_key | quote }}
     {{- end }}
     {{- if ne .Values.llm.hyde.model nil }}
-    llm__hyde__model: {{ .Values.llm.hyde.model | quote }}
+    llm__rag_hyde__model: {{ .Values.llm.hyde.model | quote }}
     {{- end }}
     {{- if ne .Values.llm.hyde.temperature nil }}
-    llm__hyde__temperature: {{ .Values.llm.hyde.temperature | quote }}
+    llm__rag_hyde__temperature: {{ .Values.llm.hyde.temperature | quote }}
     {{- end }}
     {{- if .Values.llm.hyde.extra_headers }}
-    llm__hyde__extra_headers: {{ .Values.llm.hyde.extra_headers | toJson | quote }}
+    llm__rag_hyde__extra_headers: {{ .Values.llm.hyde.extra_headers | toJson | quote }}
     {{- end }}
     {{- if .Values.llm.hyde.extra_body }}
-    llm__hyde__extra_body: {{ .Values.llm.hyde.extra_body | toJson | quote }}
+    llm__rag_hyde__extra_body: {{ .Values.llm.hyde.extra_body | toJson | quote }}
     {{- end }}
     {{- if ne .Values.llm.hyde.timeout nil }}
-    llm__hyde__timeout: {{ .Values.llm.hyde.timeout | quote }}
+    llm__rag_hyde__timeout: {{ .Values.llm.hyde.timeout | quote }}
     {{- end }}
     {{- if ne .Values.llm.hyde.num_documents nil }}
-    llm__hyde__num_documents: {{ .Values.llm.hyde.num_documents | quote }}
+    llm__rag_hyde__num_documents: {{ .Values.llm.hyde.num_documents | quote }}
     {{- end }}
     {{- if ne .Values.llm.hyde.max_tokens nil }}
-    llm__hyde__max_tokens: {{ .Values.llm.hyde.max_tokens | quote }}
+    llm__rag_hyde__max_tokens: {{ .Values.llm.hyde.max_tokens | quote }}
     {{- end }}
     {{- if ne .Values.llm.hyde.max_sentences nil }}
-    llm__hyde__max_sentences: {{ .Values.llm.hyde.max_sentences | quote }}
+    llm__rag_hyde__max_sentences: {{ .Values.llm.hyde.max_sentences | quote }}
     {{- end }}
 
     # tool suggest_queries
@@ -489,60 +496,63 @@ data:
     {{- end }}
 
     # llm rerank
-    llm__rerank__endpoint: {{ .Values.llm.rerank.endpoint | default $ollamaEndpoint | quote }}
+    llm__rag_rerank__backend: {{ .Values.llm.rerank.backend | default $defaultBackend | quote }}
+    llm__rag_rerank__endpoint: {{ .Values.llm.rerank.endpoint | default $ollamaEndpoint | quote }}
     {{- if and (not .Values.externalSecrets.secrets.llm__rerank__api_key.enabled) (ne .Values.llm.rerank.api_key nil) }}
     llm__rerank__api_key: {{ .Values.llm.rerank.api_key | quote }}
     {{- end }}
     {{- if ne .Values.llm.rerank.model nil }}
-    llm__rerank__model: {{ .Values.llm.rerank.model | quote }}
+    llm__rag_rerank__model: {{ .Values.llm.rerank.model | quote }}
     {{- end }}
     {{- if ne .Values.llm.rerank.temperature nil }}
-    llm__rerank__temperature: {{ .Values.llm.rerank.temperature | quote }}
+    llm__rag_rerank__temperature: {{ .Values.llm.rerank.temperature | quote }}
     {{- end }}
     {{- if .Values.llm.rerank.extra_headers }}
-    llm__rerank__extra_headers: {{ .Values.llm.rerank.extra_headers | toJson | quote }}
+    llm__rag_rerank__extra_headers: {{ .Values.llm.rerank.extra_headers | toJson | quote }}
     {{- end }}
     {{- if .Values.llm.rerank.extra_body }}
-    llm__rerank__extra_body: {{ .Values.llm.rerank.extra_body | toJson | quote }}
+    llm__rag_rerank__extra_body: {{ .Values.llm.rerank.extra_body | toJson | quote }}
     {{- end }}
     {{- if ne .Values.llm.rerank.timeout nil }}
-    llm__rerank__timeout: {{ .Values.llm.rerank.timeout | quote }}
+    llm__rag_rerank__timeout: {{ .Values.llm.rerank.timeout | quote }}
     {{- end }}
     {{- if ne .Values.llm.rerank.max_tokens nil }}
-    llm__rerank__max_tokens: {{ .Values.llm.rerank.max_tokens | quote }}
+    llm__rag_rerank__max_tokens: {{ .Values.llm.rerank.max_tokens | quote }}
     {{- end }}
     {{- if ne .Values.llm.rerank.max_sentences nil }}
-    llm__rerank__max_sentences: {{ .Values.llm.rerank.max_sentences | quote }}
+    llm__rag_rerank__max_sentences: {{ .Values.llm.rerank.max_sentences | quote }}
     {{- end }}
 
-    # llm chat
-    llm__chat__endpoint: {{ .Values.llm.chat.endpoint | default $ollamaEndpoint | quote }}
-    {{- if and (not .Values.externalSecrets.secrets.llm__chat__api_key.enabled) (ne .Values.llm.chat.api_key nil) }}
-    llm__chat__api_key: {{ .Values.llm.chat.api_key | quote }}
+    # llm rag synthesize
+    llm__rag_synthesize__backend: {{ .Values.llm.synthesize.backend | default $defaultBackend | quote }}
+    llm__rag_synthesize__endpoint: {{ .Values.llm.synthesize.endpoint | default $ollamaEndpoint | quote }}
+    {{- if and (not .Values.externalSecrets.secrets.llm__synthesize__api_key.enabled) (ne .Values.llm.synthesize.api_key nil) }}
+    llm__rag_synthesize__api_key: {{ .Values.llm.synthesize.api_key | quote }}
     {{- end }}
-    {{- if ne .Values.llm.chat.model nil }}
-    llm__chat__model: {{ .Values.llm.chat.model | quote }}
+    {{- if ne .Values.llm.synthesize.model nil }}
+    llm__rag_synthesize__model: {{ .Values.llm.synthesize.model | quote }}
     {{- end }}
-    {{- if ne .Values.llm.chat.temperature nil }}
-    llm__chat__temperature: {{ .Values.llm.chat.temperature | quote }}
+    {{- if ne .Values.llm.synthesize.temperature nil }}
+    llm__rag_synthesize__temperature: {{ .Values.llm.synthesize.temperature | quote }}
     {{- end }}
-    {{- if .Values.llm.chat.extra_headers }}
-    llm__chat__extra_headers: {{ .Values.llm.chat.extra_headers | toJson | quote }}
+    {{- if .Values.llm.synthesize.extra_headers }}
+    llm__rag_synthesize__extra_headers: {{ .Values.llm.synthesize.extra_headers | toJson | quote }}
     {{- end }}
-    {{- if .Values.llm.chat.extra_body }}
-    llm__chat__extra_body: {{ .Values.llm.chat.extra_body | toJson | quote }}
+    {{- if .Values.llm.synthesize.extra_body }}
+    llm__rag_synthesize__extra_body: {{ .Values.llm.synthesize.extra_body | toJson | quote }}
     {{- end }}
-    {{- if ne .Values.llm.chat.timeout nil }}
-    llm__chat__timeout: {{ .Values.llm.chat.timeout | quote }}
+    {{- if ne .Values.llm.synthesize.timeout nil }}
+    llm__rag_synthesize__timeout: {{ .Values.llm.synthesize.timeout | quote }}
     {{- end }}
-    {{- if ne .Values.llm.chat.max_tokens nil }}
-    llm__chat__max_tokens: {{ .Values.llm.chat.max_tokens | quote }}
+    {{- if ne .Values.llm.synthesize.max_tokens nil }}
+    llm__rag_synthesize__max_tokens: {{ .Values.llm.synthesize.max_tokens | quote }}
     {{- end }}
-    {{- if ne .Values.llm.chat.max_sentences nil }}
-    llm__chat__max_sentences: {{ .Values.llm.chat.max_sentences | quote }}
+    {{- if ne .Values.llm.synthesize.max_sentences nil }}
+    llm__rag_synthesize__max_sentences: {{ .Values.llm.synthesize.max_sentences | quote }}
     {{- end }}
 
     # llm vision
+    llm__vision__backend: {{ .Values.llm.vision.backend | default $defaultBackend | quote }}
     llm__vision__endpoint: {{ .Values.llm.vision.endpoint | default $ollamaEndpoint | quote }}
     {{- if ne .Values.llm.vision.api_key nil }}
     llm__vision__api_key: {{ .Values.llm.vision.api_key | quote }}
@@ -573,6 +583,7 @@ data:
     {{- end }}
 
     # llm translation
+    llm__translation__backend: {{ .Values.llm.translation.backend | default $defaultBackend | quote }}
     llm__translation__endpoint: {{ .Values.llm.translation.endpoint | default $ollamaEndpoint | quote }}
     {{- if and (not .Values.externalSecrets.secrets.llm__translation__api_key.enabled) (ne .Values.llm.translation.api_key nil) }}
     llm__translation__api_key: {{ .Values.llm.translation.api_key | quote }}

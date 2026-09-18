@@ -39,6 +39,7 @@ from common.ai_context.ai_context_repository import (
 from common.ai_context.tool_models import ToolSource
 from common.services.task_scheduling_service import TaskSchedulingService
 from pydantic_ai.capabilities import Capability
+from pydantic_ai.tools import DeferredToolRequests
 from pydantic_ai.ui.ag_ui import AGUIAdapter
 
 from api.services.tool_service import AgentDeps
@@ -298,7 +299,7 @@ class AiService:
         self,
         context: AiContext,
         root_task_id: UUID,
-        adapter: AGUIAdapter[AgentDeps],
+        adapter: AGUIAdapter[AgentDeps, str | DeferredToolRequests],
         deps: AgentDeps,
         capabilities: Sequence[Capability[AgentDeps]] | None = None,
     ) -> AsyncIterator[BaseEvent]:

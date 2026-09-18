@@ -98,6 +98,11 @@ class FileWithoutStorageDataException(FileRepositoryException):
     pass
 
 
+class DetectedLanguage(BaseModel, frozen=True):
+    confidence: float
+    language: str
+
+
 class Embedding(BaseModel):
     # ES 9.2+ excludes dense_vector fields from _source by default
     # (exclude_vectors feature). The elasticsearch-dsl library sets
