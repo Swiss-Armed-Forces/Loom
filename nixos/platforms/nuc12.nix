@@ -38,6 +38,23 @@
       Type = "wlan";
     };
 
+    # The kits ship with a single SO-DIMM and the iGPU takes its share before
+    # Linux sees the rest, which lands around 15 GiB usable -- well under
+    # LOOM_MIN_MEMORY (25Gi in vars.sh). Two facts follow, and both are about
+    # this box rather than about policy:
+    #
+    #   * Ollama does not fit. The image bakes in a 9b chat model and an
+    #     embedding model, and they are the single largest consumer by a wide
+    #     margin. Without them the rest of the stack is a plausible fit.
+    #   * check_host_resources would refuse to start at all, and it is a hard
+    #     exit rather than a warning.
+    #
+    # Fit both SO-DIMM slots and this platform should set neither: the board
+    # takes 64 GB, and a NUC with real memory wants the full stack. Changing
+    # these two lines is the whole of it.
+    runsAiServices = false;
+    meetsResourceMinimum = false;
+
     # Nothing extra. NVMe, USB storage, usbhid and hid_generic are already in
     # boot.initrd.includeDefaultModules, which defaults to true, and the LUKS key
     # comes off the stick rather than the network.

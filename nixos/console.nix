@@ -41,6 +41,16 @@ let
 
   tmuxSocket = cfg.consoleSocket;
 
+  # Whether this box deploys Ollama at all. False on a platform that has not got
+  # the memory for it (platforms/nuc12.nix), and then the assistant pane has
+  # nothing to dial: modes.nix passes `--disable-ai`, so there is no ollama
+  # Service and no ingress behind `ollama.loom`. The session drops to the top row
+  # rather than shipping a pane that can only ever print a connection error.
+  #
+  # It also takes `opencode` out of the closure entirely -- see box.nix -- which
+  # is the honest thing to do on an image that cannot use it.
+  aiEnabled = cfg.platform.runsAiServices;
+
   # Taken from the host list rather than written out again, so the name the chat
   # pane dials is by construction one of the names box.nix pins in /etc/hosts.
   # Spelling it "ollama.loom" here instead would be a second copy of the domain,
@@ -557,20 +567,30 @@ let
       # The two above it are glanced at rather than read: k9s wants rows more
       # than columns, and btop picks a smaller box set when it has to.
       #
+      # On a box whose platform declares `runsAiServices = false` there is no
+      # Ollama for the assistant to talk to, so the session is the top row alone,
+      # full height:
+      #
+      #   +---------------------+---------------------+
+      #   |  log, then k9s      |  btop               |  100%
+      #   +---------------------+---------------------+
+      #
       # Panes are addressed by pane ID (`%0`, `%3`, ...) rather than by index.
       # Indices follow layout POSITION and so are rewritten by every later split
       # -- splitting the top-left pane renumbers the bottom pane from 1 to 2 --
       # which makes any fixed `loom:0.N` in the middle of this function a bug
       # waiting for the next edit. IDs are assigned once and never move.
       create() {
-        local main chat mon
+        local main mon${lib.optionalString aiEnabled " chat"}
         main=$("''${tm[@]}" new-session -d -x "$cols" -y "$lines" -s loom -n loom \
           -P -F '#{pane_id}' ${lib.getExe loom-progress})
+      ${lib.optionalString aiEnabled ''
         # -c so the assistant starts in the checkout: it is what an operator
         # asking about this box would want it looking at, and `respawn-pane`
         # below keeps a pane's start directory.
         chat=$("''${tm[@]}" split-window -v -l 60% -t "$main" \
           -c ${lib.escapeShellArg loomRepoDir} -P -F '#{pane_id}')
+      ''}
         mon=$("''${tm[@]}" split-window -h -t "$main" -P -F '#{pane_id}')
 
         # Plain shells first, the real commands only once every split is done. A
@@ -578,7 +598,9 @@ let
         # early is resized by each later one -- and both loom-chat and loom-btop
         # draw TUIs that measure their pane once at startup and cannot take that
         # back. Hence the respawns into panes that have stopped moving.
+      ${lib.optionalString aiEnabled ''
         "''${tm[@]}" respawn-pane -k -t "$chat" ${lib.getExe loom-chat}
+      ''}
         "''${tm[@]}" respawn-pane -k -t "$mon" ${lib.getExe loom-btop}
 
         # A pane that died keeps its error on screen instead of collapsing the
@@ -587,13 +609,22 @@ let
         # Set after the respawns above, which would otherwise have to kill panes
         # that `remain-on-exit` is keeping around.
         #
-        # All three panes now, where it used to be two: the session no longer
+        # Every pane, where it used to be two of three: the session no longer
         # contains a shell, so there is no pane left whose death is routine.
         "''${tm[@]}" set-option -p -t "$main" remain-on-exit on
-        "''${tm[@]}" set-option -p -t "$chat" remain-on-exit on
         "''${tm[@]}" set-option -p -t "$mon" remain-on-exit on
-        # Land in the assistant, not in the log.
-        "''${tm[@]}" select-pane -t "$chat"
+      ${
+        if aiEnabled then
+          ''
+            "''${tm[@]}" set-option -p -t "$chat" remain-on-exit on
+                    # Land in the assistant, not in the log.
+                    "''${tm[@]}" select-pane -t "$chat"''
+        else
+          ''
+            # No assistant to land in, so land on the log -- which is the pane
+                    # that becomes k9s, and the one an operator watches on this box.
+                    "''${tm[@]}" select-pane -t "$main"''
+      }
       }
 
       # `new-session -A` would be terser but cannot run the layout only on
@@ -705,9 +736,11 @@ in
       loom-console
       loom-progress
       loom-k9s
-      loom-chat
       loom-btop
-    ];
+    ]
+    # Pointless on a box with no Ollama, and it drags opencode's Bun binary and
+    # baked model catalogue along with it.
+    ++ lib.optional aiEnabled loom-chat;
 
     # Only tty1. tty2-tty6 deliberately get an ordinary shell, so a session that
     # will not start is never the only thing between the operator and a prompt.

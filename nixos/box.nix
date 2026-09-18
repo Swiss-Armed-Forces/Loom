@@ -192,6 +192,12 @@ let
       printf '%s' "$reset"
       printf '\n  Loom appliance -- %s\n' ${lib.escapeShellArg tag}
       printf '  %s\n' ${lib.escapeShellArg config.loom.platform.description}
+      ${lib.optionalString (!config.loom.platform.runsAiServices) ''
+        printf '  No AI on this box: no summaries, translation or semantic search.\n'
+      ''}
+      ${lib.optionalString (!config.loom.platform.meetsResourceMinimum) ''
+        printf '  Below the documented memory minimum -- running without resource limits.\n'
+      ''}
       if [ -r /etc/loom/network.conf ]; then
         # shellcheck disable=SC1091
         . /etc/loom/network.conf
@@ -414,15 +420,18 @@ in
       # that an operator on a plain Alt-F2 console, or one who closed the pane,
       # still has it.
       k9s
-      # The assistant pane, same reasoning. console.nix's loom-chat is what wires it
-      # to the cluster's Ollama and pins the model; bare `opencode` here is for
-      # the operator who wants it pointed somewhere else.
-      #
-      # nixpkgs builds only the CLI -- one Bun-compiled binary, not the desktop
-      # app in the same repo -- and bakes models.dev's catalogue into the closure,
-      # which is what makes it usable on a box with no route off the network.
-      opencode
     ])
+    # The assistant pane, same reasoning as k9s above. console.nix's loom-chat is
+    # what wires it to the cluster's Ollama and pins the model; bare `opencode`
+    # here is for the operator who wants it pointed somewhere else.
+    #
+    # nixpkgs builds only the CLI -- one Bun-compiled binary, not the desktop app
+    # in the same repo -- and bakes models.dev's catalogue into the closure,
+    # which is what makes it usable on a box with no route off the network.
+    #
+    # Omitted entirely on a platform that does not deploy Ollama: there would be
+    # nothing for it to talk to, and it is not a small closure to carry for that.
+    ++ lib.optional config.loom.platform.runsAiServices pkgs.opencode
     ++ [ loom-info ]
     ++ config.loom.entrypoints;
 

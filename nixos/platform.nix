@@ -79,6 +79,49 @@
       };
     };
 
+    runsAiServices = lib.mkOption {
+      type = lib.types.bool;
+      default = true;
+      description = ''
+        Whether this box has the memory to run Ollama and open-webui.
+
+        False makes the appliance pass `--disable-ai` to up.sh, which stops both
+        services being deployed *and* stops the indexing pipeline calling them --
+        without the second half every indexed file would retry an embedding task
+        fifteen times against a service that is not there
+        (charts/values-disable-ai-services.yaml).
+
+        What the box loses: summaries, translation, image descriptions,
+        auto-tagging, embeddings, and therefore semantic search and RAG. What it
+        keeps: full-text search, OCR, metadata extraction and archive import.
+
+        console.nix also drops its assistant pane, because that pane is an
+        opencode pointed at the cluster's own Ollama and would have nothing to
+        talk to.
+      '';
+    };
+
+    meetsResourceMinimum = lib.mkOption {
+      type = lib.types.bool;
+      default = true;
+      description = ''
+        Whether this box clears `LOOM_MIN_MEMORY` in vars.sh.
+
+        False makes the appliance pass `--no-resources`, not merely
+        `--skip-check_host_resources`. The host check is the first obstacle but
+        not the real one: even with the AI services disabled the chart asks for
+        about 19.4 GiB of memory *requests*, so a box with ~12 GiB allocatable
+        would get past up.sh and then leave most of its pods Pending forever.
+        `--no-resources` strips requests and limits, and skips the host check on
+        the way past, so one flag covers both.
+
+        The cost is real: with no limits, nothing stops one container starving
+        the others, and a heavy indexing run on a box this size ends in OOM kills
+        rather than orderly eviction. Set this only for a machine somebody has
+        actually run Loom on, and expect it to be usable rather than comfortable.
+      '';
+    };
+
     extraInitrdModules = lib.mkOption {
       type = lib.types.listOf lib.types.str;
       default = [ ];

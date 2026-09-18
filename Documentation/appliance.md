@@ -32,7 +32,8 @@ Read this before building anything; the design only makes sense if these hold.
   `docker`. It talks to nothing outside the box, so this adds no network exposure; what it adds is a way for
   anyone already at the keyboard to act through natural language instead of a shell. Given the bullet above,
   that is not a new boundary being crossed — but it is one more reason the box must not be left unattended
-  with the stick in it.
+  with the stick in it. **Not on `nuc12`**, which deploys no Ollama and ships neither the pane nor
+  `opencode` — see [The NUC 12 runs a reduced Loom](#the-nuc-12-runs-a-reduced-loom).
 - **Any USB medium plugged in is mounted and indexed.** Every image does this — see
   [Ingesting data from USB](#ingesting-data-from-usb). A USB port is therefore an unauthenticated
   data-injection path: anyone who can reach the box can put arbitrary content into the index, and kernel
@@ -67,11 +68,36 @@ differs between them.
 | Network | ConnectX-7, one port | 2.5GbE, two ports | 2.5GbE, one port (`igc`) |
 | WiFi (`--wifi`) | untested | untested | untested — AX211, AP mode unverified |
 | GPU | not supported (see below) | not supported (see below) | not supported (see below) |
+| AI services | yes | yes | **no** — see below |
 
 `nuc12` covers both Wall Street Canyon chassis, the slim NUC12WSK and the tall NUC12WSH — same board, same
 NIC. A WSH fitted with the second-LAN expansion has two `igc` ports, and then the match cannot single one
 out: whichever udev processes first becomes `loom0`, exactly as on the EVO-X2's pair. If the box comes up
 unreachable, try the other port.
+
+### The NUC 12 runs a reduced Loom
+
+These kits ship with one SO-DIMM, and the iGPU takes its share before Linux sees the rest — around 15 GiB
+usable, against a documented minimum of 25 GiB. The platform therefore declares two facts about itself, in
+`nixos/platforms/nuc12.nix`, and the image is built around them:
+
+- **`runsAiServices = false`** → the appliance passes `--disable-ai`. No Ollama, no open-webui, and the
+  indexing pipeline stops calling them. Gone: summaries, translation, image descriptions, auto-tagging,
+  embeddings, and with them semantic search and RAG. Kept: full-text search, OCR, metadata extraction and
+  archive import. The console session drops its assistant pane, because that pane is an `opencode` pointed
+  at the cluster's own Ollama and would have nothing to talk to.
+- **`meetsResourceMinimum = false`** → the appliance passes `--no-resources`. This is not merely about
+  getting past `check_host_resources`: even without the AI services the chart asks for about 19.4 GiB of
+  memory **requests**, so a box with ~12 GiB allocatable would clear the check and then leave most of its
+  pods `Pending` forever. `--no-resources` strips requests and limits, and skips the host check on the way
+  past.
+
+Both are stated on the login banner, so a box running below spec is never a silent surprise.
+
+**What to expect.** Usable rather than comfortable. With no limits, nothing stops one container starving the
+others, and a heavy indexing run on this much memory ends in OOM kills rather than orderly eviction. If you
+want the full stack, fit the second SO-DIMM — the board takes 64 GB — and flip both lines back to their
+defaults.
 
 Everything else — the LUKS-key-on-stick scheme, the two boot modes, the installer and the wipe — is identical.
 

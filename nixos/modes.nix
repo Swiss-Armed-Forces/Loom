@@ -37,6 +37,30 @@ let
   boxAddress = "${loomSubnet}.1";
   gpuArgs = lib.optionalString enableGpu " --gpus all";
 
+  # What the platform says about this particular box, turned into up.sh flags.
+  # Both are false for every platform but the NUC 12, so both are empty strings
+  # in the images that have the memory to do without them.
+  #
+  # --disable-ai drops Ollama and open-webui *and* the indexing steps that call
+  # them.
+  #
+  # --no-resources rather than --skip-check_host_resources, and the difference
+  # matters: the host check is not what actually stops an undersized box. Even
+  # with the AI services gone the chart asks for ~19.4 GiB of memory *requests*,
+  # so on a box with ~12 GiB allocatable the scheduler simply leaves most pods
+  # Pending. Skipping the check would get past up.sh and then stall in
+  # Kubernetes, which is a far more confusing failure than the one it replaced.
+  # --no-resources strips the requests and limits, and skips the host check on
+  # the way past (up.sh's check_host_resources returns early on it), so it is one
+  # flag rather than two.
+  #
+  # What it costs is real and is documented on the console: with no limits,
+  # nothing stops one container starving the rest, and a heavy indexing run on
+  # this much memory ends in OOM kills rather than orderly eviction.
+  platformArgs =
+    lib.optionalString (!cfg.platform.runsAiServices) " --disable-ai"
+    + lib.optionalString (!cfg.platform.meetsResourceMinimum) " --no-resources";
+
   # How long setup mode leaves its closing message on screen before powering the
   # box off. Long enough for whoever walks past to read why the box is going
   # down and to cancel it if they want the box up, short enough that nobody
@@ -275,7 +299,7 @@ in
           wantedBy = [ "multi-user.target" ];
           after = [ "dnsmasq.service" ];
           script = ''
-            exec loom-up --offline --expose ${boxAddress}${gpuArgs}
+            exec loom-up --offline --expose ${boxAddress}${gpuArgs}${platformArgs}
           '';
         }
       ];
@@ -321,7 +345,7 @@ in
             # --delete tears the deployment down again afterwards: the goal here
             # is a warm image store, not a running stack. Documentation/
             # installation.md:107 prescribes exactly this before going offline.
-            loom-up --offline --delete${gpuArgs}
+            loom-up --offline --delete${gpuArgs}${platformArgs}
 
             touch ${loomRepoDir}/.loom-setup-complete
 
