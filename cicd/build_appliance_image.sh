@@ -239,6 +239,24 @@ prepare_repo(){
     git -C "${repo}" remote remove origin
     git -C "${repo}" reflog expire --expire=now --all
     git -C "${repo}" gc --prune=now --quiet
+
+    # Repack deterministically, so two runs of the same tag produce a
+    # byte-identical pack -- and with it the same `loomSrc` store hash, instead
+    # of a fresh appliance closure, squashfs and ~1.5 GB image every run. See
+    # normalize_repo for the rest of that story.
+    #
+    # Both flags are needed:
+    #
+    #   * `-f` recomputes every delta. Without it repack reuses the deltas it
+    #     finds, and those came from the `git clone` above, whose pack-objects
+    #     ran multi-threaded on the source repository -- so the nondeterminism
+    #     is inherited no matter what this repack is told to do.
+    #   * `pack.threads=1` keeps the delta search itself single-threaded. With
+    #     several threads the winning candidate depends on how they interleave.
+    #
+    # Same objects and refs either way; only the encoding is pinned. Verified by
+    # running the whole step twice and comparing `nix hash path`.
+    git -C "${repo}" -c pack.threads=1 repack -adfq
 }
 
 verify_repo(){
