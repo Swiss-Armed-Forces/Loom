@@ -63,21 +63,21 @@ class IntakeS3StorageSettings(S3StorageSettings):
 LLMExtraHeaders = dict[str, str]
 LLMExtraBody = dict[str, object]
 
-_LLM_THINKING_EXTRA_HEADERS: LLMExtraHeaders = {"X-Think": "true"}
-_LLM_NO_THINKING_EXTRA_HEADERS: LLMExtraHeaders = {"X-Think": "false"}
-
 
 class LLMClientSettings(BaseModel):
+    backend: str = "ollama"
     endpoint: AnyHttpUrl = AnyHttpUrl(f"http://ollama.{DOMAIN}/v1/")
     api_key: str = "ollama"
     model: str = "huihui_ai/qwen3.5-abliterated:9b"
     temperature: float | None = None
-    extra_headers: LLMExtraHeaders | None = None
-    extra_body: LLMExtraBody | None = None
+    thinking: bool = False
     timeout: int = 5 * 60
     # NOTE: max_tokens can not exceed context window length of model
     max_tokens: int | None = 128000
     max_sentences: int | None = None
+    extra_headers: LLMExtraHeaders | None = None
+    extra_body: LLMExtraBody | None = None
+    system_prompt: str | None = None
 
 
 class LLMEmbeddingSettings(LLMClientSettings):
@@ -90,11 +90,11 @@ class LLMEmbeddingSettings(LLMClientSettings):
     text_chunk_overlap: int = 50
     document_prefix: str = "search_document:"
     query_prefix: str = "search_query:"
-    extra_headers: LLMExtraHeaders | None = _LLM_NO_THINKING_EXTRA_HEADERS
+    thinking: bool = False
 
 
 class LLMSummarizationBaseSettings(LLMClientSettings):
-    system_prompt: str = "You are an expert summarization machine called Loom."
+    system_prompt: str | None = "You are an expert summarization machine called Loom."
     max_sentences: int | None = 30
 
 
@@ -102,51 +102,65 @@ class LLMSummarizationKeyPointsSettings(LLMSummarizationBaseSettings):
     text_chunk_size: int = 3000
     text_chunk_overlap: int = 100
     max_sentences: int | None = 10
-    extra_headers: LLMExtraHeaders | None = _LLM_NO_THINKING_EXTRA_HEADERS
+    thinking: bool = False
 
 
 class LLMSummarizationSettings(LLMSummarizationBaseSettings):
-    extra_headers: LLMExtraHeaders | None = _LLM_THINKING_EXTRA_HEADERS
+    thinking: bool = True
 
 
 class LLMSummarizationRefineSettings(LLMSummarizationBaseSettings):
-    extra_headers: LLMExtraHeaders | None = _LLM_THINKING_EXTRA_HEADERS
+    thinking: bool = True
     max_sentences: int | None = 30
 
 
-class LLMHydeSettings(LLMClientSettings):
-    num_documents: int = 5
+class LLMRagHydeSettings(LLMClientSettings):
+    num_documents: int = (
+        5  # REMARK: No entirely happy with that parameter located here ...
+    )
     temperature: float | None = 0.7
-    extra_headers: LLMExtraHeaders | None = _LLM_NO_THINKING_EXTRA_HEADERS
+    thinking: bool = False
 
 
-class LLMRerankSettings(LLMClientSettings):
-    extra_headers: LLMExtraHeaders | None = _LLM_THINKING_EXTRA_HEADERS
+class LLMRagRerankSettings(LLMClientSettings):
+    system_prompt: str | None = "You are an expert reranking machine called Loom."
+    thinking: bool = True
 
 
-class LLMChatSettings(LLMClientSettings):
-    extra_headers: LLMExtraHeaders | None = _LLM_THINKING_EXTRA_HEADERS
+class LLMRagSynthesizeSettings(LLMClientSettings):
+    system_prompt: str | None = "You are an expert english chatbot called Loom."
+    thinking: bool = True
 
 
 class LLMToolSettings(LLMClientSettings):
-    extra_headers: LLMExtraHeaders | None = _LLM_THINKING_EXTRA_HEADERS
+    thinking: bool = True
 
 
 class LLMAgentSettings(LLMClientSettings):
-    extra_headers: LLMExtraHeaders | None = _LLM_THINKING_EXTRA_HEADERS
+    thinking: bool = True
     merge_system_messages: bool = True
     tool_timeout: int = 10 * 60
 
 
 class LLMVisionSettings(LLMClientSettings):
     model: str = "huihui_ai/qwen3.5-abliterated:9b"
-    system_prompt: str = "You are an expert at analysing what's in an image"
+    system_prompt: str | None = "You are an expert at analysing what's in an image"
     max_sentences: int | None = 20
-    extra_headers: LLMExtraHeaders | None = _LLM_NO_THINKING_EXTRA_HEADERS
+    thinking: bool = False
+
+
+class LLMLanguageDetectionSettings(LLMClientSettings):
+    system_prompt: str | None = "You are a language detection service."
+    thinking: bool = False
 
 
 class LLMTranslationSettings(LLMClientSettings):
-    extra_headers: LLMExtraHeaders | None = _LLM_NO_THINKING_EXTRA_HEADERS
+    system_prompt: str | None = """
+You are a translation service.
+Output only the translated text.
+No explanations, no preamble, no commentary.
+"""
+    thinking: bool = False
 
 
 class SuggestQueriesToolSettings(BaseModel):
@@ -169,10 +183,11 @@ class LLMSettings(BaseModel):
     summarization_refine: LLMSummarizationRefineSettings = (
         LLMSummarizationRefineSettings()
     )
-    hyde: LLMHydeSettings = LLMHydeSettings()
-    rerank: LLMRerankSettings = LLMRerankSettings()
-    chat: LLMChatSettings = LLMChatSettings()
+    rag_hyde: LLMRagHydeSettings = LLMRagHydeSettings()
+    rag_rerank: LLMRagRerankSettings = LLMRagRerankSettings()
+    rag_synthesize: LLMRagSynthesizeSettings = LLMRagSynthesizeSettings()
     vision: LLMVisionSettings = LLMVisionSettings()
+    language_detection: LLMLanguageDetectionSettings = LLMLanguageDetectionSettings()
     translation: LLMTranslationSettings = LLMTranslationSettings()
 
 

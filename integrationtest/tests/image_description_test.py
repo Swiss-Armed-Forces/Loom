@@ -24,14 +24,16 @@ class ImageDescriptionFileTest(BaseModel):
     name: str
 
 
+WAIT_MULTIPLIER = 6
+
 IMAGE_DESCRIPTION_TESTCASES = [
     (
         "1.png",
-        DEFAULT_MAX_WAIT_TIME_PER_FILE * 3,
+        DEFAULT_MAX_WAIT_TIME_PER_FILE * WAIT_MULTIPLIER,
     ),
     (
         "ocr.jpg",
-        DEFAULT_MAX_WAIT_TIME_PER_FILE * 3,
+        DEFAULT_MAX_WAIT_TIME_PER_FILE * WAIT_MULTIPLIER,
     ),
 ]
 

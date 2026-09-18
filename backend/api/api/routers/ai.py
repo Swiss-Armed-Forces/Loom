@@ -7,13 +7,14 @@ from common.task_object.root_task_information_repository import RootTaskInformat
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
+from pydantic_ai.tools import DeferredToolRequests
 from pydantic_ai.ui import SSE_CONTENT_TYPE
 from pydantic_ai.ui.ag_ui import AGUIAdapter
 
 from api.dependencies import get_agent_service, get_ai_service, get_tool_service
 from api.services.agent_service import AgentService
 from api.services.ai_service import AiService
-from api.services.tool_service import ToolService
+from api.services.tool_service import AgentDeps, ToolService
 
 router = APIRouter()
 
@@ -128,7 +129,7 @@ async def run_agent(
     accept = request.headers.get("accept", SSE_CONTENT_TYPE)
     run_input = AGUIAdapter.build_run_input(await request.body())
 
-    prepared = agent_service.build_agent(context)
+    prepared = agent_service.build_prepared_agent(context)
     routed = tool_service.route_frontend_tools(run_input.tools, prepared.capabilities)
     run_input.tools = routed.always_on
 
@@ -137,7 +138,9 @@ async def run_agent(
         RootTaskInformation(root_task_id=root_task_id, object_id=context.id_)
     )
 
-    adapter = AGUIAdapter(agent=prepared.agent, run_input=run_input, accept=accept)
+    adapter: AGUIAdapter[AgentDeps, str | DeferredToolRequests] = AGUIAdapter(
+        agent=prepared.agent, run_input=run_input, accept=accept
+    )
     stream = ai_service.run_agent_stream(
         context,
         root_task_id,

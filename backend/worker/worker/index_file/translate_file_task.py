@@ -7,11 +7,10 @@ from common.dependencies import (
     get_file_repository,
     get_lazybytes_service,
 )
-from common.file.file_repository import FileNotFoundException
+from common.file.file_repository import DetectedLanguage, FileNotFoundException
 
 from worker.index_file.infra.file_indexing_task import FileIndexingTask
 from worker.index_file.tasks.translate import (
-    DetectedLanguage,
     persist_best_detected_language,
     translate_task,
 )

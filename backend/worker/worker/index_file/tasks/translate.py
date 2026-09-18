@@ -2,27 +2,25 @@ import logging
 
 from celery import chain, chord, group
 from celery.canvas import Signature
+from common.agent_builder import sanitize_document_text
 from common.dependencies import (
     get_celery_app,
     get_lazybytes_service,
-    get_llm_translation_client,
+    get_llm_language_detection_agent,
+    get_llm_translation_agent,
 )
-from common.file.file_repository import File, TranslatedLanguage
+from common.file.file_repository import DetectedLanguage, File, TranslatedLanguage
 from common.services.lazybytes_service import TempLazyBytes
 from common.utils.cache import cache
 from langchain_text_splitters import RecursiveCharacterTextSplitter, TextSplitter
-from openai import APIError
 from pydantic import BaseModel
+from pydantic_ai import NativeOutput
 
 from worker.index_file.infra.file_indexing_task import FileIndexingTask
 from worker.index_file.infra.indexing_persister import IndexingPersister
 from worker.services.tika_service import TIKA_MAX_TEXT_SIZE
 from worker.settings import settings
 from worker.utils.persisting_task import persisting_task
-from worker.utils.prompt_sanitizer import (
-    build_document_security_instructions,
-    sanitize_document_text,
-)
 
 MAX_TRANSLATION_TEXT_SIZE = TIKA_MAX_TEXT_SIZE
 MAX_CHARACTERS_PER_CHUNK = 2000
@@ -34,20 +32,11 @@ logger = logging.getLogger(__name__)
 app = get_celery_app()
 
 
-class DetectedLanguage(BaseModel, frozen=True):
-    confidence: float
-    language: str
-
-
-class _LanguageDetectionResult(BaseModel):
-    languages: list[DetectedLanguage]
-
-
 class _TranslationResult(BaseModel):
     text: str
 
 
-class LLMTranslationException(Exception):
+class LLMError(Exception):
     pass
 
 
@@ -75,7 +64,7 @@ def noop(*_, **__):
 
 @app.task(
     base=FileIndexingTask,
-    autoretry_for=tuple([LLMTranslationException]),
+    autoretry_for=tuple([LLMError]),
     retry_backoff=True,
     max_retries=TRANSLATE_MAX_RETRIES,
 )
@@ -110,42 +99,21 @@ def translate_detect_language(text: str) -> list[DetectedLanguage]:
     if len(text) <= 0:
         return result
 
-    client = get_llm_translation_client()
+    prompt = (
+        "Detect the language of the text in the following "
+        "<document>...</document> tags:\n\n"
+        f"<document>\n{sanitize_document_text(text)}\n</document>"
+    )
+
+    agent = get_llm_language_detection_agent()
+
     try:
-        response = client.beta.chat.completions.parse(
-            model=settings.llm.translation.model,
-            messages=[
-                {
-                    "role": "system",
-                    "content": (
-                        "You are a language detection service.\n\n"
-                        + build_document_security_instructions(
-                            settings.translate_target
-                        )
-                    ),
-                },
-                {
-                    "role": "user",
-                    "content": (
-                        "Detect the language of the text in the following "
-                        "<document>...</document> tags:\n\n"
-                        f"<document>\n{sanitize_document_text(text)}\n</document>"
-                    ),
-                },
-            ],
-            response_format=_LanguageDetectionResult,
-            extra_headers=settings.llm.translation.extra_headers,
-            extra_body=settings.llm.translation.extra_body,
-            max_tokens=settings.llm.translation.max_tokens,
-        )
-    except APIError as ex:
-        raise LLMTranslationException from ex
+        result_agent = agent.run_sync(prompt)
 
-    detection_result = response.choices[0].message.parsed
-    if detection_result is None:
-        return result
+    except Exception as ex:
+        raise LLMError("Language detection failed") from ex
 
-    for detected_language in detection_result.languages:
+    for detected_language in result_agent.output:
         if detected_language.confidence >= settings.min_language_detection_confidence:
             result.append(detected_language)
 
@@ -203,7 +171,7 @@ def translate_task(
 
 @app.task(
     base=FileIndexingTask,
-    autoretry_for=tuple([LLMTranslationException]),
+    autoretry_for=tuple([LLMError]),
     retry_backoff=True,
     max_retries=TRANSLATE_MAX_RETRIES,
 )
@@ -216,44 +184,23 @@ def translate(text: str, detected_language: DetectedLanguage) -> str:
     if detected_language.language == settings.translate_target:
         return text
 
-    client = get_llm_translation_client()
-    try:
-        response = client.beta.chat.completions.parse(
-            model=settings.llm.translation.model,
-            messages=[
-                {
-                    "role": "system",
-                    "content": (
-                        f"You are a translation service. "
-                        f"Translate to {settings.translate_target}. "
-                        f"Output only the translated text. "
-                        f"No explanations, no preamble, no commentary.\n\n"
-                        + build_document_security_instructions(
-                            settings.translate_target
-                        )
-                    ),
-                },
-                {
-                    "role": "user",
-                    "content": (
-                        f"Translate the text in the following "
-                        f"<document>...</document> tags to {settings.translate_target}:\n\n"
-                        f"<document>\n{sanitize_document_text(text)}\n</document>"
-                    ),
-                },
-            ],
-            response_format=_TranslationResult,
-            extra_headers=settings.llm.translation.extra_headers,
-            extra_body=settings.llm.translation.extra_body,
-            max_tokens=settings.llm.translation.max_tokens,
-        )
-    except APIError as ex:
-        raise LLMTranslationException from ex
+    prompt = (
+        (
+            f"Translate the text in the following "
+            f"<document>...</document> tags to {settings.translate_target}:\n\n"
+            f"<document>\n{sanitize_document_text(text)}\n</document>"
+        ),
+    )
 
-    translation_result = response.choices[0].message.parsed
-    if translation_result is None:
-        return text
-    return translation_result.text
+    agent = get_llm_translation_agent()
+
+    try:
+        result = agent.run_sync(prompt, output_type=NativeOutput(_TranslationResult))
+
+    except Exception as ex:
+        raise LLMError("Translation failed") from ex
+
+    return result.output.text
 
 
 @app.task(base=FileIndexingTask)

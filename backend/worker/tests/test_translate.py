@@ -1,17 +1,19 @@
 from math import floor
+from types import SimpleNamespace
 from typing import cast
 from unittest.mock import MagicMock
 
 import pytest
-from common.dependencies import get_llm_translation_client
+from common.dependencies import (
+    get_llm_language_detection_agent,
+    get_llm_translation_agent,
+)
+from common.file.file_repository import DetectedLanguage
 from openai import APIConnectionError
 
 from worker.index_file.tasks.translate import (
     MAX_CHARACTERS_PER_CHUNK,
-    DetectedLanguage,
-    LLMTranslationException,
-    _LanguageDetectionResult,
-    _TranslationResult,
+    LLMError,
     get_translation_text_splitter,
     translate,
     translate_detect_language,
@@ -19,16 +21,12 @@ from worker.index_file.tasks.translate import (
 from worker.settings import settings
 
 
-def _make_parse_response(
-    parsed: _LanguageDetectionResult | _TranslationResult,
-) -> MagicMock:
-    response = MagicMock()
-    response.choices[0].message.parsed = parsed
-    return response
+def _llm_language_detection_agent() -> MagicMock:
+    return cast(MagicMock, get_llm_language_detection_agent())
 
 
-def _llm_client() -> MagicMock:
-    return cast(MagicMock, get_llm_translation_client())
+def _llm_translate_agent() -> MagicMock:
+    return cast(MagicMock, get_llm_translation_agent())
 
 
 def _assert_call_count(mock: MagicMock, expected: int) -> None:
@@ -46,13 +44,12 @@ def _assert_call_count(mock: MagicMock, expected: int) -> None:
     ],
 )
 def test_translate_detect_language(text, expected_language, expected_confidence):
-    detection_result = _LanguageDetectionResult(
-        languages=[
-            DetectedLanguage(language=expected_language, confidence=expected_confidence)
-        ]
-    )
-    _llm_client().beta.chat.completions.parse.return_value = _make_parse_response(
-        detection_result
+    detection_result = [
+        DetectedLanguage(language=expected_language, confidence=expected_confidence)
+    ]
+
+    _llm_language_detection_agent().run_sync.return_value = SimpleNamespace(
+        output=detection_result
     )
 
     result = translate_detect_language(text)
@@ -67,13 +64,12 @@ def test_translate_detect_language(text, expected_language, expected_confidence)
 def test_translate_detect_language_filters_low_confidence(
     text, expected_language, expected_confidence
 ):
-    detection_result = _LanguageDetectionResult(
-        languages=[
-            DetectedLanguage(language=expected_language, confidence=expected_confidence)
-        ]
-    )
-    _llm_client().beta.chat.completions.parse.return_value = _make_parse_response(
-        detection_result
+    detection_result = [
+        DetectedLanguage(language=expected_language, confidence=expected_confidence)
+    ]
+
+    _llm_language_detection_agent().run_sync.return_value = SimpleNamespace(
+        output=detection_result
     )
 
     result = translate_detect_language(text)
@@ -81,19 +77,17 @@ def test_translate_detect_language_filters_low_confidence(
 
 
 def test_translate_detect_language_empty_text():
-    client = _llm_client()
+    _llm_language_detection_agent()
     text = ""
     result = translate_detect_language(text)
-    assert not client.beta.chat.completions.parse.called
     assert len(result) == 0
 
 
 def test_translate_detect_llm_error():
-    _llm_client().beta.chat.completions.parse.side_effect = APIConnectionError(
-        request=MagicMock()
-    )
+    agent = get_llm_language_detection_agent()
+    agent.run_sync.side_effect = APIConnectionError(request=MagicMock())
 
-    with pytest.raises(LLMTranslationException):
+    with pytest.raises(LLMError):
         translate_detect_language("a short text")
 
 
@@ -118,25 +112,23 @@ def test_translate_detect_llm_error():
 def test_translate(
     text: str, expected_text: str, expected_language: str, expected_translate_calls: int
 ):
-    client = _llm_client()
-    client.beta.chat.completions.parse.return_value = _make_parse_response(
-        _TranslationResult(text=expected_text)
-    )
+    agent = _llm_translate_agent()
+    agent.run_sync.return_value.output = SimpleNamespace(text=expected_text)
 
     translation = translate(
         text, DetectedLanguage(confidence=1, language=expected_language)
     )
 
     assert translation == expected_text
-    _assert_call_count(client.beta.chat.completions.parse, expected_translate_calls)
+    _assert_call_count(agent.run_sync, expected_translate_calls)
 
 
 def test_translate_llm_error():
-    _llm_client().beta.chat.completions.parse.side_effect = APIConnectionError(
+    _llm_translate_agent().run_sync.side_effect = APIConnectionError(
         request=MagicMock()
     )
 
-    with pytest.raises(LLMTranslationException):
+    with pytest.raises(LLMError):
         translate("a short text", DetectedLanguage(confidence=1, language="es"))
 
 

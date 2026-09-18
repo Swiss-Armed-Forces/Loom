@@ -39,7 +39,7 @@ llm:
     model: qwen2.5:0.5b
     temperature: 0
 
-  chat:
+  synthesize:
     model: qwen2.5:0.5b
 
   translation:
