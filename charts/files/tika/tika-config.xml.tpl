@@ -8,6 +8,14 @@
       <!-- maximum time to allow per parse before killing the forked child JVM
           and all subprocesses (e.g. ImageMagick convert) it spawned -->
       <taskTimeoutMillis>{{ .taskTimeoutMillis }}</taskTimeoutMillis>
+      <!-- the forked command line is assembled from these args alone: none of
+          the server JVM's own flags carry over, so the heap that every parse
+          allocates from has to be set here -->
+      <forkedJvmArgs>
+        {{- range .forkedJvmArgs }}
+        <arg>{{ . }}</arg>
+        {{- end }}
+      </forkedJvmArgs>
     </params>
   </server>
   <parsers>

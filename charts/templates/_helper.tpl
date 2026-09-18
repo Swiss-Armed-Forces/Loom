@@ -257,11 +257,36 @@ Returns: byte value for GOMEMLIMIT (e.g., "966367641")
 {{- end -}}
 
 {{/*
-Calculate a byte count as a fraction of a Kubernetes memory limit.
-Usage: {{ include "memory-limit-fraction" (dict "memory" "6Gi" "factor" 0.25) }}
-Returns: byte value (e.g., "1610612736")
+Resolve a component's memory budget: its Kubernetes memory limit when one is
+set, otherwise the fallback the component declares in values.yaml. Software that
+sizes itself from the cgroup reads the whole node when there is no limit, so the
+fallback is what keeps values-no-resources.yaml from handing a single container
+the entire machine.
+
+Every memory-derived setting is computed from this one number, which keeps the
+arithmetic identical with and without limits.
+
+Usage: {{ include "app.memoryBudgetBytes" (dict "component" "tika" "resources" .Values.tika.resources "fallback" .Values.tika.memoryFallback) }}
+Returns: byte value (e.g., "6442450944")
 */}}
-{{- define "memory-limit-fraction" -}}
-{{- $memoryBytes := include "SI-to-bytes" .memory | int64 -}}
-{{- mulf $memoryBytes .factor | floor | int64 -}}
+{{- define "app.memoryBudgetBytes" -}}
+{{- $budget := default .fallback (dig "limits" "memory" "" (default dict .resources)) -}}
+{{- if not $budget -}}
+{{- printf "\n%s has neither resources.limits.memory nor %s.memoryFallback set.\nOne of the two is required: it is the budget the heap and scratch sizes are derived from." .component .component | fail -}}
+{{- end -}}
+{{- include "SI-to-bytes" $budget | int64 -}}
+{{- end -}}
+
+{{/*
+JVM heap flags for a byte budget, floored to whole MiB.
+
+Xms equals Xmx on purpose: a heap that grows into a fixed budget only delays the
+OOM kill, and the JVM will not hand memory back to the cgroup anyway.
+
+Usage: {{ include "app.jvm.heapFlags" 3328599655 }}
+Returns: "-Xms3174m -Xmx3174m"
+*/}}
+{{- define "app.jvm.heapFlags" -}}
+{{- $mib := div (. | int64) 1048576 -}}
+-Xms{{ $mib }}m -Xmx{{ $mib }}m
 {{- end -}}
