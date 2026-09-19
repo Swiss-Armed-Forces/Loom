@@ -8,8 +8,9 @@
 #   * devenv.lock plus the `# renovate:` comments in devenv.yaml already govern
 #     nixpkgs. A nixos/flake.lock would be a second pin and guaranteed drift.
 #
-# nixpkgs is supplied by cicd/build_appliance_image.sh, which passes devenv's
-# `inputs.nixpkgs-stable` store path through as ${LOOM_NIXPKGS}.
+# nixpkgs is supplied by cicd/build_appliance_image.sh, which takes devenv's
+# `inputs.nixpkgs-stable` store path on its own --nixpkgs flag and passes it
+# through as --arg nixpkgs.
 #
 # `system` defaults to the host, which is what lets either platform be evaluated
 # and boot-tested without the corresponding hardware to hand.

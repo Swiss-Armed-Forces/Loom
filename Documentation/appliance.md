@@ -168,7 +168,7 @@ Without `--flash` it only produces the image, under `.appliance-build/`. The opt
 | `--system SYSTEM` | Override the nix system. Normally the platform decides; a mismatch is refused. |
 | `--allow-cross` | Build for an architecture other than the host's. |
 | `--minikube-ip IP` | Address `*.loom` resolves to on the box. Defaults to `192.168.49.2`. |
-| `--nixpkgs PATH` | nixpkgs source. Defaults to `$LOOM_NIXPKGS`, which devenv sets. |
+| `--nixpkgs PATH` | nixpkgs source. Required — `build-appliance-image` passes devenv's pinned nixpkgs for you, so you only need this when driving the script directly. |
 | `--output DIR` | Where to put the image. Defaults to `.appliance-build/`. |
 | `--skip-STEP` | Skip a build step, by name. |
 | `--yes` | Skip confirmation prompts. |

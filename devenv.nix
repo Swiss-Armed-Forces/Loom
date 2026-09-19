@@ -1104,10 +1104,10 @@ in
         cd '${config.devenv.root}'
 
         # Hand the pinned nixpkgs to the build so nixos/ needs no flake and
-        # devenv.lock stays the only nixpkgs pin in this repository.
-        export LOOM_NIXPKGS='${inputs.nixpkgs-stable}'
-
+        # devenv.lock stays the only nixpkgs pin in this repository. Passed
+        # ahead of "$@" so an explicit --nixpkgs on the command line still wins.
         ./cicd/build_appliance_image.sh \
+          --nixpkgs '${inputs.nixpkgs-stable}' \
           "''${@}"
       )
     '';

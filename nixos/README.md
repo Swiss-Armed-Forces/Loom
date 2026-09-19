@@ -44,7 +44,8 @@ Two reasons, either one sufficient:
   nixpkgs, and `cicd/sync_devenv_renovate.sh` only knows about `devenv.lock`. A second lockfile here
   would drift.
 
-`cicd/build_appliance_image.sh` passes devenv's `inputs.nixpkgs-stable` through as `LOOM_NIXPKGS`.
+The `build-appliance-image` devenv script passes devenv's `inputs.nixpkgs-stable` to
+`cicd/build_appliance_image.sh` as `--nixpkgs`, which forwards it as `--arg nixpkgs`.
 
 ## The two axes: `system` and `platform`
 
@@ -117,13 +118,13 @@ actually tested.
 Normally you would use `build-appliance-image`. To drive it directly:
 
 ```bash
-export LOOM_NIXPKGS=...            # a nixpkgs checkout
+NIXPKGS=...                        # a nixpkgs checkout
 HOSTS=$(source ./vars.sh && printf '%s\n' "${LOOM_HOSTS_FQDN[@]}" | jq -R . | jq -sc .)
 
 # Evaluate only -- catches most mistakes in seconds, for either platform,
 # without the corresponding hardware.
 nix-instantiate ./nixos -A box \
-  --arg nixpkgs "$LOOM_NIXPKGS" \
+  --arg nixpkgs "$NIXPKGS" \
   --argstr system x86_64-linux --argstr platform evo-x2 \
   --arg repoSrc ./. --argstr tag dev --argstr loomHostsJson "$HOSTS"
 
@@ -227,7 +228,7 @@ if is_default:
 `is_default` is only ever compared against the **main** toplevel, and `write_loader_conf` is called with the
 generation alone. So `default` can only name `nixos-generation-<N>.conf`. Passing a specialisation's toplevel
 as `DEFAULT-CONFIG` does not select it — it matches nothing, and loader.conf is never written at all. (A newer
-builder in nixpkgs does support this. The appliance does not use that one; `LOOM_NIXPKGS` is devenv's
+builder in nixpkgs does support this. The appliance does not use that one; it builds against devenv's
 `inputs.nixpkgs-stable`.)
 
 Hence:

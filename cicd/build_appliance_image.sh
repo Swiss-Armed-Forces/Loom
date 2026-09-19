@@ -5,10 +5,11 @@ set -euo pipefail
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 CONTEXT_DIR=$(git -C "${SCRIPT_DIR}" rev-parse --show-toplevel)
 
-# nixpkgs comes from devenv's `inputs.nixpkgs-stable`, exported by the
-# build-appliance-image devenv script. That keeps devenv.lock the single
-# nixpkgs pin in this repository.
-NIXPKGS="${LOOM_NIXPKGS:-}"
+# nixpkgs comes from devenv's `inputs.nixpkgs-stable`, passed as --nixpkgs by
+# the build-appliance-image devenv script. That keeps devenv.lock the single
+# nixpkgs pin in this repository. No default: there is nothing sensible to fall
+# back to, and validate_environment says so rather than letting nix fail later.
+NIXPKGS=""
 
 OUTPUT_DIR="${CONTEXT_DIR}/.appliance-build"
 
@@ -151,8 +152,9 @@ validate_environment(){
     done
 
     if [[ -z "${NIXPKGS}" ]]; then
-        echo >&2 "[!] Error: LOOM_NIXPKGS is not set."
-        echo >&2 "    Run this through devenv: 'build-appliance-image', not the script directly."
+        echo >&2 "[!] Error: no nixpkgs given."
+        echo >&2 "    Run this through devenv: 'build-appliance-image' passes --nixpkgs for you."
+        echo >&2 "    To drive the script directly, pass --nixpkgs PATH yourself."
         exit 1
     fi
     if [[ ! -e "${NIXPKGS}/nixos/lib/eval-config.nix" ]]; then
@@ -720,7 +722,7 @@ usage(){
     echo "  --wifi-interface INTERFACE    pin the radio by name instead of letting the"
     echo "                                platform match it (renamed to loomwl0 either way)"
     echo "  --minikube-ip MINIKUBE_IP     address '*.loom' resolves to on the box (default: ${MINIKUBE_IP})"
-    echo "  --nixpkgs NIXPKGS             nixpkgs source (default: \${LOOM_NIXPKGS} from devenv)"
+    echo "  --nixpkgs NIXPKGS             nixpkgs source (required; 'build-appliance-image' passes it)"
     echo "  -y|--yes                      do not ask for confirmation"
     echo "  --allow-cross                 allow building for a system other than the host"
     echo "  --skip-STEP                   skip step STEP"
