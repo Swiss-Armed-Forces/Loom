@@ -19,7 +19,10 @@ let
   common = {
     imports = applianceModules;
     virtualisation.memorySize = 1024;
-    virtualisation.diskSize = 4096;
+    # Three nodes run from this, and none of them writes anything: measured
+    # usage is ~20 MB each. See tests/appliance.nix for why the number is a cap
+    # rather than a cost.
+    virtualisation.diskSize = 2048;
     # The test framework drives networking itself; the appliance's DHCP server
     # would fight it.
     services.dnsmasq.enable = pkgs.lib.mkForce false;
@@ -32,13 +35,19 @@ pkgs.testers.runNixOSTest {
 
   node.specialArgs = specialArgs;
 
+  # The three nodes take `common` through `imports` rather than `common // { ...
+  # }`, because `//` is a shallow merge: `dual` sets `virtualisation.vlans` and
+  # that replaced the whole `virtualisation` attribute, silently dropping the
+  # memory and disk sizes above. The module system merges the levels below the
+  # first, which is what was meant.
   nodes = {
     # One NIC: the unambiguous case, and the one that motivated all of this.
     single = common;
 
     # Two NICs, so the choice has to be made rather than fallen into. An extra
     # vlan gives the node a second interface.
-    dual = common // {
+    dual = {
+      imports = [ common ];
       virtualisation.vlans = [
         1
         2
@@ -46,7 +55,8 @@ pkgs.testers.runNixOSTest {
     };
 
     # The fallback switched off: the old behaviour, still reachable.
-    disabled = common // {
+    disabled = {
+      imports = [ common ];
       loom.autoSelectInterface = pkgs.lib.mkForce false;
     };
   };

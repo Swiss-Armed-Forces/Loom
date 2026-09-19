@@ -131,6 +131,10 @@ matches its NIC.
   eligible internal NVMe is pooled into one volume, so a box with two M.2 slots may reach that with two
   smaller drives. See [How the disks are used](#how-the-disks-are-used).
 - Secure Boot **disabled** in the box's firmware, otherwise it will not boot the stick.
+- **Free disk on the build host.** One image is a whole appliance closure plus a ~1.5 GB squashfs, so
+  budget around 20 GB for a build and more if you build several tags. Nix frees none of it by
+  itself — `nixos/README.md` has the settings that make it, which matter more if you also run the VM
+  tests.
 
 On the EVO-X2 specifically, check two more firmware settings before installing:
 
@@ -177,6 +181,12 @@ Without `--flash` it only produces the image, under `.appliance-build/`. The opt
 The tag matters: the appliance runs Loom in offline mode, which refuses to start unless the checkout sits on an
 exact tag. The build embeds a clean clone at that tag, with git-lfs payloads materialised, and verifies all of
 that before producing an image.
+
+That clone carries **exactly one ref**, the shipped tag. Branches, other tags, the remote and the git-lfs
+objects no longer reachable from it are all stripped, so `git log --all` on the box shows the release and
+nothing about the machine that built it. It is also what makes two builds of one tag produce the same image:
+with the build host's branch tips left in, the embedded pack differed per machine and per day, and every build
+added another ~1.5 GB image to the builder's Nix store for a release that had not changed.
 
 Each stick gets a **random `10.<a>.<b>.0/24` subnet**. That keeps two boxes on one wire from colliding, and
 keeps the box from clashing with a visitor's own network. The chosen subnet is printed at the end of the build

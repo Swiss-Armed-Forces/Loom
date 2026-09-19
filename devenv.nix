@@ -1113,6 +1113,22 @@ in
     '';
   };
 
+  scripts.appliance-test = {
+    description = "Run the NixOS appliance VM tests";
+    exec = ''
+      (
+        set -euo pipefail
+        cd '${config.devenv.root}'
+
+        # As build-appliance-image: the pinned nixpkgs goes in ahead of "$@", so
+        # an explicit --nixpkgs still wins.
+        ./cicd/run_appliance_tests.sh \
+          --nixpkgs '${inputs.nixpkgs-stable}' \
+          "''${@}"
+      )
+    '';
+  };
+
   scripts.nix-dind = {
     description = "Build nix-dind image";
     exec = ''

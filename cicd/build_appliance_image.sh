@@ -74,7 +74,7 @@ STEPS=(
     prepare_workdir
     prepare_repo
     verify_repo
-    normalize_repo
+    normalize_git_config
     generate_loom_hosts
     build_image
     report
@@ -333,7 +333,7 @@ prepare_workdir(){
 # checkout, and every Nix fetcher either drops `.git` or leaves git-lfs payloads
 # as pointer files.
 prepare_repo(){
-    local repo="${WORK_DIR}/loom" lfs_dir
+    local repo="${WORK_DIR}/loom" lfs_dir stale_refs ref
 
     # --no-local forces a real pack transfer. A plain local clone writes
     # .git/objects/info/alternates pointing at this machine, which does not
@@ -352,6 +352,38 @@ prepare_repo(){
     cp --archive "${lfs_dir}" "${repo}/.git/"
     git -C "${repo}" lfs checkout
 
+    # Nothing in the embedded checkout should depend on which branch the build
+    # machine happened to have checked out. A clone brings every ref of the
+    # source repository along, so the objects that survive `gc --prune=now`
+    # below -- and with them the pack, and with the pack the `loomSrc` store
+    # hash -- would otherwise move with a developer's branch tips, giving the
+    # same tag a different image on every machine that builds it.
+    #
+    # One ref is left, which is the one up.sh reads: `git describe
+    # --exact-match --tags HEAD` (up.sh:240), against the tag HEAD is already
+    # detached at from the checkout above.
+    stale_refs="$(git -C "${repo}" for-each-ref --format='%(refname)' refs/heads refs/tags refs/remotes |
+        grep --invert-match --line-regexp --fixed-strings "refs/tags/${TAG}" || true)"
+    while read -r ref; do
+        [[ -n "${ref}" ]] || continue
+        git -C "${repo}" update-ref -d "${ref}"
+    done <<<"${stale_refs}"
+
+    # for-each-ref does not list this one: it is symbolic, and the branch it
+    # names was deleted by the loop above. It is still a file naming the branch
+    # the source checkout was on.
+    git -C "${repo}" symbolic-ref --delete refs/remotes/origin/HEAD 2>/dev/null || true
+
+    # The object cache copied in above is everything this machine ever fetched,
+    # for every branch it ever had. With one ref left, what git-lfs retains is
+    # the checkout's own payloads -- the same set on any build host.
+    #
+    # Runs while origin still exists, because that is how prune decides an
+    # object is safe to drop, and takes nothing the box needs: the working tree
+    # is already materialised, and verify_repo's pointer-stub check has to pass
+    # after this.
+    git -C "${repo}" lfs prune --no-verify-remote
+
     # Nothing on the appliance should point back at a build machine.
     git -C "${repo}" remote remove origin
     git -C "${repo}" reflog expire --expire=now --all
@@ -360,7 +392,7 @@ prepare_repo(){
     # Repack deterministically, so two runs of the same tag produce a
     # byte-identical pack -- and with it the same `loomSrc` store hash, instead
     # of a fresh appliance closure, squashfs and ~1.5 GB image every run. See
-    # normalize_repo for the rest of that story.
+    # normalize_git_config for the rest of that story.
     #
     # Both flags are needed:
     #
@@ -430,36 +462,29 @@ verify_repo(){
     fi
 }
 
-# Strip the parts of .git that differ between two runs of the same tag.
+# Pin the one part of .git whose *content* differs between two runs of the same
+# tag.
 #
-# nixos/default.nix takes `loomSrc` as a `builtins.path` of this directory, so a
-# single changed byte gives it a new store hash -- and with it a new appliance
-# closure, a new squashfs and a new ~1.5 GB image, every run, for a working tree
-# that is bit-for-bit identical. A handful of builds is enough to put ten
-# gigabytes of near-duplicates in the store.
+# nixos/default.nix takes `loomSrc` as a filtered `builtins.path` of this
+# directory, so a single changed byte gives it a new store hash -- and with it a
+# new appliance closure, a new squashfs and a new ~1.5 GB image, every run, for
+# a working tree that is bit-for-bit identical. A handful of builds is enough to
+# put ten gigabytes of near-duplicates in the store.
 #
-# Three things move, none of which the appliance ever reads:
+# The volatile *files* are not handled here. They are excluded by that filter,
+# which drops them however often git puts them back -- .git/index, which stores
+# mtime, ctime and inode for all ~4000 files; .git/logs; and git-lfs's
+# timestamped .git/lfs/logs and randomly-named .git/lfs/tmp scratch
+# directories. None of them is read on the box: up.sh only runs `git describe
+# --exact-match --tags HEAD` (up.sh:240), which reads refs and objects, and git
+# rebuilds an index on demand for anything that does want one.
 #
-#   * .git/index stores mtime, ctime and inode for all ~4000 files.
-#   * `git lfs install --local` in prepare_repo writes the [filter "lfs"] keys
-#     in a nondeterministic order, so the clean/smudge pair lands above or
-#     below process/required depending on the run.
-#   * .git/lfs/tmp holds empty scratch directories with random numeric names,
-#     copied in wholesale along with the object cache.
-#
-# Deliberately AFTER verify_repo, whose `git status` rewrites .git/index. Also
-# deliberately not in prepare_repo for the same reason.
-#
-# Dropping the index is safe: up.sh only runs `git describe --exact-match --tags
-# HEAD` (up.sh:236), which reads refs and objects, and git rebuilds an index on
-# demand for anything on the box that does want one.
-normalize_repo(){
+# What a path filter cannot express is a file that has to be there with settled
+# contents, which is this one: `git lfs install --local` in prepare_repo writes
+# the [filter "lfs"] keys in a nondeterministic order, so the clean/smudge pair
+# lands above or below process/required depending on the run.
+normalize_git_config(){
     local repo="${WORK_DIR}/loom"
-
-    rm --recursive --force \
-        "${repo}/.git/index" \
-        "${repo}/.git/lfs/tmp" \
-        "${repo}/.git/logs"
 
     # Rewritten rather than sorted in place: `git config` owns the file's
     # layout, and re-adding a removed section always appends it in the order
@@ -469,10 +494,6 @@ normalize_repo(){
     git -C "${repo}" config --local filter.lfs.smudge "git-lfs smudge -- %f"
     git -C "${repo}" config --local filter.lfs.process "git-lfs filter-process"
     git -C "${repo}" config --local filter.lfs.required true
-
-    # `git config` writes through a lock file, which leaves the index behind
-    # again on some versions.
-    rm --force "${repo}/.git/index"
 }
 
 # Sourced from the embedded checkout rather than this one, so the host list

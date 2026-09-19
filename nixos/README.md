@@ -139,28 +139,40 @@ nix-build ./nixos -A installerImage ...
 Targets: `box`, `boxVm`, `installerImage`, `tests.appliance`, plus `boxSystem` and `installerSystem`
 for poking at evaluated configuration.
 
-## Running the test
+## Running the tests
 
 ```bash
+appliance-test                      # all of them, cheapest first
+appliance-test wifi usb-ingest      # or by name
+```
+
+The five short names and what each is for:
+
+| Name | Attribute | What it asserts |
+| --- | --- | --- |
+| `appliance` | `tests.appliance` | The values `box.nix` restates from `up.sh` and `vars.sh`, the console session, and the key guard. |
+| `install` | `tests.applianceInstall` | The disk layout: the pool, the container where stage 1 expects it, and the wipe. |
+| `wifi` | `tests.applianceWifi` | The `--wifi` build, which `tests.appliance` deliberately does not cover: it forces off dnsmasq and the static addresses that this one exercises. |
+| `usb-ingest` | `tests.applianceUsbIngest` | Scratch disks carrying real filesystems, and the exclusion rules — above all that the LUKS key stick is never touched. |
+| `interface-fallback` | `tests.applianceInterfaceFallback` | The box no platform matches: one NIC, two NICs, and the fallback switched off. |
+
+The script picks the platform matching the host architecture, passes the `*.loom` host list, the
+namespace and the chat model from `vars.sh` — `tests/appliance.nix` asserts the appliance restates
+those correctly, so defaults would fail the test for the wrong reason — and asks nix to collect
+garbage rather than run the disk out (see **Disk budget** below). `--platform`, `--min-free`, `--gc`
+and `--nixpkgs` are the flags; `appliance-test --help` lists them.
+
+Underneath it is one `nix-build` per target, which is still the way to run one by hand:
+
+```bash
+NIXPKGS=...                        # a nixpkgs checkout
+HOSTS=$(source ./vars.sh && printf '%s\n' "${LOOM_HOSTS_FQDN[@]}" | jq -R . | jq -sc .)
+
 nix-build ./nixos -A tests.appliance \
-  --argstr system x86_64-linux --argstr platform evo-x2 ...
-
-# The --wifi build, which tests.appliance deliberately does not cover: it forces
-# off dnsmasq and the static addresses that this one exists to exercise.
-nix-build ./nixos -A tests.applianceWifi \
-  --argstr system x86_64-linux --argstr platform evo-x2 ...
-
-# USB ingest: scratch disks carrying real filesystems, and the exclusion rules.
-nix-build ./nixos -A tests.applianceUsbIngest \
-  --argstr system x86_64-linux --argstr platform evo-x2 ...
-
-# The box no platform matches: one NIC, two NICs, and the fallback switched off.
-nix-build ./nixos -A tests.applianceInterfaceFallback \
-  --argstr system x86_64-linux --argstr platform evo-x2 ...
-
-# The disk layout: the pool, the container where stage 1 expects it, and the wipe.
-nix-build ./nixos -A tests.applianceInstall \
-  --argstr system x86_64-linux --argstr platform evo-x2 ...
+  --arg nixpkgs "$NIXPKGS" \
+  --argstr system x86_64-linux --argstr platform evo-x2 \
+  --arg repoSrc ./. --argstr loomHostsJson "$HOSTS" \
+  --no-out-link
 ```
 
 The pure logic behind `usb-ingest.nix` -- the name sanitiser, the filesystem table and the exclusion
@@ -185,6 +197,70 @@ to software emulation — much slower, but it runs:
   requiredSystemFeatures = [ "nixos-test" ];
 })
 ```
+
+## Disk budget
+
+A run costs disk in two ways, and both land on the filesystem holding `/nix`:
+
+- **The closure.** Each target builds a whole appliance system — around 3.5 GB, because `box.nix`
+  carries up.sh's entire toolchain (docker, minikube, skaffold, helm) alongside a kernel and an
+  initrd. Most of that is shared between runs and between targets, but an edit to anything under
+  `nixos/` rebuilds a few hundred megabytes and re-copies the checkout that `loomSrc` embeds
+  (~120 MB from a working tree, filtered — `nixos/` is inside the tree being copied), every time,
+  and nothing reclaims the previous one.
+- **The VM disks.** The test framework writes each node's qcow2 into the Nix *build* directory —
+  `/nix/var/nix/builds` on Nix 2.2x and later, `$TMPDIR` before that. Not `/tmp`, on either.
+  `virtualisation.diskSize` is a cap on a sparse file, so the cost is what the guest writes, not the
+  number in the test, and that turns out to be small:
+
+| Test | Nodes | Written by the guest |
+| --- | --- | --- |
+| `appliance` | 1 | 165 MB — the heaviest, and mostly the key guard's loop images |
+| `install` | 1 | the two 2 GB scratch disks it partitions, sparsely |
+| `wifi` | 1 | 19 MB |
+| `usb-ingest` | 1 | 28 MB, plus four 256 MB scratch disks it puts filesystems on |
+| `interface-fallback` | 3 | 20 MB each |
+
+A whole five-target run moved this host's free space by **2.8 GB**, nearly all of it closure and
+none of it VM disks. The guest's own `/nix/.rw-store` is a tmpfs, so what a node writes to the store
+costs RAM, not disk.
+
+Nix frees none of it on its own unless it is told to. On NixOS:
+
+```nix
+nix.gc = {
+  automatic = true;
+  dates = "weekly";
+  options = "--delete-older-than 14d";
+};
+nix.settings.min-free = 25 * 1024 * 1024 * 1024;
+nix.settings.max-free = 100 * 1024 * 1024 * 1024;
+nix.optimise.automatic = true;
+```
+
+Anywhere else — Debian, Fedora, macOS, a CI runner — the same two settings belong in
+`/etc/nix/nix.conf`, and a timer or cron job covers the scheduled half:
+
+```ini
+min-free = 26843545600
+max-free = 107374182400
+```
+
+`min-free` is the one that keeps a run from dying at a full disk: the daemon collects garbage
+*during* the build once free space drops below it. `appliance-test` also passes both on the command
+line, which nix honours only for a user in `trusted-users`; everyone else gets a warning and the
+daemon's own settings, which is why the permanent form is worth setting anyway.
+
+To reclaim by hand:
+
+```bash
+nix-collect-garbage          # unreachable store paths
+nix-collect-garbage -d       # ...and old profile generations
+nix store optimise           # hardlink identical files
+```
+
+An interrupted run leaves its build sandbox behind as `/nix/store/<drv>.chroot`, still holding that
+run's disk images. A garbage collection clears those too.
 
 ## Keeping in sync with `up.sh`
 

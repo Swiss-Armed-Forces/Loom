@@ -28,7 +28,11 @@ pkgs.testers.runNixOSTest {
   nodes.appliance = {
     imports = applianceModules;
     virtualisation.memorySize = 2048;
-    virtualisation.diskSize = 8192;
+    # What this test writes goes to the scratch disks below; the node's own root
+    # only carries what is ingested off them, which is a handful of small files
+    # -- 28 MB, measured. See tests/appliance.nix for why the number is a cap
+    # rather than a cost.
+    virtualisation.diskSize = 2048;
 
     # Four scratch disks: vdb..vde. They are virtio rather than USB, which is why
     # every check below drives the command directly instead of going through the

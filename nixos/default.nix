@@ -102,13 +102,88 @@ let
     platformModules.${platform}
       or (throw "nixos: unknown platform '${platform}'; known platforms: ${builtins.concatStringsSep ", " (builtins.attrNames platformModules)}");
 
-  # Copied verbatim, `.git` and materialised git-lfs payloads included.
-  # cicd/build_appliance_image.sh is responsible for preparing the directory;
-  # its `verify_repo` step asserts the properties up.sh depends on.
-  loomSrc = builtins.path {
-    name = "loom-src-${tag}";
-    path = repoSrc;
-  };
+  # The checkout the box carries, `.git` and materialised git-lfs payloads
+  # included. cicd/build_appliance_image.sh is responsible for preparing the
+  # directory; its `verify_repo` step asserts the properties up.sh depends on.
+  #
+  # Two kinds of thing are dropped on the way in, and this filter is the only
+  # place either is expressed:
+  #
+  #   * Volatile `.git` internals. `builtins.path` hashes what it copies, so one
+  #     file whose bytes differ between two runs of the same tag -- the index,
+  #     which stores mtime, ctime and inode for all ~4000 files; git-lfs's
+  #     timestamped logs -- yields a new store path, and with it a new appliance
+  #     closure, a new squashfs and a new ~1.5 GB image for a working tree that
+  #     is bit-for-bit identical. A handful of builds is enough to put ten
+  #     gigabytes of near-duplicates in the store. Nothing on the box reads any
+  #     of them: up.sh runs `git describe --exact-match --tags HEAD` (up.sh:240),
+  #     which needs refs and objects, and git rebuilds an index on demand for
+  #     anything that does want one.
+  #
+  #   * What a working checkout accumulates. The directory prepared by
+  #     build_appliance_image.sh holds tracked files only, but the test targets
+  #     below are documented (nixos/README.md) as taking `--arg repoSrc ./.`,
+  #     and a developer's checkout of this repository runs to ~22 GB of which
+  #     ~20 GB is build and test scratch -- .pytest_tmp, node_modules, .venv.
+  #     Unfiltered, every run that touched any of it copied the lot in again.
+  #
+  # The second half is a safety net rather than a correctness boundary: a name
+  # missing from it costs disk, never a broken image. The first half is not --
+  # it is what keeps the store path stable, so it is paired with the
+  # normalisation cicd/build_appliance_image.sh still has to do by hand
+  # (`normalize_git_config`, for the one thing a path filter cannot express).
+  loomSrc =
+    let
+      root = toString repoSrc;
+
+      # Dropped wherever they appear, so backend/worker/.pytest_tmp goes the
+      # same way as the one at the root.
+      junkNames = [
+        "node_modules"
+        ".pnpm-store"
+        ".venv"
+        ".pytest_tmp"
+        ".pytest_cache"
+        ".mypy_cache"
+        "__pycache__"
+        ".minikube"
+        ".devenv"
+        ".direnv"
+        ".skaffold"
+        ".appliance-build"
+        "result"
+      ];
+
+      # Dropped only at the position named. `logs` is the repository's own log
+      # directory (.gitignore:1); the rest are the volatile .git entries.
+      junkPaths = [
+        "logs"
+        ".git/index"
+        ".git/logs"
+        ".git/lfs/logs"
+        ".git/lfs/tmp"
+        ".git/ORIG_HEAD"
+        ".git/FETCH_HEAD"
+        ".git/COMMIT_EDITMSG"
+      ];
+    in
+    builtins.path {
+      name = "loom-src-${tag}";
+      path = repoSrc;
+      # Excluding a directory prunes its subtree, so this stays cheap on a tree
+      # with a quarter of a million files in node_modules alone.
+      filter =
+        path: _type:
+        let
+          name = baseNameOf path;
+        in
+        !(
+          builtins.elem name junkNames
+          || builtins.elem (pkgs.lib.removePrefix "${root}/" path) junkPaths
+          # `aitools` scratch directories: .loom_diagnose_<random> and friends.
+          || pkgs.lib.hasPrefix ".loom_" name
+        );
+    };
 
   specialArgs = {
     inherit
@@ -132,6 +207,16 @@ let
     recoveryPassphraseFile = "/var/lib/loom/recovery-passphrase";
   };
 
+  # Every test node takes the real `loomSrc`, filtered but complete.
+  #
+  # A slim stand-in was tried here -- the wifi, usb-ingest and interface-fallback
+  # tests read nothing out of the checkout, and skipping it would keep an edit
+  # under nixos/ from re-copying the tree. It was dropped: with the filter above,
+  # a working-checkout copy is ~120 MB rather than the 1.3 GB it used to be, so
+  # there is little left to save, and a stand-in changes what the box *is*.
+  # tests/appliance-wifi.nix caught exactly that -- its console-repaint subtest
+  # reads the banner off /dev/vcsa1, and a box seeded from a fixture repository
+  # painted a different one.
   evalConfig =
     modules:
     import "${nixpkgs}/nixos/lib/eval-config.nix" {

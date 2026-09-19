@@ -77,7 +77,12 @@ pkgs.testers.runNixOSTest {
   nodes.appliance = {
     imports = applianceModules;
     virtualisation.memorySize = 2048;
-    virtualisation.diskSize = 4096;
+    # A cap, not a cost: the node's root is a sparse qcow2 in the Nix build
+    # directory, so what it takes from the build host is what the guest writes.
+    # Measured at the end of this test that is 165 MB -- the heaviest of the
+    # suite, the rest sit near 20 MB -- and the store is not in it, being a
+    # tmpfs in here (/nix/.rw-store). 2048 leaves an order of magnitude spare.
+    virtualisation.diskSize = 2048;
     # The test framework drives networking itself; the appliance's DHCP server
     # and static address would fight it.
     services.dnsmasq.enable = pkgs.lib.mkForce false;

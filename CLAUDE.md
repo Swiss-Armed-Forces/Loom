@@ -141,6 +141,11 @@ All commands below are provided by devenv scripts (run `devenv-help` to see full
   Radios are disabled in every other image. Related flags: `--wifi-ssid`, `--wifi-psk`,
   `--wifi-country`, `--wifi-interface`. Changes the appliance threat model - see
   `Documentation/appliance.md`
+- `appliance-test` - Run the NixOS appliance VM tests (`nixos/tests/`). Takes any of `appliance`,
+  `install`, `wifi`, `usb-ingest`, `interface-fallback`; with no argument it runs all five,
+  cheapest first. Defaults to the platform matching the host architecture — the tests boot a real
+  VM, so they cannot be cross-built. `--gc` collects garbage afterwards and `--min-free GB` sets
+  how much space nix should free mid-build; see the disk budget section in `nixos/README.md`
 
 **Utilities:**
 
