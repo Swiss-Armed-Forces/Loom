@@ -28,6 +28,14 @@ let
     services.dnsmasq.enable = pkgs.lib.mkForce false;
     networking.interfaces = pkgs.lib.mkForce { };
     systemd.services.loom.wantedBy = pkgs.lib.mkForce [ ];
+    # Drop qemu's default user-mode NIC. The framework numbers the vlan
+    # interfaces from eth1 (nixpkgs nixos/lib/testing/network.nix) and
+    # qemu-vm.nix adds eth0 underneath them, so a node that asks for one vlan
+    # boots with *two* wired ports -- indistinguishable from each other to the
+    # fallback, which is right, and fatal to a test whose whole subject is how
+    # many there are. Nothing here needs it: the driver talks to these machines
+    # over the backdoor, not the network.
+    virtualisation.qemu.networkingOptions = pkgs.lib.mkForce [ ];
   };
 in
 pkgs.testers.runNixOSTest {

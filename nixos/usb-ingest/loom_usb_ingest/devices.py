@@ -13,6 +13,7 @@ that the stick actually unlocks *this* disk.
 """
 
 import json
+import os.path
 import subprocess
 from dataclasses import dataclass, field
 from enum import StrEnum
@@ -150,8 +151,16 @@ def parent_disk(device: str) -> str | None:
     A device that is already a whole disk maps to itself, which is what makes
     this safe to call on the guard's node without knowing which it is.
     """
+    # `--nodeps` is what makes this a question about one device: without it
+    # lsblk prints the whole subtree, and the first row is not reliably the one
+    # asked about -- for a disk carrying a dm-crypt mapping it is the holder.
+    # With it there is exactly one row: "PKNAME KNAME" for a partition, and
+    # "KNAME" alone for anything with no parent, which is the disk mapping to
+    # itself.
     try:
-        output = _run(["lsblk", "--noheadings", "--output", "PKNAME,KNAME", device])
+        output = _run(
+            ["lsblk", "--nodeps", "--noheadings", "--output", "PKNAME,KNAME", device]
+        )
     except (subprocess.SubprocessError, OSError):
         return None
 
@@ -159,8 +168,6 @@ def parent_disk(device: str) -> str | None:
         fields = line.split()
         if not fields:
             continue
-        if len(fields) == 2:
-            return fields[0]
         return fields[0]
     return None
 
@@ -199,6 +206,14 @@ def udev_properties(device: str) -> dict[str, str]:
     return properties
 
 
+def _node_for(nodes: list[dict], device: str) -> dict:
+    name = os.path.basename(device)
+    for node in nodes:
+        if node.get("path") == device or os.path.basename(node.get("kname") or "") == name:
+            return node
+    return nodes[0] if nodes else {}
+
+
 def _volume_from(entry: dict) -> Volume:
     return Volume(
         path=entry.get("path", ""),
@@ -218,18 +233,46 @@ def inspect_disk(device: str) -> Disk:
     lsblk as a single node with an fstype and no children, and is treated here as
     one volume covering the whole device.
     """
+    # Two flags this call cannot do without, both learned the hard way:
+    #
+    #   * `--tree`, because `--json` alone lists a disk and its partitions as
+    #     siblings (util-linux 2.42). Without it `children` is never there, a
+    #     partitioned stick looks like a disk with no volumes at all, and a disk
+    #     carrying `loom-live-store` is ingested rather than skipped -- the
+    #     partition label the exclusion reads is on a partition this never saw.
+    #   * No `--paths`, because it rewrites *every* name column as a full path,
+    #     KNAME included. A `kernel_name` of "/dev/sdb" matches neither the bare
+    #     name `parent_disk` resolves the key stick and the root disk to -- so
+    #     both exclusions in `classify_disk` stop matching -- nor `os.path.join`,
+    #     which discards everything before an absolute component when the
+    #     mountpoint is built. PATH is a full path either way, which is all that
+    #     was wanted from it.
     output = _run(
         [
             "lsblk",
             "--json",
+            "--tree",
             "--bytes",
-            "--paths",
             "--output",
             "PATH,KNAME,TYPE,FSTYPE,LABEL,PARTLABEL,SIZE,MOUNTPOINT",
             device,
         ]
     )
-    root = json.loads(output)["blockdevices"][0]
+    return disk_from_lsblk(
+        json.loads(output)["blockdevices"],
+        device,
+        udev_properties(device),
+    )
+
+
+def disk_from_lsblk(nodes: list[dict], device: str, properties: dict[str, str]) -> Disk:
+    """Build a `Disk` from lsblk's `blockdevices`. Split out so it can be tested.
+
+    The node asked about is found by name rather than taken as the first one:
+    lsblk puts holders ahead of the device they hold, so a disk carrying a
+    dm-crypt mapping is not the head of its own listing.
+    """
+    root = _node_for(nodes, device)
 
     children = root.get("children") or []
     volumes = (
@@ -240,8 +283,12 @@ def inspect_disk(device: str) -> Disk:
 
     return Disk(
         path=root.get("path", device),
-        kernel_name=root.get("kname", ""),
+        # Bare, never a path: `classify_disk` compares it against what
+        # `parent_disk` resolves the key stick and the root disk to, and
+        # `__main__` joins it onto the mount root. `basename` rather than trust,
+        # because which lsblk flags are in play is not this function's business.
+        kernel_name=os.path.basename(root.get("kname") or ""),
         size=int(root.get("size") or 0),
         volumes=volumes,
-        properties=udev_properties(device),
+        properties=properties,
     )

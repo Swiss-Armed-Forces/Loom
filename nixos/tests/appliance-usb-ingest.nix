@@ -189,14 +189,21 @@ pkgs.testers.runNixOSTest {
         # Parsed in Python rather than with sed: the quoting a shell one-liner
         # would need cannot be written inside a Nix indented string.
         wrapper_text = appliance.succeed(f"cat {wrapper}")
-        match = re.search(r"PATH=['\"]?(/nix/store[^'\"\s]*)", wrapper_text)
-        assert match, f"no PATH found in the wrapper {wrapper}"
-        wrapped_path = match.group(1)
+        # One `PATH='<store path>'$PATH` line per entry -- makeWrapper prepends
+        # them one at a time rather than writing a single colon-joined
+        # assignment, so reading only the first match would ask about the
+        # package's own bin and nothing else.
+        entries = re.findall(r"PATH='(/nix/store[^']*)'\$PATH", wrapper_text)
+        assert entries, f"no PATH entries found in the wrapper {wrapper}"
+        wrapped_path = ":".join(dict.fromkeys(entries))
 
         for binary in ["mc", "kubectl", "lsblk", "mount", "blockdev", "ntfs-3g", "tmux"]:
+            # The shell is named by store path, not as `sh`: the point of the
+            # check is that PATH holds nothing but what the wrapper puts there,
+            # and `env` resolves the command it is given on that same PATH.
             appliance.succeed(
                 f"env --ignore-environment PATH={wrapped_path} "
-                f"sh -c 'command -v {binary}'"
+                f"${pkgs.runtimeShell} -c 'command -v {binary}'"
             )
 
     with subtest("status reports cleanly before anything has been ingested"):

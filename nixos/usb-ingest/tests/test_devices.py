@@ -7,6 +7,7 @@ from loom_usb_ingest.devices import (
     KeyGuard,
     Volume,
     classify_disk,
+    disk_from_lsblk,
 )
 
 ARMED = KeyGuard(GuardState.ARMED, "sdb")
@@ -103,3 +104,72 @@ def test_guard_is_only_authoritative_when_armed_with_a_device():
     assert not IDLE.authoritative
     assert not KeyGuard(GuardState.ARMED, None).authoritative
     assert not KeyGuard(GuardState.DISARMED, "sdb").authoritative
+
+
+def test_a_disk_is_read_off_lsblk_with_its_volumes():
+    disk = disk_from_lsblk(
+        [
+            {
+                "path": "/dev/sdb",
+                "kname": "sdb",
+                "type": "disk",
+                "size": 8_000_000_000,
+                "children": [
+                    {
+                        "path": "/dev/sdb1",
+                        "kname": "sdb1",
+                        "fstype": "vfat",
+                        "partlabel": "loom-key",
+                        "size": 1024,
+                    }
+                ],
+            }
+        ],
+        "/dev/sdb",
+        {"ID_BUS": "usb"},
+    )
+
+    assert disk.kernel_name == "sdb"
+    assert disk.path == "/dev/sdb"
+    assert [volume.path for volume in disk.volumes] == ["/dev/sdb1"]
+    assert disk.partlabels == frozenset({"loom-key"})
+    assert disk.properties == {"ID_BUS": "usb"}
+
+
+def test_a_superfloppy_is_one_volume_covering_the_whole_device():
+    disk = disk_from_lsblk(
+        [{"path": "/dev/sdb", "kname": "sdb", "fstype": "vfat", "size": 1024}],
+        "/dev/sdb",
+        {},
+    )
+
+    assert [volume.path for volume in disk.volumes] == ["/dev/sdb"]
+
+
+def test_the_disk_is_found_even_when_lsblk_lists_a_holder_first():
+    # lsblk prints holders ahead of what they hold, so the device asked about
+    # is not reliably the head of the list.
+    disk = disk_from_lsblk(
+        [
+            {"path": "/dev/mapper/root", "kname": "dm-0", "type": "crypt"},
+            {"path": "/dev/sdb", "kname": "sdb", "type": "disk", "size": 1024},
+        ],
+        "/dev/sdb",
+        {},
+    )
+
+    assert disk.kernel_name == "sdb"
+
+
+def test_the_kernel_name_is_bare_even_when_lsblk_reports_a_path():
+    # `lsblk --paths` puts a full path in KNAME, and a kernel_name of
+    # "/dev/sdb" matches neither what `parent_disk` returns for the key stick
+    # nor what `protected_disks` returns for the root -- so every exclusion in
+    # `classify_disk` quietly stops matching and the key stick gets ingested.
+    disk = disk_from_lsblk(
+        [{"path": "/dev/sdb", "kname": "/dev/sdb", "size": 1024}], "/dev/sdb", {}
+    )
+
+    assert disk.kernel_name == "sdb"
+    assert not classify_disk(disk, ARMED, NO_PROTECTED).ingest
+    assert not classify_disk(disk, IDLE, frozenset({"sdb"})).ingest
