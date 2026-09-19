@@ -414,7 +414,7 @@ export class ArchivesApi extends runtime.BaseAPI {
     }
 
     /**
-     * Import files from a loom archive (.zip or .loom).
+     * Import files from a loom archive (.zip or .loom).  A blob that turns out not to be an importable archive is indexed as an ordinary file rather than discarded, which is why a name and a source travel with it -- see worker.create_archive.index_archive.
      * Import Archive
      */
     async importArchiveV1ArchiveImportPostRaw(
@@ -435,7 +435,7 @@ export class ArchivesApi extends runtime.BaseAPI {
     }
 
     /**
-     * Import files from a loom archive (.zip or .loom).
+     * Import files from a loom archive (.zip or .loom).  A blob that turns out not to be an importable archive is indexed as an ordinary file rather than discarded, which is why a name and a source travel with it -- see worker.create_archive.index_archive.
      * Import Archive
      */
     async importArchiveV1ArchiveImportPost(
